@@ -1,0 +1,31 @@
+You are running a simple Ralph loop iteration.
+
+Prompt:
+{PROMPT}
+
+Iteration:
+{ITERATION} / {MAX_ITERATIONS}
+
+Workspace:
+{WORKSPACE}
+
+Run directory:
+{RUN_DIR}
+
+Iteration directory:
+{ITERATION_DIR}
+
+Agent:
+{AGENT}
+
+AGENT_HOME:
+{AGENT_HOME}
+
+Previous iteration summary:
+{PREVIOUS_SUMMARY}
+
+Instructions:
+- Work only on the task above.
+- Leave useful artifacts in the workspace.
+- Keep the final message concise and concrete.
+- If the task is complete, make sure the verification command can pass.

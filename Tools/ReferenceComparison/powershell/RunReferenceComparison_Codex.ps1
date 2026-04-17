@@ -52,6 +52,26 @@ else {
     $ProjectRoot = (Resolve-Path $ProjectRoot).Path
 }
 
+# ── Read CODEX_HOME from AgentConfig.ini [Codex] CodexHome if not already set
+if (-not $env:CODEX_HOME) {
+    $agentConfigPath = Join-Path $ProjectRoot 'AgentConfig.ini'
+    if (Test-Path -LiteralPath $agentConfigPath -PathType Leaf) {
+        $section = ''
+        foreach ($line in (Get-Content -LiteralPath $agentConfigPath -Encoding UTF8)) {
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^\[(.+)\]$') { $section = $Matches[1]; continue }
+            if ($section -eq 'Codex' -and $trimmed -match '^CodexHome\s*=\s*(.+)$') {
+                $val = $Matches[1].Trim()
+                if ($val -ne '' -and $val -notmatch '^\s*;') {
+                    $env:CODEX_HOME = $val
+                    Write-Host ("  CODEX_HOME = {0}" -f $val) -ForegroundColor DarkCyan
+                }
+                break
+            }
+        }
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($DateSuffix)) {
     $DateSuffix = Get-Date -Format 'yyyy-MM-dd'
 }
