@@ -13,6 +13,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/Guid.h"
 #include "Misc/PackageName.h"
+#include "Misc/ScopeExit.h"
 #include "UObject/SavePackage.h"
 #include "UObject/GarbageCollection.h"
 #include "UObject/Package.h"
@@ -42,6 +43,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBlueprintImpactCommandletInvalidFileTest,
 	"Angelscript.Editor.BlueprintImpact.CommandletInvalidFile",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptBlueprintImpactCommandletEngineNotReadyTest,
+	"Angelscript.Editor.BlueprintImpact.CommandletEngineNotReadyReturnsExitCode2",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -346,6 +352,30 @@ bool FAngelscriptBlueprintImpactCommandletInvalidFileTest::RunTest(const FString
 		TEXT("BlueprintImpact.CommandletInvalidFile should return the invalid-arguments exit code for a missing ChangedScriptFile"),
 		Commandlet->Main(TEXT("ChangedScriptFile=J:/Missing/DoesNotExist.txt")),
 		1);
+}
+
+bool FAngelscriptBlueprintImpactCommandletEngineNotReadyTest::RunTest(const FString& Parameters)
+{
+	UAngelscriptBlueprintImpactScanCommandlet* Commandlet = NewObject<UAngelscriptBlueprintImpactScanCommandlet>();
+	if (!TestNotNull(TEXT("BlueprintImpact.CommandletEngineNotReady should create the commandlet object"), Commandlet))
+	{
+		return false;
+	}
+
+	FAngelscriptEngine& Engine = FAngelscriptEngine::Get();
+	const bool bOriginalDidInitialCompileSucceed = Engine.bDidInitialCompileSucceed;
+	ON_SCOPE_EXIT
+	{
+		Engine.bDidInitialCompileSucceed = bOriginalDidInitialCompileSucceed;
+	};
+
+	Engine.bDidInitialCompileSucceed = false;
+	AddExpectedError(TEXT("Blueprint impact commandlet requires a successfully initialized Angelscript engine."), EAutomationExpectedErrorFlags::Contains, 1);
+
+	return TestEqual(
+		TEXT("BlueprintImpact.CommandletEngineNotReady should return the engine-not-ready exit code before parsing ChangedScriptFile"),
+		Commandlet->Main(TEXT("ChangedScriptFile=J:/Missing/DoesNotExist.txt")),
+		2);
 }
 
 bool FAngelscriptBlueprintImpactAnalyzeVariableTypeTest::RunTest(const FString& Parameters)

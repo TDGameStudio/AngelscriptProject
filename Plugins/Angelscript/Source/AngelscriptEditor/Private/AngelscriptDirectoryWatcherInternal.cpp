@@ -9,10 +9,12 @@ namespace
 	{
 		for (const FString& RootPath : RootPaths)
 		{
-			if (AbsolutePath.StartsWith(RootPath))
+			const FString NormalizedRootPath = FPaths::ConvertRelativePathToFull(RootPath);
+			const FString RootPathWithSeparator = FPaths::ConvertRelativePathToFull(NormalizedRootPath / TEXT(""));
+			if (AbsolutePath.Equals(NormalizedRootPath) || AbsolutePath.StartsWith(RootPathWithSeparator))
 			{
 				OutRelativePath = AbsolutePath;
-				FPaths::MakePathRelativeTo(OutRelativePath, *(RootPath / TEXT("")));
+				FPaths::MakePathRelativeTo(OutRelativePath, *RootPathWithSeparator);
 				return true;
 			}
 		}

@@ -1,7 +1,41 @@
+#include "AngelscriptSourceCodeNavigation.h"
 #include "SourceCodeNavigation.h"
 #include "AngelscriptEngine.h"
 #include "ClassGenerator/ASClass.h"
 #include "ClassGenerator/ASStruct.h"
+
+namespace
+{
+	AngelscriptSourceNavigation::FOpenLocationOverride GOpenLocationOverrideForTesting;
+	ISourceCodeNavigationHandler* GAngelscriptSourceCodeNavigationHandler = nullptr;
+
+	bool TryHandleOpenLocationOverride(const FString& Path, int32 LineNo)
+	{
+		if (!GOpenLocationOverrideForTesting)
+		{
+			return false;
+		}
+
+		FAngelscriptSourceNavigationLocation Location;
+		Location.Path = Path;
+		Location.LineNumber = LineNo;
+		GOpenLocationOverrideForTesting(Location);
+		return true;
+	}
+}
+
+namespace AngelscriptSourceNavigation
+{
+	void SetOpenLocationOverrideForTesting(FOpenLocationOverride InOverride)
+	{
+		GOpenLocationOverrideForTesting = MoveTemp(InOverride);
+	}
+
+	void ResetOpenLocationOverrideForTesting()
+	{
+		GOpenLocationOverrideForTesting = nullptr;
+	}
+}
 
 class FAngelscriptSourceCodeNavigation : public ISourceCodeNavigationHandler
 {
@@ -101,6 +135,8 @@ private:
 			return;
 
 		FString Path = Module->Code[0].AbsoluteFilename;
+		if (TryHandleOpenLocationOverride(Path, LineNo))
+			return;
 		if (LineNo != -1)
 			FPlatformMisc::OsExecute(nullptr, TEXT("code"), *FString::Printf(TEXT("--goto \"%s:%d\""), *Path, LineNo));
 		else
@@ -109,6 +145,8 @@ private:
 
 	void OpenFile(const FString& Path, int LineNo = -1)
 	{
+		if (TryHandleOpenLocationOverride(Path, LineNo))
+			return;
 		if (LineNo != -1)
 			FPlatformMisc::OsExecute(nullptr, TEXT("code"), *FString::Printf(TEXT("--goto \"%s:%d\""), *Path, LineNo));
 		else
@@ -133,7 +171,36 @@ private:
 	}
 };
 
+namespace AngelscriptSourceNavigation
+{
+	bool NavigateToFunctionForTesting(const UFunction* InFunction)
+	{
+		return GAngelscriptSourceCodeNavigationHandler != nullptr
+			? GAngelscriptSourceCodeNavigationHandler->NavigateToFunction(InFunction)
+			: false;
+	}
+
+	bool NavigateToPropertyForTesting(const FProperty* InProperty)
+	{
+		return GAngelscriptSourceCodeNavigationHandler != nullptr
+			? GAngelscriptSourceCodeNavigationHandler->NavigateToProperty(InProperty)
+			: false;
+	}
+
+	bool NavigateToStructForTesting(const UStruct* InStruct)
+	{
+		return GAngelscriptSourceCodeNavigationHandler != nullptr
+			? GAngelscriptSourceCodeNavigationHandler->NavigateToStruct(InStruct)
+			: false;
+	}
+}
+
 void RegisterAngelscriptSourceNavigation()
 {
-	FSourceCodeNavigation::AddNavigationHandler(new FAngelscriptSourceCodeNavigation);
+	if (GAngelscriptSourceCodeNavigationHandler == nullptr)
+	{
+		GAngelscriptSourceCodeNavigationHandler = new FAngelscriptSourceCodeNavigation;
+	}
+
+	FSourceCodeNavigation::AddNavigationHandler(GAngelscriptSourceCodeNavigationHandler);
 }

@@ -3,6 +3,44 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+class IDirectoryWatcher;
+class UObject;
+class UASClass;
+
+#if WITH_DEV_AUTOMATION_TESTS
+class UPackage;
+struct FAssetPickerConfig;
+struct FSaveAssetDialogConfig;
+struct FAngelscriptEditorModuleTestAccess;
+
+struct FAngelscriptEditorModuleAssetListPopupTestHooks
+{
+	TFunction<void()> ForceEditorWindowToFront;
+	TFunction<void(const FString&)> OpenAssetByPath;
+	TFunction<void(UObject*)> OpenAssetByObject;
+	TFunction<void(const FAssetPickerConfig&, UASClass*)> ShowAssetPickerMenu;
+};
+
+struct FAngelscriptEditorModuleCreateBlueprintPopupTestHooks
+{
+	TFunction<void()> ForceEditorWindowToFront;
+	TFunction<bool(const FString&, bool)> HasAssetsInPath;
+	TFunction<FString(const FSaveAssetDialogConfig&)> CreateSaveAssetDialog;
+	TFunction<UObject*(UASClass*, UPackage*, FName, UClass*, UClass*)> CreateBlueprintAsset;
+	TFunction<void(const FText&)> OpenMessageDialog;
+	TFunction<void(UObject*)> AssetCreated;
+	TFunction<void(const TArray<UPackage*>&)> PromptForCheckoutAndSave;
+	TFunction<void(UObject*)> OpenEditorForAsset;
+};
+
+struct FAngelscriptEditorModuleLiteralAssetSaveTestHooks
+{
+	TFunction<bool()> HasAnyDebugServerClients;
+	TFunction<void(const FText&)> OpenMessageDialog;
+	TFunction<void(const FString&, const TArray<FString>&)> ReplaceScriptAssetContent;
+};
+#endif
+
 class ANGELSCRIPTEDITOR_API FAngelscriptEditorModule : public FDefaultModuleImpl
 {
 public:
@@ -55,7 +93,41 @@ public:
 	static void OriginalGenerate();
 
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+	friend struct FAngelscriptEditorModuleTestAccess;
+#endif
+	void RegisterGameplayTagDelegates();
+	void UnregisterGameplayTagDelegates();
 	void ReloadTags();
 	void RegisterToolsMenuEntries();
+	TArray<TPair<FString, FDelegateHandle>> DirectoryWatchHandles;
 	FDelegateHandle StateDumpExtensionHandle;
 };
+
+#if WITH_DEV_AUTOMATION_TESTS
+struct FAngelscriptEditorModuleTestAccess
+{
+	static void SetDirectoryWatcherResolver(TFunction<IDirectoryWatcher*()> InResolver);
+	static void ResetDirectoryWatcherResolver();
+	static void SetAssetListPopupTestHooks(FAngelscriptEditorModuleAssetListPopupTestHooks InHooks);
+	static void ResetAssetListPopupTestHooks();
+	static void SetCreateBlueprintPopupTestHooks(FAngelscriptEditorModuleCreateBlueprintPopupTestHooks InHooks);
+	static void ResetCreateBlueprintPopupTestHooks();
+	static void SetLiteralAssetSaveTestHooks(FAngelscriptEditorModuleLiteralAssetSaveTestHooks InHooks);
+	static void ResetLiteralAssetSaveTestHooks();
+	static void SetPlatformExecuteOverride(TFunction<bool(const TCHAR*, const TCHAR*, const TCHAR*)> InOverride);
+	static void ResetPlatformExecuteOverride();
+	static void SetReloadGameplayTagsOverride(TFunction<void(FAngelscriptEditorModule*)> InOverride);
+	static void ResetReloadGameplayTagsOverride();
+	static void SetOnEngineInitDoneOverride(TFunction<void()> InOverride);
+	static void ResetOnEngineInitDoneOverride();
+	static void InvokeOnLiteralAssetSaved(UObject* Object);
+	static bool IsLiteralAssetPreSaveRegistered();
+	static bool HasStateDumpExtensionHandle(const FAngelscriptEditorModule& Module);
+	static bool ShouldShowAssetListPopupCreateButton(UASClass* BaseClass);
+	static void RegisterGameplayTagDelegates(FAngelscriptEditorModule& Module);
+	static void RegisterToolsMenuEntries(FAngelscriptEditorModule& Module);
+	static void InvokeOnEngineInitDone();
+	static void BroadcastRegisteredOnPostEngineInit();
+};
+#endif

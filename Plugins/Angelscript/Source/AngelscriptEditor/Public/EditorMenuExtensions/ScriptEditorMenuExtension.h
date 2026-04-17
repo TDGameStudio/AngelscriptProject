@@ -44,6 +44,10 @@ class UScriptEditorMenuExtension : public UObject
 {
 	GENERATED_BODY()
 
+#if WITH_DEV_AUTOMATION_TESTS
+	friend struct FAngelscriptEditorMenuExtensionTestAccess;
+#endif
+
 public:
 
 	virtual UWorld* GetWorld() const override;
@@ -134,5 +138,58 @@ private:
 	FToolUIAction CreateToolUIAction(UFunction* Function, FExtenderSelection Selection) const;
 
 	static void UnregisterExtensions();
+	static void RegisterExtension(UScriptEditorMenuExtension* Extension);
 	static void RegisterExtensions();
 };
+
+#if WITH_DEV_AUTOMATION_TESTS
+struct FAngelscriptEditorMenuExtensionTestAccess
+{
+	static FUIAction CreateUIAction(const UScriptEditorMenuExtension* Extension, UFunction* Function)
+	{
+		UScriptEditorMenuExtension::FExtenderSelection Selection;
+		return Extension->CreateUIAction(Function, Selection);
+	}
+
+	static void BuildMenu(const UScriptEditorMenuExtension* Extension, FMenuBuilder& MenuBuilder)
+	{
+		UScriptEditorMenuExtension::FExtenderSelection Selection;
+		Extension->BuildMenu(MenuBuilder, Extension->GatherExtensionFunctions(), Selection);
+	}
+
+	static void BuildToolMenuSection(const UScriptEditorMenuExtension* Extension, FToolMenuSection& MenuSection, bool bIsMenu)
+	{
+		UScriptEditorMenuExtension::FExtenderSelection Selection;
+		Extension->BuildToolMenuSection(MenuSection, Selection, bIsMenu);
+	}
+
+	static FToolUIAction CreateToolUIAction(const UScriptEditorMenuExtension* Extension, UFunction* Function)
+	{
+		UScriptEditorMenuExtension::FExtenderSelection Selection;
+		return Extension->CreateToolUIAction(Function, Selection);
+	}
+
+	static EUserInterfaceActionType GetActionType(UFunction* Function);
+	static void SetShiftModifierOverride(TFunction<bool()> InOverride);
+	static void ResetShiftModifierOverride();
+	static void SetNavigateToFunctionOverride(TFunction<bool(const UFunction*)> InOverride);
+	static void ResetNavigateToFunctionOverride();
+	static void SetNavigateToClassOverride(TFunction<void(const UClass*)> InOverride);
+	static void ResetNavigateToClassOverride();
+
+	static void RegisterExtensions()
+	{
+		UScriptEditorMenuExtension::RegisterExtensions();
+	}
+
+	static void UnregisterExtensions()
+	{
+		UScriptEditorMenuExtension::UnregisterExtensions();
+	}
+
+	static void RegisterExtension(UScriptEditorMenuExtension* Extension)
+	{
+		UScriptEditorMenuExtension::RegisterExtension(Extension);
+	}
+};
+#endif

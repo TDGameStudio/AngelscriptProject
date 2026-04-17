@@ -12,6 +12,8 @@
 #include "ClassGenerator/AngelscriptClassGenerator.h"
 #include "ClassReloadHelper.generated.h"
 
+class UBlueprint;
+
 UCLASS()
 class UAngelscriptReferenceReplacementHelper : public UObject
 {
@@ -21,6 +23,48 @@ public:
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 };
+
+#if WITH_DEV_AUTOMATION_TESTS
+struct FClassReloadHelperClassReloadTestHooks
+{
+	TFunction<void(UClass*)> RefreshClassActions;
+	TFunction<void(UClass*)> InvalidateComponentClass;
+};
+
+struct FClassReloadHelperPostReloadTestHooks
+{
+	TFunction<void()> RefreshAllActions;
+	TFunction<void()> InvalidateComponentRegistry;
+	TFunction<void(UWorld*, const TCHAR*)> ExecCommand;
+};
+
+struct FClassReloadHelperPerformReinstanceTestHooks
+{
+	TFunction<bool()> EnterPerformReinstanceBody;
+	TFunction<void()> NotifyCustomizationModuleChanged;
+	TFunction<void(UEnum*)> RefreshAssetActions;
+	TFunction<void()> AddActorFactory;
+	TFunction<void()> BroadcastAllPlaceableAssetsChanged;
+	TFunction<void()> BroadcastPlaceableItemFilteringChanged;
+	TFunction<void(UBlueprint*)> QueueBlueprintForCompilation;
+	TFunction<void()> FlushCompilationQueueAndReinstance;
+};
+
+struct FClassReloadHelperTestAccess
+{
+	static void SetClassReloadTestHooks(FClassReloadHelperClassReloadTestHooks InHooks);
+	static void ResetClassReloadTestHooks();
+	static bool HandleRefreshClassActions(UClass* Class);
+	static bool HandleInvalidateComponentClass(UClass* Class);
+	static void SetPostReloadTestHooks(FClassReloadHelperPostReloadTestHooks InHooks);
+	static void ResetPostReloadTestHooks();
+	static bool HandleRefreshAllActions();
+	static bool HandleInvalidateComponentRegistry();
+	static bool HandleExecCommand(UWorld* World, const TCHAR* Command);
+	static void SetPerformReinstanceTestHooks(FClassReloadHelperPerformReinstanceTestHooks InHooks);
+	static void ResetPerformReinstanceTestHooks();
+};
+#endif
 
 struct FClassReloadHelper
 {
@@ -80,8 +124,13 @@ struct FClassReloadHelper
 			{
 				if (!bRefreshedAll && GEngine != nullptr)
 				{
-					auto& Database = FBlueprintActionDatabase::Get();
-					Database.RefreshClassActions(OldClass);
+#if WITH_DEV_AUTOMATION_TESTS
+					if (!FClassReloadHelperTestAccess::HandleRefreshClassActions(OldClass))
+#endif
+					{
+						auto& Database = FBlueprintActionDatabase::Get();
+						Database.RefreshClassActions(OldClass);
+					}
 				}
 			}
 
@@ -89,12 +138,24 @@ struct FClassReloadHelper
 			{
 				if (!bRefreshedAll && GEngine != nullptr)
 				{
-					auto& Database = FBlueprintActionDatabase::Get();
-					Database.RefreshClassActions(NewClass);
+#if WITH_DEV_AUTOMATION_TESTS
+					if (!FClassReloadHelperTestAccess::HandleRefreshClassActions(NewClass))
+#endif
+					{
+						auto& Database = FBlueprintActionDatabase::Get();
+						Database.RefreshClassActions(NewClass);
+					}
 				}
 
 				if (NewClass->IsChildOf(UActorComponent::StaticClass()))
-					FComponentTypeRegistry::Get().InvalidateClass(NewClass);
+				{
+#if WITH_DEV_AUTOMATION_TESTS
+					if (!FClassReloadHelperTestAccess::HandleInvalidateComponentClass(NewClass))
+#endif
+					{
+						FComponentTypeRegistry::Get().InvalidateClass(NewClass);
+					}
+				}
 
 				if (NewClass->IsChildOf(AVolume::StaticClass()))
 					ReloadState().bReloadedVolume = true;
@@ -143,8 +204,13 @@ struct FClassReloadHelper
 			// is used to populate the right click menu.
 			if (ReloadState().bRefreshAllActions && GEngine != nullptr)
 			{
-				auto& Database = FBlueprintActionDatabase::Get();
-				Database.RefreshAll();
+#if WITH_DEV_AUTOMATION_TESTS
+				if (!FClassReloadHelperTestAccess::HandleRefreshAllActions())
+#endif
+				{
+					auto& Database = FBlueprintActionDatabase::Get();
+					Database.RefreshAll();
+				}
 			}
 
 			// Refresh class lists by pretending we just compiled a bp
@@ -154,7 +220,14 @@ struct FClassReloadHelper
 			}
 
 			if (!FAngelscriptEngine::IsInitialized() || !FAngelscriptEngine::Get().IsInitialCompileFinished())
-				FComponentTypeRegistry::Get().Invalidate();
+			{
+#if WITH_DEV_AUTOMATION_TESTS
+				if (!FClassReloadHelperTestAccess::HandleInvalidateComponentRegistry())
+#endif
+				{
+					FComponentTypeRegistry::Get().Invalidate();
+				}
+			}
 
 			// If we reloaded any volume classes, trigger a geometry rebuild
 			if (ReloadState().bReloadedVolume && GEngine != nullptr)
@@ -162,7 +235,12 @@ struct FClassReloadHelper
 				auto* World = GEditor->GetEditorWorldContext().World();
 				ULevel* CurrentLevel = World->GetCurrentLevel();
 
-				GEngine->Exec( World, TEXT("MAP REBUILD ALLVISIBLE") );
+#if WITH_DEV_AUTOMATION_TESTS
+				if (!FClassReloadHelperTestAccess::HandleExecCommand(World, TEXT("MAP REBUILD ALLVISIBLE")))
+#endif
+				{
+					GEngine->Exec( World, TEXT("MAP REBUILD ALLVISIBLE") );
+				}
 
 				// Map rebuild ("Build Geometry") is currently bugged (as of 5.4.1) and resets the CurrentLevel.
 				// To avoid being annoying and resetting the active level on hotreload, restore it after the rebuild

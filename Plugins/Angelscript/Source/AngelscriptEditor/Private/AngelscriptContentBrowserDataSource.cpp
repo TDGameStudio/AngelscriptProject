@@ -34,6 +34,8 @@ void UAngelscriptContentBrowserDataSource::CompileFilter(const FName InPath, con
 
 	FContentBrowserDataFilterList& FilterList = OutCompiledFilter.CompiledFilters.FindOrAdd(this);
 	FContentBrowserAngelscriptFilter& ScriptFilter = FilterList.FindOrAddFilter<FContentBrowserAngelscriptFilter>();
+	ScriptFilter.IncludeClasses.Reset();
+	ScriptFilter.ExcludeClasses.Reset();
 
 	const bool bIncludeFiles = EnumHasAnyFlags(InFilter.ItemTypeFilter, EContentBrowserItemTypeFilter::IncludeFiles);
 	const bool bIncludeAssets = EnumHasAnyFlags(InFilter.ItemCategoryFilter, EContentBrowserItemCategoryFilter::IncludeAssets);
@@ -132,6 +134,60 @@ bool UAngelscriptContentBrowserDataSource::EnumerateItemsForObjects(const TArray
 
 bool UAngelscriptContentBrowserDataSource::DoesItemPassFilter(const FContentBrowserItemData& InItem, const FContentBrowserDataCompiledFilter& InFilter)
 {
+	const FContentBrowserDataFilterList* FilterList = InFilter.CompiledFilters.Find(this);
+	if (FilterList == nullptr)
+	{
+		return false;
+	}
+
+	const FContentBrowserAngelscriptFilter* ScriptFilter = FilterList->FindFilter<FContentBrowserAngelscriptFilter>();
+	if (ScriptFilter == nullptr)
+	{
+		return false;
+	}
+
+	if (InItem.GetOwnerDataSource() != this || !InItem.IsFile())
+	{
+		return false;
+	}
+
+	if (!EnumHasAnyFlags(InFilter.ItemTypeFilter, EContentBrowserItemTypeFilter::IncludeFiles)
+		|| !EnumHasAnyFlags(InFilter.ItemCategoryFilter, EContentBrowserItemCategoryFilter::IncludeAssets)
+		|| ScriptFilter->IncludeClasses.IsEmpty())
+	{
+		return false;
+	}
+
+	const TSharedPtr<const FAngelscriptContentBrowserPayload> Payload = StaticCastSharedPtr<const FAngelscriptContentBrowserPayload>(InItem.GetPayload());
+	UObject* Asset = Payload.IsValid() ? Payload->Asset.Get() : nullptr;
+	if (Asset == nullptr)
+	{
+		return false;
+	}
+
+	bool bMatchesIncludes = false;
+	for (UClass* Class : ScriptFilter->IncludeClasses)
+	{
+		if (Asset->IsA(Class))
+		{
+			bMatchesIncludes = true;
+			break;
+		}
+	}
+
+	if (!bMatchesIncludes)
+	{
+		return false;
+	}
+
+	for (UClass* Class : ScriptFilter->ExcludeClasses)
+	{
+		if (Asset->IsA(Class))
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -209,7 +265,11 @@ bool UAngelscriptContentBrowserDataSource::UpdateThumbnail(const FContentBrowser
 	if (InItem.GetOwnerDataSource() == this && InItem.IsFile())
 	{
 		auto Payload = StaticCastSharedPtr<const FAngelscriptContentBrowserPayload>(InItem.GetPayload());
-		auto AssetData = FAssetData(Payload->Asset.Get(), FAssetData::ECreationFlags::SkipAssetRegistryTagsGathering);
+		UObject* Asset = Payload->Asset.Get();
+		if (Asset == nullptr)
+			return false;
+
+		auto AssetData = FAssetData(Asset, FAssetData::ECreationFlags::SkipAssetRegistryTagsGathering);
 		InThumbnail.SetAsset(AssetData);
 		return true;
 	}
@@ -239,7 +299,11 @@ bool UAngelscriptContentBrowserDataSource::Legacy_TryGetAssetData(const FContent
 	if (InItem.GetOwnerDataSource() == this && InItem.IsFile())
 	{
 		auto Payload = StaticCastSharedPtr<const FAngelscriptContentBrowserPayload>(InItem.GetPayload());
-		OutAssetData = FAssetData(Payload->Asset.Get(), FAssetData::ECreationFlags::SkipAssetRegistryTagsGathering);
+		UObject* Asset = Payload->Asset.Get();
+		if (Asset == nullptr)
+			return false;
+
+		OutAssetData = FAssetData(Asset, FAssetData::ECreationFlags::SkipAssetRegistryTagsGathering);
 		return true;
 	}
 

@@ -66,4 +66,9 @@ namespace AngelscriptEditor::BlueprintImpact
 	ANGELSCRIPTEDITOR_API TArray<FAssetData> FindBlueprintAssets(IAssetRegistry& AssetRegistry, bool bIncludeOnlyOnDiskAssets);
 	ANGELSCRIPTEDITOR_API FBlueprintImpactScanResult ScanBlueprintAssets(const FAngelscriptEngine& Engine, IAssetRegistry& AssetRegistry, const FBlueprintImpactRequest& Request);
 	ANGELSCRIPTEDITOR_API const TCHAR* LexToString(EBlueprintImpactReason Reason);
+
+#if WITH_DEV_AUTOMATION_TESTS
+	ANGELSCRIPTEDITOR_API void SetBlueprintAssetsOverrideForTesting(TArray<FAssetData> InAssets);
+	ANGELSCRIPTEDITOR_API void ClearBlueprintAssetsOverrideForTesting();
+#endif
 }

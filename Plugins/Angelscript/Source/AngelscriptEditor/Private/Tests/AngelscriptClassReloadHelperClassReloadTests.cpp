@@ -1,0 +1,175 @@
+#include "ClassReloadHelper.h"
+
+#include "AngelscriptEngine.h"
+
+#include "Components/ActorComponent.h"
+#include "Components/BillboardComponent.h"
+#include "Components/SceneComponent.h"
+#include "Engine/DataTable.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "UObject/Class.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptClassReloadHelperOnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponentsTest,
+	"Angelscript.Editor.ClassReloadHelper.OnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponents",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+namespace
+{
+	struct FClassReloadImmediateCallLog
+	{
+		TArray<UClass*> RefreshedClasses;
+		TArray<UClass*> InvalidatedClasses;
+
+		void Reset()
+		{
+			RefreshedClasses.Reset();
+			InvalidatedClasses.Reset();
+		}
+	};
+
+	TUniquePtr<FAngelscriptEngine> MakeClassReloadHelperImmediateEffectTestEngine()
+	{
+		const FAngelscriptEngineConfig Config;
+		const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		return FAngelscriptEngine::CreateTestingFullEngine(Config, Dependencies);
+	}
+
+	void EnsureClassReloadHelperInitialized()
+	{
+		if (!FAngelscriptClassGenerator::OnClassReload.IsBound())
+		{
+			FClassReloadHelper::Init();
+		}
+	}
+
+	int32 CountClassHits(const TArray<UClass*>& Classes, UClass* ExpectedClass)
+	{
+		int32 Hits = 0;
+		for (UClass* Class : Classes)
+		{
+			if (Class == ExpectedClass)
+			{
+				++Hits;
+			}
+		}
+
+		return Hits;
+	}
+}
+
+bool FAngelscriptClassReloadHelperOnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponentsTest::RunTest(const FString& Parameters)
+{
+	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
+	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
+	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperImmediateEffectTestEngine();
+	TUniquePtr<FAngelscriptEngineScope> EngineScope;
+
+	ON_SCOPE_EXIT
+	{
+		FClassReloadHelperTestAccess::ResetClassReloadTestHooks();
+		EngineScope.Reset();
+		FAngelscriptEngineContextStack::RestoreSnapshot(MoveTemp(SavedStack));
+		FClassReloadHelper::ReloadState() = SavedState;
+	};
+
+	if (!TestNotNull(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should create a testing engine"), Engine.Get()))
+	{
+		return false;
+	}
+	if (!TestNotNull(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should expose GEngine"), GEngine))
+	{
+		return false;
+	}
+
+	EngineScope = MakeUnique<FAngelscriptEngineScope>(*Engine);
+	Engine->bIsInitialCompileFinished = true;
+	EnsureClassReloadHelperInitialized();
+
+	UClass* OldComponentClass = USceneComponent::StaticClass();
+	UClass* NewComponentClass = UBillboardComponent::StaticClass();
+	UClass* OldRegularClass = UObject::StaticClass();
+	UClass* NewRegularClass = UDataTable::StaticClass();
+
+	FClassReloadImmediateCallLog CallLog;
+	FClassReloadHelperClassReloadTestHooks Hooks;
+	Hooks.RefreshClassActions = [&CallLog](UClass* Class)
+	{
+		CallLog.RefreshedClasses.Add(Class);
+	};
+	Hooks.InvalidateComponentClass = [&CallLog](UClass* Class)
+	{
+		CallLog.InvalidatedClasses.Add(Class);
+	};
+	FClassReloadHelperTestAccess::SetClassReloadTestHooks(MoveTemp(Hooks));
+
+	FClassReloadHelper::FReloadState& ReloadState = FClassReloadHelper::ReloadState();
+
+	ReloadState = FClassReloadHelper::FReloadState();
+	CallLog.Reset();
+	FAngelscriptClassGenerator::OnClassReload.Broadcast(OldComponentClass, NewComponentClass);
+
+	if (!TestTrue(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should track the reloaded component class pair"), ReloadState.ReloadClasses.FindRef(OldComponentClass) == NewComponentClass))
+	{
+		return false;
+	}
+	if (!TestFalse(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should keep bRefreshAllActions false for non-interface component reloads"), ReloadState.bRefreshAllActions))
+	{
+		return false;
+	}
+	if (!TestFalse(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should keep bReloadedVolume false for non-volume component reloads"), ReloadState.bReloadedVolume))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should refresh old component class actions once"), CountClassHits(CallLog.RefreshedClasses, OldComponentClass), 1))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should refresh new component class actions once"), CountClassHits(CallLog.RefreshedClasses, NewComponentClass), 1))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should only refresh the old/new component classes"), CallLog.RefreshedClasses.Num(), 2))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should invalidate the replacement component class once"), CountClassHits(CallLog.InvalidatedClasses, NewComponentClass), 1))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should only invalidate the replacement component class"), CallLog.InvalidatedClasses.Num(), 1))
+	{
+		return false;
+	}
+
+	ReloadState = FClassReloadHelper::FReloadState();
+	CallLog.Reset();
+	FAngelscriptClassGenerator::OnClassReload.Broadcast(OldRegularClass, NewRegularClass);
+
+	if (!TestTrue(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should track the reloaded regular class pair"), ReloadState.ReloadClasses.FindRef(OldRegularClass) == NewRegularClass))
+	{
+		return false;
+	}
+	if (!TestFalse(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should keep bRefreshAllActions false for non-interface regular reloads"), ReloadState.bRefreshAllActions))
+	{
+		return false;
+	}
+	if (!TestFalse(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should keep bReloadedVolume false for non-volume regular reloads"), ReloadState.bReloadedVolume))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should refresh old regular class actions once"), CountClassHits(CallLog.RefreshedClasses, OldRegularClass), 1))
+	{
+		return false;
+	}
+	if (!TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should refresh new regular class actions once"), CountClassHits(CallLog.RefreshedClasses, NewRegularClass), 1))
+	{
+		return false;
+	}
+	return TestEqual(TEXT("ClassReloadHelper.OnClassReload immediate-effects test should not invalidate non-component replacement classes"), CallLog.InvalidatedClasses.Num(), 0);
+}
+
+#endif

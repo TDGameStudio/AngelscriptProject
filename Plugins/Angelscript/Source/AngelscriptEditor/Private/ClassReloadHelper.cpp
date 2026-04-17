@@ -17,6 +17,120 @@
 #include "PropertyEditorModule.h"
 #include "ActorFactories/ActorFactoryVolume.h"
 
+namespace
+{
+#if WITH_DEV_AUTOMATION_TESTS
+	FClassReloadHelperClassReloadTestHooks GClassReloadHelperClassReloadTestHooks;
+	FClassReloadHelperPostReloadTestHooks GClassReloadHelperPostReloadTestHooks;
+	FClassReloadHelperPerformReinstanceTestHooks GClassReloadHelperPerformReinstanceTestHooks;
+#endif
+
+	bool EnterPerformReinstanceBodyForReload()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.EnterPerformReinstanceBody)
+		{
+			return GClassReloadHelperPerformReinstanceTestHooks.EnterPerformReinstanceBody();
+		}
+#endif
+
+		return false;
+	}
+
+	void NotifyCustomizationModuleChangedForReload()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.NotifyCustomizationModuleChanged)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.NotifyCustomizationModuleChanged();
+			return;
+		}
+#endif
+
+		FPropertyEditorModule* PropertyModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor");
+		if (PropertyModule)
+			PropertyModule->NotifyCustomizationModuleChanged();
+	}
+
+	void AddActorFactoryForReload(UActorFactory* NewFactory)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.AddActorFactory)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.AddActorFactory();
+			return;
+		}
+#endif
+
+		GEditor->ActorFactories.Add(NewFactory);
+	}
+
+	void RefreshAssetActionsForReload(UEnum* ChangedEnum)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.RefreshAssetActions)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.RefreshAssetActions(ChangedEnum);
+			return;
+		}
+#endif
+
+		FBlueprintActionDatabase::Get().RefreshAssetActions(ChangedEnum);
+	}
+
+	void BroadcastAllPlaceableAssetsChangedForReload()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.BroadcastAllPlaceableAssetsChanged)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.BroadcastAllPlaceableAssetsChanged();
+			return;
+		}
+#endif
+
+		IPlacementModeModule::Get().OnAllPlaceableAssetsChanged().Broadcast();
+	}
+
+	void BroadcastPlaceableItemFilteringChangedForReload()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.BroadcastPlaceableItemFilteringChanged)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.BroadcastPlaceableItemFilteringChanged();
+			return;
+		}
+#endif
+
+		IPlacementModeModule::Get().OnPlaceableItemFilteringChanged().Broadcast();
+	}
+
+	void QueueBlueprintForCompilationForReload(UBlueprint* Blueprint)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.QueueBlueprintForCompilation)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.QueueBlueprintForCompilation(Blueprint);
+			return;
+		}
+#endif
+
+		FBlueprintCompilationManager::QueueForCompilation(Blueprint);
+	}
+
+	void FlushCompilationQueueAndReinstanceForReload()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GClassReloadHelperPerformReinstanceTestHooks.FlushCompilationQueueAndReinstance)
+		{
+			GClassReloadHelperPerformReinstanceTestHooks.FlushCompilationQueueAndReinstance();
+			return;
+		}
+#endif
+
+		FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+	}
+}
+
 // The new unreal reload system is not yet up to providing for AS reloads (for example, it does not deal well with changing UFunction definitions)
 // However, you can try it out with this CVar and hopefully at some point it can replace the hacked-together mess using the old reloader.
 static int32 GAngelscriptUseUnrealReload = 0;
@@ -24,10 +138,102 @@ static FAutoConsoleVariableRef CVar_AngelscriptUseUnrealReload(TEXT("angelscript
 
 UAngelscriptReferenceReplacementHelper* ReplaceHelper = nullptr;
 
+#if WITH_DEV_AUTOMATION_TESTS
+void FClassReloadHelperTestAccess::SetClassReloadTestHooks(FClassReloadHelperClassReloadTestHooks InHooks)
+{
+	GClassReloadHelperClassReloadTestHooks = MoveTemp(InHooks);
+}
+
+void FClassReloadHelperTestAccess::ResetClassReloadTestHooks()
+{
+	GClassReloadHelperClassReloadTestHooks = FClassReloadHelperClassReloadTestHooks();
+}
+
+bool FClassReloadHelperTestAccess::HandleRefreshClassActions(UClass* Class)
+{
+	if (GClassReloadHelperClassReloadTestHooks.RefreshClassActions)
+	{
+		GClassReloadHelperClassReloadTestHooks.RefreshClassActions(Class);
+		return true;
+	}
+
+	return false;
+}
+
+bool FClassReloadHelperTestAccess::HandleInvalidateComponentClass(UClass* Class)
+{
+	if (GClassReloadHelperClassReloadTestHooks.InvalidateComponentClass)
+	{
+		GClassReloadHelperClassReloadTestHooks.InvalidateComponentClass(Class);
+		return true;
+	}
+
+	return false;
+}
+
+void FClassReloadHelperTestAccess::SetPostReloadTestHooks(FClassReloadHelperPostReloadTestHooks InHooks)
+{
+	GClassReloadHelperPostReloadTestHooks = MoveTemp(InHooks);
+}
+
+void FClassReloadHelperTestAccess::ResetPostReloadTestHooks()
+{
+	GClassReloadHelperPostReloadTestHooks = FClassReloadHelperPostReloadTestHooks();
+}
+
+bool FClassReloadHelperTestAccess::HandleRefreshAllActions()
+{
+	if (GClassReloadHelperPostReloadTestHooks.RefreshAllActions)
+	{
+		GClassReloadHelperPostReloadTestHooks.RefreshAllActions();
+		return true;
+	}
+
+	return false;
+}
+
+bool FClassReloadHelperTestAccess::HandleInvalidateComponentRegistry()
+{
+	if (GClassReloadHelperPostReloadTestHooks.InvalidateComponentRegistry)
+	{
+		GClassReloadHelperPostReloadTestHooks.InvalidateComponentRegistry();
+		return true;
+	}
+
+	return false;
+}
+
+bool FClassReloadHelperTestAccess::HandleExecCommand(UWorld* World, const TCHAR* Command)
+{
+	if (GClassReloadHelperPostReloadTestHooks.ExecCommand)
+	{
+		GClassReloadHelperPostReloadTestHooks.ExecCommand(World, Command);
+		return true;
+	}
+
+	return false;
+}
+
+void FClassReloadHelperTestAccess::SetPerformReinstanceTestHooks(FClassReloadHelperPerformReinstanceTestHooks InHooks)
+{
+	GClassReloadHelperPerformReinstanceTestHooks = MoveTemp(InHooks);
+}
+
+void FClassReloadHelperTestAccess::ResetPerformReinstanceTestHooks()
+{
+	GClassReloadHelperPerformReinstanceTestHooks = FClassReloadHelperPerformReinstanceTestHooks();
+	GClassReloadHelperPostReloadTestHooks = FClassReloadHelperPostReloadTestHooks();
+	GClassReloadHelperClassReloadTestHooks = FClassReloadHelperClassReloadTestHooks();
+}
+#endif
+
 void FClassReloadHelper::FReloadState::PerformReinstance()
 {
 	// We never go into the reinstance path in an initial compile, there's no point
 	if (!FAngelscriptEngine::Get().bIsInitialCompileFinished)
+		return;
+
+	if (EnterPerformReinstanceBodyForReload())
 		return;
 
 	// Init our replace helper that ReparentHierarchies will try to replace stuff in later
@@ -292,10 +498,10 @@ void FClassReloadHelper::FReloadState::PerformReinstance()
 			for (UBlueprint* BP : DependencyBPs)
 			{
 				RefreshRelevantNodesInBP(BP);
-				FBlueprintCompilationManager::QueueForCompilation(BP);
+				QueueBlueprintForCompilationForReload(BP);
 			}
 
-			FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+			FlushCompilationQueueAndReinstanceForReload();
 		}
 
 		for (auto& Struct : ReloadStructs)
@@ -333,9 +539,7 @@ void FClassReloadHelper::FReloadState::PerformReinstance()
 	// We want to force-update all the property editing UI now that we've done this reload.
 	//  The easiest way to do that is to send this NotifyCustomizationModuleChanged, since
 	//  all this does is a refresh on the UI, but there's no separate 'force refresh'.
-	FPropertyEditorModule* PropertyModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor");
-	if (PropertyModule)
-		PropertyModule->NotifyCustomizationModuleChanged();
+	NotifyCustomizationModuleChangedForReload();
 
 	// If we've created any new volumes, we want to make sure they have actor factories
 	TArray<UClass*> NewVolumeClasses;
@@ -365,22 +569,21 @@ void FClassReloadHelper::FReloadState::PerformReinstance()
 				UActorFactory* NewFactory = NewObject<UActorFactory>(GetTransientPackage(), VolumeFactoryClass);
 				check(NewFactory);
 				NewFactory->NewActorClass = VolumeClass;
-				GEditor->ActorFactories.Add(NewFactory);
+				AddActorFactoryForReload(NewFactory);
 			}
 		}
 	}
 
 	// Refresh actions for enums
-	auto& Database = FBlueprintActionDatabase::Get();
 	for (UEnum* ChangedEnum : ReloadEnums)
-		Database.RefreshAssetActions(ChangedEnum);
+		RefreshAssetActionsForReload(ChangedEnum);
 	for (UEnum* ChangedEnum : NewEnums)
-		Database.RefreshAssetActions(ChangedEnum);
+		RefreshAssetActionsForReload(ChangedEnum);
 
 	if (NewClasses.Num() != 0)
 	{
-		IPlacementModeModule::Get().OnAllPlaceableAssetsChanged().Broadcast();
-		IPlacementModeModule::Get().OnPlaceableItemFilteringChanged().Broadcast();
+		BroadcastAllPlaceableAssetsChangedForReload();
+		BroadcastPlaceableItemFilteringChangedForReload();
 	}
 }
 

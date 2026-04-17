@@ -15,6 +15,10 @@
 
 namespace
 {
+#if WITH_DEV_AUTOMATION_TESTS
+	TOptional<TArray<FAssetData>> GBlueprintImpactBlueprintAssetsOverride;
+#endif
+
 	template <typename T>
 	void AddUniqueReason(TArray<AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason>& Reasons, T Reason)
 	{
@@ -251,6 +255,13 @@ namespace AngelscriptEditor::BlueprintImpact
 
 	TArray<FAssetData> FindBlueprintAssets(IAssetRegistry& AssetRegistry, const bool bIncludeOnlyOnDiskAssets)
 	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GBlueprintImpactBlueprintAssetsOverride.IsSet())
+		{
+			return GBlueprintImpactBlueprintAssetsOverride.GetValue();
+		}
+#endif
+
 		FARFilter Filter;
 		Filter.ClassPaths.Add(FTopLevelAssetPath(UBlueprint::StaticClass()));
 		Filter.bRecursiveClasses = true;
@@ -329,4 +340,16 @@ namespace AngelscriptEditor::BlueprintImpact
 			return TEXT("Unknown");
 		}
 	}
+
+#if WITH_DEV_AUTOMATION_TESTS
+	void SetBlueprintAssetsOverrideForTesting(TArray<FAssetData> InAssets)
+	{
+		GBlueprintImpactBlueprintAssetsOverride = MoveTemp(InAssets);
+	}
+
+	void ClearBlueprintAssetsOverrideForTesting()
+	{
+		GBlueprintImpactBlueprintAssetsOverride.Reset();
+	}
+#endif
 }

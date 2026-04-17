@@ -57,6 +57,456 @@ TMap<FString, FString> HeaderCache = TMap<FString, FString>();
 void FunctionTests();
 void ProcessStaticFunction(UClass* Class, UFunction* Function, TArray<FString>& lines, TArray<FString>& IncludeList, TSet<FString>& IncludeSet, TSet<FString>& ModuleSet);
 void AddParameterInclude(FProperty* prop, TArray<FString>& IncludeList, TSet<FString>& IncludeSet, TSet<FString>& ModuleSet);
+void ForceEditorWindowToFront();
+void OnEngineInitDone();
+void OnLiteralAssetSaved(UObject* Object);
+
+namespace
+{
+#if WITH_DEV_AUTOMATION_TESTS
+	TFunction<IDirectoryWatcher*()> GDirectoryWatcherResolverForTesting;
+	FAngelscriptEditorModuleAssetListPopupTestHooks GAssetListPopupTestHooks;
+	FAngelscriptEditorModuleCreateBlueprintPopupTestHooks GCreateBlueprintPopupTestHooks;
+	FAngelscriptEditorModuleLiteralAssetSaveTestHooks GLiteralAssetSaveTestHooks;
+	TFunction<bool(const TCHAR*, const TCHAR*, const TCHAR*)> GPlatformExecuteOverrideForTesting;
+	TFunction<void(FAngelscriptEditorModule*)> GReloadGameplayTagsOverrideForTesting;
+	TFunction<void()> GOnEngineInitDoneOverrideForTesting;
+	int32 GOnPostEngineInitRegistrationCountForTesting = 0;
+#endif
+
+	FDelegateHandle GOnPostEngineInitHandle;
+
+	IDirectoryWatcher* ResolveDirectoryWatcher()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GDirectoryWatcherResolverForTesting)
+		{
+			return GDirectoryWatcherResolverForTesting();
+		}
+#endif
+
+		FDirectoryWatcherModule& DirectoryWatcherModule = FModuleManager::LoadModuleChecked<FDirectoryWatcherModule>("DirectoryWatcher");
+		return DirectoryWatcherModule.Get();
+	}
+
+	void UnregisterDirectoryWatchers(TArray<TPair<FString, FDelegateHandle>>& InOutWatchHandles, IDirectoryWatcher* DirectoryWatcher)
+	{
+		if (DirectoryWatcher == nullptr)
+		{
+			return;
+		}
+
+		for (const TPair<FString, FDelegateHandle>& WatchHandle : InOutWatchHandles)
+		{
+			if (WatchHandle.Value.IsValid())
+			{
+				DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchHandle.Key, WatchHandle.Value);
+			}
+		}
+
+		InOutWatchHandles.Reset();
+	}
+
+	bool ShouldShowAssetListPopupCreateButton(UASClass* BaseClass)
+	{
+		return BaseClass != nullptr;
+	}
+
+	void ForceEditorWindowToFrontForAssetListPopup()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GAssetListPopupTestHooks.ForceEditorWindowToFront)
+		{
+			GAssetListPopupTestHooks.ForceEditorWindowToFront();
+			return;
+		}
+#endif
+
+		ForceEditorWindowToFront();
+	}
+
+	void OpenAssetEditorForAssetListPopup(const FString& AssetPath)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GAssetListPopupTestHooks.OpenAssetByPath)
+		{
+			GAssetListPopupTestHooks.OpenAssetByPath(AssetPath);
+			return;
+		}
+#endif
+
+		FScopedSlowTask ProgressBar(2.f, FText::FromString(FString::Printf(TEXT("Opening %s"), *AssetPath)));
+		ProgressBar.EnterProgressFrame(0.5f);
+		ProgressBar.MakeDialog(false, true);
+
+		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(AssetPath);
+	}
+
+	void OpenAssetEditorForAssetListPopup(UObject* AssetObject)
+	{
+		if (AssetObject == nullptr)
+		{
+			return;
+		}
+
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GAssetListPopupTestHooks.OpenAssetByObject)
+		{
+			GAssetListPopupTestHooks.OpenAssetByObject(AssetObject);
+			return;
+		}
+#endif
+
+		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(AssetObject);
+	}
+
+	bool HasAnyDebugServerClientsForLiteralAssetSave()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GLiteralAssetSaveTestHooks.HasAnyDebugServerClients)
+		{
+			return GLiteralAssetSaveTestHooks.HasAnyDebugServerClients();
+		}
+#endif
+
+		return FAngelscriptEngine::Get().HasAnyDebugServerClients();
+	}
+
+	void OpenMessageDialogForLiteralAssetSave(const FText& Message)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GLiteralAssetSaveTestHooks.OpenMessageDialog)
+		{
+			GLiteralAssetSaveTestHooks.OpenMessageDialog(Message);
+			return;
+		}
+#endif
+
+		FMessageDialog::Open(EAppMsgType::Ok, Message);
+	}
+
+	void ReplaceScriptAssetContentForLiteralAssetSave(const FString& AssetName, const TArray<FString>& NewContent)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GLiteralAssetSaveTestHooks.ReplaceScriptAssetContent)
+		{
+			GLiteralAssetSaveTestHooks.ReplaceScriptAssetContent(AssetName, NewContent);
+			return;
+		}
+#endif
+
+		FAngelscriptEngine::Get().ReplaceScriptAssetContent(AssetName, NewContent);
+	}
+
+	void ShowAssetPickerMenuForAssetListPopup(const FAssetPickerConfig& AssetPickerConfig, UASClass* BaseClass)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GAssetListPopupTestHooks.ShowAssetPickerMenu)
+		{
+			GAssetListPopupTestHooks.ShowAssetPickerMenu(AssetPickerConfig, BaseClass);
+			return;
+		}
+#endif
+
+		const FVector2D AssetPickerSize(600.0f, 586.0f);
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+
+		auto ActualWidget = SNew(SBox)
+		.WidthOverride(AssetPickerSize.X)
+		.HeightOverride(AssetPickerSize.Y)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			[
+				ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
+			]
+			+ SVerticalBox::Slot()
+			.HAlign(EHorizontalAlignment::HAlign_Center)
+			.AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.Padding(0.f, 6.f, 0.f, 0.f)
+				[
+					SNew(SBox)
+					.HeightOverride(34.f)
+					[
+						SNew(SPositiveActionButton)
+							.Visibility_Lambda([BaseClass]() {
+								return ShouldShowAssetListPopupCreateButton(BaseClass) ? EVisibility::Visible : EVisibility::Collapsed;
+							})
+							.Text(
+								BaseClass != nullptr && BaseClass->IsChildOf(UDataAsset::StaticClass())
+									? FText::FromString("Create New Data Asset")
+									: FText::FromString("Create New Blueprint")
+							)
+							.OnClicked_Lambda(
+								[BaseClass]()
+								{
+									if (BaseClass != nullptr)
+									{
+										FAngelscriptEditorModule::ShowCreateBlueprintPopup(BaseClass);
+									}
+									return FReply::Handled();
+								}
+							)
+					]
+				]
+			]
+		];
+
+		FMenuBuilder MenuBuilder(/*BShouldCloseAfterSelection=*/ false, /*CommandList=*/ nullptr);
+		MenuBuilder.BeginSection("AssetPickerOpenAsset", NSLOCTEXT("GlobalAssetPicker", "WindowTitle", "Open Asset"));
+		MenuBuilder.AddWidget(ActualWidget, FText::GetEmpty(), /*bNoIndent=*/ true);
+		MenuBuilder.EndSection();
+
+		TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
+		FVector2D WindowPosition = FSlateApplication::Get().GetCursorPos();
+		if (!ParentWindow.IsValid())
+		{
+			TSharedPtr<SDockTab> LevelEditorTab = FModuleManager::Get().GetModuleChecked<FLevelEditorModule>("LevelEditor").GetLevelEditorTab();
+			ParentWindow = LevelEditorTab->GetParentWindow();
+			check(ParentWindow.IsValid());
+		}
+
+		if (ParentWindow.IsValid())
+		{
+			FSlateRect ParentMonitorRect = ParentWindow->GetFullScreenInfo();
+			const FVector2D MonitorCenter((ParentMonitorRect.Right + ParentMonitorRect.Left) * 0.5f, (ParentMonitorRect.Top + ParentMonitorRect.Bottom) * 0.5f);
+			WindowPosition = MonitorCenter - AssetPickerSize * 0.5f;
+
+			FPopupTransitionEffect TransitionEffect(FPopupTransitionEffect::None);
+			FSlateApplication::Get().PushMenu(ParentWindow.ToSharedRef(), FWidgetPath(), MenuBuilder.MakeWidget(), WindowPosition, TransitionEffect, /*bFocusImmediately=*/ true);
+		}
+	}
+
+	void ForceEditorWindowToFrontForCreateBlueprintPopup()
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.ForceEditorWindowToFront)
+		{
+			GCreateBlueprintPopupTestHooks.ForceEditorWindowToFront();
+			return;
+		}
+#endif
+		ForceEditorWindowToFront();
+	}
+
+	FString ShowSaveAssetDialogForCreateBlueprintPopup(const FSaveAssetDialogConfig& SaveAssetDialogConfig)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.CreateSaveAssetDialog)
+		{
+			return GCreateBlueprintPopupTestHooks.CreateSaveAssetDialog(SaveAssetDialogConfig);
+		}
+#endif
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		return ContentBrowserModule.Get().CreateModalSaveAssetDialog(SaveAssetDialogConfig);
+	}
+
+	bool HasAssetsForCreateBlueprintPopup(IAssetRegistry& AssetRegistry, const FString& Path, bool bRecursive)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.HasAssetsInPath)
+		{
+			return GCreateBlueprintPopupTestHooks.HasAssetsInPath(Path, bRecursive);
+		}
+#endif
+
+		return AssetRegistry.HasAssets(*Path, bRecursive);
+	}
+
+	void OpenMessageDialogForCreateBlueprintPopup(const FText& Message)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.OpenMessageDialog)
+		{
+			GCreateBlueprintPopupTestHooks.OpenMessageDialog(Message);
+			return;
+		}
+#endif
+		FMessageDialog::Open(EAppMsgType::Ok, Message);
+	}
+
+	UObject* CreateBlueprintAssetForCreateBlueprintPopup(UASClass* Class, UPackage* Package, FName AssetName, UClass* BlueprintClass, UClass* BlueprintGeneratedClass)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.CreateBlueprintAsset)
+		{
+			return GCreateBlueprintPopupTestHooks.CreateBlueprintAsset(Class, Package, AssetName, BlueprintClass, BlueprintGeneratedClass);
+		}
+#endif
+		return FKismetEditorUtilities::CreateBlueprint(
+			Class, Package, AssetName, BPTYPE_Normal,
+			BlueprintClass, BlueprintGeneratedClass, FName("AngelscriptCreateBlueprint")
+		);
+	}
+
+	void NotifyAssetCreatedForCreateBlueprintPopup(UObject* Asset)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.AssetCreated)
+		{
+			GCreateBlueprintPopupTestHooks.AssetCreated(Asset);
+			return;
+		}
+#endif
+		FAssetRegistryModule::AssetCreated(Asset);
+	}
+
+	void PromptForCheckoutAndSaveForCreateBlueprintPopup(const TArray<UPackage*>& Packages)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.PromptForCheckoutAndSave)
+		{
+			GCreateBlueprintPopupTestHooks.PromptForCheckoutAndSave(Packages);
+			return;
+		}
+#endif
+		FEditorFileUtils::FPromptForCheckoutAndSaveParams Params;
+		FEditorFileUtils::PromptForCheckoutAndSave(Packages, Params);
+	}
+
+	void OpenAssetEditorForCreateBlueprintPopup(UObject* Asset)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GCreateBlueprintPopupTestHooks.OpenEditorForAsset)
+		{
+			GCreateBlueprintPopupTestHooks.OpenEditorForAsset(Asset);
+			return;
+		}
+#endif
+		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Asset);
+	}
+
+	bool ExecutePlatformCommandForEditorModule(const TCHAR* CommandType, const TCHAR* Command, const TCHAR* CommandLine)
+	{
+#if WITH_DEV_AUTOMATION_TESTS
+		if (GPlatformExecuteOverrideForTesting)
+		{
+			return GPlatformExecuteOverrideForTesting(CommandType, Command, CommandLine);
+		}
+#endif
+
+		return FPlatformMisc::OsExecute(CommandType, Command, CommandLine);
+	}
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+void FAngelscriptEditorModuleTestAccess::SetDirectoryWatcherResolver(TFunction<IDirectoryWatcher*()> InResolver)
+{
+	GDirectoryWatcherResolverForTesting = MoveTemp(InResolver);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetDirectoryWatcherResolver()
+{
+	GDirectoryWatcherResolverForTesting = nullptr;
+}
+
+void FAngelscriptEditorModuleTestAccess::SetAssetListPopupTestHooks(FAngelscriptEditorModuleAssetListPopupTestHooks InHooks)
+{
+	GAssetListPopupTestHooks = MoveTemp(InHooks);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetAssetListPopupTestHooks()
+{
+	GAssetListPopupTestHooks = FAngelscriptEditorModuleAssetListPopupTestHooks();
+}
+
+void FAngelscriptEditorModuleTestAccess::SetCreateBlueprintPopupTestHooks(FAngelscriptEditorModuleCreateBlueprintPopupTestHooks InHooks)
+{
+	GCreateBlueprintPopupTestHooks = MoveTemp(InHooks);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetCreateBlueprintPopupTestHooks()
+{
+	GCreateBlueprintPopupTestHooks = FAngelscriptEditorModuleCreateBlueprintPopupTestHooks();
+}
+
+void FAngelscriptEditorModuleTestAccess::SetLiteralAssetSaveTestHooks(FAngelscriptEditorModuleLiteralAssetSaveTestHooks InHooks)
+{
+	GLiteralAssetSaveTestHooks = MoveTemp(InHooks);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetLiteralAssetSaveTestHooks()
+{
+	GLiteralAssetSaveTestHooks = FAngelscriptEditorModuleLiteralAssetSaveTestHooks();
+}
+
+void FAngelscriptEditorModuleTestAccess::SetPlatformExecuteOverride(TFunction<bool(const TCHAR*, const TCHAR*, const TCHAR*)> InOverride)
+{
+	GPlatformExecuteOverrideForTesting = MoveTemp(InOverride);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetPlatformExecuteOverride()
+{
+	GPlatformExecuteOverrideForTesting = nullptr;
+}
+
+void FAngelscriptEditorModuleTestAccess::SetReloadGameplayTagsOverride(TFunction<void(FAngelscriptEditorModule*)> InOverride)
+{
+	GReloadGameplayTagsOverrideForTesting = MoveTemp(InOverride);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetReloadGameplayTagsOverride()
+{
+	GReloadGameplayTagsOverrideForTesting = nullptr;
+}
+
+void FAngelscriptEditorModuleTestAccess::SetOnEngineInitDoneOverride(TFunction<void()> InOverride)
+{
+	GOnEngineInitDoneOverrideForTesting = MoveTemp(InOverride);
+}
+
+void FAngelscriptEditorModuleTestAccess::ResetOnEngineInitDoneOverride()
+{
+	GOnEngineInitDoneOverrideForTesting = nullptr;
+}
+
+void FAngelscriptEditorModuleTestAccess::InvokeOnLiteralAssetSaved(UObject* Object)
+{
+	OnLiteralAssetSaved(Object);
+}
+
+bool FAngelscriptEditorModuleTestAccess::IsLiteralAssetPreSaveRegistered()
+{
+	return GLiteralAssetPreSaveHandle.IsValid();
+}
+
+bool FAngelscriptEditorModuleTestAccess::HasStateDumpExtensionHandle(const FAngelscriptEditorModule& Module)
+{
+	return Module.StateDumpExtensionHandle.IsValid();
+}
+
+bool FAngelscriptEditorModuleTestAccess::ShouldShowAssetListPopupCreateButton(UASClass* BaseClass)
+{
+	return ::ShouldShowAssetListPopupCreateButton(BaseClass);
+}
+
+void FAngelscriptEditorModuleTestAccess::RegisterGameplayTagDelegates(FAngelscriptEditorModule& Module)
+{
+	Module.RegisterGameplayTagDelegates();
+}
+
+void FAngelscriptEditorModuleTestAccess::RegisterToolsMenuEntries(FAngelscriptEditorModule& Module)
+{
+	Module.RegisterToolsMenuEntries();
+}
+
+void FAngelscriptEditorModuleTestAccess::InvokeOnEngineInitDone()
+{
+	OnEngineInitDone();
+}
+
+void FAngelscriptEditorModuleTestAccess::BroadcastRegisteredOnPostEngineInit()
+{
+	for (int32 InvocationIndex = 0; InvocationIndex < GOnPostEngineInitRegistrationCountForTesting; ++InvocationIndex)
+	{
+		OnEngineInitDone();
+	}
+}
+#endif
 
 struct FPromptForCheckoutAndSaveParams
 {
@@ -110,6 +560,13 @@ void ForceEditorWindowToFront()
 
 void OnEngineInitDone()
 {
+#if WITH_DEV_AUTOMATION_TESTS
+	if (GOnEngineInitDoneOverrideForTesting)
+	{
+		GOnEngineInitDoneOverrideForTesting();
+	}
+#endif
+
 	// Register the content browser data source
 	auto* DataSource = NewObject<UAngelscriptContentBrowserDataSource>(GetTransientPackage(), "AngelscriptData", RF_MarkAsRootSet | RF_Transient);
 	DataSource->Initialize();
@@ -122,9 +579,9 @@ void OnLiteralAssetSaved(UObject* Object)
 {
 	if (UCurveFloat* Curve = Cast<UCurveFloat>(Object))
 	{
-		if (!FAngelscriptEngine::Get().HasAnyDebugServerClients())
+		if (!HasAnyDebugServerClientsForLiteralAssetSave())
 		{
-			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("Visual Studio Code extension must be running to save a script literal curve")));
+			OpenMessageDialogForLiteralAssetSave(FText::FromString(TEXT("Visual Studio Code extension must be running to save a script literal curve")));
 			return;
 		}
 
@@ -292,7 +749,7 @@ void OnLiteralAssetSaved(UObject* Object)
 						if (Key.TangentMode == ERichCurveTangentMode::RCTM_Break)
 							BrokenBool = TEXT("true");
 
-						NewContent.Add(FString::Format(TEXT("{0}({1}, {2}, {2}, {3}, {4}, {5}, {6}, {7});"), {
+						NewContent.Add(FString::Format(TEXT("{0}({1}, {2}, {3}, {4}, {5}, {6}, {7});"), {
 							FunctionName,
 							FString::SanitizeFloat(Key.Time),
 							FString::SanitizeFloat(Key.Value),
@@ -328,11 +785,11 @@ void OnLiteralAssetSaved(UObject* Object)
 		case ERichCurveExtrapolation::RCCE_None: NewContent.Add(TEXT("PostInfinityExtrap = ERichCurveExtrapolation::RCCE_None;")); break;
 		}
 
-		FAngelscriptEngine::Get().ReplaceScriptAssetContent(Curve->GetName(), NewContent);
+		ReplaceScriptAssetContentForLiteralAssetSave(Curve->GetName(), NewContent);
 	}
 	else
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("Cannot save asset declared as an angelscript asset literal")));
+		OpenMessageDialogForLiteralAssetSave(FText::FromString(TEXT("Cannot save asset declared as an angelscript asset literal")));
 	}
 }
 
@@ -356,28 +813,37 @@ void FAngelscriptEditorModule::StartupModule()
 	if (FAngelscriptEngine::IsInitialized() && FAngelscriptEngine::Get().IsInitialCompileFinished())
 		FComponentTypeRegistry::Get().Invalidate();
 
-	IGameplayTagsModule::OnTagSettingsChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
-	IGameplayTagsModule::OnGameplayTagTreeChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
-	FCoreDelegates::OnPostEngineInit.AddStatic(&OnEngineInitDone);
+	RegisterGameplayTagDelegates();
+	if (!GOnPostEngineInitHandle.IsValid())
+	{
+		GOnPostEngineInitHandle = FCoreDelegates::OnPostEngineInit.AddStatic(&OnEngineInitDone);
+#if WITH_DEV_AUTOMATION_TESTS
+		GOnPostEngineInitRegistrationCountForTesting = 1;
+#endif
+	}
 
 	UScriptEditorMenuExtension::InitializeExtensions();
 	AngelscriptEditor::Private::RegisterStateDumpExtension(StateDumpExtensionHandle);
 
 	// Register a directory watch on the script directory so we know when to reload
-	FDirectoryWatcherModule& DirectoryWatcherModule = FModuleManager::LoadModuleChecked<FDirectoryWatcherModule>("DirectoryWatcher");
-	IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+	IDirectoryWatcher* DirectoryWatcher = ResolveDirectoryWatcher();
 
 	if (ensure(DirectoryWatcher != nullptr))
 	{
+		UnregisterDirectoryWatchers(DirectoryWatchHandles, DirectoryWatcher);
+
 		TArray<FString> AllRootPaths = FAngelscriptEngine::MakeAllScriptRoots();
 		for (const auto& RootPath : AllRootPaths)
 		{
 			FDelegateHandle WatchHandle;
-			DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(
+			if (DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(
 				*RootPath,
 				IDirectoryWatcher::FDirectoryChanged::CreateStatic(&OnScriptFileChanges),
 				WatchHandle,
-				IDirectoryWatcher::IncludeDirectoryChanges);
+				IDirectoryWatcher::IncludeDirectoryChanges) && WatchHandle.IsValid())
+			{
+				DirectoryWatchHandles.Emplace(RootPath, WatchHandle);
+			}
 		}
 	}
 
@@ -422,7 +888,7 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
-	ForceEditorWindowToFront();
+	ForceEditorWindowToFrontForCreateBlueprintPopup();
 
 	FString Title;
 	if (bIsDataAsset)
@@ -458,7 +924,7 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 			for (int n = 0; n <= i; ++n)
 				TestDirectory = TestDirectory / Subfolders[n];
 
-			if (AssetRegistry.HasAssets(*TestDirectory, true))
+			if (HasAssetsForCreateBlueprintPopup(AssetRegistry, TestDirectory, true))
 			{
 				InitialDirectory = TestDirectory;
 				break;
@@ -477,8 +943,7 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 		SaveAssetDialogConfig.DialogTitleOverride = FText::FromString(Title);
 	}
 
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-	FString SaveObjectPath = ContentBrowserModule.Get().CreateModalSaveAssetDialog(SaveAssetDialogConfig);
+	FString SaveObjectPath = ShowSaveAssetDialogForCreateBlueprintPopup(SaveAssetDialogConfig);
 	
 	if (!SaveObjectPath.IsEmpty())
 	{
@@ -489,7 +954,7 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 		// Check if the user inputed a valid asset name, if they did not, give it the generated default name
 		if (AssetName == NAME_None)
 		{
-			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("Error: Invalid name for new asset.")));
+			OpenMessageDialogForCreateBlueprintPopup(FText::FromString(TEXT("Error: Invalid name for new asset.")));
 			return;
 		}
 
@@ -510,18 +975,15 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 			IKismetCompilerInterface& KismetCompilerModule = FModuleManager::LoadModuleChecked<IKismetCompilerInterface>("KismetCompiler");
 			KismetCompilerModule.GetBlueprintTypesForClass(Class, BlueprintClass, BlueprintGeneratedClass);
 
-			// Create and init a new Blueprint
-			Asset = FKismetEditorUtilities::CreateBlueprint(
-				Class, Package, AssetName, BPTYPE_Normal,
-				BlueprintClass, BlueprintGeneratedClass, FName("AngelscriptCreateBlueprint")
-			);
+			Asset = CreateBlueprintAssetForCreateBlueprintPopup(Class, Package, AssetName, BlueprintClass, BlueprintGeneratedClass);
 		}
 
-		if (Asset)
+		if (Asset == nullptr)
 		{
-			// Notify the asset registry
-			FAssetRegistryModule::AssetCreated(Asset);
+			return;
 		}
+
+		NotifyAssetCreatedForCreateBlueprintPopup(Asset);
 
 		// Mark the package dirty...
 		Package->MarkPackageDirty();
@@ -529,12 +991,9 @@ void FAngelscriptEditorModule::ShowCreateBlueprintPopup(UASClass* Class)
 		TArray<UPackage*> Packages;
 		Packages.Add(Package);
 
-		FEditorFileUtils::FPromptForCheckoutAndSaveParams Params;
-		//FPromptForCheckoutAndSaveParams Params;
-		FEditorFileUtils::PromptForCheckoutAndSave(Packages, Params);
+		PromptForCheckoutAndSaveForCreateBlueprintPopup(Packages);
 
-		// Open the blueprint editor for the new asset
-		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Asset);
+		OpenAssetEditorForCreateBlueprintPopup(Asset);
 	}
 }
 
@@ -546,31 +1005,20 @@ void FAngelscriptEditorModule::ShowAssetListPopup(const TArray<FString>& AssetPa
 	if (!FAngelscriptEngine::Get().bIsInitialCompileFinished)
 		return;
 
-	ForceEditorWindowToFront();
+	ForceEditorWindowToFrontForAssetListPopup();
 
 	if (AssetPaths.Num() == 1)
 	{
-		// Show a progress bar after a short while, we might need to wait for assets to load
-		FScopedSlowTask ProgressBar(2.f, FText::FromString(FString::Printf(TEXT("Opening %s"), *AssetPaths[0])));
-		ProgressBar.EnterProgressFrame(0.5f);
-		ProgressBar.MakeDialog(false, true);
-
-		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(AssetPaths[0]);
+		OpenAssetEditorForAssetListPopup(AssetPaths[0]);
 	}
 	else
 	{
-		TArray<FAssetData> AssetData;
-
-		FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-
 		FAssetPickerConfig AssetPickerConfig;
 		AssetPickerConfig.OnAssetDoubleClicked = FOnAssetSelected::CreateLambda([](const FAssetData& AssetData)
 		{
 			if (UObject* ObjectToEdit = AssetData.GetAsset())
 			{
-				GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(ObjectToEdit);
+				OpenAssetEditorForAssetListPopup(ObjectToEdit);
 			}
 		});
 
@@ -580,7 +1028,7 @@ void FAngelscriptEditorModule::ShowAssetListPopup(const TArray<FString>& AssetPa
 			{
 				if (UObject* ObjectToEdit = AssetIt->GetAsset())
 				{
-					GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(ObjectToEdit);
+					OpenAssetEditorForAssetListPopup(ObjectToEdit);
 				}
 			}
 		});
@@ -598,83 +1046,23 @@ void FAngelscriptEditorModule::ShowAssetListPopup(const TArray<FString>& AssetPa
 			AssetPickerConfig.Filter.PackageNames.Add(*Path);
 		}
 
-		const FVector2D AssetPickerSize(600.0f, 586.0f);
-
-		// Create the contents of the popup
-		auto ActualWidget = SNew(SBox)
-		.WidthOverride(AssetPickerSize.X)
-		.HeightOverride(AssetPickerSize.Y)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			[
-				ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
-			]
-			+ SVerticalBox::Slot()
-			.HAlign(EHorizontalAlignment::HAlign_Center)
-			.AutoHeight()
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					SNew(SBox)
-					.HeightOverride(34.f)
-					[
-						SNew(SPositiveActionButton)
-							.Visibility_Lambda([BaseClass]() {
-								return BaseClass != nullptr ? EVisibility::Visible : EVisibility::Collapsed;
-							})
-							.Text(
-								BaseClass != nullptr && BaseClass->IsChildOf(UDataAsset::StaticClass())
-									? FText::FromString("Create New Data Asset")
-									: FText::FromString("Create New Blueprint")
-							)
-							.OnClicked_Lambda(
-								[BaseClass]()
-								{
-									if (BaseClass != nullptr)
-										FAngelscriptEditorModule::ShowCreateBlueprintPopup(BaseClass);
-									return FReply::Handled();
-								}
-							)
-					]
-				]
-			]
-		];
-
-		// Wrap the picker widget in a multibox-style menu body
-		FMenuBuilder MenuBuilder(/*BShouldCloseAfterSelection=*/ false, /*CommandList=*/ nullptr);
-		MenuBuilder.BeginSection("AssetPickerOpenAsset", NSLOCTEXT("GlobalAssetPicker", "WindowTitle", "Open Asset"));
-		MenuBuilder.AddWidget(ActualWidget, FText::GetEmpty(), /*bNoIndent=*/ true);
-		MenuBuilder.EndSection();
-
-		// Determine where the pop-up should open
-		TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
-		FVector2D WindowPosition = FSlateApplication::Get().GetCursorPos();
-		if (!ParentWindow.IsValid())
-		{
-			TSharedPtr<SDockTab> LevelEditorTab = FModuleManager::Get().GetModuleChecked<FLevelEditorModule>("LevelEditor").GetLevelEditorTab();
-			ParentWindow = LevelEditorTab->GetParentWindow();
-			check(ParentWindow.IsValid());
-		}
-
-		if (ParentWindow.IsValid())
-		{
-			FSlateRect ParentMonitorRect = ParentWindow->GetFullScreenInfo();
-			const FVector2D MonitorCenter((ParentMonitorRect.Right + ParentMonitorRect.Left) * 0.5f, (ParentMonitorRect.Top + ParentMonitorRect.Bottom) * 0.5f);
-			WindowPosition = MonitorCenter - AssetPickerSize * 0.5f;
-
-			// Open the pop-up
-			FPopupTransitionEffect TransitionEffect(FPopupTransitionEffect::None);
-			FSlateApplication::Get().PushMenu(ParentWindow.ToSharedRef(), FWidgetPath(), MenuBuilder.MakeWidget(), WindowPosition, TransitionEffect, /*bFocusImmediately=*/ true);
-		}
+		ShowAssetPickerMenuForAssetListPopup(AssetPickerConfig, BaseClass);
 	}
 }
 
 void FAngelscriptEditorModule::ShutdownModule()
 {
+	UnregisterGameplayTagDelegates();
+
+	if (GOnPostEngineInitHandle.IsValid())
+	{
+		FCoreDelegates::OnPostEngineInit.Remove(GOnPostEngineInitHandle);
+		GOnPostEngineInitHandle.Reset();
+	}
+#if WITH_DEV_AUTOMATION_TESTS
+	GOnPostEngineInitRegistrationCountForTesting = 0;
+#endif
+
 	if (GLiteralAssetPreSaveHandle.IsValid())
 	{
 		FCoreUObjectDelegates::OnObjectPreSave.Remove(GLiteralAssetPreSaveHandle);
@@ -683,13 +1071,43 @@ void FAngelscriptEditorModule::ShutdownModule()
 
 	AngelscriptEditor::Private::UnregisterStateDumpExtension(StateDumpExtensionHandle);
 
+	UnregisterDirectoryWatchers(DirectoryWatchHandles, ResolveDirectoryWatcher());
+
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->UnregisterSettings("Project", "Plugins", "Angelscript");
+	}
+
 	// Unregister the tool menu extension
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 }
 
+void FAngelscriptEditorModule::RegisterGameplayTagDelegates()
+{
+	IGameplayTagsModule::OnTagSettingsChanged.RemoveAll(this);
+	IGameplayTagsModule::OnGameplayTagTreeChanged.RemoveAll(this);
+
+	IGameplayTagsModule::OnTagSettingsChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
+	IGameplayTagsModule::OnGameplayTagTreeChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
+}
+
+void FAngelscriptEditorModule::UnregisterGameplayTagDelegates()
+{
+	IGameplayTagsModule::OnTagSettingsChanged.RemoveAll(this);
+	IGameplayTagsModule::OnGameplayTagTreeChanged.RemoveAll(this);
+}
+
 void FAngelscriptEditorModule::ReloadTags()
 {
+#if WITH_DEV_AUTOMATION_TESTS
+	if (GReloadGameplayTagsOverrideForTesting)
+	{
+		GReloadGameplayTagsOverrideForTesting(this);
+		return;
+	}
+#endif
+
 	AngelscriptReloadGameplayTags();
 }
 
@@ -703,11 +1121,11 @@ void FAngelscriptEditorModule::RegisterToolsMenuEntries()
 	FToolMenuSection& Section = Menu->FindOrAddSection("Programming");
 	
 	//WILL-EDIT
-	FToolUIActionChoice Action(FExecuteAction::CreateLambda([]()
+	FToolUIActionChoice Action(FToolMenuExecuteAction::CreateLambda([](const FToolMenuContext&)
 	{
 		// Open VS Code to the <Project>/Script directory
 		const FString ScriptPath = FPaths::ProjectDir() / TEXT("Script");
-		FPlatformMisc::OsExecute(nullptr, TEXT("code"), *FString::Printf(TEXT("\"%s\""), *ScriptPath));
+		ExecutePlatformCommandForEditorModule(nullptr, TEXT("code"), *FString::Printf(TEXT("\"%s\""), *ScriptPath));
 	}));
 	
 	Section.AddMenuEntry

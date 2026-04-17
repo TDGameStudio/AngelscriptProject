@@ -9,6 +9,49 @@
 
 namespace
 {
+	const TCHAR* const BlueprintImpactCommandletParamKeys[] = {
+		TEXT("ChangedScript="),
+		TEXT("ChangedScriptFile=")
+	};
+
+	bool TryExtractCommandletParamValue(const FString& Params, const FString& Key, FString& OutValue)
+	{
+		const int32 KeyIndex = Params.Find(Key, ESearchCase::IgnoreCase);
+		if (KeyIndex == INDEX_NONE)
+		{
+			return false;
+		}
+
+		const int32 ValueStart = KeyIndex + Key.Len();
+		int32 ValueEnd = Params.Len();
+		for (int32 Index = ValueStart; Index < Params.Len(); ++Index)
+		{
+			if (!FChar::IsWhitespace(Params[Index]))
+			{
+				continue;
+			}
+
+			const int32 CandidateStart = Index + 1;
+			for (const TCHAR* CandidateKey : BlueprintImpactCommandletParamKeys)
+			{
+				if (Params.Mid(CandidateStart, FCString::Strlen(CandidateKey)).Equals(CandidateKey, ESearchCase::IgnoreCase))
+				{
+					ValueEnd = Index;
+					Index = Params.Len();
+					break;
+				}
+			}
+		}
+
+		OutValue = Params.Mid(ValueStart, ValueEnd - ValueStart).TrimStartAndEnd();
+		if (OutValue.StartsWith(TEXT("\"")) && OutValue.EndsWith(TEXT("\"")) && OutValue.Len() >= 2)
+		{
+			OutValue = OutValue.Mid(1, OutValue.Len() - 2);
+		}
+
+		return true;
+	}
+
 	enum class EBlueprintImpactCommandletExitCode : int32
 	{
 		Success = 0,
@@ -19,8 +62,13 @@ namespace
 
 	void AppendChangedScriptsFromDelimitedValue(const FString& Value, TArray<FString>& OutScripts)
 	{
+		const TCHAR* const Delimiters[] = {
+			TEXT(","),
+			TEXT(";")
+		};
+
 		TArray<FString> Parts;
-		Value.ParseIntoArray(Parts, TEXT(",;"), true);
+		Value.ParseIntoArray(Parts, Delimiters, UE_ARRAY_COUNT(Delimiters), true);
 		for (const FString& Part : Parts)
 		{
 			const FString Trimmed = Part.TrimStartAndEnd();
@@ -50,6 +98,33 @@ namespace
 
 		return true;
 	}
+
+	bool TryBuildBlueprintImpactRequest(
+		const FString& Params,
+		AngelscriptEditor::BlueprintImpact::FBlueprintImpactRequest& OutRequest,
+		FString* OutErrorMessage)
+	{
+		FString ChangedScriptsValue;
+		if (TryExtractCommandletParamValue(Params, TEXT("ChangedScript="), ChangedScriptsValue))
+		{
+			AppendChangedScriptsFromDelimitedValue(ChangedScriptsValue, OutRequest.ChangedScripts);
+		}
+
+		FString ChangedScriptsFile;
+		if (TryExtractCommandletParamValue(Params, TEXT("ChangedScriptFile="), ChangedScriptsFile))
+		{
+			if (!TryReadChangedScriptsFile(ChangedScriptsFile, OutRequest.ChangedScripts))
+			{
+				if (OutErrorMessage != nullptr)
+				{
+					*OutErrorMessage = ChangedScriptsFile;
+				}
+				return false;
+			}
+		}
+
+		return true;
+	}
 }
 
 int32 UAngelscriptBlueprintImpactScanCommandlet::Main(const FString& Params)
@@ -61,21 +136,11 @@ int32 UAngelscriptBlueprintImpactScanCommandlet::Main(const FString& Params)
 	}
 
 	AngelscriptEditor::BlueprintImpact::FBlueprintImpactRequest Request;
-
-	FString ChangedScriptsValue;
-	if (FParse::Value(*Params, TEXT("ChangedScript="), ChangedScriptsValue))
+	FString ChangedScriptsFileError;
+	if (!TryBuildBlueprintImpactRequest(Params, Request, &ChangedScriptsFileError))
 	{
-		AppendChangedScriptsFromDelimitedValue(ChangedScriptsValue, Request.ChangedScripts);
-	}
-
-	FString ChangedScriptsFile;
-	if (FParse::Value(*Params, TEXT("ChangedScriptFile="), ChangedScriptsFile))
-	{
-		if (!TryReadChangedScriptsFile(ChangedScriptsFile, Request.ChangedScripts))
-		{
-			UE_LOG(Angelscript, Error, TEXT("Blueprint impact commandlet failed to read ChangedScriptFile: %s"), *ChangedScriptsFile);
-			return static_cast<int32>(EBlueprintImpactCommandletExitCode::InvalidArguments);
-		}
+		UE_LOG(Angelscript, Error, TEXT("Blueprint impact commandlet failed to read ChangedScriptFile: %s"), *ChangedScriptsFileError);
+		return static_cast<int32>(EBlueprintImpactCommandletExitCode::InvalidArguments);
 	}
 
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
@@ -119,3 +184,15 @@ int32 UAngelscriptBlueprintImpactScanCommandlet::Main(const FString& Params)
 		? static_cast<int32>(EBlueprintImpactCommandletExitCode::AssetScanFailure)
 		: static_cast<int32>(EBlueprintImpactCommandletExitCode::Success);
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+bool UAngelscriptBlueprintImpactScanCommandlet::BuildRequestForTesting(
+	const FString& Params,
+	AngelscriptEditor::BlueprintImpact::FBlueprintImpactRequest& OutRequest,
+	FString& OutErrorMessage)
+{
+	OutRequest = AngelscriptEditor::BlueprintImpact::FBlueprintImpactRequest();
+	OutErrorMessage.Reset();
+	return TryBuildBlueprintImpactRequest(Params, OutRequest, &OutErrorMessage);
+}
+#endif
