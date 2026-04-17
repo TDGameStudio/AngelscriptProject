@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveErrorTests_Private
 {
 	struct FDirectiveErrorScenario
 	{
@@ -127,6 +127,8 @@ namespace
 				ContainsCompilableCode(Modules));
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveErrorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorStructuralErrorsReportStableDiagnosticsTest,

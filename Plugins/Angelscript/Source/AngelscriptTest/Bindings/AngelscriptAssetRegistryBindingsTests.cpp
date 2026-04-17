@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private
 {
 	static constexpr ANSICHAR AssetRegistryBindingsModuleName[] = "ASAssetRegistryTopLevelPathAndNullParent";
 	static constexpr ANSICHAR AssetRegistryQueryCompatModuleName[] = "ASAssetRegistryQueryCompat";
@@ -98,6 +98,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAssetRegistryBindingsTest,

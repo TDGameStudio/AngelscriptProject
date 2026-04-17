@@ -19,7 +19,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Subsystem_AngelscriptSubsystemScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -42,6 +42,8 @@ namespace
 		return NativeRecorder;
 	}
 }
+
+using namespace AngelscriptTest_Subsystem_AngelscriptSubsystemScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioWorldSubsystemLifecycleTest,

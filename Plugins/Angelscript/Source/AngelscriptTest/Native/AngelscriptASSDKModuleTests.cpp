@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Module.Multi",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKModuleTests_Private
 {
 	bool ExecuteModuleBoolEntry(FAutomationTestBase& Test, asIScriptEngine* ScriptEngine, asIScriptModule* Module, const char* Declaration, bool& OutValue)
 	{
@@ -44,6 +44,8 @@ namespace
 		return Test.TestEqual(TEXT("Module test should finish bool execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKModuleTests_Private;
 
 bool FAngelscriptASSDKModuleCreateTest::RunTest(const FString& Parameters)
 {

@@ -6,7 +6,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Private
 {
 	constexpr ANSICHAR ModuleName[] = "ASExecutionScriptRangeBoundaries";
 	const TCHAR* const ScriptSource =
@@ -57,6 +57,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionScriptRangeBoundariesTest,

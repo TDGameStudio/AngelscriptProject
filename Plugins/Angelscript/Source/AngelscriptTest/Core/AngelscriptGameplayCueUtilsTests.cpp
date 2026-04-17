@@ -4,18 +4,19 @@
 #include "../../AngelscriptRuntime/Core/AngelscriptGameplayCueUtils.h"
 
 #include "Components/ActorTestSpawner.h"
+#include "GameplayTagContainer.h"
 #include "Misc/AutomationTest.h"
-#include "NativeGameplayTags.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGameplayCueUtilsTests_Private
 {
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(
-		AngelscriptGameplayCueUtilsLocalWrapperTag,
-		TEXT("GameplayCue.Angelscript.Tests.LocalWrapper"));
+	FGameplayTag GetAngelscriptGameplayCueUtilsLocalWrapperTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("GameplayCue.Angelscript.Tests.LocalWrapper")), false);
+	}
 
 	bool CheckRecordedCueEvent(
 		FAutomationTestBase& Test,
@@ -56,6 +57,8 @@ namespace
 	}
 }
 
+using namespace AngelscriptTest_Core_AngelscriptGameplayCueUtilsTests_Private;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest,
 	"Angelscript.TestModule.Engine.GAS.GameplayCueUtils.DispatchesExpectedCueEvents",
@@ -90,11 +93,17 @@ bool FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest::RunTest(const 
 		return false;
 	}
 
+	const FGameplayTag LocalWrapperTag = GetAngelscriptGameplayCueUtilsLocalWrapperTag();
+	if (!TestTrue(TEXT("GameplayCueUtils test tag should be registered from config"), LocalWrapperTag.IsValid()))
+	{
+		return false;
+	}
+
 	const FGameplayTag OriginalCueTag = Recorder->GameplayCueTag;
 	const FName OriginalCueName = Recorder->GameplayCueName;
 	Recorder->ResetRecords();
-	Recorder->GameplayCueTag = AngelscriptGameplayCueUtilsLocalWrapperTag;
-	Recorder->GameplayCueName = AngelscriptGameplayCueUtilsLocalWrapperTag.GetTag().GetTagName();
+	Recorder->GameplayCueTag = LocalWrapperTag;
+	Recorder->GameplayCueName = LocalWrapperTag.GetTagName();
 	ON_SCOPE_EXIT
 	{
 		Recorder->ResetRecords();
@@ -116,7 +125,7 @@ bool FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest::RunTest(const 
 
 	const FSoftObjectPath CueObjectPath(Recorder->GetPathName());
 	FGameplayCueNotifyData CueData;
-	CueData.GameplayCueTag = AngelscriptGameplayCueUtilsLocalWrapperTag;
+	CueData.GameplayCueTag = LocalWrapperTag;
 	CueData.GameplayCueNotifyObj = CueObjectPath;
 	CueData.LoadedGameplayCueClass = UAngelscriptGASTestGameplayCueRecorder::StaticClass();
 	RuntimeCueSet->GameplayCueData.Add(CueData);
@@ -136,9 +145,9 @@ bool FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest::RunTest(const 
 	CueParameters.EffectCauser = InstigatorActor;
 	CueParameters.SourceObject = InstigatorActor;
 
-	UAngelscriptGameplayCueUtils::AddLocalGameplayCue(TargetActor, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
-	UAngelscriptGameplayCueUtils::ExecuteLocalGameplayCue(TargetActor, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
-	UAngelscriptGameplayCueUtils::RemoveLocalGameplayCue(TargetActor, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::AddLocalGameplayCue(TargetActor, LocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::ExecuteLocalGameplayCue(TargetActor, LocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::RemoveLocalGameplayCue(TargetActor, LocalWrapperTag, CueParameters);
 
 	if (!TestEqual(
 			TEXT("GameplayCueUtils local wrappers should dispatch four cue events in total"),
@@ -187,9 +196,9 @@ bool FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest::RunTest(const 
 	}
 
 	const int32 EventCountBeforeNullTarget = Recorder->RecordedEventTypes.Num();
-	UAngelscriptGameplayCueUtils::AddLocalGameplayCue(nullptr, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
-	UAngelscriptGameplayCueUtils::ExecuteLocalGameplayCue(nullptr, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
-	UAngelscriptGameplayCueUtils::RemoveLocalGameplayCue(nullptr, AngelscriptGameplayCueUtilsLocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::AddLocalGameplayCue(nullptr, LocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::ExecuteLocalGameplayCue(nullptr, LocalWrapperTag, CueParameters);
+	UAngelscriptGameplayCueUtils::RemoveLocalGameplayCue(nullptr, LocalWrapperTag, CueParameters);
 
 	TestEqual(
 		TEXT("GameplayCueUtils null-target calls should not append any recorder events"),

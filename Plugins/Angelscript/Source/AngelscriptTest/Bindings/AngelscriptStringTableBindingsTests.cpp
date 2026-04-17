@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.StringTableRegistryLocTableCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptStringTableBindingsTests_Private
 {
 	static constexpr ANSICHAR StringTableBindingsModuleName[] = "ASStringTableRegistryLocTableCompat";
 	static const FString EntryFunctionDecl(TEXT("int Entry()"));
@@ -136,6 +136,8 @@ int Entry()
 		return bSourceMatched && bMetaDataMatched;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptStringTableBindingsTests_Private;
 
 bool FAngelscriptStringTableRegistryLocTableCompatBindingsTest::RunTest(const FString& Parameters)
 {

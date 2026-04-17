@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleTimersTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GTimersExample = {
 		TEXT("Example_Timers.as"),
@@ -58,6 +58,8 @@ class AExampleTimerActor_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleTimersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleTimersTest, "Angelscript.TestModule.ScriptExamples.Timers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

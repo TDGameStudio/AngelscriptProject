@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private
 {
 	TStrongObjectPtr<UAngelscriptNativeScriptTestObject> CreateDelegateWithPayloadReceiver(FAutomationTestBase& Test)
 	{
@@ -70,6 +70,8 @@ namespace
 			FMath::IsNearlyEqual(BoxedFloat->Value, ExpectedValue, KINDA_SMALL_NUMBER));
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDelegateWithPayloadBindExecuteResetTest,

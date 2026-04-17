@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleCharacterInputTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GCharacterInputExample = {
 		TEXT("Example_CharacterInput.as"),
@@ -66,6 +66,8 @@ class AExampleInputCharacter_UnitTest : ACharacter
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCharacterInputTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleCharacterInputTest, "Angelscript.TestModule.ScriptExamples.CharacterInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

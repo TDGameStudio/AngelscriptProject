@@ -150,6 +150,8 @@ class UObjectConstructionCarrier : UObject
 	}
 }
 
+using namespace ASClassObjectConstructionTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassStaticObjectConstructorAppliesScriptConstructorAndDefaultsOnceTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.StaticObjectConstructorAppliesScriptConstructorAndDefaultsOnce",

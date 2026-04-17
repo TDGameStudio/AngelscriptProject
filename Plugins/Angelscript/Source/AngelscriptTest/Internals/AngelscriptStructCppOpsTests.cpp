@@ -8,7 +8,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptStructCppOpsTests_Private
 {
 	UScriptStruct* BuildScriptStruct(
 		FAutomationTestBase& Test,
@@ -37,6 +37,8 @@ namespace
 		return Struct;
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptStructCppOpsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStructNotBlueprintTypeByDefaultTest,

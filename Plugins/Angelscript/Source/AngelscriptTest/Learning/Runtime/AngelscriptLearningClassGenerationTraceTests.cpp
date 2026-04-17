@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningClassGenerationTraceTests_Private
 {
 struct FLearningGeneratedPropertySummary
 	{
@@ -70,6 +70,8 @@ struct FLearningGeneratedPropertySummary
 		return Lines;
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningClassGenerationTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningClassGenerationTraceTest,

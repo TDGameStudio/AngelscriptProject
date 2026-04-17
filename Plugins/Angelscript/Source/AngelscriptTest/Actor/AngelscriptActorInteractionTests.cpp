@@ -12,10 +12,12 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Actor_AngelscriptActorInteractionTests_Private
 {
 	constexpr float InteractionScenarioDeltaTime = 0.016f;
 }
+
+using namespace AngelscriptTest_Actor_AngelscriptActorInteractionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioActorPointDamageTest,

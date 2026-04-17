@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptEngineExecutionGuardTests_Private
 {
 	struct FEngineExecutionGuardContextStackGuard
 	{
@@ -54,6 +54,8 @@ namespace
 		}
 	};
 }
+
+using namespace AngelscriptTest_Core_AngelscriptEngineExecutionGuardTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrepareContextLogsCrossEngineMismatchTest,

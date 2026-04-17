@@ -28,7 +28,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Debugger.Blueprint.MixedCallstackAndThisScope",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Private
 {
 	static const FName BlueprintInvocationFunctionName(TEXT("CallIntoScript"));
 	static const FName ScriptBreakpointFunctionName(TEXT("BreakInScript"));
@@ -455,6 +455,8 @@ namespace
 			});
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Private;
 
 bool FAngelscriptDebuggerBlueprintMixedCallstackAndThisScopeTest::RunTest(const FString& Parameters)
 {

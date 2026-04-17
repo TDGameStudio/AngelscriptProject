@@ -82,6 +82,8 @@ namespace CompilerPipelineControlFlowTest
 	}
 }
 
+using namespace CompilerPipelineControlFlowTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerRangeBasedForRewriteSupportsBlockAndSingleLineTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.RangeBasedForRewriteSupportsBlockAndSingleLine",

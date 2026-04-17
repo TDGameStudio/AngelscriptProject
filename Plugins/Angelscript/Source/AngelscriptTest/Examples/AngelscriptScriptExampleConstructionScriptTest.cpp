@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleConstructionScriptTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GConstructionScriptExample = {
 		TEXT("Example_ConstructionScript.as"),
@@ -44,6 +44,8 @@ class AExampleConstructionScript_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleConstructionScriptTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleConstructionScriptTest, "Angelscript.TestModule.ScriptExamples.ConstructionScript", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

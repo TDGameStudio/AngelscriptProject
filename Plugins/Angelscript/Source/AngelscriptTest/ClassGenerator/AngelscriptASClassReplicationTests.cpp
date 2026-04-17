@@ -59,6 +59,8 @@ namespace ASClassReplicationTest
 	}
 }
 
+using namespace ASClassReplicationTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassLifetimeScriptReplicationListIncludesInheritedReplicatedPropertiesTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.LifetimeScriptReplicationListIncludesInheritedReplicatedProperties",

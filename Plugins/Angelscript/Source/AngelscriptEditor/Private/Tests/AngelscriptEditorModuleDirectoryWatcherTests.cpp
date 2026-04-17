@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.OnScriptFileChangesGuardsEngineInitAndQueuesRootScripts",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleDirectoryWatcherTests_Private
 {
 	class FMockDirectoryWatcher final : public IDirectoryWatcher
 	{
@@ -136,6 +136,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleDirectoryWatcherTests_Private;
 
 bool FAngelscriptEditorModuleOnScriptFileChangesTest::RunTest(const FString& Parameters)
 {

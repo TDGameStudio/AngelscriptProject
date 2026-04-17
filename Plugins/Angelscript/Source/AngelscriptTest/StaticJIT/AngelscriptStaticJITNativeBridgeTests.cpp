@@ -12,7 +12,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private
 {
 	constexpr asDWORD ExpectedGenericReturnValue = 0x1234ABCD;
 
@@ -258,6 +258,8 @@ namespace
 		return bPassed && bRestoredExecution && bRestoredContext && bRestoredOriginalFunction;
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest,

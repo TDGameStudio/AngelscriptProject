@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_FileSystem_AngelscriptFileSystemRenameTests_Private
 {
 	FString GetFileSystemRenameTestRoot()
 	{
@@ -31,6 +31,8 @@ namespace
 		return FFileHelper::SaveStringToFile(Content, *OutAbsolutePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 	}
 }
+
+using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemRenameTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFileSystemRenameWithoutDiscardTest,

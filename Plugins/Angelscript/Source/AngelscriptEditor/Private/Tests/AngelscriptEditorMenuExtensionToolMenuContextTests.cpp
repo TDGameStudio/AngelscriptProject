@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.MenuExtensions.GetToolMenuContextExposesActiveContextOnlyDuringToolMenuCallbacks",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionToolMenuContextTests_Private
 {
 	UToolMenu* RegisterTemporaryMenu(FAutomationTestBase& Test, TArray<FName>& RegisteredMenus, const TCHAR* Prefix)
 	{
@@ -38,6 +38,8 @@ namespace
 		return Menu;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionToolMenuContextTests_Private;
 
 bool FAngelscriptEditorMenuExtensionToolMenuContextTest::RunTest(const FString& Parameters)
 {

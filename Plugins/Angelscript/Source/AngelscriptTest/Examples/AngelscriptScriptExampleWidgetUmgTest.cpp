@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleWidgetUmgTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GWidgetUmgExample = {
 		TEXT("Example_Widget_UMG.as"),
@@ -51,6 +51,8 @@ void Example_AddExampleWidgetToHUD(APlayerController OwningPlayer, TSubclassOf<U
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleWidgetUmgTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleWidgetUmgTest, "Angelscript.TestModule.ScriptExamples.WidgetUMG", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

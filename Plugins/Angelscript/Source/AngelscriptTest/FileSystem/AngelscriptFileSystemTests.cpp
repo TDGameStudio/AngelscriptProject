@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private
 {
 	FString GetFileSystemTestRoot()
 	{
@@ -36,6 +36,8 @@ namespace
 		return FFileHelper::SaveStringToFile(Content, *OutAbsolutePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 	}
 }
+
+using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleLookupByFilenameTest,

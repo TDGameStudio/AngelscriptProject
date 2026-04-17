@@ -185,6 +185,8 @@ class UComponentConstructionCarrier : UActorComponent
 	}
 }
 
+using namespace ASClassComponentConstructionTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassStaticComponentConstructorAppliesScriptConstructorAndDefaultsOnceTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.StaticComponentConstructorAppliesScriptConstructorAndDefaultsOnce",

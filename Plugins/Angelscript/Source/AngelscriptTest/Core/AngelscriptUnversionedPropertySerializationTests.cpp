@@ -15,7 +15,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private
 {
 	enum class ESerializationPath : uint8
 	{
@@ -210,6 +210,8 @@ namespace
 		return bOk;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUnversionedPropertySerializationRoundTripTest,

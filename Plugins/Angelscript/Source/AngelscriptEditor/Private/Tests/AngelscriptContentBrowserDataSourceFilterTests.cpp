@@ -14,7 +14,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFilterTests_Private
 {
 	template <typename AssetType>
 	AssetType* CreateContentBrowserFilterTestAsset(FAutomationTestBase& Test, UPackage* AssetsPackage, const TCHAR* BaseName)
@@ -142,6 +142,8 @@ namespace
 			SourceItem.GetInternalPath());
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFilterTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptContentBrowserDataSourceDoesItemPassFilterTest,

@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private
 {
 	bool StartStepOutEdgeDebuggerSession(
 		FAutomationTestBase& Test,
@@ -337,6 +337,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepOutTopFrameCompletesTest,

@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionSpecifiersTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GFunctionSpecifiersExample = {
 		TEXT("Example_FunctionSpecifiers.as"),
@@ -84,6 +84,8 @@ namespace
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionSpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFunctionSpecifiersTest, "Angelscript.TestModule.ScriptExamples.FunctionSpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

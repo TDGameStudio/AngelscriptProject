@@ -15,7 +15,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -58,6 +58,8 @@ namespace
 		return TypedComponent;
 	}
 }
+
+using namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioComponentBeginPlayTest,

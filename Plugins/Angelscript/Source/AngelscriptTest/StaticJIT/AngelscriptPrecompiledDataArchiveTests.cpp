@@ -6,7 +6,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Private
 {
 	constexpr TCHAR SourceFilename[] = TEXT("PrecompiledDataBuildIdentifierValidation.as");
 	const FName ModuleName(TEXT("ASPrecompiledDataBuildIdentifierValidation"));
@@ -103,6 +103,8 @@ namespace
 			PrecompiledData.Get());
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrecompiledDataBuildIdentifierValidationTest,

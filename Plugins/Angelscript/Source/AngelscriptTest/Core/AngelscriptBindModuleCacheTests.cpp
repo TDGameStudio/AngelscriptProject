@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private
 {
 	FString MakeBindModuleCacheAutomationDirectory()
 	{
@@ -52,6 +52,8 @@ namespace
 		return bOk;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindModuleCacheRoundTripAndMissingFileTest,

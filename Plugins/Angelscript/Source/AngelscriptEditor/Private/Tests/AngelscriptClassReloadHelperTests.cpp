@@ -29,7 +29,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Editor.ClassReloadHelper.PerformReinstanceNoOpsBeforeInitialCompileFinishes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private
 {
 	struct FPerformReinstanceCallLog
 	{
@@ -84,6 +84,8 @@ namespace
 		return SignatureFunction;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private;
 
 bool FAngelscriptClassReloadHelperPerformReinstanceInitialCompileGateTest::RunTest(const FString& Parameters)
 {

@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorAsyncLoadTests_Private
 {
 	FString GetPreprocessorAsyncLoadFixtureRoot()
 	{
@@ -192,6 +192,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorAsyncLoadTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorAsyncMatchesSynchronousPreprocessTest,

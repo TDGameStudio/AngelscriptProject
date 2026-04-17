@@ -16,7 +16,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private
 {
 	asITypeInfo* FindScriptTypeInfoForClass(
 		FAutomationTestBase& Test,
@@ -68,6 +68,8 @@ namespace
 		return FunctionPath;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTest,

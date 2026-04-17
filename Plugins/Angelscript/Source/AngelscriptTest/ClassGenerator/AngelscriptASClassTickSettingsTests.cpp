@@ -11,13 +11,15 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptASClassTickSettingsTests_Private
 {
 	static const FName ASClassTickSettingsModuleName(TEXT("ASClassTickSettings"));
 	static const FString ASClassTickSettingsFilename(TEXT("ASClassTickSettings.as"));
 	static const FName ASClassTickParentName(TEXT("AScriptTickParent"));
 	static const FName ASClassTickChildName(TEXT("AScriptTickChild"));
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassTickSettingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassTickSettingsEnableChildTickWhenReceiveTickIsImplementedTest,

@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.MenuExtensions.BuildMenuAndToolMenuSectionRespectCategoryHierarchyAndSortOrder",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionCategoryTests_Private
 {
 	FString GetEntryLabel(const FToolMenuEntry& Entry)
 	{
@@ -181,6 +181,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionCategoryTests_Private;
 
 bool FAngelscriptEditorMenuExtensionCategoryTest::RunTest(const FString& Parameters)
 {

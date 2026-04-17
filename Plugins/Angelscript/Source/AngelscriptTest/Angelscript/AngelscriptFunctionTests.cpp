@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptFunctionTests_Private
 {
 	const FAngelscriptCompileTraceDiagnosticSummary* FindDiagnosticContaining(
 		const FAngelscriptCompileTraceSummary& Summary,
@@ -25,6 +25,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptFunctionTests_Private;
 
 namespace AngelscriptTestSupport
 {

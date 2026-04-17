@@ -13,7 +13,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.DebuggingThrowAndCallstackCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptDebugBindingsTests_Private
 {
 	static constexpr ANSICHAR DebugBindingsModuleName[] = "ASDebuggingCompat";
 
@@ -57,6 +57,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptDebugBindingsTests_Private;
 
 bool FAngelscriptDebugBindingsTest::RunTest(const FString& Parameters)
 {

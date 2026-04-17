@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleArrayTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GArrayExample = {
 		TEXT("Example_Array.as"),
@@ -60,6 +60,8 @@ void ExecuteExampleArray()
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleArrayTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleArrayTest, "Angelscript.TestModule.ScriptExamples.Array", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

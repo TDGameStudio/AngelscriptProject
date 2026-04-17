@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests_Private
 {
 	static const FName AdditionalChecksModuleName(TEXT("AdditionalChecksMod"));
 	static const FString AdditionalChecksFilename(TEXT("AdditionalChecksMod.as"));
@@ -73,6 +73,8 @@ namespace
 		}
 	};
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAdditionalCompileChecksInvokeCompileAndPostReloadHooksTest,

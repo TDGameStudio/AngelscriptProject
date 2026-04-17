@@ -11,7 +11,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptCompilerTests_Private
 {
 	const AngelscriptTestSupport::FAngelscriptCompileTraceDiagnosticSummary* FindErrorDiagnosticContaining(
 		const TArray<AngelscriptTestSupport::FAngelscriptCompileTraceDiagnosticSummary>& Diagnostics,
@@ -54,6 +54,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptCompilerTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerBytecodeGenerationTest,

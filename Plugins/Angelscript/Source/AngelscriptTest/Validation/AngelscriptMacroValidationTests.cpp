@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private
 {
 	void CollectTerminalReturnBeforeLifecycleEndLocations(TArray<FString>& OutLocations)
 	{
@@ -58,6 +58,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGlobalBindingsMacroValidationTest,

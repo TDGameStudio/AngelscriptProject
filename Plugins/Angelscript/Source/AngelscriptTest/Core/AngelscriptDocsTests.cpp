@@ -15,7 +15,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptDocsTests_Private
 {
 	FString MakeAutomationDocsSuffix()
 	{
@@ -222,6 +222,8 @@ class %s
 		return bLoaded;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptDocsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDocsDumpDocumentationNormalizesSeeNoteAndReturnsAliasesTest,

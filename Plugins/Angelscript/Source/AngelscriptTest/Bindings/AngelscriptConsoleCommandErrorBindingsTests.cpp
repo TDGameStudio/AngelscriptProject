@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ConsoleCommandMissingHandlerCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandErrorBindingsTests_Private
 {
 	FString MakeConsoleCommandName(const TCHAR* Prefix)
 	{
@@ -40,6 +40,8 @@ namespace
 		return Test.TestNull(TEXT("Console command missing-handler test should leave no registered command behind"), FindConsoleCommand(Name));
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandErrorBindingsTests_Private;
 
 bool FAngelscriptConsoleCommandMissingHandlerBindingsTest::RunTest(const FString& Parameters)
 {

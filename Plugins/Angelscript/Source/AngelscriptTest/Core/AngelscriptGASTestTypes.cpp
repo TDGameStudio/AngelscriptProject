@@ -3,7 +3,7 @@
 #include "GameplayEffectComponents/TargetTagsGameplayEffectComponent.h"
 #include "GameplayTagsManager.h"
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASTestTypes_Private
 {
 	FGameplayTag FindAngelscriptGASTestCooldownTag()
 	{
@@ -39,6 +39,8 @@ namespace
 		return CooldownTags;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASTestTypes_Private;
 
 void UAngelscriptGASTestAttributeSetListener::RecordAttributeSet(UAngelscriptAttributeSet* NewAttributeSet)
 {

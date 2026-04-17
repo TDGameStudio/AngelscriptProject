@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private
 {
 	struct FCoreEngineContextStackGuard
 	{
@@ -62,6 +62,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateCompileExecuteTest,

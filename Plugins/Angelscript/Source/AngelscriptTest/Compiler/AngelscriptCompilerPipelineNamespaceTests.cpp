@@ -63,6 +63,8 @@ namespace CompilerPipelineNamespaceTest
 	}
 }
 
+using namespace CompilerPipelineNamespaceTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerNamespacedAnnotatedClassStaticHelperRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.NamespacedAnnotatedClassStaticHelperRoundTrip",

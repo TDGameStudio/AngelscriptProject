@@ -7,7 +7,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS && AS_JIT_DEBUG_CALLSTACKS
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Private
 {
 	struct FExpectedDebugFrame
 	{
@@ -82,6 +82,8 @@ namespace
 		return bAllMatched;
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITDebugCallstackScopePushPopTest,

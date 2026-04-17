@@ -11,7 +11,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceLifecycleTests_Private
 {
 	UFunction* RequireGeneratedFunction(
 		FAutomationTestBase& Test,
@@ -49,6 +49,8 @@ namespace
 	}
 
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceHierarchyProcessEventDispatchTest,

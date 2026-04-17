@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Preprocessor.Api.AsyncZeroByteFileMatchesSyncPath",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorAsyncTests_Private
 {
 	struct FPreprocessorCodeSectionSnapshot
 	{
@@ -225,6 +225,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorAsyncTests_Private;
 
 bool FAngelscriptPreprocessorAsyncZeroByteFileMatchesSyncPathTest::RunTest(const FString& Parameters)
 {

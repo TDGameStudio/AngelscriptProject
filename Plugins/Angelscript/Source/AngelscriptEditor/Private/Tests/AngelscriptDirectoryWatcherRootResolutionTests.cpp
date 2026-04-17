@@ -16,7 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.DirectoryWatcher.Queue.UsesMatchingRootWhenMultipleRootsSharePrefix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherRootResolutionTests_Private
 {
 	FString MakeTempWatcherRoot(const TCHAR* Prefix)
 	{
@@ -56,6 +56,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherRootResolutionTests_Private;
 
 bool FAngelscriptDirectoryWatcherMatchingRootSelectionTest::RunTest(const FString& Parameters)
 {

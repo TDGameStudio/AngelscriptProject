@@ -64,6 +64,8 @@ namespace InterfaceDispatchBridgeTests
 	}
 }
 
+using namespace InterfaceDispatchBridgeTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCallInterfaceMethodDispatchesToImplementingUFunctionTest,
 	"Angelscript.TestModule.ClassGenerator.Interface.CallInterfaceMethodDispatchesToImplementingUFunction",

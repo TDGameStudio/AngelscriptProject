@@ -109,6 +109,8 @@ class UOptimizedCallTarget : UObject
 	}
 }
 
+using namespace ASFunctionOptimizedCallTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionOptimizedCallWrappersPreserveArgumentsAndReturnValuesTest,
 	"Angelscript.TestModule.ClassGenerator.ASFunction.OptimizedCallWrappersPreserveArgumentsAndReturnValues",

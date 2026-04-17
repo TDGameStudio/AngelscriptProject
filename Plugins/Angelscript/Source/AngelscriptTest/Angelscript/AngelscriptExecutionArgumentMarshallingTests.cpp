@@ -6,7 +6,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private
 {
 	constexpr ANSICHAR ModuleName[] = "ASExecutionArgumentSlotOrderMatrix";
 	constexpr ANSICHAR OneArgModuleName[] = "ASExecutionOneArgNegativeAndZero";
@@ -117,6 +117,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionArgumentSlotOrderMatrixTest,

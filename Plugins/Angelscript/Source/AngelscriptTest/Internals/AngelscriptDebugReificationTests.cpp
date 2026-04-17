@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptDebugReificationTests_Private
 {
 	bool ExpectReifyType(
 		FAutomationTestBase& Test,
@@ -18,6 +18,8 @@ namespace
 			static_cast<int32>(ExpectedType));
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptDebugReificationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugReificationTypeMapAndFallbackTest,

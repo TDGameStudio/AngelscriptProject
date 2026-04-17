@@ -12,7 +12,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionWorldContextTests_Private
 {
 	static const FName WorldContextModuleName(TEXT("ASFunctionWorldContext"));
 	static const FString WorldContextFilename(TEXT("ASFunctionWorldContext.as"));
@@ -25,6 +25,8 @@ namespace
 		int32 ReturnValue = 0;
 	};
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionWorldContextTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionStaticWorldContextRuntimeCallUsesValidParmOffsetTest,

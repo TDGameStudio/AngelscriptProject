@@ -13,7 +13,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.FunctionLibraries.FrameTimeAsSeconds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR FrameTimeBindingsModuleName[] = "ASFrameTimeAsSeconds";
 	static constexpr double FrameTimeTolerance = 0.000000001;
@@ -82,6 +82,8 @@ int Entry()
 )");
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Private;
 
 bool FAngelscriptFrameTimeAsSecondsFunctionLibraryTest::RunTest(const FString& Parameters)
 {

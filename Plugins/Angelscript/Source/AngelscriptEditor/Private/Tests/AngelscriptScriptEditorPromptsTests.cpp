@@ -24,7 +24,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ScriptEditorPrompts.ShowPromptToCallFunctionOnObjectsSkipsNullAndMismatchedReceivers",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Private
 {
 	template <typename AssetType>
 	AssetType* CreatePromptTestAsset(
@@ -81,6 +81,8 @@ namespace
 		return MakeShared<FStructOnScope>(TBaseStructure<FVector>::Get(), reinterpret_cast<uint8*>(const_cast<FVector*>(&Value)));
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Private;
 
 bool FAngelscriptScriptEditorPromptsStructFirstParameterTest::RunTest(const FString& Parameters)
 {

@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ClassReloadHelper.OnPostReloadFullReloadRefreshesActionsBroadcastsBlueprintCompiledAndRestoresCurrentLevel",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReloadTests_Private
 {
 	struct FPostReloadCallLog
 	{
@@ -80,6 +80,8 @@ namespace
 		ReloadState.ReloadAssets.Add(GetTransientPackage(), GetTransientPackage());
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReloadTests_Private;
 
 bool FAngelscriptClassReloadHelperOnPostReloadFullReloadEffectsTest::RunTest(const FString& Parameters)
 {

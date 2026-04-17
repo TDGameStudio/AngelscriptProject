@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.GameplayTagBlueprintPropertyMapInitializeNullGuards",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptGASValueBindingsTests_Private
 {
 	static constexpr ANSICHAR GameplayEffectSpecNullDefGuardModuleName[] = "ASGameplayEffectSpecNullDefGuard";
 	static constexpr ANSICHAR GameplayTagBlueprintPropertyMapNullGuardsModuleName[] = "ASGameplayTagBlueprintPropertyMapInitializeNullGuards";
@@ -116,6 +116,8 @@ namespace
 		return bThrew && bHasMessage && bHasLine;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptGASValueBindingsTests_Private;
 
 bool FAngelscriptGameplayEffectSpecNullDefGuardBindingsTest::RunTest(const FString& Parameters)
 {

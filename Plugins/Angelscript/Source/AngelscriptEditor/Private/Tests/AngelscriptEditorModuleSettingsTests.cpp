@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.ProjectSettingsEntryMatchesModuleLifetime",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleSettingsTests_Private
 {
 	static const FName ProjectSettingsContainerName(TEXT("Project"));
 	static const FName PluginsCategoryName(TEXT("Plugins"));
@@ -102,6 +102,8 @@ namespace
 			AngelscriptSectionName);
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleSettingsTests_Private;
 
 bool FAngelscriptEditorModuleProjectSettingsLifecycleTest::RunTest(const FString& Parameters)
 {

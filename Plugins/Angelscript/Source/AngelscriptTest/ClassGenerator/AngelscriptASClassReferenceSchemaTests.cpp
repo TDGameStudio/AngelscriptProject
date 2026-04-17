@@ -17,7 +17,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private
 {
 	static const FName ReferenceSchemaModuleName(TEXT("ASClassReferenceSchema"));
 	static const FString ReferenceSchemaFilename(TEXT("ASClassReferenceSchema.as"));
@@ -114,6 +114,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassRuntimeAddReferencedObjectsKeepsScriptOnlyObjectReferenceAliveTest,

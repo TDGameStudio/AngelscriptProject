@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -137,6 +137,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldCollisionAsyncTraceCallbacksBindingsTest,

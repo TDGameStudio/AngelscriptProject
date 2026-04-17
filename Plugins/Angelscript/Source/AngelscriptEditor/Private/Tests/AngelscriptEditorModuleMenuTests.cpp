@@ -16,7 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.RegisterToolsMenuEntriesAddsWorkspaceAndLegacyBindCommands",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleMenuTests_Private
 {
 	struct FPlatformExecuteCall
 	{
@@ -47,6 +47,8 @@ namespace
 		return Count;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleMenuTests_Private;
 
 bool FAngelscriptEditorModuleRegisterToolsMenuEntriesTest::RunTest(const FString& Parameters)
 {

@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionsTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GFunctionsExample = {
 		TEXT("Example_Functions.as"),
@@ -65,6 +65,8 @@ void ExampleFunctionWithOutputParameter(FVector&out OutPosition)
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFunctionsTest, "Angelscript.TestModule.ScriptExamples.Functions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptHitResultFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR HitResultAccessorsModuleName[] = "ASHitResultAccessorRoundTrip";
 
@@ -111,6 +111,8 @@ namespace
 		return BoxComponent;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptHitResultFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHitResultFunctionLibraryAccessorsTest,

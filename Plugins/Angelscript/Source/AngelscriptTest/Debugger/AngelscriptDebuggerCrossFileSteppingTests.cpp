@@ -16,7 +16,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Private
 {
 	bool StartCrossFileDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
@@ -484,6 +484,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerCrossFileSteppingTest,

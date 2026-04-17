@@ -7,13 +7,15 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptTokenizerTests_Private
 {
 	struct FTokenizerAccessor : asCTokenizer
 	{
 		using asCTokenizer::GetToken;
 	};
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptTokenizerTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTokenizerBasicTokenTest,

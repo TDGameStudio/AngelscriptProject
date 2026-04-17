@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExamplePropertySpecifiersTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GPropertySpecifiersExample = {
 		TEXT("Example_PropertySpecifiers.as"),
@@ -87,6 +87,8 @@ namespace
 		AngelscriptScriptExamples::GetScriptExampleEnumSource().ScriptText,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExamplePropertySpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExamplePropertySpecifiersTest, "Angelscript.TestModule.ScriptExamples.PropertySpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

@@ -1,9 +1,11 @@
 #include "Tests/AngelscriptScriptEditorPromptsTestTypes.h"
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTestTypes_Private
 {
 	TArray<FName> GScriptEditorPromptsBatchInvocationOrder;
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTestTypes_Private;
 
 void UAngelscriptScriptEditorPromptsAssetReceiver::ResetRecordedAssets()
 {

@@ -81,6 +81,8 @@ namespace CompilerPipelineImportReloadTest
 	}
 }
 
+using namespace CompilerPipelineImportReloadTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerDeclaredFunctionImportRebindsAfterProviderReloadTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.DeclaredFunctionImportRebindsAfterProviderReload",

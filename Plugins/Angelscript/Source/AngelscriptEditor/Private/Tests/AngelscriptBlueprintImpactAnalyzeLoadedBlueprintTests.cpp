@@ -32,7 +32,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.BlueprintImpact.AnalyzeLoadedBlueprint.EnumPinsAndVariablesReportExactReasons",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private
 {
 	UBlueprint* CreateTransientBlueprintChild(FAutomationTestBase& Test, UClass* ParentClass, FStringView Suffix)
 	{
@@ -164,6 +164,8 @@ namespace
 		return CallFunctionNode;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private;
 
 bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEmptySymbolsTest::RunTest(const FString& Parameters)
 {

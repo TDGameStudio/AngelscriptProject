@@ -25,7 +25,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Editor.StateDump.RegistersExtensionAndWritesExpectedCsvFiles",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorStateDumpTests_Private
 {
 	FString MakeUniqueStateDumpPath(const FString& Prefix)
 	{
@@ -75,6 +75,8 @@ namespace
 		return FString::Printf(TEXT("%s,%s,%s"), *ExtensionPoint.ToString(), *LocationString, *SectionName.ToString());
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorStateDumpTests_Private;
 
 bool FAngelscriptEditorStateDumpRegisterAndWriteCsvTest::RunTest(const FString& Parameters)
 {

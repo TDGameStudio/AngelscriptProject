@@ -12,9 +12,11 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private
 {
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleRecordTrackingTest,

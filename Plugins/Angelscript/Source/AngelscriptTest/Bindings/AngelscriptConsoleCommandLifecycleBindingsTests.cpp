@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ConsoleCommandLifecycleOriginalReplacementUnload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandLifecycleBindingsTests_Private
 {
 	static constexpr ANSICHAR OriginalLifecycleModuleNameAnsi[] = "ASConsoleCommandOriginalLifecycle";
 	static constexpr ANSICHAR ReplacementLifecycleModuleNameAnsi[] = "ASConsoleCommandReplacementLifecycle";
@@ -152,6 +152,8 @@ int Entry()
 			1);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandLifecycleBindingsTests_Private;
 
 bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Parameters)
 {

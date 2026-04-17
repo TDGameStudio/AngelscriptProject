@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.CallingConv.Thiscall",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private
 {
 	bool ExecuteCallingConvIntEntry(FAutomationTestBase& Test, asIScriptEngine* ScriptEngine, asIScriptModule* Module, const char* Declaration, int32& OutValue)
 	{
@@ -70,6 +70,8 @@ namespace
 		new (Address) FNativeAdder();
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private;
 
 bool FAngelscriptASSDKCallingConvCDeclTest::RunTest(const FString& Parameters)
 {

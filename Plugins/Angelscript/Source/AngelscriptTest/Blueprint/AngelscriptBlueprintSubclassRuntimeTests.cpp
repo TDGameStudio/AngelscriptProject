@@ -178,6 +178,8 @@ namespace BlueprintSubclassRuntimeTest
 	}
 }
 
+using namespace BlueprintSubclassRuntimeTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest,
 	"Angelscript.TestModule.BlueprintChild.InheritsScriptBeginPlay",

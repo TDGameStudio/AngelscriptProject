@@ -49,7 +49,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.DelegateWithPayloadCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptFileAndDelegateBindingsTests_Private
 {
 	static constexpr ANSICHAR DelegateWithPayloadCompatModuleName[] = "ASDelegateWithPayloadCompat";
 
@@ -109,6 +109,8 @@ namespace
 		return bHasExceptionString && bHasExceptionLine;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptFileAndDelegateBindingsTests_Private;
 
 bool FAngelscriptScriptDelegateBindingsTest::RunTest(const FString& Parameters)
 {

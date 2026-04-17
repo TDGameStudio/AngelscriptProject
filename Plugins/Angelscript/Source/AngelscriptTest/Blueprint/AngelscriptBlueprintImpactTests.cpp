@@ -141,6 +141,8 @@ namespace BlueprintImpactScenarioTest
 	}
 }
 
+using namespace BlueprintImpactScenarioTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBlueprintImpactScriptParentMatchTest,
 	"Angelscript.TestModule.BlueprintImpact.ScriptParentMatch",

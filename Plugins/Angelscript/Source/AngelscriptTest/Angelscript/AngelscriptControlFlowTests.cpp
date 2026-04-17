@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private
 {
 	bool ContainsWarningDiagnostic(const FAngelscriptEngine& Engine, const FString& Needle)
 	{
@@ -59,6 +59,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowForLoopTest,

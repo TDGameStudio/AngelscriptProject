@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorIncludeDirectiveTests_Private
 {
 	static const FString ExpectedIncludeDiagnostic(TEXT("Unsupported preprocessor directive '#include'. Use import or automatic imports instead."));
 
@@ -49,6 +49,8 @@ namespace
 	}
 
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorIncludeDirectiveTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorIncludeDirectiveProducesDeterministicResultTest,

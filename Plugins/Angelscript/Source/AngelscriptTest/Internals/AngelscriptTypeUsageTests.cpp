@@ -15,7 +15,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptTypeUsageTests_Private
 {
 	asITypeInfo* FindTypeInfoByDecl(FAutomationTestBase& Test, asIScriptModule& Module, const FString& Declaration)
 	{
@@ -147,6 +147,8 @@ namespace
 		return bMatches;
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptTypeUsageTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeUsageFromTypeIdScriptKindsTest,

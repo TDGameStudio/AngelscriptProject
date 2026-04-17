@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryTraceTests_Private
 {
 	static constexpr ANSICHAR ModuleName[] = "ASWorldCollisionFunctionLibraryTraceQueries";
 	static const FVector BlockingTargetLocation(0.0f, 0.0f, 0.0f);
@@ -162,6 +162,8 @@ namespace
 		});
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldCollisionFunctionLibraryTraceQueriesTest,

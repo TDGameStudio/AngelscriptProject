@@ -225,6 +225,8 @@ namespace PreprocessorLiteralTest
 	}
 }
 
+using namespace PreprocessorLiteralTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorNameLiteralRoundTripTest,
 	"Angelscript.TestModule.Preprocessor.Literals.NameLiteralRoundTrip",

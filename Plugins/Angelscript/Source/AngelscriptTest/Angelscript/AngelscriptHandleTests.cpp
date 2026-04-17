@@ -16,7 +16,7 @@ namespace AngelscriptTestSupport
 	void ResetSharedInitializedTestEngine(FAngelscriptEngine& Engine);
 }
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private
 {
 	static constexpr ANSICHAR HandleNativeObjectArgumentModuleName[] = "ASHandleNativeObjectArgument";
 
@@ -61,6 +61,8 @@ namespace
 			ExpectedReturnValue);
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleBasicTest,

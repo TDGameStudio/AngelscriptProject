@@ -149,6 +149,8 @@ int Entry()
 	}
 }
 
+using namespace GameplayTagContainerFunctionLibraryTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayTagContainerRemoveTagMissTest,
 	"Angelscript.TestModule.FunctionLibraries.GameplayTagContainerRemoveTagMiss",

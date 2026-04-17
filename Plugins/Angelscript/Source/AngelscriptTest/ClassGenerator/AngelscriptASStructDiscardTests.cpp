@@ -31,6 +31,8 @@ namespace ASStructDiscardTest
 	}
 }
 
+using namespace ASStructDiscardTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASStructDiscardModuleClearsScriptTypeAndNativeOpsTest,
 	"Angelscript.TestModule.ClassGenerator.ASStruct.DiscardModuleClearsScriptTypeAndNativeOps",

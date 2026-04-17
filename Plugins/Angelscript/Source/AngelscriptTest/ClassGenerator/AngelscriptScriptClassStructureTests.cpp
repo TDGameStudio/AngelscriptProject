@@ -26,6 +26,8 @@ namespace ScriptClassStructureTests
 	}
 }
 
+using namespace ScriptClassStructureTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionOnlyScriptClassCompilesAndExecutesTest,
 	"Angelscript.TestModule.ScriptClass.FunctionOnlyClassCompilesAndExecutes",

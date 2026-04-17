@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyDefaultSpecifierTests_Private
 {
 	FString GetPreprocessorPropertyFixtureRoot()
 	{
@@ -113,6 +113,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyDefaultSpecifierTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorPropertyDefaultBlueprintAccessTest,

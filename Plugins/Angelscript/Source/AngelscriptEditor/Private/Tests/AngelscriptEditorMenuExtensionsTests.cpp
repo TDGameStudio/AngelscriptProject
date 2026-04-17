@@ -28,7 +28,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.MenuExtensions.ActionMetadataDelegatesAndShiftNavigationFallback",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_Private
 {
 	struct FResolvedMenuExtensionEngine
 	{
@@ -145,6 +145,8 @@ namespace
 		});
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_Private;
 
 bool FAngelscriptEditorMenuExtensionsTest::RunTest(const FString& Parameters)
 {

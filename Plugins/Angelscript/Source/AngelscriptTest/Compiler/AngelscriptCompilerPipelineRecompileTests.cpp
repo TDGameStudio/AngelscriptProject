@@ -141,6 +141,8 @@ int Entry()
 	}
 }
 
+using namespace CompilerPipelineRecompileTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.SuccessfulRecompileReplacesStaleOutputs",

@@ -99,6 +99,8 @@ namespace ASGeneratedTypeIdentityTest
 	}
 }
 
+using namespace ASGeneratedTypeIdentityTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASStructScriptIdentityFieldsTrackFullReloadLifecycleTest,
 	"Angelscript.TestModule.ClassGenerator.ASStruct.ScriptIdentityFieldsTrackFullReloadLifecycle",

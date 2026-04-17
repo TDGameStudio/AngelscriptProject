@@ -11,13 +11,15 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptBytecodeTests_Private
 {
 	asCModule* CreateBytecodeModule(asCScriptEngine* ScriptEngine, const char* ModuleName)
 	{
 		return static_cast<asCModule*>(ScriptEngine->GetModule(ModuleName, asGM_ALWAYS_CREATE));
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptBytecodeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBytecodeInstructionSequenceTest,

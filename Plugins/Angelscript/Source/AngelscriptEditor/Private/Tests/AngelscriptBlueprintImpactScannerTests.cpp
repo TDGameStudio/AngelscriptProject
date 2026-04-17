@@ -80,7 +80,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.BlueprintImpact.FindBlueprintAssetsDiskBacked",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private
 {
 	TSharedRef<FAngelscriptModuleDesc> MakeTestModule(const FString& ModuleName, TArray<FAngelscriptModuleDesc::FCodeSection> CodeSections)
 	{
@@ -250,6 +250,8 @@ namespace
 		return Blueprint;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 
 bool FAngelscriptBlueprintImpactNormalizePathsTest::RunTest(const FString& Parameters)
 {

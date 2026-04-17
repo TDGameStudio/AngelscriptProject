@@ -20,6 +20,8 @@ namespace CompilerPipelineExecutionTest
 	static const FName ScorePropertyName(TEXT("Score"));
 }
 
+using namespace CompilerPipelineExecutionTest;
+
 namespace CompilerPipelinePlainSourceRoundTripTest
 {
 	static const FName ModuleName(TEXT("Tests.Compiler.PlainSourceRoundTrip"));

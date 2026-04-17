@@ -11,7 +11,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceDeclareTests_Private
 {
 	int32 CountDeclaredInterfaceFunctions(const UClass* InterfaceClass)
 	{
@@ -117,6 +117,8 @@ namespace
 			ChildPropertyDescriptions.Num() > 0 ? *FString::Join(ChildPropertyDescriptions, TEXT(", ")) : TEXT("<empty>"));
 	}
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceDeclareTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceDeclareBasicTest,

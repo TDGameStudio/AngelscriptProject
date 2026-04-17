@@ -112,6 +112,8 @@ namespace ScriptClassCreationTest
 	};
 }
 
+using namespace ScriptClassCreationTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioScriptClassCompilesToUClassTest,
 	"Angelscript.TestModule.ScriptClass.CompilesToUClass",

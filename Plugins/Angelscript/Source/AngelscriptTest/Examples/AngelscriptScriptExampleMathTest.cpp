@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleMathTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GMathExample = {
 		TEXT("Example_Math.as"),
@@ -37,6 +37,8 @@ void ExecuteExampleMath()
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMathTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMathTest, "Angelscript.TestModule.ScriptExamples.Math", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private
 {
 	TSharedRef<FFakeDebuggerClientSocket> MakePendingConnectSocket(
 		const FString& Description,
@@ -67,6 +67,8 @@ namespace
 			DEBUG_SERVER_VERSION);
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest,

@@ -9,9 +9,11 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private
 {
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSoftReloadBasicTest,

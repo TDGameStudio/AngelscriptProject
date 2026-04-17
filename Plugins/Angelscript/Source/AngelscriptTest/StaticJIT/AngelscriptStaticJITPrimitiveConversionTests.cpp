@@ -7,7 +7,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private
 {
 	bool VerifyCurrentEngine(
 		FAutomationTestBase& Test,
@@ -19,6 +19,8 @@ namespace
 			FAngelscriptEngine::TryGetCurrentEngine() == &Engine);
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITPrimitiveBitCastRoundTripTest,

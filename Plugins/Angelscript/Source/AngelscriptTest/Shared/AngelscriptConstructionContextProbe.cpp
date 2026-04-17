@@ -3,11 +3,13 @@
 #include "ClassGenerator/ASClass.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 
-namespace
+namespace AngelscriptTest_Shared_AngelscriptConstructionContextProbe_Private
 {
 	TWeakObjectPtr<UObject> GCapturedConstructingObject;
 	int32 GConstructingObjectCaptureCount = 0;
 }
+
+using namespace AngelscriptTest_Shared_AngelscriptConstructionContextProbe_Private;
 
 UObject* UAngelscriptConstructionContextProbe::CaptureConstructingObject()
 {

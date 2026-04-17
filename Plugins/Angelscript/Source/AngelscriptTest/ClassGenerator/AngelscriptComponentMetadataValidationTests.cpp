@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private
 {
 	static const FName ComponentMetadataValidationModuleName(TEXT("ASComponentInvalidAttachParent"));
 	static constexpr TCHAR ComponentMetadataValidationFilename[] = TEXT("ComponentInvalidAttachParent.as");
@@ -82,6 +82,8 @@ class ADerivedOverrideMissing : ABaseOverrideMissing
 )AS");
 	}
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptComponentInvalidAttachParentFailsClosedTest,

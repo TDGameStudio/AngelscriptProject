@@ -44,6 +44,8 @@ namespace ASFunctionDispatchTests
 	}
 }
 
+using namespace ASFunctionDispatchTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionAllocateFunctionForSelectsCorrectThreadSafeDispatchSubclassTest,
 	"Angelscript.TestModule.ClassGenerator.ASFunction.AllocateFunctionForSelectsCorrectThreadSafeDispatchSubclass",

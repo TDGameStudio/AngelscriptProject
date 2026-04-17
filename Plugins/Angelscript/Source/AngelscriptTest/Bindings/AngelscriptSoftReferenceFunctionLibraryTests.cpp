@@ -17,7 +17,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptSoftReferenceFunctionLibraryTests_Private
 {
 	static const FName SoftReferenceAsyncModuleName(TEXT("ASoftReferenceAsyncDelegates"));
 	static const FString SoftReferenceAsyncFilename(TEXT("SoftReferenceAsyncDelegates.as"));
@@ -151,6 +151,8 @@ namespace
 			ExpectedMetaClass);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptSoftReferenceFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSoftReferenceAsyncDelegatesTest,

@@ -6,7 +6,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemCallbackTests_Private
 {
 	const FName HealthAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestAttributeSet, Health);
 	const float InitialHealthValue = 10.f;
@@ -54,6 +54,8 @@ namespace
 				InitialHealthValue));
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemCallbackTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilitySystemAttributeCallbackTest,

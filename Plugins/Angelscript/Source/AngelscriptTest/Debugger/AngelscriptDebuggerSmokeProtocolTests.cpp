@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerSmokeProtocolTests_Private
 {
 	class FScopedDebugBreakFiltersBinding
 	{
@@ -133,6 +133,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSmokeProtocolTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSmokeBreakFiltersRoundtripTest,

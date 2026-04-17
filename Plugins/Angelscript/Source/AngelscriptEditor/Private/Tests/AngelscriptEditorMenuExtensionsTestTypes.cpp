@@ -2,7 +2,7 @@
 
 #include "Engine/StaticMeshActor.h"
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTestTypes_Private
 {
 	bool GMenuExtensionActionCanExecute = true;
 	bool GMenuExtensionActionVisible = true;
@@ -20,6 +20,8 @@ namespace
 	int32 GMenuExtensionContextCommandInvocationCount = 0;
 	FName GMenuExtensionContextLastCommandFunctionName = NAME_None;
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTestTypes_Private;
 
 TArray<FName> UAngelscriptEditorMenuExtensionTestShim::GatheredFunctionNames() const
 {

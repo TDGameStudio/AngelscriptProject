@@ -82,6 +82,8 @@ namespace CompilerPipelineFormatStringTest
 	}
 }
 
+using namespace CompilerPipelineFormatStringTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerFormatStringRewriteProducesExpectedOutputTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.FormatStringRewriteProducesExpectedOutput",

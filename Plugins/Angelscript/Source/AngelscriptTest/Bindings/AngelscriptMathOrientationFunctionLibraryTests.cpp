@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.FunctionLibraries.MathOrientationFactoriesAndTransformMutators",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private
 {
 	template <typename TValue>
 	bool ExecuteValueFunction(
@@ -139,6 +139,8 @@ namespace
 		return Test.TestTrue(What, bRotationMatches && bTranslationMatches && bScaleMatches);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private;
 
 bool FAngelscriptMathOrientationFactoriesAndTransformMutatorsTest::RunTest(const FString& Parameters)
 {

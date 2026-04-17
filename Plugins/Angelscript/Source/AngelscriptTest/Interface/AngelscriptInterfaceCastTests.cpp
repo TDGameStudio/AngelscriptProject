@@ -15,7 +15,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceCastTests_Private
 {
 	asITypeInfo* FindBoundScriptTypeInfo(
 		FAutomationTestBase& Test,
@@ -55,6 +55,8 @@ namespace
 		return TypeInfo;
 	}
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceCastTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceCastSuccessTest,

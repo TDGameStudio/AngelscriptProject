@@ -13,7 +13,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.DateTimeParseRoundTripCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptDateTimeBindingsTests_Private
 {
 	static constexpr ANSICHAR DateTimeBindingsModuleName[] = "ASDateTimeParseRoundTripCompat";
 
@@ -289,6 +289,8 @@ int Entry()
 		return ScriptSource;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptDateTimeBindingsTests_Private;
 
 bool FAngelscriptDateTimeParseRoundTripCompatBindingsTest::RunTest(const FString& Parameters)
 {

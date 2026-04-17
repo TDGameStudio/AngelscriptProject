@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private
 {
 	FString BuildAutoInferenceMatrixScript(const bool bFloatUsesFloat64)
 	{
@@ -181,6 +181,8 @@ float Run()
 		return bMatches;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrimitiveTypeTest,

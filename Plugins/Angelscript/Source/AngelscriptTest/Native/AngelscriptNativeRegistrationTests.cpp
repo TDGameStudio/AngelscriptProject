@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.Register.SimpleValueType",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private
 {
 	int32 GNativeGlobalValue = 21;
 
@@ -128,6 +128,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private;
 
 bool FAngelscriptNativeRegisterGlobalFunctionTest::RunTest(const FString& Parameters)
 {

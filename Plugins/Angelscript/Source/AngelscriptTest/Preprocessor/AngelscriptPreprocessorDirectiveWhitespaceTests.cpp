@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveWhitespaceTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> CreateDirectiveWhitespaceEngine()
 	{
@@ -76,6 +76,8 @@ namespace
 			});
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveWhitespaceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorTabSeparatedDirectiveParsingTest,

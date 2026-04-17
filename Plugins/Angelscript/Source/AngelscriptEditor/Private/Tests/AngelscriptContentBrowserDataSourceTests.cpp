@@ -21,7 +21,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ContentBrowserDataSource.FiltersAssetsAndBuildsExpectedAttributes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTests_Private
 {
 	template <typename AssetType>
 	AssetType* CreateContentBrowserTestAsset(FAutomationTestBase& Test, UPackage* AssetsPackage, const TCHAR* BaseName)
@@ -138,6 +138,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTests_Private;
 
 bool FAngelscriptContentBrowserDataSourceFilterAndAttributesTest::RunTest(const FString& Parameters)
 {

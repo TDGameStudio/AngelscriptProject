@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private
 {
 	static const FName DelegateReloadModuleName(TEXT("HotReloadDelegateMod"));
 	static const FString DelegateReloadFilename(TEXT("HotReloadDelegateMod.as"));
@@ -67,6 +67,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadReloadDelegatesBroadcastEnumChangeAndFullReloadTest,

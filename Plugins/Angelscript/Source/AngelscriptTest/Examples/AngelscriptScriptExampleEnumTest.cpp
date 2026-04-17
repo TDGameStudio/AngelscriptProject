@@ -52,6 +52,8 @@ void TestExampleEnum_UnitTest(EExampleEnum_UnitTest Input)
 	}
 }
 
+using namespace AngelscriptScriptExamples;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleEnumTest, "Angelscript.TestModule.ScriptExamples.Enum", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleEnumTest::RunTest(const FString& Parameters)

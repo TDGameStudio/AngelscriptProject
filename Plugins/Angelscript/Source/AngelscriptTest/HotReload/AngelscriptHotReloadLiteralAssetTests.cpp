@@ -11,7 +11,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Private
 {
 	static const FName LiteralAssetReloadModuleName(TEXT("HotReloadLiteralAssetMod"));
 	static const FString LiteralAssetReloadFilename(TEXT("HotReloadLiteralAssetMod.as"));
@@ -28,6 +28,8 @@ namespace
 		return FindObject<UObject>(FAngelscriptEngine::Get().AssetsPackage, *LiteralAssetObjectName.ToString());
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest,

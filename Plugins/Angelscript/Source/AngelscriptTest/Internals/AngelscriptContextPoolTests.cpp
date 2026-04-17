@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptContextPoolTests_Private
 {
 	struct FContextPoolEngineStackGuard
 	{
@@ -68,6 +68,8 @@ namespace
 		return FAngelscriptEngine::GetLocalPooledContextCountForTesting(ScriptEngine);
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptContextPoolTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptContextPoolReuseAndResetPerEngineTest,

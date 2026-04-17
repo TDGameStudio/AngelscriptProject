@@ -34,7 +34,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.ShowCreateBlueprintPopupDoesNotPromptSaveOrOpenEditorWhenBlueprintFactoryFails",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private
 {
 	struct FCreateBlueprintPopupDefaultsCallLog
 	{
@@ -175,6 +175,8 @@ namespace
 		return ScriptClass;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private;
 
 bool FAngelscriptEditorModuleShowCreateBlueprintPopupSeedsDialogDefaultsTest::RunTest(const FString& Parameters)
 {

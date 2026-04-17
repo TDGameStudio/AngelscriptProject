@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWidgetFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR ModuleName[] = "ASWidgetRenderTransformNullGuard";
 
@@ -135,6 +135,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWidgetFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWidgetRenderTransformNullGuardTest,

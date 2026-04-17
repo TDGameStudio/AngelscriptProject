@@ -134,6 +134,8 @@ namespace CompilerPipelineGlobalUFunctionTest
 	}
 }
 
+using namespace CompilerPipelineGlobalUFunctionTest;
+
 namespace CompilerPipelineGlobalUFunctionSanitizedModuleTest
 {
 	static const FName ModuleName(TEXT("Tests.Compiler.GlobalUFunction-Foo+Bar"));

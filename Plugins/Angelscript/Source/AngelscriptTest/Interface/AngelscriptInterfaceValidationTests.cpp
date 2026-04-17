@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceValidationTests_Private
 {
 	static const FName InterfaceValidationModuleName(TEXT("ScenarioInterfaceValidation"));
 	static constexpr TCHAR InterfaceValidationFilename[] = TEXT("ScenarioInterfaceValidation.as");
@@ -26,6 +26,8 @@ namespace
 			});
 	}
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceValidationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInterfaceRejectsPropertyDeclarationsTest,

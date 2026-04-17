@@ -19,6 +19,8 @@ namespace CompilerPipelineInterfaceRoundTripTest
 	static const FName ComputeValueFunctionName(TEXT("ComputeValue"));
 }
 
+using namespace CompilerPipelineInterfaceRoundTripTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerInterfaceAnnotatedRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.InterfaceAnnotatedRoundTrip",

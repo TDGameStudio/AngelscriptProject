@@ -147,6 +147,8 @@ class AActorConstructionCarrier : AActor
 	}
 }
 
+using namespace ASClassActorConstructionTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassStaticActorConstructorAppliesScriptConstructorAndDefaultsOnceTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.StaticActorConstructorAppliesScriptConstructorAndDefaultsOnce",

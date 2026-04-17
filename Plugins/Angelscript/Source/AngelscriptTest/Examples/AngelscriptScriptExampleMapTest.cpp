@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleMapTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GMapExample = {
 		TEXT("Example_Map.as"),
@@ -111,6 +111,8 @@ class AExampleMapActor_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMapTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMapTest, "Angelscript.TestModule.ScriptExamples.Map", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

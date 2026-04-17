@@ -16,7 +16,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private
 {
 	struct FRecordedSourceNavigation
 	{
@@ -43,6 +43,8 @@ namespace
 		}
 	};
 }
+
+using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionSourceNavigationTest,

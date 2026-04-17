@@ -105,6 +105,8 @@ namespace ASClassHelperTest
 	};
 }
 
+using namespace ASClassHelperTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioASClassHierarchyHelpersResolveScriptAndNativeAncestorsTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.HierarchyHelpersResolveScriptAndNativeAncestors",

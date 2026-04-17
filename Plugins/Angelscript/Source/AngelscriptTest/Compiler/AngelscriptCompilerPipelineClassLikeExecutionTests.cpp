@@ -18,6 +18,8 @@ namespace CompilerPipelineClassLikeExecutionTest
 	static const FName VerifyFunctionName(TEXT("VerifyRoundTrip"));
 }
 
+using namespace CompilerPipelineClassLikeExecutionTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerClassLikeMethodExecutionRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.ClassLikeMethodExecutionRoundTrip",

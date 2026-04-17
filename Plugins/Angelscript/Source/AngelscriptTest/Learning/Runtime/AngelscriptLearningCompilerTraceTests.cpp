@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests_Private
 {
 	struct FLearningCompilerScenario
 	{
@@ -108,6 +108,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningCompilerTraceTest,

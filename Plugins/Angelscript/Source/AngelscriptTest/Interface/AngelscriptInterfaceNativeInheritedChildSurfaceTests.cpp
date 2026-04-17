@@ -92,6 +92,8 @@ namespace InterfaceNativeInheritedChildSurfaceTests
 	}
 }
 
+using namespace InterfaceNativeInheritedChildSurfaceTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest,
 	"Angelscript.TestModule.Interface.NativeInheritedImplement.ChildSurfaceIncludesParentMethods",

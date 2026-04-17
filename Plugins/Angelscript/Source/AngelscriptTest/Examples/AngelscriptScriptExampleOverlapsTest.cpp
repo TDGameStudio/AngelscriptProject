@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleOverlapsTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GOverlapsExample = {
 		TEXT("Example_Overlaps.as"),
@@ -68,6 +68,8 @@ class UExampleOverlapComponent_UnitTest : UPrimitiveComponent
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleOverlapsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleOverlapsTest, "Angelscript.TestModule.ScriptExamples.Overlaps", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

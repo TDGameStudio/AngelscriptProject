@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.JsonErrorPaths",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptJsonBindingsTests_Private
 {
 	static constexpr ANSICHAR JsonObjectRoundTripModuleName[] = "ASJsonObjectRoundTrip";
 	static constexpr ANSICHAR JsonErrorPathsModuleName[] = "ASJsonErrorPaths";
@@ -78,6 +78,8 @@ namespace
 		return bHasExceptionString && bHasExceptionLine;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptJsonBindingsTests_Private;
 
 bool FAngelscriptJsonObjectRoundTripBindingsTest::RunTest(const FString& Parameters)
 {

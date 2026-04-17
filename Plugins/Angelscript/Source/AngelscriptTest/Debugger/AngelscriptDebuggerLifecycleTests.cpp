@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private
 {
 	bool StartLifecycleDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
@@ -316,6 +316,8 @@ namespace
 				Session.GetDefaultTimeoutSeconds()));
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest,

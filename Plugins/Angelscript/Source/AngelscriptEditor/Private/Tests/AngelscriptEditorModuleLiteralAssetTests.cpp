@@ -27,7 +27,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.OnLiteralAssetSavedWeightedTangentsEmitExpectedFunctionAndArgumentOrder",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private
 {
 	UCurveFloat* CreateLiteralCurveTestAsset(FAutomationTestBase& Test, UPackage* AssetsPackage, const TCHAR* BaseName)
 	{
@@ -77,6 +77,8 @@ namespace
 		TArray<FString> Lines;
 	};
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private;
 
 bool FAngelscriptEditorModuleLiteralAssetCurveSerializationTest::RunTest(const FString& Parameters)
 {

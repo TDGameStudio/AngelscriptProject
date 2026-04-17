@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptGameInstanceLocalPlayerBindingsTests_Private
 {
 	static constexpr ANSICHAR GameInstanceLocalPlayerModuleName[] = "ASGameInstanceLocalPlayerCompat";
 	static constexpr int32 LocalPlayerControllerId = 7;
@@ -150,6 +150,8 @@ namespace
 		UGameViewportClient* GameViewport = nullptr;
 	};
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptGameInstanceLocalPlayerBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameInstanceLocalPlayerCompatBindingsTest,

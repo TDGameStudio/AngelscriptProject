@@ -50,7 +50,7 @@ struct FAngelscriptBindConfigTestAccess
 	}
 };
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private
 {
 	struct FBindExecutionRecorder
 	{
@@ -189,6 +189,8 @@ namespace
 		(void)Generic;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGlobalDisabledBindNamesTest,

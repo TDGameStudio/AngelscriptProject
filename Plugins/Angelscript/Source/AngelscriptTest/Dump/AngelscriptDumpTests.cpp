@@ -31,7 +31,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Dump.DumpAll.Summary",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private
 {
 	FString MakeUniqueDumpTestPath(const FString& Prefix)
 	{
@@ -145,6 +145,8 @@ namespace
 		return SummaryRows;
 	}
 }
+
+using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 
 bool FAngelscriptCSVWriterBasicTest::RunTest(const FString& Parameters)
 {

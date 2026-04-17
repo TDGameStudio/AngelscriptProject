@@ -5,7 +5,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITGeneratedOutputTests_Private
 {
 	constexpr TCHAR SourceFilename[] = TEXT("StaticJITGeneratedOutputDebugMetadata.as");
 	const FName ModuleName(TEXT("ASStaticJITGeneratedOutputDebugMetadata"));
@@ -86,6 +86,8 @@ namespace
 		return FString::Join(MarkerStrings, TEXT(", "));
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITGeneratedOutputTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITGeneratedOutputDebugMetadataHooksTest,

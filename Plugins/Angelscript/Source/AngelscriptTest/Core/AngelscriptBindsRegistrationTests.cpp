@@ -10,7 +10,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private
 {
 	FString GetCurrentNamespace(asIScriptEngine* ScriptEngine)
 	{
@@ -68,6 +68,8 @@ namespace
 			*FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8));
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNamespaceGuardAndEnumDeduplicationTest,

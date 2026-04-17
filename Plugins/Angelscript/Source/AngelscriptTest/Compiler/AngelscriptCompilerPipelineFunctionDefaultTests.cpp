@@ -61,6 +61,8 @@ namespace CompilerPipelineFunctionDefaultTest
 	}
 }
 
+using namespace CompilerPipelineFunctionDefaultTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerFunctionDefaultMetadataRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.FunctionDefaultMetadataRoundTrip",

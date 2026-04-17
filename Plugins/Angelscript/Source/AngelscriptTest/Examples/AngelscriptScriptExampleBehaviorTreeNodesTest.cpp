@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleBehaviorTreeNodesTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GBehaviorTreeNodesExample = {
 		TEXT("Example_BehaviorTreeNodes.as"),
@@ -96,6 +96,8 @@ class UBTTask_Example_UnitTest : UBTTask_BlueprintBase
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleBehaviorTreeNodesTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleBehaviorTreeNodesTest, "Angelscript.TestModule.ScriptExamples.BehaviorTreeNodes", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

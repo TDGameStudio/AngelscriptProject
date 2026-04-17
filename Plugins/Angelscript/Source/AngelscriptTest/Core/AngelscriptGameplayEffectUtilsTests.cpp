@@ -3,30 +3,37 @@
 
 #include "../../AngelscriptRuntime/Core/AngelscriptGameplayEffectUtils.h"
 
+#include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
 #include "Misc/AutomationTest.h"
-#include "NativeGameplayTags.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private
 {
 	const FName HealthAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestAttributeSet, Health);
 	const FName MissingAttributeName(TEXT("MissingAttr"));
 	const float ModifierMagnitude = 12.5f;
 
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(
-		AngelscriptGameplayEffectUtilsSourceSpecTag,
-		TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Source.Spec"));
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(
-		AngelscriptGameplayEffectUtilsSourceActorTag,
-		TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Source.Actor"));
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(
-		AngelscriptGameplayEffectUtilsTargetSpecTag,
-		TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Target.Spec"));
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(
-		AngelscriptGameplayEffectUtilsTargetActorTag,
-		TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Target.Actor"));
+	FGameplayTag GetGameplayEffectUtilsSourceSpecTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Source.Spec")), false);
+	}
+
+	FGameplayTag GetGameplayEffectUtilsSourceActorTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Source.Actor")), false);
+	}
+
+	FGameplayTag GetGameplayEffectUtilsTargetSpecTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Target.Spec")), false);
+	}
+
+	FGameplayTag GetGameplayEffectUtilsTargetActorTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("Angelscript.Tests.RuntimeCore.GameplayEffectUtils.Target.Actor")), false);
+	}
 
 	bool ResolveHealthAttribute(FAutomationTestBase& Test, FGameplayAttribute& OutHealthAttribute)
 	{
@@ -81,6 +88,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest,
@@ -166,11 +175,25 @@ bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const
 		return false;
 	}
 
+	const FGameplayTag SourceSpecTag = GetGameplayEffectUtilsSourceSpecTag();
+	const FGameplayTag SourceActorTag = GetGameplayEffectUtilsSourceActorTag();
+	const FGameplayTag TargetSpecTag = GetGameplayEffectUtilsTargetSpecTag();
+	const FGameplayTag TargetActorTag = GetGameplayEffectUtilsTargetActorTag();
+	const bool bAllTagsValid =
+		SourceSpecTag.IsValid()
+		&& SourceActorTag.IsValid()
+		&& TargetSpecTag.IsValid()
+		&& TargetActorTag.IsValid();
+	if (!TestTrue(TEXT("GameplayEffectUtils test tags should be registered from config"), bAllTagsValid))
+	{
+		return false;
+	}
+
 	FGameplayEffectSpec EffectSpec(GameplayEffect, FGameplayEffectContextHandle(), 1.f);
-	EffectSpec.CapturedSourceTags.GetSpecTags().AddTag(AngelscriptGameplayEffectUtilsSourceSpecTag);
-	EffectSpec.CapturedSourceTags.GetActorTags().AddTag(AngelscriptGameplayEffectUtilsSourceActorTag);
-	EffectSpec.CapturedTargetTags.GetSpecTags().AddTag(AngelscriptGameplayEffectUtilsTargetSpecTag);
-	EffectSpec.CapturedTargetTags.GetActorTags().AddTag(AngelscriptGameplayEffectUtilsTargetActorTag);
+	EffectSpec.CapturedSourceTags.GetSpecTags().AddTag(SourceSpecTag);
+	EffectSpec.CapturedSourceTags.GetActorTags().AddTag(SourceActorTag);
+	EffectSpec.CapturedTargetTags.GetSpecTags().AddTag(TargetSpecTag);
+	EffectSpec.CapturedTargetTags.GetActorTags().AddTag(TargetActorTag);
 
 	FGameplayEffectExecutionParameters ExecutionParameters;
 	TestTrue(
@@ -190,10 +213,10 @@ bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const
 			TEXT("SetCapturedSourceTagsFromSpec source tag copy"),
 			ExecutionParameters.WrappedParams.SourceTags,
 			ExpectedSourceTags,
-			AngelscriptGameplayEffectUtilsSourceSpecTag,
-			AngelscriptGameplayEffectUtilsSourceActorTag,
-			AngelscriptGameplayEffectUtilsTargetSpecTag,
-			AngelscriptGameplayEffectUtilsTargetActorTag))
+			SourceSpecTag,
+			SourceActorTag,
+			TargetSpecTag,
+			TargetActorTag))
 	{
 		return false;
 	}
@@ -203,10 +226,10 @@ bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const
 			TEXT("SetCapturedSourceTagsFromSpec target tag copy"),
 			ExecutionParameters.WrappedParams.TargetTags,
 			ExpectedTargetTags,
-			AngelscriptGameplayEffectUtilsTargetSpecTag,
-			AngelscriptGameplayEffectUtilsTargetActorTag,
-			AngelscriptGameplayEffectUtilsSourceSpecTag,
-			AngelscriptGameplayEffectUtilsSourceActorTag))
+			TargetSpecTag,
+			TargetActorTag,
+			SourceSpecTag,
+			SourceActorTag))
 	{
 		return false;
 	}

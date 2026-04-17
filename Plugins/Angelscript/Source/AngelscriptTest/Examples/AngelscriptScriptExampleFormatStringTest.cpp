@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleFormatStringTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GFormatStringExample = {
 		TEXT("Example_FormatString.as"),
@@ -52,6 +52,8 @@ class AExampleFormatString_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFormatStringTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFormatStringTest, "Angelscript.TestModule.ScriptExamples.FormatString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

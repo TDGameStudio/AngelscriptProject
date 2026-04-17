@@ -17,11 +17,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.JsonObjectConverterErrorPaths",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptJsonObjectConverterBindingsTests_Private
 {
 	static constexpr ANSICHAR JsonObjectConverterRoundTripModuleName[] = "ASJsonObjectConverterRoundTrip";
 	static constexpr ANSICHAR JsonObjectConverterErrorPathModuleName[] = "ASJsonObjectConverterErrorPaths";
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptJsonObjectConverterBindingsTests_Private;
 
 bool FAngelscriptJsonObjectConverterRoundTripBindingsTest::RunTest(const FString& Parameters)
 {

@@ -13,7 +13,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Private
 {
 	constexpr float ScriptActorScenarioDeltaTime = 0.016f;
 	constexpr int32 ScriptActorScenarioTickCount = 3;
@@ -85,6 +85,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest,

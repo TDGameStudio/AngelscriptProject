@@ -32,6 +32,8 @@ class UExactNameCarrier : UObject
 )AS");
 }
 
+using namespace CompilerPipelineNamingTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerGeneratedClassExactNameLookupTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.GeneratedClassExactNameLookup",

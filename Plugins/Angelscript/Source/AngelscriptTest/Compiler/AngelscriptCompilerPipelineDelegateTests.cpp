@@ -187,6 +187,8 @@ namespace CompilerPipelineDelegateMetadataTest
 	}
 }
 
+using namespace CompilerPipelineDelegateMetadataTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerDelegateSignatureMetadataRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.DelegateSignatureMetadataRoundTrip",

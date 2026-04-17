@@ -113,6 +113,8 @@ int TouchExampleAssetAgain()
 	}
 }
 
+using namespace LiteralAssetPostInitTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLiteralAssetPostInitMaterializesAssetOnceTest,
 	"Angelscript.TestModule.ClassGenerator.LiteralAsset.PostInitMaterializesAssetOnce",

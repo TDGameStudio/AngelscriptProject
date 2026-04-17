@@ -82,6 +82,8 @@ namespace BlueprintSubclassActorTest
 
 }
 
+using namespace BlueprintSubclassActorTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioBlueprintSubclassBeginPlayTest,
 	"Angelscript.TestModule.Actor.BlueprintSubclassBeginPlay",

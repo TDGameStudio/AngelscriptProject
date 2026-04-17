@@ -118,6 +118,8 @@ class UProcessEventCarrier : UObject
 	}
 }
 
+using namespace ASFunctionProcessEventTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionProcessEventDispatchesThroughNativeThunkTest,
 	"Angelscript.TestModule.ClassGenerator.ASFunction.ProcessEventDispatchesThroughNativeThunk",

@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Editor.ClassReloadHelper.PerformReinstanceBroadcastsStructChangesAndRecompilesDependentBlueprints",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperStructTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> MakeClassReloadHelperStructTestEngine()
 	{
@@ -149,6 +149,8 @@ namespace
 		TArray<UBlueprint*> QueuedBlueprints;
 	};
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperStructTests_Private;
 
 bool FAngelscriptClassReloadHelperPerformReinstanceStructDependencyTest::RunTest(const FString& Parameters)
 {

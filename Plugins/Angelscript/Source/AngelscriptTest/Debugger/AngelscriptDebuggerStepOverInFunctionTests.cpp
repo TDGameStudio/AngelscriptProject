@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOverInFunctionTests_Private
 {
 	bool StartStepOverWithinCalleeDebuggerSession(
 		FAutomationTestBase& Test,
@@ -376,6 +376,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOverInFunctionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepOverWithinCalleeTest,

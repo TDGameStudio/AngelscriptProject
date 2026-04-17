@@ -30,7 +30,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Core.Performance.Startup.CreateForTestingClone",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private
 {
 	struct FStartupPerformanceSample
 	{
@@ -157,6 +157,8 @@ namespace
 		return { TotalSeconds, Snapshot.BindScriptTypesDurationSeconds, Snapshot.CallBindsDurationSeconds };
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 
 bool FAngelscriptStartupPerformanceFullModeTest::RunTest(const FString& Parameters)
 {

@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorStructTests_Private
 {
 	FString GetPreprocessorStructFixtureRoot()
 	{
@@ -113,6 +113,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorStructTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorStructInheritanceRejectedTest,

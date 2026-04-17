@@ -110,6 +110,8 @@ namespace CompilerPipelineRangeForTest
 	}
 }
 
+using namespace CompilerPipelineRangeForTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerRangeBasedForRewriteSkipsStringAndCommentLiteralsTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.RangeBasedForRewriteSkipsStringAndCommentLiterals",

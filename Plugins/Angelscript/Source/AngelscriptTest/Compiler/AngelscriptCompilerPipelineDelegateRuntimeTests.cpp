@@ -73,6 +73,8 @@ namespace CompilerPipelineDelegateRuntimeTest
 	}
 }
 
+using namespace CompilerPipelineDelegateRuntimeTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerDelegateExecuteReportsUnboundRuntimeErrorTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.DelegateExecuteReportsUnboundRuntimeError",
@@ -206,23 +208,23 @@ int EntryBool()
 }
 )AS");
 
-	const FName ModuleName(TEXT("Tests.Compiler.DelegateExecuteIfBoundReturnsDefaultValue"));
-	const FString ScriptFilename(TEXT("Tests/Compiler/DelegateExecuteIfBoundReturnsDefaultValue.as"));
+	const FName LocalModuleName(TEXT("Tests.Compiler.DelegateExecuteIfBoundReturnsDefaultValue"));
+	const FString LocalScriptFilename(TEXT("Tests/Compiler/DelegateExecuteIfBoundReturnsDefaultValue.as"));
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
 	ON_SCOPE_EXIT
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
+		Engine.DiscardModule(*LocalModuleName.ToString());
 	};
 
 	FAngelscriptCompileTraceSummary Summary;
 	const bool bCompiled = CompileModuleWithSummary(
 		&Engine,
 		ECompileType::FullReload,
-		ModuleName,
-		ScriptFilename,
+		LocalModuleName,
+		LocalScriptFilename,
 		ScriptSource,
 		true,
 		Summary);
@@ -249,7 +251,7 @@ int EntryBool()
 		return false;
 	}
 
-	const auto ModuleNameUtf8 = StringCast<ANSICHAR>(*ModuleName.ToString());
+	const auto ModuleNameUtf8 = StringCast<ANSICHAR>(*LocalModuleName.ToString());
 	asIScriptModule* Module = Engine.GetScriptEngine()->GetModule(ModuleNameUtf8.Get(), asGM_ONLY_IF_EXISTS);
 	if (!TestNotNull(TEXT("Delegate ExecuteIfBound default-value scenario should publish a script module"), Module))
 	{

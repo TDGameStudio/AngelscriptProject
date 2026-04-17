@@ -10,7 +10,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDeletedFileTests_Private
 {
 	FString GetPreprocessorDeletedFileFixtureRoot()
 	{
@@ -69,6 +69,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDeletedFileTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorTreatAsDeletedProducesEmptyModuleTest,

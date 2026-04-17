@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleStructTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GStructExample = {
 		TEXT("Example_Struct.as"),
@@ -50,6 +50,8 @@ class AExampleStructActor_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleStructTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleStructTest, "Angelscript.TestModule.ScriptExamples.Struct", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

@@ -25,7 +25,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Editor.BlueprintImpact.ScanBlueprintAssets.NoMatchingModulesProducesNoMatches",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanNoImpactTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> CreateBlueprintImpactNoImpactTestEngine()
 	{
@@ -230,6 +230,8 @@ namespace
 		});
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanNoImpactTests_Private;
 
 bool FAngelscriptBlueprintImpactScanNoMatchingModulesTest::RunTest(const FString& Parameters)
 {

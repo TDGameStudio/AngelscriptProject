@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroErrorTests_Private
 {
 	struct FInvalidFunctionMacroScenario
 	{
@@ -222,6 +222,8 @@ namespace
 				ContainsCompilableCode(Modules));
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroErrorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorRejectUnsupportedConditionalPlacementTest,

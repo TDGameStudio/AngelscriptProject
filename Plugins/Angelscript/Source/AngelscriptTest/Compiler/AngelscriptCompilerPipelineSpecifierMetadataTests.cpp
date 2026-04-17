@@ -44,6 +44,8 @@ namespace CompilerPipelineSpecifierMetadataTest
 	}
 }
 
+using namespace CompilerPipelineSpecifierMetadataTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerSpecifierStringMetadataRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.SpecifierStringMetadataRoundTrip",

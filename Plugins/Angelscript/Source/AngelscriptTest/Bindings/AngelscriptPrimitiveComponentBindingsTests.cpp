@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.PrimitiveComponentBoundsCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptPrimitiveComponentBindingsTests_Private
 {
 	static constexpr ANSICHAR PrimitiveComponentBindingsModuleName[] = "ASPrimitiveComponentBoundsCompat";
 	static constexpr TCHAR PrimitiveComponentHostActorName[] = TEXT("PrimitiveComponentBindingsHostActor");
@@ -168,6 +168,8 @@ int Entry()
 		return Script;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptPrimitiveComponentBindingsTests_Private;
 
 bool FAngelscriptPrimitiveComponentBoundsCompatBindingsTest::RunTest(const FString& Parameters)
 {

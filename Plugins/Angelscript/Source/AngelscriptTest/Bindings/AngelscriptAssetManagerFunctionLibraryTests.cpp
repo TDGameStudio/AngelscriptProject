@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptAssetManagerFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR AssetManagerGuardModuleName[] = "ASAssetManagerNullAndInvalidCallbackGuards";
 	static constexpr TCHAR AssetManagerGuardFilename[] = TEXT("ASAssetManagerNullAndInvalidCallbackGuards.as");
@@ -40,6 +40,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptAssetManagerFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAssetManagerNullAndInvalidCallbackGuardsTest,

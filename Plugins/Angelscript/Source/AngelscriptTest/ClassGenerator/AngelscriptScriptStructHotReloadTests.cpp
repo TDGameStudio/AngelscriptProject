@@ -48,6 +48,8 @@ namespace ScriptStructHotReloadTest
 	}
 }
 
+using namespace ScriptStructHotReloadTest;
+
 namespace ScriptStructCustomGuidTest
 {
 	static const FName StableModuleName(TEXT("ScriptStructCustomGuidStable"));
@@ -57,9 +59,9 @@ namespace ScriptStructCustomGuidTest
 	static const FName DifferentStructName(TEXT("DifferentGuidStruct"));
 	static const FString DifferentScriptFilename(TEXT("ScriptStructCustomGuidDifferent.as"));
 
-	FString GetScriptAbsoluteFilename(const FString& ScriptFilename)
+	FString GetScriptAbsoluteFilename(const FString& InScriptFilename)
 	{
-		return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), ScriptFilename);
+		return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), InScriptFilename);
 	}
 
 	FString GetStableScriptAbsoluteFilename()

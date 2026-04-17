@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Private
 {
 	FAngelscriptDebuggerScriptFixture CreateDataBreakpointFixture()
 	{
@@ -475,6 +475,8 @@ int RunScenario()
 			});
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest,

@@ -32,7 +32,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.Execute.ThreeArgs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private
 {
 	bool CreateEngineAndBuildModule(
 		FAutomationTestBase& Test,
@@ -58,6 +58,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 
 bool FAngelscriptNativeExecuteVoidFunctionTest::RunTest(const FString& Parameters)
 {

@@ -5,7 +5,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_FileSystem_AngelscriptScriptRootDiscoveryTests_Private
 {
 	FString NormalizeDiscoveryPath(const FString& InPath)
 	{
@@ -50,6 +50,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_FileSystem_AngelscriptScriptRootDiscoveryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptRootDiscoveryProjectRootFirstAndPluginRootsDedupedTest,

@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModuleTraceTests_Private
 {
 	FString GetLearningFileSystemRoot()
 	{
@@ -40,6 +40,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModuleTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningFileSystemAndModuleTraceTest,

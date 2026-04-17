@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadModuleRecordTests_Private
 {
 	struct FTrackedModuleExpectation
 	{
@@ -212,6 +212,8 @@ class %s : UObject
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadModuleRecordTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadModuleRecordTracksEnumAndDelegateArtifactsTest,

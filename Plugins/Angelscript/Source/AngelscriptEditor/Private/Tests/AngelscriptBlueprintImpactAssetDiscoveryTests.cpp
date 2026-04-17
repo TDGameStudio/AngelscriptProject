@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.BlueprintImpact.FindBlueprintAssets.DiskOnlyExcludesTransientButAllAssetsIncludesBoth",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAssetDiscoveryTests_Private
 {
 	bool IsBlueprintCompiled(const UBlueprint& Blueprint)
 	{
@@ -236,6 +236,8 @@ namespace
 		return Difference;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAssetDiscoveryTests_Private;
 
 bool FAngelscriptBlueprintImpactFindBlueprintAssetsMixedAssetModesTest::RunTest(const FString& Parameters)
 {

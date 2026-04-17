@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ConsoleCommandArgumentMarshalling.ContentAndOrder",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandArgumentBindingsTests_Private
 {
 	struct FConsoleCommandArgumentScenario
 	{
@@ -209,6 +209,8 @@ int Entry()
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandArgumentBindingsTests_Private;
 
 bool FAngelscriptConsoleCommandEmptyArgsMarkerBindingsTest::RunTest(const FString& Parameters)
 {

@@ -17,7 +17,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private
 {
 	class FScopedDebugBreakOptionsBinding
 	{
@@ -423,6 +423,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest,

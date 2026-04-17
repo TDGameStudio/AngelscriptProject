@@ -44,7 +44,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Internals.GC.TwoNodeCycleCollection",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptGCInternalTests_Private
 {
 	struct FGCProbeObject;
 
@@ -265,6 +265,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptGCInternalTests_Private;
 
 bool FAngelscriptGCStatisticsTest::RunTest(const FString& Parameters)
 {

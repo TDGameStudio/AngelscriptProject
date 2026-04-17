@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorRestrictUsageTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> CreateRestrictUsageEditorEngine()
 	{
@@ -65,6 +65,8 @@ namespace
 		return Messages;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorRestrictUsageTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorRestrictUsageInactiveBranchIgnoredTest,

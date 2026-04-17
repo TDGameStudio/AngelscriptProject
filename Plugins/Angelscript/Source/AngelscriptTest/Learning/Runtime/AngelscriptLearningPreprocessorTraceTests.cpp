@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceTests_Private
 {
 	FString GetLearningPreprocessorFixtureRoot()
 	{
@@ -76,6 +76,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningPreprocessorTraceTest,

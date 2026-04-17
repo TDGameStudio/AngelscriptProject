@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private
 {
 	FString GetDiskCompileTestRoot()
 	{
@@ -30,6 +30,8 @@ namespace
 		return FFileHelper::SaveStringToFile(Content, *OutAbsolutePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 	}
 }
+
+using namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDiskCompileReadsUpdatedSourceFromPathTest,

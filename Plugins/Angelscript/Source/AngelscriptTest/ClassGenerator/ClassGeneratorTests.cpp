@@ -11,7 +11,7 @@
 // Test Layer: Runtime Integration
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_ClassGenerator_ClassGeneratorTests_Private
 {
 	FAngelscriptEngine* GetEngineForClassGeneratorTests(FAutomationTestBase* Test)
 	{
@@ -23,6 +23,8 @@ namespace
 		return &AngelscriptTestSupport::GetOrCreateSharedCloneEngine();
 	}
 }
+
+using namespace AngelscriptTest_ClassGenerator_ClassGeneratorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptClassGeneratorEmptyModuleSetupTest,

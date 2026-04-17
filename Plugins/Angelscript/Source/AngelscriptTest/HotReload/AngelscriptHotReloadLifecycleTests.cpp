@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -28,6 +28,8 @@ namespace
 		return ReloadResult == ECompileResult::FullyHandled || ReloadResult == ECompileResult::PartiallyHandled;
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadDoesNotReplayBeginPlayOnLiveActorTest,

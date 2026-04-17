@@ -18,6 +18,8 @@ namespace CompilerPipelineStructTest
 	static const FName ValuePropertyName(TEXT("Value"));
 }
 
+using namespace CompilerPipelineStructTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerAnnotatedStructRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.AnnotatedStructRoundTrip",

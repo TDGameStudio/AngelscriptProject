@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAttributeSetTests_Private
 {
 	const FName HealthAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestReplicatedAttributeSet, Health);
 	const FName ManaAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestReplicatedAttributeSet, Mana);
@@ -46,6 +46,8 @@ namespace
 		return PropertyNames;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAttributeSetTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAttributeSetInitializationAndReplicationBlacklistTest,

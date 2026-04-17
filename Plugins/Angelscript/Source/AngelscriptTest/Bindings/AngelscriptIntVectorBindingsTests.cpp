@@ -13,10 +13,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.IntVectorValueTypesCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptIntVectorBindingsTests_Private
 {
 	static constexpr ANSICHAR IntVectorBindingsModuleName[] = "ASIntVectorValueTypesCompat";
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptIntVectorBindingsTests_Private;
 
 bool FAngelscriptIntVectorValueTypesCompatBindingsTest::RunTest(const FString& Parameters)
 {

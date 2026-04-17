@@ -6,13 +6,15 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAttributeSetRuntimeTests_Private
 {
 	const FName HealthAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestReplicatedAttributeSet, Health);
 	const FName ManaAttributeName = GET_MEMBER_NAME_CHECKED(UAngelscriptGASTestReplicatedAttributeSet, Mana);
 	const float DelegatedHealthValue = 30.f;
 	const float ReplicatedHealthValue = 55.f;
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAttributeSetRuntimeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAttributeSetRuntimeConsistencyTest,

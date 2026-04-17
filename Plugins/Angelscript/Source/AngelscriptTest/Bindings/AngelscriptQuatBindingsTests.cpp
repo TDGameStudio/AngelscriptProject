@@ -14,7 +14,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.QuatRotationCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptQuatBindingsTests_Private
 {
 	bool ReadReturnValue(FAutomationTestBase&, asIScriptContext& Context, float& OutValue) { OutValue = Context.GetReturnFloat(); return true; }
 	bool ReadReturnValue(FAutomationTestBase&, asIScriptContext& Context, double& OutValue) { OutValue = Context.GetReturnDouble(); return true; }
@@ -124,6 +124,8 @@ namespace
 		return Test.TestTrue(What, FMath::Abs(Actual - Expected) <= Tolerance);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptQuatBindingsTests_Private;
 
 bool FAngelscriptQuatBindingsTest::RunTest(const FString& Parameters)
 {

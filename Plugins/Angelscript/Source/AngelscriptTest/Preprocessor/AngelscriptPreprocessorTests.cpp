@@ -8,7 +8,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorTests_Private
 {
 	FAngelscriptEngine* GetEngineForPreprocessorTests(FAutomationTestBase* Test)
 	{
@@ -65,6 +65,8 @@ namespace
 		return Macros;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorBasicParseTest,

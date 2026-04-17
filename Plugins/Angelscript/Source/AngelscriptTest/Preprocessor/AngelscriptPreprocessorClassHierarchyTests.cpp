@@ -85,6 +85,8 @@ namespace PreprocessorClassHierarchyTest
 	}
 }
 
+using namespace PreprocessorClassHierarchyTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorDuplicateClassNameAcrossHotReloadBatchReportsConflictTest,
 	"Angelscript.TestModule.Preprocessor.Classes.DuplicateClassNameAcrossHotReloadBatchReportsConflict",

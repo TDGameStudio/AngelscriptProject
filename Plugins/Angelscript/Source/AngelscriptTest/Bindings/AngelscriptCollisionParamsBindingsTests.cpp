@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private
 {
 	static constexpr ANSICHAR CollisionParamsModuleName[] = "ASCollisionQueryParamsBehaviour";
 
@@ -249,6 +249,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindingsCollisionQueryParamsBehaviourTest,

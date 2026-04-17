@@ -11,10 +11,12 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Actor_AngelscriptActorLifecycleTests_Private
 {
 	constexpr float LifecycleScenarioDeltaTime = 0.016f;
 }
+
+using namespace AngelscriptTest_Actor_AngelscriptActorLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioActorBeginPlayTest,

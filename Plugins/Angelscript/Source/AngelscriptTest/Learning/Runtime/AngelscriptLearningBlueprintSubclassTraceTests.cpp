@@ -21,7 +21,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningBlueprintSubclassTraceTests_Private
 {
 	UBlueprint* CreateLearningBlueprintChild(FAutomationTestBase& Test, UClass* ParentClass, FStringView Suffix)
 	{
@@ -66,6 +66,8 @@ namespace
 		return Blueprint;
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningBlueprintSubclassTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningBlueprintSubclassTraceTest,

@@ -12,9 +12,11 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceAdvancedTests_Private
 {
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceAdvancedTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceInheritedInterfaceTest,

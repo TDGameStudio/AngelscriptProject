@@ -23,7 +23,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.UserWidgetTreeErrorPaths",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptUserWidgetBindingsTests_Private
 {
 	static constexpr ANSICHAR UserWidgetBindingsModuleName[] = "ASUserWidgetTreeCompat";
 	static constexpr ANSICHAR UserWidgetErrorPathsModuleName[] = "ASUserWidgetTreeErrorPaths";
@@ -307,6 +307,8 @@ int Entry()
 		return Script;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptUserWidgetBindingsTests_Private;
 
 bool FAngelscriptUserWidgetTreeCompatBindingsTest::RunTest(const FString& Parameters)
 {

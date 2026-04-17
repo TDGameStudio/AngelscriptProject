@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldBindingsTests_Private
 {
 	static constexpr ANSICHAR WorldBindingsModuleName[] = "ASWorldContextAndGlobalsCompat";
 
@@ -109,6 +109,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldContextAndGlobalsBindingsTest,

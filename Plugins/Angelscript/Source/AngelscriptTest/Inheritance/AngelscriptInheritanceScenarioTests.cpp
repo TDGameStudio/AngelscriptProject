@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -20,6 +20,8 @@ namespace
 		Spawner.InitializeGameSubsystems();
 	}
 }
+
+using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInheritanceScriptToScriptTest,

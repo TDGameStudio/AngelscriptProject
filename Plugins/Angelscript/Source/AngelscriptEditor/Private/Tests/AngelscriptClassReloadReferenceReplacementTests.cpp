@@ -16,7 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ClassReloadHelper.ReferenceReplacementHelperRetargetsOpenEditors",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadReferenceReplacementTests_Private
 {
 	struct FRecordedReference
 	{
@@ -154,6 +154,8 @@ namespace
 		return ReplaceArchive.GetCount();
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadReferenceReplacementTests_Private;
 
 bool FAngelscriptClassReloadHelperReferenceReplacementHelperTest::RunTest(const FString& Parameters)
 {

@@ -16,7 +16,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private
 {
 	bool GetAnyGameplayTag(FAutomationTestBase& Test, FGameplayTag& OutTag)
 	{
@@ -64,6 +64,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASCharacterInputAndOwnedTagsTest,

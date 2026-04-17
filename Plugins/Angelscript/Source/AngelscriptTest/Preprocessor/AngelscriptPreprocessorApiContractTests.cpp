@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorApiContractTests_Private
 {
 	FString GetPreprocessorApiContractFixtureRoot()
 	{
@@ -139,6 +139,8 @@ namespace
 		return bMatched;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorApiContractTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorPreprocessIsSingleUseTest,

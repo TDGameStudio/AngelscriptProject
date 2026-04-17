@@ -38,6 +38,8 @@ namespace CompilerPipelinePropertyReplicationConditionTest
 	}
 }
 
+using namespace CompilerPipelinePropertyReplicationConditionTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerPropertyReplicationConditionRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.PropertyReplicationConditionRoundTrip",

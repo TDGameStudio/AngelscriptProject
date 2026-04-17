@@ -12,7 +12,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ArrayMutationEdgeCases",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptArrayEdgeBindingsTests_Private
 {
 	static constexpr ANSICHAR ArrayMutationEdgeCasesModuleName[] = "ASArrayMutationEdgeCases";
 
@@ -65,6 +65,8 @@ namespace
 		return bPrepared && bThrew && bHasMessage && bHasLine;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptArrayEdgeBindingsTests_Private;
 
 bool FAngelscriptArrayMutationEdgeCasesBindingsTest::RunTest(const FString& Parameters)
 {

@@ -9,7 +9,7 @@
 using namespace AngelscriptNativeTestSupport;
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Native_AngelscriptLearningNativeBindingTraceTests_Private
 {
 	struct FLearningNativeBindingCounter
 	{
@@ -31,6 +31,8 @@ namespace
 		return Value * 2;
 	}
 }
+
+using namespace AngelscriptTest_Learning_Native_AngelscriptLearningNativeBindingTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningNativeBindingTraceTest,

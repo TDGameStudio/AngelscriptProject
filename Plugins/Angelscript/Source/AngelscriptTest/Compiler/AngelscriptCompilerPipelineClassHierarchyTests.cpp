@@ -83,6 +83,8 @@ namespace CompilerPipelineClassHierarchyTest
 	}
 }
 
+using namespace CompilerPipelineClassHierarchyTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerScriptSuperclassRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.ScriptSuperclassRoundTrip",

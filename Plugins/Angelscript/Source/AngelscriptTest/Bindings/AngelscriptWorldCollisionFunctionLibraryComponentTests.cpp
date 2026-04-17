@@ -15,7 +15,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private
 {
 	static constexpr ANSICHAR ModuleName[] = "ASWorldCollisionFunctionLibraryComponentQueries";
 	static constexpr ANSICHAR NullComponentModuleName[] = "ASWorldCollisionFunctionLibraryNullComponentQueries";
@@ -152,6 +152,8 @@ namespace
 		});
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldCollisionFunctionLibraryComponentQueriesTest,

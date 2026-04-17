@@ -159,6 +159,8 @@ class UComposeOntoProjected : UObject
 	}
 }
 
+using namespace ComposeOntoClassTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptComposeOntoClassMissingTargetFailsClosedTest,
 	"Angelscript.TestModule.ClassGenerator.ComposeOntoClass.MissingTargetFailsClosed",

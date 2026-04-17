@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private
 {
 	bool VerifyNativeScriptHotReloadInline(
 		FAutomationTestBase& Test,
@@ -61,6 +61,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2ATest,

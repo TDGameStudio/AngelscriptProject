@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptTypeDatabaseTests_Private
 {
 	struct FCoreTestContextStackGuard
 	{
@@ -108,6 +108,8 @@ namespace
 		return bOk;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptTypeDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeDatabaseResetLifecycleTest,

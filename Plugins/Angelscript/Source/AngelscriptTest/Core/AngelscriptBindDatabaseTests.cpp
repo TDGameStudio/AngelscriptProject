@@ -15,7 +15,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private
 {
 	struct FBindDatabaseContextStackGuard
 	{
@@ -161,6 +161,8 @@ namespace
 		return DelegateProperty != nullptr ? Cast<UDelegateFunction>(DelegateProperty->SignatureFunction) : nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindDatabaseSaveLoadRoundTripTest,

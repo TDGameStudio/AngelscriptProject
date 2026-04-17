@@ -192,6 +192,8 @@ class UCompilerBlueprintCallableDefaultTrueCarrier : UObject
 	}
 }
 
+using namespace CompilerPipelineFunctionFlagTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.FunctionBlueprintCallableDefaultsAndOverrides",

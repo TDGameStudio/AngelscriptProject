@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Private
 {
 	bool StartStepInOnStatementDebuggerSession(
 		FAutomationTestBase& Test,
@@ -372,6 +372,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest,

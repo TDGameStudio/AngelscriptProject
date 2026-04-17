@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilityTaskTests_Private
 {
 	FGameplayAbilitySpec* FindAbilitySpec(
 		UAngelscriptAbilitySystemComponent& AbilitySystemComponent,
@@ -31,6 +31,8 @@ namespace
 		return Cast<UAngelscriptGASTestAbility>(AbilitySpec->GetPrimaryInstance());
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilityTaskTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilityTaskLifecycleTest,

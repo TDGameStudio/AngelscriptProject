@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private
 {
 	bool StartBindingDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
@@ -423,6 +423,8 @@ namespace
 		return Test.TestNotNull(TEXT("Debugger.Binding.CheckBreaksEveryInvocation should create a runtime UObject from the generated binding fixture class"), OutRuntime.Object);
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBindingDebugBreakAndEnsureTest,

@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleActorTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GActorExample = {
 		TEXT("Example_Actor.as"),
@@ -86,6 +86,8 @@ class AExampleActor_UnitTest : AActor
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleActorTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleActorTest, "Angelscript.TestModule.ScriptExamples.Actor", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

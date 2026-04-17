@@ -16,7 +16,7 @@
 // Test Layer: Runtime Integration
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private
 {
 	struct FCoreTestContextStackGuard
 	{
@@ -26,6 +26,8 @@ namespace
 		void DiscardSavedStack() { SavedStack.Reset(); }
 	};
 }
+
+using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestModuleLifecycleTest,

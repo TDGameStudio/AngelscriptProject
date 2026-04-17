@@ -38,7 +38,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Stack.ExceptionLocation",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKGlobalVarTests_Private
 {
 	static const char* RecursiveScript =
 		"void recursive(int n) \n"
@@ -89,6 +89,8 @@ namespace
 		return -1;
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKGlobalVarTests_Private;
 
 bool FAngelscriptASSDKGlobalVarEnumerationTest::RunTest(const FString& Parameters)
 {

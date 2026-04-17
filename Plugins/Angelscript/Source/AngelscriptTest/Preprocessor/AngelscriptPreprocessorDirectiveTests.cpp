@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> CreateDirectiveEditorEngine()
 	{
@@ -111,6 +111,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorIfdefRespectsBooleanFlagValueTest,

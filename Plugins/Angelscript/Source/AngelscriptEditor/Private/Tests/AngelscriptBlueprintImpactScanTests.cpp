@@ -25,7 +25,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Editor.BlueprintImpact.ScanBlueprintAssets.FullScanUsesAllActiveModulesWhenChangedScriptsEmpty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanTests_Private
 {
 	TUniquePtr<FAngelscriptEngine> CreateBlueprintImpactScanTestEngine()
 	{
@@ -241,6 +241,8 @@ namespace
 		});
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanTests_Private;
 
 bool FAngelscriptBlueprintImpactScanBlueprintAssetsFullScanTest::RunTest(const FString& Parameters)
 {

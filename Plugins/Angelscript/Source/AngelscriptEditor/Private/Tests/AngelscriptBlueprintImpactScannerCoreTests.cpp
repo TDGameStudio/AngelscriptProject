@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.BlueprintImpact.MatchChangedScriptsToModuleSections.EmptyInputReturnsAllModules",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreTests_Private
 {
 	FAngelscriptModuleDesc::FCodeSection MakeScannerCoreCodeSection(const FString& RelativeFilename)
 	{
@@ -95,6 +95,8 @@ namespace
 		return SignatureFunction;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreTests_Private;
 
 bool FAngelscriptBlueprintImpactBuildImpactSymbolsDelegateFilteringTest::RunTest(const FString& Parameters)
 {

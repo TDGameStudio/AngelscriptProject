@@ -15,7 +15,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningDelegateBridgeTraceTests_Private
 {
 	struct FLearningDelegateIntStringParams
 	{
@@ -27,6 +27,8 @@ void InitializeLearningDelegateSpawner(FActorTestSpawner& Spawner)
 		Spawner.InitializeGameSubsystems();
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningDelegateBridgeTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningDelegateBridgeTraceTest,

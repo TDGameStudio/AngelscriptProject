@@ -14,7 +14,7 @@
 // Test Layer: Runtime Integration
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private
 {
 	struct FScriptObjectTypeFixture
 	{
@@ -54,6 +54,8 @@ namespace
 		return GeneratedASClass;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptObjectGetObjectTypeMatchesGeneratedASClassTest,

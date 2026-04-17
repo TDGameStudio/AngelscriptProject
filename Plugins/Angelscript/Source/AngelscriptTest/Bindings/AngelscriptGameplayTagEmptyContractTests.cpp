@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptGameplayTagEmptyContractTests_Private
 {
 	struct FGameplayTagEmptyReference
 	{
@@ -167,6 +167,8 @@ int Entry()
 )"), Arguments);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptGameplayTagEmptyContractTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayTagEmptyContractBindingsTest,

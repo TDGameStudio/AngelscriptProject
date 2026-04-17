@@ -81,6 +81,8 @@ namespace PreprocessorClassErrorTest
 	}
 }
 
+using namespace PreprocessorClassErrorTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorUnknownSuperTypeReportsDiagnosticTest,
 	"Angelscript.TestModule.Preprocessor.Classes.UnknownSuperTypeReportsDiagnostic",

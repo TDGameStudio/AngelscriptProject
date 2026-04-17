@@ -11,7 +11,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorLiteralAssetTests_Private
 {
 	FString GetPreprocessorLiteralAssetFixtureRoot()
 	{
@@ -41,6 +41,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorLiteralAssetTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorLiteralAssetGetterAndPostInitRegistrationTest,

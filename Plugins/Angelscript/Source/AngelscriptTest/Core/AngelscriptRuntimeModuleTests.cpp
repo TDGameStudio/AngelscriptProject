@@ -8,7 +8,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private
 {
 	struct FRuntimeModuleContextStackGuard
 	{
@@ -30,6 +30,8 @@ namespace
 		}
 	};
 }
+
+using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 
 struct FAngelscriptRuntimeModuleTickTestAccess
 {

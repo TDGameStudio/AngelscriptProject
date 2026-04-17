@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.OnPostEngineInitDoesNotDuplicateAcrossRestart",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleOnPostEngineInitTests_Private
 {
 	class FMockDirectoryWatcher final : public IDirectoryWatcher
 	{
@@ -94,6 +94,8 @@ namespace
 		CollectGarbage(RF_NoFlags, true);
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleOnPostEngineInitTests_Private;
 
 bool FAngelscriptEditorModuleOnPostEngineInitRestartTest::RunTest(const FString& Parameters)
 {

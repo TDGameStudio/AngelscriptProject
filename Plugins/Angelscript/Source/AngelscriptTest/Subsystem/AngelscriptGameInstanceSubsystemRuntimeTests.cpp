@@ -89,7 +89,7 @@ struct FAngelscriptTickBehaviorTestAccess
 	}
 };
 
-namespace
+namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private
 {
 	struct FCoreTestContextStackGuard
 	{
@@ -158,6 +158,8 @@ namespace
 			FAngelscriptTickBehaviorTestAccess::GetNextHotReloadCheck(*PrimaryEngine) > PreviousNextHotReloadCheck);
 	}
 }
+
+using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest,

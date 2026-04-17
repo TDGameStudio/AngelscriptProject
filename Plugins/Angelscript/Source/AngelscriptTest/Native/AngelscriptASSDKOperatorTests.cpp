@@ -38,7 +38,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Operator.ForLoop",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKOperatorTests_Private
 {
 	asDWORD GAssignA = 0;
 	asDWORD GAssignB = 0;
@@ -131,6 +131,8 @@ namespace
 		return Test.TestEqual(TEXT("Operator test should finish int execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKOperatorTests_Private;
 
 bool FAngelscriptASSDKOperatorCallTest::RunTest(const FString& Parameters)
 {

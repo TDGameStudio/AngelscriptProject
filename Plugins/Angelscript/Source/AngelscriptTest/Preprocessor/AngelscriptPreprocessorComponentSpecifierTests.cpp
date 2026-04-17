@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifierTests_Private
 {
 	struct FShowOnActorInvalidScenario
 	{
@@ -324,6 +324,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifierTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorShowOnActorRequiresDefaultComponentTest,

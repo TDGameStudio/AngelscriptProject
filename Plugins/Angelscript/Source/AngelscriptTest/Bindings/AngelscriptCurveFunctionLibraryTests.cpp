@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptCurveFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR RuntimeCurveLinearColorModuleName[] = "ASRuntimeCurveLinearColorAddDefaultKey";
 	static constexpr ANSICHAR RuntimeFloatCurveInstanceModuleName[] = "ASRuntimeFloatCurveInstanceSurface";
@@ -109,6 +109,8 @@ namespace
 	}
 
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptCurveFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRuntimeCurveLinearColorAddDefaultKeyTest,

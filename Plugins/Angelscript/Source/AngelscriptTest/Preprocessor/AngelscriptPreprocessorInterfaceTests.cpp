@@ -103,6 +103,8 @@ namespace PreprocessorInterfaceTest
 	}
 }
 
+using namespace PreprocessorInterfaceTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorInterfaceDescriptorAndMethodNormalizationTest,
 	"Angelscript.TestModule.Preprocessor.Interface.DescriptorAndMethodNormalization",

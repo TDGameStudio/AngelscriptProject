@@ -18,7 +18,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private
 {
 	constexpr float CoverageTickDeltaTime = 0.016f;
 
@@ -135,6 +135,8 @@ namespace
 			Property->HasMetaData(Key));
 	}
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoverageActorTest,

@@ -16,7 +16,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningComponentHierarchyTraceTests_Private
 {
 	constexpr float LearningComponentDeltaTime = 0.016f;
 
@@ -25,6 +25,8 @@ namespace
 		Spawner.InitializeGameSubsystems();
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningComponentHierarchyTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningComponentHierarchyTraceTest,

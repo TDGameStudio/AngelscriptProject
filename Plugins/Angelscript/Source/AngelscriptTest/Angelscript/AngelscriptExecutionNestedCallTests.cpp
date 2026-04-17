@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private
 {
 	constexpr ANSICHAR ModuleName[] = "ASExecutionNestedRecursiveFrameIsolation";
 	const TCHAR* const ScriptSource = TEXT(R"AS(
@@ -53,6 +53,8 @@ int Entry()
 }
 )AS");
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionNestedRecursiveFrameIsolationTest,

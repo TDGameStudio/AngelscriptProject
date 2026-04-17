@@ -26,7 +26,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.ShowAssetListPopupHonorsInitGateAndBuildsExpectedOpenFlow",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Private
 {
 	struct FAssetListPopupCallLog
 	{
@@ -203,6 +203,8 @@ namespace
 		}
 	};
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Private;
 
 bool FAngelscriptEditorModuleShowAssetListPopupTest::RunTest(const FString& Parameters)
 {

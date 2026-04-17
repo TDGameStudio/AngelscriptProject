@@ -12,7 +12,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Private
 {
 	static const FName NetValidateModuleName(TEXT("ASFunctionNetValidateCache"));
 	static const FString NetValidateFilename(TEXT("ASFunctionNetValidateCache.as"));
@@ -63,6 +63,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionNetValidateCachesValidateFunctionTest,

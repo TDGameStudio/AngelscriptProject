@@ -6,7 +6,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogAngelscriptDumpCommand, Log, All);
 
-namespace
+namespace AngelscriptTest_Dump_AngelscriptDumpCommand_Private
 {
 	FString SanitizeOutputDirArg(FString OutputDir)
 	{
@@ -60,3 +60,5 @@ namespace
 		TEXT("Dump Angelscript engine state to CSV tables. Optional: as.DumpEngineState [OutputDir]"),
 		FConsoleCommandWithArgsDelegate::CreateStatic(&ExecuteDumpEngineState));
 }
+
+using namespace AngelscriptTest_Dump_AngelscriptDumpCommand_Private;

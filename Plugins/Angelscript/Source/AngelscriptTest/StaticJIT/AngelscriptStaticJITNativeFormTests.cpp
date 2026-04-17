@@ -6,7 +6,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS && AS_CAN_GENERATE_JIT
 
-namespace
+namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeFormTests_Private
 {
 	constexpr TCHAR SourceFilename[] = TEXT("StaticJITTArrayIndexCustomCall.as");
 	const FName ModuleName(TEXT("ASStaticJITTArrayIndexCustomCall"));
@@ -104,6 +104,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeFormTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITTArrayIndexCustomCallTest,

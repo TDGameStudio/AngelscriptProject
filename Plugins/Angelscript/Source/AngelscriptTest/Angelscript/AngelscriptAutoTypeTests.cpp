@@ -5,7 +5,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private
 {
 	FString BuildAutoInferenceByOverloadScript(const bool bFloatUsesFloat64)
 	{
@@ -38,6 +38,8 @@ int Run()
 )AS");
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAutoInferenceByOverloadTest,

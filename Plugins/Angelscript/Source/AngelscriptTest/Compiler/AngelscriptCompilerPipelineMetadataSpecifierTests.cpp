@@ -104,6 +104,8 @@ namespace CompilerPipelineMetadataSpecifierTest
 	}
 }
 
+using namespace CompilerPipelineMetadataSpecifierTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerMacroMetadataStringsWithClosingParenTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.MacroMetadataStringsWithClosingParen",

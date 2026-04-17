@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptEngineTypeInteropTests_Private
 {
 	struct FEngineTypeInteropContextStackGuard
 	{
@@ -44,6 +44,8 @@ namespace
 			*FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8));
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptEngineTypeInteropTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGetUnrealStructFromTypeIdRejectsNonStructsTest,

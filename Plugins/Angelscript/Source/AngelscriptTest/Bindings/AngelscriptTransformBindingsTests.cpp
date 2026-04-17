@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.TransformDeterministicCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptTransformBindingsTests_Private
 {
 	FString FormatScriptFloatLiteral(const double Value)
 	{
@@ -176,6 +176,8 @@ namespace
 		return Test.TestTrue(What, bRotationMatches && bTranslationMatches && bScaleMatches);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptTransformBindingsTests_Private;
 
 bool FAngelscriptTransformBindingsTest::RunTest(const FString& Parameters)
 {

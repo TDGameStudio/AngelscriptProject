@@ -5,7 +5,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptTextFormattingBindingsTests_Private
 {
 	struct FTextFormattingExpectations
 	{
@@ -41,6 +41,8 @@ namespace
 		return Expectations;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptTextFormattingBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFormatArgumentValueBindingsTest,

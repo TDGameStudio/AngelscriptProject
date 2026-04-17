@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ClassReloadHelper.OnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponents",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperClassReloadTests_Private
 {
 	struct FClassReloadImmediateCallLog
 	{
@@ -60,6 +60,8 @@ namespace
 		return Hits;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperClassReloadTests_Private;
 
 bool FAngelscriptClassReloadHelperOnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponentsTest::RunTest(const FString& Parameters)
 {

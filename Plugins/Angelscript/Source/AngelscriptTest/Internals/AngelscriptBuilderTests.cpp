@@ -10,13 +10,15 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptBuilderTests_Private
 {
 	asCModule* CreateBuilderModule(asCScriptEngine* ScriptEngine, const char* ModuleName)
 	{
 		return static_cast<asCModule*>(ScriptEngine->GetModule(ModuleName, asGM_ALWAYS_CREATE));
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptBuilderTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBuilderSingleModulePipelineTest,

@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorImportModeTests_Private
 {
 	const TCHAR* const AutomaticImportWarningMessage =
 		TEXT("Automatic imports are active, import statements will be ignored.");
@@ -103,6 +103,8 @@ namespace
 		return Result;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorImportModeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorAutomaticWarningRespectsConfigTest,

@@ -5,7 +5,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private
 {
 	struct FSkipEntryExpectation
 	{
@@ -20,6 +20,8 @@ namespace
 		bool bExpectedSkipped;
 	};
 }
+
+using namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDefaultSkipListRegistrationTest,

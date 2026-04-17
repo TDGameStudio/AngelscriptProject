@@ -23,7 +23,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Object.NativeFloatWrapper",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private
 {
 	bool ExecuteObjectBoolEntry(FAutomationTestBase& Test, asIScriptEngine* ScriptEngine, asIScriptModule* Module, const char* Declaration, bool& OutValue)
 	{
@@ -157,6 +157,8 @@ public:
 		return Slots[Index];
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private;
 
 bool FAngelscriptASSDKObjectValueTypeTest::RunTest(const FString& Parameters)
 {

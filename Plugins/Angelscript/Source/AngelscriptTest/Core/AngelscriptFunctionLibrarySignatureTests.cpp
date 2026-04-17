@@ -116,6 +116,8 @@ namespace SubsystemGetterMetadataTest
 	}
 }
 
+using namespace SubsystemGetterMetadataTest;
+
 namespace MathReturnValueHelperMetadataTest
 {
 	struct FMathHelperExpectation

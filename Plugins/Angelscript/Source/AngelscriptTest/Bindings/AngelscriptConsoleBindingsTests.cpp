@@ -37,7 +37,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ConsoleCommandSignatureCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptConsoleBindingsTests_Private
 {
 	FString MakeConsoleVariableName(const TCHAR* Prefix)
 	{
@@ -125,6 +125,8 @@ namespace
 		return Test.TestTrue(TEXT("Console command test should execute the registered delegate"), Command->Execute(Args, nullptr, OutputDevice));
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptConsoleBindingsTests_Private;
 
 bool FAngelscriptConsoleVariableBindingsTest::RunTest(const FString& Parameters)
 {

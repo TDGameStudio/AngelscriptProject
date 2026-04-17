@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.FunctionLibraries.MathPlanarProjectionAndColorFormatting",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private
 {
 	bool ReadReturnValue(FAutomationTestBase&, asIScriptContext& Context, float& OutValue) { OutValue = Context.GetReturnFloat(); return true; }
 	bool ReadReturnValue(FAutomationTestBase&, asIScriptContext& Context, double& OutValue) { OutValue = Context.GetReturnDouble(); return true; }
@@ -181,6 +181,8 @@ namespace
 		return Result;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private;
 
 bool FAngelscriptMathShortestPathAndTransformSemanticsTest::RunTest(const FString& Parameters)
 {

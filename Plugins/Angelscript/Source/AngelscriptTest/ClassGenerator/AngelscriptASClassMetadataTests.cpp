@@ -48,6 +48,8 @@ class %s : AActor
 	}
 }
 
+using namespace ASClassMetadataTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassIsDeveloperOnlyRecognizesNestedEditorModuleNamesTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.IsDeveloperOnlyRecognizesNestedEditorModuleNames",

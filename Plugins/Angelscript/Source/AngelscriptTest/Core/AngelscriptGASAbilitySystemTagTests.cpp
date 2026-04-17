@@ -8,7 +8,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTagTests_Private
 {
 	FGameplayAbilitySpec* FindAbilitySpec(
 		UAngelscriptAbilitySystemComponent& AbilitySystemComponent,
@@ -90,6 +90,8 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTagTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilitySystemTagQueryActivationAndCancelTest,

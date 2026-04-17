@@ -10,7 +10,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private
 {
 	static const FName ASClassComponentMetadataModuleName(TEXT("ASClassComponentMetadata"));
 	static const FString ASClassComponentMetadataFilename(TEXT("ASClassComponentMetadata.as"));
@@ -155,6 +155,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassDefaultComponentMetadataCapturesRootAndAttachLayoutTest,

@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningRestoreAndBytecodePersistenceTests_Private
 {
 	class FLearningRestoreMemoryBinaryStream final : public asIBinaryStream
 	{
@@ -221,6 +221,8 @@ int Test()
 		Trace.AddKeyValue(TEXT("WasDebugInfoStripped"), GetBoolLabel(Outcome.bWasDebugInfoStripped));
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningRestoreAndBytecodePersistenceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningRestoreAndBytecodePersistenceTest,

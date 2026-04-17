@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private
 {
 	static constexpr ANSICHAR ModuleName[] = "ASWorldStreamingNullGuards";
 	static constexpr ANSICHAR WorldStreamingAccessModuleName[] = "ASWorldStreamingAccess";
@@ -194,6 +194,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldFunctionLibraryNullGuardsTest,

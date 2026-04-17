@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private
 {
 	FString FormatScriptFloatLiteral(const double Value)
 	{
@@ -39,6 +39,8 @@ namespace
 			*FormatScriptFloatLiteral(Value.Roll));
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMathExtendedBindingsTest,

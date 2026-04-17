@@ -23,7 +23,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Debugger.Evaluation.AdapterV1LegacyPayload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private
 {
 	bool StartEvaluationDebuggerSession(
 		FAutomationTestBase& Test,
@@ -376,6 +376,8 @@ namespace
 			});
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private;
 
 bool FAngelscriptDebuggerEvaluationScopeValuesTest::RunTest(const FString& Parameters)
 {

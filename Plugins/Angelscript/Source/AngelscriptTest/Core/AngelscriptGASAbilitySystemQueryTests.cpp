@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private
 {
 	float GetMaxValue(const TArray<float>& Values)
 	{
@@ -23,6 +23,8 @@ namespace
 		return MaxValue;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilitySystemQueryTest,

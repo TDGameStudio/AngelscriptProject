@@ -105,6 +105,8 @@ namespace InterfaceNativeBridgeTests
 	}
 }
 
+using namespace InterfaceNativeBridgeTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceNativeImplementCppImplementerScriptCallTest,
 	"Angelscript.TestModule.Interface.NativeImplement.CppImplementerScriptCall",

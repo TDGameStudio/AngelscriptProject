@@ -11,7 +11,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Internals_AngelscriptRestoreTests_Private
 {
 	class FMemoryBinaryStream final : public asIBinaryStream
 	{
@@ -94,6 +94,8 @@ namespace
 		return AngelscriptTestSupport::ExecuteIntFunction(Test, Engine, *Function, OutValue);
 	}
 }
+
+using namespace AngelscriptTest_Internals_AngelscriptRestoreTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRestoreRoundTripTest,

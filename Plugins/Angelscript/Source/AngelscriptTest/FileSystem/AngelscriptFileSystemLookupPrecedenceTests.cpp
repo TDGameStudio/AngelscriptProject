@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_Private
 {
 	FString GetFileSystemLookupPrecedenceTestRoot()
 	{
@@ -35,6 +35,8 @@ namespace
 			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 	}
 }
+
+using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleLookupFilenamePrecedenceTest,

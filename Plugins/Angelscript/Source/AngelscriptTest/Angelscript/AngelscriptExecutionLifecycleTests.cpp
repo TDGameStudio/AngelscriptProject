@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptExecutionLifecycleTests_Private
 {
 	static const FName ExecutionDiscardLifecycleModuleName(TEXT("ASExecutionDiscardCleansTypeRegistries"));
 	static const FString ExecutionDiscardLifecycleFilename(TEXT("ASExecutionDiscardCleansTypeRegistries.as"));
@@ -201,6 +201,8 @@ int Run()
 			ExpectedRunResult);
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptExecutionLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionDiscardCleansTypeRegistriesTest,

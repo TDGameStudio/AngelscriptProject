@@ -3,13 +3,13 @@
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
+#include "GameplayTagContainer.h"
 #include "Misc/AutomationTest.h"
-#include "NativeGameplayTags.h"
 #include "UObject/UObjectGlobals.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private
 {
 	struct FGASAbilityOverrideFlagSnapshot
 	{
@@ -106,8 +106,15 @@ namespace
 		return Instance;
 	}
 
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(AngelscriptGASAbilityActorCueTag, TEXT("GameplayCue.Angelscript.Tests.Ability.ActorWrapper"));
-	UE_DEFINE_GAMEPLAY_TAG_STATIC(AngelscriptGASAbilityStaticCueTag, TEXT("GameplayCue.Angelscript.Tests.Ability.StaticWrapper"));
+	FGameplayTag GetAngelscriptGASAbilityActorCueTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("GameplayCue.Angelscript.Tests.Ability.ActorWrapper")), false);
+	}
+
+	FGameplayTag GetAngelscriptGASAbilityStaticCueTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("GameplayCue.Angelscript.Tests.Ability.StaticWrapper")), false);
+	}
 
 	bool ExpectCueParametersMatch(
 		FAutomationTestBase& Test,
@@ -155,6 +162,8 @@ namespace
 		CueDefaultObject.GameplayCueName = CueTag.GetTagName();
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilityOverrideDetectionFlagsTest,
@@ -336,12 +345,19 @@ bool FAngelscriptGASAbilityCueWrappersForwardTagAndGuardNullTest::RunTest(const 
 		return false;
 	}
 
+	const FGameplayTag ActorCueTag = GetAngelscriptGASAbilityActorCueTag();
+	const FGameplayTag StaticCueTag = GetAngelscriptGASAbilityStaticCueTag();
+	if (!TestTrue(TEXT("GAS ability cue-wrapper test tags should be registered from config"), ActorCueTag.IsValid() && StaticCueTag.IsValid()))
+	{
+		return false;
+	}
+
 	const FGameplayTag OriginalActorCueTag = ActorCueCDO->GameplayCueTag;
 	const FName OriginalActorCueName = ActorCueCDO->GameplayCueName;
 	const FGameplayTag OriginalStaticCueTag = StaticCueCDO->GameplayCueTag;
 	const FName OriginalStaticCueName = StaticCueCDO->GameplayCueName;
-	ConfigureCueDefaultObject(*ActorCueCDO, AngelscriptGASAbilityActorCueTag);
-	ConfigureCueDefaultObject(*StaticCueCDO, AngelscriptGASAbilityStaticCueTag);
+	ConfigureCueDefaultObject(*ActorCueCDO, ActorCueTag);
+	ConfigureCueDefaultObject(*StaticCueCDO, StaticCueTag);
 	ON_SCOPE_EXIT
 	{
 		ActorCueCDO->GameplayCueTag = OriginalActorCueTag;
@@ -375,15 +391,15 @@ bool FAngelscriptGASAbilityCueWrappersForwardTagAndGuardNullTest::RunTest(const 
 	bPassed &= TestEqual(TEXT("Actor cue wrappers should forward AddGameplayCue exactly once"), Ability->AddCueCallCount, 1);
 	bPassed &= TestEqual(TEXT("Actor cue wrappers should forward AddGameplayCueWithParams exactly once"), Ability->AddCueWithParamsCallCount, 1);
 	bPassed &= TestEqual(TEXT("Actor cue wrappers should forward RemoveGameplayCue exactly once"), Ability->RemoveCueCallCount, 1);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor ExecuteGameplayCue wrapper"), Ability->LastExecuteCueTag, AngelscriptGASAbilityActorCueTag);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParamsTag, AngelscriptGASAbilityActorCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor ExecuteGameplayCue wrapper"), Ability->LastExecuteCueTag, ActorCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParamsTag, ActorCueTag);
 	bPassed &= ExpectCueParametersMatch(*this, TEXT("Actor ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParams, ActorCueParameters);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor AddGameplayCue wrapper"), Ability->LastAddCueTag, AngelscriptGASAbilityActorCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor AddGameplayCue wrapper"), Ability->LastAddCueTag, ActorCueTag);
 	bPassed &= TestEqual(TEXT("Actor AddGameplayCue wrapper should preserve the remove-on-end flag"), Ability->bLastAddCueRemoveOnAbilityEnd, true);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParamsTag, AngelscriptGASAbilityActorCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParamsTag, ActorCueTag);
 	bPassed &= ExpectCueParametersMatch(*this, TEXT("Actor AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParams, ActorCueParameters);
 	bPassed &= TestEqual(TEXT("Actor AddGameplayCueWithParams wrapper should preserve the remove-on-end flag"), Ability->bLastAddCueWithParamsRemoveOnAbilityEnd, false);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor RemoveGameplayCue wrapper"), Ability->LastRemoveCueTag, AngelscriptGASAbilityActorCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Actor RemoveGameplayCue wrapper"), Ability->LastRemoveCueTag, ActorCueTag);
 	if (!bPassed)
 	{
 		return false;
@@ -402,15 +418,15 @@ bool FAngelscriptGASAbilityCueWrappersForwardTagAndGuardNullTest::RunTest(const 
 	bPassed &= TestEqual(TEXT("Static cue wrappers should forward AddGameplayCue exactly once"), Ability->AddCueCallCount, 1);
 	bPassed &= TestEqual(TEXT("Static cue wrappers should forward AddGameplayCueWithParams exactly once"), Ability->AddCueWithParamsCallCount, 1);
 	bPassed &= TestEqual(TEXT("Static cue wrappers should forward RemoveGameplayCue exactly once"), Ability->RemoveCueCallCount, 1);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Static ExecuteGameplayCue wrapper"), Ability->LastExecuteCueTag, AngelscriptGASAbilityStaticCueTag);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Static ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParamsTag, AngelscriptGASAbilityStaticCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Static ExecuteGameplayCue wrapper"), Ability->LastExecuteCueTag, StaticCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Static ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParamsTag, StaticCueTag);
 	bPassed &= ExpectCueParametersMatch(*this, TEXT("Static ExecuteGameplayCueWithParams wrapper"), Ability->LastExecuteCueWithParams, StaticCueParameters);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Static AddGameplayCue wrapper"), Ability->LastAddCueTag, AngelscriptGASAbilityStaticCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Static AddGameplayCue wrapper"), Ability->LastAddCueTag, StaticCueTag);
 	bPassed &= TestEqual(TEXT("Static AddGameplayCue wrapper should preserve the remove-on-end flag"), Ability->bLastAddCueRemoveOnAbilityEnd, false);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Static AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParamsTag, AngelscriptGASAbilityStaticCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Static AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParamsTag, StaticCueTag);
 	bPassed &= ExpectCueParametersMatch(*this, TEXT("Static AddGameplayCueWithParams wrapper"), Ability->LastAddCueWithParams, StaticCueParameters);
 	bPassed &= TestEqual(TEXT("Static AddGameplayCueWithParams wrapper should preserve the remove-on-end flag"), Ability->bLastAddCueWithParamsRemoveOnAbilityEnd, true);
-	bPassed &= ExpectCueTagMatch(*this, TEXT("Static RemoveGameplayCue wrapper"), Ability->LastRemoveCueTag, AngelscriptGASAbilityStaticCueTag);
+	bPassed &= ExpectCueTagMatch(*this, TEXT("Static RemoveGameplayCue wrapper"), Ability->LastRemoveCueTag, StaticCueTag);
 	if (!bPassed)
 	{
 		return false;

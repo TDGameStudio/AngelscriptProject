@@ -6,7 +6,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorCommentFormatTests_Private
 {
 	bool ExpectFormattedComment(
 		FAutomationTestBase& Test,
@@ -17,6 +17,8 @@ namespace
 		return Test.TestEqual(Context, FormatCommentForToolTip(Input), Expected);
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorCommentFormatTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorCommentFormattingTooltipNormalizationTest,

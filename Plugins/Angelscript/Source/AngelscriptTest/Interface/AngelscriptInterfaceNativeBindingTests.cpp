@@ -1,4 +1,5 @@
 #include "Core/AngelscriptEngine.h"
+#include "Interface/AngelscriptInterfaceTestAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
@@ -7,14 +8,6 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
-
-struct FAngelscriptInterfaceSignatureTestAccess
-{
-	static int32 GetSignatureCount(const FAngelscriptEngine& Engine)
-	{
-		return Engine.InterfaceMethodSignatures.Num();
-	}
-};
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInterfaceNativeBindingSignatureRegistrationLifecycleTest,

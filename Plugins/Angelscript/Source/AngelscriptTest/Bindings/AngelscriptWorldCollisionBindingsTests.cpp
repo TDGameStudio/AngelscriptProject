@@ -14,7 +14,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private
 {
 	static constexpr ANSICHAR WorldCollisionModuleName[] = "ASWorldCollisionSyncQueries";
 	static const FVector CollisionTargetLocation(0.0f, 0.0f, 0.0f);
@@ -225,6 +225,8 @@ namespace
 		return bPassed;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptWorldCollisionSyncQueriesBindingsTest,

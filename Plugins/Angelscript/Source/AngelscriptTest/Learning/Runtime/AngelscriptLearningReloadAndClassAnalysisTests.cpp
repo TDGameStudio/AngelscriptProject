@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnalysisTests_Private
 {
 	struct FLearningReloadScenario
 	{
@@ -84,6 +84,8 @@ namespace
 		Trace.AddKeyValue(TEXT("NeedsFullReload"), Outcome.bNeedsFullReload ? TEXT("true") : TEXT("false"));
 	}
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnalysisTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningReloadAndClassAnalysisTest,

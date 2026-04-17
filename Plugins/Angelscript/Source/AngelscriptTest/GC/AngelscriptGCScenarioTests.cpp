@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -54,6 +54,8 @@ namespace
 		return TypedComponent;
 	}
 }
+
+using namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioGCActorDestroyTest,

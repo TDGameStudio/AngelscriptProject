@@ -14,10 +14,12 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningTimerAndLatentTraceTests_Private
 {
 	constexpr float LearningTimerDeltaTime = 0.016f;
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningTimerAndLatentTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningTimerAndLatentTraceTest,

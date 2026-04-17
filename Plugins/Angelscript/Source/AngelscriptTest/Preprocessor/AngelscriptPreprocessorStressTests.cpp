@@ -11,7 +11,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorStressTests_Private
 {
 	const FName ModuleName(TEXT("Tests.Preprocessor.Stress.LongSourceRemainsDeterministic"));
 	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Stress/LongSourceRemainsDeterministic.as");
@@ -129,6 +129,8 @@ namespace
 			OutSnapshot);
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorStressTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorLongSourceRemainsDeterministicTest,

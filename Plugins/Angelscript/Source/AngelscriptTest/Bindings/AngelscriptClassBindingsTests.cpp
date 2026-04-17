@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptClassBindingsTests_Private
 {
 	static constexpr ANSICHAR TSubclassOfRejectsUnrelatedClassModuleName[] = "ASTSubclassOfRejectsUnrelatedClass";
 
@@ -140,6 +140,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptClassBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptClassLookupBindingsTest,

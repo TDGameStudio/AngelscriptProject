@@ -14,11 +14,13 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private
 {
 }
 
-namespace
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private;
+
+namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private
 {
 	void TestCallInterfaceMethod(asIScriptGeneric* Generic)
 	{

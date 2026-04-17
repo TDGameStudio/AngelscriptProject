@@ -16,7 +16,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 {
 	static const FName ProcessEventModuleName(TEXT("ComponentProcessEventValidate"));
 	static const FString ProcessEventFilename(TEXT("ComponentProcessEventValidate.as"));
@@ -102,6 +102,8 @@ namespace
 		return Test.TestEqual(Context, ActualValue, ExpectedValue);
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptComponentProcessEventWithValidationTest,

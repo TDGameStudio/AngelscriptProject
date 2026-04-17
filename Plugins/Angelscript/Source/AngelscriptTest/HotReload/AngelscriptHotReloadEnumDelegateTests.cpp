@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Private
 {
 	static const FName EnumCreatedWarmupModuleName(TEXT("HotReloadEnumCreatedWarmupMod"));
 	static const FString EnumCreatedWarmupFilename(TEXT("HotReloadEnumCreatedWarmupMod.as"));
@@ -19,6 +19,8 @@ namespace
 	static const FString EnumCreatedFilename(TEXT("HotReloadEnumCreatedMod.as"));
 	static const FString EnumCreatedName(TEXT("EHotReloadCreatedState"));
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadReloadDelegatesBroadcastEnumCreatedOnFirstCompileTest,

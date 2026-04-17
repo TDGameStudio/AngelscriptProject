@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleMixinMethodsTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GMixinMethodsExample = {
 		TEXT("Example_MixinMethods.as"),
@@ -31,6 +31,8 @@ void Example_MixinMethod()
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMixinMethodsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMixinMethodsTest, "Angelscript.TestModule.ScriptExamples.MixinMethods", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

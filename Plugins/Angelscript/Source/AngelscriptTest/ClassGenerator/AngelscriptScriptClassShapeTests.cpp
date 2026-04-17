@@ -32,6 +32,8 @@ namespace ScriptClassShapeTest
 	}
 }
 
+using namespace ScriptClassShapeTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioScriptInheritancePreservesParentPropertyAndOverrideTest,
 	"Angelscript.TestModule.ScriptClass.ScriptInheritancePreservesParentPropertyAndOverride",

@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private
 {
 	bool StartDatabaseDebuggerSession(
 		FAutomationTestBase& Test,
@@ -138,6 +138,8 @@ namespace
 		return FJsonSerializer::Deserialize(Reader, OutObject) && OutObject.IsValid();
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest,

@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private
 {
 	constexpr int32 P9BAutomaticImportsPropertyId = 41;
 	constexpr int32 P9BTypecheckSwitchEnumsPropertyId = 42;
@@ -61,6 +61,8 @@ namespace
 		GUpgradeMessageCallbackBText = UTF8_TO_TCHAR(Message->message);
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeHeaderCompatibilityTest,

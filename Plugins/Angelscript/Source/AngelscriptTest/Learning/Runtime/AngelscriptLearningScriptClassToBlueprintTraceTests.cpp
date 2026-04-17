@@ -21,7 +21,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningScriptClassToBlueprintTraceTests_Private
 {
 UBlueprint* CreateTransientLearningBlueprintChild(
 		FAutomationTestBase& Test,
@@ -107,6 +107,8 @@ UBlueprint* CreateTransientLearningBlueprintChild(
 		}
 	};
 }
+
+using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningScriptClassToBlueprintTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningScriptClassToBlueprintTraceTest,

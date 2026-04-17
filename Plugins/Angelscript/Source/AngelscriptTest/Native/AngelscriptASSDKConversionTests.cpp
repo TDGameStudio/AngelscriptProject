@@ -23,7 +23,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Conversion.ImplicitValueType",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKConversionTests_Private
 {
 	bool ExecuteConversionBoolEntry(FAutomationTestBase& Test, asIScriptEngine* ScriptEngine, asIScriptModule* Module, const char* Declaration, bool& OutValue)
 	{
@@ -63,6 +63,8 @@ namespace
 		*static_cast<int*>(Generic->GetAddressOfReturnLocation()) = *Value;
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKConversionTests_Private;
 
 bool FAngelscriptASSDKConversionNumericTest::RunTest(const FString& Parameters)
 {

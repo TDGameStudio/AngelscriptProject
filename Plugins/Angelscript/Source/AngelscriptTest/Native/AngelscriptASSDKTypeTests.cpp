@@ -43,7 +43,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Type.Auto",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKTypeTests_Private
 {
 	int32 GEnumValue = 0;
 	asBYTE GInt8Value = 0;
@@ -121,6 +121,8 @@ namespace
 		return Test.TestEqual(TEXT("Type test should finish numeric execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKTypeTests_Private;
 
 bool FAngelscriptASSDKTypeBoolTest::RunTest(const FString& Parameters)
 {

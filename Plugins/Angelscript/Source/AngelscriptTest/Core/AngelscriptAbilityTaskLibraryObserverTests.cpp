@@ -14,7 +14,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryObserverTests_Private
 {
 	FGameplayAbilitySpec* FindAbilitySpec(
 		UAngelscriptAbilitySystemComponent& AbilitySystemComponent,
@@ -127,6 +127,8 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 
 }
+
+using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryObserverTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryObserverWrappersTest,

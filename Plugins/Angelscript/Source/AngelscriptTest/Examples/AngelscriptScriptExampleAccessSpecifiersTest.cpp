@@ -4,7 +4,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Examples_AngelscriptScriptExampleAccessSpecifiersTest_Private
 {
 	const AngelscriptScriptExamples::FScriptExampleSource GAccessSpecifiersExample = {
 		TEXT("Example_AccessSpecifiers.as"),
@@ -103,6 +103,8 @@ class UAccessSpecifierComponent_UnitTest : UActorComponent
 		nullptr,
 	};
 }
+
+using namespace AngelscriptTest_Examples_AngelscriptScriptExampleAccessSpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleAccessSpecifiersTest, "Angelscript.TestModule.ScriptExamples.AccessSpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 

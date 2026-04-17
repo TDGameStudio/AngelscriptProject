@@ -131,6 +131,8 @@ namespace CompilerPipelinePropertyDefaultTest
 	}
 }
 
+using namespace CompilerPipelinePropertyDefaultTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerStringDefaultPreservesCommentMarkersInsideLiteralTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.StringDefaultPreservesCommentMarkersInsideLiteral",

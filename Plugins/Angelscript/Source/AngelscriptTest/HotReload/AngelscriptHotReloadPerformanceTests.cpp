@@ -31,7 +31,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.HotReload.Performance.BurstChurnLatency",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private
 {
 struct FHotReloadPerformanceSample
 	{
@@ -74,6 +74,8 @@ struct FHotReloadPerformanceSample
 		return MetricsPath;
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 
 bool FAngelscriptHotReloadSoftLatencyTest::RunTest(const FString& Parameters)
 {

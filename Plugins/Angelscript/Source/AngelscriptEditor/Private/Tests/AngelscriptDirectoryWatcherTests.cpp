@@ -53,7 +53,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.DirectoryWatcher.GatherLoadedScriptsForFolder.DeduplicatesAndRejectsPrefixCollisions",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private
 {
 	struct FResolvedDirectoryWatcherCompileEngine
 	{
@@ -159,6 +159,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 
 bool FAngelscriptDirectoryWatcherScriptQueueTest::RunTest(const FString& Parameters)
 {

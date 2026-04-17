@@ -17,7 +17,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptGameplayFunctionLibraryTests_Private
 {
 	static const FName GameplayFunctionLibraryModuleName(TEXT("ASGameplayFunctionLibraryAsyncSaveLoad"));
 	static const FString GameplayFunctionLibraryFilename(TEXT("GameplayFunctionLibraryAsyncSaveLoad.as"));
@@ -92,6 +92,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptGameplayFunctionLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayFunctionLibraryAsyncSaveLoadDelegatesTest,

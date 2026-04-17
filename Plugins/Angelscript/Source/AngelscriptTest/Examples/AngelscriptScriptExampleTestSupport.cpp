@@ -60,4 +60,6 @@ namespace AngelscriptScriptExamples
 	}
 }
 
+using namespace AngelscriptScriptExamples;
+
 #endif

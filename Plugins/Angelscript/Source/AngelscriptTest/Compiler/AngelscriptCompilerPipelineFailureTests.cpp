@@ -58,6 +58,8 @@ namespace CompilerPipelineFailureTest
 	}
 }
 
+using namespace CompilerPipelineFailureTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerEmptySourceFailsWithoutStateLeakTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.EmptySourceFailsWithoutStateLeak",

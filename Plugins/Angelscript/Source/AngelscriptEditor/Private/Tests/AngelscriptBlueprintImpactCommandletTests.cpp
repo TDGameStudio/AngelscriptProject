@@ -23,7 +23,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.BlueprintImpact.CommandletFailedAssetLoadsReturnExitCode3",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTests_Private
 {
 	FAngelscriptModuleDesc::FCodeSection MakeCommandletCodeSection(const FString& RelativeFilename)
 	{
@@ -53,6 +53,8 @@ namespace
 		return FAssetData(PackagePath, ObjectPath, FTopLevelAssetPath(UBlueprint::StaticClass()));
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTests_Private;
 
 bool FAngelscriptBlueprintImpactCommandletMergeChangedScriptsTest::RunTest(const FString& Parameters)
 {

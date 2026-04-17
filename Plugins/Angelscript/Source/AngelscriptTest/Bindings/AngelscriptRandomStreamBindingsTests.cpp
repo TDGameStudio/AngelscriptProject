@@ -8,7 +8,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptRandomStreamBindingsTests_Private
 {
 	struct FRandomStreamExpectations
 	{
@@ -75,6 +75,8 @@ namespace
 		return Expectations;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptRandomStreamBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRandomStreamSequenceParityTest,

@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorImportTests_Private
 {
 	FString GetPreprocessorImportFixtureRoot()
 	{
@@ -72,6 +72,8 @@ namespace
 		return nullptr;
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorImportTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorCircularImportChainTest,

@@ -25,7 +25,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.ClassReloadHelper.PerformReinstanceRecompilesBlueprintsBoundToReloadedDelegates",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperDelegateTests_Private
 {
 	struct FPerformReinstanceDelegateCallLog
 	{
@@ -152,6 +152,8 @@ namespace
 		return EventNode;
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperDelegateTests_Private;
 
 bool FAngelscriptClassReloadHelperPerformReinstanceDelegateDependencyTest::RunTest(const FString& Parameters)
 {

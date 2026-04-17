@@ -13,7 +13,7 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
 
-namespace
+namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private
 {
 	static const FName ModuleName(TEXT("ScenarioInterfaceCppBridgeReferenceArg"));
 	static const FString ScriptFilename(TEXT("ScenarioInterfaceCppBridgeReferenceArg.as"));
@@ -85,6 +85,8 @@ namespace
 		return bUsesReferenceBridge;
 	}
 }
+
+using namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest,

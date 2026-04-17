@@ -22,7 +22,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Runtime.Suspend",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKRuntimeTests_Private
 {
 	bool ExecuteRuntimeBoolEntry(FAutomationTestBase& Test, asIScriptEngine* ScriptEngine, asIScriptModule* Module, const char* Declaration, bool& OutValue)
 	{
@@ -44,6 +44,8 @@ namespace
 		return Test.TestEqual(TEXT("Runtime test should finish bool execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKRuntimeTests_Private;
 
 bool FAngelscriptASSDKRuntimeContextTest::RunTest(const FString& Parameters)
 {

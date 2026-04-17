@@ -32,7 +32,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.Editor.Module.ReloadTagsDelegatesRegisterOnceAndUnbindOnShutdown",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private
 {
 	class FMockDirectoryWatcher final : public IDirectoryWatcher
 	{
@@ -150,6 +150,8 @@ namespace
 		CollectGarbage(RF_NoFlags, true);
 	}
 }
+
+using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private;
 
 bool FAngelscriptEditorModuleLifecycleTest::RunTest(const FString& Parameters)
 {

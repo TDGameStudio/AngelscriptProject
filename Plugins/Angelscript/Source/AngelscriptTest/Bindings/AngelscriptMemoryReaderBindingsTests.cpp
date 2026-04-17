@@ -9,7 +9,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptMemoryReaderBindingsTests_Private
 {
 	static constexpr ANSICHAR MemoryReaderCompatModuleName[] = "ASMemoryReaderCompat";
 
@@ -80,6 +80,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptMemoryReaderBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMemoryReaderCompatBindingsTest,

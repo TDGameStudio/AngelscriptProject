@@ -8,7 +8,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemLifecycleTests_Private
 {
 	bool AreIndependentGameplayTags(const FGameplayTag& Left, const FGameplayTag& Right)
 	{
@@ -118,6 +118,8 @@ namespace
 		return Test.TestTrue(TEXT("Controlled GAS fixture should leave the spawned pawn possessed by the player controller"), OutPawn->GetController() == OutPlayerController);
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASActorInfoAndOwnedTagMirrorTest,

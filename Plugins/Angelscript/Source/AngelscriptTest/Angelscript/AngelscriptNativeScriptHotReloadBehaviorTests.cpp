@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadBehaviorTests_Private
 {
 	static const FName NativeScriptNamespaceReloadModuleName(TEXT("HotReloadPhase2BMathNamespace"));
 	static const FString NativeScriptNamespaceReloadFilename(TEXT("HotReloadPhase2BMathNamespace.as"));
@@ -105,6 +105,8 @@ class UNativeHotReloadPhase2BMathCarrier : UObject
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadBehaviorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2BNamespaceFunctionBehaviorSwitchTest,

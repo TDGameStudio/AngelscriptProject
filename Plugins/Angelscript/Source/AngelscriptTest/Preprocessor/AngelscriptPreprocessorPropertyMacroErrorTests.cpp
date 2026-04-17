@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyMacroErrorTests_Private
 {
 	struct FInvalidPropertySpecifierScenario
 	{
@@ -217,6 +217,8 @@ namespace
 				PropertyDesc);
 	}
 }
+
+using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyMacroErrorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPreprocessorPropertyInvalidSpecifiersReportDiagnosticsTest,

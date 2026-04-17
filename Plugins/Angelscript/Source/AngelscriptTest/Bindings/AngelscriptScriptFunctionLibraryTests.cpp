@@ -14,7 +14,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.FunctionLibraries.GlobalInitContextHotReloadName",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private
 {
 	static const FName ScriptFunctionLibraryModuleName(TEXT("ASGlobalInitContext_HotReload_42"));
 	static const FString ScriptFunctionLibraryFilename(TEXT("ASGlobalInitContext_HotReload_42.as"));
@@ -174,6 +174,8 @@ FString GetOutsideInitModule() { return Script::GetModuleNameOfGlobalVariableBei
 			*ScriptFunctionLibraryNamespace);
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
 
 bool FAngelscriptGlobalInitContextHotReloadNameFunctionLibraryTest::RunTest(const FString& Parameters)
 {

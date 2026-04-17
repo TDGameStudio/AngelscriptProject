@@ -105,6 +105,8 @@ class UConstructionContextCarrier : UObject
 	}
 }
 
+using namespace ASClassConstructionContextTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassGetConstructingASObjectReportsCurrentScriptInstanceTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.GetConstructingASObjectReportsCurrentScriptInstance",

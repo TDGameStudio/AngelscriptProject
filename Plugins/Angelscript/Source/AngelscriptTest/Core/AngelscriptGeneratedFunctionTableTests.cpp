@@ -71,7 +71,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Engine.GeneratedFunctionTable.MacroQualifiedDirectBindings",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private
 {
 	int32 CountGeneratedBindingRegistrations(const FString& GeneratedDirectory)
 	{
@@ -146,6 +146,8 @@ namespace
 		return Lines;
 	}
 }
+
+using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 
 bool FAngelscriptGeneratedFunctionTablePopulatesClassFuncMapsTest::RunTest(const FString& Parameters)
 {

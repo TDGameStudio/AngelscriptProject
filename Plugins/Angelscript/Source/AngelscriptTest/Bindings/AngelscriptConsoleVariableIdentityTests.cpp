@@ -16,7 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.ConsoleVariableExistingIdentityCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptConsoleVariableIdentityTests_Private
 {
 	FString MakeConsoleVariableIdentityName(const TCHAR* Prefix)
 	{
@@ -77,6 +77,8 @@ namespace
 		return bPointerPreserved && bHelpPreserved && bFlagsPreserved;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptConsoleVariableIdentityTests_Private;
 
 bool FAngelscriptConsoleVariableExistingIdentityBindingsTest::RunTest(const FString& Parameters)
 {

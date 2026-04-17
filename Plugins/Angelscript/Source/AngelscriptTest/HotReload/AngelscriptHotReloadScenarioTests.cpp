@@ -10,7 +10,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 void InitializeHotReloadScenarioSpawner(FActorTestSpawner& Spawner)
@@ -18,6 +18,8 @@ void InitializeHotReloadScenarioSpawner(FActorTestSpawner& Spawner)
 		Spawner.InitializeGameSubsystems();
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioHotReloadPropertyPreservedTest,

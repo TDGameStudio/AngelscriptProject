@@ -117,6 +117,8 @@ namespace CompilerPipelinePropertyMetadataTest
 	}
 }
 
+using namespace CompilerPipelinePropertyMetadataTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerPropertyCallbackMetadataRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.PropertyCallbackMetadataRoundTrip",

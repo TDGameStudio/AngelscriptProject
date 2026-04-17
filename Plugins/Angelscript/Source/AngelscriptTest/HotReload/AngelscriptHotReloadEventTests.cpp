@@ -11,7 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private
 {
 	static const FName PostReloadModeModuleName(TEXT("HotReloadPostReloadModeMod"));
 	static const FString PostReloadModeFilename(TEXT("HotReloadPostReloadModeMod.as"));
@@ -154,6 +154,8 @@ namespace
 			ExpectedValue);
 	}
 }
+
+using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadPostReloadModeFlagMatchesReloadPathTest,

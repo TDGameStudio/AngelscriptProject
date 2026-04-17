@@ -21,7 +21,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.CollisionResultAccessorsCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptCollisionValueBindingsTests_Private
 {
 	static constexpr ANSICHAR CollisionResultAccessorsModuleName[] = "ASCollisionResultAccessorsCompat";
 
@@ -105,6 +105,8 @@ namespace
 		return true;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptCollisionValueBindingsTests_Private;
 
 bool FAngelscriptBindingsCollisionShapeCompatTest::RunTest(const FString& Parameters)
 {

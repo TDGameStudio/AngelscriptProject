@@ -34,7 +34,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Native.ASSDK.Execute.FloatArgs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Native_AngelscriptASSDKExecuteTests_Private
 {
 	bool GCalled = false;
 	int32 GIntResult = 0;
@@ -188,6 +188,8 @@ namespace
 		}
 	}
 }
+
+using namespace AngelscriptTest_Native_AngelscriptASSDKExecuteTests_Private;
 
 bool FAngelscriptASSDKExecuteBasicCallbackTest::RunTest(const FString& Parameters)
 {

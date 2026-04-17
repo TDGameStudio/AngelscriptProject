@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Private
 {
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
@@ -341,6 +341,8 @@ namespace
 		return Test.TestTrue(Context, bFoundBreakpoint);
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest,

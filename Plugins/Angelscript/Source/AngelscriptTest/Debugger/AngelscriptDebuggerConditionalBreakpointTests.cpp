@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests_Private
 {
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
@@ -329,6 +329,8 @@ namespace
 			});
 	}
 }
+
+using namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerConditionalBreakpointExpressionTest,

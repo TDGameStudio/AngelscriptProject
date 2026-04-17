@@ -117,6 +117,8 @@ namespace CompilerPipelineImportTest
 	}
 }
 
+using namespace CompilerPipelineImportTest;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerDeclaredFunctionImportRoundTripTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.DeclaredFunctionImportRoundTrip",

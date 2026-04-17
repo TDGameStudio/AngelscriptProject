@@ -13,7 +13,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Delegate_AngelscriptDelegateScenarioTests_Private
 {
 	using namespace AngelscriptScenarioTestUtils;
 
@@ -46,6 +46,8 @@ namespace
 		Test.AddExpectedErrorPlain(TriggerSignature, EAutomationExpectedErrorFlags::Contains, -1);
 	}
 }
+
+using namespace AngelscriptTest_Delegate_AngelscriptDelegateScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioDelegateUnicastTest,

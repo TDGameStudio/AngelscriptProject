@@ -12,7 +12,7 @@
 
 using namespace AngelscriptTestSupport;
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptDataTableBindingsTests_Private
 {
 	static constexpr ANSICHAR DataTableBindingsModuleName[] = "ASDataTableRowHandleCompat";
 
@@ -27,6 +27,8 @@ namespace
 		return Row;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptDataTableBindingsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDataTableRowHandleBindingsTest,

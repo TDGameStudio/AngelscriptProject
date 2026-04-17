@@ -13,7 +13,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"Angelscript.TestModule.Bindings.TimespanAdvancedCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace
+namespace AngelscriptTest_Bindings_AngelscriptTimespanBindingsTests_Private
 {
 	static constexpr ANSICHAR TimespanBindingsModuleName[] = "ASTimespanAdvancedCompat";
 
@@ -303,6 +303,8 @@ int Entry()
 		return ScriptSource;
 	}
 }
+
+using namespace AngelscriptTest_Bindings_AngelscriptTimespanBindingsTests_Private;
 
 bool FAngelscriptTimespanAdvancedCompatBindingsTest::RunTest(const FString& Parameters)
 {
