@@ -19,6 +19,7 @@
 #include "Helper_FunctionSignature.h"
 #include "Binds/Bind_Helpers.h"
 #include "Binds/Bind_TSubclassOf.h"
+#include "Binds/BlueprintCallableReflectiveFallback.h"
 //#include "UObject/GarbageCollectionSchema.h"
 //#include "GarbageCollectionSchema.h"
 #include "UObject/GarbageCollection.h"
@@ -1318,6 +1319,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 {
 	FAngelscriptScopeTimer Timer(TEXT("blueprinttype bindings"));
 	auto* ScriptEngine = FAngelscriptEngine::Get().Engine;
+	const double T0 = FPlatformTime::Seconds();
 
 	struct FBindOrder
 	{
@@ -1366,27 +1368,49 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 	for (UClass* Class : TObjectRange<UClass>())
 		FClassVisiter::Visit(ScriptEngine, Class, ClassesToBind, VisitedClasses);
 
+	const double TCollect = FPlatformTime::Seconds();
+
+	// ---- Phase 2: Function enumeration + Callable/Event binding ----
+	int32 TotalFuncsBound = 0;
+
+	// Opt 1 + Opt 3: enable TLS caches for IsScriptDeclarationAlreadyBound global scan
+	// and for GetScriptNameForFunction prefix-conflict detection.
+	FScopedBindCaches ScopedBindCaches;
+
+	// Opt 6: cache the editor-context flag once (stable for the duration of Phase 2).
+	const bool bUseEditorScripts = FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext();
+
 	for (auto& BindOrder : ClassesToBind)
 	{
 		auto ClassType = BindOrder.Type;
 		auto* SuperClass = BindOrder.Class->GetSuperClass();
 
-		// Bind blueprint accessible functions
-		TArray<FName> NameArray;
-		BindOrder.Class->GenerateFunctionList(NameArray);
-		for (auto& Elem : NameArray)
+		// Bind blueprint accessible functions.
+		// Opt 4: single-pass TFieldIterator<UFunction>(ExcludeSuper) replaces the
+		//        GenerateFunctionList + FindFunctionByName double walk.
+		for (TFieldIterator<UFunction> FuncIt(BindOrder.Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
 		{
-			UFunction* Function = BindOrder.Class->FindFunctionByName(Elem);
+			UFunction* Function = *FuncIt;
 
 			// Don't bind inherited functions, we already bound these
 			// as virtual methods in the superclass.
 			if (Function->GetSuperFunction() != nullptr)
 				continue;
-			if (SuperClass != nullptr && SuperClass->FindFunctionByName(Function->GetFName()) != nullptr)
-				continue;
 
-			// Don't bind editor-only functions when we're running in simulate-cooked mode
-			if (!FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext())
+			// Opt 5 (phase 1): keep the SuperClass->FindFunctionByName audit to detect
+			// rare shadow-UFUNCTION patterns. Convert to ensureMsgf so we can delete
+			// the O(N) check outright once a full editor start confirms no triggers.
+			if (SuperClass != nullptr && SuperClass->FindFunctionByName(Function->GetFName()) != nullptr)
+			{
+				ensureMsgf(false,
+					TEXT("[AS] Shadow-UFUNCTION detected: %s::%s — inherits-by-name but no GetSuperFunction() link."),
+					*BindOrder.Class->GetName(), *Function->GetName());
+				continue;
+			}
+
+			// Don't bind editor-only functions when we're running in simulate-cooked mode.
+			// Opt 6: use cached bUseEditorScripts.
+			if (!bUseEditorScripts)
 			{
 				if (Function->HasAnyFunctionFlags(FUNC_EditorOnly))
 					continue;
@@ -1406,10 +1430,21 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 				BindBlueprintCallable(ClassType.ToSharedRef(), Function, DBMethod);
 
 			if (DBMethod.UnrealPath.Len() != 0 && !Function->HasAnyFunctionFlags(FUNC_EditorOnly))
+			{
 				BindOrder.DBBind.Methods.Add(DBMethod);
+				++TotalFuncsBound;
+			}
 		}
+	}
 
+	const double TFuncBind = FPlatformTime::Seconds();
+
+	// ---- Phase 3: GetterSetter binding ----
 #if WITH_EDITOR
+	for (auto& BindOrder : ClassesToBind)
+	{
+		auto ClassType = BindOrder.Type;
+
 		// Bind BlueprintGetter and BlueprintSetter methods
 		for (TFieldIterator<FProperty> It(BindOrder.Class, EFieldIterationFlags::IncludeDeprecated); It; ++It)
 		{
@@ -1473,9 +1508,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 				}
 			}
 		}
-#endif
 	}
+#endif
 
+	const double TGetterSetter = FPlatformTime::Seconds();
+
+	// ---- Phase 4: Inherit + BindProperties + DB write ----
 	for (auto& BindOrder : ClassesToBind)
 	{
 		auto ClassType = BindOrder.Type;
@@ -1504,6 +1542,18 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 		BindOrder.DBBind.UnrealPath = BindOrder.Class->GetPathName();
 		FAngelscriptBindDatabase::Get().Classes.Add(BindOrder.DBBind);
 	}
+
+	const double TPropsInherit = FPlatformTime::Seconds();
+
+	UE_LOG(Angelscript, Log,
+		TEXT("[Profiling] blueprinttype bindings breakdown: classes=%d funcs_bound=%d | ")
+		TEXT("collect=%.1fms func_bind=%.1fms getter_setter=%.1fms props_inherit=%.1fms | total=%.1fms"),
+		ClassesToBind.Num(), TotalFuncsBound,
+		(TCollect - T0) * 1000.0,
+		(TFuncBind - TCollect) * 1000.0,
+		(TGetterSetter - TFuncBind) * 1000.0,
+		(TPropsInherit - TGetterSetter) * 1000.0,
+		(TPropsInherit - T0) * 1000.0);
 });
 
 #endif // AS_USE_BIND_DB

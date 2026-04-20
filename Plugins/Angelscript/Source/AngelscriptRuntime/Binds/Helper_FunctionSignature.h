@@ -7,6 +7,7 @@
 #include "AngelscriptType.h"
 #include "AngelscriptDocs.h"
 #include "AngelscriptBindDatabase.h"
+#include "Binds/BlueprintCallableReflectiveFallback.h"
 
 #include "StartAngelscriptHeaders.h"
 //#include "as_scriptfunction.h"
@@ -106,14 +107,38 @@ struct FAngelscriptFunctionSignature
 
 			if (bChangedName)
 			{
-				// If another function already exists with this name, don't bind it without the prefix
+				// If another function already exists with this name, don't bind it without the prefix.
+				// Opt 3: when Phase 2 TLS cache is active, consult it first (O(1)) instead of FindFunctionByName.
 				UClass* OwningClass = CastChecked<UClass>(InFunction->GetOuter());
-				if (UFunction* ExistingFunction = OwningClass->FindFunctionByName(*OutScriptName))
+				bool bConflict = false;
+
+				bool bCacheExists = false;
+				if (AngelscriptBindCaches_TryHasFunctionName(OwningClass, FName(*OutScriptName), bCacheExists))
+				{
+					if (bCacheExists)
+					{
+						// Cache only records existence; we still need the function pointer to
+						// determine whether the conflict is a Blueprint-exposed function.
+						if (UFunction* ExistingFunction = OwningClass->FindFunctionByName(*OutScriptName))
+						{
+							if (ExistingFunction != InFunction && ExistingFunction->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure | FUNC_BlueprintEvent))
+							{
+								bConflict = true;
+							}
+						}
+					}
+				}
+				else if (UFunction* ExistingFunction = OwningClass->FindFunctionByName(*OutScriptName))
 				{
 					if (ExistingFunction != InFunction && ExistingFunction->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure | FUNC_BlueprintEvent))
 					{
-						OutScriptName = InFunction->GetName();
+						bConflict = true;
 					}
+				}
+
+				if (bConflict)
+				{
+					OutScriptName = InFunction->GetName();
 				}
 			}
 		}
@@ -179,6 +204,32 @@ struct FAngelscriptFunctionSignature
 	{
 		Function = InFunction;
 
+		// Opt 2 (revised): UField metadata is stored package-side, not on the field, so
+		// there is no O(1) map pointer to batch from. Instead, collapse each
+		// HasMetaData(K) + GetMetaData(K) pair into a single FindMetaData(K) call —
+		// this halves the FMetaData::FindValue lookups without changing semantics.
+		UClass* OuterClassForMeta = Function->GetOuterUClass();
+
+		static const FString EmptyString;
+		auto HasFuncMeta = [&](const FName& K) -> bool
+		{
+			return Function->FindMetaData(K) != nullptr;
+		};
+		auto GetFuncMetaRef = [&](const FName& K) -> const FString&
+		{
+			const FString* V = Function->FindMetaData(K);
+			return V != nullptr ? *V : EmptyString;
+		};
+		auto GetClassMetaRef = [&](const FName& K) -> const FString&
+		{
+			if (OuterClassForMeta == nullptr)
+			{
+				return EmptyString;
+			}
+			const FString* V = OuterClassForMeta->FindMetaData(K);
+			return V != nullptr ? *V : EmptyString;
+		};
+
 		// Map all properties in the UFunction to FAngelscriptTypes
 		for( TFieldIterator<FProperty> It(Function); It && (It->PropertyFlags & CPF_Parm); ++It )
 		{
@@ -201,13 +252,14 @@ struct FAngelscriptFunctionSignature
 				ArgumentTypes.Add(Type);
 				ArgumentNames.Add(Property->GetName());
 
+				// Opt 2: one FindMetaData call instead of HasMetaData + GetMetaData.
 				FString DefaultMeta = TEXT("CPP_Default_");
 				DefaultMeta += Property->GetName();
 
 				FName MetaName = *DefaultMeta;
-				if (Function->HasMetaData(MetaName))
+				if (const FString* MetaValue = Function->FindMetaData(MetaName))
 				{
-					FString MetaStr = Function->GetMetaData(MetaName);
+					FString MetaStr = *MetaValue;
 					if (MetaStr == TEXT("None"))
 						MetaStr = TEXT("");
 					ArgumentDefaults.Add(MetaStr);
@@ -220,7 +272,7 @@ struct FAngelscriptFunctionSignature
 		}
 
 		// If the function has a world context pin, we should default it
-		const FString& WorldContextParam = Function->GetMetaData(NAME_Signature_WorldContext);
+		const FString& WorldContextParam = GetFuncMetaRef(NAME_Signature_WorldContext);
 		if (WorldContextParam.Len() != 0)
 		{
 			for (int32 ArgIndex = 0, ArgCount = ArgumentTypes.Num(); ArgIndex < ArgCount; ++ArgIndex)
@@ -235,7 +287,7 @@ struct FAngelscriptFunctionSignature
 		}
 
 		// Check if we're using the DeterminesOutputType functionality to change the return type dynamically
-		const FString& DeterminesOutputTypeParam = Function->GetMetaData(NAME_Signature_DeterminesOutputType);
+		const FString& DeterminesOutputTypeParam = GetFuncMetaRef(NAME_Signature_DeterminesOutputType);
 		if (DeterminesOutputTypeParam.Len() != 0)
 		{
 			for (int32 ArgIndex = 0, ArgCount = ArgumentTypes.Num(); ArgIndex < ArgCount; ++ArgIndex)
@@ -257,13 +309,18 @@ struct FAngelscriptFunctionSignature
 		if (ScriptName == TEXT("-"))
 			return;
 
-		bNotAngelscriptProperty = Function->HasMetaData(NAME_Signature_NotAngelscriptProperty);
-		bTrivial = Function->HasMetaData(NAME_Signature_ScriptTrivial);
+		bNotAngelscriptProperty = HasFuncMeta(NAME_Signature_NotAngelscriptProperty);
+		bTrivial = HasFuncMeta(NAME_Signature_ScriptTrivial);
+		// GetBoolMetaData has non-trivial semantics (treats "true" specifically); keep the direct call.
 		bBlueprintProtected = Function->GetBoolMetaData(NAME_AS_BlueprintProtected);
 
-		bDeprecated = Function->HasMetaData(NAME_Function_DeprecatedFunction);
-		if (bDeprecated)
-			DeprecationMessage = Function->GetMetaData(NAME_Function_DeprecationMessage);
+		{
+			// Opt 2: single FindMetaData call for deprecated probe.
+			const FString* DeprecatedMeta = Function->FindMetaData(NAME_Function_DeprecatedFunction);
+			bDeprecated = DeprecatedMeta != nullptr;
+			if (bDeprecated)
+				DeprecationMessage = GetFuncMetaRef(NAME_Function_DeprecationMessage);
+		}
 
 		// Figure out the namespace for static functions
 		bool bForceConst = false;
@@ -271,11 +328,11 @@ struct FAngelscriptFunctionSignature
 		if (bStaticInUnreal)
 		{
 			FString Namespace = GetScriptNamespaceForClass(InType, Function);
-			bGlobalScope = Function->HasMetaData(NAME_Signature_ScriptGlobalScope);
+			bGlobalScope = HasFuncMeta(NAME_Signature_ScriptGlobalScope);
 
 			// If our class is marked as a 'script mixin', and our argument matches, bind it as a member
 			bool bFoundMixin = false;
-			const FString& MixinClasses = Function->GetOuterUClass()->GetMetaData(NAME_Signature_ScriptMixin);
+			const FString& MixinClasses = GetClassMetaRef(NAME_Signature_ScriptMixin);
 			if (MixinClasses.Len() != 0 && ArgumentTypes.Num() > 0
 				&& (ArgumentTypes[0].IsObjectPointer()
 					|| ArgumentTypes[0].Type->IsUnresolvedObjectPointer()
@@ -335,9 +392,9 @@ struct FAngelscriptFunctionSignature
 		// Add no-discard modifier if we want to
 		if (ReturnType.IsValid())
 		{
-			if (Function->HasMetaData(NAME_ScriptNoDiscard))
+			if (HasFuncMeta(NAME_ScriptNoDiscard))
 				Declaration += TEXT(" no_discard");
-			else if (Function->HasMetaData(NAME_ScriptAllowDiscard))
+			else if (HasFuncMeta(NAME_ScriptAllowDiscard))
 				Declaration += TEXT(" allow_discard");
 		}
 	}

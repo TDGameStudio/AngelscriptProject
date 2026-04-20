@@ -6,11 +6,78 @@
 #include "Binds/Helper_FunctionSignature.h"
 
 #include "UObject/UnrealType.h"
+#include "UObject/Class.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "source/as_generic.h"
 #include "source/as_scriptfunction.h"
 #include "EndAngelscriptHeaders.h"
+
+namespace
+{
+	// ---- Opt 1: TLS cache for IsScriptDeclarationAlreadyBound's global-function scan ----
+	// Key: namespace (UTF-8). Value: set of registered script-names and a set of full declarations.
+	struct FGlobalDeclCacheEntry
+	{
+		TSet<FString> Names;
+		TSet<FString> Declarations;
+	};
+
+	struct FBindCachesTLS
+	{
+		// Opt 1: namespace -> (names, decls)
+		TMap<FString, FGlobalDeclCacheEntry> GlobalDecls;
+		asUINT LastSyncedGlobalFunctionCount = 0;
+		bool bGlobalDeclsActive = false;
+
+		// Opt 3: per-class function-name cache (includes super chain for parity with FindFunctionByName).
+		TMap<UClass*, TSet<FName>> ClassFuncNames;
+		bool bClassFuncNamesActive = false;
+	};
+
+	thread_local FBindCachesTLS* GBindCachesTLS = nullptr;
+
+	// Bring the TLS global-decl cache up to date with the AS engine's current global function list.
+	// We only ever add — Phase 2 monotonically grows the global function set.
+	void SyncGlobalDeclCacheFromEngine(asIScriptEngine* ScriptEngine)
+	{
+		if (GBindCachesTLS == nullptr || !GBindCachesTLS->bGlobalDeclsActive || ScriptEngine == nullptr)
+		{
+			return;
+		}
+
+		const asUINT Count = ScriptEngine->GetGlobalFunctionCount();
+		if (Count == GBindCachesTLS->LastSyncedGlobalFunctionCount)
+		{
+			return;
+		}
+
+		for (asUINT Index = GBindCachesTLS->LastSyncedGlobalFunctionCount; Index < Count; ++Index)
+		{
+			asIScriptFunction* Func = ScriptEngine->GetGlobalFunctionByIndex(Index);
+			if (Func == nullptr)
+			{
+				continue;
+			}
+			const char* NsRaw = Func->GetNamespace();
+			const char* NameRaw = Func->GetName();
+			const char* DeclRaw = Func->GetDeclaration(false, true, false, true);
+
+			const FString NsStr = NsRaw != nullptr ? FString(UTF8_TO_TCHAR(NsRaw)) : FString();
+			FGlobalDeclCacheEntry& Entry = GBindCachesTLS->GlobalDecls.FindOrAdd(NsStr);
+			if (NameRaw != nullptr)
+			{
+				Entry.Names.Add(FString(UTF8_TO_TCHAR(NameRaw)));
+			}
+			if (DeclRaw != nullptr)
+			{
+				Entry.Declarations.Add(FString(UTF8_TO_TCHAR(DeclRaw)));
+			}
+		}
+
+		GBindCachesTLS->LastSyncedGlobalFunctionCount = Count;
+	}
+}
 
 namespace
 {
@@ -173,6 +240,24 @@ namespace
 
 		auto HasGlobalDeclaration = [&](const FString& Namespace) -> bool
 		{
+			// Opt 1 fast path: consult TLS cache populated during Phase 2.
+			if (GBindCachesTLS != nullptr && GBindCachesTLS->bGlobalDeclsActive)
+			{
+				SyncGlobalDeclCacheFromEngine(ScriptEngine);
+				if (const FGlobalDeclCacheEntry* Entry = GBindCachesTLS->GlobalDecls.Find(Namespace))
+				{
+					if (Entry->Names.Contains(Signature.ScriptName))
+					{
+						return true;
+					}
+					if (Entry->Declarations.Contains(Signature.Declaration))
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+
 			const FTCHARToUTF8 Utf8Declaration(*Signature.Declaration);
 			const FTCHARToUTF8 Utf8ScriptName(*Signature.ScriptName);
 			const FTCHARToUTF8 Utf8Namespace(*Namespace);
@@ -417,5 +502,67 @@ bool BindBlueprintCallableReflectiveFallback(
 	}
 
 	Entry.bReflectiveFallbackBound = true;
+	return true;
+}
+
+// ---- Opt 1 / Opt 3: Scoped bind caches used during Phase 2 of Bind_Defaults ----
+FScopedBindCaches::FScopedBindCaches()
+{
+	// Nested guards would silently clobber TLS state; forbid re-entry.
+	checkf(GBindCachesTLS == nullptr, TEXT("FScopedBindCaches is not re-entrant"));
+
+	static thread_local FBindCachesTLS TlsStorage;
+	TlsStorage.GlobalDecls.Reset();
+	TlsStorage.ClassFuncNames.Reset();
+	TlsStorage.LastSyncedGlobalFunctionCount = 0;
+	TlsStorage.bGlobalDeclsActive = true;
+	TlsStorage.bClassFuncNamesActive = true;
+
+	GBindCachesTLS = &TlsStorage;
+}
+
+FScopedBindCaches::~FScopedBindCaches()
+{
+	if (GBindCachesTLS == nullptr)
+	{
+		return;
+	}
+
+	GBindCachesTLS->bGlobalDeclsActive = false;
+	GBindCachesTLS->bClassFuncNamesActive = false;
+	GBindCachesTLS->GlobalDecls.Reset();
+	GBindCachesTLS->ClassFuncNames.Reset();
+	GBindCachesTLS = nullptr;
+}
+
+void AngelscriptBindCaches_NotifyGlobalFunctionRegistered(const char* /*Namespace*/, const char* /*Name*/, const char* /*Declaration*/)
+{
+	// Deprecated stub: cache is refreshed lazily from ScriptEngine->GetGlobalFunction* on query.
+	// Retained for ABI/header compatibility.
+}
+
+bool AngelscriptBindCaches_TryHasFunctionName(UClass* OwningClass, FName FunctionName, bool& bOutExists)
+{
+	if (GBindCachesTLS == nullptr || !GBindCachesTLS->bClassFuncNamesActive || OwningClass == nullptr)
+	{
+		return false;
+	}
+
+	TSet<FName>* NameSet = GBindCachesTLS->ClassFuncNames.Find(OwningClass);
+	if (NameSet == nullptr)
+	{
+		// Lazily populate: enumerate own + super chain to match FindFunctionByName semantics.
+		TSet<FName>& NewSet = GBindCachesTLS->ClassFuncNames.Add(OwningClass);
+		for (UClass* C = OwningClass; C != nullptr; C = C->GetSuperClass())
+		{
+			for (TFieldIterator<UFunction> It(C, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+			{
+				NewSet.Add(It->GetFName());
+			}
+		}
+		NameSet = &NewSet;
+	}
+
+	bOutExists = NameSet->Contains(FunctionName);
 	return true;
 }
