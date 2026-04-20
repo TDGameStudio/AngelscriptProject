@@ -15,10 +15,19 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FunctionLibraryMixins((int32)F
 
 	auto LevelStreaming_ = FAngelscriptBinds::ExistingClass("ULevelStreaming");
 #if WITH_EDITOR
-	LevelStreaming_.Method("bool GetShouldBeVisibleInEditor() const", [](const ULevelStreaming* LevelStreaming) -> bool
+	// Phase 2 of Bind_Defaults (EOrder::Late+100) auto-registers this member via the
+	// UAngelscriptLevelStreamingLibrary ScriptMixin-annotated UFUNCTION. We run at
+	// EOrder::Late+110, so guard against re-registering the same signature — otherwise
+	// AngelScript returns asALREADY_REGISTERED and the asIScriptEngine is left in a
+	// broken state (breaks MultiEngine/DependencyInjection tests that rebind on clone).
+	asITypeInfo* LevelStreamingType = LevelStreaming_.GetTypeInfo();
+	if (LevelStreamingType == nullptr || LevelStreamingType->GetMethodByDecl("bool GetShouldBeVisibleInEditor() const") == nullptr)
 	{
-		return UAngelscriptLevelStreamingLibrary::GetShouldBeVisibleInEditor(LevelStreaming);
-	});
+		LevelStreaming_.Method("bool GetShouldBeVisibleInEditor() const", [](const ULevelStreaming* LevelStreaming) -> bool
+		{
+			return UAngelscriptLevelStreamingLibrary::GetShouldBeVisibleInEditor(LevelStreaming);
+		});
+	}
 #endif
 
 	auto RuntimeCurveLinearColor_ = FAngelscriptBinds::ExistingClass("FRuntimeCurveLinearColor");

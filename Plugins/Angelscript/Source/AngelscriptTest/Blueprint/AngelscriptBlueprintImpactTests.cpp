@@ -63,14 +63,33 @@ namespace BlueprintImpactScenarioTest
 			return;
 		}
 
+		// A sibling CleanupBlueprint call earlier in the same ON_SCOPE_EXIT chain may
+		// have triggered CollectGarbage and reaped our unreferenced UObjects already.
+		// After GC, the C++ pointer can remain non-null while the UObject's InternalIndex
+		// is -1, which makes MarkAsGarbage trip the `Index >= 0` assertion in
+		// FUObjectArray::IndexToObject. IsValidLowLevel() checks the object against the
+		// UObjectArray directly (not just IsValid flags), so it catches post-GC stale
+		// pointers that IsValid() still approves.
+		if (!Blueprint->IsValidLowLevel())
+		{
+			Blueprint = nullptr;
+			return;
+		}
+
 		if (UClass* BlueprintClass = Blueprint->GeneratedClass)
 		{
-			BlueprintClass->MarkAsGarbage();
+			if (BlueprintClass->IsValidLowLevel())
+			{
+				BlueprintClass->MarkAsGarbage();
+			}
 		}
 
 		if (UPackage* BlueprintPackage = Blueprint->GetOutermost())
 		{
-			BlueprintPackage->MarkAsGarbage();
+			if (BlueprintPackage->IsValidLowLevel())
+			{
+				BlueprintPackage->MarkAsGarbage();
+			}
 		}
 
 		Blueprint->MarkAsGarbage();
