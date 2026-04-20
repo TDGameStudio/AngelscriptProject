@@ -205,3 +205,16 @@ void AngelscriptReloadGameplayTags()
 #endif
 	}
 }
+
+void AngelscriptRebindGameplayTagsToCurrentEngine()
+{
+	// Re-bind every cached tag to the currently scoped engine. This intentionally
+	// bypasses AngelscriptGameplayTagsLookup — that lookup is a process-level guard
+	// to avoid duplicate slots in the AngelscriptGameplayTags chunked array, but
+	// for a clone/test engine that missed the initial bind pass we need to replay
+	// the RegisterGlobalProperty calls onto its own asIScriptEngine.
+	for (int32 TagIndex = 0; TagIndex < AngelscriptGameplayTags.Num(); ++TagIndex)
+	{
+		Bind_AddNewGameplayTag(TagIndex);
+	}
+}

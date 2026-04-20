@@ -2,6 +2,7 @@
 
 #include "AngelscriptEngine.h"
 #include "AngelscriptGameInstanceSubsystem.h"
+#include "Debugging/AngelscriptDebugServer.h"
 #include "HAL/FileManager.h"
 #include "Containers/StringConv.h"
 #include "Engine/Engine.h"
@@ -122,38 +123,9 @@ namespace AngelscriptTestSupport
 		return nullptr;
 	}
 
-	inline FAngelscriptEngine* TryGetRunningProductionDebuggerEngine()
-	{
-		if (UAngelscriptGameInstanceSubsystem* Subsystem = TryGetRunningProductionSubsystem())
-		{
-			if (FAngelscriptEngine* AttachedEngine = Subsystem->GetEngine())
-			{
-				if (AttachedEngine->DebugServer != nullptr)
-				{
-					return AttachedEngine;
-				}
-			}
-		}
-
-#if WITH_DEV_AUTOMATION_TESTS
-		TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
-		FAngelscriptEngine* MatchingEngine = nullptr;
-		for (int32 Index = SavedStack.Num() - 1; Index >= 0; --Index)
-		{
-			FAngelscriptEngine* Candidate = SavedStack[Index];
-			if (Candidate != nullptr && Candidate->DebugServer != nullptr)
-			{
-				MatchingEngine = Candidate;
-				break;
-			}
-		}
-
-		FAngelscriptEngineContextStack::RestoreSnapshot(MoveTemp(SavedStack));
-		return MatchingEngine;
-#else
-		return nullptr;
-#endif
-	}
+	// TryGetRunningProductionDebuggerEngine is defined further below, after GetOrCreateSharedCloneEngine,
+	// because its headless-automation fallback needs to lazily attach a FAngelscriptDebugServer to the
+	// shared test engine.
 
 	inline TUniquePtr<FAngelscriptEngine> CreateIsolatedFullEngine()
 	{
@@ -197,6 +169,61 @@ namespace AngelscriptTestSupport
 
 		check(SharedCloneEngine.IsValid());
 		return *SharedCloneEngine;
+	}
+
+	inline FAngelscriptEngine* TryGetRunningProductionDebuggerEngine()
+	{
+		if (UAngelscriptGameInstanceSubsystem* Subsystem = TryGetRunningProductionSubsystem())
+		{
+			if (FAngelscriptEngine* AttachedEngine = Subsystem->GetEngine())
+			{
+				if (AttachedEngine->DebugServer != nullptr)
+				{
+					return AttachedEngine;
+				}
+			}
+		}
+
+#if WITH_DEV_AUTOMATION_TESTS
+		TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
+		FAngelscriptEngine* MatchingEngine = nullptr;
+		for (int32 Index = SavedStack.Num() - 1; Index >= 0; --Index)
+		{
+			FAngelscriptEngine* Candidate = SavedStack[Index];
+			if (Candidate != nullptr && Candidate->DebugServer != nullptr)
+			{
+				MatchingEngine = Candidate;
+				break;
+			}
+		}
+
+		FAngelscriptEngineContextStack::RestoreSnapshot(MoveTemp(SavedStack));
+		if (MatchingEngine != nullptr)
+		{
+			return MatchingEngine;
+		}
+
+#if WITH_AS_DEBUGSERVER
+		// Headless automation (e.g. -BUILDMACHINE -Unattended) has no UAngelscriptGameInstanceSubsystem
+		// and the shared clone test engine is built with bUsePrecompiledData=true so its startup
+		// path skips DebugServer creation. Lazily attach a DebugServer onto the shared engine so
+		// that debugger automation tests have something to bind to. Port 0 lets the OS pick a
+		// free ephemeral port, avoiding collisions when multiple automation runs overlap.
+		FAngelscriptEngine& SharedEngine = GetOrCreateSharedCloneEngine();
+		if (SharedEngine.DebugServer == nullptr)
+		{
+			SharedEngine.DebugServer = new FAngelscriptDebugServer(&SharedEngine, 0);
+			UE_LOG(Angelscript, Verbose,
+				TEXT("[TestEngine] Lazily attached FAngelscriptDebugServer to shared test engine %p id='%s' for automation debugger tests"),
+				&SharedEngine, *SharedEngine.GetInstanceId());
+		}
+		return &SharedEngine;
+#else
+		return nullptr;
+#endif
+#else
+		return nullptr;
+#endif
 	}
 
 	inline FAngelscriptEngine& GetSharedTestEngine()

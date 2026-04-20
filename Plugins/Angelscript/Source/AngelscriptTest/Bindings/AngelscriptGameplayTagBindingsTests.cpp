@@ -217,7 +217,10 @@ static bool FindGameplayTagNamespaceGlobalFixture(FAngelscriptEngine& Engine, FG
 			continue;
 		}
 
-		if (IdentifierCounts.FindRef(TagIdentifier) != 1 || IdentifierCounts.FindRef(ParentIdentifier) != 1)
+		// Only require uniqueness for the tag itself: the parent tag is auto-registered
+		// by Bind_AddNewGameplayTags alongside its children (see Bind_FGameplayTag.cpp),
+		// so it does not need its own GameplayTagList entry in config/*.ini.
+		if (IdentifierCounts.FindRef(TagIdentifier) != 1)
 		{
 			continue;
 		}
@@ -721,6 +724,10 @@ bool FAngelscriptGameplayTagNamespaceGlobalsTest::RunTest(const FString& Paramet
 	ASTEST_BEGIN_SHARE_CLEAN
 
 	AngelscriptReloadGameplayTags();
+	// The shared clone test engine misses the initial Bind_AddNewGameplayTags pass
+	// (AngelscriptGameplayTagsLookup short-circuits subsequent calls), so replay
+	// RegisterGlobalProperty for every cached tag onto the currently scoped engine.
+	AngelscriptRebindGameplayTagsToCurrentEngine();
 
 	FGameplayTagNamespaceGlobalFixture Fixture;
 	if (!TestTrue(
