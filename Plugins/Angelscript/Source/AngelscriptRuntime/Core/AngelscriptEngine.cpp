@@ -1918,7 +1918,9 @@ void FAngelscriptEngine::BindScriptTypes()
 	FAngelscriptBindExecutionObservation::BeginBindScriptTypesTiming();
 	#endif
 
+	FAngelscriptBinds::ResetGeneratedFunctionTableTiming();
 	FAngelscriptBinds::CallBinds(CollectDisabledBindNames());
+	FAngelscriptBinds::LogGeneratedFunctionTableTimingSummary();
 
 	#if WITH_DEV_AUTOMATION_TESTS
 	FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();

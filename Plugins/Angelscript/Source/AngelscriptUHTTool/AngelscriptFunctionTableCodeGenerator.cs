@@ -305,13 +305,25 @@ internal static class AngelscriptFunctionTableCodeGenerator
 			.Append(shardIndex.ToString("D3"))
 			.AppendLine("((int32)FAngelscriptBinds::EOrder::Late + 50, []()");
 		builder.AppendLine("{");
+		builder.AppendLine("\tconst double GeneratedFunctionTableStartSeconds = FPlatformTime::Seconds();");
 
 		for (int entryIndex = startIndex; entryIndex < startIndex + entryCount; entryIndex++)
 		{
 			builder.AppendLine(entries[entryIndex].BuildRegistrationLine());
 		}
 
-		builder.Append("\tUE_LOG(Angelscript, Log, TEXT(\"[UHT] Registered %d generated BlueprintCallable entries for module %s shard %d/%d\"), ")
+		builder.AppendLine("\tconst double GeneratedFunctionTableElapsedMilliseconds = (FPlatformTime::Seconds() - GeneratedFunctionTableStartSeconds) * 1000.0;");
+		builder.Append("\tFAngelscriptBinds::RecordGeneratedFunctionTableShardTiming(TEXT(\"")
+			.Append(moduleShortName)
+			.Append("\"), ")
+			.Append(shardIndex + 1)
+			.Append(", ")
+			.Append(shardCount)
+			.Append(", ")
+			.Append(entryCount)
+			.AppendLine(", GeneratedFunctionTableElapsedMilliseconds);");
+
+		builder.Append("\tUE_LOG(Angelscript, Log, TEXT(\"[UHT] Registered %d generated BlueprintCallable entries for module %s shard %d/%d in %.3f ms\"), ")
 			.Append(entryCount)
 			.Append(", TEXT(\"")
 			.Append(moduleShortName)
@@ -319,7 +331,7 @@ internal static class AngelscriptFunctionTableCodeGenerator
 			.Append(shardIndex + 1)
 			.Append(", ")
 			.Append(shardCount)
-			.AppendLine(");");
+			.AppendLine(", GeneratedFunctionTableElapsedMilliseconds);");
 
 		builder.AppendLine("});");
 		builder.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");

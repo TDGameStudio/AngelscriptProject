@@ -8,6 +8,7 @@ namespace UnrealBuildTool.Rules
 		public AngelscriptEditor(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+			bUseUnity = false;
 
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
