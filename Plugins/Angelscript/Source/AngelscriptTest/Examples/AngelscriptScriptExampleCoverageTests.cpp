@@ -141,22 +141,22 @@ using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_P
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoverageActorTest,
 	"Angelscript.TestModule.ScriptExamples.Coverage.Actor",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; verified still failing on full automation run. Needs individual root-cause analysis.
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoverageComponentTest,
 	"Angelscript.TestModule.ScriptExamples.Coverage.Component",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; verified still failing on full automation run. Needs individual root-cause analysis.
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoverageUObjectTest,
 	"Angelscript.TestModule.ScriptExamples.Coverage.UObject",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; verified still failing on full automation run. Needs individual root-cause analysis.
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoveragePropertySpecifiersTest,
 	"Angelscript.TestModule.ScriptExamples.Coverage.PropertySpecifiers",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; verified still failing on full automation run. Needs individual root-cause analysis.
 
 bool FAngelscriptScriptExampleCoverageActorTest::RunTest(const FString& Parameters)
 {

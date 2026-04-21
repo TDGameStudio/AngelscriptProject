@@ -4,6 +4,7 @@
 #include "ClassGenerator/ASClass.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "UObject/GarbageCollection.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -58,7 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassIsFunctionImplementedInScriptTurnsFalseAfterDiscardTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.IsFunctionImplementedInScriptTurnsFalseAfterDiscard",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): IsFunctionImplementedInScript still returns true after Engine.DiscardModule on shared test engine; likely depends on post-discard UASClass cleanup that no longer runs eagerly in UE 5.7.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-behavior): IsFunctionImplementedInScript returns true after DiscardModule+GC on UE 5.7; investigate UFunction lifecycle change
 
 bool FAngelscriptASClassIsDeveloperOnlyRecognizesNestedEditorModuleNamesTest::RunTest(const FString& Parameters)
 {
@@ -175,6 +176,12 @@ class UMetadataDiscardCarrier : UObject
 
 	Engine.DiscardModule(*ModuleName.ToString());
 	bModuleDiscarded = true;
+
+	// UE 5.7: post-Discard cleanup of UASClass' IsFunctionImplementedInScript
+	// book-keeping + source-file metadata is driven by GC finalization rather
+	// than by the DiscardModule call itself. Force one pass so the asserts
+	// below observe the fully-cleaned state.
+	CollectGarbage(RF_NoFlags, true);
 
 	const bool bImplementedAfterDiscard = GeneratedClass->IsFunctionImplementedInScript(TEXT("ComputeValue"));
 	const FString SourcePathAfterDiscard = GeneratedFunction->GetSourceFilePath();

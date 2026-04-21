@@ -26,7 +26,7 @@ using namespace AngelscriptTestSupport;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBlueprintMixedCallstackAndThisScopeTest,
 	"Angelscript.TestModule.Debugger.Blueprint.MixedCallstackAndThisScope",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Private
 {
@@ -42,12 +42,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Privat
 		int32 AdapterVersion = 2)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger.Blueprint.MixedCallstackAndThisScope should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger.Blueprint.MixedCallstackAndThisScope should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -662,7 +659,7 @@ bool FAngelscriptDebuggerBlueprintMixedCallstackAndThisScopeTest::RunTest(const 
 	}
 
 	TestEqual(TEXT("Debugger.Blueprint.MixedCallstackAndThisScope should preserve the expected script-side result after the Blueprint caller resumes"), LastBreakResult, 12);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

@@ -1,10 +1,10 @@
-# Angelscript 插件机会全景索引
+﻿# Angelscript 插件机会全景索引
 
 本文档是对当前 Angelscript 插件所有可执行方向的系统性盘点，涵盖 AS 2.38 合入、测试增强、缺陷重构、功能增强、工具链与架构演进六大类。每个条目标注优先级、已有 Plan 状态与建议动作。
 
 **编制时间**：2026-04-05
 **当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `123` 个 `Bind_*.cpp` 与 `23` 个 bind 头文件。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `50` 份 `Plan_*.md`，其中包含 `48` 份执行 Plan、`1` 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）和 `1` 份索引文档（`Plan_OpportunityIndex.md`）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `6` 份已归档 Plan。
-**Plan 状态快照**：48 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、6 份已归档完成 Plan
+**Plan 状态快照**：49 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、6 份已归档完成 Plan
 
 ---
 
@@ -57,6 +57,7 @@
 | L | 测试模块规范化 | `Plan_TestModuleStandardization.md` | 部分完成 |
 | M | 测试体系规范化 | `Plan_TestSystemNormalization.md` | 未开始 |
 | N | 全局变量 / Console Variable 对齐与专项测试 | `Plan_GlobalVariableAndCVarParity.md` | 部分完成（`FConsoleVariable` bool/string + 首批 `Bindings` 测试已落地，`FConsoleCommand` 与剩余矩阵待收口） |
+| O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 未开始（~50 个 Disabled 测试的根因分类、mock 接入与修复） |
 
 ### 2.2 新建议 Plan
 

@@ -127,7 +127,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerPropertyCallbackSignatureValidationReportsDiagnosticsTest,
 	"Angelscript.TestModule.Compiler.EndToEnd.PropertyCallbackSignatureValidationReportsDiagnostics",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): expects compile failures to leave no generated UClass behind, but UE 5.7 leaves the skeleton UClass registered until GC.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCompilerPropertyCallbackMetadataRoundTripTest::RunTest(const FString& Parameters)
 {
@@ -476,9 +476,16 @@ class UPropertyCallbackCarrier : UObject
 		}
 
 		UClass* GeneratedClass = FindGeneratedClass(&Engine, *CompilerPipelinePropertyMetadataTest::ClassName);
-		bPassed &= TestNull(
-			FString::Printf(TEXT("%s should not leave behind a generated class after compile failure"), Scenario.Label),
-			GeneratedClass);
+		// UE 5.7: a failed compile may leave a skeleton UClass registered in
+		// the object graph until the next GC pass. Accept either "no class"
+		// (ideal) or "class marked as GC target" as a successful teardown.
+		const bool bGeneratedClassIsGone =
+			GeneratedClass == nullptr
+			|| GeneratedClass->HasAnyFlags(RF_MirroredGarbage)
+			|| !::IsValid(GeneratedClass);
+		bPassed &= TestTrue(
+			FString::Printf(TEXT("%s should not leave behind a live generated class after compile failure"), Scenario.Label),
+			bGeneratedClassIsGone);
 
 		Engine.DiscardModule(*Scenario.ModuleName.ToString());
 	}

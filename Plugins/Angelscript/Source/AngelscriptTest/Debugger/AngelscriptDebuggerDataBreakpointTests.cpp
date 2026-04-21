@@ -49,12 +49,9 @@ int RunScenario()
 	bool StartDataBreakpointDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger data breakpoint should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger data breakpoint should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -481,7 +478,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest,
 	"Angelscript.TestModule.Debugger.DataBreakpoint.LocalValueHitCount",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest::RunTest(const FString& Parameters)
 {
@@ -665,7 +662,7 @@ bool FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest::RunTest(const FSt
 	TestEqual(TEXT("Debugger.DataBreakpoint.LocalValueHitCount should not stop again after the hit-count-limited data breakpoint auto-clears"), PassiveMonitorResult.StopMessages.Num(), 0);
 	TestTrue(TEXT("Debugger.DataBreakpoint.LocalValueHitCount should complete the second invocation successfully"), SecondInvocation->bSucceeded);
 	TestEqual(TEXT("Debugger.DataBreakpoint.LocalValueHitCount should preserve the second invocation result"), SecondInvocation->Result, 14);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

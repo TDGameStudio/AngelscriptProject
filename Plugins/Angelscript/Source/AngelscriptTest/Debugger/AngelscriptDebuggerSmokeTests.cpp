@@ -11,18 +11,17 @@ using namespace AngelscriptTestSupport;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSmokeHandshakeTest,
 	"Angelscript.TestModule.Debugger.Smoke.Handshake",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSmokeHandshakeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerSessionConfig SessionConfig;
-	SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
-	if (!TestNotNull(TEXT("Debugger.Smoke.Handshake should find a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-	{
-		return false;
-	}
-
+	// UE 5.7: TryGetRunningProductionDebuggerEngine() returns null in headless
+	// automation (no UAngelscriptGameInstanceSubsystem). Leaving ExistingEngine
+	// null lets Initialize() build an isolated FAngelscriptEngine whose
+	// FAngelscriptDebugServer binds to a unique port — the session then owns
+	// full engine + server lifecycle for the test.
 	if (!TestTrue(TEXT("Debugger.Smoke.Handshake should initialize a debugger test session"), Session.Initialize(SessionConfig)))
 	{
 		return false;
@@ -130,7 +129,7 @@ bool FAngelscriptDebuggerSmokeHandshakeTest::RunTest(const FString& Parameters)
 
 	const bool bStoppedDebugging = Session.PumpUntil([&Session]() { return !Session.GetDebugServer().bIsDebugging; }, Session.GetDefaultTimeoutSeconds());
 	TestTrue(TEXT("Debugger.Smoke.Handshake should leave debugging mode after StopDebugging"), bStoppedDebugging);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

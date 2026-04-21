@@ -47,12 +47,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger break-options test should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger break-options test should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -429,7 +426,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Pr
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.BreakOptionsGateStop",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest::RunTest(const FString& Parameters)
 {
@@ -651,7 +648,7 @@ bool FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest::RunTest(const FStri
 	TestTrue(TEXT("Debugger.Breakpoint.BreakOptionsGateStop should append break:any to the second delegate invocation"), ObservedBreakOptions.Calls[1].Contains(FName(TEXT("break:any"))));
 	TestFalse(TEXT("Debugger.Breakpoint.BreakOptionsGateStop should not leak break:other into the second delegate invocation"), ObservedBreakOptions.Calls[1].Contains(FName(TEXT("break:other"))));
 	TestTrue(TEXT("Debugger.Breakpoint.BreakOptionsGateStop should provide a valid world context to every delegate invocation"), Algo::AllOf(ObservedBreakOptions.WorldContexts, [](const TWeakObjectPtr<UObject>& WorldContext) { return WorldContext.IsValid(); }));
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

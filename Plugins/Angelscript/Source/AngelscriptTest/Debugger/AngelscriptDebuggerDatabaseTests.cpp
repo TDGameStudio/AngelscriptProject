@@ -21,12 +21,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private
 		FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger database protocol should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger database protocol should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -144,7 +141,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Privat
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest,
 	"Angelscript.TestModule.Debugger.Database.RequestDebugDatabaseSequence",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest::RunTest(const FString& Parameters)
 {
@@ -276,7 +273,7 @@ bool FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest::RunTest(const
 			0);
 	}
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

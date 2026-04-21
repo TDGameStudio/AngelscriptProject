@@ -21,12 +21,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Priva
 		FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger StepIn-on-statement test should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger StepIn-on-statement test should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -365,11 +362,12 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Priva
 		}
 
 		const FAngelscriptCallFrame& Frame = Callstack->Frames[FrameIndex];
+		bool bPassed = true;
 		const FString SourceContext = FString::Printf(TEXT("%s should stay on the expected source file"), Context);
-		Test.TestEqual(*SourceContext, FPaths::GetCleanFilename(Frame.Source), ExpectedFilename);
+		bPassed &= Test.TestEqual(*SourceContext, FPaths::GetCleanFilename(Frame.Source), ExpectedFilename);
 		const FString LineContext = FString::Printf(TEXT("%s should report the expected line"), Context);
-		Test.TestEqual(*LineContext, Frame.LineNumber, ExpectedLine);
-		return true;
+		bPassed &= Test.TestEqual(*LineContext, Frame.LineNumber, ExpectedLine);
+		return bPassed;
 	}
 }
 
@@ -378,7 +376,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest,
 	"Angelscript.TestModule.Debugger.Stepping.StepInOnStatementAdvancesWithinFrame",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest::RunTest(const FString& Parameters)
 {
@@ -528,7 +526,7 @@ bool FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest::RunTest(const
 
 	TestTrue(TEXT("Debugger StepIn-on-statement test should execute successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger StepIn-on-statement test should preserve the stepping fixture result"), InvocationState->Result, 14);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

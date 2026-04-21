@@ -17,12 +17,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerMultiClientTests_Private
 	bool StartPrimaryDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger multi-client test should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger multi-client test should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -316,7 +313,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerMultiClientTests_Pri
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSecondClientStartPreservesBreakpointsTest,
 	"Angelscript.TestModule.Debugger.Protocol.SecondClientStartPreservesBreakpoints",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSecondClientStartPreservesBreakpointsTest::RunTest(const FString& Parameters)
 {
@@ -495,7 +492,7 @@ bool FAngelscriptDebuggerSecondClientStartPreservesBreakpointsTest::RunTest(cons
 
 	TestTrue(TEXT("Debugger multi-client test should execute the breakpoint fixture successfully after continue"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger multi-client test should preserve the fixture return value"), InvocationState->Result, 8);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

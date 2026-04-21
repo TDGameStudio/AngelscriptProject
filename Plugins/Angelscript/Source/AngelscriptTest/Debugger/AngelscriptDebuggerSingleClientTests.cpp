@@ -18,12 +18,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSingleClientTests_Private
 	bool StartSingleClientDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Single-client debugger test should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		return Test.TestTrue(TEXT("Single-client debugger test should initialize the debugger session"), Session.Initialize(SessionConfig));
 	}
@@ -127,7 +124,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSingleClientTests_Pr
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSingleClientBreakpointRoundtripTest,
 	"Angelscript.TestModule.Debugger.SingleClient.BreakpointRoundtrip",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSingleClientBreakpointRoundtripTest::RunTest(const FString& Parameters)
 {

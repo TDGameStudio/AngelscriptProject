@@ -67,6 +67,30 @@ namespace AngelscriptTestSupport
 
 		DefaultTimeoutSeconds = Config.DefaultTimeoutSeconds > 0.0f ? Config.DefaultTimeoutSeconds : 5.0f;
 		bResetSeenEnsuresOnShutdown = Config.bResetSeenEnsuresOnShutdown;
+
+		// Mock mode: skip engine/DebugServer entirely. We still honor debug-break
+		// and seen-ensures reset flags so mock tests behave consistently with the
+		// real path, but adapter-version capture is unnecessary here (the real
+		// DebugAdapterVersion global is not mutated in mock mode).
+		if (Config.MockServer.IsValid())
+		{
+			if (Config.bResetSeenEnsuresOnInitialize)
+			{
+				AngelscriptForgetSeenEnsures();
+			}
+
+			if (Config.bDisableDebugBreaks)
+			{
+				bPreviousDebugBreakStateEnabled = AreAngelscriptDebugBreaksEnabledForTesting();
+				bHasCapturedDebugBreakState = true;
+				AngelscriptDisableDebugBreaks();
+			}
+
+			MockServer = Config.MockServer;
+			Port = MockServer->GetPort();
+			return true;
+		}
+
 		PreviousDebugAdapterVersion = AngelscriptDebugServer::DebugAdapterVersion;
 		bHasCapturedDebugAdapterVersion = true;
 
@@ -144,6 +168,7 @@ namespace AngelscriptTestSupport
 
 		PreviousDebugAdapterVersion = 0;
 
+		MockServer.Reset();
 		DebugServer = nullptr;
 		Port = 0;
 		GlobalScope.Reset();
@@ -164,7 +189,14 @@ namespace AngelscriptTestSupport
 			FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread_Local);
 		}
 
-		DebugServer->Tick();
+		if (MockServer.IsValid())
+		{
+			MockServer->Tick();
+		}
+		else
+		{
+			DebugServer->Tick();
+		}
 		FPlatformProcess::Sleep(0.0f);
 		return true;
 	}
@@ -217,6 +249,20 @@ namespace AngelscriptTestSupport
 		if (!Session.IsInitialized())
 		{
 			return false;
+		}
+
+		// Mock-mode sessions don't have a real FAngelscriptDebugServer to query;
+		// treat them as idle when the mock reports no active stop state. Tests
+		// driving the mock manage idle/pending state directly via the mock API.
+		if (Session.IsMockMode())
+		{
+			return Session.PumpUntil(
+				[&Session]()
+				{
+					const IAngelscriptDebugServerTestInterface* Mock = Session.GetMockServer();
+					return Mock != nullptr && !Mock->IsStopped();
+				},
+				TimeoutSeconds);
 		}
 
 		return Session.PumpUntil(
@@ -285,5 +331,23 @@ namespace AngelscriptTestSupport
 		});
 
 		return State;
+	}
+
+	TUniquePtr<FAngelscriptDebuggerTestSession> CreateMockDebuggerSession(
+		TSharedPtr<FAngelscriptMockDebugServer>& OutMock,
+		const FAngelscriptDebuggerSessionConfig& BaseConfig)
+	{
+		TSharedPtr<FAngelscriptMockDebugServer> Mock = MakeShared<FAngelscriptMockDebugServer>();
+		FAngelscriptDebuggerSessionConfig Config = BaseConfig;
+		Config.MockServer = Mock;
+
+		TUniquePtr<FAngelscriptDebuggerTestSession> Session = MakeUnique<FAngelscriptDebuggerTestSession>();
+		if (!Session->Initialize(Config))
+		{
+			return nullptr;
+		}
+
+		OutMock = Mock;
+		return Session;
 	}
 }

@@ -12,7 +12,7 @@ using namespace AngelscriptTestSupport;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest,
 	"Angelscript.TestModule.Interface.Native.SignatureRegistrationRelease",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; disabled pending root-cause fix.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-state): Shared test engine starts with non-empty interface signature list on UE 5.7; test isolation issue
 
 bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const FString& Parameters)
 {

@@ -21,12 +21,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Pri
 	bool StartCrossFileDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Cross-file stepping should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Cross-file stepping should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -472,16 +469,17 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Pri
 		}
 
 		const FAngelscriptCallFrame& TopFrame = Callstack->Frames[0];
+		bool bPassed = true;
 		const FString SourceContext = FString::Printf(TEXT("%s should report the expected source file"), Context);
-		Test.TestTrue(
+		bPassed &= Test.TestTrue(
 			*SourceContext,
 			FPaths::IsSamePath(TopFrame.Source, ExpectedSource));
 		const FString LineContext = FString::Printf(TEXT("%s should report the expected line"), Context);
-		Test.TestEqual(
+		bPassed &= Test.TestEqual(
 			*LineContext,
 			TopFrame.LineNumber,
 			ExpectedLine);
-		return true;
+		return bPassed;
 	}
 }
 
@@ -490,7 +488,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTes
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerCrossFileSteppingTest,
 	"Angelscript.TestModule.Debugger.Stepping.CrossFileTransition",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerCrossFileSteppingTest::RunTest(const FString& Parameters)
 {
@@ -615,13 +613,13 @@ bool FAngelscriptDebuggerCrossFileSteppingTest::RunTest(const FString& Parameter
 
 	TestTrue(TEXT("Cross-file stepping should execute successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Cross-file stepping should return the expected final result"), InvocationState->Result, 22);
-	return true;
+	return !HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerCrossFileStepOverStaysInCallerTest,
 	"Angelscript.TestModule.Debugger.Stepping.CrossFileStepOverStaysInCaller",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerCrossFileStepOverStaysInCallerTest::RunTest(const FString& Parameters)
 {
@@ -752,7 +750,7 @@ bool FAngelscriptDebuggerCrossFileStepOverStaysInCallerTest::RunTest(const FStri
 
 	TestTrue(TEXT("Cross-file StepOver should execute successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Cross-file StepOver should return the expected final result"), InvocationState->Result, 22);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

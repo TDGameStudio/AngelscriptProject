@@ -18,12 +18,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerPauseTests_Private
 	bool StartPauseDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger pause should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger pause should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -438,7 +435,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerPauseTests_Private;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerPauseStopsAtNextScriptLineTest,
 	"Angelscript.TestModule.Debugger.Session.PauseStopsAtNextScriptLine",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-timing): Pause lands on for-header (line 6) instead of loop body PauseLoopLine (line 8); likely VM line-event granularity change in UE 5.7
 
 bool FAngelscriptDebuggerPauseStopsAtNextScriptLineTest::RunTest(const FString& Parameters)
 {
@@ -603,7 +600,7 @@ bool FAngelscriptDebuggerPauseStopsAtNextScriptLineTest::RunTest(const FString& 
 	TestEqual(TEXT("Debugger.Session.PauseStopsAtNextScriptLine should not receive any unexpected extra HasStopped messages after resuming from Pause"), MonitorResult.UnexpectedStopCount, 0);
 	TestTrue(TEXT("Debugger.Session.PauseStopsAtNextScriptLine should finish the invocation successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Session.PauseStopsAtNextScriptLine should preserve the pause fixture return value"), InvocationState->Result, 5001);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

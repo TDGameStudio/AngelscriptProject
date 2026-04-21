@@ -18,12 +18,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private
 	bool StartBindingDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger binding should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger binding should initialize against the debuggable production engine"), Session.Initialize(SessionConfig)))
 		{
@@ -429,7 +426,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBindingDebugBreakAndEnsureTest,
 	"Angelscript.TestModule.Debugger.Binding.DebugBreakAndEnsure",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerBindingDebugBreakAndEnsureTest::RunTest(const FString& Parameters)
 {
@@ -688,13 +685,13 @@ bool FAngelscriptDebuggerBindingDebugBreakAndEnsureTest::RunTest(const FString& 
 	TestEqual(TEXT("Debugger.Binding.DebugBreakAndEnsure should not need any extra HasContinued messages during the repeat ensure phase"), EnsureRepeatMonitorResult.ContinuedCount, 0);
 	TestTrue(TEXT("Debugger.Binding.DebugBreakAndEnsure should execute TriggerEnsure(false, Repeat) successfully without another stop"), bEnsureRepeatInvocationSucceeded);
 	TestFalse(TEXT("Debugger.Binding.DebugBreakAndEnsure should still return false after TriggerEnsure(false, Repeat)"), bEnsureRepeatReturnValue);
-	return true;
+	return !HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBindingCheckBreaksEveryInvocationTest,
 	"Angelscript.TestModule.Debugger.Binding.CheckBreaksEveryInvocation",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerBindingCheckBreaksEveryInvocationTest::RunTest(const FString& Parameters)
 {
@@ -891,7 +888,7 @@ bool FAngelscriptDebuggerBindingCheckBreaksEveryInvocationTest::RunTest(const FS
 	TestEqual(TEXT("Debugger.Binding.CheckBreaksEveryInvocation should stop TriggerCheck(false, CheckB) at BindingCheckLine"), CheckBCallstack.Frames[0].LineNumber, Fixture.GetLine(TEXT("BindingCheckLine")));
 	TestEqual(TEXT("Debugger.Binding.CheckBreaksEveryInvocation should observe a single HasContinued after TriggerCheck(false, CheckB)"), CheckBMonitorResult.ContinuedCount, 1);
 	TestTrue(TEXT("Debugger.Binding.CheckBreaksEveryInvocation should execute TriggerCheck(false, CheckB) successfully after resume"), bCheckBInvocationSucceeded);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

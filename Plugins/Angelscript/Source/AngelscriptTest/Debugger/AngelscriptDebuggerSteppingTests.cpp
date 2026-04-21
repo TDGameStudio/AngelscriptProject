@@ -17,12 +17,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private
 	bool StartSteppingDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger stepping should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger stepping should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -335,17 +332,17 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Privat
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSteppingStepInTest,
 	"Angelscript.TestModule.Debugger.Stepping.StepIn",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSteppingStepOverTest,
 	"Angelscript.TestModule.Debugger.Stepping.StepOver",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSteppingStepOutTest,
 	"Angelscript.TestModule.Debugger.Stepping.StepOut",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSteppingStepInTest::RunTest(const FString& Parameters)
 {
@@ -452,7 +449,7 @@ bool FAngelscriptDebuggerSteppingStepInTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("Stepping.StepIn should execute successfully"), InvocationState->bSucceeded);
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerSteppingStepOverTest::RunTest(const FString& Parameters)
@@ -553,7 +550,7 @@ bool FAngelscriptDebuggerSteppingStepOverTest::RunTest(const FString& Parameters
 	}
 
 	TestTrue(TEXT("Stepping.StepOver should execute successfully"), InvocationState->bSucceeded);
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerSteppingStepOutTest::RunTest(const FString& Parameters)
@@ -655,7 +652,7 @@ bool FAngelscriptDebuggerSteppingStepOutTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("Stepping.StepOut should execute successfully"), InvocationState->bSucceeded);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

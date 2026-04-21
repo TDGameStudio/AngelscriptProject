@@ -11,7 +11,7 @@ using namespace AngelscriptTestSupport;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFrameTimeAsSecondsFunctionLibraryTest,
 	"Angelscript.TestModule.FunctionLibraries.FrameTimeAsSeconds",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; disabled pending root-cause fix.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-binding): FFrameRate::AsFrameTime(float) signature removed or changed in UE 5.7; update binding or test script
 
 namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Private
 {

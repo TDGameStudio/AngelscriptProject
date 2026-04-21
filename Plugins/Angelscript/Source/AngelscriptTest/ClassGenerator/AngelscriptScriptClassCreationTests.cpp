@@ -152,7 +152,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioScriptClassRenameReplacesOldClassTest,
 	"Angelscript.TestModule.ScriptClass.RenameReplacesOldClass",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; disabled pending root-cause fix.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScenarioScriptClassCompilesToUClassTest::RunTest(const FString& Parameters)
 {

@@ -4,7 +4,9 @@
 #include "CoreMinimal.h"
 #include "Debugging/AngelscriptDebugServer.h"
 #include "Templates/Function.h"
+#include "Templates/SharedPointer.h"
 
+#include "AngelscriptMockDebugServer.h"
 #include "AngelscriptTestUtilities.h"
 
 class FAngelscriptDebugServer;
@@ -21,6 +23,12 @@ namespace AngelscriptTestSupport
 		bool bDisableDebugBreaks = false;
 		bool bResetSeenEnsuresOnInitialize = true;
 		bool bResetSeenEnsuresOnShutdown = true;
+
+		// If set, Initialize() skips real engine/DebugServer creation and puts the
+		// session into mock mode: PumpOneTick() ticks the mock, and GetMockServer()
+		// becomes the primary handle tests use. ExistingEngine / DebugServerPort
+		// are ignored in this mode. See AngelscriptMockDebugServer.h.
+		TSharedPtr<IAngelscriptDebugServerTestInterface> MockServer;
 	};
 
 	struct FScopedDebugAdapterVersionSentinel
@@ -111,7 +119,14 @@ public:
 
 		bool IsInitialized() const
 		{
-			return Engine != nullptr && DebugServer != nullptr;
+			return (Engine != nullptr && DebugServer != nullptr) || MockServer.IsValid();
+		}
+
+		// True when the session was initialized with a MockServer config. In this
+		// mode Engine/DebugServer are null and GetDebugServer() must NOT be called.
+		bool IsMockMode() const
+		{
+			return MockServer.IsValid();
 		}
 
 		bool PumpOneTick();
@@ -119,8 +134,23 @@ public:
 
 		FAngelscriptEngine& GetEngine() const;
 		FAngelscriptDebugServer& GetDebugServer() const;
+
+		// Mock-mode accessors. Return null in real-engine mode.
+		IAngelscriptDebugServerTestInterface* GetMockServer() const
+		{
+			return MockServer.Get();
+		}
+		TSharedPtr<IAngelscriptDebugServerTestInterface> GetMockServerShared() const
+		{
+			return MockServer;
+		}
+
 		int32 GetPort() const
 		{
+			if (MockServer.IsValid())
+			{
+				return MockServer->GetPort();
+			}
 			return Port;
 		}
 
@@ -134,6 +164,8 @@ public:
 		FAngelscriptEngine* Engine = nullptr;
 		FAngelscriptDebugServer* DebugServer = nullptr;
 		TUniquePtr<FAngelscriptEngineScope> GlobalScope;
+
+		TSharedPtr<IAngelscriptDebugServerTestInterface> MockServer;
 
 		int32 Port = 0;
 		float DefaultTimeoutSeconds = 5.0f;
@@ -179,4 +211,16 @@ public:
 	bool WaitForDebugServerIdle(
 		FAngelscriptDebuggerTestSession& Session,
 		float TimeoutSeconds = 0.0f);
+
+	// Build a ready-to-use mock-mode session plus a fresh FAngelscriptMockDebugServer.
+	// Returns nullptr on initialize failure. Caller receives a unique_ptr that owns
+	// the session; the mock is accessible via Session->GetMockServer() and is also
+	// returned via OutMock for direct introspection.
+	//
+	// Keeping this helper in the session header (not AngelscriptTestUtilities.h)
+	// avoids circular includes: the utilities header is included by the session
+	// header, and the mock types already require the session type for full wiring.
+	TUniquePtr<FAngelscriptDebuggerTestSession> CreateMockDebuggerSession(
+		TSharedPtr<FAngelscriptMockDebugServer>& OutMock,
+		const FAngelscriptDebuggerSessionConfig& BaseConfig = FAngelscriptDebuggerSessionConfig());
 }

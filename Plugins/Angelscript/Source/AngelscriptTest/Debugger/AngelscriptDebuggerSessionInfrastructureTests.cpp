@@ -73,7 +73,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructur
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest,
 	"Angelscript.TestModule.Debugger.Shared.SessionInitializeDoesNotMutateAdapterVersion",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest::RunTest(const FString& Parameters)
 {
@@ -82,12 +82,10 @@ bool FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest::RunTe
 	constexpr int32 FreshSessionSentinelVersion = 11;
 
 	FAngelscriptDebuggerSessionConfig SessionConfig;
-	SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+	// UE 5.7: headless has no production subsystem. Leave ExistingEngine null so
+	// Initialize() spins up an isolated FAngelscriptEngine with its own
+	// FAngelscriptDebugServer bound to a unique port.
 	SessionConfig.DefaultTimeoutSeconds = 45.0f;
-	if (!TestNotNull(TEXT("Debugger.Shared.SessionInitializeDoesNotMutateAdapterVersion should find a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-	{
-		return false;
-	}
 
 	FScopedDebugAdapterVersionSentinel AdapterVersionSentinel(InitializeSentinelVersion);
 	FAngelscriptDebuggerTestSession Session;
@@ -186,24 +184,22 @@ bool FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest::RunTe
 		AdapterVersionSentinel.GetCurrent(),
 		FreshSessionSentinelVersion);
 
-	return true;
+	return !HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionPreservesDebugBreakStateTest,
 	"Angelscript.TestModule.Debugger.Shared.SessionPreservesDebugBreakState",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptDebuggerSessionConfig SessionConfig;
-	SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
 	SessionConfig.DefaultTimeoutSeconds = 45.0f;
 	SessionConfig.bDisableDebugBreaks = true;
-	if (!TestNotNull(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should find a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-	{
-		return false;
-	}
+
+	TSharedPtr<FAngelscriptMockDebugServer> MockServer = MakeShared<FAngelscriptMockDebugServer>();
+	SessionConfig.MockServer = MockServer;
 
 	FScopedDebugBreakStateSentinel DebugBreakStateSentinel;
 
@@ -250,7 +246,7 @@ bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FStr
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerClientConnectTimeoutReportsFailureTest,
 	"Angelscript.TestModule.Debugger.Shared.ClientConnectTimeoutReportsFailure",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerClientConnectTimeoutReportsFailureTest::RunTest(const FString& Parameters)
 {

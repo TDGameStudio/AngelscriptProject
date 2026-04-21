@@ -16,12 +16,12 @@ using namespace AngelscriptTestSupport;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerEvaluationScopeValuesTest,
 	"Angelscript.TestModule.Debugger.Evaluation.ScopeValues",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerEvaluationAdapterV1LegacyPayloadTest,
 	"Angelscript.TestModule.Debugger.Evaluation.AdapterV1LegacyPayload",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private
 {
@@ -32,12 +32,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private
 		int32 AdapterVersion = 2)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger evaluation should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger evaluation should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -584,7 +581,7 @@ bool FAngelscriptDebuggerEvaluationScopeValuesTest::RunTest(const FString& Param
 	TestEqual(TEXT("Debugger.Evaluation.ScopeValues should report GlobalCounter = 7 in the module scope"), GlobalCounterVariable->Value, FString(TEXT("7")));
 	TestTrue(TEXT("Debugger.Evaluation.ScopeValues should expose a non-zero ValueAddress for this.MemberValue through %this% scope"), MemberValueVariable->ValueAddress != 0);
 	TestTrue(TEXT("Debugger.Evaluation.ScopeValues should expose a non-zero ValueAddress for %module%.GlobalCounter through module scope"), GlobalCounterVariable->ValueAddress != 0);
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerEvaluationAdapterV1LegacyPayloadTest::RunTest(const FString& Parameters)
@@ -783,7 +780,7 @@ bool FAngelscriptDebuggerEvaluationAdapterV1LegacyPayloadTest::RunTest(const FSt
 
 	TestTrue(TEXT("Debugger.Evaluation.AdapterV1LegacyPayload should finish the generated invocation successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Evaluation.AdapterV1LegacyPayload should preserve the generated invocation return value"), InvocationState->Result, 16);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

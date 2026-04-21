@@ -19,12 +19,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger session should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger session should initialize against the debuggable production engine"), Session.Initialize(SessionConfig)))
 		{
@@ -311,17 +308,17 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Priv
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointHitLineTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.HitLine",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointClearThenResumeTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.ClearThenResume",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointIgnoreInactiveBranchTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.IgnoreInactiveBranch",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerBreakpointHitLineTest::RunTest(const FString& Parameters)
 {
@@ -432,7 +429,7 @@ bool FAngelscriptDebuggerBreakpointHitLineTest::RunTest(const FString& Parameter
 	TestEqual(TEXT("Debugger.Breakpoint.HitLine should stop at the requested helper line"), Callstack.Frames[0].LineNumber, Fixture.GetLine(TEXT("BreakpointHelperLine")));
 	TestTrue(TEXT("Debugger.Breakpoint.HitLine should execute the script function successfully after resume"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Breakpoint.HitLine should keep the module function return value"), InvocationState->Result, 8);
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerBreakpointClearThenResumeTest::RunTest(const FString& Parameters)
@@ -568,7 +565,7 @@ bool FAngelscriptDebuggerBreakpointClearThenResumeTest::RunTest(const FString& P
 	TestEqual(TEXT("Cleared breakpoints should not stop the second invocation."), SecondMonitorResult.StopEnvelopes.Num(), 0);
 	TestTrue(TEXT("Debugger.Breakpoint.ClearThenResume should still execute the script successfully after clearing breakpoints"), SecondInvocation->bSucceeded);
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerBreakpointIgnoreInactiveBranchTest::RunTest(const FString& Parameters)
@@ -651,7 +648,7 @@ bool FAngelscriptDebuggerBreakpointIgnoreInactiveBranchTest::RunTest(const FStri
 	TestEqual(TEXT("Breakpoint in the inactive branch should not have triggered a stop event."), MonitorResult.StopEnvelopes.Num(), 0);
 	TestTrue(TEXT("Debugger.Breakpoint.IgnoreInactiveBranch should execute the function successfully when the inactive branch breakpoint never hits"), InvocationState->bSucceeded);
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

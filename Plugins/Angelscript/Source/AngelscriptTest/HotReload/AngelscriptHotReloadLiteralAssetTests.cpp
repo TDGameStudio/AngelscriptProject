@@ -34,7 +34,7 @@ using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest,
 	"Angelscript.TestModule.HotReload.LiteralAsset.BroadcastsReloadedObjectReplacement",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; disabled pending root-cause fix.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest::RunTest(const FString& Parameters)
 {

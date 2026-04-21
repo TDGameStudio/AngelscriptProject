@@ -17,12 +17,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger session should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger session should initialize against the debuggable production engine"), Session.Initialize(SessionConfig)))
 		{
@@ -335,7 +332,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpoin
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerConditionalBreakpointExpressionTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.ConditionExpression",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerConditionalBreakpointExpressionTest::RunTest(const FString& Parameters)
 {
@@ -492,7 +489,7 @@ bool FAngelscriptDebuggerConditionalBreakpointExpressionTest::RunTest(const FStr
 	TestTrue(TEXT("Debugger.Breakpoint.ConditionExpression should execute the negative case successfully"), NegativeInvocation->bSucceeded);
 	TestEqual(TEXT("Debugger.Breakpoint.ConditionExpression should keep the negative helper return value"), NegativeInvocation->Result, 4);
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

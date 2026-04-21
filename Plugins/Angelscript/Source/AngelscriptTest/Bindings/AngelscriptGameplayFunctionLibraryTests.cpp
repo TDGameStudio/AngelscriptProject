@@ -98,7 +98,7 @@ using namespace AngelscriptTest_Bindings_AngelscriptGameplayFunctionLibraryTests
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayFunctionLibraryAsyncSaveLoadDelegatesTest,
 	"Angelscript.TestModule.FunctionLibraries.AsyncSaveLoadDelegates",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): crashes inside UGameplayStatics::SaveGameToMemory in headless automation because AngelscriptGASTestAttributeSet loses the 'MissingAttr' property (GAS attribute registration requires running subsystem). Disabled to avoid aborting the full TestModule run.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): crashes the automation runner at AngelscriptGameplayFunctionLibraryTests.cpp:191 inside InvokeGeneratedVoidMethod->UGameplayStatics::SaveGameToMemory in headless automation (AngelscriptGASTestAttributeSet loses the 'MissingAttr' property; GAS attribute registration requires a running UAngelscriptGameInstanceSubsystem). Disabled again until GAS attributes can be registered without the subsystem. Verified failing via full automation run on UE 5.7.
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayFunctionLibraryImmediateFailureCallbacksTest,

@@ -174,7 +174,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest,
 	"Angelscript.TestModule.GameInstanceSubsystem.MultiOwnerLifecycle.SharedPrimaryEngineKeepsTickOwnershipUntilLastShutdown",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): UE 5.7 migration; disabled pending root-cause fix.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FString& Parameters)
 {
@@ -328,10 +328,6 @@ bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FStrin
 
 bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FString& Parameters)
 {
-	AddExpectedErrorPlain(
-		TEXT("Failed in call to function 'RegisterObjectMethod' with 'ULevelStreaming' and 'bool GetShouldBeVisibleInEditor() const'"),
-		EAutomationExpectedErrorFlags::Contains,
-		1);
 	FCoreTestContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

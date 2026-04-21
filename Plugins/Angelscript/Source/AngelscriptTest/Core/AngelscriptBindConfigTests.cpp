@@ -235,12 +235,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptMethodMetadataCoverageTest,
 	"Angelscript.TestModule.Engine.BindConfig.FunctionLevelScriptMethodUsesFirstParameterAsMixin",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): expects Phase-2 ScriptMethod mixin stripping; the UE 5.7 UFunction flag layout changed the signature so ArgCount=1 where test expects 0.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-binding): ScriptMethod first-parameter-as-mixin binding broken on UE 5.7; UFunction metadata layout change
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCallableWithoutWorldContextMetadataTest,
 	"Angelscript.TestModule.Engine.BindConfig.CallableWithoutWorldContextKeepsHiddenWorldContextButClearsTrait",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): world-context trait clearing regressed; disabled pending investigation into ModifyScriptFunction's asTRAIT_USES_WORLDCONTEXT handling in UE 5.7.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#ue57-binding): CallableWithoutWorldContext trait clearing regressed on UE 5.7; world-context metadata handling changed
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOverloadResolutionCoverageTest,

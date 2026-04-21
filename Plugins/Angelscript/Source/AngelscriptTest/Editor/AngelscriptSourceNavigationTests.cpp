@@ -49,7 +49,7 @@ using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionSourceNavigationTest,
 	"Angelscript.TestModule.Editor.SourceNavigation.Functions",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): Source navigation cannot resolve generated script class on shared test engine; likely requires module source paths recorded during compile which the headless test-engine flow is missing.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): Source navigation still cannot resolve generated script class on headless test engine. Verified failing on full automation run.
 
 bool FAngelscriptFunctionSourceNavigationTest::RunTest(const FString& Parameters)
 {
@@ -117,7 +117,7 @@ class UFunctionNavigationCarrier : UObject
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSourceNavigationStoredLocationTest,
 	"Angelscript.TestModule.Editor.SourceNavigation.NavigateToFunctionUsesStoredSourceLocation",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): Property navigation source file + line never populated — shares root cause with SourceNavigation.Functions above.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): Property navigation source file + line still not populated. Shares root cause with SourceNavigation.Functions. Verified failing on full automation run.
 
 bool FAngelscriptSourceNavigationStoredLocationTest::RunTest(const FString& Parameters)
 {

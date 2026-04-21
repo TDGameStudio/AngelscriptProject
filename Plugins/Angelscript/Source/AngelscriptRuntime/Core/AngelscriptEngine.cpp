@@ -917,6 +917,13 @@ void FAngelscriptEngine::InitializeForTesting()
 	GameThreadTLD->primaryContext = CreateContext();
 	bIsInitialCompileFinished = true;
 	InitializeOwnedSharedState();
+
+#if WITH_AS_DEBUGSERVER
+	if (RuntimeConfig.DebugServerPort > 0)
+	{
+		DebugServer = new FAngelscriptDebugServer(this, RuntimeConfig.DebugServerPort);
+	}
+#endif
 }
 
 void FAngelscriptEngine::InitializeOwnedSharedState()

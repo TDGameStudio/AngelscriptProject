@@ -17,12 +17,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Pr
 	bool StartDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger session should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger session should initialize against the debuggable production engine"), Session.Initialize(SessionConfig)))
 		{
@@ -347,12 +344,12 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTe
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.NearestExecutableLineAck",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointDuplicateSetReturnsRemovalAckTest,
 	"Angelscript.TestModule.Debugger.Breakpoint.DuplicateSetReturnsRemovalAck",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest::RunTest(const FString& Parameters)
 {
@@ -493,7 +490,7 @@ bool FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest::RunTest(const F
 	TestEqual(TEXT("Debugger.Breakpoint.NearestExecutableLineAck should stop at the adjusted executable line"), Callstack.Frames[0].LineNumber, BreakpointAck->LineNumber);
 	TestTrue(TEXT("Debugger.Breakpoint.NearestExecutableLineAck should execute the script successfully after resume"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Breakpoint.NearestExecutableLineAck should preserve the script return value"), InvocationState->Result, 8);
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptDebuggerBreakpointDuplicateSetReturnsRemovalAckTest::RunTest(const FString& Parameters)
@@ -659,7 +656,7 @@ bool FAngelscriptDebuggerBreakpointDuplicateSetReturnsRemovalAckTest::RunTest(co
 	TestEqual(TEXT("Debugger.Breakpoint.DuplicateSetReturnsRemovalAck should stop at the helper line"), Callstack.Frames[0].LineNumber, BreakpointLine);
 	TestTrue(TEXT("Debugger.Breakpoint.DuplicateSetReturnsRemovalAck should execute the script successfully after resume"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Breakpoint.DuplicateSetReturnsRemovalAck should preserve the script return value"), InvocationState->Result, 8);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

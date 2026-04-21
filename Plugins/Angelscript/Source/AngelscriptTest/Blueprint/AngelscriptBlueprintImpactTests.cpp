@@ -230,9 +230,11 @@ class AScenarioBlueprintImpactScriptParentMatch : AActor
 		return false;
 	}
 
-	return TestTrue(TEXT("Blueprint impact scenario should record the script parent class reason"), Reasons.Contains(AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason::ScriptParentClass));
+	TestTrue(TEXT("Blueprint impact scenario should record the script parent class reason"), Reasons.Contains(AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason::ScriptParentClass));
 
 	ASTEST_END_SHARE_CLEAN
+
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptBlueprintImpactChangedScriptFilterTest::RunTest(const FString& Parameters)
@@ -318,9 +320,11 @@ class AScenarioBlueprintImpactFilterB : AActor
 		return false;
 	}
 
-	return TestFalse(TEXT("Blueprint impact filter scenario should not mark a blueprint whose script parent is unrelated to the changed script"), bBlueprintBImpacted);
+	TestFalse(TEXT("Blueprint impact filter scenario should not mark a blueprint whose script parent is unrelated to the changed script"), bBlueprintBImpacted);
 
 	ASTEST_END_SHARE_CLEAN
+
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptBlueprintImpactDiskBackedAssetScanTest::RunTest(const FString& Parameters)

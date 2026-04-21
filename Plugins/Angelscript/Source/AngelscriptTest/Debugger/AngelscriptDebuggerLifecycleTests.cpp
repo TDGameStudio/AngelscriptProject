@@ -18,12 +18,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private
 	bool StartLifecycleDebuggerSession(FAutomationTestBase& Test, FAngelscriptDebuggerTestSession& Session, FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger lifecycle should attach to a debuggable production engine inside the editor automation process"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger lifecycle should initialize against the debuggable production engine"), Session.Initialize(SessionConfig)))
 		{
@@ -322,7 +319,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Priva
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest,
 	"Angelscript.TestModule.Debugger.Session.DisconnectClearsDebugState",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest::RunTest(const FString& Parameters)
 {
@@ -455,7 +452,7 @@ bool FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest::RunTest(const FS
 	TestEqual(TEXT("Debugger.Session.DisconnectClearsDebugState should not leave residual debugger messages queued after the reconnect invocation"), MonitorResult.ResidualMessagesAfterInvocation.Num(), 0);
 	TestTrue(TEXT("Debugger.Session.DisconnectClearsDebugState should complete the reconnect invocation successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Debugger.Session.DisconnectClearsDebugState should preserve the reconnect invocation return value"), InvocationState->Result, 8);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

@@ -20,12 +20,9 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private
 		FAngelscriptDebuggerTestClient& Client)
 	{
 		FAngelscriptDebuggerSessionConfig SessionConfig;
-		SessionConfig.ExistingEngine = TryGetRunningProductionDebuggerEngine();
+		// UE 5.7: headless has no production subsystem. Let Initialize() create
+		// an isolated FAngelscriptEngine with its own FAngelscriptDebugServer.
 		SessionConfig.DefaultTimeoutSeconds = 45.0f;
-		if (!Test.TestNotNull(TEXT("Debugger StepOut edge test should attach to a debuggable production engine"), SessionConfig.ExistingEngine))
-		{
-			return false;
-		}
 
 		if (!Test.TestTrue(TEXT("Debugger StepOut edge test should initialize the debugger session"), Session.Initialize(SessionConfig)))
 		{
@@ -343,7 +340,7 @@ using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Pri
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepOutTopFrameCompletesTest,
 	"Angelscript.TestModule.Debugger.Stepping.StepOutTopFrameCompletes",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::Disabled) // TODO(#test-regression): headless automation has no production game-instance subsystem with a DebugServer; re-enable after refactoring test helpers to attach a DebugServer to the shared test engine cleanly.
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebuggerStepOutTopFrameCompletesTest::RunTest(const FString& Parameters)
 {
@@ -471,7 +468,7 @@ bool FAngelscriptDebuggerStepOutTopFrameCompletesTest::RunTest(const FString& Pa
 
 	TestTrue(TEXT("Stepping.StepOutTopFrameCompletes should execute successfully"), InvocationState->bSucceeded);
 	TestEqual(TEXT("Stepping.StepOutTopFrameCompletes should preserve the expected scenario result"), InvocationState->Result, 14);
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif
