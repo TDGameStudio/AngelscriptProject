@@ -8,6 +8,7 @@ namespace UnrealBuildTool.Rules
 		public AngelscriptTest(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+			bUseUnity = false;
 
 			// Module root + subdirectories mirroring AngelscriptRuntime layout
 			PublicIncludePaths.Add(ModuleDirectory);

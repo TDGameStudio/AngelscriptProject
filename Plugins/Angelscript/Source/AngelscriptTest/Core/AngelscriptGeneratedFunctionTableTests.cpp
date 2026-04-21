@@ -32,6 +32,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptGeneratedFunctionTableOutputsShardTimingHooksTest,
+	"Angelscript.TestModule.Engine.GeneratedFunctionTable.OutputsShardTimingHooks",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGeneratedFunctionTableRepresentativeCoverageTest,
 	"Angelscript.TestModule.Engine.GeneratedFunctionTable.RepresentativeCoverage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -265,6 +270,26 @@ bool FAngelscriptGeneratedFunctionTableEditorOutputsUseWithEditorGuardTest::RunT
 
 	TestTrue(TEXT("Generated strategy test should wrap editor-only outputs with #if WITH_EDITOR"), EditorOutput.StartsWith(TEXT("#if WITH_EDITOR")));
 	TestFalse(TEXT("Generated strategy test should not wrap runtime outputs with #if WITH_EDITOR"), RuntimeOutput.StartsWith(TEXT("#if WITH_EDITOR")));
+	return true;
+}
+
+bool FAngelscriptGeneratedFunctionTableOutputsShardTimingHooksTest::RunTest(const FString& Parameters)
+{
+	const FString GeneratedDirectory = FPaths::Combine(
+		FPaths::ProjectPluginsDir(),
+		TEXT("Angelscript"),
+		TEXT("Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT"));
+	const FString RuntimeOutputPath = FPaths::Combine(GeneratedDirectory, TEXT("AS_FunctionTable_Engine_000.cpp"));
+
+	FString RuntimeOutput;
+	if (!TestTrue(TEXT("Generated timing hook test should find the runtime UHT output"), FFileHelper::LoadFileToString(RuntimeOutput, *RuntimeOutputPath)))
+	{
+		return false;
+	}
+
+	TestTrue(
+		TEXT("Generated timing hook test should emit the generated shard timing recorder call"),
+		RuntimeOutput.Contains(TEXT("FAngelscriptBinds::RecordGeneratedFunctionTableShardTiming(")));
 	return true;
 }
 
