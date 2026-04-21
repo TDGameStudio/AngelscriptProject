@@ -1,6 +1,10 @@
 #include "Engine/Engine.h"
 
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
+#include "Components/InputComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "AngelscriptRuntimeModule.h"
@@ -159,6 +163,28 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AActor_Base((int32)FAngelscrip
 	[](const AActor* Actor) -> AController*
 	{
 		return Actor->GetInstigatorController();
+	});
+
+	AActor_.Method("UInputComponent GetInputComponent() const",
+	[](const AActor* Actor) -> UInputComponent*
+	{
+		if (Actor == nullptr)
+			return nullptr;
+		return Actor->InputComponent;
+	});
+
+	AActor_.Method("void EnableInput(APlayerController PlayerController)",
+	[](AActor* Actor, APlayerController* PC)
+	{
+		if (Actor != nullptr)
+			Actor->EnableInput(PC);
+	});
+
+	AActor_.Method("void DisableInput(APlayerController PlayerController)",
+	[](AActor* Actor, APlayerController* PC)
+	{
+		if (Actor != nullptr)
+			Actor->DisableInput(PC);
 	});
 #endif
 });
