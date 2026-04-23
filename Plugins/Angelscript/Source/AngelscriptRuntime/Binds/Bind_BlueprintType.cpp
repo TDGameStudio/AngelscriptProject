@@ -1658,7 +1658,16 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 				if (InterfaceScriptType != nullptr && InterfaceScriptType->GetMethodByName(TCHAR_TO_ANSI(*FuncName)) != nullptr)
 					continue;
 
-				FInterfaceMethodSignature* Sig = FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(FName(*FuncName));
+				// Record the full signature on the FInterfaceMethodSignature so FinalizeClass can
+				// perform structural matching against script implementations (Phase 1).
+				// Interface UFunctions declared via UHT always carry a complete FProperty chain,
+				// so this path has all the information it needs at registration time.
+				FInterfaceMethodSignature* Sig = FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(
+					FName(*FuncName),
+					ArgumentTypes,
+					ReturnType,
+					Function->FunctionFlags,
+					Function->HasAnyFunctionFlags(FUNC_Const));
 				Binds.GenericMethod(Declaration, CallInterfaceMethod, Sig);
 				++TotalInterfaceMethodsBound;
 
