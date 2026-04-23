@@ -19,6 +19,7 @@
 #include "Helper_FunctionSignature.h"
 #include "Binds/Bind_Helpers.h"
 #include "Binds/Bind_TSubclassOf.h"
+#include "Binds/Bind_TScriptInterface.h"
 #include "Binds/BlueprintCallableReflectiveFallback.h"
 //#include "UObject/GarbageCollectionSchema.h"
 //#include "GarbageCollectionSchema.h"
@@ -1991,6 +1992,300 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TSubclassOf((int32)FAngelscrip
 	TSubclassOf_.Method("T handle_only GetDefaultObject() const", FUNC_TRIVIAL(FAngelscriptSubclassOfHelpers::GetDefaultObject));
 });
 
+/*
+ * Bind TScriptInterface<> template.
+ *
+ * TScriptInterface<T> maps directly onto FScriptInterface (a 16-byte POD holding
+ * `{ TObjectPtr<UObject> ObjectPointer, void* InterfacePointer }`). The memory
+ * layout is identical to `FInterfaceProperty` in a UObject, so AS-side property
+ * bindings can treat the field as a plain value type at an offset without
+ * writing getter/setter accessors — the type system below only needs to ensure
+ * that:
+ *   - Construction / assignment from a UObject validates `ImplementsInterface`
+ *     and computes the correct `InterfacePointer` for C++ native implementors
+ *     via `FAngelscriptBindHelpers::GetInterfacePointerForCast`.
+ *   - The TypeFinder recognizes `FInterfaceProperty` and maps it to
+ *     `FScriptInterfaceType + SubTypes[0] = FromClass(InterfaceClass)`.
+ *   - `CreateProperty` emits `FInterfaceProperty` when the script declares a
+ *     `TScriptInterface<UIFoo>` UPROPERTY.
+ */
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TScriptInterface_Declaration((int32)FAngelscriptBinds::EOrder::Early, []
+{
+	FBindFlags Flags;
+	Flags.bTemplate = true;
+	Flags.TemplateType = "<T>";
+	Flags.ExtraFlags = asOBJ_TEMPLATE_SUBTYPE_COVARIANT;
+
+	auto TScriptInterface_ = FAngelscriptBinds::ValueClass<FScriptInterface>("TScriptInterface<class T>", Flags);
+	TScriptInterface_.Constructor("void f()", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::Construct));
+	TScriptInterface_.Constructor("void f(const TScriptInterface<T>& Other)", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::CopyConstruct));
+	TScriptInterface_.Method("TScriptInterface<T>& opAssign(const TScriptInterface<T>& Other)", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::Assign));
+
+	TScriptInterface_.TemplateCallback("bool f(int&in Type, int&out ErrorMessage)",
+	[](asITypeInfo* TemplateType, asCString* ErrorMessage) -> bool
+	{
+		if (TemplateType->GetSubTypeCount() != 1)
+			return false;
+
+		auto* SubType = TemplateType->GetSubType(0);
+		if (SubType == nullptr || SubType->GetFlags() & asOBJ_VALUE)
+		{
+			if (ErrorMessage != nullptr)
+				*ErrorMessage = "Subtype must be a class type";
+			return false;
+		}
+
+		// Validate that the subtype is actually an interface UClass.
+		// The subtype's UserData is set to the UClass by the AS type system
+		// when registering UObject-derived types; for script-only interfaces
+		// we allow it (UserData may be nullptr at template-instantiation time,
+		// in which case runtime assignment performs the final validation).
+		UClass* SubClass = (UClass*)SubType->GetUserData();
+		if (SubClass != nullptr && !SubClass->HasAnyClassFlags(CLASS_Interface))
+		{
+			if (ErrorMessage != nullptr)
+				*ErrorMessage = "TScriptInterface<> template parameter must be an interface type";
+			return false;
+		}
+		return true;
+	});
+});
+
+struct FScriptInterfaceType : TAngelscriptCppType<FScriptInterface>
+{
+	static asITypeInfo* BaseTypeInfo;
+
+	virtual FString GetAngelscriptTypeName() const override
+	{
+		return TEXT("TScriptInterface");
+	}
+
+	virtual FString GetAngelscriptTypeName(const FAngelscriptTypeUsage& Usage) const override
+	{
+		return TEXT("TScriptInterface");
+	}
+
+	UClass* GetInterfaceClass(const FAngelscriptTypeUsage& Usage) const
+	{
+		if (Usage.SubTypes.Num() == 0)
+			return nullptr;
+		return Usage.SubTypes[0].GetClass();
+	}
+
+	bool CanCreateProperty(const FAngelscriptTypeUsage& Usage) const override
+	{
+		if (Usage.SubTypes.Num() == 0)
+			return false;
+
+		if (!Usage.SubTypes[0].IsValid())
+			return false;
+
+		// At analyze-time we may not have an actual UClass yet for script classes
+		if (Usage.SubTypes[0].Type->IsObjectPointer() && Usage.SubTypes[0].Type.Get() != this && Usage.SubTypes[0].ScriptClass != nullptr)
+			return true;
+
+		UClass* InterfaceClass = Usage.SubTypes[0].GetClass();
+		if (InterfaceClass == nullptr)
+			return false;
+
+		return InterfaceClass->HasAnyClassFlags(CLASS_Interface);
+	}
+
+	FProperty* CreateProperty(const FAngelscriptTypeUsage& Usage, const FPropertyParams& Params) const override
+	{
+		if (Usage.SubTypes.Num() == 0)
+			return nullptr;
+
+		UClass* InterfaceClass = Usage.SubTypes[0].GetClass();
+		check(InterfaceClass);
+		check(InterfaceClass->HasAnyClassFlags(CLASS_Interface));
+
+		auto* Property = new FInterfaceProperty(Params.Outer, Params.PropertyName, RF_Public);
+		Property->SetInterfaceClass(InterfaceClass);
+		return Property;
+	}
+
+	bool MatchesProperty(const FAngelscriptTypeUsage& Usage, const FProperty* Property, EPropertyMatchType MatchType) const override
+	{
+		const FInterfaceProperty* InterfaceProp = CastField<FInterfaceProperty>(Property);
+		if (InterfaceProp == nullptr)
+			return false;
+
+		UClass* ExpectedClass = GetInterfaceClass(Usage);
+		if (ExpectedClass != nullptr)
+		{
+			return InterfaceProp->InterfaceClass == ExpectedClass;
+		}
+		else
+		{
+			if (Usage.SubTypes.Num() == 0)
+				return false;
+			if (Usage.SubTypes[0].ScriptClass == nullptr)
+				return false;
+
+			// Script class not yet resolved to UClass — match by name
+			FString CheckName = ANSI_TO_TCHAR(Usage.SubTypes[0].ScriptClass->GetName());
+			CheckName.RemoveFromStart(TEXT("U"));
+			CheckName.RemoveFromStart(TEXT("I"));
+
+			FString PropClassName = InterfaceProp->InterfaceClass->GetName();
+			return PropClassName == CheckName;
+		}
+	}
+
+	bool CanQueryPropertyType() const override
+	{
+		return false;
+	}
+
+	virtual UClass* GetClass(const FAngelscriptTypeUsage& Usage) const override
+	{
+		return nullptr;
+	}
+
+	bool DescribesCompleteType(const FAngelscriptTypeUsage& Usage) const override
+	{
+		return Usage.SubTypes.Num() >= 1 && Usage.SubTypes[0].IsValid();
+	}
+
+	bool HasReferences(const FAngelscriptTypeUsage& Usage) const override { return true; }
+	void EmitReferenceInfo(const FAngelscriptTypeUsage& Usage, FGCReferenceParams& Params) const override
+	{
+		// TODO(Phase 2.d): emit ObjectPointer as reference for GC; for now the
+		// outer UObject's UPROPERTY reflection tracks it via FInterfaceProperty.
+	}
+
+	bool CanBeArgument(const FAngelscriptTypeUsage& Usage) const override { return true; }
+	void SetArgument(const FAngelscriptTypeUsage& Usage, int32 ArgumentIndex, class asIScriptContext* Context, struct FFrame& Stack, const FArgData& Data) const override
+	{
+		FScriptInterface* StructMemory = (FScriptInterface*)Data.StackPtr;
+		new (StructMemory) FScriptInterface();
+
+		if (Usage.bIsReference)
+		{
+			FScriptInterface& RefValue = Stack.StepCompiledInRef<FInterfaceProperty, FScriptInterface>(StructMemory);
+			Context->SetArgAddress(ArgumentIndex, &RefValue);
+		}
+		else
+		{
+			Stack.StepCompiledIn<FInterfaceProperty>(StructMemory);
+			Context->SetArgObject(ArgumentIndex, StructMemory);
+		}
+	}
+
+	bool CanBeReturned(const FAngelscriptTypeUsage& Usage) const override
+	{
+		return true;
+	}
+
+	void GetReturnValue(const FAngelscriptTypeUsage& Usage, class asIScriptContext* Context, void* Destination) const override
+	{
+		if (Usage.bIsReference)
+		{
+			*(void**)Destination = Context->GetReturnAddress();
+		}
+		else
+		{
+			void* ReturnedObject = Context->GetReturnObject();
+			if (ReturnedObject == nullptr)
+				return;
+
+			*(FScriptInterface*)Destination = *(FScriptInterface*)ReturnedObject;
+		}
+	}
+
+	bool DefaultValue_UnrealToAngelscript(const FAngelscriptTypeUsage& Usage, const FString& InValue, FString& OutValue) const override
+	{
+		if (InValue == TEXT("null") || InValue == TEXT("nullptr") || InValue == TEXT(""))
+		{
+			OutValue = TEXT("nullptr");
+			return true;
+		}
+		return false;
+	}
+
+	bool DefaultValue_AngelscriptToUnreal(const FAngelscriptTypeUsage& Usage, const FString& InValue, FString& OutValue) const override
+	{
+		if (InValue == TEXT("null") || InValue == TEXT("nullptr"))
+		{
+			OutValue = TEXT("");
+			return true;
+		}
+		return false;
+	}
+
+	bool GetCppForm(const FAngelscriptTypeUsage& Usage, FCppForm& OutCppForm) const override
+	{
+		UClass* InterfaceClass = GetInterfaceClass(Usage);
+		if (InterfaceClass != nullptr)
+		{
+			FString ClassHeaderPath = FAngelscriptBindDatabase::GetSourceHeader(InterfaceClass);
+			if (ClassHeaderPath.Len() != 0)
+			{
+				// Script-side writes `TScriptInterface<UIFoo>`; C++ side is
+				// `TScriptInterface<IFoo>`. Use the `I`-prefixed native class
+				// name for C++ form generation.
+				FString NativeName = InterfaceClass->GetName();
+				OutCppForm.CppType = FString::Printf(TEXT("TScriptInterface<I%s>"), *NativeName);
+				OutCppForm.CppHeader = FString::Printf(TEXT("#include \"%s\""), *ClassHeaderPath);
+			}
+		}
+
+		OutCppForm.CppGenericType = TEXT("FScriptInterface");
+		OutCppForm.TemplateObjectForm = TEXT("FScriptInterface");
+		return true;
+	}
+
+	bool GetDebuggerValue(const FAngelscriptTypeUsage& Usage, void* Address, struct FDebuggerValue& Value) const override
+	{
+		FScriptInterface& ScriptInterface = Usage.ResolvePrimitive<FScriptInterface>(Address);
+		UObject* Object = ScriptInterface.GetObject();
+		if (Usage.ScriptClass != nullptr)
+			Value.Type = Usage.ScriptClass->GetName();
+
+		Value.Usage = Usage;
+		Value.Address = Address;
+		Value.SetAddressToMonitor(&ScriptInterface, sizeof(FScriptInterface));
+
+		if (Object == nullptr || Object->GetClass() == nullptr)
+		{
+			Value.Value = TEXT("nullptr");
+			Value.bHasMembers = false;
+		}
+		else
+		{
+			Value.Value = FString::Printf(TEXT("{ %s }"), *Object->GetName());
+			Value.bHasMembers = false;
+		}
+
+		return true;
+	}
+};
+
+asITypeInfo* FScriptInterfaceType::BaseTypeInfo = nullptr;
+
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TScriptInterface((int32)FAngelscriptBinds::EOrder::Late-10, []
+{
+	auto TScriptInterface_ = FAngelscriptBinds::ExistingClass("TScriptInterface<T>");
+	FScriptInterfaceType::BaseTypeInfo = FAngelscriptEngine::Get().Engine->GetTypeInfoByName("TScriptInterface");
+
+	TScriptInterface_.ImplicitConstructor("void f(UObject Object)", FUNC(FAngelscriptScriptInterfaceHelpers::ImplicitConstruct));
+	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+
+	TScriptInterface_.Method("UObject opImplConv() const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::GetObject));
+	TScriptInterface_.Method("UObject Get() const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::GetObject));
+	TScriptInterface_.Method("UObject GetObject() const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::GetObject));
+
+	TScriptInterface_.Method("void Set(UObject Object) const", FUNC(FAngelscriptScriptInterfaceHelpers::SetObject));
+	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	TScriptInterface_.Method("void opAssign(UObject Object)", FUNC(FAngelscriptScriptInterfaceHelpers::SetObject));
+	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+
+	TScriptInterface_.Method("bool opEquals(const TScriptInterface<T>& Other) const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::OpEquals));
+	TScriptInterface_.Method("bool opEquals(UObject Other) const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::OpEqualsObject));
+	TScriptInterface_.Method("bool IsValid() const", FUNC_TRIVIAL(FAngelscriptScriptInterfaceHelpers::IsValid));
+});
+
 struct FObjectPtrType : TAngelscriptCppType<TObjectPtr<UObject>>
 {
 	static asITypeInfo* BaseTypeInfo;
@@ -2648,6 +2943,10 @@ static void BindUClassLookup()
 	auto WeakObjectPtrType = MakeShared<FWeakObjectPtrType>();
 	FAngelscriptType::Register(WeakObjectPtrType);
 
+	// Register the type used by TScriptInterface
+	auto ScriptInterfaceType = MakeShared<FScriptInterfaceType>();
+	FAngelscriptType::Register(ScriptInterfaceType);
+
 	// Register a type finder into the type system that
 	// can look up an ObjectProperty's inner angelscript type.
 	FAngelscriptType::RegisterTypeFinder([=](FProperty* Property, FAngelscriptTypeUsage& Usage) -> bool
@@ -2667,6 +2966,21 @@ static void BindUClassLookup()
 				//	InnerType.bIsConst = true;
 
 				Usage.Type = WeakObjectPtrType;
+				Usage.SubTypes.SetNum(1);
+				Usage.SubTypes[0] = InnerType;
+				return true;
+			}
+
+			// Detect TScriptInterface properties (FInterfaceProperty wraps a
+			// FScriptInterface = { TObjectPtr<UObject>, void* }).
+			const FInterfaceProperty* InterfaceProperty = CastField<FInterfaceProperty>(Property);
+			if (InterfaceProperty != nullptr && InterfaceProperty->InterfaceClass != nullptr)
+			{
+				FAngelscriptTypeUsage InnerType = FAngelscriptTypeUsage::FromClass(InterfaceProperty->InterfaceClass);
+				if (!InnerType.IsValid())
+					return false;
+
+				Usage.Type = ScriptInterfaceType;
 				Usage.SubTypes.SetNum(1);
 				Usage.SubTypes[0] = InnerType;
 				return true;
