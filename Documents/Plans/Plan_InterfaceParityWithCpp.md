@@ -197,10 +197,11 @@ ThirdParty（仅列已有注入，本计划不新增）：
   - 参考预处理器现有 `TMap/TArray/TSubclassOf/TSoftObjectPtr` 等泛型类型处理的写法，新增一条 `TScriptInterface` 规则
 - [ ] **P2.5** 📦 Git 提交：`[Interface] Feat: preprocessor TScriptInterface<T> alias to T for interface types`
 
-- [ ] **P2.6** 扩展 `Shared/AngelscriptNativeInterfaceTestTypes.h/cpp`
+- [x] **P2.6** 扩展 `Shared/AngelscriptNativeInterfaceTestTypes.h/cpp`（已在 Phase 2 结束时提前实现）
   - 现有 fixture 只覆盖 C++ 实现类 `ATestNativeParentInterfaceActor`，但它是**单继承**（只实现一个接口），`PointerOffset` 通常为 0，测不出双指针偏移
-  - 新增 `ATestNativeOffsetActor`：`public AActor, public IFoo, public IBar`（两个接口），让 `IBar` 有非零 `PointerOffset`；再新增一个带 `UPROPERTY() TScriptInterface<IAngelscriptNativeParentInterface> SavedRef` 字段的 fixture 类，用于 Phase 2/3 测试
-- [ ] **P2.6** 📦 Git 提交：`[Test/Interface] Feat: add TScriptInterface fixture and multi-interface native actor`
+  - 新增 `UAngelscriptNativeSecondaryInterface`（2 方法 `GetSecondaryValue` / `SetSecondaryLabel`）+ `ATestNativeMultiInterfaceActor` 同时实现 Parent + Secondary，让 Secondary 接口 `PointerOffset` 非零
+  - 带 `UPROPERTY() TScriptInterface<…>` 字段的 fixture 类推迟到 Phase 3 真正开始时补（需要与 FInterfaceProperty 支持同步落地）
+- [x] **P2.6** 📦 Git 提交：`[Test/Interface] Feat: add multi-interface native fixture for pointer offset coverage`（commit `7cb4e4d`）
 
 - [ ] **P2.7** 新增 `AngelscriptInterfacePropertyTests.cpp` 5 个用例
   - `InterfaceProperty.GetSet` — 脚本读写 `UPROPERTY() TScriptInterface<UIFoo>`，设置实现类对象后再读出一致
@@ -220,22 +221,34 @@ ThirdParty（仅列已有注入，本计划不新增）：
 
 > 目标：脚本中 `Cast<UMyInterface>(NativeActor)` 以及后续接口方法调用时，`this` 指针与 `FScriptInterface::InterfacePointer` 按 `UObject::GetInterfaceAddress` 正确偏移。
 
-- [ ] **P3.1** `Bind_UObject.cpp` opCast 接口分支改走 `GetInterfacePointerForCast`
-  - 行 188-213 现在直接 `*(UObject**)OutAddress = Object;`，对脚本实现类正确（`PointerOffset == 0`），但对 C++ 原生实现类会丢掉接口偏移 — 虽然 AS 侧接口都是 UObject 引用，对纯调方法影响不大，但对后续 TScriptInterface 写入和任何按接口指针操作的路径都是隐患
-  - 改为：接口分支里 `void* InterfacePtr = GetInterfacePointerForCast(Object, AssociatedClass); *(UObject**)OutAddress = (UObject*)InterfacePtr;`（脚本实现类分支返回 Object 本身，语义不变；C++ 实现类分支拿到偏移后的接口指针）
-  - 评估现有 `CallInterfaceMethod` 路径（`AngelscriptClassGenerator.cpp` 行 56-98）是否需要同步走接口指针 — 目前它通过 `FindFunction` + `ProcessEvent` 走 UObject 指针路径，UE 反射层自行处理偏移，**不需要**在 AS 层改 this 装载；本项只修 opCast 和 TScriptInterface 赋值两条"直接看到 UObject 指针"的路径
-- [ ] **P3.1** 📦 Git 提交：`[Interface] Fix: opCast interface branch uses GetInterfacePointerForCast`
+**Phase 2 的实际结论**（通过 MCP `knot` + UE 源码核对得出）：
 
-- [ ] **P3.2** TScriptInterface 写入路径补接口指针偏移
-  - Phase 2.3 已经在 `SetArgument` / `BindProperty` 的 Setter 里用 `GetInterfacePointerForCast` 做 `SetInterface`；本 Phase 在 Phase 2 基础上补 Regression 测试，确保 C++ 原生多接口继承的 `ATestNativeOffsetActor` 经过脚本写入 `TScriptInterface<IFoo>` 后调 `IFoo::Execute_Method(Ref)` 能命中
-  - 若 Phase 2 实现中漏掉偏移分支，这里负责补齐
-- [ ] **P3.2** 📦 Git 提交：`[Interface] Test: regression for pointer offset via TScriptInterface`
+1. AS 侧接口都是以 UObject 引用形式注册（`RegisterObjectType ... asOBJ_REF | asOBJ_NOCOUNT | asOBJ_IMPLICIT_HANDLE`），`opCast` 写入 `OutAddress` 的必须是 `UObject*` 而不是偏移后的接口指针 — 否则 AS 会把偏移指针当 `UObject*` 处理，后续任何 UObject 解引用都会崩。所以 **`Bind_UObject.cpp:188-213` 的 opCast 接口分支保留原实现**，只加 helper 备用。
+2. `CallInterfaceMethod` 走 `Object->FindFunction` + `InvokeReflectiveUFunctionFromGenericCall`，UE 反射层自行处理接口偏移，**无需**在 AS 层手工偏移 `this`。
+3. 指针偏移的真正应用点是 `FScriptInterface::SetInterface` — 由 Phase 3 的 TScriptInterface 桥接使用；本 Phase 的 helper 作为基础设施先建好。
 
-- [ ] **P3.3** 新增 `AngelscriptInterfaceNativePointerOffsetTests.cpp` 3 个用例
-  - `NativePointerOffset.MultiInterfaceCast` — 脚本 `Cast<UBar>(MultiInterfaceActor)` 后通过接口引用调方法，方法内部读取成员字段值正确（验证 this 正确偏移）
-  - `NativePointerOffset.TScriptInterfaceOffset` — 脚本写入 `TScriptInterface<UBar> Ref = MultiInterfaceActor`，C++ 侧读取 `Ref.GetInterface()` 的偏移后指针，调方法命中正确实现
-  - `NativePointerOffset.ScriptClassStillZeroOffset` — 脚本实现类 Cast 后 `PointerOffset == 0`，行为与现状完全一致（回归保护）
-- [ ] **P3.3** 📦 Git 提交：`[Test/Interface] Feat: native interface pointer offset regression tests`
+- [x] **P2.1 / P3.1** 新增双指针桥接助手
+  - 在 `Binds/Bind_Helpers.h` 的 `FAngelscriptBindHelpers` 末尾新增 `GetInterfacePointerForCast(UObject*, UClass*)`：脚本实现类 `GetInterfaceAddress` 返回 `nullptr` 时兜底到 `Object`，C++ 原生实现类走 `Object->GetInterfaceAddress(InterfaceClass)`，`InterfaceClass` 非 `CLASS_Interface` 或未实现时返回 `nullptr`
+  - 行为与 UE `FInterfaceProperty::SerializeItem` 的约定一致（`Object->GetInterfaceAddress(InterfaceClass)`，`ObjectPointer` 为空时 `SetInterface(nullptr)`）
+  - Phase 3 的 4 个 `FInterfaceProperty` helper（Get/Set Argument/Property）将直接调用此函数填 `InterfacePointer`
+- [x] **P2.1 / P3.1** 📦 Git 提交：`[Interface] Feat: add GetInterfacePointerForCast helper in Bind_Helpers`（commit `7c91abe`）
+
+- [x] **P3.1-amend** opCast 接口分支保持原样（决策修正）
+  - 原 Plan 设想"opCast 接口分支走 `GetInterfacePointerForCast`"会把 `*(UObject**)OutAddress` 写成接口偏移指针 — 这会破坏 AS 侧 UObject 句柄的 GC 语义和后续反射调用；不能这么做
+  - 保留 `*(UObject**)OutAddress = Object;` 不变，UE 反射层自行处理接口分派
+  - helper 留给 Phase 3 TScriptInterface 桥接路径使用
+- [x] **P3.1-amend** 无代码 diff（decision-only）
+
+- [x] **P3.3-early** 扩展 native fixture：`ATestNativeMultiInterfaceActor`
+  - 现有 `ATestNativeParentInterfaceActor` 是单接口继承，`PointerOffset` 为 0，测不出双指针偏移场景
+  - 新增 `UAngelscriptNativeSecondaryInterface`（2 方法）+ `ATestNativeMultiInterfaceActor` 同时实现 Parent + Secondary，强制 Secondary 接口 `PointerOffset` 非零
+  - UHT 要求 `FString` 参数以 `const FString&` 传递，相应调整 `SetSecondaryLabel` 声明和 `_Implementation` 签名
+- [x] **P3.3-early** 📦 Git 提交：`[Test/Interface] Feat: add multi-interface native fixture for pointer offset coverage`（commit `7cb4e4d`）
+
+- [x] **P3.3** 新增 `AngelscriptInterfaceNativePointerOffsetTests.cpp` 2 个用例
+  - `NativePointerOffset.MultiInterfaceCast` — 脚本 `Cast<UAngelscriptNativeParentInterface>` + `Cast<UAngelscriptNativeSecondaryInterface>` 对同一 C++ 多接口实现类都成功；分别通过两条接口引用调方法后各自更新到不同的 C++ 成员字段（`NativeMarker` vs `SecondaryLabel`），证明接口方法分派互不串扰
+  - `NativePointerOffset.ScriptClassStillZeroOffset` — 脚本实现接口的类 `PointerOffset == 0`，Cast + 方法分派行为与 Phase 2 前完全一致（回归保护，确保 helper 未破坏快路径）
+- [x] **P3.3** 📦 Git 提交：`[Test/Interface] Feat: native interface pointer offset regression tests`（commit `0114f67`，32/32 接口测试全通过）
 
 ### Phase 4：接口方法的 `BlueprintNativeEvent` / `BlueprintImplementableEvent` 语义
 
