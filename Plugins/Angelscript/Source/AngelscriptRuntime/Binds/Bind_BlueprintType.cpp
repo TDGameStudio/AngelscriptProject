@@ -993,6 +993,13 @@ bool ShouldBindEngineType(UClass* Class)
 		return false;
 	if (Class->GetBoolMetaData(NAME_BlueprintType))
 		return true;
+
+	// Native interface classes with BlueprintCallable methods should be bound
+	// even if they don't have BlueprintType metadata, so that scripts can
+	// Cast<> to them and call their methods through interface references.
+	if (Class->HasAnyClassFlags(CLASS_Interface) && Class != UInterface::StaticClass())
+		return true;
+
 	if (Class->HasMetaData(NAME_NotBlueprintType))
 		return false;
 
@@ -1545,15 +1552,163 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 
 	const double TPropsInherit = FPlatformTime::Seconds();
 
+	// ---- Phase 5: C++ UInterface method auto-registration ----
+	// Interface methods are not picked up by the Phase 2 TFieldIterator<UFunction>(ExcludeSuper)
+	// loop because interface functions have GetOuter() == InterfaceUClass, not the implementing
+	// class. BlueprintCallableReflectiveFallback also explicitly rejects CLASS_Interface.
+	// This phase scans all registered interface UClasses and registers their BlueprintCallable
+	// methods as AS generic methods using the shared CallInterfaceMethod dispatcher.
+	{
+		extern ANGELSCRIPTRUNTIME_API void CallInterfaceMethod(class asIScriptGeneric* InGeneric);
+
+		int32 TotalInterfaceMethodsBound = 0;
+
+		// Collect interface classes that have been registered as AS types
+		struct FInterfaceBindEntry
+		{
+			UClass* InterfaceClass = nullptr;
+			FString TypeName;
+		};
+		TArray<FInterfaceBindEntry> InterfacesToBind;
+
+		for (auto& BindOrder : ClassesToBind)
+		{
+			UClass* Class = BindOrder.Class;
+			if (Class == nullptr || Class == UInterface::StaticClass())
+				continue;
+			if (!Class->HasAnyClassFlags(CLASS_Interface))
+				continue;
+			if (!Class->HasAnyClassFlags(CLASS_Native))
+				continue;
+			if (BindOrder.ScriptType == nullptr)
+				continue;
+
+			FInterfaceBindEntry Entry;
+			Entry.InterfaceClass = Class;
+			Entry.TypeName = BindOrder.Type->GetAngelscriptTypeName();
+			InterfacesToBind.Add(Entry);
+		}
+
+		UE_LOG(Angelscript, Verbose, TEXT("[Interface] Collected %d native interface types for auto-binding"), InterfacesToBind.Num());
+		for (auto& Entry : InterfacesToBind)
+		{
+			UE_LOG(Angelscript, Verbose, TEXT("[Interface]   Type: %s (UClass: %s)"), *Entry.TypeName, *Entry.InterfaceClass->GetName());
+		}
+
+		// Round 1: Register each interface's own methods
+		for (auto& Entry : InterfacesToBind)
+		{
+			FAngelscriptBinds Binds = FAngelscriptBinds::ExistingClass(Entry.TypeName);
+
+			for (TFieldIterator<UFunction> FuncIt(Entry.InterfaceClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+			{
+				UFunction* Function = *FuncIt;
+
+				// Skip UInterface base methods
+				if (Function->GetOuter() == UInterface::StaticClass())
+					continue;
+
+				// Only bind BlueprintCallable/Event/Pure methods
+				if (!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_BlueprintPure))
+					continue;
+
+				// Skip functions already manually bound or excluded
+				if (FAngelscriptBinds::ShouldSkipBlueprintCallableFunction(Function))
+					continue;
+
+				// Build AS type info for return type and arguments
+				FAngelscriptTypeUsage ReturnType;
+				TArray<FAngelscriptTypeUsage> ArgumentTypes;
+				TArray<FString> ArgumentNames;
+				TArray<FString> ArgumentDefaults;
+				bool bAllTypesValid = true;
+
+				for (TFieldIterator<FProperty> PropIt(Function); PropIt && (PropIt->PropertyFlags & CPF_Parm); ++PropIt)
+				{
+					FProperty* Property = *PropIt;
+					FAngelscriptTypeUsage Type = FAngelscriptTypeUsage::FromProperty(Property);
+					if (!Type.IsValid())
+					{
+						bAllTypesValid = false;
+						break;
+					}
+
+					if (Property->PropertyFlags & CPF_ReturnParm)
+					{
+						ReturnType = Type;
+					}
+					else
+					{
+						ArgumentTypes.Add(Type);
+						ArgumentNames.Add(Property->GetName());
+						ArgumentDefaults.Add(TEXT("-"));
+					}
+				}
+
+				if (!bAllTypesValid)
+					continue;
+
+				FString FuncName = Function->GetName();
+				FString Declaration = FAngelscriptType::BuildFunctionDeclaration(
+					ReturnType, FuncName, ArgumentTypes, ArgumentNames, ArgumentDefaults,
+					Function->HasAnyFunctionFlags(FUNC_Const));
+
+				// Check if this method is already registered on the type (e.g. by manual binding)
+				asITypeInfo* InterfaceScriptType = ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*Entry.TypeName));
+				if (InterfaceScriptType != nullptr && InterfaceScriptType->GetMethodByName(TCHAR_TO_ANSI(*FuncName)) != nullptr)
+					continue;
+
+				FInterfaceMethodSignature* Sig = FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(FName(*FuncName));
+				Binds.GenericMethod(Declaration, CallInterfaceMethod, Sig);
+				++TotalInterfaceMethodsBound;
+
+				UE_LOG(Angelscript, Verbose,
+					TEXT("[Interface]   %s::%s → %s"),
+					*Entry.TypeName, *FuncName, *Declaration);
+			}
+		}
+
+		// Round 2: Link interface inheritance — copy parent interface methods to child interfaces
+		for (auto& Entry : InterfacesToBind)
+		{
+			UClass* SuperInterface = Entry.InterfaceClass->GetSuperClass();
+			if (SuperInterface == nullptr || SuperInterface == UInterface::StaticClass())
+				continue;
+			if (!SuperInterface->HasAnyClassFlags(CLASS_Interface))
+				continue;
+
+			auto SuperType = FAngelscriptType::GetByClass(SuperInterface);
+			if (!SuperType.IsValid())
+				continue;
+
+			asITypeInfo* ChildScriptType = ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*Entry.TypeName));
+			asITypeInfo* ParentScriptType = ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*SuperType->GetAngelscriptTypeName()));
+			if (ChildScriptType != nullptr && ParentScriptType != nullptr)
+			{
+				ChildScriptType->CopySystemType(ParentScriptType);
+			}
+		}
+
+		if (TotalInterfaceMethodsBound > 0)
+		{
+			UE_LOG(Angelscript, Log,
+				TEXT("[Interface] Auto-registered %d C++ UInterface methods across %d interface types."),
+				TotalInterfaceMethodsBound, InterfacesToBind.Num());
+		}
+	}
+
+	const double TInterfaceBind = FPlatformTime::Seconds();
+
 	UE_LOG(Angelscript, Log,
 		TEXT("[Profiling] blueprinttype bindings breakdown: classes=%d funcs_bound=%d | ")
-		TEXT("collect=%.1fms func_bind=%.1fms getter_setter=%.1fms props_inherit=%.1fms | total=%.1fms"),
+		TEXT("collect=%.1fms func_bind=%.1fms getter_setter=%.1fms props_inherit=%.1fms interface=%.1fms | total=%.1fms"),
 		ClassesToBind.Num(), TotalFuncsBound,
 		(TCollect - T0) * 1000.0,
 		(TFuncBind - TCollect) * 1000.0,
 		(TGetterSetter - TFuncBind) * 1000.0,
 		(TPropsInherit - TGetterSetter) * 1000.0,
-		(TPropsInherit - T0) * 1000.0);
+		(TInterfaceBind - TPropsInherit) * 1000.0,
+		(TInterfaceBind - T0) * 1000.0);
 });
 
 #endif // AS_USE_BIND_DB

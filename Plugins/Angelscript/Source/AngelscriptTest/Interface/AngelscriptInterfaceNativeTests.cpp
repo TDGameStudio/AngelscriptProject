@@ -1,9 +1,8 @@
-#include "Core/AngelscriptBinds.h"
 #include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
+#include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptScenarioTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
-#include "../../AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Misc/AutomationTest.h"
@@ -13,78 +12,6 @@
 
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptScenarioTestUtils;
-
-namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private
-{
-}
-
-using namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private;
-
-namespace AngelscriptTest_Interface_AngelscriptInterfaceNativeTests_Private
-{
-	void TestCallInterfaceMethod(asIScriptGeneric* Generic)
-	{
-		FInterfaceMethodSignature* Signature = static_cast<FInterfaceMethodSignature*>(Generic->GetFunction()->GetUserData());
-		UObject* Object = static_cast<UObject*>(Generic->GetObject());
-		if (Signature == nullptr || Object == nullptr)
-		{
-			return;
-		}
-
-		UFunction* RealFunc = Object->FindFunction(Signature->FunctionName);
-		if (RealFunc == nullptr)
-		{
-			return;
-		}
-
-		InvokeReflectiveUFunctionFromGenericCall(Generic, Object, RealFunc);
-	}
-
-	void BindNativeInterfaceMethod(FAngelscriptBinds& Binds, const TCHAR* Declaration, const TCHAR* FunctionName)
-	{
-		FInterfaceMethodSignature* Signature = FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(FName(FunctionName));
-		Binds.GenericMethod(FString(Declaration), TestCallInterfaceMethod, Signature);
-	}
-
-	void EnsureNativeInterfaceBoundForTests(UClass* InterfaceClass)
-	{
-		if (InterfaceClass == nullptr)
-		{
-			return;
-		}
-
-		auto* ScriptEngine = FAngelscriptEngine::Get().Engine;
-		const FString TypeName = FAngelscriptType::GetBoundClassName(InterfaceClass);
-		if (ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*TypeName)) != nullptr)
-		{
-			return;
-		}
-
-		FAngelscriptBinds Binds = FAngelscriptBinds::ReferenceClass(TypeName, InterfaceClass);
-		auto* TypeInfo = (asCTypeInfo*)Binds.GetTypeInfo();
-		if (TypeInfo != nullptr)
-		{
-			TypeInfo->plainUserData = (SIZE_T)InterfaceClass;
-		}
-
-		if (InterfaceClass == UAngelscriptNativeParentInterface::StaticClass())
-		{
-			BindNativeInterfaceMethod(Binds, TEXT("int GetNativeValue() const"), TEXT("GetNativeValue"));
-			BindNativeInterfaceMethod(Binds, TEXT("void SetNativeMarker(FName Marker)"), TEXT("SetNativeMarker"));
-			BindNativeInterfaceMethod(Binds, TEXT("void AdjustNativeValue(int Delta, int& Value)"), TEXT("AdjustNativeValue"));
-		}
-		else if (InterfaceClass == UAngelscriptNativeChildInterface::StaticClass())
-		{
-			BindNativeInterfaceMethod(Binds, TEXT("int GetChildValue() const"), TEXT("GetChildValue"));
-		}
-	}
-
-	void EnsureNativeInterfaceFixturesBound()
-	{
-		EnsureNativeInterfaceBoundForTests(UAngelscriptNativeParentInterface::StaticClass());
-		EnsureNativeInterfaceBoundForTests(UAngelscriptNativeChildInterface::StaticClass());
-	}
-}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScenarioInterfaceNativeImplementTest,
@@ -115,8 +42,9 @@ bool FAngelscriptScenarioInterfaceNativeImplementTest::RunTest(const FString& Pa
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeImplement"));
-	EnsureNativeInterfaceFixturesBound();
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -231,8 +159,9 @@ bool FAngelscriptScenarioInterfaceNativeInheritedImplementTest::RunTest(const FS
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeInheritedImplement"));
-	EnsureNativeInterfaceFixturesBound();
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -362,8 +291,9 @@ bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripTest::RunTest(const FS
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeReferenceRoundTrip"));
-	EnsureNativeInterfaceFixturesBound();
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -449,8 +379,9 @@ bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripCppBridgeMutatesActorS
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeReferenceRoundTripCppBridgeState"));
-	EnsureNativeInterfaceFixturesBound();
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -578,8 +509,9 @@ bool FAngelscriptScenarioInterfaceNativeInheritedParentBridgeSetterAndRefTest::R
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeInheritedParentBridge"));
-	EnsureNativeInterfaceFixturesBound();
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());

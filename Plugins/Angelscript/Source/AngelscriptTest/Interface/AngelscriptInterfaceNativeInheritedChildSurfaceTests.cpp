@@ -1,9 +1,8 @@
-#include "Core/AngelscriptBinds.h"
 #include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
+#include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptScenarioTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
-#include "../../AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Misc/AutomationTest.h"
@@ -19,77 +18,6 @@ namespace InterfaceNativeInheritedChildSurfaceTests
 	static const FName ModuleName(TEXT("ScenarioInterfaceNativeInheritedChildSurface"));
 	static const FString ScriptFilename(TEXT("ScenarioInterfaceNativeInheritedChildSurface.as"));
 	static const FName GeneratedClassName(TEXT("AScenarioInterfaceNativeInheritedChildSurface"));
-
-	void TestCallInterfaceMethod(asIScriptGeneric* Generic)
-	{
-		FInterfaceMethodSignature* Signature = static_cast<FInterfaceMethodSignature*>(Generic->GetFunction()->GetUserData());
-		UObject* Object = static_cast<UObject*>(Generic->GetObject());
-		if (Signature == nullptr || Object == nullptr)
-		{
-			return;
-		}
-
-		UFunction* RealFunc = Object->FindFunction(Signature->FunctionName);
-		if (RealFunc == nullptr)
-		{
-			return;
-		}
-
-		InvokeReflectiveUFunctionFromGenericCall(Generic, Object, RealFunc);
-	}
-
-	void BindNativeInterfaceMethod(FAngelscriptBinds& Binds, const TCHAR* Declaration, const TCHAR* FunctionName)
-	{
-		FInterfaceMethodSignature* Signature = FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(FName(FunctionName));
-		Binds.GenericMethod(FString(Declaration), TestCallInterfaceMethod, Signature);
-	}
-
-	void EnsureNativeInterfaceBoundForTests(UClass* InterfaceClass)
-	{
-		if (InterfaceClass == nullptr)
-		{
-			return;
-		}
-
-		asIScriptEngine* ScriptEngine = FAngelscriptEngine::Get().Engine;
-		if (ScriptEngine == nullptr)
-		{
-			return;
-		}
-
-		const FString TypeName = FAngelscriptType::GetBoundClassName(InterfaceClass);
-		if (ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*TypeName)) != nullptr)
-		{
-			return;
-		}
-
-		FAngelscriptBinds Binds = FAngelscriptBinds::ReferenceClass(TypeName, InterfaceClass);
-		asCTypeInfo* TypeInfo = static_cast<asCTypeInfo*>(Binds.GetTypeInfo());
-		if (TypeInfo != nullptr)
-		{
-			TypeInfo->plainUserData = reinterpret_cast<SIZE_T>(InterfaceClass);
-		}
-
-		if (InterfaceClass == UAngelscriptNativeParentInterface::StaticClass())
-		{
-			BindNativeInterfaceMethod(Binds, TEXT("int GetNativeValue() const"), TEXT("GetNativeValue"));
-			BindNativeInterfaceMethod(Binds, TEXT("void SetNativeMarker(FName Marker)"), TEXT("SetNativeMarker"));
-			BindNativeInterfaceMethod(Binds, TEXT("void AdjustNativeValue(int Delta, int& Value)"), TEXT("AdjustNativeValue"));
-		}
-		else if (InterfaceClass == UAngelscriptNativeChildInterface::StaticClass())
-		{
-			BindNativeInterfaceMethod(Binds, TEXT("int GetNativeValue() const"), TEXT("GetNativeValue"));
-			BindNativeInterfaceMethod(Binds, TEXT("void SetNativeMarker(FName Marker)"), TEXT("SetNativeMarker"));
-			BindNativeInterfaceMethod(Binds, TEXT("void AdjustNativeValue(int Delta, int& Value)"), TEXT("AdjustNativeValue"));
-			BindNativeInterfaceMethod(Binds, TEXT("int GetChildValue() const"), TEXT("GetChildValue"));
-		}
-	}
-
-	void EnsureNativeInterfaceFixturesBound()
-	{
-		EnsureNativeInterfaceBoundForTests(UAngelscriptNativeParentInterface::StaticClass());
-		EnsureNativeInterfaceBoundForTests(UAngelscriptNativeChildInterface::StaticClass());
-	}
 }
 
 using namespace InterfaceNativeInheritedChildSurfaceTests;
@@ -104,7 +32,8 @@ bool FAngelscriptScenarioInterfaceNativeInheritedChildSurfaceIncludesParentMetho
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
-	InterfaceNativeInheritedChildSurfaceTests::EnsureNativeInterfaceFixturesBound();
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 
 	ON_SCOPE_EXIT
 	{
