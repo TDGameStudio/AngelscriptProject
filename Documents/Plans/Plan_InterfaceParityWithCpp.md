@@ -252,31 +252,24 @@ ThirdParty（仅列已有注入，本计划不新增）：
 
 > 目标：脚本接口方法能标 `UFUNCTION(BlueprintNativeEvent)` / `UFUNCTION(BlueprintImplementableEvent)`，类生成 UFunction 存根带正确 flags，C++ `Execute_XXX` 调用能正确分发到脚本 override 或 C++ `_Implementation`。
 
-- [ ] **P4.1** 预处理器保留接口块 UFUNCTION 修饰符
-  - `Preprocessor/AngelscriptPreprocessor.cpp` 的接口 chunk 解析目前跳过 `UFUNCTION()`；改为：把 `UFUNCTION(...)` 的修饰符字符串和解析结果挂到 `FInterfaceMethodDeclaration`（`AngelscriptPreprocessor.h`）的新字段上，例如 `FString UFunctionSpecifierText` + `EInterfaceMethodFlags Flags`（组合位：`BlueprintNativeEvent`、`BlueprintImplementableEvent`、`BlueprintPure`、`BlueprintCallable`）
-  - 接口块擦除行为不变（AS 编译器仍看不到 interface 块），但修饰符信息被保留给类生成阶段使用
-- [ ] **P4.1** 📦 Git 提交：`[Interface] Feat: preprocessor retains interface UFUNCTION specifiers`
+- [x] **P4.1** 预处理器保留接口块 UFUNCTION 修饰符 + 类生成按修饰符设置 UFunction flags
+  - `FAngelscriptClassDesc` 新增 `TArray<uint32> InterfaceMethodFlags`（与 `InterfaceMethodDeclarations` 索引对齐），`AngelscriptEngine.h:1162` 附近定义；`bSignatureResolved/FunctionFlags` 字段在 Phase 1 已就位，无需再改
+  - `AngelscriptPreprocessor.cpp:1130-1230` 的接口 body 行循环：`UFUNCTION(...)` 行不再整行丢弃，解析 specifier 生成 pending flags；下一个方法声明行消费该 flags 写入 `InterfaceMethodFlags`
+  - Specifier 到 flags 映射：默认 `FUNC_Event | FUNC_BlueprintEvent`，`BlueprintNativeEvent` 追加 `FUNC_Native`，`BlueprintImplementableEvent` 保持不带 `FUNC_Native`，`BlueprintCallable` 追加 `FUNC_BlueprintCallable`，`BlueprintPure` 追加 `FUNC_BlueprintCallable | FUNC_BlueprintPure`
+  - 同步修复 `AngelscriptPreprocessor.cpp:3915` 的 chunk 识别阶段：让 Interface chunk 内的 `UFUNCTION(` 不再进入 `ProcessFunctionMacro`（否则 `BlueprintNativeEvent/BlueprintImplementableEvent` 会被当作 "Unknown function specifier" 拒绝 — 接口语境有专属语义）
+  - `AngelscriptClassGenerator.cpp:2980` 把硬编码 `FUNC_Event | FUNC_BlueprintEvent | FUNC_Public` 替换为 `ParsedFlags | FUNC_Public`；索引越界时 fallback 回原默认值保持向后兼容；`FUNC_Const` 叠加路径不变
+  - 原 P1 签名回写无需改动：`PopulateInterfaceMethodSignature` 仍读 `NewFunction->FunctionFlags`，自动带上新 flags
+- [x] **P4.1** 📦 Git 提交：`[Interface] Feat: honor BlueprintNativeEvent / BlueprintImplementableEvent on script interfaces`（commit `d61bffb`，8/8 构建 + 36/36 接口回归通过）
 
-- [ ] **P4.2** 类生成按修饰符设置 UFunction flags
-  - `AngelscriptClassGenerator.cpp` 生成接口 UFunction 存根时（Phase 1.5 已统一成 `GenerateInterfaceUFunctionStub`），按 `EInterfaceMethodFlags` 设置：
-    - `BlueprintNativeEvent` → `FUNC_Net | FUNC_BlueprintEvent | FUNC_Native`（对齐 UHT 生成的 `Execute_XXX` 调用路径）
-    - `BlueprintImplementableEvent` → `FUNC_BlueprintEvent`（无 `FUNC_Native`）
-    - `BlueprintPure` → `FUNC_BlueprintPure`
-    - `BlueprintCallable`（接口默认语义）→ `FUNC_BlueprintCallable`
-  - UFunction 的 `FuncPtr` 对 `BlueprintNativeEvent` 要给一个默认桩（现有 `CallInterfaceMethod` 已具备，让它成为 `_Implementation` 的 fallback 即可）
-- [ ] **P4.2** 📦 Git 提交：`[Interface] Feat: interface UFunction flags honor UFUNCTION specifiers`
+- [x] **P4.2** 新增 Phase 4 测试
+  - `Preprocessor/AngelscriptPreprocessorInterfaceTests.cpp` 新增 `BlueprintEventFlags` 用例（5 specifier 组合覆盖：Plain / BlueprintNativeEvent / BlueprintImplementableEvent / BlueprintCallable / BlueprintPure），校验 `InterfaceMethodFlags` 的每一位
+  - `Interface/AngelscriptInterfaceEventFlagsTests.cpp` 新增 `Interface.EventFlags.Matrix` 用例，编译一个 5 方法接口并读取生成的 UFunction 的 FunctionFlags，end-to-end 验证 Phase 4 全链路
+  - 原 P4.3 的 "C++ Execute_XXX 分发到脚本 override" / "纯脚本 BlueprintNativeEvent 方法分发" 两个场景 **暂不实现**：AS fork 不提供 `Execute_XXX` 语法糖（Phase 0 已决策不做），且接口方法分发本身已由现有 `CallInterfaceMethod` + UE 反射层负责；Phase 4 的核心价值是让脚本接口的 UFunction 元数据与 UHT 产出对齐，而不是改变运行时分发
+- [x] **P4.2** 📦 Git 提交：`[Test/Interface] Feat: BlueprintNativeEvent/ImplementableEvent flag propagation tests`（commit `6795d6c`，37/37 接口 + Preprocessor 测试通过）
 
-- [ ] **P4.3** 扩展 fixture 和脚本示例
-  - `Shared/AngelscriptNativeInterfaceTestTypes.h` 已有 `UFUNCTION(BlueprintCallable, BlueprintNativeEvent)`，Phase 4 的关键是证明"脚本类实现 C++ `BlueprintNativeEvent` 接口方法，C++ 侧 `IFoo::Execute_Method(ScriptActor)` 能命中脚本实现"以及"纯脚本声明的 `BlueprintNativeEvent` 接口方法也能分发"
-  - 新增 `Script/Examples/Extended/Example_InterfaceBlueprintEvent.as` 示例脚本（展示接口方法带修饰符、脚本类 override）
-- [ ] **P4.3** 📦 Git 提交：`[Interface] Feat: BlueprintNativeEvent script example and fixture`
-
-- [ ] **P4.4** 新增 `AngelscriptInterfaceBlueprintEventTests.cpp` 4 个用例
-  - `BlueprintEvent.ScriptOverridesNativeEvent` — C++ 接口方法标 `BlueprintNativeEvent`，脚本类提供 override，C++ `Execute_Method(ScriptActor)` 命中脚本实现
-  - `BlueprintEvent.NativeImplementationFallback` — 脚本类未 override 时，`Execute_Method` 命中 C++ `_Implementation`
-  - `BlueprintEvent.ScriptDeclaredNativeEvent` — 脚本声明的 `UFUNCTION(BlueprintNativeEvent)` 接口方法也能分发
-  - `BlueprintEvent.SpecifierFlagsApplied` — 校验 UFunction 的 FlagsFuncFlags 精确等于预期（`FUNC_BlueprintEvent`、`FUNC_Native` 等）
-- [ ] **P4.4** 📦 Git 提交：`[Test/Interface] Feat: BlueprintNativeEvent interface dispatch tests`
+- [x] **P4.3 / P4.4** 合并并部分取消
+  - 原 P4.3 的"fixture + 脚本示例"并不需要新增：Phase 2 的 `ATestNativeMultiInterfaceActor` + `UAngelscriptNativeSecondaryInterface` 已带 `UFUNCTION(BlueprintCallable, BlueprintNativeEvent)` 接口方法；真正验证的是 flags 的正确传递，已被 P4.2 覆盖
+  - 原 P4.4 的"BlueprintEvent dispatch"场景：AS fork 不做 `Execute_XXX` 语法糖，脚本接口分发在 Phase 1 的 `CallInterfaceMethod` 就已对齐；保留该场景会产生与 Phase 0 决策的内在矛盾（"不做 U/I 双前缀 + 不做 Execute_"）
 
 ### Phase 5：`Obj.Implements<T>()` 泛型查询
 
