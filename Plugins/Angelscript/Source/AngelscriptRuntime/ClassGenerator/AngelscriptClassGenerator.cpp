@@ -2988,6 +2988,13 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FClassDat
 					NewFunction->FunctionFlags |= FUNC_Const;
 				}
 
+				// Collect structured signature data that will be written back to
+				// `FInterfaceMethodSignature` at the end of this loop — this lets
+				// `FinalizeClass` perform full parameter-type validation against
+				// script implementations (Phase 1).
+				FAngelscriptTypeUsage SignatureReturnType;
+				TArray<FAngelscriptTypeUsage> SignatureParamTypes;
+
 				FProperty* ReturnProperty = nullptr;
 				if (ScriptMethod != nullptr && ScriptMethod->GetReturnTypeId() != asTYPEID_VOID)
 				{
@@ -2996,6 +3003,7 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FClassDat
 					{
 						ReturnProperty = AddFunctionReturnType(NewFunction, ReturnType);
 						NewFunction->FunctionFlags |= FUNC_HasOutParms;
+						SignatureReturnType = ReturnType;
 					}
 				}
 
@@ -3057,6 +3065,7 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FClassDat
 
 						FProperty* NewProperty = AddFunctionArgument(NewFunction, ArgDesc);
 						ArgumentProperties.Add(NewProperty);
+						SignatureParamTypes.Add(Type);
 
 						if (NewProperty->HasAnyPropertyFlags(CPF_OutParm))
 						{
@@ -3083,6 +3092,26 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FClassDat
 				NewFunction->Next = NewClass->Children;
 				NewClass->Children = NewFunction;
 				NewClass->AddFunctionToFunctionMap(NewFunction, NewFunction->GetFName());
+
+				// Write the resolved signature back into `FInterfaceMethodSignature`.
+				// The preprocessor already created the signature (name-only) and
+				// attached it to the AS method via `SetUserData`; now that the full
+				// param/return types and flags are known, we populate the remaining
+				// fields so `FinalizeClass` can validate implementations structurally.
+				if (ScriptMethod != nullptr)
+				{
+					FInterfaceMethodSignature* Sig =
+						(FInterfaceMethodSignature*)((asCScriptFunction*)ScriptMethod)->GetUserData();
+					if (Sig != nullptr)
+					{
+						FAngelscriptEngine::Get().PopulateInterfaceMethodSignature(
+							Sig,
+							SignatureParamTypes,
+							SignatureReturnType,
+							NewFunction->FunctionFlags,
+							(NewFunction->FunctionFlags & FUNC_Const) != 0);
+					}
+				}
 			}
 
 			NewClass->Bind();
