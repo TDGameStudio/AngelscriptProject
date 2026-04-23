@@ -43,7 +43,7 @@ bool FAngelscriptScenarioScriptInheritancePreservesParentPropertyAndOverrideTest
 {
 	FAngelscriptEngine& Engine = ScriptClassShapeTest::AcquireFreshScriptClassShapeEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassScriptInheritance"));
+	static const FName ModuleName(TEXT("TestScriptClassScriptInheritance"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -79,7 +79,7 @@ class AScenarioScriptInheritanceChild : AScenarioScriptInheritanceParent
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassScriptInheritance.as"),
+		TEXT("TestScriptClassScriptInheritance.as"),
 		ScriptSource,
 		TEXT("AScenarioScriptInheritanceParent"));
 	if (ParentClass == nullptr)
@@ -167,7 +167,7 @@ bool FAngelscriptScenarioEmptyActorCompilesAndSpawnsTest::RunTest(const FString&
 {
 	FAngelscriptEngine& Engine = ScriptClassShapeTest::AcquireFreshScriptClassShapeEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassEmptyActor"));
+	static const FName ModuleName(TEXT("TestScriptClassEmptyActor"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -185,7 +185,7 @@ class AEmptyScriptActor : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassEmptyActor.as"),
+		TEXT("TestScriptClassEmptyActor.as"),
 		ScriptSource,
 		TEXT("AEmptyScriptActor"));
 	if (ScriptClass == nullptr)

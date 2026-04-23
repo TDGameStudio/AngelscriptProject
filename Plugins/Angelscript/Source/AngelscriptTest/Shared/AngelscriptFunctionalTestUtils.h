@@ -30,7 +30,7 @@ namespace AngelscriptFunctionalTestUtils
 		FAngelscriptEngineScope EngineScope(Engine);
 
 		if (!Test.TestTrue(
-			*FString::Printf(TEXT("Scenario module '%s' should compile"), *ModuleName.ToString()),
+			*FString::Printf(TEXT("Test module '%s' should compile"), *ModuleName.ToString()),
 			AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(&Engine, ModuleName, Filename, ScriptSource)))
 		{
 			return nullptr;
@@ -38,7 +38,7 @@ namespace AngelscriptFunctionalTestUtils
 
 		UClass* ScriptClass = AngelscriptTestSupport::FindGeneratedClass(&Engine, GeneratedClassName);
 		Test.TestNotNull(
-			*FString::Printf(TEXT("Scenario class '%s' should be generated"), *GeneratedClassName.ToString()),
+			*FString::Printf(TEXT("Test class '%s' should be generated"), *GeneratedClassName.ToString()),
 			ScriptClass);
 		return ScriptClass;
 	}

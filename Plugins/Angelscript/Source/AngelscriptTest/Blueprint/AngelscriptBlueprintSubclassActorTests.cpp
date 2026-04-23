@@ -93,7 +93,7 @@ bool FAngelscriptScenarioBlueprintSubclassBeginPlayTest::RunTest(const FString& 
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorBlueprintSubclassBeginPlay"));
+	static const FName ModuleName(TEXT("TestActorBlueprintSubclassBeginPlay"));
 	UBlueprint* Blueprint = nullptr;
 	ON_SCOPE_EXIT
 	{
@@ -121,7 +121,7 @@ bool FAngelscriptScenarioBlueprintSubclassBeginPlayTest::RunTest(const FString& 
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorBlueprintSubclassBeginPlay.as"),
+		TEXT("TestActorBlueprintSubclassBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorBlueprintSubclassBeginPlay : AActor

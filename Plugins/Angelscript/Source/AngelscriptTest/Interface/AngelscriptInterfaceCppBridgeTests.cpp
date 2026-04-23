@@ -15,8 +15,8 @@ using namespace AngelscriptFunctionalTestUtils;
 
 namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private
 {
-	static const FName ModuleName(TEXT("ScenarioInterfaceCppBridgeReferenceArg"));
-	static const FString ScriptFilename(TEXT("ScenarioInterfaceCppBridgeReferenceArg.as"));
+	static const FName ModuleName(TEXT("TestInterfaceCppBridgeReferenceArg"));
+	static const FString ScriptFilename(TEXT("TestInterfaceCppBridgeReferenceArg.as"));
 	static const FName GeneratedClassName(TEXT("AScenarioInterfaceRefBridgeActor"));
 	static const FName GeneratedInterfaceName(TEXT("UICppRefBridge"));
 	static const FName FunctionName(TEXT("AdjustValue"));

@@ -74,7 +74,7 @@ bool FAngelscriptScenarioInterfaceInheritedInterfaceTest::RunTest(const FString&
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceInherited"));
+	static const FName ModuleName(TEXT("TestInterfaceInherited"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -85,7 +85,7 @@ bool FAngelscriptScenarioInterfaceInheritedInterfaceTest::RunTest(const FString&
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceInherited.as"),
+		TEXT("TestInterfaceInherited.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableParent
@@ -159,7 +159,7 @@ bool FAngelscriptScenarioInterfaceMissingMethodTest::RunTest(const FString& Para
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceMissingMethod"));
+	static const FName ModuleName(TEXT("TestInterfaceMissingMethod"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -170,7 +170,7 @@ bool FAngelscriptScenarioInterfaceMissingMethodTest::RunTest(const FString& Para
 	const bool bCompiled = CompileAnnotatedModuleFromMemory(
 		&Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceMissingMethod.as"),
+		TEXT("TestInterfaceMissingMethod.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableMissing
@@ -219,7 +219,7 @@ bool FAngelscriptScenarioInterfaceNoPropertyTest::RunTest(const FString& Paramet
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceNoProperty"));
+	static const FName ModuleName(TEXT("TestInterfaceNoProperty"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -230,7 +230,7 @@ bool FAngelscriptScenarioInterfaceNoPropertyTest::RunTest(const FString& Paramet
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceNoProperty.as"),
+		TEXT("TestInterfaceNoProperty.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UINoProperty
@@ -261,7 +261,7 @@ bool FAngelscriptScenarioInterfaceGCSafeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceGCSafe"));
+	static const FName ModuleName(TEXT("TestInterfaceGCSafe"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -272,7 +272,7 @@ bool FAngelscriptScenarioInterfaceGCSafeTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceGCSafe.as"),
+		TEXT("TestInterfaceGCSafe.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableGC
@@ -324,7 +324,7 @@ bool FAngelscriptScenarioInterfaceHotReloadTest::RunTest(const FString& Paramete
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceHotReload"));
+	static const FName ModuleName(TEXT("TestInterfaceHotReload"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -377,7 +377,7 @@ class AScenarioInterfaceHotReload : AActor, UIDamageableHR
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceHotReload.as"),
+		TEXT("TestInterfaceHotReload.as"),
 		ScriptV1,
 		TEXT("AScenarioInterfaceHotReload"));
 	if (ClassV1 == nullptr)
@@ -394,7 +394,7 @@ class AScenarioInterfaceHotReload : AActor, UIDamageableHR
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(TEXT("Interface hot reload should succeed on the full reload path"),
-		CompileModuleWithResult(&Engine, ECompileType::FullReload, ModuleName, TEXT("ScenarioInterfaceHotReload.as"), ScriptV2, ReloadResult)))
+		CompileModuleWithResult(&Engine, ECompileType::FullReload, ModuleName, TEXT("TestInterfaceHotReload.as"), ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
@@ -426,7 +426,7 @@ bool FAngelscriptScenarioInterfaceCppInterfaceTest::RunTest(const FString& Param
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceCppInterface"));
+	static const FName ModuleName(TEXT("TestInterfaceCppInterface"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -437,7 +437,7 @@ bool FAngelscriptScenarioInterfaceCppInterfaceTest::RunTest(const FString& Param
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceCppInterface.as"),
+		TEXT("TestInterfaceCppInterface.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UICppTestInterface
@@ -488,7 +488,7 @@ bool FAngelscriptScenarioInterfaceInheritedMethodDispatchTest::RunTest(const FSt
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceInheritedDispatch"));
+	static const FName ModuleName(TEXT("TestInterfaceInheritedDispatch"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -499,7 +499,7 @@ bool FAngelscriptScenarioInterfaceInheritedMethodDispatchTest::RunTest(const FSt
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceInheritedDispatch.as"),
+		TEXT("TestInterfaceInheritedDispatch.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableDispatch
@@ -601,8 +601,8 @@ bool FAngelscriptScenarioInterfaceInheritedMethodDispatchChildSurfaceIncludesPar
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ChildModuleName(TEXT("ScenarioInterfaceInheritedDispatchChildSurface"));
-	static const FName LeafModuleName(TEXT("ScenarioInterfaceMultiDispatchChildSurface"));
+	static const FName ChildModuleName(TEXT("TestInterfaceInheritedDispatchChildSurface"));
+	static const FName LeafModuleName(TEXT("TestInterfaceMultiDispatchChildSurface"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*LeafModuleName.ToString());
@@ -614,7 +614,7 @@ bool FAngelscriptScenarioInterfaceInheritedMethodDispatchChildSurfaceIncludesPar
 		*this,
 		Engine,
 		ChildModuleName,
-		TEXT("ScenarioInterfaceInheritedDispatchChildSurface.as"),
+		TEXT("TestInterfaceInheritedDispatchChildSurface.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableDispatchChildSurface
@@ -676,7 +676,7 @@ class AScenarioInterfaceInheritedDispatchChildSurface : AActor, UIKillableDispat
 		*this,
 		Engine,
 		LeafModuleName,
-		TEXT("ScenarioInterfaceMultiDispatchChildSurface.as"),
+		TEXT("TestInterfaceMultiDispatchChildSurface.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIBaseDispatchChainChildSurface
@@ -801,7 +801,7 @@ bool FAngelscriptScenarioInterfaceMultipleInheritanceChainTest::RunTest(const FS
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceMultiChain"));
+	static const FName ModuleName(TEXT("TestInterfaceMultiChain"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -812,7 +812,7 @@ bool FAngelscriptScenarioInterfaceMultipleInheritanceChainTest::RunTest(const FS
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceMultiChain.as"),
+		TEXT("TestInterfaceMultiChain.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIBaseChain
@@ -889,7 +889,7 @@ bool FAngelscriptScenarioInterfaceMultipleInheritanceDispatchTest::RunTest(const
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceMultiDispatch"));
+	static const FName ModuleName(TEXT("TestInterfaceMultiDispatch"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -900,7 +900,7 @@ bool FAngelscriptScenarioInterfaceMultipleInheritanceDispatchTest::RunTest(const
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceMultiDispatch.as"),
+		TEXT("TestInterfaceMultiDispatch.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIBaseDispatchChain

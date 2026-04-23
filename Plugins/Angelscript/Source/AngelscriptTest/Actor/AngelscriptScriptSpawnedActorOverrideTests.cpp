@@ -127,7 +127,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest::RunTest(const FStr
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorBeginPlayRunsInWorld"));
+	static const FName ModuleName(TEXT("TestScriptActorBeginPlayRunsInWorld"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -138,7 +138,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest::RunTest(const FStr
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorBeginPlayRunsInWorld.as"),
+		TEXT("TestScriptActorBeginPlayRunsInWorld.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorBeginPlayRunsInWorld : AActor
@@ -183,7 +183,7 @@ bool FAngelscriptScenarioScriptActorNativeUFunctionCanBeInvokedTest::RunTest(con
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorNativeUFunctionCanBeInvoked"));
+	static const FName ModuleName(TEXT("TestScriptActorNativeUFunctionCanBeInvoked"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -194,7 +194,7 @@ bool FAngelscriptScenarioScriptActorNativeUFunctionCanBeInvokedTest::RunTest(con
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorNativeUFunctionCanBeInvoked.as"),
+		TEXT("TestScriptActorNativeUFunctionCanBeInvoked.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorNativeUFunctionCanBeInvoked : AActor
@@ -263,7 +263,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayCallsAnotherScriptUFunctionTest::Ru
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorBeginPlayCallsAnotherScriptUFunction"));
+	static const FName ModuleName(TEXT("TestScriptActorBeginPlayCallsAnotherScriptUFunction"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -274,7 +274,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayCallsAnotherScriptUFunctionTest::Ru
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorBeginPlayCallsAnotherScriptUFunction.as"),
+		TEXT("TestScriptActorBeginPlayCallsAnotherScriptUFunction.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
@@ -325,7 +325,7 @@ bool FAngelscriptScenarioScriptActorTickRunsNTimesTest::RunTest(const FString& P
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorTickRunsNTimes"));
+	static const FName ModuleName(TEXT("TestScriptActorTickRunsNTimes"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -336,7 +336,7 @@ bool FAngelscriptScenarioScriptActorTickRunsNTimesTest::RunTest(const FString& P
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorTickRunsNTimes.as"),
+		TEXT("TestScriptActorTickRunsNTimes.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorTickRunsNTimes : AActor
@@ -404,7 +404,7 @@ bool FAngelscriptScenarioScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTe
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorCrossInstanceCallDoesNotLeakState"));
+	static const FName ModuleName(TEXT("TestScriptActorCrossInstanceCallDoesNotLeakState"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -415,7 +415,7 @@ bool FAngelscriptScenarioScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTe
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorCrossInstanceCallDoesNotLeakState.as"),
+		TEXT("TestScriptActorCrossInstanceCallDoesNotLeakState.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorCrossInstanceCallDoesNotLeakState : AActor
@@ -493,7 +493,7 @@ bool FAngelscriptScenarioScriptActorDestroyedActorInvocationFailsSafelyTest::Run
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorDestroyedActorInvocationFailsSafely"));
+	static const FName ModuleName(TEXT("TestScriptActorDestroyedActorInvocationFailsSafely"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -504,7 +504,7 @@ bool FAngelscriptScenarioScriptActorDestroyedActorInvocationFailsSafelyTest::Run
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorDestroyedActorInvocationFailsSafely.as"),
+		TEXT("TestScriptActorDestroyedActorInvocationFailsSafely.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorDestroyedInvocationTarget : AActor
@@ -617,7 +617,7 @@ bool FAngelscriptScenarioScriptActorMissingFunctionReportsExplicitFailureTest::R
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptActorMissingFunctionReportsExplicitFailure"));
+	static const FName ModuleName(TEXT("TestScriptActorMissingFunctionReportsExplicitFailure"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -628,7 +628,7 @@ bool FAngelscriptScenarioScriptActorMissingFunctionReportsExplicitFailureTest::R
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptActorMissingFunctionReportsExplicitFailure.as"),
+		TEXT("TestScriptActorMissingFunctionReportsExplicitFailure.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptActorMissingFunctionReportsExplicitFailure : AActor

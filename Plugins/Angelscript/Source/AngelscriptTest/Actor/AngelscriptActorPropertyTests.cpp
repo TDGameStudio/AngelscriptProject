@@ -30,7 +30,7 @@ bool FAngelscriptScenarioActorUPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorUProperty"));
+	static const FName ModuleName(TEXT("TestActorUProperty"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -41,7 +41,7 @@ bool FAngelscriptScenarioActorUPropertyTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorUProperty.as"),
+		TEXT("TestActorUProperty.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorUProperty : AActor
@@ -91,7 +91,7 @@ bool FAngelscriptScenarioActorUFunctionTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorUFunction"));
+	static const FName ModuleName(TEXT("TestActorUFunction"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -102,7 +102,7 @@ bool FAngelscriptScenarioActorUFunctionTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorUFunction.as"),
+		TEXT("TestActorUFunction.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorUFunction : AActor
@@ -154,7 +154,7 @@ bool FAngelscriptScenarioActorDefaultValuesTest::RunTest(const FString& Paramete
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorDefaultValues"));
+	static const FName ModuleName(TEXT("TestActorDefaultValues"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -165,7 +165,7 @@ bool FAngelscriptScenarioActorDefaultValuesTest::RunTest(const FString& Paramete
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorDefaultValues.as"),
+		TEXT("TestActorDefaultValues.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorDefaultValues : AActor

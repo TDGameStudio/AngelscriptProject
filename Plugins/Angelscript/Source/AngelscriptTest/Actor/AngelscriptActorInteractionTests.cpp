@@ -43,7 +43,7 @@ bool FAngelscriptScenarioActorPointDamageTest::RunTest(const FString& Parameters
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorPointDamage"));
+	static const FName ModuleName(TEXT("TestActorPointDamage"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -54,7 +54,7 @@ bool FAngelscriptScenarioActorPointDamageTest::RunTest(const FString& Parameters
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorPointDamage.as"),
+		TEXT("TestActorPointDamage.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorPointDamage : AActor
@@ -96,7 +96,7 @@ bool FAngelscriptScenarioActorRadialDamageTest::RunTest(const FString& Parameter
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorRadialDamage"));
+	static const FName ModuleName(TEXT("TestActorRadialDamage"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -107,7 +107,7 @@ bool FAngelscriptScenarioActorRadialDamageTest::RunTest(const FString& Parameter
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorRadialDamage.as"),
+		TEXT("TestActorRadialDamage.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioActorRadialDamageSphere : USphereComponent
@@ -163,7 +163,7 @@ bool FAngelscriptScenarioActorMultiSpawnTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorMultiSpawn"));
+	static const FName ModuleName(TEXT("TestActorMultiSpawn"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -174,7 +174,7 @@ bool FAngelscriptScenarioActorMultiSpawnTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorMultiSpawn.as"),
+		TEXT("TestActorMultiSpawn.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorMultiSpawn : AActor
@@ -231,7 +231,7 @@ bool FAngelscriptScenarioActorCrossCallTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorCrossCall"));
+	static const FName ModuleName(TEXT("TestActorCrossCall"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -242,7 +242,7 @@ bool FAngelscriptScenarioActorCrossCallTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorCrossCall.as"),
+		TEXT("TestActorCrossCall.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorCrossCallB : AActor

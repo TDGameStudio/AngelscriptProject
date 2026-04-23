@@ -1,4 +1,4 @@
-#include "Shared/AngelscriptTestEngineHelper.h"
+﻿#include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
@@ -45,7 +45,7 @@ bool FAngelscriptScenarioWorldSubsystemLifecycleTest::RunTest(const FString& Par
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioWorldSubsystemLifecycle"));
+	static const FName ModuleName(TEXT("TestWorldSubsystemLifecycle"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -57,7 +57,7 @@ bool FAngelscriptScenarioWorldSubsystemLifecycleTest::RunTest(const FString& Par
 		&Engine,
 		ECompileType::FullReload,
 		ModuleName,
-		TEXT("ScenarioWorldSubsystemLifecycle.as"),
+		TEXT("TestWorldSubsystemLifecycle.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioWorldLifecycleTracker : UScriptWorldSubsystem
@@ -86,7 +86,7 @@ bool FAngelscriptScenarioWorldSubsystemTickTest::RunTest(const FString& Paramete
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioWorldSubsystemTick"));
+	static const FName ModuleName(TEXT("TestWorldSubsystemTick"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -98,7 +98,7 @@ bool FAngelscriptScenarioWorldSubsystemTickTest::RunTest(const FString& Paramete
 		&Engine,
 		ECompileType::FullReload,
 		ModuleName,
-		TEXT("ScenarioWorldSubsystemTick.as"),
+		TEXT("TestWorldSubsystemTick.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioWorldTicker : UScriptWorldSubsystem
@@ -122,7 +122,7 @@ bool FAngelscriptScenarioWorldSubsystemActorAccessTest::RunTest(const FString& P
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioWorldSubsystemActorAccess"));
+	static const FName ModuleName(TEXT("TestWorldSubsystemActorAccess"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -134,7 +134,7 @@ bool FAngelscriptScenarioWorldSubsystemActorAccessTest::RunTest(const FString& P
 		&Engine,
 		ECompileType::FullReload,
 		ModuleName,
-		TEXT("ScenarioWorldSubsystemActorAccess.as"),
+		TEXT("TestWorldSubsystemActorAccess.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioWorldActorWatcher : UScriptWorldSubsystem
@@ -164,7 +164,7 @@ bool FAngelscriptScenarioGameInstanceSubsystemLifecycleTest::RunTest(const FStri
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioGameInstanceSubsystemLifecycle"));
+	static const FName ModuleName(TEXT("TestGameInstanceSubsystemLifecycle"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -176,7 +176,7 @@ bool FAngelscriptScenarioGameInstanceSubsystemLifecycleTest::RunTest(const FStri
 		&Engine,
 		ECompileType::FullReload,
 		ModuleName,
-		TEXT("ScenarioGameInstanceSubsystemLifecycle.as"),
+		TEXT("TestGameInstanceSubsystemLifecycle.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioGameInstanceLifecycleTracker : UScriptGameInstanceSubsystem

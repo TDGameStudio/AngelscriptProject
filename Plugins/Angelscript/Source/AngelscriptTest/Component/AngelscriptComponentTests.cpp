@@ -100,7 +100,7 @@ bool FAngelscriptScenarioComponentBeginPlayTest::RunTest(const FString& Paramete
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioComponentBeginPlay"));
+	static const FName ModuleName(TEXT("TestComponentBeginPlay"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -111,7 +111,7 @@ bool FAngelscriptScenarioComponentBeginPlayTest::RunTest(const FString& Paramete
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioComponentBeginPlay.as"),
+		TEXT("TestComponentBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioComponentBeginPlay : UAngelscriptComponent
@@ -159,7 +159,7 @@ bool FAngelscriptScenarioComponentTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioComponentTick"));
+	static const FName ModuleName(TEXT("TestComponentTick"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -170,7 +170,7 @@ bool FAngelscriptScenarioComponentTickTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioComponentTick.as"),
+		TEXT("TestComponentTick.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioComponentTick : UAngelscriptComponent
@@ -221,7 +221,7 @@ bool FAngelscriptScenarioComponentReceiveEndPlayTest::RunTest(const FString& Par
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioComponentReceiveEndPlay"));
+	static const FName ModuleName(TEXT("TestComponentReceiveEndPlay"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -232,7 +232,7 @@ bool FAngelscriptScenarioComponentReceiveEndPlayTest::RunTest(const FString& Par
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioComponentReceiveEndPlay.as"),
+		TEXT("TestComponentReceiveEndPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioComponentReceiveEndPlay : UAngelscriptComponent
@@ -282,7 +282,7 @@ bool FAngelscriptScenarioComponentActorOwnerTest::RunTest(const FString& Paramet
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioComponentActorOwner"));
+	static const FName ModuleName(TEXT("TestComponentActorOwner"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -293,7 +293,7 @@ bool FAngelscriptScenarioComponentActorOwnerTest::RunTest(const FString& Paramet
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioComponentActorOwner.as"),
+		TEXT("TestComponentActorOwner.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioComponentOwnerActor : AActor
@@ -371,7 +371,7 @@ bool FAngelscriptScenarioDefaultComponentBasicTest::RunTest(const FString& Param
 	}
 	FAngelscriptEngine& Engine = *ProductionEngine;
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDefaultComponentBasic"));
+	static const FName ModuleName(TEXT("TestDefaultComponentBasic"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -381,7 +381,7 @@ bool FAngelscriptScenarioDefaultComponentBasicTest::RunTest(const FString& Param
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDefaultComponentBasic.as"),
+		TEXT("TestDefaultComponentBasic.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioDefaultComponentBasicRoot : USceneComponent
@@ -437,7 +437,7 @@ bool FAngelscriptScenarioDefaultComponentMultipleTest::RunTest(const FString& Pa
 	}
 	FAngelscriptEngine& Engine = *ProductionEngine;
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDefaultComponentMultiple"));
+	static const FName ModuleName(TEXT("TestDefaultComponentMultiple"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -447,7 +447,7 @@ bool FAngelscriptScenarioDefaultComponentMultipleTest::RunTest(const FString& Pa
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDefaultComponentMultiple.as"),
+		TEXT("TestDefaultComponentMultiple.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioDefaultComponentMultipleRoot : USceneComponent
@@ -531,7 +531,7 @@ bool FAngelscriptScenarioDefaultComponentNativeTypesTest::RunTest(const FString&
 	}
 	FAngelscriptEngine& Engine = *ProductionEngine;
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDefaultComponentNativeTypes"));
+	static const FName ModuleName(TEXT("TestDefaultComponentNativeTypes"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -541,7 +541,7 @@ bool FAngelscriptScenarioDefaultComponentNativeTypesTest::RunTest(const FString&
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDefaultComponentNativeTypes.as"),
+		TEXT("TestDefaultComponentNativeTypes.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioDefaultComponentNativeTypes : AActor

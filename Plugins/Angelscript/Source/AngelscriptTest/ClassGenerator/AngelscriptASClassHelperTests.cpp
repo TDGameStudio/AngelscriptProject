@@ -116,7 +116,7 @@ bool FAngelscriptScenarioASClassHierarchyHelpersResolveScriptAndNativeAncestorsT
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioASClassHierarchyHelpers"));
+	static const FName ModuleName(TEXT("TestASClassHierarchyHelpers"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -127,7 +127,7 @@ bool FAngelscriptScenarioASClassHierarchyHelpersResolveScriptAndNativeAncestorsT
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioASClassHierarchyHelpers.as"),
+		TEXT("TestASClassHierarchyHelpers.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScriptHierarchyHelperParent : AActor

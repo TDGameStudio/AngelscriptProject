@@ -144,7 +144,7 @@ bool FAngelscriptScenarioInterfaceDeclareBasicTest::RunTest(const FString& Param
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInterfaceDeclareBasic"));
+	static const FName ModuleName(TEXT("TestInterfaceDeclareBasic"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -155,7 +155,7 @@ bool FAngelscriptScenarioInterfaceDeclareBasicTest::RunTest(const FString& Param
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceDeclareBasic.as"),
+		TEXT("TestInterfaceDeclareBasic.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageable
@@ -180,7 +180,7 @@ bool FAngelscriptScenarioInterfaceDeclareBasicGeneratedUFunctionShapeTest::RunTe
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	bool bHasIntReturnProperty = false;
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInterfaceDeclareBasicGeneratedUFunctionShape"));
+	static const FName ModuleName(TEXT("TestInterfaceDeclareBasicGeneratedUFunctionShape"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -191,7 +191,7 @@ bool FAngelscriptScenarioInterfaceDeclareBasicGeneratedUFunctionShapeTest::RunTe
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceDeclareBasicGeneratedUFunctionShape.as"),
+		TEXT("TestInterfaceDeclareBasicGeneratedUFunctionShape.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableReflection
@@ -279,7 +279,7 @@ bool FAngelscriptScenarioInterfaceDeclareInheritanceTest::RunTest(const FString&
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInterfaceDeclareInheritance"));
+	static const FName ModuleName(TEXT("TestInterfaceDeclareInheritance"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -290,7 +290,7 @@ bool FAngelscriptScenarioInterfaceDeclareInheritanceTest::RunTest(const FString&
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceDeclareInheritance.as"),
+		TEXT("TestInterfaceDeclareInheritance.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableInh
@@ -320,7 +320,7 @@ bool FAngelscriptScenarioInterfaceDeclareInheritanceMetadataVisibilityTest::RunT
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInterfaceDeclareInheritanceMetadataVisibility"));
+	static const FName ModuleName(TEXT("TestInterfaceDeclareInheritanceMetadataVisibility"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -331,7 +331,7 @@ bool FAngelscriptScenarioInterfaceDeclareInheritanceMetadataVisibilityTest::RunT
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceDeclareInheritanceMetadataVisibility.as"),
+		TEXT("TestInterfaceDeclareInheritanceMetadataVisibility.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableInh

@@ -45,7 +45,7 @@ bool FAngelscriptScenarioHotReloadPropertyPreservedTest::RunTest(const FString& 
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioHotReloadPropertyPreserved"));
+	static const FName ModuleName(TEXT("TestHotReloadPropertyPreserved"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -85,7 +85,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioHotReloadPropertyPreserved.as"),
+		TEXT("TestHotReloadPropertyPreserved.as"),
 		ScriptV1,
 		TEXT("AScenarioHotReloadPropertyPreserved"));
 	if (ClassV1 == nullptr)
@@ -111,7 +111,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(TEXT("Scenario hot-reload property-preserved compile should succeed on the soft reload path"),
-		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ModuleName, TEXT("ScenarioHotReloadPropertyPreserved.as"), ScriptV2, ReloadResult)))
+		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ModuleName, TEXT("TestHotReloadPropertyPreserved.as"), ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
@@ -155,7 +155,7 @@ bool FAngelscriptScenarioHotReloadAddPropertyTest::RunTest(const FString& Parame
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioHotReloadAddProperty"));
+	static const FName ModuleName(TEXT("TestHotReloadAddProperty"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -186,7 +186,7 @@ class AScenarioHotReloadAddProperty : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioHotReloadAddProperty.as"),
+		TEXT("TestHotReloadAddProperty.as"),
 		ScriptV1,
 		TEXT("AScenarioHotReloadAddProperty"));
 	if (ClassV1 == nullptr)
@@ -196,7 +196,7 @@ class AScenarioHotReloadAddProperty : AActor
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(TEXT("Scenario hot-reload add-property compile should succeed on the full reload path"),
-		CompileModuleWithResult(&Engine, ECompileType::FullReload, ModuleName, TEXT("ScenarioHotReloadAddProperty.as"), ScriptV2, ReloadResult)))
+		CompileModuleWithResult(&Engine, ECompileType::FullReload, ModuleName, TEXT("TestHotReloadAddProperty.as"), ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
@@ -242,7 +242,7 @@ bool FAngelscriptScenarioHotReloadFunctionChangeTest::RunTest(const FString& Par
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioHotReloadFunctionChange"));
+	static const FName ModuleName(TEXT("TestHotReloadFunctionChange"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -276,7 +276,7 @@ class AScenarioHotReloadFunctionChange : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioHotReloadFunctionChange.as"),
+		TEXT("TestHotReloadFunctionChange.as"),
 		ScriptV1,
 		TEXT("AScenarioHotReloadFunctionChange"));
 	if (ClassV1 == nullptr)
@@ -308,7 +308,7 @@ class AScenarioHotReloadFunctionChange : AActor
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(TEXT("Scenario hot-reload function-change compile should succeed on the soft reload path"),
-		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ModuleName, TEXT("ScenarioHotReloadFunctionChange.as"), ScriptV2, ReloadResult)))
+		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ModuleName, TEXT("TestHotReloadFunctionChange.as"), ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
@@ -344,7 +344,7 @@ bool FAngelscriptScenarioHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTes
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioHotReloadPIEStructuralChange"));
+	static const FName ModuleName(TEXT("TestHotReloadPIEStructuralChange"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -375,7 +375,7 @@ class AScenarioHotReloadPIEStructuralChange : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioHotReloadPIEStructuralChange.as"),
+		TEXT("TestHotReloadPIEStructuralChange.as"),
 		ScriptV1,
 		TEXT("AScenarioHotReloadPIEStructuralChange"));
 	if (BaselineClass == nullptr)
@@ -389,7 +389,7 @@ class AScenarioHotReloadPIEStructuralChange : AActor
 	const bool bAnalyzed = AnalyzeReloadFromMemory(
 		&Engine,
 		ModuleName,
-		TEXT("ScenarioHotReloadPIEStructuralChange.as"),
+		TEXT("TestHotReloadPIEStructuralChange.as"),
 		ScriptV2,
 		ReloadRequirement,
 		bWantsFullReload,

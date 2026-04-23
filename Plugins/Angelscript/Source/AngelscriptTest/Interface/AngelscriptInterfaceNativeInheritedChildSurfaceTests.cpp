@@ -15,8 +15,8 @@ using namespace AngelscriptFunctionalTestUtils;
 
 namespace InterfaceNativeInheritedChildSurfaceTests
 {
-	static const FName ModuleName(TEXT("ScenarioInterfaceNativeInheritedChildSurface"));
-	static const FString ScriptFilename(TEXT("ScenarioInterfaceNativeInheritedChildSurface.as"));
+	static const FName ModuleName(TEXT("TestInterfaceNativeInheritedChildSurface"));
+	static const FString ScriptFilename(TEXT("TestInterfaceNativeInheritedChildSurface.as"));
 	static const FName GeneratedClassName(TEXT("AScenarioInterfaceNativeInheritedChildSurface"));
 }
 

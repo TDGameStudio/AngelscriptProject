@@ -158,7 +158,7 @@ bool FAngelscriptScenarioScriptClassCompilesToUClassTest::RunTest(const FString&
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassCompilesToUClass"));
+	static const FName ModuleName(TEXT("TestScriptClassCompilesToUClass"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -169,7 +169,7 @@ bool FAngelscriptScenarioScriptClassCompilesToUClassTest::RunTest(const FString&
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassCompilesToUClass.as"),
+		TEXT("TestScriptClassCompilesToUClass.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassCompilesToUClass : AActor
@@ -208,7 +208,7 @@ bool FAngelscriptScenarioScriptClassCanSpawnInTestWorldTest::RunTest(const FStri
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassCanSpawnInTestWorld"));
+	static const FName ModuleName(TEXT("TestScriptClassCanSpawnInTestWorld"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -219,7 +219,7 @@ bool FAngelscriptScenarioScriptClassCanSpawnInTestWorldTest::RunTest(const FStri
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassCanSpawnInTestWorld.as"),
+		TEXT("TestScriptClassCanSpawnInTestWorld.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassCanSpawnInTestWorld : AActor
@@ -264,7 +264,7 @@ bool FAngelscriptScenarioScriptClassMultiSpawnKeepsStateIsolationTest::RunTest(c
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassMultiSpawnKeepsStateIsolation"));
+	static const FName ModuleName(TEXT("TestScriptClassMultiSpawnKeepsStateIsolation"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -275,7 +275,7 @@ bool FAngelscriptScenarioScriptClassMultiSpawnKeepsStateIsolationTest::RunTest(c
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassMultiSpawnKeepsStateIsolation.as"),
+		TEXT("TestScriptClassMultiSpawnKeepsStateIsolation.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassMultiSpawnKeepsStateIsolation : AActor
@@ -330,7 +330,7 @@ bool FAngelscriptScenarioScriptClassBlueprintChildCompilesTest::RunTest(const FS
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassBlueprintChildCompiles"));
+	static const FName ModuleName(TEXT("TestScriptClassBlueprintChildCompiles"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -341,7 +341,7 @@ bool FAngelscriptScenarioScriptClassBlueprintChildCompilesTest::RunTest(const FS
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassBlueprintChildCompiles.as"),
+		TEXT("TestScriptClassBlueprintChildCompiles.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassBlueprintChildCompiles : AActor
@@ -406,7 +406,7 @@ bool FAngelscriptScenarioScriptClassCDOHasExpectedDefaultsTest::RunTest(const FS
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassCDOHasExpectedDefaults"));
+	static const FName ModuleName(TEXT("TestScriptClassCDOHasExpectedDefaults"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -417,7 +417,7 @@ bool FAngelscriptScenarioScriptClassCDOHasExpectedDefaultsTest::RunTest(const FS
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassCDOHasExpectedDefaults.as"),
+		TEXT("TestScriptClassCDOHasExpectedDefaults.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassCDOHasExpectedDefaults : AActor
@@ -494,7 +494,7 @@ bool FAngelscriptScenarioScriptClassRecompileDoesNotCrashClassSwitchTest::RunTes
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassRecompileDoesNotCrashClassSwitch"));
+	static const FName ModuleName(TEXT("TestScriptClassRecompileDoesNotCrashClassSwitch"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -505,7 +505,7 @@ bool FAngelscriptScenarioScriptClassRecompileDoesNotCrashClassSwitchTest::RunTes
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassRecompileDoesNotCrashClassSwitch.as"),
+		TEXT("TestScriptClassRecompileDoesNotCrashClassSwitch.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
@@ -538,7 +538,7 @@ class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassRecompileDoesNotCrashClassSwitch.as"),
+		TEXT("TestScriptClassRecompileDoesNotCrashClassSwitch.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
@@ -584,7 +584,7 @@ bool FAngelscriptScenarioScriptClassNonUClassTypeCannotSpawnTest::RunTest(const 
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioScriptClassNonUClassTypeCannotSpawn"));
+	static const FName ModuleName(TEXT("TestScriptClassNonUClassTypeCannotSpawn"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -595,7 +595,7 @@ bool FAngelscriptScenarioScriptClassNonUClassTypeCannotSpawnTest::RunTest(const 
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassNonUClassTypeCannotSpawn.as"),
+		TEXT("TestScriptClassNonUClassTypeCannotSpawn.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioScriptClassNonUClassTypeCannotSpawn : UObject
@@ -631,7 +631,7 @@ bool FAngelscriptScenarioScriptClassRenameReplacesOldClassTest::RunTest(const FS
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioScriptClassRenameReplacesOldClass"));
+	static const FName ModuleName(TEXT("TestScriptClassRenameReplacesOldClass"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -642,7 +642,7 @@ bool FAngelscriptScenarioScriptClassRenameReplacesOldClassTest::RunTest(const FS
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassRenameReplacesOldClass.as"),
+		TEXT("TestScriptClassRenameReplacesOldClass.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassRenameOld : AActor
@@ -661,7 +661,7 @@ class AScenarioScriptClassRenameOld : AActor
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioScriptClassRenameReplacesOldClass.as"),
+		TEXT("TestScriptClassRenameReplacesOldClass.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioScriptClassRenameNew : AActor

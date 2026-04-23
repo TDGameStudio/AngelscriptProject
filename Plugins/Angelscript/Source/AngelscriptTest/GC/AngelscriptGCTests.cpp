@@ -76,7 +76,7 @@ bool FAngelscriptScenarioGCActorDestroyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioGCActorDestroy"));
+	static const FName ModuleName(TEXT("TestGCActorDestroy"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -87,7 +87,7 @@ bool FAngelscriptScenarioGCActorDestroyTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioGCActorDestroy.as"),
+		TEXT("TestGCActorDestroy.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioGCActorDestroy : AActor
@@ -124,7 +124,7 @@ bool FAngelscriptScenarioGCComponentDestroyTest::RunTest(const FString& Paramete
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioGCComponentDestroy"));
+	static const FName ModuleName(TEXT("TestGCComponentDestroy"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -135,7 +135,7 @@ bool FAngelscriptScenarioGCComponentDestroyTest::RunTest(const FString& Paramete
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioGCComponentDestroy.as"),
+		TEXT("TestGCComponentDestroy.as"),
 		TEXT(R"AS(
 UCLASS()
 class UScenarioGCComponentDestroy : UAngelscriptComponent
@@ -172,7 +172,7 @@ bool FAngelscriptScenarioGCWorldTeardownTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioGCWorldTeardown"));
+	static const FName ModuleName(TEXT("TestGCWorldTeardown"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -183,7 +183,7 @@ bool FAngelscriptScenarioGCWorldTeardownTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioGCWorldTeardown.as"),
+		TEXT("TestGCWorldTeardown.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioGCWorldTeardownActor : AActor

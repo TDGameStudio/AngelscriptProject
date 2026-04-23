@@ -1,4 +1,4 @@
-#include "Shared/AngelscriptTestEngineHelper.h"
+﻿#include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
@@ -10,8 +10,8 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Interface_AngelscriptInterfaceValidationTests_Private
 {
-	static const FName InterfaceValidationModuleName(TEXT("ScenarioInterfaceValidation"));
-	static constexpr TCHAR InterfaceValidationFilename[] = TEXT("ScenarioInterfaceValidation.as");
+	static const FName InterfaceValidationModuleName(TEXT("TestInterfaceValidation"));
+	static constexpr TCHAR InterfaceValidationFilename[] = TEXT("TestInterfaceValidation.as");
 	static constexpr TCHAR InvalidInterfaceClassName[] = TEXT("UIInvalidProperty");
 	static constexpr TCHAR ExpectedDiagnosticFragment[] = TEXT("Interface UIInvalidProperty cannot declare property StoredValue.");
 

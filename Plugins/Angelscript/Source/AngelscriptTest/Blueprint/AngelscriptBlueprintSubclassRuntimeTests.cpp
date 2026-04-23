@@ -214,7 +214,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest::RunTest(cons
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildInheritsScriptBeginPlay"));
+	static const FName ModuleName(TEXT("TestBlueprintChildInheritsScriptBeginPlay"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -225,7 +225,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest::RunTest(cons
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildInheritsScriptBeginPlay.as"),
+		TEXT("TestBlueprintChildInheritsScriptBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildInheritsScriptBeginPlayParent : AActor
@@ -284,7 +284,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptTickTest::RunTest(const FSt
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildInheritsScriptTick"));
+	static const FName ModuleName(TEXT("TestBlueprintChildInheritsScriptTick"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -295,7 +295,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptTickTest::RunTest(const FSt
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildInheritsScriptTick.as"),
+		TEXT("TestBlueprintChildInheritsScriptTick.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildInheritsScriptTickParent : AActor
@@ -378,7 +378,7 @@ bool FAngelscriptScenarioBlueprintChildScriptUFunctionStillCallableTest::RunTest
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildScriptUFunctionStillCallable"));
+	static const FName ModuleName(TEXT("TestBlueprintChildScriptUFunctionStillCallable"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -389,7 +389,7 @@ bool FAngelscriptScenarioBlueprintChildScriptUFunctionStillCallableTest::RunTest
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildScriptUFunctionStillCallable.as"),
+		TEXT("TestBlueprintChildScriptUFunctionStillCallable.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildScriptUFunctionStillCallableParent : AActor
@@ -468,7 +468,7 @@ bool FAngelscriptScenarioBlueprintChildRecreateDoesNotLeakPreviousStateTest::Run
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildRecreateDoesNotLeakPreviousState"));
+	static const FName ModuleName(TEXT("TestBlueprintChildRecreateDoesNotLeakPreviousState"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -479,7 +479,7 @@ bool FAngelscriptScenarioBlueprintChildRecreateDoesNotLeakPreviousStateTest::Run
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildRecreateDoesNotLeakPreviousState.as"),
+		TEXT("TestBlueprintChildRecreateDoesNotLeakPreviousState.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildRecreateStateParent : AActor
@@ -582,7 +582,7 @@ bool FAngelscriptScenarioBlueprintChildNoOverrideUsesScriptParentDefaultTest::Ru
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildNoOverrideUsesScriptParentDefault"));
+	static const FName ModuleName(TEXT("TestBlueprintChildNoOverrideUsesScriptParentDefault"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -593,7 +593,7 @@ bool FAngelscriptScenarioBlueprintChildNoOverrideUsesScriptParentDefaultTest::Ru
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildNoOverrideUsesScriptParentDefault.as"),
+		TEXT("TestBlueprintChildNoOverrideUsesScriptParentDefault.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
@@ -691,7 +691,7 @@ bool FAngelscriptScenarioBlueprintChildOverrideChainHasDeterministicCountsTest::
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintChildOverrideChainHasDeterministicCounts"));
+	static const FName ModuleName(TEXT("TestBlueprintChildOverrideChainHasDeterministicCounts"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -702,7 +702,7 @@ bool FAngelscriptScenarioBlueprintChildOverrideChainHasDeterministicCountsTest::
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintChildOverrideChainHasDeterministicCounts.as"),
+		TEXT("TestBlueprintChildOverrideChainHasDeterministicCounts.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintChildOverrideChainParent : AActor

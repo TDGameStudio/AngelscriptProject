@@ -36,7 +36,7 @@ bool FAngelscriptScenarioInterfaceImplementBasicTest::RunTest(const FString& Par
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceImplementBasic"));
+	static const FName ModuleName(TEXT("TestInterfaceImplementBasic"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -47,7 +47,7 @@ bool FAngelscriptScenarioInterfaceImplementBasicTest::RunTest(const FString& Par
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceImplementBasic.as"),
+		TEXT("TestInterfaceImplementBasic.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableImpl
@@ -97,7 +97,7 @@ bool FAngelscriptScenarioInterfaceImplementMultipleTest::RunTest(const FString& 
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceImplementMultiple"));
+	static const FName ModuleName(TEXT("TestInterfaceImplementMultiple"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -108,7 +108,7 @@ bool FAngelscriptScenarioInterfaceImplementMultipleTest::RunTest(const FString& 
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceImplementMultiple.as"),
+		TEXT("TestInterfaceImplementMultiple.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableMulti
@@ -178,7 +178,7 @@ bool FAngelscriptScenarioInterfaceImplementsInterfaceMethodTest::RunTest(const F
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceImplMethod"));
+	static const FName ModuleName(TEXT("TestInterfaceImplMethod"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -189,7 +189,7 @@ bool FAngelscriptScenarioInterfaceImplementsInterfaceMethodTest::RunTest(const F
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceImplMethod.as"),
+		TEXT("TestInterfaceImplMethod.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableImplCheck

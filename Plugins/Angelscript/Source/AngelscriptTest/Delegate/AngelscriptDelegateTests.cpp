@@ -73,7 +73,7 @@ bool FAngelscriptScenarioDelegateUnicastTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDelegateUnicast"));
+	static const FName ModuleName(TEXT("TestDelegateUnicast"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -84,7 +84,7 @@ bool FAngelscriptScenarioDelegateUnicastTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDelegateUnicast.as"),
+		TEXT("TestDelegateUnicast.as"),
 		TEXT(R"AS(
 delegate void FOnHealthChanged(int32 NewHealth, const FString& Label);
 
@@ -158,7 +158,7 @@ bool FAngelscriptScenarioDelegateMulticastTest::RunTest(const FString& Parameter
 {
 	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDelegateMulticast"));
+	static const FName ModuleName(TEXT("TestDelegateMulticast"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -169,7 +169,7 @@ bool FAngelscriptScenarioDelegateMulticastTest::RunTest(const FString& Parameter
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDelegateMulticast.as"),
+		TEXT("TestDelegateMulticast.as"),
 		TEXT(R"AS(
 event void FOnDamaged(int32 NewHealth, const FString& Label);
 
@@ -250,7 +250,7 @@ bool FAngelscriptScenarioDelegateUnicastSignatureMismatchTest::RunTest(const FSt
 {
 	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDelegateUnicastSignatureMismatch"));
+	static const FName ModuleName(TEXT("TestDelegateUnicastSignatureMismatch"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -261,7 +261,7 @@ bool FAngelscriptScenarioDelegateUnicastSignatureMismatchTest::RunTest(const FSt
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDelegateUnicastSignatureMismatch.as"),
+		TEXT("TestDelegateUnicastSignatureMismatch.as"),
 		TEXT(R"AS(
 delegate void FOnHealthChanged(int32 NewHealth, const FString& Label);
 
@@ -324,7 +324,7 @@ class AScenarioDelegateUnicastSignatureMismatch : AActor
 	Params.Label = TEXT("UnicastMismatch");
 	ExpectDelegateSignatureMismatchLogs(
 		*this,
-		TEXT("ScenarioDelegateUnicastSignatureMismatch"),
+		TEXT("TestDelegateUnicastSignatureMismatch"),
 		TEXT("void FOnHealthChanged::Execute(int, FString) const"),
 		TEXT("void AScenarioDelegateUnicastSignatureMismatch::TriggerHealthChanged(int, FString)"));
 	{
@@ -340,7 +340,7 @@ bool FAngelscriptScenarioDelegateMulticastSignatureMismatchTest::RunTest(const F
 {
 	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("ScenarioDelegateMulticastSignatureMismatch"));
+	static const FName ModuleName(TEXT("TestDelegateMulticastSignatureMismatch"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -351,7 +351,7 @@ bool FAngelscriptScenarioDelegateMulticastSignatureMismatchTest::RunTest(const F
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioDelegateMulticastSignatureMismatch.as"),
+		TEXT("TestDelegateMulticastSignatureMismatch.as"),
 		TEXT(R"AS(
 event void FOnDamaged(int32 NewHealth, const FString& Label);
 
@@ -417,7 +417,7 @@ class AScenarioDelegateMulticastSignatureMismatch : AActor
 	Params.Label = TEXT("MulticastMismatch");
 	ExpectDelegateSignatureMismatchLogs(
 		*this,
-		TEXT("ScenarioDelegateMulticastSignatureMismatch"),
+		TEXT("TestDelegateMulticastSignatureMismatch"),
 		TEXT("void FOnDamaged::Broadcast(int, FString) const"),
 		TEXT("void AScenarioDelegateMulticastSignatureMismatch::TriggerDamaged(int, FString)"));
 	{

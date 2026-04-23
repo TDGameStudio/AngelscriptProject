@@ -82,7 +82,7 @@ bool FAngelscriptGASCharacterInputAndOwnedTagsTest::RunTest(const FString& Param
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
-	static const FName ModuleName(TEXT("ScenarioGASCharacterInputBridge"));
+	static const FName ModuleName(TEXT("TestGASCharacterInputBridge"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -99,7 +99,7 @@ bool FAngelscriptGASCharacterInputAndOwnedTagsTest::RunTest(const FString& Param
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioGASCharacterInputBridge.as"),
+		TEXT("TestGASCharacterInputBridge.as"),
 		TEXT(R"AS(
 UCLASS()
 class AAutomationGASCharacter : AAngelscriptGASCharacter
@@ -179,7 +179,7 @@ bool FAngelscriptGASActorBaseAbilitySystemAndPawnInputTest::RunTest(const FStrin
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
-	static const FName ModuleName(TEXT("ScenarioGASActorBaseBridge"));
+	static const FName ModuleName(TEXT("TestGASActorBaseBridge"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -193,7 +193,7 @@ bool FAngelscriptGASActorBaseAbilitySystemAndPawnInputTest::RunTest(const FStrin
 				CompileAnnotatedModuleFromMemory(
 					&Engine,
 					ModuleName,
-					TEXT("ScenarioGASActorBaseBridge.as"),
+					TEXT("TestGASActorBaseBridge.as"),
 					TEXT(R"AS(
 UCLASS()
 class AAutomationGASActor : AAngelscriptGASActor

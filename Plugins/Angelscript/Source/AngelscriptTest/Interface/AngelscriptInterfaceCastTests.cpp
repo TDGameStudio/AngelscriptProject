@@ -82,7 +82,7 @@ bool FAngelscriptScenarioInterfaceCastSuccessTest::RunTest(const FString& Parame
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceCastSuccess"));
+	static const FName ModuleName(TEXT("TestInterfaceCastSuccess"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -93,7 +93,7 @@ bool FAngelscriptScenarioInterfaceCastSuccessTest::RunTest(const FString& Parame
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceCastSuccess.as"),
+		TEXT("TestInterfaceCastSuccess.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableCastOk
@@ -154,7 +154,7 @@ bool FAngelscriptScenarioInterfaceCastFailTest::RunTest(const FString& Parameter
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceCastFail"));
+	static const FName ModuleName(TEXT("TestInterfaceCastFail"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -165,7 +165,7 @@ bool FAngelscriptScenarioInterfaceCastFailTest::RunTest(const FString& Parameter
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceCastFail.as"),
+		TEXT("TestInterfaceCastFail.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableCastFail
@@ -223,7 +223,7 @@ bool FAngelscriptScenarioInterfaceMethodCallTest::RunTest(const FString& Paramet
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceMethodCall"));
+	static const FName ModuleName(TEXT("TestInterfaceMethodCall"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -234,7 +234,7 @@ bool FAngelscriptScenarioInterfaceMethodCallTest::RunTest(const FString& Paramet
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceMethodCall.as"),
+		TEXT("TestInterfaceMethodCall.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableMethodCall
@@ -316,7 +316,7 @@ bool FAngelscriptScenarioInterfaceCastFastPathGuardsAndPositivePathTest::RunTest
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceCastFastPath"));
+	static const FName ModuleName(TEXT("TestInterfaceCastFastPath"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -327,7 +327,7 @@ bool FAngelscriptScenarioInterfaceCastFastPathGuardsAndPositivePathTest::RunTest
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceCastFastPath.as"),
+		TEXT("TestInterfaceCastFastPath.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIDamageableCastFastPath

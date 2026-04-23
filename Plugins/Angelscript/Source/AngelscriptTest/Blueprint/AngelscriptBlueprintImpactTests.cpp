@@ -181,7 +181,7 @@ bool FAngelscriptBlueprintImpactScriptParentMatchTest::RunTest(const FString& Pa
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintImpactScriptParentMatch"));
+	static const FName ModuleName(TEXT("TestBlueprintImpactScriptParentMatch"));
 	UBlueprint* Blueprint = nullptr;
 	ON_SCOPE_EXIT
 	{
@@ -194,7 +194,7 @@ bool FAngelscriptBlueprintImpactScriptParentMatchTest::RunTest(const FString& Pa
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintImpactScriptParentMatch.as"),
+		TEXT("TestBlueprintImpactScriptParentMatch.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintImpactScriptParentMatch : AActor
@@ -217,7 +217,7 @@ class AScenarioBlueprintImpactScriptParentMatch : AActor
 
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> MatchingModules = AngelscriptEditor::BlueprintImpact::FindModulesForChangedScripts(
 		Engine.GetActiveModules(),
-		{ TEXT("ScenarioBlueprintImpactScriptParentMatch.as") });
+		{ TEXT("TestBlueprintImpactScriptParentMatch.as") });
 	if (!TestEqual(TEXT("Blueprint impact scenario should resolve the changed script to exactly one active module"), MatchingModules.Num(), 1))
 	{
 		return false;
@@ -241,8 +241,8 @@ bool FAngelscriptBlueprintImpactChangedScriptFilterTest::RunTest(const FString& 
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleA(TEXT("ScenarioBlueprintImpactFilterA"));
-	static const FName ModuleB(TEXT("ScenarioBlueprintImpactFilterB"));
+	static const FName ModuleA(TEXT("TestBlueprintImpactFilterA"));
+	static const FName ModuleB(TEXT("TestBlueprintImpactFilterB"));
 	UBlueprint* BlueprintA = nullptr;
 	UBlueprint* BlueprintB = nullptr;
 	ON_SCOPE_EXIT
@@ -258,7 +258,7 @@ bool FAngelscriptBlueprintImpactChangedScriptFilterTest::RunTest(const FString& 
 		*this,
 		Engine,
 		ModuleA,
-		TEXT("ScenarioBlueprintImpactFilterA.as"),
+		TEXT("TestBlueprintImpactFilterA.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintImpactFilterA : AActor
@@ -277,7 +277,7 @@ class AScenarioBlueprintImpactFilterA : AActor
 		*this,
 		Engine,
 		ModuleB,
-		TEXT("ScenarioBlueprintImpactFilterB.as"),
+		TEXT("TestBlueprintImpactFilterB.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintImpactFilterB : AActor
@@ -302,7 +302,7 @@ class AScenarioBlueprintImpactFilterB : AActor
 
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> MatchingModules = AngelscriptEditor::BlueprintImpact::FindModulesForChangedScripts(
 		Engine.GetActiveModules(),
-		{ TEXT("ScenarioBlueprintImpactFilterA.as") });
+		{ TEXT("TestBlueprintImpactFilterA.as") });
 	if (!TestEqual(TEXT("Blueprint impact filter scenario should only keep the module matching the changed script"), MatchingModules.Num(), 1))
 	{
 		return false;
@@ -331,7 +331,7 @@ bool FAngelscriptBlueprintImpactDiskBackedAssetScanTest::RunTest(const FString& 
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioBlueprintImpactDiskBackedAssetScan"));
+	static const FName ModuleName(TEXT("TestBlueprintImpactDiskBackedAssetScan"));
 	UBlueprint* Blueprint = nullptr;
 	FString PackagePath;
 	FString PackageFilename;
@@ -350,7 +350,7 @@ bool FAngelscriptBlueprintImpactDiskBackedAssetScanTest::RunTest(const FString& 
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioBlueprintImpactDiskBackedAssetScan.as"),
+		TEXT("TestBlueprintImpactDiskBackedAssetScan.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioBlueprintImpactDiskBackedAssetScan : AActor
@@ -380,7 +380,7 @@ class AScenarioBlueprintImpactDiskBackedAssetScan : AActor
 	AssetRegistryModule.Get().ScanModifiedAssetFiles({ PackageFilename });
 
 	AngelscriptEditor::BlueprintImpact::FBlueprintImpactRequest Request;
-	Request.ChangedScripts = { TEXT("ScenarioBlueprintImpactDiskBackedAssetScan.as") };
+	Request.ChangedScripts = { TEXT("TestBlueprintImpactDiskBackedAssetScan.as") };
 	const AngelscriptEditor::BlueprintImpact::FBlueprintImpactScanResult ScanResult = AngelscriptEditor::BlueprintImpact::ScanBlueprintAssets(
 		Engine,
 		AssetRegistryModule.Get(),

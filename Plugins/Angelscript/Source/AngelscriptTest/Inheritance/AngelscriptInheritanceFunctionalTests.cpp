@@ -42,7 +42,7 @@ bool FAngelscriptScenarioInheritanceScriptToScriptTest::RunTest(const FString& P
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInheritanceScriptToScript"));
+	static const FName ModuleName(TEXT("TestInheritanceScriptToScript"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -56,7 +56,7 @@ class AScenarioInheritanceBaseline : AActor
 }
 )AS");
 	if (!TestTrue(TEXT("Scenario inheritance baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("ScenarioInheritanceScriptToScript.as"), BaselineScript)))
+		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceScriptToScript.as"), BaselineScript)))
 	{
 		return false;
 	}
@@ -67,7 +67,7 @@ class AScenarioInheritanceBaseline : AActor
 	const bool bAnalyzed = AnalyzeReloadFromMemory(
 		&Engine,
 		ModuleName,
-		TEXT("ScenarioInheritanceScriptToScript.as"),
+		TEXT("TestInheritanceScriptToScript.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioInheritanceBase : AActor
@@ -108,7 +108,7 @@ bool FAngelscriptScenarioInheritanceSuperTest::RunTest(const FString& Parameters
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInheritanceSuper"));
+	static const FName ModuleName(TEXT("TestInheritanceSuper"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -122,7 +122,7 @@ class AScenarioInheritanceSuperBaseline : AActor
 }
 )AS");
 	if (!TestTrue(TEXT("Scenario inheritance super baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("ScenarioInheritanceSuper.as"), BaselineScript)))
+		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceSuper.as"), BaselineScript)))
 	{
 		return false;
 	}
@@ -133,7 +133,7 @@ class AScenarioInheritanceSuperBaseline : AActor
 	const bool bAnalyzed = AnalyzeReloadFromMemory(
 		&Engine,
 		ModuleName,
-		TEXT("ScenarioInheritanceSuper.as"),
+		TEXT("TestInheritanceSuper.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioInheritanceSuperBase : AActor
@@ -174,7 +174,7 @@ bool FAngelscriptScenarioInheritanceIsATest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioInheritanceIsA"));
+	static const FName ModuleName(TEXT("TestInheritanceIsA"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -188,7 +188,7 @@ class AScenarioInheritanceIsABaseline : AActor
 }
 )AS");
 	if (!TestTrue(TEXT("Scenario inheritance IsA baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("ScenarioInheritanceIsA.as"), BaselineScript)))
+		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceIsA.as"), BaselineScript)))
 	{
 		return false;
 	}
@@ -199,7 +199,7 @@ class AScenarioInheritanceIsABaseline : AActor
 	const bool bAnalyzed = AnalyzeReloadFromMemory(
 		&Engine,
 		ModuleName,
-		TEXT("ScenarioInheritanceIsA.as"),
+		TEXT("TestInheritanceIsA.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioInheritanceIsABase : AActor

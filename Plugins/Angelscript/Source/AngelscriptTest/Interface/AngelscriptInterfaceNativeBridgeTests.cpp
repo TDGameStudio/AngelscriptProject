@@ -15,8 +15,8 @@ using namespace AngelscriptFunctionalTestUtils;
 
 namespace InterfaceNativeBridgeTests
 {
-	static const FName ModuleName(TEXT("ScenarioInterfaceNativeCppImplementerBridge"));
-	static const FString ScriptFilename(TEXT("ScenarioInterfaceNativeCppImplementerBridge.as"));
+	static const FName ModuleName(TEXT("TestInterfaceNativeCppImplementerBridge"));
+	static const FString ScriptFilename(TEXT("TestInterfaceNativeCppImplementerBridge.as"));
 	static const FName GeneratedClassName(TEXT("AScenarioInterfaceNativeCppImplementerBridge"));
 	static const FName TargetPropertyName(TEXT("Target"));
 	static const FName CastSucceededPropertyName(TEXT("bCastSucceeded"));

@@ -61,7 +61,7 @@ bool FAngelscriptScenarioInterfaceHierarchyProcessEventDispatchTest::RunTest(con
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
-	static const FName ModuleName(TEXT("ScenarioInterfaceHierarchyProcessEvent"));
+	static const FName ModuleName(TEXT("TestInterfaceHierarchyProcessEvent"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -72,7 +72,7 @@ bool FAngelscriptScenarioInterfaceHierarchyProcessEventDispatchTest::RunTest(con
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioInterfaceHierarchyProcessEvent.as"),
+		TEXT("TestInterfaceHierarchyProcessEvent.as"),
 		TEXT(R"AS(
 UINTERFACE()
 interface UIBaseDispatchProcess

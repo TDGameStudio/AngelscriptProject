@@ -47,7 +47,7 @@ bool FAngelscriptScenarioActorBeginPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorBeginPlay"));
+	static const FName ModuleName(TEXT("TestActorBeginPlay"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -58,7 +58,7 @@ bool FAngelscriptScenarioActorBeginPlayTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorBeginPlay.as"),
+		TEXT("TestActorBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorBeginPlay : AActor
@@ -104,7 +104,7 @@ bool FAngelscriptScenarioActorTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorTick"));
+	static const FName ModuleName(TEXT("TestActorTick"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -115,7 +115,7 @@ bool FAngelscriptScenarioActorTickTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorTick.as"),
+		TEXT("TestActorTick.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorTick : AActor
@@ -166,7 +166,7 @@ bool FAngelscriptScenarioActorReceiveEndPlayTest::RunTest(const FString& Paramet
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorReceiveEndPlay"));
+	static const FName ModuleName(TEXT("TestActorReceiveEndPlay"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -177,7 +177,7 @@ bool FAngelscriptScenarioActorReceiveEndPlayTest::RunTest(const FString& Paramet
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorReceiveEndPlay.as"),
+		TEXT("TestActorReceiveEndPlay.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorReceiveEndPlay : AActor
@@ -226,7 +226,7 @@ bool FAngelscriptScenarioActorReceiveDestroyedTest::RunTest(const FString& Param
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorReceiveDestroyed"));
+	static const FName ModuleName(TEXT("TestActorReceiveDestroyed"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -237,7 +237,7 @@ bool FAngelscriptScenarioActorReceiveDestroyedTest::RunTest(const FString& Param
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorReceiveDestroyed.as"),
+		TEXT("TestActorReceiveDestroyed.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorReceiveDestroyed : AActor
@@ -286,7 +286,7 @@ bool FAngelscriptScenarioActorResetTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("ScenarioActorReset"));
+	static const FName ModuleName(TEXT("TestActorReset"));
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -297,7 +297,7 @@ bool FAngelscriptScenarioActorResetTest::RunTest(const FString& Parameters)
 		*this,
 		Engine,
 		ModuleName,
-		TEXT("ScenarioActorReset.as"),
+		TEXT("TestActorReset.as"),
 		TEXT(R"AS(
 UCLASS()
 class AScenarioActorReset : AActor
