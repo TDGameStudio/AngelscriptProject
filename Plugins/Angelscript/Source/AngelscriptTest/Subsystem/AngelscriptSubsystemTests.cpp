@@ -22,26 +22,26 @@ using namespace AngelscriptTestSupport;
 // ============================================================================
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioWorldSubsystemLifecycleTest,
+	FAngelscriptTestWorldSubsystemLifecycleTest,
 	"Angelscript.TestModule.WorldSubsystem.Lifecycle",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioWorldSubsystemTickTest,
+	FAngelscriptTestWorldSubsystemTickTest,
 	"Angelscript.TestModule.WorldSubsystem.Tick",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioWorldSubsystemActorAccessTest,
+	FAngelscriptTestWorldSubsystemActorAccessTest,
 	"Angelscript.TestModule.WorldSubsystem.ActorAccess",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioGameInstanceSubsystemLifecycleTest,
+	FAngelscriptTestGameInstanceSubsystemLifecycleTest,
 	"Angelscript.TestModule.GameInstanceSubsystem.Lifecycle",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioWorldSubsystemLifecycleTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestWorldSubsystemLifecycleTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -60,7 +60,7 @@ bool FAngelscriptScenarioWorldSubsystemLifecycleTest::RunTest(const FString& Par
 		TEXT("TestWorldSubsystemLifecycle.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioWorldLifecycleTracker : UScriptWorldSubsystem
+class UTestWorldLifecycleTracker : UScriptWorldSubsystem
 {
 	UFUNCTION(BlueprintOverride)
 	void Initialize()
@@ -82,7 +82,7 @@ class UScenarioWorldLifecycleTracker : UScriptWorldSubsystem
 	return true;
 }
 
-bool FAngelscriptScenarioWorldSubsystemTickTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestWorldSubsystemTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -101,7 +101,7 @@ bool FAngelscriptScenarioWorldSubsystemTickTest::RunTest(const FString& Paramete
 		TEXT("TestWorldSubsystemTick.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioWorldTicker : UScriptWorldSubsystem
+class UTestWorldTicker : UScriptWorldSubsystem
 {
 	UFUNCTION(BlueprintOverride)
 	void Tick(float DeltaTime)
@@ -118,7 +118,7 @@ class UScenarioWorldTicker : UScriptWorldSubsystem
 	return true;
 }
 
-bool FAngelscriptScenarioWorldSubsystemActorAccessTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestWorldSubsystemActorAccessTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -137,7 +137,7 @@ bool FAngelscriptScenarioWorldSubsystemActorAccessTest::RunTest(const FString& P
 		TEXT("TestWorldSubsystemActorAccess.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioWorldActorWatcher : UScriptWorldSubsystem
+class UTestWorldActorWatcher : UScriptWorldSubsystem
 {
 	UFUNCTION(BlueprintOverride)
 	void Tick(float DeltaTime)
@@ -147,7 +147,7 @@ class UScenarioWorldActorWatcher : UScriptWorldSubsystem
 }
 
 UCLASS()
-class AScenarioWorldSubsystemActorAccessActor : AActor
+class ATestWorldSubsystemActorAccessActor : AActor
 {
 }
 )AS"),
@@ -160,7 +160,7 @@ class AScenarioWorldSubsystemActorAccessActor : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioGameInstanceSubsystemLifecycleTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestGameInstanceSubsystemLifecycleTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -179,7 +179,7 @@ bool FAngelscriptScenarioGameInstanceSubsystemLifecycleTest::RunTest(const FStri
 		TEXT("TestGameInstanceSubsystemLifecycle.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioGameInstanceLifecycleTracker : UScriptGameInstanceSubsystem
+class UTestGameInstanceLifecycleTracker : UScriptGameInstanceSubsystem
 {
 	UFUNCTION(BlueprintOverride)
 	void Initialize()

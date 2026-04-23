@@ -17,17 +17,17 @@ namespace InterfaceNativeInheritedChildSurfaceTests
 {
 	static const FName ModuleName(TEXT("TestInterfaceNativeInheritedChildSurface"));
 	static const FString ScriptFilename(TEXT("TestInterfaceNativeInheritedChildSurface.as"));
-	static const FName GeneratedClassName(TEXT("AScenarioInterfaceNativeInheritedChildSurface"));
+	static const FName GeneratedClassName(TEXT("ATestInterfaceNativeInheritedChildSurface"));
 }
 
 using namespace InterfaceNativeInheritedChildSurfaceTests;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest,
+	FAngelscriptTestInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest,
 	"Angelscript.TestModule.Interface.NativeInheritedImplement.ChildSurfaceIncludesParentMethods",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -48,7 +48,7 @@ bool FAngelscriptScenarioInterfaceNativeInheritedChildSurfaceIncludesParentMetho
 		InterfaceNativeInheritedChildSurfaceTests::ScriptFilename,
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChildInterface
+class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChildInterface
 {
 	UPROPERTY()
 	int ChildCastWorked = 0;

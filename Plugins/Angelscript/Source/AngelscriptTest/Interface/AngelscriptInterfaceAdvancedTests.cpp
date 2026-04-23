@@ -19,58 +19,58 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceAdvancedTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceAdvancedTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceInheritedInterfaceTest,
+	FAngelscriptTestInterfaceInheritedInterfaceTest,
 	"Angelscript.TestModule.Interface.InheritedInterface",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceMissingMethodTest,
+	FAngelscriptTestInterfaceMissingMethodTest,
 	"Angelscript.TestModule.Interface.MissingMethod",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNoPropertyTest,
+	FAngelscriptTestInterfaceNoPropertyTest,
 	"Angelscript.TestModule.Interface.NoProperty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceGCSafeTest,
+	FAngelscriptTestInterfaceGCSafeTest,
 	"Angelscript.TestModule.Interface.GCSafe",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 #if 1
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceHotReloadTest,
+	FAngelscriptTestInterfaceHotReloadTest,
 	"Angelscript.TestModule.Interface.HotReload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 #endif
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceCppInterfaceTest,
+	FAngelscriptTestInterfaceCppInterfaceTest,
 	"Angelscript.TestModule.Interface.CppInterface",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceInheritedMethodDispatchTest,
+	FAngelscriptTestInterfaceInheritedMethodDispatchTest,
 	"Angelscript.TestModule.Interface.InheritedMethodDispatch",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceInheritedMethodDispatchChildSurfaceIncludesParentMethodsTest,
+	FAngelscriptTestInterfaceInheritedMethodDispatchChildSurfaceIncludesParentMethodsTest,
 	"Angelscript.TestModule.Interface.InheritedMethodDispatch.ChildSurfaceIncludesParentMethods",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceMultipleInheritanceChainTest,
+	FAngelscriptTestInterfaceMultipleInheritanceChainTest,
 	"Angelscript.TestModule.Interface.MultipleInheritanceChain",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceMultipleInheritanceDispatchTest,
+	FAngelscriptTestInterfaceMultipleInheritanceDispatchTest,
 	"Angelscript.TestModule.Interface.MultipleInheritanceDispatch",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceInheritedInterfaceTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceInheritedInterfaceTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -100,7 +100,7 @@ interface UIKillableChild : UIDamageableParent
 }
 
 UCLASS()
-class AScenarioInterfaceInherited : AActor, UIKillableChild
+class ATestInterfaceInherited : AActor, UIKillableChild
 {
 	UPROPERTY()
 	float DamageReceived = 0.0;
@@ -121,7 +121,7 @@ class AScenarioInterfaceInherited : AActor, UIKillableChild
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceInherited"));
+		TEXT("ATestInterfaceInherited"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -154,7 +154,7 @@ class AScenarioInterfaceInherited : AActor, UIKillableChild
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceMissingMethodTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceMissingMethodTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
@@ -180,7 +180,7 @@ interface UIDamageableMissing
 }
 
 UCLASS()
-class AScenarioInterfaceMissingMethod : AActor, UIDamageableMissing
+class ATestInterfaceMissingMethod : AActor, UIDamageableMissing
 {
 	UFUNCTION()
 	void TakeDamage(float Amount) {}
@@ -215,7 +215,7 @@ class AScenarioInterfaceMissingMethod : AActor, UIDamageableMissing
 	return bPassed;
 }
 
-bool FAngelscriptScenarioInterfaceNoPropertyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNoPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -257,7 +257,7 @@ interface UINoProperty
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceGCSafeTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceGCSafeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -281,13 +281,13 @@ interface UIDamageableGC
 }
 
 UCLASS()
-class AScenarioInterfaceGCSafe : AActor, UIDamageableGC
+class ATestInterfaceGCSafe : AActor, UIDamageableGC
 {
 	UFUNCTION()
 	void TakeDamage(float Amount) {}
 }
 )AS"),
-		TEXT("AScenarioInterfaceGCSafe"));
+		TEXT("ATestInterfaceGCSafe"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -320,7 +320,7 @@ class AScenarioInterfaceGCSafe : AActor, UIDamageableGC
 }
 
 #if 1
-bool FAngelscriptScenarioInterfaceHotReloadTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceHotReloadTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -339,7 +339,7 @@ interface UIDamageableHR
 }
 
 UCLASS()
-class AScenarioInterfaceHotReload : AActor, UIDamageableHR
+class ATestInterfaceHotReload : AActor, UIDamageableHR
 {
 	UPROPERTY()
 	float DamageReceived = 0.0;
@@ -360,7 +360,7 @@ interface UIDamageableHR
 }
 
 UCLASS()
-class AScenarioInterfaceHotReload : AActor, UIDamageableHR
+class ATestInterfaceHotReload : AActor, UIDamageableHR
 {
 	UPROPERTY()
 	float DamageReceived = 0.0;
@@ -379,7 +379,7 @@ class AScenarioInterfaceHotReload : AActor, UIDamageableHR
 		ModuleName,
 		TEXT("TestInterfaceHotReload.as"),
 		ScriptV1,
-		TEXT("AScenarioInterfaceHotReload"));
+		TEXT("ATestInterfaceHotReload"));
 	if (ClassV1 == nullptr)
 	{
 		return false;
@@ -403,7 +403,7 @@ class AScenarioInterfaceHotReload : AActor, UIDamageableHR
 		return false;
 	}
 
-	UClass* ClassV2 = FindGeneratedClass(&Engine, TEXT("AScenarioInterfaceHotReload"));
+	UClass* ClassV2 = FindGeneratedClass(&Engine, TEXT("ATestInterfaceHotReload"));
 	if (ClassV2 == nullptr)
 	{
 		return false;
@@ -422,7 +422,7 @@ class AScenarioInterfaceHotReload : AActor, UIDamageableHR
 }
 #endif
 
-bool FAngelscriptScenarioInterfaceCppInterfaceTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceCppInterfaceTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -446,7 +446,7 @@ interface UICppTestInterface
 }
 
 UCLASS()
-class AScenarioInterfaceCppBase : AActor, UICppTestInterface
+class ATestInterfaceCppBase : AActor, UICppTestInterface
 {
 	UPROPERTY()
 	int WorkDone = 0;
@@ -458,7 +458,7 @@ class AScenarioInterfaceCppBase : AActor, UICppTestInterface
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceCppBase"));
+		TEXT("ATestInterfaceCppBase"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -484,7 +484,7 @@ class AScenarioInterfaceCppBase : AActor, UICppTestInterface
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceInheritedMethodDispatchTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceInheritedMethodDispatchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -514,7 +514,7 @@ interface UIKillableDispatch : UIDamageableDispatch
 }
 
 UCLASS()
-class AScenarioInterfaceInheritedDispatch : AActor, UIKillableDispatch
+class ATestInterfaceInheritedDispatch : AActor, UIKillableDispatch
 {
 	UPROPERTY()
 	int ParentCastWorked = 0;
@@ -560,7 +560,7 @@ class AScenarioInterfaceInheritedDispatch : AActor, UIKillableDispatch
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceInheritedDispatch"));
+		TEXT("ATestInterfaceInheritedDispatch"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -597,7 +597,7 @@ class AScenarioInterfaceInheritedDispatch : AActor, UIKillableDispatch
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceInheritedMethodDispatchChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceInheritedMethodDispatchChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -629,7 +629,7 @@ interface UIKillableDispatchChildSurface : UIDamageableDispatchChildSurface
 }
 
 UCLASS()
-class AScenarioInterfaceInheritedDispatchChildSurface : AActor, UIKillableDispatchChildSurface
+class ATestInterfaceInheritedDispatchChildSurface : AActor, UIKillableDispatchChildSurface
 {
 	UPROPERTY()
 	int ChildCastWorked = 0;
@@ -666,7 +666,7 @@ class AScenarioInterfaceInheritedDispatchChildSurface : AActor, UIKillableDispat
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceInheritedDispatchChildSurface"));
+		TEXT("ATestInterfaceInheritedDispatchChildSurface"));
 	if (ChildScriptClass == nullptr)
 	{
 		return false;
@@ -697,7 +697,7 @@ interface UILeafDispatchChainChildSurface : UIMidDispatchChainChildSurface
 }
 
 UCLASS()
-class AScenarioInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChildSurface
+class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChildSurface
 {
 	UPROPERTY()
 	int LeafCastWorked = 0;
@@ -744,7 +744,7 @@ class AScenarioInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainC
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceMultiDispatchChildSurface"));
+		TEXT("ATestInterfaceMultiDispatchChildSurface"));
 	if (LeafScriptClass == nullptr)
 	{
 		return false;
@@ -797,7 +797,7 @@ class AScenarioInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainC
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceMultipleInheritanceChainTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceMultipleInheritanceChainTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -833,7 +833,7 @@ interface UILeafChain : UIMidChain
 }
 
 UCLASS()
-class AScenarioInterfaceMultiChain : AActor, UILeafChain
+class ATestInterfaceMultiChain : AActor, UILeafChain
 {
 	UFUNCTION()
 	void BaseMethod() {}
@@ -845,7 +845,7 @@ class AScenarioInterfaceMultiChain : AActor, UILeafChain
 	void LeafMethod() {}
 }
 )AS"),
-		TEXT("AScenarioInterfaceMultiChain"));
+		TEXT("ATestInterfaceMultiChain"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -885,7 +885,7 @@ class AScenarioInterfaceMultiChain : AActor, UILeafChain
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceMultipleInheritanceDispatchTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceMultipleInheritanceDispatchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -921,7 +921,7 @@ interface UILeafDispatchChain : UIMidDispatchChain
 }
 
 UCLASS()
-class AScenarioInterfaceMultiDispatch : AActor, UILeafDispatchChain
+class ATestInterfaceMultiDispatch : AActor, UILeafDispatchChain
 {
 	UPROPERTY()
 	int BaseResult = 0;
@@ -973,7 +973,7 @@ class AScenarioInterfaceMultiDispatch : AActor, UILeafDispatchChain
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceMultiDispatch"));
+		TEXT("ATestInterfaceMultiDispatch"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

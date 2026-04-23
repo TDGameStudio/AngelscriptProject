@@ -19,7 +19,7 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncSweepBindingsTe
 
 	static const FName WorldCollisionAsyncSweepModuleName(TEXT("ASWorldCollisionAsyncSweepCallbacks"));
 	static const FString WorldCollisionAsyncSweepFilename(TEXT("WorldCollisionAsyncSweepCallbacks.as"));
-	static const FName WorldCollisionAsyncSweepClassName(TEXT("AScenarioWorldCollisionAsyncSweepCallbacks"));
+	static const FName WorldCollisionAsyncSweepClassName(TEXT("ATestWorldCollisionAsyncSweepCallbacks"));
 	static const FVector AsyncSweepStart(-200.0f, 0.0f, 0.0f);
 	static const FVector AsyncSweepEnd(200.0f, 0.0f, 0.0f);
 	static const FVector AsyncSweepTargetLocation(0.0f, 0.0f, 0.0f);
@@ -193,7 +193,7 @@ bool FAngelscriptWorldCollisionAsyncSweepBindingsTest::RunTest(const FString& Pa
 		WorldCollisionAsyncSweepFilename,
 		TEXT(R"AS(
 UCLASS()
-class AScenarioWorldCollisionAsyncSweepCallbacks : AActor
+class ATestWorldCollisionAsyncSweepCallbacks : AActor
 {
 	UPROPERTY()
 	AActor ExpectedActor;

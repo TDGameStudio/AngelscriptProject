@@ -18,21 +18,21 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceImplementTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceImplementTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceImplementBasicTest,
+	FAngelscriptTestInterfaceImplementBasicTest,
 	"Angelscript.TestModule.Interface.ImplementBasic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceImplementMultipleTest,
+	FAngelscriptTestInterfaceImplementMultipleTest,
 	"Angelscript.TestModule.Interface.ImplementMultiple",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceImplementsInterfaceMethodTest,
+	FAngelscriptTestInterfaceImplementsInterfaceMethodTest,
 	"Angelscript.TestModule.Interface.ImplementsInterfaceMethod",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceImplementBasicTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceImplementBasicTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -56,7 +56,7 @@ interface UIDamageableImpl
 }
 
 UCLASS()
-class AScenarioInterfaceImplBasic : AActor, UIDamageableImpl
+class ATestInterfaceImplBasic : AActor, UIDamageableImpl
 {
 	UPROPERTY()
 	float DamageReceived = 0.0;
@@ -68,7 +68,7 @@ class AScenarioInterfaceImplBasic : AActor, UIDamageableImpl
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceImplBasic"));
+		TEXT("ATestInterfaceImplBasic"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -93,7 +93,7 @@ class AScenarioInterfaceImplBasic : AActor, UIDamageableImpl
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceImplementMultipleTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceImplementMultipleTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -123,7 +123,7 @@ interface UIHealableMulti
 }
 
 UCLASS()
-class AScenarioInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMulti
+class ATestInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMulti
 {
 	UPROPERTY()
 	float Health = 100.0;
@@ -141,7 +141,7 @@ class AScenarioInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMult
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceImplMultiple"));
+		TEXT("ATestInterfaceImplMultiple"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -174,7 +174,7 @@ class AScenarioInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMult
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceImplementsInterfaceMethodTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceImplementsInterfaceMethodTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -198,7 +198,7 @@ interface UIDamageableImplCheck
 }
 
 UCLASS()
-class AScenarioInterfaceImplMethod : AActor, UIDamageableImplCheck
+class ATestInterfaceImplMethod : AActor, UIDamageableImplCheck
 {
 	UPROPERTY()
 	int ImplementsResult = 0;
@@ -216,7 +216,7 @@ class AScenarioInterfaceImplMethod : AActor, UIDamageableImplCheck
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceImplMethod"));
+		TEXT("ATestInterfaceImplMethod"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

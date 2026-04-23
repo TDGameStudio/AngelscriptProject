@@ -53,11 +53,11 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceLifecycleTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceHierarchyProcessEventDispatchTest,
+	FAngelscriptTestInterfaceHierarchyProcessEventDispatchTest,
 	"Angelscript.TestModule.Interface.Hierarchy.ProcessEventDispatch",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceHierarchyProcessEventDispatchTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceHierarchyProcessEventDispatchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -93,7 +93,7 @@ interface UILeafDispatchProcess : UIMidDispatchProcess
 }
 
 UCLASS()
-class AScenarioInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
+class ATestInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 {
 	UPROPERTY()
 	int BaseCalled = 0;
@@ -123,7 +123,7 @@ class AScenarioInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceHierarchyProcessEvent"));
+		TEXT("ATestInterfaceHierarchyProcessEvent"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

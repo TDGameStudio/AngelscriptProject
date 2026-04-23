@@ -62,41 +62,41 @@ namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private
 using namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioComponentBeginPlayTest,
+	FAngelscriptTestComponentBeginPlayTest,
 	"Angelscript.TestModule.Component.BeginPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioComponentTickTest,
+	FAngelscriptTestComponentTickTest,
 	"Angelscript.TestModule.Component.Tick",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioComponentReceiveEndPlayTest,
+	FAngelscriptTestComponentReceiveEndPlayTest,
 	"Angelscript.TestModule.Component.ReceiveEndPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioComponentActorOwnerTest,
+	FAngelscriptTestComponentActorOwnerTest,
 	"Angelscript.TestModule.Component.ActorOwner",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioDefaultComponentBasicTest,
+	FAngelscriptTestDefaultComponentBasicTest,
 	"Angelscript.TestModule.DefaultComponent.Basic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioDefaultComponentMultipleTest,
+	FAngelscriptTestDefaultComponentMultipleTest,
 	"Angelscript.TestModule.DefaultComponent.Multiple",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioDefaultComponentNativeTypesTest,
+	FAngelscriptTestDefaultComponentNativeTypesTest,
 	"Angelscript.TestModule.DefaultComponent.NativeTypes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioComponentBeginPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestComponentBeginPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -114,7 +114,7 @@ bool FAngelscriptScenarioComponentBeginPlayTest::RunTest(const FString& Paramete
 		TEXT("TestComponentBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioComponentBeginPlay : UAngelscriptComponent
+class UTestComponentBeginPlay : UAngelscriptComponent
 {
 	UPROPERTY()
 	bool bReady = false;
@@ -126,7 +126,7 @@ class UScenarioComponentBeginPlay : UAngelscriptComponent
 	}
 }
 )AS"),
-		TEXT("UScenarioComponentBeginPlay"));
+		TEXT("UTestComponentBeginPlay"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -155,7 +155,7 @@ class UScenarioComponentBeginPlay : UAngelscriptComponent
 	return true;
 }
 
-bool FAngelscriptScenarioComponentTickTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestComponentTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -173,7 +173,7 @@ bool FAngelscriptScenarioComponentTickTest::RunTest(const FString& Parameters)
 		TEXT("TestComponentTick.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioComponentTick : UAngelscriptComponent
+class UTestComponentTick : UAngelscriptComponent
 {
 	UPROPERTY()
 	int TickCount = 0;
@@ -185,7 +185,7 @@ class UScenarioComponentTick : UAngelscriptComponent
 	}
 }
 )AS"),
-		TEXT("UScenarioComponentTick"));
+		TEXT("UTestComponentTick"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -217,7 +217,7 @@ class UScenarioComponentTick : UAngelscriptComponent
 	return true;
 }
 
-bool FAngelscriptScenarioComponentReceiveEndPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestComponentReceiveEndPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -235,7 +235,7 @@ bool FAngelscriptScenarioComponentReceiveEndPlayTest::RunTest(const FString& Par
 		TEXT("TestComponentReceiveEndPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioComponentReceiveEndPlay : UAngelscriptComponent
+class UTestComponentReceiveEndPlay : UAngelscriptComponent
 {
 	UPROPERTY()
 	bool bCleanedUp = false;
@@ -247,7 +247,7 @@ class UScenarioComponentReceiveEndPlay : UAngelscriptComponent
 	}
 }
 )AS"),
-		TEXT("UScenarioComponentReceiveEndPlay"));
+		TEXT("UTestComponentReceiveEndPlay"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -278,7 +278,7 @@ class UScenarioComponentReceiveEndPlay : UAngelscriptComponent
 	return true;
 }
 
-bool FAngelscriptScenarioComponentActorOwnerTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestComponentActorOwnerTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -296,14 +296,14 @@ bool FAngelscriptScenarioComponentActorOwnerTest::RunTest(const FString& Paramet
 		TEXT("TestComponentActorOwner.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioComponentOwnerActor : AActor
+class ATestComponentOwnerActor : AActor
 {
 	UPROPERTY()
 	int OwnerValue = 42;
 }
 
 UCLASS()
-class UScenarioComponentActorOwner : UAngelscriptComponent
+class UTestComponentActorOwner : UAngelscriptComponent
 {
 	UPROPERTY()
 	int ReadOwnerValue = 0;
@@ -319,13 +319,13 @@ class UScenarioComponentActorOwner : UAngelscriptComponent
 	}
 }
 )AS"),
-		TEXT("AScenarioComponentOwnerActor"));
+		TEXT("ATestComponentOwnerActor"));
 	if (OwnerActorClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UScenarioComponentActorOwner"));
+	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UTestComponentActorOwner"));
 	if (!TestNotNull(TEXT("Scenario component owner-access class should be generated"), ComponentClass))
 	{
 		return false;
@@ -359,7 +359,7 @@ class UScenarioComponentActorOwner : UAngelscriptComponent
 	return true;
 }
 
-bool FAngelscriptScenarioDefaultComponentBasicTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestDefaultComponentBasicTest::RunTest(const FString& Parameters)
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
@@ -384,18 +384,18 @@ bool FAngelscriptScenarioDefaultComponentBasicTest::RunTest(const FString& Param
 		TEXT("TestDefaultComponentBasic.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioDefaultComponentBasicRoot : USceneComponent
+class UTestDefaultComponentBasicRoot : USceneComponent
 {
 }
 
 UCLASS()
-class AScenarioDefaultComponentBasic : AActor
+class ATestDefaultComponentBasic : AActor
 {
 	UPROPERTY(DefaultComponent, RootComponent)
 	UScenarioDefaultComponentBasicRoot RootScene;
 }
 )AS"),
-		TEXT("AScenarioDefaultComponentBasic"));
+		TEXT("ATestDefaultComponentBasic"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -409,7 +409,7 @@ class AScenarioDefaultComponentBasic : AActor
 
 	BeginPlayActor(Engine, *Actor);
 
-	UClass* RootComponentClass = FindGeneratedClass(&Engine, TEXT("UScenarioDefaultComponentBasicRoot"));
+	UClass* RootComponentClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentBasicRoot"));
 	if (!TestNotNull(TEXT("Scenario default-component root class should be generated"), RootComponentClass))
 	{
 		return false;
@@ -425,7 +425,7 @@ class AScenarioDefaultComponentBasic : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioDefaultComponentMultipleTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestDefaultComponentMultipleTest::RunTest(const FString& Parameters)
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
@@ -450,17 +450,17 @@ bool FAngelscriptScenarioDefaultComponentMultipleTest::RunTest(const FString& Pa
 		TEXT("TestDefaultComponentMultiple.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioDefaultComponentMultipleRoot : USceneComponent
+class UTestDefaultComponentMultipleRoot : USceneComponent
 {
 }
 
 UCLASS()
-class UScenarioDefaultComponentMultipleBillboard : UBillboardComponent
+class UTestDefaultComponentMultipleBillboard : UBillboardComponent
 {
 }
 
 UCLASS()
-class AScenarioDefaultComponentMultiple : AActor
+class ATestDefaultComponentMultiple : AActor
 {
 	UPROPERTY(DefaultComponent, RootComponent)
 	UScenarioDefaultComponentMultipleRoot RootScene;
@@ -469,7 +469,7 @@ class AScenarioDefaultComponentMultiple : AActor
 	UScenarioDefaultComponentMultipleBillboard Billboard;
 }
 )AS"),
-		TEXT("AScenarioDefaultComponentMultiple"));
+		TEXT("ATestDefaultComponentMultiple"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -483,8 +483,8 @@ class AScenarioDefaultComponentMultiple : AActor
 
 	BeginPlayActor(Engine, *Actor);
 
-	UClass* RootSceneClass = FindGeneratedClass(&Engine, TEXT("UScenarioDefaultComponentMultipleRoot"));
-	UClass* BillboardClass = FindGeneratedClass(&Engine, TEXT("UScenarioDefaultComponentMultipleBillboard"));
+	UClass* RootSceneClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentMultipleRoot"));
+	UClass* BillboardClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentMultipleBillboard"));
 	if (!TestNotNull(TEXT("Scenario multi-default root class should be generated"), RootSceneClass)
 		|| !TestNotNull(TEXT("Scenario multi-default child class should be generated"), BillboardClass))
 	{
@@ -519,7 +519,7 @@ class AScenarioDefaultComponentMultiple : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioDefaultComponentNativeTypesTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestDefaultComponentNativeTypesTest::RunTest(const FString& Parameters)
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
@@ -544,7 +544,7 @@ bool FAngelscriptScenarioDefaultComponentNativeTypesTest::RunTest(const FString&
 		TEXT("TestDefaultComponentNativeTypes.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioDefaultComponentNativeTypes : AActor
+class ATestDefaultComponentNativeTypes : AActor
 {
 	UPROPERTY(DefaultComponent, RootComponent)
 	UStaticMeshComponent Mesh;
@@ -553,7 +553,7 @@ class AScenarioDefaultComponentNativeTypes : AActor
 	UBillboardComponent Billboard;
 }
 )AS"),
-		TEXT("AScenarioDefaultComponentNativeTypes"));
+		TEXT("ATestDefaultComponentNativeTypes"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

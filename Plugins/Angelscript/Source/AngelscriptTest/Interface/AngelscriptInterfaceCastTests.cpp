@@ -59,26 +59,26 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceCastTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceCastTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceCastSuccessTest,
+	FAngelscriptTestInterfaceCastSuccessTest,
 	"Angelscript.TestModule.Interface.CastSuccess",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceCastFailTest,
+	FAngelscriptTestInterfaceCastFailTest,
 	"Angelscript.TestModule.Interface.CastFail",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceMethodCallTest,
+	FAngelscriptTestInterfaceMethodCallTest,
 	"Angelscript.TestModule.Interface.MethodCall",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceCastFastPathGuardsAndPositivePathTest,
+	FAngelscriptTestInterfaceCastFastPathGuardsAndPositivePathTest,
 	"Angelscript.TestModule.Interface.CastFastPath.GuardsAndPositivePath",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceCastSuccessTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceCastSuccessTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -102,7 +102,7 @@ interface UIDamageableCastOk
 }
 
 UCLASS()
-class AScenarioInterfaceCastSuccess : AActor, UIDamageableCastOk
+class ATestInterfaceCastSuccess : AActor, UIDamageableCastOk
 {
 	UPROPERTY()
 	int CastSucceeded = 0;
@@ -122,7 +122,7 @@ class AScenarioInterfaceCastSuccess : AActor, UIDamageableCastOk
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceCastSuccess"));
+		TEXT("ATestInterfaceCastSuccess"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -150,7 +150,7 @@ class AScenarioInterfaceCastSuccess : AActor, UIDamageableCastOk
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceCastFailTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceCastFailTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -174,7 +174,7 @@ interface UIDamageableCastFail
 }
 
 UCLASS()
-class AScenarioInterfaceCastFail : AActor
+class ATestInterfaceCastFail : AActor
 {
 	UPROPERTY()
 	int CastReturnedNull = 0;
@@ -191,7 +191,7 @@ class AScenarioInterfaceCastFail : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceCastFail"));
+		TEXT("ATestInterfaceCastFail"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -219,7 +219,7 @@ class AScenarioInterfaceCastFail : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceMethodCallTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceMethodCallTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -243,7 +243,7 @@ interface UIDamageableMethodCall
 }
 
 UCLASS()
-class AScenarioInterfaceMethodCall : AActor, UIDamageableMethodCall
+class ATestInterfaceMethodCall : AActor, UIDamageableMethodCall
 {
 	UPROPERTY()
 	int CastSucceeded = 0;
@@ -270,7 +270,7 @@ class AScenarioInterfaceMethodCall : AActor, UIDamageableMethodCall
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceMethodCall"));
+		TEXT("ATestInterfaceMethodCall"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -312,7 +312,7 @@ class AScenarioInterfaceMethodCall : AActor, UIDamageableMethodCall
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceCastFastPathGuardsAndPositivePathTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceCastFastPathGuardsAndPositivePathTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -336,7 +336,7 @@ interface UIDamageableCastFastPath
 }
 
 UCLASS()
-class AScenarioInterfaceCastFastPath : AActor, UIDamageableCastFastPath
+class ATestInterfaceCastFastPath : AActor, UIDamageableCastFastPath
 {
 	UFUNCTION()
 	void TakeDamage(float Amount)
@@ -345,17 +345,17 @@ class AScenarioInterfaceCastFastPath : AActor, UIDamageableCastFastPath
 }
 
 UCLASS()
-class AScenarioInterfaceCastPlain : AActor
+class ATestInterfaceCastPlain : AActor
 {
 }
 )AS"),
-		TEXT("AScenarioInterfaceCastFastPath"));
+		TEXT("ATestInterfaceCastFastPath"));
 	if (ImplementingClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* PlainClass = FindGeneratedClass(&Engine, TEXT("AScenarioInterfaceCastPlain"));
+	UClass* PlainClass = FindGeneratedClass(&Engine, TEXT("ATestInterfaceCastPlain"));
 	if (!TestNotNull(TEXT("Plain cast target class should exist"), PlainClass))
 	{
 		return false;

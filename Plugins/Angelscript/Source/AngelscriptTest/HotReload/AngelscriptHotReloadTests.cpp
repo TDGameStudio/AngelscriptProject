@@ -22,26 +22,26 @@ void InitializeHotReloadScenarioSpawner(FActorTestSpawner& Spawner)
 using namespace AngelscriptTest_HotReload_AngelscriptHotReloadScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioHotReloadPropertyPreservedTest,
+	FAngelscriptTestHotReloadPropertyPreservedTest,
 	"Angelscript.TestModule.HotReload.PropertyPreserved",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioHotReloadAddPropertyTest,
+	FAngelscriptTestHotReloadAddPropertyTest,
 	"Angelscript.TestModule.HotReload.AddProperty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioHotReloadFunctionChangeTest,
+	FAngelscriptTestHotReloadFunctionChangeTest,
 	"Angelscript.TestModule.HotReload.FunctionChange",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioHotReloadPIEStructuralChangeNeedsFullReloadTest,
+	FAngelscriptTestHotReloadPIEStructuralChangeNeedsFullReloadTest,
 	"Angelscript.TestModule.HotReload.PIEStructuralChangeNeedsFullReload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioHotReloadPropertyPreservedTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestHotReloadPropertyPreservedTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -54,7 +54,7 @@ bool FAngelscriptScenarioHotReloadPropertyPreservedTest::RunTest(const FString& 
 
 	const FString ScriptV1 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadPropertyPreserved : AActor
+class ATestHotReloadPropertyPreserved : AActor
 {
 	UPROPERTY()
 	int Counter = 0;
@@ -68,7 +68,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 )AS");
 	const FString ScriptV2 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadPropertyPreserved : AActor
+class ATestHotReloadPropertyPreserved : AActor
 {
 	UPROPERTY()
 	int Counter = 0;
@@ -87,7 +87,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 		ModuleName,
 		TEXT("TestHotReloadPropertyPreserved.as"),
 		ScriptV1,
-		TEXT("AScenarioHotReloadPropertyPreserved"));
+		TEXT("ATestHotReloadPropertyPreserved"));
 	if (ClassV1 == nullptr)
 	{
 		return false;
@@ -120,7 +120,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 		return false;
 	}
 
-	UClass* ClassAfterReload = FindGeneratedClass(&Engine, TEXT("AScenarioHotReloadPropertyPreserved"));
+	UClass* ClassAfterReload = FindGeneratedClass(&Engine, TEXT("ATestHotReloadPropertyPreserved"));
 	if (!TestNotNull(TEXT("Scenario hot-reload property-preserved class should exist after reload"), ClassAfterReload))
 	{
 		return false;
@@ -151,7 +151,7 @@ class AScenarioHotReloadPropertyPreserved : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioHotReloadAddPropertyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestHotReloadAddPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -164,7 +164,7 @@ bool FAngelscriptScenarioHotReloadAddPropertyTest::RunTest(const FString& Parame
 
 	const FString ScriptV1 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadAddProperty : AActor
+class ATestHotReloadAddProperty : AActor
 {
 	UPROPERTY()
 	int ExistingValue = 1;
@@ -172,7 +172,7 @@ class AScenarioHotReloadAddProperty : AActor
 )AS");
 	const FString ScriptV2 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadAddProperty : AActor
+class ATestHotReloadAddProperty : AActor
 {
 	UPROPERTY()
 	int ExistingValue = 1;
@@ -188,7 +188,7 @@ class AScenarioHotReloadAddProperty : AActor
 		ModuleName,
 		TEXT("TestHotReloadAddProperty.as"),
 		ScriptV1,
-		TEXT("AScenarioHotReloadAddProperty"));
+		TEXT("ATestHotReloadAddProperty"));
 	if (ClassV1 == nullptr)
 	{
 		return false;
@@ -205,7 +205,7 @@ class AScenarioHotReloadAddProperty : AActor
 		return false;
 	}
 
-	UClass* ClassV2 = FindGeneratedClass(&Engine, TEXT("AScenarioHotReloadAddProperty"));
+	UClass* ClassV2 = FindGeneratedClass(&Engine, TEXT("ATestHotReloadAddProperty"));
 	if (!TestNotNull(TEXT("Scenario hot-reload add-property class should exist after reload"), ClassV2))
 	{
 		return false;
@@ -238,7 +238,7 @@ class AScenarioHotReloadAddProperty : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioHotReloadFunctionChangeTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestHotReloadFunctionChangeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -251,7 +251,7 @@ bool FAngelscriptScenarioHotReloadFunctionChangeTest::RunTest(const FString& Par
 
 	const FString ScriptV1 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadFunctionChange : AActor
+class ATestHotReloadFunctionChange : AActor
 {
 	UFUNCTION()
 	int GetValue()
@@ -262,7 +262,7 @@ class AScenarioHotReloadFunctionChange : AActor
 )AS");
 	const FString ScriptV2 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadFunctionChange : AActor
+class ATestHotReloadFunctionChange : AActor
 {
 	UFUNCTION()
 	int GetValue()
@@ -278,7 +278,7 @@ class AScenarioHotReloadFunctionChange : AActor
 		ModuleName,
 		TEXT("TestHotReloadFunctionChange.as"),
 		ScriptV1,
-		TEXT("AScenarioHotReloadFunctionChange"));
+		TEXT("ATestHotReloadFunctionChange"));
 	if (ClassV1 == nullptr)
 	{
 		return false;
@@ -317,7 +317,7 @@ class AScenarioHotReloadFunctionChange : AActor
 		return false;
 	}
 
-	UClass* ClassAfterReload = FindGeneratedClass(&Engine, TEXT("AScenarioHotReloadFunctionChange"));
+	UClass* ClassAfterReload = FindGeneratedClass(&Engine, TEXT("ATestHotReloadFunctionChange"));
 	if (!TestNotNull(TEXT("Scenario hot-reload function-change class should exist after reload"), ClassAfterReload))
 	{
 		return false;
@@ -340,7 +340,7 @@ class AScenarioHotReloadFunctionChange : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -353,7 +353,7 @@ bool FAngelscriptScenarioHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTes
 
 	const FString ScriptV1 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadPIEStructuralChange : AActor
+class ATestHotReloadPIEStructuralChange : AActor
 {
 	UPROPERTY()
 	int Value = 1;
@@ -361,7 +361,7 @@ class AScenarioHotReloadPIEStructuralChange : AActor
 )AS");
 	const FString ScriptV2 = TEXT(R"AS(
 UCLASS()
-class AScenarioHotReloadPIEStructuralChange : AActor
+class ATestHotReloadPIEStructuralChange : AActor
 {
 	UPROPERTY()
 	int Value = 1;
@@ -377,7 +377,7 @@ class AScenarioHotReloadPIEStructuralChange : AActor
 		ModuleName,
 		TEXT("TestHotReloadPIEStructuralChange.as"),
 		ScriptV1,
-		TEXT("AScenarioHotReloadPIEStructuralChange"));
+		TEXT("ATestHotReloadPIEStructuralChange"));
 	if (BaselineClass == nullptr)
 	{
 		return false;

@@ -14,31 +14,31 @@ using namespace AngelscriptTestSupport;
 using namespace AngelscriptFunctionalTestUtils;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeImplementTest,
+	FAngelscriptTestInterfaceNativeImplementTest,
 	"Angelscript.TestModule.Interface.NativeImplement",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeInheritedImplementTest,
+	FAngelscriptTestInterfaceNativeInheritedImplementTest,
 	"Angelscript.TestModule.Interface.NativeInheritedImplement",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeReferenceRoundTripTest,
+	FAngelscriptTestInterfaceNativeReferenceRoundTripTest,
 	"Angelscript.TestModule.Interface.NativeReferenceRoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeReferenceRoundTripCppBridgeMutatesActorStateTest,
+	FAngelscriptTestInterfaceNativeReferenceRoundTripCppBridgeMutatesActorStateTest,
 	"Angelscript.TestModule.Interface.NativeReferenceRoundTrip.CppBridgeMutatesActorState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeInheritedParentBridgeSetterAndRefTest,
+	FAngelscriptTestInterfaceNativeInheritedParentBridgeSetterAndRefTest,
 	"Angelscript.TestModule.Interface.NativeInheritedImplement.ParentBridgeSetterAndRef",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceNativeImplementTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeImplementTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -58,7 +58,7 @@ bool FAngelscriptScenarioInterfaceNativeImplementTest::RunTest(const FString& Pa
 		TEXT("TestInterfaceNativeImplement.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
+class ATestInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
 {
 	UPROPERTY()
 	int NativeValue = 123;
@@ -101,7 +101,7 @@ class AScenarioInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterf
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceNativeImplement"));
+		TEXT("ATestInterfaceNativeImplement"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -155,7 +155,7 @@ class AScenarioInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterf
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceNativeInheritedImplementTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeInheritedImplementTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -175,7 +175,7 @@ bool FAngelscriptScenarioInterfaceNativeInheritedImplementTest::RunTest(const FS
 		TEXT("TestInterfaceNativeInheritedImplement.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildInterface
+class ATestInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildInterface
 {
 	UPROPERTY()
 	int ParentCastWorked = 0;
@@ -237,7 +237,7 @@ class AScenarioInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChi
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceNativeInheritedImplement"));
+		TEXT("ATestInterfaceNativeInheritedImplement"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -287,7 +287,7 @@ class AScenarioInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChi
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeReferenceRoundTripTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -307,7 +307,7 @@ bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripTest::RunTest(const FS
 		TEXT("TestInterfaceNativeReferenceRoundTrip.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentInterface
+class ATestInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentInterface
 {
 	UPROPERTY()
 	int ScriptAdjustedValue = 0;
@@ -343,7 +343,7 @@ class AScenarioInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativePar
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceNativeReferenceRoundTrip"));
+		TEXT("ATestInterfaceNativeReferenceRoundTrip"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -375,7 +375,7 @@ class AScenarioInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativePar
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripCppBridgeMutatesActorStateTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeReferenceRoundTripCppBridgeMutatesActorStateTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -395,7 +395,7 @@ bool FAngelscriptScenarioInterfaceNativeReferenceRoundTripCppBridgeMutatesActorS
 		TEXT("TestInterfaceNativeReferenceRoundTripCppBridgeState.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngelscriptNativeParentInterface
+class ATestInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngelscriptNativeParentInterface
 {
 	UPROPERTY()
 	int ScriptAdjustedValue = 0;
@@ -439,7 +439,7 @@ class AScenarioInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngels
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceNativeReferenceRoundTripCppBridgeState"));
+		TEXT("ATestInterfaceNativeReferenceRoundTripCppBridgeState"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -505,7 +505,7 @@ class AScenarioInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngels
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceNativeInheritedParentBridgeSetterAndRefTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeInheritedParentBridgeSetterAndRefTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -525,7 +525,7 @@ bool FAngelscriptScenarioInterfaceNativeInheritedParentBridgeSetterAndRefTest::R
 		TEXT("TestInterfaceNativeInheritedParentBridge.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeInheritedParentBridge : AActor, UAngelscriptNativeChildInterface
+class ATestInterfaceNativeInheritedParentBridge : AActor, UAngelscriptNativeChildInterface
 {
 	UPROPERTY()
 	FName NativeMarker = NAME_None;
@@ -559,7 +559,7 @@ class AScenarioInterfaceNativeInheritedParentBridge : AActor, UAngelscriptNative
 	}
 }
 )AS"),
-		TEXT("AScenarioInterfaceNativeInheritedParentBridge"));
+		TEXT("ATestInterfaceNativeInheritedParentBridge"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

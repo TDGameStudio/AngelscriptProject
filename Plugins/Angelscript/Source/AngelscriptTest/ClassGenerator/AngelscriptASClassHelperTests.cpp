@@ -108,11 +108,11 @@ namespace ASClassHelperTest
 using namespace ASClassHelperTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioASClassHierarchyHelpersResolveScriptAndNativeAncestorsTest,
+	FAngelscriptTestASClassHierarchyHelpersResolveScriptAndNativeAncestorsTest,
 	"Angelscript.TestModule.ClassGenerator.ASClass.HierarchyHelpersResolveScriptAndNativeAncestors",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioASClassHierarchyHelpersResolveScriptAndNativeAncestorsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestASClassHierarchyHelpersResolveScriptAndNativeAncestorsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH

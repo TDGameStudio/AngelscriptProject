@@ -19,7 +19,7 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_P
 
 	static const FName WorldCollisionAsyncModuleName(TEXT("ASWorldCollisionAsyncTraceCallbacks"));
 	static const FString WorldCollisionAsyncFilename(TEXT("WorldCollisionAsyncTraceCallbacks.as"));
-	static const FName WorldCollisionAsyncClassName(TEXT("AScenarioWorldCollisionAsyncCallbacks"));
+	static const FName WorldCollisionAsyncClassName(TEXT("ATestWorldCollisionAsyncCallbacks"));
 	static const FVector AsyncCollisionTargetLocation(0.0f, 0.0f, 0.0f);
 	static const FVector AsyncLineTraceStart(-200.0f, 0.0f, 0.0f);
 	static const FVector AsyncLineTraceEnd(200.0f, 0.0f, 0.0f);
@@ -161,7 +161,7 @@ bool FAngelscriptWorldCollisionAsyncTraceCallbacksBindingsTest::RunTest(const FS
 		WorldCollisionAsyncFilename,
 		TEXT(R"AS(
 UCLASS()
-class AScenarioWorldCollisionAsyncCallbacks : AActor
+class ATestWorldCollisionAsyncCallbacks : AActor
 {
 	UPROPERTY()
 	int LineCallbackCount = 0;

@@ -35,11 +35,11 @@ namespace ScriptClassShapeTest
 using namespace ScriptClassShapeTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptInheritancePreservesParentPropertyAndOverrideTest,
+	FAngelscriptTestScriptInheritancePreservesParentPropertyAndOverrideTest,
 	"Angelscript.TestModule.ScriptClass.ScriptInheritancePreservesParentPropertyAndOverride",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioScriptInheritancePreservesParentPropertyAndOverrideTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptInheritancePreservesParentPropertyAndOverrideTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassShapeTest::AcquireFreshScriptClassShapeEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -52,7 +52,7 @@ bool FAngelscriptScenarioScriptInheritancePreservesParentPropertyAndOverrideTest
 
 	static const FString ScriptSource = TEXT(R"AS(
 UCLASS()
-class AScenarioScriptInheritanceParent : AActor
+class ATestScriptInheritanceParent : AActor
 {
 	UPROPERTY()
 	int ParentValue = 21;
@@ -65,7 +65,7 @@ class AScenarioScriptInheritanceParent : AActor
 }
 
 UCLASS()
-class AScenarioScriptInheritanceChild : AScenarioScriptInheritanceParent
+class ATestScriptInheritanceChild : AScenarioScriptInheritanceParent
 {
 	UFUNCTION(BlueprintOverride)
 	int GetValue()
@@ -81,13 +81,13 @@ class AScenarioScriptInheritanceChild : AScenarioScriptInheritanceParent
 		ModuleName,
 		TEXT("TestScriptClassScriptInheritance.as"),
 		ScriptSource,
-		TEXT("AScenarioScriptInheritanceParent"));
+		TEXT("ATestScriptInheritanceParent"));
 	if (ParentClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* ChildClass = FindGeneratedClass(&Engine, TEXT("AScenarioScriptInheritanceChild"));
+	UClass* ChildClass = FindGeneratedClass(&Engine, TEXT("ATestScriptInheritanceChild"));
 	if (!TestNotNull(TEXT("Script-inheritance scenario should generate the child class"), ChildClass))
 	{
 		return false;
@@ -159,11 +159,11 @@ class AScenarioScriptInheritanceChild : AScenarioScriptInheritanceParent
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioEmptyActorCompilesAndSpawnsTest,
+	FAngelscriptTestEmptyActorCompilesAndSpawnsTest,
 	"Angelscript.TestModule.ScriptClass.EmptyActorCompilesAndSpawns",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioEmptyActorCompilesAndSpawnsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestEmptyActorCompilesAndSpawnsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassShapeTest::AcquireFreshScriptClassShapeEngine();
 	FAngelscriptEngineScope EngineScope(Engine);

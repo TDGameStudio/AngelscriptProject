@@ -24,21 +24,21 @@ namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Privat
 using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInheritanceScriptToScriptTest,
+	FAngelscriptTestInheritanceScriptToScriptTest,
 	"Angelscript.TestModule.Inheritance.ScriptToScript",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInheritanceSuperTest,
+	FAngelscriptTestInheritanceSuperTest,
 	"Angelscript.TestModule.Inheritance.Super",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInheritanceIsATest,
+	FAngelscriptTestInheritanceIsATest,
 	"Angelscript.TestModule.Inheritance.IsA",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInheritanceScriptToScriptTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInheritanceScriptToScriptTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -51,7 +51,7 @@ bool FAngelscriptScenarioInheritanceScriptToScriptTest::RunTest(const FString& P
 
 	const FString BaselineScript = TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceBaseline : AActor
+class ATestInheritanceBaseline : AActor
 {
 }
 )AS");
@@ -70,7 +70,7 @@ class AScenarioInheritanceBaseline : AActor
 		TEXT("TestInheritanceScriptToScript.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceBase : AActor
+class ATestInheritanceBase : AActor
 {
 	UFUNCTION()
 	int GetScenarioValue()
@@ -80,7 +80,7 @@ class AScenarioInheritanceBase : AActor
 }
 
 UCLASS()
-class AScenarioInheritanceDerived : AScenarioInheritanceBase
+class ATestInheritanceDerived : AScenarioInheritanceBase
 {
 	UFUNCTION()
 	int GetScenarioValue()
@@ -104,7 +104,7 @@ class AScenarioInheritanceDerived : AScenarioInheritanceBase
 	return true;
 }
 
-bool FAngelscriptScenarioInheritanceSuperTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInheritanceSuperTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -117,7 +117,7 @@ bool FAngelscriptScenarioInheritanceSuperTest::RunTest(const FString& Parameters
 
 	const FString BaselineScript = TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceSuperBaseline : AActor
+class ATestInheritanceSuperBaseline : AActor
 {
 }
 )AS");
@@ -136,7 +136,7 @@ class AScenarioInheritanceSuperBaseline : AActor
 		TEXT("TestInheritanceSuper.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceSuperBase : AActor
+class ATestInheritanceSuperBase : AActor
 {
 	UFUNCTION()
 	int GetScenarioValue()
@@ -146,7 +146,7 @@ class AScenarioInheritanceSuperBase : AActor
 }
 
 UCLASS()
-class AScenarioInheritanceSuperDerived : AScenarioInheritanceSuperBase
+class ATestInheritanceSuperDerived : AScenarioInheritanceSuperBase
 {
 	UFUNCTION()
 	int GetScenarioValue()
@@ -170,7 +170,7 @@ class AScenarioInheritanceSuperDerived : AScenarioInheritanceSuperBase
 	return true;
 }
 
-bool FAngelscriptScenarioInheritanceIsATest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInheritanceIsATest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -183,7 +183,7 @@ bool FAngelscriptScenarioInheritanceIsATest::RunTest(const FString& Parameters)
 
 	const FString BaselineScript = TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceIsABaseline : AActor
+class ATestInheritanceIsABaseline : AActor
 {
 }
 )AS");
@@ -202,12 +202,12 @@ class AScenarioInheritanceIsABaseline : AActor
 		TEXT("TestInheritanceIsA.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInheritanceIsABase : AActor
+class ATestInheritanceIsABase : AActor
 {
 }
 
 UCLASS()
-class AScenarioInheritanceIsADerived : AScenarioInheritanceIsABase
+class ATestInheritanceIsADerived : AScenarioInheritanceIsABase
 {
 	UFUNCTION()
 	int VerifyBaseCast()

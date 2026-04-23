@@ -58,21 +58,21 @@ namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private
 using namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioGCActorDestroyTest,
+	FAngelscriptTestGCActorDestroyTest,
 	"Angelscript.TestModule.GC.ActorDestroy",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioGCComponentDestroyTest,
+	FAngelscriptTestGCComponentDestroyTest,
 	"Angelscript.TestModule.GC.ComponentDestroy",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioGCWorldTeardownTest,
+	FAngelscriptTestGCWorldTeardownTest,
 	"Angelscript.TestModule.GC.WorldTeardown",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioGCActorDestroyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestGCActorDestroyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -90,11 +90,11 @@ bool FAngelscriptScenarioGCActorDestroyTest::RunTest(const FString& Parameters)
 		TEXT("TestGCActorDestroy.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioGCActorDestroy : AActor
+class ATestGCActorDestroy : AActor
 {
 }
 )AS"),
-		TEXT("AScenarioGCActorDestroy"));
+		TEXT("ATestGCActorDestroy"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -120,7 +120,7 @@ class AScenarioGCActorDestroy : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioGCComponentDestroyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestGCComponentDestroyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -138,11 +138,11 @@ bool FAngelscriptScenarioGCComponentDestroyTest::RunTest(const FString& Paramete
 		TEXT("TestGCComponentDestroy.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioGCComponentDestroy : UAngelscriptComponent
+class UTestGCComponentDestroy : UAngelscriptComponent
 {
 }
 )AS"),
-		TEXT("UScenarioGCComponentDestroy"));
+		TEXT("UTestGCComponentDestroy"));
 	if (ComponentClass == nullptr)
 	{
 		return false;
@@ -168,7 +168,7 @@ class UScenarioGCComponentDestroy : UAngelscriptComponent
 	return true;
 }
 
-bool FAngelscriptScenarioGCWorldTeardownTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestGCWorldTeardownTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -186,22 +186,22 @@ bool FAngelscriptScenarioGCWorldTeardownTest::RunTest(const FString& Parameters)
 		TEXT("TestGCWorldTeardown.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioGCWorldTeardownActor : AActor
+class ATestGCWorldTeardownActor : AActor
 {
 }
 
 UCLASS()
-class UScenarioGCWorldTeardownComponent : UAngelscriptComponent
+class UTestGCWorldTeardownComponent : UAngelscriptComponent
 {
 }
 )AS"),
-		TEXT("AScenarioGCWorldTeardownActor"));
+		TEXT("ATestGCWorldTeardownActor"));
 	if (ActorClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UScenarioGCWorldTeardownComponent"));
+	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UTestGCWorldTeardownComponent"));
 	if (!TestNotNull(TEXT("Scenario GC world-teardown component class should exist"), ComponentClass))
 	{
 		return false;

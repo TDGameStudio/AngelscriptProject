@@ -17,7 +17,7 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private
 {
 	static const FName ModuleName(TEXT("TestInterfaceCppBridgeReferenceArg"));
 	static const FString ScriptFilename(TEXT("TestInterfaceCppBridgeReferenceArg.as"));
-	static const FName GeneratedClassName(TEXT("AScenarioInterfaceRefBridgeActor"));
+	static const FName GeneratedClassName(TEXT("ATestInterfaceRefBridgeActor"));
 	static const FName GeneratedInterfaceName(TEXT("UICppRefBridge"));
 	static const FName FunctionName(TEXT("AdjustValue"));
 	static const FName ValuePropertyName(TEXT("Value"));
@@ -89,11 +89,11 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceCppBridgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest,
+	FAngelscriptTestInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest,
 	"Angelscript.TestModule.Interface.CppInterface.ProcessEventReferenceArgRoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -116,7 +116,7 @@ interface UICppRefBridge
 }
 
 UCLASS()
-class AScenarioInterfaceRefBridgeActor : AActor, UICppRefBridge
+class ATestInterfaceRefBridgeActor : AActor, UICppRefBridge
 {
 	UPROPERTY()
 	int LastAdjusted = -1;

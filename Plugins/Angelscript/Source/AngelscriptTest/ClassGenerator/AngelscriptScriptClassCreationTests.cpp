@@ -115,46 +115,46 @@ namespace ScriptClassCreationTest
 using namespace ScriptClassCreationTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassCompilesToUClassTest,
+	FAngelscriptTestScriptClassCompilesToUClassTest,
 	"Angelscript.TestModule.ScriptClass.CompilesToUClass",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassCanSpawnInTestWorldTest,
+	FAngelscriptTestScriptClassCanSpawnInTestWorldTest,
 	"Angelscript.TestModule.ScriptClass.CanSpawnInTestWorld",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassMultiSpawnKeepsStateIsolationTest,
+	FAngelscriptTestScriptClassMultiSpawnKeepsStateIsolationTest,
 	"Angelscript.TestModule.ScriptClass.MultiSpawnKeepsStateIsolation",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassBlueprintChildCompilesTest,
+	FAngelscriptTestScriptClassBlueprintChildCompilesTest,
 	"Angelscript.TestModule.ScriptClass.BlueprintChildCompiles",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassCDOHasExpectedDefaultsTest,
+	FAngelscriptTestScriptClassCDOHasExpectedDefaultsTest,
 	"Angelscript.TestModule.ScriptClass.CDOHasExpectedDefaults",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassRecompileDoesNotCrashClassSwitchTest,
+	FAngelscriptTestScriptClassRecompileDoesNotCrashClassSwitchTest,
 	"Angelscript.TestModule.ScriptClass.RecompileDoesNotCrashClassSwitch",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassNonUClassTypeCannotSpawnTest,
+	FAngelscriptTestScriptClassNonUClassTypeCannotSpawnTest,
 	"Angelscript.TestModule.ScriptClass.NonUClassTypeCannotSpawn",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptClassRenameReplacesOldClassTest,
+	FAngelscriptTestScriptClassRenameReplacesOldClassTest,
 	"Angelscript.TestModule.ScriptClass.RenameReplacesOldClass",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioScriptClassCompilesToUClassTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassCompilesToUClassTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -172,13 +172,13 @@ bool FAngelscriptScenarioScriptClassCompilesToUClassTest::RunTest(const FString&
 		TEXT("TestScriptClassCompilesToUClass.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassCompilesToUClass : AActor
+class ATestScriptClassCompilesToUClass : AActor
 {
 	UPROPERTY()
 	int SpawnMarker = 7;
 }
 )AS"),
-		TEXT("AScenarioScriptClassCompilesToUClass"));
+		TEXT("ATestScriptClassCompilesToUClass"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -204,7 +204,7 @@ class AScenarioScriptClassCompilesToUClass : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassCanSpawnInTestWorldTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassCanSpawnInTestWorldTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -222,7 +222,7 @@ bool FAngelscriptScenarioScriptClassCanSpawnInTestWorldTest::RunTest(const FStri
 		TEXT("TestScriptClassCanSpawnInTestWorld.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassCanSpawnInTestWorld : AActor
+class ATestScriptClassCanSpawnInTestWorld : AActor
 {
 	UPROPERTY()
 	int BeginPlayObserved = 0;
@@ -234,7 +234,7 @@ class AScenarioScriptClassCanSpawnInTestWorld : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptClassCanSpawnInTestWorld"));
+		TEXT("ATestScriptClassCanSpawnInTestWorld"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -260,7 +260,7 @@ class AScenarioScriptClassCanSpawnInTestWorld : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassMultiSpawnKeepsStateIsolationTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassMultiSpawnKeepsStateIsolationTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -278,13 +278,13 @@ bool FAngelscriptScenarioScriptClassMultiSpawnKeepsStateIsolationTest::RunTest(c
 		TEXT("TestScriptClassMultiSpawnKeepsStateIsolation.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassMultiSpawnKeepsStateIsolation : AActor
+class ATestScriptClassMultiSpawnKeepsStateIsolation : AActor
 {
 	UPROPERTY()
 	int LocalState = 3;
 }
 )AS"),
-		TEXT("AScenarioScriptClassMultiSpawnKeepsStateIsolation"));
+		TEXT("ATestScriptClassMultiSpawnKeepsStateIsolation"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -326,7 +326,7 @@ class AScenarioScriptClassMultiSpawnKeepsStateIsolation : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassBlueprintChildCompilesTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassBlueprintChildCompilesTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -344,7 +344,7 @@ bool FAngelscriptScenarioScriptClassBlueprintChildCompilesTest::RunTest(const FS
 		TEXT("TestScriptClassBlueprintChildCompiles.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassBlueprintChildCompiles : AActor
+class ATestScriptClassBlueprintChildCompiles : AActor
 {
 	UPROPERTY()
 	int BeginPlayCount = 0;
@@ -356,7 +356,7 @@ class AScenarioScriptClassBlueprintChildCompiles : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptClassBlueprintChildCompiles"));
+		TEXT("ATestScriptClassBlueprintChildCompiles"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -402,7 +402,7 @@ class AScenarioScriptClassBlueprintChildCompiles : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassCDOHasExpectedDefaultsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassCDOHasExpectedDefaultsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -420,7 +420,7 @@ bool FAngelscriptScenarioScriptClassCDOHasExpectedDefaultsTest::RunTest(const FS
 		TEXT("TestScriptClassCDOHasExpectedDefaults.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassCDOHasExpectedDefaults : AActor
+class ATestScriptClassCDOHasExpectedDefaults : AActor
 {
 	UPROPERTY()
 	int DefaultCounter = 21;
@@ -432,7 +432,7 @@ class AScenarioScriptClassCDOHasExpectedDefaults : AActor
 	FString DefaultLabel = "CDOStable";
 }
 )AS"),
-		TEXT("AScenarioScriptClassCDOHasExpectedDefaults"));
+		TEXT("ATestScriptClassCDOHasExpectedDefaults"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -490,7 +490,7 @@ class AScenarioScriptClassCDOHasExpectedDefaults : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassRecompileDoesNotCrashClassSwitchTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassRecompileDoesNotCrashClassSwitchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -508,13 +508,13 @@ bool FAngelscriptScenarioScriptClassRecompileDoesNotCrashClassSwitchTest::RunTes
 		TEXT("TestScriptClassRecompileDoesNotCrashClassSwitch.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
+class ATestScriptClassRecompileDoesNotCrashClassSwitch : AActor
 {
 	UPROPERTY()
 	int GenerationValue = 1;
 }
 )AS"),
-		TEXT("AScenarioScriptClassRecompileDoesNotCrashClassSwitch"));
+		TEXT("ATestScriptClassRecompileDoesNotCrashClassSwitch"));
 	if (InitialClass == nullptr)
 	{
 		return false;
@@ -541,7 +541,7 @@ class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
 		TEXT("TestScriptClassRecompileDoesNotCrashClassSwitch.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
+class ATestScriptClassRecompileDoesNotCrashClassSwitch : AActor
 {
 	UPROPERTY()
 	int GenerationValue = 2;
@@ -550,7 +550,7 @@ class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
 	int AddedAfterRecompile = 17;
 }
 )AS"),
-		TEXT("AScenarioScriptClassRecompileDoesNotCrashClassSwitch"));
+		TEXT("ATestScriptClassRecompileDoesNotCrashClassSwitch"));
 	if (RecompiledClass == nullptr)
 	{
 		return false;
@@ -580,7 +580,7 @@ class AScenarioScriptClassRecompileDoesNotCrashClassSwitch : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassNonUClassTypeCannotSpawnTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassNonUClassTypeCannotSpawnTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ScriptClassCreationTest::AcquireFreshScriptClassEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -598,13 +598,13 @@ bool FAngelscriptScenarioScriptClassNonUClassTypeCannotSpawnTest::RunTest(const 
 		TEXT("TestScriptClassNonUClassTypeCannotSpawn.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioScriptClassNonUClassTypeCannotSpawn : UObject
+class UTestScriptClassNonUClassTypeCannotSpawn : UObject
 {
 	UPROPERTY()
 	int Value = 5;
 }
 )AS"),
-		TEXT("UScenarioScriptClassNonUClassTypeCannotSpawn"));
+		TEXT("UTestScriptClassNonUClassTypeCannotSpawn"));
 	if (NonActorClass == nullptr)
 	{
 		return false;
@@ -626,7 +626,7 @@ class UScenarioScriptClassNonUClassTypeCannotSpawn : UObject
 	return true;
 }
 
-bool FAngelscriptScenarioScriptClassRenameReplacesOldClassTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptClassRenameReplacesOldClassTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -645,13 +645,13 @@ bool FAngelscriptScenarioScriptClassRenameReplacesOldClassTest::RunTest(const FS
 		TEXT("TestScriptClassRenameReplacesOldClass.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassRenameOld : AActor
+class ATestScriptClassRenameOld : AActor
 {
 	UPROPERTY()
 	int Version = 1;
 }
 )AS"),
-		TEXT("AScenarioScriptClassRenameOld"));
+		TEXT("ATestScriptClassRenameOld"));
 	if (OldClass == nullptr)
 	{
 		return false;
@@ -664,21 +664,21 @@ class AScenarioScriptClassRenameOld : AActor
 		TEXT("TestScriptClassRenameReplacesOldClass.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptClassRenameNew : AActor
+class ATestScriptClassRenameNew : AActor
 {
 	UPROPERTY()
 	int Version = 2;
 }
 )AS"),
-		TEXT("AScenarioScriptClassRenameNew"));
+		TEXT("ATestScriptClassRenameNew"));
 	if (!TestNotNull(TEXT("Rename scenario should compile the renamed generated class"), NewClass))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Rename scenario should expose the new generated class by its new name"), FindGeneratedClass(&Engine, TEXT("AScenarioScriptClassRenameNew")) == NewClass);
+	TestTrue(TEXT("Rename scenario should expose the new generated class by its new name"), FindGeneratedClass(&Engine, TEXT("ATestScriptClassRenameNew")) == NewClass);
 	TestTrue(TEXT("Rename scenario should keep the old generated class address distinct from the new class"), OldClass != NewClass);
-	TestTrue(TEXT("Rename scenario should move the old generated class out of the active class name"), OldClass->GetName().Contains(TEXT("REPLACED")) || OldClass->GetName() != TEXT("AScenarioScriptClassRenameOld"));
+	TestTrue(TEXT("Rename scenario should move the old generated class out of the active class name"), OldClass->GetName().Contains(TEXT("REPLACED")) || OldClass->GetName() != TEXT("ATestScriptClassRenameOld"));
 
 
 	FIntProperty* VersionProperty = FindFProperty<FIntProperty>(NewClass, TEXT("Version"));

@@ -121,26 +121,26 @@ namespace AngelscriptTest_Interface_AngelscriptInterfaceDeclareTests_Private
 using namespace AngelscriptTest_Interface_AngelscriptInterfaceDeclareTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceDeclareBasicTest,
+	FAngelscriptTestInterfaceDeclareBasicTest,
 	"Angelscript.TestModule.Interface.DeclareBasic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceDeclareBasicGeneratedUFunctionShapeTest,
+	FAngelscriptTestInterfaceDeclareBasicGeneratedUFunctionShapeTest,
 	"Angelscript.TestModule.Interface.DeclareBasic.GeneratedUFunctionShape",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceDeclareInheritanceTest,
+	FAngelscriptTestInterfaceDeclareInheritanceTest,
 	"Angelscript.TestModule.Interface.DeclareInheritance",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceDeclareInheritanceMetadataVisibilityTest,
+	FAngelscriptTestInterfaceDeclareInheritanceMetadataVisibilityTest,
 	"Angelscript.TestModule.Interface.DeclareInheritance.ParentMetadataVisibility",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceDeclareBasicTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceDeclareBasicTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -175,7 +175,7 @@ interface UIDamageable
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceDeclareBasicGeneratedUFunctionShapeTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceDeclareBasicGeneratedUFunctionShapeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	bool bHasIntReturnProperty = false;
@@ -275,7 +275,7 @@ interface UIDamageableReflection
 	return bHasIntReturnProperty;
 }
 
-bool FAngelscriptScenarioInterfaceDeclareInheritanceTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceDeclareInheritanceTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -316,7 +316,7 @@ interface UIKillableInh : UIDamageableInh
 	return true;
 }
 
-bool FAngelscriptScenarioInterfaceDeclareInheritanceMetadataVisibilityTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceDeclareInheritanceMetadataVisibilityTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

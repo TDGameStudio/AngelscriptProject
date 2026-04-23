@@ -89,41 +89,41 @@ namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Priva
 using namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest,
+	FAngelscriptTestScriptActorBeginPlayRunsInWorldTest,
 	"Angelscript.TestModule.ScriptActor.BeginPlayRunsInWorld",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorNativeUFunctionCanBeInvokedTest,
+	FAngelscriptTestScriptActorNativeUFunctionCanBeInvokedTest,
 	"Angelscript.TestModule.ScriptActor.NativeUFunctionCanBeInvoked",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorBeginPlayCallsAnotherScriptUFunctionTest,
+	FAngelscriptTestScriptActorBeginPlayCallsAnotherScriptUFunctionTest,
 	"Angelscript.TestModule.ScriptActor.BeginPlayCallsAnotherScriptUFunction",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorTickRunsNTimesTest,
+	FAngelscriptTestScriptActorTickRunsNTimesTest,
 	"Angelscript.TestModule.ScriptActor.TickRunsNTimes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorCrossInstanceCallDoesNotLeakStateTest,
+	FAngelscriptTestScriptActorCrossInstanceCallDoesNotLeakStateTest,
 	"Angelscript.TestModule.ScriptActor.CrossInstanceCallDoesNotLeakState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorDestroyedActorInvocationFailsSafelyTest,
+	FAngelscriptTestScriptActorDestroyedActorInvocationFailsSafelyTest,
 	"Angelscript.TestModule.ScriptActor.DestroyedActorInvocationFailsSafely",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioScriptActorMissingFunctionReportsExplicitFailureTest,
+	FAngelscriptTestScriptActorMissingFunctionReportsExplicitFailureTest,
 	"Angelscript.TestModule.ScriptActor.MissingFunctionReportsExplicitFailure",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorBeginPlayRunsInWorldTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -141,7 +141,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayRunsInWorldTest::RunTest(const FStr
 		TEXT("TestScriptActorBeginPlayRunsInWorld.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorBeginPlayRunsInWorld : AActor
+class ATestScriptActorBeginPlayRunsInWorld : AActor
 {
 	UPROPERTY()
 	int BeginPlayObserved = 0;
@@ -153,7 +153,7 @@ class AScenarioScriptActorBeginPlayRunsInWorld : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorBeginPlayRunsInWorld"));
+		TEXT("ATestScriptActorBeginPlayRunsInWorld"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -179,7 +179,7 @@ class AScenarioScriptActorBeginPlayRunsInWorld : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorNativeUFunctionCanBeInvokedTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorNativeUFunctionCanBeInvokedTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -197,7 +197,7 @@ bool FAngelscriptScenarioScriptActorNativeUFunctionCanBeInvokedTest::RunTest(con
 		TEXT("TestScriptActorNativeUFunctionCanBeInvoked.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorNativeUFunctionCanBeInvoked : AActor
+class ATestScriptActorNativeUFunctionCanBeInvoked : AActor
 {
 	UPROPERTY()
 	int NativeInvokeObserved = 0;
@@ -213,7 +213,7 @@ class AScenarioScriptActorNativeUFunctionCanBeInvoked : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorNativeUFunctionCanBeInvoked"));
+		TEXT("ATestScriptActorNativeUFunctionCanBeInvoked"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -259,7 +259,7 @@ class AScenarioScriptActorNativeUFunctionCanBeInvoked : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorBeginPlayCallsAnotherScriptUFunctionTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorBeginPlayCallsAnotherScriptUFunctionTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -277,7 +277,7 @@ bool FAngelscriptScenarioScriptActorBeginPlayCallsAnotherScriptUFunctionTest::Ru
 		TEXT("TestScriptActorBeginPlayCallsAnotherScriptUFunction.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
+class ATestScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 {
 	UPROPERTY()
 	int ScriptDispatchObserved = 0;
@@ -295,7 +295,7 @@ class AScenarioScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorBeginPlayCallsAnotherScriptUFunction"));
+		TEXT("ATestScriptActorBeginPlayCallsAnotherScriptUFunction"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -321,7 +321,7 @@ class AScenarioScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorTickRunsNTimesTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorTickRunsNTimesTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -339,7 +339,7 @@ bool FAngelscriptScenarioScriptActorTickRunsNTimesTest::RunTest(const FString& P
 		TEXT("TestScriptActorTickRunsNTimes.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorTickRunsNTimes : AActor
+class ATestScriptActorTickRunsNTimes : AActor
 {
 	UPROPERTY()
 	int LogicalTickCount = 0;
@@ -364,7 +364,7 @@ class AScenarioScriptActorTickRunsNTimes : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorTickRunsNTimes"));
+		TEXT("ATestScriptActorTickRunsNTimes"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -400,7 +400,7 @@ class AScenarioScriptActorTickRunsNTimes : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -418,7 +418,7 @@ bool FAngelscriptScenarioScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTe
 		TEXT("TestScriptActorCrossInstanceCallDoesNotLeakState.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorCrossInstanceCallDoesNotLeakState : AActor
+class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 {
 	UPROPERTY()
 	AScenarioScriptActorCrossInstanceCallDoesNotLeakState TargetActor;
@@ -443,7 +443,7 @@ class AScenarioScriptActorCrossInstanceCallDoesNotLeakState : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorCrossInstanceCallDoesNotLeakState"));
+		TEXT("ATestScriptActorCrossInstanceCallDoesNotLeakState"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -489,7 +489,7 @@ class AScenarioScriptActorCrossInstanceCallDoesNotLeakState : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorDestroyedActorInvocationFailsSafelyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorDestroyedActorInvocationFailsSafelyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -507,7 +507,7 @@ bool FAngelscriptScenarioScriptActorDestroyedActorInvocationFailsSafelyTest::Run
 		TEXT("TestScriptActorDestroyedActorInvocationFailsSafely.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorDestroyedInvocationTarget : AActor
+class ATestScriptActorDestroyedInvocationTarget : AActor
 {
 	UPROPERTY()
 	int InvocationValue = 0;
@@ -520,7 +520,7 @@ class AScenarioScriptActorDestroyedInvocationTarget : AActor
 }
 
 UCLASS()
-class AScenarioScriptActorDestroyedInvocationSource : AActor
+class ATestScriptActorDestroyedInvocationSource : AActor
 {
 	UPROPERTY()
 	AScenarioScriptActorDestroyedInvocationTarget TargetActor;
@@ -545,13 +545,13 @@ class AScenarioScriptActorDestroyedInvocationSource : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioScriptActorDestroyedInvocationSource"));
+		TEXT("ATestScriptActorDestroyedInvocationSource"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* TargetClass = FindGeneratedClass(&Engine, TEXT("AScenarioScriptActorDestroyedInvocationTarget"));
+	UClass* TargetClass = FindGeneratedClass(&Engine, TEXT("ATestScriptActorDestroyedInvocationTarget"));
 	if (!TestNotNull(TEXT("Scenario destroyed-actor target class should be generated"), TargetClass))
 	{
 		return false;
@@ -613,7 +613,7 @@ class AScenarioScriptActorDestroyedInvocationSource : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioScriptActorMissingFunctionReportsExplicitFailureTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestScriptActorMissingFunctionReportsExplicitFailureTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = AcquireFreshScriptActorEngine();
 	FAngelscriptEngineScope EngineScope(Engine);
@@ -631,13 +631,13 @@ bool FAngelscriptScenarioScriptActorMissingFunctionReportsExplicitFailureTest::R
 		TEXT("TestScriptActorMissingFunctionReportsExplicitFailure.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioScriptActorMissingFunctionReportsExplicitFailure : AActor
+class ATestScriptActorMissingFunctionReportsExplicitFailure : AActor
 {
 	UPROPERTY()
 	int StableValue = 1;
 }
 )AS"),
-		TEXT("AScenarioScriptActorMissingFunctionReportsExplicitFailure"));
+		TEXT("ATestScriptActorMissingFunctionReportsExplicitFailure"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

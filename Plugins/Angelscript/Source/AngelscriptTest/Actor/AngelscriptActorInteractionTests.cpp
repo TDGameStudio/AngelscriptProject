@@ -20,26 +20,26 @@ namespace AngelscriptTest_Actor_AngelscriptActorInteractionTests_Private
 using namespace AngelscriptTest_Actor_AngelscriptActorInteractionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorPointDamageTest,
+	FAngelscriptTestActorPointDamageTest,
 	"Angelscript.TestModule.Actor.PointDamage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorRadialDamageTest,
+	FAngelscriptTestActorRadialDamageTest,
 	"Angelscript.TestModule.Actor.RadialDamage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorMultiSpawnTest,
+	FAngelscriptTestActorMultiSpawnTest,
 	"Angelscript.TestModule.Actor.MultiSpawn",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorCrossCallTest,
+	FAngelscriptTestActorCrossCallTest,
 	"Angelscript.TestModule.Actor.CrossCall",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioActorPointDamageTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorPointDamageTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -57,7 +57,7 @@ bool FAngelscriptScenarioActorPointDamageTest::RunTest(const FString& Parameters
 		TEXT("TestActorPointDamage.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorPointDamage : AActor
+class ATestActorPointDamage : AActor
 {
 	UFUNCTION(BlueprintOverride)
 	void PointDamage(float Damage, TObjectPtr<UDamageType> DamageType, FVector HitLocation,
@@ -69,7 +69,7 @@ class AScenarioActorPointDamage : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorPointDamage"));
+		TEXT("ATestActorPointDamage"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -92,7 +92,7 @@ class AScenarioActorPointDamage : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorRadialDamageTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorRadialDamageTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -110,12 +110,12 @@ bool FAngelscriptScenarioActorRadialDamageTest::RunTest(const FString& Parameter
 		TEXT("TestActorRadialDamage.as"),
 		TEXT(R"AS(
 UCLASS()
-class UScenarioActorRadialDamageSphere : USphereComponent
+class UTestActorRadialDamageSphere : USphereComponent
 {
 }
 
 UCLASS()
-class AScenarioActorRadialDamage : AActor
+class ATestActorRadialDamage : AActor
 {
 	UPROPERTY(DefaultComponent, RootComponent)
 	UScenarioActorRadialDamageSphere DamageSphere;
@@ -131,7 +131,7 @@ class AScenarioActorRadialDamage : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorRadialDamage"));
+		TEXT("ATestActorRadialDamage"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -159,7 +159,7 @@ class AScenarioActorRadialDamage : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorMultiSpawnTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorMultiSpawnTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -177,7 +177,7 @@ bool FAngelscriptScenarioActorMultiSpawnTest::RunTest(const FString& Parameters)
 		TEXT("TestActorMultiSpawn.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorMultiSpawn : AActor
+class ATestActorMultiSpawn : AActor
 {
 	UPROPERTY()
 	int BeginPlayCount = 0;
@@ -189,7 +189,7 @@ class AScenarioActorMultiSpawn : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorMultiSpawn"));
+		TEXT("ATestActorMultiSpawn"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -227,7 +227,7 @@ class AScenarioActorMultiSpawn : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorCrossCallTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorCrossCallTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -245,7 +245,7 @@ bool FAngelscriptScenarioActorCrossCallTest::RunTest(const FString& Parameters)
 		TEXT("TestActorCrossCall.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorCrossCallB : AActor
+class ATestActorCrossCallB : AActor
 {
 	UPROPERTY()
 	int CallCount = 0;
@@ -258,7 +258,7 @@ class AScenarioActorCrossCallB : AActor
 }
 
 UCLASS()
-class AScenarioActorCrossCallA : AActor
+class ATestActorCrossCallA : AActor
 {
 	UPROPERTY()
 	AScenarioActorCrossCallB TargetActor;
@@ -273,13 +273,13 @@ class AScenarioActorCrossCallA : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorCrossCallA"));
+		TEXT("ATestActorCrossCallA"));
 	if (ActorAClass == nullptr)
 	{
 		return false;
 	}
 
-	UClass* ActorBClass = FindGeneratedClass(&Engine, TEXT("AScenarioActorCrossCallB"));
+	UClass* ActorBClass = FindGeneratedClass(&Engine, TEXT("ATestActorCrossCallB"));
 	if (!TestNotNull(TEXT("Scenario cross-call target actor class should be generated"), ActorBClass))
 	{
 		return false;

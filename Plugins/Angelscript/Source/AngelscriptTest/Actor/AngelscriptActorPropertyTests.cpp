@@ -12,21 +12,21 @@ using namespace AngelscriptTestSupport;
 using namespace AngelscriptFunctionalTestUtils;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorUPropertyTest,
+	FAngelscriptTestActorUPropertyTest,
 	"Angelscript.TestModule.Actor.UProperty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorUFunctionTest,
+	FAngelscriptTestActorUFunctionTest,
 	"Angelscript.TestModule.Actor.UFunction",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorDefaultValuesTest,
+	FAngelscriptTestActorDefaultValuesTest,
 	"Angelscript.TestModule.Actor.DefaultValues",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioActorUPropertyTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorUPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -44,7 +44,7 @@ bool FAngelscriptScenarioActorUPropertyTest::RunTest(const FString& Parameters)
 		TEXT("TestActorUProperty.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorUProperty : AActor
+class ATestActorUProperty : AActor
 {
 	UPROPERTY()
 	int Health = 100;
@@ -53,7 +53,7 @@ class AScenarioActorUProperty : AActor
 	FString DisplayName = "TestActor";
 }
 )AS"),
-		TEXT("AScenarioActorUProperty"));
+		TEXT("ATestActorUProperty"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -87,7 +87,7 @@ class AScenarioActorUProperty : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorUFunctionTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorUFunctionTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -105,7 +105,7 @@ bool FAngelscriptScenarioActorUFunctionTest::RunTest(const FString& Parameters)
 		TEXT("TestActorUFunction.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorUFunction : AActor
+class ATestActorUFunction : AActor
 {
 	UPROPERTY()
 	int Health = 100;
@@ -117,7 +117,7 @@ class AScenarioActorUFunction : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorUFunction"));
+		TEXT("ATestActorUFunction"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -150,7 +150,7 @@ class AScenarioActorUFunction : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorDefaultValuesTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorDefaultValuesTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -168,12 +168,12 @@ bool FAngelscriptScenarioActorDefaultValuesTest::RunTest(const FString& Paramete
 		TEXT("TestActorDefaultValues.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorDefaultValues : AActor
+class ATestActorDefaultValues : AActor
 {
 	default PrimaryActorTick.TickInterval = 0.5f;
 }
 )AS"),
-		TEXT("AScenarioActorDefaultValues"));
+		TEXT("ATestActorDefaultValues"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

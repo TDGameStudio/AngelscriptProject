@@ -17,7 +17,7 @@ namespace InterfaceNativeBridgeTests
 {
 	static const FName ModuleName(TEXT("TestInterfaceNativeCppImplementerBridge"));
 	static const FString ScriptFilename(TEXT("TestInterfaceNativeCppImplementerBridge.as"));
-	static const FName GeneratedClassName(TEXT("AScenarioInterfaceNativeCppImplementerBridge"));
+	static const FName GeneratedClassName(TEXT("ATestInterfaceNativeCppImplementerBridge"));
 	static const FName TargetPropertyName(TEXT("Target"));
 	static const FName CastSucceededPropertyName(TEXT("bCastSucceeded"));
 	static const FName ReadValuePropertyName(TEXT("ReadValue"));
@@ -51,11 +51,11 @@ namespace InterfaceNativeBridgeTests
 using namespace InterfaceNativeBridgeTests;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioInterfaceNativeImplementCppImplementerScriptCallTest,
+	FAngelscriptTestInterfaceNativeImplementCppImplementerScriptCallTest,
 	"Angelscript.TestModule.Interface.NativeImplement.CppImplementerScriptCall",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioInterfaceNativeImplementCppImplementerScriptCallTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestInterfaceNativeImplementCppImplementerScriptCallTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -75,7 +75,7 @@ bool FAngelscriptScenarioInterfaceNativeImplementCppImplementerScriptCallTest::R
 		InterfaceNativeBridgeTests::ScriptFilename,
 		TEXT(R"AS(
 UCLASS()
-class AScenarioInterfaceNativeCppImplementerBridge : AActor
+class ATestInterfaceNativeCppImplementerBridge : AActor
 {
 	UPROPERTY()
 	UObject Target;

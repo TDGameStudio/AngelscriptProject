@@ -85,11 +85,11 @@ namespace BlueprintSubclassActorTest
 using namespace BlueprintSubclassActorTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintSubclassBeginPlayTest,
+	FAngelscriptTestBlueprintSubclassBeginPlayTest,
 	"Angelscript.TestModule.Actor.BlueprintSubclassBeginPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioBlueprintSubclassBeginPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintSubclassBeginPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -124,7 +124,7 @@ bool FAngelscriptScenarioBlueprintSubclassBeginPlayTest::RunTest(const FString& 
 		TEXT("TestActorBlueprintSubclassBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorBlueprintSubclassBeginPlay : AActor
+class ATestActorBlueprintSubclassBeginPlay : AActor
 {
 	UPROPERTY()
 	int BeginPlayCalled = 0;
@@ -145,7 +145,7 @@ class AScenarioActorBlueprintSubclassBeginPlay : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorBlueprintSubclassBeginPlay"));
+		TEXT("ATestActorBlueprintSubclassBeginPlay"));
 	if (ScriptClass == nullptr)
 	{
 		return false;

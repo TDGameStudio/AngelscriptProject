@@ -197,13 +197,13 @@ bool FAngelscriptBlueprintImpactScriptParentMatchTest::RunTest(const FString& Pa
 		TEXT("TestBlueprintImpactScriptParentMatch.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintImpactScriptParentMatch : AActor
+class ATestBlueprintImpactScriptParentMatch : AActor
 {
 	UPROPERTY()
 	int Marker = 1;
 }
 )AS"),
-		TEXT("AScenarioBlueprintImpactScriptParentMatch"));
+		TEXT("ATestBlueprintImpactScriptParentMatch"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -261,13 +261,13 @@ bool FAngelscriptBlueprintImpactChangedScriptFilterTest::RunTest(const FString& 
 		TEXT("TestBlueprintImpactFilterA.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintImpactFilterA : AActor
+class ATestBlueprintImpactFilterA : AActor
 {
 	UPROPERTY()
 	int Value = 1;
 }
 )AS"),
-		TEXT("AScenarioBlueprintImpactFilterA"));
+		TEXT("ATestBlueprintImpactFilterA"));
 	if (ScriptParentA == nullptr)
 	{
 		return false;
@@ -280,13 +280,13 @@ class AScenarioBlueprintImpactFilterA : AActor
 		TEXT("TestBlueprintImpactFilterB.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintImpactFilterB : AActor
+class ATestBlueprintImpactFilterB : AActor
 {
 	UPROPERTY()
 	int Value = 2;
 }
 )AS"),
-		TEXT("AScenarioBlueprintImpactFilterB"));
+		TEXT("ATestBlueprintImpactFilterB"));
 	if (ScriptParentB == nullptr)
 	{
 		return false;
@@ -353,13 +353,13 @@ bool FAngelscriptBlueprintImpactDiskBackedAssetScanTest::RunTest(const FString& 
 		TEXT("TestBlueprintImpactDiskBackedAssetScan.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintImpactDiskBackedAssetScan : AActor
+class ATestBlueprintImpactDiskBackedAssetScan : AActor
 {
 	UPROPERTY()
 	int Marker = 10;
 }
 )AS"),
-		TEXT("AScenarioBlueprintImpactDiskBackedAssetScan"));
+		TEXT("ATestBlueprintImpactDiskBackedAssetScan"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;

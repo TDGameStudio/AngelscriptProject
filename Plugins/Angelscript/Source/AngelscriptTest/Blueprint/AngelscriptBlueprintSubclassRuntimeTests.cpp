@@ -181,36 +181,36 @@ namespace BlueprintSubclassRuntimeTest
 using namespace BlueprintSubclassRuntimeTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest,
+	FAngelscriptTestBlueprintChildInheritsScriptBeginPlayTest,
 	"Angelscript.TestModule.BlueprintChild.InheritsScriptBeginPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildInheritsScriptTickTest,
+	FAngelscriptTestBlueprintChildInheritsScriptTickTest,
 	"Angelscript.TestModule.BlueprintChild.InheritsScriptTick",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildScriptUFunctionStillCallableTest,
+	FAngelscriptTestBlueprintChildScriptUFunctionStillCallableTest,
 	"Angelscript.TestModule.BlueprintChild.ScriptUFunctionStillCallable",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildRecreateDoesNotLeakPreviousStateTest,
+	FAngelscriptTestBlueprintChildRecreateDoesNotLeakPreviousStateTest,
 	"Angelscript.TestModule.BlueprintChild.RecreateDoesNotLeakPreviousState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildNoOverrideUsesScriptParentDefaultTest,
+	FAngelscriptTestBlueprintChildNoOverrideUsesScriptParentDefaultTest,
 	"Angelscript.TestModule.BlueprintChild.NoOverrideUsesScriptParentDefault",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioBlueprintChildOverrideChainHasDeterministicCountsTest,
+	FAngelscriptTestBlueprintChildOverrideChainHasDeterministicCountsTest,
 	"Angelscript.TestModule.BlueprintChild.OverrideChainHasDeterministicCounts",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildInheritsScriptBeginPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -228,7 +228,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptBeginPlayTest::RunTest(cons
 		TEXT("TestBlueprintChildInheritsScriptBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildInheritsScriptBeginPlayParent : AActor
+class ATestBlueprintChildInheritsScriptBeginPlayParent : AActor
 {
 	UPROPERTY()
 	int BeginPlayCount = 0;
@@ -240,7 +240,7 @@ class AScenarioBlueprintChildInheritsScriptBeginPlayParent : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildInheritsScriptBeginPlayParent"));
+		TEXT("ATestBlueprintChildInheritsScriptBeginPlayParent"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -280,7 +280,7 @@ class AScenarioBlueprintChildInheritsScriptBeginPlayParent : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioBlueprintChildInheritsScriptTickTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildInheritsScriptTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -298,7 +298,7 @@ bool FAngelscriptScenarioBlueprintChildInheritsScriptTickTest::RunTest(const FSt
 		TEXT("TestBlueprintChildInheritsScriptTick.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildInheritsScriptTickParent : AActor
+class ATestBlueprintChildInheritsScriptTickParent : AActor
 {
 	UPROPERTY()
 	int LogicalTickCount = 0;
@@ -323,7 +323,7 @@ class AScenarioBlueprintChildInheritsScriptTickParent : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildInheritsScriptTickParent"));
+		TEXT("ATestBlueprintChildInheritsScriptTickParent"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -374,7 +374,7 @@ class AScenarioBlueprintChildInheritsScriptTickParent : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioBlueprintChildScriptUFunctionStillCallableTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildScriptUFunctionStillCallableTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -392,7 +392,7 @@ bool FAngelscriptScenarioBlueprintChildScriptUFunctionStillCallableTest::RunTest
 		TEXT("TestBlueprintChildScriptUFunctionStillCallable.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildScriptUFunctionStillCallableParent : AActor
+class ATestBlueprintChildScriptUFunctionStillCallableParent : AActor
 {
 	UPROPERTY()
 	int ScriptCallCount = 0;
@@ -408,7 +408,7 @@ class AScenarioBlueprintChildScriptUFunctionStillCallableParent : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildScriptUFunctionStillCallableParent"));
+		TEXT("ATestBlueprintChildScriptUFunctionStillCallableParent"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -464,7 +464,7 @@ class AScenarioBlueprintChildScriptUFunctionStillCallableParent : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioBlueprintChildRecreateDoesNotLeakPreviousStateTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildRecreateDoesNotLeakPreviousStateTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -482,7 +482,7 @@ bool FAngelscriptScenarioBlueprintChildRecreateDoesNotLeakPreviousStateTest::Run
 		TEXT("TestBlueprintChildRecreateDoesNotLeakPreviousState.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildRecreateStateParent : AActor
+class ATestBlueprintChildRecreateStateParent : AActor
 {
 	UPROPERTY()
 	int StatefulValue = 10;
@@ -504,7 +504,7 @@ class AScenarioBlueprintChildRecreateStateParent : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildRecreateStateParent"));
+		TEXT("ATestBlueprintChildRecreateStateParent"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -578,7 +578,7 @@ class AScenarioBlueprintChildRecreateStateParent : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioBlueprintChildNoOverrideUsesScriptParentDefaultTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildNoOverrideUsesScriptParentDefaultTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -596,7 +596,7 @@ bool FAngelscriptScenarioBlueprintChildNoOverrideUsesScriptParentDefaultTest::Ru
 		TEXT("TestBlueprintChildNoOverrideUsesScriptParentDefault.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
+class ATestBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
 {
 	UPROPERTY()
 	int DefaultCounter = 23;
@@ -608,7 +608,7 @@ class AScenarioBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
 	FString DefaultLabel = "ScriptParentDefault";
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildNoOverrideUsesScriptParentDefaultParent"));
+		TEXT("ATestBlueprintChildNoOverrideUsesScriptParentDefaultParent"));
 	if (ScriptParentClass == nullptr)
 	{
 		return false;
@@ -687,7 +687,7 @@ class AScenarioBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioBlueprintChildOverrideChainHasDeterministicCountsTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestBlueprintChildOverrideChainHasDeterministicCountsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -705,7 +705,7 @@ bool FAngelscriptScenarioBlueprintChildOverrideChainHasDeterministicCountsTest::
 		TEXT("TestBlueprintChildOverrideChainHasDeterministicCounts.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioBlueprintChildOverrideChainParent : AActor
+class ATestBlueprintChildOverrideChainParent : AActor
 {
 	UPROPERTY()
 	int ParentBeginPlayCount = 0;
@@ -752,7 +752,7 @@ class AScenarioBlueprintChildOverrideChainParent : AActor
 }
 
 UCLASS()
-class AScenarioBlueprintChildOverrideChainScriptChild : AScenarioBlueprintChildOverrideChainParent
+class ATestBlueprintChildOverrideChainScriptChild : AScenarioBlueprintChildOverrideChainParent
 {
 	UPROPERTY()
 	int ChildBeginPlayCount = 0;
@@ -800,7 +800,7 @@ class AScenarioBlueprintChildOverrideChainScriptChild : AScenarioBlueprintChildO
 	}
 }
 )AS"),
-		TEXT("AScenarioBlueprintChildOverrideChainScriptChild"));
+		TEXT("ATestBlueprintChildOverrideChainScriptChild"));
 	if (ScriptChildClass == nullptr)
 	{
 		return false;

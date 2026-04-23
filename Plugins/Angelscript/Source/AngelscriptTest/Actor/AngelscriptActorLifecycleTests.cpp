@@ -19,31 +19,31 @@ namespace AngelscriptTest_Actor_AngelscriptActorLifecycleTests_Private
 using namespace AngelscriptTest_Actor_AngelscriptActorLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorBeginPlayTest,
+	FAngelscriptTestActorBeginPlayTest,
 	"Angelscript.TestModule.Actor.BeginPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorTickTest,
+	FAngelscriptTestActorTickTest,
 	"Angelscript.TestModule.Actor.Tick",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorReceiveEndPlayTest,
+	FAngelscriptTestActorReceiveEndPlayTest,
 	"Angelscript.TestModule.Actor.ReceiveEndPlay",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorReceiveDestroyedTest,
+	FAngelscriptTestActorReceiveDestroyedTest,
 	"Angelscript.TestModule.Actor.ReceiveDestroyed",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScenarioActorResetTest,
+	FAngelscriptTestActorResetTest,
 	"Angelscript.TestModule.Actor.Reset",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAngelscriptScenarioActorBeginPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorBeginPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -61,7 +61,7 @@ bool FAngelscriptScenarioActorBeginPlayTest::RunTest(const FString& Parameters)
 		TEXT("TestActorBeginPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorBeginPlay : AActor
+class ATestActorBeginPlay : AActor
 {
 	UPROPERTY()
 	int BeginPlayCalled = 0;
@@ -73,7 +73,7 @@ class AScenarioActorBeginPlay : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorBeginPlay"));
+		TEXT("ATestActorBeginPlay"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -100,7 +100,7 @@ class AScenarioActorBeginPlay : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorTickTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorTickTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -118,7 +118,7 @@ bool FAngelscriptScenarioActorTickTest::RunTest(const FString& Parameters)
 		TEXT("TestActorTick.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorTick : AActor
+class ATestActorTick : AActor
 {
 	UPROPERTY()
 	int TickCount = 0;
@@ -130,7 +130,7 @@ class AScenarioActorTick : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorTick"));
+		TEXT("ATestActorTick"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -162,7 +162,7 @@ class AScenarioActorTick : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorReceiveEndPlayTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorReceiveEndPlayTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -180,7 +180,7 @@ bool FAngelscriptScenarioActorReceiveEndPlayTest::RunTest(const FString& Paramet
 		TEXT("TestActorReceiveEndPlay.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorReceiveEndPlay : AActor
+class ATestActorReceiveEndPlay : AActor
 {
 	UPROPERTY()
 	int EndPlayCalled = 0;
@@ -192,7 +192,7 @@ class AScenarioActorReceiveEndPlay : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorReceiveEndPlay"));
+		TEXT("ATestActorReceiveEndPlay"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -222,7 +222,7 @@ class AScenarioActorReceiveEndPlay : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorReceiveDestroyedTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorReceiveDestroyedTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -240,7 +240,7 @@ bool FAngelscriptScenarioActorReceiveDestroyedTest::RunTest(const FString& Param
 		TEXT("TestActorReceiveDestroyed.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorReceiveDestroyed : AActor
+class ATestActorReceiveDestroyed : AActor
 {
 	UPROPERTY()
 	int DestroyedCalled = 0;
@@ -252,7 +252,7 @@ class AScenarioActorReceiveDestroyed : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorReceiveDestroyed"));
+		TEXT("ATestActorReceiveDestroyed"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
@@ -282,7 +282,7 @@ class AScenarioActorReceiveDestroyed : AActor
 	return true;
 }
 
-bool FAngelscriptScenarioActorResetTest::RunTest(const FString& Parameters)
+bool FAngelscriptTestActorResetTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -300,7 +300,7 @@ bool FAngelscriptScenarioActorResetTest::RunTest(const FString& Parameters)
 		TEXT("TestActorReset.as"),
 		TEXT(R"AS(
 UCLASS()
-class AScenarioActorReset : AActor
+class ATestActorReset : AActor
 {
 	UPROPERTY()
 	int ResetValue = 3;
@@ -312,7 +312,7 @@ class AScenarioActorReset : AActor
 	}
 }
 )AS"),
-		TEXT("AScenarioActorReset"));
+		TEXT("ATestActorReset"));
 	if (ScriptClass == nullptr)
 	{
 		return false;
