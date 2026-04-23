@@ -1,4 +1,4 @@
-﻿#include "Core/AngelscriptEngine.h"
+#include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
@@ -42,6 +42,8 @@ bool FAngelscriptTestInterfaceNativeImplementTest::RunTest(const FString& Parame
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("TestInterfaceNativeImplement"));
@@ -102,17 +104,17 @@ class ATestInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
 }
 )AS"),
 		TEXT("ATestInterfaceNativeImplement"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *Actor);
@@ -122,21 +124,21 @@ class ATestInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
 	int32 ParentCastWorked = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ParentCastWorked"), ParentCastWorked))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Cast to native parent interface should succeed in script"), ParentCastWorked, 1);
 
 	int32 NativeValue = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("NativeValue"), NativeValue))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Script-side native interface call should preserve the returned value"), NativeValue, 123);
 
 	FName NativeMarker = NAME_None;
 	if (!ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Script-side native interface setter should run through the interface reference"), NativeMarker, FName(TEXT("FromScript")));
 
@@ -146,19 +148,23 @@ class ATestInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
 
 	if (!ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("C++ Execute_ bridge should call the script implementation of SetNativeMarker"), NativeMarker, FName(TEXT("FromCpp")));
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceNativeInheritedImplementTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("TestInterfaceNativeInheritedImplement"));
@@ -238,17 +244,17 @@ class ATestInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildIn
 }
 )AS"),
 		TEXT("ATestInterfaceNativeInheritedImplement"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *Actor);
@@ -268,7 +274,7 @@ class ATestInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildIn
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildResult"), ChildResult)
 		|| !ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Script-side cast to native parent interface should succeed through child implementation"), ParentCastWorked, 1);
@@ -282,15 +288,19 @@ class ATestInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildIn
 	TestEqual(TEXT("C++ Execute_ should dispatch child interface method on child implementation"),
 		IAngelscriptNativeChildInterface::Execute_GetChildValue(Actor), 11);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceNativeReferenceRoundTripTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("TestInterfaceNativeReferenceRoundTrip"));
@@ -344,17 +354,17 @@ class ATestInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentI
 }
 )AS"),
 		TEXT("ATestInterfaceNativeReferenceRoundTrip"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *Actor);
@@ -362,7 +372,7 @@ class ATestInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentI
 	int32 ScriptAdjustedValue = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ScriptAdjustedValue"), ScriptAdjustedValue))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Script-side native interface call should round-trip ref parameters"), ScriptAdjustedValue, 15);
 
@@ -370,15 +380,19 @@ class ATestInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentI
 	IAngelscriptNativeParentInterface::Execute_AdjustNativeValue(Actor, 7, CppAdjustedValue);
 	TestEqual(TEXT("C++ Execute_ bridge should round-trip ref parameters through the script implementation"), CppAdjustedValue, 27);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceNativeReferenceRoundTripCppBridgeMutatesActorStateTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("TestInterfaceNativeReferenceRoundTripCppBridgeState"));
@@ -440,17 +454,17 @@ class ATestInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngelscrip
 }
 )AS"),
 		TEXT("ATestInterfaceNativeReferenceRoundTripCppBridgeState"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *Actor);
@@ -462,53 +476,57 @@ class ATestInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngelscrip
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("AdjustCallCount"), AdjustCallCount)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LastAdjustedValue"), LastAdjustedValue))
 	{
-		return false;
+		break;
 	}
 
 	if (!TestEqual(TEXT("Script-side native interface call should still round-trip ref parameters"), ScriptAdjustedValue, 15))
 	{
-		return false;
+		break;
 	}
 	if (!TestEqual(TEXT("Script-side BeginPlay route should increment the adjust call count once"), AdjustCallCount, 1))
 	{
-		return false;
+		break;
 	}
 	if (!TestEqual(TEXT("Script-side BeginPlay route should persist the last adjusted value on the actor state"), LastAdjustedValue, 15))
 	{
-		return false;
+		break;
 	}
 
 	int32 CppAdjustedValue = 20;
 	IAngelscriptNativeParentInterface::Execute_AdjustNativeValue(Actor, 7, CppAdjustedValue);
 	if (!TestEqual(TEXT("C++ Execute_ bridge should still round-trip ref parameters through the script implementation"), CppAdjustedValue, 27))
 	{
-		return false;
+		break;
 	}
 
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("AdjustCallCount"), AdjustCallCount)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LastAdjustedValue"), LastAdjustedValue))
 	{
-		return false;
+		break;
 	}
 
 	if (!TestEqual(TEXT("C++ Execute_ bridge should re-enter the script implementation and increment actor state"), AdjustCallCount, 2))
 	{
-		return false;
+		break;
 	}
 	if (!TestEqual(TEXT("C++ Execute_ bridge should update the actor's last adjusted value after mutating the caller buffer"), LastAdjustedValue, 27))
 	{
-		return false;
+		break;
 	}
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceNativeInheritedParentBridgeSetterAndRefTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
 	static const FName ModuleName(TEXT("TestInterfaceNativeInheritedParentBridge"));
@@ -560,17 +578,17 @@ class ATestInterfaceNativeInheritedParentBridge : AActor, UAngelscriptNativeChil
 }
 )AS"),
 		TEXT("ATestInterfaceNativeInheritedParentBridge"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	IAngelscriptNativeParentInterface::Execute_SetNativeMarker(Actor, TEXT("FromParentExecute"));
@@ -583,16 +601,18 @@ class ATestInterfaceNativeInheritedParentBridge : AActor, UAngelscriptNativeChil
 	if (!ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ParentAdjustedValue"), ParentAdjustedValue))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Parent Execute_ setter should dispatch through the child implementation"), NativeMarker, FName(TEXT("FromParentExecute")));
 	TestEqual(TEXT("Parent Execute_ ref parameter should round-trip through the child implementation"), AdjustedValue, 29);
 	TestEqual(TEXT("Child implementation should persist the adjusted parent-interface value"), ParentAdjustedValue, 29);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

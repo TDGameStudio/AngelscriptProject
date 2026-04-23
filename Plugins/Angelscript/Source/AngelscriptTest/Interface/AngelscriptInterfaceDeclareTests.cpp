@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
@@ -180,6 +180,8 @@ bool FAngelscriptTestInterfaceDeclareBasicGeneratedUFunctionShapeTest::RunTest(c
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	bool bHasIntReturnProperty = false;
 	ASTEST_BEGIN_SHARE_CLEAN
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceDeclareBasicGeneratedUFunctionShape"));
 	ON_SCOPE_EXIT
 	{
@@ -201,9 +203,9 @@ interface UIDamageableReflection
 }
 )AS"),
 		TEXT("UIDamageableReflection"));
-	if (InterfaceClass == nullptr)
+	if (!TestNotNull(TEXT("InterfaceClass should be valid"), InterfaceClass))
 	{
-		return false;
+		break;
 	}
 
 	UFunction* TakeDamageFunction = FindDeclaredInterfaceFunction(InterfaceClass, TEXT("TakeDamage"));
@@ -231,7 +233,7 @@ interface UIDamageableReflection
 		|| !TestNotNull(TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should materialize the TakeDamage function"), TakeDamageFunction)
 		|| !TestNotNull(TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should materialize the GetPriority function"), GetPriorityFunction))
 	{
-		return false;
+		break;
 	}
 
 	const TArray<FProperty*> TakeDamageParameters = GetOrderedInputParameters(TakeDamageFunction);
@@ -240,13 +242,13 @@ interface UIDamageableReflection
 		AddInfo(FString::Printf(
 			TEXT("Interface.DeclareBasic.GeneratedUFunctionShape TakeDamage diagnostics: %s"),
 			*DescribeFunctionShape(TakeDamageFunction)));
-		return false;
+		break;
 	}
 	if (!TestEqual(TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should preserve the TakeDamage parameter name"), TakeDamageParameters[0]->GetFName(), FName(TEXT("Amount")))
 		|| !TestNotNull(TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should materialize Amount as FFloatProperty"), CastField<FFloatProperty>(TakeDamageParameters[0]))
 		|| !TestNull(TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should not materialize a return property for void TakeDamage"), TakeDamageFunction->GetReturnProperty()))
 	{
-		return false;
+		break;
 	}
 
 	const TArray<FProperty*> GetPriorityParameters = GetOrderedInputParameters(GetPriorityFunction);
@@ -255,7 +257,7 @@ interface UIDamageableReflection
 		AddInfo(FString::Printf(
 			TEXT("Interface.DeclareBasic.GeneratedUFunctionShape GetPriority diagnostics: %s"),
 			*DescribeFunctionShape(GetPriorityFunction)));
-		return false;
+		break;
 	}
 
 	FProperty* GetPriorityReturnProperty = GetPriorityFunction->GetReturnProperty();
@@ -264,13 +266,15 @@ interface UIDamageableReflection
 		AddInfo(FString::Printf(
 			TEXT("Interface.DeclareBasic.GeneratedUFunctionShape GetPriority return diagnostics: %s"),
 			*DescribeFunctionShape(GetPriorityFunction)));
-		return false;
+		break;
 	}
 
 	bHasIntReturnProperty = TestNotNull(
 		TEXT("Interface.DeclareBasic.GeneratedUFunctionShape should materialize GetPriority return as FIntProperty"),
 		CastField<FIntProperty>(GetPriorityReturnProperty));
 
+	}
+	while (false);
 	ASTEST_END_SHARE_CLEAN
 	return bHasIntReturnProperty;
 }
@@ -320,6 +324,8 @@ bool FAngelscriptTestInterfaceDeclareInheritanceMetadataVisibilityTest::RunTest(
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceDeclareInheritanceMetadataVisibility"));
 	ON_SCOPE_EXIT
 	{
@@ -351,7 +357,7 @@ interface UIKillableInh : UIDamageableInh
 	if (!TestNotNull(TEXT("Parent interface UIDamageableInh should be generated"), ParentInterface)
 		|| !TestNotNull(TEXT("Child interface UIKillableInh should be generated"), ChildInterface))
 	{
-		return false;
+		break;
 	}
 
 	UFunction* TakeDamageFunction = ChildInterface->FindFunctionByName(TEXT("TakeDamage"));
@@ -378,9 +384,11 @@ interface UIKillableInh : UIDamageableInh
 		CountDeclaredInterfaceFunctions(ChildInterface),
 		1);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_CLEAN
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

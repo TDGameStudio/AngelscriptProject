@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Core/AngelscriptType.h"
@@ -82,6 +82,8 @@ bool FAngelscriptTestInterfaceCastSuccessTest::RunTest(const FString& Parameters
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceCastSuccess"));
 	ON_SCOPE_EXIT
 	{
@@ -123,17 +125,17 @@ class ATestInterfaceCastSuccess : AActor, UIDamageableCastOk
 }
 )AS"),
 		TEXT("ATestInterfaceCastSuccess"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -141,19 +143,23 @@ class ATestInterfaceCastSuccess : AActor, UIDamageableCastOk
 	int32 CastSucceeded = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("CastSucceeded"), CastSucceeded))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Cast to interface should succeed for implementing actor"), CastSucceeded, 1);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceCastFailTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceCastFail"));
 	ON_SCOPE_EXIT
 	{
@@ -192,17 +198,17 @@ class ATestInterfaceCastFail : AActor
 }
 )AS"),
 		TEXT("ATestInterfaceCastFail"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -210,19 +216,23 @@ class ATestInterfaceCastFail : AActor
 	int32 CastReturnedNull = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("CastReturnedNull"), CastReturnedNull))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Cast to interface should fail for non-implementing actor"), CastReturnedNull, 1);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceMethodCallTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceMethodCall"));
 	ON_SCOPE_EXIT
 	{
@@ -271,9 +281,9 @@ class ATestInterfaceMethodCall : AActor, UIDamageableMethodCall
 }
 )AS"),
 		TEXT("ATestInterfaceMethodCall"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceClass = FindGeneratedClass(&Engine, TEXT("UIDamageableMethodCall"));
@@ -286,9 +296,9 @@ class ATestInterfaceMethodCall : AActor, UIDamageableMethodCall
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -296,26 +306,30 @@ class ATestInterfaceMethodCall : AActor, UIDamageableMethodCall
 	int32 CastSucceeded = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("CastSucceeded"), CastSucceeded))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Cast to interface type should succeed"), CastSucceeded, 1);
 
 	int32 MethodCalled = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("MethodCalled"), MethodCalled))
 	{
-		return false;
+		break;
 	}
 	TestEqual(TEXT("Method should have been called via interface reference"), MethodCalled, 1);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceCastFastPathGuardsAndPositivePathTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceCastFastPath"));
 	ON_SCOPE_EXIT
 	{
@@ -350,21 +364,21 @@ class ATestInterfaceCastPlain : AActor
 }
 )AS"),
 		TEXT("ATestInterfaceCastFastPath"));
-	if (ImplementingClass == nullptr)
+	if (!TestNotNull(TEXT("ImplementingClass should be valid"), ImplementingClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* PlainClass = FindGeneratedClass(&Engine, TEXT("ATestInterfaceCastPlain"));
 	if (!TestNotNull(TEXT("Plain cast target class should exist"), PlainClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceClass = FindGeneratedClass(&Engine, TEXT("UIDamageableCastFastPath"));
 	if (!TestNotNull(TEXT("Generated interface class should exist"), InterfaceClass))
 	{
-		return false;
+		break;
 	}
 
 	TestTrue(
@@ -377,9 +391,11 @@ class ATestInterfaceCastPlain : AActor
 	asITypeInfo* ImplementingType = FindBoundScriptTypeInfo(*this, Engine, ImplementingClass, TEXT("Implementing actor"));
 	asITypeInfo* PlainType = FindBoundScriptTypeInfo(*this, Engine, PlainClass, TEXT("Plain actor"));
 	asITypeInfo* InterfaceType = FindBoundScriptTypeInfo(*this, Engine, InterfaceClass, TEXT("Interface"));
-	if (ImplementingType == nullptr || PlainType == nullptr || InterfaceType == nullptr)
+	if (!TestNotNull(TEXT("ImplementingType should be valid"), ImplementingType)
+		|| !TestNotNull(TEXT("PlainType should be valid"), PlainType)
+		|| !TestNotNull(TEXT("InterfaceType should be valid"), InterfaceType))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
@@ -387,9 +403,10 @@ class ATestInterfaceCastPlain : AActor
 
 	AActor* ImplementingActor = SpawnScriptActor(*this, Spawner, ImplementingClass);
 	AActor* PlainActor = SpawnScriptActor(*this, Spawner, PlainClass);
-	if (ImplementingActor == nullptr || PlainActor == nullptr)
+	if (!TestNotNull(TEXT("ImplementingActor should be valid"), ImplementingActor)
+		|| !TestNotNull(TEXT("PlainActor should be valid"), PlainActor))
 	{
-		return false;
+		break;
 	}
 
 	TestTrue(
@@ -405,9 +422,11 @@ class ATestInterfaceCastPlain : AActor
 		TEXT("Fast path should reject null object pointers"),
 		FAngelscriptEngine::CanCastScriptObjectToUnrealInterface(ImplementingType, InterfaceType, nullptr));
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

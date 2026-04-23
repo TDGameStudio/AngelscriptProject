@@ -1,4 +1,4 @@
-﻿#include "Core/AngelscriptEngine.h"
+#include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
@@ -31,6 +31,8 @@ bool FAngelscriptTestInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTe
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
@@ -108,17 +110,17 @@ class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChil
 }
 )AS"),
 		InterfaceNativeInheritedChildSurfaceTests::GeneratedClassName);
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *Actor);
@@ -134,7 +136,7 @@ class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChil
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildOwnResult"), ChildOwnResult)
 		|| !ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
 	{
-		return false;
+		break;
 	}
 
 	TestTrue(TEXT("Script actor should implement native child interface"), ScriptClass->ImplementsInterface(UAngelscriptNativeChildInterface::StaticClass()));
@@ -145,8 +147,10 @@ class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChil
 	TestEqual(TEXT("Child native interface ref should still expose child-owned methods"), ChildOwnResult, 11);
 	TestEqual(TEXT("Child native interface ref should expose inherited parent setter"), NativeMarker, FName(TEXT("ChildRoute")));
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

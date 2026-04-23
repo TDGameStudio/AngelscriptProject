@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptTestEngineHelper.h"
+#include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
@@ -40,6 +40,8 @@ bool FAngelscriptInterfaceRejectsPropertyDeclarationsTest::RunTest(const FString
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*InterfaceValidationModuleName.ToString());
@@ -70,7 +72,7 @@ interface UIInvalidProperty
 
 	if (!TestFalse(TEXT("Interface validation should reject UPROPERTY declarations inside UINTERFACE bodies"), bCompiled))
 	{
-		return false;
+		break;
 	}
 
 	const FAngelscriptCompileTraceDiagnosticSummary* PropertyDiagnostic =
@@ -80,18 +82,24 @@ interface UIInvalidProperty
 		|| !TestTrue(TEXT("Interface validation should capture at least one diagnostic"), Summary.Diagnostics.Num() > 0)
 		|| !TestNotNull(TEXT("Interface validation should emit an interface-property diagnostic"), PropertyDiagnostic))
 	{
-		return false;
+		break;
 	}
 
 	if (!TestEqual(TEXT("Interface validation should report the UPROPERTY line in diagnostics"), PropertyDiagnostic->Row, 5))
 	{
-		return false;
+		break;
 	}
 
-	return TestNull(
+	if (!TestNull(
 		TEXT("Interface validation should not generate a class for an interface that declares a property"),
-		FindGeneratedClass(&Engine, InvalidInterfaceClassName));
+		FindGeneratedClass(&Engine, InvalidInterfaceClassName)))
+	{
+	}
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
+
+	return !HasAnyErrors();
 }
 
 #endif

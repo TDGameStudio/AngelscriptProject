@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -74,6 +74,8 @@ bool FAngelscriptTestInterfaceInheritedInterfaceTest::RunTest(const FString& Par
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceInherited"));
 	ON_SCOPE_EXIT
 	{
@@ -122,17 +124,17 @@ class ATestInterfaceInherited : AActor, UIKillableChild
 }
 )AS"),
 		TEXT("ATestInterfaceInherited"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	UClass* ParentInterface = FindGeneratedClass(&Engine, TEXT("UIDamageableParent"));
@@ -149,14 +151,16 @@ class ATestInterfaceInherited : AActor, UIKillableChild
 	{
 		TestTrue(TEXT("Actor implementing child interface should also satisfy parent UIDamageableParent"), Actor->GetClass()->ImplementsInterface(ParentInterface));
 	}
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceMissingMethodTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = false;
+	bool bCompileSucceeded = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	static const FName ModuleName(TEXT("TestInterfaceMissingMethod"));
@@ -167,7 +171,7 @@ bool FAngelscriptTestInterfaceMissingMethodTest::RunTest(const FString& Paramete
 	};
 
 	AddExpectedError(TEXT("missing required method"), EAutomationExpectedErrorFlags::Contains, 1);
-	const bool bCompiled = CompileAnnotatedModuleFromMemory(
+	bCompileSucceeded = CompileAnnotatedModuleFromMemory(
 		&Engine,
 		ModuleName,
 		TEXT("TestInterfaceMissingMethod.as"),
@@ -209,16 +213,17 @@ class ATestInterfaceMissingMethod : AActor, UIDamageableMissing
 		TestEqual(TEXT("Interface should declare exactly 2 methods"), FuncCount, 2);
 	}
 
-	bPassed = bCompiled;
 	ASTEST_END_SHARE_FRESH
 
-	return bPassed;
+	return bCompileSucceeded && !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceNoPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceNoProperty"));
 	ON_SCOPE_EXIT
 	{
@@ -240,9 +245,9 @@ interface UINoProperty
 )AS"),
 		TEXT("UINoProperty"));
 
-	if (InterfaceClass == nullptr)
+	if (!TestNotNull(TEXT("InterfaceClass should be valid"), InterfaceClass))
 	{
-		return false;
+		break;
 	}
 
 	int32 PropertyCount = 0;
@@ -252,15 +257,19 @@ interface UINoProperty
 	}
 
 	TestEqual(TEXT("Interface should have no UPROPERTY members"), PropertyCount, 0);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceGCSafeTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceGCSafe"));
 	ON_SCOPE_EXIT
 	{
@@ -288,17 +297,17 @@ class ATestInterfaceGCSafe : AActor, UIDamageableGC
 }
 )AS"),
 		TEXT("ATestInterfaceGCSafe"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 	BeginPlayActor(*Actor);
 
@@ -314,9 +323,11 @@ class ATestInterfaceGCSafe : AActor, UIDamageableGC
 	CollectGarbage(RF_NoFlags, true);
 
 	TestTrue(TEXT("Interface actor should be collected after destroy + GC"), !WeakActor.IsValid());
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #if 1
@@ -324,6 +335,8 @@ bool FAngelscriptTestInterfaceHotReloadTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceHotReload"));
 	ON_SCOPE_EXIT
 	{
@@ -380,9 +393,9 @@ class ATestInterfaceHotReload : AActor, UIDamageableHR
 		TEXT("TestInterfaceHotReload.as"),
 		ScriptV1,
 		TEXT("ATestInterfaceHotReload"));
-	if (ClassV1 == nullptr)
+	if (!TestNotNull(TEXT("ClassV1 should be valid"), ClassV1))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceV1 = FindGeneratedClass(&Engine, TEXT("UIDamageableHR"));
@@ -396,17 +409,17 @@ class ATestInterfaceHotReload : AActor, UIDamageableHR
 	if (!TestTrue(TEXT("Interface hot reload should succeed on the full reload path"),
 		CompileModuleWithResult(&Engine, ECompileType::FullReload, ModuleName, TEXT("TestInterfaceHotReload.as"), ScriptV2, ReloadResult)))
 	{
-		return false;
+		break;
 	}
 	if (!TestTrue(TEXT("Interface hot reload should route through the full reload path"), ReloadResult == ECompileResult::FullyHandled || ReloadResult == ECompileResult::PartiallyHandled))
 	{
-		return false;
+		break;
 	}
 
 	UClass* ClassV2 = FindGeneratedClass(&Engine, TEXT("ATestInterfaceHotReload"));
-	if (ClassV2 == nullptr)
+	if (!TestNotNull(TEXT("ClassV2 should be valid"), ClassV2))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceV2 = FindGeneratedClass(&Engine, TEXT("UIDamageableHR"));
@@ -416,9 +429,11 @@ class ATestInterfaceHotReload : AActor, UIDamageableHR
 		TestTrue(TEXT("V2 class should still implement interface after hot reload"), ClassV2->ImplementsInterface(InterfaceV2));
 	}
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 #endif
 
@@ -426,6 +441,8 @@ bool FAngelscriptTestInterfaceCppInterfaceTest::RunTest(const FString& Parameter
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceCppInterface"));
 	ON_SCOPE_EXIT
 	{
@@ -459,17 +476,17 @@ class ATestInterfaceCppBase : AActor, UICppTestInterface
 }
 )AS"),
 		TEXT("ATestInterfaceCppBase"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceClass = FindGeneratedClass(&Engine, TEXT("UICppTestInterface"));
@@ -479,15 +496,19 @@ class ATestInterfaceCppBase : AActor, UICppTestInterface
 		TestTrue(TEXT("Class should implement its declared interface"), Actor->GetClass()->ImplementsInterface(InterfaceClass));
 	}
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceInheritedMethodDispatchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceInheritedDispatch"));
 	ON_SCOPE_EXIT
 	{
@@ -561,17 +582,17 @@ class ATestInterfaceInheritedDispatch : AActor, UIKillableDispatch
 }
 )AS"),
 		TEXT("ATestInterfaceInheritedDispatch"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -585,22 +606,26 @@ class ATestInterfaceInheritedDispatch : AActor, UIKillableDispatch
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ParentResult"), ParentResult)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildResult"), ChildResult))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Parent interface cast should succeed for inherited script interface"), ParentCastWorked, 1);
 	TestEqual(TEXT("Child interface cast should succeed for inherited script interface"), ChildCastWorked, 1);
 	TestEqual(TEXT("Parent interface method should dispatch through inherited interface reference"), ParentResult, 3);
 	TestEqual(TEXT("Child interface method should dispatch through child interface reference"), ChildResult, 5);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceInheritedMethodDispatchChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ChildModuleName(TEXT("TestInterfaceInheritedDispatchChildSurface"));
 	static const FName LeafModuleName(TEXT("TestInterfaceMultiDispatchChildSurface"));
 	ON_SCOPE_EXIT
@@ -667,9 +692,9 @@ class ATestInterfaceInheritedDispatchChildSurface : AActor, UIKillableDispatchCh
 }
 )AS"),
 		TEXT("ATestInterfaceInheritedDispatchChildSurface"));
-	if (ChildScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ChildScriptClass should be valid"), ChildScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* LeafScriptClass = CompileScriptModule(
@@ -745,9 +770,9 @@ class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChild
 }
 )AS"),
 		TEXT("ATestInterfaceMultiDispatchChildSurface"));
-	if (LeafScriptClass == nullptr)
+	if (!TestNotNull(TEXT("LeafScriptClass should be valid"), LeafScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
@@ -755,9 +780,10 @@ class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChild
 
 	AActor* ChildActor = SpawnScriptActor(*this, Spawner, ChildScriptClass);
 	AActor* LeafActor = SpawnScriptActor(*this, Spawner, LeafScriptClass);
-	if (ChildActor == nullptr || LeafActor == nullptr)
+	if (!TestNotNull(TEXT("ChildActor should be valid"), ChildActor)
+		|| !TestNotNull(TEXT("LeafActor should be valid"), LeafActor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*ChildActor);
@@ -770,7 +796,7 @@ class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChild
 		|| !ReadPropertyValue<FIntProperty>(*this, ChildActor, TEXT("ChildParentResult"), ChildParentResult)
 		|| !ReadPropertyValue<FIntProperty>(*this, ChildActor, TEXT("ChildResult"), ChildResult))
 	{
-		return false;
+		break;
 	}
 
 	int32 LeafCastWorked = 0;
@@ -782,7 +808,7 @@ class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChild
 		|| !ReadPropertyValue<FIntProperty>(*this, LeafActor, TEXT("LeafMidResult"), LeafMidResult)
 		|| !ReadPropertyValue<FIntProperty>(*this, LeafActor, TEXT("LeafResult"), LeafResult))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Most-derived child interface cast should succeed"), ChildCastWorked, 1);
@@ -792,15 +818,19 @@ class ATestInterfaceMultiDispatchChildSurface : AActor, UILeafDispatchChainChild
 	TestEqual(TEXT("Leaf interface ref should inherit base methods"), LeafBaseResult, 2);
 	TestEqual(TEXT("Leaf interface ref should inherit mid methods"), LeafMidResult, 4);
 	TestEqual(TEXT("Leaf interface ref should retain leaf methods"), LeafResult, 8);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceMultipleInheritanceChainTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceMultiChain"));
 	ON_SCOPE_EXIT
 	{
@@ -846,17 +876,17 @@ class ATestInterfaceMultiChain : AActor, UILeafChain
 }
 )AS"),
 		TEXT("ATestInterfaceMultiChain"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	UClass* BaseInterface = FindGeneratedClass(&Engine, TEXT("UIBaseChain"));
@@ -880,15 +910,19 @@ class ATestInterfaceMultiChain : AActor, UILeafChain
 		TestTrue(TEXT("Actor implementing leaf should satisfy leaf interface"), Actor->GetClass()->ImplementsInterface(LeafInterface));
 	}
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceMultipleInheritanceDispatchTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceMultiDispatch"));
 	ON_SCOPE_EXIT
 	{
@@ -974,17 +1008,17 @@ class ATestInterfaceMultiDispatch : AActor, UILeafDispatchChain
 }
 )AS"),
 		TEXT("ATestInterfaceMultiDispatch"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -996,15 +1030,17 @@ class ATestInterfaceMultiDispatch : AActor, UILeafDispatchChain
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("MidResult"), MidResult)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LeafResult"), LeafResult))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Base interface method should dispatch through a leaf implementation"), BaseResult, 2);
 	TestEqual(TEXT("Mid interface method should dispatch through a leaf implementation"), MidResult, 4);
 	TestEqual(TEXT("Leaf interface method should dispatch through a leaf implementation"), LeafResult, 8);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

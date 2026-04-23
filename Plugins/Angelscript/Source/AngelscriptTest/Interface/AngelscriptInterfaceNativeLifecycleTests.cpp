@@ -16,7 +16,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -126,12 +125,11 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 			break;
 		}
 
-		bPassed = true;
 	}
 	while (false);
 
 	ASTEST_END_SHARE_CLEAN
-	return bPassed;
+	return !HasAnyErrors();
 }
 
 #endif

@@ -1,4 +1,4 @@
-﻿#include "Core/AngelscriptEngine.h"
+#include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
@@ -59,6 +59,8 @@ bool FAngelscriptTestInterfaceNativeImplementCppImplementerScriptCallTest::RunTe
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 
 	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 
@@ -108,9 +110,9 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 }
 )AS"),
 		InterfaceNativeBridgeTests::GeneratedClassName);
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
@@ -121,7 +123,7 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 	if (!TestNotNull(TEXT("Native interface bridge fixture actor should spawn"), NativeFixtureActor)
 		|| !TestNotNull(TEXT("Native interface bridge script actor should spawn"), ScriptActor))
 	{
-		return false;
+		break;
 	}
 
 	if (!InterfaceNativeBridgeTests::SetObjectReferenceProperty(
@@ -131,7 +133,7 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 		NativeFixtureActor,
 		TEXT("Native interface bridge script actor")))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(Engine, *ScriptActor);
@@ -143,7 +145,7 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, InterfaceNativeBridgeTests::ReadValuePropertyName, ReadValue)
 		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, InterfaceNativeBridgeTests::AdjustedValuePropertyName, AdjustedValue))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Script-side cast to a pure C++ native interface implementer should succeed"), bCastSucceeded, 1);
@@ -153,8 +155,10 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 	TestEqual(TEXT("C++ fixture should observe the delta passed through the interface bridge"), NativeFixtureActor->LastAdjustmentDelta, 5);
 	TestEqual(TEXT("C++ fixture should observe the final ref value written by the interface bridge"), NativeFixtureActor->LastAdjustedValue, 15);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

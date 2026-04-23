@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -97,6 +97,8 @@ bool FAngelscriptTestInterfaceCppInterfaceProcessEventReferenceArgRoundTripTest:
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ModuleName.ToString());
@@ -130,9 +132,9 @@ class ATestInterfaceRefBridgeActor : AActor, UICppRefBridge
 }
 )AS"),
 		GeneratedClassName);
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceClass = FindGeneratedClass(&Engine, GeneratedInterfaceName);
@@ -147,22 +149,22 @@ class ATestInterfaceRefBridgeActor : AActor, UICppRefBridge
 		ScriptClass,
 		FunctionName,
 		TEXT("Cpp interface ProcessEvent reference-arg bridge"));
-	if (AdjustValueFunction == nullptr)
+	if (!TestNotNull(TEXT("AdjustValueFunction should be valid"), AdjustValueFunction))
 	{
-		return false;
+		break;
 	}
 
 	if (!ValidateReferenceParameterShape(*this, AdjustValueFunction))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	FAdjustValueParms AdjustValueParms;
@@ -175,20 +177,22 @@ class ATestInterfaceRefBridgeActor : AActor, UICppRefBridge
 			&AdjustValueParms,
 			TEXT("Cpp interface ProcessEvent reference-arg bridge")))
 	{
-		return false;
+		break;
 	}
 
 	int32 LastAdjusted = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, LastAdjustedPropertyName, LastAdjusted))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Cpp interface ProcessEvent reference-arg bridge should write back the caller buffer"), AdjustValueParms.Value, 12);
 	TestEqual(TEXT("Cpp interface ProcessEvent reference-arg bridge should persist the adjusted value on the script actor"), LastAdjusted, 12);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

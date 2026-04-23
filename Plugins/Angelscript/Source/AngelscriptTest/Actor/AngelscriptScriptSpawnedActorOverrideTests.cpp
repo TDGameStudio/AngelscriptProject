@@ -1,17 +1,18 @@
 ﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptReflectiveAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "Misc/StringOutputDevice.h"
-#include "UObject/UObjectGlobals.h"
 
 // Test Layer: UE Scenario
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptFunctionalTestUtils;
+using namespace AngelscriptReflectiveAccess;
 
 namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Private
 {
@@ -24,65 +25,11 @@ namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Priva
 		return AcquireCleanSharedCloneEngine();
 	}
 
-	struct FSingleIntParam
-	{
-		int32 Value = 0;
-	};
-
 	void EnableScriptActorTick(AActor& Actor)
 	{
 		Actor.PrimaryActorTick.bCanEverTick = true;
 		Actor.SetActorTickEnabled(true);
 		Actor.RegisterAllActorTickFunctions(true, false);
-	}
-
-	UFunction* RequireGeneratedFunction(
-		FAutomationTestBase& Test,
-		UClass* OwnerClass,
-		FName FunctionName,
-		const TCHAR* Context)
-	{
-		UFunction* Function = FindGeneratedFunction(OwnerClass, FunctionName);
-		Test.TestNotNull(
-			*FString::Printf(TEXT("%s should find generated function '%s'"), Context, *FunctionName.ToString()),
-			Function);
-		return Function;
-	}
-
-	bool TryInvokeGeneratedFunction(FAngelscriptEngine& Engine, UObject* Object, UFunction* Function, void* Params = nullptr)
-	{
-		if (!::IsValid(Object) || Function == nullptr)
-		{
-			return false;
-		}
-
-		FAngelscriptEngineScope FunctionScope(Engine, Object);
-		Object->ProcessEvent(Function, Params);
-		return true;
-	}
-
-	bool SetObjectReferenceProperty(
-		FAutomationTestBase& Test,
-		UObject* Object,
-		FName PropertyName,
-		UObject* ReferencedObject,
-		const TCHAR* Context)
-	{
-		if (!Test.TestNotNull(*FString::Printf(TEXT("%s should have a valid object"), Context), Object))
-		{
-			return false;
-		}
-
-		FObjectPropertyBase* Property = FindFProperty<FObjectPropertyBase>(Object->GetClass(), PropertyName);
-		if (!Test.TestNotNull(
-			*FString::Printf(TEXT("%s should expose object property '%s'"), Context, *PropertyName.ToString()),
-			Property))
-		{
-			return false;
-		}
-
-		Property->SetObjectPropertyValue_InContainer(Object, ReferencedObject);
-		return true;
 	}
 }
 
@@ -169,14 +116,8 @@ class ATestScriptActorBeginPlayRunsInWorld : AActor
 
 	BeginPlayActor(Engine, *Actor);
 
-	int32 BeginPlayObserved = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("BeginPlayObserved"), BeginPlayObserved))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Spawned script actor should observe BeginPlay when entering the test world"), BeginPlayObserved, 1);
-	return true;
+	return VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("BeginPlayObserved"), 1,
+		TEXT("Spawned script actor should observe BeginPlay when entering the test world"));
 }
 
 bool FAngelscriptTestScriptActorNativeUFunctionCanBeInvokedTest::RunTest(const FString& Parameters)
@@ -229,34 +170,22 @@ class ATestScriptActorNativeUFunctionCanBeInvoked : AActor
 
 	BeginPlayActor(Engine, *Actor);
 
-	UFunction* Function = RequireGeneratedFunction(*this, Actor->GetClass(), TEXT("ReceiveNativeValue"), TEXT("Scenario native-UFUNCTION invocation"));
-	if (Function == nullptr)
+	FFunctionInvoker Invoker(*this, Actor, FName(TEXT("ReceiveNativeValue")));
+	if (!Invoker.IsValid())
+	{
+		return false;
+	}
+	Invoker.AddParam<int32>(77);
+	if (!TestTrue(TEXT("Scenario native-UFUNCTION invocation should succeed through reflective invocation"), Invoker.Call()))
 	{
 		return false;
 	}
 
-	FSingleIntParam Params;
-	Params.Value = 77;
-	if (!TestTrue(TEXT("Scenario native-UFUNCTION invocation should succeed through ProcessEvent"), TryInvokeGeneratedFunction(Engine, Actor, Function, &Params)))
-	{
-		return false;
-	}
-
-	int32 NativeInvokeObserved = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("NativeInvokeObserved"), NativeInvokeObserved))
-	{
-		return false;
-	}
-
-	int32 LastNativeValue = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LastNativeValue"), LastNativeValue))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Scenario native-UFUNCTION invocation should observe a reflected call into the script actor"), NativeInvokeObserved, 1);
-	TestEqual(TEXT("Scenario native-UFUNCTION invocation should preserve the reflected integer argument"), LastNativeValue, 77);
-	return true;
+	const bool bObserved = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("NativeInvokeObserved"), 1,
+		TEXT("Scenario native-UFUNCTION invocation should observe a reflected call into the script actor"));
+	const bool bValue = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("LastNativeValue"), 77,
+		TEXT("Scenario native-UFUNCTION invocation should preserve the reflected integer argument"));
+	return bObserved && bValue;
 }
 
 bool FAngelscriptTestScriptActorBeginPlayCallsAnotherScriptUFunctionTest::RunTest(const FString& Parameters)
@@ -311,14 +240,8 @@ class ATestScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 
 	BeginPlayActor(Engine, *Actor);
 
-	int32 ScriptDispatchObserved = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ScriptDispatchObserved"), ScriptDispatchObserved))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Scenario script actor BeginPlay should dispatch into another script UFUNCTION"), ScriptDispatchObserved, 1);
-	return true;
+	return VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("ScriptDispatchObserved"), 1,
+		TEXT("Scenario script actor BeginPlay should dispatch into another script UFUNCTION"));
 }
 
 bool FAngelscriptTestScriptActorTickRunsNTimesTest::RunTest(const FString& Parameters)
@@ -383,7 +306,7 @@ class ATestScriptActorTickRunsNTimes : AActor
 	BeginPlayActor(Engine, *Actor);
 
 	int32 InitialLogicalTickCount = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LogicalTickCount"), InitialLogicalTickCount))
+	if (!GetByPath<FIntProperty, int32>(*this, Actor, TEXT("LogicalTickCount"), InitialLogicalTickCount))
 	{
 		return false;
 	}
@@ -391,13 +314,14 @@ class ATestScriptActorTickRunsNTimes : AActor
 	TickWorld(Engine, Spawner.GetWorld(), ScriptActorScenarioDeltaTime, ScriptActorScenarioTickCount);
 
 	int32 FinalLogicalTickCount = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LogicalTickCount"), FinalLogicalTickCount))
+	if (!GetByPath<FIntProperty, int32>(*this, Actor, TEXT("LogicalTickCount"), FinalLogicalTickCount))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Scenario script actor should advance one logical Tick per requested world tick"), FinalLogicalTickCount - InitialLogicalTickCount, ScriptActorScenarioTickCount);
-	return true;
+	return TestEqual(TEXT("Scenario script actor should advance one logical Tick per requested world tick"),
+		FinalLogicalTickCount - InitialLogicalTickCount,
+		ScriptActorScenarioTickCount);
 }
 
 bool FAngelscriptTestScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTest(const FString& Parameters)
@@ -421,7 +345,7 @@ UCLASS()
 class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 {
 	UPROPERTY()
-	AScenarioScriptActorCrossInstanceCallDoesNotLeakState TargetActor;
+	ATestScriptActorCrossInstanceCallDoesNotLeakState TargetActor;
 
 	UPROPERTY()
 	int LocalState = 0;
@@ -459,34 +383,19 @@ class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 		return false;
 	}
 
-	if (!SetObjectReferenceProperty(
-			*this,
-			SourceActor,
-			TEXT("TargetActor"),
-			TargetActor,
-			TEXT("Scenario cross-instance source actor")))
+	if (!SetObjectByPath(*this, SourceActor, TEXT("TargetActor"), TargetActor))
 	{
 		return false;
 	}
 
 	BeginPlayActor(Engine, *SourceActor);
 
-	int32 SourceLocalState = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, SourceActor, TEXT("LocalState"), SourceLocalState))
-	{
-		return false;
-	}
-
-	int32 TargetLocalState = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, TargetActor, TEXT("LocalState"), TargetLocalState))
-	{
-		return false;
-	}
-
-	TestTrue(TEXT("Scenario cross-instance setup should produce distinct spawned actor instances"), SourceActor != TargetActor);
-	TestEqual(TEXT("Scenario cross-instance source actor should retain its own local state"), SourceLocalState, 11);
-	TestEqual(TEXT("Scenario cross-instance target actor should receive the dispatched state change without leaking back into the source"), TargetLocalState, 29);
-	return true;
+	const bool bDistinctActors = TestTrue(TEXT("Scenario cross-instance setup should produce distinct spawned actor instances"), SourceActor != TargetActor);
+	const bool bSourceState = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("LocalState"), 11,
+		TEXT("Scenario cross-instance source actor should retain its own local state"));
+	const bool bTargetState = VerifyByPath<FIntProperty, int32>(*this, TargetActor, TEXT("LocalState"), 29,
+		TEXT("Scenario cross-instance target actor should receive the dispatched state change without leaking back into the source"));
+	return bDistinctActors && bSourceState && bTargetState;
 }
 
 bool FAngelscriptTestScriptActorDestroyedActorInvocationFailsSafelyTest::RunTest(const FString& Parameters)
@@ -523,7 +432,7 @@ UCLASS()
 class ATestScriptActorDestroyedInvocationSource : AActor
 {
 	UPROPERTY()
-	AScenarioScriptActorDestroyedInvocationTarget TargetActor;
+	ATestScriptActorDestroyedInvocationTarget TargetActor;
 
 	UPROPERTY()
 	int FailedSafelyObserved = 0;
@@ -567,12 +476,7 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 		return false;
 	}
 
-	if (!SetObjectReferenceProperty(
-			*this,
-			SourceActor,
-			TEXT("TargetActor"),
-			TargetActor,
-			TEXT("Scenario destroyed-actor source actor")))
+	if (!SetObjectByPath(*this, SourceActor, TEXT("TargetActor"), TargetActor))
 	{
 		return false;
 	}
@@ -596,21 +500,11 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 		return false;
 	}
 
-	int32 FailedSafelyObserved = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, SourceActor, TEXT("FailedSafelyObserved"), FailedSafelyObserved))
-	{
-		return false;
-	}
-
-	int32 UnexpectedInvocationObserved = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, SourceActor, TEXT("UnexpectedInvocationObserved"), UnexpectedInvocationObserved))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Scenario destroyed actor call should fail safely inside script dispatch when the target was destroyed"), FailedSafelyObserved, 1);
-	TestEqual(TEXT("Scenario destroyed actor call should not reach the destroyed target invocation body"), UnexpectedInvocationObserved, 0);
-	return true;
+	const bool bFailedSafely = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("FailedSafelyObserved"), 1,
+		TEXT("Scenario destroyed actor call should fail safely inside script dispatch when the target was destroyed"));
+	const bool bNoUnexpectedInvocation = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("UnexpectedInvocationObserved"), 0,
+		TEXT("Scenario destroyed actor call should not reach the destroyed target invocation body"));
+	return bFailedSafely && bNoUnexpectedInvocation;
 }
 
 bool FAngelscriptTestScriptActorMissingFunctionReportsExplicitFailureTest::RunTest(const FString& Parameters)
@@ -654,18 +548,15 @@ class ATestScriptActorMissingFunctionReportsExplicitFailure : AActor
 	BeginPlayActor(Engine, *Actor);
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 
-	int32 StableValue = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("StableValue"), StableValue))
-	{
-		return false;
-	}
-
 	FStringOutputDevice Output;
 	const bool bCallSucceeded = Actor->CallFunctionByNameWithArguments(TEXT("DoesNotExist"), Output, nullptr, true);
 
-	TestEqual(TEXT("Scenario missing-function setup should keep the actor state readable before the failed invocation"), StableValue, 1);
-	TestFalse(TEXT("Scenario missing-function invocation should return an explicit failure result when the named function does not exist"), bCallSucceeded);
-	return true;
+	const bool bStableValue = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("StableValue"), 1,
+		TEXT("Scenario missing-function setup should keep the actor state readable before the failed invocation"));
+	const bool bMissingCallFailed = TestFalse(
+		TEXT("Scenario missing-function invocation should return an explicit failure result when the named function does not exist"),
+		bCallSucceeded);
+	return bStableValue && bMissingCallFailed;
 }
 
 #endif

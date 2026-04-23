@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -61,6 +61,8 @@ bool FAngelscriptTestInterfaceHierarchyProcessEventDispatchTest::RunTest(const F
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceHierarchyProcessEvent"));
 	ON_SCOPE_EXIT
 	{
@@ -124,9 +126,9 @@ class ATestInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 }
 )AS"),
 		TEXT("ATestInterfaceHierarchyProcessEvent"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	UClass* BaseInterface = FindGeneratedClass(&Engine, TEXT("UIBaseDispatchProcess"));
@@ -160,22 +162,23 @@ class ATestInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 		ScriptClass,
 		TEXT("LeafPing"),
 		TEXT("Interface hierarchy ProcessEvent scenario"));
-	if (BasePingFunction == nullptr || LeafPingFunction == nullptr)
+	if (!TestNotNull(TEXT("BasePingFunction should be valid"), BasePingFunction)
+		|| !TestNotNull(TEXT("LeafPingFunction should be valid"), LeafPingFunction))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	if (!InvokeGeneratedFunction(Engine, *this, Actor, BasePingFunction, TEXT("Base ProcessEvent dispatch")))
 	{
-		return false;
+		break;
 	}
 
 	int32 BaseCalled = 0;
@@ -185,7 +188,7 @@ class ATestInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("MidCalled"), MidCalled)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LeafCalled"), LeafCalled))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Base ProcessEvent dispatch should call the inherited parent interface method"), BaseCalled, 1);
@@ -194,22 +197,24 @@ class ATestInterfaceHierarchyProcessEvent : AActor, UILeafDispatchProcess
 
 	if (!InvokeGeneratedFunction(Engine, *this, Actor, LeafPingFunction, TEXT("Leaf ProcessEvent dispatch")))
 	{
-		return false;
+		break;
 	}
 
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("BaseCalled"), BaseCalled)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("MidCalled"), MidCalled)
 		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LeafCalled"), LeafCalled))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("Leaf ProcessEvent dispatch should preserve the earlier base invocation"), BaseCalled, 1);
 	TestEqual(TEXT("Leaf ProcessEvent dispatch should not implicitly route through the mid method"), MidCalled, 0);
 	TestEqual(TEXT("Leaf ProcessEvent dispatch should call the leaf interface method"), LeafCalled, 1);
 
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -36,6 +36,8 @@ bool FAngelscriptTestInterfaceImplementBasicTest::RunTest(const FString& Paramet
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceImplementBasic"));
 	ON_SCOPE_EXIT
 	{
@@ -69,17 +71,17 @@ class ATestInterfaceImplBasic : AActor, UIDamageableImpl
 }
 )AS"),
 		TEXT("ATestInterfaceImplBasic"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	UClass* InterfaceClass = FindGeneratedClass(&Engine, TEXT("UIDamageableImpl"));
@@ -88,15 +90,19 @@ class ATestInterfaceImplBasic : AActor, UIDamageableImpl
 	{
 		TestTrue(TEXT("Actor should implement the interface"), Actor->GetClass()->ImplementsInterface(InterfaceClass));
 	}
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceImplementMultipleTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceImplementMultiple"));
 	ON_SCOPE_EXIT
 	{
@@ -142,17 +148,17 @@ class ATestInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMulti
 }
 )AS"),
 		TEXT("ATestInterfaceImplMultiple"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	UClass* DamageableClass = FindGeneratedClass(&Engine, TEXT("UIDamageableMulti"));
@@ -169,15 +175,19 @@ class ATestInterfaceImplMultiple : AActor, UIDamageableMulti, UIHealableMulti
 	{
 		TestTrue(TEXT("Actor should implement UIHealableMulti"), Actor->GetClass()->ImplementsInterface(HealableClass));
 	}
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestInterfaceImplementsInterfaceMethodTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
+	do
+	{
 	static const FName ModuleName(TEXT("TestInterfaceImplMethod"));
 	ON_SCOPE_EXIT
 	{
@@ -217,17 +227,17 @@ class ATestInterfaceImplMethod : AActor, UIDamageableImplCheck
 }
 )AS"),
 		TEXT("ATestInterfaceImplMethod"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
 	{
-		return false;
+		break;
 	}
 
 	BeginPlayActor(*Actor);
@@ -242,13 +252,15 @@ class ATestInterfaceImplMethod : AActor, UIDamageableImplCheck
 	int32 ImplementsResult = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ImplementsResult"), ImplementsResult))
 	{
-		return false;
+		break;
 	}
 
 	TestEqual(TEXT("ImplementsInterface via StaticClass() should succeed in AS script"), ImplementsResult, 1);
+	}
+	while (false);
 	ASTEST_END_SHARE_FRESH
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif

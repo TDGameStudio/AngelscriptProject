@@ -1,4 +1,5 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptReflectiveAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -10,6 +11,7 @@
 
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptFunctionalTestUtils;
+using namespace AngelscriptReflectiveAccess;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestActorUPropertyTest,
@@ -30,6 +32,8 @@ bool FAngelscriptTestActorUPropertyTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
+	do
+	{
 	static const FName ModuleName(TEXT("TestActorUProperty"));
 	ON_SCOPE_EXIT
 	{
@@ -54,43 +58,37 @@ class ATestActorUProperty : AActor
 }
 )AS"),
 		TEXT("ATestActorUProperty"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("UProperty actor should spawn successfully"), Actor))
 	{
-		return false;
+		break;
 	}
 	BeginPlayActor(Engine, *Actor);
 
-	int32 Health = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("Health"), Health))
-	{
-		return false;
+	VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("Health"), 100,
+		TEXT("Script-defined int UPROPERTY should keep its default value after spawn"));
+	VerifyByPath<FStrProperty, FString>(*this, Actor, TEXT("DisplayName"), FString(TEXT("TestActor")),
+		TEXT("Script-defined FString UPROPERTY should keep its default value after spawn"));
 	}
-
-	FString DisplayName;
-	if (!ReadPropertyValue<FStrProperty>(*this, Actor, TEXT("DisplayName"), DisplayName))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Scenario actor reflected int UPROPERTY should keep its default value"), Health, 100);
-	TestEqual(TEXT("Scenario actor reflected FString UPROPERTY should keep its default value"), DisplayName, FString(TEXT("TestActor")));
+	while (false);
 	ASTEST_END_SHARE_CLEAN
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestActorUFunctionTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
+	do
+	{
 	static const FName ModuleName(TEXT("TestActorUFunction"));
 	ON_SCOPE_EXIT
 	{
@@ -118,42 +116,40 @@ class ATestActorUFunction : AActor
 }
 )AS"),
 		TEXT("ATestActorUFunction"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("UFunction actor should spawn successfully"), Actor))
 	{
-		return false;
+		break;
 	}
 	BeginPlayActor(Engine, *Actor);
 
-	UFunction* GetHealthFunction = FindGeneratedFunction(ScriptClass, TEXT("GetHealth"));
-	if (!TestNotNull(TEXT("Scenario actor reflected UFUNCTION should exist"), GetHealthFunction))
+	FFunctionInvoker Invoker(*this, Actor, FName(TEXT("GetHealth")));
+	if (!Invoker.IsValid())
 	{
-		return false;
+		break;
 	}
-
-	int32 Result = 0;
-	if (!TestTrue(TEXT("Scenario actor reflected UFUNCTION should execute on the game thread"), ExecuteGeneratedIntEventOnGameThread(&Engine, Actor, GetHealthFunction, Result)))
-	{
-		return false;
+	const int32 Result = Invoker.CallAndReturn<int32>(/*Fallback=*/INDEX_NONE);
+	TestEqual(TEXT("Script-defined UFUNCTION should return the scripted property value"), Result, 100);
 	}
-
-	TestEqual(TEXT("Scenario actor reflected UFUNCTION should return the scripted property value"), Result, 100);
+	while (false);
 	ASTEST_END_SHARE_CLEAN
 
-	return true;
+	return !HasAnyErrors();
 }
 
 bool FAngelscriptTestActorDefaultValuesTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
+	do
+	{
 	static const FName ModuleName(TEXT("TestActorDefaultValues"));
 	ON_SCOPE_EXIT
 	{
@@ -174,24 +170,26 @@ class ATestActorDefaultValues : AActor
 }
 )AS"),
 		TEXT("ATestActorDefaultValues"));
-	if (ScriptClass == nullptr)
+	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
 	{
-		return false;
+		break;
 	}
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (Actor == nullptr)
+	if (!TestNotNull(TEXT("DefaultValues actor should spawn successfully"), Actor))
 	{
-		return false;
+		break;
 	}
 	BeginPlayActor(Engine, *Actor);
 
-	TestTrue(TEXT("Scenario actor default values should apply the configured tick interval"), FMath::IsNearlyEqual(Actor->PrimaryActorTick.TickInterval, 0.5f));
+	TestTrue(TEXT("Script default values should apply the configured tick interval"), FMath::IsNearlyEqual(Actor->PrimaryActorTick.TickInterval, 0.5f));
+	}
+	while (false);
 	ASTEST_END_SHARE_CLEAN
 
-	return true;
+	return !HasAnyErrors();
 }
 
 #endif
