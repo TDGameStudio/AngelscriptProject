@@ -2,9 +2,9 @@
 
 本文档是对当前 Angelscript 插件所有可执行方向的系统性盘点，涵盖 AS 2.38 合入、测试增强、缺陷重构、功能增强、工具链与架构演进六大类。每个条目标注优先级、已有 Plan 状态与建议动作。
 
-**编制时间**：2026-04-05
-**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `123` 个 `Bind_*.cpp` 与 `23` 个 bind 头文件。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `50` 份 `Plan_*.md`，其中包含 `48` 份执行 Plan、`1` 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）和 `1` 份索引文档（`Plan_OpportunityIndex.md`）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `6` 份已归档 Plan。
-**Plan 状态快照**：49 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、6 份已归档完成 Plan
+**编制时间**：2026-04-05（数字基线更新于 2026-04-23 `bf99c93`）
+**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `52` 份 `Plan_*.md`（含 `50` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
+**Plan 状态快照**：50 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
 
 ---
 
@@ -37,7 +37,7 @@
 
 ## 二、测试增强
 
-> 当前 452 个自动化测试用例（134 个测试 `.cpp` 文件），覆盖了引擎核心、语言行为、绑定、场景集成等；其中 `275/275` 表示文档化 C++ 基线，live suite / known failures 由 `TechnicalDebtInventory.md` 继续维护。但仍有多个功能域缺乏专项测试。
+> 当前 417+ 个自动化测试定义（429 个测试 `.cpp` 文件），覆盖了引擎核心、语言行为、绑定、场景集成等；其中 `275/275` 表示文档化 C++ 基线，live suite / known failures 由 `TechnicalDebtInventory.md` 继续维护。仅剩 2 个 Disabled 测试（`#ue57-headless`）。但仍有多个功能域缺乏专项测试。
 
 ### 2.1 已有 Plan
 
@@ -57,7 +57,7 @@
 | L | 测试模块规范化 | `Plan_TestModuleStandardization.md` | 部分完成 |
 | M | 测试体系规范化 | `Plan_TestSystemNormalization.md` | 未开始 |
 | N | 全局变量 / Console Variable 对齐与专项测试 | `Plan_GlobalVariableAndCVarParity.md` | 部分完成（`FConsoleVariable` bool/string + 首批 `Bindings` 测试已落地，`FConsoleCommand` 与剩余矩阵待收口） |
-| O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 未开始（~50 个 Disabled 测试的根因分类、mock 接入与修复） |
+| O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 基本完成（仅剩 2 个 `#ue57-headless` Disabled 测试，其余已通过 UE 5.7 迁移修复批量重新启用） |
 
 ### 2.2 新建议 Plan
 
@@ -140,7 +140,7 @@
 | B | Hazelight 能力差距盘点 | `Plan_HazelightCapabilityGap.md` | 未开始 |
 | C | 手动 Bind 函数与成员 CSV 导出 | `Plan_ManualBindCsvDump.md` | 未开始 |
 | D | AS 变更蓝图影响扫描 Commandlet | `Plan_ASBlueprintImpactScanCommandlet.md` | 未开始 |
-| E | Script 示例恢复与扩展 | `Plan_ScriptExamplesExpansion.md` | 部分完成（已落首波 Coverage 真实资产、伴侣目录与 file-backed 综合测试） |
+| E | Script 示例恢复与扩展 | `Plan_ScriptExamplesExpansion.md` | 基本完成（27 个 `.as` 示例已落入 `Script/Examples/`，按 Core/EnhancedInput/Extended 分组；首波 Coverage 真实资产、伴侣目录与 file-backed 综合测试已就位） |
 
 ### 5.2 新建议 Plan
 

@@ -30,7 +30,7 @@
 2. **插件核心骨架已经成熟，不属于"能力底座缺失"阶段。**
    - `Plugins/Angelscript/Angelscript.uplugin` 已形成 `AngelscriptRuntime`、`AngelscriptEditor`、`AngelscriptTest` 三模块。
    - `Plugins/Angelscript/Source/AngelscriptRuntime/` 已具备 `Core/`、`ClassGenerator/`、`Preprocessor/`、`Debugging/`、`CodeCoverage/`、`Dump/`、`StaticJIT/`、`FunctionLibraries/`、`Binds/` 等主体结构。
-   - 当前 `Binds/` 下已有 **123 个 `Bind_*.cpp`** 与 **23 个头文件**，说明绑定面已经很广，不应继续用"插件还没建立绑定体系"的口径描述当前状态。
+   - 当前 `Binds/` 下已有 **124 个 `Bind_*.cpp`** 与 **23 个头文件**，说明绑定面已经很广，不应继续用"插件还没建立绑定体系"的口径描述当前状态。
 
 3. **测试与观测基础设施已经远强于普通原型阶段，但当前口径必须区分三套数字。**
    - `Documents/Guides/TestCatalog.md` 中的 **`275/275 PASS`** 是"已编目基线"。
@@ -58,10 +58,9 @@
    - 这意味着当前仓库"适合持续研发"，但还没有进入"插件可直接对外消费/协作"的交付状态。
 
 8. **相对 Hazelight，当前脚本上手资产和公开工作流仍薄。**
-   - 当前仓库 `Script/` 下只统计到 **9 个 `.as` 脚本**，主要是 `Example_Actor.as` 与测试资产。
+   - 当前仓库 `Script/Examples/` 下已统计到 **27 个 `.as` 示例**，按 `Core/`（20 个）、`EnhancedInput/`（2 个）、`Extended/`（5 个）分组。
    - Hazelight `J:\UnrealEngine\UEAS2\Script-Examples/` 下有 **26 个 `.as` 示例**，并且按 `Examples/`、`GASExamples/`、`EnhancedInputExamples/`、`EditorExamples/` 分组。
-   - Hazelight 的 `Script-Examples/README.md` 甚至直接把该目录定义为"复制到 `ProjectName/Script` 即可使用"的上手入口；当前仓库还没有等价的 examples 使用路径。
-   - 这条差距直接影响新用户上手速度，比再新增一批底层 bind 更先影响外部可用性。
+   - 示例数量上当前仓库已经**达到 Hazelight 同等规模**；剩余差距主要在 GAS 专项示例和对外消费路径（缺少 `Script/Examples/README.md` 使用说明）。
 
 9. **当前 Script Subsystem 已从"负例测试"推进到"编译正例"状态。**
    - `Plugins/Angelscript/Source/AngelscriptTest/Subsystem/AngelscriptSubsystemScenarioTests.cpp` 中，`UScriptWorldSubsystem` 与 `UScriptGameInstanceSubsystem` 的四个场景测试已改为 `FullReload` 编译，断言编译成功并验证 UClass 物化（2026-04-22 由 `Plan_FunctionalGapClosure.md` Phase 2 完成）。
@@ -69,7 +68,7 @@
 
 10. **当前仓库并非全面落后于 Hazelight，反而在若干基础设施上已经更强。**
    - 测试组织明显更系统，`AngelscriptTest/` 已按 `Actor`、`Bindings`、`Blueprint`、`Component`、`Debugger`、`HotReload`、`Subsystem` 等主题拆分。
-   - `Plugins/Angelscript/Source/AngelscriptTest/` 下直接统计到 **480** 个自动化测试定义，且 `TESTING_GUIDE.md` 已把测试分层和引擎生命周期宏使用沉淀成统一规范。
+   - `Plugins/Angelscript/Source/AngelscriptTest/` 下直接统计到 **417+** 个自动化测试定义（覆盖 **429** 个测试 `.cpp` 文件），且 `TESTING_GUIDE.md` 已把测试分层和引擎生命周期宏使用沉淀成统一规范。仅剩 **2 个 Disabled 测试**（均为 `#ue57-headless`）。
    - `Dump/AngelscriptStateDump.h` 已建立比对和盘点都很好用的状态导出体系。
    - `Interface` 相关主题测试已存在，而 `UINTERFACE` 支持不应再被误判为落后项。
 
@@ -115,8 +114,8 @@
 > 目标：先让所有后续计划都站在同一套事实基线上；不先做这一步，后续每一条 P1/P2 都会继续引用不同数字和不同问题归属。
 
 - [ ] **P0.1** 固定"当前现状"口径与数字基线
-  - 统一采用三套并行数字：`275/275` 已编目基线、`443/436/7` live full-suite、以及实时源码扫描规模；禁止后续 roadmap 再把它们混写成一个"当前测试数"。
-  - 同时把当前结构事实固定为：主插件三模块、`README.md = NULL`、无 `.github/workflows/`、`DocsURL/SupportURL` 为空、当前脚本样例 9 个、Hazelight 样例 26 个、当前 `Bind_*.cpp` 数量 123。
+  - 统一采用三套并行数字：`275/275` 已编目基线、live full-suite（需实际运行确认）、以及实时源码扫描规模（`417+` 定义 / `429` 文件）；禁止后续 roadmap 再把它们混写成一个"当前测试数"。
+  - 同时把当前结构事实固定为：主插件三模块、`README.md = NULL`、无 `.github/workflows/`、`DocsURL/SupportURL` 为空、当前脚本样例 27 个（`Script/Examples/` 按 Core/EnhancedInput/Extended 分组）、Hazelight 样例 26 个、当前 `Bind_*.cpp` 数量 124、Disabled 测试仅剩 2 个（`#ue57-headless`）。
   - 这一步只做口径冻结与索引同步，不在同一任务里顺手实施功能修复，避免再次把 status 文档和 feature 实施混成一个阶段。
 - [ ] **P0.1** 📦 Git 提交：`[Docs/Roadmap] Docs: freeze current status baseline and evidence anchors`
 

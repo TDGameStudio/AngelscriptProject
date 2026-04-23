@@ -9,7 +9,7 @@
 ## Current Project Phase
 
 - The plugin is **no longer in prototype or foundation-building phase**. It has entered a maturity stage where the core runtime, editor integration, and test infrastructure are established, but external delivery entry points and several key capability closures still need attention.
-- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-module structure is stable, with `123` `Bind_*.cpp` files, `27+` CSV state export tables, `452+` automation test definitions, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed.
+- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-module structure is stable, with `124` `Bind_*.cpp` files, `27+` CSV state export tables, `417+` automation test definitions across `429` test `.cpp` files (387 Test + 32 Editor + 10 Runtime), `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
 - AngelScript base version is `2.33 + selective 2.38 compatibility`; the fork has diverged too far for a wholesale upgrade — the strategy is to selectively absorb improvements from higher versions. See `Documents/Guides/AngelscriptForkStrategy.md`.
 - Current priority order: **known blockers & delivery baseline → onboarding assets & workflow entry points → feature parity & validation closure → AS 2.38 selective migration & long-term architecture**. See `Documents/Plans/Plan_StatusPriorityRoadmap.md` for details.
 
@@ -23,7 +23,7 @@
 - `Plugins/Angelscript/Source/AngelscriptRuntime/`: Runtime module — plugin core capabilities land here first.
   - `Core/`: Engine core, binding manager, type system.
   - `ClassGenerator/`: Dynamic class generation, hot reload, version chaining.
-  - `Binds/`: 123 `Bind_*.cpp` files covering engine API bindings.
+  - `Binds/`: 124 `Bind_*.cpp` files covering engine API bindings.
   - `Debugging/`: DebugServer V2 protocol.
   - `StaticJIT/`: Static JIT compilation support.
   - `Dump/`: 27+ CSV state export tables; pure external observer architecture.
@@ -36,7 +36,7 @@
 - `Plugins/Angelscript/Source/AngelscriptUHTTool/`: UHT code generation toolchain.
 - `Documents/Guides/`: Build, test, and lookup guides (13 documents).
 - `Documents/Rules/`: Git commit and other rule documents.
-- `Documents/Plans/`: Multi-phase task plan documents (47 execution Plans + 1 status overview + 1 index + 6 archived).
+- `Documents/Plans/`: Multi-phase task plan documents (50 execution Plans + 1 status overview + 1 index + 7 archived).
 - `Documents/Plans/Archives/`: Archive directory and summaries for completed or closed plans.
 - `Documents/Knowledges/`: 33+ architectural knowledge base documents.
 - `Tools/`: Local helper scripts — root runners (`RunBuild.ps1`, `RunTests.ps1`, `RunTestSuite.ps1`, `RunAutomationTests.ps1`/`.bat`, `GetAutomationReportSummary.ps1`), `Tools\Shared\UnrealCommandUtils.ps1`, and centralized tests under `Tools\Tests\`; grouped entry points under `Tools\Bootstrap\` (e.g. `BootstrapWorktree.bat`, `GenerateAgentConfigTemplate.bat`), `Tools\PullReference\PullReference.bat`, `Tools\Diagnostics\`, `Tools\Review\`, and `Tools\ReferenceComparison\`.
@@ -77,8 +77,9 @@
 
 - Current test numbers must distinguish three separate scopes; future documents and roadmaps must not conflate them:
   - `275/275 PASS`: catalogued C++ baseline (`TestCatalog.md`).
-  - `452+` automation test definitions: source-code scan scale.
+  - `417+` automation test definitions across `429` test `.cpp` files: source-code scan scale (as of `bf99c93`, 2026-04-23).
   - Live full-suite run results: defer to the actual numbers in `TechnicalDebtInventory.md`.
+  - Only `2` tests remain Disabled (`#ue57-headless`): `TestEngineHelperTests.cpp:106` and `SourceNavigationTests.cpp:125`.
 
 ## Documentation Maintenance Principles
 
@@ -116,9 +117,15 @@
 - ✅ Engine state dump system (27 CSV tables, console command, automation regression) — archived
 - ✅ Test macro optimization (`BEGIN/END`, `SHARE_CLEAN/SHARE_FRESH`, group closure) — archived
 - ✅ Technical debt Phase 0-6 closure — archived
+- ✅ UFunction reflective fallback binding — archived
 - ✅ UHT tool plugin generated function tables and legacy shard removal — merged to main
 - ✅ BlueprintImpact Commandlet and editor integration — merged to main
-- ✅ UE 5.7 binding and debugger adaptation — merged to main
+- ✅ UE 5.7 binding and debugger adaptation (38 + 16 Disabled tests re-enabled) — merged to main
+- ✅ Script Subsystem closure (WorldSubsystem/GameInstanceSubsystem from negative to positive tests) — merged to main
+- ✅ Network RPC compilation tests (Server/Client/NetMulticast + WithValidation + Unreliable) — merged to main
+- ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
+- ✅ Editor module layout realignment with runtime feature folders — merged to main
+- ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
 
 ## Document Navigation
 

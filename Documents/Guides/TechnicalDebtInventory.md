@@ -1,6 +1,6 @@
 # Angelscript 技术债实时盘点
 
-> 快照提交：`ac16f3a`
+> 快照提交：`bf99c93`（2026-04-23 更新）
 >
 > 目的：保留 Angelscript 插件技术债的 live inventory、历史验证快照与当前 debt owner 入口，避免后续执行阶段重复从零扫描。
 >
@@ -8,10 +8,10 @@
 
 ## 1. 已编目基线 vs 实时扫描
 
-- `Documents/Guides/TestCatalog.md` 仍以 `275/275 PASS` 作为**已编目基线**，它表示“已经整理进目录文档并完成一轮 closeout 的基线”，不是当前 live suite 的总数。
-- 当前源码对 `IMPLEMENT_SIMPLE_AUTOMATION_TEST`、`IMPLEMENT_COMPLEX_AUTOMATION_TEST`、`IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST`、`BEGIN_DEFINE_SPEC`、`DEFINE_SPEC` 的实时扫描命中 **324** 处定义，覆盖 **89** 个文件；这表示的是源码中自动化入口定义规模，也不等于当前 full-suite 执行总数。
-- 截至 `2026-04-04 Engine Isolation` 回归快照，`Automation RunTests Angelscript.TestModule` 的最新结果是 **443 测试 / 436 通过 / 7 失败 / 0 跳过**；这组数字才是当前 live full-suite 状态。
-- 因此这里至少存在三套需要并存维护的数字：**文档化基线**（275/275）、**源码实时定义规模**（324 定义 / 89 文件）、**最新 full-suite 结果**（443/436/7）。后续整理时不得再把其中任意一组当作另外两组的直接替代。
+- `Documents/Guides/TestCatalog.md` 仍以 `275/275 PASS` 作为**已编目基线**，它表示"已经整理进目录文档并完成一轮 closeout 的基线"，不是当前 live suite 的总数。
+- 当前源码对 `IMPLEMENT_SIMPLE_AUTOMATION_TEST`、`IMPLEMENT_COMPLEX_AUTOMATION_TEST`、`IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST`、`BEGIN_DEFINE_SPEC`、`DEFINE_SPEC` 的实时扫描命中 **417+** 处定义，覆盖 **429** 个测试 `.cpp` 文件（AngelscriptTest 387 + AngelscriptEditor/Tests 32 + AngelscriptRuntime/Tests 10）；这表示的是源码中自动化入口定义规模，也不等于当前 full-suite 执行总数。
+- 仅剩 **2 个 Disabled 测试**（均为 `#ue57-headless` 已知限制）：`TestEngineHelperTests.cpp:106`（TryGetRunningProductionDebuggerEngine headless 下返回 null）、`SourceNavigationTests.cpp:125`（Property navigation metadata headless 下未填充）。
+- 因此这里至少存在三套需要并存维护的数字：**文档化基线**（275/275）、**源码实时定义规模**（417+ 定义 / 429 文件）、**最新 full-suite 结果**（需实际运行确认）。后续整理时不得再把其中任意一组当作另外两组的直接替代。
 
 ### 当前测试债 owner 口径
 
@@ -52,7 +52,7 @@
 ## 3. 已关闭的构建与运行时债务
 
 - `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs`：`OptimizeCode = CodeOptimization.Never` 已收口为仅 `Debug` / `DebugGame` 生效的配置感知策略。
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.h`：`FBox` / `FBoxSphereBounds` 的旧入口审计锚点已被显式 provider 路径替代，不再保留“无条件特化 + WILL-EDIT”作为开放债务。
+- `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.h`：`FBox` / `FBoxSphereBounds` 的旧入口审计锚点已被显式 provider 路径替代，不再保留"无条件特化 + WILL-EDIT"作为开放债务。
 - `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintEvent.cpp`：`ExecutePreamble()` / `ExecuteEvent()` / delegate / multicast delegate 入口均已补齐签名校验。
 - `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/AngelscriptDebugServer.cpp`：data breakpoint 共享状态已改为 snapshot/atomic containment；剩余 `FAngelscriptEngine::Get()` 仅用于 line-callback 状态刷新，不再作为本计划里的开放性并发 TODO。
 - `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/StaticJITHeader.cpp`：异常路径对象生命周期已完成本计划范围内的收口，不再保留开放性销毁 TODO。
@@ -102,8 +102,8 @@
 ## 8. 后续执行建议
 
 - `P6.2` 关闭时，确保 `Plan_TechnicalDebt.md` 的引用表已显式包含 `Documents/Guides/GlobalStateContainmentMatrix.md` 与 `Documents/Plans/Plan_FullDeGlobalization.md`。
-- `P6.3` 若再次执行最终 `Automation RunTests Angelscript.TestModule`，不应再假设“仍固定保留 4 个已知失败项”；当前口径应以最新日志为准，重新核对 full-suite 是否仍然全绿，或是否出现新的顺序相关污染。
-- 最终结果摘要应同时回写计划、测试目录基线说明与本盘点文档，保持“已编目基线 / 实时扫描规模 / full-suite 最新状态”三者口径一致。
+- `P6.3` 若再次执行最终 `Automation RunTests Angelscript.TestModule`，不应再假设"仍固定保留 4 个已知失败项"；当前口径应以最新日志为准，重新核对 full-suite 是否仍然全绿，或是否出现新的顺序相关污染。
+- 最终结果摘要应同时回写计划、测试目录基线说明与本盘点文档，保持"已编目基线 / 实时扫描规模 / full-suite 最新状态"三者口径一致。
 
 ## 9. Phase 1 验证快照
 
@@ -207,12 +207,12 @@
   - `Angelscript.TestModule.ClassGenerator.EmptyModuleSetup`：PASS
   - `Angelscript.TestModule.Shared.EngineHelper.*`：PASS
   - `Angelscript.TestModule.WorldSubsystem.*`：PASS
-- 当前 containment 仍是“低风险入口收口”，不代表 `ClassGenerator` / `AngelscriptEngine` / `GameInstanceSubsystem` 已完成全量去全局化；这些后续边界已转入 `Documents/Plans/Plan_FullDeGlobalization.md`。
+- 当前 containment 仍是"低风险入口收口"，不代表 `ClassGenerator` / `AngelscriptEngine` / `GameInstanceSubsystem` 已完成全量去全局化；这些后续边界已转入 `Documents/Plans/Plan_FullDeGlobalization.md`。
 
 ## 14. Phase 6.1 结论快照
 
 - `Bind_UEnum.cpp` 当前未见显式的 enum lookup 性能 TODO、专项哈希缓存结构、或仍需单独验证的优化路径。
-- 现有代码主要集中在 `UEnum` 类型适配、属性匹配、默认值转换与 debugger value 构造，不再包含需要单独 benchmark 的“已落地但未验证”性能债务描述。
+- 现有代码主要集中在 `UEnum` 类型适配、属性匹配、默认值转换与 debugger value 构造，不再包含需要单独 benchmark 的"已落地但未验证"性能债务描述。
 - 结论：`Bind_UEnum` 的性能债务按 stale 说法退休；后续若再引入真实的枚举查找优化路径，再单独建立可回归的测量任务。
 
 ## 15. Phase 6.3 最终回归快照
@@ -240,7 +240,7 @@
 - 编辑器目标构建验证：`AngelscriptProjectEditor Win64 Development` 已重新构建通过。
 - 最新全量回归：`Automation RunTests Angelscript.TestModule` 已在当前仓库通过，结果日志见 `Saved/Logs/TestRun_20260403_170014.log`。
 - 本轮收口并不是 runtime 去全局化已经完成，而是测试侧隔离进一步收紧：
-  - `Shared/AngelscriptTestUtilities.h` 新增 `DestroySharedAndStrayGlobalTestEngine()`，用于同时清理共享测试引擎与“没有 subsystem tick owner 的 stray global engine”。
+  - `Shared/AngelscriptTestUtilities.h` 新增 `DestroySharedAndStrayGlobalTestEngine()`，用于同时清理共享测试引擎与"没有 subsystem tick owner 的 stray global engine"。
   - 多个晚段测试入口统一改为本地 `AcquireFresh*Engine()` 模式：先清 shared / stray global，再重新获取 clean shared clone，切断全量跑时从前序残留 global runtime 上 clone 的污染链。
   - `HotReload` / `Delegate` 相关 performance 与 mismatch 用例同步对齐了当前 runtime 的返回值和日志格式，避免把预期漂移误判成真实回归。
 - 这次验证也再次证明一个事实：`GAngelscriptEngine` 仍然存在并参与当前 runtime 解析路径；测试变绿不代表全局状态债务已关闭，只说明现有 helper containment 已足以稳定当前 full-suite。
