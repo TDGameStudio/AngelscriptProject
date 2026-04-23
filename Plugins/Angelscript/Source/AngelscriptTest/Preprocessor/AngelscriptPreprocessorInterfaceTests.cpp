@@ -377,4 +377,136 @@ bool FAngelscriptPreprocessorInterfaceInvalidBaseReportsDiagnosticTest::RunTest(
 	return bPassed;
 }
 
+// Phase 4: Preprocessor extracts UFUNCTION specifiers on script interface methods
+// and records them in FAngelscriptClassDesc::InterfaceMethodFlags for downstream
+// UFunction generation to honor BlueprintNativeEvent / BlueprintImplementableEvent
+// / BlueprintPure / BlueprintCallable.
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptPreprocessorInterfaceBlueprintEventFlagsTest,
+	"Angelscript.TestModule.Preprocessor.Interface.BlueprintEventFlags",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptPreprocessorInterfaceBlueprintEventFlagsTest::RunTest(const FString& Parameters)
+{
+	bool bPassed = true;
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+
+	Engine.ResetDiagnostics();
+	Engine.LastEmittedDiagnostics.Empty();
+
+	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Interface/BlueprintEventFlags.as");
+	const FString AbsoluteScriptPath = PreprocessorInterfaceTest::WriteFixture(
+		RelativeScriptPath,
+		TEXT(
+			"UINTERFACE()\n"
+			"interface UIFlagsAudit\n"
+			"{\n"
+			"    // Bare declaration — should receive the default flag set\n"
+			"    // FUNC_Event | FUNC_BlueprintEvent (index 0).\n"
+			"    void Plain();\n"
+			"\n"
+			"    // BlueprintNativeEvent — should add FUNC_Native so UHT/C++ can\n"
+			"    // provide a default _Implementation (index 1).\n"
+			"    UFUNCTION(BlueprintNativeEvent)\n"
+			"    void NativeEvent();\n"
+			"\n"
+			"    // BlueprintImplementableEvent — should NOT carry FUNC_Native\n"
+			"    // (pure script/blueprint event, index 2).\n"
+			"    UFUNCTION(BlueprintImplementableEvent)\n"
+			"    void ImplementableEvent();\n"
+			"\n"
+			"    // BlueprintCallable — should add FUNC_BlueprintCallable to the\n"
+			"    // baseline (index 3).\n"
+			"    UFUNCTION(BlueprintCallable)\n"
+			"    void CallableMethod();\n"
+			"\n"
+			"    // BlueprintPure — should add both FUNC_BlueprintCallable and\n"
+			"    // FUNC_BlueprintPure (index 4).\n"
+			"    UFUNCTION(BlueprintPure)\n"
+			"    int PureMethod();\n"
+			"}\n"));
+	ON_SCOPE_EXIT
+	{
+		IFileManager::Get().Delete(*AbsoluteScriptPath, false, true);
+	};
+
+	FAngelscriptPreprocessor Preprocessor;
+	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
+
+	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
+	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
+	const FAngelscriptModuleDesc* Module = PreprocessorInterfaceTest::FindModuleByName(
+		Modules,
+		TEXT("Tests.Preprocessor.Interface.BlueprintEventFlags"));
+	const FAngelscriptClassDesc* AuditInterface = PreprocessorInterfaceTest::FindClassByName(Module, TEXT("UIFlagsAudit"));
+
+	bPassed &= TestTrue(TEXT("Preprocess should succeed for the flags audit interface"), bPreprocessSucceeded);
+	bPassed &= TestNotNull(TEXT("Flags audit interface descriptor should exist"), AuditInterface);
+
+	if (AuditInterface != nullptr)
+	{
+		bPassed &= TestEqual(
+			TEXT("Flags audit interface should capture all five method declarations"),
+			AuditInterface->InterfaceMethodDeclarations.Num(),
+			5);
+		bPassed &= TestEqual(
+			TEXT("InterfaceMethodFlags should have one entry per declaration (aligned indices)"),
+			AuditInterface->InterfaceMethodFlags.Num(),
+			AuditInterface->InterfaceMethodDeclarations.Num());
+
+		if (AuditInterface->InterfaceMethodFlags.Num() == 5)
+		{
+			// Index 0: bare `void Plain()` — default flags only, no FUNC_Native.
+			bPassed &= TestEqual(
+				TEXT("Plain() should default to FUNC_Event | FUNC_BlueprintEvent without FUNC_Native"),
+				AuditInterface->InterfaceMethodFlags[0],
+				(uint32)(FUNC_Event | FUNC_BlueprintEvent));
+
+			// Index 1: BlueprintNativeEvent — adds FUNC_Native.
+			const uint32 NativeFlags = AuditInterface->InterfaceMethodFlags[1];
+			bPassed &= TestTrue(
+				TEXT("NativeEvent() should carry FUNC_Event"),
+				(NativeFlags & FUNC_Event) != 0);
+			bPassed &= TestTrue(
+				TEXT("NativeEvent() should carry FUNC_BlueprintEvent"),
+				(NativeFlags & FUNC_BlueprintEvent) != 0);
+			bPassed &= TestTrue(
+				TEXT("NativeEvent() should carry FUNC_Native"),
+				(NativeFlags & FUNC_Native) != 0);
+
+			// Index 2: BlueprintImplementableEvent — no FUNC_Native.
+			const uint32 ImplementableFlags = AuditInterface->InterfaceMethodFlags[2];
+			bPassed &= TestTrue(
+				TEXT("ImplementableEvent() should carry FUNC_Event"),
+				(ImplementableFlags & FUNC_Event) != 0);
+			bPassed &= TestTrue(
+				TEXT("ImplementableEvent() should carry FUNC_BlueprintEvent"),
+				(ImplementableFlags & FUNC_BlueprintEvent) != 0);
+			bPassed &= TestTrue(
+				TEXT("ImplementableEvent() should NOT carry FUNC_Native"),
+				(ImplementableFlags & FUNC_Native) == 0);
+
+			// Index 3: BlueprintCallable — adds FUNC_BlueprintCallable.
+			const uint32 CallableFlags = AuditInterface->InterfaceMethodFlags[3];
+			bPassed &= TestTrue(
+				TEXT("CallableMethod() should carry FUNC_BlueprintCallable"),
+				(CallableFlags & FUNC_BlueprintCallable) != 0);
+
+			// Index 4: BlueprintPure — adds FUNC_BlueprintPure and FUNC_BlueprintCallable.
+			const uint32 PureFlags = AuditInterface->InterfaceMethodFlags[4];
+			bPassed &= TestTrue(
+				TEXT("PureMethod() should carry FUNC_BlueprintPure"),
+				(PureFlags & FUNC_BlueprintPure) != 0);
+			bPassed &= TestTrue(
+				TEXT("PureMethod() should carry FUNC_BlueprintCallable (BlueprintPure implies Callable)"),
+				(PureFlags & FUNC_BlueprintCallable) != 0);
+		}
+	}
+
+	ASTEST_END_SHARE_CLEAN
+	return bPassed;
+}
+
 #endif

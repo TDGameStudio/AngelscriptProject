@@ -3913,8 +3913,18 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 					ParsingMacro.Type = EMacroType::Property;
 				}
 				else if (FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("UFUNCTION("), 10) == 0
-					&& (ChunkType != EChunkType::Enum))
+					&& (ChunkType != EChunkType::Enum)
+					&& (ChunkType != EChunkType::Interface))
 				{
+					// Phase 4: UFUNCTION inside an interface block is NOT consumed
+					// as a general function macro here. Interface chunks have their
+					// own body-text scan above (see `if (ClassDesc->bIsInterface)`)
+					// which reads the UFUNCTION specifier into `InterfaceMethodFlags`
+					// and strips the entire block to spaces. Routing the macro into
+					// `ProcessFunctionMacro` would reject `BlueprintNativeEvent` /
+					// `BlueprintImplementableEvent` as unknown specifiers (those
+					// names are interface-only and have no meaning on regular
+					// UFUNCTION methods in the AS fork).
 					bIsParsingMacro = true;
 					ParsingMacro.Type = EMacroType::Function;
 				}
