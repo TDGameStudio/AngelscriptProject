@@ -145,6 +145,34 @@ struct ANGELSCRIPTRUNTIME_API FAngelscriptBindHelpers
 		FBoolProperty* Prop = (FBoolProperty*)Function->userData;
 		return Prop->SetPropertyValue_InContainer(Container, Value);
 	}
+
+	// Returns the correctly-offset interface pointer for a UObject that implements
+	// a UInterface. For script-implemented interfaces `PointerOffset` is 0 and this
+	// returns the object itself; for C++ native implementations the object embeds the
+	// interface at some `PointerOffset`, and we must call `UObject::GetInterfaceAddress`
+	// to obtain the true interface vtable pointer.
+	//
+	// This is the canonical bridge used by:
+	//   - Bind_UObject.cpp opCast (interface branch) — stores a safely offset pointer
+	//   - FInterfaceProperty Get/Set accessors (Phase 3) — drives `FScriptInterface::SetInterface`
+	// Returns nullptr when the object doesn't implement the interface or when any
+	// argument is null — callers treat nullptr as "cast failed".
+	static void* GetInterfacePointerForCast(UObject* Object, UClass* InterfaceClass)
+	{
+		if (Object == nullptr || InterfaceClass == nullptr)
+			return nullptr;
+		if (!InterfaceClass->HasAnyClassFlags(CLASS_Interface))
+			return nullptr;
+		if (!Object->GetClass()->ImplementsInterface(InterfaceClass))
+			return nullptr;
+
+		// GetInterfaceAddress returns nullptr for Blueprint/script-only
+		// implementations (where `PointerOffset == 0`); in that case fall back
+		// to the UObject pointer itself so downstream consumers can dispatch
+		// through reflection (FindFunction/ProcessEvent).
+		void* NativeAddress = Object->GetInterfaceAddress(InterfaceClass);
+		return NativeAddress != nullptr ? NativeAddress : static_cast<void*>(Object);
+	}
 };
 
 struct FScriptStructType
