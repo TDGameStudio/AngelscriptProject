@@ -110,7 +110,7 @@
 |---|------|-----------|------|
 | A | C++ UInterface 绑定 | `Plan_CppInterfaceBinding.md` | 未开始（P1 优先级） |
 | B | 接口绑定总设计 | `Plan_InterfaceBinding.md` | 未开始（P1 优先级） |
-| B2 | 接口与 C++ UInterface 使用一致性补齐 | `Plan_InterfaceParityWithCpp.md` | 进行中（Phase 0 完成，承接 `Plan_InterfaceBinding.md` Phase 4/5） |
+| B2 | 接口与 C++ UInterface 使用一致性补齐 | `Archives/Plan_InterfaceParityWithCpp.md` | ✅ 已完成并归档（2026-04-24）|
 | C | UHT Exporter 插件 | `Plan_UhtPlugin.md` | 未开始 |
 | D | Bind 并行化 | `Plan_BindParallelization.md` | 分析完成，未实施 |
 | E | 状态 Dump | `Archives/Plan_ASEngineStateDump.md` | 已归档（已完成） |

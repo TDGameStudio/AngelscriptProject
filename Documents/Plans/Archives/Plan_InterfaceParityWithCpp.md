@@ -1,6 +1,19 @@
 # 接口与 C++ UInterface 使用一致性补齐计划
 
+> **归档状态**：✅ 已归档
+> **归档日期**：2026-04-24
+> **完成判断**：Phase 0-6 全部完成；Interface 测试 41/41 通过，Preprocessor.Interface 3/3 通过；原 36 个回归基线零失败；新增 Signature / Property / EventFlags / ImplementsGeneric / BlueprintEventFlags 等 ≥10 个测试全部通过；所有实质改动均落在 `Plugins/Angelscript/Source/AngelscriptRuntime/{Binds,Preprocessor,ClassGenerator,Core}/*`、`Plugins/Angelscript/Source/AngelscriptTest/**`、`Documents/Knowledges/InterfaceBinding.md`、`Script/Examples/Extended/Example_ScriptInterface.as` —— ThirdParty 目录零新增修改（满足验收标准第 7 项）。
+> **结果摘要**：
+> 1. Phase 1 完整落地接口方法签名校验（参数数量/类型/返回值/const 限定），不匹配时 FinalizeClass 阶段即报错并给出可读日志；降级路径保留不影响旧存根。
+> 2. Phase 2 落地 `TScriptInterface<UIFoo>` 作为方法体内本地变量的完整支持 + C++ 侧 `UPROPERTY TScriptInterface<IFoo>` 反射层 round-trip；`FScriptInterfaceType` 通过 AS template + TypeFinder + POD 值类型路径实现，零新增 getter/setter helper。脚本侧 UPROPERTY / UFUNCTION 参数 / UFUNCTION 返回值上的 `TScriptInterface<UIFoo>` 未覆盖（class generator 分析阶段目前拒绝），保留为后续迭代。
+> 3. Phase 3 落地 `FAngelscriptBindHelpers::GetInterfacePointerForCast`，Cast 与 TScriptInterface 桥接共享同一套 InterfacePointer 计算，多接口继承场景的 Secondary/Parent 偏移验证通过。
+> 4. Phase 4 落地脚本接口方法的 `UFUNCTION(BlueprintNativeEvent / BlueprintImplementableEvent / BlueprintCallable / BlueprintPure)` 修饰符支持；生成的 UFunction FunctionFlags 与 UHT 产出对齐，Interface chunk 下的 UFUNCTION 不再进入 `ProcessFunctionMacro`。
+> 5. Phase 5 落地 `Obj.Implements<T>()` 预处理器语法糖（`PostProcessImplementsTemplate`，~130 行，与 `PostProcessRangeBasedFor` / `PostProcessLiteralAssets` 同范式），支持脚本接口 + C++ 接口 + namespace-qualified 类型；同步补齐 `EnsureNativeInterfaceBound` helper 的 StaticClass 绑定；legacy `ImplementsInterface(UClass)` 路径零回归。
+> 6. Phase 6 完成了全量回归（Interface 41/41 + Preprocessor.Interface 3/3）、`InterfaceBinding.md` 知识文档同步（支持特性矩阵 + 未覆盖 surface 明确标注）、`Example_ScriptInterface.as` 示例脚本扩展（新增 `AExampleDamageTracker` 展示 `Implements<T>()` + 本地 TScriptInterface 用法）、`Plan_InterfaceBinding.md` 承接说明更新；2026-04-24 移动至 `Documents/Plans/Archives/`。
+
 ## 背景与目标
+
+
 
 ### 背景
 
