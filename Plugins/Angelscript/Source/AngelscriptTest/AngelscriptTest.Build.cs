@@ -31,6 +31,7 @@ namespace UnrealBuildTool.Rules
 				"GameplayTags",
 				"Json",
 				"JsonUtilities",
+				"PropertyBindingUtils",
 				"AngelscriptRuntime",
 			});
 

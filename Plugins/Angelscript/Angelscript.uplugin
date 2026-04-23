@@ -38,6 +38,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "PropertyBindingUtils",
+			"Enabled": true
+		},
+		{
 			"Name": "EnhancedInput",
 			"Enabled": true
 		},
