@@ -79,7 +79,6 @@ struct ANGELSCRIPTRUNTIME_API FAngelscriptPreprocessor
 		Global,
 		Class,
 		Struct,
-		Interface,
 		Enum,
 	};
 

@@ -748,8 +748,6 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File)
 			DetectClasses(File, Chunk);
 		else if (Chunk.Type == EChunkType::Struct)
 			DetectClasses(File, Chunk);
-		else if (Chunk.Type == EChunkType::Interface)
-			DetectClasses(File, Chunk);
 		else if (Chunk.Type == EChunkType::Enum)
 			DetectEnum(File, Chunk);
 	}
@@ -768,7 +766,7 @@ bool FAngelscriptPreprocessor::IsPreprocessingModule(const FString& ModuleName)
 static FName PP_NAME_ToolTip("ToolTip");
 void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 {
-	static const FRegexPattern ClassPattern(TEXT("(class|struct|interface)\\s+([A-Za-z0-9_]+)(\\s*:\\s*([A-Za-z0-9_]+\\s*::\\s*)*([A-Za-z0-9_]+))?"));
+	static const FRegexPattern ClassPattern(TEXT("(class|struct)\\s+([A-Za-z0-9_]+)(\\s*:\\s*([A-Za-z0-9_]+\\s*::\\s*)*([A-Za-z0-9_]+))?"));
 
 	FRegexMatcher MatchClass(ClassPattern, Chunk.Content);
 	if (!ensureMsgf(MatchClass.FindNext(), TEXT("Class code chunk did not include a valid class declaration???")))
@@ -805,22 +803,11 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 	if (Chunk.Type == EChunkType::Struct)
 		ClassDesc->bIsStruct = true;
 
-	if (Chunk.Type == EChunkType::Interface)
-	{
-		ClassDesc->bIsInterface = true;
-		ClassDesc->bAbstract = true; // Interfaces are always abstract
-	}
-
 	// Determine the direct superclass of this type
 	ClassDesc->SuperClass = MatchClass.GetCaptureGroup(5);
 	if (ClassDesc->SuperClass.Len() == 0)
 	{
-		if (ClassDesc->bIsInterface)
-		{
-			// Interfaces default to UInterface as their superclass
-			ClassDesc->SuperClass = TEXT("UInterface");
-		}
-		else if (!ClassDesc->bIsStruct)
+		if (!ClassDesc->bIsStruct)
 		{
 			// No superclass specified on a non-struct means this is a type of UObject
 			ClassDesc->SuperClass = TEXT("UObject");
@@ -829,10 +816,10 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 
 	// Parse implemented interfaces from the inheritance list (comma-separated after superclass)
 	// Syntax: class MyClass : BaseClass, IMyInterface, IOtherInterface { ... }
-	if (Chunk.Type == EChunkType::Class || Chunk.Type == EChunkType::Interface)
+	if (Chunk.Type == EChunkType::Class)
 	{
 		// Find the full inheritance clause: everything between ':' and '{'
-		static const FRegexPattern InheritancePattern(TEXT("(class|struct|interface)\\s+[A-Za-z0-9_]+\\s*:\\s*([^{]+)"));
+		static const FRegexPattern InheritancePattern(TEXT("(class|struct)\\s+[A-Za-z0-9_]+\\s*:\\s*([^{]+)"));
 		FRegexMatcher MatchInherit(InheritancePattern, Chunk.Content);
 		if (MatchInherit.FindNext())
 		{
@@ -904,7 +891,7 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 
 	// Genarate the script chunk containing the static class global variable that will be set
 	// to the correct class by AngelscriptClassGenerator later.
-	if (Chunk.Type == EChunkType::Class || Chunk.Type == EChunkType::Interface)
+	if (Chunk.Type == EChunkType::Class)
 	{
 		FString ClassVar = FString::Printf(TEXT("__StaticType_%s"), *ClassDesc->ClassName);
 		ClassDesc->StaticClassGlobalVariableName = ClassVar;
@@ -972,8 +959,6 @@ void FAngelscriptPreprocessor::AnalyzeClasses(FFile& File)
 	{
 		if (Chunk.Type == EChunkType::Class)
 			AnalyzeClasses(File, Chunk);
-		else if (Chunk.Type == EChunkType::Interface)
-			AnalyzeClasses(File, Chunk);
 		else if (Chunk.Type == EChunkType::Struct)
 			AnalyzeStructs(File, Chunk);
 	}
@@ -1016,34 +1001,7 @@ void FAngelscriptPreprocessor::AnalyzeClasses(FFile& File, FChunk& Chunk)
 	}
 
 	// If inheriting from a code class we should remove the inheritance from the script
-	// For interfaces inheriting from UInterface (C++ base), strip the inheritance clause
-	// But for interface-to-interface inheritance (e.g. interface IB : IA), keep it — AS natively supports it
-	if (ClassDesc->bIsInterface && ClassDesc->bSuperIsCodeClass)
-	{
-		// Interface inheriting from C++ UInterface — strip ": UInterface"
-		static const FRegexPattern InterfaceBasePattern(TEXT("(interface)\\s+([A-Za-z0-9_]+)(\\s*:[^{]+)?"));
-
-		FRegexMatcher MatchClass(InterfaceBasePattern, Chunk.Content);
-		if (!ensureMsgf(MatchClass.FindNext(), TEXT("Interface code chunk did not include a valid interface declaration???")))
-			return;
-
-		int32 InheritBeginPos = MatchClass.GetCaptureGroupBeginning(3);
-		int32 InheritEndPos = MatchClass.GetCaptureGroupEnding(3);
-
-		if (InheritBeginPos != -1)
-		{
-			for (int32 Pos = InheritBeginPos; Pos < InheritEndPos; ++Pos)
-				Chunk.Content[Pos] = ' ';
-		}
-	}
-	else if (ClassDesc->bIsInterface && !ClassDesc->bSuperIsCodeClass)
-	{
-		// Interface inheriting from another script interface (e.g. interface IB : IA)
-		// Keep the ": IA" part — AngelScript natively supports interface inheritance
-		// But strip any additional comma-separated interfaces if present
-		// (nothing to do here — AS handles it)
-	}
-	else if (ClassDesc->bSuperIsCodeClass)
+	if (ClassDesc->bSuperIsCodeClass)
 	{
 		// Regular class inheriting from a C++ class — strip the full inheritance clause
 		static const FRegexPattern ClassPattern(TEXT("(class|struct)\\s+([A-Za-z0-9_]+)(\\s*:[^{]+)?"));
@@ -1077,228 +1035,6 @@ void FAngelscriptPreprocessor::AnalyzeClasses(FFile& File, FChunk& Chunk)
 			{
 				for (int32 Pos = InterfaceListBegin; Pos < InterfaceListEnd; ++Pos)
 					Chunk.Content[Pos] = ' ';
-			}
-		}
-	}
-
-	// For interface chunks, blank out the entire content because the AS compiler
-	// does not support the 'interface' keyword (it's commented out in as_tokendef.h).
-	// Interface UClasses and UFunctions are created entirely at the class generation
-	// level from the FAngelscriptClassDesc data captured during DetectClasses.
-	if (ClassDesc->bIsInterface)
-	{
-		auto NormalizeInterfaceMethodDeclaration = [](const FString& InDeclaration)
-		{
-			FString Normalized = InDeclaration;
-
-			auto ReplaceWholeWord = [&Normalized](const TCHAR* Keyword, const TCHAR* Replacement)
-			{
-				const int32 KeywordLength = FCString::Strlen(Keyword);
-				const int32 ReplacementLength = FCString::Strlen(Replacement);
-				int32 SearchStart = 0;
-
-				while (SearchStart < Normalized.Len())
-				{
-					const int32 MatchIndex = Normalized.Find(Keyword, ESearchCase::CaseSensitive, ESearchDir::FromStart, SearchStart);
-					if (MatchIndex == INDEX_NONE)
-					{
-						break;
-					}
-
-					const int32 MatchEnd = MatchIndex + KeywordLength;
-					const bool bValidLeftBoundary = MatchIndex == 0 || !FAngelscriptEngine::IsValidIdentifierCharacter(Normalized[MatchIndex - 1]);
-					const bool bValidRightBoundary = MatchEnd >= Normalized.Len() || !FAngelscriptEngine::IsValidIdentifierCharacter(Normalized[MatchEnd]);
-
-					if (bValidLeftBoundary && bValidRightBoundary)
-					{
-						Normalized = Normalized.Left(MatchIndex) + Replacement + Normalized.Mid(MatchEnd);
-						SearchStart = MatchIndex + ReplacementLength;
-					}
-					else
-					{
-						SearchStart = MatchEnd;
-					}
-				}
-			};
-
-			ReplaceWholeWord(TEXT("double"), TEXT("float64"));
-			ReplaceWholeWord(TEXT("float"), TEXT("float32"));
-			return Normalized;
-		};
-
-		// Extract method declarations from the interface body before blanking.
-		// Interface methods are lines like "void TakeDamage(float Amount);" inside { }.
-		int32 OpenBrace = Chunk.Content.Find(TEXT("{"));
-		int32 CloseBrace = Chunk.Content.Find(TEXT("}"), ESearchCase::IgnoreCase, ESearchDir::FromEnd);
-		if (OpenBrace != INDEX_NONE && CloseBrace != INDEX_NONE && CloseBrace > OpenBrace + 1)
-		{
-			FString Body = Chunk.Content.Mid(OpenBrace + 1, CloseBrace - OpenBrace - 1);
-			TArray<FString> Lines;
-			Body.ParseIntoArrayLines(Lines);
-			for (const FString& Line : Lines)
-			{
-				FString Trimmed = Line.TrimStartAndEnd();
-				// Skip empty lines, comments, and UFUNCTION macros
-				if (Trimmed.Len() == 0 || Trimmed.StartsWith(TEXT("//")) || Trimmed.StartsWith(TEXT("UFUNCTION")))
-					continue;
-				// Remove trailing semicolon
-				if (Trimmed.EndsWith(TEXT(";")))
-					Trimmed = Trimmed.Left(Trimmed.Len() - 1).TrimEnd();
-				if (Trimmed.Len() > 0)
-					ClassDesc->InterfaceMethodDeclarations.Add(NormalizeInterfaceMethodDeclaration(Trimmed));
-			}
-		}
-
-		// Replace all non-newline characters with spaces to preserve line numbering
-		for (int32 Pos = 0; Pos < Chunk.Content.Len(); ++Pos)
-		{
-			if (Chunk.Content[Pos] != '\n' && Chunk.Content[Pos] != '\r')
-				Chunk.Content[Pos] = ' ';
-		}
-
-		// Register the interface as an AS reference type so other scripts can
-		// reference it in Cast<> and variable declarations. This must happen
-		// before AS module compilation.
-		auto& Engine = FAngelscriptEngine::Get();
-		FString InterfaceName = ClassDesc->ClassName;
-		int TypeId = Engine.Engine->RegisterObjectType(
-			TCHAR_TO_ANSI(*InterfaceName),
-			0,
-			asOBJ_REF | asOBJ_NOCOUNT | asOBJ_IMPLICIT_HANDLE);
-
-		if (TypeId >= 0 || TypeId == asALREADY_REGISTERED)
-		{
-			asITypeInfo* InterfaceScriptType = Engine.Engine->GetTypeInfoByName(TCHAR_TO_ANSI(*InterfaceName));
-			if (InterfaceScriptType != nullptr)
-			{
-				ClassDesc->ScriptType = InterfaceScriptType;
-
-				// Register interface methods on the AS type so scripts can call
-				// methods through interface-typed references (e.g. Casted.TakeDamage(42.0)).
-				// The CallInterfaceMethod generic callback resolves the real UFunction
-				// on the implementing object at runtime via FindFunction + ProcessEvent.
-				auto ResolveInterfaceDesc = [&](const FString& ResolvedInterfaceName) -> TSharedPtr<FAngelscriptClassDesc>
-				{
-					for (const TSharedPtr<FAngelscriptClassDesc>& ModuleClass : File.Module->Classes)
-					{
-						if (ModuleClass.IsValid() && ModuleClass->ClassName == ResolvedInterfaceName)
-						{
-							return ModuleClass;
-						}
-					}
-
-					return Engine.GetClass(ResolvedInterfaceName);
-				};
-
-				auto RegisterInterfaceMethodDeclaration = [&](const FString& MethodDecl)
-				{
-					// Extract method name from declaration like "void TakeDamage(float Amount)"
-					int32 ParenPos = MethodDecl.Find(TEXT("("));
-					if (ParenPos == INDEX_NONE)
-					{
-						return;
-					}
-
-					FString BeforeParen = MethodDecl.Left(ParenPos).TrimEnd();
-					int32 LastSpace = INDEX_NONE;
-					BeforeParen.FindLastChar(' ', LastSpace);
-					if (LastSpace == INDEX_NONE)
-					{
-						return;
-					}
-
-					FString MethodName = BeforeParen.Mid(LastSpace + 1).TrimStartAndEnd();
-					auto* Sig = Engine.RegisterInterfaceMethodSignature(FName(*MethodName));
-
-					asIScriptFunction* ExistingFunction = InterfaceScriptType->GetMethodByDecl(TCHAR_TO_ANSI(*MethodDecl));
-					if (ExistingFunction == nullptr)
-					{
-						const asUINT MethodCount = InterfaceScriptType->GetMethodCount();
-						for (asUINT MethodIndex = 0; MethodIndex < MethodCount; ++MethodIndex)
-						{
-							asIScriptFunction* CandidateMethod = InterfaceScriptType->GetMethodByIndex(MethodIndex);
-							if (CandidateMethod == nullptr || MethodName != ANSI_TO_TCHAR(CandidateMethod->GetName()))
-							{
-								continue;
-							}
-
-							if (ExistingFunction != nullptr)
-							{
-								ExistingFunction = nullptr;
-								break;
-							}
-
-							ExistingFunction = CandidateMethod;
-						}
-					}
-					asCScriptFunction* ScriptFunc = nullptr;
-					if (ExistingFunction != nullptr)
-					{
-						ScriptFunc = (asCScriptFunction*)ExistingFunction;
-					}
-					else
-					{
-						int32 FuncId = Engine.Engine->RegisterObjectMethod(
-							TCHAR_TO_ANSI(*InterfaceName),
-							TCHAR_TO_ANSI(*MethodDecl),
-							asFUNCTION(CallInterfaceMethod),
-							asCALL_GENERIC,
-							nullptr);
-
-						if (FuncId >= 0)
-						{
-							ScriptFunc = (asCScriptFunction*)Engine.Engine->GetFunctionById(FuncId);
-						}
-					}
-
-					if (ScriptFunc != nullptr)
-					{
-						if (auto* PreviousSig = (FInterfaceMethodSignature*)ScriptFunc->GetUserData())
-						{
-							Engine.ReleaseInterfaceMethodSignature(PreviousSig);
-						}
-						ScriptFunc->SetUserData(Sig, 0);
-					}
-					else
-					{
-						Engine.ReleaseInterfaceMethodSignature(Sig);
-					}
-				};
-
-				TSet<FString> VisitedInterfaceNames;
-				TFunction<void(const TSharedPtr<FAngelscriptClassDesc>&)> RegisterInterfaceMethodsRecursive;
-				RegisterInterfaceMethodsRecursive = [&](const TSharedPtr<FAngelscriptClassDesc>& InterfaceDesc)
-				{
-					if (!InterfaceDesc.IsValid() || !InterfaceDesc->bIsInterface)
-					{
-						return;
-					}
-
-					if (VisitedInterfaceNames.Contains(InterfaceDesc->ClassName))
-					{
-						return;
-					}
-					VisitedInterfaceNames.Add(InterfaceDesc->ClassName);
-
-					if (!InterfaceDesc->bSuperIsCodeClass
-						&& !InterfaceDesc->SuperClass.IsEmpty()
-						&& InterfaceDesc->SuperClass != TEXT("UInterface"))
-					{
-						RegisterInterfaceMethodsRecursive(ResolveInterfaceDesc(InterfaceDesc->SuperClass));
-					}
-
-					for (const FString& ParentInterfaceName : InterfaceDesc->ImplementedInterfaces)
-					{
-						RegisterInterfaceMethodsRecursive(ResolveInterfaceDesc(ParentInterfaceName));
-					}
-
-					for (const FString& MethodDecl : InterfaceDesc->InterfaceMethodDeclarations)
-					{
-						RegisterInterfaceMethodDeclaration(MethodDecl);
-					}
-				};
-
-				RegisterInterfaceMethodsRecursive(ClassDesc);
 			}
 		}
 	}
@@ -2548,13 +2284,6 @@ void FAngelscriptPreprocessor::ProcessPropertyMacro(FFile& File, FChunk& Chunk, 
 	PropDesc->LiteralType = Macro.SubjectType;
 	PropDesc->bEditConst = false;
 
-	if (ClassDesc->bIsInterface)
-	{
-		MacroError(File, Macro, FString::Printf(TEXT("Interface %s cannot declare property %s."),
-			*ClassDesc->ClassName, *PropDesc->PropertyName));
-		bHasError = true;
-	}
-
 	// Default Editable level for properties
 	auto EditSpecifier = ClassDesc->bIsStruct ? DefaultPropertyEditSpecifierForStructs : DefaultPropertyEditSpecifier;
 	switch (EditSpecifier)
@@ -3067,14 +2796,6 @@ void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDes
 	if (ClassDesc->CodeSuperClass != nullptr)
 		return; // Already resolved earlier
 
-	// Interface classes always derive from UInterface
-	if (ClassDesc->bIsInterface && ClassDesc->SuperClass == TEXT("UInterface"))
-	{
-		ClassDesc->bSuperIsCodeClass = true;
-		ClassDesc->CodeSuperClass = UInterface::StaticClass();
-		return;
-	}
-
 	ResolvingClasses.Add(ClassDesc);
 	ClassDesc->bSuperIsCodeClass = false;
 
@@ -3101,17 +2822,6 @@ void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDes
 			}
 #endif
 
-			// Validate: interface can only inherit from another interface
-			if (ClassDesc->bIsInterface && !Class->HasAnyClassFlags(CLASS_Interface))
-			{
-				auto* File = GetFileForClass(ClassDesc);
-				if (File != nullptr && bShowError)
-				{
-					LineError(*File, ClassDesc->LineNumber, FString::Printf(TEXT("Interface %s cannot inherit from non-interface class %s."),
-						*ClassDesc->ClassName, *ClassDesc->SuperClass));
-				}
-				bHasError = true;
-			}
 		}
 	}
 
@@ -3134,18 +2844,6 @@ void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDes
 
 		if (SuperClassDesc.IsValid())
 		{
-			// Validate: interface can only inherit from another interface
-			if (ClassDesc->bIsInterface && !SuperClassDesc->bIsInterface)
-			{
-				auto* File = GetFileForClass(ClassDesc);
-				if (File != nullptr && bShowError)
-				{
-					LineError(*File, ClassDesc->LineNumber, FString::Printf(TEXT("Interface %s cannot inherit from non-interface class %s."),
-						*ClassDesc->ClassName, *ClassDesc->SuperClass));
-				}
-				bHasError = true;
-			}
-
 			// Find the supermost class to find the correct code class
 			TSharedPtr<FAngelscriptClassDesc> Supermost = SuperClassDesc;
 			while (!Supermost->bSuperIsCodeClass)
@@ -3391,7 +3089,7 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 		Chunk.Comment = ChunkComment.TrimStartAndEnd();
 		ChunkComment = TEXT("");
 
-		if (bHasClassMacro && (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Interface || ChunkType == EChunkType::Enum))
+		if (bHasClassMacro && (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Enum))
 		{
 			Chunk.Macros.Add(PendingClassMacro);
 			bHasClassMacro = false;
@@ -3414,7 +3112,7 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 		PendingDefaults.Empty();
 
 		ChunkStart = SubmitEnd;
-		if (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Interface)
+		if (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct)
 			ClassIfDefs.Reset();
 
 		EnumValueIndex = 0;
@@ -3728,31 +3426,7 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 			}
 		break;
 		case 'i':
-			// Does this start an interface?
-			if ((RawSize - ChunkEnd) >= 10
-				&& FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("interface"), 9) == 0
-				&& IsWhitespace(File.RawCode[ChunkEnd+9])
-				&& IsTopLevelScope()
-				&& !bInComment
-				&& !bInString
-				&& IsStartOfIdentifier())
-			{
-				SubmitChunk(false);
-
-				// Record the comment that we should add to this chunk
-				if (PrevCommentStart != -1)
-				{
-					ChunkComment = File.RawCode.Mid(PrevCommentStart, PrevCommentEnd-PrevCommentStart);
-					PrevCommentStart = -1;
-				}
-
-				// Interface chunk has started
-				ClassIfDefs = IfDefStack;
-				ChunkType = EChunkType::Interface;
-				ChunkLine = LineNumber;
-				ClassExitScope = ScopeCount;
-			}
-			else if ((RawSize - ChunkEnd) >= 7
+			if ((RawSize - ChunkEnd) >= 7
 				&& FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("import"), 6) == 0
 				&& IsWhitespace(File.RawCode[ChunkEnd+6])
 				&& IsTopLevelScope()
@@ -3821,14 +3495,14 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 		case 'U':
 			if ((RawSize - ChunkEnd) >= 10
 				&& ((IsTopLevelScope() && ChunkType == EChunkType::Global)
-					|| (ScopeCount == ClassExitScope + 1 && (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Interface || ChunkType == EChunkType::Enum)))
+					|| (ScopeCount == ClassExitScope + 1 && (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Enum)))
 				&& !bInComment
 				&& !bInString
 				&& !bIsParsingMacro
 				&& IsStartOfIdentifier())
 			{
 				if (FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("UPROPERTY("), 10) == 0
-					&& (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Interface))
+					&& (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct))
 				{
 					bIsParsingMacro = true;
 					ParsingMacro.Type = EMacroType::Property;
@@ -3864,17 +3538,16 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 				{
 					bool bIsClass = FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("UCLASS("), 7) == 0;
 					bool bIsStruct = FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("USTRUCT("), 8) == 0;
-					bool bIsInterface = FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("UINTERFACE("), 11) == 0;
 					bool bIsEnum = FCString::Strncmp(&File.RawCode[ChunkEnd], TEXT("UENUM("), 6) == 0;
 
-					if (bIsClass || bIsStruct || bIsInterface)
+					if (bIsClass || bIsStruct)
 					{
 						// Immediately parse this macro, since we don't want to parse the name
 						// following it.
 						PendingClassMacro = FMacro();
 						PendingClassMacro.Type = EMacroType::Class;
 
-						int32 Offset = bIsClass ? 7 : (bIsStruct ? 8 : 11);
+						int32 Offset = bIsClass ? 7 : 8;
 
 						int32 CloseBracket = FindScopeCloseBracket(File.RawCode, ChunkEnd + Offset - 1);
 						if (CloseBracket != -1)
@@ -4165,7 +3838,7 @@ void FAngelscriptPreprocessor::ParseIntoChunks(FFile& File)
 			if (ScopeCount < 0)
 				ScopeCount = 0;
 			if (ScopeCount == ClassExitScope
-				&& (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Interface || ChunkType == EChunkType::Enum))
+				&& (ChunkType == EChunkType::Class || ChunkType == EChunkType::Struct || ChunkType == EChunkType::Enum))
 			{
 				// Class chunk is now over, include the closing brace 
 				SubmitChunk(true);

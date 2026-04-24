@@ -1101,15 +1101,8 @@ struct FAngelscriptClassDesc
 	/* Whether this class represents a struct or not. */
 	bool bIsStruct = false;
 
-	/* Whether this class represents a UInterface. */
-	bool bIsInterface = false;
-
 	/* List of interface class names this class implements. */
 	TArray<FString> ImplementedInterfaces;
-
-	/* Raw method declarations from the interface body (e.g., "void TakeDamage(float Amount)").
-	 * Only populated for interface classes (bIsInterface == true). */
-	TArray<FString> InterfaceMethodDeclarations;
 
 	/* Name of the config file to use. */
 	FString ConfigName;
@@ -1196,7 +1189,6 @@ struct FAngelscriptClassDesc
 			&& bEditInlineNew == Other.bEditInlineNew
 			&& bIsDeprecatedClass == Other.bIsDeprecatedClass
 			&& bPlaceable == Other.bPlaceable
-			&& bIsInterface == Other.bIsInterface
 			&& ImplementedInterfaces == Other.ImplementedInterfaces
 		;
 	}

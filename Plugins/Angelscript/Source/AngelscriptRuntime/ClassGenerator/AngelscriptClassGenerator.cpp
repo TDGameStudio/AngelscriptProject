@@ -1877,17 +1877,12 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 		// Store lookup for this class
 		if (!ClassDesc->bIsStaticsClass)
 		{
-			// Interface types already have their ScriptType set during preprocessing
-			// (registered as built-in AS types, not compiled from a module)
-			if (!ClassDesc->bIsInterface)
-			{
-				auto* ScriptType = GetNamespacedTypeInfoForClass(ClassData.NewClass, ModuleData.NewModule);
-				ClassData.NewClass->ScriptType = ScriptType;
+			auto* ScriptType = GetNamespacedTypeInfoForClass(ClassData.NewClass, ModuleData.NewModule);
+			ClassData.NewClass->ScriptType = ScriptType;
 
-				check(!DataRefByNewScriptType.Contains(ScriptType));
+			check(!DataRefByNewScriptType.Contains(ScriptType));
 
-				DataRefByNewScriptType.Add(ClassData.NewClass->ScriptType, FDataRef(ModuleData, ClassData));
-			}
+			DataRefByNewScriptType.Add(ClassData.NewClass->ScriptType, FDataRef(ModuleData, ClassData));
 			DataRefByName.Add(ClassData.NewClass->ClassName, FDataRef(ModuleData, ClassData));
 		}
 	}
@@ -2206,8 +2201,6 @@ void FAngelscriptClassGenerator::ResolvePendingReloadDependees(FReloadPropagatio
 bool FAngelscriptClassGenerator::ShouldFullReload(FClassData& Class)
 {
 	if (bIsDoingFullReload && Class.ReloadReq >= EReloadRequirement::FullReloadSuggested)
-		return true;
-	if (Class.NewClass->bIsInterface)
 		return true;
 	if (Class.NewClass->ImplementedInterfaces.Num() > 0)
 		return true;
@@ -2714,55 +2707,11 @@ void FAngelscriptClassGenerator::CreateFullReloadClass(FModuleData& ModuleData, 
 	if (ScriptType != nullptr)
 		ScriptType->SetUserData(NewClass);
 
-	// For interface classes, the interface chunk is blanked out before AS compilation
-	// (because AS doesn't support the 'interface' keyword). We need to manually register
-	// the interface as an AS reference type so other scripts can use it in Cast<> and
-	// variable declarations.
-	if (ClassDesc->bIsInterface && ScriptType == nullptr)
-	{
-		auto& Engine = FAngelscriptEngine::Get();
-		FString InterfaceName = ClassDesc->ClassName;
-		int TypeId = Engine.Engine->RegisterObjectType(
-			TCHAR_TO_ANSI(*InterfaceName),
-			0,
-			asOBJ_REF | asOBJ_NOCOUNT | asOBJ_IMPLICIT_HANDLE);
-
-		if (TypeId >= 0 || TypeId == asALREADY_REGISTERED)
-		{
-			asITypeInfo* InterfaceScriptType = Engine.Engine->GetTypeInfoByName(TCHAR_TO_ANSI(*InterfaceName));
-			if (InterfaceScriptType != nullptr)
-			{
-				InterfaceScriptType->SetUserData(NewClass);
-				ClassDesc->ScriptType = InterfaceScriptType;
-			}
-		}
-	}
-
 	ClassDesc->Class = NewClass;
 	ClassData.ReplacedClass = ReplacedClass;
 
 	// Fill the StaticClass global variable so ClassName::StaticClass() works in AS.
-	if (!ClassDesc->bIsInterface)
-	{
-		SetScriptStaticClass(ClassDesc, NewClass);
-	}
-	else if (ModuleDesc->ScriptModule != nullptr && !ClassDesc->StaticClassGlobalVariableName.IsEmpty())
-	{
-		// Interface ScriptType is registered at the engine level (RegisterObjectType),
-		// so ScriptType->GetModule() returns nullptr. We find the global variable
-		// directly in the compiled module from ModuleDesc.
-		asCModule* ScriptModule = (asCModule*)ModuleDesc->ScriptModule;
-		asSNameSpace* Ns = ClassDesc->Namespace.IsSet()
-			? ScriptModule->engine->FindNameSpace(TCHAR_TO_ANSI(*ClassDesc->Namespace.GetValue()))
-			: ScriptModule->defaultNamespace;
-		asCGlobalProperty* Prop = ScriptModule->scriptGlobals.FindFirst(
-			TCHAR_TO_ANSI(*ClassDesc->StaticClassGlobalVariableName), Ns);
-		if (Prop != nullptr)
-		{
-			void* VarAddr = Prop->GetAddressOfValue();
-			**(TSubclassOf<UObject>**)VarAddr = NewClass;
-		}
-	}
+	SetScriptStaticClass(ClassDesc, NewClass);
 
 	// If we're creating a new dynamic subsystem class, mark it
 	if (ClassDesc->CodeSuperClass->IsChildOf<UDynamicSubsystem>() || ClassDesc->CodeSuperClass->IsChildOf<UWorldSubsystem>())
@@ -2883,219 +2832,6 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FClassDat
 	if (ClassData.NewClass->bIsStruct)
 	{
 		DoFullReloadStruct(ModuleData, ClassData);
-	}
-	else if (ClassData.NewClass->bIsInterface)
-	{
-		// Interface classes are pure UE metadata — they don't have AS-compiled properties
-		// or AS script functions. We create UFunctions from the parsed method declarations.
-		auto InterfaceDesc = ClassData.NewClass;
-		UClass* NewClass = InterfaceDesc->Class;
-		if (NewClass != nullptr)
-		{
-			// Set super class: either another interface UClass or UInterface::StaticClass()
-			UClass* SuperClass = InterfaceDesc->CodeSuperClass;
-			if (SuperClass == nullptr)
-				SuperClass = UInterface::StaticClass();
-
-			// If this interface inherits from another script interface, find and use its UClass
-			if (!InterfaceDesc->bSuperIsCodeClass && InterfaceDesc->SuperClass != TEXT("UInterface"))
-			{
-				for (auto& CheckModule : Modules)
-				{
-					bool bFound = false;
-					for (auto& CheckClass : CheckModule.Classes)
-					{
-						if (CheckClass.NewClass->ClassName == InterfaceDesc->SuperClass && CheckClass.NewClass->bIsInterface)
-						{
-							EnsureReloaded(CheckModule, CheckClass);
-							if (CheckClass.NewClass->Class != nullptr)
-								SuperClass = CheckClass.NewClass->Class;
-							bFound = true;
-							break;
-						}
-					}
-					if (bFound)
-						break;
-				}
-			}
-
-			NewClass->SetSuperStruct(SuperClass);
-			NewClass->ClassFlags |= CLASS_Interface | CLASS_Abstract;
-			NewClass->PropertiesSize = SuperClass->GetPropertiesSize();
-			NewClass->MinAlignment = SuperClass->GetMinAlignment();
-			NewClass->ClassCastFlags = SuperClass->ClassCastFlags;
-
-			asITypeInfo* InterfaceScriptType = InterfaceDesc->ScriptType;
-			auto ResolveInterfaceScriptMethod = [](asITypeInfo* InInterfaceScriptType, const FString& InMethodDecl, const FString& InFunctionName) -> asIScriptFunction*
-			{
-				if (InInterfaceScriptType == nullptr)
-				{
-					return nullptr;
-				}
-
-				if (asIScriptFunction* ExactMethod = InInterfaceScriptType->GetMethodByDecl(TCHAR_TO_ANSI(*InMethodDecl)))
-				{
-					return ExactMethod;
-				}
-
-				asIScriptFunction* UniqueNameMatch = nullptr;
-				const asUINT MethodCount = InInterfaceScriptType->GetMethodCount();
-				for (asUINT MethodIndex = 0; MethodIndex < MethodCount; ++MethodIndex)
-				{
-					asIScriptFunction* CandidateMethod = InInterfaceScriptType->GetMethodByIndex(MethodIndex);
-					if (CandidateMethod == nullptr || InFunctionName != ANSI_TO_TCHAR(CandidateMethod->GetName()))
-					{
-						continue;
-					}
-
-					if (UniqueNameMatch != nullptr)
-					{
-						return nullptr;
-					}
-
-					UniqueNameMatch = CandidateMethod;
-				}
-
-				return UniqueNameMatch;
-			};
-
-			// Create UFunctions for each interface method declaration
-			for (const FString& MethodDecl : InterfaceDesc->InterfaceMethodDeclarations)
-			{
-				// Parse "ReturnType MethodName(ParamType ParamName, ...)" format
-				int32 ParenPos = MethodDecl.Find(TEXT("("));
-				if (ParenPos == INDEX_NONE)
-					continue;
-
-				FString BeforeParen = MethodDecl.Left(ParenPos).TrimEnd();
-				int32 LastSpace = INDEX_NONE;
-				BeforeParen.FindLastChar(' ', LastSpace);
-				if (LastSpace == INDEX_NONE)
-					continue;
-
-				FString FuncName = BeforeParen.Mid(LastSpace + 1).TrimStartAndEnd();
-				asIScriptFunction* ScriptMethod = ResolveInterfaceScriptMethod(InterfaceScriptType, MethodDecl, FuncName);
-
-				UFunction* NewFunction = NewObject<UFunction>(NewClass, *FuncName, RF_Public);
-				NewFunction->FunctionFlags = FUNC_Event | FUNC_BlueprintEvent | FUNC_Public;
-				NewFunction->ReturnValueOffset = MAX_uint16;
-				NewFunction->FirstPropertyToInit = nullptr;
-				NewFunction->NumParms = 0;
-				NewFunction->ParmsSize = 0;
-
-				if (ScriptMethod != nullptr && ScriptMethod->IsReadOnly())
-				{
-					NewFunction->FunctionFlags |= FUNC_Const;
-				}
-
-				FProperty* ReturnProperty = nullptr;
-				if (ScriptMethod != nullptr && ScriptMethod->GetReturnTypeId() != asTYPEID_VOID)
-				{
-					FAngelscriptTypeUsage ReturnType = FAngelscriptTypeUsage::FromReturn(ScriptMethod);
-					if (ReturnType.IsValid() && ReturnType.CanCreateProperty() && ReturnType.CanBeReturned() && !ReturnType.bIsReference)
-					{
-						ReturnProperty = AddFunctionReturnType(NewFunction, ReturnType);
-						NewFunction->FunctionFlags |= FUNC_HasOutParms;
-					}
-				}
-
-				TArray<FProperty*> ArgumentProperties;
-				if (ScriptMethod != nullptr)
-				{
-					const int32 ArgCount = ScriptMethod->GetParamCount();
-					for (int32 ArgIndex = 0; ArgIndex < ArgCount; ++ArgIndex)
-					{
-						const char* ParamName = nullptr;
-						const char* ParamDefaultValue = nullptr;
-						asDWORD RefFlags = 0;
-						ScriptMethod->GetParam(ArgIndex, nullptr, &RefFlags, &ParamName, &ParamDefaultValue);
-
-						FAngelscriptTypeUsage Type = FAngelscriptTypeUsage::FromParam(ScriptMethod, ArgIndex);
-						if (!Type.IsValid() || !Type.CanBeArgument() || !Type.CanCreateProperty())
-						{
-							continue;
-						}
-
-						FAngelscriptArgumentDesc ArgDesc;
-						ArgDesc.Type = Type;
-						ArgDesc.ArgumentName = ParamName != nullptr
-							? ANSI_TO_TCHAR(ParamName)
-							: FString::Printf(TEXT("Arg%d"), ArgIndex);
-						ArgDesc.DefaultValue = ParamDefaultValue != nullptr ? ANSI_TO_TCHAR(ParamDefaultValue) : FString();
-
-						if (Type.IsValid() && Type.Type->IsParamForcedOutParam() && Type.bIsConst)
-						{
-							ArgDesc.bInRefForceCopyOut = true;
-							ArgDesc.bBlueprintInRef = true;
-						}
-						else if (Type.bIsReference)
-						{
-							if ((RefFlags & asTM_INOUTREF) == asTM_INOUTREF)
-							{
-								if (Type.bIsConst)
-								{
-									ArgDesc.bBlueprintByValue = true;
-								}
-								else
-								{
-									ArgDesc.bBlueprintInRef = true;
-								}
-							}
-							else if ((RefFlags & asTM_OUTREF) != 0)
-							{
-								ArgDesc.bBlueprintOutRef = true;
-							}
-							else
-							{
-								ArgDesc.bBlueprintInRef = true;
-							}
-						}
-						else
-						{
-							ArgDesc.bBlueprintByValue = true;
-						}
-
-						FProperty* NewProperty = AddFunctionArgument(NewFunction, ArgDesc);
-						ArgumentProperties.Add(NewProperty);
-
-						if (NewProperty->HasAnyPropertyFlags(CPF_OutParm))
-						{
-							NewFunction->FunctionFlags |= FUNC_HasOutParms;
-						}
-					}
-				}
-
-				for (int32 ArgumentIndex = ArgumentProperties.Num() - 1; ArgumentIndex >= 0; --ArgumentIndex)
-				{
-					FProperty* NewProperty = ArgumentProperties[ArgumentIndex];
-					NewProperty->Next = NewFunction->ChildProperties;
-					NewFunction->ChildProperties = NewProperty;
-				}
-
-				NewFunction->StaticLink(true);
-
-				if (ReturnProperty != nullptr)
-				{
-					NewFunction->ReturnValueOffset = ReturnProperty->GetOffset_ForUFunction();
-				}
-
-				// Link into UStruct::Children so TFieldIterator<UFunction> can find it
-				NewFunction->Next = NewClass->Children;
-				NewClass->Children = NewFunction;
-				NewClass->AddFunctionToFunctionMap(NewFunction, NewFunction->GetFName());
-			}
-
-			NewClass->Bind();
-			NewClass->StaticLink(true);
-			NewClass->AssembleReferenceTokenStream();
-
-			// Set ScriptTypePtr so FindBoundScriptTypeInfo and other runtime
-			// lookups can resolve the interface UASClass back to its AS type.
-			UASClass* InterfaceASClass = CastChecked<UASClass>(NewClass);
-			InterfaceASClass->ScriptTypePtr = InterfaceDesc->ScriptType;
-
-			NewClass->GetDefaultObject(true);
-		}
 	}
 	else
 	{
@@ -3632,14 +3368,6 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 
 	if (ClassDesc->bAbstract)
 		NewClass->ClassFlags |= CLASS_Abstract;
-
-	// UInterface classes: set CLASS_Interface and configure as Blueprint/Script interface
-	if (ClassDesc->bIsInterface)
-	{
-		NewClass->ClassFlags |= CLASS_Interface | CLASS_Abstract;
-		// Do NOT set CLASS_Native — this makes GetInterfaceAddress() return this (PointerOffset=0)
-		// which is the Blueprint/Script interface pattern
-	}
 
 	if (ClassDesc->bTransient)
 		NewClass->ClassFlags |= CLASS_Transient;
@@ -4311,26 +4039,7 @@ void FAngelscriptClassGenerator::LinkSoftReloadClasses(FModuleData& ModuleData, 
 		if (ScriptType != nullptr)
 			ScriptType->SetUserData(Class);
 
-		if (ClassDesc->bIsInterface)
-		{
-			if (ModuleDesc->ScriptModule != nullptr && !ClassDesc->StaticClassGlobalVariableName.IsEmpty())
-			{
-				asCModule* ScriptModule = (asCModule*)ModuleDesc->ScriptModule;
-				asSNameSpace* ScriptNamespace = ClassDesc->Namespace.IsSet()
-					? ScriptModule->engine->FindNameSpace(TCHAR_TO_ANSI(*ClassDesc->Namespace.GetValue()))
-					: ScriptModule->defaultNamespace;
-
-				if (asCGlobalProperty* Property = ScriptModule->scriptGlobals.FindFirst(TCHAR_TO_ANSI(*ClassDesc->StaticClassGlobalVariableName), ScriptNamespace))
-				{
-					void* VarAddr = Property->GetAddressOfValue();
-					**(TSubclassOf<UObject>**)VarAddr = Class;
-				}
-			}
-		}
-		else
-		{
-			SetScriptStaticClass(ClassDesc, Class);
-		}
+		SetScriptStaticClass(ClassDesc, Class);
 	}
 	else
 	{
@@ -5329,7 +5038,7 @@ void FAngelscriptClassGenerator::FinalizeClass(FModuleData& ModuleData, FClassDa
 	}
 
 	// Add implemented interfaces to this class
-	if (ClassDesc->ImplementedInterfaces.Num() > 0 && !ClassDesc->bIsInterface)
+	if (ClassDesc->ImplementedInterfaces.Num() > 0)
 	{
 		// Helper lambda: resolve an interface name to its UClass
 		auto ResolveInterfaceClass = [this](const FString& InterfaceName) -> UClass*
@@ -5344,7 +5053,7 @@ void FAngelscriptClassGenerator::FinalizeClass(FModuleData& ModuleData, FClassDa
 					bool bFound = false;
 					for (auto& CheckClass : CheckModule.Classes)
 					{
-						if (CheckClass.NewClass->ClassName == InterfaceName && CheckClass.NewClass->bIsInterface)
+						if (CheckClass.NewClass->ClassName == InterfaceName)
 						{
 							EnsureReloaded(CheckModule, CheckClass);
 							bFound = true;
@@ -5457,18 +5166,6 @@ void FAngelscriptClassGenerator::FinalizeClass(FModuleData& ModuleData, FClassDa
 				}
 			}
 		}
-	}
-
-	// For interface classes, set bImplementedByK2 on the class CDO
-	if (ClassDesc->bIsInterface)
-	{
-		// Interface classes don't need actor/component finalization
-		FinalizeObjectClass(ClassDesc);
-
-		// Tell the loading system the class exists
-		NotifyRegistrationEvent(TEXT("/Script/Angelscript"), *NewClass->GetName(), ENotifyRegistrationType::NRT_Class,
-			ENotifyRegistrationPhase::NRP_Finished, nullptr, false, NewClass);
-		return;
 	}
 
 	// Actors and components can have some special stuff added to them

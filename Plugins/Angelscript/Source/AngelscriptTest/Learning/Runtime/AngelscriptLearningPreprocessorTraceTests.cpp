@@ -67,8 +67,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceT
 			return TEXT("Class");
 		case FAngelscriptPreprocessor::EChunkType::Struct:
 			return TEXT("Struct");
-		case FAngelscriptPreprocessor::EChunkType::Interface:
-			return TEXT("Interface");
 		case FAngelscriptPreprocessor::EChunkType::Enum:
 			return TEXT("Enum");
 		default:
