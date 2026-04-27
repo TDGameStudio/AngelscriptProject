@@ -1,7 +1,7 @@
 #include "HotReload/ClassReloadHelper.h"
 
 #include "AngelscriptEngine.h"
-#include "AngelscriptAbilitySystemComponent.h"
+#include "GAS/AngelscriptAbilitySystemComponent.h"
 
 #include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"

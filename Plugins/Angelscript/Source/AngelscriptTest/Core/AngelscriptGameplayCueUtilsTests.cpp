@@ -1,7 +1,7 @@
 #include "AngelscriptGASTestTypes.h"
 #include "Shared/AngelscriptTestUtilities.h"
 
-#include "../../AngelscriptRuntime/Core/AngelscriptGameplayCueUtils.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGameplayCueUtils.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "GameplayTagContainer.h"

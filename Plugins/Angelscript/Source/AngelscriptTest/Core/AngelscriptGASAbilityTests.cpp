@@ -1,4 +1,4 @@
-#include "../../AngelscriptRuntime/Core/AngelscriptGASAbility.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASAbility.h"
 #include "AngelscriptGASTestTypes.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"

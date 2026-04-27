@@ -1,7 +1,7 @@
 #include "AngelscriptGASTestTypes.h"
 #include "Shared/AngelscriptTestMacros.h"
 
-#include "../../AngelscriptRuntime/Core/AngelscriptAbilityAsyncLibrary.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptAbilityAsyncLibrary.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/ActorTestSpawner.h"

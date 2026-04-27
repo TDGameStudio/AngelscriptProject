@@ -1,9 +1,9 @@
 ﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
-#include "../../AngelscriptRuntime/Core/AngelscriptGASActor.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptGASCharacter.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptGASPawn.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASActor.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASCharacter.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASPawn.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Components/InputComponent.h"

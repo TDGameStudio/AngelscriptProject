@@ -1,7 +1,7 @@
 #include "HotReload/ClassReloadHelper.h"
 #include "BlueprintImpact/AngelscriptBlueprintImpactScanner.h"
 
-#include "AngelscriptAbilitySystemComponent.h"
+#include "GAS/AngelscriptAbilitySystemComponent.h"
 #include "AngelscriptEngine.h"
 
 #include "EdGraph/EdGraph.h"

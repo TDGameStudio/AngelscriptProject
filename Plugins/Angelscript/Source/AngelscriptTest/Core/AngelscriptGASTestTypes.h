@@ -7,11 +7,11 @@
 #include "GameplayCueNotify_Actor.h"
 #include "GameplayCueNotify_Static.h"
 
-#include "../../AngelscriptRuntime/Core/AngelscriptGASAbility.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptGASPawn.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptAbilityTask.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptAbilitySystemComponent.h"
-#include "../../AngelscriptRuntime/Core/AngelscriptAttributeSet.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASAbility.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASPawn.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptAbilityTask.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptAbilitySystemComponent.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptAttributeSet.h"
 
 #include "AngelscriptGASTestTypes.generated.h"
 

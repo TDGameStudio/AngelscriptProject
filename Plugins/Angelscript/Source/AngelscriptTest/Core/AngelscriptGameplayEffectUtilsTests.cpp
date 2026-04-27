@@ -1,7 +1,7 @@
 #include "AngelscriptGASTestTypes.h"
 #include "Shared/AngelscriptTestMacros.h"
 
-#include "../../AngelscriptRuntime/Core/AngelscriptGameplayEffectUtils.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptGameplayEffectUtils.h"
 
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"

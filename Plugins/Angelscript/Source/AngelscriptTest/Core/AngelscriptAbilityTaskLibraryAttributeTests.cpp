@@ -4,7 +4,7 @@
 
 #define protected public
 #define private public
-#include "../../AngelscriptRuntime/Core/AngelscriptAbilityTaskLibrary.h"
+#include "../../AngelscriptRuntime/Core/GAS/AngelscriptAbilityTaskLibrary.h"
 #undef private
 #undef protected
 

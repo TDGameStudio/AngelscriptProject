@@ -1,6 +1,6 @@
 #include "BlueprintImpact/AngelscriptBlueprintImpactScanner.h"
 
-#include "AngelscriptAbilitySystemComponent.h"
+#include "GAS/AngelscriptAbilitySystemComponent.h"
 
 #include "GameFramework/Actor.h"
 #include "Misc/AutomationTest.h"
