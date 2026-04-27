@@ -16,6 +16,8 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.Add(ModuleDirectory);
 			PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Core"));
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Core"));
+			PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Core", "GAS"));
+			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Core", "GAS"));
 
 			var AngelscriptThirdPartyPath = Path.Combine(ModuleDirectory, "ThirdParty", "angelscript");
 			PublicIncludePaths.Add(Path.Combine(AngelscriptThirdPartyPath, "source"));
