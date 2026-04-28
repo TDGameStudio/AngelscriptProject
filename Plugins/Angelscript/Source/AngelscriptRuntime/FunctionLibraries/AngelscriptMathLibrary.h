@@ -3,18 +3,49 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptMathLibrary.generated.h"
 
-// FunctionLibraries cleanup note (mixin parity):
+// FunctionLibraries cleanup note (mixin parity, refreshed 2026-04-28 per P4.3 / P5.3):
 //
-// The //UCLASS(Meta = (ScriptMixin = "...")) lines below the top-level UAngelscriptMathLibrary
-// are kept commented out as Hazelight-parity anchors. Hazelight binds these helpers via the
-// dedicated mixin-injection path in Helper_FunctionSignature.h; this fork currently routes
-// them through UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback instead,
-// which reaches scripts with equivalent method-syntax but also exposes the helpers in the
-// Blueprint node palette.
+// The //UCLASS(Meta = (ScriptMixin = "...")) lines on the 8 sub-libraries below
+// (FVector / FVector3f / FRotator / FRotator3f / FQuat / FQuat4f / FTransform / FTransform3f)
+// remain commented out as deferred Hazelight-parity anchors. Each sub-library currently
+// keeps only `ScriptName = "<Type>"` so the helpers stay reachable as static-namespace
+// calls (e.g. `FRotator::GetForwardVector(rot)`, `AngelscriptFVectorMixin::Size2D(vec, n)`),
+// matching the form used throughout fork test code (AngelscriptMathFunctionLibraryTests.cpp,
+// AngelscriptMathOrientationFunctionLibraryTests.cpp) and any user .as scripts written
+// against the fork.
 //
-// To restore upstream parity: uncomment the //UCLASS(...) line and (optionally) switch the
-// UFUNCTIONs back to ScriptCallable. See Documents/Knowledges/ZH/Syntax_Mixin.md section 6
-// for the full background.
+// Why not "BlueprintCallableReflectiveFallback":
+// P4.1 verified all helpers below have inline implementations in this header — their native
+// function pointers are always valid, so the reflective-fallback path in Bind_BlueprintCallable
+// never engages. The previous note's claim of "ReflectiveFallback bridging mixin form" was
+// inaccurate; only namespace-static form is exposed today.
+//
+// Why not "just uncomment to align with Hazelight":
+// P4.3 trial enablement caused `FunctionLibraries.MathOrientationFactoriesAndTransformMutators`,
+// `MathPlanarProjectionAndColorFormatting`, and `MathShortestPathAndTransformSemantics` to
+// fail with `No matching signatures to 'FRotator::GetForwardVector(FRotator)'` and
+// `Namespace 'AngelscriptFVectorMixin' doesn't exist.` Enabling ScriptMixin meta strips the
+// first parameter and rewrites these UFUNCTIONs into instance-method form, dissolving the
+// namespace-static form fork code depends on. Hazelight upstream avoids this by using the
+// instance form (`vec.Size2D(n)`) exclusively, but fork tests + scripts must migrate first.
+//
+// Re-enablement path (out of scope for this Plan):
+// A future "AS-script modernization" task is needed to (1) rewrite all fork-side
+// `<Lib>::<Func>(target, ...)` calls to `target.<Func>(...)`, (2) flip the //UCLASS anchors
+// to active ScriptMixin, and (3) verify ProductionScriptMixinSignatures + Math test groups.
+//
+// 2026-04-28 P5.3 update — 3 newly added Static sub-libraries (UAngelscriptFQuatStaticLibrary
+// / UAngelscriptFRotatorStaticLibrary / UAngelscriptFTransformStaticLibrary at file end)
+// align with Hazelight's "main-mixin + static-helpers" two-class layout for the FQuat /
+// FRotator / FTransform families. The 14 transform-utility helpers (GetDelta / ApplyDelta /
+// GetRelative / ApplyRelative + 2 angular-velocity converters on FQuat) live there now, so
+// the deferred ScriptMixin re-enablement above will not affect them either way.
+//
+// References:
+// - Documents/Plans/Plan_FunctionLibrariesCleanup.md         Phase 4 P4.3 / Phase 5 P5.3
+// - Documents/Plans/Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md  class 3 namespace-regression subclass
+// - Documents/Plans/Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md     anchors #2-#9
+// - Documents/Knowledges/ZH/Syntax_Mixin.md                  section 6.6 four-class taxonomy
 
 UCLASS(Meta = (ScriptName = "Math"))
 class UAngelscriptMathLibrary : public UObject
@@ -503,45 +534,6 @@ public:
 		return FMath::RadiansToDegrees(A.Quaternion().AngularDistance(B.Quaternion()));
 	}
 
-	/**
-	 * Get the delta rotation from OriginRotation to TargetRotation.
-	 * NB: Equivalent to TargetRotation * OriginRotation.Inverse()
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FRotator GetDelta(const FRotator& OriginRotation, const FRotator& TargetRotation)
-	{
-		return (TargetRotation.Quaternion() * OriginRotation.Quaternion().Inverse()).Rotator();
-	}
-
-	/**
-	 * Apply a delta rotation to OriginRotation, producing TargetRotation.
-	 * NB: Equivalent to DeltaRotation * OriginRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FRotator ApplyDelta(const FRotator& OriginRotation, const FRotator& DeltaRotation)
-	{
-		return (DeltaRotation.Quaternion() * OriginRotation.Quaternion()).Rotator();
-	}
-
-	/**
-	 * Get the relative rotation of a child given the parent's world rotation and the child's world rotation.
-	 * NB: Equivalent to ParentWorldRotation.Inverse() * ChildWorldRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FRotator GetRelative(const FRotator& ParentWorldRotation, const FRotator& ChildWorldRotation)
-	{
-		return (ParentWorldRotation.Quaternion().Inverse() * ChildWorldRotation.Quaternion()).Rotator();
-	}
-
-	/**
-	 * Apply a relative rotation for a child when attached to the given parent rotation.
-	 * NB: Equivalent to ParentWorldRotation * ChildRelativeRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FRotator ApplyRelative(const FRotator& ParentWorldRotation, const FRotator& ChildRelativeRotation)
-	{
-		return (ParentWorldRotation.Quaternion() * ChildRelativeRotation.Quaternion()).Rotator();
-	}
 };
 
 //UCLASS(Meta = (ScriptMixin = "FRotator3f", ScriptName = "FRotator3f"))
@@ -662,82 +654,6 @@ public:
 		return FMatrix(Forward.GetSafeNormal(), Right.GetSafeNormal(), Up.GetSafeNormal(), FVector::ZeroVector).ToQuat();
 	}
 
-	/**
-	 * Get the delta rotation from OriginRotation to TargetRotation.
-	 * NB: Equivalent to TargetRotation * OriginRotation.Inverse()
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FQuat GetDelta(const FQuat& OriginRotation, const FQuat& TargetRotation)
-	{
-		return TargetRotation * OriginRotation.Inverse();
-	}
-
-	/**
-	 * Apply a delta rotation to OriginRotation, producing TargetRotation.
-	 * NB: Equivalent to DeltaRotation * OriginRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FQuat ApplyDelta(const FQuat& OriginRotation, const FQuat& DeltaRotation)
-	{
-		return DeltaRotation * OriginRotation;
-	}
-
-	/**
-	 * Get the relative rotation of a child given the parent's world rotation and the child's world rotation.
-	 * NB: Equivalent to ParentWorldRotation.Inverse() * ChildWorldRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FQuat GetRelative(const FQuat& ParentWorldRotation, const FQuat& ChildWorldRotation)
-	{
-		return ParentWorldRotation.Inverse() * ChildWorldRotation;
-	}
-
-	/**
-	 * Apply a relative rotation for a child when attached to the given parent rotation.
-	 * NB: Equivalent to ParentWorldRotation * ChildRelativeRotation.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FQuat ApplyRelative(const FQuat& ParentWorldRotation, const FQuat& ChildRelativeRotation)
-	{
-		return ParentWorldRotation * ChildRelativeRotation;
-	}
-
-	/**
-	 * Make a delta rotation from angular velocity and delta time.
-	 * NB: Equivalent to FQuat(AngularVelocity.Normal, AngularVelocity.Size * DeltaTime).
-	 *
-	 * @param AngularVelocity A vector defining a rotation around an axis at a rotational speed around said axis.
-	 * @param DeltaTime The time we spend rotating at the angular velocity.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FQuat MakeDeltaRotationFromAngularVelocity(const FVector& AngularVelocity, float DeltaTime)
-	{
-		if (DeltaTime < KINDA_SMALL_NUMBER)
-			return FQuat::Identity;
-
-		const float AngularSpeed = AngularVelocity.Size();
-		if (AngularSpeed < KINDA_SMALL_NUMBER)
-			return FQuat::Identity;
-
-		const FVector Axis = AngularVelocity / AngularSpeed;
-		const float Angle = AngularSpeed * DeltaTime;
-		return FQuat(Axis, Angle);
-	}
-
-	/**
-	 * Make an angular velocity vector from a delta rotation and delta time.
-	 * NB: Equivalent to DeltaRotation.Axis * (DeltaRotation.Angle / DeltaTime).
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FVector MakeAngularVelocityFromDeltaRotation(const FQuat& DeltaRotation, float DeltaTime)
-	{
-		if (DeltaTime < KINDA_SMALL_NUMBER)
-			return FVector::ZeroVector;
-
-		const FVector Axis = DeltaRotation.GetRotationAxis();
-		const float Angle = DeltaRotation.GetAngle();
-		return Axis * (Angle / DeltaTime);
-	}
 };
 
 //UCLASS(Meta = (ScriptMixin = "FQuat4f", ScriptName = "FQuat4f"))
@@ -883,45 +799,6 @@ public:
 		return FTransform(FRotationMatrix::MakeFromZY(ZAxis, YAxis));
 	}
 
-	/**
-	 * Get the delta transform from OriginTransform to TargetTransform.
-	 * NB: Equivalent to OriginTransform.Inverse() * TargetTransform
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FTransform GetDelta(const FTransform& OriginTransform, const FTransform& TargetTransform)
-	{
-		return OriginTransform.Inverse() * TargetTransform;
-	}
-
-	/**
-	 * Apply a delta transform to OriginTransform, producing TargetTransform.
-	 * NB: Equivalent to OriginTransform * DeltaTransform
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FTransform ApplyDelta(const FTransform& OriginTransform, const FTransform& DeltaTransform)
-	{
-		return OriginTransform * DeltaTransform;
-	}
-
-	/**
-	 * Get the relative transform of a child given the parent's world transform and the child's world transform.
-	 * NB: Equivalent to ChildWorldTransform.GetRelativeTransform(ParentWorldTransform).
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FTransform GetRelative(const FTransform& ParentWorldTransform, const FTransform& ChildWorldTransform)
-	{
-		return ChildWorldTransform.GetRelativeTransform(ParentWorldTransform);
-	}
-
-	/**
-	 * Apply a relative transform for a child when attached to the given parent transform.
-	 * NB: Equivalent to ChildRelativeTransform * ParentWorldTransform.
-	 */
-	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	static FTransform ApplyRelative(const FTransform& ParentWorldTransform, const FTransform& ChildRelativeTransform)
-	{
-		return ChildRelativeTransform * ParentWorldTransform;
-	}
 };
 
 //UCLASS(Meta = (ScriptMixin = "FTransform3f", ScriptName = "FTransform3f"))
@@ -984,5 +861,269 @@ public:
 	static FTransform3f MakeFromZY(const FVector3f& ZAxis, const FVector3f& YAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromZY(ZAxis, YAxis));
+	}
+};
+
+UCLASS(Meta = (ScriptName = "FQuat"))
+class UAngelscriptFQuatStaticLibrary : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/**
+	 * Get the delta rotation from OriginRotation to TargetRotation.
+	 * This is the rotation that when applied as a delta to OriginRotation creates TargetRotation.
+	 *
+	 * Delta rotations operate in world/parent space.
+	 *
+	 * eg:
+	 * FQuat DeltaRotation = FQuat::GetDelta(OriginRotation, TargetRotation);
+	 * FQuat TargetRotation = FQuat::ApplyDelta(OriginRotation, DeltaRotation);
+	 *
+	 * NB: Equivalent to TargetRotation * OriginRotation.Inverse()
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FQuat GetDelta(const FQuat& OriginRotation, const FQuat& TargetRotation)
+	{
+		return TargetRotation * OriginRotation.Inverse();
+	}
+
+	/**
+	 * Apply a delta rotation to an origin rotation.
+	 *
+	 * Delta rotations operate in world/parent space.
+	 *
+	 * eg:
+	 * FQuat DeltaRotation = FQuat::GetDelta(OriginRotation, TargetRotation);
+	 * FQuat TargetRotation = FQuat::ApplyDelta(OriginRotation, DeltaRotation);
+	 *
+	 * NB: Equivalent to DeltaRotation * OriginRotation;
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FQuat ApplyDelta(const FQuat& OriginRotation, const FQuat& DeltaRotation)
+	{
+		return DeltaRotation * OriginRotation;
+	}
+
+	/**
+	 * Get the relative rotation for the given child rotation when attached to the given parent rotation.
+	 * This converts a ChildWorldRotation to a ChildRelativeRotation.
+	 *
+	 * eg:
+	 * FQuat ChildRelativeRotation = FQuat::GetRelative(ParentWorldRotation, ChildWorldRotation);
+	 * FQuat ChildWorldRotation = FQuat::ApplyRelative(ParentWorldRotation, ChildRelativeRotation);
+	 *
+	 * NB: Equivalent to ParentWorldRotation.Inverse() * ChildWorldRotation
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FQuat GetRelative(const FQuat& ParentWorldRotation, const FQuat& ChildWorldRotation)
+	{
+		return ParentWorldRotation.Inverse() * ChildWorldRotation;
+	}
+
+	/**
+	 * Apply a relative rotation for a child when attached to the given parent rotation.
+	 * This converts a ChildRelativeRotation to a ChildWorldRotation.
+	 *
+	 * eg:
+	 * FQuat ChildRelativeRotation = FQuat::GetRelative(ParentWorldRotation, ChildWorldRotation);
+	 * FQuat ChildWorldRotation = FQuat::ApplyRelative(ParentWorldRotation, ChildRelativeRotation);
+	 *
+	 * NB: Equivalent to ParentWorldRotation * ChildRelativeRotation
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FQuat ApplyRelative(const FQuat& ParentWorldRotation, const FQuat& ChildRelativeRotation)
+	{
+		return ParentWorldRotation * ChildRelativeRotation;
+	}
+
+	/**
+	 * Make a delta rotation from angular velocity and delta time.
+	 *
+	 * NB: Equivalent to FQuat(AngularVelocity.Normal, AngularVelocity.Size * DeltaTime)
+	 *
+	 * @param AngularVelocity A vector defining a rotation around an axis at a rotational speed around said axis.
+	 * @param DeltaTime The time we spend rotating at the angular velocity.
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FQuat MakeDeltaRotationFromAngularVelocity(const FVector& AngularVelocity, float DeltaTime)
+	{
+		if (DeltaTime < KINDA_SMALL_NUMBER)
+			return FQuat::Identity;
+
+		const float AngularSpeed = AngularVelocity.Size();
+		if (AngularSpeed < KINDA_SMALL_NUMBER)
+			return FQuat::Identity;
+
+		const FVector Axis = AngularVelocity / AngularSpeed;
+		const float Angle = AngularSpeed * DeltaTime;
+		return FQuat(Axis, Angle);
+	}
+
+	/**
+	 * Make an angular velocity vector from a delta rotation and delta time.
+	 *
+	 * NB: Equivalent to DeltaRotation.Axis * (DeltaRotation.Angle / DeltaTime)
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FVector MakeAngularVelocityFromDeltaRotation(const FQuat& DeltaRotation, float DeltaTime)
+	{
+		if (DeltaTime < KINDA_SMALL_NUMBER)
+			return FVector::ZeroVector;
+
+		const FVector Axis = DeltaRotation.GetRotationAxis();
+		const float Angle = DeltaRotation.GetAngle();
+		return Axis * (Angle / DeltaTime);
+	}
+};
+
+UCLASS(Meta = (ScriptName = "FRotator"))
+class UAngelscriptFRotatorStaticLibrary : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/**
+	 * Get the delta rotation from OriginRotation to TargetRotation.
+	 * This is the rotation that when applied as a delta to OriginRotation creates TargetRotation.
+	 *
+	 * Delta rotations operate in world/parent space.
+	 *
+	 * eg:
+	 * FRotator DeltaRotation = FRotator::GetDelta(OriginRotation, TargetRotation);
+	 * FRotator TargetRotation = FRotator::ApplyDelta(OriginRotation, DeltaRotation);
+	 *
+	 * NB: Equivalent to TargetRotation * OriginRotation.Inverse()
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FRotator GetDelta(const FRotator& OriginRotation, const FRotator& TargetRotation)
+	{
+		return (TargetRotation.Quaternion() * OriginRotation.Quaternion().Inverse()).Rotator();
+	}
+
+	/**
+	 * Apply a delta rotation to an origin rotation.
+	 *
+	 * Delta rotations operate in world/parent space.
+	 *
+	 * eg:
+	 * FRotator DeltaRotation = FRotator::GetDelta(OriginRotation, TargetRotation);
+	 * FRotator TargetRotation = FRotator::ApplyDelta(OriginRotation, DeltaRotation);
+	 *
+	 * NB: Equivalent to DeltaRotation * OriginRotation;
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FRotator ApplyDelta(const FRotator& OriginRotation, const FRotator& DeltaRotation)
+	{
+		return (DeltaRotation.Quaternion() * OriginRotation.Quaternion()).Rotator();
+	}
+
+	/**
+	 * Get the relative rotation for the given child rotation when attached to the given parent rotation.
+	 * This converts a ChildWorldRotation to a ChildRelativeRotation.
+	 *
+	 * eg:
+	 * FRotator ChildRelativeRotation = FRotator::GetRelative(ParentWorldRotation, ChildWorldRotation);
+	 * FRotator ChildWorldRotation = FRotator::ApplyRelative(ParentWorldRotation, ChildRelativeRotation);
+	 *
+	 * NB: Equivalent to ParentWorldRotation.Inverse() * ChildWorldRotation
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FRotator GetRelative(const FRotator& ParentWorldRotation, const FRotator& ChildWorldRotation)
+	{
+		return (ParentWorldRotation.Quaternion().Inverse() * ChildWorldRotation.Quaternion()).Rotator();
+	}
+
+	/**
+	 * Apply a relative rotation for a child when attached to the given parent rotation.
+	 * This converts a ChildRelativeRotation to a ChildWorldRotation.
+	 *
+	 * eg:
+	 * FRotator ChildRelativeRotation = FRotator::GetRelative(ParentWorldRotation, ChildWorldRotation);
+	 * FRotator ChildWorldRotation = FRotator::ApplyRelative(ParentWorldRotation, ChildRelativeRotation);
+	 *
+	 * NB: Equivalent to ParentWorldRotation * ChildRelativeRotation
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FRotator ApplyRelative(const FRotator& ParentWorldRotation, const FRotator& ChildRelativeRotation)
+	{
+		return (ParentWorldRotation.Quaternion() * ChildRelativeRotation.Quaternion()).Rotator();
+	}
+};
+
+UCLASS(Meta = (ScriptName = "FTransform"))
+class UAngelscriptFTransformStaticLibrary : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/**
+	 * Get the delta transform from OriginTransform to TargetTransform.
+	 * This is the transform that when applied as a delta to OriginTransform creates TargetTransform.
+	 *
+	 * Delta transforms operate in world/parent space.
+	 *
+	 * eg:
+	 * FTransform DeltaTransform = FTransform::GetDelta(OriginTransform, TargetTransform);
+	 * FTransform TargetTransform = FTransform::ApplyDelta(OriginTransform, DeltaTransform);
+	 *
+	 * NB: Equivalent to OriginTransform.Inverse() * TargetTransform
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FTransform GetDelta(const FTransform& OriginTransform, const FTransform& TargetTransform)
+	{
+		return OriginTransform.Inverse() * TargetTransform;
+	}
+
+	/**
+	 * Apply a delta transform to an origin transform.
+	 *
+	 * Delta transforms operate in world/parent space.
+	 *
+	 * eg:
+	 * FTransform DeltaTransform = FTransform::GetDelta(OriginTransform, TargetTransform);
+	 * FTransform TargetTransform = FTransform::ApplyDelta(OriginTransform, DeltaTransform);
+	 *
+	 * NB: Equivalent to OriginTransform * DeltaTransform
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FTransform ApplyDelta(const FTransform& OriginTransform, const FTransform& DeltaTransform)
+	{
+		return OriginTransform * DeltaTransform;
+	}
+
+	/**
+	 * Get the relative transform for the given child transform when attached to the given parent transform.
+	 * This converts a ChildWorldTransform to a ChildRelativeTransform.
+	 *
+	 * eg:
+	 * FTransform ChildRelativeTransform = FTransform::GetRelative(ParentWorldTransform, ChildWorldTransform);
+	 * FTransform ChildWorldTransform = FTransform::ApplyRelative(ParentWorldTransform, ChildRelativeTransform);
+	 *
+	 * NB: Equivalent to ChildWorldTransform.GetRelativeTransform(ParentWorldTransform)
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FTransform GetRelative(const FTransform& ParentWorldTransform, const FTransform& ChildWorldTransform)
+	{
+		return ChildWorldTransform.GetRelativeTransform(ParentWorldTransform);
+	}
+
+	/**
+	 * Apply a relative transform for a child when attached to the given parent transform.
+	 * This converts a ChildRelativeTransform to a ChildWorldTransform.
+	 *
+	 * eg:
+	 * FTransform ChildRelativeTransform = FTransform::GetRelative(ParentWorldTransform, ChildWorldTransform);
+	 * FTransform ChildWorldTransform = FTransform::ApplyRelative(ParentWorldTransform, ChildRelativeTransform);
+	 *
+	 * NB: Equivalent to ChildRelativeTransform * ParentWorldTransform
+	 */
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static FTransform ApplyRelative(const FTransform& ParentWorldTransform, const FTransform& ChildRelativeTransform)
+	{
+		return ChildRelativeTransform * ParentWorldTransform;
 	}
 };

@@ -304,19 +304,26 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **验证**：构建 0 错误（55s，先一次失败因 `WrapUInt` UHT 错被回退、二次构建成功）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS；`Bindings.*` 134 中 133 PASS + 1 已知 flaky（`ConsoleCommandLifecycleOriginalReplacementUnload` 单独重跑 1/1 PASS，与 Math 改动无关，IConsoleManager 时序问题）。零回归
 - [x] **P5.2-MathLibrary 部分** 📦 Git 提交：`[FunctionLibraries] Feat: restore 15 missing helpers in MathLibrary (4 transform x 3 + GetSafeNormal2D + 2 angular velocity); WrapUInt deferred per UHT uint32 restriction`
 
-- [ ] **P5.3** 补缺失的 mixin 子类（MathLibrary 缺 3 个 active UCLASS，已在 P5.1 矩阵确认）
-  - **缺漏的 3 个子类**（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2.1.1）：`UAngelscriptFQuatStaticLibrary`（`ScriptName = "FQuat"`）/ `UAngelscriptFRotatorStaticLibrary`（`ScriptName = "FRotator"`）/ `UAngelscriptFTransformStaticLibrary`（`ScriptName = "FTransform"`）—— 全部是 fork 完全没写过的"主子类承载 mixin 方法 + Static 子类承载静态构造/常量/工具"双子类模式中的 Static 半部
-  - 补回的 `UCLASS(Meta = (ScriptName = "..."))` 子类直接以 **enabled 状态**合入（不走"先注释 → 后重启"的两步流程，跟 Phase 4 的"重启已存在锚点"是不同操作）
-  - 跑 `Angelscript.TestModule.Engine.BindConfig.ProductionScriptMixinSignatures` 必须重新生成 baseline 并独立提交，附带 diff 解释
-- [ ] **P5.3** 📦 Git 提交：`[FunctionLibraries] Feat: restore missing ScriptMixin subclasses from Hazelight upstream` + 必要时另起 baseline 更新提交
+- [x] **P5.3** 补缺失的 mixin 子类（MathLibrary 缺 3 个 active UCLASS，已在 P5.1 矩阵确认）✅ 2026-04-28 完成
+  - **缺漏的 3 个子类**（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2.1.1）：`UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`，全部 `UCLASS(Meta = (ScriptName = "<Type>"))` 直接 enabled 合入
+  - **关键发现 — P5.2 与 P5.3 函数归属冲突**：P5.2 MathLibrary 实施时把 14 个 transform 工具函数（FRotator 4 + FQuat 6 + FTransform 4）补到了 fork 的 mixin 子类（`UAngelscriptFRotatorLibrary` / `UAngelscriptFQuatLibrary` / `UAngelscriptFTransformLibrary`），但 Hazelight 上游 `AngelscriptCode/Public/FunctionLibraries/AngelscriptMathLibrary.h:850-1112` 的设计是把这些工具函数放在 **Static 子类**而非 mixin 子类。如果 P5.3 直接照抄上游会和 P5.2 重复注册（同 `ScriptName` namespace 下同函数名）
+  - **采取方案 B（迁移）**：把 P5.2 加到 mixin 子类的 14 个函数**整体迁移**到新建 Static 子类，让 fork 100% 对齐 Hazelight 上游"主子类承载 mixin 方法 + Static 子类承载工具/构造"双子类模式
+  - **AS 端调用语义零变化的证据**：迁移前后两个子类都用 `ScriptName = "FQuat"` / `"FRotator"` / `"FTransform"` 注册到同一 namespace。AS 端 `FQuat::GetDelta(o, t)` 形式不论函数实际承载在哪个 UCLASS 下都是同样的命名空间静态调用。仓内 `grep "FQuat::GetDelta|FRotator::ApplyDelta|FTransform::GetRelative|MakeDeltaRotationFromAngularVelocity|MakeAngularVelocityFromDeltaRotation"` 在测试 / 脚本仅 0 处实质命中（仅文档引用），迁移零回归
+  - **未来 ScriptMixin 重启的纯净边界**：当 P4.3 Math 8 处锚点未来通过"AS 脚本现代化迁移"重启时，mixin 子类仅承载真正的实例方法、Static 子类承载 namespace 工具，两条路径互不影响——这是 Hazelight 双子类模式的核心价值
+  - **操作内容**：①从 `UAngelscriptFRotatorLibrary` / `UAngelscriptFQuatLibrary` / `UAngelscriptFTransformLibrary` 三个 mixin 子类中**删除** P5.2 加的 14 个函数（FRotator 4 + FQuat 6 + FTransform 4）；②在文件末尾**新建** 3 个 `UCLASS(Meta = (ScriptName = "<Type>"))` Static 子类（`UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`），照搬 Hazelight 上游 docstring + 函数体，meta `ScriptCallable` → `BlueprintCallable` + 保留 `ScriptTrivial / ScriptNoDiscard`
+  - **验证**：构建 0 错误（54s）；UHT 接受 fork 同 ScriptName 双子类（主 mixin disabled + Static 子类）共存形态；`ProductionScriptMixinSignatures` 1/1 PASS（mixin baseline 不变——FQuat/FRotator/FTransform mixin 子类 ScriptMixin 仍 disabled，无新签名注入）；`FunctionLibraries.*` 23/23 PASS。零回归
+  - **与 Hazelight 上游 active UCLASS 数差距闭环**：fork 之前 9 个 → 现在 12 个 = Hazelight 上游 12 个，**100% 对齐**
+- [x] **P5.3** 📦 Git 提交：与 P5.4 合并为一次 commit（同属 MathLibrary 二次重构 + cleanup note 修整）
 
-- [ ] **P5.4** 锚点注释清理 → **修整 cleanup parity note 描述准确性**
-  - **P5.1 矩阵关键修正**：fork 16 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 锚点 **100% 在 Hazelight 上游为 active ScriptMixin**（详见 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §3 全景表）—— 全部是真 parity gap、**不可清理**。原计划中的"规则 A 删锚点"实例数为 0
-  - 工作转化为：**修整 6 处 cleanup parity note 描述**——当前 fork 在 6 个文件头的 cleanup parity note 笼统说"`BlueprintCallableReflectiveFallback` 兜底"，但 P4.1 已确认 fork 5 个候选文件 native pointer 都有效、不会走 ReflectiveFallback。`AngelscriptWorldLibrary.h` 的 note 已在 `cc764db` 修正为"`Bind_UWorld.cpp` 手工接管"，无需再动；剩余 6 处需修正为"仅静态命名空间形式可见 + 待 P4.x 重启"或类似准确描述
-  - **执行前置条件**：必须等 P4.x 全部完成（试点 + 批量重启 + 类 1 决策），note 描述应反映最终的 ScriptMixin 状态而非中间态；避免"刚改完 note 又因为重启再变"
-  - 涉及文件：`AngelscriptHitResultLibrary.h` / `GameplayTagMixinLibrary.h` / `GameplayTagContainerMixinLibrary.h` / `InputComponentScriptMixinLibrary.h` / `UAssetManagerMixinLibrary.h` / `AngelscriptMathLibrary.h`（如 P4.x 后 Math 文件头新增 note）
-  - 每条改写都要引用 P4.1 / P5.1 矩阵中对应行号作为依据
-- [ ] **P5.4** 📦 Git 提交：`[FunctionLibraries] Chore: rewrite cleanup parity notes per P4.1/P5.1 audit findings`
+- [x] **P5.4** 锚点注释清理 → **修整 cleanup parity note 描述准确性** ✅ 2026-04-28 完成
+  - **实际工作量被 P4.x 大幅压缩**：P4.2 / P4.3 / P4.4 重启 ScriptMixin 时已**完整删除** 6 个文件头的 cleanup parity note（HitResult / Tag / TagContainer / Input / AssetMgr / World）—— P5.4 立项时设想的"6 处 note 修整"实际仅剩 **1 处**：`AngelscriptMathLibrary.h` 文件头 cleanup note（P5.2 阶段为 Math 8 处已注释化锚点添加的 placeholder 描述）
+  - **MathLibrary 文件头 note 修整**（仅剩处）：原 note 描述笼统说"BlueprintCallableReflectiveFallback 兜底"+"To restore upstream parity: uncomment the //UCLASS(...) line"，**两处都不准确**：
+    - P4.1 已证实 fork 这些 helpers 全部 inline 实现、native function pointer 始终有效 → ReflectiveFallback 路径不会激活
+    - P4.3 试启已证实 Math 8 锚点直接 uncomment 会引发 namespace-regression（fork 测试 + 用户脚本依赖 namespace 静态形式 `FRotator::GetForwardVector(r)` / `AngelscriptFVectorMixin::Size2D(v, n)`）
+  - **重写后内容要点**：①明确当前 8 个 mixin 子类仅暴露 namespace 静态形式（无成员方法形式）；②澄清"为什么不是 ReflectiveFallback"（P4.1 证据）；③澄清"为什么不能简单 uncomment"（P4.3 实测错误清单）；④给出未来"AS 脚本现代化迁移"专项的重启路径；⑤记录 P5.3 新增的 3 个 Static 子类位置 + 对齐 Hazelight 双子类模式说明；⑥列出 4 篇相关 audit 文档锚点
+  - **涉及文件最终清单**：`AngelscriptMathLibrary.h`（1 处 note 重写，~30 行 → ~35 行）。其他 6 个文件无 cleanup note 残留，无需操作
+  - **验证**：lint 0 错误；构建无需重新跑（仅注释变更）；P5.3 阶段已端到端验证 fork 文件结构 100% 健康
+- [x] **P5.4** 📦 Git 提交：与 P5.3 合并为一次 commit `[FunctionLibraries] Feat: add MathLibrary FQuat/FRotator/FTransform Static subclasses (P5.3) and rewrite cleanup parity note (P5.4)`
 
 ## 验收标准
 

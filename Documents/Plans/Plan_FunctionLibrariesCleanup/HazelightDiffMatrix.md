@@ -8,9 +8,9 @@
 
 | 汇总维度 | 数值 | 落点 |
 |---|---:|---|
-| ① 缺函数总数（active `UFUNCTION`） | **21**（19 + Phase 2 后新增 ActorLibrary 缺 `GetAttachedActors` / `GetAttachedActorsOfClass` 2 处）— P5.2 完成 **20/21**：5 小文件函数 + 15 Math 函数已恢复；1 处 `WrapUInt(uint32)` 因 UHT BlueprintCallable + uint32 不兼容**永久 deferred**（详见 Plan P5.2 Math 部分实施记录）| P5.2 已收口 |
-| ② 缺 mixin 子类总数（active `UCLASS`） | **3** | P5.3 实施目标 |
-| ③ 可清理锚点注释数（`//UCLASS(Meta = (ScriptMixin = "..."))` 但 Hazelight 上游也无该 mixin） | **0** | P5.4 实施目标，**所有 16 处锚点全是真 parity gap** |
+| ① 缺函数总数（active `UFUNCTION`） | **21**（19 + Phase 2 后新增 ActorLibrary 缺 `GetAttachedActors` / `GetAttachedActorsOfClass` 2 处）— P5.2 完成 **20/21**：5 小文件函数 + 15 Math 函数已恢复；1 处 `WrapUInt(uint32)` 因 UHT BlueprintCallable + uint32 不兼容**永久 deferred**（详见 Plan P5.2 Math 部分实施记录）| ✅ P5.2 已收口 |
+| ② 缺 mixin 子类总数（active `UCLASS`） | **3** — ✅ P5.3 完成 3/3：`UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary` 直接 enabled 合入；同时迁移 P5.2 加到 mixin 子类的 14 个 transform 工具函数到对应 Static 子类，对齐 Hazelight 上游"主 mixin + Static 工具"双子类模式 | ✅ P5.3 已收口 |
+| ③ 可清理锚点注释数（`//UCLASS(Meta = (ScriptMixin = "..."))` 但 Hazelight 上游也无该 mixin） | **0** ✅ 所有 16 处锚点全是真 parity gap，P5.4 转为修整 cleanup note 描述：6 处 note 在 P4.2/P4.3/P4.4 重启 ScriptMixin 时已删除，仅剩 `AngelscriptMathLibrary.h` 文件头 1 处重写为准确描述 | ✅ P5.4 已收口 |
 
 辅助统计：
 
@@ -54,17 +54,19 @@
 
 ### 2.1 `AngelscriptMathLibrary.h` — 最大缺口
 
-#### 2.1.1 缺 3 个 active `UCLASS` Static 子类（P5.3 直接补全目标）
+#### 2.1.1 缺 3 个 active `UCLASS` Static 子类（P5.3 直接补全目标）— ✅ 已完成
 
-Hazelight 12 个 active UCLASS，fork 仅 9 个；缺以下 3 个：
+Hazelight 12 个 active UCLASS，fork 之前 9 个；P5.3 补全后 fork = 12 = Hazelight 100% 对齐。新增的 3 个子类：
 
-| Hazelight UCLASS 行 | 类名 | 用途 |
-|---|---|---|
-| `UCLASS(Meta = (ScriptName = "FQuat"))` | `UAngelscriptFQuatStaticLibrary` | FQuat 静态 helper（与 `UAngelscriptFQuatLibrary` 的 mixin 方法分离） |
-| `UCLASS(Meta = (ScriptName = "FRotator"))` | `UAngelscriptFRotatorStaticLibrary` | FRotator 静态 helper |
-| `UCLASS(Meta = (ScriptName = "FTransform"))` | `UAngelscriptFTransformStaticLibrary` | FTransform 静态 helper |
+| Hazelight UCLASS 行 | 类名 | 用途 | P5.3 状态 |
+|---|---|---|---|
+| `UCLASS(Meta = (ScriptName = "FQuat"))` | `UAngelscriptFQuatStaticLibrary` | FQuat 静态 helper（与 `UAngelscriptFQuatLibrary` 的 mixin 方法分离） | ✅ 已合入（含 6 函数：4 transform 工具 + 2 angular velocity）|
+| `UCLASS(Meta = (ScriptName = "FRotator"))` | `UAngelscriptFRotatorStaticLibrary` | FRotator 静态 helper | ✅ 已合入（含 4 transform 工具）|
+| `UCLASS(Meta = (ScriptName = "FTransform"))` | `UAngelscriptFTransformStaticLibrary` | FTransform 静态 helper | ✅ 已合入（含 4 transform 工具）|
 
-补全策略：Hazelight 用"主子类承载 mixin 方法 + Static 子类承载静态构造/常量/工具"的双子类模式来分离 AS 命名空间下的"成员调用"和"`FQuat::XXX(...)` 静态调用"。补回时直接以 enabled 状态合入，无需走"先注释 → 后重启"两步。
+补全策略：Hazelight 用"主子类承载 mixin 方法 + Static 子类承载静态构造/常量/工具"的双子类模式来分离 AS 命名空间下的"成员调用"和"`FQuat::XXX(...)` 静态调用"。
+
+**P5.3 实施关键调整**（2026-04-28 实测）：P5.2 阶段曾将这 14 个 transform 工具函数补到了 fork 的 mixin 子类（`UAngelscriptFRotatorLibrary` / `UAngelscriptFQuatLibrary` / `UAngelscriptFTransformLibrary`），与 Hazelight 上游设计不符。P5.3 采取方案 B：**整体迁移**这 14 个函数到新建 Static 子类，让 fork 100% 对齐双子类模式。AS 端调用语义零变化（两个子类共用 `ScriptName = "FQuat"` 等，namespace 静态形式与函数所在 UCLASS 无关）；仓内全文 grep 无 `FQuat::GetDelta` / `MakeDeltaRotationFromAngularVelocity` 等的实质引用，迁移零回归。这一调整为未来 Math ScriptMixin 重启提供"mixin 子类仅承载实例方法、Static 子类仅承载工具"的纯净边界。
 
 #### 2.1.2 fork 8 个子类的 `ScriptMixin` meta 全部被关闭（与 §3 锚点表交叉）
 
@@ -251,17 +253,17 @@ P5.1 矩阵高层数据从 30/30 函数 parity 修正为 29/9 → P2.2 后差额
 
 ## 5. P5.x 执行映射
 
-| Phase 任务 | 本矩阵驱动数据 | 执行规模 |
-|---|---|---|
-| P5.2（补 helper 函数） | §2.1.3 (16 函数) + §2.2 / §2.3 / §2.4 (各 1 函数) | 19 个函数，分散在 4 个文件，建议 4 个 commit（按文件） |
-| P5.3（补 mixin 子类） | §2.1.1 (3 Static 子类) | 3 个新 UCLASS，全部在 MathLibrary，1 个 commit |
-| P5.4（注释清理） | §3 锚点全景表 | **0 删除**，仅在 P4.1 完成后修整 6 处 cleanup note 描述准确性 |
+| Phase 任务 | 本矩阵驱动数据 | 执行规模 | 实际结果 |
+|---|---|---|---|
+| P5.2（补 helper 函数） | §2.1.3 (16 函数) + §2.2 / §2.3 / §2.4 (各 1 函数) | 21 函数（P2.2 后 +2 ActorLibrary）| ✅ 20/21 完成（commits 24df438 + 4 个小文件单 commits）；1 处 `WrapUInt(uint32)` UHT 不支持永久 deferred |
+| P5.3（补 mixin 子类） | §2.1.1 (3 Static 子类) | 3 个新 UCLASS，全部在 MathLibrary | ✅ 3/3 完成 + 14 transform 工具函数从 mixin 子类迁移到 Static 子类对齐 Hazelight 双子类模式 |
+| P5.4（注释清理） | §3 锚点全景表 | **0 删除**；P4.x 已删 6 个 cleanup note，仅剩 1 处描述修整 | ✅ MathLibrary.h 文件头 cleanup note 重写为准确描述（原 ReflectiveFallback / "uncomment 即可" 描述均不准确） |
 
 P5.x 与其他 Phase 的协同：
 
-- **P5.2 与 P3.1 / P3.2 合并**：补回函数时同时携带 Hazelight 完整 Meta（含 `ScriptTrivial / NotAngelscriptProperty / ScriptName 重载`），避免对同一函数改两次。
-- **P5.3 直接以 enabled 状态合入**，不进 Phase 4 P4.2 / P4.3 的"重启锚点"流程。
-- **P5.4 等 P4.1 完成后做**，避免 cleanup note 描述与 P4.1 三类分类不一致。
+- **P5.2 与 P3.1 / P3.2 合并**：补回函数时同时携带 Hazelight 完整 Meta（含 `ScriptTrivial / NotAngelscriptProperty / ScriptName 重载`），避免对同一函数改两次 ✅ 已落地
+- **P5.3 直接以 enabled 状态合入**，不进 Phase 4 P4.2 / P4.3 的"重启锚点"流程 ✅ 已落地
+- **P5.4 等 P4.x 完成后做**，避免 cleanup note 描述与最终 ScriptMixin 状态不一致 ✅ 已落地（P4.2/P4.3/P4.4 完成后再做的 P5.4，note 描述 100% 反映最终状态）
 
 ---
 
