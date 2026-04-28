@@ -82,6 +82,7 @@ Plugins/*/Intermediate/*
 
 # C# / UBT plugin intermediate outputs
 Plugins/*/Source/*/obj/
+Plugins/*/Source/*/*.ubtplugin.csproj.props
 
 # Cache files for the editor to use
 DerivedDataCache/*
@@ -112,3 +113,30 @@ DerivedDataCache/*
 # Angelscript cache files
 Script/Binds.Cache
 Script/Binds.Cache.Headers
+
+# Local AI / agent runtime artifacts
+/.claude/
+/.tmp/
+/docs/
+/analysis.txt
+/ANGELSCRIPT_RUNTIME_BINDING_ANALYSIS.md
+/BINDING_ANALYSIS_INDEX.md
+/BINDS_ANALYSIS.txt
+/BINDS_CODE_SNIPPETS.txt
+/CODE_REFERENCE_GUIDE.txt
+/README_ANALYSIS.txt
+/RUNTIME_BINDING_FINDINGS.txt
+/UHT_EXPLORATION_REPORT.md
+/Review_*.md
+/Documents/Reviews/*.log
+
+# RalphLoop runtime artifacts and pulled references
+/Tools/RalphLoop/.codexloop/
+/Tools/RalphLoop/.sisyphus/
+/Tools/RalphLoop/Temp/
+/Tools/RalphLoop/tests/.tmp/
+/Tools/RalphLoop/references/*
+!/Tools/RalphLoop/references/manifest.psd1
+/Tools/RalphLoop/1.txt
+/Tools/RalphLoop/hi
+/Tools/RalphLoop/hello-codex.ps1
