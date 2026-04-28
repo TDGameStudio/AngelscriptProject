@@ -119,7 +119,7 @@ Tools\RunBuild.ps1 -Label noxge -TimeoutMs 180000 -NoXGE
 ```powershell
 Tools\RunTests.ps1 -Group AngelscriptSmoke -Label smoke -TimeoutMs 600000
 Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings." -Label bindings -TimeoutMs 600000
-Tools\RunTests.ps1 -Group AngelscriptScenario -Label scenario -TimeoutMs 900000 -Render
+Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900000 -Render
 ```
 
 ## RunTestSuite.ps1

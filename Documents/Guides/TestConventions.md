@@ -120,7 +120,7 @@
 
 | 场景 | 推荐层级 / 目录 | 标准前缀 | 核心流程 | 推荐命令 |
 | --- | --- | --- | --- | --- |
-| Native Core smoke | `Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.Smoke` | 创建独立 AngelScript 引擎 → 编译/执行最小脚本 → 验证返回值/消息回调 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Native"` |
+| Native Core smoke | `Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.Smoke` | 创建独立 AngelScript 引擎 → 编译/执行最小脚本 → 验证返回值/消息回调 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK"` |
 | Runtime 内部引擎隔离 | `Source/AngelscriptRuntime/Tests/` | `Angelscript.CppTests.MultiEngine.*` | 创建 full / clone 引擎 → 校验共享状态、模块隔离、依赖注入 | `.\Tools\RunTestSuite.ps1 -Suite Smoke` |
 | Debugger 协议与调试场景 | `Source/AngelscriptRuntime/Tests/`、`Source/AngelscriptTest/Debugger/` | `Angelscript.CppTests.Debug.*` / `Angelscript.TestModule.Debugger.*` | 连接调试客户端 → 启动调试会话 → 断言握手、断点、步进与停止状态 | `.\Tools\RunTestSuite.ps1 -Suite Debugger` |
 | UE 功能测试 Actor / Component | `Actor/`、`Component/` | `Angelscript.TestModule.Actor.*` / `Angelscript.TestModule.Component.*` | 编译脚本类 → Spawn / BeginPlay / Tick / 读回属性 → 验证 UE 侧结果 | `.\Tools\RunTestSuite.ps1 -Suite FunctionalSamples` |

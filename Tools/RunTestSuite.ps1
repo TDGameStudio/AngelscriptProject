@@ -48,16 +48,13 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
     )
     "NativeCore" = @(
-        @{ Prefix = "Angelscript.TestModule.Native"; Label = "Native" }
+        @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
     )
     "RuntimeCpp" = @(
         @{ Prefix = "Angelscript.CppTests"; Label = "CppTests" }
     )
     "Bindings" = @(
         @{ Prefix = "Angelscript.TestModule.Bindings"; Label = "Bindings" }
-    )
-    "Internals" = @(
-        @{ Prefix = "Angelscript.TestModule.Internals"; Label = "Internals" }
     )
     "LearningNative" = @(
         @{ Prefix = "Angelscript.TestModule.Learning.Native"; Label = "LearningNative" }
