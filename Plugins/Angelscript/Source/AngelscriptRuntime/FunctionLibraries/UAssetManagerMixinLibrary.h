@@ -130,4 +130,17 @@ public:
 
 		AssetManager->CallOrRegister_OnCompletedInitialScan(FSimpleDelegate::CreateUFunction(Object, FunctionName));
 	}
+
+	/** Scans a list of paths and reads asset data for all primary assets of a specific type.
+	 * If done in the editor it will load the data off disk, in cooked games it will load out of the asset registry cache */
+	UFUNCTION(BlueprintCallable)
+	static int32 ScanPathForPrimaryAssets(UAssetManager* AssetManager, FPrimaryAssetType PrimaryAssetType, const FString& Path, UClass* BaseClass, bool bHasBlueprintClasses, bool bIsEditorOnly = false, bool bForceSynchronousScan = true)
+	{
+		if (AssetManager == nullptr)
+		{
+			return 0;
+		}
+
+		return AssetManager->ScanPathForPrimaryAssets(PrimaryAssetType, Path, BaseClass, bHasBlueprintClasses, bIsEditorOnly, bForceSynchronousScan);
+	}
 };

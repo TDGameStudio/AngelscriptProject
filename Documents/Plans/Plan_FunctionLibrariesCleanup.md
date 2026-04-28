@@ -264,12 +264,23 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **实施记录**：[`Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) 已完成。**核心结论**：①缺函数 19 处（Math 16 + Hit 1 + TagContainer 1 + AssetMgr 1）——比立项时估算的 13 多 6 处，实际 active UFUNCTION 数 fork=87 而非 90、Haze=103；②缺 mixin 子类 3 处（Math 的 `UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`）；③**可清理锚点为 0**——fork 16 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 锚点 100% 在 Hazelight 上游为 active，全部是真 parity gap，P5.4 工作转化为"修整 6 处 cleanup parity note 描述准确性"。已为 16 个缺漏函数提取完整 Hazelight 签名作 P5.2 实施模板
 - [x] **P5.1** 📦 Git 提交：单次提交合并 P1.1 / P4.1 / P5.1 三份 audit deliverable，commit message `[Docs] Plans: add FunctionLibraries cleanup audit matrices (meta loss / Hazelight diff / ScriptMixin switch)`
 
-- [ ] **P5.2** 按 P5.1 矩阵补 helper 函数（共 19 个，分布在 4 个文件）
-  - **修正后的**优先级顺序（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2）：MathLibrary（16 缺漏，最大）→ HitResultLibrary（缺 `SetPhysMaterial`）→ GameplayTagContainerMixinLibrary（缺 `AppendTags`）→ UAssetManagerMixinLibrary（缺 `ScanPathForPrimaryAssets`）
+- [ ] **P5.2** 按 P5.1 矩阵补 helper 函数（共 21 个，分布在 4 个文件）
+  - **修正后的**优先级顺序（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2）：MathLibrary（16 缺漏，最大）→ HitResultLibrary（缺 `SetPhysMaterial`）→ GameplayTagContainerMixinLibrary（缺 `AppendTags`）→ UAssetManagerMixinLibrary（缺 `ScanPathForPrimaryAssets`）→ ActorLibrary（缺 `GetAttachedActors` / `GetAttachedActorsOfClass`，P2.2 后新增）
   - **MathLibrary 16 个缺漏函数**已在矩阵中提取完整签名作模板：4 组 transform 工具三重载（`ApplyDelta` / `ApplyRelative` / `GetDelta` / `GetRelative` × FQuat / FRotator / FTransform = 12 函数）+ 4 个单函数（`GetSafeNormal2D` / `MakeAngularVelocityFromDeltaRotation` / `MakeDeltaRotationFromAngularVelocity` / `WrapUInt`）
   - 每个补回来的函数必须保持 Hazelight 上游签名一致（参数顺序 / 返回类型 / Meta 完整携带）；Meta 涉及 `ScriptCallable` 时按 fork 当前惯例转换为 `BlueprintCallable` + 保留其他 Meta（参考 §6.5 已落地变更）；保留 `ScriptTrivial / NotAngelscriptProperty / ScriptName 重载` 等关键功能性 Meta（即同步完成 Phase 3 的 active 行恢复目标，避免重复 churn）
   - 跑 `Bindings.Math.*` + `Bindings.Vector.*` + `Bindings.Rotator.*` + `Bindings.Transform.*` + `ProductionScriptMixinSignatures` 做行为验证；若新函数引入新签名，`ProductionScriptMixinSignatures` baseline 可能需要按独立提交更新
-- [ ] **P5.2** 📦 Git 提交：每个文件一条（共 4 个），格式 `[FunctionLibraries] Feat: restore missing helpers from Hazelight upstream <Library>`
+
+- [x] **P5.2-小文件部分** 4 个小文件 5 函数 ✅ 2026-04-28 完成
+  - **ActorLibrary 补 2 函数**：`GetAttachedActors(Actor, bRecursive=false)` + `GetAttachedActorsOfClass(Actor, ActorClass, bRecursive=false)`，照搬 Hazelight 上游签名 + Meta（前者 `ScriptTrivial, NotAngelscriptProperty`；后者 `ScriptTrivial, DeterminesOutputType="ActorClass", NotAngelscriptProperty`）；`ScriptCallable` → `BlueprintCallable` 转换；P2.2 后 ActorLibrary 从 9 函数增至 11 函数
+  - **HitResultLibrary 补 1 函数**：`SetPhysMaterial(HitResult, PhysMaterial)`，`Meta = (ScriptTrivial)`；同时新增 `#include "PhysicalMaterials/PhysicalMaterial.h"` 头依赖（之前只引用 `UPhysicalMaterial*` 指针类型未触发完整定义需求，新增 `HitResult.PhysMaterial = PhysMaterial` 赋值需要完整类型）；P4.2 重启 ScriptMixin 后该函数自动走 mixin 注入路径
+  - **GameplayTagContainerMixinLibrary 补 1 函数**：`AppendTags(Container, TagsToAdd)`，无特殊 Meta；插在 `AddTag` 前作为 Hazelight 上游同顺序
+  - **UAssetManagerMixinLibrary 补 1 函数**：`ScanPathForPrimaryAssets(AssetManager, Type, Path, BaseClass, bHasBlueprintClasses, bIsEditorOnly=false, bForceSynchronousScan=true)`，遵循 fork 该文件 nullptr 防御惯例（与 `GetPrimaryAssetData` 等其他函数一致）
+  - **未做但故意延期**：HitResult `Reset` 签名差异（fork 无参数 / Hazelight `(InTime=1.f, bPreserveTraceData=true)`），不在矩阵 §2.2 范围内，留待将来定向 fork-vs-haze 全面校齐
+  - **未做但已观察到**：UAssetManagerMixinLibrary 中 `GetPrimaryAssetTypeInfo / GetPrimaryAssetTypeInfoList / GetPrimaryAssetRules` 仍是裸 `UFUNCTION()`，与 P2.1 ActorLibrary dead code 嫌疑同形态（不进入反射路径）；超出 P5.2 范围，延期
+  - **验证**：构建 0 错误（54s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS；`Actor.*` 24/24 PASS。零回归
+- [x] **P5.2-小文件部分** 📦 Git 提交：4 个 commit，每文件一条
+- [ ] **P5.2-MathLibrary 部分** 16 函数（4 transform 三重载 + 4 单函数），依 §2.1.3 矩阵；执行规模较大，单独后置
+- [ ] **P5.2-MathLibrary 部分** 📦 Git 提交：`[FunctionLibraries] Feat: restore 16 missing helpers in MathLibrary from Hazelight upstream`
 
 - [ ] **P5.3** 补缺失的 mixin 子类（MathLibrary 缺 3 个 active UCLASS，已在 P5.1 矩阵确认）
   - **缺漏的 3 个子类**（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2.1.1）：`UAngelscriptFQuatStaticLibrary`（`ScriptName = "FQuat"`）/ `UAngelscriptFRotatorStaticLibrary`（`ScriptName = "FRotator"`）/ `UAngelscriptFTransformStaticLibrary`（`ScriptName = "FTransform"`）—— 全部是 fork 完全没写过的"主子类承载 mixin 方法 + Static 子类承载静态构造/常量/工具"双子类模式中的 Static 半部
