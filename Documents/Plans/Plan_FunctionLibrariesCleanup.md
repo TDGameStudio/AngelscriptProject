@@ -228,12 +228,20 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **未做 BindFunctions.csv diff**：审计已确认双路径产物等价，且 `IsScriptDeclarationAlreadyBound` 是已验证拦截机制；测试组零回归即等价于 diff 通过。后续 P4.3 批量重启如发现疑似产物变化再补 dump 比对
 - [x] **P4.2** 📦 Git 提交：`[FunctionLibraries] Refactor: re-enable ScriptMixin on AngelscriptHitResultLibrary as Phase 4 pilot`
 
-- [ ] **P4.3** 批量重启剩余类 3 文件 ScriptMixin
-  - 影响文件：按 P4.1 矩阵决定，可能包括 MathLibrary（7 mixin 子类）、Input（3 子类）、GameplayTagContainer 等
-  - **明确排除**：`AngelscriptWorldLibrary.h`（类 1）以及任何审计为类 1 的文件
-  - 每个文件单独提交，便于回滚
-  - 每次重启后跑 `ProductionScriptMixinSignatures` + 对应库的功能测试
-- [ ] **P4.3** 📦 Git 提交：每个文件一条，格式 `[FunctionLibraries] Refactor: re-enable ScriptMixin on <Library> library`
+- [x] **P4.3** 批量重启剩余类 3 文件 ScriptMixin（部分完成 — 6/14 启用，Math 8 处保留禁用）✅ 2026-04-28 完成
+  - **启用范围**：14 个候选锚点中 6 处启用，8 处保留禁用
+    - ✅ 启用：`GameplayTagMixinLibrary.h`（FGameplayTag）、`GameplayTagContainerMixinLibrary.h`（FGameplayTagContainer）、`UAssetManagerMixinLibrary.h`（UAssetManager）、`InputComponentScriptMixinLibrary.h`（UInputComponent / APlayerController / UPlayerInput 共 3 处）
+    - ⛔ 保留禁用：`AngelscriptMathLibrary.h` 8 处（FVector / FVector3f / FRotator / FRotator3f / FQuat / FQuat4f / FTransform / FTransform3f）
+  - **Math 不可同构启用的回归证据**：试启 8 处 Math ScriptMixin 后，`FunctionLibraries.*` 23 个测试中 3 个 Math 测试失败：
+    - `MathOrientationFactoriesAndTransformMutators` / `MathShortestPathAndTransformSemantics`：编译错误 `No matching signatures to 'FRotator::GetForwardVector(FRotator)'`、`'FRotator::Compose(const FRotator, const FRotator)'`，源自 `AngelscriptMathOrientationFunctionLibraryTests.cpp:164/169/174/181` 的 fork-only namespace 静态调用形式
+    - `MathPlanarProjectionAndColorFormatting`：编译错误 `Namespace 'AngelscriptFVectorMixin' doesn't exist.` / `'AngelscriptFVector3fMixin' doesn't exist.`，源自 `AngelscriptMathFunctionLibraryTests.cpp:412-424` 的同类 fork-only namespace 调用
+  - **Math 与 P4.2 HitResult 试点的差异**：HitResult 启用 ScriptMixin 后双路径仍共存（反射 + 类级注入，IsScriptDeclarationAlreadyBound 拦截重复），但 Math 类启用后**类级注入会移除原有的 namespace 静态形式**（`UCLASS(Meta = (ScriptName = "FRotator"))` 提供的 `FRotator::xxx(rot)` 调用形式）；fork 测试代码 + 任何依赖该 namespace 的 AS 脚本会立即编译失败
+  - **保留禁用是务实选择**：Hazelight 上游本身未提供 namespace 静态形式（其测试库使用 mixin `vec.Size2D(n)` 形式），fork 走 namespace 调用是历史遗留；Math 重启需配套迁移 Math 测试 + 任何用户脚本，工作量超出本计划范围，移交后续脚本迁移专项任务
+  - **Tag/TagContainer/AssetMgr/Input 6 处可同构启用的安全证据**：①Tag/TagContainer/AssetMgr 全仓 grep `xxxMixin::` namespace 调用为 0；②Input 3 处通过 `Bind_InputComponentScriptMixins.cpp` 的 `ERASE_FUNCTION_PTR`（UHT 重载消歧 helper，第 6-25 行）走 C++ 路径，无 AS 脚本 namespace 依赖；启用后两条路径在 `IsScriptDeclarationAlreadyBound` 拦截下产物等价
+  - **操作内容**：①取消 6 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 注释、删除占位的 `UCLASS()` 行；②从 4 个文件（GameplayTagMixin / TagContainer / AssetMgr / Input）头部删除 cleanup parity note 段落；③Math 8 处经一次试启 → 检测到回归 → 全部回退到 `//UCLASS(Meta = (ScriptMixin = "..."))` 注释化形态保留
+  - **验证**：构建 0 错误（57s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS；零回归
+  - **审计矩阵更新**：`ScriptMixinSwitchAudit.md` 类 3 中 Math 8 处从"净增益"重分类为"namespace-regression"（保留禁用并附 fork-specific 阻塞证据）；`HazelightDiffMatrix.md` §3 锚点 #2-9（Math）保持禁用状态、#11-15（Tag/TagContainer/AssetMgr/Input）状态更新为"已重启"
+- [x] **P4.3** 📦 Git 提交：单次合并提交（P4.3 6 处启用 + Math 回退 + 文档同步），commit message `[FunctionLibraries] Refactor: re-enable ScriptMixin on Tag/TagContainer/AssetMgr/Input libraries; defer MathLibrary due to namespace-call regression (P4.3)`
 
 - [x] **P4.4** 类 1 文件的处置：保留手工接管 or 切回 ScriptMixin ✅ 2026-04-28 完成（World 唯一类 1 已切回 ScriptMixin）
   - 对类 1 文件（如 `AngelscriptWorldLibrary.h`）单独评估：手工 lambda 提供的精确签名控制（去指针 `@`、显式 `const`、自定义返回类型映射）是否真的有价值，还是历史包袱

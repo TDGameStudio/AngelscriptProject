@@ -6,20 +6,11 @@
 
 #include "GameplayTagMixinLibrary.generated.h"
 
-// FunctionLibraries cleanup note (mixin parity):
-//
-// The //UCLASS(Meta = (ScriptMixin = "FGameplayTag")) line below is kept commented
-// out as a Hazelight-parity anchor. This fork currently routes these helpers
-// through UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback
-// instead of the dedicated mixin path in Helper_FunctionSignature.h. See
-// Documents/Knowledges/ZH/Syntax_Mixin.md section 6 for the full background.
-
 /**
  * ScriptMixin library to bind functions on FGameplayTag
  * that are not BlueprintCallable by default.
  */
-//UCLASS(Meta = (ScriptMixin = "FGameplayTag"))
-UCLASS()
+UCLASS(Meta = (ScriptMixin = "FGameplayTag"))
 class UGameplayTagMixinLibrary : public UObject
 {
 	GENERATED_BODY()

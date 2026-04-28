@@ -5,20 +5,11 @@
 #include "GameFramework/PlayerInput.h"
 #include "InputComponentScriptMixinLibrary.generated.h"
 
-// FunctionLibraries cleanup note (mixin parity):
-//
-// The //UCLASS(Meta = (ScriptMixin = "...")) lines below are kept commented out as
-// Hazelight-parity anchors. Hazelight binds these helpers via the dedicated mixin
-// path in Helper_FunctionSignature.h; this fork currently routes them through
-// UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback instead. See
-// Documents/Knowledges/ZH/Syntax_Mixin.md section 6 for the full background.
-
 /**
  * ScriptMixin library to bind functions on UInputComponent
  * that are not BlueprintCallable by default.
  */
-//UCLASS(Meta = (ScriptMixin = "UInputComponent"))
-UCLASS()
+UCLASS(Meta = (ScriptMixin = "UInputComponent"))
 class UInputComponentScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()
@@ -115,8 +106,7 @@ public:
 /**
  * ScriptMixin library to bind functions on APlayerController for handling input.
  */
-//UCLASS(Meta = (ScriptMixin = "APlayerController"))
-UCLASS()
+UCLASS(Meta = (ScriptMixin = "APlayerController"))
 class UPlayerControllerInputScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()
@@ -155,8 +145,7 @@ public:
 
 };
 
-//UCLASS(Meta = (ScriptMixin = "UPlayerInput"))
-UCLASS()
+UCLASS(Meta = (ScriptMixin = "UPlayerInput"))
 class UPlayerInputScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()

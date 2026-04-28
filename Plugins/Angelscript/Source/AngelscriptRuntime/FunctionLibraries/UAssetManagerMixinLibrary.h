@@ -3,16 +3,7 @@
 #include "Engine/AssetManager.h"
 #include "UAssetManagerMixinLibrary.generated.h"
 
-// FunctionLibraries cleanup note (mixin parity):
-//
-// The //UCLASS(MinimalAPI, Meta = (ScriptMixin = "UAssetManager")) line below is
-// kept commented out as a Hazelight-parity anchor. This fork currently routes
-// these helpers through UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback
-// (and a few UFUNCTION()-only entries that the mixin path would normally inject).
-// See Documents/Knowledges/ZH/Syntax_Mixin.md section 6 for the full background.
-
-//UCLASS(MinimalAPI, Meta = (ScriptMixin = "UAssetManager"))
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, Meta = (ScriptMixin = "UAssetManager"))
 class UAssetManagerMixinLibrary : public UObject
 {
 	GENERATED_BODY()

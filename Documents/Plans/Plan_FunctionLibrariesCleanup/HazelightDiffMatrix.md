@@ -179,28 +179,27 @@ P5.2 补全要点：fork 该文件已启用 `UCLASS(Meta = (ScriptMixin = "FHitR
 
 | # | fork 文件 | fork 锚点（注释行原文） | Haze 上游对应 | P5.4 处置 | P4.x 重启目标 |
 |---|---|---|---|---|---|
-| 1 | `AngelscriptHitResultLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FHitResult"))` | active ✓ | 保留（修整 note）| 类 3 试点候选 |
-| 2 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FVector"))` | active ✓ | 保留 | 类 3（待 P4.1 audit） |
-| 3 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FVector3f"))` | active ✓ | 保留 | 类 3 |
-| 4 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FRotator", ScriptName = "FRotator"))` | active ✓ | 保留 | 类 3 |
-| 5 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FRotator3f", ScriptName = "FRotator3f"))` | active ✓ | 保留 | 类 3 |
-| 6 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FQuat", ScriptName = "FQuat"))` | active ✓ | 保留 | 类 3 |
-| 7 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FQuat4f", ScriptName = "FQuat4f"))` | active ✓ | 保留 | 类 3 |
-| 8 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FTransform", ScriptName = "FTransform"))` | active ✓ | 保留 | 类 3 |
-| 9 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FTransform3f", ScriptName = "FTransform3f"))` | active ✓ | 保留 | 类 3 |
+| 1 | `AngelscriptHitResultLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "FHitResult"))` | active ✓ | cleanup note 已删除 | ✅ P4.2 试点重启 |
+| 2 | `AngelscriptMathLibrary.h` | ⛔ **保留禁用** `//UCLASS(Meta = (ScriptMixin = "FVector"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 — fork 测试 `AngelscriptMathFunctionLibraryTests.cpp:412-424` 依赖 `AngelscriptFVectorMixin::xxx` namespace 静态形式 |
+| 3 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FVector3f"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退（同上类型，`AngelscriptFVector3fMixin::xxx` 依赖）|
+| 4 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FRotator", ScriptName = "FRotator"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 — `AngelscriptMathOrientationFunctionLibraryTests.cpp:164/169/174/181` 依赖 `FRotator::GetForwardVector(rot)` 等 namespace 静态形式 |
+| 5 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FRotator3f", ScriptName = "FRotator3f"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退（同上类型）|
+| 6 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FQuat", ScriptName = "FQuat"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 |
+| 7 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FQuat4f", ScriptName = "FQuat4f"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 |
+| 8 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FTransform", ScriptName = "FTransform"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 |
+| 9 | `AngelscriptMathLibrary.h` | ⛔ 保留禁用 `//UCLASS(Meta = (ScriptMixin = "FTransform3f", ScriptName = "FTransform3f"))` | active ✓ | 锚点保留 | ⛔ P4.3 试启回退 |
 | 10 | `AngelscriptWorldLibrary.h` | ~~`//UCLASS(Meta = (ScriptMixin = "UWorld"))`~~ → `UCLASS(Meta = (ScriptMixin = "UWorld"))` | active ✓ | **已重启**（P4.4 完成，cleanup parity note 已删除）| **原类 1，2026-04-28 已迁移**：`Bind_UWorld.cpp:79-82` 手工 lambda 删除 + ScriptMixin 启用，反射路径产物兼容 AS 端用法（2 个 WorldStreaming 测试 PASS）|
-| 11 | `GameplayTagContainerMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FGameplayTagContainer"))` | active ✓ | 保留（修整 note）| 类 3 |
-| 12 | `GameplayTagMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FGameplayTag"))` | active ✓ | 保留（修整 note）| 类 3 |
-| 13 | `InputComponentScriptMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "UInputComponent"))` | active ✓ | 保留（修整 note）| 类 3 |
-| 14 | `InputComponentScriptMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "APlayerController"))` | active ✓ | 保留（修整 note）| 类 3 |
-| 15 | `InputComponentScriptMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "UPlayerInput"))` | active ✓ | 保留（修整 note）| 类 3 |
-| 16 | `UAssetManagerMixinLibrary.h` | `//UCLASS(MinimalAPI, Meta = (ScriptMixin = "UAssetManager"))` | active ✓ | 保留（修整 note）| 类 3 |
+| 11 | `GameplayTagContainerMixinLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "FGameplayTagContainer"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启 |
+| 12 | `GameplayTagMixinLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "FGameplayTag"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启 |
+| 13 | `InputComponentScriptMixinLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "UInputComponent"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启（类 1.5，`Bind_InputComponentScriptMixins.cpp` UHT 重载消歧 helper 与 mixin 注入并存）|
+| 14 | `InputComponentScriptMixinLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "APlayerController"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启 |
+| 15 | `InputComponentScriptMixinLibrary.h` | **已启用** `UCLASS(Meta = (ScriptMixin = "UPlayerInput"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启 |
+| 16 | `UAssetManagerMixinLibrary.h` | **已启用** `UCLASS(MinimalAPI, Meta = (ScriptMixin = "UAssetManager"))` | active ✓ | cleanup note 已删除 | ✅ P4.3 重启 |
 
-**结论**：16 处锚点 100% 是 parity gap。P5.4 工作不是"删除锚点"，而是：
+**结论**：16 处锚点 100% 是 parity gap。P4.x 实施结果：**8 处已重启 / 8 处保留禁用**。
 
-- §3 锚点 #10（`AngelscriptWorldLibrary.h`）—— 已在 fork commit `cc764db` 完成 note 修正（`Bind_UWorld.cpp` 手工接管 + `IsScriptDeclarationAlreadyBound` 拦截机理），无需再动。
-- §3 锚点 #1, #11, #12, #13–15, #16（共 6 处）—— fork 当前的 cleanup parity note 描述笼统说"BlueprintCallableReflectiveFallback 兜底"，但实际未审计（待 P4.1 完成三类分类后才能确认）。建议 P4.1 完成后**再**做 P5.4 note 修整，确保描述准确。
-- §3 锚点 #2–#9（MathLibrary 8 处）—— MathLibrary 没有文件头 cleanup note（合并清理时未加），P5.4 在 P4.x 重启完成后整体收口即可。
+- §3 锚点 #1（HitResult）/ #10（World）/ #11–#16（Tag / TagContainer / AssetMgr / Input × 3）—— 共 8 处已通过 P4.2 / P4.3 / P4.4 重启 ScriptMixin，cleanup parity note 同步删除。
+- §3 锚点 #2–#9（MathLibrary 8 处）—— P4.3 试启检测到 namespace-regression 后保留禁用；锚点保留作为"未来 AS 脚本现代化迁移"的 TODO 标记。MathLibrary 文件头从未加过 cleanup note，P5.4 在 MathLibrary 上无工作量。
 
 ---
 

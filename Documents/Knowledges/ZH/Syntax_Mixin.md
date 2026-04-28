@@ -408,15 +408,18 @@ RuntimeFloatCurve_.Method(
 
 ### 6.6 ScriptMixin 关闭文件并非统一走同一条路径
 
-后续若要重启被关闭的 `//UCLASS(Meta = (ScriptMixin = "..."))`，必须先**审计每个文件的实际 AS 注入路径**——8 个文件至少存在三类不同状态：
+后续若要重启被关闭的 `//UCLASS(Meta = (ScriptMixin = "..."))`，必须先**审计每个文件的实际 AS 注入路径**——`Plan_FunctionLibrariesCleanup.md` Phase 4 实测验证了**四类不同状态**：
 
 - **类 1：已被 `Bind_*.cpp` 手工 lambda 接管**（fork 历史形态，2026-04-28 P4.4 已迁移完毕、当前实例数为 0）。历史典型例子是 `AngelscriptWorldLibrary.h` × `Bind_UWorld.cpp:79-82`：fork 早期用 `UWorld_.Method("TArray<ULevelStreaming> GetStreamingLevels() const", [...] { return UAngelscriptWorldLibrary::GetStreamingLevels(World); })` 显式注册成员方法、关闭 ScriptMixin meta，目的是强制 AS 端签名为 `TArray<ULevelStreaming>` 而非反射推导的 `TArray<ULevelStreaming@>`。**P4.4 实测结论**：删除手工 lambda + 重启 ScriptMixin 后 AS 调用 `World.GetStreamingLevels().Num()` / `[i] != Expected` 等用法零回归（2 个 WorldStreaming 测试 PASS），手工 lambda 是**冗余的历史包袱**——fork 已处理 `TObjectPtr` 路由，UObject 容器在 AS 中按引用语义传递，`@` 与无 `@` 形式在调用语义上等价。fork 现状：World 已切回 Hazelight 上游形态（`UCLASS(Meta = (ScriptMixin = "UWorld"))` + 无 `Bind_UWorld.cpp` 接管）。未来若有新文件被引入手工 lambda 模式，应重做"是否真有签名差异需求"的评估。
-- **类 2：走 `BlueprintCallableReflectiveFallback` 反射兜底**。函数没有 native function pointer entry，由 `Bind_BlueprintCallable.cpp:74-91` 的 `BindBlueprintCallableReflectiveFallback` 接住。这类文件重启 ScriptMixin 后注入路径会切换，需要逐函数对比签名是否兼容。
-- **类 3：仅静态命名空间形式可见**。函数没被任何路径绑定为成员方法，AS 脚本里只能写 `Lib::Func(target, ...)`。这类文件重启 ScriptMixin 是**净增益**（对齐 Hazelight，提供成员调用形式）。
+- **类 1.5：`Bind_*.cpp` UHT 重载消歧 helper（fork 独有 / 非接管）**。`Bind_*.cpp` 仅含 `FAngelscriptBinds::AddFunctionEntry` + `ERASE_FUNCTION_PTR` 形态，注释自陈"UHT marks these wrappers overloaded-unresolved, so register the exact signatures before the generated function table falls back to reflective dispatch"。这条路径只是补充函数指针表（让 UHT 生成的反射函数表知道精确指针），它**不**注册 AS 成员方法 —— 跟 ScriptMixin 反射注入路径正交、可共存。典型例子：`InputComponentScriptMixinLibrary.h` × `Bind_InputComponentScriptMixins.cpp:6-26`。**P4.3 实测结论**：3 处类 1.5 锚点（UInputComponent / APlayerController / UPlayerInput）启用 ScriptMixin 后零回归，UHT 重载消歧 helper 与 mixin 注入并存正常工作。
+- **类 2：走 `BlueprintCallableReflectiveFallback` 反射兜底**（fork 内当前实例数为 0）。理论上：函数没有 native function pointer entry，由 `Bind_BlueprintCallable.cpp:74-91` 的 `BindBlueprintCallableReflectiveFallback` 接住。**P4.1 审计结论**：fork 候选 5 个文件（Math / Hit / TagContainer / Tag / AssetMgr）的 static 函数都是 `.h` 内 inline 实现、native function pointer 始终有效 —— 全部不会走 ReflectiveFallback。本类暂无实例。
+- **类 3：仅静态命名空间形式可见**。函数没被任何路径绑定为成员方法，AS 脚本里只能写 `Lib::Func(target, ...)`。**P4.x 实测进一步细分两个亚类**：
+  - **类 3 净增益**（fork 测试 / 脚本用 `target.Func(...)` 实例形式）：HitResult / Tag / TagContainer / AssetMgr 共 4 处文件 / 5 处锚点，2026-04-28 P4.2 / P4.3 重启后零回归，对齐 Hazelight 上游。
+  - **类 3 namespace-regression**（fork 测试 / 脚本用 `Lib::Func(target, ...)` 静态形式）：MathLibrary 8 处锚点（FVector / FVector3f / FRotator / FRotator3f / FQuat / FQuat4f / FTransform / FTransform3f）。fork 测试代码 `AngelscriptMathFunctionLibraryTests.cpp:412-424` / `AngelscriptMathOrientationFunctionLibraryTests.cpp:164-181` 依赖 fork-only `AngelscriptFVectorMixin::Size2D(vec, normal)` / `FRotator::GetForwardVector(rot)` 等 namespace 静态调用形式，启用 ScriptMixin 后类级注入路径会**剥除第一参数并改写为成员方法形式**，原 namespace 静态形式编译失败。Hazelight 上游不存在此问题（其测试一律用 `vec.Size2D(normal)` 实例方法形式），但 fork 重启需配套迁移测试 + 用户脚本。**P4.3 实测**：试启 8 处 Math 锚点 → 3 个 Math 测试编译失败 → 全部回退保留禁用作为"AS 脚本现代化迁移"专项任务的 TODO 锚点。
 
-判断启发式：grep `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/` 下哪些 `Bind_*.cpp` `#include` 了对应 `FunctionLibraries/*.h`，命中即类 1 嫌疑大。完整审计矩阵由 `Plan_FunctionLibrariesCleanup.md` Phase 4 的 P4.1 任务承接。
+判断启发式：grep `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/` 下哪些 `Bind_*.cpp` `#include` 了对应 `FunctionLibraries/*.h`，命中即类 1 / 类 1.5；不命中且仓内有 `<Lib名>::<Func>(target, ...)` 静态调用形式 → 类 3 namespace-regression（重启需配套脚本迁移）；都不命中 → 类 3 净增益（重启即对齐 Hazelight）。完整审计矩阵见 `Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md`。
 
-后续推进由独立计划 `Documents/Plans/Plan_FunctionLibrariesCleanup.md` 承接：盘点 meta 损失矩阵、决策 ActorLibrary 处置（删除 / 反射接入 / 手工迁移）、批量恢复 active 行功能 meta、按文件分类评估 ScriptMixin 重启可行性（类 3 优先、类 2 谨慎、类 1 单独决策）。本文不在此展开行动建议，仅作客观现状记录。
+P4.x 实施进度（2026-04-28）：**16 处锚点中 8 处已重启 / 8 处保留禁用**。重启项：HitResult（P4.2 试点）+ World（P4.4 类 1 迁移）+ Tag/TagContainer/AssetMgr/Input × 3（P4.3 批量）= 8 处。保留禁用项：MathLibrary 8 处（namespace-regression）。后续推进由独立计划 `Documents/Plans/Plan_FunctionLibrariesCleanup.md` 承接。
 
 ---
 
