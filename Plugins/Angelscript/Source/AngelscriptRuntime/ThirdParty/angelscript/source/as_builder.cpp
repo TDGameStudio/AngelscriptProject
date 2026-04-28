@@ -1481,6 +1481,10 @@ int asCBuilder::ParseFunctionDeclaration(asCObjectType *objType, const char *dec
 			func->traits.SetTrait(asTRAIT_GENERATED_FUNCTION, true);
 		else if (source.TokenEquals(n->tokenPos, n->tokenLength, DEPRECATED_TOKEN))
 			func->traits.SetTrait(asTRAIT_DEPRECATED, true);
+		else if (source.TokenEquals(n->tokenPos, n->tokenLength, DEFAULTS_TOKEN))
+			func->traits.SetTrait(asTRAIT_DEFAULTS_ONLY, true);
+		else if (source.TokenEquals(n->tokenPos, n->tokenLength, UNSAFE_DURING_CONSTRUCTION_TOKEN))
+			func->traits.SetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION, true);
 		else
 			return asINVALID_DECLARATION;
 
@@ -4180,9 +4184,12 @@ void asCBuilder::AddDefaultConstructor(asCObjectType *objType, asCScriptCode *fi
 		factoryDesc.funcId = funcId;
 		factories.PushLast(factoryDesc);
 
+		scriptFunction->traits.SetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION, true);
+
 		//asCCompiler compiler(engine);
 		//compiler.CompileFactory(this, file, engine->scriptFunctions[funcId]);
 		engine->scriptFunctions[funcId]->AddRefInternal();
+		engine->scriptFunctions[funcId]->traits.SetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION, true);
 	}
 
 	// If the object is shared, then the factory must also be marked as shared
@@ -4685,6 +4692,10 @@ void asCBuilder::GetParsedFunctionDetails(asCScriptNode *node, asCScriptCode *fi
 				funcTraits.SetTrait(asTRAIT_GENERATED_FUNCTION, true);
 			else if( decorator->tokenType == ttIdentifier && file->TokenEquals(decorator->tokenPos, decorator->tokenLength, DEPRECATED_TOKEN) )
 				funcTraits.SetTrait(asTRAIT_DEPRECATED, true);
+			else if( decorator->tokenType == ttIdentifier && file->TokenEquals(decorator->tokenPos, decorator->tokenLength, DEFAULTS_TOKEN) )
+				funcTraits.SetTrait(asTRAIT_DEFAULTS_ONLY, true);
+			else if( decorator->tokenType == ttIdentifier && file->TokenEquals(decorator->tokenPos, decorator->tokenLength, UNSAFE_DURING_CONSTRUCTION_TOKEN) )
+				funcTraits.SetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION, true);
 
 			decorator = decorator->next;
 		}

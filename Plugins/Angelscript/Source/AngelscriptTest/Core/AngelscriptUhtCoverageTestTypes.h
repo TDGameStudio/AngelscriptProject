@@ -36,4 +36,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", CallableWithoutWorldContext))
 	static int32 CallableWithoutWorldContext(UObject* WorldContextObject, int32 Value);
+
+	UFUNCTION(BlueprintCallable, meta = (ScriptMethod, ScriptAllowTemporaryThis))
+	static int32 GetTemporaryThisValue(const UObject* Target);
+
+	UFUNCTION(BlueprintCallable, meta = (UnsafeDuringActorConstruction))
+	static int32 UnsafeDuringConstruction(UObject* Target);
+
+	UFUNCTION(BlueprintCallable, meta = (UnsafeDuringActorConstruction = "false"))
+	static int32 SafeDuringConstruction(UObject* Target);
 };

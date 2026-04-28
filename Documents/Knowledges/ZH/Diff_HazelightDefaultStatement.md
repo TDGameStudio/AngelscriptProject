@@ -48,12 +48,12 @@
 
 ---
 
-### 差异 ② — `AngelscriptPropertyFlags` 扩展位（**当前项目缺失**）
+### 差异 ② — `AngelscriptPropertyFlags` 扩展位（**当前项目采用插件化替代**）
 
 | 标志 | Hazelight | 当前项目 |
 |------|-----------|---------|
-| `APF_RuntimeGenerated` | ✅ `AddFunctionArgument` 中 `NewProperty->AngelscriptPropertyFlags \|= APF_RuntimeGenerated` | ❌ 该行被注释 |
-| `APF_WorldContext` | ✅ `AddFunctionArgument` 中给 WorldContext 隐式参数打 `APF_WorldContext` | ❌ 完全缺失 |
+| `APF_RuntimeGenerated` | ✅ `AddFunctionArgument` 中 `NewProperty->AngelscriptPropertyFlags \|= APF_RuntimeGenerated` | ✅ 通过 `IsAngelscriptGenerated(const FProperty*)` 查询替代 |
+| `APF_WorldContext` | ✅ `AddFunctionArgument` 中给 WorldContext 隐式参数打 `APF_WorldContext` | ✅ 通过 `IsAngelscriptWorldContextProperty(const FProperty*)` 查询替代 |
 | `AngelscriptPropertyFlags` 字段本身 | ✅ Hazelight 在 UE 引擎 `FProperty` 中加入新字段 | ❌ 当前项目无法修改引擎核心 |
 
 **根因**：Hazelight 是**引擎集成**方案，可以直接给 `FProperty` 加字段；当前项目目标是**独立插件**，无法修改 `Engine/Source/Runtime/CoreUObject/Public/UObject/UnrealType.h`。这是**架构性差异**，无法平移补足，只能用其他机制（如外挂 TMap、UProperty meta）替代。
@@ -66,14 +66,14 @@
 
 ---
 
-### 差异 ③ — AS 内核两个 default 安全 trait（**当前项目缺失**）
+### 差异 ③ — AS 内核两个 default 安全 trait（**已补足**）
 
 Hazelight 在 `as_tokendef.h` 中定义、在 `as_parser.cpp` / `as_builder.cpp` / `as_compiler.cpp` 中使用的两个修饰符：
 
 | Trait | Token | 用途 | 当前项目 |
 |-------|-------|------|---------|
-| `asTRAIT_UNSAFE_DURING_CONSTRUCTION` | `unsafe_during_construction` | 标记函数在 `__InitDefaults` / 构造函数中调用是不安全的，AS 编译器会在调用点报 `Function ... is unsafe during construction and cannot be called from defaults` | ❌ 完全缺失 |
-| `asTRAIT_DEFAULTS_ONLY` | `defaults` | 标记函数**只能**在 `default` 语句中调用 | ❌ 完全缺失 |
+| `asTRAIT_UNSAFE_DURING_CONSTRUCTION` | `unsafe_during_construction` | 标记函数在 `__InitDefaults` / 构造函数中调用是不安全的，AS 编译器会在调用点报 `Function ... is unsafe during construction and cannot be called from defaults` | ✅ 已补足 |
+| `asTRAIT_DEFAULTS_ONLY` | `defaults` | 标记函数**只能**在 `default` 语句 / default-access 上下文中调用 | ✅ 已补足 |
 
 源码对照（`as_compiler.cpp`）：
 
@@ -94,7 +94,7 @@ if ((m_isInitDefaults || ((m_isConstructor || m_isDefaultConstructor)
 - 用户在 `default` 语句或构造函数中调用了不安全的 API（如某些访问 World 的函数）时，**Hazelight 会编译期报错**，当前项目**只会运行时崩溃或行为未定义**
 - 用户无法用 `defaults` 修饰符显式标注"此函数只在 default 上下文使用"
 
-**结论**：**建议补足，中等优先级**。这两个 trait 是 AS 内核纯逻辑修改，不依赖 UE 引擎，可以直接 backport。详见 `Plan_DefaultStatementHazelightParity.md` 阶段 P1。
+**结论**：已按 Hazelight 语义补足。注意当前 fork 已将 `0x1000000` 用于 `asTRAIT_EXPLICIT`，因此 `asTRAIT_UNSAFE_DURING_CONSTRUCTION` 使用新的空闲 bit，未直接复用 Hazelight 位值。
 
 ---
 
@@ -148,15 +148,15 @@ if (!Function->HasMetaData(NAME_OptionalWorldContext)
 | 编号 | 差异主题 | 处理决策 | 备注 |
 |------|---------|---------|------|
 | ① | `__WorldContext` 变量 vs 函数 | 不追平 | 当前项目设计更优 |
-| ② | `AngelscriptPropertyFlags` 扩展位 | 走替代方案 | 架构性差异，独立插件无法平移 |
-| ③ | `unsafe_during_construction` + `defaults` 两个 AS 内核 trait | **建议补足** | 见 `Plan_DefaultStatementHazelightParity.md` |
+| ② | `AngelscriptPropertyFlags` 扩展位 | 已走插件化替代方案 | 通过 `UASFunction` / `UASClass` 查询 API 替代引擎字段 |
+| ③ | `unsafe_during_construction` + `defaults` 两个 AS 内核 trait | **已补足** | 见 `Plan_DefaultStatementHazelightParity.md` |
 | ④ | `CallableWithoutWorldContext` meta | 当前项目独有 | UE 5.7 适配正向扩展 |
 | ⑤ | `FAngelscriptManager` vs `FAngelscriptEngine` 拆分 | 不追平 | 当前项目设计更聚合 |
 
 **总体判断**：核心 default 语义路径（预处理器分块 → AS 内核生成 `__InitDefaults` → 继承链倒序执行）与 Hazelight **完全一致**。差异集中在三类：
 1. **架构性差异**（②⑤）：受"独立插件不能改引擎"的约束，不可直接平移
 2. **设计改进差异**（①④）：当前项目主动改进，不打算回滚
-3. **能力缺失差异**（③）：建议通过 backport 补足
+3. **能力缺失差异**（③）：已通过 Hazelight 语义 backport 补足
 
 ---
 

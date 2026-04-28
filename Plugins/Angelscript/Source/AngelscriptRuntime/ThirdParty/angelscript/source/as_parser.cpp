@@ -3225,6 +3225,8 @@ bool asCParser::IsFuncDecl(bool isMethod)
 						&& !IdentifierIs(t1, ALLOW_DISCARD_TOKEN)
 						&& !IdentifierIs(t1, GENERATED_FUNCTION_TOKEN)
 						&& !IdentifierIs(t1, DEPRECATED_TOKEN)
+						&& !IdentifierIs(t1, DEFAULTS_TOKEN)
+						&& !IdentifierIs(t1, UNSAFE_DURING_CONSTRUCTION_TOKEN)
 					)
 					{
 						RewindTo(&t1);
@@ -5124,6 +5126,8 @@ void asCParser::ParseMethodAttributes(asCScriptNode* funcNode)
 			|| IdentifierIs(t1, ALLOW_DISCARD_TOKEN)
 			|| IdentifierIs(t1, GENERATED_FUNCTION_TOKEN)
 			|| IdentifierIs(t1, DEPRECATED_TOKEN)
+			|| IdentifierIs(t1, DEFAULTS_TOKEN)
+			|| IdentifierIs(t1, UNSAFE_DURING_CONSTRUCTION_TOKEN)
 		)
 		{
 			funcNode->AddChildLast(ParseIdentifier());

@@ -243,6 +243,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptScriptAllowTemporaryThisMetadataTest,
+	"Angelscript.TestModule.Engine.BindConfig.ScriptAllowTemporaryThisAppendsAcceptTemporaryThis",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptUnsafeDuringActorConstructionMetadataTest,
+	"Angelscript.TestModule.Engine.BindConfig.UnsafeDuringActorConstructionSetsUnsafeTrait",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOverloadResolutionCoverageTest,
 	"Angelscript.TestModule.Engine.BindConfig.OverloadedExportedFunctionsCanRecoverDirectBind",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -703,6 +713,102 @@ bool FAngelscriptCallableWithoutWorldContextMetadataTest::RunTest(const FString&
 	TestEqual(TEXT("CallableWithoutWorldContextKeepsHiddenWorldContextButClearsTrait should hide the world-context argument for callable-without-world-context functions"), OptionalScriptFunction->hiddenArgumentIndex, 0);
 	TestTrue(TEXT("CallableWithoutWorldContextKeepsHiddenWorldContextButClearsTrait should mark required world-context functions with the world-context trait"), RequiredScriptFunction->traits.GetTrait(asTRAIT_USES_WORLDCONTEXT));
 	return TestFalse(TEXT("CallableWithoutWorldContextKeepsHiddenWorldContextButClearsTrait should not mark callable-without-world-context functions with the world-context trait"), OptionalScriptFunction->traits.GetTrait(asTRAIT_USES_WORLDCONTEXT));
+}
+
+bool FAngelscriptScriptAllowTemporaryThisMetadataTest::RunTest(const FString& Parameters)
+{
+	AngelscriptTestSupport::DestroySharedTestEngine();
+	if (FAngelscriptEngine::IsInitialized())
+	{
+		FAngelscriptBindConfigTestAccess::DestroyGlobalEngine();
+	}
+
+	FAngelscriptBinds::ResetBindState();
+	ON_SCOPE_EXIT
+	{
+		FAngelscriptBinds::ResetBindState();
+		AngelscriptTestSupport::DestroySharedTestEngine();
+		if (FAngelscriptEngine::IsInitialized())
+		{
+			FAngelscriptBindConfigTestAccess::DestroyGlobalEngine();
+		}
+	};
+
+	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+	TUniquePtr<FAngelscriptEngine> Engine = FAngelscriptEngine::CreateTestingFullEngine(FAngelscriptEngineConfig(), Dependencies);
+	if (!TestTrue(TEXT("ScriptAllowTemporaryThisAppendsAcceptTemporaryThis should create a testing engine"), Engine.IsValid()))
+	{
+		return false;
+	}
+	FAngelscriptEngineScope EngineScope(*Engine);
+
+	TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(UObject::StaticClass());
+	UFunction* TemporaryThisFunction = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("GetTemporaryThisValue"));
+	if (!TestTrue(TEXT("ScriptAllowTemporaryThisAppendsAcceptTemporaryThis should resolve the host type"), HostType.IsValid())
+		|| !TestNotNull(TEXT("ScriptAllowTemporaryThisAppendsAcceptTemporaryThis should find the test function"), TemporaryThisFunction))
+	{
+		return false;
+	}
+
+	FAngelscriptFunctionSignature Signature(HostType.ToSharedRef(), TemporaryThisFunction);
+	TestTrue(TEXT("ScriptAllowTemporaryThisAppendsAcceptTemporaryThis should bind ScriptMethod functions as members"), !Signature.bStaticInScript);
+	return TestTrue(TEXT("ScriptAllowTemporaryThisAppendsAcceptTemporaryThis should append accept_temporary_this to the declaration"), Signature.Declaration.Contains(TEXT(" accept_temporary_this")));
+}
+
+bool FAngelscriptUnsafeDuringActorConstructionMetadataTest::RunTest(const FString& Parameters)
+{
+	AngelscriptTestSupport::DestroySharedTestEngine();
+	if (FAngelscriptEngine::IsInitialized())
+	{
+		FAngelscriptBindConfigTestAccess::DestroyGlobalEngine();
+	}
+
+	FAngelscriptBinds::ResetBindState();
+	ON_SCOPE_EXIT
+	{
+		FAngelscriptBinds::ResetBindState();
+		AngelscriptTestSupport::DestroySharedTestEngine();
+		if (FAngelscriptEngine::IsInitialized())
+		{
+			FAngelscriptBindConfigTestAccess::DestroyGlobalEngine();
+		}
+	};
+
+	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+	TUniquePtr<FAngelscriptEngine> Engine = FAngelscriptEngine::CreateTestingFullEngine(FAngelscriptEngineConfig(), Dependencies);
+	if (!TestTrue(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should create a testing engine"), Engine.IsValid()))
+	{
+		return false;
+	}
+	FAngelscriptEngineScope EngineScope(*Engine);
+
+	TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(UObject::StaticClass());
+	UFunction* UnsafeFunction = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("UnsafeDuringConstruction"));
+	UFunction* SafeFunction = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("SafeDuringConstruction"));
+	if (!TestTrue(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should resolve the host type"), HostType.IsValid())
+		|| !TestNotNull(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should find the unsafe test function"), UnsafeFunction)
+		|| !TestNotNull(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should find the safe test function"), SafeFunction))
+	{
+		return false;
+	}
+
+	FAngelscriptFunctionSignature UnsafeSignature(HostType.ToSharedRef(), UnsafeFunction);
+	FAngelscriptFunctionSignature SafeSignature(HostType.ToSharedRef(), SafeFunction);
+	const int UnsafeFunctionId = FAngelscriptBinds::BindGlobalGenericFunction(UnsafeSignature.Declaration, &NoOpGeneric);
+	const int SafeFunctionId = FAngelscriptBinds::BindGlobalGenericFunction(SafeSignature.Declaration, &NoOpGeneric);
+	UnsafeSignature.ModifyScriptFunction(UnsafeFunctionId);
+	SafeSignature.ModifyScriptFunction(SafeFunctionId);
+
+	auto* UnsafeScriptFunction = reinterpret_cast<asCScriptFunction*>(FAngelscriptEngine::Get().GetScriptEngine()->GetFunctionById(UnsafeFunctionId));
+	auto* SafeScriptFunction = reinterpret_cast<asCScriptFunction*>(FAngelscriptEngine::Get().GetScriptEngine()->GetFunctionById(SafeFunctionId));
+	if (!TestNotNull(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should create the unsafe script function"), UnsafeScriptFunction)
+		|| !TestNotNull(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should create the safe script function"), SafeScriptFunction))
+	{
+		return false;
+	}
+
+	TestTrue(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should mark meta-present functions as unsafe during construction"), UnsafeScriptFunction->traits.GetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION));
+	return TestFalse(TEXT("UnsafeDuringActorConstructionSetsUnsafeTrait should not mark explicit false meta functions as unsafe during construction"), SafeScriptFunction->traits.GetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION));
 }
 
 bool FAngelscriptOverloadResolutionCoverageTest::RunTest(const FString& Parameters)

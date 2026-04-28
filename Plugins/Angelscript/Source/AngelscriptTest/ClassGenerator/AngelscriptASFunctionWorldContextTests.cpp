@@ -2,6 +2,7 @@
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
+#include "Core/AngelscriptUhtCoverageTestTypes.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/UnrealType.h"
@@ -90,9 +91,13 @@ int CheckWorldContext(AActor WorldContextObject, int Value)
 	UFunction* GeneratedFunction = FindGeneratedFunction(ScriptClass, TEXT("CheckWorldContext"));
 	UASFunction* ScriptFunction = Cast<UASFunction>(GeneratedFunction);
 	FObjectProperty* WorldContextProperty = FindFProperty<FObjectProperty>(GeneratedFunction, TEXT("WorldContextObject"));
+	FIntProperty* ValueProperty = FindFProperty<FIntProperty>(GeneratedFunction, TEXT("Value"));
+	FIntProperty* ReturnProperty = FindFProperty<FIntProperty>(GeneratedFunction, TEXT("ReturnValue"));
 	if (!TestNotNull(TEXT("World-context function test should expose the generated static function"), GeneratedFunction)
 		|| !TestNotNull(TEXT("World-context function test should generate a UASFunction"), ScriptFunction)
-		|| !TestNotNull(TEXT("World-context function test should expose the WorldContextObject property"), WorldContextProperty))
+		|| !TestNotNull(TEXT("World-context function test should expose the WorldContextObject property"), WorldContextProperty)
+		|| !TestNotNull(TEXT("World-context function test should expose the Value property"), ValueProperty)
+		|| !TestNotNull(TEXT("World-context function test should expose the ReturnValue property"), ReturnProperty))
 	{
 		return false;
 	}
@@ -108,6 +113,22 @@ int CheckWorldContext(AActor WorldContextObject, int Value)
 	{
 		return false;
 	}
+	TestTrue(TEXT("Generated function parameters should be reported as Angelscript-generated properties"), IsAngelscriptGenerated(WorldContextProperty));
+	TestTrue(TEXT("Generated function ordinary parameters should be reported as Angelscript-generated properties"), IsAngelscriptGenerated(ValueProperty));
+	TestTrue(TEXT("Generated function return parameters should be reported as Angelscript-generated properties"), IsAngelscriptGenerated(ReturnProperty));
+	TestTrue(TEXT("WorldContextObject parameter should be reported as an Angelscript world-context property"), IsAngelscriptWorldContextProperty(WorldContextProperty));
+	TestFalse(TEXT("Ordinary generated parameters should not be reported as world-context properties"), IsAngelscriptWorldContextProperty(ValueProperty));
+	TestFalse(TEXT("Generated return parameters should not be reported as world-context properties"), IsAngelscriptWorldContextProperty(ReturnProperty));
+
+	UFunction* NativeFunction = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("RequiresWorldContext"));
+	FIntProperty* NativeValueProperty = NativeFunction != nullptr ? FindFProperty<FIntProperty>(NativeFunction, TEXT("Value")) : nullptr;
+	if (!TestNotNull(TEXT("World-context function test should find a native comparison function"), NativeFunction)
+		|| !TestNotNull(TEXT("World-context function test should find a native comparison property"), NativeValueProperty))
+	{
+		return false;
+	}
+	TestFalse(TEXT("Native UFunction parameters should not be reported as Angelscript-generated properties"), IsAngelscriptGenerated(NativeValueProperty));
+	TestFalse(TEXT("Native UFunction parameters should not be reported as Angelscript world-context properties"), IsAngelscriptWorldContextProperty(NativeValueProperty));
 
 	FCheckWorldContextParams Params;
 	Params.WorldContextObject = &ContextActor;

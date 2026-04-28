@@ -1006,6 +1006,7 @@ int asCCompiler::CompileFunction(asCBuilder *in_builder, asCScriptCode *in_scrip
 			|| in_outFunc->name == "OnActorModifiedInEditor_Implementation"
 			|| in_outFunc->name == "OnComponentModifiedInEditor_Implementation"
 			|| (WITH_EDITOR && !FAngelscriptEngine::IsSimulatingCookedForCurrentContext() && in_outFunc->name.StartsWith("Editor_"))
+			|| in_outFunc->traits.GetTrait(asTRAIT_DEFAULTS_ONLY)
 	;
 
 
@@ -3076,12 +3077,15 @@ asUINT asCCompiler::MatchFunctions(asCArray<int> &funcs, asCArray<asCExprContext
 	{
 		// Some setter functions are only valid durint the InitDefault phase
 		asCScriptFunction *func = builder->GetFunctionDescription(funcs[0]);
-		if (!allowEditPropertyAccess && func->IsSetterAndOnlyValidDuringInitDefaults())
+		if (!allowEditPropertyAccess && (func->IsSetterAndOnlyValidDuringInitDefaults() || func->traits.GetTrait(asTRAIT_DEFAULTS_ONLY)))
 		{
 			if (!silent)
 			{
 				asCString str;
-				str.Format(TXT_METHOD_s_NOT_ACCESSABLE, func->GetDeclaration(true, false, false, true));
+				if (func->traits.GetTrait(asTRAIT_DEFAULTS_ONLY))
+					str.Format(TXT_FUNCTION_s_DEFAULTS_ONLY, func->GetDeclaration(true, false, false, true));
+				else
+					str.Format(TXT_METHOD_s_NOT_ACCESSABLE, func->GetDeclaration(true, false, false, true));
 				Error(str, node);
 			}
 
@@ -18135,6 +18139,14 @@ void asCCompiler::PerformFunctionCall(int funcId, asCExprContext *ctx, bool isCo
 		asCString msg;
 		msg.Format("%s uses the current World Context and should not be called in a constructor or default statement.", descr->GetName());
 		Warning(msg, ctx->exprNode);
+	}
+
+	if ((m_isInitDefaults || (m_isConstructor && outFunc->objectType != nullptr && (outFunc->objectType->GetFlags() & asOBJ_REF) != 0))
+		&& descr->traits.GetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION))
+	{
+		asCString msg;
+		msg.Format("Function %s is unsafe during construction and cannot be called from defaults", descr->name.AddressOf());
+		Error(msg, ctx->exprNode);
 	}
 
 	if (descr->accessSpecifier != nullptr && descr->objectType != outFunc->GetObjectType() && descr->objectType != nullptr)

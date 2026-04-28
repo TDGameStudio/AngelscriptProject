@@ -138,6 +138,8 @@ enum asEFuncTrait
 	asTRAIT_EDITOR_ONLY = 0x800000,
 	//[UE++]: Reintroduce the frozen explicit-trait bit needed by the restore prerequisite surface.
 	asTRAIT_EXPLICIT = 0x1000000,
+	asTRAIT_UNSAFE_DURING_CONSTRUCTION = 0x2000000,
+	asTRAIT_DEFAULTS_ONLY = 0x4000000,
 	//[UE--]
 };
 

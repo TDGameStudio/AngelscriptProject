@@ -165,6 +165,7 @@
 #define TXT_METHOD_s_OVERRIDE_CHANGES_PROPERTY      "Method '%s' marked as override but does not match the 'property' specifier with the base class"
 #define TXT_METHOD_s_s_HAS_NO_RETURN_TYPE           "Method '%s::%s' is missing the return type, nor is it the same name as object to be a constructor"
 #define TXT_METHOD_s_NOT_ACCESSABLE                 "Accessor function '%s' is bound for a property that is Editable but not Blueprint accessible. Function can only be used inside default statements."
+#define TXT_FUNCTION_s_DEFAULTS_ONLY                "Function '%s' is only accessible from default statements."
 #define TXT_MISSING_IMPLEMENTATION_OF_s             "Missing implementation of '%s'"
 #define TXT_MISSING_DEFINITION_OF_s                 "Missing definition of '%s'"
 #define TXT_MIXIN_CANNOT_BE_DECLARED_AS_s           "Mixin class cannot be declared as '%s'"

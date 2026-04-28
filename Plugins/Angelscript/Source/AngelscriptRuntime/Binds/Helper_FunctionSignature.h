@@ -32,6 +32,8 @@ static const FName NAME_CallableWithoutWorldContext("CallableWithoutWorldContext
 static const FName NAME_Signature_ScriptMethod("ScriptMethod");
 static const FName NAME_ScriptNoDiscard("ScriptNoDiscard");
 static const FName NAME_ScriptAllowDiscard("ScriptAllowDiscard");
+static const FName NAME_ScriptAllowTemporaryThis("ScriptAllowTemporaryThis");
+static const FName NAME_UnsafeDuringActorConstruction("UnsafeDuringActorConstruction");
 
 struct FAngelscriptFunctionSignature
 {
@@ -417,6 +419,9 @@ struct FAngelscriptFunctionSignature
 			else if (HasFuncMeta(NAME_ScriptAllowDiscard))
 				Declaration += TEXT(" allow_discard");
 		}
+
+		if (HasFuncMeta(NAME_ScriptAllowTemporaryThis))
+			Declaration += TEXT(" accept_temporary_this");
 	}
 #endif
 
@@ -542,6 +547,12 @@ struct FAngelscriptFunctionSignature
 				if (IsFunctionEditorOnly())
 				{
 					ScriptFunction->traits.SetTrait(asTRAIT_EDITOR_ONLY, true);
+				}
+
+				const FString* UnsafeDuringConstructionMeta = Function->FindMetaData(NAME_UnsafeDuringActorConstruction);
+				if (UnsafeDuringConstructionMeta != nullptr && *UnsafeDuringConstructionMeta != TEXT("false"))
+				{
+					ScriptFunction->traits.SetTrait(asTRAIT_UNSAFE_DURING_CONSTRUCTION, true);
 				}
 #endif
 			}

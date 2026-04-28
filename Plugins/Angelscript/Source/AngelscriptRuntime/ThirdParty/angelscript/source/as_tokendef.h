@@ -342,6 +342,8 @@ const char * const NO_DISCARD_TOKEN     = "no_discard";
 const char * const ALLOW_DISCARD_TOKEN     = "allow_discard";
 const char * const GENERATED_FUNCTION_TOKEN     = "__generated";
 const char * const DEPRECATED_TOKEN     = "deprecated";
+const char * const UNSAFE_DURING_CONSTRUCTION_TOKEN     = "unsafe_during_construction";
+const char * const DEFAULTS_TOKEN     = "defaults";
 
 END_AS_NAMESPACE
 

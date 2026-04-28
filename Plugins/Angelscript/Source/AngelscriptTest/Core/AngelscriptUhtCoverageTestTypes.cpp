@@ -25,3 +25,19 @@ int32 UAngelscriptUhtCoverageTestLibrary::CallableWithoutWorldContext(UObject* W
 {
 	return WorldContextObject != nullptr ? Value : INDEX_NONE;
 }
+
+int32 UAngelscriptUhtCoverageTestLibrary::GetTemporaryThisValue(const UObject* Target)
+{
+	const UAngelscriptUhtCoverageTestObject* TypedTarget = Cast<UAngelscriptUhtCoverageTestObject>(Target);
+	return TypedTarget != nullptr ? TypedTarget->StoredValue : INDEX_NONE;
+}
+
+int32 UAngelscriptUhtCoverageTestLibrary::UnsafeDuringConstruction(UObject* Target)
+{
+	return Target != nullptr ? 1 : INDEX_NONE;
+}
+
+int32 UAngelscriptUhtCoverageTestLibrary::SafeDuringConstruction(UObject* Target)
+{
+	return Target != nullptr ? 1 : INDEX_NONE;
+}

@@ -216,6 +216,64 @@ inline bool IsAngelscriptGenerated(const UFunction* Function)
 	return Cast<const UASFunction>(Function) != nullptr;
 }
 
+inline bool IsAngelscriptGenerated(const FProperty* Property)
+{
+	if (Property == nullptr)
+	{
+		return false;
+	}
+
+	const UObject* Owner = Property->GetOwner<UObject>();
+	if (Cast<const UASClass>(Owner) != nullptr)
+	{
+		return true;
+	}
+
+	const UASFunction* Function = Cast<const UASFunction>(Owner);
+	if (Function == nullptr)
+	{
+		return false;
+	}
+
+	if (Function->ReturnArgument.Property == Property)
+	{
+		return true;
+	}
+
+	for (const UASFunction::FArgument& Argument : Function->Arguments)
+	{
+		if (Argument.Property == Property)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+inline bool IsAngelscriptWorldContextProperty(const FProperty* Property)
+{
+	if (Property == nullptr)
+	{
+		return false;
+	}
+
+	const UASFunction* Function = Cast<const UASFunction>(Property->GetOwner<UObject>());
+	if (Function == nullptr || Function->WorldContextIndex < 0 || !Function->Arguments.IsValidIndex(Function->WorldContextIndex))
+	{
+		return false;
+	}
+
+	const UASFunction::FArgument& WorldContextArgument = Function->Arguments[Function->WorldContextIndex];
+	if (WorldContextArgument.Property == Property)
+	{
+		return true;
+	}
+
+	return Function->WorldContextOffsetInParms >= 0
+		&& Property->GetOffset_ForUFunction() == Function->WorldContextOffsetInParms;
+}
+
 UCLASS()
 class ANGELSCRIPTRUNTIME_API UASFunction_NotThreadSafe : public UASFunction
 {

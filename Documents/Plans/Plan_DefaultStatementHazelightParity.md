@@ -6,8 +6,8 @@
 
 1. **架构性差异**（`AngelscriptPropertyFlags` 字段、`FAngelscriptManager`/`FAngelscriptEngine` 拆分）：受"独立插件不能改 UE 引擎核心"约束，无法直接平移
 2. **设计改进差异**（`__WorldContext` 函数化、`CallableWithoutWorldContext` 新 meta）：当前项目主动改进，不回滚
-3. **AS 编译期安全能力缺失**（AS 内核 `unsafe_during_construction` + `defaults` 两个 trait、`APF_RuntimeGenerated` / `APF_WorldContext` 缺失）：需要补足
-4. **UE Meta → AS 修饰符桥接缺失**（`ScriptAllowTemporaryThis` UE Meta → `accept_temporary_this` AS 修饰符的自动追加逻辑缺失，AS Token 已存在）：需要补足
+3. **AS 编译期安全能力缺失**（AS 内核 `unsafe_during_construction` + `defaults` 两个 trait、`APF_RuntimeGenerated` / `APF_WorldContext` 缺失）：已补足 / 已走插件化替代
+4. **UE Meta → AS 修饰符桥接缺失**（`ScriptAllowTemporaryThis` UE Meta → `accept_temporary_this` AS 修饰符的自动追加逻辑缺失，AS Token 已存在）：已补足
 
 **目标**：
 1. 评估并补足 AS 内核的两个 default 安全 trait（`unsafe_during_construction` / `defaults`），让 `default` 语句与构造函数中的危险 API 调用能在编译期被拦截
@@ -66,7 +66,7 @@
     - `const char * const UNSAFE_DURING_CONSTRUCTION_TOKEN = "unsafe_during_construction";`
     - `const char * const DEFAULTS_TOKEN = "defaults";`
   - 在 `as_scriptfunction.h` 中添加：
-    - `asTRAIT_UNSAFE_DURING_CONSTRUCTION = 0x1000000`
+    - `asTRAIT_UNSAFE_DURING_CONSTRUCTION = 0x2000000`
     - `asTRAIT_DEFAULTS_ONLY = 0x4000000`
   - 注意检查现有 trait bit 是否已占用 `0x1000000` / `0x4000000`，避免冲突
 - [ ] **P1.1** 📦 Git 提交：`[ThirdParty/angelscript] Feat: define unsafe_during_construction and defaults tokens/traits`
@@ -216,7 +216,7 @@
 ### 风险
 
 - **AS 内核 backport 引入回归**：修改 `as_compiler.cpp` 调用编译路径有破坏现有脚本的风险——必须有完整 P1.6 测试覆盖才允许提交
-- **trait bit 冲突**：`asTRAIT_UNSAFE_DURING_CONSTRUCTION = 0x1000000` 等位可能与现有自定义 trait 冲突——P1.1 必须先扫描 `as_scriptfunction.h` 确认
+- **trait bit 冲突**：Hazelight 的 `asTRAIT_UNSAFE_DURING_CONSTRUCTION = 0x1000000` 与当前 fork 的 `asTRAIT_EXPLICIT` 冲突；当前实现改用空闲 bit `0x2000000`，`asTRAIT_DEFAULTS_ONLY` 使用 `0x4000000`
 - **替代方案性能回退**：方案 A（UProperty meta）在热路径上可能引入 FName 哈希开销——P2.5 必须做性能验证
 - **Hazelight 引擎更新**：本计划基于当前快照（`HazelightAngelscriptEngineRoot` 指向版本），Hazelight 后续可能有新增差异——建议每季度重跑差异扫描
 
@@ -242,9 +242,9 @@
 
 > 本节用于阶段执行过程中累积关键决策，便于回溯。
 
-- [ ] P0.2 backport 路径选择：（待 P0.1 扫描完成后填写）
-- [ ] P1.5.2 `accept_temporary_this` 追加位置决策（在 `if (ReturnType.IsValid())` 块内还是块外）：（待实施时确认）
-- [ ] P2.3 `AngelscriptPropertyFlags` 替代方案选择：（待 P2.1/P2.2 完成后填写）
+- [x] P0.2 backport 路径选择：本地 `Reference/angelscript-v2.38.0` 缺失，按 Hazelight 私有扩展路径移植；实现前已对照 `K:\UnrealEngine\UEAS`。
+- [x] P1.5.2 `accept_temporary_this` 追加位置决策：放在 `if (ReturnType.IsValid())` 块外，因为它描述 this 调用能力，不依赖返回值。
+- [x] P2.3 `AngelscriptPropertyFlags` 替代方案选择：不改 UE Core，不建 sidecar TMap；新增 `IsAngelscriptGenerated(const FProperty*)` / `IsAngelscriptWorldContextProperty(const FProperty*)` 查询 API。
 
 ## 关联文档
 
