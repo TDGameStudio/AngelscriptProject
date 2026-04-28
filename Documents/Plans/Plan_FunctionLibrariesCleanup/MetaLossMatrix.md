@@ -8,16 +8,16 @@
 
 | 汇总维度 | 数值 | 落点 |
 |---|---:|---|
-| ① 真实 meta 损失总数（active 行缺失的功能性 meta） | **130** | P3.1 / P3.2 实施目标 |
+| ① 真实 meta 损失总数（active 行缺失的功能性 meta） | **130** → **119**（P2.2 + P3.1 后已恢复 11 处）| P3.2 / P3.3 剩余目标 |
 | ② 涉及损失的文件数 | **4**（其余 11 个文件死注释只是噪音）| Phase 3 实施范围 |
 | ③ 涉及损失的 meta 类型 | **4 类**：`ScriptTrivial / NotAngelscriptProperty / ScriptName 重载 / ScriptNoDiscard` | Phase 3 操作类型映射 |
 
-详细分布：
+详细分布（**P2.2 + P3.1 完成后剩余**）：
 
-- `ScriptTrivial`：**94 处**（Math 78 + Component 11 + Actor 5）
-- `ScriptNoDiscard`：**35 处**（全在 Math）
-- `ScriptName 重载`：**4 处**（全在 Actor，对应 Quat 重载）
-- `NotAngelscriptProperty`：**7 处**（Component 2 + Actor 2 + Script 3）
+- `ScriptTrivial`：**94 处**（Math 78 + Component 11 + Actor 5）—— P3.2 待补；其中 Actor 5 处已随 P2.2 整文件重写消化（保留的 SetActorQuat 已带 ScriptTrivial），剩 89 处
+- `ScriptNoDiscard`：**35 处**（全在 Math）—— 新增 P3.3 待补
+- `ScriptName 重载`：**~~4 处~~ 0 处** ✅ 全部由 P2.2 完成（ActorLibrary 6 个 FQuat 重载携带 ScriptName 别名）
+- `NotAngelscriptProperty`：**~~7 处~~ 0 处** ✅ Actor 4 处由 P2.2 完成、Component 2 + Script 3 由 P3.1 完成
 
 ## 1. 文件级 meta 损失统计
 

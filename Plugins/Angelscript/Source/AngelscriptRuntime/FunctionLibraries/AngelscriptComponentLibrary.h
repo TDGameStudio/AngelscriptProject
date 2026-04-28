@@ -41,7 +41,7 @@ public:
 		Component->SetRelativeRotation(NewRotation);
 	}
 
-	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation", NotAngelscriptProperty))
 	static void SetRelativeRotationQuat(USceneComponent* Component, const FQuat& NewRotation)
 	{
 		Component->SetRelativeRotation(NewRotation);
@@ -143,7 +143,7 @@ public:
 		Component->SetWorldRotation(NewRotation);
 	}
 
-	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetWorldRotation"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetWorldRotation", NotAngelscriptProperty))
 	static void SetWorldRotationQuat(USceneComponent* Component, const FQuat& NewRotation)
 	{
 		Component->SetWorldRotation(NewRotation);

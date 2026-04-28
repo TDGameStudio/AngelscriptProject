@@ -182,11 +182,15 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 
 ### Phase 3：active 行功能 meta 批量恢复
 
-- [ ] **P3.1** 恢复 `ScriptName` 重载 + `NotAngelscriptProperty`（Component / Actor）
+- [x] **P3.1** 恢复 `ScriptName` 重载 + `NotAngelscriptProperty`（Component / Script，Actor 已在 P2.2 合并处理）✅ 2026-04-28 完成
   - 影响文件：`AngelscriptComponentLibrary.h`（6 处 `*Quat` 重载）、`AngelscriptActorLibrary.h`（如 P2.2 选 B/C）
   - 例：`UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation"))` → `UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation", NotAngelscriptProperty))`
   - 验证：`SetRelativeRotation` 在 AS 脚本里既能 Quat 又能 Rotator 调用，且不被识别成 angelscript property（`as.DumpEngineState` 的 `BindFunctions.csv` 应有两条 Bind，且 `bIsProperty=false`）
-- [ ] **P3.1** 📦 Git 提交：`[FunctionLibraries] Fix: restore NotAngelscriptProperty on Component/Actor Quat overloads`
+  - **实施记录**：依 [`MetaLossMatrix.md`](./Plan_FunctionLibrariesCleanup/MetaLossMatrix.md) §1 实际数据修正：ComponentLibrary 实际只有 2 处 NotAngelscriptProperty 损失（原计划"6 处 *Quat 重载"是估算偏差，实际 6 处中 2 处缺 NotAngelscriptProperty、其余已携带），ActorLibrary 4+2 已在 P2.2 选项 B' 合并完成。本任务实际处理 5 处：
+    - `AngelscriptComponentLibrary.h` 2 处：`SetRelativeRotationQuat` / `SetWorldRotationQuat` 在 `Meta = (ScriptName = ...)` 上追加 `NotAngelscriptProperty`
+    - `AngelscriptScriptLibrary.h` 3 处：`GetNameOfGlobalVariableBeingInitialized` / `GetNamespaceOfGlobalVariableBeingInitialized` / `GetModuleNameOfGlobalVariableBeingInitialized` 由裸 `UFUNCTION(BlueprintCallable)` 升级为 `UFUNCTION(BlueprintCallable, Meta = (NotAngelscriptProperty))`
+  - **验证**：构建 0 错误（53s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS。零回归
+- [x] **P3.1** 📦 Git 提交：`[FunctionLibraries] Fix: restore NotAngelscriptProperty on Component Quat overloads and Script global init helpers`
 
 - [ ] **P3.2** 恢复 `ScriptTrivial`（MathLibrary 子类 + Component）
   - 影响文件：`AngelscriptMathLibrary.h`（FVector / FVector3f / FRotator / FQuat 等子类大量函数）、`AngelscriptComponentLibrary.h`（多数 Get/Set）
