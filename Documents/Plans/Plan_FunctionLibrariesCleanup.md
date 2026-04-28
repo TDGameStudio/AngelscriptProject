@@ -192,11 +192,17 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **验证**：构建 0 错误（53s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS。零回归
 - [x] **P3.1** 📦 Git 提交：`[FunctionLibraries] Fix: restore NotAngelscriptProperty on Component Quat overloads and Script global init helpers`
 
-- [ ] **P3.2** 恢复 `ScriptTrivial`（MathLibrary 子类 + Component）
+- [x] **P3.2** 恢复 `ScriptTrivial`（MathLibrary 子类 + Component）✅ 2026-04-28 完成
   - 影响文件：`AngelscriptMathLibrary.h`（FVector / FVector3f / FRotator / FQuat 等子类大量函数）、`AngelscriptComponentLibrary.h`（多数 Get/Set）
   - 用 P1.1 矩阵驱动批量恢复：active 行原本 `Meta = (ScriptName = "SinCos")` → `Meta = (ScriptTrivial, ScriptName = "SinCos")`
   - 验证：`Helper_FunctionSignature.h:317` 的 `bTrivial = HasFuncMeta(NAME_Signature_ScriptTrivial)` 应为 true，落到 `FAngelscriptMethodBind::bTrivial` 字段为 true
-- [ ] **P3.2** 📦 Git 提交：`[FunctionLibraries] Fix: restore ScriptTrivial on Math/Component active UFUNCTION lines`
+  - **实施记录与 P1.1 矩阵公式修正**：实施时发现 P1.1 原矩阵的 `dead_count - active_count` 公式有 false positive 问题——它统计的是 ScriptTrivial 字符串在死注释/active 行中**出现次数差**，而不是按函数配对的真正损失数。重做按函数配对后，**真损失大幅缩小**：
+    - `ScriptTrivial` 真损失 **4 处**（不是 94）：MathLibrary 2 处（`SinCos_32` / `SinCos_64`）+ ComponentLibrary 2 处（`IsAttachedTo_Actor` / `GetShapeCenter`）
+    - `ScriptNoDiscard` 真损失 **0 处**（不是 35）：所有死注释带 ScriptNoDiscard 的函数 active 行都已携带
+    - 86 处虚假"损失"实际是 active 行已经携带了对应 meta，只是与死注释 1:1 出现次数不等而已
+  - 4 处实际修复：MathLibrary `SinCos_32` / `SinCos_64`（`Meta = (ScriptName = "SinCos")` → `Meta = (ScriptTrivial, ScriptName = "SinCos")`）；ComponentLibrary `IsAttachedTo_Actor` (追加 `ScriptTrivial`)、`GetShapeCenter`（`Meta = (DeprecatedFunction, ...)` → 前置 `ScriptTrivial`）
+  - **验证**：构建 0 错误（102s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS。零回归
+- [x] **P3.2** 📦 Git 提交：`[FunctionLibraries] Fix: restore ScriptTrivial on Math/Component 4 active UFUNCTION lines + correct P1.1 matrix formula`
 
 ### Phase 4：ScriptMixin 类级 meta 重启可行性评估
 

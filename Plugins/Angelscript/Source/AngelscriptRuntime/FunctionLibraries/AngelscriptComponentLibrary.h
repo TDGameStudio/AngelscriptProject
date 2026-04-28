@@ -219,7 +219,7 @@ public:
 		return Component->IsAttachedTo(CheckComponent);
 	}
 
-	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "IsAttachedTo"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "IsAttachedTo", ScriptTrivial))
 	static bool IsAttachedTo_Actor(const USceneComponent* Component, const AActor* CheckActor)
 	{
 		const USceneComponent* CheckComp = Component;
@@ -239,7 +239,7 @@ public:
 		return Component->Bounds;
 	}
 
-	UFUNCTION(BlueprintCallable, Meta = (DeprecatedFunction, DeprecationMessage = "Get Bounds.Origin instead"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, DeprecatedFunction, DeprecationMessage = "Get Bounds.Origin instead"))
 	static FVector GetShapeCenter(const USceneComponent* Component)
 	{
 		return Component->Bounds.Origin;

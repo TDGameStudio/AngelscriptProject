@@ -23,13 +23,13 @@ class UAngelscriptMathLibrary : public UObject
 
 public:
 	
-	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SinCos"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "SinCos"))
 	static void SinCos_32(float& ScalarSin, float& ScalarCos, float Value)
 	{
 		FMath::SinCos(&ScalarSin, &ScalarCos, Value);
 	}
 
-	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SinCos"))
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "SinCos"))
 	static void SinCos_64(double& ScalarSin, double& ScalarCos, double Value)
 	{
 		FMath::SinCos(&ScalarSin, &ScalarCos, Value);

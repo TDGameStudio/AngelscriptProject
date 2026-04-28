@@ -3,21 +3,53 @@
 > 本矩阵是 `Plan_FunctionLibrariesCleanup.md` Phase 1 的 P1.1 产出，作为 P3.1 / P3.2 实施的精确输入。
 >
 > 数据采集时点：基线提交 `cc764db^`（清理前死注释完整状态）vs `HEAD`（清理后 + 当前 active 行）。15 个文件，270+ 行死注释。
+>
+> **2026-04-28 P3.2 实施时发现初版公式 bug**：原"`dead_count - active_count`"算法统计的是 meta 字符串在死注释/active 行中的**出现次数差**，不是按函数配对的真正损失数（dead 注释总数远大于 active 函数总数本身就是文件级噪声）。**重新按函数配对后真实损失大幅缩小**——具体见下方"实际真损失（按函数配对）"章节，原"§1 文件级 meta 损失统计"表格保留作历史叙事。
 
-## 三个汇总数
+## 实际真损失（按函数配对，2026-04-28 重测）
 
-| 汇总维度 | 数值 | 落点 |
-|---|---:|---|
-| ① 真实 meta 损失总数（active 行缺失的功能性 meta） | **130** → **119**（P2.2 + P3.1 后已恢复 11 处）| P3.2 / P3.3 剩余目标 |
-| ② 涉及损失的文件数 | **4**（其余 11 个文件死注释只是噪音）| Phase 3 实施范围 |
-| ③ 涉及损失的 meta 类型 | **4 类**：`ScriptTrivial / NotAngelscriptProperty / ScriptName 重载 / ScriptNoDiscard` | Phase 3 操作类型映射 |
+| meta 类型 | 原估算 | 真实损失 | 真实位置 | 处理状态 |
+|---|---:|---:|---|---|
+| `ScriptTrivial` | 94 | **4** | MathLibrary 2 (`SinCos_32` / `SinCos_64`) + ComponentLibrary 2 (`IsAttachedTo_Actor` / `GetShapeCenter`) | ✅ P3.2 完成 |
+| `ScriptNoDiscard` | 35 | **0** | 无（所有死注释带 ScriptNoDiscard 的函数 active 行都已携带）| ✅ 无需处理 |
+| `ScriptName 重载` | 4 | **4** | ActorLibrary 4 处（FQuat 重载别名）| ✅ P2.2 完成 |
+| `NotAngelscriptProperty` | 7 | **7** | ActorLibrary 4 + ComponentLibrary 2 + ScriptLibrary 3 | ✅ P2.2 + P3.1 完成 |
+| **合计** | **140** | **15** | 4 个文件 | **15/15 全部恢复** |
 
-详细分布（**P2.2 + P3.1 完成后剩余**）：
+公式修正算法（按函数配对的真损失检测）：
 
-- `ScriptTrivial`：**94 处**（Math 78 + Component 11 + Actor 5）—— P3.2 待补；其中 Actor 5 处已随 P2.2 整文件重写消化（保留的 SetActorQuat 已带 ScriptTrivial），剩 89 处
-- `ScriptNoDiscard`：**35 处**（全在 Math）—— 新增 P3.3 待补
-- `ScriptName 重载`：**~~4 处~~ 0 处** ✅ 全部由 P2.2 完成（ActorLibrary 6 个 FQuat 重载携带 ScriptName 别名）
-- `NotAngelscriptProperty`：**~~7 处~~ 0 处** ✅ Actor 4 处由 P2.2 完成、Component 2 + Script 3 由 P3.1 完成
+```powershell
+function Get-RealMetaLoss($file, $metaName) {
+    $diff = git show cc764db -- $file
+    $lines = $diff -split "`n"
+    $hits = 0
+    for ($i = 0; $i -lt $lines.Length - 1; $i++) {
+        # 必须 dead 注释行带 metaName + 紧跟 active 行不带 metaName
+        if ($lines[$i] -match "^-\s*//UFUNCTION\(ScriptCallable.*$metaName") {
+            $next = $lines[$i+1]
+            if ($next -match "^\s\s*UFUNCTION\(BlueprintCallable" -and $next -notmatch $metaName) {
+                $hits++
+            }
+        }
+    }
+    return $hits
+}
+```
+
+## 三个汇总数（原版，保留作历史叙事）
+
+| 汇总维度 | 原估算 | 真实数据 | 落点 |
+|---|---:|---:|---|
+| ① 真实 meta 损失总数 | 130 → 119 | **15**（P3.2 修正） | 全部已完成 |
+| ② 涉及损失的文件数 | 4 | **4** | Phase 3 实施范围 |
+| ③ 涉及损失的 meta 类型 | 4 | **3 类**（`ScriptNoDiscard` 实际无损失）| Phase 3 操作类型映射 |
+
+原详细分布（含 false positive 估算）：
+
+- `ScriptTrivial`：~~94 处~~ → **真实 4 处** ✅ P3.2 完成
+- `ScriptNoDiscard`：~~35 处~~ → **真实 0 处**（虚假估算）
+- `ScriptName 重载`：4 处 ✅ P2.2 完成
+- `NotAngelscriptProperty`：7 处 ✅ P2.2 + P3.1 完成
 
 ## 1. 文件级 meta 损失统计
 
