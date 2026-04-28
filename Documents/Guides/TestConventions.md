@@ -6,7 +6,7 @@
 
 1. **测试层级不够清晰**：`CppTests`、`TestModule`、`Editor` 三条线同时存在，但放置与前缀边界容易混淆。
 2. **命名不够稳定**：部分文件名没有 `Angelscript` 前缀，部分 ASSDK 测试文件名没有显式带 `ASSDK`，部分目录/前缀/类名之间存在冗余或不对齐。
-3. **流程入口不够标准**：虽然已有 `RunTests.ps1`，但常用 smoke / native / scenario 波次还没有统一成具名入口。
+3. **流程入口不够标准**：虽然已有 `RunTests.ps1`，但常用 smoke / native / functional 波次还没有统一成具名入口。
 
 ## 当前规范总则
 
@@ -19,7 +19,7 @@
 | Native Core | `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.*` | 只验证公共 AngelScript API / ASSDK 桥接层，不引入 `FAngelscriptEngine` | `AngelscriptNativeTestSupport.h` / `AngelscriptTestAdapter.h` |
 | Runtime 集成 | `Plugins/Angelscript/Source/AngelscriptTest/Core/`、`Angelscript/`、`Bindings/`、`AngelScriptSDK/`、`Compiler/`、`Preprocessor/`、`FileSystem/`、`ClassGenerator/` | `Angelscript.TestModule.*` | 基于 `FAngelscriptEngine` 的编译、绑定、语言行为与内部机制验证 | `Shared/AngelscriptTestEngineHelper.*` |
 | Debugger 场景 | `Plugins/Angelscript/Source/AngelscriptTest/Debugger/` | `Angelscript.TestModule.Debugger.*` | 附着运行中的 production-like engine，验证握手、断点、步进等调试链路 | `Shared/AngelscriptDebuggerTestSession.*` / `Shared/AngelscriptDebuggerTestClient.*` / `Shared/AngelscriptDebuggerScriptFixture.*` |
-| UE 场景层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `Shared/AngelscriptScenarioTestUtils.h` |
+| UE 功能测试层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `Shared/AngelscriptFunctionalTestUtils.h` |
 | Learning | `Plugins/Angelscript/Source/AngelscriptTest/Learning/Native/`、`Learning/Runtime/` | `Angelscript.TestModule.Learning.<Layer>.*` | 结构化 trace / 教学型可观测测试 | `Shared/AngelscriptLearningTrace.*` |
 | Examples | `Plugins/Angelscript/Source/AngelscriptTest/Examples/` | `Angelscript.TestModule.ScriptExamples.*` | 示例脚本的编译/行为验证 | 示例脚本夹具 |
 
@@ -62,7 +62,7 @@
 
 #### 主题优先
 
-用于 UE 场景与运行时集成主题目录：
+用于 UE 功能测试与运行时集成主题目录：
 
 - `Angelscript.TestModule.Actor.*`
 - `Angelscript.TestModule.Component.*`
@@ -70,7 +70,7 @@
 - `Angelscript.TestModule.Interface.*`
 - `Angelscript.TestModule.HotReload.*`
 
-> 目录已经表达“场景层”时，Automation 路径中不再重复追加 `Scenario`。`Scenario` 应体现在目录选择、helper、fixture 和测试注释里，而不是重复塞进前缀。
+> 目录已经表达功能测试层时，Automation 路径中不再重复追加层级名；目录、helper、fixture 和测试注释都应使用具体主题语义。
 
 #### 兼容保留项
 
@@ -90,7 +90,7 @@
 2. 它是否需要真实 `UObject` / `World` / `Actor` 生命周期？
 3. 它是否只是 Editor 内部行为？
 
-依据答案选择 `CppTests` / `Editor` / `Native` / 运行时集成 / UE 场景 / Learning。
+依据答案选择 `CppTests` / `Editor` / `Native` / 运行时集成 / UE 功能测试 / Learning。
 
 ### Step 2：再定目录和主题
 
@@ -107,7 +107,7 @@
 
 - Native：`AngelscriptNativeTestSupport.h` / `AngelscriptTestAdapter.h`
 - Runtime 集成：`Shared/AngelscriptTestEngineHelper.*`
-- UE 场景：`Shared/AngelscriptScenarioTestUtils.h`
+- UE 功能测试：`Shared/AngelscriptFunctionalTestUtils.h`
 - Learning：`Shared/AngelscriptLearningTrace.*`
 
 ### Step 5：同步流程入口和文档
@@ -123,14 +123,14 @@
 | Native Core smoke | `Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.Smoke` | 创建独立 AngelScript 引擎 → 编译/执行最小脚本 → 验证返回值/消息回调 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Native"` |
 | Runtime 内部引擎隔离 | `Source/AngelscriptRuntime/Tests/` | `Angelscript.CppTests.MultiEngine.*` | 创建 full / clone 引擎 → 校验共享状态、模块隔离、依赖注入 | `.\Tools\RunTestSuite.ps1 -Suite Smoke` |
 | Debugger 协议与调试场景 | `Source/AngelscriptRuntime/Tests/`、`Source/AngelscriptTest/Debugger/` | `Angelscript.CppTests.Debug.*` / `Angelscript.TestModule.Debugger.*` | 连接调试客户端 → 启动调试会话 → 断言握手、断点、步进与停止状态 | `.\Tools\RunTestSuite.ps1 -Suite Debugger` |
-| UE 场景 Actor / Component | `Actor/`、`Component/` | `Angelscript.TestModule.Actor.*` / `Angelscript.TestModule.Component.*` | 编译脚本类 → Spawn / BeginPlay / Tick / 读回属性 → 验证 UE 侧结果 | `.\Tools\RunTestSuite.ps1 -Suite ScenarioSamples` |
+| UE 功能测试 Actor / Component | `Actor/`、`Component/` | `Angelscript.TestModule.Actor.*` / `Angelscript.TestModule.Component.*` | 编译脚本类 → Spawn / BeginPlay / Tick / 读回属性 → 验证 UE 侧结果 | `.\Tools\RunTestSuite.ps1 -Suite FunctionalSamples` |
 | HotReload 回归 | `HotReload/` | `Angelscript.TestModule.HotReload.*` | 编译 V1 → 生成对象/状态 → 编译 V2 → 断言 soft/full reload 结果与状态保持 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload"` |
 
 ## 本轮规范化落点
 
 本轮先做三件低风险、收益高的事情：
 
-1. **把流程入口标准化**：新增 `Tools\RunTestSuite.ps1`，把常用 smoke / native / scenario 波次固化成具名 suite。
+1. **把流程入口标准化**：新增 `Tools\RunTestSuite.ps1`，把常用 smoke / native / functional 波次固化成具名 suite。
 2. **把规范写成文档**：由这份文档统一说明层级、命名和典型场景。
 3. **修正典型命名异常**：优先处理 ASSDK Native 文件名和缺少 `Angelscript` 前缀的 Preprocessor 测试文件。
 

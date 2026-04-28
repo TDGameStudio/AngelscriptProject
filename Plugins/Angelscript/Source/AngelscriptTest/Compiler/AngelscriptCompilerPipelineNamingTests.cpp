@@ -64,20 +64,20 @@ bool FAngelscriptCompilerGeneratedClassExactNameLookupTest::RunTest(const FStrin
 		false);
 
 	bPassed &= TestTrue(
-		TEXT("Generated-class exact-name lookup scenario should compile successfully"),
+		TEXT("Generated-class exact-name lookup test case should compile successfully"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Generated-class exact-name lookup scenario should use the preprocessor path"),
+		TEXT("Generated-class exact-name lookup test case should use the preprocessor path"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Generated-class exact-name lookup scenario should mark compile succeeded in the summary"),
+		TEXT("Generated-class exact-name lookup test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Generated-class exact-name lookup scenario should report FullyHandled"),
+		TEXT("Generated-class exact-name lookup test case should report FullyHandled"),
 		Summary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Generated-class exact-name lookup scenario should not emit diagnostics"),
+		TEXT("Generated-class exact-name lookup test case should not emit diagnostics"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -86,45 +86,45 @@ bool FAngelscriptCompilerGeneratedClassExactNameLookupTest::RunTest(const FStrin
 	}
 
 	UPackage* Package = Engine.GetPackageInstance();
-	if (!TestNotNull(TEXT("Generated-class exact-name lookup scenario should expose the engine package"), Package))
+	if (!TestNotNull(TEXT("Generated-class exact-name lookup test case should expose the engine package"), Package))
 	{
 		return false;
 	}
 
 	UClass* ExactLookupClass = FindObject<UClass>(Package, *CompilerPipelineNamingTest::GeneratedClassName.ToString());
-	if (!TestNotNull(TEXT("Generated-class exact-name lookup scenario should find the generated class by its exact script name"), ExactLookupClass))
+	if (!TestNotNull(TEXT("Generated-class exact-name lookup test case should find the generated class by its exact script name"), ExactLookupClass))
 	{
 		return false;
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Generated-class exact-name lookup scenario should keep the exact UObject name"),
+		TEXT("Generated-class exact-name lookup test case should keep the exact UObject name"),
 		ExactLookupClass->GetName(),
 		CompilerPipelineNamingTest::GeneratedClassName.ToString());
 
 	UClass* StrippedLookupClass = FindObject<UClass>(Package, TEXT("ExactNameCarrier"));
 	bPassed &= TestNull(
-		TEXT("Generated-class exact-name lookup scenario should not leave behind a stripped-name alias"),
+		TEXT("Generated-class exact-name lookup test case should not leave behind a stripped-name alias"),
 		StrippedLookupClass);
 
 	UClass* HelperLookupClass = FindGeneratedClass(&Engine, CompilerPipelineNamingTest::GeneratedClassName);
-	if (!TestNotNull(TEXT("Generated-class exact-name lookup scenario should still resolve through FindGeneratedClass"), HelperLookupClass))
+	if (!TestNotNull(TEXT("Generated-class exact-name lookup test case should still resolve through FindGeneratedClass"), HelperLookupClass))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Generated-class exact-name lookup scenario should have helper lookup resolve to the same exact-name object"),
+		TEXT("Generated-class exact-name lookup test case should have helper lookup resolve to the same exact-name object"),
 		HelperLookupClass == ExactLookupClass);
 
 	UFunction* GetValueFunction = FindGeneratedFunction(ExactLookupClass, CompilerPipelineNamingTest::GeneratedFunctionName);
-	if (!TestNotNull(TEXT("Generated-class exact-name lookup scenario should expose GetValue on the exact-name class"), GetValueFunction))
+	if (!TestNotNull(TEXT("Generated-class exact-name lookup test case should expose GetValue on the exact-name class"), GetValueFunction))
 	{
 		return false;
 	}
 
 	UObject* RuntimeObject = NewObject<UObject>(GetTransientPackage(), ExactLookupClass, TEXT("CompilerExactNameCarrier"));
-	if (!TestNotNull(TEXT("Generated-class exact-name lookup scenario should instantiate the exact-name class"), RuntimeObject))
+	if (!TestNotNull(TEXT("Generated-class exact-name lookup test case should instantiate the exact-name class"), RuntimeObject))
 	{
 		return false;
 	}
@@ -132,12 +132,12 @@ bool FAngelscriptCompilerGeneratedClassExactNameLookupTest::RunTest(const FStrin
 	int32 Result = 0;
 	const bool bExecuted = ExecuteGeneratedIntEventOnGameThread(&Engine, RuntimeObject, GetValueFunction, Result);
 	bPassed &= TestTrue(
-		TEXT("Generated-class exact-name lookup scenario should execute GetValue on the exact-name class"),
+		TEXT("Generated-class exact-name lookup test case should execute GetValue on the exact-name class"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Generated-class exact-name lookup scenario should return the expected value"),
+			TEXT("Generated-class exact-name lookup test case should return the expected value"),
 			Result,
 			42);
 	}

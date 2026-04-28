@@ -203,11 +203,11 @@ bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FStr
 
 	FScopedDebugBreakStateSentinel DebugBreakStateSentinel;
 
-	auto RunScenario = [this, &SessionConfig, &DebugBreakStateSentinel](const bool bInitiallyEnabled, const TCHAR* ScenarioLabel) -> bool
+	auto RunTestCase = [this, &SessionConfig, &DebugBreakStateSentinel](const bool bInitiallyEnabled, const TCHAR* TestCaseLabel) -> bool
 	{
 		DebugBreakStateSentinel.SetEnabled(bInitiallyEnabled);
 		if (!TestEqual(
-				*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should start %s from the requested debug-break state"), ScenarioLabel),
+				*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should start %s from the requested debug-break state"), TestCaseLabel),
 				DebugBreakStateSentinel.IsEnabled(),
 				bInitiallyEnabled))
 		{
@@ -217,14 +217,14 @@ bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FStr
 		{
 			FAngelscriptDebuggerTestSession Session;
 			if (!TestTrue(
-					*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should initialize the debugger session for the %s branch"), ScenarioLabel),
+					*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should initialize the debugger session for the %s branch"), TestCaseLabel),
 					Session.Initialize(SessionConfig)))
 			{
 				return false;
 			}
 
 			if (!TestFalse(
-					*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should disable debug breaks while the %s session is active"), ScenarioLabel),
+					*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should disable debug breaks while the %s session is active"), TestCaseLabel),
 					DebugBreakStateSentinel.IsEnabled()))
 			{
 				return false;
@@ -232,14 +232,14 @@ bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FStr
 		}
 
 		return TestEqual(
-			*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should restore the %s debug-break state after session shutdown"), ScenarioLabel),
+			*FString::Printf(TEXT("Debugger.Shared.SessionPreservesDebugBreakState should restore the %s debug-break state after session shutdown"), TestCaseLabel),
 			DebugBreakStateSentinel.IsEnabled(),
 			bInitiallyEnabled);
 	};
 
 	bool bPassed = true;
-	bPassed &= RunScenario(true, TEXT("pre-enabled"));
-	bPassed &= RunScenario(false, TEXT("pre-disabled"));
+	bPassed &= RunTestCase(true, TEXT("pre-enabled"));
+	bPassed &= RunTestCase(false, TEXT("pre-disabled"));
 	return bPassed;
 }
 

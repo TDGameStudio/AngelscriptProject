@@ -228,7 +228,7 @@ Build output goes to `Saved/Build/<Label>/<RunId>/`; test output goes to `Saved/
 - Completed or closed plans move from `Documents/Plans/` to `Documents/Plans/Archives/`; each archived plan must include archive status, archive date, closure rationale, and a short result summary, with indexes updated in sync.
 - TODOs should be broken down around the plugin goal. Avoid lumping legacy project issues into one large task.
 - When renaming, migrating modules, or adjusting public APIs, identify all affected files and documentation.
-- Tests under `Plugins/Angelscript/Source/AngelscriptTest/` should be organized by concrete theme (for example `Actor`, `Blueprint`, `Interface`, `HotReload`, `Shared`) rather than accumulated under a broad catch-all `Scenarios` bucket.
+- Tests under `Plugins/Angelscript/Source/AngelscriptTest/` should be organized by concrete theme (for example `Actor`, `Blueprint`, `Interface`, `HotReload`, `Shared`) rather than accumulated under a broad catch-all functional bucket.
 - Current active Plan priority and execution order are managed centrally by `Documents/Plans/Plan_StatusPriorityRoadmap.md`.
 - The overview and routing of all thematic Plans are maintained in `Documents/Plans/Plan_OpportunityIndex.md`.
 

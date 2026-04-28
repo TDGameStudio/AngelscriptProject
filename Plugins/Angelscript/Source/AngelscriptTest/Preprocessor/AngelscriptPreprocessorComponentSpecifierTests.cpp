@@ -14,7 +14,7 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifierTests_Private
 {
-	struct FShowOnActorInvalidScenario
+	struct FShowOnActorInvalidTestCase
 	{
 		const TCHAR* RelativeScriptPath;
 		const TCHAR* ScriptSource;
@@ -156,29 +156,29 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifier
 		return FoundValue != nullptr && *FoundValue == ExpectedValue;
 	}
 
-	bool RunInvalidShowOnActorScenario(
+	bool RunInvalidShowOnActorTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FShowOnActorInvalidScenario& Scenario)
+		const FShowOnActorInvalidTestCase& TestCase)
 	{
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
 
 		const FString AbsoluteScriptPath = WritePreprocessorComponentSpecifierFixture(
-			Scenario.RelativeScriptPath,
-			Scenario.ScriptSource);
+			TestCase.RelativeScriptPath,
+			TestCase.ScriptSource);
 		ON_SCOPE_EXIT
 		{
 			IFileManager::Get().Delete(*AbsoluteScriptPath, false, true);
 		};
 
 		FAngelscriptPreprocessor Preprocessor;
-		Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+		Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
 		const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
-		const FString ModuleName = GetFixtureModuleName(Scenario.RelativeScriptPath);
+		const FString ModuleName = GetFixtureModuleName(TestCase.RelativeScriptPath);
 		const FAngelscriptModuleDesc* ModuleDesc = FindModuleByName(Modules, ModuleName);
 		const FAngelscriptClassDesc* ClassDesc = FindClassDescriptor(ModuleDesc, TEXT("AShowOnActorInvalidCarrier"));
 		const FAngelscriptPropertyDesc* PropertyDesc = FindPropertyDescriptor(ClassDesc, TEXT("PlainValue"));
@@ -187,17 +187,17 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifier
 
 		bool bPassed = true;
 		bPassed &= Test.TestFalse(
-			TEXT("ShowOnActor invalid scenario should fail preprocessing"),
+			TEXT("ShowOnActor invalid test case should fail preprocessing"),
 			bPreprocessSucceeded);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor invalid scenario should emit diagnostics for the failing file"),
+			TEXT("ShowOnActor invalid test case should emit diagnostics for the failing file"),
 			Diagnostics);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor invalid scenario should emit exactly one preprocessing error"),
+			TEXT("ShowOnActor invalid test case should emit exactly one preprocessing error"),
 			ErrorCount,
 			1);
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor invalid scenario should preserve at least one diagnostic message"),
+			TEXT("ShowOnActor invalid test case should preserve at least one diagnostic message"),
 			DiagnosticMessages.Num() > 0);
 		if (!bPassed || Diagnostics == nullptr || Diagnostics->Diagnostics.Num() == 0)
 		{
@@ -206,34 +206,34 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifier
 
 		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor invalid scenario should keep the error text stable"),
+			TEXT("ShowOnActor invalid test case should keep the error text stable"),
 			FirstDiagnostic.Message,
-			FString(Scenario.ExpectedMessage));
+			FString(TestCase.ExpectedMessage));
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor invalid scenario should pin the diagnostic row to the UPROPERTY line"),
+			TEXT("ShowOnActor invalid test case should pin the diagnostic row to the UPROPERTY line"),
 			FirstDiagnostic.Row,
-			Scenario.ExpectedRow);
+			TestCase.ExpectedRow);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor invalid scenario should keep the error column at the macro start"),
+			TEXT("ShowOnActor invalid test case should keep the error column at the macro start"),
 			FirstDiagnostic.Column,
 			1);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor invalid scenario should still produce one module descriptor for inspection"),
+			TEXT("ShowOnActor invalid test case should still produce one module descriptor for inspection"),
 			Modules.Num(),
 			1);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor invalid scenario should preserve the owning module descriptor"),
+			TEXT("ShowOnActor invalid test case should preserve the owning module descriptor"),
 			ModuleDesc);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor invalid scenario should preserve the owning actor class descriptor"),
+			TEXT("ShowOnActor invalid test case should preserve the owning actor class descriptor"),
 			ClassDesc);
 		bPassed &= Test.TestNull(
-			TEXT("ShowOnActor invalid scenario should not leave behind a half-valid property descriptor"),
+			TEXT("ShowOnActor invalid test case should not leave behind a half-valid property descriptor"),
 			PropertyDesc);
 		return bPassed;
 	}
 
-	bool RunValidShowOnActorScenario(
+	bool RunValidShowOnActorTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine)
 	{
@@ -269,28 +269,28 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifier
 
 		bool bPassed = true;
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should preprocess successfully"),
+			TEXT("ShowOnActor valid test case should preprocess successfully"),
 			bPreprocessSucceeded);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor valid scenario should not emit preprocessing errors"),
+			TEXT("ShowOnActor valid test case should not emit preprocessing errors"),
 			ErrorCount,
 			0);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor valid scenario should keep diagnostics empty"),
+			TEXT("ShowOnActor valid test case should keep diagnostics empty"),
 			DiagnosticMessages.Num(),
 			0);
 		bPassed &= Test.TestEqual(
-			TEXT("ShowOnActor valid scenario should produce exactly one module descriptor"),
+			TEXT("ShowOnActor valid test case should produce exactly one module descriptor"),
 			Modules.Num(),
 			1);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor valid scenario should resolve the generated module descriptor"),
+			TEXT("ShowOnActor valid test case should resolve the generated module descriptor"),
 			ModuleDesc);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor valid scenario should parse the actor class descriptor"),
+			TEXT("ShowOnActor valid test case should parse the actor class descriptor"),
 			ClassDesc);
 		bPassed &= Test.TestNotNull(
-			TEXT("ShowOnActor valid scenario should keep the default-component property descriptor"),
+			TEXT("ShowOnActor valid test case should keep the default-component property descriptor"),
 			PropertyDesc);
 		if (!bPassed || PropertyDesc == nullptr)
 		{
@@ -298,28 +298,28 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorComponentSpecifier
 		}
 
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should mark the property as an instanced reference"),
+			TEXT("ShowOnActor valid test case should mark the property as an instanced reference"),
 			PropertyDesc->bInstancedReference);
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should keep the component editable on defaults"),
+			TEXT("ShowOnActor valid test case should keep the component editable on defaults"),
 			PropertyDesc->bEditableOnDefaults);
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should keep the component editable on instances"),
+			TEXT("ShowOnActor valid test case should keep the component editable on instances"),
 			PropertyDesc->bEditableOnInstance);
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should keep the component blueprint-readable"),
+			TEXT("ShowOnActor valid test case should keep the component blueprint-readable"),
 			PropertyDesc->bBlueprintReadable);
 		bPassed &= Test.TestFalse(
-			TEXT("ShowOnActor valid scenario should keep the component blueprint-writable disabled"),
+			TEXT("ShowOnActor valid test case should keep the component blueprint-writable disabled"),
 			PropertyDesc->bBlueprintWritable);
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should add DefaultComponent=True metadata"),
+			TEXT("ShowOnActor valid test case should add DefaultComponent=True metadata"),
 			HasMetaValue(PropertyDesc->Meta, TEXT("DefaultComponent"), TEXT("True")));
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should preserve RootComponent metadata"),
+			TEXT("ShowOnActor valid test case should preserve RootComponent metadata"),
 			HasMetaFlag(PropertyDesc->Meta, TEXT("RootComponent")));
 		bPassed &= Test.TestTrue(
-			TEXT("ShowOnActor valid scenario should add EditInline=true metadata"),
+			TEXT("ShowOnActor valid test case should add EditInline=true metadata"),
 			HasMetaValue(PropertyDesc->Meta, TEXT("EditInline"), TEXT("true")));
 		return bPassed;
 	}
@@ -346,7 +346,7 @@ bool FAngelscriptPreprocessorShowOnActorRequiresDefaultComponentTest::RunTest(co
 	}
 
 	FAngelscriptEngine& Engine = Fixture.GetEngine();
-	const FShowOnActorInvalidScenario InvalidScenario = {
+	const FShowOnActorInvalidTestCase InvalidTestCase = {
 		TEXT("Tests/Preprocessor/Components/ShowOnActorRequiresDefaultComponent_Invalid.as"),
 		TEXT(
 			"UCLASS()\n"
@@ -360,13 +360,13 @@ bool FAngelscriptPreprocessorShowOnActorRequiresDefaultComponentTest::RunTest(co
 	};
 
 	bool bPassed = true;
-	bPassed &= RunInvalidShowOnActorScenario(*this, Engine, InvalidScenario);
+	bPassed &= RunInvalidShowOnActorTestCase(*this, Engine, InvalidTestCase);
 	if (!bPassed)
 	{
 		return false;
 	}
 
-	bPassed &= RunValidShowOnActorScenario(*this, Engine);
+	bPassed &= RunValidShowOnActorTestCase(*this, Engine);
 	return bPassed;
 }
 

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Core/AngelscriptComponent.h"
@@ -10,24 +10,24 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
 
-namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private
+namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private
 {
 	using namespace AngelscriptFunctionalTestUtils;
 
-	constexpr float ComponentScenarioDeltaTime = 0.016f;
+	constexpr float ComponentTestCaseDeltaTime = 0.016f;
 
-	void InitializeComponentScenarioSpawner(FActorTestSpawner& Spawner)
+	void InitializeComponentTestCaseSpawner(FActorTestSpawner& Spawner)
 	{
 		Spawner.InitializeGameSubsystems();
 	}
 
 	template <typename ComponentType = UActorComponent>
-	ComponentType* CreateComponentScenarioScriptComponent(
+	ComponentType* CreateComponentTestCaseScriptComponent(
 		FAutomationTestBase& Test,
 		AActor& OwnerActor,
 		UClass* ComponentClass,
@@ -59,7 +59,7 @@ namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Component_AngelscriptComponentScenarioTests_Private;
+using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestComponentBeginPlayTest,
@@ -133,9 +133,9 @@ class UTestComponentBeginPlay : UAngelscriptComponent
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
+	InitializeComponentTestCaseSpawner(Spawner);
 	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UActorComponent* Component = CreateComponentScenarioScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.BeginPlay"));
+	UActorComponent* Component = CreateComponentTestCaseScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.BeginPlay"));
 	if (Component == nullptr)
 	{
 		return false;
@@ -149,7 +149,7 @@ class UTestComponentBeginPlay : UAngelscriptComponent
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario component BeginPlay should set the readiness flag"), bReady);
+	TestTrue(TEXT("TestCase component BeginPlay should set the readiness flag"), bReady);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -192,9 +192,9 @@ class UTestComponentTick : UAngelscriptComponent
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
+	InitializeComponentTestCaseSpawner(Spawner);
 	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UActorComponent* Component = CreateComponentScenarioScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.Tick"));
+	UActorComponent* Component = CreateComponentTestCaseScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.Tick"));
 	if (Component == nullptr)
 	{
 		return false;
@@ -203,7 +203,7 @@ class UTestComponentTick : UAngelscriptComponent
 	Component->PrimaryComponentTick.bCanEverTick = true;
 	Component->SetComponentTickEnabled(true);
 	BeginPlayActor(Engine, HostActor);
-	TickWorld(Engine, Spawner.GetWorld(), ComponentScenarioDeltaTime, 5);
+	TickWorld(Engine, Spawner.GetWorld(), ComponentTestCaseDeltaTime, 5);
 
 	int32 TickCount = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Component, TEXT("TickCount"), TickCount))
@@ -211,7 +211,7 @@ class UTestComponentTick : UAngelscriptComponent
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario component Tick should run during manual world ticking"), TickCount >= 5);
+	TestTrue(TEXT("TestCase component Tick should run during manual world ticking"), TickCount >= 5);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -254,9 +254,9 @@ class UTestComponentReceiveEndPlay : UAngelscriptComponent
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
+	InitializeComponentTestCaseSpawner(Spawner);
 	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UActorComponent* Component = CreateComponentScenarioScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.ReceiveEndPlay"));
+	UActorComponent* Component = CreateComponentTestCaseScriptComponent(*this, HostActor, ScriptClass, TEXT("Component.ReceiveEndPlay"));
 	if (Component == nullptr)
 	{
 		return false;
@@ -272,7 +272,7 @@ class UTestComponentReceiveEndPlay : UAngelscriptComponent
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario component EndPlay should run when the owning actor is destroyed"), bCleanedUp);
+	TestTrue(TEXT("TestCase component EndPlay should run when the owning actor is destroyed"), bCleanedUp);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -326,20 +326,20 @@ class UTestComponentActorOwner : UAngelscriptComponent
 	}
 
 	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UTestComponentActorOwner"));
-	if (!TestNotNull(TEXT("Scenario component owner-access class should be generated"), ComponentClass))
+	if (!TestNotNull(TEXT("TestCase component owner-access class should be generated"), ComponentClass))
 	{
 		return false;
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
+	InitializeComponentTestCaseSpawner(Spawner);
 	AActor* HostActor = SpawnScriptActor(*this, Spawner, OwnerActorClass);
 	if (HostActor == nullptr)
 	{
 		return false;
 	}
 
-	UActorComponent* Component = CreateComponentScenarioScriptComponent(*this, *HostActor, ComponentClass, TEXT("Component.ActorOwner"));
+	UActorComponent* Component = CreateComponentTestCaseScriptComponent(*this, *HostActor, ComponentClass, TEXT("Component.ActorOwner"));
 	if (Component == nullptr)
 	{
 		return false;
@@ -353,7 +353,7 @@ class UTestComponentActorOwner : UAngelscriptComponent
 		return false;
 	}
 
-	TestEqual(TEXT("Scenario component should read the owning script actor's property in BeginPlay"), ReadOwnerValue, 42);
+	TestEqual(TEXT("TestCase component should read the owning script actor's property in BeginPlay"), ReadOwnerValue, 42);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -363,8 +363,8 @@ bool FAngelscriptTestDefaultComponentBasicTest::RunTest(const FString& Parameter
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
-	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component scenario tests require a production engine after subsystem initialization."));
+	InitializeComponentTestCaseSpawner(Spawner);
+	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component test case tests require a production engine after subsystem initialization."));
 	if (ProductionEngine == nullptr)
 	{
 		return false;
@@ -410,18 +410,18 @@ class ATestDefaultComponentBasic : AActor
 	BeginPlayActor(Engine, *Actor);
 
 	UClass* RootComponentClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentBasicRoot"));
-	if (!TestNotNull(TEXT("Scenario default-component root class should be generated"), RootComponentClass))
+	if (!TestNotNull(TEXT("TestCase default-component root class should be generated"), RootComponentClass))
 	{
 		return false;
 	}
 
 	USceneComponent* RootComponent = Actor->GetRootComponent();
-	if (!TestNotNull(TEXT("Scenario actor should create a default root component"), RootComponent))
+	if (!TestNotNull(TEXT("TestCase actor should create a default root component"), RootComponent))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario actor root component should be the scripted default component"), RootComponent->IsA(RootComponentClass));
+	TestTrue(TEXT("TestCase actor root component should be the scripted default component"), RootComponent->IsA(RootComponentClass));
 	return true;
 }
 
@@ -429,8 +429,8 @@ bool FAngelscriptTestDefaultComponentMultipleTest::RunTest(const FString& Parame
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
-	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component scenario tests require a production engine after subsystem initialization."));
+	InitializeComponentTestCaseSpawner(Spawner);
+	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component test case tests require a production engine after subsystem initialization."));
 	if (ProductionEngine == nullptr)
 	{
 		return false;
@@ -485,18 +485,18 @@ class ATestDefaultComponentMultiple : AActor
 
 	UClass* RootSceneClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentMultipleRoot"));
 	UClass* BillboardClass = FindGeneratedClass(&Engine, TEXT("UTestDefaultComponentMultipleBillboard"));
-	if (!TestNotNull(TEXT("Scenario multi-default root class should be generated"), RootSceneClass)
-		|| !TestNotNull(TEXT("Scenario multi-default child class should be generated"), BillboardClass))
+	if (!TestNotNull(TEXT("TestCase multi-default root class should be generated"), RootSceneClass)
+		|| !TestNotNull(TEXT("TestCase multi-default child class should be generated"), BillboardClass))
 	{
 		return false;
 	}
 
 	USceneComponent* RootScene = Actor->GetRootComponent();
-	if (!TestNotNull(TEXT("Scenario actor should create a scripted root scene component"), RootScene))
+	if (!TestNotNull(TEXT("TestCase actor should create a scripted root scene component"), RootScene))
 	{
 		return false;
 	}
-	if (!TestTrue(TEXT("Scenario actor root component should use the scripted root component class"), RootScene->IsA(RootSceneClass)))
+	if (!TestTrue(TEXT("TestCase actor root component should use the scripted root component class"), RootScene->IsA(RootSceneClass)))
 	{
 		return false;
 	}
@@ -510,12 +510,12 @@ class ATestDefaultComponentMultiple : AActor
 			break;
 		}
 	}
-	if (!TestNotNull(TEXT("Scenario actor should create the attached billboard component"), Billboard))
+	if (!TestNotNull(TEXT("TestCase actor should create the attached billboard component"), Billboard))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario actor attached default component should preserve the scripted hierarchy"), Billboard->GetAttachParent() == RootScene);
+	TestTrue(TEXT("TestCase actor attached default component should preserve the scripted hierarchy"), Billboard->GetAttachParent() == RootScene);
 	return true;
 }
 
@@ -523,8 +523,8 @@ bool FAngelscriptTestDefaultComponentNativeTypesTest::RunTest(const FString& Par
 {
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
-	InitializeComponentScenarioSpawner(Spawner);
-	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component scenario tests require a production engine after subsystem initialization."));
+	InitializeComponentTestCaseSpawner(Spawner);
+	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(*this, TEXT("Default component test case tests require a production engine after subsystem initialization."));
 	if (ProductionEngine == nullptr)
 	{
 		return false;
@@ -568,11 +568,11 @@ class ATestDefaultComponentNativeTypes : AActor
 	BeginPlayActor(Engine, *Actor);
 
 	USceneComponent* RootScene = Actor->GetRootComponent();
-	if (!TestNotNull(TEXT("Scenario actor should create a native static mesh root component"), RootScene))
+	if (!TestNotNull(TEXT("TestCase actor should create a native static mesh root component"), RootScene))
 	{
 		return false;
 	}
-	if (!TestTrue(TEXT("Scenario actor root component should use UStaticMeshComponent"), RootScene->IsA(UStaticMeshComponent::StaticClass())))
+	if (!TestTrue(TEXT("TestCase actor root component should use UStaticMeshComponent"), RootScene->IsA(UStaticMeshComponent::StaticClass())))
 	{
 		return false;
 	}
@@ -586,12 +586,12 @@ class ATestDefaultComponentNativeTypes : AActor
 			break;
 		}
 	}
-	if (!TestNotNull(TEXT("Scenario actor should create the native billboard component"), Billboard))
+	if (!TestNotNull(TEXT("TestCase actor should create the native billboard component"), Billboard))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario actor native billboard component should attach to the native mesh root"), Billboard->GetAttachParent() == RootScene);
+	TestTrue(TEXT("TestCase actor native billboard component should attach to the native mesh root"), Billboard->GetAttachParent() == RootScene);
 	return true;
 }
 

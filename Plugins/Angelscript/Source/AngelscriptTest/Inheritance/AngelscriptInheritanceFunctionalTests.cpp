@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/AngelscriptClassGenerator.h"
@@ -6,22 +6,22 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
 
-namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Private
+namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private
 {
 	using namespace AngelscriptFunctionalTestUtils;
 
-	void InitializeInheritanceScenarioSpawner(FActorTestSpawner& Spawner)
+	void InitializeInheritanceTestCaseSpawner(FActorTestSpawner& Spawner)
 	{
 		Spawner.InitializeGameSubsystems();
 	}
 }
 
-using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceScenarioTests_Private;
+using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestInheritanceScriptToScriptTest,
@@ -55,7 +55,7 @@ class ATestInheritanceBaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("Scenario inheritance baseline module should compile before reload analysis"),
+	if (!TestTrue(TEXT("TestCase inheritance baseline module should compile before reload analysis"),
 		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceScriptToScript.as"), BaselineScript)))
 	{
 		return false;
@@ -73,17 +73,17 @@ UCLASS()
 class ATestInheritanceBase : AActor
 {
 	UFUNCTION()
-	int GetScenarioValue()
+	int GetTestCaseValue()
 	{
 		return 1;
 	}
 }
 
 UCLASS()
-class ATestInheritanceDerived : AScenarioInheritanceBase
+class ATestInheritanceDerived : ATestCaseInheritanceBase
 {
 	UFUNCTION()
-	int GetScenarioValue()
+	int GetTestCaseValue()
 	{
 		return 2;
 	}
@@ -93,12 +93,12 @@ class ATestInheritanceDerived : AScenarioInheritanceBase
 		bWantsFullReload,
 		bNeedsFullReload);
 
-	if (!TestFalse(TEXT("Scenario script-to-script actor inheritance with overridden UFUNCTIONs remains unsupported on this branch"), bAnalyzed))
+	if (!TestFalse(TEXT("TestCase script-to-script actor inheritance with overridden UFUNCTIONs remains unsupported on this branch"), bAnalyzed))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Scenario script-to-script actor inheritance should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
+	TestEqual(TEXT("TestCase script-to-script actor inheritance should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -121,7 +121,7 @@ class ATestInheritanceSuperBaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("Scenario inheritance super baseline module should compile before reload analysis"),
+	if (!TestTrue(TEXT("TestCase inheritance super baseline module should compile before reload analysis"),
 		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceSuper.as"), BaselineScript)))
 	{
 		return false;
@@ -139,19 +139,19 @@ UCLASS()
 class ATestInheritanceSuperBase : AActor
 {
 	UFUNCTION()
-	int GetScenarioValue()
+	int GetTestCaseValue()
 	{
 		return 10;
 	}
 }
 
 UCLASS()
-class ATestInheritanceSuperDerived : AScenarioInheritanceSuperBase
+class ATestInheritanceSuperDerived : ATestCaseInheritanceSuperBase
 {
 	UFUNCTION()
-	int GetScenarioValue()
+	int GetTestCaseValue()
 	{
-		return Super::GetScenarioValue() + 5;
+		return Super::GetTestCaseValue() + 5;
 	}
 }
 )AS"),
@@ -159,12 +159,12 @@ class ATestInheritanceSuperDerived : AScenarioInheritanceSuperBase
 		bWantsFullReload,
 		bNeedsFullReload);
 
-	if (!TestFalse(TEXT("Scenario script-to-script Super calls remain unsupported on this branch"), bAnalyzed))
+	if (!TestFalse(TEXT("TestCase script-to-script Super calls remain unsupported on this branch"), bAnalyzed))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Scenario inheritance with Super should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
+	TestEqual(TEXT("TestCase inheritance with Super should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -187,7 +187,7 @@ class ATestInheritanceIsABaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("Scenario inheritance IsA baseline module should compile before reload analysis"),
+	if (!TestTrue(TEXT("TestCase inheritance IsA baseline module should compile before reload analysis"),
 		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceIsA.as"), BaselineScript)))
 	{
 		return false;
@@ -221,13 +221,13 @@ class ATestInheritanceIsADerived : ATestInheritanceIsABase
 		bWantsFullReload,
 		bNeedsFullReload);
 
-	if (!TestTrue(TEXT("Scenario inheritance IsA/Cast syntax should analyze without crashing"), bAnalyzed))
+	if (!TestTrue(TEXT("TestCase inheritance IsA/Cast syntax should analyze without crashing"), bAnalyzed))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Scenario inheritance IsA/Cast currently requires the full-reload path on this branch"), bWantsFullReload || bNeedsFullReload);
-	TestTrue(TEXT("Scenario inheritance IsA/Cast should not remain on the soft-reload path"),
+	TestTrue(TEXT("TestCase inheritance IsA/Cast currently requires the full-reload path on this branch"), bWantsFullReload || bNeedsFullReload);
+	TestTrue(TEXT("TestCase inheritance IsA/Cast should not remain on the soft-reload path"),
 		ReloadRequirement == FAngelscriptClassGenerator::FullReloadRequired
 		|| ReloadRequirement == FAngelscriptClassGenerator::FullReloadSuggested);
 	ASTEST_END_SHARE_CLEAN

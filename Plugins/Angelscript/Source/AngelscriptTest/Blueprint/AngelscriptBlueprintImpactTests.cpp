@@ -1,4 +1,4 @@
-﻿#include "BlueprintImpact/AngelscriptBlueprintImpactScanner.h"
+#include "BlueprintImpact/AngelscriptBlueprintImpactScanner.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -19,11 +19,11 @@
 using namespace AngelscriptTestSupport;
 using namespace AngelscriptFunctionalTestUtils;
 
-namespace BlueprintImpactScenarioTest
+namespace BlueprintImpactTestCaseTest
 {
 	UBlueprint* CreateTransientBlueprintChild(FAutomationTestBase& Test, UClass* ParentClass, FStringView Suffix)
 	{
-		if (!Test.TestNotNull(TEXT("Blueprint impact scenario should receive a valid parent class"), ParentClass))
+		if (!Test.TestNotNull(TEXT("Blueprint impact test case should receive a valid parent class"), ParentClass))
 		{
 			return nullptr;
 		}
@@ -34,7 +34,7 @@ namespace BlueprintImpactScenarioTest
 			Suffix.GetData(),
 			*FGuid::NewGuid().ToString(EGuidFormats::Digits));
 		UPackage* BlueprintPackage = CreatePackage(*PackagePath);
-		if (!Test.TestNotNull(TEXT("Blueprint impact scenario should create a transient package"), BlueprintPackage))
+		if (!Test.TestNotNull(TEXT("Blueprint impact test case should create a transient package"), BlueprintPackage))
 		{
 			return nullptr;
 		}
@@ -100,7 +100,7 @@ namespace BlueprintImpactScenarioTest
 	bool SaveBlueprintToDisk(FAutomationTestBase& Test, UBlueprint& Blueprint, const FString& PackagePath, FString& OutPackageFilename)
 	{
 		UPackage* Package = Blueprint.GetOutermost();
-		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed scenario should have a package before save"), Package))
+		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed test case should have a package before save"), Package))
 		{
 			return false;
 		}
@@ -111,7 +111,7 @@ namespace BlueprintImpactScenarioTest
 		SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
 		SaveArgs.SaveFlags = SAVE_NoError;
 		return Test.TestTrue(
-			TEXT("Blueprint impact disk-backed scenario should save the blueprint package to disk"),
+			TEXT("Blueprint impact disk-backed test case should save the blueprint package to disk"),
 			UPackage::SavePackage(Package, &Blueprint, *OutPackageFilename, SaveArgs));
 	}
 
@@ -122,7 +122,7 @@ namespace BlueprintImpactScenarioTest
 		FString& OutPackagePath,
 		FString& OutPackageFilename)
 	{
-		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed scenario should receive a valid parent class"), ParentClass))
+		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed test case should receive a valid parent class"), ParentClass))
 		{
 			return nullptr;
 		}
@@ -130,7 +130,7 @@ namespace BlueprintImpactScenarioTest
 		const FString AssetName = FString::Printf(TEXT("BP_%.*s_%s"), Suffix.Len(), Suffix.GetData(), *FGuid::NewGuid().ToString(EGuidFormats::Digits));
 		OutPackagePath = FString::Printf(TEXT("/Game/Automation/%s"), *AssetName);
 		UPackage* BlueprintPackage = CreatePackage(*OutPackagePath);
-		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed scenario should create a package"), BlueprintPackage))
+		if (!Test.TestNotNull(TEXT("Blueprint impact disk-backed test case should create a package"), BlueprintPackage))
 		{
 			return nullptr;
 		}
@@ -160,7 +160,7 @@ namespace BlueprintImpactScenarioTest
 	}
 }
 
-using namespace BlueprintImpactScenarioTest;
+using namespace BlueprintImpactTestCaseTest;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBlueprintImpactScriptParentMatchTest,
@@ -185,7 +185,7 @@ bool FAngelscriptBlueprintImpactScriptParentMatchTest::RunTest(const FString& Pa
 	UBlueprint* Blueprint = nullptr;
 	ON_SCOPE_EXIT
 	{
-		BlueprintImpactScenarioTest::CleanupBlueprint(Blueprint);
+		BlueprintImpactTestCaseTest::CleanupBlueprint(Blueprint);
 		Engine.DiscardModule(*ModuleName.ToString());
 		ResetSharedCloneEngine(Engine);
 	};
@@ -209,8 +209,8 @@ class ATestBlueprintImpactScriptParentMatch : AActor
 		return false;
 	}
 
-	Blueprint = BlueprintImpactScenarioTest::CreateTransientBlueprintChild(*this, ScriptParentClass, TEXT("ParentMatch"));
-	if (!TestNotNull(TEXT("Blueprint impact scenario should create a child blueprint"), Blueprint))
+	Blueprint = BlueprintImpactTestCaseTest::CreateTransientBlueprintChild(*this, ScriptParentClass, TEXT("ParentMatch"));
+	if (!TestNotNull(TEXT("Blueprint impact test case should create a child blueprint"), Blueprint))
 	{
 		return false;
 	}
@@ -218,19 +218,19 @@ class ATestBlueprintImpactScriptParentMatch : AActor
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> MatchingModules = AngelscriptEditor::BlueprintImpact::FindModulesForChangedScripts(
 		Engine.GetActiveModules(),
 		{ TEXT("TestBlueprintImpactScriptParentMatch.as") });
-	if (!TestEqual(TEXT("Blueprint impact scenario should resolve the changed script to exactly one active module"), MatchingModules.Num(), 1))
+	if (!TestEqual(TEXT("Blueprint impact test case should resolve the changed script to exactly one active module"), MatchingModules.Num(), 1))
 	{
 		return false;
 	}
 
 	const AngelscriptEditor::BlueprintImpact::FBlueprintImpactSymbols Symbols = AngelscriptEditor::BlueprintImpact::BuildImpactSymbols(MatchingModules);
 	TArray<AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason> Reasons;
-	if (!TestTrue(TEXT("Blueprint impact scenario should mark the blueprint child as impacted by the script parent class"), AngelscriptEditor::BlueprintImpact::AnalyzeLoadedBlueprint(*Blueprint, Symbols, Reasons)))
+	if (!TestTrue(TEXT("Blueprint impact test case should mark the blueprint child as impacted by the script parent class"), AngelscriptEditor::BlueprintImpact::AnalyzeLoadedBlueprint(*Blueprint, Symbols, Reasons)))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Blueprint impact scenario should record the script parent class reason"), Reasons.Contains(AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason::ScriptParentClass));
+	TestTrue(TEXT("Blueprint impact test case should record the script parent class reason"), Reasons.Contains(AngelscriptEditor::BlueprintImpact::EBlueprintImpactReason::ScriptParentClass));
 
 	ASTEST_END_SHARE_CLEAN
 
@@ -247,8 +247,8 @@ bool FAngelscriptBlueprintImpactChangedScriptFilterTest::RunTest(const FString& 
 	UBlueprint* BlueprintB = nullptr;
 	ON_SCOPE_EXIT
 	{
-		BlueprintImpactScenarioTest::CleanupBlueprint(BlueprintA);
-		BlueprintImpactScenarioTest::CleanupBlueprint(BlueprintB);
+		BlueprintImpactTestCaseTest::CleanupBlueprint(BlueprintA);
+		BlueprintImpactTestCaseTest::CleanupBlueprint(BlueprintB);
 		Engine.DiscardModule(*ModuleA.ToString());
 		Engine.DiscardModule(*ModuleB.ToString());
 		ResetSharedCloneEngine(Engine);
@@ -292,10 +292,10 @@ class ATestBlueprintImpactFilterB : AActor
 		return false;
 	}
 
-	BlueprintA = BlueprintImpactScenarioTest::CreateTransientBlueprintChild(*this, ScriptParentA, TEXT("FilterA"));
-	BlueprintB = BlueprintImpactScenarioTest::CreateTransientBlueprintChild(*this, ScriptParentB, TEXT("FilterB"));
-	if (!TestNotNull(TEXT("Blueprint impact filter scenario should create blueprint A"), BlueprintA)
-		|| !TestNotNull(TEXT("Blueprint impact filter scenario should create blueprint B"), BlueprintB))
+	BlueprintA = BlueprintImpactTestCaseTest::CreateTransientBlueprintChild(*this, ScriptParentA, TEXT("FilterA"));
+	BlueprintB = BlueprintImpactTestCaseTest::CreateTransientBlueprintChild(*this, ScriptParentB, TEXT("FilterB"));
+	if (!TestNotNull(TEXT("Blueprint impact filter test case should create blueprint A"), BlueprintA)
+		|| !TestNotNull(TEXT("Blueprint impact filter test case should create blueprint B"), BlueprintB))
 	{
 		return false;
 	}
@@ -303,7 +303,7 @@ class ATestBlueprintImpactFilterB : AActor
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> MatchingModules = AngelscriptEditor::BlueprintImpact::FindModulesForChangedScripts(
 		Engine.GetActiveModules(),
 		{ TEXT("TestBlueprintImpactFilterA.as") });
-	if (!TestEqual(TEXT("Blueprint impact filter scenario should only keep the module matching the changed script"), MatchingModules.Num(), 1))
+	if (!TestEqual(TEXT("Blueprint impact filter test case should only keep the module matching the changed script"), MatchingModules.Num(), 1))
 	{
 		return false;
 	}
@@ -315,12 +315,12 @@ class ATestBlueprintImpactFilterB : AActor
 	const bool bBlueprintAImpacted = AngelscriptEditor::BlueprintImpact::AnalyzeLoadedBlueprint(*BlueprintA, Symbols, BlueprintAReasons);
 	const bool bBlueprintBImpacted = AngelscriptEditor::BlueprintImpact::AnalyzeLoadedBlueprint(*BlueprintB, Symbols, BlueprintBReasons);
 
-	if (!TestTrue(TEXT("Blueprint impact filter scenario should still mark the matching script-parent blueprint"), bBlueprintAImpacted))
+	if (!TestTrue(TEXT("Blueprint impact filter test case should still mark the matching script-parent blueprint"), bBlueprintAImpacted))
 	{
 		return false;
 	}
 
-	TestFalse(TEXT("Blueprint impact filter scenario should not mark a blueprint whose script parent is unrelated to the changed script"), bBlueprintBImpacted);
+	TestFalse(TEXT("Blueprint impact filter test case should not mark a blueprint whose script parent is unrelated to the changed script"), bBlueprintBImpacted);
 
 	ASTEST_END_SHARE_CLEAN
 
@@ -341,7 +341,7 @@ bool FAngelscriptBlueprintImpactDiskBackedAssetScanTest::RunTest(const FString& 
 		{
 			IFileManager::Get().Delete(*PackageFilename, false, true, true);
 		}
-		BlueprintImpactScenarioTest::CleanupBlueprint(Blueprint);
+		BlueprintImpactTestCaseTest::CleanupBlueprint(Blueprint);
 		Engine.DiscardModule(*ModuleName.ToString());
 		ResetSharedCloneEngine(Engine);
 	};
@@ -365,13 +365,13 @@ class ATestBlueprintImpactDiskBackedAssetScan : AActor
 		return false;
 	}
 
-	Blueprint = BlueprintImpactScenarioTest::CreateDiskBackedBlueprintChild(
+	Blueprint = BlueprintImpactTestCaseTest::CreateDiskBackedBlueprintChild(
 		*this,
 		ScriptParentClass,
 		TEXT("DiskBacked"),
 		PackagePath,
 		PackageFilename);
-	if (!TestNotNull(TEXT("Blueprint impact disk-backed scenario should create a saved blueprint asset"), Blueprint))
+	if (!TestNotNull(TEXT("Blueprint impact disk-backed test case should create a saved blueprint asset"), Blueprint))
 	{
 		return false;
 	}
@@ -386,7 +386,7 @@ class ATestBlueprintImpactDiskBackedAssetScan : AActor
 		AssetRegistryModule.Get(),
 		Request);
 
-	if (!TestTrue(TEXT("Blueprint impact disk-backed scenario should discover the saved blueprint asset as a candidate"), ScanResult.CandidateAssets.ContainsByPredicate([&PackagePath](const FAssetData& AssetData)
+	if (!TestTrue(TEXT("Blueprint impact disk-backed test case should discover the saved blueprint asset as a candidate"), ScanResult.CandidateAssets.ContainsByPredicate([&PackagePath](const FAssetData& AssetData)
 	{
 		return AssetData.PackageName.ToString() == PackagePath;
 	})))
@@ -394,7 +394,7 @@ class ATestBlueprintImpactDiskBackedAssetScan : AActor
 		return false;
 	}
 
-	return TestTrue(TEXT("Blueprint impact disk-backed scenario should mark the saved blueprint asset as impacted"), ScanResult.Matches.ContainsByPredicate([&PackagePath](const AngelscriptEditor::BlueprintImpact::FBlueprintImpactMatch& Match)
+	return TestTrue(TEXT("Blueprint impact disk-backed test case should mark the saved blueprint asset as impacted"), ScanResult.Matches.ContainsByPredicate([&PackagePath](const AngelscriptEditor::BlueprintImpact::FBlueprintImpactMatch& Match)
 	{
 		return Match.AssetData.PackageName.ToString() == PackagePath;
 	}));

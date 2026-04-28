@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -103,7 +103,7 @@ class UOptimizedCallTarget : UObject
 	{
 		UASFunction* ScriptFunction = Cast<UASFunction>(FindGeneratedFunction(ScriptClass, FunctionName));
 		Test.TestNotNull(
-			*FString::Printf(TEXT("Optimized-call scenario should generate '%s' as a UASFunction"), FunctionName),
+			*FString::Printf(TEXT("Optimized-call test case should generate '%s' as a UASFunction"), FunctionName),
 			ScriptFunction);
 		return ScriptFunction;
 	}
@@ -128,7 +128,7 @@ bool FAngelscriptASFunctionOptimizedCallWrappersPreserveArgumentsAndReturnValues
 	};
 
 	UASClass* ScriptClass = ASFunctionOptimizedCallTests::CompileOptimizedCallTarget(*this, Engine);
-	if (!TestNotNull(TEXT("Optimized-call scenario should compile to a UASClass"), ScriptClass))
+	if (!TestNotNull(TEXT("Optimized-call test case should compile to a UASClass"), ScriptClass))
 	{
 		return false;
 	}
@@ -150,23 +150,23 @@ bool FAngelscriptASFunctionOptimizedCallWrappersPreserveArgumentsAndReturnValues
 	}
 
 	if (!TestTrue(
-			TEXT("Optimized-call scenario should route Ping through the dedicated no-params dispatch class"),
+			TEXT("Optimized-call test case should route Ping through the dedicated no-params dispatch class"),
 			PingFunction->GetClass() == UASFunction_NoParams::StaticClass()
 				|| PingFunction->GetClass() == UASFunction_NoParams_JIT::StaticClass())
 		|| !TestTrue(
-			TEXT("Optimized-call scenario should route GetByteCode through the dedicated byte-return dispatch class"),
+			TEXT("Optimized-call test case should route GetByteCode through the dedicated byte-return dispatch class"),
 			GetByteCodeFunction->GetClass() == UASFunction_ByteReturn::StaticClass()
 				|| GetByteCodeFunction->GetClass() == UASFunction_ByteReturn_JIT::StaticClass())
 		|| !TestTrue(
-			TEXT("Optimized-call scenario should route StoreFloat through the dedicated float-argument dispatch class"),
+			TEXT("Optimized-call test case should route StoreFloat through the dedicated float-argument dispatch class"),
 			StoreFloatFunction->GetClass() == UASFunction_FloatArg::StaticClass()
 				|| StoreFloatFunction->GetClass() == UASFunction_FloatArg_JIT::StaticClass())
 		|| !TestTrue(
-			TEXT("Optimized-call scenario should route StoreDouble through the dedicated double-argument dispatch class"),
+			TEXT("Optimized-call test case should route StoreDouble through the dedicated double-argument dispatch class"),
 			StoreDoubleFunction->GetClass() == UASFunction_DoubleArg::StaticClass()
 				|| StoreDoubleFunction->GetClass() == UASFunction_DoubleArg_JIT::StaticClass())
 		|| !TestTrue(
-			TEXT("Optimized-call scenario should route BumpRef through the dedicated reference-argument dispatch class"),
+			TEXT("Optimized-call test case should route BumpRef through the dedicated reference-argument dispatch class"),
 			BumpRefFunction->GetClass() == UASFunction_ReferenceArg::StaticClass()
 				|| BumpRefFunction->GetClass() == UASFunction_ReferenceArg_JIT::StaticClass()))
 	{
@@ -174,7 +174,7 @@ bool FAngelscriptASFunctionOptimizedCallWrappersPreserveArgumentsAndReturnValues
 	}
 
 	UObject* Instance = NewObject<UObject>(GetTransientPackage(), ScriptClass, TEXT("OptimizedCallTargetInstance"));
-	if (!TestNotNull(TEXT("Optimized-call scenario should instantiate the generated UObject"), Instance))
+	if (!TestNotNull(TEXT("Optimized-call test case should instantiate the generated UObject"), Instance))
 	{
 		return false;
 	}

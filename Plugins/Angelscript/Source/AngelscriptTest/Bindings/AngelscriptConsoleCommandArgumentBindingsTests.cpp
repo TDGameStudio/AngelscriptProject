@@ -24,7 +24,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandArgumentBindingsTests_Private
 {
-	struct FConsoleCommandArgumentScenario
+	struct FConsoleCommandArgumentTestCase
 	{
 		const TCHAR* ModuleName = TEXT("");
 		const TCHAR* ContextLabel = TEXT("");
@@ -159,15 +159,15 @@ int Entry()
 			1);
 	}
 
-	bool RunConsoleCommandArgumentScenario(
+	bool RunConsoleCommandArgumentTestCase(
 		FAutomationTestBase& Test,
-		const FConsoleCommandArgumentScenario& Scenario)
+		const FConsoleCommandArgumentTestCase& TestCase)
 	{
 		bool bPassed = true;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 
-		const FString ModuleName = Scenario.ModuleName;
+		const FString ModuleName = TestCase.ModuleName;
 		const FString CommandName = MakeConsoleObjectName(TEXT("Command"));
 		const FString OutputName = MakeConsoleObjectName(TEXT("Output"));
 		bool bModuleDiscarded = false;
@@ -185,24 +185,24 @@ int Entry()
 
 		IConsoleVariable* OutputVariable = IConsoleManager::Get().RegisterConsoleVariable(*OutputName, TEXT("__native_unset__"), TEXT("Console command output sink"));
 		if (!Test.TestNotNull(
-				*FString::Printf(TEXT("%s should pre-register the output cvar"), Scenario.ContextLabel),
+				*FString::Printf(TEXT("%s should pre-register the output cvar"), TestCase.ContextLabel),
 				OutputVariable))
 		{
 			return false;
 		}
 
-		if (!CompileConsoleCommandModule(Test, Engine, ModuleName, CommandName, OutputName, Scenario.ContextLabel))
+		if (!CompileConsoleCommandModule(Test, Engine, ModuleName, CommandName, OutputName, TestCase.ContextLabel))
 		{
 			return false;
 		}
 
-		const bool bRegistered = VerifyConsoleCommandExists(Test, CommandName, Scenario.ContextLabel);
-		const bool bExecuted = ExecuteConsoleCommand(Test, CommandName, Scenario.Args, Scenario.ContextLabel);
-		const bool bOutputMatched = VerifyConsoleVariableString(Test, OutputName, Scenario.ExpectedOutput, Scenario.ContextLabel);
+		const bool bRegistered = VerifyConsoleCommandExists(Test, CommandName, TestCase.ContextLabel);
+		const bool bExecuted = ExecuteConsoleCommand(Test, CommandName, TestCase.Args, TestCase.ContextLabel);
+		const bool bOutputMatched = VerifyConsoleVariableString(Test, OutputName, TestCase.ExpectedOutput, TestCase.ContextLabel);
 
 		Engine.DiscardModule(*ModuleName);
 		bModuleDiscarded = true;
-		const bool bUnregistered = VerifyConsoleCommandMissing(Test, CommandName, Scenario.ContextLabel);
+		const bool bUnregistered = VerifyConsoleCommandMissing(Test, CommandName, TestCase.ContextLabel);
 		bPassed = bRegistered && bExecuted && bOutputMatched && bUnregistered;
 
 		ASTEST_END_SHARE_CLEAN
@@ -214,26 +214,26 @@ using namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandArgumentBindin
 
 bool FAngelscriptConsoleCommandEmptyArgsMarkerBindingsTest::RunTest(const FString& Parameters)
 {
-	FConsoleCommandArgumentScenario Scenario;
-	Scenario.ModuleName = TEXT("ASConsoleCommandArgumentEmptyCompat");
-	Scenario.ContextLabel = TEXT("Console command empty-args marshalling");
-	Scenario.ExpectedOutput = TEXT("<empty>");
-	return RunConsoleCommandArgumentScenario(*this, Scenario);
+	FConsoleCommandArgumentTestCase TestCase;
+	TestCase.ModuleName = TEXT("ASConsoleCommandArgumentEmptyCompat");
+	TestCase.ContextLabel = TEXT("Console command empty-args marshalling");
+	TestCase.ExpectedOutput = TEXT("<empty>");
+	return RunConsoleCommandArgumentTestCase(*this, TestCase);
 }
 
 bool FAngelscriptConsoleCommandContentAndOrderBindingsTest::RunTest(const FString& Parameters)
 {
-	FConsoleCommandArgumentScenario Scenario;
-	Scenario.ModuleName = TEXT("ASConsoleCommandArgumentContentCompat");
-	Scenario.ContextLabel = TEXT("Console command content-and-order marshalling");
-	Scenario.Args =
+	FConsoleCommandArgumentTestCase TestCase;
+	TestCase.ModuleName = TEXT("ASConsoleCommandArgumentContentCompat");
+	TestCase.ContextLabel = TEXT("Console command content-and-order marshalling");
+	TestCase.Args =
 	{
 		TEXT("One"),
 		TEXT("Two Words"),
 		TEXT("Three=Value"),
 	};
-	Scenario.ExpectedOutput = TEXT("One|Two Words|Three=Value");
-	return RunConsoleCommandArgumentScenario(*this, Scenario);
+	TestCase.ExpectedOutput = TEXT("One|Two Words|Three=Value");
+	return RunConsoleCommandArgumentTestCase(*this, TestCase);
 }
 
 #endif

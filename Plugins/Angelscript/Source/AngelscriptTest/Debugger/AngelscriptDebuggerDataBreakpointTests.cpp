@@ -21,7 +21,7 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Privat
 		Fixture.ModuleName = TEXT("DebuggerDataBreakpointFixture");
 		Fixture.GeneratedClassName = NAME_None;
 		Fixture.EntryFunctionName = NAME_None;
-		Fixture.EntryFunctionDeclaration = TEXT("int RunScenario()");
+		Fixture.EntryFunctionDeclaration = TEXT("int RunTestCase()");
 		Fixture.Filename = TEXT("DebuggerDataBreakpointFixture.as");
 		Fixture.ScriptSource = TEXT(R"AS(int Inner(int Value)
 {
@@ -31,7 +31,7 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Privat
 	return InnerValue;
 }
 
-int RunScenario()
+int RunTestCase()
 {
 	int Result = Inner(4);
 	/*MARK:StepAfterCallLine*/ Result += 1;

@@ -120,18 +120,18 @@ int Entry()
 		PreprocessErrorCount);
 
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should preprocess successfully"),
+		TEXT("Namespaced annotated class test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Namespaced annotated class scenario should keep preprocessing errors at zero"),
+		TEXT("Namespaced annotated class test case should keep preprocessing errors at zero"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Namespaced annotated class scenario should keep preprocessing diagnostics empty"),
+		TEXT("Namespaced annotated class test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Namespaced annotated class scenario should emit exactly one module descriptor"),
+		TEXT("Namespaced annotated class test case should emit exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -141,36 +141,36 @@ int Entry()
 
 	const TSharedRef<FAngelscriptModuleDesc> ModuleDesc = Modules[0];
 	const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(CompilerPipelineNamespaceTest::ClassName);
-	if (!TestTrue(TEXT("Namespaced annotated class scenario should parse the annotated class descriptor"), ClassDesc.IsValid()))
+	if (!TestTrue(TEXT("Namespaced annotated class test case should parse the annotated class descriptor"), ClassDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should record the class namespace during preprocessing"),
+		TEXT("Namespaced annotated class test case should record the class namespace during preprocessing"),
 		ClassDesc->Namespace.IsSet());
 	if (ClassDesc->Namespace.IsSet())
 	{
 		bPassed &= TestEqual(
-			TEXT("Namespaced annotated class scenario should preserve the Gameplay namespace"),
+			TEXT("Namespaced annotated class test case should preserve the Gameplay namespace"),
 			ClassDesc->Namespace.GetValue(),
 			FString(TEXT("Gameplay")));
 	}
 
-	if (!TestTrue(TEXT("Namespaced annotated class scenario should keep one processed code section"), ModuleDesc->Code.Num() == 1))
+	if (!TestTrue(TEXT("Namespaced annotated class test case should keep one processed code section"), ModuleDesc->Code.Num() == 1))
 	{
 		return false;
 	}
 
 	const FString& ProcessedCode = ModuleDesc->Code[0].Code;
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should keep the generated helper inside the Gameplay namespace"),
+		TEXT("Namespaced annotated class test case should keep the generated helper inside the Gameplay namespace"),
 		ProcessedCode.Contains(TEXT("namespace Gameplay")));
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should emit the __StaticType global for the namespaced class"),
+		TEXT("Namespaced annotated class test case should emit the __StaticType global for the namespaced class"),
 		ProcessedCode.Contains(TEXT("__StaticType_UNamespaceCarrier")));
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should emit the nested StaticClass helper wrapper"),
+		TEXT("Namespaced annotated class test case should emit the nested StaticClass helper wrapper"),
 		ProcessedCode.Contains(TEXT("namespace UNamespaceCarrier { UClass StaticClass()")));
 
 	Engine.ResetDiagnostics();
@@ -186,20 +186,20 @@ int Entry()
 		Summary);
 
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Namespaced annotated class test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should record preprocessor usage in the compile summary"),
+		TEXT("Namespaced annotated class test case should record preprocessor usage in the compile summary"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should mark compile succeeded in the summary"),
+		TEXT("Namespaced annotated class test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Namespaced annotated class scenario should compile as fully handled"),
+		TEXT("Namespaced annotated class test case should compile as fully handled"),
 		Summary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Namespaced annotated class scenario should keep compile diagnostics empty"),
+		TEXT("Namespaced annotated class test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -208,13 +208,13 @@ int Entry()
 	}
 
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, *CompilerPipelineNamespaceTest::ClassName);
-	if (!TestNotNull(TEXT("Namespaced annotated class scenario should materialize the generated class"), GeneratedClass))
+	if (!TestNotNull(TEXT("Namespaced annotated class test case should materialize the generated class"), GeneratedClass))
 	{
 		return false;
 	}
 
 	bPassed &= TestNotNull(
-		TEXT("Namespaced annotated class scenario should materialize the generated class method"),
+		TEXT("Namespaced annotated class test case should materialize the generated class method"),
 		FindGeneratedFunction(GeneratedClass, *CompilerPipelineNamespaceTest::MethodName));
 
 	int32 Result = 0;
@@ -224,12 +224,12 @@ int Entry()
 		CompilerPipelineNamespaceTest::EntryDecl,
 		Result);
 	bPassed &= TestTrue(
-		TEXT("Namespaced annotated class scenario should execute the entry point"),
+		TEXT("Namespaced annotated class test case should execute the entry point"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Namespaced annotated class scenario should resolve Gameplay::UNamespaceCarrier::StaticClass() at runtime"),
+			TEXT("Namespaced annotated class test case should resolve Gameplay::UNamespaceCarrier::StaticClass() at runtime"),
 			Result,
 			42);
 	}

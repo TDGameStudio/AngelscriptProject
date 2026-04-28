@@ -1,4 +1,4 @@
-﻿#include "../Shared/AngelscriptFunctionalTestUtils.h"
+#include "../Shared/AngelscriptFunctionalTestUtils.h"
 #include "../Shared/AngelscriptTestMacros.h"
 
 #include "AngelscriptGameplayFunctionLibraryTestTypes.h"
@@ -162,9 +162,9 @@ class UAsyncSaveLoadScriptHarness : UObject
 	UObject* ScriptHarness = NewObject<UObject>(GetTransientPackage(), ScriptHarnessClass, TEXT("AsyncSaveLoadScriptHarness"));
 	UAngelscriptAsyncSaveLoadCallbackRecorder* Recorder = NewObject<UAngelscriptAsyncSaveLoadCallbackRecorder>(GetTransientPackage(), TEXT("AsyncSaveLoadRecorder"));
 	UAngelscriptAsyncSaveGameTestObject* SaveGameObject = NewObject<UAngelscriptAsyncSaveGameTestObject>(GetTransientPackage(), TEXT("AsyncSaveLoadSaveGame"));
-	if (!TestNotNull(TEXT("Async save/load delegate scenario should create the script harness"), ScriptHarness)
-		|| !TestNotNull(TEXT("Async save/load delegate scenario should create the callback recorder"), Recorder)
-		|| !TestNotNull(TEXT("Async save/load delegate scenario should create the save object"), SaveGameObject))
+	if (!TestNotNull(TEXT("Async save/load delegate test case should create the script harness"), ScriptHarness)
+		|| !TestNotNull(TEXT("Async save/load delegate test case should create the callback recorder"), Recorder)
+		|| !TestNotNull(TEXT("Async save/load delegate test case should create the save object"), SaveGameObject))
 	{
 		return false;
 	}

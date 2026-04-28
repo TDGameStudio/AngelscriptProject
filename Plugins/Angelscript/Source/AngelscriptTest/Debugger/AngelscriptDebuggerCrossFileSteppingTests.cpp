@@ -418,7 +418,7 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Pri
 	{
 		FCrossFileSteppingFixture Fixture;
 		Fixture.ModuleName = TEXT("DebuggerCrossFileSteppingFixture");
-		Fixture.EntryFunctionDeclaration = TEXT("int RunScenario()");
+		Fixture.EntryFunctionDeclaration = TEXT("int RunTestCase()");
 		Fixture.EntryFilename = TEXT("DebuggerCrossFileSteppingA.as");
 		Fixture.CalleeFilename = TEXT("DebuggerCrossFileSteppingB.as");
 		Fixture.Sections.Add(MakeCrossFileSection(
@@ -433,7 +433,7 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Pri
 			Fixture.LineMarkers));
 		Fixture.Sections.Add(MakeCrossFileSection(
 			Fixture.EntryFilename,
-			TEXT(R"AS(int RunScenario()
+			TEXT(R"AS(int RunTestCase()
 {
 	int StartValue = 4;
 	int Seed = StartValue + 1;

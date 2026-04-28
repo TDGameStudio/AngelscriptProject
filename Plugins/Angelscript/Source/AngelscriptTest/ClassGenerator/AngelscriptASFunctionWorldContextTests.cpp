@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -48,7 +48,7 @@ bool FAngelscriptASFunctionStaticWorldContextRuntimeCallUsesValidParmOffsetTest:
 	AActor& ContextActor = Spawner.SpawnActor<AActor>();
 	AActor& PreviousContextActor = Spawner.SpawnActor<AActor>();
 	UObject* PreviousContext = &PreviousContextActor;
-	if (!TestNotNull(TEXT("World-context function test should create a scenario actor"), &ContextActor)
+	if (!TestNotNull(TEXT("World-context function test should create a test case actor"), &ContextActor)
 		|| !TestNotNull(TEXT("World-context function test should create a previous ambient context"), PreviousContext))
 	{
 		return false;

@@ -1570,7 +1570,7 @@ class ATemplateReflectionReferenceTypesActor : AActor
 // test proves that the same helpers work against AS-*defined* USTRUCTs and
 // AS-*defined* UCLASS references used as UPROPERTY fields or UFUNCTION params.
 //
-// This scenario is historically fragile in SHARE_CLEAN mode because the
+// This test case is historically fragile in SHARE_CLEAN mode because the
 // engine's GC can outlive the shared AS engine's type table when AS structs
 // are in play. The test therefore uses an IsolatedFull engine to keep the AS
 // engine alive for the duration of the spawned actor's lifetime.

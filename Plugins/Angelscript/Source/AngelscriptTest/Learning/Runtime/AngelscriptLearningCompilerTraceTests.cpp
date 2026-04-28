@@ -12,7 +12,7 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests_Private
 {
-	struct FLearningCompilerScenario
+	struct FLearningCompilerTestCase
 	{
 		FString ApiLabel;
 		FName ModuleName;
@@ -85,12 +85,12 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests
 		return Result;
 	}
 
-	void TraceCompilerScenario(FAngelscriptLearningTraceSession& Trace, const FLearningCompilerScenario& Scenario, const FAngelscriptCompileTraceSummary& Outcome)
+	void TraceCompilerTestCase(FAngelscriptLearningTraceSession& Trace, const FLearningCompilerTestCase& TestCase, const FAngelscriptCompileTraceSummary& Outcome)
 	{
-		Trace.AddStep(Scenario.ApiLabel, Outcome.bCompileSucceeded ? TEXT("Compilation path completed without a hard error") : TEXT("Compilation path reported an error or missing preprocessing result"));
-		Trace.AddKeyValue(TEXT("ScriptFilename"), Scenario.Filename);
-		Trace.AddKeyValue(TEXT("CompileType"), GetCompileTypeLabel(Scenario.CompileType));
-		Trace.AddKeyValue(TEXT("UsesPreprocessor"), Scenario.bUsesPreprocessor ? TEXT("true") : TEXT("false"));
+		Trace.AddStep(TestCase.ApiLabel, Outcome.bCompileSucceeded ? TEXT("Compilation path completed without a hard error") : TEXT("Compilation path reported an error or missing preprocessing result"));
+		Trace.AddKeyValue(TEXT("ScriptFilename"), TestCase.Filename);
+		Trace.AddKeyValue(TEXT("CompileType"), GetCompileTypeLabel(TestCase.CompileType));
+		Trace.AddKeyValue(TEXT("UsesPreprocessor"), TestCase.bUsesPreprocessor ? TEXT("true") : TEXT("false"));
 		Trace.AddKeyValue(TEXT("ModuleDescCount"), FString::FromInt(Outcome.ModuleDescCount));
 		Trace.AddKeyValue(TEXT("CompiledModuleCount"), FString::FromInt(Outcome.CompiledModuleCount));
 		Trace.AddKeyValue(TEXT("CompileResult"), GetCompileResultLabel(Outcome.CompileResult));
@@ -136,7 +136,7 @@ bool FAngelscriptLearningCompilerTraceTest::RunTest(const FString& Parameters)
 	FAngelscriptLearningTraceSession Trace(TEXT("LearningCompilerPipeline"), SinkConfig);
 	Trace.BeginPhase(EAngelscriptLearningTracePhase::Compile);
 
-	const FLearningCompilerScenario BuildModuleScenario{
+	const FLearningCompilerTestCase BuildModuleTestCase{
 		TEXT("BuildModuleStyle.InitialCompile"),
 		TEXT("LearningCompilerBuildModule"),
 		TEXT("LearningCompilerBuildModule.as"),
@@ -145,10 +145,10 @@ bool FAngelscriptLearningCompilerTraceTest::RunTest(const FString& Parameters)
 		true,
 	};
 	FAngelscriptCompileTraceSummary BuildModuleOutcome;
-	CompileModuleWithSummary(&Engine, BuildModuleScenario.CompileType, BuildModuleScenario.ModuleName, BuildModuleScenario.Filename, BuildModuleScenario.Script, BuildModuleScenario.bUsesPreprocessor, BuildModuleOutcome, BuildModuleScenario.bSuppressCompileErrorLogs);
-	TraceCompilerScenario(Trace, BuildModuleScenario, BuildModuleOutcome);
+	CompileModuleWithSummary(&Engine, BuildModuleTestCase.CompileType, BuildModuleTestCase.ModuleName, BuildModuleTestCase.Filename, BuildModuleTestCase.Script, BuildModuleTestCase.bUsesPreprocessor, BuildModuleOutcome, BuildModuleTestCase.bSuppressCompileErrorLogs);
+	TraceCompilerTestCase(Trace, BuildModuleTestCase, BuildModuleOutcome);
 
-	const FLearningCompilerScenario PlainCompileScenario{
+	const FLearningCompilerTestCase PlainCompileTestCase{
 		TEXT("CompileModuleFromMemoryStyle.SoftReloadOnly"),
 		TEXT("LearningCompilerPlainModule"),
 		TEXT("LearningCompilerPlainModule.as"),
@@ -157,10 +157,10 @@ bool FAngelscriptLearningCompilerTraceTest::RunTest(const FString& Parameters)
 		false,
 	};
 	FAngelscriptCompileTraceSummary PlainCompileOutcome;
-	CompileModuleWithSummary(&Engine, PlainCompileScenario.CompileType, PlainCompileScenario.ModuleName, PlainCompileScenario.Filename, PlainCompileScenario.Script, PlainCompileScenario.bUsesPreprocessor, PlainCompileOutcome, PlainCompileScenario.bSuppressCompileErrorLogs);
-	TraceCompilerScenario(Trace, PlainCompileScenario, PlainCompileOutcome);
+	CompileModuleWithSummary(&Engine, PlainCompileTestCase.CompileType, PlainCompileTestCase.ModuleName, PlainCompileTestCase.Filename, PlainCompileTestCase.Script, PlainCompileTestCase.bUsesPreprocessor, PlainCompileOutcome, PlainCompileTestCase.bSuppressCompileErrorLogs);
+	TraceCompilerTestCase(Trace, PlainCompileTestCase, PlainCompileOutcome);
 
-	const FLearningCompilerScenario AnnotatedCompileScenario{
+	const FLearningCompilerTestCase AnnotatedCompileTestCase{
 		TEXT("CompileAnnotatedModuleFromMemoryStyle.FullReload"),
 		TEXT("LearningCompilerAnnotatedModule"),
 		TEXT("LearningCompilerAnnotatedModule.as"),
@@ -179,10 +179,10 @@ class ULearningCompilerTraceCarrier : UObject
 		true,
 	};
 	FAngelscriptCompileTraceSummary AnnotatedCompileOutcome;
-	CompileModuleWithSummary(&Engine, AnnotatedCompileScenario.CompileType, AnnotatedCompileScenario.ModuleName, AnnotatedCompileScenario.Filename, AnnotatedCompileScenario.Script, AnnotatedCompileScenario.bUsesPreprocessor, AnnotatedCompileOutcome, AnnotatedCompileScenario.bSuppressCompileErrorLogs);
-	TraceCompilerScenario(Trace, AnnotatedCompileScenario, AnnotatedCompileOutcome);
+	CompileModuleWithSummary(&Engine, AnnotatedCompileTestCase.CompileType, AnnotatedCompileTestCase.ModuleName, AnnotatedCompileTestCase.Filename, AnnotatedCompileTestCase.Script, AnnotatedCompileTestCase.bUsesPreprocessor, AnnotatedCompileOutcome, AnnotatedCompileTestCase.bSuppressCompileErrorLogs);
+	TraceCompilerTestCase(Trace, AnnotatedCompileTestCase, AnnotatedCompileOutcome);
 
-	const FLearningCompilerScenario BrokenAnnotatedScenario{
+	const FLearningCompilerTestCase BrokenAnnotatedTestCase{
 		TEXT("CompileAnnotatedModuleFromMemoryStyle.Diagnostics"),
 		TEXT("LearningCompilerBrokenAnnotatedModule"),
 		TEXT("LearningCompilerBrokenAnnotatedModule.as"),
@@ -203,8 +203,8 @@ class UBrokenLearningCompilerTraceCarrier : UObject
 		true,
 	};
 	FAngelscriptCompileTraceSummary BrokenAnnotatedOutcome;
-	CompileModuleWithSummary(&Engine, BrokenAnnotatedScenario.CompileType, BrokenAnnotatedScenario.ModuleName, BrokenAnnotatedScenario.Filename, BrokenAnnotatedScenario.Script, BrokenAnnotatedScenario.bUsesPreprocessor, BrokenAnnotatedOutcome, BrokenAnnotatedScenario.bSuppressCompileErrorLogs);
-	TraceCompilerScenario(Trace, BrokenAnnotatedScenario, BrokenAnnotatedOutcome);
+	CompileModuleWithSummary(&Engine, BrokenAnnotatedTestCase.CompileType, BrokenAnnotatedTestCase.ModuleName, BrokenAnnotatedTestCase.Filename, BrokenAnnotatedTestCase.Script, BrokenAnnotatedTestCase.bUsesPreprocessor, BrokenAnnotatedOutcome, BrokenAnnotatedTestCase.bSuppressCompileErrorLogs);
+	TraceCompilerTestCase(Trace, BrokenAnnotatedTestCase, BrokenAnnotatedOutcome);
 
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, TEXT("ULearningCompilerTraceCarrier"));
 	if (GeneratedClass != nullptr)

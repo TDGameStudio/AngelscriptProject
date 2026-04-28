@@ -218,7 +218,7 @@ int VerifyWorldBindings(
 		ResultMask,
 		0);
 	bPassed &= TestTrue(
-		TEXT("World context bindings test should observe a game world in the spawned scenario world"),
+		TEXT("World context bindings test should observe a game world in the spawned test case world"),
 		bExpectedIsGameWorld);
 	bPassed &= TestEqual(
 		TEXT("World context bindings test should use the native world type baseline"),

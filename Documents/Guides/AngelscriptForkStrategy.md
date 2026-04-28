@@ -54,7 +54,7 @@
 5. 最小实现
    ↓ 只改必要的代码，新增的 [UE++] 改动必须加注释标记
 6. 回归验证
-   ↓ 全量 AngelscriptFast + 受影响主题的 AngelscriptScenario
+   ↓ 全量 AngelscriptFast + 受影响主题的 AngelscriptFunctional
 ```
 
 ### 代码标记约定

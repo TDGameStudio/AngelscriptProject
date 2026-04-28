@@ -1,10 +1,10 @@
-﻿#include "Shared/AngelscriptTestEngineHelper.h"
+#include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 // Validates script classes subclassing UScriptWorldSubsystem and
 // UScriptGameInstanceSubsystem. The preprocessor auto-generates a Get()
 // static method whose Cast<SubClass>(Subsystem::GetXxxSubsystem(...))

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -13,7 +13,7 @@
 #include "UObject/GarbageCollection.h"
 #include "UObject/Package.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -21,8 +21,8 @@ using namespace AngelscriptFunctionalTestUtils;
 
 namespace BlueprintSubclassActorTest
 {
-	constexpr float ScenarioTickDeltaTime = 0.016f;
-	constexpr int32 ScenarioTickCount = 3;
+	constexpr float TestCaseTickDeltaTime = 0.016f;
+	constexpr int32 TestCaseTickCount = 3;
 
 	UBlueprint* CreateTransientBlueprintChild(FAutomationTestBase& Test, UClass* ParentClass, FStringView Suffix)
 	{
@@ -208,7 +208,7 @@ class ATestActorBlueprintSubclassBeginPlay : AActor
 		BeginPlayCalled,
 		1);
 
-	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassActorTest::ScenarioTickDeltaTime, BlueprintSubclassActorTest::ScenarioTickCount);
+	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassActorTest::TestCaseTickDeltaTime, BlueprintSubclassActorTest::TestCaseTickCount);
 
 	int32 TickCount = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("TickCount"), TickCount))
@@ -218,7 +218,7 @@ class ATestActorBlueprintSubclassBeginPlay : AActor
 
 	TestTrue(
 		TEXT("World-level Tick should dispatch inherited script Tick to blueprint subclass actors at least once per world tick"),
-		TickCount >= BlueprintSubclassActorTest::ScenarioTickCount);
+		TickCount >= BlueprintSubclassActorTest::TestCaseTickCount);
 
 	ASTEST_END_SHARE_CLEAN
 

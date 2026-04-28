@@ -202,18 +202,18 @@ class UCompilerStringDefaultCarrier : UObject
 	}
 
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should preprocess successfully"),
+		TEXT("String default literal test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should not emit preprocessing errors"),
+		TEXT("String default literal test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should keep preprocessing diagnostics empty"),
+		TEXT("String default literal test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should emit exactly one module descriptor"),
+		TEXT("String default literal test case should emit exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -223,25 +223,25 @@ class UCompilerStringDefaultCarrier : UObject
 
 	const TSharedRef<FAngelscriptModuleDesc> ModuleDesc = Modules[0];
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should preserve the expected module name"),
+		TEXT("String default literal test case should preserve the expected module name"),
 		ModuleDesc->ModuleName,
 		CompilerPipelinePropertyDefaultTest::ModuleName.ToString());
 
 	const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(CompilerPipelinePropertyDefaultTest::ClassName);
-	if (!TestTrue(TEXT("String default literal scenario should parse the annotated class descriptor"), ClassDesc.IsValid()))
+	if (!TestTrue(TEXT("String default literal test case should parse the annotated class descriptor"), ClassDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should preserve the exact defaults code text"),
+		TEXT("String default literal test case should preserve the exact defaults code text"),
 		ClassDesc->DefaultsCode,
 		CompilerPipelinePropertyDefaultTest::ExpectedDefaultsCode);
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should keep the line-comment marker inside the defaults code"),
+		TEXT("String default literal test case should keep the line-comment marker inside the defaults code"),
 		ClassDesc->DefaultsCode.Contains(TEXT("//not a comment")));
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should keep the block-comment marker inside the defaults code"),
+		TEXT("String default literal test case should keep the block-comment marker inside the defaults code"),
 		ClassDesc->DefaultsCode.Contains(TEXT("/*literal*/")));
 
 	Engine.ResetDiagnostics();
@@ -265,20 +265,20 @@ class UCompilerStringDefaultCarrier : UObject
 	}
 
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should compile through the normal preprocessor pipeline"),
+		TEXT("String default literal test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should record preprocessor usage in the compile summary"),
+		TEXT("String default literal test case should record preprocessor usage in the compile summary"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should mark compile succeeded in the summary"),
+		TEXT("String default literal test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should finish with a fully handled compile result"),
+		TEXT("String default literal test case should finish with a fully handled compile result"),
 		Summary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("String default literal scenario should keep compile diagnostics empty"),
+		TEXT("String default literal test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled || !Summary.bCompileSucceeded)
@@ -287,7 +287,7 @@ class UCompilerStringDefaultCarrier : UObject
 	}
 
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, *CompilerPipelinePropertyDefaultTest::ClassName);
-	if (!TestNotNull(TEXT("String default literal scenario should materialize the generated class"), GeneratedClass))
+	if (!TestNotNull(TEXT("String default literal test case should materialize the generated class"), GeneratedClass))
 	{
 		return false;
 	}
@@ -295,17 +295,17 @@ class UCompilerStringDefaultCarrier : UObject
 	FStrProperty* MessageProperty = FindFProperty<FStrProperty>(GeneratedClass, *CompilerPipelinePropertyDefaultTest::MessagePropertyName);
 	FStrProperty* BlockTextProperty = FindFProperty<FStrProperty>(GeneratedClass, *CompilerPipelinePropertyDefaultTest::BlockTextPropertyName);
 	UFunction* VerifyDefaultsFunction = FindGeneratedFunction(GeneratedClass, CompilerPipelinePropertyDefaultTest::VerifyFunctionName);
-	if (!TestNotNull(TEXT("String default literal scenario should materialize the Message property"), MessageProperty)
-		|| !TestNotNull(TEXT("String default literal scenario should materialize the BlockText property"), BlockTextProperty)
-		|| !TestNotNull(TEXT("String default literal scenario should materialize the verification function"), VerifyDefaultsFunction))
+	if (!TestNotNull(TEXT("String default literal test case should materialize the Message property"), MessageProperty)
+		|| !TestNotNull(TEXT("String default literal test case should materialize the BlockText property"), BlockTextProperty)
+		|| !TestNotNull(TEXT("String default literal test case should materialize the verification function"), VerifyDefaultsFunction))
 	{
 		return false;
 	}
 
 	UObject* DefaultObject = GeneratedClass->GetDefaultObject();
 	UObject* RuntimeObject = NewObject<UObject>(GetTransientPackage(), GeneratedClass, TEXT("CompilerStringDefaultCarrier"));
-	if (!TestNotNull(TEXT("String default literal scenario should expose the generated CDO"), DefaultObject)
-		|| !TestNotNull(TEXT("String default literal scenario should instantiate the generated class"), RuntimeObject))
+	if (!TestNotNull(TEXT("String default literal test case should expose the generated CDO"), DefaultObject)
+		|| !TestNotNull(TEXT("String default literal test case should instantiate the generated class"), RuntimeObject))
 	{
 		return false;
 	}
@@ -313,47 +313,47 @@ class UCompilerStringDefaultCarrier : UObject
 	CompilerPipelinePropertyDefaultTest::FRuntimeDefaultObservation Observation;
 	bPassed &= CompilerPipelinePropertyDefaultTest::ReadStringPropertyValue(
 		*this,
-		TEXT("String default literal scenario should read Message from the CDO"),
+		TEXT("String default literal test case should read Message from the CDO"),
 		MessageProperty,
 		DefaultObject,
 		Observation.DefaultMessage);
 	bPassed &= CompilerPipelinePropertyDefaultTest::ReadStringPropertyValue(
 		*this,
-		TEXT("String default literal scenario should read BlockText from the CDO"),
+		TEXT("String default literal test case should read BlockText from the CDO"),
 		BlockTextProperty,
 		DefaultObject,
 		Observation.DefaultBlockText);
 	bPassed &= CompilerPipelinePropertyDefaultTest::ReadStringPropertyValue(
 		*this,
-		TEXT("String default literal scenario should read Message from a runtime instance"),
+		TEXT("String default literal test case should read Message from a runtime instance"),
 		MessageProperty,
 		RuntimeObject,
 		Observation.RuntimeMessage);
 	bPassed &= CompilerPipelinePropertyDefaultTest::ReadStringPropertyValue(
 		*this,
-		TEXT("String default literal scenario should read BlockText from a runtime instance"),
+		TEXT("String default literal test case should read BlockText from a runtime instance"),
 		BlockTextProperty,
 		RuntimeObject,
 		Observation.RuntimeBlockText);
 
 	bPassed &= CompilerPipelinePropertyDefaultTest::VerifyStringValue(
 		*this,
-		TEXT("String default literal scenario should preserve Message on the CDO"),
+		TEXT("String default literal test case should preserve Message on the CDO"),
 		Observation.DefaultMessage,
 		CompilerPipelinePropertyDefaultTest::ExpectedMessage);
 	bPassed &= CompilerPipelinePropertyDefaultTest::VerifyStringValue(
 		*this,
-		TEXT("String default literal scenario should preserve BlockText on the CDO"),
+		TEXT("String default literal test case should preserve BlockText on the CDO"),
 		Observation.DefaultBlockText,
 		CompilerPipelinePropertyDefaultTest::ExpectedBlockText);
 	bPassed &= CompilerPipelinePropertyDefaultTest::VerifyStringValue(
 		*this,
-		TEXT("String default literal scenario should preserve Message on runtime instances"),
+		TEXT("String default literal test case should preserve Message on runtime instances"),
 		Observation.RuntimeMessage,
 		CompilerPipelinePropertyDefaultTest::ExpectedMessage);
 	bPassed &= CompilerPipelinePropertyDefaultTest::VerifyStringValue(
 		*this,
-		TEXT("String default literal scenario should preserve BlockText on runtime instances"),
+		TEXT("String default literal test case should preserve BlockText on runtime instances"),
 		Observation.RuntimeBlockText,
 		CompilerPipelinePropertyDefaultTest::ExpectedBlockText);
 
@@ -363,12 +363,12 @@ class UCompilerStringDefaultCarrier : UObject
 		VerifyDefaultsFunction,
 		Observation.VerifyResult);
 	bPassed &= TestTrue(
-		TEXT("String default literal scenario should execute the generated verification function"),
+		TEXT("String default literal test case should execute the generated verification function"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("String default literal scenario should keep comment markers and escaped quotes visible to script runtime code"),
+			TEXT("String default literal test case should keep comment markers and escaped quotes visible to script runtime code"),
 			Observation.VerifyResult,
 			CompilerPipelinePropertyDefaultTest::ExpectedVerifyResult);
 	}

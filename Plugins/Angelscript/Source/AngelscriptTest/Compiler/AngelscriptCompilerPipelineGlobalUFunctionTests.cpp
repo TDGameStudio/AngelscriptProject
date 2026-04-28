@@ -105,20 +105,20 @@ namespace CompilerPipelineGlobalUFunctionTest
 		int32& OutResult)
 	{
 		FIntProperty* ReturnProperty = FindFProperty<FIntProperty>(Function, TEXT("ReturnValue"));
-		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class scenario should expose a ReturnValue property"), ReturnProperty))
+		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class test case should expose a ReturnValue property"), ReturnProperty))
 		{
 			return false;
 		}
 
 		FStructOnScope Params(Function);
 		void* ParamsMemory = Params.GetStructMemory();
-		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class scenario should allocate a reflected parameter buffer"), ParamsMemory))
+		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class test case should allocate a reflected parameter buffer"), ParamsMemory))
 		{
 			return false;
 		}
 
 		UObject* DefaultObject = OwnerClass != nullptr ? OwnerClass->GetDefaultObject() : nullptr;
-		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class scenario should expose a default object for the generated statics class"), DefaultObject))
+		if (!Test.TestNotNull(TEXT("Global UFUNCTION statics-class test case should expose a default object for the generated statics class"), DefaultObject))
 		{
 			return false;
 		}
@@ -186,18 +186,18 @@ int GetGlobalValue()
 		PreprocessErrorCount);
 
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should preprocess successfully"),
+		TEXT("Global UFUNCTION statics-class test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should keep preprocessing errors at zero"),
+		TEXT("Global UFUNCTION statics-class test case should keep preprocessing errors at zero"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should keep preprocessing diagnostics empty"),
+		TEXT("Global UFUNCTION statics-class test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should emit exactly one module descriptor"),
+		TEXT("Global UFUNCTION statics-class test case should emit exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -211,32 +211,32 @@ int GetGlobalValue()
 	const TSharedPtr<FAngelscriptClassDesc> StaticsClassDesc = CompilerPipelineGlobalUFunctionTest::FindStaticsClassDesc(
 		ModuleDesc,
 		StaticsClassCount);
-	if (!TestTrue(TEXT("Global UFUNCTION statics-class scenario should emit a statics class descriptor"), StaticsClassDesc.IsValid()))
+	if (!TestTrue(TEXT("Global UFUNCTION statics-class test case should emit a statics class descriptor"), StaticsClassDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should emit exactly one statics class descriptor"),
+		TEXT("Global UFUNCTION statics-class test case should emit exactly one statics class descriptor"),
 		StaticsClassCount,
 		1);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should normalize the generated statics class name from the module name"),
+		TEXT("Global UFUNCTION statics-class test case should normalize the generated statics class name from the module name"),
 		StaticsClassDesc->ClassName,
 		ExpectedStaticsClassName);
 
 	const TSharedPtr<FAngelscriptFunctionDesc> FunctionDesc = StaticsClassDesc->GetMethod(
 		CompilerPipelineGlobalUFunctionTest::FunctionName.ToString());
-	if (!TestTrue(TEXT("Global UFUNCTION statics-class scenario should attach GetGlobalValue to the generated statics class descriptor"), FunctionDesc.IsValid()))
+	if (!TestTrue(TEXT("Global UFUNCTION statics-class test case should attach GetGlobalValue to the generated statics class descriptor"), FunctionDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should mark the generated descriptor method as static"),
+		TEXT("Global UFUNCTION statics-class test case should mark the generated descriptor method as static"),
 		FunctionDesc->bIsStatic);
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should preserve BlueprintCallable on the generated descriptor method"),
+		TEXT("Global UFUNCTION statics-class test case should preserve BlueprintCallable on the generated descriptor method"),
 		FunctionDesc->bBlueprintCallable);
 
 	Engine.ResetDiagnostics();
@@ -252,16 +252,16 @@ int GetGlobalValue()
 		Summary);
 
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Global UFUNCTION statics-class test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should record preprocessor usage in the compile summary"),
+		TEXT("Global UFUNCTION statics-class test case should record preprocessor usage in the compile summary"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should mark compile succeeded in the summary"),
+		TEXT("Global UFUNCTION statics-class test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should keep compile diagnostics empty"),
+		TEXT("Global UFUNCTION statics-class test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -271,34 +271,34 @@ int GetGlobalValue()
 
 	const FName GeneratedStaticsClassName(*FString::Printf(TEXT("U%s"), *ExpectedStaticsClassName));
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, GeneratedStaticsClassName);
-	if (!TestNotNull(TEXT("Global UFUNCTION statics-class scenario should materialize the generated statics class"), GeneratedClass))
+	if (!TestNotNull(TEXT("Global UFUNCTION statics-class test case should materialize the generated statics class"), GeneratedClass))
 	{
 		return false;
 	}
 
 	UFunction* GeneratedFunction = FindGeneratedFunction(GeneratedClass, CompilerPipelineGlobalUFunctionTest::FunctionName);
 	UASFunction* ScriptFunction = Cast<UASFunction>(GeneratedFunction);
-	if (!TestNotNull(TEXT("Global UFUNCTION statics-class scenario should materialize the generated static function"), GeneratedFunction)
-		|| !TestNotNull(TEXT("Global UFUNCTION statics-class scenario should expose the generated function as a UASFunction"), ScriptFunction))
+	if (!TestNotNull(TEXT("Global UFUNCTION statics-class test case should materialize the generated static function"), GeneratedFunction)
+		|| !TestNotNull(TEXT("Global UFUNCTION statics-class test case should expose the generated function as a UASFunction"), ScriptFunction))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should surface the reflected function as static"),
+		TEXT("Global UFUNCTION statics-class test case should surface the reflected function as static"),
 		GeneratedFunction->HasAnyFunctionFlags(FUNC_Static));
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should surface the reflected function as BlueprintCallable"),
+		TEXT("Global UFUNCTION statics-class test case should surface the reflected function as BlueprintCallable"),
 		GeneratedFunction->HasAnyFunctionFlags(FUNC_BlueprintCallable));
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should synthesize a hidden world-context parameter for the reflected static function"),
+		TEXT("Global UFUNCTION statics-class test case should synthesize a hidden world-context parameter for the reflected static function"),
 		ScriptFunction->bIsWorldContextGenerated);
 	bPassed &= TestEqual(
-		TEXT("Global UFUNCTION statics-class scenario should append the hidden world-context parameter after the declared script arguments"),
+		TEXT("Global UFUNCTION statics-class test case should append the hidden world-context parameter after the declared script arguments"),
 		ScriptFunction->WorldContextIndex,
 		ScriptFunction->Arguments.Num());
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should record a valid world-context offset for reflective execution"),
+		TEXT("Global UFUNCTION statics-class test case should record a valid world-context offset for reflective execution"),
 		ScriptFunction->WorldContextOffsetInParms >= 0);
 
 	int32 RuntimeResult = 0;
@@ -308,12 +308,12 @@ int GetGlobalValue()
 		ScriptFunction,
 		RuntimeResult);
 	bPassed &= TestTrue(
-		TEXT("Global UFUNCTION statics-class scenario should execute the generated statics function through RuntimeCallEvent"),
+		TEXT("Global UFUNCTION statics-class test case should execute the generated statics function through RuntimeCallEvent"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Global UFUNCTION statics-class scenario should return the original global function value through the generated statics class"),
+			TEXT("Global UFUNCTION statics-class test case should return the original global function value through the generated statics class"),
 			RuntimeResult,
 			42);
 	}
@@ -365,18 +365,18 @@ int GetSanitizedGlobalValue()
 		PreprocessErrorCount);
 
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should preprocess successfully"),
+		TEXT("Sanitized-module global UFUNCTION test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should keep preprocessing errors at zero"),
+		TEXT("Sanitized-module global UFUNCTION test case should keep preprocessing errors at zero"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should keep preprocessing diagnostics empty"),
+		TEXT("Sanitized-module global UFUNCTION test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should emit exactly one module descriptor"),
+		TEXT("Sanitized-module global UFUNCTION test case should emit exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -391,55 +391,55 @@ int GetSanitizedGlobalValue()
 	const TSharedPtr<FAngelscriptClassDesc> StaticsClassDesc = CompilerPipelineGlobalUFunctionTest::FindStaticsClassDesc(
 		ModuleDesc,
 		StaticsClassCount);
-	if (!TestTrue(TEXT("Sanitized-module global UFUNCTION scenario should emit a statics class descriptor"), StaticsClassDesc.IsValid()))
+	if (!TestTrue(TEXT("Sanitized-module global UFUNCTION test case should emit a statics class descriptor"), StaticsClassDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should preserve '-' in the raw module name before statics-class sanitization"),
+		TEXT("Sanitized-module global UFUNCTION test case should preserve '-' in the raw module name before statics-class sanitization"),
 		ModuleDesc->ModuleName.Contains(TEXT("-")));
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should preserve '+' in the raw module name before statics-class sanitization"),
+		TEXT("Sanitized-module global UFUNCTION test case should preserve '+' in the raw module name before statics-class sanitization"),
 		ModuleDesc->ModuleName.Contains(TEXT("+")));
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should emit exactly one statics class descriptor"),
+		TEXT("Sanitized-module global UFUNCTION test case should emit exactly one statics class descriptor"),
 		StaticsClassCount,
 		1);
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should sanitize invalid module-name characters when generating the statics class name"),
+		TEXT("Sanitized-module global UFUNCTION test case should sanitize invalid module-name characters when generating the statics class name"),
 		StaticsClassDesc->ClassName,
 		ExpectedStaticsClassName);
 	bPassed &= TestFalse(
-		TEXT("Sanitized-module global UFUNCTION scenario should not leave '-' in the generated statics class name"),
+		TEXT("Sanitized-module global UFUNCTION test case should not leave '-' in the generated statics class name"),
 		StaticsClassDesc->ClassName.Contains(TEXT("-")));
 	bPassed &= TestFalse(
-		TEXT("Sanitized-module global UFUNCTION scenario should not leave '+' in the generated statics class name"),
+		TEXT("Sanitized-module global UFUNCTION test case should not leave '+' in the generated statics class name"),
 		StaticsClassDesc->ClassName.Contains(TEXT("+")));
 	const FString* DisplayName = StaticsClassDesc->Meta.Find(FName(TEXT("DisplayName")));
 	bPassed &= TestNotNull(
-		TEXT("Sanitized-module global UFUNCTION scenario should set DisplayName metadata from the unsanitized base filename"),
+		TEXT("Sanitized-module global UFUNCTION test case should set DisplayName metadata from the unsanitized base filename"),
 		DisplayName);
 	if (DisplayName != nullptr)
 	{
 		bPassed &= TestEqual(
-			TEXT("Sanitized-module global UFUNCTION scenario should preserve the original base filename in DisplayName metadata"),
+			TEXT("Sanitized-module global UFUNCTION test case should preserve the original base filename in DisplayName metadata"),
 			*DisplayName,
 			ExpectedDisplayName);
 	}
 
 	const TSharedPtr<FAngelscriptFunctionDesc> FunctionDesc = StaticsClassDesc->GetMethod(
 		CompilerPipelineGlobalUFunctionSanitizedModuleTest::FunctionName.ToString());
-	if (!TestTrue(TEXT("Sanitized-module global UFUNCTION scenario should attach GetSanitizedGlobalValue to the generated statics class descriptor"), FunctionDesc.IsValid()))
+	if (!TestTrue(TEXT("Sanitized-module global UFUNCTION test case should attach GetSanitizedGlobalValue to the generated statics class descriptor"), FunctionDesc.IsValid()))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should mark the generated descriptor method as static"),
+		TEXT("Sanitized-module global UFUNCTION test case should mark the generated descriptor method as static"),
 		FunctionDesc->bIsStatic);
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should preserve BlueprintCallable on the generated descriptor method"),
+		TEXT("Sanitized-module global UFUNCTION test case should preserve BlueprintCallable on the generated descriptor method"),
 		FunctionDesc->bBlueprintCallable);
 
 	Engine.ResetDiagnostics();
@@ -455,16 +455,16 @@ int GetSanitizedGlobalValue()
 		Summary);
 
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Sanitized-module global UFUNCTION test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should record preprocessor usage in the compile summary"),
+		TEXT("Sanitized-module global UFUNCTION test case should record preprocessor usage in the compile summary"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should mark compile succeeded in the summary"),
+		TEXT("Sanitized-module global UFUNCTION test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Sanitized-module global UFUNCTION scenario should keep compile diagnostics empty"),
+		TEXT("Sanitized-module global UFUNCTION test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -474,24 +474,24 @@ int GetSanitizedGlobalValue()
 
 	const FName GeneratedStaticsClassName(*FString::Printf(TEXT("U%s"), *ExpectedStaticsClassName));
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, GeneratedStaticsClassName);
-	if (!TestNotNull(TEXT("Sanitized-module global UFUNCTION scenario should materialize the sanitized statics class"), GeneratedClass))
+	if (!TestNotNull(TEXT("Sanitized-module global UFUNCTION test case should materialize the sanitized statics class"), GeneratedClass))
 	{
 		return false;
 	}
 
 	UFunction* GeneratedFunction = FindGeneratedFunction(GeneratedClass, CompilerPipelineGlobalUFunctionSanitizedModuleTest::FunctionName);
 	UASFunction* ScriptFunction = Cast<UASFunction>(GeneratedFunction);
-	if (!TestNotNull(TEXT("Sanitized-module global UFUNCTION scenario should materialize the generated static function"), GeneratedFunction)
-		|| !TestNotNull(TEXT("Sanitized-module global UFUNCTION scenario should expose the generated function as a UASFunction"), ScriptFunction))
+	if (!TestNotNull(TEXT("Sanitized-module global UFUNCTION test case should materialize the generated static function"), GeneratedFunction)
+		|| !TestNotNull(TEXT("Sanitized-module global UFUNCTION test case should expose the generated function as a UASFunction"), ScriptFunction))
 	{
 		return false;
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should surface the reflected function as static"),
+		TEXT("Sanitized-module global UFUNCTION test case should surface the reflected function as static"),
 		GeneratedFunction->HasAnyFunctionFlags(FUNC_Static));
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should surface the reflected function as BlueprintCallable"),
+		TEXT("Sanitized-module global UFUNCTION test case should surface the reflected function as BlueprintCallable"),
 		GeneratedFunction->HasAnyFunctionFlags(FUNC_BlueprintCallable));
 
 	int32 RuntimeResult = 0;
@@ -501,12 +501,12 @@ int GetSanitizedGlobalValue()
 		ScriptFunction,
 		RuntimeResult);
 	bPassed &= TestTrue(
-		TEXT("Sanitized-module global UFUNCTION scenario should execute the generated statics function through RuntimeCallEvent"),
+		TEXT("Sanitized-module global UFUNCTION test case should execute the generated statics function through RuntimeCallEvent"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Sanitized-module global UFUNCTION scenario should return the original global function value through the sanitized statics class"),
+			TEXT("Sanitized-module global UFUNCTION test case should return the original global function value through the sanitized statics class"),
 			RuntimeResult,
 			77);
 	}

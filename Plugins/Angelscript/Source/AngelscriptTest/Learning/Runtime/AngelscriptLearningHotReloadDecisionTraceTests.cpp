@@ -13,9 +13,9 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionTraceTests_Private
 {
-	struct FLearningHotReloadDecisionScenario
+	struct FLearningHotReloadDecisionTestCase
 	{
-		FString ScenarioLabel;
+		FString TestCaseLabel;
 		FName ModuleName;
 		FString Filename;
 		FString BaselineScript;
@@ -51,11 +51,11 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionT
 		}
 	}
 
-	FLearningHotReloadDecisionOutcome RunDecisionScenario(FAngelscriptEngine& Engine, const FLearningHotReloadDecisionScenario& Scenario)
+	FLearningHotReloadDecisionOutcome RunDecisionTestCase(FAngelscriptEngine& Engine, const FLearningHotReloadDecisionTestCase& TestCase)
 	{
 		FLearningHotReloadDecisionOutcome Outcome;
 		ResetSharedCloneEngine(Engine);
-		Outcome.bBaselineCompiled = CompileAnnotatedModuleFromMemory(&Engine, Scenario.ModuleName, Scenario.Filename, Scenario.BaselineScript);
+		Outcome.bBaselineCompiled = CompileAnnotatedModuleFromMemory(&Engine, TestCase.ModuleName, TestCase.Filename, TestCase.BaselineScript);
 		if (!Outcome.bBaselineCompiled)
 		{
 			return Outcome;
@@ -63,21 +63,21 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionT
 
 		Outcome.bAnalyzed = AnalyzeReloadFromMemory(
 			&Engine,
-			Scenario.ModuleName,
-			Scenario.Filename,
-			Scenario.UpdatedScript,
+			TestCase.ModuleName,
+			TestCase.Filename,
+			TestCase.UpdatedScript,
 			Outcome.ReloadRequirement,
 			Outcome.bWantsFullReload,
 			Outcome.bNeedsFullReload);
 		return Outcome;
 	}
 
-	void TraceDecisionScenario(FAngelscriptLearningTraceSession& Trace, const FLearningHotReloadDecisionScenario& Scenario, const FLearningHotReloadDecisionOutcome& Outcome)
+	void TraceDecisionTestCase(FAngelscriptLearningTraceSession& Trace, const FLearningHotReloadDecisionTestCase& TestCase, const FLearningHotReloadDecisionOutcome& Outcome)
 	{
-		Trace.AddStep(Scenario.ScenarioLabel, Outcome.bAnalyzed ? TEXT("Hot-reload analysis produced a stable decision for this script change") : TEXT("Hot-reload analysis stopped before producing a decision"));
-		Trace.AddKeyValue(TEXT("ModuleName"), Scenario.ModuleName.ToString());
-		Trace.AddKeyValue(TEXT("Filename"), Scenario.Filename);
-		Trace.AddKeyValue(TEXT("TriggerExplanation"), Scenario.TriggerExplanation);
+		Trace.AddStep(TestCase.TestCaseLabel, Outcome.bAnalyzed ? TEXT("Hot-reload analysis produced a stable decision for this script change") : TEXT("Hot-reload analysis stopped before producing a decision"));
+		Trace.AddKeyValue(TEXT("ModuleName"), TestCase.ModuleName.ToString());
+		Trace.AddKeyValue(TEXT("Filename"), TestCase.Filename);
+		Trace.AddKeyValue(TEXT("TriggerExplanation"), TestCase.TriggerExplanation);
 		Trace.AddKeyValue(TEXT("BaselineCompiled"), Outcome.bBaselineCompiled ? TEXT("true") : TEXT("false"));
 		Trace.AddKeyValue(TEXT("ReloadRequirement"), GetHotReloadDecisionRequirementLabel(Outcome.ReloadRequirement));
 		Trace.AddKeyValue(TEXT("WantsFullReload"), Outcome.bWantsFullReload ? TEXT("true") : TEXT("false"));
@@ -110,7 +110,7 @@ bool FAngelscriptLearningHotReloadDecisionTraceTest::RunTest(const FString& Para
 	FAngelscriptLearningTraceSession Trace(TEXT("LearningHotReloadDecision"), SinkConfig);
 	Trace.BeginPhase(EAngelscriptLearningTracePhase::Compile);
 
-	const TArray<FLearningHotReloadDecisionScenario> Scenarios = {
+	const TArray<FLearningHotReloadDecisionTestCase> TestCases = {
 		{
 			TEXT("HotReload.NoChange"),
 			TEXT("LearningHotReloadNoChangeModule"),
@@ -298,22 +298,22 @@ class ULearningHotReloadFunctionTarget : UObject
 
 	TArray<FString> DecisionSummaries;
 	bool bAllChecksPassed = true;
-	for (const FLearningHotReloadDecisionScenario& Scenario : Scenarios)
+	for (const FLearningHotReloadDecisionTestCase& TestCase : TestCases)
 	{
-		const FLearningHotReloadDecisionOutcome Outcome = RunDecisionScenario(Engine, Scenario);
-		TraceDecisionScenario(Trace, Scenario, Outcome);
+		const FLearningHotReloadDecisionOutcome Outcome = RunDecisionTestCase(Engine, TestCase);
+		TraceDecisionTestCase(Trace, TestCase, Outcome);
 		DecisionSummaries.Add(FString::Printf(
 			TEXT("%s => %s (wants=%s needs=%s)"),
-			*Scenario.ScenarioLabel,
+			*TestCase.TestCaseLabel,
 			*GetHotReloadDecisionRequirementLabel(Outcome.ReloadRequirement),
 			Outcome.bWantsFullReload ? TEXT("true") : TEXT("false"),
 			Outcome.bNeedsFullReload ? TEXT("true") : TEXT("false")));
 
-		const bool bBaselineCompiled = TestTrue(*FString::Printf(TEXT("%s should compile the baseline module"), *Scenario.ScenarioLabel), Outcome.bBaselineCompiled);
-		const bool bAnalyzed = TestTrue(*FString::Printf(TEXT("%s should analyze successfully"), *Scenario.ScenarioLabel), Outcome.bAnalyzed);
-		const bool bRequirementMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected reload requirement"), *Scenario.ScenarioLabel), Outcome.ReloadRequirement, Scenario.ExpectedRequirement);
-		const bool bWantsMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected wants-full-reload flag"), *Scenario.ScenarioLabel), Outcome.bWantsFullReload, Scenario.bExpectedWantsFullReload);
-		const bool bNeedsMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected needs-full-reload flag"), *Scenario.ScenarioLabel), Outcome.bNeedsFullReload, Scenario.bExpectedNeedsFullReload);
+		const bool bBaselineCompiled = TestTrue(*FString::Printf(TEXT("%s should compile the baseline module"), *TestCase.TestCaseLabel), Outcome.bBaselineCompiled);
+		const bool bAnalyzed = TestTrue(*FString::Printf(TEXT("%s should analyze successfully"), *TestCase.TestCaseLabel), Outcome.bAnalyzed);
+		const bool bRequirementMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected reload requirement"), *TestCase.TestCaseLabel), Outcome.ReloadRequirement, TestCase.ExpectedRequirement);
+		const bool bWantsMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected wants-full-reload flag"), *TestCase.TestCaseLabel), Outcome.bWantsFullReload, TestCase.bExpectedWantsFullReload);
+		const bool bNeedsMatches = TestEqual(*FString::Printf(TEXT("%s should report the expected needs-full-reload flag"), *TestCase.TestCaseLabel), Outcome.bNeedsFullReload, TestCase.bExpectedNeedsFullReload);
 		bAllChecksPassed = bAllChecksPassed && bBaselineCompiled && bAnalyzed && bRequirementMatches && bWantsMatches && bNeedsMatches;
 	}
 

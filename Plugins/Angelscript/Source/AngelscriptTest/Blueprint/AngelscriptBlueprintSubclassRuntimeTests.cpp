@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
@@ -12,7 +12,7 @@
 #include "UObject/Package.h"
 #include "UObject/UnrealType.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -20,7 +20,7 @@ using namespace AngelscriptFunctionalTestUtils;
 
 namespace BlueprintSubclassRuntimeTest
 {
-	constexpr float ScenarioTickDeltaTime = 0.016f;
+	constexpr float TestCaseTickDeltaTime = 0.016f;
 	constexpr int32 InheritedTickCount = 3;
 	constexpr int32 OverrideChainTickCount = 4;
 
@@ -35,7 +35,7 @@ namespace BlueprintSubclassRuntimeTest
 		FStringView Suffix,
 		const TCHAR* CallingContext = TEXT("AngelscriptBlueprintSubclassRuntimeTests"))
 	{
-		if (!Test.TestNotNull(TEXT("Blueprint child runtime scenario should receive a valid script parent class"), ParentClass))
+		if (!Test.TestNotNull(TEXT("Blueprint child runtime test case should receive a valid script parent class"), ParentClass))
 		{
 			return nullptr;
 		}
@@ -46,7 +46,7 @@ namespace BlueprintSubclassRuntimeTest
 			Suffix.GetData(),
 			*FGuid::NewGuid().ToString(EGuidFormats::Digits));
 		UPackage* BlueprintPackage = CreatePackage(*PackagePath);
-		if (!Test.TestNotNull(TEXT("Blueprint child runtime scenario should create a transient package"), BlueprintPackage))
+		if (!Test.TestNotNull(TEXT("Blueprint child runtime test case should create a transient package"), BlueprintPackage))
 		{
 			return nullptr;
 		}
@@ -62,7 +62,7 @@ namespace BlueprintSubclassRuntimeTest
 			UBlueprint::StaticClass(),
 			UBlueprintGeneratedClass::StaticClass(),
 			CallingContext);
-		if (!Test.TestNotNull(TEXT("Blueprint child runtime scenario should create a transient blueprint asset"), Blueprint))
+		if (!Test.TestNotNull(TEXT("Blueprint child runtime test case should create a transient blueprint asset"), Blueprint))
 		{
 			return nullptr;
 		}
@@ -73,7 +73,7 @@ namespace BlueprintSubclassRuntimeTest
 	bool CompileAndValidateBlueprint(FAutomationTestBase& Test, UBlueprint& Blueprint)
 	{
 		FKismetEditorUtilities::CompileBlueprint(&Blueprint);
-		return Test.TestNotNull(TEXT("Blueprint child runtime scenario should compile to a generated class"), Blueprint.GeneratedClass.Get());
+		return Test.TestNotNull(TEXT("Blueprint child runtime test case should compile to a generated class"), Blueprint.GeneratedClass.Get());
 	}
 
 	void CleanupBlueprint(UBlueprint*& Blueprint)
@@ -253,7 +253,7 @@ class ATestBlueprintChildInheritsScriptBeginPlayParent : AActor
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child BeginPlay scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child BeginPlay test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
@@ -261,7 +261,7 @@ class ATestBlueprintChildInheritsScriptBeginPlayParent : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child BeginPlay scenario should spawn the blueprint subclass"), Actor))
+	if (!TestNotNull(TEXT("Blueprint child BeginPlay test case should spawn the blueprint subclass"), Actor))
 	{
 		return false;
 	}
@@ -336,7 +336,7 @@ class ATestBlueprintChildInheritsScriptTickParent : AActor
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child Tick scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child Tick test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
@@ -344,7 +344,7 @@ class ATestBlueprintChildInheritsScriptTickParent : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child Tick scenario should spawn the blueprint subclass"), Actor))
+	if (!TestNotNull(TEXT("Blueprint child Tick test case should spawn the blueprint subclass"), Actor))
 	{
 		return false;
 	}
@@ -357,7 +357,7 @@ class ATestBlueprintChildInheritsScriptTickParent : AActor
 		return false;
 	}
 
-	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassRuntimeTest::ScenarioTickDeltaTime, BlueprintSubclassRuntimeTest::InheritedTickCount);
+	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassRuntimeTest::TestCaseTickDeltaTime, BlueprintSubclassRuntimeTest::InheritedTickCount);
 
 	int32 LogicalTickCount = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("LogicalTickCount"), LogicalTickCount))
@@ -421,7 +421,7 @@ class ATestBlueprintChildScriptUFunctionStillCallableParent : AActor
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child script-UFUNCTION scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child script-UFUNCTION test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
@@ -429,7 +429,7 @@ class ATestBlueprintChildScriptUFunctionStillCallableParent : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child script-UFUNCTION scenario should spawn the blueprint subclass"), Actor))
+	if (!TestNotNull(TEXT("Blueprint child script-UFUNCTION test case should spawn the blueprint subclass"), Actor))
 	{
 		return false;
 	}
@@ -517,7 +517,7 @@ class ATestBlueprintChildRecreateStateParent : AActor
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child recreate scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child recreate test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
@@ -525,7 +525,7 @@ class ATestBlueprintChildRecreateStateParent : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* FirstActor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child recreate scenario should spawn the first actor"), FirstActor))
+	if (!TestNotNull(TEXT("Blueprint child recreate test case should spawn the first actor"), FirstActor))
 	{
 		return false;
 	}
@@ -536,7 +536,7 @@ class ATestBlueprintChildRecreateStateParent : AActor
 			Engine,
 			FirstActor,
 			TEXT("BumpState"),
-			TEXT("Blueprint child recreate scenario first actor mutation")))
+			TEXT("Blueprint child recreate test case first actor mutation")))
 	{
 		return false;
 	}
@@ -551,7 +551,7 @@ class ATestBlueprintChildRecreateStateParent : AActor
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 
 	AActor* SecondActor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child recreate scenario should spawn the second actor"), SecondActor))
+	if (!TestNotNull(TEXT("Blueprint child recreate test case should spawn the second actor"), SecondActor))
 	{
 		return false;
 	}
@@ -570,9 +570,9 @@ class ATestBlueprintChildRecreateStateParent : AActor
 		return false;
 	}
 
-	TestEqual(TEXT("Blueprint child recreate scenario should observe the first actor mutating its local script state"), FirstStatefulValue, 48);
-	TestEqual(TEXT("Blueprint child recreate scenario should reset script state when respawning a new blueprint child"), SecondStatefulValue, 11);
-	TestEqual(TEXT("Blueprint child recreate scenario should execute BeginPlay independently for each spawned instance"), SecondBeginPlayCount, 1);
+	TestEqual(TEXT("Blueprint child recreate test case should observe the first actor mutating its local script state"), FirstStatefulValue, 48);
+	TestEqual(TEXT("Blueprint child recreate test case should reset script state when respawning a new blueprint child"), SecondStatefulValue, 11);
+	TestEqual(TEXT("Blueprint child recreate test case should execute BeginPlay independently for each spawned instance"), SecondBeginPlayCount, 1);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -621,13 +621,13 @@ class ATestBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child default-preservation scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child default-preservation test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
 
 	UObject* BlueprintCDO = BlueprintClass->GetDefaultObject();
-	if (!TestNotNull(TEXT("Blueprint child default-preservation scenario should expose a class default object"), BlueprintCDO))
+	if (!TestNotNull(TEXT("Blueprint child default-preservation test case should expose a class default object"), BlueprintCDO))
 	{
 		return false;
 	}
@@ -653,7 +653,7 @@ class ATestBlueprintChildNoOverrideUsesScriptParentDefaultParent : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child default-preservation scenario should spawn the blueprint subclass"), Actor))
+	if (!TestNotNull(TEXT("Blueprint child default-preservation test case should spawn the blueprint subclass"), Actor))
 	{
 		return false;
 	}
@@ -813,7 +813,7 @@ class ATestBlueprintChildOverrideChainScriptChild : ATestBlueprintChildOverrideC
 	}
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint child override-chain scenario should expose a generated class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint child override-chain test case should expose a generated class"), BlueprintClass))
 	{
 		return false;
 	}
@@ -821,14 +821,14 @@ class ATestBlueprintChildOverrideChainScriptChild : ATestBlueprintChildOverrideC
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, BlueprintClass);
-	if (!TestNotNull(TEXT("Blueprint child override-chain scenario should spawn the blueprint subclass"), Actor))
+	if (!TestNotNull(TEXT("Blueprint child override-chain test case should spawn the blueprint subclass"), Actor))
 	{
 		return false;
 	}
 
 	BeginPlayActor(Engine, *Actor);
 
-	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassRuntimeTest::ScenarioTickDeltaTime, BlueprintSubclassRuntimeTest::OverrideChainTickCount);
+	TickWorld(Engine, Spawner.GetWorld(), BlueprintSubclassRuntimeTest::TestCaseTickDeltaTime, BlueprintSubclassRuntimeTest::OverrideChainTickCount);
 
 	int32 ParentBeginPlayCount = 0;
 	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ParentBeginPlayCount"), ParentBeginPlayCount))
@@ -854,14 +854,14 @@ class ATestBlueprintChildOverrideChainScriptChild : ATestBlueprintChildOverrideC
 		return false;
 	}
 
-	TestEqual(TEXT("Blueprint child override-chain scenario should execute the inherited parent BeginPlay step exactly once"), ParentBeginPlayCount, 1);
-	TestEqual(TEXT("Blueprint child override-chain scenario should execute the child BeginPlay step exactly once"), ChildBeginPlayCount, 1);
+	TestEqual(TEXT("Blueprint child override-chain test case should execute the inherited parent BeginPlay step exactly once"), ParentBeginPlayCount, 1);
+	TestEqual(TEXT("Blueprint child override-chain test case should execute the child BeginPlay step exactly once"), ChildBeginPlayCount, 1);
 	TestEqual(
-		TEXT("Blueprint child override-chain scenario should execute deterministic parent Tick steps"),
+		TEXT("Blueprint child override-chain test case should execute deterministic parent Tick steps"),
 		ParentTickCount,
 		BlueprintSubclassRuntimeTest::OverrideChainTickCount);
 	TestEqual(
-		TEXT("Blueprint child override-chain scenario should execute deterministic child Tick steps"),
+		TEXT("Blueprint child override-chain test case should execute deterministic child Tick steps"),
 		ChildTickCount,
 		BlueprintSubclassRuntimeTest::OverrideChainTickCount);
 	ASTEST_END_SHARE_CLEAN

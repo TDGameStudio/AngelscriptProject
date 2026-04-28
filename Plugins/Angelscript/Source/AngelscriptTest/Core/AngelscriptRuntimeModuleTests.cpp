@@ -347,7 +347,7 @@ bool FAngelscriptRuntimeModuleStartupModuleHonorsEditorAndCommandletGatesTest::R
 		return false;
 	}
 
-	struct FStartupScenario
+	struct FStartupTestCase
 	{
 		const TCHAR* Label;
 		bool bIsEditor = false;
@@ -356,25 +356,25 @@ bool FAngelscriptRuntimeModuleStartupModuleHonorsEditorAndCommandletGatesTest::R
 		bool bExpectFallbackTicker = false;
 	};
 
-	const TArray<FStartupScenario> Scenarios = {
+	const TArray<FStartupTestCase> TestCases = {
 		{ TEXT("EditorStartup"), true, false, 1, true },
 		{ TEXT("CommandletStartup"), false, true, 1, false },
 		{ TEXT("PlainRuntimeStartup"), false, false, 0, false },
 	};
 
 	bool bPassed = true;
-	for (const FStartupScenario& Scenario : Scenarios)
+	for (const FStartupTestCase& TestCase : TestCases)
 	{
 		int32 InitializeCalls = 0;
 		FAngelscriptRuntimeModuleTickTestAccess::ResetInitializeState();
 		FAngelscriptRuntimeModuleTickTestAccess::ClearStartupEnvironmentOverride();
 
-		if (!TestNull(FString::Printf(TEXT("%s should start without a current engine"), Scenario.Label), FAngelscriptEngine::TryGetCurrentEngine()))
+		if (!TestNull(FString::Printf(TEXT("%s should start without a current engine"), TestCase.Label), FAngelscriptEngine::TryGetCurrentEngine()))
 		{
 			return false;
 		}
 
-		FAngelscriptRuntimeModuleTickTestAccess::SetStartupEnvironmentOverride(Scenario.bIsEditor, Scenario.bIsRunningCommandlet);
+		FAngelscriptRuntimeModuleTickTestAccess::SetStartupEnvironmentOverride(TestCase.bIsEditor, TestCase.bIsRunningCommandlet);
 		FAngelscriptRuntimeModuleTickTestAccess::SetInitializeOverride([&OverrideEngine, &InitializeCalls]()
 		{
 			++InitializeCalls;
@@ -385,42 +385,42 @@ bool FAngelscriptRuntimeModuleStartupModuleHonorsEditorAndCommandletGatesTest::R
 		RuntimeModule.StartupModule();
 
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s should trigger the expected number of initialize calls"), Scenario.Label),
+			FString::Printf(TEXT("%s should trigger the expected number of initialize calls"), TestCase.Label),
 			InitializeCalls,
-			Scenario.ExpectedInitializeCalls);
+			TestCase.ExpectedInitializeCalls);
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s should match the expected fallback ticker registration state"), Scenario.Label),
+			FString::Printf(TEXT("%s should match the expected fallback ticker registration state"), TestCase.Label),
 			FAngelscriptRuntimeModuleTickTestAccess::HasFallbackTicker(RuntimeModule),
-			Scenario.bExpectFallbackTicker);
+			TestCase.bExpectFallbackTicker);
 
-		if (Scenario.ExpectedInitializeCalls > 0)
+		if (TestCase.ExpectedInitializeCalls > 0)
 		{
 			bPassed &= TestTrue(
-				FString::Printf(TEXT("%s should push the override engine when initialization runs"), Scenario.Label),
+				FString::Printf(TEXT("%s should push the override engine when initialization runs"), TestCase.Label),
 				FAngelscriptEngine::TryGetCurrentEngine() == OverrideEngine.Get());
 		}
 		else
 		{
 			bPassed &= TestNull(
-				FString::Printf(TEXT("%s should keep the context stack empty when initialization is gated off"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the context stack empty when initialization is gated off"), TestCase.Label),
 				FAngelscriptEngine::TryGetCurrentEngine());
 		}
 
 		RuntimeModule.ShutdownModule();
 
 		bPassed &= TestFalse(
-			FString::Printf(TEXT("%s should clear the fallback ticker handle during shutdown"), Scenario.Label),
+			FString::Printf(TEXT("%s should clear the fallback ticker handle during shutdown"), TestCase.Label),
 			FAngelscriptRuntimeModuleTickTestAccess::HasFallbackTicker(RuntimeModule));
 
 		FAngelscriptRuntimeModuleTickTestAccess::ResetInitializeState();
 		bPassed &= TestNull(
-			FString::Printf(TEXT("%s should leave no current engine after reset"), Scenario.Label),
+			FString::Printf(TEXT("%s should leave no current engine after reset"), TestCase.Label),
 			FAngelscriptEngine::TryGetCurrentEngine());
 
-		const TArray<FAngelscriptEngine*> StackAfterScenario = FAngelscriptEngineContextStack::SnapshotAndClear();
+		const TArray<FAngelscriptEngine*> StackAfterTestCase = FAngelscriptEngineContextStack::SnapshotAndClear();
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s should leave the context stack empty after teardown"), Scenario.Label),
-			StackAfterScenario.Num(),
+			FString::Printf(TEXT("%s should leave the context stack empty after teardown"), TestCase.Label),
+			StackAfterTestCase.Num(),
 			0);
 	}
 

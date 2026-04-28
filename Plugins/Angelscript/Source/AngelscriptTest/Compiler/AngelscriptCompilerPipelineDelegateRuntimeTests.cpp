@@ -49,7 +49,7 @@ namespace CompilerPipelineDelegateRuntimeTest
 
 		FAngelscriptEngineScope EngineScope(Engine);
 		asIScriptContext* Context = Engine.CreateContext();
-		if (!Test.TestNotNull(TEXT("Delegate execute runtime error scenario should create an execution context"), Context))
+		if (!Test.TestNotNull(TEXT("Delegate execute runtime error test case should create an execution context"), Context))
 		{
 			return false;
 		}
@@ -117,20 +117,20 @@ int Entry()
 		Summary);
 
 	bPassed &= TestTrue(
-		TEXT("Delegate execute runtime error scenario should compile successfully"),
+		TEXT("Delegate execute runtime error test case should compile successfully"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Delegate execute runtime error scenario should run through the preprocessor pipeline"),
+		TEXT("Delegate execute runtime error test case should run through the preprocessor pipeline"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Delegate execute runtime error scenario should report compile success before execution"),
+		TEXT("Delegate execute runtime error test case should report compile success before execution"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should finish with FullyHandled"),
+		TEXT("Delegate execute runtime error test case should finish with FullyHandled"),
 		Summary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should keep compile diagnostics empty"),
+		TEXT("Delegate execute runtime error test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -156,7 +156,7 @@ int Entry()
 		*Module,
 		ExecutionResult);
 	bPassed &= TestTrue(
-		TEXT("Delegate execute runtime error scenario should reach the manual execution path"),
+		TEXT("Delegate execute runtime error test case should reach the manual execution path"),
 		bExecuted);
 	if (!bExecuted)
 	{
@@ -164,23 +164,23 @@ int Entry()
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should prepare the entry function successfully"),
+		TEXT("Delegate execute runtime error test case should prepare the entry function successfully"),
 		ExecutionResult.PrepareResult,
 		static_cast<int32>(asSUCCESS));
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should fail during execution with a script exception"),
+		TEXT("Delegate execute runtime error test case should fail during execution with a script exception"),
 		ExecutionResult.ExecuteResult,
 		static_cast<int32>(asEXECUTION_EXCEPTION));
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should report the generated unbound delegate message"),
+		TEXT("Delegate execute runtime error test case should report the generated unbound delegate message"),
 		ExecutionResult.ExceptionString,
 		FString(CompilerPipelineDelegateRuntimeTest::ExpectedExceptionString));
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should report the generated delegate Execute wrapper line"),
+		TEXT("Delegate execute runtime error test case should report the generated delegate Execute wrapper line"),
 		ExecutionResult.ExceptionLine,
 		CompilerPipelineDelegateRuntimeTest::ExpectedExceptionLine);
 	bPassed &= TestEqual(
-		TEXT("Delegate execute runtime error scenario should attribute the exception to the generated delegate Execute wrapper"),
+		TEXT("Delegate execute runtime error test case should attribute the exception to the generated delegate Execute wrapper"),
 		ExecutionResult.ExceptionFunctionDeclaration,
 		FString(CompilerPipelineDelegateRuntimeTest::ExpectedExceptionFunctionDeclaration));
 
@@ -230,20 +230,20 @@ int EntryBool()
 		Summary);
 
 	bPassed &= TestTrue(
-		TEXT("Delegate ExecuteIfBound default-value scenario should compile successfully"),
+		TEXT("Delegate ExecuteIfBound default-value test case should compile successfully"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Delegate ExecuteIfBound default-value scenario should run through the preprocessor pipeline"),
+		TEXT("Delegate ExecuteIfBound default-value test case should run through the preprocessor pipeline"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Delegate ExecuteIfBound default-value scenario should report compile success before execution"),
+		TEXT("Delegate ExecuteIfBound default-value test case should report compile success before execution"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Delegate ExecuteIfBound default-value scenario should finish with FullyHandled"),
+		TEXT("Delegate ExecuteIfBound default-value test case should finish with FullyHandled"),
 		Summary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Delegate ExecuteIfBound default-value scenario should keep compile diagnostics empty"),
+		TEXT("Delegate ExecuteIfBound default-value test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -253,7 +253,7 @@ int EntryBool()
 
 	const auto ModuleNameUtf8 = StringCast<ANSICHAR>(*LocalModuleName.ToString());
 	asIScriptModule* Module = Engine.GetScriptEngine()->GetModule(ModuleNameUtf8.Get(), asGM_ONLY_IF_EXISTS);
-	if (!TestNotNull(TEXT("Delegate ExecuteIfBound default-value scenario should publish a script module"), Module))
+	if (!TestNotNull(TEXT("Delegate ExecuteIfBound default-value test case should publish a script module"), Module))
 	{
 		return false;
 	}
@@ -271,11 +271,11 @@ int EntryBool()
 	bPassed &= ExecuteIntFunction(*this, Engine, *EntryBoolFunction, BoolResult);
 
 	bPassed &= TestEqual(
-		TEXT("Delegate ExecuteIfBound default-value scenario should return 0 for unbound int delegates"),
+		TEXT("Delegate ExecuteIfBound default-value test case should return 0 for unbound int delegates"),
 		IntResult,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Delegate ExecuteIfBound default-value scenario should return 0 for unbound bool delegates"),
+		TEXT("Delegate ExecuteIfBound default-value test case should return 0 for unbound bool delegates"),
 		BoolResult,
 		0);
 

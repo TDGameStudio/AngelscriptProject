@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -76,20 +76,20 @@ class UComponentConstructionCarrier : UActorComponent
 
 		UASClass* GeneratedASClass = Cast<UASClass>(GeneratedClass);
 		if (!Test.TestNotNull(
-				TEXT("ASClass component-construction scenario should compile the carrier into a UASClass"),
+				TEXT("ASClass component-construction test case should compile the carrier into a UASClass"),
 				GeneratedASClass))
 		{
 			return nullptr;
 		}
 
 		Test.TestNotNull(
-			TEXT("ASClass component-construction scenario should bind the script constructor function"),
+			TEXT("ASClass component-construction test case should bind the script constructor function"),
 			GeneratedASClass->ConstructFunction);
 		Test.TestNotNull(
-			TEXT("ASClass component-construction scenario should bind the defaults function"),
+			TEXT("ASClass component-construction test case should bind the defaults function"),
 			GeneratedASClass->DefaultsFunction);
 		Test.TestNotNull(
-			TEXT("ASClass component-construction scenario should keep a live script type pointer"),
+			TEXT("ASClass component-construction test case should keep a live script type pointer"),
 			GeneratedASClass->ScriptTypePtr);
 
 		return GeneratedASClass;
@@ -213,7 +213,7 @@ bool FAngelscriptASClassStaticComponentConstructorAppliesScriptConstructorAndDef
 
 	UActorComponent* DefaultObject = Cast<UActorComponent>(GeneratedASClass->GetDefaultObject());
 	if (!TestNotNull(
-			TEXT("ASClass component-construction scenario should expose a generated component class default object"),
+			TEXT("ASClass component-construction test case should expose a generated component class default object"),
 			DefaultObject))
 	{
 		return false;
@@ -234,13 +234,13 @@ bool FAngelscriptASClassStaticComponentConstructorAppliesScriptConstructorAndDef
 		HostActor,
 		GeneratedASClass,
 		TEXT("ComponentConstructionCarrierA"),
-		TEXT("ASClass component-construction scenario first instance"));
+		TEXT("ASClass component-construction test case first instance"));
 	UActorComponent* SecondInstance = ASClassComponentConstructionTest::InstantiateScriptComponent(
 		*this,
 		HostActor,
 		GeneratedASClass,
 		TEXT("ComponentConstructionCarrierB"),
-		TEXT("ASClass component-construction scenario second instance"));
+		TEXT("ASClass component-construction test case second instance"));
 	if (FirstInstance == nullptr || SecondInstance == nullptr)
 	{
 		return false;
@@ -266,55 +266,55 @@ bool FAngelscriptASClassStaticComponentConstructorAppliesScriptConstructorAndDef
 	}
 
 	TestTrue(
-		TEXT("ASClass component-construction scenario should compile a generated component class"),
+		TEXT("ASClass component-construction test case should compile a generated component class"),
 		GeneratedASClass->IsChildOf(UActorComponent::StaticClass()));
 	TestFalse(
-		TEXT("ASClass component-construction scenario should keep the generated class out of the actor hierarchy"),
+		TEXT("ASClass component-construction test case should keep the generated class out of the actor hierarchy"),
 		GeneratedASClass->IsChildOf(AActor::StaticClass()));
 	TestTrue(
-		TEXT("ASClass component-construction scenario should create distinct runtime components"),
+		TEXT("ASClass component-construction test case should create distinct runtime components"),
 		FirstInstance != SecondInstance);
 	TestTrue(
-		TEXT("ASClass component-construction scenario should keep runtime components distinct from the class default object"),
+		TEXT("ASClass component-construction test case should keep runtime components distinct from the class default object"),
 		FirstInstance != DefaultObject && SecondInstance != DefaultObject);
 	TestTrue(
-		TEXT("ASClass component-construction scenario should keep both runtime components on the same generated class"),
+		TEXT("ASClass component-construction test case should keep both runtime components on the same generated class"),
 		FirstInstance->GetClass() == GeneratedASClass && SecondInstance->GetClass() == GeneratedASClass);
 
 	const bool bDefaultObjectVerified = ASClassComponentConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass component-construction scenario class default object"),
+		TEXT("ASClass component-construction test case class default object"),
 		DefaultSnapshot,
 		ASClassComponentConstructionTest::ExpectedCtorCount);
 	const bool bFirstInstanceVerified = ASClassComponentConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass component-construction scenario first instance"),
+		TEXT("ASClass component-construction test case first instance"),
 		FirstSnapshot,
 		ASClassComponentConstructionTest::ExpectedCtorCount);
 	const bool bSecondInstanceVerified = ASClassComponentConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass component-construction scenario second instance"),
+		TEXT("ASClass component-construction test case second instance"),
 		SecondSnapshot,
 		ASClassComponentConstructionTest::ExpectedCtorCount);
 
 	TestEqual(
-		TEXT("ASClass component-construction scenario should keep the second instance constructor count isolated from the first instance"),
+		TEXT("ASClass component-construction test case should keep the second instance constructor count isolated from the first instance"),
 		SecondSnapshot.CtorCount,
 		ASClassComponentConstructionTest::ExpectedCtorCount);
 	TestEqual(
-		TEXT("ASClass component-construction scenario should keep the class default object on the same scripted integer default as runtime instances"),
+		TEXT("ASClass component-construction test case should keep the class default object on the same scripted integer default as runtime instances"),
 		DefaultSnapshot.DefaultValue,
 		FirstSnapshot.DefaultValue);
 	TestEqual(
-		TEXT("ASClass component-construction scenario should keep both runtime components on the same scripted integer default"),
+		TEXT("ASClass component-construction test case should keep both runtime components on the same scripted integer default"),
 		FirstSnapshot.DefaultValue,
 		SecondSnapshot.DefaultValue);
 	TestEqual(
-		TEXT("ASClass component-construction scenario should keep the class default object on the same scripted string default as runtime instances"),
+		TEXT("ASClass component-construction test case should keep the class default object on the same scripted string default as runtime instances"),
 		DefaultSnapshot.DefaultLabel,
 		FirstSnapshot.DefaultLabel);
 	TestEqual(
-		TEXT("ASClass component-construction scenario should keep both runtime components on the same scripted string default"),
+		TEXT("ASClass component-construction test case should keep both runtime components on the same scripted string default"),
 		FirstSnapshot.DefaultLabel,
 		SecondSnapshot.DefaultLabel);
 

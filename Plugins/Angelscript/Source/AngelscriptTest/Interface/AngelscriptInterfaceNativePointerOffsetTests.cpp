@@ -17,7 +17,7 @@
 // `UObject::GetInterfaceAddress(InterfaceClass)` to reach the interface pointer
 // rather than assuming it coincides with the UObject pointer.
 //
-// These tests exercise the scenario via `ATestNativeMultiInterfaceActor`
+// These tests exercise the test case via `ATestNativeMultiInterfaceActor`
 // (implements both Parent + Secondary native interfaces) and validate that:
 //   1. Script-side `Cast<U...>(NativeActor)` succeeds for both interfaces.
 //   2. Method dispatch through either interface reference lands in the

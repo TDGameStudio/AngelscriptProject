@@ -14,7 +14,7 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveErrorTests_Private
 {
-	struct FDirectiveErrorScenario
+	struct FDirectiveErrorTestCase
 	{
 		const TCHAR* Label;
 		const TCHAR* RelativeScriptPath;
@@ -71,34 +71,34 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveErrorTest
 		return false;
 	}
 
-	bool RunDirectiveErrorScenario(
+	bool RunDirectiveErrorTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FDirectiveErrorScenario& Scenario)
+		const FDirectiveErrorTestCase& TestCase)
 	{
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
 
 		const FString AbsoluteScriptPath = WritePreprocessorDirectiveErrorFixture(
-			Scenario.RelativeScriptPath,
-			Scenario.ScriptSource);
+			TestCase.RelativeScriptPath,
+			TestCase.ScriptSource);
 
 		FAngelscriptPreprocessor Preprocessor;
-		Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+		Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
 		const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
 
 		if (!Test.TestFalse(
-				FString::Printf(TEXT("%s should fail preprocessing on structural directive errors"), Scenario.Label),
+				FString::Printf(TEXT("%s should fail preprocessing on structural directive errors"), TestCase.Label),
 				bPreprocessSucceeded))
 		{
 			return false;
 		}
 
 		if (!Test.TestNotNull(
-				FString::Printf(TEXT("%s should record diagnostics for the failing file"), Scenario.Label),
+				FString::Printf(TEXT("%s should record diagnostics for the failing file"), TestCase.Label),
 				Diagnostics))
 		{
 			return false;
@@ -107,23 +107,23 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveErrorTest
 		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
 
 		return Test.TestEqual(
-				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), TestCase.Label),
 				CountErrorDiagnostics(Diagnostics),
 				1)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should report the expected structural directive error text"), Scenario.Label),
+				FString::Printf(TEXT("%s should report the expected structural directive error text"), TestCase.Label),
 				FirstDiagnostic.Message,
-				FString(Scenario.ExpectedMessage))
+				FString(TestCase.ExpectedMessage))
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should pin the error row to the failing directive line"), Scenario.Label),
+				FString::Printf(TEXT("%s should pin the error row to the failing directive line"), TestCase.Label),
 				FirstDiagnostic.Row,
-				Scenario.ExpectedRow)
+				TestCase.ExpectedRow)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the error column stable at the directive start"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the error column stable at the directive start"), TestCase.Label),
 				FirstDiagnostic.Column,
 				1)
 			&& Test.TestFalse(
-				FString::Printf(TEXT("%s should not leave behind any compilable code sections after preprocessing fails"), Scenario.Label),
+				FString::Printf(TEXT("%s should not leave behind any compilable code sections after preprocessing fails"), TestCase.Label),
 				ContainsCompilableCode(Modules));
 	}
 }
@@ -145,7 +145,7 @@ bool FAngelscriptPreprocessorStructuralErrorsReportStableDiagnosticsTest::RunTes
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	const TArray<FDirectiveErrorScenario> Scenarios = {
+	const TArray<FDirectiveErrorTestCase> TestCases = {
 		{
 			TEXT("Isolated #elif"),
 			TEXT("Tests/Preprocessor/DirectiveErrors/InvalidElif.as"),
@@ -184,9 +184,9 @@ bool FAngelscriptPreprocessorStructuralErrorsReportStableDiagnosticsTest::RunTes
 		}
 	};
 
-	for (const FDirectiveErrorScenario& Scenario : Scenarios)
+	for (const FDirectiveErrorTestCase& TestCase : TestCases)
 	{
-		bPassed &= RunDirectiveErrorScenario(*this, Engine, Scenario);
+		bPassed &= RunDirectiveErrorTestCase(*this, Engine, TestCase);
 	}
 
 	ASTEST_END_MODULE_CLEAN

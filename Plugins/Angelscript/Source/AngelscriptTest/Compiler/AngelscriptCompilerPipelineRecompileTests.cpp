@@ -72,7 +72,7 @@ int Entry()
 			TEXT("int Entry()"),
 			EntryResult);
 		const bool bExecutePassed = Test.TestTrue(
-			*FString::Printf(TEXT("Successful recompile scenario should execute Entry() for value %d"), ExpectedValue),
+			*FString::Printf(TEXT("Successful recompile test case should execute Entry() for value %d"), ExpectedValue),
 			bExecuted);
 		if (!bExecutePassed)
 		{
@@ -80,7 +80,7 @@ int Entry()
 		}
 
 		return Test.TestEqual(
-			*FString::Printf(TEXT("Successful recompile scenario should observe Entry() == %d"), ExpectedValue),
+			*FString::Printf(TEXT("Successful recompile test case should observe Entry() == %d"), ExpectedValue),
 			EntryResult,
 			ExpectedValue);
 	}
@@ -93,10 +93,10 @@ int Entry()
 		int32 ExpectedValue)
 	{
 		if (!Test.TestNotNull(
-				*FString::Printf(TEXT("Successful recompile scenario should materialize a generated class for value %d"), ExpectedValue),
+				*FString::Printf(TEXT("Successful recompile test case should materialize a generated class for value %d"), ExpectedValue),
 				GeneratedClass)
 			|| !Test.TestNotNull(
-				*FString::Printf(TEXT("Successful recompile scenario should expose GetValue for value %d"), ExpectedValue),
+				*FString::Printf(TEXT("Successful recompile test case should expose GetValue for value %d"), ExpectedValue),
 				GeneratedFunction))
 		{
 			return false;
@@ -104,7 +104,7 @@ int Entry()
 
 		FIntProperty* ScoreProperty = FindFProperty<FIntProperty>(GeneratedClass, ScorePropertyName);
 		if (!Test.TestNotNull(
-				*FString::Printf(TEXT("Successful recompile scenario should expose Score for value %d"), ExpectedValue),
+				*FString::Printf(TEXT("Successful recompile test case should expose Score for value %d"), ExpectedValue),
 				ScoreProperty))
 		{
 			return false;
@@ -112,7 +112,7 @@ int Entry()
 
 		UObject* RuntimeObject = NewObject<UObject>(GetTransientPackage(), GeneratedClass);
 		if (!Test.TestNotNull(
-				*FString::Printf(TEXT("Successful recompile scenario should instantiate the generated class for value %d"), ExpectedValue),
+				*FString::Printf(TEXT("Successful recompile test case should instantiate the generated class for value %d"), ExpectedValue),
 				RuntimeObject))
 		{
 			return false;
@@ -120,14 +120,14 @@ int Entry()
 
 		const int32 DefaultScore = ScoreProperty->GetPropertyValue_InContainer(RuntimeObject);
 		const bool bDefaultScoreMatches = Test.TestEqual(
-			*FString::Printf(TEXT("Successful recompile scenario should materialize Score == %d on new instances"), ExpectedValue),
+			*FString::Printf(TEXT("Successful recompile test case should materialize Score == %d on new instances"), ExpectedValue),
 			DefaultScore,
 			ExpectedValue);
 
 		int32 MethodResult = 0;
 		const bool bExecuted = ExecuteGeneratedIntEventOnGameThread(&Engine, RuntimeObject, GeneratedFunction, MethodResult);
 		const bool bExecutePassed = Test.TestTrue(
-			*FString::Printf(TEXT("Successful recompile scenario should execute GetValue() for value %d"), ExpectedValue),
+			*FString::Printf(TEXT("Successful recompile test case should execute GetValue() for value %d"), ExpectedValue),
 			bExecuted);
 		if (!bDefaultScoreMatches || !bExecutePassed)
 		{
@@ -135,7 +135,7 @@ int Entry()
 		}
 
 		return Test.TestEqual(
-			*FString::Printf(TEXT("Successful recompile scenario should observe GetValue() == %d"), ExpectedValue),
+			*FString::Printf(TEXT("Successful recompile test case should observe GetValue() == %d"), ExpectedValue),
 			MethodResult,
 			ExpectedValue);
 	}
@@ -171,14 +171,14 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 		true,
 		InitialSummary);
 	bPassed &= TestTrue(
-		TEXT("Successful recompile scenario should compile the initial annotated module"),
+		TEXT("Successful recompile test case should compile the initial annotated module"),
 		bInitialCompiled);
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should report FullyHandled for the initial compile"),
+		TEXT("Successful recompile test case should report FullyHandled for the initial compile"),
 		InitialSummary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should emit no diagnostics for the initial compile"),
+		TEXT("Successful recompile test case should emit no diagnostics for the initial compile"),
 		InitialSummary.Diagnostics.Num(),
 		0);
 	if (!bInitialCompiled)
@@ -189,7 +189,7 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 	TSharedPtr<FAngelscriptModuleDesc> InitialModuleDesc = Engine.GetModuleByFilenameOrModuleName(
 		CompilerPipelineRecompileTest::ScriptFilename,
 		CompilerPipelineRecompileTest::ModuleName.ToString());
-	if (!TestNotNull(TEXT("Successful recompile scenario should publish the initial module descriptor"), InitialModuleDesc.Get()))
+	if (!TestNotNull(TEXT("Successful recompile test case should publish the initial module descriptor"), InitialModuleDesc.Get()))
 	{
 		return false;
 	}
@@ -205,7 +205,7 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should keep exactly one active module after the initial compile"),
+		TEXT("Successful recompile test case should keep exactly one active module after the initial compile"),
 		CompilerPipelineRecompileTest::CountActiveModulesByName(Engine, CompilerPipelineRecompileTest::ModuleName.ToString()),
 		1);
 
@@ -221,14 +221,14 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 		true,
 		RecompiledSummary);
 	bPassed &= TestTrue(
-		TEXT("Successful recompile scenario should compile the updated annotated module"),
+		TEXT("Successful recompile test case should compile the updated annotated module"),
 		bRecompiled);
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should report FullyHandled for the updated compile"),
+		TEXT("Successful recompile test case should report FullyHandled for the updated compile"),
 		RecompiledSummary.CompileResult,
 		ECompileResult::FullyHandled);
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should emit no diagnostics for the updated compile"),
+		TEXT("Successful recompile test case should emit no diagnostics for the updated compile"),
 		RecompiledSummary.Diagnostics.Num(),
 		0);
 	if (!bRecompiled)
@@ -239,7 +239,7 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 	TSharedPtr<FAngelscriptModuleDesc> RecompiledModuleDesc = Engine.GetModuleByFilenameOrModuleName(
 		CompilerPipelineRecompileTest::ScriptFilename,
 		CompilerPipelineRecompileTest::ModuleName.ToString());
-	if (!TestNotNull(TEXT("Successful recompile scenario should publish the recompiled module descriptor"), RecompiledModuleDesc.Get()))
+	if (!TestNotNull(TEXT("Successful recompile test case should publish the recompiled module descriptor"), RecompiledModuleDesc.Get()))
 	{
 		return false;
 	}
@@ -255,15 +255,15 @@ bool FAngelscriptCompilerSuccessfulRecompileReplacesStaleOutputsTest::RunTest(co
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Successful recompile scenario should keep exactly one active module after the updated compile"),
+		TEXT("Successful recompile test case should keep exactly one active module after the updated compile"),
 		CompilerPipelineRecompileTest::CountActiveModulesByName(Engine, CompilerPipelineRecompileTest::ModuleName.ToString()),
 		1);
 	bPassed &= TestNotEqual(
-		TEXT("Successful recompile scenario should replace the active module descriptor after the updated compile"),
+		TEXT("Successful recompile test case should replace the active module descriptor after the updated compile"),
 		RecompiledModuleDesc.Get(),
 		InitialModuleDesc.Get());
 	bPassed &= TestTrue(
-		TEXT("Successful recompile scenario should replace the underlying script module after the updated compile"),
+		TEXT("Successful recompile test case should replace the underlying script module after the updated compile"),
 		RecompiledModuleDesc->ScriptModule != InitialModuleDesc->ScriptModule);
 
 	if (RecompiledClass == InitialClass && RecompiledFunction == InitialFunction)

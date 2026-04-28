@@ -142,7 +142,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Grou
 Tools\RunTests.ps1 -Group AngelscriptSmoke -Label smoke -TimeoutMs 120000
 Tools\RunTests.ps1 -TestPrefix "Angelscript.CppTests." -Label runtime-unit -TimeoutMs 600000
 Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Dump" -Label dump -TimeoutMs 600000
-Tools\RunTests.ps1 -Group AngelscriptScenario -Label scenario -TimeoutMs 900000 -Render
+Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900000 -Render
 Tools\RunTests.ps1 -Group AngelscriptFast -Label fast -TimeoutMs 600000 -- -log
 ```
 
@@ -160,7 +160,7 @@ Tools\RunTests.ps1 -Group AngelscriptFast -Label fast -TimeoutMs 600000 -- -log
 ```powershell
 Tools\RunTestSuite.ps1 -Suite Smoke -LabelPrefix smoke -TimeoutMs 600000
 Tools\RunTestSuite.ps1 -Suite Debugger -LabelPrefix debugger -TimeoutMs 600000 -DryRun
-Tools\RunTestSuite.ps1 -Suite ScenarioSamples -LabelPrefix scenario -TimeoutMs 900000 -OutputRoot "D:\Tmp\SuiteRuns"
+Tools\RunTestSuite.ps1 -Suite FunctionalSamples -LabelPrefix functional -TimeoutMs 900000 -OutputRoot "D:\Tmp\SuiteRuns"
 ```
 
 - `-Suite`：具名 suite 名称
@@ -204,7 +204,7 @@ D:\Tmp\TestRuns\Tests\<Label>\<RunId>\
 - `AngelscriptRuntimeUnit`
 - `AngelscriptDebugger`
 - `AngelscriptFast`
-- `AngelscriptScenario`
+- `AngelscriptFunctional`
 - `AngelscriptEditor`
 - `AngelscriptExamples`
 
@@ -213,7 +213,7 @@ D:\Tmp\TestRuns\Tests\<Label>\<RunId>\
 
 1. 快速冒烟：`AngelscriptSmoke`
 2. 无 world 的运行时回归：`AngelscriptRuntimeUnit`、`AngelscriptFast`
-3. 需要 world / actor / subsystem 的集成回归：`AngelscriptScenario`
+3. 需要 world / actor / subsystem 的集成回归：`AngelscriptFunctional`
 4. 编辑器相关：`AngelscriptEditor`
 
 ### Blueprint impact commandlet 相关回归
@@ -250,7 +250,7 @@ J:\UnrealEngine\UERelease\Engine\Binaries\Win64\UnrealEditor-Cmd.exe <ProjectFil
 - `Bindings`
 - `AngelScriptSDK`
 - `HotReload`
-- `ScenarioSamples`
+- `FunctionalSamples`
 - `All`
 
 ## 与 Gauntlet 的边界

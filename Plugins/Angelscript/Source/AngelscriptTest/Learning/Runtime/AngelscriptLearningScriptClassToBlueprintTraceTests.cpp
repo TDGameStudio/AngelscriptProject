@@ -1,4 +1,4 @@
-﻿#include "../../Shared/AngelscriptLearningTrace.h"
+#include "../../Shared/AngelscriptLearningTrace.h"
 #include "../../Shared/AngelscriptFunctionalTestUtils.h"
 #include "../../Shared/AngelscriptTestEngineHelper.h"
 #include "../../Shared/AngelscriptTestUtilities.h"
@@ -192,7 +192,7 @@ class ALearningScriptClassToBlueprintActor : AActor
 	Trace.AddStep(TEXT("CompileBlueprintChild"), TEXT("Compiled the Blueprint asset into a generated Blueprint class that preserves the script parent hierarchy"));
 
 	UClass* BlueprintClass = Blueprint.GetGeneratedClass();
-	if (!TestNotNull(TEXT("Blueprint-child learning scenario should provide a generated blueprint class"), BlueprintClass))
+	if (!TestNotNull(TEXT("Blueprint-child learning test case should provide a generated blueprint class"), BlueprintClass))
 	{
 		Trace.FlushToAutomation(*this);
 		Trace.FlushToLog();

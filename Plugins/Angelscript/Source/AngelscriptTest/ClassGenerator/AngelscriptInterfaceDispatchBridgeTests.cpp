@@ -1,4 +1,4 @@
-﻿#include "Core/AngelscriptBinds.h"
+#include "Core/AngelscriptBinds.h"
 #include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
@@ -145,7 +145,7 @@ class AInterfaceDispatchBridgeCarrier : AActor, UAngelscriptNativeParentInterfac
 	}
 
 	TestTrue(
-		TEXT("Production bridge scenario should generate a class that implements the native parent interface"),
+		TEXT("Production bridge test case should generate a class that implements the native parent interface"),
 		ScriptClass->ImplementsInterface(UAngelscriptNativeParentInterface::StaticClass()));
 
 	FActorTestSpawner Spawner;

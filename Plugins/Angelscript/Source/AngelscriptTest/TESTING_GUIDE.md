@@ -158,10 +158,10 @@ bool FMyModuleCleanTest::RunTest(const FString& Parameters)
 }
 ```
 
-### SHARE_FRESH Scenario-Style Test
+### SHARE_FRESH Functional-Style Test
 
 ```cpp
-bool FMySharedFreshScenarioTest::RunTest(const FString& Parameters)
+bool FMySharedFreshTestCaseTest::RunTest(const FString& Parameters)
 {
     FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
     ASTEST_BEGIN_SHARE_FRESH
@@ -234,7 +234,7 @@ bool FMyBareSDKTest::RunTest(const FString& Parameters)
 ```cpp
 bool FMyCustomEngineTest::RunTest(const FString& Parameters)
 {
-    // When testing engine creation, multi-engine, or production-like scenarios,
+    // When testing engine creation, multi-engine, or production-like test cases,
     // use the utility functions directly:
     FAngelscriptEngineConfig Config;
     FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
@@ -281,7 +281,7 @@ Examples: `ASControlFlowForLoop`, `ASTypePrimitiveAndEnum`
 
 ## When NOT to Use Macros
 
-The following scenarios should use `IMPLEMENT_SIMPLE_AUTOMATION_TEST` directly without the `ASTEST_*` macros:
+The following test cases should use `IMPLEMENT_SIMPLE_AUTOMATION_TEST` directly without the `ASTEST_*` macros:
 
 1. **Engine creation tests** - Testing `CreateForTesting`, `CreateTestingFullEngine`, etc.
 2. **Multi-engine interaction tests** - Tests that create and manage multiple engine instances
@@ -306,6 +306,6 @@ The following scenarios should use `IMPLEMENT_SIMPLE_AUTOMATION_TEST` directly w
 - **Debugger session helpers**: `Shared/AngelscriptDebuggerTestSession.h`
 - **Debugger client helpers**: `Shared/AngelscriptDebuggerTestClient.h`
 - **Debugger script fixtures**: `Shared/AngelscriptDebuggerScriptFixture.h`
-- **Scenario test utils**: `Shared/AngelscriptFunctionalTestUtils.h`
+- **Functional test utils**: `Shared/AngelscriptFunctionalTestUtils.h`
 - **Native test support**: `AngelScriptSDK/AngelscriptNativeTestSupport.h`
 - **Native test adapter**: `AngelScriptSDK/AngelscriptTestAdapter.h`

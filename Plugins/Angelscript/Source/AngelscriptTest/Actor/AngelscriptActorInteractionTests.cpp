@@ -7,7 +7,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -16,7 +16,7 @@ using namespace AngelscriptReflectiveAccess;
 
 namespace AngelscriptTest_Actor_AngelscriptActorInteractionTests_Private
 {
-	constexpr float InteractionScenarioDeltaTime = 0.016f;
+	constexpr float InteractionTestCaseDeltaTime = 0.016f;
 
 	void EnableActorTick(AActor& Actor)
 	{
@@ -388,7 +388,7 @@ class ATestActorCrossCallA : AActor
 	EnableActorTick(*ActorA);
 	BeginPlayActor(*ActorA);
 	BeginPlayActor(*ActorB);
-	TickWorld(Spawner.GetWorld(), InteractionScenarioDeltaTime, 1);
+	TickWorld(Spawner.GetWorld(), InteractionTestCaseDeltaTime, 1);
 
 	int32 EventCallCount = 0;
 	if (!GetByPath<FIntProperty, int32>(*this, ActorB, TEXT("EventCallCount"), EventCallCount))
@@ -698,7 +698,7 @@ class ATestDelegateListener : AActor
 
 	BeginPlayActor(*Broadcaster);
 	BeginPlayActor(*Listener);
-	TickWorld(Spawner.GetWorld(), InteractionScenarioDeltaTime, 1);
+	TickWorld(Spawner.GetWorld(), InteractionTestCaseDeltaTime, 1);
 
 	int32 EventCallCount = 0;
 	if (!GetByPath<FIntProperty, int32>(*this, Listener, TEXT("EventCallCount"), EventCallCount))

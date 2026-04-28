@@ -72,7 +72,7 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.CppTests.Debug."; Label = "CppDebugger" }
         @{ Prefix = "Angelscript.TestModule.Debugger."; Label = "TestModuleDebugger" }
     )
-    "ScenarioSamples" = @(
+    "FunctionalSamples" = @(
         @{ Prefix = "Angelscript.TestModule.Actor"; Label = "Actor" }
         @{ Prefix = "Angelscript.TestModule.Component"; Label = "Component" }
         @{ Prefix = "Angelscript.TestModule.Delegate"; Label = "Delegate" }

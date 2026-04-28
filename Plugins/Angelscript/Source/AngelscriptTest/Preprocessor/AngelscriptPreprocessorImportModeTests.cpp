@@ -28,7 +28,7 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorImportModeTests_Pr
 		int32 ErrorCount = 0;
 	};
 
-	struct FImportWarningScenario
+	struct FImportWarningTestCase
 	{
 		const TCHAR* Label = TEXT("");
 		bool bWarnOnManualImportStatements = false;
@@ -170,15 +170,15 @@ bool FAngelscriptPreprocessorAutomaticWarningRespectsConfigTest::RunTest(const F
 		IFileManager::Get().Delete(*ProviderAbsolutePath, false, true);
 	};
 
-	const TArray<FImportWarningScenario> Scenarios = {
+	const TArray<FImportWarningTestCase> TestCases = {
 		{TEXT("WarningsEnabled"), true, 1},
 		{TEXT("WarningsDisabled"), false, 0},
 	};
 
-	for (const FImportWarningScenario& Scenario : Scenarios)
+	for (const FImportWarningTestCase& TestCase : TestCases)
 	{
-		const FString ScenarioLabel = Scenario.Label;
-		Settings->bWarnOnManualImportStatements = Scenario.bWarnOnManualImportStatements;
+		const FString TestCaseLabel = TestCase.Label;
+		Settings->bWarnOnManualImportStatements = TestCase.bWarnOnManualImportStatements;
 		Engine.ResetDiagnostics();
 
 		FAngelscriptPreprocessor Preprocessor;
@@ -192,28 +192,28 @@ bool FAngelscriptPreprocessorAutomaticWarningRespectsConfigTest::RunTest(const F
 			{ProviderAbsolutePath, ConsumerAbsolutePath});
 
 		bPassed &= TestTrue(
-			*FString::Printf(TEXT("%s should preprocess successfully"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should preprocess successfully"), *TestCaseLabel),
 			bPreprocessSucceeded);
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should emit exactly two module descriptors"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should emit exactly two module descriptors"), *TestCaseLabel),
 			Modules.Num(),
 			2);
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should keep preprocessing error count at zero"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should keep preprocessing error count at zero"), *TestCaseLabel),
 			CollectedDiagnostics.ErrorCount,
 			0);
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should emit the expected warning count"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should emit the expected warning count"), *TestCaseLabel),
 			CollectedDiagnostics.Diagnostics.Num(),
-			Scenario.ExpectedWarningCount);
+			TestCase.ExpectedWarningCount);
 
 		const FAngelscriptModuleDesc* ProviderModule = FindModuleByName(Modules, ProviderModuleName);
 		const FAngelscriptModuleDesc* ConsumerModule = FindModuleByName(Modules, ConsumerModuleName);
 		if (!TestNotNull(
-				*FString::Printf(TEXT("%s should emit the provider module descriptor"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should emit the provider module descriptor"), *TestCaseLabel),
 				ProviderModule)
 			|| !TestNotNull(
-				*FString::Printf(TEXT("%s should emit the consumer module descriptor"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should emit the consumer module descriptor"), *TestCaseLabel),
 				ConsumerModule))
 		{
 			bPassed = false;
@@ -221,27 +221,27 @@ bool FAngelscriptPreprocessorAutomaticWarningRespectsConfigTest::RunTest(const F
 		}
 
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should keep the provider module free of imported modules"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should keep the provider module free of imported modules"), *TestCaseLabel),
 			ProviderModule->ImportedModules.Num(),
 			0);
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should record exactly one imported module on the consumer"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should record exactly one imported module on the consumer"), *TestCaseLabel),
 			ConsumerModule->ImportedModules.Num(),
 			1);
 		bPassed &= TestTrue(
-			*FString::Printf(TEXT("%s should record the provider module name in ImportedModules"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should record the provider module name in ImportedModules"), *TestCaseLabel),
 			ConsumerModule->ImportedModules.Contains(ProviderModuleName));
 		bPassed &= TestTrue(
-			*FString::Printf(TEXT("%s should materialize at least one processed code section for the consumer"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should materialize at least one processed code section for the consumer"), *TestCaseLabel),
 			ConsumerModule->Code.Num() > 0);
 		bPassed &= TestFalse(
-			*FString::Printf(TEXT("%s should strip the raw manual import statement from processed code"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should strip the raw manual import statement from processed code"), *TestCaseLabel),
 			ModuleContainsText(*ConsumerModule, ConsumerImportStatement));
 
-		if (Scenario.bWarnOnManualImportStatements)
+		if (TestCase.bWarnOnManualImportStatements)
 		{
 			if (!TestEqual(
-				*FString::Printf(TEXT("%s should emit exactly one compatibility warning"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should emit exactly one compatibility warning"), *TestCaseLabel),
 				CollectedDiagnostics.Diagnostics.Num(),
 				1))
 			{
@@ -251,20 +251,20 @@ bool FAngelscriptPreprocessorAutomaticWarningRespectsConfigTest::RunTest(const F
 
 			const FAngelscriptEngine::FDiagnostic& Diagnostic = CollectedDiagnostics.Diagnostics[0];
 			bPassed &= TestFalse(
-				*FString::Printf(TEXT("%s should emit a warning instead of an error"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should emit a warning instead of an error"), *TestCaseLabel),
 				Diagnostic.bIsError);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should point the warning at the import line"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should point the warning at the import line"), *TestCaseLabel),
 				Diagnostic.Row,
 				1);
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should mention automatic import compatibility in the warning message"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should mention automatic import compatibility in the warning message"), *TestCaseLabel),
 				Diagnostic.Message.Contains(AutomaticImportWarningMessage));
 		}
 		else
 		{
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should keep diagnostics empty when warning policy is disabled"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should keep diagnostics empty when warning policy is disabled"), *TestCaseLabel),
 				CollectedDiagnostics.Diagnostics.IsEmpty());
 		}
 	}

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -73,20 +73,20 @@ class AActorConstructionCarrier : AActor
 
 		UASClass* GeneratedASClass = Cast<UASClass>(GeneratedClass);
 		if (!Test.TestNotNull(
-				TEXT("ASClass actor-construction scenario should compile the carrier into a UASClass"),
+				TEXT("ASClass actor-construction test case should compile the carrier into a UASClass"),
 				GeneratedASClass))
 		{
 			return nullptr;
 		}
 
 		Test.TestNotNull(
-			TEXT("ASClass actor-construction scenario should bind the script constructor function"),
+			TEXT("ASClass actor-construction test case should bind the script constructor function"),
 			GeneratedASClass->ConstructFunction);
 		Test.TestNotNull(
-			TEXT("ASClass actor-construction scenario should bind the defaults function"),
+			TEXT("ASClass actor-construction test case should bind the defaults function"),
 			GeneratedASClass->DefaultsFunction);
 		Test.TestNotNull(
-			TEXT("ASClass actor-construction scenario should keep a live script type pointer"),
+			TEXT("ASClass actor-construction test case should keep a live script type pointer"),
 			GeneratedASClass->ScriptTypePtr);
 
 		return GeneratedASClass;
@@ -175,7 +175,7 @@ bool FAngelscriptASClassStaticActorConstructorAppliesScriptConstructorAndDefault
 
 	AActor* DefaultObject = Cast<AActor>(GeneratedASClass->GetDefaultObject());
 	if (!TestNotNull(
-			TEXT("ASClass actor-construction scenario should expose a generated actor class default object"),
+			TEXT("ASClass actor-construction test case should expose a generated actor class default object"),
 			DefaultObject))
 	{
 		return false;
@@ -192,8 +192,8 @@ bool FAngelscriptASClassStaticActorConstructorAppliesScriptConstructorAndDefault
 
 	AActor* FirstActor = SpawnScriptActor(*this, Spawner, GeneratedASClass);
 	AActor* SecondActor = SpawnScriptActor(*this, Spawner, GeneratedASClass);
-	if (!TestNotNull(TEXT("ASClass actor-construction scenario should spawn the first generated actor"), FirstActor)
-		|| !TestNotNull(TEXT("ASClass actor-construction scenario should spawn the second generated actor"), SecondActor))
+	if (!TestNotNull(TEXT("ASClass actor-construction test case should spawn the first generated actor"), FirstActor)
+		|| !TestNotNull(TEXT("ASClass actor-construction test case should spawn the second generated actor"), SecondActor))
 	{
 		return false;
 	}
@@ -207,49 +207,49 @@ bool FAngelscriptASClassStaticActorConstructorAppliesScriptConstructorAndDefault
 	}
 
 	TestTrue(
-		TEXT("ASClass actor-construction scenario should compile a generated actor class"),
+		TEXT("ASClass actor-construction test case should compile a generated actor class"),
 		GeneratedASClass->IsChildOf(AActor::StaticClass()));
 	TestTrue(
-		TEXT("ASClass actor-construction scenario should keep runtime actors on the generated class"),
+		TEXT("ASClass actor-construction test case should keep runtime actors on the generated class"),
 		FirstActor->GetClass() == GeneratedASClass && SecondActor->GetClass() == GeneratedASClass);
 	TestTrue(
-		TEXT("ASClass actor-construction scenario should create distinct runtime actor instances"),
+		TEXT("ASClass actor-construction test case should create distinct runtime actor instances"),
 		FirstActor != SecondActor);
 	TestTrue(
-		TEXT("ASClass actor-construction scenario should keep runtime actors distinct from the class default object"),
+		TEXT("ASClass actor-construction test case should keep runtime actors distinct from the class default object"),
 		FirstActor != DefaultObject && SecondActor != DefaultObject);
 
 	const bool bDefaultObjectVerified = ASClassActorConstructionTest::VerifyDefaults(
 		*this,
-		TEXT("ASClass actor-construction scenario class default object"),
+		TEXT("ASClass actor-construction test case class default object"),
 		DefaultSnapshot);
 	const bool bFirstActorVerified = ASClassActorConstructionTest::VerifyInstanceSnapshot(
 		*this,
-		TEXT("ASClass actor-construction scenario first spawned actor"),
+		TEXT("ASClass actor-construction test case first spawned actor"),
 		FirstSnapshot);
 	const bool bSecondActorVerified = ASClassActorConstructionTest::VerifyInstanceSnapshot(
 		*this,
-		TEXT("ASClass actor-construction scenario second spawned actor"),
+		TEXT("ASClass actor-construction test case second spawned actor"),
 		SecondSnapshot);
 
 	TestEqual(
-		TEXT("ASClass actor-construction scenario should keep the second actor constructor count isolated from the first actor"),
+		TEXT("ASClass actor-construction test case should keep the second actor constructor count isolated from the first actor"),
 		SecondSnapshot.CtorCount,
 		ASClassActorConstructionTest::ExpectedCtorCount);
 	TestEqual(
-		TEXT("ASClass actor-construction scenario should keep the class default object on the same scripted integer default as spawned actors"),
+		TEXT("ASClass actor-construction test case should keep the class default object on the same scripted integer default as spawned actors"),
 		DefaultSnapshot.DefaultValue,
 		FirstSnapshot.DefaultValue);
 	TestEqual(
-		TEXT("ASClass actor-construction scenario should keep both spawned actors on the same scripted integer default"),
+		TEXT("ASClass actor-construction test case should keep both spawned actors on the same scripted integer default"),
 		FirstSnapshot.DefaultValue,
 		SecondSnapshot.DefaultValue);
 	TestEqual(
-		TEXT("ASClass actor-construction scenario should keep the class default object on the same scripted string default as spawned actors"),
+		TEXT("ASClass actor-construction test case should keep the class default object on the same scripted string default as spawned actors"),
 		DefaultSnapshot.DefaultLabel,
 		FirstSnapshot.DefaultLabel);
 	TestEqual(
-		TEXT("ASClass actor-construction scenario should keep both spawned actors on the same scripted string default"),
+		TEXT("ASClass actor-construction test case should keep both spawned actors on the same scripted string default"),
 		FirstSnapshot.DefaultLabel,
 		SecondSnapshot.DefaultLabel);
 

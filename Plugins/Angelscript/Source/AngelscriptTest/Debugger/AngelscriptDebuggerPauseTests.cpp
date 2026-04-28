@@ -565,7 +565,7 @@ bool FAngelscriptDebuggerPauseStopsAtNextScriptLineTest::RunTest(const FString& 
 		return false;
 	}
 
-	if (!TestFalse(TEXT("Debugger.Session.PauseStopsAtNextScriptLine should not time out while driving the pause scenario"), MonitorResult.bTimedOut))
+	if (!TestFalse(TEXT("Debugger.Session.PauseStopsAtNextScriptLine should not time out while driving the pause test case"), MonitorResult.bTimedOut))
 	{
 		return false;
 	}

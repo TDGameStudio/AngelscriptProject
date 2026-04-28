@@ -414,17 +414,17 @@ int RunPartial(bool bFlag)
 		TEXT("Value"));
 
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment partial scenario should still compile"),
+		TEXT("Branch definite-assignment partial test case should still compile"),
 		bPartialCompiled);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment partial scenario should report bCompileSucceeded=true"),
+		TEXT("Branch definite-assignment partial test case should report bCompileSucceeded=true"),
 		PartialSummary.bCompileSucceeded);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment partial scenario should stay on a handled compile path"),
+		TEXT("Branch definite-assignment partial test case should stay on a handled compile path"),
 		PartialSummary.CompileResult == ECompileResult::FullyHandled
 			|| PartialSummary.CompileResult == ECompileResult::PartiallyHandled);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment partial scenario should capture at least one warning diagnostic for Value"),
+		TEXT("Branch definite-assignment partial test case should capture at least one warning diagnostic for Value"),
 		PartialWarning != nullptr);
 	if (PartialWarning != nullptr)
 	{
@@ -476,17 +476,17 @@ int RunSafeFalse()
 		TEXT("Value"));
 
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment full scenario should compile"),
+		TEXT("Branch definite-assignment full test case should compile"),
 		bFullCompiled);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment full scenario should report bCompileSucceeded=true"),
+		TEXT("Branch definite-assignment full test case should report bCompileSucceeded=true"),
 		FullSummary.bCompileSucceeded);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment full scenario should stay on a handled compile path"),
+		TEXT("Branch definite-assignment full test case should stay on a handled compile path"),
 		FullSummary.CompileResult == ECompileResult::FullyHandled
 			|| FullSummary.CompileResult == ECompileResult::PartiallyHandled);
 	bPassed &= TestTrue(
-		TEXT("Branch definite-assignment full scenario should not emit an uninitialized warning for Value"),
+		TEXT("Branch definite-assignment full test case should not emit an uninitialized warning for Value"),
 		FullWarning == nullptr);
 
 	int32 SafeTrueResult = 0;
@@ -494,11 +494,11 @@ int RunSafeFalse()
 	bPassed &= ExecuteIntFunction(&Engine, FullModuleName, TEXT("int RunSafeTrue()"), SafeTrueResult);
 	bPassed &= ExecuteIntFunction(&Engine, FullModuleName, TEXT("int RunSafeFalse()"), SafeFalseResult);
 	bPassed &= TestEqual(
-		TEXT("Branch definite-assignment full scenario should execute the true wrapper result"),
+		TEXT("Branch definite-assignment full test case should execute the true wrapper result"),
 		SafeTrueResult,
 		7);
 	bPassed &= TestEqual(
-		TEXT("Branch definite-assignment full scenario should execute the false wrapper result"),
+		TEXT("Branch definite-assignment full test case should execute the false wrapper result"),
 		SafeFalseResult,
 		9);
 

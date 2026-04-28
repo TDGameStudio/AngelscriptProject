@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -73,20 +73,20 @@ class UObjectConstructionCarrier : UObject
 
 		UASClass* GeneratedASClass = Cast<UASClass>(GeneratedClass);
 		if (!Test.TestNotNull(
-				TEXT("ASClass object-construction scenario should compile the carrier into a UASClass"),
+				TEXT("ASClass object-construction test case should compile the carrier into a UASClass"),
 				GeneratedASClass))
 		{
 			return nullptr;
 		}
 
 		Test.TestNotNull(
-			TEXT("ASClass object-construction scenario should bind the script constructor function"),
+			TEXT("ASClass object-construction test case should bind the script constructor function"),
 			GeneratedASClass->ConstructFunction);
 		Test.TestNotNull(
-			TEXT("ASClass object-construction scenario should bind the defaults function"),
+			TEXT("ASClass object-construction test case should bind the defaults function"),
 			GeneratedASClass->DefaultsFunction);
 		Test.TestNotNull(
-			TEXT("ASClass object-construction scenario should keep a live script type pointer"),
+			TEXT("ASClass object-construction test case should keep a live script type pointer"),
 			GeneratedASClass->ScriptTypePtr);
 
 		return GeneratedASClass;
@@ -178,7 +178,7 @@ bool FAngelscriptASClassStaticObjectConstructorAppliesScriptConstructorAndDefaul
 
 	UObject* DefaultObject = GeneratedASClass->GetDefaultObject();
 	if (!TestNotNull(
-			TEXT("ASClass object-construction scenario should expose a generated class default object"),
+			TEXT("ASClass object-construction test case should expose a generated class default object"),
 			DefaultObject))
 	{
 		return false;
@@ -193,10 +193,10 @@ bool FAngelscriptASClassStaticObjectConstructorAppliesScriptConstructorAndDefaul
 	UObject* FirstInstance = NewObject<UObject>(GetTransientPackage(), GeneratedASClass, TEXT("ObjectConstructionCarrierA"));
 	UObject* SecondInstance = NewObject<UObject>(GetTransientPackage(), GeneratedASClass, TEXT("ObjectConstructionCarrierB"));
 	if (!TestNotNull(
-			TEXT("ASClass object-construction scenario should create the first generated UObject instance"),
+			TEXT("ASClass object-construction test case should create the first generated UObject instance"),
 			FirstInstance)
 		|| !TestNotNull(
-			TEXT("ASClass object-construction scenario should create the second generated UObject instance"),
+			TEXT("ASClass object-construction test case should create the second generated UObject instance"),
 			SecondInstance))
 	{
 		return false;
@@ -222,44 +222,44 @@ bool FAngelscriptASClassStaticObjectConstructorAppliesScriptConstructorAndDefaul
 	}
 
 	TestTrue(
-		TEXT("ASClass object-construction scenario should compile a plain UObject-generated class"),
+		TEXT("ASClass object-construction test case should compile a plain UObject-generated class"),
 		GeneratedASClass->IsChildOf(UObject::StaticClass()));
 	TestFalse(
-		TEXT("ASClass object-construction scenario should keep the generated class out of the actor hierarchy"),
+		TEXT("ASClass object-construction test case should keep the generated class out of the actor hierarchy"),
 		GeneratedASClass->IsChildOf(AActor::StaticClass()));
 	TestTrue(
-		TEXT("ASClass object-construction scenario should create distinct runtime instances"),
+		TEXT("ASClass object-construction test case should create distinct runtime instances"),
 		FirstInstance != SecondInstance);
 	TestTrue(
-		TEXT("ASClass object-construction scenario should keep runtime instances distinct from the class default object"),
+		TEXT("ASClass object-construction test case should keep runtime instances distinct from the class default object"),
 		FirstInstance != DefaultObject && SecondInstance != DefaultObject);
 
 	const bool bDefaultObjectVerified = ASClassObjectConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass object-construction scenario class default object"),
+		TEXT("ASClass object-construction test case class default object"),
 		DefaultSnapshot,
 		ASClassObjectConstructionTest::ExpectedCtorCount);
 	const bool bFirstInstanceVerified = ASClassObjectConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass object-construction scenario first instance"),
+		TEXT("ASClass object-construction test case first instance"),
 		FirstSnapshot,
 		ASClassObjectConstructionTest::ExpectedCtorCount);
 	const bool bSecondInstanceVerified = ASClassObjectConstructionTest::VerifySnapshot(
 		*this,
-		TEXT("ASClass object-construction scenario second instance"),
+		TEXT("ASClass object-construction test case second instance"),
 		SecondSnapshot,
 		ASClassObjectConstructionTest::ExpectedCtorCount);
 
 	TestEqual(
-		TEXT("ASClass object-construction scenario should keep the second instance constructor count isolated from the first instance"),
+		TEXT("ASClass object-construction test case should keep the second instance constructor count isolated from the first instance"),
 		SecondSnapshot.CtorCount,
 		ASClassObjectConstructionTest::ExpectedCtorCount);
 	TestEqual(
-		TEXT("ASClass object-construction scenario should keep both runtime instances on the same scripted integer default"),
+		TEXT("ASClass object-construction test case should keep both runtime instances on the same scripted integer default"),
 		FirstSnapshot.DefaultValue,
 		SecondSnapshot.DefaultValue);
 	TestEqual(
-		TEXT("ASClass object-construction scenario should keep both runtime instances on the same scripted string default"),
+		TEXT("ASClass object-construction test case should keep both runtime instances on the same scripted string default"),
 		FirstSnapshot.DefaultLabel,
 		SecondSnapshot.DefaultLabel);
 

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -68,15 +68,15 @@ class UProcessEventCarrier : UObject
 	{
 		FIntProperty* InputProperty = FindFProperty<FIntProperty>(Function, TEXT("Input"));
 		FIntProperty* ReturnProperty = FindFProperty<FIntProperty>(Function, TEXT("ReturnValue"));
-		if (!Test.TestNotNull(TEXT("ProcessEvent thunk scenario should expose the Input property"), InputProperty)
-			|| !Test.TestNotNull(TEXT("ProcessEvent thunk scenario should expose the ReturnValue property"), ReturnProperty))
+		if (!Test.TestNotNull(TEXT("ProcessEvent thunk test case should expose the Input property"), InputProperty)
+			|| !Test.TestNotNull(TEXT("ProcessEvent thunk test case should expose the ReturnValue property"), ReturnProperty))
 		{
 			return false;
 		}
 
 		FStructOnScope Params(Function);
 		void* ParamsMemory = Params.GetStructMemory();
-		if (!Test.TestNotNull(TEXT("ProcessEvent thunk scenario should allocate a reflected parameter buffer"), ParamsMemory))
+		if (!Test.TestNotNull(TEXT("ProcessEvent thunk test case should allocate a reflected parameter buffer"), ParamsMemory))
 		{
 			return false;
 		}
@@ -98,14 +98,14 @@ class UProcessEventCarrier : UObject
 		int32 InputValue)
 	{
 		FIntProperty* InputProperty = FindFProperty<FIntProperty>(Function, TEXT("Input"));
-		if (!Test.TestNotNull(TEXT("ProcessEvent thunk scenario should expose the Input property on the void function"), InputProperty))
+		if (!Test.TestNotNull(TEXT("ProcessEvent thunk test case should expose the Input property on the void function"), InputProperty))
 		{
 			return false;
 		}
 
 		FStructOnScope Params(Function);
 		void* ParamsMemory = Params.GetStructMemory();
-		if (!Test.TestNotNull(TEXT("ProcessEvent thunk scenario should allocate a reflected parameter buffer for the void function"), ParamsMemory))
+		if (!Test.TestNotNull(TEXT("ProcessEvent thunk test case should allocate a reflected parameter buffer for the void function"), ParamsMemory))
 		{
 			return false;
 		}
@@ -137,7 +137,7 @@ bool FAngelscriptASFunctionProcessEventDispatchesThroughNativeThunkTest::RunTest
 	};
 
 	UASClass* ScriptClass = ASFunctionProcessEventTests::CompileProcessEventCarrier(*this, Engine);
-	if (!TestNotNull(TEXT("ProcessEvent thunk scenario should compile to a UASClass"), ScriptClass))
+	if (!TestNotNull(TEXT("ProcessEvent thunk test case should compile to a UASClass"), ScriptClass))
 	{
 		return false;
 	}
@@ -146,34 +146,34 @@ bool FAngelscriptASFunctionProcessEventDispatchesThroughNativeThunkTest::RunTest
 	UFunction* SetStoredValueFunction = FindGeneratedFunction(ScriptClass, TEXT("SetStoredValue"));
 	UASFunction* AddTenScriptFunction = Cast<UASFunction>(AddTenFunction);
 	UASFunction* SetStoredValueScriptFunction = Cast<UASFunction>(SetStoredValueFunction);
-	if (!TestNotNull(TEXT("ProcessEvent thunk scenario should generate AddTen"), AddTenFunction)
-		|| !TestNotNull(TEXT("ProcessEvent thunk scenario should generate SetStoredValue"), SetStoredValueFunction)
-		|| !TestNotNull(TEXT("ProcessEvent thunk scenario should expose AddTen as a UASFunction"), AddTenScriptFunction)
-		|| !TestNotNull(TEXT("ProcessEvent thunk scenario should expose SetStoredValue as a UASFunction"), SetStoredValueScriptFunction))
+	if (!TestNotNull(TEXT("ProcessEvent thunk test case should generate AddTen"), AddTenFunction)
+		|| !TestNotNull(TEXT("ProcessEvent thunk test case should generate SetStoredValue"), SetStoredValueFunction)
+		|| !TestNotNull(TEXT("ProcessEvent thunk test case should expose AddTen as a UASFunction"), AddTenScriptFunction)
+		|| !TestNotNull(TEXT("ProcessEvent thunk test case should expose SetStoredValue as a UASFunction"), SetStoredValueScriptFunction))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("ProcessEvent thunk scenario should route AddTen through UASFunctionNativeThunk"), AddTenFunction->GetNativeFunc() == &UASFunctionNativeThunk);
-	TestTrue(TEXT("ProcessEvent thunk scenario should route SetStoredValue through UASFunctionNativeThunk"), SetStoredValueFunction->GetNativeFunc() == &UASFunctionNativeThunk);
+	TestTrue(TEXT("ProcessEvent thunk test case should route AddTen through UASFunctionNativeThunk"), AddTenFunction->GetNativeFunc() == &UASFunctionNativeThunk);
+	TestTrue(TEXT("ProcessEvent thunk test case should route SetStoredValue through UASFunctionNativeThunk"), SetStoredValueFunction->GetNativeFunc() == &UASFunctionNativeThunk);
 
 	UObject* Instance = NewObject<UObject>(GetTransientPackage(), ScriptClass, TEXT("ProcessEventCarrierInstance"));
-	if (!TestNotNull(TEXT("ProcessEvent thunk scenario should instantiate the generated UObject"), Instance))
+	if (!TestNotNull(TEXT("ProcessEvent thunk test case should instantiate the generated UObject"), Instance))
 	{
 		return false;
 	}
 
 	int32 AddTenResult = INDEX_NONE;
 	if (!TestTrue(
-			TEXT("ProcessEvent thunk scenario should execute AddTen via ProcessEvent"),
+			TEXT("ProcessEvent thunk test case should execute AddTen via ProcessEvent"),
 			ASFunctionProcessEventTests::InvokeIntFunctionThroughProcessEvent(*this, Engine, Instance, AddTenFunction, 5, AddTenResult))
-		|| !TestEqual(TEXT("ProcessEvent thunk scenario should return 15 when AddTen receives 5"), AddTenResult, 15))
+		|| !TestEqual(TEXT("ProcessEvent thunk test case should return 15 when AddTen receives 5"), AddTenResult, 15))
 	{
 		return false;
 	}
 
 	if (!TestTrue(
-			TEXT("ProcessEvent thunk scenario should execute SetStoredValue via ProcessEvent"),
+			TEXT("ProcessEvent thunk test case should execute SetStoredValue via ProcessEvent"),
 			ASFunctionProcessEventTests::InvokeVoidFunctionThroughProcessEvent(*this, Engine, Instance, SetStoredValueFunction, 17)))
 	{
 		return false;
@@ -185,7 +185,7 @@ bool FAngelscriptASFunctionProcessEventDispatchesThroughNativeThunkTest::RunTest
 		return false;
 	}
 
-	TestEqual(TEXT("ProcessEvent thunk scenario should write StoredValue through RuntimeCallFunction"), StoredValue, 17);
+	TestEqual(TEXT("ProcessEvent thunk test case should write StoredValue through RuntimeCallFunction"), StoredValue, 17);
 
 	ASTEST_END_SHARE_CLEAN
 	return true;

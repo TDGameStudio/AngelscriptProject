@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 
 #include "ClassGenerator/ASClass.h"
 #include "Components/ActorTestSpawner.h"
@@ -6,7 +6,7 @@
 #include "Misc/ScopeExit.h"
 #include "UObject/UnrealType.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -65,7 +65,7 @@ class ATestScriptInheritanceParent : AActor
 }
 
 UCLASS()
-class ATestScriptInheritanceChild : AScenarioScriptInheritanceParent
+class ATestScriptInheritanceChild : ATestCaseScriptInheritanceParent
 {
 	UFUNCTION(BlueprintOverride)
 	int GetValue()
@@ -88,27 +88,27 @@ class ATestScriptInheritanceChild : AScenarioScriptInheritanceParent
 	}
 
 	UClass* ChildClass = FindGeneratedClass(&Engine, TEXT("ATestScriptInheritanceChild"));
-	if (!TestNotNull(TEXT("Script-inheritance scenario should generate the child class"), ChildClass))
+	if (!TestNotNull(TEXT("Script-inheritance test case should generate the child class"), ChildClass))
 	{
 		return false;
 	}
 
 	UASClass* ParentASClass = Cast<UASClass>(ParentClass);
 	UASClass* ChildASClass = Cast<UASClass>(ChildClass);
-	if (!TestNotNull(TEXT("Script-inheritance scenario should compile the parent as a UASClass"), ParentASClass)
-		|| !TestNotNull(TEXT("Script-inheritance scenario should compile the child as a UASClass"), ChildASClass))
+	if (!TestNotNull(TEXT("Script-inheritance test case should compile the parent as a UASClass"), ParentASClass)
+		|| !TestNotNull(TEXT("Script-inheritance test case should compile the child as a UASClass"), ChildASClass))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Script-inheritance scenario should keep the child class actor-derived"), ChildClass->IsChildOf(AActor::StaticClass()));
-	TestTrue(TEXT("Script-inheritance scenario should make the child class inherit from the parent class"), ChildClass->IsChildOf(ParentClass));
-	TestEqual(TEXT("Script-inheritance scenario should keep the generated child superclass exact"), ChildClass->GetSuperClass(), ParentClass);
+	TestTrue(TEXT("Script-inheritance test case should keep the child class actor-derived"), ChildClass->IsChildOf(AActor::StaticClass()));
+	TestTrue(TEXT("Script-inheritance test case should make the child class inherit from the parent class"), ChildClass->IsChildOf(ParentClass));
+	TestEqual(TEXT("Script-inheritance test case should keep the generated child superclass exact"), ChildClass->GetSuperClass(), ParentClass);
 	TestEqual(TEXT("Script-inheritance parent should already be its own most-up-to-date class"), ParentASClass->GetMostUpToDateClass(), ParentClass);
 	TestEqual(TEXT("Script-inheritance child should already be its own most-up-to-date class"), ChildASClass->GetMostUpToDateClass(), ChildClass);
 
 	UObject* ChildDefaultObject = ChildClass->GetDefaultObject();
-	if (!TestNotNull(TEXT("Script-inheritance scenario should provide a child CDO"), ChildDefaultObject))
+	if (!TestNotNull(TEXT("Script-inheritance test case should provide a child CDO"), ChildDefaultObject))
 	{
 		return false;
 	}
@@ -123,8 +123,8 @@ class ATestScriptInheritanceChild : AScenarioScriptInheritanceParent
 	Spawner.InitializeGameSubsystems();
 	AActor* ParentActor = SpawnScriptActor(*this, Spawner, ParentClass);
 	AActor* ChildActor = SpawnScriptActor(*this, Spawner, ChildClass);
-	if (!TestNotNull(TEXT("Script-inheritance scenario should spawn the parent actor"), ParentActor)
-		|| !TestNotNull(TEXT("Script-inheritance scenario should spawn the child actor"), ChildActor))
+	if (!TestNotNull(TEXT("Script-inheritance test case should spawn the parent actor"), ParentActor)
+		|| !TestNotNull(TEXT("Script-inheritance test case should spawn the child actor"), ChildActor))
 	{
 		return false;
 	}
@@ -137,24 +137,24 @@ class ATestScriptInheritanceChild : AScenarioScriptInheritanceParent
 
 	UFunction* ParentGetValueFunction = FindGeneratedFunction(ParentClass, TEXT("GetValue"));
 	UFunction* ChildGetValueFunction = FindGeneratedFunction(ChildClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Script-inheritance scenario should generate the parent GetValue function"), ParentGetValueFunction)
-		|| !TestNotNull(TEXT("Script-inheritance scenario should generate the child GetValue function"), ChildGetValueFunction))
+	if (!TestNotNull(TEXT("Script-inheritance test case should generate the parent GetValue function"), ParentGetValueFunction)
+		|| !TestNotNull(TEXT("Script-inheritance test case should generate the child GetValue function"), ChildGetValueFunction))
 	{
 		return false;
 	}
 
 	int32 ParentResult = 0;
 	int32 ChildResult = 0;
-	if (!TestTrue(TEXT("Script-inheritance scenario should execute the parent GetValue function"), ExecuteGeneratedIntEventOnGameThread(&Engine, ParentActor, ParentGetValueFunction, ParentResult))
-		|| !TestTrue(TEXT("Script-inheritance scenario should execute the child GetValue function"), ExecuteGeneratedIntEventOnGameThread(&Engine, ChildActor, ChildGetValueFunction, ChildResult)))
+	if (!TestTrue(TEXT("Script-inheritance test case should execute the parent GetValue function"), ExecuteGeneratedIntEventOnGameThread(&Engine, ParentActor, ParentGetValueFunction, ParentResult))
+		|| !TestTrue(TEXT("Script-inheritance test case should execute the child GetValue function"), ExecuteGeneratedIntEventOnGameThread(&Engine, ChildActor, ChildGetValueFunction, ChildResult)))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Script-inheritance scenario should flow the parent default value into the child CDO"), ChildDefaultParentValue, 21);
-	TestEqual(TEXT("Script-inheritance scenario should expose the inherited parent property on child instances"), ChildInstanceParentValue, 21);
-	TestEqual(TEXT("Script-inheritance scenario should preserve the parent function result on the parent actor"), ParentResult, 21);
-	TestEqual(TEXT("Script-inheritance scenario should dispatch the child override instead of the parent implementation"), ChildResult, 217);
+	TestEqual(TEXT("Script-inheritance test case should flow the parent default value into the child CDO"), ChildDefaultParentValue, 21);
+	TestEqual(TEXT("Script-inheritance test case should expose the inherited parent property on child instances"), ChildInstanceParentValue, 21);
+	TestEqual(TEXT("Script-inheritance test case should preserve the parent function result on the parent actor"), ParentResult, 21);
+	TestEqual(TEXT("Script-inheritance test case should dispatch the child override instead of the parent implementation"), ChildResult, 217);
 	return true;
 }
 
@@ -194,17 +194,17 @@ class AEmptyScriptActor : AActor
 	}
 
 	UASClass* ASClass = Cast<UASClass>(ScriptClass);
-	if (!TestNotNull(TEXT("Empty script actor scenario should generate a UASClass"), ASClass))
+	if (!TestNotNull(TEXT("Empty script actor test case should generate a UASClass"), ASClass))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Empty script actor scenario should stay actor-derived"), ScriptClass->IsChildOf(AActor::StaticClass()));
-	TestEqual(TEXT("Empty script actor scenario should use AActor as the exact generated superclass"), ScriptClass->GetSuperClass(), AActor::StaticClass());
-	TestEqual(TEXT("Empty script actor scenario should not synthesize any declared user properties"), ScriptClassShapeTest::CountDeclaredProperties(*ScriptClass), 0);
+	TestTrue(TEXT("Empty script actor test case should stay actor-derived"), ScriptClass->IsChildOf(AActor::StaticClass()));
+	TestEqual(TEXT("Empty script actor test case should use AActor as the exact generated superclass"), ScriptClass->GetSuperClass(), AActor::StaticClass());
+	TestEqual(TEXT("Empty script actor test case should not synthesize any declared user properties"), ScriptClassShapeTest::CountDeclaredProperties(*ScriptClass), 0);
 
 	UObject* ClassDefaultObject = ScriptClass->GetDefaultObject();
-	if (!TestNotNull(TEXT("Empty script actor scenario should provide a class default object"), ClassDefaultObject))
+	if (!TestNotNull(TEXT("Empty script actor test case should provide a class default object"), ClassDefaultObject))
 	{
 		return false;
 	}
@@ -212,15 +212,15 @@ class AEmptyScriptActor : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Empty script actor scenario should spawn the generated actor class"), Actor))
+	if (!TestNotNull(TEXT("Empty script actor test case should spawn the generated actor class"), Actor))
 	{
 		return false;
 	}
 
 	BeginPlayActor(Engine, *Actor);
-	TestTrue(TEXT("Empty script actor scenario should enter BeginPlay even without user properties or functions"), Actor->HasActorBegunPlay());
-	TestTrue(TEXT("Empty script actor scenario should allow the spawned actor to enter the destroy flow"), Actor->Destroy());
-	TestTrue(TEXT("Empty script actor scenario should mark the actor as being destroyed after Destroy()"), Actor->IsActorBeingDestroyed());
+	TestTrue(TEXT("Empty script actor test case should enter BeginPlay even without user properties or functions"), Actor->HasActorBegunPlay());
+	TestTrue(TEXT("Empty script actor test case should allow the spawned actor to enter the destroy flow"), Actor->Destroy());
+	TestTrue(TEXT("Empty script actor test case should mark the actor as being destroyed after Destroy()"), Actor->IsActorBeingDestroyed());
 	return true;
 }
 

@@ -413,7 +413,7 @@ bool FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest::RunTest(const FS
 		}
 	};
 
-	if (!WaitForLifecycleMonitorReady(*this, Session, bMonitorReady, TEXT("Debugger.Session.DisconnectClearsDebugState should bring the reconnect monitor up before re-running the scenario")))
+	if (!WaitForLifecycleMonitorReady(*this, Session, bMonitorReady, TEXT("Debugger.Session.DisconnectClearsDebugState should bring the reconnect monitor up before re-running the test case")))
 	{
 		return false;
 	}

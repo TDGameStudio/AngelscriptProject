@@ -15,7 +15,7 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroErrorTests_Private
 {
-	struct FInvalidFunctionMacroScenario
+	struct FInvalidFunctionMacroTestCase
 	{
 		const TCHAR* Label;
 		const TCHAR* RelativeScriptPath;
@@ -23,7 +23,7 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroError
 		int32 ExpectedRow;
 	};
 
-	struct FInvalidFunctionSpecifierScenario
+	struct FInvalidFunctionSpecifierTestCase
 	{
 		const TCHAR* Label;
 		const TCHAR* RelativeScriptPath;
@@ -100,41 +100,41 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroError
 		return Meta.Contains(FName(Key));
 	}
 
-	bool RunInvalidConditionalPlacementScenario(
+	bool RunInvalidConditionalPlacementTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FInvalidFunctionMacroScenario& Scenario)
+		const FInvalidFunctionMacroTestCase& TestCase)
 	{
 		static const FString ExpectedMessage = TEXT("Cannot put a UPROPERTY or UFUNCTION inside preprocessor conditions other than EDITOR or flags declared in configuration.");
 
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
 
-		const FString AbsoluteScriptPath = WriteFunctionMacroFixture(Scenario.RelativeScriptPath, Scenario.ScriptSource);
+		const FString AbsoluteScriptPath = WriteFunctionMacroFixture(TestCase.RelativeScriptPath, TestCase.ScriptSource);
 
 		FAngelscriptPreprocessor Preprocessor;
-		Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+		Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
 		const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
 
 		if (!Test.TestFalse(
-				FString::Printf(TEXT("%s should fail preprocessing when a reflected member is placed under an unsupported condition"), Scenario.Label),
+				FString::Printf(TEXT("%s should fail preprocessing when a reflected member is placed under an unsupported condition"), TestCase.Label),
 				bPreprocessSucceeded))
 		{
 			return false;
 		}
 
 		if (!Test.TestNotNull(
-				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), TestCase.Label),
 				Diagnostics))
 		{
 			return false;
 		}
 
 		if (!Test.TestTrue(
-				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), TestCase.Label),
 				Diagnostics->Diagnostics.Num() > 0))
 		{
 			return false;
@@ -142,59 +142,59 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroError
 
 		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
 		return Test.TestEqual(
-				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), TestCase.Label),
 				CountErrorDiagnostics(Diagnostics),
 				1)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the unsupported-conditional error text stable"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the unsupported-conditional error text stable"), TestCase.Label),
 				FirstDiagnostic.Message,
 				ExpectedMessage)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should pin the error row to the reflected macro line"), Scenario.Label),
+				FString::Printf(TEXT("%s should pin the error row to the reflected macro line"), TestCase.Label),
 				FirstDiagnostic.Row,
-				Scenario.ExpectedRow)
+				TestCase.ExpectedRow)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the error column at the macro start"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the error column at the macro start"), TestCase.Label),
 				FirstDiagnostic.Column,
 				1)
 			&& Test.TestFalse(
-				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), Scenario.Label),
+				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), TestCase.Label),
 				ContainsCompilableCode(Modules));
 	}
 
-	bool RunInvalidFunctionSpecifierScenario(
+	bool RunInvalidFunctionSpecifierTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FInvalidFunctionSpecifierScenario& Scenario)
+		const FInvalidFunctionSpecifierTestCase& TestCase)
 	{
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
 
-		const FString AbsoluteScriptPath = WriteFunctionMacroFixture(Scenario.RelativeScriptPath, Scenario.ScriptSource);
+		const FString AbsoluteScriptPath = WriteFunctionMacroFixture(TestCase.RelativeScriptPath, TestCase.ScriptSource);
 
 		FAngelscriptPreprocessor Preprocessor;
-		Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+		Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
 		const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
 
 		if (!Test.TestFalse(
-				FString::Printf(TEXT("%s should fail preprocessing when UFUNCTION specifiers are invalid"), Scenario.Label),
+				FString::Printf(TEXT("%s should fail preprocessing when UFUNCTION specifiers are invalid"), TestCase.Label),
 				bPreprocessSucceeded))
 		{
 			return false;
 		}
 
 		if (!Test.TestNotNull(
-				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), TestCase.Label),
 				Diagnostics))
 		{
 			return false;
 		}
 
 		if (!Test.TestTrue(
-				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), TestCase.Label),
 				Diagnostics->Diagnostics.Num() > 0))
 		{
 			return false;
@@ -202,23 +202,23 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorFunctionMacroError
 
 		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
 		return Test.TestEqual(
-				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), TestCase.Label),
 				CountErrorDiagnostics(Diagnostics),
 				1)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the function-specifier error text stable"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the function-specifier error text stable"), TestCase.Label),
 				FirstDiagnostic.Message,
-				FString(Scenario.ExpectedMessage))
+				FString(TestCase.ExpectedMessage))
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should pin the error row to the UFUNCTION line"), Scenario.Label),
+				FString::Printf(TEXT("%s should pin the error row to the UFUNCTION line"), TestCase.Label),
 				FirstDiagnostic.Row,
-				Scenario.ExpectedRow)
+				TestCase.ExpectedRow)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the error column at the macro start"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the error column at the macro start"), TestCase.Label),
 				FirstDiagnostic.Column,
 				1)
 			&& Test.TestFalse(
-				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), Scenario.Label),
+				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), TestCase.Label),
 				ContainsCompilableCode(Modules));
 	}
 }
@@ -240,7 +240,7 @@ bool FAngelscriptPreprocessorRejectUnsupportedConditionalPlacementTest::RunTest(
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	const TArray<FInvalidFunctionMacroScenario> InvalidScenarios = {
+	const TArray<FInvalidFunctionMacroTestCase> InvalidTestCases = {
 		{
 			TEXT("Unsupported function conditional"),
 			TEXT("Tests/Preprocessor/FunctionMacros/InvalidConditionalFunction.as"),
@@ -274,9 +274,9 @@ bool FAngelscriptPreprocessorRejectUnsupportedConditionalPlacementTest::RunTest(
 		}
 	};
 
-	for (const FInvalidFunctionMacroScenario& Scenario : InvalidScenarios)
+	for (const FInvalidFunctionMacroTestCase& TestCase : InvalidTestCases)
 	{
-		bPassed &= RunInvalidConditionalPlacementScenario(*this, Engine, Scenario);
+		bPassed &= RunInvalidConditionalPlacementTestCase(*this, Engine, TestCase);
 	}
 
 	Engine.ResetDiagnostics();
@@ -375,7 +375,7 @@ bool FAngelscriptPreprocessorInvalidSpecifiersReportDiagnosticsTest::RunTest(con
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	const TArray<FInvalidFunctionSpecifierScenario> Scenarios = {
+	const TArray<FInvalidFunctionSpecifierTestCase> TestCases = {
 		{
 			TEXT("Global BlueprintEvent specifier"),
 			TEXT("Tests/Preprocessor/FunctionMacros/InvalidSpecifierGlobalBlueprintEvent.as"),
@@ -421,9 +421,9 @@ bool FAngelscriptPreprocessorInvalidSpecifiersReportDiagnosticsTest::RunTest(con
 		}
 	};
 
-	for (const FInvalidFunctionSpecifierScenario& Scenario : Scenarios)
+	for (const FInvalidFunctionSpecifierTestCase& TestCase : TestCases)
 	{
-		bPassed &= RunInvalidFunctionSpecifierScenario(*this, Engine, Scenario);
+		bPassed &= RunInvalidFunctionSpecifierTestCase(*this, Engine, TestCase);
 	}
 
 	ASTEST_END_MODULE_CLEAN

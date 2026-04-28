@@ -1,11 +1,11 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -109,9 +109,9 @@ class AHotReloadLifecycleTarget : AActor
 	FIntProperty* BeginPlayCountProperty = FindFProperty<FIntProperty>(InitialClass, TEXT("BeginPlayCount"));
 	FIntProperty* PersistentCounterProperty = FindFProperty<FIntProperty>(InitialClass, TEXT("PersistentCounter"));
 	UFunction* GetValueBeforeReload = FindGeneratedFunction(InitialClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Soft reload lifecycle scenario should expose BeginPlayCount before reload"), BeginPlayCountProperty)
-		|| !TestNotNull(TEXT("Soft reload lifecycle scenario should expose PersistentCounter before reload"), PersistentCounterProperty)
-		|| !TestNotNull(TEXT("Soft reload lifecycle scenario should expose GetValue before reload"), GetValueBeforeReload))
+	if (!TestNotNull(TEXT("Soft reload lifecycle test case should expose BeginPlayCount before reload"), BeginPlayCountProperty)
+		|| !TestNotNull(TEXT("Soft reload lifecycle test case should expose PersistentCounter before reload"), PersistentCounterProperty)
+		|| !TestNotNull(TEXT("Soft reload lifecycle test case should expose GetValue before reload"), GetValueBeforeReload))
 	{
 		return false;
 	}
@@ -134,7 +134,7 @@ class AHotReloadLifecycleTarget : AActor
 	}
 
 	TestEqual(
-		TEXT("Soft reload lifecycle scenario should invoke BeginPlay exactly once before reload"),
+		TEXT("Soft reload lifecycle test case should invoke BeginPlay exactly once before reload"),
 		BeginPlayCountBeforeReload,
 		1);
 
@@ -142,48 +142,48 @@ class AHotReloadLifecycleTarget : AActor
 
 	int32 ValueBeforeReload = 0;
 	if (!TestTrue(
-		TEXT("Soft reload lifecycle scenario should execute GetValue before reload"),
+		TEXT("Soft reload lifecycle test case should execute GetValue before reload"),
 		ExecuteGeneratedIntEventOnGameThread(ExistingActor, GetValueBeforeReload, ValueBeforeReload)))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload lifecycle scenario should observe the modified runtime state before reload"),
+		TEXT("Soft reload lifecycle test case should observe the modified runtime state before reload"),
 		ValueBeforeReload,
 		41);
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(
-		TEXT("Soft reload lifecycle scenario should compile the body-only update on the soft reload path"),
+		TEXT("Soft reload lifecycle test case should compile the body-only update on the soft reload path"),
 		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, LifecycleModuleName, LifecycleFilename, ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
 
 	if (!TestTrue(
-		TEXT("Soft reload lifecycle scenario should remain on a handled soft reload path"),
+		TEXT("Soft reload lifecycle test case should remain on a handled soft reload path"),
 		IsHandledReloadResult(ReloadResult)))
 	{
 		return false;
 	}
 
 	UClass* ReloadedClass = FindGeneratedClass(&Engine, LifecycleClassName);
-	if (!TestNotNull(TEXT("Soft reload lifecycle scenario should still expose the generated class after reload"), ReloadedClass))
+	if (!TestNotNull(TEXT("Soft reload lifecycle test case should still expose the generated class after reload"), ReloadedClass))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Soft reload lifecycle scenario should preserve the live UClass object"), ReloadedClass, InitialClass);
-	TestEqual(TEXT("Soft reload lifecycle scenario should keep the live actor on the preserved class"), ExistingActor->GetClass(), ReloadedClass);
-	TestTrue(TEXT("Soft reload lifecycle scenario should keep the actor in begun-play state"), ExistingActor->HasActorBegunPlay());
+	TestEqual(TEXT("Soft reload lifecycle test case should preserve the live UClass object"), ReloadedClass, InitialClass);
+	TestEqual(TEXT("Soft reload lifecycle test case should keep the live actor on the preserved class"), ExistingActor->GetClass(), ReloadedClass);
+	TestTrue(TEXT("Soft reload lifecycle test case should keep the actor in begun-play state"), ExistingActor->HasActorBegunPlay());
 
 	FIntProperty* ReloadedBeginPlayCountProperty = FindFProperty<FIntProperty>(ReloadedClass, TEXT("BeginPlayCount"));
 	FIntProperty* ReloadedPersistentCounterProperty = FindFProperty<FIntProperty>(ReloadedClass, TEXT("PersistentCounter"));
 	UFunction* GetValueAfterReload = FindGeneratedFunction(ReloadedClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Soft reload lifecycle scenario should still expose BeginPlayCount after reload"), ReloadedBeginPlayCountProperty)
-		|| !TestNotNull(TEXT("Soft reload lifecycle scenario should still expose PersistentCounter after reload"), ReloadedPersistentCounterProperty)
-		|| !TestNotNull(TEXT("Soft reload lifecycle scenario should still expose GetValue after reload"), GetValueAfterReload))
+	if (!TestNotNull(TEXT("Soft reload lifecycle test case should still expose BeginPlayCount after reload"), ReloadedBeginPlayCountProperty)
+		|| !TestNotNull(TEXT("Soft reload lifecycle test case should still expose PersistentCounter after reload"), ReloadedPersistentCounterProperty)
+		|| !TestNotNull(TEXT("Soft reload lifecycle test case should still expose GetValue after reload"), GetValueAfterReload))
 	{
 		return false;
 	}
@@ -195,7 +195,7 @@ class AHotReloadLifecycleTarget : AActor
 	}
 
 	TestEqual(
-		TEXT("Soft reload lifecycle scenario should not replay BeginPlay on the live actor after reload"),
+		TEXT("Soft reload lifecycle test case should not replay BeginPlay on the live actor after reload"),
 		BeginPlayCountAfterReload,
 		1);
 
@@ -206,20 +206,20 @@ class AHotReloadLifecycleTarget : AActor
 	}
 
 	TestEqual(
-		TEXT("Soft reload lifecycle scenario should preserve the live actor runtime state after reload"),
+		TEXT("Soft reload lifecycle test case should preserve the live actor runtime state after reload"),
 		PersistentCounterAfterReload,
 		41);
 
 	int32 ValueAfterReload = 0;
 	if (!TestTrue(
-		TEXT("Soft reload lifecycle scenario should execute GetValue on the live actor after reload"),
+		TEXT("Soft reload lifecycle test case should execute GetValue on the live actor after reload"),
 		ExecuteGeneratedIntEventOnGameThread(ExistingActor, GetValueAfterReload, ValueAfterReload)))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload lifecycle scenario should apply the updated function body without resetting state"),
+		TEXT("Soft reload lifecycle test case should apply the updated function body without resetting state"),
 		ValueAfterReload,
 		42);
 	ASTEST_END_SHARE_FRESH

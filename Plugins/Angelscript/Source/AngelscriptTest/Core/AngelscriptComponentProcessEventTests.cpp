@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -29,18 +29,18 @@ namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 	static constexpr int32 AcceptedValue = 7;
 	static constexpr int32 RejectedValue = -3;
 
-	UAngelscriptComponent* CreateProcessEventScenarioComponent(
+	UAngelscriptComponent* CreateProcessEventTestCaseComponent(
 		FAutomationTestBase& Test,
 		AActor& OwnerActor,
 		UClass* ComponentClass)
 	{
-		if (!Test.TestNotNull(TEXT("Component ProcessEvent scenario should compile to a valid component class"), ComponentClass))
+		if (!Test.TestNotNull(TEXT("Component ProcessEvent test case should compile to a valid component class"), ComponentClass))
 		{
 			return nullptr;
 		}
 
 		UActorComponent* Component = NewObject<UActorComponent>(&OwnerActor, ComponentClass);
-		if (!Test.TestNotNull(TEXT("Component ProcessEvent scenario should instantiate a runtime component"), Component))
+		if (!Test.TestNotNull(TEXT("Component ProcessEvent test case should instantiate a runtime component"), Component))
 		{
 			return nullptr;
 		}
@@ -51,7 +51,7 @@ namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 		Component->Activate(true);
 
 		UAngelscriptComponent* TypedComponent = Cast<UAngelscriptComponent>(Component);
-		if (!Test.TestNotNull(TEXT("Component ProcessEvent scenario should instantiate a UAngelscriptComponent"), TypedComponent))
+		if (!Test.TestNotNull(TEXT("Component ProcessEvent test case should instantiate a UAngelscriptComponent"), TypedComponent))
 		{
 			return nullptr;
 		}
@@ -68,13 +68,13 @@ namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 	{
 		FStructOnScope FunctionParameters(&Function);
 		uint8* ParametersMemory = FunctionParameters.GetStructMemory();
-		if (!Test.TestNotNull(TEXT("Component ProcessEvent scenario should allocate parameter storage"), ParametersMemory))
+		if (!Test.TestNotNull(TEXT("Component ProcessEvent test case should allocate parameter storage"), ParametersMemory))
 		{
 			return false;
 		}
 
 		FIntProperty* ValueProperty = FindFProperty<FIntProperty>(&Function, TEXT("Value"));
-		if (!Test.TestNotNull(TEXT("Component ProcessEvent scenario should expose the RPC value parameter"), ValueProperty))
+		if (!Test.TestNotNull(TEXT("Component ProcessEvent test case should expose the RPC value parameter"), ValueProperty))
 		{
 			return false;
 		}
@@ -161,25 +161,25 @@ class UComponentProcessEventValidate : UAngelscriptComponent
 
 	UFunction* ServerFunction = FindGeneratedFunction(ScriptClass, ServerFunctionName);
 	UASFunction* GeneratedServerFunction = Cast<UASFunction>(ServerFunction);
-	if (!TestNotNull(TEXT("Component ProcessEvent scenario should generate the server RPC"), ServerFunction)
-		|| !TestNotNull(TEXT("Component ProcessEvent scenario should expose the server RPC as UASFunction"), GeneratedServerFunction))
+	if (!TestNotNull(TEXT("Component ProcessEvent test case should generate the server RPC"), ServerFunction)
+		|| !TestNotNull(TEXT("Component ProcessEvent test case should expose the server RPC as UASFunction"), GeneratedServerFunction))
 	{
 		return false;
 	}
 
 	UFunction* ValidateFunction = GeneratedServerFunction->GetRuntimeValidateFunction();
-	if (!TestNotNull(TEXT("Component ProcessEvent scenario should cache the _Validate companion function"), ValidateFunction))
+	if (!TestNotNull(TEXT("Component ProcessEvent test case should cache the _Validate companion function"), ValidateFunction))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Component ProcessEvent scenario should mark the generated RPC as requiring validation"), ServerFunction->HasAnyFunctionFlags(FUNC_NetValidate));
-	TestTrue(TEXT("Component ProcessEvent scenario should resolve the expected _Validate function"), ValidateFunction->GetFName() == ValidateFunctionName);
+	TestTrue(TEXT("Component ProcessEvent test case should mark the generated RPC as requiring validation"), ServerFunction->HasAnyFunctionFlags(FUNC_NetValidate));
+	TestTrue(TEXT("Component ProcessEvent test case should resolve the expected _Validate function"), ValidateFunction->GetFName() == ValidateFunctionName);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UAngelscriptComponent* Component = CreateProcessEventScenarioComponent(*this, HostActor, ScriptClass);
+	UAngelscriptComponent* Component = CreateProcessEventTestCaseComponent(*this, HostActor, ScriptClass);
 	if (Component == nullptr)
 	{
 		return false;

@@ -378,7 +378,7 @@ int Entry()
 
 	FAngelscriptEngineScope EngineScope(Engine);
 	asIScriptContext* WrongArrayContext = Engine.CreateContext();
-	if (!TestNotNull(TEXT("Data table error paths should create a context for the wrong-array scenario"), WrongArrayContext))
+	if (!TestNotNull(TEXT("Data table error paths should create a context for the wrong-array test case"), WrongArrayContext))
 	{
 		return false;
 	}
@@ -390,7 +390,7 @@ int Entry()
 
 	const int WrongArrayPrepareResult = WrongArrayContext->Prepare(WrongArrayEntryFunction);
 	if (!TestEqual(
-			TEXT("Data table error paths should prepare the wrong-array scenario successfully"),
+			TEXT("Data table error paths should prepare the wrong-array test case successfully"),
 			WrongArrayPrepareResult,
 			static_cast<int32>(asSUCCESS)))
 	{

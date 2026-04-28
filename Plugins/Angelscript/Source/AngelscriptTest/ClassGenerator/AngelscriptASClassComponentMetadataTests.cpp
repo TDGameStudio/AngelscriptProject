@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -374,10 +374,10 @@ class ASoftMetadataDerivedActor : ASoftMetadataBaseActor
 	UASClass* InitialDerivedASClass = Cast<UASClass>(InitialDerivedClass);
 	UClass* InitialRootComponentClass = FindGeneratedClass(&Engine, ASClassSoftReloadRootComponentClassName);
 	UClass* InitialReplacementComponentClass = FindGeneratedClass(&Engine, ASClassSoftReloadReplacementComponentClassName);
-	if (!TestNotNull(TEXT("ASClass component metadata soft-reload scenario should resolve the generated base actor class before reload"), InitialBaseClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should compile the derived actor as a UASClass before reload"), InitialDerivedASClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should resolve the generated root component class before reload"), InitialRootComponentClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should resolve the generated replacement component class before reload"), InitialReplacementComponentClass))
+	if (!TestNotNull(TEXT("ASClass component metadata soft-reload test case should resolve the generated base actor class before reload"), InitialBaseClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should compile the derived actor as a UASClass before reload"), InitialDerivedASClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should resolve the generated root component class before reload"), InitialRootComponentClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should resolve the generated replacement component class before reload"), InitialReplacementComponentClass))
 	{
 		return false;
 	}
@@ -385,19 +385,19 @@ class ASoftMetadataDerivedActor : ASoftMetadataBaseActor
 	const TArray<FDefaultComponentMetadataSnapshot> InitialDefaultSnapshot = SnapshotDefaultComponentLayoutMetadata(InitialBaseClass);
 	const TArray<FOverrideComponentMetadataSnapshot> InitialOverrideSnapshot = SnapshotOverrideComponentLayoutMetadata(InitialDerivedASClass);
 
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should start with two default-component metadata entries"), InitialDefaultSnapshot.Num(), 2);
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should start with one override-component metadata entry"), InitialOverrideSnapshot.Num(), 1);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should start with two default-component metadata entries"), InitialDefaultSnapshot.Num(), 2);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should start with one override-component metadata entry"), InitialOverrideSnapshot.Num(), 1);
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(
-		TEXT("ASClass component metadata soft-reload scenario should compile the body-only update on the soft reload path"),
+		TEXT("ASClass component metadata soft-reload test case should compile the body-only update on the soft reload path"),
 		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ASClassComponentMetadataSoftReloadModuleName, ASClassComponentMetadataSoftReloadFilename, ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
 
 	if (!TestTrue(
-		TEXT("ASClass component metadata soft-reload scenario should stay on a handled soft reload path"),
+		TEXT("ASClass component metadata soft-reload test case should stay on a handled soft reload path"),
 		IsHandledReloadResult(ReloadResult)))
 	{
 		return false;
@@ -408,71 +408,71 @@ class ASoftMetadataDerivedActor : ASoftMetadataBaseActor
 	UClass* ReloadedRootComponentClass = FindGeneratedClass(&Engine, ASClassSoftReloadRootComponentClassName);
 	UClass* ReloadedReplacementComponentClass = FindGeneratedClass(&Engine, ASClassSoftReloadReplacementComponentClassName);
 	UFunction* GetVersionAfterReload = ReloadedDerivedClass != nullptr ? FindGeneratedFunction(ReloadedDerivedClass, TEXT("GetVersion")) : nullptr;
-	if (!TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still expose the generated base actor class after reload"), ReloadedBaseClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still expose the generated derived actor class after reload"), ReloadedDerivedClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still expose the generated root component class after reload"), ReloadedRootComponentClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still expose the generated replacement component class after reload"), ReloadedReplacementComponentClass)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still expose GetVersion after reload"), GetVersionAfterReload))
+	if (!TestNotNull(TEXT("ASClass component metadata soft-reload test case should still expose the generated base actor class after reload"), ReloadedBaseClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should still expose the generated derived actor class after reload"), ReloadedDerivedClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should still expose the generated root component class after reload"), ReloadedRootComponentClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should still expose the generated replacement component class after reload"), ReloadedReplacementComponentClass)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should still expose GetVersion after reload"), GetVersionAfterReload))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve the base UASClass instance"), ReloadedBaseClass == InitialBaseClass);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve the derived UASClass instance"), ReloadedDerivedClass == InitialDerivedASClass);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve the generated root component class"), ReloadedRootComponentClass == InitialRootComponentClass);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve the generated replacement component class"), ReloadedReplacementComponentClass == InitialReplacementComponentClass);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve the base UASClass instance"), ReloadedBaseClass == InitialBaseClass);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve the derived UASClass instance"), ReloadedDerivedClass == InitialDerivedASClass);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve the generated root component class"), ReloadedRootComponentClass == InitialRootComponentClass);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve the generated replacement component class"), ReloadedReplacementComponentClass == InitialReplacementComponentClass);
 
 	const TArray<FDefaultComponentMetadataSnapshot> ReloadedDefaultSnapshot = SnapshotDefaultComponentLayoutMetadata(ReloadedBaseClass);
 	const TArray<FOverrideComponentMetadataSnapshot> ReloadedOverrideSnapshot = SnapshotOverrideComponentLayoutMetadata(ReloadedDerivedClass);
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should keep the default-component count stable"), ReloadedDefaultSnapshot.Num(), InitialDefaultSnapshot.Num());
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should keep the override-component count stable"), ReloadedOverrideSnapshot.Num(), InitialOverrideSnapshot.Num());
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve default-component metadata without duplication"), ReloadedDefaultSnapshot == InitialDefaultSnapshot);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should preserve override-component metadata without duplication"), ReloadedOverrideSnapshot == InitialOverrideSnapshot);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should keep the default-component count stable"), ReloadedDefaultSnapshot.Num(), InitialDefaultSnapshot.Num());
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should keep the override-component count stable"), ReloadedOverrideSnapshot.Num(), InitialOverrideSnapshot.Num());
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve default-component metadata without duplication"), ReloadedDefaultSnapshot == InitialDefaultSnapshot);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should preserve override-component metadata without duplication"), ReloadedOverrideSnapshot == InitialOverrideSnapshot);
 
 	const UASClass::FDefaultComponent* RootEntryAfterReload = FindDefaultComponentEntryByName(ReloadedBaseClass, ASClassRootComponentName);
 	const UASClass::FDefaultComponent* BillboardEntryAfterReload = FindDefaultComponentEntryByName(ReloadedBaseClass, ASClassBillboardComponentName);
 	const UASClass::FOverrideComponent* OverrideEntryAfterReload = FindOverrideComponentEntryByVariableName(ReloadedDerivedClass, ASClassOverrideVariableName);
-	if (!TestNotNull(TEXT("ASClass component metadata soft-reload scenario should keep the root metadata entry"), RootEntryAfterReload)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should keep the billboard metadata entry"), BillboardEntryAfterReload)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should keep the override metadata entry"), OverrideEntryAfterReload))
+	if (!TestNotNull(TEXT("ASClass component metadata soft-reload test case should keep the root metadata entry"), RootEntryAfterReload)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should keep the billboard metadata entry"), BillboardEntryAfterReload)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should keep the override metadata entry"), OverrideEntryAfterReload))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should keep RootScene as the unique root"), RootEntryAfterReload->bIsRoot);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should keep RootScene unattached"), RootEntryAfterReload->Attach.IsNone());
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should keep Billboard attached to RootScene"), BillboardEntryAfterReload->Attach, ASClassRootComponentName);
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should keep the override pointed at Billboard"), OverrideEntryAfterReload->OverrideComponentName, ASClassBillboardComponentName);
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should keep the override property name stable"), OverrideEntryAfterReload->VariableName, ASClassOverrideVariableName);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should keep RootScene as the unique root"), RootEntryAfterReload->bIsRoot);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should keep RootScene unattached"), RootEntryAfterReload->Attach.IsNone());
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should keep Billboard attached to RootScene"), BillboardEntryAfterReload->Attach, ASClassRootComponentName);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should keep the override pointed at Billboard"), OverrideEntryAfterReload->OverrideComponentName, ASClassBillboardComponentName);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should keep the override property name stable"), OverrideEntryAfterReload->VariableName, ASClassOverrideVariableName);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* ReloadedActor = SpawnScriptActor(*this, Spawner, ReloadedDerivedClass);
-	if (!TestNotNull(TEXT("ASClass component metadata soft-reload scenario should spawn the reloaded actor class"), ReloadedActor))
+	if (!TestNotNull(TEXT("ASClass component metadata soft-reload test case should spawn the reloaded actor class"), ReloadedActor))
 	{
 		return false;
 	}
 
 	USceneComponent* RuntimeRootComponent = ReloadedActor->GetRootComponent();
 	USceneComponent* RuntimeBillboardComponent = FindSceneComponentByName(ReloadedActor, ASClassBillboardComponentName);
-	if (!TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still create a runtime root component"), RuntimeRootComponent)
-		|| !TestNotNull(TEXT("ASClass component metadata soft-reload scenario should still create the overridden Billboard component"), RuntimeBillboardComponent))
+	if (!TestNotNull(TEXT("ASClass component metadata soft-reload test case should still create a runtime root component"), RuntimeRootComponent)
+		|| !TestNotNull(TEXT("ASClass component metadata soft-reload test case should still create the overridden Billboard component"), RuntimeBillboardComponent))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should keep the runtime root component class aligned with metadata"), RuntimeRootComponent->GetClass() == ReloadedRootComponentClass);
-	TestTrue(TEXT("ASClass component metadata soft-reload scenario should keep the Billboard slot attached to the root"), RuntimeBillboardComponent->GetAttachParent() == RuntimeRootComponent);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should keep the runtime root component class aligned with metadata"), RuntimeRootComponent->GetClass() == ReloadedRootComponentClass);
+	TestTrue(TEXT("ASClass component metadata soft-reload test case should keep the Billboard slot attached to the root"), RuntimeBillboardComponent->GetAttachParent() == RuntimeRootComponent);
 
 	int32 VersionAfterReload = 0;
 	if (!TestTrue(
-		TEXT("ASClass component metadata soft-reload scenario should execute the reloaded generated function"),
+		TEXT("ASClass component metadata soft-reload test case should execute the reloaded generated function"),
 		ExecuteGeneratedIntEventOnGameThread(&Engine, ReloadedActor, GetVersionAfterReload, VersionAfterReload)))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("ASClass component metadata soft-reload scenario should observe the updated function body after reload"), VersionAfterReload, 2);
+	TestEqual(TEXT("ASClass component metadata soft-reload test case should observe the updated function body after reload"), VersionAfterReload, 2);
 	ASTEST_END_SHARE_CLEAN
 
 	return true;

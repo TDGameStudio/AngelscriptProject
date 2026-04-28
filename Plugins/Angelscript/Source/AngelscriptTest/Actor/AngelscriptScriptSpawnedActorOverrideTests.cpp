@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptReflectiveAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -7,7 +7,7 @@
 #include "Misc/ScopeExit.h"
 #include "Misc/StringOutputDevice.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -16,8 +16,8 @@ using namespace AngelscriptReflectiveAccess;
 
 namespace AngelscriptTest_Actor_AngelscriptScriptSpawnedActorOverrideTests_Private
 {
-	constexpr float ScriptActorScenarioDeltaTime = 0.016f;
-	constexpr int32 ScriptActorScenarioTickCount = 3;
+	constexpr float ScriptActorTestCaseDeltaTime = 0.016f;
+	constexpr int32 ScriptActorTestCaseTickCount = 3;
 
 	FAngelscriptEngine& AcquireFreshScriptActorEngine()
 	{
@@ -109,7 +109,7 @@ class ATestScriptActorBeginPlayRunsInWorld : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Scenario script-actor BeginPlay test should spawn the generated actor"), Actor))
+	if (!TestNotNull(TEXT("TestCase script-actor BeginPlay test should spawn the generated actor"), Actor))
 	{
 		return false;
 	}
@@ -163,7 +163,7 @@ class ATestScriptActorNativeUFunctionCanBeInvoked : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Scenario native-UFUNCTION actor should spawn"), Actor))
+	if (!TestNotNull(TEXT("TestCase native-UFUNCTION actor should spawn"), Actor))
 	{
 		return false;
 	}
@@ -176,15 +176,15 @@ class ATestScriptActorNativeUFunctionCanBeInvoked : AActor
 		return false;
 	}
 	Invoker.AddParam<int32>(77);
-	if (!TestTrue(TEXT("Scenario native-UFUNCTION invocation should succeed through reflective invocation"), Invoker.Call()))
+	if (!TestTrue(TEXT("TestCase native-UFUNCTION invocation should succeed through reflective invocation"), Invoker.Call()))
 	{
 		return false;
 	}
 
 	const bool bObserved = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("NativeInvokeObserved"), 1,
-		TEXT("Scenario native-UFUNCTION invocation should observe a reflected call into the script actor"));
+		TEXT("TestCase native-UFUNCTION invocation should observe a reflected call into the script actor"));
 	const bool bValue = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("LastNativeValue"), 77,
-		TEXT("Scenario native-UFUNCTION invocation should preserve the reflected integer argument"));
+		TEXT("TestCase native-UFUNCTION invocation should preserve the reflected integer argument"));
 	return bObserved && bValue;
 }
 
@@ -233,7 +233,7 @@ class ATestScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Scenario script-dispatch actor should spawn"), Actor))
+	if (!TestNotNull(TEXT("TestCase script-dispatch actor should spawn"), Actor))
 	{
 		return false;
 	}
@@ -241,7 +241,7 @@ class ATestScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 	BeginPlayActor(Engine, *Actor);
 
 	return VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("ScriptDispatchObserved"), 1,
-		TEXT("Scenario script actor BeginPlay should dispatch into another script UFUNCTION"));
+		TEXT("TestCase script actor BeginPlay should dispatch into another script UFUNCTION"));
 }
 
 bool FAngelscriptTestScriptActorTickRunsNTimesTest::RunTest(const FString& Parameters)
@@ -297,7 +297,7 @@ class ATestScriptActorTickRunsNTimes : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	Actor = Cast<AActor>(SpawnScriptActor(*this, Spawner, ScriptClass));
-	if (!TestNotNull(TEXT("Scenario script-tick actor should spawn as an Angelscript actor"), Actor))
+	if (!TestNotNull(TEXT("TestCase script-tick actor should spawn as an Angelscript actor"), Actor))
 	{
 		return false;
 	}
@@ -311,7 +311,7 @@ class ATestScriptActorTickRunsNTimes : AActor
 		return false;
 	}
 
-	TickWorld(Engine, Spawner.GetWorld(), ScriptActorScenarioDeltaTime, ScriptActorScenarioTickCount);
+	TickWorld(Engine, Spawner.GetWorld(), ScriptActorTestCaseDeltaTime, ScriptActorTestCaseTickCount);
 
 	int32 FinalLogicalTickCount = 0;
 	if (!GetByPath<FIntProperty, int32>(*this, Actor, TEXT("LogicalTickCount"), FinalLogicalTickCount))
@@ -319,9 +319,9 @@ class ATestScriptActorTickRunsNTimes : AActor
 		return false;
 	}
 
-	return TestEqual(TEXT("Scenario script actor should advance one logical Tick per requested world tick"),
+	return TestEqual(TEXT("TestCase script actor should advance one logical Tick per requested world tick"),
 		FinalLogicalTickCount - InitialLogicalTickCount,
-		ScriptActorScenarioTickCount);
+		ScriptActorTestCaseTickCount);
 }
 
 bool FAngelscriptTestScriptActorCrossInstanceCallDoesNotLeakStateTest::RunTest(const FString& Parameters)
@@ -377,8 +377,8 @@ class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 	Spawner.InitializeGameSubsystems();
 	AActor* SourceActor = SpawnScriptActor(*this, Spawner, ScriptClass);
 	AActor* TargetActor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Scenario cross-instance source actor should spawn"), SourceActor)
-		|| !TestNotNull(TEXT("Scenario cross-instance target actor should spawn"), TargetActor))
+	if (!TestNotNull(TEXT("TestCase cross-instance source actor should spawn"), SourceActor)
+		|| !TestNotNull(TEXT("TestCase cross-instance target actor should spawn"), TargetActor))
 	{
 		return false;
 	}
@@ -390,11 +390,11 @@ class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 
 	BeginPlayActor(Engine, *SourceActor);
 
-	const bool bDistinctActors = TestTrue(TEXT("Scenario cross-instance setup should produce distinct spawned actor instances"), SourceActor != TargetActor);
+	const bool bDistinctActors = TestTrue(TEXT("TestCase cross-instance setup should produce distinct spawned actor instances"), SourceActor != TargetActor);
 	const bool bSourceState = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("LocalState"), 11,
-		TEXT("Scenario cross-instance source actor should retain its own local state"));
+		TEXT("TestCase cross-instance source actor should retain its own local state"));
 	const bool bTargetState = VerifyByPath<FIntProperty, int32>(*this, TargetActor, TEXT("LocalState"), 29,
-		TEXT("Scenario cross-instance target actor should receive the dispatched state change without leaking back into the source"));
+		TEXT("TestCase cross-instance target actor should receive the dispatched state change without leaking back into the source"));
 	return bDistinctActors && bSourceState && bTargetState;
 }
 
@@ -461,7 +461,7 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 	}
 
 	UClass* TargetClass = FindGeneratedClass(&Engine, TEXT("ATestScriptActorDestroyedInvocationTarget"));
-	if (!TestNotNull(TEXT("Scenario destroyed-actor target class should be generated"), TargetClass))
+	if (!TestNotNull(TEXT("TestCase destroyed-actor target class should be generated"), TargetClass))
 	{
 		return false;
 	}
@@ -470,8 +470,8 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 	Spawner.InitializeGameSubsystems();
 	AActor* SourceActor = SpawnScriptActor(*this, Spawner, ScriptClass);
 	AActor* TargetActor = SpawnScriptActor(*this, Spawner, TargetClass);
-	if (!TestNotNull(TEXT("Scenario destroyed-actor source actor should spawn"), SourceActor)
-		|| !TestNotNull(TEXT("Scenario destroyed-actor target actor should spawn"), TargetActor))
+	if (!TestNotNull(TEXT("TestCase destroyed-actor source actor should spawn"), SourceActor)
+		|| !TestNotNull(TEXT("TestCase destroyed-actor target actor should spawn"), TargetActor))
 	{
 		return false;
 	}
@@ -488,22 +488,22 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 	TargetActor->Destroy();
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 
-	if (!TestFalse(TEXT("Scenario destroyed actor should no longer be valid after teardown tick"), WeakTargetActor.IsValid()))
+	if (!TestFalse(TEXT("TestCase destroyed actor should no longer be valid after teardown tick"), WeakTargetActor.IsValid()))
 	{
 		return false;
 	}
 
 	FStringOutputDevice Output;
 	const bool bTriggeredSourceCall = SourceActor->CallFunctionByNameWithArguments(TEXT("TriggerCallAfterDestroy"), Output, nullptr, true);
-	if (!TestTrue(TEXT("Scenario destroyed-actor source should still accept the trigger call after target teardown"), bTriggeredSourceCall))
+	if (!TestTrue(TEXT("TestCase destroyed-actor source should still accept the trigger call after target teardown"), bTriggeredSourceCall))
 	{
 		return false;
 	}
 
 	const bool bFailedSafely = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("FailedSafelyObserved"), 1,
-		TEXT("Scenario destroyed actor call should fail safely inside script dispatch when the target was destroyed"));
+		TEXT("TestCase destroyed actor call should fail safely inside script dispatch when the target was destroyed"));
 	const bool bNoUnexpectedInvocation = VerifyByPath<FIntProperty, int32>(*this, SourceActor, TEXT("UnexpectedInvocationObserved"), 0,
-		TEXT("Scenario destroyed actor call should not reach the destroyed target invocation body"));
+		TEXT("TestCase destroyed actor call should not reach the destroyed target invocation body"));
 	return bFailedSafely && bNoUnexpectedInvocation;
 }
 
@@ -540,7 +540,7 @@ class ATestScriptActorMissingFunctionReportsExplicitFailure : AActor
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Scenario missing-function test should spawn an actor"), Actor))
+	if (!TestNotNull(TEXT("TestCase missing-function test should spawn an actor"), Actor))
 	{
 		return false;
 	}
@@ -552,9 +552,9 @@ class ATestScriptActorMissingFunctionReportsExplicitFailure : AActor
 	const bool bCallSucceeded = Actor->CallFunctionByNameWithArguments(TEXT("DoesNotExist"), Output, nullptr, true);
 
 	const bool bStableValue = VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("StableValue"), 1,
-		TEXT("Scenario missing-function setup should keep the actor state readable before the failed invocation"));
+		TEXT("TestCase missing-function setup should keep the actor state readable before the failed invocation"));
 	const bool bMissingCallFailed = TestFalse(
-		TEXT("Scenario missing-function invocation should return an explicit failure result when the named function does not exist"),
+		TEXT("TestCase missing-function invocation should return an explicit failure result when the named function does not exist"),
 		bCallSucceeded);
 	return bStableValue && bMissingCallFailed;
 }

@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -70,34 +70,34 @@ class UFunctionOnlyScriptClass : UObject
 	}
 
 	UASClass* ASClass = Cast<UASClass>(ScriptClass);
-	if (!TestNotNull(TEXT("Function-only script class scenario should generate a UASClass"), ASClass))
+	if (!TestNotNull(TEXT("Function-only script class test case should generate a UASClass"), ASClass))
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Function-only script class scenario should remain UObject-derived"), ScriptClass->IsChildOf(UObject::StaticClass()));
-	TestEqual(TEXT("Function-only script class scenario should not synthesize any declared user properties"), ScriptClassStructureTests::CountDeclaredProperties(*ScriptClass), 0);
-	TestNull(TEXT("Function-only script class scenario should not expose undeclared properties"), FindFProperty<FProperty>(ScriptClass, TEXT("UnexpectedProperty")));
+	TestTrue(TEXT("Function-only script class test case should remain UObject-derived"), ScriptClass->IsChildOf(UObject::StaticClass()));
+	TestEqual(TEXT("Function-only script class test case should not synthesize any declared user properties"), ScriptClassStructureTests::CountDeclaredProperties(*ScriptClass), 0);
+	TestNull(TEXT("Function-only script class test case should not expose undeclared properties"), FindFProperty<FProperty>(ScriptClass, TEXT("UnexpectedProperty")));
 
 	UFunction* GetValueFunction = FindGeneratedFunction(ScriptClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Function-only script class scenario should generate GetValue"), GetValueFunction))
+	if (!TestNotNull(TEXT("Function-only script class test case should generate GetValue"), GetValueFunction))
 	{
 		return false;
 	}
 
 	UObject* Instance = NewObject<UObject>(GetTransientPackage(), ScriptClass);
-	if (!TestNotNull(TEXT("Function-only script class scenario should instantiate the generated class"), Instance))
+	if (!TestNotNull(TEXT("Function-only script class test case should instantiate the generated class"), Instance))
 	{
 		return false;
 	}
 
 	int32 Result = 0;
-	if (!TestTrue(TEXT("Function-only script class scenario should execute GetValue on the game thread"), ExecuteGeneratedIntEventOnGameThread(&Engine, Instance, GetValueFunction, Result)))
+	if (!TestTrue(TEXT("Function-only script class test case should execute GetValue on the game thread"), ExecuteGeneratedIntEventOnGameThread(&Engine, Instance, GetValueFunction, Result)))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Function-only script class scenario should keep GetValue returning 17"), Result, 17);
+	TestEqual(TEXT("Function-only script class test case should keep GetValue returning 17"), Result, 17);
 
 	ASTEST_END_SHARE_CLEAN
 	return true;

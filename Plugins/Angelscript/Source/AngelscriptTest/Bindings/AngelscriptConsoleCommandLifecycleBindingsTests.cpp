@@ -24,7 +24,7 @@ namespace AngelscriptTest_Bindings_AngelscriptConsoleCommandLifecycleBindingsTes
 	static constexpr TCHAR OriginalLifecycleModuleName[] = TEXT("ASConsoleCommandOriginalLifecycle");
 	static constexpr TCHAR ReplacementLifecycleModuleName[] = TEXT("ASConsoleCommandReplacementLifecycle");
 
-	struct FConsoleCommandLifecycleScenario
+	struct FConsoleCommandLifecycleTestCase
 	{
 		FString CommandName;
 		FString OutputName;
@@ -161,11 +161,11 @@ bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Par
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
-	FConsoleCommandLifecycleScenario Scenario;
-	Scenario.CommandName = MakeConsoleObjectName(TEXT("LifecycleCommand"));
-	Scenario.OutputName = MakeConsoleObjectName(TEXT("LifecycleOutput"));
-	Scenario.ExpectedOriginalMarker = 11;
-	Scenario.ExpectedReplacementMarker = 22;
+	FConsoleCommandLifecycleTestCase TestCase;
+	TestCase.CommandName = MakeConsoleObjectName(TEXT("LifecycleCommand"));
+	TestCase.OutputName = MakeConsoleObjectName(TEXT("LifecycleOutput"));
+	TestCase.ExpectedOriginalMarker = 11;
+	TestCase.ExpectedReplacementMarker = 22;
 
 	bool bOriginalDiscarded = false;
 	bool bReplacementDiscarded = false;
@@ -182,12 +182,12 @@ bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Par
 			Engine.DiscardModule(OriginalLifecycleModuleName);
 		}
 
-		UnregisterConsoleObjectIfPresent(Scenario.CommandName);
-		UnregisterConsoleObjectIfPresent(Scenario.OutputName);
+		UnregisterConsoleObjectIfPresent(TestCase.CommandName);
+		UnregisterConsoleObjectIfPresent(TestCase.OutputName);
 	};
 
 	IConsoleVariable* OutputVariable = IConsoleManager::Get().RegisterConsoleVariable(
-		*Scenario.OutputName,
+		*TestCase.OutputName,
 		-1,
 		TEXT("Console command lifecycle output sink"));
 	if (!TestNotNull(TEXT("Console command lifecycle test should pre-register the shared output sink"), OutputVariable))
@@ -199,36 +199,36 @@ bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Par
 		*this,
 		Engine,
 		OriginalLifecycleModuleNameAnsi,
-		Scenario.CommandName,
-		Scenario.OutputName,
+		TestCase.CommandName,
+		TestCase.OutputName,
 		TEXT("OnOriginalCommand"),
 		11,
 		TEXT("Original console command lifecycle setup"));
-	const bool bOriginalRegistered = VerifyConsoleCommandExists(*this, Scenario.CommandName, TEXT("Original console command lifecycle setup"));
+	const bool bOriginalRegistered = VerifyConsoleCommandExists(*this, TestCase.CommandName, TEXT("Original console command lifecycle setup"));
 
 	const TArray<FString> NoArgs;
-	const bool bOriginalExecuted = ExecuteConsoleCommand(*this, Scenario.CommandName, NoArgs, TEXT("Original console command lifecycle execution"));
+	const bool bOriginalExecuted = ExecuteConsoleCommand(*this, TestCase.CommandName, NoArgs, TEXT("Original console command lifecycle execution"));
 	const bool bOriginalObserved = VerifyConsoleVariableInt(
 		*this,
-		Scenario.OutputName,
-		Scenario.ExpectedOriginalMarker,
+		TestCase.OutputName,
+		TestCase.ExpectedOriginalMarker,
 		TEXT("Original console command lifecycle execution"));
 
 	const bool bReplacementCompiled = CompileConsoleCommandModule(
 		*this,
 		Engine,
 		ReplacementLifecycleModuleNameAnsi,
-		Scenario.CommandName,
-		Scenario.OutputName,
+		TestCase.CommandName,
+		TestCase.OutputName,
 		TEXT("OnReplacementCommand"),
 		22,
 		TEXT("Replacement console command lifecycle setup"));
-	const bool bReplacementRegistered = VerifyConsoleCommandExists(*this, Scenario.CommandName, TEXT("Replacement console command lifecycle setup"));
-	const bool bReplacementExecuted = ExecuteConsoleCommand(*this, Scenario.CommandName, NoArgs, TEXT("Replacement console command lifecycle execution"));
+	const bool bReplacementRegistered = VerifyConsoleCommandExists(*this, TestCase.CommandName, TEXT("Replacement console command lifecycle setup"));
+	const bool bReplacementExecuted = ExecuteConsoleCommand(*this, TestCase.CommandName, NoArgs, TEXT("Replacement console command lifecycle execution"));
 	const bool bReplacementObserved = VerifyConsoleVariableInt(
 		*this,
-		Scenario.OutputName,
-		Scenario.ExpectedReplacementMarker,
+		TestCase.OutputName,
+		TestCase.ExpectedReplacementMarker,
 		TEXT("Replacement console command lifecycle execution"));
 
 	Engine.DiscardModule(OriginalLifecycleModuleName);
@@ -236,17 +236,17 @@ bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Par
 
 	const bool bOriginalUnloadKeptReplacementCommand = VerifyConsoleCommandExists(
 		*this,
-		Scenario.CommandName,
+		TestCase.CommandName,
 		TEXT("Original console command lifecycle unload"));
 	const bool bReplacementStillExecutedAfterOriginalUnload = ExecuteConsoleCommand(
 		*this,
-		Scenario.CommandName,
+		TestCase.CommandName,
 		NoArgs,
 		TEXT("Replacement console command execution after original unload"));
 	const bool bReplacementStillObservedAfterOriginalUnload = VerifyConsoleVariableInt(
 		*this,
-		Scenario.OutputName,
-		Scenario.ExpectedReplacementMarker,
+		TestCase.OutputName,
+		TestCase.ExpectedReplacementMarker,
 		TEXT("Replacement console command execution after original unload"));
 
 	Engine.DiscardModule(ReplacementLifecycleModuleName);
@@ -254,7 +254,7 @@ bool FAngelscriptConsoleCommandLifecycleBindingsTest::RunTest(const FString& Par
 
 	const bool bReplacementUnloadRemovedCommand = VerifyConsoleCommandMissing(
 		*this,
-		Scenario.CommandName,
+		TestCase.CommandName,
 		TEXT("Replacement console command lifecycle unload"));
 
 	bPassed =

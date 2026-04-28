@@ -138,7 +138,7 @@ bool FAngelscriptFunctionNamedArgumentsInvalidNameDiagnosticsTest::RunTest(const
 		const FName ModuleName,
 		const FString& ScriptFilename,
 		const FString& ScriptSource,
-		const FString& ScenarioLabel,
+		const FString& TestCaseLabel,
 		const FString& ExpectedMessage)
 	{
 		FAngelscriptCompileTraceSummary Summary;
@@ -156,32 +156,32 @@ bool FAngelscriptFunctionNamedArgumentsInvalidNameDiagnosticsTest::RunTest(const
 		asIScriptFunction* RunFunction = FailedModule != nullptr ? FailedModule->GetFunctionByDecl("int Run()") : nullptr;
 
 		bPassed &= TestFalse(
-			*FString::Printf(TEXT("%s should fail to compile"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should fail to compile"), *TestCaseLabel),
 			bCompiled);
 		bPassed &= TestFalse(
-			*FString::Printf(TEXT("%s should report bCompileSucceeded=false"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should report bCompileSucceeded=false"), *TestCaseLabel),
 			Summary.bCompileSucceeded);
 		bPassed &= TestEqual(
-			*FString::Printf(TEXT("%s should surface ECompileResult::Error"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should surface ECompileResult::Error"), *TestCaseLabel),
 			Summary.CompileResult,
 			ECompileResult::Error);
 		bPassed &= TestTrue(
-			*FString::Printf(TEXT("%s should collect at least one diagnostic"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should collect at least one diagnostic"), *TestCaseLabel),
 			Summary.Diagnostics.Num() > 0);
 		bPassed &= TestNotNull(
-			*FString::Printf(TEXT("%s should emit a diagnostic containing '%s'"), *ScenarioLabel, *ExpectedMessage),
+			*FString::Printf(TEXT("%s should emit a diagnostic containing '%s'"), *TestCaseLabel, *ExpectedMessage),
 			Diagnostic);
 		if (Diagnostic != nullptr)
 		{
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should report a non-zero diagnostic row"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should report a non-zero diagnostic row"), *TestCaseLabel),
 				Diagnostic->Row > 0);
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should report a non-zero diagnostic column"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should report a non-zero diagnostic column"), *TestCaseLabel),
 				Diagnostic->Column > 0);
 		}
 		bPassed &= TestNull(
-			*FString::Printf(TEXT("%s should not leave an executable Run() behind after compile failure"), *ScenarioLabel),
+			*FString::Printf(TEXT("%s should not leave an executable Run() behind after compile failure"), *TestCaseLabel),
 			RunFunction);
 	};
 

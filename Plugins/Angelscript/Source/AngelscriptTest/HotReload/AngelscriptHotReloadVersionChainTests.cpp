@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -6,7 +6,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -107,7 +107,7 @@ class AHotReloadVersionChainTarget : AActor
 	}
 
 	UASClass* OldASClass = Cast<UASClass>(OldClass);
-	if (!TestNotNull(TEXT("Full reload version-chain scenario should generate a UASClass"), OldASClass))
+	if (!TestNotNull(TEXT("Full reload version-chain test case should generate a UASClass"), OldASClass))
 	{
 		return false;
 	}
@@ -285,20 +285,20 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 
 	FIntProperty* CounterProperty = FindFProperty<FIntProperty>(InitialClass, TEXT("Counter"));
 	UFunction* GetValueBeforeReload = FindGeneratedFunction(InitialClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Soft reload consistency scenario should expose the Counter property"), CounterProperty)
-		|| !TestNotNull(TEXT("Soft reload consistency scenario should expose GetValue before reload"), GetValueBeforeReload))
+	if (!TestNotNull(TEXT("Soft reload consistency test case should expose the Counter property"), CounterProperty)
+		|| !TestNotNull(TEXT("Soft reload consistency test case should expose GetValue before reload"), GetValueBeforeReload))
 	{
 		return false;
 	}
 
 	AActor* InitialCDO = Cast<AActor>(InitialClass->GetDefaultObject());
-	if (!TestNotNull(TEXT("Soft reload consistency scenario should expose a class default object before reload"), InitialCDO))
+	if (!TestNotNull(TEXT("Soft reload consistency test case should expose a class default object before reload"), InitialCDO))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should start with Counter default 5 on the class default object"),
+		TEXT("Soft reload consistency test case should start with Counter default 5 on the class default object"),
 		CounterProperty->GetPropertyValue_InContainer(InitialCDO),
 		5);
 
@@ -316,56 +316,56 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 
 	int32 BeforeReloadValue = 0;
 	if (!TestTrue(
-		TEXT("Soft reload consistency scenario should execute GetValue before reload"),
+		TEXT("Soft reload consistency test case should execute GetValue before reload"),
 		ExecuteGeneratedIntEventOnGameThread(ExistingActor, GetValueBeforeReload, BeforeReloadValue)))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should read the modified value before reload"),
+		TEXT("Soft reload consistency test case should read the modified value before reload"),
 		BeforeReloadValue,
 		42);
 
 	ECompileResult ReloadResult = ECompileResult::Error;
 	if (!TestTrue(
-		TEXT("Soft reload consistency scenario should compile the body-only update on the soft reload path"),
+		TEXT("Soft reload consistency test case should compile the body-only update on the soft reload path"),
 		CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, SoftReloadConsistencyModuleName, SoftReloadConsistencyFilename, ScriptV2, ReloadResult)))
 	{
 		return false;
 	}
 
 	if (!TestTrue(
-		TEXT("Soft reload consistency scenario should remain on a handled soft reload path"),
+		TEXT("Soft reload consistency test case should remain on a handled soft reload path"),
 		IsHandledReloadResult(ReloadResult)))
 	{
 		return false;
 	}
 
 	UClass* ReloadedClass = FindGeneratedClass(&Engine, SoftReloadConsistencyClassName);
-	if (!TestNotNull(TEXT("Soft reload consistency scenario should still expose the generated class after reload"), ReloadedClass))
+	if (!TestNotNull(TEXT("Soft reload consistency test case should still expose the generated class after reload"), ReloadedClass))
 	{
 		return false;
 	}
 
-	TestEqual(TEXT("Soft reload consistency scenario should preserve the UClass instance"), ReloadedClass, InitialClass);
+	TestEqual(TEXT("Soft reload consistency test case should preserve the UClass instance"), ReloadedClass, InitialClass);
 
 	FIntProperty* ReloadedCounterProperty = FindFProperty<FIntProperty>(ReloadedClass, TEXT("Counter"));
 	UFunction* GetValueAfterReload = FindGeneratedFunction(ReloadedClass, TEXT("GetValue"));
-	if (!TestNotNull(TEXT("Soft reload consistency scenario should still expose the Counter property after reload"), ReloadedCounterProperty)
-		|| !TestNotNull(TEXT("Soft reload consistency scenario should still expose GetValue after reload"), GetValueAfterReload))
+	if (!TestNotNull(TEXT("Soft reload consistency test case should still expose the Counter property after reload"), ReloadedCounterProperty)
+		|| !TestNotNull(TEXT("Soft reload consistency test case should still expose GetValue after reload"), GetValueAfterReload))
 	{
 		return false;
 	}
 
 	AActor* ReloadedCDO = Cast<AActor>(ReloadedClass->GetDefaultObject());
-	if (!TestNotNull(TEXT("Soft reload consistency scenario should still expose a class default object after reload"), ReloadedCDO))
+	if (!TestNotNull(TEXT("Soft reload consistency test case should still expose a class default object after reload"), ReloadedCDO))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should preserve Counter default 5 on the class default object after reload"),
+		TEXT("Soft reload consistency test case should preserve Counter default 5 on the class default object after reload"),
 		ReloadedCounterProperty->GetPropertyValue_InContainer(ReloadedCDO),
 		5);
 
@@ -376,7 +376,7 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should preserve the old instance override after reload"),
+		TEXT("Soft reload consistency test case should preserve the old instance override after reload"),
 		ExistingActorCounter,
 		42);
 
@@ -395,33 +395,33 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should give new instances the original Counter default"),
+		TEXT("Soft reload consistency test case should give new instances the original Counter default"),
 		NewActorCounter,
 		5);
 
 	int32 NewActorValue = 0;
 	if (!TestTrue(
-		TEXT("Soft reload consistency scenario should execute GetValue on a newly spawned instance after reload"),
+		TEXT("Soft reload consistency test case should execute GetValue on a newly spawned instance after reload"),
 		ExecuteGeneratedIntEventOnGameThread(NewActor, GetValueAfterReload, NewActorValue)))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should apply the new function body to newly spawned instances"),
+		TEXT("Soft reload consistency test case should apply the new function body to newly spawned instances"),
 		NewActorValue,
 		105);
 
 	int32 ExistingActorValue = 0;
 	if (!TestTrue(
-		TEXT("Soft reload consistency scenario should execute GetValue on the preserved old instance after reload"),
+		TEXT("Soft reload consistency test case should execute GetValue on the preserved old instance after reload"),
 		ExecuteGeneratedIntEventOnGameThread(ExistingActor, GetValueAfterReload, ExistingActorValue)))
 	{
 		return false;
 	}
 
 	TestEqual(
-		TEXT("Soft reload consistency scenario should apply the new function body to the preserved old instance"),
+		TEXT("Soft reload consistency test case should apply the new function body to the preserved old instance"),
 		ExistingActorValue,
 		142);
 	ASTEST_END_SHARE_FRESH

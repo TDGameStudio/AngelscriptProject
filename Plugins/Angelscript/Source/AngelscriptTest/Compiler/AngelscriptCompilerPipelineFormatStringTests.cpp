@@ -162,46 +162,46 @@ int Entry()
 		: FString();
 
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should preprocess successfully"),
+		TEXT("Format string rewrite test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Format string rewrite scenario should not emit preprocessing errors"),
+		TEXT("Format string rewrite test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Format string rewrite scenario should keep preprocessing diagnostics empty"),
+		TEXT("Format string rewrite test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Format string rewrite scenario should produce exactly one module descriptor"),
+		TEXT("Format string rewrite test case should produce exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (Modules.Num() > 0)
 	{
 		bPassed &= TestEqual(
-			TEXT("Format string rewrite scenario should preserve the expected module name"),
+			TEXT("Format string rewrite test case should preserve the expected module name"),
 			Modules[0]->ModuleName,
 			CompilerPipelineFormatStringTest::ModuleName.ToString());
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should materialize escaped opening braces in processed code"),
+		TEXT("Format string rewrite test case should materialize escaped opening braces in processed code"),
 		ProcessedCode.Contains(TEXT(".AppendChar('{')")));
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should materialize escaped closing braces in processed code"),
+		TEXT("Format string rewrite test case should materialize escaped closing braces in processed code"),
 		ProcessedCode.Contains(TEXT(".AppendChar('}')")));
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should rewrite equals expansion into an explicit label prefix"),
+		TEXT("Format string rewrite test case should rewrite equals expansion into an explicit label prefix"),
 		ProcessedCode.Contains(TEXT("\"21 = \"+(21)")));
 	bPassed &= TestEqual(
-		TEXT("Format string rewrite scenario should produce three ApplyFormat calls for both specifier paths"),
+		TEXT("Format string rewrite test case should produce three ApplyFormat calls for both specifier paths"),
 		CompilerPipelineFormatStringTest::CountOccurrences(ProcessedCode, TEXT("FString::ApplyFormat((")),
 		3);
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should preserve the hex format specifier in processed code"),
+		TEXT("Format string rewrite test case should preserve the hex format specifier in processed code"),
 		ProcessedCode.Contains(TEXT("\"#06x\"")));
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should preserve the decimal precision format specifier in processed code"),
+		TEXT("Format string rewrite test case should preserve the decimal precision format specifier in processed code"),
 		ProcessedCode.Contains(TEXT("\".1f\"")));
 
 	Engine.ResetDiagnostics();
@@ -218,16 +218,16 @@ int Entry()
 		true);
 
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Format string rewrite test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should report that it used the preprocessor"),
+		TEXT("Format string rewrite test case should report that it used the preprocessor"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should mark compile succeeded in the summary"),
+		TEXT("Format string rewrite test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Format string rewrite scenario should keep compile diagnostics empty"),
+		TEXT("Format string rewrite test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 
@@ -240,12 +240,12 @@ int Entry()
 			TEXT("int Entry()"),
 			EntryResult);
 	bPassed &= TestTrue(
-		TEXT("Format string rewrite scenario should execute the compiled Entry function"),
+		TEXT("Format string rewrite test case should execute the compiled Entry function"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Format string rewrite scenario should keep escaped braces, plain interpolation, equals expansion, and every specifier branch executable"),
+			TEXT("Format string rewrite test case should keep escaped braces, plain interpolation, equals expansion, and every specifier branch executable"),
 			EntryResult,
 			1117);
 	}

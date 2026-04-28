@@ -99,7 +99,7 @@ int Entry()
 		}
 
 		return Test.TestEqual(
-			TEXT("String-table LOCTABLE scenario should read back the expected localized text inside script"),
+			TEXT("String-table LOCTABLE test case should read back the expected localized text inside script"),
 			ScriptResult,
 			1);
 	}
@@ -110,7 +110,7 @@ int Entry()
 	{
 		FStringTableConstPtr StringTable = FStringTableRegistry::Get().FindStringTable(TableId);
 		if (!Test.TestNotNull(
-				TEXT("String-table LOCTABLE scenario should register the in-memory string table in FStringTableRegistry"),
+				TEXT("String-table LOCTABLE test case should register the in-memory string table in FStringTableRegistry"),
 				StringTable.Get()))
 		{
 			return false;
@@ -120,16 +120,16 @@ int Entry()
 		const bool bHasSourceString = StringTable->GetSourceString(GreetingKey, SourceString);
 		const bool bSourceMatched =
 			Test.TestTrue(
-				TEXT("String-table LOCTABLE scenario should keep the Greeting source string addressable in the registry"),
+				TEXT("String-table LOCTABLE test case should keep the Greeting source string addressable in the registry"),
 				bHasSourceString) &&
 			Test.TestEqual(
-				TEXT("String-table LOCTABLE scenario should preserve the Greeting source string contents"),
+				TEXT("String-table LOCTABLE test case should preserve the Greeting source string contents"),
 				SourceString,
 				ExpectedGreeting);
 
 		const FString MetaData = StringTable->GetMetaData(GreetingKey, CommentMetaDataId);
 		const bool bMetaDataMatched = Test.TestEqual(
-			TEXT("String-table LOCTABLE scenario should preserve the Greeting metadata payload"),
+			TEXT("String-table LOCTABLE test case should preserve the Greeting metadata payload"),
 			MetaData,
 			ExpectedComment);
 
@@ -176,7 +176,7 @@ bool FAngelscriptStringTableRegistryLocTableCompatBindingsTest::RunTest(const FS
 	bModuleDiscarded = true;
 
 	bPassed &= TestNotNull(
-		TEXT("String-table LOCTABLE scenario should keep the registered string table alive until explicit registry cleanup"),
+		TEXT("String-table LOCTABLE test case should keep the registered string table alive until explicit registry cleanup"),
 		FStringTableRegistry::Get().FindStringTable(TableId).Get());
 
 	ASTEST_END_SHARE_CLEAN

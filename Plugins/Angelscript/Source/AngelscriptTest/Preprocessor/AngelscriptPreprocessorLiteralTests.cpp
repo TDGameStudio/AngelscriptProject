@@ -18,7 +18,7 @@ namespace PreprocessorLiteralTest
 	static const FName ModuleName(TEXT("Tests.Preprocessor.Literals.NameLiteralRoundTrip"));
 	static const FString RelativeScriptPath(TEXT("Tests/Preprocessor/Literals/NameLiteralRoundTrip.as"));
 
-	struct FPrefixedLiteralBoundaryScenario
+	struct FPrefixedLiteralBoundaryTestCase
 	{
 		const TCHAR* Label;
 		const TCHAR* RelativePath;
@@ -123,14 +123,14 @@ namespace PreprocessorLiteralTest
 		return Indices;
 	}
 
-	bool RunPrefixedLiteralBoundaryScenario(
+	bool RunPrefixedLiteralBoundaryTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FPrefixedLiteralBoundaryScenario& Scenario)
+		const FPrefixedLiteralBoundaryTestCase& TestCase)
 	{
 		bool bPassed = true;
-		const FString RelativePath(Scenario.RelativePath);
-		const FString ScriptSource(Scenario.ScriptSource);
+		const FString RelativePath(TestCase.RelativePath);
+		const FString ScriptSource(TestCase.ScriptSource);
 		const FString AbsoluteScriptPath = WriteFixture(RelativePath, ScriptSource);
 		const FString FixtureModuleName = GetFixtureModuleName(RelativePath);
 		ON_SCOPE_EXIT
@@ -154,32 +154,32 @@ namespace PreprocessorLiteralTest
 		const FAngelscriptEngine::FDiagnostics* PreprocessDiagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
 
 		bPassed &= Test.TestTrue(
-			FString::Printf(TEXT("%s should preprocess successfully"), Scenario.Label),
+			FString::Printf(TEXT("%s should preprocess successfully"), TestCase.Label),
 			bPreprocessSucceeded);
 		bPassed &= Test.TestEqual(
-			FString::Printf(TEXT("%s should emit exactly one module descriptor during preprocessing"), Scenario.Label),
+			FString::Printf(TEXT("%s should emit exactly one module descriptor during preprocessing"), TestCase.Label),
 			Modules.Num(),
 			1);
 		bPassed &= Test.TestNotNull(
-			FString::Printf(TEXT("%s should keep the fixture module descriptor available"), Scenario.Label),
+			FString::Printf(TEXT("%s should keep the fixture module descriptor available"), TestCase.Label),
 			Module);
 		bPassed &= Test.TestEqual(
-			FString::Printf(TEXT("%s should keep preprocessing diagnostics empty"), Scenario.Label),
+			FString::Printf(TEXT("%s should keep preprocessing diagnostics empty"), TestCase.Label),
 			CountErrorDiagnostics(PreprocessDiagnostics),
 			0);
 
 		if (Module != nullptr)
 		{
 			bPassed &= Test.TestEqual(
-				FString::Printf(TEXT("%s should keep exactly one generated code section"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep exactly one generated code section"), TestCase.Label),
 				Module->Code.Num(),
 				1);
 			bPassed &= Test.TestTrue(
-				FString::Printf(TEXT("%s should preserve the malformed token in processed code"), Scenario.Label),
-				ProcessedCode.Contains(Scenario.PreservedToken));
+				FString::Printf(TEXT("%s should preserve the malformed token in processed code"), TestCase.Label),
+				ProcessedCode.Contains(TestCase.PreservedToken));
 			bPassed &= Test.TestFalse(
-				FString::Printf(TEXT("%s should not rewrite the malformed token into helper code"), Scenario.Label),
-				ProcessedCode.Contains(Scenario.UnexpectedRewriteMarker));
+				FString::Printf(TEXT("%s should not rewrite the malformed token into helper code"), TestCase.Label),
+				ProcessedCode.Contains(TestCase.UnexpectedRewriteMarker));
 		}
 
 		Engine.ResetDiagnostics();
@@ -197,27 +197,27 @@ namespace PreprocessorLiteralTest
 			true);
 
 		bPassed &= Test.TestFalse(
-			FString::Printf(TEXT("%s should fail during the real compile pipeline"), Scenario.Label),
+			FString::Printf(TEXT("%s should fail during the real compile pipeline"), TestCase.Label),
 			bCompiled);
 		bPassed &= Test.TestTrue(
-			FString::Printf(TEXT("%s should report that compile used the preprocessor"), Scenario.Label),
+			FString::Printf(TEXT("%s should report that compile used the preprocessor"), TestCase.Label),
 			Summary.bUsedPreprocessor);
 		bPassed &= Test.TestTrue(
-			FString::Printf(TEXT("%s should capture at least one compile diagnostic"), Scenario.Label),
+			FString::Printf(TEXT("%s should capture at least one compile diagnostic"), TestCase.Label),
 			Summary.Diagnostics.Num() > 0);
 
 		const FAngelscriptCompileTraceDiagnosticSummary* FirstErrorDiagnostic = FindFirstErrorDiagnostic(Summary);
 		bPassed &= Test.TestNotNull(
-			FString::Printf(TEXT("%s should expose a first error diagnostic"), Scenario.Label),
+			FString::Printf(TEXT("%s should expose a first error diagnostic"), TestCase.Label),
 			FirstErrorDiagnostic);
 		if (FirstErrorDiagnostic != nullptr)
 		{
 			bPassed &= Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the first compile error pinned to the malformed token line"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the first compile error pinned to the malformed token line"), TestCase.Label),
 				FirstErrorDiagnostic->Row,
-				Scenario.ExpectedErrorRow);
+				TestCase.ExpectedErrorRow);
 			bPassed &= Test.TestTrue(
-				FString::Printf(TEXT("%s should keep the first compile error on a concrete source column"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the first compile error on a concrete source column"), TestCase.Label),
 				FirstErrorDiagnostic->Column > 0);
 		}
 
@@ -392,7 +392,7 @@ int Entry()
 bool FAngelscriptPreprocessorPrefixedLiteralsRequireTokenBoundaryTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const TArray<PreprocessorLiteralTest::FPrefixedLiteralBoundaryScenario> Scenarios = {
+	const TArray<PreprocessorLiteralTest::FPrefixedLiteralBoundaryTestCase> TestCases = {
 		{
 			TEXT("Name literal token boundary"),
 			TEXT("Tests/Preprocessor/Literals/PrefixedNameLiteralRequiresTokenBoundary.as"),
@@ -422,9 +422,9 @@ bool FAngelscriptPreprocessorPrefixedLiteralsRequireTokenBoundaryTest::RunTest(c
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	for (const PreprocessorLiteralTest::FPrefixedLiteralBoundaryScenario& Scenario : Scenarios)
+	for (const PreprocessorLiteralTest::FPrefixedLiteralBoundaryTestCase& TestCase : TestCases)
 	{
-		bPassed &= PreprocessorLiteralTest::RunPrefixedLiteralBoundaryScenario(*this, Engine, Scenario);
+		bPassed &= PreprocessorLiteralTest::RunPrefixedLiteralBoundaryTestCase(*this, Engine, TestCase);
 	}
 
 	ASTEST_END_MODULE_CLEAN

@@ -28,7 +28,7 @@ namespace CompilerPipelinePropertyMetadataTest
 	static const FString SetterFunctionName(TEXT("SetTrackedValue"));
 	static const int32 ExpectedEntryValue = 42;
 
-	struct FPropertyCallbackValidationScenario
+	struct FPropertyCallbackValidationTestCase
 	{
 		const TCHAR* Label;
 		FName ModuleName;
@@ -190,18 +190,18 @@ int Entry()
 		PreprocessErrorCount);
 
 	bPassed &= TestTrue(
-		TEXT("Property callback metadata scenario should preprocess successfully"),
+		TEXT("Property callback metadata test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Property callback metadata scenario should not emit preprocessing errors"),
+		TEXT("Property callback metadata test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Property callback metadata scenario should keep preprocessing diagnostics empty"),
+		TEXT("Property callback metadata test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Property callback metadata scenario should produce exactly one module descriptor"),
+		TEXT("Property callback metadata test case should produce exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -211,12 +211,12 @@ int Entry()
 
 	const TSharedRef<FAngelscriptModuleDesc> ModuleDesc = Modules[0];
 	bPassed &= TestEqual(
-		TEXT("Property callback metadata scenario should preserve the expected module name"),
+		TEXT("Property callback metadata test case should preserve the expected module name"),
 		ModuleDesc->ModuleName,
 		CompilerPipelinePropertyMetadataTest::ModuleName.ToString());
 
 	const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(CompilerPipelinePropertyMetadataTest::ClassName);
-	if (!TestTrue(TEXT("Property callback metadata scenario should parse the annotated class descriptor"), ClassDesc.IsValid()))
+	if (!TestTrue(TEXT("Property callback metadata test case should parse the annotated class descriptor"), ClassDesc.IsValid()))
 	{
 		return false;
 	}
@@ -225,10 +225,10 @@ int Entry()
 	const TSharedPtr<FAngelscriptFunctionDesc> OnRepDesc = ClassDesc->GetMethod(CompilerPipelinePropertyMetadataTest::OnRepFunctionName);
 	const TSharedPtr<FAngelscriptFunctionDesc> GetterDesc = ClassDesc->GetMethod(CompilerPipelinePropertyMetadataTest::GetterFunctionName);
 	const TSharedPtr<FAngelscriptFunctionDesc> SetterDesc = ClassDesc->GetMethod(CompilerPipelinePropertyMetadataTest::SetterFunctionName);
-	if (!TestTrue(TEXT("Property callback metadata scenario should parse the annotated property descriptor"), PropertyDesc.IsValid())
-		|| !TestTrue(TEXT("Property callback metadata scenario should parse the RepNotify callback descriptor"), OnRepDesc.IsValid())
-		|| !TestTrue(TEXT("Property callback metadata scenario should parse the BlueprintGetter descriptor"), GetterDesc.IsValid())
-		|| !TestTrue(TEXT("Property callback metadata scenario should parse the BlueprintSetter descriptor"), SetterDesc.IsValid()))
+	if (!TestTrue(TEXT("Property callback metadata test case should parse the annotated property descriptor"), PropertyDesc.IsValid())
+		|| !TestTrue(TEXT("Property callback metadata test case should parse the RepNotify callback descriptor"), OnRepDesc.IsValid())
+		|| !TestTrue(TEXT("Property callback metadata test case should parse the BlueprintGetter descriptor"), GetterDesc.IsValid())
+		|| !TestTrue(TEXT("Property callback metadata test case should parse the BlueprintSetter descriptor"), SetterDesc.IsValid()))
 	{
 		return false;
 	}
@@ -276,16 +276,16 @@ int Entry()
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Property callback metadata scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Property callback metadata test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Property callback metadata scenario should record preprocessor usage in the compile summary"),
+		TEXT("Property callback metadata test case should record preprocessor usage in the compile summary"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Property callback metadata scenario should mark compile succeeded in the summary"),
+		TEXT("Property callback metadata test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Property callback metadata scenario should keep compile diagnostics empty"),
+		TEXT("Property callback metadata test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -301,18 +301,18 @@ int Entry()
 		CompilerPipelinePropertyMetadataTest::EntryFunctionDeclaration,
 		EntryResult);
 	bPassed &= TestTrue(
-		TEXT("Property callback metadata scenario should execute the compiled entry function"),
+		TEXT("Property callback metadata test case should execute the compiled entry function"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Property callback metadata scenario should preserve module execution after metadata propagation"),
+			TEXT("Property callback metadata test case should preserve module execution after metadata propagation"),
 			EntryResult,
 			CompilerPipelinePropertyMetadataTest::ExpectedEntryValue);
 	}
 
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, *CompilerPipelinePropertyMetadataTest::ClassName);
-	if (!TestNotNull(TEXT("Property callback metadata scenario should materialize the generated class"), GeneratedClass))
+	if (!TestNotNull(TEXT("Property callback metadata test case should materialize the generated class"), GeneratedClass))
 	{
 		return false;
 	}
@@ -321,10 +321,10 @@ int Entry()
 	UFunction* OnRepFunction = FindGeneratedFunction(GeneratedClass, *CompilerPipelinePropertyMetadataTest::OnRepFunctionName);
 	UFunction* GetterFunction = FindGeneratedFunction(GeneratedClass, *CompilerPipelinePropertyMetadataTest::GetterFunctionName);
 	UFunction* SetterFunction = FindGeneratedFunction(GeneratedClass, *CompilerPipelinePropertyMetadataTest::SetterFunctionName);
-	if (!TestNotNull(TEXT("Property callback metadata scenario should materialize the generated property"), TrackedValueProperty)
-		|| !TestNotNull(TEXT("Property callback metadata scenario should materialize the generated RepNotify callback"), OnRepFunction)
-		|| !TestNotNull(TEXT("Property callback metadata scenario should materialize the generated BlueprintGetter callback"), GetterFunction)
-		|| !TestNotNull(TEXT("Property callback metadata scenario should materialize the generated BlueprintSetter callback"), SetterFunction))
+	if (!TestNotNull(TEXT("Property callback metadata test case should materialize the generated property"), TrackedValueProperty)
+		|| !TestNotNull(TEXT("Property callback metadata test case should materialize the generated RepNotify callback"), OnRepFunction)
+		|| !TestNotNull(TEXT("Property callback metadata test case should materialize the generated BlueprintGetter callback"), GetterFunction)
+		|| !TestNotNull(TEXT("Property callback metadata test case should materialize the generated BlueprintSetter callback"), SetterFunction))
 	{
 		return false;
 	}
@@ -376,7 +376,7 @@ bool FAngelscriptCompilerPropertyCallbackSignatureValidationReportsDiagnosticsTe
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
-	const TArray<CompilerPipelinePropertyMetadataTest::FPropertyCallbackValidationScenario> Scenarios = {
+	const TArray<CompilerPipelinePropertyMetadataTest::FPropertyCallbackValidationTestCase> TestCases = {
 		{
 			TEXT("ReplicatedUsing callback should reject more than one argument"),
 			FName(TEXT("Tests.Compiler.PropertyCallbackValidation.RepNotifyTooManyArgs")),
@@ -440,7 +440,7 @@ class UPropertyCallbackCarrier : UObject
 		}
 	};
 
-	for (const CompilerPipelinePropertyMetadataTest::FPropertyCallbackValidationScenario& Scenario : Scenarios)
+	for (const CompilerPipelinePropertyMetadataTest::FPropertyCallbackValidationTestCase& TestCase : TestCases)
 	{
 		Engine.ResetDiagnostics();
 
@@ -448,34 +448,34 @@ class UPropertyCallbackCarrier : UObject
 		const bool bCompiled = CompileModuleWithSummary(
 			&Engine,
 			ECompileType::FullReload,
-			Scenario.ModuleName,
-			Scenario.RelativeScriptPath,
-			Scenario.ScriptSource,
+			TestCase.ModuleName,
+			TestCase.RelativeScriptPath,
+			TestCase.ScriptSource,
 			true,
 			Summary,
 			true);
 
 		if (Summary.Diagnostics.Num() > 0)
 		{
-			AddInfo(FString::Printf(TEXT("%s diagnostics: %s"), Scenario.Label, *CompilerPipelinePropertyMetadataTest::JoinDiagnostics(Summary.Diagnostics)));
+			AddInfo(FString::Printf(TEXT("%s diagnostics: %s"), TestCase.Label, *CompilerPipelinePropertyMetadataTest::JoinDiagnostics(Summary.Diagnostics)));
 		}
 
 		const FAngelscriptCompileTraceDiagnosticSummary* MatchingDiagnostic =
-			CompilerPipelinePropertyMetadataTest::FindMatchingErrorDiagnostic(Summary.Diagnostics, Scenario.ExpectedMessageFragment);
+			CompilerPipelinePropertyMetadataTest::FindMatchingErrorDiagnostic(Summary.Diagnostics, TestCase.ExpectedMessageFragment);
 
-		bPassed &= TestFalse(FString::Printf(TEXT("%s should fail compile"), Scenario.Label), bCompiled);
-		bPassed &= TestFalse(FString::Printf(TEXT("%s should keep bCompileSucceeded false"), Scenario.Label), Summary.bCompileSucceeded);
-		bPassed &= TestTrue(FString::Printf(TEXT("%s should record preprocessor usage"), Scenario.Label), Summary.bUsedPreprocessor);
-		bPassed &= TestNotNull(FString::Printf(TEXT("%s should emit the expected callback diagnostic"), Scenario.Label), MatchingDiagnostic);
+		bPassed &= TestFalse(FString::Printf(TEXT("%s should fail compile"), TestCase.Label), bCompiled);
+		bPassed &= TestFalse(FString::Printf(TEXT("%s should keep bCompileSucceeded false"), TestCase.Label), Summary.bCompileSucceeded);
+		bPassed &= TestTrue(FString::Printf(TEXT("%s should record preprocessor usage"), TestCase.Label), Summary.bUsedPreprocessor);
+		bPassed &= TestNotNull(FString::Printf(TEXT("%s should emit the expected callback diagnostic"), TestCase.Label), MatchingDiagnostic);
 		if (MatchingDiagnostic != nullptr)
 		{
 			bPassed &= TestEqual(
-				FString::Printf(TEXT("%s should pin the diagnostic row to the callback/property declaration"), Scenario.Label),
+				FString::Printf(TEXT("%s should pin the diagnostic row to the callback/property declaration"), TestCase.Label),
 				MatchingDiagnostic->Row,
-				Scenario.ExpectedRow);
+				TestCase.ExpectedRow);
 		}
 
-		Engine.DiscardModule(*Scenario.ModuleName.ToString());
+		Engine.DiscardModule(*TestCase.ModuleName.ToString());
 	}
 
 	ASTEST_END_SHARE_FRESH

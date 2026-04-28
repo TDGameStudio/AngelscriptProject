@@ -84,7 +84,7 @@ bool FAngelscriptGASAbilitySystemAttributeCallbackTest::RunTest(const FString& P
 
 	UAngelscriptGASTestAttributeChangedListener* DirectListener =
 		NewObject<UAngelscriptGASTestAttributeChangedListener>(DirectActor, TEXT("AttributeChangedListener"));
-	if (!TestNotNull(TEXT("Direct attribute callback scenario should create a listener"), DirectListener))
+	if (!TestNotNull(TEXT("Direct attribute callback test case should create a listener"), DirectListener))
 	{
 		return false;
 	}
@@ -146,7 +146,7 @@ bool FAngelscriptGASAbilitySystemAttributeCallbackTest::RunTest(const FString& P
 
 	UAngelscriptGASTestModifiedAttributeListener* DeprecatedListener =
 		NewObject<UAngelscriptGASTestModifiedAttributeListener>(DeprecatedActor, TEXT("ModifiedAttributeListener"));
-	if (!TestNotNull(TEXT("Deprecated attribute callback scenario should create an OnAttributeChanged listener"), DeprecatedListener))
+	if (!TestNotNull(TEXT("Deprecated attribute callback test case should create an OnAttributeChanged listener"), DeprecatedListener))
 	{
 		return false;
 	}

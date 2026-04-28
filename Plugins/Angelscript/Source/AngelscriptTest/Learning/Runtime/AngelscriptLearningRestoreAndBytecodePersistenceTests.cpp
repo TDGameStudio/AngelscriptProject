@@ -131,7 +131,7 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningRestoreAndBytecode
 		return true;
 	}
 
-	FLearningRestoreOutcome RunLearningRestoreScenario(const TCHAR* ModuleNameLiteral, bool bStripDebugInfo)
+	FLearningRestoreOutcome RunLearningRestoreTestCase(const TCHAR* ModuleNameLiteral, bool bStripDebugInfo)
 	{
 		FLearningRestoreOutcome Outcome;
 		TUniquePtr<FAngelscriptEngine> EngineOwner = CreateIsolatedCloneEngine();
@@ -207,9 +207,9 @@ int Test()
 		return Outcome;
 	}
 
-	void TraceLearningRestoreOutcome(FAngelscriptLearningTraceSession& Trace, const FString& ScenarioLabel, const FLearningRestoreOutcome& Outcome)
+	void TraceLearningRestoreOutcome(FAngelscriptLearningTraceSession& Trace, const FString& TestCaseLabel, const FLearningRestoreOutcome& Outcome)
 	{
-		Trace.AddStep(ScenarioLabel, Outcome.LoadResult == asSUCCESS ? TEXT("Saved bytecode and restored it into a fresh module instance") : TEXT("Bytecode round-trip failed before the restored module reached a validated load state"));
+		Trace.AddStep(TestCaseLabel, Outcome.LoadResult == asSUCCESS ? TEXT("Saved bytecode and restored it into a fresh module instance") : TEXT("Bytecode round-trip failed before the restored module reached a validated load state"));
 		Trace.AddKeyValue(TEXT("Compiled"), GetBoolLabel(Outcome.bCompiled));
 		Trace.AddKeyValue(TEXT("SaveResult"), FString::FromInt(Outcome.SaveResult));
 		Trace.AddKeyValue(TEXT("LoadResult"), FString::FromInt(Outcome.LoadResult));
@@ -238,13 +238,13 @@ bool FAngelscriptLearningRestoreAndBytecodePersistenceTest::RunTest(const FStrin
 
 	FAngelscriptLearningTraceSession Trace(TEXT("LearningRestoreAndBytecodePersistence"), SinkConfig);
 	Trace.BeginPhase(EAngelscriptLearningTracePhase::Compile);
-	const FLearningRestoreOutcome PreserveDebugOutcome = RunLearningRestoreScenario(TEXT("LearningRestorePreserveDebugModule"), false);
+	const FLearningRestoreOutcome PreserveDebugOutcome = RunLearningRestoreTestCase(TEXT("LearningRestorePreserveDebugModule"), false);
 	Trace.AddStep(TEXT("CompileSourceModule"), TEXT("Compiled the source module once before any serialization so the baseline execution result and local-variable metadata are visible"));
 	Trace.AddKeyValue(TEXT("PreserveDebugCompiled"), GetBoolLabel(PreserveDebugOutcome.bCompiled));
 
 	Trace.BeginPhase(EAngelscriptLearningTracePhase::Bytecode);
 	TraceLearningRestoreOutcome(Trace, TEXT("SaveAndLoadBytecode.PreserveDebug"), PreserveDebugOutcome);
-	const FLearningRestoreOutcome StripDebugOutcome = RunLearningRestoreScenario(TEXT("LearningRestoreStripDebugModule"), true);
+	const FLearningRestoreOutcome StripDebugOutcome = RunLearningRestoreTestCase(TEXT("LearningRestoreStripDebugModule"), true);
 	TraceLearningRestoreOutcome(Trace, TEXT("SaveAndLoadBytecode.StripDebug"), StripDebugOutcome);
 
 	Trace.BeginPhase(EAngelscriptLearningTracePhase::Execution);
@@ -256,20 +256,20 @@ bool FAngelscriptLearningRestoreAndBytecodePersistenceTest::RunTest(const FStrin
 	Trace.AddKeyValue(TEXT("PreserveDebugFlag"), GetBoolLabel(PreserveDebugOutcome.bWasDebugInfoStripped));
 	Trace.AddKeyValue(TEXT("StripDebugFlag"), GetBoolLabel(StripDebugOutcome.bWasDebugInfoStripped));
 
-	const bool bPreserveCompiled = TestTrue(TEXT("Preserve-debug restore scenario should compile"), PreserveDebugOutcome.bCompiled);
-	const bool bPreserveSaveSucceeded = TestEqual(TEXT("Preserve-debug restore scenario should save bytecode successfully"), PreserveDebugOutcome.SaveResult, static_cast<int32>(asSUCCESS));
-	const bool bPreserveLoadSucceeded = TestEqual(TEXT("Preserve-debug restore scenario should load bytecode successfully"), PreserveDebugOutcome.LoadResult, static_cast<int32>(asSUCCESS));
+	const bool bPreserveCompiled = TestTrue(TEXT("Preserve-debug restore test case should compile"), PreserveDebugOutcome.bCompiled);
+	const bool bPreserveSaveSucceeded = TestEqual(TEXT("Preserve-debug restore test case should save bytecode successfully"), PreserveDebugOutcome.SaveResult, static_cast<int32>(asSUCCESS));
+	const bool bPreserveLoadSucceeded = TestEqual(TEXT("Preserve-debug restore test case should load bytecode successfully"), PreserveDebugOutcome.LoadResult, static_cast<int32>(asSUCCESS));
 	const bool bPreserveRunsBeforeRestore = TestEqual(TEXT("Preserve-debug source execution should return the expected value"), PreserveDebugOutcome.SourceExecutionResult, 42);
 	const bool bPreserveFunctionStillVisible = TestTrue(TEXT("Preserve-debug restore should still expose the function declaration after load"), PreserveDebugOutcome.bRestoredFunctionAvailable);
 	const bool bPreserveRetainsDebugFlag = TestFalse(TEXT("Preserve-debug restore should report intact debug info"), PreserveDebugOutcome.bWasDebugInfoStripped);
 
-	const bool bStripCompiled = TestTrue(TEXT("Strip-debug restore scenario should compile"), StripDebugOutcome.bCompiled);
-	const bool bStripSaveSucceeded = TestEqual(TEXT("Strip-debug restore scenario should save bytecode successfully"), StripDebugOutcome.SaveResult, static_cast<int32>(asSUCCESS));
-	const bool bStripLoadSucceeded = TestEqual(TEXT("Strip-debug restore scenario should load bytecode successfully"), StripDebugOutcome.LoadResult, static_cast<int32>(asSUCCESS));
+	const bool bStripCompiled = TestTrue(TEXT("Strip-debug restore test case should compile"), StripDebugOutcome.bCompiled);
+	const bool bStripSaveSucceeded = TestEqual(TEXT("Strip-debug restore test case should save bytecode successfully"), StripDebugOutcome.SaveResult, static_cast<int32>(asSUCCESS));
+	const bool bStripLoadSucceeded = TestEqual(TEXT("Strip-debug restore test case should load bytecode successfully"), StripDebugOutcome.LoadResult, static_cast<int32>(asSUCCESS));
 	const bool bStripRunsBeforeRestore = TestEqual(TEXT("Strip-debug source execution should return the expected value"), StripDebugOutcome.SourceExecutionResult, 42);
 	const bool bStripFunctionStillVisible = TestTrue(TEXT("Strip-debug restore should still expose the function declaration after load"), StripDebugOutcome.bRestoredFunctionAvailable);
 	const bool bStripReportsDebugLoss = TestTrue(TEXT("Strip-debug restore should report stripped debug info"), StripDebugOutcome.bWasDebugInfoStripped);
-	const bool bBytecodeProduced = TestTrue(TEXT("Both restore scenarios should serialize non-empty bytecode"), PreserveDebugOutcome.StreamByteCount > 0 && StripDebugOutcome.StreamByteCount > 0);
+	const bool bBytecodeProduced = TestTrue(TEXT("Both restore test cases should serialize non-empty bytecode"), PreserveDebugOutcome.StreamByteCount > 0 && StripDebugOutcome.StreamByteCount > 0);
 
 	const bool bPhaseSequenceOk = AssertLearningTracePhaseSequence(*this, Trace.GetEvents(), {
 		EAngelscriptLearningTracePhase::Compile,

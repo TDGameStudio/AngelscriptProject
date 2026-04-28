@@ -6,7 +6,7 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -111,7 +111,7 @@ namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests
 		}
 	};
 
-	bool InitializeRuntimeSubsystemScenario(
+	bool InitializeRuntimeSubsystemTestCase(
 		FAutomationTestBase& Test,
 		FActorTestSpawner& Spawner,
 		UWorld*& OutWorld,
@@ -121,19 +121,19 @@ namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests
 		Spawner.InitializeGameSubsystems();
 
 		OutWorld = &Spawner.GetWorld();
-		if (!Test.TestNotNull(TEXT("Subsystem runtime scenario should create a test world"), OutWorld))
+		if (!Test.TestNotNull(TEXT("Subsystem runtime test case should create a test world"), OutWorld))
 		{
 			return false;
 		}
 
 		OutGameInstance = OutWorld->GetGameInstance();
-		if (!Test.TestNotNull(TEXT("Subsystem runtime scenario should expose a game instance"), OutGameInstance))
+		if (!Test.TestNotNull(TEXT("Subsystem runtime test case should expose a game instance"), OutGameInstance))
 		{
 			return false;
 		}
 
 		OutSubsystem = OutGameInstance->GetSubsystem<UAngelscriptGameInstanceSubsystem>();
-		return Test.TestNotNull(TEXT("Subsystem runtime scenario should expose the Angelscript game-instance subsystem"), OutSubsystem);
+		return Test.TestNotNull(TEXT("Subsystem runtime test case should expose the Angelscript game-instance subsystem"), OutSubsystem);
 	}
 
 	bool VerifyTickAdvancesProbe(
@@ -186,7 +186,7 @@ bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FStrin
 		UWorld* AdoptWorld = nullptr;
 		UGameInstance* AdoptGameInstance = nullptr;
 		UAngelscriptGameInstanceSubsystem* AdoptSubsystem = nullptr;
-		if (!InitializeRuntimeSubsystemScenario(*this, AdoptSpawner, AdoptWorld, AdoptGameInstance, AdoptSubsystem))
+		if (!InitializeRuntimeSubsystemTestCase(*this, AdoptSpawner, AdoptWorld, AdoptGameInstance, AdoptSubsystem))
 		{
 			return false;
 		}
@@ -254,7 +254,7 @@ bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FStrin
 		UWorld* OwnWorld = nullptr;
 		UGameInstance* OwnGameInstance = nullptr;
 		UAngelscriptGameInstanceSubsystem* OwnSubsystem = nullptr;
-		if (!InitializeRuntimeSubsystemScenario(*this, OwnSpawner, OwnWorld, OwnGameInstance, OwnSubsystem))
+		if (!InitializeRuntimeSubsystemTestCase(*this, OwnSpawner, OwnWorld, OwnGameInstance, OwnSubsystem))
 		{
 			return false;
 		}
@@ -360,7 +360,7 @@ bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FSt
 		}
 
 		FActorTestSpawner SpawnerA;
-		if (!InitializeRuntimeSubsystemScenario(*this, SpawnerA, WorldA, GameInstanceA, SubsystemA))
+		if (!InitializeRuntimeSubsystemTestCase(*this, SpawnerA, WorldA, GameInstanceA, SubsystemA))
 		{
 			return false;
 		}
@@ -382,7 +382,7 @@ bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FSt
 		}
 
 		FActorTestSpawner SpawnerB;
-		if (!InitializeRuntimeSubsystemScenario(*this, SpawnerB, WorldB, GameInstanceB, SubsystemB))
+		if (!InitializeRuntimeSubsystemTestCase(*this, SpawnerB, WorldB, GameInstanceB, SubsystemB))
 		{
 			return false;
 		}

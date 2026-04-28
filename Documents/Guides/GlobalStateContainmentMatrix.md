@@ -23,7 +23,7 @@
 | --- | --- | --- | --- |
 | `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h` | 测试层通过 scoped helper 显式覆盖 global engine / world context | `FScopedGlobalEngineOverride`、`FScopedTestWorldContextScope` | 已 containment，作为后续 runtime containment 的样板 |
 | `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineHelper.cpp` | 编译 helper 进入前显式安装 `FScopedGlobalEngineOverride` | `FScopedGlobalEngineOverride` | 已 containment |
-| `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptScenarioTestUtils.h` | 场景 helper 在编译与 tick 时显式安装 global engine / world context scope | `FScopedGlobalEngineOverride`、`FScopedTestWorldContextScope` | 已 containment |
+| `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptFunctionalTestUtils.h` | 功能测试 helper 在编译与 tick 时显式安装 global engine / world context scope | `FScopedGlobalEngineOverride`、`FScopedTestWorldContextScope` | 已 containment |
 | `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/AngelscriptDebugServer.cpp` | 仍直接触发 `FAngelscriptEngine::Get()` 与 `CurrentWorldContext` | 无显式 owner engine 注入 | **本计划 `P5.2` 的首要低风险 containment 候选** |
 
 ## 4. 现有 wrapper 速查

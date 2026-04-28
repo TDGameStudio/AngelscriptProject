@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -134,7 +134,7 @@ bool FAngelscriptLiteralAssetPostInitMaterializesAssetOnceTest::RunTest(const FS
 
 	UClass* GeneratedClass = LiteralAssetPostInitTest::CompileLiteralAssetCarrier(*this, Engine);
 	if (!TestNotNull(
-			TEXT("Literal-asset post-init scenario should compile the generated asset carrier class"),
+			TEXT("Literal-asset post-init test case should compile the generated asset carrier class"),
 			GeneratedClass))
 	{
 		return false;
@@ -142,7 +142,7 @@ bool FAngelscriptLiteralAssetPostInitMaterializesAssetOnceTest::RunTest(const FS
 
 	UObject* LiteralAssetBeforeTouch = LiteralAssetPostInitTest::FindLiteralAsset();
 	if (!TestNotNull(
-			TEXT("Literal-asset post-init scenario should materialize the asset object before any explicit getter call"),
+			TEXT("Literal-asset post-init test case should materialize the asset object before any explicit getter call"),
 			LiteralAssetBeforeTouch))
 	{
 		return false;
@@ -155,18 +155,18 @@ bool FAngelscriptLiteralAssetPostInitMaterializesAssetOnceTest::RunTest(const FS
 	}
 
 	if (!TestEqual(
-			TEXT("Literal-asset post-init scenario should keep the generated literal asset on the expected script class"),
+			TEXT("Literal-asset post-init test case should keep the generated literal asset on the expected script class"),
 			LiteralAssetBeforeTouch->GetClass(),
 			GeneratedClass)
 		|| !TestEqual(
-			TEXT("Literal-asset post-init scenario should execute __Init_ExampleAsset exactly once during compile teardown"),
+			TEXT("Literal-asset post-init test case should execute __Init_ExampleAsset exactly once during compile teardown"),
 			SnapshotBeforeTouch.PostInitCalls,
 			1)
 		|| !TestTrue(
-			TEXT("Literal-asset post-init scenario should preserve the bool flag written by __Init_ExampleAsset"),
+			TEXT("Literal-asset post-init test case should preserve the bool flag written by __Init_ExampleAsset"),
 			SnapshotBeforeTouch.bWasPostInit)
 		|| !TestEqual(
-			TEXT("Literal-asset post-init scenario should preserve the init marker written by __Init_ExampleAsset"),
+			TEXT("Literal-asset post-init test case should preserve the init marker written by __Init_ExampleAsset"),
 			SnapshotBeforeTouch.InitMarker,
 			LiteralAssetPostInitTest::ExpectedInitMarker))
 	{
@@ -186,7 +186,7 @@ bool FAngelscriptLiteralAssetPostInitMaterializesAssetOnceTest::RunTest(const FS
 
 	UObject* LiteralAssetAfterTouch = LiteralAssetPostInitTest::FindLiteralAsset();
 	if (!TestNotNull(
-			TEXT("Literal-asset post-init scenario should still expose the canonical asset after repeated getter access"),
+			TEXT("Literal-asset post-init test case should still expose the canonical asset after repeated getter access"),
 			LiteralAssetAfterTouch))
 	{
 		return false;
@@ -340,7 +340,7 @@ bool FAngelscriptLiteralAssetPostInitResolvesGeneratedGetterInsteadOfNameCollisi
 
 	UClass* GeneratedClass = LiteralAssetPostInitNameCollisionTest::CompileLiteralAssetCarrier(*this, Engine);
 	if (!TestNotNull(
-			TEXT("Literal-asset short-name collision scenario should compile the generated asset carrier class"),
+			TEXT("Literal-asset short-name collision test case should compile the generated asset carrier class"),
 			GeneratedClass))
 	{
 		return false;
@@ -348,7 +348,7 @@ bool FAngelscriptLiteralAssetPostInitResolvesGeneratedGetterInsteadOfNameCollisi
 
 	UObject* LiteralAssetAfterCompile = LiteralAssetPostInitNameCollisionTest::FindLiteralAsset();
 	if (!TestNotNull(
-			TEXT("Literal-asset short-name collision scenario should materialize the canonical asset during compile teardown"),
+			TEXT("Literal-asset short-name collision test case should materialize the canonical asset during compile teardown"),
 			LiteralAssetAfterCompile))
 	{
 		return false;
@@ -361,15 +361,15 @@ bool FAngelscriptLiteralAssetPostInitResolvesGeneratedGetterInsteadOfNameCollisi
 	}
 
 	if (!TestEqual(
-			TEXT("Literal-asset short-name collision scenario should keep the materialized asset on the generated carrier class"),
+			TEXT("Literal-asset short-name collision test case should keep the materialized asset on the generated carrier class"),
 			LiteralAssetAfterCompile->GetClass(),
 			GeneratedClass)
 		|| !TestEqual(
-			TEXT("Literal-asset short-name collision scenario should execute the generated getter exactly once during post-init"),
+			TEXT("Literal-asset short-name collision test case should execute the generated getter exactly once during post-init"),
 			SnapshotAfterCompile.RightCalls,
 			1)
 		|| !TestEqual(
-			TEXT("Literal-asset short-name collision scenario should never execute the namespaced short-name collision getter during post-init"),
+			TEXT("Literal-asset short-name collision test case should never execute the namespaced short-name collision getter during post-init"),
 			SnapshotAfterCompile.WrongCalls,
 			0))
 	{
@@ -389,7 +389,7 @@ bool FAngelscriptLiteralAssetPostInitResolvesGeneratedGetterInsteadOfNameCollisi
 
 	UObject* LiteralAssetAfterTouch = LiteralAssetPostInitNameCollisionTest::FindLiteralAsset();
 	if (!TestNotNull(
-			TEXT("Literal-asset short-name collision scenario should still expose the canonical asset after the explicit getter touch"),
+			TEXT("Literal-asset short-name collision test case should still expose the canonical asset after the explicit getter touch"),
 			LiteralAssetAfterTouch))
 	{
 		return false;

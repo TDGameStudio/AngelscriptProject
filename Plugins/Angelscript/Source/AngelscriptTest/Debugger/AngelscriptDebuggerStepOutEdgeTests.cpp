@@ -467,7 +467,7 @@ bool FAngelscriptDebuggerStepOutTopFrameCompletesTest::RunTest(const FString& Pa
 	}
 
 	TestTrue(TEXT("Stepping.StepOutTopFrameCompletes should execute successfully"), InvocationState->bSucceeded);
-	TestEqual(TEXT("Stepping.StepOutTopFrameCompletes should preserve the expected scenario result"), InvocationState->Result, 14);
+	TestEqual(TEXT("Stepping.StepOutTopFrameCompletes should preserve the expected test case result"), InvocationState->Result, 14);
 	return !HasAnyErrors();
 }
 

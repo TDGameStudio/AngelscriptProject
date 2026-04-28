@@ -80,7 +80,7 @@ namespace AngelscriptTestSupport
 	return LocalValue;
 }
 
-	int RunScenario()
+	int RunTestCase()
 	{
 		/*MARK:BreakpointEntryLine*/ int StartValue = 3;
 		if (StartValue > 0)
@@ -96,7 +96,7 @@ namespace AngelscriptTestSupport
 			ModuleName,
 			NAME_None,
 			NAME_None,
-			TEXT("int RunScenario()"),
+			TEXT("int RunTestCase()"),
 			Filename,
 			ScriptSource,
 			{
@@ -113,7 +113,7 @@ namespace AngelscriptTestSupport
 			TEXT("DebuggerSteppingFixture"),
 			NAME_None,
 			NAME_None,
-			TEXT("int RunScenario()"),
+			TEXT("int RunTestCase()"),
 			TEXT("DebuggerSteppingFixture.as"),
 			TEXT(R"AS(int Inner(int Value)
 {
@@ -123,7 +123,7 @@ namespace AngelscriptTestSupport
 	return InnerValue;
 }
 
-	int RunScenario()
+	int RunTestCase()
 	{
 		/*MARK:StepCallLine*/ int Result = Inner(4);
 		/*MARK:StepAfterCallLine*/ Result += 1;
@@ -144,9 +144,9 @@ namespace AngelscriptTestSupport
 			TEXT("DebuggerPauseFixture"),
 			NAME_None,
 			NAME_None,
-			TEXT("int RunScenario()"),
+			TEXT("int RunTestCase()"),
 			TEXT("DebuggerPauseFixture.as"),
-			TEXT(R"AS(int RunScenario()
+			TEXT(R"AS(int RunTestCase()
 {
 	/*MARK:PauseReadyLine*/ int Total = 1;
 	for (int Outer = 0; Outer < 50; ++Outer)

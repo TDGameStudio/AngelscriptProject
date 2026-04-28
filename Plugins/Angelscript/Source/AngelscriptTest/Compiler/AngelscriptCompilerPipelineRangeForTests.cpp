@@ -181,48 +181,48 @@ int Entry()
 		: FString();
 
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should preprocess successfully"),
+		TEXT("Range-based for literal/comment guard test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should not emit preprocessing errors"),
+		TEXT("Range-based for literal/comment guard test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should keep preprocessing diagnostics empty"),
+		TEXT("Range-based for literal/comment guard test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should produce exactly one module descriptor"),
+		TEXT("Range-based for literal/comment guard test case should produce exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (Modules.Num() > 0)
 	{
 		bPassed &= TestEqual(
-			TEXT("Range-based for literal/comment guard scenario should preserve the expected module name"),
+			TEXT("Range-based for literal/comment guard test case should preserve the expected module name"),
 			Modules[0]->ModuleName,
 			CompilerPipelineRangeForTest::ModuleName.ToString());
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should rewrite exactly one real loop into iterator advance form"),
+		TEXT("Range-based for literal/comment guard test case should rewrite exactly one real loop into iterator advance form"),
 		CompilerPipelineRangeForTest::CountOccurrences(ProcessedCode, TEXT("_Iterator.CanProceed; )")),
 		1);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should rewrite exactly one real loop into iterator proceed form"),
+		TEXT("Range-based for literal/comment guard test case should rewrite exactly one real loop into iterator proceed form"),
 		CompilerPipelineRangeForTest::CountOccurrences(ProcessedCode, TEXT("_Iterator.Proceed();")),
 		1);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should preserve the raw loop text only inside the two strings and two comments"),
+		TEXT("Range-based for literal/comment guard test case should preserve the raw loop text only inside the two strings and two comments"),
 		CompilerPipelineRangeForTest::CountOccurrences(ProcessedCode, CompilerPipelineRangeForTest::RawLoopText),
 		CompilerPipelineRangeForTest::ExpectedRawLoopTextOccurrences);
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should preserve the exact string literal payload"),
+		TEXT("Range-based for literal/comment guard test case should preserve the exact string literal payload"),
 		ProcessedCode.Contains(CompilerPipelineRangeForTest::StringLiteralToken));
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should preserve the single-line comment payload"),
+		TEXT("Range-based for literal/comment guard test case should preserve the single-line comment payload"),
 		ProcessedCode.Contains(CompilerPipelineRangeForTest::LineCommentToken));
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should preserve the block comment payload"),
+		TEXT("Range-based for literal/comment guard test case should preserve the block comment payload"),
 		ProcessedCode.Contains(CompilerPipelineRangeForTest::BlockCommentToken));
 
 	Engine.ResetDiagnostics();
@@ -245,16 +245,16 @@ int Entry()
 	}
 
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Range-based for literal/comment guard test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should report that it used the preprocessor"),
+		TEXT("Range-based for literal/comment guard test case should report that it used the preprocessor"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should mark compile succeeded in the summary"),
+		TEXT("Range-based for literal/comment guard test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Range-based for literal/comment guard scenario should keep compile diagnostics empty"),
+		TEXT("Range-based for literal/comment guard test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 
@@ -267,12 +267,12 @@ int Entry()
 			TEXT("int Entry()"),
 			EntryResult);
 	bPassed &= TestTrue(
-		TEXT("Range-based for literal/comment guard scenario should execute the compiled Entry function"),
+		TEXT("Range-based for literal/comment guard test case should execute the compiled Entry function"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Range-based for literal/comment guard scenario should preserve the string literal while keeping the real loop executable"),
+			TEXT("Range-based for literal/comment guard test case should preserve the string literal while keeping the real loop executable"),
 			EntryResult,
 			CompilerPipelineRangeForTest::ExpectedEntryResult);
 	}

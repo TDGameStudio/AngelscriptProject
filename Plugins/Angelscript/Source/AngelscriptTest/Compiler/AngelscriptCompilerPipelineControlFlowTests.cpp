@@ -142,38 +142,38 @@ int Entry()
 		: FString();
 
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should preprocess successfully"),
+		TEXT("Range-based for rewrite test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should not emit preprocessing errors"),
+		TEXT("Range-based for rewrite test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should keep preprocessing diagnostics empty"),
+		TEXT("Range-based for rewrite test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should produce exactly one module descriptor"),
+		TEXT("Range-based for rewrite test case should produce exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (Modules.Num() > 0)
 	{
 		bPassed &= TestEqual(
-			TEXT("Range-based for rewrite scenario should preserve the expected module name"),
+			TEXT("Range-based for rewrite test case should preserve the expected module name"),
 			Modules[0]->ModuleName,
 			CompilerPipelineControlFlowTest::ModuleName.ToString());
 	}
 
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should rewrite both loops into iterator advance conditions"),
+		TEXT("Range-based for rewrite test case should rewrite both loops into iterator advance conditions"),
 		CompilerPipelineControlFlowTest::CountOccurrences(ProcessedCode, TEXT("_Iterator.CanProceed; )")),
 		2);
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should rewrite both loops into iterator proceed calls"),
+		TEXT("Range-based for rewrite test case should rewrite both loops into iterator proceed calls"),
 		CompilerPipelineControlFlowTest::CountOccurrences(ProcessedCode, TEXT("_Iterator.Proceed();")),
 		2);
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should materialize the const-ref storage marker in processed code"),
+		TEXT("Range-based for rewrite test case should materialize the const-ref storage marker in processed code"),
 		ProcessedCode.Contains(TEXT("__auto_constref_type")));
 
 	Engine.ResetDiagnostics();
@@ -190,16 +190,16 @@ int Entry()
 		true);
 
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Range-based for rewrite test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should report that it used the preprocessor"),
+		TEXT("Range-based for rewrite test case should report that it used the preprocessor"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should mark compile succeeded in the summary"),
+		TEXT("Range-based for rewrite test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Range-based for rewrite scenario should keep compile diagnostics empty"),
+		TEXT("Range-based for rewrite test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 
@@ -212,12 +212,12 @@ int Entry()
 			TEXT("int Entry()"),
 			EntryResult);
 	bPassed &= TestTrue(
-		TEXT("Range-based for rewrite scenario should execute the compiled Entry function"),
+		TEXT("Range-based for rewrite test case should execute the compiled Entry function"),
 		bExecuted);
 	if (bExecuted)
 	{
 		bPassed &= TestEqual(
-			TEXT("Range-based for rewrite scenario should keep both block and single-line loop sums executable"),
+			TEXT("Range-based for rewrite test case should keep both block and single-line loop sums executable"),
 			EntryResult,
 			4242);
 	}

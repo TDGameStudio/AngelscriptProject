@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "../../AngelscriptRuntime/Core/GAS/AngelscriptGASActor.h"
@@ -25,7 +25,7 @@ namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private
 
 		TArray<FGameplayTag> AvailableTags;
 		AllTags.GetGameplayTagArray(AvailableTags);
-		if (!Test.TestTrue(TEXT("GAS character scenario requires at least one registered gameplay tag"), AvailableTags.Num() > 0))
+		if (!Test.TestTrue(TEXT("GAS character test case requires at least one registered gameplay tag"), AvailableTags.Num() > 0))
 		{
 			return false;
 		}
@@ -124,12 +124,12 @@ class AAutomationGASCharacter : AAngelscriptGASCharacter
 	Spawner.InitializeGameSubsystems();
 
 	AAngelscriptGASCharacter* Character = SpawnScriptActor<AAngelscriptGASCharacter>(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("GAS character bridge scenario should spawn the generated character"), Character))
+	if (!TestNotNull(TEXT("GAS character bridge test case should spawn the generated character"), Character))
 	{
 		return false;
 	}
 
-	if (!TestNotNull(TEXT("GAS character bridge scenario should create an ability-system component"), Character->AbilitySystem))
+	if (!TestNotNull(TEXT("GAS character bridge test case should create an ability-system component"), Character->AbilitySystem))
 	{
 		return false;
 	}
@@ -145,7 +145,7 @@ class AAutomationGASCharacter : AAngelscriptGASCharacter
 	Character->AbilitySystem->AddLooseGameplayTag(OwnedTag);
 
 	UInputComponent* InputComponent = NewObject<UInputComponent>(Character, TEXT("AutomationInputComponent"));
-	if (!TestNotNull(TEXT("GAS character bridge scenario should create an input component"), InputComponent))
+	if (!TestNotNull(TEXT("GAS character bridge test case should create an input component"), InputComponent))
 	{
 		return false;
 	}
@@ -189,7 +189,7 @@ bool FAngelscriptGASActorBaseAbilitySystemAndPawnInputTest::RunTest(const FStrin
 	{
 		FAngelscriptEngineScope EngineScope(Engine);
 		if (!TestTrue(
-				TEXT("GAS actor-base bridge scenario should compile"),
+				TEXT("GAS actor-base bridge test case should compile"),
 				CompileAnnotatedModuleFromMemory(
 					&Engine,
 					ModuleName,
@@ -220,8 +220,8 @@ class AAutomationGASPawn : AAngelscriptGASPawn
 
 	UClass* ActorClass = FindGeneratedClass(&Engine, TEXT("AAutomationGASActor"));
 	UClass* PawnClass = FindGeneratedClass(&Engine, TEXT("AAutomationGASPawn"));
-	if (!TestNotNull(TEXT("GAS actor-base bridge scenario should generate the actor class"), ActorClass)
-		|| !TestNotNull(TEXT("GAS actor-base bridge scenario should generate the pawn class"), PawnClass))
+	if (!TestNotNull(TEXT("GAS actor-base bridge test case should generate the actor class"), ActorClass)
+		|| !TestNotNull(TEXT("GAS actor-base bridge test case should generate the pawn class"), PawnClass))
 	{
 		return false;
 	}
@@ -232,8 +232,8 @@ class AAutomationGASPawn : AAngelscriptGASPawn
 	AAngelscriptGASActor* Actor = SpawnScriptActor<AAngelscriptGASActor>(*this, Spawner, ActorClass);
 	AAngelscriptGASPawn* Pawn = SpawnScriptActor<AAngelscriptGASPawn>(*this, Spawner, PawnClass);
 	bool bPassed = true;
-	bPassed &= ExpectReplicatedAbilitySystem(*this, TEXT("GAS actor-base actor scenario"), Actor);
-	bPassed &= ExpectReplicatedAbilitySystem(*this, TEXT("GAS actor-base pawn scenario"), Pawn);
+	bPassed &= ExpectReplicatedAbilitySystem(*this, TEXT("GAS actor-base actor test case"), Actor);
+	bPassed &= ExpectReplicatedAbilitySystem(*this, TEXT("GAS actor-base pawn test case"), Pawn);
 
 	if (!bPassed)
 	{
@@ -241,7 +241,7 @@ class AAutomationGASPawn : AAngelscriptGASPawn
 	}
 
 	UInputComponent* InputComponent = NewObject<UInputComponent>(Pawn, TEXT("AutomationPawnInputComponent"));
-	if (!TestNotNull(TEXT("GAS actor-base pawn scenario should create an input component"), InputComponent))
+	if (!TestNotNull(TEXT("GAS actor-base pawn test case should create an input component"), InputComponent))
 	{
 		return false;
 	}

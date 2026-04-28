@@ -24,7 +24,7 @@ namespace CompilerPipelineFunctionFlagTest
 		bool bBlueprintPure = false;
 	};
 
-	struct FScenario
+	struct FTestCase
 	{
 		FName ModuleName;
 		FString RelativeScriptPath;
@@ -34,7 +34,7 @@ namespace CompilerPipelineFunctionFlagTest
 		TArray<FExpectedFunctionFlags> ExpectedFunctions;
 	};
 
-	TArray<FScenario> BuildScenarios()
+	TArray<FTestCase> BuildTestCases()
 	{
 		return {
 			{
@@ -142,12 +142,12 @@ class UCompilerBlueprintCallableDefaultTrueCarrier : UObject
 
 	bool ExpectDescriptorFlags(
 		FAutomationTestBase& Test,
-		const FString& ScenarioLabel,
+		const FString& TestCaseLabel,
 		const TSharedPtr<FAngelscriptFunctionDesc>& FunctionDesc,
 		const FExpectedFunctionFlags& Expected)
 	{
 		if (!Test.TestTrue(
-				*FString::Printf(TEXT("%s should parse function descriptor %s"), *ScenarioLabel, Expected.FunctionName),
+				*FString::Printf(TEXT("%s should parse function descriptor %s"), *TestCaseLabel, Expected.FunctionName),
 				FunctionDesc.IsValid()))
 		{
 			return false;
@@ -155,11 +155,11 @@ class UCompilerBlueprintCallableDefaultTrueCarrier : UObject
 
 		bool bPassed = true;
 		bPassed &= Test.TestEqual(
-			*FString::Printf(TEXT("%s should set bBlueprintCallable for %s during preprocessing"), *ScenarioLabel, Expected.FunctionName),
+			*FString::Printf(TEXT("%s should set bBlueprintCallable for %s during preprocessing"), *TestCaseLabel, Expected.FunctionName),
 			FunctionDesc->bBlueprintCallable,
 			Expected.bBlueprintCallable);
 		bPassed &= Test.TestEqual(
-			*FString::Printf(TEXT("%s should set bBlueprintPure for %s during preprocessing"), *ScenarioLabel, Expected.FunctionName),
+			*FString::Printf(TEXT("%s should set bBlueprintPure for %s during preprocessing"), *TestCaseLabel, Expected.FunctionName),
 			FunctionDesc->bBlueprintPure,
 			Expected.bBlueprintPure);
 		return bPassed;
@@ -167,13 +167,13 @@ class UCompilerBlueprintCallableDefaultTrueCarrier : UObject
 
 	bool ExpectGeneratedFlags(
 		FAutomationTestBase& Test,
-		const FString& ScenarioLabel,
+		const FString& TestCaseLabel,
 		UClass* GeneratedClass,
 		const FExpectedFunctionFlags& Expected)
 	{
 		UFunction* GeneratedFunction = FindGeneratedFunction(GeneratedClass, Expected.FunctionName);
 		if (!Test.TestNotNull(
-				*FString::Printf(TEXT("%s should materialize generated function %s"), *ScenarioLabel, Expected.FunctionName),
+				*FString::Printf(TEXT("%s should materialize generated function %s"), *TestCaseLabel, Expected.FunctionName),
 				GeneratedFunction))
 		{
 			return false;
@@ -181,11 +181,11 @@ class UCompilerBlueprintCallableDefaultTrueCarrier : UObject
 
 		bool bPassed = true;
 		bPassed &= Test.TestEqual(
-			*FString::Printf(TEXT("%s should set FUNC_BlueprintCallable for %s"), *ScenarioLabel, Expected.FunctionName),
+			*FString::Printf(TEXT("%s should set FUNC_BlueprintCallable for %s"), *TestCaseLabel, Expected.FunctionName),
 			GeneratedFunction->HasAnyFunctionFlags(FUNC_BlueprintCallable),
 			Expected.bBlueprintCallable);
 		bPassed &= Test.TestEqual(
-			*FString::Printf(TEXT("%s should set FUNC_BlueprintPure for %s"), *ScenarioLabel, Expected.FunctionName),
+			*FString::Printf(TEXT("%s should set FUNC_BlueprintPure for %s"), *TestCaseLabel, Expected.FunctionName),
 			GeneratedFunction->HasAnyFunctionFlags(FUNC_BlueprintPure),
 			Expected.bBlueprintPure);
 		return bPassed;
@@ -217,24 +217,24 @@ bool FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest::RunT
 		Settings->bDefaultFunctionBlueprintCallable = PreviousDefaultCallable;
 	};
 
-	for (const CompilerPipelineFunctionFlagTest::FScenario& Scenario : CompilerPipelineFunctionFlagTest::BuildScenarios())
+	for (const CompilerPipelineFunctionFlagTest::FTestCase& TestCase : CompilerPipelineFunctionFlagTest::BuildTestCases())
 	{
 		{
 			const FString AbsoluteScriptPath = CompilerPipelineFunctionFlagTest::WriteFixture(
-				Scenario.RelativeScriptPath,
-				Scenario.ScriptSource);
-			const FString ModuleNameString = Scenario.ModuleName.ToString();
+				TestCase.RelativeScriptPath,
+				TestCase.ScriptSource);
+			const FString ModuleNameString = TestCase.ModuleName.ToString();
 			ON_SCOPE_EXIT
 			{
 				Engine.DiscardModule(*ModuleNameString);
 				IFileManager::Get().Delete(*AbsoluteScriptPath, false, true);
 			};
 
-			Settings->bDefaultFunctionBlueprintCallable = Scenario.bDefaultFunctionBlueprintCallable;
+			Settings->bDefaultFunctionBlueprintCallable = TestCase.bDefaultFunctionBlueprintCallable;
 			Engine.ResetDiagnostics();
 
 			FAngelscriptPreprocessor Preprocessor;
-			Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+			Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 			const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 			const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
@@ -245,24 +245,24 @@ bool FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest::RunT
 				AbsoluteScriptPath,
 				PreprocessErrorCount);
 
-			const FString ScenarioLabel = FString::Printf(
-				TEXT("Function blueprint callable defaults scenario (%s, default=%s)"),
-				*Scenario.ClassName,
-				Scenario.bDefaultFunctionBlueprintCallable ? TEXT("true") : TEXT("false"));
+			const FString TestCaseLabel = FString::Printf(
+				TEXT("Function blueprint callable defaults test case (%s, default=%s)"),
+				*TestCase.ClassName,
+				TestCase.bDefaultFunctionBlueprintCallable ? TEXT("true") : TEXT("false"));
 
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should preprocess successfully"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should preprocess successfully"), *TestCaseLabel),
 				bPreprocessSucceeded);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should keep preprocessing error count at zero"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should keep preprocessing error count at zero"), *TestCaseLabel),
 				PreprocessErrorCount,
 				0);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should keep preprocessing diagnostics empty"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should keep preprocessing diagnostics empty"), *TestCaseLabel),
 				PreprocessMessages.Num(),
 				0);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should emit exactly one module descriptor"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should emit exactly one module descriptor"), *TestCaseLabel),
 				Modules.Num(),
 				1);
 			if (!bPassed || !bPreprocessSucceeded || Modules.Num() != 1)
@@ -271,20 +271,20 @@ bool FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest::RunT
 			}
 
 			const TSharedRef<FAngelscriptModuleDesc> ModuleDesc = Modules[0];
-			const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(Scenario.ClassName);
+			const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(TestCase.ClassName);
 			if (!TestTrue(
-					*FString::Printf(TEXT("%s should parse the annotated class descriptor"), *ScenarioLabel),
+					*FString::Printf(TEXT("%s should parse the annotated class descriptor"), *TestCaseLabel),
 					ClassDesc.IsValid()))
 			{
 				return false;
 			}
 
-			for (const CompilerPipelineFunctionFlagTest::FExpectedFunctionFlags& ExpectedFunction : Scenario.ExpectedFunctions)
+			for (const CompilerPipelineFunctionFlagTest::FExpectedFunctionFlags& ExpectedFunction : TestCase.ExpectedFunctions)
 			{
 				const TSharedPtr<FAngelscriptFunctionDesc> FunctionDesc = ClassDesc->GetMethod(ExpectedFunction.FunctionName);
 				bPassed &= CompilerPipelineFunctionFlagTest::ExpectDescriptorFlags(
 					*this,
-					ScenarioLabel,
+					TestCaseLabel,
 					FunctionDesc,
 					ExpectedFunction);
 			}
@@ -295,28 +295,28 @@ bool FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest::RunT
 			const bool bCompiled = CompileModuleWithSummary(
 				&Engine,
 				ECompileType::FullReload,
-				Scenario.ModuleName,
-				Scenario.RelativeScriptPath,
-				Scenario.ScriptSource,
+				TestCase.ModuleName,
+				TestCase.RelativeScriptPath,
+				TestCase.ScriptSource,
 				true,
 				Summary,
 				true);
 
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should compile through the full preprocessor pipeline"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should compile through the full preprocessor pipeline"), *TestCaseLabel),
 				bCompiled);
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should record preprocessor usage in the compile summary"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should record preprocessor usage in the compile summary"), *TestCaseLabel),
 				Summary.bUsedPreprocessor);
 			bPassed &= TestTrue(
-				*FString::Printf(TEXT("%s should mark compile succeeded in the summary"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should mark compile succeeded in the summary"), *TestCaseLabel),
 				Summary.bCompileSucceeded);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should report FullyHandled compile result"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should report FullyHandled compile result"), *TestCaseLabel),
 				Summary.CompileResult,
 				ECompileResult::FullyHandled);
 			bPassed &= TestEqual(
-				*FString::Printf(TEXT("%s should keep compile diagnostics empty"), *ScenarioLabel),
+				*FString::Printf(TEXT("%s should keep compile diagnostics empty"), *TestCaseLabel),
 				Summary.Diagnostics.Num(),
 				0);
 			if (!bCompiled)
@@ -324,19 +324,19 @@ bool FAngelscriptCompilerFunctionBlueprintCallableDefaultsAndOverridesTest::RunT
 				return false;
 			}
 
-			UClass* GeneratedClass = FindGeneratedClass(&Engine, *Scenario.ClassName);
+			UClass* GeneratedClass = FindGeneratedClass(&Engine, *TestCase.ClassName);
 			if (!TestNotNull(
-					*FString::Printf(TEXT("%s should materialize the generated class"), *ScenarioLabel),
+					*FString::Printf(TEXT("%s should materialize the generated class"), *TestCaseLabel),
 					GeneratedClass))
 			{
 				return false;
 			}
 
-			for (const CompilerPipelineFunctionFlagTest::FExpectedFunctionFlags& ExpectedFunction : Scenario.ExpectedFunctions)
+			for (const CompilerPipelineFunctionFlagTest::FExpectedFunctionFlags& ExpectedFunction : TestCase.ExpectedFunctions)
 			{
 				bPassed &= CompilerPipelineFunctionFlagTest::ExpectGeneratedFlags(
 					*this,
-					ScenarioLabel,
+					TestCaseLabel,
 					GeneratedClass,
 					ExpectedFunction);
 			}

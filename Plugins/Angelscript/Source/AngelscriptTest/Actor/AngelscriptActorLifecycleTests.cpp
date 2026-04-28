@@ -8,7 +8,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
@@ -17,7 +17,7 @@ using namespace AngelscriptReflectiveAccess;
 
 namespace AngelscriptTest_Actor_AngelscriptActorLifecycleTests_Private
 {
-	constexpr float LifecycleScenarioDeltaTime = 0.016f;
+	constexpr float LifecycleTestCaseDeltaTime = 0.016f;
 
 	void EnableLifecycleActorTick(AActor& Actor)
 	{
@@ -254,7 +254,7 @@ class ATestActorTick : AActor
 
 	EnableLifecycleActorTick(*Actor);
 	BeginPlayActor(Engine, *Actor);
-	TickWorld(Engine, Spawner.GetWorld(), LifecycleScenarioDeltaTime, 5);
+	TickWorld(Engine, Spawner.GetWorld(), LifecycleTestCaseDeltaTime, 5);
 
 	int32 EventCallCount = 0;
 	if (!GetByPath<FIntProperty, int32>(*this, Actor, TEXT("EventCallCount"), EventCallCount))
@@ -332,7 +332,7 @@ class ATestActorTickRegisteredDispatch : AActor
 		Actor->PrimaryActorTick.IsTickFunctionRegistered());
 
 	constexpr int32 NumTicks = 3;
-	TickWorldThroughTickManager(Engine, Spawner.GetWorld(), LifecycleScenarioDeltaTime, NumTicks);
+	TickWorldThroughTickManager(Engine, Spawner.GetWorld(), LifecycleTestCaseDeltaTime, NumTicks);
 
 	int32 EventCallCount = 0;
 	if (!GetByPath<FIntProperty, int32>(*this, Actor, TEXT("EventCallCount"), EventCallCount))

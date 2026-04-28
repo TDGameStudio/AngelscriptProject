@@ -326,7 +326,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTest::RunTest(const FString& Parameters)
 {
-	struct FDeclaredImportErrorScenario
+	struct FDeclaredImportErrorTestCase
 	{
 		const TCHAR* Label = TEXT("");
 		FName ProviderModuleName;
@@ -341,7 +341,7 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 		int32 ExpectedDiagnosticRow = 0;
 	};
 
-	const TArray<FDeclaredImportErrorScenario> Scenarios =
+	const TArray<FDeclaredImportErrorTestCase> TestCases =
 	{
 		{TEXT("Missing module"), CompilerPipelineImportTest::MissingSourceModuleName, CompilerPipelineImportTest::MissingSourceConsumerModuleName, FString(), CompilerPipelineImportTest::MissingSourceConsumerRelativeScriptPath, FString(), TEXT("import int SharedValue() from \"Tests.Compiler.MissingSource\";\n\nint Entry()\n{\n\treturn SharedValue();\n}\n"), TEXT("could not find module Tests.Compiler.MissingSource to import from."), 1, 1, 1},
 		{TEXT("Signature mismatch"), CompilerPipelineImportTest::SignatureMismatchProviderModuleName, CompilerPipelineImportTest::SignatureMismatchConsumerModuleName, CompilerPipelineImportTest::SignatureMismatchProviderRelativeScriptPath, CompilerPipelineImportTest::SignatureMismatchConsumerRelativeScriptPath, TEXT("int SharedValue(int Extra)\n{\n\treturn Extra;\n}\n"), TEXT("import int SharedValue() from \"Tests.Compiler.ImportSourceSignatureMismatch\";\n\nint Entry()\n{\n\treturn SharedValue();\n}\n"), TEXT("could not find function with this signature in module Tests.Compiler.ImportSourceSignatureMismatch."), 2, 2, 1}
@@ -354,13 +354,13 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 
 	const FString SignatureMismatchProviderAbsoluteScriptPath = CompilerPipelineImportTest::WriteFixture(
 		CompilerPipelineImportTest::SignatureMismatchProviderRelativeScriptPath,
-		Scenarios[1].ProviderScriptSource);
+		TestCases[1].ProviderScriptSource);
 	const FString MissingSourceConsumerAbsoluteScriptPath = CompilerPipelineImportTest::WriteFixture(
 		CompilerPipelineImportTest::MissingSourceConsumerRelativeScriptPath,
-		Scenarios[0].ConsumerScriptSource);
+		TestCases[0].ConsumerScriptSource);
 	const FString SignatureMismatchConsumerAbsoluteScriptPath = CompilerPipelineImportTest::WriteFixture(
 		CompilerPipelineImportTest::SignatureMismatchConsumerRelativeScriptPath,
-		Scenarios[1].ConsumerScriptSource);
+		TestCases[1].ConsumerScriptSource);
 
 	ON_SCOPE_EXIT
 	{
@@ -372,14 +372,14 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 		IFileManager::Get().Delete(*SignatureMismatchProviderAbsoluteScriptPath, false, true);
 	};
 
-	for (const FDeclaredImportErrorScenario& Scenario : Scenarios)
+	for (const FDeclaredImportErrorTestCase& TestCase : TestCases)
 	{
 		const FString ConsumerAbsoluteScriptPath = FPaths::Combine(
 			CompilerPipelineImportTest::GetFixtureRoot(),
-			Scenario.ConsumerRelativeScriptPath);
-		const FString ProviderAbsoluteScriptPath = Scenario.ProviderRelativeScriptPath.IsEmpty()
+			TestCase.ConsumerRelativeScriptPath);
+		const FString ProviderAbsoluteScriptPath = TestCase.ProviderRelativeScriptPath.IsEmpty()
 			? FString()
-			: FPaths::Combine(CompilerPipelineImportTest::GetFixtureRoot(), Scenario.ProviderRelativeScriptPath);
+			: FPaths::Combine(CompilerPipelineImportTest::GetFixtureRoot(), TestCase.ProviderRelativeScriptPath);
 
 		Engine.ResetDiagnostics();
 
@@ -387,13 +387,13 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 		FScopedAutomaticImportsOverride AutomaticImportsOverride(Engine.GetScriptEngine());
 
 		FAngelscriptPreprocessor Preprocessor;
-		if (!Scenario.ProviderRelativeScriptPath.IsEmpty()) { Preprocessor.AddFile(Scenario.ProviderRelativeScriptPath, ProviderAbsoluteScriptPath); }
-		Preprocessor.AddFile(Scenario.ConsumerRelativeScriptPath, ConsumerAbsoluteScriptPath);
+		if (!TestCase.ProviderRelativeScriptPath.IsEmpty()) { Preprocessor.AddFile(TestCase.ProviderRelativeScriptPath, ProviderAbsoluteScriptPath); }
+		Preprocessor.AddFile(TestCase.ConsumerRelativeScriptPath, ConsumerAbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> ModulesToCompile = Preprocessor.GetModulesToCompile();
 
-		const TArray<FString> DiagnosticFiles = Scenario.ProviderRelativeScriptPath.IsEmpty()
+		const TArray<FString> DiagnosticFiles = TestCase.ProviderRelativeScriptPath.IsEmpty()
 			? TArray<FString>{ConsumerAbsoluteScriptPath}
 			: TArray<FString>{ProviderAbsoluteScriptPath, ConsumerAbsoluteScriptPath};
 
@@ -405,21 +405,21 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 		const FString PreprocessDiagnostics = FString::Join(PreprocessMessages, TEXT("\n"));
 
 		bPassed &= TestTrue(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should preprocess successfully"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should preprocess successfully"), TestCase.Label),
 			bPreprocessSucceeded);
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should keep preprocessing diagnostics empty"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should keep preprocessing diagnostics empty"), TestCase.Label),
 			PreprocessErrorCount,
 			0);
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should produce the expected module descriptor count"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should produce the expected module descriptor count"), TestCase.Label),
 			ModulesToCompile.Num(),
-			Scenario.ExpectedModuleDescCount);
-		if (!PreprocessDiagnostics.IsEmpty()) { AddInfo(FString::Printf(TEXT("%s preprocessor diagnostics: %s"), Scenario.Label, *PreprocessDiagnostics)); }
-		if (!bPreprocessSucceeded || ModulesToCompile.Num() != Scenario.ExpectedModuleDescCount) { return false; }
+			TestCase.ExpectedModuleDescCount);
+		if (!PreprocessDiagnostics.IsEmpty()) { AddInfo(FString::Printf(TEXT("%s preprocessor diagnostics: %s"), TestCase.Label, *PreprocessDiagnostics)); }
+		if (!bPreprocessSucceeded || ModulesToCompile.Num() != TestCase.ExpectedModuleDescCount) { return false; }
 
 		Engine.ResetDiagnostics();
-		AddExpectedError(*Scenario.ExpectedDiagnosticFragment, EAutomationExpectedErrorFlags::Contains, 1);
+		AddExpectedError(*TestCase.ExpectedDiagnosticFragment, EAutomationExpectedErrorFlags::Contains, 1);
 
 		TArray<TSharedRef<FAngelscriptModuleDesc>> CompiledModules;
 		const ECompileResult CompileResult = Engine.CompileModules(
@@ -433,42 +433,42 @@ bool FAngelscriptCompilerDeclaredFunctionImportErrorsReportPreciseDiagnosticsTes
 			DiagnosticFiles,
 			CompileErrorCount);
 		const FString CompileDiagnostics = FString::Join(CompileMessages, TEXT("\n"));
-		if (!CompileDiagnostics.IsEmpty()) { AddInfo(FString::Printf(TEXT("%s compile diagnostics: %s"), Scenario.Label, *CompileDiagnostics)); }
+		if (!CompileDiagnostics.IsEmpty()) { AddInfo(FString::Printf(TEXT("%s compile diagnostics: %s"), TestCase.Label, *CompileDiagnostics)); }
 
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should fail compilation"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should fail compilation"), TestCase.Label),
 			CompileResult,
 			ECompileResult::Error);
 		bPassed &= TestEqual(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should keep the expected number of compiled module descriptors"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should keep the expected number of compiled module descriptors"), TestCase.Label),
 			CompiledModules.Num(),
-			Scenario.ExpectedCompiledModuleCount);
+			TestCase.ExpectedCompiledModuleCount);
 		bPassed &= TestTrue(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should capture at least one compile error"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should capture at least one compile error"), TestCase.Label),
 			CompileErrorCount > 0);
 		bPassed &= TestFalse(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should keep the consumer module inactive after the failed compile"), Scenario.Label),
-			Engine.GetModule(Scenario.ConsumerModuleName.ToString()).IsValid());
-		if (!Scenario.ProviderRelativeScriptPath.IsEmpty())
+			FString::Printf(TEXT("%s declared-import diagnostics test case should keep the consumer module inactive after the failed compile"), TestCase.Label),
+			Engine.GetModule(TestCase.ConsumerModuleName.ToString()).IsValid());
+		if (!TestCase.ProviderRelativeScriptPath.IsEmpty())
 			bPassed &= TestFalse(
-				FString::Printf(TEXT("%s declared-import diagnostics scenario should avoid swapping in the provider when the batch fails"), Scenario.Label),
-				Engine.GetModule(Scenario.ProviderModuleName.ToString()).IsValid());
+				FString::Printf(TEXT("%s declared-import diagnostics test case should avoid swapping in the provider when the batch fails"), TestCase.Label),
+				Engine.GetModule(TestCase.ProviderModuleName.ToString()).IsValid());
 
 		const FAngelscriptEngine::FDiagnostic* MatchingDiagnostic = CompilerPipelineImportTest::FindMatchingErrorDiagnostic(
 			Engine,
 			ConsumerAbsoluteScriptPath,
-			Scenario.ExpectedDiagnosticFragment);
+			TestCase.ExpectedDiagnosticFragment);
 		bPassed &= TestNotNull(
-			FString::Printf(TEXT("%s declared-import diagnostics scenario should attach the expected error to the consumer file"), Scenario.Label),
+			FString::Printf(TEXT("%s declared-import diagnostics test case should attach the expected error to the consumer file"), TestCase.Label),
 			MatchingDiagnostic);
 		if (MatchingDiagnostic != nullptr)
 		{
 			bPassed &= TestEqual(
-				FString::Printf(TEXT("%s declared-import diagnostics scenario should keep the diagnostic row pinned to the import line"), Scenario.Label),
+				FString::Printf(TEXT("%s declared-import diagnostics test case should keep the diagnostic row pinned to the import line"), TestCase.Label),
 				MatchingDiagnostic->Row,
-				Scenario.ExpectedDiagnosticRow);
+				TestCase.ExpectedDiagnosticRow);
 			bPassed &= TestEqual(
-				FString::Printf(TEXT("%s declared-import diagnostics scenario should keep the diagnostic column pinned to the import line start"), Scenario.Label),
+				FString::Printf(TEXT("%s declared-import diagnostics test case should keep the diagnostic column pinned to the import line start"), TestCase.Label),
 				MatchingDiagnostic->Column,
 				1);
 		}

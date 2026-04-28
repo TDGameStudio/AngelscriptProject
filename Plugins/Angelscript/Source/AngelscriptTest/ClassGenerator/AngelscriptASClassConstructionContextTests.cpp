@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptConstructionContextProbe.h"
+#include "Shared/AngelscriptConstructionContextProbe.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -71,7 +71,7 @@ class UConstructionContextCarrier : UObject
 
 		UASClass* GeneratedASClass = Cast<UASClass>(GeneratedClass);
 		Test.TestNotNull(
-			TEXT("Construction-context scenario should compile to a generated UASClass"),
+			TEXT("Construction-context test case should compile to a generated UASClass"),
 			GeneratedASClass);
 		return GeneratedASClass;
 	}
@@ -80,23 +80,23 @@ class UConstructionContextCarrier : UObject
 		FAutomationTestBase& Test,
 		UObject* Instance)
 	{
-		if (!Test.TestNotNull(TEXT("Construction-context scenario should create the generated script object"), Instance))
+		if (!Test.TestNotNull(TEXT("Construction-context test case should create the generated script object"), Instance))
 		{
 			return false;
 		}
 
 		const bool bCaptureCountMatches = Test.TestEqual(
-			TEXT("Construction-context scenario should capture the constructing object exactly once during instance defaults"),
+			TEXT("Construction-context test case should capture the constructing object exactly once during instance defaults"),
 			UAngelscriptConstructionContextProbe::GetLastCaptureCount(),
 			1);
 
 		UObject* CapturedObject = UAngelscriptConstructionContextProbe::GetLastCapturedObject();
 		const bool bProbeCapturedInstance = Test.TestTrue(
-			TEXT("Construction-context scenario should record the final instance through the native probe"),
+			TEXT("Construction-context test case should record the final instance through the native probe"),
 			CapturedObject == Instance);
 
 		const bool bConstructionStateCleared = Test.TestNull(
-			TEXT("Construction-context scenario should clear GetConstructingASObject after NewObject completes"),
+			TEXT("Construction-context test case should clear GetConstructingASObject after NewObject completes"),
 			UASClass::GetConstructingASObject());
 
 		return bCaptureCountMatches
@@ -133,7 +133,7 @@ bool FAngelscriptASClassGetConstructingASObjectReportsCurrentScriptInstanceTest:
 	}
 
 	if (!TestNull(
-			TEXT("Construction-context scenario should not expose a constructing object before compiling or instantiating"),
+			TEXT("Construction-context test case should not expose a constructing object before compiling or instantiating"),
 			UASClass::GetConstructingASObject()))
 	{
 		return false;
@@ -152,7 +152,7 @@ bool FAngelscriptASClassGetConstructingASObjectReportsCurrentScriptInstanceTest:
 	}
 
 	if (!TestNull(
-			TEXT("Construction-context scenario should clear any compile-time CDO capture before the runtime instantiation step"),
+			TEXT("Construction-context test case should clear any compile-time CDO capture before the runtime instantiation step"),
 			UASClass::GetConstructingASObject()))
 	{
 		return false;

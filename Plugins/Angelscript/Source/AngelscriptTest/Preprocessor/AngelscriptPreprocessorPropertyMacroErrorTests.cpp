@@ -15,7 +15,7 @@ using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyMacroErrorTests_Private
 {
-	struct FInvalidPropertySpecifierScenario
+	struct FInvalidPropertySpecifierTestCase
 	{
 		const TCHAR* Label;
 		const TCHAR* RelativeScriptPath;
@@ -137,50 +137,50 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyMacroError
 		return nullptr;
 	}
 
-	bool RunInvalidPropertySpecifierScenario(
+	bool RunInvalidPropertySpecifierTestCase(
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
-		const FInvalidPropertySpecifierScenario& Scenario)
+		const FInvalidPropertySpecifierTestCase& TestCase)
 	{
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
 
 		const FString AbsoluteScriptPath = WritePropertyMacroFixture(
-			Scenario.RelativeScriptPath,
-			Scenario.ScriptSource);
+			TestCase.RelativeScriptPath,
+			TestCase.ScriptSource);
 		ON_SCOPE_EXIT
 		{
 			IFileManager::Get().Delete(*AbsoluteScriptPath, false, true);
 		};
 
 		FAngelscriptPreprocessor Preprocessor;
-		Preprocessor.AddFile(Scenario.RelativeScriptPath, AbsoluteScriptPath);
+		Preprocessor.AddFile(TestCase.RelativeScriptPath, AbsoluteScriptPath);
 
 		const bool bPreprocessSucceeded = Preprocessor.Preprocess();
 		const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
 		const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
-		const FString ModuleName = GetFixtureModuleName(Scenario.RelativeScriptPath);
+		const FString ModuleName = GetFixtureModuleName(TestCase.RelativeScriptPath);
 		const FAngelscriptModuleDesc* ModuleDesc = FindModuleByName(Modules, ModuleName);
 		const FAngelscriptClassDesc* ClassDesc = FindClassDescriptor(ModuleDesc, TEXT("UBadPropertyCarrier"));
 		const FAngelscriptPropertyDesc* PropertyDesc =
 			FindPropertyDescriptor(Modules, TEXT("UBadPropertyCarrier"), TEXT("TrackedValue"));
 
 		if (!Test.TestFalse(
-				FString::Printf(TEXT("%s should fail preprocessing when property callback specifiers are invalid"), Scenario.Label),
+				FString::Printf(TEXT("%s should fail preprocessing when property callback specifiers are invalid"), TestCase.Label),
 				bPreprocessSucceeded))
 		{
 			return false;
 		}
 
 		if (!Test.TestNotNull(
-				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit diagnostics for the failing file"), TestCase.Label),
 				Diagnostics))
 		{
 			return false;
 		}
 
 		if (!Test.TestTrue(
-				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit at least one diagnostic entry"), TestCase.Label),
 				Diagnostics->Diagnostics.Num() > 0))
 		{
 			return false;
@@ -188,32 +188,32 @@ namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorPropertyMacroError
 
 		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
 		return Test.TestEqual(
-				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), Scenario.Label),
+				FString::Printf(TEXT("%s should emit exactly one error diagnostic"), TestCase.Label),
 				CountErrorDiagnostics(Diagnostics),
 				1)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the property-specifier error text stable"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the property-specifier error text stable"), TestCase.Label),
 				FirstDiagnostic.Message,
-				FString(Scenario.ExpectedMessage))
+				FString(TestCase.ExpectedMessage))
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should pin the error row to the UPROPERTY line"), Scenario.Label),
+				FString::Printf(TEXT("%s should pin the error row to the UPROPERTY line"), TestCase.Label),
 				FirstDiagnostic.Row,
-				Scenario.ExpectedRow)
+				TestCase.ExpectedRow)
 			&& Test.TestEqual(
-				FString::Printf(TEXT("%s should keep the error column at the macro start"), Scenario.Label),
+				FString::Printf(TEXT("%s should keep the error column at the macro start"), TestCase.Label),
 				FirstDiagnostic.Column,
 				1)
 			&& Test.TestNotNull(
-				FString::Printf(TEXT("%s should preserve the owning module descriptor for inspection"), Scenario.Label),
+				FString::Printf(TEXT("%s should preserve the owning module descriptor for inspection"), TestCase.Label),
 				ModuleDesc)
 			&& Test.TestNotNull(
-				FString::Printf(TEXT("%s should preserve the owning class descriptor even when the property macro fails"), Scenario.Label),
+				FString::Printf(TEXT("%s should preserve the owning class descriptor even when the property macro fails"), TestCase.Label),
 				ClassDesc)
 			&& Test.TestFalse(
-				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), Scenario.Label),
+				FString::Printf(TEXT("%s should not leave behind any compilable code after preprocessing fails"), TestCase.Label),
 				ContainsCompilableCode(Modules))
 			&& Test.TestNull(
-				FString::Printf(TEXT("%s should not leave behind a half-valid reflected property descriptor"), Scenario.Label),
+				FString::Printf(TEXT("%s should not leave behind a half-valid reflected property descriptor"), TestCase.Label),
 				PropertyDesc);
 	}
 }
@@ -253,7 +253,7 @@ bool FAngelscriptPreprocessorPropertyInvalidSpecifiersReportDiagnosticsTest::Run
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	const TArray<FInvalidPropertySpecifierScenario> Scenarios = {
+	const TArray<FInvalidPropertySpecifierTestCase> TestCases = {
 		{
 			TEXT("ReplicatedUsing without callback"),
 			TEXT("Tests/Preprocessor/PropertyMacros/InvalidReplicatedUsingSpecifier.as"),
@@ -308,9 +308,9 @@ bool FAngelscriptPreprocessorPropertyInvalidSpecifiersReportDiagnosticsTest::Run
 		}
 	};
 
-	for (const FInvalidPropertySpecifierScenario& Scenario : Scenarios)
+	for (const FInvalidPropertySpecifierTestCase& TestCase : TestCases)
 	{
-		bPassed &= RunInvalidPropertySpecifierScenario(*this, Engine, Scenario);
+		bPassed &= RunInvalidPropertySpecifierTestCase(*this, Engine, TestCase);
 	}
 
 	ASTEST_END_MODULE_CLEAN
@@ -328,7 +328,7 @@ bool FAngelscriptPreprocessorUnknownReplicationConditionReportsDiagnosticTest::R
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 	ASTEST_BEGIN_MODULE_CLEAN
 
-	const FInvalidPropertySpecifierScenario Scenario = {
+	const FInvalidPropertySpecifierTestCase TestCase = {
 		TEXT("Unknown ReplicationCondition"),
 		TEXT("Tests/Preprocessor/PropertyMacros/InvalidUnknownReplicationConditionSpecifier.as"),
 		TEXT(
@@ -342,7 +342,7 @@ bool FAngelscriptPreprocessorUnknownReplicationConditionReportsDiagnosticTest::R
 		4
 	};
 
-	bPassed = RunInvalidPropertySpecifierScenario(*this, Engine, Scenario);
+	bPassed = RunInvalidPropertySpecifierTestCase(*this, Engine, TestCase);
 
 	ASTEST_END_MODULE_CLEAN
 	return bPassed;

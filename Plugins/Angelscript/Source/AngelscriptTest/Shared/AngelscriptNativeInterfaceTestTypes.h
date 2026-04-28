@@ -71,7 +71,7 @@ public:
 // `ATestNativeMultiInterfaceActor` to exercise the non-zero `PointerOffset`
 // branch of `UObject::GetInterfaceAddress`. The two interfaces together force
 // the native implementing class to embed two distinct interface vtables at
-// different offsets — the precise scenario that `GetInterfacePointerForCast`
+// different offsets — the precise test case that `GetInterfacePointerForCast`
 // is designed to handle correctly.
 UINTERFACE(BlueprintType)
 class ANGELSCRIPTTEST_API UAngelscriptNativeSecondaryInterface : public UInterface

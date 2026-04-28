@@ -160,18 +160,18 @@ enum class ECompilerMetadataParenState : uint8
 		PreprocessErrorCount);
 
 	bPassed &= TestTrue(
-		TEXT("Metadata specifier scenario should preprocess successfully"),
+		TEXT("Metadata specifier test case should preprocess successfully"),
 		bPreprocessSucceeded);
 	bPassed &= TestEqual(
-		TEXT("Metadata specifier scenario should not emit preprocessing errors"),
+		TEXT("Metadata specifier test case should not emit preprocessing errors"),
 		PreprocessErrorCount,
 		0);
 	bPassed &= TestEqual(
-		TEXT("Metadata specifier scenario should keep preprocessing diagnostics empty"),
+		TEXT("Metadata specifier test case should keep preprocessing diagnostics empty"),
 		PreprocessMessages.Num(),
 		0);
 	bPassed &= TestEqual(
-		TEXT("Metadata specifier scenario should produce exactly one module descriptor"),
+		TEXT("Metadata specifier test case should produce exactly one module descriptor"),
 		Modules.Num(),
 		1);
 	if (!bPreprocessSucceeded || Modules.Num() != 1)
@@ -181,24 +181,24 @@ enum class ECompilerMetadataParenState : uint8
 
 	const TSharedRef<FAngelscriptModuleDesc> ModuleDesc = Modules[0];
 	bPassed &= TestEqual(
-		TEXT("Metadata specifier scenario should preserve the expected module name"),
+		TEXT("Metadata specifier test case should preserve the expected module name"),
 		ModuleDesc->ModuleName,
 		CompilerPipelineMetadataSpecifierTest::ModuleName.ToString());
 
 	const TSharedPtr<FAngelscriptClassDesc> ClassDesc = ModuleDesc->GetClass(CompilerPipelineMetadataSpecifierTest::ClassName);
-	if (!TestTrue(TEXT("Metadata specifier scenario should parse the annotated class descriptor"), ClassDesc.IsValid()))
+	if (!TestTrue(TEXT("Metadata specifier test case should parse the annotated class descriptor"), ClassDesc.IsValid()))
 	{
 		return false;
 	}
 
 	const TSharedPtr<FAngelscriptFunctionDesc> FunctionDesc = ClassDesc->GetMethod(CompilerPipelineMetadataSpecifierTest::FunctionName);
-	if (!TestTrue(TEXT("Metadata specifier scenario should parse the annotated function descriptor"), FunctionDesc.IsValid()))
+	if (!TestTrue(TEXT("Metadata specifier test case should parse the annotated function descriptor"), FunctionDesc.IsValid()))
 	{
 		return false;
 	}
 
 	const TSharedPtr<FAngelscriptEnumDesc> EnumDesc = ModuleDesc->GetEnum(CompilerPipelineMetadataSpecifierTest::EnumName);
-	if (!TestTrue(TEXT("Metadata specifier scenario should parse the annotated enum descriptor"), EnumDesc.IsValid()))
+	if (!TestTrue(TEXT("Metadata specifier test case should parse the annotated enum descriptor"), EnumDesc.IsValid()))
 	{
 		return false;
 	}
@@ -246,13 +246,13 @@ enum class ECompilerMetadataParenState : uint8
 		true);
 
 	bPassed &= TestTrue(
-		TEXT("Metadata specifier scenario should compile through the normal preprocessor pipeline"),
+		TEXT("Metadata specifier test case should compile through the normal preprocessor pipeline"),
 		bCompiled);
 	bPassed &= TestTrue(
-		TEXT("Metadata specifier scenario should report that it used the preprocessor"),
+		TEXT("Metadata specifier test case should report that it used the preprocessor"),
 		Summary.bUsedPreprocessor);
 	bPassed &= TestTrue(
-		TEXT("Metadata specifier scenario should mark compile succeeded in the summary"),
+		TEXT("Metadata specifier test case should mark compile succeeded in the summary"),
 		Summary.bCompileSucceeded);
 	if (Summary.Diagnostics.Num() > 0)
 	{
@@ -270,7 +270,7 @@ enum class ECompilerMetadataParenState : uint8
 			*FString::Join(DiagnosticMessages, TEXT(" | "))));
 	}
 	bPassed &= TestEqual(
-		TEXT("Metadata specifier scenario should keep compile diagnostics empty"),
+		TEXT("Metadata specifier test case should keep compile diagnostics empty"),
 		Summary.Diagnostics.Num(),
 		0);
 	if (!bCompiled)
@@ -279,23 +279,23 @@ enum class ECompilerMetadataParenState : uint8
 	}
 
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, *CompilerPipelineMetadataSpecifierTest::ClassName);
-	if (!TestNotNull(TEXT("Metadata specifier scenario should materialize the generated class"), GeneratedClass))
+	if (!TestNotNull(TEXT("Metadata specifier test case should materialize the generated class"), GeneratedClass))
 	{
 		return false;
 	}
 
 	UFunction* GeneratedFunction = FindGeneratedFunction(GeneratedClass, *CompilerPipelineMetadataSpecifierTest::FunctionName);
-	if (!TestNotNull(TEXT("Metadata specifier scenario should materialize the generated function"), GeneratedFunction))
+	if (!TestNotNull(TEXT("Metadata specifier test case should materialize the generated function"), GeneratedFunction))
 	{
 		return false;
 	}
 
 	const TSharedPtr<FAngelscriptEnumDesc> GeneratedEnumDesc = Engine.GetEnum(CompilerPipelineMetadataSpecifierTest::EnumName);
-	if (!TestTrue(TEXT("Metadata specifier scenario should register the generated enum descriptor"), GeneratedEnumDesc.IsValid()))
+	if (!TestTrue(TEXT("Metadata specifier test case should register the generated enum descriptor"), GeneratedEnumDesc.IsValid()))
 	{
 		return false;
 	}
-	if (!TestNotNull(TEXT("Metadata specifier scenario should materialize the generated UEnum"), GeneratedEnumDesc->Enum))
+	if (!TestNotNull(TEXT("Metadata specifier test case should materialize the generated UEnum"), GeneratedEnumDesc->Enum))
 	{
 		return false;
 	}

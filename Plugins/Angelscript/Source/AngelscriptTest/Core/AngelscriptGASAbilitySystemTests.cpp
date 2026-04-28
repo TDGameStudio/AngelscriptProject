@@ -237,13 +237,13 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 	TestEqual(TEXT("CancelAbilityByHandle should end the active ability instance once"), FirstAbilityInstance->EndCount, 1);
 
 	AAngelscriptGASTestActor* CancelByClassActor = &Spawner.SpawnActor<AAngelscriptGASTestActor>();
-	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel scenario should spawn a second test actor"), CancelByClassActor))
+	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel test case should spawn a second test actor"), CancelByClassActor))
 	{
 		return false;
 	}
 
 	UAngelscriptAbilitySystemComponent* CancelByClassAbilitySystemComponent = CancelByClassActor->AbilitySystemComponent;
-	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel scenario should expose an ability-system component"), CancelByClassAbilitySystemComponent))
+	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel test case should expose an ability-system component"), CancelByClassAbilitySystemComponent))
 	{
 		return false;
 	}
@@ -252,7 +252,7 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 
 	UAngelscriptGASTestAbilityGivenListener* CancelByClassListener =
 		NewObject<UAngelscriptGASTestAbilityGivenListener>(CancelByClassActor, TEXT("AbilityGivenListener_CancelByClass"));
-	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel scenario should create an ability-given listener"), CancelByClassListener))
+	if (!TestNotNull(TEXT("GAS GiveAbility class-cancel test case should create an ability-given listener"), CancelByClassListener))
 	{
 		return false;
 	}
@@ -280,7 +280,7 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 	}
 
 	TestTrue(
-		TEXT("The class-cancel scenario should also register the granted ability class"),
+		TEXT("The class-cancel test case should also register the granted ability class"),
 		CancelByClassAbilitySystemComponent->HasAbility(UAngelscriptGASTestAbility::StaticClass()));
 	TestEqual(TEXT("OnAbilityGiven should broadcast exactly once for the class-cancel grant"), CancelByClassListener->BroadcastCount, 1);
 	TestTrue(TEXT("The class-cancel grant should report the returned handle"), CancelByClassListener->LastHandle == SecondHandle);
@@ -313,7 +313,7 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 
 	TestEqual(TEXT("The second activated ability should record one activation"), SecondAbilityInstance->ActivationCount, 1);
 	TestTrue(
-		TEXT("The class-cancel scenario ability should report as active after activation"),
+		TEXT("The class-cancel test case ability should report as active after activation"),
 		CancelByClassAbilitySystemComponent->IsAbilityActive(UAngelscriptGASTestAbility::StaticClass()));
 
 	CancelByClassAbilitySystemComponent->CancelAbility(UAngelscriptGASTestAbility::StaticClass());
@@ -336,13 +336,13 @@ bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Para
 	Spawner.InitializeGameSubsystems();
 
 	AAngelscriptGASTestActor* TestActor = &Spawner.SpawnActor<AAngelscriptGASTestActor>();
-	if (!TestNotNull(TEXT("GAS remove-on-end scenario should spawn a test actor"), TestActor))
+	if (!TestNotNull(TEXT("GAS remove-on-end test case should spawn a test actor"), TestActor))
 	{
 		return false;
 	}
 
 	UAngelscriptAbilitySystemComponent* AbilitySystemComponent = TestActor->AbilitySystemComponent;
-	if (!TestNotNull(TEXT("GAS remove-on-end scenario should expose an ability-system component"), AbilitySystemComponent))
+	if (!TestNotNull(TEXT("GAS remove-on-end test case should expose an ability-system component"), AbilitySystemComponent))
 	{
 		return false;
 	}
@@ -351,7 +351,7 @@ bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Para
 
 	UAngelscriptGASTestAbilityGivenListener* RemovedListener =
 		NewObject<UAngelscriptGASTestAbilityGivenListener>(TestActor, TEXT("AbilityRemovedListener"));
-	if (!TestNotNull(TEXT("GAS remove-on-end scenario should create an ability-removed listener"), RemovedListener))
+	if (!TestNotNull(TEXT("GAS remove-on-end test case should create an ability-removed listener"), RemovedListener))
 	{
 		return false;
 	}
@@ -361,7 +361,7 @@ bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Para
 		&UAngelscriptGASTestAbilityGivenListener::RecordAbilityGiven);
 
 	UObject* SourceObject = NewObject<UAngelscriptGASTestSourceObject>(TestActor, TEXT("RemoveOnEndSourceObject"));
-	if (!TestNotNull(TEXT("GAS remove-on-end scenario should create a source object"), SourceObject))
+	if (!TestNotNull(TEXT("GAS remove-on-end test case should create a source object"), SourceObject))
 	{
 		return false;
 	}

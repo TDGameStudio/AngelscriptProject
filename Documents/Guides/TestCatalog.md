@@ -718,8 +718,8 @@
 
 > 说明：
 >
-> - 这组测试原先集中放在 Scenarios/ 目录下，现已按主题拆分到 Actor/、Blueprint/、ClassGenerator/、Component/、Delegate/、GC/、HotReload/、Inheritance/、Interface/、Subsystem/ 等目录。
-> - 自动化测试路径已去掉历史上的 Scenario 中间层，目录分类与测试发现路径现在保持一致。
+> - 这组测试原先集中放在旧的宽泛目录下，现已按主题拆分到 Actor/、Blueprint/、ClassGenerator/、Component/、Delegate/、GC/、HotReload/、Inheritance/、Interface/、Subsystem/ 等目录。
+> - 自动化测试路径已去掉历史上的宽泛中间层，目录分类与测试发现路径现在保持一致。
 
 ### 12.1 Actor 生命周期
 
@@ -815,7 +815,7 @@
 
 ### 12.8 Component 组件
 
-> 源文件：`Component/AngelscriptComponentScenarioTests.cpp`
+> 源文件：`Component/AngelscriptComponentTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -826,7 +826,7 @@
 
 ### 12.9 DefaultComponent 默认组件
 
-> 源文件：`Component/AngelscriptComponentScenarioTests.cpp`
+> 源文件：`Component/AngelscriptComponentTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -835,7 +835,7 @@
 
 ### 12.10 Inheritance 继承场景
 
-> 源文件：`Inheritance/AngelscriptInheritanceScenarioTests.cpp`
+> 源文件：`Inheritance/AngelscriptInheritanceFunctionalTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -867,7 +867,7 @@
 
 ### 12.12 Delegate 委托
 
-> 源文件：`Delegate/AngelscriptDelegateScenarioTests.cpp`
+> 源文件：`Delegate/AngelscriptDelegateTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -876,7 +876,7 @@
 
 ### 12.13 GC 垃圾回收
 
-> 源文件：`GC/AngelscriptGCScenarioTests.cpp`
+> 源文件：`GC/AngelscriptGCTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -886,7 +886,7 @@
 
 ### 12.14 Subsystem 子系统
 
-> 源文件：`Subsystem/AngelscriptSubsystemScenarioTests.cpp`
+> 源文件：`Subsystem/AngelscriptSubsystemTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -897,7 +897,7 @@
 
 ### 12.15 HotReload 热重载场景
 
-> 源文件：`HotReload/AngelscriptHotReloadScenarioTests.cpp`
+> 源文件：`HotReload/AngelscriptHotReloadTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|

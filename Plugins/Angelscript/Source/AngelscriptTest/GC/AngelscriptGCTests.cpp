@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Core/AngelscriptComponent.h"
@@ -8,22 +8,22 @@
 #include "Misc/ScopeExit.h"
 #include "UObject/GarbageCollection.h"
 
-// Test Layer: UE Scenario
+// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
 
-namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private
+namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private
 {
 	using namespace AngelscriptFunctionalTestUtils;
 
-	void InitializeGCScenarioSpawner(FActorTestSpawner& Spawner)
+	void InitializeGCTestCaseSpawner(FActorTestSpawner& Spawner)
 	{
 		Spawner.InitializeGameSubsystems();
 	}
 
 	template <typename ComponentType = UActorComponent>
-	ComponentType* CreateGCScenarioScriptComponent(
+	ComponentType* CreateGCTestCaseScriptComponent(
 		FAutomationTestBase& Test,
 		AActor& OwnerActor,
 		UClass* ComponentClass,
@@ -55,7 +55,7 @@ namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private
 	}
 }
 
-using namespace AngelscriptTest_GC_AngelscriptGCScenarioTests_Private;
+using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestGCActorDestroyTest,
@@ -101,7 +101,7 @@ class ATestGCActorDestroy : AActor
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeGCScenarioSpawner(Spawner);
+	InitializeGCTestCaseSpawner(Spawner);
 	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
 	if (Actor == nullptr)
 	{
@@ -114,7 +114,7 @@ class ATestGCActorDestroy : AActor
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 	CollectGarbage(RF_NoFlags, true);
 
-	TestTrue(TEXT("Scenario GC actor destroy should complete without leaving a live actor reference"), !WeakActor.IsValid());
+	TestTrue(TEXT("TestCase GC actor destroy should complete without leaving a live actor reference"), !WeakActor.IsValid());
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -149,9 +149,9 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 	}
 
 	FActorTestSpawner Spawner;
-	InitializeGCScenarioSpawner(Spawner);
+	InitializeGCTestCaseSpawner(Spawner);
 	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UActorComponent* Component = CreateGCScenarioScriptComponent(*this, HostActor, ComponentClass, TEXT("GC.ComponentDestroy"));
+	UActorComponent* Component = CreateGCTestCaseScriptComponent(*this, HostActor, ComponentClass, TEXT("GC.ComponentDestroy"));
 	if (Component == nullptr)
 	{
 		return false;
@@ -162,7 +162,7 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 	CollectGarbage(RF_NoFlags, true);
 
-	TestTrue(TEXT("Scenario GC component destroy should complete without leaving a live component reference"), !WeakComponent.IsValid());
+	TestTrue(TEXT("TestCase GC component destroy should complete without leaving a live component reference"), !WeakComponent.IsValid());
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
@@ -202,7 +202,7 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 	}
 
 	UClass* ComponentClass = FindGeneratedClass(&Engine, TEXT("UTestGCWorldTeardownComponent"));
-	if (!TestNotNull(TEXT("Scenario GC world-teardown component class should exist"), ComponentClass))
+	if (!TestNotNull(TEXT("TestCase GC world-teardown component class should exist"), ComponentClass))
 	{
 		return false;
 	}
@@ -212,7 +212,7 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 	TWeakObjectPtr<UActorComponent> WeakComponent;
 	{
 		FActorTestSpawner Spawner;
-	InitializeGCScenarioSpawner(Spawner);
+	InitializeGCTestCaseSpawner(Spawner);
 		WeakWorld = &Spawner.GetWorld();
 
 		AActor* Actor = SpawnScriptActor(*this, Spawner, ActorClass);
@@ -222,7 +222,7 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 		}
 		BeginPlayActor(Engine, *Actor);
 
-	UActorComponent* Component = CreateGCScenarioScriptComponent(*this, *Actor, ComponentClass, TEXT("GC.WorldTeardown"));
+	UActorComponent* Component = CreateGCTestCaseScriptComponent(*this, *Actor, ComponentClass, TEXT("GC.WorldTeardown"));
 		if (Component == nullptr)
 		{
 			return false;
@@ -233,9 +233,9 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 	}
 
 	CollectGarbage(RF_NoFlags, true);
-	TestTrue(TEXT("Scenario GC world teardown should release the world after scope cleanup"), !WeakWorld.IsValid());
-	TestTrue(TEXT("Scenario GC world teardown should release spawned actors after scope cleanup"), !WeakActor.IsValid());
-	TestTrue(TEXT("Scenario GC world teardown should release spawned components after scope cleanup"), !WeakComponent.IsValid());
+	TestTrue(TEXT("TestCase GC world teardown should release the world after scope cleanup"), !WeakWorld.IsValid());
+	TestTrue(TEXT("TestCase GC world teardown should release spawned actors after scope cleanup"), !WeakActor.IsValid());
+	TestTrue(TEXT("TestCase GC world teardown should release spawned components after scope cleanup"), !WeakComponent.IsValid());
 	ASTEST_END_SHARE_CLEAN
 
 	return true;
