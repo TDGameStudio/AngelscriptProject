@@ -250,8 +250,8 @@ bool FAngelscriptPreprocessorPropertyInvalidSpecifiersReportDiagnosticsTest::Run
 		EAutomationExpectedErrorFlags::Contains,
 		1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const TArray<FInvalidPropertySpecifierScenario> Scenarios = {
 		{
@@ -313,7 +313,7 @@ bool FAngelscriptPreprocessorPropertyInvalidSpecifiersReportDiagnosticsTest::Run
 		bPassed &= RunInvalidPropertySpecifierScenario(*this, Engine, Scenario);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 
@@ -325,8 +325,8 @@ bool FAngelscriptPreprocessorUnknownReplicationConditionReportsDiagnosticTest::R
 		EAutomationExpectedErrorFlags::Contains,
 		1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const FInvalidPropertySpecifierScenario Scenario = {
 		TEXT("Unknown ReplicationCondition"),
@@ -344,7 +344,7 @@ bool FAngelscriptPreprocessorUnknownReplicationConditionReportsDiagnosticTest::R
 
 	bPassed = RunInvalidPropertySpecifierScenario(*this, Engine, Scenario);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

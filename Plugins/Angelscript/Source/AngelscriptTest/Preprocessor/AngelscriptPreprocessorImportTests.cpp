@@ -98,8 +98,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorCircularImportChainTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -177,7 +177,7 @@ bool FAngelscriptPreprocessorCircularImportChainTest::RunTest(const FString& Par
 		bEmittedChainEntries &&
 		bAvoidedCompilationSideEffects;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }
@@ -185,8 +185,8 @@ bool FAngelscriptPreprocessorCircularImportChainTest::RunTest(const FString& Par
 bool FAngelscriptPreprocessorAutomaticImportCompatibilityTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -320,7 +320,7 @@ bool FAngelscriptPreprocessorAutomaticImportCompatibilityTest::RunTest(const FSt
 		bMatchesWarningPolicy &&
 		bMentionsCompatibilityWarning;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }
@@ -328,8 +328,8 @@ bool FAngelscriptPreprocessorAutomaticImportCompatibilityTest::RunTest(const FSt
 bool FAngelscriptPreprocessorMissingSemicolonReportsSyntaxTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -429,7 +429,7 @@ bool FAngelscriptPreprocessorMissingSemicolonReportsSyntaxTest::RunTest(const FS
 		bLeavesNoMaterializedCodeOrCleanOutput &&
 		bPreservesFollowingCodeWhenMaterialized;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }
@@ -437,8 +437,8 @@ bool FAngelscriptPreprocessorMissingSemicolonReportsSyntaxTest::RunTest(const FS
 bool FAngelscriptPreprocessorTrailingBlockCommentImportTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -607,7 +607,7 @@ bool FAngelscriptPreprocessorTrailingBlockCommentImportTest::RunTest(const FStri
 		Result,
 		11);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }

@@ -237,8 +237,8 @@ bool FAngelscriptPreprocessorRejectUnsupportedConditionalPlacementTest::RunTest(
 		TEXT("Cannot put a UPROPERTY or UFUNCTION inside preprocessor conditions other than EDITOR or flags declared in configuration."),
 		EAutomationExpectedErrorFlags::Contains,
 		2);
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const TArray<FInvalidFunctionMacroScenario> InvalidScenarios = {
 		{
@@ -347,7 +347,7 @@ bool FAngelscriptPreprocessorRejectUnsupportedConditionalPlacementTest::RunTest(
 			HasMetaFlag(EditorFunctionDesc->Meta, TEXT("EditorOnly")));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 
@@ -372,8 +372,8 @@ bool FAngelscriptPreprocessorInvalidSpecifiersReportDiagnosticsTest::RunTest(con
 		EAutomationExpectedErrorFlags::Contains,
 		1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const TArray<FInvalidFunctionSpecifierScenario> Scenarios = {
 		{
@@ -426,7 +426,7 @@ bool FAngelscriptPreprocessorInvalidSpecifiersReportDiagnosticsTest::RunTest(con
 		bPassed &= RunInvalidFunctionSpecifierScenario(*this, Engine, Scenario);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

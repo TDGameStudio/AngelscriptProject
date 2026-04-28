@@ -250,8 +250,8 @@ int Entry()
 }
 )AS");
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const FString AbsoluteScriptPath = PreprocessorLiteralTest::WriteFixture(
 		PreprocessorLiteralTest::RelativeScriptPath,
@@ -385,7 +385,7 @@ int Entry()
 			42);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 
@@ -419,15 +419,15 @@ bool FAngelscriptPreprocessorPrefixedLiteralsRequireTokenBoundaryTest::RunTest(c
 		}
 	};
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	for (const PreprocessorLiteralTest::FPrefixedLiteralBoundaryScenario& Scenario : Scenarios)
 	{
 		bPassed &= PreprocessorLiteralTest::RunPrefixedLiteralBoundaryScenario(*this, Engine, Scenario);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

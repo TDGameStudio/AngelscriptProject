@@ -14,6 +14,7 @@ This project uses a two-layer macro system defined in `Shared/AngelscriptTestMac
 | `ASTEST_CREATE_ENGINE_SHARE()` | `FAngelscriptEngine&` | Shared cached Full test engine. Reuses the existing shared engine without resetting it. |
 | `ASTEST_CREATE_ENGINE_SHARE_CLEAN()` | `FAngelscriptEngine&` | Shared cached Full test engine with `AcquireCleanSharedCloneEngine()` semantics before use. |
 | `ASTEST_CREATE_ENGINE_SHARE_FRESH()` | `FAngelscriptEngine&` | Shared cached Full test engine with `AcquireFreshSharedCloneEngine()` semantics before use. |
+| `ASTEST_CREATE_ENGINE_MODULE_CLEAN()` | `FAngelscriptEngine&` | Module-level cached source engine. Cleans only module/class deltas created inside the matching lifecycle scope and batches GC. |
 | `ASTEST_CREATE_ENGINE_CLONE()` | `FAngelscriptEngine&` | Lightweight isolation. Shares source engine read-only state (bindings, types). |
 | `ASTEST_CREATE_ENGINE_NATIVE()` | `asIScriptEngine*` | Raw AngelScript SDK engine, no FAngelscriptEngine wrapper. |
 | `ASTEST_CREATE_ENGINE_BARE()` | `asCScriptEngine*` | Internal SDK engine for AngelScriptSDK tests. No UE bindings, minimal config. |
@@ -26,6 +27,7 @@ This project uses a two-layer macro system defined in `Shared/AngelscriptTestMac
 | `ASTEST_BEGIN_SHARE` / `ASTEST_END_SHARE` | Creates `FAngelscriptEngineScope` for the shared engine | None (modules accumulate) |
 | `ASTEST_BEGIN_SHARE_CLEAN` / `ASTEST_END_SHARE_CLEAN` | Creates `FAngelscriptEngineScope` after clean shared-engine reacquire | None (reset semantics come from `ASTEST_CREATE_ENGINE_SHARE_CLEAN()`) |
 | `ASTEST_BEGIN_SHARE_FRESH` / `ASTEST_END_SHARE_FRESH` | Creates `FAngelscriptEngineScope` after fresh shared-engine reacquire | None (reset semantics come from `ASTEST_CREATE_ENGINE_SHARE_FRESH()`) |
+| `ASTEST_BEGIN_MODULE_CLEAN` / `ASTEST_END_MODULE_CLEAN` | Creates `FAngelscriptEngineScope` and captures a module baseline | Discards only active/raw AS modules created in the scope; clears detached `UASClass` root/standalone flags; GC is batched |
 | `ASTEST_BEGIN_CLONE` / `ASTEST_END_CLONE` | Creates `FAngelscriptEngineScope` | Auto-discards all active modules |
 | `ASTEST_BEGIN_NATIVE` / `ASTEST_END_NATIVE` | Validates non-null pointer | Auto `ShutDownAndRelease` |
 | `ASTEST_BEGIN_BARE` / `ASTEST_END_BARE` | Validates non-null `asCScriptEngine*` pointer | Auto `ShutDownAndRelease` |
@@ -48,6 +50,9 @@ Need to test engine core / bind environment / hot-reload?
 
 Lightweight compile-and-execute, no isolation needed?
   YES --> ASTEST_CREATE_ENGINE_SHARE + BEGIN/END_SHARE
+
+Need cached bind/type database behavior, but only this test's module/class delta must be cleaned?
+  YES --> ASTEST_CREATE_ENGINE_MODULE_CLEAN + BEGIN/END_MODULE_CLEAN
 
 Need shared full-engine behavior but must reset shared state first?
   YES --> ASTEST_CREATE_ENGINE_SHARE_CLEAN + BEGIN/END_SHARE_CLEAN
@@ -132,6 +137,24 @@ bool FMySharedResetTest::RunTest(const FString& Parameters)
 
     ASTEST_END_SHARE_CLEAN
     return TestEqual(TEXT("Shared clean engine should start from a reset state"), Result, 17);
+}
+```
+
+### MODULE_CLEAN Engine Test
+
+```cpp
+bool FMyModuleCleanTest::RunTest(const FString& Parameters)
+{
+    FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+    ASTEST_BEGIN_MODULE_CLEAN
+
+    int32 Result = 0;
+    ASTEST_COMPILE_RUN_INT(Engine, "MyModuleCleanModule",
+        TEXT("int Run() { return 23; }"),
+        TEXT("int Run()"), Result);
+
+    ASTEST_END_MODULE_CLEAN
+    return TestEqual(TEXT("Module-clean engine should clean this test's module delta"), Result, 23);
 }
 ```
 
@@ -268,10 +291,17 @@ The following scenarios should use `IMPLEMENT_SIMPLE_AUTOMATION_TEST` directly w
 6. **Native ASSDK tests with custom adapters** - Tests using `CreateASSDKTestEngine` with `FAngelscriptSDKTestAdapter`
 7. **Tests whose helper semantics are still under review** - For example, paths that currently require explicit shared/global teardown beyond the existing lifecycle macros
 
+## Module-Clean Pool Notes
+
+- `ASTEST_CREATE_ENGINE_MODULE_CLEAN()` uses `Shared/AngelscriptTestEnginePool.h` and caches a source Full engine instead of copying `FAngelscriptTypeDatabase` or `FAngelscriptBindDatabase`.
+- The pool is lazy by default. Pass `-AngelscriptTestPrewarmEngine` to prewarm the source engine when a suite intentionally wants to pay bind cost at module startup.
+- Prefer `MODULE_CLEAN` for ordinary compile/execute and binding smoke tests. Keep `FULL`, `SHARE_CLEAN`, or `SHARE_FRESH` for HotReload, Debugger, GC, Subsystem/global-engine ownership, and tests that require physical UObject collection timing.
+
 ## Files
 
 - **Macro definitions**: `Shared/AngelscriptTestMacros.h`
 - **Utility functions**: `Shared/AngelscriptTestUtilities.h`
+- **Module-clean test engine pool**: `Shared/AngelscriptTestEnginePool.h`
 - **Compile/execute helpers**: `Shared/AngelscriptTestEngineHelper.h`
 - **Debugger session helpers**: `Shared/AngelscriptDebuggerTestSession.h`
 - **Debugger client helpers**: `Shared/AngelscriptDebuggerTestClient.h`

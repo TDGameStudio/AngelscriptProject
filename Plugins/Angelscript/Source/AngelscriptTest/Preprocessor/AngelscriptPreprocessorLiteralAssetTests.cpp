@@ -53,8 +53,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorLiteralAssetGetterAndPostInitRegistrationTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -153,7 +153,7 @@ bool FAngelscriptPreprocessorLiteralAssetGetterAndPostInitRegistrationTest::RunT
 		bRegistersSinglePostInitFunction &&
 		bRegistersExpectedGetterName;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }
@@ -166,8 +166,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorLiteralAssetSkipStringAndCommentDecoysTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -279,7 +279,7 @@ bool FAngelscriptPreprocessorLiteralAssetSkipStringAndCommentDecoysTest::RunTest
 		bDoesNotGenerateCommentGetter &&
 		bDoesNotGenerateCommentCreate;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 
@@ -306,8 +306,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptPreprocessorLiteralAssetMissingTypeTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*LiteralAssetMissingTypeTest::ModuleName.ToString());
@@ -333,7 +333,7 @@ class UMissingTypeAssetOwner : UObject
 
 	TestFalse(TEXT("asset with missing type should fail to compile/preprocess"), bCompiled);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return true;
 }
 
@@ -354,8 +354,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptPreprocessorLiteralAssetInsideFunctionBodyTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*LiteralAssetInsideFunctionTest::ModuleName.ToString());
@@ -385,7 +385,7 @@ class UFunctionBodyAssetOwner : UObject
 
 	TestFalse(TEXT("asset inside function body should not expand and should fail"), bCompiled);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return true;
 }
 

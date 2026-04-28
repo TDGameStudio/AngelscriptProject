@@ -85,8 +85,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorBackslashRelativePathNormalizesModuleNameTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -182,7 +182,7 @@ bool FAngelscriptPreprocessorBackslashRelativePathNormalizesModuleNameTest::RunT
 			ImportingModule->ImportedModules.Contains(TEXT("Tests\\Preprocessor\\PathNormalization\\WinShared")));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }

@@ -142,8 +142,8 @@ bool FAngelscriptPreprocessorStructuralErrorsReportStableDiagnosticsTest::RunTes
 	AddExpectedError(TEXT("Invalid #else, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Invalid #endif, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Preceding preprocessor #if/#ifdef/#else was not closed, missing #endif."), EAutomationExpectedErrorFlags::Contains, 1);
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const TArray<FDirectiveErrorScenario> Scenarios = {
 		{
@@ -189,7 +189,7 @@ bool FAngelscriptPreprocessorStructuralErrorsReportStableDiagnosticsTest::RunTes
 		bPassed &= RunDirectiveErrorScenario(*this, Engine, Scenario);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

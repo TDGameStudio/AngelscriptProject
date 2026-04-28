@@ -28,8 +28,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorCommentFormattingTooltipNormalizationTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	bPassed &= TestTrue(
 		TEXT("IsAllSameChar should accept uniform dash separators"),
@@ -80,7 +80,7 @@ bool FAngelscriptPreprocessorCommentFormattingTooltipNormalizationTest::RunTest(
 		TEXT("/* ===== */"),
 		TEXT(""));
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

@@ -139,8 +139,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptPreprocessorLongSourceRemainsDeterministicTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	const FString ScriptSource = BuildLongSourceScript();
 	const FString AbsoluteScriptPath = WritePreprocessorStressFixture(RelativeScriptPath, ScriptSource);
@@ -265,7 +265,7 @@ bool FAngelscriptPreprocessorLongSourceRemainsDeterministicTest::RunTest(const F
 		EntryResult,
 		ExpectedEntryResult);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return true;
 }
 

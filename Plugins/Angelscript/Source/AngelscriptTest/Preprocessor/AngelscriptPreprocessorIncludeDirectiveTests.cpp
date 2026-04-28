@@ -60,8 +60,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorIncludeDirectiveProducesDeterministicResultTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IncludeDirectiveProducesDeterministicResult"));
 	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/IncludeDirectiveProducesDeterministicResult.as");
@@ -160,7 +160,7 @@ bool FAngelscriptPreprocessorIncludeDirectiveProducesDeterministicResultTest::Ru
 			1);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }

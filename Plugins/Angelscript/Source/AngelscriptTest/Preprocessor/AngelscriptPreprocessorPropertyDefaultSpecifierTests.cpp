@@ -124,8 +124,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorPropertyDefaultBlueprintAccessTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -239,7 +239,7 @@ class UBlueprintAccessDefaultSpecifierCarrier : UObject
 		TEXT("Default blueprint access property test should keep explicit BlueprintReadWrite properties blueprint-writable"),
 		ExplicitProperty->bBlueprintWritable);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }

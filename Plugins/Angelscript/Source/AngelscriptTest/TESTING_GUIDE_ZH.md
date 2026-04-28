@@ -6,7 +6,15 @@
 
 - `ASTEST_BEGIN_*` 会展开出新的 C++ 作用域，并在其中创建 `FAngelscriptEngineScope`。
 - `FULL` / `CLONE` / `NATIVE` 这几类还会在 `BEGIN` 里注册 `ON_SCOPE_EXIT`，把模块回收或 `ShutDownAndRelease()` 绑定到作用域退出。
+- `MODULE_CLEAN` 会复用测试模块级 source engine，只清理当前 `BEGIN` / `END` 作用域内新增的 AS module 与 detached generated class 标记；GC 由 pool 分批触发。
 - `ASTEST_END_*` 本身主要只是关闭这个由 `BEGIN` 打开的作用域；真正的清理工作来自作用域退出时触发的 RAII 与 `ON_SCOPE_EXIT`。
+
+## `MODULE_CLEAN` 的使用边界
+
+- 优先用于普通 compile-and-execute、绑定 smoke、编译管线正例、不会验证全局引擎销毁语义的测试。
+- 不要用于 HotReload 版本链、Debugger 会话、显式 GC 行为、Subsystem/global engine owner、`SHARE_FRESH` 场景或需要断言物理 UObject 回收的测试。
+- 如果测试只要求“本测试生成的 module/class 不污染下一测”，优先用 `ASTEST_CREATE_ENGINE_MODULE_CLEAN()` + `ASTEST_BEGIN_MODULE_CLEAN` / `ASTEST_END_MODULE_CLEAN`，不要再默认使用每次强制 GC 的 `SHARE_CLEAN`。
+- 需要在模块加载时预热 source engine 时，通过命令行加 `-AngelscriptTestPrewarmEngine`；默认保持 lazy 创建，避免拖慢测试发现和普通 Editor 启动。
 
 ## 为什么不要把终结 `return` 写在 `ASTEST_END_*` 前面
 

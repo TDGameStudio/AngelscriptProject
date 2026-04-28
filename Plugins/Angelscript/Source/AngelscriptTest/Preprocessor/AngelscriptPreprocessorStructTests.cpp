@@ -129,8 +129,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorStructInheritanceRejectedTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -221,7 +221,7 @@ bool FAngelscriptPreprocessorStructInheritanceRejectedTest::RunTest(const FStrin
 		bPointsAtStructDeclarationLine &&
 		bDoesNotLeaveValidStructDescriptor;
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }
@@ -229,8 +229,8 @@ bool FAngelscriptPreprocessorStructInheritanceRejectedTest::RunTest(const FStrin
 bool FAngelscriptPreprocessorStructDefaultPropertySpecifierTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 
@@ -355,7 +355,7 @@ class UClassDefaultSpecifierCarrier : UObject
 		TEXT("Struct default property specifier test should keep class properties non-instance-editable when class defaults are NotEditable"),
 		ClassProperty->bEditableOnInstance);
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 
 	return bPassed;
 }

@@ -142,8 +142,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPreprocessorIfdefRespectsBooleanFlagValueTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IfdefBooleanFlagValue"));
 	ON_SCOPE_EXIT
@@ -278,7 +278,7 @@ bool FAngelscriptPreprocessorIfdefRespectsBooleanFlagValueTest::RunTest(const FS
 			23);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

@@ -112,8 +112,8 @@ bool FAngelscriptPreprocessorInvalidNamespaceDeclarationReportsSyntaxTest::RunTe
 	bool bPassed = true;
 	AddExpectedErrorPlain(PreprocessorNamespaceTest::InvalidNamespaceMessage, EAutomationExpectedErrorFlags::Contains, 1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 	Engine.LastEmittedDiagnostics.Empty();
@@ -216,7 +216,7 @@ bool FAngelscriptPreprocessorInvalidNamespaceDeclarationReportsSyntaxTest::RunTe
 		TEXT("Invalid namespace declaration should not leave behind compilable code after preprocessing fails"),
 		PreprocessorNamespaceTest::ContainsCompilableCode(Modules));
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 

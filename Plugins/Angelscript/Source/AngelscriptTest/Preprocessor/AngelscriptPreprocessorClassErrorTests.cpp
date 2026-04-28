@@ -96,8 +96,8 @@ bool FAngelscriptPreprocessorUnknownSuperTypeReportsDiagnosticTest::RunTest(cons
 		EAutomationExpectedErrorFlags::Contains,
 		1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	ASTEST_BEGIN_MODULE_CLEAN
 
 	Engine.ResetDiagnostics();
 	Engine.LastEmittedDiagnostics.Empty();
@@ -178,7 +178,7 @@ bool FAngelscriptPreprocessorUnknownSuperTypeReportsDiagnosticTest::RunTest(cons
 			Module->GetClass(TEXT("UUnknownSuperCarrier")).Get());
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	ASTEST_END_MODULE_CLEAN
 	return bPassed;
 }
 
