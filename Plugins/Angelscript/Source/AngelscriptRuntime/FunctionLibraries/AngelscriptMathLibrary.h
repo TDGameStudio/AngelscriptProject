@@ -3,6 +3,19 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptMathLibrary.generated.h"
 
+// FunctionLibraries cleanup note (mixin parity):
+//
+// The //UCLASS(Meta = (ScriptMixin = "...")) lines below the top-level UAngelscriptMathLibrary
+// are kept commented out as Hazelight-parity anchors. Hazelight binds these helpers via the
+// dedicated mixin-injection path in Helper_FunctionSignature.h; this fork currently routes
+// them through UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback instead,
+// which reaches scripts with equivalent method-syntax but also exposes the helpers in the
+// Blueprint node palette.
+//
+// To restore upstream parity: uncomment the //UCLASS(...) line and (optionally) switch the
+// UFUNCTIONs back to ScriptCallable. See Documents/Knowledges/ZH/Syntax_Mixin.md section 6
+// for the full background.
+
 UCLASS(Meta = (ScriptName = "Math"))
 class UAngelscriptMathLibrary : public UObject
 {
@@ -10,14 +23,12 @@ class UAngelscriptMathLibrary : public UObject
 
 public:
 	
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "SinCos"))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SinCos"))
 	static void SinCos_32(float& ScalarSin, float& ScalarCos, float Value)
 	{
 		FMath::SinCos(&ScalarSin, &ScalarCos, Value);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "SinCos"))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SinCos"))
 	static void SinCos_64(double& ScalarSin, double& ScalarCos, double Value)
 	{
@@ -25,7 +36,6 @@ public:
 	}
 
 	// Lerp between two rotators along the shortest path between them. Uses a quaternion slerp internally. 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	static FRotator LerpShortestPath(const FRotator& A, const FRotator& B, double Alpha)
 	{
@@ -37,7 +47,6 @@ public:
 	}
 
 	// Interp between two rotators along the shortest path between them. Uses a quaternion interp internally.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	static FRotator RInterpShortestPathTo(const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeed)
 	{
@@ -49,7 +58,6 @@ public:
 	}
 
 	// Interp with constant speed between two rotators along the shortest path between them. Uses a quaternion interp internally.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	static FRotator RInterpConstantShortestPathTo(const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeedDegrees)
 	{
@@ -60,7 +68,6 @@ public:
 		return Result.Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
 	static FTransform TInterpTo(const FTransform& Current, const FTransform& Target, float DeltaTime, float InterpSpeed)
 	{
@@ -82,21 +89,18 @@ public:
 		return Result;
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static bool LineBoxIntersection(const FBox& Box, const FVector& Start, const FVector& End)
 	{
 		return FMath::LineBoxIntersection(Box, Start, End, End - Start);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Modf", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "Modf", ScriptNoDiscard))
 	static float Modf_32(float InValue, float& OutIntPart)
 	{
 		return FMath::Modf(InValue, &OutIntPart);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Modf", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "Modf", ScriptNoDiscard))
 	static double Modf_64(double InValue, double& OutIntPart)
 	{
@@ -107,7 +111,6 @@ public:
 	 * Wraps X to be between Min and Max, inclusive.
 	 * When X can wrap to both Min and Max, it will wrap to Min if it lies below the range and wrap to Max if it is above the range. 
 	 **/
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard))
 	static double WrapDouble(double X, double Min, double Max)
 	{
@@ -152,7 +155,6 @@ public:
 	 * Wraps X to be between Min and Max, inclusive.
 	 * When X can wrap to both Min and Max, it will wrap to Min if it lies below the range and wrap to Max if it is above the range. 
 	 **/
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard))
 	static float WrapFloat(float X, float Min, float Max)
 	{
@@ -197,7 +199,6 @@ public:
 	 * Wraps X to be between Min and Max, inclusive.
 	 * When X can wrap to both Min and Max, it will wrap to Min if it lies below the range and wrap to Max if it is above the range. 
 	 **/
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard, DeprecatedFunction, DeprecationMessage = "Wrapping integers is inclusive, and returns unintuitive values. Use Math::WrapIndex for the natural behavior."))
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard, DeprecatedFunction, DeprecationMessage = "Wrapping integers is inclusive, and returns unintuitive values. Use Math::WrapIndex for the natural behavior."))
 	static int32 WrapInt(int32 X, int32 Min, int32 Max)
 	{
@@ -242,7 +243,6 @@ public:
 	 * Wraps X to be between Min and Max, inclusive.
 	 * When X can wrap to both Min and Max, it will wrap to Min if it lies below the range and wrap to Max if it is above the range. 
 	 **/
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Wrap", ScriptNoDiscard, DeprecatedFunction, DeprecationMessage = "Wrapping integers is inclusive, and returns unintuitive values. Use Math::WrapIndex for the natural behavior."))
 	//UFUNCTION(BlueprintCallable, Meta = (ScriptName = "Wrap", DeprecatedFunction, DeprecationMessage = "Wrapping integers is inclusive, and returns unintuitive values. Use Math::WrapIndex for the natural behavior."))
 	//static uint32 WrapUInt(uint32 X, uint32 Min, uint32 Max)
 	//{
@@ -291,7 +291,6 @@ public:
 	 * This differs from Math::Wrap() in that the Max boundary is exclusive,
 	 * rather than inclusive.
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))	
 	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial, ScriptNoDiscard))	
 	static int32 WrapIndex(int32 Value, int32 Min, int32 Max)
 	{
@@ -316,7 +315,6 @@ public:
 	 * This differs from Math::Wrap() in that the Max boundary is exclusive,
 	 * rather than inclusive.
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard, ScriptName = "WrapIndex"))
 	UFUNCTION(Meta = (ScriptName = "WrapIndex"))
 	static uint32 WrapIndexUInt(uint32 Value, uint32 Min, uint32 Max)
 	{
@@ -335,80 +333,70 @@ public:
 };
 
 //UCLASS(Meta = (ScriptMixin = "FVector"))
-UCLASS(Meta = ())
+UCLASS()
 class UAngelscriptFVectorMixinLibrary : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double Size2D(const FVector& Vector, const FVector& UpDirection)
 	{
 		return FVector::VectorPlaneProject(Vector, UpDirection).Size();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double SizeSquared2D(const FVector& Vector, const FVector& UpDirection)
 	{
 		return FVector::VectorPlaneProject(Vector, UpDirection).SizeSquared();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = (BlueprintCallable))
+	UFUNCTION(BlueprintCallable)
 	static FVector PointPlaneProject(const FVector& Vector, const FVector& PlaneBase, const FVector& PlaneNormal)
 	{
 		return FVector::PointPlaneProject(Vector, PlaneBase, PlaneNormal);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double Dist2D(const FVector& Vector, const FVector& Other, const FVector& UpDirection)
 	{
 		return FMath::Sqrt(FVector::DistSquared(FVector::VectorPlaneProject(Vector, UpDirection), FVector::VectorPlaneProject(Other, UpDirection)));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double DistSquared2D(const FVector& Vector, const FVector& Other, const FVector& UpDirection)
 	{
 		return FVector::DistSquared(FVector::VectorPlaneProject(Vector, UpDirection), FVector::VectorPlaneProject(Other, UpDirection));
 	}
 
 	// Get the angle in radians between two vectors. Vectors are not assumed to be normalized.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double AngularDistance(const FVector& A, const FVector& B)
 	{
 		return FMath::Acos(FVector::DotProduct(A, B) / FMath::Sqrt(A.SizeSquared() * B.SizeSquared()));
 	}
 
 	// Get the angle in radians between two normal vectors. Both vectors are assumed to be unit length, or a wrong value will be returned.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double AngularDistanceForNormals(const FVector& A, const FVector& B)
 	{
 		return FMath::Acos(FVector::DotProduct(A, B));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector ConstrainToPlane(const FVector& Vector, const FVector& PlaneUp)
 	{
 		return FVector::VectorPlaneProject(Vector, PlaneUp);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector ConstrainToDirection(const FVector& Vector, const FVector& Direction)
 	{
 		return Direction * FVector::DotProduct(Vector, Direction);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FString ToColorString(const FVector& Vector)
 	{
 		FString XString = FString::Printf(TEXT("<Red>X=%3.3f </>"), Vector.X);
@@ -417,8 +405,7 @@ public:
 		return XString + YString + ZString;
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector MoveTowards(const FVector& Vector, const FVector& Target, double StepSize)
 	{
 		return FMath::VInterpConstantTo(Vector, Target, StepSize, 1.0f);
@@ -426,80 +413,70 @@ public:
 };
 
 //UCLASS(Meta = (ScriptMixin = "FVector3f"))
-UCLASS(Meta = ())
+UCLASS()
 class UAngelscriptFVector3fMixinLibrary : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float Size2D(const FVector3f& Vector, const FVector3f& UpDirection)
 	{
 		return FVector3f::VectorPlaneProject(Vector, UpDirection).Size();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float SizeSquared2D(const FVector3f& Vector, const FVector3f& UpDirection)
 	{
 		return FVector3f::VectorPlaneProject(Vector, UpDirection).SizeSquared();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f PointPlaneProject(const FVector3f& Vector, const FVector3f& PlaneBase, const FVector3f& PlaneNormal)
 	{
 		return FVector3f::PointPlaneProject(Vector, PlaneBase, PlaneNormal);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float Dist2D(const FVector3f& Vector, const FVector3f& Other, const FVector3f& UpDirection)
 	{
 		return FMath::Sqrt(FVector3f::DistSquaredXY(FVector3f::VectorPlaneProject(Vector, UpDirection), FVector3f::VectorPlaneProject(Other, UpDirection)));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float DistSquared2D(const FVector3f& Vector, const FVector3f& Other, const FVector3f& UpDirection)
 	{
 		return FVector3f::DistSquaredXY(FVector3f::VectorPlaneProject(Vector, UpDirection), FVector3f::VectorPlaneProject(Other, UpDirection));
 	}
 
 	// Get the angle in radians between two vectors. Vectors are not assumed to be normalized.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float AngularDistance(const FVector3f& A, const FVector3f& B)
 	{
 		return FMath::Acos(FVector3f::DotProduct(A, B) / FMath::Sqrt(A.SizeSquared() * B.SizeSquared()));
 	}
 
 	// Get the angle in radians between two normal vectors. Both vectors are assumed to be unit length, or a wrong value will be returned.
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float AngularDistanceForNormals(const FVector3f& A, const FVector3f& B)
 	{
 		return FMath::Acos(FVector3f::DotProduct(A, B));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f ConstrainToPlane(const FVector3f& Vector, const FVector3f& PlaneUp)
 	{
 		return FVector3f::VectorPlaneProject(Vector, PlaneUp);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f ConstrainToDirection(const FVector3f& Vector, const FVector3f& Direction)
 	{
 		return Direction * FVector3f::DotProduct(Vector, Direction);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FString ToColorString(const FVector3f& Vector)
 	{
 		FString XString = FString::Printf(TEXT("<Red>X=%3.3f </>"), Vector.X);
@@ -517,36 +494,31 @@ class UAngelscriptFRotatorLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator MakeFromAxes(const FVector& Forward, const FVector& Right, const FVector& Up)
 	{
 		return FMatrix(Forward.GetSafeNormal(), Right.GetSafeNormal(), Up.GetSafeNormal(), FVector::ZeroVector).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector GetForwardVector(const FRotator& Rotator)
 	{
 		return Rotator.Vector();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector GetRightVector(const FRotator& Rotator)
 	{
 		return FRotationMatrix(Rotator).GetScaledAxis(EAxis::Y);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector GetUpVector(const FRotator& Rotator)
 	{
 		return FRotationMatrix(Rotator).GetScaledAxis(EAxis::Z);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator Compose(const FRotator& A, const FRotator& B)
 	{
 		const FQuat AQuat(A);
@@ -556,8 +528,7 @@ public:
 	}
 
 	// Get the angle in degrees between two rotators
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static double AngularDistance(const FRotator& A, const FRotator& B)
 	{
 		return FMath::RadiansToDegrees(A.Quaternion().AngularDistance(B.Quaternion()));
@@ -572,36 +543,31 @@ class UAngelscriptFRotator3fLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator3f MakeFromAxes(const FVector3f& Forward, const FVector3f& Right, const FVector3f& Up)
 	{
 		return FMatrix44f(Forward.GetSafeNormal(), Right.GetSafeNormal(), Up.GetSafeNormal(), FVector3f::ZeroVector).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f GetForwardVector(const FRotator3f& Rotator)
 	{
 		return Rotator.Vector();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f GetRightVector(const FRotator3f& Rotator)
 	{
 		return FRotationMatrix44f(Rotator).GetScaledAxis(EAxis::Y);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FVector3f GetUpVector(const FRotator3f& Rotator)
 	{
 		return FRotationMatrix44f(Rotator).GetScaledAxis(EAxis::Z);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator3f Compose(const FRotator3f& A, const FRotator3f& B)
 	{
 		const FQuat4f AQuat(A);
@@ -611,8 +577,7 @@ public:
 	}
 
 	// Get the angle in degrees between two rotators
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static float AngularDistance(const FRotator3f& A, const FRotator3f& B)
 	{
 		return FMath::RadiansToDegrees(FQuat4f(A).AngularDistance(FQuat4f(B)));
@@ -628,71 +593,61 @@ class UAngelscriptFQuatLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromX(const FVector& XAxis)
 	{
 		return FRotationMatrix::MakeFromX(XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromY(const FVector& YAxis)
 	{
 		return FRotationMatrix::MakeFromY(YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromZ(const FVector& ZAxis)
 	{
 		return FRotationMatrix::MakeFromZ(ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromXY(const FVector& XAxis, const FVector& YAxis)
 	{
 		return FRotationMatrix::MakeFromXY(XAxis, YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromXZ(const FVector& XAxis, const FVector& ZAxis)
 	{
 		return FRotationMatrix::MakeFromXZ(XAxis, ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromYX(const FVector& YAxis, const FVector& XAxis)
 	{
 		return FRotationMatrix::MakeFromYX(YAxis, XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromYZ(const FVector& YAxis, const FVector& ZAxis)
 	{
 		return FRotationMatrix::MakeFromYZ(YAxis, ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromZX(const FVector& ZAxis, const FVector& XAxis)
 	{
 		return FRotationMatrix::MakeFromZX(ZAxis, XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromZY(const FVector& ZAxis, const FVector& YAxis)
 	{
 		return FRotationMatrix::MakeFromZY(ZAxis, YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat MakeFromAxes(const FVector& Forward, const FVector& Right, const FVector& Up)
 	{
 		return FMatrix(Forward.GetSafeNormal(), Right.GetSafeNormal(), Up.GetSafeNormal(), FVector::ZeroVector).ToQuat();
@@ -707,71 +662,61 @@ class UAngelscriptFQuat4fLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromX(const FVector3f& XAxis)
 	{
 		return FRotationMatrix44f::MakeFromX(XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromY(const FVector3f& YAxis)
 	{
 		return FRotationMatrix44f::MakeFromY(YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromZ(const FVector3f& ZAxis)
 	{
 		return FRotationMatrix44f::MakeFromZ(ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromXY(const FVector3f& XAxis, const FVector3f& YAxis)
 	{
 		return FRotationMatrix44f::MakeFromXY(XAxis, YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromXZ(const FVector3f& XAxis, const FVector3f& ZAxis)
 	{
 		return FRotationMatrix44f::MakeFromXZ(XAxis, ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromYX(const FVector3f& YAxis, const FVector3f& XAxis)
 	{
 		return FRotationMatrix44f::MakeFromYX(YAxis, XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromYZ(const FVector3f& YAxis, const FVector3f& ZAxis)
 	{
 		return FRotationMatrix44f::MakeFromYZ(YAxis, ZAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromZX(const FVector3f& ZAxis, const FVector3f& XAxis)
 	{
 		return FRotationMatrix44f::MakeFromZX(ZAxis, XAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromZY(const FVector3f& ZAxis, const FVector3f& YAxis)
 	{
 		return FRotationMatrix44f::MakeFromZY(ZAxis, YAxis).ToQuat();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FQuat4f MakeFromAxes(const FVector3f& Forward, const FVector3f& Right, const FVector3f& Up)
 	{
 		return FMatrix44f(Forward.GetSafeNormal(), Right.GetSafeNormal(), Up.GetSafeNormal(), FVector3f::ZeroVector).ToQuat();
@@ -786,78 +731,67 @@ class UAngelscriptFTransformLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static void Blend(FTransform& Transform, const FTransform& Atom1, const FTransform& Atom2, double Alpha)
 	{
 		Transform.Blend(Atom1, Atom2, (float)Alpha);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static void BlendWith(FTransform& Transform, const FTransform& OtherAtom, double Alpha)
 	{
 		return Transform.BlendWith(OtherAtom, (float)Alpha);
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator TransformRotation(const FTransform& Transform, const FRotator& R)
 	{
 		return Transform.TransformRotation(R.Quaternion()).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator InverseTransformRotation(const FTransform& Transform, const FRotator& R)
 	{
 		return Transform.InverseTransformRotation(R.Quaternion()).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, NotAngelscriptProperty))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static void SetRotation(FTransform& Transform, const FRotator& NewRotation)
 	{
 		Transform.SetRotation(NewRotation.Quaternion());
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromXY(const FVector& XAxis, const FVector& YAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromXY(XAxis, YAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromXZ(const FVector& XAxis, const FVector& ZAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromXZ(XAxis, ZAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromYX(const FVector& YAxis, const FVector& XAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromYX(YAxis, XAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromYZ(const FVector& YAxis, const FVector& ZAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromYZ(YAxis, ZAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromZX(const FVector& ZAxis, const FVector& XAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromZX(ZAxis, XAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform MakeFromZY(const FVector& ZAxis, const FVector& YAxis)
 	{
 		return FTransform(FRotationMatrix::MakeFromZY(ZAxis, YAxis));
@@ -872,64 +806,55 @@ class UAngelscriptFTransform3fLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator3f TransformRotation(const FTransform3f& Transform, const FRotator3f& R)
 	{
 		return Transform.TransformRotation(R.Quaternion()).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FRotator3f InverseTransformRotation(const FTransform3f& Transform, const FRotator3f& R)
 	{
 		return Transform.InverseTransformRotation(R.Quaternion()).Rotator();
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static void SetRotation(FTransform3f& Transform, const FRotator3f& NewRotation)
 	{
 		Transform.SetRotation(NewRotation.Quaternion());
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromXY(const FVector3f& XAxis, const FVector3f& YAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromXY(XAxis, YAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromXZ(const FVector3f& XAxis, const FVector3f& ZAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromXZ(XAxis, ZAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromYX(const FVector3f& YAxis, const FVector3f& XAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromYX(YAxis, XAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromYZ(const FVector3f& YAxis, const FVector3f& ZAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromYZ(YAxis, ZAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromZX(const FVector3f& ZAxis, const FVector3f& XAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromZX(ZAxis, XAxis));
 	}
 
-	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
-	UFUNCTION(BlueprintCallable, Meta = ())
+	UFUNCTION(BlueprintCallable)
 	static FTransform3f MakeFromZY(const FVector3f& ZAxis, const FVector3f& YAxis)
 	{
 		return FTransform3f(FRotationMatrix44f::MakeFromZY(ZAxis, YAxis));

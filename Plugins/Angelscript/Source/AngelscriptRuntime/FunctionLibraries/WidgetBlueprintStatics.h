@@ -16,7 +16,6 @@ class UWidgetBlueprintStatics : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (WorldContext = "WorldContextObject"))
 	UFUNCTION(BlueprintCallable, Meta = (WorldContext = "WorldContextObject"))
 	static class UUserWidget* CreateWidget(UObject* WorldContextObject, TSubclassOf<class UUserWidget> WidgetType, APlayerController* OwningPlayer)
 	{
@@ -32,7 +31,6 @@ class UAngelscriptWidgetMixinLibrary : public UObject
 
 public:
 
-	//UFUNCTION(ScriptCallable, Meta = (WorldContext = "WorldContextObject"))
 	UFUNCTION(BlueprintCallable, Meta = (WorldContext = "WorldContextObject"))
 	static const FWidgetTransform& GetRenderTransform(UWidget* Widget)
 	{

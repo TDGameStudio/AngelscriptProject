@@ -5,12 +5,20 @@
 #include "GameFramework/PlayerInput.h"
 #include "InputComponentScriptMixinLibrary.generated.h"
 
+// FunctionLibraries cleanup note (mixin parity):
+//
+// The //UCLASS(Meta = (ScriptMixin = "...")) lines below are kept commented out as
+// Hazelight-parity anchors. Hazelight binds these helpers via the dedicated mixin
+// path in Helper_FunctionSignature.h; this fork currently routes them through
+// UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback instead. See
+// Documents/Knowledges/ZH/Syntax_Mixin.md section 6 for the full background.
+
 /**
  * ScriptMixin library to bind functions on UInputComponent
  * that are not BlueprintCallable by default.
  */
 //UCLASS(Meta = (ScriptMixin = "UInputComponent"))
-UCLASS(Meta = ())
+UCLASS()
 class UInputComponentScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()
@@ -20,7 +28,6 @@ public:
 	 * Bind a function to be called when a key bound to this action triggers a specific keyevent.
 	 * Specified function must be a UFUNCTION() and takes a single FKey as its argument.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindAction(UInputComponent* Component, const FName& ActionName, EInputEvent KeyEvent, const FInputActionHandlerDynamicSignature& Delegate)
 	{
@@ -33,7 +40,6 @@ public:
 	 * Bind a specific key to a delegate. This bypasses any action bindings setup in project settings.
 	 * Specified function must be a UFUNCTION() and takes a single FKey as its argument.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindKey(UInputComponent* Component, const FKey& Key, EInputEvent KeyEvent, const FInputActionHandlerDynamicSignature& Delegate, bool bConsumeInput = true)
 	{
@@ -47,7 +53,6 @@ public:
 	 * Bind a specific key chord to a delegate. This bypasses any action bindings setup in project settings.
 	 * Specified function must be a UFUNCTION() and takes a single FKey as its argument.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindChord(UInputComponent* Component, const FInputChord& Chord, EInputEvent KeyEvent, const FInputActionHandlerDynamicSignature& Delegate)
 	{
@@ -60,7 +65,6 @@ public:
 	 * Bind a function to be called whenever a float axis bound to the specified axis name is changed.
 	 * Specified function must be a UFUNCTION() and takes a single float as its argument.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindAxis(UInputComponent* Component, const FName& AxisName, const FInputAxisHandlerDynamicSignature& Delegate)
 	{
@@ -77,7 +81,6 @@ public:
 	 * Bind a function to be called whenever an axis specified by the given key changes. This bypasses any action bindings setup in project settings.
 	 * Specified function must be a UFUNCTION() and takes a single float as its argument.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindAxisKey(UInputComponent* Component, const FName& AxisKey, const FInputAxisHandlerDynamicSignature& Delegate)
 	{
@@ -95,7 +98,6 @@ public:
 	 * Specified function must be a UFUNCTION() and takes a single FVector as its argument.
 		GB.GestureDelegate = FInputGestureUnifiedDelegate(Delegate);
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void BindVectorAxis(UInputComponent* Component, const FKey& AxisKey, const FInputVectorAxisHandlerDynamicSignature& Delegate)
 	{
@@ -114,7 +116,7 @@ public:
  * ScriptMixin library to bind functions on APlayerController for handling input.
  */
 //UCLASS(Meta = (ScriptMixin = "APlayerController"))
-UCLASS(Meta = ())
+UCLASS()
 class UPlayerControllerInputScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()
@@ -124,7 +126,6 @@ public:
 	/**
 	 * Push an input component to handle input from this player controller.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void PushInputComponent(APlayerController* PlayerController, UInputComponent* Component)
 	{
@@ -137,7 +138,6 @@ public:
 	/**
 	 * Remove an input component so it no longer handles input from this player controller.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void PopInputComponent(APlayerController* PlayerController, UInputComponent* Component)
 	{
@@ -147,7 +147,6 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static UPlayerInput* GetPlayerInput(APlayerController* PlayerController)
 	{
@@ -157,7 +156,7 @@ public:
 };
 
 //UCLASS(Meta = (ScriptMixin = "UPlayerInput"))
-UCLASS(Meta = ())
+UCLASS()
 class UPlayerInputScriptMixinLibrary : public UObject
 {
 	GENERATED_BODY()
@@ -175,7 +174,6 @@ public:
 		return EmptyMappings;
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void AddActionMapping(UPlayerInput* PlayerInput, const FInputActionKeyMapping& KeyMapping)
 	{
@@ -185,7 +183,6 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void RemoveActionMapping(UPlayerInput* PlayerInput, const FInputActionKeyMapping& KeyMapping)
 	{
@@ -195,7 +192,6 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void AddAxisMapping(UPlayerInput* PlayerInput, const FInputAxisKeyMapping& KeyMapping)
 	{
@@ -205,7 +201,6 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void RemoveAxisMapping(UPlayerInput* PlayerInput, const FInputAxisKeyMapping& KeyMapping)
 	{
@@ -215,7 +210,6 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void ForceRebuildingKeyMaps(UPlayerInput* PlayerInput, const bool bRestoreDefaults = false)
 	{
@@ -225,42 +219,36 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static const TArray<FInputActionKeyMapping>& GetKeysForAction(UPlayerInput* PlayerInput, const FName ActionName)
 	{
 		return PlayerInput != nullptr ? PlayerInput->GetKeysForAction(ActionName) : GetEmptyActionMappings();
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static const TArray<FInputAxisKeyMapping>& GetKeysForAxis(UPlayerInput* PlayerInput, const FName AxisName)
 	{
 		return PlayerInput != nullptr ? PlayerInput->GetKeysForAxis(AxisName) : GetEmptyAxisMappings();
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static const TArray<FInputActionKeyMapping>& GetEngineDefinedActionMappings(UPlayerInput* PlayerInput, const FName ActionName)
 	{
 		return PlayerInput->GetEngineDefinedActionMappings();
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static const TArray<FInputAxisKeyMapping>& GetEngineDefinedAxisMappings(UPlayerInput* PlayerInput, const FName AxisName)
 	{
 		return PlayerInput->GetEngineDefinedAxisMappings();
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void InvertAxis(UPlayerInput* PlayerInput, const FName AxisName)
 	{
 		PlayerInput->InvertAxis(AxisName);
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void SetMouseSensitivity(UPlayerInput* PlayerInput, const float Sensitivity)
 	{
@@ -270,14 +258,12 @@ public:
 		}
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static float GetMouseSensitivityX(UPlayerInput* PlayerInput)
 	{
 		return PlayerInput != nullptr ? PlayerInput->GetMouseSensitivityX() : 0.f;
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static float GetMouseSensitivityY(UPlayerInput* PlayerInput)
 	{

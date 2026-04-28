@@ -14,7 +14,6 @@ class USubsystemLibrary : public UObject
 public:
 
 	/** Get a Game Instance Subsystem from the Game Instance associated with the provided context */
-	//UFUNCTION(ScriptCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	static UEngineSubsystem* GetEngineSubsystem(TSubclassOf<UEngineSubsystem> Class)
 	{
@@ -22,7 +21,6 @@ public:
 	}
 
 	/** Get a Game Instance Subsystem from the Game Instance associated with the provided context */
-	//UFUNCTION(ScriptCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	static UGameInstanceSubsystem* GetGameInstanceSubsystem(UObject* WorldContextObject, TSubclassOf<UGameInstanceSubsystem> Class)
 	{
@@ -30,7 +28,6 @@ public:
 	}
 
 	/** Get a Local Player Subsystem from the Local Player associated with the provided context */
-	//UFUNCTION(ScriptCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	static ULocalPlayerSubsystem* GetLocalPlayerSubsystem(UObject* WorldContextObject, TSubclassOf<ULocalPlayerSubsystem> Class)
 	{
@@ -38,7 +35,6 @@ public:
 	}
 
 	/** Get a World Subsystem from the World associated with the provided context */
-	//UFUNCTION(ScriptCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Class", ScriptNoDiscard))
 	static UWorldSubsystem* GetWorldSubsystem(UObject* WorldContextObject, TSubclassOf<UWorldSubsystem> Class)
 	{
@@ -49,7 +45,6 @@ public:
 	 * Get a Local Player Subsystem from the LocalPlayer associated with the provided context
 	 * If the player controller isn't associated to a LocalPlayer nullptr is returned
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	static ULocalPlayerSubsystem* GetLocalPlayerSubsystemFromPlayerController(APlayerController* PlayerController, TSubclassOf<ULocalPlayerSubsystem> Class)
 	{
@@ -57,7 +52,6 @@ public:
 	}
 
 	/** Get a Local Player Subsystem from the Local Player associated with the provided context */
-	//UFUNCTION(ScriptCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	UFUNCTION(BlueprintCallable, Meta = (DeterminesOutputType = "Class", ScriptNoDiscard))
 	static ULocalPlayerSubsystem* GetLocalPlayerSubsystemFromLocalPlayer(ULocalPlayer* LocalPlayer, TSubclassOf<ULocalPlayerSubsystem> Class)
 	{

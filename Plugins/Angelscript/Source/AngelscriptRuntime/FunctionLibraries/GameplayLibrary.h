@@ -33,7 +33,6 @@ public:
 	 * @param UserIndex			For some platforms, master user index to identify the user doing the loading.
 	 * @param SavedDelegate		Delegate that will be called on game thread when save succeeds or fails.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void AsyncSaveGameToSlot(USaveGame* SaveGameObject, const FString& SlotName, const int32 UserIndex,
 		FAsyncSaveGameToSlotDynamicDelegate Delegate)
@@ -53,7 +52,6 @@ public:
 	 * @param UserIndex			For some platforms, master user index to identify the user doing the loading.
 	 * @param LoadedDelegate	Delegate that will be called on game thread when load succeeds or fails.
 	 */
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static void AsyncLoadGameFromSlot(const FString& SlotName, const int32 UserIndex,
 		FAsyncLoadGameFromSlotDynamicDelegate Delegate)

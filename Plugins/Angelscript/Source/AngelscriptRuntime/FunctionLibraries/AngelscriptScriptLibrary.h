@@ -14,7 +14,6 @@ public:
 	 * If we are currently initializing a script global variable, return its name.
 	 * Returns an empty string if no global variable is currently being initialized.
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (NotAngelscriptProperty))
 	UFUNCTION(BlueprintCallable)
 	static FString GetNameOfGlobalVariableBeingInitialized();
 
@@ -22,7 +21,6 @@ public:
 	 * If we are currently initializing a script global variable, return the namespace it is in.
 	 * Returns an empty string if no global variable is currently being initialized.
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (NotAngelscriptProperty))
 	UFUNCTION(BlueprintCallable)
 	static FString GetNamespaceOfGlobalVariableBeingInitialized();
 
@@ -30,7 +28,6 @@ public:
 	 * If we are currently initializing a script global variable, return the name of the module it is in.
 	 * Returns an empty string if no global variable is currently being initialized.
 	 */
-	//UFUNCTION(ScriptCallable, Meta = (NotAngelscriptProperty))
 	UFUNCTION(BlueprintCallable)
 	static FString GetModuleNameOfGlobalVariableBeingInitialized();
 };

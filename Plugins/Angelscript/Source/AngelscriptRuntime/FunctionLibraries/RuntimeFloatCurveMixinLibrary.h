@@ -21,28 +21,24 @@ class ANGELSCRIPTRUNTIME_API URuntimeFloatCurveMixinLibrary  : public UObject
 public:
 
 	/** Evaluate this float curve at the specified time */
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
     static float GetFloatValue(const FRuntimeFloatCurve& Target, const float InTime, const float DefaultValue = 0)
 	{
 		return Target.GetRichCurveConst()->Eval(InTime, DefaultValue);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves", Meta = (NotInAngelscript = "true"))
     static void GetTimeRange(const FRuntimeFloatCurve& Target, float& MinTime, float& MaxTime)
 	{
 		Target.GetRichCurveConst()->GetTimeRange(MinTime, MaxTime);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
     static void GetValueRange(const FRuntimeFloatCurve& Target, float& MinValue, float& MaxValue)
 	{
 		Target.GetRichCurveConst()->GetValueRange(MinValue, MaxValue);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves", Meta = (ScriptName = "GetTimeRange"))
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves", Meta = (ScriptName = "GetTimeRange"))
     static void GetTimeRange_Double(const FRuntimeFloatCurve& Target, double& MinTime, double& MaxTime)
 	{
@@ -52,7 +48,6 @@ public:
 		MaxTime = MaxTimeFlt;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves", Meta = (ScriptName = "GetValueRange"))
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves", Meta = (ScriptName = "GetValueRange"))
     static void GetValueRange_Double(const FRuntimeFloatCurve& Target, double& MinValue, double& MaxValue)
 	{
@@ -62,14 +57,12 @@ public:
 		MaxValue = MaxValueFlt;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
     static int32 GetNumKeys(const FRuntimeFloatCurve& Target)
 	{
 		return Target.GetRichCurveConst()->GetNumKeys();
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
     static bool Equals(const FRuntimeFloatCurve& Target, const FRuntimeFloatCurve& Other)
 	{
@@ -81,14 +74,12 @@ public:
 		return (*TargetCurve) == (*OtherCurve);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void AddDefaultKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
 	{
 		Target.EditorCurveData.AddKey(InTime, InValue);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKey(UCurveFloat* Curve, float InTime, float InValue)
 	{
@@ -96,56 +87,48 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void AutoSetTangents(UCurveFloat* Curve)
 	{
 		Curve->FloatCurve.AutoSetTangents();
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetDefaultValue(UCurveFloat* Curve, float DefaultValue)
 	{
 		Curve->FloatCurve.SetDefaultValue(DefaultValue);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetPreInfinityExtrap(UCurveFloat* Curve, ERichCurveExtrapolation Extrapolation)
 	{
 		Curve->FloatCurve.PreInfinityExtrap = Extrapolation;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetPostInfinityExtrap(UCurveFloat* Curve, ERichCurveExtrapolation Extrapolation)
 	{
 		Curve->FloatCurve.PostInfinityExtrap = Extrapolation;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetKeyInterpMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveInterpMode NewInterpMode, bool bAutoSetTangents)
 	{
 		Curve->FloatCurve.SetKeyInterpMode(KeyHandle.KeyHandle, NewInterpMode, bAutoSetTangents);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetKeyTangentMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveTangentMode NewTangentMode, bool bAutoSetTangents = true)
 	{
 		Curve->FloatCurve.SetKeyTangentMode(KeyHandle.KeyHandle, NewTangentMode, bAutoSetTangents);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetKeyTangentWeightMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveTangentWeightMode NewTangentWeightMode, bool bAutoSetTangents = true)
 	{
 		Curve->FloatCurve.SetKeyTangentWeightMode(KeyHandle.KeyHandle, NewTangentWeightMode, bAutoSetTangents);
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetKeyUserTangents(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, float ArriveTangent, float LeaveTangent)
 	{
@@ -156,7 +139,6 @@ public:
 		Key.LeaveTangent = LeaveTangent;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static void SetKeyUserTangentWeights(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, float ArriveTangentWeight, float LeaveTangentWeight)
 	{
@@ -167,7 +149,6 @@ public:
 		Key.LeaveTangentWeight = LeaveTangentWeight;
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddConstantCurveKey(UCurveFloat* Curve, float InTime, float InValue)
 	{
@@ -176,7 +157,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddLinearCurveKey(UCurveFloat* Curve, float InTime, float InValue)
 	{
@@ -184,7 +164,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddAutoCurveKey(UCurveFloat* Curve, float InTime, float InValue)
 	{
@@ -194,7 +173,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddSmartAutoCurveKey(UCurveFloat* Curve, float InTime, float InValue)
 	{
@@ -204,7 +182,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKeyTangent(UCurveFloat* Curve, float InTime, float InValue, float Tangent)
 	{
@@ -219,7 +196,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKeyBrokenTangent(UCurveFloat* Curve, float InTime, float InValue, float ArriveTangent, float LeaveTangent)
 	{
@@ -234,7 +210,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKeyWeightedArriveTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
 	{
@@ -255,7 +230,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKeyWeightedLeaveTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
 	{
@@ -276,7 +250,6 @@ public:
 		return FCurveKeyHandle{Handle};
 	}
 
-	//UFUNCTION(ScriptCallable, Category = "Math|Curves")
 	UFUNCTION(BlueprintCallable, Category = "Math|Curves")
 	static FCurveKeyHandle AddCurveKeyWeightedBothTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
 	{

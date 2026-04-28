@@ -15,21 +15,18 @@ class UGameplayTagQueryMixinLibrary : public UObject
 {
 	GENERATED_BODY()
 public:
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static bool Matches(const FGameplayTagQuery& GameplayTagQuery, const FGameplayTagContainer& Tags)
 	{
 		return GameplayTagQuery.Matches(Tags);
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static bool IsEmpty(const FGameplayTagQuery& GameplayTagQuery)
 	{
 		return GameplayTagQuery.IsEmpty();
 	}
 
-	//UFUNCTION(ScriptCallable)
 	UFUNCTION(BlueprintCallable)
 	static const FString& GetDescription(const FGameplayTagQuery& GameplayTagQuery)
 	{
