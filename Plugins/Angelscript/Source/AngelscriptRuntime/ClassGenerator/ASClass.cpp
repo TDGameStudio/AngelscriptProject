@@ -979,9 +979,8 @@ void UASClass::RuntimeDestroyObject(UObject* Object)
 bool UASClass::IsFunctionImplementedInScript(FName InFunctionName) const
 {
 	UFunction* Function = FindFunctionByName(InFunctionName);
-	//return Function && Function->GetOuterUClass() && Function->GetOuterUClass()->bIsScriptClass;
 	UASFunction* asFunction = Cast<UASFunction>(Function);
-	return asFunction && asFunction->GetOuterUClass();
+	return asFunction != nullptr && asFunction->ScriptFunction != nullptr;
 }
 
 static TArray<FObjectInitializer> CurrentObjectInitializers;

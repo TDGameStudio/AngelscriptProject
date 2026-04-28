@@ -103,6 +103,7 @@
 #define TXT_EXPECTED_POST_OPERATOR            "Expected post operator"
 #define TXT_EXPECTED_PRE_OPERATOR             "Expected pre operator"
 #define TXT_FOREACH_VARIABLE_DECLARATION      "Expected foreach variable declaration"
+#define TXT_FOREACH_DISABLED                  "foreach support has been disabled by the application"
 #define TXT_EXPECTED_STRING                   "Expected string"
 #define TXT_EXPR_DOESNT_EVAL_TO_FUNC          "Expression doesn't evaluate to a function"
 #define TXT_EXPR_MUST_BE_BOOL                 "Expression must be of boolean type"

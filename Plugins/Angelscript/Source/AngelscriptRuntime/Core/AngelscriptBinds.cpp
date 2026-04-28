@@ -4,6 +4,8 @@
 #include "AngelscriptSettings.h"
 #include "Testing/AngelscriptBindExecutionObservation.h"
 
+#include "Kismet/KismetSystemLibrary.h"
+
 #include "AngelscriptInclude.h"
 #include "AngelscriptSettings.h"
 //#include "as_property.h"
@@ -116,6 +118,23 @@ bool FAngelscriptBinds::ShouldSkipBlueprintCallableFunction(const UFunction* Fun
 		if (OwningClass == UActorComponent::StaticClass() && Function->GetFName() == FName(TEXT("GetOwner")))
 		{
 			return true;
+		}
+
+		if (OwningClass == UKismetSystemLibrary::StaticClass())
+		{
+			// Bind_SystemTimers.cpp already exposes the ambient-world-context variants for these APIs.
+			// Reflecting the K2 world-context UFUNCTIONs adds an indistinguishable second callable
+			// signature in script and makes timer-handle calls ambiguous.
+			static const TSet<FName> TimerHandleFunctionsWithManualBinds = {
+				FName(TEXT("K2_IsTimerPausedHandle")),
+				FName(TEXT("K2_PauseTimerHandle")),
+				FName(TEXT("K2_UnPauseTimerHandle")),
+				FName(TEXT("K2_ClearAndInvalidateTimerHandle")),
+			};
+			if (TimerHandleFunctionsWithManualBinds.Contains(Function->GetFName()))
+			{
+				return true;
+			}
 		}
 	}
 

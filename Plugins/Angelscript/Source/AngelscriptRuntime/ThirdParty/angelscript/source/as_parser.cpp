@@ -4361,7 +4361,16 @@ asCScriptNode *asCParser::ParseStatement()
 	else if( t1.type == ttFor )
 		return ParseFor();
 	else if( t1.type == ttForeach )
+	{
+		//[UE++]: Honor the engine foreach-support property before parsing stock foreach syntax.
+		if( engine != 0 && !engine->ep.foreachSupport )
+		{
+			asCScriptNode *node = CreateNode(snExpressionStatement);
+			Error(TXT_FOREACH_DISABLED, &t1);
+			return node;
+		}
 		return ParseForeach();
+	}
 	else if( t1.type == ttWhile )
 		return ParseWhile();
 	else if( t1.type == ttReturn )

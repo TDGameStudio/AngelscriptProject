@@ -382,29 +382,38 @@ public:
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static double AngularDistance(const FVector& A, const FVector& B)
 	{
-		return FMath::Acos(FVector::DotProduct(A, B) / FMath::Sqrt(A.SizeSquared() * B.SizeSquared()));
+		const FVector SafeA = A.GetSafeNormal();
+		const FVector SafeB = B.GetSafeNormal();
+		if (SafeA.IsNearlyZero() || SafeB.IsNearlyZero())
+		{
+			return 0.0;
+		}
+
+		return FMath::Acos(FMath::Clamp(FVector::DotProduct(SafeA, SafeB), -1.0, 1.0));
 	}
 
-	// Get the angle in radians between two normal vectors. Both vectors are assumed to be unit length, or a wrong value will be returned.
+	// Get the angle in radians between two normal vectors.
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static double AngularDistanceForNormals(const FVector& A, const FVector& B)
 	{
-		return FMath::Acos(FVector::DotProduct(A, B));
+		return AngularDistance(A, B);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static FVector ConstrainToPlane(const FVector& Vector, const FVector& PlaneUp)
 	{
-		return FVector::VectorPlaneProject(Vector, PlaneUp);
+		const FVector SafePlaneUp = PlaneUp.GetSafeNormal();
+		return SafePlaneUp.IsNearlyZero() ? Vector : FVector::VectorPlaneProject(Vector, SafePlaneUp);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static FVector ConstrainToDirection(const FVector& Vector, const FVector& Direction)
 	{
-		return Direction * FVector::DotProduct(Vector, Direction);
+		const FVector SafeDirection = Direction.GetSafeNormal();
+		return SafeDirection.IsNearlyZero() ? FVector::ZeroVector : SafeDirection * FVector::DotProduct(Vector, SafeDirection);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
@@ -473,29 +482,38 @@ public:
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static float AngularDistance(const FVector3f& A, const FVector3f& B)
 	{
-		return FMath::Acos(FVector3f::DotProduct(A, B) / FMath::Sqrt(A.SizeSquared() * B.SizeSquared()));
+		const FVector3f SafeA = A.GetSafeNormal();
+		const FVector3f SafeB = B.GetSafeNormal();
+		if (SafeA.IsNearlyZero() || SafeB.IsNearlyZero())
+		{
+			return 0.0f;
+		}
+
+		return FMath::Acos(FMath::Clamp(FVector3f::DotProduct(SafeA, SafeB), -1.0f, 1.0f));
 	}
 
-	// Get the angle in radians between two normal vectors. Both vectors are assumed to be unit length, or a wrong value will be returned.
+	// Get the angle in radians between two normal vectors.
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static float AngularDistanceForNormals(const FVector3f& A, const FVector3f& B)
 	{
-		return FMath::Acos(FVector3f::DotProduct(A, B));
+		return AngularDistance(A, B);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static FVector3f ConstrainToPlane(const FVector3f& Vector, const FVector3f& PlaneUp)
 	{
-		return FVector3f::VectorPlaneProject(Vector, PlaneUp);
+		const FVector3f SafePlaneUp = PlaneUp.GetSafeNormal();
+		return SafePlaneUp.IsNearlyZero() ? Vector : FVector3f::VectorPlaneProject(Vector, SafePlaneUp);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))
 	UFUNCTION(BlueprintCallable, Meta = ())
 	static FVector3f ConstrainToDirection(const FVector3f& Vector, const FVector3f& Direction)
 	{
-		return Direction * FVector3f::DotProduct(Vector, Direction);
+		const FVector3f SafeDirection = Direction.GetSafeNormal();
+		return SafeDirection.IsNearlyZero() ? FVector3f::ZeroVector : SafeDirection * FVector3f::DotProduct(Vector, SafeDirection);
 	}
 
 	//UFUNCTION(ScriptCallable, Meta = (ScriptTrivial))

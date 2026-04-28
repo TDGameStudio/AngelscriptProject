@@ -5153,13 +5153,23 @@ void GetStackTrace(TArray<FString>& OutTrace)
 			if (ScriptFunction != nullptr)
 			{
 				int32 Line, Column;
-				Line = Context->GetLineNumber(i, &Column, nullptr);
+				const char* Filename = nullptr;
+				Line = Context->GetLineNumber(i, &Column, &Filename);
 
 				FStackFrameDescription& Desc = Stack.Emplace_GetRef();
 				Desc.Frame = FString::Printf(TEXT("  %s | Line %d | Col %d"),
 					ANSI_TO_TCHAR(ScriptFunction->GetDeclaration(true, false, false, true)),
 					Line, Column);
-				Desc.Module = ANSI_TO_TCHAR(ScriptFunction->GetModuleName());
+				const FString ModuleName = ANSI_TO_TCHAR(ScriptFunction->GetModuleName());
+				if (Filename != nullptr && Filename[0] != '\0')
+				{
+					const FString CleanFilename = FPaths::GetCleanFilename(ANSI_TO_TCHAR(Filename));
+					Desc.Module = FString::Printf(TEXT("%s | %s"), *ModuleName, *CleanFilename);
+				}
+				else
+				{
+					Desc.Module = ModuleName;
+				}
 				Desc.ThisObject = nullptr;
 
 				int ThisTypeId = Context->GetThisTypeId(i);

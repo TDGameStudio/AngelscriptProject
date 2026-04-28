@@ -4519,10 +4519,12 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 		if (OldFuncDesc->Function != nullptr && OldFuncDesc->ScriptFunction != nullptr)
 		{
 			FuncDesc->Function = OldFuncDesc->Function;
-			((UASFunction*)FuncDesc->Function)->ScriptFunction = FuncDesc->ScriptFunction;
+			UASFunction* ReusedFunction = CastChecked<UASFunction>(FuncDesc->Function);
+			ReusedFunction->ScriptFunction = FuncDesc->ScriptFunction;
+			ReusedFunction->bIsNoOp = FuncDesc->bIsNoOp;
 
 			// We need to check the function's arguments and update the script types in them
-			SoftReloadFunction(OldFuncDesc->Function);
+			SoftReloadFunction(ReusedFunction);
 
 #if WITH_EDITOR
 			// Update the no-op flag
@@ -6170,6 +6172,7 @@ void FAngelscriptClassGenerator::UpdateConstructAndDefaultsFunctions(TSharedPtr<
 	if (ObjType != nullptr)
 	{
 		Class->ConstructFunction = ObjType->GetEngine()->GetFunctionById(ObjType->beh.construct);
+		Class->DefaultsFunction = nullptr;
 		
 		// Only take the defaults function if it was overridden by our class, otherwise we're going to call the parent manually anyway
 		auto* DefaultsFunction = (asCScriptFunction*)ObjType->GetMethodByDecl("void __InitDefaults()");

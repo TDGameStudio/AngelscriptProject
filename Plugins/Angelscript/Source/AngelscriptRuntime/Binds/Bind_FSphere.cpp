@@ -88,5 +88,5 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FSphere_Late(FAngelscriptBinds
 	FSphere_.Method("bool IsInside(const FVector& In, float64 Tolerance = KINDA_SMALL_NUMBER) const", METHODPR_TRIVIAL(bool, FSphere, IsInside, (const FVector&, double) const));
 	FSphere_.Method("bool Intersects(const FSphere& Other, float64 Tolerance = KINDA_SMALL_NUMBER) const", METHODPR_TRIVIAL(bool, FSphere, Intersects, (const FSphere&, double) const));
 	FSphere_.Method("FSphere TransformBy( const FTransform& M ) const", METHODPR_TRIVIAL(FSphere, FSphere, TransformBy, (const FTransform&) const));
-	FSphere_.Method("float32 GetVolume() const", METHOD_TRIVIAL(FSphere, GetVolume));
+	FSphere_.Method("float64 GetVolume() const", METHOD_TRIVIAL(FSphere, GetVolume));
 });

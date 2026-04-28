@@ -41,8 +41,8 @@ struct FAngelscriptClassGenerator
 
 	ANGELSCRIPTRUNTIME_API EReloadRequirement Setup();
 
-	void PerformFullReload();
-	void PerformSoftReload();
+	ANGELSCRIPTRUNTIME_API void PerformFullReload();
+	ANGELSCRIPTRUNTIME_API void PerformSoftReload();
 
 	void GetFullReloadLines(TSharedRef<FAngelscriptModuleDesc> Module, TArray<int32>& OutLines);
 	ANGELSCRIPTRUNTIME_API bool WantsFullReload(TSharedRef<FAngelscriptModuleDesc> Module);

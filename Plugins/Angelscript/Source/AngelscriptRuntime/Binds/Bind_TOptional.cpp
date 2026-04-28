@@ -558,6 +558,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TOptional(FAngelscriptBinds::E
 	TOptional_.Method("bool IsSet() const", &FAngelscriptOptionalBinds::IsSet);
 	SCRIPT_NATIVE_TEMPLATED_CALL(TOptional_, "FAngelscriptOptionalBinds::IsSet", false);
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_BIND_DOCUMENTATION("Returns if the optional has a valid value. This must be true in order for Get() or GetValue() to be called.\n")
 
 	TOptional_.Method("void Set(const T&in if_handle_then_const Value) const", &FAngelscriptOptionalBinds::Set);
@@ -567,16 +568,19 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TOptional(FAngelscriptBinds::E
 	TOptional_.Method("const T& GetValue() const", &FAngelscriptOptionalBinds::GetValue);
 	SCRIPT_NATIVE_TEMPLATED_CALL(TOptional_, "FAngelscriptOptionalBinds::GetValue", false);
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_BIND_DOCUMENTATION("Gets a const reference to the optional's set value. IsSet() must return true for this function to be called.\n")
 
 	TOptional_.Method("T& GetValue()", &FAngelscriptOptionalBinds::GetValue);
 	SCRIPT_NATIVE_TEMPLATED_CALL(TOptional_, "FAngelscriptOptionalBinds::GetValue", false);
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_BIND_DOCUMENTATION("Gets a non-const reference to the optional's set value. IsSet() must return true for this function to be called.\n")
 
 	TOptional_.Method("const T& Get(const T&in if_handle_then_const DefaultValue) const", &FAngelscriptOptionalBinds::Get);
 	SCRIPT_NATIVE_TEMPLATED_CALL_NEEDSCOPY(TOptional_, "FAngelscriptOptionalBinds::Get", false);
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_BIND_DOCUMENTATION("If set returns the optional's set value, otherwise returns DefaultValue")
 
 	TOptional_.Method("void Reset()", &FAngelscriptOptionalBinds::Reset);

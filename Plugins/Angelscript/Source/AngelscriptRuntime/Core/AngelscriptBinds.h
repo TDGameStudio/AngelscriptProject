@@ -526,6 +526,11 @@ struct ANGELSCRIPTRUNTIME_API FAngelscriptBinds
 
 	static void AddFunctionEntry(UClass* Class, FString Name, FFuncEntry Entry)
 	{
+		if (Class == nullptr || CheckForSkipClass(Class->GetFName()) || CheckForSkipEntry(Class->GetFName(), FName(*Name)))
+		{
+			return;
+		}
+
 		auto& ClassFuncMaps = GetClassFuncMaps();
 		if (ClassFuncMaps.Contains(Class))
 		{

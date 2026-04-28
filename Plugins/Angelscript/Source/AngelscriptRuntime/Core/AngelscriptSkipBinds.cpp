@@ -11,6 +11,11 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Skip
 		FAngelscriptBinds::AddSkipEntry("SkeletalMesh", "GetMinLODForQualityLevels");
 		FAngelscriptBinds::AddSkipEntry("SkeletalMesh", "SetMinLODForQualityLevels");
 		FAngelscriptBinds::AddSkipEntry("SourceEffectEQPreset", "SetSettings");
+		FAngelscriptBinds::AddSkipEntry("KismetMathLibrary", "ClampAngle");
+		FAngelscriptBinds::AddSkipEntry("KismetMathLibrary", "FInterpTo");
+		FAngelscriptBinds::AddSkipEntry("KismetMathLibrary", "GetReflectionVector");
+		FAngelscriptBinds::AddSkipEntry("KismetMathLibrary", "RInterpTo");
+		FAngelscriptBinds::AddSkipEntry("KismetMathLibrary", "VInterpTo");
 		FAngelscriptBinds::AddSkipClass("ClothingSimulationInteractorNv");
 		FAngelscriptBinds::AddSkipClass("NiagaraPreviewGrid");
 		FAngelscriptBinds::AddSkipClass("GameplayCamerasSubsystem");

@@ -21,7 +21,13 @@ public:
 			return false;
 		}
 
-		return AssetManager->GetPrimaryAssetData(PrimaryAssetId, AssetData);
+		const bool bFoundAssetData = AssetManager->GetPrimaryAssetData(PrimaryAssetId, AssetData);
+		if (!bFoundAssetData)
+		{
+			AssetData = FAssetData();
+		}
+
+		return bFoundAssetData;
 	}
 
 	/** Gets list of all FAssetData for a primary asset type, returns true if any were found */
@@ -35,7 +41,14 @@ public:
 			return false;
 		}
 
-		return AssetManager->GetPrimaryAssetDataList(PrimaryAssetType, AssetDataList);
+		AssetDataList.Reset();
+		const bool bFoundAssetDataList = AssetManager->GetPrimaryAssetDataList(PrimaryAssetType, AssetDataList);
+		if (!bFoundAssetDataList)
+		{
+			AssetDataList.Reset();
+		}
+
+		return bFoundAssetDataList;
 	}
 
 	/** Gets the in-memory UObject for a primary asset id, returning nullptr if it's not in memory. Will return blueprint class for blueprint assets. This works even if the asset wasn't loaded explicitly */
@@ -75,7 +88,14 @@ public:
 			return false;
 		}
 
-		return AssetManager->GetPrimaryAssetIdList(PrimaryAssetType, PrimaryAssetIdList);
+		PrimaryAssetIdList.Reset();
+		const bool bFoundPrimaryAssetIdList = AssetManager->GetPrimaryAssetIdList(PrimaryAssetType, PrimaryAssetIdList);
+		if (!bFoundPrimaryAssetIdList)
+		{
+			PrimaryAssetIdList.Reset();
+		}
+
+		return bFoundPrimaryAssetIdList;
 	}
 
 	/** Gets metadata for a specific asset type, returns false if not found */
@@ -89,7 +109,13 @@ public:
 			return false;
 		}
 
-		return AssetManager->GetPrimaryAssetTypeInfo(PrimaryAssetType, AssetTypeInfo);
+		const bool bFoundAssetTypeInfo = AssetManager->GetPrimaryAssetTypeInfo(PrimaryAssetType, AssetTypeInfo);
+		if (!bFoundAssetTypeInfo)
+		{
+			AssetTypeInfo = FPrimaryAssetTypeInfo();
+		}
+
+		return bFoundAssetTypeInfo;
 	}
 
 	/** Gets list of all primary asset types infos */

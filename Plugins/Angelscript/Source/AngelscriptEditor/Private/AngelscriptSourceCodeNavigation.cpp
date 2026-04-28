@@ -22,6 +22,54 @@ namespace
 		GOpenLocationOverrideForTesting(Location);
 		return true;
 	}
+
+	TSharedPtr<FAngelscriptPropertyDesc> FindPropertyDesc(
+		const TSharedPtr<FAngelscriptClassDesc>& ClassDesc,
+		const FProperty* InProperty)
+	{
+		if (!ClassDesc.IsValid() || InProperty == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (TSharedPtr<FAngelscriptPropertyDesc> PropertyDesc = ClassDesc->GetProperty(InProperty->GetNameCPP());
+			PropertyDesc.IsValid())
+		{
+			return PropertyDesc;
+		}
+
+		if (TSharedPtr<FAngelscriptPropertyDesc> PropertyDesc = ClassDesc->GetProperty(InProperty->GetAuthoredName());
+			PropertyDesc.IsValid())
+		{
+			return PropertyDesc;
+		}
+
+		return ClassDesc->GetProperty(InProperty->GetName());
+	}
+
+	TSharedPtr<FAngelscriptClassDesc> FindClassDescByScriptType(
+		asITypeInfo* ScriptType,
+		TSharedPtr<FAngelscriptModuleDesc>* OutModule)
+	{
+		if (ScriptType == nullptr)
+		{
+			return nullptr;
+		}
+
+		FAngelscriptEngine& Engine = FAngelscriptEngine::Get();
+		TSharedPtr<FAngelscriptModuleDesc> Module = Engine.GetModule(ScriptType->GetModule());
+		if (!Module.IsValid())
+		{
+			return nullptr;
+		}
+
+		if (OutModule != nullptr)
+		{
+			*OutModule = Module;
+		}
+
+		return Module->GetClass(ScriptType);
+	}
 }
 
 namespace AngelscriptSourceNavigation
@@ -91,7 +139,7 @@ public:
 		if (!ClassDesc.IsValid())
 			return false;
 
-		auto PropertyDesc = ClassDesc->GetProperty(InProperty->GetNameCPP());
+		auto PropertyDesc = FindPropertyDesc(ClassDesc, InProperty);
 		if (!PropertyDesc.IsValid())
 			return false;
 
@@ -158,12 +206,24 @@ private:
 		auto* ASClass = Cast<const UASClass>(Struct);
 		if (ASClass != nullptr)
 		{
+			if (TSharedPtr<FAngelscriptClassDesc> ClassDesc = FindClassDescByScriptType(static_cast<asITypeInfo*>(ASClass->ScriptTypePtr), OutModule);
+				ClassDesc.IsValid())
+			{
+				return ClassDesc;
+			}
+
 			return FAngelscriptEngine::Get().GetClass(ASClass->GetPrefixCPP() + ASClass->GetName(), OutModule);
 		}
 
 		auto* ASStruct = Cast<const UASStruct>(Struct);
 		if (ASStruct != nullptr)
 		{
+			if (TSharedPtr<FAngelscriptClassDesc> ClassDesc = FindClassDescByScriptType(ASStruct->ScriptType, OutModule);
+				ClassDesc.IsValid())
+			{
+				return ClassDesc;
+			}
+
 			return FAngelscriptEngine::Get().GetClass(ASStruct->GetPrefixCPP() + ASStruct->GetName(), OutModule);
 		}
 

@@ -51,8 +51,14 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMargin(FAngelscriptBinds::EOr
 	FMargin_.Method("FMargin opSub(const FMargin& Other) const", METHODPR_TRIVIAL(FMargin, FMargin, operator-, (const FMargin&) const));
 	FMargin_.Method("bool opEquals(const FMargin& Other) const", METHODPR_TRIVIAL(bool, FMargin, operator==, (const FMargin&) const));
 
-	FMargin_.Method("FVector2D GetTopLeft() const", METHOD_TRIVIAL(FMargin, GetTopLeft));
-	FMargin_.Method("FVector2D GetDesiredSize() const", METHOD_TRIVIAL(FMargin, GetDesiredSize));
+	FMargin_.Method("FVector2D GetTopLeft() const", [](const FMargin& Margin) -> FVector2D
+	{
+		return FVector2D(Margin.GetTopLeft2f());
+	});
+	FMargin_.Method("FVector2D GetDesiredSize() const", [](const FMargin& Margin) -> FVector2D
+	{
+		return FVector2D(Margin.GetDesiredSize2f());
+	});
 	FMargin_.Method("float32 GetTotalSpaceAlongHorizontal() const", [](const FMargin& Margin) -> float
 	{
 		return Margin.GetTotalSpaceAlong<Orient_Horizontal>();

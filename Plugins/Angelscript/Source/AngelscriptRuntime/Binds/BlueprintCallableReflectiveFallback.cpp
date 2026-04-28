@@ -15,12 +15,95 @@
 
 namespace
 {
+	FString GetScriptTypeSignatureKey(FAngelscriptTypeUsage Usage, FAngelscriptType::EAngelscriptDeclarationMode Mode)
+	{
+		if (!Usage.IsValid())
+		{
+			return TEXT("void");
+		}
+
+		// AngelScript does not distinguish top-level const value parameters for overload
+		// identity. Keep reference constness because const refs are distinct call contracts.
+		if (!Usage.bIsReference)
+		{
+			Usage.bIsConst = false;
+		}
+
+		return Usage.GetAngelscriptDeclaration(Mode);
+	}
+
+	FString BuildScriptFunctionSignatureKey(
+		const FString& ScriptName,
+		const FAngelscriptTypeUsage& ReturnType,
+		const TArrayView<const FAngelscriptTypeUsage> ArgumentTypes,
+		bool bConstMethod)
+	{
+		FString Key = GetScriptTypeSignatureKey(ReturnType, FAngelscriptType::EAngelscriptDeclarationMode::FunctionReturnValue);
+		Key += TEXT(" ");
+		Key += ScriptName;
+		Key += TEXT("(");
+		for (int32 ArgumentIndex = 0, ArgumentCount = ArgumentTypes.Num(); ArgumentIndex < ArgumentCount; ++ArgumentIndex)
+		{
+			if (ArgumentIndex != 0)
+			{
+				Key += TEXT(",");
+			}
+
+			Key += GetScriptTypeSignatureKey(ArgumentTypes[ArgumentIndex], FAngelscriptType::EAngelscriptDeclarationMode::FunctionArgument);
+		}
+		Key += TEXT(")");
+		if (bConstMethod)
+		{
+			Key += TEXT(" const");
+		}
+		return Key;
+	}
+
+	bool SignatureDeclaresConstMethod(const FAngelscriptFunctionSignature& Signature)
+	{
+		return Signature.Declaration.Contains(TEXT(") const"));
+	}
+
+	FString BuildScriptFunctionSignatureKey(const FAngelscriptFunctionSignature& Signature)
+	{
+		return BuildScriptFunctionSignatureKey(
+			Signature.ScriptName,
+			Signature.ReturnType,
+			MakeArrayView(Signature.ArgumentTypes),
+			SignatureDeclaresConstMethod(Signature));
+	}
+
+	FString BuildRegisteredScriptFunctionSignatureKey(asIScriptFunction* Function)
+	{
+		if (Function == nullptr || Function->GetName() == nullptr)
+		{
+			return FString();
+		}
+
+		TArray<FAngelscriptTypeUsage, TInlineAllocator<8>> ArgumentTypes;
+		const asUINT ArgumentCount = Function->GetParamCount();
+		for (asUINT ArgumentIndex = 0; ArgumentIndex < ArgumentCount; ++ArgumentIndex)
+		{
+			ArgumentTypes.Add(FAngelscriptTypeUsage::FromParam(Function, static_cast<int32>(ArgumentIndex)));
+		}
+
+		return BuildScriptFunctionSignatureKey(
+			UTF8_TO_TCHAR(Function->GetName()),
+			FAngelscriptTypeUsage::FromReturn(Function),
+			MakeArrayView(ArgumentTypes),
+			Function->IsReadOnly());
+	}
+
+	bool RegisteredScriptFunctionMatchesSignature(asIScriptFunction* Function, const FString& SignatureKey)
+	{
+		return BuildRegisteredScriptFunctionSignatureKey(Function) == SignatureKey;
+	}
+
 	// ---- Opt 1: TLS cache for IsScriptDeclarationAlreadyBound's global-function scan ----
-	// Key: namespace (UTF-8). Value: set of registered script-names and a set of full declarations.
+	// Key: namespace (UTF-8). Value: registered normalized signatures in that namespace.
 	struct FGlobalDeclCacheEntry
 	{
-		TSet<FString> Names;
-		TSet<FString> Declarations;
+		TSet<FString> SignatureKeys;
 	};
 
 	struct FBindCachesTLS
@@ -60,19 +143,10 @@ namespace
 				continue;
 			}
 			const char* NsRaw = Func->GetNamespace();
-			const char* NameRaw = Func->GetName();
-			const char* DeclRaw = Func->GetDeclaration(false, true, false, true);
 
 			const FString NsStr = NsRaw != nullptr ? FString(UTF8_TO_TCHAR(NsRaw)) : FString();
 			FGlobalDeclCacheEntry& Entry = GBindCachesTLS->GlobalDecls.FindOrAdd(NsStr);
-			if (NameRaw != nullptr)
-			{
-				Entry.Names.Add(FString(UTF8_TO_TCHAR(NameRaw)));
-			}
-			if (DeclRaw != nullptr)
-			{
-				Entry.Declarations.Add(FString(UTF8_TO_TCHAR(DeclRaw)));
-			}
+			Entry.SignatureKeys.Add(BuildRegisteredScriptFunctionSignatureKey(Func));
 		}
 
 		GBindCachesTLS->LastSyncedGlobalFunctionCount = Count;
@@ -238,6 +312,7 @@ namespace
 			return false;
 		}
 
+		const FString SignatureKey = BuildScriptFunctionSignatureKey(Signature);
 		auto HasGlobalDeclaration = [&](const FString& Namespace) -> bool
 		{
 			// Opt 1 fast path: consult TLS cache populated during Phase 2.
@@ -246,11 +321,9 @@ namespace
 				SyncGlobalDeclCacheFromEngine(ScriptEngine);
 				if (const FGlobalDeclCacheEntry* Entry = GBindCachesTLS->GlobalDecls.Find(Namespace))
 				{
-					if (Entry->Names.Contains(Signature.ScriptName))
-					{
-						return true;
-					}
-					if (Entry->Declarations.Contains(Signature.Declaration))
+					// ScriptName is intentionally not enough here: reflected ScriptName aliases can
+					// expose multiple overloads under the same callable name.
+					if (Entry->SignatureKeys.Contains(SignatureKey))
 					{
 						return true;
 					}
@@ -258,12 +331,7 @@ namespace
 				return false;
 			}
 
-			const FTCHARToUTF8 Utf8Declaration(*Signature.Declaration);
-			const FTCHARToUTF8 Utf8ScriptName(*Signature.ScriptName);
 			const FTCHARToUTF8 Utf8Namespace(*Namespace);
-			const char* PreviousNamespace = ScriptEngine->GetDefaultNamespace();
-			ScriptEngine->SetDefaultNamespace(Utf8Namespace.Get());
-			asIScriptFunction* ExistingFunction = nullptr;
 			for (asUINT FunctionIndex = 0, FunctionCount = ScriptEngine->GetGlobalFunctionCount(); FunctionIndex < FunctionCount; ++FunctionIndex)
 			{
 				asIScriptFunction* CandidateFunction = ScriptEngine->GetGlobalFunctionByIndex(FunctionIndex);
@@ -281,20 +349,13 @@ namespace
 					continue;
 				}
 
-				if (FCStringAnsi::Strcmp(CandidateFunction->GetName(), Utf8ScriptName.Get()) == 0)
+				if (RegisteredScriptFunctionMatchesSignature(CandidateFunction, SignatureKey))
 				{
-					ExistingFunction = CandidateFunction;
-					break;
-				}
-
-				if (FCStringAnsi::Strcmp(CandidateFunction->GetDeclaration(false, true, false, true), Utf8Declaration.Get()) == 0)
-				{
-					ExistingFunction = CandidateFunction;
-					break;
+					return true;
 				}
 			}
-			ScriptEngine->SetDefaultNamespace(PreviousNamespace != nullptr ? PreviousNamespace : "");
-			return ExistingFunction != nullptr;
+
+			return false;
 		};
 
 		if (Signature.bStaticInScript)
@@ -314,20 +375,21 @@ namespace
 
 		const FString& ScriptTypeName = Signature.bStaticInUnreal ? Signature.ClassName : InType->GetAngelscriptTypeName();
 		const FTCHARToUTF8 Utf8TypeName(*ScriptTypeName);
-		const FTCHARToUTF8 Utf8ScriptName(*Signature.ScriptName);
-		const FTCHARToUTF8 Utf8Declaration(*Signature.Declaration);
 		asITypeInfo* TypeInfo = ScriptEngine->GetTypeInfoByName(Utf8TypeName.Get());
 		if (TypeInfo == nullptr)
 		{
 			return false;
 		}
 
-		if (TypeInfo->GetMethodByName(Utf8ScriptName.Get()) != nullptr)
+		for (asUINT MethodIndex = 0, MethodCount = TypeInfo->GetMethodCount(); MethodIndex < MethodCount; ++MethodIndex)
 		{
-			return true;
+			if (RegisteredScriptFunctionMatchesSignature(TypeInfo->GetMethodByIndex(MethodIndex), SignatureKey))
+			{
+				return true;
+			}
 		}
 
-		return TypeInfo->GetMethodByDecl(Utf8Declaration.Get()) != nullptr;
+		return false;
 	}
 }
 
