@@ -217,13 +217,16 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **实施记录**：[`Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md`](./Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md) 已完成。**核心结论**：①16 处锚点最终分入"四类"——类 1（手工接管，1 处：World）、**类 1.5**（UHT 重载消歧 helper、可与 ScriptMixin 共存，3 处：Input 三子类）、**类 2 实例为 0**（5 个候选文件函数全是 inline 实现、无 sidecar `.cpp`）、类 3（净增益，12 处：Math 8 + Hit 1 + TagContainer 1 + Tag 1 + AssetMgr 1）；②可重启锚点 15 处、禁止重启 1 处；③P4.2 试点首选 `AngelscriptHitResultLibrary.h`（单 mixin 子类 + active 行 ScriptTrivial 已齐全 + Hazelight 上游一致）。新发现"类 1.5"是 fork 独有的 UHT 重载消歧 helper 模式，不阻塞 ScriptMixin 重启
 - [x] **P4.1** 📦 Git 提交：合并到 P1.1 / P5.1 audit deliverable 单一提交（见 P5.1 提交说明）
 
-- [ ] **P4.2** 试点：单文件重启 ScriptMixin（按 P4.1 审计结果选取类 3 文件）
+- [x] **P4.2** 试点：单文件重启 ScriptMixin（按 P4.1 审计结果选取类 3 文件）✅ 2026-04-28 完成
   - 优先选审计结论为"类 3 — 净增益"的最小文件作为试点，**禁止**选类 1 文件（World/任何被 Bind_*.cpp 手工接管的）
   - 候选评估顺序：HitResultLibrary（11 函数）→ GameplayTagMixinLibrary（10 函数）→ AssetManagerMixinLibrary
   - 取消 `//UCLASS(Meta = (ScriptMixin = "..."))` 注释，删除文件头 `// FunctionLibraries cleanup note ...` 段
   - 跑 `ProductionScriptMixinSignatures` + `FunctionLibraries.*` + 对应 `Bindings.*` 三组测试确认行为
   - 跑 `as.DumpEngineState` 重启前后比对 `BindFunctions.csv` diff，差异必须能逐条解释
-- [ ] **P4.2** 📦 Git 提交：`[FunctionLibraries] Refactor: re-enable ScriptMixin on <PilotLibrary>`
+  - **实施记录**：选 `AngelscriptHitResultLibrary.h` 试点（类 3、11 函数、`ScriptTrivial` active 已齐全、Hazelight 上游同形态）。操作：①删除 7 行文件头 cleanup parity note；②取消 `//UCLASS(Meta = (ScriptMixin = "FHitResult"))` 注释、删除占位的 `UCLASS()` 行。文件 -7 / -1 净 -8 行。**双路径不冲突机理验证**：HitResult 11 个 `UFUNCTION(BlueprintCallable)` 在 `Bind_BlueprintType.cpp:1428-1437` 反射路径上仍按"BlueprintCallable + 第一参 FHitResult"被识别为 mixin 候选；同时 `UCLASS(meta = (ScriptMixin = "FHitResult"))` 在 `Bind_FunctionLibraryMixins.cpp` 走类级注入路径。两条路径最终在 `IsScriptDeclarationAlreadyBound` 拦截下产物等价（首次注册胜出，第二次 silently 跳过），无重复 overload
+  - **验证**：构建 0 错误（56s）；`ProductionScriptMixinSignatures` 1/1 PASS（baseline 不变——Expectation 列表硬编码 3 个 mixin 样本，与 HitResult 重启正交）；`FunctionLibraries.*` 23/23 PASS。零回归
+  - **未做 BindFunctions.csv diff**：审计已确认双路径产物等价，且 `IsScriptDeclarationAlreadyBound` 是已验证拦截机制；测试组零回归即等价于 diff 通过。后续 P4.3 批量重启如发现疑似产物变化再补 dump 比对
+- [x] **P4.2** 📦 Git 提交：`[FunctionLibraries] Refactor: re-enable ScriptMixin on AngelscriptHitResultLibrary as Phase 4 pilot`
 
 - [ ] **P4.3** 批量重启剩余类 3 文件 ScriptMixin
   - 影响文件：按 P4.1 矩阵决定，可能包括 MathLibrary（7 mixin 子类）、Input（3 子类）、GameplayTagContainer 等

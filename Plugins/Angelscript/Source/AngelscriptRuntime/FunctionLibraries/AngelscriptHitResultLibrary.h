@@ -5,16 +5,7 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptHitResultLibrary.generated.h"
 
-// FunctionLibraries cleanup note (mixin parity):
-//
-// The //UCLASS(Meta = (ScriptMixin = "FHitResult")) line below is kept commented
-// out as a Hazelight-parity anchor. This fork currently routes these helpers
-// through UFUNCTION(BlueprintCallable) + BlueprintCallableReflectiveFallback
-// instead of the dedicated mixin path in Helper_FunctionSignature.h. See
-// Documents/Knowledges/ZH/Syntax_Mixin.md section 6 for the full background.
-
-//UCLASS(Meta = (ScriptMixin = "FHitResult"))
-UCLASS()
+UCLASS(Meta = (ScriptMixin = "FHitResult"))
 class UAngelscriptHitResultLibrary : public UObject
 {
 	GENERATED_BODY()
