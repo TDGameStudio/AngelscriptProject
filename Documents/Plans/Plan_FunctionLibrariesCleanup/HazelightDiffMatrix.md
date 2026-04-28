@@ -201,7 +201,7 @@ P5.2 补全要点：fork 该文件已启用 `UCLASS(Meta = (ScriptMixin = "FHitR
 **结论**：16 处锚点 100% 是 parity gap。P4.x 实施结果：**8 处已重启 / 8 处保留禁用**。
 
 - §3 锚点 #1（HitResult）/ #10（World）/ #11–#16（Tag / TagContainer / AssetMgr / Input × 3）—— 共 8 处已通过 P4.2 / P4.3 / P4.4 重启 ScriptMixin，cleanup parity note 同步删除。
-- §3 锚点 #2–#9（MathLibrary 8 处）—— P4.3 试启检测到 namespace-regression 后保留禁用；锚点保留作为"未来 AS 脚本现代化迁移"的 TODO 标记。MathLibrary 文件头从未加过 cleanup note，P5.4 在 MathLibrary 上无工作量。
+- §3 锚点 #2–#9（MathLibrary 8 处）—— P4.3 试启检测到 namespace-regression 后保留禁用；已切出独立专项 [`Plan_MathScriptMixinReenablement.md`](../Plan_MathScriptMixinReenablement.md) 系统性推进重启。MathLibrary 文件头 cleanup note 由 P5.4 重写为反映该专项的入口指引（指向新 Plan）。
 
 ---
 

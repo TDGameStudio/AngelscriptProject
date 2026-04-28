@@ -89,7 +89,8 @@
 | H | StructUtils 运行时边界迁移 | `Plan_StructUtilsMigration.md` | 未开始 |
 | I | Detached Class 积极清理优化 | `Plan_DetachedClassEagerCleanup.md` | 未开始 |
 | J | Core 目录细分（GAS/Commandlet 迁移至子目录） | `Plan_CoreDirectorySubdivision.md` | 已完成 |
-| K | FunctionLibraries 清理与功能恢复 | `Plan_FunctionLibrariesCleanup.md` | 未开始（语法噪音清理已落地工作树（15 个 `.h` 净 -187 行，待提交）；本计划承接丢失功能 meta 恢复 + ActorLibrary dead code 决策 + ScriptMixin 重启评估） |
+| K | FunctionLibraries 清理与功能恢复 | `Plan_FunctionLibrariesCleanup.md` | ✅ 5 个 Phase 全部收口（P1.1 / P2 / P3 / P4 / P5 已完成；P4.3 Math 8 锚点 deferred 已切出独立 Plan）|
+| L | Math 子类 ScriptMixin 重启专项 | `Plan_MathScriptMixinReenablement.md` | 未开始（承接 `Plan_FunctionLibrariesCleanup.md` P4.3 deferred 的 Math 8 锚点；用户契约变更 + AS 调用形式批量迁移；P1 盘点是入口） |
 
 ### 3.2 新建议 Plan
 
