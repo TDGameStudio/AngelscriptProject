@@ -3,8 +3,8 @@
 本文档是对当前 Angelscript 插件所有可执行方向的系统性盘点，涵盖 AS 2.38 合入、测试增强、缺陷重构、功能增强、工具链与架构演进六大类。每个条目标注优先级、已有 Plan 状态与建议动作。
 
 **编制时间**：2026-04-05（数字基线更新于 2026-04-28）
-**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `59` 份 `Plan_*.md`（含 `57` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
-**Plan 状态快照**：57 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
+**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `60` 份 `Plan_*.md`（含 `58` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
+**Plan 状态快照**：58 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
 
 ---
 
@@ -89,6 +89,7 @@
 | H | StructUtils 运行时边界迁移 | `Plan_StructUtilsMigration.md` | 未开始 |
 | I | Detached Class 积极清理优化 | `Plan_DetachedClassEagerCleanup.md` | 未开始 |
 | J | Core 目录细分（GAS/Commandlet 迁移至子目录） | `Plan_CoreDirectorySubdivision.md` | 已完成 |
+| K | FunctionLibraries 清理与功能恢复 | `Plan_FunctionLibrariesCleanup.md` | 未开始（语法噪音清理已落地工作树（15 个 `.h` 净 -187 行，待提交）；本计划承接丢失功能 meta 恢复 + ActorLibrary dead code 决策 + ScriptMixin 重启评估） |
 
 ### 3.2 新建议 Plan
 
