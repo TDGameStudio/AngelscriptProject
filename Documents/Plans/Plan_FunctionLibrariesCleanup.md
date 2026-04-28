@@ -162,19 +162,23 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 
 ### Phase 2：ActorLibrary dead code 决策
 
-- [ ] **P2.1** 验证 `AngelscriptActorLibrary` 是否真的是 dead code
+- [x] **P2.1** 验证 `AngelscriptActorLibrary` 是否真的是 dead code ✅ 2026-04-28 完成
   - 用 `Tools\RunBuild.ps1 -SerializeByEngine` + 在 `UAngelscriptActorLibrary::SetActorRelativeLocation` 的实现里塞一行 `UE_LOG(LogTemp, Fatal, ...)`，跑 `Angelscript.TestModule.Actor.*`，确认这条 log 永远不触发即为 dead code
   - 备选验证路径：用 `as.DumpEngineState` 生成 `BindDatabase.csv`，搜 `UAngelscriptActorLibrary` 是否出现在 `ClassName` 列；不出现就是 dead code
   - 验证完成后回滚验证用的 Fatal log 修改
-- [ ] **P2.1** 📦 Git 提交：无（仅本地验证，不提交）
+  - **实施记录**：采用静态证据链验证（无需运行时 Fatal log），4 条证据全部命中：①全仓库零 .cpp 调用（仅 .h + 2 处文档）；②`Bind_BlueprintType.cpp:1428-1437` 反射五分支对裸 `UFUNCTION()` 全部 miss；③`AngelscriptTest/` 模块零引用；④`Script/` 与测试 AS 代码对 `SetActorRotation/SetActorRelativeRotation/AddActor*Rotation/SetActorQuat` 全部零调用。**结论**：30 个函数中实际有效函数为 0（27 个真冗余 + 3 个 fork 独有 BlueprintCallable 但与 UE native 同名 → 被 `IsScriptDeclarationAlreadyBound` 拦截）；**但其中 6 个 FQuat 重载 + 1 个 SetActorLocationAdvanced + 2 个 EDITOR utility 是 fork 独有签名**（UE native AActor BlueprintCallable surface 不覆盖），属真实 fork 价值
+- [x] **P2.1** 📦 Git 提交：无（仅本地验证，不提交）
 
-- [ ] **P2.2** 决策 `AngelscriptActorLibrary.h` 处置方案
+- [x] **P2.2** 决策 `AngelscriptActorLibrary.h` 处置方案 ✅ 2026-04-28 完成
   - 若 P2.1 确认 dead code，三选一：
     - **选项 A（推荐）**：整文件删除，加注释到 `Bind_AActor.cpp` 头部说明历史
     - **选项 B**：把 `UFUNCTION()` 改成 `UFUNCTION(BlueprintCallable)` 让反射路径接住，并恢复死注释里的 `ScriptName / NotAngelscriptProperty` meta
     - **选项 C**：把这 27 个函数迁移到 `Bind_AActor.cpp` 用手工 `AActor_.Method("...", lambda)` 注册（与 `Bind_FunctionLibraryMixins.cpp` 的 `RuntimeFloatCurve` 模式一致）
   - 在 Plan 内补一条决策 + 理由
-- [ ] **P2.2** 📦 Git 提交：`[Angelscript] Refactor: <decided action> for AngelscriptActorLibrary dead code`
+  - **决策**：选项 B'（混合方案）—— 仅保留 9 个 fork 独有签名（6 FQuat + `SetActorLocationAdvanced` + 2 EDITOR utility）并升级为 `UFUNCTION(BlueprintCallable, Meta = (ScriptName=..., NotAngelscriptProperty))` 形态；删除 21 个 UE native AActor 已覆盖的真冗余函数。**理由**：选项 A 整删会丢失 6 个 FQuat 重载未来兼容性（Hazelight 上游也保留这些）；选项 B 全保留会让 21 个真冗余被 `IsScriptDeclarationAlreadyBound` 静默拦截，制造无意义 fallback noise；选项 C 手工迁移成本远高于价值。选项 B' 在"恢复 fork 独有功能"和"清理 dead code"之间取得最佳平衡
+  - **实施细节**：文件从 169 行缩到 81 行；6 个 FQuat 重载每个都带 `ScriptName="SetActor*Rotation"` 别名 + `NotAngelscriptProperty`，与 UE native FRotator 重载形成 AS 重载；`SetActorQuat` 按 Hazelight 上游设计独立 ScriptName + `ScriptTrivial`；`SetActorLocationAdvanced` 带 sweep+hit+teleport 完整签名；2 EDITOR utility 保持 `WITH_EDITOR` 守护
+  - **验证**：构建 0 错误（180s）；`ProductionScriptMixinSignatures` 1/1 PASS（mixin 签名无 regression）；`FunctionLibraries.*` 23/23 PASS；`Actor.*` 24/24 PASS。零回归
+- [x] **P2.2** 📦 Git 提交：`[FunctionLibraries] Refactor: trim AngelscriptActorLibrary to 9 fork-distinctive surfaces (6 FQuat + sweep + 2 editor)`
 
 ### Phase 3：active 行功能 meta 批量恢复
 

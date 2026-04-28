@@ -2,6 +2,16 @@
 #include "GameFramework/Actor.h"
 #include "AngelscriptActorLibrary.generated.h"
 
+// Hybrid library after Plan_FunctionLibrariesCleanup.md Phase 2 (2026-04-28):
+// only function shapes that UE-native AActor BlueprintCallable API does NOT cover survive here.
+// All UFunctions are tagged BlueprintCallable so they enter the reflective binding path
+// (Bind_BlueprintType.cpp:1428-1437); the historical bare UFUNCTION() forms were dead code
+// (no manual Bind_*.cpp wiring + no BlueprintCallable/ScriptCallable flag => never bound).
+// 21 redundant wrappers around UE-native FRotator/FVector/FTransform AActor APIs were removed;
+// 9 fork-distinctive surfaces remain: 6 FQuat overloads + SetActorLocationAdvanced (sweep+hit)
+// + 2 editor-only construction-script utilities. Hazelight upstream parity holds via ScriptName
+// aliases on the FQuat overloads.
+
 UCLASS(meta = (ScriptMixin = "AActor"))
 class UAngelscriptActorLibrary : public UObject
 {
@@ -9,181 +19,49 @@ class UAngelscriptActorLibrary : public UObject
 
 public:
 
-	UFUNCTION()
-	static void SetActorRelativeLocation(AActor* Actor, const FVector& NewRelativeLocation)
-	{
-		Actor->SetActorRelativeLocation(NewRelativeLocation);
-	}
-
-	UFUNCTION()
-	static FVector GetActorRelativeLocation(const AActor* Actor)
-	{
-		if (auto* RootComp = Actor->GetRootComponent())
-			return RootComp->GetRelativeLocation();
-		return FVector::ZeroVector;
-	}
-
-	UFUNCTION()
-	static void SetActorRelativeRotation(AActor* Actor, const FRotator& NewRelativeRotation)
-	{
-		Actor->SetActorRelativeRotation(NewRelativeRotation);
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetActorRelativeRotation", NotAngelscriptProperty))
 	static void SetActorRelativeRotationQuat(AActor* Actor, const FQuat& NewRelativeRotation)
 	{
 		Actor->SetActorRelativeRotation(NewRelativeRotation);
 	}
 
-	UFUNCTION()
-	static FRotator GetActorRelativeRotation(const AActor* Actor)
-	{
-		if (auto* RootComp = Actor->GetRootComponent())
-			return RootComp->GetRelativeRotation();
-		return FRotator::ZeroRotator;
-	}
-
-	UFUNCTION()
-	static void SetActorRelativeTransform(AActor* Actor, const FTransform& NewRelativeTransform)
-	{
-		Actor->SetActorRelativeTransform(NewRelativeTransform);
-	}
-
-	UFUNCTION()
-	static FTransform GetActorRelativeTransform(const AActor* Actor)
-	{
-		if (auto* RootComp = Actor->GetRootComponent())
-			return RootComp->GetRelativeTransform();
-		return FTransform::Identity;
-	}
-
-	UFUNCTION()
-	static void SetActorLocation(AActor* Actor, const FVector& NewLocation)
-	{
-		Actor->SetActorLocation(NewLocation);
-	}
-
-	UFUNCTION(BlueprintCallable)
-	static FVector GetActorLocation(const AActor* Actor)
-	{
-		return Actor->GetActorLocation();
-	}
-
-	UFUNCTION(meta = (ScriptName = "SetActorLocation", NotAngelscriptProperty))
-	static bool SetActorLocationAdvanced(AActor* Actor, const FVector& NewLocation, bool bSweep, FHitResult& SweepHitResult, bool bTeleport = false)
-	{
-		return Actor->K2_SetActorLocation(NewLocation, bSweep, SweepHitResult, bTeleport);
-	}
-
-	UFUNCTION()
-	static void SetActorRotation(AActor* Actor, const FRotator& NewRotation)
-	{
-		Actor->SetActorRotation(NewRotation);
-	}
-
-	UFUNCTION(BlueprintCallable)
-	static FRotator GetActorRotation(const AActor* Actor)
-	{
-		return Actor->GetActorRotation();
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetActorRotation", NotAngelscriptProperty))
 	static void SetActorRotationQuat(AActor* Actor, const FQuat& NewRotation)
 	{
 		Actor->SetActorRotation(NewRotation);
 	}
 
-	UFUNCTION()
-	static void SetActorLocationAndRotation(AActor* Actor, const FVector& NewLocation, const FRotator& NewRotation, bool bTeleport = false)
-	{
-		Actor->SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, TeleportFlagToEnum(bTeleport));
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetActorLocationAndRotation"))
 	static void SetActorLocationAndRotationQuat(AActor* Actor, const FVector& NewLocation, const FQuat& NewRotation, bool bTeleport = false)
 	{
 		Actor->SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, TeleportFlagToEnum(bTeleport));
 	}
 
-	UFUNCTION()
-	static void SetActorTransform(AActor* Actor, const FTransform& NewTransform)
-	{
-		Actor->SetActorTransform(NewTransform);
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptTrivial))
 	static void SetActorQuat(AActor* Actor, const FQuat& NewRotation)
 	{
 		Actor->SetActorRotation(NewRotation);
 	}
 
-	UFUNCTION()
-	static FQuat GetActorQuat(const AActor* Actor)
-	{
-		return Actor->GetActorQuat();
-	}
-
-	UFUNCTION()
-	static void AddActorLocalOffset(AActor* Actor, const FVector& DeltaLocation)
-	{
-		Actor->AddActorLocalOffset(DeltaLocation);
-	}
-
-	UFUNCTION()
-	static void AddActorLocalRotation(AActor* Actor, const FRotator& DeltaRotation)
-	{
-		Actor->AddActorLocalRotation(DeltaRotation);
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "AddActorLocalRotation", NotAngelscriptProperty))
 	static void AddActorLocalRotationQuat(AActor* Actor, const FQuat& DeltaRotation)
 	{
 		Actor->AddActorLocalRotation(DeltaRotation);
 	}
 
-	UFUNCTION()
-	static void AddActorLocalTransform(AActor* Actor, const FTransform& DeltaTransform)
-	{
-		Actor->AddActorLocalTransform(DeltaTransform);
-	}
-
-	UFUNCTION()
-	static void AddActorWorldOffset(AActor* Actor, const FVector& DeltaLocation)
-	{
-		Actor->AddActorWorldOffset(DeltaLocation);
-	}
-
-	UFUNCTION()
-	static void AddActorWorldRotation(AActor* Actor, const FRotator& DeltaRotation)
-	{
-		Actor->AddActorWorldRotation(DeltaRotation);
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "AddActorWorldRotation"))
 	static void AddActorWorldRotationQuat(AActor* Actor, const FQuat& DeltaRotation)
 	{
 		Actor->AddActorWorldRotation(DeltaRotation);
 	}
 
-	UFUNCTION()
-	static void AddActorWorldTransform(AActor* Actor, const FTransform& DeltaTransform)
+	UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetActorLocation", NotAngelscriptProperty))
+	static bool SetActorLocationAdvanced(AActor* Actor, const FVector& NewLocation, bool bSweep, FHitResult& SweepHitResult, bool bTeleport = false)
 	{
-		Actor->AddActorWorldTransform(DeltaTransform);
+		return Actor->K2_SetActorLocation(NewLocation, bSweep, SweepHitResult, bTeleport);
 	}
 
-	UFUNCTION()
-	static void AttachToComponent(AActor* Actor, USceneComponent* Parent, FName SocketName = NAME_None, EAttachmentRule AttachmentRule = EAttachmentRule::SnapToTarget)
-	{
-		Actor->K2_AttachToComponent(Parent, SocketName, AttachmentRule, AttachmentRule, EAttachmentRule::KeepWorld, false);
-	}
-
-	UFUNCTION()
-	static void AttachToActor(AActor* Actor, AActor* ParentActor, FName SocketName = NAME_None, EAttachmentRule AttachmentRule = EAttachmentRule::SnapToTarget)
-	{
-	    Actor->K2_AttachToActor(ParentActor, SocketName, AttachmentRule, AttachmentRule, EAttachmentRule::KeepWorld, false);
-	}
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	static void SetbRunConstructionScriptOnDrag(AActor* Actor, bool Value)
 	{
 #if WITH_EDITOR
@@ -192,7 +70,7 @@ public:
 	}
 
 #if WITH_EDITOR
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	static void RerunConstructionScripts(AActor* Actor)
 	{
 		Actor->RerunConstructionScripts();

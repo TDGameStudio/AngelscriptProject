@@ -8,7 +8,7 @@
 
 | 汇总维度 | 数值 | 落点 |
 |---|---:|---|
-| ① 缺函数总数（active `UFUNCTION`） | **19** | P5.2 实施目标 |
+| ① 缺函数总数（active `UFUNCTION`） | **21**（19 + Phase 2 后新增 ActorLibrary 缺 `GetAttachedActors` / `GetAttachedActorsOfClass` 2 处）| P5.2 实施目标 |
 | ② 缺 mixin 子类总数（active `UCLASS`） | **3** | P5.3 实施目标 |
 | ③ 可清理锚点注释数（`//UCLASS(Meta = (ScriptMixin = "..."))` 但 Hazelight 上游也无该 mixin） | **0** | P5.4 实施目标，**所有 16 处锚点全是真 parity gap** |
 
@@ -26,7 +26,7 @@
 
 | 文件 | Haze 行 | Fork 行 | Haze UCLASS | Fork UCLASS | Haze UFUNC | Fork UFUNC | Gap |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `AngelscriptActorLibrary.h` | 186 | 169 | 1 | 1 | 30 | 30 | 函数数同，但 fork 全用裸 `UFUNCTION()` (见 §4) |
+| `AngelscriptActorLibrary.h` | 186 | 81 | 1 | 1 | 29 | 9 | **P2.2 后修正** Phase 2 已完成 B' 混合处置：保留 9 fork 独有 + 删 21 冗余；fork 仍多 `SetActorLocationAdvanced`，**Hazelight 多 `GetAttachedActors` / `GetAttachedActorsOfClass`**（待 P5.2 补） |
 | `AngelscriptComponentLibrary.h` | 231 | 208 | 1 | 1 | 36 | 36 | 完全 parity（待 §6 meta 维度 P1.1 补） |
 | `AngelscriptFrameTimeMixinLibrary.h` | 16 | 15 | 1 | 1 | 1 | 1 | 完全 parity |
 | `AngelscriptHitResultLibrary.h` | 100 | 75 | 1 | 1 | 12 | 11 | **缺 1 函数：`SetPhysMaterial`** |
@@ -204,27 +204,49 @@ P5.2 补全要点：fork 该文件已启用 `UCLASS(Meta = (ScriptMixin = "FHitR
 
 ---
 
-## 4. `AngelscriptActorLibrary.h` 专项：30/30 函数数同但全部裸 `UFUNCTION()`
+## 4. `AngelscriptActorLibrary.h` 专项（**Phase 2 已完成**）
 
-### 4.1 现状对照
+### 4.1 P2.2 处置结果（2026-04-28）
 
-| 维度 | Hazelight | fork |
+采用选项 B'（混合方案）：保留 9 fork 独有签名 + 删 21 冗余 + 全部升级到 `UFUNCTION(BlueprintCallable, Meta = (...))`。
+
+| 维度 | Hazelight 上游 | fork（P2.2 前）| fork（P2.2 后）|
+|---|---|---|---|
+| `UCLASS` 数 | 1 | 1 | 1 |
+| `UFUNCTION` 数 | 29 | 30 | 9 |
+| `UFUNCTION` 形态 | `UFUNCTION(ScriptCallable, Meta = (...))` | 裸 `UFUNCTION()` × 27 + 例外 3 | `UFUNCTION(BlueprintCallable, Meta = (...))` × 9 |
+| 是否进入反射绑定 | ✓ | ✗ 全 dead | ✓ 全 active |
+| 文件行数 | 220 | 169 | 81 |
+
+### 4.2 P2.2 后保留的 9 个函数
+
+| # | 函数 | Meta | 价值依据 |
+|---|---|---|---|
+| 1 | `SetActorRelativeRotationQuat` | `ScriptName="SetActorRelativeRotation", NotAngelscriptProperty` | UE native AActor 仅有 FRotator 版本 |
+| 2 | `SetActorRotationQuat` | `ScriptName="SetActorRotation", NotAngelscriptProperty` | 同上 |
+| 3 | `SetActorLocationAndRotationQuat` | `ScriptName="SetActorLocationAndRotation"` | 同上 |
+| 4 | `SetActorQuat` | `ScriptTrivial` | 独立 ScriptName，trivial inline 优化 |
+| 5 | `AddActorLocalRotationQuat` | `ScriptName="AddActorLocalRotation", NotAngelscriptProperty` | UE native 仅有 FRotator 版本 |
+| 6 | `AddActorWorldRotationQuat` | `ScriptName="AddActorWorldRotation"` | 同上 |
+| 7 | `SetActorLocationAdvanced` | `ScriptName="SetActorLocation", NotAngelscriptProperty` | 带 `bSweep + FHitResult& + bTeleport` 签名（fork 独有，Hazelight 上游也无）|
+| 8 | `SetbRunConstructionScriptOnDrag` | (无) | EDITOR-only 字段写入接口 |
+| 9 | `RerunConstructionScripts` | (无) | EDITOR-only utility |
+
+### 4.3 P2.2 后删除的 21 个函数
+
+`SetActorRelativeLocation` / `GetActorRelativeLocation` / `SetActorRelativeRotation`(FRotator) / `GetActorRelativeRotation` / `SetActorRelativeTransform` / `GetActorRelativeTransform` / `SetActorLocation` / `GetActorLocation` / `SetActorRotation`(FRotator) / `GetActorRotation` / `SetActorLocationAndRotation`(FRotator) / `SetActorTransform` / `GetActorQuat` / `AddActorLocalOffset` / `AddActorLocalRotation`(FRotator) / `AddActorLocalTransform` / `AddActorWorldOffset` / `AddActorWorldRotation`(FRotator) / `AddActorWorldTransform` / `AttachToComponent` / `AttachToActor`
+
+均与 UE native AActor 同名 BlueprintCallable/BlueprintPure 等价，AS 脚本调用通过 UE native 反射路径正常 work，删除零行为变化。
+
+### 4.4 fork 与 Hazelight 仍存差异（待 P5.2 处理）
+
+| 方向 | 函数 | 备注 |
 |---|---|---|
-| `UCLASS` 数 | 1 | 1（已启用 `UCLASS(Meta = (ScriptMixin = "AActor"))`）|
-| `UFUNCTION` 数 | 30 | 30 |
-| `UFUNCTION` 形态 | `UFUNCTION(ScriptCallable, Meta = (...))` | `UFUNCTION()` 全裸 |
-| 是否进入反射绑定 | ✓（`Bind_BlueprintType.cpp:1437` 走 `ScriptCallable` 分支）| ✗（不进任何分支）|
-| 是否被手工 `Method` 接管 | 部分（`Bind_AActor.cpp` 手工绑了 `GetActorLocation` 等基础方法）| 与 Hazelight 同 `Bind_AActor.cpp`（30 个 ActorLibrary 函数无任何手工迁移）|
+| fork 多 | `SetActorLocationAdvanced` | Hazelight 上游无对应签名，fork 独有的 sweep+hit+teleport 完整 K2 签名包装。**保留** |
+| Hazelight 多 | `GetAttachedActors(bRecursive=false)` | 返回 `TArray<AActor*>` 而非 OutActors 引用参数；`Meta = (ScriptTrivial, NotAngelscriptProperty)`。**P5.2 待补** |
+| Hazelight 多 | `GetAttachedActorsOfClass(TSubclassOf<AActor>, bRecursive)` | 按 class 过滤的版本；`Meta = (ScriptTrivial, DeterminesOutputType="ActorClass", NotAngelscriptProperty)`。**P5.2 待补** |
 
-### 4.2 fork 现状的实际后果
-
-fork 中这 30 个函数**全都是 dead code**：既不进反射路径，也无手工 `AActor_.Method(...)` 接管。AS 脚本里 `Actor.SetActorRelativeLocation(...)` 之所以能用，是因为 UE 引擎 `AActor` 自身有同名 `BlueprintCallable` 方法，由引擎反射路径接住。
-
-### 4.3 Hazelight 上游可作为 P2.2 改造模板
-
-Phase 2 P2.2 的三个选项（删除 / 改 BlueprintCallable / 迁移到 `Bind_AActor.cpp`）中，**选项 B（改成 `BlueprintCallable`）的实施模板**就是 Hazelight 上游：把每个 `UFUNCTION()` 改回 `UFUNCTION(BlueprintCallable, Meta = (...))`，Meta 内容从 Hazelight 上游对应函数取（一般是 `ScriptName / NotAngelscriptProperty / ScriptTrivial` 组合）。
-
-具体每个函数的 Hazelight 完整 Meta 由 P2.1 验证完成后、在 P2.2 实施前，按需逐函数从 `K:\UnrealEngine\UEAS\Engine\Plugins\Angelscript\Source\AngelscriptCode\Public\FunctionLibraries\AngelscriptActorLibrary.h` 取。
+P5.1 矩阵高层数据从 30/30 函数 parity 修正为 29/9 → P2.2 后差额 = `Hazelight 29 - fork 9 + Hazelight 多 2 - fork 多 1 = 22 净差` 但实际只有 2 个真"缺漏"；其余 20 个差额是"我们主动删除的 UE native 已覆盖冗余"，不是 parity gap。
 
 ---
 
