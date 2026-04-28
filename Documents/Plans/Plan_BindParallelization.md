@@ -236,3 +236,206 @@ AngelScript 的 `Register*` 方法每次调用都做字符串解析（`asCBuilde
 - **绑定分片模块的加载顺序**：`ASRuntimeBind_*` 模块在 `LoadModule` 时注册绑定到静态数组，排序在 `CallBinds` 中完成。如果分阶段绑定需要不同的注册模式（Prepare + Commit），生成的绑定代码也需要同步修改
 - **收益依赖实际耗时数据**：如果 Phase 1 测量显示总绑定耗时 < 500ms，Phase 4 的分阶段并行化投入产出比较低，应将精力转向其他优化（如脚本编译并行化——UEAS2 已有 `BuildParallelParseScripts` 先例）
 - **生成绑定代码的兼容性**：`AngelscriptEditorModule.cpp` 中 `GenerateNativeBinds` 生成的分片模块代码使用 `FAngelscriptBinds::RegisterBinds(EOrder::Late, ...)` 模式。如果 Phase 4 引入新的 Prepare + Commit 拆分，需要同步更新代码生成器
+
+---
+
+## 附录 A：原子计数与数据提前确定可行性专题
+
+> 本附录回答一类常见提问：「每个 `Bind` 写入 AS 引擎的数据都可以提前确定，是否可以用原子计数（如递增 `nextScriptFunctionId`）替代锁，从而把 `CallBinds` 阶段并行化？」结论先行：思路在概念上对了一半，但落到当前 fork 的 AngelScript 引擎实现时，**仅靠原子计数远远不够**；要把它变成可用方案，仍要走方向 C 的「分阶段并行准备 + 串行提交」路径，并且收益必须先经过 Phase 1 的实测耗时数据验证。
+
+### 附录 A.1 — 思路重述
+
+把每个 `Bind.Function()` lambda 内部要写入 `asIScriptEngine` 的字段（签名字符串、函数指针、UserData 等）预先在工作线程上备好，最关键的「函数 ID」改用 `std::atomic<int>` 自增分配，整个 `CallBinds` 因此可以 `ParallelFor`。该思路天然有吸引力，因为它把"瓶颈"简化为单一资源争用。
+
+### 附录 A.2 —「数据是否真的能提前确定」分类
+
+直接对照 [Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp) 中 `RegisterObjectMethod`（第 2691 行）与 `RegisterMethodToObjectType`（第 2717 行）实际写入的字段：
+
+可提前确定（lambda 局部、纯本地数据）：
+
+- 签名字符串字面量（`"void SetWorldLocation(const FVector &in)"`）
+- 函数指针 `asSFuncPtr` / 调用约定 `asECallConvTypes` / `ASAutoCaller::FunctionCaller`
+- UserData 指针、`accessorType`、父类型名 `obj`
+- `FNamespace` 名字面量
+
+不可提前确定（必须运行期生成、且依赖前序 bind 已完成的全局状态）：
+
+- `func->id`：由 `asCScriptEngine::GetNextScriptFunctionId()`（第 5503 行）从 `freeScriptFunctionIds` 栈顶或 `scriptFunctions.GetLength()` 获取
+- `ParseDataType("AActor", &dt, defaultNamespace, ...)` 的解析结果：内部读 `engine->allRegisteredTypesByName` / `typeLookup`，依赖该类型已被前面的 bind 注册过
+- `ParseFunctionDeclaration` 的解析结果：对每个参数类型做同样查找
+- `objectType->FindMethod(name, ...)` 的重载冲突检查结果：依赖该类型当前的 `methodTable`
+- `func->CalculateParameterOffsets()`：依赖参数 `asCDataType` 已确定
+
+也就是说，「数据可提前确定」对**字面量级的输入**成立，对**引擎查询出的中间结果**不成立。
+
+### 附录 A.3 — 「原子计数」能解决什么、不能解决什么
+
+可单点原子化（理论可行，工程量小）：
+
+- `nextScriptFunctionId` 自增：把 `GetNextScriptFunctionId()` 改成 `std::atomic<int>::fetch_add(1)`，即可让多线程并发抢 ID
+- `PreviouslyBoundFunction`（[Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp) 第 73 行 `GetPreviouslyBoundFunctionRef`）：可改为 `thread_local`，但这只是把「跨线程冲突」转成「线程内顺序」，不解除语义耦合
+
+不可单点原子化（必须串行，或换一整套 lock-free 容器）：
+
+- `scriptFunctions.PushLast(func)`：`asCArray::PushLast` 内部会扩容 realloc + memcpy，扩容期间任何并发读会拿到悬空指针
+- `objectType->methods.PushLast(id)` 与 `objectType->methodTable.Add(func)`：同上
+- `engine->allRegisteredTypesByName`、`typeLookup`、`registeredObjTypes` 等表的写入：哈希表 rehash 不是原子操作
+- `defaultNamespace` 是 `asCScriptEngine` 全局变量，[Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp) 第 760~771 行 `FNamespace` RAII 通过 `SetDefaultNamespace` 切换；并行执行时不同线程会互相覆盖，导致方法注册到错误 namespace
+
+引申结论：**若要让 `RegisterObjectMethod` 整体无锁可并发，等同于把 `asCArray` / `asCMap` 换成 lock-free 容器，并改写 `defaultNamespace` 的语义**。这是对 fork 出去的 AS 引擎做结构性重构，违反 [AGENTS.md](AGENTS.md) 写明的「`AngelScript` 选择性吸收、不大改 fork」策略，也会让后续合并上游 2.38+ 的代价急剧上升。
+
+### 附录 A.4 — 场景区分：手写 Binds vs 生成 Bind 分片
+
+按可并行性把 bind 来源分成两类讨论。
+
+#### A.4.1 生成绑定分片（`ASRuntimeBind_*` / `ASEditorBind_*`）
+
+- 来源：[Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp](Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp) 第 270 行 `FAngelscriptEditorModule::GenerateNativeBinds`，每 10 个 UClass 一个分片，分片缓存写入 `BindModules.Cache`（同文件第 348 行）
+- 模式高度规整：每个分片只做「对一组 UClass 的 BlueprintCallable 函数调 `BindMethod` / `BindMethodDirect`」，**不做类型声明、不做 namespace 切换、不做跨分片依赖**，统一注册在 `EOrder::Late`
+- 可并行性评估：
+  - **Prepare（并行可）**：在工作线程上完成 `UClass::GenerateFunctionList` 收集、签名字符串构造、`FFuncEntry` 整理、调用约定推导，**不接触 `asIScriptEngine`**
+  - **Parse（分阶段并行可）**：前提是所有 `Bind_*` 早期类型声明（`Early`/`Normal`）已串行完成、类型表已冻结，工作线程上的 `ParseDataType` / `ParseFunctionDeclaration` 才是「只读引擎」操作
+  - **Commit（必须串行）**：`AddScriptFunction` + `methods.PushLast` + `methodTable.Add` 这一段写入容器，与原子计数无关
+- 收益预估假设：生成绑定方法数量远超手写 binds（每分片 10 个 UClass、所有 BlueprintCallable 方法叠加），如果 Phase 1 数据显示 Parse + 字符串处理是热点，分阶段并行的相对收益最大
+
+#### A.4.2 手写 Binds（`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_*.cpp`）
+
+- 模式不规整：
+  - `FNamespace` RAII 普遍存在：[Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FVector2D.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FVector2D.cpp) 第 185 行、[Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_InputEvents.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_InputEvents.cpp) 第 217 行等
+  - `PreviouslyBoundFunction` 紧跟 `BindMethod` 的副作用调用普遍存在：`Bind_FString.cpp` / `Bind_FVector.cpp` / `Bind_AActor.cpp` / `Bind_BlueprintEvent.cpp` / `Bind_BlueprintType.cpp` / `Bind_UStruct.cpp` 等数十个文件
+  - 部分类型采用 `Early` 类型声明 + `Late` 方法注册的二阶段模式（`Bind_FVector` 等数学类型）
+- 可并行性评估：
+  - 不能直接套用「Prepare → Commit」模型，需先按 Phase 2 完成 `FBoundFunction` 改造、消除 `PreviouslyBoundFunction` 紧耦合
+  - `FNamespace` RAII 在并行准备阶段必须用「预计算 namespace 字段」替代「运行时 SetDefaultNamespace」
+- 现实路径：**手写 Binds 暂时维持串行**，把生成绑定作为并行试点的第一阶段；待生成绑定的 Prepare/Commit 拆分稳定后，再决定是否扩展到手写 Binds
+
+### 附录 A.5 — 与现有 Phase 1~4 的对应关系
+
+- 用户思路「数据提前确定」≡ 方向 C / Phase 4.1 中描述的「在工作线程上构造签名字符串、收集函数指针等不涉及 AS 引擎状态修改的工作」
+- 用户思路「原子计数 ID」≡ Phase 4.1 的工作线程间 ID 同步原语，作用范围仅限「ID 分配」一步
+- 用户思路「并行 register」≡ 方向 C 已写明「最终 `RegisterObjectMethod` 仍在单线程上串行调用」，即提交阶段不能并行
+- 收益判断 ≡ Phase 1.1 / 1.2 的 per-bind 计时基线必须先落地，否则任何并行原型都缺乏决策依据
+
+### 附录 A.6 — 落地前置条件清单
+
+要进入「并行 bind 原型」阶段，必须先满足以下前置条件：
+
+1. Phase 1.1 per-bind 计时落地，并跑出编辑器 / 非编辑器两组数据
+2. Phase 2 完成 `FBoundFunction` 改造，消除 `PreviouslyBoundFunction` 静态变量耦合
+3. 生成绑定代码模板（`AngelscriptEditorCodeGen.cpp` 的 `GenerateNativeBinds`）支持 Prepare / Commit 拆分，否则现有 `ASRuntimeBind_*` 分片仍走旧路径
+4. 决策点：若 Phase 1 数据显示总绑定耗时 < 500ms，放弃并行原型，将精力转向脚本编译并行化（参照 UEAS2 `BuildParallelParseScripts` 先例）
+
+### 附录 A.7 — 不做事项（明确缩小范围）
+
+- 不做：把 `asCArray` / `asCMap` 替换为 lock-free 容器
+- 不做：在 `RegisterObjectMethod` 入口加全局锁；锁开销 > 收益，且无法解决 namespace / `PreviouslyBoundFunction` 的语义耦合
+- 不做：把整个 `CallBinds` 直接 `ParallelFor`；本计划「## 可行性评估」一节已论证不可行
+- 不做：在本附录中扩展 Phase 1~4 的 todo 项与 Git 提交脚本；本附录是分析性专题，不引入新交付物
+
+---
+
+## 附录 B：Bind Database 并行化分析
+
+> 本附录回答「`bind database` 这一类预计算数据是否可以并行生成」的问题。结论先行：要把 database 拆成两类来谈，**Editor 离线代码生成阶段的 database 几乎完全可并行（且作者在源码里已留下 TODO 注释）**，**运行期从 `Binds.Cache` 还原后的 register 调用仍然不能并行（受附录 A.3 约束）**。理解这一区别，可以让"并行化"投资集中在 ROI 最高的环节。
+
+### 附录 B.1 — 两种 database 的辨别
+
+工程里"bind database"实际指两个不同对象，并行可行性差别很大。
+
+#### B.1.1 Database 1：`FAngelscriptBindDatabase`（持久化到 `Script/Binds.Cache`）
+
+- 定义：[Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindDatabase.h](Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindDatabase.h)，由 `FAngelscriptStructBind` / `FAngelscriptClassBind` / `FAngelscriptMethodBind` / `FAngelscriptPropertyBind` 组成
+- 用途：cooked game 在没有 editor metadata 的情况下重放 bind 调用所需的"快照"
+- 填充入口（Editor 期间）：
+  - [Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp) 第 1325 行 `Bind_Defaults`（`Late+100`，`#elif !AS_USE_BIND_DB` 分支，第 888~1714 行）：5-Phase 串行扫描所有 UClass，第 1550 行 `FAngelscriptBindDatabase::Get().Classes.Add(BindOrder.DBBind)`
+  - [Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UStruct.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UStruct.cpp) 第 1420 行 `FAngelscriptBindDatabase::Get().Structs.Add(DBBind)`
+- 读取入口（cooked / `AS_USE_BIND_DB` 分支）：
+  - [Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp) 第 706~753 行 `#if AS_USE_BIND_DB` 块：第 715 行 `for (auto& DBBind : FAngelscriptBindDatabase::Get().Classes) { ... BindUClass(...) }`、第 733/759 行调 `BindBlueprintEvent` / `BindBlueprintCallable`
+  - [Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UStruct.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UStruct.cpp) 第 865 行 `Bind_StructDeclarations`（`Early+1`）、第 885 行 `Bind_StructDetails`（`Late`）
+- 序列化：[Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindDatabase.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindDatabase.cpp) 第 42 行 `Save` / 第 103 行 `Load`，单一 `FArchive` 顺序读写
+
+#### B.1.2 Database 2：`RuntimeClassDB` / `EditorClassDB`（Editor 离线代码生成）
+
+- 定义：`TMap<FString, TArray<TObjectPtr<UClass>>>`，按 package 名分组所有 BlueprintCallable 类
+- 用途：仅给 `GenerateNativeBinds` 决定 `ASRuntimeBind_*` / `ASEditorBind_*` 分片的成员归属，**不写入 AS 引擎、不进入 cooked 流程**
+- 填充入口：[Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp](Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp) 第 352 行 `GenerateBindDatabases()`，串行 `for (UClass* Class : TObjectRange<UClass>())`（第 359 行）
+- 消费入口：同文件第 270 行 `GenerateNativeBinds`，把每 10 个 UClass 打成一个分片 `.cpp` 文件
+
+### 附录 B.2 — 阶段化可行性评估
+
+把 database 的生命周期拆成四个阶段单独评估：
+
+#### B.2.1 阶段 A：`GenerateBindDatabases`（Editor 离线代码生成阶段，填充 Database 2）
+
+- 当前实现：单线程 `TObjectRange<UClass>` 串行扫描，对每个 UClass 调 `FSourceCodeNavigation::FindClassHeaderPath`、`Class->GenerateFunctionList`、检查 `FUNC_BlueprintCallable`，最后 `RuntimeClassDB.Add(...)` / `EditorClassDB.Add(...)`
+- 可并行性：**最高**
+  - 每个 UClass 的处理是相互独立的纯只读操作（除了最后的 TMap 写入）
+  - `FSourceCodeNavigation::FindClassHeaderPath` 是 Editor 同步 IO，几乎肯定是这一阶段的真实热点
+  - **完全不接触 AS 引擎**，不受附录 A 任何前置条件约束
+- 改造模板（不引入此 Plan 的 todo）：
+  - `ParallelFor` 处理 UClass，每线程产出 thread-local `TArray<TPair<FString, UClass*>>`
+  - 串行收尾批量 reduce 到 `RuntimeClassDB` / `EditorClassDB`
+- 源码端已存在的 TODO 注释（[Bind_BlueprintType.cpp 第 1042 行](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp)）：
+  - `for (UClass* Class : TObjectRange<UClass>()) //Could this be parallel for? Have to create all maps first`
+  - 作者已经识别到同样的并行机会，但落到的是 `Bind_BlueprintType_Declarations`（`Early`）阶段；阶段 A 与之共享同一个机制
+
+#### B.2.2 阶段 B：`Bind_Defaults` 5-Phase（Editor 期间，填充 Database 1 + 调 AS register）
+
+- 当前实现：[Bind_BlueprintType.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp) 第 1325~1712 行
+  - Phase 1（第 1341~1378 行）：拓扑排序 `ClassesToBind`
+  - Phase 2（第 1380~1447 行）：`TFieldIterator<UFunction>` + `BindBlueprintEvent` / `BindBlueprintCallable`，**同时**写 `BindOrder.DBBind.Methods` 与调 `Binds.Method(...)`
+  - Phase 3（第 1449~1521 行）：GetterSetter
+  - Phase 4（第 1523~1551 行）：Inherit + `BindProperties` + 第 1550 行 `FAngelscriptBindDatabase::Get().Classes.Add(BindOrder.DBBind)`
+  - Phase 5（第 1555 行起）：UInterface 方法 register
+- 可并行性：**部分可并行，但需要先解耦**
+  - "DB 写入"（`DBBind.Methods.Add` / `DBBind.Properties.Add`）是纯本地数据，可并行
+  - "AS register"（`BindBlueprintEvent` / `BindBlueprintCallable` 内部 `Binds.Method(...)`）触发 `RegisterObjectMethod`，受附录 A.3 约束必须串行
+  - 当前两件事**写在同一个循环里**，必须先按附录 A.6 完成 `FBoundFunction` 改造、消除 `PreviouslyBoundFunction` 紧耦合
+- 改造方向（与附录 A.4.1 的 Prepare → Commit 模型同构）：
+  - Pass 1（可 `ParallelFor`）：每线程遍历各自的 BindOrder 子集，只填 `DBBind.Methods/Properties` 和准备好"待 register entry"
+  - Pass 2（必须串行）：把所有线程收集到的 entry 顺序提交给 AS 引擎
+
+#### B.2.3 阶段 C：`Save(Binds.Cache)` / `Load(Binds.Cache)`（序列化）
+
+- 当前实现：[AngelscriptBindDatabase.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindDatabase.cpp) 第 42 行 `Save` / 第 103 行 `Load`，单一 `FArchive` 顺序读写
+- 可并行性：**基本不需要并行**
+  - 二进制 archive 本身的顺序性使得拆并行收益很低
+  - 唯一可并行的子环节：`Save` 内 `FAngelscriptClassHeader` 收集（第 60~99 行，对每个 Class/Struct/Enum/Delegate 调 `FSourceCodeNavigation::FindClassHeaderPath`），如果实测显示 IO 是热点，可以 `ParallelFor` 收集；否则不值得改
+
+#### B.2.4 阶段 D：cooked 启动时从 `Binds.Cache` 还原后调 AS register
+
+- 当前实现：[Bind_BlueprintType.cpp](Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp) 第 706~753 行的 `#if AS_USE_BIND_DB` 分支，遍历 `FAngelscriptBindDatabase::Get().Classes` 调 `BindUClass` / `BindBlueprintCallable` / `BindBlueprintEvent`
+- 可并行性：**不能并行**
+  - 与 `CallBinds` 阶段的串行约束完全等价
+  - 只是输入从"hardcoded lambda"换成"序列化数据"，AS 引擎 API 的非线程安全性没有改变
+  - 直接受附录 A.3 约束（`asCArray::PushLast` 扩容、`allRegisteredTypesByName` rehash、`defaultNamespace` 全局变量）
+
+### 附录 B.3 — 与附录 A 的对应映射
+
+可以把"bind database 是否可并行生成"理解为附录 A 的具象化：
+
+- 附录 A 中的 **Prepare 阶段** ≡ B.2.1 阶段 A 与 B.2.2 阶段 B 的 Pass 1，本质上就是"生成/填充 database"
+- 附录 A 中的 **Commit 阶段** ≡ B.2.2 阶段 B 的 Pass 2 与 B.2.4 阶段 D，本质上就是"读 database 调 AS 引擎"
+- 因此：**database 的生成本质上是 Prepare 阶段，可并行；register 是 Commit 阶段，必须串行**。容易踩的坑是把它们写在同一个循环里（如当前 `Bind_Defaults` 的 5-Phase），从而误判整体不可并行
+- 落到既有 Phase 1~4 上：
+  - 阶段 A 不依赖任何前置条件，可独立成单独 Plan 驱动
+  - 阶段 B 必须先具备附录 A.6 的前置条件（per-bind 计时数据 + `FBoundFunction` 改造）才能动
+  - 阶段 C / 阶段 D 维持现状
+
+### 附录 B.4 — 按 ROI 排序的潜在改造方向
+
+按"实施成本 / 预估收益 / 是否依赖附录 A 前置"三维度排序，从高到低：
+
+1. **最高 ROI**：阶段 A（`GenerateBindDatabases` 改 `ParallelFor`）
+   - 离线、无 AS 依赖、`FSourceCodeNavigation::FindClassHeaderPath` 几乎肯定是热点
+   - 改动局限于 [AngelscriptEditorCodeGen.cpp](Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp) 一个文件
+   - 不依赖附录 A 的任何前置条件
+2. **中 ROI**：阶段 B（`Bind_Defaults` 5-Phase 解耦为 Prepare / Commit）
+   - 需要先按附录 A.6 完成 `FBoundFunction` 改造
+   - 收益规模取决于 Phase 1.1 计时数据
+3. **低 ROI**：阶段 C 中 `Save` 的 `FAngelscriptClassHeader` 收集 `ParallelFor`
+   - 仅在实测显示该子环节占大头时才值得做
+4. **不做**：阶段 D 直接并行
+   - 与"把 `CallBinds` 直接 `ParallelFor`"等价，附录 A 已论证不可行
+
+> 本附录与附录 A 一致，仅做分析性记录，不引入 todo 项与 Git 提交脚本。是否把阶段 A 推进为独立 Plan、是否把阶段 B 纳入 Phase 4 的执行计划，由后续基于 Phase 1 实测数据决定。

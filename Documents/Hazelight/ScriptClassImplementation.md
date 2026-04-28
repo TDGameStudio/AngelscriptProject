@@ -568,6 +568,10 @@ ProcessEvent → CallFunction (FUNC_Native|FUNC_RuntimeGenerated 快速路径)
 - 对象构造、GC 追踪、热重载完全等价
 - 唯一可测量的差异在 RPC 路径上（纳秒级 FFrame 创建），对实际游戏无影响
 
+### 后续专项计划
+
+`UASClass` 子类化方案下，`Cast<UASClass>(Class)`、父类链上的 AS-backed 查询、以及 `ScriptTypePtr` live 检查不能混用。后续语义梳理与加速研究由 `Documents/Plans/Plan_ASClassLookupSemanticsAndAcceleration.md` 承接，重点评估 helper 命名、父链查询缓存、UObject annotation / side table，以及 reload/discard 场景下的缓存失效策略。
+
 ### 与 UBlueprintGeneratedClass 的对比
 
 我们的方案与 UE 原生的 `UBlueprintGeneratedClass` 模式高度一致：

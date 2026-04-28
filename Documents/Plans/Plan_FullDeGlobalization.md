@@ -1,5 +1,7 @@
 # Angelscript 全量去全局化后续计划
 
+> **⚠️ 本计划已被 `Plan_DeGlobalizationV2.md` 替代**（2026-04-28）。`Plan_DeGlobalizationV2.md` 合并了本计划与 `Plan_TestEngineIsolation.md` Phase 2-4 的执行内容，并基于最新的 Hazelight 对比分析重新组织了 Phase 结构。本文件保留为历史参考，待正式归档到 `Archives/`。
+
 ## 背景与目标
 
 ### 背景

@@ -2,9 +2,9 @@
 
 本文档是对当前 Angelscript 插件所有可执行方向的系统性盘点，涵盖 AS 2.38 合入、测试增强、缺陷重构、功能增强、工具链与架构演进六大类。每个条目标注优先级、已有 Plan 状态与建议动作。
 
-**编制时间**：2026-04-05（数字基线更新于 2026-04-23 `bf99c93`）
-**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `52` 份 `Plan_*.md`（含 `50` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
-**Plan 状态快照**：50 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
+**编制时间**：2026-04-05（数字基线更新于 2026-04-28）
+**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `57` 份 `Plan_*.md`（含 `55` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
+**Plan 状态快照**：55 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
 
 ---
 
@@ -80,8 +80,8 @@
 |---|------|-----------|------|
 | A | 技术债全景 | `Archives/Plan_TechnicalDebt.md` | 已归档（已完成） |
 | B | Callfunc 死代码清理 | `Archives/Plan_CallfuncDeadCodeCleanup.md` | 已归档（已完成） |
-| C | 去全局化 | `Plan_FullDeGlobalization.md` | 未开始 |
-| D | 测试引擎隔离 | `Plan_TestEngineIsolation.md` | 部分完成 |
+| C | 去全局化 V2（合并） | `Plan_DeGlobalizationV2.md` | 未开始（替代 `Plan_FullDeGlobalization.md` + `Plan_TestEngineIsolation.md` Phase 2-4） |
+| D | 测试引擎隔离 | `Plan_TestEngineIsolation.md` | Phase 1 已完成；Phase 2-4 合入 `Plan_DeGlobalizationV2.md` |
 | E | 文件系统重构 | `Plan_ScriptFileSystemRefactor.md` | 未开始 |
 | F | Hazelight Bind 模块迁移 | `Plan_HazelightBindModuleMigration.md` | 未开始 |
 | G | 新一轮技术债刷新与分流 | `Plan_TechnicalDebtRefresh.md` | 未开始（先校准 debt baseline 与 owner，再进入下一批实施） |
@@ -162,11 +162,12 @@
 
 | # | 方向 | Plan 文档 | 状态 |
 |---|------|-----------|------|
-| A | 去全局化 | `Plan_FullDeGlobalization.md` | 规划阶段 |
-| B | 测试引擎隔离 | `Plan_TestEngineIsolation.md` | 部分完成 |
+| A | 去全局化 V2（合并） | `Plan_DeGlobalizationV2.md` | 未开始（替代旧 `Plan_FullDeGlobalization.md`，合入 `Plan_TestEngineIsolation.md` Phase 2-4） |
+| B | 测试引擎隔离 | `Plan_TestEngineIsolation.md` | Phase 1 已完成；Phase 2-4 合入 `Plan_DeGlobalizationV2.md` |
 | C | 文件系统重构 | `Plan_ScriptFileSystemRefactor.md` | 未开始 |
 | D | UnrealCSharp 架构吸收 | `Plan_UnrealCSharpArchitectureAbsorption.md` | 未开始 |
 | E | 调研结论整合执行闸门 | `Plan_AngelscriptResearchRoadmap.md` | 未开始 |
+| F | ASClass 查询语义与加速研究 | `Plan_ASClassLookupSemanticsAndAcceleration.md` | 未开始 |
 
 ### 6.2 新建议 Plan
 
@@ -206,36 +207,37 @@
 | 11 | 性能基准框架 | 功能 | `Plan_PerformanceBenchmarkFramework` |
 | 12 | ThirdParty 修改追踪体系 | 架构 | `Plan_ThirdPartyModificationTracking` |
 | 13 | StructUtils 运行时边界迁移 | 重构 | `Plan_StructUtilsMigration` |
+| 14 | ASClass 查询语义与加速研究 | 架构 / 性能 | `Plan_ASClassLookupSemanticsAndAcceleration` |
 
 ### 🟡 P3（有价值，可根据需求插入）
 
 | # | 方向 | 类别 |
 |---|------|------|
-| 13 | using namespace 支持 | AS 2.38 |
-| 14 | 上下文 bool 转换 | AS 2.38 |
-| 15 | 默认拷贝语义 | AS 2.38 |
-| 16 | JIT v2 接口 | AS 2.38 |
-| 17 | Editor 功能测试 | 测试 |
-| 18 | 热重载稳健性测试 | 测试 |
-| 19 | Runtime 观测代码分离 | 重构 |
-| 20 | 废弃 UE API 迁移 | 重构 |
-| 21 | 大文件拆分 | 重构 |
-| 22 | 编译错误信息改善 | 功能 |
-| 23 | IntelliSense 数据导出 | 功能 |
-| 24 | Bind 注册 API 统一化 | 架构 |
-| 25 | Bind 注册性能分析工具 | 工具链 |
-| 26 | 热重载体验优化 | 工具链 |
+| 15 | using namespace 支持 | AS 2.38 |
+| 16 | 上下文 bool 转换 | AS 2.38 |
+| 17 | 默认拷贝语义 | AS 2.38 |
+| 18 | JIT v2 接口 | AS 2.38 |
+| 19 | Editor 功能测试 | 测试 |
+| 20 | 热重载稳健性测试 | 测试 |
+| 21 | Runtime 观测代码分离 | 重构 |
+| 22 | 废弃 UE API 迁移 | 重构 |
+| 23 | 大文件拆分 | 重构 |
+| 24 | 编译错误信息改善 | 功能 |
+| 25 | IntelliSense 数据导出 | 功能 |
+| 26 | Bind 注册 API 统一化 | 架构 |
+| 27 | Bind 注册性能分析工具 | 工具链 |
+| 28 | 热重载体验优化 | 工具链 |
 
 ### ⚪ P4（Backlog，需求驱动）
 
 | # | 方向 | 类别 |
 |---|------|------|
-| 27 | Member init mode | AS 2.38 |
-| 28 | Computed goto 优化 | AS 2.38 |
-| 29 | Bind Hack 清理 | 重构 |
-| 30 | 模块依赖可视化 | 功能 |
-| 31 | 脚本断言库增强 | 功能 |
-| 32 | AngelscriptEditor 模块化拆分 | 架构 |
+| 29 | Member init mode | AS 2.38 |
+| 30 | Computed goto 优化 | AS 2.38 |
+| 31 | Bind Hack 清理 | 重构 |
+| 32 | 模块依赖可视化 | 功能 |
+| 33 | 脚本断言库增强 | 功能 |
+| 34 | AngelscriptEditor 模块化拆分 | 架构 |
 
 ---
 
@@ -254,6 +256,7 @@ P1 批次 → foreach 语法 ← 脚本用户体验最大提升
 P2 批次 → Bug 修复回移 + ThirdParty 追踪体系 ← 安全网
         → Enhanced Input / Network / StaticJIT 测试 ← 补齐覆盖
         → 性能基准框架 ← 为后续 2.38 性能对比提供基线
+        → ASClass 查询语义与加速研究 ← 收口插件版 UClass/ASClass 查询边界
         → API 文档生成 ← 降低脚本开发者门槛
       ↓
 P3/P4 → 按需求穿插
