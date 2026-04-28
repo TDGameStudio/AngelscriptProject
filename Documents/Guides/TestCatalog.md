@@ -307,7 +307,7 @@
 
 ## 4. Bindings — UE API 绑定
 
-> 源文件：`Bindings/` 目录下 15 个测试文件
+> 源文件：`Bindings/` 目录下 67 个测试文件
 
 ### 值类型与引擎核心
 
@@ -315,9 +315,8 @@
 |--------|----------|--------|
 | Bindings.ValueTypes | `int32`/`double`/`FString`/`FName`/`FVector`/`FRotator`/`FTransform`/`FText` 运算与比较 | AngelscriptEngineBindingsTests.cpp |
 | Bindings.FNameArrayCompat | `FName[]` 与 `TArray<FName>` 别名/显式、`Add`、索引、`Contains` | AngelscriptEngineBindingsTests.cpp |
-| Bindings.TArrayMutationCompat | `int[]`：`FindIndex`/`AddUnique`/`Insert`/`RemoveSingle`/`Remove`/`Reset` | AngelscriptEngineBindingsTests.cpp |
+| Bindings.ArraySyntaxCompat | `int[]` 作为默认数组语法兼容入口映射到 `TArray<T>`，覆盖 `Reserve`/`SetNum`/`RemoveSwap`/自引用保护 | AngelscriptArrayEdgeBindingsTests.cpp |
 | Bindings.ForeachCompat | `int[]`/`TArray` 的 `for (x : arr)` 与 `const FVector&` 范围 for | AngelscriptEngineBindingsTests.cpp |
-| Bindings.TArrayIteratorCompat | `TArrayIterator`/`TArrayConstIterator` 可变迭代、常量遍历、别名迭代器累加 | AngelscriptEngineBindingsTests.cpp |
 
 ### 全局变量与控制台
 
@@ -337,6 +336,7 @@
 | Bindings.OptionalCompat | `TOptional<int>`：`IsSet`/`Get`/`Set`/`GetValue`/`Reset`；`TOptional<FName>` | AngelscriptContainerBindingsTests.cpp |
 | Bindings.SetCompat | `TSet<int>`：去重 `Add`/`Contains`/拷贝/`Remove`/`Reset`；`TSet<FName>` | AngelscriptContainerBindingsTests.cpp |
 | Bindings.MapCompat | `TMap<FName,int>`：`Add` 覆盖/`Find`/`FindOrAdd`/复制/`Remove`/`Reset` | AngelscriptContainerBindingsTests.cpp |
+| Bindings.TArray | 单个 AS engine 测试入口覆盖 `TArray` 兼容性、显式 API、类型矩阵、对象/Actor 类型、返回值、运行时负向异常和嵌套容器编译拒绝 | AngelscriptTArrayBindingsTests.cpp |
 | Bindings.ArrayForeach | `TArray` 的 `foreach (值, 索引)` 累加元素和与索引和 | AngelscriptContainerBindingsTests.cpp |
 | Bindings.SetForeach | `TSet` 的 `foreach` 累加为 7 | AngelscriptContainerBindingsTests.cpp |
 | Bindings.MapForeach | `TMap` 的 `foreach (值, 键)` 和为 7、键计数为 2 | AngelscriptContainerBindingsTests.cpp |

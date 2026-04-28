@@ -10,13 +10,13 @@ using namespace AngelscriptTestSupport;
 using namespace AngelscriptReflectiveAccess;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptArrayMutationEdgeCasesBindingsTest,
-	"Angelscript.TestModule.Bindings.ArrayMutationEdgeCases",
+	FAngelscriptArraySyntaxCompatBindingsTest,
+	"Angelscript.TestModule.Bindings.ArraySyntaxCompat",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-namespace AngelscriptTest_Bindings_AngelscriptArrayEdgeBindingsTests_Private
+namespace AngelscriptTest_Bindings_AngelscriptArraySyntaxCompatTests_Private
 {
-	static constexpr ANSICHAR ArrayMutationEdgeCasesModuleName[] = "ASArrayMutationEdgeCases";
+	static constexpr ANSICHAR ArraySyntaxCompatModuleName[] = "ASArraySyntaxCompat";
 
 	bool ExpectGlobalInt(
 		FAutomationTestBase& Test,
@@ -110,23 +110,23 @@ namespace AngelscriptTest_Bindings_AngelscriptArrayEdgeBindingsTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptArrayEdgeBindingsTests_Private;
+using namespace AngelscriptTest_Bindings_AngelscriptArraySyntaxCompatTests_Private;
 
-bool FAngelscriptArrayMutationEdgeCasesBindingsTest::RunTest(const FString& Parameters)
+bool FAngelscriptArraySyntaxCompatBindingsTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT
 	{
-		Engine.DiscardModule(TEXT("ASArrayMutationEdgeCases"));
+		Engine.DiscardModule(TEXT("ASArraySyntaxCompat"));
 		ResetSharedCloneEngine(Engine);
 	};
 
 	asIScriptModule* Module = BuildModule(
 		*this,
 		Engine,
-		ArrayMutationEdgeCasesModuleName,
+		ArraySyntaxCompatModuleName,
 		TEXT(R"(
 bool HasRemainingValues(const int[] Values)
 {
@@ -264,20 +264,20 @@ void TriggerSelfAliasInsert()
 	}
 
 	bool bHappyPathPassed = true;
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveCount()"), TEXT("Reserve should preserve Num"), 2);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveFirstValue()"), TEXT("Reserve should preserve first value"), 4);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveSecondValue()"), TEXT("Reserve should preserve second value"), 5);
-	bHappyPathPassed &= ExpectGlobalIntAtLeast(*this, Engine, *Module, TEXT("int ReserveMaxAfterReserve()"), TEXT("Reserve should grow Max"), 16);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumCount()"), TEXT("SetNum should extend Num"), 4);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumExistingValue()"), TEXT("SetNum should preserve existing values"), 9);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumNewSlotSum()"), TEXT("SetNum should zero-initialize new slots"), 0);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapRemovedCount()"), TEXT("RemoveSwap should remove all matching values"), 2);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapCountAfterRemove()"), TEXT("RemoveSwap should shrink Num"), 2);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapNoRemovedValueLeft()"), TEXT("RemoveSwap should leave no removed value"), 1);
-	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapHasExpectedSurvivors()"), TEXT("RemoveSwap should preserve survivor set"), 1);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveCount()"), TEXT("int[] compatibility Reserve should preserve Num"), 2);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveFirstValue()"), TEXT("int[] compatibility Reserve should preserve first value"), 4);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int ReserveSecondValue()"), TEXT("int[] compatibility Reserve should preserve second value"), 5);
+	bHappyPathPassed &= ExpectGlobalIntAtLeast(*this, Engine, *Module, TEXT("int ReserveMaxAfterReserve()"), TEXT("int[] compatibility Reserve should grow Max"), 16);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumCount()"), TEXT("int[] compatibility SetNum should extend Num"), 4);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumExistingValue()"), TEXT("int[] compatibility SetNum should preserve existing values"), 9);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int SetNumNewSlotSum()"), TEXT("int[] compatibility SetNum should zero-initialize new slots"), 0);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapRemovedCount()"), TEXT("int[] compatibility RemoveSwap should remove all matching values"), 2);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapCountAfterRemove()"), TEXT("int[] compatibility RemoveSwap should shrink Num"), 2);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapNoRemovedValueLeft()"), TEXT("int[] compatibility RemoveSwap should leave no removed value"), 1);
+	bHappyPathPassed &= ExpectGlobalInt(*this, Engine, *Module, TEXT("int RemoveSwapHasExpectedSurvivors()"), TEXT("int[] compatibility RemoveSwap should preserve survivor set"), 1);
 	AddExpectedError(TEXT("Cannot Add an element from the same array by reference. Copy it to a temporary first."), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Cannot Insert an element from the same array by reference. Copy it to a temporary first."), EAutomationExpectedErrorFlags::Contains, 1);
-	AddExpectedError(TEXT("ASArrayMutationEdgeCases"), EAutomationExpectedErrorFlags::Contains, 2);
+	AddExpectedError(TEXT("ASArraySyntaxCompat"), EAutomationExpectedErrorFlags::Contains, 2);
 	AddExpectedError(TEXT("| Col 2"), EAutomationExpectedErrorFlags::Contains, 2);
 	const bool bSelfAliasAddPassed = ExecuteFunctionExpectingScriptException(
 		*this,
@@ -285,14 +285,14 @@ void TriggerSelfAliasInsert()
 		*Module,
 		TEXT("void TriggerSelfAliasAdd()"),
 		TEXT("Cannot Add an element from the same array by reference. Copy it to a temporary first."),
-		TEXT("TArray.Add self-alias"));
+		TEXT("int[] compatibility Add self-alias"));
 	const bool bSelfAliasInsertPassed = ExecuteFunctionExpectingScriptException(
 		*this,
 		Engine,
 		*Module,
 		TEXT("void TriggerSelfAliasInsert()"),
 		TEXT("Cannot Insert an element from the same array by reference. Copy it to a temporary first."),
-		TEXT("TArray.Insert self-alias"));
+		TEXT("int[] compatibility Insert self-alias"));
 
 	bPassed = bHappyPathPassed && bSelfAliasAddPassed && bSelfAliasInsertPassed;
 	ASTEST_END_SHARE_CLEAN
