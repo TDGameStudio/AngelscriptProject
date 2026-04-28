@@ -247,4 +247,208 @@ int Entry()
 	return true;
 }
 
+// ============================================================================
+// FInputActionValue constructors and axis type accessors
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptInputActionValueConstructorsAndAxisTypesTest,
+	"Angelscript.TestModule.Bindings.EnhancedInput.InputActionValueConstructorsAndAxisTypes",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptInputActionValueConstructorsAndAxisTypesTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "InputValueAxisTypes", TEXT(R"AS(
+int Entry()
+{
+	FInputActionValue Val1D = FInputActionValue(5.0f);
+	if (Val1D.GetAxis1D() < 4.9f || Val1D.GetAxis1D() > 5.1f)
+		return 1;
+
+	FInputActionValue Val2D = FInputActionValue(FVector2D(3.0f, 4.0f));
+	FVector2D V2 = Val2D.GetAxis2D();
+	if (V2.X < 2.9f || V2.X > 3.1f)
+		return 2;
+	if (V2.Y < 3.9f || V2.Y > 4.1f)
+		return 3;
+
+	FInputActionValue Val3D = FInputActionValue(FVector(1.0f, 2.0f, 3.0f));
+	FVector V3 = Val3D.GetAxis3D();
+	if (V3.X < 0.9f || V3.X > 1.1f)
+		return 4;
+	if (V3.Z < 2.9f || V3.Z > 3.1f)
+		return 5;
+
+	return 42;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("FInputActionValue constructors and axis accessors should work correctly"), Result, 42);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// FInputActionValue ConvertToType
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptInputActionValueConvertToTypeTest,
+	"Angelscript.TestModule.Bindings.EnhancedInput.InputActionValueConvertToType",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptInputActionValueConvertToTypeTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "InputValueConvert", TEXT(R"AS(
+int Entry()
+{
+	FInputActionValue Val3D = FInputActionValue(FVector(7.0f, 8.0f, 9.0f));
+
+	FInputActionValue Converted1D = Val3D.ConvertToType(EInputActionValueType::Axis1D);
+	float Axis1 = Converted1D.GetAxis1D();
+	if (Axis1 < 6.9f || Axis1 > 7.1f)
+		return 1;
+
+	FInputActionValue Converted2D = Val3D.ConvertToType(EInputActionValueType::Axis2D);
+	FVector2D Axis2 = Converted2D.GetAxis2D();
+	if (Axis2.X < 6.9f || Axis2.X > 7.1f)
+		return 2;
+
+	return 42;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("ConvertToType should preserve dimension data correctly"), Result, 42);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// UEnhancedInputComponent BindAction compiles
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptEnhancedInputBindActionCompilesTest,
+	"Angelscript.TestModule.Bindings.EnhancedInput.EnhancedInputComponentBindActionCompiles",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptEnhancedInputBindActionCompilesTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "EIBindAction", TEXT(R"AS(
+UCLASS()
+class ABindActionTestActor : AActor
+{
+	UPROPERTY()
+	UInputAction InputJump;
+
+	UFUNCTION()
+	void OnJumpTriggered(FInputActionValue ActionValue)
+	{
+	}
+
+	UFUNCTION()
+	void SetupInput(UEnhancedInputComponent InputComp)
+	{
+		FEnhancedInputActionHandlerDynamicSignature Delegate;
+		Delegate.BindUFunction(this, n"OnJumpTriggered");
+		InputComp.BindAction(InputJump, ETriggerEvent::Triggered, Delegate);
+	}
+}
+
+int Entry()
+{
+	return 1;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("BindAction with delegate signature should compile"), Result, 1);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// UEnhancedInputComponent RemoveBinding compiles
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptEnhancedInputRemoveBindingCompilesTest,
+	"Angelscript.TestModule.Bindings.EnhancedInput.EnhancedInputComponentRemoveBindingCompiles",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptEnhancedInputRemoveBindingCompilesTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "EIRemoveBinding", TEXT(R"AS(
+void VerifyRemoveSignatures(UEnhancedInputComponent Comp)
+{
+	Comp.ClearActionEventBindings();
+	Comp.ClearActionValueBindings();
+	Comp.ClearDebugKeyBindings();
+	Comp.ClearActionBindings();
+}
+
+int Entry()
+{
+	return 1;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("Remove/Clear binding signatures should compile"), Result, 1);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// UEnhancedInputComponent editor delegate flags
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptEnhancedInputEditorDelegateFlagsTest,
+	"Angelscript.TestModule.Bindings.EnhancedInput.EnhancedInputComponentEditorDelegateFlags",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptEnhancedInputEditorDelegateFlagsTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "EIEditorFlags", TEXT(R"AS(
+void VerifyEditorDelegateFlags(UEnhancedInputComponent Comp)
+{
+	Comp.SetShouldFireDelegatesInEditor(true);
+	bool bFires = Comp.ShouldFireDelegatesInEditor();
+}
+
+int Entry()
+{
+	return 1;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("Editor delegate flag API should compile"), Result, 1);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
 #endif

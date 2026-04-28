@@ -595,4 +595,274 @@ class ATestDefaultComponentNativeTypes : AActor
 	return true;
 }
 
+// ============================================================================
+// Deep Attach Chain (3 layers: Root -> Mid -> Leaf)
+// ============================================================================
+
+namespace DeepAttachChainTest
+{
+	static const FName ModuleName(TEXT("ASComponent.DeepAttachChain"));
+	static const FString ScriptFilename(TEXT("ASComponent_DeepAttachChain.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptDefaultComponentDeepAttachChainTest,
+	"Angelscript.TestModule.Component.DefaultComponent.DeepAttachChain",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptDefaultComponentDeepAttachChainTest::RunTest(const FString& Parameters)
+{
+	using namespace AngelscriptTestSupport;
+
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*DeepAttachChainTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		DeepAttachChainTest::ModuleName,
+		DeepAttachChainTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class ADeepAttachActor : AActor
+{
+	UPROPERTY(DefaultComponent, RootComponent)
+	USceneComponent RootScene;
+
+	UPROPERTY(DefaultComponent, Attach = RootScene)
+	USceneComponent MidScene;
+
+	UPROPERTY(DefaultComponent, Attach = MidScene)
+	USceneComponent LeafScene;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Deep attach chain should compile"), bCompiled))
+		return false;
+
+	UClass* GeneratedClass = FindGeneratedClass(&Engine, TEXT("ADeepAttachActor"));
+	if (!TestNotNull(TEXT("Class should be materialized"), GeneratedClass))
+		return false;
+
+	FProperty* MidProp = GeneratedClass->FindPropertyByName(TEXT("MidScene"));
+	FProperty* LeafProp = GeneratedClass->FindPropertyByName(TEXT("LeafScene"));
+	TestNotNull(TEXT("MidScene property should exist on class"), MidProp);
+	TestNotNull(TEXT("LeafScene property should exist on class"), LeafProp);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// OverrideComponent multi-layer inheritance (A -> B -> C)
+// ============================================================================
+
+namespace OverrideMultiLayerTest
+{
+	static const FName ModuleName(TEXT("ASComponent.OverrideMultiLayer"));
+	static const FString ScriptFilename(TEXT("ASComponent_OverrideMultiLayer.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptOverrideComponentMultiLayerTest,
+	"Angelscript.TestModule.Component.DefaultComponent.OverrideComponentMultiLayerInheritance",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptOverrideComponentMultiLayerTest::RunTest(const FString& Parameters)
+{
+	using namespace AngelscriptTestSupport;
+
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*OverrideMultiLayerTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		OverrideMultiLayerTest::ModuleName,
+		OverrideMultiLayerTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class ABaseLayerActor : AActor
+{
+	UPROPERTY(DefaultComponent, RootComponent)
+	USceneComponent RootScene;
+
+	UPROPERTY(DefaultComponent, Attach = RootScene)
+	USceneComponent BaseChild;
+}
+
+UCLASS()
+class AMidLayerActor : ABaseLayerActor
+{
+	UPROPERTY(OverrideComponent = BaseChild)
+	UStaticMeshComponent MidReplacement;
+}
+
+UCLASS()
+class ATopLayerActor : AMidLayerActor
+{
+	UPROPERTY(DefaultComponent)
+	USceneComponent TopExtra;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Multi-layer OverrideComponent should compile"), bCompiled))
+		return false;
+
+	UClass* TopClass = FindGeneratedClass(&Engine, TEXT("ATopLayerActor"));
+	TestNotNull(TEXT("Top layer class should be materialized"), TopClass);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Native actor (ACharacter) with extra script DefaultComponent
+// ============================================================================
+
+namespace NativeActorExtraComponentTest
+{
+	static const FName ModuleName(TEXT("ASComponent.NativeActorExtra"));
+	static const FString ScriptFilename(TEXT("ASComponent_NativeActorExtra.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptNativeActorWithExtraComponentTest,
+	"Angelscript.TestModule.Component.DefaultComponent.NativeActorWithExtraScriptComponent",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptNativeActorWithExtraComponentTest::RunTest(const FString& Parameters)
+{
+	using namespace AngelscriptTestSupport;
+
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*NativeActorExtraComponentTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		NativeActorExtraComponentTest::ModuleName,
+		NativeActorExtraComponentTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class AExtendedCharacter : ACharacter
+{
+	UPROPERTY(DefaultComponent)
+	USceneComponent ExtraMarker;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Native actor with extra script component should compile"), bCompiled))
+		return false;
+
+	UClass* GeneratedClass = FindGeneratedClass(&Engine, TEXT("AExtendedCharacter"));
+	TestNotNull(TEXT("Extended character class should be materialized"), GeneratedClass);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// OverrideComponent metadata multi-layer verification
+// ============================================================================
+
+namespace OverrideMetadataMultiLayerTest
+{
+	static const FName ModuleName(TEXT("ASComponent.OverrideMetadataMultiLayer"));
+	static const FString ScriptFilename(TEXT("ASComponent_OverrideMetadataMultiLayer.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptOverrideComponentMetadataMultiLayerTest,
+	"Angelscript.TestModule.ClassGenerator.ASClass.OverrideComponentMetadataMultiLayer",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptOverrideComponentMetadataMultiLayerTest::RunTest(const FString& Parameters)
+{
+	using namespace AngelscriptTestSupport;
+
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*OverrideMetadataMultiLayerTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		OverrideMetadataMultiLayerTest::ModuleName,
+		OverrideMetadataMultiLayerTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class AMetaBaseActor : AActor
+{
+	UPROPERTY(DefaultComponent, RootComponent)
+	USceneComponent RootScene;
+
+	UPROPERTY(DefaultComponent, Attach = RootScene)
+	USceneComponent MetaChild;
+}
+
+UCLASS()
+class AMetaMidActor : AMetaBaseActor
+{
+	UPROPERTY(OverrideComponent = MetaChild)
+	UStaticMeshComponent MidMetaReplacement;
+}
+
+UCLASS()
+class AMetaTopActor : AMetaMidActor
+{
+	UPROPERTY(DefaultComponent)
+	USceneComponent TopMetaExtra;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Override metadata multi-layer should compile"), bCompiled))
+		return false;
+
+	UClass* TopClass = FindGeneratedClass(&Engine, TEXT("AMetaTopActor"));
+	if (!TestNotNull(TEXT("Top class should exist"), TopClass))
+		return false;
+
+	UClass* MidClass = FindGeneratedClass(&Engine, TEXT("AMetaMidActor"));
+	if (!TestNotNull(TEXT("Mid class should exist"), MidClass))
+		return false;
+
+	UClass* BaseClass = FindGeneratedClass(&Engine, TEXT("AMetaBaseActor"));
+	if (!TestNotNull(TEXT("Base class should exist"), BaseClass))
+		return false;
+
+	TestTrue(TEXT("Top class should inherit from Mid"), TopClass->IsChildOf(MidClass));
+	TestTrue(TEXT("Mid class should inherit from Base"), MidClass->IsChildOf(BaseClass));
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
 #endif

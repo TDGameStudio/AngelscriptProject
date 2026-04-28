@@ -656,4 +656,168 @@ int Entry()
 	ASTEST_END_SHARE_CLEAN
 	return true;
 }
+
+// ============================================================================
+// Nested foreach: outer TArray<FName>, inner TMap<FName, int>
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptForeachNestedArrayMapTest,
+	"Angelscript.TestModule.Bindings.ForeachNestedArrayMap",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptForeachNestedArrayMapTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "ForeachNestedArrayMap", TEXT(R"AS(
+int Entry()
+{
+	TArray<FName> Keys;
+	Keys.Add(n"A");
+	Keys.Add(n"B");
+
+	TMap<FName, int> Data;
+	Data.Add(n"A", 10);
+	Data.Add(n"B", 20);
+
+	int Total = 0;
+	foreach (FName Key : Keys)
+	{
+		foreach (int Value, FName MapKey : Data)
+		{
+			if (MapKey == Key)
+				Total += Value;
+		}
+	}
+	return Total;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("Nested foreach should accumulate correct total (10+20=30)"), Result, 30);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Empty container foreach skips body
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptForeachEmptyContainerTest,
+	"Angelscript.TestModule.Bindings.ForeachEmptyContainerSkipsBody",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptForeachEmptyContainerTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "ForeachEmptyContainer", TEXT(R"AS(
+int Entry()
+{
+	TArray<int> EmptyArray;
+	TSet<int> EmptySet;
+	TMap<FName, int> EmptyMap;
+
+	int Count = 0;
+	foreach (int V : EmptyArray)
+		Count += 1;
+	foreach (int V : EmptySet)
+		Count += 1;
+	foreach (int V, FName K : EmptyMap)
+		Count += 1;
+
+	return Count;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("Empty containers should never enter foreach body"), Result, 0);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Foreach with UObject array compiles and iterates
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptForeachUObjectArrayTest,
+	"Angelscript.TestModule.Bindings.ForeachUObjectArrayCompiles",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptForeachUObjectArrayTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "ForeachUObjectArray", TEXT(R"AS(
+int Entry()
+{
+	TArray<UObject> Objects;
+	int Count = 0;
+	foreach (UObject Obj : Objects)
+	{
+		Count += 1;
+	}
+	return Count;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("UObject array foreach should compile and iterate (empty = 0)"), Result, 0);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Foreach const ref preserves original array
+// ============================================================================
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptForeachConstRefPreservesTest,
+	"Angelscript.TestModule.Bindings.ForeachConstRefPreservesOriginal",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptForeachConstRefPreservesTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
+
+	int32 Result = 0;
+	ASTEST_COMPILE_RUN_INT(Engine, "ForeachConstRef", TEXT(R"AS(
+int Entry()
+{
+	TArray<FVector> Vectors;
+	Vectors.Add(FVector(1, 2, 3));
+	Vectors.Add(FVector(4, 5, 6));
+
+	float Sum = 0.0f;
+	foreach (FVector V : Vectors)
+	{
+		Sum += V.X;
+	}
+
+	if (Sum < 4.9f || Sum > 5.1f)
+		return 1;
+
+	if (Vectors[0].X < 0.9f || Vectors[0].X > 1.1f)
+		return 2;
+
+	return 42;
+}
+)AS"), "int Entry()", Result);
+
+	TestEqual(TEXT("const ref foreach should preserve original array unchanged"), Result, 42);
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
 #endif

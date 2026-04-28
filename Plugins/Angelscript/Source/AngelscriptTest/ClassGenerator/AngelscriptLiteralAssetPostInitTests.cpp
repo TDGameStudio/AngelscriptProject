@@ -421,4 +421,146 @@ bool FAngelscriptLiteralAssetPostInitResolvesGeneratedGetterInsteadOfNameCollisi
 	return true;
 }
 
+// ============================================================================
+// Multiple assets in same class coexist
+// ============================================================================
+
+namespace LiteralAssetMultipleCoexistTest
+{
+	static const FName ModuleName(TEXT("ASLiteralAssetMultipleCoexist"));
+	static const FString ScriptFilename(TEXT("ASLiteralAssetMultipleCoexist.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptLiteralAssetMultipleCoexistTest,
+	"Angelscript.TestModule.ClassGenerator.LiteralAsset.MultipleAssetsInSameClassCoexist",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptLiteralAssetMultipleCoexistTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*LiteralAssetMultipleCoexistTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		LiteralAssetMultipleCoexistTest::ModuleName,
+		LiteralAssetMultipleCoexistTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class UMultiAssetOwner : UObject
+{
+	UPROPERTY()
+	int Marker = 0;
+}
+
+asset FirstAsset of UMultiAssetOwner
+{
+	Marker = 10;
+}
+
+asset SecondAsset of UMultiAssetOwner
+{
+	Marker = 20;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Multiple assets in same class should compile"), bCompiled))
+		return false;
+
+	UClass* GeneratedClass = FindGeneratedClass(&Engine, TEXT("UMultiAssetOwner"));
+	if (!TestNotNull(TEXT("Class should be materialized"), GeneratedClass))
+		return false;
+
+	UObject* FirstAsset = FindObject<UObject>(Engine.AssetsPackage, TEXT("FirstAsset"));
+	UObject* SecondAsset = FindObject<UObject>(Engine.AssetsPackage, TEXT("SecondAsset"));
+	TestNotNull(TEXT("FirstAsset should be materialized"), FirstAsset);
+	TestNotNull(TEXT("SecondAsset should be materialized"), SecondAsset);
+	if (FirstAsset && SecondAsset)
+	{
+		TestTrue(TEXT("Assets should be independent objects"), FirstAsset != SecondAsset);
+	}
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Asset coexists with DefaultComponent in same class
+// ============================================================================
+
+namespace LiteralAssetWithComponentTest
+{
+	static const FName ModuleName(TEXT("ASLiteralAssetWithComponent"));
+	static const FString ScriptFilename(TEXT("ASLiteralAssetWithComponent.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptLiteralAssetWithDefaultComponentTest,
+	"Angelscript.TestModule.ClassGenerator.LiteralAsset.AssetWithDefaultComponentCoexist",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptLiteralAssetWithDefaultComponentTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*LiteralAssetWithComponentTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		LiteralAssetWithComponentTest::ModuleName,
+		LiteralAssetWithComponentTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class UAssetCarrier : UObject
+{
+	UPROPERTY()
+	int CoexistMarker = 0;
+}
+
+UCLASS()
+class AAssetAndComponentActor : AActor
+{
+	UPROPERTY(DefaultComponent, RootComponent)
+	USceneComponent RootScene;
+}
+
+asset MyCoexistAsset of UAssetCarrier
+{
+	CoexistMarker = 99;
+}
+)AS"),
+		CompileResult);
+
+	if (!TestTrue(TEXT("Asset + DefaultComponent coexistence should compile"), bCompiled))
+		return false;
+
+	UClass* ActorClass = FindGeneratedClass(&Engine, TEXT("AAssetAndComponentActor"));
+	TestNotNull(TEXT("Actor class should be materialized"), ActorClass);
+
+	UClass* CarrierClass = FindGeneratedClass(&Engine, TEXT("UAssetCarrier"));
+	TestNotNull(TEXT("Carrier class should be materialized"), CarrierClass);
+
+	UObject* AssetObj = FindObject<UObject>(Engine.AssetsPackage, TEXT("MyCoexistAsset"));
+	TestNotNull(TEXT("Asset should coexist with component-bearing actor"), AssetObj);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
 #endif

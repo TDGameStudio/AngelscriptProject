@@ -1,4 +1,5 @@
 #include "../Shared/AngelscriptTestUtilities.h"
+#include "../Shared/AngelscriptTestEngineHelper.h"
 #include "../Shared/AngelscriptTestMacros.h"
 
 #include "Preprocessor/AngelscriptPreprocessor.h"
@@ -280,6 +281,112 @@ bool FAngelscriptPreprocessorLiteralAssetSkipStringAndCommentDecoysTest::RunTest
 
 	ASTEST_END_SHARE_CLEAN
 	return bPassed;
+}
+
+// ============================================================================
+// Boundary & Negative tests (use full compile pipeline)
+// ============================================================================
+
+using namespace AngelscriptTestSupport;
+
+// ============================================================================
+// Negative: Missing type after "of"
+// ============================================================================
+
+namespace LiteralAssetMissingTypeTest
+{
+	static const FName ModuleName(TEXT("ASLiteralAssetMissingType"));
+	static const FString ScriptFilename(TEXT("ASLiteralAssetMissingType.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptPreprocessorLiteralAssetMissingTypeTest,
+	"Angelscript.TestModule.Preprocessor.LiteralAssets.MissingTypeFails",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptPreprocessorLiteralAssetMissingTypeTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*LiteralAssetMissingTypeTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	AddExpectedError(TEXT(""), EAutomationExpectedErrorFlags::Contains, 0);
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		LiteralAssetMissingTypeTest::ModuleName,
+		LiteralAssetMissingTypeTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class UMissingTypeAssetOwner : UObject
+{
+	asset BrokenAsset of
+}
+)AS"),
+		CompileResult);
+
+	TestFalse(TEXT("asset with missing type should fail to compile/preprocess"), bCompiled);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
+}
+
+// ============================================================================
+// Negative: asset inside function body should not expand
+// ============================================================================
+
+namespace LiteralAssetInsideFunctionTest
+{
+	static const FName ModuleName(TEXT("ASLiteralAssetInsideFunction"));
+	static const FString ScriptFilename(TEXT("ASLiteralAssetInsideFunction.as"));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptPreprocessorLiteralAssetInsideFunctionBodyTest,
+	"Angelscript.TestModule.Preprocessor.LiteralAssets.AssetInsideFunctionBodyIgnored",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAngelscriptPreprocessorLiteralAssetInsideFunctionBodyTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	ASTEST_BEGIN_SHARE_CLEAN
+	ON_SCOPE_EXIT
+	{
+		Engine.DiscardModule(*LiteralAssetInsideFunctionTest::ModuleName.ToString());
+		ResetSharedCloneEngine(Engine);
+	};
+
+	AddExpectedError(TEXT(""), EAutomationExpectedErrorFlags::Contains, 0);
+
+	ECompileResult CompileResult = ECompileResult::Error;
+	const bool bCompiled = CompileModuleWithResult(
+		&Engine,
+		ECompileType::FullReload,
+		LiteralAssetInsideFunctionTest::ModuleName,
+		LiteralAssetInsideFunctionTest::ScriptFilename,
+		TEXT(R"AS(
+UCLASS()
+class UFunctionBodyAssetOwner : UObject
+{
+	UFUNCTION()
+	void TryDeclareAsset()
+	{
+		asset LocalAsset of UObject
+	}
+}
+)AS"),
+		CompileResult);
+
+	TestFalse(TEXT("asset inside function body should not expand and should fail"), bCompiled);
+
+	ASTEST_END_SHARE_CLEAN
+	return true;
 }
 
 #endif
