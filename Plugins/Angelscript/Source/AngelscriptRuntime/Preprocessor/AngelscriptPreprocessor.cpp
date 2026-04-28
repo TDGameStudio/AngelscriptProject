@@ -149,9 +149,18 @@ void FAngelscriptPreprocessor::PerformAsynchronousLoads()
 			continue;
 
 		auto* AsyncReadHandle = FPlatformFileManager::Get().GetPlatformFile().OpenAsyncRead(*File.AbsoluteFilename);
+		File.AsyncReadHandle = AsyncReadHandle;
+		if (AsyncReadHandle == nullptr)
+		{
+			File.RawCode = TEXT("");
+			FPlatformMisc::MemoryBarrier();
+			File.bLoadAsynchronous = false;
+			continue;
+		}
+
 		FAsyncFileCallBack SizeCallback = [&File, AsyncReadHandle](bool bCancelled, IAsyncReadRequest* Request)
 		{
-			if (bCancelled || Request->GetSizeResults() <= 0)
+			if (bCancelled || Request == nullptr || Request->GetSizeResults() <= 0)
 			{
 				File.RawCode = TEXT("");
 
@@ -161,14 +170,20 @@ void FAngelscriptPreprocessor::PerformAsynchronousLoads()
 			else
 			{
 				int64 AsyncFileSize = Request->GetSizeResults();
-				FAsyncFileCallBack ReadCallback = [&File, AsyncReadHandle, AsyncFileSize](bool bCancelled, IAsyncReadRequest* Request)
+				FAsyncFileCallBack ReadCallback = [&File, AsyncFileSize](bool bCancelled, IAsyncReadRequest* Request)
 				{
-					if (!bCancelled)
+					if (!bCancelled && Request != nullptr)
 					{
 						uint8* Buffer = Request->GetReadResults();
-						FFileHelper::BufferToString(File.RawCode, Buffer, AsyncFileSize);
-
-						FMemory::Free(Buffer);
+						if (Buffer != nullptr)
+						{
+							FFileHelper::BufferToString(File.RawCode, Buffer, AsyncFileSize);
+							FMemory::Free(Buffer);
+						}
+						else
+						{
+							File.RawCode = TEXT("");
+						}
 					}
 					else
 					{
@@ -184,31 +199,56 @@ void FAngelscriptPreprocessor::PerformAsynchronousLoads()
 					EAsyncIOPriorityAndFlags::AIOP_High,
 					&ReadCallback
 				);
+				if (File.AsyncReadRequest == nullptr)
+				{
+					File.RawCode = TEXT("");
+					FPlatformMisc::MemoryBarrier();
+					File.bLoadAsynchronous = false;
+				}
 			}
 		};
 
 		File.AsyncSizeRequest = AsyncReadHandle->SizeRequest(&SizeCallback);
-		File.AsyncReadHandle = AsyncReadHandle;
+		if (File.AsyncSizeRequest == nullptr)
+		{
+			File.RawCode = TEXT("");
+			FPlatformMisc::MemoryBarrier();
+			File.bLoadAsynchronous = false;
+		}
+	}
+
+	bool bHasPendingAsyncLoads = true;
+	while (bHasPendingAsyncLoads)
+	{
+		bHasPendingAsyncLoads = false;
+		FPlatformMisc::MemoryBarrier();
+		for (FFile& File : Files)
+		{
+			if (File.bLoadAsynchronous)
+			{
+				bHasPendingAsyncLoads = true;
+				break;
+			}
+		}
+
+		if (bHasPendingAsyncLoads)
+			FPlatformProcess::Sleep(0.001f);
 	}
 
 	for (FFile& File : Files)
 	{
-		if (File.bLoadAsynchronous)
-		{
-			FPlatformProcess::Sleep(0.001f);
-		}
-		else
-		{
-			delete File.AsyncReadRequest;
-			File.AsyncReadRequest = nullptr;
+		delete File.AsyncReadRequest;
+		File.AsyncReadRequest = nullptr;
 
-			delete File.AsyncSizeRequest;
-			File.AsyncSizeRequest = nullptr;
+		delete File.AsyncSizeRequest;
+		File.AsyncSizeRequest = nullptr;
 
-			delete File.AsyncReadHandle;
-			File.AsyncReadHandle = nullptr;
-		}
+		delete File.AsyncReadHandle;
+		File.AsyncReadHandle = nullptr;
+		File.bLoadAsynchronous = false;
 	}
+
+	bLoadingAnyFilesAsynchronous = false;
 }
 
 bool FAngelscriptPreprocessor::Preprocess()

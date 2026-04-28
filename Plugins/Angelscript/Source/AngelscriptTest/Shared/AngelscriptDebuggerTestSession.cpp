@@ -29,9 +29,11 @@ namespace AngelscriptTestSupport
 			static int32 NextOffset = 0;
 			constexpr int32 BasePort = 30000;
 			constexpr int32 PortWindow = 10000;
-			const int32 ProcessBucket = (FPlatformProcess::GetCurrentProcessId() % 500) * 10;
+			constexpr int32 BucketSize = 100;
+			constexpr int32 ProcessBucketCount = PortWindow / BucketSize;
+			const int32 ProcessBucket = (FPlatformProcess::GetCurrentProcessId() % ProcessBucketCount) * BucketSize;
 			const int32 Port = BasePort + ProcessBucket + NextOffset;
-			NextOffset = (NextOffset + 1) % 10;
+			NextOffset = (NextOffset + 1) % BucketSize;
 			return FMath::Clamp(Port, BasePort, BasePort + PortWindow - 1);
 		}
 

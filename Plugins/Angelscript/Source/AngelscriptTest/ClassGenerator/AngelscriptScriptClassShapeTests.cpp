@@ -65,7 +65,7 @@ class ATestScriptInheritanceParent : AActor
 }
 
 UCLASS()
-class ATestScriptInheritanceChild : ATestCaseScriptInheritanceParent
+class ATestScriptInheritanceChild : ATestScriptInheritanceParent
 {
 	UFUNCTION(BlueprintOverride)
 	int GetValue()

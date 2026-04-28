@@ -13,6 +13,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AngelscriptSettings.h"
 #include "ClassGenerator/ASClass.h"
+#include "SocketSubsystem.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "AngelscriptInclude.h"
@@ -643,6 +644,93 @@ bool FAngelscriptDebugServer::HandleConnectionAccepted(class FSocket* ClientSock
 	return true;
 }
 
+void FAngelscriptDebugServer::RemoveClientState(FSocket* Client, bool bResetDebugStateIfLastDebuggingClient)
+{
+	if (Client == nullptr)
+	{
+		return;
+	}
+
+	const int32 RemovedDebuggingClients = ClientsThatAreDebugging.RemoveSwap(Client);
+	ClientsThatWantDebugDatabase.RemoveSwap(Client);
+	CallstackRequests.RemoveSwap(Client);
+	QueuedSends.Remove(Client);
+
+	if (bResetDebugStateIfLastDebuggingClient && RemovedDebuggingClients > 0 && ClientsThatAreDebugging.Num() == 0)
+	{
+		bIsDebugging = false;
+		bPauseRequested = false;
+		bIsPaused = false;
+		bBreakNextScriptLine = false;
+		ClearAllBreakpoints();
+
+		if (OwnerEngine != nullptr)
+		{
+			OwnerEngine->UpdateLineCallbackState();
+		}
+		else if (FAngelscriptEngine* CurrentEngine = FAngelscriptEngine::TryGetCurrentEngine())
+		{
+			CurrentEngine->UpdateLineCallbackState();
+		}
+	}
+}
+
+void FAngelscriptDebugServer::CloseAndDestroyClient(FSocket*& Client)
+{
+	if (Client == nullptr)
+	{
+		return;
+	}
+
+	Client->Close();
+	if (ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM))
+	{
+		SocketSubsystem->DestroySocket(Client);
+	}
+
+	Client = nullptr;
+}
+
+void FAngelscriptDebugServer::ResetClientStateForShutdown()
+{
+	FSocket* PendingClient = nullptr;
+	while (PendingClients.Dequeue(PendingClient))
+	{
+		CloseAndDestroyClient(PendingClient);
+	}
+
+	for (FSocket*& Client : Clients)
+	{
+		RemoveClientState(Client, false);
+		CloseAndDestroyClient(Client);
+	}
+
+	Clients.Empty();
+	ClientsThatWantDebugDatabase.Empty();
+	ClientsThatAreDebugging.Empty();
+	QueuedSends.Empty();
+	CallstackRequests.Empty();
+
+	bIsDebugging = false;
+	bPauseRequested = false;
+	bIsPaused = false;
+	bIsEvaluatingDebuggerWatch = false;
+	bBreakNextScriptLine = false;
+	NextPingDebuggerAliveTime = 0.0;
+
+	Breakpoints.Empty();
+	SectionBreakpoints.Empty();
+	BreakpointCount = 0;
+	DataBreakpoints.Reset();
+	RebuildActiveDataBreakpoints();
+
+	IgnoreBreakSection = nullptr;
+	IgnoreBreakLine = -1;
+	ConditionBreakFunction = nullptr;
+	ConditionBreakFrame = -1;
+	StackFrameThis.Empty();
+}
+
 	FAngelscriptDebugServer::FAngelscriptDebugServer(FAngelscriptEngine* InOwnerEngine, int Port)
 {
 	OwnerEngine = InOwnerEngine;
@@ -676,6 +764,8 @@ FAngelscriptDebugServer::~FAngelscriptDebugServer()
 		delete Listener;
 		Listener = NULL;
 	}
+
+	ResetClientStateForShutdown();
 }
 
 void FAngelscriptDebugServer::Tick()
@@ -1021,29 +1111,21 @@ void FAngelscriptDebugServer::ProcessMessages()
 
 	for (int32 ClientIndex = Clients.Num() - 1; ClientIndex >= 0; --ClientIndex)
 	{
-		TArray<FQueuedMessage>& Queue = QueuedSends.FindOrAdd(Clients[ClientIndex]);
-		if (Clients[ClientIndex]->GetConnectionState() != SCS_Connected
+		FSocket* Client = Clients[ClientIndex];
+		if (Client == nullptr)
+		{
+			QueuedSends.Remove(nullptr);
+			Clients.RemoveAtSwap(ClientIndex);
+			continue;
+		}
+
+		TArray<FQueuedMessage>& Queue = QueuedSends.FindOrAdd(Client);
+		if (Client->GetConnectionState() != SCS_Connected
 			|| (Queue.Num() > 0 && Queue[0].FirstTry >= 0.0 && Queue[0].FirstTry < FPlatformTime::Seconds() - 10.0))
 		{
-			UE_LOG(Angelscript, Log, TEXT("Removing angelscript debug client from %s"), *Clients[ClientIndex]->GetDescription());
-			Clients[ClientIndex]->Close();
-
-			if (ClientsThatAreDebugging.Contains(Clients[ClientIndex]))
-			{
-				ClientsThatAreDebugging.RemoveSwap(Clients[ClientIndex]);
-				if (ClientsThatAreDebugging.Num() == 0)
-				{
-					bIsDebugging = false;
-					bPauseRequested = false;
-					bIsPaused = false;
-					bBreakNextScriptLine = false;
-					ClearAllBreakpoints();
-					FAngelscriptEngine::Get().UpdateLineCallbackState();
-				}
-			}
-
-			ClientsThatWantDebugDatabase.RemoveSwap(Clients[ClientIndex]);
-			QueuedSends.Remove(Clients[ClientIndex]);
+			UE_LOG(Angelscript, Log, TEXT("Removing angelscript debug client from %s"), *Client->GetDescription());
+			RemoveClientState(Client, true);
+			CloseAndDestroyClient(Client);
 			Clients.RemoveAtSwap(ClientIndex);
 		}
 	}

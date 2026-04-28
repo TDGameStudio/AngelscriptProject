@@ -4983,6 +4983,8 @@ void FAngelscriptClassGenerator::CleanupRemovedClass(TSharedPtr<FAngelscriptClas
 	UASClass* Class = (UASClass*)ClassDesc->Class;
 	if (Class != nullptr)
 	{
+		FString RemovedClassName = FString::Printf(TEXT("%s_REPLACED_%d"), *Class->GetName(), UniqueCounter());
+		Class->Rename(*RemovedClassName, nullptr, REN_DontCreateRedirectors);
 		Class->ScriptTypePtr = nullptr;
 		Class->OwnerScriptEngine = nullptr;
 		Class->ConstructFunction = nullptr;
@@ -5018,6 +5020,8 @@ void FAngelscriptClassGenerator::CleanupRemovedClass(TSharedPtr<FAngelscriptClas
 	UASStruct* Struct = (UASStruct*)ClassDesc->Struct;
 	if (Struct != nullptr)
 	{
+		FString RemovedStructName = FString::Printf(TEXT("%s_REPLACED_%d"), *Struct->GetName(), UniqueCounter());
+		Struct->Rename(*RemovedStructName, nullptr, REN_DontCreateRedirectors);
 		Struct->ScriptType = nullptr;
 		Struct->UpdateScriptType();
 		if (Struct->IsRooted())

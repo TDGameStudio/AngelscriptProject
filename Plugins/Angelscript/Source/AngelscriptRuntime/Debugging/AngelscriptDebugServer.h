@@ -601,6 +601,9 @@ class ANGELSCRIPTRUNTIME_API FAngelscriptDebugServer
 	double NextPingDebuggerAliveTime = 0.0;
 
 	bool HandleConnectionAccepted(class FSocket* ClientSocket, const FIPv4Endpoint& ClientEndpoint);
+	void RemoveClientState(class FSocket* Client, bool bResetDebugStateIfLastDebuggingClient);
+	void CloseAndDestroyClient(class FSocket*& Client);
+	void ResetClientStateForShutdown();
 
 public:
 	FAngelscriptEngine* GetOwnerEngine() const { return OwnerEngine; }

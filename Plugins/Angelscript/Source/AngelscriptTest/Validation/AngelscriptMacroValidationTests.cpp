@@ -282,6 +282,7 @@ bool FAngelscriptModuleCleanMacroValidationTest::RunTest(const FString& Paramete
 	bool bPassed = false;
 	int32 Result = 0;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+	const int32 BaselineActiveModules = Engine.GetActiveModules().Num();
 	ASTEST_BEGIN_MODULE_CLEAN
 
 	ASTEST_COMPILE_RUN_INT(
@@ -299,7 +300,7 @@ int Entry()
 	bPassed = TestEqual(TEXT("Module clean lifecycle macro pair should compile and run"), Result, 31);
 	ASTEST_END_MODULE_CLEAN
 
-	return bPassed && TestEqual(TEXT("Module clean lifecycle should discard its module delta"), Engine.GetActiveModules().Num(), 0);
+	return bPassed && TestEqual(TEXT("Module clean lifecycle should discard its module delta"), Engine.GetActiveModules().Num(), BaselineActiveModules);
 }
 
 bool FAngelscriptLifecycleEndPlacementValidationTest::RunTest(const FString& Parameters)
