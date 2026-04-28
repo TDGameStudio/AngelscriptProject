@@ -235,11 +235,16 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - 每次重启后跑 `ProductionScriptMixinSignatures` + 对应库的功能测试
 - [ ] **P4.3** 📦 Git 提交：每个文件一条，格式 `[FunctionLibraries] Refactor: re-enable ScriptMixin on <Library> library`
 
-- [ ] **P4.4** 类 1 文件的处置：保留手工接管 or 切回 ScriptMixin
+- [x] **P4.4** 类 1 文件的处置：保留手工接管 or 切回 ScriptMixin ✅ 2026-04-28 完成（World 唯一类 1 已切回 ScriptMixin）
   - 对类 1 文件（如 `AngelscriptWorldLibrary.h`）单独评估：手工 lambda 提供的精确签名控制（去指针 `@`、显式 `const`、自定义返回类型映射）是否真的有价值，还是历史包袱
   - 若评估为有价值：在文件头永久标注"由 Bind_*.cpp 接管，不要重启 ScriptMixin"，本计划对此文件的工作收口
   - 若评估为历史包袱：把 `Bind_*.cpp` 的手工 lambda 删除 + 重启 ScriptMixin meta + 修整 helper 函数签名（去掉冗余 `*`/调整 `const`）让反射路径产物等价于原手工签名
-- [ ] **P4.4** 📦 Git 提交：每个类 1 文件一条，格式 `[FunctionLibraries] Refactor: <decision> for <Library> manual lambda`
+  - **决策与实施**：选项 B（删手工 lambda + 重启 ScriptMixin），三步落地：①删 `Bind_UWorld.cpp:79-82` 4 行 lambda；②删 `Bind_UWorld.cpp:7` 孤立 include `FunctionLibraries/AngelscriptWorldLibrary.h`；③`AngelscriptWorldLibrary.h` 取消 `//UCLASS(Meta = (ScriptMixin = "UWorld"))` 注释 + 删除 11 行 cleanup parity note，回归 Hazelight 上游形态（`UCLASS(Meta = (ScriptMixin = "UWorld"))` + `UFUNCTION(BlueprintCallable, ...)`）
+  - **手工 lambda 是历史包袱的证据**：fork 当年加 lambda 的目的是"强制 AS 签名 `TArray<ULevelStreaming>` 而非反射推导的 `TArray<ULevelStreaming@>`"，但实测删除后 AS 测试 `WorldStreamingNullGuards` / `WorldStreamingAccess`（共 2 个）零回归全部通过——AS 端 `World.GetStreamingLevels().Num()` / `[i] != ExpectedFirst` 等用法对反射路径产物完全兼容。fork 已经处理 `TObjectPtr` 路由（commit `5cdb3ef` 等历史成果），UObject 容器在 AS 中按引用语义传递，`@` 标记并不影响调用语义
+  - **为什么对 World 安全、对 P4.2 HitResult 也是安全的同一原理**：两条路径（Bind_BlueprintType.cpp:1428-1437 反射 + Bind_FunctionLibraryMixins.cpp 类级注入）在 `IsScriptDeclarationAlreadyBound`（`Bind_BlueprintCallable.cpp:62-70`）拦截下产物等价；World 删除手工 lambda 后从"双轨（lambda + 反射兜底）"变成"单轨（仅 ScriptMixin 注入）"，更纯净
+  - **验证**：构建 0 错误（53s）；`FunctionLibraries.WorldStreaming*` 2/2 PASS；`FunctionLibraries.*` 23/23 PASS（无新增/缺失）；`ProductionScriptMixinSignatures` 1/1 PASS。零回归
+  - **审计矩阵更新**：`ScriptMixinSwitchAudit.md` 类 1 锚点（World 1 处）从"禁止重启"转"已迁移"，可重启锚点总计变 16/16；`HazelightDiffMatrix.md` §3 锚点 #10 状态更新为"已重启"
+- [x] **P4.4** 📦 Git 提交：`[FunctionLibraries] Refactor: re-enable ScriptMixin on AngelscriptWorldLibrary by removing redundant Bind_UWorld manual lambda (P4.4)`
 
 ### Phase 5：Hazelight 上游对比与 helper 漏改修复 + 锚点注释清理
 

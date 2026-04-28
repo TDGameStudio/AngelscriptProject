@@ -188,7 +188,7 @@ P5.2 补全要点：fork 该文件已启用 `UCLASS(Meta = (ScriptMixin = "FHitR
 | 7 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FQuat4f", ScriptName = "FQuat4f"))` | active ✓ | 保留 | 类 3 |
 | 8 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FTransform", ScriptName = "FTransform"))` | active ✓ | 保留 | 类 3 |
 | 9 | `AngelscriptMathLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FTransform3f", ScriptName = "FTransform3f"))` | active ✓ | 保留 | 类 3 |
-| 10 | `AngelscriptWorldLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "UWorld"))` | active ✓ | 保留（note 已修正）| **类 1**（`Bind_UWorld.cpp:79-82` 手工接管，**禁止**重启）|
+| 10 | `AngelscriptWorldLibrary.h` | ~~`//UCLASS(Meta = (ScriptMixin = "UWorld"))`~~ → `UCLASS(Meta = (ScriptMixin = "UWorld"))` | active ✓ | **已重启**（P4.4 完成，cleanup parity note 已删除）| **原类 1，2026-04-28 已迁移**：`Bind_UWorld.cpp:79-82` 手工 lambda 删除 + ScriptMixin 启用，反射路径产物兼容 AS 端用法（2 个 WorldStreaming 测试 PASS）|
 | 11 | `GameplayTagContainerMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FGameplayTagContainer"))` | active ✓ | 保留（修整 note）| 类 3 |
 | 12 | `GameplayTagMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "FGameplayTag"))` | active ✓ | 保留（修整 note）| 类 3 |
 | 13 | `InputComponentScriptMixinLibrary.h` | `//UCLASS(Meta = (ScriptMixin = "UInputComponent"))` | active ✓ | 保留（修整 note）| 类 3 |

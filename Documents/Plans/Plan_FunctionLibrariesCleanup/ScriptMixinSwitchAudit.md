@@ -65,6 +65,8 @@ UWorld_.Method("TArray<ULevelStreaming> GetStreamingLevels() const", [](const UW
 
 **结论**：类 1 文件**禁止**自动 P4.3 批量重启；改在 P4.4 单独决策（保留手工接管 / 切回 ScriptMixin 删除手工 lambda）。
 
+**P4.4 实测结论（2026-04-28，Bind_UWorld 删除手工 lambda + 重启 ScriptMixin）**：fork 当年加 lambda 的目的是"强制 AS 签名 `TArray<ULevelStreaming>` 而非反射推导的 `TArray<ULevelStreaming@>`"，但删除后 AS 测试 `WorldStreamingNullGuards` / `WorldStreamingAccess` 共 2 个全部 PASS，零回归。**根因**：fork 已处理 `TObjectPtr` 路由，UObject 容器在 AS 中按引用语义传递，`@` 与无 `@` 形式在调用语义上等价（`.Num()` / `[i] != Expected` 等用法跨形式可移植）。**类 1 在 fork 中的实例数**：原 1 处（World）已迁移；fork 内**类 1 实例数归 0**，未来扫描需重新评估"是否有新增手工 lambda"。
+
 ### 类 1.5：`Bind_*.cpp` UHT 重载消歧 helper（fork 独有 / 非接管）
 
 **判定依据**：
