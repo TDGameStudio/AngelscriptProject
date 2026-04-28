@@ -845,25 +845,23 @@
 
 ### 12.11 Interface 接口
 
-> 源文件：`Interface/AngelscriptInterfaceDeclareTests.cpp`、`Interface/AngelscriptInterfaceImplementTests.cpp`、`Interface/AngelscriptInterfaceCastTests.cpp`、`Interface/AngelscriptInterfaceAdvancedTests.cpp`
+> 源文件：`Interface/AngelscriptInterfaceNativeTests.cpp`、`Interface/AngelscriptInterfaceNativeBridgeTests.cpp`、`Interface/AngelscriptInterfaceNativeBindingTests.cpp`、`Interface/AngelscriptInterfaceNativeLifecycleTests.cpp`、`Interface/AngelscriptInterfaceNativeInheritedChildSurfaceTests.cpp`、`Interface/AngelscriptInterfaceNativePointerOffsetTests.cpp`
+>
+> 当前不支持脚本 `UINTERFACE()` / `interface UIFoo {}` 声明；Interface 测试覆盖的是脚本实现或调用 C++ native UInterface 的路径。
 
 | 测试名 | 验证内容 |
 |--------|----------|
-| Interface.DeclareBasic | 脚本声明 `UINTERFACE` 生成带 `CLASS_Interface` 的 `UClass` |
-| Interface.DeclareInheritance | 子接口继承父接口并生成，子接口类带 `CLASS_Interface` |
-| Interface.ImplementBasic | Actor 实现接口后 `ImplementsInterface` 为 true |
-| Interface.ImplementMultiple | 单 Actor 同时实现两个接口，二者 `ImplementsInterface` 均为 true |
-| Interface.ImplementsInterfaceMethod | `BeginPlay` 中 `this.ImplementsInterface(...)` 为真 |
-| Interface.CastSuccess | 实现接口的 Actor `Cast` 到接口成功，`CastSucceeded` 为 1 |
-| Interface.CastFail | 未实现接口的 Actor `Cast` 得到 null |
-| Interface.MethodCall | `Cast` 成功后通过接口引用调用 `TakeDamage`，`MethodCalled` 为 1 |
-| Interface.InheritedInterface | 子接口继承父接口时，实现子接口的 Actor 对父子接口均 `ImplementsInterface` |
-| Interface.MissingMethod | 声明接口方法未全实现时编译报错 |
-| Interface.NoProperty | 纯接口类上无 `UPROPERTY` 成员 |
-| Interface.GCSafe | 实现接口的 Actor 销毁并 GC 后弱引用失效 |
-| Interface.HotReload | Full reload 后类仍实现同一接口；行为可按新版更新 |
-| Interface.CppInterface | 脚本声明并实现接口的 Actor 可被检测为 `ImplementsInterface` |
-| Interface.MultipleInheritanceChain | 多层接口继承链上，实现叶接口的 Actor 对基/中/叶接口均满足 |
+| Interface.NativeImplement | 脚本 Actor 实现 native parent interface，脚本侧 `Cast` 与 C++ `Execute_` bridge 均可调用脚本实现 |
+| Interface.NativeInheritedImplement | 脚本 Actor 实现 native child interface，并可通过 parent/child 接口引用调用继承链方法 |
+| Interface.NativeReferenceRoundTrip | native interface 引用在脚本与 C++ 之间往返时保持可调用状态 |
+| Interface.NativeReferenceRoundTrip.CppBridgeMutatesActorState | C++ bridge 通过 native interface 调用脚本实现并修改 Actor 状态 |
+| Interface.NativeInheritedImplement.ParentBridgeSetterAndRef | parent interface 的 setter 与 ref 参数通过 child implementer 正确分发 |
+| Interface.NativeImplement.CppImplementerScriptCall | 脚本 Actor 持有 C++ native implementer，脚本侧 cast 后调用 C++ `_Implementation` |
+| Interface.NativeBinding.SignatureRegistrationLifecycle | interface method signature 注册和释放生命周期不泄漏 |
+| Interface.Native.SignatureRegistrationRelease | shared engine 中 signature 注册/释放按基线计数恢复 |
+| Interface.NativeInheritedImplement.ChildSurfaceIncludesParentMethods | child native interface 暴露 parent interface 方法面 |
+| Interface.NativePointerOffset.MultiInterfaceCast | 多 native interface C++ implementer 的非零 `PointerOffset` cast 与调用正确 |
+| Interface.NativePointerOffset.ScriptClassStillZeroOffset | 脚本类实现 native interface 的零偏移路径仍保持正确 |
 
 ### 12.12 Delegate 委托
 
@@ -943,7 +941,7 @@
 | Learning.Runtime.HotReloadDecision | 解释软重载/完整重载判定触发条件（no-change、body-only、property-count、super-class、class-add/remove、signature-change） |
 | Learning.Runtime.ClassGeneration | 解释 `UCLASS()` 脚本如何生成 `UClass`、属性枚举、CDO 默认值、actor-derived 检测 |
 | Learning.Runtime.ScriptClassToBlueprint | 解释脚本类如何作为 Blueprint 父类、继承验证、BeginPlay override、属性传播 |
-| Learning.Runtime.InterfaceDispatch | 解释 `UINTERFACE` 生成、接口继承链、`ImplementsInterface` 验证、dispatch 可见性 |
+| Learning.Runtime.InterfaceDispatch | 解释脚本类实现 C++ native UInterface、`ImplementsInterface` 验证、C++ `Execute_` bridge 和 dispatch 可见性 |
 | Learning.Runtime.DelegateBridge | 解释 unicast delegate 绑定、`BindUFunction`、native->script dispatch |
 | Learning.Runtime.ComponentHierarchy | 解释 `DefaultComponent` specifier、组件生命周期（BeginPlay/Tick） |
 | Learning.Runtime.BlueprintSubclass | 解释 Blueprint 继承脚本类、属性继承、运行时 override 行为 |

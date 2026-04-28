@@ -1,10 +1,17 @@
 # Angelscript 接口绑定完善计划
 
+> **状态更新（2026-04-28）**：本文早期章节记录的是历史“脚本定义
+> `UINTERFACE`”方案，不再代表当前实现现状。当前支持方向是 C++
+> `UINTERFACE(BlueprintType)` 自动绑定、脚本类实现 native UInterface、
+> `Cast<UCppInterface>(Obj)` 和接口方法 bridge 调用；脚本
+> `UINTERFACE()` / `interface UIFoo {}` 声明已废弃，不应再新增测试或示例。
+> 后续若继续执行本计划，应先按当前 native-interface 实现重写范围与验收项。
+
 ## 背景与目标
 
 ### 背景
 
-当前 `Plugins/Angelscript` 已实现了一条完整的 **脚本定义 UINTERFACE** 管线（详见仓库内接口分析资料；若需本地外部分析文档路径，统一通过 `Reference/README.md` 或本机配置索引查询，而不是在计划中写死绝对路径）：
+历史版本曾实现过一条 **脚本定义 UINTERFACE** 管线（详见仓库内接口分析资料；若需本地外部分析文档路径，统一通过 `Reference/README.md` 或本机配置索引查询，而不是在计划中写死绝对路径），但该方向已经回退并废弃：
 
 - **预处理器**：识别 `interface` chunk → 提取方法声明到 `InterfaceMethodDeclarations` → 擦除接口块（保留行号空格） → `RegisterObjectType`（引用类型）+ `RegisterObjectMethod`（`CallInterfaceMethod` 回调）
 - **类生成器**：创建接口 `UClass`（`CLASS_Interface | CLASS_Abstract`）+ minimal UFunction 存根 → `ResolveInterfaceClass` + `AddInterfaceRecursive` → `FindFunctionByName` 方法完整性校验
@@ -23,9 +30,9 @@
 | **接口块不进入 AS 编译** | 由预处理器擦除 + 插件侧模拟，非 AS 引擎原生 `interface` | 不能使用 AS 原生接口语法特性（如虚函数表） |
 | **方法签名不做类型匹配** | 校验只检查方法名存在，不校验参数类型/个数 | 理论上方法名相同但签名不同也会通过编译 |
 
-### C++ UInterface 支持缺口（来自同文档 §6.2，**核心问题**）
+### C++ UInterface 支持缺口（历史状态，来自同文档 §6.2）
 
-AS 类 **当前只能实现 AS 脚本中声明的接口**，**不能** 实现 C++ 侧通过 `UINTERFACE()` 宏声明的 UInterface。尽管 `ResolveInterfaceClass` 有三级回退查找能在反射层部分挂接，但 AS 脚本层完全不可用：
+该小节记录的是 C++ UInterface 自动绑定落地前的历史缺口。当前脚本类已经可以实现 C++ 侧通过 `UINTERFACE(BlueprintType)` 声明的 UInterface，并可通过 `Cast<UCppInterface>(Obj)` 调用已绑定接口方法；继续推进时应重新盘点剩余缺口，而不是恢复脚本 `UINTERFACE()` 声明。
 
 | # | 缺口 | 说明 |
 |---|------|------|
@@ -67,38 +74,29 @@ Patch 方案的关键可借鉴技术点：
 ## 当前事实状态
 
 ```text
-接口相关代码分布（AngelscriptRuntime/）：
+脚本自定义接口方案已经废弃；以下历史实现点不再作为当前能力目标：
+Preprocessor interface 块解析 / 方法提取 / 块擦除
+ClassGenerator 动态创建脚本接口 UClass
+脚本 `UINTERFACE()` + `interface UIFoo {}` 声明
 
-Preprocessor/AngelscriptPreprocessor.h    ← EChunkType::Interface
-Preprocessor/AngelscriptPreprocessor.cpp  ← interface 块解析、方法提取、块擦除、
-                                             RegisterObjectType + RegisterObjectMethod(CallInterfaceMethod)
-Core/AngelscriptEngine.h                  ← FInterfaceMethodSignature（仅 FName FunctionName）、
-                                             FAngelscriptClassDesc 中 bIsInterface / ImplementedInterfaces /
-                                             InterfaceMethodDeclarations
-Core/AngelscriptEngine.cpp                ← RegisterInterfaceMethodSignature / ReleaseInterfaceMethodSignature
-ClassGenerator/AngelscriptClassGenerator.cpp ← CallInterfaceMethod 实现（55-98行）、
-                                               接口 UClass 创建（2788-2861行）、
-                                               FinalizeClass 接口挂接（5081-5209行）
-Binds/Bind_UObject.cpp                    ← opCast 接口分支（134-169行）、ImplementsInterface 绑定
-Binds/Bind_BlueprintType.cpp              ← 无接口相关改动（Patch 核心改动点 +500行）
-Binds/Bind_Helpers.h                      ← 无接口相关 helper（Patch 新增 +80行）
+当前接口测试（AngelscriptTest/Interface/）：
+  AngelscriptInterfaceNativeTests.cpp
+  AngelscriptInterfaceNativeBridgeTests.cpp
+  AngelscriptInterfaceNativeBindingTests.cpp
+  AngelscriptInterfaceNativeLifecycleTests.cpp
+  AngelscriptInterfaceNativeInheritedChildSurfaceTests.cpp
+  AngelscriptInterfaceNativePointerOffsetTests.cpp
 
-测试（AngelscriptTest/Interface/）：
-  AngelscriptInterfaceDeclareTests.cpp      ← 2 个用例
-  AngelscriptInterfaceImplementTests.cpp    ← 3 个用例
-  AngelscriptInterfaceCastTests.cpp         ← 3 个用例
-  AngelscriptInterfaceAdvancedTests.cpp     ← 7 个用例（含 CppInterface 用例，
-                                               但实际是脚本声明的接口，非 C++ 声明绑定）
 AngelscriptTest/Angelscript/
   AngelscriptInheritanceTests.cpp           ← 语言级 interface 负例（期望编译失败）
 ```
 
 能力边界：
-- 脚本定义 `UINTERFACE` + 脚本类实现 → **完整闭环，15 个测试**
-- C++ 定义 `UInterface` + 脚本类实现 → **反射层部分可用，AS 脚本层不可用**
+- 脚本定义 `UINTERFACE()` / `interface UIFoo {}` → **已废弃，不支持，不应新增测试或示例**
+- C++ 定义 `UInterface` + 脚本类实现 → **当前支持方向，测试覆盖 native implement / bridge / lifecycle / inherited surface / pointer offset**
 - `TScriptInterface<T>` 属性 → **未支持**
 - AS 语言级 `interface I…` → **明确不支持**
-- 接口方法签名完整性 → **仅函数名匹配，不校验参数**
+- 接口方法签名完整性 → **按 native UInterface 绑定路径继续验证；不恢复脚本自定义接口的签名匹配模型**
 
 ## 架构决策点
 

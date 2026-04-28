@@ -141,8 +141,8 @@
   - 讲“软重载/全量重载分析的判定依据与结构变化边界”。
 - `Plugins/Angelscript/Source/AngelscriptTest/Learning/Runtime/AngelscriptLearningRestoreAndBytecodePersistenceTests.cpp`
   - 讲“SaveByteCode/LoadByteCode、restore round-trip、debug info strip 的影响”。
-- `Plugins/Angelscript/Source/AngelscriptTest/Learning/Scenario/AngelscriptLearningInterfaceDispatchTraceTests.cpp`
-  - 讲“UINTERFACE 声明、继承链、实现类 dispatch、C++ Execute_ bridge”。
+- `Plugins/Angelscript/Source/AngelscriptTest/Learning/Runtime/AngelscriptLearningInterfaceDispatchTraceTests.cpp`
+  - 讲“脚本类实现 native UInterface、`ImplementsInterface` 验证、实现类 dispatch、C++ `Execute_` bridge”。
 - `Plugins/Angelscript/Source/AngelscriptTest/Learning/Scenario/AngelscriptLearningDelegateBridgeTraceTests.cpp`
   - 讲“unicast/multicast delegate、BindUFunction/AddUFunction、事件广播跨桥接过程”。
 - `Plugins/Angelscript/Source/AngelscriptTest/Learning/Scenario/AngelscriptLearningGCTraceTests.cpp`
@@ -196,8 +196,8 @@
   - 依据：`Plugins/Angelscript/Source/AngelscriptTest/Delegate/AngelscriptDelegateScenarioTests.cpp`、`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Delegates.h`
   - 教学价值：解释脚本事件如何变成 UE delegate，以及 AngelScriptSDK/script 双向触发路径。
 - **Interface Dispatch**
-  - 依据：`Plugins/Angelscript/Source/AngelscriptTest/Interface/AngelscriptInterfaceAdvancedTests.cpp`
-  - 教学价值：解释 interface 继承链、实现类、Execute_ bridge 与 GC-safe dispatch。
+  - 依据：`Plugins/Angelscript/Source/AngelscriptTest/Interface/AngelscriptInterfaceNativeBridgeTests.cpp`、`Plugins/Angelscript/Source/AngelscriptTest/Interface/AngelscriptInterfaceNativeInheritedChildSurfaceTests.cpp`
+  - 教学价值：解释 native UInterface 继承链、脚本实现类、`Execute_` bridge 与 GC-safe dispatch。
 - **FileSystem / Module Discovery**
   - 依据：`Plugins/Angelscript/Source/AngelscriptTest/FileSystem/AngelscriptFileSystemTests.cpp`
   - 教学价值：解释脚本文件如何被发现、命名、定位，以及坏模块为何不应污染好模块。
@@ -468,9 +468,9 @@
   - 输出至少包括：生成类名、Blueprint child 名、BeginPlay 命中情况、关键 property 回读结果。
 - [x] **P4.3** 📦 Git 提交：`[Test/Learning] Feat: add script-class-to-blueprint learning trace test`
 
-- [x] **P4.4** 创建 `Learning/AngelscriptLearningInterfaceDispatchTraceTests.cpp`
-  - 基于 `Interface/AngelscriptInterfaceAdvancedTests.cpp`，讲清楚 `UINTERFACE`、interface 继承链、实现类如何满足父/子接口、以及 `Execute_` bridge 的 dispatch 过程。
-  - 输出重点是“接口声明 -> 生成 UE interface type -> 实现类 dispatch -> C++/script 调用方看到的行为”。
+- [x] **P4.4** 创建 `Learning/Runtime/AngelscriptLearningInterfaceDispatchTraceTests.cpp`
+  - 基于 native interface 测试，讲清楚脚本类实现 C++ native UInterface、`ImplementsInterface`、实现类 dispatch、以及 `Execute_` bridge 的过程。
+  - 输出重点是“native interface 绑定 -> 脚本实现类 -> C++/script 调用方看到的行为”。
 - [x] **P4.4** 📦 Git 提交：`[Test/Learning] Feat: add interface dispatch learning trace test`
 
 - [x] **P4.5** 创建 `Learning/AngelscriptLearningDelegateBridgeTraceTests.cpp`
