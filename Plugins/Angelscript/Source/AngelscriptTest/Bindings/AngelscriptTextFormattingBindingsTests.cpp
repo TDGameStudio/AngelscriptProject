@@ -1,60 +1,112 @@
-#include "Shared/AngelscriptTestUtilities.h"
+// ============================================================================
+// AngelscriptTextFormattingBindingsTests.cpp
+//
+// FFormatArgumentValue / FText::Format binding coverage — CQTest pattern.
+// Automation ID:
+//   Angelscript.TestModule.Bindings.TextFormatting.FAngelscriptTextFormattingBindingsTest.*
+//
+// Sections:
+//   OrderedFormat — ordered FFormatArgumentValue args + FText::Format
+//   NamedFormat   — named FFormatArgumentValue args + FText::Format
+//
+// Each section computes the C++ expected string at runtime, injects it into
+// the AS source via ReplaceInline, and verifies the AS-side formatted result
+// matches (returns 1 on match, 0 on mismatch).
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
-namespace AngelscriptTest_Bindings_AngelscriptTextFormattingBindingsTests_Private
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GProfile{
+	TEXT("TextFormatting"),          // Theme
+	TEXT(""),                        // Variant
+	TEXT("ASTextFormat"),            // ModulePrefix
+	TEXT("TextFormat"),              // CasePrefix
+	TEXT("TextFormattingBindings"),  // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Helpers — compute C++ baselines at runtime
+// ----------------------------------------------------------------------------
+
+namespace AngelscriptTest_TextFormatting_Private
 {
-	struct FTextFormattingExpectations
+	FString BuildOrderedExpected()
 	{
-		FString OrderedExpected;
-		FString NamedExpected;
-	};
+		const FText Pattern = FText::FromString(TEXT("{0}|{1}|{2}|{3}|{4}|{5}|{6}"));
+		FFormatOrderedArguments Args;
+		Args.Add(FFormatArgumentValue(int32(-7)));
+		Args.Add(FFormatArgumentValue(uint32(42)));
+		Args.Add(FFormatArgumentValue(int64(9000000000ll)));
+		Args.Add(FFormatArgumentValue(uint64(15)));
+		Args.Add(FFormatArgumentValue(float(3.25f)));
+		Args.Add(FFormatArgumentValue(double(6.5)));
+		Args.Add(FFormatArgumentValue(FText::FromString(TEXT("Alpha"))));
+		return FText::Format(Pattern, Args).ToString().ReplaceCharWithEscapedChar();
+	}
 
-	FTextFormattingExpectations BuildTextFormattingExpectations()
+	FString BuildNamedExpected()
 	{
-		const FText OrderedPattern = FText::FromString(TEXT("{0}|{1}|{2}|{3}|{4}|{5}|{6}"));
-		FFormatOrderedArguments OrderedArguments;
-		OrderedArguments.Add(FFormatArgumentValue(int32(-7)));
-		OrderedArguments.Add(FFormatArgumentValue(uint32(42)));
-		OrderedArguments.Add(FFormatArgumentValue(int64(9000000000ll)));
-		OrderedArguments.Add(FFormatArgumentValue(uint64(15)));
-		OrderedArguments.Add(FFormatArgumentValue(float(3.25f)));
-		OrderedArguments.Add(FFormatArgumentValue(double(6.5)));
-		OrderedArguments.Add(FFormatArgumentValue(FText::FromString(TEXT("Alpha"))));
-
-		const FText NamedPattern = FText::FromString(TEXT("{Int32}|{UInt32}|{Int64}|{UInt64}|{Float32}|{Float64}|{Text}"));
-		FFormatNamedArguments NamedArguments;
-		NamedArguments.Add(TEXT("Int32"), FFormatArgumentValue(int32(-7)));
-		NamedArguments.Add(TEXT("UInt32"), FFormatArgumentValue(uint32(42)));
-		NamedArguments.Add(TEXT("Int64"), FFormatArgumentValue(int64(9000000000ll)));
-		NamedArguments.Add(TEXT("UInt64"), FFormatArgumentValue(uint64(15)));
-		NamedArguments.Add(TEXT("Float32"), FFormatArgumentValue(float(3.25f)));
-		NamedArguments.Add(TEXT("Float64"), FFormatArgumentValue(double(6.5)));
-		NamedArguments.Add(TEXT("Text"), FFormatArgumentValue(FText::FromString(TEXT("Alpha"))));
-
-		FTextFormattingExpectations Expectations;
-		Expectations.OrderedExpected = FText::Format(OrderedPattern, OrderedArguments).ToString().ReplaceCharWithEscapedChar();
-		Expectations.NamedExpected = FText::Format(NamedPattern, NamedArguments).ToString().ReplaceCharWithEscapedChar();
-		return Expectations;
+		const FText Pattern = FText::FromString(TEXT("{Int32}|{UInt32}|{Int64}|{UInt64}|{Float32}|{Float64}|{Text}"));
+		FFormatNamedArguments Args;
+		Args.Add(TEXT("Int32"), FFormatArgumentValue(int32(-7)));
+		Args.Add(TEXT("UInt32"), FFormatArgumentValue(uint32(42)));
+		Args.Add(TEXT("Int64"), FFormatArgumentValue(int64(9000000000ll)));
+		Args.Add(TEXT("UInt64"), FFormatArgumentValue(uint64(15)));
+		Args.Add(TEXT("Float32"), FFormatArgumentValue(float(3.25f)));
+		Args.Add(TEXT("Float64"), FFormatArgumentValue(double(6.5)));
+		Args.Add(TEXT("Text"), FFormatArgumentValue(FText::FromString(TEXT("Alpha"))));
+		return FText::Format(Pattern, Args).ToString().ReplaceCharWithEscapedChar();
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptTextFormattingBindingsTests_Private;
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptFormatArgumentValueBindingsTest,
-	"Angelscript.TestModule.Bindings.FormatArgumentValueCompat",
+TEST_CLASS_WITH_FLAGS(FAngelscriptTextFormattingBindingsTest,
+	"Angelscript.TestModule.Bindings.TextFormatting",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptFormatArgumentValueBindingsTest::RunTest(const FString& Parameters)
 {
-	const FTextFormattingExpectations Expectations = BuildTextFormattingExpectations();
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	FString ScriptSource = TEXT(R"(
-int Entry()
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	// ====================================================================
+	// Section: OrderedFormat
+	// ====================================================================
+
+	TEST_METHOD(OrderedFormat)
+	{
+		using namespace AngelscriptTest_TextFormatting_Private;
+
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		const FString OrderedExpected = BuildOrderedExpected();
+
+		FString Source = TEXT(R"(
+int OrderedFormat_Match()
 {
 	TArray<FFormatArgumentValue> OrderedArgs;
 	OrderedArgs.Add(FFormatArgumentValue(int32(-7)));
@@ -65,10 +117,40 @@ int Entry()
 	OrderedArgs.Add(FFormatArgumentValue(float64(6.5)));
 	OrderedArgs.Add(FFormatArgumentValue(FText::FromString("Alpha")));
 
-	FText OrderedText = FText::Format(FText::FromString("{0}|{1}|{2}|{3}|{4}|{5}|{6}"), OrderedArgs);
-	if (!(OrderedText.ToString() == "__ORDERED_EXPECTED__"))
-		return 10;
+	FText Result = FText::Format(FText::FromString("{0}|{1}|{2}|{3}|{4}|{5}|{6}"), OrderedArgs);
+	if (Result.ToString() == "__ORDERED_EXPECTED__")
+		return 1;
+	return 0;
+}
+)");
+		Source.ReplaceInline(TEXT("__ORDERED_EXPECTED__"), *OrderedExpected, ESearchCase::CaseSensitive);
 
+		FCoverageModuleScope Mod(*TestRunner, Engine, GProfile, TEXT("OrderedFormat"), Source);
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GProfile,
+			TEXT("int OrderedFormat_Match()"),
+			TEXT("Ordered FFormatArgumentValue args should produce expected FText::Format output"),
+			1);
+	}
+
+	// ====================================================================
+	// Section: NamedFormat
+	// ====================================================================
+
+	TEST_METHOD(NamedFormat)
+	{
+		using namespace AngelscriptTest_TextFormatting_Private;
+
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		const FString NamedExpected = BuildNamedExpected();
+
+		FString Source = TEXT(R"(
+int NamedFormat_Match()
+{
 	TMap<FString, FFormatArgumentValue> NamedArgs;
 	NamedArgs.Add("Int32", FFormatArgumentValue(int32(-7)));
 	NamedArgs.Add("UInt32", FFormatArgumentValue(uint32(42)));
@@ -78,46 +160,23 @@ int Entry()
 	NamedArgs.Add("Float64", FFormatArgumentValue(float64(6.5)));
 	NamedArgs.Add("Text", FFormatArgumentValue(FText::FromString("Alpha")));
 
-	FText NamedText = FText::Format(FText::FromString("{Int32}|{UInt32}|{Int64}|{UInt64}|{Float32}|{Float64}|{Text}"), NamedArgs);
-	if (!(NamedText.ToString() == "__NAMED_EXPECTED__"))
-		return 20;
-
-	return 1;
+	FText Result = FText::Format(FText::FromString("{Int32}|{UInt32}|{Int64}|{UInt64}|{Float32}|{Float64}|{Text}"), NamedArgs);
+	if (Result.ToString() == "__NAMED_EXPECTED__")
+		return 1;
+	return 0;
 }
 )");
+		Source.ReplaceInline(TEXT("__NAMED_EXPECTED__"), *NamedExpected, ESearchCase::CaseSensitive);
 
-	ScriptSource.ReplaceInline(TEXT("__ORDERED_EXPECTED__"), *Expectations.OrderedExpected, ESearchCase::CaseSensitive);
-	ScriptSource.ReplaceInline(TEXT("__NAMED_EXPECTED__"), *Expectations.NamedExpected, ESearchCase::CaseSensitive);
+		FCoverageModuleScope Mod(*TestRunner, Engine, GProfile, TEXT("NamedFormat"), Source);
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASTextFormattingBindings",
-		ScriptSource);
-	if (Module == nullptr)
-	{
-		return false;
+		ExpectGlobalInt(*TestRunner, Engine, M, GProfile,
+			TEXT("int NamedFormat_Match()"),
+			TEXT("Named FFormatArgumentValue args should produce expected FText::Format output"),
+			1);
 	}
-
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
-	{
-		return false;
-	}
-
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("FFormatArgumentValue constructors should preserve ordered and named FText::Format output parity"), Result, 1);
-
-	ASTEST_END_SHARE_CLEAN
-	return true;
-}
+};
 
 #endif

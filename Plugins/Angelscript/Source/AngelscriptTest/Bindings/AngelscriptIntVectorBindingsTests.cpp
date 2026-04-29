@@ -1,125 +1,258 @@
-#include "Shared/AngelscriptTestUtilities.h"
-#include "Shared/AngelscriptTestMacros.h"
+// ============================================================================
+// AngelscriptIntVectorBindingsTests.cpp
+//
+// Integer vector value-type binding coverage — CQTest refactor. Automation IDs:
+//   Angelscript.TestModule.Bindings.IntVector.FAngelscriptIntVectorBindingsTest.*
+//
+// Sections:
+//   IntPointArithmetic  — construction, indexing, negate+add, multiply/divide, GetMax/GetMin
+//   IntVectorOps        — zero check, construction, indexing, +=, -=, *=, /=
+//   IntVector2Compat    — uniform construction, copy, assignment, indexing
+//   IntVector4Arithmetic — negate, add, subtract, multiply/divide, indexing
+//
+// CQTest adaptation notes:
+//   All values are literals — no C++ template substitution needed.
+// ============================================================================
 
-#include "Misc/AutomationTest.h"
-#include "Misc/ScopeExit.h"
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptIntVectorValueTypesCompatBindingsTest,
-	"Angelscript.TestModule.Bindings.IntVectorValueTypesCompat",
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GIntVectorProfile{
+	TEXT("IntVector"),            // Theme
+	TEXT(""),                     // Variant
+	TEXT("ASIntVector"),          // ModulePrefix
+	TEXT("IntVector"),            // CasePrefix
+	TEXT("IntVectorBindings"),    // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptIntVectorBindingsTest,
+	"Angelscript.TestModule.Bindings.IntVector",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-namespace AngelscriptTest_Bindings_AngelscriptIntVectorBindingsTests_Private
 {
-	static constexpr ANSICHAR IntVectorBindingsModuleName[] = "ASIntVectorValueTypesCompat";
-}
-
-using namespace AngelscriptTest_Bindings_AngelscriptIntVectorBindingsTests_Private;
-
-bool FAngelscriptIntVectorValueTypesCompatBindingsTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	ON_SCOPE_EXIT
+	BEFORE_ALL()
 	{
-		Engine.DiscardModule(TEXT("ASIntVectorValueTypesCompat"));
-	};
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		IntVectorBindingsModuleName,
-		TEXT(R"AS(
-int Entry()
-{
-	FIntPoint Point(4, 9);
-	if (Point.X != 4 || Point.Y != 9 || Point[0] != 4 || Point[1] != 9)
-		return 10;
-	if (!((-Point + FIntPoint(10, 20)) == FIntPoint(6, 11)))
-		return 11;
-	if (!(((Point * 2) / 2) == Point))
-		return 12;
-	if (Point.GetMax() != 9 || Point.GetMin() != 4)
-		return 13;
-
-	FIntVector ZeroVector = FIntVector();
-	if (!ZeroVector.IsZero())
-		return 20;
-
-	FIntVector Vector(1, 2, 3);
-	if (Vector.IsZero())
-		return 21;
-	if (Vector[2] != 3)
-		return 22;
-	Vector += FIntVector(4, 5, 6);
-	if (!(Vector == FIntVector(5, 7, 9)))
-		return 23;
-	Vector -= FIntVector(4, 5, 6);
-	if (!(Vector == FIntVector(1, 2, 3)))
-		return 24;
-	Vector *= 3;
-	Vector /= 3;
-	if (!(Vector == FIntVector(1, 2, 3)))
-		return 25;
-
-	FIntVector2 Uniform(7);
-	if (Uniform.X != 7 || Uniform.Y != 7)
-		return 30;
-	FIntVector2 Copy(Uniform);
-	if (!(Copy == Uniform))
-		return 31;
-	FIntVector2 Assigned = FIntVector2();
-	Assigned = Uniform;
-	if (!(Assigned == Uniform))
-		return 32;
-	if (Copy[1] != 7)
-		return 33;
-
-	FIntVector4 Quad(1, 2, 3, 4);
-	if (!((-Quad) == FIntVector4(-1, -2, -3, -4)))
-		return 40;
-	if (!((Quad + FIntVector4(1, 1, 1, 1)) == FIntVector4(2, 3, 4, 5)))
-		return 41;
-	if (!((Quad - FIntVector4(1, 1, 1, 1)) == FIntVector4(0, 1, 2, 3)))
-		return 42;
-	if (!(((Quad * 2) / 2) == Quad))
-		return 43;
-	if (Quad[3] != 4)
-		return 44;
-
-	return 1;
-}
-)AS"));
-	if (Module == nullptr)
-	{
-		return false;
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	AFTER_ALL()
 	{
-		return false;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
-	int32 Result = INDEX_NONE;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
+	// ====================================================================
+	// Section: IntPointArithmetic
+	// ====================================================================
+
+	TEST_METHOD(IntPointArithmetic)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	bPassed = TestEqual(
-		TEXT("Int vector value-type bindings should preserve the deterministic arithmetic matrix"),
-		Result,
-		1);
-
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
+		FCoverageModuleScope Mod(*TestRunner, Engine, GIntVectorProfile, TEXT("IntPoint"), TEXT(R"(
+int IntPoint_Construction()
+{
+	FIntPoint P(4, 9);
+	return (P.X == 4 && P.Y == 9) ? 1 : 0;
 }
+int IntPoint_Indexing()
+{
+	FIntPoint P(4, 9);
+	return (P[0] == 4 && P[1] == 9) ? 1 : 0;
+}
+int IntPoint_NegateAdd()
+{
+	FIntPoint P(4, 9);
+	return ((-P + FIntPoint(10, 20)) == FIntPoint(6, 11)) ? 1 : 0;
+}
+int IntPoint_MulDiv()
+{
+	FIntPoint P(4, 9);
+	return (((P * 2) / 2) == P) ? 1 : 0;
+}
+int IntPoint_GetMax()
+{
+	FIntPoint P(4, 9);
+	return (P.GetMax() == 9) ? 1 : 0;
+}
+int IntPoint_GetMin()
+{
+	FIntPoint P(4, 9);
+	return (P.GetMin() == 4) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_Construction()"), TEXT("FIntPoint construction should set X and Y"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_Indexing()"), TEXT("FIntPoint operator[] should access X and Y"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_NegateAdd()"), TEXT("FIntPoint negate+add should compute correctly"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_MulDiv()"), TEXT("FIntPoint multiply then divide should roundtrip"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_GetMax()"), TEXT("FIntPoint GetMax should return largest component"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntPoint_GetMin()"), TEXT("FIntPoint GetMin should return smallest component"), 1);
+	}
+
+	// ====================================================================
+	// Section: IntVectorOps
+	// ====================================================================
+
+	TEST_METHOD(IntVectorOps)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GIntVectorProfile, TEXT("IntVec"), TEXT(R"(
+int IntVec_ZeroIsZero()
+{
+	FIntVector V = FIntVector();
+	return V.IsZero() ? 1 : 0;
+}
+int IntVec_Construction()
+{
+	FIntVector V(1, 2, 3);
+	return (!V.IsZero()) ? 1 : 0;
+}
+int IntVec_Indexing()
+{
+	FIntVector V(1, 2, 3);
+	return (V[2] == 3) ? 1 : 0;
+}
+int IntVec_AddAssign()
+{
+	FIntVector V(1, 2, 3);
+	V += FIntVector(4, 5, 6);
+	return (V == FIntVector(5, 7, 9)) ? 1 : 0;
+}
+int IntVec_SubAssign()
+{
+	FIntVector V(5, 7, 9);
+	V -= FIntVector(4, 5, 6);
+	return (V == FIntVector(1, 2, 3)) ? 1 : 0;
+}
+int IntVec_MulDivAssign()
+{
+	FIntVector V(1, 2, 3);
+	V *= 3;
+	V /= 3;
+	return (V == FIntVector(1, 2, 3)) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_ZeroIsZero()"), TEXT("Default FIntVector should be zero"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_Construction()"), TEXT("FIntVector(1,2,3) should not be zero"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_Indexing()"), TEXT("FIntVector operator[] should access Z"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_AddAssign()"), TEXT("FIntVector += should add componentwise"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_SubAssign()"), TEXT("FIntVector -= should subtract componentwise"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec_MulDivAssign()"), TEXT("FIntVector *= then /= should roundtrip"), 1);
+	}
+
+	// ====================================================================
+	// Section: IntVector2Compat
+	// ====================================================================
+
+	TEST_METHOD(IntVector2Compat)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GIntVectorProfile, TEXT("IntVec2"), TEXT(R"(
+int IntVec2_Uniform()
+{
+	FIntVector2 V(7);
+	return (V.X == 7 && V.Y == 7) ? 1 : 0;
+}
+int IntVec2_Copy()
+{
+	FIntVector2 V(7);
+	FIntVector2 C(V);
+	return (C == V) ? 1 : 0;
+}
+int IntVec2_Assignment()
+{
+	FIntVector2 V(7);
+	FIntVector2 A = FIntVector2();
+	A = V;
+	return (A == V) ? 1 : 0;
+}
+int IntVec2_Indexing()
+{
+	FIntVector2 V(7);
+	FIntVector2 C(V);
+	return (C[1] == 7) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec2_Uniform()"), TEXT("FIntVector2 uniform ctor should set both components"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec2_Copy()"), TEXT("FIntVector2 copy ctor should produce equal vector"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec2_Assignment()"), TEXT("FIntVector2 assignment should produce equal vector"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec2_Indexing()"), TEXT("FIntVector2 operator[] should access Y"), 1);
+	}
+
+	// ====================================================================
+	// Section: IntVector4Arithmetic
+	// ====================================================================
+
+	TEST_METHOD(IntVector4Arithmetic)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GIntVectorProfile, TEXT("IntVec4"), TEXT(R"(
+int IntVec4_Negate()
+{
+	FIntVector4 V(1, 2, 3, 4);
+	return ((-V) == FIntVector4(-1, -2, -3, -4)) ? 1 : 0;
+}
+int IntVec4_Add()
+{
+	FIntVector4 V(1, 2, 3, 4);
+	return ((V + FIntVector4(1, 1, 1, 1)) == FIntVector4(2, 3, 4, 5)) ? 1 : 0;
+}
+int IntVec4_Subtract()
+{
+	FIntVector4 V(1, 2, 3, 4);
+	return ((V - FIntVector4(1, 1, 1, 1)) == FIntVector4(0, 1, 2, 3)) ? 1 : 0;
+}
+int IntVec4_MulDiv()
+{
+	FIntVector4 V(1, 2, 3, 4);
+	return (((V * 2) / 2) == V) ? 1 : 0;
+}
+int IntVec4_Indexing()
+{
+	FIntVector4 V(1, 2, 3, 4);
+	return (V[3] == 4) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec4_Negate()"), TEXT("FIntVector4 negate should flip all components"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec4_Add()"), TEXT("FIntVector4 addition should be componentwise"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec4_Subtract()"), TEXT("FIntVector4 subtraction should be componentwise"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec4_MulDiv()"), TEXT("FIntVector4 multiply then divide should roundtrip"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GIntVectorProfile, TEXT("int IntVec4_Indexing()"), TEXT("FIntVector4 operator[] should access W"), 1);
+	}
+};
 
 #endif

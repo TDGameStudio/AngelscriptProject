@@ -1,21 +1,49 @@
+// ============================================================================
+// AngelscriptFrameTimeFunctionLibraryTests.cpp
+//
+// FQualifiedFrameTime binding coverage — CQTest pattern. Automation ID:
+//   Angelscript.TestModule.FunctionLibraries.FrameTime.FAngelscriptFrameTimeBindingsTest.*
+//
+// Sections:
+//   NativeBaselines        — verify 3 native FQualifiedFrameTime.AsSeconds()
+//                            cases using TestTrue + FMath::IsNearlyEqual
+//                            (no AS engine needed)
+//   AsSecondsMixinCompiles — verify the AsSeconds() mixin binding compiles
+//                            and is callable from script
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
-#include "Shared/AngelscriptTestUtilities.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "Misc/QualifiedFrameTime.h"
-#include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptFrameTimeAsSecondsFunctionLibraryTest,
-	"Angelscript.TestModule.FunctionLibraries.FrameTimeAsSeconds",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
 
-namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Private
+static const FBindingsCoverageProfile GProfile{
+	TEXT("FrameTime"),          // Theme
+	TEXT(""),                   // Variant
+	TEXT("ASFrameTime"),        // ModulePrefix
+	TEXT("FrameTime"),          // CasePrefix
+	TEXT("FrameTimeBindings"),  // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Constants
+// ----------------------------------------------------------------------------
+
+namespace AngelscriptTest_FrameTime_Private
 {
-	static constexpr ANSICHAR FrameTimeBindingsModuleName[] = "ASFrameTimeAsSeconds";
 	static constexpr double FrameTimeTolerance = 0.000000001;
 
 	struct FFrameTimeAsSecondsCase
@@ -33,65 +61,70 @@ namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Priv
 			{ TEXT("12 @ 25fps"), FQualifiedFrameTime(FFrameTime(FFrameNumber(12)), FFrameRate(25, 1)), 0.48 }
 		};
 	}
+}
 
-	// FQualifiedFrameTime::Time and ::Rate are not UPROPERTY, so they cannot be
-	// assigned from script. The script side only verifies that the AsSeconds()
-	// mixin binding compiles and resolves. Numerical correctness is asserted on
-	// the native side via BuildNativeCases.
-	FString BuildScriptSource()
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptFrameTimeBindingsTest,
+	"Angelscript.TestModule.FunctionLibraries.FrameTime",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	BEFORE_ALL()
 	{
-	return TEXT(R"(
-// Verify that the AsSeconds mixin binding on FQualifiedFrameTime compiles
-// and is callable. The actual numerical correctness is tested on the
-// native side.
-int Entry()
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
+
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	// ====================================================================
+	// Section: NativeBaselines
+	// ====================================================================
+
+	TEST_METHOD(NativeBaselines)
+	{
+		using namespace AngelscriptTest_FrameTime_Private;
+
+		const TArray<FFrameTimeAsSecondsCase> Cases = BuildNativeCases();
+		for (const FFrameTimeAsSecondsCase& C : Cases)
+		{
+			TestRunner->TestTrue(
+				FString::Printf(TEXT("Native %s baseline should match expected seconds conversion"), C.Label),
+				FMath::IsNearlyEqual(C.Value.AsSeconds(), C.ExpectedSeconds, FrameTimeTolerance));
+		}
+	}
+
+	// ====================================================================
+	// Section: AsSecondsMixinCompiles
+	// ====================================================================
+
+	TEST_METHOD(AsSecondsMixinCompiles)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GProfile, TEXT("AsSecondsMixin"), TEXT(R"(
+int AsSeconds_Compiles()
 {
 	FQualifiedFrameTime DefaultTime;
 	// Just call AsSeconds to verify the mixin binding compiles and links.
-	// We do not assert on the value because the default-constructed struct
-	// may have zero-initialized Rate in script (unlike C++ default ctor).
 	DefaultTime.AsSeconds();
 	return 1;
 }
-)");
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GProfile,
+			TEXT("int AsSeconds_Compiles()"),
+			TEXT("FQualifiedFrameTime.AsSeconds mixin binding should compile and be callable"),
+			1);
 	}
-}
-
-using namespace AngelscriptTest_Bindings_AngelscriptFrameTimeFunctionLibraryTests_Private;
-
-bool FAngelscriptFrameTimeAsSecondsFunctionLibraryTest::RunTest(const FString& Parameters)
-{
-	const TArray<FFrameTimeAsSecondsCase> NativeCases = BuildNativeCases();
-	bool bNativeBaselinesMatch = true;
-	for (const FFrameTimeAsSecondsCase& TestCase : NativeCases)
-	{
-		bNativeBaselinesMatch &= TestTrue(
-			FString::Printf(TEXT("Native %s baseline should match the expected seconds conversion"), TestCase.Label),
-			FMath::IsNearlyEqual(TestCase.Value.AsSeconds(), TestCase.ExpectedSeconds, FrameTimeTolerance));
-	}
-	if (!bNativeBaselinesMatch)
-	{
-		return false;
-	}
-
-	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASFrameTimeAsSeconds"));
-	};
-
-	int32 Result = 0;
-	ASTEST_COMPILE_RUN_INT(Engine, FrameTimeBindingsModuleName, BuildScriptSource(), TEXT("int Entry()"), Result);
-
-	bPassed = TestEqual(
-		TEXT("FQualifiedFrameTime.AsSeconds mixin binding should compile and return correct result for default-constructed frame time"),
-		Result,
-		1);
-
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
+};
 
 #endif

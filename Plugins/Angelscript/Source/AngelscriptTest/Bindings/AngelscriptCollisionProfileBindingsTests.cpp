@@ -1,123 +1,211 @@
-#include "Shared/AngelscriptTestUtilities.h"
+// ============================================================================
+// AngelscriptCollisionProfileBindingsTests.cpp
+//
+// UCollisionProfile conversion binding coverage — CQTest refactor. Automation IDs:
+//   Angelscript.TestModule.Bindings.CollisionProfile.FAngelscriptCollisionProfileBindingsTest.*
+//
+// Sections:
+//   ObjectTypeConversion — ConvertToObjectType + round-trip via ConvertToCollisionChannel
+//                          for WorldStatic and WorldDynamic
+//   TraceTypeConversion  — ConvertToTraceType + round-trip for Visibility and Camera,
+//                          plus composite round-trip cases
+//
+// Native baselines are computed in each TEST_METHOD and injected into AS via
+// $TOKEN$ substitution (ReplaceInline), since the enum-to-int mapping is
+// platform/project dependent.
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "Engine/CollisionProfile.h"
 #include "Engine/EngineTypes.h"
-#include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptCollisionProfileChannelConversionsBindingsTest,
-	"Angelscript.TestModule.Bindings.CollisionProfileChannelConversions",
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GCollisionProfileProfile{
+	TEXT("CollisionProfile"),          // Theme
+	TEXT(""),                          // Variant
+	TEXT("ASCollisionProfile"),        // ModulePrefix
+	TEXT("CollisionProfile"),          // CasePrefix
+	TEXT("CollisionProfileBindings"),  // LogCategory
+};
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptCollisionProfileBindingsTest,
+	"Angelscript.TestModule.Bindings.CollisionProfile",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptCollisionProfileChannelConversionsBindingsTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
-	if (!TestNotNull(TEXT("Collision profile binding test should access the native collision profile singleton"), CollisionProfile))
+	BEFORE_ALL()
 	{
-		return false;
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	}
 
-	const EObjectTypeQuery WorldStaticObjectType = CollisionProfile->ConvertToObjectType(ECC_WorldStatic);
-	const EObjectTypeQuery WorldDynamicObjectType = CollisionProfile->ConvertToObjectType(ECC_WorldDynamic);
-	const ETraceTypeQuery VisibilityTraceType = CollisionProfile->ConvertToTraceType(ECC_Visibility);
-	const ETraceTypeQuery CameraTraceType = CollisionProfile->ConvertToTraceType(ECC_Camera);
-
-	const ECollisionChannel WorldStaticRoundTrip = CollisionProfile->ConvertToCollisionChannel(false, static_cast<int32>(WorldStaticObjectType));
-	const ECollisionChannel WorldDynamicRoundTrip = CollisionProfile->ConvertToCollisionChannel(false, static_cast<int32>(WorldDynamicObjectType));
-	const ECollisionChannel VisibilityRoundTrip = CollisionProfile->ConvertToCollisionChannel(true, static_cast<int32>(VisibilityTraceType));
-	const ECollisionChannel CameraRoundTrip = CollisionProfile->ConvertToCollisionChannel(true, static_cast<int32>(CameraTraceType));
-
-	bPassed &= TestEqual(
-		TEXT("Native world-static object query should round-trip back to ECC_WorldStatic"),
-		static_cast<int32>(WorldStaticRoundTrip),
-		static_cast<int32>(ECC_WorldStatic));
-	bPassed &= TestEqual(
-		TEXT("Native world-dynamic object query should round-trip back to ECC_WorldDynamic"),
-		static_cast<int32>(WorldDynamicRoundTrip),
-		static_cast<int32>(ECC_WorldDynamic));
-	bPassed &= TestEqual(
-		TEXT("Native visibility trace query should round-trip back to ECC_Visibility"),
-		static_cast<int32>(VisibilityRoundTrip),
-		static_cast<int32>(ECC_Visibility));
-	bPassed &= TestEqual(
-		TEXT("Native camera trace query should round-trip back to ECC_Camera"),
-		static_cast<int32>(CameraRoundTrip),
-		static_cast<int32>(ECC_Camera));
-	if (!bPassed)
+	AFTER_ALL()
 	{
-		return false;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
-	FString Script = TEXT(R"(
-int Entry()
+	// ====================================================================
+	// Section: ObjectTypeConversion
+	// ====================================================================
+
+	TEST_METHOD(ObjectTypeConversion)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		// Compute native baselines
+		UCollisionProfile* CP = UCollisionProfile::Get();
+		if (!TestRunner->TestNotNull(TEXT("CollisionProfile singleton should be available"), CP))
+			return;
+
+		const int32 WorldStaticObjType = static_cast<int32>(CP->ConvertToObjectType(ECC_WorldStatic));
+		const int32 WorldDynamicObjType = static_cast<int32>(CP->ConvertToObjectType(ECC_WorldDynamic));
+		const int32 WorldStaticChannel = static_cast<int32>(ECC_WorldStatic);
+		const int32 WorldDynamicChannel = static_cast<int32>(ECC_WorldDynamic);
+
+		FString Script = TEXT(R"(
+int ObjType_WorldStatic()
 {
-	if (int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic)) != $WORLD_STATIC_OBJECT_TYPE$)
-		return 10;
-	if (int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic)) != $WORLD_DYNAMIC_OBJECT_TYPE$)
-		return 20;
-	if (int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Visibility)) != $VISIBILITY_TRACE_TYPE$)
-		return 30;
-	if (int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Camera)) != $CAMERA_TRACE_TYPE$)
-		return 40;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(false, $WORLD_STATIC_OBJECT_TYPE$)) != $WORLD_STATIC_CHANNEL$)
-		return 50;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(false, $WORLD_DYNAMIC_OBJECT_TYPE$)) != $WORLD_DYNAMIC_CHANNEL$)
-		return 60;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(true, $VISIBILITY_TRACE_TYPE$)) != $VISIBILITY_CHANNEL$)
-		return 70;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(true, $CAMERA_TRACE_TYPE$)) != $CAMERA_CHANNEL$)
-		return 80;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(false, int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic)))) != $WORLD_STATIC_CHANNEL$)
-		return 90;
-	if (int(UCollisionProfile::ConvertToCollisionChannel(true, int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Visibility)))) != $VISIBILITY_CHANNEL$)
-		return 100;
-	return 1;
+	return int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+}
+
+int ObjType_WorldDynamic()
+{
+	return int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+}
+
+int ObjType_WorldStaticRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(false, $WORLD_STATIC_OBJ_TYPE$));
+}
+
+int ObjType_WorldDynamicRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(false, $WORLD_DYNAMIC_OBJ_TYPE$));
 }
 )");
 
-	Script.ReplaceInline(TEXT("$WORLD_STATIC_OBJECT_TYPE$"), *LexToString(static_cast<int32>(WorldStaticObjectType)));
-	Script.ReplaceInline(TEXT("$WORLD_DYNAMIC_OBJECT_TYPE$"), *LexToString(static_cast<int32>(WorldDynamicObjectType)));
-	Script.ReplaceInline(TEXT("$VISIBILITY_TRACE_TYPE$"), *LexToString(static_cast<int32>(VisibilityTraceType)));
-	Script.ReplaceInline(TEXT("$CAMERA_TRACE_TYPE$"), *LexToString(static_cast<int32>(CameraTraceType)));
-	Script.ReplaceInline(TEXT("$WORLD_STATIC_CHANNEL$"), *LexToString(static_cast<int32>(ECC_WorldStatic)));
-	Script.ReplaceInline(TEXT("$WORLD_DYNAMIC_CHANNEL$"), *LexToString(static_cast<int32>(ECC_WorldDynamic)));
-	Script.ReplaceInline(TEXT("$VISIBILITY_CHANNEL$"), *LexToString(static_cast<int32>(ECC_Visibility)));
-	Script.ReplaceInline(TEXT("$CAMERA_CHANNEL$"), *LexToString(static_cast<int32>(ECC_Camera)));
+		Script.ReplaceInline(TEXT("$WORLD_STATIC_OBJ_TYPE$"), *LexToString(WorldStaticObjType));
+		Script.ReplaceInline(TEXT("$WORLD_DYNAMIC_OBJ_TYPE$"), *LexToString(WorldDynamicObjType));
 
-	asIScriptModule* Module = BuildModule(*this, Engine, "ASCollisionProfileChannelConversions", Script);
-	if (Module == nullptr)
-	{
-		return false;
+		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionProfileProfile, TEXT("ObjType"), Script);
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int ObjType_WorldStatic()"),
+			TEXT("ConvertToObjectType(WorldStatic) should match native baseline"),
+			WorldStaticObjType);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int ObjType_WorldDynamic()"),
+			TEXT("ConvertToObjectType(WorldDynamic) should match native baseline"),
+			WorldDynamicObjType);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int ObjType_WorldStaticRoundTrip()"),
+			TEXT("WorldStatic object type should round-trip back to ECC_WorldStatic"),
+			WorldStaticChannel);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int ObjType_WorldDynamicRoundTrip()"),
+			TEXT("WorldDynamic object type should round-trip back to ECC_WorldDynamic"),
+			WorldDynamicChannel);
 	}
 
-	asIScriptFunction* EntryFunction = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (EntryFunction == nullptr)
+	// ====================================================================
+	// Section: TraceTypeConversion
+	// ====================================================================
+
+	TEST_METHOD(TraceTypeConversion)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *EntryFunction, Result))
-	{
-		return false;
-	}
+		// Compute native baselines
+		UCollisionProfile* CP = UCollisionProfile::Get();
+		if (!TestRunner->TestNotNull(TEXT("CollisionProfile singleton should be available"), CP))
+			return;
 
-	bPassed &= TestEqual(
-		TEXT("Collision profile channel conversion bindings should match the native object/trace round-trip baseline"),
-		Result,
-		1);
+		const int32 VisibilityTraceType = static_cast<int32>(CP->ConvertToTraceType(ECC_Visibility));
+		const int32 CameraTraceType = static_cast<int32>(CP->ConvertToTraceType(ECC_Camera));
+		const int32 VisibilityChannel = static_cast<int32>(ECC_Visibility);
+		const int32 CameraChannel = static_cast<int32>(ECC_Camera);
+		const int32 WorldStaticChannel = static_cast<int32>(ECC_WorldStatic);
 
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
+		FString Script = TEXT(R"(
+int TraceType_Visibility()
+{
+	return int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Visibility));
 }
+
+int TraceType_Camera()
+{
+	return int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Camera));
+}
+
+int TraceType_VisibilityRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(true, $VISIBILITY_TRACE_TYPE$));
+}
+
+int TraceType_CameraRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(true, $CAMERA_TRACE_TYPE$));
+}
+
+int Composite_ObjTypeRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(false, int(UCollisionProfile::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic))));
+}
+
+int Composite_TraceTypeRoundTrip()
+{
+	return int(UCollisionProfile::ConvertToCollisionChannel(true, int(UCollisionProfile::ConvertToTraceType(ECollisionChannel::ECC_Visibility))));
+}
+)");
+
+		Script.ReplaceInline(TEXT("$VISIBILITY_TRACE_TYPE$"), *LexToString(VisibilityTraceType));
+		Script.ReplaceInline(TEXT("$CAMERA_TRACE_TYPE$"), *LexToString(CameraTraceType));
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionProfileProfile, TEXT("TraceType"), Script);
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int TraceType_Visibility()"),
+			TEXT("ConvertToTraceType(Visibility) should match native baseline"),
+			VisibilityTraceType);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int TraceType_Camera()"),
+			TEXT("ConvertToTraceType(Camera) should match native baseline"),
+			CameraTraceType);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int TraceType_VisibilityRoundTrip()"),
+			TEXT("Visibility trace type should round-trip back to ECC_Visibility"),
+			VisibilityChannel);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int TraceType_CameraRoundTrip()"),
+			TEXT("Camera trace type should round-trip back to ECC_Camera"),
+			CameraChannel);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int Composite_ObjTypeRoundTrip()"),
+			TEXT("Composite WorldStatic object-type round-trip should return ECC_WorldStatic"),
+			WorldStaticChannel);
+		ExpectGlobalInt(*TestRunner, Engine, M, GCollisionProfileProfile,
+			TEXT("int Composite_TraceTypeRoundTrip()"),
+			TEXT("Composite Visibility trace-type round-trip should return ECC_Visibility"),
+			VisibilityChannel);
+	}
+};
 
 #endif
