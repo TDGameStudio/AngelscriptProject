@@ -1,0 +1,109 @@
+// =============================================================================
+// AngelscriptSphere3fBindingsTests.cpp
+//
+// CQTest coverage for FSphere, FSphere3f, FPlane4f bindings.
+// Automation IDs: Angelscript.TestModule.Bindings.Sphere3f.*
+// =============================================================================
+
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Bindings/Shared/AngelscriptBindingsCoverage.h"
+#include "Bindings/Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Bindings/Shared/AngelscriptBindingsAssertions.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+
+static const FBindingsCoverageProfile GSphere3fProfile{
+	TEXT("Sphere3f"),
+	TEXT(""),
+	TEXT("ASSphere3f"),
+	TEXT("Sphere3f"),
+	TEXT("Sphere3fBindings"),
+};
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptSphere3fBindingsTest,
+	"Angelscript.TestModule.Bindings.Sphere3f",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
+
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(FSphereBasics)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GSphere3fProfile, TEXT("Sphere"), TEXT(R"(
+int Sphere_CenterPreserved()
+{
+	FSphere S = FSphere(FVector(1,2,3), 5.0);
+	return (S.Center.X == 1.0 && S.Center.Y == 2.0 && S.Center.Z == 3.0) ? 1 : 0;
+}
+int Sphere_RadiusPreserved()
+{
+	FSphere S = FSphere(FVector(0,0,0), 12.5);
+	return (S.W == 12.5) ? 1 : 0;
+}
+int Sphere_IsInsideTrue()
+{
+	FSphere S = FSphere(FVector(0,0,0), 10.0);
+	return S.IsInside(FVector(1,1,1)) ? 1 : 0;
+}
+int Sphere_IsInsideFalse()
+{
+	FSphere S = FSphere(FVector(0,0,0), 1.0);
+	return S.IsInside(FVector(10,10,10)) ? 0 : 1;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		const FExpectedGlobalInt Cases[] = {
+			{ TEXT("int Sphere_CenterPreserved()"), TEXT("Sphere center preserved"), 1 },
+			{ TEXT("int Sphere_RadiusPreserved()"), TEXT("Sphere radius preserved"), 1 },
+			{ TEXT("int Sphere_IsInsideTrue()"),    TEXT("Point inside sphere"), 1 },
+			{ TEXT("int Sphere_IsInsideFalse()"),   TEXT("Point outside sphere"), 1 },
+		};
+		ExpectGlobalInts(*TestRunner, Engine, M, GSphere3fProfile, Cases);
+	}
+
+	TEST_METHOD(FPlaneBasics)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GSphere3fProfile, TEXT("Plane"), TEXT(R"(
+int Plane_NormalPreserved()
+{
+	FPlane P = FPlane(FVector(0,0,1), 5.0);
+	return (P.X == 0.0 && P.Y == 0.0 && P.Z == 1.0) ? 1 : 0;
+}
+int Plane_WPreserved()
+{
+	FPlane P = FPlane(FVector(0,0,1), 5.0);
+	return (P.W == 5.0) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		const FExpectedGlobalInt Cases[] = {
+			{ TEXT("int Plane_NormalPreserved()"), TEXT("Plane normal preserved"), 1 },
+			{ TEXT("int Plane_WPreserved()"),      TEXT("Plane W preserved"), 1 },
+		};
+		ExpectGlobalInts(*TestRunner, Engine, M, GSphere3fProfile, Cases);
+	}
+};
+
+#endif // WITH_DEV_AUTOMATION_TESTS

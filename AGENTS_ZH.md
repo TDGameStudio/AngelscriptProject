@@ -55,6 +55,7 @@
 | AngelScript v2.38.0 | 使用 `Tools\PullReference\PullReference.bat angelscript` 默认拉取到 `Reference\angelscript-v2.38.0`；详情见 `Reference/README.md` |
 | Hazelight Angelscript | 通过 `AgentConfig.ini` 的 `References.HazelightAngelscriptEngineRoot` 获取；详情见 `Reference/README.md` |
 | Hazelight Docs | 使用 `Tools\PullReference\PullReference.bat hazelightdocs` 默认拉取到 `Reference\Docs-UnrealEngine-Angelscript`；用于参考 Hazelight 公开文档站源码与内容组织；详情见 `Reference/README.md` |
+| Hazelight VS Code Angelscript | 使用 `Tools\PullReference\PullReference.bat hazelightvscode` 默认拉取到 `Reference\vscode-unreal-angelscript`；用于参考 VS Code Language Server、Debug Adapter、错误展示与断点调试工作流；详情见 `Reference/README.md` |
 | UnrealCSharp | 使用 `Tools\PullReference\PullReference.bat unrealcsharp` 默认拉取到 `Reference\UnrealCSharp`；详情见 `Reference/README.md` |
 | Tencent UnLua | 使用 `Tools\PullReference\PullReference.bat unlua` 默认拉取到 `Reference\UnLua`；用于参考 Lua 反射接入、事件覆写与示例组织；详情见 `Reference/README.md` |
 | Tencent puerts | 使用 `Tools\PullReference\PullReference.bat puerts` 默认拉取到 `Reference\puerts`；用于参考 TypeScript/JavaScript 脚本运行时与声明生成；详情见 `Reference/README.md` |

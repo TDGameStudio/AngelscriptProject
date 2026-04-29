@@ -141,6 +141,8 @@ Invoke-TestCase -Name 'ListIncludesHazelightDocs' -Body {
         -Message ('PullReference list should exit successfully. Output: {0}' -f $combined)
     Assert-True -Condition ($combined -match 'hazelightdocs\s+- Pull Hazelight public docs into Reference\\Docs-UnrealEngine-Angelscript') `
         -Message ('PullReference list should mention hazelightdocs. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match 'hazelightvscode\s+- Pull Hazelight VS Code extension into Reference\\vscode-unreal-angelscript') `
+        -Message ('PullReference list should mention hazelightvscode. Output: {0}' -f $combined)
 }
 
 Invoke-TestCase -Name 'UsageIncludesHazelightDocs' -Body {
@@ -154,6 +156,8 @@ Invoke-TestCase -Name 'UsageIncludesHazelightDocs' -Body {
         -Message ('PullReference without arguments should show usage. Output: {0}' -f $combined)
     Assert-True -Condition ($combined -match 'Tools\\PullReference\\PullReference\.bat hazelightdocs') `
         -Message ('Usage output should include hazelightdocs example. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match 'Tools\\PullReference\\PullReference\.bat hazelightvscode') `
+        -Message ('Usage output should include hazelightvscode example. Output: {0}' -f $combined)
 }
 
 Invoke-TestCase -Name 'RemoteCloneHazelightDocs' -Body {

@@ -8,30 +8,121 @@
 
 `UPROPERTY` 不是 AS 语言关键字，而是**预处理器层面的宏伪装**——AS 内核解析器对它一无所知，整条流水线由当前项目的预处理器与类生成器协作完成：
 
-```
+```text
 .as 源码 (UPROPERTY(EditAnywhere, Replicated) int32 Health;)
-    │
-    ├── 预处理器（Preprocessor）路径
-    │     ① 词法扫描 ParseIntoChunks → 识别 "UPROPERTY(" 并配对括号 → FMacro
-    │     ② 语义解析 ProcessPropertyMacro → 把每个 specifier 映射为
-    │        FAngelscriptPropertyDesc 中的 bool 字段或 Meta Map 条目
-    │
-    ├── AS 内核（ThirdParty/angelscript）路径
-    │     完全无视 UPROPERTY 宏，只看到普通的 `int32 Health;` 字段声明
-    │     ↓
-    │     asCObjectType::properties[i] 包含 byteOffset
-    │
-    ▼ 类生成器（ClassGenerator）路径
-        ③ AddClassProperties → FAngelscriptTypeUsage::CreateProperty
-           创建对应的 FIntProperty / FObjectProperty / FStructProperty 等
-        ④ 按 PropDesc 的 bool 字段 + Meta Map 设置 CPF_* PropertyFlags
-        ⑤ DetectAngelscriptReferences → 为没有 UPROPERTY 宏的私有属性补 GC Schema
-        ⑥ FinalizeClass → FinalizeActorClass → 把 DefaultComponent / OverrideComponent
-           Meta 转换为 UASClass::FDefaultComponent / FOverrideComponent 描述符
-        ⑦ 运行时 SpawnActor → CreateDefaultComponents 真正实例化组件
+    |
+    +-- 预处理器 (Preprocessor) 路径
+    |     [Step 1] 词法扫描 ParseIntoChunks
+    |               识别 "UPROPERTY(" 并配对括号 -> FMacro
+    |     [Step 2] 语义解析 ProcessPropertyMacro
+    |               把每个 specifier 映射为 FAngelscriptPropertyDesc 中的 bool 字段
+    |               或 Meta Map 条目
+    |
+    +-- AS 内核 (ThirdParty/angelscript) 路径
+    |     完全无视 UPROPERTY 宏, 只看到普通的 `int32 Health;` 字段声明
+    |     |
+    |     v
+    |     asCObjectType::properties[i] 包含 byteOffset
+    |
+    v 类生成器 (ClassGenerator) 路径
+        [Step 3] AddClassProperties -> FAngelscriptTypeUsage::CreateProperty
+                   创建对应的 FIntProperty / FObjectProperty / FStructProperty 等
+        [Step 4] 按 PropDesc 的 bool 字段 + Meta Map 设置 CPF_* PropertyFlags
+        [Step 5] DetectAngelscriptReferences
+                   为没有 UPROPERTY 宏的私有属性补 GC Schema
+        [Step 6] FinalizeClass -> FinalizeActorClass
+                   把 DefaultComponent / OverrideComponent Meta
+                   转换为 UASClass::FDefaultComponent / FOverrideComponent 描述符
+        [Step 7] 运行时 SpawnActor -> CreateDefaultComponents 真正实例化组件
 ```
 
 整个流水线的核心数据载体是 `FAngelscriptPropertyDesc`——所有 specifier 都先被翻译成它的字段，再由类生成器一次性消费。
+
+### 完整生命周期 ASCII 全景
+
+下图以 `UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category="Combat") int32 Health;` 为例，展示从 `.as` 源码字符到运行时使用的完整生命周期。
+
+```text
+============================================================================
+  脚本属性 UPROPERTY 修饰符的完整生命周期
+============================================================================
+
+  [.as 源文件]
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category="Combat")
+      int32 Health;
+        |
+        |  [Step 1] ParseIntoChunks (词法扫描)
+        |      - case 'U' + IsStartOfIdentifier + Strncmp("UPROPERTY(", 10)
+        |      - '(' / ')' 配对计数 -> MacroExitScope
+        |      - ';' 触发 FinishMacro 反向扫描属性名/类型
+        v
+  [词法产物] FMacro
+      Type        = EMacroType::Property
+      Name        = "Health"
+      SubjectType = "int32"
+      Arguments   = "EditAnywhere, BlueprintReadWrite, Replicated, Category=\"Combat\""
+        |
+        |  [Step 2] ProcessPropertyMacro (语义解析)
+        |      - ParseSpecifiers(Macro.Arguments) -> FSpecifier[]
+        |      - for each specifier: 设置 PropDesc 的 bool 字段或 Meta Map
+        v
+  [描述符] FAngelscriptPropertyDesc
+      PropertyName         = "Health"
+      LiteralType          = "int32"
+      bEditableOnDefaults  = true              <- EditAnywhere
+      bEditableOnInstance  = true              <- EditAnywhere
+      bBlueprintReadable   = true              <- BlueprintReadWrite
+      bBlueprintWritable   = true              <- BlueprintReadWrite
+      bReplicated          = true              <- Replicated
+      Meta["Category"]     = "Combat"          <- Category=
+        |
+        |  [Step 3] asCModule 编译 (AS 内核, 与预处理并行发生)
+        |      - BuildParallelParseScripts -> BuildGenerateTypes -> BuildLayoutClasses
+        v
+  asCObjectType::properties[i]
+      asCObjectProperty::byteOffset = 4        (内存偏移由 AS 布局器计算)
+        |
+        |  [Step 4] AddClassProperties (类生成器, 描述符 -> FProperty)
+        v
+  PropDesc->PropertyType.CreateProperty(Params)
+      -> new FIntProperty(InStruct, "Health", RF_Public)
+      -> [WITH_EDITOR] SetMetaData("Category", "Combat")
+      -> // CPF_RuntimeGenerated 该行被注释 (详见 §九.9.1)
+      -> SetPropertyFlags(CPF_Net)              <- bReplicated=true
+      -> SetPropertyFlags(CPF_BlueprintVisible) <- bBlueprintReadable=true
+            (不设 CPF_BlueprintReadOnly         <- bBlueprintWritable=true)
+      -> SetPropertyFlags(CPF_Edit)             <- bEditableOn*=true
+            (不设 DisableEditOnInstance/Template <- 两者均为 true)
+      -> InStruct->ChildProperties = NewProperty   (前插链表)
+      -> InStruct->SetPropertiesSize(4)
+      -> NewProperty->Link(ArDummy)
+            check(GetOffset_ForUFunction() == 4)   (*) 内存对齐契约
+        |
+        |  [Step 5] DetectAngelscriptReferences (GC Schema 兜底)
+        |      Health 是 int32 (基础类型)
+        |      -> TypeId <= asTYPEID_LAST_PRIMITIVE -> 跳过
+        v
+        |  [Step 6] FinalizeClass / FinalizeActorClass
+        |      非 DefaultComponent / OverrideComponent
+        |      -> 不进入 ASClass->DefaultComponents[]
+        v
+  [最终态] UASClass / UScriptStruct 内
+      FIntProperty "Health"
+        PropertyFlags                = CPF_Net | CPF_BlueprintVisible | CPF_Edit
+        Offset_Internal              = 4
+        Meta                         = { "Category": "Combat" }
+        RepNotifyFunc                = NAME_None
+        BlueprintReplicationCondition = COND_None
+        |
+        |  [Step 7] 运行时使用
+        v
+  - 编辑器 Details 面板  : 读 CPF_Edit            -> 显示输入框
+                          读 Meta["Category"]    -> 归类到 "Combat"
+  - 蓝图节点系统         : 读 CPF_BlueprintVisible -> 暴露为 Get/Set 节点
+  - 网络复制层           : 读 CPF_Net              -> GetLifetimeScriptReplicationList
+                                                  -> FLifetimeProperty(RepIndex, COND_None)
+  - 序列化系统           : 未设 CPF_Transient      -> 参与存档 / 关卡序列化
+```
 
 ---
 
@@ -883,18 +974,169 @@ static FORCEINLINE_DEBUGGABLE void CreateDefaultComponents(
 
 ### 7.4 `StaticActorConstructor` 完整时序
 
-```
-SpawnActor → UASClass::StaticActorConstructor(FObjectInitializer)
-  ① ApplyOverrideComponents             // OverrideComponent 变量预填 nullptr
-  ② Class->CodeSuperClass->ClassConstructor(Initializer)   // C++ 基类构造
-  ③ Actor->PrimaryActorTick.bCanEverTick = Class->bCanEverTick   // Tick 配置
-  ④ new(Object) asCScriptObject(ScriptType)                // AS 零初始化所有属性
-  ⑤ CreateDefaultComponents(...)                          // ★ 组件实例化 + AS 属性写回
-  ⑥ ExecuteConstructFunction(...)                         // AS 构造函数体（脚本中的 AMyActor() {})
-  ⑦ ExecuteDefaultsFunctions(...)                         // ★ 所有 default 语句执行（详见 Syntax_DefaultStatement）
+```text
+SpawnActor -> UASClass::StaticActorConstructor(FObjectInitializer)
+  [Step 1] ApplyOverrideComponents             // OverrideComponent 变量预填 nullptr
+  [Step 2] Class->CodeSuperClass->ClassConstructor(Initializer)  // C++ 基类构造
+  [Step 3] Actor->PrimaryActorTick.bCanEverTick = Class->bCanEverTick  // Tick 配置
+  [Step 4] new(Object) asCScriptObject(ScriptType)               // AS 零初始化所有属性
+  [Step 5] CreateDefaultComponents(...)                          // (*) 组件实例化 + AS 属性写回
+  [Step 6] ExecuteConstructFunction(...)                         // AS 构造函数体 (脚本中的 AMyActor() {})
+  [Step 7] ExecuteDefaultsFunctions(...)                         // (*) 所有 default 语句执行
+                                                                 //     (详见 Syntax_DefaultStatement)
 ```
 
-`UPROPERTY` 字段的"内存指针有效"发生在 ⑤，而它的 `default` 赋值发生在 ⑦——两者同处对象构造尾段，但分工明确。
+`UPROPERTY` 字段的"内存指针有效"发生在 **Step 5**，而它的 `default` 赋值发生在 **Step 7**——两者同处对象构造尾段，但分工明确。
+
+### 7.5 组件修饰符完整链路 ASCII 全景
+
+下图以三个组件属性为例，展示组件相关 UPROPERTY 修饰符从源码到运行时的完整路径。
+
+```text
+============================================================================
+  组件修饰符完整链路: DefaultComponent / OverrideComponent / Attach
+============================================================================
+
+  [.as 源文件]
+      UPROPERTY(DefaultComponent, RootComponent)
+      UStaticMeshComponent MeshComp;
+
+      UPROPERTY(DefaultComponent, Attach=MeshComp, AttachSocket=WeaponSocket)
+      UChildActorComponent WeaponComp;
+
+      UPROPERTY(OverrideComponent=ParentMeshComp)
+      UStaticMeshComponent MeshOverride;
+        |
+        |  ===== 阶段 1: 预处理 (修饰符 -> Meta Map) =====
+        v
+ProcessPropertyMacro()
+    [MeshComp]   DefaultComponent + RootComponent
+        - bInstancedReference = true
+        - bBlueprintReadable  = true,  bBlueprintWritable  = false
+        - bEditableOnDefaults = true,  bEditableOnInstance = false
+        - Meta["DefaultComponent"]   = "True"  (FinalizeActorClass 扫描 key)
+        - Meta["EditInlineDefaults"] = "true"
+        - Meta["RootComponent"]      = "True"  (FinalizeActorClass 判断 bIsRoot)
+
+    [WeaponComp] DefaultComponent + Attach + AttachSocket
+        - 同上 + Meta["Attach"]       = "MeshComp"
+              + Meta["AttachSocket"] = "WeaponSocket"
+
+    [MeshOverride] OverrideComponent=ParentMeshComp
+        - bInstancedReference   = true
+        - bBlueprintReadable    = false, bBlueprintWritable    = false
+        - bEditableOnDefaults   = false, bEditableOnInstance   = false
+        - Meta["OverrideComponent"] = "ParentMeshComp"
+        |
+        |  ===== 阶段 2: AddClassProperties (FProperty 生成) =====
+        v
+  AddClassProperties()
+    [MeshComp]
+      FObjectProperty { PropertyClass = UStaticMeshComponent }
+      Flags: CPF_BlueprintVisible | CPF_InstancedReference | CPF_ExportObject
+           | CPF_EditConst | CPF_Edit | CPF_DisableEditOnInstance
+      check(GetOffset_ForUFunction() == ScriptPropertyOffset)   (*) 对齐断言
+
+    [WeaponComp]
+      FObjectProperty { PropertyClass = UChildActorComponent }
+      Flags: 同上
+
+    [MeshOverride]
+      FObjectProperty { PropertyClass = UStaticMeshComponent }
+      Flags: CPF_InstancedReference | CPF_ExportObject | CPF_EditConst
+      (*) 不含 CPF_BlueprintVisible / CPF_Edit -- OverrideComponent 完全只读
+        |
+        |  ===== 阶段 3: FinalizeClass -> FinalizeActorClass =====
+        v
+  FinalizeClass(ModuleData, ClassData)
+    - ClassData.bFinalized = true                  (防重入)
+    - NewClass->SetUpRuntimeReplicationData()      (RepIndex 在这里分配)
+    - IsChildOf(AActor) -> FinalizeActorClass(...)
+        - ClassConstructor = &UASClass::StaticActorConstructor
+        - 遍历 ClassDesc->Properties:
+
+            [MeshComp] Meta.Contains("DefaultComponent")
+              FDefaultComponent {
+                  ComponentClass = UStaticMeshComponent
+                  ComponentName  = "MeshComp"
+                  VariableOffset = ScriptPropertyOffset
+                  bIsRoot        = true
+                  Attach         = NAME_None
+              }
+              编译期验证: IsChildOf(USceneComponent) / 非 Abstract / Root 唯一性
+              -> ASClass->DefaultComponents.Add(Comp)
+                 ASClass->ClassFlags |= CLASS_HasInstancedReference
+
+            [WeaponComp] Meta.Contains("DefaultComponent")
+              FDefaultComponent {
+                  ComponentName = "WeaponComp"
+                  Attach        = "MeshComp"        (非 NAME_None)
+                  AttachSocket  = "WeaponSocket"
+              }
+              -> 运行时走 DelayedComponentAttach 路径
+
+            [MeshOverride] Meta.Contains("OverrideComponent")
+              FOverrideComponent {
+                  ComponentClass        = UStaticMeshComponent
+                  OverrideComponentName = "ParentMeshComp"
+                  VariableName          = "MeshOverride"
+                  VariableOffset        = ScriptPropertyOffset
+              }
+              [WITH_EDITOR] 三路查找父类组件类型:
+                A) ParentASClass.DefaultComponents
+                B) C++ Actor CDO.GetComponents()
+                C) TFieldIterator 扫 CPF_InstancedReference 抽象属性
+              -> ASClass->OverrideComponents.Add(Comp)
+        |
+        |  ===== 阶段 4: 运行时 SpawnActor -> StaticActorConstructor =====
+        v
+  UASClass::StaticActorConstructor(FObjectInitializer)
+    [Step 1] ApplyOverrideComponents              (MeshOverride 变量预填 nullptr)
+    [Step 2] CodeSuperClass->ClassConstructor     (C++ 基类构造)
+    [Step 3] Actor->Tick 设置                      (来自 UASClass 元数据)
+    [Step 4] new(Object) asCScriptObject(...)     (AS 零初始化所有属性)
+    [Step 5] CreateDefaultComponents(...)         (递归: 父类先)
+
+      [MeshComp] bIsRoot=true
+        - CreateDefaultSubobject("MeshComp", UStaticMeshComponent)
+        - *(VariableOffset 处) = Component        (*) 内存写回 AS 属性
+        - SetupAttachment(nullptr)
+        - Actor->SetRootComponent(SC)
+
+      [WeaponComp] Attach="MeshComp" (延迟附加)
+        - CreateDefaultSubobject("WeaponComp", UChildActorComponent)
+        - *(VariableOffset 处) = Component        (*) 先写回引用
+        - DelayedComponentAttach.Add({SC, idx})
+
+      [循环结束后处理 DelayedComponentAttach]
+        - 遍历 Actor->GetComponents() 找 FName=="MeshComp"
+        - WeaponComp->SetupAttachment(MeshComp, "WeaponSocket")
+
+      [处理 OverrideComponents]
+        - 遍历 Actor->GetComponents() 找 FName=="ParentMeshComp"
+        - *(MeshOverride VariableOffset 处) = ParentMeshComp
+
+    [Step 6] ExecuteConstructFunction             (执行 AS 构造函数体)
+    [Step 7] ExecuteDefaultsFunctions             (执行所有 default 语句, 见 Syntax_DefaultStatement)
+        |
+        |  ===== 运行时效果 =====
+        v
+  AS 脚本访问 (VariableOffset 处的指针有效):
+      MeshComp.SetStaticMesh(MyMesh);
+      WeaponComp.ChildActorClass = AMyWeapon::StaticClass();
+      MeshOverride.SetMobility(EComponentMobility::Movable);   // 指向父类已有组件
+
+  组件层级 (内存态):
+      Actor
+        +-- MeshComp (RootComponent)
+            +-- WeaponComp (AttachSocket="WeaponSocket")
+      ParentMeshComp (来自 C++ 父类, 被 MeshOverride 引用)
+
+  UClass 元数据:
+      ASClass->DefaultComponents[]  = [{MeshComp,Root}, {WeaponComp,Attach=MeshComp}]
+      ASClass->OverrideComponents[] = [{ParentMeshComp -> MeshOverride}]
+      ASClass->ClassFlags |= CLASS_HasInstancedReference
+```
 
 ---
 
@@ -1059,6 +1301,159 @@ UPROPERTY 的核心流水线（预处理 + 描述符 + AddClassProperties + Dete
 | `meta=(EditCondition=Expr)` | `Meta["EditCondition"]=Expr` | 条件显示/灰化 | |
 | `#if EDITOR ... #endif` 块内 | `Macro.bEditorOnly=true` → `Meta["EditorOnly"]` | `CPF_EditorOnly` | Cooked 包不存在 |
 
+### 10.1 修饰符 → 字段 → CPF / Meta 数据流分组速查
+
+下面按主题分组呈现修饰符流向。每个分组用三段式表达：
+**修饰符** → **PropDesc 字段（来自 §三）** → **最终 CPF / Meta 效果（来自 §四）**。
+
+#### 蓝图访问
+
+```text
+BlueprintReadWrite        ->  bBlueprintReadable=T, bBlueprintWritable=T
+BlueprintReadOnly         ->  bBlueprintReadable=T, bBlueprintWritable=F
+BlueprintHidden           ->  bBlueprintReadable=F, bBlueprintWritable=F
+                              |
+                              v  AddClassProperties §4.2 (4)
+                              CPF_BlueprintVisible (+ CPF_BlueprintReadOnly?)
+                              注: private 默认不暴露, 需 meta=(AllowPrivateAccess)
+
+BlueprintSetter=Func      ->  Meta["BlueprintSetter"]=Func
+BlueprintGetter=Func      ->  Meta["BlueprintGetter"]=Func
+BlueprintProtected        ->  Meta["BlueprintProtected"]=true
+```
+
+#### 编辑器可见性
+
+```text
+EditAnywhere              ->  bEditableOnDefaults=T, bEditableOnInstance=T
+EditDefaultsOnly          ->  bEditableOnDefaults=T, bEditableOnInstance=F
+EditInstanceOnly          ->  bEditableOnDefaults=F, bEditableOnInstance=T
+NotEditable / NotVisible  ->  两个 editable 都为 F
+EditConst                 ->  bEditConst=T
+VisibleAnywhere           ->  bEditConst=T + bEditable* 都为 T
+VisibleDefaultsOnly       ->  bEditConst=T + 仅 OnDefaults
+VisibleInstanceOnly       ->  bEditConst=T + 仅 OnInstance
+                              |
+                              v  AddClassProperties §4.2 (5)
+                              CPF_Edit (+ DisableEditOnInstance/Template)
+                              (+ CPF_EditConst when bEditConst)
+```
+
+#### 网络复制
+
+```text
+Replicated                ->  bReplicated=T
+ReplicatedUsing=Func      ->  bReplicated=T, bRepNotify=T,
+                              Meta["ReplicatedUsing"]=Func
+ReplicationCondition=X    ->  ReplicationCondition=COND_X
+NotReplicated (Struct)    ->  bSkipReplication=T
+                              |
+                              v  AddClassProperties §4.2 (2)
+                              CPF_Net (+ CPF_RepNotify, RepNotifyFunc=Func)
+                              CPF_RepSkip (Struct 字段)
+                              SetBlueprintReplicationCondition(COND_X)
+```
+
+#### 序列化
+
+```text
+Transient                 ->  bTransient=T              ->  CPF_Transient
+SaveGame                  ->  bSaveGame=T               ->  CPF_SaveGame
+SkipSerialization         ->  bSkipSerialization=T      ->  CPF_SkipSerialization
+Config                    ->  bConfig=T                 ->  CPF_Config
+```
+
+#### 显示与杂项
+
+```text
+AdvancedDisplay           ->  bAdvancedDisplay=T         ->  CPF_AdvancedDisplay
+Interp                    ->  bInterp=T                  ->  CPF_Interp
+AssetRegistrySearchable   ->  bAssetRegistrySearchable=T ->  CPF_AssetRegistrySearchable
+NoClear                   ->  bNoClear=T                 ->  CPF_NoClear
+                              注: 当前项目预编译序列化丢失该字段, 详见 §十一
+```
+
+#### 实例引用
+
+```text
+Instanced                 ->  bPersistentInstance=T
+                              |
+                              v  AddClassProperties §4.2 (6)
+                              MarkUStructContainsReference()
+                              -> STRUCT_HasInstancedReference 气泡上传
+```
+
+#### 组件（仅 Actor）
+
+```text
+DefaultComponent          ->  bInstancedReference=T,
+                              bBlueprintReadable=T,
+                              Meta["DefaultComponent"]="True",
+                              Meta["EditInlineDefaults"]="true"
+                              |
+                              v  AddClassProperties §4.2 (6) + FinalizeActorClass §7.2
+                              CPF_InstancedReference | CPF_ExportObject | CPF_EditConst
+                              + UASClass::DefaultComponents.Add(FDefaultComponent{...})
+
+RootComponent             ->  Meta["RootComponent"]="True"
+                              -> FDefaultComponent::bIsRoot=true
+Attach=Name               ->  Meta["Attach"]=Name
+                              -> FDefaultComponent::Attach=Name
+AttachSocket=Name         ->  Meta["AttachSocket"]=Name
+                              -> FDefaultComponent::AttachSocket=Name
+
+OverrideComponent=Name    ->  bInstancedReference=T,
+                              所有访问权限=F,
+                              Meta["OverrideComponent"]=Name
+                              |
+                              v
+                              CPF_InstancedReference | CPF_ExportObject | CPF_EditConst
+                              + UASClass::OverrideComponents.Add(FOverrideComponent{...})
+
+ShowOnActor               ->  bEditableOnInstance=T, Meta["EditInline"]="true"
+                              注: 必须与 DefaultComponent 联用
+```
+
+#### UI 绑定
+
+```text
+BindWidget                ->  bTransient=T, bBlueprintReadable=T,
+                              Meta["BindWidget"]=""
+                              |
+                              v
+                              CPF_Transient | CPF_BlueprintVisible
+
+注: 当前项目缺失 BindWidgetAnim / BindWidgetOptional / BindComponent
+    -- 详见 §九.9.2 已识别 Hazelight 差异
+```
+
+#### Meta 直通（无独立 bool 字段）
+
+```text
+Category=X                ->  Meta["Category"]=X         -> Details 面板分组
+DisplayName=X             ->  Meta["DisplayName"]=X      -> 编辑器显示名
+ToolTip=X                 ->  Meta["ToolTip"]=X          -> 鼠标悬停 (注释自动转入)
+Keywords=X                ->  Meta["Keywords"]=X         -> 搜索关键字
+
+meta=(ExposeOnSpawn)      ->  Meta["ExposeOnSpawn"]      ->  CPF_ExposeOnSpawn
+meta=(EditFixedSize)      ->  Meta["EditFixedSize"]      ->  CPF_EditFixedSize
+meta=(AllowPrivateAccess) ->  Meta["AllowPrivateAccess"] -> 允许 private 暴露蓝图
+meta=(ClampMin/Max=X)     ->  Meta["ClampMin/Max"]=X     -> 编辑器输入约束
+meta=(EditCondition=Expr) ->  Meta["EditCondition"]=Expr -> 条件显示/灰化
+```
+
+#### 隐式属性（非 specifier，但影响行为）
+
+```text
+#if EDITOR 块内           ->  Macro.bEditorOnly=true,
+                              Meta["EditorOnly"]=""      ->  CPF_EditorOnly
+                              注: Cooked 包此属性不存在
+
+private: / protected: 块  ->  bIsPrivate / bIsProtected
+                              影响 CPF_BlueprintVisible 决策 (§4.2 ④)
+                              bIsProtected -> SetMetaData("BlueprintProtected", "true")
+```
+
 ---
 
 ## 十一、预编译持久化：`FAngelscriptPrecompiledProperty`
@@ -1209,3 +1604,5 @@ Shipping 包冷启动时不需要重跑 `ParseIntoChunks` + `ProcessPropertyMacr
 |------|------|------|
 | v1.0 | 2026-04-28 | 首版：基于 `Temp/Temp_UProperty/uproperty.md` 五轮迭代分析 + 实际源码核对完整产出，覆盖词法扫描/语义解析/CPF 映射/GC 兜底/热重载/组件实例化/网络复制/预编译持久化全链路；记录已识别 Hazelight 差异（`CPF_RuntimeGenerated`、`ReplicationPushModel`、`BindWidgetAnim`、`AngelscriptPropertyFlags`） |
 | v1.1 | 2026-04-28 | 与当前仓库实际源码做精细比对，修正多处与参考文档（Hazelight）不符的描述：① §三.UI 绑定 — 补充缺失的 `BindWidgetOptional` / `BindComponent` 修饰符；② §八.8.1 — 修正 `GetLifetimeScriptReplicationList` 实际为 2 参 `AddUnique` 简化版，无 Push Model 检查；③ §九 — 重组为三类差异（架构性 / 修饰符缺失 / 实现简化）；④ §十一 — 完全重写预编译序列化描述（实际为逐字段 `Ar << bool`，非位掩码 packing；缺 `bNoClear` 字段；`ReplicationCondition` 用 `int32`） |
+| v1.2 | 2026-04-28 | 整合参考文档中跨 5 轮迭代的 ASCII 图示，新增 3 张全景图：① 概览之后 — **完整生命周期 ASCII 全景**（以 `int32 Health` 为例展示从源码字符到运行时使用的全链路）；② §七.5 — **组件修饰符完整链路 ASCII 全景**（DefaultComponent + RootComponent + Attach + OverrideComponent 端到端流程）；③ §十.10.1 — **修饰符 → 字段 → CPF / Meta 数据流全景图**（按 9 个主题分组的可视化映射）。所有图示均已适配当前项目实际源码（含 `CPF_RuntimeGenerated` 注释、`GetLifetimeScriptReplicationList` 2 参形式、缺失修饰符标注等）。 |
+| v1.3 | 2026-04-28 | 重写所有 ASCII 图示以提升字体兼容性。**问题**：v1.2 图示大量使用全角字符（`▼ ▌ ★ ① ② ─ │ ┌ └ ═ ➡`），在非等宽字体或不同操作系统/浏览器下会发生宽度错位、对齐失效甚至字符不显示。**修复**：① 全角符号 → 纯 ASCII（`v` `|` `+` `-` `=` `*`）；② 圆圈数字 `①②③` → `[Step 1]` / `(1)` `(2)`；③ 主题分隔符 `▌` → Markdown 三级标题；④ 复杂全景流程图（图 3）从单一代码块拆分为 9 个分主题的小代码块，每块独立紧凑、便于在网页上分块渲染；⑤ 注释强调改用纯文本"注:"前缀而非 `★`。所有图示在等宽字体（VS Code / 网页 `<pre>`）和比例字体（GitHub Markdown 默认 / Notion）下都能稳定显示。 |

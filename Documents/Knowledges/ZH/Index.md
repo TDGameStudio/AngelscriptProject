@@ -73,6 +73,7 @@
 ## Syntax_ — 语法机制与实现原理
 
 ```
+│  ── 关键字与修饰符 ──
 ├── Syntax_DefaultStatement.md             // default 语句：解析、展开与构造函数映射
 ├── Syntax_UPROPERTY.md                    // UPROPERTY 修饰符：反射注册与编辑器元数据
 ├── Syntax_UFUNCTION.md                    // UFUNCTION 修饰符：BlueprintOverride / Event / Pure
@@ -81,7 +82,21 @@
 ├── Syntax_AccessSpecifiers.md             // access 自定义访问修饰符
 ├── Syntax_PropertyAccessor.md             // property 关键字：Get/Set 访问器语法糖
 ├── Syntax_Mixin.md                        // mixin 关键字：非侵入式扩展方法
-└── Syntax_FString.md                      // f-string 格式化：编译期展开与格式说明符
+├── Syntax_FString.md                      // f-string 格式化：编译期展开与格式说明符
+│
+│  ── 容器类型 ──
+├── Syntax_TArray.md                       // TArray<T>：动态数组，FScriptArray 桥接 + 模板实例化
+├── Syntax_TMap.md                         // TMap<K, V>：哈希映射，键类型约束与 GenericContainer 优化
+├── Syntax_TSet.md                         // TSet<T>：哈希集合，与 TMap 共享 KeyFuncs 机制
+├── Syntax_TOptional.md                    // TOptional<T>：可选值包装，IsSet / Get / Reset 语义
+│
+│  ── 智能指针与引用包装 ──
+├── Syntax_TSubclassOf.md                  // TSubclassOf<T>：UClass 类型安全引用，蓝图 ClassPicker 集成
+├── Syntax_TWeakObjectPtr.md               // TWeakObjectPtr<T>：UObject 弱引用，IsValid / Get 语义
+├── Syntax_TSoftObjectPtr.md               // TSoftObjectPtr / TSoftClassPtr：软引用资源/类，AssetManager 集成
+│
+│  ── 类型擦除 ──
+└── Syntax_FInstancedStruct.md             // FInstancedStruct：类型擦除 struct，StructUtils 桥接
 ```
 
 ## Diff_ — 与参考实现的差异分析

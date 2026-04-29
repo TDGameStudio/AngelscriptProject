@@ -3,8 +3,8 @@
 本文档是对当前 Angelscript 插件所有可执行方向的系统性盘点，涵盖 AS 2.38 合入、测试增强、缺陷重构、功能增强、工具链与架构演进六大类。每个条目标注优先级、已有 Plan 状态与建议动作。
 
 **编制时间**：2026-04-05（数字基线更新于 2026-04-28）
-**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `60` 份 `Plan_*.md`（含 `58` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
-**Plan 状态快照**：58 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
+**当前基线**：AS 2.33.0 WIP，文档化 C++ 基线为 `275/275 PASS`，当前 live automation / full-suite 状态以测试增强章节、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TechnicalDebtInventory.md` 为准；当前可直接统计到 `124` 个 `Bind_*.cpp`、`417+` 个自动化测试定义（覆盖 `429` 个测试 .cpp 文件）、`27` 个脚本示例（`Script/Examples/`）。仅剩 `2` 个 Disabled 测试（均为 `#ue57-headless` 已知限制）。新增总览入口 `Plan_StatusPriorityRoadmap.md`，用于统一维护当前完成现状、Hazelight 差距与后续优先级。`Documents/Plans/` 根目录当前可见 `61` 份 `Plan_*.md`（含 `59` 份执行 Plan、`1` 份状态总览 Plan 和 `1` 份索引文档）；`Plan.md` 作为编写规则文档单独保留，`Archives/` 下另有 `7` 份已归档 Plan。
+**Plan 状态快照**：59 份执行 Plan、1 份状态总览 Plan（`Plan_StatusPriorityRoadmap.md`）、1 份索引文档（`Plan_OpportunityIndex.md`）、1 份编写规则文档（`Plan.md`）、7 份已归档完成 Plan
 
 ---
 
@@ -59,6 +59,7 @@
 | N | 全局变量 / Console Variable 对齐与专项测试 | `Plan_GlobalVariableAndCVarParity.md` | 部分完成（`FConsoleVariable` bool/string + 首批 `Bindings` 测试已落地，`FConsoleCommand` 与剩余矩阵待收口） |
 | O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 基本完成（仅剩 2 个 `#ue57-headless` Disabled 测试，其余已通过 UE 5.7 迁移修复批量重新启用） |
 | P | 测试套件累积稳定性 | `Plan_TestSuiteAccumulationStability.md` | 执行中（修复全量单进程状态 / socket / async IO 累积问题） |
+| Q | 测试骨架效率优化 | `Plan_TestEngineCreationPatternMigration.md` | 未开始（Phase 1-2: FULL×60 + SHARE×136 → SHARE_CLEAN 迁移；Phase 3/3B: 单 Entry 测试合并 ~170 处） |
 
 ### 2.2 新建议 Plan
 

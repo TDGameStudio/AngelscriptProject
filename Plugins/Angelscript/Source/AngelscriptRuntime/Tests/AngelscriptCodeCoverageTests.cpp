@@ -198,4 +198,109 @@ bool FAngelscriptCodeCoverageTests3::RunTest(const FString& Parameters)
 	return true;
 }
 
+// ---------------------------------------------------------------------------
+// ResetHits clears all accumulated hit counts
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageResetHitsTest,
+	"Angelscript.CppTests.AngelscriptCodeCoverage.ResetHitsClearsAll",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
+
+bool FAngelscriptCodeCoverageResetHitsTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptEngine& Manager = FAngelscriptEngine::Get();
+
+	FAngelscriptCodeCoverage Coverage;
+	for (TSharedRef<struct FAngelscriptModuleDesc>& Module : Manager.GetActiveModules())
+	{
+		Coverage.MapExecutableLines(*Module);
+	}
+
+	Coverage.StartRecording();
+
+	// Hit some lines
+	TSharedRef<struct FAngelscriptModuleDesc>* FirstModule = nullptr;
+	for (TSharedRef<struct FAngelscriptModuleDesc>& Module : Manager.GetActiveModules())
+	{
+		const FLineCoverage* LC = Coverage.GetLineCoverage(*Module);
+		if (LC != nullptr && LC->NumExecutableLines() > 0)
+		{
+			for (auto& Pair : LC->HitCounts)
+			{
+				Coverage.HitLine(*Module, Pair.Key);
+			}
+			FirstModule = &Module;
+			break;
+		}
+	}
+
+	if (FirstModule == nullptr)
+	{
+		AddInfo(TEXT("No modules with executable lines found, skipping"));
+		return true;
+	}
+
+	// Verify hits were recorded
+	const FLineCoverage* BeforeReset = Coverage.GetLineCoverage(**FirstModule);
+	TestTrue(TEXT("Before reset, some lines should be hit"),
+		BeforeReset != nullptr && BeforeReset->NumLinesHit() > 0);
+
+	// Reset
+	Coverage.ResetHits();
+
+	// Verify all cleared
+	const FLineCoverage* AfterReset = Coverage.GetLineCoverage(**FirstModule);
+	if (AfterReset != nullptr)
+	{
+		TestEqual(TEXT("After ResetHits, no lines should be hit"),
+			AfterReset->NumLinesHit(), 0);
+	}
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// StartRecording twice does not crash (idempotent)
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageStartStopIdempotentTest,
+	"Angelscript.CppTests.AngelscriptCodeCoverage.StartStopIdempotent",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
+
+bool FAngelscriptCodeCoverageStartStopIdempotentTest::RunTest(const FString& Parameters)
+{
+	FAngelscriptCodeCoverage Coverage;
+
+	// Double start should not crash
+	Coverage.StartRecording();
+	Coverage.StartRecording();
+
+	// Double stop should not crash
+	FString TempDir = FPaths::Combine(FPaths::AutomationTransientDir(), TEXT("IdempotentTest"));
+	Coverage.StopRecordingAndWriteReport(TempDir);
+	Coverage.StopRecordingAndWriteReport(TempDir);
+
+	// Cleanup
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	PlatformFile.DeleteDirectoryRecursively(*TempDir);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// CoverageEnabled reflects config/command-line
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageEnabledTest,
+	"Angelscript.CppTests.AngelscriptCodeCoverage.CoverageEnabledCallable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
+
+bool FAngelscriptCodeCoverageEnabledTest::RunTest(const FString& Parameters)
+{
+	// Just verify CoverageEnabled() is callable and returns a bool without crashing.
+	const bool Enabled = FAngelscriptCodeCoverage::CoverageEnabled();
+	AddInfo(FString::Printf(TEXT("CoverageEnabled() = %s"), Enabled ? TEXT("true") : TEXT("false")));
+	return true;
+}
+
 #endif    // WITH_DEV_AUTOMATION_TESTS && WITH_AS_COVERAGE

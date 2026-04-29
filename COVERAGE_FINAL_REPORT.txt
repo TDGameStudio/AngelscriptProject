@@ -1,0 +1,55 @@
+ANGELSCRIPT PROJECT - TEST COVERAGE FINAL REPORT
+Generated: 2026-04-29
+
+OVERALL: 73% Well Tested (269/369 files)
+
+CRITICAL GAPS - 15 Files Needing Tests
+========================================
+
+EDITOR UI EXTENSIONS (6 files - ZERO TESTS)
+  1. ScriptActorMenuExtension.cpp
+  2. ScriptAssetMenuExtension.cpp
+  3. ScriptEditorMenuExtension.cpp
+  4. ScriptEditorMenuExtensionRegistration.cpp
+  5. ScriptEditorPrompts.cpp
+  6. AngelscriptContentBrowserDataSource.cpp
+
+CODE COVERAGE (2 files - NO DEDICATED TESTS)
+  7. AngelscriptCodeCoverage.cpp
+  8. CoverageReportGenerator.cpp
+
+OTHER UNTESTED/PARTIAL (7 files)
+  9. UObjectInWorld.cpp
+  10. AngelscriptThirdPartyLib.cpp
+  11. Bind_Deprecations.cpp
+  12. AngelscriptEditorCodeGen.cpp
+  13. ScriptableFactory.cpp
+  14. AngelscriptAllScriptRootsCommandlet.cpp
+  15. AngelscriptTestCommandlet.cpp
+
+MODULE BREAKDOWN
+================
+AngelscriptRuntime: 301 files
+  - 265 Well Tested (88%)
+  - 32 Partial (11%)
+  - 4 Not Tested (1%)
+
+AngelscriptEditor: 66 files
+  - 6 Well Tested (9%)
+  - 3 Partial (5%)
+  - 57 Not Tested (86%)
+
+AngelscriptLoader: 2 files
+  - 0 Well Tested
+  - 2 Partial (100%)
+
+WELL-TESTED AREAS
+=================
+✓ Bindings: 120+/127 files tested
+✓ ClassGenerator: 3/3 tested
+✓ Debugger: 1/1 tested
+✓ StaticJIT: 5/5 tested
+✓ Preprocessor: 1/1 tested
+✓ Core: 17/23 tested
+✓ HotReload: 2/2 tested
+✓ BlueprintImpact: 2/2 tested

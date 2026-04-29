@@ -1,0 +1,183 @@
+// =============================================================================
+// AngelscriptASSDKAtomicTests.cpp
+//
+// Tests for as_atomic.cpp — thread-safe reference counting via asCAtomic.
+// Validates basic get/set, atomic inc/dec, and concurrent safety.
+//
+// Automation IDs:
+//   Angelscript.TestModule.AngelScriptSDK.Atomic.*
+// =============================================================================
+
+#include "Misc/AutomationTest.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/PlatformProcess.h"
+
+#include "StartAngelscriptHeaders.h"
+#include "source/as_atomic.h"
+#include "EndAngelscriptHeaders.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+// ---------------------------------------------------------------------------
+// Test declarations
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptASSDKAtomicInitZeroTest,
+	"Angelscript.TestModule.AngelScriptSDK.Atomic.InitZero",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptASSDKAtomicSetGetTest,
+	"Angelscript.TestModule.AngelScriptSDK.Atomic.SetGet",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptASSDKAtomicIncDecTest,
+	"Angelscript.TestModule.AngelScriptSDK.Atomic.IncDec",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAngelscriptASSDKAtomicConcurrentIncDecTest,
+	"Angelscript.TestModule.AngelScriptSDK.Atomic.ConcurrentIncDec",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+// ---------------------------------------------------------------------------
+// InitZero — default constructed asCAtomic should read as 0
+// ---------------------------------------------------------------------------
+
+bool FAngelscriptASSDKAtomicInitZeroTest::RunTest(const FString& Parameters)
+{
+	asCAtomic Atomic;
+	TestEqual(TEXT("Default-constructed asCAtomic value should be 0"),
+		static_cast<int32>(Atomic.get()), 0);
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// SetGet — set(42) then get() should return 42
+// ---------------------------------------------------------------------------
+
+bool FAngelscriptASSDKAtomicSetGetTest::RunTest(const FString& Parameters)
+{
+	asCAtomic Atomic;
+
+	Atomic.set(42);
+	TestEqual(TEXT("set(42) followed by get() should return 42"),
+		static_cast<int32>(Atomic.get()), 42);
+
+	Atomic.set(0);
+	TestEqual(TEXT("set(0) followed by get() should return 0"),
+		static_cast<int32>(Atomic.get()), 0);
+
+	Atomic.set(999);
+	TestEqual(TEXT("set(999) followed by get() should return 999"),
+		static_cast<int32>(Atomic.get()), 999);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// IncDec — atomicInc/atomicDec should adjust value by 1
+// ---------------------------------------------------------------------------
+
+bool FAngelscriptASSDKAtomicIncDecTest::RunTest(const FString& Parameters)
+{
+	asCAtomic Atomic;
+
+	const asDWORD After1 = Atomic.atomicInc();
+	TestEqual(TEXT("atomicInc from 0 should return 1"),
+		static_cast<int32>(After1), 1);
+	TestEqual(TEXT("get() after one atomicInc should be 1"),
+		static_cast<int32>(Atomic.get()), 1);
+
+	const asDWORD After2 = Atomic.atomicInc();
+	TestEqual(TEXT("atomicInc from 1 should return 2"),
+		static_cast<int32>(After2), 2);
+
+	const asDWORD After3 = Atomic.atomicDec();
+	TestEqual(TEXT("atomicDec from 2 should return 1"),
+		static_cast<int32>(After3), 1);
+
+	const asDWORD After4 = Atomic.atomicDec();
+	TestEqual(TEXT("atomicDec from 1 should return 0"),
+		static_cast<int32>(After4), 0);
+	TestEqual(TEXT("get() after balanced inc/dec should be 0"),
+		static_cast<int32>(Atomic.get()), 0);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// ConcurrentIncDec — multiple threads inc then dec, final value must be 0
+// ---------------------------------------------------------------------------
+
+namespace AngelscriptTest_AngelScriptSDK_AngelscriptASSDKAtomicTests_Private
+{
+	static constexpr int32 GNumThreads = 4;
+	static constexpr int32 GIterationsPerThread = 1000;
+
+	class FAtomicIncDecRunnable : public FRunnable
+	{
+	public:
+		explicit FAtomicIncDecRunnable(asCAtomic& InAtomic)
+			: Atomic(InAtomic)
+		{
+		}
+
+		virtual uint32 Run() override
+		{
+			for (int32 I = 0; I < GIterationsPerThread; ++I)
+			{
+				Atomic.atomicInc();
+			}
+			for (int32 I = 0; I < GIterationsPerThread; ++I)
+			{
+				Atomic.atomicDec();
+			}
+			return 0;
+		}
+
+	private:
+		asCAtomic& Atomic;
+	};
+}
+
+bool FAngelscriptASSDKAtomicConcurrentIncDecTest::RunTest(const FString& Parameters)
+{
+	using namespace AngelscriptTest_AngelScriptSDK_AngelscriptASSDKAtomicTests_Private;
+
+	asCAtomic Atomic;
+
+	TArray<TUniquePtr<FAtomicIncDecRunnable>> Runnables;
+	TArray<FRunnableThread*> Threads;
+
+	Runnables.Reserve(GNumThreads);
+	Threads.Reserve(GNumThreads);
+
+	for (int32 I = 0; I < GNumThreads; ++I)
+	{
+		Runnables.Add(MakeUnique<FAtomicIncDecRunnable>(Atomic));
+		Threads.Add(FRunnableThread::Create(
+			Runnables.Last().Get(),
+			*FString::Printf(TEXT("AtomicTest_%d"), I)));
+	}
+
+	for (FRunnableThread* Thread : Threads)
+	{
+		if (Thread != nullptr)
+		{
+			Thread->WaitForCompletion();
+			delete Thread;
+		}
+	}
+
+	TestEqual(
+		TEXT("After balanced concurrent inc/dec across all threads, value should be 0"),
+		static_cast<int32>(Atomic.get()), 0);
+
+	return true;
+}
+
+#endif // WITH_DEV_AUTOMATION_TESTS

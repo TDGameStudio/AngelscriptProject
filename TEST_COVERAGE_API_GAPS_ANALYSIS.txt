@@ -1,0 +1,117 @@
+# TEST COVERAGE API GAPS ANALYSIS
+
+Analysis Date: April 29, 2026
+
+## Files Analyzed
+
+1. AngelscriptSourceCodeNavigation.cpp - 252 lines
+2. AngelscriptCodeCoverage.cpp - 212 lines
+3. CoverageReportGenerator.cpp - 314 lines
+4. AngelscriptEditorCodeGen.cpp - 100+ lines
+5. as_atomic.h - 70 lines
+6. as_callfunc.h - 147 lines
+7. as_thread.h - 78 lines
+8. as_configgroup.h - 90 lines
+9. as_variablescope.h - 89 lines
+10. as_outputbuffer.h - 81 lines
+11. as_string_util.h - 53 lines
+12. AngelscriptAllScriptRootsCommandlet.cpp - 23 lines
+13. AngelscriptTestCommandlet.cpp - 26 lines
+
+## PUBLIC APIS LACKING DIRECT TEST COVERAGE
+
+### 1. SOURCE CODE NAVIGATION (6 functions - 0% coverage)
+
+File: Plugins/Angelscript/Source/AngelscriptEditor/SourceNavigation/AngelscriptSourceCodeNavigation.cpp
+
+Public Functions:
+- NavigateToFunctionForTesting()
+- NavigateToPropertyForTesting()
+- NavigateToStructForTesting()
+- SetOpenLocationOverrideForTesting()
+- ResetOpenLocationOverrideForTesting()
+- BuildVSCodeOpenParametersForTesting()
+
+Priority: HIGH (user-visible editor feature)
+
+### 2. CODE COVERAGE API (16 functions - 20% coverage)
+
+File: Plugins/Angelscript/Source/AngelscriptRuntime/CodeCoverage/AngelscriptCodeCoverage.cpp
+File: Plugins/Angelscript/Source/AngelscriptRuntime/CodeCoverage/CoverageReportGenerator.cpp
+
+FAngelscriptCodeCoverage Methods:
+- CoverageEnabled()
+- StartRecording()
+- StopRecordingAndWriteReport()
+- MapExecutableLines()
+- HitLine()
+- GetLineCoverage()
+- AddTestFrameworkHooks()
+
+CoverageReportGenerator Functions:
+- WriteFileCoverageReportHtml()
+- AddCoverageLeaf()
+- ComputeCoverage()
+- WriteCoverageSummaryHtml()
+- WriteTopLevelCoverageJson()
+- StyleClassForCoverage()
+- SummaryLineForNode()
+- CountsToJson()
+
+Priority: HIGH (CI/CD-critical)
+
+### 3. CODE GENERATION (3 functions - 0% coverage)
+
+File: Plugins/Angelscript/Source/AngelscriptEditor/CodeGen/AngelscriptEditorCodeGen.cpp
+
+Public Functions:
+- ProcessStaticFunction()
+- AddParameterInclude()
+- FunctionTests()
+
+Priority: MEDIUM (compilation pipeline)
+
+### 4. THIRDPARTY SDK (35+ functions - 0% coverage)
+
+Indirectly tested through integration tests:
+- as_atomic.h: 4 methods (atomicInc, atomicDec, get, set)
+- as_callfunc.h: 4 functions (DetectCallingConvention, Prepare*, CallSystemFunction)
+- as_thread.h: 1 method (GetLocalData)
+- as_configgroup.h: 9 methods (AddRef, Release, FindType, RefConfigGroup, HasLiveObjects, RemoveConfiguration, AddReferencesFor*)
+- as_variablescope.h: 4 methods (Reset, DeclareVariable, GetVariable, GetVariableByOffset)
+- as_outputbuffer.h: 4 methods (Clear, Callback, Append, SendToCallback)
+- as_string_util.h: 7 functions (Compare, Scan*, Encode*, Decode*)
+
+Priority: LOW (external library)
+
+### 5. COMMANDLETS (2 functions - 50% coverage)
+
+File: Plugins/Angelscript/Source/AngelscriptRuntime/Core/Commandlets/AngelscriptAllScriptRootsCommandlet.cpp
+File: Plugins/Angelscript/Source/AngelscriptRuntime/Core/Commandlets/AngelscriptTestCommandlet.cpp
+
+Public Functions:
+- UAngelscriptAllScriptRootsCommandlet::Main()
+- UAngelscriptTestCommandlet::Main()
+
+Priority: MEDIUM (external entry points)
+
+## COVERAGE SUMMARY
+
+Total Public APIs Analyzed: 62+
+Total APIs with 0% Coverage: 51
+Total APIs with Partial Coverage: 5
+Total APIs with Full Coverage: 6+
+
+Highest Priority Gaps (32-40 hours estimated):
+1. SourceCodeNavigation - 6 functions (4-6 hours)
+2. CodeCoverage & CoverageReportGenerator - 10 functions (10-12 hours)
+3. CodeGen - 3 functions (2-3 hours)
+4. Commandlets - 2 functions (2-3 hours)
+
+Medium Priority Gap (10-15 hours estimated):
+5. ThirdParty SDK - 35+ functions (optional)
+
+## RECOMMENDATION
+
+Implement Priority 1 and 2 items before next major release.
+Plugin is production-ready but gaps should be closed for regression detection.

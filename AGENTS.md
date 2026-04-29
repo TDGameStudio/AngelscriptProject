@@ -116,6 +116,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 | AngelScript v2.38.0 | Pull with `Tools\PullReference\PullReference.bat angelscript`; defaults to `Reference\angelscript-v2.38.0`. See `Reference/README.md` |
 | Hazelight Angelscript | Obtained via `AgentConfig.ini` key `References.HazelightAngelscriptEngineRoot`. See `Reference/README.md` |
 | Hazelight Docs | Pull with `Tools\PullReference\PullReference.bat hazelightdocs`; defaults to `Reference\Docs-UnrealEngine-Angelscript`; use it for the public documentation site source and content structure. See `Reference/README.md` |
+| Hazelight VS Code Angelscript | Pull with `Tools\PullReference\PullReference.bat hazelightvscode`; defaults to `Reference\vscode-unreal-angelscript`; use it to compare VS Code Language Server, Debug Adapter, diagnostics, and breakpoint workflows. See `Reference/README.md` |
 | UnrealCSharp | Pull with `Tools\PullReference\PullReference.bat unrealcsharp`; defaults to `Reference\UnrealCSharp`. See `Reference/README.md` |
 | Tencent UnLua | Pull with `Tools\PullReference\PullReference.bat unlua`; defaults to `Reference\UnLua`; use it to compare Lua reflection exposure, event overrides, and sample organization. See `Reference/README.md` |
 | Tencent puerts | Pull with `Tools\PullReference\PullReference.bat puerts`; defaults to `Reference\puerts`; use it to compare TypeScript/JavaScript runtime integration and declaration generation. See `Reference/README.md` |

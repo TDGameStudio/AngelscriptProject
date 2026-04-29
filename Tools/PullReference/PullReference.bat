@@ -68,6 +68,15 @@ if /I "%REFERENCE_KEY%"=="hazelightdocs" (
     goto :ValidateGit
 )
 
+if /I "%REFERENCE_KEY%"=="hazelightvscode" (
+    set "REPO_NAME=vscode-unreal-angelscript"
+    set "REPO_SSH=git@github.com:Hazelight/vscode-unreal-angelscript.git"
+    set "REPO_HTTPS=https://github.com/Hazelight/vscode-unreal-angelscript.git"
+    set "REPO_BRANCH=master"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\vscode-unreal-angelscript"
+    goto :ValidateGit
+)
+
 if /I "%REFERENCE_KEY%"=="hazelight" goto :Hazelight
 
 echo Unknown reference key: %REFERENCE_KEY%
@@ -82,6 +91,7 @@ echo   unlua             - Pull Tencent UnLua into Reference\UnLua
 echo   puerts            - Pull Tencent puerts into Reference\puerts
 echo   sluaunreal        - Pull Tencent sluaunreal into Reference\sluaunreal
 echo   hazelightdocs     - Pull Hazelight public docs into Reference\Docs-UnrealEngine-Angelscript
+echo   hazelightvscode   - Pull Hazelight VS Code extension into Reference\vscode-unreal-angelscript
 echo   hazelight         - Local config only, read AgentConfig.ini
 exit /b 0
 
@@ -103,6 +113,7 @@ echo   Tools\PullReference\PullReference.bat unlua
 echo   Tools\PullReference\PullReference.bat puerts
 echo   Tools\PullReference\PullReference.bat sluaunreal
 echo   Tools\PullReference\PullReference.bat hazelightdocs
+echo   Tools\PullReference\PullReference.bat hazelightvscode
 echo   Tools\PullReference\PullReference.bat angelscript "J:\UnrealEngine\AngelscriptProject\Reference\angelscript-v2.38.0"
 echo   Tools\PullReference\PullReference.bat list
 exit /b 1

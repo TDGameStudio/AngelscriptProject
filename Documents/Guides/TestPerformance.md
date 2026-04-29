@@ -8,34 +8,41 @@
 
 ### 自动化结果层
 
-- 统一通过 `-ReportExportPath="<RunDir>/Reports"` 导出 JSON / HTML 自动化报告。
+- 统一通过 `Tools\RunTests.ps1` 导出 JSON / HTML 自动化报告；脚本会为每次运行生成独立的 `Saved/Tests/<Label>/<RunId>/Report/` 目录。
 - 自动化结果只负责通过/失败、测试名和标准报告结构，不承担详细时序原始数据。
 
 ### 原始日志层
 
-- 统一通过 `-ABSLOG="<RunDir>/Logs/Editor.log"` 输出完整运行日志。
+- 统一通过 `Tools\RunTests.ps1` 输出完整运行日志；脚本会为每次运行生成独立的 `Saved/Tests/<Label>/<RunId>/Automation.log`。
 - 启动 bind 与 reload 测试应输出统一前缀日志行，便于后处理脚本抽取指标。
 - 原始日志保留一次执行的完整上下文，不以仓库提交形式长期保存。
 
 ### 人工摘要层
 
 - 仓库内只登记命令模板、指标定义、最近一轮基线摘要与注意事项。
-- 原始 JSON / HTML / CSV / 日志文件保存在 `Saved/Automation/AngelscriptPerformance/<RunId>/`，不直接提交易波动的大文件。
+- 自动化报告与日志保存在 `Saved/Tests/<Label>/<RunId>/`，性能指标保存在 `Saved/Automation/AngelscriptPerformance/<RunId>/`；不直接提交易波动的大文件。
 
 ## 目录布局
 
-每次运行统一使用：
+自动化 runner 产物由 `Tools\RunTests.ps1` 统一写入：
+
+```text
+<Project>/Saved/Tests/<Label>/<RunId>/
+  Automation.log
+  Report/
+  Summary.json
+```
+
+结构化性能指标仍按稳定 `RunId` 写入性能目录：
 
 ```text
 <Project>/Saved/Automation/AngelscriptPerformance/<RunId>/
-  Reports/
-  Logs/
   Metrics/
   Artifacts/
 ```
 
-- `Reports/`：`-ReportExportPath` 导出的自动化报告。
-- `Logs/`：`-ABSLOG` 输出的完整日志。
+- `Report/`：`Tools\RunTests.ps1` 导出的自动化报告。
+- `Automation.log`：`Tools\RunTests.ps1` 输出的完整日志。
 - `Metrics/`：结构化指标摘要，例如 `metrics.json`、`summary.md`。
 - `Artifacts/`：可选的 CSV、额外诊断或截图索引，不要求首批一定启用。
 
@@ -92,24 +99,30 @@
 
 ## 首批 telemetry 决策
 
-- 默认方案：保留 `FPlatformTime::Seconds()` + 统一格式日志行 + `-ReportExportPath` / `-ABSLOG` 产物留痕，作为自动化 artifact 的稳定基础。
+- 默认方案：保留 `FPlatformTime::Seconds()` + 统一格式日志行 + `Tools\RunTests.ps1` 产物留痕，作为自动化 artifact 的稳定基础。
 - Runtime instrumentation：启动 bind、CallBinds、initial compile、CompileModules、hot reload、class generator、BPVM JIT 调用、参数 context fallback、StaticJIT precompiled data、DebugServer tick、DumpAll、BlueprintImpact commandlet 已接入 UE 原生插桩。
 - 可选增强：若后续验证表明当前 UE 版本能稳定从自动化测试写入 telemetry，再增量接入 `AddTestTelemetryData`；CSV profiler 已作为 runtime 侧插桩路径接入，不再作为首批前置风险。
 - `UAutomationPerformanceHelper` 和重量级 Functional Test 依赖不作为首批必选项，避免在建立基线前先把执行入口复杂化。
 
 ## 推荐命令模板
 
-执行路径应从 `AgentConfig.ini` 的 `Paths.EngineRoot` 读取引擎目录，并为每次运行生成唯一 `RunId`：
+执行路径应从 `AgentConfig.ini` 的 `Paths.EngineRoot` 读取引擎目录；自动化报告和日志路径由 `Tools\RunTests.ps1` 生成，不要手写 `-ABSLOG` / `-ReportExportPath`：
 
-```text
-Tools\RunTests.ps1 -Group AngelscriptPerformance \
-  -ReportExportPath="<Project>/Saved/Automation/AngelscriptPerformance/<RunId>/Reports" \
-  -ABSLOG="<Project>/Saved/Automation/AngelscriptPerformance/<RunId>/Logs/Editor.log" \
-  -- -NullRHI -NoSplash -NOSOUND
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Group AngelscriptPerformance -Label perf -TimeoutMs 900000
+```
+
+只跑运行期微基准时：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Performance." -Label perf-runtime -TimeoutMs 600000
 ```
 
 ### 当前已落地的性能测试前缀
 
+- `Angelscript.TestModule.Performance.ScriptSelf`
+- `Angelscript.TestModule.Performance.NativeProperty`
+- `Angelscript.TestModule.Performance.NativeFunction`
 - `Angelscript.TestModule.Core.Performance.Startup.Full`
 - `Angelscript.TestModule.Core.Performance.Startup.Clone`
 - `Angelscript.TestModule.Core.Performance.Startup.CreateForTestingFallbackFull`
@@ -123,6 +136,7 @@ Tools\RunTests.ps1 -Group AngelscriptPerformance \
 
 ### 推荐运行波次
 
+- 运行期微基准：`Automation RunTests Angelscript.TestModule.Performance`
 - 启动基线：`Automation RunTests Angelscript.TestModule.Core.Performance.Startup`
 - 热重载延迟：`Automation RunTests Angelscript.TestModule.HotReload.Performance`
 - 产物回归：`Automation RunTests Angelscript.TestModule.Core.Performance.ArtifactGeneration`
@@ -140,6 +154,9 @@ Tools\RunTests.ps1 -Group AngelscriptPerformance \
 - `Saved/Automation/AngelscriptPerformance/P3_2_HotReloadPerformance_RenameWindow/Metrics/metrics.json`
 - `Saved/Automation/AngelscriptPerformance/P3_4_HotReloadPerformance_BurstChurn/Metrics/metrics.json`
 - `Saved/Automation/AngelscriptPerformance/P3_4_PerformanceArtifactGeneration/Metrics/metrics.json`
+- `Saved/Automation/AngelscriptPerformance/RuntimeMicrobenchmark_ScriptSelf/Metrics/metrics.json`
+- `Saved/Automation/AngelscriptPerformance/RuntimeMicrobenchmark_NativeProperty/Metrics/metrics.json`
+- `Saved/Automation/AngelscriptPerformance/RuntimeMicrobenchmark_NativeFunction/Metrics/metrics.json`
 
 #### P5/P6 回归与执行证据样本
 
