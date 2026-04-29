@@ -60,39 +60,168 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxOperatorOverloadTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOAdd"),
-			TEXT("struct FVecAdd { int X = 0; int Y = 0; FVecAdd opAdd(const FVecAdd& Other) const { FVecAdd Result; Result.X = X + Other.X; Result.Y = Y + Other.Y; return Result; } }"),
+			TEXT(R"(
+struct FVecAdd
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecAdd opAdd(const FVecAdd& Other) const
+	{
+		FVecAdd Result;
+		Result.X = X + Other.X;
+		Result.Y = Y + Other.Y;
+		return Result;
+	}
+}
+)"),
 			TEXT("Operator overload: opAdd"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOSub"),
-			TEXT("struct FVecSub { int X = 0; int Y = 0; FVecSub opSub(const FVecSub& Other) const { FVecSub Result; Result.X = X - Other.X; Result.Y = Y - Other.Y; return Result; } }"),
+			TEXT(R"(
+struct FVecSub
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecSub opSub(const FVecSub& Other) const
+	{
+		FVecSub Result;
+		Result.X = X - Other.X;
+		Result.Y = Y - Other.Y;
+		return Result;
+	}
+}
+)"),
 			TEXT("Operator overload: opSub"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOMul"),
-			TEXT("struct FVecMul { int X = 0; int Y = 0; FVecMul opMul(int Scalar) const { FVecMul Result; Result.X = X * Scalar; Result.Y = Y * Scalar; return Result; } }"),
+			TEXT(R"(
+struct FVecMul
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecMul opMul(int Scalar) const
+	{
+		FVecMul Result;
+		Result.X = X * Scalar;
+		Result.Y = Y * Scalar;
+		return Result;
+	}
+}
+)"),
 			TEXT("Operator overload: opMul"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOEquals"),
-			TEXT("struct FVecEquals { int X = 0; int Y = 0; bool opEquals(const FVecEquals& Other) const { return X == Other.X && Y == Other.Y; } }"),
+			TEXT(R"(
+struct FVecEquals
+{
+	int X = 0;
+	int Y = 0;
+
+	bool opEquals(const FVecEquals& Other) const
+	{
+		return X == Other.X && Y == Other.Y;
+	}
+}
+)"),
 			TEXT("Operator overload: opEquals"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOCmp"),
-			TEXT("struct FValCmp { int Value = 0; int opCmp(const FValCmp& Other) const { return Value - Other.Value; } }"),
+			TEXT(R"(
+struct FValCmp
+{
+	int Value = 0;
+
+	int opCmp(const FValCmp& Other) const
+	{
+		return Value - Other.Value;
+	}
+}
+)"),
 			TEXT("Operator overload: opCmp"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOIndex"),
-			TEXT("struct FMyContainer { TArray<int> Data; int opIndex(int Index) const { return Data[Index]; } }"),
+			TEXT(R"(
+struct FMyContainer
+{
+	TArray<int> Data;
+
+	int opIndex(int Index) const
+	{
+		return Data[Index];
+	}
+}
+)"),
 			TEXT("Operator overload: opIndex"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOONeg"),
-			TEXT("struct FVecNeg { int X = 0; int Y = 0; FVecNeg opNeg() const { FVecNeg Result; Result.X = -X; Result.Y = -Y; return Result; } }"),
+			TEXT(R"(
+struct FVecNeg
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecNeg opNeg() const
+	{
+		FVecNeg Result;
+		Result.X = -X;
+		Result.Y = -Y;
+		return Result;
+	}
+}
+)"),
 			TEXT("Operator overload: opNeg (unary minus)"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOAddAssign"),
-			TEXT("struct FVecAddAssign { int X = 0; int Y = 0; FVecAddAssign& opAddAssign(const FVecAddAssign& Other) { X += Other.X; Y += Other.Y; return this; } }"),
+			TEXT(R"(
+struct FVecAddAssign
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecAddAssign& opAddAssign(const FVecAddAssign& Other)
+	{
+		X += Other.X;
+		Y += Other.Y;
+		return this;
+	}
+}
+)"),
 			TEXT("Operator overload: opAddAssign"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxOOUsage"),
-			TEXT("struct FVecUsage { int X = 0; int Y = 0; FVecUsage opAdd(const FVecUsage& Other) const { FVecUsage R; R.X = X + Other.X; R.Y = Y + Other.Y; return R; } bool opEquals(const FVecUsage& Other) const { return X == Other.X && Y == Other.Y; } } void Test() { FVecUsage A; FVecUsage B; A.X = 1; B.X = 2; FVecUsage C = A + B; bool Eq = (A == B); }"),
+			TEXT(R"(
+struct FVecUsage
+{
+	int X = 0;
+	int Y = 0;
+
+	FVecUsage opAdd(const FVecUsage& Other) const
+	{
+		FVecUsage R;
+		R.X = X + Other.X;
+		R.Y = Y + Other.Y;
+		return R;
+	}
+
+	bool opEquals(const FVecUsage& Other) const
+	{
+		return X == Other.X && Y == Other.Y;
+	}
+}
+
+void Test()
+{
+	FVecUsage A;
+	FVecUsage B;
+	A.X = 1;
+	B.X = 2;
+	FVecUsage C = A + B;
+	bool Eq = (A == B);
+}
+)"),
 			TEXT("Using overloaded operators"));
 	}
 
@@ -106,43 +235,117 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxOperatorOverloadTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOInvalid"),
-			TEXT("struct FVecInvalid { int X = 0; FVecInvalid opInvalid(const FVecInvalid& Other) const { return FVecInvalid(); } }"),
+			TEXT(R"(
+struct FVecInvalid
+{
+	int X = 0;
+
+	FVecInvalid opInvalid(const FVecInvalid& Other) const
+	{
+		return FVecInvalid();
+	}
+}
+)"),
 			TEXT("Invalid operator overload name should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOEqualsWrongReturn"),
-			TEXT("struct FVecEqWrongRet { int X = 0; int opEquals(const FVecEqWrongRet& Other) const { return 0; } }"),
+			TEXT(R"(
+struct FVecEqWrongRet
+{
+	int X = 0;
+
+	int opEquals(const FVecEqWrongRet& Other) const { return 0; }
+}
+)"),
 			TEXT("opEquals with non-bool return should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOCmpWrongReturn"),
-			TEXT("struct FValCmpWrongRet { int Value = 0; float opCmp(const FValCmpWrongRet& Other) const { return 0.0f; } }"),
+			TEXT(R"(
+struct FValCmpWrongRet
+{
+	int Value = 0;
+
+	float opCmp(const FValCmpWrongRet& Other) const { return 0.0f; }
+}
+)"),
 			TEXT("opCmp with non-int return should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOGlobal"),
-			TEXT("int opAdd(int A, int B) { return A + B; }"),
+			TEXT(R"(
+int opAdd(int A, int B) { return A + B; }
+)"),
 			TEXT("Operator overload at global scope should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOONoOp"),
-			TEXT("struct FMyType { int X = 0; } void Test() { FMyType A; FMyType B; FMyType C = A + B; }"),
+			TEXT(R"(
+struct FMyType
+{
+	int X = 0;
+}
+
+void Test()
+{
+	FMyType A;
+	FMyType B;
+	FMyType C = A + B;
+}
+)"),
 			TEXT("Using + without opAdd overload should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOBadParams"),
-			TEXT("struct FVecBadParams { int X = 0; FVecBadParams opAdd() const { return FVecBadParams(); } }"),
+			TEXT(R"(
+struct FVecBadParams
+{
+	int X = 0;
+
+	FVecBadParams opAdd() const { return FVecBadParams(); }
+}
+)"),
 			TEXT("opAdd without parameter should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOAddVoid"),
-			TEXT("struct FVecAddVoid { int X = 0; void opAdd(const FVecAddVoid& Other) const { } }"),
+			TEXT(R"(
+struct FVecAddVoid
+{
+	int X = 0;
+
+	void opAdd(const FVecAddVoid& Other) const { }
+}
+)"),
 			TEXT("opAdd returning void should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOODuplicateAdd"),
-			TEXT("struct FVecDupAdd { int X = 0; FVecDupAdd opAdd(const FVecDupAdd& Other) const { return FVecDupAdd(); } FVecDupAdd opAdd(const FVecDupAdd& Other) const { return FVecDupAdd(); } }"),
+			TEXT(R"(
+struct FVecDupAdd
+{
+	int X = 0;
+
+	FVecDupAdd opAdd(const FVecDupAdd& Other) const { return FVecDupAdd(); }
+	FVecDupAdd opAdd(const FVecDupAdd& Other) const { return FVecDupAdd(); }
+}
+)"),
 			TEXT("Duplicate opAdd overload should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOOIndexBadReturn"),
-			TEXT("struct FContainerBadRet { TArray<int> Data; void opIndex(int Index) const { } }"),
+			TEXT(R"(
+struct FContainerBadRet
+{
+	TArray<int> Data;
+
+	void opIndex(int Index) const { }
+}
+)"),
 			TEXT("opIndex returning void should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxOONegWithParam"),
-			TEXT("struct FVecNegParam { int X = 0; FVecNegParam opNeg(int Dummy) const { return FVecNegParam(); } }"),
+			TEXT(R"(
+struct FVecNegParam
+{
+	int X = 0;
+
+	FVecNegParam opNeg(int Dummy) const { return FVecNegParam(); }
+}
+)"),
 			TEXT("opNeg with parameter should fail"));
 	}
 };

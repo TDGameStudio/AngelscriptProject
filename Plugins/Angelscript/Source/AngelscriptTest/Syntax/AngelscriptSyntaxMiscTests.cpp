@@ -60,19 +60,35 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentLine"),
-			TEXT("// This is a comment\nvoid Test() { int X = 1; }"),
+			TEXT(R"(
+// This is a comment
+void Test() { int X = 1; }
+)"),
 			TEXT("Single-line comment"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentBlock"),
-			TEXT("/* This is a\n   multi-line comment */\nvoid Test() { int X = 1; }"),
+			TEXT(R"(
+/* This is a
+   multi-line comment */
+void Test() { int X = 1; }
+)"),
 			TEXT("Multi-line block comment"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentInline"),
-			TEXT("void Test() { int X = 1; // inline comment\n int Y = 2; /* block */ int Z = 3; }"),
+			TEXT(R"(
+void Test()
+{
+	int X = 1; // inline comment
+	int Y = 2; /* block */ int Z = 3;
+}
+)"),
 			TEXT("Comments within code"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentStars"),
-			TEXT("/* Comment with * and / separately */\nvoid Test() { }"),
+			TEXT(R"(
+/* Comment with * and / separately */
+void Test() { }
+)"),
 			TEXT("Block comment with stars"));
 	}
 
@@ -86,7 +102,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentUnterminated"),
-			TEXT("/* Unterminated comment\nvoid Test() { }"),
+			TEXT(R"(
+/* Unterminated comment
+void Test() { }
+)"),
 			TEXT("Unterminated block comment should fail"));
 	}
 
@@ -100,23 +119,60 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscThis"),
-			TEXT("class AActorThis : AActor { int X = 0; void SetX(int Val) { this.X = Val; } }"),
+			TEXT(R"(
+class AActorThis : AActor
+{
+	int X = 0;
+
+	void SetX(int Val)
+	{
+		this.X = Val;
+	}
+}
+)"),
 			TEXT("this keyword"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscSuper"),
-			TEXT("class AActorSuper : AActor { UFUNCTION(BlueprintOverride) void BeginPlay() { Super::BeginPlay(); } }"),
+			TEXT(R"(
+class AActorSuper : AActor
+{
+	UFUNCTION(BlueprintOverride)
+	void BeginPlay()
+	{
+		Super::BeginPlay();
+	}
+}
+)"),
 			TEXT("Super keyword"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscFinalClass"),
-			TEXT("class AFinalActorMisc : AActor final { }"),
+			TEXT(R"(
+class AFinalActorMisc : AActor final { }
+)"),
 			TEXT("final class modifier"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscOverride"),
-			TEXT("class ABaseActorOvrd : AActor { void Foo() { } } class AChildActorOvrd : ABaseActorOvrd { void Foo() override { } }"),
+			TEXT(R"(
+class ABaseActorOvrd : AActor
+{
+	void Foo() { }
+}
+
+class AChildActorOvrd : ABaseActorOvrd
+{
+	void Foo() override { }
+}
+)"),
 			TEXT("override keyword"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscConstMethod"),
-			TEXT("struct FStructConst { int X = 0; int GetX() const { return X; } }"),
+			TEXT(R"(
+struct FStructConst
+{
+	int X = 0;
+	int GetX() const { return X; }
+}
+)"),
 			TEXT("const method"));
 	}
 
@@ -130,23 +186,41 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscThisGlobal"),
-			TEXT("void Test() { auto X = this; }"),
+			TEXT(R"(
+void Test() { auto X = this; }
+)"),
 			TEXT("this outside class should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscInheritFinal"),
-			TEXT("class AFinalActorInhN : AActor final { } class AChildActorInhN : AFinalActorInhN { }"),
+			TEXT(R"(
+class AFinalActorInhN : AActor final { }
+class AChildActorInhN : AFinalActorInhN { }
+)"),
 			TEXT("Inheriting from final class should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscOverrideNoParent"),
-			TEXT("class AActorOvrdNoParent : AActor { void NonExistentMethod() override { } }"),
+			TEXT(R"(
+class AActorOvrdNoParent : AActor
+{
+	void NonExistentMethod() override { }
+}
+)"),
 			TEXT("override without matching parent method should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscConstModify"),
-			TEXT("struct FStructConstModify { int X = 0; void Bad() const { X = 5; } }"),
+			TEXT(R"(
+struct FStructConstModify
+{
+	int X = 0;
+	void Bad() const { X = 5; }
+}
+)"),
 			TEXT("Modifying member in const method should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscSuperGlobal"),
-			TEXT("void Test() { Super::BeginPlay(); }"),
+			TEXT(R"(
+void Test() { Super::BeginPlay(); }
+)"),
 			TEXT("Super outside class should fail"));
 	}
 
@@ -160,27 +234,41 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscEmptyFunc"),
-			TEXT("void DoNothing() { }"),
+			TEXT(R"(
+void DoNothing() { }
+)"),
 			TEXT("Empty function body"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscDeepNest"),
-			TEXT("void Test() { { { { { int X = 1; } } } } }"),
+			TEXT(R"(
+void Test() { { { { { int X = 1; } } } } }
+)"),
 			TEXT("Deeply nested blocks"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscLongExpr"),
-			TEXT("void Test() { int X = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15; }"),
+			TEXT(R"(
+void Test() { int X = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15; }
+)"),
 			TEXT("Long chained expression"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscMultiStmt"),
-			TEXT("void Test() { int A = 1; int B = 2; int C = A + B; }"),
+			TEXT(R"(
+void Test() { int A = 1; int B = 2; int C = A + B; }
+)"),
 			TEXT("Multiple statements"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscDeepParens"),
-			TEXT("void Test() { int X = ((((1 + 2)))); }"),
+			TEXT(R"(
+void Test() { int X = ((((1 + 2)))); }
+)"),
 			TEXT("Deeply parenthesized expression"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscGlobalVar"),
-			TEXT("int GlobalCounter = 0; void Increment() { ++GlobalCounter; }"),
+			TEXT(R"(
+int GlobalCounter = 0;
+
+void Increment() { ++GlobalCounter; }
+)"),
 			TEXT("Global variable with function"));
 	}
 
@@ -194,35 +282,52 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscUnmatchedBrace"),
-			TEXT("void Test() { int X = 1; "),
+			TEXT(R"(
+void Test() { int X = 1;
+)"),
 			TEXT("Unmatched opening brace should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscExtraBrace"),
-			TEXT("void Test() { } }"),
+			TEXT(R"(
+void Test() { } }
+)"),
 			TEXT("Extra closing brace should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscUnmatchedParen"),
-			TEXT("void Test() { int X = (1 + 2; }"),
+			TEXT(R"(
+void Test() { int X = (1 + 2; }
+)"),
 			TEXT("Unmatched parenthesis should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscNoSemicolon"),
-			TEXT("void Test() { int X = 1 int Y = 2; }"),
+			TEXT(R"(
+void Test() { int X = 1 int Y = 2; }
+)"),
 			TEXT("Missing semicolon should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscGarbage"),
-			TEXT("asdfgh jklmn @#$%"),
+			TEXT(R"(
+asdfgh jklmn @#$%
+)"),
 			TEXT("Random garbage should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscStmtTopLevel"),
-			TEXT("int X = 5; X = 10;"),
+			TEXT(R"(
+int X = 5;
+X = 10;
+)"),
 			TEXT("Assignment statement at top level should fail"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscEmpty"),
-			TEXT(""),
+			TEXT(R"()"),
 			TEXT("Empty source should compile (no declarations)"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscWhitespace"),
-			TEXT("   \n\n\t\t  \n"),
+			TEXT(R"(
+   
+
+		  
+)"),
 			TEXT("Whitespace-only source should compile"));
 	}
 };

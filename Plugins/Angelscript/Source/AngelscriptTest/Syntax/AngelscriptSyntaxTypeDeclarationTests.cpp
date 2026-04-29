@@ -61,28 +61,71 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Basic"),
-			TEXT("class AClassBasicActor : AActor { }"), TEXT("Basic class"));
+			TEXT(R"(
+class AClassBasicActor : AActor { }
+)"),
+			TEXT("Basic class"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Members"),
-			TEXT("class AClassMembersActor : AActor { int Health = 100; float Speed = 5.0f; }"), TEXT("Class with members"));
+			TEXT(R"(
+class AClassMembersActor : AActor
+{
+	int Health = 100;
+	float Speed = 5.0f;
+}
+)"),
+			TEXT("Class with members"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Methods"),
-			TEXT("class AClassMethodsActor : AActor { void Foo() { } int Bar() { return 1; } }"), TEXT("Class with methods"));
+			TEXT(R"(
+class AClassMethodsActor : AActor
+{
+	void Foo() { }
+	int Bar() { return 1; }
+}
+)"),
+			TEXT("Class with methods"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_UCLASS"),
-			TEXT("UCLASS() class AClassUCLASSActor : AActor { UPROPERTY() int X = 0; }"), TEXT("UCLASS with UPROPERTY"));
+			TEXT(R"(
+UCLASS()
+class AClassUCLASSActor : AActor
+{
+	UPROPERTY()
+	int X = 0;
+}
+)"),
+			TEXT("UCLASS with UPROPERTY"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Abstract"),
-			TEXT("UCLASS(Abstract) class AMyAbstract : AActor { }"), TEXT("Abstract UCLASS"));
+			TEXT(R"(
+UCLASS(Abstract)
+class AMyAbstract : AActor { }
+)"),
+			TEXT("Abstract UCLASS"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Constructor"),
-			TEXT("class AClassCtorActor : AActor { int X; AClassCtorActor() { X = 10; } }"), TEXT("Constructor"));
+			TEXT(R"(
+class AClassCtorActor : AActor
+{
+	int X;
+	AClassCtorActor() { X = 10; }
+}
+)"),
+			TEXT("Constructor"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Chain"),
-			TEXT("class ABaseChainActor : AActor { } class AChildChainActor : ABaseChainActor { }"), TEXT("Inheritance chain"));
+			TEXT(R"(
+class ABaseChainActor : AActor { }
+class AChildChainActor : ABaseChainActor { }
+)"),
+			TEXT("Inheritance chain"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Final"),
-			TEXT("class AFinalClassActor : AActor final { }"), TEXT("Final class"));
+			TEXT(R"(
+class AFinalClassActor : AActor final { }
+)"),
+			TEXT("Final class"));
 	}
 
 	// ====================================================================
@@ -95,31 +138,63 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_NoName"),
-			TEXT("class : AActor { }"), TEXT("Class without name"));
+			TEXT(R"(
+class : AActor { }
+)"),
+			TEXT("Class without name"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_NoBrace"),
-			TEXT("class AClassNoBraceActor : AActor"), TEXT("Class without braces"));
+			TEXT(R"(
+class AClassNoBraceActor : AActor
+)"),
+			TEXT("Class without braces"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_Duplicate"),
-			TEXT("class ADupActor : AActor { } class ADupActor : AActor { }"), TEXT("Duplicate class name"));
+			TEXT(R"(
+class ADupActor : AActor { }
+class ADupActor : AActor { }
+)"),
+			TEXT("Duplicate class name"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_BadParent"),
-			TEXT("class AClassBadParentActor : ANonExistentActor { }"), TEXT("Non-existent parent"));
+			TEXT(R"(
+class AClassBadParentActor : ANonExistentActor { }
+)"),
+			TEXT("Non-existent parent"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_BadMember"),
-			TEXT("class AClassBadMemberActor : AActor { NonExistentType X; }"), TEXT("Invalid member type"));
+			TEXT(R"(
+class AClassBadMemberActor : AActor
+{
+	NonExistentType X;
+}
+)"),
+			TEXT("Invalid member type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_BadPrefix"),
-			TEXT("class MyActor : AActor { }"), TEXT("Actor without A prefix"));
+			TEXT(R"(
+class MyActor : AActor { }
+)"),
+			TEXT("Actor without A prefix"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_MultiBase"),
-			TEXT("class AClassMultiBaseActor : AActor, APawn { }"), TEXT("Multiple base classes"));
+			TEXT(R"(
+class AClassMultiBaseActor : AActor, APawn { }
+)"),
+			TEXT("Multiple base classes"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_InheritFinal"),
-			TEXT("class AFinalInheritActor : AActor final { } class AChildInheritActor : AFinalInheritActor { }"), TEXT("Inherit from final"));
+			TEXT(R"(
+class AFinalInheritActor : AActor final { }
+class AChildInheritActor : AFinalInheritActor { }
+)"),
+			TEXT("Inherit from final"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ClassN_SelfInherit"),
-			TEXT("class ASelfActor : ASelfActor { }"), TEXT("Self-inheritance"));
+			TEXT(R"(
+class ASelfActor : ASelfActor { }
+)"),
+			TEXT("Self-inheritance"));
 	}
 
 	// ====================================================================
@@ -132,19 +207,52 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_Basic"),
-			TEXT("struct FStructBasic { int X; float Y; }"), TEXT("Basic struct"));
+			TEXT(R"(
+struct FStructBasic { int X; float Y; }
+)"),
+			TEXT("Basic struct"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_USTRUCT"),
-			TEXT("USTRUCT() struct FStructUSTRUCT { UPROPERTY() int X = 0; }"), TEXT("USTRUCT"));
+			TEXT(R"(
+USTRUCT()
+struct FStructUSTRUCT
+{
+	UPROPERTY()
+	int X = 0;
+}
+)"),
+			TEXT("USTRUCT"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_Methods"),
-			TEXT("struct FStructMethods { int X = 0; int GetX() const { return X; } }"), TEXT("Struct with methods"));
+			TEXT(R"(
+struct FStructMethods
+{
+	int X = 0;
+	int GetX() const { return X; }
+}
+)"),
+			TEXT("Struct with methods"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_Defaults"),
-			TEXT("struct FStructDefaults { int X = 42; FString Name = \"Default\"; }"), TEXT("Struct defaults"));
+			TEXT(R"(
+struct FStructDefaults
+{
+	int X = 42;
+	FString Name = "Default";
+}
+)"),
+			TEXT("Struct defaults"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_Constructor"),
-			TEXT("struct FStructCtor { int X; FStructCtor() { X = 0; } FStructCtor(int InX) { X = InX; } }"), TEXT("Constructors"));
+			TEXT(R"(
+struct FStructCtor
+{
+	int X;
+	FStructCtor() { X = 0; }
+	FStructCtor(int InX) { X = InX; }
+}
+)"),
+			TEXT("Constructors"));
 	}
 
 	// ====================================================================
@@ -157,22 +265,47 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_NoName"),
-			TEXT("struct { int X; }"), TEXT("Struct without name"));
+			TEXT(R"(
+struct { int X; }
+)"),
+			TEXT("Struct without name"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_Duplicate"),
-			TEXT("struct FDup { int X; } struct FDup { int Y; }"), TEXT("Duplicate struct"));
+			TEXT(R"(
+struct FDup { int X; }
+struct FDup { int Y; }
+)"),
+			TEXT("Duplicate struct"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_BadMember"),
-			TEXT("struct FStructBadMember { NonExistentType X; }"), TEXT("Invalid member type"));
+			TEXT(R"(
+struct FStructBadMember { NonExistentType X; }
+)"),
+			TEXT("Invalid member type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_BadPrefix"),
-			TEXT("USTRUCT() struct MyStruct { UPROPERTY() int X; }"), TEXT("USTRUCT without F prefix"));
+			TEXT(R"(
+USTRUCT()
+struct MyStruct
+{
+	UPROPERTY()
+	int X;
+}
+)"),
+			TEXT("USTRUCT without F prefix"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_Inherit"),
-			TEXT("struct FBase { int X; } struct FChild : FBase { int Y; }"), TEXT("Struct inheritance"));
+			TEXT(R"(
+struct FBase { int X; }
+struct FChild : FBase { int Y; }
+)"),
+			TEXT("Struct inheritance"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("StructN_VoidMember"),
-			TEXT("struct FStructVoidMember { void X; }"), TEXT("Void member"));
+			TEXT(R"(
+struct FStructVoidMember { void X; }
+)"),
+			TEXT("Void member"));
 	}
 
 	// ====================================================================
@@ -185,16 +318,34 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("EnumP_Basic"),
-			TEXT("enum EEnumBasic { Value1, Value2, Value3 }"), TEXT("Basic enum"));
+			TEXT(R"(
+enum EEnumBasic { Value1, Value2, Value3 }
+)"),
+			TEXT("Basic enum"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("EnumP_UENUM"),
-			TEXT("UENUM() enum EEnumUENUM { Value1, Value2 }"), TEXT("UENUM"));
+			TEXT(R"(
+UENUM()
+enum EEnumUENUM { Value1, Value2 }
+)"),
+			TEXT("UENUM"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("EnumP_Explicit"),
-			TEXT("enum EEnumExplicit { Value1 = 0, Value2 = 5, Value3 = 10 }"), TEXT("Explicit values"));
+			TEXT(R"(
+enum EEnumExplicit { Value1 = 0, Value2 = 5, Value3 = 10 }
+)"),
+			TEXT("Explicit values"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("EnumP_Usage"),
-			TEXT("enum EEnumUsage { Val1, Val2 } void Test() { EEnumUsage E = EEnumUsage::Val1; }"), TEXT("Enum usage"));
+			TEXT(R"(
+enum EEnumUsage { Val1, Val2 }
+
+void Test()
+{
+	EEnumUsage E = EEnumUsage::Val1;
+}
+)"),
+			TEXT("Enum usage"));
 	}
 
 	// ====================================================================
@@ -207,22 +358,41 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_NoName"),
-			TEXT("enum { Value1 }"), TEXT("Enum without name"));
+			TEXT(R"(
+enum { Value1 }
+)"),
+			TEXT("Enum without name"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_DupVal"),
-			TEXT("enum EEnumDupVal { Value1, Value1 }"), TEXT("Duplicate enum value"));
+			TEXT(R"(
+enum EEnumDupVal { Value1, Value1 }
+)"),
+			TEXT("Duplicate enum value"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_BadVal"),
-			TEXT("enum EEnumBadVal { Value1 = \"hello\" }"), TEXT("Non-integer enum value"));
+			TEXT(R"(
+enum EEnumBadVal { Value1 = "hello" }
+)"),
+			TEXT("Non-integer enum value"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_BadPrefix"),
-			TEXT("UENUM() enum MyEnum { Value1 }"), TEXT("UENUM without E prefix"));
+			TEXT(R"(
+UENUM()
+enum MyEnum { Value1 }
+)"),
+			TEXT("UENUM without E prefix"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_Empty"),
-			TEXT("enum EEnumEmpty { }"), TEXT("Empty enum"));
+			TEXT(R"(
+enum EEnumEmpty { }
+)"),
+			TEXT("Empty enum"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("EnumN_Method"),
-			TEXT("enum EEnumMethod { Value1; void Foo() { } }"), TEXT("Method in enum"));
+			TEXT(R"(
+enum EEnumMethod { Value1; void Foo() { } }
+)"),
+			TEXT("Method in enum"));
 	}
 
 	// ====================================================================
@@ -236,17 +406,33 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 
 		// Positive
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("IntfP_Basic"),
-			TEXT("interface UIntfBasic { void DoSomething(); int GetValue(); }"), TEXT("Basic interface"));
+			TEXT(R"(
+interface UIntfBasic
+{
+	void DoSomething();
+	int GetValue();
+}
+)"),
+			TEXT("Basic interface"));
 
 		// Negative
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("IntfN_Member"),
-			TEXT("interface UIntfMember { int X; }"), TEXT("Interface with member variable"));
+			TEXT(R"(
+interface UIntfMember { int X; }
+)"),
+			TEXT("Interface with member variable"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("IntfN_Body"),
-			TEXT("interface UIntfBody { void DoSomething() { } }"), TEXT("Interface with method body"));
+			TEXT(R"(
+interface UIntfBody { void DoSomething() { } }
+)"),
+			TEXT("Interface with method body"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("IntfN_NoName"),
-			TEXT("interface { void Foo(); }"), TEXT("Interface without name"));
+			TEXT(R"(
+interface { void Foo(); }
+)"),
+			TEXT("Interface without name"));
 	}
 
 	// ====================================================================
@@ -260,23 +446,56 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 
 		// Positive
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("NSP_Basic"),
-			TEXT("namespace MySpaceBasic { int GlobalVal = 42; }"), TEXT("Basic namespace"));
+			TEXT(R"(
+namespace MySpaceBasic { int GlobalVal = 42; }
+)"),
+			TEXT("Basic namespace"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("NSP_Access"),
-			TEXT("namespace MySpaceAccess { int GetVal() { return 42; } } void Test() { int X = MySpaceAccess::GetVal(); }"), TEXT("Namespace access"));
+			TEXT(R"(
+namespace MySpaceAccess
+{
+	int GetVal() { return 42; }
+}
+
+void Test()
+{
+	int X = MySpaceAccess::GetVal();
+}
+)"),
+			TEXT("Namespace access"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("NSP_Nested"),
-			TEXT("namespace Outer { namespace Inner { int Value = 1; } }"), TEXT("Nested namespaces"));
+			TEXT(R"(
+namespace Outer
+{
+	namespace Inner
+	{
+		int Value = 1;
+	}
+}
+)"),
+			TEXT("Nested namespaces"));
 
 		// Negative
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("NSN_Anonymous"),
-			TEXT("namespace { int X; }"), TEXT("Anonymous namespace"));
+			TEXT(R"(
+namespace { int X; }
+)"),
+			TEXT("Anonymous namespace"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("NSN_BadAccess"),
-			TEXT("namespace MySpaceBadAcc { int X = 1; } void Test() { int Y = MySpaceBadAcc::NonExistent; }"), TEXT("Non-existent member"));
+			TEXT(R"(
+namespace MySpaceBadAcc { int X = 1; }
+void Test() { int Y = MySpaceBadAcc::NonExistent; }
+)"),
+			TEXT("Non-existent member"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("NSN_NotExist"),
-			TEXT("void Test() { int X = FakeNamespace::Value; }"), TEXT("Non-existent namespace"));
+			TEXT(R"(
+void Test() { int X = FakeNamespace::Value; }
+)"),
+			TEXT("Non-existent namespace"));
 	}
 
 	// ====================================================================
@@ -312,28 +531,52 @@ int RefVar()      { int X = 5; int& Ref = X; Ref = 10; return X; }
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_BadType"),
-			TEXT("void Test() { NonExistentType X; }"), TEXT("Undeclared type"));
+			TEXT(R"(
+void Test() { NonExistentType X; }
+)"),
+			TEXT("Undeclared type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_Duplicate"),
-			TEXT("void Test() { int X = 1; int X = 2; }"), TEXT("Duplicate variable"));
+			TEXT(R"(
+void Test() { int X = 1; int X = 2; }
+)"),
+			TEXT("Duplicate variable"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_AutoNoInit"),
-			TEXT("void Test() { auto X; }"), TEXT("Auto without initializer"));
+			TEXT(R"(
+void Test() { auto X; }
+)"),
+			TEXT("Auto without initializer"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_ConstNoInit"),
-			TEXT("void Test() { const int X; }"), TEXT("Const without initializer"));
+			TEXT(R"(
+void Test() { const int X; }
+)"),
+			TEXT("Const without initializer"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_BadName"),
-			TEXT("void Test() { int 123abc = 0; }"), TEXT("Name starting with number"));
+			TEXT(R"(
+void Test() { int 123abc = 0; }
+)"),
+			TEXT("Name starting with number"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_Keyword"),
-			TEXT("void Test() { int class = 0; }"), TEXT("Keyword as variable name"));
+			TEXT(R"(
+void Test() { int class = 0; }
+)"),
+			TEXT("Keyword as variable name"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_VoidVar"),
-			TEXT("void Test() { void X; }"), TEXT("Void variable"));
+			TEXT(R"(
+void Test() { void X; }
+)"),
+			TEXT("Void variable"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_UseBefore"),
-			TEXT("void Test() { int Y = X; int X = 5; }"), TEXT("Use before declaration"));
+			TEXT(R"(
+void Test() { int Y = X; int X = 5; }
+)"),
+			TEXT("Use before declaration"));
 	}
 
 	// ====================================================================
@@ -346,22 +589,46 @@ int RefVar()      { int X = 5; int& Ref = X; Ref = 10; return X; }
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Void"),
-			TEXT("void Foo() { }"), TEXT("Void function"));
+			TEXT(R"(
+void Foo() { }
+)"),
+			TEXT("Void function"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Return"),
-			TEXT("int Add(int A, int B) { return A + B; }"), TEXT("Function with return"));
+			TEXT(R"(
+int Add(int A, int B) { return A + B; }
+)"),
+			TEXT("Function with return"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Default"),
-			TEXT("int Foo(int X = 5, float Y = 1.0f) { return X; }"), TEXT("Default parameters"));
+			TEXT(R"(
+int Foo(int X = 5, float Y = 1.0f) { return X; }
+)"),
+			TEXT("Default parameters"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Overload"),
-			TEXT("void Foo(int X) { } void Foo(float X) { } void Foo(int X, int Y) { }"), TEXT("Overloading"));
+			TEXT(R"(
+void Foo(int X) { }
+void Foo(float X) { }
+void Foo(int X, int Y) { }
+)"),
+			TEXT("Overloading"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Ref"),
-			TEXT("void Foo(int& Out) { Out = 42; }"), TEXT("Reference parameter"));
+			TEXT(R"(
+void Foo(int& Out) { Out = 42; }
+)"),
+			TEXT("Reference parameter"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Const"),
-			TEXT("struct FStructFuncConst { int X = 0; int Get() const { return X; } }"), TEXT("Const method"));
+			TEXT(R"(
+struct FStructFuncConst
+{
+	int X = 0;
+	int Get() const { return X; }
+}
+)"),
+			TEXT("Const method"));
 	}
 
 	TEST_METHOD(Function_Negative)
@@ -370,25 +637,47 @@ int RefVar()      { int X = 5; int& Ref = X; Ref = 10; return X; }
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_NoReturn"),
-			TEXT("Foo() { }"), TEXT("No return type"));
+			TEXT(R"(
+Foo() { }
+)"),
+			TEXT("No return type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_NoBody"),
-			TEXT("void Foo();"), TEXT("No body (non-interface)"));
+			TEXT(R"(
+void Foo();
+)"),
+			TEXT("No body (non-interface)"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_Duplicate"),
-			TEXT("void Foo(int X) { } void Foo(int X) { }"), TEXT("Duplicate signature"));
+			TEXT(R"(
+void Foo(int X) { }
+void Foo(int X) { }
+)"),
+			TEXT("Duplicate signature"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_BadDefault"),
-			TEXT("void Foo(int X = 5, int Y) { }"), TEXT("Non-default after default"));
+			TEXT(R"(
+void Foo(int X = 5, int Y) { }
+)"),
+			TEXT("Non-default after default"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_BadReturnType"),
-			TEXT("NonExistentType Foo() { }"), TEXT("Non-existent return type"));
+			TEXT(R"(
+NonExistentType Foo() { }
+)"),
+			TEXT("Non-existent return type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_BadParamType"),
-			TEXT("void Foo(NonExistentType X) { }"), TEXT("Non-existent param type"));
+			TEXT(R"(
+void Foo(NonExistentType X) { }
+)"),
+			TEXT("Non-existent param type"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_VoidParam"),
-			TEXT("void Foo(void X) { }"), TEXT("Void parameter"));
+			TEXT(R"(
+void Foo(void X) { }
+)"),
+			TEXT("Void parameter"));
 	}
 };
 

@@ -61,7 +61,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelDeclBasic"),
-			TEXT("delegate void FOnActionBasic(); class ADelDeclBasicActor : AActor { UPROPERTY() FOnActionBasic OnAction; }"),
+			TEXT(R"(
+delegate void FOnActionBasic();
+
+class ADelDeclBasicActor : AActor
+{
+	UPROPERTY()
+	FOnActionBasic OnAction;
+}
+)"),
 			TEXT("Basic delegate void declaration"));
 	}
 
@@ -71,7 +79,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelDeclParams"),
-			TEXT("delegate void FOnDamage(int Amount, AActor Instigator); class ADelDeclParamActor : AActor { UPROPERTY() FOnDamage OnDamage; }"),
+			TEXT(R"(
+delegate void FOnDamage(int Amount, AActor Instigator);
+
+class ADelDeclParamActor : AActor
+{
+	UPROPERTY()
+	FOnDamage OnDamage;
+}
+)"),
 			TEXT("Delegate with parameters"));
 	}
 
@@ -81,7 +97,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelDeclReturn"),
-			TEXT("delegate bool FValidateAction(int ActionId); class ADelDeclReturnActor : AActor { UPROPERTY() FValidateAction Validator; }"),
+			TEXT(R"(
+delegate bool FValidateAction(int ActionId);
+
+class ADelDeclReturnActor : AActor
+{
+	UPROPERTY()
+	FValidateAction Validator;
+}
+)"),
 			TEXT("Delegate with return type"));
 	}
 
@@ -91,7 +115,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelDeclEvent"),
-			TEXT("event void FOnHealthChanged(float NewHealth); class ADelDeclEventActor : AActor { UPROPERTY() FOnHealthChanged OnHealthChanged; }"),
+			TEXT(R"(
+event void FOnHealthChanged(float NewHealth);
+
+class ADelDeclEventActor : AActor
+{
+	UPROPERTY()
+	FOnHealthChanged OnHealthChanged;
+}
+)"),
 			TEXT("Basic event (multicast delegate) declaration"));
 	}
 
@@ -101,7 +133,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelDeclEventMulti"),
-			TEXT("event void FOnGameEvent(FString EventName, int Data, bool bImportant); class ADelDeclEventMultiActor : AActor { UPROPERTY() FOnGameEvent OnGameEvent; }"),
+			TEXT(R"(
+event void FOnGameEvent(FString EventName, int Data, bool bImportant);
+
+class ADelDeclEventMultiActor : AActor
+{
+	UPROPERTY()
+	FOnGameEvent OnGameEvent;
+}
+)"),
 			TEXT("Event with multiple parameters"));
 	}
 
@@ -115,7 +155,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclNoPrefix"),
-			TEXT("delegate void OnAction();"),
+			TEXT(R"(
+delegate void OnAction();
+)"),
 			TEXT("Delegate without F prefix should fail"));
 	}
 
@@ -125,7 +167,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclNoName"),
-			TEXT("delegate void ();"),
+			TEXT(R"(
+delegate void ();
+)"),
 			TEXT("Delegate without name should fail"));
 	}
 
@@ -135,7 +179,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclBadParam"),
-			TEXT("delegate void FOnActionBadParam(NonExistentType X);"),
+			TEXT(R"(
+delegate void FOnActionBadParam(NonExistentType X);
+)"),
 			TEXT("Delegate with invalid parameter type should fail"));
 	}
 
@@ -145,7 +191,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclEventNoPrefix"),
-			TEXT("event void OnChanged(int X);"),
+			TEXT(R"(
+event void OnChanged(int X);
+)"),
 			TEXT("Event without F prefix should fail"));
 	}
 
@@ -155,7 +203,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclDup"),
-			TEXT("delegate void FOnActionDup(); delegate void FOnActionDup(int X);"),
+			TEXT(R"(
+delegate void FOnActionDup();
+delegate void FOnActionDup(int X);
+)"),
 			TEXT("Duplicate delegate name should fail"));
 	}
 
@@ -165,7 +216,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclNoSemicolon"),
-			TEXT("delegate void FOnActionNoSemi()"),
+			TEXT(R"(
+delegate void FOnActionNoSemi()
+)"),
 			TEXT("Missing semicolon after delegate should fail"));
 	}
 
@@ -175,7 +228,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclWithBody"),
-			TEXT("delegate void FOnActionBody() { }"),
+			TEXT(R"(
+delegate void FOnActionBody() { }
+)"),
 			TEXT("Delegate with body should fail"));
 	}
 
@@ -185,7 +240,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclNested"),
-			TEXT("class ADelNestedActor : AActor { delegate void FOnActionNested(); }"),
+			TEXT(R"(
+class ADelNestedActor : AActor
+{
+	delegate void FOnActionNested();
+}
+)"),
 			TEXT("Nested delegate inside class should fail"));
 	}
 
@@ -195,7 +255,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclLocal"),
-			TEXT("class ADelLocalActor : AActor { void Foo() { delegate void FOnActionLocal(); } }"),
+			TEXT(R"(
+class ADelLocalActor : AActor
+{
+	void Foo()
+	{
+		delegate void FOnActionLocal();
+	}
+}
+)"),
 			TEXT("Delegate as local type inside function should fail"));
 	}
 
@@ -205,7 +273,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclEventReturn"),
-			TEXT("event int FOnChangedReturn();"),
+			TEXT(R"(
+event int FOnChangedReturn();
+)"),
 			TEXT("Event (multicast) with non-void return should fail"));
 	}
 
@@ -215,7 +285,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclEventBadParam"),
-			TEXT("event void FOnChangedBadParam(NonExistentType X);"),
+			TEXT(R"(
+event void FOnChangedBadParam(NonExistentType X);
+)"),
 			TEXT("Event with invalid parameter type should fail"));
 	}
 
@@ -225,7 +297,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelDeclNoParens"),
-			TEXT("delegate void FOnActionNoParens;"),
+			TEXT(R"(
+delegate void FOnActionNoParens;
+)"),
 			TEXT("Delegate without parentheses should fail"));
 	}
 
@@ -239,7 +313,22 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelBindUFunc"),
-			TEXT("delegate void FOnActionBind(); class ADelBindActor : AActor { UPROPERTY() FOnActionBind OnAction; void HandleAction() { } void Setup() { OnAction.BindUFunction(this, n\"HandleAction\"); } }"),
+			TEXT(R"(
+delegate void FOnActionBind();
+
+class ADelBindActor : AActor
+{
+	UPROPERTY()
+	FOnActionBind OnAction;
+
+	void HandleAction() { }
+
+	void Setup()
+	{
+		OnAction.BindUFunction(this, n"HandleAction");
+	}
+}
+)"),
 			TEXT("Bind unicast delegate with BindUFunction"));
 	}
 
@@ -249,7 +338,22 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelBindAddUFunc"),
-			TEXT("event void FOnChangedBind(int Val); class ADelBindAddActor : AActor { UPROPERTY() FOnChangedBind OnChanged; void HandleChanged(int Val) { } void Setup() { OnChanged.AddUFunction(this, n\"HandleChanged\"); } }"),
+			TEXT(R"(
+event void FOnChangedBind(int Val);
+
+class ADelBindAddActor : AActor
+{
+	UPROPERTY()
+	FOnChangedBind OnChanged;
+
+	void HandleChanged(int Val) { }
+
+	void Setup()
+	{
+		OnChanged.AddUFunction(this, n"HandleChanged");
+	}
+}
+)"),
 			TEXT("AddUFunction to multicast event"));
 	}
 
@@ -259,7 +363,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelBindExecute"),
-			TEXT("delegate void FOnActionExec(); class ADelExecActor : AActor { UPROPERTY() FOnActionExec OnAction; void Fire() { OnAction.ExecuteIfBound(); } }"),
+			TEXT(R"(
+delegate void FOnActionExec();
+
+class ADelExecActor : AActor
+{
+	UPROPERTY()
+	FOnActionExec OnAction;
+
+	void Fire()
+	{
+		OnAction.ExecuteIfBound();
+	}
+}
+)"),
 			TEXT("ExecuteIfBound on unicast delegate"));
 	}
 
@@ -269,7 +386,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DelBindBroadcast"),
-			TEXT("event void FOnChangedBroadcast(int Val); class ADelBroadcastActor : AActor { UPROPERTY() FOnChangedBroadcast OnChanged; void Fire() { OnChanged.Broadcast(42); } }"),
+			TEXT(R"(
+event void FOnChangedBroadcast(int Val);
+
+class ADelBroadcastActor : AActor
+{
+	UPROPERTY()
+	FOnChangedBroadcast OnChanged;
+
+	void Fire()
+	{
+		OnChanged.Broadcast(42);
+	}
+}
+)"),
 			TEXT("Broadcast multicast event"));
 	}
 
@@ -283,7 +413,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelBindBadArgCount"),
-			TEXT("event void FOnChangedBadArgCnt(int Val); class ADelBadArgCntActor : AActor { UPROPERTY() FOnChangedBadArgCnt OnChanged; void Fire() { OnChanged.Broadcast(); } }"),
+			TEXT(R"(
+event void FOnChangedBadArgCnt(int Val);
+
+class ADelBadArgCntActor : AActor
+{
+	UPROPERTY()
+	FOnChangedBadArgCnt OnChanged;
+
+	void Fire()
+	{
+		OnChanged.Broadcast();
+	}
+}
+)"),
 			TEXT("Broadcast with wrong argument count should fail"));
 	}
 
@@ -293,7 +436,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelBindBadArgType"),
-			TEXT("event void FOnChangedBadArgType(int Val); class ADelBadArgTypeActor : AActor { UPROPERTY() FOnChangedBadArgType OnChanged; void Fire() { OnChanged.Broadcast(\"hello\"); } }"),
+			TEXT(R"(
+event void FOnChangedBadArgType(int Val);
+
+class ADelBadArgTypeActor : AActor
+{
+	UPROPERTY()
+	FOnChangedBadArgType OnChanged;
+
+	void Fire()
+	{
+		OnChanged.Broadcast("hello");
+	}
+}
+)"),
 			TEXT("Broadcast with wrong argument type should fail"));
 	}
 
@@ -303,7 +459,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelBindUndeclared"),
-			TEXT("class ADelUndeclaredActor : AActor { UPROPERTY() FNonExistentDelegate OnAction; }"),
+			TEXT(R"(
+class ADelUndeclaredActor : AActor
+{
+	UPROPERTY()
+	FNonExistentDelegate OnAction;
+}
+)"),
 			TEXT("Using undeclared delegate type should fail"));
 	}
 
@@ -313,7 +475,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDelegateEventTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DelBindBadFunc"),
-			TEXT("delegate void FOnActionBadFunc(); class ADelBadFuncActor : AActor { UPROPERTY() FOnActionBadFunc OnAction; void Setup() { OnAction.BindUFunction(this, n\"NonExistentHandler\"); } }"),
+			TEXT(R"(
+delegate void FOnActionBadFunc();
+
+class ADelBadFuncActor : AActor
+{
+	UPROPERTY()
+	FOnActionBadFunc OnAction;
+
+	void Setup()
+	{
+		OnAction.BindUFunction(this, n"NonExistentHandler");
+	}
+}
+)"),
 			TEXT("Bind to non-existent function should fail"));
 	}
 };

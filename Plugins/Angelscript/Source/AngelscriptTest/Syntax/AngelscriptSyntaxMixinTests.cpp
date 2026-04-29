@@ -59,19 +59,64 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMixinTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMixBasicDecl"),
-			TEXT("mixin class UHealthMixinBasic { UPROPERTY() int Health = 100; void TakeDamage(int Amount) { Health -= Amount; } }"),
+			TEXT(R"(
+mixin class UHealthMixinBasic
+{
+	UPROPERTY()
+	int Health = 100;
+
+	void TakeDamage(int Amount)
+	{
+		Health -= Amount;
+	}
+}
+)"),
 			TEXT("Basic mixin declaration"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMixApply"),
-			TEXT("mixin class UHealthMixinApply { UPROPERTY() int Health = 100; } class AMixApplyActor : AActor { mixin UHealthMixinApply; }"),
+			TEXT(R"(
+mixin class UHealthMixinApply
+{
+	UPROPERTY()
+	int Health = 100;
+}
+
+class AMixApplyActor : AActor
+{
+	mixin UHealthMixinApply;
+}
+)"),
 			TEXT("Mixin applied to class"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMixMultiple"),
-			TEXT("mixin class UHealthMixinMulti { int Health = 100; } mixin class UMoveMixin { float Speed = 5.0f; } class AMixMultiActor : AActor { mixin UHealthMixinMulti; mixin UMoveMixin; }"),
+			TEXT(R"(
+mixin class UHealthMixinMulti
+{
+	int Health = 100;
+}
+
+mixin class UMoveMixin
+{
+	float Speed = 5.0f;
+}
+
+class AMixMultiActor : AActor
+{
+	mixin UHealthMixinMulti;
+	mixin UMoveMixin;
+}
+)"),
 			TEXT("Multiple mixins on one class"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMixMethod"),
-			TEXT("mixin class UCombatMixin { int Damage = 10; int GetDamage() { return Damage; } }"),
+			TEXT(R"(
+mixin class UCombatMixin
+{
+	int Damage = 10;
+
+	int GetDamage() { return Damage; }
+}
+)"),
 			TEXT("Mixin with method"));
 	}
 
@@ -85,43 +130,107 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMixinTest,
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixNoPrefix"),
-			TEXT("mixin class HealthMixin { int Health = 100; }"),
+			TEXT(R"(
+mixin class HealthMixin
+{
+	int Health = 100;
+}
+)"),
 			TEXT("Mixin without U prefix should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixNonExist"),
-			TEXT("class AMixNonExistActor : AActor { mixin UNonExistentMixin; }"),
+			TEXT(R"(
+class AMixNonExistActor : AActor
+{
+	mixin UNonExistentMixin;
+}
+)"),
 			TEXT("Using non-existent mixin should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixOnStruct"),
-			TEXT("mixin class UHealthMixinOnStruct { int Health = 100; } struct FMixStruct { mixin UHealthMixinOnStruct; }"),
+			TEXT(R"(
+mixin class UHealthMixinOnStruct
+{
+	int Health = 100;
+}
+
+struct FMixStruct
+{
+	mixin UHealthMixinOnStruct;
+}
+)"),
 			TEXT("Mixin on struct should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixDuplicate"),
-			TEXT("mixin class UHealthMixinDup { int Health = 100; } class AMixDupActor : AActor { mixin UHealthMixinDup; mixin UHealthMixinDup; }"),
+			TEXT(R"(
+mixin class UHealthMixinDup
+{
+	int Health = 100;
+}
+
+class AMixDupActor : AActor
+{
+	mixin UHealthMixinDup;
+	mixin UHealthMixinDup;
+}
+)"),
 			TEXT("Duplicate mixin application should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixGlobal"),
-			TEXT("mixin class UHealthMixinGlobal { int Health = 100; } mixin UHealthMixinGlobal;"),
+			TEXT(R"(
+mixin class UHealthMixinGlobal
+{
+	int Health = 100;
+}
+
+mixin UHealthMixinGlobal;
+)"),
 			TEXT("Mixin at global scope should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixNonMixin"),
-			TEXT("class ABaseMixN : AActor { } class AChildMixN : AActor { mixin ABaseMixN; }"),
+			TEXT(R"(
+class ABaseMixN : AActor { }
+
+class AChildMixN : AActor
+{
+	mixin ABaseMixN;
+}
+)"),
 			TEXT("Using non-mixin class as mixin should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixInheritMixin"),
-			TEXT("mixin class UBaseMixin { int X = 0; } mixin class UChildMixin : UBaseMixin { int Y = 0; }"),
+			TEXT(R"(
+mixin class UBaseMixin { int X = 0; }
+mixin class UChildMixin : UBaseMixin { int Y = 0; }
+)"),
 			TEXT("Mixin inheriting mixin should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixUPropNonActor"),
-			TEXT("mixin class UHealthMixinUPropN { UPROPERTY() int Health = 100; } class FMyPlainClass { mixin UHealthMixinUPropN; }"),
+			TEXT(R"(
+mixin class UHealthMixinUPropN
+{
+	UPROPERTY()
+	int Health = 100;
+}
+
+class FMyPlainClass
+{
+	mixin UHealthMixinUPropN;
+}
+)"),
 			TEXT("Mixin with UPROPERTY on non-actor should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixCircular"),
-			TEXT("mixin class UMixinA { mixin UMixinB; } mixin class UMixinB { mixin UMixinA; }"),
+			TEXT(R"(
+mixin class UMixinA { mixin UMixinB; }
+mixin class UMixinB { mixin UMixinA; }
+)"),
 			TEXT("Circular mixin reference should fail"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixTypo"),
-			TEXT("mixn class UBadMixin { int X = 0; }"),
+			TEXT(R"(
+mixn class UBadMixin { int X = 0; }
+)"),
 			TEXT("Mixin keyword typo should fail"));
 	}
 };

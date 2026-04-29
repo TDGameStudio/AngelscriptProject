@@ -61,27 +61,84 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxPropertyAccessorTest,
 
 		// Property with getter
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxPAGet"),
-			TEXT("class AActorPAGet : AActor { private int _Health = 100; int get_Health() const property { return _Health; } }"),
+			TEXT(R"(
+class AActorPAGet : AActor
+{
+	private int _Health = 100;
+
+	int get_Health() const property
+	{
+		return _Health;
+	}
+}
+)"),
 			TEXT("Property with getter"));
 
 		// Property with setter
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxPASet"),
-			TEXT("class AActorPASet : AActor { private int _Health = 100; void set_Health(int Value) property { _Health = Value; } }"),
+			TEXT(R"(
+class AActorPASet : AActor
+{
+	private int _Health = 100;
+
+	void set_Health(int Value) property
+	{
+		_Health = Value;
+	}
+}
+)"),
 			TEXT("Property with setter"));
 
 		// Property with both getter and setter
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxPABoth"),
-			TEXT("class AActorPABoth : AActor { private int _Health = 100; int get_Health() const property { return _Health; } void set_Health(int Value) property { _Health = Value; } }"),
+			TEXT(R"(
+class AActorPABoth : AActor
+{
+	private int _Health = 100;
+
+	int get_Health() const property
+	{
+		return _Health;
+	}
+
+	void set_Health(int Value) property
+	{
+		_Health = Value;
+	}
+}
+)"),
 			TEXT("Property with getter and setter"));
 
 		// Using property accessor
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxPAUsage"),
-			TEXT("class AActorPAUsage : AActor { private int _X = 0; int get_X() const property { return _X; } void set_X(int V) property { _X = V; } void Test() { X = 5; int Y = X; } }"),
+			TEXT(R"(
+class AActorPAUsage : AActor
+{
+	private int _X = 0;
+
+	int get_X() const property { return _X; }
+	void set_X(int V) property { _X = V; }
+
+	void Test()
+	{
+		X = 5;
+		int Y = X;
+	}
+}
+)"),
 			TEXT("Using property accessor syntax"));
 
 		// Float property accessor
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxPAFloat"),
-			TEXT("class AActorPAFloat : AActor { private float _Speed = 1.0f; float get_Speed() const property { return _Speed; } void set_Speed(float V) property { _Speed = V; } }"),
+			TEXT(R"(
+class AActorPAFloat : AActor
+{
+	private float _Speed = 1.0f;
+
+	float get_Speed() const property { return _Speed; }
+	void set_Speed(float V) property { _Speed = V; }
+}
+)"),
 			TEXT("Float property accessor"));
 	}
 
@@ -96,52 +153,115 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxPropertyAccessorTest,
 
 		// Getter with wrong return type (void)
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPAGetVoid"),
-			TEXT("class AActorPAGetVoid : AActor { void get_Health() const property { } }"),
+			TEXT(R"(
+class AActorPAGetVoid : AActor
+{
+	void get_Health() const property { }
+}
+)"),
 			TEXT("Getter returning void should fail"));
 
 		// Setter with wrong param count
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPASetBadParams"),
-			TEXT("class AActorPASetBadP : AActor { void set_Health(int A, int B) property { } }"),
+			TEXT(R"(
+class AActorPASetBadP : AActor
+{
+	void set_Health(int A, int B) property { }
+}
+)"),
 			TEXT("Setter with two params should fail"));
 
 		// Setter with non-void return
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPASetReturn"),
-			TEXT("class AActorPASetRet : AActor { int set_Health(int V) property { return V; } }"),
+			TEXT(R"(
+class AActorPASetRet : AActor
+{
+	int set_Health(int V) property { return V; }
+}
+)"),
 			TEXT("Setter with non-void return should fail"));
 
 		// Getter/setter type mismatch
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPATypeMismatch"),
-			TEXT("class AActorPATypeMis : AActor { int get_Health() const property { return 0; } void set_Health(float V) property { } }"),
+			TEXT(R"(
+class AActorPATypeMis : AActor
+{
+	int get_Health() const property { return 0; }
+	void set_Health(float V) property { }
+}
+)"),
 			TEXT("Getter/setter type mismatch should fail"));
 
 		// Writing to read-only property (no setter)
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPAReadOnly"),
-			TEXT("class AActorPAReadOnly : AActor { int get_Health() const property { return 100; } void Test() { Health = 50; } }"),
+			TEXT(R"(
+class AActorPAReadOnly : AActor
+{
+	int get_Health() const property { return 100; }
+
+	void Test()
+	{
+		Health = 50;
+	}
+}
+)"),
 			TEXT("Writing to read-only property should fail"));
 
 		// Property accessor at global scope
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPAGlobal"),
-			TEXT("int get_GlobalProp() property { return 0; }"),
+			TEXT(R"(
+int get_GlobalProp() property { return 0; }
+)"),
 			TEXT("Property accessor at global scope should fail"));
 
 		// Getter with parameters
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPAGetWithParams"),
-			TEXT("class AActorPAGetParams : AActor { int get_Health(int Index) const property { return 0; } }"),
+			TEXT(R"(
+class AActorPAGetParams : AActor
+{
+	int get_Health(int Index) const property { return 0; }
+}
+)"),
 			TEXT("Getter with parameters should fail"));
 
 		// Accessor without property keyword
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPANoPropKeyword"),
-			TEXT("class AActorPANoProp : AActor { int get_Health() const { return 0; } void Test() { int X = Health; } }"),
+			TEXT(R"(
+class AActorPANoProp : AActor
+{
+	int get_Health() const { return 0; }
+
+	void Test()
+	{
+		int X = Health;
+	}
+}
+)"),
 			TEXT("Accessor without property keyword should fail"));
 
 		// Setter without parameter
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPASetNoParam"),
-			TEXT("class AActorPASetNoP : AActor { void set_Health() property { } }"),
+			TEXT(R"(
+class AActorPASetNoP : AActor
+{
+	void set_Health() property { }
+}
+)"),
 			TEXT("Setter without parameter should fail"));
 
 		// Reading from write-only property (no getter)
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxPAWriteOnly"),
-			TEXT("class AActorPAWriteOnly : AActor { void set_Health(int V) property { } void Test() { int X = Health; } }"),
+			TEXT(R"(
+class AActorPAWriteOnly : AActor
+{
+	void set_Health(int V) property { }
+
+	void Test()
+	{
+		int X = Health;
+	}
+}
+)"),
 			TEXT("Reading from write-only property should fail"));
 	}
 };

@@ -109,61 +109,81 @@ int MixedTypes()   { float X = 1 + 2.0f; return int(X * 10); }
 		// Type mismatch: string + int
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_StrPlusInt"),
-			TEXT("void Test() { int X = \"hello\" + 1; }"),
+			TEXT(R"(
+void Test() { int X = "hello" + 1; }
+)"),
 			TEXT("String + int type mismatch"));
 
 		// Bool arithmetic
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_BoolAdd"),
-			TEXT("void Test() { bool A = true; bool B = false; int X = A + B; }"),
+			TEXT(R"(
+void Test() { bool A = true; bool B = false; int X = A + B; }
+)"),
 			TEXT("Bool addition"));
 
 		// Float modulo
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_FloatMod"),
-			TEXT("void Test() { float X = 10.0f % 3.0f; }"),
+			TEXT(R"(
+void Test() { float X = 10.0f % 3.0f; }
+)"),
 			TEXT("Float modulo"));
 
 		// Missing operand
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_MissingOp"),
-			TEXT("void Test() { int X = 1 + ; }"),
+			TEXT(R"(
+void Test() { int X = 1 + ; }
+)"),
 			TEXT("Missing right operand"));
 
 		// Increment on literal
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_IncLiteral"),
-			TEXT("void Test() { ++5; }"),
+			TEXT(R"(
+void Test() { ++5; }
+)"),
 			TEXT("Increment on literal"));
 
 		// Increment on const
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_IncConst"),
-			TEXT("void Test() { const int X = 5; ++X; }"),
+			TEXT(R"(
+void Test() { const int X = 5; ++X; }
+)"),
 			TEXT("Increment on const"));
 
 		// Double operator
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_DoubleOp"),
-			TEXT("void Test() { int X = 1 ++ 2; }"),
+			TEXT(R"(
+void Test() { int X = 1 ++ 2; }
+)"),
 			TEXT("Double operator in expression"));
 
 		// Assign to expression result
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_AssignExpr"),
-			TEXT("void Test() { int A = 1; int B = 2; (A + B) = 5; }"),
+			TEXT(R"(
+void Test() { int A = 1; int B = 2; (A + B) = 5; }
+)"),
 			TEXT("Assign to expression result"));
 
 		// Unary plus on string
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_UnaryPlusStr"),
-			TEXT("void Test() { FString S = +\"hello\"; }"),
+			TEXT(R"(
+void Test() { FString S = +"hello"; }
+)"),
 			TEXT("Unary plus on string"));
 
 		// Multiply string by int
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ArithN_StrMulInt"),
-			TEXT("void Test() { auto S = \"abc\" * 3; }"),
+			TEXT(R"(
+void Test() { auto S = "abc" * 3; }
+)"),
 			TEXT("String * int"));
 	}
 
@@ -211,37 +231,51 @@ int Compound()    { return (0xFF & 0x0F) | (0xF0 ^ 0x0F); }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_AndFloat"),
-			TEXT("void Test() { float X = 1.0f & 2.0f; }"),
+			TEXT(R"(
+void Test() { float X = 1.0f & 2.0f; }
+)"),
 			TEXT("Bitwise AND on float"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_OrFloat"),
-			TEXT("void Test() { float X = 1.0f | 2.0f; }"),
+			TEXT(R"(
+void Test() { float X = 1.0f | 2.0f; }
+)"),
 			TEXT("Bitwise OR on float"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_ShiftFloat"),
-			TEXT("void Test() { float X = 1.0f << 2; }"),
+			TEXT(R"(
+void Test() { float X = 1.0f << 2; }
+)"),
 			TEXT("Shift on float"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_NotStr"),
-			TEXT("void Test() { auto S = ~\"hello\"; }"),
+			TEXT(R"(
+void Test() { auto S = ~"hello"; }
+)"),
 			TEXT("Bitwise NOT on string"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_MissingOp"),
-			TEXT("void Test() { int X = 0xFF & ; }"),
+			TEXT(R"(
+void Test() { int X = 0xFF & ; }
+)"),
 			TEXT("Missing operand in bitwise AND"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_XorBool"),
-			TEXT("void Test() { bool A = true; bool B = false; int X = A ^ B; }"),
+			TEXT(R"(
+void Test() { bool A = true; bool B = false; int X = A ^ B; }
+)"),
 			TEXT("Bitwise XOR on bool"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("BitN_ShiftStr"),
-			TEXT("void Test() { auto X = \"abc\" >> 2; }"),
+			TEXT(R"(
+void Test() { auto X = "abc" >> 2; }
+)"),
 			TEXT("Shift on string"));
 	}
 
@@ -285,32 +319,44 @@ int ShortCircuit()  { bool A = false; return (A && (1/0 > 0)) ? 1 : 0; }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_AndInt"),
-			TEXT("void Test() { int X = 1 && 2; }"),
+			TEXT(R"(
+void Test() { int X = 1 && 2; }
+)"),
 			TEXT("Logical AND on integers"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_NotInt"),
-			TEXT("void Test() { int X = !5; }"),
+			TEXT(R"(
+void Test() { int X = !5; }
+)"),
 			TEXT("Logical NOT on integer"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_Missing"),
-			TEXT("void Test() { bool X = true && ; }"),
+			TEXT(R"(
+void Test() { bool X = true && ; }
+)"),
 			TEXT("Missing right operand"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_TripleAnd"),
-			TEXT("void Test() { bool X = true &&& false; }"),
+			TEXT(R"(
+void Test() { bool X = true &&& false; }
+)"),
 			TEXT("Triple & is invalid"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_OrStr"),
-			TEXT("void Test() { auto X = \"a\" || \"b\"; }"),
+			TEXT(R"(
+void Test() { auto X = "a" || "b"; }
+)"),
 			TEXT("Logical OR on strings"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("LogicN_AndFloat"),
-			TEXT("void Test() { bool X = 1.0f && 2.0f; }"),
+			TEXT(R"(
+void Test() { bool X = 1.0f && 2.0f; }
+)"),
 			TEXT("Logical AND on floats"));
 	}
 
@@ -360,27 +406,37 @@ int FloatCompare()  { return (1.5f > 1.0f) ? 1 : 0; }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("CmpN_StrLtInt"),
-			TEXT("void Test() { bool X = (\"hello\" < 5); }"),
+			TEXT(R"(
+void Test() { bool X = ("hello" < 5); }
+)"),
 			TEXT("Comparing string to int"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("CmpN_Missing"),
-			TEXT("void Test() { bool X = (1 == ); }"),
+			TEXT(R"(
+void Test() { bool X = (1 == ); }
+)"),
 			TEXT("Missing right operand"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("CmpN_TripleEq"),
-			TEXT("void Test() { bool X = (1 === 1); }"),
+			TEXT(R"(
+void Test() { bool X = (1 === 1); }
+)"),
 			TEXT("Triple equals not valid"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("CmpN_VecLtVec"),
-			TEXT("void Test() { bool X = FVector(1,0,0) < FVector(0,1,0); }"),
+			TEXT(R"(
+void Test() { bool X = FVector(1,0,0) < FVector(0,1,0); }
+)"),
 			TEXT("Comparing vectors with <"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("CmpN_BoolLtBool"),
-			TEXT("void Test() { bool X = (true < false); }"),
+			TEXT(R"(
+void Test() { bool X = (true < false); }
+)"),
 			TEXT("Comparing booleans with <"));
 	}
 
@@ -436,47 +492,66 @@ int ShiftRAssign()   { int X = 16; X >>= 2; return X; }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_Const"),
-			TEXT("void Test() { const int X = 5; X = 10; }"),
+			TEXT(R"(
+void Test() { const int X = 5; X = 10; }
+)"),
 			TEXT("Assignment to const"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_Literal"),
-			TEXT("void Test() { 5 = 10; }"),
+			TEXT(R"(
+void Test() { 5 = 10; }
+)"),
 			TEXT("Assignment to literal"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_TypeMismatch"),
-			TEXT("void Test() { int X = 0; X = \"hello\"; }"),
+			TEXT(R"(
+void Test() { int X = 0; X = "hello"; }
+)"),
 			TEXT("String assigned to int"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_AddAssignType"),
-			TEXT("void Test() { int X = 0; X += \"hello\"; }"),
+			TEXT(R"(
+void Test() { int X = 0; X += "hello"; }
+)"),
 			TEXT("Add-assign string to int"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_FuncResult"),
-			TEXT("int Foo() { return 1; } void Test() { Foo() = 5; }"),
+			TEXT(R"(
+int Foo() { return 1; }
+void Test() { Foo() = 5; }
+)"),
 			TEXT("Assign to function return"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_Undeclared"),
-			TEXT("void Test() { UndeclaredVar = 5; }"),
+			TEXT(R"(
+void Test() { UndeclaredVar = 5; }
+)"),
 			TEXT("Assign to undeclared variable"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_ExprLhs"),
-			TEXT("void Test() { int X = 0; int Y = 0; (X + Y) = 5; }"),
+			TEXT(R"(
+void Test() { int X = 0; int Y = 0; (X + Y) = 5; }
+)"),
 			TEXT("Assign to expression"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_ShiftAssignFloat"),
-			TEXT("void Test() { float X = 1.0f; X <<= 2; }"),
+			TEXT(R"(
+void Test() { float X = 1.0f; X <<= 2; }
+)"),
 			TEXT("Shift-assign on float"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("AssignN_ModAssignFloat"),
-			TEXT("void Test() { float X = 1.0f; X %= 2.0f; }"),
+			TEXT(R"(
+void Test() { float X = 1.0f; X %= 2.0f; }
+)"),
 			TEXT("Mod-assign on float"));
 	}
 
@@ -518,32 +593,44 @@ int FalseCondition() { return false ? 100 : 200; }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_NonBool"),
-			TEXT("void Test() { int X = 5 ? 1 : 0; }"),
+			TEXT(R"(
+void Test() { int X = 5 ? 1 : 0; }
+)"),
 			TEXT("Non-bool ternary condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_TypeMismatch"),
-			TEXT("void Test() { auto X = true ? 1 : \"hello\"; }"),
+			TEXT(R"(
+void Test() { auto X = true ? 1 : "hello"; }
+)"),
 			TEXT("Ternary branch type mismatch"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_NoColon"),
-			TEXT("void Test() { int X = true ? 1; }"),
+			TEXT(R"(
+void Test() { int X = true ? 1; }
+)"),
 			TEXT("Ternary without colon"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_NoTrue"),
-			TEXT("void Test() { int X = true ? : 0; }"),
+			TEXT(R"(
+void Test() { int X = true ? : 0; }
+)"),
 			TEXT("Ternary without true branch"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_FloatCond"),
-			TEXT("void Test() { int X = 1.0f ? 1 : 0; }"),
+			TEXT(R"(
+void Test() { int X = 1.0f ? 1 : 0; }
+)"),
 			TEXT("Float as ternary condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("TernN_StrCond"),
-			TEXT("void Test() { int X = \"yes\" ? 1 : 0; }"),
+			TEXT(R"(
+void Test() { int X = "yes" ? 1 : 0; }
+)"),
 			TEXT("String as ternary condition"));
 	}
 
@@ -579,22 +666,30 @@ int AssignInExpr() { int X = 0; int Y = (X = 5); return Y; }
 		// Negative edge cases
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("EdgeN_UnmatchedParen"),
-			TEXT("void Test() { int X = (1 + 2; }"),
+			TEXT(R"(
+void Test() { int X = (1 + 2; }
+)"),
 			TEXT("Unmatched parenthesis"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("EdgeN_EmptyParens"),
-			TEXT("void Test() { int X = (); }"),
+			TEXT(R"(
+void Test() { int X = (); }
+)"),
 			TEXT("Empty parentheses as value"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("EdgeN_TrailingOp"),
-			TEXT("void Test() { int X = 1 +; }"),
+			TEXT(R"(
+void Test() { int X = 1 +; }
+)"),
 			TEXT("Trailing operator"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("EdgeN_LeadingOp"),
-			TEXT("void Test() { int X = * 2; }"),
+			TEXT(R"(
+void Test() { int X = * 2; }
+)"),
 			TEXT("Leading binary operator"));
 	}
 };

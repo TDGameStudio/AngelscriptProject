@@ -93,37 +93,51 @@ int Complex()      { int A = 1; int B = 2; if (A > 0 && B > 0) { return A + B; }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_NonBool"),
-			TEXT("void Test() { if (5) { } }"),
+			TEXT(R"(
+void Test() { if (5) { } }
+)"),
 			TEXT("Non-bool condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_NoParen"),
-			TEXT("void Test() { if true { } }"),
+			TEXT(R"(
+void Test() { if true { } }
+)"),
 			TEXT("Missing parentheses"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_Empty"),
-			TEXT("void Test() { if () { } }"),
+			TEXT(R"(
+void Test() { if () { } }
+)"),
 			TEXT("Empty condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_ElseNoIf"),
-			TEXT("void Test() { else { } }"),
+			TEXT(R"(
+void Test() { else { } }
+)"),
 			TEXT("Else without if"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_IntCond"),
-			TEXT("void Test() { int X = 0; if (X) { } }"),
+			TEXT(R"(
+void Test() { int X = 0; if (X) { } }
+)"),
 			TEXT("Integer as condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_FloatCond"),
-			TEXT("void Test() { if (1.0f) { } }"),
+			TEXT(R"(
+void Test() { if (1.0f) { } }
+)"),
 			TEXT("Float as condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("IfN_StringCond"),
-			TEXT("void Test() { if (\"hello\") { } }"),
+			TEXT(R"(
+void Test() { if ("hello") { } }
+)"),
 			TEXT("String as condition"));
 	}
 
@@ -167,27 +181,37 @@ int CompoundStep() { int S = 0; for (int I = 0; I < 100; I += 25) { ++S; } retur
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForN_NoSemicolon"),
-			TEXT("void Test() { for (int I = 0 I < 10 ++I) { } }"),
+			TEXT(R"(
+void Test() { for (int I = 0 I < 10 ++I) { } }
+)"),
 			TEXT("For without semicolons"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForN_NonBoolCond"),
-			TEXT("void Test() { for (int I = 0; I; ++I) { } }"),
+			TEXT(R"(
+void Test() { for (int I = 0; I; ++I) { } }
+)"),
 			TEXT("Non-bool condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForN_NoParen"),
-			TEXT("void Test() { for int I = 0; I < 10; ++I { } }"),
+			TEXT(R"(
+void Test() { for int I = 0; I < 10; ++I { } }
+)"),
 			TEXT("For without parentheses"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForN_TooFew"),
-			TEXT("void Test() { for (int I = 0; I < 10) { } }"),
+			TEXT(R"(
+void Test() { for (int I = 0; I < 10) { } }
+)"),
 			TEXT("For with only two clauses"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForN_VarAfterLoop"),
-			TEXT("void Test() { for (int I = 0; I < 5; ++I) { } int X = I; }"),
+			TEXT(R"(
+void Test() { for (int I = 0; I < 5; ++I) { } int X = I; }
+)"),
 			TEXT("Access loop var after loop"));
 	}
 
@@ -231,32 +255,44 @@ int Nested()      { int S = 0; int I = 0; while (I < 3) { int J = 0; while (J < 
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_NonBool"),
-			TEXT("void Test() { while (5) { } }"),
+			TEXT(R"(
+void Test() { while (5) { } }
+)"),
 			TEXT("Non-bool while condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_NoParen"),
-			TEXT("void Test() { while true { } }"),
+			TEXT(R"(
+void Test() { while true { } }
+)"),
 			TEXT("While without parentheses"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_Empty"),
-			TEXT("void Test() { while () { } }"),
+			TEXT(R"(
+void Test() { while () { } }
+)"),
 			TEXT("While with empty condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_DoNoSemi"),
-			TEXT("void Test() { do { } while (true) }"),
+			TEXT(R"(
+void Test() { do { } while (true) }
+)"),
 			TEXT("Do-while missing semicolon"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_IntCond"),
-			TEXT("void Test() { int X = 1; while (X) { break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; while (X) { break; } }
+)"),
 			TEXT("Integer as while condition"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("WhileN_DoIntCond"),
-			TEXT("void Test() { do { } while (1); }"),
+			TEXT(R"(
+void Test() { do { } while (1); }
+)"),
 			TEXT("Integer as do-while condition"));
 	}
 
@@ -298,37 +334,51 @@ int DefaultOnly()  { int X = 42; switch(X) { default: return 100; } }
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_DupCase"),
-			TEXT("void Test() { int X = 1; switch(X) { case 1: break; case 1: break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; switch(X) { case 1: break; case 1: break; } }
+)"),
 			TEXT("Duplicate case labels"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_NonConst"),
-			TEXT("void Test() { int X = 1; int Y = 2; switch(X) { case Y: break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; int Y = 2; switch(X) { case Y: break; } }
+)"),
 			TEXT("Non-constant case expression"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_MultiDefault"),
-			TEXT("void Test() { int X = 1; switch(X) { default: break; default: break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; switch(X) { default: break; default: break; } }
+)"),
 			TEXT("Multiple default labels"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_CaseOutside"),
-			TEXT("void Test() { case 1: int X = 0; }"),
+			TEXT(R"(
+void Test() { case 1: int X = 0; }
+)"),
 			TEXT("Case label outside switch"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_NoBrace"),
-			TEXT("void Test() { int X = 1; switch(X) case 0: break; }"),
+			TEXT(R"(
+void Test() { int X = 1; switch(X) case 0: break; }
+)"),
 			TEXT("Switch without braces"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_FloatCase"),
-			TEXT("void Test() { int X = 1; switch(X) { case 1.5f: break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; switch(X) { case 1.5f: break; } }
+)"),
 			TEXT("Float as case value"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("SwitchN_StrCase"),
-			TEXT("void Test() { int X = 1; switch(X) { case \"hello\": break; } }"),
+			TEXT(R"(
+void Test() { int X = 1; switch(X) { case "hello": break; } }
+)"),
 			TEXT("String as case value for int switch"));
 	}
 
@@ -343,31 +393,46 @@ int DefaultOnly()  { int X = 42; switch(X) { default: return 100; } }
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
 			TEXT("BCN_BreakOutside"),
-			TEXT("void Test() { break; }"),
+			TEXT(R"(
+void Test() { break; }
+)"),
 			TEXT("Invalid 'break'"),
 			TEXT("Break outside loop"));
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
 			TEXT("BCN_ContinueOutside"),
-			TEXT("void Test() { continue; }"),
+			TEXT(R"(
+void Test() { continue; }
+)"),
 			TEXT("Invalid 'continue'"),
 			TEXT("Continue outside loop"));
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
 			TEXT("BCN_BreakInIf"),
-			TEXT("void Test() { if (true) { break; } }"),
+			TEXT(R"(
+void Test() { if (true) { break; } }
+)"),
 			TEXT("Invalid 'break'"),
 			TEXT("Break in if but not loop"));
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
 			TEXT("BCN_ContinueInIf"),
-			TEXT("void Test() { if (true) { continue; } }"),
+			TEXT(R"(
+void Test() { if (true) { continue; } }
+)"),
 			TEXT("Invalid 'continue'"),
 			TEXT("Continue in if but not loop"));
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
 			TEXT("BCN_BreakInFunc"),
-			TEXT("void Foo() { break; } void Test() { for(int I=0;I<5;++I) { Foo(); } }"),
+			TEXT(R"(
+void Foo() { break; }
+
+void Test()
+{
+	for(int I=0;I<5;++I) { Foo(); }
+}
+)"),
 			TEXT("Invalid 'break'"),
 			TEXT("Break inside function called from loop"));
 	}
@@ -431,27 +496,37 @@ int ForeachContinue()
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForeachN_NonIter"),
-			TEXT("void Test() { int X = 5; for (int Val : X) { } }"),
+			TEXT(R"(
+void Test() { int X = 5; for (int Val : X) { } }
+)"),
 			TEXT("Foreach over non-iterable"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForeachN_TypeMismatch"),
-			TEXT("void Test() { TArray<int> Arr; for (FString Val : Arr) { } }"),
+			TEXT(R"(
+void Test() { TArray<int> Arr; for (FString Val : Arr) { } }
+)"),
 			TEXT("Foreach element type mismatch"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForeachN_NoColon"),
-			TEXT("void Test() { TArray<int> Arr; for (int Val Arr) { } }"),
+			TEXT(R"(
+void Test() { TArray<int> Arr; for (int Val Arr) { } }
+)"),
 			TEXT("Foreach missing colon"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForeachN_OverInt"),
-			TEXT("void Test() { for (int Val : 42) { } }"),
+			TEXT(R"(
+void Test() { for (int Val : 42) { } }
+)"),
 			TEXT("Foreach over literal int"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("ForeachN_OverStr"),
-			TEXT("void Test() { for (int Val : \"hello\") { } }"),
+			TEXT(R"(
+void Test() { for (int Val : "hello") { } }
+)"),
 			TEXT("Foreach over string literal"));
 	}
 
@@ -467,38 +542,52 @@ int ForeachContinue()
 		// Positive
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine,
 			TEXT("RetP_Void"),
-			TEXT("void Test() { return; }"),
+			TEXT(R"(
+void Test() { return; }
+)"),
 			TEXT("Return void"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine,
 			TEXT("RetP_Int"),
-			TEXT("int Test() { return 42; }"),
+			TEXT(R"(
+int Test() { return 42; }
+)"),
 			TEXT("Return int"));
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine,
 			TEXT("RetP_Expr"),
-			TEXT("int Test() { int X = 5; return X * 2 + 1; }"),
+			TEXT(R"(
+int Test() { int X = 5; return X * 2 + 1; }
+)"),
 			TEXT("Return expression"));
 
 		// Negative
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("RetN_TypeMismatch"),
-			TEXT("int Test() { return \"hello\"; }"),
+			TEXT(R"(
+int Test() { return "hello"; }
+)"),
 			TEXT("Return type mismatch"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("RetN_ValueInVoid"),
-			TEXT("void Test() { return 5; }"),
+			TEXT(R"(
+void Test() { return 5; }
+)"),
 			TEXT("Return value in void function"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("RetN_MissingValue"),
-			TEXT("int Test() { return; }"),
+			TEXT(R"(
+int Test() { return; }
+)"),
 			TEXT("Missing return value in non-void"));
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
 			TEXT("RetN_FloatAsInt"),
-			TEXT("int Test() { return 3.14f; }"),
+			TEXT(R"(
+int Test() { return 3.14f; }
+)"),
 			TEXT("Return float for int function"));
 	}
 };
