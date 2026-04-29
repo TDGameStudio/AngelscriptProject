@@ -7,6 +7,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/GarbageCollection.h"
+#include "UObject/ReferenceChainSearch.h"
 
 // Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
@@ -20,6 +21,26 @@ namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private
 	void InitializeGCTestCaseSpawner(FActorTestSpawner& Spawner)
 	{
 		Spawner.InitializeGameSubsystems();
+	}
+
+	void LogReferenceChainIfAlive(FAutomationTestBase& Test, const UObject* Obj, const TCHAR* Context)
+	{
+		if (!Obj)
+		{
+			return;
+		}
+		FReferenceChainSearch Search(const_cast<UObject*>(Obj), EReferenceChainSearchMode::Shortest);
+		FString ChainReport = Search.GetRootPath();
+		if (ChainReport.IsEmpty())
+		{
+			Test.AddWarning(FString::Printf(TEXT("[GC Diagnostic] %s: object %s still alive but no external reference chain found (may be held by internal root)"),
+				Context, *Obj->GetPathName()));
+		}
+		else
+		{
+			Test.AddWarning(FString::Printf(TEXT("[GC Diagnostic] %s: object %s still alive. Reference chain:\n%s"),
+				Context, *Obj->GetPathName(), *ChainReport));
+		}
 	}
 
 	template <typename ComponentType = UActorComponent>
@@ -114,6 +135,10 @@ class ATestGCActorDestroy : AActor
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 	CollectGarbage(RF_NoFlags, true);
 
+	if (WeakActor.IsValid())
+	{
+		LogReferenceChainIfAlive(*this, WeakActor.Get(), TEXT("GC.ActorDestroy"));
+	}
 	TestTrue(TEXT("TestCase GC actor destroy should complete without leaving a live actor reference"), !WeakActor.IsValid());
 	ASTEST_END_SHARE_CLEAN
 
@@ -162,6 +187,10 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 	TickWorld(Engine, Spawner.GetWorld(), 0.0f, 1);
 	CollectGarbage(RF_NoFlags, true);
 
+	if (WeakComponent.IsValid())
+	{
+		LogReferenceChainIfAlive(*this, WeakComponent.Get(), TEXT("GC.ComponentDestroy"));
+	}
 	TestTrue(TEXT("TestCase GC component destroy should complete without leaving a live component reference"), !WeakComponent.IsValid());
 	ASTEST_END_SHARE_CLEAN
 
@@ -233,6 +262,19 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 	}
 
 	CollectGarbage(RF_NoFlags, true);
+
+	if (WeakWorld.IsValid())
+	{
+		LogReferenceChainIfAlive(*this, WeakWorld.Get(), TEXT("GC.WorldTeardown.World"));
+	}
+	if (WeakActor.IsValid())
+	{
+		LogReferenceChainIfAlive(*this, WeakActor.Get(), TEXT("GC.WorldTeardown.Actor"));
+	}
+	if (WeakComponent.IsValid())
+	{
+		LogReferenceChainIfAlive(*this, WeakComponent.Get(), TEXT("GC.WorldTeardown.Component"));
+	}
 	TestTrue(TEXT("TestCase GC world teardown should release the world after scope cleanup"), !WeakWorld.IsValid());
 	TestTrue(TEXT("TestCase GC world teardown should release spawned actors after scope cleanup"), !WeakActor.IsValid());
 	TestTrue(TEXT("TestCase GC world teardown should release spawned components after scope cleanup"), !WeakComponent.IsValid());

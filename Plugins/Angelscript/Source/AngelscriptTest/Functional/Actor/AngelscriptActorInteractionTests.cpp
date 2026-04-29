@@ -396,6 +396,103 @@ class ATestOverlapTrigger : AActor
 		}
 	}
 
+	TEST_METHOD(ActorEndOverlap)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestActorEndOverlap"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ReceiverClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestActorEndOverlap.as"),
+			TEXT(R"AS(
+UCLASS()
+class ATestEndOverlapReceiver : AActor
+{
+	UPROPERTY()
+	int EventCallCount = 0;
+
+	UPROPERTY()
+	AActor LastActorRef = nullptr;
+
+	UFUNCTION(BlueprintOverride)
+	void ActorEndOverlap(AActor OtherActor)
+	{
+		LastActorRef = OtherActor;
+		EventCallCount += 1;
+	}
+}
+
+UCLASS()
+class ATestEndOverlapTrigger : AActor
+{
+}
+)AS"),
+			TEXT("ATestEndOverlapReceiver"));
+		if (ReceiverClass == nullptr) return;
+
+		UClass* TriggerClass = FindGeneratedClass(&Engine, TEXT("ATestEndOverlapTrigger"));
+		if (!TestRunner->TestNotNull(TEXT("Trigger class should be generated"), TriggerClass)) return;
+
+		FScopedActorWorld W(*TestRunner);
+		if (!W.IsValid()) return;
+		AActor* Receiver = W.SpawnActorOfClass(ReceiverClass);
+		AActor* Trigger = W.SpawnActorOfClass(TriggerClass);
+		if (!TestRunner->TestNotNull(TEXT("Receiver should spawn"), Receiver)
+			|| !TestRunner->TestNotNull(TEXT("Trigger should spawn"), Trigger)) return;
+
+		W.BeginPlay(*Receiver);
+		W.BeginPlay(*Trigger);
+
+		Receiver->NotifyActorEndOverlap(Trigger);
+
+		int32 EventCallCount = 0;
+		if (!GetByPath<FIntProperty, int32>(*TestRunner, Receiver, TEXT("EventCallCount"), EventCallCount)) return;
+		TestRunner->TestEqual(TEXT("ActorEndOverlap should fire once"), EventCallCount, 1);
+		{
+			UObject* OtherActor = nullptr;
+			if (!GetObjectByPath(*TestRunner, Receiver, TEXT("LastActorRef"), OtherActor)) return;
+			TestRunner->TestEqual(TEXT("ActorEndOverlap should pass the departing actor"),
+				OtherActor, static_cast<UObject*>(Trigger));
+		}
+	}
+
+	TEST_METHOD(SpawnActorInvalidClassThrowsException)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestActorSpawnInvalidClass"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestActorSpawnInvalidClass.as"),
+			TEXT(R"AS(
+UCLASS()
+class ATestActorSpawnInvalidClass : AActor
+{
+	UFUNCTION()
+	void RunSpawnInvalidClassTest()
+	{
+		AActor Spawned = SpawnActor(nullptr, FVector::ZeroVector, FRotator::ZeroRotator, n"InvalidSpawn");
+	}
+}
+)AS"),
+			TEXT("ATestActorSpawnInvalidClass"));
+		if (ScriptClass == nullptr) return;
+
+		FScopedActorWorld W(*TestRunner);
+		if (!W.IsValid()) return;
+		AActor* Actor = W.SpawnActorOfClass(ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		W.BeginPlay(Engine, *Actor);
+
+		TestRunner->AddExpectedError(TEXT("Angelscript"), EAutomationExpectedErrorFlags::Contains, 0);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunSpawnInvalidClassTest")));
+		if (!Invoker.IsValid()) return;
+		Invoker.Call();
+	}
+
 	TEST_METHOD(DelegateBroadcast)
 	{
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();

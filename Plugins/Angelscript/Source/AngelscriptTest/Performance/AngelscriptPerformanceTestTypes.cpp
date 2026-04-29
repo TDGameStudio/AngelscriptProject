@@ -117,6 +117,76 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AngelscriptPerformanceTestTarg
 			"TMap<FName, int32> GetMapValueFunction() const",
 			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetMapValueFunction));
 		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetBoolValueFunction(bool InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetBoolValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"bool GetBoolValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetBoolValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetNameValueFunction(FName InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetNameValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"FName GetNameValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetNameValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetTextValueFunction(const FText& InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetTextValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"FText GetTextValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetTextValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetEnumValueFunction(EAngelscriptPerformanceTestEnum InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetEnumValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"EAngelscriptPerformanceTestEnum GetEnumValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetEnumValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetStructValueFunction(const FAngelscriptPerformanceTestStruct& InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetStructValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"FAngelscriptPerformanceTestStruct GetStructValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetStructValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetObjectValueFunction(UObject InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetObjectValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"UObject GetObjectValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetObjectValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"void SetClassValueFunction(UClass InValue)",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, SetClassValueFunction));
+		MarkPreviousBindEditorOnly();
+
+		TargetObject_.Method(
+			"UClass GetClassValueFunction() const",
+			METHOD_TRIVIAL(UAngelscriptPerformanceTestTargetObject, GetClassValueFunction));
+		MarkPreviousBindEditorOnly();
 	});
 #endif
 
@@ -318,11 +388,11 @@ int32 UAngelscriptPerformanceTestTargetObject::RunNativeContainerPropertyLoop(in
 	int32 Checksum = 0;
 	for (int32 Index = 0; Index < Iterations; ++Index)
 	{
-		ArrayValue.Reset();
+		ArrayValue.Empty();
 		ArrayValue.Add(Index);
-		SetValue.Reset();
+		SetValue.Empty();
 		SetValue.Add(Index);
-		MapValue.Reset();
+		MapValue.Empty();
 		MapValue.Add(TEXT("Value"), Index);
 		Checksum += ArrayValue[0];
 		Checksum += SetValue.Contains(Index) ? 1 : 0;

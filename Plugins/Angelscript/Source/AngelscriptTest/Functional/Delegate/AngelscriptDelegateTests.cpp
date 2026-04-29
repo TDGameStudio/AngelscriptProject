@@ -1,91 +1,58 @@
+#include "CQTest.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
-
 #include "Shared/AngelscriptNativeScriptTestObject.h"
+#include "Shared/AngelscriptReflectiveAccess.h"
+#include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/ScriptDelegates.h"
 #include "UObject/UnrealType.h"
 
-// Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptFunctionalTestUtils;
+using namespace AngelscriptReflectiveAccess;
 
-namespace AngelscriptTest_Delegate_AngelscriptDelegateTestCaseTests_Private
+namespace
 {
-	using namespace AngelscriptFunctionalTestUtils;
-
-	FAngelscriptEngine& AcquireFreshDelegateEngine()
-	{
-		DestroySharedAndStrayGlobalTestEngine();
-		return AcquireCleanSharedCloneEngine();
-	}
-
 	struct FTestCaseIntStringParams
 	{
 		int32 Value = 0;
 		FString Label;
 	};
-
-	void InitializeDelegateTestCaseSpawner(FActorTestSpawner& Spawner)
-	{
-		Spawner.InitializeGameSubsystems();
-	}
-
-	void ExpectDelegateSignatureMismatchLogs(
-		FAutomationTestBase& Test,
-		const TCHAR* TestCaseName,
-		const TCHAR* DelegateCallSignature,
-		const TCHAR* TriggerSignature)
-	{
-		Test.AddExpectedErrorPlain(TEXT("Signature mismatch while executing 'MarkNativeFlagFromDelegate': too many arguments were pushed."), EAutomationExpectedErrorFlags::Contains, -1);
-		Test.AddExpectedErrorPlain(TestCaseName, EAutomationExpectedErrorFlags::Contains, -1);
-		Test.AddExpectedErrorPlain(DelegateCallSignature, EAutomationExpectedErrorFlags::Contains, -1);
-		Test.AddExpectedErrorPlain(TriggerSignature, EAutomationExpectedErrorFlags::Contains, -1);
-	}
 }
 
-using namespace AngelscriptTest_Delegate_AngelscriptDelegateTestCaseTests_Private;
+// ============================================================================
+// Unicast Delegate Tests
+// ============================================================================
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestDelegateUnicastTest,
+TEST_CLASS_WITH_FLAGS(FAngelscriptDelegateUnicastTest,
 	"Angelscript.TestModule.Delegate.Unicast",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestDelegateMulticastTest,
-	"Angelscript.TestModule.Delegate.Multicast",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestDelegateUnicastSignatureMismatchTest,
-	"Angelscript.TestModule.Delegate.UnicastSignatureMismatch",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestDelegateMulticastSignatureMismatchTest,
-	"Angelscript.TestModule.Delegate.MulticastSignatureMismatch",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTestDelegateUnicastTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
-	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("TestDelegateUnicast"));
-	ON_SCOPE_EXIT
+	BEFORE_ALL()
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("TestDelegateUnicast.as"),
-		TEXT(R"AS(
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(ExecuteWithBoundNativeCallback)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateUnicast"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateUnicast.as"),
+			TEXT(R"AS(
 delegate void FOnHealthChanged(int32 NewHealth, const FString& Label);
 
 UCLASS()
@@ -104,73 +71,293 @@ class ATestDelegateUnicast : AActor
 	}
 }
 )AS"),
-		TEXT("ATestDelegateUnicast"));
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			TEXT("ATestDelegateUnicast"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
+		if (!TestRunner->TestNotNull(TEXT("Native receiver should be created"), NativeReceiver)) return;
+		NativeReceiver->NameCounts.Reset();
+
+		FDelegateProperty* DelegateProperty = FindFProperty<FDelegateProperty>(Actor->GetClass(), TEXT("OnHealthChanged"));
+		if (!TestRunner->TestNotNull(TEXT("Delegate property should exist"), DelegateProperty)) return;
+
+		FScriptDelegate BoundDelegate;
+		BoundDelegate.BindUFunction(NativeReceiver, TEXT("SetIntStringFromDelegate"));
+		*DelegateProperty->ContainerPtrToValuePtr<FScriptDelegate>(Actor) = BoundDelegate;
+
+		UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerHealthChanged"));
+		if (!TestRunner->TestNotNull(TEXT("Trigger function should exist"), TriggerFunction)) return;
+
+		FTestCaseIntStringParams Params;
+		Params.Value = 77;
+		Params.Label = TEXT("Unicast");
+		{
+			FAngelscriptEngineScope ExecutionScope(Engine, Actor);
+			Actor->ProcessEvent(TriggerFunction, &Params);
+		}
+
+		TestRunner->TestEqual(TEXT("Unicast Execute should invoke bound C++ callback with correct parameters"),
+			NativeReceiver->NameCounts.FindRef(TEXT("Unicast")), 77);
 	}
 
-	FActorTestSpawner Spawner;
-	InitializeDelegateTestCaseSpawner(Spawner);
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("TestCase unicast delegate actor should spawn"), Actor))
+	TEST_METHOD(IsBoundReturnsFalseWhenUnbound)
 	{
-		return false;
-	}
-	BeginPlayActor(Engine, *Actor);
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateIsBound"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
-	UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
-	if (!TestNotNull(TEXT("TestCase unicast delegate test should create a native receiver"), NativeReceiver))
-	{
-		return false;
-	}
-	NativeReceiver->NameCounts.Reset();
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateIsBound.as"),
+			TEXT(R"AS(
+delegate void FSimpleNotify();
 
-	FDelegateProperty* DelegateProperty = FindFProperty<FDelegateProperty>(Actor->GetClass(), TEXT("OnHealthChanged"));
-	if (!TestNotNull(TEXT("TestCase unicast delegate property should exist"), DelegateProperty))
-	{
-		return false;
-	}
-
-	FScriptDelegate BoundDelegate;
-	BoundDelegate.BindUFunction(NativeReceiver, TEXT("SetIntStringFromDelegate"));
-	*DelegateProperty->ContainerPtrToValuePtr<FScriptDelegate>(Actor) = BoundDelegate;
-
-	UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerHealthChanged"));
-	if (!TestNotNull(TEXT("TestCase unicast trigger function should exist"), TriggerFunction))
-	{
-		return false;
-	}
-
-	FTestCaseIntStringParams Params;
-	Params.Value = 77;
-	Params.Label = TEXT("Unicast");
-	{
-		FAngelscriptEngineScope ExecutionScope(Engine, Actor);
-		Actor->ProcessEvent(TriggerFunction, &Params);
-	}
-
-	TestEqual(TEXT("TestCase unicast delegate should invoke the bound C++ callback"), NativeReceiver->NameCounts.FindRef(TEXT("Unicast")), 77);
-	return true;
-}
-
-bool FAngelscriptTestDelegateMulticastTest::RunTest(const FString& Parameters)
+UCLASS()
+class ATestDelegateIsBound : AActor
 {
-	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
-	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("TestDelegateMulticast"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+	UPROPERTY()
+	FSimpleNotify OnNotify;
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("TestDelegateMulticast.as"),
-		TEXT(R"AS(
+	UFUNCTION()
+	int RunIsBoundTest()
+	{
+		if (OnNotify.IsBound())
+			return 10;
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateIsBound"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunIsBoundTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("IsBound should return false when delegate has no binding"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(ClearRemovesBinding)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateClear"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateClear.as"),
+			TEXT(R"AS(
+delegate void FSimpleNotify();
+
+UCLASS()
+class ATestDelegateClear : AActor
+{
+	UPROPERTY()
+	FSimpleNotify OnNotify;
+
+	UPROPERTY()
+	int CallCount = 0;
+
+	UFUNCTION()
+	void HandleNotify()
+	{
+		CallCount += 1;
+	}
+
+	UFUNCTION()
+	int RunClearTest()
+	{
+		OnNotify.BindUFunction(this, n"HandleNotify");
+		if (!OnNotify.IsBound())
+			return 10;
+
+		OnNotify.Execute();
+		if (CallCount != 1)
+			return 20;
+
+		OnNotify.Clear();
+		if (OnNotify.IsBound())
+			return 30;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateClear"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunClearTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("Clear should unbind the delegate after a successful Execute"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(GetUObjectReturnsTarget)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateGetUObject"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateGetUObject.as"),
+			TEXT(R"AS(
+delegate void FSimpleNotify();
+
+UCLASS()
+class ATestDelegateGetUObject : AActor
+{
+	UPROPERTY()
+	FSimpleNotify OnNotify;
+
+	UFUNCTION()
+	void HandleNotify() {}
+
+	UFUNCTION()
+	int RunGetUObjectTest()
+	{
+		if (OnNotify.GetUObject() != nullptr)
+			return 10;
+
+		OnNotify.BindUFunction(this, n"HandleNotify");
+		UObject Target = OnNotify.GetUObject();
+		if (Target == nullptr)
+			return 20;
+		if (Target != this)
+			return 30;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateGetUObject"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunGetUObjectTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("GetUObject should return null when unbound and target when bound"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(SignatureMismatchDoesNotInvoke)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateUnicastSigMismatch"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateUnicastSigMismatch.as"),
+			TEXT(R"AS(
+delegate void FOnHealthChanged(int32 NewHealth, const FString& Label);
+
+UCLASS()
+class ATestDelegateUnicastSigMismatch : AActor
+{
+	UPROPERTY()
+	FOnHealthChanged OnHealthChanged;
+
+	UFUNCTION()
+	void TriggerHealthChanged(int32 NewHealth, const FString& Label)
+	{
+		if (OnHealthChanged.IsBound())
+		{
+			OnHealthChanged.Execute(NewHealth, Label);
+		}
+	}
+}
+)AS"),
+			TEXT("ATestDelegateUnicastSigMismatch"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
+		if (!TestRunner->TestNotNull(TEXT("Native receiver should be created"), NativeReceiver)) return;
+		NativeReceiver->bNativeFlag = false;
+
+		FDelegateProperty* DelegateProperty = FindFProperty<FDelegateProperty>(Actor->GetClass(), TEXT("OnHealthChanged"));
+		if (!TestRunner->TestNotNull(TEXT("Delegate property should exist"), DelegateProperty)) return;
+
+		FScriptDelegate BoundDelegate;
+		BoundDelegate.BindUFunction(NativeReceiver, TEXT("MarkNativeFlagFromDelegate"));
+		*DelegateProperty->ContainerPtrToValuePtr<FScriptDelegate>(Actor) = BoundDelegate;
+
+		UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerHealthChanged"));
+		if (!TestRunner->TestNotNull(TEXT("Trigger function should exist"), TriggerFunction)) return;
+
+		TestRunner->AddExpectedError(TEXT("Signature mismatch"), EAutomationExpectedErrorFlags::Contains, 0);
+		TestRunner->AddExpectedError(TEXT("Angelscript"), EAutomationExpectedErrorFlags::Contains, 0);
+
+		FTestCaseIntStringParams Params;
+		Params.Value = 91;
+		Params.Label = TEXT("UnicastMismatch");
+		{
+			FAngelscriptEngineScope ExecutionScope(Engine, Actor);
+			Actor->ProcessEvent(TriggerFunction, &Params);
+		}
+
+		TestRunner->TestFalse(TEXT("Signature-mismatched unicast should not invoke zero-arg native receiver"),
+			NativeReceiver->bNativeFlag);
+	}
+};
+
+// ============================================================================
+// Multicast Delegate Tests
+// ============================================================================
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptDelegateMulticastTest,
+	"Angelscript.TestModule.Delegate.Multicast",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
+
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(BroadcastInvokesScriptHandler)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateMulticast"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateMulticast.as"),
+			TEXT(R"AS(
 event void FOnDamaged(int32 NewHealth, const FString& Label);
 
 UCLASS()
@@ -195,168 +382,368 @@ class ATestDelegateMulticast : AActor
 	}
 }
 )AS"),
-		TEXT("ATestDelegateMulticast"));
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			TEXT("ATestDelegateMulticast"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FMulticastInlineDelegateProperty* MulticastProperty = FindFProperty<FMulticastInlineDelegateProperty>(Actor->GetClass(), TEXT("OnDamaged"));
+		if (!TestRunner->TestNotNull(TEXT("Multicast delegate property should exist"), MulticastProperty)) return;
+
+		FMulticastScriptDelegate* MulticastDelegate = MulticastProperty->ContainerPtrToValuePtr<FMulticastScriptDelegate>(Actor);
+		if (!TestRunner->TestNotNull(TEXT("Multicast delegate storage should exist"), MulticastDelegate)) return;
+
+		FTestCaseIntStringParams Params;
+		Params.Value = 33;
+		Params.Label = TEXT("Multicast");
+		{
+			FAngelscriptEngineScope ExecutionScope(Engine, Actor);
+			MulticastDelegate->ProcessMulticastDelegate<UObject>(&Params);
+		}
+
+		int32 EventTriggerCount = 0;
+		if (!GetByPath<FIntProperty, int32>(*TestRunner, Actor, TEXT("EventTriggerCount"), EventTriggerCount)) return;
+		TestRunner->TestTrue(TEXT("Multicast Broadcast from C++ should invoke the script handler"),
+			EventTriggerCount > 0);
 	}
 
-	FActorTestSpawner Spawner;
-	InitializeDelegateTestCaseSpawner(Spawner);
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("TestCase multicast delegate actor should spawn"), Actor))
+	TEST_METHOD(AddUFunctionAndBroadcastFromScript)
 	{
-		return false;
-	}
-	BeginPlayActor(Engine, *Actor);
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateMulticastScript"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
-	int32 InitialEventTriggerCount = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("EventTriggerCount"), InitialEventTriggerCount))
-	{
-		return false;
-	}
-
-	FMulticastInlineDelegateProperty* MulticastProperty = FindFProperty<FMulticastInlineDelegateProperty>(Actor->GetClass(), TEXT("OnDamaged"));
-	if (!TestNotNull(TEXT("TestCase multicast delegate property should exist"), MulticastProperty))
-	{
-		return false;
-	}
-
-	FMulticastScriptDelegate* MulticastDelegate = MulticastProperty->ContainerPtrToValuePtr<FMulticastScriptDelegate>(Actor);
-	if (!TestNotNull(TEXT("TestCase multicast delegate storage should exist"), MulticastDelegate))
-	{
-		return false;
-	}
-
-	FTestCaseIntStringParams Params;
-	Params.Value = 33;
-	Params.Label = TEXT("Multicast");
-	{
-		FAngelscriptEngineScope ExecutionScope(Engine, Actor);
-		MulticastDelegate->ProcessMulticastDelegate<UObject>(&Params);
-	}
-
-	int32 EventTriggerCount = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("EventTriggerCount"), EventTriggerCount))
-	{
-		return false;
-	}
-
-	TestTrue(TEXT("TestCase multicast delegate should invoke the script handler when broadcast from C++"), EventTriggerCount > InitialEventTriggerCount);
-	return true;
-}
-
-bool FAngelscriptTestDelegateUnicastSignatureMismatchTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
-	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("TestDelegateUnicastSignatureMismatch"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
-
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("TestDelegateUnicastSignatureMismatch.as"),
-		TEXT(R"AS(
-delegate void FOnHealthChanged(int32 NewHealth, const FString& Label);
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateMulticastScript.as"),
+			TEXT(R"AS(
+event void FOnScoreChanged(int32 Score);
 
 UCLASS()
-class ATestDelegateUnicastSignatureMismatch : AActor
+class ATestDelegateMulticastScript : AActor
 {
 	UPROPERTY()
-	FOnHealthChanged OnHealthChanged;
+	FOnScoreChanged OnScoreChanged;
+
+	UPROPERTY()
+	int TotalReceived = 0;
 
 	UFUNCTION()
-	void TriggerHealthChanged(int32 NewHealth, const FString& Label)
+	void HandleScore(int32 Score)
 	{
-		if (OnHealthChanged.IsBound())
-		{
-			OnHealthChanged.Execute(NewHealth, Label);
-		}
+		TotalReceived += Score;
+	}
+
+	UFUNCTION()
+	int RunMulticastTest()
+	{
+		OnScoreChanged.AddUFunction(this, n"HandleScore");
+
+		if (!OnScoreChanged.IsBound())
+			return 10;
+
+		OnScoreChanged.Broadcast(50);
+		if (TotalReceived != 50)
+			return 20;
+
+		OnScoreChanged.Broadcast(25);
+		if (TotalReceived != 75)
+			return 30;
+
+		return 1;
 	}
 }
 )AS"),
-		TEXT("ATestDelegateUnicastSignatureMismatch"));
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			TEXT("ATestDelegateMulticastScript"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunMulticastTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("AddUFunction + Broadcast from script should accumulate values"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
 	}
 
-	FActorTestSpawner Spawner;
-	InitializeDelegateTestCaseSpawner(Spawner);
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("TestCase unicast mismatch actor should spawn"), Actor))
+	TEST_METHOD(MultipleSubscribers)
 	{
-		return false;
-	}
-	BeginPlayActor(Engine, *Actor);
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateMultiSub"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
-	UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
-	if (!TestNotNull(TEXT("TestCase unicast mismatch test should create a native receiver"), NativeReceiver))
-	{
-		return false;
-	}
-	NativeReceiver->bNativeFlag = false;
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateMultiSub.as"),
+			TEXT(R"AS(
+event void FOnTick();
 
-	FDelegateProperty* DelegateProperty = FindFProperty<FDelegateProperty>(Actor->GetClass(), TEXT("OnHealthChanged"));
-	if (!TestNotNull(TEXT("TestCase unicast mismatch delegate property should exist"), DelegateProperty))
-	{
-		return false;
-	}
-
-	FScriptDelegate BoundDelegate;
-	BoundDelegate.BindUFunction(NativeReceiver, TEXT("MarkNativeFlagFromDelegate"));
-	*DelegateProperty->ContainerPtrToValuePtr<FScriptDelegate>(Actor) = BoundDelegate;
-
-	UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerHealthChanged"));
-	if (!TestNotNull(TEXT("TestCase unicast mismatch trigger function should exist"), TriggerFunction))
-	{
-		return false;
-	}
-
-	FTestCaseIntStringParams Params;
-	Params.Value = 91;
-	Params.Label = TEXT("UnicastMismatch");
-	ExpectDelegateSignatureMismatchLogs(
-		*this,
-		TEXT("TestDelegateUnicastSignatureMismatch"),
-		TEXT("void FOnHealthChanged::Execute(int, FString) const"),
-		TEXT("void ATestCaseDelegateUnicastSignatureMismatch::TriggerHealthChanged(int, FString)"));
-	{
-		FAngelscriptEngineScope ExecutionScope(Engine, Actor);
-		Actor->ProcessEvent(TriggerFunction, &Params);
-	}
-
-	TestFalse(TEXT("TestCase unicast mismatch should not invoke a zero-argument native receiver"), NativeReceiver->bNativeFlag);
-	return true;
-}
-
-bool FAngelscriptTestDelegateMulticastSignatureMismatchTest::RunTest(const FString& Parameters)
+UCLASS()
+class ATestDelegateMultiSub : AActor
 {
-	FAngelscriptEngine& Engine = AcquireFreshDelegateEngine();
-	FAngelscriptEngineScope EngineScope(Engine);
-	static const FName ModuleName(TEXT("TestDelegateMulticastSignatureMismatch"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+	UPROPERTY()
+	FOnTick OnTick;
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("TestDelegateMulticastSignatureMismatch.as"),
-		TEXT(R"AS(
+	UPROPERTY()
+	int CountA = 0;
+	UPROPERTY()
+	int CountB = 0;
+
+	UFUNCTION()
+	void HandlerA() { CountA += 1; }
+
+	UFUNCTION()
+	void HandlerB() { CountB += 1; }
+
+	UFUNCTION()
+	int RunMultiSubTest()
+	{
+		OnTick.AddUFunction(this, n"HandlerA");
+		OnTick.AddUFunction(this, n"HandlerB");
+
+		OnTick.Broadcast();
+
+		if (CountA != 1)
+			return 10;
+		if (CountB != 1)
+			return 20;
+
+		OnTick.Broadcast();
+		if (CountA != 2)
+			return 30;
+		if (CountB != 2)
+			return 40;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateMultiSub"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunMultiSubTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("Multiple subscribers should all receive each Broadcast"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(UnbindRemovesSpecificSubscriber)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateUnbind"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateUnbind.as"),
+			TEXT(R"AS(
+event void FOnPulse();
+
+UCLASS()
+class ATestDelegateUnbind : AActor
+{
+	UPROPERTY()
+	FOnPulse OnPulse;
+
+	UPROPERTY()
+	int CountA = 0;
+	UPROPERTY()
+	int CountB = 0;
+
+	UFUNCTION()
+	void HandlerA() { CountA += 1; }
+
+	UFUNCTION()
+	void HandlerB() { CountB += 1; }
+
+	UFUNCTION()
+	int RunUnbindTest()
+	{
+		OnPulse.AddUFunction(this, n"HandlerA");
+		OnPulse.AddUFunction(this, n"HandlerB");
+
+		OnPulse.Broadcast();
+		if (CountA != 1 || CountB != 1)
+			return 10;
+
+		OnPulse.Unbind(this, n"HandlerA");
+		OnPulse.Broadcast();
+		if (CountA != 1)
+			return 20;
+		if (CountB != 2)
+			return 30;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateUnbind"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunUnbindTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("Unbind should remove only the specified handler"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(ClearRemovesAllSubscribers)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateMCClear"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateMCClear.as"),
+			TEXT(R"AS(
+event void FOnPing();
+
+UCLASS()
+class ATestDelegateMCClear : AActor
+{
+	UPROPERTY()
+	FOnPing OnPing;
+
+	UPROPERTY()
+	int Count = 0;
+
+	UFUNCTION()
+	void Handler() { Count += 1; }
+
+	UFUNCTION()
+	int RunClearTest()
+	{
+		OnPing.AddUFunction(this, n"Handler");
+		OnPing.Broadcast();
+		if (Count != 1)
+			return 10;
+
+		OnPing.Clear();
+		if (OnPing.IsBound())
+			return 20;
+
+		OnPing.Broadcast();
+		if (Count != 1)
+			return 30;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateMCClear"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunClearTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("Clear should remove all subscribers and IsBound returns false"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(UnbindObjectRemovesAllForTarget)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateUnbindObj"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateUnbindObj.as"),
+			TEXT(R"AS(
+event void FOnSignal();
+
+UCLASS()
+class ATestDelegateUnbindObj : AActor
+{
+	UPROPERTY()
+	FOnSignal OnSignal;
+
+	UPROPERTY()
+	int CountA = 0;
+	UPROPERTY()
+	int CountB = 0;
+
+	UFUNCTION()
+	void HandlerA() { CountA += 1; }
+
+	UFUNCTION()
+	void HandlerB() { CountB += 1; }
+
+	UFUNCTION()
+	int RunUnbindObjTest()
+	{
+		OnSignal.AddUFunction(this, n"HandlerA");
+		OnSignal.AddUFunction(this, n"HandlerB");
+
+		OnSignal.Broadcast();
+		if (CountA != 1 || CountB != 1)
+			return 10;
+
+		OnSignal.UnbindObject(this);
+		if (OnSignal.IsBound())
+			return 20;
+
+		OnSignal.Broadcast();
+		if (CountA != 1 || CountB != 1)
+			return 30;
+
+		return 1;
+	}
+}
+)AS"),
+			TEXT("ATestDelegateUnbindObj"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunUnbindObjTest")));
+		if (!Invoker.IsValid()) return;
+		TestRunner->TestEqual(TEXT("UnbindObject should remove all handlers bound to the target"),
+			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+	}
+
+	TEST_METHOD(SignatureMismatchDoesNotInvoke)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestDelegateMulticastSigMismatch"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		UClass* ScriptClass = CompileScriptModule(*TestRunner, Engine, ModuleName,
+			TEXT("TestDelegateMulticastSigMismatch.as"),
+			TEXT(R"AS(
 event void FOnDamaged(int32 NewHealth, const FString& Label);
 
 UCLASS()
-class ATestDelegateMulticastSignatureMismatch : AActor
+class ATestDelegateMulticastSigMismatch : AActor
 {
 	UPROPERTY()
 	FOnDamaged OnDamaged;
@@ -368,65 +755,46 @@ class ATestDelegateMulticastSignatureMismatch : AActor
 	}
 }
 )AS"),
-		TEXT("ATestDelegateMulticastSignatureMismatch"));
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			TEXT("ATestDelegateMulticastSigMismatch"));
+		if (ScriptClass == nullptr) return;
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
+		BeginPlayActor(Engine, *Actor);
+
+		UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
+		if (!TestRunner->TestNotNull(TEXT("Native receiver should be created"), NativeReceiver)) return;
+		NativeReceiver->bNativeFlag = false;
+
+		FMulticastInlineDelegateProperty* MulticastProperty = FindFProperty<FMulticastInlineDelegateProperty>(Actor->GetClass(), TEXT("OnDamaged"));
+		if (!TestRunner->TestNotNull(TEXT("Multicast property should exist"), MulticastProperty)) return;
+
+		FMulticastScriptDelegate* MulticastDelegate = MulticastProperty->ContainerPtrToValuePtr<FMulticastScriptDelegate>(Actor);
+		if (!TestRunner->TestNotNull(TEXT("Multicast delegate storage should exist"), MulticastDelegate)) return;
+
+		FScriptDelegate BoundDelegate;
+		BoundDelegate.BindUFunction(NativeReceiver, TEXT("MarkNativeFlagFromDelegate"));
+		MulticastDelegate->Add(BoundDelegate);
+
+		UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerDamaged"));
+		if (!TestRunner->TestNotNull(TEXT("Trigger function should exist"), TriggerFunction)) return;
+
+		TestRunner->AddExpectedError(TEXT("Signature mismatch"), EAutomationExpectedErrorFlags::Contains, 0);
+		TestRunner->AddExpectedError(TEXT("Angelscript"), EAutomationExpectedErrorFlags::Contains, 0);
+
+		FTestCaseIntStringParams Params;
+		Params.Value = 45;
+		Params.Label = TEXT("MulticastMismatch");
+		{
+			FAngelscriptEngineScope ExecutionScope(Engine, Actor);
+			Actor->ProcessEvent(TriggerFunction, &Params);
+		}
+
+		TestRunner->TestFalse(TEXT("Signature-mismatched multicast should not invoke zero-arg native receiver"),
+			NativeReceiver->bNativeFlag);
 	}
+};
 
-	FActorTestSpawner Spawner;
-	InitializeDelegateTestCaseSpawner(Spawner);
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("TestCase multicast mismatch actor should spawn"), Actor))
-	{
-		return false;
-	}
-	BeginPlayActor(Engine, *Actor);
-
-	UAngelscriptNativeScriptTestObject* NativeReceiver = NewObject<UAngelscriptNativeScriptTestObject>(GetTransientPackage());
-	if (!TestNotNull(TEXT("TestCase multicast mismatch test should create a native receiver"), NativeReceiver))
-	{
-		return false;
-	}
-	NativeReceiver->bNativeFlag = false;
-
-	FMulticastInlineDelegateProperty* MulticastProperty = FindFProperty<FMulticastInlineDelegateProperty>(Actor->GetClass(), TEXT("OnDamaged"));
-	if (!TestNotNull(TEXT("TestCase multicast mismatch delegate property should exist"), MulticastProperty))
-	{
-		return false;
-	}
-
-	FMulticastScriptDelegate* MulticastDelegate = MulticastProperty->ContainerPtrToValuePtr<FMulticastScriptDelegate>(Actor);
-	if (!TestNotNull(TEXT("TestCase multicast mismatch delegate storage should exist"), MulticastDelegate))
-	{
-		return false;
-	}
-
-	FScriptDelegate BoundDelegate;
-	BoundDelegate.BindUFunction(NativeReceiver, TEXT("MarkNativeFlagFromDelegate"));
-	MulticastDelegate->Add(BoundDelegate);
-
-	UFunction* TriggerFunction = FindGeneratedFunction(ScriptClass, TEXT("TriggerDamaged"));
-	if (!TestNotNull(TEXT("TestCase multicast mismatch trigger function should exist"), TriggerFunction))
-	{
-		return false;
-	}
-
-	FTestCaseIntStringParams Params;
-	Params.Value = 45;
-	Params.Label = TEXT("MulticastMismatch");
-	ExpectDelegateSignatureMismatchLogs(
-		*this,
-		TEXT("TestDelegateMulticastSignatureMismatch"),
-		TEXT("void FOnDamaged::Broadcast(int, FString) const"),
-		TEXT("void ATestCaseDelegateMulticastSignatureMismatch::TriggerDamaged(int, FString)"));
-	{
-		FAngelscriptEngineScope ExecutionScope(Engine, Actor);
-		Actor->ProcessEvent(TriggerFunction, &Params);
-	}
-
-	TestFalse(TEXT("TestCase multicast mismatch should not invoke a zero-argument native receiver"), NativeReceiver->bNativeFlag);
-	return true;
-}
-
-#endif
+#endif // WITH_DEV_AUTOMATION_TESTS
