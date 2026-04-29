@@ -1,557 +1,308 @@
-#include "Shared/AngelscriptTestUtilities.h"
-#include "Shared/AngelscriptTestMacros.h"
+// ============================================================================
+// AngelscriptPreprocessorDirectiveTests.cpp
+//
+// Preprocessor tests for conditional directives (#if, #ifdef, #ifndef, #elif,
+// #else, #endif), structural error reporting, whitespace tolerance, and
+// unsupported directives (#include).
+//
+// Migrated from:
+//   - AngelscriptPreprocessorDirectiveTests.cpp (IfdefBoolean, InactiveBranch, Elif, StringLiteral, Compound)
+//   - AngelscriptPreprocessorDirectiveErrorTests.cpp (StructuralErrors)
+//   - AngelscriptPreprocessorDirectiveWhitespaceTests.cpp (TabSeparated)
+//   - AngelscriptPreprocessorIncludeDirectiveTests.cpp (IncludeDirective)
+//
+// Automation prefix: Angelscript.TestModule.Preprocessor.Directives.*
+// ============================================================================
 
-#include "Preprocessor/AngelscriptPreprocessor.h"
-
-#include "HAL/FileManager.h"
-#include "Misc/AutomationTest.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
+#include "CQTest.h"
+#include "Preprocessor/AngelscriptPreprocessorTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+using namespace PreprocessorTestHelpers;
 using namespace AngelscriptTestSupport;
 
-namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveTests_Private
+// ============================================================================
+// Test class
+// ============================================================================
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
+	"Angelscript.TestModule.Preprocessor.Directives",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	TUniquePtr<FAngelscriptEngine> CreateDirectiveEditorEngine()
+	// ========================================================================
+	// IfdefRespectsBooleanFlagValue — false flag routes #ifdef to else branch,
+	// #ifndef to body; compiles and executes correctly
+	// ========================================================================
+	TEST_METHOD(IfdefRespectsBooleanFlagValue)
 	{
-		FAngelscriptEngineConfig Config;
-		Config.bIsEditor = true;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
 
-		FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
-		return AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(Config, Dependencies);
-	}
+		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IfdefBooleanFlagValue"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
-	FString GetPreprocessorDirectiveFixtureRoot()
-	{
-		return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("PreprocessorDirectiveFixtures"));
-	}
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/IfdefBooleanFlagValue.as");
+		const FString ScriptSource = TEXT(
+			"#ifdef MYFLAG\n"
+			"int IfdefValue()\n"
+			"{\n"
+			"    return 1;\n"
+			"}\n"
+			"#else\n"
+			"int IfdefValue()\n"
+			"{\n"
+			"    return 2;\n"
+			"}\n"
+			"#endif\n"
+			"#ifndef MYFLAG\n"
+			"int IfndefValue()\n"
+			"{\n"
+			"    return 3;\n"
+			"}\n"
+			"#else\n"
+			"int IfndefValue()\n"
+			"{\n"
+			"    return 4;\n"
+			"}\n"
+			"#endif\n"
+			"int Entry()\n"
+			"{\n"
+			"    return IfdefValue() * 10 + IfndefValue();\n"
+			"}\n");
 
-	FString WritePreprocessorDirectiveFixture(const FString& RelativeScriptPath, const FString& Contents)
-	{
-		const FString AbsolutePath = FPaths::Combine(GetPreprocessorDirectiveFixtureRoot(), RelativeScriptPath);
-		IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsolutePath), true);
-		FFileHelper::SaveStringToFile(Contents, *AbsolutePath);
-		return AbsolutePath;
-	}
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
 
-	TArray<FString> CollectDiagnosticMessages(
-		const FAngelscriptEngine& Engine,
-		const TArray<FString>& AbsoluteFilenames,
-		int32& OutErrorCount)
-	{
-		TArray<FString> Messages;
-		OutErrorCount = 0;
+		auto Result = RunPreprocess(Engine, File, {{TEXT("MYFLAG"), false}});
 
-		for (const FString& AbsoluteFilename : AbsoluteFilenames)
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		const FAngelscriptModuleDesc* Module = AssertModuleExists(
+			*TestRunner, Result, TEXT("Tests.Preprocessor.Directives.IfdefBooleanFlagValue"));
+		if (Module != nullptr)
 		{
-			const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteFilename);
-			if (Diagnostics == nullptr)
-			{
-				continue;
-			}
-
-			for (const FAngelscriptEngine::FDiagnostic& Diagnostic : Diagnostics->Diagnostics)
-			{
-				Messages.Add(Diagnostic.Message);
-				if (Diagnostic.bIsError)
-				{
-					++OutErrorCount;
-				}
-			}
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 2;"));
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 3;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 1;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 4;"));
 		}
 
-		return Messages;
-	}
+		// Compile and execute
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary);
 
-	bool SummaryContainsMessage(
-		const FAngelscriptCompileTraceSummary& Summary,
-		const FString& Needle)
-	{
-		return Summary.Diagnostics.ContainsByPredicate(
-			[&Needle](const FAngelscriptCompileTraceDiagnosticSummary& Diagnostic)
-			{
-				return Diagnostic.Message.Contains(Needle);
-			});
-	}
+		TestRunner->TestTrue(TEXT("Should compile after preprocessing"), bCompiled);
+		TestRunner->TestEqual(TEXT("Should emit no compile diagnostics"), Summary.Diagnostics.Num(), 0);
 
-	int32 CountErrorDiagnostics(const FAngelscriptEngine::FDiagnostics* Diagnostics)
-	{
-		if (Diagnostics == nullptr)
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(TEXT("Entry should execute"), bExecuted);
+		if (bExecuted)
 		{
-			return 0;
+			TestRunner->TestEqual(
+				TEXT("False MYFLAG: #ifdef→else(2), #ifndef→body(3) → 23"),
+				EntryResult, 23);
 		}
 
-		int32 ErrorCount = 0;
-		for (const FAngelscriptEngine::FDiagnostic& Diagnostic : Diagnostics->Diagnostics)
+		ASTEST_END_MODULE_CLEAN
+	}
+
+	// ========================================================================
+	// InactiveBranchSkipsUnknownConditions — when #if EDITOR is taken,
+	// later #elif UNKNOWN_FLAG in the dead branch does not produce errors
+	// ========================================================================
+	TEST_METHOD(InactiveBranchSkipsUnknownConditions)
+	{
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateEditorEngine();
+		if (!TestRunner->TestNotNull(TEXT("Should create editor engine"), OwnedEngine.Get()))
 		{
-			if (Diagnostic.bIsError)
-			{
-				++ErrorCount;
-			}
+			return;
 		}
 
-		return ErrorCount;
-	}
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
 
-	bool ContainsCompilableCode(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules)
-	{
-		for (const TSharedRef<FAngelscriptModuleDesc>& Module : Modules)
+		TestRunner->TestTrue(
+			TEXT("Should run with EDITOR flag enabled"),
+			FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext());
+
+		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.InactiveUnknownConditions"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/InactiveUnknownConditions.as");
+		const FString ScriptSource = TEXT(
+			"#if EDITOR\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 7;\n"
+			"}\n"
+			"#else\n"
+			"#if UNKNOWN_FLAG\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 1;\n"
+			"}\n"
+			"#elif UNKNOWN_FLAG\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 2;\n"
+			"}\n"
+			"#else\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 3;\n"
+			"}\n"
+			"#endif\n"
+			"#endif\n");
+
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertDiagnosticNotContains(*TestRunner, Result, TEXT("Invalid preprocessor condition"));
+
+		const FAngelscriptModuleDesc* Module = Result.FindModule(
+			TEXT("Tests.Preprocessor.Directives.InactiveUnknownConditions"));
+		if (Module != nullptr)
 		{
-			for (const FAngelscriptModuleDesc::FCodeSection& Section : Module->Code)
-			{
-				if (!Section.Code.IsEmpty())
-				{
-					return true;
-				}
-			}
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 7;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("UNKNOWN_FLAG"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 3;"));
 		}
 
-		return false;
-	}
-}
+		// Compile and execute through the full pipeline
+		Engine.ResetDiagnostics();
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary, true);
 
-using namespace AngelscriptTest_Preprocessor_AngelscriptPreprocessorDirectiveTests_Private;
+		TestRunner->TestTrue(TEXT("Should compile successfully"), bCompiled);
+		TestRunner->TestTrue(TEXT("Should report preprocessor usage"), Summary.bUsedPreprocessor);
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorIfdefRespectsBooleanFlagValueTest,
-	"Angelscript.TestModule.Preprocessor.Directives.IfdefRespectsBooleanFlagValue",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+		const bool bSummaryHasInvalidCondition = Summary.Diagnostics.ContainsByPredicate(
+			[](const FAngelscriptCompileTraceDiagnosticSummary& D)
+			{ return D.Message.Contains(TEXT("Invalid preprocessor condition")); });
+		TestRunner->TestFalse(TEXT("Compile summary should not report invalid-condition"), bSummaryHasInvalidCondition);
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorInactiveBranchSkipsUnknownConditionsTest,
-	"Angelscript.TestModule.Preprocessor.Directives.InactiveBranchSkipsUnknownConditions",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(TEXT("Entry should execute"), bExecuted);
+		if (bExecuted)
+		{
+			TestRunner->TestEqual(TEXT("Active EDITOR branch should return 7"), EntryResult, 7);
+		}
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorElifShortCircuitsAfterTakenBranchTest,
-	"Angelscript.TestModule.Preprocessor.Directives.ElifShortCircuitsAfterTakenBranch",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorStringLiteralDirectiveLexerTest,
-	"Angelscript.TestModule.Preprocessor.Directives.StringLiteralDoesNotTriggerDirectiveLexer",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorCompoundConditionReportsUnsupportedSyntaxTest,
-	"Angelscript.TestModule.Preprocessor.Directives.CompoundConditionReportsUnsupportedSyntax",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptPreprocessorIfdefRespectsBooleanFlagValueTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-	ASTEST_BEGIN_MODULE_CLEAN
-
-	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IfdefBooleanFlagValue"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-	};
-
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/IfdefBooleanFlagValue.as");
-	const FString ScriptSource = TEXT(
-		"#ifdef MYFLAG\n"
-		"int IfdefValue()\n"
-		"{\n"
-		"    return 1;\n"
-		"}\n"
-		"#else\n"
-		"int IfdefValue()\n"
-		"{\n"
-		"    return 2;\n"
-		"}\n"
-		"#endif\n"
-		"#ifndef MYFLAG\n"
-		"int IfndefValue()\n"
-		"{\n"
-		"    return 3;\n"
-		"}\n"
-		"#else\n"
-		"int IfndefValue()\n"
-		"{\n"
-		"    return 4;\n"
-		"}\n"
-		"#endif\n"
-		"int Entry()\n"
-		"{\n"
-		"    return IfdefValue() * 10 + IfndefValue();\n"
-		"}\n");
-	const FString AbsoluteScriptPath = WritePreprocessorDirectiveFixture(RelativeScriptPath, ScriptSource);
-
-	Engine.ResetDiagnostics();
-
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.PreprocessorFlags.Add(TEXT("MYFLAG"), false);
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
-
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-
-	int32 PreprocessErrorCount = 0;
-	const TArray<FString> PreprocessDiagnosticMessages = CollectDiagnosticMessages(
-		Engine,
-		{AbsoluteScriptPath},
-		PreprocessErrorCount);
-	const FString PreprocessDiagnosticSummary = FString::Join(PreprocessDiagnosticMessages, TEXT("\n"));
-
-	bPassed &= TestTrue(
-		TEXT("Boolean-valued MYFLAG should still preprocess successfully"),
-		bPreprocessSucceeded);
-	bPassed &= TestEqual(
-		TEXT("Boolean-valued MYFLAG should not emit preprocess diagnostics"),
-		PreprocessErrorCount,
-		0);
-	bPassed &= TestEqual(
-		TEXT("Boolean-valued MYFLAG should keep exactly one module descriptor"),
-		Modules.Num(),
-		1);
-
-	FString ProcessedCode;
-	if (Modules.Num() > 0 && Modules[0]->Code.Num() > 0)
-	{
-		ProcessedCode = Modules[0]->Code[0].Code;
+		ASTEST_END_FULL
 	}
 
-	bPassed &= TestFalse(
-		TEXT("Boolean-valued MYFLAG should not emit any preprocess messages"),
-		!PreprocessDiagnosticSummary.IsEmpty());
-	bPassed &= TestTrue(
-		TEXT("False MYFLAG should route #ifdef to the else branch"),
-		ProcessedCode.Contains(TEXT("return 2;")));
-	bPassed &= TestTrue(
-		TEXT("False MYFLAG should keep the #ifndef body"),
-		ProcessedCode.Contains(TEXT("return 3;")));
-	bPassed &= TestFalse(
-		TEXT("False MYFLAG should strip the #ifdef true branch"),
-		ProcessedCode.Contains(TEXT("return 1;")));
-	bPassed &= TestFalse(
-		TEXT("False MYFLAG should strip the #ifndef else branch"),
-		ProcessedCode.Contains(TEXT("return 4;")));
-
-	Engine.ResetDiagnostics();
-
-	TArray<TSharedRef<FAngelscriptModuleDesc>> CompiledModules;
-	const ECompileResult CompileResult = Engine.CompileModules(
-		ECompileType::SoftReloadOnly,
-		Modules,
-		CompiledModules);
-	const bool bCompiled =
-		CompileResult == ECompileResult::FullyHandled
-		|| CompileResult == ECompileResult::PartiallyHandled;
-
-	int32 CompileErrorCount = 0;
-	const TArray<FString> CompileDiagnosticMessages = CollectDiagnosticMessages(
-		Engine,
-		{AbsoluteScriptPath},
-		CompileErrorCount);
-
-	bPassed &= TestTrue(
-		TEXT("Boolean-valued MYFLAG should compile after preprocessing"),
-		bCompiled);
-	bPassed &= TestEqual(
-		TEXT("Boolean-valued MYFLAG compile should not emit diagnostics"),
-		CompileErrorCount,
-		0);
-	bPassed &= TestEqual(
-		TEXT("Boolean-valued MYFLAG should compile exactly one module"),
-		CompiledModules.Num(),
-		1);
-	bPassed &= TestEqual(
-		TEXT("Boolean-valued MYFLAG should preserve the expected preprocessed module name"),
-		Modules.Num() > 0 ? Modules[0]->ModuleName : FString(),
-		ModuleName.ToString());
-
-	int32 EntryResult = 0;
-	const bool bExecuted = bCompiled
-		&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
-	bPassed &= TestTrue(
-		TEXT("Boolean-valued MYFLAG should execute the compiled Entry function"),
-		bExecuted);
-	if (bExecuted)
+	// ========================================================================
+	// ElifShortCircuitsAfterTakenBranch — when #if EDITOR is true,
+	// the following #elif UNKNOWN_FLAG is never evaluated
+	// ========================================================================
+	TEST_METHOD(ElifShortCircuitsAfterTakenBranch)
 	{
-		bPassed &= TestEqual(
-			TEXT("False MYFLAG should select the #ifdef else branch and the #ifndef body"),
-			EntryResult,
-			23);
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateEditorEngine();
+		if (!TestRunner->TestNotNull(TEXT("Should create editor engine"), OwnedEngine.Get()))
+		{
+			return;
+		}
+
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
+
+		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.ElifShortCircuitsAfterTakenBranch"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/ElifShortCircuitsAfterTakenBranch.as");
+		const FString ScriptSource = TEXT(
+			"#if EDITOR\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 7;\n"
+			"}\n"
+			"#elif UNKNOWN_FLAG\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 9;\n"
+			"}\n"
+			"#else\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 3;\n"
+			"}\n"
+			"#endif\n");
+
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		const FAngelscriptModuleDesc* Module = Result.FindModule(
+			TEXT("Tests.Preprocessor.Directives.ElifShortCircuitsAfterTakenBranch"));
+		if (Module != nullptr)
+		{
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 7;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("UNKNOWN_FLAG"));
+		}
+
+		// Compile and execute
+		Engine.ResetDiagnostics();
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary, true);
+
+		TestRunner->TestTrue(TEXT("Should compile successfully"), bCompiled);
+		TestRunner->TestTrue(TEXT("Should report preprocessor usage"), Summary.bUsedPreprocessor);
+		TestRunner->TestEqual(TEXT("Should emit no compile diagnostics"), Summary.Diagnostics.Num(), 0);
+
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(TEXT("Entry should execute"), bExecuted);
+		if (bExecuted)
+		{
+			TestRunner->TestEqual(TEXT("Active EDITOR branch should return 7"), EntryResult, 7);
+		}
+
+		ASTEST_END_FULL
 	}
 
-	ASTEST_END_MODULE_CLEAN
-	return bPassed;
-}
-
-bool FAngelscriptPreprocessorInactiveBranchSkipsUnknownConditionsTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateDirectiveEditorEngine();
-	if (!TestNotNull(TEXT("Directive preprocessor test should create an editor-configured engine"), OwnedEngine.Get()))
+	// ========================================================================
+	// StringLiteralDoesNotTriggerDirectiveLexer — #if/#else tokens inside
+	// string literals are not parsed as preprocessor directives
+	// ========================================================================
+	TEST_METHOD(StringLiteralDoesNotTriggerDirectiveLexer)
 	{
-		return false;
-	}
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateEditorEngine();
+		if (!TestRunner->TestNotNull(TEXT("Should create editor engine"), OwnedEngine.Get()))
+		{
+			return;
+		}
 
-	FAngelscriptEngine& Engine = *OwnedEngine;
-	ASTEST_BEGIN_FULL
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
 
-	bPassed &= TestTrue(
-		TEXT("Directive preprocessor test should run with EDITOR flag enabled in the active engine context"),
-		FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext());
+		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.StringLiteralDoesNotTriggerDirectiveLexer"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
-	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.InactiveUnknownConditions"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-	};
-
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/InactiveUnknownConditions.as");
-	const FString ScriptSource = TEXT(
-		"#if EDITOR\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 7;\n"
-		"}\n"
-		"#else\n"
-		"#if UNKNOWN_FLAG\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 1;\n"
-		"}\n"
-		"#elif UNKNOWN_FLAG\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 2;\n"
-		"}\n"
-		"#else\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 3;\n"
-		"}\n"
-		"#endif\n"
-		"#endif\n");
-	const FString AbsoluteScriptPath = WritePreprocessorDirectiveFixture(RelativeScriptPath, ScriptSource);
-
-	Engine.ResetDiagnostics();
-
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
-
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-
-	int32 PreprocessErrorCount = 0;
-	const TArray<FString> PreprocessDiagnosticMessages = CollectDiagnosticMessages(
-		Engine,
-		{AbsoluteScriptPath},
-		PreprocessErrorCount);
-	const FString PreprocessDiagnosticSummary = FString::Join(PreprocessDiagnosticMessages, TEXT("\n"));
-
-	bPassed &= TestTrue(
-		TEXT("Inactive unknown preprocessor conditions should not break direct preprocessing"),
-		bPreprocessSucceeded);
-	bPassed &= TestEqual(
-		TEXT("Inactive unknown preprocessor conditions should keep exactly one module descriptor"),
-		Modules.Num(),
-		1);
-	bPassed &= TestEqual(
-		TEXT("Inactive unknown preprocessor conditions should not emit preprocessing errors"),
-		PreprocessErrorCount,
-		0);
-	bPassed &= TestFalse(
-		TEXT("Inactive unknown preprocessor conditions should not report invalid-condition diagnostics"),
-		PreprocessDiagnosticSummary.Contains(TEXT("Invalid preprocessor condition")));
-
-	FString ProcessedCode;
-	if (Modules.Num() > 0 && Modules[0]->Code.Num() > 0)
-	{
-		ProcessedCode = Modules[0]->Code[0].Code;
-	}
-
-	bPassed &= TestTrue(
-		TEXT("Inactive unknown preprocessor conditions should preserve the active Entry implementation"),
-		ProcessedCode.Contains(TEXT("return 7;")));
-	bPassed &= TestFalse(
-		TEXT("Inactive unknown preprocessor conditions should strip dead-branch UNKNOWN_FLAG text from processed code"),
-		ProcessedCode.Contains(TEXT("UNKNOWN_FLAG")));
-	bPassed &= TestFalse(
-		TEXT("Inactive unknown preprocessor conditions should strip dead-branch return values from processed code"),
-		ProcessedCode.Contains(TEXT("return 3;")));
-
-	Engine.ResetDiagnostics();
-
-	FAngelscriptCompileTraceSummary Summary;
-	const bool bCompiled = CompileModuleWithSummary(
-		&Engine,
-		ECompileType::SoftReloadOnly,
-		ModuleName,
-		RelativeScriptPath,
-		ScriptSource,
-		true,
-		Summary,
-		true);
-
-	bPassed &= TestTrue(
-		TEXT("Inactive unknown preprocessor conditions should still compile through the normal compile pipeline"),
-		bCompiled);
-	bPassed &= TestTrue(
-		TEXT("Inactive unknown preprocessor conditions should report preprocessor usage in compile summary"),
-		Summary.bUsedPreprocessor);
-	bPassed &= TestFalse(
-		TEXT("Compile summary should stay free of invalid-condition diagnostics for inactive unknown branches"),
-		SummaryContainsMessage(Summary, TEXT("Invalid preprocessor condition")));
-
-	bPassed &= TestEqual(
-		TEXT("Compile summary should surface the preprocessed module name"),
-		Summary.ModuleNames.Num(),
-		1);
-
-	int32 EntryResult = 0;
-	const bool bExecuted = bCompiled
-		&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
-	bPassed &= TestTrue(
-		TEXT("Inactive unknown preprocessor conditions should still execute the compiled Entry function"),
-		bExecuted);
-	if (bExecuted)
-	{
-		bPassed &= TestEqual(
-			TEXT("Inactive unknown preprocessor conditions should keep the active branch result"),
-			EntryResult,
-			7);
-	}
-
-	ASTEST_END_FULL
-	return bPassed;
-}
-
-bool FAngelscriptPreprocessorElifShortCircuitsAfterTakenBranchTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateDirectiveEditorEngine();
-	if (!TestNotNull(TEXT("Directive preprocessor elif short-circuit test should create an editor-configured engine"), OwnedEngine.Get()))
-	{
-		return false;
-	}
-
-	FAngelscriptEngine& Engine = *OwnedEngine;
-	ASTEST_BEGIN_FULL
-	bPassed &= TestTrue(
-		TEXT("Directive preprocessor elif short-circuit test should run with EDITOR flag enabled in the active engine context"),
-		FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext());
-	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.ElifShortCircuitsAfterTakenBranch"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-	};
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/ElifShortCircuitsAfterTakenBranch.as");
-	const FString ScriptSource = TEXT(
-		"#if EDITOR\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 7;\n"
-		"}\n"
-		"#elif UNKNOWN_FLAG\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 9;\n"
-		"}\n"
-		"#else\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 3;\n"
-		"}\n"
-		"#endif\n");
-	const FString AbsoluteScriptPath = WritePreprocessorDirectiveFixture(RelativeScriptPath, ScriptSource);
-	Engine.ResetDiagnostics();
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-	int32 PreprocessErrorCount = 0;
-	const TArray<FString> PreprocessDiagnosticMessages = CollectDiagnosticMessages(
-		Engine,
-		{AbsoluteScriptPath},
-		PreprocessErrorCount);
-	const FString PreprocessDiagnosticSummary = FString::Join(PreprocessDiagnosticMessages, TEXT("\n"));
-	const FString ProcessedCode = (Modules.Num() > 0 && Modules[0]->Code.Num() > 0)
-		? Modules[0]->Code[0].Code
-		: FString();
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should let direct preprocessing succeed without evaluating later #elif"),
-		bPreprocessSucceeded);
-	bPassed &= TestEqual(
-		TEXT("Taken #if branch should keep exactly one preprocessed module descriptor"),
-		Modules.Num(),
-		1);
-	bPassed &= TestEqual(
-		TEXT("Taken #if branch should not emit preprocessing errors"),
-		PreprocessErrorCount,
-		0);
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should keep preprocessing diagnostics empty"),
-		PreprocessDiagnosticSummary.IsEmpty());
-	bPassed &= TestFalse(
-		TEXT("Taken #if branch should not report invalid-condition diagnostics for later #elif"),
-		PreprocessDiagnosticSummary.Contains(TEXT("Invalid preprocessor condition: UNKNOWN_FLAG")));
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should preserve the active Entry implementation in processed code"),
-		ProcessedCode.Contains(TEXT("return 7;")));
-	bPassed &= TestFalse(
-		TEXT("Taken #if branch should strip UNKNOWN_FLAG text from processed code"),
-		ProcessedCode.Contains(TEXT("UNKNOWN_FLAG")));
-	Engine.ResetDiagnostics();
-	FAngelscriptCompileTraceSummary Summary;
-	const bool bCompiled = CompileModuleWithSummary(
-		&Engine,
-		ECompileType::SoftReloadOnly,
-		ModuleName,
-		RelativeScriptPath,
-		ScriptSource,
-		true,
-		Summary,
-		true);
-
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should still compile through the normal compile pipeline"),
-		bCompiled);
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should report preprocessor usage in compile summary"),
-		Summary.bUsedPreprocessor);
-	bPassed &= TestEqual(
-		TEXT("Taken #if branch should keep compile summary diagnostics empty"),
-		Summary.Diagnostics.Num(),
-		0);
-	bPassed &= TestFalse(
-		TEXT("Compile summary should not report invalid-condition diagnostics for later #elif"),
-		SummaryContainsMessage(Summary, TEXT("Invalid preprocessor condition: UNKNOWN_FLAG")));
-	int32 EntryResult = 0;
-	const bool bExecuted = bCompiled
-		&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
-	bPassed &= TestTrue(
-		TEXT("Taken #if branch should execute the compiled Entry function"),
-		bExecuted);
-	if (bExecuted)
-	{
-		bPassed &= TestEqual(
-			TEXT("Taken #if branch should keep the active branch result"),
-			EntryResult,
-			7);
-	}
-	ASTEST_END_FULL
-	return bPassed;
-}
-
-bool FAngelscriptPreprocessorStringLiteralDirectiveLexerTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateDirectiveEditorEngine();
-	if (!TestNotNull(TEXT("Directive string-literal test should create an editor-configured engine"), OwnedEngine.Get()))
-		return false;
-	FAngelscriptEngine& Engine = *OwnedEngine;
-	ASTEST_BEGIN_FULL
-	static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.StringLiteralDoesNotTriggerDirectiveLexer"));
-	ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/StringLiteralDoesNotTriggerDirectiveLexer.as");
-	const FString ScriptSource = TEXT(R"AS(
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/StringLiteralDoesNotTriggerDirectiveLexer.as");
+		const FString ScriptSource = TEXT(R"AS(
 FString BuildMarker()
 {
 	return "debug #if RELEASE #else keep";
@@ -561,108 +312,401 @@ int Entry()
 	return BuildMarker() == "debug #if RELEASE #else keep" ? 42 : 0;
 }
 )AS");
-	const FString AbsoluteScriptPath = WritePreprocessorDirectiveFixture(RelativeScriptPath, ScriptSource);
-	Engine.ResetDiagnostics();
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-	int32 PreprocessErrorCount = 0;
-	const TArray<FString> PreprocessDiagnosticMessages = CollectDiagnosticMessages(Engine, {AbsoluteScriptPath}, PreprocessErrorCount);
-	const FString ProcessedCode = (Modules.Num() > 0 && Modules[0]->Code.Num() > 0) ? Modules[0]->Code[0].Code : FString();
-	bPassed &= TestTrue(TEXT("String-literal #if/#else text should let preprocessing succeed"), bPreprocessSucceeded);
-	bPassed &= TestEqual(TEXT("String-literal #if/#else text should keep preprocessing diagnostics empty"), PreprocessDiagnosticMessages.Num(), 0);
-	bPassed &= TestEqual(TEXT("String-literal #if/#else text should not emit preprocessing errors"), PreprocessErrorCount, 0);
-	bPassed &= TestTrue(TEXT("String-literal #if/#else text should survive preprocessing unchanged"), ProcessedCode.Contains(TEXT("\"debug #if RELEASE #else keep\"")));
-	Engine.ResetDiagnostics();
-	FAngelscriptCompileTraceSummary Summary;
-	const bool bCompiled = CompileModuleWithSummary(&Engine, ECompileType::SoftReloadOnly, ModuleName, RelativeScriptPath, ScriptSource, true, Summary, true);
-	bPassed &= TestTrue(TEXT("String-literal #if/#else text should compile through the preprocessor pipeline"), bCompiled);
-	bPassed &= TestEqual(TEXT("String-literal #if/#else text should keep compile diagnostics empty"), Summary.Diagnostics.Num(), 0);
-	int32 EntryResult = 0;
-	const bool bExecuted = bCompiled && ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
-	bPassed &= TestTrue(TEXT("String-literal #if/#else text should execute the compiled Entry function"), bExecuted);
-	if (bExecuted)
-		bPassed &= TestEqual(TEXT("String-literal #if/#else text should keep Entry() returning the string-match sentinel"), EntryResult, 42);
-	ASTEST_END_FULL
-	return bPassed;
-}
 
-bool FAngelscriptPreprocessorCompoundConditionReportsUnsupportedSyntaxTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	AddExpectedError(TEXT("Invalid preprocessor condition:"), EAutomationExpectedErrorFlags::Contains, 1);
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
 
-	TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateDirectiveEditorEngine();
-	if (!TestNotNull(TEXT("Compound-condition directive test should create an editor-configured engine"), OwnedEngine.Get()))
-	{
-		return false;
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		const FAngelscriptModuleDesc* Module = Result.FindModule(
+			TEXT("Tests.Preprocessor.Directives.StringLiteralDoesNotTriggerDirectiveLexer"));
+		if (Module != nullptr)
+		{
+			AssertModuleCodeContains(*TestRunner, Result, *Module,
+				TEXT("\"debug #if RELEASE #else keep\""));
+		}
+
+		// Compile and execute
+		Engine.ResetDiagnostics();
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary, true);
+
+		TestRunner->TestTrue(TEXT("Should compile successfully"), bCompiled);
+		TestRunner->TestEqual(TEXT("Should emit no compile diagnostics"), Summary.Diagnostics.Num(), 0);
+
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(TEXT("Entry should execute"), bExecuted);
+		if (bExecuted)
+		{
+			TestRunner->TestEqual(TEXT("String comparison should match → 42"), EntryResult, 42);
+		}
+
+		ASTEST_END_FULL
 	}
 
-	FAngelscriptEngine& Engine = *OwnedEngine;
-	ASTEST_BEGIN_FULL
-
-	bPassed &= TestTrue(
-		TEXT("Compound-condition directive test should run with EDITOR flag enabled in the active engine context"),
-		FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext());
-
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/CompoundConditionReportsUnsupportedSyntax.as");
-	const FString ScriptSource = TEXT(
-		"#if EDITOR && TEST\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 7;\n"
-		"}\n"
-		"#endif\n");
-	const FString AbsoluteScriptPath = WritePreprocessorDirectiveFixture(RelativeScriptPath, ScriptSource);
-
-	Engine.ResetDiagnostics();
-	Engine.LastEmittedDiagnostics.Empty();
-
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
-
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-	const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
-
-	bPassed &= TestFalse(
-		TEXT("Compound #if conditions should fail direct preprocessing"),
-		bPreprocessSucceeded);
-	bPassed &= TestNotNull(
-		TEXT("Compound #if conditions should record diagnostics for the failing file"),
-		Diagnostics);
-	bPassed &= TestEqual(
-		TEXT("Compound #if conditions should emit exactly one preprocessing error"),
-		CountErrorDiagnostics(Diagnostics),
-		1);
-	bPassed &= TestFalse(
-		TEXT("Compound #if conditions should not leave compilable code sections behind after preprocessing fails"),
-		ContainsCompilableCode(Modules));
-
-	const bool bHasFirstDiagnostic = Diagnostics != nullptr && Diagnostics->Diagnostics.Num() > 0;
-	bPassed &= TestTrue(
-		TEXT("Compound #if conditions should emit a first diagnostic entry"),
-		bHasFirstDiagnostic);
-	if (bHasFirstDiagnostic)
+	// ========================================================================
+	// CompoundConditionReportsUnsupportedSyntax — "#if EDITOR && TEST"
+	// fails preprocessing with a stable diagnostic at row 1
+	// ========================================================================
+	TEST_METHOD(CompoundConditionReportsUnsupportedSyntax)
 	{
-		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
-		bPassed &= TestEqual(
-			TEXT("Compound #if conditions should report the expected invalid-condition text"),
-			FirstDiagnostic.Message,
-			FString(TEXT("Invalid preprocessor condition: EDITOR && TEST")));
-		bPassed &= TestEqual(
-			TEXT("Compound #if conditions should pin the diagnostic row to the #if line"),
-			FirstDiagnostic.Row,
-			1);
-		bPassed &= TestEqual(
-			TEXT("Compound #if conditions should keep the diagnostic column at the directive start"),
-			FirstDiagnostic.Column,
-			1);
+		TestRunner->AddExpectedError(TEXT("Invalid preprocessor condition:"), EAutomationExpectedErrorFlags::Contains, 1);
+
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
+
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/CompoundConditionReportsUnsupportedSyntax.as");
+		const FString ScriptSource = TEXT(
+			"#if EDITOR && TEST\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 7;\n"
+			"}\n"
+			"#endif\n");
+
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+
+		// Use EDITOR flag so the compound condition is the actual error, not a missing flag
+		auto Result = RunPreprocess(Engine, File, {{TEXT("EDITOR"), true}});
+
+		AssertPreprocessFailed(*TestRunner, Result);
+		AssertErrorCount(*TestRunner, Result, 1);
+		AssertDiagnosticContains(*TestRunner, Result, TEXT("Invalid preprocessor condition: EDITOR && TEST"));
+		AssertDiagnosticAt(*TestRunner, Result, TEXT("Invalid preprocessor condition"), 1, 1);
+		AssertNoCompilableCode(*TestRunner, Result);
+
+		ASTEST_END_MODULE_CLEAN
 	}
 
-	ASTEST_END_FULL
-	return bPassed;
-}
+	// ========================================================================
+	// StructuralErrorsReportStableDiagnostics — isolated #elif/#else/#endif
+	// and missing #endif all produce stable error diagnostics
+	// ========================================================================
+	TEST_METHOD(StructuralErrorsReportStableDiagnostics)
+	{
+		TestRunner->AddExpectedError(TEXT("Invalid #elif, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("Invalid #else, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("Invalid #endif, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("Preceding preprocessor #if/#ifdef/#else was not closed, missing #endif."), EAutomationExpectedErrorFlags::Contains, 1);
 
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
+
+		struct FDirectiveErrorCase
+		{
+			const TCHAR* Label;
+			const TCHAR* RelativePath;
+			const TCHAR* Source;
+			const TCHAR* ExpectedMessage;
+			int32 ExpectedRow;
+		};
+
+		const TArray<FDirectiveErrorCase> Cases = {
+			{
+				TEXT("Isolated #elif"),
+				TEXT("Tests/Preprocessor/DirectiveErrors/InvalidElif.as"),
+				TEXT("#elif EDITOR\nint Value = 1;\n"),
+				TEXT("Invalid #elif, no matching #if found."),
+				1
+			},
+			{
+				TEXT("Isolated #else"),
+				TEXT("Tests/Preprocessor/DirectiveErrors/InvalidElse.as"),
+				TEXT("#else\nint Value = 1;\n"),
+				TEXT("Invalid #else, no matching #if found."),
+				1
+			},
+			{
+				TEXT("Isolated #endif"),
+				TEXT("Tests/Preprocessor/DirectiveErrors/InvalidEndif.as"),
+				TEXT("#endif\nint Value = 1;\n"),
+				TEXT("Invalid #endif, no matching #if found."),
+				1
+			},
+			{
+				TEXT("Missing #endif"),
+				TEXT("Tests/Preprocessor/DirectiveErrors/MissingEndif.as"),
+				TEXT("#if EDITOR\nint Value = 1;\n"),
+				TEXT("Preceding preprocessor #if/#ifdef/#else was not closed, missing #endif."),
+				1
+			}
+		};
+
+		for (const FDirectiveErrorCase& Case : Cases)
+		{
+			Engine.ResetDiagnostics();
+			Engine.LastEmittedDiagnostics.Empty();
+
+			FFixtureFile File(Case.RelativePath, Case.Source);
+
+			auto Result = RunPreprocess(Engine, File);
+
+			TestRunner->TestFalse(
+				FString::Printf(TEXT("%s should fail preprocessing"), Case.Label),
+				Result.bSuccess);
+			TestRunner->TestEqual(
+				FString::Printf(TEXT("%s should emit exactly one error"), Case.Label),
+				Result.ErrorCount, 1);
+			AssertDiagnosticContains(*TestRunner, Result, Case.ExpectedMessage);
+			AssertDiagnosticAt(*TestRunner, Result, Case.ExpectedMessage, Case.ExpectedRow, 1);
+			TestRunner->TestFalse(
+				FString::Printf(TEXT("%s should not leave compilable code"), Case.Label),
+				ContainsCompilableCode(Result));
+		}
+
+		ASTEST_END_MODULE_CLEAN
+	}
+
+	// ========================================================================
+	// TabSeparatedDirectiveParsing — tab between "#if" and "EDITOR" is valid;
+	// nested #ifdef with tabs also works; #restrict usage with tab is parsed
+	// ========================================================================
+	TEST_METHOD(TabSeparatedDirectiveParsing)
+	{
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = CreateEditorEngine();
+		if (!TestRunner->TestNotNull(TEXT("Should create editor engine"), OwnedEngine.Get()))
+		{
+			return;
+		}
+
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
+
+		static const FName ModuleName(TEXT("Game.Preprocessor.Directives.TabSeparatedDirectiveParsing"));
+		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
+
+		const FString RelativeScriptPath = TEXT("Game/Preprocessor/Directives/TabSeparatedDirectiveParsing.as");
+		const FString ScriptSource = TEXT(
+			"#if\tEDITOR\n"
+			"#ifdef\tEDITOR\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 74;\n"
+			"}\n"
+			"#else\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 704;\n"
+			"}\n"
+			"#endif\n"
+			"#else\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 0;\n"
+			"}\n"
+			"#endif\n"
+			"#restrict usage allow\tGame.*\n"
+			);
+
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		const FAngelscriptModuleDesc* Module = Result.FindModule(
+			TEXT("Game.Preprocessor.Directives.TabSeparatedDirectiveParsing"));
+		if (Module != nullptr)
+		{
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 74;"));
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("int Entry()"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 704;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 0;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("#if"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("#restrict"));
+
+#if WITH_EDITOR
+			TestRunner->TestEqual(
+				TEXT("Should record one usage restriction"),
+				Module->UsageRestrictions.Num(), 1);
+			if (Module->UsageRestrictions.Num() == 1)
+			{
+				TestRunner->TestTrue(TEXT("Should be an allow restriction"),
+					Module->UsageRestrictions[0].bIsAllow);
+				TestRunner->TestEqual(TEXT("Pattern should be Game.*"),
+					Module->UsageRestrictions[0].Pattern, FString(TEXT("Game.*")));
+			}
 #endif
+		}
+
+		// Compile and execute
+		Engine.ResetDiagnostics();
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary, true);
+
+		TestRunner->TestTrue(TEXT("Should compile successfully"), bCompiled);
+		TestRunner->TestTrue(TEXT("Should report preprocessor usage"), Summary.bUsedPreprocessor);
+		TestRunner->TestEqual(TEXT("Should emit no compile diagnostics"), Summary.Diagnostics.Num(), 0);
+
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, RelativeScriptPath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(TEXT("Entry should execute"), bExecuted);
+		if (bExecuted)
+		{
+			TestRunner->TestEqual(TEXT("Nested tab-separated EDITOR branch should return 74"), EntryResult, 74);
+		}
+
+		ASTEST_END_FULL
+	}
+
+	// ========================================================================
+	// IncludeDirectiveProducesDeterministicResult — #include "Shared.as"
+	// always fails with a stable unsupported-directive diagnostic
+	// ========================================================================
+	TEST_METHOD(IncludeDirectiveProducesDeterministicResult)
+	{
+		static const FString ExpectedDiagnostic(TEXT("Unsupported preprocessor directive '#include'. Use import or automatic imports instead."));
+
+		TestRunner->AddExpectedError(*ExpectedDiagnostic, EAutomationExpectedErrorFlags::Contains, 2);
+
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
+
+		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IncludeDirectiveProducesDeterministicResult"));
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/IncludeDirectiveProducesDeterministicResult.as");
+		const FString ScriptSource = TEXT(
+			"#include \"Shared.as\"\n"
+			"int Entry()\n"
+			"{\n"
+			"    return 42;\n"
+			"}\n");
+
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessFailed(*TestRunner, Result);
+		AssertErrorCount(*TestRunner, Result, 1);
+		AssertDiagnosticContains(*TestRunner, Result, ExpectedDiagnostic);
+		AssertDiagnosticAt(*TestRunner, Result, ExpectedDiagnostic, 1);
+
+		// Verify it also fails through the compile pipeline
+		Engine.ResetDiagnostics();
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine, ECompileType::SoftReloadOnly, ModuleName,
+			RelativeScriptPath, ScriptSource, true, Summary, true);
+
+		TestRunner->TestFalse(TEXT("Should fail through compile pipeline"), bCompiled);
+		TestRunner->TestTrue(TEXT("Should report preprocessor usage"), Summary.bUsedPreprocessor);
+		TestRunner->TestEqual(TEXT("CompileResult should be Error"), Summary.CompileResult, ECompileResult::Error);
+		TestRunner->TestEqual(TEXT("Should not compile any module"), Summary.CompiledModuleCount, 0);
+
+		// Verify the same diagnostic is collected by the compile-trace summary.
+		// Note: CompileModuleWithSummary uses an internal preprocessor instance,
+		// so the per-engine Diagnostics map is not the right place to look —
+		// the summary's Diagnostics array is.
+		const bool bSummaryHasIncludeDiag = Summary.Diagnostics.ContainsByPredicate(
+			[](const FAngelscriptCompileTraceDiagnosticSummary& D)
+			{ return D.bIsError && D.Message.Contains(ExpectedDiagnostic); });
+		TestRunner->TestTrue(
+			TEXT("Compile-trace summary should record the #include diagnostic"),
+			bSummaryHasIncludeDiag);
+
+		ASTEST_END_MODULE_CLEAN
+	}
+
+	// ========================================================================
+	// DeeplyNestedConditionals — 3+ layers of nested #if/#ifdef/#ifndef
+	// all resolve correctly: only the innermost active branch survives
+	//
+	// Note: flag overrides are only honored by FAngelscriptPreprocessor instances
+	// passed to RunPreprocess. The compile pipeline (CompileModuleWithSummary)
+	// constructs its own preprocessor without overrides, so we cannot validate
+	// branch selection through ExecuteIntFunction here without altering the
+	// compile helper. We therefore validate branch selection purely on the
+	// preprocessor output (module code text).
+	// ========================================================================
+	TEST_METHOD(DeeplyNestedConditionals)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
+
+		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/DeeplyNestedConditionals.as");
+		const FString ScriptSource = TEXT(
+			"#ifdef OUTER\n"
+			"  #ifdef MIDDLE\n"
+			"    #ifdef INNER\n"
+			"    int Entry() { return 1; }\n"
+			"    #else\n"
+			"    int Entry() { return 2; }\n"
+			"    #endif\n"
+			"  #else\n"
+			"  int Entry() { return 3; }\n"
+			"  #endif\n"
+			"#else\n"
+			"  #ifndef MIDDLE\n"
+			"    #ifdef INNER\n"
+			"    int Entry() { return 4; }\n"
+			"    #else\n"
+			"    int Entry() { return 5; }\n"
+			"    #endif\n"
+			"  #else\n"
+			"  int Entry() { return 6; }\n"
+			"  #endif\n"
+			"#endif\n");
+
+		// OUTER=false → #else branch → MIDDLE not defined → #ifndef taken → INNER=true → return 4
+		FFixtureFile File(RelativeScriptPath, ScriptSource);
+		auto Result = RunPreprocess(Engine, File,
+			{{TEXT("OUTER"), false}, {TEXT("MIDDLE"), false}, {TEXT("INNER"), true}});
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 0);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		FAngelscriptModuleDesc* Module = AssertModuleExists(
+			*TestRunner, Result, TEXT("Tests.Preprocessor.Directives.DeeplyNestedConditionals"));
+		if (Module != nullptr)
+		{
+			AssertModuleCodeContains(*TestRunner, Result, *Module, TEXT("return 4;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 1;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 2;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 3;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 5;"));
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("return 6;"));
+		}
+
+		// Cross-check: with no flag overrides, the default-undefined path
+		// (OUTER undef → #else; MIDDLE undef → #ifndef true; INNER undef → #else)
+		// should select 'return 5;'. This validates that flag overrides actually
+		// drove the result above, instead of being a no-op.
+		auto DefaultResult = RunPreprocess(Engine, File);
+		AssertPreprocessSucceeded(*TestRunner, DefaultResult);
+		FAngelscriptModuleDesc* DefaultModule = AssertModuleExists(
+			*TestRunner, DefaultResult, TEXT("Tests.Preprocessor.Directives.DeeplyNestedConditionals"));
+		if (DefaultModule != nullptr)
+		{
+			AssertModuleCodeContains(*TestRunner, DefaultResult, *DefaultModule, TEXT("return 5;"));
+			AssertModuleCodeNotContains(*TestRunner, DefaultResult, *DefaultModule, TEXT("return 4;"));
+		}
+
+		ASTEST_END_MODULE_CLEAN
+	}
+
+private:
+	// Helper to create an editor-configured engine for tests that need #if EDITOR
+	static TUniquePtr<FAngelscriptEngine> CreateEditorEngine()
+	{
+		FAngelscriptEngineConfig Config;
+		Config.bIsEditor = true;
+		FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		return AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(Config, Dependencies);
+	}
+};
+
+#endif // WITH_DEV_AUTOMATION_TESTS

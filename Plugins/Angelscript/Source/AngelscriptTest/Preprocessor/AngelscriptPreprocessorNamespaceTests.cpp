@@ -1,223 +1,295 @@
-#include "Shared/AngelscriptTestUtilities.h"
-#include "Shared/AngelscriptTestMacros.h"
+// ============================================================================
+// AngelscriptPreprocessorNamespaceTests.cpp
+//
+// Preprocessor tests for namespace handling and restrict-usage directives.
+//
+// Migrated from:
+//   - AngelscriptPreprocessorNamespaceTests.cpp (InvalidDeclarationReportsSyntax)
+//   - AngelscriptPreprocessorRestrictUsageTests.cpp (InactiveBranchIgnored)
+//
+// Automation prefix: Angelscript.TestModule.Preprocessor.Namespace.*
+// ============================================================================
 
-#include "Preprocessor/AngelscriptPreprocessor.h"
-
-#include "HAL/FileManager.h"
-#include "Misc/AutomationTest.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
-#include "Misc/ScopeExit.h"
+#include "CQTest.h"
+#include "Preprocessor/AngelscriptPreprocessorTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+using namespace PreprocessorTestHelpers;
 using namespace AngelscriptTestSupport;
 
-namespace PreprocessorNamespaceTest
+// ============================================================================
+// Helpers
+// ============================================================================
+
+namespace NamespaceTestHelpers
 {
-	static const TCHAR* InvalidNamespaceMessage = TEXT("Invalid namespace declaration, expected '{' after namespace name.");
-
-	FString GetFixtureRoot()
+	static TUniquePtr<FAngelscriptEngine> CreateEditorEngine()
 	{
-		return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("PreprocessorNamespaceFixtures"));
-	}
-
-	FString WriteFixture(const FString& RelativeScriptPath, const FString& Contents)
-	{
-		const FString AbsolutePath = FPaths::Combine(GetFixtureRoot(), RelativeScriptPath);
-		IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsolutePath), true);
-		FFileHelper::SaveStringToFile(Contents, *AbsolutePath);
-		return AbsolutePath;
-	}
-
-	int32 CountErrorDiagnostics(const FAngelscriptEngine::FDiagnostics* Diagnostics)
-	{
-		if (Diagnostics == nullptr)
-		{
-			return 0;
-		}
-
-		int32 ErrorCount = 0;
-		for (const FAngelscriptEngine::FDiagnostic& Diagnostic : Diagnostics->Diagnostics)
-		{
-			if (Diagnostic.bIsError)
-			{
-				++ErrorCount;
-			}
-		}
-
-		return ErrorCount;
-	}
-
-	bool ContainsCompilableCode(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules)
-	{
-		for (const TSharedRef<FAngelscriptModuleDesc>& Module : Modules)
-		{
-			for (const FAngelscriptModuleDesc::FCodeSection& Section : Module->Code)
-			{
-				if (!Section.Code.IsEmpty())
-				{
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	const FAngelscriptPreprocessor::FChunk* FindFirstChunkOfType(
-		const FAngelscriptPreprocessor& Preprocessor,
-		const FAngelscriptPreprocessor::EChunkType ChunkType)
-	{
-		for (const FAngelscriptPreprocessor::FFile& File : Preprocessor.Files)
-		{
-			for (const FAngelscriptPreprocessor::FChunk& Chunk : File.ChunkedCode)
-			{
-				if (Chunk.Type == ChunkType)
-				{
-					return &Chunk;
-				}
-			}
-		}
-
-		return nullptr;
-	}
-
-	const FAngelscriptPreprocessor::FChunk* FindChunkContainingText(
-		const FAngelscriptPreprocessor& Preprocessor,
-		const FString& Needle)
-	{
-		for (const FAngelscriptPreprocessor::FFile& File : Preprocessor.Files)
-		{
-			for (const FAngelscriptPreprocessor::FChunk& Chunk : File.ChunkedCode)
-			{
-				if (Chunk.Content.Contains(Needle))
-				{
-					return &Chunk;
-				}
-			}
-		}
-
-		return nullptr;
+		FAngelscriptEngineConfig Config;
+		Config.bIsEditor = true;
+		FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		return AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(Config, Dependencies);
 	}
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptPreprocessorInvalidNamespaceDeclarationReportsSyntaxTest,
-	"Angelscript.TestModule.Preprocessor.Namespace.InvalidDeclarationReportsSyntax",
+// ============================================================================
+// Test class
+// ============================================================================
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorNamespaceTest,
+	"Angelscript.TestModule.Preprocessor.Namespace",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptPreprocessorInvalidNamespaceDeclarationReportsSyntaxTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = true;
-	AddExpectedErrorPlain(PreprocessorNamespaceTest::InvalidNamespaceMessage, EAutomationExpectedErrorFlags::Contains, 1);
-
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-	ASTEST_BEGIN_MODULE_CLEAN
-
-	Engine.ResetDiagnostics();
-	Engine.LastEmittedDiagnostics.Empty();
-
-	const FString ScriptSource = TEXT(
-		"namespace Gameplay\n"
-		"UCLASS()\n"
-		"class UBrokenNamespaceCarrier : UObject\n"
-		"{\n"
-		"}\n"
-		"\n"
-		"int Entry()\n"
-		"{\n"
-		"    return 7;\n"
-		"}\n");
-
-	const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Namespace/InvalidDeclarationReportsSyntax.as");
-	const FString AbsoluteScriptPath = PreprocessorNamespaceTest::WriteFixture(RelativeScriptPath, ScriptSource);
-	ON_SCOPE_EXIT
+	// ========================================================================
+	// InvalidDeclarationReportsSyntax — missing '{' after namespace name
+	// ========================================================================
+	TEST_METHOD(InvalidDeclarationReportsSyntax)
 	{
-		IFileManager::Get().Delete(*AbsoluteScriptPath, false, true);
-	};
+		static const TCHAR* InvalidNamespaceMessage =
+			TEXT("Invalid namespace declaration, expected '{' after namespace name.");
 
-	FAngelscriptPreprocessor Preprocessor;
-	Preprocessor.AddFile(RelativeScriptPath, AbsoluteScriptPath);
+		TestRunner->AddExpectedErrorPlain(InvalidNamespaceMessage, EAutomationExpectedErrorFlags::Contains, 1);
 
-	const bool bPreprocessSucceeded = Preprocessor.Preprocess();
-	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = Preprocessor.GetModulesToCompile();
-	const FAngelscriptEngine::FDiagnostics* Diagnostics = Engine.Diagnostics.Find(AbsoluteScriptPath);
-	const FAngelscriptPreprocessor::FChunk* ClassChunk =
-		PreprocessorNamespaceTest::FindFirstChunkOfType(Preprocessor, FAngelscriptPreprocessor::EChunkType::Class);
-	const FAngelscriptPreprocessor::FChunk* EntryChunk =
-		PreprocessorNamespaceTest::FindChunkContainingText(Preprocessor, TEXT("int Entry()"));
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
+		ASTEST_BEGIN_MODULE_CLEAN
 
-	bPassed &= TestFalse(
-		TEXT("Invalid namespace declaration should fail during preprocessing"),
-		bPreprocessSucceeded);
-	bPassed &= TestEqual(
-		TEXT("Invalid namespace declaration should keep exactly one module descriptor for inspection"),
-		Modules.Num(),
-		1);
-	bPassed &= TestNotNull(
-		TEXT("Invalid namespace declaration should emit diagnostics for the failing file"),
-		Diagnostics);
-	bPassed &= TestNotNull(
-		TEXT("Invalid namespace declaration should still parse the class chunk before fail-closed cleanup"),
-		ClassChunk);
-	bPassed &= TestNotNull(
-		TEXT("Invalid namespace declaration should still keep the trailing Entry chunk available for inspection"),
-		EntryChunk);
+		FFixtureFile File(TEXT("Tests/Preprocessor/Namespace/InvalidDeclarationReportsSyntax.as"),
+			TEXT("namespace Gameplay\n")
+			TEXT("UCLASS()\n")
+			TEXT("class UBrokenNamespaceCarrier : UObject\n")
+			TEXT("{\n")
+			TEXT("}\n")
+			TEXT("\n")
+			TEXT("int Entry()\n")
+			TEXT("{\n")
+			TEXT("    return 7;\n")
+			TEXT("}\n"));
 
-	if (Diagnostics != nullptr && Diagnostics->Diagnostics.Num() > 0)
-	{
-		const FAngelscriptEngine::FDiagnostic& FirstDiagnostic = Diagnostics->Diagnostics[0];
-		bPassed &= TestEqual(
-			TEXT("Invalid namespace declaration should emit exactly one error diagnostic"),
-			PreprocessorNamespaceTest::CountErrorDiagnostics(Diagnostics),
-			1);
-		bPassed &= TestEqual(
-			TEXT("Invalid namespace declaration should report the expected namespace syntax error text"),
-			FirstDiagnostic.Message,
-			FString(PreprocessorNamespaceTest::InvalidNamespaceMessage));
-		bPassed &= TestEqual(
-			TEXT("Invalid namespace declaration should pin the diagnostic row to the namespace line"),
-			FirstDiagnostic.Row,
-			1);
-		bPassed &= TestEqual(
-			TEXT("Invalid namespace declaration should keep the diagnostic column at the namespace start"),
-			FirstDiagnostic.Column,
-			1);
+		auto Session = RunPreprocessSession(Engine, File);
+		const auto& Result = Session.Result;
+
+		AssertPreprocessFailed(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertErrorCount(*TestRunner, Result, 1);
+		AssertDiagnosticContains(*TestRunner, Result, FString(InvalidNamespaceMessage));
+		AssertDiagnosticAt(*TestRunner, Result, FString(InvalidNamespaceMessage), /*Row=*/1, /*Column=*/1);
+
+		// Verify chunk-level state: class and trailing code chunks should exist
+		// but neither should have a namespace set (error prevents namespace propagation).
+		const FAngelscriptPreprocessor::FChunk* ClassChunk =
+			Session.FindFirstChunkOfType(FAngelscriptPreprocessor::EChunkType::Class);
+		const FAngelscriptPreprocessor::FChunk* EntryChunk = nullptr;
+		for (const FAngelscriptPreprocessor::FFile& PPFile : Session.GetFiles())
+		{
+			for (const FAngelscriptPreprocessor::FChunk& Chunk : PPFile.ChunkedCode)
+			{
+				if (Chunk.Content.Contains(TEXT("int Entry()")))
+				{
+					EntryChunk = &Chunk;
+					break;
+				}
+			}
+			if (EntryChunk != nullptr)
+			{
+				break;
+			}
+		}
+
+		TestRunner->TestNotNull(
+			TEXT("Should still parse the class chunk before fail-closed cleanup"),
+			ClassChunk);
+		TestRunner->TestNotNull(
+			TEXT("Should still keep the trailing Entry chunk available for inspection"),
+			EntryChunk);
+
+		if (ClassChunk != nullptr)
+		{
+			TestRunner->TestFalse(
+				TEXT("Gameplay namespace should not leak into the class chunk"),
+				ClassChunk->Namespace.IsSet());
+		}
+
+		if (EntryChunk != nullptr)
+		{
+			TestRunner->TestFalse(
+				TEXT("Gameplay namespace should not leak into the trailing global chunk"),
+				EntryChunk->Namespace.IsSet());
+		}
+
+		if (Result.Modules.Num() == 1)
+		{
+			FAngelscriptModuleDesc& Module = Result.Modules[0].Get();
+			TestRunner->TestEqual(
+				TEXT("Should not emit any processed code sections"),
+				Module.Code.Num(), 0);
+			AssertModuleNotDeclaresClass(*TestRunner, Module, TEXT("UBrokenNamespaceCarrier"));
+		}
+
+		AssertNoCompilableCode(*TestRunner, Result);
+
+		ASTEST_END_MODULE_CLEAN
 	}
 
-	if (ClassChunk != nullptr)
+	// ========================================================================
+	// RestrictUsageInactiveBranchIgnored — #restrict usage inside #if !EDITOR
+	// is skipped when running in editor context
+	// ========================================================================
+	TEST_METHOD(RestrictUsageInactiveBranchIgnored)
 	{
-		bPassed &= TestFalse(
-			TEXT("Invalid namespace declaration should not leak Gameplay into the class chunk namespace"),
-			ClassChunk->Namespace.IsSet());
-	}
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = NamespaceTestHelpers::CreateEditorEngine();
+		if (!TestRunner->TestNotNull(
+				TEXT("Should create an editor-configured engine"), OwnedEngine.Get()))
+		{
+			return;
+		}
 
-	if (EntryChunk != nullptr)
-	{
-		bPassed &= TestFalse(
-			TEXT("Invalid namespace declaration should not leak Gameplay into the trailing global chunk namespace"),
-			EntryChunk->Namespace.IsSet());
-	}
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
 
-	if (Modules.Num() == 1)
-	{
-		FAngelscriptModuleDesc& Module = Modules[0].Get();
-		bPassed &= TestEqual(
-			TEXT("Invalid namespace declaration should not emit any processed code sections"),
-			Module.Code.Num(),
-			0);
-		bPassed &= TestNull(
-			TEXT("Invalid namespace declaration should not surface a compilable class descriptor"),
-			Module.GetClass(TEXT("UBrokenNamespaceCarrier")).Get());
-	}
+		TestRunner->TestTrue(
+			TEXT("Should run with EDITOR enabled"),
+			FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext());
 
-	bPassed &= TestFalse(
-		TEXT("Invalid namespace declaration should not leave behind compilable code after preprocessing fails"),
-		PreprocessorNamespaceTest::ContainsCompilableCode(Modules));
+		FFixtureFile File(
+			TEXT("Game/Preprocessor/RestrictUsage/InactiveBranchIgnored.as"),
+			TEXT("#if !EDITOR\n")
+			TEXT("#restrict usage disallow Runtime.*\n")
+			TEXT("#endif\n")
+			TEXT("int Entry()\n")
+			TEXT("{\n")
+			TEXT("    return 7;\n")
+			TEXT("}\n"));
 
-	ASTEST_END_MODULE_CLEAN
-	return bPassed;
-}
+		auto Result = RunPreprocess(Engine, File);
 
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertNoDiagnostics(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+
+		if (Result.Modules.Num() > 0)
+		{
+			const FAngelscriptModuleDesc& Module = Result.Modules[0].Get();
+
+			if (Module.Code.Num() > 0)
+			{
+				TestRunner->TestFalse(
+					TEXT("Should strip raw #restrict text from processed code"),
+					Module.Code[0].Code.Contains(TEXT("#restrict")));
+				TestRunner->TestFalse(
+					TEXT("Should not leak the dead-branch pattern into processed code"),
+					Module.Code[0].Code.Contains(TEXT("Runtime.*")));
+			}
+
+#if WITH_EDITOR
+			TestRunner->TestEqual(
+				TEXT("Should not record usage restriction metadata for inactive branch"),
+				Module.UsageRestrictions.Num(), 0);
 #endif
+		}
+
+		// Compile and execute to confirm the active branch works end-to-end
+		static const FName ModuleName(TEXT("Game.Preprocessor.RestrictUsage.InactiveBranchIgnored"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+		};
+
+		Engine.ResetDiagnostics();
+
+		const FString ScriptSource =
+			TEXT("#if !EDITOR\n")
+			TEXT("#restrict usage disallow Runtime.*\n")
+			TEXT("#endif\n")
+			TEXT("int Entry()\n")
+			TEXT("{\n")
+			TEXT("    return 7;\n")
+			TEXT("}\n");
+
+		FAngelscriptCompileTraceSummary Summary;
+		const bool bCompiled = CompileModuleWithSummary(
+			&Engine,
+			ECompileType::SoftReloadOnly,
+			ModuleName,
+			File.RelativePath,
+			ScriptSource,
+			true,
+			Summary,
+			true);
+
+		TestRunner->TestTrue(
+			TEXT("Should compile through the preprocessor pipeline"), bCompiled);
+		TestRunner->TestEqual(
+			TEXT("Should have no compile diagnostics"),
+			Summary.Diagnostics.Num(), 0);
+
+		int32 EntryResult = 0;
+		const bool bExecuted = bCompiled
+			&& ExecuteIntFunction(&Engine, File.RelativePath, ModuleName, TEXT("int Entry()"), EntryResult);
+		TestRunner->TestTrue(
+			TEXT("Should execute the compiled Entry function"), bExecuted);
+		if (bExecuted)
+		{
+			TestRunner->TestEqual(
+				TEXT("Entry should return the active branch result"),
+				EntryResult, 7);
+		}
+
+		ASTEST_END_FULL
+	}
+
+	// ========================================================================
+	// RestrictUsageAllowPattern — #restrict usage allow in an active branch
+	// records the usage restriction with the correct pattern
+	// ========================================================================
+	TEST_METHOD(RestrictUsageAllowPattern)
+	{
+		TUniquePtr<FAngelscriptEngine> OwnedEngine = NamespaceTestHelpers::CreateEditorEngine();
+		if (!TestRunner->TestNotNull(TEXT("Should create editor engine"), OwnedEngine.Get()))
+		{
+			return;
+		}
+
+		FAngelscriptEngine& Engine = *OwnedEngine;
+		ASTEST_BEGIN_FULL
+
+		FFixtureFile File(TEXT("Game/Preprocessor/Namespace/RestrictAllow.as"),
+			TEXT("#restrict usage allow Game.UI.*\n")
+			TEXT("#restrict usage disallow Game.Internal.*\n")
+			TEXT("int Entry()\n{\n    return 42;\n}\n"));
+
+		auto Result = RunPreprocess(Engine, File);
+
+		AssertPreprocessSucceeded(*TestRunner, Result);
+		AssertModuleCount(*TestRunner, Result, 1);
+		AssertNoDiagnostics(*TestRunner, Result);
+
+		FAngelscriptModuleDesc* Module = Result.FindModule(
+			TEXT("Game.Preprocessor.Namespace.RestrictAllow"));
+		if (TestRunner->TestNotNull(TEXT("Should find module"), Module))
+		{
+			AssertModuleCodeNotContains(*TestRunner, Result, *Module, TEXT("#restrict"));
+
+#if WITH_EDITOR
+			TestRunner->TestEqual(TEXT("Should record two usage restrictions"),
+				Module->UsageRestrictions.Num(), 2);
+			if (Module->UsageRestrictions.Num() >= 2)
+			{
+				TestRunner->TestTrue(TEXT("First restriction should be allow"),
+					Module->UsageRestrictions[0].bIsAllow);
+				TestRunner->TestEqual(TEXT("First pattern should be Game.UI.*"),
+					Module->UsageRestrictions[0].Pattern, FString(TEXT("Game.UI.*")));
+
+				TestRunner->TestFalse(TEXT("Second restriction should be disallow"),
+					Module->UsageRestrictions[1].bIsAllow);
+				TestRunner->TestEqual(TEXT("Second pattern should be Game.Internal.*"),
+					Module->UsageRestrictions[1].Pattern, FString(TEXT("Game.Internal.*")));
+			}
+#endif
+		}
+
+		ASTEST_END_FULL
+	}
+};
+
+#endif // WITH_DEV_AUTOMATION_TESTS
