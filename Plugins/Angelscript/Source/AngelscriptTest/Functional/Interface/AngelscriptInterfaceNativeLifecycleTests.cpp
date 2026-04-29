@@ -1,6 +1,6 @@
 #include "CQTest.h"
 #include "Core/AngelscriptEngine.h"
-#include "Interface/AngelscriptInterfaceTestAccess.h"
+#include "Functional/Interface/AngelscriptInterfaceTestAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "Shared/AngelscriptBindingsCoverage.h"
 #include "Shared/AngelscriptBindingsModuleBuilder.h"
