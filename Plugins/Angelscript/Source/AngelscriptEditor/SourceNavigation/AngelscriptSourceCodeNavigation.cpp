@@ -25,7 +25,7 @@ namespace
 		return true;
 	}
 
-	FString BuildVSCodeOpenParameters(FString Params, const FString& VSCodeWorkspacePath, bool bOpenFolderOnVSCodeSourceLinks, const FString& ScriptRootDirectory)
+	FString BuildVSCodeOpenParametersInternal(FString Params, const FString& VSCodeWorkspacePath, bool bOpenFolderOnVSCodeSourceLinks, const FString& ScriptRootDirectory)
 	{
 		if (!VSCodeWorkspacePath.IsEmpty())
 		{
@@ -57,6 +57,11 @@ namespace AngelscriptSourceNavigation
 	FString BuildVSCodeOpenParametersForTesting(FString Params, const FString& VSCodeWorkspacePath, bool bOpenFolderOnVSCodeSourceLinks, const FString& ScriptRootDirectory)
 	{
 		return BuildVSCodeOpenParameters(MoveTemp(Params), VSCodeWorkspacePath, bOpenFolderOnVSCodeSourceLinks, ScriptRootDirectory);
+	}
+
+	FString BuildVSCodeOpenParameters(FString Params, const FString& VSCodeWorkspacePath, bool bOpenFolderOnVSCodeSourceLinks, const FString& ScriptRootDirectory)
+	{
+		return BuildVSCodeOpenParametersInternal(MoveTemp(Params), VSCodeWorkspacePath, bOpenFolderOnVSCodeSourceLinks, ScriptRootDirectory);
 	}
 }
 
@@ -194,7 +199,7 @@ private:
 
 		const FString VSCodeWorkspacePath = Settings != nullptr ? Settings->VSCodeWorkspacePath : FString();
 		const bool bOpenFolderOnVSCodeSourceLinks = Settings != nullptr && Settings->bOpenFolderOnVSCodeSourceLinks;
-		Params = BuildVSCodeOpenParameters(MoveTemp(Params), VSCodeWorkspacePath, bOpenFolderOnVSCodeSourceLinks, ScriptRootDirectory);
+		Params = BuildVSCodeOpenParametersInternal(MoveTemp(Params), VSCodeWorkspacePath, bOpenFolderOnVSCodeSourceLinks, ScriptRootDirectory);
 		FPlatformMisc::OsExecute(nullptr, TEXT("code"), *Params);
 	}
 
@@ -218,25 +223,40 @@ private:
 
 namespace AngelscriptSourceNavigation
 {
-	bool NavigateToFunctionForTesting(const UFunction* InFunction)
+	bool NavigateToFunction(const UFunction* InFunction)
 	{
 		return GAngelscriptSourceCodeNavigationHandler != nullptr
 			? GAngelscriptSourceCodeNavigationHandler->NavigateToFunction(InFunction)
 			: false;
 	}
 
-	bool NavigateToPropertyForTesting(const FProperty* InProperty)
+	bool NavigateToProperty(const FProperty* InProperty)
 	{
 		return GAngelscriptSourceCodeNavigationHandler != nullptr
 			? GAngelscriptSourceCodeNavigationHandler->NavigateToProperty(InProperty)
 			: false;
 	}
 
-	bool NavigateToStructForTesting(const UStruct* InStruct)
+	bool NavigateToStruct(const UStruct* InStruct)
 	{
 		return GAngelscriptSourceCodeNavigationHandler != nullptr
 			? GAngelscriptSourceCodeNavigationHandler->NavigateToStruct(InStruct)
 			: false;
+	}
+
+	bool NavigateToFunctionForTesting(const UFunction* InFunction)
+	{
+		return NavigateToFunction(InFunction);
+	}
+
+	bool NavigateToPropertyForTesting(const FProperty* InProperty)
+	{
+		return NavigateToProperty(InProperty);
+	}
+
+	bool NavigateToStructForTesting(const UStruct* InStruct)
+	{
+		return NavigateToStruct(InStruct);
 	}
 }
 

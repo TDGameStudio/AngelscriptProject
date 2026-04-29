@@ -35,6 +35,7 @@ namespace UnrealBuildTool.Rules
 				"GameplayAbilities",
 				"GameplayTags",
 				"Settings",
+				"InputCore",
 				"LevelEditor",
 				"PlacementMode",
 				"PropertyEditor",

@@ -49,6 +49,7 @@ public:
 
 	static void ShowAssetListPopup(const TArray<FString>& AssetPaths, class UASClass* BaseClass);
 	static void ShowCreateBlueprintPopup(class UASClass* Class);
+	static void ShowEngineStateWindow();
 
 	static void GenerateNativeBinds();
 	static void GenerateBindDatabases();	
@@ -115,6 +116,8 @@ struct FAngelscriptEditorModuleTestAccess
 	static void ResetCreateBlueprintPopupTestHooks();
 	static void SetLiteralAssetSaveTestHooks(FAngelscriptEditorModuleLiteralAssetSaveTestHooks InHooks);
 	static void ResetLiteralAssetSaveTestHooks();
+	static void SetEngineStateWindowOpenOverride(TFunction<void()> InOverride);
+	static void ResetEngineStateWindowOpenOverride();
 	static void SetPlatformExecuteOverride(TFunction<bool(const TCHAR*, const TCHAR*, const TCHAR*)> InOverride);
 	static void ResetPlatformExecuteOverride();
 	static void SetReloadGameplayTagsOverride(TFunction<void(FAngelscriptEditorModule*)> InOverride);

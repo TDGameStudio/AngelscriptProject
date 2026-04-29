@@ -12,6 +12,7 @@
 #include "KismetCompilerModule.h"
 #include "FileHelpers.h"
 #include "SPositiveActionButton.h"
+#include "StateInspector/AngelscriptInspectorTabs.h"
 
 #include "ISettingsModule.h"
 #include "HAL/FileManager.h"
@@ -821,6 +822,7 @@ void FAngelscriptEditorModule::StartupModule()
 
 	UScriptEditorMenuExtension::InitializeExtensions();
 	AngelscriptEditor::Private::RegisterStateDumpExtension(StateDumpExtensionHandle);
+	AngelscriptEditor::StateInspector::RegisterInspectorTabs();
 
 	// Register a directory watch on the script directory so we know when to reload
 	IDirectoryWatcher* DirectoryWatcher = ResolveDirectoryWatcher();
@@ -1067,6 +1069,7 @@ void FAngelscriptEditorModule::ShutdownModule()
 	}
 
 	AngelscriptEditor::Private::UnregisterStateDumpExtension(StateDumpExtensionHandle);
+	AngelscriptEditor::StateInspector::UnregisterInspectorTabs();
 
 	UnregisterDirectoryWatchers(DirectoryWatchHandles, ResolveDirectoryWatcher());
 
@@ -1133,6 +1136,71 @@ void FAngelscriptEditorModule::RegisterToolsMenuEntries()
 		FSourceCodeNavigation::GetOpenSourceCodeIDEIcon(),
 		Action
 	);
+
+	FToolUIActionChoice OpenEngineStateAction(FToolMenuExecuteAction::CreateLambda([](const FToolMenuContext&)
+	{
+		FAngelscriptEditorModule::ShowEngineStateWindow();
+	}));
+
+	Section.AddMenuEntry
+	(
+		"ASOpenEngineState",
+		NSLOCTEXT("Angelscript", "OpenEngineState.Label", "Open Angelscript Engine State"),
+		NSLOCTEXT("Angelscript", "OpenEngineState.ToolTip", "Opens a standalone window for inspecting current Angelscript engine, script class, and binding state."),
+		FSourceCodeNavigation::GetOpenSourceCodeIDEIcon(),
+		OpenEngineStateAction
+	);
+
+	FToolMenuSection& InspectorsSection = Menu->FindOrAddSection("Angelscript Inspectors");
+	auto AddInspectorEntry = [&InspectorsSection](
+		const FName EntryName,
+		const FText& Label,
+		const FText& ToolTip,
+		const AngelscriptEditor::StateInspector::EInspectorTab Tab)
+	{
+		FToolUIActionChoice InspectorAction(FToolMenuExecuteAction::CreateLambda([Tab](const FToolMenuContext&)
+		{
+			AngelscriptEditor::StateInspector::OpenInspectorTab(Tab);
+		}));
+
+		InspectorsSection.AddMenuEntry(
+			EntryName,
+			Label,
+			ToolTip,
+			FSourceCodeNavigation::GetOpenSourceCodeIDEIcon(),
+			InspectorAction);
+	};
+
+	AddInspectorEntry(
+		"ASOpenScriptClassBrowser",
+		NSLOCTEXT("Angelscript", "OpenScriptClassBrowser.Label", "Script Class Browser"),
+		NSLOCTEXT("Angelscript", "OpenScriptClassBrowser.ToolTip", "Inspect compiled Angelscript classes and generated Unreal types."),
+		AngelscriptEditor::StateInspector::EInspectorTab::ScriptClassBrowser);
+	AddInspectorEntry(
+		"ASOpenBindingExplorer",
+		NSLOCTEXT("Angelscript", "OpenBindingExplorer.Label", "Binding Explorer"),
+		NSLOCTEXT("Angelscript", "OpenBindingExplorer.ToolTip", "Inspect C++ class, struct, property, and method bindings."),
+		AngelscriptEditor::StateInspector::EInspectorTab::BindingExplorer);
+	AddInspectorEntry(
+		"ASOpenCompileDiagnostics",
+		NSLOCTEXT("Angelscript", "OpenCompileDiagnostics.Label", "Compile Diagnostics"),
+		NSLOCTEXT("Angelscript", "OpenCompileDiagnostics.ToolTip", "Inspect current Angelscript compiler diagnostics."),
+		AngelscriptEditor::StateInspector::EInspectorTab::CompileDiagnostics);
+	AddInspectorEntry(
+		"ASOpenBlueprintImpact",
+		NSLOCTEXT("Angelscript", "OpenBlueprintImpact.Label", "Blueprint Impact Viewer"),
+		NSLOCTEXT("Angelscript", "OpenBlueprintImpact.ToolTip", "Scan Blueprints affected by Angelscript symbols."),
+		AngelscriptEditor::StateInspector::EInspectorTab::BlueprintImpactViewer);
+	AddInspectorEntry(
+		"ASOpenContentBrowserSourceHealth",
+		NSLOCTEXT("Angelscript", "OpenContentBrowserSourceHealth.Label", "Content Browser / Source Navigation Health"),
+		NSLOCTEXT("Angelscript", "OpenContentBrowserSourceHealth.ToolTip", "Inspect Angelscript Content Browser and source navigation state."),
+		AngelscriptEditor::StateInspector::EInspectorTab::ContentBrowserSourceHealth);
+	AddInspectorEntry(
+		"ASOpenStateDumpBrowser",
+		NSLOCTEXT("Angelscript", "OpenStateDumpBrowser.Label", "State Dump Browser / Diff"),
+		NSLOCTEXT("Angelscript", "OpenStateDumpBrowser.ToolTip", "Browse and diff saved Angelscript engine state dumps."),
+		AngelscriptEditor::StateInspector::EInspectorTab::StateDumpBrowser);
 
 	FToolUIActionChoice GenerateAction(FExecuteAction::CreateLambda([]() { GenerateNativeBinds(); }));
 
