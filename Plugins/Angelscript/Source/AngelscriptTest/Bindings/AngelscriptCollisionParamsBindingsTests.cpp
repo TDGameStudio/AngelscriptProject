@@ -1,5 +1,27 @@
-#include "Shared/AngelscriptTestUtilities.h"
+// ============================================================================
+// AngelscriptCollisionParamsBindingsTests.cpp
+//
+// Collision params binding coverage — CQTest refactor. Automation ID:
+//   Angelscript.TestModule.Bindings.CollisionParams.FAngelscriptCollisionParamsBindingsTest.*
+//
+// Sections:
+//   CollisionQueryParamsBehaviour — full parity test for FCollisionQueryParams,
+//     FComponentQueryParams, FCollisionObjectQueryParams, FCollisionResponseContainer
+//
+// CQTest adaptation notes:
+//   One IMPLEMENT_SIMPLE_AUTOMATION_TEST merged into one TEST_CLASS.
+//   This test retains its custom execution pattern (parameterised function with
+//   out-ref arguments) because the script populates multiple struct outputs that
+//   are compared against native equivalents. The original helper namespace is
+//   preserved intact.
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptTestUtilities.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "CollisionQueryParams.h"
 #include "Components/BoxComponent.h"
@@ -11,6 +33,12 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
+
+static const FBindingsCoverageProfile GCollisionParamsProfile{
+	TEXT("CollisionParams"), TEXT(""), TEXT("ASCollisionParams"), TEXT("CollisionParams"), TEXT("CollisionParamsBindings")
+};
 
 namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private
 {
@@ -252,22 +280,26 @@ namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Priva
 
 using namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptBindingsCollisionQueryParamsBehaviourTest,
-	"Angelscript.TestModule.Bindings.CollisionQueryParamsBehaviour",
+TEST_CLASS_WITH_FLAGS(FAngelscriptCollisionParamsBindingsTest, "Angelscript.TestModule.Bindings.CollisionParams",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptBindingsCollisionQueryParamsBehaviourTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		CollisionParamsModuleName,
-		TEXT(R"AS(
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(CollisionQueryParamsBehaviour)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionParamsProfile, TEXT("Behaviour"), TEXT(R"AS(
 int PopulateCollisionBindings(
 	AActor IgnoredActor,
 	UPrimitiveComponent IgnoredComponent,
@@ -357,119 +389,116 @@ int PopulateCollisionBindings(
 	return Failures;
 }
 )AS"));
-	if (Module == nullptr)
-	{
-		return false;
-	}
+		if (!Mod.IsValid()) return;
 
-	AActor* TestActor = NewObject<AActor>(GetTransientPackage(), NAME_None, RF_Transient);
-	UBoxComponent* TestComponent = NewObject<UBoxComponent>(TestActor, NAME_None, RF_Transient);
-	if (!TestNotNull(TEXT("CollisionQueryParamsBehaviour should create a transient actor"), TestActor)
-		|| !TestNotNull(TEXT("CollisionQueryParamsBehaviour should create a transient primitive component"), TestComponent))
-	{
-		return false;
-	}
-
-	FCollisionQueryParams ScriptQueryParams;
-	FComponentQueryParams ScriptComponentQueryParams;
-	FCollisionObjectQueryParams ScriptObjectQueryParams;
-	FCollisionResponseContainer ScriptResponseContainer;
-	FCollisionResponseContainer ScriptMinResponseContainer;
-	int32 ResultMask = INDEX_NONE;
-	if (!ExecuteIntFunction(
-		*this,
-		Engine,
-		*Module,
-		TEXT("int PopulateCollisionBindings(AActor IgnoredActor, UPrimitiveComponent IgnoredComponent, FCollisionQueryParams& OutQueryParams, FComponentQueryParams& OutComponentQueryParams, FCollisionObjectQueryParams& OutObjectQueryParams, FCollisionResponseContainer& OutResponseContainer, FCollisionResponseContainer& OutMinResponseContainer)"),
-		[this, TestActor, TestComponent, &ScriptQueryParams, &ScriptComponentQueryParams, &ScriptObjectQueryParams, &ScriptResponseContainer, &ScriptMinResponseContainer](asIScriptContext& Context)
+		AActor* TestActor = NewObject<AActor>(GetTransientPackage(), NAME_None, RF_Transient);
+		UBoxComponent* TestComponent = NewObject<UBoxComponent>(TestActor, NAME_None, RF_Transient);
+		if (!TestRunner->TestNotNull(TEXT("CollisionQueryParamsBehaviour should create a transient actor"), TestActor)
+			|| !TestRunner->TestNotNull(TEXT("CollisionQueryParamsBehaviour should create a transient primitive component"), TestComponent))
 		{
-			return SetArgObjectChecked(*this, Context, 0, TestActor, TEXT("PopulateCollisionBindings"))
-				&& SetArgObjectChecked(*this, Context, 1, TestComponent, TEXT("PopulateCollisionBindings"))
-				&& SetArgAddressChecked(*this, Context, 2, &ScriptQueryParams, TEXT("PopulateCollisionBindings"))
-				&& SetArgAddressChecked(*this, Context, 3, &ScriptComponentQueryParams, TEXT("PopulateCollisionBindings"))
-				&& SetArgAddressChecked(*this, Context, 4, &ScriptObjectQueryParams, TEXT("PopulateCollisionBindings"))
-				&& SetArgAddressChecked(*this, Context, 5, &ScriptResponseContainer, TEXT("PopulateCollisionBindings"))
-				&& SetArgAddressChecked(*this, Context, 6, &ScriptMinResponseContainer, TEXT("PopulateCollisionBindings"));
-		},
-		TEXT("PopulateCollisionBindings"),
-		ResultMask))
-	{
-		return false;
+			return;
+		}
+
+		FCollisionQueryParams ScriptQueryParams;
+		FComponentQueryParams ScriptComponentQueryParams;
+		FCollisionObjectQueryParams ScriptObjectQueryParams;
+		FCollisionResponseContainer ScriptResponseContainer;
+		FCollisionResponseContainer ScriptMinResponseContainer;
+		int32 ResultMask = INDEX_NONE;
+
+		auto& M = Mod.GetModule();
+		if (!ExecuteIntFunction(
+			*TestRunner,
+			Engine,
+			M,
+			TEXT("int PopulateCollisionBindings(AActor IgnoredActor, UPrimitiveComponent IgnoredComponent, FCollisionQueryParams& OutQueryParams, FComponentQueryParams& OutComponentQueryParams, FCollisionObjectQueryParams& OutObjectQueryParams, FCollisionResponseContainer& OutResponseContainer, FCollisionResponseContainer& OutMinResponseContainer)"),
+			[this, TestActor, TestComponent, &ScriptQueryParams, &ScriptComponentQueryParams, &ScriptObjectQueryParams, &ScriptResponseContainer, &ScriptMinResponseContainer](asIScriptContext& Context)
+			{
+				return SetArgObjectChecked(*TestRunner, Context, 0, TestActor, TEXT("PopulateCollisionBindings"))
+					&& SetArgObjectChecked(*TestRunner, Context, 1, TestComponent, TEXT("PopulateCollisionBindings"))
+					&& SetArgAddressChecked(*TestRunner, Context, 2, &ScriptQueryParams, TEXT("PopulateCollisionBindings"))
+					&& SetArgAddressChecked(*TestRunner, Context, 3, &ScriptComponentQueryParams, TEXT("PopulateCollisionBindings"))
+					&& SetArgAddressChecked(*TestRunner, Context, 4, &ScriptObjectQueryParams, TEXT("PopulateCollisionBindings"))
+					&& SetArgAddressChecked(*TestRunner, Context, 5, &ScriptResponseContainer, TEXT("PopulateCollisionBindings"))
+					&& SetArgAddressChecked(*TestRunner, Context, 6, &ScriptMinResponseContainer, TEXT("PopulateCollisionBindings"));
+			},
+			TEXT("PopulateCollisionBindings"),
+			ResultMask))
+		{
+			return;
+		}
+
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve script-side ignored-list and response mutation checks"),
+			ResultMask,
+			0);
+
+		const uint32 ExpectedActorId = TestActor->GetUniqueID();
+		const uint32 ExpectedComponentId = TestComponent->GetUniqueID();
+		const FCollisionQueryParams NativeQueryParams = BuildNativeCollisionQueryParams(TestActor, TestComponent);
+		const FComponentQueryParams NativeComponentQueryParams = BuildNativeComponentQueryParams(TestActor, TestComponent);
+		const FCollisionObjectQueryParams NativeObjectQueryParams = BuildNativeObjectQueryParams();
+		const FCollisionResponseContainer NativeResponseContainer = BuildNativeResponseContainer();
+		const FCollisionResponseContainer NativeMinResponseContainer = BuildNativeMinResponseContainer();
+
+		ExpectCollisionQueryParamsParity(
+			*TestRunner,
+			TEXT("CollisionQueryParamsBehaviour query params"),
+			ScriptQueryParams,
+			NativeQueryParams,
+			ExpectedActorId,
+			ExpectedComponentId);
+		ExpectComponentQueryParamsParity(
+			*TestRunner,
+			ScriptComponentQueryParams,
+			NativeComponentQueryParams,
+			ExpectedActorId,
+			ExpectedComponentId);
+
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve the object-query bitfield"),
+			ScriptObjectQueryParams.GetQueryBitfield(),
+			NativeObjectQueryParams.GetQueryBitfield());
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve ObjectTypesToQuery"),
+			ScriptObjectQueryParams.ObjectTypesToQuery,
+			NativeObjectQueryParams.ObjectTypesToQuery);
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve object-query IgnoreMask"),
+			ScriptObjectQueryParams.IgnoreMask,
+			NativeObjectQueryParams.IgnoreMask);
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve object-query validity"),
+			ScriptObjectQueryParams.IsValid(),
+			NativeObjectQueryParams.IsValid());
+
+		TestRunner->TestTrue(
+			TEXT("CollisionQueryParamsBehaviour should preserve the response container state"),
+			ScriptResponseContainer == NativeResponseContainer);
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve Visibility response"),
+			ScriptResponseContainer.GetResponse(ECC_Visibility),
+			NativeResponseContainer.GetResponse(ECC_Visibility));
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve Camera response"),
+			ScriptResponseContainer.GetResponse(ECC_Camera),
+			NativeResponseContainer.GetResponse(ECC_Camera));
+		TestRunner->TestTrue(
+			TEXT("CollisionQueryParamsBehaviour should preserve CreateMinContainer results"),
+			ScriptMinResponseContainer == NativeMinResponseContainer);
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve min Visibility response"),
+			ScriptMinResponseContainer.GetResponse(ECC_Visibility),
+			NativeMinResponseContainer.GetResponse(ECC_Visibility));
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve min Camera response"),
+			ScriptMinResponseContainer.GetResponse(ECC_Camera),
+			NativeMinResponseContainer.GetResponse(ECC_Camera));
+		TestRunner->TestEqual(
+			TEXT("CollisionQueryParamsBehaviour should preserve min WorldStatic response"),
+			ScriptMinResponseContainer.GetResponse(ECC_WorldStatic),
+			NativeMinResponseContainer.GetResponse(ECC_WorldStatic));
 	}
-
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve script-side ignored-list and response mutation checks"),
-		ResultMask,
-		0);
-
-	const uint32 ExpectedActorId = TestActor->GetUniqueID();
-	const uint32 ExpectedComponentId = TestComponent->GetUniqueID();
-	const FCollisionQueryParams NativeQueryParams = BuildNativeCollisionQueryParams(TestActor, TestComponent);
-	const FComponentQueryParams NativeComponentQueryParams = BuildNativeComponentQueryParams(TestActor, TestComponent);
-	const FCollisionObjectQueryParams NativeObjectQueryParams = BuildNativeObjectQueryParams();
-	const FCollisionResponseContainer NativeResponseContainer = BuildNativeResponseContainer();
-	const FCollisionResponseContainer NativeMinResponseContainer = BuildNativeMinResponseContainer();
-
-	bPassed &= ExpectCollisionQueryParamsParity(
-		*this,
-		TEXT("CollisionQueryParamsBehaviour query params"),
-		ScriptQueryParams,
-		NativeQueryParams,
-		ExpectedActorId,
-		ExpectedComponentId);
-	bPassed &= ExpectComponentQueryParamsParity(
-		*this,
-		ScriptComponentQueryParams,
-		NativeComponentQueryParams,
-		ExpectedActorId,
-		ExpectedComponentId);
-
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve the object-query bitfield"),
-		ScriptObjectQueryParams.GetQueryBitfield(),
-		NativeObjectQueryParams.GetQueryBitfield());
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve ObjectTypesToQuery"),
-		ScriptObjectQueryParams.ObjectTypesToQuery,
-		NativeObjectQueryParams.ObjectTypesToQuery);
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve object-query IgnoreMask"),
-		ScriptObjectQueryParams.IgnoreMask,
-		NativeObjectQueryParams.IgnoreMask);
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve object-query validity"),
-		ScriptObjectQueryParams.IsValid(),
-		NativeObjectQueryParams.IsValid());
-
-	bPassed &= TestTrue(
-		TEXT("CollisionQueryParamsBehaviour should preserve the response container state"),
-		ScriptResponseContainer == NativeResponseContainer);
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve Visibility response"),
-		ScriptResponseContainer.GetResponse(ECC_Visibility),
-		NativeResponseContainer.GetResponse(ECC_Visibility));
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve Camera response"),
-		ScriptResponseContainer.GetResponse(ECC_Camera),
-		NativeResponseContainer.GetResponse(ECC_Camera));
-	bPassed &= TestTrue(
-		TEXT("CollisionQueryParamsBehaviour should preserve CreateMinContainer results"),
-		ScriptMinResponseContainer == NativeMinResponseContainer);
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve min Visibility response"),
-		ScriptMinResponseContainer.GetResponse(ECC_Visibility),
-		NativeMinResponseContainer.GetResponse(ECC_Visibility));
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve min Camera response"),
-		ScriptMinResponseContainer.GetResponse(ECC_Camera),
-		NativeMinResponseContainer.GetResponse(ECC_Camera));
-	bPassed &= TestEqual(
-		TEXT("CollisionQueryParamsBehaviour should preserve min WorldStatic response"),
-		ScriptMinResponseContainer.GetResponse(ECC_WorldStatic),
-		NativeMinResponseContainer.GetResponse(ECC_WorldStatic));
-
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
+};
 
 #endif

@@ -1,10 +1,35 @@
-#include "Shared/AngelscriptTestUtilities.h"
+// ============================================================================
+// AngelscriptFileAndDelegateBindingsTests.cpp
+//
+// File helper and delegate binding coverage — CQTest refactor. Automation IDs:
+//   Angelscript.TestModule.Bindings.FileAndDelegate.FAngelscriptFileAndDelegateBindingsTest.*
+//
+// Sections:
+//   ScriptDelegateCompat        — delegate bind/unbind/clear operations
+//   ScriptDelegateExecuteCompat — delegate execute and broadcast
+//   SoftPathCompat              — FSoftObjectPath/FSoftClassPath value operations
+//   SoftPathResolveCompat       — soft path resolve/load with token substitution
+//   SourceMetadataCompat        — UClass/UFunction source metadata accessors
+//   FileHelperCompat            — FFileHelper save/load string
+//   DelegateWithPayloadCompat   — FAngelscriptDelegateWithPayload happy + error paths
+//
+// CQTest adaptation notes:
+//   - Entry() functions split into individual 1/0-returning functions where feasible.
+//   - SoftPathResolveCompat uses $TOKEN$ → ReplaceInline for runtime paths.
+//   - SourceMetadataCompat uses $TOKEN$ → ReplaceInline for script file path.
+//   - DelegateWithPayloadCompat retains exception-testing helper with AddExpectedError.
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptNativeScriptTestObject.h"
 
 #include "HAL/FileManager.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
@@ -13,461 +38,380 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScriptDelegateBindingsTest,
-	"Angelscript.TestModule.Bindings.ScriptDelegateCompat",
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GFileDelegateProfile{
+	TEXT("FileDelegate"),              // Theme
+	TEXT(""),                          // Variant
+	TEXT("ASFileDelegate"),            // ModulePrefix
+	TEXT("FileDelegate"),              // CasePrefix
+	TEXT("FileAndDelegateBindings"),   // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptFileAndDelegateBindingsTest,
+	"Angelscript.TestModule.Bindings.FileAndDelegate",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScriptDelegateExecuteBindingsTest,
-	"Angelscript.TestModule.Bindings.ScriptDelegateExecuteCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptSoftPathBindingsTest,
-	"Angelscript.TestModule.Bindings.SoftPathCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptSoftPathResolveBindingsTest,
-	"Angelscript.TestModule.Bindings.SoftPathResolveCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptSourceMetadataBindingsTest,
-	"Angelscript.TestModule.Bindings.SourceMetadataCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptFileHelperBindingsTest,
-	"Angelscript.TestModule.Bindings.FileHelperCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDelegateWithPayloadBindingsTest,
-	"Angelscript.TestModule.Bindings.DelegateWithPayloadCompat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-namespace AngelscriptTest_Bindings_AngelscriptFileAndDelegateBindingsTests_Private
 {
-	static constexpr ANSICHAR DelegateWithPayloadCompatModuleName[] = "ASDelegateWithPayloadCompat";
-
-	bool ExecuteFunctionExpectingException(
-		FAutomationTestBase& Test,
-		FAngelscriptEngine& Engine,
-		asIScriptModule& Module,
-		const TCHAR* FunctionDecl,
-		const TCHAR* ContextLabel,
-		FString& OutExceptionString,
-		int32& OutExceptionLine)
+	BEFORE_ALL()
 	{
-		asIScriptFunction* Function = GetFunctionByDecl(Test, Module, FunctionDecl);
-		if (Function == nullptr)
-		{
-			return false;
-		}
-
-		FAngelscriptEngineScope EngineScope(Engine);
-		asIScriptContext* Context = Engine.CreateContext();
-		if (!Test.TestNotNull(*FString::Printf(TEXT("%s should create an execution context"), ContextLabel), Context))
-		{
-			return false;
-		}
-
-		ON_SCOPE_EXIT
-		{
-			Context->Release();
-		};
-
-		const int PrepareResult = Context->Prepare(Function);
-		if (!Test.TestEqual(
-				*FString::Printf(TEXT("%s should prepare successfully"), ContextLabel),
-				PrepareResult,
-				static_cast<int32>(asSUCCESS)))
-		{
-			return false;
-		}
-
-		const int ExecuteResult = Context->Execute();
-		if (!Test.TestEqual(
-				*FString::Printf(TEXT("%s should fail with a script exception"), ContextLabel),
-				ExecuteResult,
-				static_cast<int32>(asEXECUTION_EXCEPTION)))
-		{
-			return false;
-		}
-
-		OutExceptionString = Context->GetExceptionString() != nullptr ? UTF8_TO_TCHAR(Context->GetExceptionString()) : TEXT("");
-		OutExceptionLine = Context->GetExceptionLineNumber();
-		const bool bHasExceptionString = Test.TestFalse(
-			*FString::Printf(TEXT("%s should report a non-empty exception string"), ContextLabel),
-			OutExceptionString.IsEmpty());
-		const bool bHasExceptionLine = Test.TestTrue(
-			*FString::Printf(TEXT("%s should report a positive exception line"), ContextLabel),
-			OutExceptionLine > 0);
-		return bHasExceptionString && bHasExceptionLine;
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	}
-}
 
-using namespace AngelscriptTest_Bindings_AngelscriptFileAndDelegateBindingsTests_Private;
-
-bool FAngelscriptScriptDelegateBindingsTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
+	AFTER_ALL()
 	{
-		Engine.DiscardModule(TEXT("ASScriptDelegateCompat"));
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
 
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASScriptDelegateCompat",
-		TEXT(R"(
-delegate int FNativeCallback(int Value, const FString& Label);
-event void FNativeEvent(int Value, const FString& Label);
+	// ====================================================================
+	// Section: ScriptDelegateCompat
+	// ====================================================================
 
-int Entry()
+	TEST_METHOD(ScriptDelegateCompat)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("DelegateBind"), TEXT(R"(
+int DelegateBind_EmptyNotBound()
 {
-	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
-
+	delegate int FNativeCallback(int Value, const FString& Label);
 	FNativeCallback Single;
-	if (Single.IsBound())
-		return 5;
-
+	return Single.IsBound() ? 0 : 1;
+}
+int DelegateBind_BindUFunction()
+{
+	delegate int FNativeCallback(int Value, const FString& Label);
+	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
+	FNativeCallback Single;
 	Single.BindUFunction(TestObject, n"NativeIntStringEvent");
-	if (!Single.IsBound())
-		return 10;
-	if (!Single.GetFunctionName().IsEqual(n"NativeIntStringEvent"))
-		return 15;
-
+	return Single.IsBound() ? 1 : 0;
+}
+int DelegateBind_GetFunctionName()
+{
+	delegate int FNativeCallback(int Value, const FString& Label);
+	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
+	FNativeCallback Single;
+	Single.BindUFunction(TestObject, n"NativeIntStringEvent");
+	return Single.GetFunctionName().IsEqual(n"NativeIntStringEvent") ? 1 : 0;
+}
+int DelegateBind_MulticastAddUnbind()
+{
+	event void FNativeEvent(int Value, const FString& Label);
+	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
 	FNativeEvent Multi;
-	if (Multi.IsBound())
-		return 20;
-
+	if (Multi.IsBound()) return 0;
 	Multi.AddUFunction(TestObject, n"SetIntStringFromDelegate");
-	if (!Multi.IsBound())
-		return 25;
-
+	if (!Multi.IsBound()) return 0;
 	Multi.Unbind(TestObject, n"SetIntStringFromDelegate");
-	if (Multi.IsBound())
-		return 30;
-
+	return Multi.IsBound() ? 0 : 1;
+}
+int DelegateBind_ClearMakesUnbound()
+{
+	delegate int FNativeCallback(int Value, const FString& Label);
+	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
+	FNativeCallback Single;
+	Single.BindUFunction(TestObject, n"NativeIntStringEvent");
 	Single.Clear();
-	if (Single.IsBound())
-		return 35;
-
-	return 1;
+	return Single.IsBound() ? 0 : 1;
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateBind_EmptyNotBound()"), TEXT("Empty delegate should not be bound"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateBind_BindUFunction()"), TEXT("BindUFunction should make delegate bound"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateBind_GetFunctionName()"), TEXT("GetFunctionName should return bound function name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateBind_MulticastAddUnbind()"), TEXT("Multicast Add then Unbind should leave unbound"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateBind_ClearMakesUnbound()"), TEXT("Clear should make delegate unbound"), 1);
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: ScriptDelegateExecuteCompat
+	// ====================================================================
+
+	TEST_METHOD(ScriptDelegateExecuteCompat)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
+		UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();
+		if (!TestRunner->TestNotNull(TEXT("Script delegate execute compat test should resolve the native test object"), NativeTestObject))
+		{
+			return;
+		}
+		NativeTestObject->NameCounts.Reset();
+		ON_SCOPE_EXIT { NativeTestObject->NameCounts.Reset(); };
 
-	TestEqual(TEXT("Script delegate compat operations should behave as expected"), Result, 1);
-	ASTEST_END_SHARE_CLEAN
-
-	return true;
-}
-
-bool FAngelscriptScriptDelegateExecuteBindingsTest::RunTest(const FString& Parameters)
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("DelegateExec"), TEXT(R"(
+int DelegateExec_SingleExecute()
 {
-	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASScriptDelegateExecuteCompat"));
-	};
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASScriptDelegateExecuteCompat",
-		TEXT(R"(
-delegate int FNativeCallback(int Value, const FString& Label);
-event void FNativeEvent(int Value, const FString& Label);
-
-int Entry()
-{
+	delegate int FNativeCallback(int Value, const FString& Label);
 	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
-	if (TestObject == nullptr)
-		return 10;
-
 	FNativeCallback Single;
 	Single.BindUFunction(TestObject, n"NativeIntStringEvent");
-	if (!Single.IsBound())
-		return 20;
-	if (Single.Execute(7, "Alpha") != 12)
-		return 30;
-
+	return (Single.Execute(7, "Alpha") == 12) ? 1 : 0;
+}
+int DelegateExec_MulticastBroadcast()
+{
+	event void FNativeEvent(int Value, const FString& Label);
+	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
 	FNativeEvent Multi;
 	Multi.AddUFunction(TestObject, n"SetIntStringFromDelegate");
-	if (!Multi.IsBound())
-		return 40;
-
 	Multi.Broadcast(7, "Alpha");
 	Multi.Unbind(TestObject, n"SetIntStringFromDelegate");
-	if (Multi.IsBound())
-		return 50;
-
 	Multi.Broadcast(11, "Beta");
-	Single.Clear();
-	if (Single.IsBound())
-		return 60;
-
-	return 1;
+	return Multi.IsBound() ? 0 : 1;
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateExec_SingleExecute()"), TEXT("Single delegate Execute should return expected value"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegateExec_MulticastBroadcast()"), TEXT("Multicast broadcast then unbind should leave unbound"), 1);
+
+		const int32* AlphaCount = NativeTestObject->NameCounts.Find(TEXT("Alpha"));
+		TestRunner->TestNotNull(TEXT("Multicast delegate broadcast should write the expected label key"), AlphaCount);
+		if (AlphaCount != nullptr)
+		{
+			TestRunner->TestEqual(TEXT("Multicast delegate broadcast should forward the expected value"), *AlphaCount, 7);
+		}
+		TestRunner->TestFalse(TEXT("Unbound multicast delegate should not write additional label entries"), NativeTestObject->NameCounts.Contains(TEXT("Beta")));
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: SoftPathCompat
+	// ====================================================================
+
+	TEST_METHOD(SoftPathCompat)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();
-	if (!TestNotNull(TEXT("Script delegate execute compat test should resolve the native test object default instance"), NativeTestObject))
-	{
-		return false;
-	}
-
-	NativeTestObject->NameCounts.Reset();
-	ON_SCOPE_EXIT
-	{
-		NativeTestObject->NameCounts.Reset();
-	};
-
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
-
-	const int32* AlphaCount = NativeTestObject->NameCounts.Find(TEXT("Alpha"));
-	TestEqual(TEXT("Script delegate execute compat operations should behave as expected"), Result, 1);
-	TestNotNull(TEXT("Multicast delegate broadcast should write the expected label key"), AlphaCount);
-	if (AlphaCount != nullptr)
-	{
-		TestEqual(TEXT("Multicast delegate broadcast should forward the expected value"), *AlphaCount, 7);
-	}
-	TestFalse(TEXT("Unbound multicast delegate should not write additional label entries"), NativeTestObject->NameCounts.Contains(TEXT("Beta")));
-	bPassed = Result == 1 && AlphaCount != nullptr && *AlphaCount == 7 && !NativeTestObject->NameCounts.Contains(TEXT("Beta"));
-	ASTEST_END_SHARE_CLEAN
-
-	return bPassed;
-}
-
-bool FAngelscriptSoftPathBindingsTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASSoftPathCompat"));
-	};
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASSoftPathCompat",
-		TEXT(R"(
-int Entry()
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("SoftPath"), TEXT(R"(
+int SoftPath_EmptyIsNull()
 {
 	FSoftObjectPath EmptyPath;
-	if (!EmptyPath.IsNull())
-		return 10;
-
+	return EmptyPath.IsNull() ? 1 : 0;
+}
+int SoftPath_ObjectPathValid()
+{
 	FSoftObjectPath ObjectPath(AActor::StaticClass().GetPathName());
-	if (!ObjectPath.IsValid())
-		return 20;
-	if (ObjectPath.GetAssetName().IsEmpty())
-		return 30;
-	if (ObjectPath.GetLongPackageName().IsEmpty())
-		return 40;
-	if (ObjectPath.IsSubobject())
-		return 50;
-	if (!(ObjectPath == FSoftObjectPath(AActor::StaticClass().GetPathName())))
-		return 60;
-
+	return ObjectPath.IsValid() ? 1 : 0;
+}
+int SoftPath_ObjectPathAssetName()
+{
+	FSoftObjectPath ObjectPath(AActor::StaticClass().GetPathName());
+	return ObjectPath.GetAssetName().IsEmpty() ? 0 : 1;
+}
+int SoftPath_ObjectPathPackageName()
+{
+	FSoftObjectPath ObjectPath(AActor::StaticClass().GetPathName());
+	return ObjectPath.GetLongPackageName().IsEmpty() ? 0 : 1;
+}
+int SoftPath_ObjectPathNotSubobject()
+{
+	FSoftObjectPath ObjectPath(AActor::StaticClass().GetPathName());
+	return ObjectPath.IsSubobject() ? 0 : 1;
+}
+int SoftPath_ObjectPathEquality()
+{
+	FSoftObjectPath ObjectPath(AActor::StaticClass().GetPathName());
+	return (ObjectPath == FSoftObjectPath(AActor::StaticClass().GetPathName())) ? 1 : 0;
+}
+int SoftPath_ClassPathValid()
+{
 	FSoftClassPath ClassPath(AActor::StaticClass().GetPathName());
-	if (!ClassPath.IsValid())
-		return 70;
-	if (ClassPath.GetAssetName().IsEmpty())
-		return 80;
-	if (ClassPath.GetLongPackageName().IsEmpty())
-		return 90;
-	if (ClassPath.IsSubobject())
-		return 100;
-
+	return ClassPath.IsValid() ? 1 : 0;
+}
+int SoftPath_ClassPathAssetName()
+{
+	FSoftClassPath ClassPath(AActor::StaticClass().GetPathName());
+	return ClassPath.GetAssetName().IsEmpty() ? 0 : 1;
+}
+int SoftPath_ClassPathPackageName()
+{
+	FSoftClassPath ClassPath(AActor::StaticClass().GetPathName());
+	return ClassPath.GetLongPackageName().IsEmpty() ? 0 : 1;
+}
+int SoftPath_ClassPathCopyEquality()
+{
+	FSoftClassPath ClassPath(AActor::StaticClass().GetPathName());
 	FSoftClassPath Copy = ClassPath;
-	if (!(Copy.ToString() == ClassPath.ToString()))
-		return 110;
-	if (Copy.ToString().IsEmpty())
-		return 120;
-
+	if (Copy.ToString().IsEmpty()) return 0;
+	return (Copy.ToString() == ClassPath.ToString()) ? 1 : 0;
+}
+int SoftPath_ClassPathFromString()
+{
+	FSoftClassPath ClassPath(AActor::StaticClass().GetPathName());
 	FSoftClassPath FromString(ClassPath.ToString());
-	if (!(FromString.ToString() == ClassPath.ToString()))
-		return 130;
-
-	return 1;
+	return (FromString.ToString() == ClassPath.ToString()) ? 1 : 0;
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_EmptyIsNull()"), TEXT("Empty FSoftObjectPath should be null"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ObjectPathValid()"), TEXT("FSoftObjectPath from class path should be valid"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ObjectPathAssetName()"), TEXT("FSoftObjectPath should have non-empty asset name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ObjectPathPackageName()"), TEXT("FSoftObjectPath should have non-empty package name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ObjectPathNotSubobject()"), TEXT("FSoftObjectPath from class should not be subobject"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ObjectPathEquality()"), TEXT("FSoftObjectPath equality from same source should hold"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ClassPathValid()"), TEXT("FSoftClassPath from class path should be valid"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ClassPathAssetName()"), TEXT("FSoftClassPath should have non-empty asset name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ClassPathPackageName()"), TEXT("FSoftClassPath should have non-empty package name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ClassPathCopyEquality()"), TEXT("FSoftClassPath copy should equal original"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftPath_ClassPathFromString()"), TEXT("FSoftClassPath from string roundtrip should match"), 1);
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: SoftPathResolveCompat
+	// ====================================================================
+
+	TEST_METHOD(SoftPathResolveCompat)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
+		UClass* NativeActorClass = AActor::StaticClass();
+		if (!TestRunner->TestNotNull(TEXT("SoftPath resolve compat test should resolve the native actor class"), NativeActorClass))
+		{
+			return;
+		}
 
-	TestEqual(TEXT("SoftPath compat operations should behave as expected"), Result, 1);
-	ASTEST_END_SHARE_CLEAN
+		const FSoftObjectPath NativeObjectPath(NativeActorClass);
+		const FSoftClassPath NativeClassPath(NativeActorClass);
+		const FString ExpectedObjectPathString = NativeObjectPath.ToString();
+		const FString ExpectedClassPathString = NativeClassPath.ToString();
+		const FString ExpectedAssetName = NativeObjectPath.GetAssetName();
+		const FString ExpectedLongPackageName = NativeObjectPath.GetLongPackageName();
+		const FString ExpectedObjectAssetPathString = NativeObjectPath.GetAssetPath().ToString();
+		const FString ExpectedClassAssetPathString = NativeClassPath.GetAssetPath().ToString();
 
-	return true;
-}
+		if (!TestRunner->TestTrue(TEXT("Native soft object path baseline should be valid"), NativeObjectPath.IsValid())
+			|| !TestRunner->TestTrue(TEXT("Native soft class path baseline should be valid"), NativeClassPath.IsValid()))
+		{
+			return;
+		}
 
-bool FAngelscriptSoftPathResolveBindingsTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASSoftPathResolveCompat"));
-	};
-
-	UClass* NativeActorClass = AActor::StaticClass();
-	if (!TestNotNull(TEXT("SoftPath resolve compat test should resolve the native actor class baseline"), NativeActorClass))
-	{
-		return false;
-	}
-
-	const FSoftObjectPath NativeObjectPath(NativeActorClass);
-	const FSoftClassPath NativeClassPath(NativeActorClass);
-	const FString ExpectedObjectPathString = NativeObjectPath.ToString();
-	const FString ExpectedClassPathString = NativeClassPath.ToString();
-	const FString ExpectedAssetName = NativeObjectPath.GetAssetName();
-	const FString ExpectedLongPackageName = NativeObjectPath.GetLongPackageName();
-	const FString ExpectedObjectAssetPathString = NativeObjectPath.GetAssetPath().ToString();
-	const FString ExpectedClassAssetPathString = NativeClassPath.GetAssetPath().ToString();
-
-	if (!TestTrue(TEXT("Native soft object path baseline should be valid"), NativeObjectPath.IsValid())
-		|| !TestTrue(TEXT("Native soft class path baseline should be valid"), NativeClassPath.IsValid())
-		|| !TestEqual(TEXT("Native soft object path should resolve the actor class"), NativeObjectPath.ResolveObject(), static_cast<UObject*>(NativeActorClass))
-		|| !TestEqual(TEXT("Native soft class path should resolve the actor class"), NativeClassPath.ResolveClass(), NativeActorClass))
-	{
-		return false;
-	}
-
-	FString Script = TEXT(R"(
-int Entry()
+		FString Script = TEXT(R"(
+int SoftResolve_ObjectPathValid()
 {
 	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
-	if (!ObjectPath.IsValid())
-		return 10;
-	if (!(ObjectPath.ToString() == "__OBJECT_PATH__"))
-		return 20;
-	if (!(ObjectPath.GetAssetName() == "__ASSET_NAME__"))
-		return 30;
-	if (!(ObjectPath.GetLongPackageName() == "__PACKAGE_NAME__"))
-		return 40;
-	if (!(ObjectPath.GetAssetPath() == FTopLevelAssetPath("__OBJECT_ASSET_PATH__")))
-		return 50;
-	if (!(ObjectPath.ResolveObject() == AActor::StaticClass()))
-		return 60;
-	if (!(ObjectPath.TryLoad() == AActor::StaticClass()))
-		return 70;
-
+	return ObjectPath.IsValid() ? 1 : 0;
+}
+int SoftResolve_ObjectPathToString()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.ToString() == "__OBJECT_PATH__") ? 1 : 0;
+}
+int SoftResolve_ObjectPathAssetName()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.GetAssetName() == "__ASSET_NAME__") ? 1 : 0;
+}
+int SoftResolve_ObjectPathPackageName()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.GetLongPackageName() == "__PACKAGE_NAME__") ? 1 : 0;
+}
+int SoftResolve_ObjectPathAssetPath()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.GetAssetPath() == FTopLevelAssetPath("__OBJECT_ASSET_PATH__")) ? 1 : 0;
+}
+int SoftResolve_ObjectPathResolve()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.ResolveObject() == AActor::StaticClass()) ? 1 : 0;
+}
+int SoftResolve_ObjectPathTryLoad()
+{
+	FSoftObjectPath ObjectPath("__OBJECT_PATH__");
+	return (ObjectPath.TryLoad() == AActor::StaticClass()) ? 1 : 0;
+}
+int SoftResolve_ClassPathValid()
+{
 	FSoftClassPath ClassPath("__CLASS_PATH__");
-	if (!ClassPath.IsValid())
-		return 80;
-	if (!(ClassPath.ToString() == "__CLASS_PATH__"))
-		return 90;
-	if (!(ClassPath.GetAssetName() == "__ASSET_NAME__"))
-		return 100;
-	if (!(ClassPath.GetLongPackageName() == "__PACKAGE_NAME__"))
-		return 110;
-	if (!(ClassPath.GetAssetPath() == FTopLevelAssetPath("__CLASS_ASSET_PATH__")))
-		return 120;
-	if (!(ClassPath.ResolveClass() == AActor::StaticClass()))
-		return 130;
-	if (!(ClassPath.TryLoadClass() == AActor::StaticClass()))
-		return 140;
-
-	return 1;
+	return ClassPath.IsValid() ? 1 : 0;
+}
+int SoftResolve_ClassPathToString()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.ToString() == "__CLASS_PATH__") ? 1 : 0;
+}
+int SoftResolve_ClassPathAssetName()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.GetAssetName() == "__ASSET_NAME__") ? 1 : 0;
+}
+int SoftResolve_ClassPathPackageName()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.GetLongPackageName() == "__PACKAGE_NAME__") ? 1 : 0;
+}
+int SoftResolve_ClassPathAssetPath()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.GetAssetPath() == FTopLevelAssetPath("__CLASS_ASSET_PATH__")) ? 1 : 0;
+}
+int SoftResolve_ClassPathResolve()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.ResolveClass() == AActor::StaticClass()) ? 1 : 0;
+}
+int SoftResolve_ClassPathTryLoad()
+{
+	FSoftClassPath ClassPath("__CLASS_PATH__");
+	return (ClassPath.TryLoadClass() == AActor::StaticClass()) ? 1 : 0;
 }
 )");
+		Script.ReplaceInline(TEXT("__OBJECT_PATH__"), *ExpectedObjectPathString.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__CLASS_PATH__"), *ExpectedClassPathString.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__ASSET_NAME__"), *ExpectedAssetName.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__PACKAGE_NAME__"), *ExpectedLongPackageName.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__OBJECT_ASSET_PATH__"), *ExpectedObjectAssetPathString.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__CLASS_ASSET_PATH__"), *ExpectedClassAssetPathString.ReplaceCharWithEscapedChar());
 
-	Script.ReplaceInline(TEXT("__OBJECT_PATH__"), *ExpectedObjectPathString.ReplaceCharWithEscapedChar());
-	Script.ReplaceInline(TEXT("__CLASS_PATH__"), *ExpectedClassPathString.ReplaceCharWithEscapedChar());
-	Script.ReplaceInline(TEXT("__ASSET_NAME__"), *ExpectedAssetName.ReplaceCharWithEscapedChar());
-	Script.ReplaceInline(TEXT("__PACKAGE_NAME__"), *ExpectedLongPackageName.ReplaceCharWithEscapedChar());
-	Script.ReplaceInline(TEXT("__OBJECT_ASSET_PATH__"), *ExpectedObjectAssetPathString.ReplaceCharWithEscapedChar());
-	Script.ReplaceInline(TEXT("__CLASS_ASSET_PATH__"), *ExpectedClassAssetPathString.ReplaceCharWithEscapedChar());
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("SoftResolve"), Script);
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
 
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASSoftPathResolveCompat",
-		Script);
-	if (Module == nullptr)
-	{
-		return false;
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathValid()"), TEXT("FSoftObjectPath from string should be valid"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathToString()"), TEXT("FSoftObjectPath ToString should roundtrip"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathAssetName()"), TEXT("FSoftObjectPath GetAssetName should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathPackageName()"), TEXT("FSoftObjectPath GetLongPackageName should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathAssetPath()"), TEXT("FSoftObjectPath GetAssetPath should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathResolve()"), TEXT("FSoftObjectPath ResolveObject should find AActor class"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ObjectPathTryLoad()"), TEXT("FSoftObjectPath TryLoad should find AActor class"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathValid()"), TEXT("FSoftClassPath from string should be valid"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathToString()"), TEXT("FSoftClassPath ToString should roundtrip"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathAssetName()"), TEXT("FSoftClassPath GetAssetName should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathPackageName()"), TEXT("FSoftClassPath GetLongPackageName should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathAssetPath()"), TEXT("FSoftClassPath GetAssetPath should match"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathResolve()"), TEXT("FSoftClassPath ResolveClass should find AActor class"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int SoftResolve_ClassPathTryLoad()"), TEXT("FSoftClassPath TryLoadClass should find AActor class"), 1);
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: SourceMetadataCompat
+	// ====================================================================
+
+	TEST_METHOD(SourceMetadataCompat)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
-
-	bPassed = TestEqual(TEXT("SoftPath resolve compat operations should behave as expected"), Result, 1);
-	ASTEST_END_SHARE_CLEAN
-
-	return bPassed;
-}
-
-bool FAngelscriptSourceMetadataBindingsTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	const FString Script = TEXT(R"AS(
+		const FString ScriptSource = TEXT(R"AS(
 UCLASS()
 class UBindingSourceMetadataCarrier : UObject
 {
@@ -478,180 +422,163 @@ class UBindingSourceMetadataCarrier : UObject
 	}
 }
 )AS");
-	const FString ScriptDirectory = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Script/Automation"));
-	IFileManager::Get().MakeDirectory(*ScriptDirectory, true);
-	const FString ScriptPath = ScriptDirectory / TEXT("RuntimeSourceMetadataBindingsTest.as");
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASSourceMetadataQuery"));
-		Engine.DiscardModule(TEXT("RuntimeSourceMetadataBindingsTest"));
-		IFileManager::Get().Delete(*ScriptPath, false, true, true);
-	};
+		const FString ScriptDirectory = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Script/Automation"));
+		IFileManager::Get().MakeDirectory(*ScriptDirectory, true);
+		const FString ScriptPath = ScriptDirectory / TEXT("RuntimeSourceMetadataBindingsTest.as");
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(TEXT("ASFileDelegateSourceMeta"));
+			Engine.DiscardModule(TEXT("RuntimeSourceMetadataBindingsTest"));
+			IFileManager::Get().Delete(*ScriptPath, false, true, true);
+		};
 
-	if (!TestTrue(TEXT("Write source metadata script file should succeed"), FFileHelper::SaveStringToFile(Script, *ScriptPath)))
-	{
-		return false;
-	}
+		if (!TestRunner->TestTrue(TEXT("Write source metadata script file should succeed"), FFileHelper::SaveStringToFile(ScriptSource, *ScriptPath)))
+		{
+			return;
+		}
 
-	const bool bAnnotatedCompiled = CompileAnnotatedModuleFromMemory(&Engine, TEXT("RuntimeSourceMetadataBindingsTest"), ScriptPath, Script);
-	if (!TestTrue(TEXT("Compile annotated source metadata module should succeed"), bAnnotatedCompiled))
-	{
-		return false;
-	}
+		const bool bAnnotatedCompiled = CompileAnnotatedModuleFromMemory(&Engine, TEXT("RuntimeSourceMetadataBindingsTest"), ScriptPath, ScriptSource);
+		if (!TestRunner->TestTrue(TEXT("Compile annotated source metadata module should succeed"), bAnnotatedCompiled))
+		{
+			return;
+		}
 
-	FString RuntimeScript = TEXT(R"AS(
-int Entry()
+		FString Script = TEXT(R"AS(
+int SourceMeta_ClassFilePath()
 {
 	UClass Type = FindClass("UBindingSourceMetadataCarrier");
-	if (Type == null)
-		return 10;
-	if (!(Type.GetSourceFilePath() == "__SCRIPT_PATH__"))
-		return 20;
-	if (!Type.GetScriptModuleName().Contains("RuntimeSourceMetadataBindingsTest"))
-		return 30;
-	if (Type.GetScriptTypeDeclaration().IsEmpty())
-		return 35;
-	if (!Type.IsFunctionImplementedInScript(n"ComputeValue"))
-		return 37;
-
+	if (Type == null) return 0;
+	return (Type.GetSourceFilePath() == "__SCRIPT_PATH__") ? 1 : 0;
+}
+int SourceMeta_ClassModuleName()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
+	return Type.GetScriptModuleName().Contains("RuntimeSourceMetadataBindingsTest") ? 1 : 0;
+}
+int SourceMeta_ClassTypeDeclaration()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
+	return Type.GetScriptTypeDeclaration().IsEmpty() ? 0 : 1;
+}
+int SourceMeta_FunctionImplementedInScript()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
+	return Type.IsFunctionImplementedInScript(n"ComputeValue") ? 1 : 0;
+}
+int SourceMeta_FunctionFilePath()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
 	UFunction Func = Type.FindFunctionByName(n"ComputeValue");
-	if (Func == null)
-		return 40;
-	if (!(Func.GetSourceFilePath() == "__SCRIPT_PATH__"))
-		return 50;
-	if (Func.GetSourceLineNumber() != 6)
-		return 60;
-	if (!(Func.GetScriptFunctionDeclaration() == "int ComputeValue()"))
-		return 70;
-
-	return 1;
+	if (Func == null) return 0;
+	return (Func.GetSourceFilePath() == "__SCRIPT_PATH__") ? 1 : 0;
+}
+int SourceMeta_FunctionLineNumber()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
+	UFunction Func = Type.FindFunctionByName(n"ComputeValue");
+	if (Func == null) return 0;
+	return (Func.GetSourceLineNumber() == 6) ? 1 : 0;
+}
+int SourceMeta_FunctionDeclaration()
+{
+	UClass Type = FindClass("UBindingSourceMetadataCarrier");
+	if (Type == null) return 0;
+	UFunction Func = Type.FindFunctionByName(n"ComputeValue");
+	if (Func == null) return 0;
+	return (Func.GetScriptFunctionDeclaration() == "int ComputeValue()") ? 1 : 0;
 }
 )AS");
-	RuntimeScript.ReplaceInline(TEXT("__SCRIPT_PATH__"), *ScriptPath.ReplaceCharWithEscapedChar());
+		Script.ReplaceInline(TEXT("__SCRIPT_PATH__"), *ScriptPath.ReplaceCharWithEscapedChar());
 
-	asIScriptModule* Module = BuildModule(*this, Engine, "ASSourceMetadataQuery", RuntimeScript);
-	if (Module == nullptr)
-	{
-		return false;
+		asIScriptModule* Module = BuildModule(*TestRunner, Engine, "ASFileDelegateSourceMeta", Script);
+		if (Module == nullptr)
+		{
+			return;
+		}
+
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_ClassFilePath()"), TEXT("UClass GetSourceFilePath should match written file"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_ClassModuleName()"), TEXT("UClass GetScriptModuleName should contain module name"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_ClassTypeDeclaration()"), TEXT("UClass GetScriptTypeDeclaration should be non-empty"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_FunctionImplementedInScript()"), TEXT("IsFunctionImplementedInScript should be true"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_FunctionFilePath()"), TEXT("UFunction GetSourceFilePath should match written file"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_FunctionLineNumber()"), TEXT("UFunction GetSourceLineNumber should be 6"), 1);
+		ExpectGlobalInt(*TestRunner, Engine, *Module, GFileDelegateProfile, TEXT("int SourceMeta_FunctionDeclaration()"), TEXT("UFunction GetScriptFunctionDeclaration should match"), 1);
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: FileHelperCompat
+	// ====================================================================
+
+	TEST_METHOD(FileHelperCompat)
 	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	int32 Result = 0;
-	const bool bExecuted = ExecuteIntFunction(*this, Engine, *Function, Result);
-	if (!TestTrue(TEXT("Execute source metadata accessor function should succeed"), bExecuted))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Source metadata accessors should behave as expected"), Result, 1);
-	ASTEST_END_SHARE_CLEAN
-
-	return true;
-}
-
-bool FAngelscriptFileHelperBindingsTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASFileHelperCompat"));
-	};
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASFileHelperCompat",
-		TEXT(R"(
-int Entry()
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("FileHelper"), TEXT(R"(
+int FileHelper_SaveAndLoad()
 {
 	FString Filename = FPaths::CombinePaths(FPaths::ProjectSavedDir(), "AngelscriptFileHelperCompat.txt");
 	if (!FFileHelper::SaveStringToFile("HelloFileHelper", Filename))
-		return 10;
-
+		return 0;
 	FString Loaded;
 	if (!FFileHelper::LoadFileToString(Loaded, Filename))
-		return 20;
-	if (!(Loaded == "HelloFileHelper"))
-		return 30;
-
-	return 1;
+		return 0;
+	return (Loaded == "HelloFileHelper") ? 1 : 0;
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int FileHelper_SaveAndLoad()"), TEXT("FFileHelper save then load should roundtrip string content"), 1);
 	}
 
-	asIScriptFunction* Function = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (Function == nullptr)
+	// ====================================================================
+	// Section: DelegateWithPayloadCompat
+	// ====================================================================
+
+	TEST_METHOD(DelegateWithPayloadCompat)
 	{
-		return false;
-	}
+		TestRunner->AddExpectedError(TEXT("Invalid payload type"), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("Invalid object passed to BindUFunction."), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("Specified function is not compatible with delegate function."), EAutomationExpectedErrorFlags::Contains, 1);
+		TestRunner->AddExpectedError(TEXT("ASDelegateWithPayloadCompat"), EAutomationExpectedErrorFlags::Contains, 0);
+		TestRunner->AddExpectedError(TEXT("void TriggerInvalidPayloadType()"), EAutomationExpectedErrorFlags::Contains, 0, false);
+		TestRunner->AddExpectedError(TEXT("void TriggerInvalidObject()"), EAutomationExpectedErrorFlags::Contains, 0, false);
+		TestRunner->AddExpectedError(TEXT("void TriggerSignatureMismatch()"), EAutomationExpectedErrorFlags::Contains, 0, false);
 
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *Function, Result))
-	{
-		return false;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	TestEqual(TEXT("FileHelper compat operations should behave as expected"), Result, 1);
-	ASTEST_END_SHARE_CLEAN
+		UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();
+		if (!TestRunner->TestNotNull(TEXT("DelegateWithPayload compat test should resolve the native test object"), NativeTestObject))
+		{
+			return;
+		}
+		NativeTestObject->bNativeFlag = false;
+		NativeTestObject->LargeCount = 0;
 
-	return true;
-}
-
-bool FAngelscriptDelegateWithPayloadBindingsTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = false;
-	AddExpectedError(TEXT("Invalid payload type"), EAutomationExpectedErrorFlags::Contains, 1);
-	AddExpectedError(TEXT("Invalid object passed to BindUFunction."), EAutomationExpectedErrorFlags::Contains, 1);
-	AddExpectedError(TEXT("Specified function is not compatible with delegate function."), EAutomationExpectedErrorFlags::Contains, 1);
-	AddExpectedError(TEXT("ASDelegateWithPayloadCompat"), EAutomationExpectedErrorFlags::Contains, 0);
-	AddExpectedError(TEXT("void TriggerInvalidPayloadType()"), EAutomationExpectedErrorFlags::Contains, 0, false);
-	AddExpectedError(TEXT("void TriggerInvalidObject()"), EAutomationExpectedErrorFlags::Contains, 0, false);
-	AddExpectedError(TEXT("void TriggerSignatureMismatch()"), EAutomationExpectedErrorFlags::Contains, 0, false);
-
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(TEXT("ASDelegateWithPayloadCompat"));
-	};
-
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		DelegateWithPayloadCompatModuleName,
-		TEXT(R"(
-int Entry()
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("DelegatePayload"), TEXT(R"(
+int DelegatePayload_HappyPath()
 {
 	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
-	if (TestObject == nullptr)
-		return 10;
+	if (TestObject == nullptr) return 0;
 
 	FAngelscriptDelegateWithPayload NoPayloadDelegate;
-	if (NoPayloadDelegate.IsBound())
-		return 20;
-
+	if (NoPayloadDelegate.IsBound()) return 0;
 	NoPayloadDelegate.ExecuteIfBound();
 	NoPayloadDelegate.BindUFunction(TestObject, n"MarkNativeFlagFromDelegate");
-	if (!NoPayloadDelegate.IsBound())
-		return 30;
-
+	if (!NoPayloadDelegate.IsBound()) return 0;
 	NoPayloadDelegate.ExecuteIfBound();
 
 	int PayloadValue = 123;
 	FAngelscriptDelegateWithPayload PayloadDelegate;
 	PayloadDelegate.BindWithPayload(TestObject, n"SetLargeCountFromDelegate", PayloadValue);
-	if (!PayloadDelegate.IsBound())
-		return 40;
-
+	if (!PayloadDelegate.IsBound()) return 0;
 	PayloadDelegate.ExecuteIfBound();
 
 	return 1;
@@ -661,7 +588,6 @@ void TriggerInvalidPayloadType()
 {
 	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
 	UObject PayloadObject = TestObject;
-
 	FAngelscriptDelegateWithPayload Delegate;
 	Delegate.BindWithPayload(TestObject, n"SetLargeCountFromDelegate", PayloadObject);
 }
@@ -675,85 +601,32 @@ void TriggerInvalidObject()
 void TriggerSignatureMismatch()
 {
 	UObject TestObject = FindClass("UAngelscriptNativeScriptTestObject").GetDefaultObject();
-
 	FAngelscriptDelegateWithPayload Delegate;
 	Delegate.BindWithPayload(TestObject, n"MarkNativeFlagFromDelegate", 7);
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
-	}
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
 
-	asIScriptFunction* EntryFunction = GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-	if (EntryFunction == nullptr)
-	{
-		return false;
-	}
+		ExpectGlobalInt(*TestRunner, Engine, M, GFileDelegateProfile, TEXT("int DelegatePayload_HappyPath()"), TEXT("DelegateWithPayload happy path should execute both bindings"), 1);
+		TestRunner->TestTrue(TEXT("DelegateWithPayload should execute the bound no-payload native function"), NativeTestObject->bNativeFlag);
+		TestRunner->TestEqual(TEXT("DelegateWithPayload should forward the boxed int payload"), NativeTestObject->LargeCount, static_cast<int64>(123));
 
-	UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();
-	if (!TestNotNull(TEXT("DelegateWithPayload compat test should resolve the native test object default instance"), NativeTestObject))
-	{
-		return false;
-	}
-
-	NativeTestObject->bNativeFlag = false;
-	NativeTestObject->LargeCount = 0;
-
-	int32 Result = 0;
-	if (!ExecuteIntFunction(*this, Engine, *EntryFunction, Result))
-	{
-		return false;
-	}
-
-	const bool bHappyPath =
-		TestEqual(TEXT("DelegateWithPayload compat happy path should execute both no-payload and payload bindings"), Result, 1)
-		&& TestTrue(TEXT("DelegateWithPayload compat happy path should execute the bound no-payload native function"), NativeTestObject->bNativeFlag)
-		&& TestEqual(TEXT("DelegateWithPayload compat happy path should forward the boxed int payload to the native function"), NativeTestObject->LargeCount, static_cast<int64>(123));
-
-	FString InvalidPayloadException;
-	int32 InvalidPayloadLine = 0;
-	const bool bInvalidPayload = ExecuteFunctionExpectingException(
-			*this,
-			Engine,
-			*Module,
+		ExecuteFunctionExpectingScriptException(*TestRunner, Engine, M, GFileDelegateProfile,
 			TEXT("void TriggerInvalidPayloadType()"),
-			TEXT("DelegateWithPayload invalid payload type"),
-			InvalidPayloadException,
-			InvalidPayloadLine)
-		&& TestTrue(TEXT("DelegateWithPayload invalid payload type should mention the payload contract"), InvalidPayloadException.Contains(TEXT("Invalid payload type")))
-		&& TestTrue(TEXT("DelegateWithPayload invalid payload type should report a positive exception line"), InvalidPayloadLine > 0);
+			TEXT("invalid payload type should raise exception"),
+			TEXT("Invalid payload type"));
 
-	FString InvalidObjectException;
-	int32 InvalidObjectLine = 0;
-	const bool bInvalidObject = ExecuteFunctionExpectingException(
-			*this,
-			Engine,
-			*Module,
+		ExecuteFunctionExpectingScriptException(*TestRunner, Engine, M, GFileDelegateProfile,
 			TEXT("void TriggerInvalidObject()"),
-			TEXT("DelegateWithPayload invalid object"),
-			InvalidObjectException,
-			InvalidObjectLine)
-		&& TestTrue(TEXT("DelegateWithPayload invalid object should mention the invalid object contract"), InvalidObjectException.Contains(TEXT("Invalid object passed to BindUFunction.")))
-		&& TestTrue(TEXT("DelegateWithPayload invalid object should report a positive exception line"), InvalidObjectLine > 0);
+			TEXT("invalid object should raise exception"),
+			TEXT("Invalid object passed to BindUFunction."));
 
-	FString SignatureMismatchException;
-	int32 SignatureMismatchLine = 0;
-	const bool bSignatureMismatch = ExecuteFunctionExpectingException(
-			*this,
-			Engine,
-			*Module,
+		ExecuteFunctionExpectingScriptException(*TestRunner, Engine, M, GFileDelegateProfile,
 			TEXT("void TriggerSignatureMismatch()"),
-			TEXT("DelegateWithPayload signature mismatch"),
-			SignatureMismatchException,
-			SignatureMismatchLine)
-		&& TestTrue(TEXT("DelegateWithPayload signature mismatch should mention the compatibility contract"), SignatureMismatchException.Contains(TEXT("Specified function is not compatible with delegate function.")))
-		&& TestTrue(TEXT("DelegateWithPayload signature mismatch should report a positive exception line"), SignatureMismatchLine > 0);
-
-	bPassed = bHappyPath && bInvalidPayload && bInvalidObject && bSignatureMismatch;
-	ASTEST_END_SHARE_CLEAN
-
-	return bPassed;
-}
+			TEXT("signature mismatch should raise exception"),
+			TEXT("Specified function is not compatible with delegate function."));
+	}
+};
 
 #endif

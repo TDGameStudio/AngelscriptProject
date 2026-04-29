@@ -1,6 +1,28 @@
-#include "Shared/AngelscriptTestUtilities.h"
+// ============================================================================
+// AngelscriptMathOrientationFunctionLibraryTests.cpp
+//
+// Math orientation function library binding coverage — CQTest refactor.
+// Automation ID:
+//   Angelscript.TestModule.FunctionLibraries.MathOrientation.FAngelscriptMathOrientationFunctionLibraryTest.*
+//
+// Sections:
+//   FactoriesAndTransformMutators — FRotator factories, FQuat factories,
+//     FTransform Blend/BlendWith/SetRotation parity
+//
+// CQTest adaptation notes:
+//   One IMPLEMENT_SIMPLE_AUTOMATION_TEST merged into one TEST_CLASS.
+//   This test retains the custom ExecuteValueFunction helper because each
+//   script function returns a struct (FRotator/FQuat/FTransform) that must
+//   be read via GetAddressOfReturnValue.
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "Math/Quat.h"
 #include "Math/RotationMatrix.h"
@@ -9,11 +31,12 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptMathOrientationFactoriesAndTransformMutatorsTest,
-	"Angelscript.TestModule.FunctionLibraries.MathOrientationFactoriesAndTransformMutators",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+static const FBindingsCoverageProfile GMathOrientProfile{
+	TEXT("MathOrientation"), TEXT(""), TEXT("ASMathOrient"), TEXT("MathOrient"), TEXT("MathOrientationBindings")
+};
 
 namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private
 {
@@ -142,18 +165,26 @@ namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTest
 
 using namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private;
 
-bool FAngelscriptMathOrientationFactoriesAndTransformMutatorsTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptMathOrientationFunctionLibraryTest, "Angelscript.TestModule.FunctionLibraries.MathOrientation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	bool bPassed = false;
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
 
-	asIScriptModule* Module = BuildModule(
-		*this,
-		Engine,
-		"ASMathOrientationFactoriesAndTransformMutators",
-		TEXT(R"(
+	TEST_METHOD(FactoriesAndTransformMutators)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GMathOrientProfile, TEXT("FactoriesAndMutators"), TEXT(R"(
 FRotator GetAxesRotator()
 {
 	return FRotator::MakeFromAxes(FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f));
@@ -250,241 +281,215 @@ FTransform GetSetRotationTransform()
 	return Result;
 }
 )"));
-	if (Module == nullptr)
-	{
-		return false;
+		if (!Mod.IsValid()) return;
+		auto& Module = Mod.GetModule();
+
+		const FVector CanonicalForward(1.0f, 0.0f, 0.0f);
+		const FVector CanonicalRight(0.0f, 1.0f, 0.0f);
+		const FVector CanonicalUp(0.0f, 0.0f, 1.0f);
+		const FRotator ComposeA(0.0f, 90.0f, 0.0f);
+		const FRotator ComposeB(45.0f, 0.0f, 0.0f);
+		const FVector FactoryX(1.0f, 1.0f, 0.0f);
+		const FVector FactoryY(-1.0f, 1.0f, 0.0f);
+		const FVector FactoryZ(0.0f, 0.0f, 1.0f);
+		const FTransform TransformA(FRotator(10.0f, 20.0f, 30.0f), FVector(100.0f, -50.0f, 25.0f), FVector(1.25f, 0.75f, 2.0f));
+		const FTransform TransformB(FRotator(-20.0f, 70.0f, 10.0f), FVector(-40.0f, 80.0f, 5.0f), FVector(0.5f, 1.5f, 1.0f));
+		const FRotator ReplacementRotation(-30.0f, 15.0f, 45.0f);
+
+		FRotator ScriptAxesRotator;
+		FVector ScriptAxesForward;
+		FVector ScriptAxesRight;
+		FVector ScriptAxesUp;
+		FRotator ScriptComposedRotator;
+		FQuat ScriptQuatFromX;
+		FQuat ScriptQuatFromY;
+		FQuat ScriptQuatFromZ;
+		FQuat ScriptQuatFromXY;
+		FQuat ScriptQuatFromXZ;
+		FQuat ScriptQuatFromYX;
+		FQuat ScriptQuatFromYZ;
+		FQuat ScriptQuatFromZX;
+		FQuat ScriptQuatFromZY;
+		FTransform ScriptBlendTransform;
+		FTransform ScriptBlendWithTransform;
+		FTransform ScriptSetRotationTransform;
+
+		asIScriptFunction* AxesRotatorFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FRotator GetAxesRotator()"));
+		asIScriptFunction* AxesForwardFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesForward()"));
+		asIScriptFunction* AxesRightFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesRight()"));
+		asIScriptFunction* AxesUpFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesUp()"));
+		asIScriptFunction* ComposedRotatorFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FRotator GetComposedRotator()"));
+		asIScriptFunction* QuatFromXFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromX()"));
+		asIScriptFunction* QuatFromYFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromY()"));
+		asIScriptFunction* QuatFromZFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromZ()"));
+		asIScriptFunction* QuatFromXYFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromXY()"));
+		asIScriptFunction* QuatFromXZFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromXZ()"));
+		asIScriptFunction* QuatFromYXFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromYX()"));
+		asIScriptFunction* QuatFromYZFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromYZ()"));
+		asIScriptFunction* QuatFromZXFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromZX()"));
+		asIScriptFunction* QuatFromZYFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromZY()"));
+		asIScriptFunction* BlendTransformFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FTransform GetBlendTransform()"));
+		asIScriptFunction* BlendWithTransformFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FTransform GetBlendWithTransform()"));
+		asIScriptFunction* SetRotationTransformFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FTransform GetSetRotationTransform()"));
+		if (AxesRotatorFunction == nullptr
+			|| AxesForwardFunction == nullptr
+			|| AxesRightFunction == nullptr
+			|| AxesUpFunction == nullptr
+			|| ComposedRotatorFunction == nullptr
+			|| QuatFromXFunction == nullptr
+			|| QuatFromYFunction == nullptr
+			|| QuatFromZFunction == nullptr
+			|| QuatFromXYFunction == nullptr
+			|| QuatFromXZFunction == nullptr
+			|| QuatFromYXFunction == nullptr
+			|| QuatFromYZFunction == nullptr
+			|| QuatFromZXFunction == nullptr
+			|| QuatFromZYFunction == nullptr
+			|| BlendTransformFunction == nullptr
+			|| BlendWithTransformFunction == nullptr
+			|| SetRotationTransformFunction == nullptr)
+		{
+			return;
+		}
+
+		const bool bExecutedAll =
+			ExecuteValueFunction(*TestRunner, Engine, *AxesRotatorFunction, ScriptAxesRotator) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesForwardFunction, ScriptAxesForward) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesRightFunction, ScriptAxesRight) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesUpFunction, ScriptAxesUp) &&
+			ExecuteValueFunction(*TestRunner, Engine, *ComposedRotatorFunction, ScriptComposedRotator) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromXFunction, ScriptQuatFromX) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromYFunction, ScriptQuatFromY) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromZFunction, ScriptQuatFromZ) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromXYFunction, ScriptQuatFromXY) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromXZFunction, ScriptQuatFromXZ) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromYXFunction, ScriptQuatFromYX) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromYZFunction, ScriptQuatFromYZ) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromZXFunction, ScriptQuatFromZX) &&
+			ExecuteValueFunction(*TestRunner, Engine, *QuatFromZYFunction, ScriptQuatFromZY) &&
+			ExecuteValueFunction(*TestRunner, Engine, *BlendTransformFunction, ScriptBlendTransform) &&
+			ExecuteValueFunction(*TestRunner, Engine, *BlendWithTransformFunction, ScriptBlendWithTransform) &&
+			ExecuteValueFunction(*TestRunner, Engine, *SetRotationTransformFunction, ScriptSetRotationTransform);
+		if (!bExecutedAll)
+		{
+			return;
+		}
+
+		const FRotator ExpectedAxesRotator = FMatrix(CanonicalForward.GetSafeNormal(), CanonicalRight.GetSafeNormal(), CanonicalUp.GetSafeNormal(), FVector::ZeroVector).Rotator();
+		const FRotator ExpectedComposedRotator = FRotator(FQuat(ComposeB) * FQuat(ComposeA));
+		const FQuat ExpectedQuatFromX = FRotationMatrix::MakeFromX(FactoryX).ToQuat();
+		const FQuat ExpectedQuatFromY = FRotationMatrix::MakeFromY(FactoryY).ToQuat();
+		const FQuat ExpectedQuatFromZ = FRotationMatrix::MakeFromZ(FactoryZ).ToQuat();
+		const FQuat ExpectedQuatFromXY = FRotationMatrix::MakeFromXY(FactoryX, FactoryY).ToQuat();
+		const FQuat ExpectedQuatFromXZ = FRotationMatrix::MakeFromXZ(FactoryX, FactoryZ).ToQuat();
+		const FQuat ExpectedQuatFromYX = FRotationMatrix::MakeFromYX(FactoryY, FactoryX).ToQuat();
+		const FQuat ExpectedQuatFromYZ = FRotationMatrix::MakeFromYZ(FactoryY, FactoryZ).ToQuat();
+		const FQuat ExpectedQuatFromZX = FRotationMatrix::MakeFromZX(FactoryZ, FactoryX).ToQuat();
+		const FQuat ExpectedQuatFromZY = FRotationMatrix::MakeFromZY(FactoryZ, FactoryY).ToQuat();
+
+		FTransform ExpectedBlendTransform;
+		ExpectedBlendTransform.Blend(TransformA, TransformB, 0.25f);
+		FTransform ExpectedBlendWithTransform = TransformA;
+		ExpectedBlendWithTransform.BlendWith(TransformB, 0.5f);
+		FTransform ExpectedSetRotationTransform = TransformA;
+		ExpectedSetRotationTransform.SetRotation(ReplacementRotation.Quaternion());
+
+		VerifyRotator(
+			*TestRunner,
+			TEXT("FRotator::MakeFromAxes should build the same orientation as the native matrix conversion"),
+			ScriptAxesRotator,
+			ExpectedAxesRotator);
+		VerifyVector(
+			*TestRunner,
+			TEXT("FRotator::GetForwardVector should recover the canonical forward axis from MakeFromAxes"),
+			ScriptAxesForward,
+			CanonicalForward);
+		VerifyVector(
+			*TestRunner,
+			TEXT("FRotator::GetRightVector should recover the canonical right axis from MakeFromAxes"),
+			ScriptAxesRight,
+			CanonicalRight);
+		VerifyVector(
+			*TestRunner,
+			TEXT("FRotator::GetUpVector should recover the canonical up axis from MakeFromAxes"),
+			ScriptAxesUp,
+			CanonicalUp);
+		VerifyRotator(
+			*TestRunner,
+			TEXT("FRotator::Compose should preserve the native B * A multiplication order"),
+			ScriptComposedRotator,
+			ExpectedComposedRotator);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromX should match the native rotation matrix factory"),
+			ScriptQuatFromX,
+			ExpectedQuatFromX);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromY should match the native rotation matrix factory"),
+			ScriptQuatFromY,
+			ExpectedQuatFromY);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromZ should match the native rotation matrix factory"),
+			ScriptQuatFromZ,
+			ExpectedQuatFromZ);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromXY should match the native rotation matrix factory"),
+			ScriptQuatFromXY,
+			ExpectedQuatFromXY);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromXZ should match the native rotation matrix factory"),
+			ScriptQuatFromXZ,
+			ExpectedQuatFromXZ);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromYX should match the native rotation matrix factory"),
+			ScriptQuatFromYX,
+			ExpectedQuatFromYX);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromYZ should match the native rotation matrix factory"),
+			ScriptQuatFromYZ,
+			ExpectedQuatFromYZ);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromZX should match the native rotation matrix factory"),
+			ScriptQuatFromZX,
+			ExpectedQuatFromZX);
+		VerifyQuat(
+			*TestRunner,
+			TEXT("FQuat::MakeFromZY should match the native rotation matrix factory"),
+			ScriptQuatFromZY,
+			ExpectedQuatFromZY);
+		VerifyTransform(
+			*TestRunner,
+			TEXT("FTransform::Blend should match native transform blending"),
+			ScriptBlendTransform,
+			ExpectedBlendTransform);
+		VerifyTransform(
+			*TestRunner,
+			TEXT("FTransform::BlendWith should match native in-place blending"),
+			ScriptBlendWithTransform,
+			ExpectedBlendWithTransform);
+		VerifyTransform(
+			*TestRunner,
+			TEXT("FTransform::SetRotation should update only the rotation component"),
+			ScriptSetRotationTransform,
+			ExpectedSetRotationTransform);
+		VerifyVector(
+			*TestRunner,
+			TEXT("FTransform::SetRotation should preserve the original translation"),
+			ScriptSetRotationTransform.GetLocation(),
+			TransformA.GetLocation());
+		VerifyVector(
+			*TestRunner,
+			TEXT("FTransform::SetRotation should preserve the original scale"),
+			ScriptSetRotationTransform.GetScale3D(),
+			TransformA.GetScale3D());
 	}
-
-	const FVector CanonicalForward(1.0f, 0.0f, 0.0f);
-	const FVector CanonicalRight(0.0f, 1.0f, 0.0f);
-	const FVector CanonicalUp(0.0f, 0.0f, 1.0f);
-	const FRotator ComposeA(0.0f, 90.0f, 0.0f);
-	const FRotator ComposeB(45.0f, 0.0f, 0.0f);
-	const FVector FactoryX(1.0f, 1.0f, 0.0f);
-	const FVector FactoryY(-1.0f, 1.0f, 0.0f);
-	const FVector FactoryZ(0.0f, 0.0f, 1.0f);
-	const FTransform TransformA(FRotator(10.0f, 20.0f, 30.0f), FVector(100.0f, -50.0f, 25.0f), FVector(1.25f, 0.75f, 2.0f));
-	const FTransform TransformB(FRotator(-20.0f, 70.0f, 10.0f), FVector(-40.0f, 80.0f, 5.0f), FVector(0.5f, 1.5f, 1.0f));
-	const FRotator ReplacementRotation(-30.0f, 15.0f, 45.0f);
-
-	FRotator ScriptAxesRotator;
-	FVector ScriptAxesForward;
-	FVector ScriptAxesRight;
-	FVector ScriptAxesUp;
-	FRotator ScriptComposedRotator;
-	FQuat ScriptQuatFromX;
-	FQuat ScriptQuatFromY;
-	FQuat ScriptQuatFromZ;
-	FQuat ScriptQuatFromXY;
-	FQuat ScriptQuatFromXZ;
-	FQuat ScriptQuatFromYX;
-	FQuat ScriptQuatFromYZ;
-	FQuat ScriptQuatFromZX;
-	FQuat ScriptQuatFromZY;
-	FTransform ScriptBlendTransform;
-	FTransform ScriptBlendWithTransform;
-	FTransform ScriptSetRotationTransform;
-
-	asIScriptFunction* AxesRotatorFunction = GetFunctionByDecl(*this, *Module, TEXT("FRotator GetAxesRotator()"));
-	asIScriptFunction* AxesForwardFunction = GetFunctionByDecl(*this, *Module, TEXT("FVector GetAxesForward()"));
-	asIScriptFunction* AxesRightFunction = GetFunctionByDecl(*this, *Module, TEXT("FVector GetAxesRight()"));
-	asIScriptFunction* AxesUpFunction = GetFunctionByDecl(*this, *Module, TEXT("FVector GetAxesUp()"));
-	asIScriptFunction* ComposedRotatorFunction = GetFunctionByDecl(*this, *Module, TEXT("FRotator GetComposedRotator()"));
-	asIScriptFunction* QuatFromXFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromX()"));
-	asIScriptFunction* QuatFromYFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromY()"));
-	asIScriptFunction* QuatFromZFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromZ()"));
-	asIScriptFunction* QuatFromXYFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromXY()"));
-	asIScriptFunction* QuatFromXZFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromXZ()"));
-	asIScriptFunction* QuatFromYXFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromYX()"));
-	asIScriptFunction* QuatFromYZFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromYZ()"));
-	asIScriptFunction* QuatFromZXFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromZX()"));
-	asIScriptFunction* QuatFromZYFunction = GetFunctionByDecl(*this, *Module, TEXT("FQuat GetQuatFromZY()"));
-	asIScriptFunction* BlendTransformFunction = GetFunctionByDecl(*this, *Module, TEXT("FTransform GetBlendTransform()"));
-	asIScriptFunction* BlendWithTransformFunction = GetFunctionByDecl(*this, *Module, TEXT("FTransform GetBlendWithTransform()"));
-	asIScriptFunction* SetRotationTransformFunction = GetFunctionByDecl(*this, *Module, TEXT("FTransform GetSetRotationTransform()"));
-	if (AxesRotatorFunction == nullptr
-		|| AxesForwardFunction == nullptr
-		|| AxesRightFunction == nullptr
-		|| AxesUpFunction == nullptr
-		|| ComposedRotatorFunction == nullptr
-		|| QuatFromXFunction == nullptr
-		|| QuatFromYFunction == nullptr
-		|| QuatFromZFunction == nullptr
-		|| QuatFromXYFunction == nullptr
-		|| QuatFromXZFunction == nullptr
-		|| QuatFromYXFunction == nullptr
-		|| QuatFromYZFunction == nullptr
-		|| QuatFromZXFunction == nullptr
-		|| QuatFromZYFunction == nullptr
-		|| BlendTransformFunction == nullptr
-		|| BlendWithTransformFunction == nullptr
-		|| SetRotationTransformFunction == nullptr)
-	{
-		return false;
-	}
-
-	const bool bExecutedAll =
-		ExecuteValueFunction(*this, Engine, *AxesRotatorFunction, ScriptAxesRotator) &&
-		ExecuteValueFunction(*this, Engine, *AxesForwardFunction, ScriptAxesForward) &&
-		ExecuteValueFunction(*this, Engine, *AxesRightFunction, ScriptAxesRight) &&
-		ExecuteValueFunction(*this, Engine, *AxesUpFunction, ScriptAxesUp) &&
-		ExecuteValueFunction(*this, Engine, *ComposedRotatorFunction, ScriptComposedRotator) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromXFunction, ScriptQuatFromX) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromYFunction, ScriptQuatFromY) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromZFunction, ScriptQuatFromZ) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromXYFunction, ScriptQuatFromXY) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromXZFunction, ScriptQuatFromXZ) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromYXFunction, ScriptQuatFromYX) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromYZFunction, ScriptQuatFromYZ) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromZXFunction, ScriptQuatFromZX) &&
-		ExecuteValueFunction(*this, Engine, *QuatFromZYFunction, ScriptQuatFromZY) &&
-		ExecuteValueFunction(*this, Engine, *BlendTransformFunction, ScriptBlendTransform) &&
-		ExecuteValueFunction(*this, Engine, *BlendWithTransformFunction, ScriptBlendWithTransform) &&
-		ExecuteValueFunction(*this, Engine, *SetRotationTransformFunction, ScriptSetRotationTransform);
-	if (!bExecutedAll)
-	{
-		return false;
-	}
-
-	const FRotator ExpectedAxesRotator = FMatrix(CanonicalForward.GetSafeNormal(), CanonicalRight.GetSafeNormal(), CanonicalUp.GetSafeNormal(), FVector::ZeroVector).Rotator();
-	const FRotator ExpectedComposedRotator = FRotator(FQuat(ComposeB) * FQuat(ComposeA));
-	const FQuat ExpectedQuatFromX = FRotationMatrix::MakeFromX(FactoryX).ToQuat();
-	const FQuat ExpectedQuatFromY = FRotationMatrix::MakeFromY(FactoryY).ToQuat();
-	const FQuat ExpectedQuatFromZ = FRotationMatrix::MakeFromZ(FactoryZ).ToQuat();
-	const FQuat ExpectedQuatFromXY = FRotationMatrix::MakeFromXY(FactoryX, FactoryY).ToQuat();
-	const FQuat ExpectedQuatFromXZ = FRotationMatrix::MakeFromXZ(FactoryX, FactoryZ).ToQuat();
-	const FQuat ExpectedQuatFromYX = FRotationMatrix::MakeFromYX(FactoryY, FactoryX).ToQuat();
-	const FQuat ExpectedQuatFromYZ = FRotationMatrix::MakeFromYZ(FactoryY, FactoryZ).ToQuat();
-	const FQuat ExpectedQuatFromZX = FRotationMatrix::MakeFromZX(FactoryZ, FactoryX).ToQuat();
-	const FQuat ExpectedQuatFromZY = FRotationMatrix::MakeFromZY(FactoryZ, FactoryY).ToQuat();
-
-	FTransform ExpectedBlendTransform;
-	ExpectedBlendTransform.Blend(TransformA, TransformB, 0.25f);
-	FTransform ExpectedBlendWithTransform = TransformA;
-	ExpectedBlendWithTransform.BlendWith(TransformB, 0.5f);
-	FTransform ExpectedSetRotationTransform = TransformA;
-	ExpectedSetRotationTransform.SetRotation(ReplacementRotation.Quaternion());
-
-	const bool bAxesRotatorMatches = VerifyRotator(
-		*this,
-		TEXT("FRotator::MakeFromAxes should build the same orientation as the native matrix conversion"),
-		ScriptAxesRotator,
-		ExpectedAxesRotator);
-	const bool bForwardMatches = VerifyVector(
-		*this,
-		TEXT("FRotator::GetForwardVector should recover the canonical forward axis from MakeFromAxes"),
-		ScriptAxesForward,
-		CanonicalForward);
-	const bool bRightMatches = VerifyVector(
-		*this,
-		TEXT("FRotator::GetRightVector should recover the canonical right axis from MakeFromAxes"),
-		ScriptAxesRight,
-		CanonicalRight);
-	const bool bUpMatches = VerifyVector(
-		*this,
-		TEXT("FRotator::GetUpVector should recover the canonical up axis from MakeFromAxes"),
-		ScriptAxesUp,
-		CanonicalUp);
-	const bool bComposeMatches = VerifyRotator(
-		*this,
-		TEXT("FRotator::Compose should preserve the native B * A multiplication order"),
-		ScriptComposedRotator,
-		ExpectedComposedRotator);
-	const bool bQuatFromXMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromX should match the native rotation matrix factory"),
-		ScriptQuatFromX,
-		ExpectedQuatFromX);
-	const bool bQuatFromYMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromY should match the native rotation matrix factory"),
-		ScriptQuatFromY,
-		ExpectedQuatFromY);
-	const bool bQuatFromZMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromZ should match the native rotation matrix factory"),
-		ScriptQuatFromZ,
-		ExpectedQuatFromZ);
-	const bool bQuatFromXYMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromXY should match the native rotation matrix factory"),
-		ScriptQuatFromXY,
-		ExpectedQuatFromXY);
-	const bool bQuatFromXZMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromXZ should match the native rotation matrix factory"),
-		ScriptQuatFromXZ,
-		ExpectedQuatFromXZ);
-	const bool bQuatFromYXMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromYX should match the native rotation matrix factory"),
-		ScriptQuatFromYX,
-		ExpectedQuatFromYX);
-	const bool bQuatFromYZMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromYZ should match the native rotation matrix factory"),
-		ScriptQuatFromYZ,
-		ExpectedQuatFromYZ);
-	const bool bQuatFromZXMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromZX should match the native rotation matrix factory"),
-		ScriptQuatFromZX,
-		ExpectedQuatFromZX);
-	const bool bQuatFromZYMatches = VerifyQuat(
-		*this,
-		TEXT("FQuat::MakeFromZY should match the native rotation matrix factory"),
-		ScriptQuatFromZY,
-		ExpectedQuatFromZY);
-	const bool bBlendMatches = VerifyTransform(
-		*this,
-		TEXT("FTransform::Blend should match native transform blending"),
-		ScriptBlendTransform,
-		ExpectedBlendTransform);
-	const bool bBlendWithMatches = VerifyTransform(
-		*this,
-		TEXT("FTransform::BlendWith should match native in-place blending"),
-		ScriptBlendWithTransform,
-		ExpectedBlendWithTransform);
-	const bool bSetRotationMatches = VerifyTransform(
-		*this,
-		TEXT("FTransform::SetRotation should update only the rotation component"),
-		ScriptSetRotationTransform,
-		ExpectedSetRotationTransform);
-	const bool bSetRotationPreservesLocation = VerifyVector(
-		*this,
-		TEXT("FTransform::SetRotation should preserve the original translation"),
-		ScriptSetRotationTransform.GetLocation(),
-		TransformA.GetLocation());
-	const bool bSetRotationPreservesScale = VerifyVector(
-		*this,
-		TEXT("FTransform::SetRotation should preserve the original scale"),
-		ScriptSetRotationTransform.GetScale3D(),
-		TransformA.GetScale3D());
-
-	bPassed =
-		bAxesRotatorMatches &&
-		bForwardMatches &&
-		bRightMatches &&
-		bUpMatches &&
-		bComposeMatches &&
-		bQuatFromXMatches &&
-		bQuatFromYMatches &&
-		bQuatFromZMatches &&
-		bQuatFromXYMatches &&
-		bQuatFromXZMatches &&
-		bQuatFromYXMatches &&
-		bQuatFromYZMatches &&
-		bQuatFromZXMatches &&
-		bQuatFromZYMatches &&
-		bBlendMatches &&
-		bBlendWithMatches &&
-		bSetRotationMatches &&
-		bSetRotationPreservesLocation &&
-		bSetRotationPreservesScale;
-
-	ASTEST_END_SHARE_CLEAN
-
-	return bPassed;
-}
+};
 
 #endif

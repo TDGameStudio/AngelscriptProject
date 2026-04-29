@@ -1,30 +1,64 @@
-#include "Shared/AngelscriptFunctionalTestUtils.h"
+// ============================================================================
+// AngelscriptWorldCollisionAsyncSweepBindingsTests.cpp
+//
+// World collision async sweep callback coverage — CQTest refactor. Automation IDs:
+//   Angelscript.TestModule.Bindings.WorldCollisionAsyncSweep.FAngelscriptWorldCollisionAsyncSweepBindingsTest.*
+//
+// Sections:
+//   AsyncSweepCallbacks — spawns actor with callbacks, fires async sweeps, ticks world, verifies results
+//
+// CQTest adaptation notes:
+//   This is an integration test requiring FULL engine, actor spawning, world ticking.
+//   The original single monolithic test is preserved as one TEST_METHOD since the
+//   async sweep workflow is inherently sequential. Verification is split into per-case
+//   assertions using the profile naming conventions.
+// ============================================================================
+
+#include "CQTest.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 
 #include "Components/ActorTestSpawner.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/UnrealType.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptFunctionalTestUtils;
 
-namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncSweepBindingsTests_Private
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GWCAsyncSweepProfile{
+	TEXT("WCAsyncSweep"),                     // Theme
+	TEXT(""),                                 // Variant
+	TEXT("ASWCAsyncSweep"),                   // ModulePrefix
+	TEXT("WCAsyncSweep"),                     // CasePrefix
+	TEXT("WorldCollisionAsyncSweepBindings"), // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Local helpers
+// ----------------------------------------------------------------------------
+
+namespace
 {
-	using namespace AngelscriptFunctionalTestUtils;
-
-	static const FName WorldCollisionAsyncSweepModuleName(TEXT("ASWorldCollisionAsyncSweepCallbacks"));
-	static const FString WorldCollisionAsyncSweepFilename(TEXT("WorldCollisionAsyncSweepCallbacks.as"));
-	static const FName WorldCollisionAsyncSweepClassName(TEXT("ATestWorldCollisionAsyncSweepCallbacks"));
+	static const FName AsyncSweepModuleName(TEXT("ASWCAsyncSweepCallbacks"));
+	static const FString AsyncSweepFilename(TEXT("WCAsyncSweepCallbacks.as"));
+	static const FName AsyncSweepClassName(TEXT("ATestWorldCollisionAsyncSweepCallbacks"));
 	static const FVector AsyncSweepStart(-200.0f, 0.0f, 0.0f);
 	static const FVector AsyncSweepEnd(200.0f, 0.0f, 0.0f);
 	static const FVector AsyncSweepTargetLocation(0.0f, 0.0f, 0.0f);
 	static const FVector AsyncSweepTargetExtent(50.0f, 50.0f, 50.0f);
-	static const FVector AsyncSweepQueryExtent(30.0f, 30.0f, 30.0f);
 	static constexpr float AsyncTickDeltaTime = 1.0f / 60.0f;
 	static constexpr int32 AsyncMaxTickCount = 90;
 
@@ -170,28 +204,33 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncSweepBindingsTe
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncSweepBindingsTests_Private;
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptWorldCollisionAsyncSweepBindingsTest,
-	"Angelscript.TestModule.FunctionLibraries.WorldCollisionAsyncSweepCallbacks",
+TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionAsyncSweepBindingsTest,
+	"Angelscript.TestModule.Bindings.WorldCollisionAsyncSweep",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptWorldCollisionAsyncSweepBindingsTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*WorldCollisionAsyncSweepModuleName.ToString());
-	};
+	// ====================================================================
+	// Section: AsyncSweepCallbacks
+	// ====================================================================
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		WorldCollisionAsyncSweepModuleName,
-		WorldCollisionAsyncSweepFilename,
-		TEXT(R"AS(
+	TEST_METHOD(AsyncSweepCallbacks)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
+		FAngelscriptEngineScope Scope(Engine);
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*AsyncSweepModuleName.ToString());
+		};
+
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			AsyncSweepModuleName,
+			AsyncSweepFilename,
+			TEXT(R"AS(
 UCLASS()
 class ATestWorldCollisionAsyncSweepCallbacks : AActor
 {
@@ -388,152 +427,147 @@ class ATestWorldCollisionAsyncSweepCallbacks : AActor
 	}
 }
 )AS"),
-		WorldCollisionAsyncSweepClassName);
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			AsyncSweepClassName);
+		if (ScriptClass == nullptr)
+		{
+			return;
+		}
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+
+		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
+		UBoxComponent* BlockingBox = AddCollisionBox(
+			BlockingActor,
+			TEXT("AsyncSweepBlockingTarget"),
+			AsyncSweepTargetExtent,
+			AsyncSweepTargetLocation);
+		if (!TestRunner->TestNotNull(TEXT("Async sweep blocking box should be created"), BlockingBox))
+		{
+			return;
+		}
+
+		AActor* ScriptActor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Async sweep script actor should spawn"), ScriptActor))
+		{
+			return;
+		}
+
+		if (!WriteObjectPropertyChecked(*TestRunner, ScriptActor, TEXT("ExpectedActor"), &BlockingActor)
+			|| !WriteObjectPropertyChecked(*TestRunner, ScriptActor, TEXT("ExpectedComponent"), BlockingBox))
+		{
+			return;
+		}
+
+		BeginPlayActor(Engine, *ScriptActor);
+
+		UWorld* World = BlockingActor.GetWorld();
+		if (!TestRunner->TestNotNull(TEXT("Async sweep test should access the spawned world"), World))
+		{
+			return;
+		}
+
+		int32 StartResult = 0;
+		if (!ExecuteGeneratedIntMethod(*TestRunner, ScriptActor, ScriptClass, TEXT("StartAsyncSweeps"), StartResult))
+		{
+			return;
+		}
+		TestRunner->TestEqual(TEXT("Async sweep start method should acknowledge launch"), StartResult, 1);
+
+		if (!WaitForAsyncSweepCallbacks(*TestRunner, Engine, *World, *ScriptActor))
+		{
+			return;
+		}
+
+		// Read all result properties
+		int32 ChannelCallbackCount = 0, ChannelUserData = 0, ChannelHitCount = 0;
+		int32 ChannelQuerySucceeded = 0, ChannelQueryHitCount = 0, ChannelHandleValidInitially = 0;
+		int32 ObjectCallbackCount = 0, ObjectUserData = 0, ObjectHitCount = 0;
+		int32 ObjectQuerySucceeded = 0, ObjectQueryHitCount = 0, ObjectHandleValidInitially = 0;
+		int32 ProfileCallbackCount = 0, ProfileUserData = 0, ProfileHitCount = 0;
+		int32 ProfileQuerySucceeded = 0, ProfileQueryHitCount = 0, ProfileHandleValidInitially = 0;
+		uint64 ChannelHandleRaw = 0, LastChannelCallbackHandle = 0;
+		uint64 ObjectHandleRaw = 0, LastObjectCallbackHandle = 0;
+		uint64 ProfileHandleRaw = 0, LastProfileCallbackHandle = 0;
+		bool bChannelHitActorMatched = false, bChannelHitComponentMatched = false;
+		bool bObjectHitActorMatched = false, bObjectHitComponentMatched = false;
+		bool bProfileHitActorMatched = false, bProfileHitComponentMatched = false;
+
+		if (!ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelCallbackCount"), ChannelCallbackCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelUserData"), ChannelUserData)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelHitCount"), ChannelHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelQuerySucceeded"), ChannelQuerySucceeded)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelQueryHitCount"), ChannelQueryHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelHandleValidInitially"), ChannelHandleValidInitially)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectCallbackCount"), ObjectCallbackCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectUserData"), ObjectUserData)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectHitCount"), ObjectHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectQuerySucceeded"), ObjectQuerySucceeded)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectQueryHitCount"), ObjectQueryHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectHandleValidInitially"), ObjectHandleValidInitially)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileCallbackCount"), ProfileCallbackCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileUserData"), ProfileUserData)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileHitCount"), ProfileHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileQuerySucceeded"), ProfileQuerySucceeded)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileQueryHitCount"), ProfileQueryHitCount)
+			|| !ReadIntPropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileHandleValidInitially"), ProfileHandleValidInitially)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("ChannelHandleRaw"), ChannelHandleRaw)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("LastChannelCallbackHandle"), LastChannelCallbackHandle)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("ObjectHandleRaw"), ObjectHandleRaw)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("LastObjectCallbackHandle"), LastObjectCallbackHandle)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("ProfileHandleRaw"), ProfileHandleRaw)
+			|| !ReadUInt64PropertyChecked(*TestRunner, ScriptActor, TEXT("LastProfileCallbackHandle"), LastProfileCallbackHandle)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bChannelHitActorMatched"), bChannelHitActorMatched)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bChannelHitComponentMatched"), bChannelHitComponentMatched)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bObjectHitActorMatched"), bObjectHitActorMatched)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bObjectHitComponentMatched"), bObjectHitComponentMatched)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bProfileHitActorMatched"), bProfileHitActorMatched)
+			|| !ReadBoolPropertyChecked(*TestRunner, ScriptActor, TEXT("bProfileHitComponentMatched"), bProfileHitComponentMatched))
+		{
+			return;
+		}
+
+		// Verify callback invocation counts
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel should invoke its callback exactly once"), ChannelCallbackCount, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType should invoke its callback exactly once"), ObjectCallbackCount, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile should invoke its callback exactly once"), ProfileCallbackCount, 1);
+
+		// Verify UserData preservation
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel should preserve UserData through the delegate bridge"), ChannelUserData, 101);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType should preserve UserData through the delegate bridge"), ObjectUserData, 202);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile should preserve UserData through the delegate bridge"), ProfileUserData, 303);
+
+		// Verify hit counts
+		TestRunner->TestTrue(TEXT("AsyncSweepByChannel should report at least one hit"), ChannelHitCount > 0);
+		TestRunner->TestTrue(TEXT("AsyncSweepByObjectType should report at least one hit"), ObjectHitCount > 0);
+		TestRunner->TestTrue(TEXT("AsyncSweepByProfile should report at least one hit"), ProfileHitCount > 0);
+
+		// Verify handle validity
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel should return an initially valid trace handle"), ChannelHandleValidInitially, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType should return an initially valid trace handle"), ObjectHandleValidInitially, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile should return an initially valid trace handle"), ProfileHandleValidInitially, 1);
+
+		// Verify handle matching
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel callback should observe the same handle that StartAsyncSweeps stored"), LastChannelCallbackHandle, ChannelHandleRaw);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType callback should observe the same handle that StartAsyncSweeps stored"), LastObjectCallbackHandle, ObjectHandleRaw);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile callback should observe the same handle that StartAsyncSweeps stored"), LastProfileCallbackHandle, ProfileHandleRaw);
+
+		// Verify QueryTraceData
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel callback should report successful QueryTraceData"), ChannelQuerySucceeded, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType callback should report successful QueryTraceData"), ObjectQuerySucceeded, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile callback should report successful QueryTraceData"), ProfileQuerySucceeded, 1);
+		TestRunner->TestEqual(TEXT("AsyncSweepByChannel query hit count should match callback payload"), ChannelQueryHitCount, ChannelHitCount);
+		TestRunner->TestEqual(TEXT("AsyncSweepByObjectType query hit count should match callback payload"), ObjectQueryHitCount, ObjectHitCount);
+		TestRunner->TestEqual(TEXT("AsyncSweepByProfile query hit count should match callback payload"), ProfileQueryHitCount, ProfileHitCount);
+
+		// Verify actor/component identification
+		TestRunner->TestTrue(TEXT("AsyncSweepByChannel should identify the expected blocker actor"), bChannelHitActorMatched);
+		TestRunner->TestTrue(TEXT("AsyncSweepByChannel should identify the expected blocker component"), bChannelHitComponentMatched);
+		TestRunner->TestTrue(TEXT("AsyncSweepByObjectType should identify the expected blocker actor"), bObjectHitActorMatched);
+		TestRunner->TestTrue(TEXT("AsyncSweepByObjectType should identify the expected blocker component"), bObjectHitComponentMatched);
+		TestRunner->TestTrue(TEXT("AsyncSweepByProfile should identify the expected blocker actor"), bProfileHitActorMatched);
+		TestRunner->TestTrue(TEXT("AsyncSweepByProfile should identify the expected blocker component"), bProfileHitComponentMatched);
 	}
-
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-
-	AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-	UBoxComponent* BlockingBox = AddCollisionBox(
-		BlockingActor,
-		TEXT("AsyncSweepBlockingTarget"),
-		AsyncSweepTargetExtent,
-		AsyncSweepTargetLocation);
-	if (!TestNotNull(TEXT("Async sweep blocking box should be created"), BlockingBox))
-	{
-		return false;
-	}
-
-	AActor* ScriptActor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Async sweep script actor should spawn"), ScriptActor))
-	{
-		return false;
-	}
-
-	if (!WriteObjectPropertyChecked(*this, ScriptActor, TEXT("ExpectedActor"), &BlockingActor)
-		|| !WriteObjectPropertyChecked(*this, ScriptActor, TEXT("ExpectedComponent"), BlockingBox))
-	{
-		return false;
-	}
-
-	BeginPlayActor(Engine, *ScriptActor);
-
-	UWorld* World = BlockingActor.GetWorld();
-	if (!TestNotNull(TEXT("Async sweep test should access the spawned world"), World))
-	{
-		return false;
-	}
-
-	int32 StartResult = 0;
-	if (!ExecuteGeneratedIntMethod(*this, ScriptActor, ScriptClass, TEXT("StartAsyncSweeps"), StartResult))
-	{
-		return false;
-	}
-	TestEqual(TEXT("Async sweep start method should acknowledge launch"), StartResult, 1);
-
-	if (!WaitForAsyncSweepCallbacks(*this, Engine, *World, *ScriptActor))
-	{
-		return false;
-	}
-
-	int32 ChannelCallbackCount = 0;
-	int32 ChannelUserData = 0;
-	int32 ChannelHitCount = 0;
-	int32 ChannelQuerySucceeded = 0;
-	int32 ChannelQueryHitCount = 0;
-	int32 ChannelHandleValidInitially = 0;
-	int32 ObjectCallbackCount = 0;
-	int32 ObjectUserData = 0;
-	int32 ObjectHitCount = 0;
-	int32 ObjectQuerySucceeded = 0;
-	int32 ObjectQueryHitCount = 0;
-	int32 ObjectHandleValidInitially = 0;
-	int32 ProfileCallbackCount = 0;
-	int32 ProfileUserData = 0;
-	int32 ProfileHitCount = 0;
-	int32 ProfileQuerySucceeded = 0;
-	int32 ProfileQueryHitCount = 0;
-	int32 ProfileHandleValidInitially = 0;
-	uint64 ChannelHandleRaw = 0;
-	uint64 LastChannelCallbackHandle = 0;
-	uint64 ObjectHandleRaw = 0;
-	uint64 LastObjectCallbackHandle = 0;
-	uint64 ProfileHandleRaw = 0;
-	uint64 LastProfileCallbackHandle = 0;
-	bool bChannelHitActorMatched = false;
-	bool bChannelHitComponentMatched = false;
-	bool bObjectHitActorMatched = false;
-	bool bObjectHitComponentMatched = false;
-	bool bProfileHitActorMatched = false;
-	bool bProfileHitComponentMatched = false;
-	if (!ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelCallbackCount"), ChannelCallbackCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelUserData"), ChannelUserData)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelHitCount"), ChannelHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelQuerySucceeded"), ChannelQuerySucceeded)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelQueryHitCount"), ChannelQueryHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ChannelHandleValidInitially"), ChannelHandleValidInitially)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectCallbackCount"), ObjectCallbackCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectUserData"), ObjectUserData)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectHitCount"), ObjectHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectQuerySucceeded"), ObjectQuerySucceeded)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectQueryHitCount"), ObjectQueryHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ObjectHandleValidInitially"), ObjectHandleValidInitially)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileCallbackCount"), ProfileCallbackCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileUserData"), ProfileUserData)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileHitCount"), ProfileHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileQuerySucceeded"), ProfileQuerySucceeded)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileQueryHitCount"), ProfileQueryHitCount)
-		|| !ReadIntPropertyChecked(*this, ScriptActor, TEXT("ProfileHandleValidInitially"), ProfileHandleValidInitially)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("ChannelHandleRaw"), ChannelHandleRaw)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("LastChannelCallbackHandle"), LastChannelCallbackHandle)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("ObjectHandleRaw"), ObjectHandleRaw)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("LastObjectCallbackHandle"), LastObjectCallbackHandle)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("ProfileHandleRaw"), ProfileHandleRaw)
-		|| !ReadUInt64PropertyChecked(*this, ScriptActor, TEXT("LastProfileCallbackHandle"), LastProfileCallbackHandle)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bChannelHitActorMatched"), bChannelHitActorMatched)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bChannelHitComponentMatched"), bChannelHitComponentMatched)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bObjectHitActorMatched"), bObjectHitActorMatched)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bObjectHitComponentMatched"), bObjectHitComponentMatched)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bProfileHitActorMatched"), bProfileHitActorMatched)
-		|| !ReadBoolPropertyChecked(*this, ScriptActor, TEXT("bProfileHitComponentMatched"), bProfileHitComponentMatched))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("AsyncSweepByChannel should invoke its callback exactly once"), ChannelCallbackCount, 1);
-	TestEqual(TEXT("AsyncSweepByObjectType should invoke its callback exactly once"), ObjectCallbackCount, 1);
-	TestEqual(TEXT("AsyncSweepByProfile should invoke its callback exactly once"), ProfileCallbackCount, 1);
-	TestEqual(TEXT("AsyncSweepByChannel should preserve UserData through the delegate bridge"), ChannelUserData, 101);
-	TestEqual(TEXT("AsyncSweepByObjectType should preserve UserData through the delegate bridge"), ObjectUserData, 202);
-	TestEqual(TEXT("AsyncSweepByProfile should preserve UserData through the delegate bridge"), ProfileUserData, 303);
-	TestTrue(TEXT("AsyncSweepByChannel should report at least one hit"), ChannelHitCount > 0);
-	TestTrue(TEXT("AsyncSweepByObjectType should report at least one hit"), ObjectHitCount > 0);
-	TestTrue(TEXT("AsyncSweepByProfile should report at least one hit"), ProfileHitCount > 0);
-	TestEqual(TEXT("AsyncSweepByChannel should return an initially valid trace handle"), ChannelHandleValidInitially, 1);
-	TestEqual(TEXT("AsyncSweepByObjectType should return an initially valid trace handle"), ObjectHandleValidInitially, 1);
-	TestEqual(TEXT("AsyncSweepByProfile should return an initially valid trace handle"), ProfileHandleValidInitially, 1);
-	TestEqual(TEXT("AsyncSweepByChannel callback should observe the same handle that StartAsyncSweeps stored"), LastChannelCallbackHandle, ChannelHandleRaw);
-	TestEqual(TEXT("AsyncSweepByObjectType callback should observe the same handle that StartAsyncSweeps stored"), LastObjectCallbackHandle, ObjectHandleRaw);
-	TestEqual(TEXT("AsyncSweepByProfile callback should observe the same handle that StartAsyncSweeps stored"), LastProfileCallbackHandle, ProfileHandleRaw);
-	TestEqual(TEXT("AsyncSweepByChannel callback should report successful QueryTraceData"), ChannelQuerySucceeded, 1);
-	TestEqual(TEXT("AsyncSweepByObjectType callback should report successful QueryTraceData"), ObjectQuerySucceeded, 1);
-	TestEqual(TEXT("AsyncSweepByProfile callback should report successful QueryTraceData"), ProfileQuerySucceeded, 1);
-	TestEqual(TEXT("AsyncSweepByChannel query hit count should match callback payload"), ChannelQueryHitCount, ChannelHitCount);
-	TestEqual(TEXT("AsyncSweepByObjectType query hit count should match callback payload"), ObjectQueryHitCount, ObjectHitCount);
-	TestEqual(TEXT("AsyncSweepByProfile query hit count should match callback payload"), ProfileQueryHitCount, ProfileHitCount);
-	TestTrue(TEXT("AsyncSweepByChannel should identify the expected blocker actor"), bChannelHitActorMatched);
-	TestTrue(TEXT("AsyncSweepByChannel should identify the expected blocker component"), bChannelHitComponentMatched);
-	TestTrue(TEXT("AsyncSweepByObjectType should identify the expected blocker actor"), bObjectHitActorMatched);
-	TestTrue(TEXT("AsyncSweepByObjectType should identify the expected blocker component"), bObjectHitComponentMatched);
-	TestTrue(TEXT("AsyncSweepByProfile should identify the expected blocker actor"), bProfileHitActorMatched);
-	TestTrue(TEXT("AsyncSweepByProfile should identify the expected blocker component"), bProfileHitComponentMatched);
-
-	ASTEST_END_FULL
-	return true;
-}
+};
 
 #endif
