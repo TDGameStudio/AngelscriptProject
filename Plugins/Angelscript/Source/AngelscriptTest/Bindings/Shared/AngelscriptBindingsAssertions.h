@@ -1,0 +1,236 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AngelscriptEngine.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+
+#include "AngelscriptBindingsCoverage.h"
+#include "../../Shared/AngelscriptGlobalFunctionInvoker.h"
+
+#include "StartAngelscriptHeaders.h"
+#include "source/as_context.h"
+#include "source/as_scriptengine.h"
+#include "source/as_scriptfunction.h"
+#include "EndAngelscriptHeaders.h"
+
+/**
+ * AngelscriptBindingsAssertions — one-line per-case assertion helpers that
+ * wrap `FASGlobalFunctionInvoker` for the Bindings Coverage refactor.
+ *
+ * Each helper:
+ *   1. Resolves the named global function on the supplied module.
+ *   2. Invokes it (with no args by default — see batch overloads for arg
+ *      lists; for parameterised cases drive `FASGlobalFunctionInvoker` directly).
+ *   3. Compares the return value against `Expected` (or matches an exception
+ *      pattern, for the negative-path helper).
+ *   4. Pushes a friendly `Test.AddInfo` line so a passing run still leaves a
+ *      readable per-case trail in the automation log.
+ *
+ * Usage spans every SubPlan; the canonical templates live in
+ * `AngelscriptBindingsExampleSection.h`.
+ *
+ * Convention: all expectations take a `CaseLabel` that describes the
+ * *behavior under test*, not the function name. The function declaration is
+ * already echoed by `FASGlobalFunctionInvoker`'s own diagnostics on failure.
+ */
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+namespace AngelscriptTestBindings
+{
+	/** Common bookkeeping: trace + invoker preflight. Returns invoker validity. */
+	namespace Detail
+	{
+		inline bool TraceCase(
+			FAutomationTestBase& Test,
+			const FBindingsCoverageProfile& Profile,
+			const TCHAR* CaseLabel)
+		{
+			Test.AddInfo(FormatCaseLabel(Profile, CaseLabel));
+			return true;
+		}
+	}
+
+	/**
+	 * Invoke a no-arg `int F()` global, compare its return against `Expected`.
+	 * Returns aggregate pass/fail.
+	 */
+	inline bool ExpectGlobalInt(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		int32 Expected)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid())
+		{
+			return false;
+		}
+		const int32 Actual = Invoker.CallAndReturn<int32>(INDEX_NONE);
+		return Test.TestEqual(
+			*FString::Printf(TEXT("%s (decl=%s)"), *FormatCaseLabel(Profile, CaseLabel), FunctionDecl),
+			Actual,
+			Expected);
+	}
+
+	/** Same as `ExpectGlobalInt` but asserts `Actual >= Minimum`. */
+	inline bool ExpectGlobalIntAtLeast(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		int32 Minimum)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid())
+		{
+			return false;
+		}
+		const int32 Actual = Invoker.CallAndReturn<int32>(INDEX_NONE);
+		return Test.TestTrue(
+			*FString::Printf(TEXT("%s (decl=%s) returned %d, expected >= %d"),
+				*FormatCaseLabel(Profile, CaseLabel), FunctionDecl, Actual, Minimum),
+			Actual >= Minimum);
+	}
+
+	/**
+	 * Invoke a no-arg `int F()` (or `bool F()` exposed as int) and assert the
+	 * result matches `Expected`. The script is expected to return 0/1 to
+	 * represent false/true.
+	 */
+	inline bool ExpectGlobalBool(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		bool Expected)
+	{
+		return ExpectGlobalInt(Test, Engine, Module, Profile, FunctionDecl, CaseLabel, Expected ? 1 : 0);
+	}
+
+	/** Invoke a no-arg `double F()` and compare with the supplied tolerance. */
+	inline bool ExpectGlobalDouble(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		double Expected,
+		double Tolerance = 1e-6)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid())
+		{
+			return false;
+		}
+		const double Actual = Invoker.CallAndReturn<double>(0.0);
+		return Test.TestTrue(
+			*FString::Printf(TEXT("%s (decl=%s) returned %.9g, expected %.9g (tol=%g)"),
+				*FormatCaseLabel(Profile, CaseLabel), FunctionDecl, Actual, Expected, Tolerance),
+			FMath::IsNearlyEqual(Actual, Expected, Tolerance));
+	}
+
+	/** Batched variant — one entry per case. */
+	struct FExpectedGlobalInt
+	{
+		const TCHAR* FunctionDecl;
+		const TCHAR* CaseLabel;
+		int32 Expected;
+	};
+
+	inline bool ExpectGlobalInts(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		TArrayView<const FExpectedGlobalInt> Cases)
+	{
+		bool bPassed = true;
+		for (const FExpectedGlobalInt& Case : Cases)
+		{
+			bPassed &= ExpectGlobalInt(Test, Engine, Module, Profile,
+				Case.FunctionDecl, Case.CaseLabel, Case.Expected);
+		}
+		return bPassed;
+	}
+
+	/**
+	 * Negative path: invoke a no-arg `void F()` (or any function whose return
+	 * is irrelevant) and assert that AS execution raises an exception whose
+	 * message *contains* `ExpectedExceptionContains`. Validates the full
+	 * "Prepare success / Execute exception / non-empty message / message
+	 * contains substring / non-zero line" five-tuple.
+	 *
+	 * Caller is responsible for any necessary `AddExpectedError` registration
+	 * — the exception will be logged by the AS log handler regardless.
+	 */
+	inline bool ExecuteFunctionExpectingScriptException(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		const FString& ExpectedExceptionContains)
+	{
+		const FString Label = FormatCaseLabel(Profile, CaseLabel);
+		Test.AddInfo(Label);
+
+		asIScriptFunction* Function = AngelscriptReflectiveAccess::ResolveFunctionByDecl(Test, Module, FunctionDecl);
+		if (Function == nullptr)
+		{
+			return false;
+		}
+
+		FAngelscriptEngineScope EngineScope(Engine);
+		asIScriptContext* Context = Engine.CreateContext();
+		if (!Test.TestNotNull(*FString::Printf(TEXT("%s should create execution context"), *Label), Context))
+		{
+			return false;
+		}
+		ON_SCOPE_EXIT { Context->Release(); };
+
+		const int PrepareResult = Context->Prepare(Function);
+		const int ExecuteResult = PrepareResult == asSUCCESS ? Context->Execute() : PrepareResult;
+		const FString ExceptionString = UTF8_TO_TCHAR(
+			Context->GetExceptionString() != nullptr ? Context->GetExceptionString() : "");
+		const int32 ExceptionLine = Context->GetExceptionLineNumber();
+
+		bool bPassed = true;
+		bPassed &= Test.TestEqual(
+			*FString::Printf(TEXT("%s should Prepare successfully (code=%d)"), *Label, PrepareResult),
+			PrepareResult,
+			static_cast<int32>(asSUCCESS));
+		bPassed &= Test.TestEqual(
+			*FString::Printf(TEXT("%s should raise asEXECUTION_EXCEPTION (got=%d)"), *Label, ExecuteResult),
+			ExecuteResult,
+			static_cast<int32>(asEXECUTION_EXCEPTION));
+		bPassed &= Test.TestFalse(
+			*FString::Printf(TEXT("%s should produce non-empty exception text"), *Label),
+			ExceptionString.IsEmpty());
+		bPassed &= Test.TestTrue(
+			*FString::Printf(TEXT("%s exception '%s' should contain '%s'"),
+				*Label, *ExceptionString, *ExpectedExceptionContains),
+			ExceptionString.Contains(ExpectedExceptionContains));
+		bPassed &= Test.TestTrue(
+			*FString::Printf(TEXT("%s should report a positive exception line (got=%d)"), *Label, ExceptionLine),
+			ExceptionLine > 0);
+
+		Test.AddInfo(FString::Printf(TEXT("%s raised at line %d: %s"), *Label, ExceptionLine, *ExceptionString));
+		return bPassed;
+	}
+}
+
+#endif // WITH_DEV_AUTOMATION_TESTS
