@@ -106,6 +106,10 @@ DerivedDataCache/*
 # CodeBuddy local plans
 .codebuddy/
 
+# Claude local working data
+.claude/
+.claude-internal/
+
 # Local git worktrees
 .worktrees/
 
