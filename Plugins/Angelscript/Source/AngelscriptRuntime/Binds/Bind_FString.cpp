@@ -219,6 +219,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString(FAngelscriptBinds::EOr
 
 	FString_.Method("FString& Append(const FString& Other) accept_temporary_this", METHODPR_TRIVIAL(FString&, FString, Append, (const FString&)));
 	FString_.Method("FString& AppendChar(int16 Character) accept_temporary_this", METHODPR_TRIVIAL(FString&, FString, AppendChar, (TCHAR)));
+	FString_.Method("void AppendInt(int32 InNum)", METHOD_TRIVIAL(FString, AppendInt));
+	FString_.Method("void InsertAt(int32 Index, int16 Character)", METHODPR_TRIVIAL(void, FString, InsertAt, (int32, TCHAR)));
+	FString_.Method("void InsertAt(int32 Index, const FString& Characters)", METHODPR_TRIVIAL(void, FString, InsertAt, (int32, const FString&)));
 
 	// Manipulation as array
 	FString_.Method("void Empty()", METHODPR_TRIVIAL(void, FString, Empty, ()));
@@ -227,16 +230,23 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString(FAngelscriptBinds::EOr
 	FString_.Method("void Reset(int NewReservedSize = 0)", METHOD_TRIVIAL(FString, Reset));
 	FString_.Method("void Reserve(int Count)", METHOD_TRIVIAL(FString, Reserve));
 	FString_.Method("void Shrink()", METHOD_TRIVIAL(FString, Shrink));
-	FString_.Method("void IsValidIndex(int Index) const", METHOD_TRIVIAL(FString, IsValidIndex));
+	FString_.Method("bool IsValidIndex(int Index) const", METHOD_TRIVIAL(FString, IsValidIndex));
 	FString_.Method("void RemoveAt(int Index, int Count)", [](FString& String, int32 Index, int32 Count)
 	{
 		String.RemoveAt(Index, Count);
 	});
+	FString_.Method("void RemoveSpacesInline()", METHOD_TRIVIAL(FString, RemoveSpacesInline));
 
 	// Handling as string
 	FString_.Method("int Len() const", METHOD_TRIVIAL(FString, Len));
 	FString_.Method("bool IsNumeric() const", METHOD_TRIVIAL(FString, IsNumeric));
 	FString_.Method("FString Reverse() const", METHOD_TRIVIAL(FString, Reverse));
+
+	FString_.Method("FString ConvertTabsToSpaces(int32 InSpacesPerTab) const",
+	[](const FString& Str, int32 InSpacesPerTab) -> FString
+	{
+		return Str.ConvertTabsToSpaces(InSpacesPerTab);
+	});
 
 	// Substring handling
 	FString_.Method("bool RemoveFromStart(const FString& Prefix, ESearchCase SearchCase = ESearchCase::IgnoreCase)", METHODPR_TRIVIAL(bool, FString, RemoveFromStart, (const FString&,ESearchCase::Type)));
@@ -259,6 +269,24 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString(FAngelscriptBinds::EOr
 	[](const FString& Str, const FString& From, const FString& To, ESearchCase::Type SearchCase) -> FString
 	{
 		return Str.Replace(*From, *To, SearchCase);
+	});
+
+	FString_.Method("int ReplaceInline(const FString& SearchText, const FString& ReplacementText, ESearchCase SearchCase = ESearchCase::IgnoreCase)",
+	[](FString& Str, const FString& SearchText, const FString& ReplacementText, ESearchCase::Type SearchCase) -> int32
+	{
+		return Str.ReplaceInline(*SearchText, *ReplacementText, SearchCase);
+	});
+
+	FString_.Method("FString ReplaceCharWithEscapedChar() const",
+	[](const FString& Str) -> FString
+	{
+		return Str.ReplaceCharWithEscapedChar();
+	});
+
+	FString_.Method("FString ReplaceEscapedCharWithChar() const",
+	[](const FString& Str) -> FString
+	{
+		return Str.ReplaceEscapedCharWithChar();
 	});
 
 	// Substring finding
@@ -316,6 +344,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString(FAngelscriptBinds::EOr
 	FString_.Method("FString TrimEnd() const", [](const FString& Str) -> FString
 	{
 		return Str.TrimEnd();
+	});
+
+	FString_.Method("FString TrimChar(int16 CharacterToTrim) const",
+	[](const FString& Str, TCHAR CharacterToTrim) -> FString
+	{
+		return Str.TrimChar(CharacterToTrim);
 	});
 
 	FString_.Method("int32 Compare(const FString& Other, ESearchCase SearchCase = ESearchCase::CaseSensitive) const", METHODPR_TRIVIAL(int32, FString, Compare, (const FString&, ESearchCase::Type) const));
@@ -1291,6 +1325,21 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString_Conversion((int32)FAng
 			return FString::Join(StringArray, *Separator);
 		});
 
+		FAngelscriptBinds::BindGlobalFunction("FString FromInt(int32 Num) no_discard",
+		[](int32 Num) { return FString::FromInt(Num); });
+
+		FAngelscriptBinds::BindGlobalFunction("FString SanitizeFloat(float64 InFloat, int32 InMinFractionalDigits = 1) no_discard",
+		[](double InFloat, int32 InMinFractionalDigits) { return FString::SanitizeFloat(InFloat, InMinFractionalDigits); });
+
+		FAngelscriptBinds::BindGlobalFunction("FString FormatAsNumber(int32 InNumber) no_discard",
+		[](int32 InNumber) { return FString::FormatAsNumber(InNumber); });
+
+		FAngelscriptBinds::BindGlobalFunction("FString Chr(int16 Ch) no_discard",
+		[](TCHAR Ch) { return FString::Chr(Ch); });
+
+		FAngelscriptBinds::BindGlobalFunction("FString ChrN(int32 NumCharacters, int16 Char) no_discard",
+		[](int32 NumCharacters, TCHAR Char) { return FString::ChrN(NumCharacters, Char); });
+
 		FAngelscriptBinds::BindGlobalGenericFunction("FString Format(const FString& Format, const ?& Arg0) no_discard", &Generic_FormatString);
 		FAngelscriptBinds::BindGlobalGenericFunction("FString Format(const FString& Format, const ?& Arg0, const ?& Arg1) no_discard", &Generic_FormatString);
 		FAngelscriptBinds::BindGlobalGenericFunction("FString Format(const FString& Format, const ?& Arg0, const ?& Arg1, const ?& Arg2) no_discard", &Generic_FormatString);
@@ -1356,5 +1405,17 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FString_Conversion((int32)FAng
 			DelimList[i] = *Delimiters[i];
 
 		return Str.ParseIntoArray(OutArray, DelimList, Delimiters.Num(), bCullEmpty);
+	});
+
+	FString_.Method("int ParseIntoArrayLines(TArray<FString>& OutArray, bool bCullEmpty = true) const",
+	[](const FString& Str, TArray<FString>& OutArray, bool bCullEmpty) -> int
+	{
+		return Str.ParseIntoArrayLines(OutArray, bCullEmpty);
+	});
+
+	FString_.Method("int ParseIntoArrayWS(TArray<FString>& OutArray, bool bCullEmpty = true) const",
+	[](const FString& Str, TArray<FString>& OutArray, bool bCullEmpty) -> int
+	{
+		return Str.ParseIntoArrayWS(OutArray, nullptr, bCullEmpty);
 	});
 });

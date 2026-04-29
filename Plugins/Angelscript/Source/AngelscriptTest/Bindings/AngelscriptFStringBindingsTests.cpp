@@ -783,6 +783,195 @@ int Reverse_Empty()
 	}
 
 	// ====================================================================
+	// Section: MutationExtended
+	// ====================================================================
+
+	TEST_METHOD(MutationExtended)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFStringProfile, TEXT("MutExt"), TEXT(R"(
+// ---- AppendInt ----
+int AppendInt_Positive()
+{
+	FString S = "Val:";
+	S.AppendInt(42);
+	return (S == "Val:42") ? 1 : 0;
+}
+int AppendInt_Negative()
+{
+	FString S = "N:";
+	S.AppendInt(-7);
+	return (S == "N:-7") ? 1 : 0;
+}
+int AppendInt_Zero()
+{
+	FString S = "Z:";
+	S.AppendInt(0);
+	return (S == "Z:0") ? 1 : 0;
+}
+
+// ---- InsertAt (char) ----
+int InsertAtChar_Front()
+{
+	FString S = "BCD";
+	S.InsertAt(0, 0x41);  // 'A'
+	return (S == "ABCD") ? 1 : 0;
+}
+int InsertAtChar_Mid()
+{
+	FString S = "ACD";
+	S.InsertAt(1, 0x42);  // 'B'
+	return (S == "ABCD") ? 1 : 0;
+}
+int InsertAtChar_End()
+{
+	FString S = "ABC";
+	S.InsertAt(3, 0x44);  // 'D'
+	return (S == "ABCD") ? 1 : 0;
+}
+
+// ---- InsertAt (string) ----
+int InsertAtStr_Front()
+{
+	FString S = "World";
+	S.InsertAt(0, "Hello ");
+	return (S == "Hello World") ? 1 : 0;
+}
+int InsertAtStr_Mid()
+{
+	FString S = "ACD";
+	S.InsertAt(1, "B");
+	return (S == "ABCD") ? 1 : 0;
+}
+int InsertAtStr_Empty()
+{
+	FString S = "ABC";
+	S.InsertAt(1, "");
+	return (S == "ABC") ? 1 : 0;
+}
+
+// ---- RemoveSpacesInline ----
+int RemoveSpaces_Basic()
+{
+	FString S = "Hello World Test";
+	S.RemoveSpacesInline();
+	return (S == "HelloWorldTest") ? 1 : 0;
+}
+int RemoveSpaces_None()
+{
+	FString S = "NoSpaces";
+	S.RemoveSpacesInline();
+	return (S == "NoSpaces") ? 1 : 0;
+}
+int RemoveSpaces_AllSpaces()
+{
+	FString S = "   ";
+	S.RemoveSpacesInline();
+	return S.IsEmpty() ? 1 : 0;
+}
+
+// ---- ReplaceInline ----
+int ReplaceInline_Basic()
+{
+	FString S = "aXbXc";
+	int Count = S.ReplaceInline("X", "Y");
+	return (Count == 2 && S == "aYbYc") ? 1 : 0;
+}
+int ReplaceInline_NoMatch()
+{
+	FString S = "Hello";
+	int Count = S.ReplaceInline("Z", "Y");
+	return (Count == 0 && S == "Hello") ? 1 : 0;
+}
+int ReplaceInline_CaseSensitive()
+{
+	FString S = "AaAa";
+	int Count = S.ReplaceInline("a", "X", ESearchCase::CaseSensitive);
+	return (Count == 2 && S == "AXAX") ? 1 : 0;
+}
+
+// ---- ReplaceCharWithEscapedChar / ReplaceEscapedCharWithChar ----
+int EscapeChar_Roundtrip()
+{
+	FString Original = "Line1\nLine2\tEnd";
+	FString Escaped = Original.ReplaceCharWithEscapedChar();
+	FString Restored = Escaped.ReplaceEscapedCharWithChar();
+	return (Restored == Original) ? 1 : 0;
+}
+
+// ---- ConvertTabsToSpaces ----
+int TabsToSpaces_Single()
+{
+	FString S = "\tHello";
+	FString Result = S.ConvertTabsToSpaces(4);
+	return Result.StartsWith("    ") ? 1 : 0;
+}
+int TabsToSpaces_Multiple()
+{
+	FString S = "A\tB\tC";
+	FString Result = S.ConvertTabsToSpaces(2);
+	return (!Result.Contains("\t")) ? 1 : 0;
+}
+int TabsToSpaces_NoTabs()
+{
+	FString S = "NoTabs";
+	FString Result = S.ConvertTabsToSpaces(4);
+	return (Result == "NoTabs") ? 1 : 0;
+}
+
+// ---- TrimChar (removes at most ONE from each end) ----
+int TrimChar_Basic()
+{
+	FString S = "#Hello#";
+	FString Result = S.TrimChar(0x23);  // '#'
+	return (Result == "Hello") ? 1 : 0;
+}
+int TrimChar_NoMatch()
+{
+	FString S = "Hello";
+	FString Result = S.TrimChar(0x23);  // '#'
+	return (Result == "Hello") ? 1 : 0;
+}
+int TrimChar_AllSame()
+{
+	FString S = "##";
+	FString Result = S.TrimChar(0x23);  // '#'
+	return Result.IsEmpty() ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		const FExpectedGlobalInt Cases[] = {
+			{ TEXT("int AppendInt_Positive()"),            TEXT("AppendInt positive"),                   1 },
+			{ TEXT("int AppendInt_Negative()"),            TEXT("AppendInt negative"),                   1 },
+			{ TEXT("int AppendInt_Zero()"),                TEXT("AppendInt zero"),                       1 },
+			{ TEXT("int InsertAtChar_Front()"),            TEXT("InsertAt char front"),                  1 },
+			{ TEXT("int InsertAtChar_Mid()"),              TEXT("InsertAt char middle"),                 1 },
+			{ TEXT("int InsertAtChar_End()"),              TEXT("InsertAt char end"),                    1 },
+			{ TEXT("int InsertAtStr_Front()"),             TEXT("InsertAt string front"),                1 },
+			{ TEXT("int InsertAtStr_Mid()"),               TEXT("InsertAt string middle"),               1 },
+			{ TEXT("int InsertAtStr_Empty()"),             TEXT("InsertAt empty string no-op"),          1 },
+			{ TEXT("int RemoveSpaces_Basic()"),            TEXT("RemoveSpacesInline basic"),             1 },
+			{ TEXT("int RemoveSpaces_None()"),             TEXT("RemoveSpacesInline no spaces"),         1 },
+			{ TEXT("int RemoveSpaces_AllSpaces()"),        TEXT("RemoveSpacesInline all spaces"),        1 },
+			{ TEXT("int ReplaceInline_Basic()"),           TEXT("ReplaceInline basic + count"),          1 },
+			{ TEXT("int ReplaceInline_NoMatch()"),         TEXT("ReplaceInline no match returns 0"),     1 },
+			{ TEXT("int ReplaceInline_CaseSensitive()"),   TEXT("ReplaceInline case sensitive"),         1 },
+			{ TEXT("int EscapeChar_Roundtrip()"),          TEXT("Escape/unescape roundtrip"),            1 },
+			{ TEXT("int TabsToSpaces_Single()"),           TEXT("ConvertTabsToSpaces single tab"),       1 },
+			{ TEXT("int TabsToSpaces_Multiple()"),         TEXT("ConvertTabsToSpaces multiple tabs"),    1 },
+			{ TEXT("int TabsToSpaces_NoTabs()"),           TEXT("ConvertTabsToSpaces no tabs"),          1 },
+			{ TEXT("int TrimChar_Basic()"),                TEXT("TrimChar basic"),                       1 },
+			{ TEXT("int TrimChar_NoMatch()"),              TEXT("TrimChar no match"),                    1 },
+			{ TEXT("int TrimChar_AllSame()"),              TEXT("TrimChar all same char"),               1 },
+		};
+		ExpectGlobalInts(*TestRunner, Engine, M, GFStringProfile, Cases);
+	}
+
+	// ====================================================================
 	// Section: CaseAndTrim
 	// ====================================================================
 
@@ -1063,6 +1252,100 @@ int ParseMulti_TwoDelims()
 			// ParseIntoArray multi
 			{ TEXT("int ParseMulti_Basic()"),           TEXT("ParseIntoArray with 3 delimiters"),               1 },
 			{ TEXT("int ParseMulti_TwoDelims()"),       TEXT("ParseIntoArray with 2 delimiters"),               1 },
+		};
+		ExpectGlobalInts(*TestRunner, Engine, M, GFStringProfile, Cases);
+	}
+
+	// ====================================================================
+	// Section: SplitExtended
+	// ====================================================================
+
+	TEST_METHOD(SplitExtended)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFStringProfile, TEXT("SplitExt"), TEXT(R"(
+// ---- ParseIntoArrayLines ----
+int ParseLines_Multi()
+{
+	FString S = "Line1\nLine2\nLine3";
+	TArray<FString> Lines;
+	int Count = S.ParseIntoArrayLines(Lines);
+	return (Count == 3 && Lines[0] == "Line1" && Lines[2] == "Line3") ? 1 : 0;
+}
+int ParseLines_CRLF()
+{
+	FString S = "A\r\nB\r\nC";
+	TArray<FString> Lines;
+	int Count = S.ParseIntoArrayLines(Lines);
+	return (Count == 3 && Lines[1] == "B") ? 1 : 0;
+}
+int ParseLines_Single()
+{
+	FString S = "NoNewline";
+	TArray<FString> Lines;
+	int Count = S.ParseIntoArrayLines(Lines);
+	return (Count == 1 && Lines[0] == "NoNewline") ? 1 : 0;
+}
+int ParseLines_EmptyLines_Cull()
+{
+	FString S = "A\n\nB";
+	TArray<FString> Lines;
+	int Count = S.ParseIntoArrayLines(Lines, true);
+	return (Count == 2) ? 1 : 0;
+}
+int ParseLines_EmptyLines_Keep()
+{
+	FString S = "A\n\nB";
+	TArray<FString> Lines;
+	int Count = S.ParseIntoArrayLines(Lines, false);
+	return (Count == 3 && Lines[1] == "") ? 1 : 0;
+}
+
+// ---- ParseIntoArrayWS ----
+int ParseWS_Basic()
+{
+	FString S = "Hello World Test";
+	TArray<FString> Parts;
+	int Count = S.ParseIntoArrayWS(Parts);
+	return (Count == 3 && Parts[0] == "Hello" && Parts[2] == "Test") ? 1 : 0;
+}
+int ParseWS_MultipleSpaces()
+{
+	FString S = "A   B   C";
+	TArray<FString> Parts;
+	int Count = S.ParseIntoArrayWS(Parts);
+	return (Count == 3) ? 1 : 0;
+}
+int ParseWS_TabsAndSpaces()
+{
+	FString S = "A\tB C";
+	TArray<FString> Parts;
+	int Count = S.ParseIntoArrayWS(Parts);
+	return (Count == 3) ? 1 : 0;
+}
+int ParseWS_OnlyWhitespace()
+{
+	FString S = "   \t  ";
+	TArray<FString> Parts;
+	int Count = S.ParseIntoArrayWS(Parts);
+	return (Count == 0) ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		const FExpectedGlobalInt Cases[] = {
+			{ TEXT("int ParseLines_Multi()"),              TEXT("ParseIntoArrayLines multi-line"),         1 },
+			{ TEXT("int ParseLines_CRLF()"),               TEXT("ParseIntoArrayLines CRLF"),              1 },
+			{ TEXT("int ParseLines_Single()"),             TEXT("ParseIntoArrayLines single line"),       1 },
+			{ TEXT("int ParseLines_EmptyLines_Cull()"),    TEXT("ParseIntoArrayLines cull empty"),        1 },
+			{ TEXT("int ParseLines_EmptyLines_Keep()"),    TEXT("ParseIntoArrayLines keep empty"),        1 },
+			{ TEXT("int ParseWS_Basic()"),                 TEXT("ParseIntoArrayWS basic"),                1 },
+			{ TEXT("int ParseWS_MultipleSpaces()"),        TEXT("ParseIntoArrayWS multiple spaces"),      1 },
+			{ TEXT("int ParseWS_TabsAndSpaces()"),         TEXT("ParseIntoArrayWS tabs and spaces"),      1 },
+			{ TEXT("int ParseWS_OnlyWhitespace()"),        TEXT("ParseIntoArrayWS only whitespace"),      1 },
 		};
 		ExpectGlobalInts(*TestRunner, Engine, M, GFStringProfile, Cases);
 	}
@@ -1544,6 +1827,100 @@ int Join_WithEmptyElements()
 			{ TEXT("int Join_EmptySeparator()"),     TEXT("Join with empty separator concatenates"),   1 },
 			{ TEXT("int Join_MultiCharSep()"),       TEXT("Join with multi-char separator"),           1 },
 			{ TEXT("int Join_WithEmptyElements()"),  TEXT("Join preserves empty elements"),            1 },
+		};
+		ExpectGlobalInts(*TestRunner, Engine, M, GFStringProfile, Cases);
+	}
+
+	// ====================================================================
+	// Section: StaticConstruction
+	// ====================================================================
+
+	TEST_METHOD(StaticConstruction)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FCoverageModuleScope Mod(*TestRunner, Engine, GFStringProfile, TEXT("StaticCtor"), TEXT(R"(
+// ---- FString::FromInt ----
+int FromInt_Positive()
+{
+	FString S = FString::FromInt(42);
+	return (S == "42") ? 1 : 0;
+}
+int FromInt_Negative()
+{
+	FString S = FString::FromInt(-123);
+	return (S == "-123") ? 1 : 0;
+}
+int FromInt_Zero()
+{
+	FString S = FString::FromInt(0);
+	return (S == "0") ? 1 : 0;
+}
+
+// ---- FString::SanitizeFloat ----
+int SanitizeFloat_Whole()
+{
+	FString S = FString::SanitizeFloat(3.0);
+	return (S == "3.0") ? 1 : 0;
+}
+int SanitizeFloat_Decimal()
+{
+	FString S = FString::SanitizeFloat(1.5);
+	return (S == "1.5") ? 1 : 0;
+}
+int SanitizeFloat_Precision()
+{
+	FString S = FString::SanitizeFloat(2.0, 3);
+	return (S == "2.000") ? 1 : 0;
+}
+
+// ---- FString::FormatAsNumber ----
+int FormatAsNumber_Thousands()
+{
+	FString S = FString::FormatAsNumber(1234567);
+	return S.Contains(",") ? 1 : 0;
+}
+int FormatAsNumber_Small()
+{
+	FString S = FString::FormatAsNumber(42);
+	return (S == "42") ? 1 : 0;
+}
+
+// ---- FString::Chr ----
+int Chr_Basic()
+{
+	FString S = FString::Chr(0x41);  // 'A'
+	return (S == "A" && S.Len() == 1) ? 1 : 0;
+}
+
+// ---- FString::ChrN ----
+int ChrN_Repeat()
+{
+	FString S = FString::ChrN(5, 0x58);  // 'X' x 5
+	return (S == "XXXXX" && S.Len() == 5) ? 1 : 0;
+}
+int ChrN_Zero()
+{
+	FString S = FString::ChrN(0, 0x41);
+	return S.IsEmpty() ? 1 : 0;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+
+		const FExpectedGlobalInt Cases[] = {
+			{ TEXT("int FromInt_Positive()"),              TEXT("FromInt positive"),                    1 },
+			{ TEXT("int FromInt_Negative()"),              TEXT("FromInt negative"),                    1 },
+			{ TEXT("int FromInt_Zero()"),                  TEXT("FromInt zero"),                        1 },
+			{ TEXT("int SanitizeFloat_Whole()"),           TEXT("SanitizeFloat whole number"),          1 },
+			{ TEXT("int SanitizeFloat_Decimal()"),         TEXT("SanitizeFloat decimal"),               1 },
+			{ TEXT("int SanitizeFloat_Precision()"),       TEXT("SanitizeFloat min fractional"),        1 },
+			{ TEXT("int FormatAsNumber_Thousands()"),      TEXT("FormatAsNumber with commas"),          1 },
+			{ TEXT("int FormatAsNumber_Small()"),          TEXT("FormatAsNumber small number"),         1 },
+			{ TEXT("int Chr_Basic()"),                     TEXT("Chr single character"),                1 },
+			{ TEXT("int ChrN_Repeat()"),                   TEXT("ChrN repeated characters"),            1 },
+			{ TEXT("int ChrN_Zero()"),                     TEXT("ChrN zero length"),                    1 },
 		};
 		ExpectGlobalInts(*TestRunner, Engine, M, GFStringProfile, Cases);
 	}
