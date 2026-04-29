@@ -1,15 +1,10 @@
-#include "Core/AngelscriptEngine.h"
-#include "Shared/AngelscriptNativeInterfaceTestTypes.h"
-#include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
-#include "Shared/AngelscriptFunctionalTestUtils.h"
-#include "Shared/AngelscriptTestMacros.h"
-
-#include "Components/ActorTestSpawner.h"
-#include "Misc/AutomationTest.h"
-#include "Misc/ScopeExit.h"
-
+// ============================================================================
+// AngelscriptInterfaceNativePointerOffsetTests.cpp
+//
 // Phase 2 regression tests for FScriptInterface pointer offset handling on
-// C++ native implementing classes.
+// C++ native implementing classes — CQTest refactor. Automation IDs:
+//   Angelscript.TestModule.Interface.NativePointerOffset.MultiInterfaceCast
+//   Angelscript.TestModule.Interface.NativePointerOffset.ScriptClassStillZeroOffset
 //
 // When a C++ class implements more than one UInterface (or its chosen interface
 // is not the first UObject-derived base), UE lays the interface vtable down at
@@ -25,12 +20,44 @@
 //   3. State mutations made through each interface end up on the distinct
 //      backing fields (Parent's NativeMarker vs Secondary's SecondaryLabel),
 //      which would silently corrupt if the pointer offset were wrong.
-//
-// See `Plan_InterfaceParityWithCpp.md` Phase 2 / 3 for the broader context.
+// ============================================================================
+
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+
+#include "Core/AngelscriptEngine.h"
+#include "Shared/AngelscriptNativeInterfaceTestTypes.h"
+#include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
+
+#include "Components/ActorTestSpawner.h"
+#include "Misc/ScopeExit.h"
+
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 using namespace AngelscriptFunctionalTestUtils;
+
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GInterfacePtrProfile{
+	TEXT("InterfacePtr"),           // Theme
+	TEXT(""),                       // Variant
+	TEXT("ASIntfPtr"),             // ModulePrefix
+	TEXT("IntfPtr"),               // CasePrefix
+	TEXT("InterfacePtrTests"),     // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
 
 namespace AngelscriptTest_InterfaceNativePointerOffset_Private
 {
@@ -70,38 +97,35 @@ namespace AngelscriptTest_InterfaceNativePointerOffset_Private
 
 using namespace AngelscriptTest_InterfaceNativePointerOffset_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInterfaceNativePointerOffsetMultiInterfaceCastTest,
-	"Angelscript.TestModule.Interface.NativePointerOffset.MultiInterfaceCast",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+// ----------------------------------------------------------------------------
+// Test Class
+// ----------------------------------------------------------------------------
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInterfaceNativePointerOffsetScriptClassStillZeroOffsetTest,
-	"Angelscript.TestModule.Interface.NativePointerOffset.ScriptClassStillZeroOffset",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTestInterfaceNativePointerOffsetMultiInterfaceCastTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativePointerOffsetTest, "Angelscript.TestModule.Interface.NativePointerOffset", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	do
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
+	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
+
+	TEST_METHOD(MultiInterfaceCast)
 	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeSecondaryInterface::StaticClass());
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeSecondaryInterface::StaticClass());
 
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		ScriptFilename,
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			ModuleName,
+			ScriptFilename,
+			TEXT(R"AS(
 UCLASS()
 class ATestInterfaceNativePointerOffset : AActor
 {
@@ -141,83 +165,76 @@ class ATestInterfaceNativePointerOffset : AActor
 	}
 }
 )AS"),
-		GeneratedClassName);
-	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
-	{
-		break;
+			GeneratedClassName);
+		if (!TestRunner->TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
+		{
+			return;
+		}
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+
+		ATestNativeMultiInterfaceActor* NativeFixtureActor = Spawner.GetWorld().SpawnActor<ATestNativeMultiInterfaceActor>();
+		AActor* ScriptActor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Multi-interface native fixture actor should spawn"), NativeFixtureActor)
+			|| !TestRunner->TestNotNull(TEXT("Script actor should spawn"), ScriptActor))
+		{
+			return;
+		}
+
+		if (!SetObjectReferenceProperty(
+			*TestRunner,
+			ScriptActor,
+			TargetPropertyName,
+			NativeFixtureActor,
+			TEXT("Multi-interface native pointer offset script actor")))
+		{
+			return;
+		}
+
+		BeginPlayActor(Engine, *ScriptActor);
+
+		int32 bParentCastSucceeded = 0;
+		int32 bSecondaryCastSucceeded = 0;
+		int32 ParentReadValue = 0;
+		int32 SecondaryReadValue = 0;
+		if (!ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, ParentCastPropertyName, bParentCastSucceeded)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, SecondaryCastPropertyName, bSecondaryCastSucceeded)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, ParentReadValuePropertyName, ParentReadValue)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, SecondaryReadValuePropertyName, SecondaryReadValue))
+		{
+			return;
+		}
+
+		TestRunner->TestEqual(TEXT("Script-side Cast<UAngelscriptNativeParentInterface> should succeed on multi-interface native actor"), bParentCastSucceeded, 1);
+		TestRunner->TestEqual(TEXT("Script-side Cast<UAngelscriptNativeSecondaryInterface> should succeed on multi-interface native actor"), bSecondaryCastSucceeded, 1);
+		TestRunner->TestEqual(TEXT("Parent interface method dispatch returns the correct C++ field"), ParentReadValue, 777);
+		TestRunner->TestEqual(TEXT("Secondary interface method dispatch returns the correct C++ field"), SecondaryReadValue, 4242);
+
+		TestRunner->TestEqual(TEXT("Parent interface setter writes the correct C++ backing field"), NativeFixtureActor->NativeMarker, FName(TEXT("FromParent")));
+		TestRunner->TestEqual(TEXT("Secondary interface setter writes the distinct C++ backing field"), NativeFixtureActor->SecondaryLabel, FString(TEXT("FromSecondary")));
 	}
 
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-
-	ATestNativeMultiInterfaceActor* NativeFixtureActor = Spawner.GetWorld().SpawnActor<ATestNativeMultiInterfaceActor>();
-	AActor* ScriptActor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Multi-interface native fixture actor should spawn"), NativeFixtureActor)
-		|| !TestNotNull(TEXT("Script actor should spawn"), ScriptActor))
+	TEST_METHOD(ScriptClassStillZeroOffset)
 	{
-		break;
-	}
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	if (!SetObjectReferenceProperty(
-		*this,
-		ScriptActor,
-		TargetPropertyName,
-		NativeFixtureActor,
-		TEXT("Multi-interface native pointer offset script actor")))
-	{
-		break;
-	}
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 
-	BeginPlayActor(Engine, *ScriptActor);
+		static const FName ScriptOnlyModuleName(TEXT("TestInterfaceNativePointerOffsetScriptZero"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ScriptOnlyModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+		};
 
-	int32 bParentCastSucceeded = 0;
-	int32 bSecondaryCastSucceeded = 0;
-	int32 ParentReadValue = 0;
-	int32 SecondaryReadValue = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, ScriptActor, ParentCastPropertyName, bParentCastSucceeded)
-		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, SecondaryCastPropertyName, bSecondaryCastSucceeded)
-		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, ParentReadValuePropertyName, ParentReadValue)
-		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, SecondaryReadValuePropertyName, SecondaryReadValue))
-	{
-		break;
-	}
-
-	TestEqual(TEXT("Script-side Cast<UAngelscriptNativeParentInterface> should succeed on multi-interface native actor"), bParentCastSucceeded, 1);
-	TestEqual(TEXT("Script-side Cast<UAngelscriptNativeSecondaryInterface> should succeed on multi-interface native actor"), bSecondaryCastSucceeded, 1);
-	TestEqual(TEXT("Parent interface method dispatch returns the correct C++ field"), ParentReadValue, 777);
-	TestEqual(TEXT("Secondary interface method dispatch returns the correct C++ field"), SecondaryReadValue, 4242);
-
-	TestEqual(TEXT("Parent interface setter writes the correct C++ backing field"), NativeFixtureActor->NativeMarker, FName(TEXT("FromParent")));
-	TestEqual(TEXT("Secondary interface setter writes the distinct C++ backing field"), NativeFixtureActor->SecondaryLabel, FString(TEXT("FromSecondary")));
-
-	}
-	while (false);
-	ASTEST_END_SHARE_CLEAN
-	return !HasAnyErrors();
-}
-
-bool FAngelscriptTestInterfaceNativePointerOffsetScriptClassStillZeroOffsetTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	do
-	{
-
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
-
-	static const FName ScriptOnlyModuleName(TEXT("TestInterfaceNativePointerOffsetScriptZero"));
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*ScriptOnlyModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
-
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ScriptOnlyModuleName,
-		TEXT("TestInterfaceNativePointerOffsetScriptZero.as"),
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			ScriptOnlyModuleName,
+			TEXT("TestInterfaceNativePointerOffsetScriptZero.as"),
+			TEXT(R"AS(
 UCLASS()
 class ATestInterfaceNativePointerOffsetScriptZero : AActor, UAngelscriptNativeParentInterface
 {
@@ -265,60 +282,56 @@ class ATestInterfaceNativePointerOffsetScriptZero : AActor, UAngelscriptNativePa
 	}
 }
 )AS"),
-		TEXT("ATestInterfaceNativePointerOffsetScriptZero"));
-	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
-	{
-		break;
-	}
+			TEXT("ATestInterfaceNativePointerOffsetScriptZero"));
+		if (!TestRunner->TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
+		{
+			return;
+		}
 
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
-	{
-		break;
-	}
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Actor should be valid"), Actor))
+		{
+			return;
+		}
 
-	BeginPlayActor(Engine, *Actor);
+		BeginPlayActor(Engine, *Actor);
 
-	// Script-implemented interfaces have `PointerOffset == 0`; this test guards
-	// the fast-path: Cast + dispatch must behave identically to the pre-Phase-2
-	// behavior on script classes. Any regression here would indicate the new
-	// `GetInterfacePointerForCast` helper accidentally perturbed the script path.
-	UClass* ImplementedInterface = FindGeneratedClass(&Engine, TEXT("UAngelscriptNativeParentInterface"));
-	if (ImplementedInterface == nullptr)
-	{
-		ImplementedInterface = UAngelscriptNativeParentInterface::StaticClass();
-	}
-	const FImplementedInterface* ImplementedEntry = Actor->GetClass()->Interfaces.FindByPredicate(
-		[ImplementedInterface](const FImplementedInterface& Entry) { return Entry.Class == ImplementedInterface; });
-	if (TestNotNull(TEXT("Implemented interface entry should exist on the script class"), ImplementedEntry))
-	{
-		TestEqual(TEXT("Script-implemented interface must keep PointerOffset == 0"), ImplementedEntry->PointerOffset, 0);
-	}
+		// Script-implemented interfaces have `PointerOffset == 0`; this test guards
+		// the fast-path: Cast + dispatch must behave identically to the pre-Phase-2
+		// behavior on script classes. Any regression here would indicate the new
+		// `GetInterfacePointerForCast` helper accidentally perturbed the script path.
+		UClass* ImplementedInterface = FindGeneratedClass(&Engine, TEXT("UAngelscriptNativeParentInterface"));
+		if (ImplementedInterface == nullptr)
+		{
+			ImplementedInterface = UAngelscriptNativeParentInterface::StaticClass();
+		}
+		const FImplementedInterface* ImplementedEntry = Actor->GetClass()->Interfaces.FindByPredicate(
+			[ImplementedInterface](const FImplementedInterface& Entry) { return Entry.Class == ImplementedInterface; });
+		if (TestRunner->TestNotNull(TEXT("Implemented interface entry should exist on the script class"), ImplementedEntry))
+		{
+			TestRunner->TestEqual(TEXT("Script-implemented interface must keep PointerOffset == 0"), ImplementedEntry->PointerOffset, 0);
+		}
 
-	int32 bSelfCastSucceeded = 0;
-	int32 DispatchedValue = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("bSelfCastSucceeded"), bSelfCastSucceeded)
-		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("DispatchedValue"), DispatchedValue))
-	{
-		break;
-	}
+		int32 bSelfCastSucceeded = 0;
+		int32 DispatchedValue = 0;
+		if (!ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("bSelfCastSucceeded"), bSelfCastSucceeded)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("DispatchedValue"), DispatchedValue))
+		{
+			return;
+		}
 
-	TestEqual(TEXT("Script-implemented interface cast should still succeed after Phase 2"), bSelfCastSucceeded, 1);
-	TestEqual(TEXT("Script-implemented interface dispatch should still return the script field"), DispatchedValue, 321);
+		TestRunner->TestEqual(TEXT("Script-implemented interface cast should still succeed after Phase 2"), bSelfCastSucceeded, 1);
+		TestRunner->TestEqual(TEXT("Script-implemented interface dispatch should still return the script field"), DispatchedValue, 321);
 
-	FName NativeMarker = NAME_None;
-	if (!ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
-	{
-		break;
+		FName NativeMarker = NAME_None;
+		if (!ReadPropertyValue<FNameProperty>(*TestRunner, Actor, TEXT("NativeMarker"), NativeMarker))
+		{
+			return;
+		}
+		TestRunner->TestEqual(TEXT("Script-implemented interface setter should still route through the script implementation"), NativeMarker, FName(TEXT("FromSelf")));
 	}
-	TestEqual(TEXT("Script-implemented interface setter should still route through the script implementation"), NativeMarker, FName(TEXT("FromSelf")));
-
-	}
-	while (false);
-	ASTEST_END_SHARE_CLEAN
-	return !HasAnyErrors();
-}
+};
 
 #endif

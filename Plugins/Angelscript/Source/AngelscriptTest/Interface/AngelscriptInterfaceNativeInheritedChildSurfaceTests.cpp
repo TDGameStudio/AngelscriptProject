@@ -1,16 +1,21 @@
+#include "CQTest.h"
 #include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "Components/ActorTestSpawner.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 using namespace AngelscriptFunctionalTestUtils;
 
 namespace InterfaceNativeInheritedChildSurfaceTests
@@ -20,35 +25,40 @@ namespace InterfaceNativeInheritedChildSurfaceTests
 	static const FName GeneratedClassName(TEXT("ATestInterfaceNativeInheritedChildSurface"));
 }
 
-using namespace InterfaceNativeInheritedChildSurfaceTests;
+static const FBindingsCoverageProfile GInterfaceChildProfile{TEXT("InterfaceChild"),TEXT(""),TEXT("ASIntfChild"),TEXT("IntfChild"),TEXT("InterfaceChildTests")};
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest,
-	"Angelscript.TestModule.Interface.NativeInheritedImplement.ChildSurfaceIncludesParentMethods",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTestInterfaceNativeInheritedChildSurfaceIncludesParentMethodsTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeInheritedChildSurfaceTests, "Angelscript.TestModule.Interface.NativeInheritedChild", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	do
+	BEFORE_ALL()
 	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
-
-	ON_SCOPE_EXIT
+	AFTER_ALL()
 	{
-		Engine.DiscardModule(*InterfaceNativeInheritedChildSurfaceTests::ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		InterfaceNativeInheritedChildSurfaceTests::ModuleName,
-		InterfaceNativeInheritedChildSurfaceTests::ScriptFilename,
-		TEXT(R"AS(
+	TEST_METHOD(ChildSurfaceIncludesParentMethods)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeChildInterface::StaticClass());
+
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*InterfaceNativeInheritedChildSurfaceTests::ModuleName.ToString());
+		};
+
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			InterfaceNativeInheritedChildSurfaceTests::ModuleName,
+			InterfaceNativeInheritedChildSurfaceTests::ScriptFilename,
+			TEXT(R"AS(
 UCLASS()
 class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChildInterface
 {
@@ -109,48 +119,44 @@ class ATestInterfaceNativeInheritedChildSurface : AActor, UAngelscriptNativeChil
 	}
 }
 )AS"),
-		InterfaceNativeInheritedChildSurfaceTests::GeneratedClassName);
-	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
-	{
-		break;
+			InterfaceNativeInheritedChildSurfaceTests::GeneratedClassName);
+		if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
+		{
+			return;
+		}
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor* Actor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestNotNull(TEXT("Actor should be valid"), Actor))
+		{
+			return;
+		}
+
+		BeginPlayActor(Engine, *Actor);
+
+		int32 ChildCastWorked = 0;
+		int32 ChildParentResult = 0;
+		int32 ChildAdjustedValue = 0;
+		int32 ChildOwnResult = 0;
+		FName NativeMarker = NAME_None;
+		if (!ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("ChildCastWorked"), ChildCastWorked)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("ChildParentResult"), ChildParentResult)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("ChildAdjustedValue"), ChildAdjustedValue)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, Actor, TEXT("ChildOwnResult"), ChildOwnResult)
+			|| !ReadPropertyValue<FNameProperty>(*TestRunner, Actor, TEXT("NativeMarker"), NativeMarker))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("Script actor should implement native child interface"), ScriptClass->ImplementsInterface(UAngelscriptNativeChildInterface::StaticClass()));
+		TestTrue(TEXT("Script actor implementing child interface should also satisfy native parent interface"), ScriptClass->ImplementsInterface(UAngelscriptNativeParentInterface::StaticClass()));
+		TestEqual(TEXT("Script-side cast to native child interface should succeed"), ChildCastWorked, 1);
+		TestEqual(TEXT("Child native interface ref should expose inherited parent getter"), ChildParentResult, 7);
+		TestEqual(TEXT("Child native interface ref should expose inherited parent ref-parameter method"), ChildAdjustedValue, 29);
+		TestEqual(TEXT("Child native interface ref should still expose child-owned methods"), ChildOwnResult, 11);
+		TestEqual(TEXT("Child native interface ref should expose inherited parent setter"), NativeMarker, FName(TEXT("ChildRoute")));
 	}
-
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-	AActor* Actor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Actor should be valid"), Actor))
-	{
-		break;
-	}
-
-	BeginPlayActor(Engine, *Actor);
-
-	int32 ChildCastWorked = 0;
-	int32 ChildParentResult = 0;
-	int32 ChildAdjustedValue = 0;
-	int32 ChildOwnResult = 0;
-	FName NativeMarker = NAME_None;
-	if (!ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildCastWorked"), ChildCastWorked)
-		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildParentResult"), ChildParentResult)
-		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildAdjustedValue"), ChildAdjustedValue)
-		|| !ReadPropertyValue<FIntProperty>(*this, Actor, TEXT("ChildOwnResult"), ChildOwnResult)
-		|| !ReadPropertyValue<FNameProperty>(*this, Actor, TEXT("NativeMarker"), NativeMarker))
-	{
-		break;
-	}
-
-	TestTrue(TEXT("Script actor should implement native child interface"), ScriptClass->ImplementsInterface(UAngelscriptNativeChildInterface::StaticClass()));
-	TestTrue(TEXT("Script actor implementing child interface should also satisfy native parent interface"), ScriptClass->ImplementsInterface(UAngelscriptNativeParentInterface::StaticClass()));
-	TestEqual(TEXT("Script-side cast to native child interface should succeed"), ChildCastWorked, 1);
-	TestEqual(TEXT("Child native interface ref should expose inherited parent getter"), ChildParentResult, 7);
-	TestEqual(TEXT("Child native interface ref should expose inherited parent ref-parameter method"), ChildAdjustedValue, 29);
-	TestEqual(TEXT("Child native interface ref should still expose child-owned methods"), ChildOwnResult, 11);
-	TestEqual(TEXT("Child native interface ref should expose inherited parent setter"), NativeMarker, FName(TEXT("ChildRoute")));
-
-	}
-	while (false);
-	ASTEST_END_SHARE_CLEAN
-	return !HasAnyErrors();
-}
+};
 
 #endif

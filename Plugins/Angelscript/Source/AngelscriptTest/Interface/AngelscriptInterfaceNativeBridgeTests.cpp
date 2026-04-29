@@ -1,17 +1,49 @@
+// ============================================================================
+// AngelscriptInterfaceNativeBridgeTests.cpp
+//
+// Native interface bridge tests — CQTest refactor. Automation ID:
+//   Angelscript.TestModule.Interface.NativeBridge
+//
+// Validates that a script class can cast to and call methods on a C++
+// native interface implementer through the script-side interface bridge.
+// ============================================================================
+
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+
 #include "Core/AngelscriptEngine.h"
 #include "Shared/AngelscriptNativeInterfaceTestTypes.h"
 #include "Shared/AngelscriptNativeInterfaceTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
-#include "Shared/AngelscriptTestMacros.h"
 
 #include "Components/ActorTestSpawner.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 using namespace AngelscriptFunctionalTestUtils;
+
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GInterfaceBridgeProfile{
+	TEXT("InterfaceBridge"),       // Theme
+	TEXT(""),                      // Variant
+	TEXT("ASIntfBridge"),          // ModulePrefix
+	TEXT("IntfBridge"),            // CasePrefix
+	TEXT("InterfaceBridgeTests"),  // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
 
 namespace InterfaceNativeBridgeTests
 {
@@ -48,34 +80,34 @@ namespace InterfaceNativeBridgeTests
 	}
 }
 
-using namespace InterfaceNativeBridgeTests;
+// ----------------------------------------------------------------------------
+// Test Class
+// ----------------------------------------------------------------------------
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInterfaceNativeImplementCppImplementerScriptCallTest,
-	"Angelscript.TestModule.Interface.NativeImplement.CppImplementerScriptCall",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTestInterfaceNativeImplementCppImplementerScriptCallTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeBridgeTest, "Angelscript.TestModule.Interface.NativeBridge", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	do
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
+	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
+
+	TEST_METHOD(CppImplementerScriptCall)
 	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
 
-	AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
+		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
 
-	ON_SCOPE_EXIT
-	{
-		Engine.DiscardModule(*InterfaceNativeBridgeTests::ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*InterfaceNativeBridgeTests::ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		InterfaceNativeBridgeTests::ModuleName,
-		InterfaceNativeBridgeTests::ScriptFilename,
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			InterfaceNativeBridgeTests::ModuleName,
+			InterfaceNativeBridgeTests::ScriptFilename,
+			TEXT(R"AS(
 UCLASS()
 class ATestInterfaceNativeCppImplementerBridge : AActor
 {
@@ -109,56 +141,52 @@ class ATestInterfaceNativeCppImplementerBridge : AActor
 	}
 }
 )AS"),
-		InterfaceNativeBridgeTests::GeneratedClassName);
-	if (!TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
-	{
-		break;
+			InterfaceNativeBridgeTests::GeneratedClassName);
+		if (!TestRunner->TestNotNull(TEXT("ScriptClass should be valid"), ScriptClass))
+		{
+			return;
+		}
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+
+		ATestNativeParentInterfaceActor* NativeFixtureActor = Spawner.GetWorld().SpawnActor<ATestNativeParentInterfaceActor>();
+		AActor* ScriptActor = SpawnScriptActor(*TestRunner, Spawner, ScriptClass);
+		if (!TestRunner->TestNotNull(TEXT("Native interface bridge fixture actor should spawn"), NativeFixtureActor)
+			|| !TestRunner->TestNotNull(TEXT("Native interface bridge script actor should spawn"), ScriptActor))
+		{
+			return;
+		}
+
+		if (!InterfaceNativeBridgeTests::SetObjectReferenceProperty(
+			*TestRunner,
+			ScriptActor,
+			InterfaceNativeBridgeTests::TargetPropertyName,
+			NativeFixtureActor,
+			TEXT("Native interface bridge script actor")))
+		{
+			return;
+		}
+
+		BeginPlayActor(Engine, *ScriptActor);
+
+		int32 bCastSucceeded = 0;
+		int32 ReadValue = 0;
+		int32 AdjustedValue = 0;
+		if (!ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, InterfaceNativeBridgeTests::CastSucceededPropertyName, bCastSucceeded)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, InterfaceNativeBridgeTests::ReadValuePropertyName, ReadValue)
+			|| !ReadPropertyValue<FIntProperty>(*TestRunner, ScriptActor, InterfaceNativeBridgeTests::AdjustedValuePropertyName, AdjustedValue))
+		{
+			return;
+		}
+
+		TestRunner->TestEqual(TEXT("Script-side cast to a pure C++ native interface implementer should succeed"), bCastSucceeded, 1);
+		TestRunner->TestEqual(TEXT("Script-side interface getter should dispatch to the C++ implementer"), ReadValue, 123);
+		TestRunner->TestEqual(TEXT("Script-side ref parameter bridge should write back the adjusted value"), AdjustedValue, 15);
+		TestRunner->TestEqual(TEXT("Script-side interface setter should update the C++ implementer marker"), NativeFixtureActor->NativeMarker, FName(TEXT("FromScript")));
+		TestRunner->TestEqual(TEXT("C++ fixture should observe the delta passed through the interface bridge"), NativeFixtureActor->LastAdjustmentDelta, 5);
+		TestRunner->TestEqual(TEXT("C++ fixture should observe the final ref value written by the interface bridge"), NativeFixtureActor->LastAdjustedValue, 15);
 	}
-
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-
-	ATestNativeParentInterfaceActor* NativeFixtureActor = Spawner.GetWorld().SpawnActor<ATestNativeParentInterfaceActor>();
-	AActor* ScriptActor = SpawnScriptActor(*this, Spawner, ScriptClass);
-	if (!TestNotNull(TEXT("Native interface bridge fixture actor should spawn"), NativeFixtureActor)
-		|| !TestNotNull(TEXT("Native interface bridge script actor should spawn"), ScriptActor))
-	{
-		break;
-	}
-
-	if (!InterfaceNativeBridgeTests::SetObjectReferenceProperty(
-		*this,
-		ScriptActor,
-		InterfaceNativeBridgeTests::TargetPropertyName,
-		NativeFixtureActor,
-		TEXT("Native interface bridge script actor")))
-	{
-		break;
-	}
-
-	BeginPlayActor(Engine, *ScriptActor);
-
-	int32 bCastSucceeded = 0;
-	int32 ReadValue = 0;
-	int32 AdjustedValue = 0;
-	if (!ReadPropertyValue<FIntProperty>(*this, ScriptActor, InterfaceNativeBridgeTests::CastSucceededPropertyName, bCastSucceeded)
-		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, InterfaceNativeBridgeTests::ReadValuePropertyName, ReadValue)
-		|| !ReadPropertyValue<FIntProperty>(*this, ScriptActor, InterfaceNativeBridgeTests::AdjustedValuePropertyName, AdjustedValue))
-	{
-		break;
-	}
-
-	TestEqual(TEXT("Script-side cast to a pure C++ native interface implementer should succeed"), bCastSucceeded, 1);
-	TestEqual(TEXT("Script-side interface getter should dispatch to the C++ implementer"), ReadValue, 123);
-	TestEqual(TEXT("Script-side ref parameter bridge should write back the adjusted value"), AdjustedValue, 15);
-	TestEqual(TEXT("Script-side interface setter should update the C++ implementer marker"), NativeFixtureActor->NativeMarker, FName(TEXT("FromScript")));
-	TestEqual(TEXT("C++ fixture should observe the delta passed through the interface bridge"), NativeFixtureActor->LastAdjustmentDelta, 5);
-	TestEqual(TEXT("C++ fixture should observe the final ref value written by the interface bridge"), NativeFixtureActor->LastAdjustedValue, 15);
-
-	}
-	while (false);
-	ASTEST_END_SHARE_CLEAN
-	return !HasAnyErrors();
-}
+};
 
 #endif

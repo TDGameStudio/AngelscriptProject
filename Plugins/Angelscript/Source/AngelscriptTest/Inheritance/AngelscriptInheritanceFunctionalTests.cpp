@@ -1,15 +1,20 @@
+#include "CQTest.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
 #include "ClassGenerator/AngelscriptClassGenerator.h"
 #include "Components/ActorTestSpawner.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
 // Test Layer: UE Functional
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
 namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private
 {
@@ -23,52 +28,51 @@ namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Privat
 
 using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInheritanceScriptToScriptTest,
-	"Angelscript.TestModule.Inheritance.ScriptToScript",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+static const FBindingsCoverageProfile GInheritanceProfile{TEXT("Inheritance"),TEXT(""),TEXT("ASInheritance"),TEXT("Inheritance"),TEXT("InheritanceTests")};
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInheritanceSuperTest,
-	"Angelscript.TestModule.Inheritance.Super",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTestInheritanceIsATest,
-	"Angelscript.TestModule.Inheritance.IsA",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTestInheritanceScriptToScriptTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptInheritanceFunctionalTests, "Angelscript.TestModule.Inheritance", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("TestInheritanceScriptToScript"));
-	ON_SCOPE_EXIT
+	BEFORE_ALL()
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	const FString BaselineScript = TEXT(R"AS(
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(ScriptToScript)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestInheritanceScriptToScript"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+		};
+
+		const FString BaselineScript = TEXT(R"AS(
 UCLASS()
 class ATestInheritanceBaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("TestCase inheritance baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceScriptToScript.as"), BaselineScript)))
-	{
-		return false;
-	}
+		if (!TestTrue(TEXT("TestCase inheritance baseline module should compile before reload analysis"),
+			CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceScriptToScript.as"), BaselineScript)))
+		{
+			return;
+		}
 
-	FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
-	bool bWantsFullReload = false;
-	bool bNeedsFullReload = false;
-	const bool bAnalyzed = AnalyzeReloadFromMemory(
-		&Engine,
-		ModuleName,
-		TEXT("TestInheritanceScriptToScript.as"),
-		TEXT(R"AS(
+		FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
+		bool bWantsFullReload = false;
+		bool bNeedsFullReload = false;
+		const bool bAnalyzed = AnalyzeReloadFromMemory(
+			&Engine,
+			ModuleName,
+			TEXT("TestInheritanceScriptToScript.as"),
+			TEXT(R"AS(
 UCLASS()
 class ATestInheritanceBase : AActor
 {
@@ -89,52 +93,48 @@ class ATestInheritanceDerived : ATestCaseInheritanceBase
 	}
 }
 )AS"),
-		ReloadRequirement,
-		bWantsFullReload,
-		bNeedsFullReload);
+			ReloadRequirement,
+			bWantsFullReload,
+			bNeedsFullReload);
 
-	if (!TestFalse(TEXT("TestCase script-to-script actor inheritance with overridden UFUNCTIONs remains unsupported on this branch"), bAnalyzed))
-	{
-		return false;
+		if (!TestFalse(TEXT("TestCase script-to-script actor inheritance with overridden UFUNCTIONs remains unsupported on this branch"), bAnalyzed))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("TestCase script-to-script actor inheritance should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
 	}
 
-	TestEqual(TEXT("TestCase script-to-script actor inheritance should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
-	ASTEST_END_SHARE_CLEAN
-
-	return true;
-}
-
-bool FAngelscriptTestInheritanceSuperTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("TestInheritanceSuper"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(Super)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestInheritanceSuper"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+		};
 
-	const FString BaselineScript = TEXT(R"AS(
+		const FString BaselineScript = TEXT(R"AS(
 UCLASS()
 class ATestInheritanceSuperBaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("TestCase inheritance super baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceSuper.as"), BaselineScript)))
-	{
-		return false;
-	}
+		if (!TestTrue(TEXT("TestCase inheritance super baseline module should compile before reload analysis"),
+			CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceSuper.as"), BaselineScript)))
+		{
+			return;
+		}
 
-	FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
-	bool bWantsFullReload = false;
-	bool bNeedsFullReload = false;
-	const bool bAnalyzed = AnalyzeReloadFromMemory(
-		&Engine,
-		ModuleName,
-		TEXT("TestInheritanceSuper.as"),
-		TEXT(R"AS(
+		FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
+		bool bWantsFullReload = false;
+		bool bNeedsFullReload = false;
+		const bool bAnalyzed = AnalyzeReloadFromMemory(
+			&Engine,
+			ModuleName,
+			TEXT("TestInheritanceSuper.as"),
+			TEXT(R"AS(
 UCLASS()
 class ATestInheritanceSuperBase : AActor
 {
@@ -155,52 +155,48 @@ class ATestInheritanceSuperDerived : ATestCaseInheritanceSuperBase
 	}
 }
 )AS"),
-		ReloadRequirement,
-		bWantsFullReload,
-		bNeedsFullReload);
+			ReloadRequirement,
+			bWantsFullReload,
+			bNeedsFullReload);
 
-	if (!TestFalse(TEXT("TestCase script-to-script Super calls remain unsupported on this branch"), bAnalyzed))
-	{
-		return false;
+		if (!TestFalse(TEXT("TestCase script-to-script Super calls remain unsupported on this branch"), bAnalyzed))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("TestCase inheritance with Super should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
 	}
 
-	TestEqual(TEXT("TestCase inheritance with Super should currently stay in the error state"), ReloadRequirement, FAngelscriptClassGenerator::Error);
-	ASTEST_END_SHARE_CLEAN
-
-	return true;
-}
-
-bool FAngelscriptTestInheritanceIsATest::RunTest(const FString& Parameters)
-{
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("TestInheritanceIsA"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(IsA)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+		static const FName ModuleName(TEXT("TestInheritanceIsA"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+		};
 
-	const FString BaselineScript = TEXT(R"AS(
+		const FString BaselineScript = TEXT(R"AS(
 UCLASS()
 class ATestInheritanceIsABaseline : AActor
 {
 }
 )AS");
-	if (!TestTrue(TEXT("TestCase inheritance IsA baseline module should compile before reload analysis"),
-		CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceIsA.as"), BaselineScript)))
-	{
-		return false;
-	}
+		if (!TestTrue(TEXT("TestCase inheritance IsA baseline module should compile before reload analysis"),
+			CompileAnnotatedModuleFromMemory(&Engine, ModuleName, TEXT("TestInheritanceIsA.as"), BaselineScript)))
+		{
+			return;
+		}
 
-	FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
-	bool bWantsFullReload = false;
-	bool bNeedsFullReload = false;
-	const bool bAnalyzed = AnalyzeReloadFromMemory(
-		&Engine,
-		ModuleName,
-		TEXT("TestInheritanceIsA.as"),
-		TEXT(R"AS(
+		FAngelscriptClassGenerator::EReloadRequirement ReloadRequirement = FAngelscriptClassGenerator::Error;
+		bool bWantsFullReload = false;
+		bool bNeedsFullReload = false;
+		const bool bAnalyzed = AnalyzeReloadFromMemory(
+			&Engine,
+			ModuleName,
+			TEXT("TestInheritanceIsA.as"),
+			TEXT(R"AS(
 UCLASS()
 class ATestInheritanceIsABase : AActor
 {
@@ -217,22 +213,20 @@ class ATestInheritanceIsADerived : ATestInheritanceIsABase
 	}
 }
 )AS"),
-		ReloadRequirement,
-		bWantsFullReload,
-		bNeedsFullReload);
+			ReloadRequirement,
+			bWantsFullReload,
+			bNeedsFullReload);
 
-	if (!TestTrue(TEXT("TestCase inheritance IsA/Cast syntax should analyze without crashing"), bAnalyzed))
-	{
-		return false;
+		if (!TestTrue(TEXT("TestCase inheritance IsA/Cast syntax should analyze without crashing"), bAnalyzed))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("TestCase inheritance IsA/Cast currently requires the full-reload path on this branch"), bWantsFullReload || bNeedsFullReload);
+		TestTrue(TEXT("TestCase inheritance IsA/Cast should not remain on the soft-reload path"),
+			ReloadRequirement == FAngelscriptClassGenerator::FullReloadRequired
+			|| ReloadRequirement == FAngelscriptClassGenerator::FullReloadSuggested);
 	}
-
-	TestTrue(TEXT("TestCase inheritance IsA/Cast currently requires the full-reload path on this branch"), bWantsFullReload || bNeedsFullReload);
-	TestTrue(TEXT("TestCase inheritance IsA/Cast should not remain on the soft-reload path"),
-		ReloadRequirement == FAngelscriptClassGenerator::FullReloadRequired
-		|| ReloadRequirement == FAngelscriptClassGenerator::FullReloadSuggested);
-	ASTEST_END_SHARE_CLEAN
-
-	return true;
-}
+};
 
 #endif

@@ -1,34 +1,47 @@
+#include "CQTest.h"
 #include "Core/AngelscriptEngine.h"
 #include "Interface/AngelscriptInterfaceTestAccess.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
 
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+using namespace AngelscriptReflectiveAccess;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest,
-	"Angelscript.TestModule.Interface.Native.SignatureRegistrationRelease",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+static const FBindingsCoverageProfile GInterfaceLifecycleProfile{TEXT("InterfaceLifecycle"),TEXT(""),TEXT("ASIntfLifecycle"),TEXT("IntfLifecycle"),TEXT("InterfaceLifecycleTests")};
 
-bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeLifecycleTests, "Angelscript.TestModule.Interface.NativeLifecycle", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	FInterfaceMethodSignature* FirstSignature = nullptr;
-	FInterfaceMethodSignature* SecondSignature = nullptr;
-	ON_SCOPE_EXIT
+	BEFORE_ALL()
 	{
-		Engine.ReleaseInterfaceMethodSignature(FirstSignature);
-		Engine.ReleaseInterfaceMethodSignature(SecondSignature);
-	};
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
 
-	do
+	AFTER_ALL()
 	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	TEST_METHOD(SignatureRegistrationRelease)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		FInterfaceMethodSignature* FirstSignature = nullptr;
+		FInterfaceMethodSignature* SecondSignature = nullptr;
+		ON_SCOPE_EXIT
+		{
+			Engine.ReleaseInterfaceMethodSignature(FirstSignature);
+			Engine.ReleaseInterfaceMethodSignature(SecondSignature);
+		};
+
 		// Use the current count as baseline instead of assuming zero — prior tests
 		// in a batch run may leave interface signatures in the shared engine.
 		const int32 BaselineCount = FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine);
@@ -43,14 +56,14 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				TEXT("Interface.Native.SignatureRegistrationRelease should allocate the second interface signature"),
 				SecondSignature))
 		{
-			break;
+			return;
 		}
 
 		if (!TestTrue(
 				TEXT("Interface.Native.SignatureRegistrationRelease should return distinct records for distinct registrations"),
 				FirstSignature != SecondSignature))
 		{
-			break;
+			return;
 		}
 
 		if (!TestEqual(
@@ -58,7 +71,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine),
 				BaselineCount + 2))
 		{
-			break;
+			return;
 		}
 
 		if (!TestEqual(
@@ -66,7 +79,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				FirstSignature->FunctionName,
 				FName(TEXT("GetNativeValue"))))
 		{
-			break;
+			return;
 		}
 
 		if (!TestEqual(
@@ -74,7 +87,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				SecondSignature->FunctionName,
 				FName(TEXT("SetNativeMarker"))))
 		{
-			break;
+			return;
 		}
 
 		Engine.ReleaseInterfaceMethodSignature(FirstSignature);
@@ -85,7 +98,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine),
 				BaselineCount + 1))
 		{
-			break;
+			return;
 		}
 
 		if (!TestEqual(
@@ -93,7 +106,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				SecondSignature->FunctionName,
 				FName(TEXT("SetNativeMarker"))))
 		{
-			break;
+			return;
 		}
 
 		Engine.ReleaseInterfaceMethodSignature(nullptr);
@@ -103,7 +116,7 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine),
 				BaselineCount + 1))
 		{
-			break;
+			return;
 		}
 
 		if (!TestEqual(
@@ -111,25 +124,17 @@ bool FAngelscriptInterfaceNativeSignatureRegistrationReleaseTest::RunTest(const 
 				SecondSignature->FunctionName,
 				FName(TEXT("SetNativeMarker"))))
 		{
-			break;
+			return;
 		}
 
 		Engine.ReleaseInterfaceMethodSignature(SecondSignature);
 		SecondSignature = nullptr;
 
-		if (!TestEqual(
-				TEXT("Interface.Native.SignatureRegistrationRelease should shrink back to baseline after releasing the final signature"),
-				FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine),
-				BaselineCount))
-		{
-			break;
-		}
-
+		TestEqual(
+			TEXT("Interface.Native.SignatureRegistrationRelease should shrink back to baseline after releasing the final signature"),
+			FAngelscriptInterfaceSignatureTestAccess::GetSignatureCount(Engine),
+			BaselineCount);
 	}
-	while (false);
-
-	ASTEST_END_SHARE_CLEAN
-	return !HasAnyErrors();
-}
+};
 
 #endif
