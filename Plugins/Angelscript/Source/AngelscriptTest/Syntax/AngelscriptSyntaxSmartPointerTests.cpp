@@ -1,0 +1,210 @@
+// ============================================================================
+// AngelscriptSyntaxSmartPointerTests.cpp
+//
+// Syntax coverage tests for smart pointer types: TSubclassOf,
+// TWeakObjectPtr, TSoftObjectPtr — CQTest refactor.
+//
+// Automation prefix: Angelscript.TestModule.Syntax.SmartPointer.*
+// ============================================================================
+
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+#include "Syntax/AngelscriptSyntaxTestHelpers.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GSyntaxSmartPtrProfile{
+	TEXT("Syntax"),          // Theme
+	TEXT("SmartPtr"),        // Variant
+	TEXT("ASSyntaxSP"),      // ModulePrefix
+	TEXT("SmartPtr"),        // CasePrefix
+	TEXT("SyntaxSmartPtr"),  // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxSmartPointerTest,
+	"Angelscript.TestModule.Syntax.SmartPointer",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
+
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	// ====================================================================
+	// TSubclassOf — Positive
+	// ====================================================================
+
+	TEST_METHOD(TSubclassOf_Positive)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassDecl"),
+			TEXT("class AActorSPSubDecl : AActor { UPROPERTY() TSubclassOf<AActor> ActorClass; }"),
+			TEXT("TSubclassOf declaration"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassParam"),
+			TEXT("void SpawnActor(TSubclassOf<AActor> Class) { }"),
+			TEXT("TSubclassOf as function parameter"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassNullCheck"),
+			TEXT("void Test(TSubclassOf<AActor> Class) { if (Class.IsValid()) { } }"),
+			TEXT("TSubclassOf validity check"));
+	}
+
+	// ====================================================================
+	// TSubclassOf — Negative
+	// ====================================================================
+
+	TEST_METHOD(TSubclassOf_Negative)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassNoTemplate"),
+			TEXT("void Test() { TSubclassOf Class; }"),
+			TEXT("TSubclassOf without template param should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassBadType"),
+			TEXT("void Test() { TSubclassOf<NonExistentClass> Class; }"),
+			TEXT("TSubclassOf of non-existent type should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassPrimitive"),
+			TEXT("void Test() { TSubclassOf<int> Class; }"),
+			TEXT("TSubclassOf of primitive should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassStruct"),
+			TEXT("void Test() { TSubclassOf<FVector> Class; }"),
+			TEXT("TSubclassOf of struct should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSubclassNested"),
+			TEXT("void Test() { TSubclassOf<TSubclassOf<AActor>> Class; }"),
+			TEXT("Nested TSubclassOf should fail"));
+	}
+
+	// ====================================================================
+	// TWeakObjectPtr — Positive
+	// ====================================================================
+
+	TEST_METHOD(TWeakObjectPtr_Positive)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPWeakDecl"),
+			TEXT("class AActorSPWeakDecl : AActor { UPROPERTY() TWeakObjectPtr<AActor> WeakRef; }"),
+			TEXT("TWeakObjectPtr declaration"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPWeakIsValid"),
+			TEXT("void Test(TWeakObjectPtr<AActor> Weak) { if (Weak.IsValid()) { } }"),
+			TEXT("TWeakObjectPtr.IsValid()"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPWeakGet"),
+			TEXT("void Test(TWeakObjectPtr<AActor> Weak) { AActor A = Weak.Get(); }"),
+			TEXT("TWeakObjectPtr.Get()"));
+	}
+
+	// ====================================================================
+	// TWeakObjectPtr — Negative
+	// ====================================================================
+
+	TEST_METHOD(TWeakObjectPtr_Negative)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPWeakNoTemplate"),
+			TEXT("void Test() { TWeakObjectPtr Weak; }"),
+			TEXT("TWeakObjectPtr without template should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPWeakNonUObj"),
+			TEXT("void Test() { TWeakObjectPtr<FVector> Weak; }"),
+			TEXT("TWeakObjectPtr of non-UObject type should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPWeakPrimitive"),
+			TEXT("void Test() { TWeakObjectPtr<int> Weak; }"),
+			TEXT("TWeakObjectPtr of primitive should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPWeakBadType"),
+			TEXT("void Test() { TWeakObjectPtr<NonExistentClass> Weak; }"),
+			TEXT("TWeakObjectPtr of non-existent type should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPWeakNested"),
+			TEXT("void Test() { TWeakObjectPtr<TWeakObjectPtr<AActor>> Weak; }"),
+			TEXT("Nested TWeakObjectPtr should fail"));
+	}
+
+	// ====================================================================
+	// TSoftObjectPtr — Positive
+	// ====================================================================
+
+	TEST_METHOD(TSoftObjectPtr_Positive)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSoftDecl"),
+			TEXT("class AActorSPSoftDecl : AActor { UPROPERTY() TSoftObjectPtr<UStaticMesh> MeshAsset; }"),
+			TEXT("TSoftObjectPtr declaration"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSoftIsValid"),
+			TEXT("void Test(TSoftObjectPtr<UStaticMesh> Soft) { bool B = Soft.IsValid(); }"),
+			TEXT("TSoftObjectPtr.IsValid()"));
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxSPSoftGet"),
+			TEXT("void Test(TSoftObjectPtr<UStaticMesh> Soft) { UStaticMesh Mesh = Soft.Get(); }"),
+			TEXT("TSoftObjectPtr.Get()"));
+	}
+
+	// ====================================================================
+	// TSoftObjectPtr — Negative
+	// ====================================================================
+
+	TEST_METHOD(TSoftObjectPtr_Negative)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSoftNoTemplate"),
+			TEXT("void Test() { TSoftObjectPtr Soft; }"),
+			TEXT("TSoftObjectPtr without template should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSoftNonUObj"),
+			TEXT("void Test() { TSoftObjectPtr<FVector> Soft; }"),
+			TEXT("TSoftObjectPtr of non-UObject should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSoftPrimitive"),
+			TEXT("void Test() { TSoftObjectPtr<int> Soft; }"),
+			TEXT("TSoftObjectPtr of primitive should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSoftBadType"),
+			TEXT("void Test() { TSoftObjectPtr<NonExistentClass> Soft; }"),
+			TEXT("TSoftObjectPtr of non-existent type should fail"));
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxSPSoftNested"),
+			TEXT("void Test() { TSoftObjectPtr<TSoftObjectPtr<UStaticMesh>> Soft; }"),
+			TEXT("Nested TSoftObjectPtr should fail"));
+	}
+};
+
+#endif // WITH_DEV_AUTOMATION_TESTS

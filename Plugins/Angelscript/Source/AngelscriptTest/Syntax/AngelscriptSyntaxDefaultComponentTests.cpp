@@ -1,0 +1,256 @@
+// ============================================================================
+// AngelscriptSyntaxDefaultComponentTests.cpp
+//
+// Syntax coverage tests for DefaultComponent, RootComponent, Attach, AttachSocket,
+// OverrideComponent, and ShowOnActor modifiers — CQTest edition.
+//
+// Automation prefix: Angelscript.TestModule.Syntax.DefaultComponent.*
+// ============================================================================
+
+#include "CQTest.h"
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptBindingsCoverage.h"
+#include "Shared/AngelscriptBindingsModuleBuilder.h"
+#include "Shared/AngelscriptBindingsAssertions.h"
+#include "Syntax/AngelscriptSyntaxTestHelpers.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+using namespace AngelscriptTestSupport;
+using namespace AngelscriptTestBindings;
+
+// ----------------------------------------------------------------------------
+// Profile
+// ----------------------------------------------------------------------------
+
+static const FBindingsCoverageProfile GSyntaxDefCompProfile{
+	TEXT("Syntax"),          // Theme
+	TEXT("DefComp"),         // Variant
+	TEXT("ASSyntaxDC"),      // ModulePrefix
+	TEXT("DefComp"),         // CasePrefix
+	TEXT("SyntaxDefComp"),   // LogCategory
+};
+
+// ----------------------------------------------------------------------------
+// Test class
+// ----------------------------------------------------------------------------
+
+TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDefaultComponentTest,
+	"Angelscript.TestModule.Syntax.DefaultComponent",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	BEFORE_ALL()
+	{
+		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	}
+
+	AFTER_ALL()
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
+	}
+
+	// ====================================================================
+	// Positive — Basic DefaultComponent forms
+	// ====================================================================
+
+	TEST_METHOD(Positive_BasicDefaultComponent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompBasic"),
+			TEXT("class ADefCompBasicActor : AActor { UPROPERTY(DefaultComponent) USceneComponent Root; }"),
+			TEXT("Basic DefaultComponent"));
+	}
+
+	TEST_METHOD(Positive_RootComponent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompRoot"),
+			TEXT("class ADefCompRootActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; }"),
+			TEXT("DefaultComponent with RootComponent"));
+	}
+
+	TEST_METHOD(Positive_Attach)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompAttach"),
+			TEXT("class ADefCompAttachActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; UPROPERTY(DefaultComponent, Attach = Root) UStaticMeshComponent Mesh; }"),
+			TEXT("DefaultComponent with Attach"));
+	}
+
+	TEST_METHOD(Positive_AttachSocket)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompAttachSocket"),
+			TEXT("class ADefCompSocketActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; UPROPERTY(DefaultComponent, Attach = Root, AttachSocket = \"Socket1\") USceneComponent Child; }"),
+			TEXT("DefaultComponent with AttachSocket"));
+	}
+
+	TEST_METHOD(Positive_MultipleComponents)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompMultiple"),
+			TEXT("class ADefCompMultiActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; UPROPERTY(DefaultComponent, Attach = Root) USceneComponent Child1; UPROPERTY(DefaultComponent, Attach = Root) USceneComponent Child2; }"),
+			TEXT("Multiple DefaultComponents"));
+	}
+
+	// ====================================================================
+	// Negative — Invalid DefaultComponent usage
+	// ====================================================================
+
+	TEST_METHOD(Negative_OnNonComponentType)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompNonComp"),
+			TEXT("class ADefCompNonCompActor : AActor { UPROPERTY(DefaultComponent) int X; }"),
+			TEXT("DefaultComponent on non-component type should fail"));
+	}
+
+	TEST_METHOD(Negative_OutsideClass)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompGlobal"),
+			TEXT("UPROPERTY(DefaultComponent) USceneComponent Root;"),
+			TEXT("DefaultComponent at global scope should fail"));
+	}
+
+	TEST_METHOD(Negative_RootComponentWithoutDefaultComponent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompRootOnly"),
+			TEXT("class ADefCompRootOnlyActor : AActor { UPROPERTY(RootComponent) USceneComponent Root; }"),
+			TEXT("RootComponent without DefaultComponent should fail"));
+	}
+
+	TEST_METHOD(Negative_AttachToNonExistent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadAttach"),
+			TEXT("class ADefCompBadAttachActor : AActor { UPROPERTY(DefaultComponent, Attach = NonExistent) USceneComponent Child; }"),
+			TEXT("Attach to non-existent component should fail"));
+	}
+
+	TEST_METHOD(Negative_MultipleRootComponents)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompMultiRoot"),
+			TEXT("class ADefCompMultiRootActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root1; UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root2; }"),
+			TEXT("Multiple RootComponents should fail"));
+	}
+
+	TEST_METHOD(Negative_InNonActorClass)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompNonActor"),
+			TEXT("struct FDefCompStruct { UPROPERTY(DefaultComponent) USceneComponent Root; }"),
+			TEXT("DefaultComponent in non-Actor class should fail"));
+	}
+
+	TEST_METHOD(Negative_BadComponentType)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadCompType"),
+			TEXT("class ADefCompBadTypeActor : AActor { UPROPERTY(DefaultComponent) AActor SubActor; }"),
+			TEXT("DefaultComponent on non-UActorComponent type should fail"));
+	}
+
+	TEST_METHOD(Negative_AttachToSelf)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompAttachSelf"),
+			TEXT("class ADefCompSelfActor : AActor { UPROPERTY(DefaultComponent, Attach = Myself) USceneComponent Myself; }"),
+			TEXT("DefaultComponent attaching to self should fail"));
+	}
+
+	TEST_METHOD(Negative_CircularAttach)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompCircular"),
+			TEXT("class ADefCompCircularActor : AActor { UPROPERTY(DefaultComponent, Attach = CompB) USceneComponent CompA; UPROPERTY(DefaultComponent, Attach = CompA) USceneComponent CompB; }"),
+			TEXT("Circular attachment should fail"));
+	}
+
+	TEST_METHOD(Negative_DefaultComponentOnNonUPROPERTY)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompNoUProp"),
+			TEXT("class ADefCompNoUPropActor : AActor { USceneComponent Root; default Root = DefaultComponent; }"),
+			TEXT("DefaultComponent on non-UPROPERTY field should fail"));
+	}
+
+	TEST_METHOD(Negative_AttachSocketWithoutAttach)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompSocketNoAttach"),
+			TEXT("class ADefCompSocketNoAttachActor : AActor { UPROPERTY(DefaultComponent, AttachSocket = \"Socket1\") USceneComponent Child; }"),
+			TEXT("AttachSocket without Attach should fail"));
+	}
+
+	TEST_METHOD(Negative_DefaultComponentOnNonExistentType)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadType"),
+			TEXT("class ADefCompBadTypeNameActor : AActor { UPROPERTY(DefaultComponent) UNonExistentComponent Comp; }"),
+			TEXT("DefaultComponent with non-existent component type should fail"));
+	}
+
+	// ====================================================================
+	// Override — Mixed positive and negative
+	// ====================================================================
+
+	TEST_METHOD(Override_Mixed_PositiveOverrideParent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompOverride"),
+			TEXT("class ADefCompBaseActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; } class ADefCompChildActor : ADefCompBaseActor { UPROPERTY(OverrideComponent = Root) UStaticMeshComponent Root; }"),
+			TEXT("OverrideComponent from parent"));
+	}
+
+	TEST_METHOD(Override_Mixed_NegativeOverrideNonExistent)
+	{
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompOverrideBad"),
+			TEXT("class ADefCompBaseBadActor : AActor { UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root; } class ADefCompChildBadActor : ADefCompBaseBadActor { UPROPERTY(OverrideComponent = NonExistent) UStaticMeshComponent Mesh; }"),
+			TEXT("Override non-existent component should fail"));
+	}
+};
+
+#endif // WITH_DEV_AUTOMATION_TESTS
