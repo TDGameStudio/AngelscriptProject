@@ -6,7 +6,7 @@
 #include "Misc/ScopeExit.h"
 
 #include "AngelscriptBindingsCoverage.h"
-#include "../../Shared/AngelscriptGlobalFunctionInvoker.h"
+#include "Shared/AngelscriptGlobalFunctionInvoker.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "source/as_context.h"
@@ -230,6 +230,100 @@ namespace AngelscriptTestBindings
 
 		Test.AddInfo(FString::Printf(TEXT("%s raised at line %d: %s"), *Label, ExceptionLine, *ExceptionString));
 		return bPassed;
+	}
+
+	// ====================================================================
+	// Return-type coverage helpers
+	//
+	// These invoke a no-arg global function whose *declared* return type is
+	// the type under test (bool, float, FString, FVector, TArray, TSet,
+	// TMap, ...).  The caller supplies a Validator lambda that receives the
+	// raw return address and performs assertions.
+	//
+	// Usage:
+	//   ExpectGlobalReturnBool(Test, Engine, Module, Profile,
+	//       TEXT("bool F()"), TEXT("should return true"), true);
+	//
+	//   ExpectGlobalReturnFloat(Test, Engine, Module, Profile,
+	//       TEXT("float F()"), TEXT("should be ~3.5"), 3.5f, 0.01f);
+	//
+	//   ExpectGlobalReturnCustom<FVector>(Test, Engine, Module, Profile,
+	//       TEXT("FVector F()"), TEXT("X should be ~1"),
+	//       [](auto& T, const FVector& V) { return T.TestTrue(..., V.X > 0.9f); });
+	// ====================================================================
+
+	/** Invoke a no-arg `bool F()` global, compare return. */
+	inline bool ExpectGlobalReturnBool(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		bool Expected)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid()) return false;
+		const bool Actual = Invoker.CallAndReturn<bool>(false);
+		return Test.TestEqual(
+			*FString::Printf(TEXT("%s (decl=%s)"), *FormatCaseLabel(Profile, CaseLabel), FunctionDecl),
+			Actual, Expected);
+	}
+
+	/** Invoke a no-arg `float F()` global, compare with tolerance.
+	 *  Note: AS engine runs with asEP_FLOAT_IS_FLOAT64=1 so script `float`
+	 *  is actually stored as double in the return register. */
+	inline bool ExpectGlobalReturnFloat(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		float Expected,
+		float Tolerance = 0.01f)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid()) return false;
+		// AS float is double under asEP_FLOAT_IS_FLOAT64; read as double.
+		const double Actual = Invoker.CallAndReturn<double>(0.0);
+		return Test.TestTrue(
+			*FString::Printf(TEXT("%s (decl=%s) returned %.6g, expected %.6g (tol=%g)"),
+				*FormatCaseLabel(Profile, CaseLabel), FunctionDecl, Actual, (double)Expected, (double)Tolerance),
+			FMath::IsNearlyEqual(Actual, (double)Expected, (double)Tolerance));
+	}
+
+	/**
+	 * Invoke a no-arg function returning a struct/container, read via
+	 * GetAddressOfReturnValue, and hand off to a caller-supplied validator.
+	 *
+	 * Validator signature: bool(FAutomationTestBase& Test, const T& Value)
+	 * Return true if all assertions passed.
+	 */
+	template <typename T, typename ValidatorFn>
+	inline bool ExpectGlobalReturnCustom(
+		FAutomationTestBase& Test,
+		FAngelscriptEngine& Engine,
+		asIScriptModule& Module,
+		const FBindingsCoverageProfile& Profile,
+		const TCHAR* FunctionDecl,
+		const TCHAR* CaseLabel,
+		ValidatorFn&& Validator)
+	{
+		Detail::TraceCase(Test, Profile, CaseLabel);
+		AngelscriptReflectiveAccess::FASGlobalFunctionInvoker Invoker(Test, Engine, Module, FunctionDecl);
+		if (!Invoker.IsValid()) return false;
+		if (!Invoker.Call()) return false;
+
+		T Value{};
+		if (!Invoker.ReadReturnStruct(Value))
+		{
+			Test.AddError(FString::Printf(TEXT("%s failed to read return struct"), *FormatCaseLabel(Profile, CaseLabel)));
+			return false;
+		}
+		return Validator(Test, Value);
 	}
 }
 

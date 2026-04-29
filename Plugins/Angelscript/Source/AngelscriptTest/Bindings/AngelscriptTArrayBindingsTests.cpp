@@ -1,7 +1,7 @@
-#include "../Shared/AngelscriptGlobalFunctionInvoker.h"
-#include "../Shared/AngelscriptTestEngineHelper.h"
-#include "../Shared/AngelscriptTestUtilities.h"
-#include "../Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptGlobalFunctionInvoker.h"
+#include "Shared/AngelscriptTestEngineHelper.h"
+#include "Shared/AngelscriptTestUtilities.h"
+#include "Shared/AngelscriptTestMacros.h"
 
 #include "Containers/ScriptArray.h"
 #include "Camera/CameraActor.h"
@@ -15,7 +15,7 @@ using namespace AngelscriptReflectiveAccess;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTArrayBindingsTest,
-	"Angelscript.TestModule.Bindings.TArray",
+	"Angelscript.TestModule.Bindings.Container.TArray",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_Bindings_AngelscriptTArrayBindingsTests_Private
