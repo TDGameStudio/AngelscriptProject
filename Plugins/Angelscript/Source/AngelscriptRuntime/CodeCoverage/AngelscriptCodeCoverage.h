@@ -43,6 +43,9 @@ struct FAngelscriptCodeCoverage
 	void AddTestFrameworkHooks();
 #endif
 
+	// Clear all line hits so far.
+	void ResetHits();
+
 private:
 #if WITH_EDITOR
 	// Starts recording when run from the test framework.
@@ -51,9 +54,6 @@ private:
 	// Writes a report for the case we were run from the tests.
 	void OnTestsStopping();
 #endif
-
-	// Clear all line hits so far.
-	void ResetHits();
 
 	// Writes out the coverage results as a directory structure that matches the .as source
 	// structure, with one summary .html file per source file.
