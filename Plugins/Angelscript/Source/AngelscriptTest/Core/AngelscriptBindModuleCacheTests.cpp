@@ -1,7 +1,7 @@
 #include "AngelscriptBinds.h"
 
+#include "CQTest.h"
 #include "HAL/FileManager.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Guid.h"
 #include "Misc/Paths.h"
@@ -54,91 +54,91 @@ namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptBindModuleCacheRoundTripAndMissingFileTest,
-	"Angelscript.TestModule.Engine.BindConfig.BindModuleCache.RoundTripsOrderAndClearsOnMissingFile",
+TEST_CLASS_WITH_FLAGS(FAngelscriptBindModuleCacheTests,
+	"Angelscript.TestModule.Engine.BindConfig.BindModuleCache",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptBindModuleCacheRoundTripAndMissingFileTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private;
-	const TArray<FString> ExpectedBindModules = MakeExpectedBindModules();
-	const FString CacheDirectory = MakeBindModuleCacheAutomationDirectory();
-	const FString CachePath = FPaths::Combine(CacheDirectory, TEXT("BindModules.Cache"));
-	const FString MissingCachePath = FPaths::Combine(CacheDirectory, TEXT("MissingBindModules.Cache"));
-
-	IFileManager::Get().MakeDirectory(*CacheDirectory, true);
-	FAngelscriptBinds::ResetBindState();
-	ON_SCOPE_EXIT
+	TEST_METHOD(RoundTripsOrderAndClearsOnMissingFile)
 	{
+		using namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private;
+		const TArray<FString> ExpectedBindModules = MakeExpectedBindModules();
+		const FString CacheDirectory = MakeBindModuleCacheAutomationDirectory();
+		const FString CachePath = FPaths::Combine(CacheDirectory, TEXT("BindModules.Cache"));
+		const FString MissingCachePath = FPaths::Combine(CacheDirectory, TEXT("MissingBindModules.Cache"));
+
+		IFileManager::Get().MakeDirectory(*CacheDirectory, true);
 		FAngelscriptBinds::ResetBindState();
-		IFileManager::Get().DeleteDirectory(*CacheDirectory, false, true);
-	};
+		ON_SCOPE_EXIT
+		{
+			FAngelscriptBinds::ResetBindState();
+			IFileManager::Get().DeleteDirectory(*CacheDirectory, false, true);
+		};
 
-	TArray<FString>& BindModuleNames = FAngelscriptBinds::GetBindModuleNames();
-	BindModuleNames = ExpectedBindModules;
-	FAngelscriptBinds::SaveBindModules(CachePath);
+		TArray<FString>& BindModuleNames = FAngelscriptBinds::GetBindModuleNames();
+		BindModuleNames = ExpectedBindModules;
+		FAngelscriptBinds::SaveBindModules(CachePath);
 
-	if (!TestTrue(
-			TEXT("BindModuleCache should write BindModules.Cache to the automation directory"),
-			IFileManager::Get().FileExists(*CachePath)))
-	{
-		return false;
-	}
+		if (!TestRunner->TestTrue(
+				TEXT("BindModuleCache should write BindModules.Cache to the automation directory"),
+				IFileManager::Get().FileExists(*CachePath)))
+		{
+			return;
+		}
 
-	TArray<FString> SavedLines;
-	if (!TestTrue(
-			TEXT("BindModuleCache should persist BindModules.Cache as readable string lines"),
-			FFileHelper::LoadFileToStringArray(SavedLines, *CachePath)))
-	{
-		return false;
-	}
+		TArray<FString> SavedLines;
+		if (!TestRunner->TestTrue(
+				TEXT("BindModuleCache should persist BindModules.Cache as readable string lines"),
+				FFileHelper::LoadFileToStringArray(SavedLines, *CachePath)))
+		{
+			return;
+		}
 
-	if (!ExpectBindModuleSequence(
-			*this,
-			TEXT("BindModuleCache save path"),
-			SavedLines,
-			ExpectedBindModules))
-	{
-		return false;
-	}
+		if (!ExpectBindModuleSequence(
+				*TestRunner,
+				TEXT("BindModuleCache save path"),
+				SavedLines,
+				ExpectedBindModules))
+		{
+			return;
+		}
 
-	FAngelscriptBinds::ResetBindState();
-	if (!TestEqual(
-			TEXT("BindModuleCache reset should clear the in-memory bind module list before reload"),
+		FAngelscriptBinds::ResetBindState();
+		if (!TestRunner->TestEqual(
+				TEXT("BindModuleCache reset should clear the in-memory bind module list before reload"),
+				FAngelscriptBinds::GetBindModuleNames().Num(),
+				0))
+		{
+			return;
+		}
+
+		FAngelscriptBinds::LoadBindModules(CachePath);
+		if (!ExpectBindModuleSequence(
+				*TestRunner,
+				TEXT("BindModuleCache round-trip"),
+				FAngelscriptBinds::GetBindModuleNames(),
+				ExpectedBindModules))
+		{
+			return;
+		}
+
+		BindModuleNames = {
+			TEXT("ASRuntimeBind_Stale"),
+			TEXT("ASEditorBind_Stale"),
+		};
+
+		if (!TestRunner->TestFalse(
+				TEXT("BindModuleCache missing-file coverage should use a path that does not exist"),
+				IFileManager::Get().FileExists(*MissingCachePath)))
+		{
+			return;
+		}
+
+		FAngelscriptBinds::LoadBindModules(MissingCachePath);
+		TestRunner->TestEqual(
+			TEXT("BindModuleCache missing-file load should clear stale in-memory bind module names"),
 			FAngelscriptBinds::GetBindModuleNames().Num(),
-			0))
-	{
-		return false;
+			0);
 	}
-
-	FAngelscriptBinds::LoadBindModules(CachePath);
-	if (!ExpectBindModuleSequence(
-			*this,
-			TEXT("BindModuleCache round-trip"),
-			FAngelscriptBinds::GetBindModuleNames(),
-			ExpectedBindModules))
-	{
-		return false;
-	}
-
-	BindModuleNames = {
-		TEXT("ASRuntimeBind_Stale"),
-		TEXT("ASEditorBind_Stale"),
-	};
-
-	if (!TestFalse(
-			TEXT("BindModuleCache missing-file coverage should use a path that does not exist"),
-			IFileManager::Get().FileExists(*MissingCachePath)))
-	{
-		return false;
-	}
-
-	FAngelscriptBinds::LoadBindModules(MissingCachePath);
-	return TestEqual(
-		TEXT("BindModuleCache missing-file load should clear stale in-memory bind module names"),
-		FAngelscriptBinds::GetBindModuleNames().Num(),
-		0);
-}
+};
 
 #endif

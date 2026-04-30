@@ -4,8 +4,8 @@
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
+#include "CQTest.h"
 #include "Containers/StringConv.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/GarbageCollection.h"
 #include "UObject/UObjectGlobals.h"
@@ -70,40 +70,38 @@ namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTest,
-	"Angelscript.TestModule.Engine.Debugger.AutoEvaluate.RespectsBlacklistAndTracksSourceProperty",
+TEST_CLASS_WITH_FLAGS(FAngelscriptDebuggerAutoEvaluationTests,
+	"Angelscript.TestModule.Engine.Debugger.AutoEvaluate",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
-	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
-
-	static const FName ModuleName(TEXT("CoreDebuggerAutoEvaluateWorldless"));
-	static const FName GeneratedClassName(TEXT("UDebuggerAutoEvaluateWorldlessProbe"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(RespectsBlacklistAndTracksSourceProperty)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-		CollectGarbage(RF_NoFlags, true);
-	};
+		using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
-	UAngelscriptSettings& Settings = UAngelscriptSettings::Get();
-	const TSet<FString> SavedWithoutWorldBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext;
-	ON_SCOPE_EXIT
-	{
-		Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext = SavedWithoutWorldBlacklist;
-	};
+		static const FName ModuleName(TEXT("CoreDebuggerAutoEvaluateWorldless"));
+		static const FName GeneratedClassName(TEXT("UDebuggerAutoEvaluateWorldlessProbe"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+			CollectGarbage(RF_NoFlags, true);
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("CoreDebuggerAutoEvaluateWorldless.as"),
-		TEXT(R"AS(
+		UAngelscriptSettings& Settings = UAngelscriptSettings::Get();
+		const TSet<FString> SavedWithoutWorldBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext;
+		ON_SCOPE_EXIT
+		{
+			Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext = SavedWithoutWorldBlacklist;
+		};
+
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			ModuleName,
+			TEXT("CoreDebuggerAutoEvaluateWorldless.as"),
+			TEXT(R"AS(
 UCLASS()
 class UDebuggerAutoEvaluateWorldlessProbe : UObject
 {
@@ -117,90 +115,86 @@ class UDebuggerAutoEvaluateWorldlessProbe : UObject
 	}
 }
 )AS"),
-		GeneratedClassName);
+			GeneratedClassName);
 
-	if (ScriptClass != nullptr)
-	{
-		asITypeInfo* ScriptType = FindScriptTypeInfoForClass(*this, Engine, ScriptClass);
-		asIScriptFunction* GetterFunction = ScriptType != nullptr
-			? FindMethodByDecl(*this, *ScriptType, TEXT("int GetStoredValue() const"))
-			: nullptr;
-		FIntProperty* StoredValueProperty = FindFProperty<FIntProperty>(ScriptClass, TEXT("StoredValue"));
-		UObject* Target = NewObject<UObject>(GetTransientPackage(), ScriptClass, TEXT("DebuggerAutoEvaluateWorldlessTarget"));
+		if (ScriptClass != nullptr)
+		{
+			asITypeInfo* ScriptType = FindScriptTypeInfoForClass(*TestRunner, Engine, ScriptClass);
+			asIScriptFunction* GetterFunction = ScriptType != nullptr
+				? FindMethodByDecl(*TestRunner, *ScriptType, TEXT("int GetStoredValue() const"))
+				: nullptr;
+			FIntProperty* StoredValueProperty = FindFProperty<FIntProperty>(ScriptClass, TEXT("StoredValue"));
+			UObject* Target = NewObject<UObject>(GetTransientPackage(), ScriptClass, TEXT("DebuggerAutoEvaluateWorldlessTarget"));
 
-		if (!TestNotNull(TEXT("Debugger auto-evaluate test should expose the generated StoredValue property"), StoredValueProperty) ||
-			!TestNotNull(TEXT("Debugger auto-evaluate test should instantiate the generated UObject"), Target) ||
-			!TestNotNull(TEXT("Debugger auto-evaluate test should resolve the generated getter method"), GetterFunction))
-		{
-			bPassed = false;
-		}
-		else
-		{
-			bPassed &= TestTrue(
+			if (!TestRunner->TestNotNull(TEXT("Debugger auto-evaluate test should expose the generated StoredValue property"), StoredValueProperty) ||
+				!TestRunner->TestNotNull(TEXT("Debugger auto-evaluate test should instantiate the generated UObject"), Target) ||
+				!TestRunner->TestNotNull(TEXT("Debugger auto-evaluate test should resolve the generated getter method"), GetterFunction))
+			{
+				return;
+			}
+
+			TestRunner->TestTrue(
 				TEXT("Debugger auto-evaluate test should keep the generated UObject worldless so the without-world blacklist path is reachable"),
 				Target->GetWorld() == nullptr);
 
 			void* const StoredValueAddress = StoredValueProperty->ContainerPtrToValuePtr<void>(Target);
 			int32* const StoredValuePtr = static_cast<int32*>(StoredValueAddress);
-			if (!TestNotNull(TEXT("Debugger auto-evaluate test should expose reflected StoredValue storage"), StoredValuePtr))
+			if (!TestRunner->TestNotNull(TEXT("Debugger auto-evaluate test should expose reflected StoredValue storage"), StoredValuePtr))
 			{
-				bPassed = false;
+				return;
 			}
-			else
-			{
-				*StoredValuePtr = 42;
 
-				FDebuggerValue EvaluatedValue;
-				const bool bEvaluated = FAngelscriptType::GetDebuggerValueFromFunction(
+			*StoredValuePtr = 42;
+
+			FDebuggerValue EvaluatedValue;
+			const bool bEvaluated = FAngelscriptType::GetDebuggerValueFromFunction(
+				GetterFunction,
+				Target,
+				EvaluatedValue,
+				ScriptType,
+				ScriptClass,
+				TEXT("StoredValue"));
+			TestRunner->TestTrue(
+				TEXT("Debugger auto-evaluate test should evaluate the generated getter before blacklist filtering"),
+				bEvaluated);
+			if (bEvaluated)
+			{
+				TestRunner->TestEqual(
+					TEXT("Debugger auto-evaluate test should stringify the getter result as the current StoredValue"),
+					EvaluatedValue.Value,
+					FString(TEXT("42")));
+				TestRunner->TestTrue(
+					TEXT("Debugger auto-evaluate test should mark function-return debugger values as temporary"),
+					EvaluatedValue.bTemporaryValue);
+				TestRunner->TestTrue(
+					TEXT("Debugger auto-evaluate test should track the non-temporary StoredValue address"),
+					EvaluatedValue.GetNonTemporaryAddress() == StoredValueAddress);
+				TestRunner->TestTrue(
+					TEXT("Debugger auto-evaluate test should monitor the StoredValue address for refresh"),
+					EvaluatedValue.GetAddressToMonitor() == StoredValueAddress);
+				TestRunner->TestEqual(
+					TEXT("Debugger auto-evaluate test should report the StoredValue monitor size as int32"),
+					EvaluatedValue.GetAddressToMonitorValueSize(),
+					static_cast<int32>(sizeof(int32)));
+			}
+
+			Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Add(
+				BuildDebuggerFunctionPath(*GetterFunction));
+
+			FDebuggerValue BlacklistedValue;
+			TestRunner->TestFalse(
+				TEXT("Debugger auto-evaluate test should reject the getter once it is blacklisted for objects without world context"),
+				FAngelscriptType::GetDebuggerValueFromFunction(
 					GetterFunction,
 					Target,
-					EvaluatedValue,
+					BlacklistedValue,
 					ScriptType,
 					ScriptClass,
-					TEXT("StoredValue"));
-				bPassed &= TestTrue(
-					TEXT("Debugger auto-evaluate test should evaluate the generated getter before blacklist filtering"),
-					bEvaluated);
-				if (bEvaluated)
-				{
-					bPassed &= TestEqual(
-						TEXT("Debugger auto-evaluate test should stringify the getter result as the current StoredValue"),
-						EvaluatedValue.Value,
-						FString(TEXT("42")));
-					bPassed &= TestTrue(
-						TEXT("Debugger auto-evaluate test should mark function-return debugger values as temporary"),
-						EvaluatedValue.bTemporaryValue);
-					bPassed &= TestTrue(
-						TEXT("Debugger auto-evaluate test should track the non-temporary StoredValue address"),
-						EvaluatedValue.GetNonTemporaryAddress() == StoredValueAddress);
-					bPassed &= TestTrue(
-						TEXT("Debugger auto-evaluate test should monitor the StoredValue address for refresh"),
-						EvaluatedValue.GetAddressToMonitor() == StoredValueAddress);
-					bPassed &= TestEqual(
-						TEXT("Debugger auto-evaluate test should report the StoredValue monitor size as int32"),
-						EvaluatedValue.GetAddressToMonitorValueSize(),
-						static_cast<int32>(sizeof(int32)));
-				}
+					TEXT("StoredValue")));
+		}
 
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Add(
-					BuildDebuggerFunctionPath(*GetterFunction));
-
-				FDebuggerValue BlacklistedValue;
-				bPassed &= TestFalse(
-					TEXT("Debugger auto-evaluate test should reject the getter once it is blacklisted for objects without world context"),
-					FAngelscriptType::GetDebuggerValueFromFunction(
-						GetterFunction,
-						Target,
-						BlacklistedValue,
-						ScriptType,
-						ScriptClass,
-						TEXT("StoredValue")));
-			}
 		}
 	}
-
-	}
-	return bPassed;
-}
+};
 
 #endif

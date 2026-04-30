@@ -1,11 +1,11 @@
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
+#include "CQTest.h"
 #include "ClassGenerator/ASClass.h"
 #include "Core/AngelscriptComponent.h"
 #include "Components/ActorTestSpawner.h"
 #include "GameFramework/Actor.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/CoreNet.h"
 #include "UObject/StructOnScope.h"
@@ -104,28 +104,27 @@ namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptComponentProcessEventWithValidationTest,
-	"Angelscript.TestModule.Engine.Component.ProcessEvent.WithValidationRoutesValidateBeforeRpcBody",
+TEST_CLASS_WITH_FLAGS(FAngelscriptComponentProcessEventTests,
+	"Angelscript.TestModule.Engine.Component.ProcessEvent",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptComponentProcessEventWithValidationTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
-	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
-	ON_SCOPE_EXIT
+	TEST_METHOD(WithValidationRoutesValidateBeforeRpcBody)
 	{
-		Engine.DiscardModule(*ProcessEventModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-	};
+		using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ProcessEventModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ProcessEventModuleName,
-		ProcessEventFilename,
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*TestRunner,
+			Engine,
+			ProcessEventModuleName,
+			ProcessEventFilename,
+			TEXT(R"AS(
 UCLASS()
 class UComponentProcessEventValidate : UAngelscriptComponent
 {
@@ -153,108 +152,108 @@ class UComponentProcessEventValidate : UAngelscriptComponent
 	}
 }
 )AS"),
-		ProcessEventClassName);
-	if (ScriptClass == nullptr)
-	{
-		return false;
+			ProcessEventClassName);
+		if (ScriptClass == nullptr)
+		{
+			return;
+		}
+
+		UFunction* ServerFunction = FindGeneratedFunction(ScriptClass, ServerFunctionName);
+		UASFunction* GeneratedServerFunction = Cast<UASFunction>(ServerFunction);
+		if (!TestRunner->TestNotNull(TEXT("Component ProcessEvent test case should generate the server RPC"), ServerFunction)
+			|| !TestRunner->TestNotNull(TEXT("Component ProcessEvent test case should expose the server RPC as UASFunction"), GeneratedServerFunction))
+		{
+			return;
+		}
+
+		UFunction* ValidateFunction = GeneratedServerFunction->GetRuntimeValidateFunction();
+		if (!TestRunner->TestNotNull(TEXT("Component ProcessEvent test case should cache the _Validate companion function"), ValidateFunction))
+		{
+			return;
+		}
+
+		TestRunner->TestTrue(TEXT("Component ProcessEvent test case should mark the generated RPC as requiring validation"), ServerFunction->HasAnyFunctionFlags(FUNC_NetValidate));
+		TestRunner->TestTrue(TEXT("Component ProcessEvent test case should resolve the expected _Validate function"), ValidateFunction->GetFName() == ValidateFunctionName);
+
+		FActorTestSpawner Spawner;
+		Spawner.InitializeGameSubsystems();
+		AActor& HostActor = Spawner.SpawnActor<AActor>();
+		UAngelscriptComponent* Component = CreateProcessEventTestCaseComponent(*TestRunner, HostActor, ScriptClass);
+		if (Component == nullptr)
+		{
+			return;
+		}
+
+		BeginPlayActor(Engine, HostActor);
+
+		RPC_ResetLastFailedReason();
+		if (!InvokeServerRecordValue(*TestRunner, Engine, *Component, *ServerFunction, AcceptedValue))
+		{
+			return;
+		}
+
+		if (!ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				ValidateCallsPropertyName,
+				1,
+				TEXT("Component ProcessEvent should call the _Validate companion before accepting the RPC"))
+			|| !ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				BodyCallsPropertyName,
+				1,
+				TEXT("Component ProcessEvent should execute the RPC body when validation passes"))
+			|| !ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				LastAcceptedValuePropertyName,
+				AcceptedValue,
+				TEXT("Component ProcessEvent should persist the accepted RPC payload")))
+		{
+			return;
+		}
+
+		TestRunner->TestTrue(TEXT("Component ProcessEvent should not record a validation failure for accepted input"), RPC_GetLastFailedReason() == nullptr);
+
+		RPC_ResetLastFailedReason();
+		if (!InvokeServerRecordValue(*TestRunner, Engine, *Component, *ServerFunction, RejectedValue))
+		{
+			return;
+		}
+
+		if (!ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				ValidateCallsPropertyName,
+				2,
+				TEXT("Component ProcessEvent should call the _Validate companion again for rejected input"))
+			|| !ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				BodyCallsPropertyName,
+				1,
+				TEXT("Component ProcessEvent should not execute the RPC body when validation fails"))
+			|| !ExpectIntPropertyValue(
+				*TestRunner,
+				*Component,
+				LastAcceptedValuePropertyName,
+				AcceptedValue,
+				TEXT("Component ProcessEvent should preserve the last accepted payload after validation failure")))
+		{
+			return;
+		}
+
+		const TCHAR* FailedReason = RPC_GetLastFailedReason();
+		if (!TestRunner->TestNotNull(TEXT("Component ProcessEvent should record the failed validation function name"), FailedReason))
+		{
+			return;
+		}
+
+		TestRunner->TestEqual(TEXT("Component ProcessEvent should report the _Validate function name on validation failure"), FString(FailedReason), ValidateFunctionName.ToString());
+
+		}
 	}
-
-	UFunction* ServerFunction = FindGeneratedFunction(ScriptClass, ServerFunctionName);
-	UASFunction* GeneratedServerFunction = Cast<UASFunction>(ServerFunction);
-	if (!TestNotNull(TEXT("Component ProcessEvent test case should generate the server RPC"), ServerFunction)
-		|| !TestNotNull(TEXT("Component ProcessEvent test case should expose the server RPC as UASFunction"), GeneratedServerFunction))
-	{
-		return false;
-	}
-
-	UFunction* ValidateFunction = GeneratedServerFunction->GetRuntimeValidateFunction();
-	if (!TestNotNull(TEXT("Component ProcessEvent test case should cache the _Validate companion function"), ValidateFunction))
-	{
-		return false;
-	}
-
-	TestTrue(TEXT("Component ProcessEvent test case should mark the generated RPC as requiring validation"), ServerFunction->HasAnyFunctionFlags(FUNC_NetValidate));
-	TestTrue(TEXT("Component ProcessEvent test case should resolve the expected _Validate function"), ValidateFunction->GetFName() == ValidateFunctionName);
-
-	FActorTestSpawner Spawner;
-	Spawner.InitializeGameSubsystems();
-	AActor& HostActor = Spawner.SpawnActor<AActor>();
-	UAngelscriptComponent* Component = CreateProcessEventTestCaseComponent(*this, HostActor, ScriptClass);
-	if (Component == nullptr)
-	{
-		return false;
-	}
-
-	BeginPlayActor(Engine, HostActor);
-
-	RPC_ResetLastFailedReason();
-	if (!InvokeServerRecordValue(*this, Engine, *Component, *ServerFunction, AcceptedValue))
-	{
-		return false;
-	}
-
-	if (!ExpectIntPropertyValue(
-			*this,
-			*Component,
-			ValidateCallsPropertyName,
-			1,
-			TEXT("Component ProcessEvent should call the _Validate companion before accepting the RPC"))
-		|| !ExpectIntPropertyValue(
-			*this,
-			*Component,
-			BodyCallsPropertyName,
-			1,
-			TEXT("Component ProcessEvent should execute the RPC body when validation passes"))
-		|| !ExpectIntPropertyValue(
-			*this,
-			*Component,
-			LastAcceptedValuePropertyName,
-			AcceptedValue,
-			TEXT("Component ProcessEvent should persist the accepted RPC payload")))
-	{
-		return false;
-	}
-
-	TestTrue(TEXT("Component ProcessEvent should not record a validation failure for accepted input"), RPC_GetLastFailedReason() == nullptr);
-
-	RPC_ResetLastFailedReason();
-	if (!InvokeServerRecordValue(*this, Engine, *Component, *ServerFunction, RejectedValue))
-	{
-		return false;
-	}
-
-	if (!ExpectIntPropertyValue(
-			*this,
-			*Component,
-			ValidateCallsPropertyName,
-			2,
-			TEXT("Component ProcessEvent should call the _Validate companion again for rejected input"))
-		|| !ExpectIntPropertyValue(
-			*this,
-			*Component,
-			BodyCallsPropertyName,
-			1,
-			TEXT("Component ProcessEvent should not execute the RPC body when validation fails"))
-		|| !ExpectIntPropertyValue(
-			*this,
-			*Component,
-			LastAcceptedValuePropertyName,
-			AcceptedValue,
-			TEXT("Component ProcessEvent should preserve the last accepted payload after validation failure")))
-	{
-		return false;
-	}
-
-	const TCHAR* FailedReason = RPC_GetLastFailedReason();
-	if (!TestNotNull(TEXT("Component ProcessEvent should record the failed validation function name"), FailedReason))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Component ProcessEvent should report the _Validate function name on validation failure"), FString(FailedReason), ValidateFunctionName.ToString());
-
-	}
-	return true;
-}
+};
 
 #endif

@@ -9,7 +9,7 @@
 #include "ClassGenerator/ASClass.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/PlatformTime.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/Guid.h"
 #include "UObject/ReferenceChainSearch.h"
 #include "UObject/ReferencerFinder.h"
@@ -17,31 +17,7 @@
 #include "UObject/UObjectIterator.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptStartupPerformanceFullModeTest,
-	"Angelscript.TestModule.Core.Performance.Startup.Full",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptStartupPerformanceCloneModeTest,
-	"Angelscript.TestModule.Core.Performance.Startup.Clone",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptStartupPerformanceCreateForTestingFallbackTest,
-	"Angelscript.TestModule.Core.Performance.Startup.CreateForTestingFallbackFull",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptStartupPerformanceCreateForTestingCloneTest,
-	"Angelscript.TestModule.Core.Performance.Startup.CreateForTestingClone",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptShareCleanCyclePerformanceTest,
-	"Angelscript.TestModule.Core.Performance.ShareCleanCycle",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+using namespace AngelscriptTestSupport;
 
 namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private
 {
@@ -644,50 +620,55 @@ class %s : UObject
 }
 
 
-bool FAngelscriptStartupPerformanceFullModeTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptStartupPerformanceTests,
+	"Angelscript.TestModule.Core.Performance.Startup",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
+	TEST_METHOD(Full)
+	{
+		using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureFullStartup(); });
-	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_Full"), TEXT("Angelscript.TestModule.Core.Performance.Startup.Full"), Samples, { TEXT("Measured with fresh full-engine startup samples." )});
-	return true;
-}
+	ValidateAndWriteStartupMetrics(*TestRunner, TEXT("P3_1_StartupPerformance_Full"), TEXT("Angelscript.TestModule.Core.Performance.Startup.Full"), Samples, { TEXT("Measured with fresh full-engine startup samples." )});
+	}
 
-bool FAngelscriptStartupPerformanceCloneModeTest::RunTest(const FString& Parameters)
-{
+	TEST_METHOD(Clone)
+	{
+		using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCloneStartup(); });
 	for (const FStartupPerformanceSample& Sample : Samples)
 	{
-		TestEqual(TEXT("Clone startup performance should not replay BindScriptTypes"), Sample.BindScriptTypesSeconds, 0.0);
-		TestEqual(TEXT("Clone startup performance should not replay CallBinds"), Sample.CallBindsSeconds, 0.0);
+		TestRunner->TestEqual(TEXT("Clone startup performance should not replay BindScriptTypes"), Sample.BindScriptTypesSeconds, 0.0);
+		TestRunner->TestEqual(TEXT("Clone startup performance should not replay CallBinds"), Sample.CallBindsSeconds, 0.0);
 	}
-	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_Clone"), TEXT("Angelscript.TestModule.Core.Performance.Startup.Clone"), Samples, { TEXT("Clone samples measure shared-state adoption without startup bind replay.") });
-	return true;
-}
+	ValidateAndWriteStartupMetrics(*TestRunner, TEXT("P3_1_StartupPerformance_Clone"), TEXT("Angelscript.TestModule.Core.Performance.Startup.Clone"), Samples, { TEXT("Clone samples measure shared-state adoption without startup bind replay.") });
+	}
 
-bool FAngelscriptStartupPerformanceCreateForTestingFallbackTest::RunTest(const FString& Parameters)
-{
+	TEST_METHOD(CreateForTestingFallbackFull)
+	{
+		using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCreateForTestingFallbackStartup(); });
-	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_CreateForTestingFallback"), TEXT("Angelscript.TestModule.Core.Performance.Startup.CreateForTestingFallbackFull"), Samples, { TEXT("CreateForTesting falls back to a full engine when no global source engine exists.") });
-	return true;
-}
+	ValidateAndWriteStartupMetrics(*TestRunner, TEXT("P3_1_StartupPerformance_CreateForTestingFallback"), TEXT("Angelscript.TestModule.Core.Performance.Startup.CreateForTestingFallbackFull"), Samples, { TEXT("CreateForTesting falls back to a full engine when no global source engine exists.") });
+	}
 
-bool FAngelscriptStartupPerformanceCreateForTestingCloneTest::RunTest(const FString& Parameters)
-{
+	TEST_METHOD(CreateForTestingClone)
+	{
+		using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCreateForTestingCloneStartup(); });
 	for (const FStartupPerformanceSample& Sample : Samples)
 	{
-		TestEqual(TEXT("CreateForTesting clone performance should not replay BindScriptTypes"), Sample.BindScriptTypesSeconds, 0.0);
-		TestEqual(TEXT("CreateForTesting clone performance should not replay CallBinds"), Sample.CallBindsSeconds, 0.0);
+		TestRunner->TestEqual(TEXT("CreateForTesting clone performance should not replay BindScriptTypes"), Sample.BindScriptTypesSeconds, 0.0);
+		TestRunner->TestEqual(TEXT("CreateForTesting clone performance should not replay CallBinds"), Sample.CallBindsSeconds, 0.0);
 	}
-	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_CreateForTestingClone"), TEXT("Angelscript.TestModule.Core.Performance.Startup.CreateForTestingClone"), Samples, { TEXT("CreateForTesting clone samples reuse the current global source engine.") });
-	return true;
-}
+	ValidateAndWriteStartupMetrics(*TestRunner, TEXT("P3_1_StartupPerformance_CreateForTestingClone"), TEXT("Angelscript.TestModule.Core.Performance.Startup.CreateForTestingClone"), Samples, { TEXT("CreateForTesting clone samples reuse the current global source engine.") });
+	}
 
-bool FAngelscriptShareCleanCyclePerformanceTest::RunTest(const FString& Parameters)
-{
+	TEST_METHOD(ShareCleanCycle)
+	{
+		using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	constexpr int32 CycleCount = 3;
 	const FString RunSuffix = FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8);
@@ -704,40 +685,40 @@ bool FAngelscriptShareCleanCyclePerformanceTest::RunTest(const FString& Paramete
 		for (int32 CycleIndex = 0; CycleIndex < CycleCount; ++CycleIndex)
 		{
 			FShareCleanCycleSample Sample = MeasureShareCleanCycle(Workload, RunSuffix, CycleIndex);
-			LogShareCleanCycleSample(*this, Sample);
-			TestTrue(
+			LogShareCleanCycleSample(*TestRunner, Sample);
+			TestRunner->TestTrue(
 				*FString::Printf(TEXT("Share-clean %s cycle %d should compile successfully"), Workload.Name, CycleIndex),
 				Sample.bCompileSucceeded);
-			TestEqual(
+			TestRunner->TestEqual(
 				*FString::Printf(TEXT("Share-clean %s cycle %d reset should leave no active modules"), Workload.Name, CycleIndex),
 				Sample.ResetActiveModuleCount,
 				0);
 			if (Sample.bGeneratedClassExpected)
 			{
-				TestTrue(
+				TestRunner->TestTrue(
 					*FString::Printf(TEXT("Share-clean %s cycle %d should locate the generated UASClass before reset"), Workload.Name, CycleIndex),
 					Sample.bGeneratedClassFoundBeforeReset);
-				TestEqual(
+				TestRunner->TestEqual(
 					*FString::Printf(TEXT("Share-clean %s cycle %d should detach every matching generated UASClass left after reset"), Workload.Name, CycleIndex),
 					Sample.DetachedGeneratedClassCountAfterReset,
 					Sample.GeneratedClassCountAfterReset);
-				TestEqual(
+				TestRunner->TestEqual(
 					*FString::Printf(TEXT("Share-clean %s cycle %d generated UASClass should not remain rooted after reset"), Workload.Name, CycleIndex),
 					Sample.RootedGeneratedClassCountAfterReset,
 					0);
-				TestEqual(
+				TestRunner->TestEqual(
 					*FString::Printf(TEXT("Share-clean %s cycle %d generated UASClass should not remain standalone after reset"), Workload.Name, CycleIndex),
 					Sample.StandaloneGeneratedClassCountAfterReset,
 					0);
-				TestEqual(
+				TestRunner->TestEqual(
 					*FString::Printf(TEXT("Share-clean %s cycle %d generated UASClass should have no strong referencers after reset"), Workload.Name, CycleIndex),
 					Sample.StrongReferencerCountAfterReset,
 					0);
-				TestEqual(
+				TestRunner->TestEqual(
 					*FString::Printf(TEXT("Share-clean %s cycle %d generated UASClass should have no external strong referencers after reset"), Workload.Name, CycleIndex),
 					Sample.ExternalStrongReferencerCountAfterReset,
 					0);
-				TestTrue(
+				TestRunner->TestTrue(
 					*FString::Printf(TEXT("Share-clean %s cycle %d generated UASClass should be garbage collected after reset"), Workload.Name, CycleIndex),
 					Sample.WasGeneratedClassGarbageCollectedAfterReset());
 			}
@@ -745,9 +726,10 @@ bool FAngelscriptShareCleanCyclePerformanceTest::RunTest(const FString& Paramete
 		}
 	}
 
-	ValidateAndWriteShareCleanMetrics(*this, Samples);
+	ValidateAndWriteShareCleanMetrics(*TestRunner, Samples);
 	AngelscriptTestSupport::DestroySharedTestEngine();
-	return true;
-}
+	}
+
+};
 
 #endif

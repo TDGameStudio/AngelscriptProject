@@ -2,8 +2,8 @@
 
 #include "UnversionedPropertySerialization.h"
 
+#include "CQTest.h"
 #include "Hash/Blake3.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/ScopeExit.h"
 #include "Serialization/ArchiveProxy.h"
@@ -212,53 +212,51 @@ namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptUnversionedPropertySerializationRoundTripTest,
-	"Angelscript.TestModule.Engine.UnversionedPropertySerialization.RoundTripsAndRebuildsSchemaCache",
+TEST_CLASS_WITH_FLAGS(FAngelscriptUnversionedPropertySerializationTests,
+	"Angelscript.TestModule.Engine.UnversionedPropertySerialization",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptUnversionedPropertySerializationRoundTripTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private;
-	if (!TestTrue(
-			TEXT("Automation environment should enable unversioned property serialization"),
-			IsUnversionedPropertySerializationEnabled()))
+	TEST_METHOD(RoundTripsAndRebuildsSchemaCache)
 	{
-		return false;
-	}
+		using namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private;
+		if (!TestRunner->TestTrue(
+				TEXT("Automation environment should enable unversioned property serialization"),
+				IsUnversionedPropertySerializationEnabled()))
+		{
+			return;
+		}
 
-	UScriptStruct* Struct = GetFixtureStruct();
-	DestroyAngelscriptUnversionedSchema(Struct);
-	ON_SCOPE_EXIT
-	{
+		UScriptStruct* Struct = GetFixtureStruct();
 		DestroyAngelscriptUnversionedSchema(Struct);
-	};
+		ON_SCOPE_EXIT
+		{
+			DestroyAngelscriptUnversionedSchema(Struct);
+		};
 
-	const FAngelscriptUnversionedPropertySerializationFixture Defaults;
-	const FAngelscriptUnversionedPropertySerializationFixture NonDefault = MakeNonDefaultFixture();
+		const FAngelscriptUnversionedPropertySerializationFixture Defaults;
+		const FAngelscriptUnversionedPropertySerializationFixture NonDefault = MakeNonDefaultFixture();
 
-	bool bOk = true;
-	bOk &= ExpectRoundTrip(*this, TEXT("Versioned default fixture"), ESerializationPath::Versioned, Defaults, Defaults);
-	bOk &= ExpectRoundTrip(*this, TEXT("Versioned non-default fixture"), ESerializationPath::Versioned, NonDefault, Defaults);
-	bOk &= ExpectRoundTrip(*this, TEXT("Unversioned default fixture"), ESerializationPath::Unversioned, Defaults, Defaults);
-	bOk &= ExpectRoundTrip(*this, TEXT("Unversioned non-default fixture"), ESerializationPath::Unversioned, NonDefault, Defaults);
-
-#if WITH_EDITORONLY_DATA
-	const FBlake3Hash SchemaHashBeforeDestroy = GetSchemaHash(Struct, false);
-#endif
-
-	DestroyAngelscriptUnversionedSchema(Struct);
+		ExpectRoundTrip(*TestRunner, TEXT("Versioned default fixture"), ESerializationPath::Versioned, Defaults, Defaults);
+		ExpectRoundTrip(*TestRunner, TEXT("Versioned non-default fixture"), ESerializationPath::Versioned, NonDefault, Defaults);
+		ExpectRoundTrip(*TestRunner, TEXT("Unversioned default fixture"), ESerializationPath::Unversioned, Defaults, Defaults);
+		ExpectRoundTrip(*TestRunner, TEXT("Unversioned non-default fixture"), ESerializationPath::Unversioned, NonDefault, Defaults);
 
 #if WITH_EDITORONLY_DATA
-	const FBlake3Hash SchemaHashAfterDestroy = GetSchemaHash(Struct, false);
-	bOk &= TestTrue(
-		TEXT("Schema hash should stay stable across cache destruction"),
-		SchemaHashBeforeDestroy == SchemaHashAfterDestroy);
+		const FBlake3Hash SchemaHashBeforeDestroy = GetSchemaHash(Struct, false);
 #endif
 
-	bOk &= ExpectRoundTrip(*this, TEXT("Unversioned default fixture after schema rebuild"), ESerializationPath::Unversioned, Defaults, Defaults);
-	bOk &= ExpectRoundTrip(*this, TEXT("Unversioned non-default fixture after schema rebuild"), ESerializationPath::Unversioned, NonDefault, Defaults);
-	return bOk;
-}
+		DestroyAngelscriptUnversionedSchema(Struct);
+
+#if WITH_EDITORONLY_DATA
+		const FBlake3Hash SchemaHashAfterDestroy = GetSchemaHash(Struct, false);
+		TestRunner->TestTrue(
+			TEXT("Schema hash should stay stable across cache destruction"),
+			SchemaHashBeforeDestroy == SchemaHashAfterDestroy);
+#endif
+
+		ExpectRoundTrip(*TestRunner, TEXT("Unversioned default fixture after schema rebuild"), ESerializationPath::Unversioned, Defaults, Defaults);
+		ExpectRoundTrip(*TestRunner, TEXT("Unversioned non-default fixture after schema rebuild"), ESerializationPath::Unversioned, NonDefault, Defaults);
+	}
+};
 
 #endif

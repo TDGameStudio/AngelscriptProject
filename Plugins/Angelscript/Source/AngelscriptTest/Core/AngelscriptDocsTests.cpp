@@ -3,9 +3,9 @@
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
+#include "CQTest.h"
 #include "Containers/StringConv.h"
 #include "HAL/FileManager.h"
-#include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Guid.h"
 #include "Misc/Paths.h"
@@ -224,136 +224,134 @@ class %s
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDocsDumpDocumentationNormalizesSeeNoteAndReturnsAliasesTest,
-	"Angelscript.TestModule.Engine.Docs.DumpDocumentationNormalizesSeeNoteAndReturnsAliases",
+TEST_CLASS_WITH_FLAGS(FAngelscriptDocsTests,
+	"Angelscript.TestModule.Engine.Docs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptDocsDumpDocumentationNormalizesSeeNoteAndReturnsAliasesTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptDocsTests_Private;
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
+	TEST_METHOD(DumpDocumentationNormalizesSeeNoteAndReturnsAliases)
 	{
-		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		using namespace AngelscriptTest_Core_AngelscriptDocsTests_Private;
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
+		{
+			FAngelscriptEngineScope _AutoEngineScope(Engine);
+			ON_SCOPE_EXIT
+			{
+				const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+				for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+				{
+					Engine.DiscardModule(*_Module->ModuleName);
+				}
+			};
+
+		const FString UniqueSuffix = MakeAutomationDocsSuffix();
+		const FString TypeName = FString::Printf(TEXT("FAutomationDocs_%s"), *UniqueSuffix);
+		const FName ModuleName(*FString::Printf(TEXT("Automation.Docs.%s"), *UniqueSuffix));
+		const FString ScriptFilename = FString::Printf(TEXT("Docs/%s.as"), *TypeName);
+		const FString ScriptSource = MakeDocsScriptSource(TypeName);
+		const FString GeneratedFilePath = GetGeneratedDocsFilePath(TypeName);
+		const FGeneratedDocsOutputGuard OutputGuard(TypeName);
+		int32 FunctionId = INDEX_NONE;
+
 		ON_SCOPE_EXIT
 		{
-			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
-			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			if (FunctionId != INDEX_NONE)
 			{
-				Engine.DiscardModule(*_Module->ModuleName);
+				FAngelscriptDocs::AddUnrealDocumentation(FunctionId, TEXT(""), TEXT(""), nullptr);
 			}
+
+			Engine.DiscardModule(*ModuleName.ToString());
+			OutputGuard.Cleanup();
 		};
 
-	const FString UniqueSuffix = MakeAutomationDocsSuffix();
-	const FString TypeName = FString::Printf(TEXT("FAutomationDocs_%s"), *UniqueSuffix);
-	const FName ModuleName(*FString::Printf(TEXT("Automation.Docs.%s"), *UniqueSuffix));
-	const FString ScriptFilename = FString::Printf(TEXT("Docs/%s.as"), *TypeName);
-	const FString ScriptSource = MakeDocsScriptSource(TypeName);
-	const FString GeneratedFilePath = GetGeneratedDocsFilePath(TypeName);
-	const FGeneratedDocsOutputGuard OutputGuard(TypeName);
-	int32 FunctionId = INDEX_NONE;
-
-	ON_SCOPE_EXIT
-	{
-		if (FunctionId != INDEX_NONE)
+		if (!OutputGuard.Prepare(*TestRunner))
 		{
-			FAngelscriptDocs::AddUnrealDocumentation(FunctionId, TEXT(""), TEXT(""), nullptr);
+			return;
 		}
 
-		Engine.DiscardModule(*ModuleName.ToString());
-		OutputGuard.Cleanup();
-	};
+		const bool bCompiled = CompileModuleFromMemory(
+			&Engine,
+			ModuleName,
+			ScriptFilename,
+			ScriptSource);
+		if (!TestRunner->TestTrue(TEXT("Docs normalization test should compile the automation docs module"), bCompiled))
+		{
+			return;
+		}
 
-	if (!OutputGuard.Prepare(*this))
-	{
-		return false;
+		const TSharedPtr<FAngelscriptModuleDesc> ModuleDesc = Engine.GetModuleByModuleName(ModuleName.ToString());
+		if (!TestRunner->TestTrue(TEXT("Docs normalization test should register the module by name"), ModuleDesc.IsValid()))
+		{
+			return;
+		}
+
+		if (!TestRunner->TestNotNull(TEXT("Docs normalization test should expose the compiled script module"), ModuleDesc->ScriptModule))
+		{
+			return;
+		}
+
+		asITypeInfo* ScriptType = FindTypeInfoByDecl(*TestRunner, *ModuleDesc->ScriptModule, TypeName);
+		if (ScriptType == nullptr)
+		{
+			return;
+		}
+
+		asIScriptFunction* EvaluateScore = FindMethodByDecl(*TestRunner, *ScriptType, TEXT("int EvaluateScore(int) const"));
+		if (EvaluateScore == nullptr)
+		{
+			return;
+		}
+
+		FunctionId = EvaluateScore->GetId();
+		const FString FunctionTooltip = TEXT(
+			"Evaluates the score.\n"
+			"@see RelatedScoreType\n"
+			"@note Keep integer only\n"
+			"@param InValue - first line\n"
+			"  second line continues\n"
+			"@returns final computed score");
+
+		FAngelscriptDocs::AddUnrealDocumentation(FunctionId, FunctionTooltip, TEXT(""), nullptr);
+		FAngelscriptDocs::DumpDocumentation(Engine.GetScriptEngine());
+
+		FString GeneratedContent;
+		if (!LoadGeneratedDocsFile(*TestRunner, GeneratedFilePath, GeneratedContent))
+		{
+			return;
+		}
+
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should emit the generated class declaration"),
+			GeneratedContent.Contains(FString::Printf(TEXT("class %s"), *TypeName)));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should normalize @see into a See section"),
+			GeneratedContent.Contains(TEXT("See: RelatedScoreType")));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should normalize @note into a Note section"),
+			GeneratedContent.Contains(TEXT("Note: Keep integer only")));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should emit a Parameters section"),
+			GeneratedContent.Contains(TEXT("Parameters:")));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should fold multi-line parameter text into one readable line"),
+			GeneratedContent.Contains(TEXT("InValue - first line second line continues")));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should emit a Returns section for @returns"),
+			GeneratedContent.Contains(TEXT("Returns:")));
+		TestRunner->TestTrue(
+			TEXT("Docs normalization test should preserve the @returns description text"),
+			GeneratedContent.Contains(TEXT("final computed score")));
+		TestRunner->TestFalse(
+			TEXT("Docs normalization test should not leak raw @see tags into generated output"),
+			GeneratedContent.Contains(TEXT("@see")));
+		TestRunner->TestFalse(
+			TEXT("Docs normalization test should not leak raw @note tags into generated output"),
+			GeneratedContent.Contains(TEXT("@note")));
+		TestRunner->TestFalse(
+			TEXT("Docs normalization test should not leak raw @returns tags into generated output"),
+			GeneratedContent.Contains(TEXT("@returns")));
+
+		}
 	}
-
-	const bool bCompiled = CompileModuleFromMemory(
-		&Engine,
-		ModuleName,
-		ScriptFilename,
-		ScriptSource);
-	if (!TestTrue(TEXT("Docs normalization test should compile the automation docs module"), bCompiled))
-	{
-		return false;
-	}
-
-	const TSharedPtr<FAngelscriptModuleDesc> ModuleDesc = Engine.GetModuleByModuleName(ModuleName.ToString());
-	if (!TestTrue(TEXT("Docs normalization test should register the module by name"), ModuleDesc.IsValid()))
-	{
-		return false;
-	}
-
-	if (!TestNotNull(TEXT("Docs normalization test should expose the compiled script module"), ModuleDesc->ScriptModule))
-	{
-		return false;
-	}
-
-	asITypeInfo* ScriptType = FindTypeInfoByDecl(*this, *ModuleDesc->ScriptModule, TypeName);
-	if (ScriptType == nullptr)
-	{
-		return false;
-	}
-
-	asIScriptFunction* EvaluateScore = FindMethodByDecl(*this, *ScriptType, TEXT("int EvaluateScore(int) const"));
-	if (EvaluateScore == nullptr)
-	{
-		return false;
-	}
-
-	FunctionId = EvaluateScore->GetId();
-	const FString FunctionTooltip = TEXT(
-		"Evaluates the score.\n"
-		"@see RelatedScoreType\n"
-		"@note Keep integer only\n"
-		"@param InValue - first line\n"
-		"  second line continues\n"
-		"@returns final computed score");
-
-	FAngelscriptDocs::AddUnrealDocumentation(FunctionId, FunctionTooltip, TEXT(""), nullptr);
-	FAngelscriptDocs::DumpDocumentation(Engine.GetScriptEngine());
-
-	FString GeneratedContent;
-	if (!LoadGeneratedDocsFile(*this, GeneratedFilePath, GeneratedContent))
-	{
-		return false;
-	}
-
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should emit the generated class declaration"),
-		GeneratedContent.Contains(FString::Printf(TEXT("class %s"), *TypeName)));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should normalize @see into a See section"),
-		GeneratedContent.Contains(TEXT("See: RelatedScoreType")));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should normalize @note into a Note section"),
-		GeneratedContent.Contains(TEXT("Note: Keep integer only")));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should emit a Parameters section"),
-		GeneratedContent.Contains(TEXT("Parameters:")));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should fold multi-line parameter text into one readable line"),
-		GeneratedContent.Contains(TEXT("InValue - first line second line continues")));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should emit a Returns section for @returns"),
-		GeneratedContent.Contains(TEXT("Returns:")));
-	bPassed &= TestTrue(
-		TEXT("Docs normalization test should preserve the @returns description text"),
-		GeneratedContent.Contains(TEXT("final computed score")));
-	bPassed &= TestFalse(
-		TEXT("Docs normalization test should not leak raw @see tags into generated output"),
-		GeneratedContent.Contains(TEXT("@see")));
-	bPassed &= TestFalse(
-		TEXT("Docs normalization test should not leak raw @note tags into generated output"),
-		GeneratedContent.Contains(TEXT("@note")));
-	bPassed &= TestFalse(
-		TEXT("Docs normalization test should not leak raw @returns tags into generated output"),
-		GeneratedContent.Contains(TEXT("@returns")));
-
-	}
-	return bPassed;
-}
+};
 
 #endif

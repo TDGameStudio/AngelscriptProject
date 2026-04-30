@@ -1,6 +1,6 @@
 #include "AngelscriptBindString.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -36,81 +36,81 @@ namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private
 }
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptBindStringRoundTripTest,
-	"Angelscript.TestModule.Engine.BindString.EmptyAndRoundTripAcrossConstantDynamicAndUnrealSources",
+TEST_CLASS_WITH_FLAGS(FAngelscriptBindStringTests,
+	"Angelscript.TestModule.Engine.BindString",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptBindStringRoundTripTest::RunTest(const FString& Parameters)
 {
-	using namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private;
-	FBindString ConstantEmpty("");
-	if (!ExpectBindStringState(*this, TEXT("BindString constant empty"), ConstantEmpty, true, TEXT(""), ""))
+	TEST_METHOD(EmptyAndRoundTripAcrossConstantDynamicAndUnrealSources)
 	{
-		return false;
-	}
+		using namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private;
+		FBindString ConstantEmpty("");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString constant empty"), ConstantEmpty, true, TEXT(""), ""))
+		{
+			return;
+		}
 
-	if (!TestEqual(
-			TEXT("BindString constant empty should expose the same constant ANSI pointer content"),
-			FCStringAnsi::Strcmp(ConstantEmpty.ToCString_EnsureConstant(), ""),
-			0))
-	{
-		return false;
-	}
+		if (!TestRunner->TestEqual(
+				TEXT("BindString constant empty should expose the same constant ANSI pointer content"),
+				FCStringAnsi::Strcmp(ConstantEmpty.ToCString_EnsureConstant(), ""),
+				0))
+		{
+			return;
+		}
 
-	FBindString ConstantValue("Constant::Value");
-	if (!ExpectBindStringState(*this, TEXT("BindString constant value"), ConstantValue, false, TEXT("Constant::Value"), "Constant::Value"))
-	{
-		return false;
-	}
+		FBindString ConstantValue("Constant::Value");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString constant value"), ConstantValue, false, TEXT("Constant::Value"), "Constant::Value"))
+		{
+			return;
+		}
 
-	if (!TestEqual(
-			TEXT("BindString constant value should keep the constant ANSI source available"),
-			FCStringAnsi::Strcmp(ConstantValue.ToCString_EnsureConstant(), "Constant::Value"),
-			0))
-	{
-		return false;
-	}
+		if (!TestRunner->TestEqual(
+				TEXT("BindString constant value should keep the constant ANSI source available"),
+				FCStringAnsi::Strcmp(ConstantValue.ToCString_EnsureConstant(), "Constant::Value"),
+				0))
+		{
+			return;
+		}
 
-	FBindString UnrealEmpty{ FString() };
-	if (!ExpectBindStringState(*this, TEXT("BindString FString empty"), UnrealEmpty, true, TEXT(""), ""))
-	{
-		return false;
-	}
+		FBindString UnrealEmpty{ FString() };
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString FString empty"), UnrealEmpty, true, TEXT(""), ""))
+		{
+			return;
+		}
 
-	FBindString UnrealValue{ FString(TEXT("UnrealValue")) };
-	if (!ExpectBindStringState(*this, TEXT("BindString FString value"), UnrealValue, false, TEXT("UnrealValue"), "UnrealValue"))
-	{
-		return false;
-	}
+		FBindString UnrealValue{ FString(TEXT("UnrealValue")) };
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString FString value"), UnrealValue, false, TEXT("UnrealValue"), "UnrealValue"))
+		{
+			return;
+		}
 
-	FBindString DynamicValue;
-	DynamicValue.SetDynamic("");
-	if (!ExpectBindStringState(*this, TEXT("BindString dynamic empty"), DynamicValue, true, TEXT(""), ""))
-	{
-		return false;
-	}
+		FBindString DynamicValue;
+		DynamicValue.SetDynamic("");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString dynamic empty"), DynamicValue, true, TEXT(""), ""))
+		{
+			return;
+		}
 
-	DynamicValue.SetDynamic("Namespace::Value");
-	if (!ExpectBindStringState(*this, TEXT("BindString dynamic value"), DynamicValue, false, TEXT("Namespace::Value"), "Namespace::Value"))
-	{
-		return false;
-	}
+		DynamicValue.SetDynamic("Namespace::Value");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString dynamic value"), DynamicValue, false, TEXT("Namespace::Value"), "Namespace::Value"))
+		{
+			return;
+		}
 
-	FBindString SwappedValue("Before");
-	if (!ExpectBindStringState(*this, TEXT("BindString swapped initial constant"), SwappedValue, false, TEXT("Before"), "Before"))
-	{
-		return false;
-	}
+		FBindString SwappedValue("Before");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString swapped initial constant"), SwappedValue, false, TEXT("Before"), "Before"))
+		{
+			return;
+		}
 
-	SwappedValue.SetDynamic("DynamicAfterConstant");
-	if (!ExpectBindStringState(*this, TEXT("BindString swapped dynamic"), SwappedValue, false, TEXT("DynamicAfterConstant"), "DynamicAfterConstant"))
-	{
-		return false;
-	}
+		SwappedValue.SetDynamic("DynamicAfterConstant");
+		if (!ExpectBindStringState(*TestRunner, TEXT("BindString swapped dynamic"), SwappedValue, false, TEXT("DynamicAfterConstant"), "DynamicAfterConstant"))
+		{
+			return;
+		}
 
-	SwappedValue = FString(TEXT("FinalUnreal"));
-	return ExpectBindStringState(*this, TEXT("BindString swapped FString"), SwappedValue, false, TEXT("FinalUnreal"), "FinalUnreal");
-}
+		SwappedValue = FString(TEXT("FinalUnreal"));
+		ExpectBindStringState(*TestRunner, TEXT("BindString swapped FString"), SwappedValue, false, TEXT("FinalUnreal"), "FinalUnreal");
+	}
+};
 
 #endif

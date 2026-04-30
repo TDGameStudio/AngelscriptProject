@@ -8,7 +8,7 @@
 #include "FunctionLibraries/WidgetBlueprintStatics.h"
 #include "Shared/AngelscriptTestUtilities.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 #include "StartAngelscriptHeaders.h"
@@ -371,208 +371,189 @@ namespace ProductionScriptMixinSignatureTest
 	}
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptSubsystemGetterMetadataTest,
-	"Angelscript.TestModule.Engine.BindConfig.SubsystemGetterMetadata",
+TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionLibrarySignatureTests,
+	"Angelscript.TestModule.Engine.BindConfig",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptMathReturnValueHelperMetadataTest,
-	"Angelscript.TestModule.Engine.BindConfig.MathReturnValueHelperMetadata",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptProductionScriptMixinSignaturesTest,
-	"Angelscript.TestModule.Engine.BindConfig.ProductionScriptMixinSignatures",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptSubsystemGetterMetadataTest::RunTest(const FString& Parameters)
 {
-	SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	ON_SCOPE_EXIT
+	TEST_METHOD(SubsystemGetterMetadata)
 	{
 		SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	};
+		ON_SCOPE_EXIT
+		{
+			SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
+		};
 
-	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
-	TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
-	if (!TestTrue(TEXT("SubsystemGetterMetadata should create a testing engine"), Engine.IsValid()))
-	{
-		return false;
-	}
-
-	FAngelscriptEngineScope EngineScope(*Engine);
-
-	TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(USubsystemLibrary::StaticClass());
-	if (!TestTrue(TEXT("SubsystemGetterMetadata should resolve the subsystem library host type"), HostType.IsValid()))
-	{
-		return false;
-	}
-
-	const TArray<SubsystemGetterMetadataTest::FSubsystemGetterExpectation> Expectations = {
+		const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
+		if (!TestRunner->TestTrue(TEXT("SubsystemGetterMetadata should create a testing engine"), Engine.IsValid()))
 		{
-			TEXT("GetEngineSubsystem"),
-			false,
-			-1,
-			false,
-			TEXT("GetEngineSubsystem")
-		},
-		{
-			TEXT("GetGameInstanceSubsystem"),
-			true,
-			0,
-			true,
-			nullptr
-		},
-		{
-			TEXT("GetLocalPlayerSubsystem"),
-			true,
-			0,
-			true,
-			nullptr
-		},
-		{
-			TEXT("GetWorldSubsystem"),
-			true,
-			0,
-			true,
-			nullptr
-		},
-		{
-			TEXT("GetLocalPlayerSubsystemFromPlayerController"),
-			false,
-			-1,
-			false,
-			nullptr
-		},
-		{
-			TEXT("GetLocalPlayerSubsystemFromLocalPlayer"),
-			false,
-			-1,
-			false,
-			TEXT("LocalPlayer")
+			return;
 		}
-	};
 
-	bool bPassed = true;
-	for (const SubsystemGetterMetadataTest::FSubsystemGetterExpectation& Expectation : Expectations)
-	{
-		bPassed &= SubsystemGetterMetadataTest::CheckSubsystemGetterSignature(
-			*this,
-			HostType.ToSharedRef(),
-			Expectation);
-	}
+		FAngelscriptEngineScope EngineScope(*Engine);
 
-	return bPassed;
-}
-
-bool FAngelscriptMathReturnValueHelperMetadataTest::RunTest(const FString& Parameters)
-{
-	SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	ON_SCOPE_EXIT
-	{
-		SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	};
-
-	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
-	TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
-	if (!TestTrue(TEXT("MathReturnValueHelperMetadata should create a testing engine"), Engine.IsValid()))
-	{
-		return false;
-	}
-
-	FAngelscriptEngineScope EngineScope(*Engine);
-
-	TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(UAngelscriptMathLibrary::StaticClass());
-	if (!TestTrue(TEXT("MathReturnValueHelperMetadata should resolve the math library host type"), HostType.IsValid()))
-	{
-		return false;
-	}
-
-	const TArray<MathReturnValueHelperMetadataTest::FMathHelperExpectation> Expectations = {
-		{ TEXT("LerpShortestPath"), TEXT("LerpShortestPath") },
-		{ TEXT("RInterpShortestPathTo"), TEXT("RInterpShortestPathTo") },
-		{ TEXT("RInterpConstantShortestPathTo"), TEXT("RInterpConstantShortestPathTo") },
-		{ TEXT("TInterpTo"), TEXT("TInterpTo") },
-		{ TEXT("Modf_32"), TEXT("Modf") },
-		{ TEXT("Modf_64"), TEXT("Modf") },
-		{ TEXT("WrapDouble"), TEXT("Wrap") },
-		{ TEXT("WrapFloat"), TEXT("Wrap") },
-		{ TEXT("WrapInt"), TEXT("Wrap") },
-		{ TEXT("WrapIndex"), TEXT("WrapIndex") }
-	};
-
-	bool bPassed = true;
-	for (const MathReturnValueHelperMetadataTest::FMathHelperExpectation& Expectation : Expectations)
-	{
-		bPassed &= MathReturnValueHelperMetadataTest::CheckMathHelperSignature(
-			*this,
-			HostType.ToSharedRef(),
-			Expectation);
-	}
-
-	return bPassed;
-}
-
-bool FAngelscriptProductionScriptMixinSignaturesTest::RunTest(const FString& Parameters)
-{
-	SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	ON_SCOPE_EXIT
-	{
-		SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
-	};
-
-	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
-	TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
-	if (!TestTrue(TEXT("ProductionScriptMixinSignatures should create a testing engine"), Engine.IsValid()))
-	{
-		return false;
-	}
-
-	FAngelscriptEngineScope EngineScope(*Engine);
-
-	const TArray<ProductionScriptMixinSignatureTest::FProductionScriptMixinExpectation> Expectations = {
+		TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(USubsystemLibrary::StaticClass());
+		if (!TestRunner->TestTrue(TEXT("SubsystemGetterMetadata should resolve the subsystem library host type"), HostType.IsValid()))
 		{
-			UAngelscriptFrameTimeMixinLibrary::StaticClass(),
-			TEXT("AsSeconds"),
-			TEXT("FQualifiedFrameTime"),
-			0,
-			TEXT("AsSeconds"),
-			nullptr,
-			nullptr,
-			true
-		},
-		{
-			UAngelscriptWidgetMixinLibrary::StaticClass(),
-			TEXT("GetRenderTransform"),
-			TEXT("UWidget"),
-			0,
-			TEXT("GetRenderTransform"),
-			nullptr,
-			TEXT("WorldContextObject"),
-			false
-		},
-		{
-			UGameplayTagQueryMixinLibrary::StaticClass(),
-			TEXT("Matches"),
-			TEXT("FGameplayTagQuery"),
-			1,
-			TEXT("Matches"),
-			TEXT("FGameplayTagContainer"),
-			nullptr,
-			true
+			return;
 		}
-	};
 
-	bool bPassed = true;
-	for (const ProductionScriptMixinSignatureTest::FProductionScriptMixinExpectation& Expectation : Expectations)
-	{
-		bPassed &= ProductionScriptMixinSignatureTest::CheckProductionScriptMixinSignature(
-			*this,
-			Expectation);
+		const TArray<SubsystemGetterMetadataTest::FSubsystemGetterExpectation> Expectations = {
+			{
+				TEXT("GetEngineSubsystem"),
+				false,
+				-1,
+				false,
+				TEXT("GetEngineSubsystem")
+			},
+			{
+				TEXT("GetGameInstanceSubsystem"),
+				true,
+				0,
+				true,
+				nullptr
+			},
+			{
+				TEXT("GetLocalPlayerSubsystem"),
+				true,
+				0,
+				true,
+				nullptr
+			},
+			{
+				TEXT("GetWorldSubsystem"),
+				true,
+				0,
+				true,
+				nullptr
+			},
+			{
+				TEXT("GetLocalPlayerSubsystemFromPlayerController"),
+				false,
+				-1,
+				false,
+				nullptr
+			},
+			{
+				TEXT("GetLocalPlayerSubsystemFromLocalPlayer"),
+				false,
+				-1,
+				false,
+				TEXT("LocalPlayer")
+			}
+		};
+
+		for (const SubsystemGetterMetadataTest::FSubsystemGetterExpectation& Expectation : Expectations)
+		{
+			SubsystemGetterMetadataTest::CheckSubsystemGetterSignature(
+				*TestRunner,
+				HostType.ToSharedRef(),
+				Expectation);
+		}
 	}
 
-	return bPassed;
-}
+	TEST_METHOD(MathReturnValueHelperMetadata)
+	{
+		SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
+		ON_SCOPE_EXIT
+		{
+			SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
+		};
+
+		const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
+		if (!TestRunner->TestTrue(TEXT("MathReturnValueHelperMetadata should create a testing engine"), Engine.IsValid()))
+		{
+			return;
+		}
+
+		FAngelscriptEngineScope EngineScope(*Engine);
+
+		TSharedPtr<FAngelscriptType> HostType = FAngelscriptType::GetByClass(UAngelscriptMathLibrary::StaticClass());
+		if (!TestRunner->TestTrue(TEXT("MathReturnValueHelperMetadata should resolve the math library host type"), HostType.IsValid()))
+		{
+			return;
+		}
+
+		const TArray<MathReturnValueHelperMetadataTest::FMathHelperExpectation> Expectations = {
+			{ TEXT("LerpShortestPath"), TEXT("LerpShortestPath") },
+			{ TEXT("RInterpShortestPathTo"), TEXT("RInterpShortestPathTo") },
+			{ TEXT("RInterpConstantShortestPathTo"), TEXT("RInterpConstantShortestPathTo") },
+			{ TEXT("TInterpTo"), TEXT("TInterpTo") },
+			{ TEXT("Modf_32"), TEXT("Modf") },
+			{ TEXT("Modf_64"), TEXT("Modf") },
+			{ TEXT("WrapDouble"), TEXT("Wrap") },
+			{ TEXT("WrapFloat"), TEXT("Wrap") },
+			{ TEXT("WrapInt"), TEXT("Wrap") },
+			{ TEXT("WrapIndex"), TEXT("WrapIndex") }
+		};
+
+		for (const MathReturnValueHelperMetadataTest::FMathHelperExpectation& Expectation : Expectations)
+		{
+			MathReturnValueHelperMetadataTest::CheckMathHelperSignature(
+				*TestRunner,
+				HostType.ToSharedRef(),
+				Expectation);
+		}
+	}
+
+	TEST_METHOD(ProductionScriptMixinSignatures)
+	{
+		SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
+		ON_SCOPE_EXIT
+		{
+			SubsystemGetterMetadataTest::ResetIsolatedEnvironment();
+		};
+
+		const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		TUniquePtr<FAngelscriptEngine> Engine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(FAngelscriptEngineConfig(), Dependencies);
+		if (!TestRunner->TestTrue(TEXT("ProductionScriptMixinSignatures should create a testing engine"), Engine.IsValid()))
+		{
+			return;
+		}
+
+		FAngelscriptEngineScope EngineScope(*Engine);
+
+		const TArray<ProductionScriptMixinSignatureTest::FProductionScriptMixinExpectation> Expectations = {
+			{
+				UAngelscriptFrameTimeMixinLibrary::StaticClass(),
+				TEXT("AsSeconds"),
+				TEXT("FQualifiedFrameTime"),
+				0,
+				TEXT("AsSeconds"),
+				nullptr,
+				nullptr,
+				true
+			},
+			{
+				UAngelscriptWidgetMixinLibrary::StaticClass(),
+				TEXT("GetRenderTransform"),
+				TEXT("UWidget"),
+				0,
+				TEXT("GetRenderTransform"),
+				nullptr,
+				TEXT("WorldContextObject"),
+				false
+			},
+			{
+				UGameplayTagQueryMixinLibrary::StaticClass(),
+				TEXT("Matches"),
+				TEXT("FGameplayTagQuery"),
+				1,
+				TEXT("Matches"),
+				TEXT("FGameplayTagContainer"),
+				nullptr,
+				true
+			}
+		};
+
+		for (const ProductionScriptMixinSignatureTest::FProductionScriptMixinExpectation& Expectation : Expectations)
+		{
+			ProductionScriptMixinSignatureTest::CheckProductionScriptMixinSignature(
+				*TestRunner,
+				Expectation);
+		}
+	}
+};
 
 #endif
