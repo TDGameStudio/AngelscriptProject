@@ -94,15 +94,6 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_P
 			ExecuteGeneratedIntEventOnGameThread(Object, Function, OutResult));
 	}
 
-	bool ReadIntPropertyChecked(
-		FAutomationTestBase& Test,
-		UObject* Object,
-		FName PropertyName,
-		int32& OutValue)
-	{
-		return ReadPropertyValue<FIntProperty>(Test, Object, PropertyName, OutValue);
-	}
-
 	bool ReadUInt64PropertyChecked(
 		FAutomationTestBase& Test,
 		UObject* Object,

@@ -132,7 +132,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCompilerPropertyCallbackMetadataRoundTripTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const FString ScriptSource = TEXT(R"AS(
+	const FString TestScriptSource = TEXT(R"AS(
 UCLASS()
 class UPropertyCallbackCarrier : UObject
 {
@@ -168,7 +168,7 @@ int Entry()
 
 	const FString AbsoluteScriptPath = CompilerPipelinePropertyMetadataTest::WriteFixture(
 		CompilerPipelinePropertyMetadataTest::RelativeScriptPath,
-		ScriptSource);
+		TestScriptSource);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*CompilerPipelinePropertyMetadataTest::ModuleName.ToString());
@@ -263,7 +263,7 @@ int Entry()
 		ECompileType::FullReload,
 		CompilerPipelinePropertyMetadataTest::ModuleName,
 		CompilerPipelinePropertyMetadataTest::RelativeScriptPath,
-		ScriptSource,
+		TestScriptSource,
 		true,
 		Summary,
 		true);

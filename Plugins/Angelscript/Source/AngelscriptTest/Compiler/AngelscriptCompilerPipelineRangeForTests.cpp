@@ -120,7 +120,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCompilerRangeBasedForRewriteSkipsStringAndCommentLiteralsTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const FString ScriptSource = TEXT(R"AS(
+	const FString TestScriptSource = TEXT(R"AS(
 int Entry()
 {
 	TArray<int> Values;
@@ -149,7 +149,7 @@ int Entry()
 
 	const FString AbsoluteScriptPath = CompilerPipelineRangeForTest::WriteFixture(
 		CompilerPipelineRangeForTest::RelativeScriptPath,
-		ScriptSource);
+		TestScriptSource);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*CompilerPipelineRangeForTest::ModuleName.ToString());
@@ -233,7 +233,7 @@ int Entry()
 		ECompileType::SoftReloadOnly,
 		CompilerPipelineRangeForTest::ModuleName,
 		CompilerPipelineRangeForTest::RelativeScriptPath,
-		ScriptSource,
+		TestScriptSource,
 		true,
 		Summary,
 		true);

@@ -110,23 +110,8 @@ namespace
 			ExecuteGeneratedIntEventOnGameThread(&Engine, Object, Function, OutResult));
 	}
 
-	bool ReadIntPropertyChecked(
-		FAutomationTestBase& Test,
-		UObject* Object,
-		FName PropertyName,
-		int32& OutValue)
-	{
-		return ReadPropertyValue<FIntProperty>(Test, Object, PropertyName, OutValue);
-	}
-
-	bool ReadStringPropertyChecked(
-		FAutomationTestBase& Test,
-		UObject* Object,
-		FName PropertyName,
-		FString& OutValue)
-	{
-		return ReadPropertyValue<FStrProperty>(Test, Object, PropertyName, OutValue);
-	}
+	// ReadIntPropertyChecked / ReadStringPropertyChecked provided by
+	// Shared/AngelscriptFunctionalTestUtils.h
 
 	bool VerifyObjectCallbackSignature(
 		FAutomationTestBase& Test,

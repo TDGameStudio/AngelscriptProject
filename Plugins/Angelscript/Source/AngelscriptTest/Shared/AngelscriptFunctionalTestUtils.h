@@ -24,14 +24,14 @@ namespace AngelscriptFunctionalTestUtils
 		FAngelscriptEngine& Engine,
 		FName ModuleName,
 		const FString& Filename,
-		const FString& ScriptSource,
+		const FString& InScriptSource,
 		FName GeneratedClassName)
 	{
 		FAngelscriptEngineScope EngineScope(Engine);
 
 		if (!Test.TestTrue(
 			*FString::Printf(TEXT("Test module '%s' should compile"), *ModuleName.ToString()),
-			AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(&Engine, ModuleName, Filename, ScriptSource)))
+			AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(&Engine, ModuleName, Filename, InScriptSource)))
 		{
 			return nullptr;
 		}
@@ -131,5 +131,23 @@ namespace AngelscriptFunctionalTestUtils
 
 		OutValue = Property->GetPropertyValue_InContainer(Object);
 		return true;
+	}
+
+	inline bool ReadIntPropertyChecked(
+		FAutomationTestBase& Test,
+		UObject* Object,
+		FName PropertyName,
+		int32& OutValue)
+	{
+		return ReadPropertyValue<FIntProperty>(Test, Object, PropertyName, OutValue);
+	}
+
+	inline bool ReadStringPropertyChecked(
+		FAutomationTestBase& Test,
+		UObject* Object,
+		FName PropertyName,
+		FString& OutValue)
+	{
+		return ReadPropertyValue<FStrProperty>(Test, Object, PropertyName, OutValue);
 	}
 }

@@ -36,7 +36,7 @@ using namespace AngelscriptReflectiveAccess;
 // Profile
 // ----------------------------------------------------------------------------
 
-static const FBindingsCoverageProfile GHitResultProfile{
+static const FBindingsCoverageProfile GHitResultFunctionLibraryProfile{
 	TEXT("HitResult"),              // Theme
 	TEXT(""),                       // Variant
 	TEXT("ASHitResult"),            // ModulePrefix
@@ -93,7 +93,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptHitResultFunctionLibraryTest,
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
-		FCoverageModuleScope Mod(*TestRunner, Engine, GHitResultProfile, TEXT("Accessors"), TEXT(R"(
+		FCoverageModuleScope Mod(*TestRunner, Engine, GHitResultFunctionLibraryProfile, TEXT("Accessors"), TEXT(R"(
 int PopulateHitResult(FHitResult& OutHit, AActor ExpectedActor, UPrimitiveComponent ExpectedComponent)
 {
 	int MismatchMask = 0;

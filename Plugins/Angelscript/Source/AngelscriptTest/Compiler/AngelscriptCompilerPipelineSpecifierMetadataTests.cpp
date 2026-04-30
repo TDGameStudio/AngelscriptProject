@@ -54,7 +54,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCompilerSpecifierStringMetadataRoundTripTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const FString ScriptSource = TEXT(R"AS(
+	const FString TestScriptSource = TEXT(R"AS(
 UCLASS(meta=(DisplayName="Alpha, Beta", ToolTip="He said \"Hi\""))
 class USpecifierCarrier : UObject
 {
@@ -88,7 +88,7 @@ int Entry()
 		ECompileType::FullReload,
 		CompilerPipelineSpecifierMetadataTest::ModuleName,
 		CompilerPipelineSpecifierMetadataTest::RelativeScriptPath,
-		ScriptSource,
+		TestScriptSource,
 		true,
 		Summary,
 		true);

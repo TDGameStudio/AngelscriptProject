@@ -30,9 +30,9 @@ namespace CompilerPipelineClassHierarchyTest
 		return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("CompilerPipelineClassHierarchyFixtures"));
 	}
 
-	FString WriteFixture(const FString& RelativeScriptPath, const FString& Contents)
+	FString WriteFixture(const FString& InRelativeScriptPath, const FString& Contents)
 	{
-		const FString AbsolutePath = FPaths::Combine(GetFixtureRoot(), RelativeScriptPath);
+		const FString AbsolutePath = FPaths::Combine(GetFixtureRoot(), InRelativeScriptPath);
 		IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsolutePath), true);
 		FFileHelper::SaveStringToFile(Contents, *AbsolutePath);
 		return AbsolutePath;

@@ -48,7 +48,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCompilerPropertyReplicationConditionRoundTripTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const FString ScriptSource = TEXT(R"AS(
+	const FString TestScriptSource = TEXT(R"AS(
 UCLASS()
 class APropertyReplicationConditionCarrier : AActor
 {
@@ -80,7 +80,7 @@ int Entry()
 		ECompileType::FullReload,
 		CompilerPipelinePropertyReplicationConditionTest::ModuleName,
 		CompilerPipelinePropertyReplicationConditionTest::RelativeScriptPath,
-		ScriptSource,
+		TestScriptSource,
 		true,
 		Summary,
 		true);

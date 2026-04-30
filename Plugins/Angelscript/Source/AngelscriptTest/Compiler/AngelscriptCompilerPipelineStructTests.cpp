@@ -28,7 +28,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCompilerAnnotatedStructRoundTripTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	const FString ScriptSource = TEXT(R"AS(
+	const FString TestScriptSource = TEXT(R"AS(
 USTRUCT()
 struct FAnnotatedCarrier
 {
@@ -57,7 +57,7 @@ int Entry()
 		ECompileType::FullReload,
 		CompilerPipelineStructTest::ModuleName,
 		CompilerPipelineStructTest::ScriptFilename,
-		ScriptSource,
+		TestScriptSource,
 		true,
 		Summary);
 

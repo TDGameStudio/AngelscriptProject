@@ -123,14 +123,14 @@ bool FAngelscriptASClassIsFunctionImplementedInScriptTurnsFalseAfterDiscardTest:
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
-	static const FName ModuleName(TEXT("Game.Tools.Runtime.DiscardMetadata"));
-	static const FName GeneratedClassName(TEXT("UMetadataDiscardCarrier"));
+	static const FName DiscardModuleName(TEXT("Game.Tools.Runtime.DiscardMetadata"));
+	static const FName DiscardGeneratedClassName(TEXT("UMetadataDiscardCarrier"));
 	bool bModuleDiscarded = false;
 	ON_SCOPE_EXIT
 	{
 		if (!bModuleDiscarded)
 		{
-			Engine.DiscardModule(*ModuleName.ToString());
+			Engine.DiscardModule(*DiscardModuleName.ToString());
 		}
 		ResetSharedCloneEngine(Engine);
 	};
@@ -151,14 +151,14 @@ class UMetadataDiscardCarrier : UObject
 			TEXT("ASClass discard metadata case should compile"),
 			CompileAnnotatedModuleFromMemory(
 				&Engine,
-				ModuleName,
+				DiscardModuleName,
 				TEXT("Game/Tools/Runtime/DiscardMetadata.as"),
 				ScriptSource)))
 	{
 		return false;
 	}
 
-	UASClass* GeneratedClass = Cast<UASClass>(FindGeneratedClass(&Engine, GeneratedClassName));
+	UASClass* GeneratedClass = Cast<UASClass>(FindGeneratedClass(&Engine, DiscardGeneratedClassName));
 	if (!TestNotNull(TEXT("ASClass discard metadata case should generate the script class"), GeneratedClass))
 	{
 		return false;
@@ -174,7 +174,7 @@ class UMetadataDiscardCarrier : UObject
 	const FString SourcePathBeforeDiscard = GeneratedFunction->GetSourceFilePath();
 	const int32 SourceLineBeforeDiscard = GeneratedFunction->GetSourceLineNumber();
 
-	Engine.DiscardModule(*ModuleName.ToString());
+	Engine.DiscardModule(*DiscardModuleName.ToString());
 	bModuleDiscarded = true;
 
 	// UE 5.7: post-Discard cleanup of UASClass' IsFunctionImplementedInScript

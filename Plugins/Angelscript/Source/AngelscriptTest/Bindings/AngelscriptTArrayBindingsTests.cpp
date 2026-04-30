@@ -35,14 +35,14 @@ namespace AngelscriptTest_Bindings_AngelscriptTArrayBindingsTests_Private
 		TEXT("TArrayBindings"),
 	};
 
-	struct FExpectedGlobalInt
+	struct FTArrayExpectedGlobalInt
 	{
 		const TCHAR* FunctionDecl;
 		const TCHAR* ContextLabel;
 		int32 ExpectedValue;
 	};
 
-	struct FExpectedGlobalIntAtLeast
+	struct FTArrayExpectedGlobalIntAtLeast
 	{
 		const TCHAR* FunctionDecl;
 		const TCHAR* ContextLabel;
@@ -135,10 +135,10 @@ namespace AngelscriptTest_Bindings_AngelscriptTArrayBindingsTests_Private
 		FAngelscriptEngine& Engine,
 		asIScriptModule& Module,
 		const FArraySyntaxCoverageProfile& Profile,
-		const TArray<FExpectedGlobalInt>& Cases)
+		const TArray<FTArrayExpectedGlobalInt>& Cases)
 	{
 		bool bPassed = true;
-		for (const FExpectedGlobalInt& TestCase : Cases)
+		for (const FTArrayExpectedGlobalInt& TestCase : Cases)
 		{
 			bPassed &= ExpectGlobalInt(
 				Test,
@@ -157,10 +157,10 @@ namespace AngelscriptTest_Bindings_AngelscriptTArrayBindingsTests_Private
 		FAngelscriptEngine& Engine,
 		asIScriptModule& Module,
 		const FArraySyntaxCoverageProfile& Profile,
-		const TArray<FExpectedGlobalIntAtLeast>& Cases)
+		const TArray<FTArrayExpectedGlobalIntAtLeast>& Cases)
 	{
 		bool bPassed = true;
-		for (const FExpectedGlobalIntAtLeast& TestCase : Cases)
+		for (const FTArrayExpectedGlobalIntAtLeast& TestCase : Cases)
 		{
 			bPassed &= ExpectGlobalIntAtLeast(
 				Test,
@@ -1012,7 +1012,7 @@ int IntIteratorCopyAssignStartsAtSameElement()
 		return false;
 	}
 
-	const TArray<FExpectedGlobalInt> ExactCases = {
+	const TArray<FTArrayExpectedGlobalInt> ExactCases = {
 		{ TEXT("int IntDefaultIsEmpty()"), TEXT("TArray<int> default construction and IsEmpty"), 1 },
 		{ TEXT("int IntReserveKeepsNum()"), TEXT("TArray<int>.Reserve should preserve Num"), 2 },
 		{ TEXT("int IntGetAllocatedSizeAfterReserve()"), TEXT("TArray<int>.GetAllocatedSize should observe allocation"), 1 },
@@ -1062,7 +1062,7 @@ int IntIteratorCopyAssignStartsAtSameElement()
 		{ TEXT("int IntConstIteratorProceedSum()"), TEXT("TArrayConstIterator<int>.Proceed should walk const arrays"), 15 },
 		{ TEXT("int IntIteratorCopyAssignStartsAtSameElement()"), TEXT("TArrayIterator<int> copy and assignment should preserve iterator state"), 3 },
 	};
-	const TArray<FExpectedGlobalIntAtLeast> MinimumCases = {
+	const TArray<FTArrayExpectedGlobalIntAtLeast> MinimumCases = {
 		{ TEXT("int IntReserveGrowsMax()"), TEXT("TArray<int>.Reserve should grow Max"), 16 },
 		{ TEXT("int IntGetSlackAfterReserve()"), TEXT("TArray<int>.GetSlack should expose reserved slack"), 14 },
 		{ TEXT("int IntEmptyReservedMax()"), TEXT("TArray<int>.Empty should honor reserved size"), 6 },
@@ -1342,7 +1342,7 @@ int FTextArrayOperations()
 		return false;
 	}
 
-	const TArray<FExpectedGlobalInt> Cases = {
+	const TArray<FTArrayExpectedGlobalInt> Cases = {
 		{ TEXT("int UInt8ArraySum()"), TEXT("TArray<uint8> should store byte values"), 255 },
 		{ TEXT("int Int8ArrayKeepsSignedBytes()"), TEXT("TArray<int8> should preserve signed byte values"), -1 },
 		{ TEXT("int UInt16ArraySum()"), TEXT("TArray<uint16> should preserve unsigned 16-bit values"), 1 },
@@ -1539,7 +1539,7 @@ int TSubclassOfActorArrayOperations()
 		return false;
 	}
 
-	const TArray<FExpectedGlobalInt> Cases = {
+	const TArray<FTArrayExpectedGlobalInt> Cases = {
 		{ TEXT("int UObjectNullSlotsAndForeach()"), TEXT("TArray<UObject> should support zeroed null slots and foreach"), 1 },
 		{ TEXT("int UObjectDefaultObjectArray()"), TEXT("TArray<UObject> should store UObject references and search them"), 1 },
 		{ TEXT("int UObjectAppendCopyAndMove()"), TEXT("TArray<UObject> should append, copy, and move object references"), 1 },

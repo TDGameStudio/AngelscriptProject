@@ -24,14 +24,14 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 	static const TCHAR* ModulePrefix = TEXT("ASTArraySyntaxCompat");
 	static const TCHAR* LogCategory = TEXT("TArraySyntaxCompatBindings");
 
-	struct FExpectedGlobalInt
+	struct FSyntaxExpectedGlobalInt
 	{
 		const TCHAR* FunctionDecl;
 		const TCHAR* ContextLabel;
 		int32 ExpectedValue;
 	};
 
-	struct FExpectedGlobalIntAtLeast
+	struct FSyntaxExpectedGlobalIntAtLeast
 	{
 		const TCHAR* FunctionDecl;
 		const TCHAR* ContextLabel;
@@ -110,10 +110,10 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
 		asIScriptModule& Module,
-		const TArray<FExpectedGlobalInt>& Cases)
+		const TArray<FSyntaxExpectedGlobalInt>& Cases)
 	{
 		bool bPassed = true;
-		for (const FExpectedGlobalInt& TestCase : Cases)
+		for (const FSyntaxExpectedGlobalInt& TestCase : Cases)
 		{
 			bPassed &= ExpectGlobalInt(
 				Test,
@@ -130,10 +130,10 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 		FAutomationTestBase& Test,
 		FAngelscriptEngine& Engine,
 		asIScriptModule& Module,
-		const TArray<FExpectedGlobalIntAtLeast>& Cases)
+		const TArray<FSyntaxExpectedGlobalIntAtLeast>& Cases)
 	{
 		bool bPassed = true;
-		for (const FExpectedGlobalIntAtLeast& TestCase : Cases)
+		for (const FSyntaxExpectedGlobalIntAtLeast& TestCase : Cases)
 		{
 			bPassed &= ExpectGlobalIntAtLeast(
 				Test,
@@ -275,7 +275,7 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 		return ValidateReturnedArray(*ReturnedArray);
 	}
 
-	bool CompileSummaryContainsDiagnosticMessage(
+	bool SyntaxCompileSummaryContainsDiagnosticMessage(
 		const FAngelscriptCompileTraceSummary& Summary,
 		const FString& ExpectedMessage)
 	{
@@ -289,7 +289,7 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 		return false;
 	}
 
-	void ReportCompileSummaryDiagnostics(
+	void SyntaxReportCompileSummaryDiagnostics(
 		FAutomationTestBase& Test,
 		const TCHAR* ContextLabel,
 		const FAngelscriptCompileTraceSummary& Summary)
@@ -333,7 +333,7 @@ namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Pr
 			Summary,
 			true);
 
-		ReportCompileSummaryDiagnostics(Test, ContextLabel, Summary);
+		SyntaxReportCompileSummaryDiagnostics(Test, ContextLabel, Summary);
 
 		bool bPassed = true;
 		bPassed &= Test.TestFalse(
@@ -993,7 +993,7 @@ int IntIteratorCopyAssignStartsAtSameElement()
 		return false;
 	}
 
-	const TArray<FExpectedGlobalInt> ExactCases = {
+	const TArray<FSyntaxExpectedGlobalInt> ExactCases = {
 		{ TEXT("int IntDefaultIsEmpty()"), TEXT("int[] default construction and IsEmpty"), 1 },
 		{ TEXT("int IntReserveKeepsNum()"), TEXT("int[].Reserve should preserve Num"), 2 },
 		{ TEXT("int IntGetAllocatedSizeAfterReserve()"), TEXT("int[].GetAllocatedSize should observe allocation"), 1 },
@@ -1043,7 +1043,7 @@ int IntIteratorCopyAssignStartsAtSameElement()
 		{ TEXT("int IntConstIteratorProceedSum()"), TEXT("TArrayConstIterator<int>.Proceed should walk const int[] arrays"), 15 },
 		{ TEXT("int IntIteratorCopyAssignStartsAtSameElement()"), TEXT("TArrayIterator<int> copy and assignment should preserve int[] iterator state"), 3 },
 	};
-	const TArray<FExpectedGlobalIntAtLeast> MinimumCases = {
+	const TArray<FSyntaxExpectedGlobalIntAtLeast> MinimumCases = {
 		{ TEXT("int IntReserveGrowsMax()"), TEXT("int[].Reserve should grow Max"), 16 },
 		{ TEXT("int IntGetSlackAfterReserve()"), TEXT("int[].GetSlack should expose reserved slack"), 14 },
 		{ TEXT("int IntEmptyReservedMax()"), TEXT("int[].Empty should honor reserved size"), 6 },
@@ -1320,7 +1320,7 @@ int TSubclassOfActorArrayOperations()
 		return false;
 	}
 
-	const TArray<FExpectedGlobalInt> Cases = {
+	const TArray<FSyntaxExpectedGlobalInt> Cases = {
 		{ TEXT("int UInt8ArraySum()"), TEXT("uint8[] should store byte values"), 255 },
 		{ TEXT("int Int8ArrayKeepsSignedBytes()"), TEXT("int8[] should preserve signed byte values"), -1 },
 		{ TEXT("int UInt16ArraySum()"), TEXT("uint16[] should preserve unsigned 16-bit values"), 1 },
@@ -1817,7 +1817,7 @@ int Entry()
 		Summary,
 		true);
 
-	ReportCompileSummaryDiagnostics(Test, TEXT("int[][] nested container rejection"), Summary);
+	SyntaxReportCompileSummaryDiagnostics(Test, TEXT("int[][] nested container rejection"), Summary);
 
 	bool bPassed = true;
 	bPassed &= Test.TestFalse(
@@ -1831,7 +1831,7 @@ int Entry()
 	{
 		bPassed &= Test.TestTrue(
 			TEXT("int[][] rejection should report nested container diagnostics when diagnostics are available"),
-			CompileSummaryContainsDiagnosticMessage(Summary, NestedContainerDiagnostic));
+			SyntaxCompileSummaryContainsDiagnosticMessage(Summary, NestedContainerDiagnostic));
 	}
 
 	return bPassed;
