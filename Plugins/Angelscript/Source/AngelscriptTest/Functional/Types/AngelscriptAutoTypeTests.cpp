@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -43,7 +43,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAutoInferenceByOverloadTest,
-	"Angelscript.TestModule.Angelscript.Types.Auto.InferenceByOverload",
+	"Angelscript.TestModule.Functional.Types.Auto.InferenceByOverload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptAutoInferenceByOverloadTest::RunTest(const FString& Parameters)

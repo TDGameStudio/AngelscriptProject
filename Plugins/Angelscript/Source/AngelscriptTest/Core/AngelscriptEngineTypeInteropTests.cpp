@@ -1,5 +1,5 @@
 #include "AngelscriptEngine.h"
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestUtilities.h"
 
 #include "Containers/StringConv.h"

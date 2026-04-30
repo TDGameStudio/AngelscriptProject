@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 // Test Layer: Runtime Integration
@@ -8,7 +8,7 @@ using namespace AngelscriptTestSupport;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscNamespaceTest,
-	"Angelscript.TestModule.Angelscript.Misc.Namespace",
+	"Angelscript.TestModule.Functional.Misc.Namespace",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscNamespaceTest::RunTest(const FString& Parameters)
@@ -32,7 +32,7 @@ bool FAngelscriptMiscNamespaceTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscGlobalVarTest,
-	"Angelscript.TestModule.Angelscript.Misc.GlobalVar",
+	"Angelscript.TestModule.Functional.Misc.GlobalVar",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscGlobalVarTest::RunTest(const FString& Parameters)
@@ -55,7 +55,7 @@ bool FAngelscriptMiscGlobalVarTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscMultiAssignTest,
-	"Angelscript.TestModule.Angelscript.Misc.MultiAssign",
+	"Angelscript.TestModule.Functional.Misc.MultiAssign",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscMultiAssignTest::RunTest(const FString& Parameters)
@@ -78,7 +78,7 @@ bool FAngelscriptMiscMultiAssignTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscAssignTest,
-	"Angelscript.TestModule.Angelscript.Misc.Assign",
+	"Angelscript.TestModule.Functional.Misc.Assign",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscAssignTest::RunTest(const FString& Parameters)
@@ -101,7 +101,7 @@ bool FAngelscriptMiscAssignTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscDuplicateFunctionTest,
-	"Angelscript.TestModule.Angelscript.Misc.DuplicateFunction",
+	"Angelscript.TestModule.Functional.Misc.DuplicateFunction",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscDuplicateFunctionTest::RunTest(const FString& Parameters)
@@ -139,7 +139,7 @@ bool FAngelscriptMiscDuplicateFunctionTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMiscDuplicateFunctionRawModuleRecreateAfterFailureTest,
-	"Angelscript.TestModule.Angelscript.Misc.DuplicateFunction.RawModuleRecreateAfterFailure",
+	"Angelscript.TestModule.Functional.Misc.DuplicateFunction.RawModuleRecreateAfterFailure",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptMiscDuplicateFunctionRawModuleRecreateAfterFailureTest::RunTest(const FString& Parameters)

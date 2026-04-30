@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
 #include "Shared/AngelscriptTestMacros.h"
@@ -36,7 +36,7 @@ namespace AngelscriptTestSupport
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionDefaultArgumentsTest,
-	"Angelscript.TestModule.Angelscript.Functions.DefaultArguments",
+	"Angelscript.TestModule.Functional.Functions.DefaultArguments",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionDefaultArgumentsTest::RunTest(const FString& Parameters)
@@ -59,7 +59,7 @@ bool FAngelscriptFunctionDefaultArgumentsTest::RunTest(const FString& Parameters
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionNamedArgumentsTest,
-	"Angelscript.TestModule.Angelscript.Functions.NamedArguments",
+	"Angelscript.TestModule.Functional.Functions.NamedArguments",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionNamedArgumentsTest::RunTest(const FString& Parameters)
@@ -82,7 +82,7 @@ bool FAngelscriptFunctionNamedArgumentsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionNamedArgumentsMixedPartialOrderTest,
-	"Angelscript.TestModule.Angelscript.Functions.NamedArguments.MixedPartialOrder",
+	"Angelscript.TestModule.Functional.Functions.NamedArguments.MixedPartialOrder",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionNamedArgumentsMixedPartialOrderTest::RunTest(const FString& Parameters)
@@ -125,7 +125,7 @@ int Run()
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionNamedArgumentsInvalidNameDiagnosticsTest,
-	"Angelscript.TestModule.Angelscript.Functions.NamedArguments.InvalidNameDiagnostics",
+	"Angelscript.TestModule.Functional.Functions.NamedArguments.InvalidNameDiagnostics",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionNamedArgumentsInvalidNameDiagnosticsTest::RunTest(const FString& Parameters)
@@ -225,7 +225,7 @@ int Run()
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionDefaultArgumentsOverrideAndNamedMixTest,
-	"Angelscript.TestModule.Angelscript.Functions.DefaultArguments.OverrideAndNamedMix",
+	"Angelscript.TestModule.Functional.Functions.DefaultArguments.OverrideAndNamedMix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionDefaultArgumentsOverrideAndNamedMixTest::RunTest(const FString& Parameters)
@@ -291,7 +291,7 @@ int RunNamedPartial()
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionPointerAndOverloadTest,
-	"Angelscript.TestModule.Angelscript.Functions.OverloadResolution",
+	"Angelscript.TestModule.Functional.Functions.OverloadResolution",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionPointerAndOverloadTest::RunTest(const FString& Parameters)
@@ -314,7 +314,7 @@ bool FAngelscriptFunctionPointerAndOverloadTest::RunTest(const FString& Paramete
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionPointerTest,
-	"Angelscript.TestModule.Angelscript.Functions.Pointer",
+	"Angelscript.TestModule.Functional.Functions.Pointer",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionPointerTest::RunTest(const FString& Parameters)
@@ -343,7 +343,7 @@ bool FAngelscriptFunctionPointerTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionConstructorTest,
-	"Angelscript.TestModule.Angelscript.Functions.Constructor",
+	"Angelscript.TestModule.Functional.Functions.Constructor",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionConstructorTest::RunTest(const FString& Parameters)
@@ -367,7 +367,7 @@ bool FAngelscriptFunctionConstructorTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionDestructorTest,
-	"Angelscript.TestModule.Angelscript.Functions.Destructor",
+	"Angelscript.TestModule.Functional.Functions.Destructor",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionDestructorTest::RunTest(const FString& Parameters)
@@ -390,7 +390,7 @@ bool FAngelscriptFunctionDestructorTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionTemplateTest,
-	"Angelscript.TestModule.Angelscript.Functions.Template",
+	"Angelscript.TestModule.Functional.Functions.Template",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionTemplateTest::RunTest(const FString& Parameters)
@@ -419,7 +419,7 @@ bool FAngelscriptFunctionTemplateTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionFactoryTest,
-	"Angelscript.TestModule.Angelscript.Functions.Factory",
+	"Angelscript.TestModule.Functional.Functions.Factory",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptFunctionFactoryTest::RunTest(const FString& Parameters)

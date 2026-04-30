@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 // Test Layer: Runtime Integration
@@ -122,7 +122,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshall
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionArgumentSlotOrderMatrixTest,
-	"Angelscript.TestModule.Angelscript.Execute.ArgumentSlotOrderMatrix",
+	"Angelscript.TestModule.Functional.Execute.ArgumentSlotOrderMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionArgumentSlotOrderMatrixTest::RunTest(const FString& Parameters)
@@ -219,17 +219,17 @@ bool FAngelscriptExecutionArgumentSlotOrderMatrixTest::RunTest(const FString& Pa
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionOneArgNegativeAndZeroTest,
-	"Angelscript.TestModule.Angelscript.Execute.OneArg.NegativeAndZero",
+	"Angelscript.TestModule.Functional.Execute.OneArg.NegativeAndZero",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionRefAddressRoundTripTest,
-	"Angelscript.TestModule.Angelscript.Execute.RefAddressRoundTrip",
+	"Angelscript.TestModule.Functional.Execute.RefAddressRoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionDoubleArgDirectApiRoundTripTest,
-	"Angelscript.TestModule.Angelscript.Execute.DoubleArg.DirectApiRoundTrip",
+	"Angelscript.TestModule.Functional.Execute.DoubleArg.DirectApiRoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionOneArgNegativeAndZeroTest::RunTest(const FString& Parameters)

@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "Shared/AngelscriptTestUtilities.h"
@@ -67,7 +67,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Privat
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateCompileExecuteTest,
-	"Angelscript.TestModule.Angelscript.Core.CreateCompileExecute",
+	"Angelscript.TestModule.Functional.Core.CreateCompileExecute",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreCreateCompileExecuteTest::RunTest(const FString& Parameters)
@@ -88,7 +88,7 @@ bool FAngelscriptCoreCreateCompileExecuteTest::RunTest(const FString& Parameters
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateCompileExecuteFreshEngineBootstrapTest,
-	"Angelscript.TestModule.Angelscript.Core.CreateCompileExecute.FreshEngineBootstrap",
+	"Angelscript.TestModule.Functional.Core.CreateCompileExecute.FreshEngineBootstrap",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreCreateCompileExecuteFreshEngineBootstrapTest::RunTest(const FString& Parameters)
@@ -202,7 +202,7 @@ bool FAngelscriptCoreCreateCompileExecuteFreshEngineBootstrapTest::RunTest(const
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreGlobalStateTest,
-	"Angelscript.TestModule.Angelscript.Core.GlobalState",
+	"Angelscript.TestModule.Functional.Core.GlobalState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreGlobalStateTest::RunTest(const FString& Parameters)
@@ -223,7 +223,7 @@ bool FAngelscriptCoreGlobalStateTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateEngineTest,
-	"Angelscript.TestModule.Angelscript.Core.CreateEngine",
+	"Angelscript.TestModule.Functional.Core.CreateEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreCreateEngineTest::RunTest(const FString& Parameters)
@@ -254,7 +254,7 @@ bool FAngelscriptCoreCreateEngineTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateEngineRequestedModeTest,
-	"Angelscript.TestModule.Angelscript.Core.CreateEngine.RespectsRequestedMode",
+	"Angelscript.TestModule.Functional.Core.CreateEngine.RespectsRequestedMode",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreCreateEngineRequestedModeTest::RunTest(const FString& Parameters)
@@ -385,7 +385,7 @@ bool FAngelscriptCoreCreateEngineRequestedModeTest::RunTest(const FString& Param
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateEngineIsolatedModuleRegistriesTest,
-	"Angelscript.TestModule.Angelscript.Core.CreateEngine.IsolatedModuleRegistries",
+	"Angelscript.TestModule.Functional.Core.CreateEngine.IsolatedModuleRegistries",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FAngelscriptCoreCreateEngineIsolatedModuleRegistriesTest::RunTest(const FString& Parameters)
 {
@@ -409,7 +409,7 @@ bool FAngelscriptCoreCreateEngineIsolatedModuleRegistriesTest::RunTest(const FSt
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest,
-	"Angelscript.TestModule.Angelscript.Core.ModuleLookup.FilenameThenModuleFallback",
+	"Angelscript.TestModule.Functional.Core.ModuleLookup.FilenameThenModuleFallback",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest::RunTest(const FString& Parameters)
@@ -513,7 +513,7 @@ bool FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest::RunTest(const F
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerBasicTest,
-	"Angelscript.TestModule.Angelscript.Core.CompilerBasic",
+	"Angelscript.TestModule.Functional.Core.CompilerBasic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCompilerBasicTest::RunTest(const FString& Parameters)
@@ -595,12 +595,12 @@ bool FAngelscriptCompilerBasicTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerParserTest,
-	"Angelscript.TestModule.Angelscript.Core.Parser",
+	"Angelscript.TestModule.Functional.Core.Parser",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerParserInvalidSyntaxDiagnosticsAndCleanupTest,
-	"Angelscript.TestModule.Angelscript.Core.Parser.InvalidSyntaxDiagnosticsAndCleanup",
+	"Angelscript.TestModule.Functional.Core.Parser.InvalidSyntaxDiagnosticsAndCleanup",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCompilerParserTest::RunTest(const FString& Parameters)
@@ -751,7 +751,7 @@ bool FAngelscriptCompilerParserInvalidSyntaxDiagnosticsAndCleanupTest::RunTest(c
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCompilerOptimizeTest,
-	"Angelscript.TestModule.Angelscript.Core.Optimize",
+	"Angelscript.TestModule.Functional.Core.Optimize",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptCompilerOptimizeTest::RunTest(const FString& Parameters)

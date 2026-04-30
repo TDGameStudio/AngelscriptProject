@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 // Test Layer: Runtime Integration
@@ -14,7 +14,7 @@ namespace AngelscriptTestSupport
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectModelInheritanceTest,
-	"Angelscript.TestModule.Angelscript.Objects.ValueTypeConstruction",
+	"Angelscript.TestModule.Functional.Objects.ValueTypeConstruction",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectModelInheritanceTest::RunTest(const FString& Parameters)
@@ -37,7 +37,7 @@ bool FAngelscriptObjectModelInheritanceTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectModelDestructorTest,
-	"Angelscript.TestModule.Angelscript.Objects.ValueTypeCopyAndArithmetic",
+	"Angelscript.TestModule.Functional.Objects.ValueTypeCopyAndArithmetic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectModelDestructorTest::RunTest(const FString& Parameters)
@@ -60,7 +60,7 @@ bool FAngelscriptObjectModelDestructorTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectBasicTest,
-	"Angelscript.TestModule.Angelscript.Objects.Basic",
+	"Angelscript.TestModule.Functional.Objects.Basic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectBasicTest::RunTest(const FString& Parameters)
@@ -98,7 +98,7 @@ bool FAngelscriptObjectBasicTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectCompositionTest,
-	"Angelscript.TestModule.Angelscript.Objects.Composition",
+	"Angelscript.TestModule.Functional.Objects.Composition",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectCompositionTest::RunTest(const FString& Parameters)
@@ -136,7 +136,7 @@ bool FAngelscriptObjectCompositionTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectSingletonTest,
-	"Angelscript.TestModule.Angelscript.Objects.Singleton",
+	"Angelscript.TestModule.Functional.Objects.Singleton",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectSingletonTest::RunTest(const FString& Parameters)
@@ -147,7 +147,7 @@ bool FAngelscriptObjectSingletonTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectZeroSizeTest,
-	"Angelscript.TestModule.Angelscript.Objects.ZeroSize",
+	"Angelscript.TestModule.Functional.Objects.ZeroSize",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectZeroSizeTest::RunTest(const FString& Parameters)
@@ -170,7 +170,7 @@ bool FAngelscriptObjectZeroSizeTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptObjectZeroSizeByValueAndLocalLayoutTest,
-	"Angelscript.TestModule.Angelscript.Objects.ZeroSize.ByValueAndLocalLayout",
+	"Angelscript.TestModule.Functional.Objects.ZeroSize.ByValueAndLocalLayout",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptObjectZeroSizeByValueAndLocalLayoutTest::RunTest(const FString& Parameters)

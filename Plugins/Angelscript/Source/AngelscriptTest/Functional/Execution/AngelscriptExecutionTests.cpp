@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 // Test Layer: Runtime Integration
@@ -8,7 +8,7 @@ using namespace AngelscriptTestSupport;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionBasicTest,
-	"Angelscript.TestModule.Angelscript.Execute.Basic",
+	"Angelscript.TestModule.Functional.Execute.Basic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionBasicTest::RunTest(const FString& Parameters)
@@ -64,7 +64,7 @@ bool FAngelscriptExecutionBasicTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionOneArgTest,
-	"Angelscript.TestModule.Angelscript.Execute.OneArg",
+	"Angelscript.TestModule.Functional.Execute.OneArg",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionOneArgTest::RunTest(const FString& Parameters)
@@ -118,7 +118,7 @@ bool FAngelscriptExecutionOneArgTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionTwoArgsTest,
-	"Angelscript.TestModule.Angelscript.Execute.TwoArgs",
+	"Angelscript.TestModule.Functional.Execute.TwoArgs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionTwoArgsTest::RunTest(const FString& Parameters)
@@ -173,7 +173,7 @@ bool FAngelscriptExecutionTwoArgsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionFourArgsTest,
-	"Angelscript.TestModule.Angelscript.Execute.FourArgs",
+	"Angelscript.TestModule.Functional.Execute.FourArgs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionFourArgsTest::RunTest(const FString& Parameters)
@@ -230,12 +230,12 @@ bool FAngelscriptExecutionFourArgsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionMixedArgsTest,
-	"Angelscript.TestModule.Angelscript.Execute.MixedArgs",
+	"Angelscript.TestModule.Functional.Execute.MixedArgs",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionInt64QWordRoundTripTest,
-	"Angelscript.TestModule.Angelscript.Execute.Int64QWordRoundTrip",
+	"Angelscript.TestModule.Functional.Execute.Int64QWordRoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionMixedArgsTest::RunTest(const FString& Parameters)
@@ -409,7 +409,7 @@ bool FAngelscriptExecutionInt64QWordRoundTripTest::RunTest(const FString& Parame
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionContextTest,
-	"Angelscript.TestModule.Angelscript.Execute.Context",
+	"Angelscript.TestModule.Functional.Execute.Context",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionContextTest::RunTest(const FString& Parameters)
@@ -478,7 +478,7 @@ bool FAngelscriptExecutionContextTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionNestedTest,
-	"Angelscript.TestModule.Angelscript.Execute.Nested",
+	"Angelscript.TestModule.Functional.Execute.Nested",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionNestedTest::RunTest(const FString& Parameters)
@@ -532,7 +532,7 @@ bool FAngelscriptExecutionNestedTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionDiscardTest,
-	"Angelscript.TestModule.Angelscript.Execute.Discard",
+	"Angelscript.TestModule.Functional.Execute.Discard",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionDiscardTest::RunTest(const FString& Parameters)
@@ -566,7 +566,7 @@ bool FAngelscriptExecutionDiscardTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionScriptTest,
-	"Angelscript.TestModule.Angelscript.Execute.Script",
+	"Angelscript.TestModule.Functional.Execute.Script",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionScriptTest::RunTest(const FString& Parameters)

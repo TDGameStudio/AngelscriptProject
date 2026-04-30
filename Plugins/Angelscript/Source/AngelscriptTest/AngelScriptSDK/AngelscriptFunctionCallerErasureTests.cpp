@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "../../AngelscriptRuntime/Core/FunctionCallers.h"
 

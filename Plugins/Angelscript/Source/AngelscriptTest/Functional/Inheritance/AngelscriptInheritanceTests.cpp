@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
@@ -16,7 +16,7 @@ namespace AngelscriptTestSupport
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInheritanceBasicTest,
-	"Angelscript.TestModule.Angelscript.Inheritance.Basic",
+	"Angelscript.TestModule.Functional.Inheritance.Basic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInheritanceBasicTest::RunTest(const FString& Parameters)
@@ -52,7 +52,7 @@ bool FAngelscriptInheritanceBasicTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInheritanceInterfaceTest,
-	"Angelscript.TestModule.Angelscript.Inheritance.Interface",
+	"Angelscript.TestModule.Functional.Inheritance.Interface",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInheritanceInterfaceTest::RunTest(const FString& Parameters)
@@ -83,7 +83,7 @@ bool FAngelscriptInheritanceInterfaceTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInheritanceVirtualMethodTest,
-	"Angelscript.TestModule.Angelscript.Inheritance.VirtualMethod",
+	"Angelscript.TestModule.Functional.Inheritance.VirtualMethod",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInheritanceVirtualMethodTest::RunTest(const FString& Parameters)
@@ -119,7 +119,7 @@ bool FAngelscriptInheritanceVirtualMethodTest::RunTest(const FString& Parameters
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInheritanceCastOpTest,
-	"Angelscript.TestModule.Angelscript.Inheritance.CastOp",
+	"Angelscript.TestModule.Functional.Inheritance.CastOp",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInheritanceCastOpTest::RunTest(const FString& Parameters)
@@ -150,7 +150,7 @@ bool FAngelscriptInheritanceCastOpTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInheritanceMixinTest,
-	"Angelscript.TestModule.Angelscript.Inheritance.Mixin",
+	"Angelscript.TestModule.Functional.Inheritance.Mixin",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInheritanceMixinTest::RunTest(const FString& Parameters)

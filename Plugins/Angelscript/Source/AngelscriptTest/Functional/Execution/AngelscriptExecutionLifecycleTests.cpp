@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -206,7 +206,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptExecutionLifecycleTests_P
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionDiscardCleansTypeRegistriesTest,
-	"Angelscript.TestModule.Angelscript.Execute.Discard.CleansTypeRegistries",
+	"Angelscript.TestModule.Functional.Execute.Discard.CleansTypeRegistries",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionDiscardCleansTypeRegistriesTest::RunTest(const FString& Parameters)

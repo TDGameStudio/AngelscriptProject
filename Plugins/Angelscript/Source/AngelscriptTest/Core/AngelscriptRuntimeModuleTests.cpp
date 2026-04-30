@@ -2,7 +2,7 @@
 #include "AngelscriptEngineSubsystem.h"
 #include "AngelscriptGameInstanceSubsystem.h"
 #include "AngelscriptRuntimeModule.h"
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"

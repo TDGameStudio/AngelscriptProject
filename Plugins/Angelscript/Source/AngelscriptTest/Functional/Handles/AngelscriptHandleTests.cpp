@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/UObjectGlobals.h"
@@ -66,7 +66,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleBasicTest,
-	"Angelscript.TestModule.Angelscript.Handles.Basic",
+	"Angelscript.TestModule.Functional.Handles.Basic",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptHandleBasicTest::RunTest(const FString& Parameters)
@@ -97,7 +97,7 @@ bool FAngelscriptHandleBasicTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleImplicitTest,
-	"Angelscript.TestModule.Angelscript.Handles.Implicit",
+	"Angelscript.TestModule.Functional.Handles.Implicit",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptHandleImplicitTest::RunTest(const FString& Parameters)
@@ -134,7 +134,7 @@ bool FAngelscriptHandleImplicitTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleAutoTest,
-	"Angelscript.TestModule.Angelscript.Handles.Auto",
+	"Angelscript.TestModule.Functional.Handles.Auto",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptHandleAutoTest::RunTest(const FString& Parameters)
@@ -165,12 +165,12 @@ bool FAngelscriptHandleAutoTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleRefArgumentTest,
-	"Angelscript.TestModule.Angelscript.Handles.RefArgument",
+	"Angelscript.TestModule.Functional.Handles.RefArgument",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHandleNativeObjectArgumentNullAndNonNullTest,
-	"Angelscript.TestModule.Angelscript.Handles.NativeObjectArgument.NullAndNonNull",
+	"Angelscript.TestModule.Functional.Handles.NativeObjectArgument.NullAndNonNull",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptHandleRefArgumentTest::RunTest(const FString& Parameters)

@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
@@ -64,12 +64,12 @@ using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowForLoopTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.ForLoop",
+	"Angelscript.TestModule.Functional.ControlFlow.ForLoop",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowForLoopDecrementAndZeroIterationTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.ForLoop.DecrementAndZeroIteration",
+	"Angelscript.TestModule.Functional.ControlFlow.ForLoop.DecrementAndZeroIteration",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptControlFlowForLoopTest::RunTest(const FString& Parameters)
@@ -106,22 +106,22 @@ bool FAngelscriptControlFlowForLoopDecrementAndZeroIterationTest::RunTest(const 
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowSwitchTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.SwitchAndConditional",
+	"Angelscript.TestModule.Functional.ControlFlow.SwitchAndConditional",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowSwitchMatrixTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.SwitchDefaultAndConditionalMatrix",
+	"Angelscript.TestModule.Functional.ControlFlow.SwitchDefaultAndConditionalMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowForeachBreakContinueNestedTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.ForeachBreakContinueNested",
+	"Angelscript.TestModule.Functional.ControlFlow.ForeachBreakContinueNested",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowWhileBreakContinueNestedTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.WhileBreakContinueNested",
+	"Angelscript.TestModule.Functional.ControlFlow.WhileBreakContinueNested",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptControlFlowForeachBreakContinueNestedTest::RunTest(const FString& Parameters)
@@ -190,17 +190,17 @@ bool FAngelscriptControlFlowSwitchMatrixTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowConditionTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.Condition",
+	"Angelscript.TestModule.Functional.ControlFlow.Condition",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowIfElseStatementMatrixTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.IfElseStatementMatrix",
+	"Angelscript.TestModule.Functional.ControlFlow.IfElseStatementMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowInvalidBreakContinueDiagnosticsTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.InvalidBreakContinueDiagnostics",
+	"Angelscript.TestModule.Functional.ControlFlow.InvalidBreakContinueDiagnostics",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptControlFlowConditionTest::RunTest(const FString& Parameters)
@@ -307,7 +307,7 @@ bool FAngelscriptControlFlowInvalidBreakContinueDiagnosticsTest::RunTest(const F
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowNeverVisitedTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.NeverVisited",
+	"Angelscript.TestModule.Functional.ControlFlow.NeverVisited",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptControlFlowNeverVisitedTest::RunTest(const FString& Parameters)
@@ -333,12 +333,12 @@ bool FAngelscriptControlFlowNeverVisitedTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowNotInitializedTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.NotInitialized",
+	"Angelscript.TestModule.Functional.ControlFlow.NotInitialized",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowNotInitializedBranchDefiniteAssignmentMatrixTest,
-	"Angelscript.TestModule.Angelscript.ControlFlow.NotInitialized.BranchDefiniteAssignmentMatrix",
+	"Angelscript.TestModule.Functional.ControlFlow.NotInitialized.BranchDefiniteAssignmentMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptControlFlowNotInitializedTest::RunTest(const FString& Parameters)

@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 // Test Layer: Runtime Integration
@@ -62,7 +62,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionScriptRangeBoundariesTest,
-	"Angelscript.TestModule.Angelscript.Execute.Script.RangeBoundaries",
+	"Angelscript.TestModule.Functional.Execute.Script.RangeBoundaries",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionScriptRangeBoundariesTest::RunTest(const FString& Parameters)

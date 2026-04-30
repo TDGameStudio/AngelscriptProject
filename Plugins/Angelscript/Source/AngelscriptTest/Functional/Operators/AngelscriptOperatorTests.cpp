@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "Misc/Paths.h"
 
@@ -14,7 +14,7 @@ namespace AngelscriptTestSupport
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOperatorOverloadTest,
-	"Angelscript.TestModule.Angelscript.Operators.Overload",
+	"Angelscript.TestModule.Functional.Operators.Overload",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptOperatorOverloadTest::RunTest(const FString& Parameters)
@@ -39,7 +39,7 @@ bool FAngelscriptOperatorOverloadTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOperatorGetSetTest,
-	"Angelscript.TestModule.Angelscript.Operators.GetSet",
+	"Angelscript.TestModule.Functional.Operators.GetSet",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptOperatorGetSetTest::RunTest(const FString& Parameters)
@@ -77,7 +77,7 @@ bool FAngelscriptOperatorGetSetTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOperatorConstTest,
-	"Angelscript.TestModule.Angelscript.Operators.Const",
+	"Angelscript.TestModule.Functional.Operators.Const",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptOperatorConstTest::RunTest(const FString& Parameters)
@@ -102,7 +102,7 @@ bool FAngelscriptOperatorConstTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptOperatorPowerTest,
-	"Angelscript.TestModule.Angelscript.Operators.Power",
+	"Angelscript.TestModule.Functional.Operators.Power",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptOperatorPowerTest::RunTest(const FString& Parameters)

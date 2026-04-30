@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "StartAngelscriptHeaders.h"
@@ -66,7 +66,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeHeaderCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.HeaderCompatibility",
+	"Angelscript.TestModule.Functional.Upgrade.HeaderCompatibility",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptUpgradeHeaderCompatibilityTest::RunTest(const FString& Parameters)
@@ -122,32 +122,32 @@ bool FAngelscriptUpgradeHeaderCompatibilityTest::RunTest(const FString& Paramete
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeEnginePropertyCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.EngineProperties",
+	"Angelscript.TestModule.Functional.Upgrade.EngineProperties",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeEnginePropertyCallStackLimitOverflowTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.EngineProperties.CallStackLimitOverflow",
+	"Angelscript.TestModule.Functional.Upgrade.EngineProperties.CallStackLimitOverflow",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeMessageCallbackCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.MessageCallback",
+	"Angelscript.TestModule.Functional.Upgrade.MessageCallback",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeMessageCallbackClearAndReRegisterCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.MessageCallback.ClearAndReRegister",
+	"Angelscript.TestModule.Functional.Upgrade.MessageCallback.ClearAndReRegister",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeRegisterObjectTypeFlagCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.RegisterObjectTypeFlags",
+	"Angelscript.TestModule.Functional.Upgrade.RegisterObjectTypeFlags",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeCStringHashCompatibilityTest,
-	"Angelscript.TestModule.Angelscript.Upgrade.CStringHash",
+	"Angelscript.TestModule.Functional.Upgrade.CStringHash",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptUpgradeEnginePropertyCompatibilityTest::RunTest(const FString& Parameters)

@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -7,7 +7,7 @@ using namespace AngelscriptTestSupport;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeConversionNegativeTruncateTowardZeroTest,
-	"Angelscript.TestModule.Angelscript.Types.Conversion.NegativeTruncateTowardZero",
+	"Angelscript.TestModule.Functional.Types.Conversion.NegativeTruncateTowardZero",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeConversionNegativeTruncateTowardZeroTest::RunTest(const FString& Parameters)

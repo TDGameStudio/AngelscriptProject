@@ -1,7 +1,7 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptBinds.h"
 #include "AngelscriptType.h"
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/Actor.h"

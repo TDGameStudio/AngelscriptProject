@@ -1,7 +1,7 @@
 #include "AngelscriptEngineSubsystem.h"
 
 #include "AngelscriptEngine.h"
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 
 #include "Engine/Engine.h"
 #include "Misc/AutomationTest.h"

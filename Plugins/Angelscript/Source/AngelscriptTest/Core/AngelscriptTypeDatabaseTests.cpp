@@ -1,7 +1,7 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptType.h"
 #include "AngelscriptUhtCoverageTestTypes.h"
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"

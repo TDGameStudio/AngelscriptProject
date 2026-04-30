@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Core/AngelscriptSettings.h"
@@ -186,7 +186,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrimitiveTypeTest,
-	"Angelscript.TestModule.Angelscript.Types.PrimitiveAndEnum",
+	"Angelscript.TestModule.Functional.Types.PrimitiveAndEnum",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPrimitiveTypeTest::RunTest(const FString& Parameters)
@@ -207,7 +207,7 @@ bool FAngelscriptPrimitiveTypeTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInt64TypedefTest,
-	"Angelscript.TestModule.Angelscript.Types.Int64AndTypedef",
+	"Angelscript.TestModule.Functional.Types.Int64AndTypedef",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInt64TypedefTest::RunTest(const FString& Parameters)
@@ -228,12 +228,12 @@ bool FAngelscriptInt64TypedefTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeBoolTest,
-	"Angelscript.TestModule.Angelscript.Types.Bool",
+	"Angelscript.TestModule.Functional.Types.Bool",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeBoolLogicMatrixTest,
-	"Angelscript.TestModule.Angelscript.Types.Bool.LogicMatrix",
+	"Angelscript.TestModule.Functional.Types.Bool.LogicMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeBoolTest::RunTest(const FString& Parameters)
@@ -270,22 +270,22 @@ bool FAngelscriptTypeBoolLogicMatrixTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeFloatTest,
-	"Angelscript.TestModule.Angelscript.Types.Float",
+	"Angelscript.TestModule.Functional.Types.Float",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeFloatDebuggerFormattingTest,
-	"Angelscript.TestModule.Angelscript.Types.FloatDebuggerFormatting",
+	"Angelscript.TestModule.Functional.Types.FloatDebuggerFormatting",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeFloatNegativeAndFractionalMatrixTest,
-	"Angelscript.TestModule.Angelscript.Types.Float.NegativeAndFractionalMatrix",
+	"Angelscript.TestModule.Functional.Types.Float.NegativeAndFractionalMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeFloatConfigurationModesTest,
-	"Angelscript.TestModule.Angelscript.Types.Float.ConfigurationModes",
+	"Angelscript.TestModule.Functional.Types.Float.ConfigurationModes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeFloatTest::RunTest(const FString& Parameters)
@@ -547,12 +547,12 @@ bool FAngelscriptTypeFloatNegativeAndFractionalMatrixTest::RunTest(const FString
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeInt8Test,
-	"Angelscript.TestModule.Angelscript.Types.Int8",
+	"Angelscript.TestModule.Functional.Types.Int8",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeInt8SignAndBoundsTest,
-	"Angelscript.TestModule.Angelscript.Types.Int8.SignAndBounds",
+	"Angelscript.TestModule.Functional.Types.Int8.SignAndBounds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeInt8Test::RunTest(const FString& Parameters)
@@ -589,7 +589,7 @@ bool FAngelscriptTypeInt8SignAndBoundsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeBitsTest,
-	"Angelscript.TestModule.Angelscript.Types.Bits",
+	"Angelscript.TestModule.Functional.Types.Bits",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeBitsTest::RunTest(const FString& Parameters)
@@ -610,11 +610,11 @@ bool FAngelscriptTypeBitsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeEnumTest,
-	"Angelscript.TestModule.Angelscript.Types.Enum",
+	"Angelscript.TestModule.Functional.Types.Enum",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeEnumExplicitValueMatrixTest,
-	"Angelscript.TestModule.Angelscript.Types.Enum.ExplicitValueMatrix",
+	"Angelscript.TestModule.Functional.Types.Enum.ExplicitValueMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeEnumTest::RunTest(const FString& Parameters)
@@ -647,12 +647,12 @@ bool FAngelscriptTypeEnumExplicitValueMatrixTest::RunTest(const FString& Paramet
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeAutoTest,
-	"Angelscript.TestModule.Angelscript.Types.Auto",
+	"Angelscript.TestModule.Functional.Types.Auto",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeAutoInferenceMatrixTest,
-	"Angelscript.TestModule.Angelscript.Types.AutoInferenceMatrix",
+	"Angelscript.TestModule.Functional.Types.AutoInferenceMatrix",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeAutoTest::RunTest(const FString& Parameters)
@@ -704,7 +704,7 @@ bool FAngelscriptTypeAutoInferenceMatrixTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeConversionTest,
-	"Angelscript.TestModule.Angelscript.Types.Conversion",
+	"Angelscript.TestModule.Functional.Types.Conversion",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeConversionTest::RunTest(const FString& Parameters)
@@ -734,7 +734,7 @@ bool FAngelscriptTypeConversionTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeImplicitCastTest,
-	"Angelscript.TestModule.Angelscript.Types.ImplicitCast",
+	"Angelscript.TestModule.Functional.Types.ImplicitCast",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeImplicitCastTest::RunTest(const FString& Parameters)
@@ -775,7 +775,7 @@ bool FAngelscriptTypeImplicitCastTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeImplicitCastNegativeAndParamWideningTest,
-	"Angelscript.TestModule.Angelscript.Types.ImplicitCast.NegativeAndParamWidening",
+	"Angelscript.TestModule.Functional.Types.ImplicitCast.NegativeAndParamWidening",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptTypeImplicitCastNegativeAndParamWideningTest::RunTest(const FString& Parameters)

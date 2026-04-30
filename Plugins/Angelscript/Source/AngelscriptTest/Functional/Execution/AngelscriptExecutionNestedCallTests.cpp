@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "Misc/ScopeExit.h"
@@ -58,12 +58,12 @@ using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionNestedRecursiveFrameIsolationTest,
-	"Angelscript.TestModule.Angelscript.Execute.Nested.RecursiveFrameIsolation",
+	"Angelscript.TestModule.Functional.Execute.Nested.RecursiveFrameIsolation",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionExceptionCallstackInspectionTest,
-	"Angelscript.TestModule.Angelscript.Execute.Context.ExceptionCallstackInspection",
+	"Angelscript.TestModule.Functional.Execute.Context.ExceptionCallstackInspection",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptExecutionNestedRecursiveFrameIsolationTest::RunTest(const FString& Parameters)

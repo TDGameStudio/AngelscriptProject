@@ -1,4 +1,4 @@
-#include "AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Misc/FileHelper.h"
 #include "Misc/AutomationTest.h"
@@ -66,17 +66,17 @@ using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTest
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2ATest,
-	"Angelscript.TestModule.Angelscript.NativeScriptHotReload.Phase2A",
+	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2A",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2BTest,
-	"Angelscript.TestModule.Angelscript.NativeScriptHotReload.Phase2B",
+	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2B",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2CTest,
-	"Angelscript.TestModule.Angelscript.NativeScriptHotReload.Phase2C",
+	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2C",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptNativeScriptHotReloadPhase2ATest::RunTest(const FString& Parameters)

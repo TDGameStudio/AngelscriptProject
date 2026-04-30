@@ -1,4 +1,4 @@
-#include "Angelscript/AngelscriptTestSupport.h"
+#include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "../Core/AngelscriptUhtCoverageTestTypes.h"
 #include "../../AngelscriptRuntime/Core/AngelscriptType.h"
