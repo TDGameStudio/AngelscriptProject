@@ -82,10 +82,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Pr
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Private;
 
 bool FAngelscriptScriptEditorPromptsStructFirstParameterTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Private;
 	UAngelscriptScriptEditorPromptsAssetReceiver* Receiver = NewObject<UAngelscriptScriptEditorPromptsAssetReceiver>(GetTransientPackage());
 	UPackage* FirstPackage = nullptr;
 	UPackage* SecondPackage = nullptr;
@@ -152,6 +152,7 @@ bool FAngelscriptScriptEditorPromptsStructFirstParameterTest::RunTest(const FStr
 
 bool FAngelscriptScriptEditorPromptsBatchObjectFilteringTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptScriptEditorPromptsTests_Private;
 	UAngelscriptScriptEditorPromptsBatchReceiver* FirstReceiver = NewObject<UAngelscriptScriptEditorPromptsBatchReceiver>(GetTransientPackage());
 	UAngelscriptScriptEditorPromptsBatchReceiver* SecondReceiver = NewObject<UAngelscriptScriptEditorPromptsBatchReceiver>(GetTransientPackage());
 	UObject* UnrelatedObject = NewObject<UAngelscriptScriptEditorPromptsUnrelatedObject>(GetTransientPackage());

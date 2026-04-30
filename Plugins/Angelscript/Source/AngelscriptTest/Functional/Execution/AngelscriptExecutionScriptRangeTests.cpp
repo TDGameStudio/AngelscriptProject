@@ -58,7 +58,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionScriptRangeBoundariesTest,
@@ -67,6 +66,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptExecutionScriptRangeBoundariesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 

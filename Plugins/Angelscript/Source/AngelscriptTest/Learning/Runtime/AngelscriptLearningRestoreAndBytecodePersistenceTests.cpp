@@ -222,7 +222,6 @@ int Test()
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningRestoreAndBytecodePersistenceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningRestoreAndBytecodePersistenceTest,
@@ -231,6 +230,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningRestoreAndBytecodePersistenceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningRestoreAndBytecodePersistenceTests_Private;
 	FAngelscriptLearningTraceSinkConfig SinkConfig;
 	SinkConfig.bEmitToAutomation = true;
 	SinkConfig.bEmitToLog = true;

@@ -83,7 +83,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Priv
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITDebugCallstackScopePushPopTest,
@@ -92,6 +91,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITDebugCallstackScopePushPopTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

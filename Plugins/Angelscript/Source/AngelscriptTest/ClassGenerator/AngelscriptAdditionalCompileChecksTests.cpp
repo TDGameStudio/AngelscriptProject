@@ -74,7 +74,6 @@ namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests
 	};
 }
 
-using namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAdditionalCompileChecksInvokeCompileAndPostReloadHooksTest,
@@ -83,6 +82,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAdditionalCompileChecksInvokeCompileAndPostReloadHooksTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

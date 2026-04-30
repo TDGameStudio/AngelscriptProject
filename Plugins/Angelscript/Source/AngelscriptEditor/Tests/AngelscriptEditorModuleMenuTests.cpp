@@ -48,10 +48,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleMenuTests_Priva
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleMenuTests_Private;
 
 bool FAngelscriptEditorModuleRegisterToolsMenuEntriesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleMenuTests_Private;
 	UToolMenus* ToolMenus = UToolMenus::Get();
 	if (!TestNotNull(TEXT("Editor.Module.RegisterToolsMenuEntriesAddsWorkspaceAndLegacyBindCommands should resolve tool menus"), ToolMenus))
 	{

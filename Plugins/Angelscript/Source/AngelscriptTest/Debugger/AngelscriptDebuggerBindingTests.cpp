@@ -421,7 +421,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBindingDebugBreakAndEnsureTest,
@@ -430,6 +429,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerBindingDebugBreakAndEnsureTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartBindingDebuggerSession(*this, Session, Client))
@@ -695,6 +695,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerBindingCheckBreaksEveryInvocationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBindingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartBindingDebuggerSession(*this, Session, Client))

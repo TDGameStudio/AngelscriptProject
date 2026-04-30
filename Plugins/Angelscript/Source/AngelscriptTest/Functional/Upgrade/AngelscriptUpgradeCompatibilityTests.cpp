@@ -62,7 +62,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUpgradeHeaderCompatibilityTest,
@@ -71,6 +70,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptUpgradeHeaderCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	const bool bVersionMatches =
 		TestEqual(TEXT("Embedded Angelscript version should remain pinned to 2.33.0 until the 2.38 upgrade resumes"), ANGELSCRIPT_VERSION, 23300) &&
 		TestEqual(TEXT("Embedded Angelscript version string should report 2.33.0 WIP"), FString(ANSI_TO_TCHAR(ANGELSCRIPT_VERSION_STRING)), FString(TEXT("2.33.0 WIP")));
@@ -152,6 +152,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptUpgradeEnginePropertyCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	bool bCustomPropertiesStillWork = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
@@ -231,6 +232,7 @@ bool FAngelscriptUpgradeEnginePropertyCompatibilityTest::RunTest(const FString& 
 
 bool FAngelscriptUpgradeEnginePropertyCallStackLimitOverflowTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	TUniquePtr<FAngelscriptEngine> IsolatedEngine = CreateIsolatedCloneEngine();
 	if (!TestNotNull(TEXT("Upgrade.EngineProperties.CallStackLimitOverflow should create an isolated clone engine"), IsolatedEngine.Get()))
 	{
@@ -304,6 +306,7 @@ bool FAngelscriptUpgradeEnginePropertyCallStackLimitOverflowTest::RunTest(const 
 
 bool FAngelscriptUpgradeMessageCallbackCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 
@@ -348,6 +351,7 @@ bool FAngelscriptUpgradeMessageCallbackCompatibilityTest::RunTest(const FString&
 
 bool FAngelscriptUpgradeMessageCallbackClearAndReRegisterCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	TUniquePtr<FAngelscriptEngine> IsolatedEngine = CreateIsolatedCloneEngine();
 	if (!TestNotNull(TEXT("Upgrade.MessageCallback.ClearAndReRegister should create an isolated clone engine"), IsolatedEngine.Get()))
 	{
@@ -453,6 +457,7 @@ bool FAngelscriptUpgradeMessageCallbackClearAndReRegisterCompatibilityTest::RunT
 
 bool FAngelscriptUpgradeRegisterObjectTypeFlagCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	asQWORD Flags = 0;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
@@ -485,6 +490,7 @@ bool FAngelscriptUpgradeRegisterObjectTypeFlagCompatibilityTest::RunTest(const F
 
 bool FAngelscriptUpgradeCStringHashCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptUpgradeCompatibilityTests_Private;
 	const asCString MixedCase("AlphaBeta");
 	const asCString LowerCase("alphabeta");
 	const asCString DifferentValue("gamma");

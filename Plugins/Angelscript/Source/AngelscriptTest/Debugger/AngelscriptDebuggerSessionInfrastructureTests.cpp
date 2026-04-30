@@ -68,7 +68,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest,
@@ -77,6 +76,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSessionInitializeDoesNotMutateAdapterVersionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private;
 	constexpr int32 InitializeSentinelVersion = 7;
 	constexpr int32 HandshakeAdapterVersion = 2;
 	constexpr int32 FreshSessionSentinelVersion = 11;
@@ -194,6 +194,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSessionPreservesDebugBreakStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private;
 	FAngelscriptDebuggerSessionConfig SessionConfig;
 	SessionConfig.DefaultTimeoutSeconds = 45.0f;
 	SessionConfig.bDisableDebugBreaks = true;
@@ -250,6 +251,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerClientConnectTimeoutReportsFailureTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSessionInfrastructureTests_Private;
 	constexpr float FailureTimeoutSeconds = 0.01f;
 	constexpr float SuccessTimeoutSeconds = 0.05f;
 

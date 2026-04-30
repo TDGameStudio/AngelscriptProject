@@ -105,7 +105,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeFormTests_Private
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeFormTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITTArrayIndexCustomCallTest,
@@ -114,6 +113,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITTArrayIndexCustomCallTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeFormTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngineConfig Config;
 	Config.bGeneratePrecompiledData = true;

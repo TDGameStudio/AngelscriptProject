@@ -104,12 +104,12 @@ class UAccessSpecifierComponent_UnitTest : UActorComponent
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleAccessSpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleAccessSpecifiersTest, "Angelscript.TestModule.ScriptExamples.AccessSpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleAccessSpecifiersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleAccessSpecifiersTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GAccessSpecifiersExample);
 }
 

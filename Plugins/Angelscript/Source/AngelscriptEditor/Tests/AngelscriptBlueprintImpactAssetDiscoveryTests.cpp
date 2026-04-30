@@ -237,10 +237,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAssetDiscove
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAssetDiscoveryTests_Private;
 
 bool FAngelscriptBlueprintImpactFindBlueprintAssetsMixedAssetModesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAssetDiscoveryTests_Private;
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
 	const TArray<FAssetData> BaselineDiskOnlyAssets =

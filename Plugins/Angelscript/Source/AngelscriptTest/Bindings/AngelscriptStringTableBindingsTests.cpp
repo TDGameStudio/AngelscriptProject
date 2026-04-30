@@ -96,7 +96,6 @@ int LocTable_ReadBack()
 	}
 }
 
-using namespace AngelscriptStringTableBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -123,6 +122,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptStringTableBindingsTest,
 
 	TEST_METHOD(LocTableCompat)
 	{
+		using namespace AngelscriptStringTableBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

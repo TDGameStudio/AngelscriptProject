@@ -47,7 +47,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAttributeSetTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAttributeSetTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAttributeSetInitializationAndReplicationBlacklistTest,
@@ -56,6 +55,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAttributeSetInitializationAndReplicationBlacklistTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAttributeSetTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

@@ -145,7 +145,6 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFil
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFilterTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptContentBrowserDataSourceDoesItemPassFilterTest,
@@ -159,6 +158,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptContentBrowserDataSourceDoesItemPassFilterTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFilterTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("ContentBrowserDataSource DoesItemPassFilter test requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
@@ -245,6 +245,7 @@ bool FAngelscriptContentBrowserDataSourceDoesItemPassFilterTest::RunTest(const F
 
 bool FAngelscriptContentBrowserDataSourceCompileFilterReuseClearsStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceFilterTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("ContentBrowserDataSource CompileFilter reuse test requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
 	{

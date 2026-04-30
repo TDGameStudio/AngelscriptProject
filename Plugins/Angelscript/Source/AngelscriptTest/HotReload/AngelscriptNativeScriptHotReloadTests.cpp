@@ -62,7 +62,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Priv
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2ATest,
@@ -81,6 +80,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNativeScriptHotReloadPhase2ATest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private;
 	return VerifyNativeScriptHotReloadInline(
 		*this,
 		TEXT("Phase2A"),
@@ -143,6 +143,7 @@ class UNativeHotReloadPhase2AHandleCarrier : UObject
 
 bool FAngelscriptNativeScriptHotReloadPhase2BTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private;
 	return VerifyNativeScriptHotReloadInline(
 		*this,
 		TEXT("Phase2B"),
@@ -240,6 +241,7 @@ class UNativeHotReloadPhase2BMathCarrier : UObject
 
 bool FAngelscriptNativeScriptHotReloadPhase2CTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTests_Private;
 	const FString RelativeFilename = TEXT("Script/Tests/Test_ExampleActorFixture.as");
 	const FString AbsoluteFilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / RelativeFilename);
 	FString Source;

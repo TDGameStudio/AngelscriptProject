@@ -57,7 +57,6 @@ namespace AngelscriptTest_Core_AngelscriptGameplayCueUtilsTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGameplayCueUtilsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest,
@@ -66,6 +65,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGameplayCueUtilsDispatchesExpectedCueEventsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGameplayCueUtilsTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::ProductionLike);
 	if (!TestTrue(TEXT("GameplayCueUtils test should acquire a production-like engine"), Fixture.IsValid()))
 	{

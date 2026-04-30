@@ -39,10 +39,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionToolMenu
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionToolMenuContextTests_Private;
 
 bool FAngelscriptEditorMenuExtensionToolMenuContextTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionToolMenuContextTests_Private;
 	UAngelscriptEditorMenuExtensionContextTestShim* Extension = NewObject<UAngelscriptEditorMenuExtensionContextTestShim>(GetTransientPackage());
 	if (!TestNotNull(TEXT("MenuExtensions tool-menu context test should create a context-aware extension shim"), Extension))
 	{

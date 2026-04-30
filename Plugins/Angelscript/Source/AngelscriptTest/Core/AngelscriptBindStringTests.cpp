@@ -35,7 +35,6 @@ namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindStringRoundTripTest,
@@ -44,6 +43,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptBindStringRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindStringTests_Private;
 	FBindString ConstantEmpty("");
 	if (!ExpectBindStringState(*this, TEXT("BindString constant empty"), ConstantEmpty, true, TEXT(""), ""))
 	{

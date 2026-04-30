@@ -278,7 +278,6 @@ namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptCollisionParamsBindingsTest, "Angelscript.TestModule.Bindings.CollisionParams",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -296,6 +295,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCollisionParamsBindingsTest, "Angelscript.Test
 
 	TEST_METHOD(CollisionQueryParamsBehaviour)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptCollisionParamsBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

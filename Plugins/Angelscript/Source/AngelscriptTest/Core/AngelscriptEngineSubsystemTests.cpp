@@ -32,7 +32,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineSubsystemTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineSubsystemTests_Private;
 
 struct FAngelscriptEngineSubsystemTestAccess
 {
@@ -99,6 +98,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptEngineSubsystemShouldCreateHonorsEditorAndCommandletGatesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineSubsystemTests_Private;
 	ON_SCOPE_EXIT
 	{
 		FAngelscriptEngineSubsystemTestAccess::ClearStartupEnvironmentOverride();
@@ -141,6 +141,7 @@ bool FAngelscriptEngineSubsystemShouldCreateHonorsEditorAndCommandletGatesTest::
 
 bool FAngelscriptEngineSubsystemInitializeOverrideLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineSubsystemTests_Private;
 	FEngineSubsystemContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

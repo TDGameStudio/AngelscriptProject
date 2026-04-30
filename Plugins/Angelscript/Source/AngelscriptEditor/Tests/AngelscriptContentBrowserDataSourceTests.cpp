@@ -141,10 +141,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTes
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTests_Private;
 
 bool FAngelscriptContentBrowserDataSourceFilterAndAttributesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("ContentBrowserDataSource test requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
@@ -291,6 +291,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptContentBrowserDataSourceRejectsStalePayloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptContentBrowserDataSourceTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("Stale payload ContentBrowserDataSource test requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
 	{

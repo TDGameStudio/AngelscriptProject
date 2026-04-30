@@ -19,7 +19,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningTimerAndLatentTrac
 	constexpr float LearningTimerDeltaTime = 0.016f;
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningTimerAndLatentTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningTimerAndLatentTraceTest,
@@ -28,6 +27,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningTimerAndLatentTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningTimerAndLatentTraceTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("LearningTimerModule"));

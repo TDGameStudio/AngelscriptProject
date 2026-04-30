@@ -20,7 +20,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Privat
 	static const FString EnumCreatedName(TEXT("EHotReloadCreatedState"));
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadReloadDelegatesBroadcastEnumCreatedOnFirstCompileTest,
@@ -29,6 +28,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadReloadDelegatesBroadcastEnumCreatedOnFirstCompileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 

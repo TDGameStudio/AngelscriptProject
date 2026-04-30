@@ -327,7 +327,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSteppingStepInTest,
@@ -346,6 +345,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSteppingStepInTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartSteppingDebuggerSession(*this, Session, Client))
@@ -454,6 +454,7 @@ bool FAngelscriptDebuggerSteppingStepInTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptDebuggerSteppingStepOverTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartSteppingDebuggerSession(*this, Session, Client))
@@ -555,6 +556,7 @@ bool FAngelscriptDebuggerSteppingStepOverTest::RunTest(const FString& Parameters
 
 bool FAngelscriptDebuggerSteppingStepOutTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSteppingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartSteppingDebuggerSession(*this, Session, Client))

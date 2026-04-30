@@ -128,7 +128,6 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 }
 
-using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryObserverTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryObserverWrappersTest,
@@ -137,6 +136,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryObserverWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryObserverTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

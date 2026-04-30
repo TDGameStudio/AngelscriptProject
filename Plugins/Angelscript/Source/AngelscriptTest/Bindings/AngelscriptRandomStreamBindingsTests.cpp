@@ -45,7 +45,6 @@ namespace AngelscriptRandomStreamBindingsTests_Private
 	}
 }
 
-using namespace AngelscriptRandomStreamBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -84,6 +83,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptRandomStreamBindingsTest,
 
 	TEST_METHOD(IntSeedSequence)
 	{
+		using namespace AngelscriptRandomStreamBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -197,6 +197,7 @@ int IntSeed_CopyParity()
 
 	TEST_METHOD(IntSeedReset)
 	{
+		using namespace AngelscriptRandomStreamBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -238,6 +239,7 @@ int IntSeed_Reset()
 
 	TEST_METHOD(UintSeedSequence)
 	{
+		using namespace AngelscriptRandomStreamBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -293,6 +295,7 @@ int UintSeed_Reset()
 
 	TEST_METHOD(NameSeedSequence)
 	{
+		using namespace AngelscriptRandomStreamBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

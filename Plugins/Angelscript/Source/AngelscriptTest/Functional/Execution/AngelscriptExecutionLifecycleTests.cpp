@@ -202,7 +202,6 @@ int Run()
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptExecutionLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionDiscardCleansTypeRegistriesTest,
@@ -211,6 +210,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptExecutionDiscardCleansTypeRegistriesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionLifecycleTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

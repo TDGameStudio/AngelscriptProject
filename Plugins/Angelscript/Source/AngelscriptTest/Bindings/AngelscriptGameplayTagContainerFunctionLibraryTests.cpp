@@ -192,7 +192,6 @@ int RemoveTag_PresentParity()
 	}
 }
 
-using namespace AngelscriptGameplayTagContainerFunctionLibraryTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -219,6 +218,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagContainerFunctionLibraryTest,
 
 	TEST_METHOD(RemoveTagMiss)
 	{
+		using namespace AngelscriptGameplayTagContainerFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

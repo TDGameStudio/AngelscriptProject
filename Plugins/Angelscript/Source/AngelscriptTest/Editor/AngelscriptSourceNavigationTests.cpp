@@ -44,7 +44,6 @@ namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionSourceNavigationTest,
@@ -58,6 +57,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptFunctionSourceNavigationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 	FResolvedProductionLikeEngine ResolvedEngine;
 	if (!AcquireProductionLikeEngine(*this, TEXT("Source navigation tests require a production-like engine."), ResolvedEngine))
 	{
@@ -126,6 +126,7 @@ class UFunctionNavigationCarrier : UObject
 
 bool FAngelscriptSourceNavigationVSCodeParametersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 	const FString TargetParams = TEXT("--goto \"C:/Project/Script/Test.as:12\"");
 	const FString ScriptRootDirectory = TEXT("C:/Project/Script");
 	const FString WorkspaceRelativePath = TEXT("Tools/Angelscript.code-workspace");
@@ -154,6 +155,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptSourceNavigationStoredLocationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Editor_AngelscriptSourceNavigationTests_Private;
 	FResolvedProductionLikeEngine ResolvedEngine;
 	if (!AcquireProductionLikeEngine(*this, TEXT("Source navigation navigation-action test requires a production-like engine."), ResolvedEngine))
 	{

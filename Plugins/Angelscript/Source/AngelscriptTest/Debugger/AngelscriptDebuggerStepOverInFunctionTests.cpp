@@ -375,7 +375,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOverInFunctionTests_Pr
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOverInFunctionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepOverWithinCalleeTest,
@@ -384,6 +383,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerStepOverWithinCalleeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOverInFunctionTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartStepOverWithinCalleeDebuggerSession(*this, Session, Client))

@@ -69,7 +69,6 @@ namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNamespaceGuardAndEnumDeduplicationTest,
@@ -83,6 +82,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNamespaceGuardAndEnumDeduplicationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -208,6 +208,7 @@ bool FAngelscriptNamespaceGuardAndEnumDeduplicationTest::RunTest(const FString& 
 
 bool FAngelscriptReferenceAndValueClassLayoutReuseTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindsRegistrationTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

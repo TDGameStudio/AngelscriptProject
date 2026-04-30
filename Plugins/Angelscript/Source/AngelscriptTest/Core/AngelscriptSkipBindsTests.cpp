@@ -21,7 +21,6 @@ namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDefaultSkipListRegistrationTest,
@@ -30,6 +29,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDefaultSkipListRegistrationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

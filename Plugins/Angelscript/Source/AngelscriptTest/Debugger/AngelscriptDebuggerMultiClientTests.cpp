@@ -308,7 +308,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerMultiClientTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerMultiClientTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSecondClientStartPreservesBreakpointsTest,
@@ -317,6 +316,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSecondClientStartPreservesBreakpointsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerMultiClientTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient PrimaryClient;
 	if (!StartPrimaryDebuggerSession(*this, Session, PrimaryClient))

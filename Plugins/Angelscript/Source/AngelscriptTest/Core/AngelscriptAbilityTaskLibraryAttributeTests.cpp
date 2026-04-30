@@ -101,7 +101,6 @@ namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryAttributeTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryAttributeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryAttributeWrappersTest,
@@ -110,6 +109,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryAttributeWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryAttributeTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

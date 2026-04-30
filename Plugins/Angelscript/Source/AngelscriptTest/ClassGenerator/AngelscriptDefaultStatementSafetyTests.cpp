@@ -57,7 +57,6 @@ namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDefaultStatementUnsafeDuringConstructionRejectsDefaultAndConstructorTest,
@@ -71,6 +70,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDefaultStatementUnsafeDuringConstructionRejectsDefaultAndConstructorTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT
@@ -166,6 +166,7 @@ class UUnsafeOrdinaryTarget : UObject
 
 bool FAngelscriptDefaultStatementDefaultsOnlyAccessTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

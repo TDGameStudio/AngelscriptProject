@@ -212,7 +212,6 @@ namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -239,6 +238,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMathFunctionLibraryTest,
 
 	TEST_METHOD(ShortestPathAndTransformSemantics)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -391,6 +391,7 @@ FVector GetMoveLargeStep()
 
 	TEST_METHOD(PlanarProjectionAndColorFormatting)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

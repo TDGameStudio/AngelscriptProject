@@ -152,10 +152,10 @@ namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 
 bool FAngelscriptGeneratedFunctionTablePopulatesClassFuncMapsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	if (!TestTrue(TEXT("Generated function table test requires the runtime engine to be initialized in editor automation"), FAngelscriptEngine::IsInitialized()))
 	{
 		return false;
@@ -205,6 +205,7 @@ bool FAngelscriptGeneratedFunctionTablePopulatesClassFuncMapsTest::RunTest(const
 
 bool FAngelscriptGeneratedFunctionTablePreservesHandwrittenGASEntriesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	if (!TestTrue(TEXT("Generated GAS compatibility test requires the runtime engine to be initialized in editor automation"), FAngelscriptEngine::IsInitialized()))
 	{
 		return false;
@@ -248,6 +249,7 @@ bool FAngelscriptGeneratedFunctionTablePreservesHandwrittenGASEntriesTest::RunTe
 
 bool FAngelscriptGeneratedFunctionTableEditorOutputsUseWithEditorGuardTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -275,6 +277,7 @@ bool FAngelscriptGeneratedFunctionTableEditorOutputsUseWithEditorGuardTest::RunT
 
 bool FAngelscriptGeneratedFunctionTableOutputsShardTimingHooksTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -295,6 +298,7 @@ bool FAngelscriptGeneratedFunctionTableOutputsShardTimingHooksTest::RunTest(cons
 
 bool FAngelscriptGeneratedFunctionTableRepresentativeCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	if (!TestTrue(TEXT("Generated representative coverage test requires the runtime engine to be initialized in editor automation"), FAngelscriptEngine::IsInitialized()))
 	{
 		return false;
@@ -347,6 +351,7 @@ bool FAngelscriptGeneratedFunctionTableRepresentativeCoverageTest::RunTest(const
 
 bool FAngelscriptGeneratedFunctionTableMinimalApiFunctionLevelExportTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	if (!TestTrue(TEXT("MinimalAPI function export regression test requires the runtime engine to be initialized in editor automation"), FAngelscriptEngine::IsInitialized()))
 	{
 		return false;
@@ -386,6 +391,7 @@ bool FAngelscriptGeneratedFunctionTableMinimalApiFunctionLevelExportTest::RunTes
 
 bool FAngelscriptGeneratedFunctionTableReflectiveFallbackStatsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	if (!TestTrue(TEXT("Generated reflective fallback stats test requires the runtime engine to be initialized in editor automation"), FAngelscriptEngine::IsInitialized()))
 	{
 		return false;
@@ -485,6 +491,7 @@ bool FAngelscriptGeneratedFunctionTableReflectiveFallbackStatsTest::RunTest(cons
 
 bool FAngelscriptGeneratedFunctionTableSummaryOutputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -620,6 +627,7 @@ bool FAngelscriptGeneratedFunctionTableSummaryOutputTest::RunTest(const FString&
 
 bool FAngelscriptGeneratedFunctionTableCsvOutputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -695,6 +703,7 @@ bool FAngelscriptGeneratedFunctionTableCsvOutputTest::RunTest(const FString& Par
 
 bool FAngelscriptGeneratedFunctionTableSkippedCsvOutputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -732,6 +741,7 @@ bool FAngelscriptGeneratedFunctionTableSkippedCsvOutputTest::RunTest(const FStri
 
 bool FAngelscriptGeneratedFunctionTableSkippedReasonSummaryCsvOutputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),
@@ -778,6 +788,7 @@ bool FAngelscriptGeneratedFunctionTableSkippedReasonSummaryCsvOutputTest::RunTes
 
 bool FAngelscriptGeneratedFunctionTableMacroQualifiedDirectBindingsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGeneratedFunctionTableTests_Private;
 	const FString GeneratedDirectory = FPaths::Combine(
 		FPaths::ProjectPluginsDir(),
 		TEXT("Angelscript"),

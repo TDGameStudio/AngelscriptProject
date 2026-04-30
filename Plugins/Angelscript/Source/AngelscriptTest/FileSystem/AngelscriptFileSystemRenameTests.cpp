@@ -32,7 +32,6 @@ namespace AngelscriptTest_FileSystem_AngelscriptFileSystemRenameTests_Private
 	}
 }
 
-using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemRenameTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFileSystemRenameWithoutDiscardTest,
@@ -41,6 +40,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptFileSystemRenameWithoutDiscardTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemRenameTests_Private;
 	CleanFileSystemRenameTestRoot();
 
 	bool bResult = false;

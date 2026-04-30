@@ -206,7 +206,6 @@ int EmptyTag_ParentParity()
 	}
 }
 
-using namespace AngelscriptGameplayTagEmptyContractTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -233,6 +232,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagEmptyContractTest,
 
 	TEST_METHOD(EmptyTagContracts)
 	{
+		using namespace AngelscriptGameplayTagEmptyContractTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

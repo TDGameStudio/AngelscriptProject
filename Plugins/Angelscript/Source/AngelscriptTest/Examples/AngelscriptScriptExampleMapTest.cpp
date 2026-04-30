@@ -112,12 +112,12 @@ class AExampleMapActor_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMapTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMapTest, "Angelscript.TestModule.ScriptExamples.Map", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleMapTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMapTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GMapExample);
 }
 

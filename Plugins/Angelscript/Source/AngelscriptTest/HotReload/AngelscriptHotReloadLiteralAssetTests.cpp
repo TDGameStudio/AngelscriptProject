@@ -29,7 +29,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest,
@@ -38,6 +37,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 

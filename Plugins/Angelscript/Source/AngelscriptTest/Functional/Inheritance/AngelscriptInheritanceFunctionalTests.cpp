@@ -26,7 +26,6 @@ namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 
 static const FBindingsCoverageProfile GInheritanceProfile{TEXT("Inheritance"),TEXT(""),TEXT("ASInheritance"),TEXT("Inheritance"),TEXT("InheritanceTests")};
 
@@ -45,6 +44,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptInheritanceFunctionalTests, "Angelscript.TestM
 
 	TEST_METHOD(ScriptToScript)
 	{
+		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceScriptToScript"));
@@ -107,6 +107,7 @@ class ATestInheritanceDerived : ATestCaseInheritanceBase
 
 	TEST_METHOD(Super)
 	{
+		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceSuper"));
@@ -169,6 +170,7 @@ class ATestInheritanceSuperDerived : ATestCaseInheritanceSuperBase
 
 	TEST_METHOD(IsA)
 	{
+		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceIsA"));

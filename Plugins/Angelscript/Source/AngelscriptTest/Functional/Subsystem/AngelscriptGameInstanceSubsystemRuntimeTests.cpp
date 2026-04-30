@@ -159,7 +159,6 @@ namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests
 	}
 }
 
-using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest,
@@ -178,6 +177,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -328,6 +328,7 @@ bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FStrin
 
 bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -446,6 +447,7 @@ bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FSt
 
 bool FAngelscriptGameInstanceSubsystemTickPolicyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

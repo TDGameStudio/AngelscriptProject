@@ -80,10 +80,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTes
 	};
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private;
 
 bool FAngelscriptEditorModuleLiteralAssetCurveSerializationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("Editor.Module.OnLiteralAssetSavedSerializesCurveKeysDefaultValueAndInfinityModes requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
@@ -189,6 +189,7 @@ bool FAngelscriptEditorModuleLiteralAssetCurveSerializationTest::RunTest(const F
 
 bool FAngelscriptEditorModuleLiteralAssetFlatCurveSerializationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("Editor.Module.OnLiteralAssetSavedFlatCurvesSkipAsciiGraphButPreserveSerializedKeys requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
@@ -365,6 +366,7 @@ bool FAngelscriptEditorModuleLiteralAssetFlatCurveSerializationTest::RunTest(con
 
 bool FAngelscriptEditorModuleLiteralAssetWeightedTangentSerializationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLiteralAssetTests_Private;
 	FAngelscriptRuntimeModule::InitializeAngelscript();
 	if (!TestTrue(TEXT("Editor.Module.OnLiteralAssetSavedWeightedTangentsEmitExpectedFunctionAndArgumentOrder requires the Angelscript engine to be initialized"), FAngelscriptEngine::IsInitialized()))
 	{

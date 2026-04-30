@@ -136,7 +136,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest,
@@ -145,6 +144,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerDatabaseRequestDebugDatabaseSequenceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDatabaseTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDatabaseDebuggerSession(*this, Session, Client))

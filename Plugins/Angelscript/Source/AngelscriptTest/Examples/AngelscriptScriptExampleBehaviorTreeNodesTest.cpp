@@ -97,12 +97,12 @@ class UBTTask_Example_UnitTest : UBTTask_BlueprintBase
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleBehaviorTreeNodesTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleBehaviorTreeNodesTest, "Angelscript.TestModule.ScriptExamples.BehaviorTreeNodes", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleBehaviorTreeNodesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleBehaviorTreeNodesTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GBehaviorTreeNodesExample);
 }
 

@@ -69,7 +69,6 @@ namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTest,
@@ -78,6 +77,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

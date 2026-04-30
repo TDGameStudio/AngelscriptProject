@@ -76,10 +76,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorStateDumpTests_Privat
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorStateDumpTests_Private;
 
 bool FAngelscriptEditorStateDumpRegisterAndWriteCsvTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorStateDumpTests_Private;
 	FClassReloadHelper::FReloadState SavedReloadState = FClassReloadHelper::ReloadState();
 	FAngelscriptStateDump::FDumpExtensionsDelegate SavedDumpExtensions;
 	Swap(SavedDumpExtensions, FAngelscriptStateDump::OnDumpExtensions);

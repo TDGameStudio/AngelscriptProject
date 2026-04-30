@@ -33,7 +33,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadFullReloadVersionChainAndCDOConsistencyTest,
@@ -47,6 +46,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadFullReloadVersionChainAndCDOConsistencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	ON_SCOPE_EXIT
@@ -233,6 +233,7 @@ class AHotReloadVersionChainTarget : AActor
 
 bool FAngelscriptHotReloadSoftReloadCDOAndInstanceConsistencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	ON_SCOPE_EXIT

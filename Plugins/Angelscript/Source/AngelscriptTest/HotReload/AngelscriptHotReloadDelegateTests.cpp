@@ -68,7 +68,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadReloadDelegatesBroadcastEnumChangeAndFullReloadTest,
@@ -87,6 +86,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadReloadDelegatesBroadcastEnumChangeAndFullReloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
@@ -255,6 +255,7 @@ class UHotReloadEventCarrier : UObject
 
 bool FAngelscriptHotReloadReloadDelegatesBroadcastOldAndNewTypesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
@@ -424,6 +425,7 @@ class UHotReloadDelegateCarrier : UObject
 
 bool FAngelscriptHotReloadReloadDelegatesBroadcastDelegateSignatureSwapTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 

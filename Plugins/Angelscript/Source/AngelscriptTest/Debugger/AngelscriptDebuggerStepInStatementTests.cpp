@@ -371,7 +371,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest,
@@ -380,6 +379,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerStepInOnStatementAdvancesWithinFrameTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepInStatementTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartStepInOnStatementDebuggerSession(*this, Session, Client))

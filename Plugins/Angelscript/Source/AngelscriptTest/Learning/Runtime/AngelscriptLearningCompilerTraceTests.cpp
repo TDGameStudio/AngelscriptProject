@@ -109,7 +109,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningCompilerTraceTest,
@@ -118,6 +117,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningCompilerTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningCompilerTraceTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

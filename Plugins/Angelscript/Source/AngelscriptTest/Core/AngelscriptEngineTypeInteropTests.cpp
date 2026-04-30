@@ -45,7 +45,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineTypeInteropTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineTypeInteropTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGetUnrealStructFromTypeIdRejectsNonStructsTest,
@@ -54,6 +53,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGetUnrealStructFromTypeIdRejectsNonStructsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineTypeInteropTests_Private;
 	FEngineTypeInteropContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

@@ -24,7 +24,6 @@ namespace AngelscriptTest_ClassGenerator_ClassGeneratorTests_Private
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_ClassGeneratorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptClassGeneratorEmptyModuleSetupTest,
@@ -33,6 +32,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptClassGeneratorEmptyModuleSetupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_ClassGeneratorTests_Private;
 	FAngelscriptEngine* Engine = GetEngineForClassGeneratorTests(this);
 	if (!TestNotNull(TEXT("ClassGenerator test should have an initialized engine"), Engine))
 	{

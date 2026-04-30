@@ -264,7 +264,6 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -280,6 +279,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionBindingsTest,
 
 	TEST_METHOD(SyncQueries)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 		ASTEST_BEGIN_FULL
 

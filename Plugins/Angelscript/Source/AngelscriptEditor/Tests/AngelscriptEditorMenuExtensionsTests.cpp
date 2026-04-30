@@ -146,10 +146,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_P
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_Private;
 
 bool FAngelscriptEditorMenuExtensionsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_Private;
 	UAngelscriptEditorMenuExtensionTestShim* BaseExtension = NewObject<UAngelscriptEditorMenuExtensionTestShim>(GetTransientPackage());
 	if (!TestNotNull(TEXT("MenuExtensions test should create a base extension shim"), BaseExtension))
 	{
@@ -323,6 +323,7 @@ bool FAngelscriptEditorMenuExtensionsTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptEditorMenuExtensionsActionMetadataTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionsTests_Private;
 	UAngelscriptEditorMenuExtensionActionTestShim* Extension = NewObject<UAngelscriptEditorMenuExtensionActionTestShim>(GetTransientPackage());
 	if (!TestNotNull(TEXT("MenuExtensions action metadata test should create an action extension shim"), Extension))
 	{

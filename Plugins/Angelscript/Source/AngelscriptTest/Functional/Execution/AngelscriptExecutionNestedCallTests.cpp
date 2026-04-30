@@ -54,7 +54,6 @@ int Entry()
 )AS");
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionNestedRecursiveFrameIsolationTest,
@@ -68,6 +67,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptExecutionNestedRecursiveFrameIsolationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
@@ -91,6 +91,7 @@ bool FAngelscriptExecutionNestedRecursiveFrameIsolationTest::RunTest(const FStri
 
 bool FAngelscriptExecutionExceptionCallstackInspectionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

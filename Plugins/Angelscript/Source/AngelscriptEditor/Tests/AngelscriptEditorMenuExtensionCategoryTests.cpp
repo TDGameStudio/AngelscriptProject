@@ -182,10 +182,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionCategory
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionCategoryTests_Private;
 
 bool FAngelscriptEditorMenuExtensionCategoryTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorMenuExtensionCategoryTests_Private;
 	UAngelscriptEditorMenuExtensionCategoryTestShim* Extension = NewObject<UAngelscriptEditorMenuExtensionCategoryTestShim>(GetTransientPackage());
 	if (!TestNotNull(TEXT("MenuExtensions category test should create a category-order extension shim"), Extension))
 	{

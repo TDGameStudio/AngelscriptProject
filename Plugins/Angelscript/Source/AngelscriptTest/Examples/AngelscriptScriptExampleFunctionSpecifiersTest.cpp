@@ -85,12 +85,12 @@ namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionSpecifiersTes
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionSpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFunctionSpecifiersTest, "Angelscript.TestModule.ScriptExamples.FunctionSpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleFunctionSpecifiersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionSpecifiersTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GFunctionSpecifiersExample);
 }
 

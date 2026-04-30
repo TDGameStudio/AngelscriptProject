@@ -36,7 +36,6 @@ namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_
 	}
 }
 
-using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleLookupFilenamePrecedenceTest,
@@ -45,6 +44,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptModuleLookupFilenamePrecedenceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_Private;
 	CleanFileSystemLookupPrecedenceTestRoot();
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();

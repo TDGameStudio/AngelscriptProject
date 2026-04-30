@@ -374,10 +374,10 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private;
 
 bool FAngelscriptDebuggerEvaluationScopeValuesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartEvaluationDebuggerSession(*this, Session, Client))
@@ -586,6 +586,7 @@ bool FAngelscriptDebuggerEvaluationScopeValuesTest::RunTest(const FString& Param
 
 bool FAngelscriptDebuggerEvaluationAdapterV1LegacyPayloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerEvaluationTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartEvaluationDebuggerSession(*this, Session, Client, 1))

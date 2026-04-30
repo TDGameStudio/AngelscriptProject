@@ -136,7 +136,6 @@ namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptExampleCoverageActorTest,
@@ -160,6 +159,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptScriptExampleCoverageActorTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -237,6 +237,7 @@ bool FAngelscriptScriptExampleCoverageActorTest::RunTest(const FString& Paramete
 
 bool FAngelscriptScriptExampleCoverageComponentTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -310,6 +311,7 @@ bool FAngelscriptScriptExampleCoverageComponentTest::RunTest(const FString& Para
 
 bool FAngelscriptScriptExampleCoverageUObjectTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -375,6 +377,7 @@ bool FAngelscriptScriptExampleCoverageUObjectTest::RunTest(const FString& Parame
 
 bool FAngelscriptScriptExampleCoveragePropertySpecifiersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCoverageTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();

@@ -87,7 +87,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITGeneratedOutputTests_Pri
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITGeneratedOutputTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITGeneratedOutputDebugMetadataHooksTest,
@@ -96,6 +95,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITGeneratedOutputDebugMetadataHooksTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITGeneratedOutputTests_Private;
 	const FString ScriptSource = MakeScriptSource();
 	const int32 FirstCallLine = FindScriptLineNumberContaining(ScriptSource, TEXT("AddOne(1);"));
 	const int32 SecondCallLine = FindScriptLineNumberContaining(ScriptSource, TEXT("AddTwo(First);"));

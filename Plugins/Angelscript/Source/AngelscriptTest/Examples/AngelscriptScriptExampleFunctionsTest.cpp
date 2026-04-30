@@ -66,12 +66,12 @@ void ExampleFunctionWithOutputParameter(FVector&out OutPosition)
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFunctionsTest, "Angelscript.TestModule.ScriptExamples.Functions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleFunctionsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFunctionsTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GFunctionsExample);
 }
 

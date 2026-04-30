@@ -303,7 +303,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointHitLineTest,
@@ -322,6 +321,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerBreakpointHitLineTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))
@@ -434,6 +434,7 @@ bool FAngelscriptDebuggerBreakpointHitLineTest::RunTest(const FString& Parameter
 
 bool FAngelscriptDebuggerBreakpointClearThenResumeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))
@@ -570,6 +571,7 @@ bool FAngelscriptDebuggerBreakpointClearThenResumeTest::RunTest(const FString& P
 
 bool FAngelscriptDebuggerBreakpointIgnoreInactiveBranchTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))

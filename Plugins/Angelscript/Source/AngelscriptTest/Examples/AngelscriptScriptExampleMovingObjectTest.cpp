@@ -96,12 +96,12 @@ class AExampleMovingObject_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMovingObjectTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMovingObjectTest, "Angelscript.TestModule.ScriptExamples.MovingObject", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleMovingObjectTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMovingObjectTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GMovingObjectExample);
 }
 

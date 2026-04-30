@@ -119,7 +119,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemLifecycleTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASActorInfoAndOwnedTagMirrorTest,
@@ -128,6 +127,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASActorInfoAndOwnedTagMirrorTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemLifecycleTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

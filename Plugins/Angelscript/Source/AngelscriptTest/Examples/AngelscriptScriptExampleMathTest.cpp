@@ -38,12 +38,12 @@ void ExecuteExampleMath()
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMathTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMathTest, "Angelscript.TestModule.ScriptExamples.Math", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleMathTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMathTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GMathExample);
 }
 

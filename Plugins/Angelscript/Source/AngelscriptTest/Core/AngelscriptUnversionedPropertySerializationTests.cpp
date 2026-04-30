@@ -211,7 +211,6 @@ namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptUnversionedPropertySerializationRoundTripTest,
@@ -220,6 +219,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptUnversionedPropertySerializationRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptUnversionedPropertySerializationTests_Private;
 	if (!TestTrue(
 			TEXT("Automation environment should enable unversioned property serialization"),
 			IsUnversionedPropertySerializationEnabled()))

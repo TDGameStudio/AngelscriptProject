@@ -145,7 +145,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITExceptionHelpersMapExpectedErrorsTest,
@@ -164,6 +163,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITExceptionHelpersMapExpectedErrorsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -192,6 +192,7 @@ bool FAngelscriptStaticJITExceptionHelpersMapExpectedErrorsTest::RunTest(const F
 
 bool FAngelscriptStaticJITExceptionHelpersWrapperParityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -220,6 +221,7 @@ bool FAngelscriptStaticJITExceptionHelpersWrapperParityTest::RunTest(const FStri
 
 bool FAngelscriptStaticJITExceptionHelpersSwitchValueInvalidTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

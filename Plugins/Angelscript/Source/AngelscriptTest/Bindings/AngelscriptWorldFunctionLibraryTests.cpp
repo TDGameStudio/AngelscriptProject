@@ -224,13 +224,13 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptWorldFunctionLibraryTest, "Angelscript.TestModule.FunctionLibraries.World",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
 	TEST_METHOD(WorldStreamingNullGuards)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private;
 		TestRunner->AddExpectedError(TEXT("Null pointer access"), EAutomationExpectedErrorFlags::Contains, 0);
 		TestRunner->AddExpectedError(TEXT("ASWorldStreamingNullGuards"), EAutomationExpectedErrorFlags::Contains, 0);
 		TestRunner->AddExpectedError(TEXT("int GetStreamingLevelCount(UWorld) | Line 4 | Col 2"), EAutomationExpectedErrorFlags::Contains, 1, false);
@@ -380,6 +380,7 @@ bool GetLevelVisibleInEditor(ULevelStreaming Level)
 
 	TEST_METHOD(WorldStreamingAccess)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 		ASTEST_BEGIN_FULL
 

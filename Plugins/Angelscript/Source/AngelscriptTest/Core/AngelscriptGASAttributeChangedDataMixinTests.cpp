@@ -80,7 +80,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAttributeChangedDataMixinTests_Priv
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAttributeChangedDataMixinTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAttributeChangedDataMixinTest,
@@ -89,6 +88,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAttributeChangedDataMixinTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAttributeChangedDataMixinTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("AttributeChangedData mixin test should acquire an isolated full engine"), Fixture.IsValid()))
 	{

@@ -151,10 +151,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private;
 
 bool FAngelscriptEditorModuleLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private;
 	FMockDirectoryWatcher DirectoryWatcher;
 	FAngelscriptEditorModule Module;
 	bool bModuleStarted = false;
@@ -262,6 +262,7 @@ bool FAngelscriptEditorModuleLifecycleTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptEditorModuleOnEngineInitDoneDataSourceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private;
 	UContentBrowserDataSubsystem* ContentBrowserDataSubsystem = IContentBrowserDataModule::Get().GetSubsystem();
 	if (!TestNotNull(TEXT("Editor.Module.OnEngineInitDoneActivatesAngelscriptDataSourceOnce should resolve the content browser data subsystem"), ContentBrowserDataSubsystem))
 	{
@@ -348,6 +349,7 @@ bool FAngelscriptEditorModuleOnEngineInitDoneDataSourceTest::RunTest(const FStri
 
 bool FAngelscriptEditorModuleReloadTagsDelegatesLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleLifecycleTests_Private;
 	FMockDirectoryWatcher DirectoryWatcher;
 	FAngelscriptEditorModule Module;
 	bool bModuleStarted = false;

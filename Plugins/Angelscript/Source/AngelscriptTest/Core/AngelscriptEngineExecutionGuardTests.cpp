@@ -55,7 +55,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineExecutionGuardTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineExecutionGuardTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrepareContextLogsCrossEngineMismatchTest,
@@ -64,6 +63,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptPrepareContextLogsCrossEngineMismatchTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineExecutionGuardTests_Private;
 	FEngineExecutionGuardContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

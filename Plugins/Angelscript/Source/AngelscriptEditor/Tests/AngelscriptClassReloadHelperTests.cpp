@@ -85,10 +85,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Priv
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private;
 
 bool FAngelscriptClassReloadHelperPerformReinstanceInitialCompileGateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private;
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperTestEngine();
@@ -227,6 +227,7 @@ bool FAngelscriptClassReloadHelperPerformReinstanceInitialCompileGateTest::RunTe
 
 bool FAngelscriptClassReloadHelperReloadStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private;
 	EnsureReloadHelperInitialized();
 
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
@@ -336,6 +337,7 @@ bool FAngelscriptClassReloadHelperReloadStateTest::RunTest(const FString& Parame
 
 bool FAngelscriptClassReloadHelperEnumAndAssetReloadStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperTests_Private;
 	EnsureReloadHelperInitialized();
 
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();

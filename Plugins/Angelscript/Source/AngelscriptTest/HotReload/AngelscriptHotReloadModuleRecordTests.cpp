@@ -213,7 +213,6 @@ class %s : UObject
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadModuleRecordTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadModuleRecordTracksEnumAndDelegateArtifactsTest,
@@ -222,6 +221,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadModuleRecordTracksEnumAndDelegateArtifactsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadModuleRecordTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	bool bModuleAPassed = false;
 	bool bModuleBPassed = false;

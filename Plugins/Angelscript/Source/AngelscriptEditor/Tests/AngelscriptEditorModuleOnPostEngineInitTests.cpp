@@ -95,10 +95,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleOnPostEngineIni
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleOnPostEngineInitTests_Private;
 
 bool FAngelscriptEditorModuleOnPostEngineInitRestartTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleOnPostEngineInitTests_Private;
 	UContentBrowserDataSubsystem* ContentBrowserDataSubsystem = IContentBrowserDataModule::Get().GetSubsystem();
 	if (!TestNotNull(TEXT("Editor.Module.OnPostEngineInitDoesNotDuplicateAcrossRestart should resolve the content browser data subsystem"), ContentBrowserDataSubsystem))
 	{

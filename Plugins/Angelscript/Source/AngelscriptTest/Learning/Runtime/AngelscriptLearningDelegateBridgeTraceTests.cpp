@@ -28,7 +28,6 @@ void InitializeLearningDelegateSpawner(FActorTestSpawner& Spawner)
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningDelegateBridgeTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningDelegateBridgeTraceTest,
@@ -37,6 +36,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningDelegateBridgeTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningDelegateBridgeTraceTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("LearningDelegateBridgeModule"));

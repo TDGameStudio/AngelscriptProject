@@ -101,12 +101,12 @@ class AExampleEventActor_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleDelegatesTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleDelegatesTest, "Angelscript.TestModule.ScriptExamples.Delegates", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleDelegatesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleDelegatesTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GDelegatesExample);
 }
 

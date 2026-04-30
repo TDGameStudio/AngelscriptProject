@@ -104,7 +104,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrecompiledDataBuildIdentifierValidationTest,
@@ -113,6 +112,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptPrecompiledDataBuildIdentifierValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

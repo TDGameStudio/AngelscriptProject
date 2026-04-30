@@ -204,10 +204,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Priv
 	};
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Private;
 
 bool FAngelscriptEditorModuleShowAssetListPopupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Private;
 	FAssetListPopupCallLog CallLog;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakePopupTestEngine();
@@ -382,6 +382,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptEditorModuleShowCreateBlueprintPopupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModulePopupTests_Private;
 	FCreateBlueprintPopupCallLog CallLog;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakePopupTestEngine();

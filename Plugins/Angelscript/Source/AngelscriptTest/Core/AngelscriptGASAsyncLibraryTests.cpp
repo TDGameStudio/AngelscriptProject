@@ -151,7 +151,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASWaitGameplayTagQueryCreatesTaskTest,
@@ -160,6 +159,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASWaitGameplayTagQueryCreatesTaskTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -252,6 +252,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASActorWrappersCreateWorkingTasksTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

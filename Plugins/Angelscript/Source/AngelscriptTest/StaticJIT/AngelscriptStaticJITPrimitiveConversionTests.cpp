@@ -20,7 +20,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITPrimitiveBitCastRoundTripTest,
@@ -39,6 +38,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITPrimitiveBitCastRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -91,6 +91,7 @@ bool FAngelscriptStaticJITPrimitiveBitCastRoundTripTest::RunTest(const FString& 
 
 bool FAngelscriptStaticJITPrimitiveZeroExtendParityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -135,6 +136,7 @@ bool FAngelscriptStaticJITPrimitiveZeroExtendParityTest::RunTest(const FString& 
 
 bool FAngelscriptStaticJITPrimitiveNumericConversionParityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

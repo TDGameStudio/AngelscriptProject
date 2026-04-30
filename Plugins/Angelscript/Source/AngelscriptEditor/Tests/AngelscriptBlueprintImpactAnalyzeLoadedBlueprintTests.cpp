@@ -165,10 +165,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoade
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private;
 
 bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEmptySymbolsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, UObject::StaticClass(), TEXT("EmptySymbols"));
 	ON_SCOPE_EXIT
 	{
@@ -215,6 +215,7 @@ bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEmptySymbolsTest::RunTest(
 
 bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEditablePinsAndMacroWildcardReportPinTypeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private;
 	FEdGraphPinType VectorPinType;
 	VectorPinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
 	VectorPinType.PinSubCategoryObject = TBaseStructure<FVector>::Get();
@@ -300,6 +301,7 @@ bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEditablePinsAndMacroWildca
 
 bool FAngelscriptBlueprintImpactAnalyzeLoadedBlueprintEnumPinsAndVariablesReportExactReasonsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactAnalyzeLoadedBlueprintTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, UObject::StaticClass(), TEXT("EnumPinsAndVariables"));
 	ON_SCOPE_EXIT
 	{

@@ -155,10 +155,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadReferenceReplace
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadReferenceReplacementTests_Private;
 
 bool FAngelscriptClassReloadHelperReferenceReplacementHelperTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadReferenceReplacementTests_Private;
 	UAssetEditorSubsystem* AssetEditorSubsystem = GEditor != nullptr ? GEditor->GetEditorSubsystem<UAssetEditorSubsystem>() : nullptr;
 	UAngelscriptReferenceReplacementHelper* Helper = NewObject<UAngelscriptReferenceReplacementHelper>(GetTransientPackage());
 	UObject* OriginalAssetObject = CreateReferenceReplacementTestAsset(*this, TEXT("ClassReloadHelperOriginalAsset"));

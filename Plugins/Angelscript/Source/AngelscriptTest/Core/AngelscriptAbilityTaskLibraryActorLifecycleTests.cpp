@@ -194,7 +194,6 @@ namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryActorLifecycleTests_
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryActorLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryActorLifecycleWrappersTest,
@@ -203,6 +202,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryActorLifecycleWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryActorLifecycleTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

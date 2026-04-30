@@ -63,7 +63,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCoreCreateCompileExecuteTest,
@@ -72,6 +71,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreCreateCompileExecuteTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 
@@ -93,6 +93,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreCreateCompileExecuteFreshEngineBootstrapTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	static constexpr ANSICHAR ModuleNameAnsi[] = "ASCoreFreshBootstrap";
 	static const FName ModuleName(TEXT("ASCoreFreshBootstrap"));
 	static const FString Script = TEXT("int DoubleValue(int Value) { return Value * 2; } int Run() { return DoubleValue(21); }");
@@ -207,6 +208,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreGlobalStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 
@@ -228,6 +230,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreCreateEngineTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngineConfig Config;
 	FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
 	TUniquePtr<FAngelscriptEngine> LocalEngineA = AngelscriptTestSupport::CreateScriptScanFreeEngineForTesting(Config, Dependencies);
@@ -259,6 +262,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreCreateEngineRequestedModeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FCoreEngineContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -389,6 +393,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FAngelscriptCoreCreateEngineIsolatedModuleRegistriesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	const FName ModuleName(TEXT("ASCoreCreateEngineIsolationA"));
 	const FAngelscriptEngineConfig Config;
 	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
@@ -414,6 +419,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	static const FName ModuleName(TEXT("ASCoreModuleLookupProbe"));
 	static const FString RelativeFilename(TEXT("Lookup/ModuleLookup/FilenameFallback.as"));
 	static const FString MissingFilename(TEXT("Z:/DefinitelyMissing/ModuleLookupProbe.as"));
@@ -518,6 +524,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCompilerBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 	const bool bCompiledSimple = CompileModuleFromMemory(
@@ -605,6 +612,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCompilerParserTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 	const bool bCompiledValid = CompileModuleFromMemory(
@@ -650,6 +658,7 @@ bool FAngelscriptCompilerParserTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptCompilerParserInvalidSyntaxDiagnosticsAndCleanupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 	static const FName ModuleName(TEXT("ASCoreParserInvalidCleanup"));
@@ -756,6 +765,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCompilerOptimizeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 	const bool bCompiledConstant = CompileModuleFromMemory(

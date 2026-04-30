@@ -121,7 +121,6 @@ namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -160,6 +159,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAssetRegistryBindingsTest,
 
 	TEST_METHOD(TopLevelPathAndNullParent)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private;
 		TestRunner->AddExpectedError(TEXT("A null Class was passed to GetBlueprintCDOsByParentClass."), EAutomationExpectedErrorFlags::Contains, 0);
 		TestRunner->AddExpectedError(TEXT("ASAssetReg_TopLevelPathAndNullParent"), EAutomationExpectedErrorFlags::Contains, 0);
 		TestRunner->AddExpectedError(TEXT("void TriggerNullParent(UObject[]&)"), EAutomationExpectedErrorFlags::Contains, 0, false);
@@ -265,6 +265,7 @@ void TriggerNullParent(TArray<UObject>& OutAssets)
 
 	TEST_METHOD(QueryCompat)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptAssetRegistryBindingsTests_Private;
 		static const FName EngineMaterialsPath(TEXT("/Engine/EngineMaterials"));
 		static const FString TargetObjectPath(TEXT("/Engine/EngineMaterials/DefaultMaterial.DefaultMaterial"));
 

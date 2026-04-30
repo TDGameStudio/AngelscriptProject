@@ -163,7 +163,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilityOverrideDetectionFlagsTest,
@@ -172,6 +171,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilityOverrideDetectionFlagsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -327,6 +327,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilityCueWrappersForwardTagAndGuardNullTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private;
 	UAngelscriptGASTestCueForwardingAbility* Ability = NewObject<UAngelscriptGASTestCueForwardingAbility>(GetTransientPackage());
 	if (!TestNotNull(TEXT("Cue wrapper test should create a forwarding recorder ability"), Ability))
 	{

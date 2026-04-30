@@ -39,7 +39,6 @@ int Run()
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAutoInferenceByOverloadTest,
@@ -48,6 +47,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAutoInferenceByOverloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 

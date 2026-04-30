@@ -60,7 +60,6 @@ namespace AngelscriptTest_Core_AngelscriptFunctionCallersTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptFunctionCallersTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFunctionCallersRoundTripTest,
@@ -69,6 +68,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptFunctionCallersRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptFunctionCallersTests_Private;
 	FFuncEntry GlobalEntry = { ERASE_AUTO_FUNCTION_PTR(GlobalAddAndBump) };
 	FFuncEntry MethodEntry = { ERASE_AUTO_METHOD_PTR(FFunctionCallerHarness, AddToBias) };
 	FFuncEntry ConstMethodEntry = { ERASE_AUTO_METHOD_PTR(FFunctionCallerHarness, GetBiasRef) };

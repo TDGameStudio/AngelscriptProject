@@ -51,12 +51,12 @@ class AExampleStructActor_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleStructTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleStructTest, "Angelscript.TestModule.ScriptExamples.Struct", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleStructTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleStructTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GStructExample);
 }
 

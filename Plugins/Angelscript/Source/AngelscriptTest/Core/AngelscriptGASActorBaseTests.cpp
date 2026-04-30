@@ -65,7 +65,6 @@ namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASCharacterInputAndOwnedTagsTest,
@@ -79,6 +78,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASCharacterInputAndOwnedTagsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -176,6 +176,7 @@ class AAutomationGASCharacter : AAngelscriptGASCharacter
 
 bool FAngelscriptGASActorBaseAbilitySystemAndPawnInputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASActorBaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

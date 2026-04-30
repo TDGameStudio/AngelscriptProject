@@ -81,10 +81,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReload
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReloadTests_Private;
 
 bool FAngelscriptClassReloadHelperOnPostReloadFullReloadEffectsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReloadTests_Private;
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperPostReloadTestEngine();
@@ -273,6 +273,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptClassReloadHelperOnPostReloadSoftReloadInvalidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperPostReloadTests_Private;
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperPostReloadTestEngine();

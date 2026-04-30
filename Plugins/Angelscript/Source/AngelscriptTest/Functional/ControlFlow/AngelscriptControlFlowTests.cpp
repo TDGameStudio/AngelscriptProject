@@ -60,7 +60,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptControlFlowForLoopTest,
@@ -74,6 +73,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptControlFlowForLoopTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -90,6 +90,7 @@ bool FAngelscriptControlFlowForLoopTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptControlFlowForLoopDecrementAndZeroIterationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -126,6 +127,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptControlFlowForeachBreakContinueNestedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -142,6 +144,7 @@ bool FAngelscriptControlFlowForeachBreakContinueNestedTest::RunTest(const FStrin
 
 bool FAngelscriptControlFlowWhileBreakContinueNestedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -158,6 +161,7 @@ bool FAngelscriptControlFlowWhileBreakContinueNestedTest::RunTest(const FString&
 
 bool FAngelscriptControlFlowSwitchTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -174,6 +178,7 @@ bool FAngelscriptControlFlowSwitchTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptControlFlowSwitchMatrixTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -205,6 +210,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptControlFlowConditionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -221,6 +227,7 @@ bool FAngelscriptControlFlowConditionTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptControlFlowIfElseStatementMatrixTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -237,6 +244,7 @@ bool FAngelscriptControlFlowIfElseStatementMatrixTest::RunTest(const FString& Pa
 
 bool FAngelscriptControlFlowInvalidBreakContinueDiagnosticsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -312,6 +320,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptControlFlowNeverVisitedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
 
@@ -343,6 +352,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptControlFlowNotInitializedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bFoundUninitializedWarning = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -367,6 +377,7 @@ bool FAngelscriptControlFlowNotInitializedTest::RunTest(const FString& Parameter
 
 bool FAngelscriptControlFlowNotInitializedBranchDefiniteAssignmentMatrixTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

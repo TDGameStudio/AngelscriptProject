@@ -236,7 +236,6 @@ namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryRepresentativeWrappersTest,
@@ -245,6 +244,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryRepresentativeWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -413,6 +413,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryGameplayEffectWatcherWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -673,6 +674,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryRootMotionAndTargetingWrapperArgumentsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

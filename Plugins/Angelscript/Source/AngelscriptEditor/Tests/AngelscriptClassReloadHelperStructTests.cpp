@@ -150,10 +150,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperStructTest
 	};
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperStructTests_Private;
 
 bool FAngelscriptClassReloadHelperPerformReinstanceStructDependencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperStructTests_Private;
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperStructTestEngine();

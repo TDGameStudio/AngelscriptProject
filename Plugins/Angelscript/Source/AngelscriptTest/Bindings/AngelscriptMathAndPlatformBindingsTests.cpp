@@ -66,7 +66,6 @@ namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Priva
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -105,6 +104,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMathAndPlatformBindingsTest,
 
 	TEST_METHOD(MathExtended)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -277,6 +277,7 @@ int LinePlaneIntersectionCorrect()
 
 	TEST_METHOD(MathDeterministic)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 		constexpr float Tolerance = 0.001f;
 		const float ExpectedClampAngle = FMath::ClampAngle(370.0f, -180.0f, 180.0f);
 		const float ExpectedDeltaAngle = FMath::FindDeltaAngleDegrees(10.0f, 20.0f);
@@ -349,6 +350,7 @@ int Entry()
 
 	TEST_METHOD(PlatformProcess)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -385,6 +387,7 @@ int CanLaunchURLWorks() { return FPlatformProcess::CanLaunchURL("https://example
 
 	TEST_METHOD(Logging)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 		TestRunner->AddExpectedError(TEXT("Test error message"), EAutomationExpectedErrorFlags::Contains, 1);
 
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();

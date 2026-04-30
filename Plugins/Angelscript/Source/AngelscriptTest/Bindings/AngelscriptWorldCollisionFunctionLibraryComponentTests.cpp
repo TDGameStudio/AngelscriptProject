@@ -191,7 +191,6 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryCompo
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 
 // ----------------------------------------------------------------------------
 // Test class
@@ -207,6 +206,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionFunctionLibraryComponentTest,
 
 	TEST_METHOD(ComponentQueries)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 		ASTEST_BEGIN_FULL
 
@@ -389,6 +389,7 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 
 	TEST_METHOD(NullComponentQueries)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 		ASTEST_BEGIN_FULL
 

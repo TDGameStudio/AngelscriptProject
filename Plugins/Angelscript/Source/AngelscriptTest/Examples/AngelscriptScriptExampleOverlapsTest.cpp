@@ -69,12 +69,12 @@ class UExampleOverlapComponent_UnitTest : UPrimitiveComponent
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleOverlapsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleOverlapsTest, "Angelscript.TestModule.ScriptExamples.Overlaps", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleOverlapsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleOverlapsTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GOverlapsExample);
 }
 

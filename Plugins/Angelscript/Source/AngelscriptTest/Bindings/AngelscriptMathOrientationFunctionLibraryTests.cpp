@@ -163,7 +163,6 @@ namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTest
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptMathOrientationFunctionLibraryTest, "Angelscript.TestModule.FunctionLibraries.MathOrientation",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -181,6 +180,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMathOrientationFunctionLibraryTest, "Angelscri
 
 	TEST_METHOD(FactoriesAndTransformMutators)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptMathOrientationFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

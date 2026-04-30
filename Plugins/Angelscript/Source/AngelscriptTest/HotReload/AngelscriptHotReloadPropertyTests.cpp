@@ -13,7 +13,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private
 {
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSoftReloadBasicTest,
@@ -37,6 +36,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptSoftReloadBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -140,6 +140,7 @@ int GetSoftReloadVersion()
 
 bool FAngelscriptSoftReloadPreservesOtherModulesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
@@ -208,6 +209,7 @@ int GetValueA()
 
 bool FAngelscriptFullReloadBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	const FString ScriptV1 = TEXT(R"AS(
@@ -308,6 +310,7 @@ class UFullReloadTarget : UObject
 
 bool FAngelscriptFullReloadEnumBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPropertyTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	ON_SCOPE_EXIT

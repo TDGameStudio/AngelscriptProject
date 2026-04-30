@@ -430,7 +430,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerPauseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerPauseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerPauseStopsAtNextScriptLineTest,
@@ -439,6 +438,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerPauseStopsAtNextScriptLineTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerPauseTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartPauseDebuggerSession(*this, Session, Client))

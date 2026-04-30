@@ -118,7 +118,6 @@ namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTes
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptExecutionArgumentSlotOrderMatrixTest,
@@ -127,6 +126,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptExecutionArgumentSlotOrderMatrixTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -234,6 +234,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptExecutionOneArgNegativeAndZeroTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -281,6 +282,7 @@ bool FAngelscriptExecutionOneArgNegativeAndZeroTest::RunTest(const FString& Para
 
 bool FAngelscriptExecutionRefAddressRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -358,6 +360,7 @@ bool FAngelscriptExecutionRefAddressRoundTripTest::RunTest(const FString& Parame
 
 bool FAngelscriptExecutionDoubleArgDirectApiRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

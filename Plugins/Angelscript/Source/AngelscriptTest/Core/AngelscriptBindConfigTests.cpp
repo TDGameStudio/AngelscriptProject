@@ -190,7 +190,6 @@ namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGlobalDisabledBindNamesTest,
@@ -269,6 +268,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGlobalDisabledBindNamesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 	if (!TestNotNull(TEXT("BindConfig.GlobalDisabledBindNames should access mutable settings"), Settings))
 	{
@@ -328,6 +328,7 @@ bool FAngelscriptGlobalDisabledBindNamesTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptEngineDisabledBindNamesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 	if (!TestNotNull(TEXT("BindConfig.EngineDisabledBindNames should access mutable settings"), Settings))
 	{
@@ -379,6 +380,7 @@ bool FAngelscriptEngineDisabledBindNamesTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptUnnamedBindBackwardCompatibilityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	const TArray<FName> BaselineBindNames = FAngelscriptBinds::GetAllRegisteredBindNames();
 	const FName CounterKey = MakeUniqueBindTestName(TEXT("Automation.BindConfig.Unnamed.Counter"));
 	FBindExecutionRecorder::Reset(CounterKey);
@@ -431,6 +433,7 @@ bool FAngelscriptUnnamedBindBackwardCompatibilityTest::RunTest(const FString& Pa
 
 bool FAngelscriptStartupBindOrderCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	const FName EarlyBindName = MakeUniqueBindTestName(TEXT("Automation.BindConfig.StartupOrder.Early"));
 	const FName LateBindName = MakeUniqueBindTestName(TEXT("Automation.BindConfig.StartupOrder.Late"));
 	FAngelscriptBinds::FBind EarlyBind(EarlyBindName, -100, []() {});
@@ -465,6 +468,7 @@ bool FAngelscriptStartupBindOrderCoverageTest::RunTest(const FString& Parameters
 
 bool FAngelscriptStartupDisabledBindMergeCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 	if (!TestNotNull(TEXT("BindConfig.StartupPathMergesDisabledBindNames should access mutable settings"), Settings))
 	{
@@ -504,6 +508,7 @@ bool FAngelscriptStartupDisabledBindMergeCoverageTest::RunTest(const FString& Pa
 
 bool FAngelscriptGeneratedFunctionEntryPopulationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -566,6 +571,7 @@ bool FAngelscriptGeneratedFunctionEntryPopulationTest::RunTest(const FString& Pa
 
 bool FAngelscriptFunctionEntryDeduplicationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	FAngelscriptBinds::ResetBindState();
 	ON_SCOPE_EXIT
 	{
@@ -599,6 +605,7 @@ bool FAngelscriptFunctionEntryDeduplicationTest::RunTest(const FString& Paramete
 
 bool FAngelscriptBlueprintInternalUseOnlyOverrideTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	UFunction* WithOverride = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("InternalCallableWithOverride"));
 	UFunction* WithoutOverride = UAngelscriptUhtCoverageTestLibrary::StaticClass()->FindFunctionByName(TEXT("InternalCallableWithoutOverride"));
 	if (!TestNotNull(TEXT("BlueprintInternalUseOnlyCanBeOverriddenForAngelscript should find the override test function"), WithOverride)
@@ -615,6 +622,7 @@ bool FAngelscriptBlueprintInternalUseOnlyOverrideTest::RunTest(const FString& Pa
 
 bool FAngelscriptScriptMethodMetadataCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -658,6 +666,7 @@ bool FAngelscriptScriptMethodMetadataCoverageTest::RunTest(const FString& Parame
 
 bool FAngelscriptCallableWithoutWorldContextMetadataTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -717,6 +726,7 @@ bool FAngelscriptCallableWithoutWorldContextMetadataTest::RunTest(const FString&
 
 bool FAngelscriptScriptAllowTemporaryThisMetadataTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -757,6 +767,7 @@ bool FAngelscriptScriptAllowTemporaryThisMetadataTest::RunTest(const FString& Pa
 
 bool FAngelscriptUnsafeDuringActorConstructionMetadataTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -813,6 +824,7 @@ bool FAngelscriptUnsafeDuringActorConstructionMetadataTest::RunTest(const FStrin
 
 bool FAngelscriptOverloadResolutionCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -861,6 +873,7 @@ bool FAngelscriptOverloadResolutionCoverageTest::RunTest(const FString& Paramete
 
 bool FAngelscriptInlineDefinitionCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{
@@ -909,6 +922,7 @@ bool FAngelscriptInlineDefinitionCoverageTest::RunTest(const FString& Parameters
 
 bool FAngelscriptInlineOutRefCoverageTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindConfigTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
 	{

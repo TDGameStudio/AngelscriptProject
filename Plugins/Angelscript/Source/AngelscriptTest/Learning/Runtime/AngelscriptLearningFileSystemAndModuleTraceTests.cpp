@@ -41,7 +41,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModul
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModuleTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningFileSystemAndModuleTraceTest,
@@ -50,6 +49,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningFileSystemAndModuleTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModuleTraceTests_Private;
 	CleanLearningFileSystemRoot();
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

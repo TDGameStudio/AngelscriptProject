@@ -103,7 +103,6 @@ namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRuntimePerformanceScriptSelfTest,
@@ -122,6 +121,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptRuntimePerformanceScriptSelfTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	bool bWroteMetrics = false;
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -239,6 +239,7 @@ class URuntimePerformanceScriptSelfCarrier : UObject
 
 bool FAngelscriptRuntimePerformanceNativePropertyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private;
 	TUniquePtr<FAngelscriptEngine> EngineOwner = CreatePerformanceEditorBindingEngine();
 	if (!TestTrue(TEXT("Native property benchmark engine should create"), EngineOwner.IsValid()))
 	{
@@ -356,6 +357,7 @@ class URuntimePerformanceNativePropertyCarrier : UObject
 
 bool FAngelscriptRuntimePerformanceNativeFunctionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private;
 	TUniquePtr<FAngelscriptEngine> EngineOwner = CreatePerformanceEditorBindingEngine();
 	if (!TestTrue(TEXT("Native function benchmark engine should create"), EngineOwner.IsValid()))
 	{

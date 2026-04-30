@@ -32,7 +32,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAbilityTaskTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilityTaskTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilityTaskLifecycleTest,
@@ -41,6 +40,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilityTaskLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilityTaskTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("GAS AbilityTask lifecycle test should acquire an isolated full engine"), Fixture.IsValid()))
 	{

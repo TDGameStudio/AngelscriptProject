@@ -41,7 +41,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASRegisterAttributeSetReplayTest,
@@ -60,6 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASRegisterAttributeSetReplayTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -131,6 +131,7 @@ bool FAngelscriptGASRegisterAttributeSetReplayTest::RunTest(const FString& Param
 
 bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 
@@ -329,6 +330,7 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 
 bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

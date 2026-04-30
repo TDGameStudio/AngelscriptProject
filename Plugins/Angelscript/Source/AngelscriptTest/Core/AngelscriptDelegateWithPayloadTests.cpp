@@ -71,7 +71,6 @@ namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDelegateWithPayloadBindExecuteResetTest,
@@ -80,6 +79,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDelegateWithPayloadBindExecuteResetTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private;
 	bool bPassed = false;
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();

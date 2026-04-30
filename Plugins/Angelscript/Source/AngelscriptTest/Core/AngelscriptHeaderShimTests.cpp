@@ -95,7 +95,6 @@ namespace AngelscriptTest_Core_AngelscriptHeaderShimTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptHeaderShimTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHeaderShimRawApiRoundTripTest,
@@ -104,6 +103,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHeaderShimRawApiRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptHeaderShimTests_Private;
 	const ANSICHAR* RawLibraryVersion = asGetLibraryVersion();
 	if (!TestNotNull(TEXT("HeaderShim native API test should expose a library version string"), RawLibraryVersion))
 	{

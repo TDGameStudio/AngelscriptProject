@@ -96,10 +96,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreT
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreTests_Private;
 
 bool FAngelscriptBlueprintImpactBuildImpactSymbolsDelegateFilteringTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreTests_Private;
 	UDelegateFunction* SignatureFunction = FindAbilitySystemDelegateSignature(
 		*this,
 		GET_MEMBER_NAME_CHECKED(UAngelscriptAbilitySystemComponent, OnAbilityGiven));
@@ -172,6 +172,7 @@ bool FAngelscriptBlueprintImpactBuildImpactSymbolsDelegateFilteringTest::RunTest
 
 bool FAngelscriptBlueprintImpactMatchChangedScriptsEmptyInputReturnsAllModulesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerCoreTests_Private;
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = {
 		MakeScannerCoreModule(TEXT("Gameplay.Enemy"), { TEXT("Scripts/Gameplay/Enemy.as"), TEXT("Scripts/Gameplay/EnemyAbilities.as") }),
 		MakeScannerCoreModule(TEXT("Gameplay.Boss"), { TEXT("Scripts/Gameplay/Boss.as") })

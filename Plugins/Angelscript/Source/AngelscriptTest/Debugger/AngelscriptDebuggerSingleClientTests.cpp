@@ -119,7 +119,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSingleClientTests_Private
 
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSingleClientTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSingleClientBreakpointRoundtripTest,
@@ -128,6 +127,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSingleClientBreakpointRoundtripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSingleClientTests_Private;
 	bool bPassed = false;
 	FAngelscriptDebuggerTestSession Session;
 	if (!StartSingleClientDebuggerSession(*this, Session))

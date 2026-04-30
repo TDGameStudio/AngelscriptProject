@@ -24,7 +24,6 @@ namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilitySystemQueryTest,
@@ -33,6 +32,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilitySystemQueryTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("GAS query test should acquire an isolated full engine"), Fixture.IsValid()))
 	{
@@ -182,6 +182,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilitySystemInvalidHandleGuardsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("GAS invalid-handle guard test should acquire an isolated full engine"), Fixture.IsValid()))
 	{
@@ -263,6 +264,7 @@ bool FAngelscriptGASAbilitySystemInvalidHandleGuardsTest::RunTest(const FString&
 
 bool FAngelscriptGASCheckedAttributeGetterMissingSetTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemQueryTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("GAS checked-attribute getter test should acquire an isolated full engine"), Fixture.IsValid()))
 	{

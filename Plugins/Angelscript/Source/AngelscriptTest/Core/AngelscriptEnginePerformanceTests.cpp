@@ -643,10 +643,10 @@ class %s : UObject
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 
 bool FAngelscriptStartupPerformanceFullModeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureFullStartup(); });
 	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_Full"), TEXT("Angelscript.TestModule.Core.Performance.Startup.Full"), Samples, { TEXT("Measured with fresh full-engine startup samples." )});
 	return true;
@@ -654,6 +654,7 @@ bool FAngelscriptStartupPerformanceFullModeTest::RunTest(const FString& Paramete
 
 bool FAngelscriptStartupPerformanceCloneModeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCloneStartup(); });
 	for (const FStartupPerformanceSample& Sample : Samples)
 	{
@@ -666,6 +667,7 @@ bool FAngelscriptStartupPerformanceCloneModeTest::RunTest(const FString& Paramet
 
 bool FAngelscriptStartupPerformanceCreateForTestingFallbackTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCreateForTestingFallbackStartup(); });
 	ValidateAndWriteStartupMetrics(*this, TEXT("P3_1_StartupPerformance_CreateForTestingFallback"), TEXT("Angelscript.TestModule.Core.Performance.Startup.CreateForTestingFallbackFull"), Samples, { TEXT("CreateForTesting falls back to a full engine when no global source engine exists.") });
 	return true;
@@ -673,6 +675,7 @@ bool FAngelscriptStartupPerformanceCreateForTestingFallbackTest::RunTest(const F
 
 bool FAngelscriptStartupPerformanceCreateForTestingCloneTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	const TArray<FStartupPerformanceSample> Samples = CollectStartupSamples([]() { return MeasureCreateForTestingCloneStartup(); });
 	for (const FStartupPerformanceSample& Sample : Samples)
 	{
@@ -685,6 +688,7 @@ bool FAngelscriptStartupPerformanceCreateForTestingCloneTest::RunTest(const FStr
 
 bool FAngelscriptShareCleanCyclePerformanceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEnginePerformanceTests_Private;
 	constexpr int32 CycleCount = 3;
 	const FString RunSuffix = FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8);
 	const FShareCleanWorkload Workloads[] = {

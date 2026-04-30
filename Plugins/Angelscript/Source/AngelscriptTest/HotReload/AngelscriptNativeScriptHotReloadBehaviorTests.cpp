@@ -106,7 +106,6 @@ class UNativeHotReloadPhase2BMathCarrier : UObject
 	}
 }
 
-using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadBehaviorTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2BNamespaceFunctionBehaviorSwitchTest,
@@ -115,6 +114,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNativeScriptHotReloadPhase2BNamespaceFunctionBehaviorSwitchTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadBehaviorTests_Private;
 	FAngelscriptEngine* ProductionEngine = RequireRunningProductionEngine(
 		*this,
 		TEXT("Native script namespace hot reload behavior tests require a production engine."));

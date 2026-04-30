@@ -483,7 +483,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Pri
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerCrossFileSteppingTest,
@@ -492,6 +491,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerCrossFileSteppingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartCrossFileDebuggerSession(*this, Session, Client))
@@ -623,6 +623,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerCrossFileStepOverStaysInCallerTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerCrossFileSteppingTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartCrossFileDebuggerSession(*this, Session, Client))

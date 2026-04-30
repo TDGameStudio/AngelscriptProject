@@ -32,12 +32,12 @@ void Example_MixinMethod()
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMixinMethodsTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleMixinMethodsTest, "Angelscript.TestModule.ScriptExamples.MixinMethods", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleMixinMethodsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleMixinMethodsTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GMixinMethodsExample);
 }
 

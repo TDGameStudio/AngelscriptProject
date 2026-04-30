@@ -162,7 +162,6 @@ namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindDatabaseSaveLoadRoundTripTest,
@@ -186,6 +185,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptBindDatabaseSaveLoadRoundTripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("BindDatabase.SaveLoadRoundTripsClassesAndHeaders should acquire an isolated full engine"), Fixture.IsValid()))
 	{
@@ -303,6 +303,7 @@ bool FAngelscriptBindDatabaseSaveLoadRoundTripTest::RunTest(const FString& Param
 
 bool FAngelscriptBindDatabaseGetCurrentEnginePriorityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 	FBindDatabaseContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -458,6 +459,7 @@ bool FAngelscriptBindDatabaseGetCurrentEnginePriorityTest::RunTest(const FString
 
 bool FAngelscriptBindDatabaseLoadWithoutHeadersSidecarTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("BindDatabase.LoadWithoutHeadersSidecarLeavesHeaderLinksEmptyButRestoresBinds should acquire an isolated full engine"), Fixture.IsValid()))
 	{
@@ -558,6 +560,7 @@ bool FAngelscriptBindDatabaseLoadWithoutHeadersSidecarTest::RunTest(const FStrin
 
 bool FAngelscriptBindDatabaseClearPurgesEnumsDelegatesAndHeaderLinksTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindDatabaseTests_Private;
 	FAngelscriptTestFixture Fixture(*this, ETestEngineMode::IsolatedFull);
 	if (!TestTrue(TEXT("BindDatabase.ClearPurgesEnumsDelegatesAndHeaderLinks should acquire an isolated full engine"), Fixture.IsValid()))
 	{

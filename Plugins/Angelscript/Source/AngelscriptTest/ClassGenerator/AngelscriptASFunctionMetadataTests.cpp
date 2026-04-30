@@ -64,7 +64,6 @@ namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Priv
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASFunctionNetValidateCachesValidateFunctionTest,
@@ -73,6 +72,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptASFunctionNetValidateCachesValidateFunctionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

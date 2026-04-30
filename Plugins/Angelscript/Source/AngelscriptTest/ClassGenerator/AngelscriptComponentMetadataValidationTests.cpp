@@ -83,7 +83,6 @@ class ADerivedOverrideMissing : ABaseOverrideMissing
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptComponentInvalidAttachParentFailsClosedTest,
@@ -92,6 +91,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptComponentInvalidAttachParentFailsClosedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -159,6 +159,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptComponentMissingOverrideTargetFailsClosedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN

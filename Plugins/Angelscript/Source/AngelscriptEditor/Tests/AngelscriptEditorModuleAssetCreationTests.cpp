@@ -176,10 +176,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTe
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private;
 
 bool FAngelscriptEditorModuleShowCreateBlueprintPopupSeedsDialogDefaultsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private;
 	FCreateBlueprintPopupDefaultsCallLog CallLog;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakePopupAssetCreationTestEngine();
@@ -293,6 +293,7 @@ bool FAngelscriptEditorModuleShowCreateBlueprintPopupSeedsDialogDefaultsTest::Ru
 
 bool FAngelscriptEditorModuleShowCreateBlueprintPopupRejectsInvalidDialogObjectPathTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private;
 	FCreateBlueprintPopupInvalidObjectPathCallLog CallLog;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakePopupAssetCreationTestEngine();
@@ -425,6 +426,7 @@ bool FAngelscriptEditorModuleShowCreateBlueprintPopupRejectsInvalidDialogObjectP
 
 bool FAngelscriptEditorModuleShowCreateBlueprintPopupBlueprintFactoryFailureTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleAssetCreationTests_Private;
 	FCreateBlueprintPopupFactoryFailureCallLog CallLog;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakePopupAssetCreationTestEngine();

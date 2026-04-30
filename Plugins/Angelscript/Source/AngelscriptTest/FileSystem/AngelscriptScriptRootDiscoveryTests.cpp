@@ -51,7 +51,6 @@ namespace AngelscriptTest_FileSystem_AngelscriptScriptRootDiscoveryTests_Private
 	}
 }
 
-using namespace AngelscriptTest_FileSystem_AngelscriptScriptRootDiscoveryTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptRootDiscoveryProjectRootFirstAndPluginRootsDedupedTest,
@@ -60,6 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptScriptRootDiscoveryProjectRootFirstAndPluginRootsDedupedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptScriptRootDiscoveryTests_Private;
 	const FString ProjectDir = NormalizeDiscoveryPath(TEXT("J:/VirtualProject"));
 	const FString ProjectScriptRoot = NormalizeDiscoveryPath(ProjectDir / TEXT("Script"));
 	const FString PluginBetaRoot = NormalizeDiscoveryPath(TEXT("J:/VirtualProject/Plugins/Beta/Script"));

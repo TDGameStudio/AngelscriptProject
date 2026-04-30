@@ -196,7 +196,6 @@ FString GetOutsideInitModule() { return Script::GetModuleNameOfGlobalVariableBei
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -235,6 +234,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptFunctionLibraryTest,
 
 	TEST_METHOD(GlobalInitContextHotReloadName)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -335,6 +335,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptFunctionLibraryTest,
 
 	TEST_METHOD(GlobalInitContext)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

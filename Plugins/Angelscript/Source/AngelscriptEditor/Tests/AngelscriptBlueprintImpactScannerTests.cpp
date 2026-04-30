@@ -255,10 +255,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 
 bool FAngelscriptBlueprintImpactNormalizePathsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	const TArray<FString> ChangedScripts = {
 		TEXT("Scripts\\Gameplay\\Enemy.as"),
 		TEXT("./Scripts/Gameplay/Enemy.as"),
@@ -275,6 +275,7 @@ bool FAngelscriptBlueprintImpactNormalizePathsTest::RunTest(const FString& Param
 
 bool FAngelscriptBlueprintImpactMatchChangedScriptsToModuleSectionsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	const TArray<TSharedRef<FAngelscriptModuleDesc>> Modules = {
 		MakeTestModule(TEXT("Gameplay.Enemy"), {
 			MakeCodeSection(TEXT("Scripts/Gameplay/Enemy.as")),
@@ -301,6 +302,7 @@ bool FAngelscriptBlueprintImpactMatchChangedScriptsToModuleSectionsTest::RunTest
 
 bool FAngelscriptBlueprintImpactBuildSymbolsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	TSharedRef<FAngelscriptModuleDesc> Module = MakeShared<FAngelscriptModuleDesc>();
 	Module->Classes.Add(MakeClassDesc(TEXT("BlueprintImpactActor"), AActor::StaticClass()));
 	Module->Classes.Add(MakeStructDesc(TEXT("BlueprintImpactStruct"), TBaseStructure<FVector>::Get()));
@@ -323,6 +325,7 @@ bool FAngelscriptBlueprintImpactBuildSymbolsTest::RunTest(const FString& Paramet
 
 bool FAngelscriptBlueprintImpactAnalyzeParentClassTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, AActor::StaticClass(), TEXT("ParentMatch"));
 	ON_SCOPE_EXIT
 	{
@@ -348,6 +351,7 @@ bool FAngelscriptBlueprintImpactAnalyzeParentClassTest::RunTest(const FString& P
 
 bool FAngelscriptBlueprintImpactCommandletInvalidFileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UAngelscriptBlueprintImpactScanCommandlet* Commandlet = NewObject<UAngelscriptBlueprintImpactScanCommandlet>();
 	if (!TestNotNull(TEXT("BlueprintImpact.CommandletInvalidFile should create the commandlet object"), Commandlet))
 	{
@@ -385,6 +389,7 @@ bool FAngelscriptBlueprintImpactCommandletInvalidFileTest::RunTest(const FString
 
 bool FAngelscriptBlueprintImpactCommandletEngineNotReadyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UAngelscriptBlueprintImpactScanCommandlet* Commandlet = NewObject<UAngelscriptBlueprintImpactScanCommandlet>();
 	if (!TestNotNull(TEXT("BlueprintImpact.CommandletEngineNotReady should create the commandlet object"), Commandlet))
 	{
@@ -416,6 +421,7 @@ bool FAngelscriptBlueprintImpactCommandletEngineNotReadyTest::RunTest(const FStr
 
 bool FAngelscriptBlueprintImpactAnalyzeVariableTypeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, UObject::StaticClass(), TEXT("VariableType"));
 	ON_SCOPE_EXIT { CleanupBlueprint(Blueprint); };
 	if (!TestNotNull(TEXT("BlueprintImpact.AnalyzeVariableType should create a blueprint"), Blueprint))
@@ -443,6 +449,7 @@ bool FAngelscriptBlueprintImpactAnalyzeVariableTypeTest::RunTest(const FString& 
 
 bool FAngelscriptBlueprintImpactAnalyzePinTypeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, UObject::StaticClass(), TEXT("PinType"));
 	ON_SCOPE_EXIT { CleanupBlueprint(Blueprint); };
 	if (!TestNotNull(TEXT("BlueprintImpact.AnalyzePinType should create a blueprint"), Blueprint))
@@ -470,6 +477,7 @@ bool FAngelscriptBlueprintImpactAnalyzePinTypeTest::RunTest(const FString& Param
 
 bool FAngelscriptBlueprintImpactAnalyzeNodeDependencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, UObject::StaticClass(), TEXT("NodeDependency"));
 	ON_SCOPE_EXIT { CleanupBlueprint(Blueprint); };
 	if (!TestNotNull(TEXT("BlueprintImpact.AnalyzeNodeDependency should create a blueprint"), Blueprint))
@@ -497,6 +505,7 @@ bool FAngelscriptBlueprintImpactAnalyzeNodeDependencyTest::RunTest(const FString
 
 bool FAngelscriptBlueprintImpactAnalyzeReferencedAssetTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UBlueprint* Blueprint = CreateTransientBlueprintChild(*this, AActor::StaticClass(), TEXT("ReferencedAsset"));
 	ON_SCOPE_EXIT { CleanupBlueprint(Blueprint); };
 	if (!TestNotNull(TEXT("BlueprintImpact.AnalyzeReferencedAsset should create a blueprint"), Blueprint))
@@ -518,6 +527,7 @@ bool FAngelscriptBlueprintImpactAnalyzeReferencedAssetTest::RunTest(const FStrin
 
 bool FAngelscriptBlueprintImpactAnalyzeDelegateSignatureTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	UDelegateFunction* DelegateFunc = nullptr;
 	for (TFieldIterator<FProperty> It(AActor::StaticClass()); It; ++It)
 	{
@@ -575,6 +585,7 @@ bool FAngelscriptBlueprintImpactAnalyzeDelegateSignatureTest::RunTest(const FStr
 
 bool FAngelscriptBlueprintImpactFindBlueprintAssetsDiskBackedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScannerTests_Private;
 	FString PackagePath;
 	FString PackageFilename;
 	UBlueprint* Blueprint = CreateDiskBackedBlueprintChild(*this, AActor::StaticClass(), TEXT("DiskBackedEditor"), PackagePath, PackageFilename);

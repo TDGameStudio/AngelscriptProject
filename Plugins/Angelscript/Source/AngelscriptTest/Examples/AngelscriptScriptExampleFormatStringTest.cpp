@@ -53,12 +53,12 @@ class AExampleFormatString_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFormatStringTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleFormatStringTest, "Angelscript.TestModule.ScriptExamples.FormatString", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleFormatStringTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleFormatStringTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GFormatStringExample);
 }
 

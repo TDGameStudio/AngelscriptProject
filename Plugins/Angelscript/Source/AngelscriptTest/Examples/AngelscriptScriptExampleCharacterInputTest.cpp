@@ -67,12 +67,12 @@ class AExampleInputCharacter_UnitTest : ACharacter
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCharacterInputTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleCharacterInputTest, "Angelscript.TestModule.ScriptExamples.CharacterInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleCharacterInputTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleCharacterInputTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GCharacterInputExample);
 }
 

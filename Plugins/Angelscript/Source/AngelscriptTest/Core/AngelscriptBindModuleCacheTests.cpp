@@ -53,7 +53,6 @@ namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptBindModuleCacheRoundTripAndMissingFileTest,
@@ -62,6 +61,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptBindModuleCacheRoundTripAndMissingFileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptBindModuleCacheTests_Private;
 	const TArray<FString> ExpectedBindModules = MakeExpectedBindModules();
 	const FString CacheDirectory = MakeBindModuleCacheAutomationDirectory();
 	const FString CachePath = FPaths::Combine(CacheDirectory, TEXT("BindModules.Cache"));

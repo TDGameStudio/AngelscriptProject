@@ -55,7 +55,6 @@ namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScriptObjectGetObjectTypeMatchesGeneratedASClassTest,
@@ -64,6 +63,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptScriptObjectGetObjectTypeMatchesGeneratedASClassTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

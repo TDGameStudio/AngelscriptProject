@@ -59,12 +59,12 @@ class AExampleTimerActor_UnitTest : AActor
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleTimersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleTimersTest, "Angelscript.TestModule.ScriptExamples.Timers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleTimersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleTimersTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GTimersExample);
 }
 

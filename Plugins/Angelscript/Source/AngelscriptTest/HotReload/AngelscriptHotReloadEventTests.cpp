@@ -155,7 +155,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadPostReloadModeFlagMatchesReloadPathTest,
@@ -169,6 +168,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadPostReloadModeFlagMatchesReloadPathTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
@@ -326,6 +326,7 @@ class UPostReloadModeTarget : UObject
 
 bool FAngelscriptHotReloadFailedReloadDoesNotBroadcastReloadDelegatesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private;
 	static const FName ModuleName(TEXT("HotReloadFailedReloadEventMod"));
 	static const FString Filename(TEXT("HotReloadFailedReloadEventMod.as"));
 	static const FName ClassName(TEXT("UFailedReloadEventTarget"));

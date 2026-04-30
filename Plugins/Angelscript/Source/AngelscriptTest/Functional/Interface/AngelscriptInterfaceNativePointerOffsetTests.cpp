@@ -95,7 +95,6 @@ namespace AngelscriptTest_InterfaceNativePointerOffset_Private
 	}
 }
 
-using namespace AngelscriptTest_InterfaceNativePointerOffset_Private;
 
 // ----------------------------------------------------------------------------
 // Test Class
@@ -108,6 +107,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativePointerOffsetTest, "Angelscript
 
 	TEST_METHOD(MultiInterfaceCast)
 	{
+		using namespace AngelscriptTest_InterfaceNativePointerOffset_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -217,6 +217,7 @@ class ATestInterfaceNativePointerOffset : AActor
 
 	TEST_METHOD(ScriptClassStillZeroOffset)
 	{
+		using namespace AngelscriptTest_InterfaceNativePointerOffset_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

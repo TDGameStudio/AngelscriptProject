@@ -76,7 +76,6 @@ namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestGCActorDestroyTest,
@@ -95,6 +94,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTestGCActorDestroyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestGCActorDestroy"));
@@ -147,6 +147,7 @@ class ATestGCActorDestroy : AActor
 
 bool FAngelscriptTestGCComponentDestroyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestGCComponentDestroy"));
@@ -199,6 +200,7 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 
 bool FAngelscriptTestGCWorldTeardownTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestGCWorldTeardown"));

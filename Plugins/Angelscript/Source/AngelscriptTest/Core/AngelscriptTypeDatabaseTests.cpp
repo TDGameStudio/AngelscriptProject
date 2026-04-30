@@ -109,7 +109,6 @@ namespace AngelscriptTest_Core_AngelscriptTypeDatabaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptTypeDatabaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTypeDatabaseResetLifecycleTest,
@@ -118,6 +117,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTypeDatabaseResetLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptTypeDatabaseTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

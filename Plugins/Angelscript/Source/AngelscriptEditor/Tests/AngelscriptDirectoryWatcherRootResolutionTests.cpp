@@ -57,10 +57,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherRootResolut
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherRootResolutionTests_Private;
 
 bool FAngelscriptDirectoryWatcherMatchingRootSelectionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherRootResolutionTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString BaseRoot = MakeTempWatcherRoot(TEXT("RootResolution"));
 	const FString ProjectRoot = FPaths::ConvertRelativePathToFull(BaseRoot / TEXT("Scripts"));

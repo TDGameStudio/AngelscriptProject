@@ -137,10 +137,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleDirectoryWatche
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleDirectoryWatcherTests_Private;
 
 bool FAngelscriptEditorModuleOnScriptFileChangesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempEditorModuleRoot(TEXT("OnScriptFileChanges"));
 	const FString ScriptsFolder = RootPath / TEXT("Scripts");

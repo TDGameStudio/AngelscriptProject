@@ -54,7 +54,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSkinnedMeshBindingTest,
@@ -133,6 +132,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptSkinnedMeshBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("Skinned mesh test should access the production angelscript engine"), Engine))
 	{
@@ -152,6 +152,7 @@ bool FAngelscriptSkinnedMeshBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptDelegateWithPayloadBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("DelegateWithPayload test should access the production angelscript engine"), Engine))
 	{
@@ -171,6 +172,7 @@ bool FAngelscriptDelegateWithPayloadBindingTest::RunTest(const FString& Paramete
 
 bool FAngelscriptCollisionProfileBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("CollisionProfile test should access the production angelscript engine"), Engine))
 	{
@@ -231,6 +233,7 @@ bool FAngelscriptCollisionProfileBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptCollisionQueryParamsBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("CollisionQueryParams test should access the production angelscript engine"), Engine))
 	{
@@ -265,6 +268,7 @@ bool FAngelscriptCollisionQueryParamsBindingTest::RunTest(const FString& Paramet
 
 bool FAngelscriptWorldCollisionBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("WorldCollision test should access the production angelscript engine"), Engine))
 	{
@@ -310,6 +314,7 @@ bool FAngelscriptWorldCollisionBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptIntPointBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("FIntPoint test should access the production angelscript engine"), Engine))
 	{
@@ -360,6 +365,7 @@ bool FAngelscriptIntPointBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptVector2fBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("FVector2f test should access the production angelscript engine"), Engine))
 	{
@@ -411,6 +417,7 @@ bool FAngelscriptVector2fBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptSoftReferenceCppFormTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	if (!TestNotNull(TEXT("Soft reference C++ form test should access the production angelscript engine"), GetProductionEngineForParity(this)))
 	{
 		return false;
@@ -455,6 +462,7 @@ bool FAngelscriptSoftReferenceCppFormTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptSoftReferenceBindingCompileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("Soft reference compile test should access the production angelscript engine"), Engine))
 	{
@@ -489,6 +497,7 @@ bool FAngelscriptSoftReferenceBindingCompileTest::RunTest(const FString& Paramet
 
 bool FAngelscriptUserWidgetPaintBindingCompileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("UserWidget paint compile test should access the production angelscript engine"), Engine))
 	{
@@ -514,6 +523,7 @@ bool FAngelscriptUserWidgetPaintBindingCompileTest::RunTest(const FString& Param
 
 bool FAngelscriptLevelStreamingBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("LevelStreaming test should access the production angelscript engine"), Engine))
 	{
@@ -535,6 +545,7 @@ bool FAngelscriptLevelStreamingBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptRuntimeCurveLinearColorBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("RuntimeCurveLinearColor test should access the production angelscript engine"), Engine))
 	{
@@ -574,6 +585,7 @@ bool FAngelscriptRuntimeCurveLinearColorBindingTest::RunTest(const FString& Para
 
 bool FAngelscriptHitResultBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("FHitResult test should access the production angelscript engine"), Engine))
 	{
@@ -630,6 +642,7 @@ bool FAngelscriptHitResultBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptDeprecationsBindingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	static const FName NAME_META_DeprecatedFunction(TEXT("DeprecatedFunction"));
 	static const FName NAME_META_DeprecationMessage(TEXT("DeprecationMessage"));
 
@@ -647,6 +660,7 @@ bool FAngelscriptDeprecationsBindingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptStartupBindRegistryParityTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineParityTests_Private;
 	FAngelscriptEngine* Engine = GetProductionEngineForParity(this);
 	if (!TestNotNull(TEXT("Startup bind registry smoke should access the production angelscript engine"), Engine))
 	{

@@ -103,10 +103,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleSettingsTests_P
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleSettingsTests_Private;
 
 bool FAngelscriptEditorModuleProjectSettingsLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptEditorModuleSettingsTests_Private;
 	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 	const bool bHadInitialSettingsSection = FindAngelscriptProjectSettingsSection(SettingsModule).IsValid();
 	FMockDirectoryWatcher DirectoryWatcher;

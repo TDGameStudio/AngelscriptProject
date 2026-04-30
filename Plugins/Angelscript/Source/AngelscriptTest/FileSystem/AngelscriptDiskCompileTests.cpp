@@ -31,7 +31,6 @@ namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private
 	}
 }
 
-using namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDiskCompileReadsUpdatedSourceFromPathTest,
@@ -40,6 +39,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDiskCompileReadsUpdatedSourceFromPathTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private;
 	CleanDiskCompileTestRoot();
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();

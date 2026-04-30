@@ -16,7 +16,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private
 {
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleRecordTrackingTest,
@@ -83,6 +82,7 @@ struct FAngelscriptHotReloadTestAccess
 
 bool FAngelscriptModuleRecordTrackingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	const FString ScriptA = TEXT(R"AS(
@@ -154,6 +154,7 @@ class UTrackedObjectB : UObject
 
 bool FAngelscriptDiscardModuleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	const FString ScriptA = TEXT(R"AS(
@@ -217,6 +218,7 @@ int SurvivorEntry()
 
 bool FAngelscriptDiscardAndRecompileTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	const FString ScriptV1 = TEXT(R"AS(
@@ -303,6 +305,7 @@ class UDiscardRecompileTargetV2 : UObject
 
 bool FAngelscriptModuleWatcherQueuesFileChangesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 
@@ -333,6 +336,7 @@ bool FAngelscriptModuleWatcherQueuesFileChangesTest::RunTest(const FString& Para
 
 bool FAngelscriptHotReloadModifyLookupFlowTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
@@ -419,6 +423,7 @@ class UHotReloadModifyLookupFlow : UObject
 
 bool FAngelscriptHotReloadFailureKeepsOldCodeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	AddExpectedError(TEXT("HotReloadFailureKeepsOldCode.as:"), EAutomationExpectedErrorFlags::Contains, 2);
 	AddExpectedError(TEXT("Identifier 'MissingType' is not a data type in global namespace"), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Identifier 'MissingType' is not a data type"), EAutomationExpectedErrorFlags::Contains, 1);

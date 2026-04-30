@@ -115,7 +115,6 @@ namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassRuntimeAddReferencedObjectsKeepsScriptOnlyObjectReferenceAliveTest,
@@ -124,6 +123,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptASClassRuntimeAddReferencedObjectsKeepsScriptOnlyObjectReferenceAliveTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT
@@ -262,6 +262,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptASClassReferenceSchemaDoesNotDuplicateAcrossRepeatedSoftReloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

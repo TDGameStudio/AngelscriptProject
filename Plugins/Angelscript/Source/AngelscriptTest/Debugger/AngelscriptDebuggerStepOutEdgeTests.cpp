@@ -335,7 +335,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerStepOutTopFrameCompletesTest,
@@ -344,6 +343,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerStepOutTopFrameCompletesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerStepOutEdgeTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartStepOutEdgeDebuggerSession(*this, Session, Client))

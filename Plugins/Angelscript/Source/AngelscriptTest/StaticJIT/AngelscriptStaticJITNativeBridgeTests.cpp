@@ -259,7 +259,6 @@ namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest,
@@ -273,6 +272,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -308,6 +308,7 @@ bool FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest::RunTest(cons
 
 bool FAngelscriptStaticJITNativeBridgeGenericMethodNullThisThrowsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL

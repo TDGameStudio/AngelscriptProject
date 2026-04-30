@@ -88,12 +88,12 @@ namespace AngelscriptTest_Examples_AngelscriptScriptExamplePropertySpecifiersTes
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExamplePropertySpecifiersTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExamplePropertySpecifiersTest, "Angelscript.TestModule.ScriptExamples.PropertySpecifiers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExamplePropertySpecifiersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExamplePropertySpecifiersTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GPropertySpecifiersExample);
 }
 

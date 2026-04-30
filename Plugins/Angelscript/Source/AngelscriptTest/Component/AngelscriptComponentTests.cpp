@@ -59,7 +59,6 @@ namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestComponentBeginPlayTest,
@@ -98,6 +97,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTestComponentBeginPlayTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestComponentBeginPlay"));
@@ -157,6 +157,7 @@ class UTestComponentBeginPlay : UAngelscriptComponent
 
 bool FAngelscriptTestComponentTickTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestComponentTick"));
@@ -219,6 +220,7 @@ class UTestComponentTick : UAngelscriptComponent
 
 bool FAngelscriptTestComponentReceiveEndPlayTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestComponentReceiveEndPlay"));
@@ -280,6 +282,7 @@ class UTestComponentReceiveEndPlay : UAngelscriptComponent
 
 bool FAngelscriptTestComponentActorOwnerTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("TestComponentActorOwner"));
@@ -361,6 +364,7 @@ class UTestComponentActorOwner : UAngelscriptComponent
 
 bool FAngelscriptTestDefaultComponentBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	InitializeComponentTestCaseSpawner(Spawner);
@@ -427,6 +431,7 @@ class ATestDefaultComponentBasic : AActor
 
 bool FAngelscriptTestDefaultComponentMultipleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	InitializeComponentTestCaseSpawner(Spawner);
@@ -521,6 +526,7 @@ class ATestDefaultComponentMultiple : AActor
 
 bool FAngelscriptTestDefaultComponentNativeTypesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	DestroySharedTestEngine();
 	FActorTestSpawner Spawner;
 	InitializeComponentTestCaseSpawner(Spawner);
@@ -612,6 +618,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDefaultComponentDeepAttachChainTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -677,6 +684,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptOverrideComponentMultiLayerTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -747,6 +755,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNativeActorWithExtraComponentTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -800,6 +809,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptOverrideComponentMetadataMultiLayerTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();

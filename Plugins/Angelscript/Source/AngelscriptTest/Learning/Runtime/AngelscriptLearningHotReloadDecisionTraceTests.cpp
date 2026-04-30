@@ -85,7 +85,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionT
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningHotReloadDecisionTraceTest,
@@ -94,6 +93,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningHotReloadDecisionTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningHotReloadDecisionTraceTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 	ResetSharedCloneEngine(Engine);

@@ -156,10 +156,10 @@ namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 
 bool FAngelscriptCSVWriterBasicTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 	const FString OutputFilename = FPaths::Combine(MakeUniqueDumpTestPath(TEXT("CSVWriterBasic")), TEXT("Basic.csv"));
 
 	FCSVWriter Writer;
@@ -186,6 +186,7 @@ bool FAngelscriptCSVWriterBasicTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptCSVWriterEscapingTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 	const FString OutputFilename = FPaths::Combine(MakeUniqueDumpTestPath(TEXT("CSVWriterEscape")), TEXT("Escaped.csv"));
 
 	FCSVWriter Writer;
@@ -213,6 +214,7 @@ bool FAngelscriptCSVWriterEscapingTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptStateDumpEndToEndTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 	FString OutputDir;
 	if (!RunDumpAll(*this, OutputDir))
 	{
@@ -230,6 +232,7 @@ bool FAngelscriptStateDumpEndToEndTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptStateDumpSummaryTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Dump_AngelscriptDumpTests_Private;
 	FString OutputDir;
 	if (!RunDumpAll(*this, OutputDir))
 	{

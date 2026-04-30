@@ -60,12 +60,12 @@ namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.AngelScriptSDK.StringUtil", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
 	TEST_METHOD(ParseInt)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
 		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
@@ -80,6 +80,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.
 
 	TEST_METHOD(ParseNegativeInt)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
 		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
@@ -94,6 +95,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.
 
 	TEST_METHOD(ParseFloat)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
 		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
@@ -108,6 +110,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.
 
 	TEST_METHOD(ParseZero)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
 		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
@@ -122,6 +125,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.
 
 	TEST_METHOD(LargeValue)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
 		if (!TestNotNull(TEXT("Should create engine"), SE)) return;

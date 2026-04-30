@@ -91,7 +91,6 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTagTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGASAbilitySystemTagQueryActivationAndCancelTest,
@@ -100,6 +99,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGASAbilitySystemTagQueryActivationAndCancelTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTagTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

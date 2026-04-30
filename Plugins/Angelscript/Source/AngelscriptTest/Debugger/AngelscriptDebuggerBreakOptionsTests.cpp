@@ -421,7 +421,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest,
@@ -430,6 +429,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerBreakpointBreakOptionsGateStopTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakOptionsTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))

@@ -75,7 +75,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceT
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningPreprocessorTraceTest,
@@ -84,6 +83,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningPreprocessorTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningPreprocessorTraceTests_Private;
 	FAngelscriptLearningTraceSinkConfig SinkConfig;
 	SinkConfig.bEmitToAutomation = true;
 	SinkConfig.bEmitToLog = true;

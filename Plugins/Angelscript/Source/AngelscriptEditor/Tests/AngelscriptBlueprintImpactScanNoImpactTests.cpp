@@ -231,10 +231,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanNoImpact
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanNoImpactTests_Private;
 
 bool FAngelscriptBlueprintImpactScanNoMatchingModulesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactScanNoImpactTests_Private;
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = CreateBlueprintImpactNoImpactTestEngine();
 	TUniquePtr<FAngelscriptEngineScope> EngineScope;

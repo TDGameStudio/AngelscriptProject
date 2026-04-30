@@ -61,10 +61,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperClassReloa
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperClassReloadTests_Private;
 
 bool FAngelscriptClassReloadHelperOnClassReloadRefreshesClassActionsAndInvalidatesComponentRegistryForNonInterfaceComponentsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptClassReloadHelperClassReloadTests_Private;
 	const FClassReloadHelper::FReloadState SavedState = FClassReloadHelper::ReloadState();
 	TArray<FAngelscriptEngine*> SavedStack = FAngelscriptEngineContextStack::SnapshotAndClear();
 	TUniquePtr<FAngelscriptEngine> Engine = MakeClassReloadHelperImmediateEffectTestEngine();

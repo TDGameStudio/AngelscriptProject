@@ -131,7 +131,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerSmokeProtocolTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSmokeProtocolTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSmokeBreakFiltersRoundtripTest,
@@ -140,6 +139,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSmokeBreakFiltersRoundtripTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerSmokeProtocolTests_Private;
 	FScopedDebugBreakFiltersBinding ScopedBinding(
 		[](FAngelscriptDebugBreakFilters& OutFilters)
 		{

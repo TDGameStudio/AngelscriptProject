@@ -157,7 +157,6 @@ namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGlobalBindingsMacroValidationTest,
@@ -191,6 +190,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGlobalBindingsMacroValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	ASTEST_BEGIN_FULL
@@ -231,6 +231,7 @@ int Entry()
 
 bool FAngelscriptSharedCleanMacroValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	bool bPassed = false;
 	int32 Result = 0;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -255,6 +256,7 @@ int Entry()
 
 bool FAngelscriptSharedFreshMacroValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	bool bPassed = false;
 	int32 Result = 0;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
@@ -279,6 +281,7 @@ int Entry()
 
 bool FAngelscriptModuleCleanMacroValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	bool bPassed = false;
 	int32 Result = 0;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
@@ -305,6 +308,7 @@ int Entry()
 
 bool FAngelscriptLifecycleEndPlacementValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	TArray<FString> MisplacedLocations;
 	CollectTerminalReturnBeforeLifecycleEndLocations(MisplacedLocations);
 
@@ -329,6 +333,7 @@ bool FAngelscriptLifecycleEndPlacementValidationTest::RunTest(const FString& Par
 
 bool FAngelscriptLifecycleEarlyReturnValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Validation_AngelscriptMacroValidationTests_Private;
 	TArray<FString> MisplacedLocations;
 	CollectEarlyLifecycleReturnLocations(
 		TEXT("Plugins/Angelscript/Source/AngelscriptTest/Actor"),

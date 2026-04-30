@@ -55,10 +55,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTe
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTests_Private;
 
 bool FAngelscriptBlueprintImpactCommandletMergeChangedScriptsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTests_Private;
 	const FString TempDirectory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BlueprintImpact"));
 	IFileManager::Get().MakeDirectory(*TempDirectory, true);
 
@@ -179,6 +179,7 @@ bool FAngelscriptBlueprintImpactCommandletMergeChangedScriptsTest::RunTest(const
 
 bool FAngelscriptBlueprintImpactCommandletFailedAssetLoadsReturnExitCode3Test::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptBlueprintImpactCommandletTests_Private;
 	UAngelscriptBlueprintImpactScanCommandlet* Commandlet = NewObject<UAngelscriptBlueprintImpactScanCommandlet>();
 	if (!TestNotNull(TEXT("BlueprintImpact.CommandletFailedAssetLoadsReturnExitCode3 should create the commandlet object"), Commandlet))
 	{

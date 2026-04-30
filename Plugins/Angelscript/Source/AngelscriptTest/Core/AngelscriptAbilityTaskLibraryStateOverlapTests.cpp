@@ -108,7 +108,6 @@ namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryStateOverlapTests_Pr
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryStateOverlapTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptAbilityTaskLibraryStateAndOverlapWrappersTest,
@@ -117,6 +116,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptAbilityTaskLibraryStateAndOverlapWrappersTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryStateOverlapTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

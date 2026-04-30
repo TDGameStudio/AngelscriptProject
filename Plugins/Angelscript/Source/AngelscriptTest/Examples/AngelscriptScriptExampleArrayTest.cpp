@@ -61,12 +61,12 @@ void ExecuteExampleArray()
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleArrayTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleArrayTest, "Angelscript.TestModule.ScriptExamples.Array", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleArrayTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleArrayTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GArrayExample);
 }
 

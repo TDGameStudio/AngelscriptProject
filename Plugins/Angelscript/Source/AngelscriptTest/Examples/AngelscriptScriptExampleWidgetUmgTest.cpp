@@ -52,12 +52,12 @@ void Example_AddExampleWidgetToHUD(APlayerController OwningPlayer, TSubclassOf<U
 	};
 }
 
-using namespace AngelscriptTest_Examples_AngelscriptScriptExampleWidgetUmgTest_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptScriptExampleWidgetUmgTest, "Angelscript.TestModule.ScriptExamples.WidgetUMG", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptScriptExampleWidgetUmgTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Examples_AngelscriptScriptExampleWidgetUmgTest_Private;
 	return AngelscriptScriptExamples::RunScriptExampleCompileTest(*this, GWidgetUmgExample);
 }
 

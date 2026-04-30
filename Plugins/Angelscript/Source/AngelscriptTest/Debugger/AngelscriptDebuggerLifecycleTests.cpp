@@ -314,7 +314,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest,
@@ -323,6 +322,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerSessionDisconnectClearsDebugStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerLifecycleTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartLifecycleDebuggerSession(*this, Session, Client))

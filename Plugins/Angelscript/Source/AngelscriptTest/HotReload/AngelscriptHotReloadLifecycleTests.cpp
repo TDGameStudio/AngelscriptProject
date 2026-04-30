@@ -29,7 +29,6 @@ namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptHotReloadDoesNotReplayBeginPlayOnLiveActorTest,
@@ -38,6 +37,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptHotReloadDoesNotReplayBeginPlayOnLiveActorTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	ON_SCOPE_EXIT

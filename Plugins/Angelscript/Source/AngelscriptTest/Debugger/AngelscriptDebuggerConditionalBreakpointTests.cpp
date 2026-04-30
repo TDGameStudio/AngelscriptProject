@@ -327,7 +327,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerConditionalBreakpointExpressionTest,
@@ -336,6 +335,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerConditionalBreakpointExpressionTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerConditionalBreakpointTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))

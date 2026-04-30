@@ -89,7 +89,6 @@ namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest,
@@ -98,6 +97,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 

@@ -75,10 +75,10 @@ struct FHotReloadPerformanceSample
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 
 bool FAngelscriptHotReloadSoftLatencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 	const auto Measure = [this]() -> FHotReloadPerformanceSample
 	{
 		FHotReloadPerformanceSample ReturnSample;
@@ -133,6 +133,7 @@ class UHotReloadPerformanceSoft : UObject
 
 bool FAngelscriptHotReloadFullLatencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 	const auto Measure = [this]() -> FHotReloadPerformanceSample
 	{
 		FHotReloadPerformanceSample ReturnSample;
@@ -184,6 +185,7 @@ class UHotReloadPerformanceFull : UObject
 
 bool FAngelscriptHotReloadRenameWindowLatencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 	AddExpectedError(TEXT("Cannot declare class UHotReloadPerformanceRename in module HotReloadPerformanceRenameNew. A class with this name already exists in module HotReloadPerformanceRenameOld."), EAutomationExpectedErrorFlags::Contains, 4);
 
 	const auto Measure = [this]() -> FHotReloadPerformanceSample
@@ -241,6 +243,7 @@ class UHotReloadPerformanceRename : UObject
 
 bool FAngelscriptHotReloadBurstChurnLatencyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadPerformanceTests_Private;
 	AddExpectedErrorPlain(TEXT("Full Reload is required due to UPROPERTY() or UFUNCTION() changes, but cannot perform a full reload right now. Keeping old angelscript code active."), EAutomationExpectedErrorFlags::Contains, -1);
 
 	const auto Measure = [this]() -> FHotReloadPerformanceSample

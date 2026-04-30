@@ -453,10 +453,10 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Private;
 
 bool FAngelscriptDebuggerBlueprintMixedCallstackAndThisScopeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBlueprintFrameTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartBlueprintDebuggerSession(*this, Session, Client))

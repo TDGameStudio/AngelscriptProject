@@ -163,7 +163,6 @@ namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_P
 	}
 }
 
-using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -191,6 +190,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionAsyncBindingsTest,
 
 	TEST_METHOD(AsyncTraceCallbacks)
 	{
+		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 		ASTEST_BEGIN_FULL
 		ON_SCOPE_EXIT

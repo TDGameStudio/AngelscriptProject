@@ -67,7 +67,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningBlueprintSubclassT
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningBlueprintSubclassTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningBlueprintSubclassTraceTest,
@@ -76,6 +75,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningBlueprintSubclassTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningBlueprintSubclassTraceTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	static const FName ModuleName(TEXT("LearningBlueprintSubclassModule"));

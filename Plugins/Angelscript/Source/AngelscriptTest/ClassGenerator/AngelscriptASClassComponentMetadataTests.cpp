@@ -156,7 +156,6 @@ namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTest
 	}
 }
 
-using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptASClassDefaultComponentMetadataCapturesRootAndAttachLayoutTest,
@@ -165,6 +164,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptASClassDefaultComponentMetadataCapturesRootAndAttachLayoutTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT
@@ -270,6 +270,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptASClassSoftReloadPreservesDefaultComponentMetadataWithoutDuplicationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

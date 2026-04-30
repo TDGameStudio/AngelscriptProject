@@ -473,7 +473,6 @@ int RunTestCase()
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest,
@@ -482,6 +481,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerDataBreakpointLocalValueHitCountTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerDataBreakpointTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDataBreakpointDebuggerSession(*this, Session, Client))

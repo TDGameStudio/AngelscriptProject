@@ -32,7 +32,6 @@ namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 
 struct FAngelscriptRuntimeModuleTickTestAccess
 {
@@ -115,6 +114,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptRuntimeModuleInitializeOverrideLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 	FRuntimeModuleContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -192,6 +192,7 @@ bool FAngelscriptRuntimeModuleInitializeOverrideLifecycleTest::RunTest(const FSt
 
 bool FAngelscriptRuntimeModuleInitializeRoutesToEngineSubsystemTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 	FRuntimeModuleContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -285,6 +286,7 @@ bool FAngelscriptRuntimeModuleInitializeRoutesToEngineSubsystemTest::RunTest(con
 
 bool FAngelscriptRuntimeModuleStartupModuleDoesNotBootstrapPrimaryEngineTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 	FRuntimeModuleContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -345,6 +347,7 @@ bool FAngelscriptRuntimeModuleStartupModuleDoesNotBootstrapPrimaryEngineTest::Ru
 
 bool FAngelscriptEngineSubsystemTickRespectsGameInstanceOwnershipTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 	FRuntimeModuleContextStackGuard ContextGuard;
 	const int32 SavedActiveTickOwners = FAngelscriptTickBehaviorTestAccess::GetActiveTickOwners();
 	AngelscriptTestSupport::DestroySharedTestEngine();
@@ -416,6 +419,7 @@ bool FAngelscriptEngineSubsystemTickRespectsGameInstanceOwnershipTest::RunTest(c
 
 bool FAngelscriptRuntimeModuleInitializeAdoptsAmbientEngineWithoutOwningItTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptRuntimeModuleTests_Private;
 	FRuntimeModuleContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

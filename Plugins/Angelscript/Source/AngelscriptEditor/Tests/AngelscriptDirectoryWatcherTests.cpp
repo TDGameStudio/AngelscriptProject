@@ -160,10 +160,10 @@ namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Priva
 	}
 }
 
-using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 
 bool FAngelscriptDirectoryWatcherScriptQueueTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("ScriptQueue"));
 	ON_SCOPE_EXIT
@@ -194,6 +194,7 @@ bool FAngelscriptDirectoryWatcherScriptQueueTest::RunTest(const FString& Paramet
 
 bool FAngelscriptDirectoryWatcherNonScriptIgnoreTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("NonScriptIgnore"));
 	ON_SCOPE_EXIT
@@ -220,6 +221,7 @@ bool FAngelscriptDirectoryWatcherNonScriptIgnoreTest::RunTest(const FString& Par
 
 bool FAngelscriptDirectoryWatcherModifiedScriptQueueTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("ModifiedScriptQueue"));
 	ON_SCOPE_EXIT
@@ -259,6 +261,7 @@ bool FAngelscriptDirectoryWatcherModifiedScriptQueueTest::RunTest(const FString&
 
 bool FAngelscriptDirectoryWatcherFolderAddTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("FolderAdd"));
 	const FString AddedFolderPath = RootPath / TEXT("AddedFolder");
@@ -289,6 +292,7 @@ bool FAngelscriptDirectoryWatcherFolderAddTest::RunTest(const FString& Parameter
 
 bool FAngelscriptDirectoryWatcherFolderRemoveTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("FolderRemove"));
 	const FString RemovedFolderPath = FPaths::ConvertRelativePathToFull(RootPath / TEXT("RemovedFolder"));
@@ -322,6 +326,7 @@ bool FAngelscriptDirectoryWatcherFolderRemoveTest::RunTest(const FString& Parame
 
 bool FAngelscriptDirectoryWatcherRenameWindowTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("RenameWindow"));
 	const FString RenameFolderPath = RootPath / TEXT("Rename");
@@ -353,6 +358,7 @@ bool FAngelscriptDirectoryWatcherRenameWindowTest::RunTest(const FString& Parame
 
 bool FAngelscriptDirectoryWatcherOutsideRootTimestampTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("OutsideRootTimestamp"));
 	const FString OutsideRootPath = RootPath + TEXT("_Outside");
@@ -413,6 +419,7 @@ bool FAngelscriptDirectoryWatcherOutsideRootTimestampTest::RunTest(const FString
 
 bool FAngelscriptDirectoryWatcherGatherLoadedScriptsForFolderTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptEditor_Private_Tests_AngelscriptDirectoryWatcherTests_Private;
 	IFileManager& FileManager = IFileManager::Get();
 	const FString RootPath = MakeTempWatcherRoot(TEXT("GatherLoadedScriptsForFolder"));
 	const FString RemovedFolderPath = FPaths::ConvertRelativePathToFull(RootPath / TEXT("RemovedFolder"));

@@ -339,7 +339,6 @@ namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Pr
 	}
 }
 
-using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest,
@@ -353,6 +352,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))
@@ -495,6 +495,7 @@ bool FAngelscriptDebuggerBreakpointNearestExecutableLineAckTest::RunTest(const F
 
 bool FAngelscriptDebuggerBreakpointDuplicateSetReturnsRemovalAckTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Debugger_AngelscriptDebuggerBreakpointProtocolTests_Private;
 	FAngelscriptDebuggerTestSession Session;
 	FAngelscriptDebuggerTestClient Client;
 	if (!StartDebuggerSession(*this, Session, Client))

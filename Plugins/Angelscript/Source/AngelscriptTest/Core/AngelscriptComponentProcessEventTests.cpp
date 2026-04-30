@@ -103,7 +103,6 @@ namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptComponentProcessEventWithValidationTest,
@@ -112,6 +111,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptComponentProcessEventWithValidationTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 	ASTEST_BEGIN_SHARE_CLEAN
 	ON_SCOPE_EXIT

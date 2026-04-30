@@ -72,7 +72,6 @@ namespace AngelscriptTransformBindingsTests_Private
 	}
 }
 
-using namespace AngelscriptTransformBindingsTests_Private;
 
 // ----------------------------------------------------------------------------
 // Profile
@@ -111,6 +110,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTransformBindingsTest,
 
 	TEST_METHOD(TransformPosition)
 	{
+		using namespace AngelscriptTransformBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -179,6 +179,7 @@ int Transform_ScaleAffectsResult()
 
 	TEST_METHOD(RelativeTransform)
 	{
+		using namespace AngelscriptTransformBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 
@@ -239,6 +240,7 @@ int Transform_RelativeNotIdentity()
 
 	TEST_METHOD(SettersAndGetters)
 	{
+		using namespace AngelscriptTransformBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 		FAngelscriptEngineScope Scope(Engine);
 

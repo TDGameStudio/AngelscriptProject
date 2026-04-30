@@ -57,10 +57,10 @@ namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 
 bool FAngelscriptTestEnginePoolPrewarmCachesBindDatabaseTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	AngelscriptTestSupport::ShutdownTestEnginePool();
 	FAngelscriptBindExecutionObservation::Reset();
 
@@ -84,6 +84,7 @@ bool FAngelscriptTestEnginePoolPrewarmCachesBindDatabaseTest::RunTest(const FStr
 
 bool FAngelscriptTestEnginePoolModuleCleanDiscardsOnlyDeltaTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	AngelscriptTestSupport::ShutdownTestEnginePool();
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 
@@ -111,6 +112,7 @@ bool FAngelscriptTestEnginePoolModuleCleanDiscardsOnlyDeltaTest::RunTest(const F
 
 bool FAngelscriptTestEnginePoolGeneratedClassCleanupIsBoundedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	AngelscriptTestSupport::ShutdownTestEnginePool();
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
 
@@ -153,6 +155,7 @@ class UPoolGeneratedClassObject : UObject
 
 bool FAngelscriptTestEnginePoolGeneratedStructCleanupIsBoundedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	static const FName GeneratedStructName(TEXT("PoolGeneratedStruct"));
 
 	AngelscriptTestSupport::ShutdownTestEnginePool();
@@ -204,6 +207,7 @@ struct FPoolGeneratedStruct
 
 bool FAngelscriptTestEnginePoolGeneratedEnumDelegateCleanupIsBoundedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	AngelscriptTestSupport::ShutdownTestEnginePool();
 	AngelscriptTestSupport::FAngelscriptTestEnginePool::Get().SetGarbageCollectEveryNCleanups(1);
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
@@ -305,6 +309,7 @@ event void FPoolGeneratedEvent(int Value);
 
 bool FAngelscriptTestEnginePoolGeneratedClassActionCacheIsClearedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Shared_AngelscriptTestEnginePoolTests_Private;
 	AngelscriptTestSupport::ShutdownTestEnginePool();
 	AngelscriptTestSupport::FAngelscriptTestEnginePool::Get().SetGarbageCollectEveryNCleanups(1);
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();

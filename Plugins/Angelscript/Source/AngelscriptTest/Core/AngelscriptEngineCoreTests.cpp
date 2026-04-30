@@ -27,7 +27,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestModuleLifecycleTest,
@@ -66,6 +65,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTestModuleLifecycleTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	FAngelscriptEngineConfig Config;
 	FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
@@ -83,6 +83,7 @@ bool FAngelscriptTestModuleLifecycleTest::RunTest(const FString& Parameters)
 
 bool FAngelscriptTestModuleCompileSnippetTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
@@ -115,6 +116,7 @@ bool FAngelscriptTestModuleCompileSnippetTest::RunTest(const FString& Parameters
 
 bool FAngelscriptTestModuleExecuteSnippetTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
@@ -164,6 +166,7 @@ bool FAngelscriptTestModuleExecuteSnippetTest::RunTest(const FString& Parameters
 
 bool FAngelscriptFullDestroyClearsTypeStateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -200,6 +203,7 @@ bool FAngelscriptFullDestroyClearsTypeStateTest::RunTest(const FString& Paramete
 
 bool FAngelscriptFullDestroyAllowsCleanRecreateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -272,6 +276,7 @@ bool FAngelscriptFullDestroyAllowsCleanRecreateTest::RunTest(const FString& Para
 
 bool FAngelscriptFullDestroyAllowsAnnotatedRecreateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())
@@ -362,6 +367,7 @@ class ARecreateAnnotatedActorB : AActor
 
 bool FAngelscriptFullDestroyAllowsAnnotatedSameNameRecreateTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	FCoreTestContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

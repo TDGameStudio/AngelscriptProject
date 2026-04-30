@@ -37,7 +37,6 @@ namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private
 	}
 }
 
-using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleLookupByFilenameTest,
@@ -82,6 +81,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptModuleLookupByFilenameTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
@@ -128,6 +128,7 @@ ASTEST_END_SHARE_CLEAN
 
 bool FAngelscriptCompileFromDiskTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
@@ -174,6 +175,7 @@ ASTEST_END_SHARE_CLEAN
 
 bool FAngelscriptPartialFailurePreservesGoodModulesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
@@ -238,6 +240,7 @@ ASTEST_END_SHARE_CLEAN
 
 bool FAngelscriptDiscoverScriptFilenamesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
@@ -282,6 +285,7 @@ ASTEST_END_SHARE_CLEAN
 
 bool FAngelscriptDiscoverySkipRulesTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
@@ -320,6 +324,7 @@ ASTEST_END_SHARE_CLEAN
 
 bool FAngelscriptRenameUpdatesModuleLookupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -371,6 +376,7 @@ int PatrolEntry()
 
 bool FAngelscriptPathNormalizationLookupTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
@@ -416,6 +422,7 @@ int NormalizeEntry()
 
 bool FAngelscriptMixedSuccessFailureRecoveryAndRemapTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	AddExpectedError(TEXT("Automation/FileSystem/Mixed/Bad.as:"), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Identifier 'MissingType' is not a data type"), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Hot reload failed due to script compile errors. Keeping all old script code."), EAutomationExpectedErrorFlags::Contains, 1);

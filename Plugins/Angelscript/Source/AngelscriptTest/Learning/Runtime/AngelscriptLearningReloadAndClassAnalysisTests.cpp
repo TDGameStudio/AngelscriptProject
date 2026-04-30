@@ -85,7 +85,6 @@ namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnal
 	}
 }
 
-using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnalysisTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningReloadAndClassAnalysisTest,
@@ -94,6 +93,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningReloadAndClassAnalysisTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnalysisTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
 	ASTEST_BEGIN_SHARE
 	ResetSharedCloneEngine(Engine);

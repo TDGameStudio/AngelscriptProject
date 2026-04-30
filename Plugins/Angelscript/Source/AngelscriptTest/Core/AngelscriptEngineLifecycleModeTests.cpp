@@ -29,7 +29,6 @@ namespace AngelscriptTest_Core_AngelscriptEngineLifecycleModeTests_Private
 	};
 }
 
-using namespace AngelscriptTest_Core_AngelscriptEngineLifecycleModeTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCreateForTestingLifecycleModeTest,
@@ -38,6 +37,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptCreateForTestingLifecycleModeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Core_AngelscriptEngineLifecycleModeTests_Private;
 	FEngineLifecycleContextStackGuard ContextGuard;
 	AngelscriptTestSupport::DestroySharedTestEngine();
 	if (FAngelscriptEngine::IsInitialized())

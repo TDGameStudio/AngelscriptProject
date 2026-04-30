@@ -32,7 +32,6 @@ namespace AngelscriptTest_Learning_Native_AngelscriptLearningNativeBindingTraceT
 	}
 }
 
-using namespace AngelscriptTest_Learning_Native_AngelscriptLearningNativeBindingTraceTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptLearningNativeBindingTraceTest,
@@ -41,6 +40,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptLearningNativeBindingTraceTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_Learning_Native_AngelscriptLearningNativeBindingTraceTests_Private;
 	FAngelscriptLearningTraceSinkConfig SinkConfig;
 	SinkConfig.bEmitToAutomation = true;
 	SinkConfig.bEmitToLog = true;

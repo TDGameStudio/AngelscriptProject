@@ -19,7 +19,6 @@ void InitializeHotReloadTestCaseSpawner(FActorTestSpawner& Spawner)
 	}
 }
 
-using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptTestHotReloadPropertyPreservedTest,
@@ -43,6 +42,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTestHotReloadPropertyPreservedTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	static const FName ModuleName(TEXT("TestHotReloadPropertyPreserved"));
@@ -153,6 +153,7 @@ class ATestHotReloadPropertyPreserved : AActor
 
 bool FAngelscriptTestHotReloadAddPropertyTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	static const FName ModuleName(TEXT("TestHotReloadAddProperty"));
@@ -240,6 +241,7 @@ class ATestHotReloadAddProperty : AActor
 
 bool FAngelscriptTestHotReloadFunctionChangeTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	static const FName ModuleName(TEXT("TestHotReloadFunctionChange"));
@@ -342,6 +344,7 @@ class ATestHotReloadFunctionChange : AActor
 
 bool FAngelscriptTestHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTest(const FString& Parameters)
 {
+	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 	ASTEST_BEGIN_SHARE_FRESH
 	static const FName ModuleName(TEXT("TestHotReloadPIEStructuralChange"));
