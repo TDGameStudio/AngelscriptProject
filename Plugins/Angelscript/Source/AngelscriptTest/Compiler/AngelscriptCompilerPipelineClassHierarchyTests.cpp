@@ -39,11 +39,11 @@ namespace CompilerPipelineClassHierarchyTest
 
 	FAngelscriptModuleDesc* FindModuleByName(
 		const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules,
-		const FString& ModuleName)
+		const FString& InModuleName)
 	{
 		for (const TSharedRef<FAngelscriptModuleDesc>& Module : Modules)
 		{
-			if (Module->ModuleName == ModuleName)
+			if (Module->ModuleName == InModuleName)
 			{
 				return &Module.Get();
 			}

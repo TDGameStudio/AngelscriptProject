@@ -1,5 +1,6 @@
 #include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptTestLegacyHelpers.h"
 #include "Misc/Paths.h"
 
 // Test Layer: Runtime Integration

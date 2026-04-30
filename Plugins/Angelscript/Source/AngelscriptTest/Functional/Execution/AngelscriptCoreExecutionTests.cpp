@@ -1,6 +1,7 @@
 #include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
 #include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptTestLegacyHelpers.h"
 #include "Shared/AngelscriptTestUtilities.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
