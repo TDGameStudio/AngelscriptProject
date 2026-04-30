@@ -1,4 +1,4 @@
-#include "Debugging/AngelscriptDebugServer.h"
+#include "Debugging/AngelscriptDebugProtocol.h"
 
 #include "Misc/AutomationTest.h"
 

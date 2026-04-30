@@ -407,3 +407,20 @@ Documents\Iterations\2026-04-06\
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\IterationAnalysis\tests\IterationAnalysisSelfTests.ps1
 ```
 
+## AngelscriptDebugger Smoke
+
+| 项目 | 说明 |
+| --- | --- |
+| 工具路径 | `Tools\Diagnostics\powershell\Test-AngelscriptDebuggerSmoke.ps1` |
+| 批处理入口 | `Tools\Diagnostics\Test-AngelscriptDebuggerSmoke.bat` |
+| 主要用途 | 验证独立 Slate 调试器可启动、可通过 `-smoketest` 关闭，并且不会留下调试器进程、`CrashReportClientEditor` 或新增 crash 目录 |
+| 构建前置 | `Tools\RunBuild.ps1 -Target AngelscriptDebugger -SerializeByEngine` |
+| 自测入口 | `Tools\Diagnostics\tests\AngelscriptDebuggerSmokeSelfTests.ps1` |
+
+常用命令：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powershell\Test-AngelscriptDebuggerSmoke.ps1 -TimeoutSeconds 30
+```
+
+`ResolveAgentCommandTemplates.ps1` 会输出 `DebuggerBuildCommand` 和 `DebuggerSmokeCommand`。其中 `DebuggerBuildCommand` 固定包含 `-Target AngelscriptDebugger -SerializeByEngine`，避免独立调试器启动时缺少运行时 DLL。

@@ -4,6 +4,8 @@ param(
 
     [string]$Label = 'build',
 
+    [string]$Target = '',
+
     [string]$LogRoot = '',
 
     [switch]$SerializeByEngine,
@@ -48,6 +50,7 @@ try {
     }
 
     $defaultTimeoutMs = $agentConfig.BuildDefaultTimeoutMs
+    $resolvedTarget = if ([string]::IsNullOrWhiteSpace($Target)) { $agentConfig.EditorTarget } else { $Target }
     $resolvedTimeoutMs = Resolve-TimeoutMs -RequestedTimeoutMs $TimeoutMs -DefaultTimeoutMs $defaultTimeoutMs -ParameterName 'TimeoutMs'
     $deadlineUtc = New-ExecutionDeadline -TimeoutMs $resolvedTimeoutMs
     $ubtPaths = Resolve-UbtPaths -EngineRoot $agentConfig.EngineRoot
@@ -99,7 +102,7 @@ try {
     $ubtLogPath = Join-Path $outputLayout.OutputRoot 'UBT.log'
     $argumentList = @(
         $ubtPaths.UbtDllPath
-        $agentConfig.EditorTarget
+        $resolvedTarget
         $agentConfig.Platform
         $agentConfig.Configuration
         "-Project=$($agentConfig.ProjectFile)"
@@ -128,6 +131,7 @@ try {
             EngineRoot        = $agentConfig.EngineRoot
             DotNetExecutable  = $ubtPaths.DotNetExecutablePath
             UbtDllPath        = $ubtPaths.UbtDllPath
+            Target            = $resolvedTarget
             WorkingDirectory  = $ubtPaths.WorkingDirectory
             TimeoutMs         = $resolvedTimeoutMs
             OutputRoot        = $outputLayout.OutputRoot
@@ -146,7 +150,7 @@ try {
     Write-Host 'Angelscript UBT Build Runner'
     Write-Host '================================================================'
     Write-Host ('Mode            : {0}' -f $buildMode)
-    Write-Host ('Target          : {0}' -f $agentConfig.EditorTarget)
+    Write-Host ('Target          : {0}' -f $resolvedTarget)
     Write-Host ('Platform        : {0}' -f $agentConfig.Platform)
     Write-Host ('Configuration   : {0}' -f $agentConfig.Configuration)
     Write-Host ('ProjectFile     : {0}' -f $agentConfig.ProjectFile)
@@ -191,6 +195,45 @@ try {
         }
     }
 
+    if ($scriptExitCode -eq $exitCodes.Success -and $resolvedTarget -eq 'AngelscriptDebugger') {
+        if (-not $SerializeByEngine) {
+            Write-Host '[warn] AngelscriptDebugger writes shared engine outputs. Rerun with -SerializeByEngine to copy runtime DLLs next to the executable.' -ForegroundColor Yellow
+        }
+        else {
+            $debuggerRuntimeDependencies = @(
+                [PSCustomObject]@{
+                    Source      = Join-Path $projectRoot 'Plugins\Angelscript\Binaries\Win64\UnrealEditor-AngelscriptDebugProtocol.dll'
+                    Destination = Join-Path $agentConfig.EngineRoot 'Engine\Binaries\Win64\UnrealEditor-AngelscriptDebugProtocol.dll'
+                    Required    = $true
+                },
+                [PSCustomObject]@{
+                    Source      = Join-Path $projectRoot 'Plugins\Angelscript\Binaries\Win64\UnrealEditor-AngelscriptSyntax.dll'
+                    Destination = Join-Path $agentConfig.EngineRoot 'Engine\Binaries\Win64\UnrealEditor-AngelscriptSyntax.dll'
+                    Required    = $true
+                },
+                [PSCustomObject]@{
+                    Source      = Join-Path $projectRoot 'Binaries\Win64\AngelscriptDebugger.target'
+                    Destination = Join-Path $agentConfig.EngineRoot 'Engine\Binaries\Win64\AngelscriptDebugger.target'
+                    Required    = $false
+                }
+            )
+
+            foreach ($dependency in $debuggerRuntimeDependencies) {
+                if (Test-Path -LiteralPath $dependency.Source -PathType Leaf) {
+                    Copy-Item -LiteralPath $dependency.Source -Destination $dependency.Destination -Force
+                    Write-Host ('Copied debugger runtime dependency: {0}' -f $dependency.Destination)
+                }
+                elseif ($dependency.Required) {
+                    Write-Host ('[warn] Missing required debugger runtime dependency: {0}' -f $dependency.Source) -ForegroundColor Yellow
+                    $scriptExitCode = $exitCodes.BuildFailed
+                }
+                else {
+                    Write-Host ('[warn] Optional debugger runtime dependency not found: {0}' -f $dependency.Source) -ForegroundColor Yellow
+                }
+            }
+        }
+    }
+
     $sharedEngineTimestampConflict = Get-UhtTimestampConflictSummary -LogPaths @($outputLayout.LogPath, $ubtLogPath) -EngineRoot $agentConfig.EngineRoot
     if ($sharedEngineTimestampConflict.SharedEngineDetected) {
         $previewConflictPaths = @($sharedEngineTimestampConflict.SharedEnginePaths | Select-Object -First 3)
@@ -220,6 +263,7 @@ try {
             EngineRoot        = $agentConfig.EngineRoot
             DotNetExecutable  = $ubtPaths.DotNetExecutablePath
             UbtDllPath        = $ubtPaths.UbtDllPath
+            Target            = $resolvedTarget
             WorkingDirectory  = $ubtPaths.WorkingDirectory
             TimeoutMs         = $resolvedTimeoutMs
             OutputRoot        = $outputLayout.OutputRoot

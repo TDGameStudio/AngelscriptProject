@@ -239,3 +239,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ```text
 请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1。构建只能通过 Tools\RunBuild.ps1 进行，并显式带一个不超过 900000ms 的超时。默认保持并发模式；只有确认要写共享引擎输出时才追加 -SerializeByEngine。常用的 -NoXGE 不要再通过 ExtraArgs 透传，直接使用一等参数。不要使用 -UniqueBuildEnvironment，因为它会触发 worktree 私有的引擎级重编。日志必须实时输出，并写入当前 run 的独立目录；不要手写 Build.bat、RunUBT.bat 或 dotnet UnrealBuildTool.dll 命令。
 ```
+
+## 独立 AngelscriptDebugger Target
+
+独立 Slate 调试器使用 `AngelscriptDebugger` target 构建。该 target 会把调试协议和语法高亮 DLL 等运行时依赖复制到共享引擎 `Engine\Binaries\Win64`，因此必须显式使用引擎级串行模式：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Target AngelscriptDebugger -Label debugger-build -TimeoutMs 600000 -SerializeByEngine
+```
+
+不要用普通并发构建去构建该 target；否则可执行文件可能存在，但启动时缺少 `UnrealEditor-AngelscriptDebugProtocol.dll` 或 `UnrealEditor-AngelscriptSyntax.dll`。
+
+构建完成后可用独立 smoke 诊断验证启动与关闭路径：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powershell\Test-AngelscriptDebuggerSmoke.ps1 -TimeoutSeconds 30
+```

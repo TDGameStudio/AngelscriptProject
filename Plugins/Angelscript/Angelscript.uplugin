@@ -17,6 +17,16 @@
 
 	"Modules": [
 		{
+			"Name": "AngelscriptDebugProtocol",
+			"Type": "RuntimeAndProgram",
+			"LoadingPhase": "PostDefault"
+		},
+		{
+			"Name": "AngelscriptSyntax",
+			"Type": "RuntimeAndProgram",
+			"LoadingPhase": "PostDefault"
+		},
+		{
 			"Name": "AngelscriptRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "PostDefault"

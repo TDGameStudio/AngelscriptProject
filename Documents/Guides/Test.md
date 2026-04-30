@@ -291,3 +291,20 @@ J:\UnrealEngine\UERelease\Engine\Binaries\Win64\UnrealEditor-Cmd.exe <ProjectFil
 ```text
 请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1。自动化测试只能通过 Tools\RunTests.ps1 或 Tools\RunTestSuite.ps1 执行，并显式带一个不超过 900000ms 的超时。不要手写 UnrealEditor-Cmd.exe 命令，也不要手写 -ABSLOG / -ReportExportPath 共享路径；日志、报告和摘要必须写入当前 run 的独立目录。除非明确需要真实渲染，否则保持默认 headless 模式。
 ```
+
+## 独立调试器 Smoke 诊断
+
+`AngelscriptDebugger.exe` 是独立 Slate 进程，不属于 UE Automation 测试进程。构建后使用专用诊断脚本验证最小启动和关闭路径：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powershell\Test-AngelscriptDebuggerSmoke.ps1 -TimeoutSeconds 30
+```
+
+该脚本会启动 `AngelscriptDebugger.exe -smoketest`，并检查：
+
+- 进程退出码为 `0`
+- 没有残留 `AngelscriptDebugger` 进程
+- 没有残留 `CrashReportClientEditor` 进程
+- 当前项目 `Saved\Crashes` 下没有新增 crash 目录
+
+当前自动化验收边界是 Slate 内部 `RequestDestroyWindow()` 关闭路径。原生 `WM_CLOSE` 的窗口消息自动化暂不作为验收条件，因为这个 target 使用 Editor `PreInit` 加 standalone Slate loop，关闭路径已经保留 `FEngineLoop::AppExit()` 后直接 `TerminateProcess()` 的保守规避。

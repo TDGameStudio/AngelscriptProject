@@ -32,6 +32,8 @@ namespace UnrealBuildTool.Rules
 				"Json",
 				"JsonUtilities",
 				"PropertyBindingUtils",
+				"AngelscriptDebugProtocol",
+				"AngelscriptSyntax",
 				"AngelscriptRuntime",
 			});
 

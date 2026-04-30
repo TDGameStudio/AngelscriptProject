@@ -63,6 +63,8 @@ try {
     $resolved.TestDefaultTimeoutMs = $testTimeoutMs
     $resolved.BuildCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -Label "{2}" -TimeoutMs {3}' -f $powerShell, $buildScript, $BuildLabel, $buildTimeoutMs)
     $resolved.NoXgeBuildCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -Label "{2}" -TimeoutMs {3} -NoXGE' -f $powerShell, $buildScript, $BuildLabel, $buildTimeoutMs)
+    $resolved.DebuggerBuildCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -Target AngelscriptDebugger -Label "{2}-debugger" -TimeoutMs {3} -SerializeByEngine' -f $powerShell, $buildScript, $BuildLabel, $buildTimeoutMs)
+    $resolved.DebuggerSmokeCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -TimeoutSeconds 30' -f $powerShell, (Join-Path $resolvedProjectRoot 'Tools\Diagnostics\powershell\Test-AngelscriptDebuggerSmoke.ps1'))
     $resolved.SerializedBuildCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -Label "{2}" -TimeoutMs {3} -SerializeByEngine' -f $powerShell, $buildScript, $BuildLabel, $buildTimeoutMs)
     $resolved.TestCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -TestPrefix "{2}" -Label "{3}" -TimeoutMs {4}' -f $powerShell, $testScript, $TestName, $TestLabel, $testTimeoutMs)
     $resolved.TestSuiteSmokeCommand = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -Suite Smoke -LabelPrefix "{2}" -TimeoutMs {3}' -f $powerShell, $testSuiteScript, $TestLabel, $testTimeoutMs)

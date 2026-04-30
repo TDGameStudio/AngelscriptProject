@@ -34,6 +34,7 @@ namespace UnrealBuildTool.Rules
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"ApplicationCore",
+				"AngelscriptDebugProtocol",
 				"Core",
 				"CoreUObject",
 				"Engine",
