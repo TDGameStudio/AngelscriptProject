@@ -3,22 +3,12 @@
 // Automation IDs: Angelscript.TestModule.AngelScriptSDK.VariableScope.*
 
 #include "AngelscriptNativeTestSupport.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptNativeTestSupport;
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKVariableScopeIsolationTest,
-	"Angelscript.TestModule.AngelScriptSDK.VariableScope.Isolation",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKVariableScopeShadowingTest,
-	"Angelscript.TestModule.AngelScriptSDK.VariableScope.Shadowing",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKVariableScopeNestedTest,
-	"Angelscript.TestModule.AngelScriptSDK.VariableScope.NestedBlocks",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_AngelScriptSDK_VariableScope_Private
 {
@@ -37,69 +27,71 @@ namespace AngelscriptTest_AngelScriptSDK_VariableScope_Private
 
 using namespace AngelscriptTest_AngelScriptSDK_VariableScope_Private;
 
-bool FAngelscriptASSDKVariableScopeIsolationTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKVariableScopeTests, "Angelscript.TestModule.AngelScriptSDK.VariableScope", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-
-	// Variable declared in inner scope should not be visible in outer scope
-	Messages.Reset();
-	asIScriptModule* M = BuildNativeModule(SE, "ScopeIso",
-		"int Entry() { { int x = 5; } return x; }\n");
-	TestNull(TEXT("Access to out-of-scope variable should fail compilation"), M);
-	return true;
-}
-
-bool FAngelscriptASSDKVariableScopeShadowingTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-
-	asIScriptModule* M = BuildNativeModule(SE, "ScopeShadow",
-		"int Entry() {\n"
-		"  int x = 10;\n"
-		"  { int x = 20; }\n"
-		"  return x;\n"
-		"}\n");
-	if (!TestNotNull(TEXT("Shadowing should compile"), M))
+	TEST_METHOD(Isolation)
 	{
-		AddInfo(CollectMessages(Messages));
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+
+		// Variable declared in inner scope should not be visible in outer scope
+		Messages.Reset();
+		asIScriptModule* M = BuildNativeModule(SE, "ScopeIso",
+			"int Entry() { { int x = 5; } return x; }\n");
+		TestNull(TEXT("Access to out-of-scope variable should fail compilation"), M);
 	}
 
-	int32 Result = 0;
-	if (!ExecuteIntEntry(*this, SE, M, Result)) return false;
-	return TestEqual(TEXT("Outer x should remain 10 after inner shadow"), Result, 10);
-}
-
-bool FAngelscriptASSDKVariableScopeNestedTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-
-	asIScriptModule* M = BuildNativeModule(SE, "ScopeNested",
-		"int Entry() {\n"
-		"  int sum = 0;\n"
-		"  { int a = 1; sum += a; }\n"
-		"  { int b = 2; sum += b; }\n"
-		"  { int c = 3; { int d = 4; sum += d; } sum += c; }\n"
-		"  return sum;\n"
-		"}\n");
-	if (!TestNotNull(TEXT("Nested blocks should compile"), M))
+	TEST_METHOD(Shadowing)
 	{
-		AddInfo(CollectMessages(Messages));
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+
+		asIScriptModule* M = BuildNativeModule(SE, "ScopeShadow",
+			"int Entry() {\n"
+			"  int x = 10;\n"
+			"  { int x = 20; }\n"
+			"  return x;\n"
+			"}\n");
+		if (!TestNotNull(TEXT("Shadowing should compile"), M))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		int32 Result = 0;
+		if (!ExecuteIntEntry(*this, SE, M, Result)) return;
+		TestEqual(TEXT("Outer x should remain 10 after inner shadow"), Result, 10);
 	}
 
-	int32 Result = 0;
-	if (!ExecuteIntEntry(*this, SE, M, Result)) return false;
-	return TestEqual(TEXT("sum = 1+2+4+3 = 10"), Result, 10);
-}
+	TEST_METHOD(NestedBlocks)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+
+		asIScriptModule* M = BuildNativeModule(SE, "ScopeNested",
+			"int Entry() {\n"
+			"  int sum = 0;\n"
+			"  { int a = 1; sum += a; }\n"
+			"  { int b = 2; sum += b; }\n"
+			"  { int c = 3; { int d = 4; sum += d; } sum += c; }\n"
+			"  return sum;\n"
+			"}\n");
+		if (!TestNotNull(TEXT("Nested blocks should compile"), M))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		int32 Result = 0;
+		if (!ExecuteIntEntry(*this, SE, M, Result)) return;
+		TestEqual(TEXT("sum = 1+2+4+3 = 10"), Result, 10);
+	}
+};
 
 #endif // WITH_DEV_AUTOMATION_TESTS

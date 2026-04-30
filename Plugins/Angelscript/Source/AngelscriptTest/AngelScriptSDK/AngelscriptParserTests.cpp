@@ -1,5 +1,5 @@
 #include "Shared/AngelscriptTestMacros.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "source/as_builder.h"
@@ -72,202 +72,170 @@
 	}
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptParserDeclarationTest,
-	"Angelscript.TestModule.AngelScriptSDK.Parser.Declarations",
+TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
+	"Angelscript.TestModule.AngelScriptSDK.Parser",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptParserExpressionAstTest,
-	"Angelscript.TestModule.AngelScriptSDK.Parser.ExpressionAst",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptParserControlFlowTest,
-	"Angelscript.TestModule.AngelScriptSDK.Parser.ControlFlow",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptParserSyntaxErrorTest,
-	"Angelscript.TestModule.AngelScriptSDK.Parser.SyntaxErrors",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptParserReuseAfterSyntaxErrorTest,
-	"Angelscript.TestModule.AngelScriptSDK.Parser.ReuseAfterSyntaxError",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptParserDeclarationTest::RunTest(const FString& Parameters)
 {
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateParserModule(BareEngine, "ParserDeclarations");
-	if (!TestNotNull(TEXT("Parser declaration test should create a backing module"), Module))
+	TEST_METHOD(Declarations)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateParserModule(BareEngine, "ParserDeclarations");
+		if (!TestNotNull(TEXT("Parser declaration test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		asCScriptCode Code;
+		Code.SetCode("ParserDeclarations", "int GlobalValue = 7; class FSample { int Value; }", true);
+
+		asCParser Parser(&Builder);
+		const int ParseResult = Parser.ParseScript(&Code);
+		if (!TestEqual(TEXT("Parser should successfully parse declarations"), ParseResult, 0))
+		{
+			return;
+		}
+
+		asCScriptNode* Root = Parser.GetScriptNode();
+		if (!TestNotNull(TEXT("Parser should produce a root script node"), Root))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("Root node should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
+		TestTrue(TEXT("Parser should emit a declaration node for the global variable"), ContainsNodeType(Root, snDeclaration));
+		TestTrue(TEXT("Parser should emit a class node for the class declaration"), ContainsNodeType(Root, snClass));
+		ASTEST_END_BARE
 	}
 
-	asCBuilder Builder(BareEngine, Module);
-	asCScriptCode Code;
-	Code.SetCode("ParserDeclarations", "int GlobalValue = 7; class FSample { int Value; }", true);
-
-	asCParser Parser(&Builder);
-	const int ParseResult = Parser.ParseScript(&Code);
-	if (!TestEqual(TEXT("Parser should successfully parse declarations"), ParseResult, 0))
+	TEST_METHOD(ExpressionAst)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateParserModule(BareEngine, "ParserExpressions");
+		if (!TestNotNull(TEXT("Parser expression test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		asCScriptCode Code;
+		Code.SetCode("ParserExpressions", "1 + 2 * 3", true);
+
+		FParserAccessor Parser(&Builder);
+		asCScriptNode* Root = Parser.ParseExpressionSnippet(&Code);
+		if (!TestNotNull(TEXT("Parser should produce an AST for expression input"), Root))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("Expression root should be an expression node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snExpression));
+		TestTrue(TEXT("Parser should emit an expression operator node"), ContainsNodeType(Root, snExprOperator));
+		ASTEST_END_BARE
 	}
 
-	asCScriptNode* Root = Parser.GetScriptNode();
-	if (!TestNotNull(TEXT("Parser should produce a root script node"), Root))
+	TEST_METHOD(ControlFlow)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateParserModule(BareEngine, "ParserControlFlow");
+		if (!TestNotNull(TEXT("Parser control-flow test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		asCScriptCode Code;
+		Code.SetCode("ParserControlFlow", "if (true) { for (int i = 0; i < 3; i++) { while(false) { } } }", true);
+
+		FParserAccessor Parser(&Builder);
+		asCScriptNode* Root = Parser.ParseStatementSnippet(&Code);
+		if (!TestNotNull(TEXT("Parser should produce an AST for control flow input"), Root))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("Control-flow root should be an if node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snIf));
+		TestTrue(TEXT("Parser should emit an if node"), ContainsNodeType(Root, snIf));
+		TestTrue(TEXT("Parser should emit a for node"), ContainsNodeType(Root, snFor));
+		TestTrue(TEXT("Parser should emit a while node"), ContainsNodeType(Root, snWhile));
+		ASTEST_END_BARE
 	}
 
-	TestEqual(TEXT("Root node should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
-	TestTrue(TEXT("Parser should emit a declaration node for the global variable"), ContainsNodeType(Root, snDeclaration));
-	TestTrue(TEXT("Parser should emit a class node for the class declaration"), ContainsNodeType(Root, snClass));
-	ASTEST_END_BARE
-
-	return true;
-}
-
-bool FAngelscriptParserExpressionAstTest::RunTest(const FString& Parameters)
-{
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateParserModule(BareEngine, "ParserExpressions");
-	if (!TestNotNull(TEXT("Parser expression test should create a backing module"), Module))
+	TEST_METHOD(SyntaxErrors)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateParserModule(BareEngine, "ParserSyntaxErrors");
+		if (!TestNotNull(TEXT("Parser syntax-error test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		Builder.silent = true;
+		asCScriptCode Code;
+		Code.SetCode("ParserSyntaxErrors", "void Broken( { return; }", true);
+
+		asCParser Parser(&Builder);
+		const int ParseResult = Parser.ParseScript(&Code);
+		TestTrue(TEXT("Parser should reject malformed syntax"), ParseResult < 0);
+		ASTEST_END_BARE
 	}
 
-	asCBuilder Builder(BareEngine, Module);
-	asCScriptCode Code;
-	Code.SetCode("ParserExpressions", "1 + 2 * 3", true);
-
-	FParserAccessor Parser(&Builder);
-	asCScriptNode* Root = Parser.ParseExpressionSnippet(&Code);
-	if (!TestNotNull(TEXT("Parser should produce an AST for expression input"), Root))
+	TEST_METHOD(ReuseAfterSyntaxError)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateParserModule(BareEngine, "ParserReuseAfterSyntaxError");
+		if (!TestNotNull(TEXT("Parser reuse-after-error test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		Builder.silent = true;
+
+		asCScriptCode InvalidCode;
+		InvalidCode.SetCode("ParserReuseAfterSyntaxError_Invalid", "void Broken( { return; }", true);
+
+		asCScriptCode ValidCode;
+		ValidCode.SetCode("ParserReuseAfterSyntaxError_Valid", "int GlobalValue = 7; class FRecoveredSample { int Value; }", true);
+
+		FParserAccessor Parser(&Builder);
+		const int InvalidParseResult = Parser.ParseScriptSnippetWithoutImplicitReset(&InvalidCode);
+		TestTrue(
+			TEXT("Parser.ReuseAfterSyntaxError should fail the malformed script on the first parse"),
+			InvalidParseResult < 0);
+
+		Parser.ResetParser();
+
+		const int ValidParseResult = Parser.ParseScriptSnippetWithoutImplicitReset(&ValidCode);
+		TestEqual(
+			TEXT("Parser.ReuseAfterSyntaxError should succeed when the same parser is reused on valid script after Reset"),
+			ValidParseResult,
+			0);
+
+		asCScriptNode* Root = Parser.GetScriptNode();
+		if (!TestNotNull(TEXT("Parser.ReuseAfterSyntaxError should produce a root node for the recovered parse"), Root))
+		{
+			return;
+		}
+
+		TestEqual(
+			TEXT("Parser.ReuseAfterSyntaxError should recover a script root node after Reset"),
+			static_cast<int32>(Root->nodeType),
+			static_cast<int32>(snScript));
+		TestTrue(
+			TEXT("Parser.ReuseAfterSyntaxError should recover a declaration node after Reset"),
+			ContainsNodeType(Root, snDeclaration));
+		TestTrue(
+			TEXT("Parser.ReuseAfterSyntaxError should recover a class node after Reset"),
+			ContainsNodeType(Root, snClass));
+
+		ASTEST_END_BARE
 	}
-
-	TestEqual(TEXT("Expression root should be an expression node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snExpression));
-	TestTrue(TEXT("Parser should emit an expression operator node"), ContainsNodeType(Root, snExprOperator));
-	ASTEST_END_BARE
-
-	return true;
-}
-
-bool FAngelscriptParserControlFlowTest::RunTest(const FString& Parameters)
-{
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateParserModule(BareEngine, "ParserControlFlow");
-	if (!TestNotNull(TEXT("Parser control-flow test should create a backing module"), Module))
-	{
-		return false;
-	}
-
-	asCBuilder Builder(BareEngine, Module);
-	asCScriptCode Code;
-	Code.SetCode("ParserControlFlow", "if (true) { for (int i = 0; i < 3; i++) { while(false) { } } }", true);
-
-	FParserAccessor Parser(&Builder);
-	asCScriptNode* Root = Parser.ParseStatementSnippet(&Code);
-	if (!TestNotNull(TEXT("Parser should produce an AST for control flow input"), Root))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Control-flow root should be an if node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snIf));
-	TestTrue(TEXT("Parser should emit an if node"), ContainsNodeType(Root, snIf));
-	TestTrue(TEXT("Parser should emit a for node"), ContainsNodeType(Root, snFor));
-	TestTrue(TEXT("Parser should emit a while node"), ContainsNodeType(Root, snWhile));
-	ASTEST_END_BARE
-
-	return true;
-}
-
-bool FAngelscriptParserSyntaxErrorTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = false;
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateParserModule(BareEngine, "ParserSyntaxErrors");
-	if (!TestNotNull(TEXT("Parser syntax-error test should create a backing module"), Module))
-	{
-		return false;
-	}
-
-	asCBuilder Builder(BareEngine, Module);
-	Builder.silent = true;
-	asCScriptCode Code;
-	Code.SetCode("ParserSyntaxErrors", "void Broken( { return; }", true);
-
-	asCParser Parser(&Builder);
-	const int ParseResult = Parser.ParseScript(&Code);
-	TestTrue(TEXT("Parser should reject malformed syntax"), ParseResult < 0);
-	bPassed = ParseResult < 0;
-	ASTEST_END_BARE
-
-	return bPassed;
-}
-
-bool FAngelscriptParserReuseAfterSyntaxErrorTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateParserModule(BareEngine, "ParserReuseAfterSyntaxError");
-	if (!TestNotNull(TEXT("Parser reuse-after-error test should create a backing module"), Module))
-	{
-		return false;
-	}
-
-	asCBuilder Builder(BareEngine, Module);
-	Builder.silent = true;
-
-	asCScriptCode InvalidCode;
-	InvalidCode.SetCode("ParserReuseAfterSyntaxError_Invalid", "void Broken( { return; }", true);
-
-	asCScriptCode ValidCode;
-	ValidCode.SetCode("ParserReuseAfterSyntaxError_Valid", "int GlobalValue = 7; class FRecoveredSample { int Value; }", true);
-
-	FParserAccessor Parser(&Builder);
-	const int InvalidParseResult = Parser.ParseScriptSnippetWithoutImplicitReset(&InvalidCode);
-	bPassed &= TestTrue(
-		TEXT("Parser.ReuseAfterSyntaxError should fail the malformed script on the first parse"),
-		InvalidParseResult < 0);
-
-	Parser.ResetParser();
-
-	const int ValidParseResult = Parser.ParseScriptSnippetWithoutImplicitReset(&ValidCode);
-	bPassed &= TestEqual(
-		TEXT("Parser.ReuseAfterSyntaxError should succeed when the same parser is reused on valid script after Reset"),
-		ValidParseResult,
-		0);
-
-	asCScriptNode* Root = Parser.GetScriptNode();
-	if (!TestNotNull(TEXT("Parser.ReuseAfterSyntaxError should produce a root node for the recovered parse"), Root))
-	{
-		return false;
-	}
-
-	bPassed &= TestEqual(
-		TEXT("Parser.ReuseAfterSyntaxError should recover a script root node after Reset"),
-		static_cast<int32>(Root->nodeType),
-		static_cast<int32>(snScript));
-	bPassed &= TestTrue(
-		TEXT("Parser.ReuseAfterSyntaxError should recover a declaration node after Reset"),
-		ContainsNodeType(Root, snDeclaration));
-	bPassed &= TestTrue(
-		TEXT("Parser.ReuseAfterSyntaxError should recover a class node after Reset"),
-		ContainsNodeType(Root, snClass));
-
-	ASTEST_END_BARE
-	return bPassed;
-}
+};
 
 #endif

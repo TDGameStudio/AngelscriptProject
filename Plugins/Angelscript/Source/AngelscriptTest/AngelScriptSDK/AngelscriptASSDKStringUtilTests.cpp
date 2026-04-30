@@ -3,7 +3,7 @@
 // Automation IDs: Angelscript.TestModule.AngelScriptSDK.StringUtil.*
 
 #include "AngelscriptNativeTestSupport.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 // TODO: RegisterStringFactory API differs between AS 2.33 fork and AS 2.38.
@@ -12,22 +12,6 @@
 #if 0 // WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptNativeTestSupport;
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKStringUtilParseIntTest,
-	"Angelscript.TestModule.AngelScriptSDK.StringUtil.ParseInt",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKStringUtilParseNegativeIntTest,
-	"Angelscript.TestModule.AngelScriptSDK.StringUtil.ParseNegativeInt",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKStringUtilParseFloatTest,
-	"Angelscript.TestModule.AngelScriptSDK.StringUtil.ParseFloat",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKStringUtilParseZeroTest,
-	"Angelscript.TestModule.AngelScriptSDK.StringUtil.ParseZero",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptASSDKStringUtilLargeValueTest,
-	"Angelscript.TestModule.AngelScriptSDK.StringUtil.LargeValue",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private
 {
@@ -78,75 +62,77 @@ namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private
 
 using namespace AngelscriptTest_AngelScriptSDK_StringUtil_Private;
 
-bool FAngelscriptASSDKStringUtilParseIntTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKStringUtilTests, "Angelscript.TestModule.AngelScriptSDK.StringUtil", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-	RegisterStringFactory(SE);
-	asIScriptModule* M = BuildNativeModule(SE, "StrUtilPI", "int Entry() { string s = \"42\"; return s.parseInt(); }\n");
-	if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return false; }
-	int32 Result = 0;
-	if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return false;
-	return TestEqual(TEXT("parseInt 42"), Result, 42);
-}
+	TEST_METHOD(ParseInt)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+		RegisterStringFactory(SE);
+		asIScriptModule* M = BuildNativeModule(SE, "StrUtilPI", "int Entry() { string s = \"42\"; return s.parseInt(); }\n");
+		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		int32 Result = 0;
+		if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return;
+		TestEqual(TEXT("parseInt 42"), Result, 42);
+	}
 
-bool FAngelscriptASSDKStringUtilParseNegativeIntTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-	RegisterStringFactory(SE);
-	asIScriptModule* M = BuildNativeModule(SE, "StrUtilNI", "int Entry() { string s = \"-100\"; return s.parseInt(); }\n");
-	if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return false; }
-	int32 Result = 0;
-	if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return false;
-	return TestEqual(TEXT("parseInt -100"), Result, -100);
-}
+	TEST_METHOD(ParseNegativeInt)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+		RegisterStringFactory(SE);
+		asIScriptModule* M = BuildNativeModule(SE, "StrUtilNI", "int Entry() { string s = \"-100\"; return s.parseInt(); }\n");
+		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		int32 Result = 0;
+		if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return;
+		TestEqual(TEXT("parseInt -100"), Result, -100);
+	}
 
-bool FAngelscriptASSDKStringUtilParseFloatTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-	RegisterStringFactory(SE);
-	asIScriptModule* M = BuildNativeModule(SE, "StrUtilPF", "double Entry() { string s = \"3.14\"; return s.parseFloat(); }\n");
-	if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return false; }
-	double Result = 0.0;
-	if (!ExecuteDoubleEntry(*this, SE, M, "double Entry()", Result)) return false;
-	TestTrue(TEXT("parseFloat 3.14"), FMath::IsNearlyEqual(Result, 3.14, 0.001));
-	return true;
-}
+	TEST_METHOD(ParseFloat)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+		RegisterStringFactory(SE);
+		asIScriptModule* M = BuildNativeModule(SE, "StrUtilPF", "double Entry() { string s = \"3.14\"; return s.parseFloat(); }\n");
+		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		double Result = 0.0;
+		if (!ExecuteDoubleEntry(*this, SE, M, "double Entry()", Result)) return;
+		TestTrue(TEXT("parseFloat 3.14"), FMath::IsNearlyEqual(Result, 3.14, 0.001));
+	}
 
-bool FAngelscriptASSDKStringUtilParseZeroTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-	RegisterStringFactory(SE);
-	asIScriptModule* M = BuildNativeModule(SE, "StrUtilZ", "int Entry() { string s = \"0\"; return s.parseInt(); }\n");
-	if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return false; }
-	int32 Result = -1;
-	if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return false;
-	return TestEqual(TEXT("parseInt 0"), Result, 0);
-}
+	TEST_METHOD(ParseZero)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+		RegisterStringFactory(SE);
+		asIScriptModule* M = BuildNativeModule(SE, "StrUtilZ", "int Entry() { string s = \"0\"; return s.parseInt(); }\n");
+		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		int32 Result = -1;
+		if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return;
+		TestEqual(TEXT("parseInt 0"), Result, 0);
+	}
 
-bool FAngelscriptASSDKStringUtilLargeValueTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* SE = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("Should create engine"), SE)) return false;
-	ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
-	RegisterStringFactory(SE);
-	asIScriptModule* M = BuildNativeModule(SE, "StrUtilLV", "int Entry() { string s = \"2147483647\"; return s.parseInt(); }\n");
-	if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return false; }
-	int32 Result = 0;
-	if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return false;
-	return TestEqual(TEXT("parseInt INT32_MAX"), Result, 2147483647);
-}
+	TEST_METHOD(LargeValue)
+	{
+		FNativeMessageCollector Messages;
+		asIScriptEngine* SE = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
+		RegisterStringFactory(SE);
+		asIScriptModule* M = BuildNativeModule(SE, "StrUtilLV", "int Entry() { string s = \"2147483647\"; return s.parseInt(); }\n");
+		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		int32 Result = 0;
+		if (!ExecuteIntEntry(*this, SE, M, "int Entry()", Result)) return;
+		TestEqual(TEXT("parseInt INT32_MAX"), Result, 2147483647);
+	}
+};
 
 #endif // WITH_DEV_AUTOMATION_TESTS

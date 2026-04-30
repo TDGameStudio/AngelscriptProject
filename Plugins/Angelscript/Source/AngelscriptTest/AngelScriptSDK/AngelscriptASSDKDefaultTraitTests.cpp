@@ -1,44 +1,42 @@
 #include "AngelscriptTestAdapter.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptNativeTestSupport;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKDefaultTraitModifierCompileTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Compiler.DefaultTraitModifiers",
+TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKDefaultTraitTests,
+	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Compiler",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptASSDKDefaultTraitModifierCompileTest::RunTest(const FString& Parameters)
 {
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK default-trait modifier test should create a standalone engine"), ScriptEngine))
+	TEST_METHOD(DefaultTraitModifiers)
 	{
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK default-trait modifier test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKDefaultTraitModifiers",
+			"int DefaultsOnlyValue() defaults { return 7; }                         \n"
+			"int UnsafeConstructionValue() unsafe_during_construction { return 5; }  \n"
+			"int Entry() { return 1; }                                               \n");
+		if (!TestNotNull(TEXT("ASSDK default-trait modifier test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
 	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKDefaultTraitModifiers",
-		"int DefaultsOnlyValue() defaults { return 7; }                         \n"
-		"int UnsafeConstructionValue() unsafe_during_construction { return 5; }  \n"
-		"int Entry() { return 1; }                                               \n");
-	if (!TestNotNull(TEXT("ASSDK default-trait modifier test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
-	}
-
-	return true;
-}
+};
 
 #endif

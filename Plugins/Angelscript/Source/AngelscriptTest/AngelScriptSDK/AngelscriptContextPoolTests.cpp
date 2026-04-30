@@ -1,6 +1,6 @@
 #include "Shared/AngelscriptTestUtilities.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/Guid.h"
 #include "Misc/ScopeExit.h"
 
@@ -71,147 +71,144 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptContextPoolTests_Private
 
 using namespace AngelscriptTest_AngelScriptSDK_AngelscriptContextPoolTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptContextPoolReuseAndResetPerEngineTest,
-	"Angelscript.TestModule.AngelScriptSDK.ContextPool.ReuseAndResetPerEngine",
+TEST_CLASS_WITH_FLAGS(FAngelscriptContextPoolTests,
+	"Angelscript.TestModule.AngelScriptSDK.ContextPool",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptContextPoolReuseAndResetPerEngineTest::RunTest(const FString& Parameters)
 {
-	FContextPoolEngineStackGuard ContextStackGuard;
-
-	const FAngelscriptEngineConfig Config;
-	const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
-	TUniquePtr<FAngelscriptEngine> EngineA = AngelscriptTestSupport::CreateScriptScanFreeEngineForTesting(
-		Config,
-		Dependencies,
-		EAngelscriptEngineCreationMode::Full);
-	TUniquePtr<FAngelscriptEngine> EngineB = AngelscriptTestSupport::CreateScriptScanFreeEngineForTesting(
-		Config,
-		Dependencies,
-		EAngelscriptEngineCreationMode::Full);
-
-	if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should create EngineA"), EngineA.Get())
-		|| !TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should create EngineB"), EngineB.Get()))
+	TEST_METHOD(ReuseAndResetPerEngine)
 	{
-		return false;
-	}
+		FContextPoolEngineStackGuard ContextStackGuard;
 
-	asIScriptFunction* RunFunction = CompileContextPoolFunction(
-		*this,
-		*EngineA,
-		MakeContextPoolModuleName(TEXT("ContextPoolReuseAndResetPerEngine")),
-		"void Run() {}",
-		"void Run()");
-	if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should compile the EngineA helper function"), RunFunction))
-	{
-		return false;
-	}
+		const FAngelscriptEngineConfig Config;
+		const FAngelscriptEngineDependencies Dependencies = FAngelscriptEngineDependencies::CreateDefault();
+		TUniquePtr<FAngelscriptEngine> EngineA = AngelscriptTestSupport::CreateScriptScanFreeEngineForTesting(
+			Config,
+			Dependencies,
+			EAngelscriptEngineCreationMode::Full);
+		TUniquePtr<FAngelscriptEngine> EngineB = AngelscriptTestSupport::CreateScriptScanFreeEngineForTesting(
+			Config,
+			Dependencies,
+			EAngelscriptEngineCreationMode::Full);
 
-	ON_SCOPE_EXIT
-	{
-		RunFunction->Release();
-	};
-
-	bool bPassed = true;
-	const int32 EngineABaselineCount = GetLocalPooledContextCount(EngineA->GetScriptEngine());
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should start EngineA with an empty local pool"),
-		EngineABaselineCount,
-		0);
-
-	asIScriptContext* SeedContext = nullptr;
-	{
-		FAngelscriptEngineScope EngineScope(*EngineA);
-		SeedContext = EngineA->GetScriptEngine()->RequestContext();
-		if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a seed context from EngineA"), SeedContext))
+		if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should create EngineA"), EngineA.Get())
+			|| !TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should create EngineB"), EngineB.Get()))
 		{
-			return false;
+			return;
 		}
 
-		bPassed &= TestEqual(
-			TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineA pool empty while the seed context is checked out"),
-			GetLocalPooledContextCount(EngineA->GetScriptEngine()),
+		asIScriptFunction* RunFunction = CompileContextPoolFunction(
+			*this,
+			*EngineA,
+			MakeContextPoolModuleName(TEXT("ContextPoolReuseAndResetPerEngine")),
+			"void Run() {}",
+			"void Run()");
+		if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should compile the EngineA helper function"), RunFunction))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			RunFunction->Release();
+		};
+
+		const int32 EngineABaselineCount = GetLocalPooledContextCount(EngineA->GetScriptEngine());
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should start EngineA with an empty local pool"),
+			EngineABaselineCount,
 			0);
 
-		const int32 PrepareResult = SeedContext->Prepare(RunFunction);
-		bPassed &= TestEqual(
-			TEXT("ContextPool.ReuseAndResetPerEngine should prepare the EngineA seed context successfully"),
-			PrepareResult,
-			asSUCCESS);
-
-		const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedContext->Execute() : PrepareResult;
-		bPassed &= TestEqual(
-			TEXT("ContextPool.ReuseAndResetPerEngine should execute the EngineA seed context successfully"),
-			ExecuteResult,
-			asEXECUTION_FINISHED);
-
-		EngineA->GetScriptEngine()->ReturnContext(SeedContext);
-	}
-
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should pool the returned EngineA context"),
-		GetLocalPooledContextCount(EngineA->GetScriptEngine()),
-		1);
-
-	asIScriptContext* ReusedContext = nullptr;
-	{
-		FAngelscriptEngineScope EngineScope(*EngineA);
-		ReusedContext = EngineA->GetScriptEngine()->RequestContext();
-		if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a reused context from EngineA"), ReusedContext))
+		asIScriptContext* SeedContext = nullptr;
 		{
-			return false;
+			FAngelscriptEngineScope EngineScope(*EngineA);
+			SeedContext = EngineA->GetScriptEngine()->RequestContext();
+			if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a seed context from EngineA"), SeedContext))
+			{
+				return;
+			}
+
+			TestEqual(
+				TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineA pool empty while the seed context is checked out"),
+				GetLocalPooledContextCount(EngineA->GetScriptEngine()),
+				0);
+
+			const int32 PrepareResult = SeedContext->Prepare(RunFunction);
+			TestEqual(
+				TEXT("ContextPool.ReuseAndResetPerEngine should prepare the EngineA seed context successfully"),
+				PrepareResult,
+				asSUCCESS);
+
+			const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedContext->Execute() : PrepareResult;
+			TestEqual(
+				TEXT("ContextPool.ReuseAndResetPerEngine should execute the EngineA seed context successfully"),
+				ExecuteResult,
+				asEXECUTION_FINISHED);
+
+			EngineA->GetScriptEngine()->ReturnContext(SeedContext);
 		}
 
-		bPassed &= TestTrue(
-			TEXT("ContextPool.ReuseAndResetPerEngine should reuse the same pooled EngineA context"),
-			ReusedContext == SeedContext);
-		bPassed &= TestEqual(
-			TEXT("ContextPool.ReuseAndResetPerEngine should pop EngineA pool count back to zero when re-borrowing"),
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should pool the returned EngineA context"),
 			GetLocalPooledContextCount(EngineA->GetScriptEngine()),
-			0);
-		bPassed &= TestEqual(
-			TEXT("ContextPool.ReuseAndResetPerEngine should reset the reused EngineA context to the uninitialized state"),
-			static_cast<int32>(ReusedContext->GetState()),
-			static_cast<int32>(asEXECUTION_UNINITIALIZED));
+			1);
 
-		EngineA->GetScriptEngine()->ReturnContext(ReusedContext);
-	}
-
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should restore EngineA pooled count after returning the reused context"),
-		GetLocalPooledContextCount(EngineA->GetScriptEngine()),
-		1);
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineB baseline pool count at zero before it borrows a context"),
-		GetLocalPooledContextCount(EngineB->GetScriptEngine()),
-		0);
-
-	{
-		FAngelscriptEngineScope EngineScope(*EngineB);
-		asIScriptContext* EngineBContext = EngineB->GetScriptEngine()->RequestContext();
-		if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a context from EngineB"), EngineBContext))
+		asIScriptContext* ReusedContext = nullptr;
 		{
-			return false;
+			FAngelscriptEngineScope EngineScope(*EngineA);
+			ReusedContext = EngineA->GetScriptEngine()->RequestContext();
+			if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a reused context from EngineA"), ReusedContext))
+			{
+				return;
+			}
+
+			TestTrue(
+				TEXT("ContextPool.ReuseAndResetPerEngine should reuse the same pooled EngineA context"),
+				ReusedContext == SeedContext);
+			TestEqual(
+				TEXT("ContextPool.ReuseAndResetPerEngine should pop EngineA pool count back to zero when re-borrowing"),
+				GetLocalPooledContextCount(EngineA->GetScriptEngine()),
+				0);
+			TestEqual(
+				TEXT("ContextPool.ReuseAndResetPerEngine should reset the reused EngineA context to the uninitialized state"),
+				static_cast<int32>(ReusedContext->GetState()),
+				static_cast<int32>(asEXECUTION_UNINITIALIZED));
+
+			EngineA->GetScriptEngine()->ReturnContext(ReusedContext);
 		}
 
-		bPassed &= TestTrue(
-			TEXT("ContextPool.ReuseAndResetPerEngine should never hand EngineB the pooled EngineA context"),
-			EngineBContext != SeedContext);
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should restore EngineA pooled count after returning the reused context"),
+			GetLocalPooledContextCount(EngineA->GetScriptEngine()),
+			1);
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineB baseline pool count at zero before it borrows a context"),
+			GetLocalPooledContextCount(EngineB->GetScriptEngine()),
+			0);
 
-		EngineB->GetScriptEngine()->ReturnContext(EngineBContext);
+		{
+			FAngelscriptEngineScope EngineScope(*EngineB);
+			asIScriptContext* EngineBContext = EngineB->GetScriptEngine()->RequestContext();
+			if (!TestNotNull(TEXT("ContextPool.ReuseAndResetPerEngine should request a context from EngineB"), EngineBContext))
+			{
+				return;
+			}
+
+			TestTrue(
+				TEXT("ContextPool.ReuseAndResetPerEngine should never hand EngineB the pooled EngineA context"),
+				EngineBContext != SeedContext);
+
+			EngineB->GetScriptEngine()->ReturnContext(EngineBContext);
+		}
+
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineA pooled count unchanged after EngineB returns its context"),
+			GetLocalPooledContextCount(EngineA->GetScriptEngine()),
+			1);
+		TestEqual(
+			TEXT("ContextPool.ReuseAndResetPerEngine should track EngineB pooled count independently after its own return"),
+			GetLocalPooledContextCount(EngineB->GetScriptEngine()),
+			1);
 	}
-
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should keep EngineA pooled count unchanged after EngineB returns its context"),
-		GetLocalPooledContextCount(EngineA->GetScriptEngine()),
-		1);
-	bPassed &= TestEqual(
-		TEXT("ContextPool.ReuseAndResetPerEngine should track EngineB pooled count independently after its own return"),
-		GetLocalPooledContextCount(EngineB->GetScriptEngine()),
-		1);
-
-	return bPassed;
-}
+};
 
 #endif

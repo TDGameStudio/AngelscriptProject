@@ -1,42 +1,12 @@
 #include "AngelscriptTestAdapter.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptNativeTestSupport;
 using namespace AngelscriptSDKTestSupport;
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorCallTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.Call",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorPowTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.Pow",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorNegateTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.Negate",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorMultiAssignTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.MultiAssign",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorConditionTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.Condition",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOperatorForLoopTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator.ForLoop",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_Native_AngelscriptASSDKOperatorTests_Private
 {
@@ -134,267 +104,270 @@ namespace AngelscriptTest_Native_AngelscriptASSDKOperatorTests_Private
 
 using namespace AngelscriptTest_Native_AngelscriptASSDKOperatorTests_Private;
 
-bool FAngelscriptASSDKOperatorCallTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKOperatorTests, "Angelscript.TestModule.AngelScriptSDK.ASSDK.Operator", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator opCall test should create a standalone engine"), ScriptEngine))
+	TEST_METHOD(Call)
 	{
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator opCall test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorCall",
+			"class C                     \n"
+			"{                           \n"
+			"  int opCall(int a, int b)  \n"
+			"  {                         \n"
+			"    return a + b;           \n"
+			"  }                         \n"
+			"}                           \n"
+			"int Entry()                 \n"
+			"{                           \n"
+			"  C c;                      \n"
+			"  return c(2, 3);           \n"
+			"}                           \n");
+		if (!TestNotNull(TEXT("ASSDK operator opCall test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		TestNotNull(TEXT("ASSDK operator opCall test should expose the entry function after successful resolution"), GetNativeFunctionByDecl(Module, "int Entry()"));
 	}
 
-	ON_SCOPE_EXIT
+	TEST_METHOD(Pow)
 	{
-		DestroyNativeEngine(ScriptEngine);
-	};
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator pow test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
 
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorCall",
-		"class C                     \n"
-		"{                           \n"
-		"  int opCall(int a, int b)  \n"
-		"  {                         \n"
-		"    return a + b;           \n"
-		"  }                         \n"
-		"}                           \n"
-		"int Entry()                 \n"
-		"{                           \n"
-		"  C c;                      \n"
-		"  return c(2, 3);           \n"
-		"}                           \n");
-	if (!TestNotNull(TEXT("ASSDK operator opCall test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorPow",
+			"bool Entry()                  \n"
+			"{                             \n"
+			"  return 3 ** 2 == 9          \n"
+			"    && 9.0 ** 0.5 == 3.0      \n"
+			"    && 2.5 ** 2 == 6.25;      \n"
+			"}                             \n"
+			"void Overflow()               \n"
+			"{                             \n"
+			"  double x = 1.0e100;         \n"
+			"  x = x ** 6.0;               \n"
+			"}                             \n");
+		if (!TestNotNull(TEXT("ASSDK operator pow test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		bool bPowResult = false;
+		if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bPowResult))
+		{
+			return;
+		}
+
+		if (!TestTrue(TEXT("ASSDK operator pow test should preserve exponent behavior"), bPowResult))
+		{
+			return;
+		}
+
+		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "void Overflow()");
+		if (!TestNotNull(TEXT("ASSDK operator pow test should resolve the overflow function"), Function))
+		{
+			return;
+		}
+
+		asIScriptContext* Context = ScriptEngine->CreateContext();
+		if (!TestNotNull(TEXT("ASSDK operator pow test should create a context"), Context))
+		{
+			return;
+		}
+
+		const int ExecuteResult = PrepareAndExecute(Context, Function);
+		const FString ExceptionString = UTF8_TO_TCHAR(Context->GetExceptionString() != nullptr ? Context->GetExceptionString() : "");
+		Context->Release();
+
+		if (!TestEqual(TEXT("ASSDK operator pow test should raise an execution exception on overflow"), ExecuteResult, static_cast<int32>(asEXECUTION_EXCEPTION)))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("ASSDK operator pow test should report overflow in exponent operation"), ExceptionString, FString(TEXT("Overflow in exponent operation")));
 	}
 
-	return TestNotNull(TEXT("ASSDK operator opCall test should expose the entry function after successful resolution"), GetNativeFunctionByDecl(Module, "int Entry()"));
-}
-
-bool FAngelscriptASSDKOperatorPowTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator pow test should create a standalone engine"), ScriptEngine))
+	TEST_METHOD(Negate)
 	{
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator negate test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorNegate",
+			"bool Entry()                   \n"
+			"{                              \n"
+			"  int value = 1000;            \n"
+			"  value = -value;              \n"
+			"  value = value - value;       \n"
+			"  return value == 0;           \n"
+			"}                              \n");
+		if (!TestNotNull(TEXT("ASSDK operator negate test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		bool bResult = false;
+		if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("ASSDK operator negate test should preserve unary minus and subtraction semantics"), bResult);
 	}
 
-	ON_SCOPE_EXIT
+	TEST_METHOD(MultiAssign)
 	{
-		DestroyNativeEngine(ScriptEngine);
-	};
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator multi-assign test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
 
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorPow",
-		"bool Entry()                  \n"
-		"{                             \n"
-		"  return 3 ** 2 == 9          \n"
-		"    && 9.0 ** 0.5 == 3.0      \n"
-		"    && 2.5 ** 2 == 6.25;      \n"
-		"}                             \n"
-		"void Overflow()               \n"
-		"{                             \n"
-		"  double x = 1.0e100;         \n"
-		"  x = x ** 6.0;               \n"
-		"}                             \n");
-	if (!TestNotNull(TEXT("ASSDK operator pow test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorMultiAssign",
+			"bool Entry()                   \n"
+			"{                              \n"
+			"  int a = 0, b = 0, c = 0, d = 0; \n"
+			"  int clr = 0x12345678;        \n"
+			"  a = b = c = d = clr;         \n"
+			"  return a == clr && b == clr && c == clr && d == clr; \n"
+			"}                              \n");
+		if (!TestNotNull(TEXT("ASSDK operator multi-assign test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		bool bResult = false;
+		if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("ASSDK operator multi-assign test should assign every local target equally"), bResult);
 	}
 
-	bool bPowResult = false;
-	if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bPowResult))
+	TEST_METHOD(Condition)
 	{
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator condition test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorCondition",
+			"bool Entry()             \n"
+			"{                        \n"
+			"  int value = true ? 1 : 0; \n"
+			"  return value == 1;    \n"
+			"}                        \n");
+		if (!TestNotNull(TEXT("ASSDK operator condition test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		bool bResult = false;
+		if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("ASSDK operator condition test should preserve ternary assignment side effects"), bResult);
 	}
 
-	if (!TestTrue(TEXT("ASSDK operator pow test should preserve exponent behavior"), bPowResult))
+	TEST_METHOD(ForLoop)
 	{
-		return false;
+		FNativeMessageCollector Messages;
+		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
+		if (!TestNotNull(TEXT("ASSDK operator for-loop test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOperatorForLoop",
+			"bool Entry()                                \n"
+			"{                                           \n"
+			"  int result = 0;                           \n"
+			"  for (int a = 1, b = 1; a < 5 && b < 5; a++, b = a + 1) \n"
+			"  {                                         \n"
+			"    result += a * b;                        \n"
+			"  }                                         \n"
+			"  return result == (1 + 6 + 12);           \n"
+			"}                                           \n");
+		if (!TestNotNull(TEXT("ASSDK operator for-loop test should compile the module"), Module))
+		{
+			AddInfo(CollectMessages(Messages));
+			return;
+		}
+
+		bool bResult = false;
+		if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("ASSDK operator for-loop test should preserve multiple increment expressions"), bResult);
 	}
-
-	asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "void Overflow()");
-	if (!TestNotNull(TEXT("ASSDK operator pow test should resolve the overflow function"), Function))
-	{
-		return false;
-	}
-
-	asIScriptContext* Context = ScriptEngine->CreateContext();
-	if (!TestNotNull(TEXT("ASSDK operator pow test should create a context"), Context))
-	{
-		return false;
-	}
-
-	const int ExecuteResult = PrepareAndExecute(Context, Function);
-	const FString ExceptionString = UTF8_TO_TCHAR(Context->GetExceptionString() != nullptr ? Context->GetExceptionString() : "");
-	Context->Release();
-
-	if (!TestEqual(TEXT("ASSDK operator pow test should raise an execution exception on overflow"), ExecuteResult, static_cast<int32>(asEXECUTION_EXCEPTION)))
-	{
-		return false;
-	}
-
-	return TestEqual(TEXT("ASSDK operator pow test should report overflow in exponent operation"), ExceptionString, FString(TEXT("Overflow in exponent operation")));
-}
-
-bool FAngelscriptASSDKOperatorNegateTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator negate test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorNegate",
-		"bool Entry()                   \n"
-		"{                              \n"
-		"  int value = 1000;            \n"
-		"  value = -value;              \n"
-		"  value = value - value;       \n"
-		"  return value == 0;           \n"
-		"}                              \n");
-	if (!TestNotNull(TEXT("ASSDK operator negate test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
-	}
-
-	bool bResult = false;
-	if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
-	{
-		return false;
-	}
-
-	return TestTrue(TEXT("ASSDK operator negate test should preserve unary minus and subtraction semantics"), bResult);
-}
-
-bool FAngelscriptASSDKOperatorMultiAssignTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator multi-assign test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorMultiAssign",
-		"bool Entry()                   \n"
-		"{                              \n"
-		"  int a = 0, b = 0, c = 0, d = 0; \n"
-		"  int clr = 0x12345678;        \n"
-		"  a = b = c = d = clr;         \n"
-		"  return a == clr && b == clr && c == clr && d == clr; \n"
-		"}                              \n");
-	if (!TestNotNull(TEXT("ASSDK operator multi-assign test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
-	}
-
-	bool bResult = false;
-	if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
-	{
-		return false;
-	}
-
-	return TestTrue(TEXT("ASSDK operator multi-assign test should assign every local target equally"), bResult);
-}
-
-bool FAngelscriptASSDKOperatorConditionTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator condition test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorCondition",
-		"bool Entry()             \n"
-		"{                        \n"
-		"  int value = true ? 1 : 0; \n"
-		"  return value == 1;    \n"
-		"}                        \n");
-	if (!TestNotNull(TEXT("ASSDK operator condition test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
-	}
-
-	bool bResult = false;
-	if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
-	{
-		return false;
-	}
-
-	return TestTrue(TEXT("ASSDK operator condition test should preserve ternary assignment side effects"), bResult);
-}
-
-bool FAngelscriptASSDKOperatorForLoopTest::RunTest(const FString& Parameters)
-{
-	FNativeMessageCollector Messages;
-	asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-	if (!TestNotNull(TEXT("ASSDK operator for-loop test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOperatorForLoop",
-		"bool Entry()                                \n"
-		"{                                           \n"
-		"  int result = 0;                           \n"
-		"  for (int a = 1, b = 1; a < 5 && b < 5; a++, b = a + 1) \n"
-		"  {                                         \n"
-		"    result += a * b;                        \n"
-		"  }                                         \n"
-		"  return result == (1 + 6 + 12);           \n"
-		"}                                           \n");
-	if (!TestNotNull(TEXT("ASSDK operator for-loop test should compile the module"), Module))
-	{
-		AddInfo(CollectMessages(Messages));
-		return false;
-	}
-
-	bool bResult = false;
-	if (!ExecuteOperatorBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
-	{
-		return false;
-	}
-
-	return TestTrue(TEXT("ASSDK operator for-loop test should preserve multiple increment expressions"), bResult);
-}
+};
 
 #endif

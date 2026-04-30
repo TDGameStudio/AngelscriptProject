@@ -1,27 +1,12 @@
 #include "AngelscriptTestAdapter.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 using namespace AngelscriptNativeTestSupport;
 using namespace AngelscriptSDKTestSupport;
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOOPInterfaceTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.OOP.InterfaceBridge",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOOPMixinNamespaceTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.OOP.MixinNamespace",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptASSDKOOPInheritedInterfaceMethodTest,
-	"Angelscript.TestModule.AngelScriptSDK.ASSDK.OOP.InheritedInterfaceMethod",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace AngelscriptTest_Native_AngelscriptASSDKOOPTests_Private
 {
@@ -60,125 +45,128 @@ namespace AngelscriptTest_Native_AngelscriptASSDKOOPTests_Private
 
 using namespace AngelscriptTest_Native_AngelscriptASSDKOOPTests_Private;
 
-bool FAngelscriptASSDKOOPInterfaceTest::RunTest(const FString& Parameters)
+TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKOOPTests, "Angelscript.TestModule.AngelScriptSDK.ASSDK.OOP", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	FAngelscriptSDKTestAdapter Adapter(*this);
-	FASSDKBufferedOutStream Buffered;
-	asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
-	if (!TestNotNull(TEXT("ASSDK OOP interface test should create a standalone engine"), ScriptEngine))
+	TEST_METHOD(InterfaceBridge)
 	{
-		return false;
+		FAngelscriptSDKTestAdapter Adapter(*this);
+		FASSDKBufferedOutStream Buffered;
+		asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
+		if (!TestNotNull(TEXT("ASSDK OOP interface test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		const int InterfaceResult = ScriptEngine->RegisterInterface("appintf");
+		const int MethodResult = InterfaceResult >= 0
+			? ScriptEngine->RegisterInterfaceMethod("appintf", "void test()")
+			: InterfaceResult;
+		if (!TestTrue(TEXT("ASSDK OOP interface test should register the application interface"), InterfaceResult >= 0 && MethodResult >= 0))
+		{
+			return;
+		}
+
+		const FString InterfaceDeclaration = UTF8_TO_TCHAR(ScriptEngine->GetTypeDeclaration(InterfaceResult));
+		if (!TestEqual(TEXT("ASSDK OOP interface test should preserve the registered interface declaration"), InterfaceDeclaration, FString(TEXT("appintf"))))
+		{
+			return;
+		}
+
+		asITypeInfo* InterfaceType = ScriptEngine->GetTypeInfoByName("appintf");
+		if (!TestNotNull(TEXT("ASSDK OOP interface test should expose the registered interface type"), InterfaceType))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("ASSDK OOP interface test should expose the registered interface method count"), static_cast<int32>(InterfaceType->GetMethodCount()), 1);
 	}
 
-	ON_SCOPE_EXIT
+	TEST_METHOD(MixinNamespace)
 	{
-		DestroyNativeEngine(ScriptEngine);
-	};
+		FAngelscriptSDKTestAdapter Adapter(*this);
+		FASSDKBufferedOutStream Buffered;
+		asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
+		if (!TestNotNull(TEXT("ASSDK OOP mixin test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
 
-	const int InterfaceResult = ScriptEngine->RegisterInterface("appintf");
-	const int MethodResult = InterfaceResult >= 0
-		? ScriptEngine->RegisterInterfaceMethod("appintf", "void test()")
-		: InterfaceResult;
-	if (!TestTrue(TEXT("ASSDK OOP interface test should register the application interface"), InterfaceResult >= 0 && MethodResult >= 0))
-	{
-		return false;
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOOPMixinNamespace",
+			"struct Counter                              \n"
+			"{                                           \n"
+			"  int Value = 0;                            \n"
+			"}                                           \n"
+			"mixin void AddToCounter(Counter& Self, int Delta) \n"
+			"{                                           \n"
+			"  Self.Value += Delta;                      \n"
+			"}                                           \n"
+			"bool Entry()                                \n"
+			"{                                           \n"
+			"  Counter Value;                            \n"
+			"  Value.AddToCounter(3);                    \n"
+			"  return Value.Value == 3;                  \n"
+			"}                                           \n");
+		if (!TestNotNull(TEXT("ASSDK OOP mixin test should compile the module"), Module))
+		{
+			AddInfo(UTF8_TO_TCHAR(Buffered.Buffer.c_str()));
+			return;
+		}
+
+		TestNotNull(TEXT("ASSDK OOP mixin test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
 	}
 
-	const FString InterfaceDeclaration = UTF8_TO_TCHAR(ScriptEngine->GetTypeDeclaration(InterfaceResult));
-	if (!TestEqual(TEXT("ASSDK OOP interface test should preserve the registered interface declaration"), InterfaceDeclaration, FString(TEXT("appintf"))))
+	TEST_METHOD(InheritedInterfaceMethod)
 	{
-		return false;
+		FAngelscriptSDKTestAdapter Adapter(*this);
+		FASSDKBufferedOutStream Buffered;
+		asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
+		if (!TestNotNull(TEXT("ASSDK OOP inherited-interface-method test should create a standalone engine"), ScriptEngine))
+		{
+			return;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			DestroyNativeEngine(ScriptEngine);
+		};
+
+		asIScriptModule* Module = BuildNativeModule(
+			ScriptEngine,
+			"ASSDKOOPInheritedInterfaceMethod",
+			"class B                                    \n"
+			"{                                          \n"
+			"  bool touched = false;                    \n"
+			"  void Touch() { touched = true; }         \n"
+			"}                                          \n"
+			"class D : B                                \n"
+			"{                                          \n"
+			"}                                          \n"
+			"bool Entry()                               \n"
+			"{                                          \n"
+			"  D value = D();                           \n"
+			"  value.Touch();                           \n"
+			"  return value.touched;                    \n"
+			"}                                          \n");
+		if (!TestNotNull(TEXT("ASSDK OOP inherited-interface-method test should compile the module"), Module))
+		{
+			AddInfo(UTF8_TO_TCHAR(Buffered.Buffer.c_str()));
+			return;
+		}
+
+		TestNotNull(TEXT("ASSDK OOP inheritance test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
 	}
-
-	asITypeInfo* InterfaceType = ScriptEngine->GetTypeInfoByName("appintf");
-	if (!TestNotNull(TEXT("ASSDK OOP interface test should expose the registered interface type"), InterfaceType))
-	{
-		return false;
-	}
-
-	return TestEqual(TEXT("ASSDK OOP interface test should expose the registered interface method count"), static_cast<int32>(InterfaceType->GetMethodCount()), 1);
-}
-
-bool FAngelscriptASSDKOOPMixinNamespaceTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptSDKTestAdapter Adapter(*this);
-	FASSDKBufferedOutStream Buffered;
-	asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
-	if (!TestNotNull(TEXT("ASSDK OOP mixin test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOOPMixinNamespace",
-		"struct Counter                              \n"
-		"{                                           \n"
-		"  int Value = 0;                            \n"
-		"}                                           \n"
-		"mixin void AddToCounter(Counter& Self, int Delta) \n"
-		"{                                           \n"
-		"  Self.Value += Delta;                      \n"
-		"}                                           \n"
-		"bool Entry()                                \n"
-		"{                                           \n"
-		"  Counter Value;                            \n"
-		"  Value.AddToCounter(3);                    \n"
-		"  return Value.Value == 3;                  \n"
-		"}                                           \n");
-	if (!TestNotNull(TEXT("ASSDK OOP mixin test should compile the module"), Module))
-	{
-		AddInfo(UTF8_TO_TCHAR(Buffered.Buffer.c_str()));
-		return false;
-	}
-
-	return TestNotNull(TEXT("ASSDK OOP mixin test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
-}
-
-bool FAngelscriptASSDKOOPInheritedInterfaceMethodTest::RunTest(const FString& Parameters)
-{
-	FAngelscriptSDKTestAdapter Adapter(*this);
-	FASSDKBufferedOutStream Buffered;
-	asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &Buffered);
-	if (!TestNotNull(TEXT("ASSDK OOP inherited-interface-method test should create a standalone engine"), ScriptEngine))
-	{
-		return false;
-	}
-
-	ON_SCOPE_EXIT
-	{
-		DestroyNativeEngine(ScriptEngine);
-	};
-
-	asIScriptModule* Module = BuildNativeModule(
-		ScriptEngine,
-		"ASSDKOOPInheritedInterfaceMethod",
-		"class B                                    \n"
-		"{                                          \n"
-		"  bool touched = false;                    \n"
-		"  void Touch() { touched = true; }         \n"
-		"}                                          \n"
-		"class D : B                                \n"
-		"{                                          \n"
-		"}                                          \n"
-		"bool Entry()                               \n"
-		"{                                          \n"
-		"  D value = D();                           \n"
-		"  value.Touch();                           \n"
-		"  return value.touched;                    \n"
-		"}                                          \n");
-	if (!TestNotNull(TEXT("ASSDK OOP inherited-interface-method test should compile the module"), Module))
-	{
-		AddInfo(UTF8_TO_TCHAR(Buffered.Buffer.c_str()));
-		return false;
-	}
-
-	return TestNotNull(TEXT("ASSDK OOP inheritance test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
-}
+};
 
 #endif

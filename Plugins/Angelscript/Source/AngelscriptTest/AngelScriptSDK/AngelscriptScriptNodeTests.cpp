@@ -1,5 +1,5 @@
 #include "Shared/AngelscriptTestMacros.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "source/as_builder.h"
@@ -32,105 +32,90 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private
 
 using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScriptNodeTypeTest,
-	"Angelscript.TestModule.AngelScriptSDK.ScriptNode.Types",
+TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
+	"Angelscript.TestModule.AngelScriptSDK.ScriptNode",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScriptNodeTraversalTest,
-	"Angelscript.TestModule.AngelScriptSDK.ScriptNode.Traversal",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptScriptNodeCopyTest,
-	"Angelscript.TestModule.AngelScriptSDK.ScriptNode.Copy",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptScriptNodeTypeTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("snScript should remain the root script node enum value"), static_cast<int32>(snScript), 1);
-	TestTrue(TEXT("snFunction should remain a positive enum value"), static_cast<int32>(snFunction) > 0);
-	TestTrue(TEXT("snClass should remain a positive enum value"), static_cast<int32>(snClass) > 0);
-	TestTrue(TEXT("snExpression should remain a positive enum value"), static_cast<int32>(snExpression) > 0);
-	return true;
-}
-
-bool FAngelscriptScriptNodeTraversalTest::RunTest(const FString& Parameters)
-{
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeTraversal");
-	if (!TestNotNull(TEXT("ScriptNode traversal test should create a backing module"), Module))
+	TEST_METHOD(Types)
 	{
-		return false;
+		TestEqual(TEXT("snScript should remain the root script node enum value"), static_cast<int32>(snScript), 1);
+		TestTrue(TEXT("snFunction should remain a positive enum value"), static_cast<int32>(snFunction) > 0);
+		TestTrue(TEXT("snClass should remain a positive enum value"), static_cast<int32>(snClass) > 0);
+		TestTrue(TEXT("snExpression should remain a positive enum value"), static_cast<int32>(snExpression) > 0);
 	}
 
-	asCBuilder Builder(BareEngine, Module);
-	asCScriptCode Code;
-	Code.SetCode("ScriptNodeTraversal", "int GlobalValue = 1; class FNodeType { int Value; }", true);
-
-	asCParser Parser(&Builder);
-	if (!TestEqual(TEXT("ScriptNode traversal parser run should succeed"), Parser.ParseScript(&Code), 0))
+	TEST_METHOD(Traversal)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeTraversal");
+		if (!TestNotNull(TEXT("ScriptNode traversal test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		asCScriptCode Code;
+		Code.SetCode("ScriptNodeTraversal", "int GlobalValue = 1; class FNodeType { int Value; }", true);
+
+		asCParser Parser(&Builder);
+		if (!TestEqual(TEXT("ScriptNode traversal parser run should succeed"), Parser.ParseScript(&Code), 0))
+		{
+			return;
+		}
+
+		asCScriptNode* Root = Parser.GetScriptNode();
+		if (!TestNotNull(TEXT("ScriptNode traversal should produce a root node"), Root))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("Root should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
+		TestEqual(TEXT("Two top-level declarations should produce two direct children"), CountDirectChildren(Root), 2);
+		TestNotNull(TEXT("Root should expose the first child"), Root->firstChild);
+		TestNotNull(TEXT("Root should expose the last child"), Root->lastChild);
+		TestTrue(TEXT("First and last child should differ when multiple declarations exist"), Root->firstChild != Root->lastChild);
+		TestEqual(TEXT("Second child should point back to the first child as prev"), Root->lastChild->prev, Root->firstChild);
+		ASTEST_END_BARE
 	}
 
-	asCScriptNode* Root = Parser.GetScriptNode();
-	if (!TestNotNull(TEXT("ScriptNode traversal should produce a root node"), Root))
+	TEST_METHOD(Copy)
 	{
-		return false;
+		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
+		ASTEST_BEGIN_BARE
+		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeCopy");
+		if (!TestNotNull(TEXT("ScriptNode copy test should create a backing module"), Module))
+		{
+			return;
+		}
+
+		asCBuilder Builder(BareEngine, Module);
+		asCScriptCode Code;
+		Code.SetCode("ScriptNodeCopy", "int Value = 3;", true);
+
+		asCParser Parser(&Builder);
+		if (!TestEqual(TEXT("ScriptNode copy parser run should succeed"), Parser.ParseScript(&Code), 0))
+		{
+			return;
+		}
+
+		asCScriptNode* Root = Parser.GetScriptNode();
+		if (!TestNotNull(TEXT("ScriptNode copy test should produce a root node"), Root))
+		{
+			return;
+		}
+
+		asCScriptNode* Copy = Root->CreateCopy(Parser.MemStack, BareEngine);
+		if (!TestNotNull(TEXT("CreateCopy should produce a duplicate node tree"), Copy))
+		{
+			return;
+		}
+
+		TestEqual(TEXT("Copied root should keep the same node type"), static_cast<int32>(Copy->nodeType), static_cast<int32>(Root->nodeType));
+		TestTrue(TEXT("Copied node should be a different instance"), Copy != Root);
+		TestTrue(TEXT("Copied first child should be a different instance"), Copy->firstChild != nullptr && Copy->firstChild != Root->firstChild);
+		ASTEST_END_BARE
 	}
-
-	TestEqual(TEXT("Root should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
-	TestEqual(TEXT("Two top-level declarations should produce two direct children"), CountDirectChildren(Root), 2);
-	TestNotNull(TEXT("Root should expose the first child"), Root->firstChild);
-	TestNotNull(TEXT("Root should expose the last child"), Root->lastChild);
-	TestTrue(TEXT("First and last child should differ when multiple declarations exist"), Root->firstChild != Root->lastChild);
-	TestEqual(TEXT("Second child should point back to the first child as prev"), Root->lastChild->prev, Root->firstChild);
-	ASTEST_END_BARE
-
-	return true;
-}
-
-bool FAngelscriptScriptNodeCopyTest::RunTest(const FString& Parameters)
-{
-	asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-	ASTEST_BEGIN_BARE
-	asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeCopy");
-	if (!TestNotNull(TEXT("ScriptNode copy test should create a backing module"), Module))
-	{
-		return false;
-	}
-
-	asCBuilder Builder(BareEngine, Module);
-	asCScriptCode Code;
-	Code.SetCode("ScriptNodeCopy", "int Value = 3;", true);
-
-	asCParser Parser(&Builder);
-	if (!TestEqual(TEXT("ScriptNode copy parser run should succeed"), Parser.ParseScript(&Code), 0))
-	{
-		return false;
-	}
-
-	asCScriptNode* Root = Parser.GetScriptNode();
-	if (!TestNotNull(TEXT("ScriptNode copy test should produce a root node"), Root))
-	{
-		return false;
-	}
-
-	asCScriptNode* Copy = Root->CreateCopy(Parser.MemStack, BareEngine);
-	if (!TestNotNull(TEXT("CreateCopy should produce a duplicate node tree"), Copy))
-	{
-		return false;
-	}
-
-	TestEqual(TEXT("Copied root should keep the same node type"), static_cast<int32>(Copy->nodeType), static_cast<int32>(Root->nodeType));
-	TestTrue(TEXT("Copied node should be a different instance"), Copy != Root);
-	TestTrue(TEXT("Copied first child should be a different instance"), Copy->firstChild != nullptr && Copy->firstChild != Root->firstChild);
-	ASTEST_END_BARE
-
-	return true;
-}
+};
 
 #endif

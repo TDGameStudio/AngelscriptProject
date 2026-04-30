@@ -1,11 +1,11 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 #include "../../AngelscriptRuntime/Core/AngelscriptSettings.h"
 #include "../../AngelscriptRuntime/Core/AngelscriptType.h"
 #include "ClassGenerator/ASClass.h"
 
 #include "Containers/StringConv.h"
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/GarbageCollection.h"
 #include "UObject/UObjectGlobals.h"
@@ -119,30 +119,28 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebuggerValueTests_Private
 
 using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebuggerValueTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDebuggerValueGetterPropertyTrackingTest,
-	"Angelscript.TestModule.AngelScriptSDK.DebuggerValue.GetterPropertyTracking",
+TEST_CLASS_WITH_FLAGS(FAngelscriptDebuggerValueTests,
+	"Angelscript.TestModule.AngelScriptSDK.DebuggerValue",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptDebuggerValueGetterPropertyTrackingTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("InternalsDebuggerValueGetterTracking"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(GetterPropertyTracking)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-		CollectGarbage(RF_NoFlags, true);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_BEGIN_SHARE_CLEAN
+		static const FName ModuleName(TEXT("InternalsDebuggerValueGetterTracking"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+			CollectGarbage(RF_NoFlags, true);
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("InternalsDebuggerValueGetterTracking.as"),
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*this,
+			Engine,
+			ModuleName,
+			TEXT("InternalsDebuggerValueGetterTracking.as"),
+			TEXT(R"AS(
 UCLASS()
 class ADebuggerValueGetterProbe : AActor
 {
@@ -156,14 +154,13 @@ class ADebuggerValueGetterProbe : AActor
 	}
 }
 )AS"),
-		TEXT("ADebuggerValueGetterProbe"));
+			TEXT("ADebuggerValueGetterProbe"));
 
-	if (ScriptClass == nullptr)
-	{
-		bPassed = false;
-	}
-	else
-	{
+		if (ScriptClass == nullptr)
+		{
+			return;
+		}
+
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 
@@ -179,105 +176,93 @@ class ADebuggerValueGetterProbe : AActor
 			!TestNotNull(TEXT("Debugger value getter tracking should keep the spawned actor inside a world"), Actor != nullptr ? Actor->GetWorld() : nullptr) ||
 			!TestNotNull(TEXT("Debugger value getter tracking should resolve the script getter method"), GetterFunction))
 		{
-			bPassed = false;
+			return;
 		}
-		else
+
+		void* const HealthAddress = HealthProperty->ContainerPtrToValuePtr<void>(Actor);
+		int32* const HealthValue = static_cast<int32*>(HealthAddress);
+		if (!TestNotNull(TEXT("Debugger value getter tracking should expose reflected Health storage"), HealthValue))
 		{
-			void* const HealthAddress = HealthProperty->ContainerPtrToValuePtr<void>(Actor);
-			int32* const HealthValue = static_cast<int32*>(HealthAddress);
-			if (!TestNotNull(TEXT("Debugger value getter tracking should expose reflected Health storage"), HealthValue))
-			{
-				bPassed = false;
-			}
-			else
-			{
-				TestEqual(TEXT("Debugger value getter tracking should start from the default Health value"), *HealthValue, 42);
-
-				FDebuggerValue FirstValue;
-				const bool bFirstResolved = FAngelscriptType::GetDebuggerValueFromFunction(
-					GetterFunction,
-					Actor,
-					FirstValue,
-					ScriptType,
-					ScriptClass,
-					TEXT("Health"));
-				bPassed &= TestTrue(
-					TEXT("Debugger value getter tracking should evaluate the getter once before mutation"),
-					bFirstResolved);
-				if (bFirstResolved)
-				{
-					bPassed &= ExpectTrackedDebuggerValue(
-						*this,
-						TEXT("Debugger value getter tracking first evaluation"),
-						FirstValue,
-						TEXT("42"),
-						HealthAddress);
-				}
-
-				*HealthValue = 99;
-				TestEqual(TEXT("Debugger value getter tracking should mutate the reflected Health storage in place"), *HealthValue, 99);
-
-				FDebuggerValue SecondValue;
-				const bool bSecondResolved = FAngelscriptType::GetDebuggerValueFromFunction(
-					GetterFunction,
-					Actor,
-					SecondValue,
-					ScriptType,
-					ScriptClass,
-					TEXT("Health"));
-				bPassed &= TestTrue(
-					TEXT("Debugger value getter tracking should evaluate the getter again after mutation"),
-					bSecondResolved);
-				if (bSecondResolved)
-				{
-					bPassed &= ExpectTrackedDebuggerValue(
-						*this,
-						TEXT("Debugger value getter tracking second evaluation"),
-						SecondValue,
-						TEXT("99"),
-						HealthAddress);
-				}
-			}
+			return;
 		}
+
+		TestEqual(TEXT("Debugger value getter tracking should start from the default Health value"), *HealthValue, 42);
+
+		FDebuggerValue FirstValue;
+		const bool bFirstResolved = FAngelscriptType::GetDebuggerValueFromFunction(
+			GetterFunction,
+			Actor,
+			FirstValue,
+			ScriptType,
+			ScriptClass,
+			TEXT("Health"));
+		TestTrue(
+			TEXT("Debugger value getter tracking should evaluate the getter once before mutation"),
+			bFirstResolved);
+		if (bFirstResolved)
+		{
+			ExpectTrackedDebuggerValue(
+				*this,
+				TEXT("Debugger value getter tracking first evaluation"),
+				FirstValue,
+				TEXT("42"),
+				HealthAddress);
+		}
+
+		*HealthValue = 99;
+		TestEqual(TEXT("Debugger value getter tracking should mutate the reflected Health storage in place"), *HealthValue, 99);
+
+		FDebuggerValue SecondValue;
+		const bool bSecondResolved = FAngelscriptType::GetDebuggerValueFromFunction(
+			GetterFunction,
+			Actor,
+			SecondValue,
+			ScriptType,
+			ScriptClass,
+			TEXT("Health"));
+		TestTrue(
+			TEXT("Debugger value getter tracking should evaluate the getter again after mutation"),
+			bSecondResolved);
+		if (bSecondResolved)
+		{
+			ExpectTrackedDebuggerValue(
+				*this,
+				TEXT("Debugger value getter tracking second evaluation"),
+				SecondValue,
+				TEXT("99"),
+				HealthAddress);
+		}
+
+		ASTEST_END_SHARE_CLEAN
 	}
 
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDebuggerValueFunctionEvaluationGuardsTest,
-	"Angelscript.TestModule.AngelScriptSDK.DebuggerValue.FunctionEvaluationGuards",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptDebuggerValueFunctionEvaluationGuardsTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("InternalsDebuggerValueFunctionEvaluationGuards"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(FunctionEvaluationGuards)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-		CollectGarbage(RF_NoFlags, true);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_BEGIN_SHARE_CLEAN
+		static const FName ModuleName(TEXT("InternalsDebuggerValueFunctionEvaluationGuards"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+			CollectGarbage(RF_NoFlags, true);
+		};
 
-	UAngelscriptSettings& Settings = UAngelscriptSettings::Get();
-	const TSet<FString> SavedBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluation;
-	const TSet<FString> SavedWithoutWorldBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext;
-	ON_SCOPE_EXIT
-	{
-		Settings.DebuggerBlacklistAutomaticFunctionEvaluation = SavedBlacklist;
-		Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext = SavedWithoutWorldBlacklist;
-	};
+		UAngelscriptSettings& Settings = UAngelscriptSettings::Get();
+		const TSet<FString> SavedBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluation;
+		const TSet<FString> SavedWithoutWorldBlacklist = Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext;
+		ON_SCOPE_EXIT
+		{
+			Settings.DebuggerBlacklistAutomaticFunctionEvaluation = SavedBlacklist;
+			Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext = SavedWithoutWorldBlacklist;
+		};
 
-	UClass* ScriptClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("InternalsDebuggerValueFunctionEvaluationGuards.as"),
-		TEXT(R"AS(
+		UClass* ScriptClass = CompileScriptModule(
+			*this,
+			Engine,
+			ModuleName,
+			TEXT("InternalsDebuggerValueFunctionEvaluationGuards.as"),
+			TEXT(R"AS(
 UCLASS()
 class UDebuggerValueGuardProbe : UObject
 {
@@ -299,14 +284,13 @@ class UDebuggerValueGuardProbe : UObject
 	}
 }
 )AS"),
-		TEXT("UDebuggerValueGuardProbe"));
+			TEXT("UDebuggerValueGuardProbe"));
 
-	if (ScriptClass == nullptr)
-	{
-		bPassed = false;
-	}
-	else
-	{
+		if (ScriptClass == nullptr)
+		{
+			return;
+		}
+
 		asITypeInfo* ScriptType = FindScriptTypeInfoForClass(*this, Engine, ScriptClass);
 		asIScriptFunction* GetterFunction = ScriptType != nullptr
 			? FindMethodByDecl(*this, *ScriptType, TEXT("int GetValue()"))
@@ -322,131 +306,119 @@ class UDebuggerValueGuardProbe : UObject
 			!TestNotNull(TEXT("Debugger value guard test should resolve the generated getter method"), GetterFunction) ||
 			!TestNotNull(TEXT("Debugger value guard test should resolve the generated NeedsArg method"), NeedsArgFunction))
 		{
-			bPassed = false;
+			return;
 		}
-		else
+
+		TestTrue(
+			TEXT("Debugger value guard test should keep the generated UObject worldless so the without-world blacklist path is reachable"),
+			Target->GetWorld() == nullptr);
+
+		int32* const EvalCountPtr = EvalCountProperty->ContainerPtrToValuePtr<int32>(Target);
+		if (!TestNotNull(TEXT("Debugger value guard test should expose reflected EvalCount storage"), EvalCountPtr))
 		{
-			bPassed &= TestTrue(
-				TEXT("Debugger value guard test should keep the generated UObject worldless so the without-world blacklist path is reachable"),
-				Target->GetWorld() == nullptr);
-
-			int32* const EvalCountPtr = EvalCountProperty->ContainerPtrToValuePtr<int32>(Target);
-			if (!TestNotNull(TEXT("Debugger value guard test should expose reflected EvalCount storage"), EvalCountPtr))
-			{
-				bPassed = false;
-			}
-			else
-			{
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Reset();
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Reset();
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Add(
-					BuildDebuggerFunctionPath(*GetterFunction));
-
-				FDebuggerValue WithoutWorldValue;
-				bPassed &= TestFalse(
-					TEXT("Debugger value guard test should reject a getter blacklisted for objects without world context"),
-					FAngelscriptType::GetDebuggerValueFromFunction(
-						GetterFunction,
-						Target,
-						WithoutWorldValue,
-						ScriptType,
-						ScriptClass));
-				bPassed &= TestEqual(
-					TEXT("Debugger value guard test should not execute the getter when the without-world blacklist matches"),
-					*EvalCountPtr,
-					0);
-
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Reset();
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Add(
-					BuildDebuggerFunctionPath(*GetterFunction));
-
-				FDebuggerValue UnconditionalValue;
-				bPassed &= TestFalse(
-					TEXT("Debugger value guard test should reject a getter blacklisted for all debugger evaluation"),
-					FAngelscriptType::GetDebuggerValueFromFunction(
-						GetterFunction,
-						Target,
-						UnconditionalValue,
-						ScriptType,
-						ScriptClass));
-				bPassed &= TestEqual(
-					TEXT("Debugger value guard test should still leave EvalCount untouched after the unconditional blacklist guard"),
-					*EvalCountPtr,
-					0);
-
-				Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Reset();
-
-				FDebuggerValue NeedsArgValue;
-				bPassed &= TestFalse(
-					TEXT("Debugger value guard test should reject methods whose signature still requires parameters"),
-					FAngelscriptType::GetDebuggerValueFromFunction(
-						NeedsArgFunction,
-						Target,
-						NeedsArgValue,
-						ScriptType,
-						ScriptClass));
-				bPassed &= TestEqual(
-					TEXT("Debugger value guard test should not execute the parameterized method when the signature guard rejects it"),
-					*EvalCountPtr,
-					0);
-
-				FDebuggerValue GetterValue;
-				const bool bGetterResolved = FAngelscriptType::GetDebuggerValueFromFunction(
-					GetterFunction,
-					Target,
-					GetterValue,
-					ScriptType,
-					ScriptClass);
-				bPassed &= TestTrue(
-					TEXT("Debugger value guard test should evaluate the getter once all guards are removed"),
-					bGetterResolved);
-				if (bGetterResolved)
-				{
-					bPassed &= TestEqual(
-						TEXT("Debugger value guard test should stringify the getter return value once evaluation is allowed"),
-						GetterValue.Value,
-						FString(TEXT("42")));
-					bPassed &= TestTrue(
-						TEXT("Debugger value guard test should report the getter result as a temporary debugger value"),
-						GetterValue.bTemporaryValue);
-				}
-
-				bPassed &= TestEqual(
-					TEXT("Debugger value guard test should increment EvalCount exactly once after the successful evaluation"),
-					*EvalCountPtr,
-					1);
-			}
+			return;
 		}
+
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Reset();
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Reset();
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Add(
+			BuildDebuggerFunctionPath(*GetterFunction));
+
+		FDebuggerValue WithoutWorldValue;
+		TestFalse(
+			TEXT("Debugger value guard test should reject a getter blacklisted for objects without world context"),
+			FAngelscriptType::GetDebuggerValueFromFunction(
+				GetterFunction,
+				Target,
+				WithoutWorldValue,
+				ScriptType,
+				ScriptClass));
+		TestEqual(
+			TEXT("Debugger value guard test should not execute the getter when the without-world blacklist matches"),
+			*EvalCountPtr,
+			0);
+
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext.Reset();
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Add(
+			BuildDebuggerFunctionPath(*GetterFunction));
+
+		FDebuggerValue UnconditionalValue;
+		TestFalse(
+			TEXT("Debugger value guard test should reject a getter blacklisted for all debugger evaluation"),
+			FAngelscriptType::GetDebuggerValueFromFunction(
+				GetterFunction,
+				Target,
+				UnconditionalValue,
+				ScriptType,
+				ScriptClass));
+		TestEqual(
+			TEXT("Debugger value guard test should still leave EvalCount untouched after the unconditional blacklist guard"),
+			*EvalCountPtr,
+			0);
+
+		Settings.DebuggerBlacklistAutomaticFunctionEvaluation.Reset();
+
+		FDebuggerValue NeedsArgValue;
+		TestFalse(
+			TEXT("Debugger value guard test should reject methods whose signature still requires parameters"),
+			FAngelscriptType::GetDebuggerValueFromFunction(
+				NeedsArgFunction,
+				Target,
+				NeedsArgValue,
+				ScriptType,
+				ScriptClass));
+		TestEqual(
+			TEXT("Debugger value guard test should not execute the parameterized method when the signature guard rejects it"),
+			*EvalCountPtr,
+			0);
+
+		FDebuggerValue GetterValue;
+		const bool bGetterResolved = FAngelscriptType::GetDebuggerValueFromFunction(
+			GetterFunction,
+			Target,
+			GetterValue,
+			ScriptType,
+			ScriptClass);
+		TestTrue(
+			TEXT("Debugger value guard test should evaluate the getter once all guards are removed"),
+			bGetterResolved);
+		if (bGetterResolved)
+		{
+			TestEqual(
+				TEXT("Debugger value guard test should stringify the getter return value once evaluation is allowed"),
+				GetterValue.Value,
+				FString(TEXT("42")));
+			TestTrue(
+				TEXT("Debugger value guard test should report the getter result as a temporary debugger value"),
+				GetterValue.bTemporaryValue);
+		}
+
+		TestEqual(
+			TEXT("Debugger value guard test should increment EvalCount exactly once after the successful evaluation"),
+			*EvalCountPtr,
+			1);
+
+		ASTEST_END_SHARE_CLEAN
 	}
 
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptDebuggerValueInheritedGetterTracksBasePropertyAddressTest,
-	"Angelscript.TestModule.AngelScriptSDK.DebuggerValue.InheritedGetterTracksBasePropertyAddress",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptDebuggerValueInheritedGetterTracksBasePropertyAddressTest::RunTest(const FString& Parameters)
-{
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-	static const FName ModuleName(TEXT("InternalsDebuggerValueInheritedGetterTracking"));
-	ON_SCOPE_EXIT
+	TEST_METHOD(InheritedGetterTracksBasePropertyAddress)
 	{
-		Engine.DiscardModule(*ModuleName.ToString());
-		ResetSharedCloneEngine(Engine);
-		CollectGarbage(RF_NoFlags, true);
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_BEGIN_SHARE_CLEAN
+		static const FName ModuleName(TEXT("InternalsDebuggerValueInheritedGetterTracking"));
+		ON_SCOPE_EXIT
+		{
+			Engine.DiscardModule(*ModuleName.ToString());
+			ResetSharedCloneEngine(Engine);
+			CollectGarbage(RF_NoFlags, true);
+		};
 
-	UClass* DerivedClass = CompileScriptModule(
-		*this,
-		Engine,
-		ModuleName,
-		TEXT("InternalsDebuggerValueInheritedGetterTracking.as"),
-		TEXT(R"AS(
+		UClass* DerivedClass = CompileScriptModule(
+			*this,
+			Engine,
+			ModuleName,
+			TEXT("InternalsDebuggerValueInheritedGetterTracking.as"),
+			TEXT(R"AS(
 UCLASS()
 class ADebuggerValueBaseProbe : AActor
 {
@@ -464,14 +436,13 @@ class ADebuggerValueDerivedProbe : ADebuggerValueBaseProbe
 	}
 }
 )AS"),
-		TEXT("ADebuggerValueDerivedProbe"));
+			TEXT("ADebuggerValueDerivedProbe"));
 
-	if (DerivedClass == nullptr)
-	{
-		bPassed = false;
-	}
-	else
-	{
+		if (DerivedClass == nullptr)
+		{
+			return;
+		}
+
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 
@@ -487,76 +458,71 @@ class ADebuggerValueDerivedProbe : ADebuggerValueBaseProbe
 			!TestNotNull(TEXT("Debugger value inherited getter tracking should keep the spawned actor inside a world"), Actor != nullptr ? Actor->GetWorld() : nullptr) ||
 			!TestNotNull(TEXT("Debugger value inherited getter tracking should resolve the derived getter method"), GetterFunction))
 		{
-			bPassed = false;
+			return;
 		}
-		else
+
+		void* const HealthAddress = HealthProperty->ContainerPtrToValuePtr<void>(Actor);
+		int32* const HealthValue = static_cast<int32*>(HealthAddress);
+		if (!TestNotNull(TEXT("Debugger value inherited getter tracking should expose reflected Health storage"), HealthValue))
 		{
-			void* const HealthAddress = HealthProperty->ContainerPtrToValuePtr<void>(Actor);
-			int32* const HealthValue = static_cast<int32*>(HealthAddress);
-			if (!TestNotNull(TEXT("Debugger value inherited getter tracking should expose reflected Health storage"), HealthValue))
-			{
-				bPassed = false;
-			}
-			else
-			{
-				bPassed &= TestEqual(
-					TEXT("Debugger value inherited getter tracking should start from the base-class default Health value"),
-					*HealthValue,
-					42);
-
-				FDebuggerValue FirstValue;
-				const bool bFirstResolved = FAngelscriptType::GetDebuggerValueFromFunction(
-					GetterFunction,
-					Actor,
-					FirstValue,
-					ScriptType,
-					DerivedClass,
-					TEXT("Health"));
-				bPassed &= TestTrue(
-					TEXT("Debugger value inherited getter tracking should evaluate the derived getter before mutation"),
-					bFirstResolved);
-				if (bFirstResolved)
-				{
-					bPassed &= ExpectTrackedDebuggerValue(
-						*this,
-						TEXT("Debugger value inherited getter tracking first evaluation"),
-						FirstValue,
-						TEXT("42"),
-						HealthAddress);
-				}
-
-				*HealthValue = 99;
-				bPassed &= TestEqual(
-					TEXT("Debugger value inherited getter tracking should mutate the inherited Health storage in place"),
-					*HealthValue,
-					99);
-
-				FDebuggerValue SecondValue;
-				const bool bSecondResolved = FAngelscriptType::GetDebuggerValueFromFunction(
-					GetterFunction,
-					Actor,
-					SecondValue,
-					ScriptType,
-					DerivedClass,
-					TEXT("Health"));
-				bPassed &= TestTrue(
-					TEXT("Debugger value inherited getter tracking should evaluate the derived getter again after mutation"),
-					bSecondResolved);
-				if (bSecondResolved)
-				{
-					bPassed &= ExpectTrackedDebuggerValue(
-						*this,
-						TEXT("Debugger value inherited getter tracking second evaluation"),
-						SecondValue,
-						TEXT("99"),
-						HealthAddress);
-				}
-			}
+			return;
 		}
-	}
 
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
+		TestEqual(
+			TEXT("Debugger value inherited getter tracking should start from the base-class default Health value"),
+			*HealthValue,
+			42);
+
+		FDebuggerValue FirstValue;
+		const bool bFirstResolved = FAngelscriptType::GetDebuggerValueFromFunction(
+			GetterFunction,
+			Actor,
+			FirstValue,
+			ScriptType,
+			DerivedClass,
+			TEXT("Health"));
+		TestTrue(
+			TEXT("Debugger value inherited getter tracking should evaluate the derived getter before mutation"),
+			bFirstResolved);
+		if (bFirstResolved)
+		{
+			ExpectTrackedDebuggerValue(
+				*this,
+				TEXT("Debugger value inherited getter tracking first evaluation"),
+				FirstValue,
+				TEXT("42"),
+				HealthAddress);
+		}
+
+		*HealthValue = 99;
+		TestEqual(
+			TEXT("Debugger value inherited getter tracking should mutate the inherited Health storage in place"),
+			*HealthValue,
+			99);
+
+		FDebuggerValue SecondValue;
+		const bool bSecondResolved = FAngelscriptType::GetDebuggerValueFromFunction(
+			GetterFunction,
+			Actor,
+			SecondValue,
+			ScriptType,
+			DerivedClass,
+			TEXT("Health"));
+		TestTrue(
+			TEXT("Debugger value inherited getter tracking should evaluate the derived getter again after mutation"),
+			bSecondResolved);
+		if (bSecondResolved)
+		{
+			ExpectTrackedDebuggerValue(
+				*this,
+				TEXT("Debugger value inherited getter tracking second evaluation"),
+				SecondValue,
+				TEXT("99"),
+				HealthAddress);
+		}
+
+		ASTEST_END_SHARE_CLEAN
+	}
+};
 
 #endif

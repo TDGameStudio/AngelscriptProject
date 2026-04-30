@@ -2,7 +2,7 @@
 #include "Shared/AngelscriptTestMacros.h"
 #include "../../AngelscriptRuntime/Core/FunctionCallers.h"
 
-#include "Misc/AutomationTest.h"
+#include "CQTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -30,45 +30,43 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_P
 
 using namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_Private;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptFunctionCallersConstRefQualifiedMethodCallerTest,
-	"Angelscript.TestModule.AngelScriptSDK.FunctionCallers.ConstRefQualifiedMethodCaller",
+TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
+	"Angelscript.TestModule.AngelScriptSDK.FunctionCallers",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptFunctionCallersConstRefQualifiedMethodCallerTest::RunTest(const FString& Parameters)
 {
-	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
-
-	using FProbeMethod = int32 (FConstRefQualifiedProbe::*)(int32) const&;
-	const FProbeMethod Method = &FConstRefQualifiedProbe::ReadPlus;
-
-	FGenericFuncPtr GenericMethod = MakeAutoMethodPtr(Method);
-	const ASAutoCaller::FunctionCaller Caller = ASAutoCaller::MakeFunctionCaller(Method);
-	ASAutoCaller::TMethodPtr ErasedMethod = MakeErasedMethodPointer(Method);
-
-	bPassed &= TestTrue(TEXT("const& qualified method caller should produce a bound generic method pointer"), GenericMethod.IsBound());
-	bPassed &= TestEqual(TEXT("const& qualified method caller should encode the method pointer as a class method"), static_cast<int32>(GenericMethod.flag), 3);
-	bPassed &= TestTrue(TEXT("const& qualified method caller should produce a bound auto caller"), Caller.IsBound());
-	bPassed &= TestEqual(TEXT("const& qualified method caller should select the method caller path"), Caller.type, 2);
-
-	FConstRefQualifiedProbe Probe;
-	int32 Delta = 5;
-	int32 Result = 0;
-	void* Arguments[] =
+	TEST_METHOD(ConstRefQualifiedMethodCaller)
 	{
-		&Probe,
-		&Delta,
-	};
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_BEGIN_SHARE_CLEAN
 
-	Caller.MethodPtr(ErasedMethod, Arguments, &Result);
+		using FProbeMethod = int32 (FConstRefQualifiedProbe::*)(int32) const&;
+		const FProbeMethod Method = &FConstRefQualifiedProbe::ReadPlus;
 
-	bPassed &= TestEqual(TEXT("const& qualified method caller should preserve the erased return value"), Result, 16);
-	bPassed &= TestEqual(TEXT("const& qualified method caller should not mutate the probe object"), Probe.Base, 11);
+		FGenericFuncPtr GenericMethod = MakeAutoMethodPtr(Method);
+		const ASAutoCaller::FunctionCaller Caller = ASAutoCaller::MakeFunctionCaller(Method);
+		ASAutoCaller::TMethodPtr ErasedMethod = MakeErasedMethodPointer(Method);
 
-	ASTEST_END_SHARE_CLEAN
-	return bPassed;
-}
+		TestTrue(TEXT("const& qualified method caller should produce a bound generic method pointer"), GenericMethod.IsBound());
+		TestEqual(TEXT("const& qualified method caller should encode the method pointer as a class method"), static_cast<int32>(GenericMethod.flag), 3);
+		TestTrue(TEXT("const& qualified method caller should produce a bound auto caller"), Caller.IsBound());
+		TestEqual(TEXT("const& qualified method caller should select the method caller path"), Caller.type, 2);
+
+		FConstRefQualifiedProbe Probe;
+		int32 Delta = 5;
+		int32 Result = 0;
+		void* Arguments[] =
+		{
+			&Probe,
+			&Delta,
+		};
+
+		Caller.MethodPtr(ErasedMethod, Arguments, &Result);
+
+		TestEqual(TEXT("const& qualified method caller should preserve the erased return value"), Result, 16);
+		TestEqual(TEXT("const& qualified method caller should not mutate the probe object"), Probe.Base, 11);
+
+		ASTEST_END_SHARE_CLEAN
+	}
+};
 
 #endif
