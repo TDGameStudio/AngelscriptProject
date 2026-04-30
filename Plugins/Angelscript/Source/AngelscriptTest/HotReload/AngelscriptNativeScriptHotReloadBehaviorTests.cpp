@@ -110,7 +110,7 @@ using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadBeha
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2BNamespaceFunctionBehaviorSwitchTest,
-	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2B.NamespaceFunctionBehaviorSwitch",
+	"Angelscript.TestModule.HotReload.NativeScript.Phase2B.NamespaceFunctionBehaviorSwitch",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptNativeScriptHotReloadPhase2BNamespaceFunctionBehaviorSwitchTest::RunTest(const FString& Parameters)

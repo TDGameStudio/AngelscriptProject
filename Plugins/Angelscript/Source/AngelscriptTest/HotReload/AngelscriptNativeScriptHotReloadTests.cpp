@@ -66,17 +66,17 @@ using namespace AngelscriptTest_Angelscript_AngelscriptNativeScriptHotReloadTest
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2ATest,
-	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2A",
+	"Angelscript.TestModule.HotReload.NativeScript.Phase2A",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2BTest,
-	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2B",
+	"Angelscript.TestModule.HotReload.NativeScript.Phase2B",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptNativeScriptHotReloadPhase2CTest,
-	"Angelscript.TestModule.Functional.NativeScriptHotReload.Phase2C",
+	"Angelscript.TestModule.HotReload.NativeScript.Phase2C",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptNativeScriptHotReloadPhase2ATest::RunTest(const FString& Parameters)
