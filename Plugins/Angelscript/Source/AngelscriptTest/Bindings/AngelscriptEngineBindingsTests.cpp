@@ -48,12 +48,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptEngineBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -63,7 +63,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptEngineBindingsTest,
 
 	TEST_METHOD(ValueTypes)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GEngineProfile, TEXT("ValueTypes"), TEXT(R"(
@@ -118,7 +118,7 @@ int ValueTypes_FText()
 
 	TEST_METHOD(FNameArrayCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GEngineProfile, TEXT("FNameArrayCompat"), TEXT(R"(
@@ -182,7 +182,7 @@ int FNameArray_Contains()
 
 	TEST_METHOD(FNameArrayIndexWriteBack)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GEngineProfile, TEXT("FNameArrayIdxWB"), TEXT(R"(
@@ -228,7 +228,7 @@ int FNameIdxWB_ContainsAfterMutation()
 
 	TEST_METHOD(ForeachCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GEngineProfile, TEXT("ForeachCompat"), TEXT(R"(

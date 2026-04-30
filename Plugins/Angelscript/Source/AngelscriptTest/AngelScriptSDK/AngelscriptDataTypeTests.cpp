@@ -43,8 +43,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 
 	TEST_METHOD(HandleQualifierMatrix)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCTypeInfo* ActorType = static_cast<asCTypeInfo*>(ScriptEngine->GetTypeInfoByName("AActor"));
 		if (!TestRunner->TestNotNull(TEXT("AActor should exist in the script type system for handle qualifier comparisons"), ActorType))
@@ -88,13 +88,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 			return;
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ObjectHandles)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCTypeInfo* ActorType = static_cast<asCTypeInfo*>(ScriptEngine->GetTypeInfoByName("AActor"));
 		if (!TestRunner->TestNotNull(TEXT("AActor should exist in the script type system for data-type handle tests"), ActorType))
@@ -109,7 +109,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		asCDataType ActorHandleType = asCDataType::CreateObjectHandle(ActorType, false);
 		TestRunner->TestTrue(TEXT("CreateObjectHandle should mark the type as an object handle"), ActorHandleType.IsObjectHandle());
 		TestRunner->TestTrue(TEXT("Object handle should still be considered instantiable as a handle slot"), ActorHandleType.CanBeInstantiated());
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(SizeAndAlignment)

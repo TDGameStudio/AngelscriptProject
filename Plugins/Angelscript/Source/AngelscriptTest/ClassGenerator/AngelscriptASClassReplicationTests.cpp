@@ -66,8 +66,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassReplicationTests,
 	TEST_METHOD(LifetimeScriptReplicationListIncludesInheritedReplicatedProperties)
 	{
 		using namespace ASClassReplicationTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASClassReplicationTest::ModuleName.ToString());
@@ -178,7 +178,7 @@ class AReplicationChild : AReplicationParent
 		TestRunner->TestTrue(
 			TEXT("ASClass replication test case should include the child RepNotify property in the child lifetime list"),
 			ReplicatedPropertyNames.Contains(ASClassReplicationTest::ChildNotifiedValueName));
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

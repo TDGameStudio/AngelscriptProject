@@ -20,18 +20,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeBindingTests, "Angelscript.Test
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_FRESH();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(SignatureRegistrationLifecycle)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		ON_SCOPE_EXIT
 		{

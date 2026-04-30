@@ -10,28 +10,43 @@
 // Angelscript Test Macros
 // ============================================================================
 //
-// Two-layer macro system for test engine management:
+// Engine Creation:
+//   ASTEST_CREATE_ENGINE()       — shared engine, reset to clean state
+//   ASTEST_GET_ENGINE()          — shared engine, no reset (use in TEST_METHOD)
+//   ASTEST_CREATE_ENGINE_FULL()  — fresh isolated full engine
+//   ASTEST_CREATE_ENGINE_NATIVE()— raw asIScriptEngine* from SDK
 //
-//   Layer 1 - Engine Creation:  ASTEST_CREATE_ENGINE_*
-//   Layer 2 - Lifecycle:        ASTEST_BEGIN_* / ASTEST_END_*
+// Engine Reset:
+//   ASTEST_RESET_ENGINE(Engine)  — reset shared engine (use in AFTER_ALL)
 //
-// Usage:
-//   FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-//   ASTEST_BEGIN_FULL
-//   // ... test code ...
-//   ASTEST_END_FULL
-//   return true;
-//
-// See TESTING_GUIDE.md for detailed usage and decision tree.
+// CQTest standard pattern:
+//   BEFORE_ALL()  { ASTEST_CREATE_ENGINE(); }
+//   TEST_METHOD() { FAngelscriptEngine& Engine = ASTEST_GET_ENGINE(); ... }
+//   AFTER_ALL()   { FAngelscriptEngine& E = ASTEST_GET_ENGINE(); ASTEST_RESET_ENGINE(E); }
 // ============================================================================
 
 // ============================================================================
-// Layer 1: Engine Creation Macros
+// Engine Creation Macros
 // ============================================================================
+
+// CREATE - Acquires the shared engine after resetting it to a clean state.
+// Use for: first-time acquisition in BEFORE_ALL, or standalone tests needing
+//          a guaranteed clean shared engine.
+// Returns: FAngelscriptEngine&
+#define ASTEST_CREATE_ENGINE() \
+	AngelscriptTestSupport::AcquireCleanSharedCloneEngine()
+
+// GET - Acquires the shared engine without resetting.
+// Use for: TEST_METHOD bodies where the engine was already cleaned by
+//          BEFORE_ALL / ASTEST_CREATE_ENGINE(). Pair with FCoverageModuleScope
+//          for per-test module isolation.
+// Returns: FAngelscriptEngine&
+#define ASTEST_GET_ENGINE() \
+	AngelscriptTestSupport::GetOrCreateSharedCloneEngine()
 
 // FULL - Creates a fresh isolated Full engine each time.
 // Use for: engine core self-tests, bind environment testing, hot-reload tests.
-// Provides: FAngelscriptEngine& Engine
+// Returns: FAngelscriptEngine&
 #define ASTEST_CREATE_ENGINE_FULL() \
 	(*[this]() -> TUniquePtr<FAngelscriptEngine>& { \
 		static thread_local TUniquePtr<FAngelscriptEngine> _FullEngine; \
@@ -40,167 +55,21 @@
 		return _FullEngine; \
 	}())
 
-// SHARE - Process-level singleton, reused across tests, no reset.
-// Use for: lightweight compile-and-execute tests with no isolation needs.
-// Provides: FAngelscriptEngine& Engine
-#define ASTEST_CREATE_ENGINE_SHARE() \
-	AngelscriptTestSupport::GetOrCreateSharedCloneEngine()
-
-#define ASTEST_CREATE_ENGINE_SHARE_CLEAN() \
-	AngelscriptTestSupport::AcquireCleanSharedCloneEngine()
-
-#define ASTEST_CREATE_ENGINE_SHARE_FRESH() \
-	AngelscriptTestSupport::AcquireFreshSharedCloneEngine()
-
-// MODULE_CLEAN - Reuses the module-level source engine and cleans only modules
-// introduced inside the matching ASTEST_BEGIN/END_MODULE_CLEAN scope.
-#define ASTEST_CREATE_ENGINE_MODULE_CLEAN() \
-	AngelscriptTestSupport::AcquireModuleCleanSharedEngine()
-
-// CLONE - Lightweight isolation, shares source engine read-only state.
-// Use for: tests needing isolation without Full engine creation cost.
-// Provides: FAngelscriptEngine& Engine
-#define ASTEST_CREATE_ENGINE_CLONE() \
-	(*[this]() -> TUniquePtr<FAngelscriptEngine>& { \
-		static thread_local TUniquePtr<FAngelscriptEngine> _CloneEngine; \
-		_CloneEngine = AngelscriptTestSupport::CreateIsolatedCloneEngine(); \
-		check(_CloneEngine.IsValid()); \
-		return _CloneEngine; \
-	}())
-
-// BARE - Internal SDK asCScriptEngine without FAngelscriptEngine wrapper.
-// Use for: AngelScriptSDK tests that directly operate on asCBuilder/asCByteCode/asCParser.
-// Provides: asCScriptEngine* BareEngine
-#define ASTEST_CREATE_ENGINE_BARE() \
-	AngelscriptTestSupport::CreateBareScriptEngine()
-
-// NATIVE - Raw asIScriptEngine without FAngelscriptEngine wrapper.
+// NATIVE - Raw asIScriptEngine from the AngelScript SDK.
 // Use for: testing AngelScript SDK APIs directly.
-// Provides: asIScriptEngine* NativeEngine
+// Returns: asIScriptEngine*
 #define ASTEST_CREATE_ENGINE_NATIVE() \
 	asCreateScriptEngine(ANGELSCRIPT_VERSION)
 
 // ============================================================================
-// Layer 2: Lifecycle Macros (BEGIN / END pairs)
+// Engine Reset Macro
 // ============================================================================
-// Placement rule:
-//   `ASTEST_END_*` closes the lifecycle scope opened by `ASTEST_BEGIN_*`.
-//   Put the terminal `return` after `ASTEST_END_*` so the lifecycle pairing
-//   remains explicit in source, even though RAII cleanup still runs on early
-//   returns inside the scoped block.
 
-// ---------- FULL lifecycle ----------
-// Establishes EngineScope + auto-discards all modules on exit.
-#define ASTEST_BEGIN_FULL \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine); \
-		ON_SCOPE_EXIT \
-		{ \
-			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules(); \
-			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules) \
-			{ \
-				Engine.DiscardModule(*_Module->ModuleName); \
-			} \
-		};
-
-#define ASTEST_END_FULL \
-	}
-
-// ---------- SHARE lifecycle ----------
-// Establishes the current-engine scope, but leaves shared-engine module state intact.
-#define ASTEST_BEGIN_SHARE \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine);
-
-#define ASTEST_END_SHARE \
-	}
-
-// ---------- SHARE_CLEAN lifecycle ----------
-// Establishes the current-engine scope after AcquireCleanSharedCloneEngine() reset semantics.
-#define ASTEST_BEGIN_SHARE_CLEAN \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine);
-
-#define ASTEST_END_SHARE_CLEAN \
-	}
-
-// ---------- SHARE_FRESH lifecycle ----------
-// Establishes the current-engine scope after AcquireFreshSharedCloneEngine() reset semantics.
-#define ASTEST_BEGIN_SHARE_FRESH \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine);
-
-#define ASTEST_END_SHARE_FRESH \
-	}
-
-// ---------- MODULE_CLEAN lifecycle ----------
-// Establishes the current-engine scope and removes only the module/class delta
-// created inside this block. GC is batched by the test engine pool.
-#define ASTEST_BEGIN_MODULE_CLEAN \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine); \
-		AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
-
-#define ASTEST_END_MODULE_CLEAN \
-	}
-
-// ---------- CLONE lifecycle ----------
-// Establishes EngineScope + auto-discards all modules on exit.
-#define ASTEST_BEGIN_CLONE \
-	{ \
-		FAngelscriptEngineScope _AutoEngineScope(Engine); \
-		ON_SCOPE_EXIT \
-		{ \
-			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules(); \
-			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules) \
-			{ \
-				Engine.DiscardModule(*_Module->ModuleName); \
-			} \
-		};
-
-#define ASTEST_END_CLONE \
-	}
-
-// ---------- NATIVE lifecycle ----------
-// Validates engine pointer + auto ShutDownAndRelease on exit.
-// Expects variable name: NativeEngine (asIScriptEngine*)
-#define ASTEST_BEGIN_NATIVE \
-	if (NativeEngine == nullptr) \
-	{ \
-		AddError(TEXT("Failed to create native AngelScript engine")); \
-		return false; \
-	} \
-	{ \
-		ON_SCOPE_EXIT { NativeEngine->ShutDownAndRelease(); };
-
-#define ASTEST_END_NATIVE \
-	}
-
-// ---------- BARE lifecycle ----------
-// Validates bare engine pointer + auto ShutDownAndRelease on exit.
-// Expects variable name: BareEngine (asCScriptEngine*)
-#define ASTEST_BEGIN_BARE \
-	if (BareEngine == nullptr) \
-	{ \
-		AddError(TEXT("Failed to create bare AngelScript SDK engine")); \
-		return false; \
-	} \
-	{ \
-		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
-
-// CQTest-compatible version (TEST_METHOD is void, uses TestRunner->)
-// DEPRECATED: Prefer inlining the null-check directly in TEST_METHOD for better debuggability.
-#define ASTEST_BEGIN_BARE_VOID \
-	if (BareEngine == nullptr) \
-	{ \
-		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine")); \
-		return; \
-	} \
-	{ \
-		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
-
-#define ASTEST_END_BARE \
-	}
+// RESET - Resets the shared engine to a clean state.
+// Use for: AFTER_ALL / AFTER_EACH to leave the shared engine clean for
+//          subsequent test classes.
+#define ASTEST_RESET_ENGINE(Engine) \
+	AngelscriptTestSupport::ResetSharedCloneEngine(Engine)
 
 // ============================================================================
 // Helper Macros: Compile + Execute shortcuts

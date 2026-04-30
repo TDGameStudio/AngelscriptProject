@@ -1104,81 +1104,81 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptClassBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(ClassLookupCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunClassLookupSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(TSubclassOfCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunTSubclassOfSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(TSubclassOfRejectsUnrelatedClass)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunTSubclassOfRejectSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(TSoftClassPtrCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunTSoftClassPtrSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(StaticClassCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunStaticClassSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(NativeStaticClassNamespace)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunNativeStaticClassNamespaceSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(NativeStaticTypeGlobal)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunNativeStaticTypeGlobalSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(UClassReflectionCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunUClassReflectionSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(TSoftClassPtrRejectsUnrelatedClass)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunTSoftClassPtrRejectSection(*TestRunner, Engine, GClassProfile);
 	}
 
 	TEST_METHOD(ClassReturnTypeAndLogDiag)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		if (!RunClassReturnTypeSection(*TestRunner, Engine, GClassProfile))
 		{

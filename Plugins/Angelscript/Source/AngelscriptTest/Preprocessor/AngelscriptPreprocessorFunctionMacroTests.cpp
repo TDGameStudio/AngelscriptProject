@@ -38,8 +38,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorFunctionMacroTest,
 			TEXT("Cannot put a UPROPERTY or UFUNCTION inside preprocessor conditions other than EDITOR or flags declared in configuration."),
 			EAutomationExpectedErrorFlags::Contains, 2);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		struct FConditionalCase
 		{
@@ -156,7 +156,7 @@ class UEditorConditionalCarrier : UObject
 			}
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -175,8 +175,8 @@ class UEditorConditionalCarrier : UObject
 			TEXT("Unknown function specifier DefinitelyUnknownSpecifier on method UBadCarrier::Unknown."),
 			EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		struct FSpecifierCase
 		{
@@ -252,7 +252,7 @@ class UBadCarrier : UObject
 			AssertNoCompilableCode(*TestRunner, Result);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 };
 

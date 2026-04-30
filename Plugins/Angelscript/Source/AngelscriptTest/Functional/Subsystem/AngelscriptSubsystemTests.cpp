@@ -43,8 +43,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTestWorldSubsystemLifecycleTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestWorldSubsystemLifecycle"));
 	ON_SCOPE_EXIT
 	{
@@ -77,15 +77,15 @@ class UTestWorldLifecycleTracker : UScriptWorldSubsystem
 
 	// CPF_TObjectPtr fix landed: subsystem subclass should now compile successfully.
 	TestTrue(TEXT("Script world subsystem lifecycle subclass should compile after TObjectPtr fix"), bCompiled);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
 
 bool FAngelscriptTestWorldSubsystemTickTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestWorldSubsystemTick"));
 	ON_SCOPE_EXIT
 	{
@@ -113,15 +113,15 @@ class UTestWorldTicker : UScriptWorldSubsystem
 
 	// CPF_TObjectPtr fix landed: subsystem subclass should now compile successfully.
 	TestTrue(TEXT("Script world subsystem tick subclass should compile after TObjectPtr fix"), bCompiled);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
 
 bool FAngelscriptTestWorldSubsystemActorAccessTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestWorldSubsystemActorAccess"));
 	ON_SCOPE_EXIT
 	{
@@ -155,15 +155,15 @@ class ATestWorldSubsystemActorAccessActor : AActor
 
 	// CPF_TObjectPtr fix landed: subsystem subclass should now compile successfully.
 	TestTrue(TEXT("Script world subsystem actor access subclass should compile after TObjectPtr fix"), bCompiled);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
 
 bool FAngelscriptTestGameInstanceSubsystemLifecycleTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestGameInstanceSubsystemLifecycle"));
 	ON_SCOPE_EXIT
 	{
@@ -196,7 +196,7 @@ class UTestGameInstanceLifecycleTracker : UScriptGameInstanceSubsystem
 
 	// CPF_TObjectPtr fix landed: subsystem subclass should now compile successfully.
 	TestTrue(TEXT("Script game-instance subsystem lifecycle subclass should compile after TObjectPtr fix"), bCompiled);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

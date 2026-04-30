@@ -86,12 +86,12 @@ namespace InterfaceNativeBridgeTests
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeBridgeTest, "Angelscript.TestModule.Interface.NativeBridge", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
 
 	TEST_METHOD(CppImplementerScriptCall)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());

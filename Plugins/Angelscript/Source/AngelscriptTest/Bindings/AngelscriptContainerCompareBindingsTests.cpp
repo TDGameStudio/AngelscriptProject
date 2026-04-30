@@ -55,12 +55,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptContainerCompareBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -70,7 +70,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptContainerCompareBindingsTest,
 
 	TEST_METHOD(SetCompare)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GContainerCmpProfile, TEXT("SetCompare"), TEXT(R"(
@@ -113,7 +113,7 @@ int SetCompare_DifferentSize()
 
 	TEST_METHOD(SetCompareSameSizeMismatch)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GContainerCmpProfile, TEXT("SetSizeMismatch"), TEXT(R"(
@@ -166,7 +166,7 @@ int SetMismatch_CopyEqual()
 
 	TEST_METHOD(MapCompare)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GContainerCmpProfile, TEXT("MapCompare"), TEXT(R"(
@@ -209,7 +209,7 @@ int MapCompare_DifferentSize()
 
 	TEST_METHOD(MapCompareValue)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GContainerCmpProfile, TEXT("MapCompareValue"), TEXT(R"(
@@ -265,7 +265,7 @@ int MapValue_EmptyCompare()
 
 	TEST_METHOD(OptionalTypeCompare)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FAngelscriptTypeUsage IntUsage(FAngelscriptType::GetByAngelscriptTypeName(TEXT("int")));
@@ -337,7 +337,7 @@ int MapValue_EmptyCompare()
 
 	TEST_METHOD(MapDebugger)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FAngelscriptTypeUsage KeyUsage(FAngelscriptType::GetByAngelscriptTypeName(TEXT("FName")));

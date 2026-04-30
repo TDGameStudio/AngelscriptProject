@@ -56,8 +56,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassMetadataTests,
 	TEST_METHOD(IsDeveloperOnlyRecognizesNestedEditorModuleNames)
 	{
 		using namespace ASClassMetadataTests;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const TArray<ASClassMetadataTests::FDeveloperOnlyModuleCase> Cases =
 		{
@@ -106,13 +106,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassMetadataTests,
 				TestCase.bExpectedDeveloperOnly);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(IsFunctionImplementedInScriptTurnsFalseAfterDiscard)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		static const FName DiscardModuleName(TEXT("Game.Tools.Runtime.DiscardMetadata"));
 		static const FName DiscardGeneratedClassName(TEXT("UMetadataDiscardCarrier"));
@@ -186,7 +186,7 @@ class UMetadataDiscardCarrier : UObject
 			TEXT("Generated script function should clear its source metadata after discard"),
 			SourcePathAfterDiscard.IsEmpty() || SourceLineAfterDiscard == -1);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

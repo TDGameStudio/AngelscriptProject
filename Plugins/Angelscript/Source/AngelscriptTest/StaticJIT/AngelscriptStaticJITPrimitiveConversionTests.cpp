@@ -41,7 +41,16 @@ bool FAngelscriptStaticJITPrimitiveBitCastRoundTripTest::RunTest(const FString& 
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -85,7 +94,7 @@ bool FAngelscriptStaticJITPrimitiveBitCastRoundTripTest::RunTest(const FString& 
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -94,7 +103,16 @@ bool FAngelscriptStaticJITPrimitiveZeroExtendParityTest::RunTest(const FString& 
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -130,7 +148,7 @@ bool FAngelscriptStaticJITPrimitiveZeroExtendParityTest::RunTest(const FString& 
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -139,7 +157,16 @@ bool FAngelscriptStaticJITPrimitiveNumericConversionParityTest::RunTest(const FS
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITPrimitiveConversionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -181,7 +208,7 @@ bool FAngelscriptStaticJITPrimitiveNumericConversionParityTest::RunTest(const FS
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

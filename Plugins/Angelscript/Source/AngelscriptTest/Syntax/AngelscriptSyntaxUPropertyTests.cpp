@@ -41,12 +41,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxUPropertyTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -56,7 +56,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxUPropertyTest,
 
 	TEST_METHOD(Specifiers_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Basic UPROPERTY
@@ -190,7 +190,7 @@ class AUPropMetaActor : AActor
 
 	TEST_METHOD(Specifiers_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Invalid specifier
@@ -372,7 +372,7 @@ class AUPropNumSpecActor : AActor
 
 	TEST_METHOD(Types_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// int
@@ -459,7 +459,7 @@ class AUPropSubclassActor : AActor
 
 	TEST_METHOD(Types_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Non-existent type

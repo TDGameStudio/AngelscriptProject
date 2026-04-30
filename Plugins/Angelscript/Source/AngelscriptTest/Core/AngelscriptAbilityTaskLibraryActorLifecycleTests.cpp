@@ -203,8 +203,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryActorLifecycleWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryActorLifecycleTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	UAngelscriptGASTestAbility* AbilityCDO = GetMutableDefault<UAngelscriptGASTestAbility>();
 	uint8 OriginalNetExecutionPolicy = 0;
@@ -368,7 +368,7 @@ bool FAngelscriptAbilityTaskLibraryActorLifecycleWrappersTest::RunTest(const FSt
 	TestFalse(TEXT("VisualizeTargeting EndTask should destroy the spawned target actor"), VisualizedTargetActorWeak.IsValid());
 	TestFalse(TEXT("VisualizeTargeting EndTask should clear the duration timer"), Spawner.GetWorld().GetTimerManager().IsTimerActive(VisualizeTask->TimerHandle_OnTimeElapsed));
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

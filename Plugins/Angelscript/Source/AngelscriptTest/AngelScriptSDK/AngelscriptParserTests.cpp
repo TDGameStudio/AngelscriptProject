@@ -78,8 +78,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 {
 	TEST_METHOD(Declarations)
 	{
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateParserModule(BareEngine, "ParserDeclarations");
 		if (!TestRunner->TestNotNull(TEXT("Parser declaration test should create a backing module"), Module))
 		{
@@ -106,13 +112,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 		TestRunner->TestEqual(TEXT("Root node should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
 		TestRunner->TestTrue(TEXT("Parser should emit a declaration node for the global variable"), ContainsNodeType(Root, snDeclaration));
 		TestRunner->TestTrue(TEXT("Parser should emit a class node for the class declaration"), ContainsNodeType(Root, snClass));
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(ExpressionAst)
 	{
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateParserModule(BareEngine, "ParserExpressions");
 		if (!TestRunner->TestNotNull(TEXT("Parser expression test should create a backing module"), Module))
 		{
@@ -132,13 +144,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 
 		TestRunner->TestEqual(TEXT("Expression root should be an expression node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snExpression));
 		TestRunner->TestTrue(TEXT("Parser should emit an expression operator node"), ContainsNodeType(Root, snExprOperator));
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(ControlFlow)
 	{
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateParserModule(BareEngine, "ParserControlFlow");
 		if (!TestRunner->TestNotNull(TEXT("Parser control-flow test should create a backing module"), Module))
 		{
@@ -160,13 +178,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 		TestRunner->TestTrue(TEXT("Parser should emit an if node"), ContainsNodeType(Root, snIf));
 		TestRunner->TestTrue(TEXT("Parser should emit a for node"), ContainsNodeType(Root, snFor));
 		TestRunner->TestTrue(TEXT("Parser should emit a while node"), ContainsNodeType(Root, snWhile));
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(SyntaxErrors)
 	{
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateParserModule(BareEngine, "ParserSyntaxErrors");
 		if (!TestRunner->TestNotNull(TEXT("Parser syntax-error test should create a backing module"), Module))
 		{
@@ -181,13 +205,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 		asCParser Parser(&Builder);
 		const int ParseResult = Parser.ParseScript(&Code);
 		TestRunner->TestTrue(TEXT("Parser should reject malformed syntax"), ParseResult < 0);
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(ReuseAfterSyntaxError)
 	{
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateParserModule(BareEngine, "ParserReuseAfterSyntaxError");
 		if (!TestRunner->TestNotNull(TEXT("Parser reuse-after-error test should create a backing module"), Module))
 		{
@@ -234,7 +264,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptParserTests,
 			TEXT("Parser.ReuseAfterSyntaxError should recover a class node after Reset"),
 			ContainsNodeType(Root, snClass));
 
-		ASTEST_END_BARE
+		}
 	}
 };
 

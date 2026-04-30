@@ -52,12 +52,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptUtilityBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -67,7 +67,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptUtilityBindingsTest,
 
 	TEST_METHOD(Hash)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GUtilityProfile, TEXT("Hash"), TEXT(R"(
@@ -122,7 +122,7 @@ int Hash_SeededDiffersFromUnseeded()
 
 	TEST_METHOD(CommandLine)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		TArray<FString> ExpectedTokens;
@@ -196,7 +196,7 @@ int CommandLine_PlatformMiscGetEnvVar()
 
 	TEST_METHOD(Parse)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GUtilityProfile, TEXT("Parse"), TEXT(R"(
@@ -251,7 +251,7 @@ int Parse_Bool()
 
 	TEST_METHOD(RandomStream)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GUtilityProfile, TEXT("RandStream"), TEXT(R"(
@@ -330,7 +330,7 @@ int RandStream_ToStringNotEmpty()
 
 	TEST_METHOD(StringRemoveAt)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GUtilityProfile, TEXT("StrRemove"), TEXT(R"(

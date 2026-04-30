@@ -465,7 +465,7 @@ class %s : UObject
 
 		const double TotalStartTime = FPlatformTime::Seconds();
 		const double AcquireStartTime = FPlatformTime::Seconds();
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		Sample.AcquireSeconds = FPlatformTime::Seconds() - AcquireStartTime;
 
 		FAngelscriptEngineScope EngineScope(Engine);
@@ -633,7 +633,7 @@ class %s : UObject
 			TEXT("Angelscript.TestModule.Core.Performance.ShareCleanCycle"),
 			Metrics,
 			{
-				TEXT("Measures ASTEST_CREATE_ENGINE_SHARE_CLEAN acquire/create, AS compile, and explicit ResetSharedCloneEngine latency across serial cycles."),
+				TEXT("Measures ASTEST_CREATE_ENGINE acquire/create, AS compile, and explicit ASTEST_RESET_ENGINE latency across serial cycles."),
 				TEXT("Cycle 0 starts after destroying the shared test engine; later cycles observe the hot shared-engine path."),
 				TEXT("Generated UASClass diagnostics run after timing capture and report GC state plus strong referencers."),
 				TEXT("No timing thresholds are enforced; this is an optimization baseline artifact.")

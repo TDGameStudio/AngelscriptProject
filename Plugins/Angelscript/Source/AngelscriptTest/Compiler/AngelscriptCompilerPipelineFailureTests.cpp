@@ -66,8 +66,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerEndToEndFailureTests,
 	{
 		using namespace CompilerPipelineFailureTest;
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -160,7 +160,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerEndToEndFailureTests,
 				42);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(SyntaxErrorFailsWithoutResidualReflection)
@@ -201,8 +201,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerEndToEndFailureTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -378,7 +378,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerEndToEndFailureTests,
 				9);
 		}
 
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 };
 

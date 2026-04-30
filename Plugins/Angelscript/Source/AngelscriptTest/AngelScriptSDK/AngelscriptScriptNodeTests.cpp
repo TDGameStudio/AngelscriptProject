@@ -47,8 +47,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 	TEST_METHOD(Traversal)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeTraversal");
 		if (!TestRunner->TestNotNull(TEXT("ScriptNode traversal test should create a backing module"), Module))
 		{
@@ -77,14 +83,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 		TestRunner->TestNotNull(TEXT("Root should expose the last child"), Root->lastChild);
 		TestRunner->TestTrue(TEXT("First and last child should differ when multiple declarations exist"), Root->firstChild != Root->lastChild);
 		TestRunner->TestEqual(TEXT("Second child should point back to the first child as prev"), Root->lastChild->prev, Root->firstChild);
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(Copy)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeCopy");
 		if (!TestRunner->TestNotNull(TEXT("ScriptNode copy test should create a backing module"), Module))
 		{
@@ -116,7 +128,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 		TestRunner->TestEqual(TEXT("Copied root should keep the same node type"), static_cast<int32>(Copy->nodeType), static_cast<int32>(Root->nodeType));
 		TestRunner->TestTrue(TEXT("Copied node should be a different instance"), Copy != Root);
 		TestRunner->TestTrue(TEXT("Copied first child should be a different instance"), Copy->firstChild != nullptr && Copy->firstChild != Root->firstChild);
-		ASTEST_END_BARE
+		}
 	}
 };
 

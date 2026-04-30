@@ -22,12 +22,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMeshComponentBindingsTest,
 	"Angelscript.TestModule.Bindings.MeshComponent",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(ProjectileMovement)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMeshCompProfile, TEXT("Projectile"), TEXT(R"(
 int Projectile_DefaultSpeed()
@@ -47,7 +47,7 @@ int Projectile_DefaultSpeed()
 
 	TEST_METHOD(SkeletalMeshTypeCheck)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMeshCompProfile, TEXT("Skeletal"), TEXT(R"(
 int Skeletal_TypeExists()

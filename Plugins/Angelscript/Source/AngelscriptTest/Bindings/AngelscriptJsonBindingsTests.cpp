@@ -118,12 +118,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptJsonBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -133,7 +133,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptJsonBindingsTest,
 
 	TEST_METHOD(ObjectRoundTrip)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GJsonProfile, TEXT("ObjectRoundTrip"), TEXT(R"(
@@ -236,7 +236,7 @@ int RoundTrip()
 
 	TEST_METHOD(ErrorPaths)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GJsonProfile, TEXT("ErrorPaths"), TEXT(R"(

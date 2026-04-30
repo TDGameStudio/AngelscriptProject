@@ -15,9 +15,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 {
 	TEST_METHOD(DelegateEnumClassCompile)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerDelegateEnumClassCompile"),
@@ -76,14 +76,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		TestRunner->TestTrue(TEXT("Generated class should preserve abstract flag"), GeneratedClass->HasAnyClassFlags(CLASS_Abstract));
 		TestRunner->TestNotNull(TEXT("Generated Score property should exist"), FindFProperty<FProperty>(GeneratedClass, TEXT("Score")));
 		TestRunner->TestNotNull(TEXT("Generated GetScore function should exist"), AngelscriptTestSupport::FindGeneratedFunction(GeneratedClass, TEXT("GetScore")));
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(FunctionDefaultsAndClassLikeCompile)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerFunctionDefaultsAndClassLikeCompile"),
@@ -146,14 +146,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		TestRunner->TestNotNull(TEXT("EchoPlainClass function should exist"), AngelscriptTestSupport::FindGeneratedFunction(GeneratedClass, TEXT("EchoPlainClass")));
 		TestRunner->TestNotNull(TEXT("EchoActorClass function should exist"), AngelscriptTestSupport::FindGeneratedFunction(GeneratedClass, TEXT("EchoActorClass")));
 		TestRunner->TestNotNull(TEXT("EchoSoftActorClass function should exist"), AngelscriptTestSupport::FindGeneratedFunction(GeneratedClass, TEXT("EchoSoftActorClass")));
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(PropertyDefaultsCompile)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerPropertyDefaultsCompile"),
@@ -198,14 +198,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 
 		const int32 ScoreValue = ScoreProperty->GetPropertyValue_InContainer(DefaultObject);
 		TestRunner->TestEqual(TEXT("Generated default object should materialize overridden int default"), ScoreValue, 21);
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(GeneratedClassConsistency)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerGeneratedClassConsistency"),
@@ -239,14 +239,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		TestRunner->TestTrue(TEXT("Generated consistency class should preserve abstract flag"), GeneratedClass->HasAnyClassFlags(CLASS_Abstract));
 		TestRunner->TestNotNull(TEXT("Generated consistency class should expose Score property"), FindFProperty<FProperty>(GeneratedClass, TEXT("Score")));
 		TestRunner->TestNotNull(TEXT("Generated consistency class should expose GetScore function"), AngelscriptTestSupport::FindGeneratedFunction(GeneratedClass, TEXT("GetScore")));
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(ModuleFunctionInspection)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -282,14 +282,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		}
 
 		TestRunner->TestEqual(TEXT("Compiled inspection module should preserve executable default values"), Result, 42);
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(EnumAvailability)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerEnumAvailability"),
@@ -317,14 +317,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 
 		TestRunner->TestEqual(TEXT("Compiled enum should have 3 declared values"), EnumDesc->ValueNames.Num(), 3);
 		TestRunner->TestEqual(TEXT("Beta should have explicit value 4"), static_cast<int32>(EnumDesc->EnumValues[1]), 4);
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(DelegateSignatureConsistency)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerDelegateSignatureConsistency"),
@@ -359,14 +359,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		TestRunner->TestTrue(TEXT("Multicast delegate should be marked multicast"), MultiCast->bIsMulticast);
 		TestRunner->TestNotNull(TEXT("Single-cast delegate should materialize a UDelegateFunction"), SingleCast->Function);
 		TestRunner->TestNotNull(TEXT("Multicast delegate should materialize a UDelegateFunction"), MultiCast->Function);
-	ASTEST_END_SHARE
+	}
 	}
 
 	TEST_METHOD(ClassLikeReflectionShape)
 	{
-		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+		FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const bool bCompiled = AngelscriptTestSupport::CompileAnnotatedModuleFromMemory(
 			&Engine,
 			TEXT("CompilerClassLikeReflectionShape"),
@@ -438,7 +438,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerPipelineEndToEndTest,
 		}
 		TestRunner->TestTrue(TEXT("Soft class return MetaClass should be AActor"), SoftReturnProperty->MetaClass == AActor::StaticClass());
 		TestRunner->TestTrue(TEXT("Soft class parameter MetaClass should be AActor"), SoftParamProperty->MetaClass == AActor::StaticClass());
-	ASTEST_END_SHARE
+	}
 	}
 };
 

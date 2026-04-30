@@ -26,8 +26,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 	TEST_METHOD(SingleModulePipeline)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -50,14 +50,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 		}
 
 		TestRunner->TestEqual(TEXT("Builder single-module pipeline should execute the compiled function"), Result, 42);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(CompileErrors)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCModule* Module = CreateBuilderModule(ScriptEngine, "BuilderCompileErrors");
 		if (!TestRunner->TestNotNull(TEXT("Builder compile-error test should create a backing module"), Module))
@@ -71,14 +71,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 		const int32 BuildResult = Builder.CompileFunction("BuilderCompileErrors", "int Entry( { return 42; }", 0, 0, &Function);
 		TestRunner->TestTrue(TEXT("Builder should report invalid syntax as a build failure"), BuildResult < 0);
 		TestRunner->TestEqual(TEXT("Builder compile-error test should not return a compiled function on failure"), Function, static_cast<asCScriptFunction*>(nullptr));
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(RebuildModule)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* ModuleV1 = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -122,14 +122,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 			return;
 		}
 		TestRunner->TestEqual(TEXT("Rebuilt builder module should execute the latest function body"), SecondResult, 2);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ImportBinding)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* SourceModule = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -173,7 +173,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 		}
 
 		TestRunner->TestEqual(TEXT("Imported function binding should let the consumer execute the source function"), Result, 77);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

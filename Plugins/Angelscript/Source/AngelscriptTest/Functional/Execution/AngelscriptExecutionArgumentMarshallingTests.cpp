@@ -128,8 +128,8 @@ bool FAngelscriptExecutionArgumentSlotOrderMatrixTest::RunTest(const FString& Pa
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	do
 	{
@@ -213,7 +213,7 @@ bool FAngelscriptExecutionArgumentSlotOrderMatrixTest::RunTest(const FString& Pa
 	}
 	while (false);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 
@@ -235,8 +235,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptExecutionOneArgNegativeAndZeroTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptModule* Module = BuildModule(
 		*this,
@@ -276,7 +276,7 @@ bool FAngelscriptExecutionOneArgNegativeAndZeroTest::RunTest(const FString& Para
 	}
 
 	Context->Release();
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -284,8 +284,8 @@ bool FAngelscriptExecutionRefAddressRoundTripTest::RunTest(const FString& Parame
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptModule* Module = BuildModule(
 		*this,
@@ -354,7 +354,7 @@ bool FAngelscriptExecutionRefAddressRoundTripTest::RunTest(const FString& Parame
 
 	bPassed = bReturnMatched && bOutputMatched && bInputMatched;
 	Context->Release();
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 
@@ -362,8 +362,8 @@ bool FAngelscriptExecutionDoubleArgDirectApiRoundTripTest::RunTest(const FString
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionArgumentMarshallingTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Execution.DoubleArg.DirectApiRoundTrip should expose the script engine"), ScriptEngine))
@@ -425,7 +425,7 @@ bool FAngelscriptExecutionDoubleArgDirectApiRoundTripTest::RunTest(const FString
 		31.0,
 		0.0001);
 	Context->Release();
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

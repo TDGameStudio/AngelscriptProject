@@ -34,8 +34,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorMacroShapeTest,
 	// ========================================================================
 	TEST_METHOD(ClassEnumMetaShapes)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		const FString ScriptSource = TEXT(R"(
 UCLASS(Abstract, BlueprintType)
@@ -164,7 +164,7 @@ enum class EMacroState : uint8
 				EnumMetaMacro->SubjectIndex, 1);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -173,8 +173,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(TooltipNormalization)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		// IsAllSameChar / IsLineSeparator utilities
 		TestRunner->TestTrue(
@@ -221,7 +221,7 @@ enum class EMacroState : uint8
 			FormatCommentForToolTip(TEXT("/* ===== */")),
 			FString(TEXT("")));
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// DISABLED(#preprocessor-vs-runtime-fields): the four enum tests below
@@ -240,8 +240,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(EnumBasicCompileAndExecute)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.MacroShapes.EnumBasicCompileAndExecute"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -318,7 +318,7 @@ enum class EMacroState : uint8
 			TestRunner->TestEqual(TEXT("South direction should return 180"), EntryResult, 180);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -327,8 +327,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(EnumWithUmetaDisplayNames)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		FFixtureFile File(TEXT("Tests/Preprocessor/MacroShapes/EnumWithUmetaDisplayNames.as"),
 			TEXT("UENUM(BlueprintType)\n")
@@ -411,7 +411,7 @@ enum class EMacroState : uint8
 				&& EnumMetaMacros[2]->Arguments.Contains(TEXT("Hidden")));
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -420,8 +420,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(EnumDescriptorRecordsBlueprintType)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		FFixtureFile File(TEXT("Tests/Preprocessor/MacroShapes/EnumBlueprintType.as"),
 			TEXT("UENUM(BlueprintType)\n")
@@ -494,7 +494,7 @@ enum class EMacroState : uint8
 			}
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -503,8 +503,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(EnumInsideClassScope)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.MacroShapes.EnumInsideClassScope"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -584,7 +584,7 @@ enum class EMacroState : uint8
 				EntryResult, 12);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 #endif // DISABLED(#preprocessor-vs-runtime-fields)
 
@@ -594,8 +594,8 @@ enum class EMacroState : uint8
 	// ========================================================================
 	TEST_METHOD(DelegateDeclarationParsed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		FFixtureFile File(TEXT("Tests/Preprocessor/MacroShapes/DelegateDeclaration.as"), TEXT(R"(
 event void FOnHealthChanged(float NewHealth);
@@ -629,7 +629,7 @@ int Entry()
 				Code.Contains(TEXT("int Entry()")));
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 };
 

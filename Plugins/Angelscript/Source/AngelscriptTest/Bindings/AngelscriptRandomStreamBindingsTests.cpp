@@ -68,12 +68,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptRandomStreamBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -84,7 +84,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptRandomStreamBindingsTest,
 	TEST_METHOD(IntSeedSequence)
 	{
 		using namespace AngelscriptRandomStreamBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Compute native expectations
@@ -198,7 +198,7 @@ int IntSeed_CopyParity()
 	TEST_METHOD(IntSeedReset)
 	{
 		using namespace AngelscriptRandomStreamBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Compute native expectation
@@ -240,7 +240,7 @@ int IntSeed_Reset()
 	TEST_METHOD(UintSeedSequence)
 	{
 		using namespace AngelscriptRandomStreamBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FRandomStream Native(uint32(123));
@@ -296,7 +296,7 @@ int UintSeed_Reset()
 	TEST_METHOD(NameSeedSequence)
 	{
 		using namespace AngelscriptRandomStreamBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FRandomStream Native;

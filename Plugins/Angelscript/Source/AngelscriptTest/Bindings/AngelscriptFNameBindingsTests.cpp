@@ -21,12 +21,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFNameBindingsTest,
 	"Angelscript.TestModule.Bindings.FName",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(FNameConstruction)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFNameProfile, TEXT("Ctor"), TEXT(R"(
 int FName_ConstructAndIsNone()
@@ -47,7 +47,7 @@ int FName_ConstructAndIsNone()
 
 	TEST_METHOD(FNameNone)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFNameProfile, TEXT("None"), TEXT(R"(
 int FName_NoneIsNone()
@@ -68,7 +68,7 @@ int FName_NoneIsNone()
 
 	TEST_METHOD(FNameEquality)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFNameProfile, TEXT("Equal"), TEXT(R"(
 int FName_EqualityCheck()
@@ -90,7 +90,7 @@ int FName_EqualityCheck()
 
 	TEST_METHOD(FNameToString)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFNameProfile, TEXT("ToString"), TEXT(R"(
 int FName_ToStringLen()

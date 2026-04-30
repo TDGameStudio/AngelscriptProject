@@ -42,12 +42,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxCastingTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -57,7 +57,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxCastingTest,
 
 	TEST_METHOD(Cast_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("CastP_ToParent"),
@@ -89,7 +89,7 @@ void Test(AActor A)
 
 	TEST_METHOD(Cast_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("CastN_BadType"),
@@ -168,7 +168,7 @@ void Test(AActor A) { auto X = Cast<ENetRole>(A); }
 
 	TEST_METHOD(Implicit_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ImplP_IntToFloat"),
@@ -213,7 +213,7 @@ void Test() { float X = 5; }
 
 	TEST_METHOD(Implicit_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ImplN_StrToInt"),
@@ -294,7 +294,7 @@ void Test() { float X = 3.14f; uint8 Y = X; }
 
 	TEST_METHOD(Explicit_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ExplP_FloatToInt"),
@@ -322,7 +322,7 @@ void Test() { int X = 5; float Y = float(X); }
 
 	TEST_METHOD(Explicit_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ExplN_StrToInt"),
@@ -362,7 +362,7 @@ void Test() { bool B = true; FString S = FString(B); }
 
 	TEST_METHOD(Nullptr_Mixed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// --- Positive ---

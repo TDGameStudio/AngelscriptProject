@@ -144,12 +144,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAssetRegistryBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -164,7 +164,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAssetRegistryBindingsTest,
 		TestRunner->AddExpectedError(TEXT("ASAssetReg_TopLevelPathAndNullParent"), EAutomationExpectedErrorFlags::Contains, 0);
 		TestRunner->AddExpectedError(TEXT("void TriggerNullParent(UObject[]&)"), EAutomationExpectedErrorFlags::Contains, 0, false);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const FString Script = TEXT(R"(
@@ -381,7 +381,7 @@ int Entry()
 		Script.ReplaceInline(TEXT("__EXPECTED_SOFT_OBJECT_PATH_STRING__"), *NativeSoftObjectPathString, ESearchCase::CaseSensitive);
 		Script.ReplaceInline(TEXT("__ENGINE_MATERIALS_PATH__"), *EngineMaterialsPath.ToString(), ESearchCase::CaseSensitive);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GAssetRegProfile, TEXT("QueryCompat"), Script);

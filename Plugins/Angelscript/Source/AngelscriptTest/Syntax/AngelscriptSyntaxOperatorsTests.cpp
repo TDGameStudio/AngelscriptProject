@@ -43,12 +43,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxOperatorsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -58,7 +58,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxOperatorsTest,
 
 	TEST_METHOD(Arithmetic_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("ArithPos"), TEXT(R"(
@@ -103,7 +103,7 @@ int MixedTypes()   { float X = 1 + 2.0f; return int(X * 10); }
 
 	TEST_METHOD(Arithmetic_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Type mismatch: string + int
@@ -199,7 +199,7 @@ void Test() { auto S = "abc" * 3; }
 
 	TEST_METHOD(Bitwise_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("BitPos"), TEXT(R"(
@@ -232,7 +232,7 @@ int Compound()    { return (0xFF & 0x0F) | (0xF0 ^ 0x0F); }
 
 	TEST_METHOD(Bitwise_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -294,7 +294,7 @@ void Test() { auto X = "abc" >> 2; }
 
 	TEST_METHOD(Logical_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("LogicPos"), TEXT(R"(
@@ -323,7 +323,7 @@ int ShortCircuit()  { bool A = false; int Z = 0; return (A && (1/Z > 0)) ? 1 : 0
 
 	TEST_METHOD(Logical_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -375,7 +375,7 @@ void Test() { bool X = 1.0f && 2.0f; }
 
 	TEST_METHOD(Comparison_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("CmpPos"), TEXT(R"(
@@ -410,7 +410,7 @@ int FloatCompare()  { return (1.5f > 1.0f) ? 1 : 0; }
 
 	TEST_METHOD(Comparison_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -455,7 +455,7 @@ void Test() { bool X = (true < false); }
 
 	TEST_METHOD(Assignment_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("AssignPos"), TEXT(R"(
@@ -496,7 +496,7 @@ int ShiftRAssign()   { int X = 16; X >>= 2; return X; }
 
 	TEST_METHOD(Assignment_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -573,7 +573,7 @@ void Test() { float X = 1.0f; X %= 2.0f; }
 
 	TEST_METHOD(Ternary_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxOperatorsProfile, TEXT("TernPos"), TEXT(R"(
@@ -600,7 +600,7 @@ int FalseCondition() { return false ? 100 : 200; }
 
 	TEST_METHOD(Ternary_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -652,7 +652,7 @@ void Test() { int X = "yes" ? 1 : 0; }
 
 	TEST_METHOD(EdgeCases)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Positive edge cases

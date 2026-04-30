@@ -14,7 +14,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTypeRegistryTests,
 	TEST_METHOD(AliasAndPropertyFinder)
 	{
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		const FString AliasName = TEXT("ScoreAlias");
 		FProperty* StoredValueProperty = UAngelscriptUhtCoverageTestObject::StaticClass()->FindPropertyByName(TEXT("StoredValue"));
@@ -94,7 +103,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTypeRegistryTests,
 			UsageFromProperty.GetAngelscriptDeclaration(),
 			TEXT("int"));
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

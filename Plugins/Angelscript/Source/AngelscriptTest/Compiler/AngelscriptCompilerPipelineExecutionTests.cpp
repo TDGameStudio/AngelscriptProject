@@ -50,8 +50,8 @@ class UCompilerExecutionCarrier : UObject
 }
 )AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -110,7 +110,7 @@ class UCompilerExecutionCarrier : UObject
 		TestRunner->TestEqual(TEXT("Annotated execution test should return the updated scripted value"), Result, 42);
 		TestRunner->TestEqual(TEXT("Annotated execution test should persist the scripted state mutation on the UObject instance"), ScoreAfterCall, 42);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(PlainSourcePreprocessorRoundTrip)
@@ -125,8 +125,8 @@ int Entry()
 }
 )AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -196,7 +196,7 @@ int Entry()
 				42);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

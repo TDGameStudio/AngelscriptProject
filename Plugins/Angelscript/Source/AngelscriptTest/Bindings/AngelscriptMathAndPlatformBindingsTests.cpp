@@ -89,12 +89,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMathAndPlatformBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -105,7 +105,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMathAndPlatformBindingsTest,
 	TEST_METHOD(MathExtended)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMathPlatProfile, TEXT("MathExtended"), TEXT(R"(
@@ -334,7 +334,7 @@ int Entry()
 		Script.ReplaceInline(TEXT("$EXPECTED_ROTATOR_INTERP$"), *FormatScriptRotatorLiteral(ExpectedRotatorInterp));
 		Script.ReplaceInline(TEXT("$EXPECTED_SCALAR_INTERP$"), *FormatScriptFloatLiteral(ExpectedScalarInterp));
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMathPlatProfile, TEXT("MathDeterministic"), Script);
@@ -351,7 +351,7 @@ int Entry()
 	TEST_METHOD(PlatformProcess)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMathPlatProfile, TEXT("PlatformProcess"), TEXT(R"(
@@ -390,7 +390,7 @@ int CanLaunchURLWorks() { return FPlatformProcess::CanLaunchURL("https://example
 		using namespace AngelscriptTest_Bindings_AngelscriptMathAndPlatformBindingsTests_Private;
 		TestRunner->AddExpectedError(TEXT("Test error message"), EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMathPlatProfile, TEXT("Logging"), TEXT(R"(

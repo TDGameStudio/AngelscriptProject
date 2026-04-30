@@ -54,12 +54,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMemoryReaderBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -69,7 +69,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMemoryReaderBindingsTest,
 
 	TEST_METHOD(ReadOperations)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMemoryReaderProfile, TEXT("ReadOps"), TEXT(R"(
@@ -166,7 +166,7 @@ int MemReader_ReadAnsiString()
 
 	TEST_METHOD(OutOfBoundsSkip)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GMemoryReaderProfile, TEXT("InvalidSkip"), TEXT(R"(

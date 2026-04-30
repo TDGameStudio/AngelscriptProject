@@ -21,12 +21,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptColorBindingsTest,
 	"Angelscript.TestModule.Bindings.Color",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(FColorConstruction)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GColorProfile, TEXT("FColorCtor"), TEXT(R"(
 int FColor_RedComponent()
@@ -47,7 +47,7 @@ int FColor_RedComponent()
 
 	TEST_METHOD(FLinearColorConstruction)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GColorProfile, TEXT("FLinearCtor"), TEXT(R"(
 int FLinearColor_IsBlack()
@@ -68,7 +68,7 @@ int FLinearColor_IsBlack()
 
 	TEST_METHOD(FColorToLinearColor)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GColorProfile, TEXT("ToLinear"), TEXT(R"(
 int FColor_ToLinearConversion()

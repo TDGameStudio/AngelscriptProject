@@ -24,7 +24,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptStateDumpAll,
 
 bool FAngelscriptStateDumpAll::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+	FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 
 	FString TempDir = FPaths::ProjectSavedDir() / TEXT("Tests") / TEXT("StateDumpTest");
 	FString Result = FAngelscriptStateDump::DumpAll(Engine, TempDir);
@@ -44,7 +44,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptStateDumpDefaultDir,
 
 bool FAngelscriptStateDumpDefaultDir::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+	FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 	// Empty string should use internal default — no crash
 	FString Result = FAngelscriptStateDump::DumpAll(Engine, TEXT(""));
 	TestTrue(TEXT("DumpAll with empty dir returns non-empty path"), !Result.IsEmpty());
@@ -67,7 +67,7 @@ bool FAngelscriptStateDumpExtensionsDelegate::RunTest(const FString& Parameters)
 			bCalled = true;
 		});
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+	FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 	FString TempDir = FPaths::ProjectSavedDir() / TEXT("Tests") / TEXT("StateDumpExtTest");
 	FAngelscriptStateDump::DumpAll(Engine, TempDir);
 

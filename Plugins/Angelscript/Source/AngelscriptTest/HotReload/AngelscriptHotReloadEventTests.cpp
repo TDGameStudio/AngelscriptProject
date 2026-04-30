@@ -169,8 +169,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadPostReloadModeFlagMatchesReloadPathTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEventTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	ON_SCOPE_EXIT
 	{
@@ -320,7 +320,7 @@ class UPostReloadModeTarget : UObject
 		return false;
 	}
 
-	ASTEST_END_SHARE_FRESH
+	}
 	return true;
 }
 
@@ -361,9 +361,9 @@ class UFailedReloadEventTarget : UObject
 }
 )AS");
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 	bool bPassed = true;
-	ASTEST_BEGIN_SHARE_FRESH
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	ON_SCOPE_EXIT
 	{
@@ -441,7 +441,7 @@ class UFailedReloadEventTarget : UObject
 			TEXT("Failed-reload event fallback"));
 	}
 
-	ASTEST_END_SHARE_FRESH
+	}
 	return bPassed;
 }
 

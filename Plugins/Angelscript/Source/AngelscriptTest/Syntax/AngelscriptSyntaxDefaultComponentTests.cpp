@@ -41,12 +41,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDefaultComponentTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -56,7 +56,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxDefaultComponentTest,
 
 	TEST_METHOD(Positive_BasicDefaultComponent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompBasic"),
@@ -72,7 +72,7 @@ class ADefCompBasicActor : AActor
 
 	TEST_METHOD(Positive_RootComponent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompRoot"),
@@ -88,7 +88,7 @@ class ADefCompRootActor : AActor
 
 	TEST_METHOD(Positive_Attach)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompAttach"),
@@ -107,7 +107,7 @@ class ADefCompAttachActor : AActor
 
 	TEST_METHOD(Positive_AttachSocket)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompAttachSocket"),
@@ -126,7 +126,7 @@ class ADefCompSocketActor : AActor
 
 	TEST_METHOD(Positive_MultipleComponents)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("DefCompMultiple"),
@@ -152,7 +152,7 @@ class ADefCompMultiActor : AActor
 
 	TEST_METHOD(Negative_OnNonComponentType)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompNonComp"),
@@ -168,7 +168,7 @@ class ADefCompNonCompActor : AActor
 
 	TEST_METHOD(Negative_OutsideClass)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompGlobal"),
@@ -180,7 +180,7 @@ UPROPERTY(DefaultComponent) USceneComponent Root;
 
 	TEST_METHOD(Negative_RootComponentWithoutDefaultComponent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS logs RootComponent error but compilation succeeds (non-fatal warning)
@@ -199,7 +199,7 @@ class ADefCompRootOnlyActor : AActor
 
 	TEST_METHOD(Negative_AttachToNonExistent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadAttach"),
@@ -215,7 +215,7 @@ class ADefCompBadAttachActor : AActor
 
 	TEST_METHOD(Negative_MultipleRootComponents)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 不校验多个 RootComponent 声明
@@ -237,7 +237,7 @@ class ADefCompMultiRootActor : AActor
 
 	TEST_METHOD(Negative_InNonActorClass)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 不校验 DefaultComponent 是否在 Actor 类中
@@ -256,7 +256,7 @@ struct FDefCompStruct
 
 	TEST_METHOD(Negative_BadComponentType)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadCompType"),
@@ -272,7 +272,7 @@ class ADefCompBadTypeActor : AActor
 
 	TEST_METHOD(Negative_AttachToSelf)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 不校验组件自引用挂载
@@ -291,7 +291,7 @@ class ADefCompSelfActor : AActor
 
 	TEST_METHOD(Negative_CircularAttach)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 不校验循环挂载依赖
@@ -313,7 +313,7 @@ class ADefCompCircularActor : AActor
 
 	TEST_METHOD(Negative_DefaultComponentOnNonUPROPERTY)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompNoUProp"),
@@ -329,7 +329,7 @@ class ADefCompNoUPropActor : AActor
 
 	TEST_METHOD(Negative_AttachSocketWithoutAttach)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 不校验 AttachSocket 必须配合 Attach 使用
@@ -348,7 +348,7 @@ class ADefCompSocketNoAttachActor : AActor
 
 	TEST_METHOD(Negative_DefaultComponentOnNonExistentType)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompBadType"),
@@ -368,7 +368,7 @@ class ADefCompBadTypeNameActor : AActor
 
 	TEST_METHOD(Override_Mixed_PositiveOverrideParent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): feature-not-supported — AS 不支持 OverrideComponent 跨继承层级覆盖
@@ -393,7 +393,7 @@ class ADefCompChildActor : ADefCompBaseActor
 
 	TEST_METHOD(Override_Mixed_NegativeOverrideNonExistent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("DefCompOverrideBad"),

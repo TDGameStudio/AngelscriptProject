@@ -30,8 +30,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UClassSpecifierMatrixTest::AbstractModule.ToString());
@@ -63,7 +63,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("Abstract should set CLASS_Abstract"), GeneratedClass->HasAnyClassFlags(CLASS_Abstract));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -72,8 +72,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UClassSpecifierMatrixTest::BlueprintTypeModule.ToString());
@@ -106,7 +106,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("BlueprintType should set metadata"),
 			GeneratedClass->HasMetaData(TEXT("BlueprintType")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -115,8 +115,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UClassSpecifierMatrixTest::DefaultToInstancedModule.ToString());
@@ -149,7 +149,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("DefaultToInstanced should set CLASS_DefaultToInstanced"),
 			GeneratedClass->HasAnyClassFlags(CLASS_DefaultToInstanced));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -158,8 +158,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UClassSpecifierMatrixTest::DeprecatedModule.ToString());
@@ -192,7 +192,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("Deprecated should set CLASS_Deprecated"),
 			GeneratedClass->HasAnyClassFlags(CLASS_Deprecated));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -201,8 +201,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UClassSpecifierMatrixTest::HideCategoriesModule.ToString());
@@ -235,7 +235,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUClassSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("HideCategories should set metadata"),
 			GeneratedClass->HasMetaData(TEXT("HideCategories")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

@@ -12,8 +12,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTypeConversionNegativeTruncateTowardZeroTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.Conversion.NegativeTruncateTowardZero should expose a script engine"), ScriptEngine))
@@ -39,7 +39,7 @@ bool FAngelscriptTypeConversionNegativeTruncateTowardZeroTest::RunTest(const FSt
 		Result,
 		-27);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 

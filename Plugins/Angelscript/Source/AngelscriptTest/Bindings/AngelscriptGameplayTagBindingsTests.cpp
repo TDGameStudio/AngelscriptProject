@@ -236,12 +236,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -251,7 +251,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagBindingsTest,
 
 	TEST_METHOD(GameplayTagCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTagContainer AllTags;
@@ -314,7 +314,7 @@ int GPTag_RequestNoneInvalid()
 
 	TEST_METHOD(GameplayTagContainerCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTagContainer AllTags;
@@ -435,7 +435,7 @@ int GPTagContainer_Reset()
 
 	TEST_METHOD(GameplayTagContainerEmptyContracts)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTagContainer AllTags;
@@ -523,7 +523,7 @@ int GPTagEmptyContract_ComputeMask()
 
 	TEST_METHOD(GameplayTagQueryCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTagContainer AllTags;
@@ -641,7 +641,7 @@ int GPTagQuery_MatchesQuery()
 
 	TEST_METHOD(GameplayTagExactQueryCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTagContainer AllTags;
@@ -703,7 +703,7 @@ int GPTagExact_RequestNoneEqualsEmpty()
 
 	TEST_METHOD(GameplayTagNamespaceGlobals)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptReloadGameplayTags();
@@ -813,7 +813,7 @@ int GPTagNS_NotMatchesExactParent()
 
 	TEST_METHOD(GameplayTagHierarchySemantics)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTag ChildTag;
@@ -930,7 +930,7 @@ int GPTagHier_UnrelatedNotMatched()
 
 	TEST_METHOD(GameplayTagContainerHierarchyFilters)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTag ChildTag;

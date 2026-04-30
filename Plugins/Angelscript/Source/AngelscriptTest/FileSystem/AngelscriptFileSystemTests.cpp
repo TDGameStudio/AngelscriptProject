@@ -84,9 +84,9 @@ bool FAngelscriptModuleLookupByFilenameTest::RunTest(const FString& Parameters)
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString Script = TEXT(R"AS(
 int PatrolEntry()
 {
@@ -121,7 +121,7 @@ int PatrolEntry()
 	TestEqual(TEXT("Filename-or-module lookup should resolve the same module name"), ModuleByEither->ModuleName, FString(TEXT("Game.AI.Patrol")));
 
 	CleanFileSystemTestRoot();
-ASTEST_END_SHARE_CLEAN
+}
 
 	return true;
 }
@@ -131,9 +131,9 @@ bool FAngelscriptCompileFromDiskTest::RunTest(const FString& Parameters)
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString Source = TEXT(R"AS(
 int Entry()
 {
@@ -168,7 +168,7 @@ int Entry()
 
 	TestEqual(TEXT("Disk-loaded script should return expected value"), Result, 42);
 	CleanFileSystemTestRoot();
-ASTEST_END_SHARE_CLEAN
+}
 
 	return true;
 }
@@ -178,9 +178,9 @@ bool FAngelscriptPartialFailurePreservesGoodModulesTest::RunTest(const FString& 
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString GoodSource = TEXT(R"AS(
 int SurvivorEntry()
 {
@@ -233,7 +233,7 @@ int BrokenEntry()
 	}
 
 	CleanFileSystemTestRoot();
-ASTEST_END_SHARE_CLEAN
+}
 
 	return true;
 }
@@ -243,9 +243,9 @@ bool FAngelscriptDiscoverScriptFilenamesTest::RunTest(const FString& Parameters)
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	FString UnusedPath;
 	if (!TestTrue(TEXT("Write root script file should succeed"), WriteFileSystemTestFile(TEXT("RootScript.as"), TEXT("int Entry() { return 1; }"), UnusedPath)) ||
 		!TestTrue(TEXT("Write nested script file should succeed"), WriteFileSystemTestFile(TEXT("Game/Player.as"), TEXT("int Entry() { return 2; }"), UnusedPath)) ||
@@ -278,7 +278,7 @@ ASTEST_BEGIN_SHARE_CLEAN
 	TestTrue(TEXT("Discovery should include Game/AI/Patrol.as"), FoundRelativePaths.Contains(TEXT("Game/AI/Patrol.as")));
 
 	CleanFileSystemTestRoot();
-ASTEST_END_SHARE_CLEAN
+}
 
 	return true;
 }
@@ -288,9 +288,9 @@ bool FAngelscriptDiscoverySkipRulesTest::RunTest(const FString& Parameters)
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE_SHARE();
-FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& EngineOwner = ASTEST_CREATE_ENGINE();
+FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	FString UnusedPath;
 	if (!TestTrue(TEXT("Write gameplay script file should succeed"), WriteFileSystemTestFile(TEXT("Gameplay/Main.as"), TEXT("int GameplayEntry() { return 1; }"), UnusedPath)) ||
 		!TestTrue(TEXT("Write examples script file should succeed"), WriteFileSystemTestFile(TEXT("Examples/ExampleOnly.as"), TEXT("int ExampleEntry() { return 2; }"), UnusedPath)) ||
@@ -317,7 +317,7 @@ ASTEST_BEGIN_SHARE_CLEAN
 	}
 
 	CleanFileSystemTestRoot();
-ASTEST_END_SHARE_CLEAN
+}
 
 	return true;
 }
@@ -327,8 +327,8 @@ bool FAngelscriptRenameUpdatesModuleLookupTest::RunTest(const FString& Parameter
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString Script = TEXT(R"AS(
 int PatrolEntry()
 {
@@ -369,7 +369,7 @@ int PatrolEntry()
 	TestTrue(TEXT("Rename lookup should keep module-name lookup alive after the filename switch"), Engine.GetModuleByFilenameOrModuleName(NewAbsolutePath, TEXT("Game.AI.Patrol")).IsValid());
 
 	CleanFileSystemTestRoot();
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -379,8 +379,8 @@ bool FAngelscriptPathNormalizationLookupTest::RunTest(const FString& Parameters)
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemTests_Private;
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString Script = TEXT(R"AS(
 int NormalizeEntry()
 {
@@ -415,7 +415,7 @@ int NormalizeEntry()
 	TestEqual(TEXT("Normalization lookup should not duplicate the module when normalizing paths through filename-or-module fallback"), ModuleByEither->ModuleName, FString(TEXT("Game.Path.Normalize")));
 
 	CleanFileSystemTestRoot();
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -428,8 +428,8 @@ bool FAngelscriptMixedSuccessFailureRecoveryAndRemapTest::RunTest(const FString&
 	AddExpectedError(TEXT("Hot reload failed due to script compile errors. Keeping all old script code."), EAutomationExpectedErrorFlags::Contains, 1);
 	CleanFileSystemTestRoot();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(TEXT("Game.Mixed.Good"));
@@ -550,7 +550,7 @@ int BrokenEntry()
 	}
 	TestEqual(TEXT("Renamed good module should preserve updated behavior"), GoodResultAfterRename, 17);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

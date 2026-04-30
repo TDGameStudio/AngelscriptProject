@@ -115,7 +115,16 @@ bool FAngelscriptPrecompiledDataBuildIdentifierValidationTest::RunTest(const FSt
 	using namespace AngelscriptTest_StaticJIT_AngelscriptPrecompiledDataArchiveTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -199,7 +208,7 @@ bool FAngelscriptPrecompiledDataBuildIdentifierValidationTest::RunTest(const FSt
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

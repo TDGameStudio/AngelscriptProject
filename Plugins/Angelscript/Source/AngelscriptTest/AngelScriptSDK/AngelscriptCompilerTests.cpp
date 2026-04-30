@@ -63,8 +63,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 	TEST_METHOD(BytecodeGeneration)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -85,14 +85,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 		asDWORD* Bytecode = Function->GetByteCode(&BytecodeLength);
 		TestRunner->TestNotNull(TEXT("Compiled function should expose a bytecode buffer"), Bytecode);
 		TestRunner->TestTrue(TEXT("Compiled function should emit at least one bytecode instruction"), BytecodeLength > 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(BytecodeExecutionAndRetBoundary)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -164,14 +164,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 		{
 			return;
 		}
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(VariableScopes)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -193,14 +193,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 		const char* FirstVarName = nullptr;
 		Function->GetVar(0, &FirstVarName, nullptr);
 		TestRunner->TestNotNull(TEXT("Compiler should record the first local variable name"), FirstVarName);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(OutOfScopeUseRejected)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FName ModuleName(TEXT("CompilerVariableScopesOutOfScope"));
 		const FString ScriptFilename = FPaths::Combine(
@@ -262,14 +262,14 @@ int Entry()
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should not leave a compiled module behind"),
 			!Engine.GetModuleByModuleName(ModuleName.ToString()).IsValid());
 
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 
 	TEST_METHOD(FunctionCalls)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -293,14 +293,14 @@ int Entry()
 		}
 
 		TestRunner->TestEqual(TEXT("Compiler should generate callable bytecode for function invocations"), Result, 12);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TypeConversions)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -331,14 +331,14 @@ int Entry()
 		TestRunner->TestEqual(TEXT("Compiler conversion test should prepare successfully"), PrepareResult, asSUCCESS);
 		TestRunner->TestEqual(TEXT("Compiler conversion test should execute successfully"), ExecuteResult, asEXECUTION_FINISHED);
 		TestRunner->TestTrue(TEXT("Compiler should emit a numeric conversion that preserves the value"), FMath::IsNearlyEqual(Result, 7.0f));
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(NegativeAndFloat64Matrix)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
 			*TestRunner,
 			Engine,
@@ -380,7 +380,7 @@ int Entry()
 			return;
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

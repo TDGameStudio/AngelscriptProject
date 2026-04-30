@@ -34,18 +34,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDelegateUnicastTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(ExecuteWithBoundNativeCallback)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateUnicast"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -108,7 +108,7 @@ class ATestDelegateUnicast : AActor
 
 	TEST_METHOD(IsBoundReturnsFalseWhenUnbound)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateIsBound"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -150,7 +150,7 @@ class ATestDelegateIsBound : AActor
 
 	TEST_METHOD(ClearRemovesBinding)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateClear"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -211,7 +211,7 @@ class ATestDelegateClear : AActor
 
 	TEST_METHOD(GetUObjectReturnsTarget)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateGetUObject"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -264,7 +264,7 @@ class ATestDelegateGetUObject : AActor
 
 	TEST_METHOD(SignatureMismatchDoesNotInvoke)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateUnicastSigMismatch"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -339,18 +339,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDelegateMulticastTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(BroadcastInvokesScriptHandler)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateMulticast"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -413,7 +413,7 @@ class ATestDelegateMulticast : AActor
 
 	TEST_METHOD(AddUFunctionAndBroadcastFromScript)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateMulticastScript"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -475,7 +475,7 @@ class ATestDelegateMulticastScript : AActor
 
 	TEST_METHOD(MultipleSubscribers)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateMultiSub"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -542,7 +542,7 @@ class ATestDelegateMultiSub : AActor
 
 	TEST_METHOD(UnbindRemovesSpecificSubscriber)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateUnbind"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -607,7 +607,7 @@ class ATestDelegateUnbind : AActor
 
 	TEST_METHOD(ClearRemovesAllSubscribers)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateMCClear"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -666,7 +666,7 @@ class ATestDelegateMCClear : AActor
 
 	TEST_METHOD(UnbindObjectRemovesAllForTarget)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateUnbindObj"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -732,7 +732,7 @@ class ATestDelegateUnbindObj : AActor
 
 	TEST_METHOD(SignatureMismatchDoesNotInvoke)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestDelegateMulticastSigMismatch"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };

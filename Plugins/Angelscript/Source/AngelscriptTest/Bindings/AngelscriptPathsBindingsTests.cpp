@@ -21,12 +21,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPathsBindingsTest,
 	"Angelscript.TestModule.Bindings.Paths",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(FPathsProjectDir)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GPathsProfile, TEXT("ProjectDir"), TEXT(R"(
 int Paths_ProjectDirNonEmpty()
@@ -47,7 +47,7 @@ int Paths_ProjectDirNonEmpty()
 
 	TEST_METHOD(FPathsGetExtension)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GPathsProfile, TEXT("Extension"), TEXT(R"(
 int Paths_GetExtensionLen()
@@ -68,7 +68,7 @@ int Paths_GetExtensionLen()
 
 	TEST_METHOD(FAppGetName)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GPathsProfile, TEXT("AppName"), TEXT(R"(
 int App_GetNameNonEmpty()
@@ -89,7 +89,7 @@ int App_GetNameNonEmpty()
 
 	TEST_METHOD(FCommandLineGet)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GPathsProfile, TEXT("CmdLine"), TEXT(R"(
 int CommandLine_GetExists()

@@ -36,8 +36,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 	// ========================================================================
 	TEST_METHOD(IfdefRespectsBooleanFlagValue)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IfdefBooleanFlagValue"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -111,7 +111,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 				EntryResult, 23);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -127,7 +127,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		TestRunner->TestTrue(
 			TEXT("Should run with EDITOR flag enabled"),
@@ -205,7 +214,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 			TestRunner->TestEqual(TEXT("Active EDITOR branch should return 7"), EntryResult, 7);
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ========================================================================
@@ -221,7 +230,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.ElifShortCircuitsAfterTakenBranch"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -283,7 +301,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 			TestRunner->TestEqual(TEXT("Active EDITOR branch should return 7"), EntryResult, 7);
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ========================================================================
@@ -299,7 +317,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorDirectiveTest,
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.StringLiteralDoesNotTriggerDirectiveLexer"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -352,7 +379,7 @@ int Entry()
 			TestRunner->TestEqual(TEXT("String comparison should match → 42"), EntryResult, 42);
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ========================================================================
@@ -363,8 +390,8 @@ int Entry()
 	{
 		TestRunner->AddExpectedError(TEXT("Invalid preprocessor condition:"), EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/CompoundConditionReportsUnsupportedSyntax.as");
 		const FString ScriptSource = TEXT(
@@ -387,7 +414,7 @@ int Entry()
 		AssertDiagnosticAt(*TestRunner, Result, TEXT("Invalid preprocessor condition"), 1, 1);
 		AssertNoCompilableCode(*TestRunner, Result);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -401,8 +428,8 @@ int Entry()
 		TestRunner->AddExpectedError(TEXT("Invalid #endif, no matching #if found."), EAutomationExpectedErrorFlags::Contains, 1);
 		TestRunner->AddExpectedError(TEXT("Preceding preprocessor #if/#ifdef/#else was not closed, missing #endif."), EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		struct FDirectiveErrorCase
 		{
@@ -467,7 +494,7 @@ int Entry()
 				ContainsCompilableCode(Result));
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -483,7 +510,16 @@ int Entry()
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		static const FName ModuleName(TEXT("Game.Preprocessor.Directives.TabSeparatedDirectiveParsing"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -566,7 +602,7 @@ int Entry()
 			TestRunner->TestEqual(TEXT("Nested tab-separated EDITOR branch should return 74"), EntryResult, 74);
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ========================================================================
@@ -579,8 +615,8 @@ int Entry()
 
 		TestRunner->AddExpectedError(*ExpectedDiagnostic, EAutomationExpectedErrorFlags::Contains, 2);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		static const FName ModuleName(TEXT("Tests.Preprocessor.Directives.IncludeDirectiveProducesDeterministicResult"));
 		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/IncludeDirectiveProducesDeterministicResult.as");
@@ -624,7 +660,7 @@ int Entry()
 			TEXT("Compile-trace summary should record the #include diagnostic"),
 			bSummaryHasIncludeDiag);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -640,8 +676,8 @@ int Entry()
 	// ========================================================================
 	TEST_METHOD(DeeplyNestedConditionals)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		const FString RelativeScriptPath = TEXT("Tests/Preprocessor/Directives/DeeplyNestedConditionals.as");
 		const FString ScriptSource = TEXT(
@@ -705,7 +741,7 @@ int Entry()
 			AssertModuleCodeNotContains(*TestRunner, DefaultResult, *DefaultModule, TEXT("return 4;"));
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 private:

@@ -42,12 +42,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -57,7 +57,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxTypeDeclarationTest,
 
 	TEST_METHOD(Class_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ClassP_Basic"),
@@ -134,7 +134,7 @@ class AFinalClassActor : AActor final { }
 
 	TEST_METHOD(Class_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): preprocessor-ensure-crash — 匿名 class 触发 DetectClasses ensure 崩溃
@@ -215,7 +215,7 @@ class ASelfActor : ASelfActor { }
 
 	TEST_METHOD(Struct_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("StructP_Basic"),
@@ -273,7 +273,7 @@ struct FStructCtor
 
 	TEST_METHOD(Struct_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): structural-validation-absent — AS 允许匿名 struct 编译通过
@@ -332,7 +332,7 @@ struct FStructVoidMember { void X; }
 
 	TEST_METHOD(Enum_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("EnumP_Basic"),
@@ -372,7 +372,7 @@ void Test()
 
 	TEST_METHOD(Enum_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): preprocessor-ensure-crash — 匿名 enum 触发 DetectEnum ensure 崩溃
@@ -428,7 +428,7 @@ enum EEnumMethod { Value1; void Foo() { } }
 
 	TEST_METHOD(Interface_Mixed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): feature-not-supported — AS 2.33 fork 不支持 interface 关键字
@@ -471,7 +471,7 @@ interface { void Foo(); }
 
 	TEST_METHOD(Namespace_Mixed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): feature-not-supported — AS 2.33 fork 不支持 namespace 声明
@@ -543,7 +543,7 @@ void Test() { int X = FakeNamespace::Value; }
 
 	TEST_METHOD(Variable_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxTypeDeclProfile, TEXT("VarPos"), TEXT(R"(
@@ -566,7 +566,7 @@ int RefVar()      { int X = 5; int& Ref = X; Ref = 10; return X; }
 
 	TEST_METHOD(Variable_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("VarN_BadType"),
@@ -627,7 +627,7 @@ void Test() { int Y = X; int X = 5; }
 
 	TEST_METHOD(Function_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("FuncP_Void"),
@@ -675,7 +675,7 @@ struct FStructFuncConst
 
 	TEST_METHOD(Function_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("FuncN_NoReturn"),

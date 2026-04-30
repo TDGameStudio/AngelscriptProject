@@ -57,12 +57,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeEngineBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -72,7 +72,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeEngineBindingsTest,
 
 	TEST_METHOD(NativeActorMethods)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const bool bCompiled = CompileAnnotatedModuleFromMemory(
@@ -137,7 +137,7 @@ class ABindingExampleActor : AActor
 
 	TEST_METHOD(NativeComponentMethods)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const bool bCompiled = CompileAnnotatedModuleFromMemory(
@@ -258,7 +258,7 @@ class UBindingSceneComponent : USceneComponent
 
 	TEST_METHOD(ComponentDestroy)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const bool bCompiled = CompileAnnotatedModuleFromMemory(

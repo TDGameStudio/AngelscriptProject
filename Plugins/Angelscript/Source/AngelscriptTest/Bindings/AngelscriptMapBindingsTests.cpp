@@ -1099,18 +1099,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMapBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(MapCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunMapSection(*TestRunner, Engine, GMapProfile);
 		RunMapTypeMatrixSection(*TestRunner, Engine, GMapProfile);
@@ -1121,7 +1121,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMapBindingsTest,
 
 	TEST_METHOD(MapFindFailureAndFindOrAddRefCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunMapFindFailureSection(*TestRunner, Engine, GMapProfile);
 	}

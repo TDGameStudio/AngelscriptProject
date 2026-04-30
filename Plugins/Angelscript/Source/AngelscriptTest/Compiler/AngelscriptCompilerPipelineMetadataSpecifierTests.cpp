@@ -133,8 +133,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineMetadataSpecifierTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelineMetadataSpecifierTest::WriteFixture(
 			CompilerPipelineMetadataSpecifierTest::RelativeScriptPath,
@@ -334,7 +334,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineMetadataSpecifierTests,
 			GeneratedEnum->GetDisplayNameTextByIndex(0).ToString(),
 			CompilerPipelineMetadataSpecifierTest::ExpectedEnumValueDisplayName);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

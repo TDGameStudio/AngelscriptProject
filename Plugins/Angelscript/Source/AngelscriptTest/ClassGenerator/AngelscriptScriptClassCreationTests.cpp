@@ -486,8 +486,8 @@ class UTestScriptClassNonUClassTypeCannotSpawn : UObject
 	TEST_METHOD(RenameReplacesOldClass)
 	{
 		using namespace ScriptClassCreationTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		static const FName ModuleName(TEXT("TestScriptClassRenameReplacesOldClass"));
 		ON_SCOPE_EXIT
 		{
@@ -529,7 +529,7 @@ class ATestScriptClassRenameNew : AActor
 		if (!TestRunner->TestNotNull(TEXT("Rename test case should expose the new reflected property on the renamed class"), VersionProperty)) { return; }
 
 		TestRunner->TestEqual(TEXT("Rename test case should apply the renamed class default value after replacement"), VersionProperty->GetPropertyValue_InContainer(NewClass->GetDefaultObject()), 2);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

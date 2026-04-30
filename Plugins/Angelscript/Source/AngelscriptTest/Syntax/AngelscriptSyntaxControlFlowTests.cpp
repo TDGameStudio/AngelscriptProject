@@ -42,12 +42,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxControlFlowTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -57,7 +57,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxControlFlowTest,
 
 	TEST_METHOD(IfElse_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxControlFlowProfile, TEXT("IfPos"), TEXT(R"(
@@ -88,7 +88,7 @@ int Complex()      { int A = 1; int B = 2; if (A > 0 && B > 0) { return A + B; }
 
 	TEST_METHOD(IfElse_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -147,7 +147,7 @@ void Test() { if ("hello") { } }
 
 	TEST_METHOD(For_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxControlFlowProfile, TEXT("ForPos"), TEXT(R"(
@@ -176,7 +176,7 @@ int CompoundStep() { int S = 0; for (int I = 0; I < 100; I += 25) { ++S; } retur
 
 	TEST_METHOD(For_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -221,7 +221,7 @@ void Test() { for (int I = 0; I < 5; ++I) { } int X = I; }
 
 	TEST_METHOD(While_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxControlFlowProfile, TEXT("WhilePos"), TEXT(R"(
@@ -250,7 +250,7 @@ int Nested()      { int S = 0; int I = 0; while (I < 3) { int J = 0; while (J < 
 
 	TEST_METHOD(While_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -302,7 +302,7 @@ void Test() { do { } while (1); }
 
 	TEST_METHOD(Switch_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxControlFlowProfile, TEXT("SwitchPos"), TEXT(R"(
@@ -329,7 +329,7 @@ int DefaultOnly()  { int X = 42; switch(X) { case 0: return 0; default: return 1
 
 	TEST_METHOD(Switch_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -388,7 +388,7 @@ void Test() { int X = 1; switch(X) { case "hello": break; } }
 
 	TEST_METHOD(BreakContinue_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsWithError(*TestRunner, Engine,
@@ -443,7 +443,7 @@ void Test()
 
 	TEST_METHOD(Foreach_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GSyntaxControlFlowProfile, TEXT("ForeachPos"), TEXT(R"(
@@ -491,7 +491,7 @@ int ForeachContinue()
 
 	TEST_METHOD(Foreach_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine,
@@ -536,7 +536,7 @@ void Test() { for (int Val : "hello") { } }
 
 	TEST_METHOD(Return_Mixed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Positive

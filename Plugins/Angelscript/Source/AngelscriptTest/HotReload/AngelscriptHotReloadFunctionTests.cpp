@@ -83,8 +83,8 @@ struct FAngelscriptHotReloadTestAccess
 bool FAngelscriptModuleRecordTrackingTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString ScriptA = TEXT(R"AS(
 UCLASS()
 class UTrackedObjectA : UObject
@@ -147,7 +147,7 @@ class UTrackedObjectB : UObject
 	TestNotNull(TEXT("UTrackedObjectA class should exist"), FindGeneratedClass(&Engine, TEXT("UTrackedObjectA")));
 	TestNotNull(TEXT("UTrackedObjectB class should exist"), FindGeneratedClass(&Engine, TEXT("UTrackedObjectB")));
 	TestTrue(TEXT("Unknown module record should not exist"), !Engine.GetModuleByModuleName(TEXT("NonExistent")).IsValid());
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -155,8 +155,8 @@ class UTrackedObjectB : UObject
 bool FAngelscriptDiscardModuleTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString ScriptA = TEXT(R"AS(
 UCLASS()
 class UDiscardableObject : UObject
@@ -211,7 +211,7 @@ int SurvivorEntry()
 	TestEqual(TEXT("Survivor module should still return 99 after discard"), SurvivorResult, 99);
 
 	TestFalse(TEXT("Discarding the same module twice should fail"), Engine.DiscardModule(TEXT("DiscardA")));
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -219,8 +219,8 @@ int SurvivorEntry()
 bool FAngelscriptDiscardAndRecompileTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const FString ScriptV1 = TEXT(R"AS(
 UCLASS()
 class UDiscardRecompileTarget : UObject
@@ -298,7 +298,7 @@ class UDiscardRecompileTargetV2 : UObject
 
 	TestEqual(TEXT("Version default should be 2 after discard and recompile"), VersionProperty->GetPropertyValue_InContainer(ObjV2), 2);
 	TestTrue(TEXT("Reload module record should exist after recompile"), Engine.GetModuleByModuleName(TEXT("DiscardRecompileMod")).IsValid());
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -306,8 +306,8 @@ class UDiscardRecompileTargetV2 : UObject
 bool FAngelscriptModuleWatcherQueuesFileChangesTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	const FAngelscriptEngine::FFilenamePair FilenamePair{
 		TEXT("J:/UnrealEngine/Temp/UE-Angelscript/Saved/Automation/WatcherTest.as"),
@@ -331,15 +331,15 @@ bool FAngelscriptModuleWatcherQueuesFileChangesTest::RunTest(const FString& Para
 		FAngelscriptHotReloadTestAccess::GetQueuedFileChangeCount(Engine),
 		1);
 
-	ASTEST_END_SHARE_FRESH
+	}
 }
 
 bool FAngelscriptHotReloadModifyLookupFlowTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadFunctionTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("HotReloadModifyLookupFlow"));
 	ON_SCOPE_EXIT
 	{
@@ -416,7 +416,7 @@ class UHotReloadModifyLookupFlow : UObject
 	TestEqual(TEXT("Modify/lookup flow should surface the modified function body result after reload"), Result, 2);
 	Engine.DiscardModule(*ModuleName.ToString());
 	bPassed = TestTrue(TEXT("Modify/lookup flow should clear the module lookup after discard"), !Engine.GetModuleByModuleName(ModuleName.ToString()).IsValid());
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return bPassed;
 }
@@ -429,8 +429,8 @@ bool FAngelscriptHotReloadFailureKeepsOldCodeTest::RunTest(const FString& Parame
 	AddExpectedError(TEXT("Identifier 'MissingType' is not a data type"), EAutomationExpectedErrorFlags::Contains, 1);
 	AddExpectedError(TEXT("Hot reload failed due to script compile errors. Keeping all old script code."), EAutomationExpectedErrorFlags::Contains, 1);
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("HotReloadFailureKeepsOldCode"));
 	const FString AbsoluteFilename = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("HotReloadFailureKeepsOldCode.as"));
 	ON_SCOPE_EXIT
@@ -506,7 +506,7 @@ class UHotReloadFailureKeepsOldCode : UObject
 	}
 
 	TestEqual(TEXT("Failure fallback test should keep the old code active after the broken reload"), ResultAfterFailure, 5);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

@@ -202,8 +202,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineFunctionFlagTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 		if (!TestRunner->TestNotNull(TEXT("Function blueprint callable defaults test should access mutable angelscript settings"), Settings))
@@ -343,7 +343,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineFunctionFlagTests,
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

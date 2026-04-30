@@ -21,12 +21,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCollisionBindingsTest,
 	"Angelscript.TestModule.Bindings.Collision",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(FCollisionQueryParamsDefault)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionProfile, TEXT("QueryParams"), TEXT(R"(
 int CollisionQueryParams_DefaultTraceComplex()
@@ -47,7 +47,7 @@ int CollisionQueryParams_DefaultTraceComplex()
 
 	TEST_METHOD(FCollisionShapeSphere)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionProfile, TEXT("Shape"), TEXT(R"(
 int CollisionShape_MakeSphere()
@@ -68,7 +68,7 @@ int CollisionShape_MakeSphere()
 
 	TEST_METHOD(FCollisionShapeBox)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCollisionProfile, TEXT("Box"), TEXT(R"(
 int CollisionShape_MakeBox()

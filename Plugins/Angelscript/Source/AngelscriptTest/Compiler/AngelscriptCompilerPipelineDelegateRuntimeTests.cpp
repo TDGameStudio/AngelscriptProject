@@ -93,8 +93,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineDelegateRuntimeTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -179,7 +179,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineDelegateRuntimeTests,
 			ExecutionResult.ExceptionFunctionDeclaration,
 			FString(CompilerPipelineDelegateRuntimeTest::ExpectedExceptionFunctionDeclaration));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -208,8 +208,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineDelegateRuntimeTests,
 		const FName LocalModuleName(TEXT("Tests.Compiler.DelegateExecuteIfBoundReturnsDefaultValue"));
 		const FString LocalScriptFilename(TEXT("Tests/Compiler/DelegateExecuteIfBoundReturnsDefaultValue.as"));
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -276,7 +276,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineDelegateRuntimeTests,
 			BoolResult,
 			0);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

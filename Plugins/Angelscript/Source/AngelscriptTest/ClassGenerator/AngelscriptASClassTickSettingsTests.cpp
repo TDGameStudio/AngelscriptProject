@@ -27,8 +27,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassTickSettingsTests,
 	TEST_METHOD(TickSettingsEnableChildTickWhenReceiveTickIsImplemented)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassTickSettingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASClassTickSettingsModuleName.ToString());
@@ -74,7 +74,7 @@ class AScriptTickChild : AScriptTickParent
 
 		TestRunner->TestTrue(TEXT("ASClass tick-settings test should propagate bCanEverTick onto a spawned child actor"), SpawnedChild->PrimaryActorTick.bCanEverTick);
 		TestRunner->TestTrue(TEXT("ASClass tick-settings test should propagate bStartWithTickEnabled onto a spawned child actor"), SpawnedChild->PrimaryActorTick.bStartWithTickEnabled);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

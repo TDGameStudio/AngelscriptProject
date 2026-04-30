@@ -82,8 +82,8 @@ bool FAngelscriptDelegateWithPayloadBindExecuteResetTest::RunTest(const FString&
 	using namespace AngelscriptTest_Core_AngelscriptDelegateWithPayloadTests_Private;
 	bool bPassed = false;
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	TStrongObjectPtr<UAngelscriptNativeScriptTestObject> Receiver = CreateDelegateWithPayloadReceiver(*this);
 	if (!Receiver.IsValid())
@@ -204,7 +204,7 @@ bool FAngelscriptDelegateWithPayloadBindExecuteResetTest::RunTest(const FString&
 			FMath::IsNearlyEqual(static_cast<float>(Receiver->PreciseValue), 9.5f, KINDA_SMALL_NUMBER));
 
 	bPassed = bNoOpAfterReset;
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return bPassed;
 }

@@ -108,8 +108,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionAccessTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccess"));
 	ON_SCOPE_EXIT
 	{
@@ -219,7 +219,7 @@ class ATemplateReflectionAccessActor : AActor
 	VerifyByPath<FIntProperty, int32>(*this, Actor, TEXT("LastIntValue"), 50,
 		TEXT("Inherited UPROPERTY assigned from AS should be observable via path read"));
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -241,8 +241,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionAccessAllTypesTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccessAllTypes"));
 	ON_SCOPE_EXIT
 	{
@@ -412,7 +412,7 @@ class ATemplateReflectionAccessAllTypesActor : AActor
 	if (!SetByPath<FStrProperty, FString>(*this, Actor, TEXT("StringArray[1]"), FString(TEXT("beta-updated")))) return false;
 	VerifyByPath<FStrProperty, FString>(*this, Actor, TEXT("StringArray[1]"), FString(TEXT("beta-updated")), TEXT("Array-indexed write should round-trip"));
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -446,8 +446,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionAccessInvokeAllTypesTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccessInvokeAllTypes"));
 	ON_SCOPE_EXIT
 	{
@@ -729,7 +729,7 @@ class ATemplateReflectionInvokeAllTypesActor : AActor
 			Result, FString(TEXT("Enemy-7")));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -756,8 +756,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionAccessExtendedTypesTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccessExtendedTypes"));
 	ON_SCOPE_EXIT
 	{
@@ -1069,7 +1069,7 @@ class ATemplateReflectionExtendedTypesActor : AActor
 			Inner.Equals(FVector(-1.0, -2.0, -3.0)));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -1089,8 +1089,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionAccessInvokeExtendedTypesTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccessInvokeExtendedTypes"));
 	ON_SCOPE_EXIT
 	{
@@ -1362,7 +1362,7 @@ class ATemplateReflectionInvokeExtendedTypesActor : AActor
 	// AS rejects it with "Unknown or invalid parameter type". See PathAccessExtendedTypes
 	// for TOptional UPROPERTY coverage instead.)
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -1386,9 +1386,18 @@ bool FAngelscriptTemplateReflectionAccessReferenceTypesTest::RunTest(const FStri
 	// Reference type tests use IsolatedFull so script-defined classes and their
 	// type metadata stay alive for the whole actor lifetime.
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	static const FName ModuleName(TEXT("TemplateReflectionAccessReferenceTypes"));
-	// ASTEST_BEGIN_FULL auto-discards all modules on scope exit, so no explicit
+	// ASTEST_CREATE_ENGINE_FULL auto-discards all modules on scope exit, so no explicit
 	// ON_SCOPE_EXIT discard is needed here.
 
 	// Pre-resolve a known FSoftObjectPath target so the AS side can refer to it
@@ -1558,7 +1567,7 @@ class ATemplateReflectionReferenceTypesActor : AActor
 			Result.ToString(), FString(TEXT("Mob:11")));
 	}
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -1583,7 +1592,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTemplateReflectionAccessScriptDefinedTypesTest::RunTest(const FString& Parameters)
 {
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	static const FName ModuleName(TEXT("TemplateReflectionAccessScriptDefined"));
 
 	UClass* ScriptClass = CompileScriptModule(
@@ -1686,7 +1704,7 @@ class ATemplateScriptDefinedOwner : AActor
 	// (e.g. via a helper UFUNCTION returning the struct) rather than building
 	// one from raw FProperty writes on the C++ side.
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -1758,8 +1776,8 @@ bool FAngelscriptTemplateReflectionAccessPathLimitsTest::RunTest(const FString& 
 	// actual object. We build a minimal scratch actor with a TMap and a
 	// TArray<TArray<int>>-ish shape to exercise those rejections.
 	// -----------------------------------------------------------------------
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionAccessPathLimits"));
 	ON_SCOPE_EXIT
 	{
@@ -1859,7 +1877,7 @@ class ATemplateReflectionPathLimitsActor : AActor
 			TryResolve(TEXT("NotThere.SubField"), ResolveError));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -1893,8 +1911,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionBPLibraryViaASGlobalWrapperTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		ResetSharedCloneEngine(Engine);
@@ -2027,7 +2045,7 @@ double WrapScoreBlend(double Value, double Floor, double Ceiling)
 			FMath::IsNearlyEqual(Invoker.CallAndReturn<double>(-1.0), 20.0));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -2129,8 +2147,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateReflectionBPLibraryThroughActorUFunctionTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TemplateReflectionBPLibraryActor"));
 	ON_SCOPE_EXIT
 	{
@@ -2232,7 +2250,7 @@ class ATemplateReflectionBPLibraryActor : AActor
 	VerifyByPath<FDoubleProperty, double>(*this, Actor, TEXT("LastClampedBlend"), 5.0,
 		TEXT("LastClampedBlend UPROPERTY should reflect the second invocation's clamp output"));
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

@@ -16,18 +16,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptActorLifecycleTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(BeginPlay)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorBeginPlay"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -63,7 +63,7 @@ class ATestActorBeginPlay : AActor
 
 	TEST_METHOD(BeginPlayIdempotent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorBeginPlayIdempotent"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -101,7 +101,7 @@ class ATestActorBeginPlayIdempotent : AActor
 
 	TEST_METHOD(Tick)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorTick"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -149,7 +149,7 @@ class ATestActorTick : AActor
 
 	TEST_METHOD(TickRegisteredDispatch)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorTickRegisteredDispatch"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -200,7 +200,7 @@ class ATestActorTickRegisteredDispatch : AActor
 
 	TEST_METHOD(ReceiveEndPlay)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorReceiveEndPlay"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -239,7 +239,7 @@ class ATestActorReceiveEndPlay : AActor
 
 	TEST_METHOD(ReceiveEndPlayReason)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorReceiveEndPlayReason"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -287,7 +287,7 @@ class ATestActorReceiveEndPlayReason : AActor
 
 	TEST_METHOD(DestroyLifecycleOrder)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorDestroyLifecycleOrder"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -354,7 +354,7 @@ class ATestActorDestroyLifecycleOrder : AActor
 
 	TEST_METHOD(ReceiveDestroyed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorReceiveDestroyed"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -393,7 +393,7 @@ class ATestActorReceiveDestroyed : AActor
 
 	TEST_METHOD(ConstructionScript)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorConstructionScript"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -454,7 +454,7 @@ class ATestActorConstructionScript : AActor
 
 	TEST_METHOD(Reset)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestActorReset"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };

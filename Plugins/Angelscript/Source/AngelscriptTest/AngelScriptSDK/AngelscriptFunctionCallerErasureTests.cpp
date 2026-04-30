@@ -36,8 +36,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 	TEST_METHOD(ConstRefQualifiedMethodCaller)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		using FProbeMethod = int32 (FConstRefQualifiedProbe::*)(int32) const&;
 		const FProbeMethod Method = &FConstRefQualifiedProbe::ReadPlus;
@@ -65,7 +65,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 		TestRunner->TestEqual(TEXT("const& qualified method caller should preserve the erased return value"), Result, 16);
 		TestRunner->TestEqual(TEXT("const& qualified method caller should not mutate the probe object"), Probe.Base, 11);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

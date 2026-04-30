@@ -112,8 +112,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassConstructionContextTests,
 	TEST_METHOD(GetConstructingASObjectReportsCurrentScriptInstance)
 	{
 		using namespace ASClassConstructionContextTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ASClassConstructionContextTest::ResetProbeState();
 
 		ON_SCOPE_EXIT
@@ -176,7 +176,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassConstructionContextTests,
 			*TestRunner,
 			Instance);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

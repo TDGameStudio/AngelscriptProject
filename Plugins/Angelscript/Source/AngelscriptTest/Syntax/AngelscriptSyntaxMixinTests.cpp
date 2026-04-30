@@ -40,12 +40,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMixinTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -55,7 +55,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMixinTest,
 
 	TEST_METHOD(Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): feature-not-supported — AS 2.33 fork 不支持 mixin class 语法
@@ -129,7 +129,7 @@ mixin class UCombatMixin
 
 	TEST_METHOD(Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMixNoPrefix"),

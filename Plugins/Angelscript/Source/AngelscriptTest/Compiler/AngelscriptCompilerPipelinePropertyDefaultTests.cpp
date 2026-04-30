@@ -168,8 +168,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelinePropertyDefaultTest::WriteFixture(
 			CompilerPipelinePropertyDefaultTest::RelativeScriptPath,
@@ -373,7 +373,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultTests,
 				CompilerPipelinePropertyDefaultTest::ExpectedVerifyResult);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

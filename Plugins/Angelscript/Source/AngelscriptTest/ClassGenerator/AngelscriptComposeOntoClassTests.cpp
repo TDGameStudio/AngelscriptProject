@@ -175,8 +175,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComposeOntoClassTests,
 			EAutomationExpectedErrorFlags::Contains,
 			1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		Engine.Diagnostics.Empty();
 		Engine.LastEmittedDiagnostics.Empty();
@@ -245,7 +245,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComposeOntoClassTests,
 			TEXT("ComposeOntoClass missing-target test should not publish a module record after failure"),
 			!Engine.GetModuleByModuleName(PreparedModuleName).IsValid());
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ValidTargetDoesNotSilentlyPublishNoOpClass)
@@ -260,8 +260,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComposeOntoClassTests,
 			EAutomationExpectedErrorFlags::Contains,
 			1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		Engine.Diagnostics.Empty();
 		Engine.LastEmittedDiagnostics.Empty();
@@ -345,7 +345,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComposeOntoClassTests,
 			TEXT("ComposeOntoClass valid-target test should not publish a module record after the unsupported compose path"),
 			!Engine.GetModuleByModuleName(PreparedModuleName).IsValid());
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

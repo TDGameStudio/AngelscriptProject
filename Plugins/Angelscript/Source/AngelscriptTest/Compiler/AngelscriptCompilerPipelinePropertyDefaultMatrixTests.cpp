@@ -38,8 +38,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::FNameModule.ToString());
@@ -79,7 +79,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		FName Value = Prop->GetPropertyValue_InContainer(CDO);
 		TestRunner->TestEqual(TEXT("CDO MyName should be TestName"), Value, FName(TEXT("TestName")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -88,8 +88,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::EnumModule.ToString());
@@ -145,7 +145,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("GetDirectionValue should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("Direction should be Right (3)"), Result, 3);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -154,8 +154,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::FloatBoolModule.ToString());
@@ -211,7 +211,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("VerifyDefaults should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("Float+Bool defaults should apply correctly"), Result, 42);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -220,8 +220,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::VectorModule.ToString());
@@ -275,7 +275,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("VerifyVector should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("FVector default should apply correctly"), Result, 42);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -284,8 +284,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::StringModule.ToString());
@@ -335,7 +335,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("VerifyString should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("FString default should apply correctly"), Result, 42);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -344,8 +344,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::TagsAddModule.ToString());
@@ -397,7 +397,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("VerifyTags should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("Tags.Add should actually add tags to CDO and instances"), Result, 42);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -406,8 +406,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::SubobjectModule.ToString());
@@ -442,7 +442,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 
 		TestRunner->TestTrue(TEXT("PrimaryActorTick.bStartWithTickEnabled should be true via default statement"), CDO->PrimaryActorTick.bStartWithTickEnabled);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -451,8 +451,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::PriorityModule.ToString());
@@ -500,7 +500,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 		TestRunner->TestTrue(TEXT("GetScore should execute"), bExecuted);
 		TestRunner->TestEqual(TEXT("default should override inline initializer (20 > 10)"), Result, 20);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -509,8 +509,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::NonExistentModule.ToString());
@@ -536,7 +536,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 
 		TestRunner->TestFalse(TEXT("Non-existent property default should fail to compile"), bCompiled);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -545,8 +545,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::OutsideScopeModule.ToString());
@@ -569,7 +569,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 
 		TestRunner->TestFalse(TEXT("default outside class scope should fail"), bCompiled);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -578,8 +578,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*DefaultMatrixTest::TypeMismatchModule.ToString());
@@ -608,7 +608,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyDefaultMatrixTests,
 
 		TestRunner->TestFalse(TEXT("Type mismatch default should fail to compile"), bCompiled);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

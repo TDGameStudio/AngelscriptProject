@@ -66,7 +66,16 @@ bool FAngelscriptScriptObjectGetObjectTypeMatchesGeneratedASClassTest::RunTest(c
 	using namespace AngelscriptTest_Core_AngelscriptScriptObjectTypeTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	static const FScriptObjectTypeFixture FirstFixture = {
 		TEXT("ObjectTypeProbeA"),
@@ -203,7 +212,7 @@ class UObjectTypeProbeObjectB : UObject
 			SecondFixture.GeneratedClassName.ToString());
 	}
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

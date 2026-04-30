@@ -117,8 +117,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryStateAndOverlapWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryStateOverlapTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -299,7 +299,7 @@ bool FAngelscriptAbilityTaskLibraryStateAndOverlapWrappersTest::RunTest(const FS
 	AvatarPrimitive->OnComponentHit.Broadcast(AvatarPrimitive, OverlapTargetActor, TargetPrimitive, FVector::ZeroVector, OverlapHit);
 	TestEqual(TEXT("WaitForOverlap should ignore later hits after the task has finished"), OverlapListener->CallbackCount, 1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

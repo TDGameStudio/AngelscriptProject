@@ -156,8 +156,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTypeUsageTests,
 	TEST_METHOD(TypeUsageFromTypeIdScriptKinds)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptTypeUsageTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -241,14 +241,14 @@ class UTypeUsageCarrier : UObject
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TypeUsageFromPropertyScriptMemberMatrix)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptTypeUsageTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -343,14 +343,14 @@ class FHolder
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(DataTypeTypeUsageQualifiers)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptTypeUsageTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -420,14 +420,14 @@ int Produce()
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TypeUsageFromPropertyNativeQualifierMatrix)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptTypeUsageTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString ScriptSource = TEXT(R"ANGELSCRIPT(
 UCLASS()
@@ -495,14 +495,14 @@ class ATypeUsageNativePropertyProbe : AActor
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TypeUsageFromDataTypeQualifierAndContainerMatrix)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptTypeUsageTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		FAngelscriptEngineScope EngineScope(Engine);
 		asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
@@ -578,7 +578,7 @@ class ATypeUsageNativePropertyProbe : AActor
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

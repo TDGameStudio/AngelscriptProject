@@ -35,16 +35,13 @@
 //
 // ---- Angelscript engine lifecycle in CQTest ----
 //
-//   The project's ASTEST_BEGIN/END_SHARE_CLEAN macros expand to brace pairs
-//   containing FAngelscriptEngineScope RAII — they cannot be split across
-//   CQTest's Setup()/TearDown()/TEST_METHOD() boundaries. The recommended
-//   adaptation:
+//   The recommended pattern:
 //
-//     BEFORE_ALL  : ASTEST_CREATE_ENGINE_SHARE_CLEAN()  — one-time acquire
-//     TEST_METHOD : ASTEST_CREATE_ENGINE_SHARE()         — no reset per test
-//                   FAngelscriptEngineScope               — local RAII scope
-//                   FCoverageModuleScope                  — module RAII
-//     AFTER_ALL   : ResetSharedCloneEngine()             — one-time cleanup
+//     BEFORE_ALL  : ASTEST_CREATE_ENGINE()       — one-time acquire (with reset)
+//     TEST_METHOD : ASTEST_GET_ENGINE()           — no reset per test
+//                   FAngelscriptEngineScope       — local RAII scope
+//                   FCoverageModuleScope          — module RAII
+//     AFTER_ALL   : ASTEST_RESET_ENGINE(Engine)   — one-time cleanup
 //
 //   FCoverageModuleScope automatically calls Engine.DiscardModule() in its
 //   destructor, so per-test module isolation is guaranteed without a full
@@ -100,7 +97,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateCQTest,
 	// -----------------------------------------------------------------
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	// -----------------------------------------------------------------
@@ -110,7 +107,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateCQTest,
 	// -----------------------------------------------------------------
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -123,7 +120,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateCQTest,
 
 	TEST_METHOD(BasicCompileAndRun)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GTemplateProfile, TEXT("Basic"), TEXT(R"(
@@ -152,7 +149,7 @@ int GetFortyTwo()
 
 	TEST_METHOD(MultipleAssertions)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GTemplateProfile, TEXT("Multi"), TEXT(R"(
@@ -186,7 +183,7 @@ int Modulo()   { return 17 % 5; }
 
 	TEST_METHOD(ReturnStruct)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GTemplateProfile, TEXT("RetStruct"), TEXT(R"(
@@ -249,7 +246,7 @@ FString FormatValue()
 
 	TEST_METHOD(PassArguments)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GTemplateProfile, TEXT("PassArgs"), TEXT(R"(
@@ -327,7 +324,7 @@ int StringLen(const FString& in S)
 
 	TEST_METHOD(NegativePath)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// Register expected errors BEFORE module compilation so patterns
@@ -382,7 +379,7 @@ void StringIndexOOB()
 
 	TEST_METHOD(AssertThatEarlyReturn)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GTemplateProfile, TEXT("AssertThat"), TEXT(R"(

@@ -41,12 +41,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -56,7 +56,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSyntaxMiscTest,
 
 	TEST_METHOD(Comments_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscCommentLine"),
@@ -98,7 +98,7 @@ void Test() { }
 
 	TEST_METHOD(Comments_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		// DISABLED(#as-engine-behavior): preprocessor-permissive — AS 预处理器对未终止块注释处理宽松，不报编译错误
@@ -115,7 +115,7 @@ void Test() { }
 
 	TEST_METHOD(Keywords_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscThis"),
@@ -185,7 +185,7 @@ struct FStructConst
 
 	TEST_METHOD(Keywords_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscThisGlobal"),
@@ -236,7 +236,7 @@ void Test() { Super::BeginPlay(); }
 
 	TEST_METHOD(EdgeCases_Positive)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertCompiles(*TestRunner, Engine, TEXT("ASSyntaxMiscEmptyFunc"),
@@ -287,7 +287,7 @@ void Increment() { ++GlobalCounter; }
 
 	TEST_METHOD(EdgeCases_Negative)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		SyntaxTestHelpers::AssertFailsToCompile(*TestRunner, Engine, TEXT("ASSyntaxMiscUnmatchedBrace"),

@@ -232,8 +232,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptLiteralAssetPostInitTests,
 	TEST_METHOD(PostInitMaterializesAssetOnce)
 	{
 		using namespace LiteralAssetPostInitTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		TestRunner->AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
 
 		ON_SCOPE_EXIT
@@ -327,14 +327,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptLiteralAssetPostInitTests,
 			SnapshotAfterTouch.InitMarker,
 			LiteralAssetPostInitTest::ExpectedInitMarker);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(PostInitResolvesGeneratedGetterInsteadOfNameCollision)
 	{
 		using namespace LiteralAssetPostInitNameCollisionTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		TestRunner->AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
 
 		ON_SCOPE_EXIT
@@ -422,13 +422,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptLiteralAssetPostInitTests,
 			SnapshotAfterTouch.WrongCalls,
 			0);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(MultipleAssetsInSameClassCoexist)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		TestRunner->AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
 		ON_SCOPE_EXIT
 		{
@@ -478,13 +478,13 @@ asset SecondAsset of UMultiAssetOwner
 			TestRunner->TestTrue(TEXT("Assets should be independent objects"), FirstAsset != SecondAsset);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(AssetWithDefaultComponentCoexist)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		TestRunner->AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 1);
 		ON_SCOPE_EXIT
 		{
@@ -532,7 +532,7 @@ asset MyCoexistAsset of UAssetCarrier
 		UObject* AssetObj = FindObject<UObject>(Engine.AssetsPackage, TEXT("MyCoexistAsset"));
 		TestRunner->TestNotNull(TEXT("Asset should coexist with component-bearing actor"), AssetObj);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

@@ -52,12 +52,12 @@ static const FBindingsCoverageProfile GInterfaceNativeProfile{
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceNativeTest, "Angelscript.TestModule.Interface.Native", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(Engine); }
 
 	TEST_METHOD(NativeImplement)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
@@ -172,7 +172,7 @@ class ATestInterfaceNativeImplement : AActor, UAngelscriptNativeParentInterface
 
 	TEST_METHOD(NativeInheritedImplement)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
@@ -302,7 +302,7 @@ class ATestInterfaceNativeInheritedImplement : AActor, UAngelscriptNativeChildIn
 
 	TEST_METHOD(NativeReferenceRoundTrip)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
@@ -388,7 +388,7 @@ class ATestInterfaceNativeReferenceRoundTrip : AActor, UAngelscriptNativeParentI
 
 	TEST_METHOD(NativeReferenceRoundTripCppBridgeMutatesActorState)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());
@@ -498,7 +498,7 @@ class ATestInterfaceNativeReferenceRoundTripCppBridgeState : AActor, UAngelscrip
 
 	TEST_METHOD(NativeInheritedParentBridgeSetterAndRef)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		AngelscriptNativeInterfaceTestHelpers::EnsureNativeInterfaceBound(UAngelscriptNativeParentInterface::StaticClass());

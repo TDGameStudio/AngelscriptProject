@@ -203,12 +203,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagContainerFunctionLibraryTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -219,7 +219,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayTagContainerFunctionLibraryTest,
 	TEST_METHOD(RemoveTagMiss)
 	{
 		using namespace AngelscriptGameplayTagContainerFunctionLibraryTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FGameplayTag PresentTag;

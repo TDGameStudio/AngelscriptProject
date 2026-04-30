@@ -48,8 +48,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAutoInferenceByOverloadTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptAutoTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.Auto.InferenceByOverload should expose a script engine"), ScriptEngine))
@@ -73,7 +73,7 @@ bool FAngelscriptAutoInferenceByOverloadTest::RunTest(const FString& Parameters)
 		Result,
 		123);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 

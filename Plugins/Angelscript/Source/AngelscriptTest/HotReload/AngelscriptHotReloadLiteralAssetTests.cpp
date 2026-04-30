@@ -1,4 +1,4 @@
-﻿#include "Shared/AngelscriptFunctionalTestUtils.h"
+#include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
 #include "ClassGenerator/AngelscriptClassGenerator.h"
@@ -38,8 +38,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadLiteralAssetBroadcastsReloadedObjectReplacementTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLiteralAssetTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	AddExpectedError(TEXT("LogUObjectBase: Class pointer is invalid or CDO is invalid."), EAutomationExpectedErrorFlags::Contains, 2);
 
@@ -175,7 +175,7 @@ asset ReloadExampleAsset of ULiteralReloadAsset
 
 	TestEqual(TEXT("Reloaded literal asset should expose the new ExtraValue default"), NewAssetExtraValue, 2);
 
-	ASTEST_END_SHARE_FRESH
+	}
 	return true;
 }
 

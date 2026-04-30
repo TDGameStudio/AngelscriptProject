@@ -98,8 +98,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTestComponentBeginPlayTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestComponentBeginPlay"));
 	ON_SCOPE_EXIT
 	{
@@ -150,7 +150,7 @@ class UTestComponentBeginPlay : UAngelscriptComponent
 	}
 
 	TestTrue(TEXT("TestCase component BeginPlay should set the readiness flag"), bReady);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -158,8 +158,8 @@ class UTestComponentBeginPlay : UAngelscriptComponent
 bool FAngelscriptTestComponentTickTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestComponentTick"));
 	ON_SCOPE_EXIT
 	{
@@ -213,7 +213,7 @@ class UTestComponentTick : UAngelscriptComponent
 	}
 
 	TestTrue(TEXT("TestCase component Tick should run during manual world ticking"), TickCount >= 5);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -221,8 +221,8 @@ class UTestComponentTick : UAngelscriptComponent
 bool FAngelscriptTestComponentReceiveEndPlayTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestComponentReceiveEndPlay"));
 	ON_SCOPE_EXIT
 	{
@@ -275,7 +275,7 @@ class UTestComponentReceiveEndPlay : UAngelscriptComponent
 	}
 
 	TestTrue(TEXT("TestCase component EndPlay should run when the owning actor is destroyed"), bCleanedUp);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -283,8 +283,8 @@ class UTestComponentReceiveEndPlay : UAngelscriptComponent
 bool FAngelscriptTestComponentActorOwnerTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestComponentActorOwner"));
 	ON_SCOPE_EXIT
 	{
@@ -357,7 +357,7 @@ class UTestComponentActorOwner : UAngelscriptComponent
 	}
 
 	TestEqual(TEXT("TestCase component should read the owning script actor's property in BeginPlay"), ReadOwnerValue, 42);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -621,8 +621,8 @@ bool FAngelscriptDefaultComponentDeepAttachChainTest::RunTest(const FString& Par
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*DeepAttachChainTest::ModuleName.ToString());
@@ -663,7 +663,7 @@ class ADeepAttachActor : AActor
 	TestNotNull(TEXT("MidScene property should exist on class"), MidProp);
 	TestNotNull(TEXT("LeafScene property should exist on class"), LeafProp);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -687,8 +687,8 @@ bool FAngelscriptOverrideComponentMultiLayerTest::RunTest(const FString& Paramet
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*OverrideMultiLayerTest::ModuleName.ToString());
@@ -734,7 +734,7 @@ class ATopLayerActor : AMidLayerActor
 	UClass* TopClass = FindGeneratedClass(&Engine, TEXT("ATopLayerActor"));
 	TestNotNull(TEXT("Top layer class should be materialized"), TopClass);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -758,8 +758,8 @@ bool FAngelscriptNativeActorWithExtraComponentTest::RunTest(const FString& Param
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*NativeActorExtraComponentTest::ModuleName.ToString());
@@ -788,7 +788,7 @@ class AExtendedCharacter : ACharacter
 	UClass* GeneratedClass = FindGeneratedClass(&Engine, TEXT("AExtendedCharacter"));
 	TestNotNull(TEXT("Extended character class should be materialized"), GeneratedClass);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -812,8 +812,8 @@ bool FAngelscriptOverrideComponentMetadataMultiLayerTest::RunTest(const FString&
 	using namespace AngelscriptTest_Component_AngelscriptComponentTestCaseTests_Private;
 	using namespace AngelscriptTestSupport;
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*OverrideMetadataMultiLayerTest::ModuleName.ToString());
@@ -871,7 +871,7 @@ class AMetaTopActor : AMetaMidActor
 	TestTrue(TEXT("Top class should inherit from Mid"), TopClass->IsChildOf(MidClass));
 	TestTrue(TEXT("Mid class should inherit from Base"), MidClass->IsChildOf(BaseClass));
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

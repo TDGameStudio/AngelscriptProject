@@ -35,12 +35,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTestWorldHarnessTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
@@ -49,7 +49,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTestWorldHarnessTest,
 	// FAngelscriptEngine::TryGetCurrentEngine() resolves to the same engine.
 	TEST_METHOD(ConstructionInitializesWorld)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 
 		{
 			FAngelscriptTestWorld W(*TestRunner, Engine);
@@ -68,7 +68,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTestWorldHarnessTest,
 	// generated class.
 	TEST_METHOD(SpawnActorOfClassReturnsValid)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestWorldHarnessSpawn"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -99,7 +99,7 @@ class ATestWorldHarnessSpawnActor : AActor
 	// AS-side counter equals N (precise driving guarantee, no scheduler noise).
 	TEST_METHOD(DispatchActorTickIsExact)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestWorldHarnessActorTick"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -144,7 +144,7 @@ class ATestWorldHarnessActorTickActor : AActor
 	// bCanEverTick + SetComponentTickEnabled enabled by the test fixture.
 	TEST_METHOD(DispatchComponentTickIsExact)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestWorldHarnessComponentTick"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -200,7 +200,7 @@ class UTestWorldHarnessComponentTickComp : UAngelscriptComponent
 	// actor is PendingKill.
 	TEST_METHOD(DestroyAndDrainTriggersEndPlayAndDestroyed)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestWorldHarnessDestroyDrain"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -265,7 +265,7 @@ class ATestWorldHarnessDestroyDrainActor : AActor
 	// which guards on AActor::HasActorBegunPlay()).
 	TEST_METHOD(BeginPlayIsIdempotent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestWorldHarnessBeginPlayIdempotent"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };

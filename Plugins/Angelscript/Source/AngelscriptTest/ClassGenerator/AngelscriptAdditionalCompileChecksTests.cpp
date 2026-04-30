@@ -81,8 +81,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAdditionalCompileChecksTests,
 	TEST_METHOD(InvokeCompileAndPostReloadHooks)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptAdditionalCompileChecksTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		TSharedPtr<FTestAdditionalCompileChecks> Recorder = MakeShared<FTestAdditionalCompileChecks>();
 		Engine.AdditionalCompileChecks.Add(UObject::StaticClass(), StaticCastSharedPtr<FAngelscriptAdditionalCompileChecks>(Recorder));
@@ -178,7 +178,7 @@ class UAdditionalChecksRejectedTarget : UObject
 		TestRunner->TestEqual(TEXT("A rejecting additional compile check should report the rejected class name"), Recorder->LastClassName, AdditionalChecksRejectedClassName.ToString());
 		TestRunner->TestNull(TEXT("A rejecting additional compile check should not publish the rejected class"), FindGeneratedClass(&Engine, AdditionalChecksRejectedClassName));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

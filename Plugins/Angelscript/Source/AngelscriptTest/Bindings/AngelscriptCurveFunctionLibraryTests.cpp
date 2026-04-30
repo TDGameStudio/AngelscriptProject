@@ -156,12 +156,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCurveFunctionLibraryBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -171,7 +171,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCurveFunctionLibraryBindingsTest,
 
 	TEST_METHOD(RuntimeCurveLinearColorAddDefaultKey)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCurveProfile, TEXT("LinearColorAddKey"), TEXT(R"(
@@ -233,7 +233,7 @@ int PopulateCurve(FRuntimeCurveLinearColor& Curve)
 
 	TEST_METHOD(RuntimeFloatCurveInstanceSurface)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		UCurveFloat* CurveAsset = NewObject<UCurveFloat>(

@@ -13,8 +13,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptMiscNamespaceTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -24,7 +24,7 @@ bool FAngelscriptMiscNamespaceTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Misc.Namespace should resolve namespace-qualified globals"), Result, 42);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -37,8 +37,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptMiscGlobalVarTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -48,7 +48,7 @@ bool FAngelscriptMiscGlobalVarTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Misc.GlobalVar should expose compiled global state"), Result, 42);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -60,8 +60,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptMiscMultiAssignTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -71,7 +71,7 @@ bool FAngelscriptMiscMultiAssignTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Misc.MultiAssign should evaluate chained assignments from right to left"), Result, 126);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -83,8 +83,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptMiscAssignTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -94,7 +94,7 @@ bool FAngelscriptMiscAssignTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Misc.Assign should apply compound assignments in sequence"), Result, 8);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -107,8 +107,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptMiscDuplicateFunctionTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FAngelscriptEngineScope EngineScope(Engine);
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
@@ -132,7 +132,7 @@ bool FAngelscriptMiscDuplicateFunctionTest::RunTest(const FString& Parameters)
 	const int32 BuildResult = Module->Build();
 	TestEqual(TEXT("Misc.DuplicateFunction should reject duplicate global function declarations on the raw AngelScript path"), BuildResult, static_cast<int32>(asERROR));
 	bPassed = BuildResult == asERROR;
-	ASTEST_END_SHARE
+	}
 
 	return bPassed;
 }
@@ -145,8 +145,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptMiscDuplicateFunctionRawModuleRecreateAfterFailureTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FAngelscriptEngineScope EngineScope(Engine);
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
@@ -215,7 +215,7 @@ bool FAngelscriptMiscDuplicateFunctionRawModuleRecreateAfterFailureTest::RunTest
 
 	TestEqual(TEXT("Misc.DuplicateFunction.RawModuleRecreateAfterFailure should execute the recreated module entry after discard"), Result, 42);
 	bPassed = Result == 42;
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return bPassed;
 }

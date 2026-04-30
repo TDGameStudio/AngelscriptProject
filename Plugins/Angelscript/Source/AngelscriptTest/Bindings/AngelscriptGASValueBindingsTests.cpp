@@ -52,12 +52,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGASValueBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -67,7 +67,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGASValueBindingsTest,
 
 	TEST_METHOD(GameplayEffectSpecNullDefGuard)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		TestRunner->AddExpectedError(TEXT("GameplayEffect was null."), EAutomationExpectedErrorFlags::Contains, 1);
@@ -99,7 +99,7 @@ void TriggerNullEffectSpec()
 
 	TEST_METHOD(GameplayTagPropertyMapNullGuards)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		TestRunner->AddExpectedError(TEXT("GameplayTagBlueprintPropertyMap.Initialize received a null Owner."), EAutomationExpectedErrorFlags::Contains, 0);

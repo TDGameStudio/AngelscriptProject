@@ -63,12 +63,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFileAndDelegateBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -78,7 +78,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFileAndDelegateBindingsTest,
 
 	TEST_METHOD(ScriptDelegateCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("DelegateBind"), TEXT(R"(
@@ -141,7 +141,7 @@ int DelegateBind_ClearMakesUnbound()
 
 	TEST_METHOD(ScriptDelegateExecuteCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();
@@ -194,7 +194,7 @@ int DelegateExec_MulticastBroadcast()
 
 	TEST_METHOD(SoftPathCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("SoftPath"), TEXT(R"(
@@ -279,7 +279,7 @@ int SoftPath_ClassPathFromString()
 
 	TEST_METHOD(SoftPathResolveCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		UClass* NativeActorClass = AActor::StaticClass();
@@ -408,7 +408,7 @@ int SoftResolve_ClassPathTryLoad()
 
 	TEST_METHOD(SourceMetadataCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const FString ScriptSource = TEXT(R"AS(
@@ -516,7 +516,7 @@ int SourceMeta_FunctionDeclaration()
 
 	TEST_METHOD(FileHelperCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GFileDelegateProfile, TEXT("FileHelper"), TEXT(R"(
@@ -551,7 +551,7 @@ int FileHelper_SaveAndLoad()
 		TestRunner->AddExpectedError(TEXT("void TriggerInvalidObject()"), EAutomationExpectedErrorFlags::Contains, 0, false);
 		TestRunner->AddExpectedError(TEXT("void TriggerSignatureMismatch()"), EAutomationExpectedErrorFlags::Contains, 0, false);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		UAngelscriptNativeScriptTestObject* NativeTestObject = GetMutableDefault<UAngelscriptNativeScriptTestObject>();

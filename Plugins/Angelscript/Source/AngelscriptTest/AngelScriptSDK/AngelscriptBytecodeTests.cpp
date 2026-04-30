@@ -26,8 +26,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 	TEST_METHOD(InstructionSequence)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeInstructionSequence");
 		if (!TestRunner->TestNotNull(TEXT("Bytecode instruction test should create a backing module"), Module))
 		{
@@ -43,14 +49,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		TestRunner->TestNotNull(TEXT("Bytecode should expose the first instruction"), ByteCode.GetFirstInstr());
 		TestRunner->TestEqual(TEXT("First emitted opcode should match asBC_PshC4"), static_cast<int32>(ByteCode.GetFirstInstr()->op), static_cast<int32>(asBC_PshC4));
 		TestRunner->TestEqual(TEXT("Last emitted opcode should match asBC_RET"), ByteCode.GetLastInstr(), static_cast<int32>(asBC_RET));
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(Append)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeAppend");
 		if (!TestRunner->TestNotNull(TEXT("Bytecode append test should create a backing module"), Module))
 		{
@@ -68,14 +80,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 
 		TestRunner->TestTrue(TEXT("AddCode should append the second sequence to the first one"), First.GetSize() > InitialSize);
 		TestRunner->TestEqual(TEXT("The last dword payload should come from the appended sequence"), static_cast<int32>(First.GetLastInstrValueDW()), 20);
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(JumpResolution)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeJumpResolution");
 		if (!TestRunner->TestNotNull(TEXT("Bytecode jump test should create a backing module"), Module))
 		{
@@ -88,14 +106,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		ByteCode.Label(1);
 
 		TestRunner->TestEqual(TEXT("ResolveJumpAddresses should resolve a forward label jump"), ByteCode.ResolveJumpAddresses(), 0);
-		ASTEST_END_BARE
+		}
 	}
 
 	TEST_METHOD(Output)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
-		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
-		ASTEST_BEGIN_BARE_VOID
+		asCScriptEngine* BareEngine = reinterpret_cast<asCScriptEngine*>(ASTEST_CREATE_ENGINE_NATIVE());
+		if (BareEngine == nullptr)
+	{
+		TestRunner->AddError(TEXT("Failed to create bare AngelScript SDK engine"));
+		return;
+	}
+	{
+		ON_SCOPE_EXIT { BareEngine->ShutDownAndRelease(); };
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeOutput");
 		if (!TestRunner->TestNotNull(TEXT("Bytecode output test should create a backing module"), Module))
 		{
@@ -112,7 +136,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 
 		TestRunner->TestEqual(TEXT("Output should preserve the opcode in the first emitted dword"), static_cast<int32>(*reinterpret_cast<asBYTE*>(&Buffer[0])), static_cast<int32>(asBC_PshC4));
 		TestRunner->TestEqual(TEXT("Output should preserve the dword payload for asBC_PshC4"), static_cast<int32>(Buffer[1]), 42);
-		ASTEST_END_BARE
+		}
 	}
 };
 

@@ -62,8 +62,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateGlobalFunctionInvokeTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		ResetSharedCloneEngine(Engine);
@@ -128,7 +128,7 @@ int NextPayload(int Base, int Delta)
 		TestEqual(TEXT("NextPayload(100, 23) should return 123"), Result, 123);
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -143,8 +143,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptTemplateGlobalFunctionAllArgsTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		ResetSharedCloneEngine(Engine);
@@ -336,7 +336,7 @@ FVector MakeVector(double X, double Y, double Z)
 			Result.Equals(FVector(1.0, 2.0, 3.0)));
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

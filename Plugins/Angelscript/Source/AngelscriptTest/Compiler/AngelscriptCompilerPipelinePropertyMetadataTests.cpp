@@ -158,8 +158,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyMetadataTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelinePropertyMetadataTest::WriteFixture(
 			CompilerPipelinePropertyMetadataTest::RelativeScriptPath,
@@ -360,7 +360,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyMetadataTests,
 			TEXT("Generated BlueprintSetter callback should expose an int Value parameter"),
 			SetterValueProperty);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -370,8 +370,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyMetadataTests,
 
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const TArray<CompilerPipelinePropertyMetadataTest::FPropertyCallbackValidationTestCase> TestCases = {
 			{
@@ -475,7 +475,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelinePropertyMetadataTests,
 			Engine.DiscardModule(*TestCase.ModuleName.ToString());
 		}
 
-		ASTEST_END_SHARE_FRESH
+		}
 
 	}
 

@@ -92,12 +92,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBlueprintImpactTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -107,7 +107,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBlueprintImpactTest,
 
 	TEST_METHOD(ScriptParentMatch)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestBPImpactScriptParentMatch"));
 		FScopedTransientBlueprint BP;
@@ -154,7 +154,7 @@ class ATestBPImpactScriptParentMatch : AActor
 
 	TEST_METHOD(ChangedScriptFilter)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleA(TEXT("TestBPImpactFilterA"));
 		static const FName ModuleB(TEXT("TestBPImpactFilterB"));
@@ -217,7 +217,7 @@ class ATestBPImpactFilterB : AActor
 
 	TEST_METHOD(DiskBackedAssetScan)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestBPImpactDiskBacked"));
 		UBlueprint* DiskBP = nullptr;

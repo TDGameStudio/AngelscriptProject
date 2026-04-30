@@ -137,8 +137,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryObserverWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryObserverTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -404,7 +404,7 @@ bool FAngelscriptAbilityTaskLibraryObserverWrappersTest::RunTest(const FString& 
 	TestEqual(TEXT("WaitForNewAbilityCommit should stay one-shot after the second match commit"), MatchCommitListener->CallbackCount, 1);
 	TestEqual(TEXT("WaitForNewAbilityCommitQuery should stay one-shot after the second match commit"), QueryCommitListener->CallbackCount, 1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

@@ -71,8 +71,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASFunctionMetadataTests,
 	TEST_METHOD(NetValidateCachesValidateFunction)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionMetadataTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*NetValidateModuleName.ToString());
@@ -135,7 +135,7 @@ class AASFunctionNetValidateCache : AActor
 		if (!ExpectMatchingParameterSignature(*TestRunner, *ServerFunction, *ValidateFunction))
 		{ return; }
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

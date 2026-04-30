@@ -95,8 +95,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTestGCActorDestroyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestGCActorDestroy"));
 	ON_SCOPE_EXIT
 	{
@@ -140,7 +140,7 @@ class ATestGCActorDestroy : AActor
 		LogReferenceChainIfAlive(*this, WeakActor.Get(), TEXT("GC.ActorDestroy"));
 	}
 	TestTrue(TEXT("TestCase GC actor destroy should complete without leaving a live actor reference"), !WeakActor.IsValid());
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -148,8 +148,8 @@ class ATestGCActorDestroy : AActor
 bool FAngelscriptTestGCComponentDestroyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestGCComponentDestroy"));
 	ON_SCOPE_EXIT
 	{
@@ -193,7 +193,7 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 		LogReferenceChainIfAlive(*this, WeakComponent.Get(), TEXT("GC.ComponentDestroy"));
 	}
 	TestTrue(TEXT("TestCase GC component destroy should complete without leaving a live component reference"), !WeakComponent.IsValid());
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -201,8 +201,8 @@ class UTestGCComponentDestroy : UAngelscriptComponent
 bool FAngelscriptTestGCWorldTeardownTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_GC_AngelscriptGCTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestGCWorldTeardown"));
 	ON_SCOPE_EXIT
 	{
@@ -280,7 +280,7 @@ class UTestGCWorldTeardownComponent : UAngelscriptComponent
 	TestTrue(TEXT("TestCase GC world teardown should release the world after scope cleanup"), !WeakWorld.IsValid());
 	TestTrue(TEXT("TestCase GC world teardown should release spawned actors after scope cleanup"), !WeakActor.IsValid());
 	TestTrue(TEXT("TestCase GC world teardown should release spawned components after scope cleanup"), !WeakComponent.IsValid());
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

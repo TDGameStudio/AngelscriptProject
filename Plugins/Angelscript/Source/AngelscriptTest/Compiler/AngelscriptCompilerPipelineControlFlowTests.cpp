@@ -112,8 +112,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineControlFlowTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelineControlFlowTest::WriteFixture(
 			CompilerPipelineControlFlowTest::RelativeScriptPath,
@@ -222,7 +222,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineControlFlowTests,
 				4242);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

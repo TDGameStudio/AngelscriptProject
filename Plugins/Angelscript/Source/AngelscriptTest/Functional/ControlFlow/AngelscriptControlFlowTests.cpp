@@ -75,7 +75,16 @@ bool FAngelscriptControlFlowForLoopTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowForLoop",
@@ -84,7 +93,7 @@ bool FAngelscriptControlFlowForLoopTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("For-loop control flow should sum the expected values"), Result, 10);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -92,7 +101,16 @@ bool FAngelscriptControlFlowForLoopDecrementAndZeroIterationTest::RunTest(const 
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowForLoopDecrementZeroIteration",
@@ -101,7 +119,7 @@ bool FAngelscriptControlFlowForLoopDecrementAndZeroIterationTest::RunTest(const 
 
 	TestEqual(TEXT("For-loop control flow should preserve decrement updates and zero-iteration short-circuit"), Result, 32100);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -129,7 +147,16 @@ bool FAngelscriptControlFlowForeachBreakContinueNestedTest::RunTest(const FStrin
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowForeachBreakContinue",
@@ -138,7 +165,7 @@ bool FAngelscriptControlFlowForeachBreakContinueNestedTest::RunTest(const FStrin
 
 	TestEqual(TEXT("Foreach control flow should preserve continue skip, break exit, and accumulated state"), Result, 38);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -146,7 +173,16 @@ bool FAngelscriptControlFlowWhileBreakContinueNestedTest::RunTest(const FString&
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowWhileBreakContinue",
@@ -155,7 +191,7 @@ bool FAngelscriptControlFlowWhileBreakContinueNestedTest::RunTest(const FString&
 
 	TestEqual(TEXT("While control flow should preserve continue skip, break exit, and nested if/else accumulation"), Result, 309);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -163,7 +199,16 @@ bool FAngelscriptControlFlowSwitchTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowSwitch",
@@ -172,7 +217,7 @@ bool FAngelscriptControlFlowSwitchTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Switch/conditional flow should return the expected branch result"), Result, 7);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -180,7 +225,16 @@ bool FAngelscriptControlFlowSwitchMatrixTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowSwitchMatrix",
@@ -189,7 +243,7 @@ bool FAngelscriptControlFlowSwitchMatrixTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Switch default and conditional matrix should return the expected branch summary"), Result, 24671);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -212,7 +266,16 @@ bool FAngelscriptControlFlowConditionTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowCondition",
@@ -221,7 +284,7 @@ bool FAngelscriptControlFlowConditionTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Condition control flow should preserve nested ternary branches"), Result, 210);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -229,7 +292,16 @@ bool FAngelscriptControlFlowIfElseStatementMatrixTest::RunTest(const FString& Pa
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASControlFlowIfElseStatementMatrix",
@@ -238,7 +310,7 @@ bool FAngelscriptControlFlowIfElseStatementMatrixTest::RunTest(const FString& Pa
 
 	TestEqual(TEXT("Statement-level if/else control flow should preserve both branch-local writes"), Result, 4004);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -247,7 +319,16 @@ bool FAngelscriptControlFlowInvalidBreakContinueDiagnosticsTest::RunTest(const F
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	auto VerifyInvalidControlFlow = [this, &Engine, &bPassed](
 		const FName ModuleName,
@@ -309,7 +390,7 @@ bool FAngelscriptControlFlowInvalidBreakContinueDiagnosticsTest::RunTest(const F
 		TEXT("continue"),
 		TEXT("Invalid 'continue'"));
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -322,7 +403,16 @@ bool FAngelscriptControlFlowNeverVisitedTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	asIScriptModule* Module = nullptr;
 	ASTEST_BUILD_MODULE(Engine, "ASControlFlowNeverVisited",
@@ -336,7 +426,7 @@ bool FAngelscriptControlFlowNeverVisitedTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("NeverVisited should compile code with a potentially unreachable block"), true);
 
-	ASTEST_END_FULL
+	}
 	return true;
 }
 
@@ -355,7 +445,16 @@ bool FAngelscriptControlFlowNotInitializedTest::RunTest(const FString& Parameter
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bFoundUninitializedWarning = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	asIScriptModule* Module = nullptr;
 	ASTEST_BUILD_MODULE(Engine, "ASControlFlowNotInitialized",
@@ -371,7 +470,7 @@ bool FAngelscriptControlFlowNotInitializedTest::RunTest(const FString& Parameter
 
 	TestTrue(TEXT("NotInitialized should preserve the compiler warning for reading an uninitialized variable"), bFoundUninitializedWarning);
 
-	ASTEST_END_FULL
+	}
 	return bFoundUninitializedWarning;
 }
 
@@ -379,8 +478,8 @@ bool FAngelscriptControlFlowNotInitializedBranchDefiniteAssignmentMatrixTest::Ru
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptControlFlowTests_Private;
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	const FName PartialModuleName(TEXT("ASControlFlowNotInitializedBranchPartial"));
 	const FName FullModuleName(TEXT("ASControlFlowNotInitializedBranchFull"));
@@ -513,7 +612,7 @@ int RunSafeFalse()
 		SafeFalseResult,
 		9);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

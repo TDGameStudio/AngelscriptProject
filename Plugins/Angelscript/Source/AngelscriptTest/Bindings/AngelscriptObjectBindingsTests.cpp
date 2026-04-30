@@ -43,12 +43,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptObjectBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -58,7 +58,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptObjectBindingsTest,
 
 	TEST_METHOD(ObjectPtrCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GObjectProfile, TEXT("ObjectPtrCompat"), TEXT(R"(
@@ -127,7 +127,7 @@ int ObjPtr_Copy()
 
 	TEST_METHOD(SoftObjectPtrCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GObjectProfile, TEXT("SoftObjectPtrCompat"), TEXT(R"(

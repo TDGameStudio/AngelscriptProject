@@ -219,12 +219,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptFunctionLibraryTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -235,7 +235,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptFunctionLibraryTest,
 	TEST_METHOD(GlobalInitContextHotReloadName)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		ON_SCOPE_EXIT
@@ -336,7 +336,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptFunctionLibraryTest,
 	TEST_METHOD(GlobalInitContext)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptScriptFunctionLibraryTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(

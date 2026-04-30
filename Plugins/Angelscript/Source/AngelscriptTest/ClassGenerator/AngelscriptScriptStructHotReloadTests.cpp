@@ -149,8 +149,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptStructHotReloadTests,
 	TEST_METHOD(GetNewestVersionAfterFullReload)
 	{
 		using namespace ScriptStructHotReloadTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ScriptStructHotReloadTest::ModuleName.ToString());
@@ -242,14 +242,14 @@ struct FScriptStructHotReloadVersionChain
 		TestRunner->TestNull(TEXT("The middle replaced struct should keep the layout it had when it was canonical"), ScriptStructHotReloadTest::FindStructProperty(SecondVersion, TEXT("TailValue")));
 		TestRunner->TestNull(TEXT("The oldest replaced struct should remain frozen at its original layout"), ScriptStructHotReloadTest::FindStructProperty(FirstVersion, TEXT("AddedValue")));
 		TestRunner->TestNull(TEXT("The oldest replaced struct should never gain later properties"), ScriptStructHotReloadTest::FindStructProperty(FirstVersion, TEXT("TailValue")));
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 
 	TEST_METHOD(CustomGuidStableAcrossSameNameReload)
 	{
 		using namespace ScriptStructCustomGuidTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ScriptStructCustomGuidTest::StableModuleName.ToString());
@@ -320,14 +320,14 @@ struct FDifferentGuidStruct
 		const FGuid DifferentGuid = DifferentStruct->GetCustomGuid();
 		TestRunner->TestTrue(TEXT("Different-name script struct should publish a valid custom GUID"), DifferentGuid.IsValid());
 		TestRunner->TestNotEqual(TEXT("Different-name script struct should not collide with the stable struct custom GUID"), DifferentGuid, StableGuidBeforeReload);
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 
 	TEST_METHOD(UpdateScriptTypeClearsIdenticalAndHashCapabilitiesAfterReload)
 	{
 		using namespace ScriptStructCapabilityReloadTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ScriptStructCapabilityReloadTest::ModuleName.ToString());
@@ -407,7 +407,7 @@ struct FReloadableCapabilityStruct
 
 		TestRunner->TestNotNull(TEXT("Capability reload replacement should keep the ToString binding after dropping opEquals and Hash"), ReloadedStruct->GetToStringFunction());
 
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 };
 

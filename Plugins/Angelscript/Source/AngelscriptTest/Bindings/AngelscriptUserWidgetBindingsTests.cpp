@@ -297,29 +297,29 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptUserWidgetBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(UserWidgetTreeCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunWidgetTreeBasicSection(*TestRunner, Engine, GUserWidgetProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(UserWidgetTreeErrorPaths)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunWidgetTreeErrorSection(*TestRunner, Engine, GUserWidgetProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

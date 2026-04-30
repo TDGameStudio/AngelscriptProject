@@ -33,8 +33,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkServerRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::ServerRPCModuleName.ToString());
@@ -88,7 +88,7 @@ class AServerRPCTestActor : AActor
 		ServerFunc->HasAnyFunctionFlags(FUNC_NetServer));
 	TestTrue(TEXT("Server RPC function should default to reliable (FUNC_NetReliable)"),
 		ServerFunc->HasAnyFunctionFlags(FUNC_NetReliable));
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -104,8 +104,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkClientRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::ClientRPCModuleName.ToString());
@@ -156,7 +156,7 @@ class AClientRPCTestActor : AActor
 		ClientFunc->HasAnyFunctionFlags(FUNC_NetClient));
 	TestTrue(TEXT("Client RPC function should default to reliable (FUNC_NetReliable)"),
 		ClientFunc->HasAnyFunctionFlags(FUNC_NetReliable));
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -172,8 +172,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkMulticastRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::MulticastRPCModuleName.ToString());
@@ -224,7 +224,7 @@ class AMulticastRPCTestActor : AActor
 		MulticastFunc->HasAnyFunctionFlags(FUNC_NetMulticast));
 	TestTrue(TEXT("NetMulticast RPC function should default to reliable (FUNC_NetReliable)"),
 		MulticastFunc->HasAnyFunctionFlags(FUNC_NetReliable));
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -240,8 +240,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkValidationRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::ValidationRPCModuleName.ToString());
@@ -298,7 +298,7 @@ class AValidationRPCTestActor : AActor
 		ValidatedFunc->HasAnyFunctionFlags(FUNC_NetServer));
 	TestTrue(TEXT("WithValidation RPC function should carry FUNC_NetValidate flag"),
 		ValidatedFunc->HasAnyFunctionFlags(FUNC_NetValidate));
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -314,8 +314,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkUnreliableRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::UnreliableRPCModuleName.ToString());
@@ -366,7 +366,7 @@ class AUnreliableRPCTestActor : AActor
 		UnreliableFunc->HasAnyFunctionFlags(FUNC_NetClient));
 	TestFalse(TEXT("Unreliable RPC function should NOT carry FUNC_NetReliable flag"),
 		UnreliableFunc->HasAnyFunctionFlags(FUNC_NetReliable));
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -382,8 +382,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptNetworkMixedRPCCompileTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*AngelscriptNetworkRPCTest::MixedRPCModuleName.ToString());
@@ -498,7 +498,7 @@ class AMixedRPCTestActor : AActor
 		TestTrue(TEXT("Mixed: Health should carry CPF_Net"), HealthProperty->HasAnyPropertyFlags(CPF_Net));
 		TestTrue(TEXT("Mixed: Health should carry CPF_RepNotify"), HealthProperty->HasAnyPropertyFlags(CPF_RepNotify));
 	}
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

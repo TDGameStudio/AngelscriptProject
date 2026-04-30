@@ -31,8 +31,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::EditConstModule.ToString());
@@ -68,7 +68,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("EditConst should set CPF_EditConst"), Prop->HasAnyPropertyFlags(CPF_EditConst));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -77,8 +77,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::NotEditableModule.ToString());
@@ -114,7 +114,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestFalse(TEXT("NotEditable should clear CPF_Edit"), Prop->HasAnyPropertyFlags(CPF_Edit));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -123,8 +123,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::AdvancedDisplayModule.ToString());
@@ -160,7 +160,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("AdvancedDisplay should set CPF_AdvancedDisplay"), Prop->HasAnyPropertyFlags(CPF_AdvancedDisplay));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -169,8 +169,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::SaveGameModule.ToString());
@@ -206,7 +206,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("SaveGame should set CPF_SaveGame"), Prop->HasAnyPropertyFlags(CPF_SaveGame));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -215,8 +215,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::TransientModule.ToString());
@@ -252,7 +252,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("Transient should set CPF_Transient"), Prop->HasAnyPropertyFlags(CPF_Transient));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -261,8 +261,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UPropertySpecifierMatrixTest::ConfigModule.ToString());
@@ -298,7 +298,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUPropertySpecifierMatrixTests,
 
 		TestRunner->TestTrue(TEXT("Config should set CPF_Config"), Prop->HasAnyPropertyFlags(CPF_Config));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

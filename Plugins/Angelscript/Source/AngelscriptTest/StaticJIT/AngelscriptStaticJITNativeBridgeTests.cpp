@@ -275,7 +275,16 @@ bool FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest::RunTest(cons
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -302,7 +311,7 @@ bool FAngelscriptStaticJITNativeBridgeGenericCallRestoresStateTest::RunTest(cons
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -311,7 +320,16 @@ bool FAngelscriptStaticJITNativeBridgeGenericMethodNullThisThrowsTest::RunTest(c
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITNativeBridgeTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -338,7 +356,7 @@ bool FAngelscriptStaticJITNativeBridgeGenericMethodNullThisThrowsTest::RunTest(c
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

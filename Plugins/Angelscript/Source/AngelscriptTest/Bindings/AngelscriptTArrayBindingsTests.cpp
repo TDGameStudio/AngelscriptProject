@@ -2117,20 +2117,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTArrayBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(TArrayCompat)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptTArrayBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		TestRunner->AddInfo(FString::Printf(TEXT("%s.MutationCompat: begin"), TArrayProfile.CasePrefix));
 		RunTArrayMutationCompatSection(*TestRunner, Engine, TArrayProfile);
@@ -2156,7 +2156,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTArrayBindingsTest,
 		TestRunner->AddInfo(FString::Printf(TEXT("%s.NestedContainerRejection: begin"), TArrayProfile.CasePrefix));
 		RunTArrayNestedContainerRejectionSection(*TestRunner, Engine, TArrayProfile);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

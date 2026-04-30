@@ -1910,20 +1910,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTArraySyntaxCompatBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(TArraySyntaxCompat)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptTArraySyntaxCompatBindingsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		TestRunner->AddInfo(TEXT("TArraySyntaxCompat.MutationCompat: begin"));
 		RunIntArrayMutationCompatSection(*TestRunner, Engine);
@@ -1949,7 +1949,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTArraySyntaxCompatBindingsTest,
 		TestRunner->AddInfo(TEXT("TArraySyntaxCompat.ObjectArraySyntaxBoundary: begin"));
 		RunObjectArraySyntaxBoundarySection(*TestRunner, Engine);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

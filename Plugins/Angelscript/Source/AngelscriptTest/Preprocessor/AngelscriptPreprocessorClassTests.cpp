@@ -39,8 +39,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorClassTest,
 			TEXT("Class UUnknownSuperCarrier has an unknown super type UMissingBaseType."),
 			EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
@@ -70,7 +70,7 @@ class UUnknownSuperCarrier : UMissingBaseType
 			TestRunner->TestEqual(TEXT("Should have no class descriptors"), Module->Classes.Num(), 0);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================

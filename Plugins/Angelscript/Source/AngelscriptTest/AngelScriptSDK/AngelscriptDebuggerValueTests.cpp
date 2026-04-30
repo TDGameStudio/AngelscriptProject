@@ -125,8 +125,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDebuggerValueTests,
 	TEST_METHOD(GetterPropertyTracking)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebuggerValueTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		static const FName ModuleName(TEXT("InternalsDebuggerValueGetterTracking"));
 		ON_SCOPE_EXIT
 		{
@@ -233,14 +233,14 @@ class ADebuggerValueGetterProbe : AActor
 				HealthAddress);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(FunctionEvaluationGuards)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebuggerValueTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		static const FName ModuleName(TEXT("InternalsDebuggerValueFunctionEvaluationGuards"));
 		ON_SCOPE_EXIT
 		{
@@ -399,14 +399,14 @@ class UDebuggerValueGuardProbe : UObject
 			*EvalCountPtr,
 			1);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(InheritedGetterTracksBasePropertyAddress)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebuggerValueTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		static const FName ModuleName(TEXT("InternalsDebuggerValueInheritedGetterTracking"));
 		ON_SCOPE_EXIT
 		{
@@ -523,7 +523,7 @@ class ADebuggerValueDerivedProbe : ADebuggerValueBaseProbe
 				HealthAddress);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

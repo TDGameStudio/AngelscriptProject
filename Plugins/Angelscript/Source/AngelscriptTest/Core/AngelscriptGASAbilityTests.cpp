@@ -172,8 +172,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASAbilityOverrideDetectionFlagsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilityTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	static const FName ModuleName(TEXT("AutomationGASAbilityOverrideFlags"));
 	static const FName FullClassName(TEXT("UAutomationASGASAbilityAllHooks"));
@@ -316,7 +316,7 @@ class UAutomationASGASAbilityPartialHooks : UAngelscriptGASAbility
 		return false;
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

@@ -309,8 +309,8 @@ public:
 	// ========================================================================
 	TEST_METHOD(AsyncMatchesSynchronousPreprocess)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		const FString SharedPadding = MakeAsyncLoadPadding(60000);
 		const FString ProviderRelativePath = TEXT("Tests/Preprocessor/AsyncLoad/Provider.as");
@@ -406,7 +406,7 @@ int UseProvider()
 			TestModuleSnapshotsMatch(SynchronousModules, AsynchronousModules);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -415,8 +415,8 @@ int UseProvider()
 	// ========================================================================
 	TEST_METHOD(AsyncZeroByteFileMatchesSyncPath)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		const FString RelativeFilename = TEXT("Tests/Preprocessor/AsyncZeroByte/ZeroByte.as");
 		FFixtureFile ZeroByteFile = FFixtureFile::CreateZeroByte(RelativeFilename);
@@ -497,7 +497,7 @@ int UseProvider()
 			CompareZeroByteSnapshots(SyncSnapshot, AsyncSnapshot);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -506,8 +506,8 @@ int UseProvider()
 	// ========================================================================
 	TEST_METHOD(TreatAsDeletedProducesEmptyModule)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		Engine.ResetDiagnostics();
 
@@ -618,7 +618,7 @@ class UDeletedFileProbe : UObject
 			Module->EditorOnlyBlockLines.Num(), 0);
 #endif
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 };
 

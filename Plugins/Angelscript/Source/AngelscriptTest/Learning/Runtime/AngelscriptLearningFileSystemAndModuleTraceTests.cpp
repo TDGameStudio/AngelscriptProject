@@ -51,8 +51,8 @@ bool FAngelscriptLearningFileSystemAndModuleTraceTest::RunTest(const FString& Pa
 {
 	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningFileSystemAndModuleTraceTests_Private;
 	CleanLearningFileSystemRoot();
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		ResetSharedCloneEngine(Engine);
@@ -198,7 +198,7 @@ int BrokenEntry()
 		&& bContainsSkipRulesKeyword
 		&& bMinimumEventsOk;
 
-	ASTEST_END_SHARE_CLEAN
+	}
 }
 
 #endif

@@ -94,8 +94,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptLearningReloadAndClassAnalysisTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningReloadAndClassAnalysisTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ResetSharedCloneEngine(Engine);
 	ON_SCOPE_EXIT
 	{
@@ -248,7 +248,7 @@ class ULearningReloadSignatureTarget : UObject
 		&& bContainsFullReloadRequiredKeyword
 		&& bMinimumEventsOk;
 
-	ASTEST_END_SHARE
+	}
 }
 
 #endif

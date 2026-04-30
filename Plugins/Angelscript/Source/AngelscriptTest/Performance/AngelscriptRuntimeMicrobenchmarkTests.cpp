@@ -122,9 +122,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptRuntimePerformanceScriptSelfTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Performance_RuntimeMicrobenchmarkTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 	bool bWroteMetrics = false;
-	ASTEST_BEGIN_SHARE_CLEAN
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	do
 	{
 	ON_SCOPE_EXIT
@@ -233,7 +233,7 @@ class URuntimePerformanceScriptSelfCarrier : UObject
 
 	}
 	while (false);
-	ASTEST_END_SHARE_CLEAN
+	}
 	return !HasAnyErrors() && bWroteMetrics;
 }
 
@@ -248,7 +248,16 @@ bool FAngelscriptRuntimePerformanceNativePropertyTest::RunTest(const FString& Pa
 
 	FAngelscriptEngine& Engine = *EngineOwner;
 	bool bWroteMetrics = false;
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	do
 	{
 	ON_SCOPE_EXIT
@@ -351,7 +360,7 @@ class URuntimePerformanceNativePropertyCarrier : UObject
 
 	}
 	while (false);
-	ASTEST_END_FULL
+	}
 	return !HasAnyErrors() && bWroteMetrics;
 }
 
@@ -366,7 +375,16 @@ bool FAngelscriptRuntimePerformanceNativeFunctionTest::RunTest(const FString& Pa
 
 	FAngelscriptEngine& Engine = *EngineOwner;
 	bool bWroteMetrics = false;
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	do
 	{
 	ON_SCOPE_EXIT
@@ -477,7 +495,7 @@ class URuntimePerformanceNativeFunctionCarrier : UObject
 
 	}
 	while (false);
-	ASTEST_END_FULL
+	}
 	return !HasAnyErrors() && bWroteMetrics;
 }
 

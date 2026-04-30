@@ -64,12 +64,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBlueprintCallableReflectiveFallbackTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -248,7 +248,7 @@ int GameplayTagReflectiveVerify()
 
 	TEST_METHOD(EligibilityMatrix)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const UFunction* EligibleFunction = UAngelscriptBlueprintCallableReflectiveFallbackTestLibrary::StaticClass()->FindFunctionByName(TEXT("EligibleCallable"));

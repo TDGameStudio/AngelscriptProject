@@ -51,8 +51,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorNamespaceTest,
 
 		TestRunner->AddExpectedErrorPlain(InvalidNamespaceMessage, EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		FFixtureFile File(TEXT("Tests/Preprocessor/Namespace/InvalidDeclarationReportsSyntax.as"), TEXT(R"(
 namespace Gameplay
@@ -129,7 +129,7 @@ int Entry()
 
 		AssertNoCompilableCode(*TestRunner, Result);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -146,7 +146,16 @@ int Entry()
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		TestRunner->TestTrue(
 			TEXT("Should run with EDITOR enabled"),
@@ -239,7 +248,7 @@ int Entry()
 				EntryResult, 7);
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ========================================================================
@@ -255,7 +264,16 @@ int Entry()
 		}
 
 		FAngelscriptEngine& Engine = *OwnedEngine;
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		FFixtureFile File(TEXT("Game/Preprocessor/Namespace/RestrictAllow.as"), TEXT(R"(
 #restrict usage allow Game.UI.*
@@ -297,7 +315,7 @@ int Entry()
 #endif
 		}
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

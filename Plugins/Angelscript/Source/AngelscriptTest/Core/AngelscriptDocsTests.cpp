@@ -234,7 +234,16 @@ bool FAngelscriptDocsDumpDocumentationNormalizesSeeNoteAndReturnsAliasesTest::Ru
 	using namespace AngelscriptTest_Core_AngelscriptDocsTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	const FString UniqueSuffix = MakeAutomationDocsSuffix();
 	const FString TypeName = FString::Printf(TEXT("FAutomationDocs_%s"), *UniqueSuffix);
@@ -343,7 +352,7 @@ bool FAngelscriptDocsDumpDocumentationNormalizesSeeNoteAndReturnsAliasesTest::Ru
 		TEXT("Docs normalization test should not leak raw @returns tags into generated output"),
 		GeneratedContent.Contains(TEXT("@returns")));
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

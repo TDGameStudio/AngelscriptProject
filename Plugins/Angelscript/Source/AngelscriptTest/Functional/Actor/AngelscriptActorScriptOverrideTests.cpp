@@ -21,7 +21,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptActorScriptOverrideTest,
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
@@ -29,7 +29,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptActorScriptOverrideTest,
 
 	TEST_METHOD(BeginPlayRunsInWorld)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorBeginPlayRunsInWorld"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -65,7 +65,7 @@ class ATestScriptActorBeginPlayRunsInWorld : AActor
 
 	TEST_METHOD(NativeUFunctionCanBeInvoked)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorNativeUFunctionCanBeInvoked"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -112,7 +112,7 @@ class ATestScriptActorNativeUFunctionCanBeInvoked : AActor
 
 	TEST_METHOD(BeginPlayCallsAnotherScriptUFunction)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorBeginPlayCallsAnotherScriptUFunction"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -154,7 +154,7 @@ class ATestScriptActorBeginPlayCallsAnotherScriptUFunction : AActor
 
 	TEST_METHOD(TickRunsNTimes)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorTickRunsNTimes"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -213,7 +213,7 @@ class ATestScriptActorTickRunsNTimes : AActor
 
 	TEST_METHOD(CrossInstanceCallDoesNotLeakState)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorCrossInstanceCallDoesNotLeakState"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -270,7 +270,7 @@ class ATestScriptActorCrossInstanceCallDoesNotLeakState : AActor
 
 	TEST_METHOD(DestroyedActorInvocationFailsSafely)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorDestroyedActorInvocationFailsSafely"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -353,7 +353,7 @@ class ATestScriptActorDestroyedInvocationSource : AActor
 
 	TEST_METHOD(MissingFunctionReportsExplicitFailure)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestScriptActorMissingFunctionReportsExplicitFailure"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -393,7 +393,7 @@ class ATestScriptActorMissingFunctionReportsExplicitFailure : AActor
 
 	TEST_METHOD(InheritanceParentBlueprintEventDispatches)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceParentEvent"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -452,7 +452,7 @@ class ATestInhParentBase1 : AActor
 
 	TEST_METHOD(InheritanceChildOverridesBlueprintEvent)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceChildOverride"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -555,7 +555,7 @@ class ATestInhHealthPickup2 : ATestInhParentBase2
 
 	TEST_METHOD(InheritanceProcessEventDispatchesToChildOverride)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceProcessEvent"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };

@@ -64,8 +64,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDefaultStatementSafetyTests,
 	TEST_METHOD(UnsafeDuringConstructionRejectsDefaultAndConstructor)
 	{
 		using namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(TEXT("ASUnsafeDefault"));
@@ -147,14 +147,14 @@ class UUnsafeOrdinaryTarget : UObject
 		if (!CompileSafetyScript(*TestRunner, Engine, TEXT("ASUnsafeOrdinary"), TEXT("UUnsafeOrdinaryTarget"), UnsafeOrdinaryScript, true, UnsafeOrdinarySummary))
 		{ return; }
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(DefaultsOnlyAccess)
 	{
 		using namespace AngelscriptTest_ClassGenerator_DefaultStatementSafetyTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(TEXT("ASDefaultsOnlyOk"));
@@ -209,7 +209,7 @@ class UDefaultsOnlyRejectTarget : UObject
 		{ return; }
 		TestRunner->TestTrue(TEXT("Defaults-only ordinary call should report an access diagnostic"), SummaryContainsDiagnosticMessage(DefaultsOnlyRejectSummary, TEXT("only accessible from default statements")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

@@ -136,7 +136,7 @@ bool FAngelscriptDebuggerSingleClientBreakpointRoundtripTest::RunTest(const FStr
 	}
 
 	FAngelscriptEngine& Engine = Session.GetEngine();
-	ASTEST_BEGIN_SHARE
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		const FAngelscriptDebuggerScriptFixture Fixture = FAngelscriptDebuggerScriptFixture::CreateBreakpointFixture();
 		TAtomic<bool> bWorkerReady{false};
 		TAtomic<bool> bAbortWorker{false};
@@ -251,7 +251,7 @@ bool FAngelscriptDebuggerSingleClientBreakpointRoundtripTest::RunTest(const FStr
 		TestEqual(TEXT("Debugger.SingleClient.BreakpointRoundtrip should stop at the requested helper line"), CallStack.Frames[0].LineNumber, Fixture.GetLine(TEXT("BreakpointHelperLine")));
 
 		bPassed = true;
-	ASTEST_END_SHARE
+	}
 
 	return bPassed;
 }

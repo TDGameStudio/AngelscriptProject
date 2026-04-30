@@ -208,7 +208,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionFunctionLibraryComponentTest,
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -380,7 +389,7 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 		ExpectArrayParity(*TestRunner, TEXT("ComponentOverlapMulti miss"), bScriptComponentOverlapMiss, bNativeComponentOverlapMiss, ScriptComponentOverlapMisses, NativeComponentOverlapMisses);
 		TestRunner->TestEqual(TEXT("ComponentOverlapMulti miss should clear stale overlap results"), ScriptComponentOverlapMisses.Num(), 0);
 
-		ASTEST_END_FULL
+		}
 	}
 
 	// ====================================================================
@@ -391,7 +400,16 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -552,7 +570,7 @@ bool RunComponentOverlapMultiNull(UPrimitiveComponent QueryComponent, TArray<FOv
 		TestRunner->TestFalse(TEXT("ComponentOverlapMulti should return false when the source component is null"), bScriptNullOverlap);
 		TestRunner->TestEqual(TEXT("ComponentOverlapMulti should clear stale overlap results when the source component is null"), ScriptNullOverlaps.Num(), 0);
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

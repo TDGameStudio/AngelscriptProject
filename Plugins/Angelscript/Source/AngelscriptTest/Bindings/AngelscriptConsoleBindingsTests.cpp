@@ -894,53 +894,53 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptConsoleBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(ConsoleVariableCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleVariableTypesSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}
 
 	TEST_METHOD(ConsoleVariableExistingCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleVariableExistingSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}
 
 	TEST_METHOD(ConsoleCommandCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleCommandBasicSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}
 
 	TEST_METHOD(ConsoleCommandReplacementCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleCommandReplacementSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}
 
 	TEST_METHOD(ConsoleCommandSignatureCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleCommandWrongSignatureSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}
 
 	TEST_METHOD(LeakSelfCheck)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		RunConsoleLeakSelfCheckSection(*TestRunner, Engine, GetConsoleBindingsProfile());
 	}

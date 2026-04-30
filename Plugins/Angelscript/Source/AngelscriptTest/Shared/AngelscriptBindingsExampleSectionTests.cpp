@@ -34,8 +34,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptBindingsSharedExampleTest::RunTest(const FString& Parameters)
 {
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT { ResetSharedCloneEngine(Engine); };
 
 	static const FBindingsCoverageProfile GExampleProfile{
@@ -48,7 +48,7 @@ bool FAngelscriptBindingsSharedExampleTest::RunTest(const FString& Parameters)
 
 	bPassed &= RunBindingsExampleSection(*this, Engine, GExampleProfile);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

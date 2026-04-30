@@ -106,8 +106,8 @@ bool FAngelscriptStaticJITGeneratedOutputDebugMetadataHooksTest::RunTest(const F
 	}
 
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	do
 	{
@@ -178,7 +178,7 @@ bool FAngelscriptStaticJITGeneratedOutputDebugMetadataHooksTest::RunTest(const F
 	}
 	while (false);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

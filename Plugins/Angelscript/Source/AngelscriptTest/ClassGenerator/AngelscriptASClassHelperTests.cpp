@@ -112,8 +112,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassHelperTests,
 	TEST_METHOD(HierarchyHelpersResolveScriptAndNativeAncestors)
 	{
 		using namespace ASClassHelperTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		static const FName ModuleName(TEXT("TestASClassHierarchyHelpers"));
 		ON_SCOPE_EXIT
 		{
@@ -183,7 +183,7 @@ class AScriptHierarchyHelperParent : AActor
 		TestRunner->TestTrue(TEXT("ASClass helper test case should resolve the script parent from the Blueprint child actor instance"), ScriptAncestorFromBlueprintActor == ScriptParentClass);
 		TestRunner->TestTrue(TEXT("ASClass helper test case should prefer the script ancestor over the generated Blueprint class"), ScriptOrNativeFromBlueprintClass == ScriptParentClass);
 		TestRunner->TestTrue(TEXT("ASClass helper test case should return AActor for native AActor fallback"), ScriptOrNativeFromNativeActor == AActor::StaticClass());
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

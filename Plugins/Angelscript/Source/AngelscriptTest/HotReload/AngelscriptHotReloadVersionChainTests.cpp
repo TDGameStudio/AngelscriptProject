@@ -47,8 +47,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadFullReloadVersionChainAndCDOConsistencyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*VersionChainModuleName.ToString());
@@ -226,7 +226,7 @@ class AHotReloadVersionChainTarget : AActor
 
 	TestEqual(TEXT("New actor instances should inherit the reloaded Version default"), ReloadedActorVersion, 2);
 	TestEqual(TEXT("New actor instances should expose the newly added Mana default"), ReloadedActorMana, 5);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -234,8 +234,8 @@ class AHotReloadVersionChainTarget : AActor
 bool FAngelscriptHotReloadSoftReloadCDOAndInstanceConsistencyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadVersionChainTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*SoftReloadConsistencyModuleName.ToString());
@@ -425,7 +425,7 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 		TEXT("Soft reload consistency test case should apply the new function body to the preserved old instance"),
 		ExistingActorValue,
 		142);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }

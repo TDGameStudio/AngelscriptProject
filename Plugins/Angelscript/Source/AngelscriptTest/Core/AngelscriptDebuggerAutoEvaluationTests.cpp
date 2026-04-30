@@ -1,4 +1,4 @@
-﻿#include "AngelscriptSettings.h"
+#include "AngelscriptSettings.h"
 #include "AngelscriptType.h"
 #include "ClassGenerator/ASClass.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
@@ -79,8 +79,8 @@ bool FAngelscriptDebuggerAutoEvaluateRespectsBlacklistAndTracksSourcePropertyTes
 {
 	using namespace AngelscriptTest_Core_AngelscriptDebuggerAutoEvaluationTests_Private;
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	static const FName ModuleName(TEXT("CoreDebuggerAutoEvaluateWorldless"));
 	static const FName GeneratedClassName(TEXT("UDebuggerAutoEvaluateWorldlessProbe"));
@@ -199,7 +199,7 @@ class UDebuggerAutoEvaluateWorldlessProbe : UObject
 		}
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

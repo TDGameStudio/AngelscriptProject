@@ -47,8 +47,8 @@ bool FAngelscriptModuleLookupFilenamePrecedenceTest::RunTest(const FString& Para
 	using namespace AngelscriptTest_FileSystem_AngelscriptFileSystemLookupPrecedenceTests_Private;
 	CleanFileSystemLookupPrecedenceTestRoot();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleNameA(TEXT("Game.Lookup.A"));
 	static const FName ModuleNameB(TEXT("Game.Lookup.B"));
 	ON_SCOPE_EXIT
@@ -113,7 +113,7 @@ int EntryB()
 	TestEqual(TEXT("Path B lookup should preserve the exact absolute filename"), ModuleFromFilenameB->Code[0].AbsoluteFilename, AbsolutePathB);
 	TestEqual(TEXT("Fallback lookup should still resolve module B's compiled filename"), ModuleFromFallback->Code[0].AbsoluteFilename, AbsolutePathB);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

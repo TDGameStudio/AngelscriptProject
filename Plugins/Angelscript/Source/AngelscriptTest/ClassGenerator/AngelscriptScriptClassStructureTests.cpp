@@ -33,8 +33,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptClassStructureTests,
 	TEST_METHOD(FunctionOnlyClassCompilesAndExecutes)
 	{
 		using namespace ScriptClassStructureTests;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		static const FName ModuleName(TEXT("ASFunctionOnlyScriptClassStructure"));
 		ON_SCOPE_EXIT
@@ -97,7 +97,7 @@ class UFunctionOnlyScriptClass : UObject
 
 		TestRunner->TestEqual(TEXT("Function-only script class test case should keep GetValue returning 17"), Result, 17);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

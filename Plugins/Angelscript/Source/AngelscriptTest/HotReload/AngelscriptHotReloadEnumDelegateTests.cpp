@@ -29,8 +29,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadReloadDelegatesBroadcastEnumCreatedOnFirstCompileTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadEnumDelegateTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 EnumCreatedCount = 0;
 	int32 EnumChangedCount = 0;
@@ -115,7 +115,7 @@ enum class EHotReloadCreatedState : uint8
 	TestEqual(TEXT("OnEnumChanged should not broadcast when the enum is first created"), EnumChangedCount, 0);
 	TestEqual(TEXT("OnEnumCreated should broadcast the created enum name"), EnumCreatedNameDuringCompile, EnumCreatedName);
 	TestEqual(TEXT("OnEnumCreated should expose the same enum object registered on the engine"), EnumCreatedDuringCompile, CreatedEnumDesc->Enum);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }

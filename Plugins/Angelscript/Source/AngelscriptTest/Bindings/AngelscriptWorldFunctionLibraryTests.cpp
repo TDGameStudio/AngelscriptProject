@@ -237,7 +237,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldFunctionLibraryTest, "Angelscript.TestMod
 		TestRunner->AddExpectedError(TEXT("bool GetLevelVisibleInEditor(ULevelStreaming) | Line 9 | Col 2"), EAutomationExpectedErrorFlags::Contains, 1, false);
 
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -375,14 +384,23 @@ bool GetLevelVisibleInEditor(ULevelStreaming Level)
 			NullLevelException,
 			FString(TEXT("Null pointer access")));
 
-		ASTEST_END_FULL
+		}
 	}
 
 	TEST_METHOD(WorldStreamingAccess)
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptWorldFunctionLibraryTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
@@ -505,7 +523,7 @@ int VerifyWorldStreamingAccess(UWorld World, ULevelStreaming ExpectedFirst, ULev
 			TEXT("World streaming access test should keep the second streaming level editor-hidden"),
 			bNativeSecondVisibility);
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

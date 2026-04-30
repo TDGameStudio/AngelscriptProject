@@ -38,8 +38,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASStructDiscardTests,
 	TEST_METHOD(DiscardModuleClearsScriptTypeAndNativeOps)
 	{
 		using namespace ASStructDiscardTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASStructDiscardTest::ModuleName.ToString());
@@ -113,7 +113,7 @@ struct FDiscardableStruct
 			TEXT("ASStruct discard test should clear STRUCT_IdenticalNative after discard"),
 			EnumHasAnyFlags(Struct->StructFlags, STRUCT_IdenticalNative));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

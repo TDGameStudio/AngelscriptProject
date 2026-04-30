@@ -33,19 +33,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptInheritanceFunctionalTests, "Angelscript.TestM
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(ScriptToScript)
 	{
 		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceScriptToScript"));
 		ON_SCOPE_EXIT
@@ -108,7 +108,7 @@ class ATestInheritanceDerived : ATestCaseInheritanceBase
 	TEST_METHOD(Super)
 	{
 		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceSuper"));
 		ON_SCOPE_EXIT
@@ -171,7 +171,7 @@ class ATestInheritanceSuperDerived : ATestCaseInheritanceSuperBase
 	TEST_METHOD(IsA)
 	{
 		using namespace AngelscriptTest_Inheritance_AngelscriptInheritanceTestCaseTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TestInheritanceIsA"));
 		ON_SCOPE_EXIT

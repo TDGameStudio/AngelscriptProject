@@ -60,8 +60,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASRegisterAttributeSetReplayTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -125,15 +125,15 @@ bool FAngelscriptGASRegisterAttributeSetReplayTest::RunTest(const FString& Param
 		CountAttributeSetsOfClass(*AbilitySystemComponent, UAngelscriptGASTestAttributeSet::StaticClass()),
 		1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
 bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -324,15 +324,15 @@ bool FAngelscriptGASGiveAbilitySpecAndDelegateTest::RunTest(const FString& Param
 	TestEqual(TEXT("CancelAbility by class should end the second ability instance once"), SecondAbilityInstance->EndCount, 1);
 	TestEqual(TEXT("Cancellation should not rebroadcast OnAbilityGiven"), CancelByClassListener->BroadcastCount, 1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
 bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -443,7 +443,7 @@ bool FAngelscriptGASRemoveAbilityOnEndLifecycleTest::RunTest(const FString& Para
 		RemovedListener->BroadcastCount,
 		1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

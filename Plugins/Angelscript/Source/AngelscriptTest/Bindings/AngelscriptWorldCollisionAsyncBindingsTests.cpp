@@ -183,7 +183,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionAsyncBindingsTest,
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionAsyncBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*WorldCollisionAsyncModuleName.ToString());
@@ -421,7 +430,7 @@ class ATestWorldCollisionAsyncCallbacks : AActor
 		TestRunner->TestEqual(TEXT("Script line handle validity should match native after completion"), ScriptLineHandleValidNow, bNativeLineHandleValidNow ? 1 : 0);
 		TestRunner->TestEqual(TEXT("Script overlap handle validity should match native after completion"), ScriptOverlapHandleValidNow, bNativeOverlapHandleValidNow ? 1 : 0);
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

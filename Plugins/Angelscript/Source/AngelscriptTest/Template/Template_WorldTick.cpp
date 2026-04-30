@@ -1,4 +1,4 @@
-#include "CQTest.h"
+﻿#include "CQTest.h"
 #include "Functional/Actor/AngelscriptActorTestHelpers.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptReflectiveAccess.h"
@@ -112,7 +112,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateWorldTickTest,
 	// -----------------------------------------------------------------
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	// -----------------------------------------------------------------
@@ -121,7 +121,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateWorldTickTest,
 	// -----------------------------------------------------------------
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		ResetSharedCloneEngine(Engine);
 	}
 
@@ -140,7 +140,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptTemplateWorldTickTest,
 	// =================================================================
 	TEST_METHOD(BasicTickFlow)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickBasic"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -202,7 +202,7 @@ class ATemplateWorldTickBasicActor : AActor
 	// =================================================================
 	TEST_METHOD(ExplicitTickCount)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickExplicit"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -253,7 +253,7 @@ class ATemplateWorldTickExplicitActor : AActor
 	// =================================================================
 	TEST_METHOD(AccumulatedDeltaTime)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickAccumDt"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -310,7 +310,7 @@ class ATemplateWorldTickAccumDtActor : AActor
 	// =================================================================
 	TEST_METHOD(VariableDeltaTime)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickVarDt"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -380,7 +380,7 @@ class ATemplateWorldTickVarDtActor : AActor
 	// =================================================================
 	TEST_METHOD(MultipleActorsTickedTogether)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickMultiActor"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
@@ -455,7 +455,7 @@ class ATemplateWorldTickMultiActor : AActor
 	// =================================================================
 	TEST_METHOD(ComponentTickAlongsideActor)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		static const FName ModuleName(TEXT("TemplateWorldTickComponent"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };

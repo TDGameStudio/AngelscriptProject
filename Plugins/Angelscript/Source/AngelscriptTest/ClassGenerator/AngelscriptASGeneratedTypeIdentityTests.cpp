@@ -106,8 +106,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASGeneratedTypeIdentityTests,
 	TEST_METHOD(ScriptIdentityFieldsTrackFullReloadLifecycle)
 	{
 		using namespace ASGeneratedTypeIdentityTest;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-		ASTEST_BEGIN_SHARE_FRESH
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASGeneratedTypeIdentityTest::StructModuleName.ToString());
@@ -203,7 +203,7 @@ struct FStructIdentityTarget
 			StructV2,
 			TEXT("Struct identity replaced struct"));
 
-		ASTEST_END_SHARE_FRESH
+		}
 	}
 };
 

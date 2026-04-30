@@ -19,8 +19,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectModelInheritanceTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -30,7 +30,7 @@ bool FAngelscriptObjectModelInheritanceTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Value-type construction and member access should preserve field values"), Result, 7);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -42,8 +42,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectModelDestructorTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -53,7 +53,7 @@ bool FAngelscriptObjectModelDestructorTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Value-type copies should preserve the original and apply arithmetic to the copy"), Result, 57);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -65,8 +65,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectBasicTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	const bool bCompiled = CompileModuleFromMemory(
 		&Engine,
@@ -91,7 +91,7 @@ bool FAngelscriptObjectBasicTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("Objects.Basic currently verifies compile and symbol registration only because executing script-object methods still faults at runtime on this branch"), true);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -103,8 +103,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectCompositionTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	const bool bCompiled = CompileModuleFromMemory(
 		&Engine,
@@ -129,7 +129,7 @@ bool FAngelscriptObjectCompositionTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("Objects.Composition currently verifies compile and symbol registration only because nested script-object execution still faults at runtime on this branch"), true);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -152,8 +152,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectZeroSizeTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -163,7 +163,7 @@ bool FAngelscriptObjectZeroSizeTest::RunTest(const FString& Parameters)
 		Result);
 
 	TestEqual(TEXT("Zero-size script objects should still be instantiable"), Result, 1);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -175,8 +175,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAngelscriptObjectZeroSizeByValueAndLocalLayoutTest::RunTest(const FString& Parameters)
 {
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine,
@@ -186,7 +186,7 @@ bool FAngelscriptObjectZeroSizeByValueAndLocalLayoutTest::RunTest(const FString&
 		Result);
 
 	TestEqual(TEXT("Zero-size script objects should preserve adjacent locals and pass by value twice"), Result, 5622);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }

@@ -68,8 +68,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineClassLikeExecutionTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		ON_SCOPE_EXIT
 		{
@@ -141,7 +141,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineClassLikeExecutionTests,
 				1);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

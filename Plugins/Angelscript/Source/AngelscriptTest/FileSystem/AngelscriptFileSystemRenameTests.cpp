@@ -44,8 +44,8 @@ bool FAngelscriptFileSystemRenameWithoutDiscardTest::RunTest(const FString& Para
 	CleanFileSystemRenameTestRoot();
 
 	bool bResult = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	ON_SCOPE_EXIT
 	{
@@ -185,7 +185,7 @@ int PatrolEntry()
 		TEXT("Renamed patrol module should execute the updated source after the filename remap"),
 		ResultAfterRename,
 		13);
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bResult;
 }
 

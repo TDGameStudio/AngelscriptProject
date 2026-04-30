@@ -67,8 +67,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptExecutionScriptRangeBoundariesTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionScriptRangeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptModule* Module = BuildModule(*this, Engine, ModuleName, ScriptSource);
 	if (Module == nullptr)
@@ -97,7 +97,7 @@ bool FAngelscriptExecutionScriptRangeBoundariesTest::RunTest(const FString& Para
 		}
 	}
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 

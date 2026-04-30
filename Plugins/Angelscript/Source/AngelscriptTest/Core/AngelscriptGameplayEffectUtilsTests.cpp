@@ -98,8 +98,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGameplayEffectUtilsTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FGameplayAttribute HealthAttribute;
 	if (!ResolveHealthAttribute(*this, HealthAttribute))
@@ -238,7 +238,7 @@ bool FAngelscriptGameplayEffectUtilsCapturesAttributesAndTagsTest::RunTest(const
 		TEXT("SetCapturedSourceTagsFromSpec should keep source and target tag pointers distinct"),
 		ExecutionParameters.WrappedParams.SourceTags != ExecutionParameters.WrappedParams.TargetTags);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

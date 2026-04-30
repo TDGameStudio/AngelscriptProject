@@ -42,9 +42,9 @@ bool FAngelscriptDiskCompileReadsUpdatedSourceFromPathTest::RunTest(const FStrin
 	using namespace AngelscriptTest_FileSystem_AngelscriptDiskCompileTests_Private;
 	CleanDiskCompileTestRoot();
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 	bool bFinalLookupValid = false;
-	ASTEST_BEGIN_SHARE_CLEAN
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(TEXT("RuntimeDiskModule"));
@@ -111,7 +111,7 @@ int Entry()
 
 	bFinalLookupValid =
 		TestTrue(TEXT("Updated disk-compiled module should remain discoverable by filename"), Engine.GetModuleByFilename(AbsolutePath).IsValid());
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return bFinalLookupValid;
 }

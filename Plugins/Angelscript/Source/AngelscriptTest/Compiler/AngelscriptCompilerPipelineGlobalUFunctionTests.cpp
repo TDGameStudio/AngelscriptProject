@@ -159,8 +159,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineGlobalUFunctionTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelineGlobalUFunctionTest::WriteFixture(
 			CompilerPipelineGlobalUFunctionTest::RelativeScriptPath,
@@ -318,7 +318,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineGlobalUFunctionTests,
 				42);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -335,8 +335,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineGlobalUFunctionTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString AbsoluteScriptPath = CompilerPipelineGlobalUFunctionTest::WriteFixture(
 			CompilerPipelineGlobalUFunctionSanitizedModuleTest::RelativeScriptPath,
@@ -508,7 +508,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineGlobalUFunctionTests,
 				77);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

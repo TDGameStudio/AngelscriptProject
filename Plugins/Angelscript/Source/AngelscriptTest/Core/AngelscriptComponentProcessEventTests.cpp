@@ -112,8 +112,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptComponentProcessEventWithValidationTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptComponentProcessEventTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*ProcessEventModuleName.ToString());
@@ -253,7 +253,7 @@ class UComponentProcessEventValidate : UAngelscriptComponent
 
 	TestEqual(TEXT("Component ProcessEvent should report the _Validate function name on validation failure"), FString(FailedReason), ValidateFunctionName.ToString());
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

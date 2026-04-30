@@ -245,8 +245,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryRepresentativeWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FGameplayTag ObservedTag;
 	if (!GetAnyGameplayTag(*this, ObservedTag))
@@ -402,7 +402,7 @@ bool FAngelscriptAbilityTaskLibraryRepresentativeWrappersTest::RunTest(const FSt
 		TEXT("WaitTargetDataUsingActor should preserve the provided target actor"),
 		ReadObjectProperty<AGameplayAbilityTargetActor>(*this, *WaitTargetDataTask, TEXT("TargetActor")) == TargetActor);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -414,8 +414,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryGameplayEffectWatcherWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FGameplayTag PrimaryTag;
 	FGameplayTag SecondaryTag;
@@ -663,7 +663,7 @@ bool FAngelscriptAbilityTaskLibraryGameplayEffectWatcherWrappersTest::RunTest(co
 	TestEqual(TEXT("WaitForGameplayEffectRemoved should report the remaining stack count from the final removal"), RemovedListener->LastStackCount, 1);
 	TestEqual(TEXT("WaitForGameplayEffectStackChange should not fire again during final removal"), StackListener->CallbackCount, 1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -675,8 +675,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryRootMotionAndTargetingWrapperArgumentsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -921,7 +921,7 @@ bool FAngelscriptAbilityTaskLibraryRootMotionAndTargetingWrapperArgumentsTest::R
 	TestTrue(TEXT("WaitTargetData should leave target actor unset for class overload"), WaitTargetDataTask->TargetActor == nullptr);
 	TestEqual(TEXT("WaitTargetData should preserve confirmation type"), WaitTargetDataTask->ConfirmationType, EGameplayTargetingConfirmation::UserConfirmed);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

@@ -216,12 +216,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionTraceBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -231,7 +231,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionTraceBindingsTest,
 
 	TEST_METHOD(LineTraceSingle)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("LineTraceSingle"), TEXT(R"(
@@ -272,7 +272,7 @@ bool RunLineTraceSingleByChannelHit(FHitResult& OutHit)
 
 	TEST_METHOD(LineTraceMultiHit)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("LineTraceMultiHit"), TEXT(R"(
@@ -312,7 +312,7 @@ bool RunLineTraceMultiByChannelHit(TArray<FHitResult>& OutHits)
 
 	TEST_METHOD(LineTraceMultiMiss)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("LineTraceMultiMiss"), TEXT(R"(
@@ -354,7 +354,7 @@ bool RunLineTraceMultiByChannelMiss(TArray<FHitResult>& OutHits)
 
 	TEST_METHOD(SweepSingleByObject)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("SweepSingleByObject"), TEXT(R"(
@@ -402,7 +402,7 @@ bool RunSweepSingleByObjectTypeHit(FHitResult& OutHit)
 
 	TEST_METHOD(OverlapMultiByProfile)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("OverlapMultiByProfile"), TEXT(R"(
@@ -446,7 +446,7 @@ bool RunOverlapMultiByProfileHit(TArray<FOverlapResult>& OutOverlaps)
 
 	TEST_METHOD(OverlapMultiMiss)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GWorldCollisionTraceProfile, TEXT("OverlapMultiMiss"), TEXT(R"(

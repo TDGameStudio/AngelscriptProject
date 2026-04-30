@@ -18,7 +18,7 @@
 // CQTest usage pattern:
 //   TEST_METHOD(SomeName)
 //   {
-//       FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+//       FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 //       FAngelscriptEngineScope Scope(Engine);
 //
 //       // Positive: use FCoverageModuleScope + ExpectGlobalInts
@@ -27,7 +27,7 @@
 //
 // Key difference from old pattern:
 //   - Pass *TestRunner (not *this) as FAutomationTestBase&
-//   - Use FAngelscriptEngineScope instead of ASTEST_BEGIN/END macros
+//   - Use FAngelscriptEngineScope directly (no ASTEST_BEGIN/END macros)
 //   - Negative tests auto-report source code and error diagnostics
 // ============================================================================
 

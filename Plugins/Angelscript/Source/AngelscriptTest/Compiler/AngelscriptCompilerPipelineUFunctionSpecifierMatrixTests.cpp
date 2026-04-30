@@ -28,8 +28,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UFunctionSpecifierMatrixTest::CallInEditorModule.ToString());
@@ -68,7 +68,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("CallInEditor function should have CallInEditor metadata"),
 			Func->HasMetaData(TEXT("CallInEditor")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -77,8 +77,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UFunctionSpecifierMatrixTest::AuthorityOnlyModule.ToString());
@@ -117,7 +117,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("BlueprintAuthorityOnly should set FUNC_BlueprintAuthorityOnly"),
 			Func->HasAnyFunctionFlags(FUNC_BlueprintAuthorityOnly));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -126,8 +126,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 	using namespace AngelscriptTestSupport;
 
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*UFunctionSpecifierMatrixTest::ExecModule.ToString());
@@ -166,7 +166,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineUFunctionSpecifierMatrixTests,
 		TestRunner->TestTrue(TEXT("Exec should set FUNC_Exec flag"),
 			Func->HasAnyFunctionFlags(FUNC_Exec));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

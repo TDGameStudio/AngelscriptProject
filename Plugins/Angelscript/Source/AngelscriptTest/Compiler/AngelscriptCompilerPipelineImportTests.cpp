@@ -144,8 +144,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineImportTests,
 	}
 	)AS");
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		const FString ProviderAbsoluteScriptPath = CompilerPipelineImportTest::WriteFixture(
 			CompilerPipelineImportTest::ProviderRelativeScriptPath,
@@ -315,7 +315,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineImportTests,
 				77);
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 
@@ -345,8 +345,8 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineImportTests,
 			{TEXT("Signature mismatch"), CompilerPipelineImportTest::SignatureMismatchProviderModuleName, CompilerPipelineImportTest::SignatureMismatchConsumerModuleName, CompilerPipelineImportTest::SignatureMismatchProviderRelativeScriptPath, CompilerPipelineImportTest::SignatureMismatchConsumerRelativeScriptPath, TEXT("int SharedValue(int Extra)\n{\n\treturn Extra;\n}\n"), TEXT("import int SharedValue() from \"Tests.Compiler.ImportSourceSignatureMismatch\";\n\nint Entry()\n{\n\treturn SharedValue();\n}\n"), TEXT("could not find function with this signature in module Tests.Compiler.ImportSourceSignatureMismatch."), 2, 2, 1}
 		};
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		TestRunner->AddExpectedError(TEXT("Hot reload failed due to script compile errors. Keeping all old script code."), EAutomationExpectedErrorFlags::Contains, 2);
 
 		const FString SignatureMismatchProviderAbsoluteScriptPath = CompilerPipelineImportTest::WriteFixture(
@@ -471,7 +471,7 @@ TEST_CLASS_WITH_FLAGS(FCompilerPipelineImportTests,
 			}
 		}
 
-		ASTEST_END_SHARE_CLEAN
+		}
 
 	}
 

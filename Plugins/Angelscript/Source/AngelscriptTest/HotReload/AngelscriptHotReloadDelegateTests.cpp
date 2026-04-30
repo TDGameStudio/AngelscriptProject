@@ -87,8 +87,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadReloadDelegatesBroadcastEnumChangeAndFullReloadTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 EnumChangedCount = 0;
 	int32 FullReloadCount = 0;
@@ -248,7 +248,7 @@ class UHotReloadEventCarrier : UObject
 	}
 
 	TestEqual(TEXT("Reloaded enum should assign the expected value to Gamma"), GammaValue, int64(9));
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -256,8 +256,8 @@ class UHotReloadEventCarrier : UObject
 bool FAngelscriptHotReloadReloadDelegatesBroadcastOldAndNewTypesTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 ClassReloadCount = 0;
 	int32 StructReloadCount = 0;
@@ -418,7 +418,7 @@ class UHotReloadDelegateCarrier : UObject
 	TestEqual(TEXT("Class-reload delegate should expose the new class"), NewClassSeenDuringReload, ClassObjectAfterReload);
 	TestNotEqual(TEXT("Struct-reload delegate should broadcast distinct old/new structs"), OldStructSeenDuringReload, NewStructSeenDuringReload);
 	TestNotEqual(TEXT("Class-reload delegate should broadcast distinct old/new classes"), OldClassSeenDuringReload, NewClassSeenDuringReload);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -426,8 +426,8 @@ class UHotReloadDelegateCarrier : UObject
 bool FAngelscriptHotReloadReloadDelegatesBroadcastDelegateSignatureSwapTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadDelegateTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 DelegateReloadCount = 0;
 	UDelegateFunction* OldDelegateSeenDuringReload = nullptr;
@@ -492,7 +492,7 @@ bool FAngelscriptHotReloadReloadDelegatesBroadcastDelegateSignatureSwapTest::Run
 	TestNotEqual(TEXT("Delegate-reload callback should broadcast distinct old/new delegate functions"), OldDelegateSeenDuringReload, NewDelegateSeenDuringReload);
 	TestTrue(TEXT("Delegate property should retarget to the reloaded signature function"), DelegatePropertyAfterReload->SignatureFunction == DelegateAfterReload->Function);
 	TestNotNull(TEXT("Reloaded delegate signature should expose the new Label parameter"), FindFProperty<FProperty>(DelegateAfterReload->Function, TEXT("Label")));
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }

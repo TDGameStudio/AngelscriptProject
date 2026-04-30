@@ -32,7 +32,16 @@ bool FAngelscriptDefaultSkipListRegistrationTest::RunTest(const FString& Paramet
 	using namespace AngelscriptTest_Core_AngelscriptSkipBindsTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	const FSkipEntryExpectation EntryCases[] =
 	{
@@ -84,7 +93,7 @@ bool FAngelscriptDefaultSkipListRegistrationTest::RunTest(const FString& Paramet
 			bFirstRead);
 	}
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

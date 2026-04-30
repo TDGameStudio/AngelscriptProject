@@ -2310,117 +2310,117 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptUObjectBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(CreateAndIdentity)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunCreateAndIdentitySection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(HierarchyAndOuter)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunHierarchyAndOuterSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TypeQueryAndCast)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunTypeQueryAndCastSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(FindAndLookup)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunFindAndLookupSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(RootLifecycle)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunRootLifecycleSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(FlagMutation)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunFlagMutationSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(NullAndIsValid)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunNullAndIsValidSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(NewObjectVariants)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunNewObjectVariantsSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ClassReflection)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunClassReflectionSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ReturnValueCrossCheck)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunReturnValueCrossCheckSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(CppToScriptPassthrough)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunCppToScriptPassthroughSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ObjectChainAndNesting)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunObjectChainAndNestingSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(LogAndDiagnostics)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		RunLogAndDiagnosticsSection(*TestRunner, Engine, GUObjectProfile);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

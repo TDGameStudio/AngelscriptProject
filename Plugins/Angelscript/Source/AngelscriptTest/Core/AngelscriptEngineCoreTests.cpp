@@ -85,8 +85,8 @@ bool FAngelscriptTestModuleCompileSnippetTest::RunTest(const FString& Parameters
 {
 	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	if (!TestNotNull(TEXT("Compile test should create an initialized engine"), &Engine))
 	{
 		return false;
@@ -109,7 +109,7 @@ bool FAngelscriptTestModuleCompileSnippetTest::RunTest(const FString& Parameters
 		Function->Release();
 	}
 	bPassed = CompileResult == asSUCCESS && bCompiled;
-	ASTEST_END_SHARE
+	}
 
 	return bPassed;
 }
@@ -118,8 +118,8 @@ bool FAngelscriptTestModuleExecuteSnippetTest::RunTest(const FString& Parameters
 {
 	using namespace AngelscriptTest_Core_AngelscriptEngineCoreTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	if (!TestNotNull(TEXT("Execute test should create an initialized engine"), &Engine))
 	{
 		return false;
@@ -159,7 +159,7 @@ bool FAngelscriptTestModuleExecuteSnippetTest::RunTest(const FString& Parameters
 	Context->Release();
 	Function->Release();
 	bPassed = PrepareResult == asSUCCESS && ExecuteResult == asEXECUTION_FINISHED;
-	ASTEST_END_SHARE
+	}
 
 	return bPassed;
 }

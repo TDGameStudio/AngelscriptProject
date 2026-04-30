@@ -21,12 +21,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBodyInstanceBindingsTest,
 	"Angelscript.TestModule.Bindings.BodyInstance",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
-	BEFORE_ALL() { ASTEST_CREATE_ENGINE_SHARE_CLEAN(); }
-	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE_SHARE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
+	BEFORE_ALL() { ASTEST_CREATE_ENGINE(); }
+	AFTER_ALL() { FAngelscriptEngine& E = ASTEST_CREATE_ENGINE(); AngelscriptTestSupport::ResetSharedCloneEngine(E); }
 
 	TEST_METHOD(FBodyInstanceDefaults)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GBodyInstProfile, TEXT("BodyInst"), TEXT(R"(
 int BodyInstance_SimulatePhysicsDefault()
@@ -47,7 +47,7 @@ int BodyInstance_SimulatePhysicsDefault()
 
 	TEST_METHOD(FLatentActionInfoDefault)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		FCoverageModuleScope Mod(*TestRunner, Engine, GBodyInstProfile, TEXT("Latent"), TEXT(R"(
 int LatentInfo_DefaultLinkage()

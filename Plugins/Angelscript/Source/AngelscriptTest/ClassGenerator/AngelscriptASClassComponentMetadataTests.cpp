@@ -129,8 +129,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassComponentMetadataTests,
 	TEST_METHOD(DefaultComponentMetadataCapturesRootAndAttachLayout)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASClassComponentMetadataModuleName.ToString());
@@ -207,14 +207,14 @@ class AMetadataDerivedActor : AMetadataBaseActor
 		TestRunner->TestEqual(TEXT("ASClass component metadata test should record which base component gets overridden"), OverrideEntry->OverrideComponentName, ASClassBillboardComponentName);
 		TestRunner->TestEqual(TEXT("ASClass component metadata test should record the overriding property name"), OverrideEntry->VariableName, ASClassOverrideVariableName);
 		TestRunner->TestTrue(TEXT("ASClass component metadata test should preserve the generated override component class"), OverrideEntry->ComponentClass == ReplacementBillboardComponentClass);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(SoftReloadPreservesDefaultComponentMetadataWithoutDuplication)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassComponentMetadataTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ASClassComponentMetadataSoftReloadModuleName.ToString());
@@ -338,7 +338,7 @@ class ASoftMetadataDerivedActor : ASoftMetadataBaseActor
 			ExecuteGeneratedIntEventOnGameThread(&Engine, ReloadedActor, GetVersionAfterReload, VersionAfterReload)))
 		{ return; }
 		TestRunner->TestEqual(TEXT("Soft-reload test should observe updated function body"), VersionAfterReload, 2);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

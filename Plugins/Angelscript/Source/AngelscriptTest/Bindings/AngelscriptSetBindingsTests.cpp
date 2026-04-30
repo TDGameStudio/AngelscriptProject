@@ -826,19 +826,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSetBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
 	TEST_METHOD(SetCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		RunSetSection(*TestRunner, Engine, GSetProfile);
 		RunSetTypeMatrixSection(*TestRunner, Engine, GSetProfile);
@@ -846,7 +846,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptSetBindingsTest,
 		RunSetReturnTypeSection(*TestRunner, Engine, GSetProfile);
 		RunSetLogDiagnosticSection(*TestRunner, Engine, GSetProfile);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

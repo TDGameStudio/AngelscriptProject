@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // AngelscriptGameplayFunctionLibraryTests.cpp
 //
 // Gameplay function library async save/load delegate binding coverage — CQTest
@@ -140,12 +140,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayFunctionLibraryTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -155,7 +155,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGameplayFunctionLibraryTest,
 
 	TEST_METHOD(AsyncSaveLoadDelegates)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		ON_SCOPE_EXIT
 		{
@@ -313,7 +313,7 @@ class UAsyncSaveLoadScriptHarness : UObject
 
 	TEST_METHOD(ImmediateFailureCallbacks)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 		ON_SCOPE_EXIT
 		{

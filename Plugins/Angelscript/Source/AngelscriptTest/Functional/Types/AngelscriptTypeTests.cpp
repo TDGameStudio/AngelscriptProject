@@ -191,8 +191,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptPrimitiveTypeTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypePrimitiveAndEnum",
@@ -201,7 +201,7 @@ bool FAngelscriptPrimitiveTypeTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Primitive and enum math should preserve the expected result"), Result, 9);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -213,8 +213,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptInt64TypedefTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int64 Result = 0;
 	ASTEST_COMPILE_RUN_INT64(Engine, "ASTypeInt64AndTypedef",
@@ -223,7 +223,7 @@ bool FAngelscriptInt64TypedefTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("int64 arithmetic should preserve wide integer precision"), Result, static_cast<int64>(1099511627783LL));
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -240,8 +240,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeBoolTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeBool",
@@ -250,15 +250,15 @@ bool FAngelscriptTypeBoolTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Bool expressions should preserve logical truthiness"), Result, 1);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
 bool FAngelscriptTypeBoolLogicMatrixTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeBoolLogicMatrix",
@@ -267,7 +267,7 @@ bool FAngelscriptTypeBoolLogicMatrixTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Bool logic matrix should preserve &&, ||, and ! semantics across the false path"), Result, 101);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -295,8 +295,8 @@ bool FAngelscriptTypeFloatTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.Float should expose a script engine"), ScriptEngine))
@@ -324,7 +324,7 @@ bool FAngelscriptTypeFloatTest::RunTest(const FString& Parameters)
 
 	bPassed = ReadExpectedFloatResult(*this, Engine, *Function, 6.28);
 
-	ASTEST_END_SHARE
+	}
 	return bPassed;
 }
 
@@ -333,7 +333,16 @@ bool FAngelscriptTypeFloatConfigurationModesTest::RunTest(const FString& Paramet
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 	bool bPassed = true;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 	if (!TestNotNull(TEXT("Types.Float.ConfigurationModes should access mutable angelscript settings"), Settings))
@@ -470,7 +479,7 @@ bool FAngelscriptTypeFloatConfigurationModesTest::RunTest(const FString& Paramet
 		static_cast<int32>(Float32ScriptEngine->GetEngineProperty(asEP_FLOAT_IS_FLOAT64)),
 		0);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -478,8 +487,8 @@ bool FAngelscriptTypeFloatDebuggerFormattingTest::RunTest(const FString& Paramet
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 	bool bUsesScientificNotation = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FAngelscriptEngineScope EngineScope(Engine);
 
@@ -513,7 +522,7 @@ bool FAngelscriptTypeFloatDebuggerFormattingTest::RunTest(const FString& Paramet
 	bUsesScientificNotation = DebugValue.Value.Contains(TEXT("e")) || DebugValue.Value.Contains(TEXT("E"));
 	TestTrue(TEXT("Small float debugger values should use scientific notation"), bUsesScientificNotation);
 
-	ASTEST_END_SHARE
+	}
 	return bUsesScientificNotation;
 }
 
@@ -521,8 +530,8 @@ bool FAngelscriptTypeFloatNegativeAndFractionalMatrixTest::RunTest(const FString
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.Float.NegativeAndFractionalMatrix should expose a script engine"), ScriptEngine))
@@ -548,7 +557,7 @@ bool FAngelscriptTypeFloatNegativeAndFractionalMatrixTest::RunTest(const FString
 
 	bPassed = ReadExpectedFloatResult(*this, Engine, *Function, -1.5);
 
-	ASTEST_END_SHARE
+	}
 	return bPassed;
 }
 
@@ -565,8 +574,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeInt8Test::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeInt8",
@@ -575,15 +584,15 @@ bool FAngelscriptTypeInt8Test::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Int8 arithmetic should survive promotion back to int"), Result, 150);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
 bool FAngelscriptTypeInt8SignAndBoundsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeInt8SignAndBounds",
@@ -592,7 +601,7 @@ bool FAngelscriptTypeInt8SignAndBoundsTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Int8 negative literals and boundary promotions should preserve signed semantics"), Result, 1111);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -604,8 +613,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeBitsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeBits",
@@ -614,7 +623,7 @@ bool FAngelscriptTypeBitsTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Bitwise operations should preserve expected masks"), Result, 1);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -630,8 +639,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeEnumTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeEnum",
@@ -640,20 +649,20 @@ bool FAngelscriptTypeEnumTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Enums should preserve ordinal values"), Result, 1);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 bool FAngelscriptTypeEnumExplicitValueMatrixTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeEnumExplicitValueMatrix",
 		TEXT("enum Status { Negative = -4, Sparse = 20, SparsePlusOne = 21, AliasSparse = 20, FlagA = 1, FlagB = 4 } int Run() { return (int(Status::Sparse) + int(Status::SparsePlusOne) - int(Status::Negative)) * 100 + int(Status::AliasSparse) + (int(Status::FlagA) | int(Status::FlagB)); }"),
 		TEXT("int Run()"), Result);
 	TestEqual(TEXT("Explicit enum values should preserve negative, sparse, alias, and bitwise-composed constants"), Result, 4525);
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -670,8 +679,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeAutoTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASTypeAuto",
@@ -680,15 +689,15 @@ bool FAngelscriptTypeAutoTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Auto should infer integer literal types"), Result, 42);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
 bool FAngelscriptTypeAutoInferenceMatrixTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.AutoInferenceMatrix should expose a script engine"), ScriptEngine))
@@ -712,7 +721,7 @@ bool FAngelscriptTypeAutoInferenceMatrixTest::RunTest(const FString& Parameters)
 		Result,
 		123);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -724,8 +733,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeConversionTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.Conversion should expose a script engine"), ScriptEngine))
@@ -743,7 +752,7 @@ bool FAngelscriptTypeConversionTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Explicit numeric conversion should truncate toward zero"), Result, 3);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -756,8 +765,8 @@ bool FAngelscriptTypeImplicitCastTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.ImplicitCast should expose a script engine"), ScriptEngine))
@@ -785,7 +794,7 @@ bool FAngelscriptTypeImplicitCastTest::RunTest(const FString& Parameters)
 
 	bPassed = ReadExpectedFloatResult(*this, Engine, *Function, 42.0);
 
-	ASTEST_END_SHARE
+	}
 	return bPassed;
 }
 
@@ -797,8 +806,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTypeImplicitCastNegativeAndParamWideningTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptTypeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 	if (!TestNotNull(TEXT("Types.ImplicitCast.NegativeAndParamWidening should expose a script engine"), ScriptEngine))
@@ -822,7 +831,7 @@ bool FAngelscriptTypeImplicitCastNegativeAndParamWideningTest::RunTest(const FSt
 		Result,
 		111);
 
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 

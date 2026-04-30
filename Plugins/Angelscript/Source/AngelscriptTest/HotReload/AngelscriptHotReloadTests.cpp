@@ -43,8 +43,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptTestHotReloadPropertyPreservedTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestHotReloadPropertyPreserved"));
 	ON_SCOPE_EXIT
 	{
@@ -146,7 +146,7 @@ class ATestHotReloadPropertyPreserved : AActor
 		return false;
 	}
 	TestEqual(TEXT("TestCase hot-reload property-preserved function should observe the preserved property value after reload"), Result, 142);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -154,8 +154,8 @@ class ATestHotReloadPropertyPreserved : AActor
 bool FAngelscriptTestHotReloadAddPropertyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestHotReloadAddProperty"));
 	ON_SCOPE_EXIT
 	{
@@ -234,7 +234,7 @@ class ATestHotReloadAddProperty : AActor
 
 	TestEqual(TEXT("TestCase hot-reload add-property should preserve the original property default"), ExistingValue, 1);
 	TestEqual(TEXT("TestCase hot-reload add-property should expose the newly added property with its default value"), NewValue, 99);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -242,8 +242,8 @@ class ATestHotReloadAddProperty : AActor
 bool FAngelscriptTestHotReloadFunctionChangeTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestHotReloadFunctionChange"));
 	ON_SCOPE_EXIT
 	{
@@ -337,7 +337,7 @@ class ATestHotReloadFunctionChange : AActor
 		return false;
 	}
 	TestEqual(TEXT("TestCase hot-reload function-change should expose the updated function body on the same actor instance"), AfterReloadResult, 2);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }
@@ -345,8 +345,8 @@ class ATestHotReloadFunctionChange : AActor
 bool FAngelscriptTestHotReloadPIEStructuralChangeNeedsFullReloadTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadTestCaseTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("TestHotReloadPIEStructuralChange"));
 	ON_SCOPE_EXIT
 	{
@@ -408,7 +408,7 @@ class ATestHotReloadPIEStructuralChange : AActor
 		ReloadRequirement == FAngelscriptClassGenerator::FullReloadRequired
 		|| ReloadRequirement == FAngelscriptClassGenerator::FullReloadSuggested);
 
-	ASTEST_END_SHARE_FRESH
+	}
 }
 
 #endif

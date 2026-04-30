@@ -90,8 +90,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComponentMetadataValidationTests,
 	TEST_METHOD(InvalidAttachParentFailsClosed)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ComponentMetadataValidationModuleName.ToString());
@@ -116,14 +116,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComponentMetadataValidationTests,
 		TestRunner->TestNull(TEXT("Invalid attach-parent metadata should not publish the generated actor class after failure"), FindGeneratedClass(&Engine, InvalidAttachParentClassName));
 		TestRunner->TestTrue(TEXT("Invalid attach-parent metadata should not publish a module record after failure"), !FailedModuleRecord.IsValid());
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(MissingOverrideTargetFailsClosed)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptComponentMetadataValidationTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*MissingOverrideTargetModuleName.ToString());
@@ -150,7 +150,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComponentMetadataValidationTests,
 		TestRunner->TestTrue(TEXT("Missing override-target metadata should not silently publish the broken derived class"),
 			FindGeneratedClass(&Engine, MissingOverrideTargetBaseClassName) == nullptr || FindGeneratedClass(&Engine, MissingOverrideTargetDerivedClassName) == nullptr);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

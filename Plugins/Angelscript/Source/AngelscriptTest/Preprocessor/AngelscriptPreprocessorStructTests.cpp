@@ -40,8 +40,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorStructTest,
 
 		TestRunner->AddExpectedError(ExpectedMessage, EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		FFixtureFile File(TEXT("Tests/Preprocessor/Structs/InvalidInheritance.as"), TEXT(R"(
 USTRUCT() struct FDerivedStruct : FBaseStruct
@@ -58,7 +58,7 @@ USTRUCT() struct FDerivedStruct : FBaseStruct
 		AssertDiagnosticAt(*TestRunner, Result, ExpectedMessage, 1);
 		AssertModuleCount(*TestRunner, Result, 1);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -68,8 +68,8 @@ USTRUCT() struct FDerivedStruct : FBaseStruct
 	// ========================================================================
 	TEST_METHOD(DefaultPropertySpecifierUsesStructSettings)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 		if (!TestRunner->TestNotNull(TEXT("Should access mutable settings"), Settings))
@@ -143,7 +143,7 @@ class UClassDefaultSpecifierCarrier : UObject
 			}
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 };
 

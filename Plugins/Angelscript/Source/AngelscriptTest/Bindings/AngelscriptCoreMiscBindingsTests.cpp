@@ -51,12 +51,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCoreMiscBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -66,7 +66,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCoreMiscBindingsTest,
 
 	TEST_METHOD(GuidCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCoreMiscProfile, TEXT("GuidCompat"), TEXT(R"(
@@ -159,7 +159,7 @@ int GuidGetTypeHashNonZero()
 
 	TEST_METHOD(PathsCompat)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCoreMiscProfile, TEXT("PathsCompat"), TEXT(R"(
@@ -338,7 +338,7 @@ int Entry()
 		Script.ReplaceInline(TEXT("__EXPECTED_PROJECT_DIR_EXISTS__"), bExpectedProjectDirExists ? TEXT("true") : TEXT("false"), ESearchCase::CaseSensitive);
 		Script.ReplaceInline(TEXT("__EXPECTED_PROJECT_DIR_IS_FILE__"), bExpectedProjectDirIsFile ? TEXT("true") : TEXT("false"), ESearchCase::CaseSensitive);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCoreMiscProfile, TEXT("PathsExactCompat"), Script);
@@ -354,7 +354,7 @@ int Entry()
 
 	TEST_METHOD(NumberFormattingOptions)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GCoreMiscProfile, TEXT("NumberFormattingOptions"), TEXT(R"(

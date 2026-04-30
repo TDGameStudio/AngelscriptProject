@@ -71,8 +71,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptInterfaceDispatchBridgeTests,
 	TEST_METHOD(CallInterfaceMethodDispatchesToImplementingUFunction)
 	{
 		using namespace InterfaceDispatchBridgeTests;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		InterfaceDispatchBridgeTests::EnsureFixturesBound();
 
@@ -180,7 +180,7 @@ class AInterfaceDispatchBridgeCarrier : AActor, UAngelscriptNativeParentInterfac
 			ScriptObservedMarker,
 			FName(TEXT("BridgeHit")));
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

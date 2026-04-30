@@ -178,8 +178,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	{
 		FActorTestSpawner AdoptSpawner;
@@ -321,7 +321,7 @@ bool FAngelscriptGameInstanceSubsystemRuntimeLifecycleTest::RunTest(const FStrin
 	}
 
 	TestTrue(TEXT("Leaving the cleared-stack own case should restore the shared test engine scope"), FAngelscriptEngine::TryGetCurrentEngine() == &Engine);
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }
@@ -448,8 +448,8 @@ bool FAngelscriptGameInstanceSubsystemMultiOwnerLifecycleTest::RunTest(const FSt
 bool FAngelscriptGameInstanceSubsystemTickPolicyTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Subsystem_AngelscriptGameInstanceSubsystemRuntimeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	UAngelscriptGameInstanceSubsystem* SubsystemCDO = GetMutableDefault<UAngelscriptGameInstanceSubsystem>();
 	if (!TestNotNull(TEXT("TickPolicy test should resolve the subsystem CDO"), SubsystemCDO))
@@ -538,7 +538,7 @@ bool FAngelscriptGameInstanceSubsystemTickPolicyTest::RunTest(const FString& Par
 		return false;
 	}
 
-	ASTEST_END_SHARE_CLEAN
+	}
 
 	return true;
 }

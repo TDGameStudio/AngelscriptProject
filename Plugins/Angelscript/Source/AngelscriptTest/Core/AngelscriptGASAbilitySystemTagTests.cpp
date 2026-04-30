@@ -100,8 +100,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASAbilitySystemTagQueryActivationAndCancelTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemTagTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -271,7 +271,7 @@ bool FAngelscriptGASAbilitySystemTagQueryActivationAndCancelTest::RunTest(const 
 		TEXT("Secondary tag query should still return the secondary tagged ability instance after primary cancellation"),
 		SecondaryActiveAbilities.Num() == 1 && SecondaryActiveAbilities[0] == SecondaryAbilityInstance);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

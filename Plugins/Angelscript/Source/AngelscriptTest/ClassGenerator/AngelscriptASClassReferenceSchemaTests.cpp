@@ -87,8 +87,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASClassReferenceSchemaTests,
 	TEST_METHOD(RuntimeAddReferencedObjectsKeepsScriptOnlyObjectReferenceAlive)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ReferenceSchemaModuleName.ToString());
@@ -167,14 +167,14 @@ class UReferenceSchemaHolder : UObject
 
 		CollectGarbage(RF_NoFlags, true);
 		TestRunner->TestFalse(TEXT("Reference-schema GC test case should release target after clearing last reference"), WeakTarget.IsValid());
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ReferenceSchemaDoesNotDuplicateAcrossRepeatedSoftReload)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASClassReferenceSchemaTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*ReferenceSchemaSoftReloadModuleName.ToString());
@@ -276,7 +276,7 @@ class UReferenceSchemaReloadHolder : UObject
 		if (!TestRunner->TestTrue(TEXT("Should expose stored object after repeated reloads and GC"), InvokeGeneratedFunction(Engine, Holder, GetStoredFunction, &GetStoredAfterGC))) { return; }
 		TestRunner->TestTrue(TEXT("Should preserve same stored object identity after repeated reloads"), GetStoredAfterGC.ReturnValue == WeakTarget.Get());
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

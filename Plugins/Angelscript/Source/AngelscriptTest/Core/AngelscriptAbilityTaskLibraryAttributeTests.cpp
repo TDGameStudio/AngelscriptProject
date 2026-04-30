@@ -1,4 +1,4 @@
-﻿#include "AngelscriptGASTestTypes.h"
+#include "AngelscriptGASTestTypes.h"
 #include "Shared/AngelscriptFunctionalTestUtils.h"
 #include "Shared/AngelscriptTestMacros.h"
 
@@ -110,8 +110,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptAbilityTaskLibraryAttributeWrappersTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptAbilityTaskLibraryAttributeTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -331,7 +331,7 @@ bool FAngelscriptAbilityTaskLibraryAttributeWrappersTest::RunTest(const FString&
 	TestEqual(TEXT("WaitForAttributeChangeWithComparison should stay at one callback after ending"), ComparisonListener->TriggerCount, 1);
 	TestEqual(TEXT("WaitForAttributeChangeThreshold should stay at two callbacks after ending"), ThresholdListener->CallbackCount, 2);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

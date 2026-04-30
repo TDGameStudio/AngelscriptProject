@@ -93,8 +93,8 @@ bool FAngelscriptStaticJITDebugCallstackScopePushPopTest::RunTest(const FString&
 {
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITDebugCallstackTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	do
 	{
@@ -215,7 +215,7 @@ bool FAngelscriptStaticJITDebugCallstackScopePushPopTest::RunTest(const FString&
 	}
 	while (false);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

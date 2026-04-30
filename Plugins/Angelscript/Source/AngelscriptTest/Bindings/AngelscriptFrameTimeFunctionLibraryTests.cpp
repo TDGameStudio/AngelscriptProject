@@ -73,12 +73,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFrameTimeBindingsTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -105,7 +105,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFrameTimeBindingsTest,
 
 	TEST_METHOD(AsSecondsMixinCompiles)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		FCoverageModuleScope Mod(*TestRunner, Engine, GProfile, TEXT("AsSecondsMixin"), TEXT(R"(

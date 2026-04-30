@@ -51,8 +51,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorPropertyTest,
 			TEXT("Unknown property specifier DefinitelyUnknownSpecifier on property UBadPropertyCarrier::TrackedValue."),
 			EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		struct FPropertyErrorCase
 		{
@@ -111,7 +111,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorPropertyTest,
 			AssertNoCompilableCode(*TestRunner, Result);
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -124,8 +124,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptPreprocessorPropertyTest,
 			TEXT("Unknown ReplicationCondition DefinitelyUnknown on property UBadPropertyCarrier::TrackedValue."),
 			EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		Engine.ResetDiagnostics();
 		Engine.LastEmittedDiagnostics.Empty();
@@ -149,7 +149,7 @@ class UBadPropertyCarrier : UObject
 			TEXT("Unknown ReplicationCondition"), 4, 1);
 		AssertNoCompilableCode(*TestRunner, Result);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -158,8 +158,8 @@ class UBadPropertyCarrier : UObject
 	// ========================================================================
 	TEST_METHOD(DefaultBlueprintAccessUsesSettings)
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		UAngelscriptSettings* Settings = GetMutableDefault<UAngelscriptSettings>();
 		if (!TestRunner->TestNotNull(TEXT("Should access mutable settings"), Settings))
@@ -220,7 +220,7 @@ class UBlueprintAccessDefaultSpecifierCarrier : UObject
 		TestRunner->TestTrue(TEXT("Explicit property should be blueprint-readable"), ExplicitProp->bBlueprintReadable);
 		TestRunner->TestTrue(TEXT("Explicit property should be blueprint-writable"), ExplicitProp->bBlueprintWritable);
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 
 	// ========================================================================
@@ -233,8 +233,8 @@ class UBlueprintAccessDefaultSpecifierCarrier : UObject
 			TEXT("ShowOnActor can only be used on default components in actors"),
 			EAutomationExpectedErrorFlags::Contains, 1);
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-		ASTEST_BEGIN_MODULE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 
 		// Invalid case: ShowOnActor without DefaultComponent
 		{
@@ -305,7 +305,7 @@ class AShowOnActorValidCarrier : AActor
 			}
 		}
 
-		ASTEST_END_MODULE_CLEAN
+		}
 	}
 };
 

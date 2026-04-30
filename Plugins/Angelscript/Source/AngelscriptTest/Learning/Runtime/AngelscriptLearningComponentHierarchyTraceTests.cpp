@@ -35,8 +35,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptLearningComponentHierarchyTraceTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Learning_Runtime_AngelscriptLearningComponentHierarchyTraceTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	static const FName ModuleName(TEXT("LearningComponentHierarchyModule"));
 	ON_SCOPE_EXIT
 	{
@@ -169,7 +169,7 @@ class ALearningComponentHierarchyActor : AActor
 		&& bContainsCountKeyword
 		&& bMinimumEventsOk;
 
-	ASTEST_END_SHARE_CLEAN
+	}
 }
 
 #endif

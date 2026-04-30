@@ -34,8 +34,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASFunctionWorldContextTests,
 	TEST_METHOD(StaticWorldContextRuntimeCallUsesValidParmOffset)
 	{
 		using namespace AngelscriptTest_ClassGenerator_AngelscriptASFunctionWorldContextTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		ON_SCOPE_EXIT
 		{
 			Engine.DiscardModule(*WorldContextModuleName.ToString());
@@ -122,7 +122,7 @@ int CheckWorldContext(AActor WorldContextObject, int Value)
 		}
 
 		TestRunner->TestTrue(TEXT("World-context runtime call should restore the ambient context after the scoped override exits"), FAngelscriptEngine::GetAmbientWorldContext() == AmbientBeforeScope);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

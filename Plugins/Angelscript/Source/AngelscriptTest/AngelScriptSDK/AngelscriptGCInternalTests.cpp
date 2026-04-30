@@ -239,8 +239,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 	TEST_METHOD(Statistics)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCGarbageCollector Collector;
 		Collector.engine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 
@@ -256,27 +256,27 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 		TestRunner->TestEqual(TEXT("Fresh GC collector should start with zero detected cycles"), TotalDetected, 0u);
 		TestRunner->TestEqual(TEXT("Fresh GC collector should start with zero new objects"), NewObjects, 0u);
 		TestRunner->TestEqual(TEXT("Fresh GC collector should start with zero newly destroyed objects"), TotalNewDestroyed, 0u);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(EmptyCollect)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCGarbageCollector Collector;
 		Collector.engine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 
 		const int Result = Collector.GarbageCollect(asGC_FULL_CYCLE, 1);
 		TestRunner->TestEqual(TEXT("GC full cycle on an empty collector should complete immediately"), Result, 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(InvalidLookup)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCGarbageCollector Collector;
 		Collector.engine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 
@@ -289,27 +289,27 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 		TestRunner->TestEqual(TEXT("GetObjectInGC should zero the sequence number on failure"), SeqNbr, 0u);
 		TestRunner->TestEqual(TEXT("GetObjectInGC should null the object pointer on failure"), Object, static_cast<void*>(nullptr));
 		TestRunner->TestEqual(TEXT("GetObjectInGC should null the type pointer on failure"), Type, static_cast<asITypeInfo*>(nullptr));
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ReportUndestroyedEmpty)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asCGarbageCollector Collector;
 		Collector.engine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 
 		const int Result = Collector.ReportAndReleaseUndestroyedObjects();
 		TestRunner->TestEqual(TEXT("ReportAndReleaseUndestroyedObjects should return zero when no objects are tracked"), Result, 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ManualCycleCollection)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 		asITypeInfo* GCProbeType = nullptr;
 		if (!RegisterGCProbeType(*TestRunner, *ScriptEngine, GCProbeType))
@@ -336,14 +336,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 		TestRunner->TestTrue(TEXT("Manual GC should destroy at least one released cyclic object"), AfterCollect.TotalDestroyed > BeforeRelease.TotalDestroyed);
 		TestRunner->TestTrue(TEXT("Manual GC should not increase the number of tracked objects after collecting a released cycle"), AfterCollect.CurrentSize <= BeforeRelease.CurrentSize);
 		TestRunner->TestEqual(TEXT("Manual GC should leave no probe objects alive after collecting a self-cycle"), FGCProbeObject::LiveCount, 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(CycleDetection)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 		asITypeInfo* GCProbeType = nullptr;
 		if (!RegisterGCProbeType(*TestRunner, *ScriptEngine, GCProbeType))
@@ -378,14 +378,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 		const FGCStatisticsSnapshot AfterCollect = GetGCStatisticsSnapshot(*ScriptEngine);
 		TestRunner->TestTrue(TEXT("GC should eventually destroy the detected cycle"), AfterCollect.TotalDestroyed >= AfterDetect.TotalDestroyed);
 		TestRunner->TestEqual(TEXT("GC should leave no probe objects alive after collecting the detected self-cycle"), FGCProbeObject::LiveCount, 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(TwoNodeCycleCollection)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptGCInternalTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		asIScriptEngine* ScriptEngine = Engine.GetScriptEngine();
 		asITypeInfo* GCProbeType = nullptr;
 		if (!RegisterGCProbeType(*TestRunner, *ScriptEngine, GCProbeType))
@@ -431,7 +431,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptGCInternalTests,
 		TestRunner->TestTrue(TEXT("GC should destroy released two-node cycle objects during full collection"), AfterCollect.TotalDestroyed > AfterDetect.TotalDestroyed);
 		TestRunner->TestTrue(TEXT("Full collection should remove both released cyclic probe objects from GC tracking"), AfterDetect.CurrentSize >= AfterCollect.CurrentSize + 2);
 		TestRunner->TestEqual(TEXT("GC should leave no probe objects alive after collecting the detected two-node cycle"), FGCProbeObject::LiveCount, 0);
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 

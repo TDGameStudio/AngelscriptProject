@@ -69,8 +69,8 @@ bool FAngelscriptExecutionNestedRecursiveFrameIsolationTest::RunTest(const FStri
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(
@@ -85,7 +85,7 @@ bool FAngelscriptExecutionNestedRecursiveFrameIsolationTest::RunTest(const FStri
 		Result,
 		1234);
 
-	ASTEST_END_SHARE
+	}
 	return bPassed;
 }
 
@@ -93,8 +93,8 @@ bool FAngelscriptExecutionExceptionCallstackInspectionTest::RunTest(const FStrin
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptExecutionNestedCallTests_Private;
 	bool bPassed = true;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	asIScriptModule* Module = BuildModule(*this, Engine, ExceptionModuleName, ExceptionScriptSource);
 	if (Module == nullptr)
@@ -188,7 +188,7 @@ bool FAngelscriptExecutionExceptionCallstackInspectionTest::RunTest(const FStrin
 		TEXT("Execution.Context.ExceptionCallstackInspection should expose positive source line numbers for captured frames"),
 		bAllFrameLinesPositive);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

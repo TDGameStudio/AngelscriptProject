@@ -86,12 +86,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAssetManagerFunctionLibraryTest,
 {
 	BEFORE_ALL()
 	{
-		ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+		ASTEST_CREATE_ENGINE();
 	}
 
 	AFTER_ALL()
 	{
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		AngelscriptTestSupport::ResetSharedCloneEngine(Engine);
 	}
 
@@ -103,7 +103,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptAssetManagerFunctionLibraryTest,
 	{
 		using namespace AngelscriptAssetManagerTestHelpers;
 
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		ON_SCOPE_EXIT

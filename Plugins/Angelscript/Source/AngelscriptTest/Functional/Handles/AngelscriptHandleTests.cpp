@@ -74,7 +74,16 @@ bool FAngelscriptHandleBasicTest::RunTest(const FString& Parameters)
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	const FString ScriptFilename = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("NegativeCompileIsolation"), TEXT("ASHandleBasic.as"));
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	ECompileResult CompileResult = ECompileResult::FullyHandled;
 	UE_SET_LOG_VERBOSITY(Angelscript, Fatal);
 	const bool bCompiled = CompileModuleWithResult(
@@ -90,7 +99,7 @@ bool FAngelscriptHandleBasicTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	bPassed = CompileResult == ECompileResult::Error;
-	ASTEST_END_FULL
+	}
 
 	return bPassed;
 }
@@ -103,8 +112,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHandleImplicitTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const bool bCompiled = CompileModuleFromMemory(
 		&Engine,
 		TEXT("ASHandleImplicit"),
@@ -128,7 +137,7 @@ bool FAngelscriptHandleImplicitTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("Handles.Implicit currently verifies compile and symbol registration only because executing implicit script-class parameter passing still faults at runtime on this branch"), true);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -144,7 +153,16 @@ bool FAngelscriptHandleAutoTest::RunTest(const FString& Parameters)
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
 	const FString ScriptFilename = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("NegativeCompileIsolation"), TEXT("ASHandleAuto.as"));
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	ECompileResult CompileResult = ECompileResult::FullyHandled;
 	UE_SET_LOG_VERBOSITY(Angelscript, Fatal);
 	const bool bCompiled = CompileModuleWithResult(
@@ -160,7 +178,7 @@ bool FAngelscriptHandleAutoTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	bPassed = CompileResult == ECompileResult::Error;
-	ASTEST_END_FULL
+	}
 
 	return bPassed;
 }
@@ -178,8 +196,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHandleRefArgumentTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	const bool bCompiled = CompileModuleFromMemory(
 		&Engine,
 		TEXT("ASHandleRefArgument"),
@@ -210,7 +228,7 @@ bool FAngelscriptHandleRefArgumentTest::RunTest(const FString& Parameters)
 	}
 
 	TestEqual(TEXT("Handles.RefArgument should propagate out-ref writes back to the caller"), Result, 42);
-	ASTEST_END_SHARE
+	}
 	return true;
 }
 
@@ -218,8 +236,8 @@ bool FAngelscriptHandleNativeObjectArgumentNullAndNonNullTest::RunTest(const FSt
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptHandleTests_Private;
 	bool bPassed = false;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	ON_SCOPE_EXIT
 	{
@@ -292,7 +310,7 @@ int Test(UObject Value)
 	}
 	while (false);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 

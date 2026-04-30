@@ -222,10 +222,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadModuleRecordTracksEnumAndDelegateArtifactsTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadModuleRecordTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 	bool bModuleAPassed = false;
 	bool bModuleBPassed = false;
-	ASTEST_BEGIN_SHARE_FRESH
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	ON_SCOPE_EXIT
 	{
@@ -259,7 +259,7 @@ bool FAngelscriptHotReloadModuleRecordTracksEnumAndDelegateArtifactsTest::RunTes
 	bModuleAPassed = VerifyTrackedModuleArtifacts(*this, Engine, ModuleTrackedTypesA, ModuleTrackedTypesB);
 	bModuleBPassed = VerifyTrackedModuleArtifacts(*this, Engine, ModuleTrackedTypesB, ModuleTrackedTypesA);
 
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return bModuleAPassed && bModuleBPassed;
 }

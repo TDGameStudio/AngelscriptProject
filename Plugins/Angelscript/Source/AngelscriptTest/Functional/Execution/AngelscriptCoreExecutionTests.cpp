@@ -72,8 +72,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCoreCreateCompileExecuteTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASCoreCreateCompileExecute",
@@ -81,7 +81,7 @@ bool FAngelscriptCoreCreateCompileExecuteTest::RunTest(const FString& Parameters
 		TEXT("int Run()"), Result);
 
 	TestEqual(TEXT("Core create/compile/execute should return the expected value"), Result, 42);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -209,8 +209,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptCoreGlobalStateTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE();
-	ASTEST_BEGIN_SHARE
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	int32 Result = 0;
 	ASTEST_COMPILE_RUN_INT(Engine, "ASCoreGlobalState",
@@ -218,7 +218,7 @@ bool FAngelscriptCoreGlobalStateTest::RunTest(const FString& Parameters)
 		TEXT("int Run()"), Result);
 
 	TestEqual(TEXT("Const globals and helper calls should evaluate as expected"), Result, 7);
-	ASTEST_END_SHARE
+	}
 
 	return true;
 }
@@ -426,9 +426,9 @@ bool FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest::RunTest(const F
 	static const FString WrongModuleName(TEXT("DefinitelyWrongName"));
 	static const FString Script(TEXT("int Run() { return 42; }"));
 
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
 	bool bPassed = true;
-	ASTEST_BEGIN_SHARE_CLEAN
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	const FString AbsoluteFilename = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), RelativeFilename);
 	const FName WrongModuleFName(*WrongModuleName);
@@ -513,7 +513,7 @@ bool FAngelscriptCoreModuleLookupFilenameThenModuleFallbackTest::RunTest(const F
 		FallbackResult,
 		42);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return bPassed;
 }
 
@@ -526,7 +526,16 @@ bool FAngelscriptCompilerBasicTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	const bool bCompiledSimple = CompileModuleFromMemory(
 		&Engine,
 		TEXT("ASCoreCompilerBasicSimple"),
@@ -595,7 +604,7 @@ bool FAngelscriptCompilerBasicTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("Core.CompilerBasic should report an error compile result for invalid syntax"), ErrorCompileResult, ECompileResult::Error);
-	ASTEST_END_FULL
+	}
 
 	return true;
 }
@@ -614,7 +623,16 @@ bool FAngelscriptCompilerParserTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	const bool bCompiledValid = CompileModuleFromMemory(
 		&Engine,
 		TEXT("ASCoreParserValid"),
@@ -651,7 +669,7 @@ bool FAngelscriptCompilerParserTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("Core.Parser should report an error compile result for invalid syntax"), InvalidCompileResult, ECompileResult::Error);
-	ASTEST_END_FULL
+	}
 
 	return true;
 }
@@ -660,7 +678,16 @@ bool FAngelscriptCompilerParserInvalidSyntaxDiagnosticsAndCleanupTest::RunTest(c
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	static const FName ModuleName(TEXT("ASCoreParserInvalidCleanup"));
 	static const FString Filename(TEXT("ASCoreParserInvalidCleanup.as"));
 
@@ -753,7 +780,7 @@ bool FAngelscriptCompilerParserInvalidSyntaxDiagnosticsAndCleanupTest::RunTest(c
 		return false;
 	}
 	TestEqual(TEXT("Core.Parser invalid-syntax recovery should return the fixed result after retry"), Result, 42);
-	ASTEST_END_FULL
+	}
 
 	return true;
 }
@@ -767,7 +794,16 @@ bool FAngelscriptCompilerOptimizeTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Angelscript_AngelscriptCoreExecutionTests_Private;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 	const bool bCompiledConstant = CompileModuleFromMemory(
 		&Engine,
 		TEXT("ASCoreOptimizeConstant"),
@@ -802,7 +838,7 @@ bool FAngelscriptCompilerOptimizeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("Core.Optimize should keep reachable results stable when dead code is present"), DeadCodeResult, 1);
-	ASTEST_END_FULL
+	}
 
 	return true;
 }

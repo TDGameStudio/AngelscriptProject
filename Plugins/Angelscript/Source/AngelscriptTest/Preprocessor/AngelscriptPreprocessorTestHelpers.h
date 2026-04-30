@@ -13,8 +13,8 @@
 // Usage:
 //   TEST_METHOD(SomeName)
 //   {
-//       FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_MODULE_CLEAN();
-//       ASTEST_BEGIN_MODULE_CLEAN
+//       FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+//       { FAngelscriptEngineScope _AutoEngineScope(Engine); AngelscriptTestSupport::FScopedModuleCleanEngine _AutoModuleClean(Engine);
 //
 //       FFixtureFile File(TEXT("Tests/PP/Feature/Test.as"), TEXT("int Entry() { return 7; }"));
 //       auto Result = RunPreprocess(Engine, File);
@@ -22,7 +22,7 @@
 //       auto* Module = AssertModuleExists(*TestRunner, Result, TEXT("Tests.PP.Feature.Test"));
 //       if (Module) AssertModuleCodeContains(*TestRunner, *Module, TEXT("return 7;"));
 //
-//       ASTEST_END_MODULE_CLEAN
+//       }
 //   }
 // ============================================================================
 

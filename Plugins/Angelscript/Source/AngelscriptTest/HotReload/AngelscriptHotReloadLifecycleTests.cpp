@@ -38,8 +38,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptHotReloadDoesNotReplayBeginPlayOnLiveActorTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_HotReload_AngelscriptHotReloadLifecycleTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
-	ASTEST_BEGIN_SHARE_FRESH
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 	ON_SCOPE_EXIT
 	{
 		Engine.DiscardModule(*LifecycleModuleName.ToString());
@@ -222,7 +222,7 @@ class AHotReloadLifecycleTarget : AActor
 		TEXT("Soft reload lifecycle test case should apply the updated function body without resetting state"),
 		ValueAfterReload,
 		42);
-	ASTEST_END_SHARE_FRESH
+	}
 
 	return true;
 }

@@ -281,7 +281,16 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptWorldCollisionBindingsTest,
 	{
 		using namespace AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-		ASTEST_BEGIN_FULL
+		{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 		asIScriptModule* Module = BuildModule(
 			*TestRunner,
@@ -543,7 +552,7 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 			ScriptComponentOverlapMisses,
 			NativeComponentOverlapMisses);
 
-		ASTEST_END_FULL
+		}
 	}
 };
 

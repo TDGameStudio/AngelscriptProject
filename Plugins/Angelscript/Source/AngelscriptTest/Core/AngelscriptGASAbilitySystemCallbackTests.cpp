@@ -64,8 +64,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASAbilitySystemAttributeCallbackTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAbilitySystemCallbackTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FActorTestSpawner Spawner;
 	Spawner.InitializeGameSubsystems();
@@ -196,7 +196,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	TestEqual(TEXT("Deprecated trampoline should report the previous Health value"), DeprecatedListener->LastOldValue, InitialHealthValue);
 	TestEqual(TEXT("Deprecated trampoline should report the updated Health value"), DeprecatedListener->LastNewValue, UpdatedHealthValue);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

@@ -166,7 +166,16 @@ bool FAngelscriptStaticJITExceptionHelpersMapExpectedErrorsTest::RunTest(const F
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -186,7 +195,7 @@ bool FAngelscriptStaticJITExceptionHelpersMapExpectedErrorsTest::RunTest(const F
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -195,7 +204,16 @@ bool FAngelscriptStaticJITExceptionHelpersWrapperParityTest::RunTest(const FStri
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -215,7 +233,7 @@ bool FAngelscriptStaticJITExceptionHelpersWrapperParityTest::RunTest(const FStri
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -224,7 +242,16 @@ bool FAngelscriptStaticJITExceptionHelpersSwitchValueInvalidTest::RunTest(const 
 	using namespace AngelscriptTest_StaticJIT_AngelscriptStaticJITExceptionTests_Private;
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	do
 	{
@@ -252,7 +279,7 @@ bool FAngelscriptStaticJITExceptionHelpersSwitchValueInvalidTest::RunTest(const 
 	}
 	while (false);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

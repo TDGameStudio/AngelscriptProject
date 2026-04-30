@@ -160,8 +160,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASWaitGameplayTagQueryCreatesTaskTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FGameplayTag MatchingTag;
 	FGameplayTag NonMatchingTag;
@@ -241,7 +241,7 @@ bool FAngelscriptGASWaitGameplayTagQueryCreatesTaskTest::RunTest(const FString& 
 		Listener->TriggerCount,
 		1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 
@@ -253,8 +253,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FAngelscriptGASActorWrappersCreateWorkingTasksTest::RunTest(const FString& Parameters)
 {
 	using namespace AngelscriptTest_Core_AngelscriptGASAsyncLibraryTests_Private;
-	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-	ASTEST_BEGIN_SHARE_CLEAN
+	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+	{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 	FGameplayTag ExactEventTag;
 	FGameplayTag ChildEventTag;
@@ -400,7 +400,7 @@ bool FAngelscriptGASActorWrappersCreateWorkingTasksTest::RunTest(const FString& 
 	AbilitySystemComponent->RemoveLooseGameplayTag(ChildEventTag);
 	TestEqual(TEXT("One-shot gameplay-tag-removed tasks should not re-broadcast after ending"), RemovedListener->TriggerCount, 1);
 
-	ASTEST_END_SHARE_CLEAN
+	}
 	return true;
 }
 

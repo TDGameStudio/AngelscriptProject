@@ -20,7 +20,16 @@ bool FAngelscriptCompilerEnumMacroValidationTest::RunTest(const FString& Paramet
 {
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	const bool bCompiled = CompileAnnotatedModuleFromMemory(
 		&Engine,
@@ -51,7 +60,7 @@ enum class ECompilerMacroAvailabilityState : uint16
 		TestEqual(TEXT("Compiled enum should have 3 declared values"), EnumDesc->ValueNames.Num(), 3)
 		&& TestEqual(TEXT("Beta should have explicit value 4"), static_cast<int32>(EnumDesc->EnumValues[1]), 4);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 
@@ -59,7 +68,16 @@ bool FAngelscriptCompilerDelegateMacroValidationTest::RunTest(const FString& Par
 {
 	bool bPassed = false;
 	FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_FULL();
-	ASTEST_BEGIN_FULL
+	{
+		FAngelscriptEngineScope _AutoEngineScope(Engine);
+		ON_SCOPE_EXIT
+		{
+			const TArray<TSharedRef<FAngelscriptModuleDesc>> _ActiveModules = Engine.GetActiveModules();
+			for (const TSharedRef<FAngelscriptModuleDesc>& _Module : _ActiveModules)
+			{
+				Engine.DiscardModule(*_Module->ModuleName);
+			}
+		};
 
 	const bool bCompiled = CompileAnnotatedModuleFromMemory(
 		&Engine,
@@ -97,7 +115,7 @@ class UCompilerDelegateCarrier : UObject
 		&& TestNotNull(TEXT("Single-cast delegate should materialize a UDelegateFunction"), SingleCast->Function)
 		&& TestNotNull(TEXT("Multicast delegate should materialize a UDelegateFunction"), MultiCast->Function);
 
-	ASTEST_END_FULL
+	}
 	return bPassed;
 }
 

@@ -46,8 +46,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptStructCppOpsTests,
 	TEST_METHOD(NotBlueprintTypeByDefault)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptStructCppOpsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 		UScriptStruct* Struct = BuildScriptStruct(
 			*TestRunner,
 			Engine,
@@ -65,14 +65,14 @@ struct FScopeConstructStruct
 		}
 
 		TestRunner->TestFalse(TEXT("Script structs should not be BlueprintType by default"), Struct->GetBoolMetaData(TEXT("BlueprintType")));
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 
 	TEST_METHOD(ValueClassUsesCppStructOps)
 	{
 		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptStructCppOpsTests_Private;
-		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
-		ASTEST_BEGIN_SHARE_CLEAN
+		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE();
+		{ FAngelscriptEngineScope _AutoEngineScope(Engine);
 
 		FAngelscriptStructCppOpsLifecycleFixture::ResetCounters();
 		UScriptStruct* Struct = FAngelscriptStructCppOpsLifecycleFixture::StaticStruct();
@@ -153,7 +153,7 @@ struct FScopeConstructStruct
 		bSourceInitialized = false;
 		TestRunner->TestEqual(TEXT("DestroyStruct should run both native destructors"), FAngelscriptStructCppOpsLifecycleFixture::DestructorCount, 2);
 
-		ASTEST_END_SHARE_CLEAN
+		}
 	}
 };
 
