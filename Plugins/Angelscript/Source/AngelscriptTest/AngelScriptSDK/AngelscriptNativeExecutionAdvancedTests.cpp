@@ -16,7 +16,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native float-return execution test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native float-return execution test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -35,26 +35,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 			: "float Test()";
 
 		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "NativeExecuteFloatReturn", Source);
-		if (!TestNotNull(TEXT("Native float-return execution test should compile the module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Native float-return execution test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, Declaration);
-		if (!TestNotNull(TEXT("Native float-return execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native float-return execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native float-return execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native float-return execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int ExecuteResult = PrepareAndExecute(Context, Function);
-		if (!TestEqual(TEXT("Native float-return execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
+		if (!TestRunner->TestEqual(TEXT("Native float-return execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
 		{
 			Context->Release();
 			return;
@@ -63,11 +63,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		if (bFloatUsesFloat64)
 		{
 			const double ReturnValue = Context->GetReturnDouble();
-			TestTrue(TEXT("Native float-return execution test should preserve double results"), FMath::IsNearlyEqual(ReturnValue, 42.5, 0.0001));
+			TestRunner->TestTrue(TEXT("Native float-return execution test should preserve double results"), FMath::IsNearlyEqual(ReturnValue, 42.5, 0.0001));
 		}
 		else
 		{
-			TestEqual(TEXT("Native float-return execution test should preserve float results"), Context->GetReturnFloat(), 42.5f, 0.0001f);
+			TestRunner->TestEqual(TEXT("Native float-return execution test should preserve float results"), Context->GetReturnFloat(), 42.5f, 0.0001f);
 		}
 
 		Context->Release();
@@ -77,7 +77,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native negative-value execution test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native negative-value execution test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -88,26 +88,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		};
 
 		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "NativeExecuteNegativeValue", "int Test(int Start, int Delta) { return Start + Delta; }");
-		if (!TestNotNull(TEXT("Native negative-value execution test should compile the module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Native negative-value execution test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test(int, int)");
-		if (!TestNotNull(TEXT("Native negative-value execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native negative-value execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native negative-value execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native negative-value execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int PrepareResult = Context->Prepare(Function);
-		if (!TestEqual(TEXT("Native negative-value execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native negative-value execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			Context->Release();
 			return;
@@ -116,8 +116,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		Context->SetArgDWord(0, static_cast<asDWORD>(10));
 		Context->SetArgDWord(1, static_cast<asDWORD>(-52));
 		const int ExecuteResult = Context->Execute();
-		TestEqual(TEXT("Native negative-value execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native negative-value execution test should preserve signed integer arguments"), static_cast<int32>(Context->GetReturnDWord()), -42);
+		TestRunner->TestEqual(TEXT("Native negative-value execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native negative-value execution test should preserve signed integer arguments"), static_cast<int32>(Context->GetReturnDWord()), -42);
 		Context->Release();
 	}
 
@@ -125,7 +125,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native multiple-return-paths execution test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native multiple-return-paths execution test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -136,26 +136,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		};
 
 		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "NativeExecuteMultipleReturnPaths", "int Test(int Value) { if (Value > 0) { return 40; } return 2; }");
-		if (!TestNotNull(TEXT("Native multiple-return-paths execution test should compile the module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Native multiple-return-paths execution test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test(int)");
-		if (!TestNotNull(TEXT("Native multiple-return-paths execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native multiple-return-paths execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* PositiveContext = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native multiple-return-paths execution test should create the positive-path context"), PositiveContext))
+		if (!TestRunner->TestNotNull(TEXT("Native multiple-return-paths execution test should create the positive-path context"), PositiveContext))
 		{
 			return;
 		}
 
 		const int PositivePrepareResult = PositiveContext->Prepare(Function);
-		if (!TestEqual(TEXT("Native multiple-return-paths execution test should prepare the positive path"), PositivePrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should prepare the positive path"), PositivePrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			PositiveContext->Release();
 			return;
@@ -163,7 +163,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 
 		PositiveContext->SetArgDWord(0, 1);
 		const int PositiveExecuteResult = PositiveContext->Execute();
-		if (!TestEqual(TEXT("Native multiple-return-paths execution test should finish the positive path"), PositiveExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
+		if (!TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should finish the positive path"), PositiveExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
 		{
 			PositiveContext->Release();
 			return;
@@ -173,13 +173,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		PositiveContext->Release();
 
 		asIScriptContext* FallbackContext = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native multiple-return-paths execution test should create the fallback-path context"), FallbackContext))
+		if (!TestRunner->TestNotNull(TEXT("Native multiple-return-paths execution test should create the fallback-path context"), FallbackContext))
 		{
 			return;
 		}
 
 		const int FallbackPrepareResult = FallbackContext->Prepare(Function);
-		if (!TestEqual(TEXT("Native multiple-return-paths execution test should prepare the fallback path"), FallbackPrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should prepare the fallback path"), FallbackPrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			FallbackContext->Release();
 			return;
@@ -187,7 +187,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 
 		FallbackContext->SetArgDWord(0, 0);
 		const int FallbackExecuteResult = FallbackContext->Execute();
-		if (!TestEqual(TEXT("Native multiple-return-paths execution test should finish the fallback path"), FallbackExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
+		if (!TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should finish the fallback path"), FallbackExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
 		{
 			FallbackContext->Release();
 			return;
@@ -196,8 +196,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionAdvancedTests,
 		const int32 FallbackResult = static_cast<int32>(FallbackContext->GetReturnDWord());
 		FallbackContext->Release();
 
-		TestEqual(TEXT("Native multiple-return-paths execution test should take the positive branch when Value > 0"), PositiveResult, 40);
-		TestEqual(TEXT("Native multiple-return-paths execution test should take the fallback branch when Value <= 0"), FallbackResult, 2);
+		TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should take the positive branch when Value > 0"), PositiveResult, 40);
+		TestRunner->TestEqual(TEXT("Native multiple-return-paths execution test should take the fallback branch when Value <= 0"), FallbackResult, 2);
 	}
 };
 

@@ -34,7 +34,6 @@ namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 	"Angelscript.TestModule.AngelScriptSDK.Execute",
@@ -42,10 +41,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 {
 	TEST_METHOD(VoidFunction)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = nullptr;
 		asIScriptModule* Module = nullptr;
-		if (!CreateEngineAndBuildModule(*this, "NativeExecuteVoid", "void Test() {}", Messages, ScriptEngine, Module))
+		if (!CreateEngineAndBuildModule(*TestRunner, "NativeExecuteVoid", "void Test() {}", Messages, ScriptEngine, Module))
 		{
 			return;
 		}
@@ -56,28 +56,29 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		};
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "void Test()");
-		if (!TestNotNull(TEXT("Native void execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native void execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native void execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native void execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int ExecuteResult = PrepareAndExecute(Context, Function);
 		Context->Release();
-		TestEqual(TEXT("Native void execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native void execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
 	}
 
 	TEST_METHOD(ReturnValue)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = nullptr;
 		asIScriptModule* Module = nullptr;
-		if (!CreateEngineAndBuildModule(*this, "NativeExecuteReturn", "int Test() { return 42; }", Messages, ScriptEngine, Module))
+		if (!CreateEngineAndBuildModule(*TestRunner, "NativeExecuteReturn", "int Test() { return 42; }", Messages, ScriptEngine, Module))
 		{
 			return;
 		}
@@ -88,29 +89,30 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		};
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test()");
-		if (!TestNotNull(TEXT("Native return-value execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native return-value execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native return-value execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native return-value execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int ExecuteResult = PrepareAndExecute(Context, Function);
-		TestEqual(TEXT("Native return-value execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native return-value execution test should return 42"), static_cast<int32>(Context->GetReturnDWord()), 42);
+		TestRunner->TestEqual(TEXT("Native return-value execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native return-value execution test should return 42"), static_cast<int32>(Context->GetReturnDWord()), 42);
 		Context->Release();
 	}
 
 	TEST_METHOD(OneArg)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = nullptr;
 		asIScriptModule* Module = nullptr;
-		if (!CreateEngineAndBuildModule(*this, "NativeExecuteOneArg", "int Test(int Value) { return Value * 2; }", Messages, ScriptEngine, Module))
+		if (!CreateEngineAndBuildModule(*TestRunner, "NativeExecuteOneArg", "int Test(int Value) { return Value * 2; }", Messages, ScriptEngine, Module))
 		{
 			return;
 		}
@@ -121,19 +123,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		};
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test(int)");
-		if (!TestNotNull(TEXT("Native one-arg execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native one-arg execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native one-arg execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native one-arg execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int PrepareResult = Context->Prepare(Function);
-		if (!TestEqual(TEXT("Native one-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native one-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			Context->Release();
 			return;
@@ -141,17 +143,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 
 		Context->SetArgDWord(0, 21);
 		const int ExecuteResult = Context->Execute();
-		TestEqual(TEXT("Native one-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native one-arg execution test should preserve the provided input"), static_cast<int32>(Context->GetReturnDWord()), 42);
+		TestRunner->TestEqual(TEXT("Native one-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native one-arg execution test should preserve the provided input"), static_cast<int32>(Context->GetReturnDWord()), 42);
 		Context->Release();
 	}
 
 	TEST_METHOD(TwoArgs)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = nullptr;
 		asIScriptModule* Module = nullptr;
-		if (!CreateEngineAndBuildModule(*this, "NativeExecuteTwoArgs", "int Test(int A, int B) { return A + B; }", Messages, ScriptEngine, Module))
+		if (!CreateEngineAndBuildModule(*TestRunner, "NativeExecuteTwoArgs", "int Test(int A, int B) { return A + B; }", Messages, ScriptEngine, Module))
 		{
 			return;
 		}
@@ -162,19 +165,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		};
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test(int, int)");
-		if (!TestNotNull(TEXT("Native two-arg execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native two-arg execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native two-arg execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native two-arg execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int PrepareResult = Context->Prepare(Function);
-		if (!TestEqual(TEXT("Native two-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native two-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			Context->Release();
 			return;
@@ -183,17 +186,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		Context->SetArgDWord(0, 20);
 		Context->SetArgDWord(1, 22);
 		const int ExecuteResult = Context->Execute();
-		TestEqual(TEXT("Native two-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native two-arg execution test should sum both arguments"), static_cast<int32>(Context->GetReturnDWord()), 42);
+		TestRunner->TestEqual(TEXT("Native two-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native two-arg execution test should sum both arguments"), static_cast<int32>(Context->GetReturnDWord()), 42);
 		Context->Release();
 	}
 
 	TEST_METHOD(ThreeArgs)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeExecutionTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = nullptr;
 		asIScriptModule* Module = nullptr;
-		if (!CreateEngineAndBuildModule(*this, "NativeExecuteThreeArgs", "int Test(int A, int B, int C) { return A + B + C; }", Messages, ScriptEngine, Module))
+		if (!CreateEngineAndBuildModule(*TestRunner, "NativeExecuteThreeArgs", "int Test(int A, int B, int C) { return A + B + C; }", Messages, ScriptEngine, Module))
 		{
 			return;
 		}
@@ -204,19 +208,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		};
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test(int, int, int)");
-		if (!TestNotNull(TEXT("Native three-arg execution test should resolve the entry function"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native three-arg execution test should resolve the entry function"), Function))
 		{
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native three-arg execution test should create a context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native three-arg execution test should create a context"), Context))
 		{
 			return;
 		}
 
 		const int PrepareResult = Context->Prepare(Function);
-		if (!TestEqual(TEXT("Native three-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("Native three-arg execution test should prepare the function"), PrepareResult, static_cast<int32>(asSUCCESS)))
 		{
 			Context->Release();
 			return;
@@ -226,8 +230,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeExecutionTests,
 		Context->SetArgDWord(1, 20);
 		Context->SetArgDWord(2, 12);
 		const int ExecuteResult = Context->Execute();
-		TestEqual(TEXT("Native three-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native three-arg execution test should sum all arguments"), static_cast<int32>(Context->GetReturnDWord()), 42);
+		TestRunner->TestEqual(TEXT("Native three-arg execution test should finish successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native three-arg execution test should sum all arguments"), static_cast<int32>(Context->GetReturnDWord()), 42);
 		Context->Release();
 	}
 };

@@ -18,7 +18,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 	"Angelscript.TestModule.AngelScriptSDK.Builder",
@@ -26,40 +25,42 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 {
 	TEST_METHOD(SingleModulePipeline)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"BuilderSinglePipeline",
 			TEXT("int Entry() { return 42; }"));
-		if (!TestNotNull(TEXT("Builder single-module test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Builder single-module test should create a backing module"), Module))
 		{
 			return;
 		}
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
-		if (!TestNotNull(TEXT("Builder single-module pipeline should expose the compiled function"), Function))
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry()"));
+		if (!TestRunner->TestNotNull(TEXT("Builder single-module pipeline should expose the compiled function"), Function))
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *Function, Result))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *Function, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Builder single-module pipeline should execute the compiled function"), Result, 42);
+		TestRunner->TestEqual(TEXT("Builder single-module pipeline should execute the compiled function"), Result, 42);
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(CompileErrors)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCModule* Module = CreateBuilderModule(ScriptEngine, "BuilderCompileErrors");
-		if (!TestNotNull(TEXT("Builder compile-error test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Builder compile-error test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -68,108 +69,110 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBuilderTests,
 		Builder.silent = true;
 		asCScriptFunction* Function = nullptr;
 		const int32 BuildResult = Builder.CompileFunction("BuilderCompileErrors", "int Entry( { return 42; }", 0, 0, &Function);
-		TestTrue(TEXT("Builder should report invalid syntax as a build failure"), BuildResult < 0);
-		TestEqual(TEXT("Builder compile-error test should not return a compiled function on failure"), Function, static_cast<asCScriptFunction*>(nullptr));
+		TestRunner->TestTrue(TEXT("Builder should report invalid syntax as a build failure"), BuildResult < 0);
+		TestRunner->TestEqual(TEXT("Builder compile-error test should not return a compiled function on failure"), Function, static_cast<asCScriptFunction*>(nullptr));
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(RebuildModule)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* ModuleV1 = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"BuilderRebuild",
 			TEXT("int Entry() { return 1; }"));
-		if (!TestNotNull(TEXT("Builder rebuild test should create the initial backing module"), ModuleV1))
+		if (!TestRunner->TestNotNull(TEXT("Builder rebuild test should create the initial backing module"), ModuleV1))
 		{
 			return;
 		}
-		asIScriptFunction* FunctionV1 = AngelscriptTestSupport::GetFunctionByDecl(*this, *ModuleV1, TEXT("int Entry()"));
-		if (!TestNotNull(TEXT("Initial builder rebuild compile should expose Entry()"), FunctionV1))
+		asIScriptFunction* FunctionV1 = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *ModuleV1, TEXT("int Entry()"));
+		if (!TestRunner->TestNotNull(TEXT("Initial builder rebuild compile should expose Entry()"), FunctionV1))
 		{
 			return;
 		}
 
 		int32 FirstResult = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *FunctionV1, FirstResult))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *FunctionV1, FirstResult))
 		{
 			return;
 		}
-		TestEqual(TEXT("Initial builder rebuild function should return the first version"), FirstResult, 1);
+		TestRunner->TestEqual(TEXT("Initial builder rebuild function should return the first version"), FirstResult, 1);
 
 		asIScriptModule* ModuleV2 = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"BuilderRebuild",
 			TEXT("int Entry() { return 2; }"));
-		if (!TestNotNull(TEXT("Builder rebuild test should create the rebuilt module"), ModuleV2))
+		if (!TestRunner->TestNotNull(TEXT("Builder rebuild test should create the rebuilt module"), ModuleV2))
 		{
 			return;
 		}
-		asIScriptFunction* FunctionV2 = AngelscriptTestSupport::GetFunctionByDecl(*this, *ModuleV2, TEXT("int Entry()"));
-		if (!TestNotNull(TEXT("Rebuilt builder module should expose Entry()"), FunctionV2))
+		asIScriptFunction* FunctionV2 = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *ModuleV2, TEXT("int Entry()"));
+		if (!TestRunner->TestNotNull(TEXT("Rebuilt builder module should expose Entry()"), FunctionV2))
 		{
 			return;
 		}
 
 		int32 SecondResult = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *FunctionV2, SecondResult))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *FunctionV2, SecondResult))
 		{
 			return;
 		}
-		TestEqual(TEXT("Rebuilt builder module should execute the latest function body"), SecondResult, 2);
+		TestRunner->TestEqual(TEXT("Rebuilt builder module should execute the latest function body"), SecondResult, 2);
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(ImportBinding)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBuilderTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* SourceModule = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"BuilderImportSource",
 			TEXT("int SharedValue() { return 77; }"));
 		asIScriptModule* ConsumerModule = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"BuilderImportConsumer",
 			TEXT("import int SharedValue() from \"BuilderImportSource\"; int Entry() { return SharedValue(); }"));
-		if (!TestNotNull(TEXT("Builder import test should create the source module"), SourceModule) ||
-			!TestNotNull(TEXT("Builder import test should create the consumer module"), ConsumerModule))
+		if (!TestRunner->TestNotNull(TEXT("Builder import test should create the source module"), SourceModule) ||
+			!TestRunner->TestNotNull(TEXT("Builder import test should create the consumer module"), ConsumerModule))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Consumer module should expose one imported function before binding"), static_cast<int32>(ConsumerModule->GetImportedFunctionCount()), 1);
-		TestEqual(TEXT("Imported function should point to the expected source module"), FString(UTF8_TO_TCHAR(ConsumerModule->GetImportedFunctionSourceModule(0))), FString(TEXT("BuilderImportSource")));
+		TestRunner->TestEqual(TEXT("Consumer module should expose one imported function before binding"), static_cast<int32>(ConsumerModule->GetImportedFunctionCount()), 1);
+		TestRunner->TestEqual(TEXT("Imported function should point to the expected source module"), FString(UTF8_TO_TCHAR(ConsumerModule->GetImportedFunctionSourceModule(0))), FString(TEXT("BuilderImportSource")));
 
 		asIScriptFunction* SourceFunction = SourceModule->GetFunctionByDecl("int SharedValue()");
-		if (!TestNotNull(TEXT("Builder import test should expose the source function for binding"), SourceFunction))
+		if (!TestRunner->TestNotNull(TEXT("Builder import test should expose the source function for binding"), SourceFunction))
 		{
 			return;
 		}
 
-		if (!TestEqual(TEXT("BindImportedFunction should resolve the imported function"), ConsumerModule->BindImportedFunction(0, SourceFunction), static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("BindImportedFunction should resolve the imported function"), ConsumerModule->BindImportedFunction(0, SourceFunction), static_cast<int32>(asSUCCESS)))
 		{
 			return;
 		}
 
-		asIScriptFunction* EntryFunction = AngelscriptTestSupport::GetFunctionByDecl(*this, *ConsumerModule, TEXT("int Entry()"));
-		if (!TestNotNull(TEXT("Consumer module should expose Entry() after import binding"), EntryFunction))
+		asIScriptFunction* EntryFunction = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *ConsumerModule, TEXT("int Entry()"));
+		if (!TestRunner->TestNotNull(TEXT("Consumer module should expose Entry() after import binding"), EntryFunction))
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *EntryFunction, Result))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *EntryFunction, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Imported function binding should let the consumer execute the source function"), Result, 77);
+		TestRunner->TestEqual(TEXT("Imported function binding should let the consumer execute the source function"), Result, 77);
 		ASTEST_END_SHARE_CLEAN
 	}
 };

@@ -143,15 +143,15 @@ public:
 	}
 }
 
-using namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKObjectTests, "Angelscript.TestModule.AngelScriptSDK.ASSDK.Object", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 {
 	TEST_METHOD(ValueType)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK object value-type test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object value-type test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -167,7 +167,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKObjectTests, "Angelscript.TestModule.Ange
 		const int RegisterDestructResult = ScriptEngine->RegisterObjectBehaviour("Object", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructObject), asCALL_CDECL_OBJLAST);
 		const int RegisterPropertyResult = ScriptEngine->RegisterObjectProperty("Object", "int Value", asOFFSET(CObject, Value));
 
-		if (!TestTrue(TEXT("ASSDK object value-type test should register all object APIs"),
+		if (!TestRunner->TestTrue(TEXT("ASSDK object value-type test should register all object APIs"),
 			RegisterObjectResult >= 0 &&
 			RegisterConstructResult >= 0 &&
 			RegisterDestructResult >= 0 &&
@@ -176,30 +176,30 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKObjectTests, "Angelscript.TestModule.Ange
 			return;
 		}
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKObjectValueType",
-			"bool Entry()                 \n"
-			"{                            \n"
-			"  Object value;              \n"
-			"  value.Value = 10;          \n"
-			"  Object copy = value;       \n"
-			"  return copy.Value == 10;   \n"
-			"}                            \n");
-		if (!TestNotNull(TEXT("ASSDK object value-type test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKObjectValueType", R"(
+bool Entry()
+{
+	Object value;
+	value.Value = 10;
+	Object copy = value;
+	return copy.Value == 10;
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object value-type test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
-		TestNotNull(TEXT("ASSDK object value-type test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
+		TestRunner->TestNotNull(TEXT("ASSDK object value-type test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
 	}
 
 	TEST_METHOD(ConstructorChain)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK object constructor-chain test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object constructor-chain test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -209,50 +209,52 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKObjectTests, "Angelscript.TestModule.Ange
 			DestroyNativeEngine(ScriptEngine);
 		};
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKObjectConstructorChain",
-			"class InternalClass            \n"
-			"{                              \n"
-			"  InternalClass()              \n"
-			"  {                            \n"
-			"    m_x = 3;                   \n"
-			"    m_y = 773456;              \n"
-			"  }                            \n"
-			"  int8 m_x;                    \n"
-			"  int  m_y;                    \n"
-			"}                              \n"
-			"class MyClass                  \n"
-			"{                              \n"
-			"  MyClass()                    \n"
-			"  {                            \n"
-			"    m_c = InternalClass();     \n"
-			"  }                            \n"
-			"  bool Test() const            \n"
-			"  {                            \n"
-			"    return m_c.m_x == 3 && m_c.m_y == 773456; \n"
-			"  }                            \n"
-			"  InternalClass m_c;           \n"
-			"}                              \n"
-			"bool Entry()                   \n"
-			"{                              \n"
-			"  MyClass test;                \n"
-			"  return test.Test();          \n"
-			"}                              \n");
-		if (!TestNotNull(TEXT("ASSDK object constructor-chain test should compile the script constructor chain module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKObjectConstructorChain", R"(
+class InternalClass
+{
+	InternalClass()
+	{
+		m_x = 3;
+		m_y = 773456;
+	}
+	int8 m_x;
+	int  m_y;
+}
+
+class MyClass
+{
+	MyClass()
+	{
+		m_c = InternalClass();
+	}
+	bool Test() const
+	{
+		return m_c.m_x == 3 && m_c.m_y == 773456;
+	}
+	InternalClass m_c;
+}
+
+bool Entry()
+{
+	MyClass test;
+	return test.Test();
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object constructor-chain test should compile the script constructor chain module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
-		TestNotNull(TEXT("ASSDK object constructor-chain test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
+		TestRunner->TestNotNull(TEXT("ASSDK object constructor-chain test should expose the compiled entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
 	}
 
 	TEST_METHOD(NativeFloatWrapper)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKObjectTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK object native-float wrapper test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object native-float wrapper test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -262,26 +264,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKObjectTests, "Angelscript.TestModule.Ange
 			DestroyNativeEngine(ScriptEngine);
 		};
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKObjectFloatValue",
-			"class FloatValue               \n"
-			"{                              \n"
-			"  float Value;                 \n"
-			"}                              \n"
-			"bool Entry()                  \n"
-			"{                             \n"
-			"  FloatValue value;           \n"
-			"  value.Value = 10.0f;        \n"
-			"  return value.Value > 9.9f && value.Value < 10.1f; \n"
-			"}                             \n");
-		if (!TestNotNull(TEXT("ASSDK object native-float wrapper test should compile the float value module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKObjectFloatValue", R"(
+class FloatValue
+{
+	float Value;
+}
+
+bool Entry()
+{
+	FloatValue value;
+	value.Value = 10.0f;
+	return value.Value > 9.9f && value.Value < 10.1f;
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK object native-float wrapper test should compile the float value module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
-		TestNotNull(TEXT("ASSDK object native-float wrapper test should expose the float entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
+		TestRunner->TestNotNull(TEXT("ASSDK object native-float wrapper test should expose the float entry function"), GetNativeFunctionByDecl(Module, "bool Entry()"));
 	}
 };
 

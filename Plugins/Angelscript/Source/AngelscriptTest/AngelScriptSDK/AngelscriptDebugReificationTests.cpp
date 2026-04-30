@@ -19,7 +19,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebugReificationTests_Privat
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebugReificationTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptDebugReificationTests,
 	"Angelscript.TestModule.AngelScriptSDK.DebugReification",
@@ -27,6 +26,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDebugReificationTests,
 {
 	TEST_METHOD(TypeMapAndFallback)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptDebugReificationTests_Private;
 		const int32 Int32Type = GetReifyType<int32>();
 		const int32 DoubleType = GetReifyType<double>();
 		const int32 NameType = GetReifyType<FName>();
@@ -60,11 +60,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDebugReificationTests,
 			TEXT("Debug reification should map UObject* to the UObject debugger type"),
 			ObjectType,
 			EReifiedType::_Enum_UObject);
-		TestNotEqual(
+		TestRunner->TestNotEqual(
 			TEXT("Debug reification should keep int32 and double on distinct debugger types"),
 			Int32Type,
 			DoubleType);
-		TestNotEqual(
+		TestRunner->TestNotEqual(
 			TEXT("Debug reification should keep FName and UObject* on distinct debugger types"),
 			NameType,
 			ObjectType);

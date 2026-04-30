@@ -11,10 +11,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKSmokeTests, "Angelscript.TestModule.Angel
 {
 	TEST_METHOD(Smoke)
 	{
-		FAngelscriptSDKTestAdapter Adapter(*this);
+		FAngelscriptSDKTestAdapter Adapter(*TestRunner);
 		FASSDKBufferedOutStream BufferedOutStream;
 		asIScriptEngine* ScriptEngine = CreateASSDKTestEngine(Adapter, &BufferedOutStream);
-		if (!TestNotNull(TEXT("ASSDK smoke test should create a standalone script engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK smoke test should create a standalone script engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -25,7 +25,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKSmokeTests, "Angelscript.TestModule.Angel
 		};
 
 		ScriptEngine->WriteMessage("ASSDKSmoke", 0, 0, asMSGTYPE_INFORMATION, "Smoke callback ready");
-		if (!TestTrue(TEXT("ASSDK smoke test should capture engine callback messages"), BufferedOutStream.Buffer.find("Smoke callback ready") != std::string::npos))
+		if (!TestRunner->TestTrue(TEXT("ASSDK smoke test should capture engine callback messages"), BufferedOutStream.Buffer.find("Smoke callback ready") != std::string::npos))
 		{
 			return;
 		}
@@ -34,12 +34,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKSmokeTests, "Angelscript.TestModule.Angel
 			ScriptEngine,
 			"bool ExecuteSmoke() { assert(true); return true; }");
 
-		if (!TestEqual(TEXT("ASSDK smoke test should compile and execute a simple snippet"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
+		if (!TestRunner->TestEqual(TEXT("ASSDK smoke test should compile and execute a simple snippet"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED)))
 		{
 			return;
 		}
 
-		TestFalse(TEXT("ASSDK smoke test should not latch an adapter failure for Assert(true)"), Adapter.bFailed);
+		TestRunner->TestFalse(TEXT("ASSDK smoke test should not latch an adapter failure for Assert(true)"), Adapter.bFailed);
 	}
 };
 

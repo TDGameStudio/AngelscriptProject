@@ -28,7 +28,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_P
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 	"Angelscript.TestModule.AngelScriptSDK.FunctionCallers",
@@ -36,6 +35,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 {
 	TEST_METHOD(ConstRefQualifiedMethodCaller)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptFunctionCallerErasureTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 
@@ -46,10 +46,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 		const ASAutoCaller::FunctionCaller Caller = ASAutoCaller::MakeFunctionCaller(Method);
 		ASAutoCaller::TMethodPtr ErasedMethod = MakeErasedMethodPointer(Method);
 
-		TestTrue(TEXT("const& qualified method caller should produce a bound generic method pointer"), GenericMethod.IsBound());
-		TestEqual(TEXT("const& qualified method caller should encode the method pointer as a class method"), static_cast<int32>(GenericMethod.flag), 3);
-		TestTrue(TEXT("const& qualified method caller should produce a bound auto caller"), Caller.IsBound());
-		TestEqual(TEXT("const& qualified method caller should select the method caller path"), Caller.type, 2);
+		TestRunner->TestTrue(TEXT("const& qualified method caller should produce a bound generic method pointer"), GenericMethod.IsBound());
+		TestRunner->TestEqual(TEXT("const& qualified method caller should encode the method pointer as a class method"), static_cast<int32>(GenericMethod.flag), 3);
+		TestRunner->TestTrue(TEXT("const& qualified method caller should produce a bound auto caller"), Caller.IsBound());
+		TestRunner->TestEqual(TEXT("const& qualified method caller should select the method caller path"), Caller.type, 2);
 
 		FConstRefQualifiedProbe Probe;
 		int32 Delta = 5;
@@ -62,8 +62,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptFunctionCallerErasureTests,
 
 		Caller.MethodPtr(ErasedMethod, Arguments, &Result);
 
-		TestEqual(TEXT("const& qualified method caller should preserve the erased return value"), Result, 16);
-		TestEqual(TEXT("const& qualified method caller should not mutate the probe object"), Probe.Base, 11);
+		TestRunner->TestEqual(TEXT("const& qualified method caller should preserve the erased return value"), Result, 16);
+		TestRunner->TestEqual(TEXT("const& qualified method caller should not mutate the probe object"), Probe.Base, 11);
 
 		ASTEST_END_SHARE_CLEAN
 	}

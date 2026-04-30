@@ -55,7 +55,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 	"Angelscript.TestModule.AngelScriptSDK.Compiler",
@@ -63,10 +62,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 {
 	TEST_METHOD(BytecodeGeneration)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerBytecodeGeneration",
 			TEXT("int Entry() { int A = 1; int B = 2; return A + B; }"));
@@ -75,7 +75,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry()"));
 		if (Function == nullptr)
 		{
 			return;
@@ -83,17 +83,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 
 		asUINT BytecodeLength = 0;
 		asDWORD* Bytecode = Function->GetByteCode(&BytecodeLength);
-		TestNotNull(TEXT("Compiled function should expose a bytecode buffer"), Bytecode);
-		TestTrue(TEXT("Compiled function should emit at least one bytecode instruction"), BytecodeLength > 0);
+		TestRunner->TestNotNull(TEXT("Compiled function should expose a bytecode buffer"), Bytecode);
+		TestRunner->TestTrue(TEXT("Compiled function should emit at least one bytecode instruction"), BytecodeLength > 0);
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(BytecodeExecutionAndRetBoundary)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerBytecodeExecutionAndRetBoundary",
 			TEXT("int Entry(int A) { int B = 2; return A + B; }"));
@@ -102,14 +103,14 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry(int)"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry(int)"));
 		if (Function == nullptr)
 		{
 			return;
 		}
 
 		asIScriptContext* Context = Engine.CreateContext();
-		if (!TestNotNull(TEXT("Compiler bytecode boundary test should create a script context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Compiler bytecode boundary test should create a script context"), Context))
 		{
 			return;
 		}
@@ -120,46 +121,46 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 		const int32 Result = ExecuteResult == asEXECUTION_FINISHED ? static_cast<int32>(Context->GetReturnDWord()) : 0;
 		Context->Release();
 
-		if (!TestEqual(TEXT("Compiler bytecode boundary test should prepare successfully"), PrepareResult, asSUCCESS))
+		if (!TestRunner->TestEqual(TEXT("Compiler bytecode boundary test should prepare successfully"), PrepareResult, asSUCCESS))
 		{
 			return;
 		}
-		if (!TestEqual(TEXT("Compiler bytecode boundary test should accept the integer argument"), SetArgResult, asSUCCESS))
+		if (!TestRunner->TestEqual(TEXT("Compiler bytecode boundary test should accept the integer argument"), SetArgResult, asSUCCESS))
 		{
 			return;
 		}
-		if (!TestEqual(TEXT("Compiler bytecode boundary test should execute successfully"), ExecuteResult, asEXECUTION_FINISHED))
+		if (!TestRunner->TestEqual(TEXT("Compiler bytecode boundary test should execute successfully"), ExecuteResult, asEXECUTION_FINISHED))
 		{
 			return;
 		}
-		if (!TestEqual(TEXT("Compiler bytecode boundary test should execute the compiled arithmetic function"), Result, 3))
+		if (!TestRunner->TestEqual(TEXT("Compiler bytecode boundary test should execute the compiled arithmetic function"), Result, 3))
 		{
 			return;
 		}
 
 		asUINT BytecodeLength = 0;
 		asDWORD* Bytecode = Function->GetByteCode(&BytecodeLength);
-		if (!TestNotNull(TEXT("Compiler bytecode boundary test should expose a bytecode buffer"), Bytecode))
+		if (!TestRunner->TestNotNull(TEXT("Compiler bytecode boundary test should expose a bytecode buffer"), Bytecode))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("Compiler bytecode boundary test should emit more than one dword"), BytecodeLength > 1))
+		if (!TestRunner->TestTrue(TEXT("Compiler bytecode boundary test should emit more than one dword"), BytecodeLength > 1))
 		{
 			return;
 		}
 
 		const asBYTE FirstOpcode = *reinterpret_cast<const asBYTE*>(&Bytecode[0]);
-		if (!TestNotEqual(TEXT("Compiler bytecode boundary test should not begin with RET"), static_cast<int32>(FirstOpcode), static_cast<int32>(asBC_RET)))
+		if (!TestRunner->TestNotEqual(TEXT("Compiler bytecode boundary test should not begin with RET"), static_cast<int32>(FirstOpcode), static_cast<int32>(asBC_RET)))
 		{
 			return;
 		}
 
 		asBYTE LastOpcode = 0;
-		if (!TestTrue(TEXT("Compiler bytecode boundary test should walk the bytecode to a valid end boundary"), FindLastBytecodeOpcode(Bytecode, BytecodeLength, LastOpcode)))
+		if (!TestRunner->TestTrue(TEXT("Compiler bytecode boundary test should walk the bytecode to a valid end boundary"), FindLastBytecodeOpcode(Bytecode, BytecodeLength, LastOpcode)))
 		{
 			return;
 		}
-		if (!TestEqual(TEXT("Compiler bytecode boundary test should end with RET"), static_cast<int32>(LastOpcode), static_cast<int32>(asBC_RET)))
+		if (!TestRunner->TestEqual(TEXT("Compiler bytecode boundary test should end with RET"), static_cast<int32>(LastOpcode), static_cast<int32>(asBC_RET)))
 		{
 			return;
 		}
@@ -168,10 +169,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 
 	TEST_METHOD(VariableScopes)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerVariableScopes",
 			TEXT("int Entry() { int Outer = 1; { int Inner = 2; Outer += Inner; } return Outer; }"));
@@ -180,22 +182,23 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptCompilerTests,
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry()"));
 		if (Function == nullptr)
 		{
 			return;
 		}
 
-		TestTrue(TEXT("Compiled function should report local variables for scoped declarations"), Function->GetVarCount() >= 2);
+		TestRunner->TestTrue(TEXT("Compiled function should report local variables for scoped declarations"), Function->GetVarCount() >= 2);
 
 		const char* FirstVarName = nullptr;
 		Function->GetVar(0, &FirstVarName, nullptr);
-		TestNotNull(TEXT("Compiler should record the first local variable name"), FirstVarName);
+		TestRunner->TestNotNull(TEXT("Compiler should record the first local variable name"), FirstVarName);
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(OutOfScopeUseRejected)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_FRESH();
 		ASTEST_BEGIN_SHARE_FRESH
 
@@ -227,35 +230,35 @@ int Entry()
 		const AngelscriptTestSupport::FAngelscriptCompileTraceDiagnosticSummary* Diagnostic =
 			FindErrorDiagnosticContaining(Summary.Diagnostics, TEXT("is not declared"));
 
-		TestFalse(
+		TestRunner->TestFalse(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should reject out-of-scope locals"),
 			bCompiled);
-		TestFalse(
+		TestRunner->TestFalse(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should report bCompileSucceeded=false"),
 			Summary.bCompileSucceeded);
-		TestEqual(
+		TestRunner->TestEqual(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should surface ECompileResult::Error"),
 			Summary.CompileResult,
 			ECompileResult::Error);
-		TestTrue(
+		TestRunner->TestTrue(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should capture at least one diagnostic"),
 			Summary.Diagnostics.Num() > 0);
-		TestNotNull(
+		TestRunner->TestNotNull(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should surface a scope diagnostic"),
 			Diagnostic);
 		if (Diagnostic != nullptr)
 		{
-			TestTrue(
+			TestRunner->TestTrue(
 				TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should keep the missing variable name in the diagnostic"),
 				Diagnostic->Message.Contains(TEXT("Inner")));
-			TestTrue(
+			TestRunner->TestTrue(
 				TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should report a non-zero row"),
 				Diagnostic->Row > 0);
-			TestTrue(
+			TestRunner->TestTrue(
 				TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should report a non-zero column"),
 				Diagnostic->Column > 0);
 		}
-		TestTrue(
+		TestRunner->TestTrue(
 			TEXT("Compiler.VariableScopes.OutOfScopeUseRejected should not leave a compiled module behind"),
 			!Engine.GetModuleByModuleName(ModuleName.ToString()).IsValid());
 
@@ -264,10 +267,11 @@ int Entry()
 
 	TEST_METHOD(FunctionCalls)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerFunctionCalls",
 			TEXT("int Add(int A, int B) { return A + B; } int Entry() { return Add(7, 5); }"));
@@ -276,28 +280,29 @@ int Entry()
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry()"));
 		if (Function == nullptr)
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *Function, Result))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *Function, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Compiler should generate callable bytecode for function invocations"), Result, 12);
+		TestRunner->TestEqual(TEXT("Compiler should generate callable bytecode for function invocations"), Result, 12);
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(TypeConversions)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerTypeConversions",
 			TEXT("float32 Entry() { int Value = 7; return float32(Value); }"));
@@ -306,14 +311,14 @@ int Entry()
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("float32 Entry()"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("float32 Entry()"));
 		if (Function == nullptr)
 		{
 			return;
 		}
 
 		asIScriptContext* Context = Engine.CreateContext();
-		if (!TestNotNull(TEXT("Compiler conversion test should create a script context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Compiler conversion test should create a script context"), Context))
 		{
 			return;
 		}
@@ -323,18 +328,19 @@ int Entry()
 		const float Result = Context->GetReturnFloat();
 		Context->Release();
 
-		TestEqual(TEXT("Compiler conversion test should prepare successfully"), PrepareResult, asSUCCESS);
-		TestEqual(TEXT("Compiler conversion test should execute successfully"), ExecuteResult, asEXECUTION_FINISHED);
-		TestTrue(TEXT("Compiler should emit a numeric conversion that preserves the value"), FMath::IsNearlyEqual(Result, 7.0f));
+		TestRunner->TestEqual(TEXT("Compiler conversion test should prepare successfully"), PrepareResult, asSUCCESS);
+		TestRunner->TestEqual(TEXT("Compiler conversion test should execute successfully"), ExecuteResult, asEXECUTION_FINISHED);
+		TestRunner->TestTrue(TEXT("Compiler should emit a numeric conversion that preserves the value"), FMath::IsNearlyEqual(Result, 7.0f));
 		ASTEST_END_SHARE_CLEAN
 	}
 
 	TEST_METHOD(NegativeAndFloat64Matrix)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptCompilerTests_Private;
 		FAngelscriptEngine& Engine = ASTEST_CREATE_ENGINE_SHARE_CLEAN();
 		ASTEST_BEGIN_SHARE_CLEAN
 		asIScriptModule* Module = AngelscriptTestSupport::BuildModule(
-			*this,
+			*TestRunner,
 			Engine,
 			"CompilerTypeConversionsNegativeAndFloat64Matrix",
 			TEXT("int Entry() { float32 A = -3.75f; float64 B = 9.25; int FromA = int(A); int FromB = int(B); return (FromA + 10) * 100 + FromB; }"));
@@ -343,19 +349,19 @@ int Entry()
 			return;
 		}
 
-		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*this, *Module, TEXT("int Entry()"));
+		asIScriptFunction* Function = AngelscriptTestSupport::GetFunctionByDecl(*TestRunner, *Module, TEXT("int Entry()"));
 		if (Function == nullptr)
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!AngelscriptTestSupport::ExecuteIntFunction(*this, Engine, *Function, Result))
+		if (!AngelscriptTestSupport::ExecuteIntFunction(*TestRunner, Engine, *Function, Result))
 		{
 			return;
 		}
 
-		if (!TestEqual(
+		if (!TestRunner->TestEqual(
 			TEXT("Compiler type conversion matrix should truncate both float32 negatives and float64 positives toward zero"),
 			Result,
 			709))
@@ -365,11 +371,11 @@ int Entry()
 
 		asUINT BytecodeLength = 0;
 		asDWORD* Bytecode = Function->GetByteCode(&BytecodeLength);
-		if (!TestNotNull(TEXT("Compiler type conversion matrix should expose generated bytecode"), Bytecode))
+		if (!TestRunner->TestNotNull(TEXT("Compiler type conversion matrix should expose generated bytecode"), Bytecode))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("Compiler type conversion matrix should emit at least one bytecode instruction"), BytecodeLength > 0))
+		if (!TestRunner->TestTrue(TEXT("Compiler type conversion matrix should emit at least one bytecode instruction"), BytecodeLength > 0))
 		{
 			return;
 		}

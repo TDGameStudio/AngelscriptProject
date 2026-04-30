@@ -15,7 +15,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKEngineTests,
 	{
 		FASSDKBufferedOutStream BufferedOutStream;
 		asIScriptEngine* PrimaryEngine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
-		if (!TestNotNull(TEXT("ASSDK engine-create test should create the primary engine"), PrimaryEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK engine-create test should create the primary engine"), PrimaryEngine))
 		{
 			return;
 		}
@@ -32,13 +32,13 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKEngineTests,
 			asMETHODPR(FASSDKBufferedOutStream, Callback, (asSMessageInfo*), void),
 			&BufferedOutStream,
 			asCALL_THISCALL);
-		if (!TestEqual(TEXT("ASSDK engine-create test should install the primary engine callback"), PrimaryCallbackResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("ASSDK engine-create test should install the primary engine callback"), PrimaryCallbackResult, static_cast<int32>(asSUCCESS)))
 		{
 			return;
 		}
 
 		asIScriptEngine* SecondaryEngine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
-		if (!TestNotNull(TEXT("ASSDK engine-create test should create the secondary engine"), SecondaryEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK engine-create test should create the secondary engine"), SecondaryEngine))
 		{
 			return;
 		}
@@ -55,25 +55,25 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKEngineTests,
 		void* CallbackObject = nullptr;
 		asDWORD CallConv = 0;
 		const int GetCallbackResult = PrimaryEngine->GetMessageCallback(&MessageCallback, &CallbackObject, &CallConv);
-		if (!TestEqual(TEXT("ASSDK engine-create test should read back the primary callback"), GetCallbackResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("ASSDK engine-create test should read back the primary callback"), GetCallbackResult, static_cast<int32>(asSUCCESS)))
 		{
 			return;
 		}
 
 		const int ReuseCallbackResult = SecondaryEngine->SetMessageCallback(MessageCallback, CallbackObject, CallConv);
-		if (!TestEqual(TEXT("ASSDK engine-create test should reuse the primary callback on the secondary engine"), ReuseCallbackResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("ASSDK engine-create test should reuse the primary callback on the secondary engine"), ReuseCallbackResult, static_cast<int32>(asSUCCESS)))
 		{
 			return;
 		}
 
 		const int WriteMessageResult = SecondaryEngine->WriteMessage("test", 0, 0, asMSGTYPE_INFORMATION, "Hello from engine2");
-		if (!TestEqual(TEXT("ASSDK engine-create test should emit a callback message from the secondary engine"), WriteMessageResult, static_cast<int32>(asSUCCESS)))
+		if (!TestRunner->TestEqual(TEXT("ASSDK engine-create test should emit a callback message from the secondary engine"), WriteMessageResult, static_cast<int32>(asSUCCESS)))
 		{
 			return;
 		}
 
-		TestTrue(TEXT("ASSDK engine-create test should preserve the upstream callback payload"), BufferedOutStream.Buffer.find("Hello from engine2") != std::string::npos);
-		TestTrue(TEXT("ASSDK engine-create test should preserve the upstream callback section"), BufferedOutStream.Buffer.find("test (0, 0)") != std::string::npos);
+		TestRunner->TestTrue(TEXT("ASSDK engine-create test should preserve the upstream callback payload"), BufferedOutStream.Buffer.find("Hello from engine2") != std::string::npos);
+		TestRunner->TestTrue(TEXT("ASSDK engine-create test should preserve the upstream callback section"), BufferedOutStream.Buffer.find("test (0, 0)") != std::string::npos);
 	}
 };
 

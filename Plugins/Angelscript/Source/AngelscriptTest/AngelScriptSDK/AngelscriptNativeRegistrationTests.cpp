@@ -114,7 +114,6 @@ namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptNativeRegistrationTests,
 	"Angelscript.TestModule.AngelScriptSDK.Register",
@@ -122,9 +121,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeRegistrationTests,
 {
 	TEST_METHOD(GlobalFunction)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native global-function registration test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native global-function registration test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -140,26 +140,27 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeRegistrationTests,
 			asFUNCTION(NativeDoubleValue),
 			asCALL_CDECL,
 			*(asFunctionCaller*)&Caller);
-		if (!TestTrue(TEXT("Native global-function registration test should register the C++ function"), RegisterResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("Native global-function registration test should register the C++ function"), RegisterResult >= 0))
 		{
-			AddInfo(FString::Printf(TEXT("RegisterGlobalFunction returned %d"), RegisterResult));
+			TestRunner->AddInfo(FString::Printf(TEXT("RegisterGlobalFunction returned %d"), RegisterResult));
 			return;
 		}
 
 		int32 Result = 0;
-		if (!ExecuteRegisteredScript(*this, ScriptEngine, "NativeRegisterGlobalFunction", "int Entry() { return DoubleNative(21); }", "int Entry()", Messages, Result))
+		if (!ExecuteRegisteredScript(*TestRunner, ScriptEngine, "NativeRegisterGlobalFunction", "int Entry() { return DoubleNative(21); }", "int Entry()", Messages, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Native global-function registration test should allow script code to call the registered function"), Result, 42);
+		TestRunner->TestEqual(TEXT("Native global-function registration test should allow script code to call the registered function"), Result, 42);
 	}
 
 	TEST_METHOD(GlobalProperty)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native global-property registration test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native global-property registration test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -170,25 +171,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeRegistrationTests,
 		};
 
 		const int RegisterResult = ScriptEngine->RegisterGlobalProperty("int NativeGlobalValue", &GNativeGlobalValue);
-		if (!TestTrue(TEXT("Native global-property registration test should register the C++ property"), RegisterResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("Native global-property registration test should register the C++ property"), RegisterResult >= 0))
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!ExecuteRegisteredScript(*this, ScriptEngine, "NativeRegisterGlobalProperty", "int Entry() { return NativeGlobalValue * 2; }", "int Entry()", Messages, Result))
+		if (!ExecuteRegisteredScript(*TestRunner, ScriptEngine, "NativeRegisterGlobalProperty", "int Entry() { return NativeGlobalValue * 2; }", "int Entry()", Messages, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Native global-property registration test should expose the registered property to script code"), Result, 42);
+		TestRunner->TestEqual(TEXT("Native global-property registration test should expose the registered property to script code"), Result, 42);
 	}
 
 	TEST_METHOD(SimpleValueType)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptNativeRegistrationTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native value-type registration test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native value-type registration test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -198,18 +200,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeRegistrationTests,
 			DestroyNativeEngine(ScriptEngine);
 		};
 
-		if (!RegisterNativeCounter(*this, ScriptEngine))
+		if (!RegisterNativeCounter(*TestRunner, ScriptEngine))
 		{
 			return;
 		}
 
 		int32 Result = 0;
-		if (!ExecuteRegisteredScript(*this, ScriptEngine, "NativeRegisterSimpleValueType", "int Entry() { NativeCounter Counter; Counter.Value = 19; return Counter.Value + 23; }", "int Entry()", Messages, Result))
+		if (!ExecuteRegisteredScript(*TestRunner, ScriptEngine, "NativeRegisterSimpleValueType", "int Entry() { NativeCounter Counter; Counter.Value = 19; return Counter.Value + 23; }", "int Entry()", Messages, Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Native value-type registration test should allow script code to construct and use the registered POD type"), Result, 42);
+		TestRunner->TestEqual(TEXT("Native value-type registration test should allow script code to construct and use the registered POD type"), Result, 42);
 	}
 };
 

@@ -15,7 +15,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeSmokeTest,
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Native smoke test should create a standalone AngelScript engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("Native smoke test should create a standalone AngelScript engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -26,28 +26,28 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptNativeSmokeTest,
 		};
 
 		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "NativeSmoke", "int Test() { return 1; }");
-		if (!TestNotNull(TEXT("Native smoke test should build an in-memory script module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Native smoke test should build an in-memory script module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		asIScriptFunction* Function = GetNativeFunctionByDecl(Module, "int Test()");
-		if (!TestNotNull(TEXT("Native smoke test should resolve the compiled function by declaration"), Function))
+		if (!TestRunner->TestNotNull(TEXT("Native smoke test should resolve the compiled function by declaration"), Function))
 		{
-			AddInfo(FString::Printf(TEXT("Native smoke module functions: %s"), *CollectFunctionDeclarations(Module)));
+			TestRunner->AddInfo(FString::Printf(TEXT("Native smoke module functions: %s"), *CollectFunctionDeclarations(Module)));
 			return;
 		}
 
 		asIScriptContext* Context = ScriptEngine->CreateContext();
-		if (!TestNotNull(TEXT("Native smoke test should create a native execution context"), Context))
+		if (!TestRunner->TestNotNull(TEXT("Native smoke test should create a native execution context"), Context))
 		{
 			return;
 		}
 
 		const int ExecuteResult = PrepareAndExecute(Context, Function);
-		TestEqual(TEXT("Native smoke test should finish execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
-		TestEqual(TEXT("Native smoke test should return the expected integer result"), static_cast<int32>(Context->GetReturnDWord()), 1);
+		TestRunner->TestEqual(TEXT("Native smoke test should finish execution successfully"), ExecuteResult, static_cast<int32>(asEXECUTION_FINISHED));
+		TestRunner->TestEqual(TEXT("Native smoke test should return the expected integer result"), static_cast<int32>(Context->GetReturnDWord()), 1);
 		Context->Release();
 	}
 };

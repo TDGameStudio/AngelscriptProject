@@ -18,7 +18,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 	"Angelscript.TestModule.AngelScriptSDK.Bytecode",
@@ -26,10 +25,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 {
 	TEST_METHOD(InstructionSequence)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeInstructionSequence");
-		if (!TestNotNull(TEXT("Bytecode instruction test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Bytecode instruction test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -39,19 +39,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		ByteCode.InstrDWORD(asBC_PshC4, 42);
 		ByteCode.Instr(asBC_RET);
 
-		TestTrue(TEXT("Bytecode should contain at least one dword after emitting instructions"), ByteCode.GetSize() > 0);
-		TestNotNull(TEXT("Bytecode should expose the first instruction"), ByteCode.GetFirstInstr());
-		TestEqual(TEXT("First emitted opcode should match asBC_PshC4"), static_cast<int32>(ByteCode.GetFirstInstr()->op), static_cast<int32>(asBC_PshC4));
-		TestEqual(TEXT("Last emitted opcode should match asBC_RET"), ByteCode.GetLastInstr(), static_cast<int32>(asBC_RET));
+		TestRunner->TestTrue(TEXT("Bytecode should contain at least one dword after emitting instructions"), ByteCode.GetSize() > 0);
+		TestRunner->TestNotNull(TEXT("Bytecode should expose the first instruction"), ByteCode.GetFirstInstr());
+		TestRunner->TestEqual(TEXT("First emitted opcode should match asBC_PshC4"), static_cast<int32>(ByteCode.GetFirstInstr()->op), static_cast<int32>(asBC_PshC4));
+		TestRunner->TestEqual(TEXT("Last emitted opcode should match asBC_RET"), ByteCode.GetLastInstr(), static_cast<int32>(asBC_RET));
 		ASTEST_END_BARE
 	}
 
 	TEST_METHOD(Append)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeAppend");
-		if (!TestNotNull(TEXT("Bytecode append test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Bytecode append test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -65,17 +66,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		const int32 InitialSize = First.GetSize();
 		First.AddCode(&Second);
 
-		TestTrue(TEXT("AddCode should append the second sequence to the first one"), First.GetSize() > InitialSize);
-		TestEqual(TEXT("The last dword payload should come from the appended sequence"), static_cast<int32>(First.GetLastInstrValueDW()), 20);
+		TestRunner->TestTrue(TEXT("AddCode should append the second sequence to the first one"), First.GetSize() > InitialSize);
+		TestRunner->TestEqual(TEXT("The last dword payload should come from the appended sequence"), static_cast<int32>(First.GetLastInstrValueDW()), 20);
 		ASTEST_END_BARE
 	}
 
 	TEST_METHOD(JumpResolution)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeJumpResolution");
-		if (!TestNotNull(TEXT("Bytecode jump test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Bytecode jump test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -85,16 +87,17 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		ByteCode.InstrDWORD(asBC_JMP, 1);
 		ByteCode.Label(1);
 
-		TestEqual(TEXT("ResolveJumpAddresses should resolve a forward label jump"), ByteCode.ResolveJumpAddresses(), 0);
+		TestRunner->TestEqual(TEXT("ResolveJumpAddresses should resolve a forward label jump"), ByteCode.ResolveJumpAddresses(), 0);
 		ASTEST_END_BARE
 	}
 
 	TEST_METHOD(Output)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptBytecodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateBytecodeModule(BareEngine, "BytecodeOutput");
-		if (!TestNotNull(TEXT("Bytecode output test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("Bytecode output test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -107,8 +110,8 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptBytecodeTests,
 		Buffer.SetNumZeroed(ByteCode.GetSize());
 		ByteCode.Output(Buffer.GetData());
 
-		TestEqual(TEXT("Output should preserve the opcode in the first emitted dword"), static_cast<int32>(*reinterpret_cast<asBYTE*>(&Buffer[0])), static_cast<int32>(asBC_PshC4));
-		TestEqual(TEXT("Output should preserve the dword payload for asBC_PshC4"), static_cast<int32>(Buffer[1]), 42);
+		TestRunner->TestEqual(TEXT("Output should preserve the opcode in the first emitted dword"), static_cast<int32>(*reinterpret_cast<asBYTE*>(&Buffer[0])), static_cast<int32>(asBC_PshC4));
+		TestRunner->TestEqual(TEXT("Output should preserve the dword payload for asBC_PshC4"), static_cast<int32>(Buffer[1]), 42);
 		ASTEST_END_BARE
 	}
 };

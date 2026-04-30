@@ -15,7 +15,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKDefaultTraitTests,
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK default-trait modifier test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK default-trait modifier test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -25,15 +25,25 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKDefaultTraitTests,
 			DestroyNativeEngine(ScriptEngine);
 		};
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKDefaultTraitModifiers",
-			"int DefaultsOnlyValue() defaults { return 7; }                         \n"
-			"int UnsafeConstructionValue() unsafe_during_construction { return 5; }  \n"
-			"int Entry() { return 1; }                                               \n");
-		if (!TestNotNull(TEXT("ASSDK default-trait modifier test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKDefaultTraitModifiers", R"(
+int DefaultsOnlyValue() defaults
+{
+	return 7;
+}
+
+int UnsafeConstructionValue() unsafe_during_construction
+{
+	return 5;
+}
+
+int Entry()
+{
+	return 1;
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK default-trait modifier test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 	}

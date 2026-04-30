@@ -21,11 +21,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		asCDataType VoidType = asCDataType::CreatePrimitive(ttVoid, false);
 		asCDataType NullHandleType = asCDataType::CreateNullHandle();
 
-		TestTrue(TEXT("int data type should be valid and primitive"), IntType.IsValid() && IntType.IsPrimitive() && IntType.IsIntegerType());
-		TestTrue(TEXT("float32 data type should report float semantics"), FloatType.IsPrimitive() && FloatType.IsFloat32Type() && FloatType.IsMathType());
-		TestTrue(TEXT("bool data type should report boolean semantics"), BoolType.IsPrimitive() && BoolType.IsBooleanType());
-		TestFalse(TEXT("void data type should not be instantiable"), VoidType.CanBeInstantiated());
-		TestTrue(TEXT("null handle data type should report object-handle semantics"), NullHandleType.IsNullHandle() && NullHandleType.IsObjectHandle());
+		TestRunner->TestTrue(TEXT("int data type should be valid and primitive"), IntType.IsValid() && IntType.IsPrimitive() && IntType.IsIntegerType());
+		TestRunner->TestTrue(TEXT("float32 data type should report float semantics"), FloatType.IsPrimitive() && FloatType.IsFloat32Type() && FloatType.IsMathType());
+		TestRunner->TestTrue(TEXT("bool data type should report boolean semantics"), BoolType.IsPrimitive() && BoolType.IsBooleanType());
+		TestRunner->TestFalse(TEXT("void data type should not be instantiable"), VoidType.CanBeInstantiated());
+		TestRunner->TestTrue(TEXT("null handle data type should report object-handle semantics"), NullHandleType.IsNullHandle() && NullHandleType.IsObjectHandle());
 	}
 
 	TEST_METHOD(Comparisons)
@@ -35,10 +35,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		asCDataType RefInt = asCDataType::CreatePrimitive(ttInt, false);
 		RefInt.MakeReference(true);
 
-		TestTrue(TEXT("Constness should be ignored by IsEqualExceptConst"), MutableInt.IsEqualExceptConst(ConstInt));
-		TestFalse(TEXT("Constness should still matter for exact equality"), MutableInt == ConstInt);
-		TestTrue(TEXT("Reference-ness should be ignored by IsEqualExceptRef"), MutableInt.IsEqualExceptRef(RefInt));
-		TestFalse(TEXT("Reference-ness should still matter for exact equality"), MutableInt == RefInt);
+		TestRunner->TestTrue(TEXT("Constness should be ignored by IsEqualExceptConst"), MutableInt.IsEqualExceptConst(ConstInt));
+		TestRunner->TestFalse(TEXT("Constness should still matter for exact equality"), MutableInt == ConstInt);
+		TestRunner->TestTrue(TEXT("Reference-ness should be ignored by IsEqualExceptRef"), MutableInt.IsEqualExceptRef(RefInt));
+		TestRunner->TestFalse(TEXT("Reference-ness should still matter for exact equality"), MutableInt == RefInt);
 	}
 
 	TEST_METHOD(HandleQualifierMatrix)
@@ -47,7 +47,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		ASTEST_BEGIN_SHARE_CLEAN
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCTypeInfo* ActorType = static_cast<asCTypeInfo*>(ScriptEngine->GetTypeInfoByName("AActor"));
-		if (!TestNotNull(TEXT("AActor should exist in the script type system for handle qualifier comparisons"), ActorType))
+		if (!TestRunner->TestNotNull(TEXT("AActor should exist in the script type system for handle qualifier comparisons"), ActorType))
 		{
 			return;
 		}
@@ -59,31 +59,31 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		RefConstActorHandleType.MakeReference(true);
 		asCDataType NullHandleType = asCDataType::CreateNullHandle();
 
-		if (!TestTrue(TEXT("Object handle matrix should preserve the target type info"), ActorHandleType.GetTypeInfo() == ActorType))
+		if (!TestRunner->TestTrue(TEXT("Object handle matrix should preserve the target type info"), ActorHandleType.GetTypeInfo() == ActorType))
 		{
 			return;
 		}
-		if (!TestFalse(TEXT("Exact equality should distinguish mutable and const handles"), ActorHandleType == ConstActorHandleType))
+		if (!TestRunner->TestFalse(TEXT("Exact equality should distinguish mutable and const handles"), ActorHandleType == ConstActorHandleType))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("IsEqualExceptConst should ignore handle constness"), ActorHandleType.IsEqualExceptConst(ConstActorHandleType)))
+		if (!TestRunner->TestTrue(TEXT("IsEqualExceptConst should ignore handle constness"), ActorHandleType.IsEqualExceptConst(ConstActorHandleType)))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("IsEqualExceptRefAndConst should ignore both reference and const on handles"), ActorHandleType.IsEqualExceptRefAndConst(RefConstActorHandleType)))
+		if (!TestRunner->TestTrue(TEXT("IsEqualExceptRefAndConst should ignore both reference and const on handles"), ActorHandleType.IsEqualExceptRefAndConst(RefConstActorHandleType)))
 		{
 			return;
 		}
-		if (!TestFalse(TEXT("Null handle should not be exactly equal to a typed object handle"), NullHandleType == ActorHandleType))
+		if (!TestRunner->TestFalse(TEXT("Null handle should not be exactly equal to a typed object handle"), NullHandleType == ActorHandleType))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("Null handle should still report object-handle semantics"), NullHandleType.IsObjectHandle() && NullHandleType.IsNullHandle()))
+		if (!TestRunner->TestTrue(TEXT("Null handle should still report object-handle semantics"), NullHandleType.IsObjectHandle() && NullHandleType.IsNullHandle()))
 		{
 			return;
 		}
-		if (!TestTrue(TEXT("Value type and object handle should keep different kind semantics"), ActorValueType.IsObject() && ActorHandleType.IsObjectHandle()))
+		if (!TestRunner->TestTrue(TEXT("Value type and object handle should keep different kind semantics"), ActorValueType.IsObject() && ActorHandleType.IsObjectHandle()))
 		{
 			return;
 		}
@@ -97,18 +97,18 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		ASTEST_BEGIN_SHARE_CLEAN
 		asCScriptEngine* ScriptEngine = static_cast<asCScriptEngine*>(Engine.GetScriptEngine());
 		asCTypeInfo* ActorType = static_cast<asCTypeInfo*>(ScriptEngine->GetTypeInfoByName("AActor"));
-		if (!TestNotNull(TEXT("AActor should exist in the script type system for data-type handle tests"), ActorType))
+		if (!TestRunner->TestNotNull(TEXT("AActor should exist in the script type system for data-type handle tests"), ActorType))
 		{
 			return;
 		}
 
 		asCDataType ActorValueType = asCDataType::CreateType(ActorType, false);
-		TestTrue(TEXT("AActor value type should be recognized as an object type"), ActorValueType.IsObject());
-		TestTrue(TEXT("AActor value type should support handles"), ActorValueType.SupportHandles());
+		TestRunner->TestTrue(TEXT("AActor value type should be recognized as an object type"), ActorValueType.IsObject());
+		TestRunner->TestTrue(TEXT("AActor value type should support handles"), ActorValueType.SupportHandles());
 
 		asCDataType ActorHandleType = asCDataType::CreateObjectHandle(ActorType, false);
-		TestTrue(TEXT("CreateObjectHandle should mark the type as an object handle"), ActorHandleType.IsObjectHandle());
-		TestTrue(TEXT("Object handle should still be considered instantiable as a handle slot"), ActorHandleType.CanBeInstantiated());
+		TestRunner->TestTrue(TEXT("CreateObjectHandle should mark the type as an object handle"), ActorHandleType.IsObjectHandle());
+		TestRunner->TestTrue(TEXT("Object handle should still be considered instantiable as a handle slot"), ActorHandleType.CanBeInstantiated());
 		ASTEST_END_SHARE_CLEAN
 	}
 
@@ -118,9 +118,9 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptDataTypeTests,
 		asCDataType Float64Type = asCDataType::CreatePrimitive(ttFloat64, false);
 		asCDataType BoolType = asCDataType::CreatePrimitive(ttBool, false);
 
-		TestEqual(TEXT("int should occupy one dword in memory"), IntType.GetSizeInMemoryDWords(), 1);
-		TestEqual(TEXT("float64 should occupy eight bytes in memory"), Float64Type.GetSizeInMemoryBytes(), 8);
-		TestEqual(TEXT("bool alignment should stay byte-sized"), BoolType.GetAlignment(), 1);
+		TestRunner->TestEqual(TEXT("int should occupy one dword in memory"), IntType.GetSizeInMemoryDWords(), 1);
+		TestRunner->TestEqual(TEXT("float64 should occupy eight bytes in memory"), Float64Type.GetSizeInMemoryBytes(), 8);
+		TestRunner->TestEqual(TEXT("bool alignment should stay byte-sized"), BoolType.GetAlignment(), 1);
 	}
 };
 

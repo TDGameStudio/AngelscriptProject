@@ -23,7 +23,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private
 	};
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptMemoryTests,
 	"Angelscript.TestModule.AngelScriptSDK.Memory",
@@ -31,49 +30,54 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMemoryTests,
 {
 	TEST_METHOD(Construction)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 		asCMemoryMgr Manager;
-		TestTrue(TEXT("Constructing the internal memory manager should succeed"), true);
+		TestRunner->TestTrue(TEXT("Constructing the internal memory manager should succeed"), true);
 	}
 
 	TEST_METHOD(FreeUnused)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 		FMemoryManagerProbe Manager;
 		Manager.FreeUnusedMemory();
-		TestTrue(TEXT("FreeUnusedMemory should be callable even when no pooled memory is tracked"), true);
-		TestEqual(TEXT("FreeUnusedMemory should leave the script-node pool empty"), Manager.GetScriptNodePoolSize(), 0);
-		TestEqual(TEXT("FreeUnusedMemory should leave the byte-instruction pool empty"), Manager.GetByteInstructionPoolSize(), 0);
+		TestRunner->TestTrue(TEXT("FreeUnusedMemory should be callable even when no pooled memory is tracked"), true);
+		TestRunner->TestEqual(TEXT("FreeUnusedMemory should leave the script-node pool empty"), Manager.GetScriptNodePoolSize(), 0);
+		TestRunner->TestEqual(TEXT("FreeUnusedMemory should leave the byte-instruction pool empty"), Manager.GetByteInstructionPoolSize(), 0);
 	}
 
 	TEST_METHOD(ScriptNodeReuse)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 		FMemoryManagerProbe Manager;
 		void* FirstAllocation = Manager.AllocScriptNode();
-		TestNotNull(TEXT("AllocScriptNode should return storage for a script node"), FirstAllocation);
+		TestRunner->TestNotNull(TEXT("AllocScriptNode should return storage for a script node"), FirstAllocation);
 		Manager.FreeScriptNode(FirstAllocation);
-		TestEqual(TEXT("FreeScriptNode should retain exactly one script-node allocation in the pool"), Manager.GetScriptNodePoolSize(), 1);
+		TestRunner->TestEqual(TEXT("FreeScriptNode should retain exactly one script-node allocation in the pool"), Manager.GetScriptNodePoolSize(), 1);
 
 		void* ReusedAllocation = Manager.AllocScriptNode();
-		TestEqual(TEXT("AllocScriptNode should reuse the most recently freed script-node allocation"), ReusedAllocation, FirstAllocation);
-		TestEqual(TEXT("Reusing a script-node allocation should remove it from the pool"), Manager.GetScriptNodePoolSize(), 0);
+		TestRunner->TestEqual(TEXT("AllocScriptNode should reuse the most recently freed script-node allocation"), ReusedAllocation, FirstAllocation);
+		TestRunner->TestEqual(TEXT("Reusing a script-node allocation should remove it from the pool"), Manager.GetScriptNodePoolSize(), 0);
 		Manager.FreeScriptNode(ReusedAllocation);
 	}
 
 	TEST_METHOD(ByteInstructionReuse)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 		FMemoryManagerProbe Manager;
 		void* FirstAllocation = Manager.AllocByteInstruction();
-		TestNotNull(TEXT("AllocByteInstruction should return storage for a bytecode instruction"), FirstAllocation);
+		TestRunner->TestNotNull(TEXT("AllocByteInstruction should return storage for a bytecode instruction"), FirstAllocation);
 		Manager.FreeByteInstruction(FirstAllocation);
-		TestEqual(TEXT("FreeByteInstruction should retain exactly one byte-instruction allocation in the pool"), Manager.GetByteInstructionPoolSize(), 1);
+		TestRunner->TestEqual(TEXT("FreeByteInstruction should retain exactly one byte-instruction allocation in the pool"), Manager.GetByteInstructionPoolSize(), 1);
 
 		void* ReusedAllocation = Manager.AllocByteInstruction();
-		TestEqual(TEXT("AllocByteInstruction should reuse the most recently freed bytecode instruction allocation"), ReusedAllocation, FirstAllocation);
-		TestEqual(TEXT("Reusing a bytecode instruction allocation should remove it from the pool"), Manager.GetByteInstructionPoolSize(), 0);
+		TestRunner->TestEqual(TEXT("AllocByteInstruction should reuse the most recently freed bytecode instruction allocation"), ReusedAllocation, FirstAllocation);
+		TestRunner->TestEqual(TEXT("Reusing a bytecode instruction allocation should remove it from the pool"), Manager.GetByteInstructionPoolSize(), 0);
 		Manager.FreeByteInstruction(ReusedAllocation);
 	}
 
 	TEST_METHOD(PoolLeakTracking)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptMemoryTests_Private;
 		FMemoryManagerProbe Manager;
 		void* ScriptNodeA = Manager.AllocScriptNode();
 		void* ScriptNodeB = Manager.AllocScriptNode();
@@ -83,12 +87,12 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptMemoryTests,
 		Manager.FreeScriptNode(ScriptNodeB);
 		Manager.FreeByteInstruction(Instruction);
 
-		TestEqual(TEXT("The script-node pool should track every freed script-node allocation"), Manager.GetScriptNodePoolSize(), 2);
-		TestEqual(TEXT("The byte-instruction pool should track every freed bytecode allocation"), Manager.GetByteInstructionPoolSize(), 1);
+		TestRunner->TestEqual(TEXT("The script-node pool should track every freed script-node allocation"), Manager.GetScriptNodePoolSize(), 2);
+		TestRunner->TestEqual(TEXT("The byte-instruction pool should track every freed bytecode allocation"), Manager.GetByteInstructionPoolSize(), 1);
 
 		Manager.FreeUnusedMemory();
-		TestEqual(TEXT("FreeUnusedMemory should release all tracked script-node allocations"), Manager.GetScriptNodePoolSize(), 0);
-		TestEqual(TEXT("FreeUnusedMemory should release all tracked bytecode allocations"), Manager.GetByteInstructionPoolSize(), 0);
+		TestRunner->TestEqual(TEXT("FreeUnusedMemory should release all tracked script-node allocations"), Manager.GetScriptNodePoolSize(), 0);
+		TestRunner->TestEqual(TEXT("FreeUnusedMemory should release all tracked bytecode allocations"), Manager.GetByteInstructionPoolSize(), 0);
 	}
 };
 

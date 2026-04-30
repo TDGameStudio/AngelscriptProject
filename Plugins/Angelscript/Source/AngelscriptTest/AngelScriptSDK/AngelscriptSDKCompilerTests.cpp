@@ -30,7 +30,6 @@ namespace AngelscriptTest_Native_AngelscriptASSDKCompilerTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Native_AngelscriptASSDKCompilerTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCompilerTests,
 	"Angelscript.TestModule.AngelScriptSDK.ASSDK.Compiler",
@@ -38,9 +37,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCompilerTests,
 {
 	TEST_METHOD(Basic)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCompilerTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK compiler basic test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK compiler basic test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -50,38 +50,40 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCompilerTests,
 			DestroyNativeEngine(ScriptEngine);
 		};
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKCompilerBasic",
-			"const int GlobalVar = 42;                       \n"
-			"int Multiply(int A, int B)                      \n"
-			"{                                               \n"
-			"  return A * B;                                 \n"
-			"}                                               \n"
-			"bool Entry()                                    \n"
-			"{                                               \n"
-			"  return GlobalVar == 42 && Multiply(6, 7) == 42; \n"
-			"}                                               \n");
-		if (!TestNotNull(TEXT("ASSDK compiler basic test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKCompilerBasic", R"(
+const int GlobalVar = 42;
+
+int Multiply(int A, int B)
+{
+	return A * B;
+}
+
+bool Entry()
+{
+	return GlobalVar == 42 && Multiply(6, 7) == 42;
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK compiler basic test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		bool bResult = false;
-		if (!ExecuteCompilerBoolEntry(*this, ScriptEngine, Module, "bool Entry()", bResult))
+		if (!ExecuteCompilerBoolEntry(*TestRunner, ScriptEngine, Module, "bool Entry()", bResult))
 		{
 			return;
 		}
 
-		TestTrue(TEXT("ASSDK compiler basic test should compile and execute basic constructs"), bResult);
+		TestRunner->TestTrue(TEXT("ASSDK compiler basic test should compile and execute basic constructs"), bResult);
 	}
 
 	TEST_METHOD(Error)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCompilerTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK compiler error test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK compiler error test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -92,26 +94,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCompilerTests,
 		};
 
 		// Test that invalid syntax produces compile errors
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKCompilerError",
-			"int MissingReturn() { }                         \n");
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKCompilerError", R"(
+int MissingReturn() { }
+)");
 
 		// This should fail to compile - expect null module or error messages
 		if (Module != nullptr)
 		{
-			AddInfo(TEXT("Expected compile error for missing return statement"));
+			TestRunner->AddInfo(TEXT("Expected compile error for missing return statement"));
 			return;
 		}
 
-		TestTrue(TEXT("ASSDK compiler error test should detect syntax errors"), Messages.Entries.Num() > 0);
+		TestRunner->TestTrue(TEXT("ASSDK compiler error test should detect syntax errors"), Messages.Entries.Num() > 0);
 	}
 
 	TEST_METHOD(Config)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCompilerTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK compiler config test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK compiler config test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -123,19 +125,19 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCompilerTests,
 
 		// Test engine property access
 		const int PropResult = ScriptEngine->SetEngineProperty(asEP_COPY_SCRIPT_SECTIONS, true);
-		if (!TestTrue(TEXT("ASSDK compiler config test should set engine property"), PropResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("ASSDK compiler config test should set engine property"), PropResult >= 0))
 		{
 			return;
 		}
 
 		// Test type registration configuration
 		const int TypeResult = ScriptEngine->RegisterObjectType("TestConfigType", 0, asOBJ_REF | asOBJ_NOCOUNT);
-		if (!TestTrue(TEXT("ASSDK compiler config test should register reference type"), TypeResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("ASSDK compiler config test should register reference type"), TypeResult >= 0))
 		{
 			return;
 		}
 
-		TestTrue(TEXT("ASSDK compiler config test should configure engine properties"), true);
+		TestRunner->TestTrue(TEXT("ASSDK compiler config test should configure engine properties"), true);
 	}
 };
 

@@ -30,7 +30,6 @@ namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 	"Angelscript.TestModule.AngelScriptSDK.ScriptNode",
@@ -38,18 +37,20 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 {
 	TEST_METHOD(Types)
 	{
-		TestEqual(TEXT("snScript should remain the root script node enum value"), static_cast<int32>(snScript), 1);
-		TestTrue(TEXT("snFunction should remain a positive enum value"), static_cast<int32>(snFunction) > 0);
-		TestTrue(TEXT("snClass should remain a positive enum value"), static_cast<int32>(snClass) > 0);
-		TestTrue(TEXT("snExpression should remain a positive enum value"), static_cast<int32>(snExpression) > 0);
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
+		TestRunner->TestEqual(TEXT("snScript should remain the root script node enum value"), static_cast<int32>(snScript), 1);
+		TestRunner->TestTrue(TEXT("snFunction should remain a positive enum value"), static_cast<int32>(snFunction) > 0);
+		TestRunner->TestTrue(TEXT("snClass should remain a positive enum value"), static_cast<int32>(snClass) > 0);
+		TestRunner->TestTrue(TEXT("snExpression should remain a positive enum value"), static_cast<int32>(snExpression) > 0);
 	}
 
 	TEST_METHOD(Traversal)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeTraversal");
-		if (!TestNotNull(TEXT("ScriptNode traversal test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("ScriptNode traversal test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -59,32 +60,33 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 		Code.SetCode("ScriptNodeTraversal", "int GlobalValue = 1; class FNodeType { int Value; }", true);
 
 		asCParser Parser(&Builder);
-		if (!TestEqual(TEXT("ScriptNode traversal parser run should succeed"), Parser.ParseScript(&Code), 0))
+		if (!TestRunner->TestEqual(TEXT("ScriptNode traversal parser run should succeed"), Parser.ParseScript(&Code), 0))
 		{
 			return;
 		}
 
 		asCScriptNode* Root = Parser.GetScriptNode();
-		if (!TestNotNull(TEXT("ScriptNode traversal should produce a root node"), Root))
+		if (!TestRunner->TestNotNull(TEXT("ScriptNode traversal should produce a root node"), Root))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Root should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
-		TestEqual(TEXT("Two top-level declarations should produce two direct children"), CountDirectChildren(Root), 2);
-		TestNotNull(TEXT("Root should expose the first child"), Root->firstChild);
-		TestNotNull(TEXT("Root should expose the last child"), Root->lastChild);
-		TestTrue(TEXT("First and last child should differ when multiple declarations exist"), Root->firstChild != Root->lastChild);
-		TestEqual(TEXT("Second child should point back to the first child as prev"), Root->lastChild->prev, Root->firstChild);
+		TestRunner->TestEqual(TEXT("Root should be a script node"), static_cast<int32>(Root->nodeType), static_cast<int32>(snScript));
+		TestRunner->TestEqual(TEXT("Two top-level declarations should produce two direct children"), CountDirectChildren(Root), 2);
+		TestRunner->TestNotNull(TEXT("Root should expose the first child"), Root->firstChild);
+		TestRunner->TestNotNull(TEXT("Root should expose the last child"), Root->lastChild);
+		TestRunner->TestTrue(TEXT("First and last child should differ when multiple declarations exist"), Root->firstChild != Root->lastChild);
+		TestRunner->TestEqual(TEXT("Second child should point back to the first child as prev"), Root->lastChild->prev, Root->firstChild);
 		ASTEST_END_BARE
 	}
 
 	TEST_METHOD(Copy)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_AngelscriptScriptNodeTests_Private;
 		asCScriptEngine* BareEngine = ASTEST_CREATE_ENGINE_BARE();
 		ASTEST_BEGIN_BARE
 		asCModule* Module = CreateScriptNodeModule(BareEngine, "ScriptNodeCopy");
-		if (!TestNotNull(TEXT("ScriptNode copy test should create a backing module"), Module))
+		if (!TestRunner->TestNotNull(TEXT("ScriptNode copy test should create a backing module"), Module))
 		{
 			return;
 		}
@@ -94,26 +96,26 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptScriptNodeTests,
 		Code.SetCode("ScriptNodeCopy", "int Value = 3;", true);
 
 		asCParser Parser(&Builder);
-		if (!TestEqual(TEXT("ScriptNode copy parser run should succeed"), Parser.ParseScript(&Code), 0))
+		if (!TestRunner->TestEqual(TEXT("ScriptNode copy parser run should succeed"), Parser.ParseScript(&Code), 0))
 		{
 			return;
 		}
 
 		asCScriptNode* Root = Parser.GetScriptNode();
-		if (!TestNotNull(TEXT("ScriptNode copy test should produce a root node"), Root))
+		if (!TestRunner->TestNotNull(TEXT("ScriptNode copy test should produce a root node"), Root))
 		{
 			return;
 		}
 
 		asCScriptNode* Copy = Root->CreateCopy(Parser.MemStack, BareEngine);
-		if (!TestNotNull(TEXT("CreateCopy should produce a duplicate node tree"), Copy))
+		if (!TestRunner->TestNotNull(TEXT("CreateCopy should produce a duplicate node tree"), Copy))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("Copied root should keep the same node type"), static_cast<int32>(Copy->nodeType), static_cast<int32>(Root->nodeType));
-		TestTrue(TEXT("Copied node should be a different instance"), Copy != Root);
-		TestTrue(TEXT("Copied first child should be a different instance"), Copy->firstChild != nullptr && Copy->firstChild != Root->firstChild);
+		TestRunner->TestEqual(TEXT("Copied root should keep the same node type"), static_cast<int32>(Copy->nodeType), static_cast<int32>(Root->nodeType));
+		TestRunner->TestTrue(TEXT("Copied node should be a different instance"), Copy != Root);
+		TestRunner->TestTrue(TEXT("Copied first child should be a different instance"), Copy->firstChild != nullptr && Copy->firstChild != Root->firstChild);
 		ASTEST_END_BARE
 	}
 };

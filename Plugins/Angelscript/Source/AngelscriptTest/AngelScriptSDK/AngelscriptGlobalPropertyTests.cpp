@@ -39,7 +39,6 @@ namespace AngelscriptTest_AngelScriptSDK_GlobalProperty_Private
 	}
 }
 
-using namespace AngelscriptTest_AngelScriptSDK_GlobalProperty_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKGlobalPropertyTests,
 	"Angelscript.TestModule.AngelScriptSDK.GlobalProperty",
@@ -47,45 +46,48 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKGlobalPropertyTests,
 {
 	TEST_METHOD(ScriptReads)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_GlobalProperty_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		if (!TestRunner->TestNotNull(TEXT("Should create engine"), SE)) return;
 		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
 
 		GTestValue = 42;
 		int R = SE->RegisterGlobalProperty("int GTestValue", &GTestValue);
-		TestTrue(TEXT("RegisterGlobalProperty should succeed"), R >= 0);
+		TestRunner->TestTrue(TEXT("RegisterGlobalProperty should succeed"), R >= 0);
 
 		asIScriptModule* M = BuildNativeModule(SE, "GPRead", "int Entry() { return GTestValue; }\n");
-		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		if (!TestRunner->TestNotNull(TEXT("Should compile"), M)) { TestRunner->AddInfo(CollectMessages(Messages)); return; }
 
 		int32 Result = 0;
-		if (!ExecuteIntEntry(*this, SE, M, Result)) return;
-		TestEqual(TEXT("Script should read C++ global value 42"), Result, 42);
+		if (!ExecuteIntEntry(*TestRunner, SE, M, Result)) return;
+		TestRunner->TestEqual(TEXT("Script should read C++ global value 42"), Result, 42);
 	}
 
 	TEST_METHOD(ScriptWrites)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_GlobalProperty_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		if (!TestRunner->TestNotNull(TEXT("Should create engine"), SE)) return;
 		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
 
 		GTestValue = 0;
 		SE->RegisterGlobalProperty("int GTestValue", &GTestValue);
 
 		asIScriptModule* M = BuildNativeModule(SE, "GPWrite", "void Entry() { GTestValue = 99; }\n");
-		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		if (!TestRunner->TestNotNull(TEXT("Should compile"), M)) { TestRunner->AddInfo(CollectMessages(Messages)); return; }
 
-		ExecuteVoidEntry(*this, SE, M);
-		TestEqual(TEXT("C++ should see script-written value 99"), GTestValue, 99);
+		ExecuteVoidEntry(*TestRunner, SE, M);
+		TestRunner->TestEqual(TEXT("C++ should see script-written value 99"), GTestValue, 99);
 	}
 
 	TEST_METHOD(MultipleGlobals)
 	{
+		using namespace AngelscriptTest_AngelScriptSDK_GlobalProperty_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		if (!TestRunner->TestNotNull(TEXT("Should create engine"), SE)) return;
 		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
 
 		GTestA = 10;
@@ -94,11 +96,11 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKGlobalPropertyTests,
 		SE->RegisterGlobalProperty("int GTestB", &GTestB);
 
 		asIScriptModule* M = BuildNativeModule(SE, "GPMulti", "int Entry() { return GTestA + GTestB; }\n");
-		if (!TestNotNull(TEXT("Should compile"), M)) { AddInfo(CollectMessages(Messages)); return; }
+		if (!TestRunner->TestNotNull(TEXT("Should compile"), M)) { TestRunner->AddInfo(CollectMessages(Messages)); return; }
 
 		int32 Result = 0;
-		if (!ExecuteIntEntry(*this, SE, M, Result)) return;
-		TestEqual(TEXT("Script reads both globals: 10+20=30"), Result, 30);
+		if (!ExecuteIntEntry(*TestRunner, SE, M, Result)) return;
+		TestRunner->TestEqual(TEXT("Script reads both globals: 10+20=30"), Result, 30);
 	}
 };
 

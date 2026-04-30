@@ -56,7 +56,6 @@ namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private
 	}
 }
 
-using namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private;
 
 TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCallingConvTests,
 	"Angelscript.TestModule.AngelScriptSDK.ASSDK.CallingConv",
@@ -64,9 +63,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCallingConvTests,
 {
 	TEST_METHOD(CDecl)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK calling-convention CDecl test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention CDecl test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -78,35 +78,38 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCallingConvTests,
 
 		const ASAutoCaller::FunctionCaller Caller = ASAutoCaller::MakeFunctionCaller(DoubleNativeValue);
 		const int RegisterResult = ScriptEngine->RegisterGlobalFunction("int DoubleNativeValue(int Value)", asFUNCTION(DoubleNativeValue), asCALL_CDECL, *(asFunctionCaller*)&Caller);
-		if (!TestTrue(TEXT("ASSDK calling-convention CDecl test should register the native function"), RegisterResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("ASSDK calling-convention CDecl test should register the native function"), RegisterResult >= 0))
 		{
 			return;
 		}
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKCallingConvCDecl",
-			"int Entry() { return DoubleNativeValue(21); }\n");
-		if (!TestNotNull(TEXT("ASSDK calling-convention CDecl test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKCallingConvCDecl", R"(
+int Entry()
+{
+	return DoubleNativeValue(21);
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention CDecl test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		int32 Result = 0;
-		if (!ExecuteCallingConvIntEntry(*this, ScriptEngine, Module, "int Entry()", Result))
+		if (!ExecuteCallingConvIntEntry(*TestRunner, ScriptEngine, Module, "int Entry()", Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("ASSDK calling-convention CDecl test should preserve native CDecl calls"), Result, 42);
+		TestRunner->TestEqual(TEXT("ASSDK calling-convention CDecl test should preserve native CDecl calls"), Result, 42);
 	}
 
 	TEST_METHOD(Generic)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK calling-convention generic test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention generic test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -117,35 +120,38 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCallingConvTests,
 		};
 
 		const int RegisterResult = ScriptEngine->RegisterGlobalFunction("int TripleGenericValue(int Value)", asFUNCTION(TripleGenericValue), asCALL_GENERIC);
-		if (!TestTrue(TEXT("ASSDK calling-convention generic test should register the generic function"), RegisterResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("ASSDK calling-convention generic test should register the generic function"), RegisterResult >= 0))
 		{
 			return;
 		}
 
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKCallingConvGeneric",
-			"int Entry() { return TripleGenericValue(14); }\n");
-		if (!TestNotNull(TEXT("ASSDK calling-convention generic test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKCallingConvGeneric", R"(
+int Entry()
+{
+	return TripleGenericValue(14);
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention generic test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		int32 Result = 0;
-		if (!ExecuteCallingConvIntEntry(*this, ScriptEngine, Module, "int Entry()", Result))
+		if (!ExecuteCallingConvIntEntry(*TestRunner, ScriptEngine, Module, "int Entry()", Result))
 		{
 			return;
 		}
 
-		TestEqual(TEXT("ASSDK calling-convention generic test should preserve generic callback execution"), Result, 42);
+		TestRunner->TestEqual(TEXT("ASSDK calling-convention generic test should preserve generic callback execution"), Result, 42);
 	}
 
 	TEST_METHOD(Thiscall)
 	{
+		using namespace AngelscriptTest_Native_AngelscriptASSDKCallingConvTests_Private;
 		FNativeMessageCollector Messages;
 		asIScriptEngine* ScriptEngine = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("ASSDK calling-convention thiscall test should create a standalone engine"), ScriptEngine))
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention thiscall test should create a standalone engine"), ScriptEngine))
 		{
 			return;
 		}
@@ -160,31 +166,30 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKCallingConvTests,
 		const int ConstructResult = ScriptEngine->RegisterObjectBehaviour("NativeAdder", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructNativeAdder), asCALL_CDECL_OBJLAST, *(asFunctionCaller*)&ConstructCaller);
 		const int PropertyResult = ScriptEngine->RegisterObjectProperty("NativeAdder", "int Base", asOFFSET(FNativeAdder, Base));
 		const int MethodResult = ScriptEngine->RegisterObjectMethod("NativeAdder", "int Add(int Delta) const", asMETHODPR(FNativeAdder, Add, (int32) const, int32), asCALL_THISCALL);
-		if (!TestTrue(TEXT("ASSDK calling-convention thiscall test should register the value type and method"), TypeResult >= 0 && ConstructResult >= 0 && PropertyResult >= 0 && MethodResult >= 0))
+		if (!TestRunner->TestTrue(TEXT("ASSDK calling-convention thiscall test should register the value type and method"), TypeResult >= 0 && ConstructResult >= 0 && PropertyResult >= 0 && MethodResult >= 0))
 		{
 			return;
 		}
 
 		// Compile-only test: verify the module compiles with native thiscall method registration.
 		// Script class instantiation in isolated engine context may crash, so we only verify compilation.
-		asIScriptModule* Module = BuildNativeModule(
-			ScriptEngine,
-			"ASSDKCallingConvThiscall",
-			"int Entry()                            \n"
-			"{                                      \n"
-			"  NativeAdder Value;                   \n"
-			"  Value.Base = 39;                     \n"
-			"  return Value.Add(3);                 \n"
-			"}                                      \n");
-		if (!TestNotNull(TEXT("ASSDK calling-convention thiscall test should compile the module"), Module))
+		asIScriptModule* Module = BuildNativeModule(ScriptEngine, "ASSDKCallingConvThiscall", R"(
+int Entry()
+{
+	NativeAdder Value;
+	Value.Base = 39;
+	return Value.Add(3);
+}
+)");
+		if (!TestRunner->TestNotNull(TEXT("ASSDK calling-convention thiscall test should compile the module"), Module))
 		{
-			AddInfo(CollectMessages(Messages));
+			TestRunner->AddInfo(CollectMessages(Messages));
 			return;
 		}
 
 		// Verify the function exists in the compiled module.
 		asIScriptFunction* EntryFunc = GetNativeFunctionByDecl(Module, "int Entry()");
-		TestNotNull(TEXT("ASSDK calling-convention thiscall test should expose the compiled entry function"), EntryFunc);
+		TestRunner->TestNotNull(TEXT("ASSDK calling-convention thiscall test should expose the compiled entry function"), EntryFunc);
 	}
 };
 

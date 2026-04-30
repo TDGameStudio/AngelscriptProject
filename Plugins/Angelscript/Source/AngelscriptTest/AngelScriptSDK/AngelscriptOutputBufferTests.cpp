@@ -16,7 +16,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKOutputBufferTests, "Angelscript.TestModul
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		if (!TestRunner->TestNotNull(TEXT("Should create engine"), SE)) return;
 		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
 
 		// Compile invalid code - should produce error messages
@@ -34,15 +34,15 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKOutputBufferTests, "Angelscript.TestModul
 				break;
 			}
 		}
-		TestTrue(TEXT("Message callback should capture at least one error"), HasError);
-		TestTrue(TEXT("Error messages should be non-empty"), Messages.Entries.Num() > 0);
+		TestRunner->TestTrue(TEXT("Message callback should capture at least one error"), HasError);
+		TestRunner->TestTrue(TEXT("Error messages should be non-empty"), Messages.Entries.Num() > 0);
 	}
 
 	TEST_METHOD(WarningCapture)
 	{
 		FNativeMessageCollector Messages;
 		asIScriptEngine* SE = CreateNativeEngine(&Messages);
-		if (!TestNotNull(TEXT("Should create engine"), SE)) return;
+		if (!TestRunner->TestNotNull(TEXT("Should create engine"), SE)) return;
 		ON_SCOPE_EXIT { DestroyNativeEngine(SE); };
 
 		// Code that compiles but may produce warnings (unused variable)
@@ -52,10 +52,10 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptASSDKOutputBufferTests, "Angelscript.TestModul
 
 		// Whether or not there are warnings depends on engine config.
 		// The key assertion is that message callback works and does not crash.
-		AddInfo(FString::Printf(TEXT("Messages captured: %d"), Messages.Entries.Num()));
+		TestRunner->AddInfo(FString::Printf(TEXT("Messages captured: %d"), Messages.Entries.Num()));
 		for (const FNativeMessageEntry& Entry : Messages.Entries)
 		{
-			AddInfo(FString::Printf(TEXT("  [%s] %s"), *FString(ToMessageTypeString(Entry.Type)), *Entry.Message));
+			TestRunner->AddInfo(FString::Printf(TEXT("  [%s] %s"), *FString(ToMessageTypeString(Entry.Type)), *Entry.Message));
 		}
 	}
 };
