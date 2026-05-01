@@ -59,6 +59,7 @@
   - [12.13 GC 垃圾回收](#1213-gc-垃圾回收)
   - [12.14 Subsystem 子系统](#1214-subsystem-子系统)
   - [12.15 HotReload 热重载场景](#1215-hotreload-热重载场景)
+  - [12.16 Functional Round1 Gap-Fill — 真空区与深度补漏](#1216-functional-round1-gap-fill--真空区与深度补漏)
 - [13. Learning — 教学型可观测测试](#13-learning--教学型可观测测试)
   - [13.1 Native 层学习测试](#131-native-层学习测试)
   - [13.2 Runtime 层学习测试](#132-runtime-层学习测试)
@@ -934,6 +935,32 @@
 | HotReload.AddProperty | Full reload 后新属性 `NewValue` 默认 99，原属性仍存在 |
 | HotReload.FunctionChange | Soft reload 前后 `GetValue` 分别从 1 变为 2 |
 | HotReload.PIEStructuralChangeNeedsFullReload | 分析脚本增属性变更，要求走 Full reload 路径 |
+
+### 12.16 Functional Round1 Gap-Fill — 真空区与深度补漏
+
+> 源文件：`Functional/<Theme>/Angelscript<Theme><Topic>Tests.cpp`
+>
+> 来源：`Documents/Plans/Plan_ReferenceBasedTestExpansion.md` Round1 落地（仅补真空区与深度，共 15 个用例）。
+>
+> Prefix 沿用 Round1 蓝图字面：`Angelscript.TestModule.Functional.<Theme>.<Topic>.*`，与默认 `<Theme>.*` 主题层并存的例外说明见 `Documents/Guides/TestConventions.md`。
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| Functional.Types.ScriptDataAsset.CompilesAndRegistersProperties | `class : UDataAsset` 编译；`UPROPERTY` 进入反射；CDO 默认值匹配；`AActor` 持 `UDataAsset` 引用 |
+| Functional.Widget.BindWidget.MetadataAndPropertyTypes | `UUserWidget` 子类 `UPROPERTY(BindWidget)` 多种 widget 类型注册 + metadata 反射 |
+| Functional.Animation.AnimNotifyScript.SubclassRegistersUPropertyAndDerivesFromUAnimNotify | `class : UAnimNotify` 编译，`UPROPERTY` 进入反射，CDO 默认值（FName / float）正确 |
+| Functional.Animation.AnimNotifyStateScript.SubclassRegistersUPropertyAndDerivesFromUAnimNotifyState | `class : UAnimNotifyState` 编译，多 `UPROPERTY` 类型注册，bool CDO 默认值生效 |
+| Functional.Rendering.DynamicMaterial.ScriptCompilesDynamicMaterialAPI | `UStaticMeshComponent` `DefaultComponent` + `UMaterialInstanceDynamic` 引用 + AS 端 `CreateDynamicMaterialInstance` / `SetScalarParameterValue` / `SetVectorParameterValue` 编译路径打通 |
+| Functional.GAS.ScriptAttributeSet.SubclassRegistersAttributeFieldsAndOnRepFunction | `class : UAngelscriptAttributeSet` 编译；`FAngelscriptGameplayAttributeData` 字段进入反射；`OnRep_Attribute` UFunction 继承 |
+| Functional.Component.SplineUsage.SplineDefaultComponentRegistersAndAPICompiles | `USplineComponent` `DefaultComponent` + AS `GetSplineLength` / `GetLocationAtDistanceAlongSpline` / `GetRotationAtDistanceAlongSpline` 编译路径打通 |
+| Functional.Component.MultiLevelHierarchy.FourLevelAttachChainResolves | 4 层 `DefaultComponent` 链（Root → Middle → LeafMesh → DeepLight）的 `GetAttachParent` / `GetChildrenComponents` 全链验证 |
+| Functional.Component.DefaultPropertyOverride.DefaultStatementsAffectComponentCDOs | `default Sphere.SphereRadius=128`、`default Mesh.bHiddenInGame=true`、`default Mesh.CastShadow=false` 在 CDO 上正确生效 |
+| Functional.Property.MetaSpecifiersMatrix.MetaSpecifiersAreReflectedOnFProperty | `EditCondition` / `EditConditionHides` / `InlineEditConditionToggle` / `ClampMin/Max` / `UIMin/Max` / `MakeEditWidget` 经 `FProperty::GetMetaData` 全部可读 |
+| Functional.Functions.MixinReferenceMatrix.MixinSignaturesCompileAndDispatchAtRuntime | mixin 单参 / 单参+默认值 / 多参+默认值 三种签名运行时正确 dispatch |
+| Functional.Delegate.BroadcastWithParams.EventBroadcastFanOutsToAllListenersAndDelegateExecuteReturnsValue | `event` AddUFunction + Broadcast 多绑定 fan-out + Unbind 后只剩 1 listener；`delegate` IsBound + Execute 返回值 |
+| Functional.Actor.SpawnPatterns.MultipleSpawnSyntaxesProduceValidActors | `SpawnActor(Class, Loc, Rot)` / 命名参数 / `bDeferredSpawn=true`+`FinishSpawningActor` / `TSubclassOf`+`Cast<>` 四种调用模式均成功 |
+| Functional.Actor.TimerRuntimeBehavior.PauseUnpauseAndClearTransitionsAreObservable | `SetTimer` 后 `IsTimerPausedHandle == false` → `Pause` 后 == true → `UnPause` 后 == false → `Clear` 后 == false 状态机闭合 |
+| Functional.Types.StringInterpolationAndFNameLiteral.FStringInterpolationAndFNameLiteralRuntimeValues | `f"Hello {Name}!"` / `f"{A} {B} in {C}s"` 运行时输出正确；`n"Tag" == FName("Tag")` 与 case-insensitive `n"tag" == FName("TAG")` |
 
 ---
 

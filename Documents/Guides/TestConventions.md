@@ -81,6 +81,10 @@
 - `Angelscript.TestModule.WorldSubsystem.*`
 - `Angelscript.TestModule.GameInstanceSubsystem.*`
 
+#### 例外：Functional 主题层（Round1 gap-fill）
+
+`Documents/Plans/Plan_ReferenceBasedTestExpansion.md` 的 Round1 落地（参见 `Plugins/Angelscript/Source/AngelscriptTest/Functional/<Theme>/Angelscript<Theme><Topic>Tests.cpp`，目录段为 `Animation` / `GAS` / `Property` / `Rendering` / `Widget` 等）按计划保留 **`Angelscript.TestModule.Functional.<Theme>.<Topic>.*`** 这一额外的 `Functional.*` 主题层级，与默认的 `Angelscript.TestModule.<Theme>.*`（`Actor/Component/Delegate/...`）并存。该例外只覆盖该计划落地的 15 个用例（详见 `TestCatalog.md` 12.16 节），其它新增主题集成测试仍使用默认的 `<Theme>.*` 形态。
+
 ## 新增测试的标准流程
 
 ### Step 1：先定层级，不要先写文件
