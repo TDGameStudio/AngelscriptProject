@@ -5,8 +5,12 @@
 #include "Core/FunctionCallers.h"
 #include "Binds/Helper_FunctionSignature.h"
 
+#include "Misc/Optional.h"
 #include "UObject/UnrealType.h"
 #include "UObject/Class.h"
+#include "UObject/PropertyOptional.h"
+#include "UObject/Script.h"
+#include "UObject/Stack.h"
 
 #include "StartAngelscriptHeaders.h"
 #include "source/as_generic.h"
@@ -84,11 +88,116 @@ namespace
 	constexpr int32 BlueprintCallableReflectiveFallbackMaxArgs = 16;
 	const FName NAME_BlueprintCallableReflectiveFallback_CustomThunk(TEXT("CustomThunk"));
 
-	struct FReflectiveOutReference
+	// =====================================================================
+	// FReflectiveParamCache
+	//
+	// Per-UFunction precomputed dispatch metadata. Built lazily on the first
+	// reflective fallback call (see FBlueprintCallableReflectiveSignature::
+	// GetOrBuildCache) and reused on every subsequent call. The intent mirrors
+	// sluaunreal's `LuaFunctionAccelerator`: replace the per-call
+	// TFieldIterator + virtual FProperty dispatch with a tight TArray loop
+	// that knows offsets / sizes / copy strategy upfront.
+	//
+	// This is a runtime-only structure (allocated in TOptional inside the
+	// signature); it is freed automatically when the signature is deleted.
+	// =====================================================================
+	struct FReflectiveParamCache
 	{
-		FProperty* Property = nullptr;
-		void* ScriptValue = nullptr;
+		struct FParamEntry
+		{
+			FProperty* Property = nullptr;
+			int32 UEOffset = 0;       // FProperty::GetOffset_ForInternal()
+			int32 Size = 0;           // FProperty::GetSize()
+			bool bIsSimpleCopy = false;
+			bool bNeedInitialize = false;
+			bool bNeedDestroy = false;
+			// CPF_OutParm is set: the engine's FFrame::StepExplicitProperty
+			// will look this property up in OutParms and crash if it is
+			// missing. const-ref UFUNCTION args (CPF_OutParm | CPF_ConstParm)
+			// fall under this category as well — they must be in the chain
+			// even though we never write back to script.
+			bool bRequiresOutParmRec = false;
+			// Subset of bRequiresOutParmRec that we should also copy back to
+			// the AS-side argument address after Invoke (true non-const out
+			// parameters with no CPF_ReturnParm).
+			bool bIsWritebackOut = false;
+			bool bIsReferenceParam = false;
+		};
+
+		// In AS argument order, with the return parameter excluded.
+		TArray<FParamEntry, TInlineAllocator<8>> Params;
+		// Indices into Params with CPF_OutParm set (regardless of CPF_ConstParm).
+		// Used to build the FOutParmRec linked list that engine exec stubs expect.
+		TArray<int32, TInlineAllocator<4>> OutParamIndices;
+		FParamEntry Return;
+		int32 ParmsSize = 0;
+		int32 ReturnValueOffset = MAX_uint16;
+		bool bHasReturn = false;
+		bool bIsNetFunction = false;
 	};
+
+	// Determine whether a property's bytes can be moved with a raw memcpy
+	// (instead of going through CPP-level copy constructors via
+	// FProperty::CopySingleValue). We use a deny-list because most engine
+	// containers and string-like types depend on FProperty's virtual copy.
+	bool IsPropertySimpleCopy(const FProperty* Property)
+	{
+		if (Property == nullptr)
+		{
+			return false;
+		}
+
+		if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData))
+		{
+			return true;
+		}
+
+		// FObjectProperty / FInterfaceProperty / FObjectPtrProperty etc. all derive from
+		// FObjectPropertyBase and store an 8-byte pointer that is bytewise copyable.
+		if (CastField<FObjectPropertyBase>(Property) != nullptr)
+		{
+			return true;
+		}
+
+		// Containers, delegates, FString / FName / FText, FSoft* etc. require
+		// per-element ref-counting / interning and cannot be memcpy'd safely.
+		if (CastField<FStrProperty>(Property) != nullptr
+			|| CastField<FNameProperty>(Property) != nullptr
+			|| CastField<FTextProperty>(Property) != nullptr
+			|| CastField<FArrayProperty>(Property) != nullptr
+			|| CastField<FMapProperty>(Property) != nullptr
+			|| CastField<FSetProperty>(Property) != nullptr
+			|| CastField<FDelegateProperty>(Property) != nullptr
+			|| CastField<FMulticastDelegateProperty>(Property) != nullptr
+			|| CastField<FSoftObjectProperty>(Property) != nullptr
+			|| CastField<FSoftClassProperty>(Property) != nullptr
+			|| CastField<FFieldPathProperty>(Property) != nullptr
+			|| CastField<FOptionalProperty>(Property) != nullptr)
+		{
+			return false;
+		}
+
+		// USTRUCT: only allow memcpy if the struct itself has no destructor and
+		// no copy semantics that need running.
+		if (const FStructProperty* StructProp = CastField<FStructProperty>(Property))
+		{
+			if (StructProp->Struct != nullptr)
+			{
+				const EStructFlags Flags = StructProp->Struct->StructFlags;
+				const bool bHasDtor = (Flags & STRUCT_NoDestructor) == 0;
+				const bool bHasCustomCopy = (Flags & STRUCT_CopyNative) != 0;
+				if (bHasDtor || bHasCustomCopy)
+				{
+					return false;
+				}
+				return true;
+			}
+			return false;
+		}
+
+		// Conservatively fall back to virtual CopySingleValue for anything we don't recognise.
+		return false;
+	}
 
 	struct FBlueprintCallableReflectiveSignature
 	{
@@ -100,7 +209,79 @@ namespace
 		bool bInjectMixinObject = false;
 		bool bInitReturn = false;
 		bool bZeroReturnPtr = false;
+
+		// Lazily-constructed parameter cache. Populated on the first call to
+		// GetOrBuildCache(); subsequent calls return the same cache by reference.
+		// Storing inside TOptional keeps the cache colocated with the signature
+		// so it dies automatically when the signature is deleted.
+		TOptional<FReflectiveParamCache> CachedParams;
+
+		const FReflectiveParamCache& GetOrBuildCache();
 	};
+
+	const FReflectiveParamCache& FBlueprintCallableReflectiveSignature::GetOrBuildCache()
+	{
+		if (CachedParams.IsSet())
+		{
+			return CachedParams.GetValue();
+		}
+
+		FReflectiveParamCache& Cache = CachedParams.Emplace();
+		// Allocate space for parameters AND locals. For native UFUNCTIONs the two
+		// are equal (no Blueprint locals); for Blueprint-defined functions reached
+		// via reflective fallback the extra space is needed by ProcessInternal.
+		Cache.ParmsSize = UnrealFunction != nullptr ? UnrealFunction->PropertiesSize : 0;
+		Cache.ReturnValueOffset = UnrealFunction != nullptr ? UnrealFunction->ReturnValueOffset : MAX_uint16;
+		Cache.bIsNetFunction = UnrealFunction != nullptr
+			&& (UnrealFunction->FunctionFlags & FUNC_Net) != 0;
+
+		if (UnrealFunction == nullptr)
+		{
+			return Cache;
+		}
+
+		Cache.Params.Reserve(BlueprintCallableReflectiveFallbackMaxArgs);
+
+		for (TFieldIterator<FProperty> It(UnrealFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
+		{
+			FProperty* Prop = *It;
+
+			FReflectiveParamCache::FParamEntry Entry;
+			Entry.Property = Prop;
+			Entry.UEOffset = Prop->GetOffset_ForInternal();
+			Entry.Size = Prop->GetSize();
+			Entry.bNeedInitialize = !Prop->HasAnyPropertyFlags(CPF_ZeroConstructor);
+			Entry.bNeedDestroy = !Prop->HasAnyPropertyFlags(CPF_NoDestructor)
+				&& !Prop->HasAnyPropertyFlags(CPF_IsPlainOldData);
+			Entry.bIsSimpleCopy = IsPropertySimpleCopy(Prop);
+			Entry.bIsReferenceParam = Prop->HasAnyPropertyFlags(CPF_ReferenceParm);
+			// Engine FFrame contract: every CPF_OutParm parameter (including
+			// const-ref) must appear in OutParms or StepExplicitProperty
+			// dereferences a null record.
+			Entry.bRequiresOutParmRec = Prop->HasAnyPropertyFlags(CPF_OutParm)
+				&& !Prop->HasAnyPropertyFlags(CPF_ReturnParm);
+			// Only true non-const out-parameters need to be written back to AS
+			// after Invoke. Const-ref args are read-only on the engine side.
+			Entry.bIsWritebackOut = Entry.bRequiresOutParmRec
+				&& !Prop->HasAnyPropertyFlags(CPF_ConstParm);
+
+			if (Prop->HasAnyPropertyFlags(CPF_ReturnParm))
+			{
+				Cache.Return = Entry;
+				Cache.bHasReturn = true;
+			}
+			else
+			{
+				const int32 ParamIndex = Cache.Params.Add(Entry);
+				if (Entry.bRequiresOutParmRec)
+				{
+					Cache.OutParamIndices.Add(ParamIndex);
+				}
+			}
+		}
+
+		return Cache;
+	}
 
 	int32 GetNonReturnParameterCount(const UFunction* Function)
 	{
@@ -115,23 +296,6 @@ namespace
 		return ParameterCount;
 	}
 
-	void InitializeParameterBuffer(const UFunction* Function, uint8* Buffer)
-	{
-		FMemory::Memzero(Buffer, Function->ParmsSize);
-		for (TFieldIterator<FProperty> It(Function); It && (It->PropertyFlags & CPF_Parm); ++It)
-		{
-			It->InitializeValue_InContainer(Buffer);
-		}
-	}
-
-	void DestroyParameterBuffer(const UFunction* Function, uint8* Buffer)
-	{
-		for (TFieldIterator<FProperty> It(Function); It && (It->PropertyFlags & CPF_Parm); ++It)
-		{
-			It->DestroyValue_InContainer(Buffer);
-		}
-	}
-
 	void* ResolveScriptArgumentAddress(const FProperty* Property, void* ScriptArgumentAddress)
 	{
 		if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_ReferenceParm))
@@ -140,6 +304,212 @@ namespace
 		}
 
 		return ScriptArgumentAddress;
+	}
+
+	// Cached counterpart to InvokeReflectiveUFunctionFromGenericCall:
+	//   - reads everything from the prebuilt FReflectiveParamCache
+	//   - skips ProcessEvent in favour of FFrame + UFunction::Invoke
+	//   - mirrors sluaunreal's FOutParmRec linked-list construction so engines
+	//     that expect FFrame::OutParms still see them
+	//   - special-cases FUNC_Net via GetFunctionCallspace + CallRemoteFunction
+	bool InvokeReflectiveUFunctionFromGenericCallCached(
+		asCGeneric* Generic,
+		UObject* TargetObject,
+		UFunction* Function,
+		const FReflectiveParamCache& Cache,
+		bool bInjectMixinObject)
+	{
+		if (Generic == nullptr || TargetObject == nullptr || Function == nullptr)
+		{
+			return false;
+		}
+
+		uint8* ParameterBuffer = static_cast<uint8*>(FMemory_Alloca(Cache.ParmsSize));
+		FMemory::Memzero(ParameterBuffer, Cache.ParmsSize);
+
+		// Initialize parameters that need non-zero default construction.
+		for (const FReflectiveParamCache::FParamEntry& Entry : Cache.Params)
+		{
+			if (Entry.bNeedInitialize)
+			{
+				Entry.Property->InitializeValue_InContainer(ParameterBuffer);
+			}
+		}
+		if (Cache.bHasReturn && Cache.Return.bNeedInitialize)
+		{
+			Cache.Return.Property->InitializeValue_InContainer(ParameterBuffer);
+		}
+
+		// Track the script-side addresses of out parameters so we can write back after Invoke.
+		void* OutScriptAddresses[BlueprintCallableReflectiveFallbackMaxArgs];
+		FMemory::Memzero(OutScriptAddresses, sizeof(OutScriptAddresses));
+
+		int32 ScriptArgIndex = 0;
+		bool bInjectedMixinObject = false;
+
+		const int32 ParamCount = Cache.Params.Num();
+		for (int32 ParamIndex = 0; ParamIndex < ParamCount; ++ParamIndex)
+		{
+			const FReflectiveParamCache::FParamEntry& Entry = Cache.Params[ParamIndex];
+
+			void* Destination = ParameterBuffer + Entry.UEOffset;
+
+			if (bInjectMixinObject && !bInjectedMixinObject)
+			{
+				UObject* MixinObject = static_cast<UObject*>(Generic->GetObject());
+				Entry.Property->CopySingleValue(Destination, &MixinObject);
+				bInjectedMixinObject = true;
+				continue;
+			}
+
+			if (ScriptArgIndex >= Generic->GetArgCount())
+			{
+				// Argument under-flow: clean up and bail out.
+				for (const FReflectiveParamCache::FParamEntry& E : Cache.Params)
+				{
+					if (E.bNeedDestroy)
+					{
+						E.Property->DestroyValue_InContainer(ParameterBuffer);
+					}
+				}
+				if (Cache.bHasReturn && Cache.Return.bNeedDestroy)
+				{
+					Cache.Return.Property->DestroyValue_InContainer(ParameterBuffer);
+				}
+				return false;
+			}
+
+			void* ScriptArgumentAddress = Generic->GetAddressOfArg(ScriptArgIndex);
+			void* SourceAddress = ResolveScriptArgumentAddress(Entry.Property, ScriptArgumentAddress);
+
+			if (Entry.bIsSimpleCopy && SourceAddress != nullptr)
+			{
+				FMemory::Memcpy(Destination, SourceAddress, Entry.Size);
+			}
+			else if (SourceAddress != nullptr)
+			{
+				Entry.Property->CopySingleValue(Destination, SourceAddress);
+			}
+
+			if (Entry.bIsWritebackOut)
+			{
+				OutScriptAddresses[ParamIndex] = SourceAddress;
+			}
+
+			++ScriptArgIndex;
+		}
+
+		// Build the FOutParmRec chain that the engine expects when out parameters are present.
+		// Mirrors sluaunreal's LuaFunctionAccelerator::call layout.
+		FFrame NewStack(TargetObject, Function, ParameterBuffer, /*PreviousFrame=*/ nullptr,
+			Function->ChildProperties);
+
+		FOutParmRec** LastOut = &NewStack.OutParms;
+		for (int32 OutIdx : Cache.OutParamIndices)
+		{
+			const FReflectiveParamCache::FParamEntry& Entry = Cache.Params[OutIdx];
+			FOutParmRec* OutRec = static_cast<FOutParmRec*>(FMemory_Alloca(sizeof(FOutParmRec)));
+			OutRec->Property = Entry.Property;
+			OutRec->PropAddr = ParameterBuffer + Entry.UEOffset;
+			OutRec->NextOutParm = nullptr;
+			if (*LastOut != nullptr)
+			{
+				(*LastOut)->NextOutParm = OutRec;
+				LastOut = &(*LastOut)->NextOutParm;
+			}
+			else
+			{
+				*LastOut = OutRec;
+			}
+		}
+
+		uint8* ReturnAddress = Cache.bHasReturn
+			? (ParameterBuffer + Cache.ReturnValueOffset)
+			: nullptr;
+
+		if (Cache.bIsNetFunction)
+		{
+			// Replicate sluaunreal's FUNC_Net handling so RPCs remain functionally correct.
+			const int32 FunctionCallspace = TargetObject->GetFunctionCallspace(Function, &NewStack);
+			uint8* SavedCode = nullptr;
+			if ((FunctionCallspace & FunctionCallspace::Remote) != 0)
+			{
+				SavedCode = NewStack.Code;
+				TargetObject->CallRemoteFunction(Function, ParameterBuffer, NewStack.OutParms, &NewStack);
+			}
+			if ((FunctionCallspace & FunctionCallspace::Local) != 0)
+			{
+				if (SavedCode != nullptr)
+				{
+					NewStack.Code = SavedCode;
+				}
+				Function->Invoke(TargetObject, NewStack, ReturnAddress);
+			}
+		}
+		else
+		{
+			Function->Invoke(TargetObject, NewStack, ReturnAddress);
+		}
+
+		// Out-parameter writeback (script-side addresses captured above).
+		// Only non-const out parameters need their data copied back to AS.
+		for (int32 OutIdx : Cache.OutParamIndices)
+		{
+			const FReflectiveParamCache::FParamEntry& Entry = Cache.Params[OutIdx];
+			if (!Entry.bIsWritebackOut)
+			{
+				continue;
+			}
+			void* ScriptAddress = OutScriptAddresses[OutIdx];
+			if (ScriptAddress == nullptr)
+			{
+				continue;
+			}
+			void* SourceAddress = ParameterBuffer + Entry.UEOffset;
+			if (Entry.bIsSimpleCopy)
+			{
+				FMemory::Memcpy(ScriptAddress, SourceAddress, Entry.Size);
+			}
+			else
+			{
+				Entry.Property->CopySingleValue(ScriptAddress, SourceAddress);
+			}
+		}
+
+		// Return-value writeback into the AS-controlled return location.
+		if (Cache.bHasReturn)
+		{
+			void* ReturnDestination = Generic->GetAddressOfReturnLocation();
+			if (ReturnDestination != nullptr)
+			{
+				if (Cache.Return.bIsSimpleCopy)
+				{
+					FMemory::Memcpy(ReturnDestination, ParameterBuffer + Cache.ReturnValueOffset, Cache.Return.Size);
+				}
+				else
+				{
+					Cache.Return.Property->InitializeValue(ReturnDestination);
+					Cache.Return.Property->CopySingleValue(
+						ReturnDestination,
+						ParameterBuffer + Cache.ReturnValueOffset);
+				}
+			}
+		}
+
+		// Tear down anything the parameter buffer initialised.
+		for (const FReflectiveParamCache::FParamEntry& Entry : Cache.Params)
+		{
+			if (Entry.bNeedDestroy)
+			{
+				Entry.Property->DestroyValue_InContainer(ParameterBuffer);
+			}
+		}
+		if (Cache.bHasReturn && Cache.Return.bNeedDestroy)
+		{
+			Cache.Return.Property->DestroyValue_InContainer(ParameterBuffer);
+		}
+
+		return true;
 	}
 
 	void CallBlueprintCallableReflectiveFallback(asIScriptGeneric* InGeneric)
@@ -161,7 +531,38 @@ namespace
 			return;
 		}
 
-		InvokeReflectiveUFunctionFromGenericCall(Generic, TargetObject, Signature->UnrealFunction, Signature->bInjectMixinObject);
+		const FReflectiveParamCache& Cache = Signature->GetOrBuildCache();
+		InvokeReflectiveUFunctionFromGenericCallCached(
+			static_cast<asCGeneric*>(InGeneric),
+			TargetObject,
+			Signature->UnrealFunction,
+			Cache,
+			Signature->bInjectMixinObject);
+	}
+
+	// Bridge for the public-API InvokeReflectiveUFunctionFromGenericCall: callers
+	// outside the anonymous namespace cannot construct a FBlueprintCallableReflectiveSignature
+	// directly, so this thin helper builds a transient signature, populates its
+	// cache, and routes through the cached dispatch path.
+	bool InvokeReflectiveUFunctionFromGenericCall_Bridge(
+		asIScriptGeneric* InGeneric,
+		UObject* TargetObject,
+		UFunction* Function,
+		bool bInjectMixinObject)
+	{
+		auto* Generic = static_cast<asCGeneric*>(InGeneric);
+		if (Generic == nullptr || TargetObject == nullptr || Function == nullptr)
+		{
+			return false;
+		}
+
+		FBlueprintCallableReflectiveSignature TransientSignature;
+		TransientSignature.UnrealFunction = Function;
+		TransientSignature.bInjectMixinObject = bInjectMixinObject;
+		const FReflectiveParamCache& Cache = TransientSignature.GetOrBuildCache();
+
+		return InvokeReflectiveUFunctionFromGenericCallCached(
+			Generic, TargetObject, Function, Cache, bInjectMixinObject);
 	}
 
 	bool BindReflectiveFunction(
@@ -378,82 +779,14 @@ bool InvokeReflectiveUFunctionFromGenericCall(
 	UFunction* Function,
 	bool bInjectMixinObject)
 {
-	auto* Generic = static_cast<asCGeneric*>(InGeneric);
-	if (Generic == nullptr || TargetObject == nullptr || Function == nullptr)
-	{
-		return false;
-	}
-
-	uint8* ParameterBuffer = static_cast<uint8*>(FMemory_Alloca(Function->ParmsSize));
-	InitializeParameterBuffer(Function, ParameterBuffer);
-
-	FReflectiveOutReference OutReferences[BlueprintCallableReflectiveFallbackMaxArgs];
-	int32 OutReferenceCount = 0;
-	int32 ScriptArgIndex = 0;
-	bool bInjectedMixinObject = false;
-
-	for (TFieldIterator<FProperty> It(Function); It && (It->PropertyFlags & CPF_Parm); ++It)
-	{
-		FProperty* Property = *It;
-		if (Property->HasAnyPropertyFlags(CPF_ReturnParm))
-		{
-			continue;
-		}
-
-		void* Destination = Property->ContainerPtrToValuePtr<void>(ParameterBuffer);
-		if (bInjectMixinObject && !bInjectedMixinObject)
-		{
-			UObject* MixinObject = static_cast<UObject*>(Generic->GetObject());
-			Property->CopySingleValue(Destination, &MixinObject);
-			bInjectedMixinObject = true;
-			continue;
-		}
-
-		if (!ensure(ScriptArgIndex < Generic->GetArgCount()))
-		{
-			DestroyParameterBuffer(Function, ParameterBuffer);
-			return false;
-		}
-
-		void* ScriptArgumentAddress = Generic->GetAddressOfArg(ScriptArgIndex);
-		void* SourceAddress = ResolveScriptArgumentAddress(Property, ScriptArgumentAddress);
-		Property->CopySingleValue(Destination, SourceAddress);
-
-		if (Property->HasAnyPropertyFlags(CPF_ReferenceParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm) && ensure(OutReferenceCount < BlueprintCallableReflectiveFallbackMaxArgs))
-		{
-			OutReferences[OutReferenceCount++] = { Property, SourceAddress };
-		}
-
-		++ScriptArgIndex;
-	}
-
-	TargetObject->ProcessEvent(Function, ParameterBuffer);
-
-	for (int32 OutReferenceIndex = 0; OutReferenceIndex < OutReferenceCount; ++OutReferenceIndex)
-	{
-		const FReflectiveOutReference& OutReference = OutReferences[OutReferenceIndex];
-		if (ensure(OutReference.Property != nullptr && OutReference.ScriptValue != nullptr))
-		{
-			OutReference.Property->CopySingleValue(
-				OutReference.ScriptValue,
-				OutReference.Property->ContainerPtrToValuePtr<void>(ParameterBuffer));
-		}
-	}
-
-	if (FProperty* ReturnProperty = Function->GetReturnProperty())
-	{
-		void* ReturnDestination = Generic->GetAddressOfReturnLocation();
-		if (ReturnDestination != nullptr)
-		{
-			ReturnProperty->InitializeValue(ReturnDestination);
-			ReturnProperty->CopySingleValue(
-				ReturnDestination,
-				ReturnProperty->ContainerPtrToValuePtr<void>(ParameterBuffer));
-		}
-	}
-
-	DestroyParameterBuffer(Function, ParameterBuffer);
-	return true;
+	// Backward-compatible entry point: external callers (notably automation
+	// tests) hold an asIScriptGeneric* and a UFunction* without owning a
+	// FBlueprintCallableReflectiveSignature. The bridge builds a transient
+	// signature and routes through the same cached + Invoke-based fast path
+	// as the bound trampoline. Even with the per-call cache build, skipping
+	// ProcessEvent is a net win.
+	return InvokeReflectiveUFunctionFromGenericCall_Bridge(
+		InGeneric, TargetObject, Function, bInjectMixinObject);
 }
 
 bool BindBlueprintCallableReflectiveFallback(

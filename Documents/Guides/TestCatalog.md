@@ -447,6 +447,22 @@
 | Bindings.NativeComponentMethods | `USceneComponent`：`Activate`/`Deactivate`/相对变换/`GetComponent`/标签，以及 `SetComponentVelocity` / `GetComponentVelocity` / `FScopedMovementUpdate` | AngelscriptNativeEngineBindingsTests.cpp |
 | Bindings.ComponentDestroyCompat | 注解组件上 `DestroyComponent()` 可编译执行，组件进入 `IsBeingDestroyed()` | AngelscriptNativeEngineBindingsTests.cpp |
 
+### BlueprintCallable 反射回退缓存
+
+> 缓存实现见 `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.cpp`（`FReflectiveParamCache` + `FBlueprintCallableReflectiveSignature::GetOrBuildCache` + `InvokeReflectiveUFunctionFromGenericCallCached`）。原始 `InvokeReflectiveUFunctionFromGenericCall` 公共 API 现在转发到缓存路径，因此现存的 UMG/AIModule/GameplayTags 反射回退测试也间接覆盖缓存。
+>
+> 7 个新增功能用例选用 GameplayTags BPLib（UHT 摘要 35/35 stub，100% 反射回退）作为驱动函数，避免 AngelscriptTest 模块内函数被 UHT 直接绑定旁路缓存。
+
+| 测试名 | 验证内容 | 源文件 |
+|--------|----------|--------|
+| Bindings.ReflectiveFallbackCache.PODScalar | POD 标量参数与返回值通过 `FMemory::Memcpy` 快路径反射回退 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.NonPOD | `FName`/`FGameplayTag` 等非 POD 类型走 `CopySingleValue` 反射回退 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.OutParam | `UPARAM(ref) FGameplayTagContainer&` 经 FOutParmRec 链表正确写回脚本侧 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.Return | 非 POD USTRUCT 返回值（`FGameplayTagContainer`）经缓存回写到 AS 返回槽 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.MixinObject | `bInjectMixinObject==true` 静态 BPLib 函数：首参从 `Generic->GetObject()` 注入而非 AS 参数列表 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.CacheReuse | 同一 UFunction 在循环中调用 32 次，验证首次构建的缓存在后续调用中被正确复用 | AngelscriptReflectiveFallbackCacheTests.cpp |
+| Bindings.ReflectiveFallbackCache.FuncNetEligibility | 结构性兜底：BPLib UFUNCTION 在缓存改造后仍保持反射回退资格（FUNC_Net 端到端验证待网络环境） | AngelscriptReflectiveFallbackCacheTests.cpp |
+
 ---
 
 ## 5. HotReload — 热重载
@@ -1056,7 +1072,7 @@
 
 ### 15.6 Performance — 运行期微基准
 
-> 源文件：`Performance/AngelscriptRuntimeMicrobenchmarkTests.cpp`、`Performance/AngelscriptPerformanceTestTypes.cpp`
+> 源文件：`Performance/AngelscriptRuntimeMicrobenchmarkTests.cpp`、`Performance/AngelscriptReflectiveFallbackBenchmarkTests.cpp`、`Performance/AngelscriptPerformanceTestTypes.cpp`
 >
 > 标准分组：`AngelscriptPerformance` 同时路由 `Angelscript.TestModule.Performance.`、`Angelscript.TestModule.Core.Performance.` 与 `Angelscript.TestModule.HotReload.Performance.`。
 
@@ -1065,6 +1081,7 @@
 | Performance.ScriptSelf | 参考外部样例中的脚本自调用场景，采样空函数与算术函数循环，并与 native baseline checksum 对齐 |
 | Performance.NativeProperty | 采样脚本访问 C++ scalar/container UPROPERTY 的读写循环，并与 C++ native loop checksum 对齐 |
 | Performance.NativeFunction | 采样脚本调用 C++ scalar/container UFUNCTION 的读写循环，并与 C++ native loop checksum 对齐 |
+| Performance.ReflectiveFallback.Benchmark | 纯 C++ 四组对照基准（不经过 AS）：A0=直接 C++ 方法调用（绝对下限） / A1=`UObject::ProcessEvent` / A2=`FFrame`+`UFunction::Invoke`（无缓存）/ A3=预缓存 `FBenchParamCache`+`FFrame`+`Invoke`（含 POD `FMemory::Memcpy` 快路径）。覆盖 16 个 UFunction，按 FProperty 类型矩阵铺开：(1) 反射地板基线 `StaticNoOp` / `MemberNoOp` / `StaticAdd`；(2) POD 标量 getter `GetBool` / `GetInt32` / `GetDouble` / `GetEnum`；(3) 非 POD getter `GetName` / `GetString` / `GetStruct` / `GetObject` / `GetArray` / `GetMap`；(4) `const&` 入参 setter `SetString` / `SetStruct` / `SetArray` / `SetMap`。每个函数四路径都通过同一 `BenchOne` 驱动 + `ExtractChecksum` 跨路径校验（A1/A2/A3 始终比对，A0 在类型可比较时也比对）。输出 metrics.json，前缀 `reflective.<funcname>.{a0,a1,a2,a3}_*_seconds`，用于量化跳过 `ProcessEvent`（A2 vs A1）、额外缓存（A3 vs A2）以及反射 vs 原生（A3 vs A0）随类型复杂度的衰减。注：纯静态函数 / 标量 getter 的 A0 测量受编译器 inline / DCE 影响会偏低；`Get*` 容器 / 字符串类型的 A0 才是真实可比较的反射不可消除下限。参考 `Reference/sluaunreal/Plugins/slua_unreal/Source/slua_unreal/Private/LuaFunctionAccelerator.cpp`。 |
 
 ### 15.7 首轮执行快照（2026-04-03）
 
