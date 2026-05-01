@@ -2,7 +2,7 @@
 // AngelscriptThirdPartyLibTests.cpp
 //
 // Tests for AngelscriptThirdPartyLib.cpp - validates the SDK integration layer.
-// Automation IDs: Angelscript.CppTests.ThirdPartyLib.*
+// Automation IDs: Angelscript.TestModule.CppTests.ThirdPartyLib.*
 // =============================================================================
 
 #include "Misc/AutomationTest.h"
@@ -12,17 +12,17 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptThirdPartyLibVersionTest,
-	"Angelscript.CppTests.ThirdPartyLib.VersionString",
+	"Angelscript.TestModule.CppTests.ThirdPartyLib.VersionString",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptThirdPartyLibCreateReleaseTest,
-	"Angelscript.CppTests.ThirdPartyLib.CreateAndRelease",
+	"Angelscript.TestModule.CppTests.ThirdPartyLib.CreateAndRelease",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptThirdPartyLibEnginePropertyTest,
-	"Angelscript.CppTests.ThirdPartyLib.EngineProperty",
+	"Angelscript.TestModule.CppTests.ThirdPartyLib.EngineProperty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 // ---------------------------------------------------------------------------

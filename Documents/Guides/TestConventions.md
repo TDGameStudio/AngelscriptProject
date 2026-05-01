@@ -14,7 +14,7 @@
 
 | 层级 | 代码路径 | Automation 前缀 | 用途 | 推荐 helper |
 | --- | --- | --- | --- | --- |
-| Runtime 内部 C++ | `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` | `Angelscript.CppTests.*` | 运行时内部状态、共享引擎、隔离、覆盖率、预编译数据等 | Runtime 私有头 + `StartAngelscriptHeaders.h` |
+| Runtime 内部 C++ | `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` | `Angelscript.TestModule.CppTests.*` | 运行时内部状态、共享引擎、隔离、覆盖率、预编译数据等 | Runtime 私有头 + `StartAngelscriptHeaders.h` |
 | Editor 内部 | `Plugins/Angelscript/Source/AngelscriptEditor/Tests/` | `Angelscript.Editor.*` | Editor 专有行为，例如 watcher / source navigation / debugger seam | Editor 私有实现 + editor-only helper |
 | Native Core | `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.*` | 只验证公共 AngelScript API / ASSDK 桥接层，不引入 `FAngelscriptEngine` | `AngelscriptNativeTestSupport.h` / `AngelscriptTestAdapter.h` |
 | Runtime 集成 | `Plugins/Angelscript/Source/AngelscriptTest/Core/`、`Angelscript/`、`Bindings/`、`AngelScriptSDK/`、`Compiler/`、`Preprocessor/`、`FileSystem/`、`ClassGenerator/` | `Angelscript.TestModule.*` | 基于 `FAngelscriptEngine` 的编译、绑定、语言行为与内部机制验证 | `Shared/AngelscriptTestEngineHelper.*` |
@@ -46,7 +46,7 @@
 
 ### 3. Automation 前缀规则
 
-- `Angelscript.CppTests.*`：只用于 `AngelscriptRuntime/Tests/`
+- `Angelscript.TestModule.CppTests.*`：只用于 `AngelscriptRuntime/Tests/`
 - `Angelscript.Editor.*`：只用于 Editor 内部测试
 - `Angelscript.TestModule.*`：只用于 `AngelscriptTest` 模块
 
@@ -106,7 +106,7 @@
 
 - 文件名要能一眼说明测试族别。
 - Automation 前缀要先区分模块层，再区分主题，再区分 case。
-- 不要混用 `Angelscript.CppTests.*` 与 `Angelscript.TestModule.*`。
+- 不要混用 `Angelscript.TestModule.CppTests.*` 与 `Angelscript.TestModule.*`。
 
 ### Step 4：优先复用 helper
 
@@ -128,8 +128,8 @@
 | 场景 | 推荐层级 / 目录 | 标准前缀 | 核心流程 | 推荐命令 |
 | --- | --- | --- | --- | --- |
 | Native Core smoke | `Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.Smoke` | 创建独立 AngelScript 引擎 → 编译/执行最小脚本 → 验证返回值/消息回调 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK"` |
-| Runtime 内部引擎隔离 | `Source/AngelscriptRuntime/Tests/` | `Angelscript.CppTests.MultiEngine.*` | 创建 full / clone 引擎 → 校验共享状态、模块隔离、依赖注入 | `.\Tools\RunTestSuite.ps1 -Suite Smoke` |
-| Debugger 协议与调试场景 | `Source/AngelscriptRuntime/Tests/`、`Source/AngelscriptTest/Debugger/` | `Angelscript.CppTests.Debug.*` / `Angelscript.TestModule.Debugger.*` | 连接调试客户端 → 启动调试会话 → 断言握手、断点、步进与停止状态 | `.\Tools\RunTestSuite.ps1 -Suite Debugger` |
+| Runtime 内部引擎隔离 | `Source/AngelscriptRuntime/Tests/` | `Angelscript.TestModule.CppTests.MultiEngine.*` | 创建 full / clone 引擎 → 校验共享状态、模块隔离、依赖注入 | `.\Tools\RunTestSuite.ps1 -Suite Smoke` |
+| Debugger 协议与调试场景 | `Source/AngelscriptRuntime/Tests/`、`Source/AngelscriptTest/Debugger/` | `Angelscript.TestModule.CppTests.Debug.*` / `Angelscript.TestModule.Debugger.*` | 连接调试客户端 → 启动调试会话 → 断言握手、断点、步进与停止状态 | `.\Tools\RunTestSuite.ps1 -Suite Debugger` |
 | UE 功能测试 Actor / Component | `Actor/`、`Component/` | `Angelscript.TestModule.Actor.*` / `Angelscript.TestModule.Component.*` | `FAngelscriptTestWorld W(*TestRunner, Engine)` → `W.SpawnActorOfClass` → `W.BeginPlay` → `W.Tick` / `W.DispatchActorTick` / `W.DispatchComponentTick` → `ReadPropertyValue` 读回断言 | `.\Tools\RunTestSuite.ps1 -Suite FunctionalSamples` |
 | UE 完整 Actor 生命周期 | `Actor/` 或主题目录 | `Angelscript.TestModule.Actor.Lifecycle.*` 等 | `FAngelscriptTestWorld` → `SpawnActorOfClass`（触发 `UserConstructionScript`）→ `BeginPlay` → `Tick` × N → `DestroyAndDrain`（同步派发 `EndPlay(Destroyed) + Destroyed`）→ 断言计数 / 顺序 / `LastEndPlayReason` | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Actor."` |
 | HotReload 回归 | `HotReload/` | `Angelscript.TestModule.HotReload.*` | 编译 V1 → 生成对象/状态 → 编译 V2 → 断言 soft/full reload 结果与状态保持 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload"` |

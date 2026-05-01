@@ -17,27 +17,27 @@ namespace
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugTransportSingleEnvelopeTest,
-	"Angelscript.CppTests.Debug.Transport.SingleEnvelope",
+	"Angelscript.TestModule.CppTests.Debug.Transport.SingleEnvelope",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugTransportMultipleEnvelopesTest,
-	"Angelscript.CppTests.Debug.Transport.MultipleEnvelopes",
+	"Angelscript.TestModule.CppTests.Debug.Transport.MultipleEnvelopes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugTransportTruncatedEnvelopeTest,
-	"Angelscript.CppTests.Debug.Transport.TruncatedEnvelope",
+	"Angelscript.TestModule.CppTests.Debug.Transport.TruncatedEnvelope",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugTransportInvalidLengthTest,
-	"Angelscript.CppTests.Debug.Transport.InvalidLength",
+	"Angelscript.TestModule.CppTests.Debug.Transport.InvalidLength",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugTransportEmptyBodyEnvelopeTest,
-	"Angelscript.CppTests.Debug.Transport.EmptyBodyEnvelope",
+	"Angelscript.TestModule.CppTests.Debug.Transport.EmptyBodyEnvelope",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebugTransportSingleEnvelopeTest::RunTest(const FString& Parameters)

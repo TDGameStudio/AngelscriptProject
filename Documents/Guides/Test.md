@@ -144,7 +144,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Grou
 
 ```powershell
 Tools\RunTests.ps1 -Group AngelscriptSmoke -Label smoke -TimeoutMs 120000
-Tools\RunTests.ps1 -TestPrefix "Angelscript.CppTests." -Label runtime-unit -TimeoutMs 600000
+Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.CppTests." -Label runtime-unit -TimeoutMs 600000
 Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Dump" -Label dump -TimeoutMs 600000
 Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900000 -Render
 Tools\RunTests.ps1 -Group AngelscriptFast -Label fast -TimeoutMs 600000 -- -log

@@ -5,7 +5,7 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrecompiledAllocatorResizeAndMoveTest,
-	"Angelscript.CppTests.StaticJIT.PrecompiledAllocator.ResizeAndMove",
+	"Angelscript.TestModule.CppTests.StaticJIT.PrecompiledAllocator.ResizeAndMove",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPrecompiledAllocatorResizeAndMoveTest::RunTest(const FString& Parameters)

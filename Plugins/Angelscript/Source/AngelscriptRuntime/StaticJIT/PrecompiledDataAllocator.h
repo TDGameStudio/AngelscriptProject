@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "Misc/MemStack.h"
 
-extern FMemStackBase GScriptPreallocatedMemStack;
+extern ANGELSCRIPTRUNTIME_API FMemStackBase GScriptPreallocatedMemStack;
 
 /** A container allocator that allocates from a mem-stack. */
 template<uint32 Alignment = DEFAULT_ALIGNMENT>

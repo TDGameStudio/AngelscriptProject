@@ -738,8 +738,8 @@
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
-| `Angelscript.CppTests.Debug.Protocol.*` | `AngelscriptDebugProtocolTests.cpp` | 调试消息体 round-trip、版本字段与结构兼容 |
-| `Angelscript.CppTests.Debug.Transport.*` | `AngelscriptDebugTransportTests.cpp` | 调试 envelope 的 framing、半包、多包与错误长度处理 |
+| `Angelscript.TestModule.CppTests.Debug.Protocol.*` | `AngelscriptDebugProtocolTests.cpp` | 调试消息体 round-trip、版本字段与结构兼容 |
+| `Angelscript.TestModule.CppTests.Debug.Transport.*` | `AngelscriptDebugTransportTests.cpp` | 调试 envelope 的 framing、半包、多包与错误长度处理 |
 | `Angelscript.TestModule.Debugger.Smoke.*` | `Debugger/AngelscriptDebuggerSmokeTests.cpp` | 调试会话握手、server version 返回与基础连接链路 |
 | `Angelscript.TestModule.Debugger.Breakpoint.*` | `Debugger/AngelscriptDebuggerBreakpointTests.cpp` | 断点下发、命中行号、分支忽略与继续执行行为 |
 | `Angelscript.TestModule.Debugger.Stepping.*` | `Debugger/AngelscriptDebuggerSteppingTests.cpp` | `StepIn` / `StepOver` / `StepOut` 的停止行为与调用栈变化 |
@@ -1063,7 +1063,7 @@
 
 | 测试前缀 | 说明 |
 |--------|----------|
-| `Angelscript.CppTests.MultiEngine` | 创建模式与 startup owner 基础烟雾 |
+| `Angelscript.TestModule.CppTests.MultiEngine` | 创建模式与 startup owner 基础烟雾 |
 | `Angelscript.TestModule.Engine.BindConfig` | 启动 bind 配置与顺序烟雾 |
 | `Angelscript.TestModule.Shared.EngineHelper` | 引擎隔离与 scope 恢复烟雾 |
 | `Angelscript.TestModule.Parity` | 生产引擎 bind 可见性 smoke |
@@ -1097,8 +1097,8 @@
 | 测试前缀 | 说明 |
 |--------|----------|
 | `Angelscript.TestModule.Core.Performance.ArtifactGeneration` | metrics.json 与目录结构落盘验证 |
-| `Angelscript.CppTests.CodeCoverage.HtmlReport.Generation` | 报告产物写出能力邻近回归 |
-| `Angelscript.CppTests.StaticJIT.PrecompiledData.*` | 预编译数据产物与 round-trip 稳定性 |
+| `Angelscript.TestModule.CppTests.CodeCoverage.HtmlReport.Generation` | 报告产物写出能力邻近回归 |
+| `Angelscript.TestModule.CppTests.StaticJIT.PrecompiledData.*` | 预编译数据产物与 round-trip 稳定性 |
 
 ### 15.6 Performance — 运行期微基准
 
@@ -1117,9 +1117,9 @@
 
 | 层级 | 前缀 | 报告目录 | 结果摘要 |
 |--------|----------|----------|----------|
-| 快速烟雾层 | `Angelscript.CppTests.MultiEngine` | `Saved/Automation/AngelscriptPerformance/P6_MultiEngine/Reports/index.json` | `failed=0` |
-| 快速烟雾层 | `Angelscript.CppTests.Engine.DependencyInjection` | `Saved/Automation/AngelscriptPerformance/P6_DependencyInjection/Reports/index.json` | `failed=0` |
-| 快速烟雾层 | `Angelscript.CppTests.Subsystem` | `Saved/Automation/AngelscriptPerformance/P6_Subsystem/Reports/index.json` | `failed=0` |
+| 快速烟雾层 | `Angelscript.TestModule.CppTests.MultiEngine` | `Saved/Automation/AngelscriptPerformance/P6_MultiEngine/Reports/index.json` | `failed=0` |
+| 快速烟雾层 | `Angelscript.TestModule.CppTests.Engine.DependencyInjection` | `Saved/Automation/AngelscriptPerformance/P6_DependencyInjection/Reports/index.json` | `failed=0` |
+| 快速烟雾层 | `Angelscript.TestModule.CppTests.Subsystem` | `Saved/Automation/AngelscriptPerformance/P6_Subsystem/Reports/index.json` | `failed=0` |
 | 快速烟雾层 | `Angelscript.TestModule.Engine.BindConfig` | `Saved/Automation/AngelscriptPerformance/P6_BindConfig/Reports/index.json` | `failed=0` |
 | 快速烟雾层 | `Angelscript.TestModule.Shared.EngineHelper` | `Saved/Automation/AngelscriptPerformance/P6_SharedEngineHelper/Reports/index.json` | `failed=0` |
 | 快速烟雾层 | `Angelscript.TestModule.Parity` | `Saved/Automation/AngelscriptPerformance/P6_Parity/Reports/index.json` | `failed=0` |

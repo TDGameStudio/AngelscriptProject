@@ -335,9 +335,9 @@ struct FAngelscriptPrecompiledClass
 		return Ar;
 	}
 
-	void InitFrom(FAngelscriptPrecompiledData& Context, class asCModule* Module, class asCObjectType* Type);
+	ANGELSCRIPTRUNTIME_API void InitFrom(FAngelscriptPrecompiledData& Context, class asCModule* Module, class asCObjectType* Type);
 
-	asCObjectType* Create(FAngelscriptPrecompiledData& Context, class asCModule* Module) const;
+	ANGELSCRIPTRUNTIME_API asCObjectType* Create(FAngelscriptPrecompiledData& Context, class asCModule* Module) const;
 	void ProcessProperties(FAngelscriptPrecompiledData& Context, asCObjectType* Type) const;
 	void CreateFunctions(FAngelscriptPrecompiledData& Context, asCObjectType* Type) const;
 	void PreProcessFunctions(FAngelscriptPrecompiledData& Context, asCObjectType* Type) const;

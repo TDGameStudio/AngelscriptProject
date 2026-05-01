@@ -54,7 +54,7 @@
 ### 当前测试基础设施
 
 - `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`
-  - 已有 `Angelscript.CppTests.*` 风格的低层自动化测试，适合无真实世界/无真实暂停上下文的 deterministic 逻辑。
+  - 已有 `Angelscript.TestModule.CppTests.*` 风格的低层自动化测试，适合无真实世界/无真实暂停上下文的 deterministic 逻辑。
 - `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h`
   - 提供 `GetResetSharedTestEngine()`、`BuildModule()`、`ExecuteIntFunction()` 等基础 helper。
 - `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineHelper.h`
@@ -102,8 +102,8 @@
 
 命名建议：
 
-- `Angelscript.CppTests.Debugger.Protocol.*`
-- `Angelscript.CppTests.Debugger.Transport.*`
+- `Angelscript.TestModule.CppTests.Debugger.Protocol.*`
+- `Angelscript.TestModule.CppTests.Debugger.Transport.*`
 
 ### Layer B：Editor Automation Debugger 场景测试
 
@@ -251,7 +251,7 @@
 
 ### 通用命名与断言约定
 
-- 测试名统一使用 `Angelscript.CppTests.Debugger.*` 或 `Angelscript.TestModule.Debugger.*`
+- 测试名统一使用 `Angelscript.TestModule.CppTests.Debugger.*` 或 `Angelscript.TestModule.Debugger.*`
 - 断点类测试至少断言：`StoppedReason`、`Source`、`LineNumber`
 - 步进类测试至少断言：新旧行号差异、调用栈深度变化、停止原因从 `step` 派生
 - 变量类测试至少断言：`Name`、`Value`、`Type`、`bHasMembers`
@@ -290,7 +290,7 @@
 
 执行阶段应优先按最小回归面分批验证：
 
-- 低层协议：`Automation RunTests Angelscript.CppTests.Debugger`
+- 低层协议：`Automation RunTests Angelscript.TestModule.CppTests.Debugger`
 - 冒烟与断点：`Automation RunTests Angelscript.TestModule.Debugger.Smoke+Angelscript.TestModule.Debugger.Breakpoint`
 - 步进/调用栈/变量：`Automation RunTests Angelscript.TestModule.Debugger.Stepping+Angelscript.TestModule.Debugger.Callstack+Angelscript.TestModule.Debugger.Variables`
 - 绑定与 Win64 数据断点：按平台条件单独运行，避免一次性把不稳定面混入基础回归
@@ -366,12 +366,12 @@
 - [ ] **P1.4** 📦 Git 提交：`[Debugger/Test] Feat: add deterministic debugger script fixtures`
 
 - [ ] **P1.5** 如确有必要，更新 `Config/DefaultEngine.ini`，添加 `AngelscriptDebugger` 测试组过滤规则
-  - `Contains="Angelscript.CppTests.Debugger."`
+  - `Contains="Angelscript.TestModule.CppTests.Debugger."`
   - `Contains="Angelscript.TestModule.Debugger."`
   - 仅在确认现有配置确实需要统一入口时执行；否则保留到 Phase 6。
   - **实现要求**：
     - 先确认仓库当前是否已有 debugger 相关 group，避免新旧规则重叠或命中范围过宽。
-    - group 只聚合同主题 debugger tests，不要顺手把 `Angelscript.CppTests.AngelscriptCodeCoverage.*` 或其他依赖 line callback 的测试一并纳入。
+    - group 只聚合同主题 debugger tests，不要顺手把 `Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.*` 或其他依赖 line callback 的测试一并纳入。
   - **验证方式**：
     - 配置后用 `Automation RunTest Group:AngelscriptDebugger` 验证过滤结果；若匹配面不稳定则宁可先不提交该步。
   - **完成判据**：
@@ -394,13 +394,13 @@
     - `FAngelscriptDebugDatabaseSettings`
   - 覆盖 `DebugAdapterVersion >= 2` 时 `ValueAddress` / `ValueSize` 的序列化分支。
   - 每个测试必须显式保存并恢复 `AngelscriptDebugServer::DebugAdapterVersion`，避免不同协议版本用例相互污染。
-  - 测试名建议统一使用 `Angelscript.CppTests.Debugger.Protocol.*`。
+  - 测试名建议统一使用 `Angelscript.TestModule.CppTests.Debugger.Protocol.*`。
   - **实现要求**：
     - 用例按消息族拆分，而不是一个 test 覆盖所有 struct：`Protocol.StartDebugging.RoundTrip`、`Protocol.Breakpoint.RoundTrip`、`Protocol.Variables.Version2RoundTrip` 之类分别存在。
     - round-trip 断言必须覆盖所有已定义字段；例如 `FAngelscriptVariable` 不仅要比对 `Name/Value/Type`，还要在 V2 下校验 `ValueAddress/ValueSize`。
     - 对可选字段（如旧版协议下不存在的字段）要明确写出“旧版加载后的默认值预期”，不能只断言反序列化成功。
   - **验证方式**：
-    - 运行 `Angelscript.CppTests.Debugger.Protocol.*`，确保每个消息族至少一个正例，关键兼容分支至少一个版本切换用例。
+    - 运行 `Angelscript.TestModule.CppTests.Debugger.Protocol.*`，确保每个消息族至少一个正例，关键兼容分支至少一个版本切换用例。
   - **完成判据**：
     - 任何 message struct 字段顺序变动、字段丢失、版本分支错误，都能由该文件中的单测直接打红。
 - [ ] **P2.1** 📦 Git 提交：`[Debugger/Test] Feat: add debugger protocol round-trip tests`
@@ -415,7 +415,7 @@
     - transport tests 必须覆盖“连续两条消息写入同一个 buffer 后被顺序读出”的场景，防止只验证单消息 happy path。
     - 错误路径要明确断言行为：返回失败、记录错误、丢弃连接或保留缓冲区中的哪一种；不能只写“应该失败”。
   - **验证方式**：
-    - 运行 `Angelscript.CppTests.Debugger.Transport.*`，并确认其中至少存在 `SingleEnvelope`、`MultipleEnvelopes`、`TruncatedEnvelope`、`InvalidLength` 四类命名清晰的 case。
+    - 运行 `Angelscript.TestModule.CppTests.Debugger.Transport.*`，并确认其中至少存在 `SingleEnvelope`、`MultipleEnvelopes`、`TruncatedEnvelope`、`InvalidLength` 四类命名清晰的 case。
   - **完成判据**：
     - 后续 `TestClient` 对长度字段和 body 读取语义不再靠猜；transport contract 已被写成测试事实。
 - [ ] **P2.2** 📦 Git 提交：`[Debugger/Test] Feat: add debugger transport framing tests`
@@ -433,7 +433,7 @@
     - 该测试能作为后续所有 debugger 场景测试的前置健康检查：只要它红，优先排查 transport/session，而不是断点逻辑。
 - [ ] **P2.3** 📦 Git 提交：`[Debugger/Test] Feat: add debugger handshake smoke test`
 
-- [ ] **P2.4** 运行 `Angelscript.CppTests.Debugger.*` 与 `Angelscript.TestModule.Debugger.Smoke.*`，确认协议层与握手冒烟都通过
+- [ ] **P2.4** 运行 `Angelscript.TestModule.CppTests.Debugger.*` 与 `Angelscript.TestModule.Debugger.Smoke.*`，确认协议层与握手冒烟都通过
   - **验证方式**：
     - 先单跑 `Protocol.*`、再单跑 `Transport.*`、最后跑 `Smoke.*`，避免一口气运行后无法定位是协议层还是 session 层出问题。
     - 若 `Smoke` 失败，优先检查 port、tick 驱动和 framing，而不是直接修改断点/变量测试计划。
@@ -664,7 +664,7 @@
 
 - [ ] **P6.2** 更新 `Documents/Guides/Test.md`
   - 补充 debugger 测试的推荐分批命令：
-    - `Automation RunTests Angelscript.CppTests.Debugger`
+    - `Automation RunTests Angelscript.TestModule.CppTests.Debugger`
     - `Automation RunTests Angelscript.TestModule.Debugger`
     - 如配置了组：`Automation RunTest Group:AngelscriptDebugger`
   - 写明必须先读取 `AgentConfig.ini`，通过 `Paths.EngineRoot` 和 `ProjectFile` 组装命令，不能写死本地路径。
@@ -679,7 +679,7 @@
 - [ ] **P6.2** 📦 Git 提交：`[Docs] Feat: document debugger automation test entry points`
 
 - [ ] **P6.3** 运行一轮分批验证
-  - `Angelscript.CppTests.Debugger.*`
+  - `Angelscript.TestModule.CppTests.Debugger.*`
   - `Angelscript.TestModule.Debugger.Breakpoint.*`
   - `Angelscript.TestModule.Debugger.Stepping.*`
   - `Angelscript.TestModule.Debugger.Callstack.*`
@@ -708,7 +708,7 @@
 
 ## 验收标准
 
-1. `AngelscriptRuntime/Tests/` 中存在 `Angelscript.CppTests.Debugger.*` 测试集，并覆盖核心 message round-trip 与 framing。
+1. `AngelscriptRuntime/Tests/` 中存在 `Angelscript.TestModule.CppTests.Debugger.*` 测试集，并覆盖核心 message round-trip 与 framing。
 2. `AngelscriptTest/Debugger/` 目录建立完成，且至少包含 `Smoke / Breakpoint / Stepping / Callstack / Variables / Bindings` 六类测试文件。
 3. 断点测试可稳定命中固定脚本文件与固定行号，不依赖 GUID 绝对路径。
 4. 步进测试同时断言停止原因、行号和调用栈深度变化。

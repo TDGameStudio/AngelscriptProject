@@ -12,12 +12,12 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptPrecompiledEditorOnlyFlagRoundtripTest,
-	"Angelscript.CppTests.StaticJIT.PrecompiledData.EditorOnlyFlagRoundtrip",
+	"Angelscript.TestModule.CppTests.StaticJIT.PrecompiledData.EditorOnlyFlagRoundtrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptModuleDiffHighBitFlagTest,
-	"Angelscript.CppTests.StaticJIT.ModuleDiff.HighBitFlags",
+	"Angelscript.TestModule.CppTests.StaticJIT.ModuleDiff.HighBitFlags",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPrecompiledEditorOnlyFlagRoundtripTest::RunTest(const FString& Parameters)

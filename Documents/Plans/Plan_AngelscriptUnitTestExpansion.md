@@ -175,7 +175,7 @@ Plugins/Angelscript/Source/
 1. **临时分组（Phase 0）**
    - 只为当前已经稳定的前缀或目录建立分组，避免在目录迁移前就把过滤规则写死。
    - 例如：
-     - `AngelscriptRuntimeUnit` → `Angelscript.CppTests.*`
+     - `AngelscriptRuntimeUnit` → `Angelscript.TestModule.CppTests.*`
      - `AngelscriptFast` → `Angelscript.TestModule.Core.*`、`Angelscript.TestModule.Bindings.*`、`Angelscript.TestModule.AngelScriptSDK.*`、`Angelscript.TestModule.Compiler.*`、`Angelscript.TestModule.Preprocessor.*`、`Angelscript.TestModule.Angelscript.*`
      - `AngelscriptScenario` → 当前 `Angelscript.TestModule.Scenario.*` 与已确认的主题化场景前缀
 2. **最终分组（Phase 1 之后）**
@@ -259,7 +259,7 @@ Use `Tools\RunBuild.ps1`（例如 `Tools\RunBuild.ps1 -Label bootstrap -TimeoutM
     - `AngelscriptFast`
     - `AngelscriptScenario`
   - 过滤条件以测试路径前缀为主，不依赖文件名；其中：
-    - `AngelscriptRuntimeUnit` 初版仅收 `Angelscript.CppTests.*`
+    - `AngelscriptRuntimeUnit` 初版仅收 `Angelscript.TestModule.CppTests.*`
     - `AngelscriptFast` 初版仅收 `Angelscript.TestModule.Core.*`、`Angelscript.TestModule.Angelscript.*`、`Angelscript.TestModule.Bindings.*`、`Angelscript.TestModule.AngelScriptSDK.*`、`Angelscript.TestModule.Compiler.*`、`Angelscript.TestModule.Preprocessor.*`
     - `AngelscriptScenario` 初版允许同时覆盖 `Angelscript.TestModule.Scenario.*` 与已明确主题前缀
     - `AngelscriptEditorUnit` 在 Editor bootstrap 跑通前可以为空组，但条目必须预留

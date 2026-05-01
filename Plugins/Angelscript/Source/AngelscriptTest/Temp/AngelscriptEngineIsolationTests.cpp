@@ -9,9 +9,7 @@
 #include "Curves/CurveFloat.h"
 #include "UObject/UObjectGlobals.h"
 
-#include "StartAngelscriptHeaders.h"
-#include "source/as_context.h"
-#include "EndAngelscriptHeaders.h"
+#include "AngelscriptInclude.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -39,7 +37,8 @@ struct FAngelscriptEngineIsolationTestAccess
 
 	static asIScriptContext* GetActiveContext()
 	{
-		return asCThreadManager::GetLocalData()->activeContext;
+		// Uses the AS public SDK accessor so this test can link from outside the Runtime DLL.
+		return asGetActiveContext();
 	}
 };
 
@@ -97,62 +96,62 @@ static asIScriptFunction* CompileIsolationFunction(
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptContextStackScopedResolutionTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextStack.ScopedResolution",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextStack.ScopedResolution",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineScopeRestoresWorldContextTest,
-	"Angelscript.CppTests.Engine.Isolation.EngineScope.RestoresWorldContext",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.EngineScope.RestoresWorldContext",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFullEnginesKeepStateSeparateTest,
-	"Angelscript.CppTests.Engine.Isolation.SharedState.FullEnginesKeepStateSeparate",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.SharedState.FullEnginesKeepStateSeparate",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCloneSharesSourceStateTest,
-	"Angelscript.CppTests.Engine.Isolation.SharedState.CloneSharesSourceState",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.SharedState.CloneSharesSourceState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptMultipleFullEnginesCanCoexistTest,
-	"Angelscript.CppTests.Engine.Isolation.MultiFull.CanCoexist",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.MultiFull.CanCoexist",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRequestContextUsesRequestedEngineTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.RequestContextUsesRequestedEngine",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.RequestContextUsesRequestedEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRequestContextReusedStartsUnpreparedTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.RequestContextReusedStartsUnprepared",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.RequestContextReusedStartsUnprepared",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRequestContextAfterReturningUnpreparedScopedContextTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.RequestContextAfterReturningUnpreparedScopedContext",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.RequestContextAfterReturningUnpreparedScopedContext",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptFullEngineCreateClearsThreadLocalPoolTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.FullEngineCreateClearsThreadLocalPool",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.FullEngineCreateClearsThreadLocalPool",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptContextPoolResetSequenceKeepsRequestedContextReusableTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.Sequence.FullEngineCreateThenRequestContextAfterReturningUnpreparedScopedContext",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.Sequence.FullEngineCreateThenRequestContextAfterReturningUnpreparedScopedContext",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptScopedPooledContextUsesScopedEngineTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.ScopedPooledContextUsesScopedEngine",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.ScopedPooledContextUsesScopedEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptReusedPooledContextStartsUnpreparedTest,
-	"Angelscript.CppTests.Engine.Isolation.ContextPool.ReusedContextStartsUnprepared",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.ReusedContextStartsUnprepared",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptContextStackScopedResolutionTest::RunTest(const FString& Parameters)
@@ -821,10 +820,13 @@ bool FAngelscriptReusedPooledContextStartsUnpreparedTest::RunTest(const FString&
 
 		FAngelscriptPooledContextBase ReusedContext;
 		TestTrue(TEXT("Reused pooled context test should reacquire the pooled context"), ReusedContext.operator->() == SeedRawContext);
-		TestEqual(TEXT("Reused pooled context should start unprepared after pool reuse"), (int32)ReusedContext->GetState(), (int32)asEXECUTION_UNINITIALIZED);
+		// Go through the asIScriptContext* handle (obtained via the initial RequestContext call above)
+		// instead of FAngelscriptPooledContextBase::operator->() which returns the incomplete asCContext* type.
+		asIScriptContext* ReusedScriptContext = SeedRawContext;
+		TestEqual(TEXT("Reused pooled context should start unprepared after pool reuse"), (int32)ReusedScriptContext->GetState(), (int32)asEXECUTION_UNINITIALIZED);
 
-		const int32 PrepareResult = ReusedContext->Prepare(Function);
-		const int32 ExecuteResult = PrepareResult == asSUCCESS ? ReusedContext->Execute() : PrepareResult;
+		const int32 PrepareResult = ReusedScriptContext->Prepare(Function);
+		const int32 ExecuteResult = PrepareResult == asSUCCESS ? ReusedScriptContext->Execute() : PrepareResult;
 		TestEqual(TEXT("Reused pooled context should prepare successfully"), PrepareResult, asSUCCESS);
 		return TestEqual(TEXT("Reused pooled context should execute successfully"), ExecuteResult, asEXECUTION_FINISHED);
 	}
@@ -832,7 +834,7 @@ bool FAngelscriptReusedPooledContextStartsUnpreparedTest::RunTest(const FString&
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineLocalFlagsIsolationTest,
-	"Angelscript.CppTests.Engine.Isolation.EngineLocal.FlagsAreInstanceScoped",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.EngineLocal.FlagsAreInstanceScoped",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineLocalFlagsIsolationTest::RunTest(const FString& Parameters)
@@ -886,7 +888,7 @@ bool FAngelscriptEngineLocalFlagsIsolationTest::RunTest(const FString& Parameter
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineLocalTypeDatabaseIsolationTest,
-	"Angelscript.CppTests.Engine.Isolation.EngineLocal.TypeDatabaseIsInstanceScoped",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.EngineLocal.TypeDatabaseIsInstanceScoped",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineLocalTypeDatabaseIsolationTest::RunTest(const FString& Parameters)
@@ -928,7 +930,7 @@ bool FAngelscriptEngineLocalTypeDatabaseIsolationTest::RunTest(const FString& Pa
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineLocalBlueprintNamespaceSettingsIsolationTest,
-	"Angelscript.CppTests.Engine.Isolation.EngineLocal.BlueprintNamespaceSettingsAreInstanceScoped",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.EngineLocal.BlueprintNamespaceSettingsAreInstanceScoped",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineLocalBlueprintNamespaceSettingsIsolationTest::RunTest(const FString& Parameters)
@@ -985,7 +987,7 @@ bool FAngelscriptEngineLocalBlueprintNamespaceSettingsIsolationTest::RunTest(con
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineLocalStaticNamesIsolationTest,
-	"Angelscript.CppTests.Engine.Isolation.EngineLocal.StaticNamesAreSharedStateScoped",
+	"Angelscript.TestModule.CppTests.Engine.Isolation.EngineLocal.StaticNamesAreSharedStateScoped",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineLocalStaticNamesIsolationTest::RunTest(const FString& Parameters)

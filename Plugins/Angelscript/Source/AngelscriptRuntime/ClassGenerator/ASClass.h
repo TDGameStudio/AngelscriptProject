@@ -44,6 +44,7 @@ public:
 		FName Attach;
 		FName AttachSocket;
 	};
+	
 	TArray<FDefaultComponent> DefaultComponents;
 
 	struct FOverrideComponent
@@ -53,6 +54,7 @@ public:
 		FName VariableName;
 		SIZE_T VariableOffset;
 	};
+	
 	TArray<FOverrideComponent> OverrideComponents;
 
 	struct ANGELSCRIPTRUNTIME_API FScopeSetDefaultConstructorOuter

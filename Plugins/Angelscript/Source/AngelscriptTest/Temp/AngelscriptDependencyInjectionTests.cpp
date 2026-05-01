@@ -16,32 +16,32 @@ struct FAngelscriptDependencyInjectionTestAccess
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInjectedScriptRootDiscoveryTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.ScriptRoots",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.ScriptRoots",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInjectedProjectOnlyScriptRootDiscoveryTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.ProjectOnlyScriptRoots",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.ProjectOnlyScriptRoots",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInjectedMissingPluginScriptRootSkipTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.SkipMissingPluginRoots",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.SkipMissingPluginRoots",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptInjectedEditorCreatesProjectScriptRootTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.EditorCreatesProjectRoot",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.EditorCreatesProjectRoot",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCreateLegacyAliasSkipsProductionDirectorySetupTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.Create.LegacyAliasSkipsProductionDirectorySetup",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.Create.LegacyAliasSkipsProductionDirectorySetup",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCreateTestingFullEngineSkipsProductionDirectorySetupTest,
-	"Angelscript.CppTests.Engine.DependencyInjection.CreateTestingFullEngine.SkipsProductionDirectorySetup",
+	"Angelscript.TestModule.CppTests.Engine.DependencyInjection.CreateTestingFullEngine.SkipsProductionDirectorySetup",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptInjectedScriptRootDiscoveryTest::RunTest(const FString& Parameters)

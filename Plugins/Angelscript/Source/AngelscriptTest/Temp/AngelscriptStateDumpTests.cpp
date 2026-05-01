@@ -2,7 +2,7 @@
 // AngelscriptStateDumpTests.cpp
 //
 // Tests for FAngelscriptStateDump — validates dump utility functions.
-// Automation IDs: Angelscript.CppTests.StateDump.*
+// Automation IDs: Angelscript.TestModule.CppTests.StateDump.*
 // =============================================================================
 
 #include "Misc/AutomationTest.h"
@@ -19,7 +19,7 @@ using namespace AngelscriptTestSupport;
 // Test: DumpAll produces non-empty result with a valid engine
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptStateDumpAll,
-	"Angelscript.CppTests.StateDump.DumpAllReturnsPath",
+	"Angelscript.TestModule.CppTests.StateDump.DumpAllReturnsPath",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptStateDumpAll::RunTest(const FString& Parameters)
@@ -39,7 +39,7 @@ bool FAngelscriptStateDumpAll::RunTest(const FString& Parameters)
 // Test: DumpAll with empty output dir uses default (doesn't crash)
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptStateDumpDefaultDir,
-	"Angelscript.CppTests.StateDump.DumpAllDefaultDirNoCrash",
+	"Angelscript.TestModule.CppTests.StateDump.DumpAllDefaultDirNoCrash",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptStateDumpDefaultDir::RunTest(const FString& Parameters)
@@ -55,7 +55,7 @@ bool FAngelscriptStateDumpDefaultDir::RunTest(const FString& Parameters)
 // Test: OnDumpExtensions delegate can be bound without crash
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptStateDumpExtensionsDelegate,
-	"Angelscript.CppTests.StateDump.ExtensionsDelegateBind",
+	"Angelscript.TestModule.CppTests.StateDump.ExtensionsDelegateBind",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptStateDumpExtensionsDelegate::RunTest(const FString& Parameters)

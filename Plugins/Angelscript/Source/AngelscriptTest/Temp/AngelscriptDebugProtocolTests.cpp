@@ -38,42 +38,42 @@ namespace
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolStartDebuggingRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.StartDebugging.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.StartDebugging.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolDebugServerVersionRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.DebugServerVersion.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.DebugServerVersion.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolBreakpointRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.Breakpoint.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.Breakpoint.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolVariablesVersion1RoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.Variables.Version1RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.Variables.Version1RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolVariablesVersion2RoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.Variables.Version2RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.Variables.Version2RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolDataBreakpointsRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.DataBreakpoints.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.DataBreakpoints.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolBreakFiltersRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.BreakFilters.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.BreakFilters.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDebugProtocolDatabaseSettingsRoundTripTest,
-	"Angelscript.CppTests.Debug.Protocol.DatabaseSettings.RoundTrip",
+	"Angelscript.TestModule.CppTests.Debug.Protocol.DatabaseSettings.RoundTrip",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptDebugProtocolStartDebuggingRoundTripTest::RunTest(const FString& Parameters)

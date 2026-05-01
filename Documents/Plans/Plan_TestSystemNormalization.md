@@ -21,7 +21,7 @@
    - 部分 Native / ASSDK 测试文件没有显式体现 `ASSDK`；部分文件缺少统一的 `Angelscript` 前缀，搜索和归类成本偏高。
    - 典型问题包括 `AngelscriptSmokeTest.cpp`、`AngelscriptEngineTests.cpp`、`AngelscriptExecuteTests.cpp`、`AngelscriptGlobalVarTests.cpp` 与 `PreprocessorTests.cpp` 这类名字与目录意图不完全对齐的样本。
 3. **Automation 前缀不完全稳定**
-   - 现有代码实际同时使用 `Angelscript.CppTests.*`、`Angelscript.Editor.*`、`Angelscript.TestModule.*` 三层前缀，但个别文档、suite、历史计划中的前缀仍有漂移。
+   - 现有代码实际同时使用 `Angelscript.TestModule.CppTests.*`、`Angelscript.Editor.*`、`Angelscript.TestModule.*` 三层前缀，但个别文档、suite、历史计划中的前缀仍有漂移。
    - 例如 `Parity` 相关 smoke 入口曾同时出现 `Angelscript.TestModule.Parity` 与 `Angelscript.TestModule.Core.Parity` 两种写法。
 4. **执行流程入口不够标准化**
    - `Tools/RunTests.ps1` 已经能稳定运行单个前缀，但常用 `Smoke / Native / Learning / Scenario` 波次仍然依赖人工记忆和手工拼命令。
@@ -101,7 +101,7 @@ Tools/（2 个）：
 
 ### 已确认的事实
 
-1. `AngelscriptRuntime/Tests` 已经是纯 Runtime 内部 C++ 测试层，前缀实际为 `Angelscript.CppTests.*`。
+1. `AngelscriptRuntime/Tests` 已经是纯 Runtime 内部 C++ 测试层，前缀实际为 `Angelscript.TestModule.CppTests.*`。
 2. `AngelscriptEditor/Tests` 已经是 Editor 内部测试层，前缀实际为 `Angelscript.Editor.*`。
 3. `AngelscriptTest` 模块已经承载 Native、运行时集成、UE 场景、Learning、Examples 等多层测试，但此前没有单一文档统一解释这些层的边界。
 4. Native 层的两条事实子层已经存在：
@@ -133,7 +133,7 @@ Tools/（2 个）：
 - [ ] **P0.1** 📦 Git 提交：`[Docs/Test] Docs: define test layer boundaries and placement rules`
 
 - [ ] **P0.2** 固定文件命名与 Automation 前缀约定
-  - 把“测试源文件统一以 `Angelscript` 开头”“ASSDK 文件显式带 `ASSDK`”“`Angelscript.CppTests.*` / `Angelscript.Editor.*` / `Angelscript.TestModule.*` 三层不混用”写成正式规则。
+  - 把“测试源文件统一以 `Angelscript` 开头”“ASSDK 文件显式带 `ASSDK`”“`Angelscript.TestModule.CppTests.*` / `Angelscript.Editor.*` / `Angelscript.TestModule.*` 三层不混用”写成正式规则。
   - 同时明确“目录已经表达场景层时，不在 Automation 路径中重复追加 `Scenario`”这一约束，避免今后再出现目录名、类名前缀、Automation 前缀三处重复表达同一语义的情况。
   - 对 `ScriptExamples.*`、`WorldSubsystem.*`、`GameInstanceSubsystem.*` 这类已广泛存在的历史前缀，暂列为兼容保留项，不在 Phase 0 强推整体改名。
 - [ ] **P0.2** 📦 Git 提交：`[Docs/Test] Docs: define naming and automation prefix conventions`

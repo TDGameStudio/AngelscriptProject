@@ -56,7 +56,7 @@
 
 ### 2026-04-04 主干状态同步
 
-- `FAngelscriptEngineContextStack`、`FAngelscriptEngineScope` 以及 `Angelscript.CppTests.Engine.Isolation.*` 回归测试已经在主干上，不再属于后续假设工作。
+- `FAngelscriptEngineContextStack`、`FAngelscriptEngineScope` 以及 `Angelscript.TestModule.CppTests.Engine.Isolation.*` 回归测试已经在主干上，不再属于后续假设工作。
 - `AngelscriptScenarioTestUtils`、共享测试 helper 与首批 scenario / hot-reload / learning 测试已经切到 `FAngelscriptEngineScope`，测试 containment groundwork 已完成。
 - `AAngelscriptActor` 已从主干移除，脚本 Actor 回到 UE 标准 `AActor` 路径；此前依赖 `AAngelscriptActor::ProcessEvent` 的分析只保留为历史背景。
 - TypeDatabase / BindState / ToString / BindDatabase 目前已经按 isolation key 分桶，并带有销毁/回归测试入口；这显著降低了测试互相污染，但仍不是最终的 engine-instance 去全局化形态。
@@ -89,18 +89,18 @@
   - `AngelscriptTestUtilities.h` 中的 legacy using alias 已移除
 - **验证结果**：
   - 构建通过（`RunBuild.ps1 -NoXGE`）
-  - 全量 CppTests 通过（`Angelscript.CppTests.*` 9/9 isolation + subsystem + multi-engine 等）
+  - 全量 CppTests 通过（`Angelscript.TestModule.CppTests.*` 9/9 isolation + subsystem + multi-engine 等）
 - 结论：Phase 1 的 Context Stack + legacy global fallback 清理已完成。剩余工作集中在 Phase 2-4（静态标志迁移、核心单例迁移、解除 Epoch 限制）。
 
 ### 2026-04-04 实施收尾（ContextPool + Tooling）
 
 - `FAngelscriptPooledContextBase` 与引擎 `RequestContext/ReturnContext` 现在在归还到池前统一调用 `Unprepare()`，复用 context 会回到 `asEXECUTION_UNINITIALIZED`，不再以 `FINISHED`/脏状态重新进入 `Prepare()`。
-- `AngelscriptEngineIsolationTests.cpp` 新增 `Angelscript.CppTests.Engine.Isolation.ContextPool.RequestContextReusedStartsUnprepared`，补齐脚本引擎原生 `RequestContext/ReturnContext` 池化路径的回归覆盖；原有 `ReusedContextStartsUnprepared` 一并转绿。
+- `AngelscriptEngineIsolationTests.cpp` 新增 `Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.RequestContextReusedStartsUnprepared`，补齐脚本引擎原生 `RequestContext/ReturnContext` 池化路径的回归覆盖；原有 `ReusedContextStartsUnprepared` 一并转绿。
 - `Tools/GetAutomationReportSummary.ps1` 现在将 `succeededWithWarnings` 计入 passed，并把阻塞失败 hint 收紧到 `LogAutomationCommandLine: Error:`、`LogAutomationController: Error:` 以及明确的 `No matching group` / `No automation tests matched` / `Fatal error!`；启动期噪音 `Condition failed` 不再误报为测试失败。
 - `Tools/Tests/AutomationToolSelfTests.ps1` 新增 warnings-only fixture 回归，`Tools/Tests/Fixtures/MissingReport/Automation.log` 同步改为更接近真实运行时的 missing-group/missing-tests 场景。
 - 本轮验证结果：
   - `Tools/RunBuild.ps1 -Label final-engine-isolation-build` ✅
-  - `Tools/RunTests.ps1 -TestPrefix 'Angelscript.CppTests.Engine.Isolation' -Label final-engine-isolation-tests` ✅（9/9 通过）
+  - `Tools/RunTests.ps1 -TestPrefix 'Angelscript.TestModule.CppTests.Engine.Isolation' -Label final-engine-isolation-tests` ✅（9/9 通过）
   - `Tools/Tests/AutomationToolSelfTests.ps1` ✅
   - `Tools/Tests/RunToolingSmokeTests.ps1` ✅
 - 结论：当前主干已经补齐本轮 worktree 合回后的上下文池隔离缺口，并修复了对应的测试脚本误判；本计划剩余未完成范围仍集中在 Phase 2-4 的 engine-local state、统一 fixture/API、以及 legacy global fallback 清理。
@@ -136,12 +136,12 @@ Tools\RunTests.ps1 -Group Angelscript -Label TestEngineIsolation -TimeoutMs 9000
 
 #### 通过的测试（49 项）
 
-- `Angelscript.CppTests.AngelscriptCodeCoverage.*` (5)
-- `Angelscript.CppTests.Engine.DependencyInjection.*` (6)
-- `Angelscript.CppTests.Engine.Isolation.*` (4)
-- `Angelscript.CppTests.MultiEngine.*` (16)
-- `Angelscript.CppTests.StaticJIT.*` (2)
-- `Angelscript.CppTests.Subsystem.*` (11)
+- `Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.*` (5)
+- `Angelscript.TestModule.CppTests.Engine.DependencyInjection.*` (6)
+- `Angelscript.TestModule.CppTests.Engine.Isolation.*` (4)
+- `Angelscript.TestModule.CppTests.MultiEngine.*` (16)
+- `Angelscript.TestModule.CppTests.StaticJIT.*` (2)
+- `Angelscript.TestModule.CppTests.Subsystem.*` (11)
 - `Angelscript.Editor.DirectoryWatcher.Queue.*` (5)
 
 #### 失败的测试（8 项）
@@ -327,7 +327,7 @@ bool FXxxTest::RunTest(const FString& Parameters)
 | 状态 | 数量 | 说明 |
 |------|------|------|
 | PASSED | 50+ | 原 8 个失败测试中的多数恢复 |
-| CRASH | 1 | **新崩溃**：`Angelscript.CppTests.Engine.Isolation.ContextPool.ReusedContextStartsUnprepared` |
+| CRASH | 1 | **新崩溃**：`Angelscript.TestModule.CppTests.Engine.Isolation.ContextPool.ReusedContextStartsUnprepared` |
 
 新崩溃发生在 `asCContext::ReserveStackSpace()`（`Prepare()` 内部），来自 `AngelscriptEngineIsolationTests.cpp` 中的内部引擎隔离测试，与本次 scenario 测试修改无直接关系。该测试的 `asCScriptEngine*` 在 context pool reuse 场景下出现无效状态。
 

@@ -11,7 +11,7 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_AS_COVERAGE
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageTests0,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.IntegrationTest",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.IntegrationTest",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageTests0::RunTest(const FString& Parameters)
@@ -83,7 +83,7 @@ bool FAngelscriptCodeCoverageTests0::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageTests1,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.LineCoverageTestEmpty",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.LineCoverageTestEmpty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageTests1::RunTest(const FString& Parameters)
@@ -97,7 +97,7 @@ bool FAngelscriptCodeCoverageTests1::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageTests2,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.LineCoverageTest",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.LineCoverageTest",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageTests2::RunTest(const FString& Parameters)
@@ -120,7 +120,7 @@ bool FAngelscriptCodeCoverageTests2::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageTests4,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.LineCoveragePruneTest",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.LineCoveragePruneTest",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageTests4::RunTest(const FString& Parameters)
@@ -145,7 +145,7 @@ bool FAngelscriptCodeCoverageTests4::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageTests3,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.ComputeCoverageTest",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.ComputeCoverageTest",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageTests3::RunTest(const FString& Parameters)
@@ -203,7 +203,7 @@ bool FAngelscriptCodeCoverageTests3::RunTest(const FString& Parameters)
 // ---------------------------------------------------------------------------
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageResetHitsTest,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.ResetHitsClearsAll",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.ResetHitsClearsAll",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageResetHitsTest::RunTest(const FString& Parameters)
@@ -269,7 +269,7 @@ bool FAngelscriptCodeCoverageResetHitsTest::RunTest(const FString& Parameters)
 // ---------------------------------------------------------------------------
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageStartStopIdempotentTest,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.StartStopIdempotent",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.StartStopIdempotent",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageStartStopIdempotentTest::RunTest(const FString& Parameters)
@@ -297,7 +297,7 @@ bool FAngelscriptCodeCoverageStartStopIdempotentTest::RunTest(const FString& Par
 // ---------------------------------------------------------------------------
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptCodeCoverageEnabledTest,
-	"Angelscript.CppTests.AngelscriptCodeCoverage.CoverageEnabledCallable",
+	"Angelscript.TestModule.CppTests.AngelscriptCodeCoverage.CoverageEnabledCallable",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
 
 bool FAngelscriptCodeCoverageEnabledTest::RunTest(const FString& Parameters)

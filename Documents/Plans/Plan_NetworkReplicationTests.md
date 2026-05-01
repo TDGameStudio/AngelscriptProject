@@ -65,7 +65,7 @@
 本计划预计涉及以下操作（按需组合）：
 
 - **复制元数据链路对齐**：补 `ReplicationPushModel` specifier 解析、push-model property 登记、`REPNOTIFY_OnChanged` 与 push-model lifetime replication list 数据流。
-- **runtime 单元测试新增**：为 `FakeNetDriver`、脚本复制列表、flag materialization 补 `Angelscript.CppTests.*`。
+- **runtime 单元测试新增**：为 `FakeNetDriver`、脚本复制列表、flag materialization 补 `Angelscript.TestModule.CppTests.*`。
 - **UE 场景测试新增**：在 `Angelscript.TestModule.Networking.*` 下补脚本类网络场景与负例诊断。
 - **示例与文档同步**：新增最小网络 example test，并同步 `Test.md` / `TestCatalog.md` / `TestConventions.md` / 相关计划索引。
 
@@ -124,7 +124,7 @@ TestModule/Networking / Examples（3-4 个）：
 > 目标：先把不依赖 World / Actor 多进程会话的 networking runtime 路径固定下来，避免后续所有网络回归都只能靠重场景测试兜底。
 
 - [ ] **P2.1** 新增 `AngelscriptFakeNetDriverTests.cpp`
-  - 落点：`Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`，Automation 前缀统一用 `Angelscript.CppTests.*`。
+  - 落点：`Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`，Automation 前缀统一用 `Angelscript.TestModule.CppTests.*`。
   - 覆盖 `UFakeNetDriver` 的构造默认值、`IsServer()` 行为、GC 生存期和最小 `UNetDriver` 继承语义，直接承接 `Plan_AngelscriptUnitTestExpansion.md` 里尚未执行的 `P3.3`。
   - 目标不是做网络协议测试，而是把后续复制 / RPC 场景依赖的 driver seam 固化成可稳定复用的 runtime baseline。
 - [ ] **P2.1** 📦 Git 提交：`[Runtime/Networking] Test: add fake net driver baseline coverage`
@@ -136,7 +136,7 @@ TestModule/Networking / Examples（3-4 个）：
 - [ ] **P2.2** 📦 Git 提交：`[Runtime/Networking] Test: cover script replication metadata materialization`
 
 - [ ] **P2.3** 运行 runtime 网络阶段性回归
-  - 执行 `Tools/RunTests.ps1 -Group AngelscriptRuntimeUnit`，并单独跑新增 `Angelscript.CppTests.*` 前缀。
+  - 执行 `Tools/RunTests.ps1 -Group AngelscriptRuntimeUnit`，并单独跑新增 `Angelscript.TestModule.CppTests.*` 前缀。
   - 目标是把 runtime seam 的失败尽量留在这一层暴露，而不是等到场景层才发现生成 flag 或 replication list 已经漂移。
 - [ ] **P2.3** 📦 Git 提交：`[Runtime/Networking] Test: verify runtime networking baselines`
 
@@ -206,7 +206,7 @@ TestModule/Networking / Examples（3-4 个）：
 ## 验收标准
 
 1. 当前插件的网络能力被明确拆分成：**已实现且有测试证据**、**已实现但仅限 runtime seam**、**Hazelight / 引擎侧边界** 三类。
-2. `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 至少新增一组 `FakeNetDriver` / replication metadata 基线测试，Automation 前缀符合 `Angelscript.CppTests.*`。
+2. `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 至少新增一组 `FakeNetDriver` / replication metadata 基线测试，Automation 前缀符合 `Angelscript.TestModule.CppTests.*`。
 3. `Plugins/Angelscript/Source/AngelscriptTest/Networking/` 建立完成，并至少覆盖 `Replicated`、`ReplicationCondition`、`ReplicatedUsing`、`Server` / `Client` / `NetMulticast`、`_Validate` 相关 case。
 4. 当前仓库至少拥有一个可直接阅读的网络 example test，不再只剩 `bReplicates = true` 这一类弱示例。
 5. `Documents/Guides/Test.md`、`Documents/Guides/TestCatalog.md` 与 `Documents/Guides/TestConventions.md` 已同步说明网络专题入口与层级边界。

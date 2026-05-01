@@ -47,12 +47,12 @@ bool WriteFileCoverageReportHtml(const FString& RelativeFilename, const FLineCov
 //                  -> D.as
 //        -> E -> F -> G.as
 // The new leaf node gets the hit counts from Coverage.
-void AddCoverageLeaf(FCoverageNode& Root, const FString& Path, const FLineCoverage& Coverage);
+ANGELSCRIPTRUNTIME_API void AddCoverageLeaf(FCoverageNode& Root, const FString& Path, const FLineCoverage& Coverage);
 
 // Traverses the tree in postorder (leaves first) and computes hit counts for directories.
 // This is done by adding up the hit counts from all children (and AddCoverageLeaf) already
 // set up the hit counts for all leaves.
-FCoverageCounts ComputeCoverage(FCoverageNode& Node);
+ANGELSCRIPTRUNTIME_API FCoverageCounts ComputeCoverage(FCoverageNode& Node);
 
 // Writes out index.html files for all directories. You must call ComputeCoverage first so
 // the hit counts for dirs are initialized.

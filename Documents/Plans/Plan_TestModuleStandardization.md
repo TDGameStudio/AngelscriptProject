@@ -16,7 +16,7 @@
 
 ## 当前事实状态
 
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 事实前缀为 `Angelscript.CppTests.*`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 事实前缀为 `Angelscript.TestModule.CppTests.*`
 - `Plugins/Angelscript/Source/AngelscriptEditor/Tests/` 事实前缀为 `Angelscript.Editor.*`
 - `Plugins/Angelscript/Source/AngelscriptTest/` 事实前缀为 `Angelscript.TestModule.*`
 - Native 层原先存在未显式带 `ASSDK` 的历史文件名：`AngelscriptSmokeTest.cpp`、`AngelscriptEngineTests.cpp`、`AngelscriptExecuteTests.cpp`、`AngelscriptGlobalVarTests.cpp`；本轮已统一迁为 `AngelscriptASSDK*Tests.cpp`

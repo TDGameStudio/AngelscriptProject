@@ -18,7 +18,7 @@
 
 这意味着 Static JIT 的绝大多数 deterministic 路径仍然没有单元测试保护：`PrecompiledData` 的类型/模块重建、`FScriptFunctionNativeForm` 的 native form 选择、`FJITDatabase` 的全局注册表状态等一旦漂移，只能靠更高层回归或人工排查发现。
 
-另外，`StaticJIT` 相关代码大量依赖 `FAngelscriptEngine` 与 `source/as_*.h` 内部类型，不适合放到 `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`。首轮测试应继续沿用 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 的 `Angelscript.CppTests.*` 层级，保持与现有 `AngelscriptPrecompiledDataTests.cpp` 一致的内部测试模式。
+另外，`StaticJIT` 相关代码大量依赖 `FAngelscriptEngine` 与 `source/as_*.h` 内部类型，不适合放到 `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`。首轮测试应继续沿用 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 的 `Angelscript.TestModule.CppTests.*` 层级，保持与现有 `AngelscriptPrecompiledDataTests.cpp` 一致的内部测试模式。
 
 ### 目标
 
@@ -43,7 +43,7 @@
   - HotReload、Scenario、World/Actor/Blueprint 级场景测试
   - 与 Static JIT 单元测试无直接关系的运行时代码修复
 - **边界约束**
-  - 新增测试默认落在 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`，使用 `Angelscript.CppTests.StaticJIT.*` 前缀；**不要**放进 `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`。
+  - 新增测试默认落在 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`，使用 `Angelscript.TestModule.CppTests.StaticJIT.*` 前缀；**不要**放进 `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`。
   - 测试可以继续使用 `FAngelscriptEngine::CreateForTesting(...)`、`StartAngelscriptHeaders.h` 与 `source/as_*.h`，但要像现有 Runtime tests 一样，把 fixture 控制在最小范围内。
   - 由于 `StaticJITConfig.h` 在 `WITH_EDITOR` 下定义了 `AS_SKIP_JITTED_CODE`，首轮测试应验证**数据、绑定选择、注册表状态**，不要把“执行真正 jitted 代码”当作完成条件。
 
@@ -64,7 +64,7 @@
 
 本计划固定将 Static JIT 单元测试放在 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/`，原因如下：
 
-1. 现有 `AngelscriptPrecompiledDataTests.cpp` 已证明 Runtime tests 层可以合法访问 `FAngelscriptEngine` 与 `source/as_*.h`，且命名是 `Angelscript.CppTests.StaticJIT.*`，最符合当前仓库事实。
+1. 现有 `AngelscriptPrecompiledDataTests.cpp` 已证明 Runtime tests 层可以合法访问 `FAngelscriptEngine` 与 `source/as_*.h`，且命名是 `Angelscript.TestModule.CppTests.StaticJIT.*`，最符合当前仓库事实。
 2. `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` 的边界是“只用 `AngelscriptInclude.h` / `angelscript.h` 暴露的公共 API”，而 Static JIT 的预编译/绑定/数据库测试显然越过了这条边界。
 3. 首轮要补的是 deterministic 低层逻辑，不需要 World/Actor/Editor helper；放进 `AngelscriptRuntime/Tests/` 能避免把测试层级人为抬高。
 
@@ -95,13 +95,13 @@
 推荐统一前缀：
 
 ```text
-Angelscript.CppTests.StaticJIT
+Angelscript.TestModule.CppTests.StaticJIT
 ```
 
 ### 运行命令
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File "Tools\RunTests.ps1" -TestPrefix "Angelscript.CppTests.StaticJIT" -Label "StaticJIT_Unit"
+powershell.exe -ExecutionPolicy Bypass -File "Tools\RunTests.ps1" -TestPrefix "Angelscript.TestModule.CppTests.StaticJIT" -Label "StaticJIT_Unit"
 ```
 
 ## 分阶段执行计划
@@ -143,26 +143,26 @@ powershell.exe -ExecutionPolicy Bypass -File "Tools\RunTests.ps1" -TestPrefix "A
 > 目标：把新增 Static JIT 单元测试的前缀、层级与执行方式同步到文档，避免代码已经补齐而测试入口仍然只能靠记忆搜索。
 
 - [ ] **P3.1** 更新 `Documents/Guides/Test.md`，明确 Static JIT 单元测试的层级与运行方式
-  - 在现有自动化测试指南中补充 `Angelscript.CppTests.StaticJIT` 前缀，说明这组测试属于 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 的 Runtime unit 层，适合 `NullRHI` + EditorContext 环境执行。
+  - 在现有自动化测试指南中补充 `Angelscript.TestModule.CppTests.StaticJIT` 前缀，说明这组测试属于 `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 的 Runtime unit 层，适合 `NullRHI` + EditorContext 环境执行。
   - 明确写出本计划的边界：首轮验证 `PrecompiledData`、`NativeForm`、`FJITDatabase` 等 deterministic 单元，不把 cooked/package/JIT 产物执行纳入同一组回归。
   - 如果需要补充推荐执行顺序，就放在 `CppTests` / Runtime unit 小节下，不要新开与现有测试分层冲突的术语桶。
 - [ ] **P3.1** 📦 Git 提交：`[StaticJIT] Docs: document runtime unit test entrypoints`
 
 - [ ] **P3.2** 更新 `Documents/Guides/TestCatalog.md` 并完成首轮 Static JIT 前缀回归记录
-  - 在测试目录文档中补充 `Angelscript.CppTests.StaticJIT.PrecompiledData.*`、`Angelscript.CppTests.StaticJIT.Module.*`、`Angelscript.CppTests.StaticJIT.NativeForm.*`、`Angelscript.CppTests.StaticJIT.Database.*` 的主题归属，避免后续再把 Static JIT 用例混成“无目录、无主题”的孤立测试。
-  - 构建 `AngelscriptProjectEditor` 后执行 `Tools\RunTests.ps1 -TestPrefix "Angelscript.CppTests.StaticJIT"`，记录报告目录、日志路径和结果；如果某些 case 受 `AS_CAN_GENERATE_JIT` 或平台限制而跳过，也要在目录文档中说明，而不是默默接受灰色行为。
+  - 在测试目录文档中补充 `Angelscript.TestModule.CppTests.StaticJIT.PrecompiledData.*`、`Angelscript.TestModule.CppTests.StaticJIT.Module.*`、`Angelscript.TestModule.CppTests.StaticJIT.NativeForm.*`、`Angelscript.TestModule.CppTests.StaticJIT.Database.*` 的主题归属，避免后续再把 Static JIT 用例混成“无目录、无主题”的孤立测试。
+  - 构建 `AngelscriptProjectEditor` 后执行 `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.CppTests.StaticJIT"`，记录报告目录、日志路径和结果；如果某些 case 受 `AS_CAN_GENERATE_JIT` 或平台限制而跳过，也要在目录文档中说明，而不是默默接受灰色行为。
   - 这一步的完成标志不是“代码看起来写完了”，而是文档里已经出现可复用的前缀与首轮执行记录，后续任何人都能直接按该入口复跑。
 - [ ] **P3.2** 📦 Git 提交：`[StaticJIT] Docs: catalog static jit unit coverage and verification`
 
 ## 验收标准
 
-1. `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 中存在一组可按 `Angelscript.CppTests.StaticJIT` 前缀筛选的 Static JIT 单元测试，至少覆盖：
+1. `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` 中存在一组可按 `Angelscript.TestModule.CppTests.StaticJIT` 前缀筛选的 Static JIT 单元测试，至少覆盖：
    - `PrecompiledDataType` round-trip
    - `PrecompiledModule` stage apply / module round-trip
    - `FScriptFunctionNativeForm` 解析与能力位
    - `FJITDatabase` singleton / clear 语义
 2. 现有 `AngelscriptPrecompiledDataTests.cpp` 的高位 flag 回归继续保留并通过，没有被新覆盖重写掉。
-3. `Tools\RunTests.ps1 -TestPrefix "Angelscript.CppTests.StaticJIT"` 在当前 Windows editor 环境下可以作为稳定入口执行；若有平台/宏 gating，也有明确的测试内 skip 或文档说明。
+3. `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.CppTests.StaticJIT"` 在当前 Windows editor 环境下可以作为稳定入口执行；若有平台/宏 gating，也有明确的测试内 skip 或文档说明。
 4. `Documents/Guides/Test.md` 与 `Documents/Guides/TestCatalog.md` 已同步 Static JIT 的测试层级、前缀与首轮执行结果。
 5. 整个首轮方案没有把 Static JIT 低层测试错误地下沉到 `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`，也没有把非 deterministic 的 generated code 全文 snapshot 当作主要回归手段。
 

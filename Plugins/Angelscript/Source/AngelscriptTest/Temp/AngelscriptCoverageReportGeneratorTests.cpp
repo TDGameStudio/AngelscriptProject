@@ -3,7 +3,7 @@
 //
 // Tests for CoverageReportGenerator — validates tree construction, coverage
 // computation, and report generation helpers.
-// Automation IDs: Angelscript.CppTests.CoverageReportGenerator.*
+// Automation IDs: Angelscript.TestModule.CppTests.CoverageReportGenerator.*
 // =============================================================================
 
 #include "Misc/AutomationTest.h"
@@ -19,7 +19,7 @@
 // Test: FCoverageCounts::ToString with zero executable lines returns "N/A"
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoverageCountsToStringNA,
-	"Angelscript.CppTests.CoverageReportGenerator.CountsToString_NA",
+	"Angelscript.TestModule.CppTests.CoverageReportGenerator.CountsToString_NA",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FCoverageCountsToStringNA::RunTest(const FString& Parameters)
@@ -35,7 +35,7 @@ bool FCoverageCountsToStringNA::RunTest(const FString& Parameters)
 // Test: FCoverageCounts::ToString with partial coverage
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoverageCountsToStringPartial,
-	"Angelscript.CppTests.CoverageReportGenerator.CountsToString_Partial",
+	"Angelscript.TestModule.CppTests.CoverageReportGenerator.CountsToString_Partial",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FCoverageCountsToStringPartial::RunTest(const FString& Parameters)
@@ -53,7 +53,7 @@ bool FCoverageCountsToStringPartial::RunTest(const FString& Parameters)
 // Test: AddCoverageLeaf creates tree structure
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddCoverageLeafCreatesTree,
-	"Angelscript.CppTests.CoverageReportGenerator.AddCoverageLeaf_CreatesTree",
+	"Angelscript.TestModule.CppTests.CoverageReportGenerator.AddCoverageLeaf_CreatesTree",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAddCoverageLeafCreatesTree::RunTest(const FString& Parameters)
@@ -77,7 +77,7 @@ bool FAddCoverageLeafCreatesTree::RunTest(const FString& Parameters)
 // Test: ComputeCoverage aggregates child counts
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FComputeCoverageAggregates,
-	"Angelscript.CppTests.CoverageReportGenerator.ComputeCoverage_Aggregates",
+	"Angelscript.TestModule.CppTests.CoverageReportGenerator.ComputeCoverage_Aggregates",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FComputeCoverageAggregates::RunTest(const FString& Parameters)
@@ -106,7 +106,7 @@ bool FComputeCoverageAggregates::RunTest(const FString& Parameters)
 // Test: AddCoverageLeaf with single-level path
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAddCoverageLeafSingleLevel,
-	"Angelscript.CppTests.CoverageReportGenerator.AddCoverageLeaf_SingleLevel",
+	"Angelscript.TestModule.CppTests.CoverageReportGenerator.AddCoverageLeaf_SingleLevel",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAddCoverageLeafSingleLevel::RunTest(const FString& Parameters)

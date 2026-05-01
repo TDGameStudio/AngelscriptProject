@@ -127,7 +127,7 @@
 > 目标：先把性能数据“稳定采出来并记录下来”，再考虑是否引入硬预算门槛；第一批不要把所有测试都变成脆弱的毫秒级红线。
 
 - [ ] **P3.1** 新建启动 bind 性能测试文件并固定测量方法
-  - 建议新建 `Plugins/Angelscript/Source/AngelscriptTest/Core/AngelscriptEnginePerformanceTests.cpp`，围绕 `Full / Clone / CreateForTesting` 三种启动路径测量总初始化时长、`BindScriptTypes()` 时长、`FAngelscriptBinds::CallBinds()` 时长。若为了保持层级一致更适合拆到 `AngelscriptRuntime/Tests/`，也要保证最终测试名前缀清晰，例如 `Angelscript.CppTests.Engine.Performance.*` 或 `Angelscript.TestModule.Core.Performance.*`，不要混成普通功能测试。
+  - 建议新建 `Plugins/Angelscript/Source/AngelscriptTest/Core/AngelscriptEnginePerformanceTests.cpp`，围绕 `Full / Clone / CreateForTesting` 三种启动路径测量总初始化时长、`BindScriptTypes()` 时长、`FAngelscriptBinds::CallBinds()` 时长。若为了保持层级一致更适合拆到 `AngelscriptRuntime/Tests/`，也要保证最终测试名前缀清晰，例如 `Angelscript.TestModule.CppTests.Engine.Performance.*` 或 `Angelscript.TestModule.Core.Performance.*`，不要混成普通功能测试。
   - 采样方法优先采用仓内现成的 `FPlatformTime::Seconds()` 模式，并加上固定 warmup 次数与 measurement 次数，避免第一次初始化、文件缓存、延迟加载把数据完全污染。当前阶段以“记录基线 + 检查没有数量级回退”为主，不建议直接写死过细预算。
   - 若当前 UE 版本可在自动化测试中安全调用 telemetry API，则同步把关键数字写入 test telemetry；否则至少输出统一格式日志行，并确保 `-ReportExportPath`、`-ABSLOG` 的原始产物可以一一对应到本测试。
 - [ ] **P3.1** 📦 Git 提交：`[Test/Perf] Test: add startup bind performance baselines`
@@ -219,7 +219,7 @@
 - [ ] **P6.1** 📦 Git 提交：`[Docs/Test] Docs: register bind watcher and performance validation entrypoints`
 
 - [ ] **P6.2** 执行分层回归并记录首轮基线
-  - 完成实现后，至少按以下顺序执行回归：先编译目标，再跑 `Angelscript.CppTests.MultiEngine` / `Angelscript.CppTests.Engine.DependencyInjection` / `Angelscript.CppTests.Subsystem`，再跑 `Angelscript.TestModule.Engine.BindConfig`、`Angelscript.TestModule.HotReload`、必要的 editor/internal watcher tests，最后跑性能子集并收集 `-ABSLOG` / `-ReportExportPath` 产物。
+  - 完成实现后，至少按以下顺序执行回归：先编译目标，再跑 `Angelscript.TestModule.CppTests.MultiEngine` / `Angelscript.TestModule.CppTests.Engine.DependencyInjection` / `Angelscript.TestModule.CppTests.Subsystem`，再跑 `Angelscript.TestModule.Engine.BindConfig`、`Angelscript.TestModule.HotReload`、必要的 editor/internal watcher tests，最后跑性能子集并收集 `-ABSLOG` / `-ReportExportPath` 产物。
   - 这一轮回归必须把首轮性能基线、命令模板、拆分策略和任何已知不稳定项写成文档记录。若 rename 场景因 UE watcher 平台差异需要拆成 deterministic callback tests + end-to-end scenario tests 两层，也要在记录中明确写清。
   - 不允许只说“测试都过了”；要留下哪几组命令执行过、结果写到哪里、下一次比较应看哪些指标的明确线索。
 - [ ] **P6.2** 📦 Git 提交：`[Test/Perf] Test: run regression matrix and record first baseline`

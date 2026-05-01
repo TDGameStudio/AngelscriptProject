@@ -92,92 +92,92 @@ static FName MakeUniqueStartupBindName(const TCHAR* Prefix)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineCreateFullModeTest,
-	"Angelscript.CppTests.MultiEngine.Create.Full",
+	"Angelscript.TestModule.CppTests.MultiEngine.Create.Full",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineCreateCloneModeTest,
-	"Angelscript.CppTests.MultiEngine.Create.Clone",
+	"Angelscript.TestModule.CppTests.MultiEngine.Create.Clone",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineCreateForTestingDefaultsToCloneTest,
-	"Angelscript.CppTests.MultiEngine.CreateForTesting.DefaultsToClone",
+	"Angelscript.TestModule.CppTests.MultiEngine.CreateForTesting.DefaultsToClone",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineCreateForTestingUsesScopedSourceEngineTest,
-	"Angelscript.CppTests.MultiEngine.CreateForTesting.UsesScopedSourceEngine",
+	"Angelscript.TestModule.CppTests.MultiEngine.CreateForTesting.UsesScopedSourceEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineCreateForTestingFallbacksToFullTest,
-	"Angelscript.CppTests.MultiEngine.CreateForTesting.FallbacksToFull",
+	"Angelscript.TestModule.CppTests.MultiEngine.CreateForTesting.FallbacksToFull",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCloneModuleIsolationTest,
-	"Angelscript.CppTests.MultiEngine.CloneModuleIsolation",
+	"Angelscript.TestModule.CppTests.MultiEngine.CloneModuleIsolation",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCloneDestroyDoesNotAffectPrimaryTest,
-	"Angelscript.CppTests.MultiEngine.CloneDestroyDoesNotAffectPrimary",
+	"Angelscript.TestModule.CppTests.MultiEngine.CloneDestroyDoesNotAffectPrimary",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCloneKeepsSharedStateAliveTest,
-	"Angelscript.CppTests.MultiEngine.CloneKeepsSharedStateAlive",
+	"Angelscript.TestModule.CppTests.MultiEngine.CloneKeepsSharedStateAlive",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDestroyingSourceWhileCloneAliveIsRejectedTest,
-	"Angelscript.CppTests.MultiEngine.DestroyingSourceWhileCloneAliveIsRejected",
+	"Angelscript.TestModule.CppTests.MultiEngine.DestroyingSourceWhileCloneAliveIsRejected",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptDeferredSharedStateReleasePurgesLocalContextPoolTest,
-	"Angelscript.CppTests.MultiEngine.DeferredSharedStateReleasePurgesLocalContextPool",
+	"Angelscript.TestModule.CppTests.MultiEngine.DeferredSharedStateReleasePurgesLocalContextPool",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSecondFullCreateIsRejectedBeforeBindRegistrationTest,
-	"Angelscript.CppTests.MultiEngine.SecondFullCreateIsRejectedBeforeBindRegistration",
+	"Angelscript.TestModule.CppTests.MultiEngine.SecondFullCreateIsRejectedBeforeBindRegistration",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSingleFullDestroyResetsGlobalStateTest,
-	"Angelscript.CppTests.MultiEngine.SingleFullDestroyResetsGlobalState",
+	"Angelscript.TestModule.CppTests.MultiEngine.SingleFullDestroyResetsGlobalState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptCloneHonorsInjectedDependenciesTest,
-	"Angelscript.CppTests.MultiEngine.CloneHonorsInjectedDependencies",
+	"Angelscript.TestModule.CppTests.MultiEngine.CloneHonorsInjectedDependencies",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStartupBindObservationFullCreateTest,
-	"Angelscript.CppTests.MultiEngine.StartupBindObservation.FullCreateRecordsOrderedBinds",
+	"Angelscript.TestModule.CppTests.MultiEngine.StartupBindObservation.FullCreateRecordsOrderedBinds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStartupBindObservationCloneCreateTest,
-	"Angelscript.CppTests.MultiEngine.StartupBindObservation.CloneCreateDoesNotReplayBinds",
+	"Angelscript.TestModule.CppTests.MultiEngine.StartupBindObservation.CloneCreateDoesNotReplayBinds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStartupBindObservationCreateForTestingCloneTest,
-	"Angelscript.CppTests.MultiEngine.StartupBindObservation.CreateForTestingCloneDoesNotReplayBinds",
+	"Angelscript.TestModule.CppTests.MultiEngine.StartupBindObservation.CreateForTestingCloneDoesNotReplayBinds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptStartupBindObservationCreateForTestingFullFallbackTest,
-	"Angelscript.CppTests.MultiEngine.StartupBindObservation.CreateForTestingFullFallbackReplaysBinds",
+	"Angelscript.TestModule.CppTests.MultiEngine.StartupBindObservation.CreateForTestingFullFallbackReplaysBinds",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSharedStateParticipantCountsTest,
-	"Angelscript.CppTests.MultiEngine.SharedState.ParticipantCountsTrackFullAndClones",
+	"Angelscript.TestModule.CppTests.MultiEngine.SharedState.ParticipantCountsTrackFullAndClones",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineCreateFullModeTest::RunTest(const FString& Parameters)

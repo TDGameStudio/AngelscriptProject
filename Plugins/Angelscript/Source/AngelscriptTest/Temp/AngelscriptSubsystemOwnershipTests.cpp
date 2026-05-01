@@ -9,12 +9,12 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineTickOwnershipTest,
-	"Angelscript.CppTests.Subsystem.EngineNoLongerTickable",
+	"Angelscript.TestModule.CppTests.Subsystem.EngineNoLongerTickable",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSubsystemTickOwnershipTest,
-	"Angelscript.CppTests.Subsystem.GameInstanceSubsystemOwnsTick",
+	"Angelscript.TestModule.CppTests.Subsystem.GameInstanceSubsystemOwnsTick",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptEngineTickOwnershipTest::RunTest(const FString& Parameters)

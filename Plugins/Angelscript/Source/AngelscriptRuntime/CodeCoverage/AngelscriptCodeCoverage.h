@@ -14,23 +14,23 @@ class asCScriptFunction;
 // The resulting HTML files are written out to Saved/CodeCoverage/.
 struct FAngelscriptCodeCoverage
 {
-	static bool CoverageEnabled();
+	static ANGELSCRIPTRUNTIME_API bool CoverageEnabled();
 
 	// Starts recording (HitLine calls are ignored unless we're recording).
-	void StartRecording();
+	ANGELSCRIPTRUNTIME_API void StartRecording();
 
 	// Stops recording and writes coverage to OutputDir.
-	void StopRecordingAndWriteReport(const FString& OutputDir);
+	ANGELSCRIPTRUNTIME_API void StopRecordingAndWriteReport(const FString& OutputDir);
 
 	// Adds the .as module to our internal coverage map. This must be done before trying
 	// to record line hits in it.
-	void MapExecutableLines(FAngelscriptModuleDesc& Module);
+	ANGELSCRIPTRUNTIME_API void MapExecutableLines(FAngelscriptModuleDesc& Module);
 
 	// Call when the line in the given file has been executed.
-	void HitLine(FAngelscriptModuleDesc& Module, int Line);
+	ANGELSCRIPTRUNTIME_API void HitLine(FAngelscriptModuleDesc& Module, int Line);
 
 	// Retrieves what we got so far on a given module.
-	const FLineCoverage* GetLineCoverage(FAngelscriptModuleDesc& Module) const;
+	ANGELSCRIPTRUNTIME_API const FLineCoverage* GetLineCoverage(FAngelscriptModuleDesc& Module) const;
 
 	// Hooks up StartRecording and StopRecordingAndWriteReport so we reset coverage
 	// between test runs and writes a report at the end. This must be called post
@@ -44,7 +44,7 @@ struct FAngelscriptCodeCoverage
 #endif
 
 	// Clear all line hits so far.
-	void ResetHits();
+	ANGELSCRIPTRUNTIME_API void ResetHits();
 
 private:
 #if WITH_EDITOR

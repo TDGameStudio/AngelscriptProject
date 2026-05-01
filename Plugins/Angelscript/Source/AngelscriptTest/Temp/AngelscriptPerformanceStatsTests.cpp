@@ -2,7 +2,7 @@
 // AngelscriptPerformanceStatsTests.cpp
 //
 // Tests for FAngelscriptPerformanceStats — validates scope name registry.
-// Automation IDs: Angelscript.CppTests.PerformanceStats.*
+// Automation IDs: Angelscript.TestModule.CppTests.PerformanceStats.*
 // =============================================================================
 
 #include "Misc/AutomationTest.h"
@@ -14,7 +14,7 @@
 // Test: Known scope names array is non-empty
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptPerfStatsKnownScopesNonEmpty,
-	"Angelscript.CppTests.PerformanceStats.KnownScopesNonEmpty",
+	"Angelscript.TestModule.CppTests.PerformanceStats.KnownScopesNonEmpty",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPerfStatsKnownScopesNonEmpty::RunTest(const FString& Parameters)
@@ -28,7 +28,7 @@ bool FAngelscriptPerfStatsKnownScopesNonEmpty::RunTest(const FString& Parameters
 // Test: At least one scope contains "Startup"
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptPerfStatsContainsStartup,
-	"Angelscript.CppTests.PerformanceStats.ContainsStartupScope",
+	"Angelscript.TestModule.CppTests.PerformanceStats.ContainsStartupScope",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPerfStatsContainsStartup::RunTest(const FString& Parameters)
@@ -51,7 +51,7 @@ bool FAngelscriptPerfStatsContainsStartup::RunTest(const FString& Parameters)
 // Test: No duplicate scope names
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptPerfStatsNoDuplicates,
-	"Angelscript.CppTests.PerformanceStats.NoDuplicateScopes",
+	"Angelscript.TestModule.CppTests.PerformanceStats.NoDuplicateScopes",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPerfStatsNoDuplicates::RunTest(const FString& Parameters)
@@ -70,7 +70,7 @@ bool FAngelscriptPerfStatsNoDuplicates::RunTest(const FString& Parameters)
 // Test: Public GetKnownScopeNames returns same data as testing variant
 // -----------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptPerfStatsPublicMatchesTesting,
-	"Angelscript.CppTests.PerformanceStats.PublicMatchesTestingAPI",
+	"Angelscript.TestModule.CppTests.PerformanceStats.PublicMatchesTestingAPI",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAngelscriptPerfStatsPublicMatchesTesting::RunTest(const FString& Parameters)

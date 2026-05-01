@@ -12,42 +12,42 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptGameInstanceSubsystemTest,
-	"Angelscript.CppTests.Subsystem.GameInstanceSubsystem",
+	"Angelscript.TestModule.CppTests.Subsystem.GameInstanceSubsystem",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSubsystemCreatesPrimaryEngineTest,
-	"Angelscript.CppTests.Subsystem.CreatesPrimaryEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.CreatesPrimaryEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSubsystemTicksPrimaryEngineTest,
-	"Angelscript.CppTests.Subsystem.TicksPrimaryEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.TicksPrimaryEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptSubsystemDeinitializeDestroysPrimaryEngineTest,
-	"Angelscript.CppTests.Subsystem.DeinitializeDestroysPrimaryEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.DeinitializeDestroysPrimaryEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineSubsystemDoesNotTickWhenGameInstanceSubsystemOwnsEngineTest,
-	"Angelscript.CppTests.Subsystem.EngineSubsystem.DoesNotTickWhenGameInstanceSubsystemOwnsEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.EngineSubsystem.DoesNotTickWhenGameInstanceSubsystemOwnsEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRuntimeModuleInitializeCreatesGlobalEngineTest,
-	"Angelscript.CppTests.Subsystem.RuntimeModule.InitializeCreatesGlobalEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.RuntimeModule.InitializeCreatesGlobalEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptRuntimeModuleStartupDoesNotBootstrapPrimaryEngineTest,
-	"Angelscript.CppTests.Subsystem.RuntimeModule.StartupDoesNotBootstrapPrimaryEngine",
+	"Angelscript.TestModule.CppTests.Subsystem.RuntimeModule.StartupDoesNotBootstrapPrimaryEngine",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAngelscriptEngineSubsystemTicksGlobalEngineWithoutGameInstanceOwnerTest,
-	"Angelscript.CppTests.Subsystem.EngineSubsystem.TicksGlobalEngineWithoutGameInstanceOwner",
+	"Angelscript.TestModule.CppTests.Subsystem.EngineSubsystem.TicksGlobalEngineWithoutGameInstanceOwner",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 struct FAngelscriptTickBehaviorTestAccess

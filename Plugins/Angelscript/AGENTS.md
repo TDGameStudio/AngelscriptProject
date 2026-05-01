@@ -1,7 +1,7 @@
 # AGENTS.md
 
 - `Source/AngelscriptTest/AngelScriptSDK/` 是 Native Core / ASSDK 测试层，只使用明确允许的 AngelScript SDK 入口与本层 helper；不要把 `FAngelscriptEngine` 带进纯 Native helper。
-- `Source/AngelscriptRuntime/Tests/` 只放运行时内部 C++ 测试，Automation 前缀统一用 `Angelscript.CppTests.*`。
+- `Source/AngelscriptTest/Temp/` 是从 `AngelscriptRuntime/Tests/` 迁入的 C++ 白盒单元测试暂存区，Automation 前缀统一用 `Angelscript.TestModule.CppTests.*`；后续按主题拆分到对应目录（Core/Debugger/StaticJIT/Dump/CodeCoverage 等）后再删除该目录。
 - `Source/AngelscriptEditor/Tests/` 只放 Editor 内部测试，Automation 前缀统一用 `Angelscript.Editor.*`。
 - `Source/AngelscriptRuntime/Dump/` 负责运行时状态 CSV 导出与汇总。优先通过现有 public/runtime API 做外部观察，不要为了 dump 回写或侵入原有业务类型。
 - `Source/AngelscriptTest/Dump/` 负责状态导出控制台命令与自动化回归，Automation 前缀统一用 `Angelscript.TestModule.Dump.*`。
