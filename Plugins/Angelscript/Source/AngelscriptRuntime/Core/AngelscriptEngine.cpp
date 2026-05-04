@@ -60,6 +60,7 @@
 
 #include "Testing/DiscoverTests.h"
 #include "Testing/AngelscriptBindExecutionObservation.h"
+#include "Testing/AngelscriptEnumTableBaselineProbe.h"
 #include "Testing/UnitTest.h"
 #include "Testing/AngelscriptTestSettings.h"
 
@@ -2110,6 +2111,7 @@ void FAngelscriptEngine::BindScriptTypes()
 
 	#if WITH_DEV_AUTOMATION_TESTS
 	FAngelscriptBindExecutionObservation::BeginBindScriptTypesTiming();
+	FAngelscriptEnumTableBaselineProbe::Reset();
 	#endif
 
 	FAngelscriptBinds::ResetGeneratedFunctionTableTiming();
@@ -2118,6 +2120,7 @@ void FAngelscriptEngine::BindScriptTypes()
 
 	#if WITH_DEV_AUTOMATION_TESTS
 	FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();
+	FAngelscriptEnumTableBaselineProbe::MaybeAutoDump();
 	#endif
 }
 

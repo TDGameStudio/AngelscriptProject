@@ -3,7 +3,9 @@
 #include "AngelscriptEngine.h"
 #include "AngelscriptPerformanceStats.h"
 #include "AngelscriptSettings.h"
+#include "Misc/Paths.h"
 #include "Testing/AngelscriptBindExecutionObservation.h"
+#include "Testing/AngelscriptEnumTableBaselineProbe.h"
 
 #include "AngelscriptInclude.h"
 #include "AngelscriptSettings.h"
@@ -147,6 +149,34 @@ static FName MakeUnnamedBindName()
 	return FName(*FString::Printf(TEXT("UnnamedBind_%d"), NextUnnamedBindId++));
 }
 
+static FName MakeBindNameFromCallerFile(const ANSICHAR* CallerFile)
+{
+	if (CallerFile == nullptr || *CallerFile == '\0')
+	{
+		return MakeUnnamedBindName();
+	}
+
+	const FString FullPath = ANSI_TO_TCHAR(CallerFile);
+	const FString Stem = FPaths::GetBaseFilename(FullPath);
+	if (Stem.IsEmpty())
+	{
+		return MakeUnnamedBindName();
+	}
+
+	static TMap<FName, int32> StemDuplicateCounter;
+	const FName StemName(*Stem);
+	int32& Count = StemDuplicateCounter.FindOrAdd(StemName);
+	if (Count == 0)
+	{
+		++Count;
+		return StemName;
+	}
+
+	const FName UniqueName(*FString::Printf(TEXT("%s#%d"), *Stem, Count));
+	++Count;
+	return UniqueName;
+}
+
 static TArray<FBindFunction> GetSortedBindArray()
 {
 	TArray<FBindFunction> SortedBinds = GetBindArray();
@@ -159,9 +189,9 @@ void FAngelscriptBinds::RegisterBinds(FName BindName, int32 BindOrder, TFunction
 	GetBindArray().Add({BindName.IsNone() ? MakeUnnamedBindName() : BindName, BindOrder, MoveTemp(Function)});
 }
 
-void FAngelscriptBinds::RegisterBinds(int32 BindOrder, TFunction<void()> Function)
+void FAngelscriptBinds::RegisterBinds(int32 BindOrder, TFunction<void()> Function, const ANSICHAR* CallerFile)
 {
-	RegisterBinds(NAME_None, BindOrder, MoveTemp(Function));
+	GetBindArray().Add({MakeBindNameFromCallerFile(CallerFile), BindOrder, MoveTemp(Function)});
 }
 
 TArray<FName> FAngelscriptBinds::GetAllRegisteredBindNames()
@@ -286,9 +316,13 @@ void FAngelscriptBinds::CallBinds(const TSet<FName>& DisabledBindNames)
 
 		#if WITH_DEV_AUTOMATION_TESTS
 		FAngelscriptBindExecutionObservation::RecordExecutedBind(Bind.BindName);
-		#endif
-
+		{
+			FAngelscriptEnumTableBaselineBindScope BindScope(Bind.BindName, Bind.BindOrder);
+			Bind.Function();
+		}
+		#else
 		Bind.Function();
+		#endif
 	}
 
 	#if WITH_DEV_AUTOMATION_TESTS
@@ -739,21 +773,59 @@ void FAngelscriptBinds::FEnumBind::FEnumElement::operator=(int32 Value)
 	auto& Manager = FAngelscriptEngine::Get();
 	auto* PrevNamespace = Manager.Engine->GetDefaultNamespace();
 
+#if WITH_DEV_AUTOMATION_TESTS
+	const double DedupeStartSeconds = FPlatformTime::Seconds();
+	int32 DedupeStrcmpCount = 0;
+	bool bSkippedByDedupe = false;
+#endif
+
 	if (asITypeInfo* ExistingEnum = Bind->GetTypeInfo())
 	{
 		for (asUINT Index = 0, Count = ExistingEnum->GetEnumValueCount(); Index < Count; ++Index)
 		{
 			int ExistingValue = 0;
 			const char* ExistingName = ExistingEnum->GetEnumValueByIndex(Index, &ExistingValue);
+#if WITH_DEV_AUTOMATION_TESTS
+			if (ExistingName != nullptr)
+			{
+				++DedupeStrcmpCount;
+			}
+#endif
 			if (ExistingName != nullptr && FCStringAnsi::Strcmp(ExistingName, Name.ToCString()) == 0)
 			{
+#if WITH_DEV_AUTOMATION_TESTS
+				bSkippedByDedupe = true;
+				const double DedupeElapsedSeconds = FPlatformTime::Seconds() - DedupeStartSeconds;
+				FAngelscriptEnumTableBaselineProbe::RecordEnumValueRegister(
+					Bind->EnumName.ToCString(),
+					DedupeElapsedSeconds,
+					DedupeStrcmpCount,
+					0.0,
+					true);
+#endif
 				return;
 			}
 		}
 	}
 
+#if WITH_DEV_AUTOMATION_TESTS
+	const double DedupeElapsedSeconds = FPlatformTime::Seconds() - DedupeStartSeconds;
+	const double RegisterStartSeconds = FPlatformTime::Seconds();
+#endif
+
 	auto AnsiEnumName = Bind->EnumName.ToCString();
 	const int Result = Manager.Engine->RegisterEnumValue(AnsiEnumName, Name.ToCString(), Value);
+
+#if WITH_DEV_AUTOMATION_TESTS
+	const double RegisterElapsedSeconds = FPlatformTime::Seconds() - RegisterStartSeconds;
+	FAngelscriptEnumTableBaselineProbe::RecordEnumValueRegister(
+		AnsiEnumName,
+		DedupeElapsedSeconds,
+		DedupeStrcmpCount,
+		RegisterElapsedSeconds,
+		Result == asALREADY_REGISTERED);
+#endif
+
 	if (Result == asALREADY_REGISTERED)
 	{
 		return;

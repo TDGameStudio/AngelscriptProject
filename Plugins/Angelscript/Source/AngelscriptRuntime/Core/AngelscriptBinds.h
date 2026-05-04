@@ -479,24 +479,24 @@ struct ANGELSCRIPTRUNTIME_API FAngelscriptBinds
 			FAngelscriptBinds::RegisterBinds(BindName, 0, MoveTemp(Function));
 		}
 
-		FBind(int32 BindOrder, TFunction<void()> Function)
+		FBind(int32 BindOrder, TFunction<void()> Function, const ANSICHAR* CallerFile = __builtin_FILE())
 		{
-			FAngelscriptBinds::RegisterBinds(BindOrder, MoveTemp(Function));
+			FAngelscriptBinds::RegisterBinds(BindOrder, MoveTemp(Function), CallerFile);
 		}
 
-		FBind(EOrder BindOrder, TFunction<void()> Function)
+		FBind(EOrder BindOrder, TFunction<void()> Function, const ANSICHAR* CallerFile = __builtin_FILE())
 		{
-			FAngelscriptBinds::RegisterBinds((int32)BindOrder, MoveTemp(Function));
+			FAngelscriptBinds::RegisterBinds((int32)BindOrder, MoveTemp(Function), CallerFile);
 		}
 
-		FBind(TFunction<void()> Function)
+		FBind(TFunction<void()> Function, const ANSICHAR* CallerFile = __builtin_FILE())
 		{
-			FAngelscriptBinds::RegisterBinds(0, MoveTemp(Function));
+			FAngelscriptBinds::RegisterBinds(0, MoveTemp(Function), CallerFile);
 		}
 	};
 
 	static void RegisterBinds(FName BindName, int32 BindOrder, TFunction<void()> Function);
-	static void RegisterBinds(int32 BindOrder, TFunction<void()> Function);
+	static void RegisterBinds(int32 BindOrder, TFunction<void()> Function, const ANSICHAR* CallerFile = nullptr);
 	static TArray<FName> GetAllRegisteredBindNames();
 	static TArray<FBindInfo> GetBindInfoList(const TSet<FName>& DisabledBindNames = TSet<FName>());
 	static void ResetBindState();

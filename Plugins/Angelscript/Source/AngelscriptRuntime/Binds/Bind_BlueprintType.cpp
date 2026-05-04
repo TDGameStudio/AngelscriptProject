@@ -20,12 +20,16 @@
 #include "Binds/Bind_Helpers.h"
 #include "Binds/Bind_TSubclassOf.h"
 #include "Binds/BlueprintCallableReflectiveFallback.h"
+#include "Binds/Bind_BlueprintTypePrep.h"
 //#include "UObject/GarbageCollectionSchema.h"
 //#include "GarbageCollectionSchema.h"
 #include "UObject/GarbageCollection.h"
 
 #include "AngelscriptDocs.h"
 #include "AngelscriptSettings.h"
+
+#include "Testing/AngelscriptEnumTableBaselineProbe.h"
+#include "Async/ParallelFor.h"
 
 #if WITH_EDITOR
 #include "HAL/FileManager.h"
@@ -39,6 +43,39 @@
 #include "source/as_scriptengine.h"
 #include "source/as_objecttype.h"
 #include "EndAngelscriptHeaders.h"
+
+#if !AS_USE_BIND_DB && WITH_EDITOR
+// Toggle for the Bind_Defaults Late+100 Phase 2A ParallelFor (Step 3.1).
+// Default true: parallel prepare across BindOrder indices.
+// Set 0 to fall back to single-threaded prepare for diagnosis or rollback.
+// Read once at the entry of Phase 2A to keep behavior stable for the run.
+static TAutoConsoleVariable<bool> CVarBindParallelPrepare(
+	TEXT("as.Bind.ParallelPrepare"),
+	true,
+	TEXT("If true (default), Bind_Defaults Late+100 Phase 2A runs the per-BindOrder prepare loop in ParallelFor. ")
+	TEXT("Set 0 to fall back to single-threaded prepare. Phase 2B (commit) is always single-threaded on GameThread."),
+	ECVF_Default);
+
+// Implemented in Bind_BlueprintCallable.cpp / Bind_BlueprintEvent.cpp.
+// Used by the Bind_Defaults Late+100 Phase 2A/2B split (single-threaded prepare in
+// Step 2.4; ParallelFor prepare in Step 3.3).
+extern void BindBlueprintCallable_Prepare(
+	TSharedRef<FAngelscriptType> InType,
+	UFunction* Function,
+	struct FUFunctionBindPrep& Prep);
+extern void BindBlueprintCallable_FromPrep(
+	TSharedRef<FAngelscriptType> InType,
+	struct FUFunctionBindPrep& Prep,
+	FAngelscriptMethodBind& DBBind);
+extern void BindBlueprintEvent_Prepare(
+	TSharedRef<FAngelscriptType> InType,
+	UFunction* Function,
+	struct FUFunctionBindPrep& Prep);
+extern void BindBlueprintEvent_FromPrep(
+	TSharedRef<FAngelscriptType> InType,
+	struct FUFunctionBindPrep& Prep,
+	FAngelscriptMethodBind& DBBind);
+#endif // !AS_USE_BIND_DB && WITH_EDITOR
 
 static const FName NAME_BlueprintType("BlueprintType");
 static const FName NAME_NotBlueprintType("NotBlueprintType");
@@ -1336,6 +1373,10 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 		TSharedPtr<FAngelscriptType> InheritType;
 		asITypeInfo* InheritScriptType = nullptr;
 		FAngelscriptClassBind DBBind;
+
+		// Phase 2A (prepare) populates this; Phase 2B (commit) consumes it.
+		// Empty until Phase 2A runs; cleared after Phase 2B finishes.
+		TArray<FUFunctionBindPrep> FunctionPreps;
 	};
 
 	TArray<FBindOrder> ClassesToBind;
@@ -1380,67 +1421,165 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 	// ---- Phase 2: Function enumeration + Callable/Event binding ----
 	int32 TotalFuncsBound = 0;
 
-	// Opt 1 + Opt 3: enable TLS caches for IsScriptDeclarationAlreadyBound global scan
-	// and for GetScriptNameForFunction prefix-conflict detection.
-	FScopedBindCaches ScopedBindCaches;
-
 	// Opt 6: cache the editor-context flag once (stable for the duration of Phase 2).
 	const bool bUseEditorScripts = FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext();
 
-	for (auto& BindOrder : ClassesToBind)
+	// ---- Phase 1.5: Prewarm UClass NameArray on the GameThread (Step 3.2) ----
+	// UClass::FindFunctionByName triggers a lazy GenerateFunctionList walk that mutates
+	// UClass::FuncMap. Phase 2A must be safe to run on worker threads, so we materialize
+	// every UClass + SuperClass function list serially here. Cost is small (~5 ms in
+	// editor) and only runs once per Late+100 invocation.
 	{
-		auto ClassType = BindOrder.Type;
-		auto* SuperClass = BindOrder.Class->GetSuperClass();
-
-		// Bind blueprint accessible functions.
-		// Opt 4: single-pass TFieldIterator<UFunction>(ExcludeSuper) replaces the
-		//        GenerateFunctionList + FindFunctionByName double walk.
-		for (TFieldIterator<UFunction> FuncIt(BindOrder.Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+		AS_BIND_PHASE_SCOPE(EBindLatePhase::PrewarmNameArray);
+		TArray<FName> Tmp;
+		for (auto& Order : ClassesToBind)
 		{
-			UFunction* Function = *FuncIt;
-
-			// Don't bind inherited functions, we already bound these
-			// as virtual methods in the superclass.
-			if (Function->GetSuperFunction() != nullptr)
-				continue;
-
-			// Opt 5 (phase 1): keep the SuperClass->FindFunctionByName audit to detect
-			// rare shadow-UFUNCTION patterns. Convert to ensureMsgf so we can delete
-			// the O(N) check outright once a full editor start confirms no triggers.
-			if (SuperClass != nullptr && SuperClass->FindFunctionByName(Function->GetFName()) != nullptr)
+			if (Order.Class != nullptr)
 			{
-				ensureMsgf(false,
-					TEXT("[AS] Shadow-UFUNCTION detected: %s::%s — inherits-by-name but no GetSuperFunction() link."),
-					*BindOrder.Class->GetName(), *Function->GetName());
-				continue;
+				Order.Class->GenerateFunctionList(Tmp);
+				if (UClass* Super = Order.Class->GetSuperClass())
+				{
+					Super->GenerateFunctionList(Tmp);
+				}
 			}
+		}
+	}
 
-			// Don't bind editor-only functions when we're running in simulate-cooked mode.
-			// Opt 6: use cached bUseEditorScripts.
-			if (!bUseEditorScripts)
-			{
-				if (Function->HasAnyFunctionFlags(FUNC_EditorOnly))
-					continue;
-			}
+	// ---- Phase 2A: Prepare (read-only AS Engine, parallelizable) ----
+	// Walks every UClass + UFunction once, runs all eligibility checks, and builds
+	// FAngelscriptFunctionSignature + cached FFuncEntry pointer into BindOrder.FunctionPreps.
+	// No AS Engine writes happen here. Each ClassIdx writes only to its own
+	// ClassesToBind[ClassIdx].FunctionPreps, so the loop is safely parallelizable.
+	// The NameArray prewarm in Phase 1.5 guards against UClass::FindFunctionByName
+	// triggering lazy mutation from worker threads.
+	const bool bRunParallelPrepare = CVarBindParallelPrepare.GetValueOnGameThread();
+	{
+		AS_BIND_PHASE_SCOPE(EBindLatePhase::Phase2_Prepare);
 
-			FAngelscriptMethodBind DBMethod;
-
-			if (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent | FUNC_NetFuncFlags))
-				BindBlueprintEvent(ClassType.ToSharedRef(), Function, DBMethod);
-#if WITH_ANGELSCRIPT_HAZE
-			else if (Function->HasAnyFunctionFlags(FUNC_NetFunction))
-				BindBlueprintEvent(ClassType.ToSharedRef(), Function, DBMethod);
+		auto PreparePerClass = [&ClassesToBind, bUseEditorScripts](int32 ClassIdx)
+		{
+#if WITH_DEV_AUTOMATION_TESTS
+			const double WorkerStartSeconds = FPlatformTime::Seconds();
 #endif
-			else if (Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure))
-				BindBlueprintCallable(ClassType.ToSharedRef(), Function, DBMethod);
-			else if (Function->HasMetaData(NAME_ScriptCallable))
-				BindBlueprintCallable(ClassType.ToSharedRef(), Function, DBMethod);
 
-			if (DBMethod.UnrealPath.Len() != 0 && !Function->HasAnyFunctionFlags(FUNC_EditorOnly))
+			FBindOrder& BindOrder = ClassesToBind[ClassIdx];
+			auto ClassType = BindOrder.Type;
+			UClass* SuperClass = BindOrder.Class != nullptr ? BindOrder.Class->GetSuperClass() : nullptr;
+
+			// Opt 4: single-pass TFieldIterator<UFunction>(ExcludeSuper) replaces the
+			//        GenerateFunctionList + FindFunctionByName double walk.
+			for (TFieldIterator<UFunction> FuncIt(BindOrder.Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
 			{
-				BindOrder.DBBind.Methods.Add(DBMethod);
-				++TotalFuncsBound;
+				UFunction* Function = *FuncIt;
+
+				if (Function->GetSuperFunction() != nullptr)
+					continue;
+
+				// Opt 5 (phase 1): keep the SuperClass->FindFunctionByName audit to detect
+				// rare shadow-UFUNCTION patterns. Phase 1.5 prewarmed Super NameArray so
+				// FindFunctionByName is safe to invoke from worker threads here.
+				if (SuperClass != nullptr && SuperClass->FindFunctionByName(Function->GetFName()) != nullptr)
+				{
+					ensureMsgf(false,
+						TEXT("[AS] Shadow-UFUNCTION detected: %s::%s — inherits-by-name but no GetSuperFunction() link."),
+						*BindOrder.Class->GetName(), *Function->GetName());
+					continue;
+				}
+
+				if (!bUseEditorScripts && Function->HasAnyFunctionFlags(FUNC_EditorOnly))
+					continue;
+
+				FUFunctionBindPrep Prep;
+				if (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent | FUNC_NetFuncFlags))
+				{
+					BindBlueprintEvent_Prepare(ClassType.ToSharedRef(), Function, Prep);
+				}
+#if WITH_ANGELSCRIPT_HAZE
+				else if (Function->HasAnyFunctionFlags(FUNC_NetFunction))
+				{
+					BindBlueprintEvent_Prepare(ClassType.ToSharedRef(), Function, Prep);
+				}
+#endif
+				else if (Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure))
+				{
+					BindBlueprintCallable_Prepare(ClassType.ToSharedRef(), Function, Prep);
+				}
+				else if (Function->HasMetaData(NAME_ScriptCallable))
+				{
+					BindBlueprintCallable_Prepare(ClassType.ToSharedRef(), Function, Prep);
+				}
+				else
+				{
+					continue;
+				}
+
+				if (Prep.Kind == FUFunctionBindPrep::EKind::Skip)
+				{
+					continue;
+				}
+
+				BindOrder.FunctionPreps.Add(MoveTemp(Prep));
 			}
+
+#if WITH_DEV_AUTOMATION_TESTS
+			const double WorkerSeconds = FPlatformTime::Seconds() - WorkerStartSeconds;
+			FAngelscriptEnumTableBaselineProbe::RecordLatePhaseSeconds(
+				FAngelscriptEnumTableBaselineProbe::EBindLatePhase::Phase2_PerWorker_Sum, WorkerSeconds);
+			FAngelscriptEnumTableBaselineProbe::RecordLatePhaseSeconds(
+				FAngelscriptEnumTableBaselineProbe::EBindLatePhase::Phase2_PerWorker_Max, WorkerSeconds);
+#endif
+		};
+
+		// Unbalanced: per-UClass workload varies wildly (some classes have 1 UFunction,
+		// some have 100+). Unbalanced reduces tail latency by allowing dynamic work
+		// stealing instead of static partitioning.
+		const EParallelForFlags Flags = bRunParallelPrepare
+			? EParallelForFlags::Unbalanced
+			: EParallelForFlags::ForceSingleThread;
+
+		ParallelFor(ClassesToBind.Num(), PreparePerClass, Flags);
+	}
+
+	// ---- Phase 2B: Commit (must run on GameThread; AS Engine writes happen here) ----
+	// Opt 1 + Opt 3: enable TLS caches for IsScriptDeclarationAlreadyBound global scan
+	// and for GetScriptNameForFunction prefix-conflict detection. The cache only covers
+	// the commit window (prepare path is already metadata-only and does not look up
+	// global script declarations).
+	{
+		ensureMsgf(IsInGameThread(),
+			TEXT("[AS] Bind_Defaults Late+100 Phase 2B commit must run on GameThread (AS Engine writes are not thread-safe)."));
+		AS_BIND_PHASE_SCOPE(EBindLatePhase::Phase2_Commit);
+		FScopedBindCaches ScopedBindCaches;
+
+		for (auto& BindOrder : ClassesToBind)
+		{
+			auto ClassType = BindOrder.Type;
+
+			for (auto& Prep : BindOrder.FunctionPreps)
+			{
+				if (Prep.Kind == FUFunctionBindPrep::EKind::Skip)
+					continue;
+
+				FAngelscriptMethodBind DBMethod;
+
+				if (Prep.Kind == FUFunctionBindPrep::EKind::Event)
+				{
+					BindBlueprintEvent_FromPrep(ClassType.ToSharedRef(), Prep, DBMethod);
+				}
+				else
+				{
+					BindBlueprintCallable_FromPrep(ClassType.ToSharedRef(), Prep, DBMethod);
+				}
+
+				if (DBMethod.UnrealPath.Len() != 0 && !Prep.Function->HasAnyFunctionFlags(FUNC_EditorOnly))
+				{
+					BindOrder.DBBind.Methods.Add(DBMethod);
+					++TotalFuncsBound;
+				}
+			}
+
+			// Free transient prep storage now that commit is done.
+			BindOrder.FunctionPreps.Empty();
 		}
 	}
 

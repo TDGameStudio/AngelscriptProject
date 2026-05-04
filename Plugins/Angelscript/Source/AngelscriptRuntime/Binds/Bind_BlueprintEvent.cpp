@@ -15,6 +15,7 @@
 #include "EndAngelscriptHeaders.h"
 
 #include "Helper_FunctionSignature.h"
+#include "Bind_BlueprintTypePrep.h"
 
 #define AS_EVENT_MAX_ARGS 16
 #define AS_EVENT_MAX_SIZE 1024
@@ -651,6 +652,133 @@ void BindBlueprintEvent(
 	Signature.WriteToDB(DBBind);
 #endif
 }
+
+#if !AS_USE_BIND_DB && WITH_EDITOR
+// Prepare-only entry point used by the Bind_Defaults Late+100 Phase 2A.
+// Performs all metadata gating + Signature build (read-only). On success, sets
+// Prep.Kind = Event; on any rejection, leaves Prep.Kind = Skip.
+// CachedEntry is unused for Event prepares.
+void BindBlueprintEvent_Prepare(
+	TSharedRef<FAngelscriptType> InType,
+	UFunction* Function,
+	FUFunctionBindPrep& Prep)
+{
+	Prep.Function = Function;
+	Prep.Kind = FUFunctionBindPrep::EKind::Skip;
+	Prep.CachedEntry = nullptr;
+
+	if (Function == nullptr)
+	{
+		return;
+	}
+
+	if (Function->HasMetaData(NAME_Event_DeprecatedFunction))
+	{
+		return;
+	}
+	if (Function->HasMetaData(NAME_Event_NotInAngelscript))
+	{
+		return;
+	}
+	if (Function->HasMetaData(NAME_Event_BlueprintInternalUseOnly)
+		&& Function->GetFName() != NAME_Event_ConstructionScript
+		&& !Function->HasMetaData(NAME_Event_AllowAngelscriptOverride))
+	{
+		return;
+	}
+
+	Prep.Signature = FAngelscriptFunctionSignature(InType, Function, /*OverrideName=*/nullptr);
+	if (!Prep.Signature.bAllTypesValid)
+	{
+		return;
+	}
+	if (Prep.Signature.ArgumentTypes.Num() > AS_EVENT_MAX_ARGS)
+	{
+		return;
+	}
+
+	Prep.Kind = FUFunctionBindPrep::EKind::Event;
+}
+
+// Commit-only entry point used by the Bind_Defaults Late+100 Phase 2A/2B split
+// (see Plan_BindParallelization). The caller is responsible for filling Prep with:
+//   - Function           (UFunction*, non-null, all event-eligibility metadata checks passed)
+//   - Signature          (already InitFromFunction'd, bAllTypesValid == true,
+//                         ArgumentTypes.Num() <= AS_EVENT_MAX_ARGS)
+//   - Kind == Event
+// CachedEntry is unused for Event commits. This function only performs the AS Engine
+// register half (must run on GameThread).
+void BindBlueprintEvent_FromPrep(
+	TSharedRef<FAngelscriptType> InType,
+	FUFunctionBindPrep& Prep,
+	FAngelscriptMethodBind& DBBind)
+{
+	UFunction* Function = Prep.Function;
+	FAngelscriptFunctionSignature& Signature = Prep.Signature;
+
+	if (Function == nullptr)
+	{
+		return;
+	}
+
+	auto* Sig = new FBlueprintEventSignature;
+	Sig->FunctionName = Function->GetFName();
+	Sig->UnrealFunction = Function;
+	Sig->ArgCount = Signature.ArgumentTypes.Num();
+	Sig->ReturnType = Signature.ReturnType;
+	check(!Sig->ReturnType.bIsReference);
+	Sig->ReturnType.bIsReference = true;
+	for (int32 i = 0; i < Sig->ArgCount; ++i)
+		Sig->Arguments[i] = Signature.ArgumentTypes[i];
+
+	if (Sig->ReturnType.IsValid())
+	{
+		Sig->bInitReturn = Sig->ReturnType.CanConstruct() && Sig->ReturnType.NeedConstruct();
+		Sig->bZeroReturnPtr = !Sig->bInitReturn && Sig->ReturnType.Type->IsObjectPointer();
+	}
+
+	if (Signature.bStaticInScript)
+	{
+		Sig->StaticObject = InType->GetClass(FAngelscriptTypeUsage::DefaultUsage)->GetDefaultObject();
+
+		FAngelscriptBinds::FNamespace Namespace(Signature.ClassName);
+		int32 FunctionId = FAngelscriptBinds::BindGlobalFunctionDirect(Signature.Declaration,
+			asFUNCTION(CallStaticWithSignature), asCALL_GENERIC, ASAutoCaller::FunctionCaller::Make(), Sig);
+		Signature.ModifyScriptFunction(FunctionId);
+	}
+	else if (Signature.bStaticInUnreal)
+	{
+		Sig->StaticObject = InType->GetClass(FAngelscriptTypeUsage::DefaultUsage)->GetDefaultObject();
+
+		Sig->MixinType = FAngelscriptTypeUsage();
+		Sig->MixinType.Type = InType;
+
+		int32 FunctionId = FAngelscriptBinds::BindMethodDirect(
+			Signature.ClassName,
+			Signature.Declaration,
+			asFUNCTION(CallMixinWithSignature), asCALL_GENERIC, ASAutoCaller::FunctionCaller::Make(), Sig);
+		Signature.ModifyScriptFunction(FunctionId);
+	}
+	else
+	{
+		int32 FunctionId = FAngelscriptBinds::BindMethodDirect(InType->GetAngelscriptTypeName(),
+			Signature.Declaration,
+			asFUNCTION(CallEventWithSignature), asCALL_GENERIC, ASAutoCaller::FunctionCaller::Make(), Sig);
+		Signature.ModifyScriptFunction(FunctionId);
+	}
+
+	if (!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure) && !Function->HasMetaData(NAME_Event_ScriptCallable))
+		FAngelscriptBinds::SetPreviousBindIsCallable(false);
+
+	GBlueprintEventsByScriptName.FindOrAdd(CastChecked<UClass>(Function->GetOuter())).Add(Signature.ScriptName, Function);
+
+#if AS_CAN_GENERATE_JIT
+	SCRIPT_NATIVE_UFUNCTION(Function, Function->GetName(), false);
+#endif
+
+	Signature.WriteToDB(DBBind);
+}
+#endif // !AS_USE_BIND_DB && WITH_EDITOR
 
 template<bool TIsMulticast, bool TErrorIfUnbound>
 void CallDelegateEvent(asIScriptGeneric* InGeneric)

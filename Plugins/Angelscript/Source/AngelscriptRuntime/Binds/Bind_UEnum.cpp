@@ -4,6 +4,7 @@
 #include "AngelscriptType.h"
 #include "AngelscriptDebugValue.h"
 #include "AngelscriptBindDatabase.h"
+#include "Testing/AngelscriptEnumTableBaselineProbe.h"
 
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
@@ -374,13 +375,81 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Enums((int32)FAngelscriptBinds
 	auto& BindDB = FAngelscriptBindDatabase::Get();
 	GScriptEnumTypeLookupByName.Reset();
 
-	// Register each BlueprintType UEnum
+#if WITH_DEV_AUTOMATION_TESTS
+	// Phase 0 baseline probe: capture filtered candidate enums up-front so the
+	// per-enum-loop segment can be measured cleanly without re-running the
+	// TObjectRange + ShouldBindEngineType filter inside the timing scope.
+	TArray<UEnum*> EligibleEnums;
+	{
+		FAngelscriptEnumTableBaselineSegmentScope SegmentScope(
+			FAngelscriptEnumTableBaselineProbe::EBindEnumsSegment::TObjectRangeFilter);
+		EligibleEnums.Reserve(2048);
+		for (UEnum* Enum : TObjectRange<UEnum>())
+		{
+			if (ShouldBindEngineType(Enum))
+			{
+				EligibleEnums.Add(Enum);
+			}
+		}
+	}
+
+	auto ProcessOneEnum = [&BindDB](UEnum* Enum)
+	{
+		// PerEnumLoop: GetNameByIndex + ToString + RightChop + RegisterEnumValue (incl. O(N) dedupe)
+		FAngelscriptBinds::FEnumBind EnumBind = FAngelscriptBinds::Enum(Enum->GetName());
+		int32 EnumValueCount = 0;
+		{
+			FAngelscriptEnumTableBaselineSegmentScope SegmentScope(
+				FAngelscriptEnumTableBaselineProbe::EBindEnumsSegment::PerEnumLoop);
+			for (int32 Index = 0, Num = Enum->NumEnums(); Index < Num; ++Index)
+			{
+				FString Name = Enum->GetNameByIndex(Index).ToString();
+
+				int32 ColonPos;
+				if (Name.FindLastChar((TCHAR)':', ColonPos))
+					Name = Name.RightChop(ColonPos+1);
+
+				EnumBind[Name] = Enum->GetValueByIndex(Index);
+				++EnumValueCount;
+			}
+		}
+		FAngelscriptEnumTableBaselineProbe::RecordBindEnumsEnumProcessed(EnumValueCount);
+
+		{
+			FAngelscriptEnumTableBaselineSegmentScope SegmentScope(
+				FAngelscriptEnumTableBaselineProbe::EBindEnumsSegment::TypeRegister);
+			FAngelscriptType::Register(MakeShared<FEnumType>(Enum));
+			BindDB.BoundEnums.Add(Enum);
+		}
+
+#if WITH_EDITOR
+		const FString& Doc = Enum->GetMetaData(TEXT("ToolTip"));
+		if (Doc.Len() != 0)
+			FAngelscriptDocs::AddUnrealDocumentationForType(EnumBind.TypeId, Doc);
+#endif
+
+		{
+			FAngelscriptEnumTableBaselineSegmentScope SegmentScope(
+				FAngelscriptEnumTableBaselineProbe::EBindEnumsSegment::LookupRegister);
+			if (auto* EnumScriptType = EnumBind.GetTypeInfo())
+			{
+				EnumScriptType->SetUserData(Enum);
+				GScriptEnumTypeLookupByName.Add(*Enum->GetName(), EnumScriptType);
+			}
+		}
+	};
+
+	for (UEnum* Enum : EligibleEnums)
+	{
+		ProcessOneEnum(Enum);
+	}
+#else
+	// Production path: original implementation, untouched.
 	for (UEnum* Enum : TObjectRange<UEnum>())
 	{
 		if (!ShouldBindEngineType(Enum))
 			continue;
 
-		// Angelscript should know the values
 		auto EnumBind = FAngelscriptBinds::Enum(Enum->GetName());
 		for (int32 Index = 0, Num = Enum->NumEnums(); Index < Num; ++Index)
 		{
@@ -393,12 +462,10 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Enums((int32)FAngelscriptBinds
 			EnumBind[Name] = Enum->GetValueByIndex(Index);
 		}
 
-		// We need to create a type for it so we can use it
 		FAngelscriptType::Register(MakeShared<FEnumType>(Enum));
 		BindDB.BoundEnums.Add(Enum);
 
 #if WITH_EDITOR
-		// Store documentation for the enum
 		const FString& Doc = Enum->GetMetaData(TEXT("ToolTip"));
 		if (Doc.Len() != 0)
 			FAngelscriptDocs::AddUnrealDocumentationForType(EnumBind.TypeId, Doc);
@@ -410,6 +477,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Enums((int32)FAngelscriptBinds
 			GScriptEnumTypeLookupByName.Add(*Enum->GetName(), EnumScriptType);
 		}
 	}
+#endif
 
 	// Register a type finder into the type system that
 	// can look up an EnumProperty's inner angelscript type.
