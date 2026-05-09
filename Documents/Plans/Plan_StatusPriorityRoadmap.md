@@ -85,7 +85,7 @@
 - **Script Subsystem**：`WorldSubsystem` / `GameInstanceSubsystem` 仍停留在负例测试阶段，是目前最直接的"接口在、能力没闭环"案例。
 - **网络复制与 RPC 验证闭环**：当前已有底座，但验证强度、专题测试、示例与文档仍弱于 Hazelight 的公开能力面；优先由 `Plan_NetworkReplicationTests.md` 及其 sibling tasks 承接。
 - **Console / 全局变量工作流**：当前"global variable 完全缺失"已经不是事实，真实剩余差距收敛到 `FConsoleCommand` 与更完整的控制台工作流可见性，继续由 `Plan_GlobalVariableAndCVarParity.md` 收口。
-- **GAS / EnhancedInput helper surface**：当前主插件已经内建 GAS 和 EnhancedInput 依赖，也已有 `21` 个本地 `FunctionLibraries` 头文件，但相对 Hazelight 的 `AngelscriptGAS/Source/Public/Mixin/` 下 **17** 个 mixin、`FunctionLibraries/` 下 **4** 个 GAS function libraries、以及 `AngelscriptEnhancedInput/Source/Public/Mixin/` 下 **2** 个 EnhancedInput mixin，当前脚本友好 helper 面仍然偏薄；这更像"API 表面与工作流差距"，而不只是"有没有基类/有没有 bind"。
+- **GAS / EnhancedInput helper surface**：GAS 支持已拆到 `Plugins/AngelscriptGAS`，EnhancedInput 仍在主插件内；相对 Hazelight 的 `AngelscriptGAS/Source/Public/Mixin/` 下 **17** 个 mixin、`FunctionLibraries/` 下 **4** 个 GAS function libraries、以及 `AngelscriptEnhancedInput/Source/Public/Mixin/` 下 **2** 个 EnhancedInput mixin，当前脚本友好 helper 面仍然偏薄；这更像"API 表面与工作流差距"，而不只是"有没有基类/有没有 bind"。
 
 ### 三、工具链与上手差距：这部分最直接影响外部可用性，优先级应高于很多"看起来更酷"的底层扩展
 
@@ -244,7 +244,7 @@ Phase 0（口径与 owner）
 2. **被"更多 bind / 更多 2.38 特性"吸走优先级**：当前最容易让 roadmap 偏航的，就是继续优先做能力扩面，而不是先收口 README/CI/examples/subsystem 这些真实 blocker。
    - **缓解**：坚持先过 `P1` 与 `P2` 闸门，再进入大规模 parity/迁移扩面。
 
-3. **把结构差异误判成功能缺失**：`AngelscriptGAS`/`AngelscriptEnhancedInput` 独立插件化这类边界差异，很容易被误写成"必须立即补"的高优先级缺口；`Loader` 启动边界已迁移，不再作为结构差异缺口处理。
+3. **把结构差异误判成功能缺失**：`AngelscriptGAS` 已独立插件化；`AngelscriptEnhancedInput` 这类剩余边界差异，很容易被误写成"必须立即补"的高优先级缺口；`Loader` 启动边界已迁移，不再作为结构差异缺口处理。
    - **缓解**：所有这类事项先回答"当前 bundled 方案是否真的不能用"，若没有直接 blocker，就降级到后段结构决策。
 
 4. **把引擎补丁项继续塞回插件计划**：Hazelight 基线存在引擎侧能力，如果不先承认边界，后续会持续出现"插件里为什么还没补完"的伪问题。

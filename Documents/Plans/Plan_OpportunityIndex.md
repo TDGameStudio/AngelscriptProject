@@ -60,12 +60,13 @@
 | O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 基本完成（仅剩 2 个 `#ue57-headless` Disabled 测试，其余已通过 UE 5.7 迁移修复批量重新启用） |
 | P | 测试套件累积稳定性 | `Plan_TestSuiteAccumulationStability.md` | 执行中（修复全量单进程状态 / socket / async IO 累积问题） |
 | Q | 测试骨架效率优化 | `Plan_TestEngineCreationPatternMigration.md` | 未开始（Phase 1-2: FULL×60 + SHARE×136 → SHARE_CLEAN 迁移；Phase 3/3B: 单 Entry 测试合并 ~170 处） |
+| R | Syntax 负向测试 expected-error 收口 | `Plan_SyntaxNegativeExpectedErrors.md` | 未开始（收口 2026-05-09 full `Angelscript` 中 4 个 Syntax negative 预期错误日志泄漏） |
 
 ### 2.2 新建议 Plan
 
 | # | 方向 | 价值说明 | 优先级 | 建议 Plan 名 |
 |---|------|----------|--------|-------------|
-| K | **GAS 集成测试** | 当前有 6 个 GAS 相关 Bind 文件（`Bind_FGameplayAttribute/Spec/EffectSpec`、`Bind_AngelscriptGASLibrary` 等）以及 `AngelscriptAbilitySystemComponent`、`AngelscriptAttributeSet` 等核心类，但 **AngelscriptTest 中零个 GAS 专项测试**。GAS 是项目额外新增的能力（UEAS2 没有），更需要验证。 | **P1** | `Plan_GASIntegrationTests` |
+| K | **GAS 集成测试** | GAS 支持已拆到 `Plugins/AngelscriptGAS`，包含 Ability/Attribute/Effect/Task 相关 bind 与 `AngelscriptGASTest` 专项测试入口；下一步重点是补齐脚本友好 helper、场景级 ASC/AttributeSet 行为和 Aura 工作流验证。 | **P1** | `Plan_GASIntegrationTests` |
 | L | **Enhanced Input 测试** | 3 个 Bind 文件（`Bind_FInputActionValue`、`Bind_FInputBindingHandle`、`Bind_UEnhancedInputComponent`）为 AngelPortV2 新增，无任何测试覆盖。Enhanced Input 是 UE5 的标准输入框架。 | **P2** | `Plan_EnhancedInputTests` |
 | M | **Editor 功能测试扩展** | `Editor/` 目录仅 1 个文件（源码导航，83 行）。`AngelscriptEditor` 模块有代码着色、目录监视、编译通知、调试器集成等功能均未覆盖。 | P3 | `Plan_EditorFeatureTests` |
 | N | **热重载稳健性测试** | 已有 5 个 HotReload 测试文件，但 `BurstChurnLatency` 测试已知失败（需 full reload 环境）。需补充边界场景：属性类型变更、函数签名变更、类层次变更等。 | P3 | `Plan_HotReloadRobustnessTests` |
