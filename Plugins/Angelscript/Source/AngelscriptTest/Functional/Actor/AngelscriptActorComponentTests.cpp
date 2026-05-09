@@ -104,6 +104,30 @@ namespace AngelscriptTest_Functional_Actor_Component_Private
 		return Invoker.Call() && Invoker.ReadParamAfterCall<TArray<UActorComponent*>>(0, OutComponents);
 	}
 
+	template <typename ComponentType>
+	bool InvokeComponentReturn(
+		FAutomationTestBase& Test,
+		UObject* Target,
+		FName FunctionName,
+		ComponentType*& OutComponent)
+	{
+		OutComponent = nullptr;
+		FFunctionInvoker Invoker(Test, Target, FunctionName);
+		if (!Invoker.IsValid())
+		{
+			return false;
+		}
+
+		OutComponent = Invoker.CallAndReturn<ComponentType*>(nullptr);
+		return true;
+	}
+
+	bool InvokeVoid(FAutomationTestBase& Test, UObject* Target, FName FunctionName)
+	{
+		FFunctionInvoker Invoker(Test, Target, FunctionName);
+		return Invoker.IsValid() && Invoker.Call();
+	}
+
 	bool ReadComponentArrayProperty(
 		FAutomationTestBase& Test,
 		UObject* Object,
@@ -170,49 +194,45 @@ UCLASS()
 class ATestActorCreateComponent : AActor
 {
 	UFUNCTION()
-	int RunCreateComponentTest()
+	USceneComponent CreateDynamicRootForCpp()
 	{
-		USceneComponent FirstScene = Cast<USceneComponent>(CreateComponent(USceneComponent::StaticClass(), n"DynamicRoot"));
-		if (FirstScene == nullptr)
-			return 10;
-		if (FirstScene.GetOwner() != this)
-			return 11;
-		if (FirstScene.GetName() != n"DynamicRoot")
-			return 12;
+		return Cast<USceneComponent>(CreateComponent(USceneComponent::StaticClass(), n"DynamicRoot"));
+	}
 
-		USceneComponent SecondScene = Cast<USceneComponent>(CreateComponent(USceneComponent::StaticClass(), n"DynamicChild"));
-		if (SecondScene == nullptr)
-			return 20;
-		if (SecondScene.GetOwner() != this)
-			return 21;
-		if (SecondScene.GetName() != n"DynamicChild")
-			return 22;
+	UFUNCTION()
+	USceneComponent CreateDynamicChildForCpp()
+	{
+		return Cast<USceneComponent>(CreateComponent(USceneComponent::StaticClass(), n"DynamicChild"));
+	}
 
-		UBillboardComponent Billboard = Cast<UBillboardComponent>(CreateComponent(UBillboardComponent::StaticClass(), n"DynamicBillboard"));
-		if (Billboard == nullptr)
-			return 30;
-		if (Billboard.GetOwner() != this)
-			return 31;
-
-		TArray<USceneComponent> AllScenes;
-		GetComponentsByClass(AllScenes);
-		if (AllScenes.Num() != 3)
-			return 40;
-
-		if (GetComponent(USceneComponent::StaticClass(), n"DynamicRoot") != FirstScene)
-			return 50;
-		if (GetComponent(UBillboardComponent::StaticClass(), n"DynamicBillboard") != Billboard)
-			return 51;
-		if (GetComponent(UStaticMeshComponent::StaticClass(), n"DynamicBillboard") != nullptr)
-			return 52;
-
-		return 1;
+	UFUNCTION()
+	UBillboardComponent CreateDynamicBillboardForCpp()
+	{
+		return Cast<UBillboardComponent>(CreateComponent(UBillboardComponent::StaticClass(), n"DynamicBillboard"));
 	}
 
 	UFUNCTION()
 	USceneComponent CreateNamedSceneForCpp()
 	{
 		return Cast<USceneComponent>(CreateComponent(USceneComponent::StaticClass(), n"CppReturnedNamedScene"));
+	}
+
+	UFUNCTION()
+	UActorComponent FindDynamicRootForCpp()
+	{
+		return GetComponent(USceneComponent::StaticClass(), n"DynamicRoot");
+	}
+
+	UFUNCTION()
+	UActorComponent FindDynamicBillboardForCpp()
+	{
+		return GetComponent(UBillboardComponent::StaticClass(), n"DynamicBillboard");
+	}
+
+	UFUNCTION()
+	UActorComponent FindDynamicBillboardAsWrongTypeForCpp()
+	{
+		return GetComponent(UStaticMeshComponent::StaticClass(), n"DynamicBillboard");
 	}
 }
 )AS"),
@@ -225,30 +245,47 @@ class ATestActorCreateComponent : AActor
 		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
 		W.BeginPlay(*Actor);
 
-		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunCreateComponentTest")));
-		if (!Invoker.IsValid()) return;
-		TestRunner->TestEqual(TEXT("CreateComponent should create and register components on the actor"),
-			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
-
-		USceneComponent* DynamicRoot = FindComponentByName<USceneComponent>(Actor, TEXT("DynamicRoot"));
-		USceneComponent* DynamicChild = FindComponentByName<USceneComponent>(Actor, TEXT("DynamicChild"));
-		UBillboardComponent* DynamicBillboard = FindComponentByName<UBillboardComponent>(Actor, TEXT("DynamicBillboard"));
-		if (!TestRunner->TestNotNull(TEXT("CreateComponent should keep the first dynamic scene component"), DynamicRoot)
-			|| !TestRunner->TestNotNull(TEXT("CreateComponent should keep the second dynamic scene component"), DynamicChild)
-			|| !TestRunner->TestNotNull(TEXT("CreateComponent should keep the dynamic billboard component"), DynamicBillboard))
-		{
-			return;
-		}
-
+		USceneComponent* DynamicRoot = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateDynamicRootForCpp")), DynamicRoot)) return;
+		if (!TestRunner->TestNotNull(TEXT("CreateComponent should return the first dynamic scene component to C++"), DynamicRoot)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("CreateComponent dynamic root returned to C++: %s:%s"), *DynamicRoot->GetName(), *DynamicRoot->GetClass()->GetName()));
+		TestRunner->TestEqual(TEXT("CreateComponent root should preserve the requested object name"), DynamicRoot->GetFName(), FName(TEXT("DynamicRoot")));
+		TestRunner->TestEqual(TEXT("CreateComponent root should be owned by the script actor"), DynamicRoot->GetOwner(), Actor);
 		TestRunner->TestEqual(TEXT("CreateComponent should promote the first scene component to root"), Actor->GetRootComponent(), DynamicRoot);
+
+		USceneComponent* DynamicChild = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateDynamicChildForCpp")), DynamicChild)) return;
+		if (!TestRunner->TestNotNull(TEXT("CreateComponent should return the second dynamic scene component to C++"), DynamicChild)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("CreateComponent dynamic child returned to C++: %s:%s"), *DynamicChild->GetName(), *DynamicChild->GetClass()->GetName()));
+		TestRunner->TestEqual(TEXT("CreateComponent child should preserve the requested object name"), DynamicChild->GetFName(), FName(TEXT("DynamicChild")));
+		TestRunner->TestEqual(TEXT("CreateComponent child should be owned by the script actor"), DynamicChild->GetOwner(), Actor);
 		TestRunner->TestEqual(TEXT("CreateComponent should attach later scene components to the root"), DynamicChild->GetAttachParent(), DynamicRoot);
+
+		UBillboardComponent* DynamicBillboard = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateDynamicBillboardForCpp")), DynamicBillboard)) return;
+		if (!TestRunner->TestNotNull(TEXT("CreateComponent should return the dynamic billboard component to C++"), DynamicBillboard)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("CreateComponent dynamic billboard returned to C++: %s:%s"), *DynamicBillboard->GetName(), *DynamicBillboard->GetClass()->GetName()));
+		TestRunner->TestEqual(TEXT("CreateComponent billboard should preserve the requested object name"), DynamicBillboard->GetFName(), FName(TEXT("DynamicBillboard")));
+		TestRunner->TestEqual(TEXT("CreateComponent billboard should be owned by the script actor"), DynamicBillboard->GetOwner(), Actor);
 		TestRunner->TestEqual(TEXT("CreateComponent should attach later scene-derived components to the root"), DynamicBillboard->GetAttachParent(), DynamicRoot);
+
 		TestRunner->TestTrue(TEXT("CreateComponent should register every created component"), AreAllComponentsRegistered(Actor));
 		TestRunner->TestEqual(TEXT("CreateComponent should leave exactly three scene components on this actor"), CountComponentsByClass(Actor, USceneComponent::StaticClass()), 3);
 
-		FFunctionInvoker ReturnComponentInvoker(*TestRunner, Actor, FName(TEXT("CreateNamedSceneForCpp")));
-		if (!ReturnComponentInvoker.IsValid()) return;
-		USceneComponent* ReturnedNamedScene = ReturnComponentInvoker.CallAndReturn<USceneComponent*>(nullptr);
+		UActorComponent* FoundDynamicRoot = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindDynamicRootForCpp")), FoundDynamicRoot)) return;
+		TestRunner->TestTrue(TEXT("CreateComponent should make the dynamic root discoverable by name"), FoundDynamicRoot == DynamicRoot);
+
+		UActorComponent* FoundDynamicBillboard = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindDynamicBillboardForCpp")), FoundDynamicBillboard)) return;
+		TestRunner->TestTrue(TEXT("CreateComponent should make the dynamic billboard discoverable by name and class"), FoundDynamicBillboard == DynamicBillboard);
+
+		UActorComponent* WrongTypeBillboard = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindDynamicBillboardAsWrongTypeForCpp")), WrongTypeBillboard)) return;
+		TestRunner->TestNull(TEXT("CreateComponent should not return a named component through an unrelated class"), WrongTypeBillboard);
+
+		USceneComponent* ReturnedNamedScene = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateNamedSceneForCpp")), ReturnedNamedScene)) return;
 		if (!TestRunner->TestNotNull(TEXT("CreateComponent should return the newly created named component to C++"), ReturnedNamedScene)) return;
 		TestRunner->AddInfo(FString::Printf(TEXT("CreateComponent returned named component to C++: %s:%s"), *ReturnedNamedScene->GetName(), *ReturnedNamedScene->GetClass()->GetName()));
 		TestRunner->TestEqual(TEXT("Returned named component should preserve the requested object name"), ReturnedNamedScene->GetFName(), FName(TEXT("CppReturnedNamedScene")));
@@ -288,43 +325,45 @@ class ATestActorGetComponent : AActor
 	UBillboardComponent Billboard;
 
 	UFUNCTION()
-	int RunGetComponentTest()
+	UActorComponent FindFirstSceneByClassForCpp()
 	{
-		UActorComponent Found = GetComponent(USceneComponent::StaticClass());
-		if (Found == nullptr)
-			return 10;
-		if (!Found.IsA(USceneComponent::StaticClass()))
-			return 11;
+		return GetComponent(USceneComponent::StaticClass());
+	}
 
-		UActorComponent FoundMesh = GetComponent(UStaticMeshComponent::StaticClass());
-		if (FoundMesh == nullptr)
-			return 20;
-		if (FoundMesh.GetName() != n"Mesh")
-			return 21;
+	UFUNCTION()
+	UActorComponent FindMeshByClassForCpp()
+	{
+		return GetComponent(UStaticMeshComponent::StaticClass());
+	}
 
-		UActorComponent ByName = GetComponent(USceneComponent::StaticClass(), n"RootScene");
-		if (ByName == nullptr)
-			return 30;
-		if (ByName != RootScene)
-			return 31;
+	UFUNCTION()
+	UActorComponent FindRootByClassAndNameForCpp()
+	{
+		return GetComponent(USceneComponent::StaticClass(), n"RootScene");
+	}
 
-		UActorComponent MeshAsScene = GetComponent(USceneComponent::StaticClass(), n"Mesh");
-		if (MeshAsScene != Mesh)
-			return 40;
+	UFUNCTION()
+	UActorComponent FindMeshByParentClassAndNameForCpp()
+	{
+		return GetComponent(USceneComponent::StaticClass(), n"Mesh");
+	}
 
-		UActorComponent MeshWrongName = GetComponent(UStaticMeshComponent::StaticClass(), n"Billboard");
-		if (MeshWrongName != nullptr)
-			return 50;
+	UFUNCTION()
+	UActorComponent FindBillboardWithWrongClassForCpp()
+	{
+		return GetComponent(UStaticMeshComponent::StaticClass(), n"Billboard");
+	}
 
-		UActorComponent MissingByName = GetComponent(USceneComponent::StaticClass(), n"MissingScene");
-		if (MissingByName != nullptr)
-			return 60;
+	UFUNCTION()
+	UActorComponent FindMissingSceneByNameForCpp()
+	{
+		return GetComponent(USceneComponent::StaticClass(), n"MissingScene");
+	}
 
-		UActorComponent MissingByClass = GetComponent(UTestActorGetComponentMissing::StaticClass());
-		if (MissingByClass != nullptr)
-			return 70;
-
-		return 1;
+	UFUNCTION()
+	UActorComponent FindMissingComponentByClassForCpp()
+	{
+		return GetComponent(UTestActorGetComponentMissing::StaticClass());
 	}
 }
 )AS"),
@@ -337,14 +376,48 @@ class ATestActorGetComponent : AActor
 		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
 		W.BeginPlay(*Actor);
 
-		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunGetComponentTest")));
-		if (!Invoker.IsValid()) return;
-		TestRunner->TestEqual(TEXT("GetComponent should find existing and return null for missing"),
-			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
+		USceneComponent* RootScene = FindComponentByName<USceneComponent>(Actor, TEXT("RootScene"));
+		UStaticMeshComponent* Mesh = FindComponentByName<UStaticMeshComponent>(Actor, TEXT("Mesh"));
+		UBillboardComponent* Billboard = FindComponentByName<UBillboardComponent>(Actor, TEXT("Billboard"));
+		if (!TestRunner->TestNotNull(TEXT("GetComponent fixture should have a root scene component"), RootScene)
+			|| !TestRunner->TestNotNull(TEXT("GetComponent fixture should have a static mesh component"), Mesh)
+			|| !TestRunner->TestNotNull(TEXT("GetComponent fixture should have a billboard component"), Billboard))
+		{
+			return;
+		}
 
-		TestRunner->TestNotNull(TEXT("GetComponent fixture should have a root scene component"), FindComponentByName<USceneComponent>(Actor, TEXT("RootScene")));
-		TestRunner->TestNotNull(TEXT("GetComponent fixture should have a static mesh component"), FindComponentByName<UStaticMeshComponent>(Actor, TEXT("Mesh")));
-		TestRunner->TestNotNull(TEXT("GetComponent fixture should have a billboard component"), FindComponentByName<UBillboardComponent>(Actor, TEXT("Billboard")));
+		UActorComponent* FirstSceneByClass = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindFirstSceneByClassForCpp")), FirstSceneByClass)) return;
+		if (!TestRunner->TestNotNull(TEXT("GetComponent should find a scene component by class"), FirstSceneByClass)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetComponent first scene by class returned to C++: %s:%s"), *FirstSceneByClass->GetName(), *FirstSceneByClass->GetClass()->GetName()));
+		TestRunner->TestTrue(TEXT("GetComponent result should satisfy the requested scene class"), FirstSceneByClass->IsA(USceneComponent::StaticClass()));
+
+		UActorComponent* MeshByClass = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindMeshByClassForCpp")), MeshByClass)) return;
+		if (!TestRunner->TestNotNull(TEXT("GetComponent should find Mesh by static mesh class"), MeshByClass)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetComponent mesh by class returned to C++: %s:%s"), *MeshByClass->GetName(), *MeshByClass->GetClass()->GetName()));
+		TestRunner->TestTrue(TEXT("GetComponent should find Mesh by static mesh class"), MeshByClass == Mesh);
+
+		UActorComponent* RootByName = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindRootByClassAndNameForCpp")), RootByName)) return;
+		TestRunner->TestTrue(TEXT("GetComponent should find RootScene by class and name"), RootByName == RootScene);
+
+		UActorComponent* MeshAsScene = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindMeshByParentClassAndNameForCpp")), MeshAsScene)) return;
+		TestRunner->TestTrue(TEXT("GetComponent should match a derived component when querying parent class plus name"), MeshAsScene == Mesh);
+
+		UActorComponent* WrongTypeByName = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindBillboardWithWrongClassForCpp")), WrongTypeByName)) return;
+		TestRunner->TestNull(TEXT("GetComponent should return null for matching name with wrong class"), WrongTypeByName);
+
+		UActorComponent* MissingByName = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindMissingSceneByNameForCpp")), MissingByName)) return;
+		TestRunner->TestNull(TEXT("GetComponent should return null for a missing component name"), MissingByName);
+
+		UActorComponent* MissingByClass = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("FindMissingComponentByClassForCpp")), MissingByClass)) return;
+		TestRunner->TestNull(TEXT("GetComponent should return null for an absent component class"), MissingByClass);
+
 		TestRunner->TestEqual(TEXT("GetComponent fixture should not create extra components"), CountComponentsByClass(Actor, UActorComponent::StaticClass()), 3);
 	}
 
@@ -367,50 +440,39 @@ class ATestActorGetOrCreateComponent : AActor
 	USceneComponent RootScene;
 
 	UFUNCTION()
-	int RunGetOrCreateComponentTest()
+	UActorComponent GetExistingRootByNameForCpp()
 	{
-		UActorComponent ExistingRootByName = GetOrCreateComponent(USceneComponent::StaticClass(), n"RootScene");
-		if (ExistingRootByName == nullptr)
-			return 10;
-		if (ExistingRootByName != RootScene)
-			return 11;
+		return GetOrCreateComponent(USceneComponent::StaticClass(), n"RootScene");
+	}
 
-		UActorComponent ExistingRootByClass = GetOrCreateComponent(USceneComponent::StaticClass());
-		if (ExistingRootByClass == nullptr)
-			return 20;
-		if (ExistingRootByClass != RootScene)
-			return 21;
+	UFUNCTION()
+	UActorComponent GetExistingRootByClassForCpp()
+	{
+		return GetOrCreateComponent(USceneComponent::StaticClass());
+	}
 
-		USceneComponent FirstLazy = Cast<USceneComponent>(GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyScene"));
-		if (FirstLazy == nullptr)
-			return 30;
-		if (FirstLazy.GetOwner() != this)
-			return 31;
-		if (FirstLazy.GetName() != n"LazyScene")
-			return 32;
+	UFUNCTION()
+	USceneComponent CreateLazySceneForCpp()
+	{
+		return Cast<USceneComponent>(GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyScene"));
+	}
 
-		UActorComponent SecondLazy = GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyScene");
-		if (SecondLazy == nullptr)
-			return 40;
-		if (FirstLazy != SecondLazy)
-			return 41;
+	UFUNCTION()
+	UActorComponent GetLazySceneAgainForCpp()
+	{
+		return GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyScene");
+	}
 
-		UBillboardComponent FirstBillboard = Cast<UBillboardComponent>(GetOrCreateComponent(UBillboardComponent::StaticClass(), n"LazyBillboard"));
-		if (FirstBillboard == nullptr)
-			return 50;
-		if (FirstBillboard.GetOwner() != this)
-			return 51;
+	UFUNCTION()
+	UBillboardComponent CreateLazyBillboardForCpp()
+	{
+		return Cast<UBillboardComponent>(GetOrCreateComponent(UBillboardComponent::StaticClass(), n"LazyBillboard"));
+	}
 
-		UActorComponent BillboardBySceneName = GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyBillboard");
-		if (BillboardBySceneName != FirstBillboard)
-			return 60;
-
-		TArray<UActorComponent> AllComponents;
-		GetAllComponents(UActorComponent::StaticClass(), AllComponents);
-		if (AllComponents.Num() != 3)
-			return 70;
-
-		return 1;
+	UFUNCTION()
+	UActorComponent GetLazyBillboardBySceneClassForCpp()
+	{
+		return GetOrCreateComponent(USceneComponent::StaticClass(), n"LazyBillboard");
 	}
 }
 )AS"),
@@ -423,24 +485,43 @@ class ATestActorGetOrCreateComponent : AActor
 		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
 		W.BeginPlay(*Actor);
 
-		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunGetOrCreateComponentTest")));
-		if (!Invoker.IsValid()) return;
-		TestRunner->TestEqual(TEXT("GetOrCreateComponent should reuse existing and create on first access"),
-			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
-
 		USceneComponent* RootScene = FindComponentByName<USceneComponent>(Actor, TEXT("RootScene"));
-		USceneComponent* LazyScene = FindComponentByName<USceneComponent>(Actor, TEXT("LazyScene"));
-		UBillboardComponent* LazyBillboard = FindComponentByName<UBillboardComponent>(Actor, TEXT("LazyBillboard"));
-		if (!TestRunner->TestNotNull(TEXT("GetOrCreateComponent should keep the original root scene"), RootScene)
-			|| !TestRunner->TestNotNull(TEXT("GetOrCreateComponent should create one lazy scene component"), LazyScene)
-			|| !TestRunner->TestNotNull(TEXT("GetOrCreateComponent should create one lazy billboard component"), LazyBillboard))
-		{
-			return;
-		}
+		if (!TestRunner->TestNotNull(TEXT("GetOrCreateComponent should keep the original root scene"), RootScene)) return;
 
+		UActorComponent* ExistingRootByName = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("GetExistingRootByNameForCpp")), ExistingRootByName)) return;
+		if (!TestRunner->TestNotNull(TEXT("GetOrCreateComponent should return the default root by name"), ExistingRootByName)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetOrCreateComponent existing root by name returned to C++: %s:%s"), *ExistingRootByName->GetName(), *ExistingRootByName->GetClass()->GetName()));
+		TestRunner->TestTrue(TEXT("GetOrCreateComponent should reuse the default root by name"), ExistingRootByName == RootScene);
+
+		UActorComponent* ExistingRootByClass = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("GetExistingRootByClassForCpp")), ExistingRootByClass)) return;
+		TestRunner->TestTrue(TEXT("GetOrCreateComponent should reuse the default root by class"), ExistingRootByClass == RootScene);
 		TestRunner->TestEqual(TEXT("GetOrCreateComponent should not replace the root component"), Actor->GetRootComponent(), RootScene);
+
+		USceneComponent* LazyScene = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateLazySceneForCpp")), LazyScene)) return;
+		if (!TestRunner->TestNotNull(TEXT("GetOrCreateComponent should create one lazy scene component"), LazyScene)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetOrCreateComponent lazy scene returned to C++: %s:%s"), *LazyScene->GetName(), *LazyScene->GetClass()->GetName()));
+		TestRunner->TestEqual(TEXT("GetOrCreateComponent lazy scene should preserve the requested name"), LazyScene->GetFName(), FName(TEXT("LazyScene")));
+		TestRunner->TestEqual(TEXT("GetOrCreateComponent lazy scene should be owned by the actor"), LazyScene->GetOwner(), Actor);
 		TestRunner->TestEqual(TEXT("GetOrCreateComponent should attach created scene components to the root"), LazyScene->GetAttachParent(), RootScene);
+
+		UActorComponent* LazySceneAgain = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("GetLazySceneAgainForCpp")), LazySceneAgain)) return;
+		TestRunner->TestTrue(TEXT("GetOrCreateComponent should not duplicate a named scene component"), LazySceneAgain == LazyScene);
+
+		UBillboardComponent* LazyBillboard = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("CreateLazyBillboardForCpp")), LazyBillboard)) return;
+		if (!TestRunner->TestNotNull(TEXT("GetOrCreateComponent should create one lazy billboard component"), LazyBillboard)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetOrCreateComponent lazy billboard returned to C++: %s:%s"), *LazyBillboard->GetName(), *LazyBillboard->GetClass()->GetName()));
+		TestRunner->TestEqual(TEXT("GetOrCreateComponent lazy billboard should preserve the requested name"), LazyBillboard->GetFName(), FName(TEXT("LazyBillboard")));
+		TestRunner->TestEqual(TEXT("GetOrCreateComponent lazy billboard should be owned by the actor"), LazyBillboard->GetOwner(), Actor);
 		TestRunner->TestEqual(TEXT("GetOrCreateComponent should attach created scene-derived components to the root"), LazyBillboard->GetAttachParent(), RootScene);
+
+		UActorComponent* BillboardBySceneName = nullptr;
+		if (!InvokeComponentReturn(*TestRunner, Actor, FName(TEXT("GetLazyBillboardBySceneClassForCpp")), BillboardBySceneName)) return;
+		TestRunner->TestTrue(TEXT("GetOrCreateComponent should reuse derived components when parent class and name match"), BillboardBySceneName == LazyBillboard);
 		TestRunner->TestEqual(TEXT("GetOrCreateComponent should not duplicate components when called repeatedly"), CountComponentsByClass(Actor, UActorComponent::StaticClass()), 3);
 	}
 
@@ -505,66 +586,6 @@ class ATestActorGetAllComponents : AActor
 	TArray<UActorComponent> LastBillboardsForCpp;
 
 	UFUNCTION()
-	int RunGetAllComponentsTest()
-	{
-		TArray<UActorComponent> SeededComps;
-		SeededComps.Add(CompA);
-		GetAllComponents(UStaticMeshComponent::StaticClass(), SeededComps);
-		if (SeededComps.Num() != 1)
-			return 5;
-		if (SeededComps[0] != CompA)
-			return 6;
-
-		TArray<UActorComponent> AllComps;
-		GetAllComponents(UActorComponent::StaticClass(), AllComps);
-		if (AllComps.Num() != 7)
-			return 10;
-
-		TArray<UActorComponent> AllScenes;
-		GetAllComponents(USceneComponent::StaticClass(), AllScenes);
-		if (AllScenes.Num() != 7)
-			return 20;
-
-		TArray<UActorComponent> BFamily;
-		GetAllComponents(UTestCompB::StaticClass(), BFamily);
-		if (BFamily.Num() != 4)
-			return 30;
-		if (!BFamily.Contains(CompB))
-			return 31;
-		if (!BFamily.Contains(CompB2))
-			return 32;
-		if (!BFamily.Contains(DerivedB))
-			return 33;
-		if (!BFamily.Contains(DerivedB2))
-			return 34;
-
-		TArray<UActorComponent> OnlyDerivedB;
-		GetAllComponents(UTestCompDerivedB::StaticClass(), OnlyDerivedB);
-		if (OnlyDerivedB.Num() != 2)
-			return 40;
-		if (!OnlyDerivedB.Contains(DerivedB))
-			return 41;
-		if (!OnlyDerivedB.Contains(DerivedB2))
-			return 42;
-
-		TArray<UActorComponent> OnlyBillboard;
-		GetAllComponents(UBillboardComponent::StaticClass(), OnlyBillboard);
-		if (OnlyBillboard.Num() != 2)
-			return 50;
-		if (!OnlyBillboard.Contains(Billboard))
-			return 51;
-		if (!OnlyBillboard.Contains(Billboard2))
-			return 52;
-
-		TArray<UActorComponent> NoMatch;
-		GetAllComponents(UStaticMeshComponent::StaticClass(), NoMatch);
-		if (NoMatch.Num() != 0)
-			return 60;
-
-		return 1;
-	}
-
-	UFUNCTION()
 	UActorComponent ReturnRootForCpp()
 	{
 		return CompA;
@@ -577,15 +598,39 @@ class ATestActorGetAllComponents : AActor
 	}
 
 	UFUNCTION()
+	void FillAllActorComponentsForCpp(TArray<UActorComponent>& OutComponents)
+	{
+		GetAllComponents(UActorComponent::StaticClass(), OutComponents);
+	}
+
+	UFUNCTION()
+	void FillAllSceneComponentsForCpp(TArray<UActorComponent>& OutComponents)
+	{
+		GetAllComponents(USceneComponent::StaticClass(), OutComponents);
+	}
+
+	UFUNCTION()
 	void FillBFamilyForCpp(TArray<UActorComponent>& OutComponents)
 	{
 		GetAllComponents(UTestCompB::StaticClass(), OutComponents);
 	}
 
 	UFUNCTION()
-	void FillAllActorComponentsForCpp(TArray<UActorComponent>& OutComponents)
+	void FillDerivedBOnlyForCpp(TArray<UActorComponent>& OutComponents)
 	{
-		GetAllComponents(UActorComponent::StaticClass(), OutComponents);
+		GetAllComponents(UTestCompDerivedB::StaticClass(), OutComponents);
+	}
+
+	UFUNCTION()
+	void FillBillboardsForCpp(TArray<UActorComponent>& OutComponents)
+	{
+		GetAllComponents(UBillboardComponent::StaticClass(), OutComponents);
+	}
+
+	UFUNCTION()
+	void FillNoStaticMeshMatchesForCpp(TArray<UActorComponent>& OutComponents)
+	{
+		GetAllComponents(UStaticMeshComponent::StaticClass(), OutComponents);
 	}
 
 	UFUNCTION()
@@ -616,11 +661,6 @@ class ATestActorGetAllComponents : AActor
 		AActor* Actor = W.SpawnActorOfClass(ScriptClass);
 		if (!TestRunner->TestNotNull(TEXT("Actor should spawn"), Actor)) return;
 		W.BeginPlay(*Actor);
-
-		FFunctionInvoker Invoker(*TestRunner, Actor, FName(TEXT("RunGetAllComponentsTest")));
-		if (!Invoker.IsValid()) return;
-		TestRunner->TestEqual(TEXT("GetAllComponents should filter by class and return correct counts"),
-			Invoker.CallAndReturn<int32>(INDEX_NONE), 1);
 
 		TestRunner->TestEqual(TEXT("GetAllComponents fixture should contain seven actor components"), CountComponentsByClass(Actor, UActorComponent::StaticClass()), 7);
 		TestRunner->TestEqual(TEXT("GetAllComponents fixture should contain seven scene components"), CountComponentsByClass(Actor, USceneComponent::StaticClass()), 7);
@@ -654,15 +694,6 @@ class ATestActorGetAllComponents : AActor
 		UActorComponent* ReturnedDerived = ReturnDerivedInvoker.CallAndReturn<UActorComponent*>(nullptr);
 		TestRunner->TestEqual(TEXT("Script should return DerivedB to C++ as a component object"), ReturnedDerived, DerivedB);
 
-		TArray<UActorComponent*> BFamily;
-		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillBFamilyForCpp")), {}, BFamily)) return;
-		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents B-family returned to C++: [%s]"), *DescribeComponents(BFamily)));
-		TestRunner->TestEqual(TEXT("B-family array returned to C++ should contain every base and derived component"), BFamily.Num(), 4);
-		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include CompB"), BFamily.Contains(CompB));
-		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include CompB2"), BFamily.Contains(CompB2));
-		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include DerivedB"), BFamily.Contains(DerivedB));
-		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include DerivedB2"), BFamily.Contains(DerivedB2));
-
 		TArray<UActorComponent*> AllActorComponents;
 		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillAllActorComponentsForCpp")), {}, AllActorComponents)) return;
 		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents all actor components returned to C++: [%s]"), *DescribeComponents(AllActorComponents)));
@@ -674,6 +705,47 @@ class ATestActorGetAllComponents : AActor
 		TestRunner->TestTrue(TEXT("All actor components returned to C++ should include DerivedB2"), AllActorComponents.Contains(DerivedB2));
 		TestRunner->TestTrue(TEXT("All actor components returned to C++ should include Billboard"), AllActorComponents.Contains(Billboard));
 		TestRunner->TestTrue(TEXT("All actor components returned to C++ should include Billboard2"), AllActorComponents.Contains(Billboard2));
+
+		TArray<UActorComponent*> AllSceneComponents;
+		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillAllSceneComponentsForCpp")), {}, AllSceneComponents)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents all scene components returned to C++: [%s]"), *DescribeComponents(AllSceneComponents)));
+		TestRunner->TestEqual(TEXT("All scene components returned to C++ should include every fixture component"), AllSceneComponents.Num(), 7);
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include CompA"), AllSceneComponents.Contains(CompA));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include CompB"), AllSceneComponents.Contains(CompB));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include CompB2"), AllSceneComponents.Contains(CompB2));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include DerivedB"), AllSceneComponents.Contains(DerivedB));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include DerivedB2"), AllSceneComponents.Contains(DerivedB2));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include Billboard"), AllSceneComponents.Contains(Billboard));
+		TestRunner->TestTrue(TEXT("All scene components returned to C++ should include Billboard2"), AllSceneComponents.Contains(Billboard2));
+
+		TArray<UActorComponent*> BFamily;
+		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillBFamilyForCpp")), {}, BFamily)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents B-family returned to C++: [%s]"), *DescribeComponents(BFamily)));
+		TestRunner->TestEqual(TEXT("B-family array returned to C++ should contain every base and derived component"), BFamily.Num(), 4);
+		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include CompB"), BFamily.Contains(CompB));
+		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include CompB2"), BFamily.Contains(CompB2));
+		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include DerivedB"), BFamily.Contains(DerivedB));
+		TestRunner->TestTrue(TEXT("B-family array returned to C++ should include DerivedB2"), BFamily.Contains(DerivedB2));
+
+		TArray<UActorComponent*> DerivedOnly;
+		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillDerivedBOnlyForCpp")), {}, DerivedOnly)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents derived-only returned to C++: [%s]"), *DescribeComponents(DerivedOnly)));
+		TestRunner->TestEqual(TEXT("Derived-only array returned to C++ should contain only derived instances"), DerivedOnly.Num(), 2);
+		TestRunner->TestTrue(TEXT("Derived-only array returned to C++ should include DerivedB"), DerivedOnly.Contains(DerivedB));
+		TestRunner->TestTrue(TEXT("Derived-only array returned to C++ should include DerivedB2"), DerivedOnly.Contains(DerivedB2));
+		TestRunner->TestFalse(TEXT("Derived-only array returned to C++ should not include base CompB"), DerivedOnly.Contains(CompB));
+
+		TArray<UActorComponent*> Billboards;
+		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillBillboardsForCpp")), {}, Billboards)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents billboards returned to C++: [%s]"), *DescribeComponents(Billboards)));
+		TestRunner->TestEqual(TEXT("Billboard array returned to C++ should contain both billboards"), Billboards.Num(), 2);
+		TestRunner->TestTrue(TEXT("Billboard array returned to C++ should include Billboard"), Billboards.Contains(Billboard));
+		TestRunner->TestTrue(TEXT("Billboard array returned to C++ should include Billboard2"), Billboards.Contains(Billboard2));
+
+		TArray<UActorComponent*> NoStaticMeshMatches;
+		if (!InvokeComponentArrayOut(*TestRunner, Actor, FName(TEXT("FillNoStaticMeshMatchesForCpp")), {}, NoStaticMeshMatches)) return;
+		TestRunner->AddInfo(FString::Printf(TEXT("GetAllComponents no static mesh matches returned to C++: [%s]"), *DescribeComponents(NoStaticMeshMatches)));
+		TestRunner->TestEqual(TEXT("No-match array returned to C++ should stay empty"), NoStaticMeshMatches.Num(), 0);
 
 		TArray<UActorComponent*> SeededComponents;
 		SeededComponents.Add(CompA);

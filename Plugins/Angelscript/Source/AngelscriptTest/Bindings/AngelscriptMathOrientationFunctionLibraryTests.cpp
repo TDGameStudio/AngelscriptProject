@@ -190,14 +190,32 @@ FVector GetAxesForward()
 	return FRotator::GetForwardVector(GetAxesRotator());
 }
 
+FVector GetAxesForwardMember()
+{
+	const FRotator Rotator = GetAxesRotator();
+	return Rotator.GetForwardVector();
+}
+
 FVector GetAxesRight()
 {
 	return FRotator::GetRightVector(GetAxesRotator());
 }
 
+FVector GetAxesRightMember()
+{
+	const FRotator Rotator = GetAxesRotator();
+	return Rotator.GetRightVector();
+}
+
 FVector GetAxesUp()
 {
 	return FRotator::GetUpVector(GetAxesRotator());
+}
+
+FVector GetAxesUpMember()
+{
+	const FRotator Rotator = GetAxesRotator();
+	return Rotator.GetUpVector();
 }
 
 FRotator GetComposedRotator()
@@ -293,8 +311,11 @@ FTransform GetSetRotationTransform()
 
 		FRotator ScriptAxesRotator;
 		FVector ScriptAxesForward;
+		FVector ScriptAxesForwardMember;
 		FVector ScriptAxesRight;
+		FVector ScriptAxesRightMember;
 		FVector ScriptAxesUp;
+		FVector ScriptAxesUpMember;
 		FRotator ScriptComposedRotator;
 		FQuat ScriptQuatFromX;
 		FQuat ScriptQuatFromY;
@@ -311,8 +332,11 @@ FTransform GetSetRotationTransform()
 
 		asIScriptFunction* AxesRotatorFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FRotator GetAxesRotator()"));
 		asIScriptFunction* AxesForwardFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesForward()"));
+		asIScriptFunction* AxesForwardMemberFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesForwardMember()"));
 		asIScriptFunction* AxesRightFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesRight()"));
+		asIScriptFunction* AxesRightMemberFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesRightMember()"));
 		asIScriptFunction* AxesUpFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesUp()"));
+		asIScriptFunction* AxesUpMemberFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FVector GetAxesUpMember()"));
 		asIScriptFunction* ComposedRotatorFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FRotator GetComposedRotator()"));
 		asIScriptFunction* QuatFromXFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromX()"));
 		asIScriptFunction* QuatFromYFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FQuat GetQuatFromY()"));
@@ -328,8 +352,11 @@ FTransform GetSetRotationTransform()
 		asIScriptFunction* SetRotationTransformFunction = GetFunctionByDecl(*TestRunner, Module, TEXT("FTransform GetSetRotationTransform()"));
 		if (AxesRotatorFunction == nullptr
 			|| AxesForwardFunction == nullptr
+			|| AxesForwardMemberFunction == nullptr
 			|| AxesRightFunction == nullptr
+			|| AxesRightMemberFunction == nullptr
 			|| AxesUpFunction == nullptr
+			|| AxesUpMemberFunction == nullptr
 			|| ComposedRotatorFunction == nullptr
 			|| QuatFromXFunction == nullptr
 			|| QuatFromYFunction == nullptr
@@ -350,8 +377,11 @@ FTransform GetSetRotationTransform()
 		const bool bExecutedAll =
 			ExecuteValueFunction(*TestRunner, Engine, *AxesRotatorFunction, ScriptAxesRotator) &&
 			ExecuteValueFunction(*TestRunner, Engine, *AxesForwardFunction, ScriptAxesForward) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesForwardMemberFunction, ScriptAxesForwardMember) &&
 			ExecuteValueFunction(*TestRunner, Engine, *AxesRightFunction, ScriptAxesRight) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesRightMemberFunction, ScriptAxesRightMember) &&
 			ExecuteValueFunction(*TestRunner, Engine, *AxesUpFunction, ScriptAxesUp) &&
+			ExecuteValueFunction(*TestRunner, Engine, *AxesUpMemberFunction, ScriptAxesUpMember) &&
 			ExecuteValueFunction(*TestRunner, Engine, *ComposedRotatorFunction, ScriptComposedRotator) &&
 			ExecuteValueFunction(*TestRunner, Engine, *QuatFromXFunction, ScriptQuatFromX) &&
 			ExecuteValueFunction(*TestRunner, Engine, *QuatFromYFunction, ScriptQuatFromY) &&
@@ -401,13 +431,28 @@ FTransform GetSetRotationTransform()
 			CanonicalForward);
 		VerifyVector(
 			*TestRunner,
+			TEXT("FRotator.GetForwardVector should recover the canonical forward axis from MakeFromAxes"),
+			ScriptAxesForwardMember,
+			CanonicalForward);
+		VerifyVector(
+			*TestRunner,
 			TEXT("FRotator::GetRightVector should recover the canonical right axis from MakeFromAxes"),
 			ScriptAxesRight,
 			CanonicalRight);
 		VerifyVector(
 			*TestRunner,
+			TEXT("FRotator.GetRightVector should recover the canonical right axis from MakeFromAxes"),
+			ScriptAxesRightMember,
+			CanonicalRight);
+		VerifyVector(
+			*TestRunner,
 			TEXT("FRotator::GetUpVector should recover the canonical up axis from MakeFromAxes"),
 			ScriptAxesUp,
+			CanonicalUp);
+		VerifyVector(
+			*TestRunner,
+			TEXT("FRotator.GetUpVector should recover the canonical up axis from MakeFromAxes"),
+			ScriptAxesUpMember,
 			CanonicalUp);
 		VerifyRotator(
 			*TestRunner,

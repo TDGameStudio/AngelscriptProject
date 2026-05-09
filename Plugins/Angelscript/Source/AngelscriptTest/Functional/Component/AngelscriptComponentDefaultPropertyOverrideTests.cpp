@@ -25,6 +25,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptComponentDefaultPropertyOverrideTests,
 		static const FName ModuleName(TEXT("FunctionalComponentDefaultOverride"));
 		ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 
+		const FRotator ExpectedMeshRotation(0.0f, 45.0f, 0.0f);
 		UClass* ActorClass = CompileScriptModule(
 			*TestRunner,
 			Engine,
@@ -43,6 +44,7 @@ class AFunctionalDefaultOverrideActor : AActor
 	default Sphere.SphereRadius = 128.0;
 	default Mesh.bHiddenInGame = true;
 	default Mesh.CastShadow = false;
+	default Mesh.SetRelativeRotation(FRotator(0.0f, 45.0f, 0.0f));
 }
 )AS"),
 			TEXT("AFunctionalDefaultOverrideActor"));
@@ -74,6 +76,9 @@ class AFunctionalDefaultOverrideActor : AActor
 		{
 			TestRunner->TestTrue(TEXT("Mesh.bHiddenInGame CDO default should be true"), MeshCDO->bHiddenInGame);
 			TestRunner->TestFalse(TEXT("Mesh.CastShadow CDO default should be false"), MeshCDO->CastShadow);
+			TestRunner->TestTrue(
+				TEXT("Mesh.SetRelativeRotation default statement should set CDO relative rotation"),
+				MeshCDO->GetRelativeRotation().Equals(ExpectedMeshRotation));
 		}
 	}
 };

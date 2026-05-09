@@ -74,6 +74,31 @@ int Skeletal_TypeExists()
 		ExpectGlobalInt(*TestRunner, Engine, Mod.GetModule(), GMeshCompProfile,
 			TEXT("int Skeletal_TypeExists()"), TEXT("USkeletalMeshComponent compiles"), 1);
 	}
+
+	TEST_METHOD(SkeletalMeshAssetAccessorsCompile)
+	{
+		FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
+		FAngelscriptEngineScope Scope(Engine);
+		FCoverageModuleScope Mod(*TestRunner, Engine, GMeshCompProfile, TEXT("SkeletalAssetAccessors"), TEXT(R"(
+void Skeletal_SetAndGetAsset(USkeletalMeshComponent Comp, USkeletalMesh Mesh)
+{
+	Comp.SetSkeletalMeshAsset(Mesh);
+	USkeletalMesh CurrentMesh = Comp.GetSkeletalMeshAsset();
+}
+
+int Skeletal_SetAndGetAssetEntry()
+{
+	return 1;
+}
+)"));
+		if (!Mod.IsValid())
+		{
+			TestRunner->AddInfo(TEXT("USkeletalMeshComponent asset accessors not available, skipping"));
+			return;
+		}
+		ExpectGlobalInt(*TestRunner, Engine, Mod.GetModule(), GMeshCompProfile,
+			TEXT("int Skeletal_SetAndGetAssetEntry()"), TEXT("USkeletalMeshComponent asset accessors compile"), 1);
+	}
 };
 
 #endif
