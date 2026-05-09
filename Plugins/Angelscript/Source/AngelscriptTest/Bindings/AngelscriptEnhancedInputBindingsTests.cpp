@@ -10,7 +10,8 @@
 //   InputDebugKeyBindingExecuteCompat    — binding handle/execute coexistence
 //   InputActionValueConstructorsAndAxisTypes — constructors and axis accessors
 //   InputActionValueConvertToType        — ConvertToType dimension preservation
-//   EnhancedInputComponentBindActionCompiles — BindAction delegate compilation
+//   InputMappingContextRuntimeConstruction — AS-created action/context + WASD/arrow mappings
+//   EnhancedInputComponentBindActionAcceptsDynamicSignature — BindAction dynamic delegate validation
 //   EnhancedInputComponentRemoveBindingCompiles — Clear binding compilation
 //   EnhancedInputComponentEditorDelegateFlags — editor delegate flag API
 //
@@ -24,9 +25,17 @@
 #include "Shared/AngelscriptTestMacros.h"
 #include "Shared/AngelscriptTestUtilities.h"
 #include "Shared/AngelscriptTestEngineHelper.h"
+#include "Shared/AngelscriptReflectiveAccess.h"
 #include "Shared/AngelscriptBindingsCoverage.h"
 #include "Shared/AngelscriptBindingsModuleBuilder.h"
 #include "Shared/AngelscriptBindingsAssertions.h"
+
+#include "EnhancedInputComponent.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "InputModifiers.h"
+#include "Misc/ScopeExit.h"
+#include "UObject/UObjectGlobals.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -278,12 +287,93 @@ int VerifyConvertToType()
 			TEXT("ConvertToType should preserve dimension data correctly"), 1);
 	}
 
-	TEST_METHOD(EnhancedInputComponentBindActionCompiles)
+	TEST_METHOD(InputMappingContextRuntimeConstruction)
 	{
 		FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
-		FCoverageModuleScope Mod(*TestRunner, Engine, GEnhInputProfile, TEXT("BindAction"), TEXT(R"(
+		FCoverageModuleScope Mod(*TestRunner, Engine, GEnhInputProfile, TEXT("RuntimeMappingContext"), TEXT(R"(
+int ConfigureRuntimeMapping()
+{
+	UInputAction MoveAction = Cast<UInputAction>(NewObject(GetTransientPackage(), UInputAction::StaticClass(), n"AS_MoveAction", true));
+	UInputMappingContext MappingContext = Cast<UInputMappingContext>(NewObject(GetTransientPackage(), UInputMappingContext::StaticClass(), n"AS_MoveContext", true));
+	if (MoveAction == nullptr || MappingContext == nullptr)
+		return 0;
+
+	MoveAction.SetValueType(EInputActionValueType::Axis2D);
+	MoveAction.SetAccumulationBehavior(EInputActionAccumulationBehavior::Cumulative);
+	MappingContext.UnmapAll();
+
+	UInputModifierSwizzleAxis WSwizzle = Cast<UInputModifierSwizzleAxis>(NewObject(MappingContext, UInputModifierSwizzleAxis::StaticClass(), n"AS_WSwizzle", true));
+	UInputModifierSwizzleAxis SSwizzle = Cast<UInputModifierSwizzleAxis>(NewObject(MappingContext, UInputModifierSwizzleAxis::StaticClass(), n"AS_SSwizzle", true));
+	UInputModifierNegate SNegate = Cast<UInputModifierNegate>(NewObject(MappingContext, UInputModifierNegate::StaticClass(), n"AS_SNegate", true));
+	UInputModifierNegate ANegate = Cast<UInputModifierNegate>(NewObject(MappingContext, UInputModifierNegate::StaticClass(), n"AS_ANegate", true));
+	UInputModifierSwizzleAxis UpSwizzle = Cast<UInputModifierSwizzleAxis>(NewObject(MappingContext, UInputModifierSwizzleAxis::StaticClass(), n"AS_UpSwizzle", true));
+	UInputModifierSwizzleAxis DownSwizzle = Cast<UInputModifierSwizzleAxis>(NewObject(MappingContext, UInputModifierSwizzleAxis::StaticClass(), n"AS_DownSwizzle", true));
+	UInputModifierNegate DownNegate = Cast<UInputModifierNegate>(NewObject(MappingContext, UInputModifierNegate::StaticClass(), n"AS_DownNegate", true));
+	UInputModifierNegate LeftNegate = Cast<UInputModifierNegate>(NewObject(MappingContext, UInputModifierNegate::StaticClass(), n"AS_LeftNegate", true));
+	if (WSwizzle == nullptr || SSwizzle == nullptr || SNegate == nullptr || ANegate == nullptr
+		|| UpSwizzle == nullptr || DownSwizzle == nullptr || DownNegate == nullptr || LeftNegate == nullptr)
+		return 0;
+
+	FEnhancedActionKeyMapping& W = MappingContext.MapKey(MoveAction, EKeys::W);
+	W.AddModifier(WSwizzle);
+
+	FEnhancedActionKeyMapping& S = MappingContext.MapKey(MoveAction, EKeys::S);
+	S.AddModifier(SSwizzle);
+	S.AddModifier(SNegate);
+
+	FEnhancedActionKeyMapping& A = MappingContext.MapKey(MoveAction, EKeys::A);
+	A.AddModifier(ANegate);
+
+	FEnhancedActionKeyMapping& D = MappingContext.MapKey(MoveAction, EKeys::D);
+
+	FEnhancedActionKeyMapping& Up = MappingContext.MapKey(MoveAction, EKeys::Up);
+	Up.AddModifier(UpSwizzle);
+
+	FEnhancedActionKeyMapping& Down = MappingContext.MapKey(MoveAction, EKeys::Down);
+	Down.AddModifier(DownSwizzle);
+	Down.AddModifier(DownNegate);
+
+	FEnhancedActionKeyMapping& Left = MappingContext.MapKey(MoveAction, EKeys::Left);
+	Left.AddModifier(LeftNegate);
+
+	FEnhancedActionKeyMapping& Right = MappingContext.MapKey(MoveAction, EKeys::Right);
+
+	if (MappingContext.GetMappingCount() != 8)
+		return 0;
+	if (MoveAction.GetValueType() != EInputActionValueType::Axis2D)
+		return 0;
+	if (MoveAction.GetAccumulationBehavior() != EInputActionAccumulationBehavior::Cumulative)
+		return 0;
+	if (W.GetAction() != MoveAction || W.GetKey() != EKeys::W || W.GetModifierCount() != 1)
+		return 0;
+	if (S.GetModifierCount() != 2 || A.GetModifierCount() != 1 || D.GetModifierCount() != 0)
+		return 0;
+	if (Up.GetModifierCount() != 1 || Down.GetModifierCount() != 2 || Left.GetModifierCount() != 1 || Right.GetModifierCount() != 0)
+		return 0;
+
+	return 1;
+}
+)"));
+		if (!Mod.IsValid()) return;
+		auto& M = Mod.GetModule();
+		ExpectGlobalInt(*TestRunner, Engine, M, GEnhInputProfile,
+			TEXT("int ConfigureRuntimeMapping()"),
+			TEXT("AS should be able to create an Enhanced Input movement context at runtime"), 1);
+	}
+
+	TEST_METHOD(EnhancedInputComponentBindActionAcceptsDynamicSignature)
+	{
+		FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
+		FAngelscriptEngineScope Scope(Engine);
+
+		const TCHAR* ModuleName = TEXT("ASAnnotatedEnhancedInputDynamicSignature");
+		const bool bCompiled = CompileAnnotatedModuleFromMemory(
+			&Engine,
+			ModuleName,
+			TEXT("ASAnnotatedEnhancedInputDynamicSignature.as"),
+			TEXT(R"(
 UCLASS()
 class ABindActionTestActor : AActor
 {
@@ -291,7 +381,7 @@ class ABindActionTestActor : AActor
 	UInputAction InputJump;
 
 	UFUNCTION()
-	void OnJumpTriggered(FInputActionValue ActionValue)
+	void OnJumpTriggered(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 	}
 
@@ -309,11 +399,73 @@ int BindActionEntry()
 	return 1;
 }
 )"));
-		if (!Mod.IsValid()) return;
-		auto& M = Mod.GetModule();
-		ExpectGlobalInt(*TestRunner, Engine, M, GEnhInputProfile,
-			TEXT("int BindActionEntry()"),
-			TEXT("BindAction with delegate signature should compile"), 1);
+		ON_SCOPE_EXIT { Engine.DiscardModule(ModuleName); };
+
+		if (!TestRunner->TestTrue(TEXT("EnhancedInput dynamic signature module should compile"), bCompiled))
+		{
+			return;
+		}
+
+		UClass* RuntimeActorClass = FindGeneratedClass(&Engine, TEXT("ABindActionTestActor"));
+		if (!TestRunner->TestNotNull(TEXT("EnhancedInput dynamic signature actor class should exist"), RuntimeActorClass))
+		{
+			return;
+		}
+
+		AActor* RuntimeActor = NewObject<AActor>(GetTransientPackage(), RuntimeActorClass);
+		UEnhancedInputComponent* InputComponent = NewObject<UEnhancedInputComponent>(RuntimeActor);
+		UInputAction* InputAction = NewObject<UInputAction>(RuntimeActor);
+		if (!TestRunner->TestNotNull(TEXT("EnhancedInput dynamic signature actor should instantiate"), RuntimeActor)
+			|| !TestRunner->TestNotNull(TEXT("EnhancedInput component should instantiate"), InputComponent)
+			|| !TestRunner->TestNotNull(TEXT("InputAction should instantiate"), InputAction))
+		{
+			return;
+		}
+
+		FObjectPropertyBase* InputJumpProperty = FindFProperty<FObjectPropertyBase>(RuntimeActorClass, TEXT("InputJump"));
+		if (!TestRunner->TestNotNull(TEXT("InputJump property should exist"), InputJumpProperty))
+		{
+			return;
+		}
+		InputJumpProperty->SetObjectPropertyValue_InContainer(RuntimeActor, InputAction);
+
+		if (!TestRunner->TestNotNull(
+			TEXT("SetupInput function should exist"),
+			FindGeneratedFunction(RuntimeActorClass, TEXT("SetupInput"))))
+		{
+			return;
+		}
+
+		FFunctionInvoker SetupInputInvoker(*TestRunner, RuntimeActor, TEXT("SetupInput"));
+		SetupInputInvoker.AddParam<UEnhancedInputComponent*>(InputComponent);
+		if (!TestRunner->TestTrue(TEXT("SetupInput should execute through generated UFUNCTION dispatch"), SetupInputInvoker.Call()))
+		{
+			return;
+		}
+
+		TestRunner->TestTrue(
+			TEXT("BindAction should create one action binding for a compatible script UFUNCTION"),
+			InputComponent->HasBindings());
+
+		const TArray<TUniquePtr<FEnhancedInputActionEventBinding>>& Bindings = InputComponent->GetActionEventBindings();
+		if (!TestRunner->TestEqual(TEXT("BindAction should add one action event binding"), Bindings.Num(), 1))
+		{
+			return;
+		}
+
+		TestRunner->TestTrue(
+			TEXT("BindAction should store the requested input action"),
+			Bindings[0]->GetAction() == InputAction);
+		TestRunner->TestEqual(
+			TEXT("BindAction should store the requested trigger event"),
+			Bindings[0]->GetTriggerEvent(),
+			ETriggerEvent::Triggered);
+		TestRunner->TestTrue(
+			TEXT("BindAction should bind the script actor as delegate object"),
+			Bindings[0]->GetUObject() == RuntimeActor);
+		TestRunner->TestTrue(
+			TEXT("BindAction delegate should report the script actor as bound"),
+			Bindings[0]->IsBoundToObject(RuntimeActor));
 	}
 
 	TEST_METHOD(EnhancedInputComponentRemoveBindingCompiles)
