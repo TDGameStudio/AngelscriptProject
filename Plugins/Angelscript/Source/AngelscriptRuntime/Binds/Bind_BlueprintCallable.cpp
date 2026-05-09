@@ -60,7 +60,7 @@ void BindBlueprintCallable(
 		return;
 #endif
 
-	if (BindBlueprintCallableReflectionFallback(InType, Signature))
+	if (ShouldBindBlueprintCallableReflectionFallback(Function))
 	{
 		Entry->bReflectiveFallbackBound = false;
 
@@ -229,7 +229,7 @@ void BindBlueprintCallable_FromPrep(
 		return;
 	}
 
-	if (BindBlueprintCallableReflectionFallback(InType, Signature))
+	if (ShouldBindBlueprintCallableReflectionFallback(Function))
 	{
 		Entry->bReflectiveFallbackBound = false;
 		Signature.WriteToDB(DBBind);
