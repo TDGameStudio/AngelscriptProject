@@ -32,11 +32,11 @@ Do not invoke `superpowers:writing-plans`, and do not create `docs/plans` or `do
 <!-- SUPERPOWER-END: explore-thinking-adapter -->
 
 <!-- SUPERPOWER-BEGIN: explore-handoff -->
-When the idea is ready to formalize, hand off to `/opsx:propose <description>` or the project-local `openspec-propose` skill. Propose will create or update the OpenSpec change and generate artifacts through the OpenSpec CLI flow.
+When the idea is ready to formalize (user confirms direction, or requirements/scope/approach are clear enough to write a proposal), hand off to the `openspec-propose` skill. In environments with slash commands, the user may also invoke `/opsx:propose <description>` or `/openspec:propose <description>`.
 <!-- SUPERPOWER-END: explore-handoff -->
 
 ## Guardrails
 
 - Do not implement features or bug fixes in explore mode.
 - Do not mutate repository files unless the user explicitly asks to update OpenSpec artifacts.
-- If the user asks to implement, redirect them to `/opsx:propose` or `/opsx:apply` depending on whether a change already exists.
+- If the user asks to implement, redirect them to `openspec-apply-change` (or `/opsx:apply`) depending on whether a change already exists. If no change exists yet, redirect to `openspec-propose` (or `/opsx:propose`) first.

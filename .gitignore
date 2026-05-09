@@ -110,8 +110,17 @@ DerivedDataCache/*
 .claude/
 .claude-internal/
 
+# Codex local config (machine-specific MCP paths)
+.codex/config.toml
+
 # Local git worktrees
 .worktrees/
+
+# Local generated wiki workspace
+/Wiki/
+
+# UnrealMCP (may become a submodule later)
+Tools/UnrealMCP/
 
 # Windows artifact
 /nul

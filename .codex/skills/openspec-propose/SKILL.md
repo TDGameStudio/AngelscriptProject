@@ -33,6 +33,60 @@ Design consensus mapping:
 - `tasks.md`: executable tasks and verification commands; this is the only implementation plan.
 <!-- SUPERPOWER-END: propose-thinking-flow -->
 
+<!-- SUPERPOWER-BEGIN: openspec-artifact-awareness -->
+Superpowers skills (brainstorming, writing-plans, TDD, etc.) do not know about OpenSpec. When invoking their thinking methods, you must supply the following context so they produce output compatible with the OpenSpec artifact structure.
+
+### Artifact structure and dependency chain
+
+```
+proposal.md ──┬──► design.md ──┐
+              │                 ├──► tasks.md
+              └──► specs/*.md ──┘
+```
+
+`applyRequires: [tasks]` — apply cannot start until `tasks.md` exists.
+
+### What each artifact must contain
+
+**`proposal.md`** — Why this change exists
+- **Why**: Problem or opportunity (1-2 sentences). Why now?
+- **What Changes**: Concrete list of new/modified/removed capabilities. Mark breaking changes with `**BREAKING**`.
+- **Capabilities**: New and modified capability names (kebab-case). Each new capability creates `specs/<name>/spec.md`. Each modified capability references an existing spec.
+- **Impact**: Affected code paths, APIs, dependencies, systems.
+
+**`specs/<name>/spec.md`** — User-observable requirements per capability
+- Acceptance criteria or behavior scenarios (Given/When/Then or equivalent).
+- Only externally observable behavior — no implementation details.
+- If a spec involves testable behavior in this Unreal project, include a `## Testing Requirements` section declaring:
+  - Target test layer (from `Documents/Guides/TestConventions.md` layer matrix: Runtime CppTests / Editor / Native Core / Runtime Integration / UE Functional / Bindings CQTest / Learning)
+  - Expected Automation prefix (e.g., `Angelscript.TestModule.<Theme>.*`)
+  - Recommended helper/harness (e.g., `FAngelscriptTestWorld`, `FCoverageModuleScope`, `AngelscriptNativeTestSupport.h`)
+  - Verification entry point command (from `Documents/Guides/Test.md` standard entries)
+
+**`design.md`** — Technical approach
+- Current state, goals/non-goals, technical approach, tradeoffs, risks.
+- Architecture and data flow decisions that inform task decomposition.
+- In this Unreal project, reference existing module structure from root `AGENTS.md` Architecture Overview when relevant.
+
+**`tasks.md`** — Executable implementation plan (the ONLY plan)
+- Checkbox tasks (`- [ ]`) with TDD/Non-TDD markers.
+- Each task: file scope, expected change, verification command.
+- Verification commands must use project unified runners (`Tools\RunBuild.ps1`, `Tools\RunTests.ps1`, `Tools\RunTestSuite.ps1`). Never hand-write UBT/Build.bat/RunUBT.bat commands.
+- TDD tasks involving tests must follow project test conventions:
+  - New test files start with `Angelscript` prefix.
+  - Choose test layer by answering: needs `FAngelscriptEngine`? needs real `UObject`/`World`/`Actor`? is Editor-only?
+  - Use existing helpers: `FAngelscriptTestWorld` for actor/component/lifecycle, `FCoverageModuleScope` for bindings coverage, `AngelscriptNativeTestSupport.h` for pure AS SDK.
+  - Automation prefix follows theme-first naming for functional tests (`Angelscript.TestModule.<Theme>.*`) and layer-first for native/learning.
+  - Templates in `Plugins/Angelscript/Source/AngelscriptTest/Template/` are recommended starting points.
+
+### Project docs to read when generating artifacts
+
+- `Documents/Guides/TestConventions.md` — test layer matrix, naming rules, standard flow
+- `Documents/Guides/Test.md` — test entry points, CQTest usage, harness patterns, templates
+- `Documents/Guides/Build.md` — build entry points and constraints
+- `Plugins/Angelscript/AGENTS.md` — plugin-internal test layering rules
+<!-- SUPERPOWER-END: openspec-artifact-awareness -->
+
 ## Input
 
 The user should provide either a kebab-case change name or a description of what they want to build or fix. If the request is unclear, ask what change they want and stop until they answer.
@@ -43,30 +97,18 @@ The user should provide either a kebab-case change name or a description of what
 
    Follow the `propose-thinking-flow` adapter block. Do not create files until the user has confirmed the design direction.
 
-2. **Check worktree safety**
-
-<!-- SUPERPOWER-BEGIN: worktree-check -->
-Choose worktree use from user intent and current workspace state. Check the current Git context with non-mutating commands such as:
-
-```powershell
-git rev-parse --show-toplevel
-git rev-parse --git-dir
-git rev-parse --git-common-dir
-git worktree list --porcelain
-```
-
-Decision rules:
-- If the user explicitly asks to create, switch to, or implement in a worktree, create or switch to a feature worktree before continuing.
-- If the user does not explicitly request a worktree and the current main/master working tree is clean, continue in the current workspace.
-- If the user does not explicitly request a worktree and the current workspace has uncommitted or untracked changes, stop and ask whether to create/switch worktree, continue in the current directory, or cancel.
-
-If the user chooses to create a worktree, use `superpowers:using-git-worktrees` as guidance, but do not silently edit `.gitignore`, commit changes, or move work without explicit confirmation.
-<!-- SUPERPOWER-END: worktree-check -->
-
-3. **Create or continue the OpenSpec change**
+2. **Create or continue the OpenSpec change**
 
 <!-- SUPERPOWER-BEGIN: openspec-cli-compat -->
 OpenSpec CLI metadata is authoritative. Do not create a bare `openspec/changes/<name>` directory by hand.
+
+Before writing `proposal.md` Capabilities, check existing specs to correctly classify new vs modified:
+
+   ```powershell
+   openspec list --specs --json
+   ```
+
+If specs exist, capabilities matching existing spec names are `Modified Capabilities`; all others are `New Capabilities`. Do not mark an existing spec as new or omit a modified spec.
 
 For a new change, run:
 
@@ -89,11 +131,11 @@ For each ready artifact, get current schema instructions:
 Use the returned `outputPath`, `template`, `instruction`, `context`, `rules`, and dependency list. Read dependency artifacts before generating dependent artifacts. Preserve `.openspec.yaml` and all OpenSpec CLI state.
 <!-- SUPERPOWER-END: openspec-cli-compat -->
 
-4. **Generate artifacts until apply-ready**
+3. **Generate artifacts until apply-ready**
 
    Continue in dependency order until every artifact required by `applyRequires` is complete. Re-run `openspec status --change "<name>" --json` after each artifact.
 
-5. **Use `tasks.md` as the implementation plan**
+4. **Use `tasks.md` as the implementation plan**
 
 <!-- SUPERPOWER-BEGIN: plan-as-tasks-md -->
 `tasks.md` is created by the OpenSpec propose artifact flow. Get the tasks artifact `outputPath`, `template`, and `instruction` with `openspec instructions <tasks-artifact-id> --change "<name>" --json`, then write to that path.
@@ -131,12 +173,22 @@ For this Unreal project, do not hardcode verification command templates in the s
 Task verification commands must use the project unified runner or documented entry points. Do not hand-write UBT, Build.bat, RunUBT.bat, or dotnet UnrealBuildTool commands.
 <!-- SUPERPOWER-END: tasks-template -->
 
+5. **Validate artifacts before finishing**
+
+   Run structural validation on the completed change:
+
+   ```powershell
+   openspec validate "<name>" --strict --json
+   ```
+
+   If validation reports errors (missing required sections, malformed structure, unresolved capability references), fix the affected artifacts before proceeding. Warnings may be reported to the user without blocking.
+
 6. **Finish propose**
 
-   Show the change name, artifact paths, and current OpenSpec status. Tell the user they may review and manually edit `proposal.md`, `design.md`, `specs/*`, or `tasks.md` before apply; run `/opsx:apply <name>` when ready.
+   Show the change name, artifact paths, and current OpenSpec status. Tell the user they may review and manually edit `proposal.md`, `design.md`, `specs/*`, or `tasks.md` before apply; run the `openspec-apply-change` skill (or `/opsx:apply <name>`) when ready.
 
 ## Guardrails
 
 - Propose must not edit application code.
 - Keep all generated artifacts under OpenSpec CLI output paths.
-- If a user asks to implement while still proposing, explain that implementation starts with `/opsx:apply` after artifacts are ready.
+- If a user asks to implement while still proposing, explain that implementation starts with the `openspec-apply-change` skill (or `/opsx:apply`) after artifacts are ready.

@@ -32,21 +32,21 @@ Before archiving, verify completion evidence:
 - If specs need syncing, show the delta summary and ask whether to sync before archive.
 <!-- SUPERPOWER-END: archive-completion-check -->
 
-3. **Archive safely**
+3. **Archive via CLI**
 
-   Preserve `.openspec.yaml` and the whole change directory. On Windows, use native PowerShell file operations with `-LiteralPath` after resolving the intended paths. Do not build destructive shell strings.
+   Run:
 
-   Target path format:
-
-```text
-openspec/changes/archive/YYYY-MM-DD-<name>/
+```powershell
+openspec archive "<name>"
 ```
 
-   If the target already exists, stop and report the conflict.
+   The CLI handles directory moves, spec updates, and validation automatically. Add `-y` to skip interactive confirmation if the user has already confirmed in step 2. Add `--skip-specs` for infrastructure, tooling, or doc-only changes that have no spec impact.
+
+   If the CLI reports a validation error or conflict, stop and report to the user.
 
 4. **Summarize**
 
-   Report the change name, schema, archive path, spec sync choice, and any warnings accepted by the user.
+   Report the change name, schema, CLI output (archive result and any spec updates performed), and any warnings accepted by the user.
 
 ## Guardrails
 
