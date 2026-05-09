@@ -1,3 +1,6 @@
 [submodule "Plugins/AngelscriptGAS"]
 	path = Plugins/AngelscriptGAS
 	url = git@github.com:TDGameStudio/AngelscriptGAS.git
+[submodule "Plugins/Angelscript"]
+	path = Plugins/Angelscript
+	url = git@github.com:TDGameStudio/UnrealAngelscriptPlugin.git
