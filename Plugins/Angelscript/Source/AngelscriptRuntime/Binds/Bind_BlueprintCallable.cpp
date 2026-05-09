@@ -60,7 +60,7 @@ void BindBlueprintCallable(
 		return;
 #endif
 
-	if (IsScriptDeclarationAlreadyBound(InType, Signature))
+	if (BindBlueprintCallableReflectionFallback(InType, Signature))
 	{
 		Entry->bReflectiveFallbackBound = false;
 
@@ -74,7 +74,7 @@ void BindBlueprintCallable(
 	const bool bHasDirectNativePointer = DirectNativePointer != nullptr && DirectNativePointer->IsBound();
 	if (!bHasDirectNativePointer)
 	{
-		if (!BindBlueprintCallableReflectiveFallback(InType, Function, Signature, *Entry))
+		if (!BindBlueprintCallableReflectionFallback(InType, Function, Signature, *Entry))
 			return;
 
 #if AS_CAN_GENERATE_JIT
@@ -229,7 +229,7 @@ void BindBlueprintCallable_FromPrep(
 		return;
 	}
 
-	if (IsScriptDeclarationAlreadyBound(InType, Signature))
+	if (BindBlueprintCallableReflectionFallback(InType, Signature))
 	{
 		Entry->bReflectiveFallbackBound = false;
 		Signature.WriteToDB(DBBind);
@@ -240,7 +240,7 @@ void BindBlueprintCallable_FromPrep(
 	const bool bHasDirectNativePointer = DirectNativePointer != nullptr && DirectNativePointer->IsBound();
 	if (!bHasDirectNativePointer)
 	{
-		if (!BindBlueprintCallableReflectiveFallback(InType, Function, Signature, *Entry))
+		if (!BindBlueprintCallableReflectionFallback(InType, Function, Signature, *Entry))
 		{
 			return;
 		}

@@ -65,7 +65,7 @@ void CallInterfaceMethod(asIScriptGeneric* InGeneric)
 
 	UFunction* RealFunc = Object->FindFunction(Sig->FunctionName);
 	if (RealFunc == nullptr) return;
-	InvokeReflectiveUFunctionFromGenericCall(Generic, Object, RealFunc);
+	InvokeReflectionFallbackFromGenericCall(Generic, Object, RealFunc);
 }
 
 FOnAngelscriptClassReload FAngelscriptClassGenerator::OnClassReload;

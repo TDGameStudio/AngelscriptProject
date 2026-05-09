@@ -515,7 +515,7 @@ void CallStaticWithSignature(asIScriptGeneric* InGeneric)
 		return;
 	}
 
-	InvokeReflectiveUFunctionFromGenericCall(Generic, Sig->StaticObject, Sig->UnrealFunction);
+	InvokeReflectionFallbackFromGenericCall(Generic, Sig->StaticObject, Sig->UnrealFunction);
 }
 
 void CallEventWithSignature(asIScriptGeneric* InGeneric)
@@ -528,7 +528,7 @@ void CallEventWithSignature(asIScriptGeneric* InGeneric)
 		return;
 	}
 
-	InvokeReflectiveUFunctionFromGenericCall(Generic, static_cast<UObject*>(Generic->GetObject()), Sig->UnrealFunction);
+	InvokeReflectionFallbackFromGenericCall(Generic, static_cast<UObject*>(Generic->GetObject()), Sig->UnrealFunction);
 }
 
 void CallMixinWithSignature(asIScriptGeneric* InGeneric)
@@ -541,7 +541,7 @@ void CallMixinWithSignature(asIScriptGeneric* InGeneric)
 		return;
 	}
 
-	InvokeReflectiveUFunctionFromGenericCall(Generic, Sig->StaticObject, Sig->UnrealFunction, true);
+	InvokeReflectionFallbackFromGenericCall(Generic, Sig->StaticObject, Sig->UnrealFunction, true);
 }
 
 static const FName NAME_Event_DeprecatedFunction("DeprecatedFunction");

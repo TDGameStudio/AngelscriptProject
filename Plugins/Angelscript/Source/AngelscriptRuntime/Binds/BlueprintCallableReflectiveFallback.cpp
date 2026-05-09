@@ -930,43 +930,43 @@ bool IsScriptDeclarationAlreadyBound(TSharedRef<FAngelscriptType> InType, const 
 	return IsScriptDeclarationAlreadyBoundImpl(InType, Signature);
 }
 
-EAngelscriptReflectiveFallbackEligibility EvaluateReflectiveFallbackEligibility(const UFunction* Function)
+EReflectionFallbackResult EvaluateReflectionFallback(const UFunction* Function)
 {
 	if (Function == nullptr)
 	{
-		return EAngelscriptReflectiveFallbackEligibility::RejectedNullFunction;
+		return EReflectionFallbackResult::NullFunction;
 	}
 
 	const UClass* OwningClass = Function->GetOuterUClass();
 	if (OwningClass == nullptr)
 	{
-		return EAngelscriptReflectiveFallbackEligibility::RejectedMissingOwningClass;
+		return EReflectionFallbackResult::MissingOwningClass;
 	}
 
 	if (OwningClass->HasAnyClassFlags(CLASS_Interface))
 	{
-		return EAngelscriptReflectiveFallbackEligibility::RejectedInterfaceClass;
+		return EReflectionFallbackResult::InterfaceClass;
 	}
 
 	if (Function->HasMetaData(NAME_BlueprintCallableReflectiveFallback_CustomThunk))
 	{
-		return EAngelscriptReflectiveFallbackEligibility::RejectedCustomThunk;
+		return EReflectionFallbackResult::CustomThunk;
 	}
 
 	if (GetNonReturnParameterCount(Function) > BlueprintCallableReflectiveFallbackMaxArgs)
 	{
-		return EAngelscriptReflectiveFallbackEligibility::RejectedTooManyArguments;
+		return EReflectionFallbackResult::TooManyArguments;
 	}
 
-	return EAngelscriptReflectiveFallbackEligibility::Eligible;
+	return EReflectionFallbackResult::Success;
 }
 
-bool ShouldBindBlueprintCallableReflectiveFallback(const UFunction* Function)
+bool ShouldBindBlueprintCallableReflectionFallback(const UFunction* Function)
 {
-	return EvaluateReflectiveFallbackEligibility(Function) == EAngelscriptReflectiveFallbackEligibility::Eligible;
+	return EvaluateReflectionFallback(Function) == EReflectionFallbackResult::Success;
 }
 
-bool InvokeReflectiveUFunctionFromGenericCall(
+bool InvokeReflectionFallbackFromGenericCall(
 	asIScriptGeneric* InGeneric,
 	UObject* TargetObject,
 	UFunction* Function,
@@ -982,7 +982,7 @@ bool InvokeReflectiveUFunctionFromGenericCall(
 		InGeneric, TargetObject, Function, bInjectMixinObject);
 }
 
-bool BindBlueprintCallableReflectiveFallback(
+bool BindBlueprintCallableReflectionFallback(
 	TSharedRef<FAngelscriptType> InType,
 	UFunction* Function,
 	FAngelscriptFunctionSignature& Signature,
@@ -990,7 +990,7 @@ bool BindBlueprintCallableReflectiveFallback(
 {
 	Entry.bReflectiveFallbackBound = false;
 
-	if (!ShouldBindBlueprintCallableReflectiveFallback(Function))
+	if (!ShouldBindBlueprintCallableReflectionFallback(Function))
 	{
 		return false;
 	}

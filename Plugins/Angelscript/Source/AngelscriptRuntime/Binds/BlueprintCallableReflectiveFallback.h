@@ -9,19 +9,26 @@ struct FAngelscriptType;
 struct FFuncEntry;
 struct FAngelscriptFunctionSignature;
 
-enum class EAngelscriptReflectiveFallbackEligibility : uint8
+// Result of evaluating whether a UFunction is eligible for reflection-based fallback binding.
+enum class EReflectionFallbackResult : uint8
 {
-	Eligible,
-	RejectedNullFunction,
-	RejectedMissingOwningClass,
-	RejectedInterfaceClass,
-	RejectedCustomThunk,
-	RejectedTooManyArguments,
+	// Function passed all checks and can use reflection fallback.
+	Success,
+	// Function pointer is null.
+	NullFunction,
+	// Function has no valid owning UClass.
+	MissingOwningClass,
+	// Function belongs to an interface class, which is not supported.
+	InterfaceClass,
+	// Function uses a custom thunk (DECLARE_FUNCTION), incompatible with generic reflection invoke.
+	CustomThunk,
+	// Function has more parameters than the reflection fallback can handle.
+	TooManyArguments,
 };
 
-ANGELSCRIPTRUNTIME_API EAngelscriptReflectiveFallbackEligibility EvaluateReflectiveFallbackEligibility(const UFunction* Function);
-ANGELSCRIPTRUNTIME_API bool ShouldBindBlueprintCallableReflectiveFallback(const UFunction* Function);
-ANGELSCRIPTRUNTIME_API bool InvokeReflectiveUFunctionFromGenericCall(
+ANGELSCRIPTRUNTIME_API EReflectionFallbackResult EvaluateReflectionFallback(const UFunction* Function);
+ANGELSCRIPTRUNTIME_API bool ShouldBindBlueprintCallableReflectionFallback(const UFunction* Function);
+ANGELSCRIPTRUNTIME_API bool InvokeReflectionFallbackFromGenericCall(
 	asIScriptGeneric* Generic,
 	UObject* TargetObject,
 	UFunction* Function,
@@ -50,7 +57,7 @@ ANGELSCRIPTRUNTIME_API void AngelscriptBindCaches_NotifyGlobalFunctionRegistered
 // When false, callers must fall back to FindFunctionByName.
 ANGELSCRIPTRUNTIME_API bool AngelscriptBindCaches_TryHasFunctionName(class UClass* OwningClass, FName FunctionName, bool& bOutExists);
 
-ANGELSCRIPTRUNTIME_API bool BindBlueprintCallableReflectiveFallback(
+ANGELSCRIPTRUNTIME_API bool BindBlueprintCallableReflectionFallback(
 	TSharedRef<FAngelscriptType> InType,
 	UFunction* Function,
 	FAngelscriptFunctionSignature& Signature,

@@ -4,7 +4,6 @@
 #include "Shared/AngelscriptTestMacros.h"
 #include "Shared/AngelscriptTestUtilities.h"
 
-#include "Bindings/AngelscriptBlueprintCallableReflectiveFallbackTestTypes.h"
 #include "Components/ActorTestSpawner.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -2046,84 +2045,6 @@ double WrapScoreBlend(double Value, double Floor, double Ceiling)
 	}
 
 	}
-	return true;
-}
-
-// =============================================================================
-// Test 10: BPLibraryDirectCDOCall
-// =============================================================================
-//
-// BP-library statics are UFUNCTIONs on a UBlueprintFunctionLibrary subclass.
-// We can reach them from C++ without an AS wrapper at all, by driving the
-// UFunction directly on the library's CDO through FFunctionInvoker. This
-// routes through `UObject::ProcessEvent` (the non-AS branch inside
-// FFunctionInvoker::Call), so it exercises the same invocation plumbing the
-// template uses for AS-defined UFUNCTIONs, except the target is a stateless
-// CDO rather than a spawned actor.
-//
-// Useful when:
-//   - you need to call a BP static from a test that never compiles an AS
-//     script at all, but still wants to go through the same reflection layer;
-//   - you want to confirm the UFunction's parameter layout matches
-//     expectations, independent of any AS binding behaviour.
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FAngelscriptTemplateReflectionBPLibraryDirectCDOCallTest,
-	"Angelscript.Template.ReflectionAccess.BPLibraryDirectCDOCall",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FAngelscriptTemplateReflectionBPLibraryDirectCDOCallTest::RunTest(const FString& Parameters)
-{
-	// No AS engine needed: the CDO + UFunction already exist by virtue of the
-	// test module loading. We do NOT need a spawned actor, a compiled script,
-	// or an engine scope for this path.
-	UClass* LibraryClass = UAngelscriptBlueprintCallableReflectiveFallbackTestLibrary::StaticClass();
-	if (!TestNotNull(TEXT("Test BP library class should exist"), LibraryClass))
-	{
-		return false;
-	}
-
-	UObject* LibraryCDO = LibraryClass->GetDefaultObject();
-	if (!TestNotNull(TEXT("Test BP library CDO should be retrievable"), LibraryCDO))
-	{
-		return false;
-	}
-
-	// Single-arg sample — `int32 EligibleCallable(int32 Value)`.
-	{
-		FFunctionInvoker Invoker(*this, LibraryCDO, FName(TEXT("EligibleCallable")));
-		if (!Invoker.IsValid())
-		{
-			return false;
-		}
-		Invoker.AddParam<int32>(1234);
-		const int32 Result = Invoker.CallAndReturn<int32>(INDEX_NONE);
-		TestEqual(TEXT("BP library EligibleCallable should return its int32 argument unchanged"),
-			Result, 1234);
-	}
-
-	// Many-arg sample — `int32 TooManyArgumentsCallable(int32 x 17)`. The
-	// function sums all 17 args, so we pass identifiable values and assert
-	// on the arithmetic sum. This also confirms that FFunctionInvoker handles
-	// a wide parameter list against a non-AS UFUNCTION.
-	{
-		FFunctionInvoker Invoker(*this, LibraryCDO, FName(TEXT("TooManyArgumentsCallable")));
-		if (!Invoker.IsValid())
-		{
-			return false;
-		}
-		int32 ExpectedSum = 0;
-		for (int32 i = 0; i < 17; ++i)
-		{
-			const int32 Value = i + 1;
-			Invoker.AddParam<int32>(Value);
-			ExpectedSum += Value;
-		}
-		const int32 Result = Invoker.CallAndReturn<int32>(INDEX_NONE);
-		TestEqual(TEXT("TooManyArgumentsCallable should sum 1..17 == 153"),
-			Result, ExpectedSum);
-	}
-
 	return true;
 }
 

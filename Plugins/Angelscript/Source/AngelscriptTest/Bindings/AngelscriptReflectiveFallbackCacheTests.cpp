@@ -397,8 +397,8 @@ int RunCacheReuse()
 		ASSERT_THAT(IsNotNull(SetTagsFunction));
 		TestRunner->TestEqual(
 			TEXT("BPLib UFUNCTIONs reaching reflective fallback should remain eligible after the cache lands"),
-			EvaluateReflectiveFallbackEligibility(SetTagsFunction),
-			EAngelscriptReflectiveFallbackEligibility::Eligible);
+			EvaluateReflectionFallback(SetTagsFunction),
+			EReflectionFallbackResult::Success);
 	}
 
 	// ====================================================================
