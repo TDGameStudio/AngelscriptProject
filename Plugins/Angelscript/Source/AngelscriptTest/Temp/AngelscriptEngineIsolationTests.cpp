@@ -506,7 +506,7 @@ bool FAngelscriptRequestContextAfterReturningUnpreparedScopedContextTest::RunTes
 		FAngelscriptEngineScope Scope(*Engine);
 		{
 			FAngelscriptPooledContextBase UnpreparedContext;
-			ReturnedScopedRawContext = UnpreparedContext.operator->();
+			ReturnedScopedRawContext = ScriptContextOf(UnpreparedContext);
 		}
 
 		RequestedContext = Engine->GetScriptEngine()->RequestContext();
@@ -554,8 +554,9 @@ bool FAngelscriptFullEngineCreateClearsThreadLocalPoolTest::RunTest(const FStrin
 	{
 		FAngelscriptEngineScope ScopeA(*EngineA);
 		FAngelscriptPooledContextBase SeedContext;
-		const int32 PrepareResult = SeedContext->Prepare(FunctionA);
-		const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedContext->Execute() : PrepareResult;
+		asIScriptContext* SeedScriptContext = ScriptContextOf(SeedContext);
+		const int32 PrepareResult = SeedScriptContext->Prepare(FunctionA);
+		const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedScriptContext->Execute() : PrepareResult;
 		if (!TestEqual(TEXT("Full engine create pool reset test should seed engine A into the local pool"), PrepareResult, asSUCCESS)
 			|| !TestEqual(TEXT("Full engine create pool reset test should execute the seeded function"), ExecuteResult, asEXECUTION_FINISHED))
 		{
@@ -589,7 +590,7 @@ bool FAngelscriptFullEngineCreateClearsThreadLocalPoolTest::RunTest(const FStrin
 		FAngelscriptPooledContextBase FreshContext;
 		return TestTrue(
 			TEXT("Creating a new full engine should acquire a context bound to that engine"),
-			FreshContext->GetEngine() == EngineB->GetScriptEngine());
+			ScriptContextOf(FreshContext)->GetEngine() == EngineB->GetScriptEngine());
 	}
 }
 
@@ -622,8 +623,9 @@ bool FAngelscriptContextPoolResetSequenceKeepsRequestedContextReusableTest::RunT
 		{
 			FAngelscriptEngineScope ScopeA(*EngineA);
 			FAngelscriptPooledContextBase SeedContext;
-			const int32 PrepareResult = SeedContext->Prepare(FunctionA);
-			const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedContext->Execute() : PrepareResult;
+			asIScriptContext* SeedScriptContext = ScriptContextOf(SeedContext);
+			const int32 PrepareResult = SeedScriptContext->Prepare(FunctionA);
+			const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedScriptContext->Execute() : PrepareResult;
 			if (!TestEqual(TEXT("Sequence test should seed engine A into the local pool"), PrepareResult, asSUCCESS)
 				|| !TestEqual(TEXT("Sequence test should execute the seeded function"), ExecuteResult, asEXECUTION_FINISHED))
 			{
@@ -657,7 +659,7 @@ bool FAngelscriptContextPoolResetSequenceKeepsRequestedContextReusableTest::RunT
 			FAngelscriptPooledContextBase FreshContext;
 			if (!TestTrue(
 				TEXT("Sequence test should acquire a context bound to engine B"),
-				FreshContext->GetEngine() == EngineB->GetScriptEngine()))
+				ScriptContextOf(FreshContext)->GetEngine() == EngineB->GetScriptEngine()))
 			{
 				return false;
 			}
@@ -695,7 +697,7 @@ bool FAngelscriptContextPoolResetSequenceKeepsRequestedContextReusableTest::RunT
 		asIScriptContext* ReturnedScopedRawContext = nullptr;
 		{
 			FAngelscriptPooledContextBase UnpreparedContext;
-			ReturnedScopedRawContext = UnpreparedContext.operator->();
+			ReturnedScopedRawContext = ScriptContextOf(UnpreparedContext);
 		}
 
 		asIScriptContext* RequestedContext = Engine->GetScriptEngine()->RequestContext();
@@ -762,7 +764,8 @@ bool FAngelscriptScopedPooledContextUsesScopedEngineTest::RunTest(const FString&
 	{
 		FAngelscriptEngineScope ScopeA(*EngineA);
 		FAngelscriptPooledContextBase SeedContext;
-		const int32 SeedPrepareResult = SeedContext->Prepare(FunctionA);
+		asIScriptContext* SeedScriptContext = ScriptContextOf(SeedContext);
+		const int32 SeedPrepareResult = SeedScriptContext->Prepare(FunctionA);
 		if (!TestEqual(TEXT("Scoped pooled context test should seed engine A into the local pool"), SeedPrepareResult, asSUCCESS))
 		{
 			return false;
@@ -772,10 +775,11 @@ bool FAngelscriptScopedPooledContextUsesScopedEngineTest::RunTest(const FString&
 	{
 		FAngelscriptEngineScope ScopeB(*EngineB);
 		FAngelscriptPooledContextBase Context;
-		TestTrue(TEXT("Scoped pooled context should resolve to engine B under engine B scope"), Context->GetEngine() == EngineB->GetScriptEngine());
+		asIScriptContext* ScriptContext = ScriptContextOf(Context);
+		TestTrue(TEXT("Scoped pooled context should resolve to engine B under engine B scope"), ScriptContext->GetEngine() == EngineB->GetScriptEngine());
 
-		const int32 PrepareResult = Context->Prepare(FunctionB);
-		const int32 ExecuteResult = PrepareResult == asSUCCESS ? Context->Execute() : PrepareResult;
+		const int32 PrepareResult = ScriptContext->Prepare(FunctionB);
+		const int32 ExecuteResult = PrepareResult == asSUCCESS ? ScriptContext->Execute() : PrepareResult;
 		TestEqual(TEXT("Scoped pooled context should prepare engine B function successfully"), PrepareResult, asSUCCESS);
 		return TestEqual(TEXT("Scoped pooled context should execute engine B function successfully"), ExecuteResult, asEXECUTION_FINISHED);
 	}
@@ -811,10 +815,11 @@ bool FAngelscriptReusedPooledContextStartsUnpreparedTest::RunTest(const FString&
 
 		{
 			FAngelscriptPooledContextBase SeedContext;
-			SeedRawContext = SeedContext.operator->();
+			SeedRawContext = ScriptContextOf(SeedContext);
 
-			const int32 PrepareResult = SeedContext->Prepare(Function);
-			const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedContext->Execute() : PrepareResult;
+			asIScriptContext* SeedScriptContext = ScriptContextOf(SeedContext);
+			const int32 PrepareResult = SeedScriptContext->Prepare(Function);
+			const int32 ExecuteResult = PrepareResult == asSUCCESS ? SeedScriptContext->Execute() : PrepareResult;
 			if (!TestEqual(TEXT("Seed pooled context should prepare successfully"), PrepareResult, asSUCCESS)
 				|| !TestEqual(TEXT("Seed pooled context should execute successfully"), ExecuteResult, asEXECUTION_FINISHED))
 			{
@@ -828,7 +833,7 @@ bool FAngelscriptReusedPooledContextStartsUnpreparedTest::RunTest(const FString&
 		}
 
 		FAngelscriptPooledContextBase ReusedContext;
-		TestTrue(TEXT("Reused pooled context test should reacquire the pooled context"), ReusedContext.operator->() == SeedRawContext);
+		TestTrue(TEXT("Reused pooled context test should reacquire the pooled context"), ScriptContextOf(ReusedContext) == SeedRawContext);
 		// Go through the asIScriptContext* handle (obtained via the initial RequestContext call above)
 		// instead of FAngelscriptPooledContextBase::operator->() which returns the incomplete asCContext* type.
 		asIScriptContext* ReusedScriptContext = SeedRawContext;

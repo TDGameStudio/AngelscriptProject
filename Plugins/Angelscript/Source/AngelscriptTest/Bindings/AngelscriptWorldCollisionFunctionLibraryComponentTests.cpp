@@ -267,11 +267,11 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 		Spawner.InitializeGameSubsystems();
 
 		AActor& CollisionBlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(CollisionBlockingActor, FName(TEXT("BlockingTarget")), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionBlockingActor, FName(TEXT("BlockingTarget")), TargetExtent, BlockingTargetLocation);
 		AActor& CollisionOverlapActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* OverlapBox = AddCollisionBox(CollisionOverlapActor, FName(TEXT("OverlapTarget")), OverlapExtent, OverlapTargetLocation);
+		UBoxComponent* OverlapBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionOverlapActor, FName(TEXT("OverlapTarget")), OverlapExtent, OverlapTargetLocation);
 		AActor& CollisionQueryActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* QueryBox = AddCollisionBox(CollisionQueryActor, FName(TEXT("QueryComponent")), QueryExtent, QueryComponentSpawnLocation);
+		UBoxComponent* QueryBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionQueryActor, FName(TEXT("QueryComponent")), QueryExtent, QueryComponentSpawnLocation);
 		if (!TestRunner->TestNotNull(TEXT("World collision function library blocker should be created"), BlockingBox)
 			|| !TestRunner->TestNotNull(TEXT("World collision function library overlap target should be created"), OverlapBox)
 			|| !TestRunner->TestNotNull(TEXT("World collision function library query component should be created"), QueryBox))
@@ -457,11 +457,11 @@ bool RunComponentOverlapMultiNull(UPrimitiveComponent QueryComponent, TArray<FOv
 		Spawner.InitializeGameSubsystems();
 
 		AActor& CollisionBlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(CollisionBlockingActor, FName(TEXT("NullGuardBlockingTarget")), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionBlockingActor, FName(TEXT("NullGuardBlockingTarget")), TargetExtent, BlockingTargetLocation);
 		AActor& CollisionOverlapActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* OverlapBox = AddCollisionBox(CollisionOverlapActor, FName(TEXT("NullGuardOverlapTarget")), OverlapExtent, OverlapTargetLocation);
+		UBoxComponent* OverlapBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionOverlapActor, FName(TEXT("NullGuardOverlapTarget")), OverlapExtent, OverlapTargetLocation);
 		AActor& CollisionQueryActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* QueryBox = AddCollisionBox(CollisionQueryActor, FName(TEXT("NullGuardQueryComponent")), QueryExtent, QueryComponentSpawnLocation);
+		UBoxComponent* QueryBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionFunctionLibraryComponentTests_Private::AddCollisionBox(CollisionQueryActor, FName(TEXT("NullGuardQueryComponent")), QueryExtent, QueryComponentSpawnLocation);
 		if (!TestRunner->TestNotNull(TEXT("World collision null-component test should create the blocker component"), BlockingBox)
 			|| !TestRunner->TestNotNull(TEXT("World collision null-component test should create the overlap target"), OverlapBox)
 			|| !TestRunner->TestNotNull(TEXT("World collision null-component test should create the query component"), QueryBox))

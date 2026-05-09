@@ -360,9 +360,9 @@ bool RunComponentOverlapMultiMiss(UPrimitiveComponent QueryComponent, TArray<FOv
 		Spawner.InitializeGameSubsystems();
 
 		AActor& CollisionTargetActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* TargetBox = AddCollisionBox(CollisionTargetActor, FName(TEXT("CollisionTarget")), TargetExtent, CollisionTargetLocation);
+		UBoxComponent* TargetBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private::AddCollisionBox(CollisionTargetActor, FName(TEXT("CollisionTarget")), TargetExtent, CollisionTargetLocation);
 		AActor& CollisionQueryActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* QueryBox = AddCollisionBox(CollisionQueryActor, FName(TEXT("CollisionQuery")), QueryExtent, CollisionMissLocation);
+		UBoxComponent* QueryBox = AngelscriptTest_Bindings_AngelscriptWorldCollisionBindingsTests_Private::AddCollisionBox(CollisionQueryActor, FName(TEXT("CollisionQuery")), QueryExtent, CollisionMissLocation);
 		if (!TestRunner->TestNotNull(TEXT("World collision target box should be created"), TargetBox)
 			|| !TestRunner->TestNotNull(TEXT("World collision query box should be created"), QueryBox))
 		{

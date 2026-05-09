@@ -242,7 +242,7 @@ bool RunLineTraceSingleByChannelHit(FHitResult& OutHit)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 		ASSERT_THAT(IsNotNull(BlockingBox));
 
 		UWorld* World = BlockingActor.GetWorld();
@@ -283,7 +283,7 @@ bool RunLineTraceMultiByChannelHit(TArray<FHitResult>& OutHits)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 		ASSERT_THAT(IsNotNull(BlockingBox));
 
 		UWorld* World = BlockingActor.GetWorld();
@@ -323,7 +323,7 @@ bool RunLineTraceMultiByChannelMiss(TArray<FHitResult>& OutHits)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 		ASSERT_THAT(IsNotNull(BlockingBox));
 
 		UWorld* World = BlockingActor.GetWorld();
@@ -368,7 +368,7 @@ bool RunSweepSingleByObjectTypeHit(FHitResult& OutHit)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* BlockingBox = AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		UBoxComponent* BlockingBox = WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 		ASSERT_THAT(IsNotNull(BlockingBox));
 
 		UWorld* World = BlockingActor.GetWorld();
@@ -414,9 +414,9 @@ bool RunOverlapMultiByProfileHit(TArray<FOverlapResult>& OutOverlaps)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 		AActor& OverlapActor = Spawner.SpawnActor<AActor>();
-		UBoxComponent* OverlapBox = AddCollisionBox(OverlapActor, TEXT("OverlapTarget"), OverlapExtent, OverlapTargetLocation);
+		UBoxComponent* OverlapBox = WorldCollisionTraceTestHelpers::AddCollisionBox(OverlapActor, TEXT("OverlapTarget"), OverlapExtent, OverlapTargetLocation);
 		ASSERT_THAT(IsNotNull(OverlapBox));
 
 		UWorld* World = BlockingActor.GetWorld();
@@ -458,7 +458,7 @@ bool RunOverlapMultiByProfileMiss(TArray<FOverlapResult>& OutOverlaps)
 		FActorTestSpawner Spawner;
 		Spawner.InitializeGameSubsystems();
 		AActor& BlockingActor = Spawner.SpawnActor<AActor>();
-		AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
+		WorldCollisionTraceTestHelpers::AddCollisionBox(BlockingActor, TEXT("BlockingTarget"), TargetExtent, BlockingTargetLocation);
 
 		UWorld* World = BlockingActor.GetWorld();
 		ASSERT_THAT(IsNotNull(World));

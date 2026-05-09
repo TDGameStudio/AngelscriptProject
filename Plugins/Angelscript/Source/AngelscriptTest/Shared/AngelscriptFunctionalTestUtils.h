@@ -25,7 +25,7 @@ namespace AngelscriptFunctionalTestUtils
 		FName ModuleName,
 		const FString& Filename,
 		const FString& InScriptSource,
-		FName GeneratedClassName)
+		FName ExpectedGeneratedClassName)
 	{
 		FAngelscriptEngineScope EngineScope(Engine);
 
@@ -36,9 +36,9 @@ namespace AngelscriptFunctionalTestUtils
 			return nullptr;
 		}
 
-		UClass* ScriptClass = AngelscriptTestSupport::FindGeneratedClass(&Engine, GeneratedClassName);
+		UClass* ScriptClass = AngelscriptTestSupport::FindGeneratedClass(&Engine, ExpectedGeneratedClassName);
 		Test.TestNotNull(
-			*FString::Printf(TEXT("Test class '%s' should be generated"), *GeneratedClassName.ToString()),
+			*FString::Printf(TEXT("Test class '%s' should be generated"), *ExpectedGeneratedClassName.ToString()),
 			ScriptClass);
 		return ScriptClass;
 	}
