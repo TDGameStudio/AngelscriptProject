@@ -175,6 +175,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FRotator_Interaction(FAngelscr
 	FRotator_.Method("FVector Vector() const", METHOD_TRIVIAL(FRotator, Vector));
 	FRotator_.Method("FQuat Quaternion() const", METHOD_TRIVIAL(FRotator, Quaternion));
 	FRotator_.Method("FVector Euler() const", METHOD_TRIVIAL(FRotator, Euler));
+	FRotator_.Method("FVector GetForwardVector() const", METHOD_TRIVIAL(FRotator, Vector));
+	FRotator_.Method("FVector GetRightVector() const", [](const FRotator& Rotator) -> FVector
+	{
+		return FRotationMatrix(Rotator).GetScaledAxis(EAxis::Y);
+	});
+	FRotator_.Method("FVector GetUpVector() const", [](const FRotator& Rotator) -> FVector
+	{
+		return FRotationMatrix(Rotator).GetScaledAxis(EAxis::Z);
+	});
 
 	FRotator_.Method("FVector RotateVector(const FVector& V) const", METHOD_TRIVIAL(FRotator, RotateVector));
 	FRotator_.Method("FVector UnrotateVector(const FVector& V) const", METHOD_TRIVIAL(FRotator, UnrotateVector));

@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Editor.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshActor.h"
+#include "GameFramework/Actor.h"
 #include "ISettingsModule.h"
 #include "Modules/ModuleManager.h"
 #include "Settings/LevelEditorViewportSettings.h"
@@ -64,6 +68,65 @@ public:
 				GEditor->edactDuplicateSelected(CurrentLevel, bOffsetLocations);
 			}
 		}
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Editor Scripting | Level Utility")
+	static AActor* SpawnActorDirect(UClass* ActorClass, const FVector& Location, const FRotator& Rotation, bool bTransient = false)
+	{
+		if (GEditor == nullptr || ActorClass == nullptr || !ActorClass->IsChildOf(AActor::StaticClass()))
+		{
+			return nullptr;
+		}
+
+		UWorld* World = GEditor->GetEditorWorldContext().World();
+		if (World == nullptr)
+		{
+			return nullptr;
+		}
+
+		ULevel* CurrentLevel = World->GetCurrentLevel();
+		if (CurrentLevel == nullptr)
+		{
+			return nullptr;
+		}
+
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.OverrideLevel = CurrentLevel;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParameters.ObjectFlags = RF_Transactional;
+		if (bTransient)
+		{
+			SpawnParameters.ObjectFlags |= RF_Transient;
+		}
+
+		World->Modify();
+		CurrentLevel->Modify();
+		AActor* Actor = World->SpawnActor(ActorClass, &Location, &Rotation, SpawnParameters);
+		if (Actor != nullptr)
+		{
+			Actor->InvalidateLightingCache();
+			Actor->PostEditMove(true);
+			Actor->MarkPackageDirty();
+			CurrentLevel->MarkPackageDirty();
+		}
+		return Actor;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Editor Scripting | Level Utility")
+	static AStaticMeshActor* SpawnStaticMeshActorDirect(UStaticMesh* StaticMesh, const FVector& Location, const FRotator& Rotation, bool bTransient = false)
+	{
+		AStaticMeshActor* Actor = Cast<AStaticMeshActor>(SpawnActorDirect(AStaticMeshActor::StaticClass(), Location, Rotation, bTransient));
+		if (Actor == nullptr || StaticMesh == nullptr)
+		{
+			return Actor;
+		}
+
+		UStaticMeshComponent* StaticMeshComponent = Actor->GetStaticMeshComponent();
+		if (StaticMeshComponent != nullptr)
+		{
+			StaticMeshComponent->SetStaticMesh(StaticMesh);
+		}
+		return Actor;
 	}
 
 	//UFUNCTION(ScriptCallable)

@@ -2,6 +2,7 @@
 #include "Curves/CurveLinearColor.h"
 #include "Engine/LevelStreaming.h"
 
+#include "FunctionLibraries/AngelscriptComponentLibrary.h"
 #include "FunctionLibraries/AngelscriptLevelStreamingLibrary.h"
 #include "FunctionLibraries/RuntimeCurveLinearColorMixinLibrary.h"
 #include "FunctionLibraries/RuntimeFloatCurveMixinLibrary.h"
@@ -29,6 +30,18 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FunctionLibraryMixins((int32)F
 		});
 	}
 #endif
+
+	auto SceneComponent_ = FAngelscriptBinds::ExistingClass("USceneComponent");
+	asITypeInfo* SceneComponentType = SceneComponent_.GetTypeInfo();
+	if (SceneComponentType == nullptr || SceneComponentType->GetMethodByDecl("void SetRelativeRotation(FRotator NewRotation)") == nullptr)
+	{
+		SceneComponent_.Method(
+			"void SetRelativeRotation(FRotator NewRotation)",
+			[](USceneComponent* Component, const FRotator& NewRotation)
+			{
+				UAngelscriptComponentLibrary::SetRelativeRotation(Component, NewRotation);
+			});
+	}
 
 	auto RuntimeCurveLinearColor_ = FAngelscriptBinds::ExistingClass("FRuntimeCurveLinearColor");
 	if (!RuntimeCurveLinearColor_.HasMethod(TEXT("AddDefaultKey")))

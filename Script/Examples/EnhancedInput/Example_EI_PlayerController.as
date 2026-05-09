@@ -20,11 +20,11 @@ class AExampleEIPlayerController : APlayerController
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
-		APawn ControlledPawn = GetPawn();
-		if (ControlledPawn == nullptr)
+		APawn CurrentPawn = GetPawn();
+		if (CurrentPawn == nullptr)
 			return;
 
-		UEnhancedInputComponent EIC = Cast<UEnhancedInputComponent>(ControlledPawn.GetInputComponent());
+		UEnhancedInputComponent EIC = Cast<UEnhancedInputComponent>(CurrentPawn.GetInputComponent());
 		if (EIC == nullptr)
 			return;
 
@@ -44,13 +44,13 @@ class AExampleEIPlayerController : APlayerController
 	}
 
 	UFUNCTION()
-	void OnLook(FInputActionValue ActionValue, float ElapsedTime, FInputActionInstance ActionInstance, UInputAction SourceAction)
+	void OnLook(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 		Print("Look input received", Duration=0.0);
 	}
 
 	UFUNCTION()
-	void OnInteract(FInputActionValue ActionValue, float ElapsedTime, FInputActionInstance ActionInstance, UInputAction SourceAction)
+	void OnInteract(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 		Print("Interact pressed!", Duration=3.0);
 	}

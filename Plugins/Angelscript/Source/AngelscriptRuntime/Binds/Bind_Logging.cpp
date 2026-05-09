@@ -1,6 +1,8 @@
 #include "AngelscriptBinds.h"
 #include "AngelscriptEngine.h"
 
+#include "CoreGlobals.h"
+#include "Engine/Engine.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Logging([]
@@ -191,6 +193,28 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Logging([]
 		UKismetSystemLibrary::PrintString(FAngelscriptEngine::TryGetCurrentWorldContextObject(), Text, true, false, Color, Duration);
 	}));
 	FAngelscriptBinds::SetPreviousBindRequiresWorldContext(true);
+
+	FAngelscriptBinds::CompileOutIfNoLog(FAngelscriptBinds::BindGlobalFunction(
+	"void PrintDirectToScreen(const FString& Text, float32 Duration = 5.f, FLinearColor Color = FLinearColor::LucBlue)",
+		[](const FString& Text, float Duration, FLinearColor Color)
+	{
+		if (GEngine != nullptr)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, Duration, Color.ToFColor(true), Text);
+			UE_LOG(Angelscript, Display, TEXT("[Display] PrintDirectToScreen queued: ScreenMessages=%s, EngineScreen=%s, EngineDisplay=%s, Text=%s"),
+				GAreScreenMessagesEnabled ? TEXT("true") : TEXT("false"),
+				GEngine->bEnableOnScreenDebugMessages ? TEXT("true") : TEXT("false"),
+				GEngine->bEnableOnScreenDebugMessagesDisplay ? TEXT("true") : TEXT("false"),
+				*Text);
+		}
+	}));
+
+	FAngelscriptBinds::CompileOutIfNoLog(FAngelscriptBinds::BindGlobalFunction(
+	"void DrawDebugStringFromObject(const UObject WorldContextObject, const FVector& TextLocation, const FString& Text, float32 Duration = 5.f, FLinearColor Color = FLinearColor::White)",
+		[](const UObject* WorldContextObject, const FVector& TextLocation, const FString& Text, float Duration, FLinearColor Color)
+	{
+		UKismetSystemLibrary::DrawDebugString(WorldContextObject, TextLocation, Text, nullptr, Color, Duration);
+	}));
 
 	FAngelscriptBinds::CompileOutIfNoLog(FAngelscriptBinds::BindGlobalFunction(
 	"void PrintWarning(const FString& Text, float32 Duration = 8.f, FLinearColor Color = FLinearColor::Yellow)",

@@ -41,20 +41,20 @@ class AExampleEIPawn : APawn
 	}
 
 	UFUNCTION()
-	void OnMove(FInputActionValue ActionValue, float ElapsedTime, FInputActionInstance ActionInstance, UInputAction SourceAction)
+	void OnMove(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 		FVector2D MoveInput = ActionValue.GetAxis2D();
 		AddMovementInput(FVector(MoveInput.X, MoveInput.Y, 0.0), 1.0);
 	}
 
 	UFUNCTION()
-	void OnJumpStarted(FInputActionValue ActionValue, float ElapsedTime, FInputActionInstance ActionInstance, UInputAction SourceAction)
+	void OnJumpStarted(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 		Print("Jump started!", Duration=3.0);
 	}
 
 	UFUNCTION()
-	void OnJumpCompleted(FInputActionValue ActionValue, float ElapsedTime, FInputActionInstance ActionInstance, UInputAction SourceAction)
+	void OnJumpCompleted(FInputActionValue ActionValue, float32 ElapsedTime, float32 TriggeredTime, const UInputAction SourceAction)
 	{
 		Print("Jump completed!", Duration=3.0);
 	}
