@@ -27,10 +27,10 @@ The user may specify a change name. If omitted, infer only when unambiguous. If 
 
    Run:
 
-```powershell
-openspec status --change "<name>" --json
-openspec instructions apply --change "<name>" --json
-```
+   ```powershell
+   openspec status --change "<name>" --json
+   openspec instructions apply --change "<name>" --json
+   ```
 
    Use the returned schema, task progress, dynamic instruction, and `contextFiles`. If the apply instruction reports a blocked or missing-artifact state, stop and report the missing artifacts.
 
@@ -38,11 +38,14 @@ openspec instructions apply --change "<name>" --json
 
    Read every file listed in `contextFiles`. Do not assume file names; OpenSpec schema output is authoritative.
 
+   Apply uses the OpenSpec artifacts currently on disk, including any manual edits the user made after propose.
+
 <!-- SUPERPOWER-BEGIN: plan-as-tasks-md -->
-`tasks.md` is the only implementation plan. It is generated during OpenSpec propose; if it uses the planning method from `superpowers:writing-plans`, that output must still be written to OpenSpec `tasks.md`, not to extra plan files.
+`tasks.md` is the only implementation plan. During apply, do not create `docs/plans` or `docs/superpowers/plans`, and do not write implementation plans outside the current OpenSpec change.
+
+If task decomposition needs revision, you may use the planning method from `superpowers:writing-plans`, but the result must be written back to the current change's `tasks.md`.
 
 During apply, read and update only the `tasks.md` under the current OpenSpec change:
-- Do not create `docs/superpowers/plans` or `docs/plans`.
 - Do not write task execution logs, review notes, or temporary commentary into `tasks.md`.
 - Update checkboxes only after the task is actually complete.
 
@@ -64,14 +67,7 @@ Stop for user selection before spawning subagents. In Codex, use subagents only 
 4. **Execute tasks from `tasks.md`**
 
 <!-- SUPERPOWER-BEGIN: tdd-discipline -->
-For TDD tasks, use `superpowers:test-driven-development` and execute in order:
-1. Write the failing test.
-2. Run the listed command and confirm it fails for the expected reason.
-3. Write the smallest implementation that can pass.
-4. Run the listed command and confirm it passes.
-5. Refactor while keeping verification green.
-
-Do not write implementation code for a TDD task before observing the failing test.
+For TDD tasks, use the current `superpowers:test-driven-development`. Do not write implementation code for a TDD task before observing the failing test required by that skill.
 <!-- SUPERPOWER-END: tdd-discipline -->
 
 <!-- SUPERPOWER-BEGIN: non-tdd-discipline -->

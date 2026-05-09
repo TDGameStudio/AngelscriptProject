@@ -70,21 +70,21 @@ OpenSpec CLI metadata is authoritative. Do not create a bare `openspec/changes/<
 
 For a new change, run:
 
-```powershell
-openspec new change "<name>"
-```
+   ```powershell
+   openspec new change "<name>"
+   ```
 
 Then inspect artifact state:
 
-```powershell
-openspec status --change "<name>" --json
-```
+   ```powershell
+   openspec status --change "<name>" --json
+   ```
 
 For each ready artifact, get current schema instructions:
 
-```powershell
-openspec instructions <artifact-id> --change "<name>" --json
-```
+   ```powershell
+   openspec instructions <artifact-id> --change "<name>" --json
+   ```
 
 Use the returned `outputPath`, `template`, `instruction`, `context`, `rules`, and dependency list. Read dependency artifacts before generating dependent artifacts. Preserve `.openspec.yaml` and all OpenSpec CLI state.
 <!-- SUPERPOWER-END: openspec-cli-compat -->
@@ -114,27 +114,14 @@ The plan is complete when:
 <!-- SUPERPOWER-END: plan-as-tasks-md -->
 
 <!-- SUPERPOWER-BEGIN: tasks-template -->
-When creating implementation tasks, shape them for Superpowers-backed execution without copying Superpowers docs.
+When creating implementation tasks, define only what OpenSpec `tasks.md` must carry. Do not copy Superpowers execution steps into this skill.
 
-Use TDD tasks for new behavior, bug fixes, behavior changes, and complex logic:
-
-```markdown
-- [ ] N.M <task description>  <!-- TDD -->
-  - [ ] N.M.1 Write a failing test: `<test file or test name>`
-  - [ ] N.M.2 Run verification and confirm the failure is expected: `<command>`
-  - [ ] N.M.3 Implement the smallest change: `<implementation file>`
-  - [ ] N.M.4 Run verification and confirm it passes: `<command>`
-  - [ ] N.M.5 Refactor while keeping verification green
-```
-
-Use non-TDD tasks for documentation, mechanical config, dependency updates, generated files, and other work where a failing behavioral test is not appropriate:
-
-```markdown
-- [ ] N.M <task description>  <!-- Non-TDD -->
-  - [ ] N.M.1 Execute the change: `<file path>`
-  - [ ] N.M.2 Verify no regression: `<command>`
-  - [ ] N.M.3 Check completeness and affected references
-```
+Task requirements:
+- Mark new behavior, bug fixes, behavior changes, and complex logic with `<!-- TDD -->`.
+- Mark documentation, mechanical config, dependency updates, generated files, and work without an appropriate failing behavioral test with `<!-- Non-TDD -->`.
+- Each task must state the relevant file scope, expected change, and verification entry point.
+- TDD tasks must be sufficient to trigger and execute the current `superpowers:test-driven-development`; task decomposition may follow the current `superpowers:writing-plans`.
+- Non-TDD tasks must still include verification or completeness checks; do not write tasks that only say to edit files.
 
 For this Unreal project, do not hardcode verification command templates in the skill. When generating `tasks.md`, choose verification entry points from the project docs for the task scope:
 - Build guidance: `Documents/Guides/Build.md`
@@ -146,7 +133,7 @@ Task verification commands must use the project unified runner or documented ent
 
 6. **Finish propose**
 
-   Show the change name, artifact paths, and current OpenSpec status. Tell the user to review the artifacts and run `/opsx:apply <name>` when ready.
+   Show the change name, artifact paths, and current OpenSpec status. Tell the user they may review and manually edit `proposal.md`, `design.md`, `specs/*`, or `tasks.md` before apply; run `/opsx:apply <name>` when ready.
 
 ## Guardrails
 
