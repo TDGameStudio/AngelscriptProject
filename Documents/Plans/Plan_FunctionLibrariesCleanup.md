@@ -74,9 +74,9 @@
 | `Documents/Knowledges/ZH/Syntax_Mixin.md` | 新建 | +343 | Mixin 知识基线总文档：AS 语言级 `mixin` 与 C++ `ScriptMixin` meta 的双轨实现、4 种触发方式、`*MixinLibrary` 文件清单（启用 8 / 关闭 8）、单元测试矩阵、§6 现状反思（含 §6.5 已落地清理 / §6.6 ScriptMixin 关闭文件三类分类）、与 Hazelight / vanilla AS 的差异 |
 | `Documents/Plans/Plan_FunctionLibrariesCleanup.md` | 新建 | +160（含本章节扩展后达 +200+） | 本计划：4 个 Phase 覆盖 meta 损失矩阵盘点、ActorLibrary dead code 决策、active 行功能 meta 批量恢复、按文件三类分类的 ScriptMixin 重启评估（P4.1 审计 → P4.2 类 3 试点 → P4.3 类 3 批量 → P4.4 类 1 单独决策） |
 | `Documents/Plans/Plan_OpportunityIndex.md` | 修改 | +3 / -2 | §3.1 表格新增"K. FunctionLibraries 清理与功能恢复"行；开篇执行 Plan 总数 57 → 58 |
-| `Documents/Plans/Plan_FunctionLibrariesCleanup/MetaLossMatrix.md` | 新建（audit deliverable） | +约 200 | P1.1 产出。15 文件 × 7 类 meta 损失矩阵；核心结论：130 处真实损失集中在 4 个文件（Math 113 / Component 13 / Actor 11 / Script 3），其余 11 文件死注释纯属噪音 |
-| `Documents/Plans/Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md` | 新建（audit deliverable） | +约 200 | P4.1 产出。16 处锚点四类分类（类 1=1 / 类 1.5=3 / 类 2=0 / 类 3=12）；P4.2 试点首选 HitResult；新发现"类 1.5"UHT 重载消歧 helper 模式不阻塞 ScriptMixin 重启 |
-| `Documents/Plans/Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md` | 新建（audit deliverable） | +约 280 | P5.1 产出。20 文件 × 5 维度对照矩阵；核心结论：缺 19 函数 + 3 子类 + 0 可清理锚点（100% parity gap）；为 16 个缺漏函数提取完整 Hazelight 签名作 P5.2 实施模板 |
+| FunctionLibraries meta 损失审计 | 已删除独立 audit deliverable | 旧 P1.1 产出，结论已内联到本计划：15 文件 × 7 类 meta 损失矩阵；核心结论：130 处真实损失集中在 4 个文件（Math 113 / Component 13 / Actor 11 / Script 3），其余 11 文件死注释纯属噪音 |
+| FunctionLibraries ScriptMixin 切换审计 | 已删除独立 audit deliverable | 旧 P4.1 产出，结论已内联到本计划：16 处锚点四类分类（类 1=1 / 类 1.5=3 / 类 2=0 / 类 3=12）；P4.2 试点首选 HitResult；新发现"类 1.5"UHT 重载消歧 helper 模式不阻塞 ScriptMixin 重启 |
+| FunctionLibraries Hazelight 对照审计 | 已删除独立 audit deliverable | 旧 P5.1 产出，结论已内联到本计划：20 文件 × 5 维度对照矩阵；核心结论：缺 19 函数 + 3 子类 + 0 可清理锚点（100% parity gap）；为 16 个缺漏函数提取完整 Hazelight 签名作 P5.2 实施模板 |
 
 ### 影响分析
 
@@ -155,9 +155,9 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 - [x] **P1.1** 生成"active 行 vs 死注释 meta 损失矩阵" ✅ 2026-04-28 完成
   - 工作树清理已删死注释，但功能差距没有可执行清单。需要从 git history 取出原文件内容，逐函数比对：每个函数原死注释里有哪些 meta、active 行有哪些、差额就是"丢失功能"
   - 立项时点的"清理前基线"在 `git stash` 或本计划提交前的 `HEAD`（即立项时刻 working tree 已 modified 状态的反向 diff）；同时配合更早的"`ScriptCallable` → `BlueprintCallable` 替换提交"（用 `git log --all -- Plugins/Angelscript/Source/AngelscriptRuntime/FunctionLibraries/AngelscriptMathLibrary.h --diff-filter=M -p | head -200` 定位），做三方比对
-  - 输出 `Documents/Plans/Plan_FunctionLibrariesCleanup/MetaLossMatrix.md`，按 16 个文件 × 4 类 meta（`ScriptTrivial` / `NotAngelscriptProperty` / `ScriptName` 重载 / `ScriptCallable`）列表，每行写文件名 + 函数名 + 当前 active meta + 应有 meta + 差额
+  - 输出独立 meta 损失矩阵（旧文件已删除，结论保留在本计划），按 16 个文件 × 4 类 meta（`ScriptTrivial` / `NotAngelscriptProperty` / `ScriptName` 重载 / `ScriptCallable`）列表，每行写文件名 + 函数名 + 当前 active meta + 应有 meta + 差额
   - 同步在 `Plan_OpportunityIndex.md` 三、缺陷重构章节添加本 Plan 索引
-  - **实施记录**：[`Plan_FunctionLibrariesCleanup/MetaLossMatrix.md`](./Plan_FunctionLibrariesCleanup/MetaLossMatrix.md) 已完成，覆盖 15 个修改过的文件 × 7 类 meta。**核心结论**：①真实 meta 损失共 130 处，②仅集中在 4 个文件（Math 113 / Component 13 / Actor 11 / Script 3），③其余 11 个文件死注释纯属噪音、无 active 行损失。详细分布：`ScriptTrivial 94 + ScriptNoDiscard 35 + NotAngelscriptProperty 7 + ScriptName 重载 4`
+  - **实施记录**：旧独立 meta 损失矩阵已删除，保留结论为：覆盖 15 个修改过的文件 × 7 类 meta。**核心结论**：①真实 meta 损失共 130 处，②仅集中在 4 个文件（Math 113 / Component 13 / Actor 11 / Script 3），③其余 11 个文件死注释纯属噪音、无 active 行损失。详细分布：`ScriptTrivial 94 + ScriptNoDiscard 35 + NotAngelscriptProperty 7 + ScriptName 重载 4`
 - [x] **P1.1** 📦 Git 提交：合并到 P4.1 / P5.1 audit deliverable 单一提交（见 P5.1 提交说明）
 
 ### Phase 2：ActorLibrary dead code 决策
@@ -186,7 +186,7 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - 影响文件：`AngelscriptComponentLibrary.h`（6 处 `*Quat` 重载）、`AngelscriptActorLibrary.h`（如 P2.2 选 B/C）
   - 例：`UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation"))` → `UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetRelativeRotation", NotAngelscriptProperty))`
   - 验证：`SetRelativeRotation` 在 AS 脚本里既能 Quat 又能 Rotator 调用，且不被识别成 angelscript property（`as.DumpEngineState` 的 `BindFunctions.csv` 应有两条 Bind，且 `bIsProperty=false`）
-  - **实施记录**：依 [`MetaLossMatrix.md`](./Plan_FunctionLibrariesCleanup/MetaLossMatrix.md) §1 实际数据修正：ComponentLibrary 实际只有 2 处 NotAngelscriptProperty 损失（原计划"6 处 *Quat 重载"是估算偏差，实际 6 处中 2 处缺 NotAngelscriptProperty、其余已携带），ActorLibrary 4+2 已在 P2.2 选项 B' 合并完成。本任务实际处理 5 处：
+  - **实施记录**：依 P1.1 meta 损失审计的实际数据修正：ComponentLibrary 实际只有 2 处 NotAngelscriptProperty 损失（原计划"6 处 *Quat 重载"是估算偏差，实际 6 处中 2 处缺 NotAngelscriptProperty、其余已携带），ActorLibrary 4+2 已在 P2.2 选项 B' 合并完成。本任务实际处理 5 处：
     - `AngelscriptComponentLibrary.h` 2 处：`SetRelativeRotationQuat` / `SetWorldRotationQuat` 在 `Meta = (ScriptName = ...)` 上追加 `NotAngelscriptProperty`
     - `AngelscriptScriptLibrary.h` 3 处：`GetNameOfGlobalVariableBeingInitialized` / `GetNamespaceOfGlobalVariableBeingInitialized` / `GetModuleNameOfGlobalVariableBeingInitialized` 由裸 `UFUNCTION(BlueprintCallable)` 升级为 `UFUNCTION(BlueprintCallable, Meta = (NotAngelscriptProperty))`
   - **验证**：构建 0 错误（53s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS。零回归
@@ -207,14 +207,14 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 ### Phase 4：ScriptMixin 类级 meta 重启可行性评估
 
 - [x] **P4.1** 审计现有 helper 的"AS 注入路径"，区分三类 ✅ 2026-04-28 完成
-  - 当前 8 个 ScriptMixin 关闭的文件**并非**统一走同一条兜底路径。需要先在 `Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md` 里把每个文件分类到三类中之一：
+  - 当前 8 个 ScriptMixin 关闭的文件**并非**统一走同一条兜底路径。需要先做 ScriptMixin 切换审计（旧独立文件已删除，结论保留在本计划）并把每个文件分类到三类中之一：
     - **类 1 — 已被 `Bind_*.cpp` 手工 lambda 接管**：例如 `AngelscriptWorldLibrary.h` 已被 `Bind_UWorld.cpp:79-82` 手工注册 `World.GetStreamingLevels() const`，转发到 `UAngelscriptWorldLibrary::GetStreamingLevels(World)`。这类文件**不能**直接重启 ScriptMixin，否则要么被 `Bind_BlueprintCallable.cpp:62-70` 的 `IsScriptDeclarationAlreadyBound` 静默跳过（无价值）、要么因签名细微差异（如 `TArray<ULevelStreaming@>` vs `TArray<ULevelStreaming>`、`const` 推导）注册成重复 overload 引发歧义
     - **类 2 — 走 `BlueprintCallableReflectiveFallback` 反射兜底**：函数没有 native pointer entry，由 `Bind_BlueprintCallable.cpp:74-91` 的 `BindBlueprintCallableReflectiveFallback` 兜底执行。这类文件可以考虑试点 ScriptMixin，但要确认 fallback 路径下生成的 AS 签名跟 mixin 路径的目标签名是否兼容
     - **类 3 — 仅静态命名空间形式可见**：函数没被任何路径绑定为成员方法，AS 脚本里只能写 `Lib::Func(target, ...)`。这类文件重启 ScriptMixin 是**净增益**（对齐 Hazelight）
   - 用 grep 扫描 `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/` 下是否 include 了对应 `FunctionLibraries/*.h`，是分类的关键启发式（命中=类 1 嫌疑大）
   - 用 `as.DumpEngineState` 导出 `BindFunctions.csv` 验证：搜目标类型（如 FVector）下是否已有同名函数；如有，进一步对比签名
   - 输出审计矩阵：`Library | Class | Has Bind_*.cpp manual wrap | Current binding path | Re-enable verdict`
-  - **实施记录**：[`Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md`](./Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md) 已完成。**核心结论**：①16 处锚点最终分入"四类"——类 1（手工接管，1 处：World）、**类 1.5**（UHT 重载消歧 helper、可与 ScriptMixin 共存，3 处：Input 三子类）、**类 2 实例为 0**（5 个候选文件函数全是 inline 实现、无 sidecar `.cpp`）、类 3（净增益，12 处：Math 8 + Hit 1 + TagContainer 1 + Tag 1 + AssetMgr 1）；②可重启锚点 15 处、禁止重启 1 处；③P4.2 试点首选 `AngelscriptHitResultLibrary.h`（单 mixin 子类 + active 行 ScriptTrivial 已齐全 + Hazelight 上游一致）。新发现"类 1.5"是 fork 独有的 UHT 重载消歧 helper 模式，不阻塞 ScriptMixin 重启
+  - **实施记录**：旧独立 ScriptMixin 切换审计已删除，保留结论为：①16 处锚点最终分入"四类"——类 1（手工接管，1 处：World）、**类 1.5**（UHT 重载消歧 helper、可与 ScriptMixin 共存，3 处：Input 三子类）、**类 2 实例为 0**（5 个候选文件函数全是 inline 实现、无 sidecar `.cpp`）、类 3（净增益，12 处：Math 8 + Hit 1 + TagContainer 1 + Tag 1 + AssetMgr 1）；②可重启锚点 15 处、禁止重启 1 处；③P4.2 试点首选 `AngelscriptHitResultLibrary.h`（单 mixin 子类 + active 行 ScriptTrivial 已齐全 + Hazelight 上游一致）。新发现"类 1.5"是 fork 独有的 UHT 重载消歧 helper 模式，不阻塞 ScriptMixin 重启
 - [x] **P4.1** 📦 Git 提交：合并到 P1.1 / P5.1 audit deliverable 单一提交（见 P5.1 提交说明）
 
 - [x] **P4.2** 试点：单文件重启 ScriptMixin（按 P4.1 审计结果选取类 3 文件）✅ 2026-04-28 完成
@@ -240,7 +240,7 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **Tag/TagContainer/AssetMgr/Input 6 处可同构启用的安全证据**：①Tag/TagContainer/AssetMgr 全仓 grep `xxxMixin::` namespace 调用为 0；②Input 3 处通过 `Bind_InputComponentScriptMixins.cpp` 的 `ERASE_FUNCTION_PTR`（UHT 重载消歧 helper，第 6-25 行）走 C++ 路径，无 AS 脚本 namespace 依赖；启用后两条路径在 `IsScriptDeclarationAlreadyBound` 拦截下产物等价
   - **操作内容**：①取消 6 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 注释、删除占位的 `UCLASS()` 行；②从 4 个文件（GameplayTagMixin / TagContainer / AssetMgr / Input）头部删除 cleanup parity note 段落；③Math 8 处经一次试启 → 检测到回归 → 全部回退到 `//UCLASS(Meta = (ScriptMixin = "..."))` 注释化形态保留
   - **验证**：构建 0 错误（57s）；`ProductionScriptMixinSignatures` 1/1 PASS；`FunctionLibraries.*` 23/23 PASS；零回归
-  - **审计矩阵更新**：`ScriptMixinSwitchAudit.md` 类 3 中 Math 8 处从"净增益"重分类为"namespace-regression"（保留禁用并附 fork-specific 阻塞证据）；`HazelightDiffMatrix.md` §3 锚点 #2-9（Math）保持禁用状态、#11-15（Tag/TagContainer/AssetMgr/Input）状态更新为"已重启"
+  - **审计结论更新**：类 3 中 Math 8 处从"净增益"重分类为"namespace-regression"（保留禁用并附 fork-specific 阻塞证据）；Hazelight 对照结论中 Math 锚点保持禁用状态、Tag/TagContainer/AssetMgr/Input 状态更新为"已重启"
 - [x] **P4.3** 📦 Git 提交：单次合并提交（P4.3 6 处启用 + Math 回退 + 文档同步），commit message `[FunctionLibraries] Refactor: re-enable ScriptMixin on Tag/TagContainer/AssetMgr/Input libraries; defer MathLibrary due to namespace-call regression (P4.3)`
 
 - [x] **P4.4** 类 1 文件的处置：保留手工接管 or 切回 ScriptMixin ✅ 2026-04-28 完成（World 唯一类 1 已切回 ScriptMixin）
@@ -251,12 +251,12 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - **手工 lambda 是历史包袱的证据**：fork 当年加 lambda 的目的是"强制 AS 签名 `TArray<ULevelStreaming>` 而非反射推导的 `TArray<ULevelStreaming@>`"，但实测删除后 AS 测试 `WorldStreamingNullGuards` / `WorldStreamingAccess`（共 2 个）零回归全部通过——AS 端 `World.GetStreamingLevels().Num()` / `[i] != ExpectedFirst` 等用法对反射路径产物完全兼容。fork 已经处理 `TObjectPtr` 路由（commit `5cdb3ef` 等历史成果），UObject 容器在 AS 中按引用语义传递，`@` 标记并不影响调用语义
   - **为什么对 World 安全、对 P4.2 HitResult 也是安全的同一原理**：两条路径（Bind_BlueprintType.cpp:1428-1437 反射 + Bind_FunctionLibraryMixins.cpp 类级注入）在 `IsScriptDeclarationAlreadyBound`（`Bind_BlueprintCallable.cpp:62-70`）拦截下产物等价；World 删除手工 lambda 后从"双轨（lambda + 反射兜底）"变成"单轨（仅 ScriptMixin 注入）"，更纯净
   - **验证**：构建 0 错误（53s）；`FunctionLibraries.WorldStreaming*` 2/2 PASS；`FunctionLibraries.*` 23/23 PASS（无新增/缺失）；`ProductionScriptMixinSignatures` 1/1 PASS。零回归
-  - **审计矩阵更新**：`ScriptMixinSwitchAudit.md` 类 1 锚点（World 1 处）从"禁止重启"转"已迁移"，可重启锚点总计变 16/16；`HazelightDiffMatrix.md` §3 锚点 #10 状态更新为"已重启"
+  - **审计结论更新**：类 1 锚点（World 1 处）从"禁止重启"转"已迁移"，可重启锚点总计变 16/16；Hazelight 对照结论中 World 锚点状态更新为"已重启"
 - [x] **P4.4** 📦 Git 提交：`[FunctionLibraries] Refactor: re-enable ScriptMixin on AngelscriptWorldLibrary by removing redundant Bind_UWorld manual lambda (P4.4)`
 
 ### Phase 5：Hazelight 上游对比与 helper 漏改修复 + 锚点注释清理
 
-> **P5.1 完成后已修正**：以下立项 sanity check 段落保留作历史叙事，但实际数据已被 [`Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) 全面取代。**正确数据**：MathLibrary `UFUNCTION` fork=87 而非 90、缺 16 函数（不是 13）；其他 19 个文件中**仅 3 个有 gap**（HitResult 缺 1 / TagContainer 缺 1 / AssetMgr 缺 1）；其余 16 个文件函数数完全 parity。后续 P5.2 / P5.3 / P5.4 一律以 audit matrix 为准。
+> **P5.1 完成后已修正**：以下立项 sanity check 段落保留作历史叙事，但实际数据已被 P5.1 全量 Hazelight 对照结论全面取代。**正确数据**：MathLibrary `UFUNCTION` fork=87 而非 90、缺 16 函数（不是 13）；其他 19 个文件中**仅 3 个有 gap**（HitResult 缺 1 / TagContainer 缺 1 / AssetMgr 缺 1）；其余 16 个文件函数数完全 parity。后续 P5.2 / P5.3 / P5.4 一律以 P5.1 内联结论为准。
 
 立项时已快速 sanity check（路径 `K:\UnrealEngine\UEAS\Engine\Plugins\Angelscript\Source\AngelscriptCode\Public\FunctionLibraries\`，来自 `AgentConfig.ini` 的 `References.HazelightAngelscriptEngineRoot`）：
 
@@ -273,12 +273,12 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
   - 当前已知 MathLibrary 缺 13 函数 + 3 mixin 子类、ActorLibrary 30/30 函数但全部裸 `UFUNCTION()`，但其他 18 个文件的 parity gap 没有数据。需要扫描全部 20 文件，沉淀成可执行的"补漏 + 清理"清单
   - 按 20 文件 × 5 维度建表：①文件存在性（已确认 100% 一致，仅作 baseline）；②active `UCLASS` 列表（含 ScriptMixin meta）；③active `UFUNCTION` 列表（含函数名 + 完整 Meta）；④函数体差异（参数 / 返回值 / 实现行数变化）；⑤Hazelight 上游有但 fork 注释掉/已删除的内容（dead removal 候选）
   - 工具建议：先用 `Compare-Object` 比对两端文件名 → `Get-ChildItem ... | Select-String "^UFUNCTION|^UCLASS"` 抽签名 → 不一致条目再用 `git diff --no-index <haze>/X.h <ours>/X.h` 看上下文
-  - 输出 `Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md`，矩阵结尾必须给出三个汇总数：①缺函数总数、②缺 mixin 子类总数、③可清理锚点注释数
-  - **实施记录**：[`Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) 已完成。**核心结论**：①缺函数 19 处（Math 16 + Hit 1 + TagContainer 1 + AssetMgr 1）——比立项时估算的 13 多 6 处，实际 active UFUNCTION 数 fork=87 而非 90、Haze=103；②缺 mixin 子类 3 处（Math 的 `UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`）；③**可清理锚点为 0**——fork 16 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 锚点 100% 在 Hazelight 上游为 active，全部是真 parity gap，P5.4 工作转化为"修整 6 处 cleanup parity note 描述准确性"。已为 16 个缺漏函数提取完整 Hazelight 签名作 P5.2 实施模板
+  - 输出独立 Hazelight 对照矩阵（旧文件已删除，结论保留在本计划），矩阵结尾必须给出三个汇总数：①缺函数总数、②缺 mixin 子类总数、③可清理锚点注释数
+  - **实施记录**：旧独立 Hazelight 对照矩阵已删除，保留结论为：①缺函数 19 处（Math 16 + Hit 1 + TagContainer 1 + AssetMgr 1）——比立项时估算的 13 多 6 处，实际 active UFUNCTION 数 fork=87 而非 90、Haze=103；②缺 mixin 子类 3 处（Math 的 `UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`）；③**可清理锚点为 0**——fork 16 处 `//UCLASS(Meta = (ScriptMixin = "..."))` 锚点 100% 在 Hazelight 上游为 active，全部是真 parity gap，P5.4 工作转化为"修整 6 处 cleanup parity note 描述准确性"。已为 16 个缺漏函数提取完整 Hazelight 签名作 P5.2 实施模板
 - [x] **P5.1** 📦 Git 提交：单次提交合并 P1.1 / P4.1 / P5.1 三份 audit deliverable，commit message `[Docs] Plans: add FunctionLibraries cleanup audit matrices (meta loss / Hazelight diff / ScriptMixin switch)`
 
 - [ ] **P5.2** 按 P5.1 矩阵补 helper 函数（共 21 个，分布在 4 个文件）
-  - **修正后的**优先级顺序（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2）：MathLibrary（16 缺漏，最大）→ HitResultLibrary（缺 `SetPhysMaterial`）→ GameplayTagContainerMixinLibrary（缺 `AppendTags`）→ UAssetManagerMixinLibrary（缺 `ScanPathForPrimaryAssets`）→ ActorLibrary（缺 `GetAttachedActors` / `GetAttachedActorsOfClass`，P2.2 后新增）
+  - **修正后的**优先级顺序（依 P5.1 全量 Hazelight 对照结论）：MathLibrary（16 缺漏，最大）→ HitResultLibrary（缺 `SetPhysMaterial`）→ GameplayTagContainerMixinLibrary（缺 `AppendTags`）→ UAssetManagerMixinLibrary（缺 `ScanPathForPrimaryAssets`）→ ActorLibrary（缺 `GetAttachedActors` / `GetAttachedActorsOfClass`，P2.2 后新增）
   - **MathLibrary 16 个缺漏函数**已在矩阵中提取完整签名作模板：4 组 transform 工具三重载（`ApplyDelta` / `ApplyRelative` / `GetDelta` / `GetRelative` × FQuat / FRotator / FTransform = 12 函数）+ 4 个单函数（`GetSafeNormal2D` / `MakeAngularVelocityFromDeltaRotation` / `MakeDeltaRotationFromAngularVelocity` / `WrapUInt`）
   - 每个补回来的函数必须保持 Hazelight 上游签名一致（参数顺序 / 返回类型 / Meta 完整携带）；Meta 涉及 `ScriptCallable` 时按 fork 当前惯例转换为 `BlueprintCallable` + 保留其他 Meta（参考 §6.5 已落地变更）；保留 `ScriptTrivial / NotAngelscriptProperty / ScriptName 重载` 等关键功能性 Meta（即同步完成 Phase 3 的 active 行恢复目标，避免重复 churn）
   - 跑 `Bindings.Math.*` + `Bindings.Vector.*` + `Bindings.Rotator.*` + `Bindings.Transform.*` + `ProductionScriptMixinSignatures` 做行为验证；若新函数引入新签名，`ProductionScriptMixinSignatures` baseline 可能需要按独立提交更新
@@ -305,7 +305,7 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 - [x] **P5.2-MathLibrary 部分** 📦 Git 提交：`[FunctionLibraries] Feat: restore 15 missing helpers in MathLibrary (4 transform x 3 + GetSafeNormal2D + 2 angular velocity); WrapUInt deferred per UHT uint32 restriction`
 
 - [x] **P5.3** 补缺失的 mixin 子类（MathLibrary 缺 3 个 active UCLASS，已在 P5.1 矩阵确认）✅ 2026-04-28 完成
-  - **缺漏的 3 个子类**（依 [`HazelightDiffMatrix.md`](./Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md) §2.1.1）：`UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`，全部 `UCLASS(Meta = (ScriptName = "<Type>"))` 直接 enabled 合入
+  - **缺漏的 3 个子类**（依 P5.1 全量 Hazelight 对照结论）：`UAngelscriptFQuatStaticLibrary` / `UAngelscriptFRotatorStaticLibrary` / `UAngelscriptFTransformStaticLibrary`，全部 `UCLASS(Meta = (ScriptName = "<Type>"))` 直接 enabled 合入
   - **关键发现 — P5.2 与 P5.3 函数归属冲突**：P5.2 MathLibrary 实施时把 14 个 transform 工具函数（FRotator 4 + FQuat 6 + FTransform 4）补到了 fork 的 mixin 子类（`UAngelscriptFRotatorLibrary` / `UAngelscriptFQuatLibrary` / `UAngelscriptFTransformLibrary`），但 Hazelight 上游 `AngelscriptCode/Public/FunctionLibraries/AngelscriptMathLibrary.h:850-1112` 的设计是把这些工具函数放在 **Static 子类**而非 mixin 子类。如果 P5.3 直接照抄上游会和 P5.2 重复注册（同 `ScriptName` namespace 下同函数名）
   - **采取方案 B（迁移）**：把 P5.2 加到 mixin 子类的 14 个函数**整体迁移**到新建 Static 子类，让 fork 100% 对齐 Hazelight 上游"主子类承载 mixin 方法 + Static 子类承载工具/构造"双子类模式
   - **AS 端调用语义零变化的证据**：迁移前后两个子类都用 `ScriptName = "FQuat"` / `"FRotator"` / `"FTransform"` 注册到同一 namespace。AS 端 `FQuat::GetDelta(o, t)` 形式不论函数实际承载在哪个 UCLASS 下都是同样的命名空间静态调用。仓内 `grep "FQuat::GetDelta|FRotator::ApplyDelta|FTransform::GetRelative|MakeDeltaRotationFromAngularVelocity|MakeAngularVelocityFromDeltaRotation"` 在测试 / 脚本仅 0 处实质命中（仅文档引用），迁移零回归
@@ -327,15 +327,15 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 
 ## 验收标准
 
-1. `Plan_FunctionLibrariesCleanup/MetaLossMatrix.md` 完整覆盖 20 个文件 × 4 类 meta，每条都能从 git history 反查证据。
+1. P1.1 meta 损失审计结论完整覆盖 20 个文件 × 4 类 meta，每条都能从 git history 反查证据。
 2. `AngelscriptActorLibrary.h` 处置完成（删除 / 全部走反射 / 全部走手工绑定，三选一），`as.DumpEngineState` 的 `BindFunctions.csv` 应消除"声明但不可调用"的歧义。
 3. `Helper_FunctionSignature.h` 的 `bTrivial / bNotAngelscriptProperty` 在重要函数上恢复 true（用 `BindDatabase.csv` 抽样验证至少 30 处）。
 4. `ProductionScriptMixinSignatures` 测试持续 1/1 PASS（注：Phase 4 ScriptMixin 重启与 Phase 5 mixin 子类补全都会改变签名注入数量；如需更新 baseline，必须有独立提交并附 diff 说明）。
 5. `Angelscript.TestModule.FunctionLibraries.*` 持续 23/23 PASS，且 `Angelscript.TestModule.Bindings.*` 在涉及 Math/Vector/Rotator/Transform/HitResult/Component/Actor 的子项无回归。
 6. 全文件 `//UFUNCTION(ScriptCallable...)` 死注释保持为 0（清理成果不能因为本计划倒退）。
-7. `Plan_FunctionLibrariesCleanup/HazelightDiffMatrix.md` 完整覆盖 20 个文件 × 5 维度，结尾有缺函数总数 / 缺 mixin 子类总数 / 可清理锚点注释数三个明确汇总。
-8. Phase 5 收口后，`AngelscriptMathLibrary.h` 已知缺漏（13 函数 + 3 mixin 子类）必须 100% 补全，或在 `HazelightDiffMatrix.md` 中明确标注"不补回的理由"（如 Hazelight 引擎侧依赖、UE 5.7 已不需要等）；其他文件按 P5.1 矩阵给出的缺漏数闭环或显式 deferred。
-9. Phase 5 注释清理（P5.4）后，文件头 cleanup parity note 数量应从当前 7 处降低；保留的每一处都必须能在 `HazelightDiffMatrix.md` 找到"Hazelight 也是 ScriptMixin / fork 之所以不开是因为 Bind_*.cpp 手工接管"的具体证据。
+7. P5.1 Hazelight 对照审计结论完整覆盖 20 个文件 × 5 维度，结尾有缺函数总数 / 缺 mixin 子类总数 / 可清理锚点注释数三个明确汇总。
+8. Phase 5 收口后，`AngelscriptMathLibrary.h` 已知缺漏（13 函数 + 3 mixin 子类）必须 100% 补全，或在 P5.1 Hazelight 对照结论中明确标注"不补回的理由"（如 Hazelight 引擎侧依赖、UE 5.7 已不需要等）；其他文件按 P5.1 结论给出的缺漏数闭环或显式 deferred。
+9. Phase 5 注释清理（P5.4）后，文件头 cleanup parity note 数量应从当前 7 处降低；保留的每一处都必须能在 P5.1 Hazelight 对照结论中找到"Hazelight 也是 ScriptMixin / fork 之所以不开是因为 Bind_*.cpp 手工接管"的具体证据。
 
 ## 风险与注意事项
 
@@ -352,7 +352,7 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
    - **缓解**：P3.2 完成后跑一次 `Angelscript.TestModule.StaticJIT.*` 全集，确认无 inline 行为回归
 4. **Hazelight 上游补漏可能引入引擎侧依赖**
    - Hazelight 部分 helper 实现可能依赖引擎补丁（例如对 `UWorld / UCurveFloat` 的私有访问、UE 5.7 之前的 API 形态等），照搬到 fork 时可能编译失败
-   - **缓解**：P5.2 / P5.3 每补一个函数后立即 `RunBuild.ps1`；编译失败时**不要**绕过引擎依赖（如改用 reflection / 加 friend），先回退该函数并在 `HazelightDiffMatrix.md` 标注"deferred — needs engine patch X"
+   - **缓解**：P5.2 / P5.3 每补一个函数后立即 `RunBuild.ps1`；编译失败时**不要**绕过引擎依赖（如改用 reflection / 加 friend），先回退该函数并在 P5.1 Hazelight 对照结论中标注"deferred — needs engine patch X"
 5. **Hazelight 路径不可访问会阻塞 Phase 5 全部任务**
    - `K:\UnrealEngine\UEAS` 是本地配置路径，CI / 其他 worktree 可能没有
    - **缓解**：P5.1 矩阵一旦合入主干，后续 P5.2-P5.4 无需再访问 Hazelight 源码（矩阵自身就是 source of truth）；Phase 5 的预备工作必须在配置了 `HazelightAngelscriptEngineRoot` 的环境完成
@@ -361,7 +361,7 @@ C1 提交后建议立即跑 `RunBuild.ps1 -Label fnlib-cleanup` + `RunTestSuite.
 
 1. **ScriptMixin 重启后，Blueprint 节点面板会减少这些 helper**：当前 `BlueprintCallableReflectiveFallback` 路径让 BP 也能调用 `Vector.Size2D` 等 helper，重启 ScriptMixin 后这些静态函数将仅在 AS 可见
    - **影响文件**：8 个重启 ScriptMixin 的文件（约 60+ 个静态函数）
-   - **应对**：在 `Plan_FunctionLibrariesCleanup/ScriptMixinSwitchAudit.md` 里逐条标注"是否被任何 BP / Blueprint 资产调用"。如确有 BP 依赖，需要在重启前先把那个函数额外补一条 `BlueprintCallable` 的 wrapper（不挂 ScriptMixin 的独立函数）。
+   - **应对**：在 P4.1 ScriptMixin 切换审计结论里逐条标注"是否被任何 BP / Blueprint 资产调用"。如确有 BP 依赖，需要在重启前先把那个函数额外补一条 `BlueprintCallable` 的 wrapper（不挂 ScriptMixin 的独立函数）。
 2. **`SetRelativeRotation` 等 Quat 重载的 ScriptName 别名恢复后，AS 脚本旧调用形式可能改变**
    - 旧：`Component.SetRelativeRotationQuat(quat)` 可能可用（如果走反射回退）
    - 新：只能 `Component.SetRelativeRotation(quat)`（与 Rotator 版本重载）

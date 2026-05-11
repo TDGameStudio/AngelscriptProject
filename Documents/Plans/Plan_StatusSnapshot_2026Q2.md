@@ -154,7 +154,6 @@
 - `Plan_BlueprintTypeBindingsOptimization.md` —— BP 类型绑定优化
 - `Plan_ContainerToStringFormat.md` —— 容器格式化
 - `Plan_AngelscriptLearningTraceTests.md` —— 学习追踪
-- `Plan_AngelscriptEngineBindAndFileWatchValidation.md` —— Bind 审计
 - `Plan_ManualBindCsvDump.md` —— 手工 CSV dump
 - `Plan_MathScriptMixinReenablement.md` —— Math mixin
 - `Plan_ContainerToStringFormat.md` —— 容器 ToString

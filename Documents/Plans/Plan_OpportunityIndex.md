@@ -51,16 +51,15 @@
 | F | Native 核心测试重构 | `Plan_NativeAngelScriptCoreTestRefactor.md` | 未开始 |
 | G | Learning trace 教学测试 | `Plan_AngelscriptLearningTraceTests.md` | 部分完成，未归档（`P4.2` 已按现状关闭；`P5.2/P5.4/P5.8/P5.9/P6.4` 部分实现；`P5.7` 待补） |
 | H | 调试器单元测试 | `Plan_ASDebuggerUnitTest.md` | 未开始 |
-| I | Engine Bind 与 FileWatch 验证 | `Plan_AngelscriptEngineBindAndFileWatchValidation.md` | 未开始 |
-| J | 网络复制与 RPC 验证闭环 | `Plan_NetworkReplicationTests.md` | 未开始 |
-| K | Static JIT 单元测试 | `Plan_StaticJITUnitTests.md` | 未开始 |
-| L | 测试模块规范化 | `Plan_TestModuleStandardization.md` | 部分完成 |
-| M | 测试体系规范化 | `Plan_TestSystemNormalization.md` | 未开始 |
-| N | 全局变量 / Console Variable 对齐与专项测试 | `Plan_GlobalVariableAndCVarParity.md` | 部分完成（`FConsoleVariable` bool/string + 首批 `Bindings` 测试已落地，`FConsoleCommand` 与剩余矩阵待收口） |
-| O | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 基本完成（仅剩 2 个 `#ue57-headless` Disabled 测试，其余已通过 UE 5.7 迁移修复批量重新启用） |
-| P | 测试套件累积稳定性 | `Plan_TestSuiteAccumulationStability.md` | 执行中（修复全量单进程状态 / socket / async IO 累积问题） |
-| Q | 测试骨架效率优化 | `Plan_TestEngineCreationPatternMigration.md` | 未开始（Phase 1-2: FULL×60 + SHARE×136 → SHARE_CLEAN 迁移；Phase 3/3B: 单 Entry 测试合并 ~170 处） |
-| R | Syntax 负向测试 expected-error 收口 | `Plan_SyntaxNegativeExpectedErrors.md` | 未开始（收口 2026-05-09 full `Angelscript` 中 4 个 Syntax negative 预期错误日志泄漏） |
+| I | 网络复制与 RPC 验证闭环 | `Plan_NetworkReplicationTests.md` | 未开始 |
+| J | Static JIT 单元测试 | `Plan_StaticJITUnitTests.md` | 未开始 |
+| K | 测试模块规范化 | `Plan_TestModuleStandardization.md` | 部分完成 |
+| L | 测试体系规范化 | `Plan_TestSystemNormalization.md` | 未开始 |
+| M | 全局变量 / Console Variable 对齐与专项测试 | `Plan_GlobalVariableAndCVarParity.md` | 部分完成（`FConsoleVariable` bool/string + 首批 `Bindings` 测试已落地，`FConsoleCommand` 与剩余矩阵待收口） |
+| N | Disabled 测试重新启用 | `Plan_DisabledTestReenablement.md` | 基本完成（仅剩 2 个 `#ue57-headless` Disabled 测试，其余已通过 UE 5.7 迁移修复批量重新启用） |
+| O | 测试套件累积稳定性 | `Plan_TestSuiteAccumulationStability.md` | 执行中（修复全量单进程状态 / socket / async IO 累积问题） |
+| P | 测试骨架效率优化 | `Plan_TestEngineCreationPatternMigration.md` | 未开始（Phase 1-2: FULL×60 + SHARE×136 → SHARE_CLEAN 迁移；Phase 3/3B: 单 Entry 测试合并 ~170 处） |
+| Q | Syntax 负向测试 expected-error 收口 | `Plan_SyntaxNegativeExpectedErrors.md` | 未开始（收口 2026-05-09 full `Angelscript` 中 4 个 Syntax negative 预期错误日志泄漏） |
 
 ### 2.2 新建议 Plan
 

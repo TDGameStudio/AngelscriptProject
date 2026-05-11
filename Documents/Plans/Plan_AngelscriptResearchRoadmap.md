@@ -90,7 +90,7 @@
 
 - [ ] **P1.2** 执行三波窄范围高价值回归补齐
   - 第 1 波：`Plan_ASInternalClassUnitTests.md`，先覆盖内部类与编译/执行基础机制。
-  - 第 2 波：`Plan_AngelscriptEngineBindAndFileWatchValidation.md`，补齐 Bind 注册与目录监视稳定性验证。
+  - 第 2 波：Bind 注册与目录监视稳定性验证方向已从本轮计划集中移除；如需恢复，重新立项后再执行。
   - 第 3 波：`Plan_ASDebuggerUnitTest.md` 的协议与基础行为层，不先追求平台特性全覆盖。
 - [ ] **P1.2** 📦 Git 提交：`[Test/Core] Test: add phased internal bind watcher and debugger focused regressions`
 
