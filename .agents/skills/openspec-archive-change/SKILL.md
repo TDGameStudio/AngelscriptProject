@@ -13,6 +13,8 @@ Archive a completed OpenSpec change. Archiving is a lifecycle action, not implem
 
    If the user names a change, use it. Otherwise run `openspec list --json` and ask the user to choose when there is more than one active change. Do not guess between multiple active changes.
 
+   Do not run `openspec instructions archive`. In OpenSpec CLI 1.3.x, `archive` is a top-level lifecycle command, not a schema artifact. `openspec instructions apply` is a CLI special case; there is no matching `instructions archive` workflow.
+
 2. **Check OpenSpec status**
 
    Run:
@@ -51,4 +53,5 @@ openspec archive "<name>"
 ## Guardrails
 
 - Do not archive a change without telling the user about incomplete artifacts or tasks.
+- Do not use `openspec instructions archive`; use `openspec archive "<name>"` for the archive operation.
 - Do not delete or rewrite OpenSpec history outside the selected change.
