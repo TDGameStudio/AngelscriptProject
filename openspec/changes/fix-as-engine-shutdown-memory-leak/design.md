@@ -1,10 +1,10 @@
 ## Current State
 
-AngelscriptEngine 支持多实例生命周期（Init → Compile → Run → Shutdown），测试模块依赖此机制实现引擎隔离。当前 Shutdown 路径存在以下缺陷：
+AngelscriptEngine supports multi-instance lifecycles (Init → Compile → Run → Shutdown). The test module relies on this mechanism for engine isolation. The Shutdown path has the following defects:
 
-### UObject Root 引用泄漏
+### UObject Root Reference Leaks
 
-ClassGenerator 在 `FAngelscriptClassGenerator::CreateNewClass` 等方法中创建 UObject 时使用 `RF_MarkAsRootSet`：
+ClassGenerator creates UObjects with `RF_MarkAsRootSet` in methods such as `FAngelscriptClassGenerator::CreateNewClass`:
 
 ```
 AngelscriptClassGenerator.cpp:2711  UASClass         RF_MarkAsRootSet
@@ -13,108 +13,110 @@ AngelscriptClassGenerator.cpp:2813  UDelegateFunction RF_MarkAsRootSet
 AngelscriptClassGenerator.cpp:3814  UUserDefinedEnum  RF_MarkAsRootSet
 ```
 
-Shutdown 路径 (`FAngelscriptEngine::Shutdown()` line 1590-1608) 仅清空脚本指针（`ScriptTypePtr`、`OwnerScriptEngine` 等），但**从未调用 `RemoveFromRoot()`**。`CleanupRemovedClass()` (line 4981-5033) 有 `RemoveFromRoot()` 逻辑，但仅在热重载替换类时调用，不在 shutdown 路径上。
+The Shutdown path (`FAngelscriptEngine::Shutdown()` line 1590-1608) only clears script pointers (`ScriptTypePtr`, `OwnerScriptEngine`, etc.) but **never calls `RemoveFromRoot()`**. `CleanupRemovedClass()` (line 4981-5033) has `RemoveFromRoot()` logic but is only invoked during hot reload class replacement, not on the shutdown path.
 
-Package (`AngelscriptPackage`) 在 shutdown 末尾 `RemoveFromRoot()`，但内部 UObject 仍独立 rooted。
+Package (`AngelscriptPackage`) calls `RemoveFromRoot()` at the end of shutdown, but internal UObjects remain independently rooted.
 
-### 全局静态容器未清理
+### Uncleaned Global Static Containers
 
-| 容器 | 定义 | Shutdown 行为 | 风险 |
-|------|------|---------------|------|
-| `GBlueprintEventsByScriptName` | `Bind_BlueprintEvent.cpp:68` `TMap<UClass*, TMap<FString, UFunction*>>` | 仅 PrecompiledData 场景清理 | 持有旧引擎 UClass*/UFunction* 悬垂指针 |
-| `AngelscriptGameplayTagsLookup` | `Bind_FGameplayTag.cpp:24` `TSet<FName>` | 保留不清理 | 是全局 TChunkedArray 的去重索引；清理会导致数组线性增长或破坏 Rebind 机制 |
-| `CachedEditorClasses` | `Bind_BlueprintType.cpp:941` `static TMap<UClass*, bool>` | 从不清理 | 持有旧引擎 UClass* 悬垂指针 |
+| Container | Definition | Shutdown Behavior | Risk |
+|-----------|-----------|-------------------|------|
+| `GBlueprintEventsByScriptName` | `Bind_BlueprintEvent.cpp:68` `TMap<UClass*, TMap<FString, UFunction*>>` | Only cleaned in PrecompiledData scenario | Holds dangling UClass*/UFunction* from destroyed engine |
+| `AngelscriptGameplayTagsLookup` | `Bind_FGameplayTag.cpp:24` `TSet<FName>` | Preserved (not cleaned) | Dedup index for global TChunkedArray; clearing causes linear array growth or breaks Rebind mechanism |
+| `CachedEditorClasses` | `Bind_BlueprintType.cpp:941` `static TMap<UClass*, bool>` | Never cleaned | Holds dangling UClass* from destroyed engine |
 
-### FName Pool 累积
+### FName Pool Accumulation
 
-`FNamePool` 是 append-only（UE 架构设计）。每次引擎周期通过 `Rename(*OldClassName_REPLACED_N*)` 创建唯一 FName，导致永久累积。此问题无法在插件层面修复，但减少重命名次数可以缓解。
+`FNamePool` is append-only (UE architectural design). Each engine cycle creates unique FNames through `Rename(*OldClassName_REPLACED_N*)`, causing permanent accumulation. This cannot be fixed at the plugin level, but reducing rename frequency can mitigate it.
 
 ## Goals
 
-- Shutdown 后所有 owned UASClass/UASStruct/UDelegateFunction/UUserDefinedEnum 从 GC root 移除，允许后续 GC 回收
-- 全局静态容器在引擎 shutdown 时清理，消除悬垂指针风险
-- 不影响正常的单引擎生命周期和热重载行为
+- After Shutdown, all owned UASClass/UASStruct/UDelegateFunction/UUserDefinedEnum are removed from GC root, allowing subsequent GC to reclaim them
+- Global static containers are cleaned on engine shutdown, eliminating dangling pointer risk
+- Normal single-engine lifecycle and hot reload behavior are unaffected
 
 ## Non-Goals
 
-- 修复 FName Pool append-only 设计（UE 引擎层面）
-- 修改 UE 分配器行为或切换分配器
-- 在 shutdown 后主动触发 `CollectGarbage()`（交给调用方决定）
+- Fix FName Pool append-only design (UE engine level)
+- Modify UE allocator behavior or switch allocators
+- Proactively trigger `CollectGarbage()` after shutdown (left to the caller)
 
 ## Technical Approach
 
-### 1. Shutdown 路径增加 RemoveFromRoot
+### 1. Add RemoveFromRoot to Shutdown Path
 
-在 `FAngelscriptEngine::Shutdown()` 现有 UASClass 清理循环中追加：
+In `FAngelscriptEngine::Shutdown()`, append to the existing UASClass cleanup loop:
 
 ```cpp
 ASClass->RemoveFromRoot();
 ASClass->ClearFlags(RF_Standalone);
 ```
 
-对 UASStruct、UDelegateFunction、UUserDefinedEnum 新增类似的遍历清理循环（使用 `TObjectRange` 或利用 Package 的 Inner 对象遍历）。
+Add a similar cleanup loop for UASStruct, UDelegateFunction, and UUserDefinedEnum using `ForEachObjectWithPackage` to iterate objects within `AngelscriptPackage`.
 
-### 2. 全局容器清理
+### 2. Global Container Cleanup
 
-在 `ReleaseOwnedSharedStateResources()` 末尾（AS 引擎已释放后）增加：
+At the end of `ReleaseOwnedSharedStateResources()` (after AS engine release):
 
 ```cpp
 extern TMap<UClass*, TMap<FString, UFunction*>> GBlueprintEventsByScriptName;
 GBlueprintEventsByScriptName.Empty();
 
-// AngelscriptGameplayTagsLookup 保留不清理
-// 它是 AngelscriptGameplayTags TChunkedArray 的去重索引，
-// 清理 lookup 而不清理数组会导致线性增长；
-// 同时清理两者会破坏 AngelscriptRebindGameplayTagsToCurrentEngine() 的 rebind 机制
+// AngelscriptGameplayTagsLookup is intentionally NOT cleared.
+// It is the dedup index for the AngelscriptGameplayTags TChunkedArray,
+// which provides stable addresses for AS global variables. Clearing the lookup
+// without clearing the array causes linear growth; clearing both breaks
+// AngelscriptRebindGameplayTagsToCurrentEngine() which relies on the array
+// as the tag truth source for clone/test engines.
 ```
 
-`CachedEditorClasses` 是函数级 static，需要在 bind 入口或 shutdown 时通过暴露清理函数来重置。
+`CachedEditorClasses` is a function-local static. It is refactored to file-scope `GCachedEditorClasses` with an exposed `ResetCachedEditorClasses()` cleanup function.
 
-### 3. GScriptEnumTypeLookupByName 已有 Reset
+### 3. GScriptEnumTypeLookupByName Already Has Reset
 
-`Bind_UEnum.cpp:376` 在 bind 入口已经 `Reset()`，无需额外处理。
+`Bind_UEnum.cpp:376` already calls `Reset()` at bind entry. No additional handling needed.
 
-### 4. GScriptNativeForms 泄漏清理（Phase 2 补充）
+### 4. GScriptNativeForms Leak Cleanup (Phase 2)
 
-`StaticJITBinds.cpp:27` 的 `static TMap<asIScriptFunction*, FScriptFunctionNativeForm*> GScriptNativeForms` 存在两个问题：
-- key 是 `asIScriptFunction*`，每个引擎实例创建不同的 function 对象，引擎销毁后成为悬垂指针
-- value 是 `new FScriptNativeXxx(...)` 分配的对象，从不 `delete`，随引擎周期线性增长
+`StaticJITBinds.cpp:27` defines `static TMap<asIScriptFunction*, FScriptFunctionNativeForm*> GScriptNativeForms` with two problems:
+- Keys are `asIScriptFunction*` — each engine instance creates its own function objects, becoming dangling pointers after engine destruction
+- Values are `new FScriptNativeXxx(...)` allocations that are never `delete`d, growing linearly with engine cycles
 
-该泄漏仅在预编译模式（`IsGeneratingPrecompiledData()` 为 true）下发生，因为所有 `BindNativeXxx` 方法都有该守卫。
+This leak only occurs in precompile mode (`IsGeneratingPrecompiledData()` is true), as all `BindNativeXxx` methods have that guard.
 
-修复方案：在 `FScriptFunctionNativeForm` 上添加 `static void ReleaseAllNativeForms()` 方法，遍历 map delete value + Empty。基类已有 `virtual ~FScriptFunctionNativeForm() {}`，通过基类指针 delete 安全。
+Fix: Add `static void ReleaseAllNativeForms()` to `FScriptFunctionNativeForm`, iterating the map to delete values + Empty. The base class has `virtual ~FScriptFunctionNativeForm() {}`, making deletion through the base pointer safe.
 
-### 5. AngelscriptDocs 4 个 TMap 清理（Phase 2 补充）
+### 5. AngelscriptDocs TMap Cleanup (Phase 2)
 
-`AngelscriptDocs.cpp:28-31` 的 4 个静态 TMap（`UnrealDocumentation`、`UnrealTypeDocumentation`、`GlobalVariableDocumentation`、`UnrealPropertyDocumentation`）从不清理。key 为 int 类型 ID/function ID，跨引擎周期可能不完全相同，存在数据残留风险。
+Four static TMaps in `AngelscriptDocs.cpp:28-31` (`UnrealDocumentation`, `UnrealTypeDocumentation`, `GlobalVariableDocumentation`, `UnrealPropertyDocumentation`) are never cleared. Keys are int-type IDs/function IDs that may differ across engine cycles, creating stale data risk.
 
-修复方案：在 `FAngelscriptDocs` 上添加 `static void ResetAllDocumentation()` 方法，4 个 TMap 全部 Empty。
+Fix: Add `static void ResetAllDocumentation()` to `FAngelscriptDocs`, calling `Empty()` on all four TMaps.
 
-### 6. 去全局化评估
+### 6. De-globalization Assessment
 
-完整审计了 AngelscriptRuntime 中所有全局静态容器（20+个），分类为：合理的全局（进程级常量/管理器）、已修复清理、新发现泄漏、低优先级可选。完全去全局化（迁入 SharedState）技术可行但 ROI 不高，当前 shutdown 清理已足够解决内存泄漏问题。
+A full audit of all global static containers (20+) in AngelscriptRuntime was performed, categorizing them as: reasonable globals (process-level constants/managers), fixed with cleanup, newly discovered leaks, and low-priority optional. Full de-globalization (moving into SharedState) is technically feasible but low ROI — the current shutdown cleanup sufficiently resolves the memory leak problem.
 
 ## Tradeoffs
 
-| 决策 | 选项 A | 选项 B | 选择 |
-|------|--------|--------|------|
-| UObject 清理时机 | Shutdown 时 RemoveFromRoot，延迟 GC 回收 | Shutdown 时 ConditionalBeginDestroy 立即销毁 | A — 更安全，避免 destroy 顺序依赖 |
-| 全局容器清理位置 | 在 ReleaseOwnedSharedStateResources | 在每个 Bind 文件中添加 cleanup 函数 | A — 集中管理，减少遗漏 |
-| CachedEditorClasses | 暴露 static 清理函数 | 改为引擎实例级缓存 | A — 最小改动 |
+| Decision | Option A | Option B | Choice |
+|----------|----------|----------|--------|
+| UObject cleanup timing | RemoveFromRoot at Shutdown, defer GC | ConditionalBeginDestroy for immediate destruction | A — Safer, avoids destroy order dependencies |
+| Global container cleanup location | In ReleaseOwnedSharedStateResources | Add cleanup function in each Bind file | A — Centralized management, fewer omissions |
+| CachedEditorClasses | Expose static cleanup function | Convert to engine-instance-level cache | A — Minimal change |
 
 ## Risks
 
-- **热重载兼容性**：`CleanupRemovedClass` 和新的 shutdown 清理可能存在执行顺序冲突。需确保 shutdown 路径只处理 `OwnerScriptEngine == Engine` 的对象。
-- **多引擎共享实例**：SharedState 的 `ActiveParticipants` 机制已存在，shutdown 清理需要在所有参与者都退出后才执行全局容器清理。
-- **测试行为变化**：清理后 GC 可能回收之前残留的对象，导致某些依赖残留状态的测试行为变化。
+- **Hot reload compatibility**: `CleanupRemovedClass` and the new shutdown cleanup may conflict in execution order. Must ensure the shutdown path only processes objects where `OwnerScriptEngine == Engine`.
+- **Multi-engine shared instances**: SharedState's `ActiveParticipants` mechanism already exists; shutdown cleanup must only execute global container clearing after all participants have exited.
+- **Test behavior changes**: Post-cleanup GC may reclaim previously residual objects, causing behavioral changes in tests that depend on residual state.
 
-## 调查过程：内存插桩策略与决策记录
+## Investigation: Memory Instrumentation Strategy and Decision Record
 
-### 插桩目的
+### Instrumentation Purpose
 
-全量测试运行时进程内存峰值达 ~12.9GB，每引擎周期增长 ~51.6MB。为区分"真实泄漏"与"分配器保留/UE 架构性增长"，在以下位置添加了临时内存插桩：
+Full test suite process memory peaked at ~12.9GB with ~51.6MB growth per engine cycle. To distinguish "real leaks" from "allocator retention / UE architectural growth," temporary memory instrumentation was added at the following locations:
 
-### 插桩 1：Init 阶段逐步追踪（`AngelscriptEngine.cpp` Initialize_GameThread）
+### Instrumentation 1: Init Phase Step Tracking (`AngelscriptEngine.cpp` Initialize_GameThread)
 
 ```cpp
 auto LogPhaseMemory = [this](const TCHAR* Phase)
@@ -127,11 +129,11 @@ auto LogPhaseMemory = [this](const TCHAR* Phase)
 };
 ```
 
-在 `PreInitialize`、`EnsureSharedStateCreated`、`BindScriptTypes`、`InitializeOwnedSharedState`、`DebugServer` 各阶段后调用。
+Called after `PreInitialize`, `EnsureSharedStateCreated`, `BindScriptTypes`, `InitializeOwnedSharedState`, and `DebugServer` phases.
 
-**发现**：单次 bind 阶段（121 个 Bind_*.cpp）贡献 ~800-1200MB，是主要的内存消耗者，但这些是合理的业务数据。
+**Finding**: A single bind phase (121 Bind_*.cpp files) contributes ~800-1200MB, the primary memory consumer, but this is legitimate business data.
 
-### 插桩 2：Shutdown 阶段逐步追踪（`AngelscriptEngine.cpp` Shutdown）
+### Instrumentation 2: Shutdown Phase Step Tracking (`AngelscriptEngine.cpp` Shutdown)
 
 ```cpp
 auto LogShutdownPhaseMemory = [this](const TCHAR* Phase)
@@ -144,11 +146,11 @@ auto LogShutdownPhaseMemory = [this](const TCHAR* Phase)
 };
 ```
 
-在 Shutdown 开始、Release 前后调用。
+Called at Shutdown start and before/after Release.
 
-**发现**：AS 引擎 `ShutDownAndRelease()` 后 PhysMB 基本不降，说明分配器未归还页面。
+**Finding**: After AS engine `ShutDownAndRelease()`, PhysMB barely decreases, indicating the allocator does not return pages.
 
-### 插桩 3：Release 阶段逐步追踪（`AngelscriptEngine.cpp` ReleaseOwnedSharedStateResources）
+### Instrumentation 3: Release Phase Step Tracking (`AngelscriptEngine.cpp` ReleaseOwnedSharedStateResources)
 
 ```cpp
 auto LogReleaseMem = [](const TCHAR* Phase)
@@ -161,14 +163,14 @@ auto LogReleaseMem = [](const TCHAR* Phase)
 };
 ```
 
-在 AS 引擎释放、TypeDB/BindState/BindDB/StaticNames 各 Reset、全局容器清理、JIT/Docs 清理各步后调用。同时输出 AS 引擎对象统计和 Docs TMap 计数。
+Called after AS engine release, each TypeDB/BindState/BindDB/StaticNames Reset, global container cleanup, and JIT/Docs cleanup step. Also outputs AS engine object statistics and Docs TMap counts.
 
-**发现**：
-- `TypeDatabase.Reset()` 和 `BindDatabase.Reset()` 可释放少量内存
-- 全局容器清理本身内存影响微小，但消除了悬垂指针风险
-- 分配器整体不归还——`FMemory::Trim(true)` 对 mimalloc 效果有限
+**Findings**:
+- `TypeDatabase.Reset()` and `BindDatabase.Reset()` release small amounts of memory
+- Global container cleanup itself has minimal memory impact, but eliminates dangling pointer risk
+- The allocator does not return memory overall — `FMemory::Trim(true)` has limited effect on mimalloc
 
-### 插桩 4：Bind 逐项追踪（`AngelscriptBinds.cpp` CallBinds）
+### Instrumentation 4: Per-Bind Tracking (`AngelscriptBinds.cpp` CallBinds)
 
 ```cpp
 const FPlatformMemoryStats BindsStartMem = FPlatformMemory::GetStats();
@@ -183,28 +185,28 @@ if (PostPhys > PrePhys)
 }
 ```
 
-**发现**：识别出内存消耗最大的几个 bind（蓝图类型注册、Actor 绑定等），但这些都是合理的业务逻辑。
+**Finding**: Identified the highest-consumption binds (Blueprint type registration, Actor binding, etc.), but these are all legitimate business logic.
 
-### 插桩 5：内存生命周期测试（`AngelscriptEngineMemoryLifecycleTests.cpp`）
+### Instrumentation 5: Memory Lifecycle Tests (`AngelscriptEngineMemoryLifecycleTests.cpp`)
 
-新增 ~555 行的测试文件，在 `Source/AngelscriptTest/GC/` 下，包含：
-- `FMemorySnapshot` 结构体：采集进程内存、UObject 计数、按类型分类的 UObject 统计
-- 各阶段前后对比输出
-- 创建→销毁→GC 全周期内存追踪
+A ~555-line test file under `Source/AngelscriptTest/GC/` containing:
+- `FMemorySnapshot` struct: captures process memory, UObject counts, per-type UObject breakdowns
+- Before/after comparison output at each phase
+- Full create → destroy → GC cycle memory tracking
 
-**发现**：提供了量化证据证明 UObject 泄漏和全局容器累积的存在。
+**Finding**: Provided quantitative evidence proving UObject leaks and global container accumulation.
 
-### 移除决策
+### Removal Decision
 
-所有插桩在完成诊断后被移除，原因：
-1. **性能开销**：每个 bind（121 次）都调用 `FPlatformMemory::GetStats()` 增加不必要的系统调用
-2. **日志噪音**：正常运行不需要这些输出，会干扰有意义的日志
-3. **诊断目的已达成**：真实泄漏已定位并修复，剩余增长确认为 UE 架构性行为
+All instrumentation was removed after diagnostics completed, for these reasons:
+1. **Performance overhead**: Each bind (121 total) calling `FPlatformMemory::GetStats()` adds unnecessary system calls
+2. **Log noise**: Normal operation does not need this output; it interferes with meaningful logs
+3. **Diagnostic purpose achieved**: Real leaks identified and fixed; remaining growth confirmed as UE architectural behavior
 
-保留的有意义代码（~131 行）聚焦于修复本身，不包含任何诊断日志。
+The retained meaningful code (~131 lines) focuses purely on the fixes, with no diagnostic logging.
 
-### 修复后回归验证
+### Post-Fix Regression Verification
 
-修复提交后执行了全量编译验证（Build succeeded）和测试回归。发现一个回归：
+After committing fixes, a full build verification (Build succeeded) and test regression run were executed. One regression was discovered:
 
-- **GameplayTagNamespaceGlobals 测试失败**：最初 `AngelscriptGameplayTagsLookup.Empty()` 导致后续引擎周期重复注册 GameplayTag 触发 `asNAME_TAKEN`。根因是 UE 的 GameplayTag 注册是进程级一次性操作，清除 guard 后无法安全重注册。修复方案是保留 `AngelscriptGameplayTagsLookup` 不清理，并添加注释说明其作为进程级 guard 的必要性。
+- **GameplayTagNamespaceGlobals test failure**: Initially `AngelscriptGameplayTagsLookup.Empty()` caused subsequent engine cycles to encounter duplicate GameplayTag registration. The root cause is that `AngelscriptGameplayTagsLookup` serves as a dedup index for the global `AngelscriptGameplayTags` TChunkedArray — clearing the lookup without clearing the array causes linear growth, and clearing both breaks `AngelscriptRebindGameplayTagsToCurrentEngine()`. Fix: preserve `AngelscriptGameplayTagsLookup` and add comments explaining the rationale.

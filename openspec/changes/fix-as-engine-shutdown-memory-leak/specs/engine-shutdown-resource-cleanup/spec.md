@@ -2,31 +2,31 @@
 
 ### Requirement: UObject Root References Released on Shutdown
 
-AngelscriptEngine Shutdown MUST remove all owned UASClass/UASStruct/UDelegateFunction/UUserDefinedEnum from GC root set.
+AngelscriptEngine Shutdown MUST remove all owned UASClass/UASStruct/UDelegateFunction/UUserDefinedEnum from the GC root set.
 
 #### Scenario: UASClass RemoveFromRoot on Shutdown
 
-- **Given** 一个已完成 Init + Bind + Compile 的 FAngelscriptEngine 实例
-- **When** 调用 `Shutdown()` 并持有 owned engine
-- **Then** 所有 `OwnerScriptEngine == Engine` 的 UASClass 对象不再是 GC root（`IsRooted() == false`）
+- **Given** a fully initialized FAngelscriptEngine instance (Init + Bind + Compile complete)
+- **When** `Shutdown()` is called on an owned engine
+- **Then** all UASClass objects with `OwnerScriptEngine == Engine` are no longer GC roots (`IsRooted() == false`)
 
 #### Scenario: UASStruct RemoveFromRoot on Shutdown
 
-- **Given** 同上
+- **Given** same as above
 - **When** Shutdown
-- **Then** 所有引擎 owned 的 UASStruct 对象不再是 GC root
+- **Then** all engine-owned UASStruct objects are no longer GC roots
 
 #### Scenario: UDelegateFunction RemoveFromRoot on Shutdown
 
-- **Given** 同上
+- **Given** same as above
 - **When** Shutdown
-- **Then** 所有引擎 owned Package 内的 UDelegateFunction 对象不再是 GC root
+- **Then** all UDelegateFunction objects within the engine-owned Package are no longer GC roots
 
 #### Scenario: UUserDefinedEnum RemoveFromRoot on Shutdown
 
-- **Given** 同上
+- **Given** same as above
 - **When** Shutdown
-- **Then** 所有引擎 owned Package 内的 UUserDefinedEnum 对象不再是 GC root
+- **Then** all UUserDefinedEnum objects within the engine-owned Package are no longer GC roots
 
 ### Requirement: Global Static Containers Cleared on Shutdown
 
@@ -34,15 +34,31 @@ AngelscriptEngine Shutdown MUST clear all global static containers that hold eng
 
 #### Scenario: GBlueprintEventsByScriptName Cleared on Shutdown
 
-- **Given** 引擎已完成 bind（`Bind_BlueprintEvent` 已填充全局 map）
+- **Given** the engine has completed binding (`Bind_BlueprintEvent` has populated the global map)
 - **When** Shutdown
-- **Then** `GBlueprintEventsByScriptName` 为空
+- **Then** `GBlueprintEventsByScriptName` is empty
 
 #### Scenario: AngelscriptGameplayTagsLookup Preserved Across Shutdown
 
-- **Given** 引擎已注册 gameplay tags
+- **Given** the engine has registered gameplay tags
 - **When** Shutdown
-- **Then** `AngelscriptGameplayTagsLookup` 保持不变（它是全局 TChunkedArray 的去重索引，Rebind 机制依赖该数组作为 tag 真值源）
+- **Then** `AngelscriptGameplayTagsLookup` remains unchanged (it is the dedup index for the global TChunkedArray; the Rebind mechanism relies on that array as the tag truth source)
+
+### Requirement: Heap-Allocated Global Resources Released on Shutdown
+
+AngelscriptEngine Shutdown MUST release all heap-allocated global resources to prevent linear memory growth.
+
+#### Scenario: GScriptNativeForms Released on Shutdown
+
+- **Given** the engine has bound native forms via `FScriptFunctionNativeForm::BindNativeXxx`
+- **When** Shutdown
+- **Then** all `new`-ed `FScriptFunctionNativeForm` objects are deleted and `GScriptNativeForms` is empty
+
+#### Scenario: AngelscriptDocs TMaps Cleared on Shutdown
+
+- **Given** the engine has populated documentation maps
+- **When** Shutdown
+- **Then** all four static documentation TMaps (`UnrealDocumentation`, `UnrealTypeDocumentation`, `GlobalVariableDocumentation`, `UnrealPropertyDocumentation`) are empty
 
 ### Requirement: Multi-Cycle Memory Stability
 
@@ -50,13 +66,13 @@ Multiple consecutive engine lifecycles MUST NOT cause unbounded memory growth fr
 
 #### Scenario: Multi-Cycle Memory Growth Bounded
 
-- **Given** 连续执行 N 次 (N >= 3) 完整的 Init → Shutdown 周期
-- **When** 每次 Shutdown 后观察进程内存
-- **Then** 每周期内存增长不超过首次周期增长的 2 倍（排除 FName 累积）
+- **Given** N consecutive (N >= 3) full Init → Shutdown cycles
+- **When** process memory is observed after each Shutdown
+- **Then** per-cycle memory growth does not exceed 2x the first cycle's growth (excluding FName accumulation)
 
 ## Testing Requirements
 
 - **Target test layer**: Runtime CppTests / GC theme
 - **Automation prefix**: `Angelscript.TestModule.GC.EngineShutdownCleanup.*`
-- **Recommended harness**: 直接 `FAngelscriptEngine` Init/Shutdown
+- **Recommended harness**: Direct `FAngelscriptEngine` Init/Shutdown
 - **Verification**: `Tools\RunTests.ps1 -Group GC`
