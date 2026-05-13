@@ -36,6 +36,10 @@
 		{
 			"Name": "AngelscriptGAS",
 			"Enabled": true
+		},
+		{
+			"Name": "UnrealEvent",
+			"Enabled": true
 		}
 	]
 }

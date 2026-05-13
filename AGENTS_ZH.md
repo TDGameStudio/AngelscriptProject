@@ -7,6 +7,7 @@
 - 本文件用于指导在 `AngelscriptProject` 中工作的 AI Agent。
 - 当前第一目标不是继续扩展一个普通游戏工程，而是把 `Plugins/Angelscript` 整理、验证并沉淀为可独立使用的插件版本 AS 插件。
 - 当前仓库是插件开发与验证的承载工程；真正的主产物是 `Angelscript` 插件本身。
+- `Plugins/UnrealEvent` 是独立插件子模块，用于承载基于 GMP 快照重启的 UnrealEvent 事件系统。后续 UnrealEvent 运行时/API 裁剪应留在该插件及对应 OpenSpec change 中，不要塞回 `AngelscriptRuntime`。
 
 ## 当前项目阶段
 
@@ -18,6 +19,7 @@
 ## 当前项目定位
 
 - `Plugins/Angelscript/` 是核心工作区，绝大多数实现、修复、清理和测试都应优先落在这里。
+- `Plugins/UnrealEvent/` 是独立插件工作区。当前基线来自 `TDGameStudio/UnrealEventPlugin` 的 fresh repository bootstrap，源自 GMP 快照但不继承 GMP git 历史；运行时裁剪和最终 UnrealEvent 命名由后续 OpenSpec change 推进。
 - `Source/AngelscriptProject/` 仅保留宿主工程必须的最小内容，除非任务明确需要，不要把插件逻辑塞回项目模块。
 
 ## 关键路径
@@ -36,6 +38,7 @@
 - `Plugins/Angelscript/Source/AngelscriptEditor/`：编辑器相关支持（菜单扩展、热重载 UI、BlueprintImpact Commandlet）。
 - `Plugins/Angelscript/Source/AngelscriptTest/`：插件测试与验证（按 Actor/Bindings/Blueprint/Component/Debugger/HotReload/Subsystem 等主题组织）。
 - `Plugins/Angelscript/Source/AngelscriptUHTTool/`：UHT 代码生成工具链。
+- `Plugins/UnrealEvent/`：独立事件系统插件子模块。当前 bootstrap 保留必要 GMP 模块；哪些功能保留、删除或重命名由后续 change 决定。
 - `Documents/Guides/`：构建、测试、查询指南（13 份）。
 - `Documents/Rules/`：Git 提交等规则文档。
 - `Documents/Plans/`：多阶段任务计划文档（47 份执行 Plan + 1 份状态总览 + 1 份索引 + 6 份已归档）。
