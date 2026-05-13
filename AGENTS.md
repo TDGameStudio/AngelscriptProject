@@ -5,6 +5,7 @@
 - This file is guidance for AI agents working in `AngelscriptProject`.
 - The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine.
 - This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
+- `Plugins/UnrealEvent` is a separate plugin submodule for a GMP-derived UnrealEvent event-system bootstrap. Keep UnrealEvent runtime/API pruning work inside that plugin and its OpenSpec changes; do not fold it into `AngelscriptRuntime`.
 
 ## Current Project Phase
 
@@ -16,6 +17,7 @@
 ## Current Project Positioning
 
 - `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first.
+- `Plugins/UnrealEvent/` is an independent plugin workspace. Its current baseline is a fresh `TDGameStudio/UnrealEventPlugin` repository initialized from GMP source without preserving GMP git history; runtime pruning and final UnrealEvent naming are deferred to follow-up OpenSpec changes.
 - `Source/AngelscriptProject/` retains only the minimal host project content. Do not push plugin logic back into the project module unless the task explicitly requires it.
 
 ## Architecture Overview
@@ -33,6 +35,9 @@ AngelscriptRuntime  (Runtime module, no intra-plugin dependencies)
                                 private dependency on Editor when bBuildEditor)
 
 AngelscriptUHTTool  (C# UBT plugin, independent — hooks into Unreal Header Tool pipeline)
+
+UnrealEvent         (independent plugin submodule, GMP-derived bootstrap;
+                    no dependency on AngelscriptRuntime)
 ```
 
 All three UE modules load at `PostDefault` phase. `AngelscriptRuntime` owns the editor/commandlet bootstrap through `UAngelscriptEngineSubsystem`, while `FAngelscriptRuntimeModule::InitializeAngelscript()` remains a compatibility API and routes to that subsystem when `GEngine` is available. `UAngelscriptGameInstanceSubsystem` owns world/game-instance contexts and suppresses the engine-subsystem fallback tick while an active game-instance tick owner exists. The host project module `AngelscriptProject` is intentionally minimal — it exists only to give UE a valid target; all real logic belongs in the plugin.
@@ -97,6 +102,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - `Plugins/Angelscript/Source/AngelscriptTest/`: Plugin tests and validation (organized by theme: Actor/Bindings/Blueprint/Component/Debugger/HotReload/Subsystem etc.).
 - `Plugins/Angelscript/Source/AngelscriptTest/Dump/`: Test-module console command and automation coverage for dump flows.
 - `Plugins/Angelscript/Source/AngelscriptUHTTool/`: UHT code generation toolchain.
+- `Plugins/UnrealEvent/`: Independent GMP-derived event-system plugin submodule. Current bootstrap keeps original GMP modules where needed; later changes decide which functionality is retained, removed, or renamed.
 - `Documents/Guides/`: Build, test, and lookup guides (13 documents).
 - `Documents/Rules/`: Git commit and other rule documents.
 - `Documents/Plans/`: Multi-phase task plan documents (50 execution Plans + 1 status overview + 1 index + 7 archived).
