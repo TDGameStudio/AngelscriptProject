@@ -38,11 +38,11 @@ AngelscriptEngine Shutdown MUST clear all global static containers that hold eng
 - **When** Shutdown
 - **Then** `GBlueprintEventsByScriptName` 为空
 
-#### Scenario: AngelscriptGameplayTagsLookup Cleared on Shutdown
+#### Scenario: AngelscriptGameplayTagsLookup Preserved Across Shutdown
 
 - **Given** 引擎已注册 gameplay tags
 - **When** Shutdown
-- **Then** `AngelscriptGameplayTagsLookup` 为空
+- **Then** `AngelscriptGameplayTagsLookup` 保持不变（它是全局 TChunkedArray 的去重索引，Rebind 机制依赖该数组作为 tag 真值源）
 
 ### Requirement: Multi-Cycle Memory Stability
 
