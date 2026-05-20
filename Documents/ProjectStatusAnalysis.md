@@ -9,7 +9,7 @@
 
 本仓库（`AngelscriptProject`）是一个面向 Unreal Engine 的 **AngelScript 脚本语言插件**开发项目。项目目标不是构建游戏，而是将 `Plugins/Angelscript/` 整理、验证并沉淀为**可独立交付的 UE 脚本插件**。当前仓库是插件开发与验证的宿主工程，真正的产物是 `Angelscript` 插件本身。
 
-**GitHub 远端**：`git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git`
+**GitHub 远端**：（已移除，原远端仓库已删除）
 
 ---
 

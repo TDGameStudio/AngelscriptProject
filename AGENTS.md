@@ -1,24 +1,116 @@
 # AGENTS.md
 
-## Purpose
+## Project Overview
 
 - This file is guidance for AI agents working in `AngelscriptProject`.
-- The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine.
-- This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
+- The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine. This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
 - `Plugins/UnrealEvent` is a separate plugin submodule for a GMP-derived UnrealEvent event-system bootstrap. Keep UnrealEvent runtime/API pruning work inside that plugin and its OpenSpec changes; do not fold it into `AngelscriptRuntime`.
-
-## Current Project Phase
-
 - The plugin is **no longer in prototype or foundation-building phase**. It has entered a maturity stage where the core runtime, editor integration, and test infrastructure are established, but external delivery entry points and several key capability closures still need attention.
-- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `124` `Bind_*.cpp` files, `27+` CSV state export tables, `417+` automation test definitions across `429` test `.cpp` files (387 Test + 32 Editor + 10 Runtime), `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. Editor and commandlet startup initialization is owned by the native runtime `UAngelscriptEngineSubsystem`. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
+- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `121` `Bind_*.cpp` files, `27+` CSV state export tables, `417+` automation test definitions across `438` test `.cpp` files, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
 - AngelScript base version is `2.33 + selective 2.38 compatibility`; the fork has diverged too far for a wholesale upgrade — the strategy is to selectively absorb improvements from higher versions. See `Documents/Guides/AngelscriptForkStrategy.md`.
-- Current priority order: **known blockers & delivery baseline → onboarding assets & workflow entry points → feature parity & validation closure → AS 2.38 selective migration & long-term architecture**. See `Documents/Plans/Plan_StatusPriorityRoadmap.md` for details.
-
-## Current Project Positioning
-
-- `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first.
+- `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first. `Source/AngelscriptProject/` retains only the minimal host project content — do not push plugin logic back into the project module unless the task explicitly requires it.
 - `Plugins/UnrealEvent/` is an independent plugin workspace. Its current baseline is a fresh `TDGameStudio/UnrealEventPlugin` repository initialized from GMP source without preserving GMP git history; runtime pruning and final UnrealEvent naming are deferred to follow-up OpenSpec changes.
-- `Source/AngelscriptProject/` retains only the minimal host project content. Do not push plugin logic back into the project module unless the task explicitly requires it.
+
+## Project Directory Structure
+
+```
+AngelscriptProject/
+├── AGENTS.md                                # AI guidance (EN) — this file
+├── AGENTS_ZH.md                             # AI guidance (ZH)
+├── CLAUDE.md                                # Redirect → AGENTS.md
+│
+├── Plugins/Angelscript/                     # ★ Core deliverable (1619 files)
+│   ├── README.md                            # Plugin README for consumers
+│   ├── Angelscript.uplugin
+│   └── Source/
+│       ├── AngelscriptRuntime/              # Runtime module (209 .cpp)
+│       │   ├── Core/                        # Engine core, type system, compilation
+│       │   ├── Binds/                       # 121 Bind_*.cpp (engine API bindings)
+│       │   ├── ClassGenerator/              # Dynamic class gen, hot reload, versioning
+│       │   ├── Debugging/                   # DebugServer V2 (DAP protocol)
+│       │   ├── StaticJIT/                   # Static JIT compilation
+│       │   ├── Preprocessor/                # Script preprocessor (#include, #if)
+│       │   ├── FunctionLibraries/           # 21 mixin helper libraries
+│       │   ├── Subsystem/                   # Script subsystem base classes
+│       │   ├── Dump/                        # 27+ CSV state export tables
+│       │   ├── CodeCoverage/                # Per-line coverage tracking
+│       │   ├── Testing/                     # Runtime test support
+│       │   └── ThirdParty/                  # AngelScript 2.33 vendored source
+│       ├── AngelscriptEditor/               # Editor module (49 .cpp)
+│       │   ├── HotReload/                   # File watcher & class reinstancing
+│       │   ├── CodeGen/                     # Editor-time code gen for IDE
+│       │   ├── BlueprintImpact/             # BP change scanner & commandlet
+│       │   ├── SourceNavigation/            # Jump-to-source support
+│       │   └── ContentBrowser/              # .as files in Content Browser
+│       ├── AngelscriptTest/                 # Test module (438 .cpp, 23 themes)
+│       └── AngelscriptUHTTool/              # UHT C# code gen toolchain
+│
+├── Plugins/UnrealEvent/                     # Independent GMP-derived event plugin submodule
+├── Source/                                  # Host project (minimal, 8 files)
+├── Script/                                  # AngelScript examples (37 .as)
+│   ├── Examples/                            # Core / EnhancedInput / Extended
+│   ├── Automation/                          # Script automation entry
+│   └── Tests/                               # Script-level tests
+│
+├── Reference/
+│   └── README.md                            # Repo index, pull cmds, priorities
+│
+├── .agents/skills/
+│   └── README.md                            # OpenSpec workflow & skill guide
+│
+├── openspec/                                # ★ Active change lifecycle (48 files)
+│   ├── changes/                             # In-progress & archived changes
+│   └── specs/                               # Shared specifications
+│
+├── Documents/
+│   ├── Guides/
+│   │   ├── Build.md                         # Build commands & execution
+│   │   ├── Test.md                          # Test runner & suite usage
+│   │   ├── TestCatalog.md                   # Catalogued baseline (275/275)
+│   │   ├── TestConventions.md               # Test naming & org conventions
+│   │   ├── TestPerformance.md               # Performance benchmarks
+│   │   ├── TestMacroStatus.md               # Macro migration status
+│   │   ├── TestFixSummary_20260430.md       # Fix snapshot 2026-04-30
+│   │   ├── TechnicalDebtInventory.md        # Tech debt & live suite status
+│   │   ├── AngelscriptForkStrategy.md       # Fork strategy (selective)
+│   │   ├── ASSDK_Fork_Differences.md        # ASSDK fork differences
+│   │   ├── GlobalStateContainmentMatrix.md  # Global state containment
+│   │   ├── BindGapAuditMatrix.md            # Binding gap audit
+│   │   ├── BlueprintTypeBindingsOptimization.md # BP type binding optimization
+│   │   ├── LearningTrace.md                 # Learning trace system
+│   │   └── UE_Search_Guide.md               # UE knowledge lookup
+│   ├── Rules/
+│   │   ├── GitCommitRule.md                 # Commit conventions (EN)
+│   │   ├── GitCommitRule_ZH.md              # Commit conventions (ZH)
+│   │   ├── ASInlineFormattingRule.md        # Inline AS formatting in C++ tests
+│   │   ├── ReviewRule_ZH.md                 # Code review rules (ZH)
+│   │   └── ReferenceComparisonRule_ZH.md    # Reference comparison (ZH)
+│   ├── Plans/                               # ⚠ Legacy only — use openspec/
+│   │   ├── Plan_StatusPriorityRoadmap.md    # Historical status snapshot
+│   │   ├── Plan_OpportunityIndex.md         # Historical opportunity index
+│   │   ├── Archives/                        # Archived Plans
+│   │   └── ...                              # 84 legacy Plan_*.md
+│   ├── Knowledges/ZH/
+│   │   ├── Index.md                         # Index for 32 knowledge articles
+│   │   └── ...                              # AS internals, syntax, types...
+│   ├── Reports/                             # Generated review reports (505)
+│   ├── Hazelight/                           # Hazelight reference notes (3)
+│   └── Tools/
+│       └── Tool.md                          # Internal tool documentation
+│
+├── Tools/                                   # Build/test/diagnostic scripts
+│   ├── RunBuild.ps1                         # Build entry
+│   ├── RunTests.ps1                         # Test entry
+│   ├── RunTestSuite.ps1                     # Suite runner
+│   ├── Bootstrap/                           # First-time setup
+│   ├── Shared/                              # Shared utility modules
+│   ├── Diagnostics/                         # Health check & debug
+│   ├── PullReference/                       # Reference repo pull
+│   ├── Review/                              # Code review utilities
+│   └── ReferenceComparison/                 # Diff against references
+│
+└── Config/                                  # UE project config (4 .ini)
+```
 
 ## Architecture Overview
 
@@ -41,21 +133,6 @@ UnrealEvent         (independent plugin submodule, GMP-derived bootstrap;
 ```
 
 All three UE modules load at `PostDefault` phase. `AngelscriptRuntime` owns the editor/commandlet bootstrap through `UAngelscriptEngineSubsystem`, while `FAngelscriptRuntimeModule::InitializeAngelscript()` remains a compatibility API and routes to that subsystem when `GEngine` is available. `UAngelscriptGameInstanceSubsystem` owns world/game-instance contexts and suppresses the engine-subsystem fallback tick while an active game-instance tick owner exists. The host project module `AngelscriptProject` is intentionally minimal — it exists only to give UE a valid target; all real logic belongs in the plugin.
-
-### Core Subsystems (AngelscriptRuntime)
-
-- **Engine Core** (`Core/`): `AngelscriptEngine` is the central singleton (~184 KB) managing script compilation, module building, type registration, and the 4-stage compilation flow (parse → preprocess → compile → link). `UAngelscriptEngineSubsystem` performs Editor/Commandlet bootstrap and fallback ticking when no game-instance subsystem owns ticking. `AngelscriptType` handles AS↔UE type mapping. `AngelscriptBinds` provides the registration framework that all `Bind_*.cpp` files use.
-- **Bindings** (`Binds/`): ~151 `Bind_*.cpp` files that expose UE types (math, actor, component, physics, UI/UMG, delegates, containers, JSON, GAS, EnhancedInput, etc.) to AngelScript. Includes a `BlueprintCallableReflectiveFallback` path for UFunctions without explicit bindings.
-- **Class Generator** (`ClassGenerator/`): Converts AngelScript class definitions into live `UClass`/`UStruct` objects at runtime. `ASClass` (~97 KB) and `AngelscriptClassGenerator` (~202 KB) handle property layout, function stubs, hot-reload version chaining, and Blueprint-visible metadata.
-- **Preprocessor** (`Preprocessor/`): Full preprocessor (~134 KB) handling `#include`, `#if`, conditional compilation, and comment-format documentation extraction before scripts reach the AS compiler.
-- **Static JIT** (`StaticJIT/`): Compiles AS bytecode into optimized native-like execution. `AngelscriptBytecodes` (~200 KB) handles bytecode analysis; `AngelscriptStaticJIT` (~117 KB) does the actual code generation; `PrecompiledData` (~93 KB) manages serialization of precompiled modules.
-- **Debug Server** (`Debugging/`): DAP-compatible debug server (~96 KB) supporting breakpoints, stepping, variable inspection, and call stack navigation over a TCP socket.
-- **Script Subsystems** (`Subsystem/`): `ScriptWorldSubsystem`, `ScriptGameInstanceSubsystem`, `ScriptEngineSubsystem`, `ScriptLocalPlayerSubsystem` — UE subsystem base classes designed for script inheritance.
-- **Function Libraries** (`FunctionLibraries/`): 21+ mixin libraries adding helper methods to math types, actors, components, GameplayTags, widgets, etc.
-- **Dump Infrastructure** (`Dump/`): 27+ CSV table exporters that observe runtime state (registered types, bindings, functions, enums) through public APIs. Pure external observer — never mutates runtime state.
-- **Code Coverage** (`CodeCoverage/`): Per-line coverage tracking and HTML/JSON report generation for AngelScript code.
-- **GAS Integration** (`Core/GAS/`): 18 files providing scripted base classes and utility libraries for Gameplay Ability System.
-- **Third-party AS engine** (`ThirdParty/angelscript/`): The vendored AngelScript 2.33 source with local patches. Not upgradable wholesale — selective backports only.
 
 ### Editor Subsystems (AngelscriptEditor)
 
@@ -84,55 +161,9 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated function tables + reflective fallback → Callable from AS scripts
 4. **Hot Reload**: File watcher detects changes → Recompile affected modules → ClassReloadHelper reinstances actors in editor
 
-## Key Paths
-
-- `Plugins/Angelscript/Source/AngelscriptRuntime/`: Runtime module — plugin core capabilities land here first.
-  - `Core/`: Engine core, binding manager, type system.
-    - `Core/GAS/`: GAS (Gameplay Ability System) scripted base classes, components, and utility libraries (18 files).
-    - `Core/Commandlets/`: Tool-class Commandlet entry points (4 files).
-  - `ClassGenerator/`: Dynamic class generation, hot reload, version chaining.
-  - `Binds/`: 124 `Bind_*.cpp` files covering engine API bindings.
-  - `Debugging/`: DebugServer V2 protocol.
-  - `StaticJIT/`: Static JIT compilation support.
-  - `Dump/`: 27+ CSV state export tables; pure external observer architecture.
-  - `CodeCoverage/`: Code coverage tracking.
-  - `FunctionLibraries/`: 21+ script helper function libraries.
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`: Runtime CSV state dump/export infrastructure. Keep dump logic here as a pure external observer over existing runtime/public APIs.
-- `Plugins/Angelscript/Source/AngelscriptEditor/`: Editor-related support (menu extensions, hot-reload UI, BlueprintImpact Commandlet).
-- `Plugins/Angelscript/Source/AngelscriptTest/`: Plugin tests and validation (organized by theme: Actor/Bindings/Blueprint/Component/Debugger/HotReload/Subsystem etc.).
-- `Plugins/Angelscript/Source/AngelscriptTest/Dump/`: Test-module console command and automation coverage for dump flows.
-- `Plugins/Angelscript/Source/AngelscriptUHTTool/`: UHT code generation toolchain.
-- `Plugins/UnrealEvent/`: Independent GMP-derived event-system plugin submodule. Current bootstrap keeps original GMP modules where needed; later changes decide which functionality is retained, removed, or renamed.
-- `Documents/Guides/`: Build, test, and lookup guides (13 documents).
-- `Documents/Rules/`: Git commit and other rule documents.
-- `Documents/Plans/`: Multi-phase task plan documents (50 execution Plans + 1 status overview + 1 index + 7 archived).
-- `Documents/Plans/Archives/`: Archive directory and summaries for completed or closed plans.
-- `Documents/Knowledges/`: 33+ architectural knowledge base documents.
-- `Tools/`: Local helper scripts — root runners (`RunBuild.ps1`, `RunTests.ps1`, `RunTestSuite.ps1`, `RunAutomationTests.ps1`/`.bat`, `GetAutomationReportSummary.ps1`), `Tools\Shared\UnrealCommandUtils.ps1`, and centralized tests under `Tools\Tests\`; grouped entry points under `Tools\Bootstrap\` (e.g. `BootstrapWorktree.bat`, `GenerateAgentConfigTemplate.bat`), `Tools\PullReference\PullReference.bat`, `Tools\Diagnostics\`, `Tools\Review\`, and `Tools\ReferenceComparison\`.
-- `Script/`: Angelscript example scripts.
-- `Reference/`: External reference repositories (not committed, local comparison use only).
-
 ## External Reference Repositories
 
-- External reference repositories are not part of this project's committed content. They are used only for comparison, migration analysis, and architectural reference.
-- This section keeps an index only; detailed descriptions, usage boundaries, and priority guidance are maintained in `Reference/README.md`.
-
-| Name | Entry & Notes |
-| --- | --- |
-| AngelScript v2.38.0 | Pull with `Tools\PullReference\PullReference.bat angelscript`; defaults to `Reference\angelscript-v2.38.0`. See `Reference/README.md` |
-| Hazelight Angelscript | Obtained via `AgentConfig.ini` key `References.HazelightAngelscriptEngineRoot`. See `Reference/README.md` |
-| Hazelight Docs | Pull with `Tools\PullReference\PullReference.bat hazelightdocs`; defaults to `Reference\Docs-UnrealEngine-Angelscript`; use it for the public documentation site source and content structure. See `Reference/README.md` |
-| Hazelight VS Code Angelscript | Pull with `Tools\PullReference\PullReference.bat hazelightvscode`; defaults to `Reference\vscode-unreal-angelscript`; use it to compare VS Code Language Server, Debug Adapter, diagnostics, and breakpoint workflows. See `Reference/README.md` |
-| Aura GAS Course Initial Project | Pull with `Tools\PullReference\PullReference.bat aura`; defaults to `Reference\GameplayAbilitySystem_Aura_Initial`; pinned to the course initial commit for Aura GAS starter assets, UE 5.2 sample content project structure, and asset organization. See `Reference/README.md` |
-| Aura GAS Course C++ Project | Pull with `Tools\PullReference\PullReference.bat auracpp`; defaults to `Reference\GameplayAbilitySystem_Aura_Cpp`; follows `main` for the implemented Aura C++ GAS project, UE 5.3 structure, and GameplayAbilities/MVVM/MotionWarping integration. See `Reference/README.md` |
-| Aura GAS Angelscript Rewrite | Pull with `Tools\PullReference\PullReference.bat auraas`; defaults to `Reference\AngelscriptAura`; follows `main` for the third-party Aura GAS Angelscript rewrite, AS-side GAS script organization, and implementation notes. See `Reference/README.md` |
-| UnrealCSharp | Pull with `Tools\PullReference\PullReference.bat unrealcsharp`; defaults to `Reference\UnrealCSharp`. See `Reference/README.md` |
-| Tencent UnLua | Pull with `Tools\PullReference\PullReference.bat unlua`; defaults to `Reference\UnLua`; use it to compare Lua reflection exposure, event overrides, and sample organization. See `Reference/README.md` |
-| Tencent puerts | Pull with `Tools\PullReference\PullReference.bat puerts`; defaults to `Reference\puerts`; use it to compare TypeScript/JavaScript runtime integration and declaration generation. See `Reference/README.md` |
-| Tencent sluaunreal | Pull with `Tools\PullReference\PullReference.bat sluaunreal`; defaults to `Reference\sluaunreal`; use it to compare Lua static export, performance trade-offs, and hot-update workflow. See `Reference/README.md` |
-| Blender MCP | Pull with `Tools\PullReference\PullReference.bat blendermcp`; defaults to `Reference\blender_mcp`; Blender Forge HTTPS only; use it to reference MCP Server implementation, MCP protocol integration, and DCC toolchain exposure patterns. See `Reference/README.md` |
-
-- When adding new reference repositories, update `Reference/README.md` first, then add an index entry here.
+- See `Reference/README.md` for the full index, pull commands, usage boundaries, and priority guidance.
 
 ## Local Configuration
 
@@ -147,65 +178,6 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - State dump entry point: `FAngelscriptStateDump::DumpAll()` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`, plus console command `as.DumpEngineState` in `Plugins/Angelscript/Source/AngelscriptTest/Dump/`.
 - Preserve the dump architecture as a pure external observer: prefer reading existing public APIs over adding intrusive dump hooks to runtime/editor classes.
 - If documentation conflicts with the current plugin-centric goal, update the documentation first, then continue implementation.
-
-## Common Commands Quick Reference
-
-All commands require `AgentConfig.ini` in project root. If missing, bootstrap first:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1
-```
-
-### Build
-
-```powershell
-# Standard build (concurrent-safe, reads AgentConfig.ini automatically)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label agent-build -TimeoutMs 180000
-
-# Build without XGE (when distributed build slots are contested)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label noxge -TimeoutMs 180000 -NoXGE
-
-# Build with engine-level serialization (only when writing shared engine outputs)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label engine-write -TimeoutMs 180000 -SerializeByEngine
-```
-
-### Test — Single Prefix
-
-```powershell
-# Run tests by name prefix (most common single-test entry)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings." -Label bindings -TimeoutMs 600000
-```
-
-### Test — By Group
-
-```powershell
-# Quick smoke
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Group AngelscriptSmoke -Label smoke -TimeoutMs 600000
-
-# Runtime unit (no world)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Group AngelscriptRuntimeUnit -Label runtime-unit -TimeoutMs 600000
-```
-
-### Test — By Named Suite
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite Smoke -LabelPrefix smoke -TimeoutMs 600000
-
-# List all available suites
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -ListSuites
-```
-
-### Diagnostics
-
-```powershell
-# Get resolved command templates (build + test) from current config
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1
-
-# Check for stale UBT processes
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powershell\Get-UbtProcess.ps1
-```
-
-Build output goes to `Saved/Build/<Label>/<RunId>/`; test output goes to `Saved/Tests/<Label>/<RunId>/`. Never use `-UniqueBuildEnvironment`. Never hand-write `Build.bat`, `RunUBT.bat`, or `dotnet UnrealBuildTool.dll` commands.
 
 ## Test Number Baselines
 
@@ -227,21 +199,24 @@ Build output goes to `Saved/Build/<Label>/<RunId>/`; test output goes to `Saved/
 - Full commit guide: `Documents/Rules/GitCommitRule.md`.
 - Format: `[<Scope>] <Type>: <description>` — Scope is optional (module/feature area), Type is required (`Fix`, `Feat`, `Refactor`, `Docs`, `Test`, `Chore`), description is a concise outcome-focused summary. Example: `[Angelscript] Feat: add FTransform mixin bindings for script access`.
 - Do not append tool-generated commit trailers (for example `Made-with: Cursor`) unless explicitly requested.
-- The canonical GitHub remote for this repository is `origin -> git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git`.
 - The default publish branch is `main`. If a local clone still uses `master`, create or switch to `main` before the first push.
-- For first-time GitHub remote setup, prefer `git remote add origin git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git`, then `git push -u origin main` to establish upstream tracking.
-- If `origin` already exists but points to another repository, update it with `git remote set-url origin git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git` instead of adding a duplicate remote.
+- For first-time GitHub remote setup, use `git remote add origin <your-remote-url>`, then `git push -u origin main` to establish upstream tracking.
+- If `origin` already exists but points to another repository, update it with `git remote set-url origin <your-remote-url>` instead of adding a duplicate remote.
 - Do not force-push `main` unless the user explicitly requests it.
 
-## Plans & TODO
+## Submodule & Worktree
 
-- Tasks requiring multi-phase execution should have a Plan document under `Documents/Plans/`. Writing rules are defined in `Documents/Plans/Plan.md`.
-- Completed or closed plans move from `Documents/Plans/` to `Documents/Plans/Archives/`; each archived plan must include archive status, archive date, closure rationale, and a short result summary, with indexes updated in sync.
-- TODOs should be broken down around the plugin goal. Avoid lumping legacy project issues into one large task.
-- When renaming, migrating modules, or adjusting public APIs, identify all affected files and documentation.
-- Tests under `Plugins/Angelscript/Source/AngelscriptTest/` should be organized by concrete theme (for example `Actor`, `Blueprint`, `Interface`, `HotReload`, `Shared`) rather than accumulated under a broad catch-all functional bucket.
-- Current active Plan priority and execution order are managed centrally by `Documents/Plans/Plan_StatusPriorityRoadmap.md`.
-- The overview and routing of all thematic Plans are maintained in `Documents/Plans/Plan_OpportunityIndex.md`.
+- The plugin directories (`Plugins/Angelscript`, `Plugins/AngelscriptGAS`, `Plugins/UnrealEvent`) are **git submodules**, not ordinary directories. `git worktree add` does not initialize them.
+- `BootstrapWorktree.ps1` now handles submodule init automatically (standard `git submodule update` → fallback to local object store worktree). Always run bootstrap after creating a new worktree.
+- When the target code lives inside a submodule, it is a dual-repo change: OpenSpec artifacts in the parent, source code in the submodule. Commit submodule first, then update the parent gitlink.
+- Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
+
+## OpenSpec & TODO
+
+- `Documents/Plans/` is **deprecated** — retained for historical reference only. All new planning, design, task tracking, and archive lifecycle uses OpenSpec under `openspec/changes/<change>/`.
+- Create or continue changes via OpenSpec skills (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-archive-change`) or equivalent CLI commands. The active change's `tasks.md` is the sole implementation plan.
+- For small, local, low-risk changes that don't affect behavior, architecture, or public APIs, ask the user whether to skip OpenSpec. If the user explicitly requests skipping, record the reason briefly.
+- TODOs should be broken down around the plugin goal. When renaming, migrating modules, or adjusting public APIs, identify all affected files and documentation.
 
 ## Recently Completed Milestones
 
@@ -261,25 +236,3 @@ Build output goes to `Saved/Build/<Label>/<RunId>/`; test output goes to `Saved/
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
 
-## Document Navigation
-
-| Document | Purpose |
-| --- | --- |
-| `AGENTS_ZH.md` | Chinese version of this guide |
-| `Plugins/Angelscript/AGENTS.md` | Plugin-internal test layering and naming conventions |
-| `Reference/README.md` | External reference repository index and details |
-| `Documents/Plans/Plan_StatusPriorityRoadmap.md` | Current completion status, Hazelight gap, and priority overview |
-| `Documents/Plans/Plan_OpportunityIndex.md` | Panoramic index of all executable directions |
-| `Documents/Guides/Build.md` | Build and command execution guide |
-| `Documents/Guides/Test.md` | Test guide |
-| `Documents/Guides/TestCatalog.md` | Catalogued test baseline inventory |
-| `Documents/Guides/TestConventions.md` | Test naming and organization conventions |
-| `Documents/Guides/TechnicalDebtInventory.md` | Technical debt and live suite status |
-| `Documents/Guides/AngelscriptForkStrategy.md` | AngelScript fork evolution strategy (selective absorption, not wholesale upgrade) |
-| `Documents/Guides/BindGapAuditMatrix.md` | Binding gap audit matrix |
-| `Documents/Guides/UE_Search_Guide.md` | UE knowledge lookup guide |
-| `Documents/Rules/GitCommitRule.md` | English commit conventions |
-| `Documents/Rules/ASInlineFormattingRule.md` | Inline AngelScript code formatting rule for C++ test files |
-| `Documents/Plans/Plan.md` | Plan document writing rules |
-| `Documents/Plans/Archives/README.md` | Archived plan index and summaries |
-| `Documents/Tools/Tool.md` | Internal tool documentation |

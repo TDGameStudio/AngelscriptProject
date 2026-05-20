@@ -128,6 +128,20 @@ Tools/UnrealMCP/
 # Knowledge temp drafts
 Documents/Knowledges/Temp/
 
+# Generated review reports; keep local for now, may be tracked later.
+Documents/Reports/
+
+# Local-only investigation drafts and LLM transcript dumps. Keep on disk
+# but never commit — they're personal scratch space, not project artifacts.
+/DETAILED_FINDINGS.md
+/INVESTIGATION_REPORT.md
+Documents/temp.md
+Documents/Temp_memory.md
+Documents/UnrealEvent_GMP*.md
+
+# External chat / forum exports kept locally for reference
+/UnrealEngine-Angelscript - Text Channels*.json
+
 # Angelscript cache files
 Script/Binds.Cache
 Script/Binds.Cache.Headers

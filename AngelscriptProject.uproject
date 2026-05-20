@@ -39,7 +39,7 @@
 		},
 		{
 			"Name": "UnrealEvent",
-			"Enabled": true
+			"Enabled": false
 		}
 	]
 }

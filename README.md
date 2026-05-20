@@ -117,8 +117,10 @@ AngelscriptProject/
 ├── Documents/                   # 项目文档
 │   ├── Guides/                  # Build / Test / Fork 策略等指南
 │   ├── Knowledges/              # 架构知识库（中文，按主题前缀组织）
-│   ├── Plans/                   # 多阶段任务执行计划
+│   ├── Plans/                   # 历史 Plan 文档（OpenSpec 前，仅作参考）
 │   └── Rules/                   # Git 提交规则、参考对照规则等
+├── .agents/                     # OpenSpec + Superpowers 项目技能适配说明
+├── openspec/                    # OpenSpec change 产物目录（由 CLI 在存在 change 时维护）
 ├── Reference/                   # 外部参考仓库（不入库，仅本地比对用）
 ├── Tools/                       # 本地辅助脚本（构建/测试/引导/分析）
 ├── AgentConfig.ini              # 机器本地配置（已 gitignore，需 bootstrap 生成）
@@ -140,6 +142,28 @@ AngelscriptProject/
 | Visual Studio | 2022 (Desktop development with C++) |
 | .NET | UE 自带 .NET 8.0 SDK |
 | PowerShell | 5.1+ 或 PowerShell Core 7+ |
+
+### 1.1 AI 协作与计划管理依赖
+
+本项目的计划管理与 AI 协作流程依赖 **OpenSpec** 和 **Superpowers**：
+
+| 依赖 | 用途 |
+|------|------|
+| OpenSpec CLI | 管理 change 生命周期：`proposal.md`、`design.md`、`specs/*`、`tasks.md`、验证与归档 |
+| Superpowers | 提供需求澄清、方案推导、TDD、系统调试、完成前验证等执行纪律 |
+
+安装 / 检查 OpenSpec CLI：
+
+```powershell
+openspec --version
+
+# 未安装时
+npm install -g @fission-ai/openspec
+```
+
+Superpowers 由 AI 工具的插件/技能系统提供；本仓库的 OpenSpec 适配说明见 `.agents/skills/README.md`。
+
+关键规则：如果用户请求创建或更新计划、方案、规划、任务拆解、change proposal，必须使用 `openspec-propose` skill（或等价 `/opsx:propose` / `/openspec:propose` 流程）。不要再为新工作创建 `Documents/Plans/Plan_*.md`；实施阶段以当前 OpenSpec change 的 `tasks.md` 作为唯一活跃计划。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -229,6 +253,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 | 文档 | 用途 |
 |------|------|
 | `AGENTS.md` / `AGENTS_ZH.md` | AI Agent / 协作者的工作指引（**项目规范的权威来源**） |
+| `.agents/skills/README.md` | OpenSpec + Superpowers 协作流程与项目技能适配说明 |
 | `Documents/Knowledges/ZH/Index.md` | 知识库主索引，按主题前缀组织所有原理性文档 |
 | `Documents/Guides/Build.md` | 构建规则、超时约束、并发安全 |
 | `Documents/Guides/Test.md` | 测试入口与超时约束 |
@@ -248,9 +273,17 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 | `Guide_` | 实践指南（QuickStart、Mixin、调试、GAS、UI、网络模拟等） |
 | `Note_` | 零散笔记（接口绑定现状、UBT 约束等） |
 
-### 任务执行计划（`Documents/Plans/`）
+### OpenSpec 计划管理
 
-每个 Plan 文件描述一个多阶段任务：背景 → 范围 → Phase 拆解 → 验证标准 → 决策记录。已归档计划放在 `Documents/Plans/Archives/`。
+OpenSpec 是当前项目的权威计划系统。新的需求、方案、计划、任务拆解与实施状态统一进入 `openspec/changes/<change>/`：
+
+- `openspec-propose`：创建或更新 proposal / design / specs / tasks；凡是“创建计划/方案/任务拆解”类请求都使用它。
+- `openspec-apply-change`：按当前 change 的 `tasks.md` 执行实现；`tasks.md` 是唯一活跃实施计划。
+- `openspec-archive-change`：完成后归档 change。
+
+`Documents/Plans/` 是 OpenSpec 引入前的历史 Plan 文档目录，仅作背景参考或迁移输入。
+
+详细规则见 `AGENTS.md` 与 `.agents/skills/README.md`。
 
 ---
 
@@ -279,7 +312,7 @@ Tools\PullReference\PullReference.bat <name>
 详细规范见 `AGENTS.md` 与 `Documents/Rules/`。简要清单：
 
 1. **不修改 UE 引擎核心**。所有改动落在 `Plugins/Angelscript/` 或本仓库内。
-2. **改动必须先有 Plan**。多阶段任务在 `Documents/Plans/Plan_*.md` 中拆解，每步附 Git 提交信息。
+2. **计划管理必须走 OpenSpec**。创建计划、方案、规划、任务拆解或 change proposal 时必须使用 `openspec-propose`；实施时以当前 change 的 `tasks.md` 为唯一活跃计划。
 3. **构建 / 测试只走标准入口**。直接调 `Build.bat` / `UnrealEditor-Cmd.exe` 等的命令不允许写入文档或脚本。
 4. **测试覆盖**。新功能或 bugfix 必须配套测试（`Plugins/Angelscript/Source/AngelscriptTest/`）。
 5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule_ZH.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
@@ -289,13 +322,15 @@ Tools\PullReference\PullReference.bat <name>
 
 ## 许可证
 
-- 本仓库代码：见各模块 `LICENSE.md`（继承 Hazelight 原项目 + 本地修改）。
+- 本仓库代码：**MIT License**。详见根目录 `LICENSE`。
+- `Plugins/Angelscript/`：**MIT License**（原始版权 Hazelight Games AB，Fork 修改版权 TDGameStudio）。详见 `Plugins/Angelscript/LICENSE.md`。
+- `Plugins/AngelscriptGAS/`：**MIT License**。详见 `Plugins/AngelscriptGAS/LICENSE.md`。
 - `Plugins/Angelscript/ThirdParty/angelscript/`：AngelCode Scripting Library，**zlib 协议**。详见 `Plugins/Angelscript/LICENSE.md`。
-- 使用 Unreal Engine 受 [Unreal® Engine EULA](https://www.unrealengine.com/eula) 约束。
 
 ---
 
 ## 联系与反馈
 
 - 项目状态分析：`Documents/ProjectStatusAnalysis.md`
-- 当前优先级路线图：`Documents/Plans/Plan_StatusPriorityRoadmap.md`
+- OpenSpec / Superpowers 协作说明：`.agents/skills/README.md`
+- 历史优先级路线图：`Documents/Plans/Plan_StatusPriorityRoadmap.md`

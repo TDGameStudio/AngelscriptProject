@@ -1,73 +1,171 @@
-# Agents_ZH.md
+# AGENTS_ZH.md
 
-此文档需要同步到 AGENTS.md
+> **本文件是 `AGENTS.md` 的中文翻译版本，内容应与英文版保持同步。**
 
-## 目的
+## 项目概览
 
 - 本文件用于指导在 `AngelscriptProject` 中工作的 AI Agent。
-- 当前第一目标不是继续扩展一个普通游戏工程，而是把 `Plugins/Angelscript` 整理、验证并沉淀为可独立使用的插件版本 AS 插件。
-- 当前仓库是插件开发与验证的承载工程；真正的主产物是 `Angelscript` 插件本身。
+- 当前第一目标不是继续扩展一个普通游戏工程，而是把 `Plugins/Angelscript` 整理、验证并沉淀为可独立使用的 Angelscript 插件。当前仓库是插件开发与验证的承载工程；真正的主产物是 `Angelscript` 插件本身。
 - `Plugins/UnrealEvent` 是独立插件子模块，用于承载基于 GMP 快照重启的 UnrealEvent 事件系统。后续 UnrealEvent 运行时/API 裁剪应留在该插件及对应 OpenSpec change 中，不要塞回 `AngelscriptRuntime`。
-
-## 当前项目阶段
-
 - 插件已经**不处于原型或底座搭建阶段**，而是进入了"核心运行时、编辑器集成、测试基础设施都已成型，但对外交付入口和若干关键能力闭环仍需收口"的成熟期。
-- 当前基线：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 三个 UE 模块已稳定，`123` 个 `Bind_*.cpp`、`27+` 张 CSV 状态导出表、`452+` 个自动化测试定义、`DebugServer V2` 协议、`CodeCoverage`、`StaticJIT`、`BlueprintImpact Commandlet` 均已落地；编辑器和 Commandlet 启动期初始化由 Runtime 内的原生 `UAngelscriptEngineSubsystem` 承接。
+- 当前基线：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 三个 UE 模块已稳定，`121` 个 `Bind_*.cpp`、`27+` 张 CSV 状态导出表、`417+` 个自动化测试定义分布在 `438` 个测试 `.cpp` 文件中、`DebugServer V2` 协议、`CodeCoverage`、`StaticJIT`、`BlueprintImpact Commandlet` 均已落地。仅余 `2` 个测试保持 Disabled（均为 `#ue57-headless` 已知限制）。
 - AS 基线版本为 `2.33 + 选择性 2.38 兼容`，fork 已深度分叉，整体升级不可行，策略为从高版本选择性吸收改进。详见 `Documents/Guides/AngelscriptForkStrategy.md`。
-- 近期优先级顺序：**已知阻塞项与交付基线 → 上手资产与工作流入口 → 功能 parity 与验证闭环 → AS 2.38 选择性迁移与长期架构**。详见 `Documents/Plans/Plan_StatusPriorityRoadmap.md`。
-
-## 当前项目定位
-
-- `Plugins/Angelscript/` 是核心工作区，绝大多数实现、修复、清理和测试都应优先落在这里。
+- `Plugins/Angelscript/` 是核心工作区，绝大多数实现、修复、清理和测试都应优先落在这里。`Source/AngelscriptProject/` 仅保留宿主工程必须的最小内容，除非任务明确需要，不要把插件逻辑塞回项目模块。
 - `Plugins/UnrealEvent/` 是独立插件工作区。当前基线来自 `TDGameStudio/UnrealEventPlugin` 的 fresh repository bootstrap，源自 GMP 快照但不继承 GMP git 历史；运行时裁剪和最终 UnrealEvent 命名由后续 OpenSpec change 推进。
-- `Source/AngelscriptProject/` 仅保留宿主工程必须的最小内容，除非任务明确需要，不要把插件逻辑塞回项目模块。
 
-## 关键路径
+## 项目目录结构
 
-- `Plugins/Angelscript/Source/AngelscriptRuntime/`：运行时模块，插件核心能力优先落在这里。
-  - `Core/`：引擎核心、绑定管理器、类型系统；`UAngelscriptEngineSubsystem` 负责 Editor/Commandlet 主启动初始化与无 GameInstance tick owner 时的主引擎 tick。
-    - `Core/GAS/`：GAS（Gameplay Ability System）脚本化基类、组件、工具库（18 个文件）。
-    - `Core/Commandlets/`：工具类 Commandlet 入口（4 个文件）。
-  - `ClassGenerator/`：动态类生成、热重载、版本链。
-  - `Binds/`：123 个 `Bind_*.cpp`，覆盖引擎 API 绑定面。
-  - `Debugging/`：DebugServer V2 协议。
-  - `StaticJIT/`：静态 JIT 编译支持。
-  - `Dump/`：27+ 张 CSV 状态导出表，纯外部观察者架构。
-  - `CodeCoverage/`：代码覆盖率追踪。
-  - `FunctionLibraries/`：21+ 个脚本辅助函数库。
-- `Plugins/Angelscript/Source/AngelscriptEditor/`：编辑器相关支持（菜单扩展、热重载 UI、BlueprintImpact Commandlet）。
-- `Plugins/Angelscript/Source/AngelscriptTest/`：插件测试与验证（按 Actor/Bindings/Blueprint/Component/Debugger/HotReload/Subsystem 等主题组织）。
-- `Plugins/Angelscript/Source/AngelscriptUHTTool/`：UHT 代码生成工具链。
-- `Plugins/UnrealEvent/`：独立事件系统插件子模块。当前 bootstrap 保留必要 GMP 模块；哪些功能保留、删除或重命名由后续 change 决定。
-- `Documents/Guides/`：构建、测试、查询指南（13 份）。
-- `Documents/Rules/`：Git 提交等规则文档。
-- `Documents/Plans/`：多阶段任务计划文档（47 份执行 Plan + 1 份状态总览 + 1 份索引 + 6 份已归档）。
-- `Documents/Plans/Archives/`：已完成或已关闭 Plan 的归档目录与摘要。
-- `Documents/Knowledges/`：33+ 份架构知识库文档。
-- `Tools/`：本地辅助脚本 — 根目录运行器（`RunBuild.ps1`、`RunTests.ps1`、`RunTestSuite.ps1`、`RunAutomationTests.ps1`/`.bat`、`GetAutomationReportSummary.ps1`）、`Tools\Shared\UnrealCommandUtils.ps1`、集中测试在 `Tools\Tests\`；分组入口在 `Tools\Bootstrap\`（如 `BootstrapWorktree.bat`、`GenerateAgentConfigTemplate.bat`）、`Tools\PullReference\PullReference.bat`、`Tools\Diagnostics\`、`Tools\Review\`、`Tools\ReferenceComparison\`。
-- `Script/`：Angelscript 示例脚本。
-- `Reference/`：外部参考仓库（不提交，仅本地比对使用）。
+```
+AngelscriptProject/
+├── AGENTS.md                                # AI 指引（英文）
+├── AGENTS_ZH.md                             # AI 指引（中文）— 本文件
+├── CLAUDE.md                                # 重定向 → AGENTS.md
+│
+├── Plugins/Angelscript/                     # ★ 核心交付物（1619 个文件）
+│   ├── README.md                            # 插件对外 README
+│   ├── Angelscript.uplugin
+│   └── Source/
+│       ├── AngelscriptRuntime/              # 运行时模块（209 .cpp）
+│       │   ├── Core/                        # 引擎核心、类型系统、编译流程
+│       │   ├── Binds/                       # 121 个 Bind_*.cpp（引擎 API 绑定）
+│       │   ├── ClassGenerator/              # 动态类生成、热重载、版本链
+│       │   ├── Debugging/                   # DebugServer V2（DAP 协议）
+│       │   ├── StaticJIT/                   # 静态 JIT 编译
+│       │   ├── Preprocessor/                # 脚本预处理器（#include、#if）
+│       │   ├── FunctionLibraries/           # 21 个 mixin 辅助函数库
+│       │   ├── Subsystem/                   # 脚本子系统基类
+│       │   ├── Dump/                        # 27+ 张 CSV 状态导出表
+│       │   ├── CodeCoverage/                # 逐行覆盖率追踪
+│       │   ├── Testing/                     # 运行时测试支持
+│       │   └── ThirdParty/                  # AngelScript 2.33 内嵌源码
+│       ├── AngelscriptEditor/               # 编辑器模块（49 .cpp）
+│       │   ├── HotReload/                   # 文件监控与类重建实例
+│       │   ├── CodeGen/                     # 编辑器时代码生成
+│       │   ├── BlueprintImpact/             # BP 变更扫描与 Commandlet
+│       │   ├── SourceNavigation/            # 跳转到源码支持
+│       │   └── ContentBrowser/              # .as 文件在内容浏览器中显示
+│       ├── AngelscriptTest/                 # 测试模块（438 .cpp，23 个主题）
+│       └── AngelscriptUHTTool/              # UHT C# 代码生成工具链
+│
+├── Plugins/UnrealEvent/                     # 独立 GMP-derived 事件插件子模块
+├── Source/                                  # 宿主工程（最小化，8 个文件）
+├── Script/                                  # AngelScript 示例（37 个 .as）
+│   ├── Examples/                            # Core / EnhancedInput / Extended
+│   ├── Automation/                          # 脚本自动化入口
+│   └── Tests/                               # 脚本级测试
+│
+├── Reference/
+│   └── README.md                            # 参考仓库索引、拉取命令、优先级
+│
+├── .agents/skills/
+│   └── README.md                            # OpenSpec 工作流与技能适配说明
+│
+├── openspec/                                # ★ 活跃变更生命周期（48 个文件）
+│   ├── changes/                             # 进行中与已归档的变更
+│   └── specs/                               # 共享规格文档
+│
+├── Documents/
+│   ├── Guides/
+│   │   ├── Build.md                         # 构建命令与执行
+│   │   ├── Test.md                          # 测试运行器与 Suite 用法
+│   │   ├── TestCatalog.md                   # 已编目测试基线（275/275）
+│   │   ├── TestConventions.md               # 测试命名与组织约定
+│   │   ├── TestPerformance.md               # 性能基准
+│   │   ├── TestMacroStatus.md               # 宏迁移状态
+│   │   ├── TestFixSummary_20260430.md       # 修复快照 2026-04-30
+│   │   ├── TechnicalDebtInventory.md        # 技术债与 live suite 状态
+│   │   ├── AngelscriptForkStrategy.md       # Fork 策略（选择性吸收）
+│   │   ├── ASSDK_Fork_Differences.md        # ASSDK fork 差异分析
+│   │   ├── GlobalStateContainmentMatrix.md  # 全局状态收容分析
+│   │   ├── BindGapAuditMatrix.md            # 绑定差距审计
+│   │   ├── BlueprintTypeBindingsOptimization.md # BP 类型绑定优化
+│   │   ├── LearningTrace.md                 # 学习追踪系统
+│   │   └── UE_Search_Guide.md               # UE 知识查询
+│   ├── Rules/
+│   │   ├── GitCommitRule.md                 # 提交规范（英文）
+│   │   ├── GitCommitRule_ZH.md              # 提交规范（中文）
+│   │   ├── ASInlineFormattingRule.md        # C++ 测试中内联 AS 格式规则
+│   │   ├── ReviewRule_ZH.md                 # 代码审查规则（中文）
+│   │   └── ReferenceComparisonRule_ZH.md    # 参考对比规则（中文）
+│   ├── Plans/                               # ⚠ 仅历史参考 — 新工作用 openspec/
+│   │   ├── Plan_StatusPriorityRoadmap.md    # 历史状态快照
+│   │   ├── Plan_OpportunityIndex.md         # 历史机会索引
+│   │   ├── Archives/                        # 已归档 Plan
+│   │   └── ...                              # 84 份历史 Plan_*.md
+│   ├── Knowledges/ZH/
+│   │   ├── Index.md                         # 知识库索引（32 篇）
+│   │   └── ...                              # AS 内核、语法、类型系统等
+│   ├── Reports/                             # 生成的审查报告（505 份）
+│   ├── Hazelight/                           # Hazelight 参考笔记（3 份）
+│   └── Tools/
+│       └── Tool.md                          # 内部工具说明
+│
+├── Tools/                                   # 构建/测试/诊断脚本
+│   ├── RunBuild.ps1                         # 构建入口
+│   ├── RunTests.ps1                         # 测试入口
+│   ├── RunTestSuite.ps1                     # Suite 运行器
+│   ├── Bootstrap/                           # 首次配置
+│   ├── Shared/                              # 共享工具模块
+│   ├── Diagnostics/                         # 健康检查与调试
+│   ├── PullReference/                       # 参考仓库拉取
+│   ├── Review/                              # 代码审查工具
+│   └── ReferenceComparison/                 # 参考对比
+│
+└── Config/                                  # UE 工程配置（4 个 .ini）
+```
+
+## 架构概览
+
+本项目是一个 **Unreal Engine 5.7 插件**，将 AngelScript 脚本语言集成为 Blueprint 和 C++ 的一等替代方案。该插件最初由 Hazelight Games 创建；本仓库维护一个基于 AS 2.33 并选择性回移 2.38 改进的分叉版本。
+
+### 模块依赖关系
+
+```
+AngelscriptRuntime  (Runtime 模块，无插件内依赖)
+       │
+       ├──► AngelscriptEditor  (Editor 模块，公开依赖 Runtime)
+       │
+       └──► AngelscriptTest    (Editor 模块，公开依赖 Runtime，
+                                bBuildEditor 时私有依赖 Editor)
+
+AngelscriptUHTTool  (C# UBT 插件，独立 — 接入 Unreal Header Tool 管线)
+
+UnrealEvent         (独立插件子模块，GMP-derived bootstrap；
+                    不依赖 AngelscriptRuntime)
+```
+
+三个 UE 模块均在 `PostDefault` 阶段加载。`AngelscriptRuntime` 通过 `UAngelscriptEngineSubsystem` 负责 Editor/Commandlet 主启动初始化，`FAngelscriptRuntimeModule::InitializeAngelscript()` 保留为兼容 API 并在 `GEngine` 可用时路由到该 Subsystem。`UAngelscriptGameInstanceSubsystem` 管理 World/GameInstance 上下文，当存在活跃 GameInstance tick owner 时会抑制 EngineSubsystem 的回退 tick。宿主工程模块 `AngelscriptProject` 有意保持最小化 — 仅为 UE 提供有效 Target，所有实际逻辑归属插件。
+
+### 编辑器子系统 (AngelscriptEditor)
+
+- **热重载** (`HotReload/`)：`DirectoryWatcher` 监控 `.as` 文件；`ClassReloadHelper` 处理编辑器中已修改脚本类的实时重建实例。
+- **代码生成** (`CodeGen/`)：编辑器时代码生成（~84 KB），用于 IDE 支持和 API 桩。
+- **Blueprint 影响分析** (`BlueprintImpact/`)：扫描器和 Commandlet，分析哪些 Blueprint 受脚本变更影响，实现定向重编译。
+- **源码导航** (`SourceNavigation/`)：允许从 UE 编辑器元素直接跳转到对应 `.as` 源文件和行号。
+- **内容浏览器** (`ContentBrowser/`)：自定义数据源，使 `.as` 脚本出现在 UE Content Browser 中。
+
+### UHT 工具 (AngelscriptUHTTool)
+
+C# 项目（`.ubtplugin.csproj`），接入 Unreal Build Tool 管线。读取 C++ 头文件，提取 `UFUNCTION`/`UPROPERTY` 元数据，生成 `AS_FunctionTable_*.cpp` 分片（direct-bind 或 stub 条目）。构建产物包括 `AS_FunctionTable_Summary.json` 和逐模块 CSV 细分。
+
+### 测试模块 (AngelscriptTest)
+
+429 个测试 `.cpp` 文件，组织在 28+ 个主题目录中（Actor、Bindings、Blueprint、Component、Debugger、Delegate、GC、HotReload、Inheritance、Interface、Networking、Preprocessor、StaticJIT、Subsystem 等）。测试使用自动化前缀约定：`Angelscript.TestModule.<Theme>.*` 用于集成测试，`Angelscript.CppTests.*` 用于运行时 C++ 单元测试，`Angelscript.Editor.*` 用于编辑器测试。参见 `Plugins/Angelscript/AGENTS.md` 了解分层规则。
+
+### 脚本示例 (`Script/`)
+
+Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子系统、输入绑定、GAS Ability）。组织在 `Script/Examples/Core/`、`Script/Examples/EnhancedInput/` 和 `Script/Examples/Extended/` 下。
+
+### 关键数据流
+
+1. **编译**：`.as` 文件 → 预处理器 → AS 编译器 → 字节码 → （可选）StaticJIT → 可执行模块
+2. **类注册**：AS 类定义 → 类生成器 → 带 UProperty 和 UFunction 的活跃 UClass/UStruct → Blueprint 和 C++ 可见
+3. **绑定**：C++ 类型 → `Bind_*.cpp` 手动绑定 + UHT 生成函数表 + 反射回退 → AS 脚本可调用
+4. **热重载**：文件监控器检测变更 → 重编译受影响模块 → ClassReloadHelper 在编辑器中重建实例
 
 ## 外部参考仓库
 
-- 外部参考仓库不属于当前项目提交内容，只用于对照、迁移分析和架构参考。
-- 本节只保留索引信息；具体说明、用途边界、优先级判断统一维护在 `Reference/README.md`。
-
-| 名称 | 入口与说明 |
-| --- | --- |
-| AngelScript v2.38.0 | 使用 `Tools\PullReference\PullReference.bat angelscript` 默认拉取到 `Reference\angelscript-v2.38.0`；详情见 `Reference/README.md` |
-| Hazelight Angelscript | 通过 `AgentConfig.ini` 的 `References.HazelightAngelscriptEngineRoot` 获取；详情见 `Reference/README.md` |
-| Hazelight Docs | 使用 `Tools\PullReference\PullReference.bat hazelightdocs` 默认拉取到 `Reference\Docs-UnrealEngine-Angelscript`；用于参考 Hazelight 公开文档站源码与内容组织；详情见 `Reference/README.md` |
-| Hazelight VS Code Angelscript | 使用 `Tools\PullReference\PullReference.bat hazelightvscode` 默认拉取到 `Reference\vscode-unreal-angelscript`；用于参考 VS Code Language Server、Debug Adapter、错误展示与断点调试工作流；详情见 `Reference/README.md` |
-| Aura GAS Course Initial Project | 使用 `Tools\PullReference\PullReference.bat aura` 默认拉取到 `Reference\GameplayAbilitySystem_Aura_Initial`；固定到课程初始提交，用于参考 Aura GAS 练习起始资产、UE 5.2 示例内容工程结构与素材组织；详情见 `Reference/README.md` |
-| Aura GAS Course C++ Project | 使用 `Tools\PullReference\PullReference.bat auracpp` 默认拉取到 `Reference\GameplayAbilitySystem_Aura_Cpp`；跟随 `main` 分支，用于参考 Aura GAS 课程完成态 C++ 实现、UE 5.3 工程结构与 GameplayAbilities/MVVM/MotionWarping 接入；详情见 `Reference/README.md` |
-| Aura GAS Angelscript Rewrite | 使用 `Tools\PullReference\PullReference.bat auraas` 默认拉取到 `Reference\AngelscriptAura`；跟随 `main` 分支，用于参考第三方 Aura GAS Angelscript 改写、AS 侧 GAS 脚本组织与实现笔记；详情见 `Reference/README.md` |
-| UnrealCSharp | 使用 `Tools\PullReference\PullReference.bat unrealcsharp` 默认拉取到 `Reference\UnrealCSharp`；详情见 `Reference/README.md` |
-| Tencent UnLua | 使用 `Tools\PullReference\PullReference.bat unlua` 默认拉取到 `Reference\UnLua`；用于参考 Lua 反射接入、事件覆写与示例组织；详情见 `Reference/README.md` |
-| Tencent puerts | 使用 `Tools\PullReference\PullReference.bat puerts` 默认拉取到 `Reference\puerts`；用于参考 TypeScript/JavaScript 脚本运行时与声明生成；详情见 `Reference/README.md` |
-| Tencent sluaunreal | 使用 `Tools\PullReference\PullReference.bat sluaunreal` 默认拉取到 `Reference\sluaunreal`；用于参考 Lua 静态导出、性能取舍与热更新工作流；详情见 `Reference/README.md` |
-
-- 后续新增参考仓库时，优先先更新 `Reference/README.md`，再回到本表补索引。
+- 完整索引、拉取命令、用途边界与优先级说明见 `Reference/README.md`。
 
 ## 本地配置
 
@@ -87,8 +185,9 @@
 
 - 当前测试数字需区分三套口径，后续文档与 roadmap 不能混写：
   - `275/275 PASS`：已编目 C++ 基线（`TestCatalog.md`）。
-  - `452+` 自动化测试定义：源码扫描规模。
+  - `417+` 个自动化测试定义分布在 `429` 个测试 `.cpp` 文件中：源码扫描规模（截至 `bf99c93`，2026-04-23）。
   - live full-suite 运行结果：以 `TechnicalDebtInventory.md` 中的实际数字为准。
+  - 仅余 `2` 个测试保持 Disabled（`#ue57-headless`）：`TestEngineHelperTests.cpp:106` 和 `SourceNavigationTests.cpp:125`。
 
 ## 文档维护原则
 
@@ -100,51 +199,24 @@
 ## Git 与提交
 
 - Git 提交格式与示例统一参考 `Documents/Rules/GitCommitRule.md`。
-- 本仓库的 GitHub 标准远端为 `origin -> git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git`。
+- 格式：`[<Scope>] <Type>: <description>` — Scope 可选（模块/功能区域），Type 必填（`Fix`、`Feat`、`Refactor`、`Docs`、`Test`、`Chore`），description 为精炼的面向结果摘要。示例：`[Angelscript] Feat: add FTransform mixin bindings for script access`。
+- 不要追加工具生成的提交尾部标记（例如 `Made-with: Cursor`），除非用户明确要求。
 - 默认发布分支为 `main`；如果本地仓库仍停留在 `master`，首次推送前先创建或切换到 `main`。
-- 首次配置 GitHub 远端时，优先使用 `git remote add origin git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git`，然后执行 `git push -u origin main` 建立 upstream 跟踪关系。
-- 如果 `origin` 已存在但指向了其他仓库，应使用 `git remote set-url origin git@github.com:UnrealEngine-Angelscript-ZH/AngelscriptProject.git` 更新地址，而不是再添加一个重复远端。
+- 首次配置 GitHub 远端时，优先使用 `git remote add origin <your-remote-url>`，然后执行 `git push -u origin main` 建立 upstream 跟踪关系。
+- 如果 `origin` 已存在但指向了其他仓库，应使用 `git remote set-url origin <your-remote-url>` 更新地址，而不是再添加一个重复远端。
 - 除非用户明确要求，否则不要对 `main` 执行 force push。
 
-## 计划与 TODO
+## 子模块与 Worktree
 
-- 需要多阶段推进的任务，在 `Documents/Plans/` 下创建 Plan 文档，编写规则见 `Documents/Plans/Plan.md`。
-- 已完成或已关闭的 Plan 从 `Documents/Plans/` 移入 `Documents/Plans/Archives/`；归档时必须补齐归档状态、归档日期、完成判断和结果摘要，并同步更新索引文档。
-- TODO 应按"插件目标"拆解，避免把旧工程遗留问题混成一个大任务。
-- 涉及重命名、模块迁移、对外 API 调整时，要同步梳理受影响文件和文档。
-- 当前活跃 Plan 的优先级与执行顺序统一由 `Documents/Plans/Plan_StatusPriorityRoadmap.md` 管理。
-- 各主题 Plan 的概况与路由统一由 `Documents/Plans/Plan_OpportunityIndex.md` 维护。
+- 插件目录（`Plugins/Angelscript`、`Plugins/AngelscriptGAS`、`Plugins/UnrealEvent`）是 **git 子模块**，不是普通目录。`git worktree add` 不会自动初始化子模块。
+- `BootstrapWorktree.ps1` 现已支持自动初始化子模块（标准 `git submodule update` → 回退到本地对象库创建 worktree）。创建新 worktree 后务必执行 bootstrap。
+- 当目标代码在子模块中时，属于双仓库变更：OpenSpec artifacts 在父仓库，源码在子模块。先提交子模块，再更新父仓库的 gitlink。
+- 完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 
-## 近期已完成里程碑
+## OpenSpec 与 TODO
 
-- ✅ 测试执行基础设施（统一 runner、group taxonomy、结构化摘要） — 已归档
-- ✅ 构建/测试脚本标准化（共享执行层、`RunBuild.ps1` / `RunTests.ps1` / `RunTestSuite.ps1`） — 已归档
-- ✅ Callfunc 死代码清理 — 已归档
-- ✅ 引擎状态导出体系（27 张 CSV 表、控制台命令、自动化回归） — 已归档
-- ✅ 测试宏优化（`BEGIN/END`、`SHARE_CLEAN/SHARE_FRESH`、group 收口） — 已归档
-- ✅ 技术债 Phase 0-6 收口 — 已归档
-- ✅ UHT 工具插件生成函数表与 legacy shard 移除 — main 已合入
-- ✅ BlueprintImpact Commandlet 与编辑器集成 — main 已合入
-- ✅ UE 5.7 绑定与调试器适配 — main 已合入
+- `Documents/Plans/` **已废弃** — 仅保留作历史参考。所有新的计划、设计、任务跟踪与归档生命周期使用 `openspec/changes/<change>/` 下的 OpenSpec 产物。
+- 通过 OpenSpec 技能（`openspec-explore`、`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`）或等价 CLI 命令创建或继续变更。活跃变更的 `tasks.md` 是唯一实施计划。
+- 对于不影响行为、架构或对外 API 的小型、局部、低风险修改，先询问用户是否跳过 OpenSpec。如用户明确要求跳过，简要记录原因。
+- TODO 应围绕插件目标拆解。涉及重命名、模块迁移、对外 API 调整时，同步梳理受影响文件和文档。
 
-## 文档导航
-
-| 文档 | 用途 |
-| --- | --- |
-| `AGENTS.md` | 英文版总纲 |
-| `Plugins/Angelscript/AGENTS.md` | 插件内部测试分层与命名约定 |
-| `Reference/README.md` | 外部参考仓库索引与详细说明 |
-| `Documents/Plans/Plan_StatusPriorityRoadmap.md` | 当前完成现状、Hazelight 差距与优先级总览 |
-| `Documents/Plans/Plan_OpportunityIndex.md` | 所有可执行方向全景索引 |
-| `Documents/Guides/Build.md` | 构建与命令执行指南 |
-| `Documents/Guides/Test.md` | 测试指南 |
-| `Documents/Guides/TestCatalog.md` | 已编目测试基线清单 |
-| `Documents/Guides/TestConventions.md` | 测试命名与组织约定 |
-| `Documents/Guides/TechnicalDebtInventory.md` | 技术债与 live suite 状态 |
-| `Documents/Guides/AngelscriptForkStrategy.md` | AngelScript Fork 演进策略（选择性吸收，非整体升级） |
-| `Documents/Guides/BindGapAuditMatrix.md` | 绑定差距审计矩阵 |
-| `Documents/Guides/UE_Search_Guide.md` | UE 知识查询指南 |
-| `Documents/Rules/GitCommitRule.md` | 英文提交规范 |
-| `Documents/Plans/Plan.md` | Plan 文档编写规则 |
-| `Documents/Plans/Archives/README.md` | 已归档 Plan 清单与摘要 |
-| `Documents/Tools/Tool.md` | 内部工具说明 |
