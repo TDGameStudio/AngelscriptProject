@@ -1,6 +1,14 @@
-# Plan 编写规则
+# Plan 编写规则（已废弃）
 
-`Documents/Plans/` 下计划文档的编写约束。
+> **废弃声明（2026-05-11）**：本文件描述的是 OpenSpec 引入前的历史 Plan 工作流。该规则现在已废弃，后续项目计划管理全面使用 OpenSpec。
+>
+> - 不要再为新工作创建 `Documents/Plans/Plan_*.md`。
+> - 新的 proposal、design、spec、tasks、实施进度与归档状态必须进入 `openspec/changes/<change>/`。
+> - 实施阶段以当前 OpenSpec change 的 `tasks.md` 作为唯一活跃任务计划。
+> - 历史 Plan 可作为背景资料引用；如果需要恢复、拆分或实质修改历史 Plan 中的事项，应先迁移为 OpenSpec change。
+> - `Documents/Plans/` 与 `Documents/Plans/Archives/` 仅保留作历史索引和迁移参考。
+
+以下内容是 `Documents/Plans/` 历史计划文档的旧编写约束，仅供阅读旧 Plan 或迁移到 OpenSpec 时参考。
 
 ## 基本约定
 
