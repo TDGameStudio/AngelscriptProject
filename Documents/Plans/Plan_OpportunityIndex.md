@@ -124,6 +124,7 @@
 | F | Mod 支持探索 | `Plan_AngelscriptModSupportExploration.md` | 未开始 |
 | G | UnrealCSharp 架构吸收 | `Plan_UnrealCSharpArchitectureAbsorption.md` | 未开始 |
 | H | UFunction 反射回退绑定 | `Plan_UFunctionReflectiveFallbackBinding.md` | 未开始（P2 优先级） |
+| I | AS 编译可观测 Hook | `Plan_ASCompilationObservabilityHooks.md` | 未开始（P2/P3 优先级，承接 LearningGuide、调试器与未来 LLVM JIT 的正式观察点） |
 
 ### 4.2 新建议 Plan
 
