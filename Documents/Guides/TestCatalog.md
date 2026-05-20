@@ -64,7 +64,7 @@
 - [13. Learning — 教学型可观测测试](#13-learning--教学型可观测测试)
   - [13.1 Native 层学习测试](#131-native-层学习测试)
   - [13.2 Runtime 层学习测试](#132-runtime-层学习测试)
-- [14. Retired Examples Test Layer](#14-retired-examples-test-layer)
+- [14. Examples — 示例脚本编译](#14-examples--示例脚本编译)
 - [15. Template — 模板场景](#15-template--模板场景)
 - [15.6 Performance — 运行期微基准](#156-performance--运行期微基准)
 - [16. Dump — 状态导出](#16-dump--状态导出)
@@ -643,7 +643,7 @@
 
 ## 7. Compiler — 编译管线
 
-> 源文件：`Compiler/AngelscriptCompilerPipelineTests.cpp`
+> 源文件：`Compiler/AngelscriptCompilerPipelineTests.cpp`、`Compiler/AngelscriptCompilationEventsTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -655,18 +655,31 @@
 | Compiler.EndToEnd.EnumAvailability | 枚举在生成侧可用性 |
 | Compiler.EndToEnd.DelegateSignatureConsistency | 委托签名一致性 |
 | Compiler.EndToEnd.ClassLikeReflectionShape | 类式反射形状 |
+| Compiler.Events.NoListenerCompileIsSilentAndPreservesResult | 无 listener 时编译事件保持默认 quiet，编译结果与诊断不改变 |
+| Compiler.Events.RegisteredListenerReceivesValueStyleCompileEvents | 注册 listener 后收到 `Compile.Begin` / `Compile.End` value-style payload |
+| Compiler.Events.ExistingCompileDelegatesRemainCompatible | 旧 `PreCompile` / `PostCompile` / `PreGenerateClasses` delegate 语义保持兼容 |
+| Compiler.Events.SuccessfulCompileEmitsOrderedStageEvents | 成功编译按顺序发出 module assembly、parse、type generation、function generation、layout、code compilation、globals、class-generation handoff、`Compile.End` |
+| Compiler.Events.FailedCompileEmitsPairedEndEvent | 编译失败仍发出 paired `Compile.End`，并携带失败 result 与 diagnostics |
+| Compiler.Events.ParseEventsAreBroadcastFromMainThreadInDeterministicOrder | parallel parse 不在 worker thread 广播事件，parse summary 从主编译流确定性发出 |
+| Compiler.Events.CompilationContextIsScopedPerCompileRun | `FAngelscriptCompilationContext` 每次 `CompileModules()` 独立创建，run id 与 module summary 不跨 run 泄漏 |
 
 ---
 
 ## 8. Preprocessor — 预处理器
 
-> 源文件：`Preprocessor/AngelscriptPreprocessorTests.cpp`
+> 源文件：`Preprocessor/AngelscriptPreprocessorTests.cpp`、`Preprocessor/AngelscriptPreprocessorContextTests.cpp`、`Preprocessor/AngelscriptPreprocessorSummaryTests.cpp`、`Preprocessor/AngelscriptPreprocessorCompilationEventsTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
 | Preprocessor.BasicParse | 预处理器基础解析 |
 | Preprocessor.MacroDetection | 宏检测与展开 |
 | Preprocessor.ImportParsing | `#import` 等解析 |
+| Preprocessor.Context.ExplicitContextControlsFlags | 显式 `FAngelscriptPreprocessorContext` 控制预处理 flag，而不是运行期重新读取全局状态 |
+| Preprocessor.Context.ExplicitContextControlsDefaultBlueprintCallable | 显式 context 控制默认函数 / 属性预处理选项 |
+| Preprocessor.Context.DefaultConstructionMatchesCurrentEngineContext | 默认构造与 current-engine context factory 保持兼容 |
+| Preprocessor.Summary.SummaryReportsProcessedScriptStructure | summary 报告 file/module/chunk/import/class/function/property/enum/delegate/generated code 等结构计数 |
+| Preprocessor.Summary.SummaryAvailableAtExistingHookPoints | `OnProcessChunks` / `OnPostProcessCode` hook 点可读取对应阶段 summary |
+| Preprocessor.CompilationEvents.HookMomentsEmitSummaryBackedCompilationEvents | `Preprocess.ProcessChunks` / `Preprocess.PostProcessCode` compilation events 携带 summary-backed payload |
 
 ---
 
@@ -976,7 +989,7 @@
 | Functional.Animation.AnimNotifyStateScript.SubclassRegistersUPropertyAndDerivesFromUAnimNotifyState | `class : UAnimNotifyState` 编译，多 `UPROPERTY` 类型注册，bool CDO 默认值生效 |
 | Functional.Rendering.DynamicMaterial.ScriptCompilesDynamicMaterialAPI | `UStaticMeshComponent` `DefaultComponent` + `UMaterialInstanceDynamic` 引用 + AS 端 `CreateDynamicMaterialInstance` / `SetScalarParameterValue` / `SetVectorParameterValue` 编译路径打通 |
 | Functional.GAS.ScriptAttributeSet.SubclassRegistersAttributeFieldsAndOnRepFunction | `class : UAngelscriptAttributeSet` 编译；`FAngelscriptGameplayAttributeData` 字段进入反射；`OnRep_Attribute` UFunction 继承 |
-| Functional.Component.SplineUsage.SplineDefaultComponentRegistersAndMaterializes | `USplineComponent` `DefaultComponent` 反射注册、运行时实例化、Root 附着层级和 BeginPlay 可见性验证 |
+| Functional.Component.SplineUsage.SplineDefaultComponentRegistersAndAPICompiles | `USplineComponent` `DefaultComponent` + AS `GetSplineLength` / `GetLocationAtDistanceAlongSpline` / `GetRotationAtDistanceAlongSpline` 编译路径打通 |
 | Functional.Component.MultiLevelHierarchy.FourLevelAttachChainResolves | 4 层 `DefaultComponent` 链（Root → Middle → LeafMesh → DeepLight）的 `GetAttachParent` / `GetChildrenComponents` 全链验证 |
 | Functional.Component.DefaultPropertyOverride.DefaultStatementsAffectComponentCDOs | `default Sphere.SphereRadius=128`、`default Mesh.bHiddenInGame=true`、`default Mesh.CastShadow=false` 在 CDO 上正确生效 |
 | Functional.Property.MetaSpecifiersMatrix.MetaSpecifiersAreReflectedOnFProperty | `EditCondition` / `EditConditionHides` / `InlineEditConditionToggle` / `ClampMin/Max` / `UIMin/Max` / `MakeEditWidget` 经 `FProperty::GetMetaData` 全部可读 |
@@ -1032,21 +1045,38 @@
 
 ---
 
-## 14. Retired Examples Test Layer
+## 14. Examples — 示例脚本编译
 
-`Plugins/Angelscript/Source/AngelscriptTest/Examples/` 与 `Angelscript.TestModule.ScriptExamples.*` 已退休。示例资产仍由 `Script/Examples/**` 负责；示例中有行为价值的测试点进入当前主题化功能测试，纯编译示例由语法、绑定、编译器或运行时主题测试承接。
+> 源文件：`Examples/AngelscriptScriptExample*Test.cpp`（各文件对应一个示例 `.as`）以及 `Examples/AngelscriptScriptExampleCoverageTests.cpp`（直接从 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/` 读取真实资产）
+>
+> 所有测试通过 `RunScriptExampleCompileTest` 将内嵌示例脚本编译为注解模块，验证文档级示例脚本能完整通过编译。
 
-| 原 Examples 覆盖点 | 当前验证入口 |
+| 测试名 | 验证内容（示例主题） |
 |--------|----------------------|
-| Actor 默认值、Tag、`BeginPlay`、脚本 `UFUNCTION` | `Angelscript.TestModule.Actor.Lifecycle.*` |
-| ConstructionScript 重算 | `Angelscript.TestModule.Actor.Lifecycle.ConstructionScript` |
-| Actor movement / 默认组件层级 | `Angelscript.TestModule.Actor.*`、`Angelscript.TestModule.Component.*`、`Angelscript.TestModule.Functional.Component.*` |
-| Actor / Component overlap | `Angelscript.TestModule.Actor.Interaction.*` |
-| Delegate/event 绑定、广播、解绑和签名 mismatch | `Angelscript.TestModule.Delegate.*`、`Angelscript.TestModule.Functional.Delegate.*` |
-| Timer handle pause/unpause/clear/invalidate | `Angelscript.TestModule.Functional.Actor.TimerRuntimeBehavior` |
-| Widget `BindWidget` metadata 与 `UUserWidget` lifecycle 签名 | `Angelscript.TestModule.Functional.Widget.BindWidget` |
-| Property metadata/specifier flags | `Angelscript.TestModule.Functional.Property.MetaSpecifiersMatrix` |
-| UObject 默认值与 helper `UFUNCTION` | `Angelscript.TestModule.Functional.Objects.ReflectedDefaultsAndFunction` |
+| ScriptExamples.Actor | Actor 类/UProperty/BlueprintOverride |
+| ScriptExamples.AccessSpecifiers | 访问修饰符 |
+| ScriptExamples.Array | 数组操作 |
+| ScriptExamples.BehaviorTreeNodes | 行为树节点 |
+| ScriptExamples.CharacterInput | 角色输入 |
+| ScriptExamples.ConstructionScript | 构造脚本 |
+| ScriptExamples.Delegates | 委托 |
+| ScriptExamples.Enum | 枚举 |
+| ScriptExamples.FormatString | 格式化字符串 |
+| ScriptExamples.Functions | 函数示例 |
+| ScriptExamples.FunctionSpecifiers | 函数说明符 |
+| ScriptExamples.Map | Map 容器 |
+| ScriptExamples.Math | 数学 |
+| ScriptExamples.MixinMethods | Mixin 方法 |
+| ScriptExamples.MovingObject | 移动对象 |
+| ScriptExamples.Overlaps | 重叠检测 |
+| ScriptExamples.PropertySpecifiers | 属性说明符（依赖 `Example_Enum.as`） |
+| ScriptExamples.Coverage.Actor | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_Actor.as` 读取并验证 Actor 默认值、`BeginPlay`、`UFUNCTION` 与默认语句 |
+| ScriptExamples.Coverage.Component | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_Component.as` 读取并验证脚本组件 `BeginPlay`、`Tick` 与宿主 Actor 访问 |
+| ScriptExamples.Coverage.UObject | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_UObject.as` 读取并验证脚本 `UObject` 默认值与 `UFUNCTION` |
+| ScriptExamples.Coverage.PropertySpecifiers | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_PropertySpecifiers.as` 读取并验证 `DefaultComponent`、`RootComponent`、`Attach` 与常用属性说明符 |
+| ScriptExamples.Struct | 结构体 |
+| ScriptExamples.Timers | 定时器 |
+| ScriptExamples.WidgetUMG | UMG 控件 |
 
 ---
 
@@ -1104,7 +1134,7 @@
 | 测试前缀 | 说明 |
 |--------|----------|
 | `Angelscript.TestModule.Core.Performance.ArtifactGeneration` | metrics.json 与目录结构落盘验证 |
-| `Angelscript.TestModule.CppTests.CodeCoverage.HtmlReport.Generation` | 报告产物写出能力邻近回归 |
+| `Angelscript.TestModule.Core.CodeCoverage.*` | coverage line/map/report 产物写出能力邻近回归 |
 | `Angelscript.TestModule.CppTests.StaticJIT.PrecompiledData.*` | 预编译数据产物与 round-trip 稳定性 |
 | `Angelscript.TestModule.StaticJIT.AOT.*` | StaticJIT AOT 生成物 verify、生成 C++ 注册、`jitFunction` 附着、`Context->Execute()` 进入生成入口、多 engine 顺序加载诊断 |
 

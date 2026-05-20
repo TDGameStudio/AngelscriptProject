@@ -40,9 +40,9 @@ if (-not (Test-Path -LiteralPath $runTestsPath)) {
 
 $suiteDefinitions = [ordered]@{
     "Smoke" = @(
-        @{ Prefix = "Angelscript.CppTests.MultiEngine"; Label = "MultiEngine" }
-        @{ Prefix = "Angelscript.CppTests.Engine.DependencyInjection"; Label = "DependencyInjection" }
-        @{ Prefix = "Angelscript.CppTests.Subsystem"; Label = "Subsystem" }
+        @{ Prefix = "Angelscript.TestModule.CppTests.MultiEngine"; Label = "MultiEngine" }
+        @{ Prefix = "Angelscript.TestModule.CppTests.Engine.DependencyInjection"; Label = "DependencyInjection" }
+        @{ Prefix = "Angelscript.TestModule.CppTests.Subsystem"; Label = "Subsystem" }
         @{ Prefix = "Angelscript.TestModule.Engine.BindConfig"; Label = "BindConfig" }
         @{ Prefix = "Angelscript.TestModule.Shared.EngineHelper"; Label = "SharedEngineHelper" }
         @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
@@ -51,7 +51,7 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
     )
     "RuntimeCpp" = @(
-        @{ Prefix = "Angelscript.CppTests"; Label = "CppTests" }
+        @{ Prefix = "Angelscript.TestModule.CppTests"; Label = "CppTests" }
     )
     "Bindings" = @(
         @{ Prefix = "Angelscript.TestModule.Bindings"; Label = "Bindings" }
@@ -66,7 +66,7 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.HotReload"; Label = "HotReload" }
     )
     "Debugger" = @(
-        @{ Prefix = "Angelscript.CppTests.Debug."; Label = "CppDebugger" }
+        @{ Prefix = "Angelscript.TestModule.CppTests.Debug."; Label = "CppDebugger" }
         @{ Prefix = "Angelscript.TestModule.Debugger."; Label = "TestModuleDebugger" }
     )
     "FunctionalSamples" = @(

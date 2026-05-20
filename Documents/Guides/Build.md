@@ -227,15 +227,16 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ## 对 AI Agent 的要求
 
 1. 先读取根目录 `AgentConfig.ini`
-2. 配置缺失时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`
-3. 仅通过 `Tools\RunBuild.ps1` 执行构建
-4. 显式传入或继承一个不超过 `3600000ms` 的超时
-5. 默认使用并发模式；只有确认会写引擎共享输出时才加 `-SerializeByEngine`
-6. 不要使用 `-UniqueBuildEnvironment`；这会触发 worktree 私有的引擎级重编
-7. 不要手写 `Build.bat` / `RunUBT.bat` / `dotnet UnrealBuildTool.dll`
+2. 配置缺失时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`（从主 workspace `AgentConfig.ini` 读取）
+3. bootstrap 现在会自动初始化子模块（标准 init + fallback 本地对象库 worktree）；如果仍有子模块缺失，参考 `Documents/Guides/SubmoduleWorktreeWorkflow.md`
+4. 仅通过 `Tools\RunBuild.ps1` 执行构建
+5. 显式传入或继承一个不超过 `3600000ms` 的超时
+6. 默认使用并发模式；只有确认会写引擎共享输出时才加 `-SerializeByEngine`
+7. 不要使用 `-UniqueBuildEnvironment`；这会触发 worktree 私有的引擎级重编
+8. 不要手写 `Build.bat` / `RunUBT.bat` / `dotnet UnrealBuildTool.dll`
 
 ## 推荐提示词
 
 ```text
-请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1。构建只能通过 Tools\RunBuild.ps1 进行，并显式带一个不超过 3600000ms 的超时。默认保持并发模式；只有确认要写共享引擎输出时才追加 -SerializeByEngine。常用的 -NoXGE 不要再通过 ExtraArgs 透传，直接使用一等参数。不要使用 -UniqueBuildEnvironment，因为它会触发 worktree 私有的引擎级重编。日志必须实时输出，并写入当前 run 的独立目录；不要手写 Build.bat、RunUBT.bat 或 dotnet UnrealBuildTool.dll 命令。
+请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。构建只能通过 Tools\RunBuild.ps1 进行，并显式带一个不超过 3600000ms 的超时。默认保持并发模式；只有确认要写共享引擎输出时才追加 -SerializeByEngine。常用的 -NoXGE 不要再通过 ExtraArgs 透传，直接使用一等参数。不要使用 -UniqueBuildEnvironment，因为它会触发 worktree 私有的引擎级重编。日志必须实时输出，并写入当前 run 的独立目录；不要手写 Build.bat、RunUBT.bat 或 dotnet UnrealBuildTool.dll 命令。
 ```

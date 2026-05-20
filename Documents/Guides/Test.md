@@ -63,6 +63,15 @@ GeneratedFunctionTable 三分类统计专项前缀：
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine.GeneratedFunctionTable" -Label generated-table -TimeoutMs 600000
 ```
 
+Compilation hook / event 专项前缀：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Preprocessor" -Label preprocessor-hooks -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Compiler" -Label compiler-events -TimeoutMs 600000
+```
+
+这两个前缀覆盖 `PreprocessorContext`、`Preprocess.ProcessChunks` / `Preprocess.PostProcessCode` summary-backed hook 事件、`Compile.Begin` / `Compile.End`、module stage events、JIT availability metadata，以及 per-run `FAngelscriptCompilationContext` 隔离语义。
+
 对应的 UHT 生成统计会在每次标准 build/UHT 运行时写入：
 
 ```text
@@ -210,6 +219,7 @@ D:\Tmp\TestRuns\Tests\<Label>\<RunId>\
 - `AngelscriptFast`
 - `AngelscriptFunctional`
 - `AngelscriptEditor`
+- `AngelscriptExamples`
 
 常用 suite 以 `Tools\RunTestSuite.ps1 -ListSuites` 输出为准，当前重点包括：
 推荐顺序：
@@ -535,14 +545,15 @@ ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 ## 对 AI Agent 的要求
 
 1. 先读取根目录 `AgentConfig.ini`
-2. 配置缺失或 worktree 路径不匹配时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`
-3. 单条测试只通过 `Tools\RunTests.ps1`
-4. suite 波次只通过 `Tools\RunTestSuite.ps1`
-5. 显式传入或继承一个不超过 `900000ms` 的超时
-6. 不要手写 `UnrealEditor-Cmd.exe`、`RunAutomationTests.ps1` 或共享日志路径
+2. 配置缺失或 worktree 路径不匹配时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`
+3. bootstrap 会自动初始化子模块；如果子模块仍缺失，参考 `Documents/Guides/SubmoduleWorktreeWorkflow.md`
+4. 单条测试只通过 `Tools\RunTests.ps1`
+5. suite 波次只通过 `Tools\RunTestSuite.ps1`
+6. 显式传入或继承一个不超过 `900000ms` 的超时
+7. 不要手写 `UnrealEditor-Cmd.exe`、`RunAutomationTests.ps1` 或共享日志路径
 
 ## 推荐提示词
 
 ```text
-请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1。自动化测试只能通过 Tools\RunTests.ps1 或 Tools\RunTestSuite.ps1 执行，并显式带一个不超过 3600000ms 的超时。不要手写 UnrealEditor-Cmd.exe 命令，也不要手写 -ABSLOG / -ReportExportPath 共享路径；日志、报告和摘要必须写入当前 run 的独立目录。除非明确需要真实渲染，否则保持默认 headless 模式。
+请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。自动化测试只能通过 Tools\RunTests.ps1 或 Tools\RunTestSuite.ps1 执行，并显式带一个不超过 3600000ms 的超时。不要手写 UnrealEditor-Cmd.exe 命令，也不要手写 -ABSLOG / -ReportExportPath 共享路径；日志、报告和摘要必须写入当前 run 的独立目录。除非明确需要真实渲染，否则保持默认 headless 模式。
 ```
