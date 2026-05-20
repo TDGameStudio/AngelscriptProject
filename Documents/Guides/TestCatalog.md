@@ -64,7 +64,7 @@
 - [13. Learning — 教学型可观测测试](#13-learning--教学型可观测测试)
   - [13.1 Native 层学习测试](#131-native-层学习测试)
   - [13.2 Runtime 层学习测试](#132-runtime-层学习测试)
-- [14. Examples — 示例脚本编译](#14-examples--示例脚本编译)
+- [14. Retired Examples Test Layer](#14-retired-examples-test-layer)
 - [15. Template — 模板场景](#15-template--模板场景)
 - [15.6 Performance — 运行期微基准](#156-performance--运行期微基准)
 - [16. Dump — 状态导出](#16-dump--状态导出)
@@ -1045,38 +1045,21 @@
 
 ---
 
-## 14. Examples — 示例脚本编译
+## 14. Retired Examples Test Layer
 
-> 源文件：`Examples/AngelscriptScriptExample*Test.cpp`（各文件对应一个示例 `.as`）以及 `Examples/AngelscriptScriptExampleCoverageTests.cpp`（直接从 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/` 读取真实资产）
->
-> 所有测试通过 `RunScriptExampleCompileTest` 将内嵌示例脚本编译为注解模块，验证文档级示例脚本能完整通过编译。
+`Plugins/Angelscript/Source/AngelscriptTest/Examples/` 与 `Angelscript.TestModule.ScriptExamples.*` 已退休（详见已归档 OpenSpec change `openspec/changes/archive/2026-05-20-refactor-examples-into-functional-tests/`）。示例资产仍由 `Script/Examples/**` 负责；示例中有行为价值的测试点进入当前主题化功能测试，纯编译示例由语法、绑定、编译器或运行时主题测试承接。
 
-| 测试名 | 验证内容（示例主题） |
+| 原 Examples 覆盖点 | 当前验证入口 |
 |--------|----------------------|
-| ScriptExamples.Actor | Actor 类/UProperty/BlueprintOverride |
-| ScriptExamples.AccessSpecifiers | 访问修饰符 |
-| ScriptExamples.Array | 数组操作 |
-| ScriptExamples.BehaviorTreeNodes | 行为树节点 |
-| ScriptExamples.CharacterInput | 角色输入 |
-| ScriptExamples.ConstructionScript | 构造脚本 |
-| ScriptExamples.Delegates | 委托 |
-| ScriptExamples.Enum | 枚举 |
-| ScriptExamples.FormatString | 格式化字符串 |
-| ScriptExamples.Functions | 函数示例 |
-| ScriptExamples.FunctionSpecifiers | 函数说明符 |
-| ScriptExamples.Map | Map 容器 |
-| ScriptExamples.Math | 数学 |
-| ScriptExamples.MixinMethods | Mixin 方法 |
-| ScriptExamples.MovingObject | 移动对象 |
-| ScriptExamples.Overlaps | 重叠检测 |
-| ScriptExamples.PropertySpecifiers | 属性说明符（依赖 `Example_Enum.as`） |
-| ScriptExamples.Coverage.Actor | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_Actor.as` 读取并验证 Actor 默认值、`BeginPlay`、`UFUNCTION` 与默认语句 |
-| ScriptExamples.Coverage.Component | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_Component.as` 读取并验证脚本组件 `BeginPlay`、`Tick` 与宿主 Actor 访问 |
-| ScriptExamples.Coverage.UObject | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_UObject.as` 读取并验证脚本 `UObject` 默认值与 `UFUNCTION` |
-| ScriptExamples.Coverage.PropertySpecifiers | 从真实 `Documents/Plans/Plan_ScriptExamplesExpansion/Coverage/Example_Coverage_PropertySpecifiers.as` 读取并验证 `DefaultComponent`、`RootComponent`、`Attach` 与常用属性说明符 |
-| ScriptExamples.Struct | 结构体 |
-| ScriptExamples.Timers | 定时器 |
-| ScriptExamples.WidgetUMG | UMG 控件 |
+| Actor 默认值、Tag、`BeginPlay`、脚本 `UFUNCTION` | `Angelscript.TestModule.Actor.Lifecycle.*` |
+| ConstructionScript 重算 | `Angelscript.TestModule.Actor.Lifecycle.ConstructionScript` |
+| Actor movement / 默认组件层级 | `Angelscript.TestModule.Actor.*`、`Angelscript.TestModule.Component.*`、`Angelscript.TestModule.Functional.Component.*` |
+| Actor / Component overlap | `Angelscript.TestModule.Actor.Interaction.*` |
+| Delegate/event 绑定、广播、解绑和签名 mismatch | `Angelscript.TestModule.Delegate.*`、`Angelscript.TestModule.Functional.Delegate.*` |
+| Timer handle pause/unpause/clear/invalidate | `Angelscript.TestModule.Functional.Actor.TimerRuntimeBehavior` |
+| Widget `BindWidget` metadata 与 `UUserWidget` lifecycle 签名 | `Angelscript.TestModule.Functional.Widget.BindWidget` |
+| Property metadata/specifier flags | `Angelscript.TestModule.Functional.Property.MetaSpecifiersMatrix` |
+| UObject 默认值与 helper `UFUNCTION` | `Angelscript.TestModule.Functional.Objects.ReflectedDefaultsAndFunction` |
 
 ---
 
