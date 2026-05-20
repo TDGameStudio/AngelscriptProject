@@ -22,5 +22,5 @@ $snapshot | ConvertTo-Json -Depth 2 | Set-Content -Path (Join-Path $iterationDir
 $stderrStream = [Console]::OpenStandardError()
 $stderrWriter = New-Object System.IO.StreamWriter($stderrStream, (New-Object System.Text.UTF8Encoding($false)))
 $stderrWriter.AutoFlush = $true
-$stderrWriter.WriteLine('unicode stderr :: 中文')
+$stderrWriter.WriteLine("unicode stderr :: $([char]0x4E2D)$([char]0x6587)")
 $stderrWriter.Dispose()

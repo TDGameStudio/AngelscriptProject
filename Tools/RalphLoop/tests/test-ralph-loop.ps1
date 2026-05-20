@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\test-helpers.ps1"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$workspaceRoot = (Get-Location).Path
 $tmpRoot = Join-Path $PSScriptRoot '.tmp\ralph-loop-smoke'
 
 if (Test-Path $tmpRoot) {
@@ -28,6 +29,95 @@ $mockProgressAgentCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File
 $mockSlowAgentCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File $repoRoot\tests\mock-slow-agent.ps1"
 $verifyTwoPassesCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$repoRoot\tests\mock-verify.ps1`" -PassAfter 2"
 $verifyOnePassCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$repoRoot\tests\mock-verify.ps1`" -PassAfter 1"
+
+$safeProfileRunsRoot = Join-Path $tmpRoot 'runs-safe-profile'
+$safeProfileArgs = @(
+    '-NoProfile'
+    '-ExecutionPolicy'
+    'Bypass'
+    '-File'
+    "$repoRoot\ralph-loop.ps1"
+    '-Prompt'
+    'safe profile smoke'
+    '-MaxIterations'
+    '0'
+    '-Agent'
+    'codex'
+    '-RunsRoot'
+    $safeProfileRunsRoot
+)
+
+$safeProfileOutput = & powershell @safeProfileArgs *>&1 | Out-String
+$safeProfileExitCode = $LASTEXITCODE
+
+Assert-Equal '0' "$safeProfileExitCode" 'Safe profile command resolution should succeed without running an agent.'
+
+$safeProfileRunDir = Get-ChildItem -Path $safeProfileRunsRoot -Directory | Select-Object -First 1
+Assert-True ($null -ne $safeProfileRunDir) 'Expected a safe-profile run directory.'
+
+$safeProfileRunMetadata = Get-Content -Raw -Path (Join-Path $safeProfileRunDir.FullName 'run.json') | ConvertFrom-Json
+Assert-True ($safeProfileRunMetadata.agentCommand -notmatch 'dangerously-bypass-approvals-and-sandbox') 'Codex safe profile should not bypass approvals or sandbox by default.'
+
+$trustedProfileRunsRoot = Join-Path $tmpRoot 'runs-trusted-profile'
+$trustedProfileArgs = @(
+    '-NoProfile'
+    '-ExecutionPolicy'
+    'Bypass'
+    '-File'
+    "$repoRoot\ralph-loop.ps1"
+    '-Prompt'
+    'trusted profile smoke'
+    '-MaxIterations'
+    '0'
+    '-Agent'
+    'codex'
+    '-RunsRoot'
+    $trustedProfileRunsRoot
+    '-TrustAgent'
+)
+
+$trustedProfileOutput = & powershell @trustedProfileArgs *>&1 | Out-String
+$trustedProfileExitCode = $LASTEXITCODE
+
+Assert-Equal '0' "$trustedProfileExitCode" 'Trusted profile command resolution should succeed without running an agent.'
+
+$trustedProfileRunDir = Get-ChildItem -Path $trustedProfileRunsRoot -Directory | Select-Object -First 1
+Assert-True ($null -ne $trustedProfileRunDir) 'Expected a trusted-profile run directory.'
+
+$trustedProfileRunMetadata = Get-Content -Raw -Path (Join-Path $trustedProfileRunDir.FullName 'run.json') | ConvertFrom-Json
+Assert-True ($trustedProfileRunMetadata.agentCommand -match 'dangerously-bypass-approvals-and-sandbox') 'Codex trusted profile should use the dangerous unattended command template.'
+Assert-True ($trustedProfileRunMetadata.trustAgent -eq $true) 'Run metadata should record trusted agent mode.'
+
+$claudeProfileRunsRoot = Join-Path $tmpRoot 'runs-claude-profile'
+$claudeProfileArgs = @(
+    '-NoProfile'
+    '-ExecutionPolicy'
+    'Bypass'
+    '-File'
+    "$repoRoot\ralph-loop.ps1"
+    '-Prompt'
+    'claude profile smoke'
+    '-MaxIterations'
+    '0'
+    '-Agent'
+    'claude'
+    '-RunsRoot'
+    $claudeProfileRunsRoot
+)
+
+$claudeProfileOutput = & powershell @claudeProfileArgs *>&1 | Out-String
+$claudeProfileExitCode = $LASTEXITCODE
+
+Assert-Equal '0' "$claudeProfileExitCode" 'Claude profile command resolution should succeed without running an agent.'
+
+$claudeProfileRunDir = Get-ChildItem -Path $claudeProfileRunsRoot -Directory | Select-Object -First 1
+Assert-True ($null -ne $claudeProfileRunDir) 'Expected a Claude-profile run directory.'
+
+$claudeProfileRunMetadata = Get-Content -Raw -Path (Join-Path $claudeProfileRunDir.FullName 'run.json') | ConvertFrom-Json
+Assert-Equal 'claude' $claudeProfileRunMetadata.agent 'Run metadata should record the Claude provider.'
+Assert-True ($claudeProfileRunMetadata.agentCommand -match 'claude') 'Claude profile should resolve a Claude CLI command.'
+Assert-True ($claudeProfileRunMetadata.agentCommand -match ' -p ') 'Claude profile should use non-interactive print mode.'
+Assert-True ($claudeProfileRunMetadata.agentCommand -notmatch 'dangerously-skip-permissions|bypassPermissions') 'Claude safe profile should not bypass permissions by default.'
 
 $psArgs = @(
     '-NoProfile'
@@ -54,7 +144,7 @@ Assert-Equal '0' "$psExitCode" 'PowerShell loop command should succeed.'
 Assert-True ($psOutput -match '================================================================') 'PowerShell loop should print a summary header block.'
 Assert-True ($psOutput -match 'RalphLoop \(codex\) - starting') 'PowerShell loop should print the selected provider in the header.'
 Assert-True ($psOutput -match 'Output dir\s+:\s+.*') 'PowerShell loop should print the output directory in the header.'
-Assert-True ($psOutput -match 'Work dir\s+:\s+.*D:\\Workspace\\codexloop') 'PowerShell loop should print the working directory in the header.'
+Assert-True ($psOutput -match ('Work dir\s+:\s+{0}' -f [regex]::Escape($workspaceRoot))) 'PowerShell loop should print the working directory in the header.'
 Assert-True ($psOutput -match 'Prompt tpl\s+:\s+.*prompts\\loop\.txt') 'PowerShell loop should print the prompt template path in the header.'
 Assert-True ($psOutput -match 'Agent home\s+:\s+.*') 'PowerShell loop should print the agent home in the header.'
 Assert-True ($psOutput -match 'Verify\s+:\s+configured') 'PowerShell loop should print whether verification is configured.'
@@ -263,7 +353,9 @@ Assert-True ($streamOutputResult -match 'Stream raw\s+:\s+on') 'Explicit stream-
 Assert-True ($streamOutputResult -match '\[codex\] mock-agent iteration 1') 'Explicit stream-output mode should show raw agent output.'
 
 $unicodeRunsRoot = Join-Path $tmpRoot 'runs-unicode'
-$unicodePrompt = 'unicode smoke :: 中文输入'
+$unicodePromptText = "$([char]0x4E2D)$([char]0x6587)$([char]0x8F93)$([char]0x5165)"
+$unicodeStderrText = "unicode stderr :: $([char]0x4E2D)$([char]0x6587)"
+$unicodePrompt = "unicode smoke :: $unicodePromptText"
 
 if ($null -ne (Get-Command pwsh -ErrorAction SilentlyContinue)) {
     $unicodeAgentCommand = "pwsh -NoProfile -ExecutionPolicy Bypass -File $repoRoot\tests\mock-unicode-agent.ps1"
@@ -290,11 +382,13 @@ if ($null -ne (Get-Command pwsh -ErrorAction SilentlyContinue)) {
     $unicodeRunDir = Get-ChildItem -Path $unicodeRunsRoot -Directory | Select-Object -First 1
     Assert-True ($null -ne $unicodeRunDir) 'Expected a unicode run directory.'
 
-    $unicodeSnapshot = Get-Content -Raw -Path (Join-Path $unicodeRunDir.FullName 'iter-001\agent-snapshot.json') | ConvertFrom-Json
+    $unicodeSnapshotPath = Join-Path $unicodeRunDir.FullName 'iter-001\agent-snapshot.json'
+    $unicodeSnapshot = [System.IO.File]::ReadAllText($unicodeSnapshotPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
     Assert-True ($unicodeSnapshot.promptFileContent -match [regex]::Escape($unicodePrompt)) 'Unicode prompt text should be preserved in prompt.txt.'
 
-    $unicodeStderr = Get-Content -Raw -Path (Join-Path $unicodeRunDir.FullName 'iter-001\stderr.log')
-    Assert-True ($unicodeStderr -match [regex]::Escape('unicode stderr :: 中文')) 'stderr.log should preserve UTF-8 unicode output.'
+    $unicodeStderrPath = Join-Path $unicodeRunDir.FullName 'iter-001\stderr.log'
+    $unicodeStderr = [System.IO.File]::ReadAllText($unicodeStderrPath, [System.Text.Encoding]::UTF8)
+    Assert-True ($unicodeStderr -match [regex]::Escape($unicodeStderrText)) 'stderr.log should preserve UTF-8 unicode output.'
 }
 
 $tickerRunsRoot = Join-Path $tmpRoot 'runs-status-ticker'
@@ -426,16 +520,21 @@ $timeoutBatArgs = @(
     $timeoutBatchCodeHome
     '-TimeoutSeconds'
     '1'
+    '-MaxConsecutiveFailures'
+    '1'
 )
 
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 $timeoutOutput = & cmd @timeoutBatArgs *>&1 | Out-String
 $timeoutExitCode = $LASTEXITCODE
+$ErrorActionPreference = $previousErrorActionPreference
 
 Remove-Item Env:RALPH_CODEX_COMMAND -ErrorAction SilentlyContinue
 Remove-Item Env:RALPH_VERIFY_COMMAND -ErrorAction SilentlyContinue
 Remove-Item Env:RALPH_RUNS_ROOT -ErrorAction SilentlyContinue
 
-Assert-Equal '124' "$timeoutExitCode" 'Batch wrapper should forward timeout seconds and stop a hanging command.'
+Assert-Equal '1' "$timeoutExitCode" 'Batch wrapper should forward timeout seconds and fail after the configured consecutive timeout limit.'
 Assert-True ($timeoutOutput -match 'Timeout\s+:\s+1 second\(s\)') 'Timeout run should print the timeout configuration.'
 
 $timeoutRunDir = Get-ChildItem -Path $timeoutRunsRoot -Directory | Select-Object -First 1

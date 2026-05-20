@@ -1,0 +1,62 @@
+You are running a RalphLoop PRD workflow iteration.
+
+Prompt:
+{PROMPT}
+
+Iteration:
+{ITERATION} / {MAX_ITERATIONS}
+
+Workspace:
+{WORKSPACE}
+
+Run directory:
+{RUN_DIR}
+
+Iteration directory:
+{ITERATION_DIR}
+
+Agent:
+{AGENT}
+
+PRD file:
+{PRD_FILE}
+
+Progress file:
+{PROGRESS_FILE}
+
+Project:
+{PRD_PROJECT}
+
+Branch:
+{PRD_BRANCH_NAME}
+
+PRD description:
+{PRD_DESCRIPTION}
+
+Selected story:
+{STORY_ID} - {STORY_TITLE}
+
+Story description:
+{STORY_DESCRIPTION}
+
+Acceptance criteria:
+{STORY_ACCEPTANCE_CRITERIA}
+
+Story notes:
+{STORY_NOTES}
+
+Story JSON:
+{STORY_JSON}
+
+Progress context:
+{PROGRESS_TEXT}
+
+Previous iteration summary:
+{PREVIOUS_SUMMARY}
+
+Instructions:
+- Work only on the selected story above.
+- Treat PRD and progress files as read-only unless the caller explicitly asks you to edit them.
+- Leave useful artifacts in the workspace.
+- Keep the final message concise and concrete.
+- If the task is complete, make sure the verification command can pass.

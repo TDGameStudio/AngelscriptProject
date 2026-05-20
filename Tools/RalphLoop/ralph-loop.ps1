@@ -25,6 +25,15 @@ param(
 
     [int]$MaxConsecutiveFailures = 3,
 
+    [ValidateSet('Basic', 'Prd')]
+    [string]$Workflow = 'Basic',
+
+    [string]$PrdFile,
+
+    [string]$ProgressFile,
+
+    [switch]$TrustAgent,
+
     [switch]$StreamAgentOutput
 )
 
@@ -100,6 +109,98 @@ function Get-AgentProfile {
     }
 
     return [pscustomobject]$Profiles.Agents[$selectedAgent]
+}
+
+function Get-AgentCommandTemplate {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Profile,
+
+        [Parameter(Mandatory = $true)]
+        [bool]$TrustAgent
+    )
+
+    if ($TrustAgent -and (-not [string]::IsNullOrWhiteSpace($Profile.TrustedCommandTemplate))) {
+        return $Profile.TrustedCommandTemplate
+    }
+
+    return $Profile.CommandTemplate
+}
+
+function ConvertTo-JsonText {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    return ($Value | ConvertTo-Json -Depth 16)
+}
+
+function ConvertTo-TextBlock {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    if ($Value -is [array]) {
+        return (($Value | ForEach-Object { "- $_" }) -join [Environment]::NewLine)
+    }
+
+    return [string]$Value
+}
+
+function Get-PrdWorkflowContext {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PrdFile,
+
+        [string]$ProgressFile
+    )
+
+    if (-not (Test-Path $PrdFile)) {
+        throw "PRD file not found: $PrdFile"
+    }
+
+    $prd = Get-Content -Raw -Path $PrdFile | ConvertFrom-Json
+    if ($null -eq $prd.userStories) {
+        throw "PRD file must contain userStories: $PrdFile"
+    }
+
+    $indexedStories = @()
+    $storyIndex = 0
+    foreach ($story in @($prd.userStories)) {
+        $priority = if ($null -ne $story.priority) { [int]$story.priority } else { [int]::MaxValue }
+        $indexedStories += [pscustomobject]@{
+            Story    = $story
+            Priority = $priority
+            Index    = $storyIndex
+        }
+        $storyIndex++
+    }
+
+    $selected = $indexedStories |
+        Where-Object { $_.Story.passes -ne $true } |
+        Sort-Object Priority, Index |
+        Select-Object -First 1
+
+    $progressText = ''
+    if (-not [string]::IsNullOrWhiteSpace($ProgressFile) -and (Test-Path $ProgressFile)) {
+        $progressText = Get-Content -Raw -Path $ProgressFile
+    }
+
+    return [pscustomobject]@{
+        Prd          = $prd
+        SelectedStory = if ($null -ne $selected) { $selected.Story } else { $null }
+        ProgressText = $progressText
+    }
 }
 
 function Resolve-AgentHomePath {
@@ -189,6 +290,9 @@ function Write-RunHeader {
         [bool]$HasVerifyCommand,
 
         [Parameter(Mandatory = $true)]
+        [string]$Workflow,
+
+        [Parameter(Mandatory = $true)]
         [int]$MaxIterations,
 
         [Parameter(Mandatory = $true)]
@@ -196,7 +300,9 @@ function Write-RunHeader {
 
         [int]$TimeoutSeconds,
 
-        [int]$MaxConsecutiveFailures = 3
+        [int]$MaxConsecutiveFailures = 3,
+
+        [bool]$TrustAgent = $false
     )
 
     Write-SectionDivider
@@ -206,8 +312,10 @@ function Write-RunHeader {
     Write-Output "  Prompt tpl : $PromptTemplatePath"
     Write-Output "  Agent home : $AgentHome"
     Write-Output "  Verify     : $(if ($HasVerifyCommand) { 'configured' } else { 'disabled' })"
+    Write-Output "  Workflow   : $Workflow"
     Write-Output "  Max rounds : $MaxIterations"
     Write-Output "  Fail limit : $MaxConsecutiveFailures consecutive"
+    Write-Output "  Trust mode : $(if ($TrustAgent) { 'on' } else { 'off' })"
     Write-Output "  Stream raw : $(if ($StreamAgentOutput) { 'on' } else { 'off' })"
     Write-Output "  Timeout    : $(if ($TimeoutSeconds -gt 0) { "$TimeoutSeconds second(s)" } else { 'off' })"
     Write-SectionDivider
@@ -540,8 +648,13 @@ if ([string]::IsNullOrWhiteSpace($Agent)) {
     $Agent = $selectedProfile.Id
 }
 
+if ((-not [string]::IsNullOrWhiteSpace($PrdFile)) -and ($Workflow -eq 'Basic')) {
+    $Workflow = 'Prd'
+}
+
 if ([string]::IsNullOrWhiteSpace($PromptFile)) {
-    $PromptFile = if ($env:RALPH_PROMPT_FILE) { $env:RALPH_PROMPT_FILE } else { Join-Path $scriptRoot 'prompts\loop.txt' }
+    $defaultPromptName = if ($Workflow -eq 'Prd') { 'prompts\prd-loop.txt' } else { 'prompts\loop.txt' }
+    $PromptFile = if ($env:RALPH_PROMPT_FILE) { $env:RALPH_PROMPT_FILE } else { Join-Path $scriptRoot $defaultPromptName }
 }
 
 if ([string]::IsNullOrWhiteSpace($AgentCommand)) {
@@ -550,7 +663,7 @@ if ([string]::IsNullOrWhiteSpace($AgentCommand)) {
     } elseif ($env:RALPH_CODEX_COMMAND) {
         $env:RALPH_CODEX_COMMAND
     } else {
-        $selectedProfile.CommandTemplate
+        Get-AgentCommandTemplate -Profile $selectedProfile -TrustAgent $TrustAgent.IsPresent
     }
 }
 
@@ -579,9 +692,21 @@ if (($CommandTimeoutSeconds -le 0) -and $env:RALPH_COMMAND_TIMEOUT_SECONDS) {
 $resolvedPromptFile = Resolve-FullPath -Path $PromptFile -BaseDirectory $workspace
 $resolvedRunsRoot = Resolve-FullPath -Path $RunsRoot -BaseDirectory $workspace
 $resolvedAgentHome = Resolve-AgentHomePath -Profile $selectedProfile -Workspace $workspace -ExplicitAgentHome $AgentHome -ExplicitCodexHome $CodexHome
+$resolvedPrdFile = if (-not [string]::IsNullOrWhiteSpace($PrdFile)) { Resolve-FullPath -Path $PrdFile -BaseDirectory $workspace } else { '' }
+$resolvedProgressFile = if (-not [string]::IsNullOrWhiteSpace($ProgressFile)) {
+    Resolve-FullPath -Path $ProgressFile -BaseDirectory $workspace
+} elseif (-not [string]::IsNullOrWhiteSpace($resolvedPrdFile)) {
+    Join-Path (Split-Path -Parent $resolvedPrdFile) 'progress.txt'
+} else {
+    ''
+}
 
 if (-not (Test-Path $resolvedPromptFile)) {
     throw "Prompt template not found: $resolvedPromptFile"
+}
+
+if (($Workflow -eq 'Prd') -and [string]::IsNullOrWhiteSpace($resolvedPrdFile)) {
+    throw 'PRD workflow requires -PrdFile.'
 }
 
 New-Item -ItemType Directory -Path $resolvedRunsRoot -Force | Out-Null
@@ -593,13 +718,16 @@ New-Item -ItemType Directory -Path $runDirectory -Force | Out-Null
 
 $templateText = Get-Content -Raw -Path $resolvedPromptFile
 $previousSummary = 'No previous iteration summary is available.'
+$prdContext = if ($Workflow -eq 'Prd') { Get-PrdWorkflowContext -PrdFile $resolvedPrdFile -ProgressFile $resolvedProgressFile } else { $null }
 
 $runMetadata = [ordered]@{
     prompt                 = $Prompt
     task                   = $Prompt
     agent                  = $Agent
+    workflow               = $Workflow
     maxIterations          = $MaxIterations
     maxConsecutiveFailures = $MaxConsecutiveFailures
+    trustAgent             = $TrustAgent.IsPresent
     agentHome              = $resolvedAgentHome
     codeHome               = $resolvedAgentHome
     promptFile             = $resolvedPromptFile
@@ -608,13 +736,34 @@ $runMetadata = [ordered]@{
     codexCommand           = $AgentCommand
     verifyCommand          = $VerifyCommand
     workspace              = $workspace
+    prdFile                = $resolvedPrdFile
+    progressFile           = $resolvedProgressFile
+    selectedStory          = if ($null -ne $prdContext) { $prdContext.SelectedStory } else { $null }
 } | ConvertTo-Json -Depth 4
 
 Set-Content -Path (Join-Path $runDirectory 'run.json') -Value $runMetadata -Encoding UTF8
 
 $hasVerifyCommand = -not [string]::IsNullOrWhiteSpace($VerifyCommand)
 
-Write-RunHeader -Agent $Agent -RunDirectory $runDirectory -Workspace $workspace -PromptTemplatePath $resolvedPromptFile -AgentHome $resolvedAgentHome -HasVerifyCommand $hasVerifyCommand -MaxIterations $MaxIterations -StreamAgentOutput $StreamAgentOutput.IsPresent -TimeoutSeconds $CommandTimeoutSeconds -MaxConsecutiveFailures $MaxConsecutiveFailures
+Write-RunHeader -Agent $Agent -RunDirectory $runDirectory -Workspace $workspace -PromptTemplatePath $resolvedPromptFile -AgentHome $resolvedAgentHome -HasVerifyCommand $hasVerifyCommand -Workflow $Workflow -MaxIterations $MaxIterations -StreamAgentOutput $StreamAgentOutput.IsPresent -TimeoutSeconds $CommandTimeoutSeconds -MaxConsecutiveFailures $MaxConsecutiveFailures -TrustAgent $TrustAgent.IsPresent
+
+if (($Workflow -eq 'Prd') -and ($null -eq $prdContext.SelectedStory)) {
+    $completeState = [ordered]@{
+        stopped      = $true
+        agent        = $Agent
+        workflow     = $Workflow
+        iteration    = 0
+        reason       = 'prd-complete'
+        runDirectory = $runDirectory
+        agentHome    = $resolvedAgentHome
+        codeHome     = $resolvedAgentHome
+        prdFile      = $resolvedPrdFile
+    } | ConvertTo-Json -Depth 4
+
+    Set-Content -Path (Join-Path $runDirectory 'state.json') -Value $completeState -Encoding UTF8
+    Write-Output "PRD workflow has no incomplete stories. Run directory: $runDirectory"
+    exit 0
+}
 
 $consecutiveFailures = 0
 $totalFailures = 0
@@ -626,10 +775,16 @@ for ($iteration = 1; $iteration -le $MaxIterations; $iteration++) {
     $lastMessageFile = Join-Path $iterationDirectory 'last-message.txt'
     $stdoutLogFile = Join-Path $iterationDirectory 'stdout.log'
     $stderrLogFile = Join-Path $iterationDirectory 'stderr.log'
+    $selectedStory = if ($null -ne $prdContext) { $prdContext.SelectedStory } else { $null }
+    $acceptanceCriteriaText = if ($null -ne $selectedStory) { ConvertTo-TextBlock -Value $selectedStory.acceptanceCriteria } else { '' }
+    $selectedStoryJson = ConvertTo-JsonText -Value $selectedStory
+    $prdJson = if ($null -ne $prdContext) { ConvertTo-JsonText -Value $prdContext.Prd } else { '' }
+    $progressText = if ($null -ne $prdContext) { $prdContext.ProgressText } else { '' }
     $values = @{
         PROMPT            = $Prompt
         TASK              = $Prompt
         AGENT             = $Agent
+        WORKFLOW          = $Workflow
         MAX_ITERATIONS    = $MaxIterations
         ITERATION         = $iteration
         WORKSPACE         = $workspace
@@ -638,11 +793,28 @@ for ($iteration = 1; $iteration -le $MaxIterations; $iteration++) {
         AGENT_HOME        = $resolvedAgentHome
         CODEX_HOME        = $resolvedAgentHome
         PREVIOUS_SUMMARY  = $previousSummary
+        PRD_FILE          = $resolvedPrdFile
+        PROGRESS_FILE     = $resolvedProgressFile
+        PRD_PROJECT       = if (($null -ne $prdContext) -and ($null -ne $prdContext.Prd.project)) { $prdContext.Prd.project } else { '' }
+        PRD_DESCRIPTION   = if (($null -ne $prdContext) -and ($null -ne $prdContext.Prd.description)) { $prdContext.Prd.description } else { '' }
+        PRD_BRANCH_NAME   = if (($null -ne $prdContext) -and ($null -ne $prdContext.Prd.branchName)) { $prdContext.Prd.branchName } else { '' }
+        PRD_JSON          = $prdJson
+        STORY_ID          = if (($null -ne $selectedStory) -and ($null -ne $selectedStory.id)) { $selectedStory.id } else { '' }
+        STORY_TITLE       = if (($null -ne $selectedStory) -and ($null -ne $selectedStory.title)) { $selectedStory.title } else { '' }
+        STORY_DESCRIPTION = if (($null -ne $selectedStory) -and ($null -ne $selectedStory.description)) { $selectedStory.description } else { '' }
+        STORY_ACCEPTANCE_CRITERIA = $acceptanceCriteriaText
+        STORY_NOTES       = if (($null -ne $selectedStory) -and ($null -ne $selectedStory.notes)) { $selectedStory.notes } else { '' }
+        STORY_JSON        = $selectedStoryJson
+        PROGRESS_TEXT     = $progressText
     }
 
     $renderedPrompt = Expand-TemplateString -Template $templateText -Values $values
     $promptFilePath = Join-Path $iterationDirectory 'prompt.txt'
     Set-Content -Path $promptFilePath -Value $renderedPrompt -Encoding UTF8
+    if ($Workflow -eq 'Prd') {
+        Set-Content -Path (Join-Path $iterationDirectory 'selected-story.json') -Value $selectedStoryJson -Encoding UTF8
+        Set-Content -Path (Join-Path $iterationDirectory 'progress-context.txt') -Value $progressText -Encoding UTF8
+    }
     Write-IterationArtifacts -Iteration $iteration -MaxIterations $MaxIterations -Agent $Agent -PromptFilePath $promptFilePath -StdoutLogFile $stdoutLogFile -StderrLogFile $stderrLogFile -LastMessageFile $lastMessageFile
 
     $commandValues = @{
