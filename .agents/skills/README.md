@@ -25,7 +25,11 @@ validation & archive                systematic-debugging
 - **Superpowers** provides disciplined thinking and execution methods (brainstorming, TDD, debugging, verification).
 - **Adapter blocks** (`<!-- SUPERPOWER-BEGIN/END -->`) override Superpowers defaults to route outputs into OpenSpec paths and inject project-specific conventions.
 
+**Project rule:** OpenSpec is now the authoritative planning system for AngelscriptProject. Legacy `Documents/Plans/Plan_*.md` files are historical references only; do not create or extend them for active work. During implementation, the current OpenSpec change's `tasks.md` is the only active plan.
+
 ## Skills
+
+### OpenSpec lifecycle skills
 
 | Skill | Trigger | Phase | Description |
 |-------|---------|-------|-------------|
@@ -33,6 +37,14 @@ validation & archive                systematic-debugging
 | `openspec-propose` | `/opsx:propose`, `/openspec:propose` | Design | Create/continue a change: brainstorm → write artifacts → validate. No code changes. |
 | `openspec-apply-change` | `/opsx:apply`, `/openspec:apply` | Implement | Execute tasks from a change with TDD/debugging discipline. Writes code. |
 | `openspec-archive-change` | `/opsx:archive`, `/openspec:archive` | Close | Archive a completed change via CLI. Lifecycle action only. |
+
+### Auxiliary skills
+
+Auxiliary skills are NOT part of the OpenSpec lifecycle and do not own a slash command. They are read IMMEDIATELY by the lifecycle skills (typically `openspec-apply-change` during TDD steps) or directly by the developer when a matching task surfaces. They never alter the OpenSpec change state.
+
+| Skill | Trigger | Phase | Description |
+|-------|---------|-------|-------------|
+| `angelscript-test-guide` _(WIP — disabled)_ | Currently disabled; directory renamed to `_angelscript-test-guide/` so the skill loader cannot discover `SKILL.md` | Implement (test layer) | Pattern handbook for picking the test layer, helper, template, and applying Positive/Negative/Boundary/RoundTrip/Exception coverage. Re-enable by restoring the directory name to `angelscript-test-guide/`. |
 
 ## Lifecycle Flow
 
@@ -138,6 +150,12 @@ These skills inject the following project-specific knowledge that Superpowers do
 - Only `Tools\RunTests.ps1` and `Tools\RunTestSuite.ps1` as test entry points
 - Standard groups and suites
 - CQTest framework patterns
+
+### OpenSpec Change Names
+- Format: `<type>-<scope>-<outcome>` in lowercase kebab-case.
+- Allowed type prefixes: `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, `chore`.
+- Use `feature` rather than `feat`; Git commits may still use `Feat`.
+- Choose `refactor` for structural boundary/dependency/module-shape changes, and `improve` for quality, diagnostics, performance, readability, or ergonomics improvements without major structural reshaping.
 
 ## Troubleshooting
 

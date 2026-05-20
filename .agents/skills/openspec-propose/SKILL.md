@@ -91,6 +91,27 @@ proposal.md ──┬──► design.md ──┐
 
 The user should provide either a kebab-case change name or a description of what they want to build or fix. If the request is unclear, ask what change they want and stop until they answer.
 
+### Change name convention
+
+OpenSpec change names in this project should use:
+
+```text
+<type>-<scope>-<outcome>
+```
+
+- Use lowercase kebab-case only.
+- Prefix every new change with one of: `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, `chore`.
+- Prefer the type that describes the main intent, not every artifact touched:
+  - `feature`: new user/script/tool-visible capability.
+  - `fix`: incorrect behavior, crash, compile failure, or test failure.
+  - `refactor`: structural boundary, responsibility, dependency, or module-shape change with compatible behavior.
+  - `improve`: quality, diagnostics, performance, readability, or ergonomics improvement without a major structural boundary change.
+  - `docs`: documentation/spec/process text.
+  - `test`: test coverage, fixtures, harnesses, or test data.
+  - `chore`: build, config, tooling, dependency, or workflow maintenance.
+- Use `feature` rather than `feat` for OpenSpec readability, even though Git commits use `Feat`.
+- Keep names outcome-focused and avoid implementation-file inventories. Good examples: `refactor-as-compilation-event-hook`, `improve-as-preprocessor-diagnostics`, `feature-as-blueprint-impact-commandlet`.
+
 ## Steps
 
 1. **Clarify and confirm the design**
@@ -134,6 +155,8 @@ Use the returned `outputPath`, `template`, `instruction`, `context`, `rules`, an
 3. **Generate artifacts until apply-ready**
 
    Continue in dependency order until every artifact required by `applyRequires` is complete. Re-run `openspec status --change "<name>" --json` after each artifact.
+
+   Codex on Windows note: OpenSpec CLI creates and tracks the change metadata, but the agent still writes artifact files. If the local `apply_patch` command resolves to a `.bat` wrapper, PowerShell may corrupt multi-line patch arguments or pipelines and report errors such as "requires a UTF-8 PATCH argument" or mismatched first/last patch lines. Treat this as a patch transport issue, not an OpenSpec CLI failure. Keep using patch-based edits; in Codex, call the underlying `codex.exe --codex-run-as-apply-patch` with the patch string, or use the platform-native patch tool when available. Do not switch to `cat`/Python file-writing workarounds for artifacts.
 
 4. **Use `tasks.md` as the implementation plan**
 

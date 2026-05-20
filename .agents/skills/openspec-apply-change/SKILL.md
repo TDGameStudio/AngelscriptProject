@@ -91,6 +91,17 @@ Decision rules:
 - If the user does not explicitly request a worktree and the current workspace has uncommitted or untracked changes, stop and ask whether to create/switch worktree, continue in the current directory, or cancel.
 
 If the user chooses to create a worktree, use `superpowers:using-git-worktrees` as guidance, but do not silently edit `.gitignore`, commit changes, or move work without explicit confirmation.
+
+**Submodule verification** — after confirming the worktree context, check submodule status:
+
+```powershell
+if (Test-Path '.gitmodules') { git submodule status }
+```
+
+- If any submodule shows `-` prefix (uninitialized) or its `Source/` directory is missing, run bootstrap first: `Tools\Bootstrap\powershell\BootstrapWorktree.ps1` (which now handles submodule init with fallback).
+- If the change target is inside a submodule (e.g. `Plugins/UnrealEvent`), confirm the submodule has its own branch/worktree — not just a detached gitlink.
+- For dual-repo changes (OpenSpec in parent, code in submodule), note that commits must be made separately: submodule first, then parent updates the gitlink.
+- See `Documents/Guides/SubmoduleWorktreeWorkflow.md` for the full workflow.
 <!-- SUPERPOWER-END: worktree-check -->
 
 4. **Analyze tasks before editing code**
