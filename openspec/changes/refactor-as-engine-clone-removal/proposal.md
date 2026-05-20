@@ -17,7 +17,8 @@ Removing Clone and extracting test logic into a dedicated `FAngelscriptTestEngin
 - **Remove**: `EAngelscriptEngineCreationMode` enum, `CreateCloneFrom()`, `CreateUncompiledWithMode()`, Clone-related members from `FAngelscriptEngine`.
 - **Simplify**: `FAngelscriptOwnedSharedState` drops reference-counting fields; ownership changes from `TSharedPtr` to `TUniquePtr`.
 - **Simplify**: `Shutdown()` no longer performs deferred-release coordination.
-- **Migrate**: 14 test-side `CreateCloneFrom` call sites adopt `FAngelscriptTestEngine` APIs.
+- **Migrate**: 15 test-side `CreateCloneFrom` call sites adopt `FAngelscriptTestEngine` APIs (4 in `AngelscriptEngineIsolationTests.cpp`, 9 in `AngelscriptMultiEngineLifecycleTests.cpp`, 1 in `AngelscriptEnginePerformanceTests.cpp`, 1 in `AngelscriptTestUtilities.h`); 1 internal forwarder in `AngelscriptEngine.cpp::CreateUncompiledWithMode` is removed alongside the API.
+- **Cleanup**: `AngelscriptStateDump.cpp` references `EAngelscriptEngineCreationMode` 3 times only via the read-only `GetCreationModeString` helper for CSV output; both the helper and the `CreationMode` column in the engine state dump are removed when the enum disappears.
 
 ## Capabilities
 
@@ -32,7 +33,7 @@ Removing Clone and extracting test logic into a dedicated `FAngelscriptTestEngin
 
 ## Impact
 
-- **AngelscriptRuntime**: `AngelscriptEngine.h/.cpp` modified (removal of Clone API surface and SharedState simplification).
+- **AngelscriptRuntime**: `AngelscriptEngine.h/.cpp` modified (removal of Clone API surface, `EAngelscriptEngineCreationMode` enum, and SharedState simplification). `Dump/AngelscriptStateDump.cpp` drops the `GetCreationModeString` helper and the `CreationMode` field in CSV output (the field has no consumers besides this dump).
 - **AngelscriptTest**: New files `AngelscriptTestEngine.h/.cpp`; updates to `AngelscriptTestMacros.h`, `AngelscriptTestUtilities.h`, `AngelscriptTestEngineHelper.h`, `AngelscriptTestEnginePool.h`.
-- **Test consumers**: All 463 test files compile and pass without regression; macro interface remains stable.
+- **Test consumers**: All 421 test `.cpp` files in `AngelscriptTest/` compile and pass without regression; macro interface remains stable. (Baseline as of 2026-05-20 commit `91ac208` with the bind/free regression suite landed.)
 - **Build rules**: No new module dependencies (AngelscriptTest already depends on AngelscriptRuntime).

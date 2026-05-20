@@ -57,6 +57,22 @@ Where `FAngelscriptTestEngine` needs access to engine internals (e.g., module ma
 
 Rationale: Adding getter methods would increase the public API surface. Protected access is appropriate for a tightly-coupled subclass in the same project.
 
+### D6: Dump system follows the enum, not the other way around
+
+`AngelscriptStateDump.cpp` references `EAngelscriptEngineCreationMode` only through the read-only `GetCreationModeString` helper to print a `CreationMode` column in the CSV state dump. There are no other consumers of the `CreationMode` field, and the dump is purely a diagnostic artefact.
+
+When Phase 3 removes the enum, `GetCreationModeString` and the `CreationMode` column in the CSV output are deleted alongside it. No replacement is required because the column was tautological once Clone is gone (every engine is Full).
+
+Rationale: Treating the dump as a downstream consumer of the enum (rather than a dependency that constrains the refactor) keeps Phase 3's runtime API removal self-contained.
+
+### D6: Dump system follows the enum, not the other way around
+
+`AngelscriptStateDump.cpp` references `EAngelscriptEngineCreationMode` only through the read-only `GetCreationModeString` helper to print a `CreationMode` column in the CSV state dump. There are no other consumers of the `CreationMode` field, and the dump is purely a diagnostic artefact.
+
+When Phase 3 removes the enum, `GetCreationModeString` and the `CreationMode` column in the CSV output are deleted alongside it. No replacement is required because the column was tautological once Clone is gone (every engine is Full).
+
+Rationale: Treating the dump as a downstream consumer of the enum (rather than a dependency that constrains the refactor) keeps Phase 3's runtime API removal self-contained.
+
 ## Risks / Trade-offs
 
 ### R1: Test performance if ResetModules is more expensive than Clone creation
@@ -73,14 +89,14 @@ Rationale: Adding getter methods would increase the public API surface. Protecte
 
 ### R3: Breaking existing test code during migration
 
-**Risk**: 463 test files and 14 Clone call sites need updating.
+**Risk**: 421 test `.cpp` files and 15 Clone call sites need updating (the runtime-internal forwarder in `CreateUncompiledWithMode` removes alongside the API).
 
 **Mitigation**: Phase the migration. Keep old macros working via updated implementations in Phase 2 before removing Clone in Phase 3. This allows incremental validation.
 
 ## Migration Plan
 
 1. **Phase 1** (Additive): Create `FAngelscriptTestEngine` with `ResetModules()` and `GetSharedEngine()`. Old macros/utilities still work.
-2. **Phase 2** (Test-side): Update macros and utilities to route through `FAngelscriptTestEngine`. Replace 14 `CreateCloneFrom` calls. Validate all 463 tests pass.
-3. **Phase 3** (Runtime removal): Delete Clone API from `FAngelscriptEngine`. Simplify `Shutdown()`.
+2. **Phase 2** (Test-side): Update macros and utilities to route through `FAngelscriptTestEngine`. Replace 15 `CreateCloneFrom` calls. Validate all 421 tests pass.
+3. **Phase 3** (Runtime removal): Delete Clone API from `FAngelscriptEngine`. Simplify `Shutdown()`. Remove the `GetCreationModeString` helper and the `CreationMode` column from `Dump/AngelscriptStateDump.cpp` (see D6).
 4. **Phase 4** (SharedState): Change `TSharedPtr` → `TUniquePtr`, remove reference-counting fields.
 5. **Phase 5** (Cleanup): Migrate helper functions from `AngelscriptTestEngineHelper.h` into `FAngelscriptTestEngine` methods. Evaluate moving `AngelscriptRuntime/Testing/` code to test module.
