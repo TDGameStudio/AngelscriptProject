@@ -103,7 +103,8 @@
 
 ```
 ├── Diff_HazelightDefaultStatement.md       // default 语句实现与 Hazelight 引擎的偏离分析
-└── Diff_HazelightInsightsToBorrow.md       // 全插件视角：Hazelight 中可借鉴的设计点汇总
+├── Diff_HazelightInsightsToBorrow.md       // 全插件视角：Hazelight 中可借鉴的设计点汇总
+└── Diff_VerseArchitecture.md               // Verse vs AS 插件：语言/编译器/VM/反射/GC/并发架构差异 + 优劣判断与选型指南 + 优劣判断与选型指南
 ```
 
 > 注：Diff_ 仅做客观差异比对与处理决策记录；可执行的补足任务对应到 `Documents/Plans/Plan_*HazelightParity.md` 系列。
