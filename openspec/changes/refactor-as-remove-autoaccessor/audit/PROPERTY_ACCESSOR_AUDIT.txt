@@ -1,0 +1,212 @@
+================================================================================
+  AUTO PROPERTY ACCESSOR SYSTEM - THOROUGH AUDIT REPORT
+  Removal Preparation (Read-Only Analysis)
+================================================================================
+
+I. CONTROL SWITCHES & CONFIGURATION POINTS
+-------------------------------------------
+
+1. AS_PROPERTY_ACCESSOR_MODE Definition
+   Location: AngelscriptEngine.h:23-24
+   Value: 3 (STRICT mode - requires asTRAIT_PROPERTY)
+   
+   Injection Points:
+   - AngelscriptEngine.cpp:1046 (main init)
+   - AngelscriptEngine.cpp:1826 (reinit)
+
+2. bAllowImplicitPropertyAccessors 
+   Location: AngelscriptSettings.h:56
+   Value: true (DEFAULT ENABLED)
+   Read by: AngelscriptBinds.cpp:547
+
+3. Prefix Definitions
+   Location: as_config.h:1267-1268
+   GET_PREFIX = "Get" (not vanilla's "get_")
+   SET_PREFIX = "Set" (not vanilla's "set_")
+
+================================================================================
+
+II. AUTO-GENERATED ACCESSOR SOURCE POINTS
+------------------------------------------
+
+1. BindProperties() Main Function
+   File: Bind_BlueprintType.cpp:1115-1312
+   
+   Key Decision:
+   - Line 1184: bGeneratedGetter = !bHasGetter && Params.bCanRead
+   - Line 1185: bGeneratedSetter = !bHasSetter && (Params.bCanWrite || Params.bCanEdit)
+
+2. Getter Generation (Lines 1208-1241)
+   - GetObjectFromProperty (L1214) - for object handles
+   - GetUnresolvedObjectFromProperty (L1219) - for unresolved objects
+   - GetValueFromProperty (L1224) - for POD values
+   - asTRAIT_GENERATED_FUNCTION marked at L1237
+
+3. Setter Generation (Lines 1246-1303)
+   - SetObjectFromProperty (L1252)
+   - SetValueFromProperty_* variants (L1259-1280 for byte/dword/qword)
+   - Generic SetValueFromProperty (L1285)
+   - asTRAIT_GENERATED_FUNCTION marked at L1298
+
+4. BlueprintGetter/BlueprintSetter Detection
+   Location: Bind_BlueprintType.cpp:1151-1152
+   Checks for named Get/Set methods matching property name
+
+================================================================================
+
+III. AS COMPILER-SIDE DEPENDENCIES
+-----------------------------------
+
+1. FindPropertyAccessor() Main Lookup
+   Location: as_compiler.cpp:13989-14430
+   
+   Entry Call Sites:
+   - L11241: obj.X member access
+   - L11298: obj.X = ... assignment
+   - L14948, L14951: Binary expressions
+   - L15287: Indexed access obj.X[k]
+
+2. Mode Check (First Line of FindPropertyAccessor)
+   Location: as_compiler.cpp:13991-13995
+   if (engine->ep.propertyAccessorMode == 0) return 0;
+
+3. ValidatePropertyAccessorFunc
+   Location: as_builder.cpp:1724-1746
+   Checks:
+   - Must start with "Get" or "Set" (line 1729-1730)
+   - Getter: non-void return, <=1 parameter (line 1737-1738)
+   - Setter: void return, 1-2 parameters (line 1741-1742)
+
+4. Mode 3 Enforcement (Strict)
+   as_compiler.cpp lines: 14021, 14085, 14167, 14219
+   if (engine->ep.propertyAccessorMode == 3 && !f->IsProperty()) return;
+
+================================================================================
+
+IV. USER CODE IMPACT (CRITICAL)
+-------------------------------
+
+1. Property Access in Scripts
+   File: Script/Examples/Core/Example_Overlaps.as
+   - Line 11: Print("Overlapping with: "+OtherActor.Name);
+   - Line 17: Print("No longer overlapping with: "+OtherActor.Name);
+   - Line 46: Print("Overlapping with component: "+OtherComponent.Name);
+   - Line 54: Print("No longer overlapping with component: "+OtherComponent.Name);
+   
+   IMPACT: All 4 lines will fail compilation after removal
+   REQUIRES: Rewrite to .GetName() method call
+
+2. Documentation Teaching Property System
+   File: Documents/Knowledges/ZH/Syntax_PropertyAccessor.md
+   Size: 1280 lines
+   Status: ENTIRE FILE becomes obsolete after removal
+   
+   Key Sections:
+   - Lines 21-120: 4 entry paths (decorator, virtual, C++ implicit, global func)
+   - Lines 186-333: Virtual property syntax expansion
+   - Lines 422-509: C++ OnBind implicit promotion
+   - Lines 511-726: FindPropertyAccessor compiler flow
+
+================================================================================
+
+V. DEBUGGER & IDE SYSTEM IMPACT
+--------------------------------
+
+1. DebugServer Filtering (asTRAIT_GENERATED_FUNCTION)
+   File: AngelscriptDebugServer.cpp
+   Lines: 1853-1856, 2182, 2771
+   
+   Effect: Hides generated accessors from call stack
+   Impact: Removal will expose accessor calls in debugger (improved transparency)
+
+2. IDE Stub Generation
+   File: AngelscriptEditorCodeGen.cpp:1286-1289
+   Detects: BlueprintGetter/BlueprintSetter metadata
+   May need: Update for properties
+
+================================================================================
+
+VI. VIRTUAL PROPERTY SYNTAX VIABILITY
+-------------------------------------
+
+QUESTION: Will "int X { get; set; }" scripts compile after removal?
+
+ANSWER: YES, but won't function as properties
+
+Details:
+- Virtual property blocks still parsed to snVirtualProperty node
+- Still expanded to GetX()/SetX() methods
+- Still forced asTRAIT_PROPERTY marked (as_builder.cpp:5383)
+- After removal: GetX/SetX exist but obj.X syntax broken
+  
+BREAKING CHANGE: All virtual property block syntax must be rewritten
+
+Before:  int Health { get const { return _h; } set { _h = value; } }
+After:   int GetHealth() const { return _h; }
+         void SetHealth(int value) { _h = value; }
+
+================================================================================
+
+VII. CRITICAL BLOCKING POINTS
+-----------------------------
+
+1. BlueprintGetter/BlueprintSetter UPROPERTY Metadata
+   Found in: Bind_BlueprintType.cpp:84-85, Test file L134
+   
+   Example: UPROPERTY(..., BlueprintGetter=GetTrackedValue, BlueprintSetter=SetTrackedValue)
+   
+   Removal Impact: NO C++ breakage (UE reflection metadata)
+   AS Impact: Can't use obj.TrackedValue syntax, must use obj.GetTrackedValue()
+
+2. Mode 3 Strictness
+   Current: requires asTRAIT_PROPERTY for all property methods
+   Enforcement: as_compiler.cpp:14021, 14085, 14167, 14219
+   
+   After removal: Mode 0 or must update mode checks
+
+3. asTRAIT_PROPERTY Trait Pervasiveness
+   Set Points: 7+ locations in builder/binds
+   Check Points: 10+ locations in compiler
+   Removal Cost: ~50+ source locations need audit
+
+================================================================================
+
+VIII. MINIMAL MODIFICATION CHECKLIST
+------------------------------------
+
+MUST CHANGE:
+1. AngelscriptEngine.h:24
+   #define AS_PROPERTY_ACCESSOR_MODE 0  (disable)
+
+2. AngelscriptBinds.cpp:547-550
+   Remove implicit SetProperty(true) call
+
+3. Bind_BlueprintType.cpp:1184-1303
+   Remove generated getter/setter generation (120 lines)
+
+4. Script/Examples/Core/Example_Overlaps.as
+   Rewrite 4 .Name accesses to .GetName()
+
+5. Documents/Knowledges/ZH/Syntax_PropertyAccessor.md
+   Archive or mark deprecated
+
+OPTIONAL CLEANUP:
+- DebugServer filtering (3 locations)
+- ValidatePropertyAccessorFunc (becomes dead code)
+- FindPropertyAccessor (becomes unreachable)
+
+================================================================================
+
+SUMMARY: Total Impact
+---------------------
+- Compiler: ~150-200 lines to change
+- Binding system: ~120 lines to remove
+- Script examples: 4 lines to rewrite
+- Documentation: 1 major file to archive
+- Dead code: ~1000 lines (leave in place)
+
+Estimated Risk: MEDIUM-HIGH
+- User scripts using property syntax will fail
+- Virtual property blocks need rewriting
+- Mode enforcement must be updated
+
