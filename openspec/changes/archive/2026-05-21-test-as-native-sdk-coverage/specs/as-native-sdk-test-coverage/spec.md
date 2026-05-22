@@ -104,7 +104,8 @@ When this change is applied through its final phase, the project test documentat
 #### Scenario: TestCatalog reflects new TEST_METHOD count
 
 - **WHEN** `Documents/Guides/TestCatalog.md` is inspected after the final phase
-- **THEN** the AngelScriptSDK section reports a `TEST_METHOD` count of approximately 132 (up from the prior 17), with per-layer breakdown for Tokenizer / Parser / ScriptNode / Bytecode
+- **THEN** the AngelScriptSDK section reports 151 new native SDK coverage cases and the latest `Angelscript.TestModule.AngelScriptSDK` verification snapshot of `301/301 PASS`
+- **AND** it includes the per-layer breakdown: Tokenizer 40, Parser 35, ScriptNode 25, Bytecode 23, Reference 28
 
 #### Scenario: Test guide lists per-layer entry commands
 

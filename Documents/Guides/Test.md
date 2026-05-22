@@ -72,6 +72,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 
 这两个前缀覆盖 `PreprocessorContext`、`Preprocess.ProcessChunks` / `Preprocess.PostProcessCode` summary-backed hook 事件、`Compile.Begin` / `Compile.End`、module stage events、JIT availability metadata，以及 per-run `FAngelscriptCompilationContext` 隔离语义。
 
+AngelScript native SDK 分层前缀：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Tokenizer" -Label sdk-tokenizer -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Parser" -Label sdk-parser -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.ScriptNode" -Label sdk-scriptnode -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Bytecode" -Label sdk-bytecode -TimeoutMs 600000
+```
+
 对应的 UHT 生成统计会在每次标准 build/UHT 运行时写入：
 
 ```text

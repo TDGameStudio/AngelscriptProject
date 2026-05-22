@@ -103,7 +103,9 @@
 
 ## Native — 原生 AngelScript / ASSDK
 
-> 源文件：`AngelScriptSDK/AngelscriptNativeSmokeTest.cpp`、`AngelScriptSDK/AngelscriptNativeCompileTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp`、`AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp`、`AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp`、`AngelScriptSDK/AngelscriptASSDKEngineTests.cpp`、`AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp`、`AngelScriptSDK/AngelscriptASSDKGlobalVarTests.cpp` 以及其余 `AngelScriptSDK/AngelscriptASSDK*Tests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptNativeSmokeTest.cpp`、`AngelScriptSDK/AngelscriptNativeCompileTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp`、`AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizer*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeParser*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeReference*Tests.cpp`、`AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp`、`AngelScriptSDK/AngelscriptASSDKEngineTests.cpp`、`AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp`、`AngelScriptSDK/AngelscriptASSDKGlobalVarTests.cpp` 以及其余 `AngelScriptSDK/AngelscriptASSDK*Tests.cpp`
+>
+> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **301/301 PASS**。`test-as-native-sdk-coverage` 新增 151 个 native SDK 覆盖项：Tokenizer 40、Parser 35、ScriptNode 25、Bytecode 23、Reference 28。
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
@@ -111,6 +113,11 @@
 | `Angelscript.TestModule.AngelScriptSDK.Compile.*` | `AngelScriptSDK/AngelscriptNativeCompileTests.cpp` | 纯公共 API 路径下的编译、错误消息与模块构建 |
 | `Angelscript.TestModule.AngelScriptSDK.Execute.*` | `AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp` | 原生上下文 Prepare / Execute、参数传递、返回值、执行状态 |
 | `Angelscript.TestModule.AngelScriptSDK.Register.*` | `AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp` | 原生全局函数/属性/值类型注册 |
+| `Angelscript.TestModule.AngelScriptSDK.Tokenizer.*` | `AngelScriptSDK/AngelscriptNativeTokenizerLiteralsTests.cpp`、`AngelscriptNativeTokenizerOperatorsTests.cpp`、`AngelscriptNativeTokenizerWhitespaceTests.cpp` | 词法层 literal、operator、comment/whitespace、BOM、EOF 与最长匹配边界；新增 40 项 |
+| `Angelscript.TestModule.AngelScriptSDK.Parser.*` | `AngelScriptSDK/AngelscriptNativeParserDeclarationsTests.cpp`、`AngelscriptNativeParserExpressionsTests.cpp`、`AngelscriptNativeParserErrorsTests.cpp` | 声明、表达式和错误恢复的当前 fork 行为锁定；新增 35 项 |
+| `Angelscript.TestModule.AngelScriptSDK.ScriptNode.*` | `AngelScriptSDK/AngelscriptNativeScriptNodeShapeTests.cpp`、`AngelscriptNativeScriptNodeSourceRangeTests.cpp`、`AngelscriptNativeScriptNodeCopyTests.cpp` | AST 节点形状、source range、复制/遍历与深度边界；新增 25 项 |
+| `Angelscript.TestModule.AngelScriptSDK.Bytecode.*` | `AngelScriptSDK/AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelscriptNativeBytecodeOptimizeTests.cpp` | 字节码 opcode、跳转回填、输出 buffer、优化与指令尺寸表边界；新增 23 项 |
+| `Angelscript.TestModule.AngelScriptSDK.Reference.*` | `AngelScriptSDK/AngelscriptNativeReference*Tests.cpp` | 从 AS 2.38 reference 测试中吸收的 tokenizer、parser/compiler reject、context、script-class、save/load 当前 fork 行为锁定；新增 28 项 |
 | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Smoke` | `AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp` | ASSDK 适配层最小引擎创建、消息回调与脚本执行 |
 | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Engine.*` | `AngelScriptSDK/AngelscriptASSDKEngineTests.cpp` | ASSDK 引擎生命周期、回调复用与基础引擎语义 |
 | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Execute.*` | `AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp` | ASSDK 回调注册、参数调用约定、cleanup 与 portability 分支 |
@@ -578,7 +585,9 @@
 
 ### Parser 解析器
 
-> 源文件：`AngelScriptSDK/AngelscriptParserTests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptParserTests.cpp`、`AngelScriptSDK/AngelscriptNativeParserDeclarationsTests.cpp`、`AngelScriptSDK/AngelscriptNativeParserExpressionsTests.cpp`、`AngelScriptSDK/AngelscriptNativeParserErrorsTests.cpp`
+>
+> 当前 native Parser 扩展覆盖 35 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.Parser`。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -586,20 +595,30 @@
 | AngelScriptSDK.Parser.ExpressionAst | 表达式 AST |
 | AngelScriptSDK.Parser.ControlFlow | 控制流解析 |
 | AngelScriptSDK.Parser.SyntaxErrors | 语法错误处理 |
+| AngelScriptSDK.Parser.Declarations.* | 函数默认参数、引用参数、类/接口/namespace/enum/typedef/funcdef/import/property accessor/operator/global const、array/template 声明边界 |
+| AngelScriptSDK.Parser.Expressions.* | 运算优先级、赋值结合性、三元表达式、cast、member/index/function call、initializer list、lambda 当前 fork 行为 |
+| AngelScriptSDK.Parser.Errors.* | 缺失分号、括号不平衡、未闭合字符串、错误 operator/参数列表、Reset 后错误状态清理、多错误累积 |
 
 ### ScriptNode 脚本节点
 
-> 源文件：`AngelScriptSDK/AngelscriptScriptNodeTests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptScriptNodeTests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNodeShapeTests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNodeSourceRangeTests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNodeCopyTests.cpp`
+>
+> 当前 native ScriptNode 扩展覆盖 25 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.ScriptNode`。
 
 | 测试名 | 验证内容 |
 |--------|----------|
 | AngelScriptSDK.ScriptNode.Types | 脚本节点类型 |
 | AngelScriptSDK.ScriptNode.Traversal | 节点遍历 |
 | AngelScriptSDK.ScriptNode.Copy | 节点拷贝 |
+| AngelScriptSDK.ScriptNode.Shape.* | 函数、参数列表、语句块、return/break/continue、do-while、switch/case、enum、interface、import、funcdef、typedef、virtual property 节点形状 |
+| AngelScriptSDK.ScriptNode.SourceRange.* | 函数/成员/多行语句、注释跳过、BOM 下的行列信息 |
+| AngelScriptSDK.ScriptNode.Copy.* | CreateCopy 类型、子节点顺序、source range、深层节点、兄弟遍历、按类型枚举和可暴露重连路径 |
 
 ### Bytecode 字节码
 
-> 源文件：`AngelScriptSDK/AngelscriptBytecodeTests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptBytecodeTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeOptimizeTests.cpp`
+>
+> 当前 native Bytecode 扩展覆盖 23 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.Bytecode`。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -607,6 +626,9 @@
 | AngelScriptSDK.Bytecode.Append | 字节码追加 |
 | AngelScriptSDK.Bytecode.JumpResolution | 跳转解析/回填 |
 | AngelScriptSDK.Bytecode.Output | 字节码输出 |
+| AngelScriptSDK.Bytecode.Opcodes.* | push/load/call/branch/line/suspend/ret/math/compare 指令、指令尺寸表、opcode 类型分布 |
+| AngelScriptSDK.Bytecode.Jumps.* | 前向/后向跳转、多 label、未解析 label、追加序列后的跳转回填 |
+| AngelScriptSDK.Bytecode.Optimize.* | 优化后大小、首尾语义、输出 buffer 大小和 round-trip、追加连续性、空字节码、末尾指令查询 |
 
 ### Memory 内存管理
 
@@ -622,7 +644,9 @@
 
 ### Tokenizer 词法分析
 
-> 源文件：`AngelScriptSDK/AngelscriptTokenizerTests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptTokenizerTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizerLiteralsTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizerOperatorsTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizerWhitespaceTests.cpp`
+>
+> 当前 native Tokenizer 扩展覆盖 40 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.Tokenizer`。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -630,6 +654,9 @@
 | AngelScriptSDK.Tokenizer.Keywords | 关键字 |
 | AngelScriptSDK.Tokenizer.CommentsAndStrings | 注释与字符串 |
 | AngelScriptSDK.Tokenizer.ErrorRecovery | 错误恢复 |
+| AngelScriptSDK.Tokenizer.Literals.* | 十六进制/八进制/二进制/十进制、float suffix/exponent、leading/trailing dot、字符串/字符 escape、heredoc、空字符串与相邻字符串 |
+| AngelScriptSDK.Tokenizer.Operators.* | 算术、位运算、比较、逻辑、赋值、++/--、三元、`::`/`.`、handle `@` 与最长匹配 |
+| AngelScriptSDK.Tokenizer.Whitespace.* | 行/块注释、未闭合块注释、CRLF、BOM、identifier 边界、空输入与 EOF 后访问 |
 
 ### StructCppOps
 

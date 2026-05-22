@@ -6,7 +6,7 @@
 - The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine. This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
 - `Plugins/UnrealEvent` is a separate plugin submodule for a GMP-derived UnrealEvent event-system bootstrap. Keep UnrealEvent runtime/API pruning work inside that plugin and its OpenSpec changes; do not fold it into `AngelscriptRuntime`.
 - The plugin is **no longer in prototype or foundation-building phase**. It has entered a maturity stage where the core runtime, editor integration, and test infrastructure are established, but external delivery entry points and several key capability closures still need attention.
-- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `121` `Bind_*.cpp` files, `27+` CSV state export tables, `417+` automation test definitions across `438` test `.cpp` files, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
+- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `121` `Bind_*.cpp` files, `27+` CSV state export tables, `1518+` automation test definitions across `430` test `.cpp` files, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
 - AngelScript base version is `2.33 + selective 2.38 compatibility`; the fork has diverged too far for a wholesale upgrade — the strategy is to selectively absorb improvements from higher versions. See `Documents/Guides/AngelscriptForkStrategy.md`.
 - `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first. `Source/AngelscriptProject/` retains only the minimal host project content — do not push plugin logic back into the project module unless the task explicitly requires it.
 - `Plugins/UnrealEvent/` is an independent plugin workspace. Its current baseline is a fresh `TDGameStudio/UnrealEventPlugin` repository initialized from GMP source without preserving GMP git history; runtime pruning and final UnrealEvent naming are deferred to follow-up OpenSpec changes.
@@ -42,7 +42,7 @@ AngelscriptProject/
 │       │   ├── BlueprintImpact/             # BP change scanner & commandlet
 │       │   ├── SourceNavigation/            # Jump-to-source support
 │       │   └── ContentBrowser/              # .as files in Content Browser
-│       ├── AngelscriptTest/                 # Test module (438 .cpp, 23 themes)
+│       ├── AngelscriptTest/                 # Test module (430 .cpp, 28+ themes)
 │       └── AngelscriptUHTTool/              # UHT C# code gen toolchain
 │
 ├── Plugins/UnrealEvent/                     # Independent GMP-derived event plugin submodule
@@ -148,7 +148,7 @@ A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline.
 
 ### Test Module (AngelscriptTest)
 
-429 test `.cpp` files organized into 28+ thematic directories (Actor, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. See `Plugins/Angelscript/AGENTS.md` for layering rules.
+430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK coverage includes a latest verified `Angelscript.TestModule.AngelScriptSDK` run of `301/301 PASS`, including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases. See the root testing guides for layering rules.
 
 ### Script Examples (`Script/`)
 
@@ -183,7 +183,8 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 - Current test numbers must distinguish three separate scopes; future documents and roadmaps must not conflate them:
   - `275/275 PASS`: catalogued C++ baseline (`TestCatalog.md`).
-  - `417+` automation test definitions across `429` test `.cpp` files: source-code scan scale (as of `bf99c93`, 2026-04-23).
+  - `1518+` automation test definitions across `430` test `.cpp` files: source-code scan scale after `test-as-native-sdk-coverage`.
+  - `301/301 PASS`: native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases.
   - Live full-suite run results: defer to the actual numbers in `TechnicalDebtInventory.md`.
   - Only `2` tests remain Disabled (`#ue57-headless`): `TestEngineHelperTests.cpp:106` and `SourceNavigationTests.cpp:125`.
 
@@ -235,5 +236,4 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
-- ✅ refactor-as-remove-autoaccessor - removed script property accessor sugar, virtual property blocks, and implicit property promotion from the plugin surface
 
