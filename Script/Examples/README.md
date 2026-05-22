@@ -64,6 +64,8 @@ UE5 Enhanced Input System 集成示例：
 
 插件测试模块 `Plugins/Angelscript/Source/AngelscriptTest/Examples/` 中已有对应的 C++ 编译测试（`AngelscriptScriptExample*Test.cpp`），它们通过内联字符串验证示例代码的编译正确性。本目录下的 `.as` 文件是这些示例的**正式资产版本**，可作为用户参考和项目级测试使用。
 
+<!-- Phase 4 sweep note: `obj.PascalCase` matches such as Fixture.Value, MoveInput.X/Y, ExampleStruct fields, MainText.Text, and named arguments such as Duration=5.0 are approved raw-field, struct-field, or call-argument usages, not property-accessor leftovers. -->
+
 ## 排除项
 
 以下 Hazelight 基线中的示例类别当前不包含在本目录中：

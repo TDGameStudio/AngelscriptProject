@@ -8,13 +8,13 @@ class AExampleOverlapActor : AActor
     UFUNCTION(BlueprintOverride)
     void ActorBeginOverlap(AActor OtherActor)
     {
-        Print("Overlapping with: "+OtherActor.Name);
+        Print("Overlapping with: "+OtherActor.GetName());
     }
 
     UFUNCTION(BlueprintOverride)
     void ActorEndOverlap(AActor OtherActor)
     {
-        Print("No longer overlapping with: "+OtherActor.Name);
+        Print("No longer overlapping with: "+OtherActor.GetName());
     }
 };
 
@@ -43,7 +43,7 @@ class UExampleOverlapComponent : UPrimitiveComponent
         UPrimitiveComponent OtherComponent, int OtherBodyIndex,
         bool bFromSweep, const FHitResult&in Hit)
     {
-        Print("Overlapping with component: "+OtherComponent.Name);
+        Print("Overlapping with component: "+OtherComponent.GetName());
     }
 
     UFUNCTION()
@@ -51,6 +51,6 @@ class UExampleOverlapComponent : UPrimitiveComponent
         UPrimitiveComponent OverlappedComponent, AActor OtherActor,
         UPrimitiveComponent OtherComponent, int OtherBodyIndex)
     {
-        Print("No longer overlapping with component: "+OtherComponent.Name);
+        Print("No longer overlapping with component: "+OtherComponent.GetName());
     }
 };

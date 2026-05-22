@@ -13,7 +13,7 @@ class AExampleActorType : AActor
 	int ExampleValue = 15;
 
 	/* Use the 'default' keyword to override property defaults from the parent class. */
-	default bReplicates = true;
+	default SetReplicates(true);
 	default Tags.Add(n"ExampleTag");
 
 	/* 

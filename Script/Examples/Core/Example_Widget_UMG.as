@@ -22,6 +22,7 @@ class UExampleWidget : UUserWidget
     void Tick(FGeometry MyGeometry, float DeltaTime)
     {
         TimePassed += DeltaTime;
+        // Scan caveat: MainText.Text is a raw UPROPERTY field.
         MainText.Text = FText::FromString("Time Passed: "+TimePassed);
     }
 };

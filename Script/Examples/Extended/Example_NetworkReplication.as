@@ -24,7 +24,7 @@
 
 class AExampleReplicatedActor : AActor
 {
-	default bReplicates = true;
+	default SetReplicates(true);
 
 	/* A replicated property: changes on the server are sent to all clients. */
 	UPROPERTY(Replicated, Category = "Network")
@@ -66,7 +66,7 @@ class AExampleReplicatedActor : AActor
  * Demonstrates all RPC patterns available in AngelScript.
  *
  * Key rules:
- *   - The actor must have bReplicates = true.
+ *   - The actor must call SetReplicates(true) in its defaults.
  *   - Server RPCs execute on the server when called from any client.
  *   - Client RPCs execute on the owning client when called from the server.
  *   - NetMulticast RPCs execute on the server and all connected clients.
@@ -75,7 +75,7 @@ class AExampleReplicatedActor : AActor
  */
 class AExampleRPCActor : AActor
 {
-	default bReplicates = true;
+	default SetReplicates(true);
 
 	UPROPERTY(Replicated, Category = "Network")
 	int DamageDealt = 0;

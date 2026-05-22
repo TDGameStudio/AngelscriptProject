@@ -24,7 +24,7 @@ class AExamplePickupBase : AActor
 	UPROPERTY(BlueprintReadOnly, Category = "Pickup")
 	bool bCollected = false;
 
-	default bReplicates = true;
+	default SetReplicates(true);
 
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()

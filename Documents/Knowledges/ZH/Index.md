@@ -80,7 +80,7 @@
 ├── Syntax_DefaultComponent.md             // DefaultComponent / Attach / RootComponent 组件声明
 ├── Syntax_DelegateEvent.md                // delegate / event 关键字：签名声明与多播机制
 ├── Syntax_AccessSpecifiers.md             // access 自定义访问修饰符
-├── Syntax_PropertyAccessor.md             // property 关键字：Get/Set 访问器语法糖
+├── Syntax_PropertyAccessor.md             // property 访问器移除说明：历史实现与显式 Get/Set 迁移
 ├── Syntax_Mixin.md                        // mixin 关键字：非侵入式扩展方法
 ├── Syntax_FString.md                      // f-string 格式化：编译期展开与格式说明符
 │

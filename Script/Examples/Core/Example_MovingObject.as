@@ -20,7 +20,7 @@ class AExampleMovingObject : AActor
 	 * The 'default' keyword is used to set properties on subobjects or
 	 * parent classes. This is equivalent to setting them in the constructor in C++.
 	 */
-	default bReplicates = true;
+	default SetReplicates(true);
 
 	/**
 	 * Setting the Attach specifier determines

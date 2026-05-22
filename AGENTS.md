@@ -235,4 +235,5 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
+- ✅ refactor-as-remove-autoaccessor - removed script property accessor sugar, virtual property blocks, and implicit property promotion from the plugin surface
 

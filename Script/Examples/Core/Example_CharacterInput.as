@@ -48,6 +48,6 @@ class AExampleInputCharacter : ACharacter
     UFUNCTION()
     void OnKeyPressed(FKey Key)
     {
-        Print("Key Pressed: " + Key.KeyName, Duration=5.0);
+        Print("Key Pressed: " + Key.GetKeyName(), Duration=5.0);
     }
 };

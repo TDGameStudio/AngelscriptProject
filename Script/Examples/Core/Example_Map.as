@@ -49,18 +49,17 @@ void ExecuteExampleMap()
 	}
 
 	// Looping over elements can be done with a range-based loop.
-	//  Note that the type of auto here is an iterator type,
-	//  which supports access to .Key and .Value.
+	//  Note that the type of auto here is an iterator type.
 	for (auto Element : LocalStringToIntMap)
 	{
-		Log("Map contained "+Element.Key+" => "+Element.Value);
+		Log("Map contained "+Element.GetKey()+" => "+Element.GetValue());
 	}
 
 	// The iterated values are references, so can be changed
 	for (auto Element : LocalStringToIntMap)
 	{
-		if (Element.Key == "ChangeThis")
-			Element.Value = 27;
+		if (Element.GetKey() == "ChangeThis")
+			Element.SetValue(27);
 	}
 	check(LocalStringToIntMap["ChangeThis"] == 27);
 
@@ -93,7 +92,7 @@ class AExampleMapActor : AActor
 		// Range based for loop to iterate all elements
 		for (auto Element : ActorMap)
 		{
-			Log("Actor Map: "+Element.Key+" => "+Element.Value);
+			Log("Actor Map: "+Element.GetKey()+" => "+Element.GetValue());
 		}
 	}
 };
