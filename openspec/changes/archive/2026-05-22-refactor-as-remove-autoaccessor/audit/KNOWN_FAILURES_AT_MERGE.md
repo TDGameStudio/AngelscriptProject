@@ -5,6 +5,19 @@ Recorded as part of the batch merge that landed
 `test-as-native-sdk-coverage` (submodule `a6799ea`) onto main on
 2026-05-22.
 
+> **Status (2026-05-22, follow-up):** All six regressions described below
+> have been resolved by a follow-up test-cleanup pass on the submodule.
+> Parser / ScriptNode tests were rewritten to verify rejection (matching
+> the surviving `interface` / `typedef` / `funcdef` rejection pattern).
+> Bindings and Compiler tests were rewritten to use bound non-bitfield
+> fields where one was available, and removed where the only remaining
+> surface depended on the autoaccessor synthesis (`FBodyInstance`,
+> `default Subobject.Property`, asset name-collision resolution). The
+> targeted regression sweep (Parser/ScriptNode/Bindings/ClassGenerator/
+> Compiler.EndToEnd) reports 0 failures across 723 tests after the
+> follow-up. The original audit text is preserved below for historical
+> reference.
+
 ## Summary
 
 The autoaccessor removal in submodule commit `cdcc0f3` deleted the AngelScript
