@@ -40,9 +40,9 @@ if (-not (Test-Path -LiteralPath $runTestsPath)) {
 
 $suiteDefinitions = [ordered]@{
     "Smoke" = @(
-        @{ Prefix = "Angelscript.TestModule.CppTests.MultiEngine"; Label = "MultiEngine" }
-        @{ Prefix = "Angelscript.TestModule.CppTests.Engine.DependencyInjection"; Label = "DependencyInjection" }
-        @{ Prefix = "Angelscript.TestModule.CppTests.Subsystem"; Label = "Subsystem" }
+        @{ Prefix = "Angelscript.TestModule.Engine.MultiEngine"; Label = "MultiEngine" }
+        @{ Prefix = "Angelscript.TestModule.Engine.DependencyInjection"; Label = "DependencyInjection" }
+        @{ Prefix = "Angelscript.TestModule.Engine.EngineSubsystem"; Label = "EngineSubsystem" }
         @{ Prefix = "Angelscript.TestModule.Engine.BindConfig"; Label = "BindConfig" }
         @{ Prefix = "Angelscript.TestModule.Shared.EngineHelper"; Label = "SharedEngineHelper" }
         @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
@@ -51,6 +51,7 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
     )
     "RuntimeCpp" = @(
+        @{ Prefix = "Angelscript.CppTests"; Label = "LegacyCppTests" }
         @{ Prefix = "Angelscript.TestModule.CppTests"; Label = "CppTests" }
     )
     "Bindings" = @(
@@ -66,7 +67,7 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.HotReload"; Label = "HotReload" }
     )
     "Debugger" = @(
-        @{ Prefix = "Angelscript.TestModule.CppTests.Debug."; Label = "CppDebugger" }
+        @{ Prefix = "Angelscript.TestModule.Engine.Debugger.AutoEvaluate"; Label = "AutoEvaluate" }
         @{ Prefix = "Angelscript.TestModule.Debugger."; Label = "TestModuleDebugger" }
     )
     "FunctionalSamples" = @(
@@ -76,7 +77,44 @@ $suiteDefinitions = [ordered]@{
         @{ Prefix = "Angelscript.TestModule.Interface"; Label = "Interface" }
     )
     "All" = @(
-        @{ Prefix = "Angelscript"; Label = "All" }
+        @{ Prefix = "Angelscript.CppTests"; Label = "LegacyCppTests" }
+        @{ Prefix = "Angelscript.Editor"; Label = "Editor" }
+        @{ Prefix = "Angelscript.GAS"; Label = "GAS" }
+        @{ Prefix = "Angelscript.Template"; Label = "Template" }
+        @{ Prefix = "Angelscript.TestModule.Actor"; Label = "Actor" }
+        @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
+        @{ Prefix = "Angelscript.TestModule.Bindings"; Label = "Bindings" }
+        @{ Prefix = "Angelscript.TestModule.Blueprint"; Label = "Blueprint" }
+        @{ Prefix = "Angelscript.TestModule.ClassGenerator"; Label = "ClassGenerator" }
+        @{ Prefix = "Angelscript.TestModule.Compiler"; Label = "Compiler" }
+        @{ Prefix = "Angelscript.TestModule.Component"; Label = "Component" }
+        @{ Prefix = "Angelscript.TestModule.Core"; Label = "Core" }
+        @{ Prefix = "Angelscript.TestModule.CppTests"; Label = "CppTests" }
+        @{ Prefix = "Angelscript.TestModule.Debugger"; Label = "Debugger" }
+        @{ Prefix = "Angelscript.TestModule.Delegate"; Label = "Delegate" }
+        @{ Prefix = "Angelscript.TestModule.Dump"; Label = "Dump" }
+        @{ Prefix = "Angelscript.TestModule.Editor"; Label = "TestModuleEditor" }
+        @{ Prefix = "Angelscript.TestModule.Engine"; Label = "Engine" }
+        @{ Prefix = "Angelscript.TestModule.FileSystem"; Label = "FileSystem" }
+        @{ Prefix = "Angelscript.TestModule.Functional"; Label = "Functional" }
+        @{ Prefix = "Angelscript.TestModule.FunctionLibraries"; Label = "FunctionLibraries" }
+        @{ Prefix = "Angelscript.TestModule.GameInstanceSubsystem"; Label = "GameInstanceSubsystem" }
+        @{ Prefix = "Angelscript.TestModule.GC"; Label = "GC" }
+        @{ Prefix = "Angelscript.TestModule.HotReload"; Label = "HotReload" }
+        @{ Prefix = "Angelscript.TestModule.Inheritance"; Label = "Inheritance" }
+        @{ Prefix = "Angelscript.TestModule.Interface"; Label = "Interface" }
+        @{ Prefix = "Angelscript.TestModule.Learning"; Label = "Learning" }
+        @{ Prefix = "Angelscript.TestModule.Memory"; Label = "Memory" }
+        @{ Prefix = "Angelscript.TestModule.Networking"; Label = "Networking" }
+        @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
+        @{ Prefix = "Angelscript.TestModule.Performance"; Label = "Performance" }
+        @{ Prefix = "Angelscript.TestModule.Preprocessor"; Label = "Preprocessor" }
+        @{ Prefix = "Angelscript.TestModule.ScriptClass"; Label = "ScriptClass" }
+        @{ Prefix = "Angelscript.TestModule.Shared"; Label = "Shared" }
+        @{ Prefix = "Angelscript.TestModule.StaticJIT"; Label = "StaticJIT" }
+        @{ Prefix = "Angelscript.TestModule.Syntax"; Label = "Syntax" }
+        @{ Prefix = "Angelscript.TestModule.Validation"; Label = "Validation" }
+        @{ Prefix = "Angelscript.TestModule.WorldSubsystem"; Label = "WorldSubsystem" }
     )
 }
 

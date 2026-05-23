@@ -54,7 +54,7 @@ The runtime SHALL introduce a per-run compilation context only for shared compil
 - **WHEN** `CompileModules()` executes
 - **THEN** any compilation context used for event generation SHALL be created for that compile run and SHALL NOT become a persistent global engine state
 
-#### Scenario: Existing compile delegates remain compatible
-- **WHEN** code subscribes to existing runtime compile delegates such as pre-compile, post-compile, or pre-generate-classes
-- **THEN** those delegates SHALL continue to fire according to their existing behavior while compilation events provide additional structured information
+#### Scenario: Engine compile hooks remain compatible
+- **WHEN** code subscribes to engine-owned compile hooks such as pre-compile, post-compile, or pre-generate-classes
+- **THEN** those hooks SHALL continue to fire according to their existing lifecycle behavior while compilation events provide additional structured read-only information
 

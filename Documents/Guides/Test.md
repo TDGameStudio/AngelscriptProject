@@ -81,6 +81,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Bytecode" -Label sdk-bytecode -TimeoutMs 600000
 ```
 
+插件测试主题前缀也按目录直接运行，常用入口包括：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Functional." -Label functional-runtime-coverage -TimeoutMs 900000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings." -Label bindings-gap-closure -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Editor." -Label editor-diagnostics-editor -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Networking." -Label editor-diagnostics-networking -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.GC." -Label editor-diagnostics-gc -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Memory." -Label editor-diagnostics-memory -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Validation." -Label editor-diagnostics-validation -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Dump." -Label editor-diagnostics-dump -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Performance." -Label editor-diagnostics-performance -TimeoutMs 900000
+```
+
+`Bindings` 目录这轮补的是显式 coverage gap closure：被恢复的主题包括 `Box3f` / `Sphere3f`、`Paths` / `PlatformMisc` / `CpuProfiler`、`FString` / `FileAndDelegate` / `MemoryReader` / `MeshComponent`。如果后续还保留边界 case，应该在 test case 里写明具体缺失的 binding 或环境限制，而不是继续用静默跳过。
+
+`Functional` 目录这轮补的是运行时行为断言收口：`Objects` 覆盖值类型构造/拷贝、反射默认值与 UFUNCTION 调用、zero-size object 布局，并把脚本类对象执行和 mutable global class variable 保留为显式负向边界；`Operators` 覆盖 `**` 正向执行，并把脚本类 operator overload、const method、显式 getter/setter 执行故障保留为 `Null pointer access` 边界；`Handles` 覆盖 `int &out` 写回和 native `UObject` null/non-null 参数，并把脚本类 handle 声明、factory-style handle、脚本类按值传参保留为显式边界；`Inheritance` 覆盖继承、virtual-like dispatch、interface、cast-op、mixin 的当前分支边界。后续修复这些边界时，应在同一主题文件里把负向 case 改成正向运行时断言，并保留现有前缀。
+
 对应的 UHT 生成统计会在每次标准 build/UHT 运行时写入：
 
 ```text

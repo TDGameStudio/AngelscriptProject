@@ -99,6 +99,7 @@ DerivedDataCache/*
 # IDE / editor specific
 .cursor/
 .vscode/
+*.DotSettings.user
 
 # Sisyphus
 .sisyphus/

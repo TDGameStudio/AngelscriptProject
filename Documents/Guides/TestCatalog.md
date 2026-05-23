@@ -14,6 +14,24 @@
 >
 > 当前测试债分流：zero/weak coverage 优先进入 `Documents/Plans/Plan_TestCoverageExpansion.md`；StaticJIT 专项优先进入 `Documents/Plans/Plan_StaticJITUnitTests.md`；测试层级/目录/命名规范化优先进入 `Documents/Plans/Plan_TestSystemNormalization.md` 与 `Documents/Plans/Plan_TestModuleStandardization.md`；negative tests 继续作为能力边界证据保留在对应主题中，不与已知失败混写。
 
+> 本次第一波 plugin-level 薄主题覆盖已经把这些显式 baseline 固化到当前测试树：`Editor.SourceNavigation.*`、`Networking.RPC.*`、`Memory.*`、`GC.*`、`Validation.*`、`Dump.*`、`Performance.*`。其中 `Memory`/`GC`/`Validation`/`Dump`/`Networking` 指的是 `Plugins/Angelscript/Source/AngelscriptTest/<Theme>/` 下的主题测试，不是下面的 `AngelScriptSDK.Memory` / `AngelScriptSDK.GC` 内部 SDK 测试。
+>
+> 同时，功能运行时与绑定 gap 收口也保留了显式基线：`Functional.Objects.*`、`Functional.Operators.*`、`Functional.Handles.*`、`Functional.Inheritance.*` 以及 `Bindings.*` 的 geometry/platform/string/delegate/memory/component 闭环。它们仍然留在各自的主题文件里，不并入新的目录层级。
+>
+> `Functional` audited surface 的当前口径是：能执行的路径必须断言真实运行时结果，仍受分支能力限制的路径必须作为负向边界留在主题文件中。正向覆盖包括值类型构造/拷贝、脚本 UObject 默认值和 UFUNCTION 调用、zero-size object 布局、`**` 运算、`int &out` 写回、native `UObject` null/non-null 参数；显式边界包括脚本类对象执行、mutable global class variable、脚本类 operator overload / const method / getter-setter 执行、脚本类 handle 声明和按值传参、interface / cast-op / mixin 语法或运行时限制。
+
+> 代表性入口：
+>
+> - `Editor/AngelscriptSourceNavigationTests.cpp` -> `Angelscript.TestModule.Editor.SourceNavigation.*`
+> - `Networking/AngelscriptNetworkRPCTests.cpp` -> `Angelscript.TestModule.Networking.RPC.*`
+> - `Memory/GlobalContainerCycleBoundedTests.cpp` / `Memory/BindFreeEvidenceTests.cpp` -> `Angelscript.TestModule.Memory.*`
+> - `GC/AngelscriptGCTests.cpp` / `GC/AngelscriptEngineMemoryLifecycleTests.cpp` -> `Angelscript.TestModule.GC.*`
+> - `Validation/AngelscriptMacroValidationTests.cpp` / `Validation/AngelscriptCompilerMacroValidationTests.cpp` -> `Angelscript.TestModule.Validation.*`
+> - `Performance/AngelscriptRuntimeMicrobenchmarkTests.cpp` / `Performance/AngelscriptReflectiveFallbackBenchmarkTests.cpp` -> `Angelscript.TestModule.Performance.*`
+> - `Dump/AngelscriptDumpTests.cpp` -> `Angelscript.TestModule.Dump.*`
+> - `Functional/Objects/AngelscriptObjectModelTests.cpp` / `Functional/Operators/AngelscriptOperatorTests.cpp` / `Functional/Handles/AngelscriptHandleTests.cpp` / `Functional/Inheritance/AngelscriptInheritanceTests.cpp` -> `Angelscript.TestModule.Functional.*`
+> - `Bindings/AngelscriptBox3fBindingsTests.cpp` / `Bindings/AngelscriptSphere3fBindingsTests.cpp` / `Bindings/AngelscriptPathsBindingsTests.cpp` / `Bindings/AngelscriptPlatformMiscBindingsTests.cpp` / `Bindings/AngelscriptCpuProfilerBindingsTests.cpp` / `Bindings/AngelscriptFStringBindingsTests.cpp` / `Bindings/AngelscriptFileAndDelegateBindingsTests.cpp` / `Bindings/AngelscriptMemoryReaderBindingsTests.cpp` / `Bindings/AngelscriptMeshComponentBindingsTests.cpp` -> `Angelscript.TestModule.Bindings.*`
+
 ---
 
 ## 目录
@@ -329,6 +347,8 @@
 ## 4. Bindings — UE API 绑定
 
 > 源文件：`Bindings/` 目录下 67 个测试文件
+>
+> 本章节同时记录了这轮 `bindings-gap-closure` 的恢复面：`Box3f` / `Sphere3f`、`Paths` / `PlatformMisc` / `CpuProfiler`、`FString` / `FileAndDelegate` / `MemoryReader` / `MeshComponent` 的静默跳过项已经改成显式断言或显式负契约。后续若还保留边界，必须在 case 内说明具体的 binding 缺失或环境限制。
 
 ### 值类型与引擎核心
 
@@ -971,6 +991,8 @@
 ### 12.13 GC 垃圾回收
 
 > 源文件：`GC/AngelscriptGCTests.cpp`
+>
+> 本章代表当前 plugin-level GC 基线；和上面的 `AngelScriptSDK.GC.*` 内部 SDK 测试不同，这里锁定的是脚本 Actor / Component / World teardown 的生命周期回收语义。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -1007,9 +1029,25 @@
 > 来源：`Documents/Plans/Plan_ReferenceBasedTestExpansion.md` Round1 落地（仅补真空区与深度，共 15 个用例）。
 >
 > Prefix 沿用 Round1 蓝图字面：`Angelscript.TestModule.Functional.<Theme>.<Topic>.*`，与默认 `<Theme>.*` 主题层并存的例外说明见 `Documents/Guides/TestConventions.md`。
+>
+> 另有 audited functional baseline 直接落在 `Functional/Objects/AngelscriptObjectModelTests.cpp`、`Functional/Operators/AngelscriptOperatorTests.cpp`、`Functional/Handles/AngelscriptHandleTests.cpp`、`Functional/Inheritance/AngelscriptInheritanceTests.cpp`。这些文件不属于 Round1 新目录样式，但属于同一个 `Angelscript.TestModule.Functional.<Theme>.*` 运行时覆盖面。
 
 | 测试名 | 验证内容 |
 |--------|----------|
+| Functional.Objects.ValueTypeConstruction | `FIntPoint` 构造和字段访问返回真实运行时结果 |
+| Functional.Objects.ValueTypeCopyAndArithmetic | 值类型拷贝保持原值，拷贝上的算术结果可执行验证 |
+| Functional.Objects.Basic | 脚本类对象方法执行当前仍触发 `Null pointer access`，作为显式负向边界保留 |
+| Functional.Objects.ReflectedDefaultsAndFunction | 脚本 `UObject` 默认属性和 helper `UFUNCTION` 可实例化并返回真实结果 |
+| Functional.Objects.Composition | 嵌套脚本类对象执行当前仍触发 `Null pointer access`，作为显式负向边界保留 |
+| Functional.Objects.Singleton | mutable global class variable 当前被编译拒绝，作为显式负向边界保留 |
+| Functional.Objects.ZeroSize / ZeroSize.ByValueAndLocalLayout | zero-size script object 可实例化，按值传递和相邻 local 布局保持稳定 |
+| Functional.Operators.Power | `**` 指数运算返回真实运行时结果 |
+| Functional.Operators.Overload / Const / GetSet | 脚本类 operator overload、const method、显式 getter/setter 执行当前仍触发 `Null pointer access`，作为显式负向边界保留 |
+| Functional.Handles.RefArgument | `int &out` 参数写回调用方 |
+| Functional.Handles.NativeObjectArgument.NullAndNonNull | native `UObject` 参数在 null / non-null 两条路径返回正确标记 |
+| Functional.Handles.Basic / Auto / Implicit | 脚本类 handle 声明、factory-style handle、脚本类按值传参当前作为显式负向边界保留 |
+| Functional.Inheritance.Basic / VirtualMethod | 脚本类继承实例执行当前仍触发 `Null pointer access`，作为显式负向边界保留 |
+| Functional.Inheritance.Interface / CastOp / Mixin | interface、script-class handle cast-op、mixin-class syntax 当前作为显式负向边界保留 |
 | Functional.Types.ScriptDataAsset.CompilesAndRegistersProperties | `class : UDataAsset` 编译；`UPROPERTY` 进入反射；CDO 默认值匹配；`AActor` 持 `UDataAsset` 引用 |
 | Functional.Widget.BindWidget.MetadataAndPropertyTypes | `UUserWidget` 子类 `UPROPERTY(BindWidget)` 多种 widget 类型注册 + metadata 反射 |
 | Functional.Animation.AnimNotifyScript.SubclassRegistersUPropertyAndDerivesFromUAnimNotify | `class : UAnimNotify` 编译，`UPROPERTY` 进入反射，CDO 默认值（FName / float）正确 |
@@ -1153,6 +1191,8 @@
 > 源文件：`Performance/AngelscriptRuntimeMicrobenchmarkTests.cpp`、`Performance/AngelscriptReflectiveFallbackBenchmarkTests.cpp`、`Performance/AngelscriptPerformanceTestTypes.cpp`
 >
 > 标准分组：`AngelscriptPerformance` 同时路由 `Angelscript.TestModule.Performance.`、`Angelscript.TestModule.Core.Performance.` 与 `Angelscript.TestModule.HotReload.Performance.`。
+>
+> 这一章保留的是脚本 runtime 微基准与反射回退对照；它和上面 `Core.Performance.*` / `HotReload.Performance.*` 的启动与 reload 指标是不同层级的性能口径。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -1188,6 +1228,8 @@
 > 源文件：`Dump/AngelscriptDumpCommand.cpp`、`Dump/AngelscriptDumpTests.cpp`
 >
 > 控制台命令：`as.DumpEngineState [OutputDir]`
+>
+> 这里的测试是 `Plugins/Angelscript/Source/AngelscriptTest/Dump/` 主题下的 dump/report 回归，不是 runtime 内部 state dump helper 的实现说明。
 
 | 测试名 | 验证内容 |
 |--------|----------|

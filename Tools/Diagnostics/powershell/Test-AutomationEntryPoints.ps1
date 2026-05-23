@@ -27,11 +27,14 @@ function Get-AutomationTestNames {
     $roots = @(
         'Plugins\Angelscript\Source\AngelscriptTest',
         'Plugins\Angelscript\Source\AngelscriptRuntime\Tests',
-        'Plugins\Angelscript\Source\AngelscriptEditor\Tests'
+        'Plugins\Angelscript\Source\AngelscriptEditor\Tests',
+        'Plugins\AngelscriptGAS\Source'
     )
 
     $names = @()
-    $testNamePattern = 'IMPLEMENT_(?:SIMPLE|COMPLEX)_AUTOMATION_TEST\s*\(\s*[^,]+,\s*"(Angelscript\.[^"]+)"'
+    $automationTestNamePattern = 'IMPLEMENT_(?:SIMPLE|COMPLEX)_AUTOMATION_TEST\s*\(\s*[^,]+,\s*"(Angelscript\.[^"]+)"'
+    $cqTestClassPattern = 'TEST_CLASS(?:_WITH_FLAGS)?\s*\(\s*[^,]+,\s*"(Angelscript\.[^"]+)"'
+    $cqTestMethodPattern = 'TEST_METHOD\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)'
     $regexOptions = [System.Text.RegularExpressions.RegexOptions]::Singleline
 
     foreach ($relativeRoot in $roots) {
@@ -42,8 +45,23 @@ function Get-AutomationTestNames {
 
         foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File -Include '*.cpp', '*.h') {
             $content = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8
-            foreach ($match in [regex]::Matches($content, $testNamePattern, $regexOptions)) {
+            foreach ($match in [regex]::Matches($content, $automationTestNamePattern, $regexOptions)) {
                 $names += [regex]::Replace($match.Value, '^.*"(Angelscript\.[^"]+)".*$', '$1', $regexOptions)
+            }
+
+            $cqTestClasses = @([regex]::Matches($content, $cqTestClassPattern, $regexOptions))
+            for ($index = 0; $index -lt $cqTestClasses.Count; ++$index) {
+                $classMatch = $cqTestClasses[$index]
+                $classPrefix = [regex]::Replace($classMatch.Value, '^.*"(Angelscript\.[^"]+)".*$', '$1', $regexOptions)
+                $names += $classPrefix
+
+                $blockStart = $classMatch.Index + $classMatch.Length
+                $blockEnd = if ($index + 1 -lt $cqTestClasses.Count) { $cqTestClasses[$index + 1].Index } else { $content.Length }
+                $blockLength = [Math]::Max(0, $blockEnd - $blockStart)
+                $classBlock = $content.Substring($blockStart, $blockLength)
+                foreach ($methodMatch in [regex]::Matches($classBlock, $cqTestMethodPattern)) {
+                    $names += ('{0}.{1}' -f $classPrefix, $methodMatch.Groups[1].Value)
+                }
             }
         }
     }
