@@ -227,6 +227,17 @@ function Invoke-SubmoduleInit {
             continue
         }
 
+        # A failed 'git submodule update' may have left a stub at $subFullPath
+        # (typically just a '.git' link file with no Source/). 'git worktree add'
+        # refuses to populate an existing non-empty path, so drop the stub here.
+        # Source/ was already checked above; reaching this point means the
+        # submodule is not properly populated, so anything in $subFullPath is
+        # leftover junk from the failed update.
+        if (Test-Path -LiteralPath $subFullPath -PathType Container) {
+            Write-Host ("[bootstrap] Cleaning partial submodule stub before fallback: {0}" -f $subFullPath)
+            Remove-Item -LiteralPath $subFullPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
         $worktreeBranch = (Split-Path $WorktreeRoot -Leaf)
         Write-Host ("[bootstrap] Creating submodule worktree from local object store: {0} -> {1}" -f $submoduleGitDir, $subFullPath)
         $prevEAP = $ErrorActionPreference

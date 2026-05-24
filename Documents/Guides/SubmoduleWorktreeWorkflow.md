@@ -21,7 +21,40 @@
 3. **OpenSpec 在父仓库，源码改动可能在子模块** — 天然是"双仓库变更"，合并/提交需要分别处理。
 4. **新 worktree 没有 `AgentConfig.ini`** — 构建前必须 bootstrap，且新 worktree 无法自动解析主 workspace 的本机配置，需要显式传 `EngineRoot`。
 
-## 标准流程
+## 一键流程（推荐）
+
+绝大多数情况下，下面这一行就能完成"父 worktree + 子模块 init/fallback + AgentConfig.ini + OpenSpec change 骨架"：
+
+```powershell
+# 在主 workspace 根目录执行
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+    -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>
+```
+
+`<change-name>` 同时作为：
+
+- 父 worktree 目录：`.worktrees/<change-name>`
+- 父分支名：`<change-name>`（从当前 HEAD 开分）
+- OpenSpec change 目录：`openspec/changes/<change-name>/`（含空的 `proposal.md` / `tasks.md` / `design.md` / `specs/.gitkeep`）
+
+常用开关：
+
+| 参数 | 用途 |
+|------|------|
+| `-DryRun` | 仅打印将执行的命令，不改文件系统/git |
+| `-NoOpenSpec` | 跳过 OpenSpec 骨架（小改动不需要 OpenSpec 时使用） |
+| `-NoPrewarm` | 跳过 `TargetInfo.json` 预热（首次执行仍建议保留预热） |
+| `-EngineRoot <path>` | 显式指定 EngineRoot（默认从主 workspace 的 `AgentConfig.ini` 读取） |
+| `-Verify` | bootstrap 完成后跑一次 `RunBuild.ps1` 验证构建链路 |
+| `-Force` | 透传给 BootstrapWorktree，强制重写 `AgentConfig.ini` / 覆盖已有 OpenSpec 目录 |
+
+执行成功后，按提示 `cd .worktrees/<change-name>` 即可继续 OpenSpec 流程或构建/测试。
+
+如果一键流程在某个子模块上失败（典型场景：父仓库记录的子模块 commit 远端不可取且本地对象库也没有），脚本**不会回滚** worktree，让你按下面的标准流程接手手工处理。
+
+---
+
+## 标准流程（手工版本，用于排查或脚本无法覆盖的场景）
 
 ### Phase 1：创建父仓库 worktree
 

@@ -208,7 +208,8 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 ## Submodule & Worktree
 
 - The plugin directories (`Plugins/Angelscript`, `Plugins/AngelscriptGAS`, `Plugins/UnrealEvent`) are **git submodules**, not ordinary directories. `git worktree add` does not initialize them.
-- `BootstrapWorktree.ps1` now handles submodule init automatically (standard `git submodule update` → fallback to local object store worktree). Always run bootstrap after creating a new worktree.
+- One-shot setup: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>` creates the parent worktree, initializes/fallbacks all submodules, writes `AgentConfig.ini`, and scaffolds an empty `openspec/changes/<change-name>/` directory in one step.
+- `BootstrapWorktree.ps1` remains the entry point for re-initializing an *existing* worktree (e.g. after switching engine root). It is invoked internally by `NewWorktree.ps1`; you only need to call it directly when fixing up a worktree that already exists.
 - When the target code lives inside a submodule, it is a dual-repo change: OpenSpec artifacts in the parent, source code in the submodule. Commit submodule first, then update the parent gitlink.
 - Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
 
