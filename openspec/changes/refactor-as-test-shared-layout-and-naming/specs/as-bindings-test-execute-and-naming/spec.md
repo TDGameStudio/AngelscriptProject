@@ -107,50 +107,44 @@ Each `Bindings/*.cpp` that defines a private file-scope `Execute*Function*` help
 - **WHEN** the project is built after the TODO markers are added
 - **THEN** the private helpers MUST continue to compile and operate exactly as before; no in-place rewrite or deletion is performed by this change
 
-### Requirement: `FBindingsCoverageProfile` carries full-word field aliases in parallel with legacy abbreviations
+### Requirement: Bindings profile context is removed from canonical execution APIs
 
-`Shared/AngelscriptBindingsCoverage.h` SHALL add full-word fields alongside the existing abbreviated fields of `FBindingsCoverageProfile`. Construction / initialization sites SHALL keep both fields in sync. Specifically, the following abbreviations SHALL each gain a full-word sibling that holds the identical value:
+`FBindingsCoverageProfile` SHALL NOT be part of the canonical AS execution or assertion API. `Shared/AngelscriptTestExecute.h` MUST NOT include `AngelscriptBindingsCoverage.h`, MUST NOT declare `FBindingsCoverageProfile`, and MUST NOT require callers to pass a Bindings-specific profile/context object to `Execute*` or `Compile*` helpers.
 
-| Abbreviated field (kept for alias) | New full-word field |
-|------------------------------------|---------------------|
-| `BodyInst` | `BodyInstance` |
-| `MsgDlg` | `MessageDialog` |
-| `MathOrient` | `MathOrientation` |
-| `CollisionVal` | `CollisionValidation` |
-| `MathPlat` | `MathPlatform` |
-| `JsonConv` | `JsonConversion` |
+#### Scenario: Canonical helpers accept plain labels
 
-Both abbreviated and full-word forms MUST be readable. The full-word fields SHALL be the recommended name for new Profile definitions. Deletion of the abbreviated fields and the rename of any `G<...>Profile` global Profile variables is deferred to a follow-up change.
+- **WHEN** `Shared/AngelscriptTestExecute.h` is parsed
+- **THEN** canonical `ExecuteAndExpect*`, `ExecuteBatchAndExpectInt`, `ExecuteAndValidate<T>`, `ExecuteAndExpectException`, and `CompileAndExpectFailure` helpers MUST accept a plain `const TCHAR* CaseLabel` (or equivalent string label) rather than a Bindings profile/context parameter
 
-#### Scenario: Full-word fields are populated by every Profile
+#### Scenario: Execute layer has no Bindings coverage dependency
 
-- **WHEN** any `FBindingsCoverageProfile` literal is constructed in the test module
-- **THEN** the construction site MUST assign the full-word field (e.g., `BodyInstance`) with the same value as the abbreviated alias (e.g., `BodyInst`), so that readers of either name observe the same value
+- **WHEN** the Shared headers are grep'd for `AngelscriptBindingsCoverage.h` includes
+- **THEN** `Shared/AngelscriptTestExecute.h` MUST NOT include it
 
-#### Scenario: New Profiles prefer full-word fields
+### Requirement: Bindings module lifetime scope uses explicit module names
 
-- **WHEN** a new Profile is added to the test module
-- **THEN** the new Profile MUST set the full-word fields; the abbreviated aliases MAY be left at their default initialization unless legacy callsites of the new Profile require them
+Bindings CQTest helpers that compile temporary AS source SHALL use an explicit module name rather than a `FBindingsCoverageProfile`. The module lifecycle helper (`FCoverageModuleScope` or its replacement) SHALL accept `ModuleName` and `Source`, compile the module under that name, and discard the same name on destruction.
 
-### Requirement: `ModulePrefix` uses `AS<Subject>` form without `Bindings` suffix
+#### Scenario: Module scope does not require a profile
 
-For every existing and new Profile, `ModulePrefix` SHALL follow the form `AS<Subject>` (for example `ASMath`, `ASBodyInstance`) and MUST NOT carry a `Bindings` suffix. Existing Profiles that already use the suffix-free form (the majority) are unchanged; the historical exception `ASMathBindings` is rewritten to `ASMath`. Since `FCoverageModuleScope` derives the AS module name by concatenating `ModulePrefix + SectionName`, all `AddExpectedError` strings that reference the old module name MUST be updated in lockstep.
+- **WHEN** a Bindings test creates a temporary AS module
+- **THEN** it MUST be able to construct the module scope with `FAutomationTestBase&`, `FAngelscriptEngine&`, `const TCHAR* ModuleName`, and `Source`, with no Profile argument
 
-#### Scenario: Every Profile follows AS<Subject> form
+#### Scenario: Module names use full words
 
-- **WHEN** the test module is grep'd for `FBindingsCoverageProfile` literals with `ModulePrefix`
-- **THEN** every literal's `ModulePrefix` MUST match the pattern `AS<Subject>` and MUST NOT end in `Bindings`
+- **WHEN** Bindings tests hard-code or locally compose AS module names
+- **THEN** those names MUST use full words (for example `ASBodyInstance_Latent`, `ASMath_Orientation_FactoriesAndMutators`) and MUST NOT use project-local abbreviations such as `BodyInst`, `MsgDlg`, `MathOrient`, `MathPlat`, `JsonConv`, or the historical `ASMathBindings`
 
-#### Scenario: AddExpectedError strings track the rename
+#### Scenario: AddExpectedError strings track module renames
 
-- **WHEN** `ASMathBindings` (or any other renamed prefix) is replaced
-- **THEN** every `AddExpectedError(TEXT("...ASMathBindings..."))` call site MUST be updated to the new prefix in the same change
+- **WHEN** a module name is renamed away from an abbreviated or suffixed form
+- **THEN** every `AddExpectedError(TEXT("...<old module name>..."))` call site MUST be updated to the new module name in the same change
 
 ## Testing Requirements
 
 - Target test layer: Bindings CQTest (`Angelscript.TestModule.Bindings.*`); existing CppTests and AngelScriptSDK suites continue to verify no regression to executor and assertion semantics.
 - Expected Automation prefix unchanged: `Angelscript.TestModule.Bindings.*`.
-- Recommended helpers/harnesses: `FAngelscriptTestExecutor` (canonical); `ExecuteAndExpect*` / `ExecuteAndExpectNear*` / `ExecuteAndExpectIntAtLeast` / `ExecuteBatchAndExpectInt` / `ExecuteAndValidate<T>` / `ExecuteAndExpectException` / `CompileAndExpectFailure`; `FBindingsCoverageProfile` (with new full-word fields); `FCoverageModuleScope`.
+- Recommended helpers/harnesses: `FAngelscriptTestExecutor` (canonical); `ExecuteAndExpect*` / `ExecuteAndExpectNear*` / `ExecuteAndExpectIntAtLeast` / `ExecuteBatchAndExpectInt` / `ExecuteAndValidate<T>` / `ExecuteAndExpectException` / `CompileAndExpectFailure`; module scope helpers that take explicit full-word module names.
 - Verification entry points:
   - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label as-bindings-test-execute-and-naming -TimeoutMs 1800000 -NoXGE`
   - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings." -Label as-bindings-test-execute-and-naming -TimeoutMs 1800000`

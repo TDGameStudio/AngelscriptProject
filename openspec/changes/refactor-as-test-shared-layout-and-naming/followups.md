@@ -1,8 +1,8 @@
 # Follow-up 清理清单
 
-本 change（`refactor-as-test-shared-layout-and-naming`）只完成「Header 拆分 + 新命名族落地 + C++ 可 alias 的兼容层 + 散落 helper TODO 标记」，仓库进入「新旧并存、稳定可用」的中间态。
+本 change（`refactor-as-test-shared-layout-and-naming`）完成「Header 拆分 + 新命名族落地 + C++ 可 alias 的兼容层 + 散落 helper TODO 标记 + Phase 5 删除 `FBindingsCoverageProfile`」，仓库进入「新旧并存、稳定可用」的中间态。
 
-以下 8 项是本 change **故意推迟**的渐进清理工作，由用户驱动以后续独立 follow-up change 处理。每项都含触发条件、影响面、推荐节奏与最终目标。
+以下事项是本 change **故意推迟**的渐进清理工作，由用户驱动以后续独立 follow-up change 处理。每项都含触发条件、影响面、推荐节奏与最终目标。
 
 ## 1. Bindings/*.cpp callsite 渐进迁移
 
@@ -20,7 +20,7 @@
 
 **待清理**：
 
-- `AngelscriptMathBindingsTests.cpp` / `AngelscriptMathFunctionLibraryTests.cpp` / `AngelscriptMathOrientationFunctionLibraryTests.cpp`：私有 `ExecuteValueFunction<T>`（每文件一份，签名相似但 Profile 引用不同）。
+- `AngelscriptMathBindingsTests.cpp` / `AngelscriptMathOrientationBindingsTests.cpp` / `AngelscriptScriptFunctionLibraryTests.cpp`：私有 `ExecuteValueFunction<T>`（每文件一份，签名相似）。
 - `AngelscriptCurveFloatBindingsTests.cpp`（或类似文件）：私有 `ExecuteIntFunctionWithAddressArg`。
 - `AngelscriptWorldFunctionBindingsTests.cpp`（或类似文件）：私有 `ExecuteIntFunction` / `ExecuteFunctionExpectingException`。
 - 其它通过 `rg "static (bool|template) .*Execute\w+Function" Plugins\Angelscript\Source\AngelscriptTest\Bindings` 发现的散落 helper。
@@ -29,35 +29,7 @@
 
 **最终目标**：所有 `Bindings/*.cpp` 内不再出现 `static` / 匿名命名空间内的 `Execute*Function*` helper；所有 helper 已收编到 `AngelscriptTestExecute.h` 主族（或以新 `Execute*` 名替代）。
 
-## 3. Profile 实例变量名重命名
-
-**触发条件**：本 change Phase 5 已完成 `FBindingsCoverageProfile` 字段双字段并存，但 Profile 实例变量名（如全局 `GBodyInstProfile`）保持原样 — C++ 没有变量名 alias 机制。
-
-**待清理**：
-
-- `GBodyInstProfile` → `GBodyInstanceProfile`
-- `GMsgDlgProfile` → `GMessageDialogProfile`
-- `GMathOrientProfile` → `GMathOrientationProfile`
-- `GCollisionValProfile` → `GCollisionValidationProfile`
-- `GMathPlatProfile` → `GMathPlatformProfile`
-- `GJsonConvProfile` → `GJsonConversionProfile`
-- 其它通过 `rg "G\w+Profile" Plugins\Angelscript\Source\AngelscriptTest\Bindings` 发现的实例。
-
-**推荐节奏**：每次 follow-up 处理一个 Profile（连同其在所有 cpp 中的 ~10-20 个引用），单 commit 验证 build + 该 theme 的 tests。
-
-**最终目标**：所有 Profile 实例变量名全词化。
-
-## 4. Profile 字段去重（删除旧缩写字段）
-
-**触发条件**：#3 完成（所有 Profile 实例变量名已全词化），且全模块 `rg -n "BodyInst\b|MsgDlg\b|MathOrient\b|CollisionVal\b|MathPlat\b|JsonConv\b" Plugins\Angelscript\Source\AngelscriptTest` 仅命中 `FBindingsCoverageProfile` 内部声明，无外部读取。
-
-**待清理**：删除 `FBindingsCoverageProfile` 内 `BodyInst` / `MsgDlg` / `MathOrient` / `CollisionVal` / `MathPlat` / `JsonConv` 等旧缩写字段及其构造时同步赋值代码。
-
-**推荐节奏**：单 follow-up 一次性处理（小范围）。
-
-**最终目标**：`FBindingsCoverageProfile` 内只剩全词字段。
-
-## 5. AS 脚本 namespace 改写（`SetIter_SumElements` → `SetIter::SumElements`）
+## 3. AS 脚本 namespace 改写（`SetIter_SumElements` → `SetIter::SumElements`）
 
 **触发条件**：本 change 已落地，C++ 侧命名族已稳定。
 
@@ -77,9 +49,9 @@
 
 **最终目标**：所有 AS 脚本函数采用 namespace 分组，下划线分组完全消失。
 
-## 6. 删除兼容层（旧符号 inline alias / forward 头）
+## 4. 删除兼容层（旧符号 inline alias / forward 头）
 
-**触发条件**：#1 / #2 / #3 / #4 / #5 全部完成；全模块 `rg -n "ExpectGlobal|FASGlobalFunctionInvoker|ExecuteIntFunction|\.Call\(\)|\.CallAndReturn|\.ReadReturnStruct" Plugins\Angelscript\Source\AngelscriptTest` 仅命中 `Shared/AngelscriptTestExecute.h` 内的 inline alias 实现，无外部依赖。
+**触发条件**：#1 / #2 / #3 全部完成；全模块 `rg -n "ExpectGlobal|FASGlobalFunctionInvoker|ExecuteIntFunction|\.Call\(\)|\.CallAndReturn|\.ReadReturnStruct" Plugins\Angelscript\Source\AngelscriptTest` 仅命中 `Shared/AngelscriptTestExecute.h` 内的 inline alias 实现，无外部依赖。`FBindingsCoverageProfile` 已在本 change Phase 5 删除，不再作为兼容层删除的前置条件。
 
 **待清理**：
 
@@ -94,7 +66,7 @@
 
 **最终目标**：仓库内只剩 `AngelscriptTestExecute.h` 一个执行入口，无任何 alias / forward 头。
 
-## 7. 文档同步
+## 5. 文档同步
 
 **触发条件**：本 change 落地后随时可做（与 #1-#6 不强依赖）。
 
@@ -106,7 +78,7 @@
 
 **推荐节奏**：单 follow-up 一次性处理。
 
-## 8. umbrella header 进一步瘦身（评估）
+## 6. umbrella header 进一步瘦身（评估）
 
 **触发条件**：本 change 落地后随时可做（独立评估）。
 
@@ -129,11 +101,9 @@
 ## 推荐 follow-up 切片顺序
 
 ```
-follow-up A: #7 文档同步 (轻量, 立即可做)
+follow-up A: #5 文档同步 (轻量, 立即可做)
 follow-up B: #1 + #2 (callsite 迁移 + 散落 helper 收编, 按 theme 切片, 多次 follow-up)
-follow-up C: #3 Profile 实例变量名重命名 (按 Profile 切片)
-follow-up D: #4 Profile 字段去重 (单次)
-follow-up E: #5 AS namespace 改写 (先试点, 再 theme 切片, 多次 follow-up)
-follow-up F: #6 删除兼容层 (单次, 强依赖 A-E 完成)
-follow-up G: #8 umbrella 瘦身评估 (独立 change, 与其它无依赖)
+follow-up C: #3 AS namespace 改写 (先试点, 再 theme 切片, 多次 follow-up)
+follow-up D: #4 删除兼容层 (单次, 强依赖 A-C 完成)
+follow-up E: #6 umbrella 瘦身评估 (独立 change, 与其它无依赖)
 ```

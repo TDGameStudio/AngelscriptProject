@@ -13,7 +13,7 @@
 1. 把 `AngelscriptTestUtilities.h` 1093 行拆成 6 个主题头 + 1 个 .cpp，umbrella 缩为 ~40 行纯 include。
 2. 把"AS 函数执行"的所有入口收口到 `Shared/AngelscriptTestExecute.h` 单文件：包含底层 `FAngelscriptTestExecutor` 类 + `Execute*` 自由函数族 + `Compile*` 独立族 + 全部旧符号 inline alias / 旧头 forward。
 3. 建立以 `Execute` 为根动词、词位 `Execute[AndGet|AndExpect|AndValidate|BatchAndExpect|(空)][Near|AtLeast|(空)][<Type>|<T>]` 的命名族契约（spec 强制）。
-4. `FBindingsCoverageProfile` 字段全词化通过**双字段并存**落地（C++ alias 能覆盖的部分）。
+4. 删除 `FBindingsCoverageProfile` 及其 `AngelscriptBindingsCoverage.h` 头，避免 Bindings Coverage 的命名上下文污染通用 `Execute*` API；`Execute*` 仅接收普通 case label，module scope 仅接收显式 module name。
 5. 编辑器头依赖（`BlueprintActionDatabase` / `K2Node_*`）收敛到 `AngelscriptTestEngineCleanup.h` 一个文件。
 6. 退役 4 个纯转发别名（`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`）+ 同步替换 ~46 callsite。
 7. **任何旧 callsite（含外部插件 `AngelscriptGAS` 等）在本 change 落地后继续编译通过，零修改**。
@@ -22,7 +22,7 @@
 
 - 不进行 Bindings/*.cpp 71 文件、~200+ callsite 的批量改名（只更新示例 `AngelscriptBindingsExampleSection.h` 作为新命名官方示范，作为唯一 callsite 改名位置）。
 - 不删除任何旧符号 / 旧头 / inline alias / forward 头（删除推迟到 follow-up）。
-- 不重命名 Profile 实例变量名（如 `GBodyInstProfile`）—— C++ 没有变量名 alias 机制。
+- 不引入任何新的 Profile / NamingContext 抽象替代 `FBindingsCoverageProfile`；CQTest 的 Automation path + `TEST_METHOD` 名已经提供测试身份。
 - 不进行 AS 脚本字符串字面量 namespace 改写（`SetIter_SumElements` → `SetIter::SumElements`，1500+ 处）—— AS 不允许同名函数在 namespace 内外并存，无兼容期。
 - 不收编各 Bindings/*.cpp 内文件私有 `Execute*Function*` helper —— 只加 `// TODO` 标记，由 follow-up 逐个迁入。
 - 不改动 `MockDebugServer` / `TestEnginePool` / `Debugger*` 套件 / `TestEngineHelper` / `TestLegacyHelpers.h` / `TestMacros.h` / `TestEngine.h/.cpp` / `ReflectiveAccess.h` —— 与本目标无关。
@@ -117,37 +117,44 @@ C++ 可 alias 的维度：
 | `FASGlobalFunctionInvoker` 类名 | `using FASGlobalFunctionInvoker = FAngelscriptTestExecutor;` | ✓ |
 | `.Call` / `.CallAndReturn<T>` / `.ReadReturnStruct<T>` 成员方法 | inline 转发方法 | ✓ |
 | `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 旧头 | 改为 forward `#include` | ✓ |
-| `FBindingsCoverageProfile` 字段缩写 | 新增同义全词字段（双字段并存） | ✓ |
 
 C++ 无法 alias / AS 不支持兼容的维度（推迟到 follow-up change）：
 
 | 维度 | 为什么不能 alias | 推迟去向 |
 |------|------------------|----------|
-| Profile **实例变量名**（如 `GBodyInstProfile`）| C++ 没有变量名 alias 机制 | `followups.md` |
 | AS 脚本 namespace 改写 | AS 不允许同名函数在 namespace 内外并存 | `followups.md` |
 | 71 个 Bindings/*.cpp 内 ~200+ callsite 改名 | 仅风险隔离考虑 | `followups.md` |
 | 各 Bindings/*.cpp 内私有 `Execute*Function*` helper 收编 | 文件私有，可逐个独立处理 | `followups.md`（本 change 仅加 `// TODO` 标记） |
 
-### D7: `FBindingsCoverageProfile` 双字段并存
+### D7: 删除 `FBindingsCoverageProfile`，不再把 Bindings 命名上下文传入通用执行层
 
-C++ 无法 alias 成员变量名 / 成员引用。最干净的兼容方式是**新增全词字段、构造时与旧缩写字段同步赋值**：
+实地审查发现原 Phase 5 方案的前提不成立：`FBindingsCoverageProfile` 中并不存在 `BodyInst` / `MsgDlg` / `MathOrient` 等业务缩写字段。该类型实际只有 5 个抽象槽位：
 
 ```cpp
 struct FBindingsCoverageProfile
 {
-    FString BodyInst;       // 旧缩写, 保留以兼容
-    FString BodyInstance;   // 新全词, 推荐新代码使用
-    // ... 构造/初始化时 BodyInstance = BodyInst
+    const TCHAR* Theme;
+    const TCHAR* Variant;
+    const TCHAR* ModulePrefix;
+    const TCHAR* CasePrefix;
+    const TCHAR* LogCategory;
 };
 ```
 
-读者可以从任一字段读取相同值。新增 Profile 时仅设全词字段。旧缩写字段在 follow-up change 内最终删除。
+这些槽位是 Bindings Coverage Section 模式为了拼模块名和日志标签引入的命名上下文，不是执行 AS 函数所需的通用信息。把它传进 `AngelscriptTest::ExecuteAndExpectInt` 等函数，会让通用执行层依赖 Bindings 专用概念，边界不清。
+
+Phase 5 采用删除方案：
+
+- `AngelscriptTest::Execute*` / `Compile*` 只接收普通 `CaseLabel`，不再接收 `FBindingsCoverageProfile`，也不调用 `FormatCaseLabel(Profile, ...)`。
+- `FCoverageModuleScope` 不再接收 Profile，而是接收显式 `ModuleName` + `Source`，只承担 AS module 生命周期 RAII。
+- 删除 `AngelscriptBindingsCoverage.h` 和 `FBindingsCoverageProfile`。Bindings 测试若需要 module name，直接写全词 module name（如 `ASBodyInstance_Latent`）或使用文件私有全词 helper，不再共享一个不通用的 Profile 抽象。
+- CQTest 已经通过 `TEST_CLASS_WITH_FLAGS(..., "Angelscript.TestModule.Bindings.BodyInstance", ...)` 与 `TEST_METHOD(...)` 提供测试身份；不再用 Profile 重复表达。
 
 替代方案：
 
-- `using BodyInstance = decltype(BodyInst)&;` —— C++ 不支持成员名 alias。已否决。
-- `#define BodyInstance BodyInst` —— 宏污染严重。已否决。
-- 直接改名 + 强制改 callsite —— 违反本 change 的兼容承诺。已否决。
+- 保留 Profile 并改为 `ForSubject()` 工厂：比原方案更内聚，但仍会让测试作者学习一个 Bindings 特有上下文；用户明确认为该抽象不通用。已否决。
+- 做全模块 `FAngelscriptTestNamingContext`：容易把 CQTest 已有身份、module lifecycle、assertion label 三件事重新耦合成新大上下文。已否决。
+- 每个测试文件继续手写 5 字段 Profile：重复、易缩写、易不同步。已否决。
 
 ### D8: 散落 helper 保持原状 + 加 `// TODO` 标记
 
@@ -172,10 +179,9 @@ AS 不允许同名函数同时存在于 namespace 内外，无兼容期可走。
 ## Risks / Trade-offs
 
 - **[`FAngelscriptTestExecutor` 与旧 `FASGlobalFunctionInvoker` 的同名成员歧义]** → Mitigation：所有旧成员方法以 inline 转发实现，禁止重载新成员；新成员名与旧成员名不冲突（`Execute` ≠ `Call`、`ExecuteAndGet` ≠ `CallAndReturn`、`ExecuteAndExtractStruct` ≠ `ReadReturnStruct`）。
-- **[Profile 双字段并存导致初始化遗漏]** → Mitigation：spec 内 Scenario 强制构造点同步赋值；compile-time `static_assert` 不可行（运行时字段），改为：(a) 在 `FBindingsCoverageProfile` 构造函数内 `check(BodyInstance == BodyInst)`-style 校验仅在 Debug 配置下启用，(b) 在 Phase 5 review 时人工 grep 所有 Profile 字面量确保 N+M 个字段都赋值。
 - **[forward 头被新代码错误依赖]** → Mitigation：spec 内 Scenario 禁止新代码 include 旧 forward 头；`Shared/README.md` 内显式标注两个 forward 头为 legacy；follow-up change 内执行删除时间表。
 - **[散落 helper 与 `Execute*` 主族命名相似导致读者混淆]** → Mitigation：(a) 散落 helper 全部 `static` 限定作用域，IDE 跳转明确指向本地；(b) 文件顶 `// TODO` 标记提示 reader 走 `Execute.h` 主族；(c) 新代码不允许新增散落 helper（spec 内禁止 `Expect*` / `Invoke*` / `Call*` 等新并行词族）。
-- **[Phase 5 双字段并存后人忘记同步赋值]** → Mitigation：(a) `FBindingsCoverageProfile` 默认构造把全词字段从缩写字段拷贝（如果两者都是 `FString`），让漏赋值时 fallback 到缩写值；(b) Phase 5 末尾 grep 所有 `BodyInstance = ` / `MessageDialog = ` 出现位置数 ≥ `BodyInst = ` / `MsgDlg = ` 出现位置数。
+- **[删除 Profile 后 module name 重复字符串增多]** → Mitigation：只保留必要的 module name 字符串，全部使用全词；多 section 文件可用文件私有 `Make<Subject>ModuleName(SectionName)` helper，但该 helper 不进入通用 Shared API。
 - **[`ResetSharedCloneEngine` / `AcquireCleanSharedCloneEngine` / `GetOrCreateSharedCloneEngine` 替换 4 个别名时被外部插件（如 GAS）依赖]** → Mitigation：原 proposal 已 audit 这 4 个别名仅在 `AngelscriptTest` 模块内部被调用，不影响外部插件；本 change 沿用该 audit 结论；Phase 1 末做一次 `rg` cross-check 确认无外部依赖。
 
 ## Migration Plan
@@ -186,7 +192,7 @@ AS 不允许同名函数同时存在于 namespace 内外，无兼容期可走。
 2. **Phase 2**：把 `AngelscriptGlobalFunctionInvoker.h` + `AngelscriptBindingsAssertions.h` 合并进 `AngelscriptTestExecute.h`；旧两头改成 forward；callsite 不动。
 3. **Phase 3**：在 `AngelscriptTestExecute.h` 内增加 `Execute*` 新命名族 + 旧符号 inline alias；executor 类改名为 `FAngelscriptTestExecutor`。
 4. **Phase 4**：更新 `AngelscriptBindingsExampleSection.h` 内示例到新命名（唯一改 callsite 位置）；新建 `followups.md` 登记待清理清单。
-5. **Phase 5**：`FBindingsCoverageProfile` 双字段并存（每个 Profile 一个 task）。
+5. **Phase 5**：删除 `FBindingsCoverageProfile`，通用 `Execute*` API 与 Bindings module naming 解耦。
 
 每 Phase 末 verification：
 
@@ -281,7 +287,7 @@ Shared/
 
   AngelscriptGlobalFunctionInvoker.h           ~3    <- 永久 forward: #include "AngelscriptTestExecute.h"
   AngelscriptBindingsAssertions.h              ~3    <- 永久 forward: #include "AngelscriptTestExecute.h"
-  AngelscriptBindingsCoverage.h               ~140   <- 双字段并存
+  AngelscriptBindingsCoverage.h                      <- 删除（Profile 抽象不再保留）
   AngelscriptBindingsModuleBuilder.h           88    (ModuleScope, 不动)
   AngelscriptBindingsExampleSection.h          80    (Phase 4 贴新命名, 作为新命名官方示范)
   (其它 8 个簇全部维持原状)
@@ -292,7 +298,25 @@ Bindings/*.cpp (71 files, 全部不动):
   - 文件头加 // TODO(refactor-as-test-shared-layout-and-naming) 标记, 指向 followups.md
 ```
 
-**没有文件被物理删除**。所有旧符号 / 旧头 / 散落 helper 一律保留，由 follow-up change 渐进清理。
+**Phase 5 删除了 `AngelscriptBindingsCoverage.h`**（`FBindingsCoverageProfile` 及其 helper）。其余旧符号 / 旧 forward 头 / 散落 helper 一律保留，由 follow-up change 渐进清理。
+
+## Implementation Record (Phases 1–5, completed May 2026)
+
+| Phase | Submodule commit (Angelscript) | Parent gitlink | Verification |
+|-------|-------------------------------|----------------|--------------|
+| 1 | `621cb1b` split + `06702b1` alias retirement | `055e5fd`, `c91d516` | Fast suite 1834/1834 |
+| 2 | `4f88c8d` merge Invoker + Assertions into Execute.h | `e1f6e8b` | Fast suite 1834/1834 |
+| 3 | `2b0f7ee` `FAngelscriptTestExecutor` + `Execute*` family | `a32b229` | Fast suite 1834/1834 |
+| 4 | `2357a29` example section migration | `da6d137` | Fast suite 1834/1834; SharedExample PASS |
+| 5 | `8ca8191` delete Profile; 125 files migrated | *(parent commit)* | Build OK; Bindings 260/260; Fast suite 1834/1834 (manual shard agg.) |
+
+**Phase 5 migration notes:**
+
+- ~117 Bindings/Syntax/Compiler/Functional/Interface test files: removed `FBindingsCoverageProfile` parameter from `ExpectGlobal*` / `Execute*` callsites; `FCoverageModuleScope` now takes explicit full-word `ModuleName`.
+- `AngelscriptGAS` test module (3 files): same Profile removal pattern.
+- Post-migration fixes: `AddExpectedError` strings must match `FCoverageModuleScope` module names — corrected `ASAssetReg_` → `ASAssetRegistry_` (AssetRegistry) and `ASTemplateCQ_` → `ASTemplate_` (Template CQTest `NegativePath`).
+- `TESTING_GUIDE.md` / `TESTING_GUIDE_ZH.md`: updated `FCoverageModuleScope` examples.
+- Known infra: `RunTestSuiteFast.ps1` aggregator may throw `ConvertTo-AngelscriptWorkerPlanJson` after all shards pass; manual `[done]` line aggregation remains authoritative.
 
 ### E. 文件数账本（最终态）
 

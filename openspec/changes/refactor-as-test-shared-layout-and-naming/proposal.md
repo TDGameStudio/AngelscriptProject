@@ -60,18 +60,19 @@
 - 原 proposal 承诺「公共符号名 0 改名」。本次改为：**新增 `Execute*` 主命名族；旧符号全部以 inline alias / forward 头永久兼容**。
 - 任何 `AngelscriptTest` 模块内或外部插件（如 `AngelscriptGAS`）的旧 callsite 在本 change 落地后**继续编译通过**，无需任何修改。
 - 唯一在本 change 内进行 callsite 改名的位置是 `AngelscriptBindingsExampleSection.h`（80 行示例），作为新命名的官方示范。
-- 71 个 Bindings/*.cpp 文件、~200+ callsite、Profile 字段全词化、Profile 实例变量名重命名、AS 脚本字符串 namespace 改写、最终删除兼容层 — **全部推迟到 follow-up change**，由用户驱动渐进重命名。
+- 71 个 Bindings/*.cpp 文件、~200+ callsite、AS 脚本字符串 namespace 改写、最终删除兼容层 — **全部推迟到 follow-up change**，由用户驱动渐进重命名。
 
-### Profile 字段双字段并存（C++ 可 alias，本 change 内落地）
+### 删除 `FBindingsCoverageProfile`（重设计 Phase 5）
 
-- `FBindingsCoverageProfile` 字段 `BodyInst` / `MsgDlg` / `MathOrient` / `CollisionVal` / `MathPlat` / `JsonConv` 等 6+ 处缩写：**新增全词字段**（如 `BodyInstance`），构造 / 初始化时与旧缩写字段同步赋值；旧缩写字段保留为 inline reference / `using` alias。
-- Profile 实例变量名（如全局 `GBodyInstProfile`）**不动** — C++ 没有变量名 alias 机制，留 follow-up change 处理。
-- `ModulePrefix` 全词化（`AS<Subject>` 不带 `Bindings`）也作为新字段并存方案的一部分。
+- Phase 5 不再扩展 `FBindingsCoverageProfile`。实地审查确认该 struct 并不存在 `BodyInst` / `MsgDlg` 等业务缩写字段；它只是 Bindings Coverage 模式引入的 5 槽命名上下文（`Theme` / `Variant` / `ModulePrefix` / `CasePrefix` / `LogCategory`）。
+- 该上下文不适合作为全测试模块 API 的依赖：通用 `AngelscriptTest::Execute*` 只需要 `Test` / `Engine` / `Module` / `FunctionDecl` / `CaseLabel`，不应知道 Bindings 的 module prefix、case prefix 或 log category。
+- Phase 5 将删除 `FBindingsCoverageProfile` 与 `AngelscriptBindingsCoverage.h`，把 `Execute*` 通用层改为接收普通 case label；Bindings 专用代码如需拼模块名，使用局部全词 helper 或显式 module name。
+- `FCoverageModuleScope` 将降级为“AS module 生命周期 RAII”，接收显式 `ModuleName` + `Source`，不再接收 Profile。CQTest 已提供测试身份（Automation path + `TEST_METHOD` 名），不需要再用 Profile 重复表达。
 
 ### 不在本 change 范围
 
 - **AS 脚本侧 namespace 改写**（`SetIter_SumElements` → `SetIter::SumElements`，1500+ 字符串字面量）：AS 不允许同名函数同时存在于 namespace 内外，**没有兼容期可走**，整个推迟到独立 follow-up change。
-- **Bindings/*.cpp callsite 批量替换** + **删除兼容层**（旧符号 / forward 头 / inline alias）+ **Profile 实例变量名重命名** + **散落 helper 收编**：登记在本 change `followups.md`，由后续 follow-up change 渐进处理。
+- **Bindings/*.cpp callsite 批量替换** + **删除兼容层**（旧符号 / forward 头 / inline alias）+ **散落 helper 收编**：登记在本 change `followups.md`，由后续 follow-up change 渐进处理。
 - **不动 Shared/ 子目录化** — 用户明确要求保持平铺。
 - **不进入** `MockDebugServer`、`TestEnginePool`、`TestLegacyHelpers`、`Debugger*` 套件、`TestEngineHelper`（它的 `ExecuteIntFunction(Engine*, ModuleName, ...)` 重载与 TestUtilities 的同名函数签名 / 抽象层不同，非重复，本次不合并）。
 - **不迁移** `AngelscriptTestLegacyHelpers.h`（11 个老 `IMPLEMENT_SIMPLE_AUTOMATION_TEST` 用户）— 作为遗留事项另开 OpenSpec。
@@ -84,7 +85,7 @@
 ### New Capabilities
 
 - `as-test-utilities-header-layout`：定义 `AngelscriptTest/Shared/` 中「umbrella header + 主题小头」的契约 — 包括 `AngelscriptTestUtilities.h` 作为聚合入口的兼容性保证、6 个主题头的职责边界（含 `AngelscriptTestExecute.h` 作为 AS 函数调用主要入口）、退役符号清单、`Shared/README.md` 导航索引要求、编辑器头依赖收敛到 Cleanup 头的规则，以及旧 `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 在本 change 内永久 forward（删除推迟到 follow-up）。
-- `as-bindings-test-execute-and-naming`：定义 `Execute*` 命名族契约 — 包括 `FAngelscriptTestExecutor` 作为唯一底层 executor 类、`Execute*` 自由函数族词位规则、`Compile*` 独立族、Profile 双字段并存规则、`ModulePrefix=AS<Subject>` 收敛、新代码强制走新命名族、旧符号仅作 inline alias 兼容。
+- `as-bindings-test-execute-and-naming`：定义 `Execute*` 命名族契约 — 包括 `FAngelscriptTestExecutor` 作为唯一底层 executor 类、`Execute*` 自由函数族词位规则、`Compile*` 独立族、删除 Bindings Profile 耦合、新代码强制走新命名族、旧符号仅作 inline alias 兼容。
 
 ### Modified Capabilities
 
@@ -93,7 +94,7 @@
 ## Impact
 
 - **代码（拆分）**：`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h`（主拆分目标，1093 行 → ~40 行）；新增 `AngelscriptTestEngineAcquisition.h/.cpp`、`AngelscriptTestEngineCleanup.h`、`AngelscriptTestMemoryProbe.h`、`AngelscriptTestModuleBuilder.h`、`AngelscriptTestExecute.h`、`AngelscriptTestFixture.h`、`Shared/README.md`。
-- **代码（命名族）**：`Shared/AngelscriptTestExecute.h` 含 `FAngelscriptTestExecutor` 类 + `Execute*` 自由函数族 + 全部旧符号 inline alias（约 1100 行）；`Shared/AngelscriptGlobalFunctionInvoker.h`（408 行 → ~3 行 forward）；`Shared/AngelscriptBindingsAssertions.h`（378 行 → ~3 行 forward）；`Shared/AngelscriptBindingsCoverage.h`（104 行 → ~140 行，双字段并存）。
+- **代码（命名族）**：`Shared/AngelscriptTestExecute.h` 含 `FAngelscriptTestExecutor` 类 + `Execute*` 自由函数族 + 全部旧符号 inline alias（约 1100 行）；`Shared/AngelscriptGlobalFunctionInvoker.h`（408 行 → ~3 行 forward）；`Shared/AngelscriptBindingsAssertions.h`（378 行 → ~3 行 forward）；`Shared/AngelscriptBindingsCoverage.h` 删除，Profile 耦合从通用 Execute 层移除。
 - **代码（标记）**：71 个 Bindings/*.cpp 中含私有 `Execute*Function*` helper 的 4-5 份（Math / Orientation / Curve / WorldFunc 等）顶部加 `// TODO(refactor-as-test-shared-layout-and-naming)` 标记。
 - **代码（callsite 改名）**：仅 `AngelscriptBindingsExampleSection.h` 内示例（~80 行）改为新命名作为官方示范。
 - **API（兼容性）**：所有旧符号（`FASGlobalFunctionInvoker` / `.Call` / `.CallAndReturn` / `ExpectGlobal*` / `ExecuteIntFunction*` / `ExpectBindingCompileFailure`）通过 inline alias / forward 头**永久可用**；新增 `Execute*` 族 + `FAngelscriptTestExecutor` 作为新代码强制入口。
@@ -101,5 +102,5 @@
 - **依赖图**：测试模块 TU 不再透传 `BlueprintActionDatabase.h` / `K2Node_GetSubsystem.h`，除非显式包含 `AngelscriptTestEngineCleanup.h`。
 - **文档**：`Documents/Guides/TestConventions.md` 与 `.agents/skills/_angelscript-test-guide/SKILL.md` 同步推迟到 follow-up change；本 change 仅新增 `Shared/README.md`。
 - **构建系统**：无 `Build.cs` 改动 — `AngelscriptTest.Build.cs` 维持现状。
-- **测试**：不影响 Automation 前缀；不新增 / 移除 / 禁用任何 test case；`275/275` C++ baseline + `301/301` ASSDK 子套不退化。
-- **OpenSpec**：新增 `as-test-utilities-header-layout` 与 `as-bindings-test-execute-and-naming` 两个 capabilities；新建 `followups.md` 登记 8 项渐进清理工作交由 follow-up change 处理。
+- **测试**：不影响 Automation 前缀；不新增 / 移除 / 禁用任何 test case；`275/275` C++ baseline + `301/301` ASSDK 子套不退化。Phase 5 验证：Bindings **260/260**、Fast suite 手动聚合 **1834/1834**（2026-05-24）。
+- **OpenSpec**：新增 `as-test-utilities-header-layout` 与 `as-bindings-test-execute-and-naming` 两个 capabilities；新建 `followups.md` 登记渐进清理工作交由 follow-up change 处理。Phases 1–5 已于 2026-05-24 落地；`design.md` §Implementation Record 含各 Phase 提交与迁移说明。

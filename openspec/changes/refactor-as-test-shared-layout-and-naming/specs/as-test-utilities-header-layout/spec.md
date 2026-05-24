@@ -95,7 +95,7 @@ The four pure-forward aliases `GetSharedTestEngine`, `GetResetSharedTestEngine`,
 
 ### Requirement: Shared directory has a navigation README
 
-`Plugins/Angelscript/Source/AngelscriptTest/Shared/README.md` SHALL exist and SHALL provide a one-screen navigation index covering: the umbrella + six themed headers; the bindings-related sibling headers (`AngelscriptBindingsCoverage.h`, `AngelscriptBindingsModuleBuilder.h`, `AngelscriptBindingsExampleSection.h`); the legacy forward headers slated for future deletion; and a brief pointer for new code to prefer the `Execute*` naming family over the legacy `Expect*` / `Call*` aliases.
+`Plugins/Angelscript/Source/AngelscriptTest/Shared/README.md` SHALL exist and SHALL provide a one-screen navigation index covering: the umbrella + six themed headers; the bindings-related sibling headers (`AngelscriptBindingsModuleBuilder.h`, `AngelscriptBindingsExampleSection.h`); the retired `AngelscriptBindingsCoverage.h` Profile abstraction; the legacy forward headers slated for future deletion; and a brief pointer for new code to prefer the `Execute*` naming family over the legacy `Expect*` / `Call*` aliases.
 
 #### Scenario: README enumerates the themed headers
 
