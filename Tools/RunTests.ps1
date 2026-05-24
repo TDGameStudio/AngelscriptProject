@@ -13,6 +13,10 @@ param(
 
     [int]$TimeoutMs = 0,
 
+    [int]$ExecutionSlot = 0,
+
+    [switch]$Fast,
+
     [switch]$Render,
 
     [switch]$NoReport,
@@ -25,6 +29,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'Shared\UnrealCommandUtils.ps1')
+. (Join-Path $PSScriptRoot 'Shared\TestLaunchProfile.ps1')
 
 $exitCodes = @{
     Success      = 0
@@ -72,10 +77,20 @@ try {
     $targetInfoPath = Join-Path $projectRoot 'Intermediate\TargetInfo.json'
     $timedOutPhase = $null
 
-    $worktreeMutexName = Get-NamedMutexName -Scope 'ue-command-worktree' -KeyPath $projectRoot
+    if ($ExecutionSlot -lt 0) {
+        throw 'ExecutionSlot must be zero or a positive integer.'
+    }
+
+    $executionScopeKeyPath = Get-ExecutionScopeKeyPath -ProjectRoot $projectRoot -ExecutionSlot $ExecutionSlot
+    $worktreeMutexName = Get-NamedMutexName -Scope 'ue-command-worktree' -KeyPath $executionScopeKeyPath
     $worktreeMutex = Acquire-NamedMutex -Name $worktreeMutexName -TimeoutMs 0
     if ($null -eq $worktreeMutex) {
-        Write-Host '[error] Another build or test command is already running for this worktree.' -ForegroundColor Red
+        if ($ExecutionSlot -gt 0) {
+            Write-Host ("[error] Execution slot {0} is already running a test command." -f $ExecutionSlot) -ForegroundColor Red
+        }
+        else {
+            Write-Host '[error] Another build or test command is already running for this worktree.' -ForegroundColor Red
+        }
         $scriptExitCode = $exitCodes.WorktreeBusy
         return
     }
@@ -98,6 +113,10 @@ try {
 
     if (-not $Render) {
         $argumentList += '-NullRHI'
+    }
+
+    if ($Fast) {
+        $argumentList += @(Get-AngelscriptTestFastLaunchArgs)
     }
 
     if ($ExtraArgs.Count -gt 0) {
@@ -166,6 +185,9 @@ try {
     Write-Host ('Target          : {0}' -f $target)
     Write-Host ('ProjectFile     : {0}' -f $agentConfig.ProjectFile)
     Write-Host ('EditorCmd       : {0}' -f $editorCmd)
+    Write-Host ('ExecutionSlot   : {0}' -f $ExecutionSlot)
+    Write-Host ('FastLaunch      : {0}' -f ([bool]$Fast))
+    Write-Host ('NullRHI         : {0}' -f (-not [bool]$Render))
     Write-Host ('TimeoutMs       : {0}' -f $resolvedTimeoutMs)
     Write-Host ('LogPath         : {0}' -f $outputLayout.LogPath)
     Write-Host ('TargetInfoPath  : {0}' -f $targetInfoPath)
@@ -240,6 +262,9 @@ try {
     Write-Utf8JsonFile -Path $metadataPath -Value ([PSCustomObject]@{
             Label             = $Label
             Target            = $target
+            ExecutionSlot     = $ExecutionSlot
+            FastLaunch        = [bool]$Fast
+            NullRHI           = -not [bool]$Render
             ProjectRoot       = $projectRoot
             ProjectFile       = $agentConfig.ProjectFile
             EngineRoot        = $agentConfig.EngineRoot

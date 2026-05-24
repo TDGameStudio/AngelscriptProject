@@ -323,6 +323,22 @@ function New-CommandOutputLayout {
     }
 }
 
+function Get-ExecutionScopeKeyPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectRoot,
+
+        [int]$ExecutionSlot = 0
+    )
+
+    $normalizedProjectRoot = Normalize-PathValue -Path $ProjectRoot
+    if ($ExecutionSlot -le 0) {
+        return $normalizedProjectRoot
+    }
+
+    return ('{0}#slot-{1}' -f $normalizedProjectRoot, $ExecutionSlot)
+}
+
 function Get-NamedMutexName {
     param(
         [Parameter(Mandatory = $true)]
