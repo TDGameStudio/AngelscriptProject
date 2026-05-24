@@ -14,6 +14,9 @@
 .PARAMETER NoReport
     Forwarded to RunTests.ps1.
 
+.PARAMETER ContinueOnFail
+    Keep running remaining prefixes after a failure instead of stopping early.
+
 .PARAMETER ListSuites
     Print available suites and included prefixes.
 
@@ -26,6 +29,7 @@ param(
     [string]$OutputRoot = "",
     [int]$TimeoutMs = 0,
     [switch]$NoReport,
+    [switch]$ContinueOnFail,
     [switch]$ListSuites,
     [switch]$DryRun
 )
@@ -33,106 +37,20 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot 'Shared\TestSuiteDefinitions.ps1')
+
 $runTestsPath = Join-Path $PSScriptRoot "RunTests.ps1"
 if (-not (Test-Path -LiteralPath $runTestsPath)) {
     throw "RunTests.ps1 not found at '$runTestsPath'."
 }
 
-$suiteDefinitions = [ordered]@{
-    "Smoke" = @(
-        @{ Prefix = "Angelscript.TestModule.Engine.MultiEngine"; Label = "MultiEngine" }
-        @{ Prefix = "Angelscript.TestModule.Engine.DependencyInjection"; Label = "DependencyInjection" }
-        @{ Prefix = "Angelscript.TestModule.Engine.EngineSubsystem"; Label = "EngineSubsystem" }
-        @{ Prefix = "Angelscript.TestModule.Engine.BindConfig"; Label = "BindConfig" }
-        @{ Prefix = "Angelscript.TestModule.Shared.EngineHelper"; Label = "SharedEngineHelper" }
-        @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
-    )
-    "NativeCore" = @(
-        @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
-    )
-    "RuntimeCpp" = @(
-        @{ Prefix = "Angelscript.TestModule.Engine"; Label = "Engine" }
-        @{ Prefix = "Angelscript.TestModule.CppTests"; Label = "CppTestsLegacy" }
-    )
-    "Bindings" = @(
-        @{ Prefix = "Angelscript.TestModule.Bindings"; Label = "Bindings" }
-    )
-    "LearningNative" = @(
-        @{ Prefix = "Angelscript.TestModule.Learning.Native"; Label = "LearningNative" }
-    )
-    "LearningRuntime" = @(
-        @{ Prefix = "Angelscript.TestModule.Learning.Runtime"; Label = "LearningRuntime" }
-    )
-    "HotReload" = @(
-        @{ Prefix = "Angelscript.TestModule.HotReload"; Label = "HotReload" }
-    )
-    "Debugger" = @(
-        @{ Prefix = "Angelscript.TestModule.Engine.Debugger.AutoEvaluate"; Label = "AutoEvaluate" }
-        @{ Prefix = "Angelscript.TestModule.Debugger."; Label = "TestModuleDebugger" }
-    )
-    "FunctionalSamples" = @(
-        @{ Prefix = "Angelscript.TestModule.Actor"; Label = "Actor" }
-        @{ Prefix = "Angelscript.TestModule.Component"; Label = "Component" }
-        @{ Prefix = "Angelscript.TestModule.Delegate"; Label = "Delegate" }
-        @{ Prefix = "Angelscript.TestModule.Interface"; Label = "Interface" }
-    )
-    "All" = @(
-        @{ Prefix = "Angelscript.Editor"; Label = "Editor" }
-        @{ Prefix = "Angelscript.GAS"; Label = "GAS" }
-        @{ Prefix = "Angelscript.Template"; Label = "Template" }
-        @{ Prefix = "Angelscript.TestModule.Actor"; Label = "Actor" }
-        @{ Prefix = "Angelscript.TestModule.AngelScriptSDK"; Label = "AngelScriptSDK" }
-        @{ Prefix = "Angelscript.TestModule.Bindings"; Label = "Bindings" }
-        @{ Prefix = "Angelscript.TestModule.Blueprint"; Label = "Blueprint" }
-        @{ Prefix = "Angelscript.TestModule.ClassGenerator"; Label = "ClassGenerator" }
-        @{ Prefix = "Angelscript.TestModule.Compiler"; Label = "Compiler" }
-        @{ Prefix = "Angelscript.TestModule.Component"; Label = "Component" }
-        @{ Prefix = "Angelscript.TestModule.Core"; Label = "Core" }
-        @{ Prefix = "Angelscript.TestModule.Debugger"; Label = "Debugger" }
-        @{ Prefix = "Angelscript.TestModule.Delegate"; Label = "Delegate" }
-        @{ Prefix = "Angelscript.TestModule.Dump"; Label = "Dump" }
-        @{ Prefix = "Angelscript.TestModule.Editor"; Label = "TestModuleEditor" }
-        @{ Prefix = "Angelscript.TestModule.Engine"; Label = "Engine" }
-        @{ Prefix = "Angelscript.TestModule.FileSystem"; Label = "FileSystem" }
-        @{ Prefix = "Angelscript.TestModule.Functional"; Label = "Functional" }
-        @{ Prefix = "Angelscript.TestModule.FunctionLibraries"; Label = "FunctionLibraries" }
-        @{ Prefix = "Angelscript.TestModule.GameInstanceSubsystem"; Label = "GameInstanceSubsystem" }
-        @{ Prefix = "Angelscript.TestModule.GC"; Label = "GC" }
-        @{ Prefix = "Angelscript.TestModule.HotReload"; Label = "HotReload" }
-        @{ Prefix = "Angelscript.TestModule.Inheritance"; Label = "Inheritance" }
-        @{ Prefix = "Angelscript.TestModule.Interface"; Label = "Interface" }
-        @{ Prefix = "Angelscript.TestModule.Learning"; Label = "Learning" }
-        @{ Prefix = "Angelscript.TestModule.Memory"; Label = "Memory" }
-        @{ Prefix = "Angelscript.TestModule.Networking"; Label = "Networking" }
-        @{ Prefix = "Angelscript.TestModule.Parity"; Label = "Parity" }
-        @{ Prefix = "Angelscript.TestModule.Performance"; Label = "Performance" }
-        @{ Prefix = "Angelscript.TestModule.Preprocessor"; Label = "Preprocessor" }
-        @{ Prefix = "Angelscript.TestModule.ScriptClass"; Label = "ScriptClass" }
-        @{ Prefix = "Angelscript.TestModule.Shared"; Label = "Shared" }
-        @{ Prefix = "Angelscript.TestModule.StaticJIT"; Label = "StaticJIT" }
-        @{ Prefix = "Angelscript.TestModule.Syntax"; Label = "Syntax" }
-        @{ Prefix = "Angelscript.TestModule.Validation"; Label = "Validation" }
-        @{ Prefix = "Angelscript.TestModule.WorldSubsystem"; Label = "WorldSubsystem" }
-    )
-}
-
 if ($ListSuites) {
-    Write-Host "Available suites:"
-    foreach ($suiteName in $suiteDefinitions.Keys) {
-        Write-Host "- $suiteName"
-        foreach ($entry in $suiteDefinitions[$suiteName]) {
-            Write-Host "    $($entry.Prefix)"
-        }
-    }
+    Write-AngelscriptTestSuiteCatalog
     exit 0
 }
 
 if ([string]::IsNullOrWhiteSpace($Suite)) {
     throw "Suite is required. Use -ListSuites to inspect available values."
-}
-
-if (-not $suiteDefinitions.Contains($Suite)) {
-    throw "Unknown suite '$Suite'. Use -ListSuites to inspect available values."
 }
 
 if ($TimeoutMs -lt 0) {
@@ -143,14 +61,16 @@ if ($TimeoutMs -gt 3600000) {
     throw "TimeoutMs cannot exceed 3600000ms."
 }
 
-$selectedSuite = $suiteDefinitions[$Suite]
+$selectedSuite = @(Get-AngelscriptTestSuiteEntries -SuiteName $Suite)
 $effectiveLabelPrefix = if ([string]::IsNullOrWhiteSpace($LabelPrefix)) { $Suite } else { $LabelPrefix }
+$failedRuns = New-Object 'System.Collections.Generic.List[object]'
 
 Write-Host "================================================================"
 Write-Host "  Angelscript Test Suite Runner"
 Write-Host "================================================================"
 Write-Host "Suite        : $Suite"
 Write-Host "Dry run      : $DryRun"
+Write-Host "ContinueOnFail : $ContinueOnFail"
 Write-Host "TimeoutMs    : $(if ($TimeoutMs -gt 0) { $TimeoutMs } else { '<per-run default>' })"
 Write-Host "Run count    : $($selectedSuite.Count)"
 Write-Host "Runner       : $runTestsPath"
@@ -185,12 +105,32 @@ for ($index = 0; $index -lt $selectedSuite.Count; ++$index) {
     Write-Host "----------------------------------------------------------------"
     Write-Host "Running $($entry.Prefix)"
     Write-Host "Label        : $runLabel"
+    Write-Host "Tier         : $(Resolve-AngelscriptTestSuiteEntryTier -Entry $entry)"
     Write-Host "----------------------------------------------------------------"
 
     & powershell.exe @argList
     if ($LASTEXITCODE -ne 0) {
-        throw "Suite '$Suite' failed while executing prefix '$($entry.Prefix)' (label '$runLabel')."
+        $failedRuns.Add([PSCustomObject]@{
+                Prefix   = $entry.Prefix
+                Label    = $runLabel
+                ExitCode = $LASTEXITCODE
+            }) | Out-Null
+
+        if (-not $ContinueOnFail) {
+            throw "Suite '$Suite' failed while executing prefix '$($entry.Prefix)' (label '$runLabel')."
+        }
+
+        Write-Host "[warn] Prefix '$($entry.Prefix)' failed with exit code $LASTEXITCODE. Continuing because -ContinueOnFail is set." -ForegroundColor Yellow
     }
+}
+
+if ($failedRuns.Count -gt 0) {
+    Write-Host ""
+    Write-Host "Suite '$Suite' completed with $($failedRuns.Count) failed prefix(es)." -ForegroundColor Yellow
+    foreach ($failedRun in $failedRuns) {
+        Write-Host ("  - {0} (exit {1})" -f $failedRun.Prefix, $failedRun.ExitCode)
+    }
+    exit 1
 }
 
 Write-Host ""
