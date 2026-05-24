@@ -1,171 +1,174 @@
 # AngelscriptTest 测试模块清理清单
 
-> 生成日期：2026-05-25  
-> 背景：Bindings P1/P2/P5 整理已完成（见 `Plugins/Angelscript/Source/AngelscriptTest/Shared/README.md` § Bindings Execute migration）。本文档记录**后续可清理项**，按优先级与主题分类。  
-> 决策规则与参考形态：`Plugins/Angelscript/Source/AngelscriptTest/TESTING_GUIDE.md`。
+> 最后评估：2026-05-25  
+> 背景：Bindings P1/P2/P5 已合并（子模块 `420c7af`）。本文档是**后续 backlog**，不是实施计划。  
+> 规范入口：`Plugins/Angelscript/Source/AngelscriptTest/TESTING_GUIDE.md`、`Shared/README.md`。
 
 ---
 
-## 1. TArray `CoverageProfile` 是否多余？
+## 评估摘要（先看这里）
 
-### 结论（简短）
+| 优先级 | 工作量 | 收益 | 建议项 |
+|--------|--------|------|--------|
+| **P0** | 极小 | 高 | ✅ 5 个 Bindings 文件头注释已更新（2026-05-25） |
+| **P1** | 小 | 中 | ✅ `LogCategory` / `TArrayBindingsFormatCoverageText` 已删除（2026-05-25） |
+| **P2** | 中 | 中 | include 已统一为无 `Shared/` 前缀（Build.cs + 184 文件）；转发 shim 仍可用 |
+| **P3** | 中～大 | 低～中 | Bindings 专用 Private 抽 helper；WorldFunctionLibrary 仅常量 Private |
+| **Defer** | 大 | 低（可读性） | TArray Profile 改 `constexpr`、去掉 `Run*Section` 的 `Profile` 参数 |
+| **不做** | — | — | 全模块 ~178 个 `*_Private` 收敛；Shared 物理分目录 |
 
-| 项 | 是否多余 | 说明 |
-|----|----------|------|
-| **两个不同的 Profile 配置**（`TArray` vs `TArraySyntax`） | **否** | 两套模块前缀、trace 函数名、`bBracketArraySyntax` 不同，必须区分 |
-| `TArrayBindingsCoverageProfile()` / `TArraySyntaxCompatCoverageProfile()` **工厂函数** | **形式可简化** | 可改为具名 `constexpr` 常量，不必每次 `()` 调用 |
-| 各 `.cpp` 里的 `static const ... = XxxCoverageProfile()` | **略冗余** | 可直接 `#include` helper 后使用 `TArrayBindingsProfile` / `TArraySyntaxCompatProfile` 全局常量 |
-| `FArraySyntaxCoverageProfile::LogCategory` | **是（死字段）** | 全模块无读取，可删 |
-| `TArrayBindingsFormatCoverageText(Profile, Text)` | **基本是空操作** | 当前 `return Text;`，未用 `CasePrefix` 做文案前缀；要么实现前缀，要么删掉 `Profile` 参数 |
+**关于 TArray 两个 `CoverageProfile()` 函数：**  
+**不是多余**——两套配置必须并存；**可简化的是**「函数 + 文件内 `static const`」这一层包装，以及未使用的 `LogCategory` / 恒等 `FormatCoverageText`。不必为删函数而删函数。
 
-### 两个 Profile 的实际差异
+**本文档是否保留：** 建议保留至 P0+P2 完成后再删或缩成 `Shared/README.md` 一段「Optional follow-ups」。
+
+---
+
+## 1. TArray `CoverageProfile`（设计说明）
+
+### 1.1 什么不能删
+
+| 字段 / 配置 | TArray 标准 | Syntax compat | 用途 |
+|-------------|-------------|---------------|------|
+| `ModulePrefix` | `ASTArray` | `ASTArraySyntaxCompat` | `BuildCoverageModule` 模块名 |
+| `TraceFunctionDecl` | `TraceTArrayCase` | `TraceSyntaxCase` | 脚本内 trace 声明 |
+| `bBracketArraySyntax` | `false` | `true` | `TArray<T>` vs `T[]` |
+| `CasePrefix` | `TArray` | `TArraySyntax` | **有使用**：`TArrayBindingsTests.cpp` 里 `AddInfo` 日志前缀 |
+
+### 1.2 什么可以删或简化
+
+| 项 | 现状（已核对） | 建议 |
+|----|----------------|------|
+| `LogCategory` | 工厂函数里赋值 `TArrayBindings` / `TArraySyntaxCompatBindings`，**全仓库无读取** | **删除**成员及初始化 |
+| `TArrayBindingsFormatCoverageText` | `return Text;`，调用 ~10+ 处但无格式化效果 | **内联**为 `ContextLabel`，或实现 `[CasePrefix] Label` |
+| `TArrayBindingsCoverageProfile()` 等 | 仅返回字面量聚合 | 可改为 `inline constexpr TArrayBindingsProfile{...}`；**非必须** |
+| `Run*Section(..., Profile)` | 单文件内 Profile 固定 | 去掉参数可减少传参噪音；**大范围 diff，Defer** |
+
+### 1.3 `constexpr` 示例（若做 cosmetic）
+
+注意字段顺序须与结构体一致（含删除 `LogCategory` 后）：
 
 ```cpp
-// TArray 标准语法
-CasePrefix = "TArray"
-ModulePrefix = "ASTArray"
-TraceFunctionDecl = "void TraceTArrayCase(...)"
-bBracketArraySyntax = false   // TArray<int>
+struct FTArrayBindingsTestProfile  // 可选重命名
+{
+	const TCHAR* CasePrefix = nullptr;
+	const TCHAR* ModulePrefix = nullptr;
+	const TCHAR* TraceFunctionDecl = nullptr;
+	bool bBracketArraySyntax = false;
+};
 
-// Syntax compat
-CasePrefix = "TArraySyntax"
-ModulePrefix = "ASTArraySyntaxCompat"
-TraceFunctionDecl = "void TraceSyntaxCase(...)"
-bBracketArraySyntax = true    // int[]
+inline constexpr FTArrayBindingsTestProfile TArrayBindingsProfile{
+	TEXT("TArray"), TEXT("ASTArray"), TEXT("void TraceTArrayCase(const FString&in)"), false};
+
+inline constexpr FTArrayBindingsTestProfile TArraySyntaxCompatProfile{
+	TEXT("TArraySyntax"), TEXT("ASTArraySyntaxCompat"), TEXT("void TraceSyntaxCase(const FString&in)"), true};
 ```
 
-因此：**不是「两个函数写重复配置」的问题，而是「用函数返回静态配置」可以写得更直白」。**
+验证：`Angelscript.TestModule.Bindings.Container.TArray`（2 tests）。
 
-### 建议目标形态（低优先级 cosmetic）
+---
 
-在 `AngelscriptTArrayBindingsTestHelpers.h` 中：
+## 2. Bindings — P0 过期注释（应立即做）
 
-```cpp
-inline constexpr FArraySyntaxCoverageProfile TArrayBindingsProfile{
-    TEXT("TArray"), TEXT("ASTArray"), TEXT("void TraceTArrayCase(const FString&in)"), false};
+以下文件**代码已迁移**，头注释仍写旧 helper，易让后续改回 Private Execute：
 
-inline constexpr FArraySyntaxCoverageProfile TArraySyntaxCompatProfile{
-    TEXT("TArraySyntax"), TEXT("ASTArraySyntaxCompat"), TEXT("void TraceSyntaxCase(const FString&in)"), true};
+| 文件 | 过期描述 | 应改为 |
+|------|----------|--------|
+| `AngelscriptMathBindingsTests.cpp` | `ExecuteValueFunction`、Private namespace | `ExecuteAndExtractStruct` + `AngelscriptMathBindingsTestCompare.h` |
+| `AngelscriptMathOrientationBindingsTests.cpp` | 同上 | 同上 |
+| `AngelscriptAssetRegistryBindingsTests.cpp` | `ExecuteFunctionExpectingException` | `WorldCollisionExecuteFunctionExpectingException` |
+| `AngelscriptWorldFunctionLibraryTests.cpp` | `ExecuteBoolFunction` 等 retained | `WorldCollisionExecute*` / `FAngelscriptTestExecutor` |
+| `AngelscriptWorldCollisionFunctionLibraryTraceTests.cpp` | address-based helpers retained | `AngelscriptWorldCollisionBindingsTestHelpers.h` |
+| `AngelscriptGameInstanceLocalPlayerBindingsTests.cpp` | helpers retained（若仍准确可只改措辞） | 核对后仅更新不准确部分 |
+
+**不在此列：** `AngelscriptScriptFunctionLibraryTests.cpp` 的 Private 仍合理（`ExecuteStringGlobalFunction` 已用 Executor，但含热重载模块脚手架）。
+
+---
+
+## 3. Bindings — P3 专用 Private（保留为主）
+
+| 文件 | Private 内容 | 动作 |
+|------|--------------|------|
+| `AngelscriptReflectiveFallbackCacheTests.cpp` | 缓存 / GameplayTag 前缀 | 保留；过长再抽 helper |
+| `AngelscriptMathAndPlatformBindingsTests.cpp` | `FormatScriptFloatLiteral` | 保留；可抽 `*TestHelpers.h` |
+| `AngelscriptTextFormattingBindingsTests.cpp` | 文本格式化 | 保留 |
+| `AngelscriptWorldCollisionBindingsTests.cpp` | 碰撞体、Functional 世界 | 保留 |
+| `AngelscriptCollisionParamsBindingsTests.cpp` | `CopyIgnoredIds` | 保留 |
+| `AngelscriptAssetRegistryBindingsTests.cpp` | AssetRegistry 查询 helper | 可选抽 `*TestHelpers.h` |
+| `AngelscriptScriptFunctionLibraryTests.cpp` | 热重载 + `ExecuteStringGlobalFunction` | 保留 |
+| `AngelscriptWorldFunctionLibraryTests.cpp` | 仅 2 个模块名 `constexpr` | 可改为匿名 `namespace` |
+| `AngelscriptWorldCollisionFunctionLibraryComponentTests.cpp` | 组件/世界 | 保留 |
+| `AngelscriptWorldCollisionAsyncBindingsTests.cpp` | Async + Functional | 保留 |
+
+**已从 backlog 移除：** `AngelscriptDataTableBindingsTests.cpp` — 已使用全局 `ExecuteIntFunction`，无需 P1 式迁移。
+
+**Console 簇：** Bindings 批量 include 已覆盖主文件；无单独 `Console/` 子目录问题。
+
+---
+
+## 4. Syntax / Functional — P2 include 迁移
+
+### 4.1 规模（2026-05-25 实测）
+
+```text
+rg -l 'AngelscriptBindingsAssertions\.h' ... --glob '*.cpp'  →  25 个文件
 ```
 
-- 删除 `TArrayBindingsCoverageProfile()` / `TArraySyntaxCompatCoverageProfile()`
-- 两测试 `.cpp` 删除文件内 `static const ... = ...()`，统一用上述常量
-- 可选：结构体重命名为 `FTArrayBindingsTestProfile`（去掉历史名 `SyntaxCoverage`）
+分布大致为：Syntax ~17、Functional Interface/Inheritance ~7、`Template/Template_CQTest.cpp` ~1（路径重复计数去重后约 25）。
 
-**风险**：低；改后跑 `Angelscript.TestModule.Bindings.Container.TArray` 前缀即可。
+Bindings 目录：**0**（已完成）。
 
----
+### 4.2 更高效做法
 
-## 2. Bindings 主题 — 建议清理（P3）
+不要只批量改 25 个 `.cpp`：
 
-### 2.1 过期文件头注释（高价值、零行为风险）
+1. **先改** `Syntax/AngelscriptSyntaxTestHelpers.h`（仍 `#include "Shared/AngelscriptBindingsAssertions.h"`）→ 改为 `AngelscriptTestExecute.h` + 按需 `AngelscriptTestModuleScope.h`。  
+2. 再对仍**直接** include shim 的 `.cpp` 跑 `Tools/Diagnostics/UpdateBindingsTestIncludes.py`（扩展 glob 到 `Syntax/`、`Functional/`、`Template/`）。
 
-迁移后仍写「保留 `ExecuteValueFunction`」等，易误导后续维护：
+`Template_CQTest.cpp`、`Shared/AngelscriptBindingsExampleSectionTests.cpp` 仍含 `FCoverageModuleScope` 字样（注释/示例），与 shim 迁移一并处理。
 
-| 文件 | 问题 |
-|------|------|
-| `AngelscriptMathBindingsTests.cpp` | 头注释仍提 `ExecuteValueFunction` / Private namespace |
-| `AngelscriptMathOrientationBindingsTests.cpp` | 同上 |
-| `AngelscriptAssetRegistryBindingsTests.cpp` | 仍写 `ExecuteFunctionExpectingException` |
+### 4.3 验证
 
-**改法**：改为「结构体返回用 `FAngelscriptTestExecutor::ExecuteAndExtractStruct` + `AngelscriptMathBindingsTestCompare.h`」。
+```powershell
+rg "AngelscriptBindingsAssertions\.h" Plugins/Angelscript/Source/AngelscriptTest --glob "*.{cpp,h}"
+rg "FCoverageModuleScope" Plugins/Angelscript/Source/AngelscriptTest --glob "*.cpp"
+```
 
-### 2.2 `AngelscriptTArrayBindingsTestHelpers.h` 内死代码
-
-| 项 | 动作 |
-|----|------|
-| `LogCategory` 成员 | 删除，或接入 `UE_LOG`（若确实需要分类日志） |
-| `TArrayBindingsFormatCoverageText` | 删除并内联 `Text`，或实现 `FString::Printf(TEXT("[%s] %s"), Profile.CasePrefix, *Text)` |
-
-### 2.3 TArray 测试 `.cpp` 结构（可选）
-
-- `RunTArray*Section(..., const FArraySyntaxCoverageProfile& Profile)`：单文件内 Profile 恒为 `TArrayProfile`，可去掉参数、闭包使用文件级常量，减少数百处 `Profile` 传参。
-- `AngelscriptTArraySyntaxCompatBindingsTests.cpp`：大量重复传 `TArraySyntaxCompatProfile`，同上。
-
-### 2.4 仍含 `*_Private` 的 Bindings 文件（保留 vs 再抽 helper）
-
-**应保留 Private（有专用逻辑）**：
-
-| 文件 | Private 内容 |
-|------|----------------|
-| `AngelscriptReflectiveFallbackCacheTests.cpp` | GameplayTag 反射前缀、缓存场景 |
-| `AngelscriptMathAndPlatformBindingsTests.cpp` | `FormatScriptFloatLiteral` 等 |
-| `AngelscriptTextFormattingBindingsTests.cpp` | 文本格式化 |
-| `AngelscriptWorldCollisionBindingsTests.cpp` | 碰撞体搭建、常量、Functional 世界 |
-| `AngelscriptCollisionParamsBindingsTests.cpp` | `CopyIgnoredIds`、模块名常量 |
-| `AngelscriptAssetRegistryBindingsTests.cpp` | `GetAssetRegistryChecked`、资产路径断言 |
-| `AngelscriptScriptFunctionLibraryTests.cpp` | 热重载模块名、字符串全局 Execute |
-| `AngelscriptWorldFunctionLibraryTests.cpp` | 模块名常量（仅 2 个 `constexpr`） |
-| `AngelscriptWorldCollisionFunctionLibraryComponentTests.cpp` | 组件/世界搭建 |
-| `AngelscriptWorldCollisionAsyncBindingsTests.cpp` | Async + Functional |
-
-**可评估再整理（P3）**：
-
-| 文件 | 建议 |
-|------|------|
-| `AngelscriptDataTableBindingsTests.cpp` | 对照 P1，是否仍有私有 `Execute*` 可换全局 API |
-| `AngelscriptWorldFunctionLibraryTests.cpp` | 仅常量的 Private 可改为文件顶部 `namespace { constexpr ... }` 或匿名 namespace |
-| `AngelscriptAssetRegistryBindingsTests.cpp` | Private helper 可迁 `AngelscriptAssetRegistryBindingsTestHelpers.h`（Bindings 内） |
-
-### 2.5 Console 簇（P4，低优先级）
-
-- 已符合 `*Sections.h` 范式；仅需确认 include 已为 `AngelscriptTestModuleScope.h` / `AngelscriptTestExecute.h`（Bindings 批量脚本未覆盖 Console 子文件时手动 spot-check）。
+目标：测试源文件为 0（Shared 转发头 `.h` 自身可保留）。
 
 ---
 
-## 3. Syntax / Functional — P5 延续（Bindings 外）
-
-Bindings 已清零转发 shim；以下仍 `#include "Shared/AngelscriptBindingsAssertions.h"`（约 **25** 个 Syntax `.cpp` + **10** 个 Functional Interface/Inheritance + `Template_CQTest.cpp`）。
-
-**改法**：复用 `Tools/Diagnostics/UpdateBindingsTestIncludes.py`，扩展 glob 到 `Syntax/`、`Functional/`、`Template/`（或复制脚本为 `UpdateTestModuleIncludes.py`）。
-
-**验证**：`rg 'AngelscriptBindingsAssertions\.h' Plugins/Angelscript/Source/AngelscriptTest --glob '*.cpp'` 目标为 0（除 Shared 转发头自身）。
-
----
-
-## 4. Shared 层 — 长期项（非紧急）
+## 5. Shared / 全模块 — 长期 Defer
 
 | 项 | 说明 |
 |----|------|
-| 转发 shim 退役 | `AngelscriptBindingsAssertions.h` 等可保留至 Syntax/Functional 迁移完成，再评估 deprecation 注释 |
-| `AngelscriptTestUtilities.h` 伞头 | README 已说明 305 TU 依赖；新代码应直接 include 子头 |
-| 物理分目录 | `Shared/Engine|Execute|Module/` — 等 API 稳定后单独 OpenSpec |
-| 全模块 `AngelscriptTest_*_Private` | 约 **178** 文件（HotReload / Learning / Compiler / SDK 等），**不要**与 Bindings 整理混做 |
+| 转发 shim 退役 | Syntax/Functional 迁完后再加 deprecation 注释 |
+| `AngelscriptTestUtilities.h` 伞头 | 新代码 include 子头；不大规模改 305 TU |
+| `Shared/Engine\|Execute\|Module/` 物理分目录 | 单独 OpenSpec |
+| 全模块 `AngelscriptTest_*_Private` | ~178 文件；按 HotReload / Learning 等主题分批，**勿与 Bindings 混做** |
 
 ---
 
-## 5. 父仓库 `Tools/Diagnostics/` 临时脚本
+## 6. 父仓库临时脚本
 
-| 文件 | 建议 |
-|------|------|
-| `UpdateBindingsTestIncludes.py` | **可保留** — Syntax/Functional 批量改 include 时复用 |
-| `strip_tarray_private.py` | **删除或不提交** — TArray 迁移一次性脚本 |
-| `migrate_syntax_compat.py` | **删除或不提交** |
-| `MigrateTArrayBindingsTests.py` | **删除或不提交** |
+| 文件 | 状态 | 建议 |
+|------|------|------|
+| `UpdateBindingsTestIncludes.py` | **已提交** | P2 扩展 glob 后复用 |
+| `strip_tarray_private.py` 等 3 个 | 未跟踪 | 删除本地副本，勿提交 |
 
 ---
 
-## 6. 建议实施顺序
+## 7. 推荐实施顺序（修订）
 
-```mermaid
-flowchart LR
-  A[P3 过期注释 + TArray 死字段]
-  B[P3 MathAndPlatform / ReflectiveFallback helper]
-  C[P5 Syntax include 批量]
-  D[TArray Profile 常量化 cosmetic]
-  A --> B
-  B --> C
-  C --> D
-```
-
-1. **Quick win**：修正 Math/AssetRegistry 文件头注释；删 `LogCategory` / 简化 `FormatCoverageText`（+ TArray 测试前缀）。
-2. **P3 Bindings**：按需抽 `MathAndPlatform` / `ReflectiveFallback` helper。
-3. **P5 扩展**：Syntax + Functional include 迁移。
-4. **TArray cosmetic**：Profile 改 `constexpr` 常量、去掉 `Run*Section` 的 Profile 参数（纯可读性）。
+1. **P0**：6 个 Bindings 文件头注释（可单独 PR，零行为变化）。  
+2. **P1**：TArray helper 删 `LogCategory`、内联 `FormatCoverageText`。  
+3. **P2**：`AngelscriptSyntaxTestHelpers.h` + 脚本扩展 + 剩余 `.cpp`。  
+4. **P3**：按需抽 ReflectiveFallback / MathAndPlatform helper。  
+5. **Defer**：TArray `constexpr` / 去掉 `Run*Section` Profile 参数。
 
 ---
 
-## 7. 验证命令（改后）
+## 8. 验证命令
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1
@@ -173,17 +176,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.Math"
 ```
 
-静态检查：
-
-```powershell
-rg "ExecuteValueFunction" Plugins/Angelscript/Source/AngelscriptTest/Bindings
-rg "AngelscriptBindingsAssertions\.h" Plugins/Angelscript/Source/AngelscriptTest --glob "*.cpp"
-```
-
 ---
 
-## 8. 变更记录
+## 9. 变更记录
 
 | 日期 | 说明 |
 |------|------|
-| 2026-05-25 | 初版：Bindings 整理后续清理项；TArray Profile 设计说明 |
+| 2026-05-25 | 初版 |
+| 2026-05-25 | **再评估**：增加摘要表；修正 Syntax 文件数（25）；标出 `SyntaxTestHelpers.h` 枢纽；`CasePrefix` 有使用；DataTable 移出 backlog；补充 6 个过期注释文件；区分 P0/P1/P2/Defer |
+| 2026-05-25 | **实施**：P0 注释（Math×2、AssetRegistry、WorldFunctionLibrary、WorldCollision Trace）；P1 TArray helper；`AngelscriptSyntaxTestHelpers.h` → `AngelscriptTestExecute.h` |
