@@ -43,7 +43,6 @@ The runtime generic hook builds the call frame from `asIScriptGeneric`. Generate
 ## Gate Policy
 
 - Phase 1 keeps the current automatic safe set behavior and changes only the thunk ABI/shape.
-- Complex parameters remain diagnosed and deferred unless the implementation can prove native-compatible slot/writeback behavior with tests.
+- Complex parameters remain diagnosed and deferred unless the implementation can prove native-compatible slot/writeback behavior with tests. Interface and delegate payloads are also deferred because they need explicit frame projection/copy semantics rather than raw slot forwarding.
 - RPC/Net remains excluded because direct native calls bypass UE RPC routing.
 - `ScriptMethod` and `ScriptMixin` remain diagnosed as implicit receiver projections, not automatically enabled.
-

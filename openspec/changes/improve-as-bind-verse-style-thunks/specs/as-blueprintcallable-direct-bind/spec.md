@@ -32,7 +32,7 @@ The generated diagnostics SHALL identify whether each unsupported cross-module c
 
 #### Scenario: Complex parameter forms are explicitly deferred
 
-- **WHEN** a supported-module UFunction has WorldContext, out/ref parameters, ref return, static arrays, containers, or implicit script receiver projection
+- **WHEN** a supported-module UFunction has WorldContext, out/ref parameters, ref return, static arrays, containers, interface/delegate payloads, or implicit script receiver projection
 - **THEN** it remains on the fallback/stub path
 - **AND** the skipped reason identifies the missing protocol family
 
@@ -41,4 +41,3 @@ The generated diagnostics SHALL identify whether each unsupported cross-module c
 - **WHEN** a UFunction has `FUNC_Net`, `FUNC_NetServer`, `FUNC_NetClient`, or `FUNC_NetMulticast`
 - **THEN** it is classified as `rpc-net-function`
 - **AND** no frame-wrapper direct thunk is emitted for it
-
