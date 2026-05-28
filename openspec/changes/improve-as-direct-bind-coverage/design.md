@@ -2,12 +2,12 @@
 
 ### 当前状态(代码事实,非推断)
 
-1. **UHT 工具的输出形态**:`Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs:21-26` 的 `[UhtExporter]` 强制 `ModuleName = "AngelscriptRuntime"`、`CppFilters = ["AS_FunctionTable_*.cpp"]`。`AngelscriptFunctionTableCodeGenerator.cs:120` 的 `factory.MakePath(...)` 因此把 *所有* shard 都落到 `AngelscriptRuntime` 的 OutputDirectory,shard 内容为 `FAngelscriptBinds::AddFunctionEntry(<Class>::StaticClass(), "Func", { ERASE_AUTO_METHOD_PTR(<Class>, Func), … })`,强依赖 `Core/AngelscriptBinds.h` 与 `Core/FunctionCallers.h`。`DeleteStaleOutputs` 同样仅 enumerate AngelscriptRuntime 自己的 output dir。
+1. **UHT 工具的输出形态**:`Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs:21-26` 的 `[UhtExporter]` 必须保留 `ModuleName = "AngelscriptRuntime"`、`CppFilters = ["AS_FunctionTable_*.cpp"]`。UE UHT 插件 exporter 不允许省略 `ModuleName`;同时 `UhtExportFactory.MakePath(...)` 在 `PluginModule != null` 时会强制使用插件模块 OutputDirectory,不能直接靠 `factory.MakePath(targetModule, ...)` 写入目标模块。当前 `AngelscriptFunctionTableCodeGenerator.cs:120` 因此把 *所有* shard 都落到 `AngelscriptRuntime` 的 OutputDirectory,shard 内容为 `FAngelscriptBinds::AddFunctionEntry(<Class>::StaticClass(), "Func", { ERASE_AUTO_METHOD_PTR(<Class>, Func), … })`,强依赖 `Core/AngelscriptBinds.h` 与 `Core/FunctionCallers.h`。`DeleteStaleOutputs` 同样仅 enumerate AngelscriptRuntime 自己的 output dir。
 2. **跨模块未导出函数会被预先剔除**:`AngelscriptHeaderSignatureResolver.cs:109-117` `HasLinkableExport` 在"模块不是 AngelscriptRuntime 且函数没匹配 `<MODULE>_API` / `UE_API` / `RequiredAPI` / `inline` / `FORCEINLINE` / `constexpr`、且类不是 `MinimalAPI` 也没 API 宏"时,把候选打成 `unexported-symbol`。`AngelscriptFunctionTableCodeGenerator.cs:482-489` 该候选退化为 `ERASE_NO_FUNCTION()` stub,运行时由 `Bind_BlueprintCallable.cpp:178-197` 走 `BindBlueprintCallableReflectionFallback` 反射路径。`AS_FunctionTable_SkippedReasonSummary.csv` 中 `unexported-symbol` 一行就是这部分被 stub 化的函数。
 3. **反射 fallback 性能基线**:`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.cpp:96-105` 注释自陈,即使开启 `as.ReflectiveFallback.UseCache=1`(默认)使用 `FReflectiveParamCache + FFrame + UFunction::Invoke` 路径,也比直绑 `asCALL_THISCALL` 慢 3-6×;关闭缓存时退到 legacy `ProcessEvent` 路径,慢更多。**重要事实**:cached 路径明确说"with FUNC_Net branch",反射路径**保留 RPC 路由**;直绑路径会绕过该路由,因此 RPC 函数必须继续走反射(见 D-RPC-Skip)。
 4. **Verse 在引擎内的同形方案**:`Engine/Source/Runtime/CoreUObject/Public/VerseVM/VVMVerseClass.h::FVerseCallableThunk = { const char* NameUTF8; Verse::VNativeFunction::FThunkFn Pointer; }`。Phase 1 调研补充:Verse 的会合点其实是 **CoreUObject 中的 `COREUOBJECT_API RegisterVerseCallableThunks(UClass*, FVerseCallableThunk*, uint32)`**(在 `Engine/Source/Runtime/CoreUObject/Private/VerseVM/VVMUECodeGen.cpp`)。每个引擎模块的 `<Class>.gen.cpp` 在 `StaticRegisterNatives()` 里调一次,把 thunk 表写到 `UVerseClass::VerseCallableThunks` 成员;Verse VM 加载时反查 UClass 元数据并填回 `VNativeFunction::Thunk`。**关键洞察:跨模块的关键不是"把 emit cpp 放到目标模块",而是"会合点在引擎模块本就 link 的位置"**。
 5. **AngelscriptRuntime 的现有依赖**(`AngelscriptRuntime.Build.cs:33-66`):已 link `Engine`、`CoreUObject`、`Core`、`SlateCore`、`UMG`、`AIModule`、`NavigationSystem`、`GameplayTags` 等(为 manual binds 与反射 fallback 服务)。**本 change 的硬约束:不再新增任何引擎模块依赖**(尤其禁止反向 link RenderCore、PhysicsCore、HairStrandsCore 等任意 BlueprintCallable 出现在的模块)。
-6. **`IModularFeatures`**(`Engine/Source/Runtime/Core/Public/Features/IModularFeatures.h`):UE 现成的"字符串 ID 中央注册表",在 Core,所有引擎模块与 AngelscriptRuntime 本就 link Core。提供 `RegisterModularFeature(FName, IModularFeature*)` / `GetModularFeatureImplementations(FName)` / `OnModularFeatureRegistered` 委托。`IModularFeature` 仅有一个 `virtual ~IModularFeature() {}` — **派生类不是 aggregate(C++17)/ 含用户提供虚析构基类(C++20)→ 不能用 `static FFeature GFeature = { ... };` brace-init,必须 ctor 实例化**。`OnModularFeatureRegistered` 委托不保证在 GameThread 触发。
+6. **`IModularFeatures`**(`Engine/Source/Runtime/Core/Public/Features/IModularFeatures.h`):UE 现成的"字符串 ID 中央注册表",在 Core,所有引擎模块与 AngelscriptRuntime 本就 link Core。提供 `RegisterModularFeature(FName, IModularFeature*)` / `GetModularFeatureImplementations(FName)` / `OnModularFeatureRegistered` 委托,但 UE 5.7 没有全局 `IModularFeatures::IsAvailable()`。`IModularFeature` 当前是空接口,没有虚析构/虚方法,因此 reader layout 不包含 vtable padding;feature 实例仍统一采用显式 ctor,把 constructor-only 作为生成物不变量。`OnModularFeatureRegistered` 委托不保证在 GameThread 触发。
 7. **`Bind_BlueprintCallable.cpp:324`** 注释明确"AS Engine register half (must run on GameThread)"。所有写入 `ClassFuncMaps` / 调用 `BindMethodDirect` 的代码路径都必须在 GameThread。
 
 ### 约束
@@ -22,13 +22,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
-- 把今天因"跨模块 + 无 API 宏"而被打成 `ERASE_NO_FUNCTION()` 的 *非 RPC* `BlueprintCallable`/`BlueprintPure` UFunction,迁移到与 AngelscriptRuntime 模块内函数同样的"直绑"路径,跳过反射 fallback。
+- 把今天因"跨模块 + 无 API 宏"而被打成 `ERASE_NO_FUNCTION()` 的 *非 RPC 且安全签名* `BlueprintCallable`/`BlueprintPure` UFunction,迁移到与 AngelscriptRuntime 模块内函数同样的"直绑"路径,跳过反射 fallback。
 - **跨模块中央会合点用 `IModularFeatures`**:每个引擎模块 emit 的 cpp 在 DLL 加载时静态构造把一个 POD-payload feature 注册到 `IModularFeatures`,字符串 ID `"AngelscriptCrossModuleBindings"`;AS Runtime 在 `EOrder::Late + 60` 阶段 `GetModularFeatureImplementations` 一次性拉取,**完全不 link 任何引擎模块**。
-- **Modular(Editor)与 Monolithic(Shipping)同路径**:`IModularFeatures` 在两种 build 配置下都工作;Shipping 也走直绑路径(不退化到反射)。Launcher / 不重编引擎用户的目标模块根本没编出 cross-module shard,运行时拉空,反射 fallback 兜底 — **路径选择不靠编译宏,自然落地**。
+- **Modular(Editor)与 Monolithic(Shipping)设计同路径**:`IModularFeatures` 不依赖 PE 导出表,设计上适用于两种 build 配置。当前 change 的验证边界是 source-build Development Editor；Monolithic Shipping 与 Launcher 安装引擎烟测作为后续 release-hardening 矩阵。Launcher / 不重编引擎用户的目标模块根本没编出 cross-module shard,运行时拉空,反射 fallback 兜底。
 - **Thunk raw 形态,emit cpp 不 include AS SDK**:thunk 签名 `void(*)(UObject* Self, void** Args, void* Ret)`,emit cpp 仅 include `Features/IModularFeatures.h` 与目标类头;asIScriptGeneric ↔ raw 缓冲区桥接由 AS Runtime 端单一通用 generic hook 完成。
-- **覆盖完整 UFunction 形态**:out-param、static、WorldContextObject、`const` 修饰、复杂参数类型(`FString` / `FName` / `FText` / `TArray<X>` / `TSubclassOf<X>` / `TSoftObjectPtr<X>` / `TWeakObjectPtr<X>` / `FVector` / `FRotator` / `FTransform` / `UENUM`)等都有规范化的 thunk 解包契约。
+- **覆盖安全 UFunction 子集**:本次自动 emit 限定在无需额外 BPVM 写回协议的安全签名。返回支持 `void`、bool/numeric/enum/struct、`FString`、`FName`、`FText`、`UObject*`;参数支持 bool/numeric/enum/struct、`FString`、`FName`、`FText`、`UObject*`、`UClass*`、soft object、weak object。out-param、WorldContextObject、ref-return、static arrays 与 `TArray/TSet/TMap` 容器显式 deferred。
 - **三道 ABI 防护**:编译期 `static_assert(sizeof(...))` + runtime `LayoutVersion` magic + null/range 校验;`LayoutVersion` 由 `cross-module-layout-version.txt` 单 token 文件管理,generator 与 AS Runtime 公共头共用,bump 规则成文。
-- **Shutdown 时序安全**:`~FAutoReg()` 与 AS Runtime `OnPreExit` 都做 `IModularFeatures::IsAvailable()` 兜底,绝不在 Core 单例销毁后 dereference。
+- **Shutdown 时序安全**:`~FAutoReg()` 与 AS Runtime `OnPreExit` 都使用 shutdown flag 兜底,绝不在 Core 单例销毁后 dereference `IModularFeatures::Get()`。
 - **回调线程安全**:`OnModularFeatureRegistered` 回调 marshal 到 GameThread 后再写 `ClassFuncMaps` / 调 `BindMethodDirect`。
 - 在 Day-0 用最小 probe 验证 (i) UBT 是否会自动纳编"目标模块 OutputDirectory 下额外 `AS_FunctionTable_<Module>_CrossModule_*.cpp`"、(ii) 引擎模块静态构造期 `IModularFeatures::Get()` 已就绪、(iii) AS Runtime 端 `GetModularFeatureImplementations` 在 Late+60 阶段能拉到;任一项失败即 STOP,本 change 整体作废。
 
@@ -45,12 +45,12 @@
 
 ### D1: 用 UHT 跨模块 emit 而不是引擎源码改造
 
-**选择**:UHT C# 插件按 module 分发 emit,文件落到目标模块 OutputDirectory。
+**选择**:UHT C# 插件保留 `ModuleName="AngelscriptRuntime"`,same-module shard 继续用 plugin factory 默认路径;cross-module shard 使用目标 `UhtModule.Module.OutputDirectory` 绝对路径并通过 `factory.CommitOutput(...)` 写入。Day-0 probe 必须先证明这种跨目录输出会被 UBT 纳编进目标模块。
 
 **为什么**:
 - 不需要改引擎源码,与 AGENTS.md "AS 插件作为独立可复用插件"目标一致。
 - 与 Verse 同形(emit 进函数所在模块)。
-- `factory.MakePath(uhtModule, suffix)` 在 `PluginModule==null`(本 exporter 当前已是这种形态)时直接落到目标模块 OutputDirectory,UE 既有机制。
+- UE UHT 插件 exporter 必须指定 `ModuleName`;且 `factory.MakePath(uhtModule, suffix)` 在 `PluginModule != null` 时会回落到插件模块 OutputDirectory,所以不能作为目标模块输出手段。
 
 **未选**:
 - 给所有目标 UFUNCTION 加 `<MODULE>_API` — 需要改引擎源码,违反约束。
@@ -89,12 +89,11 @@ struct FAngelscriptCrossModuleFeature : public IModularFeature
 };
 ```
 
-AS Runtime 端不继承 IModularFeature,而是定义同 layout 的 reader 并 reinterpret_cast(`VTablePadding` 槽对应 IModularFeature 的 vtable):
+AS Runtime 端定义同 layout 的 reader 并 reinterpret_cast `IModularFeature*`。UE 5.7 的 `IModularFeature` 当前是空接口、非多态,reader 不包含 vtable padding;Day-0 probe 与后续 `static_assert` 负责在 Core 接口形态变化时先失败:
 
 ```cpp
 struct FAngelscriptCrossModuleFeatureReader
 {
-    void*                                VTablePadding;
     const FAngelscriptCrossModuleEntry*  Table;
     int32                                Count;
     const TCHAR*                         ModuleName;
@@ -122,13 +121,13 @@ static FAngelscriptCrossModuleFeature GFeature(
 
 ### D-Aggregate-Init: 派生类 ctor 而非 brace-init
 
-**选择**:`FAngelscriptCrossModuleFeature` 必须显式声明 ctor,实例化用 `static FFeature GF(GTable, Count, TEXT("..."), 0xA5C0DE01u);`。
+**选择**:`FAngelscriptCrossModuleFeature` 必须显式声明 ctor,实例化用 `static FFeature GF(GTable, Count, TEXT("..."), 0xA5C0DE01u);`。即使 UE 5.7 的 `IModularFeature` 当前是空接口、技术上可聚合初始化,生成物仍固定采用 constructor-only 形态,让两端 layout 与实例化方式长期稳定。
 
-**为什么**:`IModularFeature` 在 Core 中包含 `virtual ~IModularFeature() {}`。该基类有用户提供的虚析构 → 派生类**不是 C++17 aggregate**,**也含 C++20 sense 下的虚析构基类** → `static FFeature GF = { GTable, Count, TEXT("..."), 0xA5C0DE01u };` 这种 brace-aggregate-init 不合法,MSVC 会报 `cannot use a brace-enclosed initializer`。Phase 0 probe 实施时第一个文件就会撞到。
+**为什么**:constructor-only 是生成物不变量,避免未来 `IModularFeature` 变成多态/带析构时才暴露 brace-init 兼容问题。Phase 0 probe 与 ABI `static_assert` 负责在接口形态变化时先失败,而不是让运行时 reader 静默错位。
 
 **未选**:
-- C++20 `designated initializers` — 同样依赖 aggregate-ness,不可。
-- `T = T(...)` copy-init — 虚析构基类导致拷贝构造也受限,且 ctor 形式更直白,无收益。
+- C++20 `designated initializers` — 仍属于初始化风格分叉,不利于 generator/reader 双端保持单一不变量。
+- `T = T(...)` copy-init — ctor 直接初始化更直白,无收益。
 
 ### D-Thunk: Thunk 签名 `void(*)(UObject*, void**, void*)`,asIScriptGeneric 桥接由 AS Runtime 通用 hook 完成
 
@@ -147,7 +146,7 @@ static void Thunk_ACharacter_AddMovementInput(UObject* Self, void** Args, void* 
 }
 ```
 
-AS Runtime 端:**所有 cross-module entry 共用同一个通用 generic hook** `static void GAngelscriptCrossModuleGenericHook(asIScriptGeneric* G)`,通过 AS user-data 携带 `FAngelscriptCrossModuleEntry` 指针;hook 内从 `G` 拿 Self 与各 arg 槽,写入 raw `void**` Args 数组、为 Ret 分配缓冲(若 `RetSize > 0`)、调 `E.Thunk(Self, Args, Ret)`、然后把 Ret 与 out-param 写回 `G`。
+AS Runtime 端:**所有 cross-module entry 共用同一个通用 generic hook** `static void GAngelscriptCrossModuleGenericHook(asIScriptGeneric* G)`,通过 AS user-data 携带 `FAngelscriptCrossModuleEntry` 指针;hook 内从 `G` 拿 Self 与各 arg 槽,写入 raw `void**` Args 数组、使用 AS 提供的返回槽(若 `RetSize > 0`)、调 `E.Thunk(Self, Args, Ret)`。当前 safe-scope 不自动 emit out-param / ref-return / WorldContext entry,因此没有额外 out-param writeback 协议。
 
 **为什么**:
 - emit cpp 只 include `Features/IModularFeatures.h`(Core)+ 目标类头,**不 include `angelscript.h`**(后者要求引擎模块 build.cs 加 AS SDK include path,违反"不改引擎"约束)。
@@ -158,24 +157,23 @@ AS Runtime 端:**所有 cross-module entry 共用同一个通用 generic hook** 
 - `void(*)(asIScriptGeneric*)` 直接形态 — 见上,SDK 头依赖问题。
 - 跨模块传 PMF 二进制位 — MSVC PMF 大小受多继承影响,跨 DLL 风险高于 raw 函数指针。
 
-### D-Param-Marshal: 复杂 UFunction 形态的 thunk 解包契约
+**Scope note**: static `ScriptMethod` functions and class-level `ScriptMixin` projections stay outside the automatic safe set. They project the first C++ parameter into script `this`; this change's raw thunk bridge does not yet inject that implicit object into `Args[0]`, so emitting them would call the target function with shifted arguments.
 
-generator 必须按 `UhtFunction` 签名为下列形态 emit 正确解包:
+### D-Param-Marshal: 当前 safe-scope 的 thunk 解包契约
+
+generator 必须按 `UhtFunction` 签名为下列 safe-scope 形态 emit 正确解包:
 
 | 形态 | thunk 体 | AS Runtime 桥接 hook 行为 |
 |---|---|---|
-| **out-param**(`int32&` / `UPARAM(ref)`) | `Args[i]` 为指向 AS 端临时缓冲的指针;thunk 体 `Type& Out = *static_cast<Type*>(Args[i]);` 直接传入函数 | hook 在调用前从 `asIScriptGeneric` 拿到 out-param 槽地址放入 `Args[i]`;调用后把 `*Args[i]` 写回 generic 对应槽 |
 | **static 函数** | `Self == nullptr`;thunk 体走 `T::Func(...)` 而非 `static_cast<T*>(Self)->Func(...)` | hook 检测 `Flags & bit0 Static`,跳过 Self 提取;AS Runtime 注册时走 `BindGlobalFunction`(命名空间 = ClassName) |
-| **WorldContextObject 隐式参数** | 由 generator 在 emit 时把 WorldContext 显式作为 Args 槽 | hook 检测 `Flags & bit2 WorldContext`,从 AS 调用上下文拿 `UWorld*` 或拥有者对象填入 |
 | **`const` 修饰** | thunk 体走 `static_cast<const T*>(Self)->Func()` | AS Runtime 注册 method declaration 时附 `const`(`Flags & bit1 Const`) |
-| **non-trivial 值参数**(`FString` / `FName` / `FText` / `TArray<X>`) | `Args[i]` 是指向值的指针;thunk 体按值复制(`FString S = *static_cast<FString*>(Args[i]);`)以避免 alias | hook 端为这些类型分配 stack 临时,生命周期跨调用 |
-| **`TSubclassOf<X>` / `TSoftObjectPtr<X>` / `TWeakObjectPtr<X>`** | 同 non-trivial,按值复制 | hook 端按这些类型的 SDK 注册形态(opaque 或 ref)处理 |
-| **SIMD 对齐类型**(`FVector` / `FRotator` / `FTransform`) | `Args[i]` 必须 16-byte 对齐 | hook 端缓冲区按 16-byte alignas 分配 |
+| **non-trivial 值参数/返回**(`FString` / `FName` / `FText` / struct) | `Args[i]` 是 AS generic 提供的槽地址;thunk 体按 `PassCrossModuleArg<T>` 解引用;非 trivial return 用 placement construction 写入 Ret | hook 端只转交 AS generic 槽地址,不自行管理复杂生命周期 |
+| **object/class/soft/weak wrapper 参数** | `Args[i]` 按已解析 C++ 类型解引用后传入目标函数 | hook 端只转交 AS generic 槽地址 |
 | **UENUM 标签** | `Args[i]` 按底层宽度(uint8 / int32 / uint64);thunk 体 `static_cast<EnumType>(*static_cast<UnderlyingType*>(Args[i]))` | hook 端按底层宽度槽位写入 |
 
 `Flags` 位定义:`bit0 Static`、`bit1 Const`、`bit2 WorldContext`、`bit3 HasOutParams`、`bit4 ReturnByRef`(若 UFunction 返回引用,Ret 是指向真值的指针),其余预留。
 
-**为什么**:这些形态在生产代码中大量出现,缺一种 generator emit 错误就会静默偏离 BPVM 行为。**写在 design 里成契约,之后 generator 实现 + 测试覆盖必须一一对应**。
+**为什么**:safe-scope 优先关闭跨模块链接边界与基础 raw thunk 桥接,避免在未建立完整 BPVM writeback / WorldContext 注入协议前把复杂形态直接切到 direct path。out-param、WorldContext、ref-return、static arrays 与 `TArray/TSet/TMap` 容器保留为后续 change。
 
 ### D-RPC-Skip: RPC / Net 函数继续走反射 fallback
 
@@ -248,7 +246,7 @@ generator 必须按 `UhtFunction` 签名为下列形态 emit 正确解包:
 ### D-ShutdownOrder: DLL 卸载与 IModularFeatures 单例销毁的安全协议
 
 **选择**:
-- emit cpp 的 `~FAutoReg()` 调 `Unregister` 前先做 `IModularFeatures::IsAvailable()` 检查(若 UE 暴露;若无,改用 try-pattern:`if (auto* MF = FModuleManager::GetModulePtr<...>(...))` 等价 idiom,具体形态在 Phase 0 probe 实施时由 UE API 实测决定)。
+- emit cpp 通过 `FCoreDelegates::OnPreExit` 设置本 TU 的 shutdown flag;`~FAutoReg()` 若看到 shutdown flag 为 true 则 no-op,否则执行正常 `UnregisterModularFeature`。
 - AS Runtime `Bind_CrossModuleDirect.cpp` 在 `FCoreDelegates::OnPreExit.AddStatic(&Unsubscribe)` 中提前移除 `OnModularFeatureRegistered` 订阅,防止 Core 单例销毁后回调触发。
 
 **为什么**:`IModularFeatures` 是 Meyers singleton;跨 DLL 的 Meyers singleton 析构顺序未定义。若 Core 内单例先销毁、引擎模块后卸载,引擎模块 `~FAutoReg` 调 `Get()` 解引用就崩。
@@ -280,13 +278,13 @@ generator 必须按 `UhtFunction` 签名为下列形态 emit 正确解包:
 | **R1**:UBT 不自动纳编目标模块 OutputDirectory 下的 `AS_FunctionTable_*_CrossModule_*.cpp` | 整个方案作废 | Day-0 probe(D7),失败即 STOP;不试图绕路用 `AddCustomCppFile` 等内部 API |
 | **R2**:`asCALL_GENERIC` + raw thunk 比 `asCALL_THISCALL` 慢 | 直绑收益缩水 | 必须在 `TestPerformance.md` micro-bench 量化,设最低收益门槛(具体阈值在 tasks 阶段量产基线后定);未达阈值则保留方案,但作为后续"thiscall 升级"的目标 |
 | **R3**:UHT 插件改动触发引擎模块全量重编 | 开发体验变差 | 严格遵循 `SaveIfChanged` — generator 输出已按 ClassName/FunctionName Ordinal 排序、无时间戳;新加的 cross-module shard 同样保持稳定排序;tasks.md 明确禁止把 `DateTime.Now` 等不稳定字段写进 emit |
-| **R-FUNC_Net**:RPC / Net 函数误走直绑 | 网络复制语义破坏(Server-only 在客户端执行 / NetMulticast 不多播 / WithValidation 不验证) | D-RPC-Skip:generator `ShouldGenerate` 显式过滤 `FUNC_Net|FUNC_NetServer|FUNC_NetClient|FUNC_NetMulticast`;`AS_FunctionTable_SkippedReasonSummary.csv` 计数;Phase 3 增加 RPC 回归测试,断言 RPC 函数仍走反射 fallback |
+| **R-FUNC_Net**:RPC / Net 函数误走直绑 | 网络复制语义破坏(Server-only 在客户端执行 / NetMulticast 不多播 / WithValidation 不验证) | D-RPC-Skip:generator `ShouldGenerate` 显式过滤 `FUNC_Net|FUNC_NetServer|FUNC_NetClient|FUNC_NetMulticast`;`AS_FunctionTable_SkippedReasonSummary.csv` 计数;当前 change 用生成端诊断测试守住,多端 RPC 行为测试留给后续网络矩阵 |
 | **R-AggregateInit**:`static FFeature GF = { ... }` 编译不过 | Phase 0 probe 撞墙 | D-Aggregate-Init:所有示例代码 / generator emit 模板用 ctor 形态;静态扫描测试断言 emit cpp 中无 `= { GTable,` 等 brace-aggregate-init 残留 |
 | **R-Layout**(原 R7 升级):双端 `FAngelscriptCrossModuleEntry` / `FAngelscriptCrossModuleFeature` layout 漂移 | 拉到错误指针、crash 风险 | D-LayoutBump:`cross-module-layout-version.txt` 单 token 文件;三道防线:(a) 编译期 `static_assert(sizeof)` 双端等价;(b) `LayoutVersion` magic 不一致即 runtime warn + skip;(c) null/range 校验。字段全用指针/int32/uint32,禁止 `bool`/`uint8`。derived class 禁止后续加新虚方法 |
 | **R-StaticInitFiasco**:静态构造期 `IModularFeatures::Get()` 是否就绪 | 引擎模块 DLL 加载即崩 | `IModularFeatures` 在 Core,Core 早于一切引擎模块加载,理论安全;由 Day-0 probe 实证 |
 | **R-OnModularFeatureRegistered-Timing**:Late+60 之后才加载的模块 entries 丢失 | 部分 UFunction 进不到 ClassFuncMaps | D-LateRegister:订阅 `OnModularFeatureRegistered`,收到回调时走与 Late+60 完全一致的路径 |
 | **R-OnModularFeatureRegisteredThread**:回调在 worker thread 触发 | 与 BPVM / AS Engine 并发写 race;`ClassFuncMaps` 数据竞争 | D-OnModularFeatureRegisteredThread:回调 `AsyncTask(ENamedThreads::GameThread, ...)` marshal;Phase 3 加 worker-thread 触发 register 的并发回归测试 |
-| **R-ShutdownOrder**:DLL 卸载时 `IModularFeatures` 单例已销毁 | Editor 退出 / hot reload 偶发 crash | D-ShutdownOrder:`IsAvailable` 检查 + `OnPreExit` 主动 unsubscribe;Phase 5 加 graceful shutdown 测试 |
+| **R-ShutdownOrder**:DLL 卸载时 `IModularFeatures` 单例已销毁 | Editor 退出 / hot reload 偶发 crash | D-ShutdownOrder:`OnPreExit` 设置 shutdown flag + 主动 unsubscribe;Phase 5 加 graceful shutdown 测试 |
 | **R-StaleShardCleanup**:`DeleteStaleOutputs` 不覆盖跨模块 dir | 旧 shard 残留 → 重复定义 link error | D-StaleCleanup:扩展 enumerate 到所有 supported module;Phase 2 加专门 task 覆盖;增量 build 回归测试断言旧 shard 自动清 |
 | **R-MultiShardSameModule**:同模块多个 feature 实例处理顺序错乱 | 重复绑定 / 无效覆盖 | D-MultiShardSameModule:AS Runtime 按 feature 实例迭代,D4 优先级规则保护;Phase 2 加多 shard 测试 |
 | **R5**:Hot-reload 改动引擎模块 .h 触发重 emit | 影响开发循环 | 跨模块 emit 内容稳定排序 + `SaveIfChanged` 保护;hot reload 路径仍走反射 fallback,与现状一致 |
@@ -296,12 +294,12 @@ generator 必须按 `UhtFunction` 签名为下列形态 emit 正确解包:
 
 ## Migration Plan
 
-1. **Phase 0**(Day-0 probe):新增最小 IModularFeatures self-register probe → 三项验证全过 → 解锁后续工作;任一项不通过 → STOP,提交 `Documents/Reports/CrossModuleLinkProbe_<Date>.md` 记录失败原因并归档 change。同时确认 `IModularFeatures::IsAvailable()` API 形态(若不存在,选定替代 idiom)。
-2. **Phase 1**(ABI 与公共头):新增 `cross-module-layout-version.txt`、`AngelscriptCrossModuleBindings.h`(POD layout、reader、`LayoutVersionExpected`、ctor、`static_assert`)、`Bind_CrossModuleDirect.cpp` 骨架(通用 generic hook + `OnModularFeatureRegistered` 订阅 + GameThread marshal + `OnPreExit` unsubscribe),先用一个手写 cross-module shard 跑通端到端(选 1 个 Engine 模块的 unexported-symbol 函数手工 emit IModularFeatures self-register;**确保选的不是 RPC/Net 函数**)。同时端到端覆盖 out-param、static、WorldContext、const、复杂参数类型各 1 个手工示例。
-3. **Phase 2**(UHT 自动化):改造 `AngelscriptFunctionTableExporter` / `AngelscriptHeaderSignatureResolver` / `AngelscriptFunctionTableCodeGenerator`,把"unexported-symbol"路径迁移到自动 cross-module emit(IModularFeatures 自注册形态 + raw thunk + POD 表 + ctor 实例化);新增 RPC/Net skip 与 reason 统计;`DeleteStaleOutputs` 扩展跨模块清理。
-4. **Phase 3**(测试):新增 `Angelscript.TestModule.Bindings.CrossModuleDirectBind.*` 一组 CQTest,覆盖直绑生效、行为等价反射、复杂参数 marshal、RPC 不直绑、ABI 三道防线、`OnModularFeatureRegistered` 后到模块、worker-thread 注册并发安全、Modular/Monolithic 双 build。
-5. **Phase 4**(基线与文档):跑全量 UHT,刷新 `AS_FunctionTable_Summary.json`(增加 `crossModuleEntries`)/ `BindGapAuditMatrix.md`;补 `TestPerformance.md` micro-bench(目标:相对反射 cached 减少 ≥ 30% per-call)。
-6. **Phase 5**(收尾):graceful shutdown 验证、Launcher 烟测、`LayoutVersion` bump 流程文档化、PR 准备。
+1. **Phase 0**(Day-0 probe):新增最小 IModularFeatures self-register probe → 三项验证全过 → 解锁后续工作;任一项不通过 → STOP,提交 `Documents/Reports/CrossModuleLinkProbe_<Date>.md` 记录失败原因并归档 change。同时确认 shutdown 兜底采用 `OnPreExit` flag + 析构 no-op 形态。
+2. **Phase 1**(ABI 与公共头):新增 `cross-module-layout-version.txt`、`AngelscriptCrossModuleBindings.h`(POD layout、reader、`LayoutVersionExpected`、ctor、`static_assert`)、`Bind_CrossModuleDirect.cpp` 骨架(通用 generic hook + `OnModularFeatureRegistered` 订阅 + GameThread marshal + `OnPreExit` unsubscribe),用 safe-scope entry 跑通 raw thunk bridge。
+3. **Phase 2**(UHT 自动化):改造 `AngelscriptFunctionTableExporter` / `AngelscriptHeaderSignatureResolver` / `AngelscriptFunctionTableCodeGenerator`,把 safe-scope "unexported-symbol" 路径迁移到自动 cross-module emit(IModularFeatures 自注册形态 + raw thunk + POD 表 + ctor 实例化);新增 RPC/Net skip 与 reason 统计;`DeleteStaleOutputs` 扩展跨模块清理。
+4. **Phase 3**(测试):新增 `Angelscript.CppTests.UHTToolResolver.*` 一组 resolver/runtime 边界测试,覆盖 probe、public header、ABI 三道防线、generic hook、`OnModularFeatureRegistered` 后到模块、worker-thread 注册并发安全、同模块多 feature 不去重与生成物 diagnostics。
+5. **Phase 4**(后续):Bindings CQTest、复杂参数 marshal、RPC 多端行为、Monolithic/Launcher/full suite、micro-bench、`BindGapAuditMatrix.md` 与 `TestPerformance.md` 数字刷新进入后续 hardening changes。
+6. **Phase 5**(收尾):OpenSpec validate、维护文档更新、review notes 准备。
 
 **Rollback**:本 change 全部代码以"新增 + UHT 改造"形式落地。回滚通过(a) 还原 `AngelscriptHeaderSignatureResolver.HasLinkableExport`、(b) 还原 `AngelscriptFunctionTableExporter.Export` 单点输出、(c) 移除 `Bind_CrossModuleDirect.cpp`、`AngelscriptCrossModuleBindings.h`、`cross-module-layout-version.txt`、(d) 还原 `DeleteStaleOutputs` 单 dir 范围 四步即可,运行时回到现有反射 fallback,不破坏 ABI。
 
@@ -309,6 +307,6 @@ generator 必须按 `UhtFunction` 签名为下列形态 emit 正确解包:
 
 - **Q1**:Cross-module shard 的 include 集合最小化策略 — 是直接 include `<Class>.h` 还是更精细化(避免 PCH 膨胀)?在 Phase 1 端到端跑通后给出测量值,Phase 2 generator 实现前敲定。
 - **Q3**:`asCALL_GENERIC` + raw thunk 性能未达预期时,thiscall 直绑升级的范围阈值 — 同模块直绑路径能否复用现 shard,而仅对 cross-module 引入第二张表?Phase 4 micro-bench 出数后定。
-- **Q-IsAvailable**:`IModularFeatures::IsAvailable()` 在当前 UE 5.7 版本是否存在 / 等价 API 形态?Phase 0 probe 实施时实测确定;若不存在,选定 try-pattern idiom(可能用 `static thread_local bool bShuttingDown` + `OnPreExit` 设置 flag)。
+- **Q-ShutdownIdiom**:Phase 0 probe 采用的 `OnPreExit` shutdown flag 是否足以覆盖 Editor 退出 / DLL unload 顺序?若实测仍有卸载顺序问题,后续 runtime reader 只能保守 no-op 并依赖进程退出释放,不能引入不存在的 `IModularFeatures::IsAvailable()`。
 
 (原 Q2 "Launcher 路径下 extern 跳过的具体宏形态" **已关闭** — `IModularFeatures` 路径不依赖编译期宏,目标模块未编出 cross-module shard 时自然没有 feature 注册,运行时拉空,反射 fallback 兜底,无需额外宏开关。)

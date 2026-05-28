@@ -2,7 +2,9 @@
 
 ### Requirement: Cross-module direct-bind shards are emitted into the target module's intermediate directory
 
-The Angelscript UHT tool SHALL emit per-module cross-module direct-bind shard files (`AS_FunctionTable_<Module>_CrossModule_<NNN>.cpp`) into the OutputDirectory of the target module — not the AngelscriptRuntime module — for every `BlueprintCallable`/`BlueprintPure` UFunction that is in scope of the supported module set, not skipped (`NotInAngelscript`, `BlueprintInternalUseOnly` without `UsableInAngelscript`, `CustomThunk`, `Private/` headers, interface classes, **RPC/Net functions**), and previously classified as `unexported-symbol` because its C++ implementation lives in a module other than `AngelscriptRuntime` without an `<MODULE>_API` / `UE_API` / inline / FORCEINLINE / constexpr decoration.
+The Angelscript UHT tool SHALL emit per-module cross-module direct-bind shard files (`AS_FunctionTable_<Module>_CrossModule_<NNN>.cpp`) into the OutputDirectory of the target module — not the AngelscriptRuntime module — for every safe-signature `BlueprintCallable`/`BlueprintPure` UFunction that is in scope of the supported module set, not skipped (`NotInAngelscript`, `BlueprintInternalUseOnly` without `UsableInAngelscript`, `CustomThunk`, `Private/` headers, interface classes, **RPC/Net functions**), and previously classified as `unexported-symbol` because its C++ implementation lives in a module other than `AngelscriptRuntime` without an `<MODULE>_API` / `UE_API` / inline / FORCEINLINE / constexpr decoration. Safe signatures are limited to returns of `void`, bool/numeric/enum/struct, `FString`, `FName`, `FText`, and `UObject*`, plus parameters of bool/numeric/enum/struct, `FString`, `FName`, `FText`, `UObject*`, `UClass*`, soft object, and weak object. Out params, WorldContext injection, ref returns, static arrays, and `TArray/TSet/TMap` containers are explicitly deferred and MUST NOT be emitted by this change. Because UE UHT plugin exporters must keep a plugin `ModuleName` and plugin `factory.MakePath(...)` routes back to the plugin module, cross-module output MUST use the target `UhtModule.Module.OutputDirectory` absolute path with `factory.CommitOutput(...)`, validated by the Day-0 probe.
+
+Additional safe-set exclusion: static UFunctions projected into script instance methods through `ScriptMethod` metadata or class-level `ScriptMixin` are outside this change's automatic cross-module emit scope. They require implicit script-`this` injection into the first C++ parameter, which the current raw thunk bridge does not model.
 
 #### Scenario: Source-build target with a previously unexported-symbol function
 
@@ -16,6 +18,14 @@ The Angelscript UHT tool SHALL emit per-module cross-module direct-bind shard fi
 - **WHEN** a candidate function's class header path contains `/Private/`
 - **THEN** UHT does NOT emit a cross-module entry for it
 - **AND** the entry remains accounted for in `AS_FunctionTable_SkippedReasonSummary.csv` under the `private-header` (or pre-existing) reason
+
+#### Scenario: UHT plugin exporter keeps ModuleName while writing cross-directory outputs
+
+- **WHEN** `AngelscriptFunctionTableExporter` is registered as a UHT plugin exporter
+- **THEN** the exporter keeps `ModuleName = "AngelscriptRuntime"`, because external UHT plugin exporters require a plugin module
+- **AND** cross-module shard output does NOT rely on `factory.MakePath(targetModule, ...)`, because plugin factories route `MakePath(...)` back to the plugin module OutputDirectory
+- **AND** the generator writes target-module shards by constructing `Path.Combine(TargetModule.Module.OutputDirectory, "AS_FunctionTable_<Module>_CrossModule_<NNN>.cpp")` and passing that absolute path to `factory.CommitOutput(...)`
+- **AND** the Day-0 link probe verifies this file is compiled into the target module before any full cross-module implementation proceeds
 
 #### Scenario: Output file naming does not collide with engine CodeGen filters
 
@@ -48,7 +58,7 @@ UFunctions whose `FunctionFlags` include any of `FUNC_Net`, `FUNC_NetServer`, `F
 
 ### Requirement: Cross-module shard ABI uses IModularFeatures-registered POD payload with raw thunks
 
-The cross-module shard contract SHALL expose its bindings to AngelscriptRuntime exclusively through the Core-provided `IModularFeatures` registry. The payload is a POD `FAngelscriptCrossModuleEntry` table embedded in an `IModularFeature`-derived feature struct that adds **only POD data members and no new virtual methods**. Because `IModularFeature` declares a virtual destructor in Core, the derived struct is NOT a C++ aggregate — instances MUST be created via a constructor, NEVER via brace-aggregate-init. AngelscriptRuntime MUST NOT link any engine module to access these payloads. Member function pointers, `FGenericFuncPtr`, `ASAutoCaller`-style template instantiations, AngelScript SDK types (`asIScriptGeneric`, `asSFuncPtr`, etc.), and any AngelscriptRuntime-internal types MUST NOT appear at the cross-module boundary.
+The cross-module shard contract SHALL expose its bindings to AngelscriptRuntime exclusively through the Core-provided `IModularFeatures` registry. The payload is a POD `FAngelscriptCrossModuleEntry` table embedded in an `IModularFeature`-derived feature struct that adds **only POD data members and no new virtual methods**. UE 5.7's `IModularFeature` is currently an empty interface, so the runtime reader has no vtable-padding field; if Core changes this interface shape later, the Day-0 probe / ABI static_asserts MUST fail before implementation proceeds. Feature instances MUST be created via a constructor, NEVER via brace-aggregate-init, as the generated-code invariant. AngelscriptRuntime MUST NOT link any engine module to access these payloads. Member function pointers, `FGenericFuncPtr`, `ASAutoCaller`-style template instantiations, AngelScript SDK types (`asIScriptGeneric`, `asSFuncPtr`, etc.), and any AngelscriptRuntime-internal types MUST NOT appear at the cross-module boundary. Shutdown safety MUST NOT depend on a nonexistent `IModularFeatures::IsAvailable()` API in UE 5.7; it uses an `OnPreExit` shutdown flag and no-op guarded unregister path instead.
 
 #### Scenario: AngelscriptRuntime does not link any engine module for cross-module dispatch
 
@@ -80,20 +90,29 @@ The cross-module shard contract SHALL expose its bindings to AngelscriptRuntime 
 
 - **WHEN** a cross-module shard is generated for a non-static, non-interface, non-CustomThunk, non-RPC `BlueprintCallable` UFunction
 - **THEN** the generated thunk has the signature `static void Thunk_<Class>_<Func>(UObject* Self, void** Args, void* Ret)` — no AS SDK types
-- **AND** AngelscriptRuntime registers a single shared generic hook `void(asIScriptGeneric*)` to AngelScript via `BindMethodDirect(..., asCALL_GENERIC, ...)` from the Late+60 bind stage
-- **AND** that shared hook unpacks `asIScriptGeneric` arguments into a raw `void**` Args array and a raw Ret buffer, calls the entry's raw `Thunk`, then writes Ret and out-params back to `asIScriptGeneric`
+- **AND** AngelscriptRuntime injects a bound `FFuncEntry` carrying the shared generic hook and per-entry user data into `FAngelscriptBinds::ClassFuncMaps` from the Late+60 bind stage
+- **AND** `Bind_BlueprintCallable.cpp` later consumes that entry and registers the generic hook with AngelScript via `BindMethodDirect(...)` or `BindGlobalFunctionDirect(...)` using `asCALL_GENERIC`
+- **AND** that shared hook passes `asIScriptGeneric` argument addresses into a raw `void**` Args array, passes the AS return slot as raw Ret when present, and calls the entry's raw `Thunk`
+- **AND** this change does not emit out-param entries, so no out-param writeback protocol is required in the generic hook
 - **AND** no `asSFuncPtr`, member-function pointer, `FGenericFuncPtr`, or PMF binary bits cross the module boundary
 
-### Requirement: Complex UFunction forms have well-defined thunk marshalling contracts
+### Requirement: Safe UFunction forms have well-defined thunk marshalling contracts
 
-The generator SHALL emit thunk bodies that correctly marshal the following UFunction signature forms; the AngelscriptRuntime-side shared generic hook SHALL provide the matching `asIScriptGeneric*` ↔ raw-buffer translation for each. The `Flags` bitfield in `FAngelscriptCrossModuleEntry` carries: `bit0 Static`, `bit1 Const`, `bit2 WorldContext`, `bit3 HasOutParams`, `bit4 ReturnByRef`, remaining bits reserved.
+The generator SHALL emit thunk bodies that correctly marshal the safe-signature UFunction forms in this change; the AngelscriptRuntime-side shared generic hook SHALL provide the matching `asIScriptGeneric*` ↔ raw-buffer translation for each. The `Flags` bitfield in `FAngelscriptCrossModuleEntry` reserves: `bit0 Static`, `bit1 Const`, `bit2 WorldContext`, `bit3 HasOutParams`, `bit4 ReturnByRef`, remaining bits reserved. `WorldContext`, `HasOutParams`, and `ReturnByRef` are reserved for follow-up changes and MUST NOT be emitted automatically by this change.
 
-#### Scenario: out-param functions write back through Args slots
+Additional deferred forms: `ScriptMethod` metadata and class-level `ScriptMixin` projections are treated like other complex cross-module signatures until the raw thunk contract grows an explicit implicit-this protocol.
 
-- **WHEN** the target UFunction has a non-const reference parameter or `UPARAM(ref)` (e.g., `void GetClampedActorBounds(FVector& OutMin, FVector& OutMax)`)
-- **THEN** the generated thunk receives `Args[i]` as a pointer into an AS-side temporary buffer; the body invokes the function passing `*static_cast<Type*>(Args[i])` so the function writes through the buffer
-- **AND** after the thunk returns, the AngelscriptRuntime hook writes `*Args[i]` back into the corresponding out-param slot of `asIScriptGeneric`
-- **AND** the entry's `Flags & bit3 HasOutParams` is set so the hook's writeback loop is enabled
+#### Scenario: unsupported complex signatures are not emitted
+
+- **WHEN** the target UFunction has out params, WorldContext metadata, ref return, static array parameters, or `TArray/TSet/TMap` container parameters
+- **THEN** no cross-module direct-bind entry is emitted for that function in this change
+- **AND** the function is diagnosed as `cross-module-unsupported-signature` or remains on its pre-existing fallback/stub path
+
+#### Scenario: ScriptMethod and ScriptMixin projections are not emitted
+
+- **WHEN** a static UFunction is projected into script as an instance method via `ScriptMethod` metadata or class-level `ScriptMixin`
+- **THEN** no automatic cross-module direct-bind entry is emitted by this change
+- **AND** the function remains on its existing fallback/stub path or is diagnosed as `cross-module-unsupported-signature`, because the raw thunk bridge does not yet model implicit script-`this` injection into the first C++ parameter
 
 #### Scenario: static functions invoke without Self
 
@@ -102,35 +121,23 @@ The generator SHALL emit thunk bodies that correctly marshal the following UFunc
 - **AND** the AngelscriptRuntime registration uses `BindGlobalFunction` (in namespace `<ClassName>`) rather than `BindMethodDirect`
 - **AND** `Flags & bit0 Static` is set
 
-#### Scenario: WorldContextObject parameter is injected by the hook
-
-- **WHEN** the target UFunction has `meta = (WorldContext = "<ParamName>")`
-- **THEN** the generator emits the WorldContext parameter as an explicit Args slot in its declared position
-- **AND** the AngelscriptRuntime hook detects `Flags & bit2 WorldContext` and supplies the `UWorld*` (or owning `UObject*`) from the AS calling context to fill that slot before invoking the thunk
-
 #### Scenario: const-qualified methods preserve const
 
 - **WHEN** the target UFunction is declared `const`
 - **THEN** the thunk body invokes via `static_cast<const T*>(Self)->Func()`
 - **AND** the AngelscriptRuntime registration declares the AS method with `const` modifier (driven by `Flags & bit1 Const`)
 
-#### Scenario: non-trivial value parameters are marshalled by value
+#### Scenario: safe non-trivial value parameters and returns are marshalled through generic slots
 
-- **WHEN** the target UFunction has parameters of type `FString`, `FName`, `FText`, or `TArray<X>` / `TSet<X>` / `TMap<K,V>`
-- **THEN** the generator emits the thunk body to copy the value (`FString S = *static_cast<FString*>(Args[i]);`) before passing it to the target function, avoiding aliasing into AS-side temporaries
-- **AND** the AngelscriptRuntime hook allocates stack-life buffers of those types whose lifetime spans the call
+- **WHEN** the target UFunction has safe parameters or return values such as `FString`, `FName`, `FText`, or reflected structs
+- **THEN** the generator emits the thunk body to read arguments via `PassCrossModuleArg<T>(Args, Index)`
+- **AND** non-trivial return values are constructed into the AS return slot using placement construction
 
 #### Scenario: object/class pointer wrappers are marshalled by value
 
 - **WHEN** the target UFunction has parameters of type `TSubclassOf<X>`, `TSoftObjectPtr<X>`, `TSoftClassPtr<X>`, `TWeakObjectPtr<X>`
 - **THEN** the generated thunk treats the parameter as an opaque `sizeof(...)`-byte value at `Args[i]` and copies it into a local before invocation
 - **AND** the AngelscriptRuntime registration matches the type's existing AS SDK registration shape (typically opaque or value-by-ref)
-
-#### Scenario: SIMD-aligned struct parameters honor 16-byte alignment
-
-- **WHEN** the target UFunction has parameters of type `FVector`, `FRotator`, `FTransform`, or any other SIMD-aligned struct
-- **THEN** the AngelscriptRuntime hook allocates the corresponding Args slot with `alignas(16)` (or the type's required alignment)
-- **AND** the thunk dereferences the slot through a properly aligned cast
 
 #### Scenario: UENUM tags are passed at the underlying width
 
@@ -167,22 +174,23 @@ The generator SHALL emit thunk bodies that correctly marshal the following UFunc
 - **THEN** after the Late+60 stage runs, `FAngelscriptBinds::GetClassFuncMaps()[OwningClass][FunctionName].FuncPtr.IsBound()` returns `true`
 - **AND** `Bind_BlueprintCallable.cpp`'s subsequent execution takes the direct-bind branch (`bHasDirectNativePointer == true`) and does NOT invoke `BindBlueprintCallableReflectionFallback`
 
-### Requirement: Modular and Monolithic build configurations both produce a working binding without configuration
+### Requirement: Modular Editor builds use cross-module direct bind without configuration
 
-The dispatch system SHALL automatically select between the cross-module direct-bind path and the existing reflection fallback at runtime, with no project configuration, env var, compile-time macro, or feature flag required. Both Modular (Editor, DebugGame, Development, Test) and Monolithic (Shipping) build configurations SHALL exercise the same `IModularFeatures`-based path; Shipping is NOT permitted to silently downgrade to reflection fallback when the cross-module shard exists.
+The dispatch system SHALL automatically select between the cross-module direct-bind path and the existing reflection fallback at runtime, with no project configuration, env var, compile-time macro, or feature flag required. This change verifies the source-build Development Editor path. Monolithic Shipping and Launcher installed-engine smoke tests are deferred to a follow-up release-hardening matrix; the design remains compatible because the path does not depend on PE exports.
 
 #### Scenario: Modular build uses cross-module direct-bind through IModularFeatures
 
 - **WHEN** the project is built as a Modular target (e.g., Editor) and the cross-module shard for module `<M>` was emitted
 - **THEN** `<M>`'s static initializer calls `IModularFeatures::Get().RegisterModularFeature(FName("AngelscriptCrossModuleBindings"), &GFeature_<M>)` at DLL load
-- **AND** `Bind_CrossModuleDirect.cpp` retrieves the feature at Late+60 and registers entries via the shared `asCALL_GENERIC` hook
+- **AND** `Bind_CrossModuleDirect.cpp` retrieves the feature at Late+60 and injects entries carrying the shared `asCALL_GENERIC` hook into `FAngelscriptBinds::ClassFuncMaps`
+- **AND** `Bind_BlueprintCallable.cpp` registers the corresponding script functions via that hook when its normal binding pass consumes those entries
 - **AND** at script call time, `BlueprintCallableReflectiveFallback::InvokeReflectiveUFunctionFromGenericCall_Bridge` is NOT invoked for the corresponding UFunctions
 
-#### Scenario: Monolithic Shipping build uses the same path
+#### Scenario: Monolithic Shipping build remains a follow-up hardening target
 
 - **WHEN** the project is built as a Monolithic Shipping target and the cross-module shard for module `<M>` was emitted as part of the same build
-- **THEN** the same `IModularFeatures`-based path is exercised; `<M>`'s static initializer registers the feature, AngelscriptRuntime retrieves it at Late+60, and direct-bind is in effect
-- **AND** behavior is observably identical to the Modular Editor build for the same UFunctions
+- **THEN** the intended path is the same `IModularFeatures`-based path
+- **AND** full Shipping behavior parity MUST be verified by a follow-up matrix before release gating
 
 #### Scenario: Launcher / installed-engine target gracefully falls back
 
@@ -190,6 +198,7 @@ The dispatch system SHALL automatically select between the cross-module direct-b
 - **THEN** the build still links successfully (AngelscriptRuntime has no link-time dependency on any cross-module symbol)
 - **AND** `IModularFeatures::Get().GetModularFeatureImplementations(FName("AngelscriptCrossModuleBindings"))` returns an empty array for the missing modules
 - **AND** at runtime, the corresponding UFunctions take the existing `BlueprintCallableReflectionFallback` path with identical observable behavior to the pre-change baseline
+- **AND** a full installed-engine smoke run is deferred to follow-up validation
 
 ### Requirement: HasLinkableExport no longer rejects cross-module unexported symbols
 
@@ -245,27 +254,27 @@ To prevent silent layout drift between the AngelscriptRuntime-side reader and th
 #### Scenario: Derived feature struct adds no new virtual methods, uses constructor instantiation
 
 - **WHEN** the project's source is inspected (both AS Runtime header and any UHT-emitted cpp)
-- **THEN** the `IModularFeature`-derived feature struct used for cross-module bindings declares no new virtual methods beyond `IModularFeature`'s implicit virtual destructor
+- **THEN** the `IModularFeature`-derived feature struct used for cross-module bindings declares no virtual methods and no assumptions about vtable padding
 - **AND** every data member is a fixed-width type (pointer, int32, uint32, int16, uint16); `bool`, `uint8`, or other variable-padding types are NOT used
 - **AND** all instances are created via the explicit constructor `FAngelscriptCrossModuleFeature(...)`; brace-aggregate-init forms are NOT used (and would not compile)
 
 ### Requirement: Late-loaded modules' cross-module bindings are picked up via OnModularFeatureRegistered, with GameThread marshalling
 
-Engine, plugin, or game modules whose static initializers run after the Late+60 bind stage (e.g., dynamically loaded plugins, deferred-load modules) SHALL still have their cross-module bindings injected. AngelscriptRuntime SHALL subscribe to `IModularFeatures::OnModularFeatureRegistered` and take the same code path as the Late+60 bulk pass. Because UE does NOT guarantee the delegate fires on the GameThread, the callback MUST marshal the actual `ClassFuncMaps` mutation and `BindMethodDirect` call to the GameThread via `AsyncTask(ENamedThreads::GameThread, ...)` (or equivalent) before touching either AS Engine or the bind registry.
+Engine, plugin, or game modules whose static initializers run after the Late+60 bind stage (e.g., dynamically loaded plugins, deferred-load modules) SHALL still have their cross-module binding entries injected. AngelscriptRuntime SHALL subscribe to `IModularFeatures::OnModularFeatureRegistered` and take the same entry-injection code path as the Late+60 bulk pass. Because UE does NOT guarantee the delegate fires on the GameThread, the callback MUST marshal the actual `ClassFuncMaps` mutation to the GameThread via `AsyncTask(ENamedThreads::GameThread, ...)` (or equivalent) before touching the bind registry. The callback does not hot-swap already-registered AngelScript functions; newly injected entries become visible to subsequent or next normal `Bind_BlueprintCallable.cpp` binding consumption.
 
 #### Scenario: Module loaded after Late+60 still gets its bindings injected
 
 - **WHEN** a module containing a registered `FAngelscriptCrossModuleFeature` is loaded after `EOrder::Late + 60` has already executed
 - **THEN** the `OnModularFeatureRegistered` delegate fires with `FeatureName == "AngelscriptCrossModuleBindings"` and the new feature pointer
 - **AND** AngelscriptRuntime executes the same reader-cast + LayoutVersion check + range validation + `ClassFuncMaps` injection logic as the Late+60 bulk pass
-- **AND** subsequent script calls into that module's UFunctions take the direct-bind path
+- **AND** the injected entries become available to subsequent or next normal BlueprintCallable binding consumption; already-registered AngelScript functions are not required to be hot-swapped by this change
 
 #### Scenario: Worker-thread feature registration marshals to GameThread
 
 - **WHEN** `IModularFeatures::Get().RegisterModularFeature(FName("AngelscriptCrossModuleBindings"), ...)` is invoked from a non-GameThread (simulating a dynamically loaded plugin's worker-thread initialization)
-- **THEN** AngelscriptRuntime's `OnModularFeatureRegistered` callback does NOT directly call `BindMethodDirect` or write to `FAngelscriptBinds::ClassFuncMaps` on the calling thread
+- **THEN** AngelscriptRuntime's `OnModularFeatureRegistered` callback does NOT directly write to `FAngelscriptBinds::ClassFuncMaps` on the calling thread
 - **AND** instead it captures the feature pointer and dispatches a GameThread task (e.g., `AsyncTask(ENamedThreads::GameThread, ...)`) that performs the actual injection
-- **AND** no race conditions are observed in `ClassFuncMaps` mutation or AS Engine bind register internals
+- **AND** no race conditions are observed in `ClassFuncMaps` mutation
 
 ### Requirement: Stale cross-module shard files are cleaned up across all supported module directories
 
@@ -290,19 +299,19 @@ Engine, plugin, or game modules whose static initializers run after the Late+60 
 
 ### Requirement: Shutdown ordering across DLL unload and Core singleton destruction is safe
 
-The cross-module binding system SHALL not crash when (a) the engine is shutting down and DLLs are being unloaded in arbitrary order, or (b) the `IModularFeatures` Meyers singleton has already been destroyed. Both the emit-cpp side `~FAutoRegister()` destructor and the AngelscriptRuntime side `OnModularFeatureRegistered` subscription MUST guard `IModularFeatures` access with availability checks or be unsubscribed before Core teardown.
+The cross-module binding system SHALL not crash when the engine is shutting down and DLLs are being unloaded in arbitrary order. UE 5.7 does not expose a global `IModularFeatures::IsAvailable()` API, so both sides use `FCoreDelegates::OnPreExit` as the shutdown boundary: emit cpp sets a TU-local shutdown flag and no-ops guarded unregister after pre-exit; AngelscriptRuntime removes its `OnModularFeatureRegistered` subscription before Core teardown.
 
 #### Scenario: AngelscriptRuntime unsubscribes OnModularFeatureRegistered on engine pre-exit
 
 - **WHEN** `FCoreDelegates::OnPreExit` fires
 - **THEN** AngelscriptRuntime's `Bind_CrossModuleDirect` removes its `OnModularFeatureRegistered` subscription
-- **AND** any subsequent `IModularFeatures::Get()` call from within AngelscriptRuntime is guarded by an availability check (or wrapped to no-op when the singleton is gone)
+- **AND** any subsequent cross-module binding work in AngelscriptRuntime no-ops after the pre-exit shutdown flag is set
 
 #### Scenario: Emit cpp Unregister is guarded against destroyed singleton
 
 - **WHEN** `~FAutoRegister()` runs during DLL unload
-- **THEN** it checks `IModularFeatures` availability (using whatever idiom UE 5.7 exposes; selected during Phase 0 probe) before calling `UnregisterModularFeature`
-- **AND** if the singleton is already destroyed, the destructor no-ops without dereferencing
+- **THEN** it no-ops after the local pre-exit shutdown flag is set; before that boundary it unregisters normally with `IModularFeatures::Get().UnregisterModularFeature(...)`
+- **AND** it does not depend on a nonexistent global `IModularFeatures::IsAvailable()` API
 
 #### Scenario: Editor exit and project switch do not produce crashes
 
@@ -332,46 +341,31 @@ UHT SHALL extend its existing summary outputs to surface cross-module direct-bin
 
 ## Testing Requirements
 
-- **Layer**: Bindings CQTest (Layer "Bindings CQTest" from `Documents/Guides/TestConventions.md`),and a small set of "Runtime CppTests" for the resolver-only and ABI-protection rules.
-- **Automation prefix**: `Angelscript.TestModule.Bindings.CrossModuleDirectBind.*` for the bindings layer; `Angelscript.CppTests.UHTToolResolver.*` for the resolver-only and public-header rules.
-- **Recommended helpers**: `FAngelscriptTestWorld` for actor/component invocation; `FCoverageModuleScope` to record coverage for the new direct-bind surface; `AngelscriptNativeTestSupport.h` for headless UHT-resolver and public-header unit tests that do not need a UE world.
+- **Layer**: Runtime CppTests for resolver/runtime bridge and ABI-protection rules. Bindings CQTest coverage is deferred until the behavior matrix extends beyond the current safe-scope bridge.
+- **Automation prefix**: `Angelscript.CppTests.UHTToolResolver.*`.
+- **Recommended helpers**: `FScopedAngelscriptModule` / `FAngelscriptTestExecutor` for generic-hook bridge behavior; static file scans for generated UHT outputs; `IModularFeatures` test features for runtime injection behavior.
 - **Verification entry points** (from `Documents/Guides/Test.md`):
-  - Bindings group: `Tools\RunTests.ps1 -Group Bindings`
-  - Native CQTest group: `Tools\RunTests.ps1 -Group Cpp` (resolver-only and ABI tests only need the runtime suite, not a world)
-  - Full regression before merge: `Tools\RunTestSuite.ps1 -Suite Default`
-  - Run the suite once in **Modular Editor** build and once in **Monolithic Shipping** build to satisfy the dual-config scenarios.
-- **New test files** are placed under `Plugins/Angelscript/Source/AngelscriptTest/Bindings/` (functional) and `Plugins/Angelscript/Source/AngelscriptTest/UHTTool/` (resolver / public header / ABI). All file names start with the `Angelscript` prefix per `Documents/Guides/TestConventions.md`.
+  - Targeted resolver group: `Tools\RunTests.ps1 -TestPrefix "Angelscript.CppTests.UHTToolResolver" -Label <label> -TimeoutMs 900000`
+  - Build: `Tools\RunBuild.ps1 -SerializeByEngine -NoXGE`
+  - Full regression / Monolithic / Launcher matrices are follow-up validation, not current safe-scope completion gates.
+- **New test files** are placed under `Plugins/Angelscript/Source/AngelscriptTest/UHTTool/` (resolver / public header / ABI / runtime bridge). All file names start with the `Angelscript` prefix per `Documents/Guides/TestConventions.md`.
 - **Required scenarios** (each maps to one or more requirement scenarios above):
-  - `IsBoundAfterLate60_CrossModuleFunction_PreviouslyUnexportedSymbol`
-  - `BehaviorEquivalent_CrossModuleDirectBind_VsReflectionFallback`
-  - `LauncherTargetSimulation_NoFeatureRegistered_FallsBackToReflection`(模拟 IModularFeatures 拉空)
+  - `LinkProbe.IModularFeaturesRoundtrip`
+  - `PublicHeader.NoASRuntimeOrSDKDeps`
+  - `LayoutVersionFile_SingleSource_GeneratorAndHeaderInSync`
+  - `CrossModuleDirectBind.GenericHook_RawThunkReceivesArgsAndReturn`
   - `SameModuleShardWins_When_BothExist_AtLate50_AndLate60`
-  - `MultipleShardsFromSameModule_AllRegisteredAndIterated_NoModuleNameDedup`
+  - `MultipleFeaturesSameModule_AllInjected_NoModuleNameDedup`
   - `Resolver_NoLongerEmitsUnexportedSymbol_ForCrossModuleCandidate`(headless UHT resolver 单测)
-  - `CullOutput_DoesNotDelete_AS_FunctionTable_CrossModule_Files`
+  - `StaleCleanup_CrossModuleEnumeratesSupportedModuleDirectories`
   - `LayoutVersionMismatch_FeatureSkipped_NoCrash`(ABI 防线 a)
   - `StaticAssert_SizeofConsistency`(ABI 防线 b — 编译期失败即测试失败)
   - `RuntimeNullRangeValidation_RejectsMalformedFeature`(ABI 防线 c)
-  - `LayoutVersionFile_SingleSource_GeneratorAndHeaderInSync`(读取 `cross-module-layout-version.txt`)
   - `OnModularFeatureRegistered_LateLoadedModule_BindingsInjected`(后到模块通道)
   - `OnModularFeatureRegistered_WorkerThreadInvocation_MarshalsToGameThread`(线程安全)
   - `BuildCs_DoesNotAddEngineModuleDependency`(`AngelscriptRuntime.Build.cs` 反向依赖回归;静态扫描)
   - `EmittedCpp_DoesNotInclude_AS_SDK_Headers`(emit 内容静态扫描;断言不出现 `angelscript.h` / `AngelscriptCrossModuleBindings.h` 等)
   - `EmittedCpp_UsesConstructorInstantiation_NoBraceAggregate`(emit 内容静态扫描;断言无 `static .* = { GTable,` 形态)
-  - `MonolithicShipping_DirectBind_BehaviorParity`(在 Shipping 配置下与 Editor 行为对齐)
-  - `RPC_ServerOnly_NotDirectBound_ReflectionRoutesCorrectly`(Server-only RPC 走反射,正确 marshal 到对端)
-  - `RPC_NetMulticast_PreservesMulticast`(NetMulticast 仍多播)
-  - `RPC_WithValidation_StillValidates`(WithValidation 仍验证)
-  - `OutParam_WriteBackThroughArgsSlot`
-  - `StaticFunc_NoSelf_BindsAsGlobal`
-  - `WorldContextObject_InjectedByHook`
-  - `ConstQualifiedMethod_PreservesConst`
-  - `NonTrivialValueParam_FString_TArray_MarshalledByValue`
-  - `SimdAlignedStruct_FVector_FTransform_HonorAlignment`
-  - `UEnumTag_PassedAtUnderlyingWidth`
-  - `ObjectPtrWrapper_TSubclassOf_TWeakObjectPtr_OpaqueByValue`
-  - `StaleShard_DeletedOnRebuildAfterFunctionRemoval`
-  - `StaleShard_DeletedOnRebuildAfterModuleRemoval`
-  - `Shutdown_OnPreExit_UnsubscribesOnModularFeatureRegistered_NoCrash`
-  - `Shutdown_DllUnload_GuardedUnregister_NoCrash`
-- **Performance verification**:在 `Documents/Guides/TestPerformance.md` 增加一节,通过 micro-bench 比较"反射 fallback cached" vs "raw thunk 直绑"的单次调用耗时,产出基线后写入,本 change 验收要求至少减少 30%(具体阈值 Phase 4 出数后写定,先以 30% 为门槛;若实测低于此应回到 Open Question Q3)。
+  - `CrossModuleDirectBind.SkippedStatisticsClassifyCrossModuleOutcomes`
+  - `CrossModuleDirectBind.AutomaticEntryVisible`
+- **Deferred behavior/performance verification**:Bindings-level behavior parity, out-param / WorldContext / container marshalling, multi-endpoint RPC behavior, Monolithic Shipping, Launcher installed-engine smoke, full suite, and micro-bench data are follow-up hardening items.

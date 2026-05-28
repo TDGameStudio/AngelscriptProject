@@ -158,8 +158,15 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 1. **Compilation**: `.as` files → Preprocessor → AS Compiler → Bytecode → (optional) StaticJIT → Executable modules
 2. **Class Registration**: AS class definitions → ClassGenerator → Live UClass/UStruct with UProperties and UFunctions → Visible to Blueprints and C++
-3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated function tables + reflective fallback → Callable from AS scripts
+3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated function tables + cross-module direct-bind feature tables + reflective fallback → Callable from AS scripts
 4. **Hot Reload**: File watcher detects changes → Recompile affected modules → ClassReloadHelper reinstances actors in editor
+
+### Binding Path Notes
+
+- Cross-module direct bind uses UHT-emitted `AS_FunctionTable_<Module>_CrossModule_*.cpp` shards in the target module OutputDirectory and publishes POD payloads through Core `IModularFeatures`; `AngelscriptRuntime` must not add engine-module link dependencies to resolve these entries.
+- Cross-module emit is intentionally limited to safe signatures. Out params, WorldContext injection, ref returns, static arrays, and `TArray` / `TSet` / `TMap` containers remain fallback/deferred unless a later OpenSpec change extends the marshalling contract.
+- RPC/Net UFunctions must continue through `BlueprintCallableReflectiveFallback`; direct raw thunk calls would bypass Unreal's RPC routing.
+- Any change to `FAngelscriptCrossModuleEntry` or `FAngelscriptCrossModuleFeatureReader` layout requires bumping `Plugins/Angelscript/Source/AngelscriptUHTTool/cross-module-layout-version.txt` and keeping runtime header, generator emit, and tests in sync.
 
 ## External Reference Repositories
 
