@@ -99,7 +99,7 @@ if (Test-Path '.gitmodules') { git submodule status }
 ```
 
 - If any submodule shows `-` prefix (uninitialized) or its `Source/` directory is missing, run bootstrap first: `Tools\Bootstrap\powershell\BootstrapWorktree.ps1` (which now handles submodule init with fallback).
-- If the change target is inside a submodule (e.g. `Plugins/UnrealEvent`), confirm the submodule has its own branch/worktree — not just a detached gitlink.
+- If the change target is inside a submodule (e.g. `Plugins/<PluginName>`), confirm the submodule has its own branch/worktree — not just a detached gitlink.
 - For dual-repo changes (OpenSpec in parent, code in submodule), note that commits must be made separately: submodule first, then parent updates the gitlink.
 - See `Documents/Guides/SubmoduleWorktreeWorkflow.md` for the full workflow.
 <!-- SUPERPOWER-END: worktree-check -->

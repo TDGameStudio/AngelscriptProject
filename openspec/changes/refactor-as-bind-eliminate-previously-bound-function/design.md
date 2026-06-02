@@ -34,7 +34,7 @@ The user-approved exploration plan (`C:\Users\scottmei\.claude-internal\plans\fa
 
 **Alternatives considered:**
 
-- **Hard-replace** — delete `SetPreviousBind*` and `PreviouslyBoundFunction` entirely. *Rejected:* invalidates ~120 callsites in a single PR, plus any external `Plugins/UnrealEvent` / `Plugins/AngelscriptGAS` / downstream user binds. Massive blast radius for zero perf gain in one shot.
+- **Hard-replace** — delete `SetPreviousBind*` and `PreviouslyBoundFunction` entirely. *Rejected:* invalidates ~120 callsites in a single PR, plus any external `Plugins/AngelscriptGAS` / downstream user binds. Massive blast radius for zero perf gain in one shot.
 - **Leave the static, add chained on top** — keep `PreviouslyBoundFunction` as the only source of truth, layer chained `.EditorOnly()` over it. *Rejected:* defeats the purpose; the static still pins the threading contract. Future Phase 2A/2B generalization cannot rely on chained API in worker threads if it still routes through the static.
 - **Chain via lambda capture** — return a wrapper holding a captured trait-mutator lambda, evaluated lazily at commit time. *Rejected:* over-engineered for current need; trait setters need to run synchronously within the bind lambda anyway because asEngine writes happen there.
 

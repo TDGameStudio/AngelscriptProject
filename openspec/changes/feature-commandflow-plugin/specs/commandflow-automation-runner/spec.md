@@ -71,17 +71,7 @@ Implementation SHALL inspect and record the upstream GenericMessagePlugin/GMP so
 
 - **WHEN** implementation work starts for `CommandFlow`
 - **THEN** the implementer records the upstream GMP repository source and revision used for `XConsole` reference
-- **AND** the implementation does not rely solely on the local `Plugins/UnrealEvent` snapshot for behavior discovery
-
-### Requirement: UnrealEvent GMP XConsole pruning remains a later step
-
-The initial `CommandFlow` implementation SHALL NOT remove GMP `XConsole` from `Plugins/UnrealEvent`, but SHALL leave a clear migration path for later pruning.
-
-#### Scenario: CommandFlow implementation is reviewed
-
-- **WHEN** the `CommandFlow` plugin is implemented
-- **THEN** GMP `XConsole` removal is not part of the same implementation scope
-- **AND** follow-up work can migrate UnrealEvent diagnostics/tests to `CommandFlow` before removing GMP `XConsole`
+- **AND** the implementation does not rely solely on any local snapshot for behavior discovery
 
 ## Testing Requirements
 

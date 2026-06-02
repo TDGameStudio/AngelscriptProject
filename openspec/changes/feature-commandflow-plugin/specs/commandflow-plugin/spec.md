@@ -8,18 +8,16 @@ The project SHALL provide a standalone plugin named `CommandFlow` for reusable c
 
 - **WHEN** maintainers inspect the new plugin descriptor
 - **THEN** the plugin identity is `CommandFlow`
-- **AND** the plugin is not named `XConsole`, `GMPConsole`, or `UnrealEventConsole`
-- **AND** the plugin can be reasoned about independently from `UnrealEvent`
+- **AND** the plugin is not named `XConsole` or `GMPConsole`
 
 ### Requirement: Lightweight runtime command module
 
-`CommandFlow` SHALL expose a runtime module that owns the reusable command SDK without depending on UnrealEvent, Angelscript, HTTPServer, or PythonScriptPlugin.
+`CommandFlow` SHALL expose a runtime module that owns the reusable command SDK without depending on Angelscript, HTTPServer, or PythonScriptPlugin.
 
 #### Scenario: Runtime dependencies are reviewed
 
 - **WHEN** maintainers inspect the runtime module build dependencies
-- **THEN** the module does not depend on `UnrealEvent`
-- **AND** the module does not depend on `AngelscriptRuntime`
+- **THEN** the module does not depend on `AngelscriptRuntime`
 - **AND** the module does not depend on `HTTPServer`
 - **AND** the module does not depend on `PythonScriptPlugin`
 

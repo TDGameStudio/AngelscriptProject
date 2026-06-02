@@ -10,7 +10,6 @@
 |-----------|---------|------|
 | `Plugins/Angelscript` | `TDGameStudio/UnrealAngelscriptPlugin` | 核心插件，绝大多数代码改动在此 |
 | `Plugins/AngelscriptGAS` | `TDGameStudio/AngelscriptGAS` | GAS 扩展插件 |
-| `Plugins/UnrealEvent` | `TDGameStudio/UnrealEventPlugin` | GMP 衍生事件插件 |
 
 `git worktree add` 只处理父仓库的工作树，**不会自动初始化或检出子模块**。新 worktree 中子模块目录只有 gitlink 占位，没有源码。直接构建或访问源码会失败。
 
@@ -94,14 +93,9 @@ git submodule status
 git -C Plugins/Angelscript worktree add `
     "D:/Workspace/AngelscriptProject/.worktrees/<change-name>/Plugins/Angelscript" `
     -b <change-name>-plugin
-
-# 以 Plugins/UnrealEvent 为例
-git -C Plugins/UnrealEvent worktree add `
-    "D:/Workspace/AngelscriptProject/.worktrees/<change-name>/Plugins/UnrealEvent" `
-    -b <change-name>
 ```
 
-**命名约定**：子模块 worktree 分支名用 `<父branch>-plugin` 后缀，或与父分支同名（取决于子模块是否有独立分支策略）。
+**命名约定**：子模块 worktree 分支名用 `<父branch>-plugin` 后缀。
 
 #### 策略 C：用本地 HEAD 临时补齐构建环境
 
@@ -134,7 +128,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 # 确认所有子模块目录有源码
 Test-Path .worktrees/<change-name>/Plugins/Angelscript/Source
 Test-Path .worktrees/<change-name>/Plugins/AngelscriptGAS/Source
-Test-Path .worktrees/<change-name>/Plugins/UnrealEvent/Source
 
 # 确认 AgentConfig.ini 存在且 ProjectFile 指向当前 worktree
 Get-Content .worktrees/<change-name>/AgentConfig.ini
@@ -170,7 +163,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 在子模块中做实现时，必须明确 scope boundary：
 
-- **UnrealEvent runtime migration**：只允许 `Source/UnrealEvent/**`、`Source/UnrealEventEditor/**`、`Source/UnrealEventTest/**`。不要扫或修改 `Source/GMPEditor/**`，除非用户明确要求。
 - **Angelscript plugin**：按 `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 模块边界工作。
 
 批量操作（rg 扫描、include 替换等）时用明确的路径参数，不要扫整个 `Plugins/<submodule>/Source/`。

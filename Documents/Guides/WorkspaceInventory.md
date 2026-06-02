@@ -1,6 +1,6 @@
 # 工作区 / Worktree / OpenSpec 盘点
 
-> 最后更新：2026-05-24（完全清理后）  
+> 最后更新：2026-06-02（子模块清理后）
 > 用途：主 workspace 与 OpenSpec 变更、子模块分支的一页式对照表。
 
 ---
@@ -15,7 +15,6 @@
 | 工作区 | **干净**（无未提交改动） |
 | 相对 origin | ahead 55（未 push） |
 | 子模块 `Plugins/Angelscript` | `679704f` @ `main` |
-| 子模块 `Plugins/UnrealEvent` | `caf1e9a` @ `main` |
 | 子模块 `Plugins/AngelscriptGAS` | `2120a8f` @ `main` |
 
 ### 2026-05-24 完全清理
@@ -38,7 +37,6 @@
 ```
 父仓库 main
 ├── Plugins/Angelscript  main @ 679704f
-├── Plugins/UnrealEvent  main @ caf1e9a
 └── Plugins/AngelscriptGAS  main @ 2120a8f
 ```
 
@@ -46,7 +44,7 @@
 
 ## 3. OpenSpec 活跃变更
 
-进行中：`test-bindings-gap-closure`、`test-functional-runtime-coverage`、`test-editor-and-runtime-diagnostics-coverage`、`refactor-unrealevent-prune-gmp-editor-modules`
+进行中：`test-bindings-gap-closure`、`test-functional-runtime-coverage`、`test-editor-and-runtime-diagnostics-coverage`
 
 待核对：`refactor-as-engine-clone-removal`
 

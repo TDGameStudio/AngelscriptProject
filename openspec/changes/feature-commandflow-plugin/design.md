@@ -1,8 +1,8 @@
 ## Context
 
-`Plugins/UnrealEvent` was bootstrapped from a GenericMessagePlugin/GMP source snapshot and still contains GMP's `XConsole` implementation. The useful part of `XConsole` is not the name or the full implementation, but the pattern: typed command registration, argument conversion, command metadata, command-file execution, ordered command pipelines, pause/continue for asynchronous UE flows, and machine-readable command results.
+GenericMessagePlugin/GMP's `XConsole` implementation contains a useful pattern: typed command registration, argument conversion, command metadata, command-file execution, ordered command pipelines, pause/continue for asynchronous UE flows, and machine-readable command results.
 
-The current `XConsole` implementation also includes responsibilities that do not belong in UnrealEvent's event runtime: an `IConsoleManager` wrapper, HTTP `/xcmd` remote execution, Python support, commandlet execution, crash/hang helper commands, and GMP-specific `z.*` naming. The user wants this capability generalized as a standalone plugin named `CommandFlow`, while keeping UnrealEvent focused on event/message semantics. Future UnrealEvent pruning may then remove GMP `XConsole` after the replacement behavior is covered.
+The current `XConsole` implementation also includes responsibilities that should not define the new reusable API surface: an `IConsoleManager` wrapper, HTTP `/xcmd` remote execution, Python support, commandlet execution, crash/hang helper commands, and GMP-specific `z.*` naming. The user wants this capability generalized as a standalone plugin named `CommandFlow`.
 
 Implementation must consult the upstream GenericMessagePlugin/GMP GitHub repository for the latest `XConsole` source and behavior. The local snapshot remains useful, but it should not be the only reference when extracting behavior.
 
@@ -10,27 +10,24 @@ Implementation must consult the upstream GenericMessagePlugin/GMP GitHub reposit
 
 **Goals:**
 
-- Add a standalone `CommandFlow` plugin that can be consumed independently of UnrealEvent and Angelscript.
+- Add a standalone `CommandFlow` plugin that can be consumed independently.
 - Provide a small runtime command framework for typed command registration, argument parsing, command metadata/help, command context, results, and command pipeline control.
 - Provide a separate automation runner layer for command files, commandlets/headless execution, wait helpers, CI-friendly exit/result output, and reproducible issue scripts.
 - Preserve the useful design lessons from GMP `XConsole` without keeping the `XConsole` name or copying unnecessary HTTP/Python/console-manager surface into runtime.
-- Record a migration path where UnrealEvent can later depend on `CommandFlow` for diagnostics/tests and remove GMP `XConsole` from its active runtime.
 
 **Non-Goals:**
 
-- Do not implement UnrealEvent event dispatch, listener storage, source scope, Store/Once, or Request/Response in this change.
 - Do not add HTTP, WebSocket, MCP, or Python remote execution in the initial `CommandFlow` plugin.
 - Do not provide a marketplace-style console button UI or Console Variables Editor replacement.
-- Do not make `CommandFlowRuntime` depend on `UnrealEvent`, `AngelscriptRuntime`, `PythonScriptPlugin`, or `HTTPServer`.
-- Do not delete GMP `XConsole` from `Plugins/UnrealEvent` in this change; that belongs to a later pruning change after replacement coverage exists.
+- Do not make `CommandFlowRuntime` depend on `AngelscriptRuntime`, `PythonScriptPlugin`, or `HTTPServer`.
 
 ## Decisions
 
 ### Create a standalone `CommandFlow` plugin
 
-`CommandFlow` should live under `Plugins/CommandFlow/` rather than inside `Plugins/UnrealEvent/`. UnrealEvent is only one likely consumer; Angelscript diagnostics, coverage, state dumps, debugger startup, and future tools can also benefit from a common typed command pipeline.
+`CommandFlow` should live under `Plugins/CommandFlow/`. Angelscript diagnostics, coverage, state dumps, debugger startup, and future tools can benefit from a common typed command pipeline.
 
-Alternative considered: put the feature in `UnrealEvent` as `UnrealEventDiagnostics`. That keeps initial integration smaller but makes a general command framework look like an event-system subfeature and risks dragging diagnostics dependencies into the event runtime.
+Alternative considered: keep this as ad hoc diagnostics helpers inside the first consumer. That keeps initial integration smaller but makes a general command framework harder to reuse.
 
 ### Split runtime command SDK from automation runner
 
@@ -55,17 +52,12 @@ Commands should be registered with a stable name, help text, typed parameters, a
 
 Implementation tasks should inspect the upstream GenericMessagePlugin/GMP GitHub repository before extracting behavior. The relevant GMP files include `XConsoleManager.h`, `XConsoleManager.cpp`, and `XConsolePythonSupport.h`, but the actual file layout should be verified against the upstream repo at implementation time.
 
-### Defer GMP `XConsole` removal until replacement behavior exists
-
-This proposal records that GMP `XConsole` may later be removed from the UnrealEvent-derived runtime. Removal should happen only after `CommandFlow` covers the required typed command and automation runner behavior, and after UnrealEvent diagnostic/test needs are migrated or deliberately dropped.
-
 ## Risks / Trade-offs
 
 - **Scope creep into a remote-control platform** -> Keep HTTP/WebSocket/MCP/Python out of this change and require separate specs for each remote surface.
-- **Runtime module becomes too heavy** -> Keep `CommandFlowRuntime` free of `HTTPServer`, `PythonScriptPlugin`, UnrealEvent, and Angelscript dependencies.
+- **Runtime module becomes too heavy** -> Keep `CommandFlowRuntime` free of `HTTPServer`, `PythonScriptPlugin`, and Angelscript dependencies.
 - **Argument parsing diverges from UE expectations** -> Start with documented support for simple UE-safe types, JSON strings, and file-backed payloads; expand only through tests.
 - **Over-copying GMP implementation** -> Treat GMP as a behavior reference and preserve license attribution if source is copied; prefer clean-room extraction where practical.
-- **UnrealEvent remains coupled to GMP XConsole longer than expected** -> Add explicit follow-up tasks and mark GMP XConsole pruning as a later change, not part of this feature.
 - **Command pipelines are hard to test** -> Require TDD tasks for command parsing, command metadata, result handling, pause/continue, and command-file execution.
 
 ## Migration Plan
@@ -75,8 +67,6 @@ This proposal records that GMP `XConsole` may later be removed from the UnrealEv
 3. Implement the runtime command registry, argument conversion, metadata, context, result, and pipeline primitives behind `CommandFlow` names.
 4. Implement automation runner support for command files, commandlet/headless execution, result output, and wait helpers.
 5. Add tests for positive and negative command registration/execution, argument conversion, command-file parsing, pipeline pause/continue, and automation result output.
-6. Optionally add UnrealEvent diagnostic commands in a later change, using `CommandFlow` instead of GMP `XConsole`.
-7. In a later UnrealEvent pruning change, remove or disable GMP `XConsole` after no active runtime or tests require it.
 
 ## Open Questions
 

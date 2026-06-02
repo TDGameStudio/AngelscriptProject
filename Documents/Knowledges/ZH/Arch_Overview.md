@@ -45,9 +45,6 @@
 │  │   README.md                  插件消费者文档                      │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                       │
-│  Plugins/UnrealEvent/            ← 独立子模块（GMP 派生）            │
-│      与 AngelscriptRuntime 不存在依赖；本文不展开                    │
-│                                                                       │
 │  Script/   Tools/   Documents/   openspec/   Config/                  │
 │      验证、构建、文档、变更提案 —— 不进入插件包                      │
 └────────────────────────────────────────────────────────────────────────┘
@@ -108,10 +105,6 @@ Source/AngelscriptProject/  ← 验证壳，最小化
   - 不放业务逻辑；放在这里意味着"无法被插件消费者继承"
   - 任何把 plugin 逻辑往 host module 推的改动，都要在 OpenSpec 中显式说明
 
-Plugins/UnrealEvent/        ← 独立 plugin submodule
-  - 自己的子模块、自己的 OpenSpec 变更生命周期
-  - 与 AngelscriptRuntime 没有任何 ModuleNames 级依赖
-  - 本文不展开；它的运行时裁剪在自己那边推进
 ```
 
 宿主项目模块 `AngelscriptProject` 的全部代码：
@@ -268,9 +261,6 @@ AngelscriptRuntime  (Runtime 模块，无任何 plugin 内依赖)
                                 + bBuildEditor 时 private 依赖 Editor)
 
 AngelscriptUHTTool  (C# UBT plugin，独立 — 构建期 hook 入 UHT pipeline)
-
-UnrealEvent        (独立 plugin submodule，GMP 派生
-                    与 AngelscriptRuntime 没有任何依赖)
 ```
 
 落到 `Build.cs` 上的依赖列表：
@@ -419,32 +409,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 
 ---
 
-## 六、边界：`Plugins/UnrealEvent/` 与宿主项目模块
-
-### 6.1 与 `Plugins/UnrealEvent/` 的边界
-
-`AGENTS.md` 第 7 行：
-
-> `Plugins/UnrealEvent` is a separate plugin submodule for a GMP-derived UnrealEvent event-system bootstrap. **Keep UnrealEvent runtime/API pruning work inside that plugin and its OpenSpec changes; do not fold it into AngelscriptRuntime.**
-
-落到代码层：
-
-```text
-依赖关系（机器可验证）
-================================================================
-  AngelscriptRuntime.Build.cs   ── 不含 "UnrealEvent"
-  AngelscriptEditor.Build.cs    ── 不含 "UnrealEvent"
-  AngelscriptTest.Build.cs      ── 不含 "UnrealEvent"
-  Plugins/UnrealEvent/.../.uplugin ── 不依赖 Angelscript 任何模块
-
-  ── ★ 两套插件在仓库内是同级关系，不是父子；
-       它们被独立的 OpenSpec 变更治理，
-       commits 也分别落到各自的 git submodule。
-```
-
-新增文档讨论"事件系统"时若涉及 UnrealEvent，应该开 UnrealEvent 自己的 Knowledges 目录或落到本仓库的 `Note_` 前缀，而**不**写进 `Arch_*` 系列。
-
-### 6.2 与 `Source/AngelscriptProject/` 的边界
+## 六、边界：宿主项目模块
 
 宿主项目模块的边界已经在 §一描述。这里补一条**在 OpenSpec 与日常修改中反复要重申**的规则：
 
@@ -566,7 +531,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 
 ## 小结
 
-- **交付物的边界很硬**：`Plugins/Angelscript/` 是真理，`Source/AngelscriptProject/` 仅一行 `IMPLEMENT_PRIMARY_GAME_MODULE`，`Plugins/UnrealEvent/` 与本插件无依赖；任何"往 host 推业务"的改动都必须显式说明。
+- **交付物的边界很硬**：`Plugins/Angelscript/` 是真理，`Source/AngelscriptProject/` 仅一行 `IMPLEMENT_PRIMARY_GAME_MODULE`；任何"往 host 推业务"的改动都必须显式说明。
 - **物理布局五件套**：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 三个 UE 模块 + `AngelscriptUHTTool` 一个 C# UBT plugin + 宿主项目的 `AngelscriptProject` minimal harness。
 - **依赖图严格**：Runtime 是底座、不依赖 plugin 内任何东西；Editor 与 Test 都 public 依赖 Runtime；Test 在 `bBuildEditor` 下 private 依赖 Editor；UHT 工具完全独立、走 UBT 接入。
 - **统一选 `PostDefault` 装载**：三个 UE 模块齐心选这个窗口，原因是 CoreUObject 已就绪但 `GEngine` 不必然存在——正合"点亮模块入口、推迟创建重对象"的策略。

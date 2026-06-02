@@ -4,6 +4,3 @@
 [submodule "Plugins/Angelscript"]
 	path = Plugins/Angelscript
 	url = git@github.com:TDGameStudio/UnrealAngelscriptPlugin.git
-[submodule "Plugins/UnrealEvent"]
-	path = Plugins/UnrealEvent
-	url = git@github.com:TDGameStudio/UnrealEventPlugin.git

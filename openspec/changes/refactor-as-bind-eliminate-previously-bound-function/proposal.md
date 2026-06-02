@@ -39,7 +39,7 @@ This change does **not** itself deliver runtime speedup — it removes the keyst
   - `Documents/Plans/Plan_BindParallelization.md` — phase status update
 - **Affected APIs**: `FAngelscriptBinds::*` registration methods gain new return types (additive — old `void` / `int` returns become `FBoundFunction` / `FBoundProperty` which implicitly convert / are ignorable). `FAngelscriptBindExecutionObservation` gains per-bind data accessors.
 - **Dependencies**: None new. Internal-only refactor.
-- **External plugins / submodules**: `Plugins/UnrealEvent`, `Plugins/AngelscriptGAS` (if present) keep working through the deprecated free-function path; they may opt into the new chained API at their own pace.
+- **External plugins / submodules**: `Plugins/AngelscriptGAS` (if present) and downstream user binds keep working through the deprecated free-function path; they may opt into the new chained API at their own pace.
 - **Build & test**: `Tools\RunBuild.ps1` (Editor + Test targets) + `Tools\RunTests.ps1` full suite must pass. No new build flags introduced.
 - **Performance**: Pre-sort cache trims a small `O(n log n)` per `CallBinds` (~ <50 ms expected). Timing instrumentation is dev-only. No shipping-path change.
 - **Out of scope (deferred to future OpenSpec changes)**:

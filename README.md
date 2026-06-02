@@ -38,12 +38,10 @@ AngelscriptGAS      (Runtime, 独立插件; public 依赖 AngelscriptRuntime,
     |
     +--> AngelscriptGASTest (Editor, GAS 专项测试)
 
-UnrealEvent        (独立插件; GMP-derived bootstrap, 后续裁剪为事件内核)
-
 AngelscriptUHTTool  (C# UBT 插件, 独立; 接入 Unreal Header Tool 流水线)
 ```
 
-UE 模块默认在 `PostDefault` 阶段加载。`GameplayTags` 仍保留在主 `Angelscript` 插件；`GameplayAbilities` / `GameplayTasks` 支持拆到可选的 `AngelscriptGAS` 插件。`UnrealEvent` 是新的独立事件系统插件子模块，当前仅完成 GMP-derived repository bootstrap，运行时 API 和功能裁剪由后续 OpenSpec change 推进。
+UE 模块默认在 `PostDefault` 阶段加载。`GameplayTags` 仍保留在主 `Angelscript` 插件；`GameplayAbilities` / `GameplayTasks` 支持拆到可选的 `AngelscriptGAS` 插件。
 
 ### 核心子系统（AngelscriptRuntime）
 
@@ -67,12 +65,6 @@ UE 模块默认在 `PostDefault` 阶段加载。`GameplayTags` 仍保留在主 `
 |------|------|---------|
 | **AngelscriptGAS** | `Plugins/AngelscriptGAS/Source/AngelscriptGAS/` | 脚本可继承的 GAS 基类、Ability/Attribute/Effect/Task 绑定与工具库 |
 | **AngelscriptGASTest** | `Plugins/AngelscriptGAS/Source/AngelscriptGASTest/` | `Angelscript.GAS.*` 自动化测试 |
-
-### 独立事件插件（UnrealEvent）
-
-| 插件 | 目录 | 当前边界 |
-|------|------|---------|
-| **UnrealEvent** | `Plugins/UnrealEvent/` | GMP-derived standalone repository bootstrap；后续再裁剪 editor/script/serializer/MessageTags 等非核心能力 |
 
 ### 编辑器子系统（AngelscriptEditor）
 
@@ -111,7 +103,6 @@ AngelscriptProject/
 │       ├── AngelscriptTest/     # 测试模块
 │       └── AngelscriptUHTTool/  # UBT C# 插件
 ├── Plugins/AngelscriptGAS/      # 可选 GAS 扩展插件
-├── Plugins/UnrealEvent/         # 独立事件系统插件子模块（GMP-derived bootstrap）
 ├── Source/AngelscriptProject/   # Host Project 模块（最小化，仅为给 UE 一个有效 Target）
 ├── Script/                      # AngelScript 示例脚本（Examples/Core, EnhancedInput, Extended）
 ├── Documents/                   # 项目文档

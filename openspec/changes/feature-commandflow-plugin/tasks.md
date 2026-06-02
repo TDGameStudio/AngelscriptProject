@@ -1,7 +1,7 @@
 ## 1. Reference And Plugin Boundary
 
 - [ ] 1.1 <!-- Non-TDD --> Inspect the upstream GenericMessagePlugin/GMP GitHub repository for `XConsoleManager.h`, `XConsoleManager.cpp`, `XConsolePythonSupport.h`, and any related registration/commandlet files; record the repository URL, revision, and relevant files in the `CommandFlow` design notes or README, then verify the note is present with `rg -n "GenericMessagePlugin|XConsole|revision" Plugins\CommandFlow openspec\changes\feature-commandflow-plugin`.
-- [ ] 1.2 <!-- Non-TDD --> Create `Plugins\CommandFlow\CommandFlow.uplugin` with `CommandFlowRuntime` and `CommandFlowAutomation` modules, no HTTP/Python remote modules, and no UnrealEvent dependency; verify descriptor JSON with `Get-Content -Raw Plugins\CommandFlow\CommandFlow.uplugin | ConvertFrom-Json`.
+- [ ] 1.2 <!-- Non-TDD --> Create `Plugins\CommandFlow\CommandFlow.uplugin` with `CommandFlowRuntime` and `CommandFlowAutomation` modules and no HTTP/Python remote modules; verify descriptor JSON with `Get-Content -Raw Plugins\CommandFlow\CommandFlow.uplugin | ConvertFrom-Json`.
 - [ ] 1.3 <!-- Non-TDD --> Add minimal module scaffolding and build files under `Plugins\CommandFlow\Source\CommandFlowRuntime\` and `Plugins\CommandFlow\Source\CommandFlowAutomation\`; verify compile discovery with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label commandflow-scaffold -TimeoutMs 180000 -NoXGE`.
 
 ## 2. Runtime Command SDK
@@ -22,8 +22,7 @@
 ## 4. Boundaries And Documentation
 
 - [ ] 4.1 <!-- Non-TDD --> Document `CommandFlow` purpose, module boundaries, supported v1 argument types, excluded HTTP/Python/remote surfaces, and GMP `XConsole` reference source in `Plugins\CommandFlow\README.md`; verify required topics with `rg -n "CommandFlowRuntime|CommandFlowAutomation|HTTP|Python|XConsole|GenericMessagePlugin" Plugins\CommandFlow\README.md`.
-- [ ] 4.2 <!-- Non-TDD --> Confirm `CommandFlowRuntime` and `CommandFlowAutomation` do not depend on `UnrealEvent`, `AngelscriptRuntime`, `HTTPServer`, or `PythonScriptPlugin`; verify with `rg -n "UnrealEvent|AngelscriptRuntime|HTTPServer|PythonScriptPlugin" Plugins\CommandFlow\Source`.
-- [ ] 4.3 <!-- Non-TDD --> Record a follow-up note for later UnrealEvent pruning that GMP `XConsoleManager`, `XConsolePythonSupport`, HTTP/Python XConsole dependencies, and `z.*` pipeline commands can be removed only after UnrealEvent diagnostics/tests migrate or are deliberately dropped; verify the note with `rg -n "XConsoleManager|XConsolePythonSupport|z\\.\\*|CommandFlow" openspec Plugins\CommandFlow`.
+- [ ] 4.2 <!-- Non-TDD --> Confirm `CommandFlowRuntime` and `CommandFlowAutomation` do not depend on `AngelscriptRuntime`, `HTTPServer`, or `PythonScriptPlugin`; verify with `rg -n "AngelscriptRuntime|HTTPServer|PythonScriptPlugin" Plugins\CommandFlow\Source`.
 
 ## 5. Final Verification
 
