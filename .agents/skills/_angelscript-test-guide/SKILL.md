@@ -28,7 +28,7 @@ USE this skill when:
 Do NOT use this skill for:
 
 - Running tests → [Documents/Guides/Test.md](../../../Documents/Guides/Test.md) + the Cursor `full-test-suite` skill.
-- Designing OpenSpec changes → `openspec-explore` / `openspec-propose`.
+- Designing OpenSpec changes → `openspec-work`.
 - Editing test runners, build scripts, or AgentConfig → [Documents/Guides/Build.md](../../../Documents/Guides/Build.md).
 
 ## 2. Four-step writing flow
@@ -377,6 +377,6 @@ Before sending the diff for review, answer YES to every question — if any answ
 ## 9. Relationship with OpenSpec
 
 - This skill is **auxiliary**: it does not own a slash command and is not part of the OpenSpec lifecycle.
-- `openspec-apply-change` references this skill when executing TDD tasks: when a task says "write a test for X", read this skill IMMEDIATELY, then pick the pattern, then write the test.
+- `openspec-work` references this skill when executing TDD tasks: when a task says "write a test for X", read this skill IMMEDIATELY, then pick the pattern, then write the test.
 - `tasks.md` verification commands still come from [Documents/Guides/Test.md](../../../Documents/Guides/Test.md) — never duplicate `Tools\RunTests.ps1` / `Tools\RunTestSuite.ps1` invocation rules into this skill.
 - If a new test layer or helper class lands, update [Documents/Guides/TestConventions.md](../../../Documents/Guides/TestConventions.md) and [Documents/Guides/Test.md](../../../Documents/Guides/Test.md) first, then refresh §3, §4, §7 of this skill to match.

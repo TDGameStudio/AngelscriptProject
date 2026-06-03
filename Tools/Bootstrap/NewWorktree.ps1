@@ -263,7 +263,7 @@ if (-not $NoOpenSpec) {
     }
     catch {
         Write-Warning ("[openspec] Failed to create skeleton at {0}: {1}" -f $openspecDir, $_.Exception.Message)
-        Write-Warning '[openspec] You can manually create proposal.md / tasks.md / design.md / specs/.gitkeep before running openspec-propose.'
+        Write-Warning '[openspec] You can manually create proposal.md / tasks.md / design.md / specs/.gitkeep before running openspec-work.'
     }
 }
 

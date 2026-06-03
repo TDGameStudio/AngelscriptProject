@@ -4,43 +4,36 @@
 
 This directory contains project-local skills that integrate [OpenSpec](https://github.com/fission-ai/openspec) (spec-driven development CLI) with [Superpowers](https://github.com/anthropics/superpowers-claude-plugins-official) (AI coding methodology plugins).
 
-**Architecture pattern: Adapter**
+**How it fits together**
 
 ```
 OpenSpec (what/where/when)          Superpowers (how)
 ─────────────────────────           ─────────────────
 change lifecycle                    brainstorming
-artifact structure                  writing-plans
-dependency ordering                 test-driven-development
-validation & archive                systematic-debugging
-                                    verification-before-completion
-        ┌───────────────────┐
-        │  Adapter Skills   │  ← this directory
-        │  (SUPERPOWER-BEGIN│
-        │   /END blocks)    │
-        └───────────────────┘
+artifact structure                  test-driven-development
+free-form records                   systematic-debugging
+archive                             verification-before-completion
 ```
 
-- **OpenSpec** controls the change lifecycle and artifact outputs (proposal, specs, design, tasks).
+- **OpenSpec** controls the change lifecycle and artifact outputs (proposal, specs, design, tasks) plus free-form supporting files.
 - **Superpowers** provides disciplined thinking and execution methods (brainstorming, TDD, debugging, verification).
-- **Adapter blocks** (`<!-- SUPERPOWER-BEGIN/END -->`) override Superpowers defaults to route outputs into OpenSpec paths and inject project-specific conventions.
+- The single `openspec-work` skill weaves these together: it routes Superpowers outputs into OpenSpec paths and inlines project-specific conventions directly in the skill text.
 
-**Project rule:** OpenSpec is now the authoritative planning system for AngelscriptProject. Legacy `Documents/Plans/Plan_*.md` files are historical references only; do not create or extend them for active work. During implementation, the current OpenSpec change's `tasks.md` is the only active plan.
+**Project rule:** OpenSpec is the authoritative **record** system for AngelscriptProject, used in a lightweight way — not as a heavy procedural gate. Legacy `Documents/Plans/Plan_*.md` files are historical references only; do not create or extend them for active work. The current change's `tasks.md` is the working checklist, but it is a disposable living record you may rewrite freely; background notes, research, and performance/benchmark data may be stored alongside it in the change directory.
 
 ## Skills
 
-### OpenSpec lifecycle skills
+### OpenSpec lifecycle skill
+
+OpenSpec is a lightweight **record**, not a procedural gate. `openspec-explore`, `openspec-propose`, `openspec-apply-change`, and `openspec-archive-change` have all been **merged into the single `openspec-work` skill** — there is no phase wall between exploring, proposing, implementing, and closing.
 
 | Skill | Trigger | Phase | Description |
 |-------|---------|-------|-------------|
-| `openspec-explore` | `/opsx:explore`, `/openspec:explore` | Think | Investigate ideas, compare options, clarify requirements. No code changes. |
-| `openspec-propose` | `/opsx:propose`, `/openspec:propose` | Design | Create/continue a change: brainstorm → write artifacts → validate. No code changes. |
-| `openspec-apply-change` | `/opsx:apply`, `/openspec:apply` | Implement | Execute tasks from a change with TDD/debugging discipline. Writes code. |
-| `openspec-archive-change` | `/opsx:archive`, `/openspec:archive` | Close | Archive a completed change via CLI. Lifecycle action only. |
+| `openspec-work` | `/opsx:work` (also `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, and the `/openspec:` equivalents) | Explore + Record + Implement + Archive | One flow for the whole lifecycle. Supports explore/think-only sessions (no change created), plan-only deliverables (a thorough, ready-to-execute plan at `superpowers:writing-plans` quality, then stop without implementing), record-while-implementing, continuing an existing change, or archiving a finished one. Record depth follows intent — plan-only is thorough, implement-now can start lean. Explore/think uses `superpowers:brainstorming`. Plans are disposable; edit artifacts and code together. Archiving is an ordinary closing action (`openspec archive "<name>"`), not a gate. |
 
 ### Auxiliary skills
 
-Auxiliary skills are NOT part of the OpenSpec lifecycle and do not own a slash command. They are read IMMEDIATELY by the lifecycle skills (typically `openspec-apply-change` during TDD steps) or directly by the developer when a matching task surfaces. They never alter the OpenSpec change state.
+Auxiliary skills are NOT part of the OpenSpec lifecycle and do not own a slash command. They are read IMMEDIATELY by the lifecycle skills (typically `openspec-work` during TDD steps) or directly by the developer when a matching task surfaces. They never alter the OpenSpec change state.
 
 | Skill | Trigger | Phase | Description |
 |-------|---------|-------|-------------|
@@ -49,12 +42,27 @@ Auxiliary skills are NOT part of the OpenSpec lifecycle and do not own a slash c
 ## Lifecycle Flow
 
 ```
-explore ──► propose ──► [user review] ──► apply ──► [verification] ──► finish-branch ──► archive
-  │              │                           │
-  │   brainstorming thinking        TDD / debugging / verification methods
-  │              │                           │
-  └── no code    └── only openspec artifacts └── real code changes
+                openspec-work (one skill, whole lifecycle)
+  ┌───────────────────────────────────────────────────────────┐
+  │  explore/think ──► record ◄──┐                             │
+  │  (brainstorming)     │       │  iterate: edit artifacts +  │
+  │                      └───────┘  code together, overturn    │
+  │                      │          the plan freely            │
+  │                      ▼                                      │
+  │                  archive  (openspec archive "<name>";       │
+  │                            ordinary closing action, no gate)│
+  └───────────────────────────────────────────────────────────┘
+
+Explore/think-only is a valid session (no change need be created).
+Plan-only is also valid: produce a thorough, ready-to-execute plan
+(writing-plans quality) and stop — implement later on the same change.
+Superpowers methods (brainstorming, TDD, systematic-debugging,
+verification-before-completion) are used actively throughout.
+What is relaxed is OpenSpec's own ceremony, not the engineering discipline.
+Verify at key milestones (not every step); verification may be a task in tasks.md.
 ```
+
+Note: `openspec-work` supports stopping after recording only — either a lean record or a full plan-only deliverable — with no implementation yet. Implementation can continue later, or in another session, on the same change. Record depth follows intent: plan-only should be thorough, not a skeleton.
 
 ## Prerequisites
 
@@ -120,15 +128,16 @@ After CLI upgrade, check:
 Superpowers is managed externally by the plugin system. After upgrade:
 1. Check if referenced skill names still exist (e.g., `superpowers:brainstorming`)
 2. Verify default output paths haven't changed (adapters override `docs/superpowers/specs/` and `docs/superpowers/plans/`)
-3. If new skills are added, evaluate whether they need adapter blocks in `openspec-apply-change`
+3. If new methods are added, evaluate whether `openspec-work` should reference them
 
 ### Skill Maintenance
 
-When modifying these skills:
-- Adapter blocks (`<!-- SUPERPOWER-BEGIN/END -->`) are the integration boundary. Edit them to adjust how Superpowers methods integrate with OpenSpec.
-- Step numbering must be sequential within each skill.
-- Cross-skill references should use skill names (`openspec-propose`, `openspec-apply-change`) as primary, with `/opsx:` as supplementary.
-- Project test/build conventions are inlined in `openspec-artifact-awareness` and `project-test-conventions` blocks — update these when `Documents/Guides/TestConventions.md` or `Documents/Guides/Test.md` change.
+When modifying the skill:
+- `openspec-work` references Superpowers methods inline in its step text — adjust those references to change how Superpowers integrates with OpenSpec.
+- Step numbering must be sequential within the skill.
+- References should use the skill name (`openspec-work`) as primary, with `/opsx:` as supplementary.
+- Project test/build conventions are inlined in `openspec-work`'s "Record the change" and project-test-conventions text — update these when `Documents/Guides/TestConventions.md` or `Documents/Guides/Test.md` change.
+- Both copies of the skill (`.claude/skills/` and `.agents/skills/`) must be kept identical; verify with `Get-FileHash` after edits.
 
 ## Project Conventions Injected
 

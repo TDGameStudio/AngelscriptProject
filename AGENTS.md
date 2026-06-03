@@ -230,7 +230,12 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 ## OpenSpec & TODO
 
 - `Documents/Plans/` is **deprecated** — retained for historical reference only. All new planning, design, task tracking, and archive lifecycle uses OpenSpec under `openspec/changes/<change>/`.
-- Create or continue changes via OpenSpec skills (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-archive-change`) or equivalent CLI commands. The active change's `tasks.md` is the sole implementation plan.
+- OpenSpec is a lightweight **record**, not a procedural gate. There is a single skill, `openspec-work`, covering the whole lifecycle (explore + record + implement + archive, one flow). The former `openspec-explore`, `openspec-propose`, `openspec-apply-change`, and `openspec-archive-change` are all merged into it; explore/think work uses `superpowers:brainstorming` inside `openspec-work`.
+- Use `openspec-work` (or `/opsx:work`, also reachable via `/opsx:propose` / `/opsx:apply`) to create or continue a change. There is no phase wall: you may record intent only and stop, record while implementing, or continue implementing later — editing OpenSpec artifacts and code together, in any order. The initial plan is disposable; overturn and rewrite `tasks.md` as you learn.
+- Record depth follows intent. A **plan-only deliverable** (plan now, implement later) is a first-class mode: produce a thorough, ready-to-execute plan (file map, bite-sized tasks, exact verification commands, at `superpowers:writing-plans` quality), then stop without implementing — not a minimal skeleton. The "record + implement now" mode may instead start from a lean record and expand as it goes.
+- Keep using Superpowers methods actively (brainstorming, TDD, systematic-debugging, verification-before-completion). What is relaxed is OpenSpec's own ceremony, not the engineering discipline. Verify at key milestones (not every step); verification may itself be an explicit task in `tasks.md`.
+- The change directory is **free-form storage**: beyond `proposal/design/specs/tasks`, you may keep background notes, research, performance/benchmark data (`benchmarks/*.csv`), and logs under `openspec/changes/<name>/`. Keep `tasks.md` a clean checklist and put commentary/data in separate files.
+- Archiving is an ordinary closing action handled inside `openspec-work` (`/opsx:archive`) via `openspec archive "<name>"` — not a verification gate. Incomplete tasks or a rewritten plan do not block archiving.
 - For small, local, low-risk changes that don't affect behavior, architecture, or public APIs, ask the user whether to skip OpenSpec. If the user explicitly requests skipping, record the reason briefly.
 - TODOs should be broken down around the plugin goal. When renaming, migrating modules, or adjusting public APIs, identify all affected files and documentation.
 
@@ -251,4 +256,3 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
-

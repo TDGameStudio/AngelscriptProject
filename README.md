@@ -163,7 +163,7 @@ npm install -g @fission-ai/openspec
 
 Superpowers 由 AI 工具的插件/技能系统提供；本仓库的 OpenSpec 适配说明见 `.agents/skills/README.md`。
 
-关键规则：如果用户请求创建或更新计划、方案、规划、任务拆解、change proposal，必须使用 `openspec-propose` skill（或等价 `/opsx:propose` / `/openspec:propose` 流程）。不要再为新工作创建 `Documents/Plans/Plan_*.md`；实施阶段以当前 OpenSpec change 的 `tasks.md` 作为唯一活跃计划。
+关键规则：如果用户请求创建/更新计划、方案、任务拆解或实施某个 change，使用 `openspec-work` skill（或 `/opsx:work`，也可经 `/opsx:propose` / `/opsx:apply` 触发）。它一体支持"记录"和"实现"，没有阶段墙——可只记录就停，也可边记边做。不要再为新工作创建 `Documents/Plans/Plan_*.md`；当前 change 的 `tasks.md` 是可随时重写的活记录。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -275,11 +275,9 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 ### OpenSpec 计划管理
 
-OpenSpec 是当前项目的权威计划系统。新的需求、方案、计划、任务拆解与实施状态统一进入 `openspec/changes/<change>/`：
+OpenSpec 是当前项目的权威**记录**系统（轻量使用，非流程门禁）。新的需求、方案、计划、任务拆解、背景资料、性能数据与实施状态统一进入 `openspec/changes/<change>/`：
 
-- `openspec-propose`：创建或更新 proposal / design / specs / tasks；凡是“创建计划/方案/任务拆解”类请求都使用它。
-- `openspec-apply-change`：按当前 change 的 `tasks.md` 执行实现；`tasks.md` 是唯一活跃实施计划。
-- `openspec-archive-change`：完成后归档 change。
+- `openspec-work`：探索+记录+实现+归档一体流程（合并了原 `openspec-explore`、`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`）。可只探索/思考、只产出完整计划当交付物（先不实现）、边记录边实现、续做已有 change、或直接归档；产物与代码可同时、任意顺序修改，初始规划可随时推翻重写。记录深度由意图决定：plan-only 时产出达到 `superpowers:writing-plans` 严谨度的计划再停下，边记边做时可从 lean 记录起步。探索/思考用 `superpowers:brainstorming`；归档经 `openspec archive "<name>"` 完成，是普通收尾动作而非门禁。
 
 `Documents/Plans/` 是 OpenSpec 引入前的历史 Plan 文档目录，仅作背景参考或迁移输入。
 
@@ -312,7 +310,7 @@ Tools\PullReference\PullReference.bat <name>
 详细规范见 `AGENTS.md` 与 `Documents/Rules/`。简要清单：
 
 1. **不修改 UE 引擎核心**。所有改动落在 `Plugins/Angelscript/` 或本仓库内。
-2. **计划管理必须走 OpenSpec**。创建计划、方案、规划、任务拆解或 change proposal 时必须使用 `openspec-propose`；实施时以当前 change 的 `tasks.md` 为唯一活跃计划。
+2. **计划/记录走 OpenSpec**。创建计划、方案、任务拆解或实施 change 时使用 `openspec-work`；当前 change 的 `tasks.md` 是可随时重写的活记录，背景资料/性能数据等可一并存于 change 目录。
 3. **构建 / 测试只走标准入口**。直接调 `Build.bat` / `UnrealEditor-Cmd.exe` 等的命令不允许写入文档或脚本。
 4. **测试覆盖**。新功能或 bugfix 必须配套测试（`Plugins/Angelscript/Source/AngelscriptTest/`）。
 5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule_ZH.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
