@@ -15,3 +15,5 @@
 - [x] 2.6 <!-- Non-TDD --> Verify with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.CppTests.Engine.Extension" -Label angelscript-extension-registry-regression -TimeoutMs 900000`.
 - [x] 2.7 <!-- Non-TDD --> Confirm no old GameplayTag binding/test prefixes remain in core with focused `rg` scans.
 - [x] 2.8 <!-- Non-TDD --> Run `openspec validate refactor-as-gameplaytags-optional-plugin --strict --json` from the project root.
+- [x] 2.9 <!-- Non-TDD --> Add `Angelscript.GameplayTags` to the all-suite and coarse-shard test definitions.
+- [x] 2.10 <!-- Non-TDD --> Verify full suite with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite All -LabelPrefix all-gameplaytags-split-final -TimeoutMs 900000 -ContinueOnFail` (`37/37` prefixes, `1836/1836 PASS`).

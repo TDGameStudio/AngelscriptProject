@@ -28,6 +28,7 @@ function Get-AngelscriptTestCoarseShards {
         @{ Prefix = 'Angelscript.TestModule'; Label = 'TestModule'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.Editor'; Label = 'Editor'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.GAS'; Label = 'GAS'; Tier = 'Heavy' }
+        @{ Prefix = 'Angelscript.GameplayTags'; Label = 'GameplayTags'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.Template'; Label = 'Template'; Tier = 'Light' }
     )
 }

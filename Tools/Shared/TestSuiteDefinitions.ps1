@@ -44,6 +44,7 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
     All = @(
         @{ Prefix = 'Angelscript.Editor'; Label = 'Editor'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.GAS'; Label = 'GAS'; Tier = 'Heavy' }
+        @{ Prefix = 'Angelscript.GameplayTags'; Label = 'GameplayTags'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.Template'; Label = 'Template'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.Actor'; Label = 'Actor'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.AngelScriptSDK'; Label = 'AngelScriptSDK'; Tier = 'Heavy' }

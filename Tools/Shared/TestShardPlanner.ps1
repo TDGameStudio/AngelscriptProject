@@ -39,6 +39,7 @@ $script:AngelscriptDefaultPrefixTimingSec = @{
     'Angelscript.TestModule.Parity'                 = 24.3
     'Angelscript.Editor'                            = 66.9
     'Angelscript.GAS'                               = 47.6
+    'Angelscript.GameplayTags'                      = 35.0
     'Angelscript.Template'                          = 32.3
 }
 
