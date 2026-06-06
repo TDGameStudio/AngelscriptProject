@@ -86,8 +86,7 @@ AngelscriptProject/
 │   │   ├── GitCommitRule.md                 # Commit conventions (EN)
 │   │   ├── GitCommitRule_ZH.md              # Commit conventions (ZH)
 │   │   ├── ASInlineFormattingRule.md        # Inline AS formatting in C++ tests
-│   │   ├── ReviewRule_ZH.md                 # Code review rules (ZH)
-│   │   └── ReferenceComparisonRule_ZH.md    # Reference comparison (ZH)
+│   │   └── ReviewRule_ZH.md                 # Code review rules (ZH)
 │   ├── Plans/                               # ⚠ Legacy only — use openspec/
 │   │   ├── Plan_StatusPriorityRoadmap.md    # Historical status snapshot
 │   │   ├── Plan_OpportunityIndex.md         # Historical opportunity index
@@ -108,9 +107,7 @@ AngelscriptProject/
 │   ├── Bootstrap/                           # First-time setup
 │   ├── Shared/                              # Shared utility modules
 │   ├── Diagnostics/                         # Health check & debug
-│   ├── PullReference/                       # Reference repo pull
-│   ├── Review/                              # Code review utilities
-│   └── ReferenceComparison/                 # Diff against references
+│   └── PullReference/                       # Reference repo pull
 │
 └── Config/                                  # UE project config (4 .ini)
 ```

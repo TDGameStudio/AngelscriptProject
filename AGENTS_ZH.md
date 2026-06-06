@@ -88,8 +88,7 @@ AngelscriptProject/
 │   │   ├── GitCommitRule.md                 # 提交规范（英文）
 │   │   ├── GitCommitRule_ZH.md              # 提交规范（中文）
 │   │   ├── ASInlineFormattingRule.md        # C++ 测试中内联 AS 格式规则
-│   │   ├── ReviewRule_ZH.md                 # 代码审查规则（中文）
-│   │   └── ReferenceComparisonRule_ZH.md    # 参考对比规则（中文）
+│   │   └── ReviewRule_ZH.md                 # 代码审查规则（中文）
 │   ├── Plans/                               # ⚠ 仅历史参考 — 新工作用 openspec/
 │   │   ├── Plan_StatusPriorityRoadmap.md    # 历史状态快照
 │   │   ├── Plan_OpportunityIndex.md         # 历史机会索引
@@ -110,9 +109,7 @@ AngelscriptProject/
 │   ├── Bootstrap/                           # 首次配置
 │   ├── Shared/                              # 共享工具模块
 │   ├── Diagnostics/                         # 健康检查与调试
-│   ├── PullReference/                       # 参考仓库拉取
-│   ├── Review/                              # 代码审查工具
-│   └── ReferenceComparison/                 # 参考对比
+│   └── PullReference/                       # 参考仓库拉取
 │
 └── Config/                                  # UE 工程配置（4 个 .ini）
 ```
