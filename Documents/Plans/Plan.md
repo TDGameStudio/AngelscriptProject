@@ -14,7 +14,7 @@
 
 - 文件名：`Plan_<Topic>.md`，Topic 用英文 CamelCase。
 - 默认中文撰写；代码符号、类名、路径保持英文。
-- commit message 遵守 `Documents/Rules/GitCommitRule_ZH.md`。
+- commit message 遵守 `Documents/Rules/GitCommitRule.md`。
 - 不要在 Plan 中写死本地路径；路径配置引用 `AgentConfig.ini`。
 
 ## 归档规则

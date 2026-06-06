@@ -84,9 +84,7 @@ AngelscriptProject/
 │   │   └── UE_Search_Guide.md               # UE knowledge lookup
 │   ├── Rules/
 │   │   ├── GitCommitRule.md                 # Commit conventions (EN)
-│   │   ├── GitCommitRule_ZH.md              # Commit conventions (ZH)
-│   │   ├── ASInlineFormattingRule.md        # Inline AS formatting in C++ tests
-│   │   └── ReviewRule_ZH.md                 # Code review rules (ZH)
+│   │   └── ASInlineFormattingRule.md        # Inline AS formatting in C++ tests
 │   ├── Plans/                               # ⚠ Legacy only — use openspec/
 │   │   ├── Plan_StatusPriorityRoadmap.md    # Historical status snapshot
 │   │   ├── Plan_OpportunityIndex.md         # Historical opportunity index

@@ -313,7 +313,7 @@ Tools\PullReference\PullReference.bat <name>
 2. **计划/记录走 OpenSpec**。创建计划、方案、任务拆解或实施 change 时使用 `openspec-work`；当前 change 的 `tasks.md` 是可随时重写的活记录，背景资料/性能数据等可一并存于 change 目录。
 3. **构建 / 测试只走标准入口**。直接调 `Build.bat` / `UnrealEditor-Cmd.exe` 等的命令不允许写入文档或脚本。
 4. **测试覆盖**。新功能或 bugfix 必须配套测试（`Plugins/Angelscript/Source/AngelscriptTest/`）。
-5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule_ZH.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
+5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
 6. **文档先行**。修改原理涉及的文档（`Documents/Knowledges/`）需要随代码同步更新。
 
 ---

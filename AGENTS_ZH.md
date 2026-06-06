@@ -86,9 +86,7 @@ AngelscriptProject/
 │   │   └── UE_Search_Guide.md               # UE 知识查询
 │   ├── Rules/
 │   │   ├── GitCommitRule.md                 # 提交规范（英文）
-│   │   ├── GitCommitRule_ZH.md              # 提交规范（中文）
-│   │   ├── ASInlineFormattingRule.md        # C++ 测试中内联 AS 格式规则
-│   │   └── ReviewRule_ZH.md                 # 代码审查规则（中文）
+│   │   └── ASInlineFormattingRule.md        # C++ 测试中内联 AS 格式规则
 │   ├── Plans/                               # ⚠ 仅历史参考 — 新工作用 openspec/
 │   │   ├── Plan_StatusPriorityRoadmap.md    # 历史状态快照
 │   │   ├── Plan_OpportunityIndex.md         # 历史机会索引
