@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the deglobalization boundary for Angelscript runtime state. Any state that references objects owned by a specific `asIScriptEngine` must be owned by `FAngelscriptEngine`, keyed by engine, or cleared by engine lifecycle.
+Defines the deglobalization boundary for Angelscript runtime state. Any state that references objects owned by a specific `asIScriptEngine` must be owned by `FAngelscriptEngine`, keyed by engine, or cleared by engine lifecycle. This baseline spec captures the rules already enforced for static TypeInfo, legacy fallback registries, and the context pool. Subsequent changes (`refactor-as-runtime-globals-enum-and-tostring`) extend the same capability with enum / ToString incremental requirements.
 
 ## ADDED Requirements
 
@@ -41,35 +41,15 @@ Native static type-info helpers SHALL NOT expose a single process-wide `asITypeI
 - **THEN** entries owned by that engine SHALL be removed before releasing the underlying AS engine
 - **AND** later engines SHALL NOT observe stale type-info entries from the destroyed engine
 
-### Requirement: Formatting validates deglobalized type identity
-
-`FString::Format` and `FText::Format` SHALL act as acceptance coverage for deglobalized native type-info.
-
-#### Scenario: FString argument after previous engine populated cache
-
-- **GIVEN** a previous engine has bound `FString`
-- **AND** a different current engine executes script code
-- **WHEN** script calls `FString::Format("{0}", "Hello")`
-- **THEN** the result SHALL be `Hello`
-- **AND** the argument SHALL NOT be rejected because the previous engine's `asITypeInfo*` differs from the current engine's pointer
-
-#### Scenario: FText argument after previous engine populated cache
-
-- **GIVEN** a previous engine has bound `FText`
-- **AND** a different current engine executes script code
-- **WHEN** script formats an `FText` argument through the text formatting path
-- **THEN** the argument SHALL be accepted using the current engine's `FText` type identity
-- **AND** stale static type-info state SHALL NOT affect the result
-
 ### Requirement: Legacy fallbacks cannot hide engine-owned state
 
 No-current-engine fallback registries SHALL NOT become hidden cross-engine owners for AngelScript runtime objects.
 
-#### Scenario: Legacy fallback receives AS runtime object
+#### Scenario: Legacy type / bind fallback receives only metadata
 
-- **WHEN** code attempts to store an AS runtime object pointer in a legacy fallback such as ToString, type database, bind state, or bind database storage
-- **THEN** the code SHALL route the write to engine-owned state, key it by engine, clear it by lifecycle, or reject the path
-- **AND** that pointer SHALL NOT later be read as if it belonged to another engine
+- **WHEN** code stores entries in legacy fallback registries (`LegacyDatabase`, `LegacyBindState`, `LegacyBindDatabase`)
+- **THEN** the entries SHALL contain only UE-side metadata such as names, reflection objects, descriptors, or replayable callbacks
+- **AND** the entries SHALL NOT cache `asITypeInfo*`, `asIScriptFunction*`, `asIScriptObject*`, or `asCContext*`
 
 #### Scenario: Context pool stores AS contexts
 
@@ -79,15 +59,10 @@ No-current-engine fallback registries SHALL NOT become hidden cross-engine owner
 
 ## Testing Requirements
 
-- Target test layer: Bindings + Runtime CppTests / Engine lifecycle.
+- Target test layer: Runtime CppTests / Engine lifecycle.
 - Expected Automation prefixes:
-  - `Angelscript.TestModule.Bindings.FString.*`
-  - `Angelscript.TestModule.Bindings.*` for `FText` or shared formatting coverage
   - `Angelscript.TestModule.Engine.*` for lifecycle cleanup and multi-engine behavior
-- Recommended helpers:
-  - Existing Angelscript binding test macros and engine acquisition helpers from `Source/AngelscriptTest/Shared/`
-  - Existing engine lifecycle / multi-engine test helpers when two engines are required
+  - `Angelscript.TestModule.Bindings.FString` and `Angelscript.TestModule.Bindings` (existing FString / FText format coverage)
 - Verification entry points:
-  - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.FString" -Label deglobalize-fstring -TimeoutMs 900000`
-  - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine" -Label deglobalize-engine -TimeoutMs 1200000`
-  - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label deglobalize-build -TimeoutMs 1800000`
+  - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine" -Label as-engine-scoped-runtime-state -TimeoutMs 1200000`
+  - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label as-engine-scoped-runtime-state-build -TimeoutMs 1800000`
