@@ -690,7 +690,7 @@
 
 ## 7. Compiler — 编译管线
 
-> 源文件：`Compiler/AngelscriptCompilerPipelineTests.cpp`、`Compiler/AngelscriptCompilationEventsTests.cpp`
+> 源文件：`Compiler/AngelscriptCompilerPipelineTests.cpp`、`Compiler/AngelscriptCompilationEventsTests.cpp`、`Compiler/AngelscriptVirtualScriptPathCompilerTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -709,12 +709,13 @@
 | Compiler.Events.FailedCompileEmitsPairedEndEvent | 编译失败仍发出 paired `Compile.End`，并携带失败 result 与 diagnostics |
 | Compiler.Events.ParseEventsAreBroadcastFromMainThreadInDeterministicOrder | parallel parse 不在 worker thread 广播事件，parse summary 从主编译流确定性发出 |
 | Compiler.Events.CompilationContextIsScopedPerCompileRun | `FAngelscriptCompilationContext` 每次 `CompileModules()` 独立创建，run id 与 module summary 不跨 run 泄漏 |
+| Compiler.VirtualScriptPaths.MemorySourceCompilesWithFullVirtualPathIdentity | `/Angelscript/Memory/Immediate/...` 内存源可编译执行，模块、代码段和 AS section name 保留完整虚拟路径 |
 
 ---
 
 ## 8. Preprocessor — 预处理器
 
-> 源文件：`Preprocessor/AngelscriptPreprocessorTests.cpp`、`Preprocessor/AngelscriptPreprocessorContextTests.cpp`、`Preprocessor/AngelscriptPreprocessorSummaryTests.cpp`、`Preprocessor/AngelscriptPreprocessorCompilationEventsTests.cpp`
+> 源文件：`Preprocessor/AngelscriptPreprocessorTests.cpp`、`Preprocessor/AngelscriptPreprocessorContextTests.cpp`、`Preprocessor/AngelscriptPreprocessorSummaryTests.cpp`、`Preprocessor/AngelscriptPreprocessorCompilationEventsTests.cpp`、`Preprocessor/AngelscriptVirtualScriptPathPreprocessorTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -727,6 +728,9 @@
 | Preprocessor.Summary.SummaryReportsProcessedScriptStructure | summary 报告 file/module/chunk/import/class/function/property/enum/delegate/generated code 等结构计数 |
 | Preprocessor.Summary.SummaryAvailableAtExistingHookPoints | `OnProcessChunks` / `OnPostProcessCode` hook 点可读取对应阶段 summary |
 | Preprocessor.CompilationEvents.HookMomentsEmitSummaryBackedCompilationEvents | `Preprocess.ProcessChunks` / `Preprocess.PostProcessCode` compilation events 携带 summary-backed payload |
+| Preprocessor.VirtualScriptPaths.AddFileEmitsGameVirtualPathMetadata | 旧 `AddFile()` 入口为磁盘源生成 `/Angelscript/Game/...` 虚拟路径并写入 summary/code section |
+| Preprocessor.VirtualScriptPaths.AddSourcePreprocessesMemoryText | `AddSource()` 可直接预处理 `/Angelscript/Memory/Immediate/...` 内存文本且不依赖物理文件名 |
+| Preprocessor.VirtualScriptPaths.AddSourceRejectsInvalidVirtualPathDescriptor | 无效 source descriptor 在预处理前失败，不生成 module 或 file summary |
 
 ---
 
@@ -742,7 +746,7 @@
 
 ## 10. FileSystem — 文件系统
 
-> 源文件：`FileSystem/AngelscriptFileSystemTests.cpp`
+> 源文件：`FileSystem/AngelscriptFileSystemTests.cpp`、`FileSystem/AngelscriptVirtualScriptPathTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -751,12 +755,17 @@
 | FileSystem.PartialFailurePreservesGoodModules | 部分模块失败时其余好模块仍保留 |
 | FileSystem.Discovery | 脚本文件发现 |
 | FileSystem.SkipRules | 跳过规则（不扫描某些路径） |
+| FileSystem.VirtualScriptPaths.CanonicalRoots | `/Angelscript/Game`、`/Angelscript/Plugin/<PluginName>`、`/Angelscript/Memory/Immediate` 解析、相对路径和模块名规则 |
+| FileSystem.VirtualScriptPaths.InvalidInputs | URI scheme、非 `/Angelscript` 根、大小写错误、非 `.as`、空段、尾部 `/`、`.`/`..` 和反斜杠路径被拒绝 |
+| FileSystem.VirtualScriptPaths.SourceDescriptorsKeepFullNames | Game、Plugin、Plugin 根目录源、Memory source descriptor 保留完整虚拟路径和兼容模块名 |
+| FileSystem.VirtualScriptPaths.DiscoveryFullNames | 磁盘发现为项目/插件脚本输出完整 `/Angelscript/...` 虚拟路径并保留旧 filename discovery 兼容元数据 |
+| FileSystem.VirtualScriptPaths.LegacyRootPathOverrideWinsWhenDescriptorsAreStale | 旧测试/工具只临时覆盖 `AllRootPaths` 时，不会被陈旧 `AllScriptRoots` descriptor 遮蔽 |
 
 ---
 
 ## 11. Editor — 编辑器
 
-> 源文件：`AngelscriptEditor/Tests/AngelscriptDirectoryWatcherTests.cpp`
+> 源文件：`AngelscriptEditor/Tests/AngelscriptDirectoryWatcherTests.cpp`、`AngelscriptEditor/Tests/AngelscriptDirectoryWatcherRootResolutionTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -765,6 +774,9 @@
 | Editor.DirectoryWatcher.Queue.FolderAddScansContainedScripts | 新增目录递归扫描脚本 |
 | Editor.DirectoryWatcher.Queue.FolderRemoveUsesLoadedScriptEnumerator | 删除目录通过已加载脚本枚举生成删除队列 |
 | Editor.DirectoryWatcher.Queue.RenameWindowTracksRemoveAndAdd | rename-window 建模下 remove+add 同时入队 |
+| Editor.DirectoryWatcher.Queue.UsesMatchingRootWhenMultipleRootsSharePrefix | 多 root 前缀相似时按真实匹配 root 计算相对路径 |
+| Editor.DirectoryWatcher.Queue.PreservesPluginVirtualPath | plugin script root 下的文件事件入队时保留 `/Angelscript/Plugin/<PluginName>/...` |
+| Editor.DirectoryWatcher.GatherLoadedScriptsForFolder.DeduplicatesAndRejectsPrefixCollisions | 删除目录枚举已加载脚本时去重、拒绝前缀碰撞并保留 code section virtual path |
 | Editor.DirectoryWatcher.Queue.DuplicateStormDeduplicatesEntries | 事件风暴下同一路径重复变更保持去重入队 |
 
 
