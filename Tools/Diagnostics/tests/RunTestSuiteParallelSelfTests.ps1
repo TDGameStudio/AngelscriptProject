@@ -242,11 +242,16 @@ Invoke-TestCase -Name 'ParallelSummarySerializesShardArray' -Body {
         -Message ('Parallel suite runner should write ParallelSuiteSummary.json. Output: {0}' -f $combined)
 
     $summary = Get-Content -LiteralPath $summaryPath.FullName -Raw | ConvertFrom-Json
-    Assert-Equal -Expected 36 -Actual ([int]$summary.ShardCount) `
+    $suiteDefinitionsPath = Join-Path $fixtureRoot 'Tools\Shared\TestSuiteDefinitions.ps1'
+    $testShardPlannerPath = Join-Path $fixtureRoot 'Tools\Shared\TestShardPlanner.ps1'
+    . $suiteDefinitionsPath
+    . $testShardPlannerPath
+    $expectedShardCount = @(Get-AngelscriptCoarseDynamicPlan -ProjectRoot $fixtureRoot -WorkerCount 4).Entries.Count
+    Assert-Equal -Expected $expectedShardCount -Actual ([int]$summary.ShardCount) `
         -Message ('Parallel suite runner should record all shard results. Output: {0}' -f $combined)
     Assert-Equal -Expected 0 -Actual ([int]$summary.FailedShardCount) `
         -Message ('Parallel suite runner should record no failed shards. Output: {0}' -f $combined)
-    Assert-Equal -Expected 36 -Actual ([int]$summary.AggregatedPassed) `
+    Assert-Equal -Expected $expectedShardCount -Actual ([int]$summary.AggregatedPassed) `
         -Message ('Parallel suite runner should aggregate passed tests. Output: {0}' -f $combined)
     Assert-True -Condition ($combined -match 'Parallel Suite Summary') `
         -Message ('Parallel suite runner should print its summary block. Output: {0}' -f $combined)

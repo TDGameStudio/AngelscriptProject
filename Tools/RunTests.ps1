@@ -31,6 +31,67 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Shared\UnrealCommandUtils.ps1')
 . (Join-Path $PSScriptRoot 'Shared\TestLaunchProfile.ps1')
 
+function Test-IsCrashOnlyTestPrefix {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prefix
+    )
+
+    $tokens = @(Split-TestPrefixTokens -Prefix $Prefix)
+    if ($tokens.Count -eq 0) {
+        return $false
+    }
+
+    foreach ($token in $tokens) {
+        if (-not ($token.Equals('Angelscript.CrashOnly', [System.StringComparison]::OrdinalIgnoreCase) -or
+                $token.StartsWith('Angelscript.CrashOnly.', [System.StringComparison]::OrdinalIgnoreCase))) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+function Test-WouldIncludeCrashOnlyTests {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prefix
+    )
+
+    foreach ($token in @(Split-TestPrefixTokens -Prefix $Prefix)) {
+        if ('Angelscript.CrashOnly'.StartsWith($token, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Split-TestPrefixTokens {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prefix
+    )
+
+    return @($Prefix.Split([char]'+', [System.StringSplitOptions]::RemoveEmptyEntries) |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+}
+
+function ConvertTo-AutomationStartsWithTarget {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prefix
+    )
+
+    $tokens = @(Split-TestPrefixTokens -Prefix $Prefix)
+    if ($tokens.Count -eq 0) {
+        throw 'TestPrefix cannot be empty.'
+    }
+
+    return (($tokens | ForEach-Object { "^$_" }) -join '+')
+}
+
 $exitCodes = @{
     Success      = 0
     TestFailed   = 1
@@ -55,15 +116,28 @@ try {
         throw "UnrealEditor-Cmd.exe was not found: $editorCmd"
     }
 
+    $isCrashOnlyTarget = $false
+    $automationTarget = $null
     $target = if ($PSCmdlet.ParameterSetName -eq 'Group') {
         $definedGroups = @(Get-DefinedAutomationGroups -ProjectRoot $projectRoot)
         if ($definedGroups -notcontains $Group) {
             throw "Unknown automation group '$Group'. Defined groups: $($definedGroups -join ', ')"
         }
 
+        $automationTarget = "Group:$Group"
         "Group:$Group"
     }
     else {
+        if ([string]::IsNullOrWhiteSpace($TestPrefix)) {
+            throw 'TestPrefix cannot be empty.'
+        }
+
+        $isCrashOnlyTarget = Test-IsCrashOnlyTestPrefix -Prefix $TestPrefix
+        if (-not $isCrashOnlyTarget -and (Test-WouldIncludeCrashOnlyTests -Prefix $TestPrefix)) {
+            throw "Crash-only tests must be run separately with -TestPrefix 'Angelscript.CrashOnly...'. Requested prefix '$TestPrefix' would include them."
+        }
+
+        $automationTarget = ConvertTo-AutomationStartsWithTarget -Prefix $TestPrefix
         $TestPrefix
     }
 
@@ -97,7 +171,7 @@ try {
 
     $argumentList = @(
         $agentConfig.ProjectFile
-        "-ExecCmds=Automation RunTests $target; Quit"
+        "-ExecCmds=Automation RunTests $automationTarget; Quit"
         '-TestExit=Automation Test Queue Empty'
         '-BUILDMACHINE'
         '-Unattended'
@@ -110,6 +184,10 @@ try {
         "-ReportExportPath=$($outputLayout.ReportPath)"
         '-NOSOUND'
     )
+
+    if ($isCrashOnlyTarget) {
+        $argumentList += '-AngelscriptRunCrashOnlyTests'
+    }
 
     if (-not $Render) {
         $argumentList += '-NullRHI'

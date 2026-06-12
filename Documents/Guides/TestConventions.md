@@ -22,6 +22,7 @@
 | UE 功能测试层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `AngelscriptFunctionalTestUtils.h` + `AngelscriptTestWorld.h`（actor / world tick / 完整生命周期） |
 | Learning | `Plugins/Angelscript/Source/AngelscriptTest/Learning/Native/`、`Learning/Runtime/` | `Angelscript.TestModule.Learning.<Layer>.*` | 结构化 trace / 教学型可观测测试 | `AngelscriptLearningTrace.*` |
 | Bindings Coverage (CQTest) | `Plugins/Angelscript/Source/AngelscriptTest/Bindings/` | `Angelscript.TestModule.Bindings.<Type>.*` | 按类型的绑定覆盖，CQTest `TEST_CLASS_WITH_FLAGS` + `BEFORE_ALL/AFTER_ALL` + `FScopedAngelscriptModule` RAII | `CQTest.h` + `AngelscriptTestModuleScope.h` + `AngelscriptTestExecute.h` + 按需 `Bindings/Angelscript*TestHelpers.h` |
+| Crash-only 子进程 | `Plugins/Angelscript/Source/AngelscriptTest/<Theme>/` | `Angelscript.CrashOnly.<Theme>.*` | 主动触发崩溃并验证崩溃路径产物；必须单独运行，不能进入普通 suite/group/full-run | 独立 child process + `Tools\RunTests.ps1 -TestPrefix "Angelscript.CrashOnly.<Theme>"` |
 
 ### 2. 文件命名规则
 
@@ -48,6 +49,7 @@
 - `Angelscript.TestModule.CppTests.*`：只用于 `AngelscriptRuntime/Tests/`
 - `Angelscript.Editor.*`：只用于 Editor 内部测试
 - `Angelscript.TestModule.*`：只用于 `AngelscriptTest` 模块
+- `Angelscript.CrashOnly.*`：只用于会主动 crash 的隔离测试；必须通过 `Tools\RunTests.ps1 -TestPrefix "Angelscript.CrashOnly..."` 单独运行，测试本体应要求 runner 注入的显式 opt-in flag
 
 ### 4. 前缀命名策略
 
@@ -105,6 +107,7 @@
 - 文件名要能一眼说明测试族别。
 - Automation 前缀要先区分模块层，再区分主题，再区分 case。
 - 不要混用 `Angelscript.TestModule.CppTests.*` 与 `Angelscript.TestModule.*`。
+- 会主动崩溃的测试不要使用 `Angelscript.TestModule.*`；放在 `Angelscript.CrashOnly.*` 下，避免被普通主题、group、suite 或全量回归带入。
 
 ### Step 4：优先复用 helper
 

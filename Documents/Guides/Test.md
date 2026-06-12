@@ -9,6 +9,7 @@
 - 默认测试超时来自 `AgentConfig.ini` 的 `Test.DefaultTimeoutMs`；仓库标准默认值为 `600000ms`。
 - 测试过程必须实时输出；超时或异常退出后脚本必须清理整棵编辑器/UBT 进程树。
 - 每次测试都必须写入自己的独立输出目录；禁止多个 run 共用同一份 `Automation.log` 或报告目录。
+- 会主动触发崩溃的测试只能使用 `Angelscript.CrashOnly.*` 前缀，并且必须单独运行；不要把它们放进 `Angelscript.TestModule.*`、group、suite、All、Fast、Parallel 或 monolithic 普通回归。
 
 ## AgentConfig.ini 与 bootstrap
 
@@ -94,6 +95,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Dump." -Label editor-diagnostics-dump -TimeoutMs 600000
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Performance." -Label editor-diagnostics-performance -TimeoutMs 900000
 ```
+
+Crash-only 测试会启动独立子进程并主动触发 UE crash，用来验证崩溃路径能落盘恢复信息。它们不属于普通 dump 回归，必须显式单跑：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.CrashOnly.CrashSnapshot" -Label crash-snapshot -TimeoutMs 600000
+```
+
+`Tools\RunTests.ps1` 会拒绝 `-TestPrefix Angelscript` 这类会覆盖 `Angelscript.CrashOnly.*` 的普通宽入口；需要全量普通回归时使用 suite/parallel/fast 入口或明确的非 crash-only 前缀。
 
 `Bindings` 目录这轮补的是显式 coverage gap closure：被恢复的主题包括 `Box3f` / `Sphere3f`、`Paths` / `PlatformMisc` / `CpuProfiler`、`FString` / `FileAndDelegate` / `MemoryReader` / `MeshComponent`。如果后续还保留边界 case，应该在 test case 里写明具体缺失的 binding 或环境限制，而不是继续用静默跳过。
 
@@ -239,14 +248,14 @@ Tools\RunTestSuiteParallel.ps1 -Strategy Coarse -Fast -MaxParallelHeavy 4 -Conti
 | `RunTestSuite.ps1 -Suite All`（串行 36 前缀） | 36 | 30–60+ min |
 | `RunTestSuiteParallel -Strategy Fine` | 36 | 15–30 min |
 | `RunTestSuiteFast` / `Strategy Coarse` | 4 | **~5–8 min** |
-| `Strategy Monolithic`（单次 `Angelscript` 前缀） | 1 | ~6–12 min |
+| `Strategy Monolithic`（单次普通前缀组合，不含 `Angelscript.CrashOnly.*`） | 1 | ~6–12 min |
 
 Debugger / Performance / HotReload 可能拖慢 `TestModule` 分片；CI 门禁可单独跑 Fast，慢套件夜间跑。
 
 单次快速验证也可：
 
 ```powershell
-Tools\RunTests.ps1 -TestPrefix Angelscript -Fast -Label all-monolithic -TimeoutMs 900000
+Tools\RunTestSuiteParallel.ps1 -Strategy Monolithic -Fast -LabelPrefix all-monolithic -TimeoutMs 900000
 ```
 
 ### `Tools\RunTestSuiteParallel.ps1`

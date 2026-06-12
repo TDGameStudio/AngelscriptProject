@@ -104,7 +104,7 @@ if ($TimeoutMs -gt 3600000) {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 $workerPlan = $null
-$entries = switch ($Strategy) {
+$entries = @(switch ($Strategy) {
     'CoarseDynamic' {
         $workerPlan = Get-AngelscriptCoarseDynamicPlan `
             -ProjectRoot $projectRoot `
@@ -116,16 +116,16 @@ $entries = switch ($Strategy) {
         @(Get-AngelscriptTestCoarseShards)
     }
     'Monolithic' {
-        @(@{
-                Prefix = (Get-AngelscriptTestMonolithicPrefix)
-                Label  = 'Monolithic'
-                Tier   = 'Heavy'
-            })
+        @{
+            Prefix = (Get-AngelscriptTestMonolithicPrefix)
+            Label  = 'Monolithic'
+            Tier   = 'Heavy'
+        }
     }
     'Fine' {
         @(Get-AngelscriptTestSuiteEntries -SuiteName $Suite)
     }
-}
+})
 $effectiveLabelPrefix = if ([string]::IsNullOrWhiteSpace($LabelPrefix)) {
     switch ($Strategy) {
         'CoarseDynamic' { 'All-Dynamic' }

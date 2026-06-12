@@ -34,7 +34,7 @@ function Get-AngelscriptTestCoarseShards {
 }
 
 function Get-AngelscriptTestMonolithicPrefix {
-    return 'Angelscript'
+    return 'Angelscript.TestModule+Angelscript.Editor+Angelscript.GAS+Angelscript.GameplayTags+Angelscript.Template'
 }
 
 function Get-AngelscriptTestSlowPrefixExclusions {
