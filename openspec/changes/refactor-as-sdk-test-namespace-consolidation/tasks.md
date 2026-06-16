@@ -51,13 +51,13 @@
 - [ ] 6.7 Property accessors (`get`/`set`) runtime
 - [ ] 6.8 Handle reference counting (`@` AddRef/Release count), null-handle deref exception, `cast<T>()` up/down-cast
 - [ ] 6.9 Object lifetime runtime: destructor call count + order, object as return value
-- [ ] 6.10 Functions: `&in` param, real overload resolution incl. ambiguity negative cases, type-based overloads, funcdef/function-pointer args
+- [~] 6.10 Functions: `&in` param ✅, type-based overloads ✅, recursion ✅ (added); still TODO: overload ambiguity negative cases, funcdef/function-pointer args
 - [ ] 6.11 Runtime: true Suspend/Resume, exception varieties (array OOB, null handle, abort), line/exception callbacks
 - [ ] 6.12 Script-class operator overloads: `opAdd`/`opEquals`/`opCmp`/`opAssign` (extends current built-in operator matrix)
 
 ### 6c. Medium-priority new coverage
 - [ ] 6.13 Module `import ... from`, `shared` types, multi-section build, post-error module state
-- [ ] 6.14 Integer full-width round-trip + overflow/wrap, enum↔int, `opConv`/`opImplConv` execution
+- [~] 6.14 Integer full-width round-trip ✅, overflow/wrap ✅, enum↔int ✅ (added to Type tests); still TODO: `opConv`/`opImplConv` execution
 - [ ] 6.15 Composite-type (object/handle/string/array) round-trip through native context params + `&out`/`&inout`
 - [ ] 6.16 Thiscall execution — investigate the fork crash (possible real bug; record expected-fail or fix)
 - [ ] 6.17 Global var init order + object-typed global lifetime; namespaced globals
