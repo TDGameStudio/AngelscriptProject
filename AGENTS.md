@@ -216,6 +216,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 ## Submodule & Worktree
 
+- Default editing location is the current workspace/main checkout. Do **not** create, switch to, or continue work inside a git worktree unless the user explicitly asks to create/use a worktree for that task.
 - The plugin directories (`Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`) are **git submodules**, not ordinary directories. `git worktree add` does not initialize them.
 - One-shot setup: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>` creates the parent worktree, initializes/fallbacks all submodules, writes `AgentConfig.ini`, and scaffolds an empty `openspec/changes/<change-name>/` directory in one step.
 - `BootstrapWorktree.ps1` remains the entry point for re-initializing an *existing* worktree (e.g. after switching engine root). It is invoked internally by `NewWorktree.ps1`; you only need to call it directly when fixing up a worktree that already exists.

@@ -126,7 +126,7 @@ The user provides either a kebab-case change name or a description of what they 
    git worktree list --porcelain
    ```
 
-   Continue in the current workspace by default. Only create or switch worktrees when the user explicitly asks (then use `superpowers:using-git-worktrees`). If the target is inside a submodule (e.g. `Plugins/UnrealEvent`), inspect submodule state (`git submodule status`) and follow `Documents/Guides/SubmoduleWorktreeWorkflow.md`.
+   Continue in the current workspace/main checkout by default. Only create, switch to, or continue work inside a git worktree when the user explicitly asks to create/use a worktree for that task (then use `superpowers:using-git-worktrees`). If the target is inside a submodule (e.g. `Plugins/UnrealEvent`), inspect submodule state (`git submodule status`) and follow `Documents/Guides/SubmoduleWorktreeWorkflow.md`.
 
 4. **Explore or design when needed**
 

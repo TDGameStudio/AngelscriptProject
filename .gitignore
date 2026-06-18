@@ -39,6 +39,7 @@
 *.xcodeproj
 *.xcworkspace
 *.sln
+*.slnx
 *.suo
 *.opensdf
 *.sdf
@@ -121,6 +122,9 @@ DerivedDataCache/*
 
 # Local generated wiki workspace
 /Wiki/
+
+# Local experiment workspace
+/Experiment/
 
 # UnrealMCP (may become a submodule later)
 Tools/UnrealMCP/
