@@ -13,6 +13,7 @@ function Get-AngelscriptTestFastLaunchArgs {
         '-NoLiveCoding'
         '-NoScreenMessages'
         '-DisableAutomaticShaderCompilerLaunch'
+        '-NoAssetRegistryCacheWrite'
     )
 }
 

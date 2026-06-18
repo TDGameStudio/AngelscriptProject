@@ -38,3 +38,5 @@
 - [x] 6.3 Re-run and fix the failed binding-heavy shards: `Engine`, `Bindings`, `FunctionLibraries`, `Actor`, and `Functional`.
 - [x] 6.4 Triage `Preprocessor.PreprocessIsSingleUse` duplicate ensure count under UE 5.8.
 - [x] 6.5 Remove or update the stale `Angelscript.TestModule.Learning` suite prefix if those tests are intentionally absent.
+- [x] 6.6 Stop tracking local UBT `.ubtplugin.csproj.props` output and ignore regenerated copies.
+- [x] 6.7 Disable AssetRegistry cache writes for parallel fast automation launches.
