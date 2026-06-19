@@ -123,7 +123,7 @@
 
 > 源文件：`AngelScriptSDK/AngelscriptNativeSmokeTest.cpp`、`AngelScriptSDK/AngelscriptNativeCompileTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp`、`AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizer*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeParser*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeReference*Tests.cpp`、`AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp`、`AngelScriptSDK/AngelscriptASSDKEngineTests.cpp`、`AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp`、`AngelScriptSDK/AngelscriptASSDKGlobalVarTests.cpp` 以及其余 `AngelScriptSDK/AngelscriptASSDK*Tests.cpp`
 >
-> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **301/301 PASS**。`test-as-native-sdk-coverage` 新增 151 个 native SDK 覆盖项：Tokenizer 40、Parser 35、ScriptNode 25、Bytecode 23、Reference 28。
+> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **301/301 PASS**。`test-as-native-sdk-coverage` 新增 151 个 native SDK 覆盖项：Tokenizer 40、Parser 35、ScriptNode 25、Bytecode 23、Reference 28。当前 `Angelscript.TestModule.AngelScriptSDK.Bytecode` 前缀单独验证为 **36/36 PASS**。
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
@@ -134,7 +134,7 @@
 | `Angelscript.TestModule.AngelScriptSDK.Tokenizer.*` | `AngelScriptSDK/AngelscriptNativeTokenizerLiteralsTests.cpp`、`AngelscriptNativeTokenizerOperatorsTests.cpp`、`AngelscriptNativeTokenizerWhitespaceTests.cpp` | 词法层 literal、operator、comment/whitespace、BOM、EOF 与最长匹配边界；新增 40 项 |
 | `Angelscript.TestModule.AngelScriptSDK.Parser.*` | `AngelScriptSDK/AngelscriptNativeParserDeclarationsTests.cpp`、`AngelscriptNativeParserExpressionsTests.cpp`、`AngelscriptNativeParserErrorsTests.cpp` | 声明、表达式和错误恢复的当前 fork 行为锁定；新增 35 项 |
 | `Angelscript.TestModule.AngelScriptSDK.ScriptNode.*` | `AngelScriptSDK/AngelscriptNativeScriptNodeShapeTests.cpp`、`AngelscriptNativeScriptNodeSourceRangeTests.cpp`、`AngelscriptNativeScriptNodeCopyTests.cpp` | AST 节点形状、source range、复制/遍历与深度边界；新增 25 项 |
-| `Angelscript.TestModule.AngelScriptSDK.Bytecode.*` | `AngelScriptSDK/AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelscriptNativeBytecodeOptimizeTests.cpp` | 字节码 opcode、跳转回填、输出 buffer、优化与指令尺寸表边界；新增 23 项 |
+| `Angelscript.TestModule.AngelScriptSDK.Bytecode.*` | `AngelScriptSDK/AngelscriptBytecodeTests.cpp`、`AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelscriptNativeBytecodeOptimizeTests.cpp` | 字节码构造/序列化、编译函数 bytecode、opcode、跳转回填、输出 buffer、优化与指令尺寸表边界；当前前缀 36 项 |
 | `Angelscript.TestModule.AngelScriptSDK.Reference.*` | `AngelScriptSDK/AngelscriptNativeReference*Tests.cpp` | 从 AS 2.38 reference 测试中吸收的 tokenizer、parser/compiler reject、context、script-class、save/load 当前 fork 行为锁定；新增 28 项 |
 | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Smoke` | `AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp` | ASSDK 适配层最小引擎创建、消息回调与脚本执行 |
 | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Engine.*` | `AngelScriptSDK/AngelscriptASSDKEngineTests.cpp` | ASSDK 引擎生命周期、回调复用与基础引擎语义 |
@@ -657,7 +657,7 @@
 
 > 源文件：`AngelScriptSDK/AngelscriptBytecodeTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecodeOptimizeTests.cpp`
 >
-> 当前 native Bytecode 扩展覆盖 23 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.Bytecode`。
+> 当前 native Bytecode 前缀覆盖 36 项，验证前缀：`Angelscript.TestModule.AngelScriptSDK.Bytecode`。
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -665,6 +665,15 @@
 | AngelScriptSDK.Bytecode.Append | 字节码追加 |
 | AngelScriptSDK.Bytecode.JumpResolution | 跳转解析/回填 |
 | AngelScriptSDK.Bytecode.Output | 字节码输出 |
+| AngelScriptSDK.Bytecode.EmptyBytecodeState | 空字节码 size、first/last instruction 和输出 buffer 状态 |
+| AngelScriptSDK.Bytecode.InsertFirstInstructionPrependsSequence | 头插指令保持序列顺序和 payload |
+| AngelScriptSDK.Bytecode.RemoveLastInstructionUpdatesTail | 删除尾指令后 tail 与 payload 更新 |
+| AngelScriptSDK.Bytecode.ClearAllResetsInstructionList | `ClearAll()` 清空后 bytecode 可继续复用 |
+| AngelScriptSDK.Bytecode.LineInstructionSerializesDebugMarker | `LINE` debug marker 序列化并保留后续语义指令 |
+| AngelScriptSDK.Bytecode.CompiledFunctionExposesExecutableBytecode | 编译函数暴露可执行 bytecode 并返回预期值 |
+| AngelScriptSDK.Bytecode.CompiledControlFlowProducesBranchOpcode | if 分支函数编译为条件跳转并保持执行结果 |
+| AngelScriptSDK.Bytecode.CompiledLoopProducesBackwardJump | for 循环函数编译出跳转 bytecode 并保持执行结果 |
+| AngelScriptSDK.Bytecode.CompiledArithmeticBytecodeDiffersFromConstantReturn | 算术函数与常量返回函数的 bytecode buffer 不同且结果一致 |
 | AngelScriptSDK.Bytecode.Opcodes.* | push/load/call/branch/line/suspend/ret/math/compare 指令、指令尺寸表、opcode 类型分布 |
 | AngelScriptSDK.Bytecode.Jumps.* | 前向/后向跳转、多 label、未解析 label、追加序列后的跳转回填 |
 | AngelScriptSDK.Bytecode.Optimize.* | 优化后大小、首尾语义、输出 buffer 大小和 round-trip、追加连续性、空字节码、末尾指令查询 |
