@@ -13,7 +13,7 @@
 > · `AngelscriptEditor/Dump/AngelscriptEditorStateDump.cpp` (~131 行，挂入 `OnDumpExtensions`)
 > · `AngelscriptRuntime/Dump/AngelscriptStateDump.{h,cpp}` (~1247 行，27 张 CSV 表的统一入口)
 > · `AngelscriptRuntime/Dump/AngelscriptCSVWriter.h` (~99 行，受限的 UTF-8 CSV 输出器)
-> · `AngelscriptTest/Dump/AngelscriptDumpCommand.cpp` (~64 行，`as.DumpEngineState` 控制台命令)
+> · `AngelscriptRuntime/Dump/AngelscriptDumpCommand.cpp` (~64 行，`as.DumpEngineState` 控制台命令)
 > · `AngelscriptTest/Shared/*` (~50 个 .h/.cpp，按用途归并为 7 大类 Helper)
 > · `AngelscriptTest/Template/Template_*.cpp` (7 份基线测试样板)
 > **关联文档**:
@@ -543,13 +543,13 @@ AddExtensionTableResult(TEXT("EditorReloadState.csv"));
 AddExtensionTableResult(TEXT("EditorMenuExtensions.csv"));
 ```
 
-### 3.4 Test 通过 `as.DumpEngineState` 控制台命令消费 Dump
+### 3.4 Runtime 提供 `as.DumpEngineState` 控制台命令，Test 做回归验证
 
-测试侧的"消费入口"是一个 64 行的小文件——它把 dump 包装成可被自动化测试 / 控制台 / CI 调用的命令：
+Runtime 侧的正式入口是一个 64 行的小文件——它把 dump 包装成可被自动化测试 / 控制台 / CI 调用的命令：
 
 ```cpp
 // ============================================================================
-// 文件: AngelscriptTest/Dump/AngelscriptDumpCommand.cpp
+// 文件: AngelscriptRuntime/Dump/AngelscriptDumpCommand.cpp
 // 角色: as.DumpEngineState [OutputDir] 控制台命令
 // ============================================================================
 void ExecuteDumpEngineState(const TArray<FString>& Args)
@@ -577,7 +577,7 @@ FAutoConsoleCommand GAngelscriptDumpEngineStateCommand(
     FConsoleCommandWithArgsDelegate::CreateStatic(&ExecuteDumpEngineState));
 ```
 
-此外，`AngelscriptTest/Dump/AngelscriptDumpTests.cpp` 内的 `FAngelscriptStateDumpEndToEndTest` 等测试**完整列出了期望出现的 27 张表**——这是 Dump 输出契约的"机器可执行规范"，任何表名修改 / 新增 / 删除都必须同步更新这份测试。
+此外，`AngelscriptTest/Dump/AngelscriptDumpTests.cpp` 内的 `FAngelscriptStateDumpEndToEndTest` 等测试**完整列出了期望出现的 27 张表**，并验证 `as.DumpEngineState` 已注册为 console command——这是 Dump 输出契约的"机器可执行规范"，任何表名修改 / 新增 / 删除都必须同步更新这份测试。
 
 ---
 
@@ -674,7 +674,7 @@ TestModule public        ✗ 禁              ——              ✗ 禁
 | ④ ContentBrowser DataSource | Editor | UE 内容浏览器枚举 | `FContentBrowserItemData` 流 | 不修改脚本文件 |
 | ⑤ CodeGen | Editor | 编辑器手动命令 | 落盘 IDE 桩文件 | 仅读公开反射 API |
 | Dump OnDumpExtensions | Runtime 提供 / Editor 注册 | `DumpAll` 末尾广播 | 写 `EditorReloadState.csv` 等 | 用 `FCSVWriter`，不拼字符串 |
-| `as.DumpEngineState` | Test | 控制台 / 自动化测试 | 调 `DumpAll()` 落盘 | 不绕过 DumpAll 直接调 private |
+| `as.DumpEngineState` | Runtime | 控制台 / 自动化测试 | 调 `DumpAll()` 落盘 | 不绕过 DumpAll 直接调 private |
 | Test Shared/ | Test | 各测试 .cpp `#include` | C++ 编译期复用 | 不依赖 Editor 私有头 |
 | Test Template/ | Test | 新增主题测试时拷贝改名 | 7 份基线 .cpp | 改 Template 等同改基线 |
 
@@ -704,5 +704,5 @@ TestModule public        ✗ 禁              ——              ✗ 禁
 - **三方位置**：Editor 仅在编辑器进程；Test 跨编辑器与 headless；Dump 在 Runtime 内、被 Editor 和 Test 同时消费。
 - **Editor 5 个扩展点**各自有专属目录与单一切入点：HotReload 双链（DirectoryWatcher + ClassReloadHelper）、BlueprintImpact 双前端（Scanner + Commandlet 共用核心）、SourceNavigation（`ISourceCodeNavigationHandler`）、ContentBrowser（`UContentBrowserDataSource`）、CodeGen（编辑器命令触发）。
 - **Test Shared/** 按 7 大类组织 60+ 文件；最关键的契约是 `FAngelscriptTestEngine` 的"static-method-only struct + 全部走公开 API"，从代码层面禁止 Test 私自访问引擎内部。
-- **Dump 子系统**对外只有 `DumpAll()` + `OnDumpExtensions` 两个公开符号；27 张 CSV 表（24 核心 + 2 扩展 + 1 Summary）通过统一入口写出，Editor 用扩展委托额外贡献 2 张表，Test 用 `as.DumpEngineState` 控制台命令消费。
+- **Dump 子系统**对外提供 `DumpAll()` + `OnDumpExtensions` + `as.DumpEngineState` 控制台命令；27 张 CSV 表（24 核心 + 2 扩展 + 1 Summary）通过统一入口写出，Editor 用扩展委托额外贡献 2 张表，Test 负责命令注册和输出契约回归。
 - **跨界禁忌一句话**：所有 Editor / Test / Dump 想读 Runtime 的某个状态，正确解法都是"在 Runtime 加一个公开通道"，而不是在自己这一侧打补丁；这条原则在 `friend` / `private` / `EngineInternalAccess` / `*ForTesting` 四个层面有相应的"已有最佳实践"模板可直接复制。

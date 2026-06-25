@@ -372,7 +372,7 @@ Angelscript.TestModule.Learning.Runtime.*
 | `Angelscript.Editor.*` | `AngelscriptEditor/Tests/` 编辑器模块自带的 49 个 spec | 编辑器专有行为（HotReload / SourceNav / BlueprintImpact） |
 | `Angelscript.Template.*` | `AngelscriptTest/Template/` 教学模板 | 演示 case，不算入主回归量 |
 | `Angelscript.TestModule.AngelScriptSDK.*` | `AngelscriptTest/AngelScriptSDK/` | Native AS / ASSDK 适配层（含 `.ASSDK.` 二级） |
-| `Angelscript.Dump.*` | `AngelscriptTest/Dump/AngelscriptDumpCommand.cpp` | 控制台命令回归 |
+| `Angelscript.TestModule.Dump.*` | `AngelscriptTest/Dump/AngelscriptDumpTests.cpp` | Runtime dump 控制台命令与 CSV 输出回归 |
 
 历史上还存在一批"短前缀"（`Angelscript.Compile.*` / `Angelscript.Binds.*` / `Angelscript.Reload.*` / `Angelscript.Startup.*` / `Angelscript.RuntimeCall.*` 等），实测仍在 grep 中出现 ~595 个独立前缀字符串。它们大多落在 `Core/` / `Compiler/` / `Performance/` / `ClassGenerator/`，是早期没有强制 `TestModule.` 段时遗留下来的。`TestConventions.md §3` 已经把"新写测试统一带 `TestModule.`"列为规范，但兼容保留项不强制重命名。
 
@@ -589,19 +589,19 @@ void FAngelscriptTestModule::StartupModule()
 
 ### 6.3 与 Dump 的关系
 
-Dump 子系统的入口在 Runtime 模块（`FAngelscriptStateDump::DumpAll`）。`AngelscriptTest/Dump/AngelscriptDumpCommand.cpp` 注册一条 `as.DumpEngineState` 控制台命令，跑一次 `DumpAll` 然后断言生成的 CSV 文件存在。本文不展开 27 张表的字段——去 `RT_StateDump.md`。这里只点出**它在分层里的位置**：
+Dump 子系统的入口在 Runtime 模块（`FAngelscriptStateDump::DumpAll`），`as.DumpEngineState` 控制台命令也由 Runtime 注册。`AngelscriptTest/Dump/AngelscriptDumpTests.cpp` 负责验证命令已注册，并跑一次 `DumpAll` 断言生成的 CSV 文件存在。本文不展开 27 张表的字段——去 `RT_StateDump.md`。这里只点出**它在分层里的位置**：
 
 ```text
 RT_StateDump 链路（在 Runtime 内部）
         │
         ▼
-FAngelscriptStateDump::DumpAll()  ←──── 被 AngelscriptTest/Dump/ 一条 spec 调用做回归
+FAngelscriptStateDump::DumpAll()  ←──── 被 AngelscriptTest/Dump/ spec 调用做回归
         │
         ▼  (OnDumpExtensions 多播)
-AngelscriptEditor/Dump/  + AngelscriptTest/Dump/  贡献额外行
+AngelscriptEditor/Dump/  贡献额外表；AngelscriptTest/Dump/  验证输出契约
 ```
 
-> Test 模块对 Dump 的"消费"是单向的：跑命令 → 断言文件 → 清理。它**不**被允许往 `OnDumpExtensions` 注册新行（注册是 Editor 模块的活）。
+> Test 模块对 Dump 的"消费"是单向的：验证命令 → 调用 dump → 断言文件 → 清理。它**不**被允许往 `OnDumpExtensions` 注册新行（注册是 Editor 模块的活）。
 
 ---
 

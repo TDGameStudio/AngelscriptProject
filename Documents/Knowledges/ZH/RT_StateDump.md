@@ -9,7 +9,7 @@
 > · `AngelscriptRuntime/Core/AngelscriptPerformanceStats.h`（`AS_PERF_SCOPE_DUMP_ALL` 宏）
 > · `AngelscriptEditor/Dump/AngelscriptEditorStateDump.cpp` (~131 行，挂入 `OnDumpExtensions`)
 > · `AngelscriptEditor/Core/AngelscriptEditorModule.cpp`（StartupModule / ShutdownModule 调用 Register/Unregister）
-> · `AngelscriptTest/Dump/AngelscriptDumpCommand.cpp` (~64 行，`as.DumpEngineState` 控制台命令)
+> · `AngelscriptRuntime/Dump/AngelscriptDumpCommand.cpp` (~64 行，`as.DumpEngineState` 控制台命令)
 > · `AngelscriptTest/Dump/AngelscriptDumpTests.cpp` (~282 行，端到端 + Summary 校验)
 > · `AngelscriptEditor/Tests/AngelscriptEditorStateDumpTests.cpp` (~201 行，扩展点注册/反注册回归)
 > **关联文档**:
@@ -677,15 +677,15 @@ AddExtensionTableResult(TEXT("EditorMenuExtensions.csv"));
 
 ## 六、`as.DumpEngineState` 控制台命令
 
-Test 模块用一个 64 行小文件把 `DumpAll` 包装成可被自动化测试 / 控制台 / CI 调用的命令：
+Runtime 模块用一个 64 行小文件把 `DumpAll` 包装成可被自动化测试 / 控制台 / CI 调用的命令：
 
 ```cpp
 // ============================================================================
-// 文件: Plugins/Angelscript/Source/AngelscriptTest/Dump/AngelscriptDumpCommand.cpp
+// 文件: Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptDumpCommand.cpp
 // 函数: ExecuteDumpEngineState + GAngelscriptDumpEngineStateCommand
 // 角色: as.DumpEngineState [OutputDir] 的派发与参数清洗
 // ============================================================================
-namespace AngelscriptTest_Dump_AngelscriptDumpCommand_Private
+namespace
 {
     FString SanitizeOutputDirArg(FString OutputDir)
     {
@@ -1142,6 +1142,6 @@ for table in sorted(a.keys() | b.keys()):
 - **调度顺序是依赖图的拓扑序**：先 EngineOverview 提供基线 → Phase B 递进遍历模块/类/属性/函数 → Phase C/D 子系统快照 → `OnDumpExtensions.Broadcast` 让 Editor 在同一目录写 2 张额外表 → `AddExtensionTableResult` 回填行数 → `DumpSummary` 写最后一张总表。
 - **半成功状态的 5 种 Status 是契约**：Success / NotAvailable / PartialExport / Skipped / Error；每一种都对应一类已知的"读不到 / 没编译 / 部分导出 / 写盘失败"语义，测试侧字符串比对。
 - **`OnDumpExtensions` 是唯一扩展点**：Editor 用 `RegisterStateDumpExtension(Handle)` 幂等注册，`UnregisterStateDumpExtension(Handle)` 反注册；Editor 用自己的 `FCSVWriter` 写到 Runtime 给的 `OutputDir`；Runtime 通过 `IFileManager::FileExists` + `LoadFileToString` 回填行数，不读 Editor 模块任何头。
-- **`as.DumpEngineState` 是 Test 模块的薄包装**：64 行，做参数清洗（trim / 引号剥离）+ 引擎初始化校验 + 调 `DumpAll`；多余参数仅 Warning，未初始化引擎直接 reject。自动化测试以 `FGuid::NewGuid()` 命名的目录避开秒级时间戳冲突。
+- **`as.DumpEngineState` 是 Runtime 模块的薄包装**：64 行，做参数清洗（trim / 引号剥离）+ 引擎初始化校验 + 调 `DumpAll`；多余参数仅 Warning，未初始化引擎直接 reject。自动化测试以 `FGuid::NewGuid()` 命名的目录避开秒级时间戳冲突。
 - **dump 不在 hot path**：`AS_PERF_SCOPE_DUMP_ALL` 让耗时进入 STATGROUP_Angelscript 但只在被人触发时才有数据；reload / JIT / Tick 链路完全感知不到 dump 子系统。
 - **设计的最高纪律是"纯外部观察者"**：四道闸门——private DumpXXX、零 friend、受限 FCSVWriter、唯一扩展委托——把"为了 dump 方便给 Runtime 加 hook"的诱惑挡在门外。任何想加 friend / `*ForTesting` 的冲动，都应回到 §10.1 决策树重新走一遍。

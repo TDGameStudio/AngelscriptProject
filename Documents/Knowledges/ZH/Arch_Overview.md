@@ -401,7 +401,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 | `ISourceCodeNavigationHandler` | `FAngelscriptSourceCodeNavigation` | Editor/SourceNavigation | UE "Go to Definition" 路由到 .as 文件:行 |
 | `IDirectoryWatcher` | `OnScriptFileChanges` 回调 | Editor/HotReload | OS 文件变更 → 待重载队列 |
 | `FCoreDelegates::OnPostEngineInit` | `OnEngineInitDone` 静态回调 | Editor/Core | ContentBrowser DataSource 注册时机 |
-| `FAutoConsoleCommand` | `as.DumpEngineState` 等 | Test/Dump | 控制台命令 |
+| `FAutoConsoleCommand` | `as.DumpEngineState` 等 | Runtime/Dump | 控制台命令 |
 | `UnrealHeaderTool` `[UhtExporter]` | `AngelscriptFunctionTableExporter.Export` | UHTTool | 构建期生成绑定函数表分片 |
 | Slate 编辑器 UI | 启动失败弹框 / 编辑器菜单扩展 | Runtime + Editor | 可视化错误处理与命令触发 |
 

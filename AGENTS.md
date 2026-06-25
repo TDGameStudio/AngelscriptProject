@@ -184,7 +184,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 - Build instructions: see `Documents/Guides/Build.md`.
 - Test instructions: see `Documents/Guides/Test.md`.
-- State dump entry point: `FAngelscriptStateDump::DumpAll()` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`, plus console command `as.DumpEngineState` in `Plugins/Angelscript/Source/AngelscriptTest/Dump/`.
+- State dump entry point: `FAngelscriptStateDump::DumpAll()` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`, plus console command `as.DumpEngineState` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`.
 - Preserve the dump architecture as a pure external observer: prefer reading existing public APIs over adding intrusive dump hooks to runtime/editor classes.
 - If documentation conflicts with the current plugin-centric goal, update the documentation first, then continue implementation.
 
