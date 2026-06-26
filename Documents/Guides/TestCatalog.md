@@ -565,6 +565,17 @@
 | HotReload.DecisionMatrix.ClassMetadataChangeSuggestsFullReload | class metadata 变化应建议 full reload |
 | HotReload.DecisionMatrix.ClassFlagChangeSuggestsFullReload | class flag 变化应建议 full reload |
 
+### Reload delegate hooks
+
+> 源文件：`HotReload/AngelscriptHotReloadDelegateTests.cpp`、`HotReload/AngelscriptHotReloadEnumDelegateTests.cpp`
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| HotReload.ReloadDelegates.BroadcastEnumCreatedOnFirstCompile | 首次编译新增 enum 时广播 `OnEnumCreated`，且不误触发 enum changed |
+| HotReload.ReloadDelegates.BroadcastEnumChangeAndFullReload | enum value 变化 full reload 时广播 enum changed / full reload / post reload，并保留旧 enum name 列表 |
+| HotReload.ReloadDelegates.BroadcastDelegateSignatureSwap | delegate 签名变化 full reload 时广播 old/new delegate function，并让 `FDelegateProperty` 指向新签名 |
+| HotReload.Delegates.BroadcastOldAndNewTypes | class / struct full reload 时广播 old/new `UClass` 与 `UScriptStruct`，post reload 时类型已可查询 |
+
 ### Blueprint 子类热重载
 
 > 源文件：`HotReload/AngelscriptHotReloadBlueprintChildTests.cpp`
