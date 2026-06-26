@@ -578,6 +578,16 @@
 | HotReload.BlueprintChild.EditSpecifierReloadKeepsBlueprintChildInstanceAlive | AS 父类属性从 `NotEditable` 改为 `EditAnywhere` 后，已有 Blueprint 子类实例仍可用 |
 | HotReload.BlueprintChild.SoftReloadKeepsBlueprintChildInstanceOnUpdatedParentBody | 已有 Blueprint 子类和 actor 实例存在时，AS 父类 body-only soft reload 不把 `UBlueprintGeneratedClass` 当作 `UASClass`，并能执行更新后的父类函数 |
 
+### Namespace 函数热重载
+
+> 源文件：`HotReload/AngelscriptHotReloadNamespaceFunctionTests.cpp`
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| HotReload.NamespaceFunction.SoftReloadUpdatesNamespaceFunctionDispatch | namespace 普通函数 body-only soft reload 后，新旧对象的 `UFUNCTION` 调用都切到新函数体 |
+| HotReload.NamespaceFunction.SoftReloadUpdatesNestedNamespaceFunctionDispatch | nested namespace 函数 body-only soft reload 后，已有对象调用使用更新后的嵌套函数体 |
+| HotReload.NamespaceFunction.SoftReloadPreservesNamespaceOverloadDispatch | namespace 重载函数 soft reload 后，单参/双参 overload 仍分派到正确的新函数体 |
+
 ### HotReload 序列场景
 
 > 源文件：`HotReload/Sequence/AngelscriptHotReloadSequenceTests.cpp`
