@@ -569,6 +569,20 @@
 | HotReload.ReloadDelegates.BroadcastDelegateSignatureSwap | delegate 签名变化 full reload 时广播 old/new delegate function，并让 `FDelegateProperty` 指向新签名 |
 | HotReload.Delegates.BroadcastOldAndNewTypes | class / struct full reload 时广播 old/new `UClass` 与 `UScriptStruct`，post reload 时类型已可查询 |
 
+### Delegate 运行态热重载
+
+> 源文件：`HotReload/AngelscriptHotReloadDelegateRuntimeTests.cpp`
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| HotReload.Delegates.Runtime.BlueprintDelegatePropertyReloadsAfterInstanceRuntime | Blueprint 子类实例运行后，delegate 属性在 soft/full reload 中保持可调用、属性 flag 与签名元数据更新正确 |
+| HotReload.Delegates.Runtime.GlobalDelegateCallerRunsAcrossReloads | 全局函数内创建和调用 delegate 时，handler body soft reload 与签名 full reload 后仍能正确分派 |
+| HotReload.Delegates.Runtime.BlueprintDelegateWorldTickContinuesAfterSoftReload | Blueprint 子类 actor 在 Tick 中通过 delegate 调用时，soft reload 后 tick 状态继续累积且 handler 切到新实现 |
+| HotReload.Delegates.Runtime.NegativeDelegateRuntimeErrorsStayExplicitAcrossReloads | 未绑定执行、缺失 handler、签名不匹配等 delegate 运行时错误在 reload 前后保持明确诊断 |
+| HotReload.Delegates.Runtime.MulticastDelegateRuntimeRunsAcrossReloads | multicast event 的 add/broadcast/unbind/clear 在 soft reload 后对已有 actor 仍执行更新后的 handler |
+| HotReload.Delegates.Runtime.DelegateArgumentAndReturnRoundTripAcrossReloads | delegate 作为返回值和参数在对象与全局函数间 round-trip，reload 后返回值语义保持正确 |
+| HotReload.Delegates.Runtime.DelegateReceiverLifecycleBoundaryAcrossReload | delegate receiver 生命周期边界在 reload 前后保持明确，不把失效接收者误当作有效调用目标 |
+
 ### Blueprint 子类热重载
 
 > 源文件：`HotReload/AngelscriptHotReloadBlueprintChildTests.cpp`
@@ -577,6 +591,18 @@
 |--------|----------|
 | HotReload.BlueprintChild.EditSpecifierReloadKeepsBlueprintChildInstanceAlive | AS 父类属性从 `NotEditable` 改为 `EditAnywhere` 后，已有 Blueprint 子类实例仍可用 |
 | HotReload.BlueprintChild.SoftReloadKeepsBlueprintChildInstanceOnUpdatedParentBody | 已有 Blueprint 子类和 actor 实例存在时，AS 父类 body-only soft reload 不把 `UBlueprintGeneratedClass` 当作 `UASClass`，并能执行更新后的父类函数 |
+| HotReload.BlueprintChild.MultipleSoftReloadsUpdateRunningBlueprintChildFunction | 同一个已 BeginPlay 的 Blueprint 子类 actor 经历多次 AS 函数体 soft reload 后，函数调用结果持续更新且运行态状态不重置 |
+| HotReload.BlueprintChild.StructuralReloadKeepsExistingAndFreshBlueprintChildDefaults | AS 父类结构性 full reload 后，已有 Blueprint 子类保留旧默认值，新建 Blueprint 子类继承最新默认值，并能通过 AS parent chain 解析到最新类 |
+
+### Level Blueprint 热重载
+
+> 源文件：`HotReload/AngelscriptHotReloadLevelBlueprintTests.cpp`
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| HotReload.LevelBlueprint.CreateEditorLevelBlueprintWithAngelscriptParent | 在编辑器中创建并打开临时关卡后，Level Blueprint 使用 AS `ALevelScriptActor` 子类作为父类并生成关卡脚本 actor |
+| HotReload.LevelBlueprint.SoftReloadKeepsOpenEditorLevelBlueprintParentAndUpdatesBody | 打开的 editor map 中 Level Blueprint 的 AS 父类 body-only soft reload 后，父类链保持且函数体更新可执行 |
+| HotReload.LevelBlueprint.FullReloadKeepsOpenEditorLevelBlueprintRecoverableAfterParentShapeChange | AS 父类结构性 full reload 后，打开的 editor map 中 Level Blueprint 可重新编译并恢复新增属性/函数行为 |
 
 ### Namespace 函数热重载
 
@@ -587,15 +613,6 @@
 | HotReload.NamespaceFunction.SoftReloadUpdatesNamespaceFunctionDispatch | namespace 普通函数 body-only soft reload 后，新旧对象的 `UFUNCTION` 调用都切到新函数体 |
 | HotReload.NamespaceFunction.SoftReloadUpdatesNestedNamespaceFunctionDispatch | nested namespace 函数 body-only soft reload 后，已有对象调用使用更新后的嵌套函数体 |
 | HotReload.NamespaceFunction.SoftReloadPreservesNamespaceOverloadDispatch | namespace 重载函数 soft reload 后，单参/双参 overload 仍分派到正确的新函数体 |
-
-### HotReload 序列场景
-
-> 源文件：`HotReload/Sequence/AngelscriptHotReloadSequenceTests.cpp`
-
-| 测试名 | 验证内容 |
-|--------|----------|
-| HotReload.Sequence.MultipleSoftReloadsUpdateRunningBlueprintChildFunction | 同一个已 BeginPlay 的 Blueprint 子类 actor 经历多次 AS 函数体 soft reload 后，函数调用结果持续更新且运行态状态不重置 |
-| HotReload.Sequence.StructuralReloadKeepsBlueprintChildRecoverable | AS 父类结构性 full reload 后，Blueprint 子类仍能通过 AS parent chain 解析到最新类，并可重新 spawn actor 验证新属性/默认值/函数行为 |
 
 ---
 
