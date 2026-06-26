@@ -4,3 +4,5 @@
 - [x] Register the regression through UE CoreRedirects.
 - [x] Resolve UE class redirects during class-generator reload.
 - [x] Verify targeted hot-reload class rename tests.
+- [x] <!-- TDD --> Add invalid class redirect hardening coverage.
+- [x] <!-- TDD --> Add two-step class rename redirect chain coverage.

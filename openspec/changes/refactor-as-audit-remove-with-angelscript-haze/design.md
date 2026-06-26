@@ -2,68 +2,79 @@
 
 ## Context
 
-`WITH_ANGELSCRIPT_HAZE` is a long-standing compile-time switch (`AngelscriptRuntime/Core/AngelscriptEngine.h:30-32`, defaults to `0`) that originally guarded the divergence between Hazelight's internal AngelScript fork and a generic Unreal-Engine path. The fork shipped from this repository has been built with the macro at `0` for the entire history available in the codebase. The macro is therefore preserving an inactive Hazelight code path at zero benefit, and adding 21 conditional-compilation sites of cognitive overhead.
+`WITH_ANGELSCRIPT_HAZE` currently defaults to `0` and is not enabled by any scanned `*.Build.cs` or `*.Target.cs` file. The macro exists only as an inactive compatibility fork for Hazelight-internal behavior.
 
-A full enumeration of those sites with classification has already been performed during planning. The five categories below map cleanly onto distinct handling rules:
+The current source scan records:
 
-- **A — Renaming dodge.** A binding in the active path uses a non-UE-standard name only because the original UE name would clash with the auto-property-accessor system on a same-named UPROPERTY field. There is exactly one such site in `Bind_AActor.cpp:155-175`. This is the reason the prerequisite — `refactor-as-remove-autoaccessor` — must merge first; once that change drops the auto-accessor synthesis, restoring the UE-original name is collision-free.
-- **B — Haze-only RPC machinery.** Code wrapped in `#if WITH_ANGELSCRIPT_HAZE` that registers Hazelight-specific specifiers (`NetFunction`, `CrumbFunction`, `DevFunction`) and flags (`HAZEFUNC_CrumbFunction`, `HazeFunctionFlags`). The fork no longer ships those specifiers, so the wrapped code is unreachable and is deleted.
-- **C — Naming-only fork.** A single site (`Bind_WorldCollision.cpp:358`) chooses between two namespace names (`System::` vs. `AsyncTrace::`) for the same global functions. Since neither is actually a UE upstream convention, the choice is preserving "fork-internal consistency". The non-Haze namespace `System::` matches every other global utility binding in the fork, so it is kept and the alternative is dropped.
-- **D — Behavioural fork.** Three sites encode different runtime behaviour between the two paths: `AS_ENSURE` macro choice (`ensureMsgf` vs. `devEnsure`), cooked-build exception dialog handling, and a `bUseAngelscriptHaze` flag that the debug server reports to IDE clients. The non-Haze defaults are kept; the Haze-side branches are deleted.
-- **E — Decoration only.** Twelve sites consist of `#if !WITH_ANGELSCRIPT_HAZE { generic UE binding } #endif` and nothing else. These wrap perfectly ordinary UE bindings that have no Haze-side equivalent. The wrappers are stripped, the bindings stay.
+- 24 macro-reference lines in `Plugins/Angelscript/Source`.
+- 20 conditional-compilation blocks.
+- 2 non-conditional debug/test references to the macro.
+- 1 macro definition block in `AngelscriptEngine.h` (2 lines).
 
-The audit work is largely mechanical, but it must be staged so that the riskiest change (Category A renames affecting both `.as` callers and inline test scripts) goes last, after the easier wrappers are gone and the build is already green at every intermediate step.
+The implementation should remove the inactive Haze fork while preserving the current non-Haze runtime behavior. The archived `refactor-as-remove-autoaccessor` change has removed the earlier blocker for restoring `AActor.GetInstigator()`-style names, but that rename still needs targeted test coverage because it changes script-visible API names.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Eliminate the `WITH_ANGELSCRIPT_HAZE` macro and every `#if WITH_ANGELSCRIPT_HAZE` / `#if !WITH_ANGELSCRIPT_HAZE` site from the repository.
-- Restore UE-original method names on Category-A bindings so the fork stops carrying gratuitous deviations from upstream UE method nomenclature.
-- Keep every behaviour that exists in the active (non-Haze) path intact and verifiable through the existing automation suite.
-- Maintain debugger wire-format compatibility for older clients (the removed `bUseAngelscriptHaze` field defaults to `false` in absent-field cases, matching the runtime behaviour with the macro at `0`).
+- Remove every `WITH_ANGELSCRIPT_HAZE` reference from active source files.
+- Remove Hazelight-only UFUNCTION specifiers and their runtime/precompiled/dump metadata path.
+- Preserve standard UE RPC behavior and tests.
+- Remove debugger protocol exposure of `bUseAngelscriptHaze`.
+- Restore UE-original actor instigator binding names after migrating active call sites.
+- Leave historical OpenSpec/archive records intact as history.
 
 **Non-Goals:**
 
-- Do not extend RPC support, add new replication specifiers, or otherwise change script-visible RPC semantics. Removing the Haze RPC path is a deletion, not a redesign.
-- Do not modify `Documents/Plans/Plan_HazelightScriptFeatureParity.md` content beyond a single header annotation; the Plans tree is deprecated.
-- Do not refactor `Bind_AActor.cpp` beyond the Category-A renames and the `#if !` wrapper removal. Other improvements (e.g. coverage of additional `AActor` UFunctions) belong to separate changes.
-- Do not delete any test except the `bUseAngelscriptHaze` mirror assertion. Other Haze-related test scaffolding, if any, is repurposed or kept as-is.
+- Do not add new RPC features or redesign replication.
+- Do not remove generic UE/UHT RPC helpers such as methods named `IsRpcNetFunction`; those describe standard UE network UFunctions, not the Hazelight-only `FUNC_NetFunction` path.
+- Do not clean up unrelated Hazelight attribution, license text, reference docs, or historical reports.
+- Do not implement this change as part of the record-only OpenSpec refresh.
 
 ## Decisions
 
-- **D1 — Sequential dependency on `refactor-as-remove-autoaccessor`.** Category A renames `GetActorInstigator` to `GetInstigator`. With the auto-property-accessor system still active, `Instigator` is a UPROPERTY auto-binding generates a synthetic `GetInstigator()` accessor; introducing a hand-bound `GetInstigator()` would either collide at registration time or shadow the auto-accessor unpredictably. Removing the auto-accessor system first guarantees the rename is a clean addition. The user has confirmed strong-dependency / serial execution as the chosen order.
+- **D1 - Use existing OpenSpec change.** `refactor-as-audit-remove-with-angelscript-haze` already exists and matches the requested scope, so the record is refreshed instead of creating a duplicate change.
 
-- **D2 — Land Category E first, A last.** Category E touches 12 files with mechanical wrapper deletion and zero behaviour change. Doing it first reduces the macro's footprint to single-digit sites and gives the build pipeline early confirmation that the macro is no longer load-bearing. Category B follows (Haze-only RPC machinery deletion, isolated to four files, cleanly verified by RPC test coverage). Category C and D are settled mid-sequence. Category A goes last because it is the only one that reaches into `.as` callers and inline AS literals.
+- **D2 - Treat `refactor-as-remove-autoaccessor` as satisfied.** The prerequisite exists under `openspec/changes/archive/2026-05-22-refactor-as-remove-autoaccessor`. Future implementation can proceed, but Category A still runs late because it changes script-visible names and requires focused migration.
 
-- **D3 — `System::` over `AsyncTrace::`.** UE itself does not put `AsyncLineTraceByChannel` etc. in any namespace; the fork's choice is purely a fork-internal organizing decision. `System::` is already where every other global utility (loading, FName, math entry points) lives in the fork, so the choice is "match the rest of the file" rather than "match upstream". One site only, low risk.
+- **D3 - Remove descriptor metadata, not only macro guards.** `bNetFunction` and `bDevFunction` are still persisted through `FAngelscriptFunctionDesc`, StaticJIT precompiled data, and state dump output. Removing only the guarded generator/preprocessor branches would leave dead schema fields behind. The implementation must remove the descriptor/precompiled/dump metadata together with the Haze-only specifier path.
 
-- **D4 — `ensureMsgf` over `devEnsure` for `AS_ENSURE`.** `devEnsure` is a Hazelight-internal stricter variant that is harder to disable in opt builds; `ensureMsgf` is the standard UE primitive and pairs better with the fork's "ship-friendly" stance. The current non-Haze default is already `ensureMsgf`; this decision just makes that permanent.
+- **D4 - Keep standard UE RPC untouched.** Any code that handles `FUNC_Net`, `FUNC_NetServer`, `FUNC_NetClient`, `FUNC_NetMulticast`, validation, reliability, or UHT-tool generic RPC detection remains in scope only for verification, not deletion.
 
-- **D5 — Remove `bUseAngelscriptHaze` from the debug protocol struct, not just its assignment.** Leaving the field with a permanent `false` value would advertise a contract the fork no longer honours. Removing the field signals to IDE-extension authors that the concept is gone. Older clients receive missing-field defaults of `false` in JSON deserialization, which matches every runtime observation prior to this change.
+- **D5 - Keep current non-Haze behavior.** Where the macro selected between behaviors, the future implementation keeps the behavior currently active with the macro at `0`: `ensureMsgf` for `AS_ENSURE`, non-Haze cooked exception behavior, `System::` async trace namespace, and no debugger Haze flag.
 
-- **D6 — Keep the parser/preprocessor handling for `Replicated` UPROPERTY specifier (Category E site `AngelscriptPreprocessor.cpp:2627`).** That site is currently `#if !WITH_ANGELSCRIPT_HAZE` because Hazelight historically handled replication on the C++ side; the fork's active path needs the AS-side processing. Removing the wrapper preserves the working processing logic. No behaviour change.
+- **D6 - Restrict zero-match gates to active surfaces.** OpenSpec records and archive notes may mention `WITH_ANGELSCRIPT_HAZE` as historical context. Final verification should require zero matches in active source/config/script/docs surfaces, while allowing the current OpenSpec record to remain readable.
+
+## Implementation Categories
+
+- **Category A - Script-visible actor rename.** `Bind_AActor.cpp` currently exposes `GetActorInstigator` and `GetActorInstigatorController`. These should become `GetInstigator` and `GetInstigatorController`, with tests migrated.
+
+- **Category B - Haze-only RPC deletion.** Remove preprocessor specifiers, function descriptor fields, StaticJIT precompiled fields, dump columns, class generator Haze flags, and BlueprintType `FUNC_NetFunction` branches.
+
+- **Category C - Namespace branch.** `Bind_WorldCollision.cpp` keeps the current non-Haze `System::` async trace namespace and removes the `AsyncTrace::` alternative branch.
+
+- **Category D - Behavioral branch.** Remove Haze-side `AS_ENSURE`, cooked exception, debug setting, and debugger test branches.
+
+- **Category E - Decorative non-Haze wrappers.** Remove normal UE binding wrappers guarded by `#if !WITH_ANGELSCRIPT_HAZE`; keep the wrapped code unchanged.
 
 ## Risks / Trade-offs
 
-- **Risk: Category A rename misses inline AS callers in `.cpp` test files** → Mitigation: the rename task does an `rg` sweep for `GetActorInstigator` and `GetActorInstigatorController` over the entire repository (including `Plugins/Angelscript/Source/AngelscriptTest`, `Script/`, and `Documents/`). The post-task verification asserts both names produce zero hits.
+- **Risk: actor rename misses inline AS call sites.** Mitigation: sweep `Plugins/Angelscript/Source`, `Script`, and active docs for `GetActorInstigator` / `GetActorInstigatorController`, then run actor tests.
 
-- **Risk: Removing `FAngelscriptDebugDatabaseSettings::bUseAngelscriptHaze` breaks IDE clients pinned to an older protocol shape** → Mitigation: confirmed forward-compatible because the protocol JSON deserializes missing fields as `false`. Documented in proposal Impact. If a client is found to fail, the fix is on the client side (delete the field consumer) — but no such consumer is known in the repository.
+- **Risk: generic RPC code is mistaken for Haze-only RPC code.** Mitigation: only remove Hazelight-only specifier/flag names (`NetFunction`, `CrumbFunction`, `DevFunction`, `FUNC_NetFunction`, `FUNC_DevFunction`, `HazeFunctionFlags`, `HAZEFUNC_CrumbFunction`) and explicitly leave standard UE RPC helpers intact.
 
-- **Risk: Category B deletion breaks compilation if a Haze-only specifier survives in some `.as` script** → Mitigation: the removal task includes an `rg` sweep for `NetFunction`, `CrumbFunction`, and `DevFunction` over `Script/` and `Plugins/Angelscript/Source/AngelscriptTest`. Any hit is flagged and resolved before the macro definition is removed.
+- **Risk: StaticJIT precompiled format changes.** Mitigation: remove the dead Haze fields in a single phase, rebuild, and run networking plus relevant StaticJIT/precompiled coverage if available.
 
-- **Trade-off: Category C consolidation (`System::` only) makes async-trace global functions accessible only in `System` namespace.** Existing `.as` scripts that imported them via `AsyncTrace::` (extremely rare; Haze-only path) lose that name. The replacement script update is part of the task.
-
-- **Trade-off: removing the macro at all means future re-introduction requires reverting this commit rather than flipping a flag.** Acceptable: the fork has no reason to revisit the Hazelight internal path; if it ever does, that requires a new design.
+- **Risk: debugger protocol clients expected `bUseAngelscriptHaze`.** Mitigation: field was always false in current builds. Removing it aligns the protocol with supported behavior; debugger database tests verify the new shape.
 
 ## Migration Plan
 
-1. **Phase 1 — Category E wrapper stripping (12 sites).** Lowest risk. After this phase the macro is referenced in 9 places.
-2. **Phase 2 — Category B Haze-only RPC machinery deletion (4 sites).** Verify with the existing `Networking` test prefix in the automation suite.
-3. **Phase 3 — Category C namespace consolidation (1 site) and Category D behavioural decisions (3 sites).** Update the `AngelscriptDebuggerDatabaseTests.cpp:115` assertion in this phase.
-4. **Phase 4 — Category A rename (1 site, multiple call-sites).** Sweep `GetActorInstigator` and `GetActorInstigatorController` across the repo and rewrite. Run Actor and Networking automation suites.
-5. **Phase 5 — Macro definition removal and final cleanup.** Delete `AngelscriptEngine.h:30-32`. Verify `rg "WITH_ANGELSCRIPT_HAZE"` returns zero hits. Add the milestone entry to `AGENTS.md` / `AGENTS_ZH.md`. Annotate `Documents/Plans/Plan_HazelightScriptFeatureParity.md` header.
+1. Strip Category E wrappers first to reduce macro footprint without changing behavior.
+2. Delete Category B Haze-only RPC syntax/metadata and verify standard networking tests.
+3. Resolve Category C/D behavior and debugger protocol cleanup.
+4. Restore Category A actor names and migrate active script/test callers.
+5. Delete the macro definition, update active docs, and validate OpenSpec plus build/test gates.
 
 ## Open Questions
 
-- None — all category assignments and handling rules are settled. The single dependency (`refactor-as-remove-autoaccessor`) is locked in by D1.
+- None for record scope. Implementation details should be rechecked against the then-current source before editing because line numbers may drift.

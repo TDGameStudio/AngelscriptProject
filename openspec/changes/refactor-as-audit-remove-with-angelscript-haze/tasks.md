@@ -1,52 +1,65 @@
-> **Sequencing**: This change is **blocked** on `refactor-as-remove-autoaccessor` being archived. Do not start tasks 1.1+ until that prerequisite is complete. Phase 4 (Category A renames) is the load-bearing reason — renaming `GetActorInstigator` back to `GetInstigator` would collide with the auto-property-accessor `GetInstigator()` generated for the `Instigator` UPROPERTY; the prerequisite removes that synthesis path so the rename becomes a clean addition.
+> Record-only status: this checklist is for a future implementation. Do not mark items complete until source/docs are actually changed and verified.
 
-## 1. Category E — strip `#if !WITH_ANGELSCRIPT_HAZE` decorative wrappers (12 sites)
+## 0. Preflight
 
-- [ ] 1.1 <!-- Non-TDD --> `Bind_AActor.cpp:342` remove the `#if !WITH_ANGELSCRIPT_HAZE` wrapper around the `GetAllActorsOfClass` global function; verify with `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source\AngelscriptRuntime\Binds\Bind_AActor.cpp`.
-- [ ] 1.2 <!-- Non-TDD --> `Bind_APlayerController.cpp` remove the wrappers at lines 11, 72, 104 (three blocks for `AController`, `APlayerController`, `APawn`); verify with `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source\AngelscriptRuntime\Binds\Bind_APlayerController.cpp`.
-- [ ] 1.3 <!-- Non-TDD --> `Bind_FCollisionShape.cpp:34` remove the wrapper around `FCollisionShape` POD value-class registration.
-- [ ] 1.4 <!-- Non-TDD --> `Bind_Subsystems.cpp:154` remove the wrapper around the `ULocalPlayerSubsystem::Get(LocalPlayer)` global function block.
-- [ ] 1.5 <!-- Non-TDD --> `Bind_UGameInstance.cpp:9` remove the wrapper around `CreateInitialPlayer` / `CreateLocalPlayer` / `AddLocalPlayer` and friends.
-- [ ] 1.6 <!-- Non-TDD --> `Bind_ULocalPlayer.cpp:6` remove the wrapper around `GetGameInstance` / `GetControllerId`.
-- [ ] 1.7 <!-- Non-TDD --> `Bind_UObject.cpp:54, 569` remove the two wrappers around `IsSupportedForNetworking` and the `LoadObject` global function.
-- [ ] 1.8 <!-- Non-TDD --> `Bind_UWorld.cpp:48` remove the wrapper around `ServerTravel` / `GetNetMode` / `GetGameState`.
-- [ ] 1.9 <!-- Non-TDD --> `AngelscriptPreprocessor.cpp:2627` remove the wrapper around `Replicated` / `ReplicationCondition` / `NotReplicated` UPROPERTY specifier processing; this is the only remaining E site outside Binds.
-- [ ] 1.10 <!-- TDD --> `Tools\RunBuild.ps1 -Label haze-cat-e -TimeoutMs 180000` and `Tools\RunTests.ps1 -Suite Functional -Label haze-cat-e`. Both must be green.
-- [ ] 1.11 <!-- Non-TDD --> Confirm progress: `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source` should now report 9 sites (down from 21).
+- [ ] 0.1 <!-- Non-TDD --> Re-run `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source` and compare with `openspec/changes/refactor-as-audit-remove-with-angelscript-haze/audit.md`.
+- [ ] 0.2 <!-- Non-TDD --> Confirm no build-layer opt-in exists: `rg -n "WITH_ANGELSCRIPT_HAZE|HAZE|Haze" Plugins\Angelscript\Source -g "*.Build.cs" -g "*.Target.cs"`.
+- [ ] 0.3 <!-- Non-TDD --> Check dirty state before editing: `git status --short` in the parent repo and `git status --short` in `Plugins\Angelscript`.
 
-## 2. Category B — delete Haze-only RPC machinery (4 sites)
+## 1. Category E - strip decorative non-Haze wrappers
 
-- [ ] 2.1 <!-- Non-TDD --> `AngelscriptClassGenerator.cpp:3501-3512` delete the entire `#if WITH_ANGELSCRIPT_HAZE` block (sets `FUNC_NetFunction`, `FUNC_DevFunction`, `HazeFunctionFlags`, `HAZEFUNC_CrumbFunction`).
-- [ ] 2.2 <!-- Non-TDD --> `AngelscriptPreprocessor.cpp:1632` delete the `else if (Spec.Name == PP_NAME_NetFunction || Spec.Name == PP_NAME_CrumbFunction)` branch and any associated `PP_NAME_DevFunction` handling. Search for `PP_NAME_NetFunction`, `PP_NAME_CrumbFunction`, `PP_NAME_DevFunction` constants and remove their declarations if no longer referenced.
-- [ ] 2.3 <!-- Non-TDD --> `Bind_BlueprintType.cpp:787, 1359, 1504` remove the three `#if WITH_ANGELSCRIPT_HAZE / else if (Function->HasAnyFunctionFlags(FUNC_NetFunction)) / #endif` blocks.
-- [ ] 2.4 <!-- Non-TDD --> Sweep `Script/**/*.as` and `Plugins/Angelscript/Source/AngelscriptTest/**/*.cpp` for `NetFunction`, `CrumbFunction`, `DevFunction` UFUNCTION specifiers; rewrite or remove any hit. Expected: zero hits in the active codebase.
-- [ ] 2.5 <!-- TDD --> `Tools\RunBuild.ps1 -Label haze-cat-b -TimeoutMs 180000` and `Tools\RunTests.ps1 -TestPrefix Angelscript.TestModule.Networking -Label haze-cat-b`. Network RPC tests must hold.
+- [ ] 1.1 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AActor.cpp`, remove the `#if !WITH_ANGELSCRIPT_HAZE` wrapper around the `GetAllActorsOfClass` global function block; keep the binding code.
+- [ ] 1.2 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_APlayerController.cpp`, remove the three `#if !WITH_ANGELSCRIPT_HAZE` wrappers around `AController`, `APlayerController`, and `APawn` binding blocks.
+- [ ] 1.3 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FCollisionShape.cpp`, remove the wrapper around `FCollisionShape` POD value-class registration.
+- [ ] 1.4 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Subsystems.cpp`, remove the wrapper around the `ULocalPlayerSubsystem::Get(LocalPlayer)` global function block.
+- [ ] 1.5 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UGameInstance.cpp`, remove the wrapper around local-player creation and management bindings.
+- [ ] 1.6 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_ULocalPlayer.cpp`, remove the wrapper around `GetGameInstance` / `GetControllerId`.
+- [ ] 1.7 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UObject.cpp`, remove both wrappers around `IsSupportedForNetworking` and `LoadObject`.
+- [ ] 1.8 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UWorld.cpp`, remove the wrapper around `ServerTravel`, `GetNetMode`, and `GetGameState`.
+- [ ] 1.9 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.cpp`, remove the wrapper around `Replicated`, `ReplicationCondition`, and `NotReplicated` UPROPERTY specifier handling.
+- [ ] 1.10 <!-- TDD --> Run `Tools\RunBuild.ps1 -Label haze-cat-e -TimeoutMs 900000`.
+- [ ] 1.11 <!-- TDD --> Run focused binding/preprocessor tests with `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings" -Label haze-cat-e-bindings -TimeoutMs 900000`.
 
-## 3. Category C and D — namespace consolidation and behavioural decisions
+## 2. Category B - delete Haze-only RPC syntax and metadata
 
-- [ ] 3.1 <!-- Non-TDD --> `Bind_WorldCollision.cpp:358` keep the `System` namespace branch and delete the `AsyncTrace` alternative branch (Category C).
-- [ ] 3.2 <!-- Non-TDD --> `ASClass.cpp:31-35` replace the `#if !WITH_ANGELSCRIPT_HAZE / #else / #endif` `AS_ENSURE` definition with a single unconditional `#define AS_ENSURE ensureMsgf` (Category D).
-- [ ] 3.3 <!-- Non-TDD --> `AngelscriptEngine.cpp:5897` delete the `#if !WITH_EDITOR && WITH_ANGELSCRIPT_HAZE` block entirely. The cooked-only Haze exception dialog logic is removed; non-Haze cooked builds already do not emit the dialog (Category D).
-- [ ] 3.4 <!-- Non-TDD --> `AngelscriptDebugServer.cpp:1911` remove the `DebugSettings.bUseAngelscriptHaze = !!WITH_ANGELSCRIPT_HAZE;` assignment (Category D). Locate the `FAngelscriptDebugDatabaseSettings` struct definition (in the same file or a paired header) and remove the `bUseAngelscriptHaze` member field.
-- [ ] 3.5 <!-- Non-TDD --> `AngelscriptTest/Debugger/AngelscriptDebuggerDatabaseTests.cpp:115` delete the `TestEqual("Debugger database protocol should mirror the haze integration setting", Settings->bUseAngelscriptHaze, !!WITH_ANGELSCRIPT_HAZE)` assertion entirely.
-- [ ] 3.6 <!-- TDD --> `Tools\RunBuild.ps1 -Label haze-cat-cd -TimeoutMs 180000` and `Tools\RunTests.ps1 -TestPrefix Angelscript.Editor.Debugger -Label haze-cat-cd`. Debugger DB protocol tests must hold.
+- [ ] 2.1 <!-- Non-TDD --> In `AngelscriptPreprocessor.cpp`, delete the `NetFunction` / `CrumbFunction` / `DevFunction` UFUNCTION branch and remove `PP_NAME_NetFunction`, `PP_NAME_CrumbFunction`, and `PP_NAME_DevFunction` if no longer referenced.
+- [ ] 2.2 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h`, remove `FAngelscriptFunctionDesc::bNetFunction`, `bDevFunction`, and related equality comparisons.
+- [ ] 2.3 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator.cpp`, delete the `#if WITH_ANGELSCRIPT_HAZE` block that sets `FUNC_NetFunction`, `FUNC_DevFunction`, `HazeFunctionFlags`, and `HAZEFUNC_CrumbFunction`; remove `FUNCMETA_CrumbFunction` if it becomes unused.
+- [ ] 2.4 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintType.cpp`, remove both `FUNC_NetFunction` BlueprintEvent binding branches.
+- [ ] 2.5 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/PrecompiledData.h` and `.cpp`, remove `bNetFunction` / `bDevFunction` storage, serialization, load, and restore logic.
+- [ ] 2.6 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.cpp`, remove the `bNetFunction` dump column/value if it only reflects the removed Haze-only descriptor field.
+- [ ] 2.7 <!-- Non-TDD --> Sweep active scripts/tests for Haze-only specifiers: `rg -n "NetFunction|CrumbFunction|DevFunction" Script Plugins\Angelscript\Source\AngelscriptTest Plugins\Angelscript\Source\AngelscriptRuntime`.
+- [ ] 2.8 <!-- TDD --> Run `Tools\RunBuild.ps1 -Label haze-cat-b -TimeoutMs 900000`.
+- [ ] 2.9 <!-- TDD --> Run `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Networking" -Label haze-cat-b-networking -TimeoutMs 900000`.
 
-## 4. Category A — restore UE-original names (1 binding site, multiple callers)
+## 3. Category C/D - keep non-Haze behavior and remove debugger flag
 
-> Phase 4 begins only after `refactor-as-remove-autoaccessor` is merged. Otherwise the renamed `GetInstigator()` collides with the auto-property-accessor `GetInstigator()` synthesized for the `Instigator` UPROPERTY field.
+- [ ] 3.1 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_WorldCollision.cpp`, keep the current `System` namespace branch and delete the `AsyncTrace` alternative branch.
+- [ ] 3.2 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/ASClass.cpp`, replace the conditional `AS_ENSURE` definition with an unconditional `#define AS_ENSURE ensureMsgf`.
+- [ ] 3.3 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp`, delete the Haze-only cooked exception dialog branch guarded by `WITH_ANGELSCRIPT_HAZE`.
+- [ ] 3.4 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/AngelscriptDebugServer.h`, remove `FAngelscriptDebugDatabaseSettings::bUseAngelscriptHaze` and its serialization.
+- [ ] 3.5 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/AngelscriptDebugServer.cpp`, remove the assignment to `DebugSettings.bUseAngelscriptHaze`.
+- [ ] 3.6 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptTest/Debugger/AngelscriptDebuggerDatabaseTests.cpp`, remove the assertion that mirrors `bUseAngelscriptHaze` against `!!WITH_ANGELSCRIPT_HAZE`.
+- [ ] 3.7 <!-- TDD --> Run `Tools\RunBuild.ps1 -Label haze-cat-cd -TimeoutMs 900000`.
+- [ ] 3.8 <!-- TDD --> Run `Tools\RunTests.ps1 -TestPrefix "Angelscript.Editor.Debugger" -Label haze-cat-cd-debugger -TimeoutMs 900000`.
 
-- [ ] 4.1 <!-- TDD --> `Bind_AActor.cpp:155-175` rename the bound method signature from `"APawn GetActorInstigator() const"` to `"APawn GetInstigator() const"`. Add a regression test asserting `actor.GetInstigator()` compiles in script and returns the actor's `Instigator` pawn.
-- [ ] 4.2 <!-- TDD --> `Bind_AActor.cpp:155-175` rename the bound method signature from `"AController GetActorInstigatorController() const"` to `"AController GetInstigatorController() const"`. Add a regression test for the same.
-- [ ] 4.3 <!-- Non-TDD --> `GetInputComponent` keeps its name (already UE-aligned); only ensure the surrounding `#if !WITH_ANGELSCRIPT_HAZE` wrapper is removed when this line is touched.
-- [ ] 4.4 <!-- Non-TDD --> Repository-wide rename sweep: `rg -n "GetActorInstigator" .` and `rg -n "GetActorInstigatorController" .` and rewrite every match in `.as` scripts, inline AS string literals (`Plugins/Angelscript/Source/AngelscriptTest/**/*.cpp`), test files, and documentation. Final state: both names return zero hits.
-- [ ] 4.5 <!-- TDD --> `Tools\RunTests.ps1 -TestPrefix Angelscript.TestModule.Actor -Label haze-cat-a` and `Tools\RunTests.ps1 -TestPrefix Angelscript.TestModule.Networking -Label haze-cat-a`. Both must be green.
+## 4. Category A - restore UE-original actor names
 
-## 5. Macro definition removal and milestone
+- [ ] 4.1 <!-- TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AActor.cpp`, rename the script binding signature from `"APawn GetActorInstigator() const"` to `"APawn GetInstigator() const"`.
+- [ ] 4.2 <!-- TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AActor.cpp`, rename the script binding signature from `"AController GetActorInstigatorController() const"` to `"AController GetInstigatorController() const"`.
+- [ ] 4.3 <!-- TDD --> In `Plugins/Angelscript/Source/AngelscriptTest/Functional/Actor/AngelscriptActorPropertyInterfaceTests.cpp`, migrate inline AS calls to `GetInstigator()` and `GetInstigatorController()` and keep behavior assertions.
+- [ ] 4.4 <!-- Non-TDD --> Sweep active source/scripts for old names: `rg -n "GetActorInstigator|GetActorInstigatorController" Plugins\Angelscript\Source Script`; expected result after migration is zero active-code hits.
+- [ ] 4.5 <!-- TDD --> Run `Tools\RunBuild.ps1 -Label haze-cat-a -TimeoutMs 900000`.
+- [ ] 4.6 <!-- TDD --> Run `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Actor" -Label haze-cat-a-actor -TimeoutMs 900000`.
+- [ ] 4.7 <!-- TDD --> Run `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Networking" -Label haze-cat-a-networking -TimeoutMs 900000`.
 
-- [ ] 5.1 <!-- Non-TDD --> `AngelscriptEngine.h:30-32` delete the `#ifndef WITH_ANGELSCRIPT_HAZE / #define WITH_ANGELSCRIPT_HAZE 0 / #endif` block.
-- [ ] 5.2 <!-- Non-TDD --> Verification gate: `rg -n "WITH_ANGELSCRIPT_HAZE" .` over the entire repository must return zero matches. If any hit remains (in `Documents/`, `Reference/`, etc.), update or remove that text.
-- [ ] 5.3 <!-- Non-TDD --> Add a one-line annotation at the top of `Documents/Plans/Plan_HazelightScriptFeatureParity.md`: "Completed via OpenSpec change `refactor-as-audit-remove-with-angelscript-haze` (date)."
-- [ ] 5.4 <!-- Non-TDD --> Update `Documents/Knowledges/ZH/Syntax_UFUNCTION.md` `WITH_ANGELSCRIPT_HAZE` references to read "removed in `refactor-as-audit-remove-with-angelscript-haze`".
-- [ ] 5.5 <!-- Non-TDD --> Append a "Recently Completed Milestones" entry to `AGENTS.md` and `AGENTS_ZH.md`.
-- [ ] 5.6 <!-- TDD --> Final regression: `Tools\RunBuild.ps1 -Label haze-final -TimeoutMs 180000` and `Tools\RunTests.ps1 -Suite Functional -Label haze-final`. The catalogued 275/275 baseline must hold.
-- [ ] 5.7 <!-- Non-TDD --> `openspec validate refactor-as-audit-remove-with-angelscript-haze --strict --json` exits 0.
+## 5. Final macro removal, docs, and validation
+
+- [ ] 5.1 <!-- Non-TDD --> In `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h`, delete the `#ifndef WITH_ANGELSCRIPT_HAZE` / `#define WITH_ANGELSCRIPT_HAZE 0` / `#endif` block.
+- [ ] 5.2 <!-- Non-TDD --> Verify active source is clean: `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source` returns zero matches.
+- [ ] 5.3 <!-- Non-TDD --> Update active documentation references in `Documents/Knowledges/ZH/Syntax_UFUNCTION.md` and related guides to state that the Haze macro path was removed by this OpenSpec change.
+- [ ] 5.4 <!-- Non-TDD --> Verify active docs/config/scripts are clean, excluding OpenSpec history: `rg -n "WITH_ANGELSCRIPT_HAZE" Documents AGENTS.md AGENTS_ZH.md Script Source Config`.
+- [ ] 5.5 <!-- Non-TDD --> Add a "Recently Completed Milestones" entry to `AGENTS.md` and `AGENTS_ZH.md` when the implementation lands.
+- [ ] 5.6 <!-- TDD --> Final build: `Tools\RunBuild.ps1 -Label haze-final -TimeoutMs 900000`.
+- [ ] 5.7 <!-- TDD --> Final functional suite: `Tools\RunTests.ps1 -Suite Functional -Label haze-final-functional -TimeoutMs 900000`.
+- [ ] 5.8 <!-- Non-TDD --> Validate OpenSpec: `openspec validate refactor-as-audit-remove-with-angelscript-haze --strict --json`.
