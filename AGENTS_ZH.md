@@ -82,7 +82,6 @@ AngelscriptProject/
 │   │   ├── GlobalStateContainmentMatrix.md  # 全局状态收容分析
 │   │   ├── BindGapAuditMatrix.md            # 绑定差距审计
 │   │   ├── BlueprintTypeBindingsOptimization.md # BP 类型绑定优化
-│   │   ├── LearningTrace.md                 # 学习追踪系统
 │   │   └── UE_Search_Guide.md               # UE 知识查询
 │   ├── Rules/
 │   │   ├── GitCommitRule.md                 # 提交规范（英文）

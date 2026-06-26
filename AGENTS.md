@@ -80,7 +80,6 @@ AngelscriptProject/
 │   │   ├── GlobalStateContainmentMatrix.md  # Global state containment
 │   │   ├── BindGapAuditMatrix.md            # Binding gap audit
 │   │   ├── BlueprintTypeBindingsOptimization.md # BP type binding optimization
-│   │   ├── LearningTrace.md                 # Learning trace system
 │   │   └── UE_Search_Guide.md               # UE knowledge lookup
 │   ├── Rules/
 │   │   ├── GitCommitRule.md                 # Commit conventions (EN)
