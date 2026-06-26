@@ -5,7 +5,7 @@
 
 
 // For example, we can make a new Actor class
-class AExampleActorType_Demo : AActor
+class AExampleActorType : AActor
 {
 	/* Any class variables declared as UPROPERTY() will be
 	 * accessible to be set in levels on the actor. */

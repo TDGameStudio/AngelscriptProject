@@ -200,14 +200,14 @@ LogAngelscript: InitialCompile finished.
 
 ### 4.1 标准 Actor 生命周期回调三件套
 
-打开 `Script/Examples/Core/Example_Actor.as` 看的是最简版：
+打开 `Script/Game/Example_Actor.as` 看的是最简版：
 
 ```angelscript
 // ========================================================================
-// 文件: Script/Examples/Core/Example_Actor.as（节选）
+// 文件: Script/Game/Example_Actor.as（节选）
 // 角色: 标准 Actor 三件套示例
 // ========================================================================
-class AExampleActorType_Demo : AActor
+class AExampleActorType : AActor
 {
     UPROPERTY()
     int ExampleValue = 15;

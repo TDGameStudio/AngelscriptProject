@@ -62,7 +62,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ```
 AngelscriptProject/
 ├── Script/                            // AS 脚本根目录（引擎自动扫描）
-│   ├── Example_Actor.as               // 根目录快速示例
+│   ├── Game/Example_Actor.as          // Actor 快速示例
 │   ├── Examples/                      // 分类示例集合
 │   │   ├── Core/                      //   基础语法与 UE 模式（20 个）
 │   │   ├── EnhancedInput/             //   UE5 增强输入（3 个）

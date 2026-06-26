@@ -1,18 +1,17 @@
 # AngelScript 示例脚本
 
-本目录包含 AngelScript 插件的示例脚本集合，按主题分为三个类别。
+本目录包含 AngelScript 插件的示例脚本集合，按主题分为三个类别。可被 cooked 内容直接引用的项目脚本放在 `Script/Game/`。
 
 **使用方式**：将需要的 `.as` 文件复制到你的项目 `Script/` 目录下即可使用。
 
 ---
 
-## Core — 核心语言与 UE 基础（20 个）
+## Core — 核心语言与 UE 基础（19 个）
 
 基础 AngelScript 语法和 Unreal Engine 常用 gameplay 模式：
 
 | 示例 | 展示内容 |
 |------|---------|
-| `Example_Actor.as` | Actor 类定义、UPROPERTY、UFUNCTION、BeginPlay 重写、BlueprintEvent |
 | `Example_Array.as` | TArray 容器操作：Add、Remove、Contains、FindIndex、range-for |
 | `Example_Map.as` | TMap 容器操作：Add、Find、FindOrAdd、range-for、引用修改 |
 | `Example_Struct.as` | 自定义 Struct 定义、UPROPERTY 反射、C++ Struct 复用 |
@@ -57,6 +56,10 @@ UE5 Enhanced Input System 集成示例：
 | `Example_ConsoleWorkflow.as` | 命名空间全局变量、跨模块状态共享 |
 
 > **注意**：Extended 示例中的部分能力（如 WorldSubsystem、完整 Network Push Model）仍在完善中，示例仅展示当前已稳定的声明模式。
+
+## Game — 可打包项目脚本
+
+`Script/Game/Example_Actor.as` 提供 Actor 类定义、UPROPERTY、UFUNCTION、BeginPlay 重写和 BlueprintEvent 示例。它不放在 `Script/Examples/` 下，因为 cooked runtime 默认跳过示例目录，而测试蓝图 `BP_AExampleActorType` 需要在打包后解析它的脚本父类。
 
 ---
 
