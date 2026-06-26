@@ -551,6 +551,8 @@ if (Inv.Call()) {
 | `Template_GameLifetime.cpp` | 完整 Actor 生命周期：Construction → BeginPlay → Tick → EndPlay → Destroyed | `Angelscript.Template.GameLifetime.*` | 验证生命周期事件链 / 顺序、Destroy 后属性读取 |
 | `Template_Blueprint.cpp` | 以 AS 类为父的瞬态 Blueprint 子类 | `Angelscript.Template.Blueprint.*` | Blueprint 继承 / 参数链 / 编译验证 |
 | `Template_BlueprintWorldTick.cpp` | Blueprint actor child 在 world tick 下的回调链 | `Angelscript.Template.Blueprint.*` | Blueprint 子类的 BeginPlay / Tick 集成 |
+| `Template_PIE.cpp` | CQTest + AS GameMode / AS LevelScriptActor 父类的真实 Editor PIE 启停 | `Angelscript.Template.PIE.*` | 需要覆盖 `FStartPIEForAutomationCommand`、PIE world context、Level Blueprint 父类和显式 EndPIE 清理路径的测试 |
+| `Template_MultiplayerPIE.cpp` | CQTest + AS GameMode / AS LevelScriptActor 父类的多人 Editor PIE 启停 | `Angelscript.Template.MultiplayerPIE.*` | 需要覆盖 2/3/4 player listen server PIE、client PIE world、NetDriver、AS GameMode、Level Blueprint 父类和显式 EndPIE 清理路径的测试 |
 
 约定：
 
