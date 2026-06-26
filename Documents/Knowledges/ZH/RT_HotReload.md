@@ -1209,7 +1209,7 @@ Tick 入口判定:
 6. **BP 子类出现红色编译错误**：通常是 `ReconstructNode` 在 `PerformReinstance` 步骤 5 中没覆盖到的 K2Node 子类。临时手动右键节点 → `Refresh` 即可，长期解决要在该 K2Node 子类里实现 `HasExternalDependencies`。
 7. **Volume 改动后场景空白**：MAP REBUILD ALLVISIBLE 在 5.4.x 上有 reset CurrentLevel 的 bug，本插件已经做了 workaround；如果仍然空白，检查 `World->GetLevels().Contains(CurrentLevel)` 失败的情况——多 Sublevel 工程偶发。
 8. **断点失效**：`DebugServer->ReapplyBreakpoints` 紧跟在编译成功之后；如果 module 因失败没 swap-in 就不会调用，断点就指向已 discard 的旧 module。重启 Debug 客户端通常能解决。
-9. **测试中模拟 reload**：用 `CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ...)`，不要走 DirectoryWatcher——`AngelscriptHotReloadAnalysisTests.cpp` 与 `AngelscriptHotReloadPerformanceTests.cpp` 是范本。
+9. **测试中模拟 reload**：用 `CompileModuleWithResult(&Engine, ECompileType::SoftReloadOnly, ...)`，不要走 DirectoryWatcher——`AngelscriptHotReloadChangeClassificationTests.cpp` 与 `AngelscriptHotReloadPerformanceTests.cpp` 是范本。
 10. **大批文件改名后 reload 异常缓慢**：DirectoryWatcher 把改名拆成 (Removed + Added) 两个事件，200ms 重命名窗口能合并相邻的；但跨窗口的"删 1000 个 + 加 1000 个"会触发整批 FullReload。先 Stop Editor、批量改名后再启动是更快的方式。
 
 ---

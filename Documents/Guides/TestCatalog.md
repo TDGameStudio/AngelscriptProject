@@ -531,39 +531,32 @@
 | HotReload.FullReload.Basic | 全量重载基本路径 |
 | HotReload.FullReload.EnumBasic | 枚举变更触发的全量重载场景 |
 
-### 重载分析
+### Hot Reload 变更分类
 
-> 源文件：`HotReload/AngelscriptHotReloadAnalysisTests.cpp`
-
-| 测试名 | 验证内容 |
-|--------|----------|
-| HotReload.AnalyzeReload.NoChange | 源码未变时分析为 `SoftReload`，不要求全量 |
-| HotReload.AnalyzeReload.PropertyCountChange | 属性数量变化时重载需求分析正确 |
-| HotReload.AnalyzeReload.SuperClassChange | 父类变化被分析识别 |
-| HotReload.AnalyzeReload.SoftReloadRequirement | 需软重载的情形被正确标记 |
-| HotReload.AnalyzeReload.ClassAdded | 新增类对分析结果的影响 |
-| HotReload.AnalyzeReload.ClassRemoved | 删除类对分析结果的影响 |
-| HotReload.AnalyzeReload.FunctionSignatureChanged | 函数签名变化对重载分析的影响 |
-
-### 重载决策矩阵
-
-> 源文件：`HotReload/AngelscriptHotReloadDecisionMatrixTests.cpp`
+> 源文件：`HotReload/AngelscriptHotReloadChangeClassificationTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
-| HotReload.DecisionMatrix.FunctionDefaultArgumentChangeSuggestsFullReload | `UFUNCTION` 默认参数变化应建议 full reload |
-| HotReload.DecisionMatrix.FunctionMetadataChangeSuggestsFullReload | `UFUNCTION` metadata 变化应建议 full reload |
-| HotReload.DecisionMatrix.FunctionBlueprintSpecifierChangeRequiresFullReload | Blueprint 相关函数定义变化应要求 full reload |
-| HotReload.DecisionMatrix.FunctionAddedSuggestsFullReload | 新增普通 `UFUNCTION` 应建议 full reload |
-| HotReload.DecisionMatrix.FunctionRemovedRequiresFullReload | 删除 `UFUNCTION` 应要求 full reload |
-| HotReload.DecisionMatrix.FunctionArgumentNameChangeSuggestsFullReload | 参数名变化应建议 full reload |
-| HotReload.DecisionMatrix.BlueprintEventAddedRequiresFullReload | 新增 `BlueprintEvent` 应要求 full reload |
-| HotReload.DecisionMatrix.DelegateAddedSuggestsFullReload | 新增 delegate 类型应建议 full reload |
-| HotReload.DecisionMatrix.DelegateKindChangeRequiresFullReload | delegate/event kind 变化应要求 full reload |
-| HotReload.DecisionMatrix.DefaultStatementChangeSuggestsFullReload | `default` 语句代码变化应建议 full reload |
-| HotReload.DecisionMatrix.EnumMetadataChangeSuggestsFullReload | enum value metadata 变化应建议 full reload |
-| HotReload.DecisionMatrix.ClassMetadataChangeSuggestsFullReload | class metadata 变化应建议 full reload |
-| HotReload.DecisionMatrix.ClassFlagChangeSuggestsFullReload | class flag 变化应建议 full reload |
+| HotReload.ChangeClassification.NoChange | 源码未变时分类为 `SoftReload`，不要求全量 |
+| HotReload.ChangeClassification.PropertyCountChange | 属性数量变化时重载分类正确 |
+| HotReload.ChangeClassification.SuperClassChange | 父类变化被分类识别 |
+| HotReload.ChangeClassification.SoftReloadRequirement | 需软重载的情形被正确标记 |
+| HotReload.ChangeClassification.ClassAdded | 新增类对分类结果的影响 |
+| HotReload.ChangeClassification.ClassRemoved | 删除类对分类结果的影响 |
+| HotReload.ChangeClassification.FunctionSignatureChanged | 函数签名变化对重载分类的影响 |
+| HotReload.ChangeClassification.FunctionDefaultArgumentChangeSuggestsFullReload | `UFUNCTION` 默认参数变化应建议 full reload |
+| HotReload.ChangeClassification.FunctionMetadataChangeSuggestsFullReload | `UFUNCTION` metadata 变化应建议 full reload |
+| HotReload.ChangeClassification.FunctionBlueprintSpecifierChangeRequiresFullReload | Blueprint 相关函数定义变化应要求 full reload |
+| HotReload.ChangeClassification.FunctionAddedSuggestsFullReload | 新增普通 `UFUNCTION` 应建议 full reload |
+| HotReload.ChangeClassification.FunctionRemovedRequiresFullReload | 删除 `UFUNCTION` 应要求 full reload |
+| HotReload.ChangeClassification.FunctionArgumentNameChangeSuggestsFullReload | 参数名变化应建议 full reload |
+| HotReload.ChangeClassification.BlueprintEventAddedRequiresFullReload | 新增 `BlueprintEvent` 应要求 full reload |
+| HotReload.ChangeClassification.DelegateAddedSuggestsFullReload | 新增 delegate 类型应建议 full reload |
+| HotReload.ChangeClassification.DelegateKindChangeRequiresFullReload | delegate/event kind 变化应要求 full reload |
+| HotReload.ChangeClassification.DefaultStatementChangeSuggestsFullReload | `default` 语句代码变化应建议 full reload |
+| HotReload.ChangeClassification.EnumMetadataChangeSuggestsFullReload | enum value metadata 变化应建议 full reload |
+| HotReload.ChangeClassification.ClassMetadataChangeSuggestsFullReload | class metadata 变化应建议 full reload |
+| HotReload.ChangeClassification.ClassFlagChangeSuggestsFullReload | class flag 变化应建议 full reload |
 
 ### Reload delegate hooks
 

@@ -5,7 +5,7 @@
 
 ## 2. Tests
 
-- [x] 2.1 Add a HotReload decision matrix test file
+- [x] 2.1 Add HotReload change classification coverage
 - [x] 2.2 Add a Blueprint-child soft reload regression
 - [x] 2.3 Preserve the existing EditAnywhere Blueprint-child regression
 - [x] 2.4 Add a dedicated HotReload sequence test folder
@@ -14,10 +14,10 @@
 
 ## 3. Verification
 
-- [x] 3.1 Run the focused decision matrix prefix
-  - `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload.DecisionMatrix" -Label hotreload-decision-matrix -TimeoutMs 600000`
-  - Report: `Saved\Tests\hotreload-decision-matrix\20260625_101015_389_c0520c25\Report\index.json`
-  - Result: `13` succeeded, `0` warnings, `0` failed, `0` not run.
+- [x] 3.1 Run the focused change classification prefix
+  - `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload.ChangeClassification" -Label hotreload-change-classification-merge-final -TimeoutMs 600000`
+  - Report: `Saved\Tests\hotreload-change-classification-merge-final\20260626_162739_359_a96a2cd9\Report\index.json`
+  - Result: `22` succeeded, `0` failed, `0` skipped.
 - [x] 3.2 Run the focused Blueprint-child prefix
   - `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload.BlueprintChild" -Label hotreload-blueprint-child -TimeoutMs 600000`
   - Report: `Saved\Tests\hotreload-blueprint-child\20260625_101103_895_ada41170\Report\index.json`
