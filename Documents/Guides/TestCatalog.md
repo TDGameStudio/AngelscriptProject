@@ -1249,6 +1249,7 @@
 | Template.Blueprint.ActorChildWorldTick | 蓝图 Actor 子类在世界 Tick 下行为模板 |
 | Template.WorldTick.ScriptActorLifecycle | 世界 Tick 驱动的脚本 Actor 生命周期模板 |
 | Template.PIE.EmptyMap_StartPIE_EndPIE_WithAngelscriptGameModeAndLevelBlueprint | 瞬态空地图启动真实 Editor PIE，验证 AS GameMode、AS 父类 Level Blueprint / LevelScriptActor，显式关闭 PIE 并等待清理 |
+| Template.PIE.EmptyMap_StartPIE_EndPIE_Twice_WithAngelscriptGameModeAndLevelBlueprint | 同一瞬态空地图连续启动并关闭两次 Editor PIE，验证第二次仍使用 AS GameMode 与 AS 父类 LevelScriptActor |
 | Template.MultiplayerPIE.EmptyMap_TwoPlayers_StartPIE_EndPIE_WithAngelscriptGameModeAndLevelBlueprint | 瞬态空地图启动 2 player listen server PIE，验证 NetDriver 拓扑、AS GameMode、AS 父类 Level Blueprint / LevelScriptActor，显式关闭 PIE |
 | Template.MultiplayerPIE.EmptyMap_ThreePlayers_StartPIE_EndPIE_WithAngelscriptGameModeAndLevelBlueprint | 瞬态空地图启动 3 player listen server PIE，验证 1 个 listen server + 2 个 client world、NetDriver 拓扑、AS GameMode、AS 父类 Level Blueprint / LevelScriptActor，显式关闭 PIE |
 | Template.MultiplayerPIE.EmptyMap_FourPlayers_StartPIE_EndPIE_WithAngelscriptGameModeAndLevelBlueprint | 瞬态空地图启动 4 player listen server PIE，验证 1 个 listen server + 3 个 client world、NetDriver 拓扑、AS GameMode、AS 父类 Level Blueprint / LevelScriptActor，显式关闭 PIE |
