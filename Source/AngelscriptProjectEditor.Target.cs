@@ -11,6 +11,7 @@ public class AngelscriptProjectEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		ExtraModuleNames.Add("AngelscriptProject");
+		ExtraModuleNames.Add("AngelscriptProjectTest");
 
 		// NOTE (BindFreeCompleteness Phase 2): we originally planned to enable
 		//   GlobalDefinitions.Add("MALLOC_LEAKDETECTION=1");

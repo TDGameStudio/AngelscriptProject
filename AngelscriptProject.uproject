@@ -8,6 +8,11 @@
 			"Name": "AngelscriptProject",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "AngelscriptProjectTest",
+			"Type": "Editor",
+			"LoadingPhase": "PostDefault"
 		}
 	],
 	"Plugins": [

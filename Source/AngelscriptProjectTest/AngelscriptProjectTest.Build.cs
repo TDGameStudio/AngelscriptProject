@@ -22,6 +22,9 @@ public class AngelscriptProjectTest : ModuleRules
 		{
 			PrivateDependencyModuleNames.AddRange(new string[]
 			{
+				"AngelscriptTest",
+				"BlueprintGraph",
+				"ClassViewer",
 				"CQTest",
 				"UnrealEd",
 				"AngelscriptEditor",

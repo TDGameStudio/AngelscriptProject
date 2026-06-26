@@ -1,6 +1,6 @@
 ## Context
 
-`AExampleActorType` is declared as a normal script class in `Script/Examples/Core/Example_Actor.as`:
+`AExampleActorType` is declared as a normal script class in `Script/Game/Example_Actor.as`:
 
 ```angelscript
 class AExampleActorType : AActor

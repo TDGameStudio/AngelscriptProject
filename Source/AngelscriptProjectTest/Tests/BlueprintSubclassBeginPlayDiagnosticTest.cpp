@@ -30,11 +30,11 @@ bool FBlueprintSubclassBeginPlayDiagnosticTest::RunTest(const FString& Parameter
 	{
 		AddInfo(TEXT("=== BeginPlay Diagnostic — PIE World Inspection ==="));
 
-		// Find the current script actor class from Script/Example_Actor.as
+		// Find the current script actor class from Script/Game/Example_Actor.as
 		UClass* ScriptActorClass = FindFirstObject<UClass>(TEXT("AExampleActorType"), EFindFirstObjectOptions::None);
 		if (ScriptActorClass == nullptr)
 		{
-			AddError(TEXT("AExampleActorType not found. Script/Example_Actor.as may not be compiled."));
+			AddError(TEXT("AExampleActorType not found. Script/Game/Example_Actor.as may not be compiled."));
 			return true;
 		}
 

@@ -6,7 +6,7 @@
 The standard Unreal Blueprint parent-class picker and Blueprint reparent picker SHALL surface loaded Angelscript-generated classes when those classes satisfy the same blueprint-base eligibility rules used for native classes.
 
 #### Scenario: Example script actor appears in parent search
-- **WHEN** `AExampleActorType` is compiled from `Script/Examples/Core/Example_Actor.as`
+- **WHEN** `AExampleActorType` is compiled from `Script/Game/Example_Actor.as`
 - **AND** the class is not explicitly marked `NotBlueprintable`, `HideDropdown`, `Abstract`, or `Deprecated`
 - **THEN** the standard Blueprint parent-class picker SHALL include `AExampleActorType` in its search results
 - **AND** the class SHALL be selectable as the parent of a new Blueprint
