@@ -28,5 +28,6 @@ Hazelight does not provide a name-level AS class redirect layer. It only has the
 ## Investigation Notes
 
 - Detailed UE/CoreRedirects source audit is recorded in `ue-core-redirects-investigation.md`.
+- Runtime hot-reload implementation, generated ini behavior, test matrix, config cleanup, verification commands, and commit IDs are recorded in `reload-implementation-record.md`.
 - The key conclusion is that UE owns redirect config ingestion and load-time name redirection. AS should still use that mechanism, but the AS hot-reload generator must perform the AS-specific detection step and emit the corresponding official CoreRedirect entry when the rename is unambiguous.
 - Production writes target project `Config/DefaultEngine.ini`. Tests override the target to `Saved/Automation/...` and delete it afterward so automation does not dirty user config.
