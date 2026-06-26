@@ -620,7 +620,7 @@
 
 ### Builder 构建器
 
-> 源文件：`AngelScriptSDK/AngelscriptBuilderTests.cpp`
+> 源文件：`AngelScriptSDK/AngelscriptBuilderTests.cpp`、`AngelScriptSDK/AngelscriptBuilderDiagnosticsTests.cpp`、`AngelScriptSDK/AngelscriptBuilderLifecycleTests.cpp`、`AngelScriptSDK/AngelscriptBuilderDeclarationTests.cpp`、`AngelScriptSDK/AngelscriptBuilderLayoutTests.cpp`、`AngelScriptSDK/AngelscriptBuilderBytecodeTests.cpp`、`AngelScriptSDK/AngelscriptBuilderAppInterfaceTests.cpp`、`AngelScriptSDK/AngelscriptBuilderGlobalVariableTests.cpp`、`AngelScriptSDK/AngelscriptBuilderEditorOnlyTests.cpp`、`AngelScriptSDK/AngelscriptBuilderDependencyTests.cpp`、`Compiler/AngelscriptCompilerBuilderIntegrationTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -631,6 +631,49 @@
 | AngelScriptSDK.Builder.GenerateFunctionsRegistersGlobalsAndFunctions | 函数生成阶段注册全局函数与 const global |
 | AngelScriptSDK.Builder.LayoutAndCompileProduceExecutableBytecode | layout/codegen 后产出可执行字节码 |
 | AngelScriptSDK.Builder.StageFailureStopsBeforeExecutableCode | parse 失败时停止在可执行代码生成前 |
+| AngelScriptSDK.Builder.CrossSectionDependenciesCompileAndKeepSections | 多 section 依赖在 codegen 后保留函数 section 归属并可执行 |
+| AngelScriptSDK.Builder.NamespaceResolutionSeparatesTypesFunctionsAndGlobals | namespace 内类型、函数和 const global 被隔离解析并正确执行 |
+| AngelScriptSDK.Builder.ClassInheritanceResolvesBaseTypesAndInheritedCalls | class 继承关系、继承属性和方法调用在 layout/codegen 后保持一致 |
+| AngelScriptSDK.Builder.ScriptInterfaceDeclarationFailsWithoutLeakingState | interface 未实现失败时不泄漏函数、类型或可执行字节码 |
+| AngelScriptSDK.Builder.DuplicateDeclarationsFailWithoutLeakingModuleState | 重复声明失败时保留精确诊断并保持 module 状态干净 |
+| AngelScriptSDK.Builder.PropertyInitializersAndMethodOverloadsCompile | 属性初始化和方法重载在 layout/codegen 后可执行 |
+| AngelScriptSDK.Builder.OverloadedGlobalFunctionsRetainDistinctDescriptions | 全局函数重载保留独立描述和独立字节码 |
+| AngelScriptSDK.Builder.Diagnostics.ParseErrorReportsSectionAndDoesNotPublishDeclarations | parse 错误报告 section/行号/消息关键字，并阻止声明发布 |
+| AngelScriptSDK.Builder.Diagnostics.DuplicateClassFailsDuringTypeGenerationWithoutFunctionLeak | 类型生成重复 class 失败时不泄漏函数或 global 描述 |
+| AngelScriptSDK.Builder.Diagnostics.UnknownTypeReportsFunctionSectionAndKeepsBytecodeEmpty | codegen 未知类型诊断带 section/行号，且不产出 Entry 字节码 |
+| AngelScriptSDK.Builder.Lifecycle.ModuleBuildCreatesAndDestroysBuilder | `asCModule::Build()` 创建、使用并清空 `module->builder` |
+| AngelScriptSDK.Builder.Lifecycle.FailedBuildClearsBuilderAndAllowsCleanRebuild | 失败 build 后清空 builder，同名 module 可重新干净构建 |
+| AngelScriptSDK.Builder.Lifecycle.StandaloneBuilderResetClearsTransientState | 独立 `asCBuilder` 与 null-module builder 的 `Reset()` 清空瞬态状态 |
+| AngelScriptSDK.Builder.Declarations.TypeGenerationRegistersClassEnumTypedefAndFuncdef | 类型生成注册 class、enum、typedef 和 funcdef 元数据 |
+| AngelScriptSDK.Builder.Declarations.FunctionGenerationRegistersFunctionsImportsAndConstGlobals | 函数生成注册函数、import 和 const global 元数据 |
+| AngelScriptSDK.Builder.Layout.ClassLayoutPreservesPropertiesMethodsAndBaseType | class layout 保留属性、方法和直接父类关系 |
+| AngelScriptSDK.Builder.Layout.PropertyInitializersAreTrackedAndDefaultInitFunctionCompiles | 属性初始化器被 builder 追踪，默认初始化相关元数据可编译 |
+| AngelScriptSDK.Builder.Layout.GlobalFunctionOverloadsKeepDistinctLayouts | 全局函数重载在 layout 后保留独立函数描述 |
+| AngelScriptSDK.Builder.Bytecode.CompileCodeProducesExecutableEntryBytecode | codegen 产出可执行 Entry 字节码 |
+| AngelScriptSDK.Builder.Bytecode.CrossSectionCallsKeepDeclaringSectionsAndExecute | 跨 section 调用保留声明 section 并可执行 |
+| AngelScriptSDK.Builder.Bytecode.NamespaceAndOverloadDispatchExecuteThroughCompiledBytecode | namespace + overload 分发通过编译字节码执行 |
+| AngelScriptSDK.Builder.Bytecode.LoopBreakContinueProducesBranchingBytecode | for/break/continue 生成分支字节码并按预期执行 |
+| AngelScriptSDK.Builder.Bytecode.RecursiveFunctionEmitsCallBytecodeAndExecutes | 递归函数生成脚本调用字节码并执行递归结果 |
+| AngelScriptSDK.Builder.Bytecode.ShortCircuitBooleanExpressionsSkipUnreachedBytecode | `&&`/`||` 短路路径生成分支字节码且跳过未触达异常路径 |
+| AngelScriptSDK.Builder.Bytecode.DefaultArgumentsCompileImplicitAndExplicitCallSites | 默认参数的隐式、部分显式、完全显式调用点都编译并执行 |
+| AngelScriptSDK.Builder.Bytecode.EnumSwitchCompilesBranchingBytecodeAndExecutes | enum switch 生成分支字节码并执行目标 case |
+| AngelScriptSDK.Builder.AppInterface.ParseDataTypeResolvesPrimitiveAndScriptClass | `ParseDataType` 直接解析 primitive const 类型与 namespaced script class |
+| AngelScriptSDK.Builder.AppInterface.ParseFunctionDeclarationPreservesParamsDefaultsAndTraits | `ParseFunctionDeclaration` 保留 namespace、参数名、默认参数与函数 trait |
+| AngelScriptSDK.Builder.AppInterface.ParseVariableDeclarationExtractsNamespaceNameAndType | `ParseVariableDeclaration` 提取变量 namespace、名称和 const 类型 |
+| AngelScriptSDK.Builder.AppInterface.ParseTemplateDeclSplitsNameAndSubtypeIdentifiers | `ParseTemplateDecl` 拆分模板名和 subtype 标识符 |
+| AngelScriptSDK.Builder.AppInterface.VerifyPropertyAcceptsValidDeclarationAndRejectsNameConflict | `VerifyProperty` 接受合法属性并拒绝 object property 名称冲突 |
+| AngelScriptSDK.Builder.GlobalVariables.ConstGlobalsAllocateDescriptorsAndAddresses | const global 在 builder 描述、module 表、地址和值层面一致 |
+| AngelScriptSDK.Builder.GlobalVariables.ConstGlobalsKeepModuleMetadataBeforeRuntimeInitialization | primitive const global 保留 module metadata、type id 和 const 标记 |
+| AngelScriptSDK.Builder.GlobalVariables.MutableGlobalIsRejectedWithoutExecutableLeak | mutable global 被拒绝且不泄漏 global/function metadata |
+| AngelScriptSDK.Builder.EditorOnly.LineBlocksClassifyTopLevelDeclarations | editor-only 行段标记正确分类顶层 class/function 节点 |
+| AngelScriptSDK.Builder.EditorOnly.EditorOnlyModuleClassifiesEveryParsedNodeAsEditorOnly | editor-only module 标记让解析节点整体视为 editor-only |
+| AngelScriptSDK.Builder.EditorOnly.LineBlocksIgnoreNodesFromOtherScriptSections | editor-only 行段只作用于主 script section，不误判其它 section |
+| AngelScriptSDK.Builder.Dependencies.DirectMarkDependencyRecordsModuleAndSourceLocation | 直接 `MarkDependency` 写入 module dependency 和首次源码位置 |
+| AngelScriptSDK.Builder.Dependencies.ValueTypePropertyMarksStructuralDependency | 外部 value type 属性在 consumer module 上标记 structural dependency |
+| AngelScriptSDK.Builder.Dependencies.DefaultConstructorCallMarksHardValueDependency | 默认初始化中的外部函数调用标记 hard-value dependency |
+| AngelScriptSDK.Builder.Dependencies.GlobalInitializerMarksHardValueDependency | global 初始化中的外部函数调用标记 hard-value dependency |
+| Compiler.BuilderIntegration.RuntimeCompileRunsObservableBuilderStages | `FAngelscriptEngine` 编译路径发出 builder 相关阶段事件并执行产物 |
+| Compiler.BuilderIntegration.RuntimeCompileFailureReportsBuilderDiagnostics | 运行时编译失败通过 summary/event 暴露 builder 诊断且不留可执行 Entry |
 
 ### ScriptModule 脚本模块
 
