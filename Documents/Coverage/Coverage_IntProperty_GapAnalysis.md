@@ -68,14 +68,14 @@
 - 类成员（UPROPERTY 和非 UPROPERTY）
 
 **缺失**：
-- ✅ struct 内 int 成员（嵌套 UPROPERTY）
+- ⬜ struct 内 int 成员（嵌套 UPROPERTY）
 - ⬜ 命名空间内的 const 全局
 
 ### 2. 容器形态（92%）
 **已覆盖**：所有基础容器（TArray/TMap/TSet，8 种宽度）
 
 **缺失**：
-- ✅ 嵌套容器（TArray<TArray<int>>）
+- ⬜ 嵌套容器（TArray<TArray<int>>）
   - 原因：路径解析器限制
   - 优先级：低
 
@@ -227,11 +227,3 @@
 8. UFunctionParametersAndReturn
 
 ⭐ = 超出原计划的额外覆盖
-
-
-
-
-
-
-
-

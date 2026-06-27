@@ -186,7 +186,7 @@ ETestEnum IntToEnumOutOfRange()
 
 ### P0 剩余（约1.25小时）
 - ⬜ 无默认值 UPROPERTY（30分钟）
-- ✅ 类型转换精度损失（45分钟）
+- ⬜ 类型转换精度损失（45分钟）
 
 ### P1 重要补充（约3小时）
 - ⬜ 边界附近值（Min±1, Max±1）
@@ -195,7 +195,7 @@ ETestEnum IntToEnumOutOfRange()
 
 ### P2 可选补充（约3小时）
 - ⬜ 更多 UE 类型（FQuat, FTransform）
-- ✅ 复杂表达式嵌套
+- ⬜ 复杂表达式嵌套
 - ⬜ UFUNCTION 说明符
 
 **总剩余估算：约7.25小时**
@@ -236,10 +236,3 @@ ETestEnum IntToEnumOutOfRange()
 ---
 
 **进展良好！继续补充 P0 剩余项！** 🚀
-
-
-
-
-
-
-

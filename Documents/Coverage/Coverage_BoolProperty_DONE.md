@@ -267,10 +267,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Bool" -Label cov
 | **总计** | **11/13** | **75/94** | **~673/793** | **~85%** | 🎯 |
 
 **3种基础类型已100%完成！** 🚀
-
-
-
-
-
-
-

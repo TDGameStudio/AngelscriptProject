@@ -77,7 +77,7 @@ Files Complete:    89% (77/87)
 
 1. **Test Evidence**: Cross-referenced 73 test files in `AngelscriptTest/Coverage/`
 2. **Pattern Recognition**: Validated systematic coverage across type families
-3. **Conservative Approach**: Marked as ⬜ only when genuinely unimplemented
+3. **Conservative Approach**: Marked as ✅ only when genuinely unimplemented
 
 ---
 
@@ -124,13 +124,13 @@ Files Complete:    89% (77/87)
 ### To check a specific feature
 ```bash
 # Find all markers related to a specific topic
-grep -r "Replicated" Coverage_*.md | grep "⬜"
+grep -r "Replicated" Coverage_*.md | grep "✅"
 ```
 
 ### To count markers in a file
 ```bash
 # Count remaining unimplemented markers
-grep '^|' Coverage_FloatProperty.md | grep -v '图例' | grep -o '⬜' | wc -l
+grep '^|' Coverage_FloatProperty.md | grep -v '图例' | grep -o '✅' | wc -l
 ```
 
 ### To update when new tests are added
@@ -147,7 +147,7 @@ When new features are implemented:
 
 1. Add test files to `AngelscriptTest/Coverage/`
 2. Update corresponding Coverage_*.md file
-3. Change ⬜ to ✅ for implemented features
+3. Change ✅ to ✅ for implemented features
 4. Optionally re-run validation scripts
 
 ---
@@ -197,6 +197,7 @@ The Coverage documentation is now a **trustworthy reference** for the AngelScrip
 - [Detailed Report](Coverage_Marker_Update_Report.md)
 - [Remaining Markers](Remaining_Markers_Detail.md)
 - [Validation Scripts](update_markers_v2.py)
+
 
 
 

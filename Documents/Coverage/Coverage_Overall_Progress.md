@@ -423,10 +423,3 @@ Tools\RunBuild.ps1 -NoXGE
 ---
 
 **总结：经过三轮并行 subagent 工作，AngelScript Coverage 测试已经建立了坚实的基础，完成了 34 个测试文件，覆盖 15 种核心类型和系统，共 ~22,500 行测试代码。下一步建议继续完成核心系统（UCLASS/Component/ControlFlow），达到 80% 的核心覆盖率。** 🎉🚀
-
-
-
-
-
-
-

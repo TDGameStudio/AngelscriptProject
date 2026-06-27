@@ -313,10 +313,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FString" -Label 
 | **总计** | **13** | **94** | **~793** | **100%** | ✅ |
 
 **4种基础类型已100%完成！** 🚀🎊
-
-
-
-
-
-
-

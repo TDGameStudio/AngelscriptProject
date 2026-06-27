@@ -18,7 +18,7 @@
 
 ## 图例
 
-- `✅ 已覆盖 ✅ 待写` ｜ `🚫 不适用/不支持`
+- `✅ 已覆盖` ｜ `🟡 部分覆盖` ｜ `⬜ 待写` ｜ `🚫 不适用/不支持`
 - 单元格内 `→方法名` 指向覆盖该格的 `TEST_METHOD`。
 
 ---
@@ -127,10 +127,10 @@
 
 | 函数用法 | 写法示例 | `bool` | 覆盖方法 |
 |------|------|:---:|------|
-| 参数（值传递） | `void F(bool B)` | ✅ | `FunctionParametersValue` |
-| 参数 `&in` | `void F(bool&in B)` | ✅ | `FunctionParametersIn` |
-| 参数 `&out` | `void F(bool&out B)` | ✅ | `FunctionParametersOut` |
-| 参数 `&inout` | `void F(bool&inout B)` | ✅ | `FunctionParametersInOut` |
+| 参数（值传递） | `void F(bool B)` | ⬜ | `FunctionParametersValue` |
+| 参数 `&in` | `void F(bool&in B)` | ⬜ | `FunctionParametersIn` |
+| 参数 `&out` | `void F(bool&out B)` | ⬜ | `FunctionParametersOut` |
+| 参数 `&inout` | `void F(bool&inout B)` | ⬜ | `FunctionParametersInOut` |
 | 返回值 | `bool F()` | ⬜ | `FunctionReturnValues` |
 | 默认参数 | `void F(bool B = true)` | ⬜ | `FunctionDefaultParameters` |
 | 多返回（`&out`） | `void F(bool&out A, bool&out B)` | ⬜ | `FunctionParametersOut` |
@@ -154,7 +154,7 @@
 | 位运算 | `& \| ^` | ⬜ | bool 位运算等价逻辑运算（但非短路） |
 | 位取反 | `~` | 🚫 | 用 `!` 代替 |
 | 复合赋值 | `&&= \|\|=` | 🚫 | AS 不支持（C++17 特性） |
-| 复合赋值 | `&= \|= ^=` | ✅ | 位运算复合赋值 |
+| 复合赋值 | `&= \|= ^=` | ⬜ | 位运算复合赋值 |
 | 自增减 | `++ --` | 🚫 | bool 无自增减 |
 | 三元 | `B ? A : C` | ⬜ | bool 作条件 |
 
@@ -183,7 +183,7 @@
 |------|------|:---:|------|
 | 整型→bool | `bool B = int(1);` / `if (X) ...` | ⬜ | 0→false, 非0→true |
 | bool→整型 | `int I = int(B);` | ⬜ | false→0, true→1 |
-| 浮点→bool | `bool B = (F != 0.0f);` | ✅ | 显式比较 |
+| 浮点→bool | `bool B = (F != 0.0f);` | ⬜ | 显式比较 |
 | bool→浮点 | `float F = float(B);` | ⬜ | false→0.0, true→1.0 |
 | 指针/handle→bool | `if (Obj) ...` / `if (Obj != nullptr)` | ⬜ | null→false, 非null→true |
 | bool→字符串 | `FString S = B ? "true" : "false";` | ⬜ | 无隐式转换，需手动 |
@@ -298,12 +298,3 @@
 3. 改各子矩阵列头为该类型族成员；删掉不适用轴（如本文删除算术/序比较/自增减，添加逻辑运算/短路求值）。
 4. 添加类型特有子矩阵（如本文的「子矩阵 10：bool 特有用法」）。
 5. 新建对应 `AngelscriptCoverage<Type>PropertyTests.cpp`，方法命名沿用 `<Type>...` 结构。
-
-
-
-
-
-
-
-
-

@@ -17,7 +17,7 @@
 
 ## 图例
 
-- `✅ 已覆盖 ✅ 待写` ｜ `🚫 不适用/不支持`
+- `✅ 已覆盖` ｜ `🟡 部分覆盖` ｜ `⬜ 待写` ｜ `🚫 不适用/不支持`
 
 ---
 
@@ -44,8 +44,8 @@
 | `ACharacter` | 带角色移动的 Pawn | ⬜ | OnMovementModeChanged |
 | `APlayerController` | 玩家控制器 | ⬜ | BeginPlay / SetupInputComponent |
 | `AGameModeBase` | 游戏模式 | ⬜ | InitGame / PostLogin |
-| `AGameStateBase` | 游戏状态 ✅ | OnRep_* |
-| `APlayerState` | 玩家状态 ✅ | CopyProperties |
+| `AGameStateBase` | 游戏状态 | ⬜ | OnRep_* |
+| `APlayerState` | 玩家状态 | ⬜ | CopyProperties |
 | `AHUD` | HUD 显示 | ⬜ | DrawHUD |
 | `UObject` | 纯数据/逻辑对象 | ⬜ | 无生命周期 |
 | `UActorComponent` | Actor 组件 | ⬜ | BeginPlay / TickComponent |
@@ -99,9 +99,9 @@
 |-------|------|---------|------|--------|
 | `ClassGroup = "MyGroup"` | 类分组 | `UCLASS(ClassGroup=(Custom))` | ⬜ | 编辑器分组显示 |
 | `HideCategories = (...)` | 隐藏属性分类 | `UCLASS(HideCategories=(Rendering))` | ⬜ | 属性面板隐藏 |
-| `ShowCategories = (...)` | 显示分类（覆盖 ✅ | |
+| `ShowCategories = (...)` | 显示分类（覆盖父类隐藏） | `UCLASS(ShowCategories=(Rendering))` | ⬜ | |
 | `CollapseCategories` | 折叠所有分类 | `UCLASS(CollapseCategories)` | ⬜ | |
-| `DontCollapseCategories` | 不折叠（覆盖 ✅ | |
+| `DontCollapseCategories` | 不折叠（覆盖父类） | `UCLASS(DontCollapseCategories)` | ⬜ | |
 | `AutoExpandCategories = (...)` | 自动展开分类 | `UCLASS(AutoExpandCategories=(MyCategory))` | ⬜ | |
 | `AutoCollapseCategories = (...)` | 自动折叠分类 | `UCLASS(AutoCollapseCategories=(MyCategory))` | ⬜ | |
 
@@ -194,7 +194,7 @@
 
 | 用法 | 写法示例 | 状态 | 验证点 |
 |------|---------|------|--------|
-| 覆盖 ✅ | CDO 中的值 |
+| 覆盖父类属性默认值 | `default Health = 200;` | ⬜ | CDO 中的值 |
 | 调用父类方法 | `default SetReplicates(true);` | ⬜ | |
 | 修改容器默认值 | `default Tags.Add(n"Tag");` | ⬜ | |
 | 设置组件属性 | `default Mesh.SetCastShadow(false);` | ⬜ | |
@@ -227,7 +227,7 @@
 | 特性 | 写法 | 状态 | 验证点 |
 |------|------|------|--------|
 | 抽象类 | `UCLASS(Abstract)` | ⬜ | 不可实例化 |
-| 虚方法（可覆盖 ✅ | 多态调用 |
+| 虚方法（可覆盖） | 子类重写父类方法 | ⬜ | 多态调用 |
 | 纯虚方法 | （AS 无显式语法） | 🚫 | |
 | 调用父类方法 | `Super::MethodName()` 或 `ParentClass::Method()` | ⬜ | |
 
@@ -235,9 +235,9 @@
 
 | 特性 | 写法 | 状态 | 验证点 |
 |------|------|------|--------|
-| 实现 ✅ | |
-| 实现 ✅ | |
-| 接口方法实现 ✅ | |
+| 实现单个接口 | `class X : AActor, IMyInterface` | ⬜ | |
+| 实现多个接口 | `class X : AActor, IFoo, IBar` | ⬜ | |
+| 接口方法实现 | 实现接口声明的方法 | ⬜ | |
 | 接口 Cast | `Cast<IMyInterface>(Obj)` | ⬜ | |
 | TScriptInterface | `TScriptInterface<IMyInterface>` | ⬜ | |
 
@@ -292,7 +292,7 @@
 |------|------|------|--------|
 | 单层继承 | `ADerived : ABase` | ⬜ | |
 | 多层继承 | `A -> B -> C -> D` | ⬜ | 4 层以上 |
-| 覆盖父类方法 | 子类重新实现 ✅ | |
+| 覆盖父类方法 | 子类重新实现父类方法 | ⬜ | |
 | 调用父类方法 | `Super::Method()` | ⬜ | |
 | 访问父类属性 | 子类访问 protected 成员 | ⬜ | |
 | 类型转换向上 | `ABase Base = Derived;` | ⬜ | 隐式转换 |
@@ -411,10 +411,3 @@
 - USTRUCT 无生命周期方法
 - UENUM 无组件概念
 - UINTERFACE 无实例化
-
-
-
-
-
-
-

@@ -205,7 +205,7 @@ Tools\RunCoverageTests.ps1
 ```powershell
 Tools\RunCoverageTestsByType.ps1
 ```
-**状态 ✅ 可用
+**状态：** ⬜ 可用
 
 ---
 
@@ -297,10 +297,3 @@ git log --oneline -2
 ```
 
 **提交已完成，代码已安全保存到版本控制！** ✅
-
-
-
-
-
-
-

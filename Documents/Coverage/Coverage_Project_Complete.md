@@ -342,10 +342,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage
 4. ⬜ 可选：扩展其他类型（FVector, FRotator 等）
 
 **当前状态：等待测试结果！** ⏳
-
-
-
-
-
-
-

@@ -43,7 +43,7 @@
 **理由：** 数据结构基础
 
 ### P3 - 其他数学类型（可选）
-11. ✅ FVector2D
+11. ⬜ FVector2D
 12. ⬜ FQuat
 13. ⬜ FLinearColor
 14. ⬜ FBox
@@ -177,11 +177,3 @@ AngelscriptCoverageBoolFunctionTests.cpp
 ```
 
 **要开始 bool coverage 吗？** 🎯
-
-
-
-
-
-
-
-

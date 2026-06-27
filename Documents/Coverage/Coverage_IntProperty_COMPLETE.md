@@ -199,10 +199,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Int" -Label cove
 ---
 
 **🎊 int coverage 任务圆满完成！🎊**
-
-
-
-
-
-
-

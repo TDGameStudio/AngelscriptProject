@@ -270,10 +270,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage
 - ✅ 详尽的文档
 
 **这是 AngelScript 项目质量保证的坚实基础！** 🚀
-
-
-
-
-
-
-

@@ -329,10 +329,3 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage"
 - 持续的验证
 
 **继续保持这种高标准的工作方式！** ✨
-
-
-
-
-
-
-

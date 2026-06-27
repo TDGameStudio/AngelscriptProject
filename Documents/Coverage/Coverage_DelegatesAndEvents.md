@@ -16,7 +16,7 @@
 
 ## 图例
 
-- `✅ 已覆盖 ✅ 待写` ｜ `🚫 不适用/不支持`
+- `✅ 已覆盖` ｜ `🟡 部分覆盖` ｜ `⬜ 待写` ｜ `🚫 不适用/不支持`
 
 ---
 
@@ -146,7 +146,7 @@
 | 生命周期事件 | `OnBeginPlay` / `OnEndPlay` | ⬜ | Actor 生命周期 |
 | 输入事件 | `OnClicked` / `OnPressed` / `OnReleased` | ⬜ | 用户输入 |
 | 碰撞事件 | `OnHit` / `OnBeginOverlap` / `OnEndOverlap` | ⬜ | 物理碰撞 |
-| 状态 ✅ | 游戏逻辑 |
+| 状态变化事件 | `OnHealthChanged` / `OnDeath` | ⬜ | 游戏逻辑 |
 | 网络事件 | `OnRepNotify` | ⬜ | 属性复制 |
 
 ### 4.3 事件绑定和触发
@@ -393,10 +393,3 @@ class AMyActor : AActor
 
 **估计工作量**：4 个测试文件，约 20-25 个测试方法
 **优先级**：🔴🔴 高（事件系统基础）
-
-
-
-
-
-
-
