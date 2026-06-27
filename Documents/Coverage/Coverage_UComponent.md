@@ -7,10 +7,13 @@
 
 | 用法分组 | 测试文件 | 状态 |
 |---------|---------|------|
-| 组件基础和生命周期 | `AngelscriptTest/Coverage/AngelscriptCoverageComponentTests.cpp` | ⬜ 计划 |
+| 组件基础和生命周期 | `AngelscriptTest/Coverage/AngelscriptCoverageComponentTests.cpp` | ✅ 已完成 |
 | 组件说明符和属性 | `AngelscriptTest/Coverage/AngelscriptCoverageComponentPropertiesTests.cpp` | ⬜ 计划 |
-| 场景组件（Transform） | `AngelscriptTest/Coverage/AngelscriptCoverageSceneComponentTests.cpp` | ⬜ 计划 |
-| 特殊组件类型 | `AngelscriptTest/Coverage/AngelscriptCoverageSpecialComponentTests.cpp` | ⬜ 计划 |
+| 场景组件（Transform） | `AngelscriptTest/Coverage/AngelscriptCoverageSceneComponentTests.cpp` | ✅ 已完成 |
+| 图元组件（渲染/碰撞） | `AngelscriptTest/Coverage/AngelscriptCoveragePrimitiveComponentTests.cpp` | ✅ 已完成 |
+| 特殊组件类型 | `AngelscriptTest/Coverage/AngelscriptCoverageSpecialComponentTests.cpp` | ✅ 已完成 |
+
+✅ 组件系统核心功能已全面覆盖
 
 - Automation 前缀：`Angelscript.TestModule.Coverage.Component*`
 
@@ -59,18 +62,18 @@ UActorComponent（基类组件）
 
 | 组件类型 | 基类 | 状态 | 典型用途 |
 |---------|------|------|---------|
-| `UActorComponent` | - | ⬜ | 纯逻辑组件 |
-| `USceneComponent` | UActorComponent | ⬜ | 带变换的组件 |
-| `UPrimitiveComponent` | USceneComponent | ⬜ | 可渲染/碰撞 |
-| `UStaticMeshComponent` | UMeshComponent | ⬜ | 静态网格 |
-| `USkeletalMeshComponent` | UMeshComponent | ⬜ | 骨骼网格 |
-| `UBoxComponent` | UShapeComponent | ⬜ | 盒体碰撞 |
-| `USphereComponent` | UShapeComponent | ⬜ | 球体碰撞 |
-| `UCapsuleComponent` | UShapeComponent | ⬜ | 胶囊碰撞 |
-| `UCameraComponent` | USceneComponent | ⬜ | 相机 |
-| `USpringArmComponent` | USceneComponent | ⬜ | 弹簧臂 |
-| `UPointLightComponent` | ULightComponent | ⬜ | 点光源 |
-| `UCharacterMovementComponent` | UMovementComponent | ⬜ | 角色移动 |
+| `UActorComponent` | - | ✅ | 纯逻辑组件 |
+| `USceneComponent` | UActorComponent | ✅ | 带变换的组件 |
+| `UPrimitiveComponent` | USceneComponent | ✅ | 可渲染/碰撞 |
+| `UStaticMeshComponent` | UMeshComponent | ✅ | 静态网格 |
+| `USkeletalMeshComponent` | UMeshComponent | ✅ | 骨骼网格 |
+| `UBoxComponent` | UShapeComponent | ✅ | 盒体碰撞 |
+| `USphereComponent` | UShapeComponent | ✅ | 球体碰撞 |
+| `UCapsuleComponent` | UShapeComponent | ✅ | 胶囊碰撞 |
+| `UCameraComponent` | USceneComponent | ✅ | 相机 |
+| `USpringArmComponent` | USceneComponent | ✅ | 弹簧臂 |
+| `UPointLightComponent` | ULightComponent | ✅ | 点光源 |
+| `UCharacterMovementComponent` | UMovementComponent | ✅ | 角色移动 |
 | `UArrowComponent` | USceneComponent | ⬜ | 编辑器箭头 |
 | `UAudioComponent` | USceneComponent | ⬜ | 音频 |
 | `UInputComponent` | UActorComponent | ⬜ | 输入处理 |
@@ -83,13 +86,13 @@ UActorComponent（基类组件）
 
 | 声明方式 | 写法示例 | 状态 | 说明 |
 |---------|---------|------|------|
-| DefaultComponent | `UPROPERTY(DefaultComponent) USceneComponent Root;` | ⬜ | 自动创建 |
-| DefaultComponent + RootComponent | `UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root;` | ⬜ | 根组件 |
-| DefaultComponent + Attach | `UPROPERTY(DefaultComponent, Attach=Root) UStaticMeshComponent Mesh;` | ⬜ | 附加到其他组件 |
-| DefaultComponent + AttachSocket | `UPROPERTY(DefaultComponent, AttachSocket="WeaponSocket") UStaticMeshComponent Weapon;` | ⬜ | 附加到 Socket |
-| DefaultComponent + ShowOnActor | `UPROPERTY(DefaultComponent, ShowOnActor) UCapsuleComponent Capsule;` | ⬜ | 编辑器显示 |
-| 普通 UPROPERTY 引用 | `UPROPERTY() USceneComponent SomeComponent;` | ⬜ | 引用外部组件 |
-| 动态创建组件 | `Comp = NewObject<UMyComponent>(this);` | ⬜ | 运行时创建 |
+| DefaultComponent | `UPROPERTY(DefaultComponent) USceneComponent Root;` | ✅ | 自动创建 |
+| DefaultComponent + RootComponent | `UPROPERTY(DefaultComponent, RootComponent) USceneComponent Root;` | ✅ | 根组件 |
+| DefaultComponent + Attach | `UPROPERTY(DefaultComponent, Attach=Root) UStaticMeshComponent Mesh;` | ✅ | 附加到其他组件 |
+| DefaultComponent + AttachSocket | `UPROPERTY(DefaultComponent, AttachSocket="WeaponSocket") UStaticMeshComponent Weapon;` | ✅ | 附加到 Socket |
+| DefaultComponent + ShowOnActor | `UPROPERTY(DefaultComponent, ShowOnActor) UCapsuleComponent Capsule;` | ✅ | 编辑器显示 |
+| 普通 UPROPERTY 引用 | `UPROPERTY() USceneComponent SomeComponent;` | ✅ | 引用外部组件 |
+| 动态创建组件 | `Comp = NewObject<UMyComponent>(this);` | ✅ | 运行时创建 |
 
 ### 2.2 组件 UPROPERTY 说明符
 
@@ -112,13 +115,13 @@ UActorComponent（基类组件）
 
 | 方法 | 调用时机 | 状态 | 验证点 |
 |------|---------|------|--------|
-| `OnComponentCreated()` | 组件创建时 | ⬜ | 早于 BeginPlay |
-| `InitializeComponent()` | 组件初始化 | ⬜ | RegisterComponent 后 |
-| `BeginPlay()` | 游戏开始 | ⬜ | PIE 启动 |
-| `TickComponent(float, ELevelTick, FActorComponentTickFunction*)` | 每帧调用 | ⬜ | 需启用 Tick |
-| `EndPlay(EEndPlayReason::Type)` | 游戏结束 | ⬜ | PIE 停止 |
-| `OnComponentDestroyed(bool)` | 组件销毁 | ⬜ | DestroyComponent |
-| `UninitializeComponent()` | 反初始化 | ⬜ | UnregisterComponent 前 |
+| `OnComponentCreated()` | 组件创建时 | ✅ | 早于 BeginPlay |
+| `InitializeComponent()` | 组件初始化 | ✅ | RegisterComponent 后 |
+| `BeginPlay()` | 游戏开始 | ✅ | PIE 启动 |
+| `TickComponent(float, ELevelTick, FActorComponentTickFunction*)` | 每帧调用 | ✅ | 需启用 Tick |
+| `EndPlay(EEndPlayReason::Type)` | 游戏结束 | ✅ | PIE 停止 |
+| `OnComponentDestroyed(bool)` | 组件销毁 | ✅ | DestroyComponent |
+| `UninitializeComponent()` | 反初始化 | ✅ | UnregisterComponent 前 |
 
 ### 3.2 生命周期顺序验证
 
@@ -161,28 +164,28 @@ UActorComponent（基类组件）
 
 | 操作 | 方法 | 状态 | 说明 |
 |------|------|------|------|
-| 获取位置 | `GetComponentLocation()` | ⬜ | 世界坐标 |
-| 设置位置 | `SetWorldLocation(FVector)` | ⬜ | |
-| 获取旋转 | `GetComponentRotation()` | ⬜ | |
-| 设置旋转 | `SetWorldRotation(FRotator)` | ⬜ | |
-| 获取缩放 | `GetComponentScale()` | ⬜ | |
-| 设置缩放 | `SetWorldScale3D(FVector)` | ⬜ | |
-| 获取 Transform | `GetComponentTransform()` | ⬜ | |
-| 设置 Transform | `SetWorldTransform(FTransform)` | ⬜ | |
-| 相对位置 | `SetRelativeLocation(FVector)` | ⬜ | 相对父组件 |
-| 相对旋转 | `SetRelativeRotation(FRotator)` | ⬜ | |
+| 获取位置 | `GetComponentLocation()` | ✅ | 世界坐标 |
+| 设置位置 | `SetWorldLocation(FVector)` | ✅ | |
+| 获取旋转 | `GetComponentRotation()` | ✅ | |
+| 设置旋转 | `SetWorldRotation(FRotator)` | ✅ | |
+| 获取缩放 | `GetComponentScale()` | ✅ | |
+| 设置缩放 | `SetWorldScale3D(FVector)` | ✅ | |
+| 获取 Transform | `GetComponentTransform()` | ✅ | |
+| 设置 Transform | `SetWorldTransform(FTransform)` | ✅ | |
+| 相对位置 | `SetRelativeLocation(FVector)` | ✅ | 相对父组件 |
+| 相对旋转 | `SetRelativeRotation(FRotator)` | ✅ | |
 
 ### 5.2 附加层次
 
 | 操作 | 方法 | 状态 | 说明 |
 |------|------|------|------|
-| 附加到组件 | `AttachToComponent(USceneComponent, FName, EAttachmentRule, ...)` | ⬜ | |
-| 附加到 Actor | `AttachToActor(AActor, FName, ...)` | ⬜ | |
-| 分离 | `DetachFromComponent(FDetachmentTransformRules)` | ⬜ | |
-| 获取父组件 | `GetAttachParent()` | ⬜ | |
-| 获取子组件 | `GetAttachChildren()` | ⬜ | |
-| 获取 Socket 位置 | `GetSocketLocation(FName)` | ⬜ | |
-| 是否附加 | `IsAttachedTo(USceneComponent)` | ⬜ | |
+| 附加到组件 | `AttachToComponent(USceneComponent, FName, EAttachmentRule, ...)` | ✅ | |
+| 附加到 Actor | `AttachToActor(AActor, FName, ...)` | ✅ | |
+| 分离 | `DetachFromComponent(FDetachmentTransformRules)` | ✅ | |
+| 获取父组件 | `GetAttachParent()` | ✅ | |
+| 获取子组件 | `GetAttachChildren()` | ✅ | |
+| 获取 Socket 位置 | `GetSocketLocation(FName)` | ✅ | |
+| 是否附加 | `IsAttachedTo(USceneComponent)` | ✅ | |
 
 ### 5.3 附加规则
 
@@ -200,34 +203,34 @@ UActorComponent（基类组件）
 
 | 属性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `SetVisibility(bool)` | ⬜ | 显示/隐藏 |
-| `SetHiddenInGame(bool)` | ⬜ | 游戏中隐藏 |
-| `SetCastShadow(bool)` | ⬜ | 投射阴影 |
-| `SetRenderCustomDepth(bool)` | ⬜ | 自定义深度 |
-| `SetCustomDepthStencilValue(int)` | ⬜ | 模板值 |
-| `SetMaterial(int, UMaterialInterface)` | ⬜ | 设置材质 |
-| `GetMaterial(int)` | ⬜ | 获取材质 |
-| `CreateDynamicMaterialInstance(int)` | ⬜ | 动态材质 |
+| `SetVisibility(bool)` | ✅ | 显示/隐藏 |
+| `SetHiddenInGame(bool)` | ✅ | 游戏中隐藏 |
+| `SetCastShadow(bool)` | ✅ | 投射阴影 |
+| `SetRenderCustomDepth(bool)` | ✅ | 自定义深度 |
+| `SetCustomDepthStencilValue(int)` | ✅ | 模板值 |
+| `SetMaterial(int, UMaterialInterface)` | ✅ | 设置材质 |
+| `GetMaterial(int)` | ✅ | 获取材质 |
+| `CreateDynamicMaterialInstance(int)` | ✅ | 动态材质 |
 
 ### 6.2 碰撞属性
 
 | 属性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `SetCollisionEnabled(ECollisionEnabled::Type)` | ⬜ | 启用碰撞 |
-| `SetCollisionProfileName(FName)` | ⬜ | 碰撞配置 |
-| `SetCollisionResponseToChannel(ECollisionChannel, ECollisionResponse)` | ⬜ | 通道响应 |
-| `SetCollisionResponseToAllChannels(ECollisionResponse)` | ⬜ | 所有通道 |
-| `SetCollisionObjectType(ECollisionChannel)` | ⬜ | 对象类型 |
-| `SetNotifyRigidBodyCollision(bool)` | ⬜ | Hit 事件通知 |
-| `SetGenerateOverlapEvents(bool)` | ⬜ | Overlap 事件 |
+| `SetCollisionEnabled(ECollisionEnabled::Type)` | ✅ | 启用碰撞 |
+| `SetCollisionProfileName(FName)` | ✅ | 碰撞配置 |
+| `SetCollisionResponseToChannel(ECollisionChannel, ECollisionResponse)` | ✅ | 通道响应 |
+| `SetCollisionResponseToAllChannels(ECollisionResponse)` | ✅ | 所有通道 |
+| `SetCollisionObjectType(ECollisionChannel)` | ✅ | 对象类型 |
+| `SetNotifyRigidBodyCollision(bool)` | ✅ | Hit 事件通知 |
+| `SetGenerateOverlapEvents(bool)` | ✅ | Overlap 事件 |
 
 ### 6.3 碰撞事件
 
 | 事件 | 签名 | 状态 | 触发时机 |
 |------|------|------|---------|
-| `OnComponentHit` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, FVector, FHitResult)` | ⬜ | 物理碰撞 |
-| `OnComponentBeginOverlap` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, int32, bool, FHitResult)` | ⬜ | 开始重叠 |
-| `OnComponentEndOverlap` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, int32)` | ⬜ | 结束重叠 |
+| `OnComponentHit` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, FVector, FHitResult)` | ✅ | 物理碰撞 |
+| `OnComponentBeginOverlap` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, int32, bool, FHitResult)` | ✅ | 开始重叠 |
+| `OnComponentEndOverlap` | `(UPrimitiveComponent, AActor, UPrimitiveComponent, int32)` | ✅ | 结束重叠 |
 
 ### 6.4 物理属性
 
@@ -249,58 +252,58 @@ UActorComponent（基类组件）
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `SetStaticMesh(UStaticMesh)` | ⬜ | 设置网格 |
-| `GetStaticMesh()` | ⬜ | 获取网格 |
-| `SetMaterial(int, UMaterialInterface)` | ⬜ | 设置材质 |
-| `GetNumMaterials()` | ⬜ | 材质数量 |
+| `SetStaticMesh(UStaticMesh)` | ✅ | 设置网格 |
+| `GetStaticMesh()` | ✅ | 获取网格 |
+| `SetMaterial(int, UMaterialInterface)` | ✅ | 设置材质 |
+| `GetNumMaterials()` | ✅ | 材质数量 |
 
 ### 7.2 USkeletalMeshComponent
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `SetSkeletalMesh(USkeletalMesh)` | ⬜ | 设置骨骼网格 |
-| `SetAnimInstanceClass(TSubclassOf<UAnimInstance>)` | ⬜ | 设置动画蓝图 |
-| `PlayAnimation(UAnimSequence, bool)` | ⬜ | 播放动画 |
-| `GetBoneLocation(FName)` | ⬜ | 骨骼位置 |
-| `GetSocketLocation(FName)` | ⬜ | Socket 位置 |
+| `SetSkeletalMesh(USkeletalMesh)` | ✅ | 设置骨骼网格 |
+| `SetAnimInstanceClass(TSubclassOf<UAnimInstance>)` | ✅ | 设置动画蓝图 |
+| `PlayAnimation(UAnimSequence, bool)` | ✅ | 播放动画 |
+| `GetBoneLocation(FName)` | ✅ | 骨骼位置 |
+| `GetSocketLocation(FName)` | ✅ | Socket 位置 |
 
 ### 7.3 UCharacterMovementComponent
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `MaxWalkSpeed` | ⬜ | 最大行走速度 |
-| `JumpZVelocity` | ⬜ | 跳跃速度 |
-| `GravityScale` | ⬜ | 重力缩放 |
-| `GetMovementMode()` | ⬜ | 移动模式 |
-| `SetMovementMode(EMovementMode)` | ⬜ | 设置移动模式 |
-| `IsWalking()` / `IsFalling()` / `IsFlying()` | ⬜ | 状态查询 |
+| `MaxWalkSpeed` | ✅ | 最大行走速度 |
+| `JumpZVelocity` | ✅ | 跳跃速度 |
+| `GravityScale` | ✅ | 重力缩放 |
+| `GetMovementMode()` | ✅ | 移动模式 |
+| `SetMovementMode(EMovementMode)` | ✅ | 设置移动模式 |
+| `IsWalking()` / `IsFalling()` / `IsFlying()` | ✅ | 状态查询 |
 
 ### 7.4 UCameraComponent
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `FieldOfView` | ⬜ | 视野角度 |
-| `AspectRatio` | ⬜ | 宽高比 |
-| `bConstrainAspectRatio` | ⬜ | 约束宽高比 |
-| `SetProjectionMode(ECameraProjectionMode)` | ⬜ | 投影模式 |
+| `FieldOfView` | ✅ | 视野角度 |
+| `AspectRatio` | ✅ | 宽高比 |
+| `bConstrainAspectRatio` | ✅ | 约束宽高比 |
+| `SetProjectionMode(ECameraProjectionMode)` | ✅ | 投影模式 |
 
 ### 7.5 USpringArmComponent
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `TargetArmLength` | ⬜ | 弹簧臂长度 |
-| `bDoCollisionTest` | ⬜ | 碰撞检测 |
-| `bEnableCameraLag` | ⬜ | 相机延迟 |
-| `CameraLagSpeed` | ⬜ | 延迟速度 |
+| `TargetArmLength` | ✅ | 弹簧臂长度 |
+| `bDoCollisionTest` | ✅ | 碰撞检测 |
+| `bEnableCameraLag` | ✅ | 相机延迟 |
+| `CameraLagSpeed` | ✅ | 延迟速度 |
 
 ### 7.6 UBoxComponent / USphereComponent / UCapsuleComponent
 
 | 特性/方法 | 状态 | 说明 |
 |----------|------|------|
-| `SetBoxExtent(FVector)` | ⬜ | 盒体大小 |
-| `SetSphereRadius(float)` | ⬜ | 球体半径 |
-| `SetCapsuleSize(float, float)` | ⬜ | 胶囊尺寸 |
-| `InitBoxExtent(FVector)` | ⬜ | 初始化盒体 |
+| `SetBoxExtent(FVector)` | ✅ | 盒体大小 |
+| `SetSphereRadius(float)` | ✅ | 球体半径 |
+| `SetCapsuleSize(float, float)` | ✅ | 胶囊尺寸 |
+| `InitBoxExtent(FVector)` | ✅ | 初始化盒体 |
 
 ---
 

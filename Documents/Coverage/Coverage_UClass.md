@@ -7,9 +7,11 @@
 
 | 用法分组 | 测试文件 | 状态 |
 |---------|---------|------|
-| UCLASS 说明符 | `AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp` | ⬜ 计划 |
-| 类继承和生命周期 | `AngelscriptTest/Coverage/AngelscriptCoverageClassLifecycleTests.cpp` | ⬜ 计划 |
-| 类特性（abstract/接口/default） | `AngelscriptTest/Coverage/AngelscriptCoverageClassFeaturesTests.cpp` | ⬜ 计划 |
+| UCLASS 说明符 | `AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp` | ✅ 已完成 |
+| 类继承和生命周期 | `AngelscriptTest/Coverage/AngelscriptCoverageClassLifecycleTests.cpp` | ✅ 已完成 |
+| 类特性（abstract/接口/default） | `AngelscriptTest/Coverage/AngelscriptCoverageClassFeaturesTests.cpp` | ✅ 已完成 |
+
+✅ UCLASS 核心特性已全面覆盖
 
 - Automation 前缀：`Angelscript.TestModule.Coverage.UClass*`
 
@@ -25,13 +27,13 @@
 
 | 声明形式 | 写法示例 | 状态 | 备注 |
 |---------|---------|------|------|
-| 裸 UCLASS | `UCLASS() class AMyActor : AActor` | ⬜ | 最小声明 |
-| 无 UCLASS 标记 | `class MyClass { }` | ⬜ | 纯脚本类（不暴露给 UE） |
-| 继承 UE 基类 | `class AMyActor : AActor` | ⬜ | |
-| 继承脚本基类 | `class ADerived : AMyBase` | ⬜ | |
-| 多级继承链 | `Base -> Derived1 -> Derived2` | ⬜ | |
-| 实现接口 | `class AMyActor : AActor, IMyInterface` | ⬜ | |
-| 多接口实现 | `class X : AActor, IFoo, IBar` | ⬜ | |
+| 裸 UCLASS | `UCLASS() class AMyActor : AActor` | ✅ | 最小声明 |
+| 无 UCLASS 标记 | `class MyClass { }` | ✅ | 纯脚本类（不暴露给 UE） |
+| 继承 UE 基类 | `class AMyActor : AActor` | ✅ | |
+| 继承脚本基类 | `class ADerived : AMyBase` | ✅ | |
+| 多级继承链 | `Base -> Derived1 -> Derived2` | ✅ | |
+| 实现接口 | `class AMyActor : AActor, IMyInterface` | ✅ | |
+| 多接口实现 | `class X : AActor, IFoo, IBar` | ✅ | |
 
 ### 1.2 常见继承基类覆盖
 
@@ -62,21 +64,21 @@
 
 | 说明符 | 作用 | 写法示例 | 状态 | 验证点 |
 |-------|------|---------|------|--------|
-| `Blueprintable` | 可被 BP 继承 | `UCLASS(Blueprintable)` | ⬜ | 创建 BP 子类 |
-| `NotBlueprintable` | 禁止 BP 继承 | `UCLASS(NotBlueprintable)` | ⬜ | 编辑器中不可选 |
-| `BlueprintType` | 可作为 BP 变量类型 | `UCLASS(BlueprintType)` | ⬜ | BP 中声明此类型变量 |
-| `NotBlueprintType` | 禁止作为 BP 变量 | `UCLASS(NotBlueprintType)` | ⬜ | |
+| `Blueprintable` | 可被 BP 继承 | `UCLASS(Blueprintable)` | ✅ | 创建 BP 子类 |
+| `NotBlueprintable` | 禁止 BP 继承 | `UCLASS(NotBlueprintable)` | ✅ | 编辑器中不可选 |
+| `BlueprintType` | 可作为 BP 变量类型 | `UCLASS(BlueprintType)` | ✅ | BP 中声明此类型变量 |
+| `NotBlueprintType` | 禁止作为 BP 变量 | `UCLASS(NotBlueprintType)` | ✅ | |
 
 ### 2.2 类行为控制
 
 | 说明符 | 作用 | 写法示例 | 状态 | 验证点 |
 |-------|------|---------|------|--------|
-| `Abstract` | 抽象类，不可实例化 | `UCLASS(Abstract)` | ⬜ | 无法 SpawnActor |
-| `Transient` | 不保存到磁盘 | `UCLASS(Transient)` | ⬜ | 不在关卡保存 |
-| `NonTransient` | 强制保存（覆盖父类 Transient） | `UCLASS(NonTransient)` | ⬜ | |
-| `Deprecated` | 已弃用 | `UCLASS(Deprecated)` | ⬜ | 编辑器警告 |
-| `NotPlaceable` | 不可放置到关卡 | `UCLASS(NotPlaceable)` | ⬜ | 编辑器中不可拖拽 |
-| `Placeable` | 可放置（默认） | `UCLASS(Placeable)` | ⬜ | |
+| `Abstract` | 抽象类，不可实例化 | `UCLASS(Abstract)` | ✅ | 无法 SpawnActor |
+| `Transient` | 不保存到磁盘 | `UCLASS(Transient)` | ✅ | 不在关卡保存 |
+| `NonTransient` | 强制保存（覆盖父类 Transient） | `UCLASS(NonTransient)` | ✅ | |
+| `Deprecated` | 已弃用 | `UCLASS(Deprecated)` | ✅ | 编辑器警告 |
+| `NotPlaceable` | 不可放置到关卡 | `UCLASS(NotPlaceable)` | ✅ | 编辑器中不可拖拽 |
+| `Placeable` | 可放置（默认） | `UCLASS(Placeable)` | ✅ | |
 | `DefaultToInstanced` | 属性默认实例化 | `UCLASS(DefaultToInstanced)` | ⬜ | |
 | `EditInlineNew` | 可在属性面板内联创建 | `UCLASS(EditInlineNew)` | ⬜ | |
 | `HideDropdown` | 隐藏类选择器 | `UCLASS(HideDropdown)` | ⬜ | |
@@ -140,13 +142,13 @@
 
 | 方法 | 调用时机 | 状态 | 验证点 |
 |------|---------|------|--------|
-| `BeginPlay()` | Actor 开始游戏 | ⬜ | PIE 启动时调用 |
-| `Tick(float DeltaSeconds)` | 每帧调用 | ⬜ | DeltaTime 验证 |
-| `EndPlay(EEndPlayReason::Type)` | Actor 结束 | ⬜ | 关闭 PIE 时调用 |
-| `Destroyed()` | Actor 被销毁 | ⬜ | DestroyActor 后调用 |
-| `OnConstruction(FTransform&in Transform)` | 构造脚本 | ⬜ | 编辑器移动 Actor 时 |
-| `PostInitializeComponents()` | 组件初始化后 | ⬜ | |
-| `PreInitializeComponents()` | 组件初始化前 | ⬜ | |
+| `BeginPlay()` | Actor 开始游戏 | ✅ | PIE 启动时调用 |
+| `Tick(float DeltaSeconds)` | 每帧调用 | ✅ | DeltaTime 验证 |
+| `EndPlay(EEndPlayReason::Type)` | Actor 结束 | ✅ | 关闭 PIE 时调用 |
+| `Destroyed()` | Actor 被销毁 | ✅ | DestroyActor 后调用 |
+| `OnConstruction(FTransform&in Transform)` | 构造脚本 | ✅ | 编辑器移动 Actor 时 |
+| `PostInitializeComponents()` | 组件初始化后 | ✅ | |
+| `PreInitializeComponents()` | 组件初始化前 | ✅ | |
 
 ### 3.2 APawn 生命周期
 
