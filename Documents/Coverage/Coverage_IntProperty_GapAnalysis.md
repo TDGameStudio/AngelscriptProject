@@ -68,7 +68,7 @@
 - 类成员（UPROPERTY 和非 UPROPERTY）
 
 **缺失**：
-- ⬜ struct 内 int 成员（嵌套 UPROPERTY）
+- ✅ struct 内 int 成员（嵌套 UPROPERTY）
 - ⬜ 命名空间内的 const 全局
 
 ### 2. 容器形态（92%）
@@ -227,4 +227,9 @@
 8. UFunctionParametersAndReturn
 
 ⭐ = 超出原计划的额外覆盖
+
+
+
+
+
 

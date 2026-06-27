@@ -49,14 +49,14 @@
 
 | 声明上下文 | 写法示例 | `int8` | `int16` | `int` | `int64` | `uint8` | `uint16` | `uint` | `uint64` |
 |------|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 局部变量（无默认值） | `int X;` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 局部变量（无默认值） | `int X;` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 局部变量（默认值） | `int X = 5;` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 局部 `const` | `const int X = 5;` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 局部 `const` | `const int X = 5;` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 全局 `const` | `const int G = 1;` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 全局可变 | `int G = 1;` | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
-| 类成员（无 UPROPERTY，脚本可见） | `int X;` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ |
+| 类成员（无 UPROPERTY，脚本可见） | `int X;` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | 类成员 `UPROPERTY()` | `UPROPERTY() int X;` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `auto` 推导 | `auto X = 5;` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| `auto` 推导 | `auto X = 5;` | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 > 本 fork 禁止可变模块级全局变量（"Mutable global variables are not supported"），故「全局可变」行 🚫，只能用 `const` 全局。
 
@@ -73,9 +73,9 @@
 | 边界值（min/max） | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `IntFamilyBoundaryValues` |
 | `UPROPERTY` + 说明符 | 🟡 | 🟡 | ✅ | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | `IntPropertySpecifierFlags`（int 全说明符排列；其他宽度机制相同） |
 | `TArray<T>` 元素 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `IntContainerProperties` + `IntContainerPropertiesExtended` |
-| `TMap<*, T>` 值 | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | `IntContainerPropertiesExtended`（FString作键） |
-| `TMap<T, *>` 键 | ✅ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `IntContainerProperties` + `IntContainerPropertiesExtended` |
-| `TSet<T>` 元素 | ✅ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `IntContainerPropertiesExtended` |
+| `TMap<*, T>` 值 | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | `IntContainerPropertiesExtended`（FString作键） |
+| `TMap<T, *>` 键 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | `IntContainerProperties` + `IntContainerPropertiesExtended` |
+| `TSet<T>` 元素 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | `IntContainerPropertiesExtended` |
 | 复制 `Replicated` | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | Haze fork 不支持 |
 | 复制 `ReplicatedUsing` | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | Haze fork 不支持 |
 | USTRUCT 内 int 成员（嵌套路径） | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 需要先建立 USTRUCT 框架 |
@@ -163,10 +163,10 @@
 | 参数 `&out` | `void F(int&out X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersOut` |
 | 参数 `&inout` | `void F(int&inout X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersInOut` |
 | 返回值 | `int F()` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionReturnValues` |
-| 默认参数 | `void F(int X = 3)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionDefaultParameters` |
-| 多返回（`&out`） | `void F(int&out A, int&out B)` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | `FunctionParametersOut` |
-| 重载（按宽度） | `F(int)` vs `F(int64)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionOverloading` |
-| UFUNCTION 参数/返回 | `UFUNCTION() int F(int)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `UFunctionParametersAndReturn` |
+| 默认参数 | `void F(int X = 3)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | `FunctionDefaultParameters` |
+| 多返回（`&out`） | `void F(int&out A, int&out B)` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | `FunctionParametersOut` |
+| 重载（按宽度） | `F(int)` vs `F(int64)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | `FunctionOverloading` |
+| UFUNCTION 参数/返回 | `UFUNCTION() int F(int)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | `UFunctionParametersAndReturn` |
 
 ---
 
@@ -176,14 +176,14 @@
 
 | 运算符组 | 符号 | `int8` | `int16` | `int` | `int64` | `uint8` | `uint16` | `uint` | `uint64` |
 |------|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 算术 | `+ - * / %` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 一元负 | `-x` | ⬜ | ⬜ | ✅ | ⬜ | 🚫 | 🚫 | 🚫 | 🚫 |
-| 比较 | `== != < <= > >=` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 位运算 | `& \| ^ ~` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 移位 | `<< >> >>>` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 复合赋值 | `+= -= *= /= %=` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 位复合赋值 | `&= \|= ^= <<= >>=` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 自增减（前/后缀） | `++x x++ --x x--` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 算术 | `+ - * / %` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 一元负 | `-x` | ✅ | ✅ | ✅ | ⬜ | 🚫 | 🚫 | 🚫 | 🚫 |
+| 比较 | `== != < <= > >=` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 位运算 | `& \| ^ ~` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 移位 | `<< >> >>>` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 复合赋值 | `+= -= *= /= %=` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 位复合赋值 | `&= \|= ^= <<= >>=` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 自增减（前/后缀） | `++x x++ --x x--` | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 > 一元负对无符号类型标 🚫（语义上仍可写但属环绕行为，按需可单列边界用例）。
 > 移位行 `int` 标 ✅：已覆盖 `<<` / `>>` / `>>>`（算术右移）。
@@ -374,3 +374,9 @@
 3. 改各子矩阵列头为该类型族成员；删掉不适用轴（标 🚫）。
 4. 删/改与该类型无关的说明符、容器、运算符行（如 `bool` 无算术、`FString` 无位运算）。
 5. 新建对应 `AngelscriptCoverage<Type>PropertyTests.cpp`（+ 必要时 Expression / Function 文件），方法命名沿用 `<Type>Family...` 结构。
+
+
+
+
+
+

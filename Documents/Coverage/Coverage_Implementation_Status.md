@@ -240,3 +240,8 @@ Tools\RunCoverageTestsByType.ps1
 **AngelScript Coverage 工作接近完成！** 🎉
 
 等待编译完成后即可进行测试验证。
+
+
+
+
+

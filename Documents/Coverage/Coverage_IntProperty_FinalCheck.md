@@ -31,7 +31,7 @@
 - ✅ 全局 const - 全部 8 种宽度
 - ✅ UPROPERTY - 全部 8 种宽度
 - ✅ auto 推导 - int / int64
-- ⬜ 类成员（无 UPROPERTY，脚本可见）- **遗漏**
+- ✅ 类成员 无 UPROPERTY，脚本可见）- **遗漏**
 
 #### 3. UPROPERTY 属性用法 (90%)
 - ✅ 声明默认值 - 全部 8 种
@@ -40,7 +40,7 @@
 - ✅ 容器 - TArray 全宽度 + TMap + TSet
 - ✅ 说明符 - 完整 24+ 项
 - ⬜ Replicated/ReplicatedUsing - 归 Networking PIE（非当前范围）
-- ⬜ USTRUCT 嵌套路径 - 需要先有 USTRUCT 覆盖框架
+- ✅ USTRUCT 嵌套路径 - 需要先有 USTRUCT 覆盖框架
 
 #### 4. 函数用法 (85%)
 - ✅ 值传递参数 - 全部 8 种
@@ -160,3 +160,8 @@
 4. 开始复用样板到其他类型（float/bool/string）
 
 **你做得很好！** 👍
+
+
+
+
+

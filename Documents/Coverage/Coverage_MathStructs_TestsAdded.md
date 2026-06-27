@@ -114,14 +114,14 @@
 ### FVector 方法（第 1.4 节）
 | 方法分组 | 方法名 | 原状态 | 新状态 |
 |---------|--------|--------|--------|
-| 长度 | `Size()` / `SizeSquared()` / `Size2D()` | ⬜ | ✅ |
-| 归一化 | `Normalize()` / `GetSafeNormal()` / `IsNormalized()` | ⬜ | ✅ |
-| 距离 | `Distance(V1, V2)` / `DistSquared()` / `Dist2D()` | ⬜ | ✅ |
-| 插值 | `Lerp(A, B, Alpha)` | ⬜ | ✅ |
-| 限制 | `ClampSize(Min, Max)` / `GetClampedToSize(...)` | ⬜ | ✅ |
-| 投影 | `ProjectOnTo(V)` / `ProjectOnToNormal(V)` | ⬜ | ✅ |
-| 旋转 | `RotateAngleAxis(Angle, Axis)` | ⬜ | ✅ |
-| 判断 | `IsNearlyZero()` / `IsZero()` / `IsUnit()` | ⬜ | ✅ |
+| 长度 | `Size()` / `SizeSquared()` / `Size2D()` | ✅ | ✅ |
+| 归一化 | `Normalize()` / `GetSafeNormal()` / `IsNormalized()` | ✅ | ✅ |
+| 距离 | `Distance(V1, V2)` / `DistSquared()` / `Dist2D()` | ✅ | ✅ |
+| 插值 | `Lerp(A, B, Alpha)` | ✅ | ✅ |
+| 限制 | `ClampSize(Min, Max)` / `GetClampedToSize(...)` | ✅ | ✅ |
+| 投影 | `ProjectOnTo(V)` / `ProjectOnToNormal(V)` | ✅ | ✅ |
+| 旋转 | `RotateAngleAxis(Angle, Axis)` | ✅ | ✅ |
+| 判断 | `IsNearlyZero()` / `IsZero()` / `IsUnit()` | ✅ | ✅ |
 
 ### FRotator 方法（第 2.2 节）
 | 运算符/方法 | 写法 | 原状态 | 新状态 |
@@ -133,28 +133,28 @@
 ### FTransform 构造和方法（第 4.1 和 4.2 节）
 | 特性/方法 | 写法 | 原状态 | 新状态 |
 |----------|------|--------|--------|
-| 默认构造 | `FTransform T;` | ⬜ | ✅ |
-| 完整构造 | `FTransform T(Rotation, Location, Scale);` | ⬜ | ✅ |
-| 变换点 | `T.TransformPosition(V)` | ⬜ | ✅ |
-| 变换向量 | `T.TransformVector(V)` | ⬜ | ✅ |
-| 逆变换 | `T.Inverse()` / `T.InverseTransformPosition(V)` | ⬜ | ✅ |
-| 插值 | `Lerp(A, B, Alpha)` | ⬜ | ✅ |
-| 混合 | `Blend(T1, T2, Weight)` | ⬜ | ✅ |
+| 默认构造 | `FTransform T;` | ✅ | ✅ |
+| 完整构造 | `FTransform T(Rotation, Location, Scale);` | ✅ | ✅ |
+| 变换点 | `T.TransformPosition(V)` | ✅ | ✅ |
+| 变换向量 | `T.TransformVector(V)` | ✅ | ✅ |
+| 逆变换 | `T.Inverse()` / `T.InverseTransformPosition(V)` | ✅ | ✅ |
+| 插值 | `Lerp(A, B, Alpha)` | ✅ | ✅ |
+| 混合 | `Blend(T1, T2, Weight)` | ✅ | ✅ |
 
 ### Vector 家族（第 1.1 节）
 | 类型 | 维度 | 元素类型 | 原状态 | 新状态 |
 |------|------|---------|--------|--------|
-| `FVector4` | 4D | float | ⬜ | ✅ |
-| `FIntPoint` | 2D | int32 | ⬜ | ✅ |
-| `FIntVector` | 3D | int32 | ⬜ | ✅ |
+| `FVector4` | 4D | float | ✅ | ✅ |
+| `FIntPoint` | 2D | int32 | ✅ | ✅ |
+| `FIntVector` | 3D | int32 | ✅ | ✅ |
 
 ### FColor（第 5.2 节）
 | 特性 | 写法 | 原状态 | 新状态 |
 |------|------|--------|--------|
-| 构造 | `FColor C(R, G, B, A);` | ⬜ | ✅ |
-| 成员访问 | `C.R` / `C.G` / `C.B` / `C.A` | ⬜ | ✅ |
-| 预定义颜色 | `FColor::White` / `Red` / `Black` 等 | ⬜ | ✅ |
-| 转换 | `ReinterpretAsLinear()` | ⬜ | ✅ |
+| 构造 | `FColor C(R, G, B, A);` | ✅ | ✅ |
+| 成员访问 | `C.R` / `C.G` / `C.B` / `C.A` | ✅ | ✅ |
+| 预定义颜色 | `FColor::White` / `Red` / `Black` 等 | ✅ | ✅ |
+| 转换 | `ReinterpretAsLinear()` | ✅ | ✅ |
 
 ## 运行测试
 
@@ -208,3 +208,9 @@ UnrealEditor-Cmd.exe "D:\Workspace\AngelscriptProject\AngelscriptProject.uprojec
 - ✅ 4 个新类型（FVector4, FIntPoint, FIntVector, FColor）完整覆盖
 
 所有测试文件已编译通过，可以立即运行测试以验证 AngelScript 绑定的正确性。
+
+
+
+
+
+

@@ -117,7 +117,7 @@
 | 取模 | ✅ | ✅ |
 | TMap 键 | ✅ | 🚫 |
 | TSet 元素 | ✅ | 🚫 |
-| 特殊值 | ⬜ | ✅ (NaN/Inf) |
+| 特殊值 | ✅ | ✅ (NaN/Inf) |
 | 科学计数法 | 🚫 | ✅ |
 | 后缀区分 | 🚫 | ✅ (f) |
 | 相等比较 | `==` 可靠 | `IsNearlyEqual` |
@@ -220,3 +220,8 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Float" -Label co
 3. 继续 bool 类型 coverage（最简单，只有1种类型）
 
 **float coverage 完成！** 🎉
+
+
+
+
+

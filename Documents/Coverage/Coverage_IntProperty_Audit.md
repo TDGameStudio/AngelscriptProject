@@ -204,3 +204,8 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntProperty" -La
 Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntExpression" -Label coverage-int-expression -TimeoutMs 1200000
 Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntFunction" -Label coverage-int-function -TimeoutMs 1200000
 ```
+
+
+
+
+

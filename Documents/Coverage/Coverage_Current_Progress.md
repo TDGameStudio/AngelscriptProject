@@ -141,3 +141,8 @@ VerifyByPath<FDoubleProperty, double>(*TestRunner, Actor, TEXT("VectorValue.Z"),
 ---
 
 **继续推进，目标完成所有核心类型的覆盖！** 🚀
+
+
+
+
+

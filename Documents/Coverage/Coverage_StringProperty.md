@@ -62,7 +62,7 @@
 | 声明默认值读回 | ⬜ | ⬜ | ⬜ | `StringFamilyDeclarationDefaults` |
 | 写回环（C++→属性→C++） | ⬜ | ⬜ | ⬜ | `StringFamilyWriteRoundTrip` |
 | 空字符串 / None | ⬜ | ⬜ | ⬜ | `StringFamilyEmptyValues` |
-| Unicode / 多字节字符 | ✅ | ⬜ | ⬜ | `StringFamilyUnicode` |
+| Unicode / 多字节字符 | ✅ | ✅ | ⬜ | `StringFamilyUnicode` |
 | `UPROPERTY` + 说明符 | ⬜ | ⬜ | ⬜ | `StringPropertySpecifierFlags` |
 | `TArray<T>` 元素 | ⬜ | ⬜ | ⬜ | `StringContainerProperties` |
 | `TMap<T, *>` 键 | ⬜ | ⬜ | 🚫 | `StringContainerProperties` |
@@ -84,4 +84,9 @@
 3. 根据类型特点调整子矩阵（字符串有拼接/格式化/转义，其它类型未必有）。
 4. 添加类型特有子矩阵（如本文的字符串操作方法）。
 5. 新建对应测试文件，方法命名沿用 `<Type>Family...` 结构。
+
+
+
+
+
 

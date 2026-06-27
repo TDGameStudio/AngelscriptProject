@@ -233,7 +233,7 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage"
 
 ### P0 剩余（约1小时）
 - ⬜ 无默认值 UPROPERTY
-- ⬜ 类型转换精度损失
+- ✅ 类型转换精度损失
 
 ### P1 重要补充（约3小时）
 - ⬜ 边界附近值（Min±1, Max±1）
@@ -242,7 +242,7 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage"
 
 ### P2 可选补充（约3小时）
 - ⬜ 更多 UE 类型（FQuat, FTransform）
-- ⬜ 复杂表达式嵌套
+- ✅ 复杂表达式嵌套
 - ⬜ UFUNCTION 说明符测试
 
 **总估算：约7小时**
@@ -290,3 +290,8 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage"
 **从最初的 23 个方法（85% 覆盖）提升到 28 个方法（95% 覆盖），质量提升了 10%！** 🎉
 
 **AngelScript int 和 float 类型覆盖测试已达到生产就绪水平！** ✅
+
+
+
+
+

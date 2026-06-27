@@ -197,3 +197,8 @@ The Coverage documentation is now a **trustworthy reference** for the AngelScrip
 - [Detailed Report](Coverage_Marker_Update_Report.md)
 - [Remaining Markers](Remaining_Markers_Detail.md)
 - [Validation Scripts](update_markers_v2.py)
+
+
+
+
+
