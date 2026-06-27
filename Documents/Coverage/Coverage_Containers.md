@@ -10,9 +10,11 @@
 | TArray 完整覆盖 | `AngelscriptTest/Coverage/AngelscriptCoverageTArrayAdvancedTests.cpp` | ✅ 已完成 |
 | TMap 完整覆盖 | `AngelscriptTest/Coverage/AngelscriptCoverageTMapAdvancedTests.cpp` | ✅ 已完成 |
 | TSet 完整覆盖 | `AngelscriptTest/Coverage/AngelscriptCoverageTSetAdvancedTests.cpp` | ✅ 已完成 |
+| 嵌套容器覆盖 | `AngelscriptTest/Coverage/AngelscriptCoverageContainerNestedTests.cpp` | ✅ 已完成 |
 | 容器高级用法 | `AngelscriptTest/Coverage/AngelscriptCoverageContainerAdvancedTests.cpp` | ⬜ 计划 |
 
 ✅ 所有三种容器的高级操作已覆盖
+✅ 嵌套容器（2D 数组、Map of Array、Array of Map、Array of Set、Map of Map）已覆盖
 
 ## 图例
 
@@ -214,17 +216,17 @@
 
 | 组合 | 写法 | 状态 | 说明 |
 |------|------|------|------|
-| 数组的数组 | `TArray<TArray<int>>` | ⬜ | 矩阵 |
-| Map 的数组 | `TArray<TMap<int, FString>>` | ⬜ | |
-| 数组的 Map | `TMap<int, TArray<int>>` | ⬜ | 一对多 |
-| Set 的数组 | `TArray<TSet<int>>` | ⬜ | |
+| 数组的数组 | `TArray<TArray<int>>` | ✅ | 矩阵 |
+| Map 的数组 | `TArray<TMap<int, FString>>` | ✅ | |
+| 数组的 Map | `TMap<int, TArray<int>>` | ✅ | 一对多 |
+| Set 的数组 | `TArray<TSet<int>>` | ✅ | |
 
 ### 4.2 复杂嵌套
 
 | 组合 | 写法 | 状态 | 说明 |
 |------|------|------|------|
-| Map<Key, Map> | `TMap<int, TMap<FString, float>>` | ⬜ | 二维映射 |
-| Array<Struct<Array>> | struct 内含数组，再放数组 | ⬜ | |
+| Map<Key, Map> | `TMap<int, TMap<FString, float>>` | ✅ | 二维映射 |
+| Array<Struct<Array>> | struct 内含数组，再放数组 | ⬜ | 待后续扩展 |
 
 ---
 

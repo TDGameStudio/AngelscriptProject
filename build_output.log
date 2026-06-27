@@ -1,0 +1,2 @@
+/d/Workspace/AngelscriptProject/Tools/RunBuild.ps1: line 1: syntax error near unexpected token `]'
+/d/Workspace/AngelscriptProject/Tools/RunBuild.ps1: line 1: `[CmdletBinding()]'
