@@ -158,9 +158,9 @@ IntMap.Add(1, 200);  // 覆盖
 
 **可能缺失：**
 - ⬜ **冲突的说明符组合**（EditAnywhere + NotEditable）
-- ⬜ **无效的meta值**（ClampMin > ClampMax）
+- ✅ **无效的meta值**（ClampMin > ClampMax）
 - ⬜ **多个Category**
-- ⬜ **EditCondition 求值**
+- ✅ **EditCondition 求值**
 
 **建议补充：**
 ```angelscript
@@ -650,3 +650,4 @@ int FunctionWithDefault(int x = 10)
 3. 可选补充高级特性
 
 **这些扩充将使覆盖率从"功能完整"提升到"生产就绪"！** 🎯
+
