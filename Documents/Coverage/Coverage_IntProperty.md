@@ -159,9 +159,9 @@
 | 函数用法 | 写法示例 | `int8` | `int16` | `int` | `int64` | `uint8` | `uint16` | `uint` | `uint64` | 覆盖方法 |
 |------|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|------|
 | 参数（值传递） | `void F(int X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersValue` |
-| 参数 `&in` | `void F(int&in X)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionParametersIn` |
-| 参数 `&out` | `void F(int&out X)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionParametersOut` |
-| 参数 `&inout` | `void F(int&inout X)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionParametersInOut` |
+| 参数 `&in` | `void F(int&in X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersIn` |
+| 参数 `&out` | `void F(int&out X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersOut` |
+| 参数 `&inout` | `void F(int&inout X)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionParametersInOut` |
 | 返回值 | `int F()` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `FunctionReturnValues` |
 | 默认参数 | `void F(int X = 3)` | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | `FunctionDefaultParameters` |
 | 多返回（`&out`） | `void F(int&out A, int&out B)` | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | `FunctionParametersOut` |
