@@ -245,3 +245,4 @@ The Coverage documentation now accurately reflects the AngelScript implementatio
 
 
 
+

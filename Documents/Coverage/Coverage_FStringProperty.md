@@ -18,7 +18,7 @@
 
 ## 图例
 
-- `✅ 已覆盖` ｜ `🟡 部分覆盖` ｜ `⬜ 待写` ｜ `🚫 不适用/不支持`
+- `✅ 已覆盖 ✅ 待写` ｜ `🚫 不适用/不支持`
 
 ---
 
@@ -315,6 +315,7 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FStringMethod" -
 | **总计** | | **约 9 小时** |
 
 > 比 int/float 复杂，因为有大量方法需要测试。
+
 
 
 

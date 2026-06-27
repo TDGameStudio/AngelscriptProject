@@ -184,3 +184,4 @@ AngelscriptCoverageBoolFunctionTests.cpp
 
 
 
+

@@ -17,7 +17,7 @@
 
 ## 图例
 
-- `✅ 已覆盖` ｜ `🟡 部分覆盖` ｜ `⬜ 待写` ｜ `🚫 不适用/不支持`
+- `✅ 已覆盖 ✅ 待写` ｜ `🚫 不适用/不支持`
 
 ---
 
@@ -230,6 +230,7 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector" -Label 
 | **总计** | | **约 4 小时** |
 
 > FVector 比基础类型复杂，有丰富的方法和运算符。
+
 
 
 
