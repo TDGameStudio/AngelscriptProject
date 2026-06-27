@@ -127,10 +127,10 @@
 
 | 函数用法 | 写法示例 | `bool` | 覆盖方法 |
 |------|------|:---:|------|
-| 参数（值传递） | `void F(bool B)` | ⬜ | `FunctionParametersValue` |
-| 参数 `&in` | `void F(bool&in B)` | ⬜ | `FunctionParametersIn` |
-| 参数 `&out` | `void F(bool&out B)` | ⬜ | `FunctionParametersOut` |
-| 参数 `&inout` | `void F(bool&inout B)` | ⬜ | `FunctionParametersInOut` |
+| 参数（值传递） | `void F(bool B)` | ✅ | `FunctionParametersValue` |
+| 参数 `&in` | `void F(bool&in B)` | ✅ | `FunctionParametersIn` |
+| 参数 `&out` | `void F(bool&out B)` | ✅ | `FunctionParametersOut` |
+| 参数 `&inout` | `void F(bool&inout B)` | ✅ | `FunctionParametersInOut` |
 | 返回值 | `bool F()` | ⬜ | `FunctionReturnValues` |
 | 默认参数 | `void F(bool B = true)` | ⬜ | `FunctionDefaultParameters` |
 | 多返回（`&out`） | `void F(bool&out A, bool&out B)` | ⬜ | `FunctionParametersOut` |
