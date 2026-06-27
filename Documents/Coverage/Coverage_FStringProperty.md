@@ -84,7 +84,7 @@
 | 拼接赋值 | `+=` | ⬜ | 🚫 | 🚫 | 只有 FString |
 | 相等 | `==` | ⬜ | ⬜ | ⬜ | |
 | 不等 | `!=` | ⬜ | ⬜ | ⬜ | |
-| 比较 | `<, <=, >, >=` | ✅ | ⬜ | 🚫 | FText 无比较 |
+| 比较 | `<, <=, >, >=` | ✅ | ✅ | 🚫 | FText 无比较 |
 | 索引 | `[]` | ⬜ | 🚫 | 🚫 | 只有 FString |
 
 ---
@@ -315,6 +315,7 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FStringMethod" -
 | **总计** | | **约 9 小时** |
 
 > 比 int/float 复杂，因为有大量方法需要测试。
+
 
 
 
