@@ -44,8 +44,8 @@
 | `ACharacter` | 带角色移动的 Pawn | ⬜ | OnMovementModeChanged |
 | `APlayerController` | 玩家控制器 | ⬜ | BeginPlay / SetupInputComponent |
 | `AGameModeBase` | 游戏模式 | ⬜ | InitGame / PostLogin |
-| `AGameStateBase` | 游戏状态 | ⬜ | OnRep_* |
-| `APlayerState` | 玩家状态 | ⬜ | CopyProperties |
+| `AGameStateBase` | 游戏状态 ✅ | OnRep_* |
+| `APlayerState` | 玩家状态 ✅ | CopyProperties |
 | `AHUD` | HUD 显示 | ⬜ | DrawHUD |
 | `UObject` | 纯数据/逻辑对象 | ⬜ | 无生命周期 |
 | `UActorComponent` | Actor 组件 | ⬜ | BeginPlay / TickComponent |
@@ -411,6 +411,7 @@
 - USTRUCT 无生命周期方法
 - UENUM 无组件概念
 - UINTERFACE 无实例化
+
 
 
 

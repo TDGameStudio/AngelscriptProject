@@ -187,7 +187,7 @@
 |------|------|------|
 | null 检查 | ⬜ | `if (!ensure(Obj)) return;` |
 | 索引检查 | ⬜ | `if (!ensure(Index < Num())) return;` |
-| 状态检查 | ⬜ | `if (!ensure(IsValid())) return;` |
+| 状态 ✅ | `if (!ensure(IsValid())) return;` |
 
 ---
 
@@ -384,6 +384,7 @@
 - 断言测试需要特殊处理（不能真崩溃）
 - 日志测试需要验证输出
 - 调试绘制需要可视化验证（可选）
+
 
 
 

@@ -184,13 +184,14 @@ Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntFunction" -La
 ### 矩阵驱动方法论
 1. 先定义完整的覆盖矩阵（文档）
 2. 按优先级分批实现（P0 → P1 → P2）
-3. 持续同步文档状态（✅ 🟡 ⬜ 🚫）
+3. 持续同步文档状态 ✅ 🚫）
 4. 审计 → 实现 → 验证 → 文档化的闭环
 
 ### 可复用性
 - 矩阵结构（9个子矩阵）适用于所有值类型
 - 测试方法命名模式（`<Type>Family<Axis>`）清晰可扩展
 - Pattern D/B/F/C 的选择规则已验证
+
 
 
 
