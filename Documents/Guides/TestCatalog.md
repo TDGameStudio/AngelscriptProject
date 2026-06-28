@@ -830,7 +830,7 @@
 
 ## 7. Compiler — 编译管线
 
-> 源文件：`Compiler/AngelscriptCompilerPipelineTests.cpp`、`Compiler/AngelscriptCompilationEventsTests.cpp`、`Compiler/AngelscriptVirtualScriptPathCompilerTests.cpp`
+> 源文件：`Compiler/AngelscriptCompilerEndToEndTests.cpp`、`Compiler/AngelscriptCompilerEventsTests.cpp`、`Compiler/AngelscriptCompilerVirtualScriptPathTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
@@ -1384,7 +1384,7 @@
 
 ## 16. Dump — 状态导出
 
-> 源文件：`Dump/AngelscriptDumpCommand.cpp`、`Dump/AngelscriptDumpTests.cpp`、`Dump/AngelscriptCrashSnapshotTests.cpp`、`Dump/AngelscriptCrashSnapshotProcessTests.cpp`
+> 源文件：`Dump/AngelscriptDumpCommand.cpp`、`Dump/AngelscriptDumpTests.cpp`、`Dump/AngelscriptStateDumpDiffTests.cpp`、`Dump/AngelscriptCrashSnapshotTests.cpp`、`Dump/AngelscriptCrashSnapshotProcessTests.cpp`
 >
 > 控制台命令：`as.DumpEngineState [OutputDir]`
 >
@@ -1394,8 +1394,11 @@
 |--------|----------|
 | Dump.CSVWriter.Basic | `FCSVWriter` 能写出基础 header/row，并将结果保存到磁盘 |
 | Dump.CSVWriter.SpecialCharacters | `FCSVWriter` 对逗号、双引号与换行字段做正确 CSV 转义 |
-| Dump.DumpAll.EndToEnd | `FAngelscriptStateDump::DumpAll()` 会生成 Phase 1-7 约定的全部 CSV 文件 |
+| Dump.DumpAll.EndToEnd | `FAngelscriptStateDump::DumpAll()` 会生成 Phase 1-7 约定的全部 CSV 文件，并包含 `EngineStateSnapshot.csv` 与分类 snapshot 表 |
 | Dump.DumpAll.Summary | `DumpSummary.csv` 会为每张表写出状态与行数；当前 `ToStringTypes` / `HotReloadState` / `CodeCoverage` 的 `NotAvailable` / `PartialExport` / `Skipped` 属于受 public API 与编译开关约束的预期结果 |
+| Dump.StateDiff.CaptureSnapshotProducesDeterministicRows | 引擎 snapshot 行使用稳定 key、无重复且排序确定，并包含 FAS/AS engine 关键状态 |
+| Dump.StateDiff.DiffSnapshotsReportsAddedRemovedAndChangedRows | snapshot diff 按 `Category + Identity + Field` 汇报 added / removed / changed |
+| Dump.StateDiff.CompileImpactAppearsInStateDiff | 编译新模块后，diff 能观察到 FAS active module 与底层 AS module/function/type 状态变化 |
 | Dump.CrashSnapshot.Write | `FAngelscriptCrashSnapshot` 能写出 JSON snapshot，包含 schema、marker、进程/线程、引擎状态和模块概要 |
 | Dump.CrashSnapshot.TestCommandRegistered | crash snapshot 的测试配置命令 `as.Test.ConfigureCrashSnapshot` 已注册 |
 | `Angelscript.CrashOnly.CrashSnapshot.ChildProcessDebugCrash` | 独立子进程通过 UE `DEBUG CRASH` 触发崩溃，并验证 crash snapshot 在崩溃路径落盘；必须单独运行，不进入普通 `Angelscript.TestModule.*` 回归 |
