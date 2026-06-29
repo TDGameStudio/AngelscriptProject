@@ -1,2 +1,0 @@
-// 测试代码过长，分段输出
-// 文件：AngelscriptCoverageFStringExpressionTests.cpp
