@@ -113,3 +113,52 @@
 - Final FTransformFunction narrow test result: passed, `8/8`; summary `Saved\Tests\coverage-ftransform-function-6\20260630_095230_124_23f04847\Summary.json`; report `Saved\Tests\coverage-ftransform-function-6\20260630_095230_124_23f04847\Report\index.json`.
 - FTransformExpression narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FTransformExpression" -Label coverage-ftransform-expression-1 -TimeoutMs 600000`
 - FTransformExpression narrow test result: passed, `8/8`; summary `Saved\Tests\coverage-ftransform-expression-1\20260630_095311_062_86e14b55\Summary.json`; report `Saved\Tests\coverage-ftransform-expression-1\20260630_095311_062_86e14b55\Report\index.json`.
+
+### FVector2DExpression Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-6 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-6\20260630_095430_582_3b54cc6e\Summary.json`; log `Saved\Tests\coverage-goal-tests-6\20260630_095430_582_3b54cc6e\Automation.log`.
+  - Crash root: `Coverage.FVector2DExpression.Vector2DConstruction` compiled a positive module containing unsupported `FVector2D(5.0)`, `FVector2D::One`, `FVector2D::UnitX`, and `FVector2D::UnitY`, then dereferenced a null module through `ExpectGlobalReturn`.
+- Root causes:
+  - The current `FVector2D` AS binding surface exposes `FVector2D()`, `FVector2D(X, Y)`, `ZeroVector`, and `UnitVector`, but not the single-value constructor or `One` / `UnitX` / `UnitY` constants.
+  - `FVector2D.DotProduct` is bound as a method, but the `A | B` operator is not exposed for `FVector2D`.
+  - Raw AS `float` return handling in this file must read through `double` because this fork uses `asEP_FLOAT_IS_FLOAT64=1`.
+- Resolution:
+  - Kept supported construction and dot-product behavior as positive coverage.
+  - Converted the single-value constructor, unbound constants, and `A | B` dot operator into explicit negative compile-boundary coverage.
+  - Added module null guards before invoking FVector2D expression globals.
+  - Read AS `float` returns through `double` in the helper.
+- First build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvector2dexpr-build-1 -TimeoutMs 1800000`
+- First build result: passed, exit code `0`; log `Saved\Build\coverage-fvector2dexpr-build-1\20260630_095731_772_0d5ecab1\UBT.log`.
+- First narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector2DExpression" -Label coverage-fvector2dexpr-1 -TimeoutMs 600000`
+- First narrow test result: failed, `4/5`; summary `Saved\Tests\coverage-fvector2dexpr-1\20260630_095757_581_e9697da3\Summary.json`. Remaining failure was `Vector2DDotProduct`, where the `A | B` operator is not exposed for `FVector2D`.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvector2dexpr-build-2 -TimeoutMs 1800000`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvector2dexpr-build-2\20260630_100302_857_20791217\UBT.log`.
+- Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector2DExpression" -Label coverage-fvector2dexpr-2 -TimeoutMs 600000`
+- Final narrow test result: passed, `5/5`; summary `Saved\Tests\coverage-fvector2dexpr-2\20260630_100344_276_fc943945\Summary.json`; report `Saved\Tests\coverage-fvector2dexpr-2\20260630_100344_276_fc943945\Report\index.json`.
+
+### FVector2DFunction Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-7 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-7\20260630_100529_188_6628e14b\Summary.json`; log `Saved\Tests\coverage-goal-tests-7\20260630_100529_188_6628e14b\Automation.log`.
+  - Crash root: `Coverage.FVector2DFunction.FunctionParametersIn` compiled a positive module containing unsupported `FVector2D.Length()`, then dereferenced a null module through `FASGlobalFunctionInvoker`.
+- Root causes:
+  - `FVector2D` binds `Size()` and `SizeSquared()`, not `Length()`.
+  - `FVector2D.Distance` is bound as a member method, not as static `FVector2D::Distance(A, B)`.
+  - Raw AS `float` return and scalar argument handling in this file needs double-backed reads/writes where the current fork exposes `float64` behavior.
+  - Omitted default arguments are not reliably invokable by resolving a shortened raw global signature; the default path should execute through a script wrapper that calls the defaulted function.
+- Resolution:
+  - Kept value, `&in`, `&out`, `&inout`, return, default, and UFUNCTION paths as positive coverage using the current binding surface.
+  - Converted unsupported `FVector2D.Length()` and static `FVector2D::Distance(A, B)` into explicit compile-boundary tests.
+  - Added module null guards before invoking compiled modules.
+  - Changed default-parameter verification to execute through `AddUsingDefault`.
+- First build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvector2dfunc-build-1 -TimeoutMs 1800000`
+- First build result: passed, exit code `0`; log `Saved\Build\coverage-fvector2dfunc-build-1\20260630_100916_603_6444f79c\UBT.log`.
+- First narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector2DFunction" -Label coverage-fvector2dfunc-1 -TimeoutMs 600000`
+- First narrow test result: failed, `5/7`; summary `Saved\Tests\coverage-fvector2dfunc-1\20260630_100944_620_a013b199\Summary.json`. Remaining failures were `FunctionParametersValue` for static `FVector2D::Distance(A, B)` and `FunctionParametersInOut` for the scalar argument path.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvector2dfunc-build-2 -TimeoutMs 1800000`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvector2dfunc-build-2\20260630_101210_437_c247c411\UBT.log`.
+- Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector2DFunction" -Label coverage-fvector2dfunc-2 -TimeoutMs 600000`
+- Final narrow test result: passed, `7/7`; summary `Saved\Tests\coverage-fvector2dfunc-2\20260630_101237_807_14bd826b\Summary.json`; report `Saved\Tests\coverage-fvector2dfunc-2\20260630_101237_807_14bd826b\Report\index.json`.
