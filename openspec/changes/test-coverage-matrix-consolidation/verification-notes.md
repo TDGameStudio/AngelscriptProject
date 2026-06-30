@@ -162,3 +162,65 @@
 - Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvector2dfunc-build-2\20260630_101210_437_c247c411\UBT.log`.
 - Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVector2DFunction" -Label coverage-fvector2dfunc-2 -TimeoutMs 600000`
 - Final narrow test result: passed, `7/7`; summary `Saved\Tests\coverage-fvector2dfunc-2\20260630_101237_807_14bd826b\Summary.json`; report `Saved\Tests\coverage-fvector2dfunc-2\20260630_101237_807_14bd826b\Report\index.json`.
+
+### FVectorExpression Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-8 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-8\20260630_101421_607_6090dc81\Summary.json`; log `Saved\Tests\coverage-goal-tests-8\20260630_101421_607_6090dc81\Automation.log`.
+  - Crash root: `Coverage.FVectorExpression.FVectorConstruction` compiled a positive module containing unsupported `FVector::UnitX()`, `FVector::UnitY()`, and `FVector::UnitZ()`, then dereferenced a null module through `ExpectGlobalReturn`.
+- Build command before the next full run: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-goal-build-1 -TimeoutMs 1800000`
+- Build result: passed, exit code `0`; UBT reported the target was up to date; log `Saved\Build\coverage-goal-build-1\20260630_102004_675_0d9a9d64\UBT.log`.
+- Full Coverage confirmation before patch:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-9 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-9\20260630_102016_694_3cceb953\Summary.json`; log `Saved\Tests\coverage-goal-tests-9\20260630_102016_694_3cceb953\Automation.log`.
+  - Crash root: same `FVectorExpression.FVectorConstruction` null-module crash after unsupported `FVector::UnitX()`, `FVector::UnitY()`, and `FVector::UnitZ()` compile diagnostics.
+- Root causes:
+  - `Bind_FVector.cpp` exposes `FVector::ZeroVector`, `OneVector`, `ForwardVector`, `RightVector`, `UpVector`, and related direction constants, but not `UnitX()`, `UnitY()`, or `UnitZ()` function aliases.
+  - `FVector` product helpers are bound as member methods (`DotProduct`, `CrossProduct`), not as `A | B`, `A ^ B`, or static `FVector::DotProduct(A, B)` / `FVector::CrossProduct(A, B)` entry points.
+  - Current bound method names are `Size`, `SizeSquared`, `GetSafeNormal`, member `Distance`, member `DotProduct`, and member `CrossProduct`; legacy aliases such as `Length`, `SquaredLength`, `GetNormalized`, static `Distance`, `Dot`, and `Cross` are not exposed.
+  - Raw AS `float` return handling in this file must read through `double` because this fork uses `asEP_FLOAT_IS_FLOAT64=1`.
+  - Plain script-class local declarations such as `FPlainVectorHolder Holder;` create a null handle in this fork; member access is therefore a runtime boundary that raises `Null pointer access`, matching the existing `FRotator` coverage pattern.
+- Resolution:
+  - Kept supported construction, constants, member access, operators, and bound methods as positive coverage.
+  - Converted unsupported `UnitX/UnitY/UnitZ`, product operator/static aliases, and legacy method aliases into explicit negative compile-boundary coverage.
+  - Added module null guards before invoking FVector expression globals.
+  - Converted the plain script-class member case into an explicit runtime exception boundary instead of a positive value assertion.
+- First narrow test command before rebuilding the modified C++ test DLL: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorExpression" -Label coverage-fvectorexpr-1 -TimeoutMs 600000`
+- First narrow test result: failed/crashed, editor exit code `3`; summary `Saved\Tests\coverage-fvectorexpr-1\20260630_102438_511_4086acaa\Summary.json`. The log showed the old test DLL still contained the previous `FVector::UnitX/Y/Z` positive module, so the C++ test edit required a rebuild before rerunning.
+- First build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvectorexpr-build-1 -TimeoutMs 1800000`
+- First build result: passed, exit code `0`; log `Saved\Build\coverage-fvectorexpr-build-1\20260630_102550_893_67db36bd\UBT.log`.
+- Second narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorExpression" -Label coverage-fvectorexpr-2 -TimeoutMs 600000`
+- Second narrow test result: failed, `7/8`; summary `Saved\Tests\coverage-fvectorexpr-2\20260630_102619_367_b6eac4e9\Summary.json`. Remaining failure was `FVectorDeclarationsAndIndexAccess`, where an inline plain AS class used unsupported C++-style `public:` syntax.
+- Second build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvectorexpr-build-2 -TimeoutMs 1800000`
+- Second build result: passed, exit code `0`; log `Saved\Build\coverage-fvectorexpr-build-2\20260630_102722_834_4529afaf\UBT.log`.
+- Third narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorExpression" -Label coverage-fvectorexpr-3 -TimeoutMs 600000`
+- Third narrow test result: failed, `7/8`; summary `Saved\Tests\coverage-fvectorexpr-3\20260630_102740_941_bc202e80\Summary.json`. Remaining failure was the same scenario after compile succeeded; `FPlainVectorHolder Holder;` raised `Null pointer access` at runtime and was converted to an explicit boundary test.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvectorexpr-build-3 -TimeoutMs 1800000`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvectorexpr-build-3\20260630_102909_000_5c5053d1\UBT.log`.
+- Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorExpression" -Label coverage-fvectorexpr-4 -TimeoutMs 600000`
+- Final narrow test result: passed, `8/8`; summary `Saved\Tests\coverage-fvectorexpr-4\20260630_103005_634_54c3650f\Summary.json`; report `Saved\Tests\coverage-fvectorexpr-4\20260630_103005_634_54c3650f\Report\index.json`.
+
+### FVectorFunction Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-10 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-10\20260630_103201_708_973d0383\Summary.json`; log `Saved\Tests\coverage-goal-tests-10\20260630_103201_708_973d0383\Automation.log`.
+  - Crash root: `Coverage.FVectorFunction.FunctionParametersIn` compiled a positive module containing unsupported `FVector.Length()`, then dereferenced a null module through `FASGlobalFunctionInvoker`.
+- Root causes:
+  - `FVector` binds `Size()` and `SizeSquared()`, not `Length()`.
+  - `FVector.Distance` is bound as a member method, not as static `FVector::Distance(A, B)`.
+  - Raw AS `float` return and scalar argument handling in this file needs double-backed reads/writes because the current fork exposes `float64` behavior.
+  - Omitted default arguments are not reliably invokable by resolving a shortened raw global signature; the default path should execute through a script wrapper that calls the defaulted function.
+- Resolution:
+  - Kept value, `&in`, `&out`, `&inout`, return, default, and UFUNCTION paths as positive coverage using the current binding surface.
+  - Converted unsupported `FVector.Length()` and static `FVector::Distance(A, B)` into explicit compile-boundary tests.
+  - Added module null guards before invoking compiled modules.
+  - Changed default-parameter verification to execute through `AddUsingDefault`.
+  - Read AS `float` return values and scalar arguments through double-backed paths.
+- First build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvectorfunc-build-1 -TimeoutMs 1800000`
+- First build result: failed before compiling because Live Coding was active; UBT reported `Unable to build while Live Coding is active`; log `Saved\Build\coverage-fvectorfunc-build-1\20260630_103517_142_0e6ecf0c\UBT.log`.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-fvectorfunc-build-2 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvectorfunc-build-2\20260630_103610_447_d6f1434d\UBT.log`.
+- Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorFunction" -Label coverage-fvectorfunc-1 -TimeoutMs 600000`
+- Final narrow test result: passed, `7/7`; summary `Saved\Tests\coverage-fvectorfunc-1\20260630_103639_591_fb877d33\Summary.json`; report `Saved\Tests\coverage-fvectorfunc-1\20260630_103639_591_fb877d33\Report\index.json`.
