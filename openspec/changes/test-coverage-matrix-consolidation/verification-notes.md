@@ -93,13 +93,23 @@
   - `FTransform.Location`, `FTransform.Scale3D`, and `FTransform.Rotation` are not exposed as direct AS members; the current binding surface exposes accessor and mutator methods such as `GetLocation`, `GetScale3D`, `SetLocation`, `SetScale3D`, `SetRotation`, and `AddToTranslation`.
   - `Math::Lerp(FTransform, FTransform, float)` is not bound; `FTransform::Blend` is available.
   - Raw AS `float` return handling in these tests must read as `double` because this fork uses `asEP_FLOAT_IS_FLOAT64=1`.
-- Resolution so far:
+- Resolution:
   - Replaced direct positive member access with bound `FTransform` accessor/mutator APIs.
   - Converted direct member access and `Math::Lerp(FTransform)` into explicit negative compile-boundary coverage.
   - Added null module guards before invoking FTransform function modules.
   - Changed default-parameter verification to execute through a script wrapper instead of resolving an omitted-argument raw invoker signature.
+  - Kept `FTransform&inout` mutation as positive coverage. The intermediate `coverage-ftransform-function-5` run proved `SetScale3D` writes back to caller storage after the test module was rebuilt, so it is not a negative boundary.
 - Build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-ftransform-build-2 -TimeoutMs 1800000`
 - Build result: passed, exit code `0`.
 - Narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FTransformFunction" -Label coverage-ftransform-function-3 -TimeoutMs 600000`
 - Narrow test result: failed, `7/8`; summary `Saved\Tests\coverage-ftransform-function-3\20260630_094021_281_9e8e67f4\Summary.json`; log `Saved\Tests\coverage-ftransform-function-3\20260630_094021_281_9e8e67f4\Automation.log`.
-- Remaining failure: `FunctionParametersInOut` reports `Expected 'FTransform &inout parameter scales' to be true` at `Plugins\Angelscript\Source\AngelscriptTest\Coverage\AngelscriptCoverageFTransformFunctionTests.cpp(222)`. The case is kept as an explicit unresolved coverage point rather than removed.
+- Intermediate build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-ftransform-build-3 -TimeoutMs 1800000`
+- Intermediate build result: passed, exit code `0`; log `Saved\Build\coverage-ftransform-build-3\20260630_095042_249_9ae58d01\UBT.log`.
+- Intermediate narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FTransformFunction" -Label coverage-ftransform-function-5 -TimeoutMs 600000`
+- Intermediate narrow test result: failed, `7/8`; summary `Saved\Tests\coverage-ftransform-function-5\20260630_095107_809_cdc3738b\Summary.json`. The failure was the intentionally inverted boundary assertion for `SetScale3D`, which showed the mutator actually writes back.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-ftransform-build-4 -TimeoutMs 1800000`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-ftransform-build-4\20260630_095211_984_e5986256\UBT.log`.
+- Final FTransformFunction narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FTransformFunction" -Label coverage-ftransform-function-6 -TimeoutMs 600000`
+- Final FTransformFunction narrow test result: passed, `8/8`; summary `Saved\Tests\coverage-ftransform-function-6\20260630_095230_124_23f04847\Summary.json`; report `Saved\Tests\coverage-ftransform-function-6\20260630_095230_124_23f04847\Report\index.json`.
+- FTransformExpression narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FTransformExpression" -Label coverage-ftransform-expression-1 -TimeoutMs 600000`
+- FTransformExpression narrow test result: passed, `8/8`; summary `Saved\Tests\coverage-ftransform-expression-1\20260630_095311_062_86e14b55\Summary.json`; report `Saved\Tests\coverage-ftransform-expression-1\20260630_095311_062_86e14b55\Report\index.json`.
