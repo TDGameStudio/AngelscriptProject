@@ -273,3 +273,33 @@
 - Final build result: passed, exit code `0`; log `Saved\Build\coverage-intfunc-build-2\20260630_111017_946_93b269c4\UBT.log`.
 - Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntFunction" -Label coverage-intfunc-2 -TimeoutMs 600000`
 - Final narrow test result: passed, `14/14`; summary `Saved\Tests\coverage-intfunc-2\20260630_111044_490_2382968e\Summary.json`; report `Saved\Tests\coverage-intfunc-2\20260630_111044_490_2382968e\Report\index.json`.
+
+### AnimInstance Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-13 -TimeoutMs 900000`
+  - Result: failed, `670/1002`; summary `Saved\Tests\coverage-goal-tests-13\20260630_111208_596_67f11bbc\Summary.json`; log `Saved\Tests\coverage-goal-tests-13\20260630_111208_596_67f11bbc\Automation.log`.
+  - First failure: `Coverage.Animation.AnimInstance.AnimInstanceQueryFunctionsCompile` and `AnimInstanceSubclassAndVariables`.
+- Narrow red test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Animation.AnimInstance" -Label coverage-animinstance-red-1 -TimeoutMs 600000`
+- Narrow red test result: failed, `0/2`; summary `Saved\Tests\coverage-animinstance-red-1\20260630_112007_651_bca7ba64\Summary.json`; report `Saved\Tests\coverage-animinstance-red-1\20260630_112007_651_bca7ba64\Report\index.json`.
+- Root cause: the AS fixture declared the `GetCurveValueWithDefault` out parameter as `float`, while the generated binding expects `float32& OutValue`; diagnostics reported `Parameter 'OutValue' expected float32&, but got float`.
+- Resolution: kept the supported `GetCurveValueWithDefault` path positive and changed the fixture local to `float32 Value`, matching the reflected signature without deleting coverage.
+- Build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-animinstance-build-1 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- Build result: passed, exit code `0`; log `Saved\Build\coverage-animinstance-build-1\20260630_112125_572_e21e2819\UBT.log`.
+- Narrow green test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Animation.AnimInstance" -Label coverage-animinstance-1 -TimeoutMs 600000`
+- Narrow green test result: passed, `2/2`; summary `Saved\Tests\coverage-animinstance-1\20260630_112151_509_625f98a2\Summary.json`; report `Saved\Tests\coverage-animinstance-1\20260630_112151_509_625f98a2\Report\index.json`.
+
+### AssetLoading Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-14 -TimeoutMs 900000`
+  - Result: failed, `671/1002`; summary `Saved\Tests\coverage-goal-tests-14\20260630_112318_250_6364d78e\Summary.json`; log `Saved\Tests\coverage-goal-tests-14\20260630_112318_250_6364d78e\Automation.log`.
+  - First failure: `Coverage.AssetLoading.GlobalLoadObject`.
+- Narrow red test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.AssetLoading" -Label coverage-assetloading-red-1 -TimeoutMs 600000`
+- Narrow red test result: failed, `5/6`; summary `Saved\Tests\coverage-assetloading-red-1\20260630_112648_368_d70fe6cb\Summary.json`; report `Saved\Tests\coverage-assetloading-red-1\20260630_112648_368_d70fe6cb\Report\index.json`.
+- Root cause: the AS fixture passed literal `null` to `LoadObject`; overload resolution treated it as `const UObject&`, while the bound API expects `UObject Outer`.
+- Resolution: kept global `LoadObject` positive coverage and introduced an explicit `UObject Outer = nullptr` handle variable before both known and missing asset calls.
+- Build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-assetloading-build-1 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- Build result: passed, exit code `0`; log `Saved\Build\coverage-assetloading-build-1\20260630_112754_885_be87b700\UBT.log`.
+- Narrow green test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.AssetLoading" -Label coverage-assetloading-1 -TimeoutMs 600000`
+- Narrow green test result: passed, `6/6`; summary `Saved\Tests\coverage-assetloading-1\20260630_112817_287_bcdbf65c\Summary.json`; report `Saved\Tests\coverage-assetloading-1\20260630_112817_287_bcdbf65c\Report\index.json`.
