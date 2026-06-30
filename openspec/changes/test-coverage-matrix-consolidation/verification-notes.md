@@ -224,3 +224,52 @@
 - Final build result: passed, exit code `0`; log `Saved\Build\coverage-fvectorfunc-build-2\20260630_103610_447_d6f1434d\UBT.log`.
 - Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.FVectorFunction" -Label coverage-fvectorfunc-1 -TimeoutMs 600000`
 - Final narrow test result: passed, `7/7`; summary `Saved\Tests\coverage-fvectorfunc-1\20260630_103639_591_fb877d33\Summary.json`; report `Saved\Tests\coverage-fvectorfunc-1\20260630_103639_591_fb877d33\Report\index.json`.
+
+### IntExpression Fix
+
+- Build command before the failing full run: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-goal-build-2 -TimeoutMs 1800000`
+- Build result: passed, exit code `0`; target was up to date.
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-11 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`.
+  - Crash root: `Coverage.IntExpression.IntWithUEMathTypes` compiled a positive module containing unsupported `int * FVector`; after the compile failure the test dereferenced the null module through struct execution helpers.
+- Root causes:
+  - `FVector * int` is bound, but `int * FVector` is not; the current diagnostic is `No conversion from 'FVector' to math type available`.
+  - `FBox + FVector` includes the point in the box; adding an already-inside point keeps max at `(10,10,10)`.
+  - AS `float` return reads in this fork need double-backed handling.
+  - Plain script-class integer members execute as the known `Null pointer access` boundary.
+  - Integer divide/modulo by zero raise `Divide by zero` script exceptions and should be explicit runtime-boundary coverage.
+  - Out-of-range enum conversion currently returns `-25`, preserving the int8-backed narrowing boundary for `EConversionEdgeEnum(999)`.
+- Resolution:
+  - Kept supported int, width, promotion, UE math, and conversion behavior positive.
+  - Converted `int * FVector` to an explicit compile-boundary test.
+  - Converted divide/modulo by zero and plain class member access to explicit exception-boundary assertions.
+  - Added module null guards around UE math execution.
+  - Adjusted `FBox + FVector`, float return reads, and enum narrowing expectation to current behavior.
+- Build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-intexpr-build-4 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- Build result: passed, exit code `0`; log `Saved\Build\coverage-intexpr-build-4\20260630_110402_582_29ff8f9a\UBT.log`.
+- Narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntExpression" -Label coverage-intexpr-4 -TimeoutMs 600000`
+- Narrow test result: passed, `20/20`; summary `Saved\Tests\coverage-intexpr-4\20260630_110428_627_b04d4534\Summary.json`; report `Saved\Tests\coverage-intexpr-4\20260630_110428_627_b04d4534\Report\index.json`.
+
+### IntFunction Fix
+
+- Full Coverage rerun before this fix:
+  - Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage" -Label coverage-goal-tests-12 -TimeoutMs 900000`
+  - Result: failed/crashed, runner exit code `1`, editor exit code `3`; summary `Saved\Tests\coverage-goal-tests-12\20260630_110508_483_b9b216ce\Summary.json`; log `Saved\Tests\coverage-goal-tests-12\20260630_110508_483_b9b216ce\Automation.log`.
+  - Crash root: `Coverage.IntFunction.FunctionParametersIn` passed value arguments into raw AS `&in` parameters; the VM treated small integers as addresses and crashed in `asCContext::ExecuteNext`.
+  - Earlier failures in the same full run also showed raw invoker default-parameter assertions failing because `FAngelscriptTestExecutor` requires `NextArgIndex == Function->GetParamCount()`.
+- Root causes:
+  - Raw AS `&in` / `const &in` parameters must be bound with live storage through `AddArgRef`, not copied through `AddArg`.
+  - Default parameters should be exercised by script wrapper functions that omit arguments inside AS; the C++ raw context helper should not invoke shortened declarations with fewer provided arguments.
+- Resolution:
+  - Replaced integer `&in` calls with `AddArgRef` and live local storage.
+  - Added wrapper functions for int default parameters, default+out combinations, and edge defaults.
+  - Kept default-parameter behavior positive by executing wrapper functions instead of deleting cases.
+- First build command after patch: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-intfunc-build-1 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- First build result: passed, exit code `0`; log `Saved\Build\coverage-intfunc-build-1\20260630_110829_324_f892a5f0\UBT.log`.
+- First narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntFunction" -Label coverage-intfunc-1 -TimeoutMs 600000`
+- First narrow test result: failed, `13/14`; summary `Saved\Tests\coverage-intfunc-1\20260630_110853_835_b89bd9e4\Summary.json`. Remaining failure was `FunctionReferenceParameterCombinations`, another raw invoker default+out omission.
+- Final build command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label coverage-intfunc-build-2 -TimeoutMs 1800000 -ExtraArgs -NoHotReloadFromIDE`
+- Final build result: passed, exit code `0`; log `Saved\Build\coverage-intfunc-build-2\20260630_111017_946_93b269c4\UBT.log`.
+- Final narrow test command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.IntFunction" -Label coverage-intfunc-2 -TimeoutMs 600000`
+- Final narrow test result: passed, `14/14`; summary `Saved\Tests\coverage-intfunc-2\20260630_111044_490_2382968e\Summary.json`; report `Saved\Tests\coverage-intfunc-2\20260630_111044_490_2382968e\Report\index.json`.
