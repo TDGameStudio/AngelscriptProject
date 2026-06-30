@@ -142,6 +142,27 @@ D:\Tmp\Logs\Build\<Label>\<RunId>\
 - 每次调用都会新建独立 `RunId`，防止多个 worktree 或多次重跑把日志写进同一文件
 - `Build.log` 是脚本流式日志，`UBT.log` 是 UBT 自己的日志，`RunMetadata.json` 记录参数、阶段、超时与退出码
 
+## Angelscript 编译选项
+
+Angelscript 编译期策略放在项目级专用文件：
+
+```ini
+; Config/DefaultAngelscriptCompileOptions.ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+bCompileAngelscriptUnitTests=false
+```
+
+`bCompileAngelscriptUnitTests=false` 是面向插件消费者的默认值。此时 `AngelscriptTest.Build.cs` 会定义 `WITH_ANGELSCRIPT_UNITTESTS=0`，`AngelscriptTest` 模块仍在既有 plugin module layout 中构建，但 Angelscript C++ automation 测试不会向 Unreal Automation 注册，测试模块启动时也不会预热 test engine pool 或安装测试初始化 override。
+
+需要运行 Angelscript C++ automation 测试时，先把该值改为 `true`，再重新构建：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label angelscript-tests-enabled -TimeoutMs 1800000 -NoXGE
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK" -TimeoutMs 600000
+```
+
+`AngelscriptTest.Build.cs` 将 `Config/DefaultAngelscriptCompileOptions.ini` 注册为 `ExternalDependencies`。修改该文件后，包含 `AngelscriptTest` 的目标会因为该外部依赖变化而让 UBT makefile 失效。这个 gate 控制测试注册和测试专用编译路径，不表示 UBT 完全跳过扫描或包含 `AngelscriptTest` 模块；完整模块级排除需要单独的 target/plugin-level module gate。
+
 ## 查询当前 UBT 进程
 
 排查卡死、残留 UBT 或多 worktree 并发情况时使用：

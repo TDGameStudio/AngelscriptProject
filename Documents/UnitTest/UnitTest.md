@@ -486,6 +486,15 @@ CompileScriptModule(TestRunner, Engine, ModuleName, Filename, Source);
 
 ## 验证规则
 
+Angelscript C++ automation 测试默认不面向消费者注册。运行本页中的 `Tools\RunTests.ps1` 命令前，确认 `Config/DefaultAngelscriptCompileOptions.ini` 中：
+
+```ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+bCompileAngelscriptUnitTests=true
+```
+
+修改该值后必须先通过 `Tools\RunBuild.ps1` 重新构建。`false` 构建仍会编译 `AngelscriptTest` 模块，但 `WITH_ANGELSCRIPT_UNITTESTS=0` 会禁用 AngelscriptTest 的 CQTest 注册和测试启动副作用；此时按 `Angelscript.TestModule.*` 前缀运行测试应报告未找到匹配测试。
+
 修改 CQTest 或 HotReload 测试后，优先运行最窄的 Automation prefix：
 
 ```powershell
