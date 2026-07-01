@@ -2,158 +2,188 @@
 
 ## ADDED Requirements
 
-### Requirement: Extension lifecycle management
+### Requirement: Extension Lifecycle Management
 
-崩溃快照系统 SHALL 通过 `IAngelscriptExtension` 接口管理其生命周期，而不是在模块启动时全局初始化。
+The crash snapshot system SHALL manage its lifecycle through the `IAngelscriptExtension` interface instead of globally initializing during module startup.
 
-#### Scenario: Extension registration during module startup
-- **WHEN** `FAngelscriptRuntimeModule::StartupModule()` 执行
-- **THEN** 崩溃快照扩展 SHALL 通过 `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension()` 注册
+#### Scenario: Extension Registration During Module Startup
 
-#### Scenario: Extension NOT directly initialized during module startup
-- **WHEN** `FAngelscriptRuntimeModule::StartupModule()` 执行
-- **THEN** 系统 SHALL NOT 直接调用 `FAngelscriptCrashSnapshot::Startup()`
+- **WHEN** `FAngelscriptRuntimeModule::StartupModule()` executes
+- **THEN** the crash snapshot extension SHALL be registered through `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension()`
 
-#### Scenario: Extension NOT directly shutdown during module unload
-- **WHEN** `FAngelscriptRuntimeModule::ShutdownModule()` 执行
-- **THEN** 系统 SHALL NOT 直接调用 `FAngelscriptCrashSnapshot::Shutdown()`
+#### Scenario: Extension Is Not Directly Initialized During Module Startup
 
-### Requirement: Engine instance awareness
+- **WHEN** `FAngelscriptRuntimeModule::StartupModule()` executes
+- **THEN** the system SHALL NOT directly call `FAngelscriptCrashSnapshot::Startup()`
 
-崩溃快照系统 SHALL 响应每个 `FAngelscriptEngine` 实例的创建和销毁事件。
+#### Scenario: Extension Is Not Directly Shutdown During Module Unload
 
-#### Scenario: First engine instance attached
-- **WHEN** 第一个 `FAngelscriptEngine` 实例通过 `OnEngineAttached` 附加到扩展
-- **THEN** 扩展 SHALL 调用 `FAngelscriptCrashSnapshot::Startup()` 注册全局崩溃处理器
+- **WHEN** `FAngelscriptRuntimeModule::ShutdownModule()` executes
+- **THEN** the system SHALL NOT directly call `FAngelscriptCrashSnapshot::Shutdown()`
 
-#### Scenario: Middle engine instance attached
-- **WHEN** 第二个或后续的 `FAngelscriptEngine` 实例通过 `OnEngineAttached` 附加
-- **THEN** 扩展 SHALL 递增引用计数但 SHALL NOT 再次注册崩溃处理器
+### Requirement: Engine Instance Awareness
 
-#### Scenario: Middle engine instance detached
-- **WHEN** 非最后一个 `FAngelscriptEngine` 实例通过 `OnEngineDetached` 分离
-- **THEN** 扩展 SHALL 递减引用计数但 SHALL NOT 取消注册崩溃处理器
+The crash snapshot system SHALL respond to creation and destruction events for each `FAngelscriptEngine` instance.
 
-#### Scenario: Last engine instance detached
-- **WHEN** 最后一个 `FAngelscriptEngine` 实例通过 `OnEngineDetached` 分离
-- **THEN** 扩展 SHALL 调用 `FAngelscriptCrashSnapshot::Shutdown()` 取消注册全局崩溃处理器
+#### Scenario: First Engine Instance Attached
 
-### Requirement: Reference counting thread safety
+- **WHEN** the first `FAngelscriptEngine` instance attaches to the extension through `OnEngineAttached`
+- **THEN** the extension SHALL call `FAngelscriptCrashSnapshot::Startup()` to register the global crash handler
 
-引擎实例引用计数 SHALL 是线程安全的，支持多线程环境下的引擎创建和销毁。
+#### Scenario: Middle Engine Instance Attached
 
-#### Scenario: Concurrent engine instance creation
-- **WHEN** 多个线程同时创建 `FAngelscriptEngine` 实例并触发 `OnEngineAttached`
-- **THEN** 引用计数的递增操作 SHALL 是原子的，不产生竞态条件
+- **WHEN** the second or later `FAngelscriptEngine` instance attaches through `OnEngineAttached`
+- **THEN** the extension SHALL increment the reference count but SHALL NOT register the crash handler again
 
-#### Scenario: Concurrent engine instance destruction
-- **WHEN** 多个线程同时销毁 `FAngelscriptEngine` 实例并触发 `OnEngineDetached`
-- **THEN** 引用计数的递减操作 SHALL 是原子的，不产生竞态条件
+#### Scenario: Middle Engine Instance Detached
 
-#### Scenario: Concurrent creation and destruction
-- **WHEN** 一个线程正在附加引擎实例，另一个线程正在分离引擎实例
-- **THEN** 引用计数操作 SHALL 保持一致性，崩溃处理器注册状态 SHALL 正确
+- **WHEN** a non-final `FAngelscriptEngine` instance detaches through `OnEngineDetached`
+- **THEN** the extension SHALL decrement the reference count but SHALL NOT unregister the crash handler
 
-### Requirement: Crash handler behavior preservation
+#### Scenario: Last Engine Instance Detached
 
-崩溃处理器的行为和输出格式 SHALL 与扩展化之前保持完全一致。
+- **WHEN** the last `FAngelscriptEngine` instance detaches through `OnEngineDetached`
+- **THEN** the extension SHALL call `FAngelscriptCrashSnapshot::Shutdown()` to unregister the global crash handler
 
-#### Scenario: Crash snapshot content unchanged
-- **WHEN** 系统崩溃触发 `OnHandleSystemError` 回调
-- **THEN** 生成的崩溃快照 JSON SHALL 包含与之前相同的字段和数据结构
+### Requirement: Reference Counting Thread Safety
 
-#### Scenario: Crash snapshot file path unchanged
-- **WHEN** 系统崩溃时未配置自定义输出路径
-- **THEN** 崩溃快照 SHALL 写入 `<ProjectSaved>/Angelscript/CrashSnapshots/<timestamp>/AngelscriptCrashSnapshot.json`
+Engine instance reference counting SHALL be thread-safe and support engine creation/destruction in multithreaded environments.
 
-#### Scenario: Crash handler atomic execution
-- **WHEN** 系统崩溃触发崩溃处理器
-- **THEN** 崩溃处理器 SHALL 使用 `GHandlingCrash` 原子变量确保只执行一次
+#### Scenario: Concurrent Engine Instance Creation
 
-#### Scenario: Current engine resolution
-- **WHEN** 崩溃处理器执行时需要获取引擎实例
-- **THEN** 系统 SHALL 通过 `FAngelscriptEngine::TryGetCurrentEngine()` 获取当前引擎上下文
+- **WHEN** multiple threads create `FAngelscriptEngine` instances and trigger `OnEngineAttached` concurrently
+- **THEN** reference count increments SHALL be atomic and free of race conditions
 
-### Requirement: Testing interface compatibility
+#### Scenario: Concurrent Engine Instance Destruction
 
-测试接口 SHALL 保持向后兼容，不受扩展化重构的影响。
+- **WHEN** multiple threads destroy `FAngelscriptEngine` instances and trigger `OnEngineDetached` concurrently
+- **THEN** reference count decrements SHALL be atomic and free of race conditions
 
-#### Scenario: WriteSnapshotForTesting remains functional
-- **WHEN** 测试代码调用 `FAngelscriptCrashSnapshot::WriteSnapshotForTesting(OutputDir, Marker)`
-- **THEN** 系统 SHALL 生成崩溃快照到指定目录，格式与实际崩溃时一致
+#### Scenario: Concurrent Creation And Destruction
 
-#### Scenario: ConfigureForTesting remains functional
-- **WHEN** 测试代码调用 `FAngelscriptCrashSnapshot::ConfigureForTesting(OutputDir, Marker)`
-- **THEN** 全局崩溃快照配置 SHALL 被更新，后续崩溃使用该配置
+- **WHEN** one thread is attaching an engine instance while another thread is detaching an engine instance
+- **THEN** reference count operations SHALL remain consistent and crash handler registration state SHALL be correct
 
-#### Scenario: Console command remains functional
-- **WHEN** 测试通过控制台执行 `as.Test.ConfigureCrashSnapshot <dir> <marker>`
-- **THEN** 系统 SHALL 调用 `ConfigureForTesting` 并输出确认日志
+### Requirement: Crash Handler Behavior Preservation
 
-### Requirement: Multiple engine instance support
+Crash handler behavior and output format SHALL remain identical to pre-extension behavior.
 
-崩溃快照系统 SHALL 支持进程中存在多个 `FAngelscriptEngine` 实例的场景。
+#### Scenario: Crash Snapshot Content Unchanged
 
-#### Scenario: Sequential engine creation and destruction
-- **WHEN** 创建引擎实例 A，销毁 A，创建引擎实例 B，销毁 B
-- **THEN** 崩溃处理器 SHALL 在 A 创建时注册，A 销毁时取消注册，B 创建时重新注册，B 销毁时再次取消注册
+- **WHEN** a system crash triggers the `OnHandleSystemError` callback
+- **THEN** the generated crash snapshot JSON SHALL contain the same fields and data structure as before
 
-#### Scenario: Overlapping engine lifetimes
-- **WHEN** 创建引擎实例 A，创建引擎实例 B，销毁 A，销毁 B
-- **THEN** 崩溃处理器 SHALL 在 A 创建时注册，在 B 销毁时取消注册
+#### Scenario: Crash Snapshot File Path Unchanged
 
-#### Scenario: Crash with multiple active engines
-- **WHEN** 系统中有多个活跃的 `FAngelscriptEngine` 实例时发生崩溃
-- **THEN** 崩溃快照 SHALL 基于 `FAngelscriptEngine::TryGetCurrentEngine()` 返回的当前引擎生成
+- **WHEN** a system crash occurs with no custom output path configured
+- **THEN** the crash snapshot SHALL be written to `<ProjectSaved>/Angelscript/CrashSnapshots/<timestamp>/AngelscriptCrashSnapshot.json`
 
-### Requirement: No memory leaks
+#### Scenario: Crash Handler Atomic Execution
 
-扩展系统 SHALL 不引入内存泄漏或资源泄漏。
+- **WHEN** a system crash triggers the crash handler
+- **THEN** the crash handler SHALL use the `GHandlingCrash` atomic variable to ensure it executes only once
 
-#### Scenario: Extension object lifecycle
-- **WHEN** 扩展通过 `RegisterExtension` 注册并最终模块卸载
-- **THEN** 扩展对象 SHALL 通过 `TSharedRef` 正确管理生命周期，不产生内存泄漏
+#### Scenario: Current Engine Resolution
 
-#### Scenario: Repeated engine creation and destruction
-- **WHEN** 多次创建和销毁 `FAngelscriptEngine` 实例（例如测试场景）
-- **THEN** 系统 SHALL NOT 泄漏崩溃处理器句柄或其他资源
+- **WHEN** the crash handler executes and needs an engine instance
+- **THEN** the system SHALL get the current engine context through `FAngelscriptEngine::TryGetCurrentEngine()`
 
-#### Scenario: Crash handler delegate handle management
-- **WHEN** 崩溃处理器在 `Startup()` 中注册 `FCoreDelegates::OnHandleSystemError` 回调
-- **THEN** 回调句柄 SHALL 在 `Shutdown()` 中正确移除，不产生悬挂引用
+### Requirement: Testing Interface Compatibility
 
-### Requirement: Graceful degradation
+Testing interfaces SHALL remain backward compatible and unaffected by the extension refactor.
 
-崩溃快照系统 SHALL 在异常情况下优雅降级，不阻止引擎初始化。
+#### Scenario: WriteSnapshotForTesting Remains Functional
 
-#### Scenario: Extension registration failure
-- **WHEN** 扩展注册因任何原因失败（理论上不应发生）
-- **THEN** 系统 SHALL 记录错误日志但 SHALL NOT 阻止模块启动
+- **WHEN** test code calls `FAngelscriptCrashSnapshot::WriteSnapshotForTesting(OutputDir, Marker)`
+- **THEN** the system SHALL generate a crash snapshot in the specified directory with the same format used for real crashes
 
-#### Scenario: Crash handler registration failure
-- **WHEN** `FCoreDelegates::OnHandleSystemError.Add` 失败
-- **THEN** 系统 SHALL 记录错误日志但 SHALL NOT 崩溃或阻止引擎初始化
+#### Scenario: ConfigureForTesting Remains Functional
 
-#### Scenario: Crash snapshot write failure
-- **WHEN** 崩溃时无法创建输出目录或写入 JSON 文件
-- **THEN** 系统 SHALL 记录错误信息但 SHALL NOT 引发二次崩溃
+- **WHEN** test code calls `FAngelscriptCrashSnapshot::ConfigureForTesting(OutputDir, Marker)`
+- **THEN** global crash snapshot configuration SHALL update and subsequent crashes SHALL use that configuration
 
-### Requirement: Logging and diagnostics
+#### Scenario: Console Command Remains Functional
 
-扩展系统 SHALL 提供足够的日志记录以便诊断崩溃快照系统的生命周期。
+- **WHEN** a test executes `as.Test.ConfigureCrashSnapshot <dir> <marker>` through the console
+- **THEN** the system SHALL call `ConfigureForTesting` and output confirmation logging
 
-#### Scenario: Engine attachment logging
-- **WHEN** `FAngelscriptEngine` 实例附加到扩展
-- **THEN** 系统 SHALL 记录引擎附加事件和当前引用计数
+### Requirement: Multiple Engine Instance Support
 
-#### Scenario: Engine detachment logging
-- **WHEN** `FAngelscriptEngine` 实例从扩展分离
-- **THEN** 系统 SHALL 记录引擎分离事件和当前引用计数
+The crash snapshot system SHALL support multiple `FAngelscriptEngine` instances in the process.
 
-#### Scenario: Crash handler registration logging
-- **WHEN** 第一个引擎附加导致崩溃处理器注册
-- **THEN** 系统 SHALL 记录 "Angelscript crash snapshot handler registered" 或类似日志
+#### Scenario: Sequential Engine Creation And Destruction
 
-#### Scenario: Crash handler unregistration logging
-- **WHEN** 最后一个引擎分离导致崩溃处理器取消注册
-- **THEN** 系统 SHALL 记录 "Angelscript crash snapshot handler unregistered" 或类似日志
+- **WHEN** engine A is created, A is destroyed, engine B is created, and B is destroyed
+- **THEN** the crash handler SHALL register when A is created, unregister when A is destroyed, register again when B is created, and unregister again when B is destroyed
+
+#### Scenario: Overlapping Engine Lifetimes
+
+- **WHEN** engine A is created, engine B is created, A is destroyed, and B is destroyed
+- **THEN** the crash handler SHALL register when A is created and unregister only when B is destroyed
+
+#### Scenario: Crash With Multiple Active Engines
+
+- **WHEN** a crash occurs while multiple `FAngelscriptEngine` instances are active
+- **THEN** the crash snapshot SHALL be generated from the current engine returned by `FAngelscriptEngine::TryGetCurrentEngine()`
+
+### Requirement: No Memory Leaks
+
+The extension system SHALL NOT introduce memory leaks or resource leaks.
+
+#### Scenario: Extension Object Lifecycle
+
+- **WHEN** the extension is registered through `RegisterExtension` and the module eventually unloads
+- **THEN** the extension object SHALL be managed correctly through `TSharedRef` and SHALL NOT leak memory
+
+#### Scenario: Repeated Engine Creation And Destruction
+
+- **WHEN** `FAngelscriptEngine` instances are repeatedly created and destroyed, such as in tests
+- **THEN** the system SHALL NOT leak crash handler handles or other resources
+
+#### Scenario: Crash Handler Delegate Handle Management
+
+- **WHEN** the crash handler registers an `FCoreDelegates::OnHandleSystemError` callback in `Startup()`
+- **THEN** the callback handle SHALL be removed correctly in `Shutdown()` and SHALL NOT leave a dangling reference
+
+### Requirement: Graceful Degradation
+
+The crash snapshot system SHALL degrade gracefully under error conditions and SHALL NOT block engine initialization.
+
+#### Scenario: Extension Registration Failure
+
+- **WHEN** extension registration fails for any reason, although this should not happen in normal conditions
+- **THEN** the system SHALL log an error and SHALL NOT block module startup
+
+#### Scenario: Crash Handler Registration Failure
+
+- **WHEN** `FCoreDelegates::OnHandleSystemError.Add` fails
+- **THEN** the system SHALL log an error and SHALL NOT crash or block engine initialization
+
+#### Scenario: Crash Snapshot Write Failure
+
+- **WHEN** the crash snapshot system cannot create the output directory or write the JSON file during a crash
+- **THEN** the system SHALL log the error and SHALL NOT trigger a secondary crash
+
+### Requirement: Logging And Diagnostics
+
+The extension system SHALL provide sufficient logging to diagnose crash snapshot lifecycle behavior.
+
+#### Scenario: Engine Attachment Logging
+
+- **WHEN** a `FAngelscriptEngine` instance attaches to the extension
+- **THEN** the system SHALL log the engine attachment event and current reference count
+
+#### Scenario: Engine Detachment Logging
+
+- **WHEN** a `FAngelscriptEngine` instance detaches from the extension
+- **THEN** the system SHALL log the engine detachment event and current reference count
+
+#### Scenario: Crash Handler Registration Logging
+
+- **WHEN** first engine attachment causes crash handler registration
+- **THEN** the system SHALL log "Angelscript crash snapshot handler registered" or similar
+
+#### Scenario: Crash Handler Unregistration Logging
+
+- **WHEN** last engine detachment causes crash handler unregistration
+- **THEN** the system SHALL log "Angelscript crash snapshot handler unregistered" or similar

@@ -2,7 +2,7 @@
 
 ## Context
 
-当前代码覆盖率系统在 `FAngelscriptEngine` 初始化过程中通过条件编译和裸指针创建：
+The current code coverage system is created during `FAngelscriptEngine` initialization through conditional compilation and a raw pointer:
 
 ```cpp
 // AngelscriptEngine.cpp:1816-1821
@@ -25,61 +25,65 @@
 #endif
 ```
 
-**当前架构的问题：**
+**Problems In The Current Architecture:**
 
-1. **生命周期不清晰**：`CodeCoverage` 是裸指针成员，没有明确的析构逻辑。搜索代码未发现 `delete CodeCoverage` 调用，可能存在内存泄漏。
+1. **Unclear lifecycle**: `CodeCoverage` is a raw pointer member with no clear destruction path. A code search found no `delete CodeCoverage` call, so this may leak memory.
 
-2. **初始化分离**：对象创建在 `Initialize_AnyThread()`，测试框架钩子注册在 `PostInitialize_GameThread()` 通过延迟回调完成，逻辑分散。
+2. **Split initialization**: object creation happens in `Initialize_AnyThread()`, while test framework hook registration is delayed through a callback in `PostInitialize_GameThread()`. The logic is scattered.
 
-3. **Lambda 闭包捕获**：`OnPostEngineInit` Lambda 捕获 `this`，如果引擎在回调触发前销毁，会导致悬挂引用。
+3. **Lambda closure capture**: the `OnPostEngineInit` lambda captures `this`. If the engine is destroyed before the callback fires, the closure may hold a dangling reference.
 
-4. **引擎实例耦合不当**：代码覆盖率数据通过引擎成员指针访问，但在多引擎环境下没有隔离。
+4. **Poor engine-instance coupling**: coverage data is accessed through an engine member pointer, but multi-engine environments have no clear isolation.
 
-5. **扩展机制未使用**：项目已有 `IAngelscriptExtension` 机制，但代码覆盖率未使用，导致架构不一致。
+5. **Extension mechanism unused**: the project already has `IAngelscriptExtension`, but code coverage does not use it, making architecture inconsistent.
 
-**现有扩展机制：**
+**Existing Extension Mechanism:**
 
-参考 `FClassReloadHelperExtension` 和即将实现的 `FAngelscriptCrashSnapshotExtension`，扩展系统提供：
-- 清晰的生命周期钩子（`OnEngineAttached` / `OnEngineDetached`）
-- 按引擎实例管理（每个扩展实例对应一个引擎实例）
-- 统一的注册点（模块启动时）
+Using `FClassReloadHelperExtension` and the planned `FAngelscriptCrashSnapshotExtension` as references, the extension system provides:
+
+- clear lifecycle hooks: `OnEngineAttached` / `OnEngineDetached`
+- per-engine-instance management, with each extension instance associated with an engine instance
+- a unified registration point during module startup
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 将代码覆盖率系统改为通过 `IAngelscriptExtension` 接口管理生命周期
-- 移除引擎中的 `CodeCoverage` 裸指针成员
-- 移除 `OnPostEngineInit` Lambda 闭包，在引擎附加时直接初始化
-- 支持多引擎实例环境下的独立覆盖率追踪
-- 确保 `FAngelscriptCodeCoverage` 对象正确析构，无内存泄漏
-- 保持现有的覆盖率 API 和报告生成逻辑不变
+- Manage the code coverage system through the `IAngelscriptExtension` interface.
+- Remove the raw `CodeCoverage` pointer member from the engine.
+- Remove the `OnPostEngineInit` lambda closure and initialize directly when the engine attaches.
+- Support independent coverage tracking in multi-engine-instance environments.
+- Ensure `FAngelscriptCodeCoverage` is destroyed correctly with no memory leak.
+- Preserve existing coverage APIs and report generation behavior.
 
 **Non-Goals:**
 
-- 不改变代码覆盖率的数据收集逻辑或报告格式
-- 不修改 `MapExecutableLines`, `HitLine`, `StartRecording` 等公共 API
-- 不在此次重构中优化覆盖率追踪的性能
-- 不改变 `WITH_AS_COVERAGE` 编译条件的行为
+- Do not change coverage data collection logic or report format.
+- Do not modify public APIs such as `MapExecutableLines`, `HitLine`, or `StartRecording`.
+- Do not optimize coverage tracking performance as part of this refactor.
+- Do not change `WITH_AS_COVERAGE` compile condition behavior.
 
 ## Decisions
 
-### 决策 1: 扩展持有覆盖率对象的策略
+### Decision 1: Coverage Object Ownership Strategy
 
-**选择：扩展内部通过 `TUniquePtr` 持有 `FAngelscriptCodeCoverage` 实例**
+**Choice: the extension owns `FAngelscriptCodeCoverage` through `TUniquePtr`.**
 
-**理由：**
-- `FAngelscriptCodeCoverage` 不是通过 `TSharedPtr` 管理的，使用 `TUniquePtr` 确保独占所有权
-- 每个引擎实例应该有独立的覆盖率数据，不应共享
-- `TUniquePtr` 自动析构，解决当前可能存在的内存泄漏问题
-- 扩展的生命周期与引擎实例一致，适合使用独占指针
+**Rationale:**
 
-**替代方案：**
-- ❌ 全局单例 - 无法支持多引擎实例的独立追踪
-- ❌ 裸指针 - 需要手动管理生命周期，容易出错
-- ❌ `TSharedPtr` - 过度设计，覆盖率对象不需要共享
+- `FAngelscriptCodeCoverage` is not managed through `TSharedPtr`; `TUniquePtr` gives clear exclusive ownership.
+- Each engine instance should have independent coverage data and should not share it.
+- `TUniquePtr` destroys automatically, solving the possible existing memory leak.
+- The extension lifetime matches the engine instance lifetime, making exclusive ownership appropriate.
 
-**实现：**
+**Alternatives:**
+
+- Global singleton: cannot support independent tracking across multiple engine instances.
+- Raw pointer: requires manual lifecycle management and is error-prone.
+- `TSharedPtr`: overdesigned because the coverage object does not need shared ownership.
+
+**Implementation Sketch:**
+
 ```cpp
 class FAngelscriptCodeCoverageExtension : public IAngelscriptExtension
 {
@@ -103,26 +107,29 @@ public:
     
     virtual void OnEngineDetached(FAngelscriptEngine& Engine) override
     {
-        Coverage.Reset(); // 自动析构
+        Coverage.Reset();
         AttachedEngine = nullptr;
     }
 };
 ```
 
-### 决策 2: 引擎访问覆盖率对象的策略
+### Decision 2: Engine Access Strategy
 
-**选择：通过扩展注册表查找扩展，然后访问覆盖率对象**
+**Choice: find the extension through the extension registry, then access the coverage object.**
 
-**理由：**
-- 移除引擎成员指针，解耦引擎和覆盖率系统
-- 覆盖率系统成为可选扩展，不影响引擎核心结构
-- 保持 API 兼容性，现有调用点通过辅助函数访问
+**Rationale:**
 
-**替代方案：**
-- ❌ 保留引擎成员指针 - 违反扩展化目标
-- ❌ 全局访问器 - 无法支持多引擎实例
+- Removes the engine member pointer and decouples the engine from the coverage system.
+- Makes coverage an optional extension rather than a core engine field.
+- Preserves API compatibility by routing existing call sites through helper functions.
 
-**实现：**
+**Alternatives:**
+
+- Keep the engine member pointer: violates the extension refactor goal.
+- Global accessor: cannot support multiple engine instances.
+
+**Implementation Sketch:**
+
 ```cpp
 // AngelscriptCodeCoverage.h
 class FAngelscriptCodeCoverageExtension : public IAngelscriptExtension
@@ -130,11 +137,11 @@ class FAngelscriptCodeCoverageExtension : public IAngelscriptExtension
 public:
     FAngelscriptCodeCoverage* GetCoverage() const { return Coverage.Get(); }
     
-    // 静态辅助函数：为给定引擎查找覆盖率对象
+    // Static helper: find the coverage object for a specific engine.
     static FAngelscriptCodeCoverage* GetForEngine(FAngelscriptEngine& Engine);
 };
 
-// 引擎中的调用改为：
+// Engine call sites become:
 FAngelscriptCodeCoverage* Coverage = FAngelscriptCodeCoverageExtension::GetForEngine(*this);
 if (Coverage != nullptr)
 {
@@ -142,52 +149,58 @@ if (Coverage != nullptr)
 }
 ```
 
-### 决策 3: 测试框架钩子注册时机
+### Decision 3: Test Framework Hook Registration Timing
 
-**选择：在 `OnEngineAttached` 中立即调用 `AddTestFrameworkHooks()`**
+**Choice: call `AddTestFrameworkHooks()` immediately in `OnEngineAttached`.**
 
-**理由：**
-- 移除对 `FCoreDelegates::OnPostEngineInit` 的依赖
-- 引擎附加时自动化测试模块已经加载（如果在编辑器环境）
-- 避免 Lambda 闭包捕获引起的生命周期问题
-- 简化初始化流程，逻辑集中
+**Rationale:**
 
-**替代方案：**
-- ❌ 保留 `OnPostEngineInit` - 不必要的延迟，增加复杂度
-- ❌ 延迟到第一次使用 - 增加状态管理复杂度
+- Removes the dependency on `FCoreDelegates::OnPostEngineInit`.
+- The automation test module should already be loaded in editor environments when the engine attaches.
+- Avoids lifecycle problems caused by lambda closure captures.
+- Keeps initialization local and straightforward.
 
-**风险缓解：**
-- `AddTestFrameworkHooks()` 内部应该检查自动化测试模块是否可用
-- 如果模块未加载，静默失败或记录警告，不阻止引擎初始化
+**Alternatives:**
 
-### 决策 4: 覆盖率对象的访问边界
+- Keep `OnPostEngineInit`: unnecessary delay and added complexity.
+- Delay until first use: increases state management complexity.
 
-**选择：保持覆盖率对象的访问为引擎实例局部的，不提供全局访问**
+**Risk Mitigation:**
 
-**理由：**
-- 每个引擎实例有独立的覆盖率数据
-- 避免多引擎环境下的数据混淆
-- 符合扩展系统的设计原则
+- `AddTestFrameworkHooks()` should check whether the automation test module is available.
+- If the module is not loaded, log a warning or fail silently, but do not block engine initialization.
 
-**实现细节：**
-- 引擎内部通过 `FAngelscriptCodeCoverageExtension::GetForEngine(*this)` 访问
-- 外部代码需要通过引擎实例访问（不提供静态全局访问器）
-- 测试代码可以直接创建扩展实例进行单元测试
+### Decision 4: Coverage Object Access Boundary
 
-### 决策 5: 扩展注册位置
+**Choice: keep coverage access local to an engine instance and do not provide global access.**
 
-**选择：在 `FAngelscriptRuntimeModule::StartupModule()` 中注册扩展**
+**Rationale:**
 
-**理由：**
-- 与崩溃快照扩展保持一致
-- 扩展需要在任何引擎实例创建之前注册
-- 模块启动是最早的初始化点
+- Each engine instance has independent coverage data.
+- Avoids data confusion in multi-engine environments.
+- Matches the extension system design principles.
 
-**实现：**
+**Implementation Details:**
+
+- Engine internals access coverage through `FAngelscriptCodeCoverageExtension::GetForEngine(*this)`.
+- External code must access coverage through an engine instance; no static global accessor is provided.
+- Tests can directly create extension instances for unit testing.
+
+### Decision 5: Extension Registration Location
+
+**Choice: register the extension in `FAngelscriptRuntimeModule::StartupModule()`.**
+
+**Rationale:**
+
+- The extension must be registered before any engine instance is created.
+- Module startup is the earliest initialization point.
+- This keeps behavior consistent with the crash snapshot extension.
+
+**Implementation Sketch:**
+
 ```cpp
 void FAngelscriptRuntimeModule::StartupModule()
 {
-    // 注册代码覆盖率扩展
     #if WITH_AS_COVERAGE
     FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(
         MakeShared<FAngelscriptCodeCoverageExtension>());
@@ -197,125 +210,131 @@ void FAngelscriptRuntimeModule::StartupModule()
 
 ## Risks / Trade-offs
 
-### 风险 1: 测试框架钩子注册失败
+### Risk 1: Test Framework Hook Registration Failure
 
-**风险：** 如果在 `OnEngineAttached` 时自动化测试模块尚未加载，`AddTestFrameworkHooks()` 可能失败。
+**Risk:** if the automation test module is not loaded when `OnEngineAttached` runs, `AddTestFrameworkHooks()` may fail.
 
-**缓解：**
-- 在 `AddTestFrameworkHooks()` 内部检查 `IAutomationControllerModule` 是否可用
-- 如果不可用，记录警告日志但不阻止引擎初始化
-- 编辑器环境下，引擎子系统初始化时自动化模块通常已经加载
+**Mitigation:**
 
-### 风险 2: 引擎访问覆盖率对象的性能
+- Check whether `IAutomationControllerModule` is available inside `AddTestFrameworkHooks()`.
+- If unavailable, log a warning without blocking engine initialization.
+- In editor environments, the automation module is usually loaded by the time engine subsystem initialization runs.
 
-**风险：** 通过扩展注册表查找覆盖率对象可能引入性能开销。
+### Risk 2: Coverage Lookup Performance
 
-**缓解：**
-- 覆盖率追踪本身是开发时功能，性能不是主要关注点
-- 可以在引擎内部缓存扩展指针（如果需要）
-- `GetForEngine()` 实现应该高效（直接从注册表查找，O(1) 或 O(N)，N 为扩展数量通常很小）
+**Risk:** finding the coverage object through the extension registry may add overhead.
 
-### 风险 3: 多引擎实例下的覆盖率数据管理
+**Mitigation:**
 
-**风险：** 在多引擎实例环境下，如何合并或区分不同引擎的覆盖率数据？
+- Coverage tracking is a development-time feature, so performance is not the primary concern.
+- The engine can cache the extension pointer if needed.
+- `GetForEngine()` should be efficient, either direct lookup or O(N), where N is the extension count and normally small.
 
-**接受理由：**
-- 当前实现本身不支持多引擎覆盖率数据合并
-- 每个引擎实例独立生成覆盖率报告，符合预期
-- 如果需要合并，可以在后续改进中实现（超出此次重构范围）
+### Risk 3: Coverage Data Management Across Multiple Engines
 
-### Trade-off 1: 扩展查找开销 vs 引擎成员直接访问
+**Risk:** behavior for merging or distinguishing coverage data across multiple engines is unclear.
 
-**权衡：** 移除引擎成员指针后，访问覆盖率对象需要通过扩展查找，增加了间接层。
+**Acceptance Rationale:**
 
-**接受理由：**
-- 解耦带来的架构优势大于性能损失
-- 覆盖率追踪调用频率不高（主要在行回调中，已有性能开销）
-- 可以通过缓存优化（如果成为瓶颈）
+- The current implementation does not support merged multi-engine coverage data either.
+- Each engine instance generating its own coverage report is expected behavior.
+- Merging can be added later if needed and is out of scope for this refactor.
 
-### Trade-off 2: 按引擎实例独立 vs 全局单例
+### Trade-off 1: Extension Lookup vs Direct Engine Member Access
 
-**权衡：** 每个引擎实例独立的覆盖率对象会增加内存占用。
+**Trade-off:** removing the engine member pointer means coverage access uses an extension lookup and adds indirection.
 
-**接受理由：**
-- 支持多引擎实例是正确的架构选择
-- 实际使用中，覆盖率通常只在单引擎环境下启用
-- 内存占用相对于覆盖率数据本身可以忽略不计
+**Acceptance Rationale:**
+
+- The architectural decoupling is more valuable than the small performance cost.
+- Coverage tracking calls already carry overhead and are not on a performance-critical path in normal builds.
+- Caching remains available if lookup becomes a bottleneck.
+
+### Trade-off 2: Per-Engine Instance Coverage vs Global Singleton
+
+**Trade-off:** each engine instance owning its own coverage object increases memory use.
+
+**Acceptance Rationale:**
+
+- Per-engine-instance support is the correct architecture.
+- In typical use, coverage is enabled in a single-engine environment.
+- The added object memory is negligible compared with coverage data itself.
 
 ## Migration Plan
 
-### 实施步骤
+### Implementation Steps
 
-1. **创建扩展类**
-   - 在 `AngelscriptCodeCoverage.h` 中添加 `FAngelscriptCodeCoverageExtension` 类
-   - 实现 `OnEngineAttached` 和 `OnEngineDetached`
-   - 使用 `TUniquePtr<FAngelscriptCodeCoverage>` 持有覆盖率对象
+1. **Create the extension class**
+   - Add `FAngelscriptCodeCoverageExtension` to `AngelscriptCodeCoverage.h`.
+   - Implement `OnEngineAttached` and `OnEngineDetached`.
+   - Own the coverage object with `TUniquePtr<FAngelscriptCodeCoverage>`.
 
-2. **添加访问辅助函数**
-   - 实现 `FAngelscriptCodeCoverageExtension::GetForEngine(FAngelscriptEngine&)` 静态函数
-   - 通过扩展注册表查找扩展实例并返回覆盖率对象指针
+2. **Add access helper**
+   - Implement static `FAngelscriptCodeCoverageExtension::GetForEngine(FAngelscriptEngine&)`.
+   - Find the extension instance through the extension registry and return its coverage pointer.
 
-3. **移除引擎成员指针**
-   - 从 `FAngelscriptEngine` 中删除 `CodeCoverage` 成员
-   - 删除 `Initialize_AnyThread()` 中的 `CodeCoverage = new FAngelscriptCodeCoverage`
-   - 删除 `PostInitialize_GameThread()` 中的 `OnPostEngineInit` Lambda
+3. **Remove engine member pointer**
+   - Delete the `CodeCoverage` member from `FAngelscriptEngine`.
+   - Delete `CodeCoverage = new FAngelscriptCodeCoverage` from `Initialize_AnyThread()`.
+   - Delete the `OnPostEngineInit` lambda from `PostInitialize_GameThread()`.
 
-4. **更新引擎内部调用点**
-   - 查找所有访问 `CodeCoverage` 的代码
-   - 改为通过 `FAngelscriptCodeCoverageExtension::GetForEngine(*this)` 访问
-   - 主要调用点：`MapExecutableLines`, `HitLine`, 状态导出
+4. **Update engine-internal call sites**
+   - Find all `CodeCoverage` access.
+   - Replace access with `FAngelscriptCodeCoverageExtension::GetForEngine(*this)`.
+   - Main call sites: `MapExecutableLines`, `HitLine`, and state export.
 
-5. **注册扩展**
-   - 在 `FAngelscriptRuntimeModule::StartupModule()` 中注册扩展
-   - 使用 `#if WITH_AS_COVERAGE` 条件编译
+5. **Register the extension**
+   - Register the extension in `FAngelscriptRuntimeModule::StartupModule()`.
+   - Guard registration with `#if WITH_AS_COVERAGE`.
 
-6. **构建和验证**
-   - 运行 `Tools\RunBuild.ps1` 确保编译通过
-   - 验证编辑器启动无错误日志
-   - 确认覆盖率功能在测试中正常工作
+6. **Build and verify**
+   - Run `Tools\RunBuild.ps1` and confirm compilation succeeds.
+   - Verify editor startup has no error logs.
+   - Confirm coverage functionality works in tests.
 
-7. **测试覆盖率功能**
-   - 运行自动化测试并生成覆盖率报告
-   - 验证报告格式和内容未改变
-   - 测试多引擎实例场景（如果有相关测试）
+7. **Test coverage behavior**
+   - Run automation tests and generate a coverage report.
+   - Verify report format and content are unchanged.
+   - Test multi-engine scenarios if coverage tests exist.
 
-8. **清理和文档更新**
-   - 检查是否有遗留的引用
-   - 更新相关文档和注释
+8. **Cleanup and docs**
+   - Check for stale references.
+   - Update relevant documentation and comments.
 
-### 回滚策略
+### Rollback Strategy
 
-如果出现问题，可以简单回退：
-1. 恢复 `FAngelscriptEngine::CodeCoverage` 成员指针
-2. 恢复 `Initialize_AnyThread()` 和 `PostInitialize_GameThread()` 中的初始化代码
-3. 取消扩展注册
-4. 删除扩展类
+If issues occur, rollback is straightforward:
 
-所有更改都是加法性的，不影响现有功能的核心逻辑。
+1. Restore the `FAngelscriptEngine::CodeCoverage` member pointer.
+2. Restore initialization code in `Initialize_AnyThread()` and `PostInitialize_GameThread()`.
+3. Remove extension registration.
+4. Delete the extension class.
 
-### 验证清单
+All changes are additive around the existing core logic and should not affect the code coverage feature internals.
 
-- [ ] 编辑器启动时代码覆盖率系统正常初始化（如果 `CoverageEnabled()`）
-- [ ] 测试框架钩子正确注册，覆盖率在测试运行时追踪
-- [ ] 覆盖率报告生成功能正常，输出格式不变
-- [ ] 多次创建/销毁引擎实例不会导致内存泄漏
-- [ ] `MapExecutableLines` 和 `HitLine` 调用正常工作
-- [ ] 状态导出包含覆盖率信息（如果启用）
-- [ ] 不再有 `delete CodeCoverage` 遗漏导致的内存泄漏
+### Verification Checklist
+
+- [ ] Code coverage initializes during editor startup when `CoverageEnabled()` is true.
+- [ ] Test framework hooks register correctly and coverage tracks during test runs.
+- [ ] Coverage report generation works and output format is unchanged.
+- [ ] Repeated engine creation/destruction does not leak memory.
+- [ ] `MapExecutableLines` and `HitLine` calls work correctly.
+- [ ] State export includes coverage information when enabled.
+- [ ] No memory leak remains from missing `delete CodeCoverage`.
 
 ## Open Questions
 
-1. **是否需要支持跨引擎实例的覆盖率数据合并？**
-   - 当前设计是每个引擎实例独立的覆盖率数据
-   - 如果需要合并，可以在报告生成阶段实现
-   - 建议：暂时保持独立，需要时再扩展
+1. **Should coverage data be merged across engine instances?**
+   - Current design keeps coverage data independent per engine instance.
+   - If merging is needed, it can be implemented during report generation.
+   - Recommendation: keep data independent for now and extend later if needed.
 
-2. **是否需要提供全局访问器用于外部工具？**
-   - 当前设计要求通过引擎实例访问覆盖率对象
-   - 外部工具（如覆盖率分析器）可能需要直接访问
-   - 建议：先实现引擎实例局部访问，如果外部工具需要再添加全局访问器
+2. **Should a global accessor be provided for external tools?**
+   - Current design requires access through an engine instance.
+   - External tools such as coverage analyzers may need direct access.
+   - Recommendation: implement engine-local access first, then add a global accessor only if external tools require it.
 
-3. **是否需要在扩展中缓存引擎指针？**
-   - 当前设计存储了 `AttachedEngine` 指针
-   - 可用于未来的引擎实例关联需求
-   - 建议：保留，但目前未使用
+3. **Should the extension cache the engine pointer?**
+   - Current design stores an `AttachedEngine` pointer.
+   - This may be useful for future engine-instance association needs.
+   - Recommendation: keep it even if unused initially.

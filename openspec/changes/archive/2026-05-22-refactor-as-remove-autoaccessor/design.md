@@ -35,7 +35,7 @@ UPROPERTY data does not actually need this sugar to remain accessible: raw field
 
 ## Decisions
 
-- **D1 — Full removal over half-measure.** Set `AS_PROPERTY_ACCESSOR_MODE = 0` AND remove `bAllowImplicitPropertyAccessors` AND drop `BindProperties` synthesis AND make virtual-property syntax a parse error AND remove the `property` decorator. A partial disable (e.g. only flipping `bAllowImplicitPropertyAccessors`) leaves virtual-property syntax legal but non-functional, which is more confusing than the current state. The user explicitly chose "全面关闭" in plan-mode clarification.
+- **D1 — Full removal over half-measure.** Set `AS_PROPERTY_ACCESSOR_MODE = 0` AND remove `bAllowImplicitPropertyAccessors` AND drop `BindProperties` synthesis AND make virtual-property syntax a parse error AND remove the `property` decorator. A partial disable (e.g. only flipping `bAllowImplicitPropertyAccessors`) leaves virtual-property syntax legal but non-functional, which is more confusing than the current state. The user explicitly chose "full closure" in plan-mode clarification.
 
 - **D2 — Preserve raw-field exposure.** Plain UPROPERTYs stay accessible as `actor.bHidden`, `mesh.RelativeLocation`, etc. via the existing `Binds.Property()` path in `BindProperties` (Lines ~1312-1322). This is offset-based field access, not method dispatch, so there is no naming ambiguity. The user reading `actor.bHidden` immediately knows it is a field. Only the synthetic `GetX` / `SetX` generation is removed.
 

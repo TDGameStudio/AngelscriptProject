@@ -2,7 +2,7 @@
 
 ### Requirement: Native SDK 4 layers SHALL each have themed white-box unit test coverage
 
-The `AngelscriptTest` module SHALL provide systematic white-box `TEST_METHOD` coverage for AngelScript native compiler core in four layers — Tokenizer (词法分析), Parser (语法分析), ScriptNode (AST), and Bytecode (字节码) — beyond the existing sample-level baseline.
+The `AngelscriptTest` module SHALL provide systematic white-box `TEST_METHOD` coverage for AngelScript native compiler core in four layers — Tokenizer (lexical analysis), Parser (syntax analysis), ScriptNode (AST), and Bytecode — beyond the existing sample-level baseline.
 
 #### Scenario: Themed test files exist per layer
 
@@ -111,12 +111,12 @@ When this change is applied through its final phase, the project test documentat
 
 - **WHEN** `Documents/Guides/Test.md` is inspected after the final phase
 - **THEN** the SDK section lists `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.<Layer>"` example commands for each of the four layers
-- **AND** all listed commands include explicit `-TimeoutMs` parameters per the project's mandatory rule (`Documents/Guides/Test.md` "强制规则")
+- **AND** all listed commands include explicit `-TimeoutMs` parameters per the project's mandatory rule (`Documents/Guides/Test.md` "Mandatory Rules")
 
 ## Testing Requirements
 
 - **Target test layer** (per `Documents/Guides/TestConventions.md` §1): Native Core (`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`).
-- **Expected Automation prefix**: `Angelscript.TestModule.AngelScriptSDK.<Layer>.<Topic>` (per `TestConventions.md` §4 层级优先策略).
+- **Expected Automation prefix**: `Angelscript.TestModule.AngelScriptSDK.<Layer>.<Topic>` (per the layer-first strategy in `TestConventions.md` §4).
 - **Recommended helper / harness**: `AngelscriptNativeTestSupport.h` (existing + new inline helpers); per-file `FTokenizerAccessor` / `FParserAccessor` accessor structs sourced from the existing pattern in `AngelscriptTokenizerTests.cpp` / `AngelscriptParserTests.cpp`; engine creation via the project's `ASTEST_CREATE_ENGINE_NATIVE()` macro then `reinterpret_cast` to `asCScriptEngine*`.
 - **Verification entry-point command** (per `Documents/Guides/Test.md` standard entries):
   - Per-layer: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.<Layer>" -Label sdk-<layer> -TimeoutMs 600000`

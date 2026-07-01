@@ -1,33 +1,33 @@
 ## Why
 
-UE 在启动时对 `Plugins/Angelscript/Angelscript.uplugin` 报弃用警告：它依赖的 `StructUtils` 已不再是独立 plugin（在 UE 5.5 弃用、后续合并进引擎核心，作为 engine module 存在）。本仓库实际引擎版本为 **UE 5.8**，该 plugin 已不存在，故触发警告。需要移除这个失效的 plugin 依赖声明，消除警告并避免未来引擎版本彻底移除 plugin 解析后构建失败。
+UE emits a deprecation warning for `Plugins/Angelscript/Angelscript.uplugin` during startup: it depends on `StructUtils`, which is no longer an independent plugin. It was deprecated in UE 5.5 and later merged into engine core as an engine module. This repository targets **UE 5.8**, where that plugin no longer exists, so the declaration triggers a warning. Remove the stale plugin dependency to eliminate the warning and avoid future build failures if plugin resolution for the removed plugin becomes stricter.
 
 ## What Changes
 
-- 从 `Plugins/Angelscript/Angelscript.uplugin` 的 `Plugins` 列表中移除 `{ "Name": "StructUtils", "Enabled": true }` 条目。
-- **保留** `AngelscriptRuntime.Build.cs` 中 `PublicDependencyModuleNames` 的 `"StructUtils"` —— 这是 engine **module** 依赖（`FInstancedStruct` 等仍由该 module 提供），不是 plugin 依赖。移除会导致链接错误。
-- include 路径保持不变：现有 `#include "StructUtils/InstancedStruct.h"` 在 UE 5.8 下仍有效。
-- 该文件位于 git submodule `Plugins/Angelscript` 内，需走 submodule 修改流程（submodule 内提交 + 主仓库更新指针）。
+- Remove the `{ "Name": "StructUtils", "Enabled": true }` entry from the `Plugins` list in `Plugins/Angelscript/Angelscript.uplugin`.
+- **Keep** `"StructUtils"` in `PublicDependencyModuleNames` in `AngelscriptRuntime.Build.cs`. This is an engine **module** dependency, not a plugin dependency, and still provides types such as `FInstancedStruct`. Removing it would cause link errors.
+- Keep include paths unchanged: the existing `#include "StructUtils/InstancedStruct.h"` remains valid in UE 5.8.
+- The file lives inside the `Plugins/Angelscript` git submodule, so use the submodule change flow: commit inside the submodule, then update the parent repository gitlink.
 
-### 范围修正（相对原 Issue #3）
+### Scope Correction Compared With Original Issue #3
 
-原 Issue 基于 UE 5.5，声称 4 个模块受影响（Angelscript、AngelscriptGAS、AngelscriptGameplayTags、AngelscriptProjectEditor）。探索确认：
+The original issue was based on UE 5.5 and claimed four modules were affected: Angelscript, AngelscriptGAS, AngelscriptGameplayTags, and AngelscriptProjectEditor. Investigation confirmed:
 
-- 引擎实际为 **UE 5.8**。
-- **仅 Angelscript 插件**真实声明并使用 StructUtils（AngelscriptRuntime + AngelscriptTest，共约 60 处 API 引用，主要是 `FInstancedStruct`）。
-- AngelscriptGAS、AngelscriptGameplayTags、AngelscriptProjectEditor **均无任何 StructUtils 引用**，不在本次范围内。
+- The actual engine baseline is **UE 5.8**.
+- **Only the Angelscript plugin** declares and uses StructUtils directly: AngelscriptRuntime and AngelscriptTest have roughly 60 API references, mostly for `FInstancedStruct`.
+- AngelscriptGAS, AngelscriptGameplayTags, and AngelscriptProjectEditor have **no StructUtils references**, so they are out of scope for this change.
 
 ## Capabilities
 
 ### New Capabilities
-（无 —— 这是依赖维护类 chore，不引入脚本/工具可见的新能力，也不改变规格级行为。）
+None. This is dependency maintenance only; it does not introduce script-visible or tool-visible capability and does not change spec-level behavior.
 
 ### Modified Capabilities
-（无规格级行为变化。）
+None. There is no spec-level behavior change.
 
 ## Impact
 
-- 唯一改动文件：`Plugins/Angelscript/Angelscript.uplugin`（submodule 内）。
-- 风险点：必须区分 plugin 依赖（删）vs Build.cs 的 module 依赖（留）；混淆会把"弃用警告"变成"链接错误"。
-- 验证：构建 `AngelscriptRuntime` 与 `AngelscriptTest`，确认弃用警告消失且 `FInstancedStruct` 绑定仍正常链接。
-- 待确认：UE 5.8 下 `StructUtils` 是否仍是独立可链接 module 名（当前 include 路径与 Build.cs module 名一致指向"module 仍存在"）；若构建报 module 找不到，退路是改依赖 `CoreUObject` 并核实 include 路径。
+- Only changed file: `Plugins/Angelscript/Angelscript.uplugin` inside the submodule.
+- Main risk: distinguish the plugin dependency to remove from the Build.cs module dependency to keep. Confusing the two would turn a deprecation warning into a link error.
+- Verification: build `AngelscriptRuntime` and `AngelscriptTest`, confirm the deprecation warning is gone, and confirm `FInstancedStruct` bindings still link.
+- Open question: whether `StructUtils` remains an independently linkable module name in UE 5.8. Current include paths and the Build.cs module name both indicate that the module still exists. If the build reports that the module cannot be found, the fallback is to depend on `CoreUObject` and re-check the include path.

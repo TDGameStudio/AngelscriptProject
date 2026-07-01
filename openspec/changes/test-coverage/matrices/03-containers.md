@@ -1,84 +1,84 @@
-# 容器覆盖矩阵（TArray / TMap / TSet）
+# Container Coverage Matrix, TArray / TMap / TSet
 
-> **本矩阵是容器测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 6 个容器测试文件的实现。⬜ 行＝待实现，✅ 行注明覆盖它的 `TEST_METHOD`，🚫 行＝fork 拒绝（已用负向编译断言守住边界）。
+> **This matrix is the design specification header for container tests**: each row is a concrete verifiable scenario guiding six container test files. ⬜ rows are pending, ✅ rows identify the covering `TEST_METHOD`, and 🚫 rows are fork rejections guarded by negative compile assertions.
 >
-> - 测试文件：`TArrayAdvanced`(23) / `TMapAdvanced`(11) / `TSetAdvanced`(8) / `ContainerAdvanced`(7) / `ContainerNested`(7) / `ContainerParameter`(4) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<上述主题>`
-> - 图例见 `../coverage-matrix.md`；fork 边界详见 `../coverage-gaps.md §2.1/§2.2`。
+> - Test files: `TArrayAdvanced`(23) / `TMapAdvanced`(11) / `TSetAdvanced`(8) / `ContainerAdvanced`(7) / `ContainerNested`(7) / `ContainerParameter`(4) Tests.cpp
+> - Automation prefix: `Angelscript.TestModule.Coverage.<topic>`
+> - See `../coverage-matrix.md` for the legend; fork boundaries are detailed in `../coverage-gaps.md §2.1/§2.2`.
 
-## 1. TArray — 操作（AngelscriptCoverageTArrayAdvancedTests.cpp）
+## 1. TArray Operations, AngelscriptCoverageTArrayAdvancedTests.cpp
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 排序与反转（Sort/反向遍历） | ✅ | `TArraySortAndReverse` | 升序排序、反向遍历 |
-| 插入与按索引删除 | ✅ | `TArrayInsertAndRemoveAt` | Insert / RemoveAt |
-| 查找（FindIndex/Contains） | ✅ | `TArrayFind` / `TArrayAdvancedSearch` | 受支持的查找路径 |
-| 预留容量 Reserve | ✅ | `TArrayReserve` / `TArraySetNumAndCapacity` | Reserve / SetNum / Max |
-| for-each 迭代 | ✅ | `TArrayForEachIteration` | 范围遍历 |
-| 索引有效性查询 IsValidIndex | ✅ | `TArrayEdgeCasesEmpty` 内 | 仅查询有效性 |
-| 越界 `[]` 访问的运行期语义 | ✅ | `TArrayOutOfBoundsIndexAccess` | 读/写越界 `[]` 均抛出稳定脚本异常 `Array index out of bounds.` |
-| 追加与合并 | ✅ | `TArrayAppendAndMerge` | Append |
-| AddUnique 与 RemoveAll(值) | ✅ | `TArrayAddUniqueAndRemoveAll` | 去重添加/按值移除 |
-| 交换元素 | ✅ | `TArraySwapElements` | Swap |
-| 批量操作 | ✅ | `TArrayBulkOperations` | 批量增删 |
-| 重复元素处理 | ✅ | `TArrayDuplicateHandling` | 重复值语义 |
-| 空数组边界 | ✅ | `TArrayEdgeCasesEmpty` | 空容器操作 |
-| 元素类型：FString / FVector / FName / UObject 引用 | ✅ | `TArrayFString` `TArrayFVector` `TArrayWithFName` `TArrayUObjectReferences` | 各元素类型 |
-| 属性说明符与 meta | ✅ | `TArrayPropertySpecifiersAndMeta` | EditAnywhere 等标志 |
-| 未绑定 API 别名（Find/FindLast/Reverse/RemoveAll(Pred)） | 🚫 | `TArrayUnsupportedApiAliases` | 期望编译失败 |
-| 未绑定算法（StableSort/Heap/FilterByPredicate 等） | 🚫 | `TArrayUnsupportedAlgorithms` | 期望编译失败 |
-| 嵌套 `TArray<TArray<>>`（含深层/局部） | 🚫 | `TArrayNestedContainers` | 诊断 `Containers cannot be nested` |
-| 嵌套 `TArray<TMap<>>` / `TArray<TSet<>>` | 🚫 | `TArrayNestedMapAndSetContainers` | 同上 |
+| Sort and reverse, Sort / reverse traversal | ✅ | `TArraySortAndReverse` | Ascending sort, reverse traversal |
+| Insert and remove by index | ✅ | `TArrayInsertAndRemoveAt` | Insert / RemoveAt |
+| Find, FindIndex / Contains | ✅ | `TArrayFind` / `TArrayAdvancedSearch` | Supported find paths |
+| Reserve capacity | ✅ | `TArrayReserve` / `TArraySetNumAndCapacity` | Reserve / SetNum / Max |
+| for-each iteration | ✅ | `TArrayForEachIteration` | Range traversal |
+| Index validity query, IsValidIndex | ✅ | inside `TArrayEdgeCasesEmpty` | Query validity only |
+| Runtime semantics for out-of-bounds `[]` access | ✅ | `TArrayOutOfBoundsIndexAccess` | Both read and write out-of-bounds `[]` throw stable script exception `Array index out of bounds.` |
+| Append and merge | ✅ | `TArrayAppendAndMerge` | Append |
+| AddUnique and RemoveAll(value) | ✅ | `TArrayAddUniqueAndRemoveAll` | Deduplicated add / value removal |
+| Swap elements | ✅ | `TArraySwapElements` | Swap |
+| Bulk operations | ✅ | `TArrayBulkOperations` | Bulk add/remove |
+| Duplicate handling | ✅ | `TArrayDuplicateHandling` | Duplicate value semantics |
+| Empty array boundary | ✅ | `TArrayEdgeCasesEmpty` | Empty container operations |
+| Element types: FString / FVector / FName / UObject references | ✅ | `TArrayFString` `TArrayFVector` `TArrayWithFName` `TArrayUObjectReferences` | Element type coverage |
+| Property specifiers and meta | ✅ | `TArrayPropertySpecifiersAndMeta` | Flags such as EditAnywhere |
+| Unbound API aliases, Find/FindLast/Reverse/RemoveAll(Pred) | 🚫 | `TArrayUnsupportedApiAliases` | Expected compile failure |
+| Unbound algorithms, StableSort/Heap/FilterByPredicate and related APIs | 🚫 | `TArrayUnsupportedAlgorithms` | Expected compile failure |
+| Nested `TArray<TArray<>>`, including deep/local forms | 🚫 | `TArrayNestedContainers` | Diagnostic: `Containers cannot be nested` |
+| Nested `TArray<TMap<>>` / `TArray<TSet<>>` | 🚫 | `TArrayNestedMapAndSetContainers` | Same diagnostic |
 
-## 2. TMap — 操作（AngelscriptCoverageTMapAdvancedTests.cpp）
+## 2. TMap Operations, AngelscriptCoverageTMapAdvancedTests.cpp
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 增删查综合 | ✅ | `TMapAdvancedOperations` / `TMapOverwriteRemoveContainsKeysValues` | Add/Remove/Contains/Keys/Values |
-| 迭代 | ✅ | `TMapIteration` | 显式迭代器 |
-| 键类型矩阵 | ✅ | `TMapKeyTypes` | int/FString/FName 等作键 |
-| 值类型矩阵（FString/FVector/int） | ✅ | `TMapValueTypes` | 标量与数学 struct 作值 |
-| 值为用户 USTRUCT 的存取往返 | ✅ | `TMapUserStructValues` | `TMap<int, 用户USTRUCT>` Add/Find/index/overwrite 往返 |
-| FindOrAdd | ✅ | `TMapFindOrAdd` | FindOrAdd 语义 |
-| 移除操作 | ✅ | `TMapRemoveOperations` | Remove 变体 |
-| 空 Map 边界 | ✅ | `TMapEdgeCases` | 空容器 |
-| 未绑定 API 别名（指针式 Find/Generate*Array/FindRef 等） | 🚫 | `TMapUnsupportedApiAliases` | 期望编译失败 |
-| 嵌套 `TMap<K,TArray<>>` | 🚫 | `TMapWithArrayValues` | 诊断 `Containers cannot be nested` |
+| Add/remove/find aggregate | ✅ | `TMapAdvancedOperations` / `TMapOverwriteRemoveContainsKeysValues` | Add/Remove/Contains/Keys/Values |
+| Iteration | ✅ | `TMapIteration` | Explicit iterator |
+| Key type matrix | ✅ | `TMapKeyTypes` | int/FString/FName and related key types |
+| Value type matrix, FString/FVector/int | ✅ | `TMapValueTypes` | Scalar and math struct values |
+| User USTRUCT value round trip | ✅ | `TMapUserStructValues` | `TMap<int, user USTRUCT>` Add/Find/index/overwrite round trip |
+| FindOrAdd | ✅ | `TMapFindOrAdd` | FindOrAdd semantics |
+| Remove operations | ✅ | `TMapRemoveOperations` | Remove variants |
+| Empty Map boundary | ✅ | `TMapEdgeCases` | Empty container |
+| Unbound API aliases, pointer-style Find/Generate*Array/FindRef and related APIs | 🚫 | `TMapUnsupportedApiAliases` | Expected compile failure |
+| Nested `TMap<K,TArray<>>` | 🚫 | `TMapWithArrayValues` | Diagnostic: `Containers cannot be nested` |
 
-## 3. TSet — 操作（AngelscriptCoverageTSetAdvancedTests.cpp）
+## 3. TSet Operations, AngelscriptCoverageTSetAdvancedTests.cpp
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 增删查综合 | ✅ | `TSetAdvancedOperations` | Add/Remove/Contains |
-| 迭代 | ✅ | `TSetIteration` | 遍历 |
-| 受支持的集合运算 | ✅ | `TSetSetOperations` | Append(并集) 等受支持路径 |
-| 元素类型矩阵 | ✅ | `TSetElementTypes` | 各元素类型 |
-| 作参数传递 | ✅ | `TSetAsParameter` | 入参语义 |
-| 与数组互转 | ✅ | `TSetArrayConversion` | Set↔Array |
-| 去重 / 重置 | ✅ | `TSetDuplicateDedupeRemoveReset` `TSetResetAndCapacity` | 去重、Reset、容量 |
+| Add/remove/find aggregate | ✅ | `TSetAdvancedOperations` | Add/Remove/Contains |
+| Iteration | ✅ | `TSetIteration` | Traversal |
+| Supported set operations | ✅ | `TSetSetOperations` | Supported paths such as Append for union |
+| Element type matrix | ✅ | `TSetElementTypes` | Element type coverage |
+| As parameter | ✅ | `TSetAsParameter` | Parameter semantics |
+| Array conversion | ✅ | `TSetArrayConversion` | Set <-> Array |
+| Deduplication / reset | ✅ | `TSetDuplicateDedupeRemoveReset` `TSetResetAndCapacity` | Deduplication, Reset, capacity |
 
-## 4. 跨容器：参数 / 返回值 / 非 UPROPERTY（ContainerAdvanced + ContainerParameter）
+## 4. Cross-Container Parameters / Return Values / Non-UPROPERTY
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 容器作参数（值/in/out/inout） | ✅ | `ContainerAsParameter` / `TMapAsParameter` / `TSetAsParameter` | 各容器入参 |
-| 容器作返回值 | ✅ | `ContainerAsReturnValue` / `TSetAsReturnValue` | 返回容器 |
-| 容器引用返回 | ✅ | `ContainerReferenceReturn` | 引用返回语义 |
-| 混合容器参数 | ✅ | `MixedContainerParameters` | 多容器混合签名 |
-| 迭代器高级操作 | ✅ | `ContainerIteratorAdvancedOperations` | 迭代器组合 |
-| 非 UPROPERTY 容器（局部/脚本内部） | ✅ | `NonUPropertyContainers` | 非反射容器 |
-| struct 含数组、再作数组元素（允许形态） | ✅ | `ArrayOfStructsContainingArrays` | 通过 struct 包装规避嵌套限制 |
-| 嵌套组合（统一不支持声明） | 🚫 | `NestedContainerCombinationsUnsupported` | 期望编译失败 |
+| Containers as parameters, value/in/out/inout | ✅ | `ContainerAsParameter` / `TMapAsParameter` / `TSetAsParameter` | Parameter coverage for all containers |
+| Containers as return values | ✅ | `ContainerAsReturnValue` / `TSetAsReturnValue` | Returning containers |
+| Container reference return | ✅ | `ContainerReferenceReturn` | Reference return semantics |
+| Mixed container parameters | ✅ | `MixedContainerParameters` | Multi-container signatures |
+| Advanced iterator operations | ✅ | `ContainerIteratorAdvancedOperations` | Iterator combinations |
+| Non-UPROPERTY containers, locals/script-internal | ✅ | `NonUPropertyContainers` | Non-reflected containers |
+| Struct containing array, then used as array element, allowed form | ✅ | `ArrayOfStructsContainingArrays` | Uses struct wrapping to avoid nesting limit |
+| Nested combinations, uniformly unsupported declarations | 🚫 | `NestedContainerCombinationsUnsupported` | Expected compile failure |
 
-## 5. 嵌套容器边界（AngelscriptCoverageContainerNestedTests.cpp — 全部 🚫）
+## 5. Nested Container Boundaries, AngelscriptCoverageContainerNestedTests.cpp, All 🚫
 
-> 当前 fork 在编译期拒绝"容器嵌套容器"。本组以负向编译断言守住边界，**避免后续重复尝试**。
+> The current fork rejects "container nested inside container" at compile time. This group guards that boundary with negative compile assertions to avoid repeated future attempts.
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| `TArray<TArray<int>>`（二维） | 🚫 | `NestedArrays_TwoDimensionalMatrix` |
-| `TArray<TArray<TArray<int>>>`（深层） | 🚫 | `NestedArrays_DeepMatrix` |
-| 局部深层嵌套数组 | 🚫 | `NestedArrays_LocalDeepMatrix` |
+| `TArray<TArray<int>>`, two-dimensional | 🚫 | `NestedArrays_TwoDimensionalMatrix` |
+| `TArray<TArray<TArray<int>>>`, deep | 🚫 | `NestedArrays_DeepMatrix` |
+| Local deep nested array | 🚫 | `NestedArrays_LocalDeepMatrix` |
 | `TArray<TMap<int,FString>>` | 🚫 | `ArrayOfMaps` |
 | `TMap<int,TArray<int>>` | 🚫 | `MapOfArrays_OneToMany` |
 | `TArray<TSet<int>>` | 🚫 | `ArrayOfSets` |
@@ -86,21 +86,21 @@
 
 ---
 
-## 汇总
+## Summary
 
-| 维度 | 场景 | 已覆盖(✅) | 待实现(⬜) | 边界(🚫) |
+| Dimension | Scenarios | Covered (✅) | Pending (⬜) | Boundary (🚫) |
 |------|------|----------|----------|---------|
-| 1 TArray 操作 | 19 | 15 | 0 | 4 |
-| 2 TMap 操作 | 10 | 8 | 0 | 2 |
-| 3 TSet 操作 | 7 | 7 | 0 | 0 |
-| 4 跨容器参数/返回 | 8 | 7 | 0 | 1 |
-| 5 嵌套边界 | 7 | 0 | 0 | 7 |
+| 1 TArray operations | 19 | 15 | 0 | 4 |
+| 2 TMap operations | 10 | 8 | 0 | 2 |
+| 3 TSet operations | 7 | 7 | 0 | 0 |
+| 4 cross-container parameters/returns | 8 | 7 | 0 | 1 |
+| 5 nested boundaries | 7 | 0 | 0 | 7 |
 
-**对应测试方法**：23+11+8+7+7+4 = 60 方法（现有）。
-**待实现（⬜，2026-06-30 深审新增）**：无。
+**Corresponding test methods**: 23+11+8+7+7+4 = 60 existing methods.
+**Pending (⬜), added by 2026-06-30 deep audit**: none.
 
-**已补充关闭（2026-07-01）**：
-- **G5** — TArray 越界 `[]` 访问运行期语义：`TArrayOutOfBoundsIndexAccess` 覆盖读/写越界异常。
-- **G6** — `TMap<K, 用户USTRUCT>` 作值的存取往返：`TMapUserStructValues` 覆盖。
+**Closed on 2026-07-01**:
+- **G5** — TArray out-of-bounds `[]` runtime semantics: `TArrayOutOfBoundsIndexAccess` covers read/write out-of-bounds exceptions.
+- **G6** — `TMap<K, user USTRUCT>` value round trip: covered by `TMapUserStructValues`.
 
-其余受支持面已覆盖，未绑定 UE API 与容器嵌套作为 🚫 边界固化。若 fork 后续绑定某 API（见 `../coverage-gaps.md §2.1`），将对应 🚫 行迁移为 ⬜ 并补正向测试。
+The remaining supported surface is covered, while unbound UE APIs and container nesting are locked as 🚫 boundaries. If the fork later binds any API in `../coverage-gaps.md §2.1`, migrate the corresponding 🚫 row to ⬜ and add a positive test.

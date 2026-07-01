@@ -2,41 +2,44 @@
 
 ## Why
 
-当前崩溃快照系统（`FAngelscriptCrashSnapshot`）在 `FAngelscriptRuntimeModule::StartupModule()` 中全局初始化，生命周期与模块绑定而非引擎实例。这导致该系统无法感知特定引擎实例的生命周期，无法利用引擎扩展机制进行按需启用/禁用，也难以在多引擎实例环境中正确工作。将其重构为引擎扩展可以解耦生命周期管理，使其成为可选的、按引擎实例管理的诊断功能。
+The current crash snapshot system, `FAngelscriptCrashSnapshot`, is globally initialized in `FAngelscriptRuntimeModule::StartupModule()`. Its lifecycle is tied to the module rather than to engine instances. This means the system cannot observe a specific engine instance lifecycle, cannot use the engine extension mechanism for on-demand enable/disable behavior, and is difficult to reason about in multi-engine-instance environments. Refactoring it into an engine extension decouples lifecycle management and makes it an optional diagnostic feature managed per engine instance.
 
 ## What Changes
 
-- 将 `FAngelscriptCrashSnapshot` 从全局静态初始化改为通过 `IAngelscriptExtension` 接口实现
-- 创建 `FAngelscriptCrashSnapshotExtension` 类，实现 `OnEngineAttached` 和 `OnEngineDetached` 生命周期钩子
-- 移除 `FAngelscriptRuntimeModule` 中的 `Startup()/Shutdown()` 调用
-- 将 `FCoreDelegates::OnHandleSystemError` 的注册移到扩展的 `OnEngineAttached` 中
-- 支持多引擎实例环境下的独立崩溃快照生成
-- 保持现有的崩溃快照 JSON 输出格式和测试接口兼容性
+- Convert `FAngelscriptCrashSnapshot` from global static initialization to implementation through the `IAngelscriptExtension` interface.
+- Add `FAngelscriptCrashSnapshotExtension`, implementing `OnEngineAttached` and `OnEngineDetached` lifecycle hooks.
+- Remove direct `Startup()` / `Shutdown()` calls from `FAngelscriptRuntimeModule`.
+- Move `FCoreDelegates::OnHandleSystemError` registration into the extension's `OnEngineAttached` path.
+- Support independent crash snapshot behavior in multi-engine-instance environments.
+- Preserve existing crash snapshot JSON output format and test interface compatibility.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `crash-snapshot-extension`: 崩溃快照系统作为引擎扩展的完整实现，包括生命周期管理、引擎实例感知、延迟初始化等能力
+- `crash-snapshot-extension`: complete implementation of the crash snapshot system as an engine extension, including lifecycle management, engine instance awareness, and lazy initialization.
 
 ### Modified Capabilities
 
-<!-- 无现有规范变更，这是纯内部重构 -->
+None. This is an internal refactor and does not modify an existing specification.
 
 ## Impact
 
-**代码影响：**
-- `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.h` - 修改公共接口，添加扩展类
-- `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.cpp` - 重构初始化逻辑
-- `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp` - 移除直接调用，注册扩展
-- `AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.h` - 可能需要确认多引擎实例支持
+**Code Impact:**
 
-**行为影响：**
-- 崩溃快照将在第一个 `FAngelscriptEngine` 实例创建时注册全局崩溃处理器
-- 在最后一个引擎实例销毁时取消注册
-- 现有测试代码（`WriteSnapshotForTesting`, `ConfigureForTesting`）保持兼容
-- 编辑器和运行时的崩溃快照功能不受影响
+- `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.h`: update public interface and add the extension class.
+- `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.cpp`: refactor initialization logic.
+- `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp`: remove direct calls and register the extension.
+- `AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.h`: may need confirmation for multi-engine-instance support.
 
-**依赖影响：**
-- 引擎扩展注册表成为崩溃快照系统的必要依赖
-- 引擎实例的生命周期决定崩溃快照功能的激活状态
+**Behavior Impact:**
+
+- Crash snapshots register the global crash handler when the first `FAngelscriptEngine` instance is created.
+- The global crash handler unregisters when the last engine instance is destroyed.
+- Existing test code, including `WriteSnapshotForTesting` and `ConfigureForTesting`, remains compatible.
+- Editor and runtime crash snapshot behavior remains unaffected.
+
+**Dependency Impact:**
+
+- The engine extension registry becomes a required dependency for the crash snapshot system.
+- Engine instance lifecycle determines whether crash snapshot functionality is active.

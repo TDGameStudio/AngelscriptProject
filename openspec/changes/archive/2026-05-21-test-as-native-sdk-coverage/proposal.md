@@ -1,37 +1,37 @@
 ## Why
 
-`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` 目前只对 AS native 编译器核心 4 层(词法 / 语法 / AST / 字节码)提供 17 个 `TEST_METHOD`(`AngelscriptTokenizerTests.cpp` 5、`AngelscriptParserTests.cpp` 5、`AngelscriptScriptNodeTests.cpp` 3、`AngelscriptBytecodeTests.cpp` 4),属于"采样级"白盒覆盖。每层都搭好了访问基础设施(`FTokenizerAccessor`、`FParserAccessor`、`asCByteCode` 直接构造),但 token 类型、operator 矩阵、AST 节点形状、opcode 桶、跳转解析、错误恢复等大量分支未被锁定。对一个已进入 maturity 阶段、持续从上游 AS 2.38 选择性回拉的 fork(参 `Documents/Guides/AngelscriptForkStrategy.md`),这种采样覆盖不足以在选择性回拉时及早发现行为漂移。本次系统化补全 4 层的"白盒"覆盖,在不改 product 代码的前提下把 native 单元测试规模从 17 提升到 ~132。
+`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` currently provides only 17 `TEST_METHOD` cases across the four layers of the AS native compiler core (lexing / parsing / AST / bytecode): `AngelscriptTokenizerTests.cpp` 5, `AngelscriptParserTests.cpp` 5, `AngelscriptScriptNodeTests.cpp` 3, and `AngelscriptBytecodeTests.cpp` 4. This is sample-level white-box coverage. Each layer already has the minimum access infrastructure (`FTokenizerAccessor`, `FParserAccessor`, direct `asCByteCode` construction), but many branches remain unlocked: token types, operator matrices, AST node shapes, opcode buckets, jump resolution, and error recovery. For a fork that has reached maturity and selectively backports from upstream AS 2.38 (see `Documents/Guides/AngelscriptForkStrategy.md`), this sample coverage is not enough to catch behavior drift early during selective backports. This change systematically fills in white-box coverage for the four layers, increasing the native unit-test scale from 17 to ~132 without changing product code.
 
 ## What Changes
 
-- 新增 12 个 native 单元测试文件,跨 4 个层(每层 3 个主题文件)
+- Add 12 native unit-test files across four layers, three themed files per layer:
   - Tokenizer: `AngelscriptNativeTokenizer{Literals,Operators,Whitespace}Tests.cpp`
   - Parser: `AngelscriptNativeParser{Declarations,Expressions,Errors}Tests.cpp`
   - ScriptNode: `AngelscriptNativeScriptNode{Shape,SourceRange,Copy}Tests.cpp`
   - Bytecode: `AngelscriptNativeBytecode{Opcodes,Jumps,Optimize}Tests.cpp`
-- 在 `AngelscriptNativeTestSupport.h` 中追加 7 个 inline header-only 帮助函数(`CreateBareSdkEngine`、`TokenizeAll`、`CountNodesOfType`、`NodeTypeHistogram`、`MaxNodeDepth`、`DumpBytecodeOpcodes`、`EmitToBuffer`),不影响现有 helper
-- 新增 ~115 个 `TEST_METHOD`(Tokenizer ~30、Parser ~35、ScriptNode ~25、Bytecode ~25),全部通过现有 `AngelscriptNative` group 自动归集
-- 同步更新 `Documents/Guides/TestCatalog.md` 计数(17 → ~132)、`Documents/Guides/Test.md` SDK 子前缀样例命令、`Plugins/Angelscript/AGENTS.md` native 测试规模数字
-- **不修改** 现有 4 个核心测试文件的类名 / Automation 前缀(避免 discovery 回归)
-- **不修改** 任何产品代码、`Build.cs`、引擎配置 `.ini`
-- **不引入** Reference SDK 原生 `test_compiler.cpp`(6286 行)直接 port,只把它作为场景启发
+- Add seven inline header-only helpers to `AngelscriptNativeTestSupport.h` (`CreateBareSdkEngine`, `TokenizeAll`, `CountNodesOfType`, `NodeTypeHistogram`, `MaxNodeDepth`, `DumpBytecodeOpcodes`, `EmitToBuffer`) without affecting existing helpers.
+- Add ~115 `TEST_METHOD` cases (Tokenizer ~30, Parser ~35, ScriptNode ~25, Bytecode ~25), all auto-collected by the existing `AngelscriptNative` group.
+- Update `Documents/Guides/TestCatalog.md` counts (17 → ~132), `Documents/Guides/Test.md` SDK sub-prefix example commands, and `Plugins/Angelscript/AGENTS.md` native test scale numbers.
+- Do **not** modify the existing four core test files' class names / Automation prefixes, avoiding discovery regressions.
+- Do **not** modify product code, `Build.cs`, or engine `.ini` configuration.
+- Do **not** directly port the Reference SDK native `test_compiler.cpp` (6286 lines); use it only as scenario inspiration.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `as-native-sdk-test-coverage`: AS native 编译器核心 4 层(词法、语法、AST、字节码)的系统化白盒单元测试覆盖契约。规定测试文件落点、Automation 前缀分层、accessor 模式复用、helper 共享位置、子前缀回归命令。
+- `as-native-sdk-test-coverage`: a systematic white-box unit-test coverage contract for the four AS native compiler-core layers (lexing, parsing, AST, bytecode). It defines test-file placement, layered Automation prefixes, accessor pattern reuse, helper sharing location, and sub-prefix regression commands.
 
 ### Modified Capabilities
 
-(无 — 本次不修改任何现有 spec 的需求行为。)
+(None — this change does not modify existing spec requirement behavior.)
 
 ## Impact
 
-- **代码路径**:`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` 新增 12 文件;`AngelscriptNativeTestSupport.h` 追加 inline helper
-- **APIs**:零公共 API 变化(测试通过 fork 内已暴露的 `asCTokenizer::GetToken` protected 提升、`asCParser::ParseScript/ParseExpression/ParseStatement`、`asCByteCode` 公共构造访问)
-- **依赖**:仅依赖 fork 当前 `2.33 + 选择性 2.38`(`Documents/Guides/AngelscriptForkStrategy.md`)既有字段
-- **构建**:`AngelscriptTest.Build.cs` 已用目录递归扫描,新增 `.cpp` 自动纳入,无需修改
-- **运行时预算**:~115 case 全为内存级(无 module `Build()` 路径),预估累加 < 10s,远低于 600000ms 默认 budget(`Documents/Guides/Test.md` 强制约束)
-- **现有测试 discovery**:每 phase 提交前必须跑 `Angelscript.TestModule.AngelScriptSDK` 全前缀,确认现有 17 case 仍 100% 通过
-- **文档**:`TestCatalog.md`、`Test.md`、`Plugins/Angelscript/AGENTS.md` 同步;`TechnicalDebtInventory.md` 不需更新(本次不解 debt 列表项)
+- **Code paths**: add 12 files under `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/`; append inline helpers to `AngelscriptNativeTestSupport.h`.
+- **APIs**: no public API changes; tests use existing fork-internal access paths (`asCTokenizer::GetToken` promoted through a protected accessor, `asCParser::ParseScript/ParseExpression/ParseStatement`, public `asCByteCode` construction).
+- **Dependencies**: only depend on fields already present in the current fork baseline, `2.33 + selective 2.38` (`Documents/Guides/AngelscriptForkStrategy.md`).
+- **Build**: `AngelscriptTest.Build.cs` already recursively scans directories, so new `.cpp` files are included automatically without modification.
+- **Runtime budget**: ~115 cases are all in-memory-level tests (no module `Build()` path), estimated accumulated runtime < 10s, far below the 600000ms default budget (`Documents/Guides/Test.md` mandatory rule).
+- **Existing test discovery**: before each phase submission, run the full `Angelscript.TestModule.AngelScriptSDK` prefix to confirm the existing 17 cases still pass 100%.
+- **Documentation**: update `TestCatalog.md`, `Test.md`, and `Plugins/Angelscript/AGENTS.md`; `TechnicalDebtInventory.md` does not need an update because this change does not close a listed debt item.

@@ -1,114 +1,114 @@
 # Tasks: Refactor Code Coverage as Extension
 
-## 1. 准备和分析
+## 1. Preparation And Analysis
 
-- [ ] 1.1 审查现有代码覆盖率实现，确认所有调用点和依赖项
-- [ ] 1.2 搜索所有访问 `Engine.CodeCoverage` 的代码位置
-- [ ] 1.3 确认 `FAngelscriptCodeCoverage` 当前的析构逻辑（是否存在内存泄漏）
-- [ ] 1.4 审查 `AddTestFrameworkHooks()` 的实现，确认对模块加载的依赖
+- [ ] 1.1 Review the existing code coverage implementation and confirm all call sites and dependencies.
+- [ ] 1.2 Search for every location that accesses `Engine.CodeCoverage`.
+- [ ] 1.3 Confirm the current destruction behavior of `FAngelscriptCodeCoverage`, including whether a memory leak exists.
+- [ ] 1.4 Review `AddTestFrameworkHooks()` and confirm its module-loading dependencies.
 
-## 2. 创建扩展类
+## 2. Create Extension Class
 
-- [ ] 2.1 在 `AngelscriptCodeCoverage.h` 中声明 `FAngelscriptCodeCoverageExtension` 类
-- [ ] 2.2 实现 `IAngelscriptExtension` 接口（`OnEngineAttached` / `OnEngineDetached`）
-- [ ] 2.3 添加 `TUniquePtr<FAngelscriptCodeCoverage> Coverage` 成员持有覆盖率对象
-- [ ] 2.4 添加 `FAngelscriptEngine* AttachedEngine` 成员记录关联引擎
-- [ ] 2.5 在 `OnEngineAttached` 中检查 `CoverageEnabled()`，创建覆盖率对象
-- [ ] 2.6 在 `OnEngineAttached` 中调用 `Coverage->AddTestFrameworkHooks()`（WITH_EDITOR）
-- [ ] 2.7 在 `OnEngineDetached` 中通过 `Coverage.Reset()` 清理覆盖率对象
+- [ ] 2.1 Declare `FAngelscriptCodeCoverageExtension` in `AngelscriptCodeCoverage.h`.
+- [ ] 2.2 Implement the `IAngelscriptExtension` interface, including `OnEngineAttached` and `OnEngineDetached`.
+- [ ] 2.3 Add a `TUniquePtr<FAngelscriptCodeCoverage> Coverage` member to own the coverage object.
+- [ ] 2.4 Add a `FAngelscriptEngine* AttachedEngine` member to record the associated engine.
+- [ ] 2.5 Check `CoverageEnabled()` in `OnEngineAttached` and create the coverage object when enabled.
+- [ ] 2.6 Call `Coverage->AddTestFrameworkHooks()` in `OnEngineAttached` under `WITH_EDITOR`.
+- [ ] 2.7 Clean up the coverage object through `Coverage.Reset()` in `OnEngineDetached`.
 
-## 3. 添加访问辅助函数
+## 3. Add Access Helper
 
-- [ ] 3.1 实现 `FAngelscriptCodeCoverageExtension::GetForEngine(FAngelscriptEngine&)` 静态函数
-- [ ] 3.2 在 `GetForEngine` 中通过 `FAngelscriptEngineExtensionRegistry` 查找扩展实例
-- [ ] 3.3 返回扩展实例中的 `Coverage.Get()` 指针（可能为 nullptr）
-- [ ] 3.4 添加 `GetCoverage()` 公共访问器用于扩展实例内部访问
+- [ ] 3.1 Implement the static `FAngelscriptCodeCoverageExtension::GetForEngine(FAngelscriptEngine&)` helper.
+- [ ] 3.2 Use `FAngelscriptEngineExtensionRegistry` inside `GetForEngine` to find the extension instance.
+- [ ] 3.3 Return `Coverage.Get()` from the extension instance, allowing `nullptr`.
+- [ ] 3.4 Add a public `GetCoverage()` accessor for extension-instance access.
 
-## 4. 移除引擎成员指针
+## 4. Remove Engine Member Pointer
 
-- [ ] 4.1 从 `FAngelscriptEngine` 中删除 `FAngelscriptCodeCoverage* CodeCoverage = nullptr;` 成员声明
-- [ ] 4.2 移除 `Initialize_AnyThread()` 中的覆盖率对象创建代码（1817-1821 行）
-- [ ] 4.3 移除 `PostInitialize_GameThread()` 中的 `OnPostEngineInit` Lambda（2007-2015 行）
-- [ ] 4.4 确认移除后没有遗留的 `CodeCoverage` 成员访问
+- [ ] 4.1 Remove the `FAngelscriptCodeCoverage* CodeCoverage = nullptr;` member from `FAngelscriptEngine`.
+- [ ] 4.2 Remove coverage object creation from `Initialize_AnyThread()`, around lines 1817-1821.
+- [ ] 4.3 Remove the `OnPostEngineInit` lambda from `PostInitialize_GameThread()`, around lines 2007-2015.
+- [ ] 4.4 Confirm no stale `CodeCoverage` member access remains.
 
-## 5. 更新引擎内部调用点
+## 5. Update Engine Internal Call Sites
 
-- [ ] 5.1 查找 `AngelscriptEngine.cpp` 中所有 `CodeCoverage != nullptr` 检查
-- [ ] 5.2 更新 `CompileModules` 中的 `MapExecutableLines` 调用（约 5081 行）
-- [ ] 5.3 更新行回调中的 `HitLine` 调用（约 6117 行）
-- [ ] 5.4 更新 `GetOnScreenMessages` 中的覆盖率状态显示（约 6210 行）
-- [ ] 5.5 将所有调用改为 `FAngelscriptCodeCoverageExtension::GetForEngine(*this)`
+- [ ] 5.1 Find every `CodeCoverage != nullptr` check in `AngelscriptEngine.cpp`.
+- [ ] 5.2 Update the `MapExecutableLines` call in `CompileModules`, around line 5081.
+- [ ] 5.3 Update the `HitLine` call in the line callback, around line 6117.
+- [ ] 5.4 Update the coverage status display in `GetOnScreenMessages`, around line 6210.
+- [ ] 5.5 Convert all calls to use `FAngelscriptCodeCoverageExtension::GetForEngine(*this)`.
 
-## 6. 更新状态导出调用点
+## 6. Update State Dump Call Sites
 
-- [ ] 6.1 查找 `AngelscriptStateDump.cpp` 中对 `Engine.CodeCoverage` 的访问（约 1157 行）
-- [ ] 6.2 改为通过 `FAngelscriptCodeCoverageExtension::GetForEngine(Engine)` 访问
-- [ ] 6.3 确认状态导出逻辑正常工作
+- [ ] 6.1 Find the `Engine.CodeCoverage` access in `AngelscriptStateDump.cpp`, around line 1157.
+- [ ] 6.2 Change it to access coverage through `FAngelscriptCodeCoverageExtension::GetForEngine(Engine)`.
+- [ ] 6.3 Confirm state dump logic still works.
 
-## 7. 注册扩展
+## 7. Register Extension
 
-- [ ] 7.1 在 `FAngelscriptRuntimeModule::StartupModule()` 中添加扩展注册代码
-- [ ] 7.2 使用 `#if WITH_AS_COVERAGE` 条件编译包裹注册代码
-- [ ] 7.3 使用 `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(MakeShared<FAngelscriptCodeCoverageExtension>())`
-- [ ] 7.4 确认注册顺序（与崩溃快照扩展一致）
+- [ ] 7.1 Add extension registration in `FAngelscriptRuntimeModule::StartupModule()`.
+- [ ] 7.2 Wrap registration with `#if WITH_AS_COVERAGE`.
+- [ ] 7.3 Use `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(MakeShared<FAngelscriptCodeCoverageExtension>())`.
+- [ ] 7.4 Confirm registration order, aligned with the crash snapshot extension.
 
-## 8. 构建和基础验证
+## 8. Build And Basic Verification
 
-- [ ] 8.1 运行 `Tools\RunBuild.ps1` 确保编译通过
-- [ ] 8.2 验证编辑器启动无错误日志
-- [ ] 8.3 验证代码覆盖率相关日志正确输出（如果启用）
-- [ ] 8.4 确认 `CoverageEnabled()` 逻辑仍然有效
+- [ ] 8.1 Run `Tools\RunBuild.ps1` and confirm compilation succeeds.
+- [ ] 8.2 Verify editor startup has no error logs.
+- [ ] 8.3 Verify code coverage logs are correct when coverage is enabled.
+- [ ] 8.4 Confirm `CoverageEnabled()` logic still works.
 
-## 9. 测试覆盖率功能 <!-- Non-TDD -->
+## 9. Test Coverage Functionality <!-- Non-TDD -->
 
-- [ ] 9.1 启用代码覆盖率功能（设置相关环境变量或配置）
-- [ ] 9.2 运行自动化测试套件
-- [ ] 9.3 验证测试框架钩子正确触发（StartRecording / StopRecordingAndWriteReport）
-- [ ] 9.4 检查生成的覆盖率报告 HTML 文件
-- [ ] 9.5 验证覆盖率报告内容格式未改变
-- [ ] 9.6 验证 `MapExecutableLines` 正确收集可执行行
-- [ ] 9.7 验证 `HitLine` 正确记录行执行
+- [ ] 9.1 Enable code coverage through the relevant environment variables or configuration.
+- [ ] 9.2 Run the automation test suite.
+- [ ] 9.3 Verify test framework hooks trigger correctly: `StartRecording` / `StopRecordingAndWriteReport`.
+- [ ] 9.4 Inspect the generated coverage report HTML files.
+- [ ] 9.5 Verify coverage report content and format are unchanged.
+- [ ] 9.6 Verify `MapExecutableLines` correctly collects executable lines.
+- [ ] 9.7 Verify `HitLine` correctly records line execution.
 
-## 10. 多引擎实例测试 <!-- TDD -->
+## 10. Multi-Engine Instance Tests <!-- TDD -->
 
-- [ ] 10.1 创建测试：验证多个引擎实例可以独立追踪覆盖率
-- [ ] 10.2 创建测试：验证引擎实例销毁时覆盖率对象正确析构
-- [ ] 10.3 创建测试：验证 `GetForEngine` 返回正确的覆盖率对象
-- [ ] 10.4 创建测试：验证未启用覆盖率时 `GetForEngine` 返回 nullptr
-- [ ] 10.5 运行 `Tools\RunTests.ps1 -Filter "CodeCoverage"` 验证所有测试通过
+- [ ] 10.1 Create a test verifying multiple engine instances can track coverage independently.
+- [ ] 10.2 Create a test verifying coverage objects are destroyed when engine instances are destroyed.
+- [ ] 10.3 Create a test verifying `GetForEngine` returns the correct coverage object.
+- [ ] 10.4 Create a test verifying `GetForEngine` returns `nullptr` when coverage is not enabled.
+- [ ] 10.5 Run `Tools\RunTests.ps1 -Filter "CodeCoverage"` and verify all tests pass.
 
-## 11. 内存泄漏检查 <!-- Non-TDD -->
+## 11. Memory Leak Check <!-- Non-TDD -->
 
-- [ ] 11.1 使用内存分析工具检查引擎创建/销毁循环
-- [ ] 11.2 验证 `TUniquePtr` 正确析构 `FAngelscriptCodeCoverage` 对象
-- [ ] 11.3 验证测试框架钩子的委托句柄正确移除
-- [ ] 11.4 在编辑器中多次进入/退出 PIE，检查内存增长
+- [ ] 11.1 Use memory analysis tooling to check engine creation/destruction loops.
+- [ ] 11.2 Verify `TUniquePtr` correctly destroys `FAngelscriptCodeCoverage`.
+- [ ] 11.3 Verify test framework delegate handles are correctly removed.
+- [ ] 11.4 Enter and exit PIE repeatedly in the editor and check for memory growth.
 
-## 12. 集成测试 <!-- Non-TDD -->
+## 12. Integration Tests <!-- Non-TDD -->
 
-- [ ] 12.1 在编辑器中运行完整的自动化测试套件
-- [ ] 12.2 验证覆盖率报告在测试结束后正确生成
-- [ ] 12.3 测试覆盖率数据在多次测试运行之间正确重置
-- [ ] 12.4 验证 `ResetHits()` 功能正常工作
+- [ ] 12.1 Run the full automation test suite in the editor.
+- [ ] 12.2 Verify coverage reports generate correctly after tests finish.
+- [ ] 12.3 Verify coverage data resets correctly between repeated test runs.
+- [ ] 12.4 Verify `ResetHits()` works correctly.
 
-## 13. AddTestFrameworkHooks 鲁棒性 <!-- Non-TDD -->
+## 13. AddTestFrameworkHooks Robustness <!-- Non-TDD -->
 
-- [ ] 13.1 检查 `AddTestFrameworkHooks()` 中对 `IAutomationControllerModule` 的加载检查
-- [ ] 13.2 如果模块未加载，添加日志记录而非崩溃
-- [ ] 13.3 验证在非编辑器环境下扩展正常工作（不调用 `AddTestFrameworkHooks`）
+- [ ] 13.1 Check whether `AddTestFrameworkHooks()` verifies `IAutomationControllerModule` loading.
+- [ ] 13.2 If the module is not loaded, add logging rather than crashing.
+- [ ] 13.3 Verify the extension works outside editor environments without calling `AddTestFrameworkHooks`.
 
-## 14. 文档更新
+## 14. Documentation Updates
 
-- [ ] 14.1 更新 `AngelscriptCodeCoverage.h` 中的注释，说明新的生命周期管理方式
-- [ ] 14.2 在设计文档中记录最终实现细节（如有偏差）
-- [ ] 14.3 更新 `AGENTS.md` 或相关文档，记录代码覆盖率系统作为扩展的事实
-- [ ] 14.4 记录 `GetForEngine()` 的使用方式和最佳实践
+- [ ] 14.1 Update comments in `AngelscriptCodeCoverage.h` to describe the new lifecycle management.
+- [ ] 14.2 Record final implementation details in the design document if they differ from the plan.
+- [ ] 14.3 Update `AGENTS.md` or related documentation to record that code coverage is now an extension.
+- [ ] 14.4 Document `GetForEngine()` usage and best practices.
 
-## 15. 清理和验证
+## 15. Cleanup And Verification
 
-- [ ] 15.1 搜索并确认所有 `Engine.CodeCoverage` 引用已更新
-- [ ] 15.2 检查是否有遗留的 `OnPostEngineInit` Lambda 闭包
-- [ ] 15.3 运行完整测试套件 `Tools\RunTestSuite.ps1` 确保无回归
-- [ ] 15.4 验证代码覆盖率系统在所有支持的平台上工作（Windows/Mac/Linux）
-- [ ] 15.5 最终构建验证 `Tools\RunBuild.ps1`
-- [ ] 15.6 验证 `WITH_AS_COVERAGE` 编译条件正确应用
+- [ ] 15.1 Search and confirm all `Engine.CodeCoverage` references have been updated.
+- [ ] 15.2 Check that no stale `OnPostEngineInit` lambda closure remains.
+- [ ] 15.3 Run the full test suite with `Tools\RunTestSuite.ps1` and confirm no regressions.
+- [ ] 15.4 Verify the code coverage system works on all supported platforms: Windows, Mac, and Linux.
+- [ ] 15.5 Run final build verification with `Tools\RunBuild.ps1`.
+- [ ] 15.6 Verify the `WITH_AS_COVERAGE` compile condition is applied correctly.

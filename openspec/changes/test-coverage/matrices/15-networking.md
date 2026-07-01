@@ -1,56 +1,56 @@
-# 网络 / 复制 / RPC 覆盖矩阵
+# Networking / Replication / RPC Coverage Matrix
 
-> **本矩阵是网络测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 `AngelscriptCoverageNetworkingTests.cpp` 的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork/headless 不支持。
+> **This matrix is the design specification header for networking tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageNetworkingTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork/headless unsupported.
 >
-> - 测试文件：`AngelscriptCoverageNetworkingTests.cpp`（28 方法）
-> - Automation 前缀：`Angelscript.TestModule.Coverage.Networking`
-> - 图例见 `../coverage-matrix.md`。
-> - 说明：RPC 实际路由依赖 `BlueprintCallableReflectiveFallback`；headless 下多以"编译 + 静态元数据 + 反射表面 + 权限分支"方式断言。
+> - Test file: `AngelscriptCoverageNetworkingTests.cpp`, 28 methods
+> - Automation prefix: `Angelscript.TestModule.Coverage.Networking`
+> - See `../coverage-matrix.md` for the legend.
+> - Note: real RPC routing depends on `BlueprintCallableReflectiveFallback`; in headless mode, assertions primarily cover compilation, static metadata, reflection surfaces, and authority branches.
 
-## 1. RPC 说明符与可靠性
+## 1. RPC Specifiers And Reliability
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| RPC 元数据标志 | ✅ | `RPCMetadataFlags` |
-| RPC 可靠性变体 | ✅ | `RPCReliabilityVariations` |
-| 单类多 RPC / 带参 RPC | ✅ | `MultipleRPCsInSingleClass` `RPCWithParameters` |
-| WithValidation 签名元数据 | ✅ | `RPCValidationSignatureMetadata` |
-| RPC 说明符互斥静态元数据 | ✅ | `RPCSpecifierFlagsAreExclusiveStaticMetadata` |
+| RPC metadata flags | ✅ | `RPCMetadataFlags` |
+| RPC reliability variants | ✅ | `RPCReliabilityVariations` |
+| Multiple RPCs in one class / parameterized RPCs | ✅ | `MultipleRPCsInSingleClass` `RPCWithParameters` |
+| WithValidation signature metadata | ✅ | `RPCValidationSignatureMetadata` |
+| RPC specifier mutual-exclusion static metadata | ✅ | `RPCSpecifierFlagsAreExclusiveStaticMetadata` |
 
-## 2. 属性复制
+## 2. Property Replication
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 复制属性与 LifetimeList / 继承 LifetimeList | ✅ | `ReplicatedPropertiesAndLifetimeList` `InheritedReplicationLifetimeList` |
-| Actor 复制默认值 | ✅ | `ActorReplicationDefaults` |
-| 复制条件元数据 / 复制元数据静态表面 | ✅ | `ReplicationConditionsMetadata` `ReplicationMetadataStaticSurface` |
-| 复杂复制类型 / 带默认值的复制属性 | ✅ | `ComplexReplicatedTypes` `ReplicatedPropertiesWithDefaults` |
+| Replicated properties and LifetimeList / inherited LifetimeList | ✅ | `ReplicatedPropertiesAndLifetimeList` `InheritedReplicationLifetimeList` |
+| Actor replication defaults | ✅ | `ActorReplicationDefaults` |
+| Replication condition metadata / replication metadata static surface | ✅ | `ReplicationConditionsMetadata` `ReplicationMetadataStaticSurface` |
+| Complex replicated types / replicated properties with defaults | ✅ | `ComplexReplicatedTypes` `ReplicatedPropertiesWithDefaults` |
 
-## 3. 网络角色与权限
+## 3. Network Roles And Authority
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 网络角色/模式枚举 | ✅ | `NetworkRoleAndModeEnums` |
-| Pawn/Controller/本地控制查询 | ✅ | `PawnControllerAndLocalControlQueries` |
-| Actor 网络角色查询可见 | ✅ | `ActorNetworkRoleQueriesAreVisible` |
-| 权限查询分支 headless 执行 | ✅ | `ActorAuthorityQueryBranchesExecuteHeadless` |
-| Owner 与相关性设置 | ✅ | `ActorOwnerAndRelevancySettings` |
-| NetMode 查询可见 | ✅ | `WorldNetModeQueryIsVisible` |
-| NetMode 查询 fork 不支持 / Actor 网络角色属性不支持 | 🚫 | `WorldNetModeQueryUnsupportedInHaze` `ActorNetworkRolePropertiesUnsupported` |
+| Network role / mode enums | ✅ | `NetworkRoleAndModeEnums` |
+| Pawn / Controller / local-control queries | ✅ | `PawnControllerAndLocalControlQueries` |
+| Actor network role queries visible | ✅ | `ActorNetworkRoleQueriesAreVisible` |
+| Authority query branches execute headless | ✅ | `ActorAuthorityQueryBranchesExecuteHeadless` |
+| Owner and relevancy settings | ✅ | `ActorOwnerAndRelevancySettings` |
+| NetMode query visible | ✅ | `WorldNetModeQueryIsVisible` |
+| NetMode query fork unsupported / Actor network role properties unsupported | 🚫 | `WorldNetModeQueryUnsupportedInHaze` `ActorNetworkRolePropertiesUnsupported` |
 
-## 4. 框架表面（GameMode / GameState / PlayerState / World）
+## 4. Framework Surfaces, GameMode / GameState / PlayerState / World
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| World/GameState/ServerTravel 表面 | ✅ | `WorldGameStateAndServerTravelSurface` |
-| GameMode/GameState/PlayerState 静态表面 | ✅ | `GameModeGameStateAndPlayerStateStaticSurface` |
-| GameState PlayerArray 与 PlayerState 身份表面 | ✅ | `GameStatePlayerArrayAndPlayerStateIdentitySurface` |
-| PlayerController 连接表面编译 | ✅ | `PlayerControllerConnectionSurfaceCompiles` |
-| GameMode 登录/登出原生表面 | ✅ | `GameModeLoginLogoutNativeSurface` |
-| Actor 休眠/更新原生表面 | ✅ | `ActorDormancyAndUpdateNativeSurface` |
-| 控制台/ClientTravel 边界 | 🚫 | `NetworkConsoleAndClientTravelBoundaries` |
+| World/GameState/ServerTravel surface | ✅ | `WorldGameStateAndServerTravelSurface` |
+| GameMode/GameState/PlayerState static surface | ✅ | `GameModeGameStateAndPlayerStateStaticSurface` |
+| GameState PlayerArray and PlayerState identity surface | ✅ | `GameStatePlayerArrayAndPlayerStateIdentitySurface` |
+| PlayerController connection surface compiles | ✅ | `PlayerControllerConnectionSurfaceCompiles` |
+| GameMode login/logout native surface | ✅ | `GameModeLoginLogoutNativeSurface` |
+| Actor dormancy/update native surface | ✅ | `ActorDormancyAndUpdateNativeSurface` |
+| Console / ClientTravel boundary | 🚫 | `NetworkConsoleAndClientTravelBoundaries` |
 
 ---
 
-**对应测试方法**：28 方法。
-**待实现（⬜）**：当前无硬缺口；真实多机网络往返非 headless 范畴，部分网络模式查询为 fork 边界。
+**Corresponding test methods**: 28 methods.
+**Pending (⬜)**: no hard gaps currently; real multi-machine network round trips are outside headless scope, and some network-mode queries are fork boundaries.

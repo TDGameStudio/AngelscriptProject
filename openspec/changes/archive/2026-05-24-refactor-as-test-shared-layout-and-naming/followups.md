@@ -1,109 +1,109 @@
-# Follow-up 清理清单
+# Follow-up Cleanup Checklist
 
-本 change（`refactor-as-test-shared-layout-and-naming`）完成「Header 拆分 + 新命名族落地 + C++ 可 alias 的兼容层 + 散落 helper TODO 标记 + Phase 5 删除 `FBindingsCoverageProfile`」，仓库进入「新旧并存、稳定可用」的中间态。
+This change (`refactor-as-test-shared-layout-and-naming`) completed the header split, new naming family, C++ aliasable compatibility layer, scattered-helper TODO markers, and Phase 5 deletion of `FBindingsCoverageProfile`. The repository is now in a stable intermediate state where the old and new APIs coexist.
 
-以下事项是本 change **故意推迟**的渐进清理工作，由用户驱动以后续独立 follow-up change 处理。每项都含触发条件、影响面、推荐节奏与最终目标。
+The following items were intentionally deferred from this change and should be handled by independent user-driven follow-up changes. Each item includes its trigger condition, impact area, recommended cadence, and final goal.
 
-## 1. Bindings/*.cpp callsite 渐进迁移
+## 1. Gradual Bindings/*.cpp call-site migration
 
-**触发条件**：本 change 已落地，仓库内 `Execute*` 主命名族 + `FAngelscriptTestExecutor` 已可用，旧 `ExpectGlobal*` / `FASGlobalFunctionInvoker` / 旧 `Execute*Function*` 通过 inline alias 永久兼容。
+**Trigger**: this change has landed; the canonical `Execute*` family + `FAngelscriptTestExecutor` are available; old `ExpectGlobal*` / `FASGlobalFunctionInvoker` / old `Execute*Function*` entries remain permanently compatible through inline aliases.
 
-**待清理**：71 个 `Plugins/Angelscript/Source/AngelscriptTest/Bindings/*.cpp` 文件、~200+ 处 callsite。
+**Cleanup target**: 71 `Plugins/Angelscript/Source/AngelscriptTest/Bindings/*.cpp` files and ~200+ call sites.
 
-**推荐节奏**：每次 follow-up change 处理 1-3 个文件（按 theme 聚合，如先 Math 系、再 Iterator 系），每次 commit 末跑一次 `RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.<Theme>." `。
+**Recommended cadence**: process 1-3 files per follow-up change, grouped by theme (for example, Math first, then Iterator). At the end of each commit, run `RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.<Theme>."`.
 
-**最终目标**：所有 callsite 走新名；与 #6（删除兼容层）联动 — 必须**所有**callsite 迁移完毕才能进 #6。
+**Final goal**: all call sites use the new names. This gates #4 (compatibility-layer deletion); **all** call sites must be migrated before #4 can proceed.
 
-## 2. Bindings/*.cpp 内文件私有 `Execute*Function*` helper 收编
+## 2. Consolidate file-private `Execute*Function*` helpers in Bindings/*.cpp
 
-**触发条件**：本 change Phase 1.9 已给每个含私有 helper 的文件加 `// TODO(refactor-as-test-shared-layout-and-naming)` 标记。
+**Trigger**: Phase 1.9 of this change added `// TODO(refactor-as-test-shared-layout-and-naming)` markers to every file containing private helpers.
 
-**待清理**：
+**Cleanup target**:
 
-- `AngelscriptMathBindingsTests.cpp` / `AngelscriptMathOrientationBindingsTests.cpp` / `AngelscriptScriptFunctionLibraryTests.cpp`：私有 `ExecuteValueFunction<T>`（每文件一份，签名相似）。
-- `AngelscriptCurveFloatBindingsTests.cpp`（或类似文件）：私有 `ExecuteIntFunctionWithAddressArg`。
-- `AngelscriptWorldFunctionBindingsTests.cpp`（或类似文件）：私有 `ExecuteIntFunction` / `ExecuteFunctionExpectingException`。
-- 其它通过 `rg "static (bool|template) .*Execute\w+Function" Plugins\Angelscript\Source\AngelscriptTest\Bindings` 发现的散落 helper。
+- `AngelscriptMathBindingsTests.cpp` / `AngelscriptMathOrientationBindingsTests.cpp` / `AngelscriptScriptFunctionLibraryTests.cpp`: private `ExecuteValueFunction<T>` helpers (one similar helper per file).
+- `AngelscriptCurveFloatBindingsTests.cpp` or similar files: private `ExecuteIntFunctionWithAddressArg`.
+- `AngelscriptWorldFunctionBindingsTests.cpp` or similar files: private `ExecuteIntFunction` / `ExecuteFunctionExpectingException`.
+- Any other scattered helpers found by `rg "static (bool|template) .*Execute\w+Function" Plugins\Angelscript\Source\AngelscriptTest\Bindings`.
 
-**推荐节奏**：与 #1 callsite 迁移合并处理 — 一次 follow-up 处理一个文件的同时把该文件的私有 helper 迁入 `AngelscriptTestExecute.h`（或确认主族已覆盖该签名后直接删除私有 helper）。
+**Recommended cadence**: combine this with #1 call-site migration. When processing one file, either move its private helper into `AngelscriptTestExecute.h` or delete it if the canonical family already covers that signature.
 
-**最终目标**：所有 `Bindings/*.cpp` 内不再出现 `static` / 匿名命名空间内的 `Execute*Function*` helper；所有 helper 已收编到 `AngelscriptTestExecute.h` 主族（或以新 `Execute*` 名替代）。
+**Final goal**: no `static` or anonymous-namespace `Execute*Function*` helper remains under `Bindings/*.cpp`; every helper is either consolidated into the canonical `AngelscriptTestExecute.h` family or replaced by a new `Execute*` name.
 
-## 3. AS 脚本 namespace 改写（`SetIter_SumElements` → `SetIter::SumElements`）
+## 3. AS script namespace rewrite (`SetIter_SumElements` → `SetIter::SumElements`)
 
-**触发条件**：本 change 已落地，C++ 侧命名族已稳定。
+**Trigger**: this change has landed and the C++ naming family is stable.
 
-**风险**：AS 不允许同名函数同时存在于 namespace 内外，**没有兼容期可走**；1500+ 字符串字面量改写错误无法被 C++ 编译期捕获，必须 100% 运行测试才能发现。
+**Risk**: AS does not allow the same function name to exist both inside and outside a namespace, so **there is no compatibility period**. Mistakes in 1500+ string literals are not caught by C++ compilation and require test execution to detect.
 
-**待清理**：
+**Cleanup target**:
 
-- 71 个 Bindings/*.cpp 内的 `FunctionDecl` 字符串字面量。
-- 各文件内 AS source 多行字符串（`R"AS(...)AS"`）内的函数定义 + 调用。
-- `AddExpectedError` 内含 AS 模块名 / 函数名的报错信息字符串。
+- `FunctionDecl` string literals in 71 `Bindings/*.cpp` files.
+- Function definitions and calls inside AS source multi-line strings (`R"AS(...)AS"`).
+- `AddExpectedError` strings containing AS module/function names.
 
-**推荐节奏**：
+**Recommended cadence**:
 
-1. 第 1 个 follow-up：在 1-2 个简单文件（如 Iterator）上做完整试点；记录失败模式（拼写错误、namespace 嵌套限制、转发声明问题等）；产出"AS namespace 改写 SOP"。
-2. 第 2 个 follow-up 起：按 theme 一次处理 1 个 theme（约 3-5 个文件），每次 commit 末必须跑该 theme 的全部 tests。
-3. 最后一次 follow-up：全模块 `rg -n "[A-Z]\w+_\w+\(" Plugins\Angelscript\Source\AngelscriptTest\Bindings` 确认无下划线分组的 AS 函数残留。
+1. First follow-up: complete a pilot on 1-2 simple files such as Iterator, record failure modes (typos, namespace nesting limits, forward declaration issues), and produce an "AS namespace rewrite SOP."
+2. Later follow-ups: process one theme at a time (about 3-5 files), and run all tests for that theme at the end of each commit.
+3. Final follow-up: run `rg -n "[A-Z]\w+_\w+\(" Plugins\Angelscript\Source\AngelscriptTest\Bindings` to confirm no underscore-grouped AS functions remain.
 
-**最终目标**：所有 AS 脚本函数采用 namespace 分组，下划线分组完全消失。
+**Final goal**: all AS script functions use namespace grouping; underscore grouping is gone.
 
-## 4. 删除兼容层（旧符号 inline alias / forward 头）
+## 4. Delete the compatibility layer (old-symbol inline aliases / forwarding headers)
 
-**触发条件**：#1 / #2 / #3 全部完成；全模块 `rg -n "ExpectGlobal|FASGlobalFunctionInvoker|ExecuteIntFunction|\.Call\(\)|\.CallAndReturn|\.ReadReturnStruct" Plugins\Angelscript\Source\AngelscriptTest` 仅命中 `Shared/AngelscriptTestExecute.h` 内的 inline alias 实现，无外部依赖。`FBindingsCoverageProfile` 已在本 change Phase 5 删除，不再作为兼容层删除的前置条件。
+**Trigger**: #1 / #2 / #3 are complete, and `rg -n "ExpectGlobal|FASGlobalFunctionInvoker|ExecuteIntFunction|\.Call\(\)|\.CallAndReturn|\.ReadReturnStruct" Plugins\Angelscript\Source\AngelscriptTest` only hits inline alias implementations in `Shared/AngelscriptTestExecute.h`. `FBindingsCoverageProfile` was already deleted in Phase 5 of this change and is not a prerequisite anymore.
 
-**待清理**：
+**Cleanup target**:
 
-- `Shared/AngelscriptTestExecute.h` 内 `using FASGlobalFunctionInvoker = ...` 别名段。
-- `Shared/AngelscriptTestExecute.h` 内 inline `ExpectGlobal*` / `ExecuteIntFunction*` / `ExpectBindingCompileFailure` 兼容包装段。
-- `Shared/AngelscriptTestExecute.h` 内 `.Call` / `.CallAndReturn<T>` / `.ReadReturnStruct<T>` inline 转发成员。
-- `Shared/AngelscriptGlobalFunctionInvoker.h` 文件（删除）。
-- `Shared/AngelscriptBindingsAssertions.h` 文件（删除）。
-- 同时检查 `refactor-angelscript-test-helper-api` capability 内引用旧头路径的 Scenario：如果该 capability 的 spec 还提到 `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 作为公共 helper 入口，**必须先开一个 modified-capability change** 把推荐入口改为 `AngelscriptTestExecute.h`，再做本步删除。
+- `using FASGlobalFunctionInvoker = ...` alias block in `Shared/AngelscriptTestExecute.h`.
+- Inline compatibility wrappers for `ExpectGlobal*` / `ExecuteIntFunction*` / `ExpectBindingCompileFailure` in `Shared/AngelscriptTestExecute.h`.
+- `.Call` / `.CallAndReturn<T>` / `.ReadReturnStruct<T>` forwarding members in `Shared/AngelscriptTestExecute.h`.
+- Delete `Shared/AngelscriptGlobalFunctionInvoker.h`.
+- Delete `Shared/AngelscriptBindingsAssertions.h`.
+- Also inspect the `refactor-angelscript-test-helper-api` capability for scenarios that still reference old header paths. If that capability still lists `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` as public helper entries, first open a modified-capability change to make `AngelscriptTestExecute.h` the recommended entry, then delete the old headers.
 
-**推荐节奏**：单 follow-up 一次性处理（小范围）；commit 前后均需运行 `RunBuild.ps1` + 全套 `RunTestSuite.ps1`。
+**Recommended cadence**: one small follow-up change. Run `RunBuild.ps1` and the full `RunTestSuite.ps1` before and after the commit.
 
-**最终目标**：仓库内只剩 `AngelscriptTestExecute.h` 一个执行入口，无任何 alias / forward 头。
+**Final goal**: `AngelscriptTestExecute.h` is the only execution entry point; no alias or forwarding header remains.
 
-## 5. 文档同步
+## 5. Documentation sync
 
-**触发条件**：本 change 落地后随时可做（与 #1-#6 不强依赖）。
+**Trigger**: can be done at any time after this change lands; it does not strongly depend on #1-#4.
 
-**待清理**：
+**Cleanup target**:
 
-- `.agents/skills/_angelscript-test-guide/SKILL.md`：更新「测试 helper 推荐表」，把 `FASGlobalFunctionInvoker` / `ExpectGlobal*` 推荐替换为 `FAngelscriptTestExecutor` / `ExecuteAndExpect*`；增加 `Execute*` / `Compile*` 命名族说明。
-- `Documents/Guides/TestConventions.md`：同步推荐入口；明确"新代码必须用 `Execute*` 主族，旧名仅作 inline alias 兼容"；指向 `Shared/README.md` 与本 change `followups.md` 作为渐进清理路径。
-- `Documents/Guides/TestCatalog.md`：检查 baseline 编号是否需调整（应不需要 — 不新增 / 移除任何 test case）。
+- `.agents/skills/_angelscript-test-guide/SKILL.md`: update the helper recommendation table, replacing `FASGlobalFunctionInvoker` / `ExpectGlobal*` with `FAngelscriptTestExecutor` / `ExecuteAndExpect*`; add `Execute*` / `Compile*` naming-family notes.
+- `Documents/Guides/TestConventions.md`: update the recommended entry point; state that new code must use the canonical `Execute*` family and old names are only inline-alias compatibility; point to `Shared/README.md` and this `followups.md` for progressive cleanup.
+- `Documents/Guides/TestCatalog.md`: check whether baseline numbering needs an update. It should not, because this change does not add or remove tests.
 
-**推荐节奏**：单 follow-up 一次性处理。
+**Recommended cadence**: one lightweight follow-up change.
 
-## 6. umbrella header 进一步瘦身（评估）
+## 6. Evaluate further umbrella-header slimming
 
-**触发条件**：本 change 落地后随时可做（独立评估）。
+**Trigger**: can be evaluated independently at any time after this change lands.
 
-**评估点**：
+**Evaluation points**:
 
-- 现 umbrella `AngelscriptTestUtilities.h` 缩为 ~40 行 `#include` 聚合后，仍透传 `Shared/AngelscriptTestEngineCleanup.h`（含 `WITH_EDITOR` 区块），意味着任何 `#include "Shared/AngelscriptTestUtilities.h"` 的 TU 仍间接拉编辑器头依赖。
-- 评估是否值得把 umbrella 进一步细化（如 `AngelscriptTestUtilities.h` 不含 Cleanup，新增 `AngelscriptTestUtilitiesFull.h` 含 Cleanup），让多数测试 TU 不再透传编辑器头。
+- The current umbrella `AngelscriptTestUtilities.h` is now a ~40-line include aggregate, but it still forwards `Shared/AngelscriptTestEngineCleanup.h` (with its `WITH_EDITOR` block). Any TU including `Shared/AngelscriptTestUtilities.h` still gets editor-header dependencies transitively.
+- Evaluate whether it is worth splitting the umbrella into light / full layers, such as keeping Cleanup out of `AngelscriptTestUtilities.h` and adding `AngelscriptTestUtilitiesFull.h` for consumers that need cleanup.
 
-**待清理（如评估通过）**：
+**Cleanup target if approved**:
 
-- 拆分 umbrella 为 light / full 两层。
-- 全模块审查每个测试 TU 是否真的需要 Cleanup 头；不需要的切到 light umbrella。
+- Split the umbrella into light / full layers.
+- Audit each test TU to determine whether it actually needs Cleanup; switch consumers that do not need it to the light umbrella.
 
-**推荐节奏**：单独 OpenSpec change 评估收益（编译时间收益是否值得拆分 umbrella）。
+**Recommended cadence**: separate OpenSpec change, based on whether compile-time benefit justifies the split.
 
-**最终目标**：测试 TU 透传的编辑器头依赖最小化。
+**Final goal**: minimize transitive editor-header dependencies for test TUs.
 
 ---
 
-## 推荐 follow-up 切片顺序
+## Recommended follow-up slicing order
 
-```
-follow-up A: #5 文档同步 (轻量, 立即可做)
-follow-up B: #1 + #2 (callsite 迁移 + 散落 helper 收编, 按 theme 切片, 多次 follow-up)
-follow-up C: #3 AS namespace 改写 (先试点, 再 theme 切片, 多次 follow-up)
-follow-up D: #4 删除兼容层 (单次, 强依赖 A-C 完成)
-follow-up E: #6 umbrella 瘦身评估 (独立 change, 与其它无依赖)
+```text
+follow-up A: #5 documentation sync (lightweight, can happen immediately)
+follow-up B: #1 + #2 (call-site migration + scattered helper consolidation, sliced by theme over multiple follow-ups)
+follow-up C: #3 AS namespace rewrite (pilot first, then theme slices over multiple follow-ups)
+follow-up D: #4 compatibility-layer deletion (single change, depends on A-C)
+follow-up E: #6 umbrella-slimming evaluation (independent change)
 ```

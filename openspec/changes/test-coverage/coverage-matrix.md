@@ -1,82 +1,82 @@
-# AngelScript Coverage 测试覆盖矩阵（主索引）
+# AngelScript Coverage Test Matrix, Main Index
 
-> 本文是 `AngelscriptTest/Coverage/` 测试覆盖记录的**主索引**，取代 `Documents/Coverage/` 下全部散乱文档。
-> **具体的展开式能力矩阵**（每行一个可验证场景、标注状态与对应 `TEST_METHOD`、指导测试实现）按 **AS 类型 / 功能** 分布在 `matrices/` 下的 18 个文件中。本文只保留**统一图例、列说明、领域索引与全局汇总**。
+> This file is the **main index** for `AngelscriptTest/Coverage/` coverage records and replaces all scattered documents under `Documents/Coverage/`.
+> **Expanded capability matrices** live in 18 files under `matrices/`, split by **AS type / feature area**. Each row is a verifiable scenario with status and the corresponding `TEST_METHOD`, and can guide test implementation. This index keeps only the unified legend, column definitions, domain index, and global summary.
 >
-> - **权威来源**：实际测试代码（`Plugins/Angelscript/Source/AngelscriptTest/Coverage/*.cpp`），而非历史规划文档。
-> - **扫描基线日期**：2026-06-30
-> - **规模**：89 个测试文件 · 90 个 Automation 主题 · **1010** 个 `TEST_METHOD`（按行首 `TEST_METHOD(...)` 机械统计；2026-07-01 补 G1/G2/G5/G6/G8/G10 后，AnimInstance +1、SaveGame +1、TArrayAdvanced +1、TMapAdvanced +1、UClass +1、ClassLifecycle +1，并回填此前主索引漏计的 Comment +1）。
-> - **测试形态**：CQTest `TEST_CLASS_WITH_FLAGS` + `TEST_METHOD`，Automation 前缀统一为 `Angelscript.TestModule.Coverage.<Theme>`。
-> - **待覆盖项与 fork 不支持边界**：统一记录在 `coverage-gaps.md`。
+> - **Authoritative source**: actual test code in `Plugins/Angelscript/Source/AngelscriptTest/Coverage/*.cpp`, not historical planning documents.
+> - **Scan baseline date**: 2026-06-30.
+> - **Scale**: 89 test files, 90 Automation themes, and **1010** `TEST_METHOD`s, mechanically counted from leading `TEST_METHOD(...)` lines. After adding G1/G2/G5/G6/G8/G10 on 2026-07-01, AnimInstance +1, SaveGame +1, TArrayAdvanced +1, TMapAdvanced +1, UClass +1, ClassLifecycle +1, plus a backfilled Comment +1 that the previous main index missed.
+> - **Test shape**: CQTest `TEST_CLASS_WITH_FLAGS` + `TEST_METHOD`, with Automation prefixes standardized as `Angelscript.TestModule.Coverage.<Theme>`.
+> - **Pending coverage items and fork-unsupported boundaries**: tracked in `coverage-gaps.md`.
 
-## 图例（统一，所有子矩阵共用）
+## Legend
 
-| 标记 | 含义 |
+| Marker | Meaning |
 |------|------|
-| ✅ | 已覆盖（有对应 `TEST_METHOD` 断言该场景） |
-| 🟡 | 部分覆盖（已有基础，存在已知待增强子项，见 `coverage-gaps.md`） |
-| ⬜ | 待实现（尚无对应测试，是后续要补的工作项） |
-| 🚫 | 当前 fork 不支持 / 不适用（已用负向编译断言守边界或不纳入计划） |
+| ✅ | Covered, with a corresponding `TEST_METHOD` asserting the scenario |
+| 🟡 | Partially covered, with known enhancement items listed in `coverage-gaps.md` |
+| ⬜ | Pending implementation, with no corresponding test yet |
+| 🚫 | Current fork unsupported / not applicable, guarded by negative compile assertions or excluded from plan |
 
-## 列说明（统一，所有子矩阵共用）
+## Column Definitions
 
-| 列 | 含义 |
+| Column | Meaning |
 |----|------|
-| 场景 | 一个具体可验证的能力/写法（矩阵的最小行单位） |
-| 状态 | 见上方图例 |
-| 覆盖测试方法 | 断言该场景的 `TEST_METHOD` 名（跨文件时带 `文件::方法`） |
-| 要点 / 待实现 | 覆盖要点；⬜ 行写明待实现内容 |
+| Scenario | A concrete verifiable capability or usage pattern, the smallest matrix row unit |
+| Status | See the legend above |
+| Coverage Test Method | The `TEST_METHOD` name that asserts the scenario, using `File::Method` for cross-file references |
+| Notes / Pending Work | Coverage notes; ⬜ rows describe the implementation to add |
 
-> 各领域矩阵在"覆盖测试文件"维度还会列出 文件 / 方法数 / Automation 前缀，确保矩阵与测试文件一一对应。
+> Domain matrices also list coverage test files, method counts, and Automation prefixes so the matrix maps directly to test files.
 
 ---
 
-## 领域矩阵索引（matrices/）
+## Domain Matrix Index
 
-### 类型与语言结构
+### Types And Language Structures
 
-| 矩阵文件 | 范围 | 文件数 | 方法数 |
+| Matrix File | Scope | Files | Methods |
 |---------|------|-------|-------|
-| [01-basic-types.md](matrices/01-basic-types.md) | int / float / bool / FString（属性·表达式·函数·方法） | 13 | 151 |
-| [02-math-structs.md](matrices/02-math-structs.md) | FVector / FRotator / FQuat / FTransform / FLinearColor / FVector2D + Math 命名空间/几何结构 | 20 | 142 |
-| [03-containers.md](matrices/03-containers.md) | TArray / TMap / TSet 及容器参数/嵌套 | 6 | 60 |
-| [04-object-references.md](matrices/04-object-references.md) | handle / 弱引用 / 软引用 / TSubclassOf / TObjectPtr / GC | 5 | 57 |
-| [05-uclass.md](matrices/05-uclass.md) | UCLASS / 类系统 / 生命周期 / 类特性 / 默认组件 / 属性引用 | 5 | 83 |
-| [06-ustruct.md](matrices/06-ustruct.md) | USTRUCT 及成员 | 2 | 47 |
-| [07-macros-enum-function-interface.md](matrices/07-macros-enum-function-interface.md) | UENUM / UFUNCTION / UINTERFACE / 综合宏 / meta 说明符 | 5 | 101 |
-| [08-delegates-events.md](matrices/08-delegates-events.md) | 单播/多播/动态委托 + 事件 | 4 | 52 |
-| [09-control-flow-language.md](matrices/09-control-flow-language.md) | 控制流 / 命名空间 / 预处理 / 类型转换 / mixin / const / 运算符重载 | 11 | 63 |
-| [10-components.md](matrices/10-components.md) | Component / Scene / Primitive / 特化组件 | 4 | 55 |
+| [01-basic-types.md](matrices/01-basic-types.md) | int / float / bool / FString: properties, expressions, functions, methods | 13 | 151 |
+| [02-math-structs.md](matrices/02-math-structs.md) | FVector / FRotator / FQuat / FTransform / FLinearColor / FVector2D plus Math namespace / geometry structs | 20 | 142 |
+| [03-containers.md](matrices/03-containers.md) | TArray / TMap / TSet and container parameters / nesting | 6 | 60 |
+| [04-object-references.md](matrices/04-object-references.md) | handles / weak references / soft references / TSubclassOf / TObjectPtr / GC | 5 | 57 |
+| [05-uclass.md](matrices/05-uclass.md) | UCLASS / class system / lifecycle / class features / default components / property references | 5 | 83 |
+| [06-ustruct.md](matrices/06-ustruct.md) | USTRUCT and members | 2 | 47 |
+| [07-macros-enum-function-interface.md](matrices/07-macros-enum-function-interface.md) | UENUM / UFUNCTION / UINTERFACE / aggregate macros / meta specifiers | 5 | 101 |
+| [08-delegates-events.md](matrices/08-delegates-events.md) | single-cast, multicast, dynamic delegates plus events | 4 | 52 |
+| [09-control-flow-language.md](matrices/09-control-flow-language.md) | control flow / namespaces / preprocessor / type conversion / mixin / const / operator overloads | 11 | 63 |
+| [10-components.md](matrices/10-components.md) | Component / Scene / Primitive / specialized components | 4 | 55 |
 
-### 功能系统（各自独立）
+### Feature Systems
 
-| 矩阵文件 | 范围 | 文件数 | 方法数 |
+| Matrix File | Scope | Files | Methods |
 |---------|------|-------|-------|
-| [11-timer-async.md](matrices/11-timer-async.md) | 定时器 / 延迟 / Latent 边界 | 1 | 31 |
-| [12-input.md](matrices/12-input.md) | 传统输入 + Enhanced Input | 1 | 21 |
-| [13-physics-collision.md](matrices/13-physics-collision.md) | 物理 / 碰撞 / Trace / 约束 / 角色移动 | 1 | 25 |
-| [14-widget-ui.md](matrices/14-widget-ui.md) | Widget / UMG（含 Widget.RuntimeApi 前缀） | 1 | 24 |
-| [15-networking.md](matrices/15-networking.md) | 复制 / RPC / 网络角色 | 1 | 28 |
+| [11-timer-async.md](matrices/11-timer-async.md) | timers / delayed execution / Latent boundaries | 1 | 31 |
+| [12-input.md](matrices/12-input.md) | legacy input plus Enhanced Input | 1 | 21 |
+| [13-physics-collision.md](matrices/13-physics-collision.md) | physics / collision / traces / constraints / character movement | 1 | 25 |
+| [14-widget-ui.md](matrices/14-widget-ui.md) | Widget / UMG, including the Widget.RuntimeApi prefix | 1 | 24 |
+| [15-networking.md](matrices/15-networking.md) | replication / RPC / network roles | 1 | 28 |
 
-### 支撑与杂项
+### Support And Miscellaneous
 
-| 矩阵文件 | 范围 | 文件数 | 方法数 |
+| Matrix File | Scope | Files | Methods |
 |---------|------|-------|-------|
-| [16-assets-and-save.md](matrices/16-assets-and-save.md) | 资源加载 / 字面量资源 / 材质 / SaveGame | 4 | 20 |
-| [17-debug-logging.md](matrices/17-debug-logging.md) | 调试 / 日志 / 错误处理 | 3 | 36 |
+| [16-assets-and-save.md](matrices/16-assets-and-save.md) | asset loading / literal assets / materials / SaveGame | 4 | 20 |
+| [17-debug-logging.md](matrices/17-debug-logging.md) | debug / logging / error handling | 3 | 36 |
 | [18-misc-systems.md](matrices/18-misc-systems.md) | CVar / AnimInstance | 2 | 14 |
 
 ---
 
-## 全局汇总
+## Global Summary
 
-| 维度 | 数值 |
+| Dimension | Value |
 |------|------|
-| 领域矩阵文件 | 18 |
-| 测试 `.cpp` 文件 | 89 |
-| Automation 主题 | 90（Widget 含 `Widget.RuntimeApi` 第二前缀） |
-| `TEST_METHOD` 总数 | 1010 |
-| 当前 ⬜/🟡 候选项 | 21（G1–G29 中 G1/G2/G5/G6/G8/G10 已补，详见 `coverage-gaps.md §1`；均为可选增强、非阻塞） |
+| Domain matrix files | 18 |
+| Test `.cpp` files | 89 |
+| Automation themes | 90, with Widget including the second `Widget.RuntimeApi` prefix |
+| Total `TEST_METHOD`s | 1010 |
+| Current ⬜/🟡 candidates | 21, with G1/G2/G5/G6/G8/G10 already added among G1-G29; see `coverage-gaps.md §1`. All are optional enhancements and non-blocking |
 
-> 校验：18 个领域矩阵的文件数小计相加 = 89；方法数小计相加 = 1010。
-> 维护规则：新增/删除 Coverage 测试时，先更新所属 `matrices/<领域>.md` 的场景行与方法数，再回填本表。
+> Check: file counts across the 18 domain matrices sum to 89; method counts sum to 1010.
+> Maintenance rule: when adding or removing Coverage tests, update the scenario rows and method count in the relevant `matrices/<domain>.md` first, then backfill this table.

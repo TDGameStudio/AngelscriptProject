@@ -1,57 +1,57 @@
-# Widget / UMG UI 覆盖矩阵
+# Widget / UMG UI Coverage Matrix
 
-> **本矩阵是 Widget/UMG 测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 `AngelscriptCoverageWidgetTests.cpp` 的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持。
+> **This matrix is the design specification header for Widget/UMG tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageWidgetTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - 测试文件：`AngelscriptCoverageWidgetTests.cpp`（24 方法）
-> - Automation 前缀：`Angelscript.TestModule.Coverage.Widget` 与 `...Widget.RuntimeApi`（同文件两前缀，故全局主题计数为 90）
-> - 图例见 `../coverage-matrix.md`。
+> - Test file: `AngelscriptCoverageWidgetTests.cpp`, 24 methods
+> - Automation prefixes: `Angelscript.TestModule.Coverage.Widget` and `...Widget.RuntimeApi`, two prefixes in one file, which is why the global theme count is 90
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 声明与反射
+## 1. Declarations And Reflection
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| WidgetClass 与 BindWidget 反射 | ✅ | `WidgetClassAndBindWidgetReflection` |
-| 生命周期与动画重写反射 | ✅ | `WidgetLifecycleAndAnimationOverrideReflection` |
-| 输入事件重写反射 | ✅ | `WidgetInputEventOverrideReflection` |
+| WidgetClass and BindWidget reflection | ✅ | `WidgetClassAndBindWidgetReflection` |
+| Lifecycle and animation override reflection | ✅ | `WidgetLifecycleAndAnimationOverrideReflection` |
+| Input event override reflection | ✅ | `WidgetInputEventOverrideReflection` |
 
-## 2. 创建与树操作
+## 2. Creation And Tree Operations
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| CreateWidget 与视口 | ✅ | `CreateWidgetAndViewportSurface` |
-| WidgetTree 运行期操作 | ✅ | `WidgetTreeRuntimeOperations` |
-| 可见性/启用/焦点查询 | ✅ | `WidgetVisibilityEnabledAndFocusQueries` |
-| 按名取控件不支持边界 | 🚫 | `GetWidgetFromNameUnsupportedBoundary` |
+| CreateWidget and viewport surface | ✅ | `CreateWidgetAndViewportSurface` |
+| WidgetTree runtime operations | ✅ | `WidgetTreeRuntimeOperations` |
+| Visibility / enabled / focus queries | ✅ | `WidgetVisibilityEnabledAndFocusQueries` |
+| Unsupported get-widget-by-name boundary | 🚫 | `GetWidgetFromNameUnsupportedBoundary` |
 
-## 3. 控件属性与样式
+## 3. Control Properties And Style
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| TextBlock 文本/颜色往返 / 字体 SlateFontInfo | ✅ | `TextBlockTextAndColorRoundTrip` `TextBlockSetFontAppliesSlateFontInfoFields` |
-| 通用控件属性方法 | ✅ | `CommonControlPropertyMethods` |
-| Image 资源 Brush 往返 / Button 样式往返 | ✅ | `ImageResourceBrushRoundTrip` `ButtonStyleRoundTrip` |
-| Slate 样式值类型 | ✅ | `SlateStyleValueTypes` |
-| Border/Margin 状态往返 | ✅ | `BorderAndMarginStateRoundTrips` |
+| TextBlock text/color round trip / font SlateFontInfo | ✅ | `TextBlockTextAndColorRoundTrip` `TextBlockSetFontAppliesSlateFontInfoFields` |
+| Common control property methods | ✅ | `CommonControlPropertyMethods` |
+| Image resource brush round trip / Button style round trip | ✅ | `ImageResourceBrushRoundTrip` `ButtonStyleRoundTrip` |
+| Slate style value types | ✅ | `SlateStyleValueTypes` |
+| Border/Margin state round trips | ✅ | `BorderAndMarginStateRoundTrips` |
 
-## 4. 布局
+## 4. Layout
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 容器布局操作 / Overlay 层序操作 | ✅ | `ContainerLayoutOperations` `OverlayLayerOrderOperations` |
-| Combo/SizeBox/Brush 状态往返 | ✅ | `ComboPanelSizeBoxAndBrushStateRoundTrips` |
-| 高级 ListView 表面 | ✅ | `AdvancedListViewSurfaces` |
+| Container layout operations / Overlay layer-order operations | ✅ | `ContainerLayoutOperations` `OverlayLayerOrderOperations` |
+| Combo/SizeBox/Brush state round trips | ✅ | `ComboPanelSizeBoxAndBrushStateRoundTrips` |
+| Advanced ListView surfaces | ✅ | `AdvancedListViewSurfaces` |
 
-## 5. 动态事件与反射
+## 5. Dynamic Events And Reflection
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 动态事件触发脚本处理器（含追加） | ✅ | `WidgetDynamicEventsInvokeScriptHandlers` `AdditionalWidgetDynamicEventsInvokeScriptHandlers` |
-| Button 事件委托反射（含追加） | ✅ | `ButtonEventDelegateReflectionSurfaces` `WidgetAdditionalEventDelegateReflectionSurfaces` |
-| 动画播放反射 | 🟡 | `WidgetAnimationPlaybackReflectionSurfaces`（仅反射表面，见 G7） |
-| 焦点与输入模式反射 | 🟡 | `WidgetFocusAndInputModeReflectionSurfaces`（仅反射表面，见 G7） |
+| Dynamic events invoke script handlers, including added coverage | ✅ | `WidgetDynamicEventsInvokeScriptHandlers` `AdditionalWidgetDynamicEventsInvokeScriptHandlers` |
+| Button event delegate reflection, including added coverage | ✅ | `ButtonEventDelegateReflectionSurfaces` `WidgetAdditionalEventDelegateReflectionSurfaces` |
+| Animation playback reflection | 🟡 | `WidgetAnimationPlaybackReflectionSurfaces`, reflection surface only; see G7 |
+| Focus and input mode reflection | 🟡 | `WidgetFocusAndInputModeReflectionSurfaces`, reflection surface only; see G7 |
 
 ---
 
-**对应测试方法**：24 方法。
-**待增强（🟡）**：G7 — `WidgetAnimationPlaybackReflectionSurfaces` / `WidgetFocusAndInputModeReflectionSurfaces` 目前仅断言反射表面，未断言运行期行为（动画推进 / 焦点实际转移）。需实测确认 headless 下能否补运行期断言；若不可行则维持反射上限（同 networking 的天花板逻辑）。
-**边界（🚫）**：`GetWidgetFromName` 运行时取控件为 fork 边界（`../coverage-gaps.md §2.4`）。
+**Corresponding test methods**: 24 methods.
+**Enhancement pending (🟡)**: G7 — `WidgetAnimationPlaybackReflectionSurfaces` / `WidgetFocusAndInputModeReflectionSurfaces` currently assert only reflection surfaces, not runtime behavior such as animation advancement or actual focus transfer. Test whether headless can add runtime assertions; if not, keep the reflection ceiling, analogous to the networking ceiling.
+**Boundary (🚫)**: runtime widget lookup through `GetWidgetFromName` is a fork boundary; see `../coverage-gaps.md §2.4`.

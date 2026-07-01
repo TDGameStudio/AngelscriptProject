@@ -2,116 +2,126 @@
 
 ## Context
 
-当前崩溃快照系统在 `FAngelscriptRuntimeModule::StartupModule()` 中通过静态函数 `FAngelscriptCrashSnapshot::Startup()` 全局初始化，注册 `FCoreDelegates::OnHandleSystemError` 回调。在模块卸载时通过 `Shutdown()` 取消注册。
+The current crash snapshot system is globally initialized in `FAngelscriptRuntimeModule::StartupModule()` through the static `FAngelscriptCrashSnapshot::Startup()` function, which registers an `FCoreDelegates::OnHandleSystemError` callback. The callback is unregistered through `Shutdown()` when the module unloads.
 
-**当前架构的问题：**
+**Problems In The Current Architecture:**
 
-1. **生命周期耦合错误**：崩溃快照与模块生命周期绑定，而非引擎实例生命周期。一个进程中可能存在多个 `FAngelscriptEngine` 实例（测试环境、编辑器内多个引擎上下文），但只有一个全局崩溃处理器。
+1. **Incorrect lifecycle coupling**: crash snapshots are tied to module lifecycle rather than engine instance lifecycle. A process can contain multiple `FAngelscriptEngine` instances, such as in tests or editor contexts, but there is only one global crash handler.
 
-2. **引擎实例无感知**：崩溃时通过 `FAngelscriptEngine::TryGetCurrentEngine()` 获取当前引擎，但这依赖于引擎上下文栈的正确性。在崩溃场景下，栈可能已损坏或指向错误的实例。
+2. **No engine instance awareness**: on crash, the system uses `FAngelscriptEngine::TryGetCurrentEngine()` to get the current engine, but this depends on the engine context stack being correct. In crash scenarios, the stack may already be corrupted or point at the wrong instance.
 
-3. **无法按需禁用**：作为全局初始化的系统，无法针对特定引擎实例启用或禁用崩溃快照。
+3. **Cannot be disabled on demand**: as a globally initialized system, crash snapshots cannot be enabled or disabled for a specific engine instance.
 
-4. **违反扩展机制设计**：项目已经建立了 `IAngelscriptExtension` / `FAngelscriptEngineExtensionRegistry` 机制用于引擎生命周期管理，但崩溃快照系统未使用。
+4. **Violates the extension architecture**: the project already has `IAngelscriptExtension` / `FAngelscriptEngineExtensionRegistry` for engine lifecycle management, but the crash snapshot system does not use it.
 
-**现有扩展机制：**
+**Existing Extension Mechanism:**
 
-- `IAngelscriptExtension` 接口：`OnEngineAttached(FAngelscriptEngine&)` 和 `OnEngineDetached(FAngelscriptEngine&)`
-- `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(Extension)` - 注册扩展
-- 扩展在引擎创建时自动附加，销毁时自动分离
-- 参考实现：`FClassReloadHelper::FClassReloadHelperExtension`（ClassReloadHelper.h）
+- `IAngelscriptExtension` interface: `OnEngineAttached(FAngelscriptEngine&)` and `OnEngineDetached(FAngelscriptEngine&)`.
+- `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(Extension)` registers an extension.
+- Extensions automatically attach when an engine is created and detach when it is destroyed.
+- Reference implementation: `FClassReloadHelper::FClassReloadHelperExtension` in `ClassReloadHelper.h`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 将崩溃快照系统改为通过 `IAngelscriptExtension` 接口管理生命周期
-- 使崩溃处理器在第一个引擎实例附加时注册，最后一个实例分离时取消注册
-- 保持现有的崩溃快照 JSON 格式和输出逻辑不变
-- 保持测试接口（`WriteSnapshotForTesting`, `ConfigureForTesting`）的兼容性
-- 支持多引擎实例环境（每个引擎实例独立追踪，但共享一个全局崩溃处理器）
+- Manage the crash snapshot system through the `IAngelscriptExtension` interface.
+- Register the crash handler when the first engine instance attaches and unregister it when the last instance detaches.
+- Preserve the existing crash snapshot JSON format and output logic.
+- Preserve compatibility for testing interfaces: `WriteSnapshotForTesting` and `ConfigureForTesting`.
+- Support multi-engine-instance environments, where each engine instance is tracked independently but shares one global crash handler.
 
 **Non-Goals:**
 
-- 不改变崩溃快照的输出格式或内容结构
-- 不修改崩溃快照的写入逻辑或性能特性
-- 不支持每个引擎实例独立的崩溃处理器（UE 的 `OnHandleSystemError` 是全局的）
-- 不在此次重构中添加新的诊断数据收集能力
+- Do not change crash snapshot output format or content structure.
+- Do not modify crash snapshot write logic or performance characteristics.
+- Do not support one crash handler per engine instance because UE's `OnHandleSystemError` is global.
+- Do not add new diagnostic data collection in this refactor.
 
 ## Decisions
 
-### 决策 1: 引擎引用持有策略
+### Decision 1: Engine Reference Ownership Strategy
 
-**选择：扩展内部持有弱引用，崩溃时通过引擎上下文栈解析**
+**Choice: keep weak engine association in the extension and resolve the current engine through the engine context stack during crashes.**
 
-**理由：**
-- `IAngelscriptExtension::OnEngineAttached` 接收的是引擎的裸引用 `FAngelscriptEngine&`
-- 崩溃快照可能在任意线程、任意时刻触发，引擎对象可能已经开始析构
-- 使用弱引用（`TWeakPtr` 或直接存储指针 + 标志）可以避免延长引擎生命周期
-- 崩溃处理器本身仍然使用 `FAngelscriptEngine::TryGetCurrentEngine()` 获取当前引擎，因为崩溃可能发生在任意引擎上下文中
+**Rationale:**
 
-**替代方案：**
-- ❌ 强引用 `TSharedPtr<FAngelscriptEngine>` - 但 `FAngelscriptEngine` 不是通过 `TSharedPtr` 管理的，无法获取
-- ❌ 存储引擎指针列表 - 需要线程安全管理，且崩溃时无法确定哪个引擎是活跃的
+- `IAngelscriptExtension::OnEngineAttached` receives a raw `FAngelscriptEngine&`.
+- Crash snapshots can trigger from any thread at any time, and the engine object may already be tearing down.
+- Weak association, such as a raw pointer plus flags, avoids extending engine lifetime.
+- The crash handler still uses `FAngelscriptEngine::TryGetCurrentEngine()` because a crash can occur in any engine context.
 
-**实现：**
-- 扩展内部维护一个静态引用计数器（类似 `ClassReloadHelper` 的模式）
-- 第一个引擎附加时注册全局崩溃处理器
-- 最后一个引擎分离时取消注册
-- 崩溃处理器仍使用 `FAngelscriptEngine::TryGetCurrentEngine()` 获取引擎实例
+**Alternatives:**
 
-### 决策 2: 全局状态迁移策略
+- Strong `TSharedPtr<FAngelscriptEngine>`: impossible because `FAngelscriptEngine` is not managed through `TSharedPtr`.
+- Store a list of engine pointers: requires thread-safe management and still cannot identify the active engine at crash time.
 
-**选择：保留现有全局状态，仅迁移初始化时机**
+**Implementation:**
 
-**理由：**
-- 现有的全局状态（`GSystemErrorHandle`, `GOverrideOutputDir`, `GMarker`, `GHandlingCrash`）在 `AngelscriptCrashSnapshot_Private` 命名空间中
-- 这些状态本质上是进程级别的，不需要按引擎实例分离
-- 崩溃处理必须是进程级别的单例（UE 的 `FCoreDelegates::OnHandleSystemError` 是全局的）
-- 迁移到扩展类内部会增加复杂度，但不带来实际收益
+- Maintain a static reference counter inside the extension, similar to the `ClassReloadHelper` pattern.
+- Register the global crash handler when the first engine attaches.
+- Unregister the handler when the last engine detaches.
+- Continue using `FAngelscriptEngine::TryGetCurrentEngine()` inside the crash handler.
 
-**替代方案：**
-- ❌ 将全局状态移到扩展类静态成员 - 增加复杂度，无实质改善
-- ❌ 每个引擎实例独立的崩溃配置 - 无法实现，`OnHandleSystemError` 是全局的
+### Decision 2: Global State Migration Strategy
 
-**实现：**
-- 保持 `AngelscriptCrashSnapshot_Private` 命名空间中的全局状态不变
-- `Startup()/Shutdown()` 改为私有，由扩展类调用
-- 测试接口（`ConfigureForTesting`）保持公开，直接操作全局状态
+**Choice: preserve existing global state and migrate only initialization timing.**
 
-### 决策 3: 扩展注册位置
+**Rationale:**
 
-**选择：在 `FAngelscriptRuntimeModule::StartupModule()` 中注册扩展**
+- Existing global state such as `GSystemErrorHandle`, `GOverrideOutputDir`, `GMarker`, and `GHandlingCrash` already lives in the `AngelscriptCrashSnapshot_Private` namespace.
+- These values are process-level by nature and do not need per-engine separation.
+- Crash handling must remain process-level because UE's `FCoreDelegates::OnHandleSystemError` is global.
+- Moving this state into the extension class would add complexity without practical benefit.
 
-**理由：**
-- 扩展需要在任何引擎实例创建之前注册
-- 模块启动是最早的初始化点
-- 参考 `FClassReloadHelper::Init()` 的实现（在 `AngelscriptEditor` 模块启动时注册）
+**Alternatives:**
 
-**替代方案：**
-- ❌ 在第一个引擎初始化时注册 - 太晚，可能错过引擎创建事件
-- ❌ 延迟注册 + `ReplayCurrentEngine()` - 增加复杂度，且与现有模式不一致
+- Move global state into extension static members: adds complexity with no meaningful improvement.
+- Per-engine crash configuration: not feasible because `OnHandleSystemError` is global.
 
-**实现：**
+**Implementation:**
+
+- Keep global state in `AngelscriptCrashSnapshot_Private` unchanged.
+- Make `Startup()` / `Shutdown()` internal-use methods called by the extension, or keep them public with documentation.
+- Keep test interfaces such as `ConfigureForTesting` public and have them operate on the global state directly.
+
+### Decision 3: Extension Registration Location
+
+**Choice: register the extension in `FAngelscriptRuntimeModule::StartupModule()`.**
+
+**Rationale:**
+
+- The extension must be registered before any engine instance is created.
+- Module startup is the earliest initialization point.
+- This follows the `FClassReloadHelper::Init()` pattern, which registers in the `AngelscriptEditor` module startup.
+
+**Alternatives:**
+
+- Register during first engine initialization: too late and may miss engine creation events.
+- Delayed registration plus `ReplayCurrentEngine()`: adds complexity and diverges from the current pattern.
+
+**Implementation:**
+
 ```cpp
 void FAngelscriptRuntimeModule::StartupModule()
 {
-    // 注册崩溃快照扩展
     FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(
         MakeShared<FAngelscriptCrashSnapshotExtension>());
 }
 ```
 
-### 决策 4: 引用计数与多引擎支持
+### Decision 4: Reference Counting And Multi-Engine Support
 
-**选择：使用静态引用计数跟踪活跃引擎数量**
+**Choice: use a static reference count to track active engine instances.**
 
-**理由：**
-- 全局崩溃处理器应该在有任何引擎实例时激活，所有引擎实例销毁后才停用
-- 简单的引用计数可以确保这一点
-- 参考 `FAngelscriptEngine::AcquireProcessPackages()` 中的 `GAngelscriptPackageRefCount` 模式
+**Rationale:**
 
-**实现：**
+- The global crash handler should be active while any engine instance exists and inactive only after all instances are destroyed.
+- A simple reference count provides this behavior.
+- This follows the pattern in `FAngelscriptEngine::AcquireProcessPackages()` and `GAngelscriptPackageRefCount`.
+
+**Implementation:**
+
 ```cpp
 class FAngelscriptCrashSnapshotExtension : public IAngelscriptExtension
 {
@@ -139,97 +149,102 @@ public:
 
 ## Risks / Trade-offs
 
-### 风险 1: 崩溃处理器取消注册时机
+### Risk 1: Crash Handler Unregistration Timing
 
-**风险：** 如果在引擎销毁过程中发生崩溃，此时崩溃处理器可能已经被取消注册。
+**Risk:** if a crash occurs during engine destruction, the crash handler might already be unregistered.
 
-**缓解：**
-- 引擎销毁是从 `OnEngineDetached` 触发的，此时引擎仍然有效
-- 只有在最后一个引擎分离后才取消注册，此时应该没有活跃的脚本执行
-- 保持与当前实现一致的时机（模块卸载时取消注册）
+**Mitigation:**
 
-### 风险 2: 多线程崩溃场景
+- Engine destruction triggers `OnEngineDetached` while the engine is still valid.
+- The handler unregisters only after the final engine detaches, when no script execution should remain active.
+- This remains close to the current module-unload unregistration timing.
 
-**风险：** 在多线程环境中，一个线程触发崩溃时，另一个线程可能正在附加或分离引擎。
+### Risk 2: Multithreaded Crash Scenario
 
-**缓解：**
-- `GHandlingCrash` 原子变量确保崩溃处理器只执行一次
-- 引用计数操作应该是原子的（使用 `FPlatformAtomics` 或 `std::atomic`）
-- 崩溃处理器本身是无锁的，不依赖扩展对象状态
+**Risk:** one thread may trigger a crash while another thread is attaching or detaching an engine.
 
-### Trade-off 1: 全局崩溃处理器的局限
+**Mitigation:**
 
-**权衡：** 仍然只有一个全局崩溃处理器，无法区分哪个引擎实例导致了崩溃。
+- `GHandlingCrash` ensures the crash handler executes only once.
+- Reference count operations should be atomic, using `FPlatformAtomics` or `std::atomic`.
+- The crash handler itself should stay lock-free and not depend on extension object state.
 
-**接受理由：**
-- UE 的 `OnHandleSystemError` 本身就是全局的
-- 崩溃快照通过 `FAngelscriptEngine::TryGetCurrentEngine()` 获取当前引擎，这已经是最好的解决方案
-- 如果需要多引擎隔离，需要更深层次的架构变更（超出此次重构范围）
+### Trade-off 1: Global Crash Handler Limitation
 
-### Trade-off 2: 测试接口保持静态
+**Trade-off:** there is still only one global crash handler, so it cannot directly identify which engine instance caused the crash.
 
-**权衡：** 测试接口（`ConfigureForTesting`, `WriteSnapshotForTesting`）仍然是静态的，无法指定特定引擎实例。
+**Acceptance Rationale:**
 
-**接受理由：**
-- 保持向后兼容
-- 测试场景通常只有一个引擎实例
-- 如果需要多引擎测试，可以通过 `FAngelscriptEngine::TryGetCurrentEngine()` 切换上下文
+- UE's `OnHandleSystemError` is global.
+- `FAngelscriptEngine::TryGetCurrentEngine()` is already the best available mechanism for finding the active engine.
+- Stronger multi-engine isolation would require deeper architecture changes and is out of scope.
+
+### Trade-off 2: Static Testing Interfaces
+
+**Trade-off:** testing interfaces such as `ConfigureForTesting` and `WriteSnapshotForTesting` remain static and cannot target a specific engine instance.
+
+**Acceptance Rationale:**
+
+- Preserves backward compatibility.
+- Tests usually run with a single engine instance.
+- If multi-engine tests need this later, they can control the active context used by `FAngelscriptEngine::TryGetCurrentEngine()`.
 
 ## Migration Plan
 
-### 实施步骤
+### Implementation Steps
 
-1. **创建扩展类**
-   - 在 `AngelscriptCrashSnapshot.h` 中添加 `FAngelscriptCrashSnapshotExtension` 类
-   - 实现 `OnEngineAttached` 和 `OnEngineDetached`
-   - 添加静态引用计数器
+1. **Create the extension class**
+   - Add `FAngelscriptCrashSnapshotExtension` to `AngelscriptCrashSnapshot.h`.
+   - Implement `OnEngineAttached` and `OnEngineDetached`.
+   - Add a static reference counter.
 
-2. **重构初始化逻辑**
-   - 将 `Startup()/Shutdown()` 改为私有或保持公开但标记为内部使用
-   - 扩展类中调用这些方法
+2. **Refactor initialization logic**
+   - Make `Startup()` / `Shutdown()` private, or keep them public but document them as internal-use.
+   - Call these methods from the extension.
 
-3. **注册扩展**
-   - 在 `FAngelscriptRuntimeModule::StartupModule()` 中注册扩展
-   - 移除直接的 `Startup()` 调用
+3. **Register the extension**
+   - Register the extension in `FAngelscriptRuntimeModule::StartupModule()`.
+   - Remove the direct `Startup()` call.
 
-4. **清理模块代码**
-   - 从 `FAngelscriptRuntimeModule::ShutdownModule()` 中移除 `Shutdown()` 调用
-   - 确保扩展在模块卸载前自动分离
+4. **Clean module code**
+   - Remove the `Shutdown()` call from `FAngelscriptRuntimeModule::ShutdownModule()`.
+   - Ensure the extension detaches before module unload.
 
-5. **验证测试**
-   - 运行现有崩溃快照测试
-   - 验证多引擎实例场景（如果有相关测试）
+5. **Verify tests**
+   - Run existing crash snapshot tests.
+   - Verify multi-engine instance scenarios if related tests exist.
 
-### 回滚策略
+### Rollback Strategy
 
-如果出现问题，可以简单回退：
-1. 恢复 `FAngelscriptRuntimeModule::StartupModule/ShutdownModule` 中的直接调用
-2. 取消扩展注册
-3. 删除扩展类
+If issues occur, rollback is straightforward:
 
-所有更改都是加法性的，不影响现有功能的核心逻辑。
+1. Restore direct calls in `FAngelscriptRuntimeModule::StartupModule()` and `ShutdownModule()`.
+2. Remove extension registration.
+3. Delete the extension class.
 
-### 验证清单
+All changes are additive around the existing feature internals and should not affect core crash snapshot logic.
 
-- [ ] 编辑器启动时崩溃快照正常注册
-- [ ] PIE 模式下崩溃能正确生成快照
-- [ ] 崩溃快照 JSON 格式不变
-- [ ] 测试接口（`WriteSnapshotForTesting`）仍然工作
-- [ ] 多次创建/销毁引擎实例不会导致泄漏或重复注册
-- [ ] 模块卸载时崩溃处理器被正确取消注册
+### Verification Checklist
+
+- [ ] Crash snapshot registers correctly during editor startup.
+- [ ] Crashes in PIE generate snapshots correctly.
+- [ ] Crash snapshot JSON format is unchanged.
+- [ ] Test interface `WriteSnapshotForTesting` still works.
+- [ ] Repeated engine creation/destruction does not leak or double-register.
+- [ ] Crash handler unregisters correctly during module unload.
 
 ## Open Questions
 
-1. **是否需要支持按引擎实例配置崩溃快照？**
-   - 当前设计是全局配置（`ConfigureForTesting` 是静态的）
-   - 如果需要，可以扩展为引擎实例级别的配置存储
-   - 建议：暂时保持全局配置，需要时再扩展
+1. **Should crash snapshot configuration be per engine instance?**
+   - Current design keeps configuration global because `ConfigureForTesting` is static.
+   - Per-engine configuration storage can be added later if needed.
+   - Recommendation: keep global configuration for now and extend later if required.
 
-2. **是否需要在崩溃快照中记录引擎实例 ID？**
-   - 可以在 JSON 输出中添加引擎实例指针或 ID
-   - 有助于多引擎环境的调试
-   - 建议：作为后续改进，不在此次重构中实现
+2. **Should crash snapshots record engine instance ID?**
+   - The JSON output could include the engine instance pointer or ID.
+   - This would help debugging multi-engine environments.
+   - Recommendation: treat this as a later improvement and keep it out of this refactor.
 
-3. **是否需要对扩展注册失败进行错误处理？**
-   - 当前假设扩展注册总是成功
-   - 建议：添加日志记录，但不阻止模块启动
+3. **Should extension registration failure have explicit error handling?**
+   - Current design assumes extension registration succeeds.
+   - Recommendation: add logging, but do not block module startup.

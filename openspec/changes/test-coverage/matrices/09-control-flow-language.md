@@ -1,115 +1,115 @@
-# 控制流与语言特性覆盖矩阵
+# Control Flow And Language Features Coverage Matrix
 
-> **本矩阵是控制流/语言特性测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 11 个测试文件的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持。
+> **This matrix is the design specification header for control-flow / language-feature tests**: each row is a concrete verifiable scenario guiding 11 test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - 测试文件：`Conditional`(10) / `Loop`(8) / `Jump`(6) / `SpecialControlFlow`(3) / `Namespace`(8) / `Comment`(1) / `Preprocessor`(7) / `TypeConversion`(6) / `Mixin`(7) / `Const`(3) / `OperatorOverload`(3) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<上述主题>`
-> - 图例见 `../coverage-matrix.md`。
+> - Test files: `Conditional`(10) / `Loop`(8) / `Jump`(6) / `SpecialControlFlow`(3) / `Namespace`(8) / `Comment`(1) / `Preprocessor`(7) / `TypeConversion`(6) / `Mixin`(7) / `Const`(3) / `OperatorOverload`(3) Tests.cpp
+> - Automation prefix: `Angelscript.TestModule.Coverage.<topic>`
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 条件（ConditionalTests 10）
+## 1. Conditionals, ConditionalTests 10
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| if 基础/嵌套/条件 | ✅ | `IfBasic` `IfNested` `IfConditions` |
-| 三元运算符 | ✅ | `TernaryOperator` |
-| switch 基础/穿透/枚举/类型 | ✅ | `SwitchBasic` `SwitchFallthrough` `SwitchEnum` `SwitchTypes` |
-| switch 枚举缺 case 告警 | ✅ | `SwitchEnumMissingCaseWarns` |
-| switch 不支持类型 | 🚫 | `SwitchUnsupportedTypes` |
+| if basics / nesting / conditions | ✅ | `IfBasic` `IfNested` `IfConditions` |
+| Ternary operator | ✅ | `TernaryOperator` |
+| switch basics / fallthrough / enum / types | ✅ | `SwitchBasic` `SwitchFallthrough` `SwitchEnum` `SwitchTypes` |
+| switch enum missing case warning | ✅ | `SwitchEnumMissingCaseWarns` |
+| switch unsupported types | 🚫 | `SwitchUnsupportedTypes` |
 
-## 2. 循环（LoopTests 8）
+## 2. Loops, LoopTests 8
 
-| 场景 | 状态 | 覆盖测试方法 / 要点 |
+| Scenario | Status | Coverage Test Method / Notes |
 |------|------|------------|
-| for 基础/变体/嵌套 | ✅ | `ForBasic` `ForVariations` `ForNested` |
-| for-each | ✅ | `ForEach`（值/引用/const 引用、TArray/TSet、`TMapIterator` 显式迭代） |
-| while / do-while | ✅ | `WhileBasic` `DoWhileBasic`（while 含 continue / 复合条件 / 嵌套；do-while 至少一次） |
-| 无限循环 | ✅ | `InfiniteLoops` |
-| `for (auto& Pair : TMap)` 不支持 | 🚫 | `TMapForEachPairUnsupported` |
-| for-each 迭代中修改容器（迭代器失效语义） | ⬜ | 待实现（G19）：`ForEach` 仅断言 `int& Val` 元素就地修改；缺 Add/Remove 容器在迭代中修改时的运行期语义断言 |
+| for basics / variants / nesting | ✅ | `ForBasic` `ForVariations` `ForNested` |
+| for-each | ✅ | `ForEach`, value/reference/const reference, TArray/TSet, explicit `TMapIterator` iteration |
+| while / do-while | ✅ | `WhileBasic` `DoWhileBasic`, while includes continue / compound conditions / nesting; do-while runs at least once |
+| infinite loops | ✅ | `InfiniteLoops` |
+| `for (auto& Pair : TMap)` unsupported | 🚫 | `TMapForEachPairUnsupported` |
+| Mutating containers during for-each iteration, iterator invalidation semantics | ⬜ | Pending G19: `ForEach` only asserts in-place element modification through `int& Val`; missing runtime semantics for Add/Remove during iteration |
 
-## 3. 跳转（JumpTests 6）
+## 3. Jumps, JumpTests 6
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| break（循环/switch） | ✅ | `BreakInLoop` `BreakInSwitch` |
+| break, loop/switch | ✅ | `BreakInLoop` `BreakInSwitch` |
 | continue | ✅ | `ContinueInLoop` |
-| return（提前/多返回） | ✅ | `ReturnEarly` `MultipleReturns` |
-| 组合跳转 | ✅ | `CombinedJumps` |
+| return, early/multiple returns | ✅ | `ReturnEarly` `MultipleReturns` |
+| combined jumps | ✅ | `CombinedJumps` |
 
-## 4. 特殊控制流（SpecialControlFlowTests 3）
+## 4. Special Control Flow, SpecialControlFlowTests 3
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 短路跳过右侧 | ✅ | `ShortCircuitSkipsRightHandSide` |
-| for 子句中的逗号表达式编译并执行 | ✅ | `ForCommaClausesCompileAndExecute` |
-| for 子句外逗号表达式不支持 | 🚫 | `CommaExpressionUnsupportedOutsideForClauses` |
+| Short-circuit skips right-hand side | ✅ | `ShortCircuitSkipsRightHandSide` |
+| Comma expression in for clauses compiles and executes | ✅ | `ForCommaClausesCompileAndExecute` |
+| Comma expression outside for clauses unsupported | 🚫 | `CommaExpressionUnsupportedOutsideForClauses` |
 
-## 5. 命名空间与作用域（NamespaceTests 8）
+## 5. Namespaces And Scope, NamespaceTests 8
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 声明/嵌套/using/限定名 | ✅ | `NamespaceDeclaration` `NamespaceNested` `NamespaceUsing` `NamespaceQualifiedName` |
-| 作用域变量/遮蔽/生命周期 | ✅ | `ScopeVariables` `ScopeShadowing` `ScopeLifecycle` |
-| 命名空间内类型 | ✅ | `NamespaceWithTypes` |
+| Declaration / nesting / using / qualified names | ✅ | `NamespaceDeclaration` `NamespaceNested` `NamespaceUsing` `NamespaceQualifiedName` |
+| Scope variables / shadowing / lifecycle | ✅ | `ScopeVariables` `ScopeShadowing` `ScopeLifecycle` |
+| Types inside namespaces | ✅ | `NamespaceWithTypes` |
 
-## 6. 注释（CommentTests 1）
+## 6. Comments, CommentTests 1
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 各注释形式编译 | ✅ | `CommentFormsCompile` |
+| Comment forms compile | ✅ | `CommentFormsCompile` |
 
-## 7. 预处理（PreprocessorTests 7）
+## 7. Preprocessor, PreprocessorTests 7
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| import 依赖与条件分支 / 失活 import 分支被忽略 | ✅ | `ImportDependencyAndConditionalBranches` `DisabledImportBranchIsIgnored` |
-| #if/#elif/#else/#endif 分支 | ✅ | `IfElifElseEndifBranches` |
-| 编辑器配置标志分支 | ✅ | `EditorConfigurationFlagBranch` |
-| 覆盖夹具形态汇总 | ✅ | `SummaryReportsCoverageFixtureShape` |
-| 未注册的旧宏名诊断 / #include 不支持诊断 | 🚫 | `UnregisteredLegacyMacroNamesReportDiagnostics` `IncludeDirectiveReportsUnsupportedDiagnostic` |
+| import dependency and conditional branches / disabled import branch ignored | ✅ | `ImportDependencyAndConditionalBranches` `DisabledImportBranchIsIgnored` |
+| #if/#elif/#else/#endif branches | ✅ | `IfElifElseEndifBranches` |
+| Editor configuration flag branch | ✅ | `EditorConfigurationFlagBranch` |
+| Coverage fixture shape summary | ✅ | `SummaryReportsCoverageFixtureShape` |
+| Unregistered legacy macro name diagnostics / #include unsupported diagnostic | 🚫 | `UnregisteredLegacyMacroNamesReportDiagnostics` `IncludeDirectiveReportsUnsupportedDiagnostic` |
 
-## 8. 类型转换（TypeConversionTests 6）
+## 8. Type Conversion, TypeConversionTests 6
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 数值/枚举/字符串转换 | ✅ | `NumericEnumAndStringConversions` |
-| 对象 Cast 与类型检查 | ✅ | `ObjectCastAndTypeChecks` |
-| TSubclassOf 参数与 UClass 转换 | ✅ | `TSubclassOfParameterAndUClassConversions` |
-| 成员引用与可空 handle 转换 | ✅ | `MemberReferenceAndNullableHandleConversions` |
-| String/Name/Text 转换往返 | ✅ | `StringNameTextConversionRoundTrips` |
-| 转换负向编译 | 🚫 | `ConversionNegativeCompile` |
+| Numeric / enum / string conversions | ✅ | `NumericEnumAndStringConversions` |
+| Object Cast and type checks | ✅ | `ObjectCastAndTypeChecks` |
+| TSubclassOf parameters and UClass conversions | ✅ | `TSubclassOfParameterAndUClassConversions` |
+| Member references and nullable handle conversions | ✅ | `MemberReferenceAndNullableHandleConversions` |
+| String/Name/Text conversion round trips | ✅ | `StringNameTextConversionRoundTrips` |
+| Negative compile conversion cases | 🚫 | `ConversionNegativeCompile` |
 
-## 9. Mixin（MixinTests 7）
+## 9. Mixin, MixinTests 7
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 自由函数 mixin 分发与默认 | ✅ | `FreeFunctionMixinDispatchAndDefaults` |
-| mixin 方法可组合 | ✅ | `MixinMethodsCanBeComposed` |
-| 重载跨脚本继承解析 / 冲突解析用显式基类接收者 | ✅ | `MixinOverloadsResolveAcrossScriptInheritance` `MixinConflictResolutionUsesExplicitBaseReceiverView` |
-| mixin 虚调用分发到重写 / 读写 UPROPERTY 边界 | ✅ | `MixinDispatchesVirtualCallsToOverrides` `MixinReadsAndWritesUPropertyBoundaries` |
-| mixin class 语法被拒 | 🚫 | `MixinClassSyntaxRejected` |
+| Free function mixin dispatch and defaults | ✅ | `FreeFunctionMixinDispatchAndDefaults` |
+| Mixin methods can be composed | ✅ | `MixinMethodsCanBeComposed` |
+| Overloads resolve across script inheritance / conflict resolution uses explicit base receiver | ✅ | `MixinOverloadsResolveAcrossScriptInheritance` `MixinConflictResolutionUsesExplicitBaseReceiverView` |
+| Mixin virtual calls dispatch to overrides / read and write UPROPERTY boundaries | ✅ | `MixinDispatchesVirtualCallsToOverrides` `MixinReadsAndWritesUPropertyBoundaries` |
+| mixin class syntax rejected | 🚫 | `MixinClassSyntaxRejected` |
 
-## 10. const（ConstTests 3）
+## 10. const, ConstTests 3
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| const 值/方法/引用 | ✅ | `ConstValuesMethodsAndReferences` |
-| const UFUNCTION 与属性反射 | ✅ | `ConstUFunctionAndPropertyReflection` |
-| const 违例负向编译 | 🚫 | `ConstViolationNegativeCompile` |
+| const values / methods / references | ✅ | `ConstValuesMethodsAndReferences` |
+| const UFUNCTION and property reflection | ✅ | `ConstUFunctionAndPropertyReflection` |
+| const violation negative compile | 🚫 | `ConstViolationNegativeCompile` |
 
-## 11. 运算符重载（OperatorOverloadTests 3）
+## 11. Operator Overload, OperatorOverloadTests 3
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 算术/比较/赋值运算符 | ✅ | `ArithmeticComparisonAndAssignmentOperators` |
-| 一元/索引/转换运算符 | ✅ | `UnaryIndexAndConversionOperators` |
-| 运算符负向编译 | 🚫 | `OperatorNegativeCompile` |
+| Arithmetic / comparison / assignment operators | ✅ | `ArithmeticComparisonAndAssignmentOperators` |
+| Unary / index / conversion operators | ✅ | `UnaryIndexAndConversionOperators` |
+| Operator negative compile | 🚫 | `OperatorNegativeCompile` |
 
 ---
 
-## 汇总
+## Summary
 
-| 文件 | 方法 |
+| File | Methods |
 |------|------|
 | Conditional | 10 |
 | Loop | 8 |
@@ -122,10 +122,10 @@
 | Mixin | 7 |
 | Const | 3 |
 | OperatorOverload | 3 |
-| **合计** | **63** |
+| **Total** | **63** |
 
-**待实现（⬜）**（2026-06-30 深审新增，**非阻塞**；编号为 `coverage-gaps.md §1` 全局 G 编号）：
+**Pending (⬜)**, added by the 2026-06-30 deep audit and non-blocking, using global G numbering from `coverage-gaps.md §1`:
 
-- `G19` ⬜ for-each 迭代中修改容器（迭代器失效语义）：现 `ForEach` 仅断言 `int& Val` 元素就地修改；缺 Add/Remove 容器在迭代中修改时的运行期语义断言。
+- `G19` ⬜ mutating containers during for-each iteration, iterator invalidation semantics: current `ForEach` only asserts in-place element modification through `int& Val`; missing runtime semantics for Add/Remove during iteration.
 
-> 其余语言特性覆盖成熟，不支持写法均以 🚫 负向断言固化。
+> The remaining language feature coverage is mature, and unsupported forms are locked through 🚫 negative assertions.

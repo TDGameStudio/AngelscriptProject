@@ -1,40 +1,40 @@
-# 杂项系统覆盖矩阵（CVar / AnimInstance）
+# Misc Systems Coverage Matrix, CVar / AnimInstance
 
-> **本矩阵是 CVar / AnimInstance 测试的设计规格("头")**：每行是一个**具体可验证场景**。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🟡＝部分覆盖（待加深），🚫＝fork 不支持。
+> **This matrix is the design specification header for CVar / AnimInstance tests**: each row is a concrete verifiable scenario. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, 🟡 means partially covered, and 🚫 means fork unsupported.
 >
-> - 测试文件：`CVar`(11) / `AnimInstance`(3) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.CVar`、`...Animation.AnimInstance`
-> - 图例见 `../coverage-matrix.md`。
+> - Test files: `CVar`(11) / `AnimInstance`(3) Tests.cpp
+> - Automation prefixes: `Angelscript.TestModule.Coverage.CVar`, `...Animation.AnimInstance`
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 控制台变量 CVar（CVarTests 11）
+## 1. Console Variables, CVarTests 11
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 全类型 Get/Set | ✅ | `CVarGetSetAllTypes` |
-| 安全访问与既有变量 / 既有变量保留原生元数据 | ✅ | `CVarSafeAccessAndExistingVariable` `CVarExistingVariablePreservesNativeMetadata` |
-| 既有引擎 CVar 冒烟（保留并恢复值） / 渲染与可伸缩性 CVar 保留恢复 | ✅ | `ExistingEngineCVarSmokePreservesAndRestoresValues` `ExistingEngineRenderAndScalabilityCVarsPreserveAndRestoreValues` |
-| 已注册 CVar 名矩阵 / 常见使用模式 | ✅ | `RegisteredCVarNameMatrix` `CommonCVarUsagePatterns` |
-| 控制台命令注册/参数/卸载 / 常见字符串矩阵分发 | ✅ | `ConsoleCommandRegistrationArgumentsAndUnload` `ConsoleCommandCommonStringMatrixDispatch` |
-| 控制台命令执行 API 不支持 | 🚫 | `ConsoleCommandExecutionApisUnsupported` |
-| 控制台命令字符串构造编译边界 | 🚫 | `ConsoleCommandStringConstructionCompileBoundary` |
+| All-type Get/Set | ✅ | `CVarGetSetAllTypes` |
+| Safe access and existing variables / existing variables preserve native metadata | ✅ | `CVarSafeAccessAndExistingVariable` `CVarExistingVariablePreservesNativeMetadata` |
+| Existing engine CVar smoke, preserve and restore value / render and scalability CVar preserve and restore | ✅ | `ExistingEngineCVarSmokePreservesAndRestoresValues` `ExistingEngineRenderAndScalabilityCVarsPreserveAndRestoreValues` |
+| Registered CVar name matrix / common usage patterns | ✅ | `RegisteredCVarNameMatrix` `CommonCVarUsagePatterns` |
+| Console command registration, arguments, unload / common string matrix dispatch | ✅ | `ConsoleCommandRegistrationArgumentsAndUnload` `ConsoleCommandCommonStringMatrixDispatch` |
+| Console command execution APIs unsupported | 🚫 | `ConsoleCommandExecutionApisUnsupported` |
+| Console command string construction compile boundary | 🚫 | `ConsoleCommandStringConstructionCompileBoundary` |
 
-## 2. 动画实例 AnimInstance（AnimInstanceTests 3）
+## 2. Animation Instance, AnimInstanceTests 3
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| UAnimInstance 子类与变量声明 | ✅ | `AnimInstanceSubclassAndVariables` |
-| 查询函数可编译 | ✅ | `AnimInstanceQueryFunctionsCompile` |
-| asset-free owner / montage / curve 查询运行期行为 | ✅ | `AnimInstanceQueryFunctionsExecute` |
-| 状态机/动画通知等需要真实动画资产或图的运行期路径 | 🚫 | 本轮不纳入 headless asset-free Coverage 范围；后续若引入专用测试资产再另开行 |
+| UAnimInstance subclass and variable declarations | ✅ | `AnimInstanceSubclassAndVariables` |
+| Query functions compile | ✅ | `AnimInstanceQueryFunctionsCompile` |
+| Asset-free owner / montage / curve query runtime behavior | ✅ | `AnimInstanceQueryFunctionsExecute` |
+| Runtime paths requiring real animation assets or graphs, such as state machines / animation notifies | 🚫 | Out of scope for this headless asset-free Coverage pass; add a row later if dedicated test assets are introduced |
 
 ---
 
-## 汇总
+## Summary
 
-| 文件 | 方法 |
+| File | Methods |
 |------|------|
 | CVar | 11 |
 | AnimInstance | 3 |
-| **合计** | **14** |
+| **Total** | **14** |
 
-**已关闭**：G1 — `AnimInstanceQueryFunctionsExecute` 通过 transient `USkeletalMeshComponent` outer 实例化 AS `UAnimInstance`，反射执行 owner / montage / curve 查询并断言 asset-free 状态。验证：`Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Animation.AnimInstance"` → `3/3`。
+**Closed**: G1 — `AnimInstanceQueryFunctionsExecute` instantiates an AS `UAnimInstance` through a transient `USkeletalMeshComponent` outer, executes owner / montage / curve queries through reflection, and asserts asset-free state. Verification: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Animation.AnimInstance"` -> `3/3`.

@@ -1,135 +1,135 @@
-# USTRUCT 覆盖矩阵
+# USTRUCT Coverage Matrix
 
-> **本矩阵是 USTRUCT 测试的设计规格("头")**：每行是一个**具体可验证场景**，用来指导 `AngelscriptCoverageUStructTests.cpp` / `AngelscriptCoverageUStructMemberTests.cpp` 的实现。
-> 状态为 ⬜ 的行即"待实现测试"；✅ 行注明已覆盖它的 `TEST_METHOD`。
+> **This matrix is the design specification ("header") for USTRUCT tests**: each row is a concrete verifiable scenario used to guide implementation in `AngelscriptCoverageUStructTests.cpp` / `AngelscriptCoverageUStructMemberTests.cpp`.
+> Rows marked ⬜ are pending tests; ✅ rows identify the covering `TEST_METHOD`.
 >
-> - 测试文件：`AngelscriptCoverageUStructTests.cpp`（43 方法）、`AngelscriptCoverageUStructMemberTests.cpp`（4 方法）
-> - Automation 前缀：`Angelscript.TestModule.Coverage.UStruct`、`...UStructMember`
-> - 图例：✅ 已覆盖 ／ 🟡 部分覆盖 ／ ⬜ 待实现 ／ 🚫 fork 不支持（边界记录）。完整图例见 `../coverage-matrix.md`。
+> - Test files: `AngelscriptCoverageUStructTests.cpp` (43 methods), `AngelscriptCoverageUStructMemberTests.cpp` (4 methods)
+> - Automation prefixes: `Angelscript.TestModule.Coverage.UStruct`, `...UStructMember`
+> - Legend: ✅ covered / 🟡 partially covered / ⬜ pending / 🚫 fork-unsupported boundary. See `../coverage-matrix.md` for the full legend.
 
-## 1. 声明与反射（Declaration & Reflection）
+## 1. Declaration and Reflection
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 基础 USTRUCT 声明 + 反射注册 | ✅ | `UStructBasicDeclaration` | 类型注册、字段可见 |
-| 声明 / 构造的边界组合 | ✅ | `UStructDeclarationAndConstructionEdgeMatrix` | 默认构造、聚合初始化边界 |
-| 命名空间内声明与反射 | ✅ | `UStructNamespacedDeclarationAndReflection` | `namespace` 下 struct 反射名 |
-| 跨多个反射点的类型标识一致 | ✅ | `UStructTypeIdentityAcrossReflectionSites` | 参数/返回/成员处类型同一 |
-| BlueprintGeneratedClass 关联边界 | ✅ | `UStructBlueprintGeneratedClassBoundary` | 与 BP 生成类交互边界 |
+| Basic USTRUCT declaration + reflection registration | ✅ | `UStructBasicDeclaration` | Type registration and visible fields |
+| Declaration / construction edge combinations | ✅ | `UStructDeclarationAndConstructionEdgeMatrix` | Default construction and aggregate-initialization boundaries |
+| Namespaced declaration and reflection | ✅ | `UStructNamespacedDeclarationAndReflection` | Reflected struct names under `namespace` |
+| Type identity is consistent across reflection sites | ✅ | `UStructTypeIdentityAcrossReflectionSites` | Same type at parameter/return/member sites |
+| BlueprintGeneratedClass association boundary | ✅ | `UStructBlueprintGeneratedClassBoundary` | Interaction boundary with BP-generated classes |
 
-## 2. 说明符与元数据（Specifiers & Metadata）
+## 2. Specifiers and Metadata
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| USTRUCT 受支持说明符 | ✅ | `UStructSpecifiers` | BlueprintType / Atomic 等 |
-| 不支持的 USTRUCT 说明符（边界） | 🚫 | `UStructUnsupportedSpecifiers` | 记录被拒绝说明符 |
-| 属性说明符标志矩阵 | ✅ | `UStructPropertySpecifierFlagMatrix` | EditAnywhere/BlueprintReadWrite/SaveGame 等标志位 |
-| 可选 + 说明符组合 | ✅ | `UStructOptionalAndSpecifierCombinations` | 组合规则 |
-| 元数据别名与弃用 | ✅ | `UStructMetadataAliasAndDeprecationMatrix` | meta alias / deprecated |
-| 高级元数据 | ✅ | `UStructAdvancedMetadata` | 自定义 meta 键往返 |
-| `HasNativeMake` / `HasNativeBreak` 说明符 | ⬜? | — | 待实现（G15）：UE UHT 用这两个说明符指示 native 端绑定自定义 Make/Break 节点；fork 内 grep 无 `HasNativeMake/HasNativeBreak` 解析；当前 `UStructUnsupportedSpecifiers` 仅覆盖 `Atomic`/`Immutable`/`NoExport`。需补一行 compile-failure 实测（预期 `Unknown class specifier`），归 🚫 边界 |
+| Supported USTRUCT specifiers | ✅ | `UStructSpecifiers` | BlueprintType / Atomic, etc. |
+| Unsupported USTRUCT specifiers (boundary) | 🚫 | `UStructUnsupportedSpecifiers` | Records rejected specifiers |
+| Property specifier flag matrix | ✅ | `UStructPropertySpecifierFlagMatrix` | EditAnywhere/BlueprintReadWrite/SaveGame and related flags |
+| Optional + specifier combinations | ✅ | `UStructOptionalAndSpecifierCombinations` | Combination rules |
+| Metadata aliases and deprecation | ✅ | `UStructMetadataAliasAndDeprecationMatrix` | meta alias / deprecated |
+| Advanced metadata | ✅ | `UStructAdvancedMetadata` | Custom meta-key round trip |
+| `HasNativeMake` / `HasNativeBreak` specifiers | ⬜? | — | Pending (G15): UE UHT uses these specifiers to point to native custom Make/Break node bindings; grep finds no `HasNativeMake/HasNativeBreak` parser path in this fork; current `UStructUnsupportedSpecifiers` only covers `Atomic`/`Immutable`/`NoExport`. Add one compile-failure probe row (expected `Unknown class specifier`) and classify it as a 🚫 boundary |
 
-## 3. 成员与默认值（Members & Defaults）
+## 3. Members and Defaults
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 成员声明与访问 | ✅ | `UStructMembers` / `UStructMember*`(member 文件) | 基础成员读写 |
-| 扩展成员类型矩阵 | ✅ | `UStructExtendedMemberTypeMatrix` | 各 UE 类型作成员（含 TWeakObjectPtr / TSoftObjectPtr / TSoftClassPtr / TSubclassOf / FText / 数学结构 / UObject 引用） |
-| 枚举 / FText / 属性标志成员 | ✅ | `UStructEnumTextAndPropertyFlags` | enum/FText 成员 |
-| 默认值类型矩阵 | ✅ | `UStructDefaultValueTypeMatrix` | 各类型默认值反射 |
-| 嵌套 struct 默认值反射 | ✅ | `UStructNestedDefaultsReflection` | 嵌套默认值（3 层 Outer→Branch→Leaf） |
-| `FInstancedStruct` 作 USTRUCT 成员 / UPROPERTY | ⬜ | — | 待实现（G11）：fork 已绑定 `FInstancedStruct`（见 `Bind_FInstancedStruct.cpp`、`AngelscriptInstancedStructBindingsTests.cpp` 的 `DefaultConstruction`/`ResetClears`），但 Coverage 域未覆盖。需补：作 UPROPERTY 反射、`InitializeAs<FFoo>` / `Get<FFoo>()` 往返、作函数参数/返回、作 TArray 元素 |
+| Member declaration and access | ✅ | `UStructMembers` / `UStructMember*` (member file) | Basic member read/write |
+| Extended member type matrix | ✅ | `UStructExtendedMemberTypeMatrix` | UE types as members, including TWeakObjectPtr / TSoftObjectPtr / TSoftClassPtr / TSubclassOf / FText / math structs / UObject references |
+| Enum / FText / property-flag members | ✅ | `UStructEnumTextAndPropertyFlags` | enum/FText members |
+| Default-value type matrix | ✅ | `UStructDefaultValueTypeMatrix` | Reflected defaults for each type |
+| Nested struct default-value reflection | ✅ | `UStructNestedDefaultsReflection` | Nested defaults (3 levels: Outer→Branch→Leaf) |
+| `FInstancedStruct` as a USTRUCT member / UPROPERTY | ⬜ | — | Pending (G11): the fork already binds `FInstancedStruct` (see `Bind_FInstancedStruct.cpp` and `AngelscriptInstancedStructBindingsTests.cpp` `DefaultConstruction`/`ResetClears`), but the Coverage domain does not cover it yet. Add coverage for UPROPERTY reflection, `InitializeAs<FFoo>` / `Get<FFoo>()` round trip, function parameter/return shapes, and TArray elements |
 
-## 4. 值语义、运算符、成员方法（Value Semantics / Operators / Methods）
+## 4. Value Semantics, Operators, and Member Methods
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 值语义（拷贝/赋值独立） | 🟡 | `UStructValueSemantics` | 值类型拷贝隔离（G12）：当前仅 int + FString 成员的拷贝/赋值独立性；含 TArray/TMap/TSet 成员的深拷贝独立性（修改副本容器不影响源容器）尚未断言 |
-| 运算符重载（==、!= 等） | 🟡 | `UStructOperators` | 当前覆盖 `opEquals` / `opAdd` / `opAssign` / `opCmp` / `opIndex`（G13）：缺 `opSub` / `opMul` / `opDiv` / `opNeg` 及复合赋值 `opAddAssign` / `opSubAssign` / `opMulAssign` / `opDivAssign` 的运行期断言 |
-| 成员方法调用矩阵 | ✅ | `UStructMemberMethodInvocationMatrix` | const / 非 const / 返回 struct / `CopyFrom(const&in)` 等形态运行期断言 |
+| Value semantics (copy/assignment independence) | 🟡 | `UStructValueSemantics` | Value-type copy isolation (G12): currently only asserts copy/assignment independence for int + FString members; deep-copy independence for TArray/TMap/TSet members (mutating the copied container does not affect the source container) is not asserted yet |
+| Operator overloads (`==`, `!=`, etc.) | 🟡 | `UStructOperators` | Currently covers `opEquals` / `opAdd` / `opAssign` / `opCmp` / `opIndex` (G13): missing runtime assertions for `opSub` / `opMul` / `opDiv` / `opNeg` and compound assignments `opAddAssign` / `opSubAssign` / `opMulAssign` / `opDivAssign` |
+| Member method invocation matrix | ✅ | `UStructMemberMethodInvocationMatrix` | Runtime assertions for const / non-const / struct-returning / `CopyFrom(const&in)` shapes |
 
-## 5. 作参数 / 返回值（Parameter / Return）
+## 5. Parameters and Return Values
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| struct 作脚本函数参数 | ✅ | `UStructAsParameter` | 值/in/out/inout |
-| struct 作脚本函数返回值 | ✅ | `UStructAsReturn` | 返回值往返 |
-| struct 作 UFUNCTION 参数调用 | ✅ | `UStructUFunctionParameterInvocation` | 反射调用入参 |
-| struct 作 UFUNCTION 返回调用 | ✅ | `UStructUFunctionReturnInvocation` | 反射调用返回 |
-| 函数形态矩阵（参数×返回组合） | ✅ | `UStructFunctionShapeMatrix` | 形态排列 |
-| 可选（optional）返回矩阵 | ✅ | `UStructOptionalReturnMatrix` | optional 返回 |
+| struct as script function parameter | ✅ | `UStructAsParameter` | value/in/out/inout |
+| struct as script function return value | ✅ | `UStructAsReturn` | Return round trip |
+| struct as UFUNCTION parameter call | ✅ | `UStructUFunctionParameterInvocation` | Reflected input call |
+| struct as UFUNCTION return call | ✅ | `UStructUFunctionReturnInvocation` | Reflected return call |
+| Function-shape matrix (parameter × return combinations) | ✅ | `UStructFunctionShapeMatrix` | Shape permutations |
+| Optional return matrix | ✅ | `UStructOptionalReturnMatrix` | optional returns |
 
-## 6. 委托交互（Delegate）
+## 6. Delegate Interaction
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| struct 作委托参数往返 | ✅ | `UStructDelegateParameterRoundTrip` | 委托广播 struct |
-| struct 容器作委托参数往返 | ✅ | `UStructDelegateContainerRoundTrip` | TArray<struct> 委托 |
-| 扩展 Map 委托排列矩阵 | ✅ | `UStructExtendedMapDelegatePermutationMatrix` | TMap 值含 struct 的委托 |
-| Map 键值委托排列矩阵 | ✅ | `UStructMapKeyValueDelegatePermutationMatrix` | 键/值 struct 委托排列 |
+| struct as delegate parameter round trip | ✅ | `UStructDelegateParameterRoundTrip` | Delegate broadcasts struct |
+| struct container as delegate parameter round trip | ✅ | `UStructDelegateContainerRoundTrip` | TArray<struct> delegate |
+| Extended Map delegate permutation matrix | ✅ | `UStructExtendedMapDelegatePermutationMatrix` | Delegates with TMap values containing struct |
+| Map key/value delegate permutation matrix | ✅ | `UStructMapKeyValueDelegatePermutationMatrix` | Key/value struct delegate permutations |
 
-## 7. 容器交互（Containers）
+## 7. Container Interaction
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| struct 在容器中（TArray/TMap/TSet 元素） | ✅ | `UStructInContainers` | 作元素 |
-| struct 作可哈希 Map 键 / Set 元素 | ✅ | `UStructHashableMapKeyAndSetElement` | GetTypeHash 路径 |
-| 空容器形态矩阵 | ✅ | `UStructEmptyContainerShapeMatrix` | 空容器边界 |
-| 容器作参数形态矩阵 | ✅ | `UStructContainerParameterShapeMatrix` | 容器入参排列 |
-| 容器作成员形态矩阵 | ✅ | `UStructContainerMemberShapeMatrix` | 容器成员排列 |
-| 扩展 Map 成员排列矩阵 | ✅ | `UStructExtendedMapMemberPermutationMatrix` | TMap 成员排列 |
-| 反射容器参数调用 | ✅ | `UStructReflectedContainerParameterInvocation` | 反射调用容器入参 |
-| 键容器参数与返回矩阵 | ✅ | `UStructKeyContainerParameterAndReturnMatrix` | 键容器形态 |
-| struct→struct Map 参数与返回 | ✅ | `UStructStructToStructMapParameterAndReturnMatrix` | TMap<struct,struct> |
-| Map 键值形态矩阵 | ✅ | `UStructMapKeyValueShapeMatrix` | 键值类型排列 |
-| Map 键值参数与返回矩阵 | ✅ | `UStructMapKeyValueParameterAndReturnMatrix` | 键值参数/返回 |
-| Map 基础键值参数与返回 | ✅ | `UStructMapPrimitiveKeyValueParameterAndReturnMatrix` | 基础类型键值 |
+| struct in containers (TArray/TMap/TSet elements) | ✅ | `UStructInContainers` | As element |
+| struct as hashable Map key / Set element | ✅ | `UStructHashableMapKeyAndSetElement` | GetTypeHash path |
+| Empty container shape matrix | ✅ | `UStructEmptyContainerShapeMatrix` | Empty-container boundary |
+| Containers as parameter shape matrix | ✅ | `UStructContainerParameterShapeMatrix` | Container input permutations |
+| Containers as member shape matrix | ✅ | `UStructContainerMemberShapeMatrix` | Container member permutations |
+| Extended Map member permutation matrix | ✅ | `UStructExtendedMapMemberPermutationMatrix` | TMap member permutations |
+| Reflected container parameter invocation | ✅ | `UStructReflectedContainerParameterInvocation` | Reflected call with container input |
+| Key-container parameter and return matrix | ✅ | `UStructKeyContainerParameterAndReturnMatrix` | Key-container shapes |
+| struct→struct Map parameter and return | ✅ | `UStructStructToStructMapParameterAndReturnMatrix` | TMap<struct,struct> |
+| Map key/value shape matrix | ✅ | `UStructMapKeyValueShapeMatrix` | Key/value type permutations |
+| Map key/value parameter and return matrix | ✅ | `UStructMapKeyValueParameterAndReturnMatrix` | Key/value parameters/returns |
+| Primitive Map key/value parameter and return | ✅ | `UStructMapPrimitiveKeyValueParameterAndReturnMatrix` | Primitive key/value types |
 
-## 8. 嵌套（Nested）
+## 8. Nesting
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 嵌套 struct（struct 含 struct 成员） | ✅ | `UStructNested` | 多层嵌套读写 |
-| struct 内含数组、再作为外层数组元素 | ✅ | `UStructInContainers` / `UStructNested` | 见 `../coverage-gaps.md §2.2`（允许形态） |
+| Nested struct (struct containing struct member) | ✅ | `UStructNested` | Multi-level nested read/write |
+| struct containing array, then used as an outer array element | ✅ | `UStructInContainers` / `UStructNested` | See `../coverage-gaps.md §2.2` (allowed shape) |
 
-## 9. 边界（Boundaries — fork 不支持/不适用）
+## 9. Boundaries — fork unsupported / not applicable
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 |
+| Scenario | Status | Covering Test Method | Notes |
 |------|------|------------|------|
-| 不支持的组合（容器嵌套等） | 🚫 | `UStructUnsupportedCombinationBoundaries` | 编译诊断作边界断言，详见 `../coverage-gaps.md §2.2` |
-| 不支持 USTRUCT 说明符（`Atomic` / `Immutable` / `NoExport`） | 🚫 | `UStructUnsupportedSpecifiers` | 编译诊断作边界断言（`Unknown class specifier ...`） |
-| `TMap<FStruct,V>` / `TSet<FStruct>` 缺少 `Hash`+`opEquals` | 🚫 | `UStructUnsupportedCombinationBoundaries` | 编译诊断 `Key type does not have a hash function defined` |
-| `FInstancedPropertyBag` / `FPropertyBag` | ⬜? | — | （G14）：fork 未发现 PropertyBag 绑定（无 `Bind_FPropertyBag*`），疑似 🚫 边界但未做 compile-failure 实证；需先实测一行 `FInstancedPropertyBag Foo;` 的编译诊断再定状态 |
-| USTRUCT 自定义 `Serialize(FArchive&)` 入口 | ⬜? | — | 待实现/边界（G16）：UE C++ 端可通过 `Serialize(FArchive&)` 重载或 `WithSerializer` Cpp struct trait 自定义 USTRUCT 二进制序列化；fork 内 grep 未发现 AS struct 暴露 `FArchive` 类型/`Serialize` 钩子绑定。预期 🚫 边界（AS struct 走默认反射序列化即可），需 1 行 `void Serialize(FArchive& Ar)` compile-failure 实测固化 |
-| USTRUCT `NetSerialize` / 复制序列化入口 | ⬜? | — | 待实现/边界（G17）：UE 通过 `NetSerialize(FArchive&,UPackageMap*,bool&)` + `WithNetSerializer` 实现 struct 网络压缩；fork 内 grep 无 `NetSerialize` 绑定。AS struct 仅能依赖默认逐字段复制（已通过 UPROPERTY 反射），但脚本端无法覆盖 `NetSerialize`。预期 🚫 边界，需对应 compile-failure 实测固化 |
-| AS USTRUCT 静态成员（`static int Foo`） | ⬜? | — | 待实现/边界（G18）：AS 语言层不支持类/结构静态字段（已在委托域以 `BindStatic` 边界形式记录于 `coverage-gaps.md §2.4`）。USTRUCT 域未做对应 compile-failure 行；需 1 行 `static int Foo` USTRUCT 成员 compile-failure 实测，固化为 🚫 边界 |
+| Unsupported combinations (nested containers, etc.) | 🚫 | `UStructUnsupportedCombinationBoundaries` | Compile diagnostics assert the boundary; see `../coverage-gaps.md §2.2` |
+| Unsupported USTRUCT specifiers (`Atomic` / `Immutable` / `NoExport`) | 🚫 | `UStructUnsupportedSpecifiers` | Compile diagnostics assert the boundary (`Unknown class specifier ...`) |
+| `TMap<FStruct,V>` / `TSet<FStruct>` without `Hash`+`opEquals` | 🚫 | `UStructUnsupportedCombinationBoundaries` | Compile diagnostic: `Key type does not have a hash function defined` |
+| `FInstancedPropertyBag` / `FPropertyBag` | ⬜? | — | (G14): no PropertyBag binding was found in this fork (no `Bind_FPropertyBag*`); likely a 🚫 boundary but not yet proven with a compile-failure probe. First test one line such as `FInstancedPropertyBag Foo;`, then decide whether it is a 🚫 boundary or a ⬜ candidate |
+| USTRUCT custom `Serialize(FArchive&)` entry point | ⬜? | — | Pending/boundary (G16): UE C++ can customize USTRUCT binary serialization via `Serialize(FArchive&)` overloads or the `WithSerializer` Cpp struct trait; grep finds no AS exposure for `FArchive` or a `Serialize` hook binding. Expected 🚫 boundary (AS struct should rely on default reflection serialization), requiring a one-line `void Serialize(FArchive& Ar)` compile-failure probe |
+| USTRUCT `NetSerialize` / replication serialization entry point | ⬜? | — | Pending/boundary (G17): UE implements compressed struct network serialization via `NetSerialize(FArchive&,UPackageMap*,bool&)` + `WithNetSerializer`; grep finds no `NetSerialize` binding. AS structs can only rely on default field-by-field replication (already covered through UPROPERTY reflection), and scripts cannot override `NetSerialize`. Expected 🚫 boundary, requiring the corresponding compile-failure probe |
+| AS USTRUCT static member (`static int Foo`) | ⬜? | — | Pending/boundary (G18): the AS language layer does not support class/struct static fields (already recorded in the delegate domain as a `BindStatic` boundary in `coverage-gaps.md §2.4`). The USTRUCT domain lacks the matching compile-failure row; add a one-line `static int Foo` USTRUCT-member compile-failure probe and harden it as a 🚫 boundary |
 
 ---
 
-## 汇总
+## Summary
 
-| 维度 | 已覆盖场景 | 状态 |
+| Dimension | Covered Scenarios | Status |
 |------|----------|------|
-| 1 声明与反射 | 5 | ✅ |
-| 2 说明符与元数据 | 6 ✅（含 1 边界）+ 1 待实证（G15） | 🟡 |
-| 3 成员与默认值 | 5 + 1 ⬜（G11） | 🟡 |
-| 4 值语义/运算符/方法 | 1 ✅ + 2 🟡（G12/G13） | 🟡 |
-| 5 参数/返回值 | 6 | ✅ |
-| 6 委托交互 | 4 | ✅ |
-| 7 容器交互 | 12 | ✅ |
-| 8 嵌套 | 2 | ✅ |
-| 9 边界 | 3 🚫 + 4 待实证（G14/G16/G17/G18） | — |
+| 1 Declaration and reflection | 5 | ✅ |
+| 2 Specifiers and metadata | 6 ✅ (including 1 boundary) + 1 proof candidate (G15) | 🟡 |
+| 3 Members and defaults | 5 + 1 ⬜ (G11) | 🟡 |
+| 4 Value semantics/operators/methods | 1 ✅ + 2 🟡 (G12/G13) | 🟡 |
+| 5 Parameters/return values | 6 | ✅ |
+| 6 Delegate interaction | 4 | ✅ |
+| 7 Container interaction | 12 | ✅ |
+| 8 Nesting | 2 | ✅ |
+| 9 Boundaries | 3 🚫 + 4 proof candidates (G14/G16/G17/G18) | — |
 
-**对应测试方法**：`UStructTests.cpp` 43 + `UStructMemberTests.cpp` 4 = 47 方法。
+**Corresponding test methods**: `UStructTests.cpp` 43 + `UStructMemberTests.cpp` 4 = 47 methods.
 
-**待实现（⬜ / 🟡）**：
-- `G11` ⬜ `FInstancedStruct` 作 USTRUCT 成员 / UPROPERTY 反射 + `InitializeAs<FFoo>` / `Get<FFoo>()` 往返 + 容器/参数形态。fork 已绑定（`Bind_FInstancedStruct.cpp`），Coverage 域未覆盖。
-- `G12` 🟡 值语义深拷贝独立性补强：现 `UStructValueSemantics` 仅 int+FString 成员；扩展为含 `TArray`/`TMap`/`TSet` 成员的深拷贝独立性（修改副本容器不影响源）。
-- `G13` 🟡 运算符重载补全：现 `UStructOperators` 覆盖 `opEquals`/`opAdd`/`opAssign`/`opCmp`/`opIndex`；补 `opSub`/`opMul`/`opDiv`/`opNeg` + 复合赋值 `opAddAssign`/`opSubAssign`/`opMulAssign`/`opDivAssign` 的运行期断言。
-- `G14` 🚫? 实证候选：`FInstancedPropertyBag` / `FPropertyBag` 在 fork 是否绑定？建议先做 1 行 compile-failure 实测，再决定归 🚫 边界还是 ⬜ 候选。
-- `G15` 🚫? 实证候选：USTRUCT 说明符 `HasNativeMake` / `HasNativeBreak`；fork 无解析路径。1 行 compile-failure 实测固化 🚫 边界。
-- `G16` 🚫? 实证候选：USTRUCT 自定义 `Serialize(FArchive&)` 入口；fork 无 `FArchive` AS 绑定。1 行 compile-failure 实测固化 🚫 边界。
-- `G17` 🚫? 实证候选：USTRUCT `NetSerialize` 复制序列化重载；fork 无 `NetSerialize` 绑定。1 行 compile-failure 实测固化 🚫 边界。
-- `G18` 🚫? 实证候选：USTRUCT 静态成员 `static int Foo;`；AS 语言不支持。1 行 compile-failure 实测固化 🚫 边界。
+**Pending (⬜ / 🟡)**:
+- `G11` ⬜ `FInstancedStruct` as USTRUCT member / UPROPERTY reflection + `InitializeAs<FFoo>` / `Get<FFoo>()` round trip + container/parameter shapes. The fork already binds it (`Bind_FInstancedStruct.cpp`), but the Coverage domain does not cover it.
+- `G12` 🟡 Strengthen value-semantics deep-copy independence: current `UStructValueSemantics` only covers int+FString members; extend it to TArray/TMap/TSet members where mutating the copied container does not affect the source.
+- `G13` 🟡 Complete operator-overload coverage: current `UStructOperators` covers `opEquals`/`opAdd`/`opAssign`/`opCmp`/`opIndex`; add runtime assertions for `opSub`/`opMul`/`opDiv`/`opNeg` + compound assignments `opAddAssign`/`opSubAssign`/`opMulAssign`/`opDivAssign`.
+- `G14` 🚫? Proof candidate: is `FInstancedPropertyBag` / `FPropertyBag` bound in this fork? Run a one-line compile-failure probe first, then classify it as a 🚫 boundary or ⬜ candidate.
+- `G15` 🚫? Proof candidate: USTRUCT specifiers `HasNativeMake` / `HasNativeBreak`; the fork has no parser path. Harden as a 🚫 boundary with a one-line compile-failure probe.
+- `G16` 🚫? Proof candidate: USTRUCT custom `Serialize(FArchive&)` entry point; the fork has no AS binding for `FArchive`. Harden as a 🚫 boundary with a one-line compile-failure probe.
+- `G17` 🚫? Proof candidate: USTRUCT `NetSerialize` replication-serialization overload; the fork has no `NetSerialize` binding. Harden as a 🚫 boundary with a one-line compile-failure probe.
+- `G18` 🚫? Proof candidate: USTRUCT static member `static int Foo;`; AS language does not support this. Harden as a 🚫 boundary with a one-line compile-failure probe.
 
-> 历史结论"USTRUCT 是覆盖最成熟的领域之一"仍成立：47 方法在断言层均为真行为/反射断言，无大面积"伪 ✅"。本次新增 8 项 NEW 中 G11~G13 为**能力面增强**（非阻塞），G14~G18 为**边界实证候选**（每项仅需 1 行 compile-failure 测试即可固化为 🚫 边界）。
+> Historical conclusion "USTRUCT is one of the most mature coverage domains" still holds: all 47 methods contain real behavior/reflection assertions at assertion depth, with no broad "false ✅" area. Of the 8 NEW items added by this review, G11~G13 are **capability-surface enhancements** (non-blocking), while G14~G18 are **boundary proof candidates** (each only needs one compile-failure test row to harden as a 🚫 boundary).

@@ -356,16 +356,16 @@ UHT SHALL extend its existing summary outputs to surface cross-module direct-bin
   - `CrossModuleDirectBind.GenericHook_RawThunkReceivesArgsAndReturn`
   - `SameModuleShardWins_When_BothExist_AtLate50_AndLate60`
   - `MultipleFeaturesSameModule_AllInjected_NoModuleNameDedup`
-  - `Resolver_NoLongerEmitsUnexportedSymbol_ForCrossModuleCandidate`(headless UHT resolver 单测)
+  - `Resolver_NoLongerEmitsUnexportedSymbol_ForCrossModuleCandidate` (headless UHT resolver unit test)
   - `StaleCleanup_CrossModuleEnumeratesSupportedModuleDirectories`
-  - `LayoutVersionMismatch_FeatureSkipped_NoCrash`(ABI 防线 a)
-  - `StaticAssert_SizeofConsistency`(ABI 防线 b — 编译期失败即测试失败)
-  - `RuntimeNullRangeValidation_RejectsMalformedFeature`(ABI 防线 c)
-  - `OnModularFeatureRegistered_LateLoadedModule_BindingsInjected`(后到模块通道)
-  - `OnModularFeatureRegistered_WorkerThreadInvocation_MarshalsToGameThread`(线程安全)
-  - `BuildCs_DoesNotAddEngineModuleDependency`(`AngelscriptRuntime.Build.cs` 反向依赖回归;静态扫描)
-  - `EmittedCpp_DoesNotInclude_AS_SDK_Headers`(emit 内容静态扫描;断言不出现 `angelscript.h` / `AngelscriptCrossModuleBindings.h` 等)
-  - `EmittedCpp_UsesConstructorInstantiation_NoBraceAggregate`(emit 内容静态扫描;断言无 `static .* = { GTable,` 形态)
+  - `LayoutVersionMismatch_FeatureSkipped_NoCrash` (ABI defense a)
+  - `StaticAssert_SizeofConsistency` (ABI defense b - compile-time failure means test failure)
+  - `RuntimeNullRangeValidation_RejectsMalformedFeature` (ABI defense c)
+  - `OnModularFeatureRegistered_LateLoadedModule_BindingsInjected` (late-module path)
+  - `OnModularFeatureRegistered_WorkerThreadInvocation_MarshalsToGameThread` (thread safety)
+  - `BuildCs_DoesNotAddEngineModuleDependency` (`AngelscriptRuntime.Build.cs` reverse-dependency regression; static scan)
+  - `EmittedCpp_DoesNotInclude_AS_SDK_Headers` (generated-output static scan; asserts no `angelscript.h` / `AngelscriptCrossModuleBindings.h` strings appear)
+  - `EmittedCpp_UsesConstructorInstantiation_NoBraceAggregate` (generated-output static scan; asserts no `static .* = { GTable,` form)
   - `CrossModuleDirectBind.SkippedStatisticsClassifyCrossModuleOutcomes`
   - `CrossModuleDirectBind.AutomaticEntryVisible`
 - **Deferred behavior/performance verification**:Bindings-level behavior parity, out-param / WorldContext / container marshalling, multi-endpoint RPC behavior, Monolithic Shipping, Launcher installed-engine smoke, full suite, and micro-bench data are follow-up hardening items.

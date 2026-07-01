@@ -1,32 +1,32 @@
 # Tasks — feature-as-blueprint-parent-jump-to-source
 
-> 改动位于 submodule `Plugins/Angelscript/Source/AngelscriptEditor`，按 `Documents/Guides/SubmoduleWorktreeWorkflow.md` 处理提交与主仓库指针。
-> 测试遵循项目约定：Editor 层（`AngelscriptEditor/Tests/`），文件名以 `Angelscript` 前缀；用现有导航测试接缝，禁止真正拉起 VS Code。
+> Changes live in the `Plugins/Angelscript/Source/AngelscriptEditor` submodule path. Follow `Documents/Guides/SubmoduleWorktreeWorkflow.md` for the submodule commit and parent repository gitlink update.
+> Tests follow project conventions: Editor layer under `AngelscriptEditor/Tests/`, filenames with the `Angelscript` prefix, existing navigation test seams, and no real VS Code launch.
 
-## 1. 确认引擎门控形态
+## 1. Confirm Engine Gating Shape
 
-- [ ] 1.1 在父类为 AS 类的蓝图编辑器中实际操作，确认右上角"打开父类源码"按钮的状态（隐藏 / 显示但无效 / 当作普通蓝图父类）。记录结论。
-- [ ] 1.2 复核 `AngelscriptClassGenerator.cpp:3319` 的 `CLASS_CompiledFromBlueprint` 标记，确认 AS 父类不被引擎判为 native。
-- [ ] 1.3 复核已注册 handler `FAngelscriptSourceCodeNavigation`（`AngelscriptSourceCodeNavigation.cpp/.h`）与注册点（`AngelscriptEditorModule.cpp:815`），确认 `NavigateToClass` 对 `UASClass`/`UASStruct` 可用。
+- [ ] 1.1 In a Blueprint editor whose parent is an AS class, manually confirm the top-right "open parent class source" action state: hidden, visible but ineffective, or treated as a normal Blueprint parent. Record the result.
+- [ ] 1.2 Re-check the `CLASS_CompiledFromBlueprint` flag in `AngelscriptClassGenerator.cpp:3319` and confirm AS parent classes are not treated as native classes by the engine.
+- [ ] 1.3 Re-check the registered `FAngelscriptSourceCodeNavigation` handler in `AngelscriptSourceCodeNavigation.cpp/.h` and the registration point at `AngelscriptEditorModule.cpp:815`; confirm `NavigateToClass` supports `UASClass`/`UASStruct`.
 
-## 2. 实现工具栏入口 <!-- TDD -->
+## 2. Implement Toolbar Entry <!-- TDD -->
 
-- [ ] 2.1 先写失败测试（Editor 层）：构造一个父类为 AS 类的场景，通过导航测试接缝断言触发动作后解析出的 `path:line` 正确（不启动 VS Code）。参考 `AngelscriptSourceNavigationTests.cpp`。
-- [ ] 2.2 在 `ScriptEditorMenuExtension.cpp` 中通过 `UToolMenus` 为蓝图编辑器新增"打开 Angelscript 父类源码"入口。
-- [ ] 2.3 入口可见性/可用性绑定 `Cast<UASClass>(Blueprint->ParentClass) != nullptr`（镜像 `CanNavigateToClass`）。
-- [ ] 2.4 执行逻辑调用现有 `FSourceCodeNavigation::NavigateToClass(ParentClass)`（落到 AS handler → `OpenVsCode`/`OpenModule`）。
-- [ ] 2.5 父类无法解析为脚本源时，记录可见日志/提示，不静默失败、不打开错误位置。
-- [ ] 2.6 运行 2.1 测试至通过。
+- [ ] 2.1 Write the failing Editor-layer test first: create a scenario whose parent class is an AS class, trigger the action through the navigation test seam, and assert the resolved `path:line` without launching VS Code. Use `AngelscriptSourceNavigationTests.cpp` as reference.
+- [ ] 2.2 Add an "Open Angelscript Parent Source" entry for the Blueprint editor in `ScriptEditorMenuExtension.cpp` through `UToolMenus`.
+- [ ] 2.3 Bind entry visibility/availability to `Cast<UASClass>(Blueprint->ParentClass) != nullptr`, mirroring `CanNavigateToClass`.
+- [ ] 2.4 Implement the action by calling the existing `FSourceCodeNavigation::NavigateToClass(ParentClass)` path, which routes to the AS handler and then `OpenVsCode`/`OpenModule`.
+- [ ] 2.5 When the parent class cannot be resolved to script source, emit visible logging or notification; do not fail silently or open the wrong location.
+- [ ] 2.6 Run the 2.1 test until it passes.
 
-## 3. 边界与回归
+## 3. Boundaries And Regressions
 
-- [ ] 3.1 验证父类为 C++ 类时，引擎自带按钮行为不受影响（本入口不显示或不干扰）。
-- [ ] 3.2 验证父类为 AS 类、源文件存在时跳转到正确 `path:line`。
-- [ ] 3.3 验证 `code` 不在 PATH 时不崩溃（既有 `OsExecute` 行为，文档注明）。
+- [ ] 3.1 Verify that C++ parent class behavior is unaffected: the engine-provided action still works, and the Angelscript-owned entry is hidden or does not interfere.
+- [ ] 3.2 Verify that an AS parent class with an existing source file navigates to the correct `path:line`.
+- [ ] 3.3 Verify that missing `code` on PATH does not crash; document that this follows the existing `OsExecute` behavior.
 
-## 4. 验证与收尾
+## 4. Verify And Finish
 
-- [ ] 4.1 `Tools\RunBuild.ps1 -NoXGE` 构建通过。
-- [ ] 4.2 `Tools\RunTests.ps1`（或 `RunTestSuite.ps1`）运行新增 Editor 测试通过。
-- [ ] 4.3 在 submodule 提交，主仓库更新 submodule 指针。
-- [ ] 4.4 在 GitHub Issue #2 回链本 change 结论与实现。
+- [ ] 4.1 `Tools\RunBuild.ps1 -NoXGE` passes.
+- [ ] 4.2 `Tools\RunTests.ps1`, or `RunTestSuite.ps1`, runs the new Editor test successfully.
+- [ ] 4.3 Commit inside the submodule and update the parent repository gitlink.
+- [ ] 4.4 Link the conclusion and implementation back to GitHub Issue #2.

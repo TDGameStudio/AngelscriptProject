@@ -1,28 +1,28 @@
 # Tasks — chore-drop-deprecated-structutils-plugin-dependency
 
-> 改动文件位于 submodule `Plugins/Angelscript`，按 `Documents/Guides/SubmoduleWorktreeWorkflow.md` 处理 submodule 提交与主仓库指针更新。
+> The changed file lives in the `Plugins/Angelscript` submodule. Follow `Documents/Guides/SubmoduleWorktreeWorkflow.md` for the submodule commit and parent repository gitlink update.
 
-## 1. 确认前提
+## 1. Confirm Preconditions
 
-- [ ] 1.1 确认引擎版本：检查 `AngelscriptProject.uproject` 的 `EngineAssociation` 为 `5.8`。
-- [ ] 1.2 确认唯一改动点：`Plugins/Angelscript/Angelscript.uplugin` 第 35-39 行存在 `{ "Name": "StructUtils", "Enabled": true }`。
-- [ ] 1.3 确认需保留项：`Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` 的 `PublicDependencyModuleNames` 含 `"StructUtils"`（module 依赖，不动）。
-- [ ] 1.4 确认无关项：AngelscriptGAS / AngelscriptGameplayTags / AngelscriptProjectEditor 无 StructUtils 引用，本次不触碰。
+- [ ] 1.1 Confirm the engine version: check that `EngineAssociation` in `AngelscriptProject.uproject` is `5.8`.
+- [ ] 1.2 Confirm the only intended edit point: `Plugins/Angelscript/Angelscript.uplugin` currently has `{ "Name": "StructUtils", "Enabled": true }` around lines 35-39.
+- [ ] 1.3 Confirm the item that must remain: `PublicDependencyModuleNames` in `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` contains `"StructUtils"` as a module dependency and must not change.
+- [ ] 1.4 Confirm unrelated plugins are out of scope: AngelscriptGAS, AngelscriptGameplayTags, and AngelscriptProjectEditor have no StructUtils references.
 
-## 2. 修改依赖声明
+## 2. Update Dependency Declaration
 
-- [ ] 2.1 在 `Angelscript.uplugin` 中删除 StructUtils plugin 条目，保持 JSON 数组语法（逗号）正确。
-- [ ] 2.2 确认 `AngelscriptRuntime.Build.cs` 的 `"StructUtils"` module 依赖**未被改动**。
-- [ ] 2.3 确认相关 include（`StructUtils/InstancedStruct.h`）**未被改动**。
+- [ ] 2.1 Remove the StructUtils plugin entry from `Angelscript.uplugin` and keep the JSON array syntax valid.
+- [ ] 2.2 Confirm the `"StructUtils"` module dependency in `AngelscriptRuntime.Build.cs` is **unchanged**.
+- [ ] 2.3 Confirm the relevant include path, `StructUtils/InstancedStruct.h`, is **unchanged**.
 
-## 3. 验证
+## 3. Verify
 
-- [ ] 3.1 运行 `Tools\RunBuild.ps1 -NoXGE` 构建，确认编译/链接通过（`FInstancedStruct` 绑定无链接错误）。
-- [ ] 3.2 确认 StructUtils plugin 弃用警告不再出现。
-- [ ] 3.3 若构建报 `StructUtils` module 找不到（退路触发）：改 `AngelscriptRuntime.Build.cs` 依赖为 `CoreUObject` 并核实 include 路径，重新构建。
+- [ ] 3.1 Run `Tools\RunBuild.ps1 -NoXGE` and confirm compilation/linking succeeds with no `FInstancedStruct` binding link errors.
+- [ ] 3.2 Confirm the StructUtils plugin deprecation warning no longer appears.
+- [ ] 3.3 If the build reports that the `StructUtils` module cannot be found, use the fallback: change the `AngelscriptRuntime.Build.cs` dependency to `CoreUObject`, verify the include path, and rebuild.
 
-## 4. 收尾
+## 4. Finish
 
-- [ ] 4.1 在 submodule `Plugins/Angelscript` 内提交改动。
-- [ ] 4.2 在主仓库更新 submodule 指针。
-- [ ] 4.3（可选）同步修正 `Documents/Knowledges/ZH/Guide_QuickStart.md` 引擎版本号（5.7 → 5.8）。
+- [ ] 4.1 Commit the change inside the `Plugins/Angelscript` submodule.
+- [ ] 4.2 Update the submodule gitlink in the parent repository.
+- [ ] 4.3 Optionally update the engine version in `Documents/Knowledges/ZH/Guide_QuickStart.md` from 5.7 to 5.8.

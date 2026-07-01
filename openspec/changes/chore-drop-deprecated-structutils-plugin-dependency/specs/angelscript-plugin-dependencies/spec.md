@@ -2,16 +2,16 @@
 
 ## ADDED Requirements
 
-### Requirement: 插件不得依赖已弃用或已移除的 plugin
+### Requirement: Plugin Dependencies Exclude Deprecated Or Removed Plugins
 
-`Angelscript.uplugin` 的 `Plugins` 依赖列表 SHALL NOT 声明在当前引擎版本（UE 5.8）中已弃用或已移除的 plugin。对已并入引擎核心的功能（如 StructUtils），SHALL 通过 Build.cs 的 engine module 依赖获取，而非 plugin 依赖。
+The `Plugins` dependency list in `Angelscript.uplugin` SHALL NOT declare plugins that are deprecated or removed in the current engine version, UE 5.8. Functionality that has moved into engine core, such as StructUtils, SHALL be consumed through Build.cs engine module dependencies rather than plugin dependencies.
 
-#### Scenario: 启动时无 StructUtils 弃用警告
+#### Scenario: Startup Has No StructUtils Deprecation Warning
 
-- **WHEN** 在 UE 5.8 下加载 Angelscript 插件
-- **THEN** 不出现 `StructUtils` plugin 已弃用/即将移除的警告
+- **WHEN** the Angelscript plugin loads under UE 5.8
+- **THEN** no warning appears that the `StructUtils` plugin is deprecated or will be removed
 
-#### Scenario: FInstancedStruct 绑定仍可用
+#### Scenario: FInstancedStruct Bindings Remain Available
 
-- **WHEN** 移除 `Angelscript.uplugin` 的 StructUtils plugin 依赖后构建
-- **THEN** `AngelscriptRuntime` 经 Build.cs 的 `StructUtils` module 依赖仍能正常链接 `FInstancedStruct` 等类型，绑定行为无回归
+- **WHEN** the build runs after removing the StructUtils plugin dependency from `Angelscript.uplugin`
+- **THEN** `AngelscriptRuntime` still links types such as `FInstancedStruct` through the Build.cs `StructUtils` module dependency with no binding behavior regression

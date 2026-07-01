@@ -1,73 +1,73 @@
-# 委托与事件覆盖矩阵
+# Delegates And Events Coverage Matrix
 
-> **本矩阵是委托/事件测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 4 个测试文件的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持。
+> **This matrix is the design specification header for delegate/event tests**: each row is a concrete verifiable scenario guiding the four test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - 测试文件：`Delegate`(13) / `MulticastDelegate`(11) / `DynamicDelegate`(12) / `Event`(16) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<Delegate|MulticastDelegate|DynamicDelegate|Event>`
-> - 图例见 `../coverage-matrix.md`；委托边界见 `../coverage-gaps.md §2.4`。
+> - Test files: `Delegate`(13) / `MulticastDelegate`(11) / `DynamicDelegate`(12) / `Event`(16) Tests.cpp
+> - Automation prefix: `Angelscript.TestModule.Coverage.<Delegate|MulticastDelegate|DynamicDelegate|Event>`
+> - See `../coverage-matrix.md` for the legend; delegate boundaries are in `../coverage-gaps.md §2.4`.
 
-## 1. 单播委托（DelegateTests 13）
+## 1. Single-Cast Delegates, DelegateTests 13
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 基础声明/绑定/执行 | ✅ | `DelegateBasics` |
-| 参数 / 参数类型 / 返回值 | ✅ | `DelegateParameters` `DelegateParameterTypes` `DelegateReturnValue` |
+| Basic declaration / bind / execute | ✅ | `DelegateBasics` |
+| Parameters / parameter types / return value | ✅ | `DelegateParameters` `DelegateParameterTypes` `DelegateReturnValue` |
 | ExecuteIfBound | ✅ | `DelegateExecuteIfBound` |
-| 签名矩阵 | ✅ | `DelegateSignatureMatrix` |
-| 对象与枚举返回值 | ✅ | `DelegateObjectAndEnumReturnValues` |
-| 重新绑定 / 成员运行期清除 | ✅ | `DelegateRebinding` `DelegateMemberRuntimeClearBoundary` |
-| 成员与参数反射 | ✅ | `DelegateMemberAndParameterReflection` |
-| 脚本结构 UFUNCTION 参数 / 脚本结构参数 执行 | ✅ | `DelegateScriptStructUFunctionParameterExecutes` `DelegateScriptStructParameterExecutes` |
-| Lambda 语法绑定不支持 | 🚫 | `DelegateLambdaSyntaxIsUnsupported` |
+| Signature matrix | ✅ | `DelegateSignatureMatrix` |
+| Object and enum return values | ✅ | `DelegateObjectAndEnumReturnValues` |
+| Rebinding / member runtime clear | ✅ | `DelegateRebinding` `DelegateMemberRuntimeClearBoundary` |
+| Member and parameter reflection | ✅ | `DelegateMemberAndParameterReflection` |
+| Script struct UFUNCTION parameter / script struct parameter execution | ✅ | `DelegateScriptStructUFunctionParameterExecutes` `DelegateScriptStructParameterExecutes` |
+| Lambda syntax binding unsupported | 🚫 | `DelegateLambdaSyntaxIsUnsupported` |
 
-## 2. 多播委托（MulticastDelegateTests 11）
+## 2. Multicast Delegates, MulticastDelegateTests 11
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 基础 Add/Broadcast | ✅ | `MulticastBasics` |
-| 多监听器 | ✅ | `MulticastMultipleListeners` |
-| 句柄管理 / Clear / RemoveAll | ✅ | `MulticastHandleManagement` `MulticastClear` `MulticastRemoveAll` |
-| 参数 / 参数类型矩阵 | ✅ | `MulticastParameters` `MulticastEventParameterTypeMatrix` |
-| 混合 UFUNCTION 监听器 | ✅ | `MulticastMixedUFunctionListeners` |
-| 按对象解绑移除目标监听器 | ✅ | `MulticastUnbindObjectRemovesTargetListeners` |
-| 事件声明元数据 | ✅ | `MulticastEventDeclarationMetadata` |
-| Lambda 语法不支持 | 🚫 | `MulticastLambdaSyntaxIsUnsupported` |
+| Basic Add/Broadcast | ✅ | `MulticastBasics` |
+| Multiple listeners | ✅ | `MulticastMultipleListeners` |
+| Handle management / Clear / RemoveAll | ✅ | `MulticastHandleManagement` `MulticastClear` `MulticastRemoveAll` |
+| Parameters / parameter type matrix | ✅ | `MulticastParameters` `MulticastEventParameterTypeMatrix` |
+| Mixed UFUNCTION listeners | ✅ | `MulticastMixedUFunctionListeners` |
+| Object unbinding removes target listeners | ✅ | `MulticastUnbindObjectRemovesTargetListeners` |
+| Event declaration metadata | ✅ | `MulticastEventDeclarationMetadata` |
+| Lambda syntax unsupported | 🚫 | `MulticastLambdaSyntaxIsUnsupported` |
 
-## 3. 动态委托（DynamicDelegateTests 12）
+## 3. Dynamic Delegates, DynamicDelegateTests 12
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 动态委托基础 / 动态多播 | ✅ | `DynamicDelegateBasics` `DynamicMulticastDelegate` |
-| 参数 / 复杂参数 / 返回值 | ✅ | `DynamicDelegateParameters` `DynamicDelegateComplexParameters` `DynamicDelegateReturnValue` |
-| BlueprintAssignable/Callable 元数据 | ✅ | `DynamicDelegateBlueprintAssignableAndCallableMetadata` |
-| 序列化往返 | ✅ | `DynamicDelegateSerializationRoundTrip` |
+| Dynamic delegate basics / dynamic multicast | ✅ | `DynamicDelegateBasics` `DynamicMulticastDelegate` |
+| Parameters / complex parameters / return value | ✅ | `DynamicDelegateParameters` `DynamicDelegateComplexParameters` `DynamicDelegateReturnValue` |
+| BlueprintAssignable/Callable metadata | ✅ | `DynamicDelegateBlueprintAssignableAndCallableMetadata` |
+| Serialization round trip | ✅ | `DynamicDelegateSerializationRoundTrip` |
 | Clear | ✅ | `DynamicDelegateClear` |
-| struct 负载属性执行 / 声明单播运行期 / 声明元数据 | ✅ | `DynamicDelegateStructPayloadPropertyExecutes` `DynamicDelegateDeclaredSingleCastRuntime` `DynamicDelegateDeclarationMetadata` |
-| 动态宏名不是脚本 API（对照） | 🚫 | `DynamicMacroNamesAreNotScriptAPIs` |
+| Struct payload property execution / declared single-cast runtime / declaration metadata | ✅ | `DynamicDelegateStructPayloadPropertyExecutes` `DynamicDelegateDeclaredSingleCastRuntime` `DynamicDelegateDeclarationMetadata` |
+| Dynamic macro names are not script APIs | 🚫 | `DynamicMacroNamesAreNotScriptAPIs` |
 
-## 4. 事件（EventTests 16）
+## 4. Events, EventTests 16
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 绑定与触发 / 生命周期 / 解绑 | ✅ | `EventBindAndTrigger` `EventLifecycle` `EventUnbinding` |
-| 声明元数据 / BlueprintEvent 元数据与执行 | ✅ | `EventDeclarationMetadata` `EventBlueprintEventMetadataAndExecution` |
-| 多处理器 / 碰撞 / 链式 | ✅ | `EventMultipleHandlers` `EventCollision` `EventChaining` |
-| 内建 Actor/组件实例 / Widget 事件实例 / Timer 事件 | ✅ | `EventBuiltInActorAndComponentInstances` `EventWidgetEventInstances` `EventTimer` |
-| 自定义游戏事件 | ✅ | `EventCustomGameEvents` |
-| RepNotify 触发状态变更 | ✅ | `EventRepNotifyExecutesStateChange` |
-| 非脚本面向边界 | 🚫 | `EventNonScriptFacingBoundaries` |
-| Lambda 语法不支持 | 🚫 | `EventLambdaSyntaxIsUnsupported` |
+| Bind and trigger / lifecycle / unbinding | ✅ | `EventBindAndTrigger` `EventLifecycle` `EventUnbinding` |
+| Declaration metadata / BlueprintEvent metadata and execution | ✅ | `EventDeclarationMetadata` `EventBlueprintEventMetadataAndExecution` |
+| Multiple handlers / collision / chaining | ✅ | `EventMultipleHandlers` `EventCollision` `EventChaining` |
+| Built-in Actor/component instances / Widget event instances / Timer events | ✅ | `EventBuiltInActorAndComponentInstances` `EventWidgetEventInstances` `EventTimer` |
+| Custom game events | ✅ | `EventCustomGameEvents` |
+| RepNotify triggers state changes | ✅ | `EventRepNotifyExecutesStateChange` |
+| Non-script-facing boundaries | 🚫 | `EventNonScriptFacingBoundaries` |
+| Lambda syntax unsupported | 🚫 | `EventLambdaSyntaxIsUnsupported` |
 
 ---
 
-## 汇总
+## Summary
 
-| 文件 | 方法 |
+| File | Methods |
 |------|------|
 | Delegate | 13 |
 | MulticastDelegate | 11 |
 | DynamicDelegate | 12 |
 | Event | 16 |
-| **合计** | **52** |
+| **Total** | **52** |
 
-**待实现（⬜）**：当前无硬缺口。Lambda 绑定、`BindStatic`、多播返回值是 fork 不适用项（`../coverage-gaps.md §2.4`），已由 `*LambdaSyntaxIsUnsupported` 等边界守住。
+**Pending (⬜)**: no hard gaps currently. Lambda binding, `BindStatic`, and multicast return values are fork-not-applicable items, documented in `../coverage-gaps.md §2.4` and guarded by `*LambdaSyntaxIsUnsupported` and related boundaries.

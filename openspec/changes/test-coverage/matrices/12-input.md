@@ -1,73 +1,73 @@
-# 输入系统覆盖矩阵（传统输入 + Enhanced Input）
+# Input System Coverage Matrix, Legacy Input + Enhanced Input
 
-> **本矩阵是输入测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 `AngelscriptCoverageInputTests.cpp` 的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🟡＝部分覆盖（反射上限或子集），🚫＝fork/headless 不支持。
+> **This matrix is the design specification header for input tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageInputTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, 🟡 means partial coverage such as reflection ceiling or subset coverage, and 🚫 means fork/headless unsupported.
 >
-> - 测试文件：`AngelscriptCoverageInputTests.cpp`（21 方法）
-> - Automation 前缀：`Angelscript.TestModule.Coverage.Input`
-> - 图例见 `../coverage-matrix.md`。
+> - Test file: `AngelscriptCoverageInputTests.cpp`, 21 methods
+> - Automation prefix: `Angelscript.TestModule.Coverage.Input`
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 传统输入绑定
+## 1. Legacy Input Bindings
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| SetupPlayerInputComponent 初始化 | ✅ | `SetupPlayerInputComponent` |
-| Action / Axis / 按键直绑 | ✅ | `ActionBinding` `AxisBinding` `KeyDirectBinding` |
-| 绑定集合初始化后可见 / 高级绑定集合 | ✅ | `InputBindingCollectionsVisibleAfterSetup` `AdvancedInputComponentBindingCollections` |
-| 输入组件查找 | ✅ | `InputComponentFinding` |
-| 绑定优先级与消费语义（Block / Override / DontBlock / bConsumeInput / bExecuteWhenPaused） | ⬜ | 待实现（G25）：`bConsumeInput` 默认参数已在 `BindKey` mixin 暴露、`bExecuteWhenPaused` 已在 `BindDebugKey` 暴露，但运行期行为（消费/穿透、暂停时执行）与 `InputComponent.Priority` / Block / Override / DontBlock 设置后 InputComponent 链路反射或行为均未断言；待补 setter 反射或绑定列表覆写行为 |
+| SetupPlayerInputComponent initialization | ✅ | `SetupPlayerInputComponent` |
+| Action / Axis / direct key binding | ✅ | `ActionBinding` `AxisBinding` `KeyDirectBinding` |
+| Binding collections visible after setup / advanced binding collections | ✅ | `InputBindingCollectionsVisibleAfterSetup` `AdvancedInputComponentBindingCollections` |
+| Input component finding | ✅ | `InputComponentFinding` |
+| Binding priority and consume semantics, Block / Override / DontBlock / bConsumeInput / bExecuteWhenPaused | ⬜ | Pending G25: `bConsumeInput` default parameter is exposed on `BindKey` mixin and `bExecuteWhenPaused` is exposed on `BindDebugKey`, but runtime behavior, consume/pass-through and paused execution, plus `InputComponent.Priority` / Block / Override / DontBlock reflected or behavioral input-component chain effects are not asserted |
 
-## 2. 输入状态与设备
+## 2. Input State And Devices
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 输入状态查询 | ✅ | `InputStateQuery` |
-| 键盘 / 鼠标 / 手柄 | ✅ | `KeyboardKeys` `MouseInput` `GamepadInput` |
-| PlayerController 设备 API（GetMousePosition / GetInputMotionState / GetInputAnalogKeyState / GetInputKeyTimeDown） | ⬜ | 待实现（G26）：`InputStateQuery` 仅以 `GetInputAxisValue` 触发 compile-failure 终止；`GetMousePosition` / `GetInputMotionState` / `GetInputAnalogKeyState` 在 fork 中 grep 零绑定，需补独立 compile-failure 边界以锁定"AS 不暴露"的反射上限 |
-| 多 Player（双手柄 / 分屏 PlayerController） | ⬜ | 待实现（G27）：所有方法都仅构造单 PlayerController；多 Player 输入路由（CreatePlayer / GetPlayerControllerFromID / 第二手柄 InputComponent 隔离）反射或行为未断言 |
+| Input state query | ✅ | `InputStateQuery` |
+| Keyboard / mouse / gamepad | ✅ | `KeyboardKeys` `MouseInput` `GamepadInput` |
+| PlayerController device APIs, GetMousePosition / GetInputMotionState / GetInputAnalogKeyState / GetInputKeyTimeDown | ⬜ | Pending G26: `InputStateQuery` only reaches compile failure with `GetInputAxisValue`; `GetMousePosition`, `GetInputMotionState`, and `GetInputAnalogKeyState` have zero fork bindings by grep, so add independent compile-failure boundaries to lock the AS reflection ceiling |
+| Multiple players, second gamepad / split-screen PlayerController | ⬜ | Pending G27: all methods construct only one PlayerController; multi-player input routing, CreatePlayer / GetPlayerControllerFromID / second gamepad InputComponent isolation, is not asserted through reflection or behavior |
 
-## 3. 输入模式 / 光标 / 反馈
+## 3. Input Mode / Cursor / Feedback
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 输入模式控制（SetShowMouseCursor 边界） | ✅ | `InputModeControl` |
-| 输入模式切换不支持边界 | 🚫 | `InputModeSwitchingUnsupportedBoundary` |
-| 光标类型 / 点击 / 悬停事件（SetMouseCursor / bEnableClickEvents / bEnableMouseOverEvents） | ⬜ | 待实现（G28）：grep 零绑定；`InputModeControl` 仅覆盖 `SetShowMouseCursor` 一项边界，其余 cursor 类 API 缺独立 compile-failure 边界 |
-| Force Feedback / Haptic（ClientPlayForceFeedback / SetHapticsByValue 等） | ⬜ | 待实现（G29）：APlayerController 反馈 API 在 fork 中 grep 零绑定，需补 compile-failure 边界 |
+| Input mode control, SetShowMouseCursor boundary | ✅ | `InputModeControl` |
+| Input mode switching unsupported boundary | 🚫 | `InputModeSwitchingUnsupportedBoundary` |
+| Cursor type / click / hover events, SetMouseCursor / bEnableClickEvents / bEnableMouseOverEvents | ⬜ | Pending G28: zero grep bindings; `InputModeControl` covers only `SetShowMouseCursor`, so other cursor APIs need independent compile-failure boundaries |
+| Force Feedback / Haptic, ClientPlayForceFeedback / SetHapticsByValue and related APIs | ⬜ | Pending G29: APlayerController feedback APIs have zero fork bindings by grep and need compile-failure boundaries |
 
-## 4. Enhanced Input（UE5）
+## 4. Enhanced Input, UE5
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| MappingContext 与 ActionValue（Bool / Axis1D / Axis2D / Axis3D / ConvertToType） | ✅ | `EnhancedInputMappingContextAndActionValues` |
-| 组件绑定事件与移除 / 绑定句柄与移除 | 🟡 | `EnhancedInputComponentBindingEventsAndRemoval` `EnhancedInputBindingHandlesAndRemoval`（G20）：5 个 ETriggerEvent（Started/Ongoing/Triggered/Completed/Canceled）已 BindAction 编译可达，但 `GetTriggerEvent()` 反射断言仅覆盖 Started+Triggered 两项，Ongoing/Completed/Canceled 三个事件缺独立反射保留断言 |
-| Modifier 与 Trigger（Add+计数） | 🟡 | `EnhancedInputModifiersAndTriggers`（G21）：仅断言 `AddModifier`/`AddTrigger` + `GetModifierCount`/`GetTriggerCount`；缺 `ModifyRaw` / `UpdateState` 行为或反射断言；Modifier 子集只覆盖 DeadZone/Negate/Scalar/Smooth/ResponseCurveExponential，未覆盖 Swizzle/FOVScaling 等；Trigger 子集只覆盖 Down/Pressed/Released/Hold/Tap/Pulse/Combo，未覆盖 ChordedAction（区别于 Combo） |
-| Modifier 全集（Swizzle / FOVScaling 等） | ⬜ | 待实现（G22）：`UInputModifierSwizzleAxis` 已在 `Bindings/AngelscriptEnhancedInputBindingsTests.cpp` 暴露但 Coverage 缺反射上限断言；`UInputModifierFOVScaling` 在 fork 中 grep 零引用，需先 compile-failure 边界确认是否暴露 |
-| Trigger 全集（ChordedAction 区别于 Combo） | ⬜ | 待实现（G23）：`UInputTriggerChordAction` 在 fork 中 grep 零引用，需以 compile-failure 边界或反射断言锁定其暴露状态（已覆盖 `UInputTriggerCombo` 一项，但 ChordAction 与 Combo 是不同类） |
-| Action 与 Mapping 元数据 | ✅ | `EnhancedInputActionAndMappingMetadata` |
-| 输入设置与运行期映射 API | ✅ | `InputSettingsAndRuntimeMappingApi` |
-| EnhancedInputUserSettings / PlayerMappableKeyProfile | ⬜ | 待实现（G24）：grep 零引用；UE5 PlayerMappable Key Settings 子系统在 AS 暴露状态未知，需补 compile-failure 边界以锁定反射上限 |
+| MappingContext and ActionValue, Bool / Axis1D / Axis2D / Axis3D / ConvertToType | ✅ | `EnhancedInputMappingContextAndActionValues` |
+| Component binding events and removal / binding handles and removal | 🟡 | `EnhancedInputComponentBindingEventsAndRemoval` `EnhancedInputBindingHandlesAndRemoval`, G20: all five ETriggerEvents, Started/Ongoing/Triggered/Completed/Canceled, are compile-reachable through BindAction, but `GetTriggerEvent()` reflection assertions cover only Started+Triggered; Ongoing/Completed/Canceled need independent reflection-preservation assertions |
+| Modifier and Trigger, Add+Count | 🟡 | `EnhancedInputModifiersAndTriggers`, G21: only asserts `AddModifier`/`AddTrigger` plus `GetModifierCount`/`GetTriggerCount`; missing `ModifyRaw` / `UpdateState` behavior or reflection assertions. Modifier subset covers only DeadZone/Negate/Scalar/Smooth/ResponseCurveExponential, not Swizzle/FOVScaling. Trigger subset covers Down/Pressed/Released/Hold/Tap/Pulse/Combo, not ChordedAction, which is distinct from Combo |
+| Full Modifier set, Swizzle / FOVScaling and related modifiers | ⬜ | Pending G22: `UInputModifierSwizzleAxis` is exposed in `Bindings/AngelscriptEnhancedInputBindingsTests.cpp` but lacks a Coverage reflection-ceiling assertion; `UInputModifierFOVScaling` has zero fork grep references, so first confirm exposure with a compile-failure boundary |
+| Full Trigger set, ChordedAction distinct from Combo | ⬜ | Pending G23: `UInputTriggerChordAction` has zero fork grep references; use compile-failure boundary or reflection assertion to lock exposure state. `UInputTriggerCombo` is covered, but ChordAction and Combo are distinct classes |
+| Action and Mapping metadata | ✅ | `EnhancedInputActionAndMappingMetadata` |
+| Input settings and runtime mapping API | ✅ | `InputSettingsAndRuntimeMappingApi` |
+| EnhancedInputUserSettings / PlayerMappableKeyProfile | ⬜ | Pending G24: zero grep references; AS exposure state for the UE5 PlayerMappable Key Settings subsystem is unknown, so add compile-failure boundaries to lock the reflection ceiling |
 
-## 5. 触摸 / 手势
+## 5. Touch / Gesture
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 触摸状态查询表面 | ✅ | `TouchStateQuerySurface` |
-| 触摸/手势 API 边界 | 🚫 | `TouchAndGestureApiBoundaries` |
+| Touch state query surface | ✅ | `TouchStateQuerySurface` |
+| Touch/gesture API boundary | 🚫 | `TouchAndGestureApiBoundaries` |
 
 ---
 
-**对应测试方法**：21 方法。
+**Corresponding test methods**: 21 methods.
 
-**待实现（⬜）**：
-- G20 EnhancedInput ETriggerEvent 全集（Ongoing/Completed/Canceled 三个事件的 `GetTriggerEvent()` 反射保留断言缺失）
-- G21 Modifier/Trigger 应用行为（`ModifyRaw`/`UpdateState` 反射或行为；当前仅 Add+Count）
-- G22 Swizzle / FOVScaling Modifier 反射上限
-- G23 ChordedAction Trigger（区别于 Combo）反射或边界
-- G24 EnhancedInputUserSettings / PlayerMappableKeyProfile compile-failure 边界
-- G25 传统 InputComponent 优先级（Block/Override/DontBlock）+ bConsumeInput / bExecuteWhenPaused 运行期行为或反射
-- G26 PlayerController 设备 API（GetMousePosition / GetInputMotionState / GetInputAnalogKeyState / GetInputKeyTimeDown）独立 compile-failure 边界
-- G27 多 Player（双手柄 / 分屏 PlayerController）输入路由
-- G28 光标类型 / 点击事件 / 悬停事件（SetMouseCursor / bEnableClickEvents / bEnableMouseOverEvents）compile-failure 边界
-- G29 Force Feedback / Haptic（ClientPlayForceFeedback / SetHapticsByValue 等）compile-failure 边界
+**Pending (⬜)**:
+- G20 full EnhancedInput ETriggerEvent coverage, missing `GetTriggerEvent()` reflection-preservation assertions for Ongoing/Completed/Canceled
+- G21 Modifier/Trigger application behavior, `ModifyRaw`/`UpdateState` reflection or behavior; currently Add+Count only
+- G22 Swizzle / FOVScaling Modifier reflection ceiling
+- G23 ChordedAction Trigger, distinct from Combo, reflection or boundary
+- G24 EnhancedInputUserSettings / PlayerMappableKeyProfile compile-failure boundary
+- G25 legacy InputComponent priority, Block/Override/DontBlock, plus bConsumeInput / bExecuteWhenPaused runtime behavior or reflection
+- G26 PlayerController device APIs, GetMousePosition / GetInputMotionState / GetInputAnalogKeyState / GetInputKeyTimeDown, independent compile-failure boundaries
+- G27 multi-player, second gamepad / split-screen PlayerController input routing
+- G28 cursor type / click event / hover event, SetMouseCursor / bEnableClickEvents / bEnableMouseOverEvents compile-failure boundaries
+- G29 Force Feedback / Haptic, ClientPlayForceFeedback / SetHapticsByValue and related APIs, compile-failure boundaries
 
-**真实饱和度**：当前 21 方法在反射上限内覆盖了 MappingContext/ActionValue 全部 4 种 ValueType、5 个 ETriggerEvent 编译可达性、Modifier/Trigger 的 Add+Count 子集、`GetTriggerEvent` 仅 Started+Triggered；headless 下"输入实际触发→handler 计数往返"非可达（依赖 SlateApplication 与 EnhancedInputSubsystem 实时 Tick），已通过 `InputModeSwitchingUnsupportedBoundary` / `TouchAndGestureApiBoundaries` 记 🚫 边界。本次降级集中在反射上限本可达但未做的能力面（G20/G21）以及 grep 零绑定但缺独立 compile-failure 边界的 PlayerController/反馈/光标/UserSettings 类 API（G24/G26/G28/G29）。Touch Pressed/Moved/Released 状态机走向延续 `TouchAndGestureApiBoundaries` 的 🚫 记录，不另开行。
+**True saturation level**: the current 21 methods cover MappingContext/ActionValue across all four ValueTypes, compile reachability for five ETriggerEvents, Add+Count subsets for Modifier/Trigger, and `GetTriggerEvent` only for Started+Triggered. In headless mode, actual input triggering and handler count round trips are not reachable because they depend on SlateApplication and EnhancedInputSubsystem real-time ticks; those are recorded as 🚫 boundaries through `InputModeSwitchingUnsupportedBoundary` / `TouchAndGestureApiBoundaries`. This downgrade is concentrated on capability surfaces that are reachable at the reflection ceiling but not yet asserted, G20/G21, plus PlayerController/feedback/cursor/UserSettings APIs with zero grep bindings but missing independent compile-failure boundaries, G24/G26/G28/G29. The Touch Pressed/Moved/Released state machine continues under the 🚫 record in `TouchAndGestureApiBoundaries` and does not need a separate row.

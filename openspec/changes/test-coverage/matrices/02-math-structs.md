@@ -1,87 +1,87 @@
-# 数学结构覆盖矩阵（FVector / FRotator / FQuat / FTransform / FLinearColor / FVector2D + Math）
+# Math Structs Coverage Matrix, FVector / FRotator / FQuat / FTransform / FLinearColor / FVector2D + Math
 
-> **本矩阵是数学结构测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 20 个数学结构测试文件的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持（负向断言守边界）。
+> **This matrix is the design specification header for math struct tests**: each row is a concrete verifiable scenario guiding 20 math struct test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported, guarded by negative assertions.
 >
-> - 三轴：属性(Property) / 表达式(Expression) / 函数(Function)，外加 Math 命名空间与几何结构。
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<Struct><Property|Expression|Function>` 等。
-> - 图例见 `../coverage-matrix.md`。
-> - 函数轴统一覆盖参数模式 value/in/out/inout + 返回值 + 默认参数 + UFUNCTION 调用（各 struct 的 `Function` 文件方法名一致）。
+> - Three axes: Property / Expression / Function, plus the Math namespace and geometry structs.
+> - Automation prefix examples: `Angelscript.TestModule.Coverage.<Struct><Property|Expression|Function>`.
+> - See `../coverage-matrix.md` for the legend.
+> - The Function axis consistently covers parameter modes value/in/out/inout, return values, default parameters, and UFUNCTION invocation; method names are aligned across struct Function files.
 
-## 1. FVector（Property 6 / Expression 8 / Function 7）
+## 1. FVector, Property 6 / Expression 8 / Function 7
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 容器 / 说明符与 Set / 脚本成员与局部 / UFUNCTION 属性往返 | ✅ | `FVectorDeclarationDefaults` `FVectorWriteRoundTrip` `FVectorContainerProperties` `FVectorSpecifierAndSetProperties` `FVectorScriptMemberAndLocalUsage` `FVectorUFunctionPropertyRoundTrip` |
-| 表达式 | 构造 / 算术 / 比较 / 点乘叉乘 / 方法 / 成员访问 / 声明与索引访问 / 扩展运算符与方法 | ✅ | `FVectorConstruction` `FVectorArithmeticOperators` `FVectorComparisonOperators` `FVectorDotAndCross` `FVectorMethods` `FVectorMemberAccess` `FVectorDeclarationsAndIndexAccess` `FVectorExtendedOperatorsAndMethods` |
-| 函数 | value/in/out/inout + 返回 + 默认参 + UFUNCTION | ✅ | `FunctionParametersValue/In/Out/InOut` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
+| Property | Declaration defaults / write round trip / containers / specifiers and Set / script members and locals / UFUNCTION property round trip | ✅ | `FVectorDeclarationDefaults` `FVectorWriteRoundTrip` `FVectorContainerProperties` `FVectorSpecifierAndSetProperties` `FVectorScriptMemberAndLocalUsage` `FVectorUFunctionPropertyRoundTrip` |
+| Expression | Construction / arithmetic / comparison / dot and cross / methods / member access / declarations and index access / extended operators and methods | ✅ | `FVectorConstruction` `FVectorArithmeticOperators` `FVectorComparisonOperators` `FVectorDotAndCross` `FVectorMethods` `FVectorMemberAccess` `FVectorDeclarationsAndIndexAccess` `FVectorExtendedOperatorsAndMethods` |
+| Function | value/in/out/inout + return + default parameters + UFUNCTION | ✅ | `FunctionParametersValue/In/Out/InOut` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
 
-## 2. FVector2D（Property 3 / Expression 5 / Function 7）
+## 2. FVector2D, Property 3 / Expression 5 / Function 7
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 容器 | ✅ | `FVector2DDeclarationDefaults` `FVector2DWriteRoundTrip` `FVector2DContainerProperties` |
-| 表达式 | 构造 / 算术 / 比较 / 点乘 / 成员访问 | ✅ | `Vector2DConstruction` `Vector2DArithmeticOperators` `Vector2DComparisonOperators` `Vector2DDotProduct` `Vector2DMemberAccess` |
-| 函数 | value/in/out/inout + 返回 + 默认参 + UFUNCTION | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
+| Property | Declaration defaults / write round trip / containers | ✅ | `FVector2DDeclarationDefaults` `FVector2DWriteRoundTrip` `FVector2DContainerProperties` |
+| Expression | Construction / arithmetic / comparison / dot product / member access | ✅ | `Vector2DConstruction` `Vector2DArithmeticOperators` `Vector2DComparisonOperators` `Vector2DDotProduct` `Vector2DMemberAccess` |
+| Function | value/in/out/inout + return + default parameters + UFUNCTION | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
 
-## 3. FRotator（Property 4 / Expression 10 / Function 8）
+## 3. FRotator, Property 4 / Expression 10 / Function 8
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 容器 / 说明符 | ✅ | `FRotatorDeclarationDefaults` `FRotatorWriteRoundTrip` `FRotatorContainerProperties` `FRotatorPropertySpecifierFlags` |
-| 表达式 | 构造 / 算术 / 比较 / 成员访问 / 归一化 / 转换 / 静态方法 / 声明与确认方法 | ✅ | `RotatorConstruction` `RotatorArithmeticOperators` `RotatorComparisonOperators` `RotatorMemberAccess` `RotatorNormalizationMethods` `RotatorConversionMethods` `RotatorStaticMethods` `RotatorDeclarationsAndConfirmedMethods` |
-| 表达式（边界） | 不支持的运算符 / 不支持的静态方法 | 🚫 | `RotatorUnsupportedOperators` `RotatorUnsupportedStaticMethods` |
-| 函数 | value/in/out/inout + 返回 + 默认参 + UFUNCTION + const 数组/存储成员往返 | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `FunctionConstArrayAndStoredMemberRoundTrip` |
+| Property | Declaration defaults / write round trip / containers / specifiers | ✅ | `FRotatorDeclarationDefaults` `FRotatorWriteRoundTrip` `FRotatorContainerProperties` `FRotatorPropertySpecifierFlags` |
+| Expression | Construction / arithmetic / comparison / member access / normalization / conversion / static methods / declarations and confirmed methods | ✅ | `RotatorConstruction` `RotatorArithmeticOperators` `RotatorComparisonOperators` `RotatorMemberAccess` `RotatorNormalizationMethods` `RotatorConversionMethods` `RotatorStaticMethods` `RotatorDeclarationsAndConfirmedMethods` |
+| Expression, boundary | Unsupported operators / unsupported static methods | 🚫 | `RotatorUnsupportedOperators` `RotatorUnsupportedStaticMethods` |
+| Function | value/in/out/inout + return + default parameters + UFUNCTION + const array / stored member round trip | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `FunctionConstArrayAndStoredMemberRoundTrip` |
 
-## 4. FQuat（Property 4 / Expression 8 / Function 8）
+## 4. FQuat, Property 4 / Expression 8 / Function 8
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 容器 / 类成员运行流 | ✅ | `FQuatDeclarationDefaults` `FQuatWriteRoundTrip` `FQuatContainerProperties` `FQuatClassMemberRuntimeFlow` |
-| 表达式 | 构造 / 成员访问 / 乘法 / 逆与归一化 / 旋转向量 / 转换 / 静态方法 / 高级运算符与方法 | ✅ | `QuatConstruction` `QuatMemberAccess` `QuatMultiplicationOperator` `QuatInverseAndNormalize` `QuatRotateVector` `QuatConversionMethods` `QuatStaticMethods` `QuatAdvancedOperatorsAndMethods` |
-| 函数 | value/in/out/inout + 返回 + 默认参 + UFUNCTION + const 数组/out 路径 | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `UFunctionConstArrayAndOutPaths` |
+| Property | Declaration defaults / write round trip / containers / class member runtime flow | ✅ | `FQuatDeclarationDefaults` `FQuatWriteRoundTrip` `FQuatContainerProperties` `FQuatClassMemberRuntimeFlow` |
+| Expression | Construction / member access / multiplication / inverse and normalize / rotate vector / conversion / static methods / advanced operators and methods | ✅ | `QuatConstruction` `QuatMemberAccess` `QuatMultiplicationOperator` `QuatInverseAndNormalize` `QuatRotateVector` `QuatConversionMethods` `QuatStaticMethods` `QuatAdvancedOperatorsAndMethods` |
+| Function | value/in/out/inout + return + default parameters + UFUNCTION + const array/out paths | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `UFunctionConstArrayAndOutPaths` |
 
-## 5. FTransform（Property 5 / Expression 8 / Function 8）
+## 5. FTransform, Property 5 / Expression 8 / Function 8
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 方法访问 / 容器 / 说明符与运行流 | ✅ | `FTransformDeclarationDefaults` `FTransformWriteRoundTrip` `FTransformMemberAccess` `FTransformContainerProperties` `FTransformPropertySpecifierAndRuntimeFlow` |
-| 表达式 | 构造 / 成员访问 / 组合 / 位置与向量 / 逆 / 高级方法与变更器 / 插值 / 比较 | ✅ | `TransformConstruction` `TransformMemberAccess` `TransformComposition` `TransformPositionAndVector` `TransformInverse` `TransformAdvancedMethodsAndMutators` `TransformInterpolation` `TransformComparison` |
-| 函数 | value/in/out/inout + 返回 + 默认参 + UFUNCTION + const 数组/存储成员往返 | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `FunctionConstArrayAndStoredMemberRoundTrip` |
+| Property | Declaration defaults / write round trip / method access / containers / specifiers and runtime flow | ✅ | `FTransformDeclarationDefaults` `FTransformWriteRoundTrip` `FTransformMemberAccess` `FTransformContainerProperties` `FTransformPropertySpecifierAndRuntimeFlow` |
+| Expression | Construction / member access / composition / position and vector / inverse / advanced methods and mutators / interpolation / comparison | ✅ | `TransformConstruction` `TransformMemberAccess` `TransformComposition` `TransformPositionAndVector` `TransformInverse` `TransformAdvancedMethodsAndMutators` `TransformInterpolation` `TransformComparison` |
+| Function | value/in/out/inout + return + default parameters + UFUNCTION + const array / stored member round trip | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionDefaultParameters` `UFunctionParametersAndReturn` `FunctionConstArrayAndStoredMemberRoundTrip` |
 
-## 6. FLinearColor（Property 4 / Expression 7 / Function 8）
+## 6. FLinearColor, Property 4 / Expression 7 / Function 8
 
-| 轴 | 场景 | 状态 | 覆盖测试方法 |
+| Axis | Scenario | Status | Coverage Test Method |
 |----|------|------|------------|
-| 属性 | 声明默认 / 写入往返 / 容器 / 类成员执行 | ✅ | `FLinearColorDeclarationDefaults` `FLinearColorWriteRoundTrip` `FLinearColorContainerProperties` `FLinearColorClassMemberExecution` |
-| 表达式 | 构造 / 算术 / 比较 / 方法 / 高级方法 / 成员访问 | ✅ | `LinearColorConstruction` `LinearColorArithmeticOperators` `LinearColorComparisonOperators` `LinearColorMethods` `FLinearColorAdvancedMethods` `LinearColorMemberAccess` |
-| 表达式（边界） | 不支持的方法 | 🚫 | `LinearColorUnsupportedMethods` |
-| 函数 | value/in/out/inout + 返回 + 数组与转换往返 + 默认参 + UFUNCTION | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionArrayAndConversionRoundTrip` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
+| Property | Declaration defaults / write round trip / containers / class member execution | ✅ | `FLinearColorDeclarationDefaults` `FLinearColorWriteRoundTrip` `FLinearColorContainerProperties` `FLinearColorClassMemberExecution` |
+| Expression | Construction / arithmetic / comparison / methods / advanced methods / member access | ✅ | `LinearColorConstruction` `LinearColorArithmeticOperators` `LinearColorComparisonOperators` `LinearColorMethods` `FLinearColorAdvancedMethods` `LinearColorMemberAccess` |
+| Expression, boundary | Unsupported methods | 🚫 | `LinearColorUnsupportedMethods` |
+| Function | value/in/out/inout + return + array and conversion round trip + default parameters + UFUNCTION | ✅ | `FunctionParameters*` `FunctionReturnValues` `FunctionArrayAndConversionRoundTrip` `FunctionDefaultParameters` `UFunctionParametersAndReturn` |
 
-## 7. Math 命名空间函数（MathNamespaceFunctions 13）
+## 7. Math Namespace Functions, MathNamespaceFunctions 13
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 三角 / 幂与根 / 取整 / 绝对值与符号 / Min-Max-Clamp | ✅ | `TrigonometricFunctions` `PowerAndRootFunctions` `RoundingFunctions` `AbsoluteAndSignFunctions` `MinMaxClampFunctions` |
-| 特殊值分类 / 插值 / 标量曲线与工具 / 随机 | ✅ | `SpecialValueClassificationFunctions` `InterpolationFunctions` `ScalarCurveAndUtilityFunctions` `RandomFunctions` |
-| 向量数学 / 几何数学 / 向量方法矩阵 | ✅ | `VectorMathFunctions` `GeometricMathFunctions` `VectorMethodMatrix` |
-| 不支持的向量数学命名空间边界 | 🚫 | `UnsupportedVectorMathNamespaceBoundaries` |
+| Trigonometric / power and root / rounding / absolute and sign / Min-Max-Clamp | ✅ | `TrigonometricFunctions` `PowerAndRootFunctions` `RoundingFunctions` `AbsoluteAndSignFunctions` `MinMaxClampFunctions` |
+| Special value classification / interpolation / scalar curve and utilities / random | ✅ | `SpecialValueClassificationFunctions` `InterpolationFunctions` `ScalarCurveAndUtilityFunctions` `RandomFunctions` |
+| Vector math / geometric math / vector method matrix | ✅ | `VectorMathFunctions` `GeometricMathFunctions` `VectorMethodMatrix` |
+| Unsupported vector math namespace boundaries | 🚫 | `UnsupportedVectorMathNamespaceBoundaries` |
 
-## 8. 几何结构（MathGeometricStructs 11）
+## 8. Geometry Structs, MathGeometricStructs 11
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| FTransform 构造与操作 | ✅ | `FTransformConstruction` `FTransformOperations` |
-| FVector4 / FIntPoint / FIntVector 表达式与反射 | ✅ | `Vector4IntPointIntVectorExpressions` `Vector4IntPointIntVectorReflection` |
-| 几何结构反射属性与容器 / 函数参数与返回 | ✅ | `GeometricStructReflectionPropertiesAndContainers` `GeometricStructFunctionParametersAndReturns` |
-| 颜色与 RandomStream 结构表达式 | ✅ | `ColorAndRandomStreamStructExpressions` |
-| FBox / FPlane 操作 | ✅ | `FBoxOperations` `FPlaneOperations` |
-| FMatrix / FBox2D 不支持边界 | 🚫 | `FMatrixUnsupportedBoundaries` `FBox2DUnsupportedBoundary` |
+| FTransform construction and operations | ✅ | `FTransformConstruction` `FTransformOperations` |
+| FVector4 / FIntPoint / FIntVector expressions and reflection | ✅ | `Vector4IntPointIntVectorExpressions` `Vector4IntPointIntVectorReflection` |
+| Geometry struct reflected properties and containers / function parameters and returns | ✅ | `GeometricStructReflectionPropertiesAndContainers` `GeometricStructFunctionParametersAndReturns` |
+| Color and RandomStream struct expressions | ✅ | `ColorAndRandomStreamStructExpressions` |
+| FBox / FPlane operations | ✅ | `FBoxOperations` `FPlaneOperations` |
+| FMatrix / FBox2D unsupported boundaries | 🚫 | `FMatrixUnsupportedBoundaries` `FBox2DUnsupportedBoundary` |
 
 ---
 
-## 汇总
+## Summary
 
-| 结构 | Property | Expression | Function | 小计 |
+| Struct | Property | Expression | Function | Subtotal |
 |------|----------|-----------|----------|------|
 | FVector | 6 | 8 | 7 | 21 |
 | FVector2D | 3 | 5 | 7 | 15 |
@@ -91,7 +91,7 @@
 | FLinearColor | 4 | 7 | 8 | 19 |
 | MathNamespace | — | — | 13 | 13 |
 | MathGeometric | — | — | 11 | 11 |
-| **合计** | | | | **142** |
+| **Total** | | | | **142** |
 
-**对应测试方法**：20 文件 / 142 方法。
-**待实现（⬜）**：当前无硬缺口；各 struct 三轴成熟，不支持运算符/方法均以 🚫 固化。
+**Corresponding test methods**: 20 files / 142 methods.
+**Pending (⬜)**: no hard gaps currently; each struct's three-axis coverage is mature, and unsupported operators/methods are locked as 🚫.

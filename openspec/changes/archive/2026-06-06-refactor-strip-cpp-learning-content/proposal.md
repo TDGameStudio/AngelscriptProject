@@ -1,6 +1,6 @@
 ## Why
 
-The C++ learning trace tooling under `Plugins/Angelscript/Source/AngelscriptTest/Learning/` produced unsatisfactory teaching artifacts. The owner (project lead) decided the C++ examples are not good enough to keep ("不好, 很难看") and will replace them with a future web-based learning content pipeline (separate effort, not part of this change). Removing the C++ tooling now prevents drift, frees the Test module of dead-weight teaching code, and clears the slate for the new direction.
+The C++ learning trace tooling under `Plugins/Angelscript/Source/AngelscriptTest/Learning/` produced unsatisfactory teaching artifacts. The owner (project lead) decided the C++ examples are not good enough to keep ("not good; very awkward") and will replace them with a future web-based learning content pipeline (separate effort, not part of this change). Removing the C++ tooling now prevents drift, frees the Test module of dead-weight teaching code, and clears the slate for the new direction.
 
 ## What Changes
 

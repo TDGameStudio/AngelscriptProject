@@ -1,43 +1,43 @@
 ## ADDED Requirements
 
-### Requirement: Coverage 测试覆盖以统一矩阵记录于 OpenSpec
+### Requirement: Coverage Test Coverage Is Recorded In OpenSpec Through Unified Matrices
 
-AngelScript `AngelscriptTest/Coverage/` 的测试覆盖情况 SHALL 以统一矩阵形式记录在 OpenSpec 中，并以实际测试代码作为唯一权威来源；`Documents/Coverage/` 不再作为覆盖记录的事实来源。
+AngelScript `AngelscriptTest/Coverage/` test coverage SHALL be recorded in OpenSpec through unified matrices, using actual test code as the single authoritative source. `Documents/Coverage/` SHALL no longer be the source of truth for coverage records.
 
-#### Scenario: 矩阵以代码为权威来源
+#### Scenario: Matrix Uses Code As The Authoritative Source
 
-- **GIVEN** Coverage 目录下存在 `AngelscriptCoverage*Tests.cpp` 测试文件
-- **WHEN** 记录某主题的覆盖状态
-- **THEN** 状态以该文件实际存在的 `TEST_METHOD` 与 Automation 前缀为准
-- **AND** 不依据历史规划文档的乐观/过时声明
+- **GIVEN** `AngelscriptCoverage*Tests.cpp` test files exist under the Coverage directory
+- **WHEN** a coverage status is recorded for a topic
+- **THEN** the status is based on actual `TEST_METHOD`s and Automation prefixes present in the test file
+- **AND** it is not based on optimistic or outdated historical planning documents
 
-#### Scenario: 覆盖状态区分三态
+#### Scenario: Coverage Status Uses Explicit State Categories
 
-- **GIVEN** 一个 Coverage 主题
-- **WHEN** 在矩阵中标注其状态
-- **THEN** 必须落入 已覆盖(✅)、部分覆盖(🟡)、待覆盖(⬜) 或 fork 不支持/不适用(🚫) 之一
-- **AND** fork 不支持项需说明替代写法或边界测试位置
+- **GIVEN** a Coverage topic
+- **WHEN** its status is marked in the matrix
+- **THEN** it MUST be one of covered (✅), partially covered (🟡), pending (⬜), or fork unsupported / not applicable (🚫)
+- **AND** fork-unsupported items need to document the replacement pattern or boundary test location
 
-#### Scenario: 矩阵格式统一
+#### Scenario: Matrix Format Is Unified
 
-- **GIVEN** 任意分类下的覆盖条目
-- **WHEN** 以表格呈现
-- **THEN** 列结构统一为 `主题 | 测试文件 | 方法数 | 状态 | 备注`
-- **AND** 全文使用同一套图例标记
+- **GIVEN** a coverage entry under any category
+- **WHEN** it is presented as a table
+- **THEN** the column structure is unified as `Topic | Test File | Method Count | Status | Notes`
+- **AND** the same legend markers are used throughout the record
 
-#### Scenario: 矩阵按领域拆分并由主索引聚合
+#### Scenario: Matrices Are Split By Domain And Aggregated By Main Index
 
-- **GIVEN** 覆盖记录跨多个 AS 类型与功能系统
-- **WHEN** 组织矩阵文件
-- **THEN** 明细矩阵 SHALL 按 AS 类型 / 功能 拆分到 `matrices/` 下的多个文件（每个文件对应一组测试文件），大型功能系统各自独立成文
-- **AND** `coverage-matrix.md` 作为主索引，集中维护统一图例、列说明、领域索引与全局汇总
-- **AND** 各领域矩阵的文件数与方法数小计相加 SHALL 与全局汇总一致
+- **GIVEN** coverage records span multiple AS types and feature systems
+- **WHEN** matrix files are organized
+- **THEN** detailed matrices SHALL be split by AS type / feature area into multiple files under `matrices/`, with each file corresponding to a group of test files and large feature systems documented independently
+- **AND** `coverage-matrix.md` SHALL serve as the main index, maintaining the unified legend, column definitions, domain index, and global summary
+- **AND** per-domain matrix file counts and method counts SHALL sum to the global summary
 
-#### Scenario: 领域矩阵以场景为行单位并指导实现
+#### Scenario: Domain Matrix Rows Are Scenario-Level And Guide Implementation
 
-- **GIVEN** 一个领域矩阵文件
-- **WHEN** 记录该领域的覆盖
-- **THEN** 矩阵的行单位 SHALL 是**具体可验证场景**（能力/写法），而非仅列出测试文件
-- **AND** 每个 ✅ 场景行 SHALL 注明断言该场景的 `TEST_METHOD`（跨文件时带 `文件::方法`）
-- **AND** 尚未覆盖的场景 SHALL 以 ⬜ 行显式列出，作为待实现工作项
-- **AND** fork 不支持的写法 SHALL 以 🚫 行记录其负向边界测试位置
+- **GIVEN** a domain matrix file
+- **WHEN** coverage for that domain is recorded
+- **THEN** matrix rows SHALL be **specific verifiable scenarios** or usage patterns rather than only listing test files
+- **AND** each ✅ scenario row SHALL identify the `TEST_METHOD` that asserts it, using `File::Method` when the method is in another file
+- **AND** uncovered scenarios SHALL be explicitly listed as ⬜ rows, serving as pending implementation work items
+- **AND** fork-unsupported patterns SHALL be recorded as 🚫 rows with their negative boundary test location

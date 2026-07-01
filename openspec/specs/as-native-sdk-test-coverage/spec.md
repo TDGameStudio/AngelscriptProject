@@ -5,7 +5,7 @@ Track the native AngelScript SDK white-box test coverage expected from `Plugins/
 ## Requirements
 ### Requirement: Native SDK 4 layers SHALL each have themed white-box unit test coverage
 
-The `AngelscriptTest` module SHALL provide systematic white-box `TEST_METHOD` coverage for AngelScript native compiler core in four layers — Tokenizer (词法分析), Parser (语法分析), ScriptNode (AST), and Bytecode (字节码) — beyond the existing sample-level baseline.
+The `AngelscriptTest` module SHALL provide systematic white-box `TEST_METHOD` coverage for AngelScript native compiler core in four layers — Tokenizer (lexical analysis), Parser (syntax analysis), ScriptNode (AST), and Bytecode — beyond the existing sample-level baseline.
 
 #### Scenario: Themed test files exist per layer
 
@@ -114,4 +114,4 @@ When this change is applied through its final phase, the project test documentat
 
 - **WHEN** `Documents/Guides/Test.md` is inspected after the final phase
 - **THEN** the SDK section lists `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.<Layer>"` example commands for each of the four layers
-- **AND** all listed commands include explicit `-TimeoutMs` parameters per the project's mandatory rule (`Documents/Guides/Test.md` "强制规则")
+- **AND** all listed commands include explicit `-TimeoutMs` parameters per the project's mandatory rule (`Documents/Guides/Test.md` "Mandatory Rules")

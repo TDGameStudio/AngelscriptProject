@@ -1,58 +1,58 @@
-# 调试 / 日志 / 错误处理 覆盖矩阵
+# Debug / Logging / Error Handling Coverage Matrix
 
-> **本矩阵是调试/日志/错误处理测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 3 个测试文件的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持。
+> **This matrix is the design specification header for debug/logging/error handling tests**: each row is a concrete verifiable scenario guiding three test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - 测试文件：`Debug`(17) / `Logging`(13) / `ErrorHandling`(6) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<Debug|Logging|ErrorHandling>`
-> - 图例见 `../coverage-matrix.md`。
+> - Test files: `Debug`(17) / `Logging`(13) / `ErrorHandling`(6) Tests.cpp
+> - Automation prefix: `Angelscript.TestModule.Coverage.<Debug|Logging|ErrorHandling>`
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 调试（DebugTests 17）
+## 1. Debug, DebugTests 17
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| Ensure/Check 绑定 / Callstack 与 Throw 绑定 | ✅ | `EnsureAndCheckBindings` `CallstackAndThrowBindings` |
-| 日志严重级辅助 / 格式化调试日志表面 | ✅ | `LogSeverityHelpersEmitExpectedVerbosity` `FormattedDebugLoggingSurfaceIncludesValuesAndContext` |
-| DrawDebugString（来自对象 / 参数化） | ✅ | `DrawDebugStringFromObject` `DrawDebugStringParameters` |
-| DebugBreak 可在自动化中禁用 | ✅ | `DebugBreakBindingCanBeDisabledForAutomation` |
-| 对象检查辅助暴露名称与 Outer | ✅ | `ObjectInspectionHelpersExposeNamesAndOuter` |
-| CPU Profiler scoped event 面向脚本 / Profiler 模式（计数器/暂存内存） | ✅ | `CpuProfilerScopedEventIsScriptFacing` `ProfilerDebugPatternsUseScopedEventsCountersAndScratchMemory` |
-| Stat/Show 命令名经注册控制台命令分发 | ✅ | `StatAndShowCommandNamesDispatchThroughRegisteredConsoleCommand` |
-| 调试错误处理模式 / 调试工作流用可调用脚本辅助 | ✅ | `DebugErrorHandlingPatterns` `DebuggingWorkflowPatternsUseCallableScriptHelpers` |
-| 原生日志 Verbosity 枚举编译期边界 | 🚫 | `NativeLogVerbosityEnumsRemainCompileTimeBoundary` |
-| 不支持的 DrawDebug 形状参数编译失败 | 🚫 | `UnsupportedDrawDebugShapeParametersFailToCompile` |
-| 控制台 Profiler 与 Debugger 控制编译失败 / Debugger 客户端专属特性编译失败 | 🚫 | `ConsoleProfilerAndDebuggerControlsFailToCompile` `DebuggerClientOnlyFeaturesFailToCompile` |
+| Ensure/Check bindings / Callstack and Throw bindings | ✅ | `EnsureAndCheckBindings` `CallstackAndThrowBindings` |
+| Log severity helpers / formatted debug logging surface | ✅ | `LogSeverityHelpersEmitExpectedVerbosity` `FormattedDebugLoggingSurfaceIncludesValuesAndContext` |
+| DrawDebugString, from object / parameterized | ✅ | `DrawDebugStringFromObject` `DrawDebugStringParameters` |
+| DebugBreak can be disabled for automation | ✅ | `DebugBreakBindingCanBeDisabledForAutomation` |
+| Object inspection helpers expose names and Outer | ✅ | `ObjectInspectionHelpersExposeNamesAndOuter` |
+| CPU Profiler scoped event script-facing / profiler patterns, counters and scratch memory | ✅ | `CpuProfilerScopedEventIsScriptFacing` `ProfilerDebugPatternsUseScopedEventsCountersAndScratchMemory` |
+| Stat/Show command names dispatch through registered console command | ✅ | `StatAndShowCommandNamesDispatchThroughRegisteredConsoleCommand` |
+| Debug error handling patterns / debugging workflow uses callable script helpers | ✅ | `DebugErrorHandlingPatterns` `DebuggingWorkflowPatternsUseCallableScriptHelpers` |
+| Native log Verbosity enum compile-time boundary | 🚫 | `NativeLogVerbosityEnumsRemainCompileTimeBoundary` |
+| Unsupported DrawDebug shape parameters fail to compile | 🚫 | `UnsupportedDrawDebugShapeParametersFailToCompile` |
+| Console Profiler and Debugger controls fail to compile / Debugger client-only features fail to compile | 🚫 | `ConsoleProfilerAndDebuggerControlsFailToCompile` `DebuggerClientOnlyFeaturesFailToCompile` |
 
-## 2. 日志（LoggingTests 13）
+## 2. Logging, LoggingTests 13
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| Print 函数 / UE_LOG 宏 | ✅ | `PrintFunctions` `UELogMacros` |
-| 日志类别 / 格式化 | ✅ | `LogCategories` `LogFormatting` |
-| 条件日志 / 条件日志函数门控 | ✅ | `ConditionalLogging` `ConditionalLogFunctionsGateOutput` |
-| 函数进出日志 / 性能友好日志 / 上下文丰富日志 | ✅ | `FunctionEntryExitLogging` `PerformanceConsciousLogging` `ContextRichLogging` |
-| Verbosity 函数发出预期类别 / 支持的日志级别映射到自动化安全 Verbosity | ✅ | `LogVerbosityFunctionsEmitExpectedCategories` `SupportedLogLevelsMapToAutomationSafeVerbosity` |
-| 网络调试日志模式 | ✅ | `NetworkDebugLoggingPatterns` |
-| 不支持的原生日志宏与 Verbosity 枚举编译失败 | 🚫 | `UnsupportedNativeLogMacrosAndVerbosityEnumsFailToCompile` |
+| Print functions / UE_LOG macros | ✅ | `PrintFunctions` `UELogMacros` |
+| Log categories / formatting | ✅ | `LogCategories` `LogFormatting` |
+| Conditional logging / conditional log functions gate output | ✅ | `ConditionalLogging` `ConditionalLogFunctionsGateOutput` |
+| Function entry/exit logging / performance-conscious logging / context-rich logging | ✅ | `FunctionEntryExitLogging` `PerformanceConsciousLogging` `ContextRichLogging` |
+| Verbosity functions emit expected categories / supported log levels map to automation-safe verbosity | ✅ | `LogVerbosityFunctionsEmitExpectedCategories` `SupportedLogLevelsMapToAutomationSafeVerbosity` |
+| Network debug logging patterns | ✅ | `NetworkDebugLoggingPatterns` |
+| Unsupported native log macros and Verbosity enums fail to compile | 🚫 | `UnsupportedNativeLogMacrosAndVerbosityEnumsFailToCompile` |
 
-## 3. 错误处理（ErrorHandlingTests 6）
+## 3. Error Handling, ErrorHandlingTests 6
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 返回模式与 out 结果 | ✅ | `ReturnPatternsAndOutResults` |
-| null 边界提前返回与重试 | ✅ | `NullBoundsEarlyReturnAndRetry` |
-| ThrowIf 报告脚本异常 | ✅ | `ThrowIfReportsScriptException` |
-| 受保护的负向边界保留回退 | ✅ | `GuardedNegativeBoundariesPreserveFallbacks` |
-| 负向运行期与编译边界 / 负向编译边界 | 🚫 | `NegativeRuntimeAndCompileBoundaries` `NegativeCompileBoundaries` |
+| Return patterns and out results | ✅ | `ReturnPatternsAndOutResults` |
+| Null bounds early return and retry | ✅ | `NullBoundsEarlyReturnAndRetry` |
+| ThrowIf reports script exception | ✅ | `ThrowIfReportsScriptException` |
+| Guarded negative boundaries preserve fallbacks | ✅ | `GuardedNegativeBoundariesPreserveFallbacks` |
+| Negative runtime and compile boundaries / negative compile boundaries | 🚫 | `NegativeRuntimeAndCompileBoundaries` `NegativeCompileBoundaries` |
 
 ---
 
-## 汇总
+## Summary
 
-| 文件 | 方法 |
+| File | Methods |
 |------|------|
 | Debug | 17 |
 | Logging | 13 |
 | ErrorHandling | 6 |
-| **合计** | **36** |
+| **Total** | **36** |
 
-**待实现（⬜）**：当前无硬缺口；不支持的原生日志/Profiler/Debugger API 均以 🚫 负向断言固化。
+**Pending (⬜)**: no hard gaps currently; unsupported native logging / Profiler / Debugger APIs are all locked by 🚫 negative assertions.

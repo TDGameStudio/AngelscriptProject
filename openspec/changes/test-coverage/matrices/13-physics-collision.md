@@ -1,84 +1,84 @@
-# 物理与碰撞覆盖矩阵
+# Physics And Collision Coverage Matrix
 
-> **本矩阵是物理/碰撞测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 `AngelscriptCoveragePhysicsTests.cpp` 的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`。
+> **This matrix is the design specification header for physics/collision tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoveragePhysicsTests.cpp` implementation. ⬜ means pending and ✅ identifies the covering `TEST_METHOD`.
 >
-> - 测试文件：`AngelscriptCoveragePhysicsTests.cpp`（25 方法）
-> - Automation 前缀：`Angelscript.TestModule.Coverage.Physics`
-> - 图例见 `../coverage-matrix.md`。
+> - Test file: `AngelscriptCoveragePhysicsTests.cpp`, 25 methods
+> - Automation prefix: `Angelscript.TestModule.Coverage.Physics`
+> - See `../coverage-matrix.md` for the legend.
 
-## 1. 物理模拟与受力
+## 1. Physics Simulation And Forces
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 物理模拟开关与状态 | ✅ | `PhysicsSimulation` | SetSimulatePhysics / 状态回读 |
-| 施加力 / 冲量 / 扭矩 | ✅ | `PhysicsForces` | AddForce/AddImpulse/AddTorque |
-| 线速度 / 角速度 | ✅ | `PhysicsVelocity` | Set/GetPhysicsLinearVelocity 等 |
+| Physics simulation toggle and state | ✅ | `PhysicsSimulation` | SetSimulatePhysics / state readback |
+| Apply force / impulse / torque | ✅ | `PhysicsForces` | AddForce/AddImpulse/AddTorque |
+| Linear velocity / angular velocity | ✅ | `PhysicsVelocity` | Set/GetPhysicsLinearVelocity and related APIs |
 
-## 2. 碰撞事件分发
+## 2. Collision Event Dispatch
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 组件级碰撞事件 | ✅ | `CollisionEvents` | OnComponentHit/BeginOverlap |
-| Actor 级碰撞事件 | ✅ | `ActorCollisionEvents` | ActorHit 委托 |
-| 移动触发的重叠 | ✅ | `ActorOverlapGeneratedByMovement` | 移动产生 Overlap |
-| 组件碰撞事件分发链 | ✅ | `ComponentCollisionEventDispatch` | 事件路由 |
+| Component-level collision events | ✅ | `CollisionEvents` | OnComponentHit/BeginOverlap |
+| Actor-level collision events | ✅ | `ActorCollisionEvents` | ActorHit delegate |
+| Movement-generated overlap | ✅ | `ActorOverlapGeneratedByMovement` | Overlap produced by movement |
+| Component collision event dispatch chain | ✅ | `ComponentCollisionEventDispatch` | Event routing |
 
-## 3. Trace / Overlap 查询
+## 3. Trace / Overlap Queries
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 射线 / 扫描 trace | ✅ | `TraceOperations` | LineTrace/SweepTrace |
-| 重叠检测 | ✅ | `OverlapDetection` | OverlapMulti/Components |
-| Object/Profile/Sweep trace 变体 | ✅ | `TraceObjectProfileAndSweepVariants` | ByObjectType/ByProfile |
-| 碰撞查询参数容器 | ✅ | `CollisionQueryParameterContainers` | FCollisionQueryParams |
-| 碰撞对象查询初始化类型 | ✅ | `CollisionObjectQueryInitTypes` | FCollisionObjectQueryParams |
+| Line / sweep trace | ✅ | `TraceOperations` | LineTrace/SweepTrace |
+| Overlap detection | ✅ | `OverlapDetection` | OverlapMulti/Components |
+| Object/Profile/Sweep trace variants | ✅ | `TraceObjectProfileAndSweepVariants` | ByObjectType/ByProfile |
+| Collision query parameter containers | ✅ | `CollisionQueryParameterContainers` | FCollisionQueryParams |
+| Collision object query init types | ✅ | `CollisionObjectQueryInitTypes` | FCollisionObjectQueryParams |
 
-## 4. 碰撞通道 / 响应 / Profile
+## 4. Collision Channels / Responses / Profile
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 碰撞通道与响应设置 | ✅ | `CollisionChannelsAndResponses` | SetCollisionResponseToChannel |
-| 碰撞 Profile 与启用模式 | ✅ | `CollisionProfilesAndEnabledModes` | SetCollisionProfileName / ECollisionEnabled |
-| 碰撞通道矩阵回读 | ✅ | `CollisionChannelMatrix` | 全通道响应矩阵 |
-| 碰撞响应容器操作 | ✅ | `CollisionResponseContainerOperations` | FCollisionResponseContainer |
+| Collision channel and response settings | ✅ | `CollisionChannelsAndResponses` | SetCollisionResponseToChannel |
+| Collision Profile and enabled modes | ✅ | `CollisionProfilesAndEnabledModes` | SetCollisionProfileName / ECollisionEnabled |
+| Collision channel matrix readback | ✅ | `CollisionChannelMatrix` | All-channel response matrix |
+| Collision response container operations | ✅ | `CollisionResponseContainerOperations` | FCollisionResponseContainer |
 
 ## 5. HitResult
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| HitResult 基础字段 | ✅ | `HitResultFields` | Location/Normal/Distance |
-| HitResult 扩展访问器 | ✅ | `HitResultExtendedAccessors` | 扩展字段 |
-| 物理材质 HitResult 引用 | ✅ | `PhysicsMaterialHitResultReference` | PhysMaterial 引用 |
+| Basic HitResult fields | ✅ | `HitResultFields` | Location/Normal/Distance |
+| Extended HitResult accessors | ✅ | `HitResultExtendedAccessors` | Extended fields |
+| Physics material HitResult reference | ✅ | `PhysicsMaterialHitResultReference` | PhysMaterial reference |
 
-## 6. 角色移动（CharacterMovementComponent）
+## 6. Character Movement, CharacterMovementComponent
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 角色移动物理设置 | ✅ | `CharacterMovementPhysicsSettings` | 重力/摩擦/最大速度 |
-| 移动模式查询 | ✅ | `CharacterMovementModeQueryStates` | Walking/Falling 等 |
-| 移动速度查询 | ✅ | `CharacterMovementVelocityQuery` | Velocity 读取 |
+| Character movement physics settings | ✅ | `CharacterMovementPhysicsSettings` | Gravity/friction/max speed |
+| Movement mode query states | ✅ | `CharacterMovementModeQueryStates` | Walking/Falling and related states |
+| Movement velocity query | ✅ | `CharacterMovementVelocityQuery` | Velocity readback |
 
-## 7. 约束与抛射物
+## 7. Constraints And Projectile Movement
 
-| 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
+| Scenario | Status | Coverage Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| 物理约束组件设置 | ✅ | `PhysicsConstraintComponentSettings` | PhysicsConstraint 参数 |
-| 物理约束预设配方 | ✅ | `PhysicsConstraintPresetRecipes` | 常用约束预设 |
-| 抛射物移动设置 | ✅ | `ProjectileMovementSettings` | ProjectileMovementComponent |
+| Physics constraint component settings | ✅ | `PhysicsConstraintComponentSettings` | PhysicsConstraint parameters |
+| Physics constraint preset recipes | ✅ | `PhysicsConstraintPresetRecipes` | Common constraint presets |
+| Projectile movement settings | ✅ | `ProjectileMovementSettings` | ProjectileMovementComponent |
 
 ---
 
-## 汇总
+## Summary
 
-| 维度 | 场景 | 状态 |
+| Dimension | Scenarios | Status |
 |------|------|------|
-| 1 物理模拟与受力 | 3 | ✅ |
-| 2 碰撞事件分发 | 4 | ✅ |
-| 3 Trace/Overlap 查询 | 5 | ✅ |
-| 4 通道/响应/Profile | 4 | ✅ |
+| 1 physics simulation and forces | 3 | ✅ |
+| 2 collision event dispatch | 4 | ✅ |
+| 3 Trace/Overlap queries | 5 | ✅ |
+| 4 channels/responses/Profile | 4 | ✅ |
 | 5 HitResult | 3 | ✅ |
-| 6 角色移动 | 3 | ✅ |
-| 7 约束与抛射物 | 3 | ✅ |
+| 6 character movement | 3 | ✅ |
+| 7 constraints and projectile movement | 3 | ✅ |
 
-**对应测试方法**：25 方法（全 ✅）。
-**待实现（⬜）**：当前无硬缺口。若后续接入更多物理子系统（如布料、破坏 Chaos 字段），在对应维度补 ⬜ 行并排期。
+**Corresponding test methods**: 25 methods, all ✅.
+**Pending (⬜)**: no hard gaps currently. If more physics subsystems are added later, such as cloth or Chaos destruction fields, add ⬜ rows to the relevant section and schedule them.

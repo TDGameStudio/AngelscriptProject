@@ -1,36 +1,36 @@
 ## Why
 
-`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h` 已经膨胀为 **1093 行的"上帝头"**，在同一头里 inline 实现了 7 段不同职责（生产/隔离/瞬态引擎获取、UASClass + BP Action DB 的 GC 清理、内存探针、shared engine 重置 + 调试日志、模块编译/函数查找、AS 函数执行/异常断言、`FAngelscriptTestFixture`），并把 `BlueprintActionDatabase.h`、`K2Node_GetSubsystem.h` 以及 SDK 三件套传染给 **400+ 个测试 `.cpp`**。同时 `Shared/` 目录另存在 4 个纯转发别名（`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`，共 ~46 个 callsite）是历史迁移残留。
+`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h` had grown into a **1093-line "god header"**. It inlined seven unrelated responsibility areas in one file: production/isolated/transient engine acquisition, UASClass + BP Action DB GC cleanup, memory probes, shared-engine reset + debug logging, module compilation/function lookup, AS function execution/exception assertions, and `FAngelscriptTestFixture`. It also leaked `BlueprintActionDatabase.h`, `K2Node_GetSubsystem.h`, and the three SDK headers into **400+ test `.cpp` files**. At the same time, `Shared/` still contained four pure forwarding aliases (`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`, about 46 historical call sites).
 
-与此同时，`AngelscriptTest/Bindings/` 71 个 `.cpp` 文件里"调用 AS 函数"这件事的入口高度分散：`Shared/AngelscriptBindingsAssertions.h` 提供 9 个 `Expect*` 一行式断言、`Shared/AngelscriptGlobalFunctionInvoker.h` 提供底层 `FASGlobalFunctionInvoker` fluent 类、各 Bindings/*.cpp 内还散落 4-5 份私有 `Execute*Function*` helper（Math/Orientation/Curve/WorldFunc 等），加上 `AngelscriptTestUtilities.h` 自带的 `ExecuteIntFunction*` / `ExecuteInt64Function`，**同一意图至少 7 个并行入口**，命名族（`Expect*` / `Execute*Function*` / `.Call()` / `.CallAndReturn`）互不对齐，与 UE 风格 / AS 底层 `asIScriptContext::Execute()` 也不一致。
+Separately, the "call an AS function" entry point was fragmented across the 71 `.cpp` files in `AngelscriptTest/Bindings/`: `Shared/AngelscriptBindingsAssertions.h` provided nine one-line `Expect*` assertions, `Shared/AngelscriptGlobalFunctionInvoker.h` provided the low-level fluent `FASGlobalFunctionInvoker`, individual `Bindings/*.cpp` files had another 4-5 private `Execute*Function*` helpers (Math/Orientation/Curve/WorldFunc, etc.), and `AngelscriptTestUtilities.h` carried its own `ExecuteIntFunction*` / `ExecuteInt64Function`. The same intent had at least seven parallel entry points, with naming families (`Expect*` / `Execute*Function*` / `.Call()` / `.CallAndReturn`) that did not align with each other, UE style, or the underlying AS `asIScriptContext::Execute()` API.
 
-本次把它收成「纯聚合 umbrella + 6 个主题小头」，并新建第 7 个主题头 `AngelscriptTestExecute.h` 作为唯一收口；同时建立以 `Execute` 为根动词的命名族契约（`Execute` / `ExecuteAndGet<T>` / `ExecuteAndExpect<Type>` / `ExecuteAndExpectNear<Type>` / `ExecuteBatchAndExpect<Type>` / `ExecuteAndValidate<T>` / `ExecuteAndExpectException` / `CompileAndExpectFailure`）。**新代码强制走 `Execute*` 族**；所有旧符号 / 旧头 / 散落 helper 通过 inline alias + forward 头**永久保留兼容**，确保仓库内任何旧 callsite 继续编译通过，由后续 follow-up change 渐进重命名清理。
+This change consolidates that into a pure umbrella header plus six themed headers, and adds a seventh themed header, `AngelscriptTestExecute.h`, as the single execution entry point. It also establishes an `Execute`-rooted naming family contract: `Execute` / `ExecuteAndGet<T>` / `ExecuteAndExpect<Type>` / `ExecuteAndExpectNear<Type>` / `ExecuteBatchAndExpect<Type>` / `ExecuteAndValidate<T>` / `ExecuteAndExpectException` / `CompileAndExpectFailure`. **New code must use the `Execute*` family**. All old symbols / old headers / scattered helpers remain permanently compatible through inline aliases and forwarding headers, so every existing repository call site continues to compile. A follow-up change will progressively rename and clean up legacy call sites.
 
 ## What Changes
 
-### Header 拆分（沿用原 proposal 范围 + 1 个主题头改名）
+### Header split (original proposal scope + one themed header rename)
 
-- 拆 `AngelscriptTestUtilities.h` 1093 行 inline 实现为 **6 个主题头 + 1 个 .cpp**（全部平铺在 `Shared/`）：`AngelscriptTestEngineAcquisition.h/.cpp`、`AngelscriptTestEngineCleanup.h`、`AngelscriptTestMemoryProbe.h`、`AngelscriptTestModuleBuilder.h`、**`AngelscriptTestExecute.h`**（改名 — 原 proposal 中的 `AngelscriptTestExecution.h` 直接命名为 `AngelscriptTestExecute.h`，与下文新命名族收口名对齐）、`AngelscriptTestFixture.h`。
-- `AngelscriptTestUtilities.h` 缩成 **~40 行的纯聚合入口头**，只 `#include` 上面 6 个新头 + 现有 `AngelscriptTestEngine.h` + `Misc/AutomationTest.h`，不再放任何函数实现。继续作为 400+ 测试 `.cpp` 的兼容包含入口。
-- **BREAKING（测试模块内部）**：退役 4 个纯转发别名 `GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`，~46 个 callsite 替换为 `GetOrCreateSharedCloneEngine` / `AcquireCleanSharedCloneEngine` / `ResetSharedCloneEngine`。**不影响外部插件**（`AngelscriptGAS` 等），因 audit 显示这些别名仅在 `AngelscriptTest` 模块内部被调用。
-- 把 `WITH_EDITOR` 的 `BlueprintActionDatabase` / `K2Node_*` 依赖**收敛到 `AngelscriptTestEngineCleanup.h` 一个文件**，不再透传给所有测试 TU（主要的编译时间收益）。
-- 新增 `Shared/README.md`，给 47+ 个文件提供 1 屏内的导航索引，与 `TestConventions.md` 的 helper 推荐表对齐。
-- 在每个新头顶部加 ~15 行块注释，说明职责边界、依赖头、典型调用方。
+- Split the 1093-line inline implementation in `AngelscriptTestUtilities.h` into **six themed headers + one `.cpp`** (all flat under `Shared/`): `AngelscriptTestEngineAcquisition.h/.cpp`, `AngelscriptTestEngineCleanup.h`, `AngelscriptTestMemoryProbe.h`, `AngelscriptTestModuleBuilder.h`, **`AngelscriptTestExecute.h`** (renamed from the original proposal's `AngelscriptTestExecution.h` to align with the new execution family), and `AngelscriptTestFixture.h`.
+- Shrink `AngelscriptTestUtilities.h` into a **~40-line pure umbrella header** that only includes the six new headers plus the existing `AngelscriptTestEngine.h` and `Misc/AutomationTest.h`. It remains the compatibility include entry for 400+ test `.cpp` files and no longer contains function implementations.
+- **BREAKING inside the test module only**: retire four pure forwarding aliases (`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`) and replace their ~46 call sites with `GetOrCreateSharedCloneEngine` / `AcquireCleanSharedCloneEngine` / `ResetSharedCloneEngine`. This does **not** affect external plugins such as `AngelscriptGAS`, because audit showed these aliases were only called inside the `AngelscriptTest` module.
+- Constrain `WITH_EDITOR` dependencies on `BlueprintActionDatabase` / `K2Node_*` to a single file, `AngelscriptTestEngineCleanup.h`, so they no longer propagate to every test TU.
+- Add `Shared/README.md` as a one-screen navigation index for 47+ files, aligned with the helper recommendation table in `TestConventions.md`.
+- Add a ~15-line block comment at the top of each new header explaining responsibility boundaries, dependency headers, and typical callers.
 
-### Execute 单文件收口（新增 — 第 7 个主题头的扩展职责）
+### Single-file Execute consolidation (new expanded responsibility of the seventh themed header)
 
-- **`AngelscriptTestExecute.h` 吸收**：
-  - 原 `Shared/AngelscriptGlobalFunctionInvoker.h`（408 行）全部内容（底层 fluent executor 类 + `ResolveFunctionByDecl` / `ResolveFunctionByName`）。
-  - 原 `Shared/AngelscriptBindingsAssertions.h`（378 行）全部内容（`Expect*` 一行式断言族）。
-  - `AngelscriptTestUtilities.h` 原 873-1015 段的 `ExecuteIntFunction` / `ExecuteIntFunctionExpectingScriptException` / `ExecuteInt64Function`。
-- **旧两个共享头改为永久 forward 头**：`AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 各缩为 ~3 行 `#include "AngelscriptTestExecute.h"`，在 follow-up change 内最终删除。
-- **Bindings/*.cpp 内文件私有 `Execute*Function*` helper 保持原状不动**（不被吸收到 `Execute.h`），仅在文件头加 `// TODO(refactor-as-test-shared-layout-and-naming): migrate to AngelscriptTestExecute.h` 标记，由 follow-up change 内逐文件迁入。
+- **`AngelscriptTestExecute.h` absorbs**:
+  - The full old `Shared/AngelscriptGlobalFunctionInvoker.h` content (408 lines): low-level fluent executor + `ResolveFunctionByDecl` / `ResolveFunctionByName`.
+  - The full old `Shared/AngelscriptBindingsAssertions.h` content (378 lines): one-line `Expect*` assertion family.
+  - The `ExecuteIntFunction` / `ExecuteIntFunctionExpectingScriptException` / `ExecuteInt64Function` block from `AngelscriptTestUtilities.h` lines 873-1015.
+- Convert the two old shared headers into permanent forwarding headers: `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` shrink to ~3-line `#include "AngelscriptTestExecute.h"` stubs. Final deletion is deferred to a follow-up change.
+- Leave file-private `Execute*Function*` helpers inside `Bindings/*.cpp` unchanged for now. Add `// TODO(refactor-as-test-shared-layout-and-naming): migrate to AngelscriptTestExecute.h` near those helpers, and migrate them file-by-file in follow-up work.
 
-### `Execute*` 命名族契约（新增）
+### `Execute*` naming family contract
 
-新建 `FAngelscriptTestExecutor` 类 + 以 `Execute` 为根的自由函数族，词位 `Execute[AndGet|AndExpect|AndValidate|BatchAndExpect|(空)][Near|AtLeast|(空)][<Type>|<T>]`：
+Create `FAngelscriptTestExecutor` plus an `Execute`-rooted free-function family with token order `Execute[AndGet|AndExpect|AndValidate|BatchAndExpect|(empty)][Near|AtLeast|(empty)][<Type>|<T>]`:
 
-| 旧 API（永久 inline alias）| 新 API（强制收口）|
+| Old API (permanent inline alias) | New API (canonical entry) |
 |---------------------------|-------------------|
 | `FASGlobalFunctionInvoker` | `FAngelscriptTestExecutor` |
 | `.Call()` | `.Execute()` |
@@ -38,69 +38,69 @@
 | `.ReadReturnStruct<T>(Out)` | `.ExecuteAndExtractStruct<T>(Out)` |
 | `ExpectGlobalInt` / `ExpectGlobalBool` / `ExpectGlobalDouble` | `ExecuteAndExpectInt` / `ExecuteAndExpectBool` / `ExecuteAndExpectDouble` |
 | `ExpectGlobalReturnFloat` | `ExecuteAndExpectNearFloat` |
-| （新增） | `ExecuteAndExpectNearDouble` |
+| (new) | `ExecuteAndExpectNearDouble` |
 | `ExpectGlobalIntAtLeast` | `ExecuteAndExpectIntAtLeast` |
 | `ExpectGlobalInts` | `ExecuteBatchAndExpectInt` |
 | `ExpectGlobalReturnCustom<T>` | `ExecuteAndValidate<T>(..., Validator)` |
-| `ExecuteFunctionExpectingScriptException` / 散落 `ExecuteFunctionExpectingException` | `ExecuteAndExpectException` |
-| `ExpectBindingCompileFailure` | `CompileAndExpectFailure`（独立 `Compile*` 族）|
+| `ExecuteFunctionExpectingScriptException` / scattered `ExecuteFunctionExpectingException` | `ExecuteAndExpectException` |
+| `ExpectBindingCompileFailure` | `CompileAndExpectFailure` (separate `Compile*` family) |
 
-设计原则：
+Design principles:
 
-1. `Execute` 不带后缀 = 仅执行不取值，与 AS 底层 `asIScriptContext::Execute()` 严格对齐。
-2. `AndGet` 取返回不断言 / `AndExpect` 取返回并断言相等 / `AndValidate` 取返回并自定义校验。
-3. 修饰词位置：`Near` / `AtLeast` 紧贴 `Expect`（修饰断言语义），`Batch` 紧贴 `Execute`（修饰执行行为）。
-4. 类型后缀在最末（`Int` / `Bool` / `Float` / `Double` / `<T>`），无歧义时省略（成员 `ExecuteAndGet<T>`）。
-5. 不引入 `Expect*` / `Invoke*` / `Call*` 等并行词族 — 旧名仅作 inline alias 兼容，spec 内禁止新代码使用。
-6. compile-side 独立成 `Compile*` 族（仅 `CompileAndExpectFailure` 一员）。
-7. `ExecuteAndValidate<T>` 与 `ExecuteAndExpect<T>` 故意分名，避免 lambda 重载歧义。
+1. Bare `Execute` means execute only, with no return extraction, exactly matching the underlying AS `asIScriptContext::Execute()`.
+2. `AndGet` extracts a return without asserting; `AndExpect` extracts and asserts equality; `AndValidate` extracts and uses a custom validator.
+3. Modifier placement: `Near` / `AtLeast` sits next to `Expect` because it modifies assertion semantics; `Batch` sits next to `Execute` because it modifies execution behavior.
+4. Type suffixes come last (`Int` / `Bool` / `Float` / `Double` / `<T>`), and are omitted when unambiguous (member `ExecuteAndGet<T>`).
+5. Do not introduce parallel `Expect*` / `Invoke*` / `Call*` families. Old names exist only as inline aliases for compatibility, and the spec forbids new code from using them.
+6. Compile-side helpers are a separate `Compile*` family, currently only `CompileAndExpectFailure`.
+7. `ExecuteAndValidate<T>` is deliberately separate from `ExecuteAndExpect<T>` to avoid lambda overload ambiguity.
 
-### 兼容策略（核心翻转 — 撤销原 proposal 的「0 改名」承诺）
+### Compatibility strategy (core pivot from the original proposal)
 
-- 原 proposal 承诺「公共符号名 0 改名」。本次改为：**新增 `Execute*` 主命名族；旧符号全部以 inline alias / forward 头永久兼容**。
-- 任何 `AngelscriptTest` 模块内或外部插件（如 `AngelscriptGAS`）的旧 callsite 在本 change 落地后**继续编译通过**，无需任何修改。
-- 唯一在本 change 内进行 callsite 改名的位置是 `AngelscriptBindingsExampleSection.h`（80 行示例），作为新命名的官方示范。
-- 71 个 Bindings/*.cpp 文件、~200+ callsite、AS 脚本字符串 namespace 改写、最终删除兼容层 — **全部推迟到 follow-up change**，由用户驱动渐进重命名。
+- The original proposal promised "zero public symbol renames." This change replaces that with: **add the canonical `Execute*` family while keeping all old symbols permanently compatible through inline aliases and forwarding headers**.
+- Any old call site inside `AngelscriptTest` or external plugins such as `AngelscriptGAS` continues compiling after this change with no source edits.
+- The only call-site rename performed in this change is `AngelscriptBindingsExampleSection.h` (~80 lines), which becomes the official example for the new naming.
+- The 71 `Bindings/*.cpp` files, ~200+ call sites, AS script-string namespace rewrite, final compatibility-layer deletion, and scattered helper consolidation are all deferred to follow-up changes and recorded in `followups.md`.
 
-### 删除 `FBindingsCoverageProfile`（重设计 Phase 5）
+### Delete `FBindingsCoverageProfile` (redesigned Phase 5)
 
-- Phase 5 不再扩展 `FBindingsCoverageProfile`。实地审查确认该 struct 并不存在 `BodyInst` / `MsgDlg` 等业务缩写字段；它只是 Bindings Coverage 模式引入的 5 槽命名上下文（`Theme` / `Variant` / `ModulePrefix` / `CasePrefix` / `LogCategory`）。
-- 该上下文不适合作为全测试模块 API 的依赖：通用 `AngelscriptTest::Execute*` 只需要 `Test` / `Engine` / `Module` / `FunctionDecl` / `CaseLabel`，不应知道 Bindings 的 module prefix、case prefix 或 log category。
-- Phase 5 将删除 `FBindingsCoverageProfile` 与 `AngelscriptBindingsCoverage.h`，把 `Execute*` 通用层改为接收普通 case label；Bindings 专用代码如需拼模块名，使用局部全词 helper 或显式 module name。
-- `FCoverageModuleScope` 将降级为“AS module 生命周期 RAII”，接收显式 `ModuleName` + `Source`，不再接收 Profile。CQTest 已提供测试身份（Automation path + `TEST_METHOD` 名），不需要再用 Profile 重复表达。
+- Phase 5 no longer extends `FBindingsCoverageProfile`. Direct inspection showed that this struct does not contain business abbreviation fields such as `BodyInst` / `MsgDlg`; it is only a five-slot naming context introduced by the Bindings Coverage pattern (`Theme` / `Variant` / `ModulePrefix` / `CasePrefix` / `LogCategory`).
+- That context is not suitable as a dependency of a module-wide test API. Generic `AngelscriptTest::Execute*` only needs `Test` / `Engine` / `Module` / `FunctionDecl` / `CaseLabel`, and should not know about Bindings module prefixes, case prefixes, or log categories.
+- Phase 5 deletes `FBindingsCoverageProfile` and `AngelscriptBindingsCoverage.h`, and changes the generic `Execute*` layer to accept normal case labels. Bindings-specific code that needs module naming uses local full-word helpers or explicit module names.
+- `FCoverageModuleScope` is reduced to "AS module lifetime RAII": it receives explicit `ModuleName` + `Source`, no longer a Profile. CQTest already provides test identity (Automation path + `TEST_METHOD` name), so Profile no longer repeats that identity.
 
-### 不在本 change 范围
+### Out of scope for this change
 
-- **AS 脚本侧 namespace 改写**（`SetIter_SumElements` → `SetIter::SumElements`，1500+ 字符串字面量）：AS 不允许同名函数同时存在于 namespace 内外，**没有兼容期可走**，整个推迟到独立 follow-up change。
-- **Bindings/*.cpp callsite 批量替换** + **删除兼容层**（旧符号 / forward 头 / inline alias）+ **散落 helper 收编**：登记在本 change `followups.md`，由后续 follow-up change 渐进处理。
-- **不动 Shared/ 子目录化** — 用户明确要求保持平铺。
-- **不进入** `MockDebugServer`、`TestEnginePool`、`TestLegacyHelpers`、`Debugger*` 套件、`TestEngineHelper`（它的 `ExecuteIntFunction(Engine*, ModuleName, ...)` 重载与 TestUtilities 的同名函数签名 / 抽象层不同，非重复，本次不合并）。
-- **不迁移** `AngelscriptTestLegacyHelpers.h`（11 个老 `IMPLEMENT_SIMPLE_AUTOMATION_TEST` 用户）— 作为遗留事项另开 OpenSpec。
-- **不动** `AngelscriptTestMacros.h`、`AngelscriptTestEngine.h/.cpp`、`AngelscriptReflectiveAccess.h` — 与本次目标无关。
-- **不修改** 已有 `refactor-angelscript-test-helper-api` 定义的外部消费契约（`angelscript-test-helper-api` capability）— 本次是模块**内部**结构重组 + 命名族契约新增，umbrella header 路径 `Shared/AngelscriptTestUtilities.h` 保持外部可见且语义不变，旧的 `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 头路径通过 forward 头继续可用。
-- **文档同步**（`.agents/skills/_angelscript-test-guide/SKILL.md` 与 `Documents/Guides/TestConventions.md`）：另开 follow-up change。
+- **AS script-side namespace rewrite** (`SetIter_SumElements` → `SetIter::SumElements`, 1500+ string literals): AS does not allow the same function name to exist both inside and outside a namespace, so no compatibility period is possible. This is entirely deferred to an independent follow-up change.
+- **Bindings/*.cpp call-site bulk replacement**, **compatibility layer deletion** (old symbols / forwarding headers / inline aliases), and **scattered helper consolidation**: recorded in `followups.md` and handled gradually by follow-up changes.
+- **Shared/ subdirectories**: not done; the user explicitly requested keeping the directory flat.
+- Do **not** enter `MockDebugServer`, `TestEnginePool`, `TestLegacyHelpers`, `Debugger*` suites, or `TestEngineHelper`. Its `ExecuteIntFunction(Engine*, ModuleName, ...)` overload has a different signature and abstraction layer from the TestUtilities function and is not a duplicate.
+- Do **not** migrate `AngelscriptTestLegacyHelpers.h` (11 old `IMPLEMENT_SIMPLE_AUTOMATION_TEST` users). Track this as a separate legacy OpenSpec item.
+- Do **not** touch `AngelscriptTestMacros.h`, `AngelscriptTestEngine.h/.cpp`, or `AngelscriptReflectiveAccess.h`; they are unrelated to this goal.
+- Do **not** change the external consumption contract already defined by `refactor-angelscript-test-helper-api` (`angelscript-test-helper-api` capability). This change is an **internal** test-module structure reorganization plus a new naming-family contract. The umbrella header path `Shared/AngelscriptTestUtilities.h` remains externally visible with unchanged meaning, and the old `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` paths continue to work through forwarding headers.
+- **Documentation sync** (`.agents/skills/_angelscript-test-guide/SKILL.md` and `Documents/Guides/TestConventions.md`) is deferred to a follow-up change.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `as-test-utilities-header-layout`：定义 `AngelscriptTest/Shared/` 中「umbrella header + 主题小头」的契约 — 包括 `AngelscriptTestUtilities.h` 作为聚合入口的兼容性保证、6 个主题头的职责边界（含 `AngelscriptTestExecute.h` 作为 AS 函数调用主要入口）、退役符号清单、`Shared/README.md` 导航索引要求、编辑器头依赖收敛到 Cleanup 头的规则，以及旧 `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` 在本 change 内永久 forward（删除推迟到 follow-up）。
-- `as-bindings-test-execute-and-naming`：定义 `Execute*` 命名族契约 — 包括 `FAngelscriptTestExecutor` 作为唯一底层 executor 类、`Execute*` 自由函数族词位规则、`Compile*` 独立族、删除 Bindings Profile 耦合、新代码强制走新命名族、旧符号仅作 inline alias 兼容。
+- `as-test-utilities-header-layout`: defines the "umbrella header + themed small headers" contract under `AngelscriptTest/Shared/`. It covers `AngelscriptTestUtilities.h` compatibility as the aggregate entry, six themed header responsibility boundaries (including `AngelscriptTestExecute.h` as the main AS function-call entry), retired-symbol inventory, `Shared/README.md` navigation-index requirements, editor-header dependency convergence into Cleanup, and permanent forwarding of old `AngelscriptGlobalFunctionInvoker.h` / `AngelscriptBindingsAssertions.h` during this change (actual deletion deferred to follow-up).
+- `as-bindings-test-execute-and-naming`: defines the `Execute*` naming-family contract, including `FAngelscriptTestExecutor` as the only low-level executor class, token-order rules for `Execute*` free functions, the separate `Compile*` family, removal of Bindings Profile coupling, mandatory use of the new naming family in new code, and old symbols as inline-alias compatibility only.
 
 ### Modified Capabilities
 
-- 无。本次不修改已有 `angelscript-test-helper-api` capability 的外部消费契约（旧头路径通过 forward 头永久保留）。
+- None. This change does not modify the external consumption contract of the existing `angelscript-test-helper-api` capability; old header paths are permanently retained through forwarding headers.
 
 ## Impact
 
-- **代码（拆分）**：`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h`（主拆分目标，1093 行 → ~40 行）；新增 `AngelscriptTestEngineAcquisition.h/.cpp`、`AngelscriptTestEngineCleanup.h`、`AngelscriptTestMemoryProbe.h`、`AngelscriptTestModuleBuilder.h`、`AngelscriptTestExecute.h`、`AngelscriptTestFixture.h`、`Shared/README.md`。
-- **代码（命名族）**：`Shared/AngelscriptTestExecute.h` 含 `FAngelscriptTestExecutor` 类 + `Execute*` 自由函数族 + 全部旧符号 inline alias（约 1100 行）；`Shared/AngelscriptGlobalFunctionInvoker.h`（408 行 → ~3 行 forward）；`Shared/AngelscriptBindingsAssertions.h`（378 行 → ~3 行 forward）；`Shared/AngelscriptBindingsCoverage.h` 删除，Profile 耦合从通用 Execute 层移除。
-- **代码（标记）**：71 个 Bindings/*.cpp 中含私有 `Execute*Function*` helper 的 4-5 份（Math / Orientation / Curve / WorldFunc 等）顶部加 `// TODO(refactor-as-test-shared-layout-and-naming)` 标记。
-- **代码（callsite 改名）**：仅 `AngelscriptBindingsExampleSection.h` 内示例（~80 行）改为新命名作为官方示范。
-- **API（兼容性）**：所有旧符号（`FASGlobalFunctionInvoker` / `.Call` / `.CallAndReturn` / `ExpectGlobal*` / `ExecuteIntFunction*` / `ExpectBindingCompileFailure`）通过 inline alias / forward 头**永久可用**；新增 `Execute*` 族 + `FAngelscriptTestExecutor` 作为新代码强制入口。
-- **API（破坏性）**：仅 4 个 `AngelscriptTestSupport::` 别名函数移除（`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`），共 ~46 callsite 在本 change 内同步替换。
-- **依赖图**：测试模块 TU 不再透传 `BlueprintActionDatabase.h` / `K2Node_GetSubsystem.h`，除非显式包含 `AngelscriptTestEngineCleanup.h`。
-- **文档**：`Documents/Guides/TestConventions.md` 与 `.agents/skills/_angelscript-test-guide/SKILL.md` 同步推迟到 follow-up change；本 change 仅新增 `Shared/README.md`。
-- **构建系统**：无 `Build.cs` 改动 — `AngelscriptTest.Build.cs` 维持现状。
-- **测试**：不影响 Automation 前缀；不新增 / 移除 / 禁用任何 test case；`275/275` C++ baseline + `301/301` ASSDK 子套不退化。Phase 5 验证：Bindings **260/260**、Fast suite 手动聚合 **1834/1834**（2026-05-24）。
-- **OpenSpec**：新增 `as-test-utilities-header-layout` 与 `as-bindings-test-execute-and-naming` 两个 capabilities；新建 `followups.md` 登记渐进清理工作交由 follow-up change 处理。Phases 1–5 已于 2026-05-24 落地；`design.md` §Implementation Record 含各 Phase 提交与迁移说明。
+- **Code (split)**: `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestUtilities.h` is the main split target (1093 lines → ~40 lines); add `AngelscriptTestEngineAcquisition.h/.cpp`, `AngelscriptTestEngineCleanup.h`, `AngelscriptTestMemoryProbe.h`, `AngelscriptTestModuleBuilder.h`, `AngelscriptTestExecute.h`, `AngelscriptTestFixture.h`, and `Shared/README.md`.
+- **Code (naming family)**: `Shared/AngelscriptTestExecute.h` contains `FAngelscriptTestExecutor`, the `Execute*` free-function family, and all old-symbol inline aliases (~1100 lines); `Shared/AngelscriptGlobalFunctionInvoker.h` shrinks from 408 lines to a ~3-line forwarder; `Shared/AngelscriptBindingsAssertions.h` shrinks from 378 lines to a ~3-line forwarder; `Shared/AngelscriptBindingsCoverage.h` is deleted and Profile coupling is removed from the generic Execute layer.
+- **Code (markers)**: add `// TODO(refactor-as-test-shared-layout-and-naming)` markers to the 4-5 `Bindings/*.cpp` files that contain private `Execute*Function*` helpers (Math / Orientation / Curve / WorldFunc, etc.).
+- **Code (call-site rename)**: only the example in `AngelscriptBindingsExampleSection.h` (~80 lines) is converted to the new naming as the official example.
+- **API (compatibility)**: all old symbols (`FASGlobalFunctionInvoker` / `.Call` / `.CallAndReturn` / `ExpectGlobal*` / `ExecuteIntFunction*` / `ExpectBindingCompileFailure`) remain available through inline aliases / forwarding headers. The new `Execute*` family + `FAngelscriptTestExecutor` are the required entry for new code.
+- **API (breaking)**: only four `AngelscriptTestSupport::` alias functions are removed (`GetSharedTestEngine` / `GetResetSharedTestEngine` / `AcquireFreshSharedCloneEngine` / `ResetSharedInitializedTestEngine`), and their ~46 call sites are replaced inside this change.
+- **Dependency graph**: test-module TUs no longer receive `BlueprintActionDatabase.h` / `K2Node_GetSubsystem.h` transitively unless they explicitly include `AngelscriptTestEngineCleanup.h`.
+- **Documentation**: `Documents/Guides/TestConventions.md` and `.agents/skills/_angelscript-test-guide/SKILL.md` sync is deferred to follow-up; this change only adds `Shared/README.md`.
+- **Build system**: no `Build.cs` changes; `AngelscriptTest.Build.cs` remains as-is.
+- **Tests**: no Automation prefixes are affected; no test case is added, removed, or disabled; the `275/275` C++ baseline and `301/301` ASSDK subset do not regress. Phase 5 verification: Bindings **260/260**, Fast suite manual aggregation **1834/1834** (2026-05-24).
+- **OpenSpec**: add `as-test-utilities-header-layout` and `as-bindings-test-execute-and-naming`; add `followups.md` for progressive cleanup. Phases 1-5 landed on 2026-05-24; `design.md` §Implementation Record contains phase commits and migration notes.

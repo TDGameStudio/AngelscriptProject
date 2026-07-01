@@ -1,103 +1,103 @@
-# 对象引用与 GC 覆盖矩阵
+# Object References And GC Coverage Matrix
 
-> **本矩阵是对象引用/GC 测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 5 个测试文件的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork 不支持。
+> **This matrix is the design specification header for object reference / GC tests**: each row is a concrete verifiable scenario guiding five test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - 测试文件：`Handle`(14) / `Handles`(10) / `WeakReference`(10) / `SoftReference`(11) / `GC`(12) Tests.cpp
-> - Automation 前缀：`Angelscript.TestModule.Coverage.<Handle|Handles|WeakReference|SoftReference|GC>`
-> - 图例见 `../coverage-matrix.md`；接口引用边界见 `../coverage-gaps.md §2.3`。
+> - Test files: `Handle`(14) / `Handles`(10) / `WeakReference`(10) / `SoftReference`(11) / `GC`(12) Tests.cpp
+> - Automation prefix: `Angelscript.TestModule.Coverage.<Handle|Handles|WeakReference|SoftReference|GC>`
+> - See `../coverage-matrix.md` for the legend; interface reference boundaries are in `../coverage-gaps.md §2.3`.
 
-## 1. UObject handle 基础与操作（HandleTests）
+## 1. UObject Handle Basics And Operations, HandleTests
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| handle 声明/赋值基础 | ✅ | `HandleBasics` |
-| handle 比较（==/!=/null） | ✅ | `HandleComparison` |
-| Cast 与类型转换 | ✅ | `HandleCast` |
-| handle 操作（GetClass/GetName 等） | ✅ | `HandleOperations` |
-| handle 作属性 | ✅ | `HandleAsProperty` |
-| handle 作参数 | ✅ | `HandleAsParameter` |
-| handle 在容器中（数组/Set） | ✅ | `HandleInContainers` `HandleSetContainer` |
-| 成员对象/Actor/组件引用 | ✅ | `MemberObjectActorComponentReferences` |
-| NewObject 与 handle | ✅ | `UObjectHandleAndNewObject` `UObjectHandleAssignmentAndActorOuter` |
-| 销毁 Actor 使引用失效 | ✅ | `HandleDestroyActorInvalidatesReference` |
+| Basic handle declaration/assignment | ✅ | `HandleBasics` |
+| Handle comparison, == / != / null | ✅ | `HandleComparison` |
+| Cast and type conversion | ✅ | `HandleCast` |
+| Handle operations, GetClass/GetName and related APIs | ✅ | `HandleOperations` |
+| Handle as property | ✅ | `HandleAsProperty` |
+| Handle as parameter | ✅ | `HandleAsParameter` |
+| Handle in containers, arrays / Set | ✅ | `HandleInContainers` `HandleSetContainer` |
+| Member object / Actor / component references | ✅ | `MemberObjectActorComponentReferences` |
+| NewObject and handle | ✅ | `UObjectHandleAndNewObject` `UObjectHandleAssignmentAndActorOuter` |
+| Destroyed Actor invalidates reference | ✅ | `HandleDestroyActorInvalidatesReference` |
 
-## 2. TObjectPtr 路由与显式属性
+## 2. TObjectPtr Routing And Explicit Properties
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| TObjectPtr 路由（脚本侧透明处理） | ✅ | `HandleTests::TObjectPtrRouting` |
-| NewObject + TObjectPtr + Subclass 引用 | ✅ | `HandlesTests::UObjectNewObjectTObjectPtrAndSubclassReferences` |
+| TObjectPtr routing, transparent script-side handling | ✅ | `HandleTests::TObjectPtrRouting` |
+| NewObject + TObjectPtr + Subclass references | ✅ | `HandlesTests::UObjectNewObjectTObjectPtrAndSubclassReferences` |
 
-## 3. 弱引用 TWeakObjectPtr（WeakReferenceTests + HandlesTests）
+## 3. Weak References, TWeakObjectPtr, WeakReferenceTests + HandlesTests
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 弱引用基础 | ✅ | `WeakObjectPtrBasics` |
-| 失效检测 | ✅ | `WeakObjectPtrInvalidation` |
-| 作属性 | ✅ | `WeakObjectPtrAsProperty` |
-| null 比较与重新赋值 | ✅ | `WeakObjectPtrNullComparisonAndReassignment` |
-| 打破反向引用环 | ✅ | `WeakObjectPtrBreaksBackReferenceCycle` |
-| 弱引用数组容器（含重新赋值） | ✅ | `WeakObjectPtrArrayContainer` `HandlesTests::WeakObjectPtrArrayContainerAndReassignment` |
+| Weak reference basics | ✅ | `WeakObjectPtrBasics` |
+| Invalidation detection | ✅ | `WeakObjectPtrInvalidation` |
+| As property | ✅ | `WeakObjectPtrAsProperty` |
+| Null comparison and reassignment | ✅ | `WeakObjectPtrNullComparisonAndReassignment` |
+| Break back-reference cycles | ✅ | `WeakObjectPtrBreaksBackReferenceCycle` |
+| Weak reference array container, including reassignment | ✅ | `WeakObjectPtrArrayContainer` `HandlesTests::WeakObjectPtrArrayContainerAndReassignment` |
 
-## 4. TSubclassOf（WeakReference + Handle + Handles）
+## 4. TSubclassOf, WeakReference + Handle + Handles
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 基础与作属性 | ✅ | `TSubclassOfBasics` `TSubclassOfAsProperty` |
+| Basics and as property | ✅ | `TSubclassOfBasics` `TSubclassOfAsProperty` |
 | Spawn / NewObject | ✅ | `TSubclassOfSpawn` `HandleTests::TSubclassOfParameterAndNewObject` |
-| 类型检查 | ✅ | `TSubclassOfTypeCheck` |
-| 综合用法 | ✅ | `HandlesTests::TSubclassOfUsage` |
+| Type check | ✅ | `TSubclassOfTypeCheck` |
+| Comprehensive usage | ✅ | `HandlesTests::TSubclassOfUsage` |
 
-## 5. 软引用 TSoftObjectPtr / TSoftClassPtr（SoftReferenceTests + Handles）
+## 5. Soft References, TSoftObjectPtr / TSoftClassPtr, SoftReferenceTests + Handles
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| SoftObjectPtr 基础 / null 检查 / 路径 | ✅ | `SoftObjectPtrBasics` `SoftObjectPtrNullChecks` `SoftObjectPtrPath` |
-| SoftObjectPtr 作属性 / 容器中 | ✅ | `SoftObjectPtrAsProperty` `SoftObjectPtrInContainers` |
-| SoftObjectPtr 路径构造与 pending / 异步加载 | ✅ | `SoftObjectPtrPathConstructionAndPending` `SoftObjectPtrAsyncLoad` |
-| SoftClassPtr 基础 / 路径 / 作属性 / 配置路径 | ✅ | `SoftClassPtrBasics` `SoftClassPtrPath` `SoftClassPtrAsProperty` `SoftClassPtrConfiguredPath` |
-| 综合软引用用法（Handles） | ✅ | `HandlesTests::SoftReferenceUsage` `SoftReferencePathConstructionAndPendingBoundary` |
+| SoftObjectPtr basics / null checks / path | ✅ | `SoftObjectPtrBasics` `SoftObjectPtrNullChecks` `SoftObjectPtrPath` |
+| SoftObjectPtr as property / in containers | ✅ | `SoftObjectPtrAsProperty` `SoftObjectPtrInContainers` |
+| SoftObjectPtr path construction and pending / async load | ✅ | `SoftObjectPtrPathConstructionAndPending` `SoftObjectPtrAsyncLoad` |
+| SoftClassPtr basics / path / as property / configured path | ✅ | `SoftClassPtrBasics` `SoftClassPtrPath` `SoftClassPtrAsProperty` `SoftClassPtrConfiguredPath` |
+| Comprehensive soft reference usage, Handles | ✅ | `HandlesTests::SoftReferenceUsage` `SoftReferencePathConstructionAndPendingBoundary` |
 
-## 6. 垃圾回收 GC（GCTests）
+## 6. Garbage Collection, GCTests
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 基础回收 | ✅ | `GCBasicReclaim` |
-| UPROPERTY 保护不被回收 | ✅ | `GCUPropertyProtection` |
-| 弱指针失效 | ✅ | `GCWeakPtrInvalidation` |
-| 容器保护 | ✅ | `GCContainerProtection` |
-| 跨帧持有 | ✅ | `GCCrossFrameHold` |
-| 局部变量不保护 | ✅ | `GCLocalVariableNoProtection` |
-| 收集方法 / IsValid 检查 | ✅ | `GCCollectionMethods` `GCIsValidCheck` |
-| NewObject Outer 与收集 | ✅ | `GCNewObjectOuterAndCollection` |
-| 根可达性 / UPROPERTY 可达链 | ✅ | `GCRootReachability` `GCUPropertyReachabilityChain` |
-| 强循环引用回收 | ✅ | `GCStrongCycleReclaim` |
+| Basic reclaim | ✅ | `GCBasicReclaim` |
+| UPROPERTY protection prevents collection | ✅ | `GCUPropertyProtection` |
+| Weak pointer invalidation | ✅ | `GCWeakPtrInvalidation` |
+| Container protection | ✅ | `GCContainerProtection` |
+| Cross-frame hold | ✅ | `GCCrossFrameHold` |
+| Local variables do not protect | ✅ | `GCLocalVariableNoProtection` |
+| Collection methods / IsValid checks | ✅ | `GCCollectionMethods` `GCIsValidCheck` |
+| NewObject Outer and collection | ✅ | `GCNewObjectOuterAndCollection` |
+| Root reachability / UPROPERTY reachability chain | ✅ | `GCRootReachability` `GCUPropertyReachabilityChain` |
+| Strong cycle reference reclaim | ✅ | `GCStrongCycleReclaim` |
 
-## 7. 引用有效性与原生接口句柄
+## 7. Reference Validity And Native Interface Handles
 
-| 场景 | 状态 | 覆盖测试方法 |
+| Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| 引用有效性检查 | ✅ | `HandlesTests::ReferenceValidityChecks` |
-| 原生接口引用句柄 | ✅ | `HandlesTests::NativeInterfaceReferenceHandles` |
-| GC 可达性与弱失效边界（Handles） | ✅ | `HandlesTests::GCReachabilityAndWeakInvalidationBoundary` |
+| Reference validity checks | ✅ | `HandlesTests::ReferenceValidityChecks` |
+| Native interface reference handles | ✅ | `HandlesTests::NativeInterfaceReferenceHandles` |
+| GC reachability and weak invalidation boundary, Handles | ✅ | `HandlesTests::GCReachabilityAndWeakInvalidationBoundary` |
 
-## 8. 边界（fork 不支持）
+## 8. Boundaries, Fork Unsupported
 
-| 场景 | 状态 | 说明 |
+| Scenario | Status | Notes |
 |------|------|------|
-| 脚本级 `TScriptInterface<I>` 引用 | 🚫 | 见 `07-macros-enum-function-interface.md` 与 `../coverage-gaps.md §2.3` |
+| Script-level `TScriptInterface<I>` references | 🚫 | See `07-macros-enum-function-interface.md` and `../coverage-gaps.md §2.3` |
 
 ---
 
-## 汇总
+## Summary
 
-| 文件 | 方法 | 说明 |
+| File | Methods | Notes |
 |------|------|------|
-| Handle | 14 | handle 基础/操作/容器/TObjectPtr 路由 |
-| Handles | 10 | 引用作属性/参数 + TObjectPtr/弱数组/软引用综合 |
+| Handle | 14 | handle basics / operations / containers / TObjectPtr routing |
+| Handles | 10 | references as properties/parameters plus TObjectPtr / weak arrays / soft reference aggregate coverage |
 | WeakReference | 10 | TWeakObjectPtr + TSubclassOf |
 | SoftReference | 11 | TSoftObjectPtr / TSoftClassPtr |
-| GC | 12 | 回收/保护/可达性/循环引用 |
-| **合计** | **57** | |
+| GC | 12 | reclaim / protection / reachability / cycles |
+| **Total** | **57** | |
 
-**待实现（⬜）**：经审计，`TObjectPtr` 路由/属性（§2）与弱引用数组（§3）均已覆盖；原 `coverage-gaps.md` G3/G4 由"待补"修正为"已覆盖（可按需加深断言）"。当前无硬缺口。
+**Pending (⬜)**: audit confirmed that `TObjectPtr` routing/properties (§2) and weak reference arrays (§3) are covered. Original `coverage-gaps.md` G3/G4 were corrected from pending to covered, with optional deeper assertions if needed. No hard gaps currently remain.
