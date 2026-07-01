@@ -149,12 +149,14 @@ Angelscript 编译期策略放在项目级专用文件：
 ```ini
 ; Config/DefaultAngelscriptCompileOptions.ini
 [/Script/AngelscriptRuntime.AngelscriptCompileOptions]
-bCompileAngelscriptUnitTests=false
+bCompileAngelscriptUnitTests=true
 ```
 
-`bCompileAngelscriptUnitTests=false` 是面向插件消费者的默认值。此时 `AngelscriptTest.Build.cs` 会定义 `WITH_ANGELSCRIPT_UNITTESTS=0`，`AngelscriptTest` 模块仍在既有 plugin module layout 中构建，但 Angelscript C++ automation 测试不会向 Unreal Automation 注册，测试模块启动时也不会预热 test engine pool 或安装测试初始化 override。
+本仓库是 Angelscript 插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`。此时 `AngelscriptTest.Build.cs` 会定义 `WITH_ANGELSCRIPT_UNITTESTS=1`，Angelscript C++ automation 测试会向 Unreal Automation 注册，测试模块启动时也会保留 test engine pool 预热和测试初始化 override。
 
-需要运行 Angelscript C++ automation 测试时，先把该值改为 `true`，再重新构建：
+如需模拟插件消费者或本地轻量构建，可临时把该值改为 `false` 后重新构建。此时 `WITH_ANGELSCRIPT_UNITTESTS=0`，`AngelscriptTest` 模块仍在既有 plugin module layout 中构建，但 Angelscript C++ automation 测试不会向 Unreal Automation 注册，测试模块启动时也不会预热 test engine pool 或安装测试初始化 override。
+
+保持默认值后，直接重新构建并运行 Angelscript C++ automation 测试：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label angelscript-tests-enabled -TimeoutMs 1800000 -NoXGE

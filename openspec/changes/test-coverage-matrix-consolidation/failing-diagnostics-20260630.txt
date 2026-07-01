@@ -1,0 +1,1066 @@
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovFStringMethod_Conversion_83D302D94A98C047E839DA90D225B687.as:
+Angelscript: Error:  (4:9): Namespace 'FCString' doesn't exist.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovFStringMethod_Conversion_83D302D94A98C047E839DA90D225B687.as:
+Angelscript: Error:  (10:9): Namespace 'FCString' doesn't exist.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovFStringMethod_Conversion_83D302D94A98C047E839DA90D225B687.as:
+Angelscript: Error:  (16:9): Namespace 'FCString' doesn't exist.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovFStringMethod_Conversion_83D302D94A98C047E839DA90D225B687.as:
+Angelscript: Error:  (22:9): Namespace 'FCString' doesn't exist.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageFTransformPropertyMemberAccess.as:
+Angelscript: Error:  (10:14): 'Location' is not a member of 'FTransform'
+Angelscript: Error:  (11:14): 'Scale3D' is not a member of 'FTransform'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCBasicReclaim.as:
+Angelscript: Error:  (22:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCCollectionMethods.as:
+Angelscript: Error:  (18:27): Unknown scope 'EObjectFlags'
+Angelscript: Error:  (32:4): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCContainerProtection.as:
+Angelscript: Error:  (34:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCCrossFrameHold.as:
+Angelscript: Error:  (31:4): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCIsValidCheck.as:
+Angelscript: Error:  (26:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCLocalVariableNoProtection.as:
+Angelscript: Error:  (15:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCNewObjectOuter.as:
+Angelscript: Error:  (20:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCRootReachability.as:
+Angelscript: Error:  (18:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error:  (28:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCStrongCycleReclaim.as:
+Angelscript: Error:  (33:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCUPropertyProtection.as:
+Angelscript: Error:  (19:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCUPropertyReachabilityChain.as:
+Angelscript: Error:  (31:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error:  (37:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageGCWeakPtrInvalidation.as:
+Angelscript: Error:  (28:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageHandlesGCReachability.as:
+Angelscript: Error:  (44:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageHandlesNativeInterfaceRefs.as:
+Angelscript: Error:  (10:9): Attempting to instantiate invalid template type 'TArray<UAngelscriptNativeParentInterface>': Containers cannot be nested in other containers
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageHandlesSoftRef.as:
+Angelscript: Error:  (82:19): Cannot use editor-only function EditorOnlyLoadSynchronous outside of an EDITOR block
+Angelscript: Error:  (110:37): No matching signatures to 'TSoftClassPtr::EditorOnlyLoadSynchronous()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAction.as:
+Angelscript: Error:  (19:55): 'IE_Pressed' is not declared
+Angelscript: Error:  (22:55): 'IE_Released' is not declared
+Angelscript: Error:  (25:55): 'IE_Repeat' is not declared
+Angelscript: Error:  (28:55): 'IE_DoubleClick' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAdvancedBindingCollections.as:
+Angelscript: Error:  (10:98): 'IE_Pressed' is not declared
+Angelscript: Error:  (11:24): No matching signatures to 'UInputComponent::BindAxisKey(const FName, AAdvancedInputBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAdvancedBindingCollections.as:
+Angelscript: Error:  (12:24): No matching signatures to 'UInputComponent::BindVectorAxis(FKey, AAdvancedInputBindingPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAxis.as:
+Angelscript: Error:  (22:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AAxisBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAxis.as:
+Angelscript: Error:  (23:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AAxisBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAxis.as:
+Angelscript: Error:  (24:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AAxisBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputAxis.as:
+Angelscript: Error:  (25:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AAxisBindingPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputEnhancedBindingHandles.as:
+Angelscript: Error:  (33:57): 'IE_Pressed' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputEnhancedComponentBinding.as:
+Angelscript: Error:  (54:64): 'IE_Pressed' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (19:66): 'IE_Pressed' is not declared
+Angelscript: Error:  (20:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (21:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (22:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (25:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (26:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (29:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (30:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (33:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (34:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (35:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (36:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (39:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (40:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (43:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (44:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (45:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AGamepadInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputGamepad.as:
+Angelscript: Error:  (46:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AGamepadInputPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputBindingCollectionsVisible.as:
+Angelscript: Error:  (10:55): 'IE_Pressed' is not declared
+Angelscript: Error:  (11:55): 'IE_Released' is not declared
+Angelscript: Error:  (12:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AInputBindingVisibilityPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputBindingCollectionsVisible.as:
+Angelscript: Error:  (13:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AInputBindingVisibilityPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputBindingCollectionsVisible.as:
+Angelscript: Error:  (14:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AInputBindingVisibilityPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputBindingCollectionsVisible.as:
+Angelscript: Error:  (15:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AInputBindingVisibilityPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputComponentFinding.as:
+Angelscript: Error:  (9:53): No matching signatures to 'FindComponentByClass(UClass)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputModeControl.as:
+Angelscript: Error:  (10:3): No matching signatures to 'SetShowMouseCursor(const bool)'
+Angelscript: Error:  (11:22): No matching signatures to 'GetShowMouseCursor()'
+Angelscript: Error:  (13:3): No matching signatures to 'SetShowMouseCursor(const bool)'
+Angelscript: Error:  (14:22): No matching signatures to 'GetShowMouseCursor()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputStateQuery.as:
+Angelscript: Error:  (27:26): No matching signatures to 'GetInputAxisValue(const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (7:42): 'IE_Pressed' is not declared
+Angelscript: Error:  (8:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (9:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (10:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (13:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (14:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (15:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (16:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (19:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (20:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (21:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (24:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (25:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (26:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (29:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyboard.as:
+Angelscript: Error:  (30:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyboardInputPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyDirect.as:
+Angelscript: Error:  (19:49): 'IE_Pressed' is not declared
+Angelscript: Error:  (20:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyDirectBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyDirect.as:
+Angelscript: Error:  (21:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AKeyDirectBindingPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputKeyDirect.as:
+Angelscript: Error:  (22:57): 'IE_Released' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (13:56): 'IE_Pressed' is not declared
+Angelscript: Error:  (14:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (15:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (16:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (17:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (20:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (21:24): No matching signatures to 'UInputComponent::BindKey(FKey, Unknown, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (24:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AMouseInputPawn const, const FName)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageInputMouse.as:
+Angelscript: Error:  (25:24): No matching signatures to 'UInputComponent::BindAxis(const FName, AMouseInputPawn const, const FName)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: BlueprintOverride method SetupPlayerInputComponent in class AInputSetupPawn does not exist in superclass Pawn, or is not a BlueprintImplementableEvent or BlueprintNativeEvent in C++.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+LogUObjectBase: Error: Class pointer is invalid or CDO is invalid.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMacrosUPARAM.as:
+Angelscript: Error:  (12:9): Expected identifier
+Angelscript: Error:  (12:9): Instead found '('
+Angelscript: Error:  (22:9): Expected identifier
+Angelscript: Error:  (22:9): Instead found '('
+Angelscript: Error:  (33:9): Expected identifier
+Angelscript: Error:  (33:9): Instead found '('
+Angelscript: Error:  (57:1): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Invalid preprocessor condition: WITH_EDITOR
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FBox_249504FC40CD2CB025BFB2B65F78E88F.as:
+Angelscript: Error:  (67:12): 'IsValid' is not a member of 'FBox'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FPlane_A3090C0E40F6008DB3B94D989F458697.as:
+Angelscript: Error:  (44:11): No matching operator that takes the types 'FPlane' and 'FPlane' found
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FTransformConstruct_BA9A82F9448B7183D6BC24B0CA960872.as:
+Angelscript: Error:  (27:10): 'Location' is not a member of 'FTransform'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FTransformConstruct_BA9A82F9448B7183D6BC24B0CA960872.as:
+Angelscript: Error:  (34:10): 'Rotation' is not a member of 'FTransform'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FTransformConstruct_BA9A82F9448B7183D6BC24B0CA960872.as:
+Angelscript: Error:  (40:10): 'Scale3D' is not a member of 'FTransform'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FTransformConstruct_BA9A82F9448B7183D6BC24B0CA960872.as:
+Angelscript: Error:  (46:3): 'Location' is not a member of 'FTransform'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMathGeom_FTransformConstruct_BA9A82F9448B7183D6BC24B0CA960872.as:
+Angelscript: Error:  (53:3): 'Scale3D' is not a member of 'FTransform'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Rounding_8CE1C2AD46215490D442538F8CCF91BF.as:
+Angelscript: Error:  (3:9): No matching signatures to 'Math::Floor(const float)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Rounding_8CE1C2AD46215490D442538F8CCF91BF.as:
+Angelscript: Error:  (13:9): No matching signatures to 'Math::Ceil(const float)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Rounding_8CE1C2AD46215490D442538F8CCF91BF.as:
+Angelscript: Error:  (23:9): No matching signatures to 'Math::Round(const float)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Rounding_8CE1C2AD46215490D442538F8CCF91BF.as:
+Angelscript: Error:  (33:9): No matching signatures to 'Math::Trunc(const float)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Rounding_8CE1C2AD46215490D442538F8CCF91BF.as:
+Angelscript: Error:  (53:9): No matching signatures to 'Math::Floor(const float)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCovMath_Vector_F70BA3364C08B47F39002BA506E87D10.as:
+Angelscript: Error:  (4:11): No matching signatures to 'FVector::Length()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMetaUFunctionMeta.as:
+Angelscript: Error:  (12:9): Expected identifier
+Angelscript: Error:  (12:9): Instead found '('
+Angelscript: Error:  (19:1): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMetaUFunctionPinMeta.as:
+Angelscript: Error:  (8:2): Expected method or property
+Angelscript: Error:  (8:2): Instead found identifier 'static'
+Angelscript: Error:  (12:1): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMixinDispatchDefaults.as:
+Angelscript: Error:  (37:71): Expected expression value
+Angelscript: Error:  (37:71): Instead found ')'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMixinInheritanceConflict.as:
+Angelscript: Error:  (68:8): Multiple matching signatures to 'MarkSource(ACoverageMixinConflictGrandchild const)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMixinInheritanceConflict.as:
+Angelscript: Error:  (69:8): Multiple matching signatures to 'AddLayer(ACoverageMixinConflictGrandchild const, const int)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMixinUPropertyBoundary.as:
+Angelscript: Error:  (47:57): Expected expression value
+Angelscript: Error:  (47:57): Instead found ')'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateBasics.as:
+Angelscript: Error:  (6:2): Identifier 'FSimpleMulticastDelegate' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateBasics.as:
+Angelscript: Error:  (12:19): Illegal operation on 'Unknown'
+Angelscript: Error:  (18:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (21:18): Illegal operation on 'Unknown'
+Angelscript: Error:  (27:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (30:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (31:19): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateClear.as:
+Angelscript: Error:  (6:2): Identifier 'FSimpleMulticastDelegate' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateClear.as:
+Angelscript: Error:  (12:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (13:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (14:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (17:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (20:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (23:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (26:19): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateHandle.as:
+Angelscript: Error:  (6:2): Identifier 'FSimpleMulticastDelegate' is not a data type in global namespace
+Angelscript: Error:  (7:2): Identifier 'FDelegateHandle' is not a data type in global namespace
+Angelscript: Error:  (8:2): Identifier 'FDelegateHandle' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateHandle.as:
+Angelscript: Error:  (14:24): Illegal operation on 'Unknown'
+Angelscript: Error:  (15:24): Illegal operation on 'Unknown'
+Angelscript: Error:  (18:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (24:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (27:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (30:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (33:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (36:19): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateMultiple.as:
+Angelscript: Error:  (9:2): Identifier 'FSimpleMulticastDelegate' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateMultiple.as:
+Angelscript: Error:  (15:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (16:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (17:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (20:14): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateParameters.as:
+Angelscript: Error:  (9:2): Identifier 'FIntMulticastDelegate' is not a data type in global namespace
+Angelscript: Error:  (10:2): Identifier 'FIntStringMulticastDelegate' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateParameters.as:
+Angelscript: Error:  (16:17): Illegal operation on 'Unknown'
+Angelscript: Error:  (17:17): Illegal operation on 'Unknown'
+Angelscript: Error:  (18:17): Illegal operation on 'Unknown'
+Angelscript: Error:  (21:23): Illegal operation on 'Unknown'
+Angelscript: Error:  (22:23): Illegal operation on 'Unknown'
+Angelscript: Error:  (23:23): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateRemoveAll.as:
+Angelscript: Error:  (6:2): Identifier 'FSimpleMulticastDelegate' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageMulticastDelegateRemoveAll.as:
+Angelscript: Error:  (12:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (13:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (14:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (17:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (20:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (23:14): Illegal operation on 'Unknown'
+Angelscript: Error:  (26:14): Illegal operation on 'Unknown'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageNetworkingOwnerRelevancy.as:
+Angelscript: Error:  (4:10): 'bOnlyRelevantToOwner' is not declared
+Angelscript: Error:  (5:10): 'bAlwaysRelevant' is not declared
+Angelscript: Error:  (6:10): 'bNetUseOwnerRelevancy' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ServerAction1_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ServerAction2_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ClientNotify1_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ClientNotify2_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ServerValidated1_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingMultiRPCActor::ServerValidated2_Implementation.
+Angelscript: Error: Unknown ReplicationCondition Never on property ACoverageNetworkingConditionsActor::NeverValue.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCReliabilityActor::ServerReliableExplicit_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCReliabilityActor::ClientReliableExplicit_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCReliabilityActor::MulticastReliableExplicit_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCSpecifierActor::ServerValidatedReliable_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCSpecifierActor::ClientReliableAction_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCValidationSignatureActor::ServerValidatedPayload_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCParamsActor::ServerActionWithInt_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCParamsActor::ServerActionWithMultipleParams_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCParamsActor::ClientNotifyWithString_Implementation.
+Angelscript: Error: Unknown function specifier Reliable on method ACoverageNetworkingRPCParamsActor::ServerValidatedWithParams_Implementation.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoveragePhysicsActorCollisionEvents
+Angelscript: Error:   void ACoveragePhysicsActorCollisionEventsActor::BeginPlay_Implementation() | Line 26 | Col 3
+Angelscript: Error:     (Actor: ACoveragePhysicsActorCollisionEventsActor_0 (Label: ACoveragePhysicsActorCollisionEventsActor0) in World_213)
+LogCharacterMovement: Error: Movement owned by ACoveragePhysicsCharacterMovementActor_0 must update a component owned by a Character
+LogCharacterMovement: Error: Movement owned by ACoveragePhysicsCharacterMovementActor_0 must update a component owned by a Character
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoveragePhysicsComponentCollisionEventDispatch
+Angelscript: Error:   void ACoveragePhysicsComponentCollisionEventActor::BeginPlay_Implementation() | Line 35 | Col 3
+Angelscript: Error:     (Actor: ACoveragePhysicsComponentCollisionEventActor_0 (Label: ACoveragePhysicsComponentCollisionEventActor0) in World_223)
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePhysicsHitResult.as:
+Angelscript: Error:  (49:3): No matching signatures to 'System::LineTraceSingle(FVector, FVector, const ETraceTypeQuery, const bool, AActor[], const EDrawDebugTrace, FHitResult, const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePhysicsOverlap.as:
+Angelscript: Error:  (29:27): No matching signatures to 'System::SphereOverlapActors(FVector, const float32, EObjectTypeQuery[], UClass, AActor[], AActor[])'
+Angelscript: Error:  (40:24): No matching signatures to 'System::BoxOverlapActors(FVector, FVector, FRotator, EObjectTypeQuery[], UClass, AActor[], AActor[])'
+Angelscript: Error:  (49:28): No matching signatures to 'System::CapsuleOverlapActors(FVector, const float32, const float32, EObjectTypeQuery[], UClass, AActor[], AActor[])'
+Angelscript: Error:  (31:11): Attempting to instantiate invalid template type 'TArray<EObjectTypeQuery>': Containers cannot be nested in other containers
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePhysicsVelocity.as:
+Angelscript: Error:  (27:39): No matching signatures to 'FVector::Length()'
+Angelscript: Error:  (33:41): No matching signatures to 'FVector::Length()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePhysicsProjectileMovement.as:
+Angelscript: Error:  (29:13): 'bRotationFollowsVelocity' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error:  (30:13): 'bShouldBounce' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error:  (31:13): 'bIsHomingProjectile' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error:  (41:14): 'bRotationFollowsVelocity' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error:  (47:13): 'bIsHomingProjectile' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error:  (50:15): 'bIsHomingProjectile' is not a member of 'UProjectileMovementComponent'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePhysicsTrace.as:
+Angelscript: Error:  (59:23): No matching signatures to 'System::LineTraceSingle(FVector, FVector, const ETraceTypeQuery, const bool, AActor[], const EDrawDebugTrace, FHitResult, const bool)'
+Angelscript: Error:  (68:25): No matching signatures to 'System::SphereTraceSingle(FVector, FVector, const float32, const ETraceTypeQuery, const bool, AActor[], const EDrawDebugTrace, FHitResult, const bool)'
+Angelscript: Error:  (76:22): No matching signatures to 'System::BoxTraceSingle(FVector, FVector, FVector, FRotator, const ETraceTypeQuery, const bool, AActor[], const EDrawDebugTrace, FHitResult, const bool)'
+Angelscript: Error:  (84:26): No matching signatures to 'System::CapsuleTraceSingle(FVector, FVector, const float32, const float32, const ETraceTypeQuery, const bool, AActor[], const EDrawDebugTrace, FHitResult, const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePrimitiveCollisionEvents.as:
+Angelscript: Error:  (34:26): Can't implicitly convert from 'FName' to 'FString'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePrimitiveHiddenInGame.as:
+Angelscript: Error:  (15:29): 'bHiddenInGame' is not a member of 'UStaticMeshComponent'
+Angelscript: Error:  (18:28): 'bHiddenInGame' is not a member of 'UStaticMeshComponent'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoveragePrimitiveHitEvents
+Angelscript: Error:   void ACoveragePrimitiveHitEventsActor::BeginPlay_Implementation() | Line 18 | Col 3
+Angelscript: Error:     (Actor: ACoveragePrimitiveHitEventsActor_0 (Label: ACoveragePrimitiveHitEventsActor0) in World_233)
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoveragePrimitiveRendering.as:
+Angelscript: Error:  (29:34): 'CastShadow' is not a member of 'UStaticMeshComponent'
+Angelscript: Error:  (32:32): 'CastShadow' is not a member of 'UStaticMeshComponent'
+Angelscript: Error:  (36:32): 'bRenderCustomDepth' is not a member of 'UStaticMeshComponent'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentAttachment.as:
+Angelscript: Error:  (29:32): No matching signatures to 'FDetachmentTransformRules(const EDetachmentRule, const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentAttachmentRules.as:
+Angelscript: Error:  (58:8): No matching signatures to 'USceneComponent::SetWorldLocation(FVector)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentAttachmentRules.as:
+Angelscript: Error:  (61:13): No matching signatures to 'USceneComponent::SetWorldLocation(FVector)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentAttachmentRules.as:
+Angelscript: Error:  (63:33): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (71:36): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (77:13): No matching signatures to 'USceneComponent::SetWorldLocation(FVector)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentAttachmentRules.as:
+Angelscript: Error:  (79:36): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (84:47): No matching signatures to 'USceneComponent::GetAttachChildren()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentCompleteTransform.as:
+Angelscript: Error:  (20:15): 'Location' is not a member of 'FTransform'
+Angelscript: Error:  (21:15): 'Rotation' is not a member of 'FTransform'
+Angelscript: Error:  (22:15): 'Scale3D' is not a member of 'FTransform'
+Angelscript: Error:  (24:8): No matching signatures to 'USceneComponent::SetWorldTransform(FTransform)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentCompleteTransform.as:
+Angelscript: Error:  (28:35): 'Location' is not a member of 'FTransform'
+Angelscript: Error:  (29:35): 'Rotation' is not a member of 'FTransform'
+Angelscript: Error:  (30:32): 'Scale3D' is not a member of 'FTransform'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentHierarchy.as:
+Angelscript: Error:  (36:47): No matching signatures to 'USceneComponent::GetAttachChildren()'
+Angelscript: Error:  (39:51): No matching signatures to 'USceneComponent::GetAttachChildren()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentRelativeTransform.as:
+Angelscript: Error:  (22:8): No matching signatures to 'USceneComponent::SetWorldLocation(FVector)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentRelativeTransform.as:
+Angelscript: Error:  (31:30): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentSocketAttachment.as:
+Angelscript: Error:  (41:31): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (44:39): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentWorldTransform.as:
+Angelscript: Error:  (21:26): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (24:8): No matching signatures to 'USceneComponent::SetWorldLocation(FVector)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentWorldTransform.as:
+Angelscript: Error:  (25:8): No matching signatures to 'USceneComponent::SetWorldRotation(FRotator)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSceneComponentWorldTransform.as:
+Angelscript: Error:  (29:22): No matching signatures to 'USceneComponent::GetComponentLocation()'
+Angelscript: Error:  (30:22): No matching signatures to 'USceneComponent::GetComponentRotation()'
+Angelscript: Error:  (31:19): No matching signatures to 'USceneComponent::GetComponentScale()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSoftClassBasics.as:
+Angelscript: Error:  (33:34): No matching signatures to 'TSoftClassPtr::EditorOnlyLoadSynchronous()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSoftRefBasics.as:
+Angelscript: Error:  (41:19): Cannot use editor-only function EditorOnlyLoadSynchronous outside of an EDITOR block
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialCamera.as:
+Angelscript: Error:  (26:14): 'bConstrainAspectRatio' is not a member of 'UCameraComponent'
+Angelscript: Error:  (29:37): 'bConstrainAspectRatio' is not a member of 'UCameraComponent'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialCustomScene.as:
+Angelscript: Error:  (15:53): Identifier 'ELevelTick' is not a data type in global namespace
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialCustomScene.as:
+Angelscript: Error:  (12:30): 'bCanEverTick' is not a member of 'FActorComponentTickFunction'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialComponentOperations.as:
+Angelscript: Error:  (84:45): No matching signatures to 'FindComponentByClass(UClass)'
+Angelscript: Error:  (86:45): No matching signatures to 'FindComponentByClass(UClass)'
+Angelscript: Error:  (98:53): No matching signatures to 'UArrowComponent::IsRegistered()'
+Angelscript: Error:  (100:16): No matching signatures to 'UArrowComponent::RegisterComponent()'
+Angelscript: Error:  (101:41): No matching signatures to 'UArrowComponent::IsRegistered()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialSpringArm.as:
+Angelscript: Error:  (32:17): 'bDoCollisionTest' is not a member of 'USpringArmComponent'
+Angelscript: Error:  (33:17): 'bEnableCameraLag' is not a member of 'USpringArmComponent'
+Angelscript: Error:  (37:35): 'bDoCollisionTest' is not a member of 'USpringArmComponent'
+Angelscript: Error:  (38:35): 'bEnableCameraLag' is not a member of 'USpringArmComponent'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageSpecialStaticMesh.as:
+Angelscript: Error:  (15:31): No matching signatures to 'UStaticMeshComponent::GetStaticMesh()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerMultipleTimers.as:
+Angelscript: Error:  (62:7): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (64:7): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (66:7): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerSystemDelay.as:
+Angelscript: Error:  (27:3): No matching signatures to 'System::Delay(const float32)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerSystemDelayBoundary.as:
+Angelscript: Error:  (19:3): No matching signatures to 'System::Delay(const float32)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerActorDestroyCleanup.as:
+Angelscript: Error:  (22:31): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerClearInvalidate.as:
+Angelscript: Error:  (31:24): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (32:35): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (39:23): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (40:34): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerClearThenReuseHandle.as:
+Angelscript: Error:  (41:20): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error:  (48:21): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerCompileStableCallSites.as:
+Angelscript: Error:  (14:18): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (15:21): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error:  (16:19): No matching signatures to 'System::GetTimerElapsedHandle(FTimerHandle)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerCompileStableCallSites.as:
+Angelscript: Error:  (23:89): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerCompileStableCallSites.as:
+Angelscript: Error:  (52:46): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (56:35): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerComponentCallbacks.as:
+Angelscript: Error:  (24:23): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerDelayedSpawnUseCase.as:
+Angelscript: Error:  (33:33): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerDestroyedComponentCleanup.as:
+Angelscript: Error:  (21:31): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerDestroyedComponentCleanup.as:
+Angelscript: Error:  (49:24): No matching signatures to 'UCoverageTimerDestroyableComponent::K2_DestroyComponent(ACoverageTimerDestroyedComponentOwner const)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerDynamicFunctionNameReflection.as:
+Angelscript: Error:  (43:38): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (44:28): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (45:25): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerDynamicFunctionNameReflection.as:
+Angelscript: Error:  (69:49): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (70:33): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerHandleInvalidationSupportedQueries.as:
+Angelscript: Error:  (32:27): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (42:32): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerImmediateExecution.as:
+Angelscript: Error:  (28:26): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (29:24): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerInvalidHandleQueries.as:
+Angelscript: Error:  (32:42): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error:  (33:25): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (36:22): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error:  (37:20): No matching signatures to 'System::GetTimerElapsedHandle(FTimerHandle)'
+Angelscript: Error:  (45:52): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerManagement.as:
+Angelscript: Error:  (34:23): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (49:25): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerRemainingElapsed.as:
+Angelscript: Error:  (47:22): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error:  (48:20): No matching signatures to 'System::GetTimerElapsedHandle(FTimerHandle)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerRemainingElapsed.as:
+Angelscript: Error:  (61:23): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error:  (62:21): No matching signatures to 'System::GetTimerElapsedHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerRepeatedFunctionNameReplaces.as:
+Angelscript: Error:  (31:37): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (34:39): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (35:30): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error:  (36:26): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerUiCountdownAiState.as:
+Angelscript: Error:  (41:46): No matching signatures to 'FTimerHandle::IsValid()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerBuffDuration.as:
+Angelscript: Error:  (23:23): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerPeriodicCheck.as:
+Angelscript: Error:  (35:24): No matching signatures to 'System::IsTimerActiveHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTimerSkillCooldown.as:
+Angelscript: Error:  (29:23): No matching signatures to 'System::GetTimerRemainingHandle(FTimerHandle)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTypeConversionMemberReferences.as:
+Angelscript: Error:  (50:87): Expected expression value
+Angelscript: Error:  (50:87): Instead found ')'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageTypeConversionObjectCast.as:
+Angelscript: Error:  (36:77): Expected expression value
+Angelscript: Error:  (36:77): Instead found ')'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Attach parent Root does not exist for DefaultComponent DerivedChild.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Attachments can only be specified on DefaultComponents
+Angelscript: Error: Attachments can only be specified on DefaultComponents
+Angelscript: Error: RootComponent can only be specified on DefaultComponents
+Angelscript: Error: ShowOnActor can only be used on default components in actors
+LogCharacterMovement: Error: Movement owned by ACoverageUClassDefaultComponentNativeTypes_0 must update a component owned by a Character
+LogCharacterMovement: Error: Movement owned by ACoverageUClassDefaultComponentNativeTypes_0 must update a component owned by a Character
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassCommonLifecycleFunctionSurface.as:
+Angelscript: Error:  (68:53): Identifier 'ELevelTick' is not a data type in global namespace
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassComponentRuntimeOperationSurface.as:
+Angelscript: Error:  (100:36): No matching signatures to 'FDetachmentTransformRules(const EDetachmentRule, const bool)'
+Angelscript: Error:  (105:16): No matching signatures to 'UCoverageUClassRuntimeSceneComponent::RegisterComponent()'
+Angelscript: Error:  (106:41): No matching signatures to 'UCoverageUClassRuntimeSceneComponent::IsRegistered()'
+Angelscript: Error:  (108:4): No matching signatures to 'FindComponentByClass(UClass)'
+Angelscript: Error:  (114:16): No matching signatures to 'UCoverageUClassRuntimeLogicComponent::RegisterComponent()'
+Angelscript: Error:  (115:41): No matching signatures to 'UCoverageUClassRuntimeLogicComponent::IsRegistered()'
+Angelscript: Error:  (117:4): No matching signatures to 'FindComponentByClass(UClass)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Attachments can only be specified on DefaultComponents
+Angelscript: Error: Attachments can only be specified on DefaultComponents
+Angelscript: Error: RootComponent can only be specified on DefaultComponents
+Angelscript: Error: ShowOnActor can only be used on default components in actors
+Angelscript: Error: OverrideComponent and DefaultComponent should not be used simultaneously
+Angelscript: Error: RootComponent can only be specified on DefaultComponents
+Angelscript: Error: Attachments can only be specified on DefaultComponents
+Angelscript: Error: Property ACoverageUClassImplicitDefaultComponentActor::Logic was marked as DefaultComponent, but the component class is abstract and cannot be added.
+LogCharacterMovement: Error: Movement owned by ACoverageUClassDefaultComponentPermutationsActor_0 must update a component owned by a Character
+LogCharacterMovement: Error: Movement owned by ACoverageUClassDefaultComponentPermutationsActor_0 must update a component owned by a Character
+Angelscript: Error: Unknown class specifier NonTransient on class UCoverageUClassUnsupportedNonTransientObject.
+Angelscript: Error: Unknown class specifier NotBlueprintType on class UCoverageUClassUnsupportedNotBlueprintTypeObject.
+Angelscript: Error: Unknown class specifier Placeable on class ACoverageUClassUnsupportedExplicitPlaceableActor.
+Angelscript: Error: Unknown class specifier GlobalUserConfig on class UCoverageUClassUnsupportedGlobalUserConfigObject.
+Angelscript: Error: Unknown class specifier ProjectUserConfig on class UCoverageUClassUnsupportedProjectUserConfigObject.
+Angelscript: Error: Unknown class specifier ShowCategories on class UCoverageUClassUnsupportedShowCategoriesObject.
+Angelscript: Error: Unknown class specifier CollapseCategories on class UCoverageUClassUnsupportedCollapseCategoriesObject.
+Angelscript: Error: Unknown class specifier DontCollapseCategories on class UCoverageUClassUnsupportedDontCollapseCategoriesObject.
+Angelscript: Error: Unknown class specifier AutoExpandCategories on class UCoverageUClassUnsupportedAutoExpandCategoriesObject.
+Angelscript: Error: Unknown class specifier AutoCollapseCategories on class UCoverageUClassUnsupportedAutoCollapseCategoriesObject.
+Angelscript: Error: Unknown class specifier ConversionRoot on class UCoverageUClassUnsupportedConversionRootObject.
+Angelscript: Error: Unknown class specifier HideFunctions on class UCoverageUClassUnsupportedHideFunctionsObject.
+Angelscript: Error: Unknown class specifier SparseClassDataTypes on class UCoverageUClassUnsupportedSparseClassDataTypesObject.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyDefaultValueAndCDOMatrix.as:
+Angelscript: Error:  (130:24): No matching signatures to 'GetIsReplicated()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Unknown property specifier BlueprintAssignable on property ACoverageUClassDelegateContainerPayloadActor::OnContainerSignal.
+Angelscript: Error: Unknown property specifier BlueprintAssignable on property ACoverageUClassDelegateMemberActor::OnSignal.
+Angelscript: Error: Unknown property specifier BlueprintCallable on property ACoverageUClassDelegateMemberActor::OnCallableSignal.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoverageUClassPropertyDelegateParameterMemberMatrix
+Angelscript: Error:   void FUClassPropertyDelegateParameterCallback::BindUFunction(UObject, FName) | Line 79 | Col 1186
+Angelscript: Error:   void ACoverageUClassDelegateParameterActor::BeginPlay_Implementation() | Line 29 | Col 3
+Angelscript: Error:     (Actor: ACoverageUClassDelegateParameterActor_0 (Label: ACoverageUClassDelegateParameterActor0) in World_303)
+Angelscript: Error: Unknown property specifier BlueprintAssignable on property ACoverageUClassDelegateStructPayloadActor::OnPayloadSignal.
+Angelscript: Error: Unknown property specifier BlueprintAssignable on property ACoverageUClassDelegateTypedPayloadActor::OnTypedSignal.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyInterfaceMemberMatrix.as:
+Angelscript: Error:  (10:9): Attempting to instantiate invalid template type 'TArray<UAngelscriptNativeParentInterface>': Containers cannot be nested in other containers
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyReferenceContainerMemberMatrix.as:
+Angelscript: Error:  (156:23): No matching signatures to 'TArray::Add(UClass)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyReferenceContainerMemberMatrix.as:
+Angelscript: Error:  (157:23): No matching signatures to 'TArray::Add(UClass)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyReferenceContainerMemberMatrix.as:
+Angelscript: Error:  (158:29): No matching signatures to 'TArray::Add(UClass)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUClassPropertyReferenceContainerMemberMatrix.as:
+Angelscript: Error:  (184:28): No matching signatures to 'TMap::Add(const FName, UClass)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Property TSet<FUClassPropertyStructPayload> PayloadSet in class ACoverageUClassScriptStructMemberActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Unknown enum specifier Bitflags on enum EUnsupportedBitflagsSpecifier.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUFunctionBlueprintEventDefaultRefMatrix.as:
+Angelscript: Error:  (20:32): Expected identifier
+Angelscript: Error:  (20:32): Instead found '('
+Angelscript: Error:  (21:47): Expected identifier
+Angelscript: Error:  (21:47): Instead found '('
+Angelscript: Error:  (37:1): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUFunctionNativeActorEventParameters.as:
+Angelscript: Error:  (61:3): Function ActorBeginOverlap is not BlueprintCallable or ScriptCallable and cannot be called from here
+Angelscript: Error:  (62:3): Function ActorEndOverlap is not BlueprintCallable or ScriptCallable and cannot be called from here
+Angelscript: Error:  (63:3): Function EndPlay is not BlueprintCallable or ScriptCallable and cannot be called from here
+Angelscript: Error:  (64:3): Function Destroyed is not BlueprintCallable or ScriptCallable and cannot be called from here
+Angelscript: Error:  (65:3): Function OnReset is not BlueprintCallable or ScriptCallable and cannot be called from here
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUFunctionNativeActorEventParameters.as:
+Angelscript: Error:  (71:31): 'Location' is not a member of 'const FTransform'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoverageUFunctionDelegateParameter
+Angelscript: Error:   void FCoverageUFunctionComputeDelegate::BindUFunction(UObject, FName) | Line 45 | Col 1144
+Angelscript: Error:   int ACoverageUFunctionDelegateActor::ExerciseDelegateParameter() | Line 35 | Col 3
+Angelscript: Error:     (Actor: ACoverageUFunctionDelegateActor_0 (Label: ACoverageUFunctionDelegateActor0) in World_331)
+Angelscript: Error: Angelscript reflected call exception in /Script/Angelscript.ACoverageUFunctionDelegateActor:ExerciseDelegateParameter: Specified function is not compatible with delegate function.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUFunctionStaticAdvancedMetadata.as:
+Angelscript: Error:  (28:8): Expected identifier
+Angelscript: Error:  (28:8): Instead found '('
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Global UFUNCTION() BadGlobalEvent may not be marked BlueprintEvent.
+Angelscript: Error: Global UFUNCTION() BadGlobalOverride may not be BlueprintOverride.
+Angelscript: Error: Error parsing script struct FBadFunctionStruct. Structs may not have any UFUNCTION()s.
+Angelscript: Error: UFUNCTION() Conflict cannot be both BlueprintEvent and BlueprintOverride.
+Angelscript: Error: UFUNCTION() Conflict cannot be both BlueprintEvent and BlueprintOverride.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUFunctionUParamMatrix.as:
+Angelscript: Error:  (11:9): Expected identifier
+Angelscript: Error:  (11:9): Instead found '('
+Angelscript: Error:  (22:9): Expected identifier
+Angelscript: Error:  (22:9): Instead found '('
+Angelscript: Error:  (32:9): Expected identifier
+Angelscript: Error:  (32:9): Instead found '('
+Angelscript: Error:  (38:1): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUInterfaceNativePolymorphicContainer.as:
+Angelscript: Error:  (73:9): Attempting to instantiate invalid template type 'TArray<UAngelscriptNativeParentInterface>': Containers cannot be nested in other containers
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUInterfaceNativeReferencePropertyContainer.as:
+Angelscript: Error:  (7:9): Attempting to instantiate invalid template type 'TArray<UAngelscriptNativeParentInterface>': Containers cannot be nested in other containers
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructParameter.as:
+Angelscript: Error:  (27:3): Cannot assign, variable is const or is not a valid l-value
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Property TMap<FStructMemberContainerKey, int> KeyToScore in class FStructContainerOwner has a type that cannot be a UPROPERTY.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Property TSet<FStructContainerParamItem> SetOut in class ACoverageStructContainerParamActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructDelegateContainerRoundTrip.as:
+Angelscript: Error:  (647:327): Expected method or property
+Angelscript: Error:  (647:327): Instead found identifier 'FDelegateContainerStruct'
+Angelscript: Error:  (647:638): Expected identifier
+Angelscript: Error:  (647:638): Instead found '>'
+Angelscript: Error:  (647:1047): Expected ',' or ';'
+Angelscript: Error:  (647:1047): Instead found reserved keyword 'const'
+Angelscript: Error:  (647:1120): Expected ',' or ';'
+Angelscript: Error:  (647:1120): Instead found reserved keyword 'const'
+Angelscript: Error:  (647:1196): Expected identifier
+Angelscript: Error:  (647:1196): Instead found '('
+Angelscript: Error:  (647:1360): Expected ',' or ';'
+Angelscript: Error:  (647:1360): Instead found reserved keyword 'const'
+Angelscript: Error:  (647:1450): Unexpected token '}'
+Angelscript: Error:  (657:345): Expected method or property
+Angelscript: Error:  (657:345): Instead found reserved keyword 'int'
+Angelscript: Error:  (657:593): Expected identifier
+Angelscript: Error:  (657:593): Instead found '>'
+Angelscript: Error:  (657:981): Expected ',' or ';'
+Angelscript: Error:  (657:981): Instead found reserved keyword 'const'
+Angelscript: Error:  (657:1054): Expected ',' or ';'
+Angelscript: Error:  (657:1054): Instead found reserved keyword 'const'
+Angelscript: Error:  (657:1133): Expected identifier
+Angelscript: Error:  (657:1133): Instead found '('
+Angelscript: Error:  (657:1297): Expected ',' or ';'
+Angelscript: Error:  (657:1297): Instead found reserved keyword 'const'
+Angelscript: Error:  (657:1387): Unexpected token '}'
+Angelscript: Error:  (667:363): Expected method or property
+Angelscript: Error:  (667:363): Instead found identifier 'FDelegateContainerStruct'
+Angelscript: Error:  (667:674): Expected identifier
+Angelscript: Error:  (667:674): Instead found '>'
+Angelscript: Error:  (667:1083): Expected ',' or ';'
+Angelscript: Error:  (667:1083): Instead found reserved keyword 'const'
+Angelscript: Error:  (667:1156): Expected ',' or ';'
+Angelscript: Error:  (667:1156): Instead found reserved keyword 'const'
+Angelscript: Error:  (667:1238): Expected identifier
+Angelscript: Error:  (667:1238): Instead found '('
+Angelscript: Error:  (667:1402): Expected ',' or ';'
+Angelscript: Error:  (667:1402): Instead found reserved keyword 'const'
+Angelscript: Error:  (667:1492): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Property TMap<FEmptyContainerStruct, int> EmptyToInt in class ACoverageEmptyStructContainerActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructKeyMapValue in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructKeyMapIn in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillStructKeyMapOut in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateStructKeyMapInout in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid return type to function ReturnStructKeyMap in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructStructMapValue in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructStructMapIn in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillStructStructMapOut in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateStructStructMapInout in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid return type to function ReturnStructStructMap in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountSetValue in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountSetIn in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillSetOut in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateSetInout in class ACoverageEmptyStructContainerActor
+Angelscript: Error: Unknown or invalid return type to function ReturnSet in class ACoverageEmptyStructContainerActor
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructExtendedMapDelegatePermutationMatrix.as:
+Angelscript: Error:  (487:351): Expected method or property
+Angelscript: Error:  (487:351): Instead found identifier 'FDelegateExtendedMapValue'
+Angelscript: Error:  (487:665): Expected identifier
+Angelscript: Error:  (487:665): Instead found '>'
+Angelscript: Error:  (487:1075): Expected ',' or ';'
+Angelscript: Error:  (487:1075): Instead found reserved keyword 'const'
+Angelscript: Error:  (487:1148): Expected ',' or ';'
+Angelscript: Error:  (487:1148): Instead found reserved keyword 'const'
+Angelscript: Error:  (487:1228): Expected identifier
+Angelscript: Error:  (487:1228): Instead found '('
+Angelscript: Error:  (487:1392): Expected ',' or ';'
+Angelscript: Error:  (487:1392): Instead found reserved keyword 'const'
+Angelscript: Error:  (487:1482): Unexpected token '}'
+Angelscript: Error:  (497:351): Expected method or property
+Angelscript: Error:  (497:351): Instead found reserved keyword 'bool'
+Angelscript: Error:  (497:602): Expected identifier
+Angelscript: Error:  (497:602): Instead found '>'
+Angelscript: Error:  (497:991): Expected ',' or ';'
+Angelscript: Error:  (497:991): Instead found reserved keyword 'const'
+Angelscript: Error:  (497:1064): Expected ',' or ';'
+Angelscript: Error:  (497:1064): Instead found reserved keyword 'const'
+Angelscript: Error:  (497:1144): Expected identifier
+Angelscript: Error:  (497:1144): Instead found '('
+Angelscript: Error:  (497:1308): Expected ',' or ';'
+Angelscript: Error:  (497:1308): Instead found reserved keyword 'const'
+Angelscript: Error:  (497:1398): Unexpected token '}'
+Angelscript: Error:  (507:357): Expected method or property
+Angelscript: Error:  (507:357): Instead found reserved keyword 'float'
+Angelscript: Error:  (507:611): Expected identifier
+Angelscript: Error:  (507:611): Instead found '>'
+Angelscript: Error:  (507:1001): Expected ',' or ';'
+Angelscript: Error:  (507:1001): Instead found reserved keyword 'const'
+Angelscript: Error:  (507:1074): Expected ',' or ';'
+Angelscript: Error:  (507:1074): Instead found reserved keyword 'const'
+Angelscript: Error:  (507:1155): Expected identifier
+Angelscript: Error:  (507:1155): Instead found '('
+Angelscript: Error:  (507:1319): Expected ',' or ';'
+Angelscript: Error:  (507:1319): Instead found reserved keyword 'const'
+Angelscript: Error:  (507:1409): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructExtendedMapMemberPermutationMatrix.as:
+Angelscript: Error:  (154:51): Can't implicitly convert from 'UObject' to 'UCoverageStructExtendedMemberMapObject&'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructExtendedMemberTypeMatrix.as:
+Angelscript: Error:  (54:20): Can't implicitly convert from 'UObject' to 'UCoverageStructMemberObject'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructFunctionShapeMatrix.as:
+Angelscript: Error:  (47:3): Cannot assign, variable is const or is not a valid l-value
+Angelscript: Error:  (48:3): Illegal operation on 'const FString'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Property TMap<FHashableStructKey, int> StructToIntMap in class ACoverageStructHashableContainerActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Property TMap<FStructContainerKey, int> StructKeyMapInout in class ACoverageStructKeyContainerMatrixActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructKeyMapValue in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructKeyMapIn in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillStructKeyMapOut in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateStructKeyMapInout in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid return type to function ReturnStructKeyMap in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructSetValue in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructSetIn in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillStructSetOut in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateStructSetInout in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: Unknown or invalid return type to function ReturnStructSet in class ACoverageStructKeyContainerMatrixActor
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructMapKeyValueDelegatePermutationMatrix.as:
+Angelscript: Error:  (1131:351): Expected method or property
+Angelscript: Error:  (1131:351): Instead found identifier 'FDelegateKeyValueMapValue'
+Angelscript: Error:  (1131:665): Expected identifier
+Angelscript: Error:  (1131:665): Instead found '>'
+Angelscript: Error:  (1131:1075): Expected ',' or ';'
+Angelscript: Error:  (1131:1075): Instead found reserved keyword 'const'
+Angelscript: Error:  (1131:1148): Expected ',' or ';'
+Angelscript: Error:  (1131:1148): Instead found reserved keyword 'const'
+Angelscript: Error:  (1131:1228): Expected identifier
+Angelscript: Error:  (1131:1228): Instead found '('
+Angelscript: Error:  (1131:1392): Expected ',' or ';'
+Angelscript: Error:  (1131:1392): Instead found reserved keyword 'const'
+Angelscript: Error:  (1131:1482): Unexpected token '}'
+Angelscript: Error:  (1141:363): Expected method or property
+Angelscript: Error:  (1141:363): Instead found identifier 'FDelegateKeyValueMapValue'
+Angelscript: Error:  (1141:677): Expected identifier
+Angelscript: Error:  (1141:677): Instead found '>'
+Angelscript: Error:  (1141:1087): Expected ',' or ';'
+Angelscript: Error:  (1141:1087): Instead found reserved keyword 'const'
+Angelscript: Error:  (1141:1160): Expected ',' or ';'
+Angelscript: Error:  (1141:1160): Instead found reserved keyword 'const'
+Angelscript: Error:  (1141:1242): Expected identifier
+Angelscript: Error:  (1141:1242): Instead found '('
+Angelscript: Error:  (1141:1406): Expected ',' or ';'
+Angelscript: Error:  (1141:1406): Instead found reserved keyword 'const'
+Angelscript: Error:  (1141:1496): Unexpected token '}'
+Angelscript: Error:  (1151:357): Expected method or property
+Angelscript: Error:  (1151:357): Instead found identifier 'FDelegateKeyValueMapValue'
+Angelscript: Error:  (1151:671): Expected identifier
+Angelscript: Error:  (1151:671): Instead found '>'
+Angelscript: Error:  (1151:1081): Expected ',' or ';'
+Angelscript: Error:  (1151:1081): Instead found reserved keyword 'const'
+Angelscript: Error:  (1151:1154): Expected ',' or ';'
+Angelscript: Error:  (1151:1154): Instead found reserved keyword 'const'
+Angelscript: Error:  (1151:1235): Expected identifier
+Angelscript: Error:  (1151:1235): Instead found '('
+Angelscript: Error:  (1151:1399): Expected ',' or ';'
+Angelscript: Error:  (1151:1399): Instead found reserved keyword 'const'
+Angelscript: Error:  (1151:1489): Unexpected token '}'
+Angelscript: Error:  (1161:363): Expected method or property
+Angelscript: Error:  (1161:363): Instead found identifier 'FDelegateKeyValueMapValue'
+Angelscript: Error:  (1161:677): Expected identifier
+Angelscript: Error:  (1161:677): Instead found '>'
+Angelscript: Error:  (1161:1087): Expected ',' or ';'
+Angelscript: Error:  (1161:1087): Instead found reserved keyword 'const'
+Angelscript: Error:  (1161:1160): Expected ',' or ';'
+Angelscript: Error:  (1161:1160): Instead found reserved keyword 'const'
+Angelscript: Error:  (1161:1242): Expected identifier
+Angelscript: Error:  (1161:1242): Instead found '('
+Angelscript: Error:  (1161:1406): Expected ',' or ';'
+Angelscript: Error:  (1161:1406): Instead found reserved keyword 'const'
+Angelscript: Error:  (1161:1496): Unexpected token '}'
+Angelscript: Error:  (1171:363): Expected method or property
+Angelscript: Error:  (1171:363): Instead found identifier 'FString'
+Angelscript: Error:  (1171:623): Expected identifier
+Angelscript: Error:  (1171:623): Instead found '>'
+Angelscript: Error:  (1171:1015): Expected ',' or ';'
+Angelscript: Error:  (1171:1015): Instead found reserved keyword 'const'
+Angelscript: Error:  (1171:1088): Expected ',' or ';'
+Angelscript: Error:  (1171:1088): Instead found reserved keyword 'const'
+Angelscript: Error:  (1171:1170): Expected identifier
+Angelscript: Error:  (1171:1170): Instead found '('
+Angelscript: Error:  (1171:1334): Expected ',' or ';'
+Angelscript: Error:  (1171:1334): Instead found reserved keyword 'const'
+Angelscript: Error:  (1171:1424): Unexpected token '}'
+Angelscript: Error:  (1181:351): Expected method or property
+Angelscript: Error:  (1181:351): Instead found identifier 'FName'
+Angelscript: Error:  (1181:605): Expected identifier
+Angelscript: Error:  (1181:605): Instead found '>'
+Angelscript: Error:  (1181:995): Expected ',' or ';'
+Angelscript: Error:  (1181:995): Instead found reserved keyword 'const'
+Angelscript: Error:  (1181:1068): Expected ',' or ';'
+Angelscript: Error:  (1181:1068): Instead found reserved keyword 'const'
+Angelscript: Error:  (1181:1148): Expected identifier
+Angelscript: Error:  (1181:1148): Instead found '('
+Angelscript: Error:  (1181:1312): Expected ',' or ';'
+Angelscript: Error:  (1181:1312): Instead found reserved keyword 'const'
+Angelscript: Error:  (1181:1402): Unexpected token '}'
+Angelscript: Error:  (1191:363): Expected method or property
+Angelscript: Error:  (1191:363): Instead found identifier 'UCoverageStructDelegateMapValueObject'
+Angelscript: Error:  (1191:713): Expected identifier
+Angelscript: Error:  (1191:713): Instead found '>'
+Angelscript: Error:  (1191:1135): Expected ',' or ';'
+Angelscript: Error:  (1191:1135): Instead found reserved keyword 'const'
+Angelscript: Error:  (1191:1208): Expected ',' or ';'
+Angelscript: Error:  (1191:1208): Instead found reserved keyword 'const'
+Angelscript: Error:  (1191:1290): Expected identifier
+Angelscript: Error:  (1191:1290): Instead found '('
+Angelscript: Error:  (1191:1454): Expected ',' or ';'
+Angelscript: Error:  (1191:1454): Instead found reserved keyword 'const'
+Angelscript: Error:  (1191:1544): Unexpected token '}'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructMapKeyValueParameterAndReturnMatrix.as:
+Angelscript: Error:  (176:46): Can't implicitly convert from 'UObject' to 'UCoverageStructMapParamValueObject&'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructMapKeyValueShapeMatrix.as:
+Angelscript: Error:  (137:39): Can't implicitly convert from 'UObject' to 'UCoverageStructMapValueObject&'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructMapPrimitiveKeyValueParameterAndReturnMatrix.as:
+Angelscript: Error:  (176:49): Can't implicitly convert from 'UObject' to 'UCoverageStructMapPrimitiveKeyObject&'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountSetValue in class ACoverageStructReflectedContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountSetIn in class ACoverageStructReflectedContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillSetOut in class ACoverageStructReflectedContainerActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateSetInout in class ACoverageStructReflectedContainerActor
+Angelscript: Error: Unknown or invalid return type to function ReturnSet in class ACoverageStructReflectedContainerActor
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Property TMap<FStructToStructMapKey, FStructToStructMapValue> StructStructMapInout in class ACoverageStructToStructMapMatrixActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructStructMapValue in class ACoverageStructToStructMapMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function CountStructStructMapIn in class ACoverageStructToStructMapMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function FillStructStructMapOut in class ACoverageStructToStructMapMatrixActor
+Angelscript: Error: Unknown or invalid parameter type for parameter Items to function MutateStructStructMapInout in class ACoverageStructToStructMapMatrixActor
+Angelscript: Error: Unknown or invalid return type to function ReturnStructStructMap in class ACoverageStructToStructMapMatrixActor
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Property TMap<FIdentityStruct, int> StructToInt in class ACoverageStructIdentityActor has a type that cannot be a UPROPERTY.
+Angelscript: Error: An error was encountered during angelscript hot reload. Keeping old angelscript code active.
+Angelscript: Error: Unknown class specifier Atomic on class FAtomicStruct.
+Angelscript: Error: Unknown class specifier Immutable on class FImmutableStruct.
+Angelscript: Error: Unknown class specifier NoExport on class FNoExportStruct.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageUStructValueSemantics.as:
+Angelscript: Error:  (49:31): No matching operator that takes the types 'FValueStruct' and 'FValueStruct' found
+Angelscript: Error:  (53:28): No matching operator that takes the types 'FValueStruct' and 'FValueStruct' found
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWeakRefBasics.as:
+Angelscript: Error:  (46:13): No matching signatures to 'TWeakObjectPtr::Reset()'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWeakRefBreakCycle.as:
+Angelscript: Error:  (41:3): No matching signatures to 'System::ForceGarbageCollection(const bool)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidgetLifecycleAnimationOverrides.as:
+Angelscript: Error:  (48:26): Can't implicitly convert from 'const UObject&' to 'UWidgetAnimation'.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidgetLifecycleAnimationOverrides.as:
+Angelscript: Error:  (54:27): Can't implicitly convert from 'const UObject&' to 'UWidgetAnimation'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoverageWidgetAdditionalDynamicEvents
+Angelscript: Error:   void UCoverageWidgetAdditionalEventHarness::Bind(UEditableText, USlider, UComboBoxString) | Line 30 | Col 3
+LogOutputDevice: Error: === Handled ensure: ===
+LogOutputDevice: Error: 
+LogOutputDevice: Error: Ensure condition failed: false  [File:D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp] [Line: 3292] 
+LogOutputDevice: Error: Class which was marked abstract was trying to be loaded in Outer /Engine/Transient.  It will be nulled out on save. None Object
+LogOutputDevice: Error: Stack: 
+LogOutputDevice: Error: [Callstack] 0x00007ff9a9ae9155 UnrealEditor-CoreUObject.dll!`StaticAllocateObjectErrorTests'::`27'::<lambda_1>::operator()() [D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp:3292]
+LogOutputDevice: Error: [Callstack] 0x00007ff9a98e91f1 UnrealEditor-CoreUObject.dll!StaticAllocateObjectErrorTests() [D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp:3292]
+LogOutputDevice: Error: [Callstack] 0x00007ff9a98e7806 UnrealEditor-CoreUObject.dll!StaticAllocateObject() [D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp:3466]
+LogOutputDevice: Error: [Callstack] 0x00007ff9a98e9de3 UnrealEditor-CoreUObject.dll!StaticConstructObject_Internal() [D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp:4842]
+LogOutputDevice: Error: [Callstack] 0x00007ff910e020e2 UnrealEditor-AngelscriptTest.dll!NewObject<UObject>() [C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\CoreUObject\Public\UObject\UObjectGlobals.h:1967]
+LogOutputDevice: Error: [Callstack] 0x00007ff910e1ae83 UnrealEditor-AngelscriptTest.dll!FAngelscriptCoverageWidgetRuntimeApiTest::AdvancedListViewSurfaces() [D:\Workspace\AngelscriptProject\Plugins\Angelscript\Source\AngelscriptTest\Coverage\AngelscriptCoverageWidgetTests.cpp:2434]
+LogOutputDevice: Error: [Callstack] 0x00007ff9107f1f1b UnrealEditor-AngelscriptTest.dll!`anonymous namespace'::TRunTestCommand<FNoDiscardAsserter>::Update() [C:\Program Files\Epic Games\UE_5.8\Engine\Source\Developer\CQTest\Public\Impl\CQTest.inl:60]
+LogOutputDevice: Error: [Callstack] 0x00007ff9107efe95 UnrealEditor-AngelscriptTest.dll!TTestRunner<FNoDiscardAsserter>::RunTest() [C:\Program Files\Epic Games\UE_5.8\Engine\Source\Developer\CQTest\Public\Impl\CQTest.inl:199]
+LogOutputDevice: Error: [Callstack] 0x00007ff99a1d1226 UnrealEditor-Core.dll!FAutomationTestFramework::InternalStartTest() [D:\build\++UE5\Sync\Engine\Source\Runtime\Core\Private\Misc\AutomationTest.cpp:1316]
+LogOutputDevice: Error: [Callstack] 0x00007ff99a1f04d0 UnrealEditor-Core.dll!FAutomationTestFramework::StartTestByName() [D:\build\++UE5\Sync\Engine\Source\Runtime\Core\Private\Misc\AutomationTest.cpp:654]
+LogOutputDevice: Error: [Callstack] 0x00000254a754f30f UnrealEditor-AutomationWorker.dll!FAutomationWorkerModule::HandleRunTestsMessage() [D:\build\++UE5\Sync\Engine\Source\Runtime\AutomationWorker\Private\AutomationWorkerModule.cpp:699]
+LogOutputDevice: Error: [Callstack] 0x00000254a754e29d UnrealEditor-AutomationWorker.dll!TRawMessageHandler<FAutomationWorkerRunTests,FAutomationWorkerModule>::HandleMessage() [D:\build\++UE5\Sync\Engine\Source\Runtime\MessagingCommon\Public\MessageHandlers.h:103]
+LogOutputDevice: Error: [Callstack] 0x00000254a75527ba UnrealEditor-AutomationWorker.dll!FMessageEndpoint::ProcessInbox() [D:\build\++UE5\Sync\Engine\Source\Runtime\MessagingCommon\Public\MessageEndpoint.h:449]
+LogOutputDevice: Error: [Callstack] 0x00000254a75413fe UnrealEditor-AutomationWorker.dll!FAutomationWorkerModule::Tick() [D:\build\++UE5\Sync\Engine\Source\Runtime\AutomationWorker\Private\AutomationWorkerModule.cpp:100]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c177325d UnrealEditor-Cmd.exe!FEngineLoop::Tick() [D:\build\++UE5\Sync\Engine\Source\Runtime\Launch\Private\LaunchEngineLoop.cpp:6043]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c175c4ac UnrealEditor-Cmd.exe!GuardedMain() [D:\build\++UE5\Sync\Engine\Source\Runtime\Launch\Private\Launch.cpp:190]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c175c5ba UnrealEditor-Cmd.exe!GuardedMainWrapper() [D:\build\++UE5\Sync\Engine\Source\Runtime\Launch\Private\Windows\LaunchWindows.cpp:123]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c1761256 UnrealEditor-Cmd.exe!LaunchWindowsStartup() [D:\build\++UE5\Sync\Engine\Source\Runtime\Launch\Private\Windows\LaunchWindows.cpp:277]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c1775c74 UnrealEditor-Cmd.exe!WinMain() [D:\build\++UE5\Sync\Engine\Source\Runtime\Launch\Private\Windows\LaunchWindows.cpp:338]
+LogOutputDevice: Error: [Callstack] 0x00007ff6c177838a UnrealEditor-Cmd.exe!__scrt_common_main_seh() [D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288]
+LogOutputDevice: Error: [Callstack] 0x00007ffa9476e957 KERNEL32.DLL!UnknownFunction []
+LogOutputDevice: Error: [Callstack] 0x00007ffa967c427c ntdll.dll!UnknownFunction []
+LogOutputDevice: Error: 
+EnsureFailed: Error: Ensure condition failed: false  [File:D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp] [Line: 3292] 
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_BorderMargin_2D36574B452300885BD8FAAA2735BE5F.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_BorderMargin_2D36574B452300885BD8FAAA2735BE5F.as:
+Angelscript: Error:  (41:32): 'HAlign_Center' is not declared
+Angelscript: Error:  (42:30): 'VAlign_Bottom' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_ButtonStyleRoundTrip_C1E397C942AC63D991EC6D8B3E5B8244.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_ComboPanelSizeBrush_1F12BB3743C998A3B10C3BBB37DBB156.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_CommonControls_C7364D26429E58FD599A828EB6B6B75E.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_CommonControls_C7364D26429E58FD599A828EB6B6B75E.as:
+Angelscript: Error:  (112:8): No matching signatures to 'UImage::SetBrushFromTexture(const UObject&, const bool)'
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_CommonControls_C7364D26429E58FD599A828EB6B6B75E.as:
+Angelscript: Error:  (113:8): No matching signatures to 'UImage::SetBrushFromMaterial(const UObject&)'
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_Containers_8E696CED435E430A5F0CA58E5D2D10DA.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_ImageResourceBrush_8E44BD894AFFB7E0D04849BE8B05E4A4.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_OverlayLayerOrder_4A987F294E3A5C4C2B3FB384EFE4A189.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_OverlayLayerOrder_4A987F294E3A5C4C2B3FB384EFE4A189.as:
+Angelscript: Error:  (45:36): 'HAlign_Center' is not declared
+Angelscript: Error:  (46:33): 'VAlign_Bottom' is not declared
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_SlateStyleValues_752D0F814A6EE80A82B5B4847B391243.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_SlateFontInfoSetFont_6C9AE3964E1FE114818CE4AEE7B3EFBF.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_SlateFontInfoSetFont_6C9AE3964E1FE114818CE4AEE7B3EFBF.as:
+Angelscript: Error:  (26:22): Can't implicitly convert from 'const UObject' to 'UObject'.
+Angelscript: Error:  (36:41): Can't implicitly convert from 'const UObject' to 'UObject'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_TextBlockTextColor_7B025C5748B246F281D371AC8C9A82C0.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.
+Angelscript: Error: Specified function is not compatible with delegate function.
+Angelscript: Error: ASCoverageWidgetDynamicEvents
+Angelscript: Error:   void UCoverageWidgetEventHarness::Bind(UButton, UCheckBox, UEditableText) | Line 39 | Col 3
+Angelscript: Error: D:/Workspace/AngelscriptProject/Saved/Automation/ASCoverageWidget_VisibilityEnabledFocus_D14718D541C209AE00DFB4A6A83C753F.as:
+Angelscript: Error:  (11:10): Can't implicitly convert from 'const UObject&' to 'UWidget'.
+Angelscript: Error: Hot reload failed due to script compile errors. Keeping all old script code.

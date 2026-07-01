@@ -27,24 +27,26 @@
 | 可选 + 说明符组合 | ✅ | `UStructOptionalAndSpecifierCombinations` | 组合规则 |
 | 元数据别名与弃用 | ✅ | `UStructMetadataAliasAndDeprecationMatrix` | meta alias / deprecated |
 | 高级元数据 | ✅ | `UStructAdvancedMetadata` | 自定义 meta 键往返 |
+| `HasNativeMake` / `HasNativeBreak` 说明符 | ⬜? | — | 待实现（G15）：UE UHT 用这两个说明符指示 native 端绑定自定义 Make/Break 节点；fork 内 grep 无 `HasNativeMake/HasNativeBreak` 解析；当前 `UStructUnsupportedSpecifiers` 仅覆盖 `Atomic`/`Immutable`/`NoExport`。需补一行 compile-failure 实测（预期 `Unknown class specifier`），归 🚫 边界 |
 
 ## 3. 成员与默认值（Members & Defaults）
 
 | 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
 |------|------|------------|-------------|
 | 成员声明与访问 | ✅ | `UStructMembers` / `UStructMember*`(member 文件) | 基础成员读写 |
-| 扩展成员类型矩阵 | ✅ | `UStructExtendedMemberTypeMatrix` | 各 UE 类型作成员 |
+| 扩展成员类型矩阵 | ✅ | `UStructExtendedMemberTypeMatrix` | 各 UE 类型作成员（含 TWeakObjectPtr / TSoftObjectPtr / TSoftClassPtr / TSubclassOf / FText / 数学结构 / UObject 引用） |
 | 枚举 / FText / 属性标志成员 | ✅ | `UStructEnumTextAndPropertyFlags` | enum/FText 成员 |
 | 默认值类型矩阵 | ✅ | `UStructDefaultValueTypeMatrix` | 各类型默认值反射 |
-| 嵌套 struct 默认值反射 | ✅ | `UStructNestedDefaultsReflection` | 嵌套默认值 |
+| 嵌套 struct 默认值反射 | ✅ | `UStructNestedDefaultsReflection` | 嵌套默认值（3 层 Outer→Branch→Leaf） |
+| `FInstancedStruct` 作 USTRUCT 成员 / UPROPERTY | ⬜ | — | 待实现（G11）：fork 已绑定 `FInstancedStruct`（见 `Bind_FInstancedStruct.cpp`、`AngelscriptInstancedStructBindingsTests.cpp` 的 `DefaultConstruction`/`ResetClears`），但 Coverage 域未覆盖。需补：作 UPROPERTY 反射、`InitializeAs<FFoo>` / `Get<FFoo>()` 往返、作函数参数/返回、作 TArray 元素 |
 
 ## 4. 值语义、运算符、成员方法（Value Semantics / Operators / Methods）
 
 | 场景 | 状态 | 覆盖测试方法 | 要点 / 待实现 |
 |------|------|------------|-------------|
-| 值语义（拷贝/赋值独立） | ✅ | `UStructValueSemantics` | 值类型拷贝隔离 |
-| 运算符重载（==、!= 等） | ✅ | `UStructOperators` | 比较/赋值运算符 |
-| 成员方法调用矩阵 | ✅ | `UStructMemberMethodInvocationMatrix` | struct 方法调用 |
+| 值语义（拷贝/赋值独立） | 🟡 | `UStructValueSemantics` | 值类型拷贝隔离（G12）：当前仅 int + FString 成员的拷贝/赋值独立性；含 TArray/TMap/TSet 成员的深拷贝独立性（修改副本容器不影响源容器）尚未断言 |
+| 运算符重载（==、!= 等） | 🟡 | `UStructOperators` | 当前覆盖 `opEquals` / `opAdd` / `opAssign` / `opCmp` / `opIndex`（G13）：缺 `opSub` / `opMul` / `opDiv` / `opNeg` 及复合赋值 `opAddAssign` / `opSubAssign` / `opMulAssign` / `opDivAssign` 的运行期断言 |
+| 成员方法调用矩阵 | ✅ | `UStructMemberMethodInvocationMatrix` | const / 非 const / 返回 struct / `CopyFrom(const&in)` 等形态运行期断言 |
 
 ## 5. 作参数 / 返回值（Parameter / Return）
 
@@ -95,6 +97,12 @@
 | 场景 | 状态 | 覆盖测试方法 | 要点 |
 |------|------|------------|------|
 | 不支持的组合（容器嵌套等） | 🚫 | `UStructUnsupportedCombinationBoundaries` | 编译诊断作边界断言，详见 `../coverage-gaps.md §2.2` |
+| 不支持 USTRUCT 说明符（`Atomic` / `Immutable` / `NoExport`） | 🚫 | `UStructUnsupportedSpecifiers` | 编译诊断作边界断言（`Unknown class specifier ...`） |
+| `TMap<FStruct,V>` / `TSet<FStruct>` 缺少 `Hash`+`opEquals` | 🚫 | `UStructUnsupportedCombinationBoundaries` | 编译诊断 `Key type does not have a hash function defined` |
+| `FInstancedPropertyBag` / `FPropertyBag` | ⬜? | — | （G14）：fork 未发现 PropertyBag 绑定（无 `Bind_FPropertyBag*`），疑似 🚫 边界但未做 compile-failure 实证；需先实测一行 `FInstancedPropertyBag Foo;` 的编译诊断再定状态 |
+| USTRUCT 自定义 `Serialize(FArchive&)` 入口 | ⬜? | — | 待实现/边界（G16）：UE C++ 端可通过 `Serialize(FArchive&)` 重载或 `WithSerializer` Cpp struct trait 自定义 USTRUCT 二进制序列化；fork 内 grep 未发现 AS struct 暴露 `FArchive` 类型/`Serialize` 钩子绑定。预期 🚫 边界（AS struct 走默认反射序列化即可），需 1 行 `void Serialize(FArchive& Ar)` compile-failure 实测固化 |
+| USTRUCT `NetSerialize` / 复制序列化入口 | ⬜? | — | 待实现/边界（G17）：UE 通过 `NetSerialize(FArchive&,UPackageMap*,bool&)` + `WithNetSerializer` 实现 struct 网络压缩；fork 内 grep 无 `NetSerialize` 绑定。AS struct 仅能依赖默认逐字段复制（已通过 UPROPERTY 反射），但脚本端无法覆盖 `NetSerialize`。预期 🚫 边界，需对应 compile-failure 实测固化 |
+| AS USTRUCT 静态成员（`static int Foo`） | ⬜? | — | 待实现/边界（G18）：AS 语言层不支持类/结构静态字段（已在委托域以 `BindStatic` 边界形式记录于 `coverage-gaps.md §2.4`）。USTRUCT 域未做对应 compile-failure 行；需 1 行 `static int Foo` USTRUCT 成员 compile-failure 实测，固化为 🚫 边界 |
 
 ---
 
@@ -103,14 +111,25 @@
 | 维度 | 已覆盖场景 | 状态 |
 |------|----------|------|
 | 1 声明与反射 | 5 | ✅ |
-| 2 说明符与元数据 | 6（含 1 边界） | ✅ |
-| 3 成员与默认值 | 5 | ✅ |
-| 4 值语义/运算符/方法 | 3 | ✅ |
+| 2 说明符与元数据 | 6 ✅（含 1 边界）+ 1 待实证（G15） | 🟡 |
+| 3 成员与默认值 | 5 + 1 ⬜（G11） | 🟡 |
+| 4 值语义/运算符/方法 | 1 ✅ + 2 🟡（G12/G13） | 🟡 |
 | 5 参数/返回值 | 6 | ✅ |
 | 6 委托交互 | 4 | ✅ |
 | 7 容器交互 | 12 | ✅ |
 | 8 嵌套 | 2 | ✅ |
-| 9 边界 | 2（🚫 记录） | — |
+| 9 边界 | 3 🚫 + 4 待实证（G14/G16/G17/G18） | — |
 
 **对应测试方法**：`UStructTests.cpp` 43 + `UStructMemberTests.cpp` 4 = 47 方法。
-**待实现（⬜）**：当前无硬缺口；USTRUCT 是覆盖最成熟的领域之一。若后续新增能力（如 struct 自定义序列化器、InstancedStruct），在对应维度补 ⬜ 行并排期。
+
+**待实现（⬜ / 🟡）**：
+- `G11` ⬜ `FInstancedStruct` 作 USTRUCT 成员 / UPROPERTY 反射 + `InitializeAs<FFoo>` / `Get<FFoo>()` 往返 + 容器/参数形态。fork 已绑定（`Bind_FInstancedStruct.cpp`），Coverage 域未覆盖。
+- `G12` 🟡 值语义深拷贝独立性补强：现 `UStructValueSemantics` 仅 int+FString 成员；扩展为含 `TArray`/`TMap`/`TSet` 成员的深拷贝独立性（修改副本容器不影响源）。
+- `G13` 🟡 运算符重载补全：现 `UStructOperators` 覆盖 `opEquals`/`opAdd`/`opAssign`/`opCmp`/`opIndex`；补 `opSub`/`opMul`/`opDiv`/`opNeg` + 复合赋值 `opAddAssign`/`opSubAssign`/`opMulAssign`/`opDivAssign` 的运行期断言。
+- `G14` 🚫? 实证候选：`FInstancedPropertyBag` / `FPropertyBag` 在 fork 是否绑定？建议先做 1 行 compile-failure 实测，再决定归 🚫 边界还是 ⬜ 候选。
+- `G15` 🚫? 实证候选：USTRUCT 说明符 `HasNativeMake` / `HasNativeBreak`；fork 无解析路径。1 行 compile-failure 实测固化 🚫 边界。
+- `G16` 🚫? 实证候选：USTRUCT 自定义 `Serialize(FArchive&)` 入口；fork 无 `FArchive` AS 绑定。1 行 compile-failure 实测固化 🚫 边界。
+- `G17` 🚫? 实证候选：USTRUCT `NetSerialize` 复制序列化重载；fork 无 `NetSerialize` 绑定。1 行 compile-failure 实测固化 🚫 边界。
+- `G18` 🚫? 实证候选：USTRUCT 静态成员 `static int Foo;`；AS 语言不支持。1 行 compile-failure 实测固化 🚫 边界。
+
+> 历史结论"USTRUCT 是覆盖最成熟的领域之一"仍成立：47 方法在断言层均为真行为/反射断言，无大面积"伪 ✅"。本次新增 8 项 NEW 中 G11~G13 为**能力面增强**（非阻塞），G14~G18 为**边界实证候选**（每项仅需 1 行 compile-failure 测试即可固化为 🚫 边界）。

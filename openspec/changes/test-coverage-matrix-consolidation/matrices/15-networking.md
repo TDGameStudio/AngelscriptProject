@@ -1,46 +1,56 @@
 # 网络 / 复制 / RPC 覆盖矩阵
 
-> 域：RPC 说明符与可靠性、属性复制与生命周期、网络角色/模式、权限查询、GameMode/GameState/PlayerState 表面。
-> 测试文件：`AngelscriptCoverageNetworkingTests.cpp`（Automation 前缀 `Angelscript.TestModule.Coverage.Networking`）。
-> 归属：OpenSpec `test-coverage-matrix-consolidation`。图例见 `../coverage-matrix.md`。
+> **本矩阵是网络测试的设计规格("头")**：每行是一个**具体可验证场景**，指导 `AngelscriptCoverageNetworkingTests.cpp` 的实现。⬜＝待实现，✅ 注明覆盖它的 `TEST_METHOD`，🚫＝fork/headless 不支持。
+>
+> - 测试文件：`AngelscriptCoverageNetworkingTests.cpp`（28 方法）
+> - Automation 前缀：`Angelscript.TestModule.Coverage.Networking`
+> - 图例见 `../coverage-matrix.md`。
+> - 说明：RPC 实际路由依赖 `BlueprintCallableReflectiveFallback`；headless 下多以"编译 + 静态元数据 + 反射表面 + 权限分支"方式断言。
 
-| 状态 | 方法数 |
-|------|-------|
-| 🟡 | 28 |
+## 1. RPC 说明符与可靠性
 
-## 测试方法清单
+| 场景 | 状态 | 覆盖测试方法 |
+|------|------|------------|
+| RPC 元数据标志 | ✅ | `RPCMetadataFlags` |
+| RPC 可靠性变体 | ✅ | `RPCReliabilityVariations` |
+| 单类多 RPC / 带参 RPC | ✅ | `MultipleRPCsInSingleClass` `RPCWithParameters` |
+| WithValidation 签名元数据 | ✅ | `RPCValidationSignatureMetadata` |
+| RPC 说明符互斥静态元数据 | ✅ | `RPCSpecifierFlagsAreExclusiveStaticMetadata` |
 
-| # | TEST_METHOD | 覆盖点 |
-|---|-------------|--------|
-| 1 | RPCMetadataFlags | RPC 元数据标志 |
-| 2 | ReplicatedPropertiesAndLifetimeList | 复制属性与 LifetimeList |
-| 3 | InheritedReplicationLifetimeList | 继承复制 LifetimeList |
-| 4 | ActorReplicationDefaults | Actor 复制默认值 |
-| 5 | ReplicationConditionsMetadata | 复制条件元数据 |
-| 6 | RPCReliabilityVariations | RPC 可靠性变体 |
-| 7 | ComplexReplicatedTypes | 复杂复制类型 |
-| 8 | ActorOwnerAndRelevancySettings | Owner/相关性设置 |
-| 9 | MultipleRPCsInSingleClass | 单类多 RPC |
-| 10 | RPCWithParameters | 带参 RPC |
-| 11 | RPCValidationSignatureMetadata | WithValidation 签名元数据 |
-| 12 | ReplicatedPropertiesWithDefaults | 带默认值的复制属性 |
-| 13 | NetworkRoleAndModeEnums | 网络角色/模式枚举 |
-| 14 | PawnControllerAndLocalControlQueries | Pawn/Controller/本地控制查询 |
-| 15 | WorldGameStateAndServerTravelSurface | World/GameState/ServerTravel 表面 |
-| 16 | GameModeGameStateAndPlayerStateStaticSurface | GameMode/GameState/PlayerState 静态表面 |
-| 17 | WorldNetModeQueryIsVisible | NetMode 查询可见 |
-| 18 | WorldNetModeQueryUnsupportedInHaze | NetMode 查询 fork 不支持边界 |
-| 19 | ActorNetworkRoleQueriesAreVisible | Actor 网络角色查询可见 |
-| 20 | ActorAuthorityQueryBranchesExecuteHeadless | 权限查询分支 headless 执行 |
-| 21 | ActorNetworkRolePropertiesUnsupported | Actor 网络角色属性不支持边界 |
-| 22 | ReplicationMetadataStaticSurface | 复制元数据静态表面 |
-| 23 | RPCSpecifierFlagsAreExclusiveStaticMetadata | RPC 说明符互斥静态元数据 |
-| 24 | NetworkConsoleAndClientTravelBoundaries | 控制台/ClientTravel 边界 |
-| 25 | GameStatePlayerArrayAndPlayerStateIdentitySurface | GameState PlayerArray/身份表面 |
-| 26 | PlayerControllerConnectionSurfaceCompiles | PlayerController 连接表面编译 |
-| 27 | GameModeLoginLogoutNativeSurface | GameMode 登录/登出原生表面 |
-| 28 | ActorDormancyAndUpdateNativeSurface | Actor 休眠/更新原生表面 |
+## 2. 属性复制
 
-## 已知边界
+| 场景 | 状态 | 覆盖测试方法 |
+|------|------|------------|
+| 复制属性与 LifetimeList / 继承 LifetimeList | ✅ | `ReplicatedPropertiesAndLifetimeList` `InheritedReplicationLifetimeList` |
+| Actor 复制默认值 | ✅ | `ActorReplicationDefaults` |
+| 复制条件元数据 / 复制元数据静态表面 | ✅ | `ReplicationConditionsMetadata` `ReplicationMetadataStaticSurface` |
+| 复杂复制类型 / 带默认值的复制属性 | ✅ | `ComplexReplicatedTypes` `ReplicatedPropertiesWithDefaults` |
 
-- RPC 实际网络路由依赖 `BlueprintCallableReflectiveFallback`，不能直绑裸 thunk；多数复制/RPC 在 headless 下以"编译 + 静态元数据 + 反射表面"方式断言。部分网络模式查询 fork 不支持（`*Unsupported*` 方法）。
+## 3. 网络角色与权限
+
+| 场景 | 状态 | 覆盖测试方法 |
+|------|------|------------|
+| 网络角色/模式枚举 | ✅ | `NetworkRoleAndModeEnums` |
+| Pawn/Controller/本地控制查询 | ✅ | `PawnControllerAndLocalControlQueries` |
+| Actor 网络角色查询可见 | ✅ | `ActorNetworkRoleQueriesAreVisible` |
+| 权限查询分支 headless 执行 | ✅ | `ActorAuthorityQueryBranchesExecuteHeadless` |
+| Owner 与相关性设置 | ✅ | `ActorOwnerAndRelevancySettings` |
+| NetMode 查询可见 | ✅ | `WorldNetModeQueryIsVisible` |
+| NetMode 查询 fork 不支持 / Actor 网络角色属性不支持 | 🚫 | `WorldNetModeQueryUnsupportedInHaze` `ActorNetworkRolePropertiesUnsupported` |
+
+## 4. 框架表面（GameMode / GameState / PlayerState / World）
+
+| 场景 | 状态 | 覆盖测试方法 |
+|------|------|------------|
+| World/GameState/ServerTravel 表面 | ✅ | `WorldGameStateAndServerTravelSurface` |
+| GameMode/GameState/PlayerState 静态表面 | ✅ | `GameModeGameStateAndPlayerStateStaticSurface` |
+| GameState PlayerArray 与 PlayerState 身份表面 | ✅ | `GameStatePlayerArrayAndPlayerStateIdentitySurface` |
+| PlayerController 连接表面编译 | ✅ | `PlayerControllerConnectionSurfaceCompiles` |
+| GameMode 登录/登出原生表面 | ✅ | `GameModeLoginLogoutNativeSurface` |
+| Actor 休眠/更新原生表面 | ✅ | `ActorDormancyAndUpdateNativeSurface` |
+| 控制台/ClientTravel 边界 | 🚫 | `NetworkConsoleAndClientTravelBoundaries` |
+
+---
+
+**对应测试方法**：28 方法。
+**待实现（⬜）**：当前无硬缺口；真实多机网络往返非 headless 范畴，部分网络模式查询为 fork 边界。
