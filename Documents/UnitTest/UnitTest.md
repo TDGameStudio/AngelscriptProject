@@ -9,6 +9,37 @@
 
 ## CQTest 结构规则
 
+### 0. 测试注册必须使用 `WITH_ANGELSCRIPT_UNITTESTS` 总开关
+
+新增或重构 `Plugins/Angelscript/Source/AngelscriptTest` 下的 C++ test registration `.cpp` 时，测试注册代码必须由 `WITH_ANGELSCRIPT_UNITTESTS` 控制。这个宏是 AngelscriptTest C++ automation 的唯一总开关；不要保留或新增 `WITH_DEV_AUTOMATION_TESTS` 作为外层条件。未来如果需要区分开发构建、CI 或消费者构建，应通过 `AngelscriptTest.Build.cs` 定义 `WITH_ANGELSCRIPT_UNITTESTS` 的值来表达。
+
+推荐形态是 include block 保持在外面，然后用一个 whole-file gate 包住 `TEST_CLASS_WITH_FLAGS`、`TEST_METHOD` 和文件级 test-only 注册对象：
+
+```cpp
+#include "CQTest.h"
+#include "AngelscriptTestMacros.h"
+
+#if WITH_ANGELSCRIPT_UNITTESTS
+
+TEST_CLASS_WITH_FLAGS(FExampleTest,
+	"Angelscript.TestModule.Example",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+{
+	TEST_METHOD(Scenario)
+	{
+	}
+};
+
+#endif // WITH_ANGELSCRIPT_UNITTESTS
+```
+
+规则：
+
+- 默认不要把 include block 包进 `#if WITH_ANGELSCRIPT_UNITTESTS`，以保持 IWYU/self-contained include、generated header 顺序和 IDE 解析稳定。
+- 只有 header 自己注册测试、依赖 unit-test-only macro side effect，或 `WITH_ANGELSCRIPT_UNITTESTS=0` build 证明它不能合法编译时，才 gate header 或 include。
+- helper、generated/AOT、commandlet、test UObject/type implementation `.cpp` 不能盲目 whole-file 包裹；重构时要记录豁免原因。
+- 不要使用旧拼写或更宽泛的 `WITH_ANGELSCRIPT_TESTS`。
+
 ### 1. 测试实现放在 `TEST_CLASS_WITH_FLAGS` 内
 
 使用 CQTest 时，相关测试实现优先直接放在 `TEST_CLASS_WITH_FLAGS` 内：
