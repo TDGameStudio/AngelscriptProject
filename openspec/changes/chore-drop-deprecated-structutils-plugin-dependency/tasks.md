@@ -4,22 +4,22 @@
 
 ## 1. Confirm Preconditions
 
-- [ ] 1.1 Confirm the engine version: check that `EngineAssociation` in `AngelscriptProject.uproject` is `5.8`.
-- [ ] 1.2 Confirm the only intended edit point: `Plugins/Angelscript/Angelscript.uplugin` currently has `{ "Name": "StructUtils", "Enabled": true }` around lines 35-39.
-- [ ] 1.3 Confirm the item that must remain: `PublicDependencyModuleNames` in `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` contains `"StructUtils"` as a module dependency and must not change.
-- [ ] 1.4 Confirm unrelated plugins are out of scope: AngelscriptGAS, AngelscriptGameplayTags, and AngelscriptProjectEditor have no StructUtils references.
+- [x] 1.1 Confirm the engine version: check that `EngineAssociation` in `AngelscriptProject.uproject` is `5.8`.
+- [x] 1.2 Confirm the only intended edit point: `Plugins/Angelscript/Angelscript.uplugin` currently has `{ "Name": "StructUtils", "Enabled": true }` around lines 35-39.
+- [x] 1.3 Confirm UE 5.8 exports `FInstancedStruct` / `FStructUtils` through `CoreUObject`, so the deprecated `"StructUtils"` module dependency no longer needs to remain.
+- [x] 1.4 Confirm unrelated plugins are out of scope: AngelscriptGAS, AngelscriptGameplayTags, and AngelscriptProjectEditor have no StructUtils references.
 
 ## 2. Update Dependency Declaration
 
-- [ ] 2.1 Remove the StructUtils plugin entry from `Angelscript.uplugin` and keep the JSON array syntax valid.
-- [ ] 2.2 Confirm the `"StructUtils"` module dependency in `AngelscriptRuntime.Build.cs` is **unchanged**.
-- [ ] 2.3 Confirm the relevant include path, `StructUtils/InstancedStruct.h`, is **unchanged**.
+- [x] 2.1 Remove the StructUtils plugin entry from `Angelscript.uplugin` and keep the JSON array syntax valid.
+- [x] 2.2 Remove the `"StructUtils"` module dependency from `AngelscriptRuntime.Build.cs`.
+- [x] 2.3 Confirm the relevant include path, `StructUtils/InstancedStruct.h`, is **unchanged**.
 
 ## 3. Verify
 
-- [ ] 3.1 Run `Tools\RunBuild.ps1 -NoXGE` and confirm compilation/linking succeeds with no `FInstancedStruct` binding link errors.
-- [ ] 3.2 Confirm the StructUtils plugin deprecation warning no longer appears.
-- [ ] 3.3 If the build reports that the `StructUtils` module cannot be found, use the fallback: change the `AngelscriptRuntime.Build.cs` dependency to `CoreUObject`, verify the include path, and rebuild.
+- [x] 3.1 Run `Tools\RunBuild.ps1 -NoXGE` and confirm compilation/linking succeeds with no `FInstancedStruct` binding link errors.
+- [x] 3.2 Confirm the StructUtils plugin deprecation warning no longer appears.
+- [x] 3.3 Confirm the UBT dependency warning about `AngelscriptRuntime` depending on `StructUtils` without a plugin dependency no longer appears.
 
 ## 4. Finish
 
