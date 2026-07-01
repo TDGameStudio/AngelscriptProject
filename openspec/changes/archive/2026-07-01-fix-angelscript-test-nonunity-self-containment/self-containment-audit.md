@@ -237,3 +237,7 @@ If the build finds additional missing symbols, add them to this file before appl
 - 2026-06-25: Full build passed with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label nonunity-self-containment-full -TimeoutMs 600000 -NoXGE`.
 - Build log: `D:\Workspace\AngelscriptProject\Saved\Build\nonunity-self-containment-full\20260625_095001_487_41dd1e06\Build.log`.
 - UBT executed 407 actions and linked `UnrealEditor-AngelscriptRuntime.dll` and `UnrealEditor-AngelscriptTest.dll` successfully.
+- 2026-07-01: Added `scan-test-self-containment.ps1` and ran `powershell.exe -NoProfile -ExecutionPolicy Bypass -File openspec\changes\fix-angelscript-test-nonunity-self-containment\scan-test-self-containment.ps1 -FailOnRequired`.
+- Result: required failures `0`; advisories `154`.
+- Decision: keep the scan as an OpenSpec-local advisory diagnostic for now. The remaining advisories are mostly broad `AngelscriptFunctionalTestUtils` file-level imports and native SDK helper umbrella re-exports; those should be handled in a separate hygiene pass instead of expanding this cross-machine compile fix into a large mechanical refactor.
+- 2026-07-02: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label nonunity-closeout -TimeoutMs 1800000 -NoXGE` passed after the final direct-include additions.

@@ -23,6 +23,6 @@
 
 ## 4. Finish
 
-- [ ] 4.1 Commit the change inside the `Plugins/Angelscript` submodule.
-- [ ] 4.2 Update the submodule gitlink in the parent repository.
-- [ ] 4.3 Optionally update the engine version in `Documents/Knowledges/ZH/Guide_QuickStart.md` from 5.7 to 5.8.
+- [x] 4.1 Commit the change inside the `Plugins/Angelscript` submodule (`120dc03 [Build] Chore: drop deprecated StructUtils dependency`).
+- [x] 4.2 Update the submodule gitlink in the parent repository (`f440c2f [OpenSpec] Chore: record StructUtils dependency cleanup`).
+- [x] 4.3 Decide not to update `Documents/Knowledges/ZH/Guide_QuickStart.md` in this dependency cleanup; the broader 5.7-to-5.8 documentation refresh is separate from removing deprecated StructUtils dependencies.

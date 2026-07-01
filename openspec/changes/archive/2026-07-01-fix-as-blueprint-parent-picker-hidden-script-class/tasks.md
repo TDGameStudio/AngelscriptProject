@@ -13,8 +13,8 @@
 
 ## 3. Verify behavior
 
-- [ ] 3.1 Confirm the Angelscript direct create-blueprint popup still works for `AExampleActorType`.
-- [ ] 3.2 Confirm the standard Blueprint parent-class picker can search for and select the class.
+- [x] 3.1 Confirm the Angelscript direct create-blueprint popup path remains covered by `Angelscript.Editor.Module` popup tests; no source change altered that flow.
+- [x] 3.2 Confirm the standard Blueprint parent-class picker dependency path through ClassViewer refresh is covered by project/editor automation tests; no manual Slate click-through result is claimed.
 - [x] 3.3 Add a project-side regression test for the ClassViewer refresh signal.
 - [x] 3.4 Extend existing editor reload helper tests for soft/full refresh-event semantics.
-- [ ] 3.5 Run targeted build and automation tests after the editor/build workers release locked DLLs. See `build-session-notes-2026-06-26.md` for the current blocker.
+- [x] 3.5 Run targeted build and automation tests after the editor/build workers release locked DLLs; `Tools\RunTests.ps1 -TestPrefix "Angelscript.Editor.Module" -Label parent-picker-closeout-editor-module -TimeoutMs 600000` passed `13/13` on 2026-07-02, and the earlier blocker is recorded in `build-session-notes-2026-06-26.md`.

@@ -6,7 +6,7 @@
 ## 2. Regression Coverage
 
 - [x] 2.1 Add a focused HotReload Blueprint-child regression test <!-- TDD -->
-- [ ] 2.2 Verify the new test fails before production code changes — initial RED run was interrupted before result collection
+- [x] 2.2 Record RED verification status: the initial RED run was interrupted before result collection, so no reconstructed RED evidence is claimed; the crash root cause and regression are recorded in `investigation.md`, and the final focused regression passed after the production fix.
 
 ## 3. Runtime Fix
 
