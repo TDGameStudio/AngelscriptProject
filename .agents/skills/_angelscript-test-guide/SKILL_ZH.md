@@ -178,7 +178,7 @@ AS `USTRUCT` delegate 或 `UFUNCTION` 参数 bug 要优先写 focused regression
 - `AngelscriptTest/Bindings/`：AS 可见绑定表面和 API 矩阵。
 - `AngelscriptTest/Syntax`、`Compiler`、`Preprocessor`、`Core`、`ClassGenerator`、`FileSystem`：不需要 world 生命周期的 runtime integration。
 - `AngelscriptTest/Actor`、`Component`、`Delegate`、`GC`、`HotReload`、`Interface`、`Subsystem`：world、UObject、actor、reload 或 functional 行为。
-- `AngelscriptTest/Coverage/`：覆盖矩阵收口，记录于 OpenSpec `test-coverage-matrix-consolidation`（`coverage-matrix.md`）。
+- `AngelscriptTest/Coverage/`：覆盖矩阵收口，记录于 OpenSpec `test-coverage`（`coverage-matrix.md`）。
 - `AngelscriptTest/Learning/*`：教学或 trace 型测试。
 
 Automation 前缀要匹配现有主题和邻近文件。没有先检查 `TestConventions.md` 时，不要创造新的前缀形状。

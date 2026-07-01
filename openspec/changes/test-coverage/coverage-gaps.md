@@ -153,7 +153,7 @@
 
 `Documents/Coverage/` 已退役，由本 OpenSpec 记录接管。cutover 执行情况：
 
-- ✅ **38 个** Coverage 测试 `.cpp` 的头注释里 `Documents/Coverage/Coverage_*.md` 引用，已统一改指 `OpenSpec: test-coverage-matrix-consolidation/coverage-matrix.md`。
+- ✅ **38 个** Coverage 测试 `.cpp` 的头注释里 `Documents/Coverage/Coverage_*.md` 引用，已统一改指 `OpenSpec: test-coverage/coverage-matrix.md`。
 - ✅ `.agents/skills/_angelscript-test-guide/SKILL.md` 与 `SKILL_ZH.md` 已同步改指本记录。
 - ✅ 改指完成后删除 `Documents/Coverage/` 整目录（80 个文件）；`git grep "Documents/Coverage"` 无残留。
 

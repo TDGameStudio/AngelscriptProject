@@ -1,4 +1,4 @@
-# Tasks — test-coverage-matrix-consolidation
+# Tasks — test-coverage
 
 > 本 change "承前启后"：§1–§3 是**已完成的记录（承前）**；§4–§6 是**安排给之后补充的工作（启后）**，未勾选即为待办，可在后续会话继续执行。
 > 验证命令统一只用：`Tools\RunTests.ps1`（按 Automation 前缀过滤）。
@@ -12,7 +12,7 @@
 
 - [x] 2.1 撰写 `coverage-matrix.md`：按分类列出已实现覆盖（统一列结构与图例）
 - [x] 2.2 撰写 `coverage-gaps.md`：待覆盖/待增强 + fork 不支持边界 + 历史误标纠偏
-- [x] 2.3 撰写 `specs/as-test-coverage-matrix/spec.md`：确立 OpenSpec 为覆盖记录 SoT
+- [x] 2.3 撰写 `specs/as-test-coverage/spec.md`：确立 OpenSpec 为覆盖记录 SoT
 - [x] 2.4 按 AS 类型/功能将矩阵拆分为 `matrices/` 下 18 个领域矩阵（UStruct/容器/类型/对象引用各独立，物理/输入/Widget/网络/定时器等功能系统各自成文）；`coverage-matrix.md` 收敛为主索引（图例/列说明/领域索引/全局汇总）。
 - [x] 2.5 将 18 个领域矩阵全部展开为**场景级设计规格**：每行一个可验证场景，标注状态 + 断言该场景的 `TEST_METHOD`，使矩阵可指导测试实现；过程中按代码审计校准真实计数（当前 89 文件 / 1010 方法），并关闭原 G3/G4 伪缺口。
 
@@ -27,7 +27,7 @@
 
 > 目标：`Documents/Coverage/` 退役，引用统一改指向本 OpenSpec 记录，无悬空引用。
 
-- [x] 4.1 将 38 个 Coverage 测试 `.cpp` 头注释中的 `Documents/Coverage/Coverage_*.md` 引用，统一改指 `OpenSpec: test-coverage-matrix-consolidation/coverage-matrix.md`
+- [x] 4.1 将 38 个 Coverage 测试 `.cpp` 头注释中的 `Documents/Coverage/Coverage_*.md` 引用，统一改指 `OpenSpec: test-coverage/coverage-matrix.md`
 - [x] 4.2 更新 `.agents/skills/_angelscript-test-guide/SKILL.md` 与 `SKILL_ZH.md` 中对 `Documents/Coverage/` 的引用
 - [x] 4.3 确认无其它文档引用后，删除 `Documents/Coverage/` 整目录（80 个文件）
 - [x] 4.4 `git grep "Documents/Coverage"` 无残留（仅 openspec 记录内说明性提及）

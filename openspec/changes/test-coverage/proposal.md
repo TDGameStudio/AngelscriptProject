@@ -18,7 +18,7 @@
 
 ### New Capabilities
 
-- `as-test-coverage-matrix`: 规定 AngelScript Coverage 测试覆盖以统一矩阵形式记录于 OpenSpec，矩阵以实际测试代码为权威来源，并区分"已覆盖 / 待覆盖 / fork 不支持"三态。
+- `as-test-coverage`: 规定 AngelScript Coverage 测试覆盖以统一矩阵形式记录于 OpenSpec，矩阵以实际测试代码为权威来源，并区分"已覆盖 / 待覆盖 / fork 不支持"三态。
 
 ### Modified Capabilities
 
@@ -27,9 +27,9 @@
 ## Impact
 
 - 新增（本 change 目录内）：
-  - `openspec/changes/test-coverage-matrix-consolidation/coverage-matrix.md`（主索引）
-  - `openspec/changes/test-coverage-matrix-consolidation/matrices/01-basic-types.md … 18-misc-systems.md`（18 个展开式领域矩阵）
-  - `openspec/changes/test-coverage-matrix-consolidation/coverage-gaps.md`
-  - `openspec/changes/test-coverage-matrix-consolidation/specs/as-test-coverage-matrix/spec.md`
+  - `openspec/changes/test-coverage/coverage-matrix.md`（主索引）
+  - `openspec/changes/test-coverage/matrices/01-basic-types.md … 18-misc-systems.md`（18 个展开式领域矩阵）
+  - `openspec/changes/test-coverage/coverage-gaps.md`
+  - `openspec/changes/test-coverage/specs/as-test-coverage/spec.md`
 - 后续删除（不在本 change 内执行，仅声明意图）：`Documents/Coverage/` 整目录。
 - 已补充（2026-07-01，子模块内）：`Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageAnimInstanceTests.cpp`、`Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageSaveGameTests.cpp`、`Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageTArrayAdvancedTests.cpp`、`Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageTMapAdvancedTests.cpp` 与 `Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp`。

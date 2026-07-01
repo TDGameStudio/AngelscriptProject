@@ -176,7 +176,7 @@ Use `Documents/Guides/TestConventions.md` for the authoritative layer matrix. Qu
 - `AngelscriptTest/Bindings/`: AS-visible binding surface and API matrices.
 - `AngelscriptTest/Syntax`, `Compiler`, `Preprocessor`, `Core`, `ClassGenerator`, `FileSystem`: runtime integration without world lifecycle.
 - `AngelscriptTest/Actor`, `Component`, `Delegate`, `GC`, `HotReload`, `Interface`, `Subsystem`: world, UObject, actor, reload, or functional behavior.
-- `AngelscriptTest/Coverage/`: coverage-matrix closure tracked in OpenSpec `test-coverage-matrix-consolidation` (`coverage-matrix.md`).
+- `AngelscriptTest/Coverage/`: coverage-matrix closure tracked in OpenSpec `test-coverage` (`coverage-matrix.md`).
 - `AngelscriptTest/Learning/*`: teaching or trace-oriented tests.
 
 Automation prefixes should match the existing theme and nearby files. Do not invent a new prefix shape without checking `TestConventions.md`.
