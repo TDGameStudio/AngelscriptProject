@@ -358,7 +358,7 @@
 |--------|----------|--------|
 | Bindings.ValueTypes | `int32`/`double`/`FString`/`FName`/`FVector`/`FRotator`/`FTransform`/`FText` 运算与比较 | AngelscriptEngineBindingsTests.cpp |
 | Bindings.FNameArrayCompat | `FName[]` 与 `TArray<FName>` 别名/显式、`Add`、索引、`Contains` | AngelscriptEngineBindingsTests.cpp |
-| Bindings.TArraySyntaxCompat | 独立覆盖 `T[]`/`int[]` 默认数组语法：`int[]` 全接口、值类型/结构体/`TSubclassOf<AActor>[]`、返回值、运行时负向异常、嵌套容器与 UObject/Actor 简写编译边界 | AngelscriptTArraySyntaxCompatBindingsTests.cpp |
+| Bindings.TArraySyntaxCompat | `T[]`/`int[]` 语法兼容入口合同：构造、变更、`foreach`、复制、`Contains` 可解析并 dispatch；嵌套容器与 `UObject[]` 保留最小负向边界 | AngelscriptTArraySyntaxCompatBindingsTests.cpp |
 | Bindings.ForeachCompat | `int[]`/`TArray` 的 `for (x : arr)` 与 `const FVector&` 范围 for | AngelscriptEngineBindingsTests.cpp |
 
 ### 全局变量与控制台
@@ -379,7 +379,7 @@
 | Bindings.OptionalCompat | `TOptional<int>`：`IsSet`/`Get`/`Set`/`GetValue`/`Reset`；`TOptional<FName>` | AngelscriptContainerBindingsTests.cpp |
 | Bindings.SetCompat | `TSet<int>`：去重 `Add`/`Contains`/拷贝/`Remove`/`Reset`；`TSet<FName>` | AngelscriptContainerBindingsTests.cpp |
 | Bindings.MapCompat | `TMap<FName,int>`：`Add` 覆盖/`Find`/`FindOrAdd`/复制/`Remove`/`Reset` | AngelscriptContainerBindingsTests.cpp |
-| Bindings.TArray | 单个 AS engine 测试入口覆盖 `TArray` 兼容性、显式 API、类型矩阵、对象/Actor 类型、返回值、运行时负向异常和嵌套容器编译拒绝 | AngelscriptTArrayBindingsTests.cpp |
+| Bindings.TArray | `TArray` 合同冒烟：构造、索引、迭代、代表性变更 API 可解析并 dispatch；嵌套容器保留最小负向边界 | AngelscriptTArrayBindingsTests.cpp |
 | Bindings.ArrayForeach | `TArray` 的 `foreach (值, 索引)` 累加元素和与索引和 | AngelscriptContainerBindingsTests.cpp |
 | Bindings.SetForeach | `TSet` 的 `foreach` 累加为 7 | AngelscriptContainerBindingsTests.cpp |
 | Bindings.MapForeach | `TMap` 的 `foreach (值, 键)` 和为 7、键计数为 2 | AngelscriptContainerBindingsTests.cpp |
@@ -388,8 +388,8 @@
 
 | 测试名 | 验证内容 | 源文件 |
 |--------|----------|--------|
-| Bindings.SetCompareCompat | 两个 `TSet` 元素相同顺序不同仍 `==`，增元素后不等 | AngelscriptContainerCompareBindingsTests.cpp |
-| Bindings.MapCompareCompat | 两个 `TMap` 键值相同插入顺序不同时 `==` 为真 | AngelscriptContainerCompareBindingsTests.cpp |
+| Bindings.SetCompareCompat | `TSet` 比较 operator 合同冒烟：顺序不同的同元素集合可通过 `==` 入口比较 | AngelscriptContainerCompareBindingsTests.cpp |
+| Bindings.MapCompareCompat | `TMap` 比较 operator 合同冒烟：键值相同的不同插入顺序 map 可通过 `==` 入口比较，并保留一个不同值负向 | AngelscriptContainerCompareBindingsTests.cpp |
 | Bindings.OptionalTypeCompareCompat | `TOptional<int>` 的 `CanCompare()`、未设置/相同/不同值的 `IsValueEqual` | AngelscriptContainerCompareBindingsTests.cpp |
 | Bindings.MapDebuggerCompat | `TMap` 的 `GetDebuggerValue` 摘要、`Num` 成员、键调试值 | AngelscriptContainerCompareBindingsTests.cpp |
 

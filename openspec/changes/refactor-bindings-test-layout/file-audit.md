@@ -3,8 +3,8 @@
 Scope: all C++ test files under `Plugins/Angelscript/Source/AngelscriptTest/Bindings`.
 
 - Files audited: `95`.
-- `.cpp` files: `89`.
-- `.h` files: `6`.
+- `.cpp` files: `90`.
+- `.h` files: `5`.
 - Source files with implementation edits: `88` `.cpp` files plus `AngelscriptConsoleBindingsSections.h`.
 - Runtime/editor files in scope: none.
 
@@ -40,7 +40,7 @@ The previous 39-file audit was superseded after review clarified that this chang
 - `AngelscriptCollisionValueBindingsTests.cpp` is included in the implementation scope and now uses normalized inline AS fixtures and matcher-backed expectation consumption.
 - `AngelscriptJsonObjectConverterBindingsTests.cpp` had one remaining AS control-flow brace violation in `Error_MalformedJsonRejected`; the final pass fixed it and reran the strengthened audit.
 - `AngelscriptContainerBindingsTests.cpp` is the only unchanged `.cpp`; it is an empty deprecated migration placeholder with no test registration or inline AS fixture.
-- The remaining unchanged headers are pure C++ test fixture/helper headers with no inline AS fixture to normalize: `AngelscriptDataTableBindingTestTypes.h`, `AngelscriptGameplayFunctionLibraryTestTypes.h`, `AngelscriptMathBindingsTestCompare.h`, `AngelscriptTArrayBindingsTestHelpers.h`, and `AngelscriptWorldCollisionBindingsTestHelpers.h`.
+- The remaining unchanged headers are pure C++ test fixture/helper headers with no inline AS fixture to normalize: `AngelscriptDataTableBindingTestTypes.h`, `AngelscriptGameplayFunctionLibraryTestTypes.h`, `AngelscriptMathBindingsTestCompare.h`, and `AngelscriptWorldCollisionBindingsTestHelpers.h`. Stage 2 removed the obsolete `AngelscriptTArrayBindingsTestHelpers.h` after the TArray syntax-compat matrix was reduced to local contract smokes.
 - The shared `AngelscriptConsoleBindingsSections.h` remains a header boundary because the console tests share section helpers across split Bindings test files.
 
 ## Audit Commands

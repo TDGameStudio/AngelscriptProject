@@ -2,16 +2,17 @@
 
 > **This matrix is the design specification header for asset, material, and save tests**: each row is a concrete verifiable scenario guiding the four test files. ⬜ means pending and ✅ identifies the covering `TEST_METHOD`.
 >
-> - Test files: `AssetLoading`(6) / `LiteralAsset`(7) / `Material`(3) / `SaveGame`(4) Tests.cpp
+> - Test files: `AssetLoading`(7) / `LiteralAsset`(7) / `Material`(3) / `SaveGame`(4) Tests.cpp
 > - Automation prefix: `Angelscript.TestModule.Coverage.<AssetLoading|LiteralAsset|Material|SaveGame>`
 > - See `../coverage-matrix.md` for the legend.
 
-## 1. Asset Loading, AssetLoadingTests 6
+## 1. Asset Loading, AssetLoadingTests 7
 
 | Scenario | Status | Coverage Test Method |
 |------|------|------------|
 | Synchronous soft object path load / synchronous soft class path load | ✅ | `SynchronousSoftObjectPathLoad` `SynchronousSoftClassPathLoad` |
 | Global LoadObject | ✅ | `GlobalLoadObject` |
+| AssetRegistry live query parity, top-level path and null-parent filters | ✅ | `AssetRegistryLiveQueryParity` |
 | Soft reference path construction and pending state | ✅ | `SoftReferencePathConstructionAndPending` |
 | Soft path string identity and missing-class boundary / soft reference async boundary | ✅ | `SoftPathStringIdentityAndMissingClassBoundaries` `SoftReferenceAsyncBoundaries` |
 
@@ -46,10 +47,10 @@
 
 | File | Methods |
 |------|------|
-| AssetLoading | 6 |
+| AssetLoading | 7 |
 | LiteralAsset | 7 |
 | Material | 3 |
 | SaveGame | 4 |
-| **Total** | **20** |
+| **Total** | **21** |
 
 **Closed on 2026-07-01**: G2 — `AngelscriptCoverageSaveGameTests.cpp::ComplexStructAndArraySlotRoundTrip` covers save -> load round-trip assertions for nested USTRUCT, `TArray<int>`, and `TArray<USTRUCT>`.

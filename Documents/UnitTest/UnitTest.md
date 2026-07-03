@@ -138,17 +138,26 @@ TEST_METHOD(MyCase)
 }
 ```
 
-### 4. Bindings 大矩阵按场景拆成多个 `TEST_METHOD`
+### 4. Bindings 只做绑定入口契约 / 冒烟
 
-Bindings/CQTest 文件里如果一个类型有多个独立覆盖面，应参考 `AngelscriptHotReloadDelegateTests.cpp` 的组织方式：一个 test class 下拆多个场景化 `TEST_METHOD`，而不是把所有 section 聚合到一个 `OptionalCompat` / `Compat` 方法里再调用一串 `RunXxxSection()`。
+`Bindings/` 的目标不是做大型语义覆盖矩阵，而是证明 **AS 可见的手写 / 默认绑定入口存在、声明正确、可调用，并且能走到预期 native 路径**。大量值域、类型组合、边界条件、异常路径、运行时状态组合、物理命中矩阵、容器返回值矩阵等内容应放到 `Coverage/` 或对应功能测试目录。
 
-推荐拆分维度：
+Bindings/CQTest 文件里如果一个类型有多个独立绑定入口，应拆成场景化 `TEST_METHOD`，但每个方法只保留契约级证明：
 
-- baseline/compat 行为。
-- type matrix。
-- API entry-point coverage。
-- null / boundary / exception 场景。
-- return-type 或 log diagnostic 这类专门路径。
+- bind 是否暴露给 AS，并能编译通过。
+- 构造、方法、属性、namespace/static 函数、operator、mixin 或 delegate signature 是否按预期解析。
+- 代表性调用是否能到达 native 路径并返回一个可观察结果。
+- 最小负向契约：null guard、错误 overload、明确不支持的边界、预期 diagnostic。
+
+不应在 Bindings 中继续扩张：
+
+- FString / 容器 / 数学结构的完整 API 语义矩阵。
+- TArray / TMap / TSet 多类型、多返回值、多错误路径矩阵。
+- WorldCollision 命中 / 未命中 / stale output / tick 行为矩阵。
+- UObject 生命周期、GC reachability、flag 组合、嵌套对象行为。
+- EnhancedInput 完整 mapping 构造或 AssetRegistry live query 对比。
+
+这些内容如果还没有覆盖，先补 `Coverage/` 的矩阵行和 `Angelscript.TestModule.Coverage.*` 测试，再从 `Bindings/` 删除重复测试。不要为了收窄 Bindings 直接损失覆盖。
 
 推荐：
 
@@ -169,22 +178,25 @@ public:
 		ASTEST_RESET_ENGINE(Engine);
 	}
 
-	TEST_METHOD(OptionalTypeMatrix)
+	TEST_METHOD(OptionalContractSmoke)
 	{
 		FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
 		FAngelscriptEngineScope Scope(Engine);
 
 		const FString ScriptSource = ASTEST_AS(R"AS(
-			int OptBool_True_IsSet()
+			int OptionalBoolCanConstructAndRead()
 			{
 				TOptional<bool> O(true);
 				return O.IsSet() ? 1 : 0;
 			}
 			)AS");
 
-		FScopedAngelscriptModule ModuleScope(*TestRunner, Engine, TEXT("ASOptional_TypeMatrix"), ScriptSource);
-		ASSERT_THAT(IsTrue(ModuleScope.IsValid(), TEXT("Optional type matrix module should compile")));
-		// assertions
+		FScopedAngelscriptModule ModuleScope(*TestRunner, Engine, TEXT("ASOptional_ContractSmoke"), ScriptSource);
+		ASSERT_THAT(IsTrue(ModuleScope.IsValid(), TEXT("Optional contract smoke module should compile")));
+		ASSERT_THAT(IsTrue(ExpectGlobalInt(*TestRunner, Engine, ModuleScope.GetModule(),
+			TEXT("int OptionalBoolCanConstructAndRead()"),
+			TEXT("TOptional<bool> constructor and IsSet should dispatch through the binding"), 1),
+			TEXT("TOptional<bool> constructor and IsSet should dispatch through the binding")));
 	}
 };
 ```
@@ -207,9 +219,10 @@ TEST_METHOD(OptionalCompat)
 
 规则：
 
-- `TEST_METHOD` 名称必须说明场景，避免所有覆盖挂在一个 `Compat` 方法下。
+- `TEST_METHOD` 名称必须说明绑定入口或契约场景，避免所有覆盖挂在一个 `Compat` 方法下。
 - `FScopedAngelscriptModule` 应在对应 `TEST_METHOD` 内创建，module name 与场景名对应。
 - `ExpectGlobalInts` / `Execute...` 的返回值必须被 `ASSERT_THAT(IsTrue(...))` 或同等级断言消费，不要只调用后忽略返回值。
+- 如果测试开始验证大量值域、类型矩阵、返回值矩阵或运行时状态组合，应迁移到 `Coverage/` 或对应功能目录，而不是继续塞进 `Bindings/`。
 - 允许保留文件级 native bind 注册对象，例如 `AS_FORCE_LINK const FAngelscriptBinds::FBind ...`，因为这类对象必须在 AS bind 初始化期注册；但测试流程、fixture 和断言仍应留在 `TEST_CLASS_WITH_FLAGS` 内。
 
 ## 内联 AS fixture 规则

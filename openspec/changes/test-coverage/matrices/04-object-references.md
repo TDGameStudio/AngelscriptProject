@@ -2,7 +2,7 @@
 
 > **This matrix is the design specification header for object reference / GC tests**: each row is a concrete verifiable scenario guiding five test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - Test files: `Handle`(14) / `Handles`(10) / `WeakReference`(10) / `SoftReference`(11) / `GC`(12) Tests.cpp
+> - Test files: `Handle`(16) / `Handles`(10) / `WeakReference`(10) / `SoftReference`(11) / `GC`(12) Tests.cpp
 > - Automation prefix: `Angelscript.TestModule.Coverage.<Handle|Handles|WeakReference|SoftReference|GC>`
 > - See `../coverage-matrix.md` for the legend; interface reference boundaries are in `../coverage-gaps.md §2.3`.
 
@@ -19,6 +19,8 @@
 | Handle in containers, arrays / Set | ✅ | `HandleInContainers` `HandleSetContainer` |
 | Member object / Actor / component references | ✅ | `MemberObjectActorComponentReferences` |
 | NewObject and handle | ✅ | `UObjectHandleAndNewObject` `UObjectHandleAssignmentAndActorOuter` |
+| UObject flag mutation and transient state | ✅ | `UObjectFlagMutationAndTransientState` |
+| UObject outer chain and path matrix | ✅ | `UObjectOuterChainAndPathMatrix` |
 | Destroyed Actor invalidates reference | ✅ | `HandleDestroyActorInvalidatesReference` |
 
 ## 2. TObjectPtr Routing And Explicit Properties
@@ -93,11 +95,11 @@
 
 | File | Methods | Notes |
 |------|------|------|
-| Handle | 14 | handle basics / operations / containers / TObjectPtr routing |
+| Handle | 16 | handle basics / operations / containers / TObjectPtr routing / UObject flag and outer-path matrices |
 | Handles | 10 | references as properties/parameters plus TObjectPtr / weak arrays / soft reference aggregate coverage |
 | WeakReference | 10 | TWeakObjectPtr + TSubclassOf |
 | SoftReference | 11 | TSoftObjectPtr / TSoftClassPtr |
 | GC | 12 | reclaim / protection / reachability / cycles |
-| **Total** | **57** | |
+| **Total** | **59** | |
 
 **Pending (⬜)**: audit confirmed that `TObjectPtr` routing/properties (§2) and weak reference arrays (§3) are covered. Original `coverage-gaps.md` G3/G4 were corrected from pending to covered, with optional deeper assertions if needed. No hard gaps currently remain.

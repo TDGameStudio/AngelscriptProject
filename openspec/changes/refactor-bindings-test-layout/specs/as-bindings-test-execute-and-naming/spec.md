@@ -74,3 +74,26 @@ Bindings tests under `Plugins/Angelscript/Source/AngelscriptTest/Bindings` SHALL
 
 - **WHEN** a scenario contains both binding existence and broad semantic behavior concerns
 - **THEN** Bindings SHOULD retain only the small exposed-entrypoint smoke/contract assertion, while the semantic expansion SHOULD live in Coverage
+
+### Requirement: Project docs describe Bindings as a binding-surface contract layer
+
+Project test guidance SHALL describe `AngelscriptTest/Bindings` as a binding-surface contract/smoke layer, not a per-type coverage matrix. `Documents/UnitTest/UnitTest.md` and `Documents/Guides/TestConventions.md` MUST NOT recommend organizing Bindings around exhaustive "type matrix", "API entry-point coverage", or broad boundary/exception matrices; that guidance MUST point to `AngelscriptTest/Coverage` and OpenSpec `test-coverage`.
+
+#### Scenario: Docs route matrix guidance to Coverage
+
+- **WHEN** the Bindings responsibility is described in `UnitTest.md` or `TestConventions.md`
+- **THEN** the docs MUST frame Bindings as proving that an AS-visible bind exists and reaches its native path, and MUST route large semantic/type/boundary matrices to `Coverage/`
+
+### Requirement: Matrix content migrates to Coverage before Bindings trimming
+
+When broad semantic matrix content is removed from a Bindings test as part of the responsibility narrowing, an equivalent matrix row and `TEST_METHOD` SHALL already exist (or be added first) in `AngelscriptTest/Coverage`. A per-file disposition and a `Bind_*.cpp`-to-contract-smoke inventory SHALL be recorded before large matrix content is trimmed or moved, so that the consolidation does not lose coverage and the remaining Bindings surface is knowable.
+
+#### Scenario: No net coverage loss during consolidation
+
+- **WHEN** a Bindings test loses semantic matrix content during the narrowing
+- **THEN** the equivalent coverage MUST exist in `Coverage/` first, and the Bindings file MUST retain a minimal exposed-entrypoint smoke
+
+#### Scenario: Binding surface is inventoried before trimming
+
+- **WHEN** the responsibility narrowing trims or moves matrix content across the Bindings directory
+- **THEN** a per-file disposition (`Keep as contract` / `Trim to smoke` / `Move-Delete duplicate` / `Needs missing contract`) and a `Bind_*.cpp`-to-contract-smoke inventory MUST be recorded first

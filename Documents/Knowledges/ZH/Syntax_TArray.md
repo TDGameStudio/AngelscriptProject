@@ -1098,9 +1098,10 @@ else if (Size == 16) FScriptArraySorter<16>::Sort(...);
   - `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TArray.h` / `Bind_TArray_Structs.h` —— `FAngelscriptArrayType` / `FArrayIterator` 头文件
   - `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_compiler.cpp:5665` —— `opFor*` 展开
 - 测试覆盖：
-  - `Plugins/Angelscript/Source/AngelscriptTest/Bindings/AngelscriptTArrayBindingsTests.cpp` —— 主体行为覆盖（自动化测试名 `Angelscript.TestModule.Bindings.Container.TArray`）
-  - `Plugins/Angelscript/Source/AngelscriptTest/Bindings/AngelscriptTArraySyntaxCompatBindingsTests.cpp` —— 语法兼容性回归
-  - `Plugins/Angelscript/Source/AngelscriptTest/Bindings/AngelscriptArrayEdgeBindingsTests.cpp` —— 边界与异常路径
+  - `Plugins/Angelscript/Source/AngelscriptTest/Bindings/AngelscriptTArrayBindingsTests.cpp` —— `TArray` 绑定入口合同冒烟（自动化测试名 `Angelscript.TestModule.Bindings.Container.TArray`）
+  - `Plugins/Angelscript/Source/AngelscriptTest/Bindings/AngelscriptTArraySyntaxCompatBindingsTests.cpp` —— `T[]` / `int[]` 语法兼容入口合同与最小负向边界
+  - `Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageTArrayAdvancedTests.cpp` —— `TArray` 主体行为覆盖矩阵
+  - `Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageContainerNestedTests.cpp` —— 嵌套容器边界矩阵
 - 示例脚本：
   - `Script/Examples/Core/Example_Array.as` —— 用户向 cookbook（声明、Add、遍历、排序）
 

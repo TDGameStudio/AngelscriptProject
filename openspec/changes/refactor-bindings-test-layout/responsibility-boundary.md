@@ -30,4 +30,4 @@ When a scenario contains both concerns, keep a small Bindings smoke/contract tes
 
 The current layout refactor still preserves the existing Bindings tests and verifies the prefix passes. The strategic goal is narrower than "make Bindings a full coverage suite": normalize structure and inline AS formatting now, then use the new boundary to prevent future Bindings growth from duplicating `Coverage/`.
 
-Future cleanup can use this record to identify oversized Bindings tests whose semantic sections should be split or moved into `Coverage/`, while retaining small entrypoint checks in `Bindings/`.
+Future cleanup can use this record to identify oversized Bindings tests whose semantic sections should be split or moved into `Coverage/`, while retaining small entrypoint checks in `Bindings/`. Stage 2 executes exactly that cleanup — see `contract-scope-plan.md` for the disposition rubric, first-batch file table, `Bind_*.cpp` contract inventory approach, and the "migrate to Coverage before trimming" safety rule.

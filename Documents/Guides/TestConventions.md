@@ -21,7 +21,7 @@
 | Debugger 场景 | `Plugins/Angelscript/Source/AngelscriptTest/Debugger/` | `Angelscript.TestModule.Debugger.*` | 附着运行中的 production-like engine，验证握手、断点、步进等调试链路 | `AngelscriptDebuggerTestSession.*` / `AngelscriptDebuggerTestClient.*` / `AngelscriptDebuggerScriptFixture.*` |
 | UE 功能测试层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `AngelscriptFunctionalTestUtils.h` + `AngelscriptTestWorld.h`（actor / world tick / 完整生命周期） |
 | Learning | `Plugins/Angelscript/Source/AngelscriptTest/Learning/Native/`、`Learning/Runtime/` | `Angelscript.TestModule.Learning.<Layer>.*` | 结构化 trace / 教学型可观测测试 | `AngelscriptLearningTrace.*` |
-| Bindings Coverage (CQTest) | `Plugins/Angelscript/Source/AngelscriptTest/Bindings/` | `Angelscript.TestModule.Bindings.<Type>.*` | 按类型的绑定覆盖，CQTest `TEST_CLASS_WITH_FLAGS` + `BEFORE_ALL/AFTER_ALL` + `FScopedAngelscriptModule` RAII | `CQTest.h` + `AngelscriptTestModuleScope.h` + `AngelscriptTestExecute.h` + 按需 `Bindings/Angelscript*TestHelpers.h` |
+| Bindings Contract (CQTest) | `Plugins/Angelscript/Source/AngelscriptTest/Bindings/` | `Angelscript.TestModule.Bindings.<Type>.*` | AS 可见手写 / 默认绑定入口的契约冒烟：声明、解析、代表性 native dispatch；大型语义矩阵放到 `Coverage/` | `CQTest.h` + `AngelscriptTestModuleScope.h` + `AngelscriptTestExecute.h` + 按需 `Bindings/Angelscript*TestHelpers.h` |
 | Crash-only 子进程 | `Plugins/Angelscript/Source/AngelscriptTest/<Theme>/` | `Angelscript.CrashOnly.<Theme>.*` | 主动触发崩溃并验证崩溃路径产物；必须单独运行，不能进入普通 suite/group/full-run | 独立 child process + `Tools\RunTests.ps1 -TestPrefix "Angelscript.CrashOnly.<Theme>"` |
 
 ### 2. 文件命名规则
@@ -116,7 +116,7 @@
 - UE 功能测试：`AngelscriptFunctionalTestUtils.h`
 - UE 功能测试 actor / world tick / 完整生命周期：`AngelscriptTestWorld.h::FAngelscriptTestWorld`（`SpawnActorOfClass` / `BeginPlay` / `Tick` / `TickViaManager` / `DispatchActorTick` / `DispatchComponentTick` / `DestroyAndDrain`，详见 `Documents/Guides/Test.md` "Actor / World Tick 测试推荐 harness" 章节，模板见 `Template_WorldTick.cpp` / `Template_GameLifetime.cpp`）
 - Learning：`AngelscriptLearningTrace.*`
-- CQTest 绑定覆盖：`CQTest.h` + `AngelscriptTestMacros.h` + `AngelscriptTestModuleScope.h` + `AngelscriptTestExecute.h`（详见 `Plugins/Angelscript/Source/AngelscriptTest/TESTING_GUIDE.md` 与 `Shared/README.md`）
+- CQTest 绑定契约：`CQTest.h` + `AngelscriptTestMacros.h` + `AngelscriptTestModuleScope.h` + `AngelscriptTestExecute.h`；只验证 AS 可见入口能编译、解析并代表性 dispatch，类型 / 值域 / 边界大矩阵放到 `Coverage/`（详见 `Plugins/Angelscript/Source/AngelscriptTest/TESTING_GUIDE.md` 与 `Shared/README.md`）
 
 ### Step 5：同步流程入口和文档
 
@@ -134,7 +134,7 @@
 | UE 功能测试 Actor / Component | `Actor/`、`Component/` | `Angelscript.TestModule.Actor.*` / `Angelscript.TestModule.Component.*` | `FAngelscriptTestWorld W(*TestRunner, Engine)` → `W.SpawnActorOfClass` → `W.BeginPlay` → `W.Tick` / `W.DispatchActorTick` / `W.DispatchComponentTick` → `ReadPropertyValue` 读回断言 | `.\Tools\RunTestSuite.ps1 -Suite FunctionalSamples` |
 | UE 完整 Actor 生命周期 | `Actor/` 或主题目录 | `Angelscript.TestModule.Actor.Lifecycle.*` 等 | `FAngelscriptTestWorld` → `SpawnActorOfClass`（触发 `UserConstructionScript`）→ `BeginPlay` → `Tick` × N → `DestroyAndDrain`（同步派发 `EndPlay(Destroyed) + Destroyed`）→ 断言计数 / 顺序 / `LastEndPlayReason` | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Actor."` |
 | HotReload 回归 | `HotReload/` | `Angelscript.TestModule.HotReload.*` | 编译 V1 → 生成对象/状态 → 编译 V2 → 断言 soft/full reload 结果与状态保持 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload"` |
-| 绑定覆盖 (CQTest) | `Bindings/` | `Angelscript.TestModule.Bindings.<Type>.*` | CQTest `BEFORE_ALL` 获取引擎 → 每个 `TEST_METHOD` 用 `FScopedAngelscriptModule` 编译 AS 模块 → `ExpectGlobalInt` / `FAngelscriptTestExecutor` / `ExecuteAndExpect*` 验证 | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings."` |
+| 绑定契约 (CQTest) | `Bindings/` | `Angelscript.TestModule.Bindings.<Type>.*` | CQTest `BEFORE_ALL` 获取引擎 → 每个 `TEST_METHOD` 编译最小 AS 模块 → 验证绑定入口存在、声明可解析、代表性调用到达 native；大型语义矩阵改放 `Coverage/` | `.\Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings."` |
 
 ## 本轮规范化落点
 

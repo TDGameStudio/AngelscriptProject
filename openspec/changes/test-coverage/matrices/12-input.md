@@ -2,7 +2,7 @@
 
 > **This matrix is the design specification header for input tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageInputTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, 🟡 means partial coverage such as reflection ceiling or subset coverage, and 🚫 means fork/headless unsupported.
 >
-> - Test file: `AngelscriptCoverageInputTests.cpp`, 21 methods
+> - Test file: `AngelscriptCoverageInputTests.cpp`, 22 methods
 > - Automation prefix: `Angelscript.TestModule.Coverage.Input`
 > - See `../coverage-matrix.md` for the legend.
 
@@ -38,10 +38,10 @@
 
 | Scenario | Status | Coverage Test Method |
 |------|------|------------|
-| MappingContext and ActionValue, Bool / Axis1D / Axis2D / Axis3D / ConvertToType | ✅ | `EnhancedInputMappingContextAndActionValues` |
+| MappingContext and ActionValue, Bool / Axis1D / Axis2D / Axis3D / ConvertToType | ✅ | `EnhancedInputMappingContextAndActionValues` `EnhancedInputRuntimeMappingContextMatrix` |
 | Component binding events and removal / binding handles and removal | 🟡 | `EnhancedInputComponentBindingEventsAndRemoval` `EnhancedInputBindingHandlesAndRemoval`, G20: all five ETriggerEvents, Started/Ongoing/Triggered/Completed/Canceled, are compile-reachable through BindAction, but `GetTriggerEvent()` reflection assertions cover only Started+Triggered; Ongoing/Completed/Canceled need independent reflection-preservation assertions |
 | Modifier and Trigger, Add+Count | 🟡 | `EnhancedInputModifiersAndTriggers`, G21: only asserts `AddModifier`/`AddTrigger` plus `GetModifierCount`/`GetTriggerCount`; missing `ModifyRaw` / `UpdateState` behavior or reflection assertions. Modifier subset covers only DeadZone/Negate/Scalar/Smooth/ResponseCurveExponential, not Swizzle/FOVScaling. Trigger subset covers Down/Pressed/Released/Hold/Tap/Pulse/Combo, not ChordedAction, which is distinct from Combo |
-| Full Modifier set, Swizzle / FOVScaling and related modifiers | ⬜ | Pending G22: `UInputModifierSwizzleAxis` is exposed in `Bindings/AngelscriptEnhancedInputBindingsTests.cpp` but lacks a Coverage reflection-ceiling assertion; `UInputModifierFOVScaling` has zero fork grep references, so first confirm exposure with a compile-failure boundary |
+| Full Modifier set, Swizzle / FOVScaling and related modifiers | 🟡 | `EnhancedInputRuntimeMappingContextMatrix`, G22: Swizzle is now covered through runtime mapping-context construction; `UInputModifierFOVScaling` still has zero fork grep references, so it needs a compile-failure boundary before this row can close |
 | Full Trigger set, ChordedAction distinct from Combo | ⬜ | Pending G23: `UInputTriggerChordAction` has zero fork grep references; use compile-failure boundary or reflection assertion to lock exposure state. `UInputTriggerCombo` is covered, but ChordAction and Combo are distinct classes |
 | Action and Mapping metadata | ✅ | `EnhancedInputActionAndMappingMetadata` |
 | Input settings and runtime mapping API | ✅ | `InputSettingsAndRuntimeMappingApi` |
@@ -56,12 +56,12 @@
 
 ---
 
-**Corresponding test methods**: 21 methods.
+**Corresponding test methods**: 22 methods.
 
 **Pending (⬜)**:
 - G20 full EnhancedInput ETriggerEvent coverage, missing `GetTriggerEvent()` reflection-preservation assertions for Ongoing/Completed/Canceled
 - G21 Modifier/Trigger application behavior, `ModifyRaw`/`UpdateState` reflection or behavior; currently Add+Count only
-- G22 Swizzle / FOVScaling Modifier reflection ceiling
+- G22 FOVScaling Modifier reflection ceiling; Swizzle is covered by `EnhancedInputRuntimeMappingContextMatrix`
 - G23 ChordedAction Trigger, distinct from Combo, reflection or boundary
 - G24 EnhancedInputUserSettings / PlayerMappableKeyProfile compile-failure boundary
 - G25 legacy InputComponent priority, Block/Override/DontBlock, plus bConsumeInput / bExecuteWhenPaused runtime behavior or reflection
