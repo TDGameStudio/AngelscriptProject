@@ -22,10 +22,10 @@ Refactoring code coverage into an engine extension gives the system:
 - Add `FAngelscriptCodeCoverageExtension`, implementing `OnEngineAttached` and `OnEngineDetached` lifecycle hooks.
 - Remove `CodeCoverage = new FAngelscriptCodeCoverage` from `FAngelscriptEngine::Initialize_AnyThread()`.
 - Remove the `OnPostEngineInit` lambda closure from `PostInitialize_GameThread()`.
-- Create the `FAngelscriptCodeCoverage` instance and call `AddTestFrameworkHooks()` from the extension's `OnEngineAttached`.
+- Create engine-specific `FAngelscriptCodeCoverage` instances and call `AddTestFrameworkHooks()` from the extension's `OnEngineAttached`.
 - Clean up the code coverage object from the extension's `OnEngineDetached`.
 - Support independent per-engine-instance coverage tracking, with separate coverage data for each engine instance.
-- Preserve the existing coverage API and report generation logic.
+- Preserve the existing coverage API while allowing the data-export change to make runtime reports JSON-only.
 
 ## Capabilities
 
@@ -41,8 +41,8 @@ None. This is an internal refactor and does not modify an existing specification
 
 **Code Impact:**
 
-- `AngelscriptRuntime/CodeCoverage/AngelscriptCodeCoverage.h`: update the interface and add the extension class.
-- `AngelscriptRuntime/CodeCoverage/AngelscriptCodeCoverage.cpp`: refactor initialization logic.
+- `AngelscriptRuntime/Extension/CodeCoverage/AngelscriptCodeCoverage.h`: update the interface and add the extension class.
+- `AngelscriptRuntime/Extension/CodeCoverage/AngelscriptCodeCoverage.cpp`: refactor initialization logic.
 - `AngelscriptRuntime/Core/AngelscriptEngine.h`: remove the raw `CodeCoverage` pointer member.
 - `AngelscriptRuntime/Core/AngelscriptEngine.cpp`: remove direct construction and lambda registration code.
 - `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp`: register the extension.
@@ -52,7 +52,7 @@ None. This is an internal refactor and does not modify an existing specification
 - Code coverage initializes when a `FAngelscriptEngine` instance is created, if `CoverageEnabled()` is true.
 - Test framework hooks register immediately when the engine attaches and no longer depend on `OnPostEngineInit`.
 - Each engine instance owns an independent `FAngelscriptCodeCoverage` object.
-- Coverage report generation logic remains unchanged.
+- Coverage report generation now writes structured JSON-only runtime output under the data-export change.
 - Existing APIs remain compatible: `MapExecutableLines`, `HitLine`, `StartRecording`, and `StopRecordingAndWriteReport`.
 
 **Dependency Impact:**

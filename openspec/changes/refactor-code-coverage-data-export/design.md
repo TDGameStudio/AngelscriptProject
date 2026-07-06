@@ -57,16 +57,16 @@ Rationale: coverage line hits and function timing have different collection poin
 
 Alternative considered: add timing while refactoring coverage export. This risks mixing a data-format refactor with VM instrumentation and makes failures harder to isolate.
 
-### Decision: External visualization must preserve current report affordances
+### Decision: External visualization is deferred to an external tool
 
-The external tool must generate a static site that covers the current C++ HTML behavior: total coverage, directory summary, file links, covered and not-covered line highlighting, hit counts, source display, and generated time. It can then add richer UI such as search, filters, sorting, and future diagnostics overlays.
+Runtime now exports the data needed by an external static site, but this implementation does not add the renderer. The exported JSON is the contract; visualization can be implemented by a separate tool without reintroducing HTML templates into runtime C++.
 
-Rationale: removing C++ HTML should not make manual validation worse. The migration is only acceptable if the external tool replaces the current manual inspection workflow.
+Rationale: the latest implementation direction explicitly separates data export from presentation. Runtime should finish the machine-readable contract first, while visualization remains an external concern that can be scheduled independently.
 
 ## Risks / Trade-offs
 
 - **External tool lags runtime JSON** -> Keep `schema_version`, deterministic ordering, and tests that parse required fields before tool rendering.
-- **Current HTML users lose a direct artifact** -> Provide a tool task that generates static HTML from the JSON and document the new manual inspection command.
+- **Current HTML users lose a direct artifact** -> Keep the exported JSON complete and deterministic so an external renderer can be added without runtime changes.
 - **Function timing data is incomplete if only one call path is instrumented** -> Treat timing as a later diagnostics collector and first inventory AS VM, StaticJIT, and UASFunction execution paths.
 - **JSON grows too large for big projects** -> Start without embedded source text and sort compact line entries; add split-file exports only if real artifact size becomes a problem.
 - **Exclude rules are hard to debug** -> Export exclude patterns and per-file inclusion/exclusion status in the data package.
@@ -75,9 +75,9 @@ Rationale: removing C++ HTML should not make manual validation worse. The migrat
 
 1. Introduce data-package export while keeping or shimming the existing stop/write entry point.
 2. Update coverage tests to assert JSON data instead of runtime HTML.
-3. Add the external static HTML generator and test it against a fixture or generated coverage package.
-4. Remove or deprecate C++ HTML output after the external renderer can reproduce the current manual inspection workflow.
-5. Document the new workflow and generated artifact paths.
+3. Remove runtime C++ HTML output.
+4. Document the JSON-only runtime artifact and leave visualization to external tooling.
+5. Add an external static HTML generator later if that workflow is prioritized.
 
 Rollback before archive is straightforward: retain the old C++ HTML generator and keep the external tool as experimental. After archive, rollback would restore the old HTML generation code and tests from git.
 

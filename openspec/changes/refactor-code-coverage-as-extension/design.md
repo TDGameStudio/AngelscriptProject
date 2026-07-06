@@ -54,11 +54,11 @@ Using `FClassReloadHelperExtension` and the planned `FAngelscriptCrashSnapshotEx
 - Remove the `OnPostEngineInit` lambda closure and initialize directly when the engine attaches.
 - Support independent coverage tracking in multi-engine-instance environments.
 - Ensure `FAngelscriptCodeCoverage` is destroyed correctly with no memory leak.
-- Preserve existing coverage APIs and report generation behavior.
+- Preserve existing coverage APIs while allowing the data-export OpenSpec to switch runtime reports to JSON-only output.
 
 **Non-Goals:**
 
-- Do not change coverage data collection logic or report format.
+- Do not change coverage data collection logic.
 - Do not modify public APIs such as `MapExecutableLines`, `HitLine`, or `StartRecording`.
 - Do not optimize coverage tracking performance as part of this refactor.
 - Do not change `WITH_AS_COVERAGE` compile condition behavior.
@@ -67,13 +67,13 @@ Using `FClassReloadHelperExtension` and the planned `FAngelscriptCrashSnapshotEx
 
 ### Decision 1: Coverage Object Ownership Strategy
 
-**Choice: the extension owns `FAngelscriptCodeCoverage` through `TUniquePtr`.**
+**Choice: the extension owns `FAngelscriptCodeCoverage` with exclusive per-engine storage.**
 
 **Rationale:**
 
 - `FAngelscriptCodeCoverage` is not managed through `TSharedPtr`; `TUniquePtr` gives clear exclusive ownership.
 - Each engine instance should have independent coverage data and should not share it.
-- `TUniquePtr` destroys automatically, solving the possible existing memory leak.
+- Extension-owned storage destroys coverage objects automatically, solving the possible existing memory leak.
 - The extension lifetime matches the engine instance lifetime, making exclusive ownership appropriate.
 
 **Alternatives:**
@@ -88,30 +88,36 @@ Using `FClassReloadHelperExtension` and the planned `FAngelscriptCrashSnapshotEx
 class FAngelscriptCodeCoverageExtension : public IAngelscriptExtension
 {
 private:
-    TUniquePtr<FAngelscriptCodeCoverage> Coverage;
-    FAngelscriptEngine* AttachedEngine = nullptr;
+    struct FEngineCoverage
+    {
+        FAngelscriptEngine* Engine = nullptr;
+        TUniquePtr<FAngelscriptCodeCoverage> Coverage;
+    };
+    TArray<FEngineCoverage> Coverages;
     
 public:
     virtual void OnEngineAttached(FAngelscriptEngine& Engine) override
     {
         if (FAngelscriptCodeCoverage::CoverageEnabled())
         {
-            Coverage = MakeUnique<FAngelscriptCodeCoverage>();
-            AttachedEngine = &Engine;
+            FEngineCoverage& EngineCoverage = Coverages.AddDefaulted_GetRef();
+            EngineCoverage.Engine = &Engine;
+            EngineCoverage.Coverage = MakeUnique<FAngelscriptCodeCoverage>();
             
             #if WITH_EDITOR
-            Coverage->AddTestFrameworkHooks();
+            EngineCoverage.Coverage->AddTestFrameworkHooks();
             #endif
         }
     }
     
     virtual void OnEngineDetached(FAngelscriptEngine& Engine) override
     {
-        Coverage.Reset();
-        AttachedEngine = nullptr;
+        RemoveCoverageForEngine(Engine);
     }
 };
 ```
+
+Implementation note: the landed version also keeps an engine-to-extension lookup table so `GetForEngine(Engine)` does not depend on scanning the registry.
 
 ### Decision 2: Engine Access Strategy
 
@@ -135,7 +141,7 @@ public:
 class FAngelscriptCodeCoverageExtension : public IAngelscriptExtension
 {
 public:
-    FAngelscriptCodeCoverage* GetCoverage() const { return Coverage.Get(); }
+    FAngelscriptCodeCoverage* GetCoverage(FAngelscriptEngine& Engine) const;
     
     // Static helper: find the coverage object for a specific engine.
     static FAngelscriptCodeCoverage* GetForEngine(FAngelscriptEngine& Engine);
@@ -294,7 +300,7 @@ void FAngelscriptRuntimeModule::StartupModule()
 
 7. **Test coverage behavior**
    - Run automation tests and generate a coverage report.
-   - Verify report format and content are unchanged.
+   - Verify JSON report format and content are complete.
    - Test multi-engine scenarios if coverage tests exist.
 
 8. **Cleanup and docs**
@@ -316,7 +322,7 @@ All changes are additive around the existing core logic and should not affect th
 
 - [ ] Code coverage initializes during editor startup when `CoverageEnabled()` is true.
 - [ ] Test framework hooks register correctly and coverage tracks during test runs.
-- [ ] Coverage report generation works and output format is unchanged.
+- [ ] Coverage report generation works and writes JSON-only runtime output.
 - [ ] Repeated engine creation/destruction does not leak memory.
 - [ ] `MapExecutableLines` and `HitLine` calls work correctly.
 - [ ] State export includes coverage information when enabled.

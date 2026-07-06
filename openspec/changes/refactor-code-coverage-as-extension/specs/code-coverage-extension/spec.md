@@ -28,7 +28,7 @@ The code coverage system SHALL respond to creation and destruction events for ea
 #### Scenario: Engine Instance Attached With Coverage Enabled
 
 - **WHEN** a `FAngelscriptEngine` instance is attached to the extension through `OnEngineAttached` and `FAngelscriptCodeCoverage::CoverageEnabled()` returns true
-- **THEN** the extension SHALL create a new `FAngelscriptCodeCoverage` object and own it through `TUniquePtr`
+- **THEN** the extension SHALL create a new `FAngelscriptCodeCoverage` object and own it through exclusive storage managed by the extension
 
 #### Scenario: Engine Instance Attached With Coverage Disabled
 
@@ -38,7 +38,7 @@ The code coverage system SHALL respond to creation and destruction events for ea
 #### Scenario: Engine Instance Detached
 
 - **WHEN** a `FAngelscriptEngine` instance is detached from the extension through `OnEngineDetached`
-- **THEN** the extension SHALL release the associated `FAngelscriptCodeCoverage` object through `TUniquePtr::Reset()`
+- **THEN** the extension SHALL release the associated `FAngelscriptCodeCoverage` object
 
 #### Scenario: Multiple Engine Instances With Independent Coverage
 
@@ -110,12 +110,13 @@ All code coverage functionality and APIs SHALL remain identical to behavior befo
 #### Scenario: StopRecordingAndWriteReport Still Works
 
 - **WHEN** `StopRecordingAndWriteReport(OutputDir)` is called after tests finish
-- **THEN** the system SHALL stop recording and write coverage report HTML files to the specified directory
+- **THEN** the system SHALL stop recording and write `coverage_summary.json` to the specified directory
 
-#### Scenario: Coverage Report Format Unchanged
+#### Scenario: Runtime HTML Report No Longer Required
 
 - **WHEN** a coverage report is generated
-- **THEN** the output HTML file structure and content format SHALL match the pre-extension behavior
+- **THEN** runtime correctness SHALL be represented by `coverage_summary.json`
+- **AND** the runtime SHALL NOT be required to write `index.html` or per-file `*.as.html` pages
 
 ### Requirement: Memory Management Correctness
 
@@ -124,7 +125,7 @@ Code coverage objects SHALL have correct lifecycle management with no memory lea
 #### Scenario: Coverage Object Properly Destroyed On Engine Detach
 
 - **WHEN** an engine instance detaches from the extension
-- **THEN** the associated `FAngelscriptCodeCoverage` object SHALL be automatically destroyed through `TUniquePtr`
+- **THEN** the associated `FAngelscriptCodeCoverage` object SHALL be automatically destroyed by extension-owned storage
 
 #### Scenario: No Memory Leak In Repeated Engine Creation
 
