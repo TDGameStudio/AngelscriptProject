@@ -17,7 +17,7 @@
 | Runtime 内部 C++ | `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` | `Angelscript.TestModule.CppTests.*` | 运行时内部状态、共享引擎、隔离、覆盖率、预编译数据等 | Runtime 私有头 + `StartAngelscriptHeaders.h` |
 | Editor 内部 | `Plugins/Angelscript/Source/AngelscriptEditor/Tests/` | `Angelscript.Editor.*` | Editor 专有行为，例如 watcher / source navigation / debugger seam | Editor 私有实现 + editor-only helper |
 | Native Core | `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.*` | 只验证公共 AngelScript API / ASSDK 桥接层，不引入 `FAngelscriptEngine` | `AngelscriptNativeTestSupport.h` / `AngelscriptTestAdapter.h` |
-| Runtime 集成 | `Plugins/Angelscript/Source/AngelscriptTest/Core/`、`Angelscript/`、`Bindings/`、`AngelScriptSDK/`、`Compiler/`、`Preprocessor/`、`FileSystem/`、`ClassGenerator/` | `Angelscript.TestModule.*` | 基于 `FAngelscriptEngine` 的编译、绑定、语言行为与内部机制验证 | `AngelscriptTestEngineHelper.*`（`Shared/` 已在 Build.cs include 路径） |
+| Runtime 集成 | `Plugins/Angelscript/Source/AngelscriptTest/Core/`、`Angelscript/`、`Bindings/`、`AngelScriptSDK/`、`Compiler/`、`Preprocessor/`、`FileSystem/`、`Generator/` | `Angelscript.TestModule.*` | 基于 `FAngelscriptEngine` 的编译、绑定、语言行为与内部机制验证；`Generator/` 内按 `ASClass` / `ASFunction` / `ASStruct` / `ReloadPlanning` 等子目录区分脚本生成后行为与 generator 能力 | `AngelscriptTestEngineHelper.*`（`Shared/` 已在 Build.cs include 路径） |
 | Debugger 场景 | `Plugins/Angelscript/Source/AngelscriptTest/Debugger/` | `Angelscript.TestModule.Debugger.*` | 附着运行中的 production-like engine，验证握手、断点、步进等调试链路 | `AngelscriptDebuggerTestSession.*` / `AngelscriptDebuggerTestClient.*` / `AngelscriptDebuggerScriptFixture.*` |
 | UE 功能测试层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `AngelscriptFunctionalTestUtils.h` + `AngelscriptTestWorld.h`（actor / world tick / 完整生命周期） |
 | Learning | `Plugins/Angelscript/Source/AngelscriptTest/Learning/Native/`、`Learning/Runtime/` | `Angelscript.TestModule.Learning.<Layer>.*` | 结构化 trace / 教学型可观测测试 | `AngelscriptLearningTrace.*` |
@@ -101,6 +101,7 @@
 
 - 先复用已有主题目录，不要为了单个 case 新建宽泛目录。
 - 若 case 横跨多个主题，优先放在“最终行为发生处”，不要为 helper 所在处命名。
+- `Generator/` 新增测试要先判断测试族别：如果目标是“脚本生成后的 `UASClass` / `UASFunction` / `UASStruct` 行为”，放到 `ASClass/`、`ASFunction/`、`ASStruct/` 或 `ScriptClass/`；如果目标是 `FAngelscriptClassGenerator` 自身能力、reload classification 或纯 reload planning seam，放到 `Core/` 或 `ReloadPlanning/`。Automation 前缀使用 `Angelscript.TestModule.Generator.*`，生产 runtime 头路径和类型名仍沿用 `ClassGenerator`。
 
 ### Step 3：统一文件名与前缀
 
