@@ -874,13 +874,13 @@
 
 ---
 
-## 9. ClassGenerator — 类生成器
+## 9. Generator — 生成器核心
 
-> 源文件：`ClassGenerator/ClassGeneratorTests.cpp`
+> 源文件：`Generator/Core/AngelscriptClassGeneratorSetupTests.cpp`
 
 | 测试名 | 验证内容 |
 |--------|----------|
-| ClassGenerator.EmptyModuleSetup | 空模块下类生成器初始化/搭建 |
+| Generator.Core.Setup.EmptyModuleSetup | 空模块下 `FAngelscriptClassGenerator` 初始化/搭建 |
 
 ---
 
@@ -1318,7 +1318,7 @@
 |--------|----------|
 | `Angelscript.Editor.DirectoryWatcher` | callback 输入到队列输出 deterministic 语义 |
 | `Angelscript.TestModule.HotReload` | queue 消费、热重载行为与失败兜底 |
-| `Angelscript.TestModule.ScriptClass` | generated class 重编译/rename/可见性 |
+| `Angelscript.TestModule.Generator.ScriptClass` | generated class 重编译/rename/可见性 |
 | `Angelscript.TestModule.FileSystem` | 文件发现、映射、路径归一化与 skip 规则 |
 
 ### 15.3 真实脚本语料层
@@ -1372,7 +1372,7 @@
 | 快速烟雾层 | `Angelscript.TestModule.Parity` | `Saved/Automation/AngelscriptPerformance/P6_Parity/Reports/index.json` | `failed=0` |
 | 功能正确性层 | `Angelscript.Editor.DirectoryWatcher` | `Saved/Automation/AngelscriptPerformance/P6_EditorDirectoryWatcher/Reports/index.json` | `failed=0` |
 | 功能正确性层 | `Angelscript.TestModule.HotReload` | `Saved/Automation/AngelscriptPerformance/P6_HotReload/Reports/index.json` | `failed=1 (BurstChurnLatency)` |
-| 功能正确性层 | `Angelscript.TestModule.ScriptClass` | `Saved/Automation/AngelscriptPerformance/P6_ScriptClass/Reports/index.json` | `failed=0` |
+| 功能正确性层 | `Angelscript.TestModule.Generator.ScriptClass` | `Saved/Automation/AngelscriptPerformance/P6_ScriptClass/Reports/index.json` | `failed=0` |
 | 功能正确性层 | `Angelscript.TestModule.FileSystem` | `Saved/Automation/AngelscriptPerformance/P6_FileSystem/Reports/index.json` | `failed=0` |
 | 功能正确性层 | `Angelscript.TestModule.FileSystem.MixedSuccessFailureRecoveryAndRemap` | `Saved/Automation/AngelscriptPerformance/P5_5_MixedSuccessFailureRecovery_Rerun6/Reports/index.json` | `failed=0` |
 | 真实语料层 | `Angelscript.TestModule.Angelscript.NativeScriptHotReload` | `Saved/Automation/AngelscriptPerformance/P6_NativeScriptHotReload/Reports/index.json` | `failed=0` |
