@@ -10,6 +10,7 @@ The current crash snapshot system, `FAngelscriptCrashSnapshot`, is globally init
 - Add `FAngelscriptCrashSnapshotExtension`, implementing `OnEngineAttached` and `OnEngineDetached` lifecycle hooks.
 - Remove direct `Startup()` / `Shutdown()` calls from `FAngelscriptRuntimeModule`.
 - Move `FCoreDelegates::OnHandleSystemError` registration into the extension's `OnEngineAttached` path.
+- Store the extension registration handle and unregister/force-clean crash handler state during module shutdown.
 - Support independent crash snapshot behavior in multi-engine-instance environments.
 - Preserve existing crash snapshot JSON output format and test interface compatibility.
 
@@ -30,12 +31,13 @@ None. This is an internal refactor and does not modify an existing specification
 - `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.h`: update public interface and add the extension class.
 - `AngelscriptRuntime/Dump/AngelscriptCrashSnapshot.cpp`: refactor initialization logic.
 - `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp`: remove direct calls and register the extension.
-- `AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.h`: may need confirmation for multi-engine-instance support.
+- `AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.h`: no behavior change; the extension handles duplicate attach/detach and module unload cleanup internally.
 
 **Behavior Impact:**
 
 - Crash snapshots register the global crash handler when the first `FAngelscriptEngine` instance is created.
 - The global crash handler unregisters when the last engine instance is destroyed.
+- Runtime module shutdown unregisters the extension and clears handler state even if registry unregister does not detach active engines.
 - Existing test code, including `WriteSnapshotForTesting` and `ConfigureForTesting`, remains compatible.
 - Editor and runtime crash snapshot behavior remains unaffected.
 

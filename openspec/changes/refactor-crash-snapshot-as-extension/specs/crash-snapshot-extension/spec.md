@@ -21,6 +21,11 @@ The crash snapshot system SHALL manage its lifecycle through the `IAngelscriptEx
 - **WHEN** `FAngelscriptRuntimeModule::ShutdownModule()` executes
 - **THEN** the system SHALL NOT directly call `FAngelscriptCrashSnapshot::Shutdown()`
 
+#### Scenario: Extension Shutdown Clears Handler State
+
+- **WHEN** `FAngelscriptRuntimeModule::ShutdownModule()` unregisters the crash snapshot extension
+- **THEN** the extension SHALL clear any tracked engine attachments and unregister the crash handler even though `FAngelscriptEngineExtensionRegistry::UnregisterExtension()` does not detach currently attached engines
+
 ### Requirement: Engine Instance Awareness
 
 The crash snapshot system SHALL respond to creation and destruction events for each `FAngelscriptEngine` instance.
@@ -35,10 +40,20 @@ The crash snapshot system SHALL respond to creation and destruction events for e
 - **WHEN** the second or later `FAngelscriptEngine` instance attaches through `OnEngineAttached`
 - **THEN** the extension SHALL increment the reference count but SHALL NOT register the crash handler again
 
+#### Scenario: Duplicate Engine Attach
+
+- **WHEN** the same `FAngelscriptEngine` instance is attached more than once
+- **THEN** the extension SHALL ignore the duplicate attach and SHALL NOT increment the reference count again
+
 #### Scenario: Middle Engine Instance Detached
 
 - **WHEN** a non-final `FAngelscriptEngine` instance detaches through `OnEngineDetached`
 - **THEN** the extension SHALL decrement the reference count but SHALL NOT unregister the crash handler
+
+#### Scenario: Unknown Engine Detach
+
+- **WHEN** an engine instance that was not tracked by the extension detaches
+- **THEN** the extension SHALL ignore the detach and SHALL NOT decrement the reference count
 
 #### Scenario: Last Engine Instance Detached
 

@@ -19,7 +19,8 @@ The current crash snapshot system is globally initialized in `FAngelscriptRuntim
 - `IAngelscriptExtension` interface: `OnEngineAttached(FAngelscriptEngine&)` and `OnEngineDetached(FAngelscriptEngine&)`.
 - `FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(Extension)` registers an extension.
 - Extensions automatically attach when an engine is created and detach when it is destroyed.
-- Reference implementation: `FClassReloadHelper::FClassReloadHelperExtension` in `ClassReloadHelper.h`.
+- Runtime reference implementation: `FAngelscriptCodeCoverageExtension`.
+- Registry detail: `UnregisterExtension()` removes the extension from future attach/detach replay but does not call `OnEngineDetached()` for currently attached engines.
 
 ## Goals / Non-Goals
 
@@ -105,33 +106,35 @@ The current crash snapshot system is globally initialized in `FAngelscriptRuntim
 ```cpp
 void FAngelscriptRuntimeModule::StartupModule()
 {
-    FAngelscriptEngineExtensionRegistry::Get().RegisterExtension(
-        MakeShared<FAngelscriptCrashSnapshotExtension>());
+    CrashSnapshotExtensionHandle = FAngelscriptCrashSnapshotExtension::Startup();
 }
 ```
 
 ### Decision 4: Reference Counting And Multi-Engine Support
 
-**Choice: use a static reference count to track active engine instances.**
+**Choice: use an atomic active-engine count plus an attached-engine set.**
 
 **Rationale:**
 
 - The global crash handler should be active while any engine instance exists and inactive only after all instances are destroyed.
-- A simple reference count provides this behavior.
-- This follows the pattern in `FAngelscriptEngine::AcquireProcessPackages()` and `GAngelscriptPackageRefCount`.
+- A `std::atomic<int32>` count provides thread-safe visibility for tests and lifecycle checks.
+- A `TSet<FAngelscriptEngine*>` guarded by `FCriticalSection` prevents duplicate attach or unknown detach from corrupting the count.
+- Module shutdown must unregister the extension and then force-clean the attached-engine set/count because registry unregister does not detach current engines.
 
 **Implementation:**
 
 ```cpp
 class FAngelscriptCrashSnapshotExtension : public IAngelscriptExtension
 {
-private:
-    static int32 ActiveEngineCount;
-    
 public:
     virtual void OnEngineAttached(FAngelscriptEngine& Engine) override
     {
-        if (++ActiveEngineCount == 1)
+        if (Engine was already attached)
+        {
+            return;
+        }
+
+        if (++GActiveEngineCount == 1)
         {
             FAngelscriptCrashSnapshot::Startup();
         }
@@ -139,10 +142,22 @@ public:
     
     virtual void OnEngineDetached(FAngelscriptEngine& Engine) override
     {
-        if (--ActiveEngineCount == 0)
+        if (Engine was not attached)
+        {
+            return;
+        }
+
+        if (--GActiveEngineCount == 0)
         {
             FAngelscriptCrashSnapshot::Shutdown();
         }
+    }
+
+    static void Shutdown(FDelegateHandle& Handle)
+    {
+        UnregisterExtension(Handle);
+        ClearAttachedEngineState();
+        FAngelscriptCrashSnapshot::Shutdown();
     }
 };
 ```
@@ -208,11 +223,12 @@ public:
 
 4. **Clean module code**
    - Remove the `Shutdown()` call from `FAngelscriptRuntimeModule::ShutdownModule()`.
-   - Ensure the extension detaches before module unload.
+   - Store the extension handle and call `FAngelscriptCrashSnapshotExtension::Shutdown(Handle)` during module unload.
+   - Ensure shutdown force-cleans handler state even if engines are still alive.
 
 5. **Verify tests**
-   - Run existing crash snapshot tests.
-   - Verify multi-engine instance scenarios if related tests exist.
+   - Run CrashSnapshot focused tests.
+   - Run CrashOnly child-process verification.
 
 ### Rollback Strategy
 
