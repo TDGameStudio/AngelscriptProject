@@ -39,4 +39,4 @@
 - [x] 6.1 <!-- Non-TDD --> Run focused engine subsystem tests with `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine.EngineSubsystem" -Label as-subsystem-engine-subsystem-final -TimeoutMs 900000` (`4 passed / 0 failed`).
 - [x] 6.2 <!-- Non-TDD --> Run subsystem binding tests with `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.Subsystem" -Label as-subsystem-bindings-final -TimeoutMs 900000` (`3 passed / 0 failed`).
 - [x] 6.3 <!-- Non-TDD --> Run plugin build with `Tools\RunBuild.ps1 -TimeoutMs 1200000 -NoXGE -Label as-subsystem-final-build` (exit 0).
-- [ ] 6.4 <!-- Non-TDD --> Review submodule and root diffs; commit `Plugins/Angelscript` first, then parent gitlink and OpenSpec artifacts.
+- [x] 6.4 <!-- Non-TDD --> Review submodule and root diffs; committed `Plugins/Angelscript` first (`c1a25d5`), then parent gitlink and OpenSpec artifacts (`83c4ba7`).
