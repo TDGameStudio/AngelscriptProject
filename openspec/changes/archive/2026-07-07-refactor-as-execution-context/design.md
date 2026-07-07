@@ -221,3 +221,49 @@ Mitigation: keep `FAngelscriptEngineScope` as a wrapper initially. Update shared
 - `as-engine-extension-registry` remains the preferred lifecycle mechanism for long-lived engine-attached services.
 - Existing code coverage and crash snapshot extension refactors are downstream examples of the long-lived service rule.
 
+## Post-Archive Discussion: Subsystem-First Engine Access
+
+2026-07-07 follow-up discussion changed the preferred near-term direction.
+
+The original `FAngelscriptExecutionContext` proposal is now considered too broad for the immediate problem. The practical target is to reduce `FAngelscriptEngine::Get()` by resolving the owning UE subsystem first, then reading the engine from that subsystem.
+
+Preferred access model:
+
+```text
+World/GameInstance context
+        |
+        v
+UAngelscriptSubsystem
+        |
+        v
+FAngelscriptEngine*
+```
+
+Rules captured from the discussion:
+
+- Code with a world, world-context object, or game instance should prefer `UAngelscriptSubsystem` lookup and then `Subsystem->GetEngine()`.
+- Editor, commandlet, and no-world paths should continue to use `UAngelscriptEngineSubsystem::Get()->GetEngine()`.
+- Tests and nested temporary overrides may keep using `FAngelscriptEngineScope`.
+- `FAngelscriptEngine::TryGetCurrentEngine()` and `FAngelscriptEngine::Get()` remain compatibility fallbacks rather than preferred new APIs.
+- Long-lived systems such as coverage, crash snapshot, debug, and StaticJIT should still attach to an engine instance through extensions or explicit ownership, not through arbitrary current-engine lookup.
+
+The naming discussion found no existing `UAngelscriptSubsystem` class conflict. The short name is acceptable mechanically, but the lost `GameInstance` lifecycle signal should be offset by clear API/docs: this subsystem is still a `UGameInstanceSubsystem`, while `UAngelscriptEngineSubsystem` remains the engine-level owner/fallback.
+
+Follow-up implementation should be narrower than this archived plan:
+
+```text
+Add explicit UAngelscriptSubsystem lookup overloads:
+
+  GetFromWorldContext(const UObject*)
+  GetFromWorld(const UWorld*)
+  GetFromGameInstance(const UGameInstance*)
+
+Then migrate low-risk call sites that already have context:
+
+  FAngelscriptEngine::Get()
+        |
+        v
+  UAngelscriptSubsystem::GetFrom...(...)->GetEngine()
+```
+
+This archived change should not be executed as-written. A future change should be recorded around subsystem-based engine access rather than introducing a general execution context object first.
