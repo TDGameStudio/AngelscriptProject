@@ -1,18 +1,20 @@
-# Current Haze Macro Audit
+# Haze Macro Audit And Implementation Status
 
-Date: 2026-06-26
+Initial audit date: 2026-06-26
 
-This file records the source state used to refresh the OpenSpec plan. It is not an implementation log; no source files are changed by this record-only update.
+Implementation update: 2026-07-06
 
-## Commands Run
+This file records the source state used to refresh the OpenSpec plan and the final implementation status after applying the change.
+
+## Initial Commands Run
 
 - `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source`
 - `rg -n "WITH_ANGELSCRIPT_HAZE|HAZE|Haze|Hazelight" Plugins\Angelscript\Source -g "*.Build.cs" -g "*.Target.cs"`
 - `rg -n "bUseAngelscriptHaze|PP_NAME_NetFunction|PP_NAME_CrumbFunction|PP_NAME_DevFunction|FUNC_NetFunction|FUNC_DevFunction|HazeFunctionFlags|HAZEFUNC_CrumbFunction|NetFunction|CrumbFunction|DevFunction" Plugins\Angelscript\Source`
 
-## Current Macro References
+## Initial Macro References
 
-`rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source` currently reports 24 lines across 17 files:
+Before implementation, `rg -n "WITH_ANGELSCRIPT_HAZE" Plugins\Angelscript\Source` reported 24 lines across 17 files:
 
 - `Plugins\Angelscript\Source\AngelscriptRuntime\Binds\Bind_AActor.cpp:163`
 - `Plugins\Angelscript\Source\AngelscriptRuntime\Binds\Bind_AActor.cpp:350`
@@ -41,11 +43,11 @@ This file records the source state used to refresh the OpenSpec plan. It is not 
 
 ## Build-Layer Status
 
-The current `*.Build.cs` / `*.Target.cs` search found no build-layer definition that enables `WITH_ANGELSCRIPT_HAZE`.
+The initial `*.Build.cs` / `*.Target.cs` search found no build-layer definition that enabled `WITH_ANGELSCRIPT_HAZE`.
 
 ## Additional Haze-Only Metadata To Remove
 
-The macro guarded branches also leave related metadata that should be removed with the same change:
+The macro guarded branches also left related metadata that was removed with the same change:
 
 - `FAngelscriptFunctionDesc::bNetFunction`
 - `FAngelscriptFunctionDesc::bDevFunction`
@@ -57,3 +59,19 @@ The macro guarded branches also leave related metadata that should be removed wi
 ## Explicit Non-Removal
 
 Do not remove generic UE RPC helpers just because their names contain `NetFunction`. In particular, the UHT tool's `IsRpcNetFunction` helpers describe standard UE network UFunctions and are outside the Haze macro removal scope.
+
+## Implementation Status
+
+The implementation removed active `WITH_ANGELSCRIPT_HAZE` source references, deleted Haze-only RPC specifiers and metadata, removed the debugger Haze flag, and restored the UE-canonical actor instigator names.
+
+Focused verification completed:
+
+- `Tools\RunBuild.ps1 -Label haze-precommit -TimeoutMs 900000`
+- `Tools\RunBuild.ps1 -Label haze-after-actor-test-fix -TimeoutMs 900000`
+- `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Actor.PropertyInterface" -Label haze-precommit-actor -TimeoutMs 900000` (`7/7`)
+- `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.UFunction" -Label haze-precommit-ufunction -TimeoutMs 900000` (`44/44`)
+- `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Coverage.Networking" -Label haze-precommit-networking -TimeoutMs 900000` (`27/27`)
+- `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Debugger.Database" -Label haze-precommit-debugger -TimeoutMs 900000` (`1/1`)
+- `openspec validate refactor-as-audit-remove-with-angelscript-haze --strict --json`
+
+The full Functional suite was not run in this implementation turn; the verification scope was narrowed to the touched actor, UFUNCTION, networking, debugger database, build, and OpenSpec gates.

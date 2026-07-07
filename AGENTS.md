@@ -248,6 +248,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - ✅ UE 5.7 binding and debugger adaptation (38 + 16 Disabled tests re-enabled) — merged to main
 - ✅ Script Subsystem closure (WorldSubsystem/GameInstanceSubsystem from negative to positive tests) — merged to main
 - ✅ Network RPC compilation tests (Server/Client/NetMulticast + WithValidation + Unreliable) — merged to main
+- ✅ Inactive `WITH_ANGELSCRIPT_HAZE` branch removal, Haze-only RPC syntax cleanup, debugger Haze flag removal, and UE-original actor instigator names — implemented in `refactor-as-audit-remove-with-angelscript-haze`
 - ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main

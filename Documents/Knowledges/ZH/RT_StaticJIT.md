@@ -331,7 +331,7 @@ struct FAngelscriptPrecompiledData
     TMapAsPtr<int64, FAngelscriptGlobalReference> GlobalReferences;
     TMapAsPtr<int64, FAngelscriptPropertyReference> PropertyReferences;
     TArray<FStringInArchive> StaticNames;
-    int32 BuildIdentifier = -1;                            // ★ Debug/Dev/Test/Shipping 不互通
+    int32 BuildIdentifier = -1;                            // ★ cache schema + Debug/Dev/Test/Shipping 不互通
 
     TArray<uint8> LoadedData;                              // 原始字节，FStringInArchive 字符串借用其底
     bool bMinimizeMemoryUsage = false;
@@ -368,7 +368,7 @@ struct FAngelscriptPrecompiledFunction
     // ── 预处理器数据 ──
     bool bIsUFunction = false;
     bool bBlueprintCallable; bool bBlueprintOverride; bool bBlueprintEvent; bool bBlueprintPure;
-    bool bNetFunction; bool bNetMulticast; bool bNetClient; bool bNetServer; ...
+    bool bNetMulticast; bool bNetClient; bool bNetServer; ...
 };
 ```
 
@@ -387,10 +387,12 @@ struct FAngelscriptPrecompiledFunction
 // ============================================================================
 int32 FAngelscriptPrecompiledData::GetCurrentBuildIdentifier()
 {
-#if   UE_BUILD_DEBUG       return 1;
-#elif UE_BUILD_DEVELOPMENT return 2;
-#elif UE_BUILD_TEST        return 3;
-#elif UE_BUILD_SHIPPING    return 4;
+    constexpr int32 SchemaVersion = 10;
+
+#if   UE_BUILD_DEBUG       return SchemaVersion * 10 + 1;
+#elif UE_BUILD_DEVELOPMENT return SchemaVersion * 10 + 2;
+#elif UE_BUILD_TEST        return SchemaVersion * 10 + 3;
+#elif UE_BUILD_SHIPPING    return SchemaVersion * 10 + 4;
 #else                      return -1;       // ★ 未知配置 → 永远视为无效
 #endif
 }

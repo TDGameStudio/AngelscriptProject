@@ -1384,7 +1384,6 @@ bool FAngelscriptFunctionDesc::IsDefinitionEquivalent(
         && Other.bBlueprintOverride    == bBlueprintOverride
         && Other.bBlueprintEvent       == bBlueprintEvent
         && Other.bBlueprintPure        == bBlueprintPure
-        && Other.bNetFunction          == bNetFunction
         // ... 一系列标志位 ...
         && Other.bIsConstMethod        == bIsConstMethod
         && Other.bThreadSafe           == bThreadSafe

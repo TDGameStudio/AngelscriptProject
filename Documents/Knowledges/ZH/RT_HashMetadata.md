@@ -57,7 +57,7 @@
     static FStaticJITCompiledInfo Info(FGuid(A,B,C,D));    // link 期固化
   if (CompiledInfo->PrecompiledDataGuid != Data->DataGuid)
      FJITDatabase::Get().Clear()                           // 整盘丢 jit 入口表
-  BuildIdentifier: Debug=1 / Dev=2 / Test=3 / Shipping=4，不一致 → 整盘丢字节码
+  BuildIdentifier: SchemaVersion * 10 + BuildConfigId，不一致 → 整盘丢字节码
 
 [Hash 角色 4] 函数 ID — FCrc::StrCrc_DEPRECATED + HashCombine
   Id = HashCombine(Id, StrCrc(ModuleName))
@@ -415,7 +415,7 @@ else
 
 | 校验 | 不一致后果 |
 |------|------------|
-| `BuildIdentifier`（Debug=1/Dev=2/Test=3/Shipping=4）| 整盘 `PrecompiledData` 抛弃——连字节码都用不上，回到全量重编 |
+| `BuildIdentifier`（SchemaVersion * 10 + BuildConfigId）| 整盘 `PrecompiledData` 抛弃——连字节码都用不上，回到全量重编 |
 | `PrecompiledDataGuid`（128-bit FGuid）| `FJITDatabase::Get().Clear()` 把所有 jit 入口清空，但字节码继续用——回退到解释器 |
 
 ### 4.4 `IsValidForCurrentBuild` 的实现
@@ -424,10 +424,12 @@ else
 // 文件: PrecompiledData.cpp
 int32 FAngelscriptPrecompiledData::GetCurrentBuildIdentifier()
 {
-#if   UE_BUILD_DEBUG       return 1;
-#elif UE_BUILD_DEVELOPMENT return 2;
-#elif UE_BUILD_TEST        return 3;
-#elif UE_BUILD_SHIPPING    return 4;
+    constexpr int32 SchemaVersion = 10;
+
+#if   UE_BUILD_DEBUG       return SchemaVersion * 10 + 1;
+#elif UE_BUILD_DEVELOPMENT return SchemaVersion * 10 + 2;
+#elif UE_BUILD_TEST        return SchemaVersion * 10 + 3;
+#elif UE_BUILD_SHIPPING    return SchemaVersion * 10 + 4;
 #else                      return -1;     // ★ 未知配置永远视为无效
 #endif
 }
@@ -778,7 +780,7 @@ StaticJIT diagnostics: CompiledInfoMatchesPrecompiledData=true
 | `Module->CodeHash` | XOR | 所有 Section.CodeHash | int64 | 同上 | PrecompiledData 装载时 == 比对 |
 | `Module->CombinedDependencyHash` | XOR | self.CodeHash + 所有 import.CombinedDep | int64 | `CompileModule_Types_Stage1` | 挂 asCModule.userData[0] |
 | `FAngelscriptPrecompiledData::DataGuid` | `FGuid::NewGuid()` | 时钟+熵 | FGuid 128bit | cook 期构造 | 与 `FStaticJITCompiledInfo::Get()->PrecompiledDataGuid` 比对 |
-| `BuildIdentifier` | 静态 switch | 编译宏 | int32 (1/2/3/4/-1) | PrecompiledData 实例 | `IsValidForCurrentBuild` |
+| `BuildIdentifier` | 静态 switch | cache schema + 编译宏 | int32 | PrecompiledData 实例 | `IsValidForCurrentBuild` |
 | `FunctionId` | StrCrc_DEPRECATED + HashCombine | 模块名 + userdata + 类名 + 函数声明 | uint32 | `CreateFunctionId` | `FStaticJITFunction::Register(Id)` 与 lookup |
 | `GetTypeHash(T)` 系列 | 类型自定义 | 类型实例 | uint32 | UE Core / Bind_*.cpp | TMap/TSet KeyFuncs |
 | `CityHash32/64` | UE CityHash | bytes | uint32/uint64 | `Bind_Hash.cpp` | AS 端用户脚本可调用 |
