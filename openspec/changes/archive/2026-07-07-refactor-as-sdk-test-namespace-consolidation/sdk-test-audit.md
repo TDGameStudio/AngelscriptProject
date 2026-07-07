@@ -1,5 +1,7 @@
 # AngelScriptSDK audit log
 
+> Historical snapshot: this note reflects the 2026-06 audit state that existed while the helper and fixture refactor was being implemented. It is no longer the current inventory. For the current 2026-07-06 source counts, remaining gaps, and verification status, see `current-state-audit.md`.
+
 ## Why this note exists
 
 This note records the follow-up review that happened after the CQTest fixture migration and the `Entry()`-pattern refactor. The immediate trigger was a user report that the documented goal and the actual test shape were drifting apart: the OpenSpec tasks still said that the `Entry()` pattern was not yet fully removed, while many newly added SDK cases were still using `Entry()`-style aggregate self-checks. The user also asked for the reasoning, the cause/effect chain, and the test inventory to be recorded in OpenSpec before any further code work continued.
