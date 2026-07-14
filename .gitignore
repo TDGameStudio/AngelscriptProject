@@ -120,8 +120,7 @@ DerivedDataCache/*
 # Local git worktrees
 .worktrees/
 
-# Local generated wiki workspace
-/Wiki/
+# Wiki source is tracked as a submodule at Wiki/
 
 # Local experiment workspace
 /Experiment/

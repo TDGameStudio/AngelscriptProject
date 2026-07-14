@@ -7,3 +7,6 @@
 [submodule "Plugins/AngelscriptGameplayTags"]
 	path = Plugins/AngelscriptGameplayTags
 	url = git@github.com:TDGameStudio/AngelscriptGameplayTags.git
+[submodule "Wiki"]
+	path = Wiki
+	url = git@github.com:TDGameStudio/AngelscriptWiki.git

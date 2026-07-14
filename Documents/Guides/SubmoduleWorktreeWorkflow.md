@@ -10,8 +10,11 @@
 |-----------|---------|------|
 | `Plugins/Angelscript` | `TDGameStudio/UnrealAngelscriptPlugin` | 核心插件，绝大多数代码改动在此 |
 | `Plugins/AngelscriptGAS` | `TDGameStudio/AngelscriptGAS` | GAS 扩展插件 |
+| `Wiki` | `TDGameStudio/AngelscriptWiki` | 独立 TiddlyWiki 工作区与后续 AS Wiki 内容 |
 
 `git worktree add` 只处理父仓库的工作树，**不会自动初始化或检出子模块**。新 worktree 中子模块目录只有 gitlink 占位，没有源码。直接构建或访问源码会失败。
+
+`Wiki/` 同样是独立 Git 仓库。修改 Wiki 内容时先在 `Wiki/` 子仓库提交并推送，再回到父仓库提交新的 Wiki gitlink；不要把 `Experiment/` 下的备份或实验目录复制回初始 Wiki 子模块。
 
 ## 核心约束
 
