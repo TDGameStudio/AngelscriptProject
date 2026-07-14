@@ -1,11 +1,82 @@
 {
   "repo": "Hazelight/UnrealEngine-Angelscript",
   "branch": "angelscript-master",
-  "lastReviewedHeadSha": null,
-  "lastReviewedAt": null,
-  "lastAuditBaseSha": null,
-  "lastAuditHeadSha": null,
-  "lastAuthors": [],
-  "lastUnrealEngineFollowSignals": [],
-  "notes": "Set lastReviewedHeadSha only after a human-reviewed audit checkpoint."
+  "lastReviewedHeadSha": "138a7e186082b639375b95545e0177b18f13c4be",
+  "lastReviewedAt": "2026-07-14T14:39:44Z",
+  "lastAuditBaseSha": "472bb2fab5a0bc76d0a86a1dd80750a4118b8418",
+  "lastAuditHeadSha": "138a7e186082b639375b95545e0177b18f13c4be",
+  "lastAuthors": [
+    {
+      "name": "Lucas",
+      "commitCount": 25
+    },
+    {
+      "name": "Dean Marsinelli",
+      "commitCount": 3
+    },
+    {
+      "name": "류기보",
+      "commitCount": 2
+    },
+    {
+      "name": "Dan Bradshaw",
+      "commitCount": 1
+    },
+    {
+      "name": "Filip Bergqvist",
+      "commitCount": 1
+    },
+    {
+      "name": "Josh Wood",
+      "commitCount": 1
+    },
+    {
+      "name": "KirstenWF",
+      "commitCount": 1
+    },
+    {
+      "name": "Nango",
+      "commitCount": 1
+    },
+    {
+      "name": "Paul Greveson",
+      "commitCount": 1
+    },
+    {
+      "name": "Szymon Zak",
+      "commitCount": 1
+    },
+    {
+      "name": "Tianlan Zhou",
+      "commitCount": 1
+    },
+    {
+      "name": "Turhan Yağız Merpez",
+      "commitCount": 1
+    }
+  ],
+  "lastUnrealEngineFollowSignals": [
+    {
+      "sha": "9a366282fa72",
+      "fullSha": "9a366282fa7214b58151be1512aa88306f867691",
+      "date": "2026-06-18T06:54:02Z",
+      "author": "Lucas",
+      "title": "Additional fixes for Unreal 5.8"
+    },
+    {
+      "sha": "4efb6a2c01e9",
+      "fullSha": "4efb6a2c01e9b709718128c6a444fa074b571df8",
+      "date": "2026-06-17T15:31:03Z",
+      "author": "Lucas",
+      "title": "Fixes for Unreal Engine 5.8.0"
+    },
+    {
+      "sha": "b233a0a85ad4",
+      "fullSha": "b233a0a85ad418b04d12d103e3a00c09ba9e42a2",
+      "date": "2026-06-17T14:15:56Z",
+      "author": "Lucas",
+      "title": "Merge remote-tracking branch 'epicgames/release' into angelscript-master"
+    }
+  ],
+  "notes": "Complete marker range reviewed on 2026-07-14: 34 core plugin commits and 39 deduplicated related-path commits. Five bounded fixes were adopted in improve-hazelight-fix-parity; Pow semantics, StaticJIT architecture, HotReload, class-generation, and engine-side changes remain deferred or reference-only."
 }

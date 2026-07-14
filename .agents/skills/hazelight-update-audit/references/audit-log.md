@@ -66,3 +66,62 @@
 - If this audit is accepted as reviewed, record `lastReviewedHeadSha` as `472bb2fab5a0bc76d0a86a1dd80750a4118b8418`.
 - Before recording the checkpoint, decide whether the three `Adopt now` items should be implemented first or merely marked as reviewed/deferred.
 - For a broader upstream sweep, inspect the earlier UE-following range around `dbd4567bb144` and `ec8d139d111c` separately from plugin feature commits.
+
+## 2026-07-14 - Complete marker-range audit and low-risk parity batch
+
+- Repo: `Hazelight/UnrealEngine-Angelscript`
+- Branch: `angelscript-master`
+- Base marker: `472bb2fab5a0bc76d0a86a1dd80750a4118b8418`
+- Reviewed HEAD: `138a7e186082b639375b95545e0177b18f13c4be`
+- Complete range: 34 core `Engine/Plugins/Angelscript` commits; 39 deduplicated commits across the configured related paths.
+- Changed-file details: fetched per commit after path-scoped pagination; repository-wide compare was not used.
+- The earlier `Count 20` command was only a recent-window preview and did not represent the full marker range.
+- Previous checkpoint: none. Checkpoint updated after the inventory, local comparison, focused tests, build, and SDK baseline review.
+- Audit checkpoint: `.agents/skills/hazelight-update-audit/references/audit-state.json` now records `138a7e186082...` as fully reviewed.
+- Local Hazelight clone: `K:\UnrealEngine\UEAS`, branch `angelscript-master`, local HEAD `fb34aaf8bf10`; GitHub API range was used for freshness.
+
+### Author summary
+
+- Lucas: 25
+- Dean Marsinelli: 3
+- 류기보: 2
+- Dan Bradshaw, Filip Bergqvist, Josh Wood, KirstenWF, Nango, Paul Greveson, Szymon Zak, Tianlan Zhou, and Turhan Yağız Merpez: 1 each
+
+### UE-following signals
+
+- `9a366282fa72` - Additional fixes for Unreal 5.8
+- `4efb6a2c01e9` - Fixes for Unreal Engine 5.8.0
+- `b233a0a85ad4` - Merge remote-tracking branch `epicgames/release`
+
+### Adopt now
+
+- `7270607d98aa` - local `Bind_FString.cpp` now uses a lambda so `TrimQuotes` forwards `OutQuotesRemoved` safely in StaticJIT builds.
+- `83a3e539d43a` - local `UObjectTickable::DestroyObject` stops ticking before `MarkAsGarbage`; a generated script subclass regression exercises the actual UE tick path.
+- `5022c3a07a1f` - local `CreateWidget` metadata now declares `DeterminesOutputType = "WidgetType"`.
+- `b448dd3defca` - local `FLatentActionInfo` keeps the explicit constructor without the incorrect trivial native form; EnhancedInput `GetHandle` uses the fork's equivalent lambda path with no StaticJIT native form.
+
+### Already absorbed
+
+- `ff265bb18dbb` - `FCollisionResponseContainer` constructor behavior is already present locally.
+- `abd98481b085`, `263f762c05d7`, and other previously reviewed fixes remain covered by existing local implementations or guards as recorded in `upstream-inventory.md`.
+
+### Needs OpenSpec
+
+- `98626b3dd747` - floating `Pow` overflow semantics; local `AngelscriptSDK` keeps the `Overflow in exponent operation` contract.
+- `f0f383f5cb22`, `767ec06038f0`, and related StaticJIT generation changes.
+- `4065a84c1bb7`, `5aa00922b79a`, and class-generation/editor lifecycle changes.
+- Bind database determinism, cooked/editor classification, preprocessor behavior, TArray API changes, and script-visible Blueprint/class metadata changes.
+
+### Reference only
+
+- Engine-side UHT/CoreUObject changes, fork-specific third-party changes, and sample-only script edits do not map directly to this standalone plugin fork.
+
+### Out of scope
+
+- `67b7a88d912f` and other GAS-only changes remain outside the core plugin parity batch.
+
+### Verification
+
+- Focused parity run: `41/41` passed across bindings, widget metadata, FString coverage, UObjectTickable, and StaticJIT native-form tests.
+- SDK baseline: `421/421` passed; the existing `Pow` overflow expectation passed unchanged.
+- Editor build: `Tools\RunBuild.ps1` passed after the production and regression-test changes.

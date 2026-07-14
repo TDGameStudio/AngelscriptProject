@@ -27,22 +27,32 @@ Use this skill for read-only review of recent updates in `Hazelight/UnrealEngine
    ```powershell
    .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 -Count 20
    ```
+   This is a recent-window preview only.
 3. For older windows, page through commits:
    ```powershell
    .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 -Count 20 -Page 2
    ```
 4. To resume from the last recorded audit checkpoint, run without `-BaseSha`; the script reads `references/audit-state.json` when present.
-5. For a known base range, use compare mode:
+5. For a complete Angelscript-related range, use path-scoped pagination:
+   ```powershell
+   .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 `
+       -CompleteRange `
+       -BaseSha <base> `
+       -HeadSha <head> `
+       -Json
+   ```
+   Complete-range mode does not use the repository-wide Unreal compare endpoint, which is subject to the GitHub 10,000-commit limit. It walks the configured Angelscript, extension, UHT, and example paths, deduplicates commits, and fetches each commit's changed files directly.
+6. For a small known base range without the complete path audit, use compare mode:
    ```powershell
    .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 -BaseSha <base> -HeadSha <head> -Json
    ```
-6. After finishing a human-reviewed audit, record the checkpoint only when requested:
+7. After finishing a human-reviewed complete audit, record the checkpoint only when requested:
    ```powershell
-   .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 -BaseSha <base> -HeadSha <head> -UpdateState
+   .\.agents\skills\hazelight-update-audit\scripts\Get-HazelightUpdateAudit.ps1 -CompleteRange -BaseSha <base> -HeadSha <head> -UpdateState
    ```
-7. Record the human-readable audit result in `references/audit-log.md` when the user wants the review to be reusable.
-8. Inspect the equivalent local files before recommending adoption. Path names alone are not enough.
-9. Produce a short report with commit range, changed files by subsystem, authors, UE-following signals, classification, and next action.
+8. Record the human-readable audit result in `references/audit-log.md` when the user wants the review to be reusable.
+9. Inspect the equivalent local files before recommending adoption. Path names alone are not enough.
+10. Produce a short report with commit range, changed files by subsystem, authors, UE-following signals, classification, and next action.
 
 ## Audit Records
 

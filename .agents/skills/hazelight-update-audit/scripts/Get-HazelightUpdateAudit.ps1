@@ -10,7 +10,16 @@ param(
     [string]$HeadSha,
     [string]$StatePath,
     [switch]$UpdateState,
-    [switch]$Json
+    [switch]$Json,
+    [switch]$CompleteRange,
+    [string[]]$AuditPath = @(
+        "Engine/Plugins/Angelscript",
+        "Engine/Plugins/AngelscriptGAS",
+        "Engine/Plugins/AngelscriptEnhancedInput",
+        "Engine/Plugins/AngelscriptGameplayTags",
+        "Engine/Source/Programs/Shared/EpicGames.UHT",
+        "Script-Examples"
+    )
 )
 
 Set-StrictMode -Version Latest
@@ -228,6 +237,127 @@ function ConvertFrom-GhCommit {
     }
 }
 
+function Get-PathCommitsUntilBase {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repo,
+        [Parameter(Mandatory = $true)]
+        [string]$HeadReference,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$BaseSha,
+        [Parameter(Mandatory = $true)]
+        [DateTime]$BaseDate
+    )
+
+    $result = @()
+    $page = 1
+    $stop = $false
+
+    while (-not $stop) {
+        $endpoint = "repos/$Repo/commits?sha=$HeadReference&path=$Path&per_page=100&page=$page"
+        $pageCommits = @(Invoke-GhJson -Arguments @("api", $endpoint))
+        if ($pageCommits.Count -eq 0) {
+            break
+        }
+
+        foreach ($commit in $pageCommits) {
+            if ($commit.sha -eq $BaseSha) {
+                $stop = $true
+                break
+            }
+
+            $commitDate = ([DateTime]::Parse($commit.commit.author.date)).ToUniversalTime()
+            if ($commitDate -le $BaseDate) {
+                $stop = $true
+                break
+            }
+
+            $result += $commit
+        }
+
+        if ($stop -or $pageCommits.Count -lt 100) {
+            break
+        }
+
+        $page++
+    }
+
+    return $result
+}
+
+function Get-CompleteRangeCommits {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repo,
+        [Parameter(Mandatory = $true)]
+        [string]$HeadReference,
+        [Parameter(Mandatory = $true)]
+        [string]$BaseSha,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Paths
+    )
+
+    $baseCommit = Invoke-GhJson -Arguments @("api", "repos/$Repo/commits/$BaseSha")
+    $baseDate = ([DateTime]::Parse($baseCommit.commit.author.date)).ToUniversalTime()
+    $uniqueCommits = @{}
+
+    foreach ($path in $Paths) {
+        $pathCommits = Get-PathCommitsUntilBase `
+            -Repo $Repo `
+            -HeadReference $HeadReference `
+            -Path $path `
+            -BaseSha $BaseSha `
+            -BaseDate $baseDate
+
+        foreach ($commit in $pathCommits) {
+            if ($commit.sha -eq $BaseSha) {
+                continue
+            }
+
+            if (-not $uniqueCommits.ContainsKey($commit.sha)) {
+                $uniqueCommits[$commit.sha] = $commit
+            }
+        }
+    }
+
+    return @(
+        $uniqueCommits.Values |
+            Sort-Object { [DateTime]::Parse($_.commit.author.date) } -Descending |
+            ForEach-Object { ConvertFrom-GhCommit -Commit $_ }
+    )
+}
+
+function Get-ChangedFilesForCommits {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repo,
+        [Parameter(Mandatory = $true)]
+        [object[]]$Commits
+    )
+
+    $changedFiles = @()
+    foreach ($commit in $Commits) {
+        $detail = Invoke-GhJson -Arguments @("api", "repos/$Repo/commits/$($commit.fullSha)")
+        foreach ($file in @($detail.files)) {
+            $mapped = ConvertTo-LocalArea -Path $file.filename
+            $changedFiles += [pscustomobject]@{
+                commitSha = $commit.fullSha
+                path = $mapped.Path
+                status = $file.status
+                additions = $file.additions
+                deletions = $file.deletions
+                changes = $file.changes
+                localArea = $mapped.LocalArea
+                initialClassification = $mapped.InitialClassification
+            }
+        }
+    }
+
+    return $changedFiles
+}
+
 function Group-CommitAuthors {
     param(
         [Parameter(Mandatory = $true)]
@@ -311,8 +441,12 @@ function Format-TextReport {
     Write-Output "Repo: $($Audit.repo)"
     Write-Output "Branch: $($Audit.branch)"
     Write-Output "Audited at: $($Audit.auditedAt)"
+    Write-Output "Mode: $($Audit.auditMode)"
     Write-Output "State path: $($Audit.state.path)"
     Write-Output "Previous reviewed HEAD: $($Audit.state.previousLastReviewedHeadSha)"
+    if (@($Audit.auditPaths).Count -gt 0) {
+        Write-Output "Audit paths: $($Audit.auditPaths -join ', ')"
+    }
     if ($Audit.compare) {
         Write-Output "Compare: $($Audit.compare.base)...$($Audit.compare.head)"
         Write-Output "Ahead by: $($Audit.compare.aheadBy)"
@@ -387,7 +521,11 @@ if ([string]::IsNullOrWhiteSpace($BaseSha) -and $auditState -and -not [string]::
     $BaseSha = $auditState.lastReviewedHeadSha
 }
 
-$commitEndpoint = "repos/$Repo/commits?sha=$Branch&per_page=$Count&page=$Page"
+$headReference = if ([string]::IsNullOrWhiteSpace($HeadSha)) { $Branch } else { $HeadSha }
+$headCommit = Invoke-GhJson -Arguments @("api", "repos/$Repo/commits/$headReference")
+$resolvedHeadSha = $headCommit.sha
+
+$commitEndpoint = "repos/$Repo/commits?sha=$headReference&per_page=$Count&page=$Page"
 $commitsRaw = Invoke-GhJson -Arguments @("api", $commitEndpoint)
 $commits = @(
     foreach ($commit in $commitsRaw) {
@@ -399,13 +537,33 @@ $compareInfo = $null
 $compareRaw = $null
 $rangeCommits = @()
 $changedFiles = @()
-if (-not [string]::IsNullOrWhiteSpace($BaseSha)) {
-    $resolvedHead = if ([string]::IsNullOrWhiteSpace($HeadSha)) { $Branch } else { $HeadSha }
-    $compareEndpoint = "repos/$Repo/compare/$BaseSha...$resolvedHead"
+if ($CompleteRange) {
+    if ([string]::IsNullOrWhiteSpace($BaseSha)) {
+        throw "-CompleteRange requires -BaseSha or a non-empty lastReviewedHeadSha in audit-state.json."
+    }
+
+    $rangeCommits = Get-CompleteRangeCommits `
+        -Repo $Repo `
+        -HeadReference $headReference `
+        -BaseSha $BaseSha `
+        -Paths $AuditPath
+    $changedFiles = Get-ChangedFilesForCommits -Repo $Repo -Commits $rangeCommits
+    $compareInfo = [pscustomobject]@{
+        mode = "complete-range"
+        base = $BaseSha
+        head = $resolvedHeadSha
+        status = "path-scoped"
+        aheadBy = $rangeCommits.Count
+        behindBy = 0
+        totalCommits = $rangeCommits.Count
+        paths = $AuditPath
+    }
+} elseif (-not [string]::IsNullOrWhiteSpace($BaseSha)) {
+    $compareEndpoint = "repos/$Repo/compare/$BaseSha...$headReference"
     $compareRaw = Invoke-GhJson -Arguments @("api", $compareEndpoint)
     $compareInfo = [pscustomobject]@{
         base = $BaseSha
-        head = $resolvedHead
+        head = $resolvedHeadSha
         status = $compareRaw.status
         aheadBy = $compareRaw.ahead_by
         behindBy = $compareRaw.behind_by
@@ -457,6 +615,8 @@ $audit = [pscustomobject]@{
     upstreamUpdatedAt = $repoInfo.updatedAt
     auditedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     state = $stateSummary
+    auditMode = if ($CompleteRange) { "complete-range" } else { "preview-or-compare" }
+    auditPaths = if ($CompleteRange) { $AuditPath } else { @() }
     localClone = $localClone
     compare = $compareInfo
     commits = $commits
@@ -467,7 +627,9 @@ $audit = [pscustomobject]@{
 }
 
 if ($UpdateState) {
-    $newHeadSha = if ($compareRaw -and $compareRaw.merge_base_commit) {
+    $newHeadSha = if ($CompleteRange) {
+        $resolvedHeadSha
+    } elseif ($compareRaw -and $compareRaw.merge_base_commit) {
         if ($compareRaw.commits.Count -gt 0) {
             $compareRaw.commits[$compareRaw.commits.Count - 1].sha
         } else {
