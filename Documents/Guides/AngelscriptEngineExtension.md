@@ -49,7 +49,7 @@ UE process
     |   +-- class generation hooks
     |   +-- reload hooks
     |   +-- debug hooks
-    |   `-- source provider / bind / cross-module hooks
+    |   `-- source provider / bind / module-binding hooks
     |
     `-- Shutdown()
         `-- FAngelscriptEngineExtensionRegistry.DetachEngine()
@@ -306,37 +306,37 @@ FAngelscriptStateDump::DumpAll(Engine, OutputDir)
 
 源码位置：
 
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_CrossModuleDirect.cpp`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/UHT/AngelscriptCrossModuleBindings.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_ModuleBinding.cpp`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/Public/Bindings/AngelscriptModuleBindingProtocol.h`
 - `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableCodeGenerator.cs`
 
 Runtime 订阅点：
 
 - `IModularFeatures::Get().OnModularFeatureRegistered()`
-- `FAngelscriptCrossModuleBindings::FeatureName()`
+- `FAngelscriptModuleBindingProtocol::FeatureName()`
 - `FCoreDelegates::OnPreExit`
 
 生成模块侧：
 
-- UHT emit cross-module shard。
+- UHT emit module-binding shard。
 - shard 注册一个 modular feature，携带 POD entries 和 thunk 指针。
 - Runtime 验证 feature 后，把可用 entry 注入 AS bind 表。
 
 ```text
-UHT generated cross-module shard
+UHT generated module-binding shard
 |
-`-- IModularFeatures.RegisterModularFeature(AngelscriptCrossModuleBindings)
+`-- IModularFeatures.RegisterModularFeature(AngelscriptModuleBindingFeature)
     |
     `-- Runtime OnModularFeatureRegistered
         |
         +-- validate layout version
         +-- resolve target UClass / UFunction data
         +-- bind generic AS trampoline
-        `-- GAngelscriptCrossModuleGenericHook()
+        `-- GAngelscriptModuleBindingGenericHook()
             `-- generated thunk invokes native function
 ```
 
-这个 hook 对 ABI 很敏感。修改 `FAngelscriptCrossModuleEntry` 或 `FAngelscriptCrossModuleFeatureReader` 布局时，必须同步更新 `cross-module-layout-version.txt`、runtime header、UHT emit 和测试。
+这个 hook 对 ABI 很敏感。修改 `FAngelscriptModuleBinding` 或 `FAngelscriptModuleBindingFeatureView` 布局时，必须同步更新 `module-binding-layout-version.txt`、runtime header、UHT emit 和测试。
 
 ## Bind Registration Hook
 
@@ -453,7 +453,7 @@ Need to own state for each FAngelscriptEngine?
     |   `-- FAngelscriptBinds::FBind / Bind_*.cpp
     |
     +-- need generated direct native bindings from another module?
-    |   `-- UHT generated function table / IModularFeatures cross-module feature
+    |   `-- UHT generated function table / IModularFeatures module-binding feature
     |
     +-- need editor UI/tooling integration?
         `-- UE editor hooks: UToolMenus, SourceCodeNavigation, DirectoryWatcher,
@@ -479,6 +479,6 @@ Need to own state for each FAngelscriptEngine?
 | `IAngelscriptSourceProvider` | Engine dependency | 替换脚本来源、测试注入、虚拟 source | Editor 热重载 UI 行为。 |
 | `FAngelscriptStateDump::OnDumpExtensions` | Dump 调用期间 | 增加额外 CSV dump 表 | 读取 Runtime 私有状态。 |
 | `FAngelscriptBinds::FBind` | Bind phase | 暴露 AS 类型、函数、属性 | Runtime 生命周期订阅。 |
-| `IModularFeatures` cross-module bind | Module feature lifetime | 跨模块生成 direct bind | 未版本化的 ABI 改动。 |
+| `IModularFeatures` module-binding bind | Module feature lifetime | 跨模块生成 direct bind | 未版本化的 ABI 改动。 |
 | UE editor hooks | Editor module lifetime | 菜单、导航、Content Browser、文件监听 | Runtime-only 代码依赖 Editor。 |
 | `ForTesting` / `TestAccess` hooks | 自动化测试期间 | 可控测试注入 | 生产扩展 API。 |

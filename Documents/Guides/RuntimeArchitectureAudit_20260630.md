@@ -117,7 +117,7 @@
 | 编号 | 问题 | 证据 |
 |------|------|------|
 | J1 | **`Start/EndAngelscriptHeaders.h` bracketing 跨 55 文件** | `Core/StartAngelscriptHeaders.h` 与 `EndAngelscriptHeaders.h` 是 `#pragma warning(push/disable: 4191/pop)` 的 bracket header；grep 显示在 runtime 模块内 110 次出现跨 **55 文件**（每文件成对）。这是隐式的"AS 头需要警告抑制"的项目级公约，但 AGENTS.md / Build.md / 任何 guide 均未文档化；新代码贡献者必须靠模仿现有 .cpp 来发现这一约束。 |
-| J2 | **`Public/` 名实不符（已在 E3，重申其单点暴露面）** | `Public/UHT/AngelscriptCrossModuleBindings.h` 是 runtime 唯一真正的"公共"头，定义 POD 三元组（`FAngelscriptCrossModuleEntry` / `FAngelscriptCrossModuleFeatureReader` / `FAngelscriptCrossModuleCallFrame`），明确标注"Higher bits are reserved and require a layout-version bump before use"。除此之外整个 Runtime 公共表面靠 `ANGELSCRIPTRUNTIME_API` 宏挂在 `Core/` 内部头上。 |
+| J2 | **`Public/` 名实不符（已在 E3，重申其单点暴露面）** | `Public/UHT/AngelscriptModuleBindingProtocol.h` 是 runtime 唯一真正的"公共"头，定义 POD 三元组（`FAngelscriptModuleBinding` / `FAngelscriptModuleBindingFeatureView` / `FAngelscriptModuleBindingCallFrame`），明确标注"Higher bits are reserved and require a layout-version bump before use"。除此之外整个 Runtime 公共表面靠 `ANGELSCRIPTRUNTIME_API` 宏挂在 `Core/` 内部头上。 |
 | J3 | **`Core/` 顶层杂项头未分组** | `Core/` 顶层包含 `AngelscriptInclude.h` / `AngelscriptSort.h` / `AngelscriptSharedPtr.h` / `Helper_Reification.h` / `FunctionCallers.h` / `FCpuProfilerTraceScoped.h` / `StartAngelscriptHeaders.h` / `EndAngelscriptHeaders.h` 等 8+ 工具头与 50 个核心 .h/.cpp 平铺；无 `Core/Util/` 或 `Core/Internal/` 子目录。 |
 
 ### K. Core 内嵌的子模块（Compilation/、Commandlets/）
