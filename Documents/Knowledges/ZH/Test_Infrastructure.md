@@ -261,24 +261,17 @@ Engine->FindAllScriptFilenames(DiskFiles);
 - 这条路径**复用 production 的 `FindAllScriptFilenames`**——也就是说测试可以验证"如果 root 是 X，那么 engine 看得到的文件清单是 Y"这种端到端断言。
 - `ON_SCOPE_EXIT` 保证测试结束后 `AllRootPaths` 立刻还原，不会污染下一条 case。
 
-### 3.3 启动期 override：`AngelscriptTestUseScanFreeStartupEngine`
+### 3.3 测试用例内的 scan-free engine
 
-最特殊的一条路径在 `FAngelscriptTestModule::StartupModule`：
+需要避免磁盘脚本扫描时，由 CQTest fixture 自己创建 scan-free engine：
 
 ```cpp
-// 节选自: AngelscriptTest/AngelscriptTestModule.cpp: StartupModule
-const bool bUseScanFreeStartupEngine = FParse::Param(FCommandLine::Get(), TEXT("AngelscriptTestUseScanFreeStartupEngine"));
-if (bUseScanFreeStartupEngine)
-{
-    GAngelscriptTestStartupOverrideEngine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(...);
-    UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting([]() -> FAngelscriptEngine*
-    {
-        return GAngelscriptTestStartupOverrideEngine.Get();      // ★ 让 subsystem 拿走这个引擎
-    });
-}
+TUniquePtr<FAngelscriptEngine> Engine = CreateScriptScanFreeFullEngineForTesting(
+    FAngelscriptEngineConfig(), FAngelscriptEngineDependencies::CreateDefault());
+FAngelscriptEngineScope Scope(*Engine);
 ```
 
-这条路径让 `UAngelscriptEngineSubsystem` 在 Engine 初始化期间**直接拿走一个 scan-free Full 引擎**，跳过它默认要做的 `Script/` 扫描。`Test_Layering.md` §六.2 已经给过命令行说明，本文不重复。
+这个 engine 属于当前测试 fixture，测试结束时由 `TUniquePtr` 和 `FAngelscriptEngineScope` 自动清理。它不会被 `UAngelscriptSubsystem` 采用，也不会影响生产引擎的启动生命周期。
 
 ---
 

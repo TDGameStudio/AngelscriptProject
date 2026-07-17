@@ -84,6 +84,6 @@ All `.as` source files under `Script/` and inline AS string literals under `Plug
 
 #### Scenario: Functional baseline holds after migration
 
-- **WHEN** `Tools\RunTests.ps1 -Group AngelscriptFunctional -- -AngelscriptTestUseScanFreeStartupEngine` runs after this change is applied
+- **WHEN** `Tools\RunTests.ps1 -Group AngelscriptFunctional` runs after this change is applied
 - **THEN** the functional baseline SHALL pass without newly disabled tests
 

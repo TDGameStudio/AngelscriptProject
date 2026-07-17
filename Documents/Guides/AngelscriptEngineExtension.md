@@ -416,11 +416,10 @@ AngelscriptEditor.StartupModule()
 
 ## Test-Only Hooks
 
-代码里有大量 `ForTesting`、`Set...Override`、`TestAccess` hook。这些只服务自动化测试，不是生产扩展 API。
+代码里仍有若干 `ForTesting`、`Set...Override`、`TestAccess` hook。这些只服务自动化测试，不是生产扩展 API。`UAngelscriptSubsystem` 已移除测试专用接口；Subsystem 测试使用 Test 模块持有的 engine scope。
 
 典型例子：
 
-- `UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting()`
 - `FAngelscriptRuntimeModule::SetInitializeOverrideForTesting()`
 - `FAngelscriptEditorModuleTestAccess::SetDirectoryWatcherResolver()`
 - `AngelscriptSourceNavigation::SetOpenLocationOverrideForTesting()`

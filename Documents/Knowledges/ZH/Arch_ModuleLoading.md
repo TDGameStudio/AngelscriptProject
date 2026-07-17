@@ -387,29 +387,17 @@ public:
 
 ——与 Runtime / Editor 不同，Test 模块的入口类**没有 `ANGELSCRIPTTEST_API` 导出宏**（不需要），也没有"对外静态 API"。
 
-### 5.2 StartupModule：两个命令行开关
+### 5.2 StartupModule：TestEnginePool 预热开关
 
 ```cpp
 // ============================================================================
 // 文件: AngelscriptTest/AngelscriptTestModule.cpp
 // 函数: FAngelscriptTestModule::StartupModule
-// 角色: 两个 -AngelscriptTest* 开关分别控制 Override Engine 与 Pool 预热
+// 角色: -AngelscriptTestPrewarmEngine 控制 TestEnginePool 预热
 // ============================================================================
 void FAngelscriptTestModule::StartupModule()
 {
-    // 开关一：用 ScanFree 引擎替换正常 Initialize（避开磁盘扫描脚本根）
-    const bool bUseScanFreeStartupEngine = FParse::Param(FCommandLine::Get(),
-        TEXT("AngelscriptTestUseScanFreeStartupEngine"));
-    if (bUseScanFreeStartupEngine) {
-        GAngelscriptTestStartupOverrideEngine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(
-            CreateEditorScanFreeStartupConfig(), FAngelscriptEngineDependencies::CreateDefault());
-        // ★ 把构造好的 Engine 注入 EngineSubsystem 的 Override Hook
-        UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting([]() -> FAngelscriptEngine* {
-            return GAngelscriptTestStartupOverrideEngine.Get();
-        });
-    }
-
-    // 开关二：是否预热 TestEnginePool（共享 Engine 池，加速 Test 套件运行）
+    // 启动期是否预热 TestEnginePool（共享 Engine 池，加速 Test 套件运行）
     const bool bPrewarmEngine = FParse::Param(FCommandLine::Get(), TEXT("AngelscriptTestPrewarmEngine"));
     AngelscriptTestSupport::StartupTestEnginePool(bPrewarmEngine);
 
@@ -417,19 +405,14 @@ void FAngelscriptTestModule::StartupModule()
 }
 ```
 
-**关键设计点**：
+**关键设计点**：`TestEnginePool` 是 Shared/ 测试基础设施的一部分，详见 `Test_Infrastructure.md`。单个 CQTest 需要 scan-free engine 时，在测试 fixture 内直接调用 `CreateScriptScanFreeFullEngineForTesting`，不再改变 Engine Subsystem 的启动路径。
 
-- **Override Engine 必须在 `EngineSubsystem::Initialize` 之前安装**——而 PostDefault 是 `UEngineSubsystem` 实例化**之前**的窗口期，恰好满足这一时序约束。这是 Test 选 PostDefault 而不是更晚阶段的硬约束。
-- **TestEnginePool** 是 Shared/ 测试基础设施的一部分，详见 `Test_Infrastructure.md`；本文不展开，只指出"pool 的 startup 时机也卡在 module loading 阶段"。
-
-### 5.3 ShutdownModule：清理 Override Hook + Pool
+### 5.3 ShutdownModule：清理 Pool
 
 ```cpp
 void FAngelscriptTestModule::ShutdownModule()
 {
-    UAngelscriptEngineSubsystem::ResetInitializeStateForTesting();   // ★ 反挂 Override Hook
     AngelscriptTestSupport::ShutdownTestEnginePool();
-    GAngelscriptTestStartupOverrideEngine.Reset();
     UE_LOG(LogAngelscriptTest, Log, TEXT("AngelscriptTest module shut down."));
 }
 ```
@@ -559,15 +542,14 @@ void UAngelscriptEngineSubsystem::Initialize(FSubsystemCollectionBase& Collectio
        ├─► Runtime.StartupModule()  仅打日志
        ├─► Editor.StartupModule()    12 步扩展注册（步骤 ⑤ AddStatic 到 OnPostEngineInit、
        │                              ⑧ DirectoryWatcher 注册、⑫ ToolMenus startup callback）
-       └─► Test.StartupModule()      可选 Override Hook + Pool 预热
+       └─► Test.StartupModule()      可选 scan-free scope + Pool 预热
        此时: FAngelscriptEngine::IsInitialized() == false
 
 [T1] PostDefault 结束 → UE 继续 boot → GEngine 构造完成
        └─► UAngelscriptEngineSubsystem 实例化 → ShouldCreateSubsystem(Editor) → true
              └─► Initialize → EnsurePrimaryEngineInitialized
-                   ├─► PrimaryEngine = &OwnedEngine
-                   ├─► ContextStack::Push(PrimaryEngine)
-                   └─► PrimaryEngine->Initialize()  ★ 含 121 Bind + InitialCompile（数秒级）
+                   ├─► 有 ambient engine：adopt Test 持有的 scan-free engine
+                   └─► 无 ambient engine：PrimaryEngine = &OwnedEngine 并完整 Initialize
                          └─ Broadcast OnInitialCompileFinished
        此时: IsInitialized() == true, 步骤 ⑧ 注册的 OnScriptFileChanges 开始正常响应
 
@@ -599,9 +581,8 @@ void UAngelscriptEngineSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 | **B** StartupModule 里 `FAngelscriptEngine::Get()` 触发 check 失败 | 重活放到了 StartupModule 而非 EngineSubsystem.Initialize / PostEngineInit | grep `FAngelscriptEngine::Get()`，应只在 `IsInitialized()` 守卫之后出现 |
 | **C** ContentBrowser 看不到 `.as` 文件 | OnPostEngineInit 多播没触发 / DataSource 注册失败 | 启动日志 grep `AngelscriptData` 应有 `ActivateDataSource`；检查 `GOnPostEngineInitHandle.IsValid()` |
 | **D** HotReload 不响应文件变更 | DirectoryWatcher 注册失败 / ScriptRoot 列表为空 | 步骤 ⑧ 的 `ensure` 是否 hit；`MakeAllScriptRoots()` 返回是否包含实际路径 |
-| **E** `-AngelscriptTestUseScanFreeStartupEngine` 注入的 Engine 没生效 | 命令行参数未透传 / EngineSubsystem.Initialize 已先于 Test.StartupModule 跑 | `FCommandLine::Get()` 内确认开关存在；Override 安装链路要求 Test 模块**先于** EngineSubsystem 实例化 |
-| **F** Test 编译失败 `AngelscriptEditor.h` 在 headless target 下找不到 | Test 代码 `#include` 了 Editor 头但被 cooked-client 编译 | `Test.Build.cs` 内 `AngelscriptEditor` 必须在 `if (Target.bBuildEditor)` 下追加；Test 的 `.h` 不能 include Editor 头 |
-| **G** 退出时 `[RuntimeStartup] ShutdownModule ownedEngine=true` 出现 | 走了 Path C 自建 OwnedPrimaryEngine（headless / 纯 -game 兜底） | 正常路径；若意外出现在 Editor 进程，检查 `ShouldBootstrapAngelscript()` 与 `GIsEditor` |
+| **E** Test 编译失败 `AngelscriptEditor.h` 在 headless target 下找不到 | Test 代码 `#include` 了 Editor 头但被 cooked-client 编译 | `Test.Build.cs` 内 `AngelscriptEditor` 必须在 `if (Target.bBuildEditor)` 下追加；Test 的 `.h` 不能 include Editor 头 |
+| **F** 退出时 `[RuntimeStartup] ShutdownModule ownedEngine=true` 出现 | 走了 Path C 自建 OwnedPrimaryEngine（headless / 纯 -game 兜底） | 正常路径；若意外出现在 Editor 进程，检查 `ShouldCreateSubsystem()` 与 `GIsEditor` |
 
 定位"模块装载阶段是不是出问题"最快的方法是 grep 三类前缀的日志：
 
@@ -622,13 +603,13 @@ void UAngelscriptEngineSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 | **PostDefault 开始** | UE 模块加载子系统 | 按依赖拓扑加载三个 C++ 模块 | `IsInitialized() == false` |
 | ↳ T0a | `AngelscriptRuntime.StartupModule()` | 仅打 verbose 日志 | `false` |
 | ↳ T0b | `AngelscriptEditor.StartupModule()` | 12 步扩展注册（无引擎调用） | `false` |
-| ↳ T0c | `AngelscriptTest.StartupModule()` | 可选 Override Hook + TestEnginePool 预热 | `false` |
+| ↳ T0c | `AngelscriptTest.StartupModule()` | 可选 TestEnginePool 预热 | `false` |
 | **PostDefault 结束** | UE | 继续 boot 主流程 | `false` |
 | ↳ T1 | `UAngelscriptEngineSubsystem::Initialize` | `EnsurePrimaryEngineInitialized` → `Engine->Initialize()` | `true`（含 121 Bind + InitialCompile） |
-| **PostEngineInit** 多播 | `FCoreDelegates::OnPostEngineInit` | Editor 步骤 ⑤ 的 `OnEngineInitDone()` 注册 ContentBrowser DataSource | `true` |
+| **PostEngineInit** 多播 | `FCoreDelegates::OnPostEngineInit` | Editor 注册 ContentBrowser DataSource | `true` |
 | **业务运行** | `EngineSubsystem.Tick` / `GameInstanceSubsystem.Tick` | 驱动 `FAngelscriptEngine::Tick` | `true` |
 | **进程退出 U0** | UE | `UAngelscriptEngineSubsystem::Deinitialize` → `Engine->Shutdown()` | `false` |
-| **进程退出 U1a** | `FModuleManager` | `AngelscriptTest.ShutdownModule()`（反挂 Override + Pool） | `false` |
+| **进程退出 U1a** | `FModuleManager` | `AngelscriptTest.ShutdownModule()`（ShutdownTestEnginePool） | `false` |
 | **进程退出 U1b** | `FModuleManager` | `AngelscriptEditor.ShutdownModule()`（12 步反向解绑） | `false` |
 | **进程退出 U1c** | `FModuleManager` | `AngelscriptRuntime.ShutdownModule()`（清 OwnedPrimaryEngine 兜底） | `false` |
 | **构建期（旁路）** | UnrealBuildTool | `AngelscriptUHTTool` 的 `Export` 跑一遍，产物编入 Runtime | — |
@@ -653,11 +634,10 @@ void UAngelscriptEngineSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 | OnObjectPreSave | `FCoreUObjectDelegates::OnObjectPreSave.AddStatic` | EditorModule.cpp | `Remove(GLiteralAssetPreSaveHandle)` |
 | ToolMenus | `UToolMenus::RegisterStartupCallback` | EditorModule.cpp | `UnRegisterStartupCallback / UnregisterOwner` |
 
-Test 模块的"扩展点"只有两个，且都是私有 hook：
+Test 模块的启动扩展点只有一个：
 
 | 扩展点 | grep 关键字 | 文件 | 反向解绑位置 |
 |--------|------------|------|-------------|
-| EngineSubsystem Override | `UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting` | TestModule.cpp | `ResetInitializeStateForTesting` |
 | TestEnginePool | `AngelscriptTestSupport::StartupTestEnginePool` | `Shared/AngelscriptTestEnginePool.cpp` | `ShutdownTestEnginePool` |
 
 Runtime 模块的 StartupModule 不挂任何扩展点（按设计——重活全部延后），故无表。

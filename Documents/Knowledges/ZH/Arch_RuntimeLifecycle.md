@@ -495,25 +495,25 @@ FAngelscriptEngine (PrimaryEngine) Lifecycle
 
 ## 六、可观测性与可测试性约定
 
-`FAngelscriptEngine` / `Subsystem` / `RuntimeModule` 三层都把"可被自动化测试驱动"作为一类**显式 API**：
+自动化测试入口按所有权分成两类：`FAngelscriptRuntimeModule` 仍保留模块路由测试 hook；`UAngelscriptSubsystem` 只暴露生产生命周期，测试引擎通过 Test 模块持有的 scope 进入正常 ambient-engine 路径：
 
 ```text
 RuntimeModule 暴露
   - SetInitializeOverrideForTesting(TFunction<FAngelscriptEngine*()>)
   - ResetInitializeStateForTesting()        // 清空 bInitializeAngelscriptCalled
 
-EngineSubsystem 暴露
-  - SetStartupEnvironmentOverrideForTesting(bIsEditor, bIsRunningCommandlet)
-                                            // 模拟 Editor / Commandlet 进程标志
-  - SetInitializeOverrideForTesting(...)    // 同上但作用于 Subsystem
-  - ClearStartupEnvironmentOverrideForTesting()
+EngineSubsystem 不暴露测试 API
+  - Test 创建 FAngelscriptEngine
+  - Test 用 FAngelscriptEngineScope 声明 ambient engine
+  - UAngelscriptSubsystem::EnsurePrimaryEngineInitialized()
+      通过 TryGetCurrentEngine() 采用它，但不取得所有权
 
 ContextStack 暴露
   - SnapshotAndClear() / RestoreFromSnapshot()
                                             // 测试用例可临时清空全局栈再恢复
 ```
 
-**含义**：当你需要写一个不真正跑 144 个 Bind 的"轻测试"，可以注入一个 stub 工厂；想验证"在 Commandlet 环境下 Subsystem 不会提前激活"，可以用环境 override 反复切换 bool。这是 `Test_RuntimeInternal.md` 文档要细化的内容。
+**含义**：需要测试 RuntimeModule 路由时可以使用它自己的 stub 工厂；需要测试 Subsystem 时则激活真实或 scan-free test engine 的 `FAngelscriptEngineScope`，通过生产入口验证采用、幂等和 fallback 行为。Subsystem 不再接受测试 locator、初始化 callback 或启动环境覆盖。
 
 日志方面，三层启动流程都会打 `[RuntimeStartup]` / `[EngineSubsystemStartup]` / `[EngineLifecycle]` 前缀的日志：
 

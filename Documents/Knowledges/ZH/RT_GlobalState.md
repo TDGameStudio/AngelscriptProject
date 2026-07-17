@@ -6,7 +6,7 @@
 > `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h` (~46 KB，`FAngelscriptEngine` / `FAngelscriptEngineContextStack` / `FAngelscriptEngineScope` / `FAngelscriptGameThreadScopeWorldContext`)
 > · `AngelscriptRuntime/Core/AngelscriptEngine.cpp` (~3000+ 行，`GAngelscriptEngineContextStack` / `GAmbientWorldContext` / `AssignWorldContext` / `TryGetCurrentEngine`)
 > · `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp` (~109 行，`bInitializeAngelscriptCalled` / `OwnedPrimaryEngine`)
-> · `AngelscriptRuntime/Core/AngelscriptEngineSubsystem.cpp` (~205 行，`InitializeOverrideForTesting` / `StartupIsEditorOverrideForTesting`)
+> · `AngelscriptRuntime/Core/AngelscriptSubsystem.cpp`（生产 Subsystem 的 ambient-engine 采用与 owned-engine 生命周期）
 > · `AngelscriptRuntime/Core/AngelscriptGameInstanceSubsystem.cpp` (~120 行，`ActiveTickOwners`)
 > · `AngelscriptRuntime/Core/AngelscriptBinds.h` / `.cpp`（`GetBindArray` Meyers' singleton、`FAngelscriptBindState` per-engine）
 > · `AngelscriptRuntime/ClassGenerator/ASClass.cpp` (~3000+ 行，`GIsInAngelscriptThreadSafeFunction` / `GIsAngelscriptWorldContextAvailable` thread_local，`UASClass::OverrideConstructingObject`)
@@ -707,9 +707,9 @@ return MatchingEngine;
 
 **契约**：每一次 `SnapshotAndClear` 必须配一次 `RestoreSnapshot`，否则后续 Test 会拿不到 engine。该 API 仅 `WITH_DEV_AUTOMATION_TESTS` 启用，正式构建里编不过去。
 
-### 5.5 Bootstrap 注入：`InitializeOverrideForTesting`
+### 5.5 Bootstrap 测试边界：Module hook 与 Subsystem scope
 
-如果想测"`InitializeAngelscript` 路由本身"而不真跑 144+ Bind，三层都暴露注入点：
+如果想测"`InitializeAngelscript` 路由本身"而不真跑完整 Bind，`FAngelscriptRuntimeModule` 仍保留模块级注入点：
 
 ```cpp
 // 文件: AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp:87-107
@@ -718,13 +718,9 @@ void FAngelscriptRuntimeModule::SetInitializeOverrideForTesting(TFunction<FAngel
 void FAngelscriptRuntimeModule::ResetInitializeStateForTesting();
 #endif
 
-// 文件: AngelscriptRuntime/Core/AngelscriptEngineSubsystem.cpp:181-203
-#if WITH_DEV_AUTOMATION_TESTS
-void UAngelscriptEngineSubsystem::SetStartupEnvironmentOverrideForTesting(...);
-void UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting(...);
-void UAngelscriptEngineSubsystem::ResetInitializeStateForTesting();
-#endif
 ```
+
+`UAngelscriptSubsystem` 不再暴露 `WITH_DEV_AUTOMATION_TESTS` 状态。Subsystem 测试通过真实生产 Subsystem 或 CQTest fixture 自己创建的 `FAngelscriptEngineScope` 验证行为；测试 engine 不会被 TestModule 保存到启动期，也不会改变生产 Subsystem 的启动顺序。
 
 `ResetInitializeStateForTesting`：
 

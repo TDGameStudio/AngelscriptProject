@@ -504,7 +504,7 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptEngineTypeInteropTests,
 | `Bindings/AngelscriptColorBindingsTests.cpp` | `Angelscript.TestModule.Bindings.Color.{FColorConstruction, FLinearColorConstruction, ...}` | CQTest 类 + 多 TEST_METHOD |
 | `AngelScriptSDK/AngelscriptNativeSmokeTest.cpp` | `Angelscript.TestModule.AngelScriptSDK.Smoke` | 单 case |
 | `AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp` | `Angelscript.TestModule.AngelScriptSDK.ASSDK.Execute.*` | ASSDK 二级前缀 |
-| `Compiler/AngelscriptCompilerPipelineDelegateTests.cpp` | `Angelscript.TestModule.Compiler.Pipeline.Delegate.*` 或 `Angelscript.Compile.Modules.*`（看具体 case） | Compiler 主题，前缀有历史变体 |
+| `Compiler/AngelscriptCompilerDelegateTests.cpp` | `Angelscript.TestModule.Compiler.Pipeline.Delegate.*` 或 `Angelscript.Compile.Modules.*`（看具体 case） | Compiler 主题，前缀有历史变体 |
 | `Functional/Actor/AngelscriptActorLifecycleTests.cpp` | `Angelscript.TestModule.Functional.Actor.Lifecycle.*` | Functional 例外段保留 `Functional.` |
 | `Learning/Runtime/Angelscript*RuntimeTrace*Tests.cpp` | `Angelscript.TestModule.Learning.Runtime.*` | 层级优先前缀 |
 
@@ -551,41 +551,27 @@ TEST_CLASS_WITH_FLAGS(FAngelscriptEngineTypeInteropTests,
 
 ### 6.2 Test 模块的启动职责
 
-`AngelscriptTestModule.cpp` 在启动期做两件事：
+`AngelscriptTestModule.cpp` 在启动期只负责可选的 TestEnginePool 预热：
 
 ```cpp
 // ============================================================================
 // 文件: AngelscriptTest/AngelscriptTestModule.cpp
 // 函数: FAngelscriptTestModule::StartupModule（节选）
-// 角色: 测试模块的"装载 hook"，影响 Engine 子系统的初始化顺序
+// 角色: 测试模块的"装载 hook"，可选预热测试引擎池
 // ============================================================================
 void FAngelscriptTestModule::StartupModule()
 {
-    const bool bUseScanFreeStartupEngine = FParse::Param(FCommandLine::Get(),
-        TEXT("AngelscriptTestUseScanFreeStartupEngine"));
-    if (bUseScanFreeStartupEngine)
-    {
-        // ★ 在 Engine 初始化前，把 UAngelscriptEngineSubsystem 的 init 路径替换成
-        //   一个不扫描 Editor script root 的轻量引擎，便于裁剪 headless 测试环境。
-        GAngelscriptTestStartupOverrideEngine = AngelscriptTestSupport::CreateScriptScanFreeFullEngineForTesting(...);
-        UAngelscriptEngineSubsystem::SetInitializeOverrideForTesting([]() -> FAngelscriptEngine*
-        {
-            return GAngelscriptTestStartupOverrideEngine.Get();
-        });
-    }
-
     const bool bPrewarmEngine = FParse::Param(FCommandLine::Get(),
         TEXT("AngelscriptTestPrewarmEngine"));
     AngelscriptTestSupport::StartupTestEnginePool(bPrewarmEngine);  // ★ 引擎池
 }
 ```
 
-两个命令行开关（详见 `Arch_ModuleLoading.md`）：
+当前启动期开关（详见 `Arch_ModuleLoading.md`）：
 
-- `-AngelscriptTestUseScanFreeStartupEngine`：用一个不扫描脚本根的引擎接管启动，跳过 cooked-style script 编译，加快 headless 启动。
 - `-AngelscriptTestPrewarmEngine`：在启动期把 `FAngelscriptTestEnginePool` 预热（创建 N 个空闲引擎），让首批 spec 的 `ASTEST_CREATE_ENGINE_FULL` 不必等 reset。
 
-`ShutdownModule` 则反向解除：归还 prewarm 引擎、清空 override 指针。
+需要 scan-free engine 的用例在自己的 fixture 内调用 `CreateScriptScanFreeFullEngineForTesting`，不影响生产 Subsystem。
 
 ### 6.3 与 Dump 的关系
 
