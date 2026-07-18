@@ -31,8 +31,8 @@ AngelscriptProject/
 │       │   ├── FunctionLibraries/           # 21 mixin helper libraries
 │       │   ├── Subsystem/                   # Script subsystem base classes
 │       │   ├── Dump/                        # 27+ CSV state export tables
-│       │   ├── CodeCoverage/                # Per-line coverage tracking
-│       │   ├── Testing/                     # Runtime test support
+│       │   ├── Extension/CodeCoverage/      # Per-line coverage tracking (engine extension)
+│       │   ├── Testing/                     # Runtime-owned AngelScript test framework
 │       │   └── ThirdParty/                  # AngelScript 2.33 vendored source
 │       ├── AngelscriptEditor/               # Editor module (49 .cpp)
 │       │   ├── HotReload/                   # File watcher & class reinstancing
@@ -54,6 +54,9 @@ AngelscriptProject/
 │   ├── Examples/                            # Core / EnhancedInput / Extended
 │   ├── Automation/                          # Script automation entry
 │   └── Tests/                               # Script-level tests
+│
+├── Extensions/                              # Project-owned external development tools
+│   └── AngelscriptVSCode/                   # VS Code Language Server / Debug Adapter
 │
 ├── Reference/
 │   └── README.md                            # Repo index, pull cmds, priorities
@@ -80,6 +83,7 @@ AngelscriptProject/
 │   │   ├── GlobalStateContainmentMatrix.md  # Global state containment
 │   │   ├── BindGapAuditMatrix.md            # Binding gap audit
 │   │   ├── BlueprintTypeBindingsOptimization.md # BP type binding optimization
+│   │   ├── VSCodeAngelscript.md              # Project-owned VS Code extension workflow
 │   │   └── UE_Search_Guide.md               # UE knowledge lookup
 │   ├── Rules/
 │   │   ├── GitCommitRule.md                 # Commit conventions (EN)
@@ -145,11 +149,15 @@ All three UE modules load at `PostDefault` phase. `AngelscriptRuntime` owns the 
 
 ### UHT Tool (AngelscriptUHTTool)
 
-A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline. It reads C++ headers, extracts `UFUNCTION`/`UPROPERTY` metadata, and generates `AS_FunctionTable_*.cpp` shards with direct-bind or stub entries. Build artifacts include `AS_FunctionTable_Summary.json` and per-module CSV breakdowns.
+A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline. It reads C++ headers, extracts `UFUNCTION`/`UPROPERTY` metadata, and generates `AS_FunctionBinding_*.cpp` shards selected by `FunctionBindingMethod`. Build artifacts include `AS_FunctionBindingStatistics.json` and per-module CSV breakdowns.
+
+### Runtime AngelScript Test Framework (`AngelscriptRuntime/Testing`)
+
+`AngelscriptRuntime/Testing/` owns the AngelScript language-level test protocol: test discovery, registration, execution, latent/network support, and the UE Automation bridge used to expose AS tests to the host runner. `UnitTest.*` and `IntegrationTest.*` describe AS test functions and runners; they are not C++ unit tests in the `AngelscriptRuntime` module.
 
 ### Test Module (AngelscriptTest)
 
-430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK coverage includes a latest verified `Angelscript.TestModule.AngelScriptSDK` run of `301/301 PASS`, including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases. See the root testing guides for layering rules.
+430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK coverage includes a latest verified `Angelscript.TestModule.AngelScriptSDK` run of `301/301 PASS`, including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases. See the root testing guides for layering rules.
 
 ### Script Examples (`Script/`)
 
@@ -159,15 +167,15 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 1. **Compilation**: `.as` files → Preprocessor → AS Compiler → Bytecode → (optional) StaticJIT → Executable modules
 2. **Class Registration**: AS class definitions → ClassGenerator → Live UClass/UStruct with UProperties and UFunctions → Visible to Blueprints and C++
-3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated function tables + cross-module direct-bind feature tables + reflective fallback → Callable from AS scripts
+3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated FunctionBinding shards + target-module native function-address features + reflective fallback → Callable from AS scripts
 4. **Hot Reload**: File watcher detects changes → Recompile affected modules → ClassReloadHelper reinstances actors in editor
 
 ### Binding Path Notes
 
-- Cross-module direct bind uses UHT-emitted `AS_FunctionTable_<Module>_CrossModule_*.cpp` shards in the target module OutputDirectory and publishes POD payloads through Core `IModularFeatures`; `AngelscriptRuntime` must not add engine-module link dependencies to resolve these entries.
+- `NativeRuntimeLinked` uses UHT-emitted `AS_FunctionBinding_<Module>_*.gen.cpp` shards compiled through dynamically configured `AngelscriptRuntime` dependencies. `NativeModuleFunctionAddress` uses explicit target-module `AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_*.cpp` shards and publishes POD payloads through Core `IModularFeatures`; it is source-engine-only.
 - Cross-module emit is intentionally limited to safe signatures. Out params, WorldContext injection, ref returns, static arrays, and `TArray` / `TSet` / `TMap` containers remain fallback/deferred unless a later OpenSpec change extends the marshalling contract.
 - RPC/Net UFunctions must continue through `BlueprintCallableReflectiveFallback`; direct raw thunk calls would bypass Unreal's RPC routing.
-- Any change to `FAngelscriptCrossModuleEntry` or `FAngelscriptCrossModuleFeatureReader` layout requires bumping `Plugins/Angelscript/Source/AngelscriptUHTTool/cross-module-layout-version.txt` and keeping runtime header, generator emit, and tests in sync.
+- Any change to `FAngelscriptNativeModuleFunctionBinding` or `FAngelscriptNativeModuleFunctionBindingView` layout requires bumping `Plugins/Angelscript/Source/AngelscriptUHTTool/native-module-function-binding-layout-version.txt` and keeping the Runtime bridge, generator emit, and tests in sync.
 
 ## External Reference Repositories
 
@@ -252,3 +260,4 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - ✅ Manual bindings for AActor/AController/APawn/APlayerController + Hazelight-style script examples (27 `.as` examples across Core/EnhancedInput/Extended) — merged to main
 - ✅ Editor module layout realignment with runtime feature folders — merged to main
 - ✅ TObjectPtr routing, UCurveFloat dual registration and multi-engine enum conflict fixes — merged to main
+- ✅ TDGameStudio-owned VS Code Angelscript extension imported with DebugDatabaseSettings wire compatibility coverage — implemented in `fix-vscode-lsp-protocol-compat`

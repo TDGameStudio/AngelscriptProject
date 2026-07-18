@@ -10,7 +10,7 @@
 > · `Documents/Knowledges/ZH/Guide_UHTToolchain.md` —— UHT 工具链使用与注意事项（用户视角）
 > · `Documents/Knowledges/ZH/Type_BindSystem.md` —— 维护者视角的三层模型（深入阅读）
 > · `Documents/Knowledges/ZH/Type_Core.md` —— `FAngelscriptType` 数据库（深入阅读）
-> · `Documents/Knowledges/ZH/Type_BaseClass.md` —— UClass 直绑骨架（深入阅读）
+> · `Documents/Knowledges/ZH/Type_BaseClass.md` —— UClass Runtime-linked骨架（深入阅读）
 > · `Documents/Knowledges/ZH/Type_FunctionLibrary.md` —— FunctionLibrary 暴露面（深入阅读）
 > · `Documents/Knowledges/ZH/Arch_UHTToolchain.md` —— UHT 工具链构建期边界（深入阅读）
 > · `Documents/Knowledges/ZH/Note_InterfaceBinding.md` —— UInterface 现状清单
@@ -21,7 +21,7 @@
 
 本文聚焦一个核心问题：**我手里有一个 C++ 类型，怎样以最低成本让 `.as` 脚本看见它？**
 
-`Type_BindSystem.md` 已经从维护者视角讲清楚了"125 份 `Bind_*.cpp` + 30+ 份 UHT 生成的 `AS_FunctionTable_*.cpp` + `Bind_Defaults` 反射兜底"三层模型。本文翻过来，只回答一个问题——**作为业务侧 C++ 工程师，你应该走哪一层？**
+`Type_BindSystem.md` 已经从维护者视角讲清楚了"125 份 `Bind_*.cpp` + 30+ 份 UHT 生成的 `AS_FunctionBinding_*.cpp` + `Bind_Defaults` 反射兜底"三层模型。本文翻过来，只回答一个问题——**作为业务侧 C++ 工程师，你应该走哪一层？**
 
 ```text
                 你的 C++ 类型 → 让脚本能用，三条路径
@@ -33,7 +33,7 @@
       │     UPROPERTY() / UCLASS() / UENUM(BlueprintType)           │
       │     ─→ Bind_Defaults @ Late+100 自动扫到 → 走               │
       │     UFunction::Invoke + FFrame 反射 trampoline              │
-      │     代价：性能比直绑慢 3–6 倍；最多 16 个参数                 │
+      │     代价：性能比Runtime-linked慢 3–6 倍；最多 16 个参数                 │
       └────────────────┬────────────────────────────────────────────┘
                        │ 不够快？需要 > 16 参 / CustomThunk？
                        ▼
@@ -41,7 +41,7 @@
       │  ② UHT 自动生成（中等成本，由构建期生成）                    │
       │     ─────────────────────────────────────────────           │
       │     UHT 工具链扫所有 BlueprintCallable / Pure 头文件         │
-      │     ─→ 构建期自动写出 AS_FunctionTable_*.cpp 分片            │
+      │     ─→ 构建期自动写出 AS_FunctionBinding_*.cpp 分片            │
       │     ─→ FuncPtr 直接命中 exec* thunk，避免反射                 │
       │     你只需把模块加到 AngelscriptRuntime.Build.cs 依赖         │
       │     代价：依赖 UCLASS 公开头；不走 .as 文件；不处理 mixin     │
@@ -130,7 +130,7 @@
 1. 这个 UFunction 在 UHT 表里有直接函数指针吗？
 2. 没有？那就给它包一层 `UFunction::Invoke + FFrame` 反射 trampoline，注册到 AS 引擎
 
-**结论**：只要你的函数标了 `BlueprintCallable`，**根本不用写任何 binding 代码，脚本就能调用**——只是性能比 UHT 直绑慢约 3–6 倍。这条路径在维护者文档 `Note_InterfaceBinding.md` §三的 Phase 5 与 `Type_BindSystem.md` §六.3 有完整描述。
+**结论**：只要你的函数标了 `BlueprintCallable`，**根本不用写任何 binding 代码，脚本就能调用**——只是性能比 UHT Runtime-linked慢约 3–6 倍。这条路径在维护者文档 `Note_InterfaceBinding.md` §三的 Phase 5 与 `Type_BindSystem.md` §六.3 有完整描述。
 
 ### 2.2 最小示例：让一个 helper 函数被脚本看见
 
@@ -181,7 +181,7 @@ void TestHelper()
 └────────────────────────────────────────────────────────────────────┘
 ┌─ 不覆盖 ───────────────────────────────────────────────────────────┐
 │  • 非 UFUNCTION 的普通 C++ 函数（要手写 Bind 或加 UFUNCTION 宏）    │
-│  • UFUNCTION 但参数 > 16 个（超过 fallback 上限，必须 UHT 直绑）     │
+│  • UFUNCTION 但参数 > 16 个（超过 fallback 上限，必须 UHT Runtime-linked）     │
 │  • UFUNCTION(CustomThunk)（被显式 skip，除非你也 NotInAngelscript）  │
 │  • UFUNCTION(BlueprintInternalUseOnly) 但没标 UsableInAngelscript    │
 │  • UFUNCTION(meta=(NotInAngelscript))                                │
@@ -234,7 +234,7 @@ PrivateDependencyModuleNames.AddRange(new string[] {
 ```
 
 加完之后 rebuild，UHT 会在
-`Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/AS_FunctionTable_MyGameModule_*.cpp`
+`Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/AS_FunctionBinding_MyGameModule_*.cpp`
 写出几个分片，自动编入 `AngelscriptRuntime.dll`。
 
 ### 3.2 UHT 自动生成什么 / 不生成什么
@@ -265,14 +265,14 @@ PrivateDependencyModuleNames.AddRange(new string[] {
 
 ```text
 Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
-├── AS_FunctionTable_Engine_0.cpp       ← UE Engine 模块的分片之一
-├── AS_FunctionTable_Engine_1.cpp
-├── AS_FunctionTable_GameplayAbilities_0.cpp
+├── AS_FunctionBinding_Engine_0.cpp       ← UE Engine 模块的分片之一
+├── AS_FunctionBinding_Engine_1.cpp
+├── AS_FunctionBinding_GameplayAbilities_0.cpp
 ├── ...
-└── AS_FunctionTable_Summary.json       ← 总览：每模块多少函数 / 直绑率
+└── AS_FunctionBindingStatistics.json       ← 总览：每模块多少函数 / Runtime-linked率
 ```
 
-打开 `Summary.json` 能看到每个模块"覆盖了多少 BlueprintCallable / 直绑成功多少 / 走 stub 多少"。如果你的模块名根本不在 Summary 里——多半是 `Build.cs` 还没加。
+打开 `Summary.json` 能看到每个模块"覆盖了多少 BlueprintCallable / Runtime-linked成功多少 / 走 reflectiveFallback 多少"。如果你的模块名根本不在 Summary 里——多半是 `Build.cs` 还没加。
 
 ---
 
@@ -853,16 +853,16 @@ as.DumpEngineState
 
 会把当前 AS 引擎的所有类型 / 方法 / 全局函数列出来，以 27+ 份 CSV 写到 `Saved/AngelscriptStateDump/`。`AS_TypeRegistry.csv` 会列出所有已注册类型——你的 `FMyVector2D` 在不在这里？详见 `RT_StateDump.md`。
 
-### 11.5 性能：怎么知道是反射兜底还是直绑
+### 11.5 性能：怎么知道是反射兜底还是Runtime-linked
 
-启用 `AS_FunctionTable_Summary.json` —— 它会写出每个模块的"直绑率"。如果你怀疑某个热点函数走了反射 fallback，去看：
+启用 `AS_FunctionBindingStatistics.json` —— 它会写出每个模块的"Runtime-linked率"。如果你怀疑某个热点函数走了反射 fallback，去看：
 
 ```text
 Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
-└── AS_FunctionTable_Summary.json
+└── AS_FunctionBindingStatistics.json
 ```
 
-里面 `DirectBoundCount` / `StubCount` 比例就是答案。如果你的关键函数被列在 `Stub`，加 UHT 直绑（确保 `Build.cs` 依赖、确保 header 不在 `/Private/`）或手写 Bind。
+里面 `NativeRuntimeLinkedCount` / `ReflectiveFallbackCount` 比例就是答案。如果你的关键函数被列在 `ReflectiveFallback`，加 UHT Runtime-linked（确保 `Build.cs` 依赖、确保 header 不在 `/Private/`）或手写 Bind。
 
 ---
 
@@ -882,7 +882,7 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 | 屏蔽某个不想暴露的函数 | 反射元数据 | `meta=(NotInAngelscript)` 一行 |
 | 改 AS 端别名 | 反射元数据 | `meta=(ScriptName="...")` 一行 |
 | 暴露 nondefault 构造（`FFoo(A, B)`） | 手写 Bind_*.cpp | `Constructor("void f(...)", lambda)` |
-| 暴露超过 16 参的 UFUNCTION | UHT 直绑或手写 | 取决于函数所在模块 |
+| 暴露超过 16 参的 UFUNCTION | UHT Runtime-linked或手写 | 取决于函数所在模块 |
 | 暴露非 UE 反射的纯 C++ 类 | 手写 Bind_*.cpp | 完全自由（无反射兜底） |
 
 ---

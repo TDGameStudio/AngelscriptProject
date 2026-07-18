@@ -19,11 +19,11 @@
 | CallFunc.MultipleArgs | 同上 | 同上 |
 | CallFunc.NestedCall | 同上 | 同上 |
 | CallFunc.VoidSideEffect | 同上 | 同上 |
-| GeneratedFunctionTable.MinimalApiFunctionLevelExports | production engine 未初始化 | AddInfo + skip |
-| GeneratedFunctionTable.PopulatesClassFuncMaps | 同上 | 同上 |
-| GeneratedFunctionTable.PreservesHandwrittenGASEntries | 同上 | 同上 |
-| GeneratedFunctionTable.ReflectiveFallbackStats | 同上 | 同上 |
-| GeneratedFunctionTable.RepresentativeCoverage | 同上 | 同上 |
+| GeneratedFunctionBinding.MinimalApiFunctionLevelExports | production engine 未初始化 | AddInfo + skip |
+| GeneratedFunctionBinding.PopulatesClassFunctionBindings | 同上 | 同上 |
+| GeneratedFunctionBinding.PreservesHandwrittenGASEntries | 同上 | 同上 |
+| GeneratedFunctionBinding.ReflectiveFallbackStats | 同上 | 同上 |
+| GeneratedFunctionBinding.RepresentativeCoverage | 同上 | 同上 |
 | BodyInstance.FLatentActionInfoDefault | UE 5.7 默认 Linkage 从 0 改为 -1 | 调整期望值为 -1 |
 | GASExtended.FGameplayAbilitySpecDefault | UE 5.7 默认 Level 从 0 改为 1 | 调整期望值为 1 |
 | Quat3f.FRotatorBasics | UE 5.7 IsNearlyZero 默认 tolerance 变化 | 脚本中显式传 tolerance 0.001 |

@@ -31,9 +31,9 @@ void FAngelscriptEngine::BindScriptTypes()
 	FAngelscriptEnumTableBaselineProbe::Reset();
 	#endif
 
-	FAngelscriptBinds::ResetGeneratedFunctionTableTiming();
+	FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();
 	FAngelscriptBinds::CallBinds(CollectDisabledBindNames());
-	FAngelscriptBinds::LogGeneratedFunctionTableTimingSummary();
+	FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();
 
 	#if WITH_DEV_AUTOMATION_TESTS
 	FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();
@@ -94,7 +94,7 @@ void FAngelscriptBinds::CallBinds(const TSet<FName>& DisabledBindNames)
 | # | 容器 | 代码引用 | 增长速率 | 已知治理状态 |
 |---|------|---------|---------|--------------|
 | C1 | `FAngelscriptBinds::GetRuntimeClassDB / GetEditorClassDB` | `AngelscriptBinds.cpp:39-49` | 全 UClass 收录，~5000 entry | 进程级 static，永久存活 |
-| C2 | `FAngelscriptBinds::GetClassFuncMaps` | `AngelscriptBinds.cpp:51-56` | 每 UClass 一个内嵌 TMap，含 ~10–30 `FFuncEntry`/类 | 进程级 static |
+| C2 | `FAngelscriptBinds::GetClassFunctionBindings` | `AngelscriptBinds.cpp:51-56` | 每 UClass 一个内嵌 TMap，含 ~10–30 `FAngelscriptFunctionBinding`/类 | 进程级 static |
 | C3 | `FAngelscriptBinds::GetBindModuleNames / GetSkipBinds / GetSkipBindNames` | `AngelscriptBinds.cpp:56-71` | 启动期间填充 | 进程级 static |
 | C4 | `GBlueprintEventsByScriptName` | `Bind_BlueprintEvent.cpp:68` | 每 BP event 一个 `(UClass*, ScriptName → UFunction*)` entry | 进程级 static，**已在 shutdown 中清理**（见 `ASEngineMemoryAnalysis.md`） |
 | C5 | `GCachedEditorClasses` | `Bind_BlueprintType.cpp:939` | 每 UClass 一个 entry，记 IsEditorOnly bool | 进程级 static，**已在 shutdown 中 Empty**（line 943） |

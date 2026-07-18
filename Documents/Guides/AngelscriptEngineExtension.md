@@ -49,7 +49,7 @@ UE process
     |   +-- class generation hooks
     |   +-- reload hooks
     |   +-- debug hooks
-    |   `-- source provider / bind / module-binding hooks
+    |   `-- source provider / bind / NativeModuleFunctionAddress hooks
     |
     `-- Shutdown()
         `-- FAngelscriptEngineExtensionRegistry.DetachEngine()
@@ -300,43 +300,43 @@ FAngelscriptStateDump::DumpAll(Engine, OutputDir)
 
 这是诊断扩展的推荐样板：Runtime 只提供窄 callback；扩展模块用公开 API 写自己的输出。
 
-## Cross-Module Direct Bind Hook
+## Native Module Function Binding Hook
 
-跨模块 direct bind 使用 Unreal `IModularFeatures`，不是 `IAngelscriptExtension`。
+目标模块函数地址绑定使用 Unreal `IModularFeatures`，不是 `IAngelscriptExtension`。
 
 源码位置：
 
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_ModuleBinding.cpp`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/Public/Bindings/AngelscriptModuleBindingProtocol.h`
-- `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableCodeGenerator.cs`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_NativeModuleFunctionBinding.cpp`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/FunctionBinding/NativeModuleFunctionBindingBridge.h`
+- `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs`
 
 Runtime 订阅点：
 
 - `IModularFeatures::Get().OnModularFeatureRegistered()`
-- `FAngelscriptModuleBindingProtocol::FeatureName()`
+- `FAngelscriptNativeModuleFunctionBindingBridge::FeatureName()`
 - `FCoreDelegates::OnPreExit`
 
 生成模块侧：
 
-- UHT emit module-binding shard。
-- shard 注册一个 modular feature，携带 POD entries 和 thunk 指针。
-- Runtime 验证 feature 后，把可用 entry 注入 AS bind 表。
+- UHT emit `NativeModuleFunctionAddress` shard。
+- shard 注册一个 modular feature，携带 POD function bindings 和 thunk 指针。
+- Runtime 验证 feature 后，把可用 function binding 注入 AS bind 表。
 
 ```text
-UHT generated module-binding shard
+UHT generated native-module-function-address shard
 |
-`-- IModularFeatures.RegisterModularFeature(AngelscriptModuleBindingFeature)
+`-- IModularFeatures.RegisterModularFeature(AngelscriptNativeModuleFunctionBinding)
     |
     `-- Runtime OnModularFeatureRegistered
         |
         +-- validate layout version
         +-- resolve target UClass / UFunction data
         +-- bind generic AS trampoline
-        `-- GAngelscriptModuleBindingGenericHook()
+        `-- GAngelscriptNativeModuleFunctionBindingGenericThunk()
             `-- generated thunk invokes native function
 ```
 
-这个 hook 对 ABI 很敏感。修改 `FAngelscriptModuleBinding` 或 `FAngelscriptModuleBindingFeatureView` 布局时，必须同步更新 `module-binding-layout-version.txt`、runtime header、UHT emit 和测试。
+这个 hook 对 ABI 很敏感。修改 `FAngelscriptNativeModuleFunctionBinding` 或 `FAngelscriptNativeModuleFunctionBindingView` 布局时，必须同步更新 `native-module-function-binding-layout-version.txt`、runtime bridge header、UHT emit 和测试。
 
 ## Bind Registration Hook
 
@@ -424,7 +424,7 @@ AngelscriptEditor.StartupModule()
 - `FAngelscriptEditorModuleTestAccess::SetDirectoryWatcherResolver()`
 - `AngelscriptSourceNavigation::SetOpenLocationOverrideForTesting()`
 - `FAngelscriptEditorMenuExtensionTestAccess::*`
-- `FAngelscriptClassRedirects::SetCoreRedirectTargetIniOverrideForTesting()`
+- `FAngelscriptClassReNativeRuntimeLinkeds::SetCoreReNativeRuntimeLinkedTargetIniOverrideForTesting()`
 
 生产扩展设计不应依赖这些符号。
 
@@ -452,8 +452,8 @@ Need to own state for each FAngelscriptEngine?
     +-- need to expose native C++ functions/types to AS?
     |   `-- FAngelscriptBinds::FBind / Bind_*.cpp
     |
-    +-- need generated direct native bindings from another module?
-    |   `-- UHT generated function table / IModularFeatures module-binding feature
+    +-- need generated NativeRuntimeLinked native bindings from another module?
+    |   `-- UHT generated function table / IModularFeatures NativeModuleFunctionAddress feature
     |
     +-- need editor UI/tooling integration?
         `-- UE editor hooks: UToolMenus, SourceCodeNavigation, DirectoryWatcher,
@@ -479,6 +479,6 @@ Need to own state for each FAngelscriptEngine?
 | `IAngelscriptSourceProvider` | Engine dependency | 替换脚本来源、测试注入、虚拟 source | Editor 热重载 UI 行为。 |
 | `FAngelscriptStateDump::OnDumpExtensions` | Dump 调用期间 | 增加额外 CSV dump 表 | 读取 Runtime 私有状态。 |
 | `FAngelscriptBinds::FBind` | Bind phase | 暴露 AS 类型、函数、属性 | Runtime 生命周期订阅。 |
-| `IModularFeatures` module-binding bind | Module feature lifetime | 跨模块生成 direct bind | 未版本化的 ABI 改动。 |
+| `IModularFeatures` NativeModuleFunctionAddress bind | Module feature lifetime | 跨模块生成 NativeRuntimeLinked bind | 未版本化的 ABI 改动。 |
 | UE editor hooks | Editor module lifetime | 菜单、导航、Content Browser、文件监听 | Runtime-only 代码依赖 Editor。 |
 | `ForTesting` / `TestAccess` hooks | 自动化测试期间 | 可控测试注入 | 生产扩展 API。 |

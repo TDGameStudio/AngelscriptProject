@@ -8,7 +8,7 @@
 > · `Plugins/Angelscript/Source/AngelscriptEditor/AngelscriptEditor.Build.cs` (~46 行)
 > · `Plugins/Angelscript/Source/AngelscriptTest/AngelscriptTest.Build.cs` (~57 行)
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptUHTTool.ubtplugin.csproj` (~54 行)
-> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs` (~UE 构建期 C# Exporter 入口)
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs` (~UE 构建期 C# Exporter 入口)
 > · `Source/AngelscriptProject/AngelscriptProject.cpp` (~6 行，仅 `IMPLEMENT_PRIMARY_GAME_MODULE` 一行有效代码)
 > · `AGENTS.md`（本文项目语境与"插件即交付物"准则的来源）
 > **关联文档**:
@@ -56,7 +56,7 @@
 
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Layer 1: 构建期工具 ─ AngelscriptUHTTool（C# / UBT plugin）          │
-│   读 C++ 头 → 生成 AS_FunctionTable_*.cpp + Summary.json + 跳过 CSV  │
+│   读 C++ 头 → 生成 AS_FunctionBinding_*.cpp + Summary.json + 跳过 CSV  │
 │   完全脱离 UE 进程，hook 进 UnrealHeaderTool 流水线                  │
 └──────────────────────────────────────────────────────────────────────┘
                                   │
@@ -208,41 +208,41 @@ AngelscriptTest/
 ```text
 AngelscriptUHTTool/                   （C# / .NET 8.0 / UBT plugin）
 ├── AngelscriptUHTTool.cs                       命名空间锚点（无实质代码）
-├── AngelscriptFunctionTableExporter.cs         ★ [UnrealHeaderTool] [UhtExporter] 入口
-├── AngelscriptFunctionTableCodeGenerator.cs    生成 AS_FunctionTable_*.cpp
+├── AngelscriptFunctionBindingExporter.cs         ★ [UnrealHeaderTool] [UhtExporter] 入口
+├── AngelscriptFunctionBindingCodeGenerator.cs    生成 AS_FunctionBinding_*.cpp
 ├── AngelscriptFunctionSignatureBuilder.cs      函数签名重建
 ├── AngelscriptHeaderSignatureResolver.cs       头文件签名解析
 ├── AngelscriptUHTTool.ubtplugin.csproj         项目文件，引用 EpicGames.UHT.dll 等
 └── AngelscriptUHTTool.ubtplugin.csproj.props   构建参数
 ```
 
-UHT 工具的入口是单个静态 `Export` 方法 —— 它注册为 UE Header Tool 的导出器（`[UhtExporter]`），构建期遍历所有反射函数并生成 `AS_FunctionTable_*.cpp` 分片：
+UHT 工具的入口是单个静态 `Export` 方法 —— 它注册为 UE Header Tool 的导出器（`[UhtExporter]`），构建期遍历所有反射函数并生成 `AS_FunctionBinding_*.cpp` 分片：
 
 ```cs
 // ============================================================================
-// 文件: AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs
+// 文件: AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs
 // 函数: Export
-// 性质: 构建期入口；CppFilters="AS_FunctionTable_*.cpp" 决定输出文件命名
+// 性质: 构建期入口；CppFilters="AS_FunctionBinding_*.cpp" 决定输出文件命名
 // ============================================================================
 [UhtExporter(
-    Name = "AngelscriptFunctionTable",
+    Name = "AngelscriptFunctionBinding",
     Description = "Exports Angelscript function table data",
     Options = UhtExporterOptions.Default | UhtExporterOptions.CompileOutput,
-    CppFilters = ["AS_FunctionTable_*.cpp"],
+    CppFilters = ["AS_FunctionBinding_*.cpp"],
     ModuleName = "AngelscriptRuntime")]
 private static void Export(IUhtExportFactory factory)
 {
     // ★ 遍历所有 module / class / function，识别 BlueprintCallable & BlueprintPure
     // ★ 重建签名 -> 生成直接绑定代码 / 无法重建则记录到跳过 CSV
-    int generatedFileCount = AngelscriptFunctionTableCodeGenerator.Generate(factory);
+    int generatedFileCount = AngelscriptFunctionBindingCodeGenerator.Generate(factory);
     // ... 累计 packageCount / classCount / functionCount / reconstructedCount / skippedCount
-    WriteSkippedEntriesCsv(factory, skippedEntries);          // 出口 1: 逐条跳过明细
-    WriteSkippedReasonSummaryCsv(factory, skippedEntries);    // 出口 2: 原因汇总
+    WriteSkippedDiagnosticsCsv(factory, skippedEntries);          // 出口 1: 逐条跳过明细
+    WriteSkippedDiagnosticsCsv(factory, skippedEntries);    // 出口 2: 原因汇总
     Console.WriteLine("AngelscriptUHTTool exporter visited {0} packages, ...", ...);
 }
 ```
 
-——UHT 工具产出的 `.cpp` 文件**编译进 `AngelscriptRuntime` 模块**（`ModuleName = "AngelscriptRuntime"`），所以"`Bind_*.cpp` 总数 121"指的是手工撰写的固定绑定；自动生成的 `AS_FunctionTable_*.cpp` 是另一类，与 Bind 在同一进程加载但分文件管理。
+——UHT 工具产出的 `.cpp` 文件**编译进 `AngelscriptRuntime` 模块**（`ModuleName = "AngelscriptRuntime"`），所以"`Bind_*.cpp` 总数 121"指的是手工撰写的固定绑定；自动生成的 `AS_FunctionBinding_*.cpp` 是另一类，与 Bind 在同一进程加载但分文件管理。
 
 ---
 
@@ -348,7 +348,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 [语言运行时]
   - AngelScript 2.33 + 选择性 2.38 兼容（不做整版升级；策略见 Documents/Guides/AngelscriptForkStrategy.md）
   - 121 个 Bind_*.cpp 手工绑定（覆盖 Actor / Component / Math / Container / Networking / ...）
-  - 自动生成 AS_FunctionTable_*.cpp（UHT 工具产出，编入 AngelscriptRuntime）
+  - 自动生成 AS_FunctionBinding_*.cpp（UHT 工具产出，编入 AngelscriptRuntime）
   - 反射回退绑定（UFunction Reflective Fallback，已落地里程碑）
   - 21 个 mixin helper library（FunctionLibraries/）
 
@@ -378,7 +378,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 
 [构建期工具链]
   - AngelscriptUHTTool: C# .NET 8.0 / UBT plugin
-  - 产物：AS_FunctionTable_*.cpp / AS_FunctionTable_Summary.json /
+  - 产物：AS_FunctionBinding_*.cpp / AS_FunctionBindingStatistics.json /
           跳过明细 CSV / 原因汇总 CSV
 ```
 
@@ -402,7 +402,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 | `IDirectoryWatcher` | `OnScriptFileChanges` 回调 | Editor/HotReload | OS 文件变更 → 待重载队列 |
 | `FCoreDelegates::OnPostEngineInit` | `OnEngineInitDone` 静态回调 | Editor/Core | ContentBrowser DataSource 注册时机 |
 | `FAutoConsoleCommand` | `as.DumpEngineState` 等 | Runtime/Dump | 控制台命令 |
-| `UnrealHeaderTool` `[UhtExporter]` | `AngelscriptFunctionTableExporter.Export` | UHTTool | 构建期生成绑定函数表分片 |
+| `UnrealHeaderTool` `[UhtExporter]` | `AngelscriptFunctionBindingExporter.Export` | UHTTool | 构建期生成绑定函数表分片 |
 | Slate 编辑器 UI | 启动失败弹框 / 编辑器菜单扩展 | Runtime + Editor | 可视化错误处理与命令触发 |
 
 这些接合点的共同模式：**Runtime 用 UE Subsystem 接管生命周期；Editor 用 UE 已有扩展点（NavigationHandler / DataSource / Watcher / ConsoleCommand）插入而不打补丁；UHTTool 用 UBT 既定的 Exporter 协议**。换句话说，整个插件**没有任何"hack 进 UE 内核"的代码**，全部接合都用官方扩展位。
@@ -495,7 +495,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 | Private 依赖 Editor | — | — | bBuildEditor 时 ✓ | — | — |
 | 文件规模 | 209 `.cpp` | 49 `.cpp` | 430 `.cpp` | 5 `.cs` | 3 文件 |
 | 入口符号 | `FAngelscriptRuntimeModule` | `FAngelscriptEditorModule` | `FAngelscriptTestModule` | `Export()` static | `IMPLEMENT_PRIMARY_GAME_MODULE` |
-| 典型对外交付 | `FAngelscriptEngine` / 121 Bind / Subsystem / Dump | HotReload / SourceNav / ContentBrowser / BlueprintImpact | 1518+ 测试定义 + Shared/ Helper | `AS_FunctionTable_*.cpp` + Summary | 无 |
+| 典型对外交付 | `FAngelscriptEngine` / 121 Bind / Subsystem / Dump | HotReload / SourceNav / ContentBrowser / BlueprintImpact | 1518+ 测试定义 + Shared/ Helper | `AS_FunctionBinding_*.cpp` + Summary | 无 |
 | 是否在 plugin 包内 | ✓ | ✓ | ✓ | ✓ | ✗（宿主项目） |
 
 ---
@@ -513,7 +513,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 | **ContextStack** | `FAngelscriptEngineContextStack`，进程级 `TArray<FAngelscriptEngine*>`，提供 Push/Pop/Peek。`TryGetCurrentEngine() = Stack.Last()`，回答"当前我属于哪个 Engine"。 | `Core/AngelscriptEngine.h` |
 | **EngineScope** | `FAngelscriptEngineScope`，RAII 包装类，构造时 Push、析构时 Pop ContextStack。所有"切换当前 Engine"的代码必须用它。 | `Core/AngelscriptEngine.h` |
 | **Bind** | C++ 类型/函数到 AS 类型系统的手工绑定，落在 `Binds/Bind_*.cpp`（121 份）。每份 `Bind_*.cpp` 通过 `FAngelscriptBinds::SetPreviousNamespaces` 等 API 注册一组类型。 | `Binds/Bind_*.cpp` |
-| **FunctionTable** | UHT 工具产出的"AS_FunctionTable_*.cpp"，自动绑定 BlueprintCallable / BlueprintPure 函数。与手工 Bind 不冲突，由 UHT 在构建期生成。 | `AngelscriptUHTTool/` |
+| **FunctionTable** | UHT 工具产出的"AS_FunctionBinding_*.cpp"，自动绑定 BlueprintCallable / BlueprintPure 函数。与手工 Bind 不冲突，由 UHT 在构建期生成。 | `AngelscriptUHTTool/` |
 | **ScriptRoot** | AS 脚本根目录列表，由 `FAngelscriptEngine::MakeAllScriptRoots()` 返回；DirectoryWatcher 注册回调时使用；默认包含 `Script/` 与项目级配置。 | `UAngelscriptSettings` |
 | **ClassGenerator** | `FAngelscriptClassGenerator`，把 AS 类声明翻译成活的 `UClass`/`UStruct`/`UFunction`/`UEnum` 的子系统；暴露 5 个 `OnXXXReload` 多播给 Editor 订阅。 | `ClassGenerator/` |
 | **HotReload** | 文件变更 → 重新编译 → ClassGenerator 触发 reinstance 的全链路。Editor 端由 DirectoryWatcher 触发；Runtime 端在 `Tick` 内读 `FileChangesDetectedForReload` 队列。 | `RT_HotReload.md` |

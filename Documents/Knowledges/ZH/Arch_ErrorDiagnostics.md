@@ -12,7 +12,7 @@
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptAdditionalCompileChecks.h`（游戏模块自定义检查回调）
 > · `Plugins/Angelscript/Source/AngelscriptEditor/SourceNavigation/AngelscriptSourceCodeNavigation.cpp`（错误定位回链）
 > · `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineHelper.h` / `.cpp`（`FAngelscriptCompileTraceSummary` 测试侧采样）
-> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs`（UHT C# 阶段失败上报）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs`（UHT C# 阶段失败上报）
 > **关联文档**:
 > `Arch_RuntimeLifecycle.md` · `AS_Compiler.md` · `RT_HotReload.md` · `RT_Debugger.md` · `Test_Infrastructure.md`
 
@@ -53,7 +53,7 @@
 │ 多源汇入 (Ingress)                                                     │
 │ ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐        │
 │ │ AS 内核         │   │ 插件桥接层      │   │ UHT C# 工具     │        │
-│ │ asCScriptEngine │   │ ClassGenerator  │   │ FunctionTable-  │        │
+│ │ asCScriptEngine │   │ ClassGenerator  │   │ FunctionBinding-  │        │
 │ │ ::WriteMessage  │   │ 模块导入检查    │   │ Exporter.cs     │        │
 │ │ → asSMessageInfo│   │ 用法限制检查    │   │ → Console.Write │        │
 │ └────────┬────────┘   └────────┬────────┘   │   Line + CSV    │        │
@@ -187,10 +187,10 @@ void FAngelscriptEngine::ScriptCompileError(const FString& AbsoluteFilename,
 
 ```cs
 // ============================================================================
-// 文件: AngelscriptUHTTool/AngelscriptFunctionTableExporter.cs（ExportClasses 末尾）
+// 文件: AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs（ExportClasses 末尾）
 // ============================================================================
-WriteSkippedEntriesCsv(factory, skippedEntries);          // ★ 出口 1: skipped CSV
-WriteSkippedReasonSummaryCsv(factory, skippedEntries);    // ★ 出口 2: 原因汇总 CSV
+WriteSkippedDiagnosticsCsv(factory, skippedEntries);          // ★ 出口 1: skipped CSV
+WriteSkippedDiagnosticsCsv(factory, skippedEntries);    // ★ 出口 2: 原因汇总 CSV
 Console.WriteLine(
     "AngelscriptUHTTool exporter visited {0} packages, {1} classes, "
     + "{2} BlueprintCallable/Pure functions, reconstructed {3}, skipped {4}, "
@@ -199,7 +199,7 @@ Console.WriteLine(
     reconstructedCount, skippedCount, generatedFileCount);
 ```
 
-错误**只出现在构建日志和 CSV**（产物中的 `AS_FunctionTable_Summary.json` / 跳过条目 CSV）。它们和运行时的 `Diagnostics` 表完全解耦——诊断"运行时无法绑定到 C++ 函数"这类问题，**第一现场永远是构建日志而非编辑器 OutputLog**。
+错误**只出现在构建日志和 CSV**（产物中的 `AS_FunctionBindingStatistics.json` / 跳过条目 CSV）。它们和运行时的 `Diagnostics` 表完全解耦——诊断"运行时无法绑定到 C++ 函数"这类问题，**第一现场永远是构建日志而非编辑器 OutputLog**。
 
 ---
 
@@ -538,7 +538,7 @@ virtual bool NavigateToFunction(const UFunction* InFunction) override
    - `LogAngelscriptError` 全程持有 `CompilationLock`，worker 线程的并行编译期间错误回调是串行的，大量错误（数百条）的场景下会拉慢"打印阶段"，偶有"编译似乎卡死"的错觉来自此。
 
 5. **UHT 工具链的错误完全不在运行时收集器内**
-   - UHT C# 失败只能从构建日志和 `AS_FunctionTable_Summary.json` / 跳过 CSV 看到。运行时阶段拿到的"绑定缺失错误"实际是**症状**（脚本里 `FunctionA(...)` 未声明），根因要回构建日志里查 UHT 阶段是否报了 skip。
+   - UHT C# 失败只能从构建日志和 `AS_FunctionBindingStatistics.json` / 跳过 CSV 看到。运行时阶段拿到的"绑定缺失错误"实际是**症状**（脚本里 `FunctionA(...)` 未声明），根因要回构建日志里查 UHT 阶段是否报了 skip。
 
 ---
 
@@ -548,7 +548,7 @@ virtual bool NavigateToFunction(const UFunction* InFunction) override
 
 | 错误模式 | 切入点 |
 |---------|-------|
-| `unresolved type / no matching declaration` | 看 `[FileA.as]:` 标头**第一条**（其余多半是雪崩）；确认 `Bind_*.cpp` 是否注册类型；UFUNCTION 反射回退见 `AS_FunctionTable_Summary.json` 与跳过 CSV |
+| `unresolved type / no matching declaration` | 看 `[FileA.as]:` 标头**第一条**（其余多半是雪崩）；确认 `Bind_*.cpp` 是否注册类型；UFUNCTION 反射回退见 `AS_FunctionBindingStatistics.json` 与跳过 CSV |
 | `ambiguous overload` | 看 `MatchFunctions` 代价表（`AS_Compiler.md`）；显式 cast 或加 alias 排除歧义 |
 | `missing super() / property writable from non-init` | UE Fork 扩展（`allowEditPropertyAccess`）；搜 `ScriptCompileError` 调用点（`AngelscriptEngine.cpp:2870/2888/2906/...`） |
 | `Could not find module ... to import` | 行号永远是 1（`ScriptCompileError(Module, 1, ...)` 行 3525），是模块级错误 |
@@ -608,5 +608,5 @@ virtual bool NavigateToFunction(const UFunction* InFunction) override
 - **预建 entry 的契约**：AS 内核回调用 `Find` 而非 `FindOrAdd`——只有 `CompileModules` 阶段提前建好的 entry 才能接住内核错误。这是过滤偶发非编译期警告的关键。
 - **雪崩抑制**：`bIgnoreCompileErrorDiagnostics` 在热重载场景下"一次解析失败后吞掉所有后续误报"，但首次启动不抑制——保留全量信息供失败弹框展示。
 - **位置回链分两层**：`Diagnostics` 表给 IDE（DAP 协议）做行级 squiggle；UE 编辑器自身的"打开源码"操作走 `FSourceCodeNavigation` + `AngelscriptSourceCodeNavigation` Handler，调用系统 `code` 命令打开 VSCode。
-- **解耦 UHT**：构建期的绑定生成失败永远不出现在运行时 `Diagnostics` 表中，去 `AS_FunctionTable_Summary.json` 与跳过 CSV 看。
+- **解耦 UHT**：构建期的绑定生成失败永远不出现在运行时 `Diagnostics` 表中，去 `AS_FunctionBindingStatistics.json` 与跳过 CSV 看。
 - **测试可观测**：`CompileModuleWithSummary` + `AddExpectedError` 两个机制让单测能精确断言"哪些错误必出现"和"哪些错误不应出现"。

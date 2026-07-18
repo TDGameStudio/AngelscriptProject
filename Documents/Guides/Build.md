@@ -150,7 +150,9 @@ Angelscript 编译期策略放在项目级专用文件：
 ; Config/DefaultAngelscriptCompileOptions.ini
 [/Script/AngelscriptRuntime.AngelscriptCompileOptions]
 bCompileAngelscriptUnitTests=true
-bCompileAngelscriptModuleBindings=false
+FunctionBindingMethod=NativeRuntimeLinked
++NativeRuntimeLinkedModules=Engine
++NativeRuntimeLinkedModules=UMG
 ```
 
 本仓库是 Angelscript 插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`。此时 `AngelscriptTest.Build.cs` 会定义 `WITH_ANGELSCRIPT_UNITTESTS=1`，Angelscript C++ automation 测试会向 Unreal Automation 注册，测试模块启动时也会保留 test engine pool 预热和测试初始化 override。
@@ -166,7 +168,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 
 `AngelscriptTest.Build.cs` 将 `Config/DefaultAngelscriptCompileOptions.ini` 注册为 `ExternalDependencies`。修改该文件后，包含 `AngelscriptTest` 的目标会因为该外部依赖变化而让 UBT makefile 失效。这个 gate 控制测试注册和测试专用编译路径，不表示 UBT 完全跳过扫描或包含 `AngelscriptTest` 模块；完整模块级排除需要单独的 target/plugin-level module gate。
 
-`bCompileAngelscriptModuleBindings` 是另一个独立的编译 gate，默认必须保持 `false`。打开后，`AngelscriptRuntime.Build.cs` 定义 `WITH_ANGELSCRIPT_MODULE_BINDINGS=1`，UHT 才会生成目标模块自己的 ModuleBinding shards，Runtime 才会编译对应的 modular-feature bridge。这个选项只支持源码版引擎：编辑器中修改时会弹错并拒绝保存，直接改 ini 时 UBT 和 UHT 都会硬失败；构建版、安装版以及无法识别的引擎都按非源码处理。
+`FunctionBindingMethod` 是全局自动绑定策略，可选 `None`、`NativeRuntimeLinked` 和 `NativeModuleFunctionAddress`。前者关闭所有 UHT 自动注册；Runtime-linked 模式从 `NativeRuntimeLinkedModules` 动态增加 Runtime 依赖并生成 wrapper；target-module 模式从 `NativeModuleFunctionAddressModules` 生成目标模块 shard，并定义 `WITH_ANGELSCRIPT_NATIVE_MODULE_FUNCTION_ADDRESS=1`。target-module 模式只支持源码版引擎：编辑器中修改时会弹错并拒绝保存，直接改 ini 时 UBT 和 UHT 都会硬失败；构建版、安装版以及无法识别的引擎都按非源码处理。
 
 ## 查询当前 UBT 进程
 

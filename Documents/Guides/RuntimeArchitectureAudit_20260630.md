@@ -67,16 +67,16 @@
 | D3 | **Helper 头同时 mix UE Editor 和 Runtime 内部头** | `ClassReloadHelper.h:3-14` 串接 `Editor.h` / `BlueprintActionDatabase.h` / `Kismet2/EnumEditorUtils.h` / `ComponentTypeRegistry.h`（UE Editor）与 runtime `AngelscriptClassGenerator.h` / `AngelscriptEngineExtensionRegistry.h`，跨层抽象在同一 header 上塌陷。 |
 | D4 | **Helper 内部直接持有 3 套 *TestHooks 结构** | `ClassReloadHelper.h:30-50` 公开 `FClassReloadHelperClassReloadTestHooks`、`FClassReloadHelperPostReloadTestHooks`、`FClassReloadHelperPerformReinstanceTestHooks`，每套是若干 `TFunction<>` — 测试 hook 不是通过抽象注入而是直接在生产 helper 上挖洞。 |
 
-### E. 模块边界 / 嵌入测试代码 / Public 表面
+### E. 模块边界 / Runtime AS 测试框架 / Public 表面
 
 | 编号 | 问题 | 证据 |
 |------|------|------|
-| E1 | **Runtime/Testing/ 嵌入大体量测试基础设施** | 顶层 `Testing/` 下 12 cpp / 22 文件，含 `IntegrationTest.cpp` 35 KB、`UnitTest.cpp` 24 KB、`AngelscriptTest.cpp` 22 KB、`DiscoverTests.cpp`、`LatentAutomationCommand.cpp/h`、`LatentAutomationCommandClientExecutor.*`、`Network/` 子目录；`AngelscriptTest.h:4` 直接 include `Misc/AutomationTest.h` — 生产 runtime 模块内嵌 UE 自动化测试运行栈，用于 .as-语言级测试。 |
-| E2 | **Core/ 内非 Core 内容** | `Core/UnversionedPropertySerializationTest.h/.cpp` 是 UE serialization 一致性测试入口（`#define UE_ENABLE_UNVERSIONED_PROPERTY_TEST WITH_EDITORONLY_DATA`）；`Core/AngelscriptEditorDebugBridge.h` 在 runtime/Core 公开 `FAngelscriptEditorCreateBlueprint`、`FAngelscriptEditorGetCreateBlueprintDefaultAssetPath` 这种"Editor"概念委托。 |
+| E1 | **Runtime/Testing/ 是 Runtime-owned 的 AS 测试框架** | 顶层 `Testing/` 下包含 `IntegrationTest.cpp`、`UnitTest.cpp`、`AngelscriptTest.cpp`、`DiscoverTests.cpp`、`LatentAutomationCommand.cpp/h`、`LatentAutomationCommandClientExecutor.*` 和 `Network/`；这些代码负责 `.as` 测试的发现、注册、执行、latent/network 支持，并通过 `Misc/AutomationTest.h` 桥接 UE Automation。它不是 `AngelscriptTest` 模块的 C++ 单元测试实现；需要审计的是 bridge、编译条件、配置和开发期探针边界。 |
+| E2 | **Core/ 内含 Runtime 序列化自检辅助代码与 Editor 概念** | `Core/UnversionedPropertySerializationTest.h/.cpp` 是可选的 Runtime 序列化一致性自检路径（`#define UE_ENABLE_UNVERSIONED_PROPERTY_TEST WITH_EDITORONLY_DATA`）；`Core/AngelscriptEditorDebugBridge.h` 在 runtime/Core 公开 `FAngelscriptEditorCreateBlueprint`、`FAngelscriptEditorGetCreateBlueprintDefaultAssetPath` 这种"Editor"概念委托。 |
 | E3 | **Public/ 名实不符** | `Public/` 目录下只有 `UHT/` 子目录、无任何顶层 public 头；公开 API 实际上通过 `ANGELSCRIPTRUNTIME_API` 宏挂在 `Core/` 内部头上。`Build.cs:18-21` 把 `Core/` 与 `Core/Commandlets/` 都加入 `PublicIncludePaths` — runtime 把 commandlet 内部头公开给所有依赖方。 |
 | E4 | **顶层 `Hash/` 是单文件 3rd 方** | `Hash/` 仅 `xxhash.h` + `xxhash.inl`，0 个 .cpp，本应位于 `ThirdParty/`。 |
 | E5 | **`Subsystem/` 顶层与 Core 子系统命名重叠** | 顶层 `Subsystem/` 含 4 个 header-only：`ScriptEngineSubsystem.h` / `ScriptGameInstanceSubsystem.h` / `ScriptLocalPlayerSubsystem.h` / `ScriptWorldSubsystem.h`（脚本侧 mixin 包装）；`Core/` 内同时有 `AngelscriptEngineSubsystem.*` / `AngelscriptGameInstanceSubsystem.*`（真正的 UE 子系统派生）。两套 "Subsystem" 命名空间并行，归属与命名易混。 |
-| E6 | **Build.cs 27 个依赖且 editor 升 public** | Public 9（含 `StructUtils`、`DeveloperSettings`）+ Private 15（含 `Slate`、`SlateCore`、`UMG`、`Sockets`、`Networking`、`PhysicsCore`）；`bBuildEditor` 时 Public 又新增 `UnrealEd` + `EditorSubsystem`，Private 增 `UMGEditor` — runtime 模块在编辑期把 `UnrealEd` 升为公共依赖。`AddGeneratedFunctionTableModuleWrappers` 还为 `UnrealEd` 4 shards、`UMGEditor` 2 shards 自动生成绑定包装。 |
+| E6 | **Build.cs 27 个依赖且 editor 升 public** | Public 9（含 `StructUtils`、`DeveloperSettings`）+ Private 15（含 `Slate`、`SlateCore`、`UMG`、`Sockets`、`Networking`、`PhysicsCore`）；`bBuildEditor` 时 Public 又新增 `UnrealEd` + `EditorSubsystem`，Private 增 `UMGEditor` — runtime 模块在编辑期把 `UnrealEd` 升为公共依赖。`AddGeneratedFunctionBindingModuleWrappers` 还为 `UnrealEd` 4 shards、`UMGEditor` 2 shards 自动生成绑定包装。 |
 
 ### F. ThirdParty AS 2.33 fork 卫生
 
@@ -101,15 +101,15 @@
 | H1 | **Dump 知道每个子系统的内部** | `Dump/AngelscriptStateDump.cpp` 写出 **34 张** distinct `*.csv` 表（grep 结果去重）：覆盖 AS 引擎内部（`AsEngineInternalState` / `AsModuleInternalState` / `AsTypeInternalState` / `AsFunctionInternalState`）、JIT（`JITDatabase` / `StaticJITState` / `PrecompiledData`）、Debugger（`DebugBreakpoints` / `DebugServerState`）、Coverage（`CodeCoverage`）、HotReload（`HotReloadState`）、Editor（`EditorReloadState` / `EditorMenuExtensions`）、Docs（`DocumentationStats`）等。"pure observer"约束之下，仍然必须知道每个子系统的可见状态形状。 |
 | H2 | **Editor-concept 表写在 runtime/Dump** | H1 中 `EditorReloadState.csv` 与 `EditorMenuExtensions.csv` 由 runtime/Dump 注册（`AngelscriptStateDump.cpp:269-270` 调 `AddExtensionTableResult`），但概念归属编辑器；与 §E2 中 `AngelscriptEditorDebugBridge.h` 的 editor 概念渗透形成同一 pattern。 |
 | H3 | **9 处 CVar / Console 命令分散 8 文件** | grep `FAutoConsoleCommand` / `FAutoConsoleVariableRef` / `TAutoConsoleVariable<` 共 9 次跨 8 文件：`Core/AngelscriptEngine.cpp:135`（`angelscript.UseRecompileAvoidance`）、`Binds/Bind_BlueprintType.cpp:51`（`BindParallelPrepare`）、`Binds/BlueprintCallableReflectiveFallback.cpp:112`（`ReflectiveFallbackUseCache`）、`Dump/AngelscriptCrashSnapshot.cpp:205`、`Dump/AngelscriptDumpCommand.cpp:60`、`StaticJIT/StaticJITDiagnostics.cpp:150`、`Core/AngelscriptSnippet.cpp:227`。无统一注册中心或命名前缀公约。 |
-| H4 | **`Testing/` 注册生产 CVar** | `Testing/AngelscriptEnumTableBaselineProbe.cpp:59,289` 在 runtime/Testing/ 内部注册 `CVarAutoDump` 和 `GDumpCommand` — 测试代码暴露生产 console 接口，违反"Testing/ 仅供测试"假设并加深 §E1 的边界塌陷。 |
+| H4 | **`Testing/` 内的开发期探针注册诊断 CVar** | `Testing/AngelscriptEnumTableBaselineProbe.cpp:59,289` 在 runtime/Testing/ 内部注册 `CVarAutoDump` 和 `GDumpCommand`。这属于 `WITH_DEV_AUTOMATION_TESTS` 下的开发期探针/诊断入口，不应被误称为 C++ 单元测试；仍需明确其编译条件、诊断接口和 Runtime AS 测试框架之间的边界。 |
 
 ### I. 跨模块隐式耦合（在 §B 全局之外）
 
 | 编号 | 问题 | 证据 |
 |------|------|------|
-| I1 | **CodeCoverage 反向依赖 Testing/** | `CodeCoverage/AngelscriptCodeCoverage.cpp:5` `#include "Testing/AngelscriptTestSettings.h"`；第 48 行 `GetDefault<UAngelscriptTestSettings>()->bEnableCodeCoverage` 决定 runtime CodeCoverage 是否开启；第 208 行读取 `CoverageExcludePatterns`。**生产 runtime 的 coverage 行为受 test settings 直接控制**；这反转了正常的"测试依赖产品"方向。 |
+| I1 | **CodeCoverage 反向耦合 Test Settings 配置** | `CodeCoverage/AngelscriptCodeCoverage.cpp:6` `#include "Testing/AngelscriptTestSettings.h"`；`AngelscriptCodeCoverage.cpp:97` 读取 `bEnableCodeCoverage`，`225,231` 读取 `CoverageExcludePatterns`。这不是 `AngelscriptRuntime` 对 `AngelscriptTest` UE 模块的直接依赖——Settings 类本身位于 Runtime——而是 Runtime-owned Coverage 能力被名为 Test Settings 的配置类控制，形成配置所有权耦合。 |
 | I2 | **`AngelscriptDocs` 在 runtime 模块** | `Core/AngelscriptDocs.cpp` 795 行的 doc generator 实现位于 runtime 模块；产生 `DocumentationStats.csv`（H1）。Doc 生成是开发期/编辑期工具职责，但被打包进 cooked runtime。 |
-| I3 | **`UnversionedPropertySerializationTest.cpp` 在 Core/** | `Core/UnversionedPropertySerializationTest.cpp` 16 KB 测试代码 + `UnversionedPropertySerialization.cpp` 1029 行（UE 内部序列化的 reimplementation/校验路径）位于 `Core/` 而非 `Testing/`；与 `#define UE_ENABLE_UNVERSIONED_PROPERTY_TEST WITH_EDITORONLY_DATA` 强相关，editor-only 测试 fixture 嵌在 Core 中。 |
+| I3 | **`UnversionedPropertySerializationTest.cpp` 在 Core/** | `Core/UnversionedPropertySerializationTest.cpp` 16 KB 的 Runtime 序列化自检辅助代码 + `UnversionedPropertySerialization.cpp` 1029 行（UE 内部序列化的 reimplementation/校验路径）位于 `Core/` 而非 `Testing/`；与 `#define UE_ENABLE_UNVERSIONED_PROPERTY_TEST WITH_EDITORONLY_DATA` 强相关。它不是 `AngelscriptTest` C++ 单元测试文件，但其 Runtime 编译条件和自检入口仍需单独记录。 |
 | I4 | **`AngelscriptEngine` friend 关系反而克制** | grep `friend (class\|struct) FAngelscriptEngine` 仅 4 次跨 3 文件（`AngelscriptBinds.h`、`AngelscriptEngine.h` 自身、`AngelscriptEngineSubsystem.h`）— 这是相对正面的信号，god class 的耦合主要靠 §B2 的全局静态访问而非 friend 网，为后续重构留下空间。 |
 
 ### J. Header 卫生 / 构建模式
@@ -117,7 +117,7 @@
 | 编号 | 问题 | 证据 |
 |------|------|------|
 | J1 | **`Start/EndAngelscriptHeaders.h` bracketing 跨 55 文件** | `Core/StartAngelscriptHeaders.h` 与 `EndAngelscriptHeaders.h` 是 `#pragma warning(push/disable: 4191/pop)` 的 bracket header；grep 显示在 runtime 模块内 110 次出现跨 **55 文件**（每文件成对）。这是隐式的"AS 头需要警告抑制"的项目级公约，但 AGENTS.md / Build.md / 任何 guide 均未文档化；新代码贡献者必须靠模仿现有 .cpp 来发现这一约束。 |
-| J2 | **`Public/` 名实不符（已在 E3，重申其单点暴露面）** | `Public/UHT/AngelscriptModuleBindingProtocol.h` 是 runtime 唯一真正的"公共"头，定义 POD 三元组（`FAngelscriptModuleBinding` / `FAngelscriptModuleBindingFeatureView` / `FAngelscriptModuleBindingCallFrame`），明确标注"Higher bits are reserved and require a layout-version bump before use"。除此之外整个 Runtime 公共表面靠 `ANGELSCRIPTRUNTIME_API` 宏挂在 `Core/` 内部头上。 |
+| J2 | **`Public/` 名实不符（已在 E3，重申其单点暴露面）** | `Public/UHT/NativeModuleFunctionBindingBridge.h` 是 runtime 唯一真正的"公共"头，定义 POD 三元组（`FAngelscriptNativeModuleFunctionBinding` / `FAngelscriptNativeModuleFunctionBindingView` / `FAngelscriptNativeModuleFunctionBindingCallFrame`），明确标注"Higher bits are reserved and require a layout-version bump before use"。除此之外整个 Runtime 公共表面靠 `ANGELSCRIPTRUNTIME_API` 宏挂在 `Core/` 内部头上。 |
 | J3 | **`Core/` 顶层杂项头未分组** | `Core/` 顶层包含 `AngelscriptInclude.h` / `AngelscriptSort.h` / `AngelscriptSharedPtr.h` / `Helper_Reification.h` / `FunctionCallers.h` / `FCpuProfilerTraceScoped.h` / `StartAngelscriptHeaders.h` / `EndAngelscriptHeaders.h` 等 8+ 工具头与 50 个核心 .h/.cpp 平铺；无 `Core/Util/` 或 `Core/Internal/` 子目录。 |
 
 ### K. Core 内嵌的子模块（Compilation/、Commandlets/）
@@ -138,8 +138,8 @@
 2. **§A god file 群（5 个 100 KB+ 单文件 + ClassGenerator 5000+ 行 + Preprocessor / DebugServer 单文件）**
    把 §C/§D/§E/§F 的清理都焊死在原模式上 — 任何模块化、子系统拆分都需要先把这些 .cpp 拆开。
 
-3. **§D + §E1 + §E2 + §I1 + §I2 + §H4 模块边界塌陷（Editor 概念渗透 Runtime + Runtime 嵌入测试代码 + 反向跨模块依赖）**
-   `AngelscriptEditorDebugBridge.h`、`UnversionedPropertySerializationTest.*`、`Testing/` 22 文件、`Build.cs` editor 公共依赖、`ClassGenerator` 47 处 editor 分支，加上**反向耦合**——`CodeCoverage` 直接读 `UAngelscriptTestSettings`、`AngelscriptDocs` 嵌入 runtime、`Testing/` 注册生产 CVar，`Dump` 写出 `EditorReloadState.csv` 等 editor 表——共同导致"runtime 模块"实际上不是 runtime。要修这层，必须先确定 §B/§A 的引擎入口归属。
+3. **§D + §E1 + §E2 + §I1 + §I2 + §H4 模块边界塌陷（Editor 概念渗透 Runtime + AS 测试框架的宿主桥接 + 反向跨模块依赖）**
+   `AngelscriptEditorDebugBridge.h`、`UnversionedPropertySerializationTest.*`、Runtime-owned `Testing/` 框架、`Build.cs` editor 公共依赖、`ClassGenerator` 47 处 editor 分支，加上**反向耦合**——`CodeCoverage` 直接读 `UAngelscriptTestSettings`、`AngelscriptDocs` 嵌入 runtime、`Testing/` 下探针注册诊断 CVar，`Dump` 写出 `EditorReloadState.csv` 等 editor 表——共同导致 Runtime 的能力边界表达不清。这里需要拆分的是 owner、bridge、编译条件和配置来源，不是把 AS 测试框架当成 `AngelscriptTest` C++ 单测目录。
 
 4. **§G 配置与硬编码 UE 符号脆性（fragility 是另一个独立维度）**
    `UAngelscriptSettings` 一个 UCLASS 承担 21+ 关注点；`DebuggerBlacklistAutomaticFunctionEvaluationWithoutWorldContext` 默认值硬编码 4 个 `AActor.*` 函数名；`AngelscriptSkipBinds.cpp` 18 行硬编码 7 个 UE 5 类型/函数名 — 这是与 §1-§3 力学不同的另一类问题：UE 升级时静默腐烂。`AngelscriptForkStrategy.md` 谈到了 ThirdParty fork 的版本管理，但配置层的 UE 符号绑定没有相同纪律。
@@ -160,7 +160,7 @@
 - 把 §A 的 god file 表与 §K3 的 cpp 数量漂移纳入 `TechnicalDebtInventory.md`，作为后续 refactor 的稳定锚点。
 - 围绕 §3.3 评估"editor concept 从 runtime 抽离"的可行性 — `AngelscriptEditorDebugBridge`、`AngelscriptDocs`、Dump 中的 `EditorReloadState/EditorMenuExtensions` 是最小入口集合。
 - ThirdParty fork 引入统一 patch tag 约定（§F1）— 这件事独立于其它清理，可单独推进。
-- 运行期模块内嵌的 `Testing/` 22 文件（§E1）是否搬迁到 `AngelscriptTest` 或独立的 test-support 模块，需要单独立项；同时收缩 §I1 的反向依赖（CodeCoverage 应自带配置而非读 TestSettings）。
+- 继续收口 Runtime-owned `Testing/` 的 UE Automation bridge、`WITH_DEV_AUTOMATION_TESTS` 探针和配置依赖；不把 AS 测试框架迁移到 `AngelscriptTest`。同时收缩 §I1 的反向依赖（CodeCoverage 应自带配置而非直接读 TestSettings）。
 - 将 `UAngelscriptSettings` 拆为按层（语言层 / 绑定层 / 编辑器层 / 调试器层）的多个配置 UCLASS（§G1），并把硬编码 UE 符号（§G2、§G3）迁移到 ini 默认或加 `WITH_*` 守卫。
 - 把 `Start/EndAngelscriptHeaders.h` bracketing 公约（§J1，55 文件）写入 `Build.md` 或新建 `RuntimeHeaderConventions.md`，避免新贡献者靠模仿摸索。
 - 对 Dump 的 34 张 CSV 表（§H1）做一次范围收敛：editor-concept 表是否从 runtime/Dump 移到 editor 模块；按子系统拆分为多个 dump provider 而非一个写出全部。

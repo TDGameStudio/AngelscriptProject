@@ -1,7 +1,7 @@
 # Type_BindSystem — Bind 系统与 Native 绑定
 
 > **所属前缀**: Type_（类型系统与生成链路族）
-> **关注层面**: 站在"插件如何把 C++ 类型 / 函数 / 全局变量 / 枚举注入到 AngelScript 引擎"的视角看 `FAngelscriptBinds` + `FBind` 这一套静态初始化框架——`Bind_*.cpp` 顶部那行 `static FBind Bind_X(EOrder::Foo, []{...})` 在做什么、`EOrder` 怎么排序、`CallBinds` 在生命周期的哪个点回放、125 份手写 `Bind_*.cpp` 与 UHT 生成的 `AS_FunctionTable_*.cpp` 怎么形成"自动表 + 手写表 + 反射兜底"三层模型。本文不重复"`asITypeInfo` 与 `UClass` 的双向映射"（那是 `Type_Core` 的职责），不重复"UHT 生成器内部的 C# 实现"（那是 `Arch_UHTToolchain`），也不重复"反射 fallback 的 Generic Trampoline 怎么打栈帧"（那是 `Type_FunctionCaller`）；本文聚焦的是把这三件事粘起来的**注册框架**
+> **关注层面**: 站在"插件如何把 C++ 类型 / 函数 / 全局变量 / 枚举注入到 AngelScript 引擎"的视角看 `FAngelscriptBinds` + `FBind` 这一套静态初始化框架——`Bind_*.cpp` 顶部那行 `static FBind Bind_X(EOrder::Foo, []{...})` 在做什么、`EOrder` 怎么排序、`CallBinds` 在生命周期的哪个点回放、125 份手写 `Bind_*.cpp` 与 UHT 生成的 `AS_FunctionBinding_*.cpp` 怎么形成"自动表 + 手写表 + 反射兜底"三层模型。本文不重复"`asITypeInfo` 与 `UClass` 的双向映射"（那是 `Type_Core` 的职责），不重复"UHT 生成器内部的 C# 实现"（那是 `Arch_UHTToolchain`），也不重复"反射 fallback 的 Generic Trampoline 怎么打栈帧"（那是 `Type_FunctionCaller`）；本文聚焦的是把这三件事粘起来的**注册框架**
 > **关键源码**:
 > `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` (~715 行，`FAngelscriptBinds` / `FBind` / `EOrder` / `FNamespace` / `FEnumBind` 公开 API)
 > · `Core/AngelscriptBinds.cpp` (~894 行，`RegisterBinds` / `CallBinds` / `OnBind` / `BindMethod` / `BindGlobalFunction` 实现)
@@ -11,13 +11,13 @@
 > · `Binds/Bind_BlueprintCallable.cpp` (~403 行，Layer C 反射兜底入口)
 > · `Binds/BlueprintCallableReflectiveFallback.cpp` (~1500+ 行，`EvaluateReflectionFallback` / `BindBlueprintCallableReflectionFallback` 主体)
 > · `Binds/Bind_BlueprintType.cpp` `Bind_Defaults` 块（~762 行起，Layer A/B/C 触发点：`Late+100`）
-> · `Plugins/Angelscript/Intermediate/Build/.../AS_FunctionTable_*.cpp`（UHT 产物示例，~30 个分片）
+> · `Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_*.cpp`（UHT 产物示例，~30 个分片）
 > **关联文档**:
 > `Documents/Knowledges/ZH/Type_Core.md` — `FAngelscriptType` 数据库（`FBind` 注册的类型对象最终落到这里）
-> · `Documents/Knowledges/ZH/Type_ClassGeneration.md` — `UASClass` 生成（消费 `ClassFuncMaps` 反查 native UFunction）
+> · `Documents/Knowledges/ZH/Type_ClassGeneration.md` — `UASClass` 生成（消费 `ClassFunctionBindings` 反查 native UFunction）
 > · `Documents/Knowledges/ZH/Type_BaseClass.md` — `BindUClass` 把 UClass 注册成 AS 引用类型的入口
 > · `Documents/Knowledges/ZH/Type_FunctionCaller.md` — `ASAutoCaller` 与反射 fallback 的调用约定细节
-> · `Documents/Knowledges/ZH/Arch_UHTToolchain.md` — UHT C# 工具链如何在构建期写出 `AS_FunctionTable_*.cpp`
+> · `Documents/Knowledges/ZH/Arch_UHTToolchain.md` — UHT C# 工具链如何在构建期写出 `AS_FunctionBinding_*.cpp`
 > · `Documents/Knowledges/ZH/Arch_RuntimeLifecycle.md` — `BindScriptTypes` 在 `Initialize_AnyThread` 中的位置
 > · `Documents/Knowledges/ZH/AS_TypeRegistration.md` — AS 内核 `RegisterObjectType` / `RegisterObjectMethod` 实现细节
 
@@ -25,7 +25,7 @@
 
 ## 概览
 
-本文聚焦一个核心问题：**当一份 `Bind_FVector.cpp` 在文件顶部写下 `static FBind Bind_FVector(EOrder::Early, []{...})`，这一行代码在 .dll 加载、引擎初始化、`CallBinds` 回放、AS 内核 `RegisterObjectType` 之间是怎样的因果链？125 份 `Bind_*.cpp` 与 UHT 生成的约 30 份 `AS_FunctionTable_*.cpp` 又如何在同一个 `EOrder::Late+100` 阶段通过同一棵 `ClassFuncMaps` 把"自动绑定 → 手写绑定 → 反射兜底"三层叠成一个最终的 AS 类型表？**
+本文聚焦一个核心问题：**当一份 `Bind_FVector.cpp` 在文件顶部写下 `static FBind Bind_FVector(EOrder::Early, []{...})`，这一行代码在 .dll 加载、引擎初始化、`CallBinds` 回放、AS 内核 `RegisterObjectType` 之间是怎样的因果链？125 份 `Bind_*.cpp` 与 UHT 生成的约 30 份 `AS_FunctionBinding_*.cpp` 又如何在同一个 `EOrder::Late+100` 阶段通过同一棵 `ClassFunctionBindings` 把"自动绑定 → 手写绑定 → 反射兜底"三层叠成一个最终的 AS 类型表？**
 
 ```text
 ================================================================================
@@ -56,7 +56,7 @@ Bind_FVector.cpp:                                     │                       
        MakeUnique<FAngelscriptBindState>()                           │
                   ▼                                                  │
        BindScriptTypes()                                             │
-           ├─ ResetGeneratedFunctionTableTiming()                    │
+           ├─ ResetGeneratedFunctionBindingTiming()                    │
            ├─ FAngelscriptBinds::CallBinds(DisabledBindNames)        │
            │     │                                                   │
            │     │ Sort(BindArray) by BindOrder ──────────────────────┘
@@ -70,12 +70,12 @@ Bind_FVector.cpp:                                     │                       
        三层叠加（按 EOrder）：
          Layer A (Early ~ Normal):  原生类型 / 容器 / 数学结构
                                     手写：FVector / FString / TArray<T> / TMap<K,V> / 枚举骨架
-         Layer B (Late-1 ~ Late):   UClass 反射类型直绑
+         Layer B (Late-1 ~ Late):   UClass 反射类型Runtime-linked
                                     手写：AActor / UObject / UWorld / UActorComponent ...
-                                    UHT 生成：AS_FunctionTable_*.cpp（类成员 + 全局函数表）
+                                    UHT 生成：AS_FunctionBinding_*.cpp（类成员 + 全局函数表）
          Layer C (Late+100):        Bind_Defaults
                                     遍历 BindDatabase 全部 UClass，依次：
-                                      bHasDirectNativePointer == true → 直绑
+                                      bHasDirectNativePointer == true → Runtime-linked
                                       bHasDirectNativePointer == false → 反射 fallback
                                       Late+150: 子系统 Get() 静态访问器
 
@@ -219,7 +219,7 @@ EOrder::Late + 150     — Bind_Subsystems（依赖所有 UClass 已绑定）
 | `Late-1` | **核心反射类型 base 方法**：`AActor` / `UObject` / `UClass` / `UFunction` 这一批"无可争议的 C++ 基类"的手写方法绑定 | 需要它们的 UClass 已在 Layer A 通过 `BlueprintType_Declarations` 调用 `BindUClass` 注册成 AS 引用类型 |
 | `Late` | **委托与 enum 收尾、SkipBinds 黑名单写入** | 需要所有手写类型已就位以便建立委托回调签名 |
 | `Late+10` | **跨类型转换运算符**（`FString` ↔ 各种数字/向量；`FVector` ↔ `FVector3f` 等） | 需要源、目标类型双方都已注册 |
-| `Late+100` | **`Bind_Defaults` 总收口**：把 `FAngelscriptBindDatabase` 中所有 UClass 的 `Methods` / `Properties` 全部按"直绑 → 反射兜底"两路批量注册 | 必须发生在所有手写 bind 完成之后，才能在反射阶段正确做"是否已存在等价签名"的去重 |
+| `Late+100` | **`Bind_Defaults` 总收口**：把 `FAngelscriptBindDatabase` 中所有 UClass 的 `Methods` / `Properties` 全部按"Runtime-linked → 反射兜底"两路批量注册 | 必须发生在所有手写 bind 完成之后，才能在反射阶段正确做"是否已存在等价签名"的去重 |
 | `Late+150` | **跨类型批量发现**（如 `Bind_Subsystems` 用 `TObjectRange<UClass>` 给所有 `USubsystem` 子类追加 `Get()`） | 需要所有 UClass 名字已经在 AS 引擎中可查（AS_TypeRegistration 完成） |
 
 ### 2.4 `Bind_FName` 必须 `Early+1` 的具体理由
@@ -271,7 +271,7 @@ static TArray<FBindFunction>& GetBindArray()
 **关键性质**：
 
 - 这是一个**进程级**全局——并不属于任何 `FAngelscriptEngine` 实例。换句话说，PIE 多 `FAngelscriptEngine` 共享同一份 BindArray
-- 但 `FAngelscriptBindState`（`ClassFuncMaps` / `RuntimeClassDB` / `SkipBinds` 等）是**引擎级**——每个 `FAngelscriptEngine` 实例独占一份
+- 但 `FAngelscriptBindState`（`ClassFunctionBindings` / `RuntimeClassDB` / `SkipBinds` 等）是**引擎级**——每个 `FAngelscriptEngine` 实例独占一份
 - 这种"注册队列共享、回放结果各自"的二分意味着同样的 lambda 在每个引擎的 `BindScriptTypes` 中都会被原样回放一次
 
 ### 3.2 注册函数的两个入口
@@ -374,9 +374,9 @@ void FAngelscriptEngine::BindScriptTypes()
     FAngelscriptEnumTableBaselineProbe::Reset();
     #endif
 
-    FAngelscriptBinds::ResetGeneratedFunctionTableTiming();          // ★ Layer A 计时器重置
+    FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();          // ★ Layer A 计时器重置
     FAngelscriptBinds::CallBinds(CollectDisabledBindNames());        // ★ 回放全部 lambda
-    FAngelscriptBinds::LogGeneratedFunctionTableTimingSummary();      // 输出 UHT 分片耗时
+    FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();      // 输出 UHT 分片耗时
 
     #if WITH_DEV_AUTOMATION_TESTS
     FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();
@@ -480,7 +480,7 @@ void FAngelscriptBinds::ResetBindState()
 }
 ```
 
-注意这里清空的是**引擎级** `FAngelscriptBindState`（即 `ClassFuncMaps` / `SkipBinds` 等），**不是** `BindArray`。换句话说，引擎销毁重建时——
+注意这里清空的是**引擎级** `FAngelscriptBindState`（即 `ClassFunctionBindings` / `SkipBinds` 等），**不是** `BindArray`。换句话说，引擎销毁重建时——
 
 - 进程级 `BindArray`：保持原样，不变
 - 引擎级 `BindState`：归零
@@ -622,29 +622,29 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
   对一个 UClass 的方法绑定，三条独立但叠加的注册路径
 ================================================================================
 
-┌─ Layer A：UHT 自动绑定（构建期生成的 AS_FunctionTable_*.cpp）─────────────┐
+┌─ Layer A：UHT 自动绑定（构建期生成的 AS_FunctionBinding_*.cpp）─────────────┐
 │                                                                             │
-│ Plugins/Angelscript/Intermediate/Build/.../UHT/AS_FunctionTable_Engine_0.cpp│
+│ Plugins/Angelscript/Intermediate/Build/.../UHT/AS_FunctionBinding_Engine_0.cpp│
 │ ────────────────────────────────────────────────────────────────────────── │
 │ AS_FORCE_LINK const FAngelscriptBinds::FBind                                │
-│ Bind_FunctionTable_Engine_Shard0((int32)EOrder::Late + 50, []               │
+│ Bind_FunctionBinding_Engine_Shard0((int32)EOrder::Late + 50, []               │
 │ {                                                                            │
-│     AddFunctionEntry(AActor::StaticClass(), "K2_DestroyActor",              │
-│         FFuncEntry{ &AActor::execK2_DestroyActor,                           │
+│     RegisterFunctionBinding(AActor::StaticClass(), "K2_DestroyActor",              │
+│         FAngelscriptFunctionBinding{ &AActor::execK2_DestroyActor,                           │
 │                     ASAutoCaller::MakeFunctionCaller(...) });               │
-│     AddFunctionEntry(AActor::StaticClass(), "SetActorLocation",             │
-│         FFuncEntry{ &AActor::execSetActorLocation, ... });                  │
+│     RegisterFunctionBinding(AActor::StaticClass(), "SetActorLocation",             │
+│         FAngelscriptFunctionBinding{ &AActor::execSetActorLocation, ... });                  │
 │     // ... 数千条 ERASE_AUTO_*_PTR 宏展开                                    │
 │ });                                                                          │
 │                                                                             │
 │ ★ 注意：这一步只是"灌库"——把 UFunction → 直接函数指针的映射存到             │
-│   FAngelscriptBinds::ClassFuncMaps[UClass*][FuncName]。                     │
+│   FAngelscriptBinds::ClassFunctionBindings[UClass*][FuncName]。                     │
 │   它本身不调用 AS 引擎的 RegisterObjectMethod！                              │
 └──────────────────────────────────────────────────────────────────────────────┘
                                    │
                                    │ 构建期"灌库"完成
                                    │
-┌─ Layer B：手写 Bind_*.cpp 直绑（如 Bind_AActor_Base）─────────────────────┐
+┌─ Layer B：手写 Bind_*.cpp Runtime-linked（如 Bind_AActor_Base）─────────────────────┐
 │                                                                             │
 │ AS_FORCE_LINK const FBind Bind_AActor_Base(EOrder::Late - 1, []             │
 │ {                                                                            │
@@ -653,12 +653,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
 │         METHOD_TRIVIAL(AActor, GetActorLocation));   // ★ 直接调 AS 引擎    │
 │ });                                                                          │
 │                                                                             │
-│ ★ 手写的方法直接触达 RegisterObjectMethod，不走 ClassFuncMaps。              │
+│ ★ 手写的方法直接触达 RegisterObjectMethod，不走 ClassFunctionBindings。              │
 │ ★ 优势：可以写脚本特化的签名（含 ?& 模板、lambda、自定义参数转换）。         │
 │ ★ 代价：每条都要手写。仅用于"无可争议必须手写"的 4–8 个核心 UClass。         │
 └──────────────────────────────────────────────────────────────────────────────┘
                                    │
-                                   │ 等手写直绑全部完成
+                                   │ 等手写Runtime-linked全部完成
                                    ▼
 ┌─ Layer C：Bind_Defaults 收口（EOrder::Late + 100）─────────────────────────┐
 │                                                                             │
@@ -680,11 +680,11 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
 │ });                                                                          │
 │                                                                             │
 │ BindBlueprintCallable(...)                                                  │
-│   ├─ Map = ClassFuncMaps.Find(OwningClass);                                 │
+│   ├─ Map = ClassFunctionBindings.Find(OwningClass);                                 │
 │   ├─ Entry = Map->Find(Function->GetFName().ToString());                    │
 │   ├─ if (Entry == nullptr) return;       ← 没在 UHT 表里登记，跳过           │
 │   ├─ if (Entry->FuncPtr.IsBound())                                          │
-│   │     → 直绑路径：BindMethodDirect(ASFuncPtr=拷贝自 Entry->FuncPtr,       │
+│   │     → Runtime-linked路径：BindMethodDirect(ASFuncPtr=拷贝自 Entry->FuncPtr,       │
 │   │                                  asCALL_THISCALL, Entry->Caller);       │
 │   ├─ else                                                                   │
 │   │     → 反射兜底：BindBlueprintCallableReflectionFallback(                 │
@@ -699,9 +699,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
 
 | 路径 | 注册早晚 | 优先级（同名时） | 备注 |
 |------|---------|----------------|------|
-| Layer B（手写直绑） | `Late-1` 阶段最先到达 AS 引擎 | **优先**：手写直绑早于 Layer C，AS 引擎层面 `RegisterObjectMethod` 已经写入 | `Bind_AActor_Base.GetActorLocation` 即使 UHT 表里也有 `GetActorLocation`，Layer C 检测到"已存在等价签名"会 skip |
-| Layer A（UHT 灌库） | `Late+50` 阶段把 ClassFuncMaps 填好 | 不直接竞争 | 它只是给 Layer C 提供"有没有直接函数指针"的元数据 |
-| Layer C 直绑路径 | `Late+100` | 在 Layer B 之后 | `IsEquivalentScriptSignatureAlreadyBound` 守卫去重 |
+| Layer B（手写Runtime-linked） | `Late-1` 阶段最先到达 AS 引擎 | **优先**：手写Runtime-linked早于 Layer C，AS 引擎层面 `RegisterObjectMethod` 已经写入 | `Bind_AActor_Base.GetActorLocation` 即使 UHT 表里也有 `GetActorLocation`，Layer C 检测到"已存在等价签名"会 skip |
+| Layer A（UHT 灌库） | `Late+50` 阶段把 ClassFunctionBindings 填好 | 不直接竞争 | 它只是给 Layer C 提供"有没有直接函数指针"的元数据 |
+| Layer C Runtime-linked路径 | `Late+100` | 在 Layer B 之后 | `IsEquivalentScriptSignatureAlreadyBound` 守卫去重 |
 | Layer C 反射兜底 | `Late+100` | 仅当 `Entry->FuncPtr.IsBound() == false` 时启用 | 通过 `EvaluateReflectionFallback` 二次过滤（拒绝 `CLASS_Interface` / `CustomThunk` / `> 16 args`） |
 
 ### 6.3 反射 fallback 的过滤条件
@@ -727,7 +727,7 @@ EReflectionFallbackResult EvaluateReflectionFallback(const UFunction* Function)
 
 实战意义：UFunction 即使没有直接函数指针、Layer C 也会**至少尝试**给它一个"反射 trampoline"——只要它不是 interface、不是 CustomThunk、参数数量 ≤ 16。这就是为什么蓝图新增的某个 `UFUNCTION(BlueprintCallable)` 通常不需要重新构建 UHT 表也能在 AS 里调用：**反射 fallback 兜住了"UHT 漏网之鱼"**。
 
-但这条兜底走 `UFunction::Invoke` + `FFrame`，性能比直绑慢约 3–6 倍（典型签名）。所以 UHT 灌库的目标是把热点函数搬到 Layer A，让 Layer C 走"直绑路径"。
+但这条兜底走 `UFunction::Invoke` + `FFrame`，性能比Runtime-linked慢约 3–6 倍（典型签名）。所以 UHT 灌库的目标是把热点函数搬到 Layer A，让 Layer C 走"Runtime-linked路径"。
 
 ### 6.4 `ShouldSkipBlueprintCallableFunction`：黑名单守卫
 
@@ -915,22 +915,22 @@ MALLOCLEAK_SCOPED_CONTEXT(*BindLeakContext);
 `Arch_UHTToolchain` 站在"构建期 vs 运行期"的边界外侧，描述 `AngelscriptUHTTool` 这个 C# UBT plugin：
 
 - 它读什么作为输入（12+ 个 UE 模块的 UCLASS/UFUNCTION 头）
-- 它产出什么（`AS_FunctionTable_*.cpp` 30+ 分片 + `Summary.json` + 4 份 CSV）
+- 它产出什么（`AS_FunctionBinding_*.cpp` 30+ 分片 + `Summary.json` + 4 份 CSV）
 - 它怎么被 AngelscriptRuntime 模块消费（编入 .lib，DLL 加载时 `AS_FORCE_LINK` 拉住）
 
-**与本文的关键耦合点**：UHT 生成的 `AS_FunctionTable_*.cpp` 长这样：
+**与本文的关键耦合点**：UHT 生成的 `AS_FunctionBinding_*.cpp` 长这样：
 
 ```cpp
 // ============================================================================
-// 文件: Plugins/Angelscript/Intermediate/Build/.../AS_FunctionTable_<Module>_<N>.cpp
+// 文件: Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_<Module>_<N>.cpp
 // 节选自: UHT 生成产物（构建期写出，运行期编入 AngelscriptRuntime.dll）
 // ============================================================================
 AS_FORCE_LINK const FAngelscriptBinds::FBind                                       // ★ 复用本文 §一 同一个 FBind
-Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, [] // ★ 复用本文 §二 同一个 EOrder
+Bind_FunctionBinding_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, [] // ★ 复用本文 §二 同一个 EOrder
 {
-    FAngelscriptBinds::AddFunctionEntry(                                            // ★ 复用本文 §五.4 同一份注册接口
+    FAngelscriptBinds::RegisterFunctionBinding(                                            // ★ 复用本文 §五.4 同一份注册接口
         AActor::StaticClass(), TEXT("K2_DestroyActor"),
-        FFuncEntry{
+        FAngelscriptFunctionBinding{
             ERASE_AUTO_OBJ_PTR(&AActor::execK2_DestroyActor),
             ASAutoCaller::MakeFunctionCaller(...)
         });
@@ -938,12 +938,12 @@ Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, 
 });
 ```
 
-也就是说 **UHT 产物里所有跨边界元素都是本文定义的**：`AS_FORCE_LINK`、`FAngelscriptBinds::FBind`、`EOrder::Late+50`、`AddFunctionEntry` / `FFuncEntry`。Arch_UHTToolchain 描述这些元素**怎么从 C# 端写出来**；本文描述这些元素**写出来之后被运行期怎么消费**。
+也就是说 **UHT 产物里所有跨边界元素都是本文定义的**：`AS_FORCE_LINK`、`FAngelscriptBinds::FBind`、`EOrder::Late+50`、`RegisterFunctionBinding` / `FAngelscriptFunctionBinding`。Arch_UHTToolchain 描述这些元素**怎么从 C# 端写出来**；本文描述这些元素**写出来之后被运行期怎么消费**。
 
-**最容易混淆的一句话**：UHT 生成的 `Bind_FunctionTable_*` 在 `EOrder::Late + 50` 注册——它**也走 FBind 框架**，没有任何"特殊通道"绕过 `BindArray` 与 `CallBinds`。它只是一份"数量惊人的、机器写的、`Bind_*.cpp`"。区别仅仅在于：
+**最容易混淆的一句话**：UHT 生成的 `Bind_FunctionBinding_*` 在 `EOrder::Late + 50` 注册——它**也走 FBind 框架**，没有任何"特殊通道"绕过 `BindArray` 与 `CallBinds`。它只是一份"数量惊人的、机器写的、`Bind_*.cpp`"。区别仅仅在于：
 
-- 手写 `Bind_*.cpp` 的 lambda 体直接调 `RegisterObjectMethod`（Layer B 直绑）
-- UHT 的 lambda 体只调 `AddFunctionEntry`（灌库），实际注册由 `Bind_Defaults`（Layer C，`Late+100`）按需触发
+- 手写 `Bind_*.cpp` 的 lambda 体直接调 `RegisterObjectMethod`（Layer B Runtime-linked）
+- UHT 的 lambda 体只调 `RegisterFunctionBinding`（灌库），实际注册由 `Bind_Defaults`（Layer C，`Late+100`）按需触发
 
 ### 9.3 三方一图
 
@@ -972,7 +972,7 @@ Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, 
            ┌─────────▼─────────────────────┐
            │  Arch_UHTToolchain             │  ←─ 构建期 / 跨进程边界
            │  AngelscriptUHTTool.csproj    │
-           │  AS_FunctionTable_*.cpp（产物）│
+           │  AS_FunctionBinding_*.cpp（产物）│
            │  Summary.json + 4 份 CSV      │
            └────────────────────────────────┘
 ```
@@ -1003,7 +1003,7 @@ Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, 
 | `Enum(name)` | 枚举注册 | `Enum("EMyEnum")["A"] = 1; Enum("EMyEnum")["B"] = 2;` |
 | `FNamespace ns(name)` | 给后续注册套命名空间 | `{ FNamespace ns("FMath"); BindGlobalFunction("..."); }` |
 | `AddSkipEntry(class, fn)` | 黑名单 | `AddSkipEntry("StaticMesh", "GetMinLODForQualityLevels")` |
-| `AddFunctionEntry(class, name, FFuncEntry)` | 灌库（仅 Layer A） | UHT 生成代码使用 |
+| `RegisterFunctionBinding(class, name, FAngelscriptFunctionBinding)` | 灌库（仅 Layer A） | UHT 生成代码使用 |
 | `SetPreviousBindNoDiscard(true)` | 禁止丢弃返回值 | 数学构造函数后 |
 | `SetPreviousBindIsCallable(false)` | 标记不可在脚本中调用 | 内部辅助函数 |
 | `CompileOutInTest(id)` | Test/Shipping 编译时移除 | `assert` 类辅助 |
@@ -1053,9 +1053,9 @@ Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, 
 
 7. **lambda 体内调 `FAngelscriptEngine::Get()` 但还没 `MakeUnique<FAngelscriptBindState>`**：`Initialize_AnyThread` 中 `BindState = MakeUnique<...>()` **在 `BindScriptTypes` 之前**。但如果开发者错把 lambda 提前到 `PreInitialize_GameThread` 触发，可能会撞到 `BindState` 还是空的状态。本框架内不会出现——只要走标准 `FBind` 入口，时序由 `BindScriptTypes` 自然保证。
 
-8. **错把 `AddFunctionEntry` 当成"已注册到 AS 引擎"**：它只是把元数据写进 `ClassFuncMaps`。AS 引擎层面 `RegisterObjectMethod` 由 `Bind_Defaults`（`Late+100`）触发。手写 `AddFunctionEntry` 后若 `Bind_Defaults` 跳过该 UClass（例如未在 `BindDatabase.Classes` 中），方法对脚本仍然不可见。
+8. **错把 `RegisterFunctionBinding` 当成"已注册到 AS 引擎"**：它只是把元数据写进 `ClassFunctionBindings`。AS 引擎层面 `RegisterObjectMethod` 由 `Bind_Defaults`（`Late+100`）触发。手写 `RegisterFunctionBinding` 后若 `Bind_Defaults` 跳过该 UClass（例如未在 `BindDatabase.Classes` 中），方法对脚本仍然不可见。
 
-9. **反射 fallback 撞到 16 参数上限**：`BlueprintCallableReflectiveFallbackMaxArgs = 16`。`UFUNCTION` 参数 ≤ 16 才能走 fallback。超过的必须手写或上 UHT 直绑。
+9. **反射 fallback 撞到 16 参数上限**：`BlueprintCallableReflectiveFallbackMaxArgs = 16`。`UFUNCTION` 参数 ≤ 16 才能走 fallback。超过的必须手写或上 UHT Runtime-linked。
 
 10. **修改 `EOrder` 数值后忘了同步 UHT 端**：UHT 生成代码硬编码 `(int32)EOrder::Late + 50`。如果 `EOrder` 枚举值变化，重新构建项目即可——但开发者改了 `EOrder` 头文件后**必须 rebuild 而不是 incremental build**，否则 UHT 产物 .cpp 的常量会与 .h 不一致。
 
@@ -1067,8 +1067,8 @@ Bind_FunctionTable_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, 
 
 - **`EOrder` 是只有 3 个枚举锚点（`Early=-100` / `Normal=0` / `Late=100`）的 int32 优先级数轴**。实际取值靠 `int32` 偏移自由组合，覆盖"基础类型 → 智能指针 → UClass 手写 → 委托 → 跨类型转换 → UHT 灌库 → Bind_Defaults 收口 → 跨类型批量发现"八层语义。
 
-- **三层 fallback 模型由同一份 `ClassFuncMaps` 表粘合**：UHT 在 `Late+50` 灌库（Layer A），手写 `Bind_*.cpp` 在 `Late-1` 直接调 AS API（Layer B），`Bind_Defaults` 在 `Late+100` 按 `bHasDirectNativePointer` 切换"直绑 vs 反射兜底"（Layer C）。
+- **三层 fallback 模型由同一份 `ClassFunctionBindings` 表粘合**：UHT 在 `Late+50` 灌库（Layer A），手写 `Bind_*.cpp` 在 `Late-1` 直接调 AS API（Layer B），`Bind_Defaults` 在 `Late+100` 按 `bHasDirectNativePointer` 切换"Runtime-linked vs 反射兜底"（Layer C）。
 
-- **125 份手写 `Bind_*.cpp` 与 30+ 份 UHT 生成 `AS_FunctionTable_*.cpp` 走同一套 `FBind` 框架**，没有任何"特殊通道"。区别仅在 lambda 体里调用的是 `RegisterObjectMethod`（手写直绑）还是 `AddFunctionEntry`（UHT 灌库）。
+- **125 份手写 `Bind_*.cpp` 与 30+ 份 UHT 生成 `AS_FunctionBinding_*.cpp` 走同一套 `FBind` 框架**，没有任何"特殊通道"。区别仅在 lambda 体里调用的是 `RegisterObjectMethod`（手写Runtime-linked）还是 `RegisterFunctionBinding`（UHT 灌库）。
 
 - **本文与 Type_Core 的边界是"数据 vs 注册"，与 Arch_UHTToolchain 的边界是"运行期消费 vs 构建期产出"**。三者共同回答"`UFunction` 与 `asIScriptFunction` 是怎样在 PostDefault 模块加载、引擎初始化、`.as` 脚本编译三个时间点之间被建立起一对一映射"这个核心问题。

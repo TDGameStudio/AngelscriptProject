@@ -25,7 +25,7 @@
 | GC 策略 | **独立 `VVMHeap`** 分代+并发标记清除,与 UE Native GC 协同同步 | **AS GC**(增量循环检测)+ UE GC,弱引用走 `TWeakObjectPtr` |
 | 并发原语 | 语言级:`spawn / race / sync / rush / branch`、`async`、`suspends` effect | 无,完全依赖 UE 侧 Tick / 委托 / 子系统 / `FAkAsyncFunctionLibrary` 等 |
 | 热重载 | 包级别 reload(`AddImport` + `bImported` 二次绑定校验) | `DirectoryWatcher` + `ClassReloadHelper` 编辑器内 reinstance `.as` |
-| 工具链 | `VerseCompiler` 引擎模块 + VNI(Verse Native Interface)+ UHT 增强 | `AngelscriptUHTTool` C# UBT 插件,生成 `AS_FunctionTable_*.cpp` |
+| 工具链 | `VerseCompiler` 引擎模块 + VNI(Verse Native Interface)+ UHT 增强 | `AngelscriptUHTTool` C# UBT 插件,生成 `AS_FunctionBinding_*.cpp` |
 | 调试 | Verse 自有 toolchain(VS Code 扩展) | 独立 `DebugServer V2`(实现 DAP 协议) |
 
 可以一句话总结:**Verse 是"语言-VM-编译器"三件套与 UE 引擎垂直耦合的方案;Angelscript 插件是
@@ -178,7 +178,7 @@ VNI(Verse Native Interface)的角色:让 C++ 写的"native Verse 类型"既被 U
 
 - **`ClassGenerator`**:把 AS 类合成成新的 `UClass`/`UFunction`,与 Verse 的 `BindNativeClass` 角色相近,但更"自下而上",AS 类不像 `UVerseClass` 那样是专门的 UClass 子类。
 - **`Bind_*.cpp`(121 个)**:手写 C++ 把引擎类型注册给 AS。这是与 Verse 最大的不同——Verse 的"native 类型"由 UHT + VNI 自动生成,AS 这边由人工 `Bind_*.cpp` + UHT 表 + 反射回退三层叠加。
-- **`AngelscriptUHTTool`(C# UBT 插件)**:扫 UE 头里的 `UFUNCTION/UPROPERTY`,生成 `AS_FunctionTable_*.cpp` 直接调用项;未在表里命中的走运行时反射回退(`UFunction reflective fallback binding`)。
+- **`AngelscriptUHTTool`(C# UBT 插件)**:扫 UE 头里的 `UFUNCTION/UPROPERTY`,生成 `AS_FunctionBinding_*.cpp` 直接调用项;未在表里命中的走运行时反射回退(`UFunction reflective fallback binding`)。
 - **`UFunction` 反射回退**:对没有 native 直调的函数,运行时通过 `UFunction::Invoke` + `FFrame` 调,用通用性换性能。
 
 ### 4.3 关键差异
@@ -313,7 +313,7 @@ AS 插件这边没有任何语言级并发原语,所有"等一帧""异步加载"
 | 项目 | Verse | AS 插件 |
 |------|-------|---------|
 | 编译器主体 | `Engine/Source/Runtime/VerseCompiler/`(C++ in engine) | 内嵌 AS 2.33 ThirdParty + `AngelscriptRuntime/Core` |
-| Native 生成器 | UHT + VNI(`UVerseFunction`/`UVerseClass` 元数据驱动) | `AngelscriptUHTTool` C# UBT 插件 → `AS_FunctionTable_*.cpp` |
+| Native 生成器 | UHT + VNI(`UVerseFunction`/`UVerseClass` 元数据驱动) | `AngelscriptUHTTool` C# UBT 插件 → `AS_FunctionBinding_*.cpp` |
 | IDE 支持 | Verse 专用 VS Code 扩展 | `AngelscriptEditor/CodeGen/`(~84 KB)输出 IDE stub + Source Navigation |
 | 调试 | Verse 自有调试器 | `DebugServer V2` (DAP 协议) |
 | 热重载 | 包级 `bImported` 二次绑定校验 | `HotReload/` + `BlueprintImpact/` 影响分析 + Commandlet |

@@ -144,7 +144,7 @@ UE 默认 unity 块上限约 384 KB（`BuildConfiguration.NumIncludedBytesPerUni
 
 - 121 份 `Bind_*.cpp` 大多体积小但 include 链很重（每份都拉若干 `Engine/`、`UMG/`、`AIModule/` 头）；默认 384 KB 上限会把十几份 Bind 拼成一个 unity，预处理器输入到达数 MB，编译器单 TU 内存峰值过高、增量编译时一改一片小 Bind 就要重编整个 unity。
 - vendored `as_*.cpp` 的 include 链相对独立，但单文件如 `as_compiler.cpp` / `as_scriptengine.cpp` 已逼近 5000 行；它们与小 .cpp 拼 unity 时反而拖慢编译。
-- UHT 生成的 `AS_FunctionTable_*.cpp` 单分片本身就接近 256 entries × `AddFunctionEntry(...)` 一行（`MaxEntriesPerShard = 256`，详见 `Arch_UHTToolchain.md` §三.3）；拼 unity 没有收益。
+- UHT 生成的 `AS_FunctionBinding_*.cpp` 单分片本身就接近 256 entries × `RegisterFunctionBinding(...)` 一行（`MaxEntriesPerShard = 256`，详见 `Arch_UHTToolchain.md` §三.3）；拼 unity 没有收益。
 
 128 KB 是社区经验值——足以让 2-3 份小 Bind 凑成一个 unity（保留 unity 提速优势），又能避免十几份 Bind 凑成大块（控制单 TU 重编代价）。
 
@@ -302,7 +302,7 @@ UHT plugin 是**插件包内唯一不属于 UE Module 体系**的产物——`.N
 
 `TreatWarningsAsErrors=true` + `Nullable=enable` 是 UE 引擎自带 UBT 工具的统一规范——禁止任何 C# 编译警告（包括 nullable 风险），保证构建期"零容忍"。
 
-`AngelscriptUHTTool.cs` 文件本身只有一行 `internal static class AngelscriptUHTToolModule {}` —— 真正的入口在 `AngelscriptFunctionTableExporter.cs`，通过 `[UhtExporter]` 标注向 UHT 自我注册。
+`AngelscriptUHTTool.cs` 文件本身只有一行 `internal static class AngelscriptUHTToolModule {}` —— 真正的入口在 `AngelscriptFunctionBindingExporter.cs`，通过 `[UhtExporter]` 标注向 UHT 自我注册。
 
 ---
 
@@ -338,9 +338,9 @@ AngelscriptRuntime.Build.cs（任何字段改动）       UBT 重生成 makefile
 .uplugin Modules / Plugins 改动                   UBT 重 Resolve + 受影响模块全编
 
 UHT plugin .cs 改动                              UBT 重 build .ubtplugin.dll → 重跑 UHT
-                                                  → AS_FunctionTable_*.cpp 内容若变 → Runtime 全编
+                                                  → AS_FunctionBinding_*.cpp 内容若变 → Runtime 全编
 
-UCLASS/UFUNCTION 头改动（任意 UE 模块）           UHT 重跑 → 受影响 AS_FunctionTable_<Module>_*.cpp
+UCLASS/UFUNCTION 头改动（任意 UE 模块）           UHT 重跑 → 受影响 AS_FunctionBinding_<Module>_*.cpp
                                                   → Runtime 该分片重编（UBT 内容 hash 比对）
 ```
 

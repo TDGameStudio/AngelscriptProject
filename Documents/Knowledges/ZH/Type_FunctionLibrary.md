@@ -16,7 +16,7 @@
 > **关联文档**:
 > `Documents/Knowledges/ZH/Type_BindSystem.md` — `FBind` / `EOrder` 注册框架（本文复用其 `Late+100` 阶段）
 > · `Documents/Knowledges/ZH/Type_FunctionCaller.md` — 反射 fallback 与 generic trampoline 调用约定
-> · `Documents/Knowledges/ZH/Type_BaseClass.md` — UClass 反射类型直绑（mixin 注入挂载在其结果之上）
+> · `Documents/Knowledges/ZH/Type_BaseClass.md` — UClass 反射类型Runtime-linked（mixin 注入挂载在其结果之上）
 > · `Documents/Knowledges/ZH/Syntax_Mixin.md` — `mixin` 关键字 / `ScriptMixin` meta 的脚本作者视角与四种触发方式
 > · `Documents/Knowledges/ZH/AS_TypeRegistration.md` — `RegisterObjectMethod` / `RegisterGlobalFunction` 内核细节
 > · `Documents/Knowledges/ZH/Type_Core.md` — `FAngelscriptType` 数据库（mixin ClassName 改写最终查的就是它）
@@ -70,7 +70,7 @@
                     Binds/Bind_InputComponentScriptMixins.cpp (Late+49)
                     Binds/Bind_AssetManagerScriptMixins.cpp (Late+49)
                     ┌───────────────────────────────────────┐
-                    │ AddFunctionEntry(...)  ← UHT 重载消歧  │
+                    │ RegisterFunctionBinding(...)  ← UHT 重载消歧  │
                     │ ExistingClass(name).Method(decl, λ)   │
                     │   if (!HasMethod("...")) { ... }      │   ← 幂等检查
                     │ FNamespace ns; BindGlobalFunction(...)│
@@ -278,8 +278,8 @@ else if (Function->HasMetaData(NAME_ScriptCallable))
 
 ```text
 Binds/Bind_FunctionLibraryMixins.cpp        ← Late+110  手写 Method/lambda 补漏
-Binds/Bind_InputComponentScriptMixins.cpp   ← Late+49   AddFunctionEntry 重载消歧
-Binds/Bind_AssetManagerScriptMixins.cpp     ← Late+49   AddFunctionEntry 重载消歧
+Binds/Bind_InputComponentScriptMixins.cpp   ← Late+49   RegisterFunctionBinding 重载消歧
+Binds/Bind_AssetManagerScriptMixins.cpp     ← Late+49   RegisterFunctionBinding 重载消歧
 Binds/Bind_TSoftObjectPtr.cpp               ← 链接段拖入 SoftReferenceStatics 的 delegate
 Binds/Bind_WorldCollision.cpp               ← 链接段拖入 WorldCollisionStatics 的 delegate
 ```
@@ -299,8 +299,8 @@ Binds/Bind_WorldCollision.cpp               ← 链接段拖入 WorldCollisionSt
 AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FunctionLibraryMixins(
     (int32)FAngelscriptBinds::EOrder::Late + 110, []
 {
-    // ── 子段 1：UHT 重载消歧 helper（FAngelscriptBinds::AddFunctionEntry）
-    FAngelscriptBinds::AddFunctionEntry(
+    // ── 子段 1：UHT 重载消歧 helper（FAngelscriptBinds::RegisterFunctionBinding）
+    FAngelscriptBinds::RegisterFunctionBinding(
         URuntimeFloatCurveMixinLibrary::StaticClass(), "GetTimeRange",
         { ERASE_FUNCTION_PTR(URuntimeFloatCurveMixinLibrary::GetTimeRange,
             (const FRuntimeFloatCurve&, float&, float&), ERASE_ARGUMENT_PACK(void)) });
@@ -343,14 +343,14 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FunctionLibraryMixins(
 
 四段读完就能掌握"补漏"的全部姿势：
 
-1. `AddFunctionEntry`——给 UHT 函数表写一条精确指针，避免反射回退；
+1. `RegisterFunctionBinding`——给 UHT 函数表写一条精确指针，避免反射回退；
 2. `HasMethod` / `GetMethodByDecl` 幂等检查 + `ExistingClass(name).Method(decl, λ)` 手挂；
 3. 含 `out` 引用、Wrapper、跨类型转换的 lambda 形态；
 4. `FNamespace + BindGlobalFunction` 让同一 helper 同时在成员方法 + 命名空间静态两个形态可见。
 
 ### 3.2 类 1.5：`Bind_*ScriptMixins.cpp`（`Late+49` 重载消歧）
 
-`Bind_InputComponentScriptMixins.cpp` 与 `Bind_AssetManagerScriptMixins.cpp` 共用同一形态——**只用 `AddFunctionEntry` 给 UHT 函数表写指针，不注册 AS 方法**：
+`Bind_InputComponentScriptMixins.cpp` 与 `Bind_AssetManagerScriptMixins.cpp` 共用同一形态——**只用 `RegisterFunctionBinding` 给 UHT 函数表写指针，不注册 AS 方法**：
 
 ```cpp
 // ============================================================================
@@ -363,7 +363,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_InputComponentScriptMixins(
     // UHT marks these wrappers overloaded-unresolved, so register the exact
     // signatures before the generated function table falls back to reflective
     // dispatch.
-    FAngelscriptBinds::AddFunctionEntry(
+    FAngelscriptBinds::RegisterFunctionBinding(
         UPlayerInputScriptMixinLibrary::StaticClass(), "AddActionMapping",
         { ERASE_FUNCTION_PTR(UPlayerInputScriptMixinLibrary::AddActionMapping,
             (UPlayerInput*, const FInputActionKeyMapping&), ERASE_ARGUMENT_PACK(void)) });
@@ -371,7 +371,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_InputComponentScriptMixins(
 });
 ```
 
-注释自陈这条路径在做什么——让 UHT 生成的 `AS_FunctionTable_*.cpp` 拿到精确函数指针，避免落到"反射 fallback"的慢路径。它**不**注册 AS 成员方法，所以与 `Late+100` 的 mixin 自动注入并存不会冲突。`EOrder::Late+49` 比 `Late+100` 早，时序上保证 `Bind_Defaults` 扫到这些 UFUNCTION 时函数指针表已就绪。
+注释自陈这条路径在做什么——让 UHT 生成的 `AS_FunctionBinding_*.cpp` 拿到精确函数指针，避免落到"反射 fallback"的慢路径。它**不**注册 AS 成员方法，所以与 `Late+100` 的 mixin 自动注入并存不会冲突。`EOrder::Late+49` 比 `Late+100` 早，时序上保证 `Bind_Defaults` 扫到这些 UFUNCTION 时函数指针表已就绪。
 
 `Syntax_Mixin.md` §6.6 把这种文件归为"类 1.5"。
 
@@ -667,7 +667,7 @@ Automation: Angelscript.TestModule.Engine.BindConfig.ProductionScriptMixinSignat
 3. **多目标 mixin 顺序敏感**：`UCLASS(meta=(ScriptMixin="A B"))` 第一个匹配第 0 参数类型的目标胜出。如果两个目标都可隐式转换，结果不确定。修法：拆 sub-class（如 `InputComponentScriptMixinLibrary` 的 3 类）。
 4. **`Late+100` 时序依赖**：自动注入路径假定目标类型已在 `Bind_<TargetType>.cpp` 中按 `EOrder::Early ~ Late` 注册完成。如果新增的 mixin 目标不在这条线（如某个 `Bind_*.cpp` 写成了 `EOrder::Late+200`），自动注入会找不到 `ExistingClass`。修法：检查目标的 `Bind_*.cpp` `EOrder` 不应晚于 `Late+99`。
 5. **`out` 引用 / wrapper / 跨类型转换**：自动注入路径走不了，必须走 `Bind_FunctionLibraryMixins.cpp` 手工 lambda。形态参考 §3.1 子段 3。
-6. **UHT 反射函数表 fallback 慢**：UHT 标记某些重载为 unresolved → 反射 dispatch。形态参考 §3.2 类 1.5——给一份 `Bind_<Subject>ScriptMixins.cpp` 用 `AddFunctionEntry + ERASE_FUNCTION_PTR` 写精确指针。
+6. **UHT 反射函数表 fallback 慢**：UHT 标记某些重载为 unresolved → 反射 dispatch。形态参考 §3.2 类 1.5——给一份 `Bind_<Subject>ScriptMixins.cpp` 用 `RegisterFunctionBinding + ERASE_FUNCTION_PTR` 写精确指针。
 7. **`GetMethodByDecl` 假阴性**：自动注入生成的 declaration 与手写不一致。改用 `HasMethod`（按方法名匹配）。
 8. **`ScriptCallable` vs `BlueprintCallable`**：fork 主体改写为 `BlueprintCallable`，导致 `*MixinLibrary` 函数全部出现在蓝图节点面板，污染蓝图体验（`Syntax_Mixin.md` §6.4）。重启 `ScriptCallable` 死注释需要改 `Helper_FunctionSignature.h` 的 meta 分发逻辑——目前不在主线。
 9. **`AngelscriptMathLibrary.h` 8 处 namespace-regression 注释**：不要照抄。新增数学 helper 直接走 `*MixinLibrary` 文件 + 启用 ScriptMixin meta，不要重蹈数学库的命名空间退化。
@@ -679,6 +679,6 @@ Automation: Angelscript.TestModule.Engine.BindConfig.ProductionScriptMixinSignat
 
 - `FunctionLibraries/` 21 份 header 是 `Bind_*.cpp` 的功能扩展层：Bind 搬"类型骨架"，FunctionLibrary 在已搬来的类型上"挂功能函数"。两者职责互不重叠，由 `EOrder::Late+100` 的 `Bind_Defaults` 把后者按 `ScriptMixin` meta 自动改写成前者已注册类型的成员方法。
 - 21 份文件按 UCLASS-meta 状态四象限分为：12 份启用真 mixin / 1 份命名空间静态退化 / 4 份纯命名空间 / 2 份纯反射壳 / 2 份混合形态。`AGENTS.md` 说的"21 mixin helper 库"这个数字在文件级精确，但语义上**只有 12 份是真 mixin**。
-- 自动注入路径覆盖不了的边角签名（`out` 引用 / lambda wrapper / UHT 重载消歧）由 5 份 `Bind_*.cpp` 补漏：`Bind_FunctionLibraryMixins.cpp` 在 `Late+110` 手挂 `Method(decl, λ)`，`Bind_InputComponentScriptMixins.cpp` / `Bind_AssetManagerScriptMixins.cpp` 在 `Late+49` 用 `AddFunctionEntry` 写精确函数指针，`Bind_TSoftObjectPtr.cpp` / `Bind_WorldCollision.cpp` 通过 `#include` 拖入空壳 helper 让 UHT 拾起 dynamic delegate。
+- 自动注入路径覆盖不了的边角签名（`out` 引用 / lambda wrapper / UHT 重载消歧）由 5 份 `Bind_*.cpp` 补漏：`Bind_FunctionLibraryMixins.cpp` 在 `Late+110` 手挂 `Method(decl, λ)`，`Bind_InputComponentScriptMixins.cpp` / `Bind_AssetManagerScriptMixins.cpp` 在 `Late+49` 用 `RegisterFunctionBinding` 写精确函数指针，`Bind_TSoftObjectPtr.cpp` / `Bind_WorldCollision.cpp` 通过 `#include` 拖入空壳 helper 让 UHT 拾起 dynamic delegate。
 - 命名约定有三组（`Angelscript*Library.h` / `*MixinLibrary.h` / `*Statics.h`），但这只是**意图提示**，真实暴露形态必须看 `UCLASS` meta + `UFUNCTION` flag 组合——`*Statics.h` 既可能是真静态库也可能是反射壳；`*MixinLibrary.h` 也可能 meta 注释关闭走命名空间退化。
 - 单元测试两层：`AngelscriptTest/Bindings/Angelscript*FunctionLibraryTests.cpp` 17 份覆盖运行时行为；`AngelscriptTest/Core/AngelscriptFunctionLibrarySignatureTests.cpp` 一份守住第 0 参数剥离 + `bStaticInScript` 翻转的签名级别正确性。改 `FunctionLibraries/` 必须看 `Engine.BindConfig.ProductionScriptMixinSignatures` 不掉绿。

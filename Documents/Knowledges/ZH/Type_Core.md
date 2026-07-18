@@ -273,9 +273,9 @@ void FAngelscriptEngine::BindScriptTypes()
     AS_PERF_SCOPE_STARTUP_BIND_SCRIPT_TYPES();
     LLM_SCOPE_BYTAG(Angelscript);
 
-    FAngelscriptBinds::ResetGeneratedFunctionTableTiming();
+    FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();
     FAngelscriptBinds::CallBinds(CollectDisabledBindNames());   // ★ 触发所有 FBind 静态实例
-    FAngelscriptBinds::LogGeneratedFunctionTableTimingSummary();
+    FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();
 }
 ```
 
@@ -934,7 +934,7 @@ UEnum / UDelegateFunction  asCEnumType / ...        (TSharedRef in DB)
                 │  • Bind_*.cpp 怎么组织                  │
                 │  • FBind / EOrder / FNamespace 用法     │
                 │  • 121 个 Bind_*.cpp 的全景             │
-                │  • UHT 生成的 AS_FunctionTable_*.cpp    │
+                │  • UHT 生成的 AS_FunctionBinding_*.cpp    │
                 │  • Reflective Fallback 链路             │
                 │     (UFunction → AS method via         │
                 │      FAngelscriptTypeUsage::SetArgument) │

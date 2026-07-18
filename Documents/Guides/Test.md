@@ -58,10 +58,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.BlueprintCallableReflectiveFallback" -Label reflective-fallback -TimeoutMs 600000
 ```
 
-GeneratedFunctionTable 三分类统计专项前缀：
+GeneratedFunctionBinding 三分类统计专项前缀：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine.GeneratedFunctionTable" -Label generated-table -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Engine.GeneratedFunctionBinding" -Label generated-binding -TimeoutMs 600000
 ```
 
 Compilation hook / event 专项前缀：
@@ -111,26 +111,26 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 对应的 UHT 生成统计会在每次标准 build/UHT 运行时写入：
 
 ```text
-Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionTable_Summary.json
-Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionTable_ModuleSummary.csv
-Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionTable_Entries.csv
+Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionBindingStatistics.json
+Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionBindingModuleStatistics.csv
+Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionBindingDiagnostics.csv
 ```
 
 该文件当前至少包含这些字段：
 
-- `totalGeneratedEntries`
-- `totalDirectBindEntries`
-- `totalStubEntries`
-- `directBindRate`
-- `stubRate`
+- `totalAnalyzedFunctions`
+- `totalNativeRuntimeLinkedCount`
+- `totalReflectiveFallbackCount`
+- `nativeRuntimeLinkedRate`
+- `reflectiveFallbackRate`
 - `totalShardCount`
-- `moduleCount`
-- `modules[]`（逐模块 `totalEntries/directBindEntries/stubEntries/directBindRate/stubRate/shardCount`）
+- `configuredModuleMissCount`
+- `modules[]`（逐模块 `totalAnalyzedFunctions/nativeRuntimeLinkedCount/reflectiveFallbackCount/skippedFunctionCount/shardCount`）
 
 CSV 侧的用途区分如下：
 
-- `AS_FunctionTable_ModuleSummary.csv`：按模块聚合，适合快速看 `total/direct/stub/rate/shards`
-- `AS_FunctionTable_Entries.csv`：逐条函数明细，适合按 `ModuleName/ClassName/FunctionName/EntryKind/EraseMacro/ShardIndex` 过滤查询
+- `AS_FunctionBindingModuleStatistics.csv`：按模块聚合，适合快速看分析数、Runtime-linked、反射 fallback、跳过数和 shard 数
+- `AS_FunctionBindingDiagnostics.csv`：逐条函数明细，适合按 `ModuleName/ClassName/FunctionName/FunctionBindingCategory/EraseMacro/ShardIndex` 过滤查询
 
 ### 按测试组运行
 
@@ -179,9 +179,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Grou
 
 `Tools\RunTestSuite.ps1` 是基于 `Tools\RunTests.ps1` 的官方调度层。它会顺序执行内置 suite 中的前缀，并把 `-TimeoutMs`、`-OutputRoot`、`-NoReport` 透传给每个子 run。
 
-`GeneratedFunctionTable` 相关验证除了自动化报告外，还应结合 `AS_FunctionTable_Summary.json` 一起看；前者回答“测试是否通过”，后者回答“本次 UHT 生成了多少条格式绑定，以及 direct/stub 的模块分布”。
+`GeneratedFunctionBinding` 相关验证除了自动化报告外，还应结合 `AS_FunctionBindingStatistics.json` 一起看；前者回答“测试是否通过”，后者回答“本次 UHT 分析了多少函数，以及 NativeRuntimeLinked/ReflectiveFallback 的模块分布”。
 
-当需要定位“某个函数为什么是 direct 还是 stub”时，优先查询 `AS_FunctionTable_Entries.csv`，不要再从 `AS_FunctionTable_*.cpp` shard 文件中手工 grep。前者是正式产物，后者是代码生成中间结果。
+当需要定位“某个函数为什么是 NativeRuntimeLinked 还是 ReflectiveFallback”时，优先查询 `AS_FunctionBindingDiagnostics.csv`，不要再从 `AS_FunctionBinding_*.gen.cpp` shard 文件中手工 grep。前者是正式产物，后者是代码生成中间结果。
 
 ## 常用参数
 
