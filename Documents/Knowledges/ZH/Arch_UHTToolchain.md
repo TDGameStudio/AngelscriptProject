@@ -5,7 +5,12 @@
 > **关键源码**:
 > `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptUHTTool.ubtplugin.csproj` (~54 行，UBT plugin 项目文件)
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs` (~173 行，`[UhtExporter]` 入口)
-> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs` (~545 行，分片 / Summary / CSV 生成)
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs`（遍历 UHT 类型并协调分析结果）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingConfiguration.cs`（UE INI 规范化解析）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingPolicy.cs`（Eligibility / RPC / 签名安全策略）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingEmitters.cs`（Runtime-linked 与 target-module 产物）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingArtifacts.cs`（JSON / CSV 统计与诊断）
+> · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCleanup.cs`（UHT 产物清理）
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionSignatureBuilder.cs` (~135 行，签名抽取)
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptHeaderSignatureResolver.cs` (~772 行，重载消歧 / API 宏识别)
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` (~600+ 行，`RegisterFunctionBinding` / `FAngelscriptFunctionBinding` 消费面)
@@ -34,7 +39,7 @@
 │ ① 输入：12+ 个 UE 模块（AIModule / Engine / UMG / ...）的 UCLASS/UFUNCTION 头│
 │        ▼ UnrealHeaderTool 解析成 UhtModule/UhtClass/UhtFunction              │
 │                                                                              │
-│ ② AngelscriptUHTTool（5 个 .cs）通过 [UhtExporter] 挂入                      │
+│ ② AngelscriptUHTTool（按职责拆分的 .cs 组件）通过 [UhtExporter] 挂入       │
 │        Exporter / CodeGenerator / SignatureBuilder / HeaderResolver / 锚点  │
 │        ▼ 写出 30 个分片 + Summary.json + 4 份 CSV                            │
 │                                                                              │
@@ -74,7 +79,7 @@
 ```xml
 <!-- ============================================================================ -->
 <!-- 文件: Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptUHTTool.ubtplugin.csproj
-       角色: 把 5 个 .cs 编成 UnrealBuildTool 加载的旁路 DLL        -->
+       角色: 把 UHT FunctionBinding .cs 组件编成 UnrealBuildTool 加载的旁路 DLL -->
 <!-- ============================================================================ -->
 <TargetFramework>net8.0</TargetFramework>
 <OutputType>Library</OutputType>
@@ -153,10 +158,9 @@ FAngelscriptEngine::Initialize → CallBinds → ClassFunctionBindings 已注册
 // ============================================================================
 internal static bool IsAngelscriptCallable(UhtFunction function)
 {
-    string functionFlags = function.FunctionFlags.ToString();
     return function.FunctionType == UhtFunctionType.Function &&
-        (functionFlags.Contains("BlueprintCallable", StringComparison.Ordinal) ||
-         functionFlags.Contains("BlueprintPure",     StringComparison.Ordinal));
+        (function.FunctionFlags.HasAnyFlags(EFunctionFlags.BlueprintCallable | EFunctionFlags.BlueprintPure) ||
+         function.MetaData.ContainsKey("ScriptCallable"));
 }
 ```
 
@@ -188,7 +192,7 @@ FunctionBindingMethod=NativeRuntimeLinked
 
 `AngelscriptRuntime.Build.cs` 消费 Runtime-linked 数组，动态添加合法依赖并生成 wrapper；UHT 消费同一数组并输出 `AS_FunctionBinding_<Module>_<Shard>.gen.cpp`。目标模块数组只控制 UHT 在模块自身输出目录生成的安全 thunk，不把目标模块加入 Runtime 依赖。未配置模块只记录 warning/profile-miss，不会偷偷切换另一种后端。
 
-`AngelscriptFunctionBindingCodeGenerator` 仍会把 `AngelscriptRuntime.Build.cs` 和编译选项 ini 注册为 external dependency，确保依赖或配置变化触发 UHT 重跑；但它只把 ini 数组作为绑定范围来源。`Build.cs` 的固定实现依赖不会自动变成绑定范围，Editor-only 模块仍根据 UHT session 和模块配置写入对应的 `#if WITH_EDITOR` 守卫。
+`AngelscriptFunctionBindingCodeGenerator` 仍会把 `AngelscriptRuntime.Build.cs` 和编译选项 ini 注册为 external dependency，确保依赖或配置变化触发 UHT 重跑；但它只把 ini 数组作为绑定范围来源。`Build.cs` 的固定实现依赖不会自动变成绑定范围，Editor-only 模块仍根据 UHT session 和模块配置写入对应的 `#if WITH_EDITOR` 守卫。配置解析、引擎分类、分析策略、发射、统计和清理分别由独立组件承担，便于隔离验证。
 
 ---
 
@@ -248,7 +252,7 @@ string eraseMacro = (classObj.ClassType == UhtClassType.Interface || classObj.Cl
     : (AngelscriptFunctionSignatureBuilder.TryBuild(classObj, function, out var signature, out _)
         ? signature!.BuildEraseMacro()
         : "ERASE_NO_FUNCTION()");                                    // 失败也 reflectiveFallback
-entries.Add(new AngelscriptGeneratedFunctionEntry(classObj.SourceName, function.SourceName, eraseMacro));
+entries.Add(new AngelscriptGeneratedFunctionRegistration(classObj.SourceName, function.SourceName, eraseMacro, functionBindingCategory));
 ```
 
 ### 3.2 HeaderResolver 的核心机制
@@ -319,7 +323,7 @@ builder.Append("AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AS_FunctionBin
 | `AS_FunctionBinding_<Module>_<NNN>.cpp` | 编译产物（C++） | 30 个分片，覆盖 12 个 UE 模块 | `BuildRuntimeShard` | UBT 编入 `AngelscriptRuntime` 模块 |
 | `AS_FunctionBindingStatistics.json` | 总目录 | 1 | `WriteStatistics` | 人工 / 监控脚本 / OpenSpec 验证 |
 | `AS_FunctionBindingModuleStatistics.csv` | 每模块汇总 | 1 | `WriteModuleSummaryCsv` | 同上 |
-| `AS_FunctionBindingDiagnostics.csv` | 逐条目清单 | 1 | `WriteEntryCsv` | 覆盖率分析、回归比对 |
+| `AS_FunctionBindingDiagnostics.csv` | 逐函数清单 | 1 | `WriteBindingDiagnosticsCsv` | 覆盖率分析、回归比对 |
 | `AS_FunctionBindingSkippedFunctions.csv` | 跳过逐条 | 1 | `WriteSkippedDiagnosticsCsv` | 排查"为什么这个函数没绑" |
 | `AS_FunctionBindingSkippedFunctionStatistics.csv` | 跳过原因聚合 | 1 | `WriteSkippedDiagnosticsCsv` | 全局原因分布 |
 
@@ -438,23 +442,23 @@ struct FAngelscriptFunctionBinding
 // 角色: 对每个 BlueprintCallable UFunction 查 ClassFunctionBindings，命中 → 直接绑；否则反射 fallback
 // ============================================================================
 UClass* OwningClass = CastChecked<UClass>(Function->GetOuter());
-FAngelscriptFunctionBinding* Entry = nullptr;
+FAngelscriptFunctionBinding* FunctionBinding = nullptr;
 if (OwningClass != nullptr)
 {
     auto* map = FAngelscriptBinds::GetClassFunctionBindings().Find(OwningClass);
-    if (map) Entry = map->Find(Function->GetFName().ToString());
+    if (map) FunctionBinding = map->Find(Function->GetFName().ToString());
 }
-if (Entry == nullptr) return;                                  // ★ Layer 0: 表里没有 → 完全不绑
+if (FunctionBinding == nullptr) return;                         // ★ Layer 0: 表里没有 → 完全不绑
 
-const bool bHasDirectNativePointer = Entry->FuncPtr.IsBound();
+const bool bHasDirectNativePointer = FunctionBinding->FunctionPointer.IsBound();
 if (!bHasDirectNativePointer)
 {
     // ★ Layer C: 反射 fallback —— UHT 写入了 ERASE_NO_FUNCTION() reflectiveFallback 时走这里
-    if (!BindBlueprintCallableReflectionFallback(InType, Function, Signature, *Entry))
+    if (!BindBlueprintCallableReflectionFallback(InType, Function, Signature, *FunctionBinding))
         return;
     return;
 }
-Entry->bReflectiveFallbackBound = false;                       // ★ Layer B: 直接绑定路径
+FunctionBinding->bReflectiveFallbackBound = false;              // ★ Layer B: 直接绑定路径
 // FGenericFuncPtr 是 asSFuncPtr 的镜像；直接 memcpy 进 ASFuncPtr，调 BindMethod / BindGlobalFunction
 ```
 
