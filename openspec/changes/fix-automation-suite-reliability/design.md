@@ -15,8 +15,9 @@ The relevant boundaries are important:
 - `AngelscriptTest` owns AOT fixture generation and all test-only environment
   controls.
 - The root test suite definition owns the automation group-to-prefix mapping.
-- The StaticJIT cache is already ignored by Git, but the existing tests expect
-  it beneath the source tree and therefore inherit stale local state.
+- The StaticJIT cache is already ignored by Git, and it forms a required pair
+  with pointer-style reference IDs embedded in generated C++ compiled into the
+  test DLL.
 
 ## Goals / Non-Goals
 
@@ -24,8 +25,8 @@ The relevant boundaries are important:
 
 - Restore deterministic, meaningful automation coverage for each identified
   failure without weakening assertions merely to make the suite green.
-- Make the StaticJIT AOT cache an entirely test-owned, rebuildable `Saved/`
-  artifact while continuing to verify committed generated C++ source.
+- Give StaticJIT AOT coverage one explicit preflight command that regenerates
+  the cache and generated C++ together, rebuilds the module, then runs tests.
 - Keep production subsystem fallback behavior intact while allowing tests to
   deliberately exercise no-current-engine branches.
 - Make the Debugger transport safe for normal TCP fragmentation, independently
@@ -34,8 +35,8 @@ The relevant boundaries are important:
 
 **Non-Goals:**
 
-- Change the consumer-facing StaticJIT precompiled-data format, cache location,
-  or production loading policy.
+- Change the consumer-facing StaticJIT precompiled-data format or production
+  loading policy.
 - Regenerate and commit a binary StaticJIT fixture cache.
 - Change UHT function binding behavior or include unrelated Wiki work.
 - Attribute the one Debugger timeout to a single cause without reproducible
@@ -43,29 +44,36 @@ The relevant boundaries are important:
 
 ## Decisions
 
-### 1. StaticJIT AOT cache is provisioned only by the test fixture
+### 1. StaticJIT AOT artifacts are prepared as one generated-and-compiled pair
 
-`AngelscriptTest/StaticJIT/AOT` will expose a test-only helper that ensures a
-cache for the current fixture GUID and current build identifier exists below
-`FPaths::ProjectSavedDir()/StaticJIT/AOT`. Missing, malformed, wrong-GUID, or
-wrong-build caches are regenerated from the in-memory AOT fixture before a
-runtime AOT test loads precompiled data. Generation writes through a temporary
-file and atomically publishes the resulting cache; a process-local lock avoids
-competing fixture generations.
+The AOT cache serializes reference IDs that are emitted as `FJitRef_*`
+constructor arguments in `.jit.cpp` / `.jit.hpp`. These IDs are process-local
+pointers, so a cache generated at runtime cannot be loaded by a DLL compiled
+from an older generated source pair. The failed experiment reaches
+`PrecompiledData.cpp`'s `RefPtr != nullptr` assertion, proving that cache-only
+refresh is unsafe.
+
+`Tools/RunStaticJITTests.ps1` will be the dedicated test-only entry point. It
+will run: (1) baseline build, (2) the `Generate` commandlet to write the
+ignored cache and checked-in generated C++ as one pair, (3) a second build to
+compile that C++, and (4) the StaticJIT automation prefix. Any failed phase
+stops the workflow. The fixture error guidance and testing guide point to this
+entry point; tests themselves never rewrite artifacts.
 
 The checked-in `.jit.cpp` and `.jit.hpp` files remain under the test module
 source tree. `Verify` mode continues comparing fresh generated text with those
-files. The runtime fixture path will never write source artifacts, so ordinary
-automation runs cannot dirty the source tree.
+files. The matching cache remains ignored in that generated-artifact directory
+and is never committed.
 
 Alternatives rejected:
 
-- **Manually regenerate a cache:** immediately unblocks one workspace but
-  recreates the failure after a schema/configuration change.
+- **Regenerate only a cache in the test process:** unsafe because it has
+  reference IDs that do not match the currently compiled generated C++.
 - **Commit the cache:** contradicts its ignored/local role and adds a
   build-dependent binary artifact to review history.
-- **Run a commandlet and full rebuild before every suite:** changes source files
-  during testing and makes the normal full suite unnecessarily slow.
+- **Redesign StaticJIT reference serialization:** could remove the pairing
+  constraint, but it is a broad product-format change outside this
+  automation-reliability repair.
 
 ### 2. No-current-engine tests use an explicit test-only resolver suppression
 
@@ -131,12 +139,11 @@ stress reruns remain a complementary end-to-end check.
 
 ## Risks / Trade-offs
 
-- **Generating a cache during a test has a small first-use cost** → Reuse a
-  validated `Saved/` cache for the current build and serialize generation with
-  a process-local lock.
-- **Generated C++ could be stale while a freshly generated cache is valid** →
-  Preserve the independent generated-source verification test; runtime tests
-  continue proving that compiled generated code registers and executes.
+- **Preparation rewrites generated source before the test run** → Confine it
+  to an explicit StaticJIT-only tool and keep generated-source verification in
+  the final prefix. Ordinary runtime tests never write artifacts.
+- **Generated C++ could be stale while a cache exists** → The tool always
+  regenerates both artifacts and rebuilds before runtime tests execute.
 - **Test resolver suppression could escape its intended boundary** → Compile it
   only for development automation, make it RAII-only, restrict it to the test
   thread, and add restoration assertions.
@@ -152,16 +159,16 @@ stress reruns remain a complementary end-to-end check.
    deterministic defect.
 2. Implement fixture/cache, engine-resolution, builder, Settings, suite-prefix,
    expected-coordinate, and Debugger framing changes in their owning modules.
-3. Delete the obsolete ignored source-tree fixture cache if it is present; no
-   repository deletion is expected because it is not tracked.
+3. Delete any obsolete ignored fixture cache before preparation; the commandlet
+   recreates the paired local artifact and no repository deletion is expected.
 4. Run focused tests, a project build, Debugger stress reruns, and the `All`
    suite through the approved `Tools/` entry points.
 5. Record actual command results in `verification.md`, commit the plugin
    submodule first, then commit the parent OpenSpec/tooling gitlink update.
 
-Rollback is straightforward: code and source artifacts can revert while any
-`Saved/` cache is discarded as derived data. No user data or versioned binary
-cache requires migration.
+Rollback is straightforward: code and generated source artifacts can revert
+while the ignored local cache is discarded as derived data. No user data or
+versioned binary cache requires migration.
 
 ## Open Questions
 

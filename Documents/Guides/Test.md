@@ -369,7 +369,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCommandlet.ps1 
 
 ### StaticJIT AOT 相关回归
 
-StaticJIT AOT 测试验证的是“生成 C++ → 二次构建 → 运行时注册和执行”整条链路。标准流程固定为：
+StaticJIT AOT 测试验证的是“生成 C++ → 二次构建 → 运行时注册和执行”整条链路。cache 内部保存的引用 ID 与生成的 `.jit.cpp` / `.jit.hpp` 中的引用 ID 成对出现，因此不能在测试运行时单独刷新 cache，也不能用另一轮生成产生的 cache 去驱动旧 DLL。
+
+日常执行请使用专用入口；它将按顺序完成基线构建、生成配套 artifacts、二次构建和 StaticJIT 测试：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunStaticJITTests.ps1 -LabelPrefix staticjit-aot
+```
+
+只运行 AOT 子集时追加 `-AotOnly`。默认会运行完整 `Angelscript.TestModule.StaticJIT` 前缀，以便同时覆盖 AOT 与不依赖生成 cache 的 StaticJIT 诊断测试。
+
+如需单独排查每一步，等价的标准流程固定为：
 
 1. 先构建一次，让 AOT commandlet 与生成 helper 进入 `AngelscriptTest` 模块。
 2. 运行 `AngelscriptStaticJITAotTest` commandlet 的 `Generate` 模式，更新 `Plugins/Angelscript/Source/AngelscriptTest/StaticJIT/AOT/Generated/` 下的 `.jit.cpp`、`.jit.hpp`，并在同目录生成本地 `StaticJITAotFixture.Cache`。
@@ -383,7 +393,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.StaticJIT.AOT" -Label staticjit-aot -TimeoutMs 600000
 ```
 
-生成物校验由 `Angelscript.TestModule.StaticJIT.AOT.GeneratedOutputVerify` 覆盖：源码文本严格比对；`StaticJITAotFixture.Cache` 是本地生成产物，不提交到 git，但测试会要求它存在，并按 fixture GUID、build id、模块与函数元数据做语义校验。cache 内部保存旧指针引用，因此不能用裸文件 hash 作为 stale 判断依据。fresh checkout 后需要先执行 generate -> rebuild -> test 流程，不能直接只跑 AOT runtime 测试。
+生成物校验由 `Angelscript.TestModule.StaticJIT.AOT.GeneratedOutputVerify` 覆盖：源码文本严格比对；`StaticJITAotFixture.Cache` 是与当前已编译 `.jit.cpp` / `.jit.hpp` 配对的本地生成产物，不提交到 git。测试会要求它存在，并按 fixture GUID、build id、模块与函数元数据做语义校验。cache 内部保存旧指针引用，因此不能用裸文件 hash 作为 stale 判断依据。fresh checkout 后需要先执行 generate -> rebuild -> test 流程，不能直接只跑 AOT runtime 测试。
 
 常用具名 suite 以 `Tools\RunTestSuite.ps1 -ListSuites` 的输出为准，当前重点包括：
 

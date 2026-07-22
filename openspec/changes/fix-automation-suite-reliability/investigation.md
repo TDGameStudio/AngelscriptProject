@@ -65,10 +65,21 @@ test source-tree generated-artifact directory. Its build identifier did not
 match the current build, so precompiled-data loading correctly failed and
 registration/dispatch tests failed as a consequence.
 
-The existing `as-static-jit-aot-test` shared spec describes this cache as a
-local ignored prerequisite. The new design makes that prerequisite
-self-provisioning under `Saved/` and keeps committed generated C++ source
-verification separate.
+The first proposed repair—regenerating only a cache under `Saved/` at test
+runtime—was implemented experimentally and rejected after direct evidence. The
+generated headers contain raw `FJitRef_*` constructor values such as
+`0x1589fab9f00`; the cache serializes the corresponding reference identities.
+Loading the newly generated cache through the DLL that was compiled from the
+previous generated C++ asserted in `PrecompiledData.cpp` (`RefPtr != nullptr`,
+"Loaded an angelscript type reference that wasn't saved properly!").
+
+The generated-source verification still passed 1/1 because it intentionally
+normalizes those pointer literals before comparing text. That is correct for
+semantic source reproducibility, but it cannot prove that a freshly generated
+cache matches already compiled code. The runtime cache is therefore not an
+independent reusable test cache. The accepted repair is an explicit
+`build -> generate paired cache/C++ -> rebuild -> test` StaticJIT-only runner,
+not self-provisioning during a runtime test.
 
 ### Test suite prefix drift
 

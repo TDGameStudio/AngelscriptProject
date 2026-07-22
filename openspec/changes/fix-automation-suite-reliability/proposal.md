@@ -25,9 +25,10 @@ determine whether the normal test suite can execute its AOT verification.
   World function-library binding tests.
 - Replace obsolete `ClassGenerator` and `ScriptClass` suite prefixes with one
   non-duplicating `Generator` entry that matches the current automation IDs.
-- Make the StaticJIT AOT fixture cache a test-owned, self-provisioned artifact
-  under `Saved/StaticJIT/AOT/`; keep generated C++ source checked in and
-  independently verified, but never require a cache in the source tree.
+- Add a dedicated StaticJIT test preflight that performs the required paired
+  `build -> generate C++ plus cache -> rebuild -> test` sequence. Keep the
+  generated C++ source checked in and independently verified; retain its
+  matching cache as an ignored local artifact beside those sources.
 - Harden Debugger TCP envelope intake against fragmented header/payload reads
   and add coverage for incremental frame assembly. The one observed suite
   timeout was not reproducible in focused reruns, so this is a robustness fix,
@@ -43,9 +44,9 @@ determine whether the normal test suite can execute its AOT verification.
 
 ### Modified Capabilities
 
-- `as-static-jit-aot-test`: StaticJIT AOT runtime tests provision and validate
-  their local cache for the current build instead of requiring a manually
-  generated source-tree cache.
+- `as-static-jit-aot-test`: StaticJIT AOT tests have one documented, runnable
+  preparation entry point that regenerates and recompiles the cache/C++ pair
+  before the runtime assertions execute.
 - `debugger-protocol-v2`: The debug server accepts a valid TCP debug envelope
   even when its header or payload arrives in multiple socket reads.
 
@@ -63,6 +64,5 @@ determine whether the normal test suite can execute its AOT verification.
 - **OpenSpec:** this change adds the reliability specification and updates the
   StaticJIT AOT and Debugger protocol requirements.
 
-**BREAKING:** None. The test-only StaticJIT cache moves from an ignored file
-under the source tree to `Saved/`; no consumer-facing runtime cache format or
-plugin API changes.
+**BREAKING:** None. The cache remains ignored and local. No consumer-facing
+runtime cache format or plugin API changes.

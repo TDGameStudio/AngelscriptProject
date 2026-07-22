@@ -4,12 +4,12 @@
 - [ ] 1.2 <!-- TDD --> Run the previously crashing Builder enum test as the red regression baseline and add the smallest valid-description assertion needed to prove post-build enumeration is safe.
 - [ ] 1.3 <!-- TDD --> Run the affected Engine, Editor, FunctionLibraries, and StaticJIT prefixes before changing their fixtures or lifecycle controls; preserve failure output needed to distinguish test-environment defects from product defects.
 
-## 2. StaticJIT AOT test fixture cache
+## 2. StaticJIT AOT generated-artifact preparation
 
-- [ ] 2.1 <!-- TDD --> Extend `AngelscriptStaticJITAotFixture` / `AngelscriptStaticJITAotGeneration` with a test-only cache preparation API and tests for missing, stale-build, and valid cache paths.
-- [ ] 2.2 <!-- TDD --> Generate fixture precompiled data under `Saved/StaticJIT/AOT/` through a temporary file and process-local synchronization; validate fixture GUID, build identifier, and semantic contents before reuse.
-- [ ] 2.3 <!-- TDD --> Route StaticJIT AOT runtime and diagnostics tests through the preparation API, retain source-generation verification for checked-in `.jit.cpp` / `.jit.hpp`, and remove the source-tree cache prerequisite from setup instructions and assertions.
-- [ ] 2.4 <!-- Non-TDD --> Delete the ignored obsolete `Source/AngelscriptTest/StaticJIT/AOT/Generated/StaticJITAotFixture.Cache` from this workspace if present; confirm no tracked cache is introduced.
+- [ ] 2.1 <!-- TDD --> Capture the cache-only-refresh assertion failure and document why the cache and generated C++ reference IDs must be generated and compiled as one pair.
+- [ ] 2.2 <!-- TDD --> Add `Tools/RunStaticJITTests.ps1`, which runs baseline build, Generate commandlet, generated-source rebuild, and the requested StaticJIT prefix in order and stops on the first failure.
+- [ ] 2.3 <!-- Non-TDD --> Point fixture setup errors and the testing guide to the dedicated runner; retain the generated-source verification test and the ignored source-tree cache location.
+- [ ] 2.4 <!-- Non-TDD --> Delete the obsolete ignored `Source/AngelscriptTest/StaticJIT/AOT/Generated/StaticJITAotFixture.Cache` before preparation if present; confirm no tracked cache is introduced.
 
 ## 3. Deterministic test environment and editor setup
 

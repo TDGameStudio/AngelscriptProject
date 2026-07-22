@@ -44,7 +44,7 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
         @{ Prefix = 'Angelscript.TestModule.AngelScriptSDK'; Label = 'AngelScriptSDK'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Bindings'; Label = 'Bindings'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Blueprint'; Label = 'Blueprint'; Tier = 'Heavy' }
-        @{ Prefix = 'Angelscript.TestModule.ClassGenerator'; Label = 'ClassGenerator'; Tier = 'Heavy' }
+		@{ Prefix = 'Angelscript.TestModule.Generator'; Label = 'Generator'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Compiler'; Label = 'Compiler'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Component'; Label = 'Component'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.Core'; Label = 'Core'; Tier = 'Heavy' }
@@ -66,7 +66,6 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
         @{ Prefix = 'Angelscript.TestModule.Parity'; Label = 'Parity'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.Performance'; Label = 'Performance'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Preprocessor'; Label = 'Preprocessor'; Tier = 'Light' }
-        @{ Prefix = 'Angelscript.TestModule.ScriptClass'; Label = 'ScriptClass'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.Shared'; Label = 'Shared'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.StaticJIT'; Label = 'StaticJIT'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Syntax'; Label = 'Syntax'; Tier = 'Light' }
