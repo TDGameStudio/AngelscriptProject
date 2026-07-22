@@ -6,6 +6,13 @@
 >
 > 当前 debt routing 主入口：`Documents/Plans/Plan_TechnicalDebtRefresh.md`
 
+## Native Core 回归快照（2026-07-23）
+
+- `Angelscript.TestModule.AngelScriptSDK` 已由最终集成构建后的官方 runner 验证为 **412/412 PASS**：`Saved/Tests/as-native-sdk-regression-full/20260723_032711_529_774230db/Report/index.json`。
+- 这 412 个活跃用例按 Engine、Frontend、Compiler、Runtime、Module、TypeSystem、Language、Embedding、Conformance 九个核心主题组织，只覆盖 vendored AngelScript 核心和公开原生接口，不包含 `sdk/add_on`。
+- 另有 7 个 `#as-v238-backport` Disabled CQTest，表示可表达但尚未选择性回移的 2.38 脚本语义；它们不是 live active pass 数，也不属于现有两个 `#ue57-headless` 限制。
+- `RunTestSuite.ps1 -Suite NativeCore` 同样通过 412/412。All suite 的首次外层工具等待在 900 秒后结束，但其已启动的 35 个子组继续自然运行；除 StaticJIT 外，各有标准报告的 34 个子组均为零测试失败。StaticJIT 在范围外的 `ConsoleCommandFunctionPaths` 中复现 `PrecompiledData.cpp:1998` 断言并使进程以 3 退出，未生成 JSON 报告；该故障已用独立命令复现并记录在本次 OpenSpec，不能据此改变 Native Core 结论。
+
 ## 1. 已编目基线 vs 实时扫描
 
 - `Documents/Guides/TestCatalog.md` 仍以 `275/275 PASS` 作为**已编目基线**，它表示"已经整理进目录文档并完成一轮 closeout 的基线"，不是当前 live suite 的总数。
@@ -28,7 +35,7 @@
 - `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineHelperTests.cpp`：11 处
 - `Plugins/Angelscript/Source/AngelscriptTest/Angelscript/AngelscriptTypeTests.cpp`：11 处
 - `Plugins/Angelscript/Source/AngelscriptTest/Angelscript/AngelscriptExecutionTests.cpp`：9 处
-- `Plugins/Angelscript/Source/AngelscriptTest/Compiler/AngelscriptCompilerPipelineTests.cpp`：8 处
+- `Plugins/Angelscript/Source/AngelscriptTest/Compiler/AngelscriptCompilerEndToEndTests.cpp`：8 处
 
 ## 2. 测试 helper 命名现状
 

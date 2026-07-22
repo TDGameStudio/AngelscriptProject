@@ -37,7 +37,7 @@
 ## 目录
 
 - [1. Shared — 测试基础设施](#1-shared--测试基础设施)
-- [Native — 原生 AngelScript / ASSDK](#native--原生-angelscript--assdk)
+- [Native — 原生 AngelScript 核心](#native--原生-angelscript-核心)
 - [2. Core — 引擎核心](#2-core--引擎核心)
 - [3. Angelscript — 脚本引擎行为](#3-angelscript--脚本引擎行为)
   - [3.1 Core — 创建/编译/执行](#31-core--创建编译执行)
@@ -119,30 +119,21 @@
 
 ---
 
-## Native — 原生 AngelScript / ASSDK
+## Native — 原生 AngelScript 核心
 
-> 源文件：`AngelScriptSDK/AngelscriptNativeSmokeTest.cpp`、`AngelScriptSDK/AngelscriptNativeCompileTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp`、`AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp`、`AngelScriptSDK/AngelscriptNativeTokenizer*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeParser*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeScriptNode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeBytecode*Tests.cpp`、`AngelScriptSDK/AngelscriptNativeReference*Tests.cpp`、`AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp`、`AngelScriptSDK/AngelscriptASSDKEngineTests.cpp`、`AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp`、`AngelScriptSDK/AngelscriptASSDKGlobalVarTests.cpp` 以及其余 `AngelScriptSDK/AngelscriptASSDK*Tests.cpp`
+> 源文件：`AngelScriptSDK/Engine/`、`Frontend/`、`Compiler/`、`Runtime/`、`Module/`、`TypeSystem/`、`Language/`、`Embedding/`、`Conformance/`，以及仅供这些主题复用的 `AngelScriptSDK/Support/`。该层只测核心 SDK，不引入 `sdk/add_on`。
 >
-> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **301/301 PASS**。`test-as-native-sdk-coverage` 新增 151 个 native SDK 覆盖项：Tokenizer 40、Parser 35、ScriptNode 25、Bytecode 23、Reference 28。当前 `Angelscript.TestModule.AngelScriptSDK.Bytecode` 前缀单独验证为 **36/36 PASS**。
+> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **412/412 PASS**（2026-07-23）。七个表达未来 2.38 脚本语义的用例保留为 Disabled `#as-v238-backport` CQTest，不计入活跃通过数。
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
-| `Angelscript.TestModule.AngelScriptSDK.Smoke` | `AngelScriptSDK/AngelscriptNativeSmokeTest.cpp` | 最小原生 AngelScript 引擎创建、编译与执行烟雾 |
-| `Angelscript.TestModule.AngelScriptSDK.Compile.*` | `AngelScriptSDK/AngelscriptNativeCompileTests.cpp` | 纯公共 API 路径下的编译、错误消息与模块构建 |
-| `Angelscript.TestModule.AngelScriptSDK.Execute.*` | `AngelScriptSDK/AngelscriptNativeExecutionTests.cpp`、`AngelScriptSDK/AngelscriptNativeExecutionAdvancedTests.cpp` | 原生上下文 Prepare / Execute、参数传递、返回值、执行状态 |
-| `Angelscript.TestModule.AngelScriptSDK.Register.*` | `AngelScriptSDK/AngelscriptNativeRegistrationTests.cpp` | 原生全局函数/属性/值类型注册 |
-| `Angelscript.TestModule.AngelScriptSDK.Tokenizer.*` | `AngelScriptSDK/AngelscriptNativeTokenizerLiteralsTests.cpp`、`AngelscriptNativeTokenizerOperatorsTests.cpp`、`AngelscriptNativeTokenizerWhitespaceTests.cpp` | 词法层 literal、operator、comment/whitespace、BOM、EOF 与最长匹配边界；新增 40 项 |
-| `Angelscript.TestModule.AngelScriptSDK.Parser.*` | `AngelScriptSDK/AngelscriptNativeParserDeclarationsTests.cpp`、`AngelscriptNativeParserExpressionsTests.cpp`、`AngelscriptNativeParserErrorsTests.cpp` | 声明、表达式和错误恢复的当前 fork 行为锁定；新增 35 项 |
-| `Angelscript.TestModule.AngelScriptSDK.ScriptNode.*` | `AngelScriptSDK/AngelscriptNativeScriptNodeShapeTests.cpp`、`AngelscriptNativeScriptNodeSourceRangeTests.cpp`、`AngelscriptNativeScriptNodeCopyTests.cpp` | AST 节点形状、source range、复制/遍历与深度边界；新增 25 项 |
-| `Angelscript.TestModule.AngelScriptSDK.Bytecode.*` | `AngelScriptSDK/AngelscriptBytecodeTests.cpp`、`AngelscriptNativeBytecodeOpcodesTests.cpp`、`AngelscriptNativeBytecodeJumpsTests.cpp`、`AngelscriptNativeBytecodeOptimizeTests.cpp` | 字节码构造/序列化、编译函数 bytecode、opcode、跳转回填、输出 buffer、优化与指令尺寸表边界；当前前缀 36 项 |
-| `Angelscript.TestModule.AngelScriptSDK.Reference.*` | `AngelScriptSDK/AngelscriptNativeReference*Tests.cpp` | 从 AS 2.38 reference 测试中吸收的 tokenizer、parser/compiler reject、context、script-class、save/load 当前 fork 行为锁定；新增 28 项 |
-| `Angelscript.TestModule.AngelScriptSDK.ASSDK.Smoke` | `AngelScriptSDK/AngelscriptASSDKSmokeTest.cpp` | ASSDK 适配层最小引擎创建、消息回调与脚本执行 |
-| `Angelscript.TestModule.AngelScriptSDK.ASSDK.Engine.*` | `AngelScriptSDK/AngelscriptASSDKEngineTests.cpp` | ASSDK 引擎生命周期、回调复用与基础引擎语义 |
-| `Angelscript.TestModule.AngelScriptSDK.ASSDK.Execute.*` | `AngelScriptSDK/AngelscriptASSDKExecuteTests.cpp` | ASSDK 回调注册、参数调用约定、cleanup 与 portability 分支 |
-| `Angelscript.TestModule.AngelScriptSDK.ASSDK.GlobalVar.*` / `Stack.*` | `AngelScriptSDK/AngelscriptASSDKGlobalVarTests.cpp` | 全局变量枚举/重置/删除、栈深限制与异常位置信息 |
-| `Angelscript.TestModule.AngelScriptSDK.ASSDK.*` | 其余 `AngelScriptSDK/AngelscriptASSDK*Tests.cpp` | 类型、对象、OOP、模块、函数、调用约定、运行时与编译器邻近回归 |
+| `Angelscript.TestModule.AngelScriptSDK.Engine.*` / `Frontend.*` | `AngelScriptSDK/Engine/`、`Frontend/` | 引擎创建/配置、上下文池、类型登记、tokenizer、parser 与脚本节点 |
+| `Angelscript.TestModule.AngelScriptSDK.Compiler.*` | `AngelScriptSDK/Compiler/` | 诊断、builder、字节码、模块管线、序列化与恢复 |
+| `Angelscript.TestModule.AngelScriptSDK.Runtime.*` / `Module.*` | `AngelScriptSDK/Runtime/`、`Module/` | 上下文执行与恢复、异常、调用、模块生命周期、函数和全局对象 |
+| `Angelscript.TestModule.AngelScriptSDK.TypeSystem.*` / `Language.*` | `AngelScriptSDK/TypeSystem/`、`Language/` | 类型/属性/构造和析构、表达式、控制流、命名空间及当前 fork 语义 |
+| `Angelscript.TestModule.AngelScriptSDK.Embedding.*` / `Conformance.*` | `AngelScriptSDK/Embedding/`、`Conformance/` | 原生注册、调用约定、脚本对象边界及与当前 fork 的行为一致性 |
 
-> 放置规则：`Native/` 只验证 `AngelscriptInclude.h` / `angelscript.h` 暴露的公共 API，不把 `FAngelscriptEngine` 或运行时私有实现带进这一层。
+> 放置规则：`AngelScriptSDK/` 只验证 vendored AngelScript 核心和 `AngelscriptInclude.h` / `angelscript.h` 暴露的公共 API；不引入 `FAngelscriptEngine`、运行时私有实现或 `sdk/add_on`。
 
 ---
 
@@ -568,6 +559,16 @@
 | HotReload.ReloadDelegates.BroadcastEnumChangeAndFullReload | enum value 变化 full reload 时广播 enum changed / full reload / post reload，并保留旧 enum name 列表 |
 | HotReload.ReloadDelegates.BroadcastDelegateSignatureSwap | delegate 签名变化 full reload 时广播 old/new delegate function，并让 `FDelegateProperty` 指向新签名 |
 | HotReload.Delegates.BroadcastOldAndNewTypes | class / struct full reload 时广播 old/new `UClass` 与 `UScriptStruct`，post reload 时类型已可查询 |
+
+### Script struct 热重载
+
+> 源文件：`HotReload/AngelscriptHotReloadStructTests.cpp`
+
+| 测试名 | 验证内容 |
+|--------|----------|
+| HotReload.Struct.StructFullReloadReplacesScriptStructAndKeepsVersionChain | AS `USTRUCT` layout full reload 后替换 canonical struct、保留旧 layout、维护 newest-version 链并广播 old/new struct |
+| HotReload.Struct.StructPropertyRetargetsToReloadedStruct | AS class 的 `UPROPERTY` struct 字段在 full reload 后指向新 `UScriptStruct`，旧属性保持旧 layout，新对象执行使用新字段 |
+| HotReload.Struct.StructUFunctionParameterExecutesAfterReload | AS `USTRUCT` 作为 `UFUNCTION` 参数时，reload 后参数 property retarget 到新 struct，并实际执行参数传递路径 |
 
 ### Delegate 运行态热重载
 

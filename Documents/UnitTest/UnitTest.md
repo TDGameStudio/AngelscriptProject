@@ -11,9 +11,9 @@
 
 ### 0. 测试注册必须使用 `WITH_ANGELSCRIPT_UNITTESTS` 总开关
 
-新增或重构 `Plugins/Angelscript/Source/AngelscriptTest` 下的 C++ test registration `.cpp` 时，测试注册代码必须由 `WITH_ANGELSCRIPT_UNITTESTS` 控制。这个宏是 AngelscriptTest C++ automation 的唯一总开关；不要保留或新增 `WITH_DEV_AUTOMATION_TESTS` 作为外层条件。未来如果需要区分开发构建、CI 或消费者构建，应通过 `AngelscriptTest.Build.cs` 定义 `WITH_ANGELSCRIPT_UNITTESTS` 的值来表达。
+`WITH_ANGELSCRIPT_UNITTESTS` 是 AngelscriptTest C++ automation 的唯一注册开关，由 `AngelscriptTest.Build.cs` 从 `Config/DefaultAngelscriptCompileOptions.ini` 读取 `bCompileAngelscriptUnitTests` 后定义为 `0` 或 `1`。当前仓库是插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`；消费者工程可以改成 `false` 来保留模块编译但禁用测试注册。
 
-推荐形态是 include block 保持在外面，然后用一个 whole-file gate 包住 `TEST_CLASS_WITH_FLAGS`、`TEST_METHOD` 和文件级 test-only 注册对象：
+新增或重构 `Plugins/Angelscript/Source/AngelscriptTest` 下的 C++ test registration `.cpp` 时，必须让测试注册在 `WITH_ANGELSCRIPT_UNITTESTS=0` 时不发生。推荐形态是 include block 保持在外面，然后用一个 body gate 包住 `TEST_CLASS_WITH_FLAGS`、`TEST_METHOD` 和文件级 test-only 注册对象：
 
 ```cpp
 #include "CQTest.h"
@@ -35,10 +35,12 @@ TEST_CLASS_WITH_FLAGS(FExampleTest,
 
 规则：
 
-- 默认不要把 include block 包进 `#if WITH_ANGELSCRIPT_UNITTESTS`，以保持 IWYU/self-contained include、generated header 顺序和 IDE 解析稳定。
+- 必须 gate：`TEST_CLASS_WITH_FLAGS` / `TEST_METHOD`、legacy `IMPLEMENT_*_AUTOMATION_TEST`、文件级 CQTest/native test registration 对象、只为测试注册而存在的 `AS_FORCE_LINK` 对象。
+- 默认不要 gate：include block、普通 helper 类型、test UObject/type 实现、generated/AOT 支撑代码、commandlet 支撑代码。它们应在 `WITH_ANGELSCRIPT_UNITTESTS=0` 下仍然可编译，除非有明确证据表明不能编译。
 - 只有 header 自己注册测试、依赖 unit-test-only macro side effect，或 `WITH_ANGELSCRIPT_UNITTESTS=0` build 证明它不能合法编译时，才 gate header 或 include。
-- helper、generated/AOT、commandlet、test UObject/type implementation `.cpp` 不能盲目 whole-file 包裹；重构时要记录豁免原因。
-- 不要使用旧拼写或更宽泛的 `WITH_ANGELSCRIPT_TESTS`。
+- 不要使用 `WITH_DEV_AUTOMATION_TESTS` 作为外层条件，也不要使用旧拼写或更宽泛的 `WITH_ANGELSCRIPT_TESTS`。
+- `AngelscriptCQTest.h` 会在 `WITH_ANGELSCRIPT_UNITTESTS=0` 时把 CQTest 宏降级为不注册测试的普通类型/方法形态；这只是安全兜底，新增和重构代码仍应显式使用上面的 body gate。
+- 如果为了保持 helper 或 fixture 可编译而选择不 gate 某个 `.cpp`，不用额外记录；如果为了绕过 disabled-unit-tests build 而 gate 掉非注册代码，必须在附近注释说明原因。
 
 ### 1. 测试实现放在 `TEST_CLASS_WITH_FLAGS` 内
 
@@ -529,6 +531,19 @@ CompileScriptModule(TestRunner, Engine, ModuleName, Filename, Source);
 测试读者应能在 `TEST_METHOD` 里直接看到：准备 fixture、编译 V1、建立观察点、reload V2、断言结果。
 
 ## 验证规则
+
+### 原生 AngelScript SDK 测试
+
+`AngelScriptSDK/` 是 ThirdParty AngelScript 核心与其已公开原生接口的回归层；它不是 UE 绑定、`sdk/add_on` 或完整 `FAngelscriptEngine` 集成层。每个注册源文件仍必须置于 `WITH_ANGELSCRIPT_UNITTESTS` body gate 内，并使用 CQTest 的 `TEST_CLASS_WITH_FLAGS` / `TEST_METHOD`。
+
+- 测试按 `Engine`、`Frontend`、`Compiler`、`Runtime`、`Module`、`TypeSystem`、`Language`、`Embedding`、`Conformance` 九个行为主题放置，Automation ID 使用 `Angelscript.TestModule.AngelScriptSDK.<主题>...`。
+- 使用 case-owned `FNativeTestEngine` 与 RAII module/context。不得向 raw SDK fixture 引入 `FAngelscriptEngine`、世界、Actor 或 add-on 注册；每个 case 清理自身 module、context 与注册状态。
+- 通过完整声明查找目标函数。当前 fork 会把按值脚本参数规范化为 `const`，声明字符串必须与 `GetDeclaration()` 一致；不得为了“找到一个函数”退回到名称或唯一函数猜测。
+- 断言应覆盖可执行成功、代表性输入、错误/诊断、生命周期、交互和隔离。当前 fork 明确拒绝或限制的行为同样要断言精确结果和文本，不能使用“任一行为均可”的宽松断言。
+- 当前 `float` 为 double-backed ABI：注册 C++ callback 与读取 context 返回槽时按实际 `asEP_FLOAT_IS_FLOAT64` 配置选择 C++ 类型和 accessor。若某个 double-backed 原生调用被 fork 明确拒绝，应断言该异常，并将可执行的整数/通用调用路径保持在独立用例中。
+- 已表达但尚未选择性回移的 2.38 脚本语义必须用 `TEST_CLASS_WITH_FLAGS_AND_TAGS`、`EAutomationTestFlags::Disabled` 和 `TEXT("#as-v238-backport")` 注册真实断言体；不要用 `#if 0`、恒假条件或注释隐藏。尚缺 C++ 公共符号的 API 只能记录为 deferred，不能伪造声明。
+
+写完一个完整主题批次后才构建；随后先运行对应最窄前缀，最后再运行完整 `Angelscript.TestModule.AngelScriptSDK`。构建仅可通过 `Tools\RunBuild.ps1`，测试仅可通过 `Tools\RunTests.ps1` 或 `Tools\RunTestSuite.ps1`。
 
 Angelscript C++ automation 测试默认不面向消费者注册。运行本页中的 `Tools\RunTests.ps1` 命令前，确认 `Config/DefaultAngelscriptCompileOptions.ini` 中：
 

@@ -82,6 +82,30 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Bytecode" -Label sdk-bytecode -TimeoutMs 600000
 ```
 
+### Native Core 九个主题
+
+完成一个完整代码批次并通过 `Tools\RunBuild.ps1 -TimeoutMs 1800000 -NoXGE` 后，按主题运行原生 AngelScript 核心回归。不要把 `sdk/add_on`、UE world/Actor 测试或 `FAngelscriptEngine` 集成场景混入这些前缀：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Engine" -Label sdk-engine -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Frontend" -Label sdk-frontend -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Compiler" -Label sdk-compiler -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Runtime" -Label sdk-runtime -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Module" -Label sdk-module -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.TypeSystem" -Label sdk-typesystem -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Language" -Label sdk-language -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Embedding" -Label sdk-embedding -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Conformance" -Label sdk-conformance -TimeoutMs 600000
+```
+
+完整原生核心回归与 suite 入口保持为：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK" -Label sdk-full -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite NativeCore -LabelPrefix native-core -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite All -LabelPrefix all -TimeoutMs 600000
+```
+
 插件测试主题前缀也按目录直接运行，常用入口包括：
 
 ```powershell

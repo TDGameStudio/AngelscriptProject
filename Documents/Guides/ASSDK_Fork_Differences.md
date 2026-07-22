@@ -331,4 +331,6 @@ bool FTest::RunTest(const FString& Parameters) {
 
 ## 9. 文档更新历史
 
+- **2026-07-23**: 原生核心回归按九个主题重组。独立 raw engine 中脚本对象构造会进入 UE class allocator，不能作为普通执行成功路径；测试改为安全验证编译、类型元数据及明确限制。当前 float64 配置下 double-backed 值类型 native call 的受限异常与可执行整数调用路径分别固定；future 2.38 脚本语义以 Disabled `#as-v238-backport` CQTest 记录。
+
 - **2026-04-03**: 初始创建，记录 P0-P5 集成过程中的发现

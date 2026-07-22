@@ -16,7 +16,7 @@
 | --- | --- | --- | --- | --- |
 | Runtime 内部 C++ | `Plugins/Angelscript/Source/AngelscriptRuntime/Tests/` | `Angelscript.TestModule.CppTests.*` | 运行时内部状态、共享引擎、隔离、覆盖率、预编译数据等 | Runtime 私有头 + `StartAngelscriptHeaders.h` |
 | Editor 内部 | `Plugins/Angelscript/Source/AngelscriptEditor/Tests/` | `Angelscript.Editor.*` | Editor 专有行为，例如 watcher / source navigation / debugger seam | Editor 私有实现 + editor-only helper |
-| Native Core | `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` | `Angelscript.TestModule.AngelScriptSDK.*` | 只验证公共 AngelScript API / ASSDK 桥接层，不引入 `FAngelscriptEngine` | `AngelscriptNativeTestSupport.h` / `AngelscriptTestAdapter.h` |
+| Native Core | `Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/<Domain>/` | `Angelscript.TestModule.AngelScriptSDK.<Domain>.*` | 只验证 AngelScript 核心/已公开原生接口，不引入 `FAngelscriptEngine` 或 `sdk/add_on` | `Support/AngelscriptNativeCoreTestSupport.h`、`Support/AngelscriptNativeExecutionTestSupport.h`、`AngelscriptTestAdapter.h` |
 | Runtime 集成 | `Plugins/Angelscript/Source/AngelscriptTest/Core/`、`Angelscript/`、`Bindings/`、`AngelScriptSDK/`、`Compiler/`、`Preprocessor/`、`FileSystem/`、`Generator/` | `Angelscript.TestModule.*` | 基于 `FAngelscriptEngine` 的编译、绑定、语言行为与内部机制验证；`Generator/` 内按 `ASClass` / `ASFunction` / `ASStruct` / `ReloadPlanning` 等子目录区分脚本生成后行为与 generator 能力 | `AngelscriptTestEngineHelper.*`（`Shared/` 已在 Build.cs include 路径） |
 | Debugger 场景 | `Plugins/Angelscript/Source/AngelscriptTest/Debugger/` | `Angelscript.TestModule.Debugger.*` | 附着运行中的 production-like engine，验证握手、断点、步进等调试链路 | `AngelscriptDebuggerTestSession.*` / `AngelscriptDebuggerTestClient.*` / `AngelscriptDebuggerScriptFixture.*` |
 | UE 功能测试层 | `Plugins/Angelscript/Source/AngelscriptTest/Actor/`、`Blueprint/`、`Component/`、`Delegate/`、`GC/`、`HotReload/`、`Interface/`、`Subsystem/` 等 | `Angelscript.TestModule.<Theme>.*` | 在 UObject / World / Actor / Component / HotReload 语义中验证最终行为 | `AngelscriptFunctionalTestUtils.h` + `AngelscriptTestWorld.h`（actor / world tick / 完整生命周期） |
@@ -33,10 +33,10 @@
 - 不再新增 `PreprocessorTests.cpp` 这类“缺少项目前缀”的文件名。
 - `Template/` 目录中的文件视为**夹具模板**，不是新的 Automation 测试文件落点。
 
-#### ASSDK / Native 规则
+#### Native Core 规则
 
-- 纯原生 AngelScript 公共 API 测试：`AngelscriptNative*Tests.cpp`
-- ASSDK 适配层 / 上游 SDK 包装测试：`AngelscriptASSDK*Tests.cpp`
+- 纯原生 AngelScript 核心测试：`AngelscriptNative*Tests.cpp`，按 `Engine`、`Frontend`、`Compiler`、`Runtime`、`Module`、`TypeSystem`、`Language`、`Embedding`、`Conformance` 子目录归属。
+- 不新增 `ASSDK`、flat `Smoke` 或历史兼容别名作为 SDK 测试身份；ID 以行为主题而非来源品牌命名。
 
 示例：
 
@@ -57,8 +57,8 @@
 
 用于 Native / Learning：
 
-- `Angelscript.TestModule.AngelScriptSDK.Execute.*`
-- `Angelscript.TestModule.AngelScriptSDK.ASSDK.Execute.*`
+- `Angelscript.TestModule.AngelScriptSDK.Runtime.*`
+- `Angelscript.TestModule.AngelScriptSDK.Embedding.*`
 - `Angelscript.TestModule.Learning.Native.*`
 - `Angelscript.TestModule.Learning.Runtime.*`
 

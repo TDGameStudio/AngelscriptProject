@@ -157,7 +157,7 @@ A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline.
 
 ### Test Module (AngelscriptTest)
 
-430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK coverage includes a latest verified `Angelscript.TestModule.AngelScriptSDK` run of `301/301 PASS`, including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases. See the root testing guides for layering rules.
+430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK tests are organized across Engine, Frontend, Compiler, Runtime, Module, TypeSystem, Language, Embedding, and Conformance; the latest full active prefix run is `412/412 PASS`, with seven Disabled `#as-v238-backport` future-script cases. See the root testing guides for layering rules.
 
 ### Script Examples (`Script/`)
 
@@ -180,6 +180,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 ## External Reference Repositories
 
 - See `Reference/README.md` for the full index, pull commands, usage boundaries, and priority guidance.
+- AngelscriptWiki theme/document-plugin migration references are pinned beneath `Reference\tiddlywiki-*`: itonnote theme/plugin, TiddlySeq, command palette, preview-glass source, and CodeMirror 6. Pull them manually through same-named `Tools\PullReference\PullReference.bat` SSH keys at their audited SHAs; `Wiki/vendor/` is the fixed runtime submodule source and normal builds do not update it over the network.
 
 ## Local Configuration
 
@@ -200,7 +201,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - Current test numbers must distinguish three separate scopes; future documents and roadmaps must not conflate them:
   - `275/275 PASS`: catalogued C++ baseline (`TestCatalog.md`).
   - `1518+` automation test definitions across `430` test `.cpp` files: source-code scan scale after `test-as-native-sdk-coverage`.
-  - `301/301 PASS`: native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), including 151 new Tokenizer/Parser/ScriptNode/Bytecode/Reference coverage cases.
+  - `412/412 PASS`: active native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), plus seven Disabled `#as-v238-backport` future-script cases.
   - Live full-suite run results: defer to the actual numbers in `TechnicalDebtInventory.md`.
   - Only `2` tests remain Disabled (`#ue57-headless`): `TestEngineHelperTests.cpp:106` and `SourceNavigationTests.cpp:125`.
 

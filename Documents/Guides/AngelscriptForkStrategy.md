@@ -72,6 +72,12 @@
 
 ## 当前已吸收的 2.38 能力
 
+### 原生核心回归策略
+
+对 `ThirdParty/angelscript` 的修改或选择性高版本回移，必须先运行同主题的 `Angelscript.TestModule.AngelScriptSDK.<Domain>` 回归，再运行完整 SDK 前缀。该套件只覆盖语言核心和原生 SDK；`sdk/add_on` 不在此范围。
+
+当前 fork 行为优先于 vanilla 预期：测试要固定实际的声明规范化、ABI、拒绝诊断和隔离引擎限制。可由 2.38 表达、但当前尚未回移的脚本语义保留为编译的 Disabled CQTest，并带 `#as-v238-backport` tag；等实现落地后先移除 Disabled，再把该行为并入活跃回归。缺失的 C++ API 不以不可编译的测试占位。
+
 | 能力 | 来源 | 落地状态 |
 |------|------|---------|
 | foreach 语法解析 | `as_parser.cpp` | 已落地，lowering 到 opFor* 方法 |
