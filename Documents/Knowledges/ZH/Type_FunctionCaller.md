@@ -903,8 +903,8 @@ UE Fork 中**所有 native 调用约定都通过 caller 走同一条 `CallFuncti
 ================================================================================
 
 [Layer A: UHT 灌库 — Late+50]
-  AS_FunctionBinding_Engine_0.cpp:
-  AS_FORCE_LINK const FBind Bind_FunctionBinding_Engine_Shard0(EOrder::Late+50, []
+  AS_FunctionBinding_Engine.gen.cpp:
+  AS_FORCE_LINK const FBind Bind_AS_FunctionBinding_Engine(TEXT("UHT.FunctionBinding.Engine"), EOrder::Late+50, []
   {
       FAngelscriptBinds::RegisterFunctionBinding(
           AAngelscriptPropertyAccessorCarrier::StaticClass(), "FetchScore",

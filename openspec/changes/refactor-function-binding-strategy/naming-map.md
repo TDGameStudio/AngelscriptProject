@@ -40,8 +40,6 @@ The old JSON module profile/policy files are retired. Module lists come from the
 | `AngelscriptModuleGenerationSummary` | `AngelscriptFunctionBindingModuleStatistics` | This is per-module binding statistics, not generic module generation. |
 | `AngelscriptGeneratedFunctionDiagnosticRow` | `AngelscriptFunctionBindingDiagnosticRow` | The row is a binding diagnostic record. |
 | `AngelscriptSkippedFunctionBinding` | `AngelscriptSkippedFunctionDiagnostic` | The record describes a skipped-function diagnostic. |
-| `FGeneratedFunctionTableTimingSummary` | `FGeneratedFunctionBindingTimingSummary` | Generated shard timing belongs to FunctionBinding, not a generic table. |
-| `RecordGeneratedFunctionTableShardTiming` | `RecordGeneratedFunctionBindingShardTiming` | Runtime timing API follows the outer FunctionBinding concept. |
 
 ## UHT Pipeline Responsibilities
 

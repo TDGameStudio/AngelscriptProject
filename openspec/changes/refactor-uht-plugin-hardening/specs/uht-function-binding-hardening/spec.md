@@ -94,19 +94,19 @@ The UHT exporter SHALL delete stale current and migration-era FunctionBinding ou
 - **WHEN** a previously configured module is absent from the current session
 - **THEN** the exporter reports the missing module and does not claim that its stale output has been reconciled silently
 
-### Requirement: Generated source scale is bounded
+### Requirement: Runtime-linked output uses one named module source
 
-The build integration SHALL compile only generated shards that exist in the current UHT pass and SHALL avoid a fixed wrapper count that grows independently of actual output. Runtime shard include sets SHOULD be local to each shard rather than the complete module include set.
+The build integration SHALL compile one guarded aggregator per configured Runtime-linked module and UHT SHALL emit at most one `AS_FunctionBinding_<Module>.gen.cpp` source for that module. The generated callback SHALL use the stable name `UHT.FunctionBinding.<Module>` and SHALL not emit registration timing or logs. The source may contain private bounded helper functions to satisfy compiler function-size limits. Target-module thunk shards remain a distinct source-engine-only output family.
 
-#### Scenario: Module emits fewer than the wrapper cap
+#### Scenario: Module has no Runtime-linked registrations
 
-- **WHEN** a module emits a small number of shards
-- **THEN** only those shards and the required stable aggregator/wrapper sources are compiled
+- **WHEN** a configured Runtime-linked module has no registrations
+- **THEN** its guarded aggregator compiles without a missing generated-include error
 
-#### Scenario: Large module is sharded
+#### Scenario: Large Runtime-linked module
 
-- **WHEN** a module exceeds the per-shard function limit
-- **THEN** shard count remains bounded, deterministic, and compilable without repeating unrelated headers in every shard
+- **WHEN** a Runtime-linked module exceeds the compiler-safe helper function size
+- **THEN** UHT keeps one module source and one named callback while splitting registrations only into private functions inside that source
 
 ### Requirement: Target-module behavior has source-engine coverage
 

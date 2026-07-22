@@ -15,7 +15,7 @@
 | 经过 `TObjectRange<UClass>` 收集到的 UClass 数（`classes=` 字段） | **5037** |
 | 实际 bind 成功的 UFunction 数（`funcs_bound=` 字段） | **5623** |
 | 自动注册的 C++ UInterface 方法 / 接口类型数 | **212 / 267** |
-| UHT 生成 BlueprintCallable 入口总数（30 shard, 12 module） | **5683** |
+| UHT 生成 BlueprintCallable 入口总数（每个 Runtime-linked 模块一个源文件） | **5683** |
 | 单次 `Bind_Defaults` Late+100 总耗时 | **~880–950 ms** |
 | 单次 bind 引起的进程 WS 瞬时增长（实测，运行中段） | **~1.2 GB**（详见 `ASTestSuiteMemoryPeakRootCause.md` 附 B.3） |
 
@@ -31,9 +31,7 @@ void FAngelscriptEngine::BindScriptTypes()
 	FAngelscriptEnumTableBaselineProbe::Reset();
 	#endif
 
-	FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();
 	FAngelscriptBinds::CallBinds(CollectDisabledBindNames());
-	FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();
 
 	#if WITH_DEV_AUTOMATION_TESTS
 	FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();

@@ -66,3 +66,10 @@
 - [ ] 8.4 Run source-engine target-module generation and compilation with explicit Engine/plugin/project module selections. Blocked by the available UE 5.7.2 source checkout being incompatible with this repository's UE 5.8 code.
 - [ ] 8.5 Run source-engine late-load, unload, reload, and script-call safety tests. Blocked until the source-engine compatibility gap is resolved.
 - [x] 8.6 Run `openspec validate refactor-uht-plugin-hardening --strict` and record verification results.
+
+## 10. Simplify Runtime-linked generated output
+
+- [x] 10.1 <!-- TDD --> Add a generated-output contract test for one Runtime-linked source per module, `UHT.FunctionBinding.<Module>` bind names, and the absence of generated registration timing.
+- [x] 10.2 Replace Runtime-linked numeric shard emission with one `AS_FunctionBinding_<Module>.gen.cpp` source and retain only one guarded Build.cs aggregator per configured module.
+- [x] 10.3 Remove generated registration timers, per-shard registration logs, and the Runtime timing accumulator/summary APIs.
+- [x] 10.4 Run the UHT-tool build, project build, focused generated-binding tests, and strict OpenSpec validation; record results in `verification.md`.

@@ -273,9 +273,7 @@ void FAngelscriptEngine::BindScriptTypes()
     AS_PERF_SCOPE_STARTUP_BIND_SCRIPT_TYPES();
     LLM_SCOPE_BYTAG(Angelscript);
 
-    FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();
     FAngelscriptBinds::CallBinds(CollectDisabledBindNames());   // ★ 触发所有 FBind 静态实例
-    FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();
 }
 ```
 

@@ -2,7 +2,7 @@
 
 The current UHT pipeline has two generated output families:
 
-- Runtime-linked modules produce normal `AS_FunctionBinding_<Module>_*.gen.cpp` shards, compiled through `AngelscriptRuntime` wrappers. Link-visible functions use a native C++ pointer. Functions without a usable pointer receive an empty binding record and can later be completed by `BlueprintCallableReflectiveFallback`.
+- Runtime-linked modules produce one `AS_FunctionBinding_<Module>.gen.cpp` source per configured module, compiled through one guarded `AngelscriptRuntime` aggregator. Link-visible functions use a native C++ pointer. Functions without a usable pointer receive an empty binding record and can later be completed by `BlueprintCallableReflectiveFallback`. The source may use private bounded helper functions to stay below MSVC's function-size limit, but exposes one Runtime-linked callback with the stable bind name `UHT.FunctionBinding.<Module>`.
 - Modules outside the Runtime-linked path can produce target-module shards in the module output directory. Those shards compile a module-local thunk and publish a POD binding payload through `IModularFeatures`; `AngelscriptRuntime` consumes the payload through the shared bridge.
 
 The previous implementation derived Runtime-linked modules by parsing `AngelscriptRuntime.Build.cs` dependency blocks, while the same Build.cs separately maintained a hand-written generated-wrapper list. Target-module generation was controlled by a second JSON profile and a legacy boolean. These were different concerns and could drift.
@@ -78,18 +78,18 @@ The two arrays are method-specific candidate sets. They may contain the same mod
 
 - each configured module is validated as a legal Runtime dependency;
 - Build.cs dynamically adds it to the appropriate dependency set, using private dependency visibility for generated binding compilation unless the module is already public;
-- Build.cs dynamically generates the Runtime wrapper files for that module;
-- UHT generates Runtime-linked binding shards only for the configured modules.
+- Build.cs dynamically generates one guarded Runtime aggregator for that module;
+- UHT generates one Runtime-linked binding source only for each configured module that has registrations.
 
 The module array is therefore the source of automatic binding intent, while Build.cs dependencies remain the link contract. A configured module that would create a dependency cycle or cannot be resolved by UBT fails before successful generation.
 
-The current per-module shard-count constants are implementation details. The first implementation may generate a fixed safe upper bound of wrappers per configured module and fail with an actionable diagnostic if UHT exceeds that bound. The shard-count policy is not exposed as a second user-facing module configuration array.
+The Runtime-linked source-count policy is fixed at one source per configured module and is not exposed as a user-facing module configuration array. The aggregator uses `__has_include` so a module with no registrations produces no missing-include error. Source-engine target-module thunk sharding remains an implementation detail of that separate output family.
 
 ### 4. Use one strict global backend per generation
 
 `None` emits no automatic Runtime-linked registrations, target-module registrations, or fallback-only `ERASE_NO_FUNCTION()` records. Handwritten `Bind_*.cpp` registrations and the Runtime binding framework remain available.
 
-`NativeRuntimeLinked` activates only `NativeRuntimeLinkedModules`. It emits the normal Runtime-linked generated registration shards. Link-visible functions are classified as `NativeRuntimeLinked`; functions without a usable native address retain the existing `ReflectiveFallback` path through an empty generated binding record.
+`NativeRuntimeLinked` activates only `NativeRuntimeLinkedModules`. It emits one named Runtime-linked generated registration source per module. Link-visible functions are classified as `NativeRuntimeLinked`; functions without a usable native address retain the existing `ReflectiveFallback` path through an empty generated binding record. The generated callback does not emit per-module registration timing or logging.
 
 `NativeModuleFunctionAddress` activates only `NativeModuleFunctionAddressModules`. It emits safe target-module thunk shards and does not emit Runtime-linked/API binding output for the same generation. Unsupported signatures are skipped with explicit diagnostics.
 

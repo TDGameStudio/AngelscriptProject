@@ -265,9 +265,8 @@ PrivateDependencyModuleNames.AddRange(new string[] {
 
 ```text
 Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
-├── AS_FunctionBinding_Engine_0.cpp       ← UE Engine 模块的分片之一
-├── AS_FunctionBinding_Engine_1.cpp
-├── AS_FunctionBinding_GameplayAbilities_0.cpp
+├── AS_FunctionBinding_Engine.gen.cpp     ← UE Engine 模块的全部 Runtime-linked 注册
+├── AS_FunctionBinding_GameplayAbilities.gen.cpp
 ├── ...
 └── AS_FunctionBindingStatistics.json       ← 总览：每模块多少函数 / Runtime-linked率
 ```

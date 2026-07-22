@@ -62,11 +62,19 @@ The generated output will preserve deterministic shards and shard-local include 
 
 The cleanup pass will cover current prefixes, the one-cycle legacy prefixes, target-module shards, bridge probes, statistics, and module output directories. Cleanup must never delete outside UHT-owned output directories.
 
-### 6. Diagnostics are a contract
+### 6. Simplify Runtime-linked generated source ownership
+
+Each configured `NativeRuntimeLinked` module emits exactly one source named `AS_FunctionBinding_<Module>.gen.cpp`. That source owns every direct-binding and reflective-fallback registration for its module, and registers its callback under the stable `FAngelscriptBinds` name `UHT.FunctionBinding.<Module>`. To stay below MSVC's optimized-function size limit, the source may contain private bounded registration helper functions; one public `FBind` callback invokes them all. This gives bind execution observation, disabled-bind diagnostics, and future logging a human-searchable module identity without relying on source filenames or shard numbering.
+
+The generated Runtime-linked callback does not perform wall-clock measurement or emit registration logs. The Runtime timing accumulator and its startup summary are removed with it. The existing top-level performance scope and test-only overall bind observations are independent instrumentation and remain unchanged.
+
+Build.cs retains one generated aggregator translation unit per configured Runtime-linked module solely to include that module's one UHT source when it exists. The aggregator is not a function-binding shard and does not restore fixed wrapper arrays. Source-engine-only `NativeModuleFunctionAddress` output is intentionally unchanged; its module-local thunk shards have a distinct ABI and compilation ownership.
+
+### 7. Diagnostics are a contract
 
 Every eligible function contributes exactly one analysis result. Generated diagnostics include category, confidence/result, failure reason, shard, and generated artifact. Skipped target-module functions and Runtime-linked reflective fallbacks use the same reason vocabulary. Aggregate statistics are computed from the result set rather than from separate emitter counters.
 
-### 7. Responsibility-oriented types
+### 8. Responsibility-oriented types
 
 The monolithic generator will be split into types with narrow responsibilities:
 
@@ -83,7 +91,7 @@ The exact names may change during implementation, but configuration, analysis, d
 ## Risks / Trade-offs
 
 - **[Risk] Conservative analysis temporarily lowers native-binding coverage.** → Report every fallback reason and add policy-driven support incrementally rather than silently emitting unsafe pointers.
-- **[Risk] A shared manifest can become another stale generated artifact.** → Record its inputs as UHT/UBT external dependencies, include a schema/version, and clean it with the same ownership rules.
+- **[Risk] A module with no eligible Runtime-linked functions has no UHT source.** → Keep the one-module Build.cs aggregator guarded by `__has_include`, so configuration alone cannot create an include failure.
 - **[Risk] Module unload cleanup may interact with already-created Angelscript functions.** → Remove or invalidate bindings before module code becomes unreachable and add a reload test that calls affected script functions after unload.
 - **[Risk] Source-engine detection differs across Git, worktree, Perforce, and source distributions.** → Define explicit classification tests and make unknown distributions fail closed for target-module mode.
 - **[Risk] Aggregation can increase one translation unit's size.** → Preserve bounded shards and benchmark compile time before and after wrapper changes.
@@ -94,8 +102,9 @@ The exact names may change during implementation, but configuration, analysis, d
 2. Introduce the typed analysis result and diagnostics schema while retaining current generated names.
 3. Implement safe target-module registration/unregistration and source-engine end-to-end coverage.
 4. Replace the header parser fallback behavior and migrate policy exceptions.
-5. Change wrapper/aggregator generation and remove stale fixed-wrapper assumptions.
+5. Change Runtime-linked generation to one named source and one guarded aggregator per module, remove stale numeric-shard outputs, and remove runtime registration timing.
 6. Split the generator types, update documentation, and run default plus source-engine verification.
+8. Replace Runtime-linked numeric shards with a single named source per module and verify the generated source contract.
 
 Rollback is configuration-safe: keep `NativeRuntimeLinked` as the default and allow `None` to disable automatic UHT output while a target-module implementation is being corrected. Generated artifacts are disposable and must be regenerated after rollback.
 

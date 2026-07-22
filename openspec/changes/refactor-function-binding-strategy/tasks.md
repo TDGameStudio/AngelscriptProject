@@ -77,3 +77,10 @@
 - [ ] 7.3 Split module configuration loading, function analysis, signature resolution, Runtime-linked emission, target-module emission, statistics writing, and stale-output cleanup into responsibility-oriented types.
 - [x] 7.4 Replace duplicated Build.cs/UHT configuration interpretation with canonical method tokens and module arrays.
 - [x] 7.5 Add consistency tests proving generated output, `FunctionBindingStatistics`, and skipped-function diagnostics agree for the same analyzed functions.
+
+## 8. Simplify Runtime-linked generated source layout
+
+- [x] 8.1 <!-- TDD --> Add a generated-output contract test that rejects numeric Runtime-linked shard suffixes, requires `UHT.FunctionBinding.<Module>`, and rejects generated registration timing code.
+- [x] 8.2 Emit one Runtime-linked `.gen.cpp` source plus one guarded aggregator per configured module; preserve target-module thunk sharding.
+- [x] 8.3 Remove the Runtime-linked registration timing API and per-module generated registration logs.
+- [x] 8.4 Build and run the focused generated-binding test prefix after regeneration.

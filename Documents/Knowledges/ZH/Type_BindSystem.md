@@ -11,7 +11,7 @@
 > · `Binds/Bind_BlueprintCallable.cpp` (~403 行，Layer C 反射兜底入口)
 > · `Binds/BlueprintCallableReflectiveFallback.cpp` (~1500+ 行，`EvaluateReflectionFallback` / `BindBlueprintCallableReflectionFallback` 主体)
 > · `Binds/Bind_BlueprintType.cpp` `Bind_Defaults` 块（~762 行起，Layer A/B/C 触发点：`Late+100`）
-> · `Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_*.cpp`（UHT 产物示例，~30 个分片）
+> · `Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_<Module>.gen.cpp`（UHT Runtime-linked 产物示例，每模块一个源文件）
 > **关联文档**:
 > `Documents/Knowledges/ZH/Type_Core.md` — `FAngelscriptType` 数据库（`FBind` 注册的类型对象最终落到这里）
 > · `Documents/Knowledges/ZH/Type_ClassGeneration.md` — `UASClass` 生成（消费 `ClassFunctionBindings` 反查 native UFunction）
@@ -56,7 +56,6 @@ Bind_FVector.cpp:                                     │                       
        MakeUnique<FAngelscriptBindState>()                           │
                   ▼                                                  │
        BindScriptTypes()                                             │
-           ├─ ResetGeneratedFunctionBindingTiming()                    │
            ├─ FAngelscriptBinds::CallBinds(DisabledBindNames)        │
            │     │                                                   │
            │     │ Sort(BindArray) by BindOrder ──────────────────────┘
@@ -374,9 +373,7 @@ void FAngelscriptEngine::BindScriptTypes()
     FAngelscriptEnumTableBaselineProbe::Reset();
     #endif
 
-    FAngelscriptBinds::ResetGeneratedFunctionBindingTiming();          // ★ Layer A 计时器重置
     FAngelscriptBinds::CallBinds(CollectDisabledBindNames());        // ★ 回放全部 lambda
-    FAngelscriptBinds::LogGeneratedFunctionBindingTimingSummary();      // 输出 UHT 分片耗时
 
     #if WITH_DEV_AUTOMATION_TESTS
     FAngelscriptBindExecutionObservation::EndBindScriptTypesTiming();
@@ -624,10 +621,11 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
 
 ┌─ Layer A：UHT 自动绑定（构建期生成的 AS_FunctionBinding_*.cpp）─────────────┐
 │                                                                             │
-│ Plugins/Angelscript/Intermediate/Build/.../UHT/AS_FunctionBinding_Engine_0.cpp│
+│ Plugins/Angelscript/Intermediate/Build/.../UHT/AS_FunctionBinding_Engine.gen.cpp│
 │ ────────────────────────────────────────────────────────────────────────── │
 │ AS_FORCE_LINK const FAngelscriptBinds::FBind                                │
-│ Bind_FunctionBinding_Engine_Shard0((int32)EOrder::Late + 50, []               │
+│ Bind_AS_FunctionBinding_Engine(TEXT("UHT.FunctionBinding.Engine"),           │
+│     (int32)EOrder::Late + 50, []                                               │
 │ {                                                                            │
 │     RegisterFunctionBinding(AActor::StaticClass(), "K2_DestroyActor",              │
 │         FAngelscriptFunctionBinding{ &AActor::execK2_DestroyActor,                           │
@@ -915,18 +913,18 @@ MALLOCLEAK_SCOPED_CONTEXT(*BindLeakContext);
 `Arch_UHTToolchain` 站在"构建期 vs 运行期"的边界外侧，描述 `AngelscriptUHTTool` 这个 C# UBT plugin：
 
 - 它读什么作为输入（12+ 个 UE 模块的 UCLASS/UFUNCTION 头）
-- 它产出什么（`AS_FunctionBinding_*.cpp` 30+ 分片 + `Summary.json` + 4 份 CSV）
+- 它产出什么（每个 Runtime-linked 模块一个 `AS_FunctionBinding_<Module>.gen.cpp` + `Summary.json` + 4 份 CSV）
 - 它怎么被 AngelscriptRuntime 模块消费（编入 .lib，DLL 加载时 `AS_FORCE_LINK` 拉住）
 
 **与本文的关键耦合点**：UHT 生成的 `AS_FunctionBinding_*.cpp` 长这样：
 
 ```cpp
 // ============================================================================
-// 文件: Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_<Module>_<N>.cpp
+// 文件: Plugins/Angelscript/Intermediate/Build/.../AS_FunctionBinding_<Module>.gen.cpp
 // 节选自: UHT 生成产物（构建期写出，运行期编入 AngelscriptRuntime.dll）
 // ============================================================================
 AS_FORCE_LINK const FAngelscriptBinds::FBind                                       // ★ 复用本文 §一 同一个 FBind
-Bind_FunctionBinding_<Module>_Shard0((int32)FAngelscriptBinds::EOrder::Late + 50, [] // ★ 复用本文 §二 同一个 EOrder
+Bind_AS_FunctionBinding_<Module>(TEXT("UHT.FunctionBinding.<Module>"), (int32)FAngelscriptBinds::EOrder::Late + 50, [] // ★ 复用本文 §二 同一个 EOrder
 {
     FAngelscriptBinds::RegisterFunctionBinding(                                            // ★ 复用本文 §五.4 同一份注册接口
         AActor::StaticClass(), TEXT("K2_DestroyActor"),
