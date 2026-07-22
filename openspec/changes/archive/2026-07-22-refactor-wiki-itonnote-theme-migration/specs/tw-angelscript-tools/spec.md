@@ -1,8 +1,17 @@
-# tw-angelscript-tools Specification
+## ADDED Requirements
 
-## Purpose
-TBD - created by archiving change feature-tw-angelscript-tools-plugin. Update Purpose after archive.
-## Requirements
+### Requirement: AngelScript code card colors align with Highlight.js presentation
+
+The `as-code` widget SHALL map its existing semantic token classes to a Highlight.js-compatible, Notion-light color presentation without requiring Highlight.js to parse AngelScript.
+
+#### Scenario: Render AngelScript beside a generic highlighted block
+
+- **WHEN** a reader views an `as-code` AngelScript card and a generic code block highlighted by the official TiddlyWiki Highlight plugin
+- **THEN** both code surfaces SHALL use compatible readable foreground, background, keyword, type, string, number, comment, and function color roles
+- **AND** the AngelScript card SHALL retain its own semantic token classes
+
+## MODIFIED Requirements
+
 ### Requirement: AngelScript code receives semantic browser highlighting
 
 The Wiki plugin SHALL render AngelScript source with escaped text and stable semantic token classes for keywords, types, macros, strings, numbers, comments, functions, and operators. The widget SHALL use its own AngelScript tokenizer and SHALL visually map those classes to Highlight.js-compatible roles.
@@ -49,13 +58,3 @@ The first plugin version SHALL not require Node filesystem APIs, Unreal TCP acce
 
 - **WHEN** the Wiki build and dev server run without Unreal Editor or port `27099`
 - **THEN** the plugin SHALL still build and render its example widget
-
-### Requirement: AngelScript code card colors align with Highlight.js presentation
-
-The `as-code` widget SHALL map its existing semantic token classes to a Highlight.js-compatible, Notion-light color presentation without requiring Highlight.js to parse AngelScript.
-
-#### Scenario: Render AngelScript beside a generic highlighted block
-
-- **WHEN** a reader views an `as-code` AngelScript card and a generic code block highlighted by the official TiddlyWiki Highlight plugin
-- **THEN** both code surfaces SHALL use compatible readable foreground, background, keyword, type, string, number, comment, and function color roles
-- **AND** the AngelScript card SHALL retain its own semantic token classes

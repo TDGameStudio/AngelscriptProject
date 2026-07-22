@@ -1,8 +1,5 @@
-# angelscript-wiki-theme Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change feature-tw-angelscript-theme. Update Purpose after archive.
-## Requirements
 ### Requirement: Standalone Angelscript theme package
 
 The Wiki project SHALL provide a buildable TiddlyWiki theme plugin titled `$:/themes/angelscript` under `Wiki/src/angelscript-theme/`, with `plugin-type` set to `theme` and a dependency on `$:/themes/tiddlywiki/vanilla`. Its visual source SHALL be a TDGameStudio-maintained migration of the reviewed itonnote theme source and it SHALL bundle the required Fira Code stylesheet. The Wiki SHALL NOT enable the upstream `$:/themes/linonetwo/itonnote` theme or `$:/plugins/linonetwo/fira-code-font` as runtime dependencies.
