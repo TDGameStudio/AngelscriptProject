@@ -46,3 +46,21 @@ The theme SHALL render the core untagged action as quiet secondary metadata with
 - **THEN** the action SHALL use `#eef2f7` background, `#5d6b7b` foreground, and a subtle neutral border
 - **AND** hover SHALL reuse the existing light blue interaction treatment
 - **AND** ordinary tagged-title colors SHALL remain unchanged
+
+### Requirement: The desktop sidebar resize affordance remains stable and restrained
+
+The sidebar resizer SHALL remain aligned to the story/sidebar boundary for the full desktop viewport while sidebar content scrolls, SHALL preserve a forgiving transparent pointer target, and SHALL render a visual rail substantially thinner than its hit area.
+
+#### Scenario: Reader scrolls the long Tools sidebar
+
+- **WHEN** the desktop Tools tab is taller than the viewport and the reader scrolls it vertically
+- **THEN** the resize hit area SHALL retain viewport-top and viewport-bottom alignment
+- **AND** its visual rail SHALL remain visible for the full viewport height rather than shrinking with `scrollTop`
+
+#### Scenario: Reader discovers and drags the sidebar boundary
+
+- **WHEN** the pointer rests away from, hovers over, and actively drags the sidebar boundary
+- **THEN** the hit area SHALL remain at least 10px wide
+- **AND** the visual rail SHALL be one pixel at rest and on hover, increasing to two pixels only during active dragging
+- **AND** hover and drag SHALL raise contrast without filling the complete hit area with the primary colour
+- **AND** the sidebar width SHALL continue to update from pointer movement

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove the blog-oriented Notion cover/icon runtime surface, restore the localized core sidebar without an in-page TOC, add a bounded scrollable viewport for long AngelScript source ranges, finish the SDK title/description presentation, and establish a fast editable vendor-source boundary with screenshot-backed verification.
+**Goal:** Remove the blog-oriented Notion cover/icon runtime surface, preserve the localized core sidebar plus a separate AS documentation outline without an in-page TOC, persist the approved documentation toolbar, add a bounded scrollable viewport for long AngelScript source ranges, finish the SDK title/description presentation, and establish a fast editable vendor-source boundary with screenshot-backed verification.
 
-**Architecture:** The external-plugin manifest remains the sole runtime boundary for imported TiddlySeq packages, so the cover/icon package is removed there and at its isolated source/test/documentation references while sibling plugins remain registered. The sidebar uses only the core language-aware Open / Recent / Tools / More tabs and long documents omit a TOC card. `$angelscript-code` keeps one source-selection/highlighting/copy pipeline and adds only an optional viewport-height constraint derived from a clamped line count. SDK descriptions remain metadata-driven ViewTemplate content and receive theme-only spacing/typography refinement.
+**Architecture:** The external-plugin manifest remains the sole runtime boundary for imported TiddlySeq packages, so the cover/icon package is removed there and at its isolated source/test/documentation references while sibling plugins remain registered. The sidebar preserves the core language-aware Open / Recent / Tools / More tabs and default, then appends a language-neutral `AS` tab that transcludes the bilingual `AS/Navigation` outline; long documents still omit an in-page TOC card. The page-control toolbar uses canonical visibility tiddlers for Home, More actions, control panel, and language. `$angelscript-code` keeps one source-selection/highlighting/copy pipeline and adds only an optional viewport-height constraint derived from a clamped line count. SDK descriptions remain metadata-driven ViewTemplate content and receive theme-only spacing/typography refinement.
 
 **Tech Stack:** TiddlyWiki 5 WikiText and widgets, TypeScript, CSS, Node.js 20+, pnpm 11.8.0, Playwright/Chromium, OpenSpec.
 
@@ -408,7 +408,7 @@ At 2048×830, seed multiple ordinary documentation titles into the story list so
 
 ---
 
-### Task 7: Restore the RefWiki toolbar layout and harmonize untagged metadata
+### Task 7: Restore the initial RefWiki toolbar layout and harmonize untagged metadata
 
 **Files:**
 - Modify: `Wiki/wiki/tiddlers/tests/playwright/document-experience.spec.ts`
@@ -428,7 +428,7 @@ At 2048×830, seed multiple ordinary documentation titles into the story list so
 
 **Interfaces:**
 - Consumes: TiddlyWiki `$:/tags/PageControls`, `$:/core/ui/PageTemplate/pagecontrols`, canonical PageControlButtons visibility tiddlers, and the existing light interaction variables.
-- Produces: the approved six-control SDK toolbar with RefWiki natural geometry plus a readable untagged action in the core More/Tags surface.
+- Produces: the initial six-control SDK toolbar with RefWiki natural geometry plus a readable untagged action in the core More/Tags surface; Task 9 later narrows the visible controls to the user's final documentation set.
 
 - [x] **Step 1: Add failing runtime toolbar and color assertions**
 
@@ -449,3 +449,76 @@ Inside the desktop media query, override only `.tc-page-controls button` to `min
 - [x] **Step 5: Verify and capture**
 
 Run focused specs, `check`, `lint:all`, `build`, and full Playwright. Capture the toolbar plus More/Tags default and hovered untagged states at 2048×830, inspect them against the RefWiki runtime screenshot, validate OpenSpec strictly, and leave changes unstaged.
+
+---
+
+### Task 8: Stabilize and refine the desktop sidebar resize rail
+
+**Files:**
+- Modify: `Wiki/wiki/tiddlers/tests/playwright/angelscript-theme.spec.ts`
+- Modify: `Wiki/vendor/tiddlyseq/src/sidebar-resizer/style.css`
+- Modify: `Wiki/vendor/tiddlyseq/src/sidebar-resizer/hook.ts`
+- Modify: `openspec/changes/improve-wiki-sdk-document-experience/{proposal.md,design.md,tasks.md}`
+- Modify: `openspec/changes/improve-wiki-sdk-document-experience/specs/angelscript-wiki-theme/spec.md`
+
+**Interfaces:**
+- Consumes: `$:/themes/tiddlywiki/vanilla/metrics/sidebarwidth`, the core `sidebarbreakpoint` macros, `.tc-sidebar-scrollable`, and the existing `#gk0wk-sidebar-resize-area` pointer listeners.
+- Produces: a viewport-fixed 12px desktop hit area, a `::before` one/two-pixel visual rail, and the `.gk0wk-sidebar-resize-active` drag-state class.
+
+- [x] **Step 1: Add the failing browser reproduction**
+
+Open the core Tools tab at 2048×1018, assert the resizer is fixed from viewport top to bottom, scroll `.tc-sidebar-scrollable` by 160px, and assert the geometry does not change. Inspect `getComputedStyle(resizer, '::before')`: the hit area must be at least 10px, the rail must be 1px at rest and hover, and active pointer-down must set a 2px rail. Complete a horizontal pointer move and assert the sidebar-width tiddler changes.
+
+- [x] **Step 2: Run the focused test and verify RED**
+
+Run `pnpm exec playwright test wiki/tiddlers/tests/playwright/angelscript-theme.spec.ts`. Expected: FAIL because the current resizer is `position: absolute`, its visible bottom moves from 1018px to 858px after a 160px Tools scroll, and its 10px element receives the full `#2eaadc` hover background without a pseudo-element rail.
+
+- [x] **Step 3: Implement viewport geometry and the narrow rail**
+
+In `style.css`, import the vanilla base variables. Below the core desktop breakpoint, hide the resizer. At desktop widths, use `position: fixed; top: 0; bottom: 0; height: auto; width: 12px; right: calc({{$:/themes/tiddlywiki/vanilla/metrics/sidebarwidth}} - 6px); background: transparent; touch-action: none`. Draw a centered `::before` rail using the palette primary colour at low opacity, keep it one pixel at rest/hover, and use two pixels only for `.gk0wk-sidebar-resize-active`. Transition only width, opacity, and shadow over 120ms.
+
+In `hook.ts`, add `.gk0wk-sidebar-resize-active` in `dragBegin` and remove it in every `dragEnd` path. Do not change the existing width calculation, near-edge close behavior, persisted width tiddler, or double-click behavior.
+
+- [x] **Step 4: Verify GREEN and interaction behavior**
+
+Run the focused spec again. Expected: the rail stays at `top: 0`, `bottom: viewport height` before and after Tools scrolling; the pointer target remains 12px; pseudo-element widths resolve to 1px/1px/2px for rest/hover/drag; and an actual pointer move changes the sidebar width.
+
+- [x] **Step 5: Rebuild, run full verification, and capture**
+
+Run `pnpm run check`, `pnpm run lint:all`, `pnpm run build`, and `pnpm run test:playwright`. Restart the persistent Wiki server if the Windows build requires releasing generated-source locks. Capture 2048×1018 screenshots after the Tools sidebar has scrolled 160px in rest, hover, and pointer-down states; inspect that the rail remains full-height and visually subordinate to the SDK content. Validate OpenSpec strictly and leave the new fix unstaged for the user's visual review.
+
+---
+
+### Task 9: Persist the final documentation toolbar and restore the AS outline
+
+**Files:**
+- Modify: `Wiki/wiki/tiddlers/tests/playwright/document-experience.spec.ts`
+- Modify: `Wiki/src/angelscript-wiki-config/config/page-controls-order.tid`
+- Create: `Wiki/src/angelscript-wiki-config/config/page-control-language.tid`
+- Create: `Wiki/src/angelscript-wiki-config/config/page-control-new-tiddler.tid`
+- Create: `Wiki/src/angelscript-wiki-config/config/page-control-new-markdown.tid`
+- Create: `Wiki/src/angelscript-wiki-config/config/page-control-new-drawio.tid`
+- Create: `Wiki/src/angelscript-wiki-config/sidebar/as-outline.tid`
+- Modify: `Wiki/Agents.md`
+- Modify: `openspec/changes/improve-wiki-sdk-document-experience/{proposal.md,design.md,implementation-plan.md,tasks.md}`
+- Modify: `openspec/changes/improve-wiki-sdk-document-experience/specs/wiki-document-experience-integration/spec.md`
+
+**Interfaces:**
+- Consumes: canonical PageControlButtons visibility tiddlers, `$:/tags/PageControls`, `$:/tags/SideBar`, core Open / Recent / Tools / More, and the bilingual `AS/Navigation` tiddler.
+- Produces: the final Home / More actions / control panel / language toolbar and a trailing non-default `AS` outline tab, without restoring any in-page TOC.
+
+- [x] **Step 1: Capture the browser-selected state and add failing assertions**
+
+Attach to the same browser tab used for authoring, confirm that the visible toolbar is Home, More actions, control panel, and language, then change the toolbar test to require those exact encoded titles and canonical visibility values. Change the sidebar test to require core Open as the default, the four localized core tabs in their original order, and a trailing `AS` tab that renders `AS/Navigation`. Run both tests and verify RED against the old six-control toolbar and absent AS tab.
+
+- [x] **Step 2: Add canonical defaults and the AS sidebar entry**
+
+Show language; hide new tiddler, new Markdown, and draw.io creation through full `$:/config/PageControlButtons/Visibility/<button-title>` tiddlers. Keep the hidden controls registered and update `$:/tags/PageControls` so language has a deterministic position after control panel. Add a `$:/tags/SideBar` tiddler after core More with the language-neutral caption `AS`, and transclude `AS/Navigation` inside `.as-docs-navigation`. Do not change `$:/config/DefaultSidebarTab`.
+
+- [x] **Step 3: Verify GREEN and inspect the desktop result**
+
+Run the two focused Playwright tests. Accept the language popup's browser-computed `min-width/min-height: 0px` as equivalent to ordinary controls' `auto` only while rendered width and height remain within the same natural approximately 21×25px bounds. Capture a 1600×1000 screenshot with the AS tab selected and verify that all five tabs, all navigation groups, and the four toolbar controls remain visible without overlap.
+
+- [x] **Step 4: Run complete verification and inspect final diffs**
+
+Run `pnpm run check`, `pnpm run lint:all`, `pnpm run build`, and `pnpm run test:playwright`; validate the active OpenSpec change, inspect Wiki and parent diffs without staging unrelated files, and keep the live browser monitor open until the user confirms the result.

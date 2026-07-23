@@ -6,6 +6,8 @@
 - [x] 1.4 Add Playwright assertions for the localized core sidebar, friendly identity, stable title/description hierarchy, readable width, TOC absence, command-palette idle/help modes, and home links
 - [x] 1.5 Add failing Playwright assertions for bounded 31vw desktop sidebar geometry and compact content-sized core tabs <!-- TDD -->
 - [x] 1.6 Add failing Playwright assertions for canonical toolbar visibility, natural button geometry, and the untagged control's default/hover colors <!-- TDD -->
+- [x] 1.7 Add a failing Playwright reproduction for the resize rail shrinking after Tools scrolling and for the coarse 10px hover fill <!-- TDD -->
+- [x] 1.8 Add failing Playwright assertions for the user-selected four-control toolbar and the restored non-default AS documentation outline <!-- TDD -->
 
 ## 2. Theme and External Plugin Boundary
 
@@ -16,6 +18,7 @@
 - [x] 2.5 Normalize the optional SDK description typography and spacing without changing the accepted palette <!-- TDD -->
 - [x] 2.6 Restore `clamp(320px, 31vw, 600px)` sidebar width and reference-density tab/list spacing without changing colors or plugin inventory <!-- TDD -->
 - [x] 2.7 Restore natural `.tc-page-controls` geometry and harmonize only the More-sidebar untagged action <!-- TDD -->
+- [x] 2.8 Pin the desktop sidebar resize hit area to the viewport and render a separate one/two-pixel interaction rail in editable vendor source <!-- TDD -->
 
 ## 3. SDK Document Experience
 
@@ -27,6 +30,7 @@
 - [x] 3.6 Implement clamped `maxVisibleLines` viewport behavior without changing source slicing, line numbering, highlighting, or copying <!-- TDD -->
 - [x] 3.7 Expand and document the Focused source range example as a long internally scrollable code card <!-- TDD -->
 - [x] 3.8 Replace ineffective short PageControlButtons config titles with canonical visibility tiddlers and the approved SDK control set <!-- TDD -->
+- [x] 3.9 Persist the user-selected Home / More / control-panel / language toolbar and restore the trailing AS outline without restoring an in-page TOC <!-- TDD -->
 
 ## 4. Editable Vendor Source and Lint Boundary
 
@@ -42,3 +46,5 @@
 - [x] 5.3 Inspect generated artifacts and final diffs without staging unrelated files
 - [x] 5.4 Capture 2048px reference-comparison and 1280px safety screenshots, then rerun focused and full regression coverage
 - [x] 5.5 Capture toolbar and More/Tags default/hover screenshots and rerun complete verification
+- [x] 5.6 Capture the resize rail after Tools scrolling in rest, hover, and drag states; rerun focused and complete verification
+- [x] 5.7 Capture and inspect the persisted four-control toolbar and AS outline, then rerun focused and complete Wiki verification

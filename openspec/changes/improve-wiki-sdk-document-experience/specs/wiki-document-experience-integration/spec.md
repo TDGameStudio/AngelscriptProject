@@ -1,15 +1,17 @@
 ## ADDED Requirements
 
-### Requirement: The Wiki preserves the localized core sidebar layout
+### Requirement: The Wiki preserves the localized core sidebar layout and AS documentation outline
 
-The Wiki SHALL retain the TiddlyWiki core Open, Recent, Tools, and More tabs as its desktop sidebar layout, SHALL use the core Open tab default, SHALL leave visible sidebar captions to the active TiddlyWiki language pack rather than hard-coding English labels, and SHALL restore the reference Wiki's wide compact PC geometry without changing the accepted light palette.
+The Wiki SHALL retain the TiddlyWiki core Open, Recent, Tools, and More tabs, SHALL add a trailing language-neutral `AS` tab that presents the existing bilingual `AS/Navigation` outline, SHALL use the core Open tab default, SHALL leave core sidebar captions to the active TiddlyWiki language pack rather than hard-coding English labels, and SHALL restore the reference Wiki's wide compact PC geometry without changing the accepted light palette.
 
 #### Scenario: Reader opens the Wiki without a saved sidebar override
 
 - **WHEN** the Wiki starts at its default documentation entry point
 - **THEN** the sidebar SHALL select `$:/core/ui/SideBar/Open`
 - **AND** the four core TiddlyWiki sidebar tabs SHALL remain reachable
-- **AND** no custom documentation sidebar tab SHALL be loaded
+- **AND** a fifth `AS` tab SHALL follow the four core tabs without replacing them
+- **AND** selecting `AS` SHALL render the existing `AS/Navigation` links as the site-wide documentation outline
+- **AND** the legacy `$:/themes/angelscript/sidebar/docs` tab SHALL NOT be loaded
 
 #### Scenario: Reader changes the Wiki language
 
@@ -22,15 +24,15 @@ The Wiki SHALL retain the TiddlyWiki core Open, Recent, Tools, and More tabs as 
 - **WHEN** the Wiki renders at a desktop width at or above the configured sidebar breakpoint
 - **THEN** the sidebar width SHALL resolve from `clamp(320px, 31vw, 600px)`
 - **AND** a 1280px viewport SHALL resolve to approximately 397px while a 2048px viewport SHALL stop at 600px
-- **AND** core sidebar tab labels SHALL size to their localized content instead of inheriting a generic 32px minimum width
+- **AND** core and AS sidebar tab labels SHALL size to their content instead of inheriting a generic 32px minimum width
 - **AND** the accepted light colors, hover feedback, keyboard focus, plugin inventory, and mobile sidebar behavior SHALL remain unchanged
 
 #### Scenario: Reader uses the desktop page-control toolbar
 
 - **WHEN** the SDK Wiki renders its page controls on desktop
-- **THEN** the visible controls SHALL be Home, More actions, new tiddler, new Markdown, control panel, and draw.io in that order, expressed through the native `$:/tags/PageControls` list field
+- **THEN** the visible controls SHALL be Home, More actions, control panel, and language in that order, expressed through the native `$:/tags/PageControls` list field
 - **AND** each toolbar control SHALL use natural approximately 21×25px geometry rather than a forced 32×32px minimum
-- **AND** save, sidebar Command Palette, new journal, refresh, layout, and advanced search SHALL be hidden through `$:/config/PageControlButtons/Visibility/<full-button-title>` tiddlers
+- **AND** new tiddler, new Markdown, draw.io creation, save, sidebar Command Palette, new journal, refresh, layout, and advanced search SHALL be hidden through `$:/config/PageControlButtons/Visibility/<full-button-title>` tiddlers
 - **AND** Batch, SCM, filter-builder, and other unregistered RefWiki plugin controls SHALL NOT be added
 
 ### Requirement: SDK documents expose friendly identity and local orientation
