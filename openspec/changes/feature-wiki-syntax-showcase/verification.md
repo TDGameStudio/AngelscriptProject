@@ -46,3 +46,26 @@ The historical package-build command previously run for this change is intention
 - The regression also dispatches `dragover` to a normal core sidebar `droppable` target and verifies that it is still handled, covering the retained drag-to-reorder path.
 - `Experiment/RefWiki/wiki` has no local `$:/config/DragAndDrop/Enable`, `$:/config/Editor/EnableImportFilter`, or `$:/core/ui/PageTemplate` override. Its Kookma Utility reader-mode action toggles the same broad global setting, while its optional TiddlyFlex layout has independent story-area dropzones; it does not provide a reusable single-file-import setting.
 - The focused browser regression, `check`, and `lint` passed. The full Playwright suite then passed (`36/36`). No publish command, parent-repository commit, or OpenSpec archive was performed.
+
+## Follow-up: comprehensive Markdown baseline and browser-source boundary (2026-07-23)
+
+- The homepage and every existing `.tid` page retain their user-facing status. This follow-up moves only `*.spec.ts` browser-test source out of `wiki/tiddlers`; it does not hide, rename, tag, or archive a tiddler.
+- Product browser source now lives in `tests/playwright/product/`; Modern.TiddlyDev fixture browser source now lives in `tests/playwright/examples/`. The source-boundary regression confirms no `*.spec.ts` remains below `wiki/tiddlers`, and the browser regression confirms `More → All` returns no non-system `*.spec.ts` titles.
+- `Markdown 基础示例` is now a rendered-only visual baseline covering heading levels, emphasis, links/anchor, nested quotes and lists, task list, separator, fenced and indented code, tables/alignment, image, `details`, keys, and emoji. `Markdown 扩展语法示例` is linked from `语法展示范式` and separately covers footnotes, definition lists, insertions, marks, sub/superscripts, reference links/images, and inline-HTML `<abbr>` styling. The installed Markdown parser does not load `markdown-it-abbr`, so `*[HTML]: ...` is explicitly not represented as a supported parser contract.
+- The initial full product run completed `39/40`; its only failure was the existing ordinary-core-codeblock copy-button test while a code element transiently intercepted a pointer event. The same test passed immediately when rerun in isolation. A second complete product run passed `40/40` in 31.0 seconds.
+- The examples fixture suite uses the same fixed development port as the product preview and must not reuse a running product preview. After allowing its own `dev:examples` server to start, `test:examples` passed `2/2`; the product preview was restored and returned HTTP `200` at `http://127.0.0.1:8080/`.
+- Final commands completed successfully without package-build or publish commands:
+
+```text
+npm exec --yes pnpm@11.8.0 -- run check
+npm exec --yes pnpm@11.8.0 -- run lint
+npm exec --yes pnpm@11.8.0 -- run test:external-plugins  # 8/8 passed
+npm exec --yes pnpm@11.8.0 -- run test:source-boundaries # 4/4 passed
+playwright test tests/playwright/product/syntax-showcase.spec.ts # 5/5 passed
+playwright test tests/playwright/product/document-experience.spec.ts # 13/13 passed
+playwright test # 40/40 passed
+npm exec --yes pnpm@11.8.0 -- run test:examples # 2/2 passed
+openspec validate feature-wiki-syntax-showcase --strict
+```
+
+- The active `feature-wiki-syntax-showcase` change intentionally remains unarchived for later style/showcase iterations. No publish command or remote operation was performed.

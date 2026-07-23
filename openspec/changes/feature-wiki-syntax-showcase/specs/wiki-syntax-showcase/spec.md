@@ -22,7 +22,7 @@ The `Markdown 基础示例` tiddler SHALL render the reference Markdown baseline
 - **THEN** its comprehensive baseline semantic surfaces SHALL be present as rendered HTML content and no embedded Markdown source tutorial SHALL be present
 
 ### Requirement: Markdown extension showcase isolates parser-supported surfaces
-The `Markdown 扩展语法示例` tiddler SHALL render parser-supported extended Markdown surfaces, including footnotes, definition lists, abbreviations, insertions, marks, subscripts, superscripts, and reference-style links or images. It SHALL remain rendered-only and SHALL NOT be merged into the Markdown More tiddler.
+The `Markdown 扩展语法示例` tiddler SHALL render parser-supported extended Markdown surfaces, including footnotes, definition lists, insertions, marks, subscripts, superscripts, and reference-style links or images, plus the visual inline-HTML abbreviation surface. It SHALL remain rendered-only and SHALL NOT be merged into the Markdown More tiddler.
 
 #### Scenario: Markdown extension styling is inspected
 - **WHEN** a reader opens `Markdown 扩展语法示例`
@@ -41,3 +41,10 @@ The `TiddlyWiki 语法示例` tiddler SHALL render WikiText formatting, structur
 #### Scenario: A reader triggers the WikiText widget
 - **WHEN** the reader activates the showcase interaction
 - **THEN** its feedback SHALL become visible without writing a persistent source tiddler
+
+### Requirement: Browser test source remains outside reader-facing Wiki content
+The Wiki SHALL store Playwright source files outside `Wiki/wiki/tiddlers/` under `Wiki/tests/playwright/`. Existing `.tid` code examples and browser fixtures SHALL retain their current titles and visibility in this iteration until their user-facing status is explicitly decided.
+
+#### Scenario: A reader opens More → All
+- **WHEN** the reader opens the regular `More → All` list
+- **THEN** no Playwright `*.spec.ts` source path SHALL appear

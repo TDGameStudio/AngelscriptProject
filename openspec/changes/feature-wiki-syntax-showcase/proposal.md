@@ -8,6 +8,7 @@ AngelscriptWiki currently has no durable, discoverable set of Markdown and WikiT
 - Keep the Markdown More table of contents disabled while retaining the extension's other rendered surfaces.
 - Expand the rendered-only Markdown baseline from a small sample into comprehensive basic and extension showcase tiddlers, while retaining a separately focused Markdown More page and WikiText page. Keep a separate syntax-showcase directory tiddler that links to rather than mixes those syntax families.
 - Add regression coverage for the imported source, runtime configuration, showcase rendering, and narrow-screen containment.
+- Move browser test source outside the runtime tiddler tree so development coverage does not pollute reader-facing Wiki lists. The visibility classification of existing `.tid` code examples and fixtures remains a separate future decision.
 - Record source provenance, maintenance rules, and the no-publish constraint in Wiki documentation.
 
 ## Capabilities

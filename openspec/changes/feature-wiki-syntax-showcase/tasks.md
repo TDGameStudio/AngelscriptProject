@@ -26,7 +26,15 @@
 ## 6. Comprehensive rendered Markdown regression baseline
 
 - [x] 6.1 Extend the design and showcase specification with the approved rendered-only comprehensive Markdown baseline, separate extension page, and no-source-panel constraint. <!-- Non-TDD -->
-- [ ] 6.2 Add failing Playwright coverage for the comprehensive basic Markdown and isolated extension Markdown rendered surfaces. <!-- TDD -->
-- [ ] 6.3 Replace the small Markdown basic sample with the comprehensive rendered baseline, add the rendered-only extension tiddler, and update the directory links without mixing syntax families. <!-- TDD -->
-- [ ] 6.4 Run the Wiki source checks, lint, full Playwright suite, OpenSpec validation, and local preview inspection without running package or publish commands. <!-- TDD -->
-- [ ] 6.5 Record verification evidence, inspect the scoped diff, and hand off the unarchived showcase iteration. <!-- Non-TDD -->
+- [x] 6.2 Add failing Playwright coverage for the comprehensive basic Markdown and isolated extension Markdown rendered surfaces. <!-- TDD -->
+- [x] 6.3 Replace the small Markdown basic sample with the comprehensive rendered baseline, add the rendered-only extension tiddler, and update the directory links without mixing syntax families. <!-- TDD -->
+- [x] 6.4 Run the Wiki source checks, lint, full Playwright suite, OpenSpec validation, and local preview inspection without running package or publish commands. <!-- TDD -->
+- [x] 6.5 Record verification evidence, inspect the scoped diff, and hand off the unarchived showcase iteration. <!-- Non-TDD -->
+
+## 7. Browser test-source boundary
+
+- [x] 7.1 Record the two-path test convention: browser source outside the runtime tiddler tree, while existing `.tid` pages retain their current user-facing status until separately decided. <!-- Non-TDD -->
+- [x] 7.2 Add failing source-boundary and browser visibility tests for moved Playwright source and the absence of `*.spec.ts` paths from `More → All`. <!-- TDD -->
+- [x] 7.3 Move all Playwright source files to the dedicated test boundary and update the runner/lint configuration without moving, renaming, tagging, or hiding any existing `.tid` page. <!-- TDD -->
+- [x] 7.4 Update the Wiki contribution and testing guidance with the canonical Playwright-source location and the rule that fixture visibility is a separate content decision. <!-- Non-TDD -->
+- [x] 7.5 Run source, type, lint, browser, and OpenSpec validation; record the scoped verification evidence without package-build or publish commands. <!-- TDD -->

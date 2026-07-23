@@ -41,9 +41,17 @@ The examples are separate tiddlers so a Markdown renderer issue, a Markdown More
 
 ### Use comprehensive rendered Markdown baselines, not source tutorials
 
-The current `Markdown 基础示例` is a deliberately small surface check and does not offer enough coverage for theme and layout review. It will be expanded using the reference Wiki's `Markdown基础语法` and `TiddlyWiki-Markdown示例1` as a coverage baseline: heading forms and levels, emphasis variants, links and anchors, quotes, ordered/unordered/nested lists, tables and alignment, inline/indented/fenced code, images, task lists, separators, HTML `details`, keyboard keys, and emoji. A new `Markdown 扩展语法示例` will separately exercise parser-supported extended surfaces such as footnotes, definition lists, abbreviations, insertions, marks, subscripts, superscripts, and reference-style links/images.
+The current `Markdown 基础示例` is a deliberately small surface check and does not offer enough coverage for theme and layout review. It will be expanded using the reference Wiki's `Markdown基础语法` and `TiddlyWiki-Markdown示例1` as a coverage baseline: heading forms and levels, emphasis variants, links and anchors, quotes, ordered/unordered/nested lists, tables and alignment, inline/indented/fenced code, images, task lists, separators, HTML `details`, keyboard keys, and emoji. A new `Markdown 扩展语法示例` will separately exercise parser-supported extended surfaces such as footnotes, definition lists, insertions, marks, subscripts, superscripts, and reference-style links/images, plus the inline-HTML abbreviation surface. The installed official Markdown parser does not load `markdown-it-abbr`, so `*[HTML]: ...` is deliberately not treated as a supported Markdown contract; the showcase uses `<abbr title="…">` to retain the relevant semantic styling check.
 
 Both pages remain rendered-only. Their tiddler sources remain the authoritative implementation and may be inspected through normal Wiki editing or the repository, but the document view must not duplicate that source in panels or paired source/result sections. Markdown More remains a third, focused page for its own runtime widgets and containers; it is not used to inflate the basic Markdown baseline.
+
+### Keep browser test source outside the runtime Wiki
+
+The current `wiki/tiddlers/tests/playwright/` location causes every Playwright `.spec.ts` file to be loaded as an ordinary text tiddler with a filesystem-path title. The runtime's core `More → All` filter lists every non-system tiddler, so the test source becomes reader-visible. This is source-boundary leakage, not unfinished test output.
+
+Browser test source will move to `Wiki/tests/playwright/`, and `playwright.config.ts` plus the local lint script will use that directory. Existing runtime `.tid` code examples and fixtures remain untouched in this iteration: some are current user-facing or homepage-linked content, and their visibility classification requires a separate user decision.
+
+This avoids a global `AllTiddlers` filter override and fixes the underlying source-boundary leak without changing reader-facing list behavior or existing tiddler titles.
 
 ### Avoid automation writes from interactive checklist controls
 
@@ -56,6 +64,7 @@ Markdown More checklist widgets intentionally write back to the Markdown tiddler
 - [Vendor stylesheet conflicts with the local theme] → Preserve upstream first and add only narrowly scoped local overrides when a confirmed rendering conflict appears.
 - [Interactive checklist dirtying a development wiki] → Regression tests never click it, and the showcase documents its intended interaction through its rendered state alone.
 - [A syntax variant is accepted differently by the installed Markdown parser] → Add only surfaces verified by the rendered browser test; retain unsupported variants as source-level notes rather than displaying a misleading visual example.
+- [Future test source is accidentally put beneath `wiki/tiddlers`] → Document the two-path convention in the Wiki contributor guidance and add a source-boundary regression test for the `tests/playwright/` location.
 - [Core PageTemplate changes in a TiddlyWiki upgrade] → The local override mirrors the current v5.4 page-template structure and removes only the outer `$dropzone`; review that tiddler against the upstream template when upgrading the core runtime.
 
 ## Migration Plan
