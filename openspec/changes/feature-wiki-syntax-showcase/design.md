@@ -77,3 +77,11 @@ Markdown More checklist widgets intentionally write back to the Markdown tiddler
 ## Open Questions
 
 None. The user selected latest upstream `main`, a disabled in-page TOC, rendered-only pages, no homepage entry, and no publication.
+
+## Left-side navigation refinement
+
+The desktop layout uses the existing `fluid-fixed` page structure: the core page template already emits the sidebar before the story river, so a local stylesheet can switch the physical side without adding or changing a `$:/core/ui/PageTemplate` fork. The sidebar's repository default is a compact `280px`; after a drag, the local startup module writes the existing vanilla sidebar-width metric directly from `PointerEvent.clientX` without a local min/max clamp. It neither changes `$:/state/sidebar` nor handles double-click, so drag no longer auto-hides or applies the old 320–600px limits.
+
+The imported `Gk0Wk/sidebar-resizer` remains declared, validated, and unmodified under `vendor/`, but its right-edge element is disabled by local CSS to prevent two active rails. A local `SideBarSegment` supplies the left rail and a local startup module attaches pointer handling after render.
+
+The existing core show/hide state remains the sole sidebar visibility API. Its `tc-topbar-right` host is positioned at the fixed page top-left in both states. Desktop opacity is reveal-on-hover/focus while retaining the full hit target and keyboard focus; narrow screens keep the control visible and use a left-hand overlay drawer. The old full-height mobile hide bar is explicitly overridden.

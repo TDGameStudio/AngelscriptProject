@@ -9,6 +9,7 @@ AngelscriptWiki currently has no durable, discoverable set of Markdown and WikiT
 - Expand the rendered-only Markdown baseline from a small sample into comprehensive basic and extension showcase tiddlers, while retaining a separately focused Markdown More page and WikiText page. Keep a separate syntax-showcase directory tiddler that links to rather than mixes those syntax families.
 - Add regression coverage for the imported source, runtime configuration, showcase rendering, and narrow-screen containment.
 - Move browser test source outside the runtime tiddler tree so development coverage does not pollute reader-facing Wiki lists. The visibility classification of existing `.tid` code examples and fixtures remains a separate future decision.
+- Move the fluid-fixed desktop sidebar to the left, retain a compact left-top show/hide control, and provide a local left-edge resize rail without changing the source-managed vendor resizer.
 - Record source provenance, maintenance rules, and the no-publish constraint in Wiki documentation.
 
 ## Capabilities
@@ -17,6 +18,7 @@ AngelscriptWiki currently has no durable, discoverable set of Markdown and WikiT
 
 - `wiki-syntax-showcase`: Persistent rendered Markdown and WikiText showcase tiddlers for visual and syntax regression checks.
 - `wiki-markdown-more-source-integration`: Source-managed Markdown More runtime integration through the Wiki external-plugin manifest.
+- `wiki-left-sidebar-layout`: Left-side fluid-fixed Wiki navigation, accessible compact sidebar toggle, and unconstrained local desktop resize behavior.
 
 ### Modified Capabilities
 

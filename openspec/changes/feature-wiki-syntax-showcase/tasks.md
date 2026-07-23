@@ -38,3 +38,10 @@
 - [x] 7.3 Move all Playwright source files to the dedicated test boundary and update the runner/lint configuration without moving, renaming, tagging, or hiding any existing `.tid` page. <!-- TDD -->
 - [x] 7.4 Update the Wiki contribution and testing guidance with the canonical Playwright-source location and the rule that fixture visibility is a separate content decision. <!-- Non-TDD -->
 - [x] 7.5 Run source, type, lint, browser, and OpenSpec validation; record the scoped verification evidence without package-build or publish commands. <!-- TDD -->
+
+## 8. Left-side navigation refinement
+
+- [x] 8.1 Record the local left-sidebar layout, no-vendor-edit boundary, compact default width, and top-left control behavior. <!-- Non-TDD -->
+- [x] 8.2 Replace the former right-rail regression with failing desktop and narrow-screen left-sidebar behavior tests. <!-- TDD -->
+- [x] 8.3 Add the local theme, sidebar segment, and pointer-driven resize startup module without editing the imported resizer. <!-- TDD -->
+- [x] 8.4 Run Wiki source, type, lint, browser, and OpenSpec verification without package-build or publish commands. <!-- TDD -->
