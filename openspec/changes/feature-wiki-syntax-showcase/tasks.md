@@ -22,3 +22,11 @@
 ## 5. Follow-up interaction defaults
 
 - [x] 5.1 Disable accidental core external-file drag-and-drop imports with a local configuration default and browser regression coverage. <!-- TDD -->
+
+## 6. Comprehensive rendered Markdown regression baseline
+
+- [x] 6.1 Extend the design and showcase specification with the approved rendered-only comprehensive Markdown baseline, separate extension page, and no-source-panel constraint. <!-- Non-TDD -->
+- [ ] 6.2 Add failing Playwright coverage for the comprehensive basic Markdown and isolated extension Markdown rendered surfaces. <!-- TDD -->
+- [ ] 6.3 Replace the small Markdown basic sample with the comprehensive rendered baseline, add the rendered-only extension tiddler, and update the directory links without mixing syntax families. <!-- TDD -->
+- [ ] 6.4 Run the Wiki source checks, lint, full Playwright suite, OpenSpec validation, and local preview inspection without running package or publish commands. <!-- TDD -->
+- [ ] 6.5 Record verification evidence, inspect the scoped diff, and hand off the unarchived showcase iteration. <!-- Non-TDD -->
