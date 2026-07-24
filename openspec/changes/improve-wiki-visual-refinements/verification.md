@@ -853,3 +853,21 @@ The product now scopes only the horizontal main row through `.tc-sidebar-header 
 - `git diff --check` passed for the Wiki production/test files.
 
 Per the user's request to avoid excessive verification before recording the accepted refinement, the broader typecheck, lint, build/artifact, full Playwright, screenshot-capture, and strict OpenSpec validation suites were intentionally not rerun in this small follow-up. Port `8081`, unrelated tracked and untracked files, publishing, deployment, OpenSpec archival, and standalone plugin packaging remain untouched.
+
+## Direct Directory navigation without a repeated caption — 2026-07-24
+
+### Root cause and approved behavior
+
+The selected horizontal tab already renders the localized `目录` caption. `AS/Navigation` repeated that caption through a generic `.as-panel-heading` and `.as-panel-kicker`, creating an unnecessary second title and a `22px` heading plus `8px` lower-margin gap before the first useful navigation group.
+
+The heading markup is removed from both language branches, so the Directory panel now begins directly with `使用者 / 插件维护者` or `Users / Plugin maintainers`. The generic heading styles remain available to Open and Recent; only the dead `.as-docs-navigation .as-panel-heading` margin rule was removed. Default-tab configuration, group state tiddlers, localized links, Chevron icon tiddlers, current-page highlighting, and row hit-targets are unchanged.
+
+### RED, GREEN, and visual evidence
+
+- RED: the new direct source contract failed exactly at the existing `class="as-panel-heading"` markup in `Wiki/wiki/tiddlers/as/navigation.tid`.
+- GREEN: the direct source contract passed after the heading markup was removed while retaining both localized group transclusions.
+- GREEN: the two focused Chromium scenarios verify directory-first startup plus the two real state-driven collapsible groups, current-page `aria-current`, and Chevron icons.
+- GREEN: `pnpm run check` completed `tsc --noEmit --skipLibCheck` without errors, and `git diff --check` reported no whitespace errors for the Wiki implementation.
+- Visual inspection: `Wiki/comparison-artifacts/review/directory-tab-layout-20260724.png` captures the `1440×960` sidebar after the change; it shows the first group immediately below the main-tab content area, without a duplicate caption. This ignored review image is not a runtime input or commit candidate.
+
+The broad lint, full product Playwright, integrated single-HTML build/artifact validation, and package-oriented checks were not rerun because this small follow-up changes no build/package path and the focused source/browser/typecheck coverage exercises every changed behavior. Port `8081`, all unrelated tracked/untracked files, publishing, deployment, archive state, and standalone plugin packaging remain untouched.

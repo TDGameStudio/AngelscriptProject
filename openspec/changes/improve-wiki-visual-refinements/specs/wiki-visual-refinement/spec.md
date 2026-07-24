@@ -108,6 +108,18 @@ The desktop Tools panel SHALL preserve native TiddlyWiki PageControl checkboxes,
 - **AND** the selected Directory tab SHALL retain its accent foreground, transparent hover/focus background, and `500` font weight
 - **AND** these rules SHALL apply only to the horizontal main-tab row, not to More categories, Tools rows, rail controls, or tiddler toolbars
 
+### Requirement: Directory panel avoids repeating its selected-tab caption
+
+The default Directory panel SHALL present its state-driven navigation groups directly beneath the selected main tab without repeating the localized Directory caption as an internal panel heading. It SHALL retain native TiddlyWiki link, language, expansion-state, and current-page behavior.
+
+#### Scenario: Directory opens directly into its two navigation groups
+
+- **WHEN** a user selects the localized Directory main tab on a desktop-width Wiki page
+- **THEN** `.as-docs-navigation` SHALL contain no `.as-panel-heading` or `.as-panel-kicker`
+- **AND** it SHALL render the two localized navigation groups with their existing expand/collapse controls and Chevron icons
+- **AND** the current AS document link SHALL retain `aria-current="page"`
+- **AND** the panel SHALL not reduce the existing group-toggle or navigation-link hit-target dimensions merely to become more compact
+
 ### Requirement: Left-sidebar alternatives remain independently previewable before selection
 
 Before a new left-sidebar visual system is applied to the production Wiki, AngelscriptWiki SHALL provide three independent standalone HTML previews that preserve the accepted light document theme and use identical representative Wiki content. Each preview SHALL demonstrate its own sidebar boundary, toggle placement, and resize affordance without requiring a network connection, shared runtime asset, or packaged TiddlyWiki plugin.

@@ -225,6 +225,14 @@ The correction strengthens only the main row selector through `.tc-sidebar-heade
 
 This is preferred to changing the generic desktop hover rule or adding a global tab reset: More categories, Tools actions, control-rail buttons, and tiddler toolbar buttons retain their established interaction treatment. The browser regression measures computed hover/focus color, background, typography, outline, and geometry, while the source contract locks the higher-specificity selector so a future stylesheet ordering change cannot silently restore the block fill.
 
+### Remove the duplicated Directory panel caption without compressing navigation targets
+
+The default horizontal sidebar tab already exposes the localized `目录` caption. `AS/Navigation` then repeated that same caption inside a generic `.as-panel-heading`, which consumed the `22px` heading box plus its directory-specific `8px` lower margin before either navigation group appeared. The repeated label creates no new context and makes the panel read as “目录 → 目录 → 使用者”.
+
+The accepted correction removes that heading markup from both localized branches of `AS/Navigation`, leaving the two native state-driven `使用者 / 插件维护者` or `Users / Plugin maintainers` sections as the direct panel content. The now-unused `.as-docs-navigation .as-panel-heading` margin rule is removed with it. The generic `.as-panel-heading` and `.as-panel-kicker` styles remain because Open, Recent, and other panels still use them.
+
+This is preferred to renaming the internal label to “文档导航”, which would retain an unnecessary extra hierarchy level, and to reducing navigation row or group-toggle heights, which would shrink useful click and keyboard-focus targets. TiddlyWiki's `$:/config/DefaultSidebarTab`, the two expansion-state tiddlers, transcluded chevron icon, real link targets, current-page `aria-current`, and language selection all remain unchanged.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
