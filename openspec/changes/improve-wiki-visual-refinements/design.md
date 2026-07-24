@@ -217,6 +217,14 @@ The Palette visibility issue is also product-owned rather than restored runtime 
 
 This is preferred to hiding descriptions with CSS, because dead DOM would remain and future tests could accidentally depend on it; and to converting descriptions into a new tooltip system, because native PageControls already own their labels/hints and the user explicitly requested less secondary text. Palette remains discoverable under “其他工具” even while unchecked.
 
+### Keep main sidebar tabs quiet without muting other controls
+
+The selected `03-compact-control-rail` reference treats the horizontal `目录 / 开启 / 最近 / 工具 / 更多` row as a lightweight index: an unselected label does not gain either a pale-blue/grey fill or a darker foreground when hovered. The product previously declared an equivalent compact rule, but it shared its specificity with the generic `.tc-sidebar-lists .tc-tab-buttons > button:hover` rule in `desktop-refinement.tid`. That generic control treatment is still appropriate for More's vertical categories and other sidebar controls, but it can win through source ordering and make the main row look like a block button.
+
+The correction strengthens only the main row selector through `.tc-sidebar-header .tc-sidebar-tabs-main > .tc-tab-buttons > button`. The normal tab baseline explicitly uses `400`; the selected tab uses `500`. Unselected hover and keyboard focus explicitly keep the transparent background and baseline foreground, while selected hover/focus explicitly preserve the accent foreground and transparent background. Focus retains its existing visible outline, so keyboard discoverability is not traded away for visual quietness.
+
+This is preferred to changing the generic desktop hover rule or adding a global tab reset: More categories, Tools actions, control-rail buttons, and tiddler toolbar buttons retain their established interaction treatment. The browser regression measures computed hover/focus color, background, typography, outline, and geometry, while the source contract locks the higher-specificity selector so a future stylesheet ordering change cannot silently restore the block fill.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.

@@ -102,8 +102,11 @@ The desktop Tools panel SHALL preserve native TiddlyWiki PageControl checkboxes,
 
 - **WHEN** an unselected main sidebar tab such as Recent is idle, hovered, or keyboard-focused
 - **THEN** its background SHALL remain transparent
+- **AND** it SHALL retain its idle foreground color and normal `400` font weight
 - **AND** its button and tab-row geometry SHALL not shift
 - **AND** keyboard focus SHALL remain visibly identifiable while the selected Directory tab remains selected
+- **AND** the selected Directory tab SHALL retain its accent foreground, transparent hover/focus background, and `500` font weight
+- **AND** these rules SHALL apply only to the horizontal main-tab row, not to More categories, Tools rows, rail controls, or tiddler toolbars
 
 ### Requirement: Left-sidebar alternatives remain independently previewable before selection
 

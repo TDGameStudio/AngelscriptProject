@@ -836,3 +836,20 @@ The live inspection returned `descriptionCount: 0`, `initialPaletteChecked: fals
 - `Wiki/comparison-artifacts/review/sidebar-tools-refinement-20260724/11-other-tools-no-descriptions-palette-off-sidebar.png`.
 
 The common and Other groups now read as compact action lists without a competing italic column, and Palette remains visibly discoverable but unchecked. The screenshots are not runtime inputs and are excluded from the requested Git commit. Port `8081`, unrelated files, publishing, deployment, OpenSpec archival, and standalone plugin packaging remain untouched. After visual acceptance, the user explicitly requested the reviewed source and OpenSpec changes be committed through the Wiki-submodule-first workflow; no push was requested.
+
+## Quiet main-sidebar tab hover and 400/500 typography — 2026-07-24
+
+### Root cause and approved behavior
+
+The compact main-tab rule had the same effective cascade strength as the generic sidebar button-hover rule in `desktop-refinement.tid`. Depending on stylesheet ordering, hovering `最近` could therefore inherit a pale control fill and darker text that do not belong to the approved `03-compact-control-rail` index-like row.
+
+The product now scopes only the horizontal main row through `.tc-sidebar-header .tc-sidebar-tabs-main`. Its unselected tabs keep the transparent `03` presentation and their baseline color at idle, hover, and keyboard focus, with an explicit `400` font weight. The selected `目录` tab retains its transparent accent presentation, two-pixel underline, and `500` weight. The existing `:focus-visible` outline remains intact. More's vertical categories, Tools rows, control-rail buttons, and tiddler toolbars are outside this selector and unchanged.
+
+### RED, GREEN, and scoped validation
+
+- RED: the new direct source contract failed exactly as intended because the existing main-tab baseline had no explicit `400` and used the weaker unscoped selector.
+- GREEN: direct source contract **10/10 passed** after the scoped CSS and selected-hover guard were added.
+- GREEN: the one focused Chromium scenario **1/1 passed**. It verified transparent idle/hover/focus backgrounds, unchanged unselected color, normal/selected `400`/`500` weights, visible `2px` focus outline, selected accent state, underline, and stable geometry.
+- `git diff --check` passed for the Wiki production/test files.
+
+Per the user's request to avoid excessive verification before recording the accepted refinement, the broader typecheck, lint, build/artifact, full Playwright, screenshot-capture, and strict OpenSpec validation suites were intentionally not rerun in this small follow-up. Port `8081`, unrelated tracked and untracked files, publishing, deployment, OpenSpec archival, and standalone plugin packaging remain untouched.
