@@ -351,6 +351,9 @@ The product SHALL expose the supplied AngelScript SVG through TiddlyWiki's nativ
 - **THEN** the approved AngelScript SVG SHALL be stored as the physical favicon source
 - **AND** its metadata SHALL map it to title `$:/favicon.ico` with type `image/svg+xml`
 - **AND** the former binary ICO payload SHALL no longer be the product favicon source
+- **AND** the favicon-specific square view box SHALL be `236 207 780 780`
+- **AND** the SVG SHALL contain no full-canvas background rectangle
+- **AND** the artwork paths SHALL remain unchanged from the approved source
 
 #### Scenario: The offline Wiki embeds the SVG favicon
 
@@ -364,6 +367,8 @@ The product SHALL expose the supplied AngelScript SVG through TiddlyWiki's nativ
 - **WHEN** a fresh browser context starts the built Wiki
 - **THEN** TiddlyWiki's existing `link#faviconLink` SHALL resolve to a `data:image/svg+xml` URI derived from `$:/favicon.ico`
 - **AND** no additional RawMarkup favicon link or custom favicon startup module SHALL compete with the native lifecycle
+- **AND** decoding the runtime SVG SHALL leave the canvas corners fully transparent
+- **AND** realistic `16px`, `20px`, `32px`, and `64px` samples SHALL retain the central roundel, halo, and inner-wing silhouette without a grey or white square
 
 #### Scenario: Internal Wiki icons remain unchanged
 

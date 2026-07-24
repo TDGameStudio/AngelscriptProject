@@ -145,6 +145,18 @@
 
 ## 23. Native SVG browser favicon
 
-- [ ] 23.1 <!-- TDD --> Extend `Wiki/scripts/core-contract.test.mjs`, `Wiki/scripts/publish-offline.test.mjs`, and the focused product Playwright coverage so they require the approved SVG source/metadata, `$:/favicon.ico` serialized as `image/svg+xml` without an external artifact, and a runtime `link#faviconLink` SVG data URI; run the focused commands and confirm RED against the current ICO-backed source.
-- [ ] 23.2 <!-- TDD --> Move `Wiki/angelscript-icon.svg` to `Wiki/wiki/tiddlers/system/$__favicon.svg`, add metadata mapping it to `$:/favicon.ico` with `image/svg+xml`, and remove the former `$__favicon.ico` payload and metadata without modifying internal Wiki icon tiddlers.
-- [ ] 23.3 <!-- TDD --> Re-run the focused source, artifact, and browser favicon checks to green; run type checking, lint, source/product boundaries, the integrated single-HTML build, artifact validation, and strict OpenSpec validation; inspect the favicon in a fresh browser context, update `verification.md`, and do not push, publish, deploy, archive, or package standalone plugins.
+- [x] 23.1 <!-- TDD --> Extend `Wiki/scripts/core-contract.test.mjs`, `Wiki/scripts/publish-offline.test.mjs`, and the focused product Playwright coverage so they require the approved SVG source/metadata, `$:/favicon.ico` serialized as `image/svg+xml` without an external artifact, and a runtime `link#faviconLink` SVG data URI; run the focused commands and confirm RED against the current ICO-backed source.
+- [x] 23.2 <!-- TDD --> Move `Wiki/angelscript-icon.svg` to `Wiki/wiki/tiddlers/system/$__favicon.svg`, add metadata mapping it to `$:/favicon.ico` with `image/svg+xml`, and remove the former `$__favicon.ico` payload and metadata without modifying internal Wiki icon tiddlers.
+- [x] 23.3 <!-- TDD --> Re-run the focused source, artifact, and browser favicon checks to green; run type checking, lint, source/product boundaries, the integrated single-HTML build, artifact validation, and strict OpenSpec validation; inspect the favicon in a fresh browser context, update `verification.md`, and do not push, publish, deploy, archive, or package standalone plugins.
+
+## 24. Semi-transparent enlarged favicon canvas
+
+- [x] 24.1 <!-- TDD --> Tighten the source, offline-artifact, and focused real-browser favicon contracts so they require view box `118 89 1016 1016`, a matching full-canvas white rectangle with `fill-opacity="0.72"`, and rendered corner alpha near `184`; run them first and confirm RED against the current opaque `1076×1076` canvas.
+- [x] 24.2 <!-- TDD --> Modify only the root view box and background rectangle in `Wiki/wiki/tiddlers/system/$__favicon.svg`, preserving the complete path data and metadata while enlarging the artwork by approximately six percent without clipping the wing tips.
+- [x] 24.3 <!-- TDD --> Re-run focused and scoped regression checks to green, rebuild the single HTML, render the live SVG data URI at `16px`, `32px`, and `64px` on light and dark samples, inspect the comparison, update `verification.md`, and keep the implementation uncommitted for user review.
+
+## 25. Screenshot-corrected transparent favicon crop
+
+- [x] 25.1 <!-- TDD --> Replace the rejected semi-transparent-canvas assertions with source, artifact, and real-browser contracts that require view box `236 207 780 780`, no `<rect>` element, and a fully transparent corner pixel; run RED against the current `72%` white square and `1016×1016` crop.
+- [x] 25.2 <!-- TDD --> Change only the SVG view box and remove its background rectangle, preserving the complete path source and metadata while intentionally clipping only the outer wing tips for a clearer central mark.
+- [x] 25.3 <!-- TDD --> Re-run focused and scoped regression checks, rebuild the single HTML, inspect realistic tab and multi-size renders against `临时图片3.jpg`, update `verification.md`, and keep both repositories uncommitted for user review.

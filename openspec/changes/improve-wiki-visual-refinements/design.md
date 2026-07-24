@@ -173,7 +173,11 @@ The site subtitle is removed from the product surface by deleting the local `$:/
 
 The reviewed `Wiki/angelscript-icon.svg` is the approved browser-page icon. It is currently an untracked standalone file, while the product still loads a tracked `256×256` ICO through the `$:/favicon.ico` system tiddler. TiddlyWiki `5.4.1` already owns the runtime contract: `$:/core/modules/startup/favicon.js` reads `$:/favicon.ico`, converts its `text`, `type`, and optional canonical URI to a data URI, and updates the existing `<link id="faviconLink">`.
 
-The product will retain that native title and startup behavior but change the physical source to `Wiki/wiki/tiddlers/system/$__favicon.svg`, with metadata declaring `title: $:/favicon.ico` and `type: image/svg+xml`. The former `$__favicon.ico` payload and metadata will be removed. The SVG body is moved without redrawing paths, changing its square white background, or creating a generated ICO derivative. The integrated offline build will therefore serialize the SVG inside the existing system tiddler and the browser will receive it as a `data:image/svg+xml` favicon after TiddlyWiki startup.
+The product will retain that native title and startup behavior but change the physical source to `Wiki/wiki/tiddlers/system/$__favicon.svg`, with metadata declaring `title: $:/favicon.ico` and `type: image/svg+xml`. The former `$__favicon.ico` payload and metadata will be removed. The SVG body is moved without redrawing paths or creating a generated ICO derivative. The integrated offline build will therefore serialize the SVG inside the existing system tiddler and the browser will receive it as a `data:image/svg+xml` favicon after TiddlyWiki startup.
+
+Runtime review of the first SVG integration showed that its full-canvas white rectangle remained completely opaque and that the wide wing artwork still read slightly small at normal favicon sizes. An intermediate follow-up changed that surface to `fill-opacity="0.72"` and tightened the view box by six percent, but `临时图片3.jpg` demonstrated that browser chrome still presented the rectangle as a conspicuous grey-white square while the full wing span continued to constrain the central mark.
+
+The accepted correction therefore removes the background rectangle entirely and uses the favicon-specific square `viewBox="236 207 780 780"`. This enlarges the unchanged source paths by approximately thirty percent and intentionally clips a small portion of the outer wing tips so the central roundel, halo, and inner wings remain identifiable at normal tab sizes. It is the selected middle ground between retaining the complete but undersized wings and a tighter central-only crop that would discard too much of the AngelScript silhouette. The SVG paths themselves remain unchanged; only the viewport selects a more useful favicon composition.
 
 This approach is preferred to converting the source to ICO because the reviewed vector remains the single source of truth. It is preferred to adding a RawMarkup `<link>` because that would duplicate and compete with the core `faviconLink` lifecycle. The change affects only the browser tab, bookmark, and related user-agent favicon surfaces; compact-rail icons, sidebar controls, Command Palette, tiddler toolbar icons, and document content remain unchanged.
 
@@ -206,6 +210,8 @@ Source, artifact, and browser contracts will cover three boundaries: the physica
 - [The detailed wing artwork can lose fine detail at very small browser-tab sizes] → Preserve the user-approved source exactly for this replacement and treat any later simplified small-size glyph as a separate visual decision.
 - [A browser can temporarily retain a cached favicon after the source changes] → Verify the actual `link#faviconLink` SVG data URI in a fresh browser context; use a hard reload only for manual comparison and do not add cache-busting product logic.
 - [Changing the physical extension while retaining the canonical `$:/favicon.ico` title can look surprising in the repository] → Keep explicit metadata beside the SVG and cover the title/type mapping in a source contract.
+- [A transparent background can reduce black-artwork contrast on dark browser chrome] → Accept native chrome blending for the user-approved transparent favicon, inspect both light and dark samples, and treat any future adaptive/light-stroke favicon as a separate visual design rather than reintroducing a full square.
+- [The favicon-specific crop intentionally clips the outer wing tips] → Lock the reviewed `780×780` middle crop, preserve the complete path source, and reject the tighter central-first crop unless the user later approves a simplified small-size mark.
 
 ## Migration Plan
 
@@ -220,6 +226,7 @@ Source, artifact, and browser contracts will cover three boundaries: the physica
 9. Add failing source/browser contracts for the observed More/Tags overflow, implement one sidebar-only live-Reveal portal adapter plus Untagged surface rules, and verify that non-sidebar consumers retain native geometry.
 10. Add failing directory-first sidebar contracts, apply only native SideBar visibility/order/default-tab configuration plus aligned visible wording, and verify fresh-load behavior without a startup module.
 11. Add failing source, artifact, and browser contracts for the approved SVG favicon; replace the old ICO-backed `$:/favicon.ico` with the metadata-mapped SVG source; then verify the integrated single-HTML build and native runtime data URI.
+12. Add failing source/artifact/runtime contracts for the screenshot-corrected transparent `780×780` crop, remove the rejected full-canvas rectangle, and inspect the favicon at `16px`, `20px`, `32px`, and `64px` in a realistic browser-tab surface.
 
 If a future request would require `publish`, external deployment, package distribution, or release-oriented artifact generation, stop and obtain explicit user direction first. A normal local `build` remains a validation command only.
 

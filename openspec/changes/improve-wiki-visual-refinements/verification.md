@@ -585,3 +585,124 @@ The build continues to report eight internal product plugin source roots that ar
 The product keeps `npm run dev` intentionally read-only. Browser-side authoring still requires the existing explicit `npm run dev:wiki` command; no development-server scripts changed.
 
 The Wiki implementation and its regression coverage were committed in the Wiki submodule as `9c4fd27` (`[Wiki] Feat: make directory the default sidebar entry`). The host commit records that submodule revision together with the updated OpenSpec design, requirement, task, and verification artifacts. Neither repository was pushed or deployed. The change does not modify `03-compact-control-rail.html`, the unrelated homepage concepts, `angelscript-icon.svg`, `临时图片.jpg`, port `8081`, publishing, OpenSpec archive state, or standalone plugin packaging.
+
+## Native SVG browser favicon — 2026-07-24
+
+### TDD evidence
+
+Three independent contracts were added before the favicon source changed:
+
+- The source contract reported **8 passed / 1 expected failure**. The new case failed with `Missing approved SVG favicon source`; every pre-existing source contract passed.
+- The integrated offline build completed, then the artifact contract failed at the intended boundary because `$:/favicon.ico` still had `image/x-icon` instead of `image/svg+xml`.
+- The focused real-browser defaults scenario failed at the same intended boundary because the live `$:/favicon.ico` tiddler still reported `image/x-icon`.
+
+The first artifact attempt did not reach the product assertion because the active Scoop installation had moved to Node `25.5.0` and exposed no global `pnpm` shim. The repository still declares Node 24 in both `.nvmrc` and `package.json`. Investigation found cached, exact project-compatible executables for Node `24.18.0` and pnpm `11.8.0`; all subsequent build/test entry points used those executables process-locally without changing the global installation, repository scripts, lockfile, or dependencies.
+
+### Implementation
+
+The approved `Wiki/angelscript-icon.svg` payload was moved byte-for-byte to `Wiki/wiki/tiddlers/system/$__favicon.svg`. Adjacent metadata maps it to the canonical title `$:/favicon.ico` with `type: image/svg+xml`. The former `256×256` ICO payload and `image/x-icon` metadata were removed.
+
+No RawMarkup favicon link, custom startup module, or generated ICO was added. TiddlyWiki `5.4.1` remains the behavior owner: its existing favicon startup module reads `$:/favicon.ico` and updates `link#faviconLink` with a data URI. No file under `Wiki/src/angelscript-tools/icons/` changed.
+
+### Fresh verification
+
+From `Wiki/`, using Node `24.18.0` and pnpm `11.8.0`:
+
+- TypeScript check: passed.
+- Local and vendor lint: passed with **0 errors**.
+- Source-boundary contracts: **16/16 passed**, including the new SVG source/metadata contract.
+- Product-source contracts: **4/4 passed**.
+- Integrated offline artifact test: **1/1 passed** after rebuilding the Wiki.
+- Focused real-browser defaults scenario: **1/1 passed**.
+- The live `$:/favicon.ico` tiddler reported `image/svg+xml`.
+- `link#faviconLink` matched the runtime prefix `data:image/svg+xml`; a fresh browser context measured the generated data URI at `10,961` characters.
+- The decoded runtime icon was rendered and inspected at `256×256` in `Wiki/test-results/favicon-runtime-preview.png`; the white square, black wings, halo, circular outline, and central mark were present without blank output or clipping.
+- `dist/` contained only `index.html` (`3,999,612` bytes); no external favicon, plugin library, JSON plugin bundle, standalone plugin package, publication, or deployment was produced.
+
+The complete 70-case Playwright suite was not repeated for this isolated favicon resource replacement. Coverage was deliberately limited to the source mapping, integrated single-HTML serialization, real TiddlyWiki favicon lifecycle, type/lint boundaries, and product-source boundaries. Port `8081`, the selected 03 reference, unrelated homepage concepts, `临时图片2.jpg`, publishing, OpenSpec archive state, and internal Wiki icons remain untouched.
+
+## Semi-transparent enlarged favicon canvas — 2026-07-24
+
+### TDD evidence
+
+The source, artifact, and focused browser contracts were tightened before the SVG changed. The source run reported **8 passed / 1 expected failure** at the old `viewBox="86 59 1076 1076"`. The focused real-browser scenario also failed at that exact old view-box declaration before it could reach the opacity assertion. Both failures therefore demonstrated the missing approved crop/background behavior rather than a fixture or favicon-loader error.
+
+The implementation changed only two SVG declarations:
+
+- `viewBox="118 89 1016 1016"`;
+- `<rect x="118" y="89" width="1016" height="1016" fill="#ffffff" fill-opacity="0.72"/>`.
+
+The complete path data, title, description, dimensions, aspect-ratio behavior, filesystem-tiddler metadata, and native TiddlyWiki favicon lifecycle remain unchanged.
+
+### GREEN and regression evidence
+
+Using Node `24.18.0` and pnpm `11.8.0`:
+
+- Direct source contract: **9/9 passed**.
+- Source-boundary contracts: **16/16 passed**.
+- Product-source contracts: **4/4 passed**.
+- Focused real-browser defaults/favicon scenario: **1/1 passed**.
+- The browser canvas corner sample was exactly `[255, 255, 255, 184]`, matching `72%` white opacity after 8-bit rounding.
+- Integrated offline artifact test: **1/1 passed**.
+- TypeScript check: passed.
+- Local and vendor lint: passed with no lint errors.
+- Rebuilt `dist/index.html`: `3,999,636` bytes and still the only `dist/` file.
+
+The artifact test's first invocation again stopped before product assertions because its internal child command expects a globally visible bare `pnpm`. Re-running it with the already-identified process-local Node 24/pnpm 11.8 shim reached the actual artifact assertions and passed. No global installation, package script, dependency, lockfile, or generated plugin-package workflow changed.
+
+### Light/dark small-size inspection
+
+The live `link#faviconLink` SVG data URI was rendered at `16px`, `32px`, and `64px` on both `#f4f5f7` and `#1f2329` samples. The comparison is stored in the ignored `Wiki/test-results/favicon-sizes-light-dark.png` file and was inspected directly.
+
+The `64px` black-artwork bounds measured `[1, 13, 62, 53]`, and every size reported `0` dark edge pixels, so the enlarged wing tips remain inside the canvas. All three sizes retained corner alpha `184`; the translucent contrast layer therefore remains visible against dark browser chrome while allowing the surrounding tone to show through. The `16px` sample necessarily loses fine wing detail because the approved source is complex; further clarity would require a separately approved simplified small-size glyph rather than a more aggressive crop.
+
+The running read-only preview remains available at `http://127.0.0.1:8080/?favicon=semi-transparent-enlarged#AngelscriptWikiHome`. The complete 70-case Playwright suite was not repeated for this isolated two-declaration SVG refinement. No internal icon tiddler, port `8081`, publication, deployment, OpenSpec archive, or standalone plugin package was changed.
+
+## Screenshot-corrected transparent favicon crop — 2026-07-24
+
+### User screenshot correction and RED evidence
+
+Direct inspection of `Wiki/临时图片3.jpg` showed that the `72%` white rectangle still rendered as a conspicuous light-gray square in the real browser tab. It also showed that the approximately six-percent crop did not make the center mark sufficiently legible at favicon size. The semi-transparent canvas recorded in section 24 is therefore a rejected intermediate result, not the current design target.
+
+Three contracts were changed before the final SVG edit:
+
+- the source contract requires `viewBox="236 207 780 780"` and rejects every `<rect>` element;
+- the offline artifact contract applies the same requirements to the serialized `$:/favicon.ico` tiddler;
+- the focused real-browser contract requires the new view box, no rectangle, and corner RGBA `[0, 0, 0, 0]`.
+
+The direct source run reported **8 passed / 1 expected failure** at the former `viewBox="118 89 1016 1016"`. The focused real-browser scenario reported **0 passed / 1 expected failure** at the same old declaration. These failures confirmed that the tests distinguished the approved screenshot correction from the rejected intermediate SVG.
+
+### Final implementation
+
+Only two SVG-level changes were made:
+
+- the root view box is now `236 207 780 780`;
+- the full-canvas white rectangle was removed completely.
+
+The complete original path data, XML metadata, intrinsic dimensions, `$:/favicon.ico` title, `image/svg+xml` type, and native TiddlyWiki favicon startup lifecycle remain unchanged. The tighter favicon-specific view box intentionally clips a small amount of the outer wing tips so the central mark occupies more of the `16–20px` browser-tab canvas. No internal Wiki image/icon tiddler changed.
+
+### GREEN, build, and visual evidence
+
+Using Node `24.18.0` and pnpm `11.8.0`:
+
+- Direct source contract: **9/9 passed**.
+- Focused real-browser defaults/favicon scenario: **1/1 passed**.
+- Source-boundary contracts: **16/16 passed**.
+- Product-source contracts: **4/4 passed**.
+- TypeScript check: passed.
+- Local and vendor lint: passed with no lint errors.
+- Integrated offline artifact test: **1/1 passed** and rebuilt the one-file Wiki.
+- The live `$:/favicon.ico` tiddler reported `image/svg+xml`.
+- The live `link#faviconLink` used an SVG data URI.
+- Canvas corner RGBA was exactly `[0, 0, 0, 0]` at `16px`, `20px`, `32px`, and `64px`.
+
+The first artifact invocation stopped during generated-source cleanup with Windows `EPERM` because the read-only port `8080` development process held `.generated/plugin-sources`. That process alone was stopped, the artifact test was rerun successfully, and port `8080` was restored. Port `8081` remained owned by its original process and was not restarted or modified.
+
+The final live-data-URI inspection is stored in ignored test output:
+
+- `Wiki/test-results/favicon-final-tab-transparent-crop.png`;
+- `Wiki/test-results/favicon-final-metrics.json`.
+
+The screenshot simulates the real light browser-tab geometry and also renders the live favicon at `16px`, `20px`, `32px`, and `64px` on light and dark surfaces. Inspection against `临时图片3.jpg` confirms that the square canvas is gone and the central mark is larger. The source is still a black line-art logo, so dark browser chrome has inherently lower contrast; adding a pale backing shape would recreate the rejected square, while a true light/dark adaptive favicon would require a separately approved artwork variant.
+
+The running read-only preview is available at `http://127.0.0.1:8080/?favicon=transparent-medium-crop#AngelscriptWikiHome`. The complete 70-case Playwright suite was intentionally not repeated for this isolated favicon-only correction. Both repositories remain uncommitted for user review; nothing was pushed, published, deployed, archived, or packaged as a standalone plugin.
