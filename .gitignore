@@ -134,6 +134,9 @@ Tools/UnrealMCP/
 # Knowledge temp drafts
 Documents/Knowledges/Temp/
 
+# Local visual comparison captures retained beside active OpenSpec changes.
+/openspec/changes/*/comparison-artifacts/
+
 # Generated review reports; keep local for now, may be tracked later.
 Documents/Reports/
 
