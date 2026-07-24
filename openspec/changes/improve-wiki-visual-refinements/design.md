@@ -233,6 +233,24 @@ The accepted correction removes that heading markup from both localized branches
 
 This is preferred to renaming the internal label to “文档导航”, which would retain an unnecessary extra hierarchy level, and to reducing navigation row or group-toggle heights, which would shrink useful click and keyboard-focus targets. TiddlyWiki's `$:/config/DefaultSidebarTab`, the two expansion-state tiddlers, transcluded chevron icon, real link targets, current-page `aria-current`, and language selection all remain unchanged.
 
+### Add local boot feedback while restoring the native tag-colour contract
+
+The reference Wiki contains a third-party Splash Screen plugin and a Garden card-colour plugin, but neither is a suitable product dependency here: the splash only needs a small pre-boot surface, and Garden does not own tag-pill colours. TiddlyWiki 5.4.1 already provides the required mechanisms. A tiddler tagged `$:/tags/RawMarkupWikified/TopBody` can render before the Wiki is ready, and the core removes a `tc-remove-when-wiki-loaded` root after boot. The core `$:/core/ui/TagTemplate` already reads the native tag tiddler `color` field and calculates the contrasting pill foreground.
+
+The product therefore adds one local theme tiddler, `$:/themes/angelscript/loading-screen`. It has no scripts or remote assets, exposes an accessible loading status, and limits its three-dot animation to a reduced-motion-safe decorative detail. It is deliberately neutral and compact so it does not introduce a competing application theme.
+
+The SDK-specific rule that forcibly painted every tag grey is removed. No replacement selector is added: setting a tag's ordinary TiddlyWiki `color` field now produces the same native pill in the document and in “更多 → 标签”. Tags without a colour retain the active palette's normal neutral presentation. This preserves the existing `TagTemplate`, TagManager editing surface, revealed tag list, native navigation, and the product's sidebar-only popup portal; only the inherited visual suppression is removed.
+
+This is preferred to copying the reference aggregation plugin, shadowing `TagTemplate`, adding a startup script, or imposing a product colour palette. Those approaches would either import unrelated dependencies or change a global interaction surface. The impact is intentionally broad only in the expected sense: every native tag that already has a `color` field can now display it consistently.
+
+### Keep the browser favicon compact and render a complete mark at pre-boot
+
+The reviewed `$:/favicon.ico` source deliberately uses a tight `236 207 780 780` view box so the black AngelScript mark remains recognizable in browser chrome. That crop is unsuitable for the larger loading surface: it clips the outer wing tips, which was visible in the loading-screen review image. Replacing the native favicon's crop would broaden the impact to browser tabs, bookmarks, and saved Wiki artifacts, so the compact browser icon remains unchanged.
+
+TiddlyWiki's RawMarkup TopBody is compiled before the ordinary plugin image-tiddler machinery is available. A direct runtime probe showed that both a product image tiddler and a static `$:/loading-mark` image transclusion produced an empty loading-mark node in this phase. The loading mark must consequently be self-contained rather than a transclusion, even though a separate SVG tiddler would otherwise be more modular.
+
+The loading tiddler therefore embeds the already-approved mark path directly in one inline SVG. Its `86 213 1076 768` view box contains the exact existing path with a `40`-unit margin on every edge; CSS presents it at a compact `82×58`. The implementation is local, decorative, and has no runtime dependency beyond the raw TopBody HTML. This preserves the browser favicon's purpose while ensuring the loading page always shows the complete wings before Wiki boot.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.

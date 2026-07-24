@@ -871,3 +871,48 @@ The heading markup is removed from both language branches, so the Directory pane
 - Visual inspection: `Wiki/comparison-artifacts/review/directory-tab-layout-20260724.png` captures the `1440×960` sidebar after the change; it shows the first group immediately below the main-tab content area, without a duplicate caption. This ignored review image is not a runtime input or commit candidate.
 
 The broad lint, full product Playwright, integrated single-HTML build/artifact validation, and package-oriented checks were not rerun because this small follow-up changes no build/package path and the focused source/browser/typecheck coverage exercises every changed behavior. Port `8081`, all unrelated tracked/untracked files, publishing, deployment, archive state, and standalone plugin packaging remain untouched.
+
+## Local loading feedback and native tag colour recovery — 2026-07-24
+
+### Scope and source decision
+
+The local reference was inspected before implementation. Its `xp/splashscreen` plugin demonstrates TiddlyWiki's standard `RawMarkupWikified/TopBody` plus `tc-remove-when-wiki-loaded` lifecycle. Its `kookma/garden` plugin colours tiddler cards rather than tag pills, while importing the reference aggregation plugin would pull unrelated dependencies. The locked local TiddlyWiki `5.4.1` core instead confirmed that `$:/core/ui/TagTemplate` already reads each tag tiddler's native `color` field and supplies contrast text.
+
+The product therefore adds only `$:/themes/angelscript/loading-screen`: a local, script-free, remote-asset-free TopBody surface that exposes `role="status"` and disables its decorative loader animation for reduced motion. The former SDK-only tag foreground/background/hover rules were removed without shadowing `TagTemplate`, TagManager, the existing tag popup stylesheet, or the sidebar portal. Tags without a native `color` field keep the active palette default.
+
+### RED, GREEN, and isolated product evidence
+
+- RED: the direct source contract initially reported **11 passed / 2 expected failures**: the local loading tiddler was absent and the SDK hard-colour selector was still present.
+- GREEN: `node --test scripts/core-contract.test.mjs scripts/source-boundaries.test.mjs` from `Wiki/` completed **20/20 passed** after implementation.
+- Targeted ESLint for the three changed JavaScript/TypeScript files completed with no errors or warnings, and `tsc --noEmit --skipLibCheck` passed.
+- `openspec validate improve-wiki-visual-refinements --strict` completed successfully.
+- A disposable full Wiki copy rebuilt all eight product plugin sources and published a complete single `dist/index.html` (**4,017,067 bytes**) without modifying the working product build directory.
+- A Chromium check against that isolated HTML confirmed the pre-boot tiddler is present in the serialized theme and removed after boot; an injected `ASWiki/Workflow` tag with `color: #2a6ebf` rendered as `rgb(42, 110, 191)` with white text in both the SDK document and “更多 → 标签”; clicking the latter kept the existing `.as-sidebar-tag-popup-portal.as-real-tag-popup` interaction visible.
+
+### Concurrent local-preview recovery note
+
+An attempted in-place artifact command collided with the already-running 8080 development watcher while its generated bridge was being removed and recreated. The product source was never affected. The generated `angelscript-theme` bridge was restored mechanically from its 31 source files, but the already-running dev server had compiled the short-lived two-file snapshot and did not accept a full hot rebuild afterward. It was deliberately not terminated or restarted. The normal 8080 preview therefore needs one user-approved restart before it can show this task's source changes; the isolated single-HTML build above is the verified runtime output. Port `8081`, all unrelated files, Git history, publishing, standalone plugin packaging, and OpenSpec archive state remain untouched.
+
+## Complete pre-boot loading mark — 2026-07-24
+
+### Root cause and final implementation
+
+The loading screenshot exposed a real crop defect rather than a CSS scale defect. `$:/favicon.ico` has a tight `236 207 780 780` SVG view box; the original path extends beyond that window at both wing tips. The crop is intentional and remains appropriate for the browser tab icon, so it was not changed.
+
+The initial modular correction attempted to transclude a separate full-view-box image tiddler from the loading screen. A real RawMarkup startup probe then showed an empty `.as-wiki-splash__mark` for both a plugin image tiddler and a static image tiddler. This is expected at this lifecycle point: RawMarkup TopBody is compiled before TiddlyWiki's ordinary image-tiddler transclusion is ready. The final product therefore embeds the exact existing mark path as inline SVG in `$:/themes/angelscript/loading-screen`.
+
+The inline SVG uses `viewBox="86 213 1076 768"`; against the existing path bounds (`126…1122`, `253…941`) that leaves `40` units of safety margin on all four edges. The `.as-wiki-splash__mark` wrapper renders it at `82×58`, preserving the compact neutral loading layout while showing the full wings. It adds no script, remote asset, system-tiddler replacement, startup module, or change to `$:/favicon.ico`.
+
+### TDD, real pre-boot visual evidence, and follow-up checks
+
+- RED: the amended direct source contract failed until an inline full-view-box SVG existed and rejected the legacy `236 207 780 780` crop/transclusion.
+- GREEN: `node --test --test-name-pattern "pre-boot loading screen" scripts/core-contract.test.mjs` passed **1/1** after the inline SVG was added. The remote-asset check was intentionally scoped to `src`/`href`, because the SVG's required XML namespace is itself an `http://` declaration rather than a network request.
+- A Chromium startup probe intercepted only core's final removal of `.tc-remove-when-wiki-loaded`; it did not inject or replace the splash markup. The real pre-boot DOM contained `.as-wiki-splash__mark svg`, reported view box `86, 213, 1076, 768`, `82×58` rendered dimensions, and verified `40`-unit left/right/top/bottom margins. The inspected capture is `C:/Users/scottmei/AppData/Local/Temp/angelscript-wiki-preview/loading-screen-corrected-preview-1440x960.png`.
+- The retained splash exists only for this visual probe. A separate normal Chromium load at `http://127.0.0.1:8080/` reported `splashCount: 0` after `.tc-sidebar-scrollable` was ready while the loading tiddler remained serialized, proving the standard core cleanup path still owns removal.
+- Full direct/source-boundary validation: `node --test scripts/core-contract.test.mjs scripts/source-boundaries.test.mjs` completed **20/20 passed**.
+- Targeted JavaScript lint for `scripts/core-contract.test.mjs` completed without errors or warnings. `git diff --check` passed for both the Wiki submodule and host repository.
+- `openspec validate improve-wiki-visual-refinements --strict` completed successfully from the host repository root.
+- The integrated single-HTML artifact test rebuilt all eight product sources and completed **1/1 passed**. Its remote-asset assertion was narrowed to actual `src`/`href` URLs so the required SVG XML namespace is not misidentified as a network dependency.
+- The full `angelscript-theme.spec.ts` Chromium suite completed **15/15 passed**. The pre-existing interaction-state test now measures the titlebar control that actually owns hover/pressed fills; compact main tabs intentionally remain transparent on hover under the accepted 03 design.
+
+Port `8081`, unrelated files, publishing, standalone plugin packaging, OpenSpec archive state, and Git history remain untouched.
