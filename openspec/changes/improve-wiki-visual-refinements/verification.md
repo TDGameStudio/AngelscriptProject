@@ -109,3 +109,68 @@ The formal production theme, TiddlyWiki templates, runtime plugin source, and re
 ## Environment note
 
 The project declares Node `>=24 <25`; this machine currently uses Node `25.5.0` with pnpm `11.8.0`. The package manager emitted the expected engine warning, but the fresh check, lint, tests, and integrated build all completed successfully. Node 24 remains the documented supported baseline.
+
+# Compact control rail production migration — 2026-07-24
+
+## TDD and focused regression
+
+The production contract was added first to:
+
+```powershell
+npm exec --yes pnpm@11.8.0 -- exec playwright test tests/playwright/product/angelscript-theme.spec.ts tests/playwright/product/document-experience.spec.ts
+```
+
+Before the production implementation, the focused run reported **18 passed and 8 failed**. The failures were the intended missing-contract failures: no compact control rail, the old `280px` sidebar geometry, no focusable/keyboard-operable ARIA separator, and selectors finding no native rail controls. After synchronizing the source bridge and implementing the rail, the same two-spec surface passed. Follow-up visual findings for the Open list, close-all control, Tools rows, and the rail More popup were also captured as failing Playwright assertions before their scoped CSS corrections.
+
+The final full suite includes **13 Angelscript theme cases**, **16 document-experience cases**, and the unchanged **12 standalone preview cases**.
+
+## Product implementation evidence
+
+- The desktop rail is a theme-guarded `$:/tags/PageTemplate` extension ordered before the core sidebar.
+- Its seven actions transclude the existing Home, More, New Tiddler, Command Palette, Palette, Control Panel, and Language button tiddlers. No preview SVG path or Unicode icon placeholder was copied into production.
+- The default `264px` total width is split into a persistent `40px` rail and `224px` sidebar content region. Closing the sidebar retains the `40px` rail; the narrow drawer remains rail-free.
+- The resize target remains `12px` wide with a quiet persistent `1px` seam. It exposes `role="separator"`, vertical orientation, current/min/max ARIA values, `8px` arrow adjustments, and Home/End bounds.
+- The Open list uses a single-line ellipsized title, a `24px` per-item close target revealed on hover/focus, and an integrated `36px` close-all row.
+- Tools keeps the native checkbox/button/description structure while constraining labels and descriptions to single-line ellipsis. More/Tags and AS keep the native information architecture.
+- The page-level More popup opens to the right of the rail and the tiddler-level More popup retains native actions with aligned icon/label coloring.
+- `Agents_ZH.md` was updated before `Agents.md`; both now require Knot `tw5` knowledge lookup first, local TiddlyWiki `5.4.1` source/runtime verification second, and official documentation as fallback.
+
+## Fresh verification
+
+From `Wiki/`:
+
+```powershell
+npm exec --yes pnpm@11.8.0 -- run check
+npm exec --yes pnpm@11.8.0 -- run lint
+npm exec --yes pnpm@11.8.0 -- run test:source-boundaries
+npm exec --yes pnpm@11.8.0 -- run test:product-sources
+npm exec --yes pnpm@11.8.0 -- run test:playwright
+npm exec --yes pnpm@11.8.0 -- run build:wiki
+npm exec --yes pnpm@11.8.0 -- run test:artifact
+```
+
+Fresh results:
+
+- TypeScript check: passed.
+- ESLint: passed with **0 errors and 0 warnings**.
+- Source-boundary tests: **9 passed**.
+- Product-source tests: **4 passed**.
+- Full product Playwright suite: **60 passed (41.6s)**.
+- Integrated offline Wiki build: passed. It prepared the eight source components already declared by the product and emitted one integrated Wiki; it did not generate standalone plugin packages.
+- Offline artifact test: **1 passed**.
+
+From the host root:
+
+```powershell
+openspec validate improve-wiki-visual-refinements --strict
+git -C Wiki diff --check
+git diff --check -- openspec/changes/improve-wiki-visual-refinements
+```
+
+Fresh results: the active OpenSpec change is valid and both intended diffs have no whitespace errors. Git only reports the repository's existing LF-to-CRLF normalization notices.
+
+## Visual inspection and environment
+
+Real product rendering was inspected for desktop Open, Tools, More/Tags, AS, page-level More, tiddler toolbar/More, closed, and resize-hover states, plus the `390×844` drawer. The result remains within the accepted Notion-light document style while matching the selected compact rail's spacing, surfaces, states, and information architecture.
+
+The read-only watched preview is running at `http://127.0.0.1:8080/`. Port `8081` was not changed. The current machine still uses Node `25.5.0`, so pnpm emits the expected engine warning against the documented `>=24 <25` baseline; all fresh checks above passed, and the project baseline remains Node 24.

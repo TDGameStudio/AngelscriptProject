@@ -1,21 +1,28 @@
 ## ADDED Requirements
 
-### Requirement: Sidebar resize rail is contextual without shrinking its interaction target
+### Requirement: Sidebar resize boundary is stable without shrinking its interaction target
 
-On desktop, AngelscriptWiki SHALL keep the enabled sidebar-resizer's full-height pointer target and resize behavior while hiding its visible rail when the pointer is not over it and no drag is active. The rail SHALL become visible on hover and SHALL be more prominent while dragging.
+On desktop, AngelscriptWiki SHALL keep the product-owned sidebar resizer's full-height pointer target and resize behavior while rendering a persistent quiet boundary at rest. The boundary SHALL strengthen on hover and SHALL be more prominent while dragging.
 
-#### Scenario: Idle desktop sidebar has no visible resize rail
+#### Scenario: Idle desktop sidebar has a quiet visible resize seam
 
 - **WHEN** a desktop-width Wiki page renders with the sidebar open and the resize target is neither hovered nor active
 - **THEN** the resize target SHALL remain present, fixed, full-height, and at least 10px wide
-- **AND** its visible pseudo-element rail SHALL have zero opacity
+- **AND** its visible pseudo-element SHALL render one low-contrast seam rather than have zero opacity
 
 #### Scenario: Hover and drag communicate resize affordance
 
 - **WHEN** the pointer hovers over the desktop resize target
-- **THEN** the rail SHALL become visible without changing the target geometry
+- **THEN** the seam SHALL strengthen without changing the target geometry
 - **AND** WHEN dragging begins
-- **THEN** the rail SHALL be more prominent than its hover state and the sidebar width SHALL remain adjustable
+- **THEN** the seam SHALL be more prominent than its hover state and the sidebar width SHALL remain adjustable
+
+#### Scenario: Keyboard user resizes the sidebar
+
+- **WHEN** keyboard focus is on the desktop resize separator
+- **THEN** ArrowLeft and ArrowRight SHALL adjust the width in bounded increments
+- **AND** Home and End SHALL select the effective minimum and maximum
+- **AND** separator ARIA value attributes SHALL remain synchronized with the rendered width
 
 ### Requirement: More sidebar content divider does not overlap category navigation
 
@@ -128,3 +135,36 @@ The compact-control-rail preview SHALL provide operable Open, Recent, Tools, Mor
 - **THEN** a distinct keyboard-operable item-level action menu SHALL appear with representative information, copy, export, delete, permalink, close-other, and fold actions
 - **AND** the tiddler view toolbar SHALL retain the current More, Edit, Close, and New Diagram action set
 - **AND** Escape SHALL close either menu and restore focus to its invoking control
+
+### Requirement: Selected compact control rail is the production desktop default
+
+The production AngelscriptWiki desktop layout SHALL adapt the selected compact-control-rail preview through native TiddlyWiki PageTemplate and toolbar extension points. The rail SHALL use real PageControl button and SVG tiddlers, preserve live sidebar and ViewToolbar behavior, and SHALL NOT copy preview fixtures, Unicode menu glyphs, or simulated popup scripts.
+
+#### Scenario: Desktop Wiki renders the selected rail
+
+- **WHEN** the Angelscript theme renders at or above the configured sidebar breakpoint
+- **THEN** a `40px` control rail SHALL occupy the left edge within a `264px` default total sidebar width
+- **AND** the core sidebar content SHALL begin after the rail
+- **AND** the story river SHALL begin after the total sidebar width
+- **AND** the rail SHALL expose native Home, More, New Tiddler, Command Palette, Palette, Control Panel, and Language controls according to their PageControl visibility settings
+
+#### Scenario: Desktop sidebar is collapsed
+
+- **WHEN** `$:/state/sidebar` is `no`
+- **THEN** the core sidebar content and resize target SHALL be hidden
+- **AND** the `40px` rail and core sidebar toggle SHALL remain visible
+- **AND** the story river SHALL begin after the persistent rail
+
+#### Scenario: Native sidebar and toolbar surfaces are refined
+
+- **WHEN** the reviewer uses Open, Recent, Tools, More, AS, page-level More, or tiddler-level More
+- **THEN** each surface SHALL use its real TiddlyWiki data, widgets, actions, popup state, and SVG icons
+- **AND** Tools SHALL retain checkbox/button/description rows
+- **AND** More SHALL retain its vertical category column and separated content divider
+- **AND** the tiddler toolbar SHALL retain the current More, Edit, Close, and New Diagram direct action set
+
+#### Scenario: Narrow viewport preserves the existing product navigation
+
+- **WHEN** the viewport is below the configured sidebar breakpoint
+- **THEN** the desktop control rail and resize separator SHALL be hidden
+- **AND** the existing left drawer, compact top-left toggle, and enabled bottom mobile PageControls SHALL remain available

@@ -53,3 +53,32 @@
 - [x] 8.1 <!-- Non-TDD --> Update this OpenSpec's proposal, design, delta specs, and task record to describe the accepted left-sidebar context, three preview alternatives, selected compact-rail refinement, production-theme stop boundary, and no-plugin-package constraint.
 - [x] 8.2 <!-- TDD --> Run the focused preview suite, type check, lint, source-boundary tests, full product Playwright suite, integrated offline Wiki build, strict OpenSpec validation, and exact diff checks; record fresh results in `verification.md`.
 - [x] 8.3 <!-- Non-TDD --> Commit the three preview files and test in the Wiki submodule, then commit only the formal OpenSpec files and updated Wiki gitlink in the host repository; do not push, archive the OpenSpec, publish packages, or modify production Wiki theme source.
+
+## 9. Selected production contract and RED coverage
+
+- [x] 9.1 <!-- Non-TDD --> Record `03-compact-control-rail` as the direct production default, native TW/plugin icon tiddlers as the icon source, `264px` as the default total desktop width, `40px` as the persistent rail/collapsed width, the unchanged mobile drawer/bottom-controls fallback, and the no-package/no-publish boundary in the formal proposal, design, and delta specs.
+- [x] 9.2 <!-- TDD --> Extend `Wiki/tests/playwright/product/angelscript-theme.spec.ts` and `Wiki/tests/playwright/product/document-experience.spec.ts` with production assertions for the seven native rail controls/icons, `40px`/`264px` geometry, persistent collapsed rail, native panel/menu structure, quiet idle resize seam, keyboard separator bounds/ARIA, reduced motion, and the narrow-layout fallback.
+- [x] 9.3 <!-- TDD --> Run `npm exec --yes pnpm@11.8.0 -- exec playwright test tests/playwright/product/angelscript-theme.spec.ts tests/playwright/product/document-experience.spec.ts` from `Wiki/` and confirm the new assertions fail because the production control rail and keyboard separator behavior are not implemented.
+
+## 10. Native PageTemplate rail and stable defaults
+
+- [x] 10.1 <!-- Non-TDD --> Add `Wiki/src/angelscript-tools/navigation/compact-control-rail.tid` as a theme-guarded `$:/tags/PageTemplate` extension before the core sidebar; transclude native Home, More, New Tiddler, Command Palette, Palette, Control Panel, and Language buttons in top/primary/utility zones without copying preview menus, SVG paths, or Unicode glyphs.
+- [x] 10.2 <!-- Non-TDD --> Update `Wiki/src/angelscript-wiki-config/config/` so the default total sidebar width is `264px`, the duplicate desktop sidebar PageControls segment is hidden, the seven rail actions are visible by default, and `$:/tags/PageControls` retains a deterministic compatible order.
+- [x] 10.3 <!-- Non-TDD --> Add `Wiki/src/angelscript-theme/compact-control-rail.tid` for the selected `40px` neutral rail, native `17px` icons, zones, separators, tooltips, interaction states, native sidebar panels, page/tiddler menus, and reduced-motion rules while preserving the Notion-light document and system typography.
+
+## 11. Layout and accessible resizer
+
+- [x] 11.1 <!-- TDD --> Modify `Wiki/src/angelscript-theme/left-sidebar-layout.tid` so desktop sidebar content begins after the rail, the story uses the total width, the collapsed story retains `40px`, the top-left toggle is persistently visible, the resizer uses a quiet idle seam, and the existing mobile drawer remains rail-free.
+- [x] 11.2 <!-- TDD --> Modify `Wiki/src/angelscript-tools/navigation/left-sidebar-resize-area.tid` and `left-sidebar-resizer.ts` to expose a focusable vertical separator, update ARIA values, support `8px` arrow adjustments plus Home/End bounds, and preserve the existing pointer persistence/cleanup behavior.
+- [x] 11.3 <!-- TDD --> Re-run the focused two-spec Playwright command until the selected production contract passes, then run the existing standalone preview spec to ensure the visual reference remains unchanged.
+
+## 12. Workflow guidance and integrated verification
+
+- [x] 12.1 <!-- Non-TDD --> Update `Wiki/Agents_ZH.md` first and `Wiki/Agents.md` in sync so TW5 research prefers Knot's `tw5` knowledge base, verifies exact behavior against the locked local TiddlyWiki `5.4.1` source, and falls back to official TiddlyWiki documentation.
+- [x] 12.2 <!-- Non-TDD --> Inspect real `1440×1000` Open, Tools, More/Tags, AS, page-More, tiddler-toolbar/More, closed, and resize states plus the `390×844` drawer; compare against `03-compact-control-rail.html` while preserving native data and icon sources.
+- [x] 12.3 <!-- TDD --> Run `check`, `lint`, `test:source-boundaries`, `test:product-sources`, full `test:playwright`, `build:wiki`, `test:artifact`, strict OpenSpec validation, and exact Wiki/host diff checks; record fresh evidence in `verification.md`.
+
+## 13. Dual-repository commit checkpoint
+
+- [x] 13.1 <!-- Non-TDD --> Commit only the intended production rail/theme/config/tests/guidance files in the Wiki submodule with `[Wiki] Feat: migrate compact control rail to product sidebar`.
+- [x] 13.2 <!-- Non-TDD --> Commit only the formal OpenSpec files and updated Wiki gitlink in the host repository with `[Wiki] Docs: record compact control rail production migration`; do not stage the untracked backup preview, push, publish, deploy, archive, or generate standalone plugin packages.

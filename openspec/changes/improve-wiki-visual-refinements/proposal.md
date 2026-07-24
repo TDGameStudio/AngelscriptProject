@@ -13,6 +13,8 @@ AngelscriptWiki's accepted document theme is visually coherent overall, but smal
 - Refine the preferred compact-control-rail experiment with working Open, Recent, Tools, More, and AS panels, while preserving the original Tools visibility-list and More vertical-category structures instead of inventing replacement information architecture.
 - Complete the experiment's production-reference surfaces with the persistent control rail, the real page-level “更多操作” menu, and the tiddler view toolbar plus its distinct item-level “更多” menu.
 - Treat experiment review as an explicit selection checkpoint: production TiddlyWiki styles and resize logic remain unchanged until one option or a deliberate mix is approved.
+- Promote the approved `03-compact-control-rail` direction to the production Wiki as the direct desktop default: a persistent `40px` control rail within a `264px` total sidebar, native TiddlyWiki button/icon tiddlers, a stable quiet resize seam, and a `40px` collapsed desktop footprint.
+- Keep the production adaptation on TiddlyWiki's PageTemplate, PageControls, SideBar, MoreSideBar, and ViewToolbar extension points instead of copying the preview's fixture data, inline menu logic, hand-written SVG paths, or Unicode menu glyphs.
 - Add or extend focused browser coverage for each visual behavior as the change grows.
 
 ## Capabilities
@@ -27,7 +29,7 @@ AngelscriptWiki's accepted document theme is visually coherent overall, but smal
 
 ## Impact
 
-- Wiki submodule: primarily `src/angelscript-theme/`, selected enabled external-plugin source under `vendor/`, standalone comparison artifacts, and Playwright visual-regression tests.
+- Wiki submodule: primarily `src/angelscript-theme/`, `src/angelscript-tools/navigation/`, `src/angelscript-wiki-config/config/`, standalone comparison artifacts, and Playwright visual-regression tests.
 - Host repository: this OpenSpec record under `openspec/changes/improve-wiki-visual-refinements/`.
 - No public AngelScript API, WikiText authoring syntax, content model, runtime dependency, or publication workflow changes are expected.
-- The sidebar experiment phase does not change production Wiki theme or plugin source and does not generate or publish plugin packages.
+- The selected production migration changes the integrated Wiki's local theme/tools/config sources but does not generate, release, or publish standalone plugin packages.

@@ -16,6 +16,7 @@ The `Wiki/` directory is a Wiki development project, not a plugin-release workfl
 - Compare three conservative left-sidebar systems against identical real Wiki content without changing the accepted type, palette, tiddler card, or content structure.
 - Make the previewed open/close and resize behavior directly testable with pointer, keyboard, reduced-motion, and narrow-drawer coverage.
 - Capture each later visual refinement with its user-visible intent and focused browser coverage in this same OpenSpec change.
+- Promote the approved compact-control-rail direction through native TW5 extension points while keeping live Open/Recent/Tools/More/AS data and behavior.
 
 **Non-Goals:**
 
@@ -27,13 +28,11 @@ The `Wiki/` directory is a Wiki development project, not a plugin-release workfl
 
 ## Decisions
 
-### Keep the resize hit target stable and hide only the idle decoration
+### Keep the resize hit target stable and make the selected boundary persistent
 
-The enabled sidebar-resizer plugin already provides a fixed, full-height, 12px desktop pointer target and a drag-state class. Its pseudo-element rail will have zero opacity at rest, a restrained visible hover state, and a clearer active-drag state. The target's size, position, `ew-resize` cursor, pointer behavior, and drag logic remain unchanged.
+The product-owned left-sidebar resizer provides a fixed, full-height, 12px desktop pointer target and a drag-state class. The approved compact-control-rail direction replaces the earlier zero-opacity idle decoration with a persistent `1px` neutral seam, a stronger neutral hover state, and a `2px` blue active-drag state. The forgiving target geometry, pointer capture, `240px` lower bound, and `min(520px, 40vw)` upper bound remain unchanged.
 
-This is preferred to shrinking the target to the line width: a one-pixel interaction target would violate the existing forgiving-pointer interaction design. It is also preferred to removing the plugin, because manual width adjustment remains an intentional desktop capability.
-
-This decision describes the currently shipped production behavior. The later preview phase does not silently replace it; instead it tests three alternatives that keep the forgiving hit target while avoiding a line that appears from nowhere: a permanent quiet seam, a short persistent grip over a stable surface boundary, and a persistent narrow control rail. The selected alternative will replace this production decision only after visual review.
+The resize tiddler also becomes a real keyboard-focusable `role="separator"` surface. Arrow keys adjust by `8px`, Home selects the minimum, End selects the current effective maximum, and `aria-valuenow` follows pointer and keyboard changes. This retains manual width adjustment while eliminating the line that previously appeared from an otherwise undecorated boundary.
 
 ### Position the More-sidebar divider outside the category column
 
@@ -71,14 +70,26 @@ The representative tiddler also retains the original view-toolbar action set —
 
 This faithful high-fidelity approach is preferred to the first redesigned Tools cards, switch controls, and horizontal More chips because those changed the current Wiki's information architecture before visual review. Recent remains curated because the production Recent panel is empty, but Tools, More, page actions, and tiddler controls now retain their original semantics and hierarchy. It is also preferred to a simplified decorative mock because every important control state needs to be judged before formal TiddlyWiki adaptation.
 
+### Promote the selected rail through native TiddlyWiki surfaces
+
+Production uses an additive `$:/tags/PageTemplate` tiddler before the core sidebar rather than copying `$:/core/ui/PageTemplate`. The new component renders only while `$:/themes/angelscript` is selected and transcludes the real PageControl buttons in three visual zones. The existing TopRightBar sidebar toggle is positioned into the rail; `$:/state/sidebar` and the core sidebar reveal behavior remain authoritative.
+
+The default desktop total width becomes `264px`: the rail owns the first `40px`, the core `.tc-sidebar-scrollable` content owns the remaining `224px`, and the story river starts after the total width. When closed, the content panel and resizer disappear, the rail remains, and the story river starts after `40px`. At the configured mobile breakpoint the desktop rail is hidden and the existing left drawer plus bottom page controls remain unchanged.
+
+The seven rail actions reuse `$:/core/ui/Buttons/home`, `more-page-actions`, `new-tiddler`, `CommandPalette`, `palette`, `control-panel`, and `language`. Their core, command-palette, and draw.io SVG tiddlers remain the icon source. The preview's inline SVG paths and Unicode glyphs are not copied. Existing PageControl visibility tiddlers remain the control plane, so Tools, the rail, and the native More menu continue to agree about visible and overflow actions.
+
+Open, Recent, Tools, More, AS, the page-level More menu, and the tiddler ViewToolbar all retain live TiddlyWiki data, widgets, messages, and popup state. Production CSS adapts their spacing and states to the selected preview; it does not import the preview's fixture items, JavaScript tab implementation, or sample menus.
+
 ## Risks / Trade-offs
 
-- [The resizer is an imported plugin and its styles can be revised upstream] → Keep the change limited to its visible pseudo-element state and preserve the existing Playwright behavior test for hit target, hover, and drag.
+- [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
 - [A broad More-sidebar selector could disturb useful tab geometry elsewhere] → Target only its secondary tab-button path and vertical More-content-panel path, assert an explicit gap between category column and divider, and retain the ordinary selected/focus interaction.
 - [Spacing changes could make tags collide with a multiline description] → Keep elements in normal flow, adjust only the description-to-tag margins, and cover a title/description/tag fixture at desktop and narrow widths.
 - [A long-lived OpenSpec could accumulate unrelated work] → Each later addition must remain a small Wiki visual or interaction refinement; feature, content-model, dependency, and publishing changes use their own change.
 - [Static previews can drift from real TiddlyWiki markup] → Use real AngelscriptWiki content, keep the production theme unchanged during selection, and treat the chosen preview as a design reference rather than code to paste wholesale.
 - [Three self-contained files duplicate interaction code] → Keep the contract deliberately small and cover every file with one parameterized Playwright suite; remove the experiment artifacts after selection only if the user explicitly requests cleanup.
+- [A PageTemplate rail can duplicate the existing sidebar PageControls segment] → Hide only `$:/core/ui/SideBarSegments/page-controls` in the integrated Wiki defaults while retaining Tools and the mobile bottom control surface.
+- [Core and plugin icons have different source view boxes] → Normalize only their rendered `17px` geometry and `currentColor`; do not fork or redraw the SVG paths.
 
 ## Migration Plan
 
@@ -86,8 +97,9 @@ This faithful high-fidelity approach is preferred to the first redesigned Tools 
 2. Apply the smallest scoped stylesheet changes that satisfy those assertions.
 3. Run the focused browser tests, type checking/linting, the full Playwright suite, and the Wiki build.
 4. Add failing browser contracts for three standalone left-sidebar previews, implement them without touching production theme source, and inspect their idle, hover, closed, and mobile states.
-5. Pause after the preview artifacts are committed; select one alternative or a deliberate mix before adding a production migration task.
-6. Append future visual corrections to this change with their requirement/test record before implementation.
+5. Record `03-compact-control-rail` as the selected direct production default.
+6. Add failing production browser contracts, implement the native PageTemplate rail/config/layout/resizer adaptation, and visually inspect real Wiki panels and menus.
+7. Append future visual corrections to this change with their requirement/test record before implementation.
 
 If a future request would require `publish`, external deployment, package distribution, or release-oriented artifact generation, stop and obtain explicit user direction first. A normal local `build` remains a validation command only.
 
@@ -95,4 +107,4 @@ Rollback is a normal Wiki-submodule commit revert. No user tiddler data, WikiTex
 
 ## Open Questions
 
-The production sidebar option remains intentionally open until the three standalone previews are reviewed. SDK metadata order and the existing production theme remain unchanged during this checkpoint.
+The production selection is closed: `03-compact-control-rail` is the direct default and native TiddlyWiki/plugin icon tiddlers are the required icon source. No runtime old/new switch is planned. SDK metadata order and the accepted document theme remain unchanged.
