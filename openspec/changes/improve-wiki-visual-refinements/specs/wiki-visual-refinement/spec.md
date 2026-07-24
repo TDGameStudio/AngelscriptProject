@@ -63,6 +63,48 @@ Each subsequent visual or interaction refinement added to this change SHALL stat
 - **THEN** its record SHALL be added to this change before implementation
 - **AND** its verification SHALL identify a focused browser scenario or equivalent targeted check
 
+### Requirement: Compact Tools rows retain stable density and semantic icons
+
+The desktop Tools panel SHALL preserve native TiddlyWiki PageControl checkboxes, action tiddlers, ordering, visibility configuration, and extensibility while omitting secondary PageControl-description text and isolating the selected compact row geometry from inherited core and global button margins. Common and Other rows SHALL use a checkbox track followed by one flexible action track without horizontal overflow across the supported resizable sidebar range. Product icons and their visible labels SHALL retain the selected 03 compact spacing, and every bundled Other control SHALL use a product-owned semantic line icon while unknown future controls retain a generic fallback.
+
+#### Scenario: Common Tools rows use the selected compact rhythm
+
+- **WHEN** the production Tools panel renders its common PageControls at desktop width
+- **THEN** each real row box SHALL retain a `29px` compact height with a `2px` gap to the next row
+- **AND** inherited `tc-sidebar-tools-item` and native button margins SHALL not increase that rhythm
+- **AND** the rendered gap from each `13px` product icon to its visible action label SHALL be `5px`
+- **AND** no `.as-tool-description` element or secondary description text SHALL render
+- **AND** action typography, checkbox behavior, ordering, colors, hover, and keyboard-focus feedback SHALL remain unchanged
+
+#### Scenario: Tool actions use the available width across resizable sidebars
+
+- **WHEN** the desktop sidebar is resized between its supported `240px` and `520px` total widths
+- **THEN** every visible common and Other row SHALL have exactly two grid tracks: the checkbox and one flexible action track
+- **AND** the action track SHALL consume the remaining row width
+- **AND** neither list nor any row SHALL introduce horizontal overflow
+
+#### Scenario: Palette is hidden by default but remains user-configurable
+
+- **WHEN** the Wiki loads without a user override for `$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/palette`
+- **THEN** the standard product visibility value SHALL be `hide`
+- **AND** Palette SHALL remain listed and unchecked under “其他工具”
+- **AND** checking its native Tools visibility checkbox SHALL write `show` without a startup process resetting it
+
+#### Scenario: Bundled Other tools use recognizable line icons
+
+- **WHEN** the user expands “其他工具” in the current product configuration
+- **THEN** Palette, Encryption, Network Activity, New Image, New Journal, Permaview, Print, Refresh, Save Wiki, Story View, Tag Manager, Theme, Timestamp, and Unfold All SHALL each resolve to an explicitly mapped semantic product icon
+- **AND** those icons SHALL use the same no-fill, current-color line-icon contract as the common Tools controls
+- **AND** no bundled Other control SHALL render the generic fallback
+- **AND** an unknown future or injected PageControl SHALL continue to render the generic fallback without losing its native action behavior
+
+#### Scenario: Main sidebar tab hover remains quiet
+
+- **WHEN** an unselected main sidebar tab such as Recent is idle, hovered, or keyboard-focused
+- **THEN** its background SHALL remain transparent
+- **AND** its button and tab-row geometry SHALL not shift
+- **AND** keyboard focus SHALL remain visibly identifiable while the selected Directory tab remains selected
+
 ### Requirement: Left-sidebar alternatives remain independently previewable before selection
 
 Before a new left-sidebar visual system is applied to the production Wiki, AngelscriptWiki SHALL provide three independent standalone HTML previews that preserve the accepted light document theme and use identical representative Wiki content. Each preview SHALL demonstrate its own sidebar boundary, toggle placement, and resize affordance without requiring a network connection, shared runtime asset, or packaged TiddlyWiki plugin.

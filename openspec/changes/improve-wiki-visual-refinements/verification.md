@@ -706,3 +706,133 @@ The final live-data-URI inspection is stored in ignored test output:
 The screenshot simulates the real light browser-tab geometry and also renders the live favicon at `16px`, `20px`, `32px`, and `64px` on light and dark surfaces. Inspection against `临时图片3.jpg` confirms that the square canvas is gone and the central mark is larger. The source is still a black line-art logo, so dark browser chrome has inherently lower contrast; adding a pale backing shape would recreate the rejected square, while a true light/dark adaptive favicon would require a separately approved artwork variant.
 
 The running read-only preview is available at `http://127.0.0.1:8080/?favicon=transparent-medium-crop#AngelscriptWikiHome`. The complete 70-case Playwright suite was intentionally not repeated for this isolated favicon-only correction. Both repositories remain uncommitted for user review; nothing was pushed, published, deployed, archived, or packaged as a standalone plugin.
+
+## Compact Tools row density and column alignment — 2026-07-24
+
+### Root cause and RED evidence
+
+The production Tools rows retained the core `tc-sidebar-tools-item` class and native PageControl button transclusions, but two unrelated inherited rules altered their real geometry:
+
+- Vanilla applied `3px` block margins to every `.tc-sidebar-tools-item` and to the version paragraph under `.tc-sidebar-lists`;
+- the Angelscript base theme applied `2px` margins to every native `button`.
+
+The row stylesheet therefore declared `min-height: 29px` while the browser produced `31px` row boxes with an approximately `34px` pitch. The version paragraph's intended local margin also computed as `3px` on all sides. Independent `auto` action tracks then placed production description starts at multiple horizontal offsets according to each PageControl caption width.
+
+The existing two product specs passed **24/24** before the new assertions. After adding computed-style and real-bounding-box coverage first, the run reported **23 passed / 1 expected failure**: the Tools version paragraph expected `margin-top: 1px` but received the inherited `3px`. The new main-tab idle/hover/focus checks passed during that same RED run, confirming that the reported grey Recent hover block is not reproducible from the current source and should be guarded rather than countered with another CSS override.
+
+### Scoped implementation
+
+Only `Wiki/src/angelscript-theme/compact-control-rail.tid` changed in the runtime:
+
+- common and Other tool lists use a `2px` grid gap;
+- Tools-panel-qualified row and action-button rules reset only their inherited margins;
+- the version paragraph uses a panel-qualified `1px 2px 9px` margin;
+- row tracks are `14px clamp(92px, 52%, 104px) minmax(0, 1fr)`;
+- native action buttons retain intrinsic width capped by the shared action track.
+
+The `tc-sidebar-tools-item` class, native visibility checkboxes, PageControl transclusions, descriptions, icon mapping, common ordering, Other discovery/collapse behavior, typography, colors, borders, and hover/focus presentation remain unchanged. No global button rule, main-tab stylesheet, mobile drawer, or selected 03 reference was modified.
+
+### GREEN, build, and visual evidence
+
+- Focused product browser files: **24/24 passed** after the development source snapshot was refreshed.
+- Final focused-file rerun after formatting: **24/24 passed**. The attempted npm-forwarded `--grep` was ignored by the wrapper, so this final command conservatively reran both complete files instead of only two cases.
+- TypeScript check: passed.
+- Local and vendor lint: passed with no lint errors or formatting warnings.
+- Source-boundary contracts: **16/16 passed**.
+- Product-source contracts: **4/4 passed**.
+- Integrated single-HTML build: passed and produced `Wiki/dist/index.html`.
+- Offline artifact validation: **1/1 passed**.
+- Strict OpenSpec validation: passed.
+- Diff whitespace checks: passed; Git reported only existing line-ending notices.
+
+The shell currently resolves Node `25.5.0`, so pnpm emitted the repository's expected engine warning (`>=24 <25`) during these commands. The checks themselves completed successfully; the existing process-local Node `24.18.0` binary remains available, and no engine declaration, dependency, package script, or lockfile changed in this refinement.
+
+Six persistent review screenshots were generated under `Wiki/comparison-artifacts/review/sidebar-tools-refinement-20260724/`:
+
+- `01-tools-default-full.png`;
+- `02-tools-default-sidebar.png`;
+- `03-tools-other-expanded-sidebar.png`;
+- `04-tools-min-240-sidebar.png`;
+- `05-tools-max-520-sidebar.png`;
+- `06-recent-hover-sidebar.png`.
+
+Direct inspection confirmed aligned description starts and no horizontal overflow at `240px`, `264px`, and `520px`; the expanded Other group uses the same geometry; and Recent hover remains transparent without a rectangular block. Port `8080` was restored after the build-source refresh. Port `8081` remained on its original PID and was never restarted or modified. The screenshots are review artifacts, not Wiki runtime inputs. Nothing was committed, pushed, published, deployed, archived, or packaged as a standalone plugin.
+
+## Other-tools semantic icons and compact icon-label gap — 2026-07-24
+
+### Root cause and RED evidence
+
+The compact Tools layout already reserved the selected 03 reference's `5px` icon-to-label gap through the icon position and action-button padding, but TiddlyWiki's native `.tc-btn-text { margin-left: 7px; }` increased the measured production gap to `12px`. The centralized sidebar icon map also covered only the common controls, so all fourteen bundled controls discovered under “其他工具” used the same `generic-tool` fallback.
+
+The source contract was extended first with the complete bundled mapping and product image-tiddler requirements. It reported **8 passed / 1 expected failure**, with `$:/core/ui/Buttons/palette` unresolved instead of mapping to `palette`. A live Chromium probe independently measured the old `12px` gap and found `generic-tool` on the palette row.
+
+The first formal browser rerun exposed two legitimate core DOM variants in the gap assertion rather than a product rendering failure: `save-wiki` nests `.tc-btn-text` inside `.tc-dirty-indicator`, while `import` renders its primary label as a bare button text node alongside its file input button. The final assertion therefore measures the first visible text glyph in each native action instead of assuming one PageControl wrapper. The runtime selector remains tightly scoped to `.as-sidebar-panel-tools` and resets `.tc-btn-text` descendants only.
+
+### Scoped implementation
+
+- Added thirteen line-icon image tiddlers: `palette`, `lock`, `network`, `image`, `journal`, `link`, `print`, `refresh`, `save`, `storyview`, `theme`, `clock`, and `unfold`.
+- Added explicit icon-map entries for the fourteen bundled Other controls; `$:/core/ui/Buttons/tag-manager` reuses the existing `tag` icon.
+- Preserved `generic-tool` as the fallback for unknown or future PageControls, verified with the injected test control.
+- Reset only Tools action-button `.tc-btn-text` left margins, leaving native toolbars elsewhere unchanged.
+- Preserved native PageControl transclusions, checkboxes, captions, descriptions, ordering, state, the Other disclosure, responsive column tracks, and all TiddlyWiki behavior.
+
+### GREEN, build, and visual evidence
+
+Using the process-local Node `24.18.0` binary:
+
+- Direct source contract: **9/9 passed**.
+- Focused real-browser Tools scenario: **1/1 passed**.
+- The browser verified all fourteen bundled semantic mappings, generic fallback for one injected future control, and a `5px` icon-right to first-visible-text gap for every common and Other row.
+- The same scenario retained zero horizontal overflow at `240px`, `264px`, and `520px` total sidebar widths.
+- TypeScript check: passed.
+- Local and vendor lint: passed with no lint errors.
+- Source-boundary contracts: **16/16 passed**.
+- Product-source contracts: **4/4 passed**.
+- Integrated single-HTML build and offline artifact validation: **1/1 passed**; `Wiki/dist/` contains only `index.html`, with no plugin library or standalone plugin JSON packages.
+
+The artifact check's first invocation stopped before building because its internal Windows command expects a `pnpm` executable on `PATH`; this shell exposes pnpm only as a fixed `.cjs` entry. A process-local temporary command shim routed that invocation to the existing Node 24/pnpm installation, the unchanged artifact test then passed, and the temporary shim was deleted immediately. No project script, dependency, lockfile, global environment, or runtime source was changed for that infrastructure issue.
+
+Final review images are stored under `Wiki/comparison-artifacts/review/sidebar-tools-refinement-20260724/`:
+
+- `07-tools-5px-gap-sidebar.png` — default common Tools group;
+- `09-other-tools-final-5px-icons-sidebar.png` — expanded Other group with the final semantic icons and corrected spacing.
+
+Both screenshots were inspected directly. The save caption retains TiddlyWiki's native dirty-state color; this refinement changes only its icon and spacing. Port `8080` remains available for read-only review, port `8081` was not modified, and the comparison screenshots remain review artifacts rather than Wiki runtime inputs. Nothing was committed, pushed, published, deployed, archived, or packaged as a standalone plugin.
+
+## Description-free Tools rows and hidden Palette default — 2026-07-24
+
+### Root cause and approved behavior
+
+The explanation after each Tools action was product-owned rather than required by TiddlyWiki. `$:/core/ui/SideBar/Tools` explicitly transcluded every PageControl's `description` field into `.as-tool-description`, and the theme reserved a third responsive grid track for that secondary text. The Palette checkbox was also intentionally on: `page-control-palette.tid` set the standard PageControl visibility tiddler to `show`.
+
+The approved behavior removes that description node and its stylesheet rather than merely hiding it, changes each row to a checkbox track plus one flexible action track, and sets Palette's product default to `hide`. No startup module enforces that value. Palette remains in the dynamic Other group, and its native checkbox can still create a `show` user override.
+
+### RED and implementation evidence
+
+- Direct source contract after adding the new expectations: **8 passed / 1 expected failure**, at the existing `as-tool-description` node.
+- Two focused real-browser scenarios after adding the runtime expectations: **0 passed / 2 expected failures**. The configuration scenario received Palette `show` instead of `hide`; the Tools scenario found sixteen rendered `.as-tool-description` elements instead of zero.
+- Removed the description transclusion from `Wiki/src/angelscript-tools/navigation/sidebar-tools.tid`.
+- Removed the description CSS and changed row tracks to `14px minmax(0, 1fr)` in `Wiki/src/angelscript-theme/compact-control-rail.tid`.
+- Changed only the Palette visibility default from `show` to `hide` in `Wiki/src/angelscript-wiki-config/config/page-control-palette.tid`.
+
+Native PageControl action transclusions, accessible names/hints, visibility checkboxes, semantic icons, `5px` icon-label spacing, `29px` row density, `2px` row gap, ordering, Other discovery, unknown-tool fallback, hover/focus behavior, and user configuration persistence remain intact.
+
+### GREEN, build, and visual evidence
+
+Using the process-local Node `24.18.0` binary:
+
+- Direct source contract: **9/9 passed**.
+- Focused browser scenarios: **2/2 passed** in one shared Playwright startup.
+- The browser confirmed zero description elements; Palette present and initially unchecked; manually checking Palette writes `show`; and two-column rows remain free of horizontal overflow at `240px`, `264px`, and `520px`.
+- TypeScript check: passed.
+- Local and vendor lint: passed without errors or formatting warnings after the two new test expressions were normalized.
+- Source-boundary contracts: **16/16 passed**.
+- Product-source contracts: **4/4 passed**.
+- Integrated single-HTML build and offline artifact validation: **1/1 passed**. The build consumed eight product plugin sources but produced only `Wiki/dist/index.html`, with no standalone plugin packages.
+
+The live inspection returned `descriptionCount: 0`, `initialPaletteChecked: false`, and computed row columns `14px 168px` at the default captured width. Two ignored review screenshots were generated and inspected:
+
+- `Wiki/comparison-artifacts/review/sidebar-tools-refinement-20260724/10-tools-without-descriptions-sidebar.png`;
+- `Wiki/comparison-artifacts/review/sidebar-tools-refinement-20260724/11-other-tools-no-descriptions-palette-off-sidebar.png`.
+
+The common and Other groups now read as compact action lists without a competing italic column, and Palette remains visibly discoverable but unchecked. The screenshots are not runtime inputs and are excluded from the requested Git commit. Port `8081`, unrelated files, publishing, deployment, OpenSpec archival, and standalone plugin packaging remain untouched. After visual acceptance, the user explicitly requested the reviewed source and OpenSpec changes be committed through the Wiki-submodule-first workflow; no push was requested.

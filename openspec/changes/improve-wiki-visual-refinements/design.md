@@ -183,6 +183,40 @@ This approach is preferred to converting the source to ICO because the reviewed 
 
 Source, artifact, and browser contracts will cover three boundaries: the physical SVG tiddler retains the approved AngelScript title/view box and system-tiddler metadata; the single offline HTML serializes `$:/favicon.ico` with `image/svg+xml` and does not emit a separate favicon asset; and a running Wiki changes `link#faviconLink` to an SVG data URI. This keeps the favicon independent of plugin packaging and external file delivery.
 
+### Isolate compact Tools geometry from inherited core margins
+
+The production Tools shadow intentionally retains `tc-sidebar-tools-item` so it stays recognizable to TiddlyWiki and compatible with PageControl extensions. Vanilla therefore contributes `3px` block margins to every tool row, while the Angelscript base theme contributes `2px` margins to the native buttons transcluded inside each action. Those inherited margins expand an intended `29px` row to `31px`, create a roughly `34px` row pitch, and override the selected 03 version paragraph rhythm. The existing test checked only the declared `min-height`, so it did not detect the larger real bounding box.
+
+Each row also owns an independent `auto` action column. Because PageControl captions have different intrinsic widths, every row chooses a different action track and the description column begins at a different horizontal position. The selected 03 fixture hides much of that raggedness through shorter sample descriptions, but the production Wiki's longer native descriptions make the drift and truncation obvious.
+
+The correction remains inside `.as-sidebar-panel-tools`: common and Other lists become grids with a `2px` row gap; rows and their native action buttons reset only their leaked margins; the version paragraph uses a panel-qualified selector strong enough to beat Vanilla; and rows use `14px clamp(92px, 52%, 104px) minmax(0, 1fr)`. The action button itself uses intrinsic width capped by the shared track, so short captions remain compact while long captions ellipsize without moving the description column. The clamp preserves the one-line selected-03 structure: it bottoms out at `92px` for the minimum sidebar, grows to roughly `100px` at the `264px` default, and caps at `104px` for wider sidebars.
+
+This is preferred to removing `tc-sidebar-tools-item`, because that would weaken compatibility with core/tooling selectors; to changing the global button rule, because unrelated tiddler and toolbar controls would move; and to wrapping descriptions below actions, because the approved direction is the compact single-line row. Main-tab CSS is not changed: current computed styles already keep the unselected Recent tab transparent and geometry-stable on hover and focus, so the reported grey block is covered as a browser regression instead of being countered with another override.
+
+### Complete the bundled Other-tools icon vocabulary and restore the 03 icon gap
+
+Runtime measurement after the row-alignment pass found a `12px` gap between every `13px` product icon and its visible action label, while the selected 03 reference uses `5px`. The product already reserves exactly `5px` through its absolute icon position and button padding; the extra `7px` comes from the native `.tc-btn-text` span's inherited `margin-left`. The correction therefore resets only `.as-sidebar-panel-tools .as-tool-action button .tc-btn-text` to `margin-left: 0`, covering both ordinary PageControls and the save control's nested dirty-indicator wrapper while leaving native toolbar buttons outside Tools unchanged. The import control uses a bare text node and already inherits the correct button track without this reset.
+
+The fourteen bundled PageControls currently discovered under “其他工具” all fall through to `generic-tool`, so the expanded list still reads as an unfinished placeholder despite preserving the correct dynamic extension behavior. The approved mapping keeps the central JSON lookup and generic fallback, but explicitly assigns the bundled controls to the same `24×24`, no-fill, `currentColor`, `1.6px`, round-cap/round-join line-icon family:
+
+- Palette → `palette`; Encryption → `lock`; Network Activity → `network`;
+- New Image → `image`; New Journal → `journal`; Permaview → `link`;
+- Print → `print`; Refresh → `refresh`; Save Wiki → `save`;
+- Story View → `storyview`; Tag Manager → the existing `tag`;
+- Theme → `theme`; Timestamp → `clock`; Unfold All → `unfold`.
+
+Thirteen new image tiddlers are required because only `tag` already exists with the approved semantics. The PageControl titles remain map keys and the tool row continues to transclude each native button, so language, tool availability, popup state, messages, visibility configuration, ordering, and future plugin discovery remain runtime-owned. Any PageControl not listed in the product map continues to receive `generic-tool`; this is required for the injected extension regression and prevents the Wiki from assuming semantics for unknown third-party controls.
+
+This complete vocabulary is preferred to aggressively reusing `layout`, `fold`, or `export`, because those silhouettes would make distinct operations look equivalent; and to exposing each PageControl's native icon, because the bundled icons vary in size, fill, and weight and would break the selected compact-rail language.
+
+### Remove secondary Tools descriptions and default Palette to hidden
+
+The selected compact Tools surface no longer needs the italic explanation column after each action. That column is not required by TiddlyWiki: the product-owned `$:/core/ui/SideBar/Tools` shadow explicitly transcludes every PageControl's `description` field into `.as-tool-description`, and the theme reserves a third grid track for it. Removing only the CSS would leave redundant DOM and field transclusions, so the approved correction removes the description node from the row procedure, deletes its unused stylesheet, and changes each row to `14px minmax(0, 1fr)`. The native PageControl button keeps its accessible label and tooltip, while the full remaining row width becomes available for the action caption.
+
+The Palette visibility issue is also product-owned rather than restored runtime state: `page-control-palette.tid` explicitly sets `$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/palette` to `show`. The product default changes to `hide`, using the same standard visibility tiddler contract as Markdown, Draw.io, Save, Refresh, and Journal. This is a default, not a startup enforcement rule: the Tools checkbox remains bound to that configuration tiddler, so a user can enable Palette later and TiddlyWiki can persist the resulting ordinary tiddler override normally.
+
+This is preferred to hiding descriptions with CSS, because dead DOM would remain and future tests could accidentally depend on it; and to converting descriptions into a new tooltip system, because native PageControls already own their labels/hints and the user explicitly requested less secondary text. Palette remains discoverable under “其他工具” even while unchecked.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
@@ -212,6 +246,12 @@ Source, artifact, and browser contracts will cover three boundaries: the physica
 - [Changing the physical extension while retaining the canonical `$:/favicon.ico` title can look surprising in the repository] → Keep explicit metadata beside the SVG and cover the title/type mapping in a source contract.
 - [A transparent background can reduce black-artwork contrast on dark browser chrome] → Accept native chrome blending for the user-approved transparent favicon, inspect both light and dark samples, and treat any future adaptive/light-stroke favicon as a separate visual design rather than reintroducing a full square.
 - [The favicon-specific crop intentionally clips the outer wing tips] → Lock the reviewed `780×780` middle crop, preserve the complete path source, and reject the tighter central-first crop unless the user later approves a simplified small-size mark.
+- [A fixed action track can truncate long native PageControl captions or descriptions] → Keep full native accessible labels and title text, use intrinsic buttons capped by a responsive `92–104px` track, preserve one-line ellipsis, and verify minimum/default/maximum sidebar widths without horizontal overflow.
+- [Removing `tc-sidebar-tools-item` or resetting buttons globally could break extension behavior] → Retain the core class and native transclusions, and qualify every margin/list/grid correction through `.as-sidebar-panel-tools`.
+- [A new core or plugin PageControl can appear without a known semantic icon] → Keep the generic fallback for unknown titles and require explicit mappings only for the fourteen bundled Other controls.
+- [Icon-to-text spacing can regress through native toolbar text rules] → Reset only `.tc-btn-text` descendants inside Tools action buttons and measure the first visible text glyph rather than assuming one core DOM wrapper; require the rendered icon-right to text-left gap to remain `5px`.
+- [Changing Palette to hidden could be mistaken for removing the tool] → Change only its standard visibility-config default, keep the Palette PageControl in the dynamic Other list, and verify that checking it still writes `show`.
+- [Removing descriptions could leave a stale empty grid track] → Remove the template node and CSS together, require exactly two computed grid columns at representative sidebar widths, and retain overflow and row-density coverage.
 
 ## Migration Plan
 
@@ -227,6 +267,9 @@ Source, artifact, and browser contracts will cover three boundaries: the physica
 10. Add failing directory-first sidebar contracts, apply only native SideBar visibility/order/default-tab configuration plus aligned visible wording, and verify fresh-load behavior without a startup module.
 11. Add failing source, artifact, and browser contracts for the approved SVG favicon; replace the old ICO-backed `$:/favicon.ico` with the metadata-mapped SVG source; then verify the integrated single-HTML build and native runtime data URI.
 12. Add failing source/artifact/runtime contracts for the screenshot-corrected transparent `780×780` crop, remove the rejected full-canvas rectangle, and inspect the favicon at `16px`, `20px`, `32px`, and `64px` in a realistic browser-tab surface.
+13. Add failing real-browser contracts for computed Tools row geometry and main-tab interaction stability, isolate inherited margins inside the Tools panel, align its responsive action/description columns, and verify the single-HTML product at representative sidebar widths.
+14. Add failing source/browser contracts for the fourteen bundled Other-tool mappings and the `5px` icon-label gap, add thirteen product-owned semantic image tiddlers plus the existing tag reuse, and retain generic fallback behavior for an injected future PageControl.
+15. Add failing source/browser contracts for description-free two-column Tools rows and a hidden Palette default, remove the product-owned description transclusion/style, switch the row to one flexible action track after the checkbox, and verify Palette remains manually enableable through the native visibility checkbox.
 
 If a future request would require `publish`, external deployment, package distribution, or release-oriented artifact generation, stop and obtain explicit user direction first. A normal local `build` remains a validation command only.
 
