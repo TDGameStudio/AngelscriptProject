@@ -341,3 +341,206 @@ The current machine still reports Node `25.5.0`, so pnpm emits the known engine 
 After user approval, the selected-reference typography, Open/toggle cleanup, and Command Palette glyph follow-up were committed in the Wiki submodule as `5b3b934` (`[Wiki] Fix: refine compact sidebar typography and icons`). The host commit records the updated Wiki gitlink together with the formal OpenSpec design, delta requirement, task checklist, and verification evidence.
 
 Neither commit is pushed. The OpenSpec remains active and unarchived, port `8081` remains untouched, and no standalone plugin packages were generated or published.
+
+# Preview-only compact tag popup — 2026-07-24
+
+## Baseline and TDD evidence
+
+Runtime inspection of the formal Wiki confirmed that the native tag reveal keeps the useful `$:/core/ui/TagTemplate` order — tag target, divider, tagged-tiddler list — but computes to a `380px` minimum width, `14px` text, square border, and no shadow. The selected 03 reference had only a static `ASWiki/Home` span and no tag-popup interaction.
+
+The selected-preview Playwright scenario was written before modifying 03. Its first run reported **8 passed and 1 failed**; the sole new failure was the expected missing semantic `ASWiki/Home` button and associated popup. After the preview implementation, the focused suite passed **9/9**.
+
+The first full lint checkpoint then caught an unsafe `evaluateAll` return around DOM `className` in the new test. Replacing that page-side value extraction with Playwright-native `toHaveClass` assertions retained the exact target/divider/list order contract and removed the unsafe/deprecated typing path. The rerun passed with **0 errors and 0 warnings**.
+
+## Preview design and interaction evidence
+
+Only `03-compact-control-rail.html` was changed:
+
+- The tag pill is now a semantic button with `aria-controls`, `aria-haspopup="menu"`, and live `aria-expanded`.
+- Its anchored popup preserves the tag-target/divider/tagged-list order and uses a `260px` white surface, `6px` radius, `#d9dde2` border, selected two-layer menu shadow, `11px` text, and `29px` rows.
+- `AngelscriptWikiHome` uses the Open panel's pale-blue current surface, `2px` blue accent edge, and `500` weight. Hover/focus rows use the quieter blue surface and no document/file glyph.
+- Click toggles the popup; outside click closes it; `Escape` closes and restores focus; page-level and tiddler-level action menus close the tag popup before opening.
+- Representative popup links remain ordinary anchors. Formal TiddlyWiki tag templates, filters, popup state, drag/drop, theme source, and navigation were not modified.
+
+At `1440×960`, the inspected popup measured `260×139px` at `x=349`; its computed font size was `11px`, radius `6px`, and shadow matched the selected menu token. At `390×844`, after closing the overlay drawer, it measured from `x=24` to `x=284` inside the `390px` viewport.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- `lint:all`: passed with **0 errors and 0 warnings** after the recorded test-only correction.
+- Source-boundary contracts: **13/13 passed**.
+- Product-source contracts: **4/4 passed**.
+- Focused selected-preview Playwright suite: **9/9 passed**.
+- Full product Playwright suite: **64/64 passed**.
+- Exact diff check: passed with the repository's existing LF-to-CRLF notices.
+- The only Wiki source diffs are the selected 03 HTML and its preview Playwright spec.
+
+From the host root:
+
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+- Scoped OpenSpec diff check: passed.
+- The formal watched Wiki still responds with HTTP `200` at `http://127.0.0.1:8080/`.
+
+The standalone file remains at `Wiki/comparison-artifacts/left-sidebar/03-compact-control-rail.html` for user review. This preview-only checkpoint did not modify production TW, touch port `8081`, commit, push, run a Wiki/plugin build, package plugins, publish, deploy, or archive the OpenSpec.
+
+# Superseded More/Tags disclosure interpretation — 2026-07-24
+
+User review rejected this checkpoint because it interpreted “use the same popup style as the body tag” as “replace More/Tags with an inline disclosure directory.” The RED/GREEN and visual evidence below remains a factual record of the rejected experiment, but the directory is not the accepted 03 design and is replaced by the corrected shared-popup task 19.
+
+## TDD evidence
+
+The selected-preview scenario was added before changing the More/Tags renderer. Its RED run reported **9 passed and 1 failed**; the sole new failure was the expected absence of `[data-more-tag-directory]` while the existing dark static tag pills remained. After implementing the disclosure directory, the same focused suite passed **10/10**.
+
+The scenario covers seven semantic tag buttons, derived count badges, controlled hidden lists, `29px` and `11px` computed styles, pale-blue/`2px` expanded and current states, no SVG/file glyphs, single-open switching, second-activation collapse, keyboard Enter, the separated untagged group, and no horizontal overflow after moving the sidebar separator to its `240px` minimum.
+
+## Preview design and visual evidence
+
+Only the standalone 03 renderer was extended:
+
+- The seven dark pills are now full-width tag disclosure rows with a quiet count and compact CSS chevron.
+- Counts come from each tag group's representative tiddler array rather than a duplicated numeric field.
+- Expanding a tag reveals its tiddlers inline. Opening another tag closes the previous list; activating the same tag again collapses it.
+- `ASWiki/Home` exposes three representative tiddlers, with `AngelscriptWikiHome` using the established pale-blue current surface and `2px` accent edge.
+- “未设标签” remains the seventh group and is separated by a restrained horizontal divider.
+- The other ten More categories continue through the existing generic chip/empty-state renderer.
+
+Desktop `1440×960` and minimum-sidebar-width screenshots were inspected. At the default `264px` sidebar width the selected label, count, chevron, and three expanded rows remain visually distinct. At the `240px` minimum, long labels use ellipsis and the More panel retains `scrollWidth <= clientWidth`; no horizontal scrollbar or overlap appears.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- `lint:all`: passed with **0 errors and 0 warnings** after correcting one test-only dprint line-wrap warning.
+- Source-boundary contracts: **13/13 passed**.
+- Product-source contracts: **4/4 passed**.
+- Focused selected-preview Playwright suite: **10/10 passed** after the recorded RED run.
+- Full product Playwright suite: **65/65 passed**.
+- Scoped Wiki diff check: passed with only the repository's existing LF-to-CRLF notices.
+- Wiki source changes remain limited to the selected 03 HTML and its preview Playwright test; formal TiddlyWiki source is unchanged.
+
+From the host root:
+
+- The design decision, delta scenario, implementation checklist, and this evidence were appended to the existing visual-refinement OpenSpec.
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+- Scoped OpenSpec diff check passed with only existing LF-to-CRLF notices.
+
+The current machine still reports Node `25.5.0`, so pnpm emits the known engine warning against the documented `>=24 <25` baseline. This preview-only checkpoint did not touch port `8081`, commit, push, run a Wiki/plugin build, package plugins, publish, deploy, archive the OpenSpec, or modify production TW.
+
+# Corrected More/Tags body-style popup — 2026-07-24
+
+## Requirement correction and TDD evidence
+
+User review clarified that More/Tags should keep its compact tag controls and open the same floating surface as the body tag. The accepted behavior is not the preceding inline disclosure directory.
+
+The rejected directory scenario was replaced before changing the HTML. Its RED run reported **9 passed and 1 failed**; the sole new failure was the expected absence of the seven `[data-more-tag-popup-toggle]` controls while the mistaken directory remained. After removing the directory and adding the shared popup, the desktop contract completed successfully. The first narrow rerun exposed a test-step error: the test closed the default-open mobile drawer before trying to select More. Removing that incorrect toggle action left implementation unchanged, and the focused suite passed **10/10**. A further explicit narrow `toBeVisible()` assertion also passed.
+
+## Shared popup and visual evidence
+
+The corrected 03 implementation keeps the compact More/Tags tag buttons and adds one popup outside the clipping sidebar DOM:
+
+- The body and More popup use the same `.tag-popup`, `.tag-popup-target`, `.tag-popup-divider`, `.tag-popup-list`, and `.tag-popup-item` classes.
+- Playwright compares their computed width, radius, background, border, shadow, text color, font size, line height, and padding as one exact object; the values are equal.
+- Only positioning differs: the body popup remains absolutely anchored below the body tag, while the More popup is fixed at page level, placed beyond the desktop sidebar edge, and clamped inside the viewport.
+- Selecting a new sidebar tag retargets the same popup and clears the old button; selecting the current tag closes it.
+- Outside click, `Escape`, the body tag, page/tiddler action menus, More-category changes, sidebar-tab changes, sidebar resizing, and viewport resizing close the More popup. `Escape` restores trigger focus.
+- Popup content retains the tag target, divider, representative tiddler list, `29px` rows, pale-blue/`2px` current item, and no file/document SVG.
+
+At `1440×960`, the inspected `ASWiki/Home` popup begins immediately beyond the `264px` sidebar, uses the same `260px` white surface as the body popup, and displays three representative rows without clipping. At `390×844`, a real viewport screenshot and runtime geometry check confirmed `display: block`, `visibility: visible`, `z-index: 100`, and bounds `x=114…374`, fully contained inside the viewport. The earlier missing full-page screenshot was a fixed-layer screenshot-stitching artifact; the actual viewport screenshot and `elementFromPoint` both confirmed the popup is the visible top layer.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- Focused selected-preview Playwright suite: **10/10 passed** after the recorded RED run and narrow-test correction.
+- TypeScript check: passed.
+- `lint:all`: passed with **0 errors and 0 warnings** after correcting one test-only dprint line-wrap warning.
+- Source-boundary contracts: **13/13 passed**.
+- Product-source contracts: **4/4 passed**.
+- Full product Playwright suite: **65/65 passed**.
+- Scoped Wiki and OpenSpec diff checks: passed with only the repository's existing LF-to-CRLF notices.
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+
+The corrected work remains limited to `03-compact-control-rail.html`, its preview test, and this existing visual-refinement OpenSpec. It does not modify production TiddlyWiki source, touch port `8081`, commit, push, build/package plugins, publish, deploy, or archive.
+
+# Production sidebar tag-popup overflow correction — 2026-07-24
+
+## Width/root-cause audit
+
+The runtime audit confirmed that the left-sidebar resizer does not double-apply or miscalculate width. After a real pointer drag to `320px`, `$:/themes/tiddlywiki/vanilla/metrics/sidebarwidth` persisted as `320px`, the temporary `--angelscript-sidebar-width` value was removed, the rail remained `40px`, `.tc-sidebar-scrollable` measured `280px`, and the separator center plus story-river start both measured exactly `320px`.
+
+The failure was a width-contract mismatch between the intentionally compact variable sidebar and TiddlyWiki's nested native overflow surfaces:
+
+- The 03 production contract treats the persisted metric as the total rail-plus-content width. The More/Tags inner client width measured `115`, `139`, `195`, `235`, `275`, `315`, and `395px` at total widths `240`, `264`, `320`, `360`, `400`, `440`, and `520px`.
+- Vanilla applies `overflow: auto` to both `.tc-sidebar-scrollable` and `.tc-tab-content.tc-vertical`.
+- A real `260px` TagTemplate popup needs `269px` of inner scroll extent at its native anchor offset. At the default `264px` total width it expanded the inner content from `139px` to `269px`; the taller `ASWiki/Workflow` popup also expanded inner scroll height from `274px` to `382px`.
+- The native `380px` Untagged Reveal uses the sidebar as its offset parent and instead expanded the outer sidebar from `224px` to `457px`.
+- Independently, the theme's `width: 100%` tag-manager heading retained the native button's `2px` inline margins, producing a closed-state `139/143px` client/scroll mismatch.
+
+The issue therefore becomes weaker or disappears when the sidebar is widened beyond roughly `394px`, but the resizer is not the defect. Raising its minimum from `240px` to approximately `394px` would destroy the selected compact layout. The correction instead resets the heading margin and portals only the currently open sidebar TagTemplate/Untagged Reveal.
+
+Knot's `tw5` source knowledge and the locked local TiddlyWiki `5.4.1` source agree on the relevant core behavior: Reveal uses absolute positioning relative to its offset parent and does not automatically portal beyond overflow ancestors; native popup state remains managed by `$tw.popup`.
+
+## TDD and widget-lifecycle correction
+
+The updated source contracts were run before implementation and reported **6 passed / 2 failed**: the expected failures were the missing portal variants in the theme stylesheet and the missing startup adapter. The three new browser scenarios all failed as intended:
+
+- the width-range scenario first observed `115px` client width versus `119px` scroll width at the `240px` minimum;
+- the Untagged scenario could not find a portalled real-tag popup;
+- the narrow scenario could not find a contained portal.
+
+The first implementation made the narrow geometry pass, but the other two tests caught a TiddlyWiki widget-tree lifecycle problem: Reveal widgets reuse their own DOM node during refresh, so leaving that node under `body` while the core refreshes can empty the original TagTemplate wrapper and break native close/switch behavior. The implementation was corrected rather than weakening the tests:
+
+- `th-page-refreshing` first restores the exact same Reveal node, original inline style, parent, and sibling position;
+- core TiddlyWiki then refreshes its normal widget tree and popup state;
+- `th-page-refreshed` re-adopts the node only when the corresponding native trigger still reports `aria-expanded="true"`;
+- no content is cloned and the adapter never writes, deletes, or triggers popup-state tiddlers.
+
+The source contract then passed **8/8**, the three new focused browser scenarios passed **3/3**, and the complete expanded-sidebar file passed **10/10**.
+
+## Visual and geometry evidence
+
+Four real runtime screenshots were captured under the ignored `Wiki/test-results/` inspection directory:
+
+- `tag-popup-final-body-1440.png`
+- `tag-popup-final-sidebar-tag-1440.png`
+- `tag-popup-final-untagged-1440.png`
+- `tag-popup-final-sidebar-tag-390.png`
+
+All four were inspected directly. The body tag remains a native absolute child at `x=349`, width `260px`. At the default `264px` total desktop sidebar, both sidebar variants start at `x=272`, exactly `8px` beyond the sidebar's `x=264` edge, and align vertically with their trigger rows. The real-tag popup measures `260×175.5px`; Untagged measures `260×215px` and uses flat normal-weight rows with no target divider. The 390px drawer popup measures from `x=68` to `x=328` and from `y=244` to `y=329.5`, fully within the required `16px` viewport inset.
+
+After the correction, default desktop geometry remains stable before and during both popups:
+
+- inner More content: `client 139×274`, `scroll 139×274`;
+- outer sidebar: `client 224×960`, `scroll 224×960`.
+
+Playwright repeats the no-growth check at total widths `240`, `264`, `320`, `400`, and `520px`, verifies external dismissal, switches a real tag directly to Untagged with only one portal, and confirms body, macro, and TagManager popups remain native absolute children.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- Scoped local lint across `src`, `scripts`, tracked Playwright tests, and configuration: passed with **0 errors and 0 warnings**. The unrelated untracked homepage-concept spec remains excluded and untouched.
+- Vendor lint: passed.
+- Source-boundary contracts: **15/15 passed**.
+- Product-source contracts: **4/4 passed**.
+- TiddlyWiki node test: **1/1 passed**.
+- Expanded-sidebar Playwright suite: **10/10 passed**.
+- Complete tracked product Playwright suite: **70/70 passed**.
+- Integrated Wiki build: passed and emitted only `Wiki/dist/index.html` (`4,015,367` bytes).
+- Offline artifact test: initially could not launch its internally hard-coded global `pnpm` command; rerunning through temporary project-version `pnpm 11.8.0` passed **1/1** and rebuilt the same single HTML.
+- HTTP watched preview: `200` at `http://127.0.0.1:8080/#AngelscriptWikiHome`.
+
+The build log's “8 product plugin sources / Minimized plugins” entries are the eight already-declared internal source roots embedded into the one Wiki HTML; no standalone plugin archives or packages were emitted, published, or deployed. Node remains `25.5.0`, so pnpm reports the known engine warning against the documented `>=24 <25` baseline.
+
+From the host root:
+
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+- Scoped Wiki/OpenSpec `git diff --check`: passed with only the repository's existing LF-to-CRLF normalization notices.
+
+## Commit checkpoint
+
+The Wiki implementation, the selected `03` visual reference, and their regression coverage were committed in the Wiki submodule as `0f8f599` (`[Wiki] Fix: prevent sidebar tag popup overflow`). The host commit records that submodule revision together with this OpenSpec update. Neither repository was pushed or deployed; no standalone plugins were packaged, port `8081` was not touched, and `improve-wiki-visual-refinements` remains active for later style iterations.

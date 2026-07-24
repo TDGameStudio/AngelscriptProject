@@ -245,3 +245,71 @@ After production selection, the comparison directory SHALL retain `03-compact-co
 - **AND** the glyph SHALL use one chevron path and one separate baseline path with no fill
 - **AND** the native Command Palette control SHALL continue to own its action, accessible label, focus, popup, and keyboard behavior
 - **AND** the selected 03 standalone reference SHALL not be rewritten by this production-only correction
+
+#### Scenario: Reviewer prototypes the tag popup in 03
+
+- **WHEN** the reviewer activates the `ASWiki/Home` tag in `03-compact-control-rail.html`
+- **THEN** an anchored compact popup SHALL preserve the tag-target link, divider, and tagged-tiddler list order
+- **AND** the surface SHALL use a `260px` desktop width, `6px` radius, selected menu border/shadow tokens, `11px` text, and `29px` tagged-tiddler rows
+- **AND** the current tiddler SHALL use the compact Open panel's pale-blue surface and `2px` accent edge without a file/document glyph
+- **AND** the tag button SHALL expose its popup relationship and expanded state
+- **AND** outside click and `Escape` SHALL close the popup, `Escape` SHALL restore focus, and the popup SHALL remain inside a `390px` viewport
+- **AND** production `$:/core/ui/TagTemplate`, theme source, live tag filters, native popup state, drag/drop, and navigation SHALL remain unchanged during this preview-only experiment
+
+#### Scenario: Reviewer opens a tag popup from More/Tags in 03
+
+- **WHEN** the reviewer activates a tag inside More/Tags in `03-compact-control-rail.html`
+- **THEN** the compact sidebar tag controls SHALL retain their non-accordion layout and expose one shared popup relationship and expanded state
+- **AND** the floating popup SHALL reuse the body tag popup's target, divider, tagged-list structure and exact surface/type/row/current-state tokens
+- **AND** the popup SHALL render outside the clipping sidebar DOM, align beyond the desktop sidebar edge, and remain contained in a `390px` viewport
+- **AND** activating another tag SHALL retarget the same popup and clear the previous trigger, while activating the current tag again SHALL close it
+- **AND** outside click, `Escape`, action-menu activation, More-category changes, sidebar-tab changes, and viewport/sidebar resizing SHALL close it
+- **AND** `Escape` SHALL restore focus and opening either the body or More-tag popup SHALL close the other
+- **AND** the other ten More categories and production Wiki source SHALL remain unchanged during this preview-only experiment
+
+### Requirement: Production real-tag popups share the approved compact surface
+
+Every production popup emitted by `$:/core/ui/TagTemplate` SHALL use the approved compact tag-target, divider, and tagged-tiddler presentation through a product-scoped stylesheet while retaining the native TiddlyWiki popup contract.
+
+#### Scenario: A real tag opens from any TagTemplate consumer
+
+- **WHEN** a user activates a real tag in a tiddler, More/Tags, a `<<tag>>` macro, or TagManager
+- **THEN** the native TagTemplate reveal SHALL use a viewport-bounded `260px` surface, `6px` radius, selected white/border/shadow tokens, `11px` text, and compact `29px` target and tagged-tiddler rows
+- **AND** the native tag-target link, `$:/tags/TagDropdown` extension point, divider, tagged filter, draggable list, navigation, qualified popup state, outside-click dismissal, and Reveal positioning SHALL remain authoritative
+- **AND** the production theme SHALL NOT shadow `$:/core/ui/TagTemplate`, replace popup state, clone popup content, or globally override native dropdown geometry
+- **AND** body, macro, and TagManager consumers SHALL remain native absolute children while only a consumer inside the left sidebar MAY receive the sidebar overflow correction below
+
+#### Scenario: Similar tag and dropdown controls remain outside the adaptation
+
+- **WHEN** the user opens the edit TagPicker, a block tag-completion dropdown, or an ordinary page/tiddler/tool dropdown
+- **THEN** that control SHALL retain its existing component-specific presentation
+- **AND** only a dropdown directly owned by `span.tc-tag-list-item[data-tag-title]`, or the sidebar Untagged sibling Reveal explicitly covered below, SHALL receive the compact popup rules
+
+#### Scenario: Native tagged rows have no synthetic current state
+
+- **WHEN** a production TagTemplate popup lists tiddlers carrying the selected tag
+- **THEN** the rows SHALL receive the approved normal, hover, and keyboard-focus treatments without document/file glyphs
+- **AND** the theme SHALL NOT infer or synthesize the standalone reference's `aria-current`, pale-blue current surface, or accent edge
+
+#### Scenario: More/Tags opens a real tag without changing sidebar overflow
+
+- **WHEN** a user activates a real tag inside the left sidebar's More/Tags content
+- **THEN** the existing native Reveal node SHALL be moved to a body-level portal and use fixed geometry without cloning its content or replacing its popup state
+- **AND** its desktop top SHALL align with the trigger row, its left edge SHALL sit `8px` beyond the sidebar edge, and its surface SHALL remain within a `16px` viewport inset
+- **AND** the More tag-manager heading SHALL not create baseline horizontal overflow through a `100%` width plus native inline margins
+- **AND** the inner More content column and outer sidebar SHALL not acquire popup-caused horizontal or vertical scroll extent at the `240px`, `264px`, `320px`, `400px`, or `520px` total sidebar widths
+- **AND** native `aria-expanded`, outside-click dismissal, tag switching, navigation, filtering, draggable-list markup, and DOM cleanup SHALL remain authoritative
+- **AND** dismissal or switching SHALL leave no stale portal popup
+
+#### Scenario: More/Tags opens Untagged with the shared surface
+
+- **WHEN** a user activates `未设标签` inside the left sidebar's More/Tags content
+- **THEN** its existing sibling Reveal SHALL use the same portal surface, viewport containment, color, border, radius, shadow, `11px` type, and `29px` row geometry as real-tag popups
+- **AND** its flat tiddler list SHALL use normal `400` row weight with no synthetic target row, divider, current state, or file/document glyph
+- **AND** native Untagged filtering, links, popup state, outside-click dismissal, and cleanup SHALL remain unchanged
+
+#### Scenario: Narrow sidebar popup remains usable
+
+- **WHEN** a sidebar tag or Untagged popup opens at `390×844`
+- **THEN** the adapter SHALL prefer placement below its trigger, use above placement when it fits better, and clamp every popup edge inside a `16px` viewport inset
+- **AND** resize or scroll SHALL recompute geometry without replacing the live Reveal or leaving a stale node
