@@ -82,3 +82,19 @@
 
 - [x] 13.1 <!-- Non-TDD --> Commit only the intended production rail/theme/config/tests/guidance files in the Wiki submodule with `[Wiki] Feat: migrate compact control rail to product sidebar`.
 - [x] 13.2 <!-- Non-TDD --> Commit only the formal OpenSpec files and updated Wiki gitlink in the host repository with `[Wiki] Docs: record compact control rail production migration`; do not stage the untracked backup preview, push, publish, deploy, archive, or generate standalone plugin packages.
+
+## 14. Compact rail fidelity follow-up
+
+- [x] 14.1 <!-- TDD --> Add failing product assertions for the six-control rail, Language-above-Control-Panel utility order, absent Palette rail control, dynamic Home state, native More selected state, native Control Panel navigation, contained Language popup, and the five-tab preview geometry.
+- [x] 14.2 <!-- TDD --> Refine the production rail and sidebar-tab CSS so Home follows the focused tiddler, selected rail buttons match the preview, the five tabs use a non-layout-shifting pseudo-element underline, Language opens upward within the viewport, and Control Panel remains native.
+- [x] 14.3 <!-- Non-TDD --> Remove Palette only from the compact rail, keep palette selection available through the native Control Panel, and order the remaining bottom utilities as Language above Control Panel.
+- [x] 14.4 <!-- Non-TDD --> Inspect real `1440×960` Home, page-More, Language, and Control Panel states against `03-compact-control-rail.html` while leaving port `8081` untouched.
+- [x] 14.5 <!-- TDD --> Run focused Playwright, type checking, local lint, source/product-boundary tests, full product Playwright, integrated Wiki build, artifact validation, strict OpenSpec validation, and exact Wiki/host diff checks; do not commit, push, publish, package plugins, deploy, or archive.
+
+## 15. TW-native expanded-panel fidelity
+
+- [x] 15.1 <!-- TDD --> Add source contracts and failing Playwright scenarios for a product-scoped line-icon map, live Open/Recent data, sixteen ordered common Tools controls plus dynamic “其他工具”, the native eleven-category More structure, and two state-driven AS groups; confirm the first run fails on the missing production structures rather than fixture errors.
+- [x] 15.2 <!-- TDD --> Add the scoped icon tiddlers and JSON action map, keep the six native PageControl buttons as the behavior layer, and cover their actual popup/navigation behavior plus computed `fill: none` line-icon rendering.
+- [x] 15.3 <!-- TDD --> Shadow only the Open, Recent, Tools, and More/Tags presentation tiddlers and refine the existing AS navigation WikiText; preserve StoryList drag/close messages, real HistoryList order, PageControl visibility/config and extension discovery, TagTemplate/UntaggedTemplate, and native state/history semantics.
+- [x] 15.4 <!-- TDD --> Apply the 03 row, count, current, grouping, divider, close-all, Other-tools, and collapsible-navigation styling; compare real `1440×960` Open, Recent, Tools, More/Tags, and AS panels against the standalone reference and correct global SVG/link-style collisions.
+- [x] 15.5 <!-- TDD --> Run focused and full source/browser checks, the integrated offline Wiki build and artifact test, strict OpenSpec validation, HTTP preview check, and exact Wiki/host diff checks; keep the change unarchived, leave port `8081` untouched, and do not generate or publish standalone plugin packages.

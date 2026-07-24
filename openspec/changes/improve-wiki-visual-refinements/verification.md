@@ -122,12 +122,12 @@ npm exec --yes pnpm@11.8.0 -- exec playwright test tests/playwright/product/ange
 
 Before the production implementation, the focused run reported **18 passed and 8 failed**. The failures were the intended missing-contract failures: no compact control rail, the old `280px` sidebar geometry, no focusable/keyboard-operable ARIA separator, and selectors finding no native rail controls. After synchronizing the source bridge and implementing the rail, the same two-spec surface passed. Follow-up visual findings for the Open list, close-all control, Tools rows, and the rail More popup were also captured as failing Playwright assertions before their scoped CSS corrections.
 
-The final full suite includes **13 Angelscript theme cases**, **16 document-experience cases**, and the unchanged **12 standalone preview cases**.
+The follow-up full suite includes **14 Angelscript theme cases**, **17 document-experience cases**, and the unchanged **12 standalone preview cases**.
 
 ## Product implementation evidence
 
 - The desktop rail is a theme-guarded `$:/tags/PageTemplate` extension ordered before the core sidebar.
-- Its seven actions transclude the existing Home, More, New Tiddler, Command Palette, Palette, Control Panel, and Language button tiddlers. No preview SVG path or Unicode icon placeholder was copied into production.
+- Its six actions transclude the existing Home, More, New Tiddler, Command Palette, Language, and Control Panel button tiddlers. Palette is not an independent rail control and remains available through Control Panel. No preview SVG path or Unicode icon placeholder was copied into production.
 - The default `264px` total width is split into a persistent `40px` rail and `224px` sidebar content region. Closing the sidebar retains the `40px` rail; the narrow drawer remains rail-free.
 - The resize target remains `12px` wide with a quiet persistent `1px` seam. It exposes `role="separator"`, vertical orientation, current/min/max ARIA values, `8px` arrow adjustments, and Home/End bounds.
 - The Open list uses a single-line ellipsized title, a `24px` per-item close target revealed on hover/focus, and an integrated `36px` close-all row.
@@ -174,3 +174,82 @@ Fresh results: the active OpenSpec change is valid and both intended diffs have 
 Real product rendering was inspected for desktop Open, Tools, More/Tags, AS, page-level More, tiddler toolbar/More, closed, and resize-hover states, plus the `390×844` drawer. The result remains within the accepted Notion-light document style while matching the selected compact rail's spacing, surfaces, states, and information architecture.
 
 The read-only watched preview is running at `http://127.0.0.1:8080/`. Port `8081` was not changed. The current machine still uses Node `25.5.0`, so pnpm emits the expected engine warning against the documented `>=24 <25` baseline; all fresh checks above passed, and the project baseline remains Node 24.
+
+# Compact rail fidelity follow-up — 2026-07-24
+
+## TDD evidence
+
+The follow-up assertions were added before the implementation. The first two-spec run reported **26 passed and 5 failed**. The failures were the intended deltas:
+
+- the rail still exposed seven controls including Palette instead of the selected six-control set;
+- the utility controls were ordered Control Panel before Language;
+- the main sidebar selected tab still used an inherited background and `2px` button border instead of the preview's transparent surface and `::after` underline;
+- the Language popup extended to `1021.375px` in a `960px` viewport;
+- native Control Panel selection still used the inherited theme state rather than the compact-rail state.
+
+After implementation, the six focused Home/tab/control-order/More/Language/Control-Panel scenarios passed:
+
+```powershell
+.\node_modules\.bin\playwright.cmd test tests/playwright/product/angelscript-theme.spec.ts tests/playwright/product/document-experience.spec.ts --grep "uses native TW controls|matches the compact preview tab row|uses the compact RefWiki page-control geometry|opens the rail More menu|keeps the toolbar language control|opens Settings as the native ControlPanel"
+```
+
+Result: **6 passed**.
+
+## Runtime and visual evidence
+
+- Open, Recent, Tools, More, and AS use the preview's `34px` tab height, `13px` gap, neutral/selected text treatment, and absolute `2px` underline without a layout-changing selected border.
+- Home uses the preview selection only when `$:/HistoryList!!current-tiddler` is `AngelscriptWikiHome`; navigating to Control Panel removes the Home state and selects only Control Panel.
+- More preserves the native popup and gains the same selected rail presentation while open.
+- The bottom rail contains Language above Control Panel. Language opens upward to the right and remains inside the `1440×960` viewport. Control Panel continues to open `$:/ControlPanel` as a native focused tiddler and does not create another settings popup.
+- Palette was removed only as an independent compact-rail action; the setting remains available through Control Panel.
+- Real `1440×960` Home, More, Language, and Control Panel states were compared with `03-compact-control-rail.html`.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- Local ESLint: passed with **0 errors and 0 warnings**.
+- Source-boundary tests: **9 passed**.
+- Product-source tests: **4 passed**.
+- Full product Playwright suite: **62 passed (49.8s)**.
+- Integrated offline Wiki build: passed and emitted one Wiki from the eight already-declared internal source components; it did not emit standalone plugin packages.
+- Offline artifact test: **1 passed**.
+- Wiki diff check: passed with only the repository's existing LF-to-CRLF notices.
+
+The first standalone product-source preparation attempt raced the already-running development watcher on `.generated/plugin-sources` and received Windows `ENOTEMPTY`. The stale watcher tree was stopped after browser verification, the same preparation completed successfully as part of `build:wiki`, and the watched preview was then restarted. The final preview responds with HTTP `200` at `http://127.0.0.1:8080/`; port `8081` remains independently owned by its original process.
+
+# TW-native expanded-panel fidelity — 2026-07-24
+
+## TDD and debugging evidence
+
+The icon-map and panel contracts were written before their implementations:
+
+- `test:source-boundaries` first failed because the scoped icon map and panel shadow tiddlers did not exist.
+- The five new browser scenarios first failed because production had no 03-style Open, Recent, Tools, More/Tags, or AS structures.
+- The first implementation exposed three TiddlyWiki-specific errors rather than being papered over with static data: hyphenated custom filter-function names were parsed as ordinary filter syntax, a Recent outer list repeated its groups once per history item, and `is[tiddler]` excluded core/plugin PageControl shadows. Dotted filter-function names, a one-result outer guard, and `all[shadows+tiddlers]` corrected the runtime contracts.
+- Computed-style assertions then caught global `tc-tiddlylink` borders/weights, SVG fill inheritance, and the inherited `8px` More-content margin. Panel-qualified selectors and a scoped `data-as-icon` line-SVG rule corrected those collisions.
+
+Focused results before the full verification checkpoint:
+
+- Five new expanded-panel scenarios: **5 passed**.
+- Combined Angelscript theme, document experience, and expanded-panel suite: **36 passed (25.8s)**.
+
+## Fresh full verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- Local and bounded vendor ESLint: passed with **0 errors and 0 warnings**.
+- Source-boundary contracts: **12 passed**.
+- Product-source contracts: **4 passed**.
+- Full product Playwright suite: **67 passed (54.9s)**.
+- Integrated offline Wiki build: passed. The preparation message enumerates the eight already-declared internal source components consumed by the build; the command emitted the single integrated Wiki and did not create standalone plugin packages.
+- Offline artifact test: **1 passed**.
+
+From the host root:
+
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+- Wiki and scoped OpenSpec diff checks: passed, apart from the repository's existing LF-to-CRLF normalization notices.
+
+The watched preview remained available at `http://127.0.0.1:8080/` and was opened for the user after the implementation. Port `8081` was not touched. The machine still reports Node `25.5.0`, so pnpm emits the known engine warning against the project baseline `>=24 <25`; all checks above passed.

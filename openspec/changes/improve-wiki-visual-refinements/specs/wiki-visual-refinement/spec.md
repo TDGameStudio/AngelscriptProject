@@ -138,7 +138,7 @@ The compact-control-rail preview SHALL provide operable Open, Recent, Tools, Mor
 
 ### Requirement: Selected compact control rail is the production desktop default
 
-The production AngelscriptWiki desktop layout SHALL adapt the selected compact-control-rail preview through native TiddlyWiki PageTemplate and toolbar extension points. The rail SHALL use real PageControl button and SVG tiddlers, preserve live sidebar and ViewToolbar behavior, and SHALL NOT copy preview fixtures, Unicode menu glyphs, or simulated popup scripts.
+The production AngelscriptWiki desktop layout SHALL adapt the selected compact-control-rail preview through native TiddlyWiki PageTemplate and toolbar extension points. The rail SHALL use real PageControl button tiddlers for behavior and product-scoped line-icon tiddlers for presentation, preserve live sidebar and ViewToolbar behavior, and SHALL NOT copy preview fixtures, Unicode menu glyphs, or simulated popup scripts.
 
 #### Scenario: Desktop Wiki renders the selected rail
 
@@ -146,7 +146,17 @@ The production AngelscriptWiki desktop layout SHALL adapt the selected compact-c
 - **THEN** a `40px` control rail SHALL occupy the left edge within a `264px` default total sidebar width
 - **AND** the core sidebar content SHALL begin after the rail
 - **AND** the story river SHALL begin after the total sidebar width
-- **AND** the rail SHALL expose native Home, More, New Tiddler, Command Palette, Palette, Control Panel, and Language controls according to their PageControl visibility settings
+- **AND** the rail SHALL expose native Home, More, New Tiddler, and Command Palette primary controls
+- **AND** its bottom utility zone SHALL expose Language above Control Panel and SHALL NOT expose Palette as an independent rail control
+- **AND** Home SHALL use the selected preview state only while the focused tiddler is `AngelscriptWikiHome`
+
+#### Scenario: Bottom utility controls preserve native behavior
+
+- **WHEN** the reviewer activates Language in the desktop rail
+- **THEN** its native language menu SHALL open beside the rail and remain within the viewport
+- **WHEN** the reviewer activates Control Panel
+- **THEN** `$:/ControlPanel` SHALL open as the native focused tiddler
+- **AND** Control Panel SHALL receive the rail selected presentation without introducing a settings popup
 
 #### Scenario: Desktop sidebar is collapsed
 
@@ -159,6 +169,7 @@ The production AngelscriptWiki desktop layout SHALL adapt the selected compact-c
 
 - **WHEN** the reviewer uses Open, Recent, Tools, More, AS, page-level More, or tiddler-level More
 - **THEN** each surface SHALL use its real TiddlyWiki data, widgets, actions, popup state, and SVG icons
+- **AND** the Open, Recent, Tools, More, and AS main tab row SHALL use the selected preview's height, gap, text states, and non-layout-shifting underline
 - **AND** Tools SHALL retain checkbox/button/description rows
 - **AND** More SHALL retain its vertical category column and separated content divider
 - **AND** the tiddler toolbar SHALL retain the current More, Edit, Close, and New Diagram direct action set
@@ -168,3 +179,36 @@ The production AngelscriptWiki desktop layout SHALL adapt the selected compact-c
 - **WHEN** the viewport is below the configured sidebar breakpoint
 - **THEN** the desktop control rail and resize separator SHALL be hidden
 - **AND** the existing left drawer, compact top-left toggle, and enabled bottom mobile PageControls SHALL remain available
+
+### Requirement: Expanded compact-rail panels remain TiddlyWiki-native
+
+The production Open, Recent, Tools, More/Tags, and AS panels SHALL reproduce the selected 03 information hierarchy without replacing live Wiki state with standalone-preview fixtures. Product shadow tiddlers MAY refine panel markup where CSS cannot express the reviewed hierarchy, but SHALL preserve the corresponding core filters, widgets, messages, configuration, and extension points.
+
+#### Scenario: Open reflects the live story
+
+- **WHEN** `$:/StoryList` changes while the Open panel is visible
+- **THEN** its item rows, count, current treatment, and empty state SHALL update from the live story list
+- **AND** item close and close-all controls SHALL send the native TiddlyWiki close messages
+- **AND** the storyview, droppable, insert-before, and drag/drop contexts SHALL remain present
+
+#### Scenario: Recent reflects real session history
+
+- **WHEN** `$:/HistoryList` contains regular tiddler visits, duplicates, and system or missing titles
+- **THEN** Recent SHALL show unique existing regular tiddlers in newest-first order
+- **AND** the first five SHALL be grouped as “本次访问” and the remainder as “较早”
+- **AND** current state and optional metadata SHALL come from real fields
+- **AND** the panel SHALL NOT invent elapsed-time labels
+
+#### Scenario: Tools remains extensible
+
+- **WHEN** the Tools panel renders with the configured common-control list and additional `$:/tags/PageControls` shadows or tiddlers
+- **THEN** the sixteen common controls SHALL retain their declared order, native visibility checkboxes, action tiddlers, and descriptions
+- **AND** every remaining current or future PageControl SHALL appear in a collapsible “其他工具” group
+- **AND** a product icon mapping or generic fallback MAY decorate the native action without replacing it
+
+#### Scenario: More and AS retain their native control planes
+
+- **WHEN** the reviewer opens More/Tags or the AS navigation panel
+- **THEN** More SHALL retain the eleven native secondary categories, one separated divider, the core all-tags filter, tag templates, untagged template, and tag-manager action
+- **AND** AS SHALL expose user and maintainer groups whose expanded and current states are backed by TiddlyWiki state/history tiddlers
+- **AND** both panels SHALL remain keyboard-operable and free of standalone-preview state scripts

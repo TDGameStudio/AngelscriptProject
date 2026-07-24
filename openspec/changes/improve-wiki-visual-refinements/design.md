@@ -16,7 +16,7 @@ The `Wiki/` directory is a Wiki development project, not a plugin-release workfl
 - Compare three conservative left-sidebar systems against identical real Wiki content without changing the accepted type, palette, tiddler card, or content structure.
 - Make the previewed open/close and resize behavior directly testable with pointer, keyboard, reduced-motion, and narrow-drawer coverage.
 - Capture each later visual refinement with its user-visible intent and focused browser coverage in this same OpenSpec change.
-- Promote the approved compact-control-rail direction through native TW5 extension points while keeping live Open/Recent/Tools/More/AS data and behavior.
+- Promote the approved compact-control-rail direction through native TW5 extension points while keeping live Open/Recent/Tools/More/AS data and behavior, with product-scoped line icons that do not replace core shadows.
 
 **Non-Goals:**
 
@@ -66,6 +66,8 @@ Visual review selected `03-compact-control-rail.html` as the leading experiment.
 
 The `40px` rail becomes a production-reference surface with three deliberate zones: the persistent top collapse control, primary navigation actions, and bottom utility actions. Icon buttons use one geometry and the existing neutral/blue palette; selected, hover, pressed, and focus states remain distinct. Labels appear as right-side tooltips on hover or focus and remain available through `aria-label`. Separators encode the zone boundaries. When the sidebar is closed, the rail and all zones remain available while the content panel disappears. Its page-level More control opens a styled but structurally faithful sample of the current TiddlyWiki page-action menu rather than acting as a decorative icon.
 
+The production refinement intentionally keeps the utility zone smaller than the preview: Language appears above Control Panel, while Palette is removed as an independent rail control because palette selection remains available inside the native control panel. Language is the utility zone's only popup and is anchored upward beside the rail so the native menu remains inside the viewport. Control Panel preserves its native navigation contract and opens `$:/ControlPanel` as the focused tiddler instead of introducing a second settings popup. Home receives the preview's selected presentation only while `$:/HistoryList!!current-tiddler` is `AngelscriptWikiHome`; More, Language, and Control Panel continue to use their native selected state.
+
 The representative tiddler also retains the original view-toolbar action set — More, Edit, Close, and New Diagram — and provides a separate item-level More menu containing representative current actions such as Info, Clone, Export, Delete, Permalink, Close Others, and Fold. Page-level and tiddler-level menus remain distinct because they have different command scopes in TiddlyWiki.
 
 This faithful high-fidelity approach is preferred to the first redesigned Tools cards, switch controls, and horizontal More chips because those changed the current Wiki's information architecture before visual review. Recent remains curated because the production Recent panel is empty, but Tools, More, page actions, and tiddler controls now retain their original semantics and hierarchy. It is also preferred to a simplified decorative mock because every important control state needs to be judged before formal TiddlyWiki adaptation.
@@ -76,9 +78,21 @@ Production uses an additive `$:/tags/PageTemplate` tiddler before the core sideb
 
 The default desktop total width becomes `264px`: the rail owns the first `40px`, the core `.tc-sidebar-scrollable` content owns the remaining `224px`, and the story river starts after the total width. When closed, the content panel and resizer disappear, the rail remains, and the story river starts after `40px`. At the configured mobile breakpoint the desktop rail is hidden and the existing left drawer plus bottom page controls remain unchanged.
 
-The seven rail actions reuse `$:/core/ui/Buttons/home`, `more-page-actions`, `new-tiddler`, `CommandPalette`, `palette`, `control-panel`, and `language`. Their core, command-palette, and draw.io SVG tiddlers remain the icon source. The preview's inline SVG paths and Unicode glyphs are not copied. Existing PageControl visibility tiddlers remain the control plane, so Tools, the rail, and the native More menu continue to agree about visible and overflow actions.
+The six rail actions reuse `$:/core/ui/Buttons/home`, `more-page-actions`, `new-tiddler`, `CommandPalette`, `language`, and `control-panel` as the behavior source. A product-owned JSON map resolves those action titles to scoped line-icon tiddlers under `$:/plugins/TDGameStudio/angelscript-tools/icons/sidebar/`; the native buttons stay in the DOM and continue to own messages, popup state, labels, and keyboard behavior. The scoped icons are visual siblings with `pointer-events: none`, not replacements for core/plugin SVG shadows. Existing PageControl visibility tiddlers remain the control plane for retained controls, while the production rail owns its deliberately smaller utility list.
 
-Open, Recent, Tools, More, AS, the page-level More menu, and the tiddler ViewToolbar all retain live TiddlyWiki data, widgets, messages, and popup state. Production CSS adapts their spacing and states to the selected preview; it does not import the preview's fixture items, JavaScript tab implementation, or sample menus.
+Open, Recent, Tools, More, AS, the page-level More menu, and the tiddler ViewToolbar all retain live TiddlyWiki data, widgets, messages, and popup state. The selected preview's panel hierarchy is adapted through narrow product-owned shadow overrides for the five sidebar surfaces rather than copied fixture HTML or JavaScript. Those overrides still read `$:/StoryList`, `$:/HistoryList`, `$:/tags/PageControls`, `$:/core/Filters/AllTags`, and product navigation tiddlers at render time and continue to send the corresponding native messages. Production CSS adapts their spacing and states to the selected preview. The five main tab buttons use the preview's `34px` height, `13px` gap, neutral text, accent selected text, and a non-layout-shifting `::after` underline instead of the inherited selected background and button border.
+
+### Adapt the five expanded panels without static production fixtures
+
+The formal Wiki may shadow the five presentation tiddlers, but it does not replace their runtime contracts:
+
+- Open renders the live `list<tv-story-list>` inside the core droppable/storyview context, keeps insert-before and drag/drop variables, and sends `tm-close-tiddler` or `tm-close-all-tiddlers`. The 03 row, current, count, hover-close, empty, and close-all treatments are presentation only.
+- Recent parses the real `$:/HistoryList` JSON, removes duplicates and system/missing entries, reverses it to newest-first order, and groups the first five entries as “本次访问” with the remainder as “较早”. It exposes real title, current state, and the first real tag; it deliberately invents no timestamps.
+- Tools declares sixteen frequently used PageControl titles in stable order, retains each native visibility checkbox and PageControl transclusion, and discovers every additional current or future `$:/tags/PageControls` shadow/tiddler into a collapsed “其他工具” group. The product icon map supplies known line icons and a generic fallback without changing the native action.
+- More retains the core eleven-category vertical tab set. Only `$:/core/ui/MoreSideBar/Tags` is shadowed so the native tag manager, `$:/core/Filters/AllTags`, `TagTemplate`, and `UntaggedTemplate` stay authoritative while receiving the selected compact heading treatment.
+- AS uses product WikiText procedures, links, and state tiddlers for the user and maintainer groups. Collapse state and current-item state remain native TiddlyWiki state/history behavior rather than static DOM state.
+
+This approach is preferred to a CSS-only pass because the reviewed difference includes hierarchy, row structure, and empty/batch states that selectors cannot introduce. It is preferred to copying the standalone HTML because every item remains derived from real Wiki state and every action remains a TiddlyWiki widget/message. Dotted custom filter operators are used because hyphenated custom function names are parsed as ordinary filter syntax in this runtime.
 
 ## Risks / Trade-offs
 
@@ -89,7 +103,8 @@ Open, Recent, Tools, More, AS, the page-level More menu, and the tiddler ViewToo
 - [Static previews can drift from real TiddlyWiki markup] → Use real AngelscriptWiki content, keep the production theme unchanged during selection, and treat the chosen preview as a design reference rather than code to paste wholesale.
 - [Three self-contained files duplicate interaction code] → Keep the contract deliberately small and cover every file with one parameterized Playwright suite; remove the experiment artifacts after selection only if the user explicitly requests cleanup.
 - [A PageTemplate rail can duplicate the existing sidebar PageControls segment] → Hide only `$:/core/ui/SideBarSegments/page-controls` in the integrated Wiki defaults while retaining Tools and the mobile bottom control surface.
-- [Core and plugin icons have different source view boxes] → Normalize only their rendered `17px` geometry and `currentColor`; do not fork or redraw the SVG paths.
+- [Core theme rules can fill line SVGs or restyle tiddlylinks after the product stylesheet] → Scope every icon with `data-as-icon`, explicitly restore `fill: none` and `stroke: currentColor`, and use panel-qualified link selectors covered by computed-style Playwright assertions.
+- [A future PageControl is omitted from the curated Tools list] → Treat the sixteen-item list only as the common section and derive “其他工具” from all remaining real PageControl shadows/tiddlers at runtime.
 
 ## Migration Plan
 
@@ -107,4 +122,4 @@ Rollback is a normal Wiki-submodule commit revert. No user tiddler data, WikiTex
 
 ## Open Questions
 
-The production selection is closed: `03-compact-control-rail` is the direct default and native TiddlyWiki/plugin icon tiddlers are the required icon source. No runtime old/new switch is planned. SDK metadata order and the accepted document theme remain unchanged.
+The production selection is closed: `03-compact-control-rail` is the direct default, native TiddlyWiki PageControl tiddlers are the required behavior source, and product-scoped line-icon tiddlers are the visual source. No runtime old/new switch is planned. SDK metadata order and the accepted document theme remain unchanged.
