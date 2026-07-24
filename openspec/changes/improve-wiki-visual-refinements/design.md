@@ -169,6 +169,16 @@ The product keeps the existing `as-outline` tiddler and `AS/*` document titles b
 
 The site subtitle is removed from the product surface by deleting the local `$:/SiteSubtitle` override and hiding the complete native site-subtitle SideBar segment through its visibility config. This avoids retaining an empty `20px` block while leaving SDK-document `description` fields and their title/tag/body rhythm unchanged. The ordinary `dev` command remains intentionally read-only; browser-to-filesystem authoring continues to require the existing explicit `dev:wiki` entry point.
 
+### Replace the browser favicon through the native TiddlyWiki system tiddler
+
+The reviewed `Wiki/angelscript-icon.svg` is the approved browser-page icon. It is currently an untracked standalone file, while the product still loads a tracked `256×256` ICO through the `$:/favicon.ico` system tiddler. TiddlyWiki `5.4.1` already owns the runtime contract: `$:/core/modules/startup/favicon.js` reads `$:/favicon.ico`, converts its `text`, `type`, and optional canonical URI to a data URI, and updates the existing `<link id="faviconLink">`.
+
+The product will retain that native title and startup behavior but change the physical source to `Wiki/wiki/tiddlers/system/$__favicon.svg`, with metadata declaring `title: $:/favicon.ico` and `type: image/svg+xml`. The former `$__favicon.ico` payload and metadata will be removed. The SVG body is moved without redrawing paths, changing its square white background, or creating a generated ICO derivative. The integrated offline build will therefore serialize the SVG inside the existing system tiddler and the browser will receive it as a `data:image/svg+xml` favicon after TiddlyWiki startup.
+
+This approach is preferred to converting the source to ICO because the reviewed vector remains the single source of truth. It is preferred to adding a RawMarkup `<link>` because that would duplicate and compete with the core `faviconLink` lifecycle. The change affects only the browser tab, bookmark, and related user-agent favicon surfaces; compact-rail icons, sidebar controls, Command Palette, tiddler toolbar icons, and document content remain unchanged.
+
+Source, artifact, and browser contracts will cover three boundaries: the physical SVG tiddler retains the approved AngelScript title/view box and system-tiddler metadata; the single offline HTML serializes `$:/favicon.ico` with `image/svg+xml` and does not emit a separate favicon asset; and a running Wiki changes `link#faviconLink` to an SVG data URI. This keeps the favicon independent of plugin packaging and external file delivery.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
@@ -193,6 +203,9 @@ The site subtitle is removed from the product surface by deleting the local `$:/
 - [Fixed geometry could leave the viewport after resize or scroll] → Recompute against current trigger/sidebar bounds, prefer below/above placement on narrow screens, clamp every edge to `16px`, and cover both `1440×960` and `390×844`.
 - [Changing the default tab could break tests or features that implicitly expect Open to be visible] → Select Open, Recent, Tools, and More by their semantic captions in behavior-specific tests, and separately cover directory-first load/reload behavior.
 - [Clearing only the subtitle text could leave a blank header band] → Hide the entire native site-subtitle SideBar segment and assert that `.tc-site-subtitle` is absent while the SDK description remains visible.
+- [The detailed wing artwork can lose fine detail at very small browser-tab sizes] → Preserve the user-approved source exactly for this replacement and treat any later simplified small-size glyph as a separate visual decision.
+- [A browser can temporarily retain a cached favicon after the source changes] → Verify the actual `link#faviconLink` SVG data URI in a fresh browser context; use a hard reload only for manual comparison and do not add cache-busting product logic.
+- [Changing the physical extension while retaining the canonical `$:/favicon.ico` title can look surprising in the repository] → Keep explicit metadata beside the SVG and cover the title/type mapping in a source contract.
 
 ## Migration Plan
 
@@ -206,6 +219,7 @@ The site subtitle is removed from the product surface by deleting the local `$:/
 8. Add failing production contracts for the shared TagTemplate surface and exclusion boundaries, implement one theme-scoped CSS module, and verify the native popup contract across body and More/Tags without changing the selected 03 positioning prototype.
 9. Add failing source/browser contracts for the observed More/Tags overflow, implement one sidebar-only live-Reveal portal adapter plus Untagged surface rules, and verify that non-sidebar consumers retain native geometry.
 10. Add failing directory-first sidebar contracts, apply only native SideBar visibility/order/default-tab configuration plus aligned visible wording, and verify fresh-load behavior without a startup module.
+11. Add failing source, artifact, and browser contracts for the approved SVG favicon; replace the old ICO-backed `$:/favicon.ico` with the metadata-mapped SVG source; then verify the integrated single-HTML build and native runtime data URI.
 
 If a future request would require `publish`, external deployment, package distribution, or release-oriented artifact generation, stop and obtain explicit user direction first. A normal local `build` remains a validation command only.
 
@@ -213,4 +227,4 @@ Rollback is a normal Wiki-submodule commit revert. No user tiddler data, WikiTex
 
 ## Open Questions
 
-The production selection is closed: `03-compact-control-rail` is the direct default, native TiddlyWiki PageControl tiddlers are the required behavior source, and product-scoped line-icon tiddlers are the visual source. No runtime old/new switch is planned. SDK metadata order and the accepted document theme remain unchanged.
+The production selection is closed: `03-compact-control-rail` is the direct default, native TiddlyWiki PageControl tiddlers are the required behavior source, and product-scoped line-icon tiddlers are the visual source. No runtime old/new switch is planned. SDK metadata order and the accepted document theme remain unchanged. The browser-favicon choice is also closed: use the supplied AngelScript SVG exactly through the native `$:/favicon.ico` system-tiddler lifecycle, without changing internal Wiki icons.

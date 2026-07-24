@@ -340,3 +340,33 @@ The product sidebar SHALL present its existing documentation outline as the firs
 - **AND** the product SHALL not ship its former English `$:/SiteSubtitle` override
 - **AND** SDK tiddlers with `description` fields SHALL continue to render their existing `.as-sdk-description` content and spacing
 - **AND** the default `dev` command SHALL remain read-only while `dev:wiki` remains the explicit browser-writeback entry point
+
+### Requirement: Browser uses the approved AngelScript SVG favicon
+
+The product SHALL expose the supplied AngelScript SVG through TiddlyWiki's native `$:/favicon.ico` system-tiddler lifecycle, and SHALL limit the replacement to browser favicon surfaces.
+
+#### Scenario: Source maps the SVG to the native favicon tiddler
+
+- **WHEN** the Wiki source tiddlers are loaded
+- **THEN** the approved AngelScript SVG SHALL be stored as the physical favicon source
+- **AND** its metadata SHALL map it to title `$:/favicon.ico` with type `image/svg+xml`
+- **AND** the former binary ICO payload SHALL no longer be the product favicon source
+
+#### Scenario: The offline Wiki embeds the SVG favicon
+
+- **WHEN** the integrated single-HTML Wiki is built
+- **THEN** the serialized `$:/favicon.ico` tiddler SHALL contain the approved SVG with type `image/svg+xml`
+- **AND** the build SHALL not require or emit a separate favicon file
+- **AND** the existing no-standalone-plugin-package boundary SHALL remain unchanged
+
+#### Scenario: TiddlyWiki publishes the SVG favicon at runtime
+
+- **WHEN** a fresh browser context starts the built Wiki
+- **THEN** TiddlyWiki's existing `link#faviconLink` SHALL resolve to a `data:image/svg+xml` URI derived from `$:/favicon.ico`
+- **AND** no additional RawMarkup favicon link or custom favicon startup module SHALL compete with the native lifecycle
+
+#### Scenario: Internal Wiki icons remain unchanged
+
+- **WHEN** the favicon replacement is applied
+- **THEN** compact-rail, sidebar, Command Palette, toolbar, and document icons SHALL keep their existing tiddlers and rendering
+- **AND** the approved SVG artwork SHALL not be repurposed as an internal control icon by this change
