@@ -253,3 +253,91 @@ From the host root:
 - Wiki and scoped OpenSpec diff checks: passed, apart from the repository's existing LF-to-CRLF normalization notices.
 
 The watched preview remained available at `http://127.0.0.1:8080/` and was opened for the user after the implementation. Port `8081` was not touched. The machine still reports Node `25.5.0`, so pnpm emits the known engine warning against the project baseline `>=24 <25`; all checks above passed.
+
+# Selected-reference typography and icon cleanup — 2026-07-24
+
+## TDD evidence
+
+The selected-reference and production assertions were changed before source implementation:
+
+- Source boundaries failed because the product single-chevron tiddler did not exist.
+- The focused browser run reported **22 passed and 5 failed**. The failures were the intended deltas: no product toggle overlay, three Open document icons, `31px` Tools rows, `10px` pre-calibration More categories, and four HTML files instead of the selected 03-only set.
+- After the first implementation, **26 of 27** focused scenarios passed. The remaining failure showed an `img.tc-image-error` inside the overlay. Runtime inspection confirmed that the new tiddler existed but had been declared as `image/svg+xml`, causing TW to encode parameterized WikiText as image data. Matching the established `$:/tags/Image` plus `\parameters` pattern fixed the source error; normalizing an absent `$:/state/sidebar` to `yes` fixed the default state attribute.
+- The three focused specs then passed **27/27**.
+- User visual review found the production Noto Sans category labels too large at the standalone reference's `11px`. A new failing assertion captured `10px`; the category-only production rule was reduced to `10px / 400` while the selected state remained `600`. The five panel scenarios then passed **5/5**.
+
+## Visual evidence
+
+Real `1440×960` Open, Tools, and More/Tags panels were inspected against the retained 03 reference. Open rows and close-all now align without leading file glyphs; Tools follows the reference's compact row and type rhythm; More categories use the reviewed production-specific `10px` size while the heading and tags retain the selected hierarchy.
+
+The open toggle shows a single left line chevron. The first closed-state screenshot caught the `160ms` rotation transition mid-frame; after settling, the glyph computed to `matrix(-1, 0, 0, -1, 0, 0)` and displayed as a right chevron. The browser assertion now waits for that exact final matrix. The native double-chevron SVG remains in the native button for behavior ownership but computes to `opacity: 0` on desktop.
+
+## Fresh full verification
+
+From `Wiki/`:
+
+- The three focused Playwright specs passed **27/27**.
+- TypeScript check passed.
+- `lint:all` passed with **0 errors and 0 warnings**.
+- Source-boundary contracts passed **12/12**.
+- Product-source contracts passed **4/4**.
+- The full product Playwright suite passed **63/63**. The total is intentionally four lower than the previous 67-test checkpoint because the 01 and 02 preview variants and their matrix cases were removed.
+- The integrated offline Wiki build passed and emitted one Wiki from the eight already-declared internal source components; no standalone plugin packages were emitted.
+- The offline artifact test passed **1/1**.
+- The Wiki diff check passed.
+- `comparison-artifacts/left-sidebar/` contains only `03-compact-control-rail.html`.
+
+From the host root:
+
+- `openspec validate improve-wiki-visual-refinements --strict` passed.
+- The scoped OpenSpec diff check passed, apart from existing LF-to-CRLF normalization notices.
+
+The watched preview responds with HTTP `200` at `http://127.0.0.1:8080/#AngelscriptWikiHome`; port `8081` was not touched. The current machine still reports Node `25.5.0`, so pnpm emits the known engine warning against the documented `>=24 <25` baseline; all checks above passed.
+
+At this visual-review checkpoint the follow-up remained uncommitted. It did not push, publish, deploy, archive this OpenSpec, or generate standalone plugin packages.
+
+# Command Palette glyph simplification — 2026-07-24
+
+## TDD evidence
+
+The source contract was added before changing the icon. Its first run reported **5 passed and 1 failed**: the existing `command.tid` exposed one long four-loop path instead of the approved two-path `>_` geometry. After replacing only the SVG body, the same focused contract passed **6/6**.
+
+The production icon keeps the existing parameterized Image-tiddler, `24×24` view box, `data-as-icon="command"`, no-fill/current-color line treatment, rounded cap/join attributes, native icon-map title, and Command Palette PageControl behavior. Its only geometry is now:
+
+- `M6 8l4 4-4 4` for the right-facing prompt chevron;
+- `M12.5 16h5.5` for the separate baseline.
+
+## Runtime and visual evidence
+
+The real compact rail was inspected at `1440×960` with a `4×` device scale. The product SVG computed to `17×17px`, `fill: none`, and the expected neutral current-color stroke. The glyph remained open and balanced beside Home, More, New, Language, and Settings.
+
+The real Tools Command Palette row was also inspected at its compact `13×13px` rendered size. The chevron and baseline remained independently legible without changing the checkbox, action label, description, or row geometry. The selected standalone 03 reference was not modified.
+
+## Fresh verification
+
+From `Wiki/`:
+
+- Focused source contract: **6/6 passed** after the recorded RED run.
+- Angelscript theme Playwright spec: **14/14 passed**.
+- TypeScript check: passed.
+- `lint:all`: passed with **0 errors and 0 warnings**.
+- Source-boundary contracts: **13/13 passed**.
+- Product-source contracts: **4/4 passed**.
+- Full product Playwright suite: **63/63 passed**.
+- Integrated offline Wiki build: passed and emitted one Wiki from the eight already-declared internal source components; it did not emit standalone plugin packages.
+- Offline artifact test: **1/1 passed**.
+
+From the host root:
+
+- `openspec validate improve-wiki-visual-refinements --strict`: passed.
+- Wiki and scoped OpenSpec diff checks: passed, apart from existing LF-to-CRLF normalization notices.
+- The selected `comparison-artifacts/left-sidebar/03-compact-control-rail.html` has no diff from this production-only correction.
+- The watched preview responds with HTTP `200` at `http://127.0.0.1:8080/#AngelscriptWikiHome`; port `8081` was not touched.
+
+The current machine still reports Node `25.5.0`, so pnpm emits the known engine warning against the documented `>=24 <25` baseline. At this visual-review checkpoint the follow-up remained uncommitted and did not push, publish, deploy, archive the OpenSpec, or generate standalone plugin packages.
+
+# Final local commit checkpoint — 2026-07-24
+
+After user approval, the selected-reference typography, Open/toggle cleanup, and Command Palette glyph follow-up were committed in the Wiki submodule as `5b3b934` (`[Wiki] Fix: refine compact sidebar typography and icons`). The host commit records the updated Wiki gitlink together with the formal OpenSpec design, delta requirement, task checklist, and verification evidence.
+
+Neither commit is pushed. The OpenSpec remains active and unarchived, port `8081` remains untouched, and no standalone plugin packages were generated or published.

@@ -212,3 +212,36 @@ The production Open, Recent, Tools, More/Tags, and AS panels SHALL reproduce the
 - **THEN** More SHALL retain the eleven native secondary categories, one separated divider, the core all-tags filter, tag templates, untagged template, and tag-manager action
 - **AND** AS SHALL expose user and maintainer groups whose expanded and current states are backed by TiddlyWiki state/history tiddlers
 - **AND** both panels SHALL remain keyboard-operable and free of standalone-preview state scripts
+
+### Requirement: Selected compact reference owns the final sidebar type and icon tokens
+
+After production selection, the comparison directory SHALL retain `03-compact-control-rail.html` as the single standalone sidebar reference. Production SHALL apply its compact Tools and More typography through panel-scoped rules, SHALL use a single product line chevron over the native desktop sidebar show/hide control, and SHALL omit decorative file glyphs from Open rows and the close-all action without replacing native behavior.
+
+#### Scenario: Reviewer compares Tools and More with 03
+
+- **WHEN** Tools or More is rendered at desktop width
+- **THEN** Tools action labels SHALL use `11px / 400`, descriptions SHALL use `10px / 400`, and rows SHALL retain the compact `29px` rhythm
+- **AND** More categories SHALL use `10px / 400` with the production font stack, selected categories SHALL use `600`, the tag-manager heading SHALL use `11px / 600`, and tag labels SHALL use `10px / 400`
+- **AND** these rules SHALL not reset ordinary tiddler buttons, links, tags, or mobile PageControls
+
+#### Scenario: Native toggle and Open actions receive quieter icons
+
+- **WHEN** the desktop sidebar is open or closed
+- **THEN** the native show/hide button SHALL retain its message, label, focus, and state behavior
+- **AND** one product-scoped single line chevron SHALL provide the visible glyph and reverse with the sidebar state
+- **AND** the native double filled chevron SHALL not remain visibly underneath it
+- **AND** Open item titles and the close-all label SHALL have no leading document/file glyph while their native close actions and live count remain available
+
+#### Scenario: Reviewer opens the comparison directory
+
+- **WHEN** the selected standalone reference set is inspected
+- **THEN** `03-compact-control-rail.html` SHALL remain independently openable and fully interactive
+- **AND** the rejected 01 and 02 variants and the untracked 03 backup SHALL not remain in the directory
+
+#### Scenario: Command Palette remains recognizable at rail size
+
+- **WHEN** the native Command Palette control renders in the compact desktop rail
+- **THEN** its product-owned `command` icon SHALL render as an unframed `>_` line glyph at the established `17px` size
+- **AND** the glyph SHALL use one chevron path and one separate baseline path with no fill
+- **AND** the native Command Palette control SHALL continue to own its action, accessible label, focus, popup, and keyboard behavior
+- **AND** the selected 03 standalone reference SHALL not be rewritten by this production-only correction

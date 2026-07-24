@@ -94,6 +94,27 @@ The formal Wiki may shadow the five presentation tiddlers, but it does not repla
 
 This approach is preferred to a CSS-only pass because the reviewed difference includes hierarchy, row structure, and empty/batch states that selectors cannot introduce. It is preferred to copying the standalone HTML because every item remains derived from real Wiki state and every action remains a TiddlyWiki widget/message. Dotted custom filter operators are used because hyphenated custom function names are parsed as ordinary filter syntax in this runtime.
 
+### Retain only the selected 03 reference and finish its typography/icon details
+
+Once `03-compact-control-rail.html` is selected and adapted, `01-quiet-seam.html` and `02-soft-surface.html` no longer serve the normal review workflow. The comparison directory therefore retains only the selected self-contained 03 reference; the two rejected tracked alternatives and the untracked 03 backup are removed. Preview coverage is narrowed from a three-way comparison to the selected reference's standalone, resize, drawer, panel, toolbar, accessibility, and reduced-motion contracts.
+
+The final production typography pass follows the computed 03 tokens instead of relying on inherited TiddlyWiki button/tag text:
+
+- Tools action labels use `11px / 400`, descriptions use `10px / 400` with compact line height, and rows use the reference `29px` rhythm.
+- More category labels use `10px / 400` in production because the active Noto Sans face has a larger visual body than the standalone 03 reference's `11px` fallback stack. Selected labels use `600`, the tag-manager heading uses `11px / 600`, and rendered tag labels use `10px / 400`.
+- The native sidebar show/hide button remains the behavior and accessibility owner, but its double filled chevron is visually suppressed on desktop and a product-scoped single line chevron is layered above it. The line chevron reverses when the sidebar is closed.
+- Open rows remove their leading document glyph and the close-all action removes its leading file glyph. The current marker, title, close control, count, native messages, and empty-state guidance remain unchanged.
+
+The icon overlay is preferred to shadowing the core show/hide button or core image tiddlers because it preserves native messages, labels, state changes, and mobile behavior. Explicit panel selectors are preferred to global button or tag resets because only the selected compact sidebar should inherit these 03 typography tokens.
+
+### Simplify the Command Palette glyph at its real rail size
+
+The original 03-derived Command symbol joins four rounded loops and their connecting stems into one path. Its meaning is recognizable at a larger size, but the geometry becomes dense and visually heavier than the neighboring Home, More, New, Language, and Settings icons when rendered at the production rail's `17px` size.
+
+The approved replacement is an unframed command-prompt glyph: one right-facing chevron followed by one short baseline, visually reading as `>_`. It keeps the existing `24×24` view box, `17px` rendered size, `fill="none"`, `stroke="currentColor"`, rounded caps/joins, and the product-owned `data-as-icon="command"` contract. Two independent paths keep the small-size silhouette open and legible. The existing `$:/core/ui/Buttons/CommandPalette` transclusion remains the behavior, accessible-name, focus, popup, and keyboard owner; the JSON icon map and tiddler title do not change.
+
+This direction is preferred to a reduced Command-loop symbol because even fewer loops remain dense at `17px`, and to a command-list glyph because three horizontal rows would be too similar to Tools, List, and More actions. The static 03 reference remains a historical selected-layout reference and is not silently rewritten for this production-only review correction.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
@@ -105,6 +126,7 @@ This approach is preferred to a CSS-only pass because the reviewed difference in
 - [A PageTemplate rail can duplicate the existing sidebar PageControls segment] → Hide only `$:/core/ui/SideBarSegments/page-controls` in the integrated Wiki defaults while retaining Tools and the mobile bottom control surface.
 - [Core theme rules can fill line SVGs or restyle tiddlylinks after the product stylesheet] → Scope every icon with `data-as-icon`, explicitly restore `fill: none` and `stroke: currentColor`, and use panel-qualified link selectors covered by computed-style Playwright assertions.
 - [A future PageControl is omitted from the curated Tools list] → Treat the sixteen-item list only as the common section and derive “其他工具” from all remaining real PageControl shadows/tiddlers at runtime.
+- [A generic prompt glyph could be mistaken for a terminal launcher] → Retain the native Command Palette tooltip and accessible label, keep the glyph only inside the established Command Palette control, and avoid adding a surrounding terminal window that would strengthen the wrong interpretation.
 
 ## Migration Plan
 
