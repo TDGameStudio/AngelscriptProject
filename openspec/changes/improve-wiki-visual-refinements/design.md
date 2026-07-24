@@ -161,6 +161,14 @@ The same compact surface now includes the sibling Reveal emitted by `$:/core/ui/
 
 This narrow portal is preferred to overriding `.tc-tab-content.tc-vertical { overflow: visible; }`, which would change scrolling and clipping for all eleven More categories, and to raising the resizer minimum until the menu fits. It is also preferred to shadowing core templates because moving the one live Reveal preserves core markup and state ownership. This follow-up explicitly supersedes the earlier CSS-only decision only for left-sidebar TagTemplate and Untagged popups; all non-sidebar consumers keep the original CSS-only/native-geometry behavior.
 
+### Make the document directory the sidebar entry point
+
+The fifth main tab was introduced as `AS` because its content originates from `AS/Navigation`, but that label describes the implementation domain rather than the panel's Wiki role. It also placed the durable document map after transient Open, Recent, Tools, and More panels, while the product now serves primarily as a documentation Wiki.
+
+The product keeps the existing `as-outline` tiddler and `AS/*` document titles but changes its caption to the core localized `$:/language/SideBar/Contents/Caption`, orders it immediately before core Open, and sets `$:/config/DefaultSidebarTab` to that existing tiddler. The resulting order is `目录 / 开启 / 最近 / 工具 / 更多` under `zh-Hans`. Core tab state remains authoritative during a session; because `$:/state/` is excluded by the core saver filter, a fresh load returns to the configured directory without a startup script or forced runtime reset.
+
+The site subtitle is removed from the product surface by deleting the local `$:/SiteSubtitle` override and hiding the complete native site-subtitle SideBar segment through its visibility config. This avoids retaining an empty `20px` block while leaving SDK-document `description` fields and their title/tag/body rhythm unchanged. The ordinary `dev` command remains intentionally read-only; browser-to-filesystem authoring continues to require the existing explicit `dev:wiki` entry point.
+
 ## Risks / Trade-offs
 
 - [Page refresh can replace the product-owned separator element] → Attach pointer and keyboard listeners idempotently from the existing page-refreshed hook, recompute ARIA bounds after viewport changes, and retain Playwright coverage for hit target, hover, drag, persistence, and keyboard behavior.
@@ -183,6 +191,8 @@ This narrow portal is preferred to overriding `.tc-tab-content.tc-vertical { ove
 - [Moving a live Reveal could accidentally replace native popup ownership] → Move only the existing connected node after core opens it, never clone rows or write popup state, and cover native `aria-expanded`, outside-click close, navigation, retarget, and cleanup behavior in Playwright.
 - [A sidebar-only portal selector could leak into body tags or generic menus] → Require a trigger below `.tc-sidebar-scrollable`, add explicit real-tag/Untagged variant classes, and assert that body, macro, and TagManager TagTemplate reveals remain native absolute children.
 - [Fixed geometry could leave the viewport after resize or scroll] → Recompute against current trigger/sidebar bounds, prefer below/above placement on narrow screens, clamp every edge to `16px`, and cover both `1440×960` and `390×844`.
+- [Changing the default tab could break tests or features that implicitly expect Open to be visible] → Select Open, Recent, Tools, and More by their semantic captions in behavior-specific tests, and separately cover directory-first load/reload behavior.
+- [Clearing only the subtitle text could leave a blank header band] → Hide the entire native site-subtitle SideBar segment and assert that `.tc-site-subtitle` is absent while the SDK description remains visible.
 
 ## Migration Plan
 
@@ -195,6 +205,7 @@ This narrow portal is preferred to overriding `.tc-tab-content.tc-vertical { ove
 7. Append future visual corrections to this change with their requirement/test record before implementation.
 8. Add failing production contracts for the shared TagTemplate surface and exclusion boundaries, implement one theme-scoped CSS module, and verify the native popup contract across body and More/Tags without changing the selected 03 positioning prototype.
 9. Add failing source/browser contracts for the observed More/Tags overflow, implement one sidebar-only live-Reveal portal adapter plus Untagged surface rules, and verify that non-sidebar consumers retain native geometry.
+10. Add failing directory-first sidebar contracts, apply only native SideBar visibility/order/default-tab configuration plus aligned visible wording, and verify fresh-load behavior without a startup module.
 
 If a future request would require `publish`, external deployment, package distribution, or release-oriented artifact generation, stop and obtain explicit user direction first. A normal local `build` remains a validation command only.
 

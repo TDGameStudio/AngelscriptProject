@@ -313,3 +313,30 @@ Every production popup emitted by `$:/core/ui/TagTemplate` SHALL use the approve
 - **WHEN** a sidebar tag or Untagged popup opens at `390×844`
 - **THEN** the adapter SHALL prefer placement below its trigger, use above placement when it fits better, and clamp every popup edge inside a `16px` viewport inset
 - **AND** resize or scroll SHALL recompute geometry without replacing the live Reveal or leaving a stale node
+
+### Requirement: The sidebar starts from the localized document directory
+
+The product sidebar SHALL present its existing documentation outline as the first and default main tab, using TiddlyWiki's native localized Contents caption and default-tab configuration rather than a runtime state-forcing module.
+
+#### Scenario: A fresh Wiki load opens the directory
+
+- **WHEN** the Wiki is opened or reloaded with no persisted `$:/state/` tab value
+- **THEN** the selected main tab SHALL be the existing `as-outline` tiddler
+- **AND** the visible main-tab order under `zh-Hans` SHALL be `目录 / 开启 / 最近 / 工具 / 更多`
+- **AND** selecting another tab during the current session SHALL continue to use the native tab state without being immediately reset
+- **AND** reloading SHALL return to the configured directory default because core saver behavior excludes `$:/state/`
+
+#### Scenario: Directory semantics replace the AS implementation label
+
+- **WHEN** the directory tab and its panel are rendered
+- **THEN** their visible heading SHALL use `$:/language/SideBar/Contents/Caption`
+- **AND** the existing two collapsible documentation groups, current-link state, and `AS/*` document titles SHALL remain unchanged
+- **AND** Open's empty-state guidance SHALL refer to the directory rather than an `AS` navigation tab
+
+#### Scenario: The site subtitle is removed without changing document descriptions
+
+- **WHEN** the configured sidebar header renders
+- **THEN** the native site-subtitle SideBar segment SHALL be hidden and `.tc-site-subtitle` SHALL not occupy layout space
+- **AND** the product SHALL not ship its former English `$:/SiteSubtitle` override
+- **AND** SDK tiddlers with `description` fields SHALL continue to render their existing `.as-sdk-description` content and spacing
+- **AND** the default `dev` command SHALL remain read-only while `dev:wiki` remains the explicit browser-writeback entry point

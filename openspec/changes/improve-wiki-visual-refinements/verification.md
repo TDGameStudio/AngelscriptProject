@@ -544,3 +544,44 @@ From the host root:
 ## Commit checkpoint
 
 The Wiki implementation, the selected `03` visual reference, and their regression coverage were committed in the Wiki submodule as `0f8f599` (`[Wiki] Fix: prevent sidebar tag popup overflow`). The host commit records that submodule revision together with this OpenSpec update. Neither repository was pushed or deployed; no standalone plugins were packaged, port `8081` was not touched, and `improve-wiki-visual-refinements` remains active for later style iterations.
+
+## Directory-first sidebar startup — 2026-07-24
+
+### TDD evidence
+
+The first focused run covered the defaults, theme, document-experience, and expanded-sidebar specs. It produced **39 passed and 3 expected failures**:
+
+- the site-subtitle segment visibility config was absent;
+- `$:/config/DefaultSidebarTab` still selected core Open;
+- no main sidebar tab had the localized `目录` caption.
+
+The directory test was then tightened from a missing-locator timeout to an explicit `toHaveCount(1)` assertion and rerun RED. After the native config and WikiText changes, the first GREEN run reached **41/42**; the only remaining failure exposed an older drag/drop test that implicitly expected Open to be the default. Making that test select its own `开启` panel removed the accidental dependency. The complete focused rerun then passed **42/42**.
+
+### Runtime inspection
+
+The watched product at `http://127.0.0.1:8080/#AS/Workflow/GettingStarted` returned HTTP `200`. Fresh screenshots were captured under the ignored `Wiki/test-results/` directory:
+
+- `sidebar-directory-desktop-1440.png`;
+- `sidebar-directory-drawer-390.png`.
+
+Direct inspection confirmed that the desktop header contains `AngelscriptWiki` followed immediately by the single-row `目录 / 开启 / 最近 / 工具 / 更多` tab strip, with no English subtitle or empty subtitle band. `目录` is selected on load, and the localized directory heading, two collapsible groups, current-document highlight, and SDK-document description remain visible. The opened `390×844` drawer keeps the same five tabs on one row, contains both directory groups, and shows no subtitle gap or horizontal overflow.
+
+### Fresh verification
+
+From `Wiki/`:
+
+- TypeScript check: passed.
+- Local lint: passed with **0 errors and 0 warnings** after applying the reported dprint-only line wrapping; vendor lint passed.
+- Source-boundary contracts: **15/15 passed**.
+- Product-source contracts: **4/4 passed**.
+- TiddlyWiki node suite: **1/1 passed**.
+- Focused product browser suite: **42/42 passed**.
+- Complete product Playwright suite: **70/70 passed** in about one minute with one worker.
+- Integrated Wiki build: passed and emitted only `Wiki/dist/index.html` (`4,015,513` bytes).
+- Offline artifact test through the project-version `pnpm 11.8.0`: **1/1 passed** and rebuilt the same single HTML.
+
+The build continues to report eight internal product plugin source roots that are minimized into the one Wiki HTML; it did not emit or publish eight standalone plugin packages. The known local Node `25.5.0` warning against the documented `>=24 <25` baseline remains unchanged.
+
+The product keeps `npm run dev` intentionally read-only. Browser-side authoring still requires the existing explicit `npm run dev:wiki` command; no development-server scripts changed.
+
+The Wiki implementation and its regression coverage were committed in the Wiki submodule as `9c4fd27` (`[Wiki] Feat: make directory the default sidebar entry`). The host commit records that submodule revision together with the updated OpenSpec design, requirement, task, and verification artifacts. Neither repository was pushed or deployed. The change does not modify `03-compact-control-rail.html`, the unrelated homepage concepts, `angelscript-icon.svg`, `临时图片.jpg`, port `8081`, publishing, OpenSpec archive state, or standalone plugin packaging.
