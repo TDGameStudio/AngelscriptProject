@@ -5,7 +5,7 @@
 - 一级侧栏标签和 More 的 11 个原生分类保持不变；不需要修改 `tabsList`、`$:/core/macros/tabs`、`$:/core/ui/SideBar/More` 或 `$:/state/tab/moresidebar`。
 - More 在桌面端扩宽至 `clamp(360px, 34vw, 460px)` 后，分类、长列表、插件卡片与树形浏览器均可读；普通侧栏仍为 264px。
 - 全局 `a.tc-tiddlylink` 的粗体、底边线与 `word-break: break-all` 是 More 长列表逐字断行的直接来源，必须在 More 内容容器内收回，而不能重写全局正文链接主题。
-- 正文画布、标题栏工具栏和 More 图标方向均完成了实验验证；本次只迁移 More 与它直接依赖的控制栏/slider，正文主题仍保留在实验文件中。
+- 正文画布、标题栏工具栏和 More 图标方向均完成了实验验证；本次只迁移 More、它直接依赖的控制栏/slider，以及正文元数据中的标签组件。正文卡片、排版和编辑工具栏仍保留在实验文件中。
 
 正式 Wiki 的左栏布局由 `left-sidebar-layout.tid` 决定，拖拽由 `left-sidebar-resizer.ts` 决定。两者目前直接读取持久化的 `$:/themes/tiddlywiki/vanilla/metrics/sidebarwidth`。More 临时扩宽若不进入同一宽度模型，story river 与 resizer 会停在旧边界；若直接写回该指标，又会把未交互的临时 More 宽度误当作用户偏好。
 
@@ -16,13 +16,15 @@
 - 将基础侧栏宽度与当前布局实际使用的有效宽度分离，并让 CSS 与 slider 共享后者。
 - More 打开时以 `max(基础宽度, clamp(360px, 34vw, 460px))` 提供足够空间；退出 More 时自动回到未变更的基础宽度。
 - 用户在 More 内主动拖拽或键盘调整时，slider 以当前有效宽度为起点和最小值，明确地保存该用户操作；未操作时不写入持久化宽度。
-- 以组件作用域重写 More 的展示规则，保留原生数据、分类、标签颜色、弹窗和操作逻辑。
+- 以组件作用域重写 More 的展示规则，保留原生数据、分类、标签 tiddler 字段、弹窗和操作逻辑。
+- 让正文标签区与 More 标签区共用方角标签几何；将实际配置的标签色转换为低饱和变体，而不是使用演示副本中的样本色或原始高饱和填充。
 - 把 Page Actions 的控制栏图标改为真正的 overflow 图标，并让 More 打开时的首页状态不与当前面板竞争。
 
 **Non-Goals:**
 
 - 不修改 TiddlyWiki 核心 More macro、tabs macro、More 分类数据、标签 popup 生命周期或 WikiText 内容。
-- 不迁移实验副本的正文卡片、正文排版或标题栏工具栏样式。
+- 不迁移实验副本的正文卡片、正文排版或标题栏工具栏样式；正文中仅标签组件属于本次范围。
+- 不新增默认标签色，也不将 `new_review2.html` 的六种演示样本色写入产品数据、样式或运行时逻辑。
 - 不新增第二个持久化“More 宽度”配置，也不改变移动端抽屉、滑块触屏禁用逻辑或发布流程。
 
 ## Decisions
@@ -45,11 +47,13 @@
 
 选择这个方案而不是隐藏 More 状态下的 slider，是为了保留现有鼠标与键盘调整能力；选择它而不是新增独立 More 偏好，是为了避免一个用户无法发现且难以维护的第二宽度状态。
 
-### More 样式集中为一个组件层
+### More 样式集中为一个组件层，标签以真实字段生成静默变体
 
 `compact-control-rail.tid` 成为桌面 More 组件的唯一视觉入口：84px 左对齐分类列、单一 1px 分隔线、可滚动内容区、内容类型特定规则和组件 token。`desktop-refinement.tid` 中旧的 More 分隔线/按钮覆盖会移除，避免两个文件竞争同一元素。
 
-More 内容仅局部撤销全局正文链接泄漏；标签不覆盖其原生 inline 色值，插件卡片以网格显示，树形浏览器保留核心结构。由此避免为了美化 More 而影响正文、标签 popup 或其它侧栏页。
+More 内容仅局部撤销全局正文链接泄漏；插件卡片以网格显示，树形浏览器保留核心结构。Explore 条目以现有 HTML 为基础变为图标、标签和计数同行的紧凑目录项，目录 reveal 的展开/折叠仍完全由核心控件处理。
+
+正文标签区、More 和 `$:/TagManager` 的原生标签单元共享同一套 24px 最小高度、4px 圆角、低对比度蓝灰基线与交互状态。产品自有 `tag-color-variants.ts` 仅在标签 tiddler 的 `color` 字段为浏览器支持的 CSS color 时，在已渲染标签上写入 `--as-tag-accent` 和标记属性；样式以 `color-mix()` 从该强调色生成表面、边框、文字与 2px 内嵌色条。该模块监听 wiki 变更、页面刷新和渲染节点变化，因此改动字段与重新渲染都可收敛。它不写入 tiddler、不替代 popup，也不触碰 TagManager 的表格/编辑行为，更不使用实验样本色。
 
 ### 图标作为资源迁移，而非 CSS 伪元素
 
@@ -59,7 +63,8 @@ Page Actions 使用新的产品自有 `more` SVG tiddler，并在 `sidebar-icon-
 
 - [More 与基础宽度在临界断点来回切换] → 仅在现有桌面断点生效；验证 960px、1440px、以及移动抽屉，且 reduced-motion 下不做过渡。
 - [用户在 More 内把宽度拖到最小值以下时感到手柄不动] → slider 的最小值在 More 激活时同步提高，ARIA 值与视觉边界一致。
-- [More 链接局部重置破坏标签色或 popup] → 只定位 `.tc-more-sidebar .tc-tab-content` 的链接；原生标签背景和 portal popup 不改色，并以现有标签测试回归。
+- [标签色变体降低可读性或污染未配置标签] → 只接受浏览器支持的 `color` 字段；没有该字段时移除标记和 CSS 变量，回退到统一蓝灰基线，并验证正文、More 与 popup 生命周期。
+- [Explore 行布局影响核心 reveal] → 只设置 CSS 布局与视觉 token，不处理 click、状态 tiddler 或 DOM 复制；以展开后的树和横向溢出回归验证。
 - [重复 More CSS 继续产生层叠债] → 删除 `desktop-refinement.tid` 的重复 More 分隔线规则，并在测试中断言单一可见 divider 与组件宽度。
 
 ## Migration Plan
@@ -67,7 +72,8 @@ Page Actions 使用新的产品自有 `more` SVG tiddler，并在 `sidebar-icon-
 1. 在 OpenSpec 中保留本设计与实验结果，作为实验副本的正式记录。
 2. 先增加会失败的 Playwright 用例，描述有效宽度、slider/ARIA、More 分类和图标语义。
 3. 实现共享有效宽度变量、slider 动态下限、集中 More 样式和 icon resource mapping。
-4. 运行受影响的 Playwright、TypeScript 检查、lint、source-boundary 和构建验证；检查无控制台错误与移动端抽屉。
+4. 以会失败的 Playwright 断言先锁定方角标签、真实 `color` 字段变体和 Explore 紧凑行，再实现主题与启动模块。
+5. 运行受影响的 Playwright、TypeScript 检查、lint、source-boundary 和构建验证；检查无控制台错误与移动端抽屉。
 5. 如需回滚，移除新的有效宽度变量/More 组件样式/图标映射并恢复被删的局部规则；持久化基础宽度格式保持不变，因此不需要数据迁移。
 
 ## Open Questions

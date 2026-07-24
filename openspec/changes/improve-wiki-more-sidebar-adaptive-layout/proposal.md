@@ -12,7 +12,9 @@
 - 将 More 的分类栏、内容栏、长列表、插件卡片、标签管理入口和树形条目收敛为主题组件规则，移除现有 42px 分类列和跨文件的重复 More 分隔线规则。
 - 解除全局正文链接规则在 More 内造成的粗体、下划线和 `break-all` 泄漏；保留原生 tiddler 链接、标签、插件、空态和弹窗行为。
 - 将紧凑控制栏的 Page Actions 图标从“下拉”改为语义正确的“更多操作”图标，并在 More 打开时消除首页与 More 同时呈现激活态的歧义。
-- 扩展 Playwright 覆盖，验证动态宽度、slider 拖拽/键盘操作、全部 11 个 More 分类、长列表、原生标签色、插件卡片、移动端抽屉和无横向溢出。
+- 为正文元数据、More 和原生 `$:/TagManager` 标签引入同一套 4px 方角标签组件：无 `color` 字段时使用工程蓝灰基线；存在有效 `color` 字段时以低饱和表面、深色文字和 2px 色条表达该颜色。演示副本中的样本色绝不进入正式 Wiki。
+- 将 More 探索树收敛为原生结构上的紧凑目录行，修复文件夹/文件图标、名称与计数的错行；不改其展开状态、过滤或数据来源。
+- 扩展 Playwright 覆盖，验证动态宽度、slider 拖拽/键盘操作、全部 11 个 More 分类、长列表、标签色变体、插件卡片、移动端抽屉和无横向溢出。
 
 ## Capabilities
 
@@ -26,7 +28,7 @@
 
 ## Impact
 
-- Wiki 子模块：`src/angelscript-theme/`、`src/angelscript-tools/navigation/left-sidebar-resizer.ts`、控制栏图标资源/映射，以及产品级 Playwright 测试。
+- Wiki 子模块：`src/angelscript-theme/`、`src/angelscript-tools/navigation/left-sidebar-resizer.ts`、`src/angelscript-tools/navigation/tag-color-variants.ts`、控制栏图标资源/映射，以及产品级 Playwright 测试。
 - 宿主仓库：本变更目录中的实验记录、设计、规格和任务清单。
 - 不修改 TiddlyWiki 的 `tabsList`、`$:/core/macros/tabs`、`$:/core/ui/SideBar/More`、More 的 11 个原生分类、WikiText 内容模型或发布流程。
-- 本轮不迁移 `new_review.html` 中的正文卡片、正文排版和标题栏工具栏整体主题；它们保留在实验副本中等待独立验收。
+- 本轮不迁移 `new_review.html` 中的正文卡片、正文排版和标题栏工具栏整体主题；仅迁移正文中的标签组件。其余实验结论保留在副本中等待独立验收。

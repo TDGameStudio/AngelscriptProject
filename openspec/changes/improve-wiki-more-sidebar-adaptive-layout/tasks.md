@@ -24,3 +24,17 @@
 - [x] 4.1 Run `npm run check`, `npm run lint`, `npm run test:source-boundaries`, the affected Playwright suites, and `npm run build:wiki` from `Wiki/`.
 - [x] 4.2 Inspect the desktop More default/system and plugin states plus a 390px mobile drawer state; check browser console output and page overflow without generating broad screenshot sets.
 - [x] 4.3 Update this task list with actual verification results and summarize the remaining deferred body-theme experiment work.
+
+## 5. Unify tag colour variants and Explore rows <!-- TDD -->
+
+- [x] 5.1 Replace the legacy native-fill product assertion with failing coverage for the 4px neutral tag baseline and an actual tag tiddler `color` field producing a quiet body/More variant.
+- [x] 5.2 Add a failing More Explore assertion for compact file rows, same-line icon/name layout, and no horizontal tree overflow.
+- [x] 5.3 Implement a scoped tag component and a product-owned startup synchronizer that only derives variants from valid `color` fields; remove superseded untagged-label overrides without changing popup ownership.
+- [x] 5.4 Implement scoped native Explore directory-row styling without modifying reveal state, tree data or More categories.
+- [x] 5.5 Run focused and full affected product tests, static validation, build, and direct desktop/mobile inspection; record results and the remaining deferred body-theme scope.
+
+## 6. Extend the tag component to native TagManager <!-- TDD -->
+
+- [x] 6.1 Add a failing `$:/TagManager` assertion proving that a real tag `color` field receives the same geometry and restrained colour variant without changing its native popup.
+- [x] 6.2 Extend only the scoped component and synchronizer selectors to the TagManager table; retain native table, editing and popup behavior.
+- [x] 6.3 Rebuild the offline Wiki, reopen the inspected artifact, and rerun static and full product validation.

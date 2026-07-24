@@ -27,16 +27,18 @@
 
 ### Requirement: More 保留原生信息架构并使用组件化阅读样式
 
-More SHALL 保留 11 个原生分类及其顺序、tabs 行为、标签颜色、tag popup 生命周期和插件动作。桌面主题 SHALL 以左对齐分类列、单一分隔线、可滚动内容区和局部链接规则呈现 More，不得让全局正文链接的粗体、底边线或 `break-all` 泄漏到 More 长列表。
+More SHALL 保留 11 个原生分类及其顺序、tabs 行为、标签 tiddler 字段、tag popup 生命周期和插件动作。桌面主题 SHALL 以左对齐分类列、单一分隔线、可滚动内容区和局部链接规则呈现 More，不得让全局正文链接的粗体、底边线或 `break-all` 泄漏到 More 长列表。More 标签及原生 `$:/TagManager` 表格标签 SHALL 使用与正文一致的 4px 方角组件；有效的 tag `color` 字段 SHALL 生成低饱和色彩变体，无效或缺失字段 SHALL 使用中性基线。探索树 SHALL 仅通过样式成为紧凑目录行，不得更改原生 reveal 展开状态或分类数据。
 
 #### Scenario: 所有 More 分类仍可使用
 - **WHEN** 用户打开 More
 - **THEN** 全部、最近、标签、缺失、草稿、孤立、类型、系统、默认、探索和插件 SHALL 以原顺序存在且可切换
 - **AND** 默认长列表 SHALL 可以纵向滚动且没有横向页面溢出
 
-#### Scenario: 原生标签颜色和插件卡片保持可读
-- **WHEN** 标签具有原生颜色并在 More 标签面板中显示
-- **THEN** 标签 SHALL 保留原生背景和前景色
+#### Scenario: 配置标签色、探索树和插件卡片保持可读
+- **WHEN** 标签具有有效颜色字段并在 More 标签面板中显示
+- **THEN** 标签 SHALL 使用统一方角几何和由该字段导出的低饱和变体
+- **AND** 未设置颜色的标签 SHALL 使用中性基线
+- **AND** 探索树的图标、名称与计数 SHALL 以紧凑行呈现，并保持原生展开行为
 - **AND** 插件列表 SHALL 以可读的两列卡片布局显示而不溢出
 
 ### Requirement: 控制栏 Page Actions 使用更多操作语义
