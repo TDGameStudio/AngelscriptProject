@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>正文工具栏 hover 布局对比</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f4f6f8;
+        --ink: #202832;
+        --muted: #687384;
+        --line: #dce2e8;
+        --panel: #ffffff;
+        --surface: #f8fafc;
+        --accent: #4271ae;
+        --accent-quiet: rgb(66 113 174 / 8%);
+        --accent-pressed: rgb(66 113 174 / 15%);
+        --shadow: 0 14px 36px rgb(28 41 56 / 8%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .page {
+        width: min(100% - 32px, 1180px);
+        margin: 0 auto;
+        padding: clamp(32px, 6vw, 72px) 0 56px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 25ch;
+        margin: 0;
+        color: #17202a;
+        font-size: clamp(1.9rem, 5vw, 3.15rem);
+        letter-spacing: -0.045em;
+        line-height: 1.08;
+      }
+
+      .lede {
+        max-width: 62ch;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 1rem;
+      }
+
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 40px;
+      }
+
+      .comparison-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .card-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .card-heading h2 {
+        margin: 0;
+        color: #26313d;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+
+      .status {
+        flex: 0 0 auto;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .status--proposed {
+        color: #2f639f;
+        font-weight: 700;
+      }
+
+      .tiddler-preview {
+        margin: 18px;
+        overflow: hidden;
+        border: 1px solid #e4e9ee;
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      .preview-titlebar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+        min-height: 74px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #edf0f3;
+        background: #fcfcfd;
+      }
+
+      .preview-titlebar h3 {
+        min-width: 0;
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: #29333d;
+        font-size: 1.1rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        line-height: 1.35;
+      }
+
+      .toolbar {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        margin-inline-start: auto;
+      }
+
+      .toolbar-button {
+        display: inline-flex;
+        flex: 0 0 32px;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        min-width: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: #737e8d;
+        cursor: pointer;
+      }
+
+      .toolbar-button:hover {
+        background: var(--accent-quiet);
+        color: #333;
+      }
+
+      .toolbar-button:active {
+        background: var(--accent-pressed);
+        color: #234a7d;
+      }
+
+      .toolbar-button:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .toolbar-button svg {
+        display: block;
+        flex: 0 0 auto;
+        fill: none;
+        stroke: currentcolor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.5;
+      }
+
+      .toolbar--current {
+        gap: 0;
+      }
+
+      .toolbar--current .toolbar-button {
+        height: 39.48px;
+        min-height: 39.48px;
+      }
+
+      .toolbar--current .toolbar-button svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .toolbar--proposed {
+        gap: 2px;
+      }
+
+      .toolbar--proposed .toolbar-button {
+        height: 32px;
+        min-height: 32px;
+        transition:
+          background-color 140ms ease,
+          color 140ms ease;
+      }
+
+      .toolbar--proposed .toolbar-button svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .preview-body {
+        padding: 16px;
+        color: #6c7683;
+        font-size: 0.88rem;
+        line-height: 1.65;
+      }
+
+      .preview-body p {
+        margin: 0;
+      }
+
+      .geometry {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 0 18px 18px;
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 10px 11px;
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .metric dt {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .metric dd {
+        margin: 4px 0 0;
+        color: #2e3945;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: 0.78rem;
+        overflow-wrap: anywhere;
+      }
+
+      .review-note {
+        margin: 24px 0 0;
+        padding: 16px 18px;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        background: #edf4fc;
+        color: #44566b;
+        font-size: 0.9rem;
+      }
+
+      .review-note strong {
+        color: #264f80;
+      }
+
+      @media (max-width: 700px) {
+        .comparison-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .preview-titlebar {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .preview-titlebar h3 {
+          flex-basis: 100%;
+        }
+
+        .toolbar {
+          margin-inline-start: 0;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .page {
+          width: min(100% - 24px, 1180px);
+          padding-top: 28px;
+        }
+
+        .card-heading,
+        .tiddler-preview {
+          margin-inline: 12px;
+        }
+
+        .card-heading {
+          padding: 16px 0 14px;
+          margin: 0 14px;
+        }
+
+        .geometry {
+          padding-inline: 12px;
+        }
+
+        .metric {
+          padding: 9px 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Wiki · review prototype</p>
+      <h1>正文工具栏 hover 布局对比</h1>
+      <p class="lede">
+        这是供确认的独立原型：左侧忠实复现当前由标题行高带出的 hover 命中区，右侧展示建议采用的紧凑方形组。移动指针或用 Tab 聚焦按钮，即可检查两种交互状态。
+      </p>
+
+      <div class="comparison-grid">
+        <section class="comparison-card" data-toolbar-variant="current" aria-labelledby="current-title">
+          <header class="card-heading">
+            <h2 id="current-title">当前运行时</h2>
+            <p class="status">实测几何</p>
+          </header>
+          <article class="tiddler-preview" aria-label="当前正文条目工具栏示例">
+            <div class="preview-titlebar">
+              <h3>开始使用与编写脚本</h3>
+              <div class="toolbar toolbar--current" aria-label="当前正文工具栏">
+                <button class="toolbar-button" type="button" aria-label="更多操作" title="更多操作">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="编辑此条目" title="编辑此条目">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5.5 4 4M5 19l3.5-.8L18.7 8a2.83 2.83 0 0 0-4-4L4.5 14.2 4 18.8Z" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="关闭此条目" title="关闭此条目">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="新建 Markdown" title="新建 Markdown">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75h8l4 4V20.25H6zM14 3.75v4h4M8.5 15h7M12 11.5v7" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="preview-body"><p>工具按钮继承标题栏的行高；hover 时，着色面积会比视觉图标显得明显更高。</p></div>
+          </article>
+          <dl class="geometry">
+            <div class="metric"><dt>按钮</dt><dd>32 × 39.48px</dd></div>
+            <div class="metric"><dt>图标</dt><dd>24px</dd></div>
+            <div class="metric"><dt>间距</dt><dd>0px</dd></div>
+          </dl>
+        </section>
+
+        <section class="comparison-card" data-toolbar-variant="proposed" aria-labelledby="proposed-title">
+          <header class="card-heading">
+            <h2 id="proposed-title">建议方案</h2>
+            <p class="status status--proposed">紧凑方形组</p>
+          </header>
+          <article class="tiddler-preview" aria-label="建议正文条目工具栏示例">
+            <div class="preview-titlebar">
+              <h3>开始使用与编写脚本</h3>
+              <div class="toolbar toolbar--proposed" aria-label="建议正文工具栏">
+                <button class="toolbar-button" type="button" aria-label="更多操作" title="更多操作">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="编辑此条目" title="编辑此条目">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5.5 4 4M5 19l3.5-.8L18.7 8a2.83 2.83 0 0 0-4-4L4.5 14.2 4 18.8Z" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="关闭此条目" title="关闭此条目">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+                </button>
+                <button class="toolbar-button" type="button" aria-label="新建 Markdown" title="新建 Markdown">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75h8l4 4V20.25H6zM14 3.75v4h4M8.5 15h7M12 11.5v7" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="preview-body"><p>每个图标拥有固定、安静的 32px 命中区，轻微留白让组边界更清楚，hover 与焦点不会改变布局。</p></div>
+          </article>
+          <dl class="geometry">
+            <div class="metric"><dt>按钮</dt><dd>32 × 32px</dd></div>
+            <div class="metric"><dt>图标</dt><dd>20px</dd></div>
+            <div class="metric"><dt>间距</dt><dd>2px</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="review-note">
+        <strong>审阅提示：</strong>在约 150% 的显示缩放下，当前 32 × 39.48px 的命中区约会呈现为 48 × 59px；右侧的固定方形组会维持与图标视觉尺寸一致的节奏。此页面不加载 Wiki、不触发任何真实操作，也尚未改动运行时样式。
+      </aside>
+    </main>
+  </body>
+</html>
