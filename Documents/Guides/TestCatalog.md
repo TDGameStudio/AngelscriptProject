@@ -123,7 +123,7 @@
 
 > 源文件：`AngelScriptSDK/Engine/`、`Frontend/`、`Compiler/`、`Runtime/`、`Module/`、`TypeSystem/`、`Language/`、`Embedding/`、`Conformance/`，以及仅供这些主题复用的 `AngelScriptSDK/Support/`。该层只测核心 SDK，不引入 `sdk/add_on`。
 >
-> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **412/412 PASS**（2026-07-23）。七个表达未来 2.38 脚本语义的用例保留为 Disabled `#as-v238-backport` CQTest，不计入活跃通过数。
+> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **683/683 PASS**（2026-07-28）。另有 14 个可发现的方法保留为 Disabled `#as-v238-backport` CQTest，用于表达尚未选择性回移的 2.38 语义，不计入活跃通过数。最终配置 `All` 套件为 35/35 前缀、2,396/2,396 测试通过。
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
@@ -1344,7 +1344,7 @@
 | `Angelscript.TestModule.Core.Performance.ArtifactGeneration` | metrics.json 与目录结构落盘验证 |
 | `Angelscript.TestModule.Core.CodeCoverage.*` | coverage line/map/report 产物写出能力邻近回归 |
 | `Angelscript.TestModule.CppTests.StaticJIT.PrecompiledData.*` | 预编译数据产物与 round-trip 稳定性 |
-| `Angelscript.TestModule.StaticJIT.AOT.*` | StaticJIT AOT 生成物 verify、生成 C++ 注册、`jitFunction` 附着、`Context->Execute()` 进入生成入口、多 engine 顺序加载诊断 |
+| `Angelscript.TestModule.StaticJIT.AOT.*` | StaticJIT AOT 生成物 verify、生成 C++ 注册、三类 JIT entry 附着、`Context->Execute()` 进入生成入口、多 engine 顺序加载诊断，以及 interpreter/generated double→`int64`/`uint64` 精确对等 |
 
 ### 15.6 Performance — 运行期微基准
 

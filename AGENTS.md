@@ -157,7 +157,7 @@ A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline.
 
 ### Test Module (AngelscriptTest)
 
-430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK tests are organized across Engine, Frontend, Compiler, Runtime, Module, TypeSystem, Language, Embedding, and Conformance; the latest full active prefix run is `412/412 PASS`, with seven Disabled `#as-v238-backport` future-script cases. See the root testing guides for layering rules.
+430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK tests are organized across Engine, Frontend, Compiler, Runtime, Module, TypeSystem, Language, Embedding, and Conformance; the latest full active prefix run is `683/683 PASS`, with fourteen discoverable Disabled `#as-v238-backport` future-script methods. See the root testing guides for layering rules.
 
 ### Script Examples (`Script/`)
 
@@ -201,7 +201,8 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - Current test numbers must distinguish three separate scopes; future documents and roadmaps must not conflate them:
   - `275/275 PASS`: catalogued C++ baseline (`TestCatalog.md`).
   - `1518+` automation test definitions across `430` test `.cpp` files: source-code scan scale after `test-as-native-sdk-coverage`.
-  - `412/412 PASS`: active native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), plus seven Disabled `#as-v238-backport` future-script cases.
+  - `683/683 PASS`: active native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), plus fourteen discoverable Disabled `#as-v238-backport` future-script methods.
+  - `2396/2396 PASS`: final configured `All` suite across 35 prefixes on 2026-07-28; all reports have zero failures, skips, and timeouts.
   - Live full-suite run results: defer to the actual numbers in `TechnicalDebtInventory.md`.
   - Only `2` tests remain Disabled (`#ue57-headless`): `TestEngineHelperTests.cpp:106` and `SourceNavigationTests.cpp:125`.
 

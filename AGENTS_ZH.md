@@ -159,7 +159,7 @@ C# 项目（`.ubtplugin.csproj`），接入 Unreal Build Tool 管线。读取 C+
 
 ### 测试模块 (AngelscriptTest)
 
-430 个测试 `.cpp` 文件，组织在 28+ 个主题目录中（Actor、AngelScriptSDK、Bindings、Blueprint、Component、Debugger、Delegate、GC、HotReload、Inheritance、Interface、Networking、Preprocessor、StaticJIT、Subsystem 等）。这个模块负责 C++ 自动化测试、CQTest、AngelScript SDK 测试和测试 Fixture。测试使用自动化前缀约定：`Angelscript.TestModule.<Theme>.*` 用于集成测试，`Angelscript.CppTests.*` 用于运行时 C++ 单元测试，`Angelscript.Editor.*` 用于编辑器测试。Native AngelScript SDK 已按 Engine、Frontend、Compiler、Runtime、Module、TypeSystem、Language、Embedding、Conformance 九个主题组织；最新完整前缀验证为 `412/412 PASS`，另有 7 个带 `#as-v238-backport` 的 Disabled 2.38 预留用例。分层规则参见根目录测试指南。
+430 个测试 `.cpp` 文件，组织在 28+ 个主题目录中（Actor、AngelScriptSDK、Bindings、Blueprint、Component、Debugger、Delegate、GC、HotReload、Inheritance、Interface、Networking、Preprocessor、StaticJIT、Subsystem 等）。这个模块负责 C++ 自动化测试、CQTest、AngelScript SDK 测试和测试 Fixture。测试使用自动化前缀约定：`Angelscript.TestModule.<Theme>.*` 用于集成测试，`Angelscript.CppTests.*` 用于运行时 C++ 单元测试，`Angelscript.Editor.*` 用于编辑器测试。Native AngelScript SDK 已按 Engine、Frontend、Compiler、Runtime、Module、TypeSystem、Language、Embedding、Conformance 九个主题组织；最新完整前缀验证为 `683/683 PASS`，另有 14 个可发现且带 `#as-v238-backport` 的 Disabled 2.38 预留方法。分层规则参见根目录测试指南。
 
 ### 脚本示例 (`Script/`)
 
@@ -203,7 +203,8 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - 当前测试数字需区分三套口径，后续文档与 roadmap 不能混写：
   - `275/275 PASS`：已编目 C++ 基线（`TestCatalog.md`）。
   - `1518+` 个自动化测试定义分布在 `430` 个测试 `.cpp` 文件中：`test-as-native-sdk-coverage` 后的源码扫描规模。
-  - `412/412 PASS`：native AngelScript SDK 活跃前缀（`Angelscript.TestModule.AngelScriptSDK`）；另有 7 个 Disabled 的 `#as-v238-backport` 脚本语义预留用例。
+  - `683/683 PASS`：native AngelScript SDK 活跃前缀（`Angelscript.TestModule.AngelScriptSDK`）；另有 14 个可发现且 Disabled 的 `#as-v238-backport` 脚本语义预留方法。
+  - `2396/2396 PASS`：2026-07-28 最终配置 `All` 套件的 35 个前缀汇总；35 份报告均为零失败、零跳过、零超时。
   - live full-suite 运行结果：以 `TechnicalDebtInventory.md` 中的实际数字为准。
   - 仅余 `2` 个测试保持 Disabled（`#ue57-headless`）：`TestEngineHelperTests.cpp:106` 和 `SourceNavigationTests.cpp:125`。
 
