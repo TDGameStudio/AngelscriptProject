@@ -78,5 +78,5 @@
       "title": "Merge remote-tracking branch 'epicgames/release' into angelscript-master"
     }
   ],
-  "notes": "Complete marker range reviewed on 2026-07-14: 34 core plugin commits and 39 deduplicated related-path commits. Five bounded fixes were adopted in improve-hazelight-fix-parity; Pow semantics, StaticJIT architecture, HotReload, class-generation, and engine-side changes remain deferred or reference-only."
+  "notes": "Complete marker range reviewed on 2026-07-14: 34 core plugin commits and 39 deduplicated related-path commits. Five bounded fixes were adopted in improve-hazelight-fix-parity. Follow-up on 2026-07-16 adopted 6948712ac8cd (GetAttachedActorsOfClass null actor/class guards) through archived OpenSpec fix-hazelight-actor-null-guards; upstream HEAD remains unchanged at 138a7e186082. FBox3f opAssign, FAssetData comparison/Blueprint helpers, RuntimeFloatCurve API, Pow semantics, StaticJIT architecture, HotReload, class-generation, and engine-side changes remain deferred or reference-only."
 }

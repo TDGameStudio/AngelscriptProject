@@ -125,3 +125,34 @@
 - Focused parity run: `41/41` passed across bindings, widget metadata, FString coverage, UObjectTickable, and StaticJIT native-form tests.
 - SDK baseline: `421/421` passed; the existing `Pow` overflow expectation passed unchanged.
 - Editor build: `Tools\RunBuild.ps1` passed after the production and regression-test changes.
+
+## 2026-07-16 - Follow-up actor null-guard sync
+
+- Repo: `Hazelight/UnrealEngine-Angelscript`
+- Branch: `angelscript-master`
+- Marker base and reviewed HEAD: `138a7e186082b639375b95545e0177b18f13c4be`
+- New upstream commits since the checkpoint: `0` (`aheadBy: 0`); the recent 20-commit result remains a preview of the already-reviewed range.
+- Follow-up purpose: record the implementation decision for the previously reviewed candidate `6948712ac8cd`; no new checkpoint range was created.
+- Local commits: plugin `4ea62d4` and parent `6a164e0`; OpenSpec archived as `2026-07-16-fix-hazelight-actor-null-guards`.
+
+### Adopt now
+
+- `6948712ac8cd` - add early empty-array returns for null actor and null class in local `GetAttachedActorsOfClass`; regression coverage verifies valid filtering, null class, and native null actor behavior.
+
+### Already absorbed
+
+- The earlier four low-risk parity fixes remain recorded under the 2026-07-14 batch: `7270607d98aa`, `83a3e539d43a`, `5022c3a07a1f`, and `b448dd3defca`.
+
+### Needs OpenSpec
+
+- `4b3da3a51cea` - `FAssetData` equality/comparison operators and binding-order changes require an explicit ordering contract test.
+- `b111be76600b` - `FAssetData.IsBlueprintChildOf` is a new script-visible asset API.
+- `c6ca75eaa675` - `FRuntimeFloatCurve` editing surface and mixin split are a larger script-visible API expansion.
+
+### Reference only
+
+- `309e7001ab12` - local `FBox3f` has no corresponding incorrect `opAssign` binding, so the upstream memory-corruption path is not present locally; adding an assignment API would require a separate capability decision.
+
+### Deferred
+
+- `98626b3dd747`, `f0f383f5cb22`, `4065a84c1bb7`, `5aa00922b79a`, and related StaticJIT, Pow, HotReload, and class-generation changes remain as classified in the complete marker audit.
