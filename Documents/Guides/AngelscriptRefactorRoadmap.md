@@ -10,9 +10,9 @@ AngelScript 插件已经具备较完整的运行时、编辑器集成、调试�
 
 本路线图的目标是逐步建立以下结构：
 
-- `AngelscriptRuntime` 的运行时能力、编辑器桥接、测试集成和扩展面具有明确的所有权。
+- `AngelscriptRuntime` 的运行时能力、编辑器桥接、Runtime-owned AS 测试框架和扩展面具有明确的所有权。
 - `AngelscriptEditor` 负责编辑器专属实现、源代码导航、热重载和编辑器工具。
-- `AngelscriptTest` 负责自动化测试实现、Fixture、测试运行器和测试专用配置；它可以作为源插件验证面随插件分发。
+- `AngelscriptTest` 负责 C++ 自动化测试、CQTest、AngelScript SDK 测试、Fixture、测试运行器和测试专用配置；它可以作为源插件验证面随插件分发，但不拥有 `AngelscriptRuntime/Testing`。
 - Engine 生命周期和 World Context 通过明确的对象关系传递，减少隐式全局访问。
 - 大型实现文件按职责拆分，而不是只按文件长度机械切割。
 - 测试目录、Fixture、宏和运行环境具有稳定、可预测的规则。
@@ -24,7 +24,7 @@ AngelScript 插件已经具备较完整的运行时、编辑器集成、调试�
 
 - Runtime 非 ThirdParty 目录约有 `193` 个 `.cpp`，其中 `AngelscriptEngine.cpp` 为 `5731` 行，`AngelscriptPreprocessor.cpp` 为 `4336` 行。
 - `FAngelscriptEngine::Get()` 与 `CurrentWorldContext` 直接访问约 `303` 处，分布在 `57` 个 Runtime 文件中。
-- Runtime 内的 `Testing/` 目录有 `24` 个源码文件，且 Runtime 仍包含文档、Commandlet、Editor Bridge 等开发期职责。
+- Runtime 内的 `Testing/` 目录有 `24` 个源码文件，提供 AS 测试发现/注册/执行、latent/network 支持以及 UE Automation bridge；这不是 Runtime 内嵌的 C++ 单元测试模块。Runtime 仍包含文档、Commandlet、Editor Bridge 等开发期职责。
 - Test 模块约有 `555` 个 `.cpp`、`2834` 个 `TEST_METHOD`；`383` 个测试文件创建 Engine，`313` 个测试文件包含生命周期宏样板。
 - 当前 `test-coverage` OpenSpec 完成 `24/49`，剩余大多为低/中优先级覆盖扩展；不应让这些扩展阻塞架构收口。
 - 当前工作区存在用户已有的未提交修改，特别是 DebugServer 与 Debugger Database 测试相关文件。开始重构前必须先将其独立收口或明确保护范围。
@@ -110,7 +110,7 @@ Phase 3 依赖 Phase 2，因为大型文件中的职责拆分需要先明确 Eng
 
 - 保留 `ModuleDirectory`、`Core`、`Core/Commandlets` 和 ThirdParty Source 的现有公共 Include Path；它们是外部扩展兼容面，不作为本阶段的清理目标。
 - 不引入标准 UE `Public/Private` 对等目录重构；以现有目录和 Include 约定为准，单独记录哪些头是稳定扩展接口、哪些头是内部实现。
-- 评估 Runtime 内 `Testing/` 的所有权，区分“编译开关开启时的 Runtime 测试集成”和“只属于 Test 的实现”，不整体搬迁目录。
+- 明确 `AngelscriptRuntime/Testing` 是 Runtime-owned 的 AS 测试框架；继续审计其 UE Automation bridge、`WITH_DEV_AUTOMATION_TESTS` 探针、配置来源和对 `AngelscriptTest` 的真实依赖，不整体搬迁目录。
 - 将文档生成、Editor Debug Bridge、Editor 状态 Dump 等职责按实际调用关系分类；只迁移确实属于 Editor/Tool 的实现，不移动 Runtime 必需的注册接口。
 - 解除不必要的 CodeCoverage 对 `AngelscriptTest` 配置的硬耦合；如果测试集成是设计的一部分，则通过明确的配置/适配接口表达，而不是假设 Runtime 必须完全独立于 Test。
 - 区分脚本运行时能力、编辑器能力和测试辅助能力，同时保留插件当前允许的跨模块扩展方式。
