@@ -513,7 +513,7 @@ EarliestPossible ─► PostConfigInit ─► PreEarlyLoadingScreen ─► ...
 | **ContextStack** | `FAngelscriptEngineContextStack`，进程级 `TArray<FAngelscriptEngine*>`，提供 Push/Pop/Peek。`TryGetCurrentEngine() = Stack.Last()`，回答"当前我属于哪个 Engine"。 | `Core/AngelscriptEngine.h` |
 | **EngineScope** | `FAngelscriptEngineScope`，RAII 包装类，构造时 Push、析构时 Pop ContextStack。所有"切换当前 Engine"的代码必须用它。 | `Core/AngelscriptEngine.h` |
 | **Bind** | C++ 类型/函数到 AS 类型系统的手工绑定，落在 `Binds/Bind_*.cpp`（121 份）。每份 `Bind_*.cpp` 通过 `FAngelscriptBinds::SetPreviousNamespaces` 等 API 注册一组类型。 | `Binds/Bind_*.cpp` |
-| **FunctionTable** | UHT 工具产出的"AS_FunctionBinding_*.cpp"，自动绑定 BlueprintCallable / BlueprintPure 函数。与手工 Bind 不冲突，由 UHT 在构建期生成。 | `AngelscriptUHTTool/` |
+| **FunctionBinding** | UHT 工具产出的"AS_FunctionBinding_*.cpp"，自动绑定 BlueprintCallable / BlueprintPure 函数。与手工 Bind 不冲突，由 UHT 在构建期生成。 | `AngelscriptUHTTool/` |
 | **ScriptRoot** | AS 脚本根目录列表，由 `FAngelscriptEngine::MakeAllScriptRoots()` 返回；DirectoryWatcher 注册回调时使用；默认包含 `Script/` 与项目级配置。 | `UAngelscriptSettings` |
 | **ClassGenerator** | `FAngelscriptClassGenerator`，把 AS 类声明翻译成活的 `UClass`/`UStruct`/`UFunction`/`UEnum` 的子系统；暴露 5 个 `OnXXXReload` 多播给 Editor 订阅。 | `ClassGenerator/` |
 | **HotReload** | 文件变更 → 重新编译 → ClassGenerator 触发 reinstance 的全链路。Editor 端由 DirectoryWatcher 触发；Runtime 端在 `Tick` 内读 `FileChangesDetectedForReload` 队列。 | `RT_HotReload.md` |
