@@ -1,0 +1,703 @@
+{
+    "name": "angelscript",
+    "displayName": "TDGameStudio Angelscript",
+    "description": "Project-maintained AngelScript Language Server and Debug Adapter for AngelscriptProject.",
+    "version": "1.9.2",
+    "publisher": "TDGameStudio",
+    "icon": "resources/angelscript_unreal.png",
+    "engines": {
+        "vscode": "^1.65.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Debuggers"
+    ],
+    "activationEvents": [
+        "onDebug",
+        "onLanguage:angelscript"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TDGameStudio/AngelscriptProject/tree/main/Extensions/AngelscriptVSCode"
+    },
+    "main": "./extension/dist/extension.js",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "angelscript-api",
+                    "title": "Angelscript API",
+                    "icon": "resources/angelscript_unreal.png"
+                }
+            ]
+        },
+        "views": {
+            "angelscript-api": [
+                {
+                    "id": "angelscript-api-search",
+                    "name": "Search",
+                    "icon": "resources/angelscript_unreal.png",
+                    "type": "webview",
+                    "initialSize": 1
+                },
+                {
+                    "id": "angelscript-api-list",
+                    "name": "List",
+                    "icon": "resources/angelscript_unreal.png",
+                    "type": "tree",
+                    "initialSize": 20
+                },
+                {
+                    "id": "angelscript-api-details",
+                    "name": "Details",
+                    "icon": "resources/angelscript_unreal.png",
+                    "type": "webview",
+                    "initialSize": 5
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Unreal Angelscript",
+            "properties": {
+                "UnrealAngelscript.insertParenthesisOnFunctionCompletion": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Insert parenthesis pair when auto-completing a function call."
+                },
+                "UnrealAngelscript.diagnosticsForUnrealNamingConvention": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Emit diagnostic warnings and hints when types, functions, or variables violate the Unreal naming convention."
+                },
+                "UnrealAngelscript.markUnreadVariablesAsUnused": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Variables that are written to but never read are marked as unused as well."
+                },
+                "UnrealAngelscript.mathCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the Math:: namespace so they can be completed without typing Math:: first."
+                },
+                "UnrealAngelscript.correctFloatLiteralsWhenExpectingDoublePrecision": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "When a float literal is typed (eg `1.f`) in a context where double-precision is expected, automatically correct it (eg to `1.0`)"
+                },
+                "UnrealAngelscript.unrealConnectionPort": {
+                    "type": "number",
+                    "default": 27099,
+                    "description": "What port to use when connecting to the Unreal engine game or editor instance for auto-completion and debugging. Must match the debug port configured in the Unreal Engine project settings, or as a launch argument (-asdebugport=)."
+                },
+                "UnrealAngelscript.inlayHints.inlayHintsEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable inlay hints rendered by the angelscript extension."
+                },
+                "UnrealAngelscript.inlayHints.parameterHintsForConstants": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show parameter name hints when passing a constant literal argument."
+                },
+                "UnrealAngelscript.inlayHints.parameterHintsForComplexExpressions": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show parameter name hints when passing a complex expression as an argument."
+                },
+                "UnrealAngelscript.inlayHints.parameterReferenceHints": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show an inlay hint when a parameter takes a writeable reference."
+                },
+                "UnrealAngelscript.inlayHints.parameterHintsForSingleParameterFunctions": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable parameter name hints for functions that are only passed a single argument."
+                },
+                "UnrealAngelscript.inlayHints.typeHintsForAutos": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the name of the type as an inlay hint on auto declarations."
+                },
+                "UnrealAngelscript.inlayHints.typeHintsForAutoIgnoredTypes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "description": "Types in this list will never receive a type hint for an auto declaration"
+                },
+                "UnrealAngelscript.inlayHints.parameterHintsIgnoredParameterNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "Object",
+                        "Actor",
+                        "FunctionName",
+                        "Value",
+                        "InValue",
+                        "NewValue",
+                        "Condition",
+                        "Parameters",
+                        "Params"
+                    ],
+                    "description": "Parameters with a name included in this list will be ignored for inlay hints."
+                },
+                "UnrealAngelscript.inlayHints.parameterHintsIgnoredFunctionNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "description": "Functions with a name included in this list will be ignored for inlay hints"
+                },
+                "UnrealAngelscript.inlineValues.showInlineValueForLocalVariables": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When debugging, show an inline value next to local variable declarations."
+                },
+                "UnrealAngelscript.inlineValues.showInlineValueForParameters": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When debugging, show an inline value for function parameters."
+                },
+                "UnrealAngelscript.inlineValues.showInlineValueForMemberAssignment": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When debugging, show an inline value next to direct assignments of this member variables."
+                },
+                "UnrealAngelscript.inlineValues.showInlineValueForFunctionThisObject": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When debugging, show an inline value above the function declaration to display the this pointer and Owner of the object."
+                },
+                "UnrealAngelscript.scriptIgnorePatterns": {
+                    "type": "array",
+                    "default": [
+                        "**/Saved/**",
+                        "**/.plastic/**"
+                    ],
+                    "description": "Glob patterns to ignore when searching for script files to parse."
+                },
+                "UnrealAngelscript.codeLenses.showCreateBlueprintClasses": {
+                    "type": "array",
+                    "default": [
+                        "AActor",
+                        "UUserWidget"
+                    ],
+                    "description": "Script classes inheriting from the specified classes will have a 'Create Blueprint' prompt above them if they don't already have a blueprint implementation."
+                },
+                "UnrealAngelscript.dataBreakpoints.cppBreakpoints.enable": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Should Data Breakpoints trigger in C++? If not, any Data Breakpoint will surface as an AS breakpoint, potentially missing the C++ callstack."
+                },
+                "UnrealAngelscript.dataBreakpoints.cppBreakpoints.triggerCount": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "How many times a C++ Data Breakpoint should trigger (silently) before activating and disabling, -1 means it will never disable automatically."
+                },
+                "UnrealAngelscript.dataBreakpoints.asBreakpoints.triggerCount": {
+                    "type": "number",
+                    "default": -1,
+                    "description": "How many times a AS Data Breakpoint should trigger (silently) before activating and disabling, -1 means it will never disable automatically."
+                },
+                "UnrealAngelscript.projectCodeGeneration.enable": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Should project code generation be enabled? If not, only built-in code generation will be applied."
+                },
+                "UnrealAngelscript.projectCodeGeneration.generators": {
+                    "type": "array",
+                    "default": [],
+                    "description": "What generators to apply during analysis.",
+                    "items": {
+                        "type": "object",
+                        "description": "A code generator to apply to a given class/struct.",
+                        "properties": {
+                            "derivedFrom": {
+                                "type": "string",
+                                "default": "UObject",
+                                "description": "The class this generator will apply to."
+                            },
+                            "staticFunctions": {
+                                "type": "array",
+                                "default": [],
+                                "description": "List of static functions to generate for the target class.",
+                                "required": [
+                                    "returnType",
+                                    "name"
+                                ],
+                                "items": {
+                                    "properties": {
+                                        "returnType": {
+                                            "type": "string",
+                                            "default": "UObject",
+                                            "description": "The type name of the class/struct to be returned. Supports patterns such as `{class}`."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "default": "MyStaticFunc",
+                                            "description": "Name of this function. Supports patterns such as `{class}`."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "default": [],
+                                            "description": "List of argument types for this function.",
+                                            "items": {
+                                                "type": "object",
+                                                "required": [
+                                                    "type",
+                                                    "name"
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The type name of the class/struct to be used. Supports patterns such as `{class}`."
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The name of the argument. Supports patterns such as `{class}`."
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "memberFunctions": {
+                                "type": "array",
+                                "default": [],
+                                "description": "List of member functions to generate for the target class.",
+                                "items": {
+                                    "required": [
+                                        "returnType",
+                                        "name"
+                                    ],
+                                    "properties": {
+                                        "returnType": {
+                                            "type": "string",
+                                            "default": "UObject",
+                                            "description": "The type name of the class/struct to be returned. Supports patterns such as `{class}`."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "default": "MyMemberFunc",
+                                            "description": "Name of this function. Supports patterns such as `{class}`."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "description": "List of argument types for this function.",
+                                            "default": [],
+                                            "items": {
+                                                "type": "object",
+                                                "required": [
+                                                    "type",
+                                                    "name"
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The type name of the class/struct to be used. Supports patterns such as `{class}`."
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The name of the argument. Supports patterns such as `{class}`."
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "const": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Whether or not this function is const qualified."
+                                        },
+                                        "property": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Whether or not this function marked as a property accessor."
+                                        }
+                                    }
+                                }
+                            },
+                            "staticAccessors": {
+                                "type": "array",
+                                "default": [],
+                                "description": "List of static accessors to generate for the target class.",
+                                "required": [
+                                    "returnType",
+                                    "name"
+                                ],
+                                "items": {
+                                    "properties": {
+                                        "derivedFrom": {
+                                            "type": "string",
+                                            "description": "The property type this generator will apply to."
+                                        },
+                                        "returnType": {
+                                            "type": "string",
+                                            "default": "UObject",
+                                            "description": "The type name of the class/struct to be returned. Supports patterns such as `{class}, {propType}, {propName}`."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "default": "MyStaticFunc",
+                                            "description": "Name of this function. Supports patterns such as `{class}, {propType}, {propName}`."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "default": [],
+                                            "description": "List of argument types for this function.",
+                                            "items": {
+                                                "type": "object",
+                                                "required": [
+                                                    "type",
+                                                    "name"
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The type name of the class/struct to be used. Supports patterns such as `{class}, {propType}, {propName}`."
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The name of the argument. Supports patterns such as `{class}, {propType}, {propName}`."
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "memberAccessors": {
+                                "type": "array",
+                                "default": [],
+                                "description": "List of member accessors to generate for the target class.",
+                                "items": {
+                                    "required": [
+                                        "returnType",
+                                        "name"
+                                    ],
+                                    "properties": {
+                                        "derivedFrom": {
+                                            "type": "string",
+                                            "description": "The property type this generator will apply to."
+                                        },
+                                        "returnType": {
+                                            "type": "string",
+                                            "default": "UObject",
+                                            "description": "The type name of the class/struct to be returned. Supports patterns such as `{class}, {propType}, {propName}`."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "default": "MyMemberFunc",
+                                            "description": "Name of this function. Supports patterns such as `{class}, {propType}, {propName}`."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "description": "List of argument types for this function.",
+                                            "default": [],
+                                            "items": {
+                                                "type": "object",
+                                                "required": [
+                                                    "type",
+                                                    "name"
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The type name of the class/struct to be used. Supports patterns such as `{class}, {propType}, {propName}`."
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "default": "UObject",
+                                                        "description": "The name of the argument. Supports patterns such as `{class}, {propType}, {propName}`."
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "const": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Whether or not this function is const qualified."
+                                        },
+                                        "property": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Whether or not this function marked as a property accessor."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "UnrealAngelscript.completion.dependencyRestrictions": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Restrictions to apply for which modules can depend on symbols from which other modules",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "isolate": {
+                                "type": "string",
+                                "default": "",
+                                "description": "Isolate symbols in modules matching this, so they cannot be used outside that match"
+                            },
+                            "unisolate": {
+                                "type": "string",
+                                "default": "",
+                                "description": "Modules matching this don't obey isolation restrictions"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "languages": [
+            {
+                "id": "angelscript",
+                "aliases": [
+                    "Angelscript",
+                    "angelscript"
+                ],
+                "extensions": [
+                    ".as"
+                ],
+                "configuration": "./extension/language-configuration.json",
+                "icon": {
+                    "dark": "./resources/file-icon-dark-theme.svg",
+                    "light": "./resources/file-icon-light-theme.svg"
+                }
+            },
+            {
+                "id": "angelscript_snippet",
+                "aliases": [
+                    "Angelscript Snippet"
+                ],
+                "extensions": [],
+                "configuration": "./extension/language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "angelscript",
+                "scopeName": "source.angelscript",
+                "path": "./extension/syntaxes/angelscript.tmLanguage.json"
+            },
+            {
+                "language": "angelscript_snippet",
+                "scopeName": "source.angelscript_snippet",
+                "path": "./extension/syntaxes/angelscript_snippet.tmLanguage.json"
+            }
+        ],
+        "configurationDefaults": {
+            "[angelscript]": {
+                "editor.tabSize": 4
+            }
+        },
+        "breakpoints": [
+            {
+                "language": "angelscript"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "angelscript",
+                "label": "Angelscript Debug",
+                "program": "./extension/out/debugAdapter.js",
+                "runtime": "node",
+                "languages": [
+                    "angelscript"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [],
+                        "properties": {
+                            "trace": {
+                                "type": "boolean",
+                                "description": "Enable logging of the Debug Adapter Protocol.",
+                                "default": true
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "Port to AS debug server. If 0, we use the Unreal Connection Port from the extension settings.",
+                                "default:": 0
+                            },
+                            "hostname": {
+                                "type": "string",
+                                "description": "Hostname to AS debug server",
+                                "default:": "localhost"
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "angelscript",
+                        "request": "launch",
+                        "name": "Debug Angelscript"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "Start Angelscript Debugging",
+                        "description": "Debug angelscript code.",
+                        "body": {
+                            "type": "angelscript",
+                            "request": "launch",
+                            "name": "Debug Angelscript"
+                        }
+                    }
+                ]
+            }
+        ],
+        "commands": [
+            {
+                "command": "angelscript.goToSymbol",
+                "title": "Go to Symbol"
+            },
+            {
+                "command": "angelscript.paren",
+                "title": "Angelscript Parenthesis Completion",
+                "enablement": "false"
+            },
+            {
+                "command": "angelscript.saveAndCreateBlueprint",
+                "title": "Angelscript Save and Create Blueprint",
+                "enablement": "false"
+            },
+            {
+                "command": "angelscript.saveAndEditAsset",
+                "title": "Angelscript Save and Edit Asset",
+                "enablement": "false"
+            },
+            {
+                "command": "angelscript.debugStopPIE",
+                "title": "Unreal: Resume Execution and Stop Any Active PIE Sessions",
+                "shortTitle": "Resume and Stop PIE",
+                "icon": "resources/stop_pie.png"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "when": "resourceLangId == angelscript",
+                    "command": "angelscript.goToSymbol",
+                    "group": "navigation"
+                }
+            ],
+            "debug/toolBar": [
+                {
+                    "command": "angelscript.debugStopPIE",
+                    "when": "debugType == angelscript && debugState == stopped"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "angelscript.goToSymbol",
+                "key": "alt+g",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "angelscript.addImportTo",
+                "key": "alt+shift+i",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "angelscript.quickOpenImport",
+                "key": "alt+e",
+                "when": "editorTextFocus"
+            }
+        ],
+        "semanticTokenScopes": [
+            {
+                "language": "angelscript",
+                "scopes": {
+                    "as_typename": [
+                        "support.type.angelscript"
+                    ],
+                    "as_typename_component": [
+                        "support.type.component.angelscript"
+                    ],
+                    "as_typename_actor": [
+                        "support.type.actor.angelscript"
+                    ],
+                    "as_typename_delegate": [
+                        "support.type.delegate.angelscript"
+                    ],
+                    "as_typename_event": [
+                        "support.type.event.angelscript"
+                    ],
+                    "as_typename_struct": [
+                        "support.type.struct.angelscript"
+                    ],
+                    "as_typename_primitive": [
+                        "storage.type.primitive.angelscript"
+                    ],
+                    "as_namespace": [
+                        "entity.name.namespace.angelscript"
+                    ],
+                    "as_template_base_type": [
+                        "support.type.angelscript"
+                    ],
+                    "as_parameter": [
+                        "variable.parameter.angelscript"
+                    ],
+                    "as_local_variable": [
+                        "variable.other.local.angelscript"
+                    ],
+                    "as_member_variable": [
+                        "variable.other.property.angelscript"
+                    ],
+                    "as_member_accessor": [
+                        "variable.other.property.accessor.angelscript"
+                    ],
+                    "as_global_variable": [
+                        "variable.other.global.angelscript"
+                    ],
+                    "as_global_accessor": [
+                        "variable.other.global.accessor.angelscript"
+                    ],
+                    "as_member_function": [
+                        "entity.name.function.member.angelscript"
+                    ],
+                    "as_global_function": [
+                        "entity.name.function.angelscript"
+                    ],
+                    "as_unknown_error": [
+                        "invalid"
+                    ],
+                    "as_unimported_symbol": [
+                        "invalid.unimported.angelscript"
+                    ],
+                    "as_access_specifier": [
+                        "support.type.access_specifier.angelscript"
+                    ]
+                }
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "npm run compile:extension && npm run compile:language-server",
+        "compile:extension": "cd extension && node esbuild.js",
+        "compile:language-server": "cd language-server && node esbuild.js",
+        "watch": "npm-run-all -p watch:*",
+        "watch:extension": "cd extension && node esbuild.js --watch",
+        "watch:language-server": "cd language-server && node esbuild.js --watch",
+        "postinstall": "cd extension && npm install && cd ../language-server && npm install && cd ..",
+        "pegjs:compile": "cd language-server/pegjs && peggy angelscript.pegjs --allowed-start-rules start,start_global,start_class,start_enum",
+        "pegjs:test": "cd language-server/pegjs && peggy angelscript.pegjs --allowed-start-rules start,start_global,start_class,start_enum --trace --test-file test.as -S start"
+    }
+}
