@@ -8,6 +8,7 @@ The language catalogs do not replace direct implementation and public-interface 
 - products: profile × property, engine A/B × registration/module visibility, resource type × shutdown path, atomic operation × value/boundary/thread count, TLS access × same/different thread × lifecycle, message severity × source location × payload form;
 - `ENG-MESSAGE-CALLBACK-CARTESIAN` retains all 3 severity forms × 4 coordinate/section forms × 3 payload forms (36 direct `WriteMessage` cells), including empty payload and zero/large offsets;
 - `ENG-ATOMIC-OPERATIONS` retains 4 `asCAtomic` operations × 4 signed initial values × single/concurrent worker modes (32 direct cells), with deterministic final values and balanced operation checks;
+- `ENG-PRODUCT-VERSION-CONTRACT` owns the Unreal AngelScript product name, semantic and encoded version, upstream-lineage separation, current/legacy/newer/cross-major engine creation behavior, and synthetic same-major backward-compatibility rules;
 - current process-global state must be observed/restored safely; non-restorable public operations remain explicit exclusions.
 
 ## Frontend

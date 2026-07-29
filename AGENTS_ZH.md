@@ -8,7 +8,7 @@
 - 当前第一目标不是继续扩展一个普通游戏工程，而是把 `Plugins/Angelscript` 整理、验证并沉淀为可独立使用的 Angelscript 插件。当前仓库是插件开发与验证的承载工程；真正的主产物是 `Angelscript` 插件本身。
 - 插件已经**不处于原型或底座搭建阶段**，而是进入了"核心运行时、编辑器集成、测试基础设施都已成型，但对外交付入口和若干关键能力闭环仍需收口"的成熟期。
 - 当前基线：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 三个 UE 模块已稳定，`121` 个 `Bind_*.cpp`、`27+` 张 CSV 状态导出表、`1518+` 个自动化测试定义分布在 `430` 个测试 `.cpp` 文件中、`DebugServer V2` 协议、`CodeCoverage`、`StaticJIT`、`BlueprintImpact Commandlet` 均已落地。`GameplayTags` 支持现在拆到可选的 `AngelscriptGameplayTags` 插件里，而 `AngelscriptGAS` 依赖它做 GAS 侧集成。仅余 `2` 个测试保持 Disabled（均为 `#ue57-headless` 已知限制）。
-- AS 基线版本为 `2.33 + 选择性 2.38 兼容`，fork 已深度分叉，整体升级不可行，策略为从高版本选择性吸收改进。详见 `Documents/Guides/AngelscriptForkStrategy.md`。
+- 当前产品版本为 `Unreal AngelScript 1.0.0`；源码 lineage 为 `AngelScript 2.33.0 WIP + 选择性 2.38 回移`。产品版本独立演进，fork 策略仍是从高版本选择性吸收改进。详见 `Documents/Guides/AngelscriptForkStrategy.md`。
 - `Plugins/Angelscript/` 是核心工作区，绝大多数实现、修复、清理和测试都应优先落在这里。`Source/AngelscriptProject/` 仅保留宿主工程必须的最小内容，除非任务明确需要，不要把插件逻辑塞回项目模块。
 
 ## 项目目录结构
@@ -35,7 +35,7 @@ AngelscriptProject/
 │       │   ├── Dump/                        # 27+ 张 CSV 状态导出表
 │       │   ├── Extension/CodeCoverage/      # 逐行覆盖率追踪（engine extension）
 │       │   ├── Testing/                     # Runtime-owned AngelScript 测试框架
-│       │   └── ThirdParty/                  # AngelScript 2.33 内嵌源码
+│       │   └── ThirdParty/                  # 2.33 WIP lineage 的内嵌 fork 源码
 │       ├── AngelscriptEditor/               # 编辑器模块（49 .cpp）
 │       │   ├── HotReload/                   # 文件监控与类重建实例
 │       │   ├── CodeGen/                     # 编辑器时代码生成
@@ -117,7 +117,7 @@ AngelscriptProject/
 
 ## 架构概览
 
-本项目是一个 **Unreal Engine 5.7 插件**，将 AngelScript 脚本语言集成为 Blueprint 和 C++ 的一等替代方案。该插件最初由 Hazelight Games 创建；本仓库维护一个基于 AS 2.33 并选择性回移 2.38 改进的分叉版本。
+本项目是一个 **Unreal Engine 5.7 插件**，将 AngelScript 脚本语言集成为 Blueprint 和 C++ 的一等替代方案。当前产品身份为 `Unreal AngelScript 1.0.0`。该插件最初由 Hazelight Games 创建；底层源码保留 AngelScript 2.33 WIP lineage，并选择性回移 2.38 改进，但这些上游数字不再作为产品版本。
 
 ### 模块依赖关系
 

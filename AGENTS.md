@@ -6,7 +6,7 @@
 - The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine. This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
 - The plugin is **no longer in prototype or foundation-building phase**. It has entered a maturity stage where the core runtime, editor integration, and test infrastructure are established, but external delivery entry points and several key capability closures still need attention.
 - Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `121` `Bind_*.cpp` files, `27+` CSV state export tables, `1518+` automation test definitions across `430` test `.cpp` files, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. GameplayTags support now lives in the optional `AngelscriptGameplayTags` plugin, while `AngelscriptGAS` depends on it for GAS-facing integration. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
-- AngelScript base version is `2.33 + selective 2.38 compatibility`; the fork has diverged too far for a wholesale upgrade — the strategy is to selectively absorb improvements from higher versions. See `Documents/Guides/AngelscriptForkStrategy.md`.
+- The current product version is `Unreal AngelScript 1.0.0`; its source lineage is `AngelScript 2.33.0 WIP + selective 2.38 backports`. Product versions advance independently while the fork continues to absorb selected higher-version improvements. See `Documents/Guides/AngelscriptForkStrategy.md`.
 - `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first. `Source/AngelscriptProject/` retains only the minimal host project content — do not push plugin logic back into the project module unless the task explicitly requires it.
 
 ## Project Directory Structure
@@ -33,7 +33,7 @@ AngelscriptProject/
 │       │   ├── Dump/                        # 27+ CSV state export tables
 │       │   ├── Extension/CodeCoverage/      # Per-line coverage tracking (engine extension)
 │       │   ├── Testing/                     # Runtime-owned AngelScript test framework
-│       │   └── ThirdParty/                  # AngelScript 2.33 vendored source
+│       │   └── ThirdParty/                  # Vendored fork with 2.33 WIP lineage
 │       ├── AngelscriptEditor/               # Editor module (49 .cpp)
 │       │   ├── HotReload/                   # File watcher & class reinstancing
 │       │   ├── CodeGen/                     # Editor-time code gen for IDE
@@ -115,7 +115,7 @@ AngelscriptProject/
 
 ## Architecture Overview
 
-This project is an **Unreal Engine 5.7 plugin** that integrates the AngelScript scripting language as a first-class alternative to Blueprints and C++. The plugin was originally created by Hazelight Games; this repository maintains a diverged fork based on AS 2.33 with selective 2.38 backports.
+This project is an **Unreal Engine 5.7 plugin** that integrates the AngelScript scripting language as a first-class alternative to Blueprints and C++. Its current product identity is `Unreal AngelScript 1.0.0`. The plugin was originally created by Hazelight Games; the underlying source retains AngelScript 2.33 WIP lineage with selective 2.38 backports, but those upstream numbers are no longer the product version.
 
 ### Module Dependency Graph
 

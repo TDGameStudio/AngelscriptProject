@@ -2052,6 +2052,28 @@
 			Owner = 'Engine/AngelscriptNativeAtomicTests.cpp|FAtomicTests|ConcurrentIncrementAndDecrementRemainBalanced'
 		}
 		@{
+			Id = 'ENG-PRODUCT-VERSION-CONTRACT'
+			SourceCatalog = 'native-domains.md'
+			Theme = 'Engine'
+			Element = 'owned Unreal AngelScript product version and upstream lineage contract'
+			Axes = @{
+				Observation = @(
+					'product_identity',
+					'upstream_lineage',
+					'current_version_creation',
+					'legacy_upstream_rejection',
+					'newer_header_rejection',
+					'major_and_zero_rejection',
+					'semantic_compatibility',
+					'version_encoding'
+				)
+			}
+			Classification = 'CurrentFork'
+			Evidence = @('Runtime', 'Metadata', 'Diagnostic', 'Lifecycle')
+			Expected = 'The runtime reports Unreal AngelScript 1.0.0 as product version 10000, exposes 2.33/2.38 provenance separately, accepts current and synthetic older same-major requests, and rejects legacy, newer, zero, and cross-major requests.'
+			Owner = 'Engine/AngelscriptNativeEngineVersionTests.cpp|FEngineVersionTests|ReportsOwnedProductIdentity'
+		}
+		@{
 			Id = 'ENG-LIFECYCLE-CROSS-ENGINE-MESSAGE-CALLBACK'
 			SourceCatalog = 'native-domains.md'
 			Theme = 'Engine'

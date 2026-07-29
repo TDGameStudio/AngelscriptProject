@@ -1,5 +1,13 @@
 # AngelScript Fork 演进策略指南
 
+## 产品版本与源码 lineage
+
+当前正式产品版本为 `Unreal AngelScript 1.0.0`，公共编码值为 `10000`。这个版本覆盖核心 UE 插件、内嵌运行时和未来 standalone 发行包；可选的 `AngelscriptGameplayTags` 与 `AngelscriptGAS` 独立维护版本。
+
+`AngelScript 2.33.0 WIP lineage + selective 2.38 backports` 只描述源码来源，不是当前产品版本。旧的 vanilla 2.33 头文件会向 `asCreateScriptEngine()` 传入 `23300`，当前运行时会明确拒绝；接入方必须使用本 fork 自带的公共头文件。
+
+1.x 运行时遵循 SemVer 兼容规则：请求版本与运行时主版本相同且请求版本不高于运行时版本时允许创建引擎。破坏公共 C API 或 ABI 的更改必须提升主版本，不能伪装成兼容的 minor 或 patch 更新。
+
 ## 核心定位
 
 **当前 ThirdParty/angelscript 已经是一个深度定制的 fork，不是、也不再可能是 vanilla AngelScript 的某个版本。**
@@ -120,4 +128,5 @@
 
 ## 文档更新历史
 
+- **2026-07-30**: 建立 `Unreal AngelScript 1.0.0` 产品版本，分离产品身份与 2.33/2.38 源码 lineage，并定义 1.x SemVer 兼容规则
 - **2026-04-06**: 初始创建，明确 fork 演进策略定位，记录结构性分叉点和选择性吸收原则
