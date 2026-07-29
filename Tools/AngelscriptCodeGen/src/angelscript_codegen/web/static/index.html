@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AngelScript CodeGen 预览</title>
+    <link rel="stylesheet" href="/assets/app.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#source-workbench">跳到源码预览</a>
+    <main class="app-shell">
+      <header class="masthead">
+        <p class="eyebrow">@as_codegen / local source preview</p>
+        <div class="masthead__title-row">
+          <div>
+            <h1>AngelScript CodeGen</h1>
+            <p>选择受审查的案例，在浏览器中查看一份可复现的 AngelScript 源码。</p>
+          </div>
+          <span class="verification-badge">source-only</span>
+        </div>
+      </header>
+
+      <section class="workbench" aria-label="AngelScript 源码预览工作台">
+        <aside class="scenario-panel">
+          <div class="panel-heading">
+            <p class="panel-heading__index">01</p>
+            <h2>选择案例</h2>
+          </div>
+          <p class="panel-copy">案例只选择现有 Profile，不会增加未实现的生成语义。</p>
+          <div id="scenario-list" class="scenario-list" role="radiogroup" aria-label="生成案例"></div>
+        </aside>
+
+        <section class="preview-panel" id="source-workbench" aria-labelledby="preview-heading">
+          <div class="panel-heading">
+            <p class="panel-heading__index">02</p>
+            <h2 id="preview-heading">生成预览</h2>
+          </div>
+
+          <form id="preview-form" class="preview-form">
+            <div class="field-group field-group--seed">
+              <label for="seed">种子</label>
+              <div class="seed-control">
+                <input id="seed" name="seed" type="text" inputmode="numeric" pattern="[0-9]+" value="0" autocomplete="off" aria-describedby="seed-help">
+                <button id="random-seed" class="button button--quiet" type="button">换一个种子</button>
+              </div>
+              <p id="seed-help" class="field-help">相同案例与种子会生成相同源码。</p>
+            </div>
+
+            <details class="advanced-options">
+              <summary>高级参数</summary>
+              <div class="advanced-options__fields">
+                <div class="field-group">
+                  <label for="max-depth">表达式深度</label>
+                  <input id="max-depth" name="max_depth" type="number" min="1" required>
+                </div>
+                <div class="field-group">
+                  <label for="max-statements">语句上限</label>
+                  <input id="max-statements" name="max_statements" type="number" min="1" required>
+                </div>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button id="generate-preview" class="button button--primary" type="submit">生成预览</button>
+              <p id="preview-error" class="form-error" aria-live="polite" hidden></p>
+            </div>
+          </form>
+
+          <section class="result" aria-labelledby="source-heading">
+            <div class="result__header">
+              <div>
+                <p class="result__eyebrow">03 / generated source</p>
+                <h2 id="source-heading">AngelScript 源码</h2>
+              </div>
+              <button id="copy-source" class="button button--quiet" type="button" disabled>复制源码</button>
+            </div>
+            <dl class="source-metadata" aria-label="源码元数据">
+              <div><dt>Profile</dt><dd id="metadata-profile">—</dd></div>
+              <div><dt>Expected</dt><dd id="metadata-expected">—</dd></div>
+              <div><dt>Harness</dt><dd id="metadata-harness">—</dd></div>
+              <div><dt>Verification</dt><dd id="metadata-verification">source-only</dd></div>
+            </dl>
+            <p id="copy-status" class="copy-status" aria-live="polite"></p>
+            <pre class="source-code" tabindex="0"><code id="source-preview">选择一个案例，然后生成预览。</code></pre>
+          </section>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

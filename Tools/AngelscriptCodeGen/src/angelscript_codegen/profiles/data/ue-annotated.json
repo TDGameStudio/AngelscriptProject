@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "ue-annotated",
+  "extends": "ue-values",
+  "harness": "ue-annotated",
+  "evidence": ["Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp"],
+  "types": [
+    {"name": "UObject", "kind": "reference", "is_handle": true},
+    {"name": "AActor", "kind": "reference", "is_handle": true},
+    {"name": "UActorComponent", "kind": "reference", "is_handle": true},
+    {"name": "USceneComponent", "kind": "reference", "is_handle": true}
+  ],
+  "callables": [],
+  "fragments": [
+    {
+      "id": "annotated-class",
+      "requires": ["ue-annotated"],
+      "source": "UCLASS()\nclass AGeneratedAnnotatedActor : AActor\n{\n\tUPROPERTY()\n\tint GeneratedValue;\n\n\tUFUNCTION()\n\tint GetGeneratedValue()\n\t{\n\t\treturn GeneratedValue;\n\t}\n}",
+      "cleanup": "module-discard",
+      "evidence": ["Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp"]
+    }
+  ],
+  "invalid_rules": [],
+  "limits": {
+    "max_statements": 16
+  }
+}

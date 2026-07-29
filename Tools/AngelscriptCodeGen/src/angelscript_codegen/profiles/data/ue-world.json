@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "ue-world",
+  "extends": "ue-annotated",
+  "harness": "ue-world",
+  "contexts": ["actor-lifecycle"],
+  "evidence": ["Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageClassLifecycleTests.cpp"],
+  "types": [],
+  "callables": [],
+  "fragments": [
+    {
+      "id": "actor-lifecycle",
+      "requires": ["ue-world", "actor-lifecycle"],
+      "source": "UCLASS()\nclass AGeneratedWorldActor : AActor\n{\n\tUFUNCTION(BlueprintOverride)\n\tvoid BeginPlay()\n\t{\n\t}\n}",
+      "cleanup": "world-teardown-and-module-discard",
+      "evidence": ["Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageClassLifecycleTests.cpp", "Plugins/Angelscript/Source/AngelscriptTest/Coverage/AngelscriptCoverageUClassTests.cpp"]
+    }
+  ],
+  "invalid_rules": [],
+  "limits": {
+    "max_depth": 5,
+    "max_statements": 20
+  }
+}

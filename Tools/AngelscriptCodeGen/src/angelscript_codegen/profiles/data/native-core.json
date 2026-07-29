@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "native-core",
+  "harness": "native-sdk",
+  "evidence": ["AngelScriptCodeGeneratorResearch.md#7-Feature-Expansion"],
+  "types": [
+    {"name": "int", "kind": "primitive"},
+    {"name": "uint", "kind": "primitive"},
+    {"name": "bool", "kind": "primitive"},
+    {"name": "float", "kind": "primitive"},
+    {"name": "double", "kind": "primitive"}
+  ],
+  "callables": [
+    {
+      "name": "Record",
+      "return_type": "void",
+      "parameters": ["int"],
+      "evidence": ["AngelScriptCodeGeneratorResearch.md#9-oracle"]
+    }
+  ],
+  "fragments": [],
+  "invalid_rules": [
+    "syntax-error",
+    "unknown-symbol",
+    "type-mismatch",
+    "invalid-lvalue-or-out"
+  ],
+  "limits": {
+    "max_depth": 3,
+    "max_statements": 8
+  }
+}

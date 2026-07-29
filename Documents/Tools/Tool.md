@@ -37,6 +37,11 @@ Tools/
 │   ├── PullReference.bat                      # 拉取或同步 Reference 仓库
 │   └── tests/PullReferenceSelfTests.ps1
 │
+├── AngelscriptCodeGen/                         # 独立 Python AS 源码生成器
+│   ├── src/angelscript_codegen/                # 类型模型、Profile、生成、lifter 与输出
+│   ├── tests/                                  # pytest 单元测试
+│   └── README.md                               # 安装、CLI、Profile 与产物契约
+│
 ├── Tests/                                     # 工具链自测（不依赖 Pester）
 │   ├── RunToolingSmokeTests.ps1               # bootstrap、模板、输出布局、超时与进程清理
 │   ├── AutomationToolSelfTests.ps1          # 报告摘要与 legacy runner 包装层
@@ -118,6 +123,14 @@ Tools/
   - 常用命令：`Tools\PullReference\PullReference.bat angelscript` / `hazelightdocs` / `unrealcsharp` / `unlua` / `puerts` / `sluaunreal`
   - 输出：`Reference\...`
   - 备注：不参与默认 build/test 流程
+
+- **AngelscriptCodeGen**
+  - 路径：`Tools\AngelscriptCodeGen\`
+  - 用途：以固定 seed、受审查 JSON Profile 和类型化内部模型生成 AngelScript `.as` 源码与 `index.json`；也可启动本机源码预览网页
+  - 常用命令：`cd Tools\AngelscriptCodeGen; python -m pip install -e ".[dev]"; python -m angelscript_codegen generate --profile native-core --kind valid --count 10 --seed 424242`
+  - 网页预览：`cd Tools\AngelscriptCodeGen; python -m pip install -e ".[web,dev]"; python -m angelscript_codegen serve --open`，固定监听 `http://127.0.0.1:8765/`（可用 `--port` 改本机端口）
+  - 输出：显式 `--out` 目录，或默认 `Saved\AngelscriptCodeGen\`
+  - 备注：网页只在内存中生成单个有效 source-only case，不写入 `Saved`、不保存目录/index/下载/历史，不执行 UE、不渲染或运行 CQTest、不运行 reducer。完整 CLI/Profile 契约见同目录 `README.md`
 
 ### 兼容与自测
 
