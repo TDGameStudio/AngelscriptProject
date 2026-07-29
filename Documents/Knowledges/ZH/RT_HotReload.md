@@ -8,7 +8,7 @@
 > · `Plugins/Angelscript/Source/AngelscriptEditor/Core/AngelscriptEditorModule.cpp` (~1187 行，`StartupModule` 内 `RegisterDirectoryChangedCallback_Handle` + `OnScriptFileChanges`)
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h` (~46 KB，`ECompileType` / `ECompileResult` / `FFilenamePair` / `FHotReloadState`)
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp` (~5500 行，`Tick` / `CheckForHotReload` / `CheckForFileChanges` / `PerformHotReload` / `StartHotReloadThread`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator.{h,cpp}` (~10000+ 行，`Setup` / `PerformReload` / `ShouldFullReload` / 5 个 OnXXXReload 委托)
+> · `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator.{h,cpp}` / `AngelscriptClassGenerator_Analyze.cpp` / `AngelscriptClassGenerator_ReloadPlanning.cpp` / `AngelscriptClassReloadPlanner.{h,cpp}`（`Setup` / reload requirement 传播 / `PerformReload` / `ShouldFullReload` / reload 通知委托）
 > · `Plugins/Angelscript/Source/AngelscriptEditor/BlueprintImpact/AngelscriptBlueprintImpactScanner.{h,cpp}` (~400 行，`AnalyzeLoadedBlueprint`)
 > **关联文档**:
 > `Documents/Knowledges/ZH/Arch_RuntimeLifecycle.md` — `Tick` 中 `CheckForHotReload` 调度的位置
@@ -593,7 +593,7 @@ if (ClassData.ReloadReq < EReloadRequirement::FullReloadRequired)
 
 ### 5.2 谁触发哪一档
 
-`AngelscriptClassGenerator.cpp` 的 `Analyze` / `PropagateReloadRequirements` 长函数里枚举了几十种条件（行 187–1991），归纳成三类：
+`AngelscriptClassGenerator_Analyze.cpp` 的 `Analyze` 阶段会先枚举局部变化并给 class / delegate 打出初始 requirement，归纳成三类：
 
 | 触发因素 | 档位 | 直觉解释 |
 |----------|------|----------|
@@ -608,9 +608,38 @@ if (ClassData.ReloadReq < EReloadRequirement::FullReloadRequired)
 | Module 上次 swap-in 失败 (`bModuleSwapInError`) | `FullReloadRequired` | 必须强制走 Full 重建 |
 | BlueprintImpl 函数 (`UFUNCTION(BlueprintOverride)`) 增减 | `FullReloadSuggested` | 影响 BP 生成节点列表 |
 
-Analyze 还会沿 `FReloadPropagation` 跨类型传播：如果一个 struct 升到 Full，所有引用它的 class 也跟着升。
+Analyze 之后还会通过 `FAngelscriptClassReloadPlanner` 跨类型传播 requirement：如果一个被引用的脚本类型升到 Full 或 Error，所有引用它的 class / delegate 也会被抬到同一档。
 
-### 5.3 PerformHotReload 中的派发表
+### 5.3 `FAngelscriptClassReloadPlanner`：跨类型依赖传播器
+
+`FAngelscriptClassReloadPlanner` 是 `ClassGenerator.Setup()` 中夹在局部 diff 分析和最终 reload 分流之间的一层小型图算法。它不执行 reload，也不创建或替换 `UClass`；它只负责把 class / delegate 的局部 `ReloadReq` 沿脚本类型依赖图传播，得到收敛后的全局 reload 决策。
+
+它的输入来自 `RegisterReloadPlannerNodes` 和 `CollectReloadDependencies`：
+
+- `RegisterReloadPlannerNodes` 为本轮生成的每个脚本 class / delegate 建一个 planner node，初始 requirement 就是 `Analyze` 阶段算出的 `SoftReload` / `FullReloadSuggested` / `FullReloadRequired` / `Error`。
+- `CollectReloadDependencies` 扫描脚本父类、属性类型、方法返回值、方法参数、delegate 签名，以及数组/容器等复合类型的 subtype。
+- `AddDependency(Dependee, Dependency)` 表示 `Dependee` 使用了 `Dependency`。如果 `Dependency` 的 requirement 更高，`Dependee` 也必须升档。
+- `PropagateAll` 反复遍历依赖边，把更高 requirement 传给依赖方，直到没有节点再变化。环依赖会收敛到环内最高档，比如 `Error` 会扩散到整环。
+- `ApplyReloadPlannerResults` 把传播后的结果写回 `FClassData` / `FDelegateData`，并继续抬高 `FModuleData.ReloadReq`，供后面的 `CompileType x ReloadRequirement` 派发表消费。
+
+直觉例子：
+
+```text
+UProvider       -> 属性布局变化，Analyze 判定 FullReloadRequired
+UConsumer       -> 有 UProvider 属性，原本自己只需要 SoftReload
+UConsumerRoot   -> 有 UConsumer 属性，原本自己只需要 SoftReload
+
+Planner 传播后：
+UProvider       = FullReloadRequired
+UConsumer       = FullReloadRequired
+UConsumerRoot   = FullReloadRequired
+```
+
+这层传播的意义是避免只 full reload “直接变化的类型”。脚本反射结构是闭包关系：一个类型的属性布局、父类、函数签名或 delegate 签名被另一个类型引用时，被引用方的更高 reload 风险必须传给使用方，否则 soft reload 可能会看到半旧半新的 `UProperty` / `UFunction` / `UStruct` 描述。
+
+实现上 planner 刻意保持很薄：node 只保存 `DebugName`、当前 `Requirement` 和依赖 node index；严重程度完全依赖 `EReloadRequirement` 的枚举顺序单调递增。因此它适合直接单元测试，`Generator/ReloadPlanning` 里覆盖了单跳、多跳、环依赖和 `Reset` 行为。
+
+### 5.4 PerformHotReload 中的派发表
 
 回到 `CompileModules` ~4333 行：
 
