@@ -171,7 +171,7 @@ else if (ClassDesc->ImplementedInterfaces.Num() > 0)
 
 ```cpp
 // ============================================================================
-// 文件: AngelscriptTest/Compiler/AngelscriptCompilerPipelineInterfaceTests.cpp
+// 文件: AngelscriptTest/Compiler/AngelscriptCompilerInterfaceTests.cpp
 // 角色: 整个测试文件就剩一行注释 —— 用例已删
 // ============================================================================
 // InterfaceAnnotatedRoundTrip test removed: UINTERFACE() is deprecated and
@@ -637,7 +637,7 @@ void AdjustNativeValue(int32 Delta, UPARAM(ref) int32& Value);
 | `ClassGenerator/AngelscriptInterfaceDispatchBridgeTests.cpp` | `CallInterfaceMethodDispatchesToImplementingUFunction` | `CallInterfaceMethod → FindFunction` 派发链 |
 
 补充：
-- `Compiler/AngelscriptCompilerPipelineInterfaceTests.cpp`：**整个文件只剩一行注释**——历史的 `InterfaceAnnotatedRoundTrip`（脚本端 `UINTERFACE()` 自定义接口）已被显式删除。
+- `Compiler/AngelscriptCompilerInterfaceTests.cpp`：**整个文件只剩一行注释**——历史的 `InterfaceAnnotatedRoundTrip`（脚本端 `UINTERFACE()` 自定义接口）已被显式删除。
 - `Functional/Inheritance/AngelscriptInheritanceTests.cpp::FAngelscriptInheritanceInterfaceTest`：负面测试，断言纯 AS `interface IFoo` 在当前 fork 上**编译失败**。
 
 > **没有 Disabled 测试**——接口域所有测试均处于活跃状态（与 `AGENTS.md` "仅 2 个 Disabled 测试" 的总数一致：`TestEngineHelperTests.cpp:106` + `SourceNavigationTests.cpp:125`，都不在 Interface 目录）。
@@ -715,4 +715,4 @@ void AdjustNativeValue(int32 Delta, UPARAM(ref) int32& Value);
 
 | 版本 | 日期 | 内容 |
 |------|------|------|
-| v1.0 | 2026-05-22 | 首版：基于 `Bind_BlueprintType.cpp` (~1405-1548 行 Phase 5 双轮注册) / `AngelscriptClassGenerator.cpp` (~58-70 行 `CallInterfaceMethod`、~5061-5189 行 `ResolveInterfaceClass` + `AddInterfaceRecursive` + `FindFunctionByName` 校验) / `AngelscriptPreprocessor.cpp` (~1034-1057 行 接口列表分离 + ~1239-1257 行 接口擦除) / `Bind_Helpers.h::GetInterfacePointerForCast` / `Bind_UObject.cpp::opCast` 接口分支 / `AngelscriptEngine.cpp::RegisterInterfaceMethodSignature` 与 `ReleaseInterfaceMethodSignature` / `Functional/Interface/` 7 个测试文件 + `Compiler/AngelscriptCompilerPipelineInterfaceTests.cpp` 注释残骸 + `Functional/Inheritance/AngelscriptInheritanceTests.cpp` 负面断言 / `AngelscriptNativeInterfaceTestHelpers.h::EnsureNativeInterfaceBound` 完整产出。覆盖：① 现状一句话总结表（13 项能 / 不能 / 半能）；② 脚本端接口声明的三种语法（`: Base, IFoo` 支持 / `UINTERFACE()` 已废弃 / 纯 AS `interface` 不接通 UE）；③ Phase 5 双轮注册 + 与 Phase 2/反射 fallback 的边界（`CLASS_Interface` 显式跳过、`CLASS_Native` 显式过滤）；④ `CallInterfaceMethod` 派发链（FName→FindFunction→InvokeReflectionFallback）+ `Cast<>` 接口分支写回 UObject* 自身 + `GetInterfacePointerForCast` 在 `FInterfaceProperty` 路径的偏移处理；⑤ `BlueprintOverride` 与接口方法的差异语义 + `BlueprintImplementableEvent` 接口方法的强校验 + `BlueprintEvent thunk` vs `Interface thunk` 的前端入口分离；⑥ 6 项未实现/半实现能力清单（脚本定义 UINTERFACE / 纯 AS interface 接通 / BP 接口自动注册 / TScriptInterface 映射 / Phase 5 时机约束 / UPARAM ref 完全走 UE 反射）；⑦ 7 个 Functional/Interface 测试 + 1 个 ClassGenerator 测试 + 2 个负面断言的覆盖矩阵；⑧ 限制根因分类（插件未实现 / AS 内核约束 / UE 反射约束 / Phase 时机）；⑨ 附录 A 14 项能力速查表 + 附录 B 9 项常见错误诊断起点。 |
+| v1.0 | 2026-05-22 | 首版：基于 `Bind_BlueprintType.cpp` (~1405-1548 行 Phase 5 双轮注册) / `AngelscriptClassGenerator.cpp` (~58-70 行 `CallInterfaceMethod`、~5061-5189 行 `ResolveInterfaceClass` + `AddInterfaceRecursive` + `FindFunctionByName` 校验) / `AngelscriptPreprocessor.cpp` (~1034-1057 行 接口列表分离 + ~1239-1257 行 接口擦除) / `Bind_Helpers.h::GetInterfacePointerForCast` / `Bind_UObject.cpp::opCast` 接口分支 / `AngelscriptEngine.cpp::RegisterInterfaceMethodSignature` 与 `ReleaseInterfaceMethodSignature` / `Functional/Interface/` 7 个测试文件 + `Compiler/AngelscriptCompilerInterfaceTests.cpp` 注释残骸 + `Functional/Inheritance/AngelscriptInheritanceTests.cpp` 负面断言 / `AngelscriptNativeInterfaceTestHelpers.h::EnsureNativeInterfaceBound` 完整产出。覆盖：① 现状一句话总结表（13 项能 / 不能 / 半能）；② 脚本端接口声明的三种语法（`: Base, IFoo` 支持 / `UINTERFACE()` 已废弃 / 纯 AS `interface` 不接通 UE）；③ Phase 5 双轮注册 + 与 Phase 2/反射 fallback 的边界（`CLASS_Interface` 显式跳过、`CLASS_Native` 显式过滤）；④ `CallInterfaceMethod` 派发链（FName→FindFunction→InvokeReflectionFallback）+ `Cast<>` 接口分支写回 UObject* 自身 + `GetInterfacePointerForCast` 在 `FInterfaceProperty` 路径的偏移处理；⑤ `BlueprintOverride` 与接口方法的差异语义 + `BlueprintImplementableEvent` 接口方法的强校验 + `BlueprintEvent thunk` vs `Interface thunk` 的前端入口分离；⑥ 6 项未实现/半实现能力清单（脚本定义 UINTERFACE / 纯 AS interface 接通 / BP 接口自动注册 / TScriptInterface 映射 / Phase 5 时机约束 / UPARAM ref 完全走 UE 反射）；⑦ 7 个 Functional/Interface 测试 + 1 个 ClassGenerator 测试 + 2 个负面断言的覆盖矩阵；⑧ 限制根因分类（插件未实现 / AS 内核约束 / UE 反射约束 / Phase 时机）；⑨ 附录 A 14 项能力速查表 + 附录 B 9 项常见错误诊断起点。 |
