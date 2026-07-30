@@ -1,0 +1,40 @@
+diff --git a/src/angelscript-theme/desktop-refinement.tid b/src/angelscript-theme/desktop-refinement.tid
+index 0ea1716..10f4968 100644
+--- a/src/angelscript-theme/desktop-refinement.tid
++++ b/src/angelscript-theme/desktop-refinement.tid
+@@ -136,6 +136,10 @@ select:focus-visible,
+   background-color: var(--as-control-pressed) !important;
+ }
+ 
++.tc-more-sidebar > .tc-tab-set > .tc-tab-buttons > button {
++  border-right: none;
++}
++
+ .as-sdk-breadcrumb {
+   margin: 0 0 0.25rem;
+   color: #999;
+@@ -159,6 +163,14 @@ select:focus-visible,
+   line-height: 1.6;
+ }
+ 
++.tc-tiddler-frame:has(.as-sdk-title) .as-sdk-description {
++  margin: 0.35rem 0 0.5rem;
++}
++
++.tc-tiddler-frame:has(.as-sdk-title) .as-sdk-description + .tc-tags-wrapper {
++  margin-top: 0;
++}
++
+ @media (min-width: <<sidebarbreakpoint>>) {
+diff --git a/vendor/tiddlyseq/src/sidebar-resizer/style.css b/vendor/tiddlyseq/src/sidebar-resizer/style.css
+index 6bb9b97..5838ccf 100644
+--- a/vendor/tiddlyseq/src/sidebar-resizer/style.css
++++ b/vendor/tiddlyseq/src/sidebar-resizer/style.css
+@@ -37,7 +37,7 @@
+ 		transform: translateX(-50%);
+ 		pointer-events: none;
+ 		background: <<colour primary>>;
+-		opacity: 0.14;
++		opacity: 0;
+ 		transition: width 120ms ease, opacity 120ms ease;
+ 	}

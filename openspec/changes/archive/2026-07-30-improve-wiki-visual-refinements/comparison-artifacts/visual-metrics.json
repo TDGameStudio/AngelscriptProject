@@ -1,0 +1,14 @@
+{
+  "active": {
+    "opacity": "0.68",
+    "width": "2px"
+  },
+  "hovered": {
+    "opacity": "0.42",
+    "width": "1px"
+  },
+  "idle": {
+    "opacity": "0",
+    "width": "1px"
+  }
+}
