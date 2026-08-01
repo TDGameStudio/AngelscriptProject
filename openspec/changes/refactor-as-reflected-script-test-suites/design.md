@@ -23,7 +23,9 @@ reference.
 **Goals:**
 
 - Provide CQTest-like AS test classes with explicit metadata-marked methods.
-- Keep one public AS framework type: `UAngelscriptTestSuite`.
+- Keep one public AS suite base, `UAngelscriptTestSuite`, plus two fieldless
+  AS value types used as a global environment facade and fluent command
+  builder.
 - Expose every method as an independently selectable UE Automation leaf with
   exact class-declared Automation flags.
 - Provide deterministic lifecycle, fail-fast assertions, expected logs,
@@ -42,7 +44,7 @@ reference.
 - Non-fatal `Expect*` assertions.
 - Parameterized/Complex test providers.
 - Automatic Integration map selection, PIE startup, or multiplayer topology.
-- Public `UAngelscriptTestWorld`, Map, Network, or command-builder objects.
+- Public `UAngelscriptTestWorld`, Map, Network, or command-builder UObjects.
 - AS function-handle/lambda backports or resumable VM `await`.
 - Cross-worker shared instances or one process-global `BeforeAll`.
 - A Runtime dependency on CQTest.
@@ -77,13 +79,15 @@ public:
 Native lifecycle implementations are no-ops. Script suites override them with
 `UFUNCTION(BlueprintOverride)`.
 
-Assertion, World, and command overloads are registered as native AngelScript
+Assertion and expected-log overloads are registered as native AngelScript
 methods on this type rather than overloaded UFUNCTIONs. That avoids UHT
-overload restrictions and keeps internal World/command state out of the public
-reflected object layout.
+overload restrictions while keeping result expectations attached to the
+active suite fixture.
 
-No other framework UObject is required for normal use. A suite method obtains
-all active state through the execution context associated with its instance.
+No other framework UObject is required for normal use. The suite `GetWorld()`
+override remains because it is part of UObject world-context behavior. World
+and command authoring instead use fieldless USTRUCT facades; all mutable state
+remains in the execution context.
 
 ### Metadata-marked methods and exact flags
 
@@ -181,34 +185,36 @@ rules cannot match away assertion errors.
 Assertions and expected logs are valid during `BeforeEach`, the marked test,
 ordinary command callbacks, advanced command callbacks, and `AfterEach`.
 
-### Private local World state exposed through suite methods
+### Private local World state exposed through a global facade
 
 The method execution context privately owns one optional local test World,
 optional GameInstance, tracked actors/components, and strong UObject
-references. The suite exposes these native AS methods:
+references. `USTRUCT(meta=(ForceAngelscriptBind)) FAngelscriptTest` contains
+no fields or context pointer. Native global functions are registered inside
+the same-name AS namespace, so authors call:
 
 ```text
-void CreateTestWorld(bool bInitializeGameSubsystems = true)
-void DestroyTestWorld()
-UWorld GetTestWorld() const
+FAngelscriptTest::CreateTestWorld(bool bInitializeGameSubsystems = true)
+FAngelscriptTest::DestroyTestWorld()
+FAngelscriptTest::GetTestWorld()
 
-UObject SpawnObject(UClass ObjectClass, UObject Outer = nullptr)
-AActor SpawnActor(TSubclassOf<AActor> ActorClass,
+FAngelscriptTest::SpawnObject(UClass ObjectClass, UObject Outer = nullptr)
+FAngelscriptTest::SpawnActor(TSubclassOf<AActor> ActorClass,
                   FVector Location = FVector::ZeroVector,
                   FRotator Rotation = FRotator::ZeroRotator)
-UActorComponent SpawnComponent(TSubclassOf<UActorComponent> ComponentClass,
+FAngelscriptTest::SpawnComponent(TSubclassOf<UActorComponent> ComponentClass,
                                AActor Owner,
                                bool bRegister = true)
 
-void BeginPlay(AActor Actor)
-void BeginPlayAll()
-void TickWorld(float32 DeltaSeconds, int32 NumTicks = 1)
-void TickActor(AActor Actor, float32 DeltaSeconds, int32 NumTicks = 1)
-void TickComponent(UActorComponent Component,
+FAngelscriptTest::BeginPlay(AActor Actor)
+FAngelscriptTest::BeginPlayAll()
+FAngelscriptTest::TickWorld(float32 DeltaSeconds, int32 NumTicks = 1)
+FAngelscriptTest::TickActor(AActor Actor, float32 DeltaSeconds, int32 NumTicks = 1)
+FAngelscriptTest::TickComponent(UActorComponent Component,
                    float32 DeltaSeconds,
                    int32 NumTicks = 1)
-void AdvanceTime(float32 DeltaSeconds, int32 NumTicks = 1)
-void DestroyActor(AActor Actor, bool bDrain = true)
+FAngelscriptTest::AdvanceTime(float32 DeltaSeconds, int32 NumTicks = 1)
+FAngelscriptTest::DestroyActor(AActor Actor, bool bDrain = true)
 ```
 
 `CreateTestWorld` is explicit; pure tests pay no World cost. A second creation
@@ -228,29 +234,40 @@ World context, and clear ambient World state. It runs after success,
 assertion/exception failure, latent timeout, explicit cancellation, and
 hot-reload cancellation.
 
-### Fluent command queue on the suite base
+### Fluent command queue through a fieldless builder
 
-The suite exposes chainable native AS methods:
+`FAngelscriptTest::Commands()` validates that a method leaf is active and
+returns a fieldless
+`USTRUCT(meta=(ForceAngelscriptBind)) FAngelscriptTestCommandBuilder`. Its
+chainable native AS methods return the builder by value:
 
 ```text
-UAngelscriptTestSuite& Do(FName Action, FString Description = "")
-UAngelscriptTestSuite& Then(FName Action, FString Description = "")
-UAngelscriptTestSuite& StartWhen(
+FAngelscriptTestCommandBuilder Do(FName Action, FString Description = "")
+FAngelscriptTestCommandBuilder Then(FName Action, FString Description = "")
+FAngelscriptTestCommandBuilder StartWhen(
 	FName Condition, float32 TimeoutSeconds = 5.0, FString Description = "")
-UAngelscriptTestSuite& Until(
+FAngelscriptTestCommandBuilder Until(
 	FName Condition, float32 TimeoutSeconds = 5.0, FString Description = "")
-UAngelscriptTestSuite& WaitDelay(
+FAngelscriptTestCommandBuilder WaitDelay(
 	float32 Seconds, FString Description = "")
-UAngelscriptTestSuite& OnTearDown(
+FAngelscriptTestCommandBuilder OnTearDown(
 	FName Action, FString Description = "")
-UAngelscriptTestSuite& OnCleanup(
+FAngelscriptTestCommandBuilder OnCleanup(
 	FName Action, FString Description = "")
-UAngelscriptTestSuite& AddLatentCommand(
+FAngelscriptTestCommandBuilder AddLatentCommand(
 	ULatentAutomationCommand Command, float32 TimeoutSeconds = 5.0)
 ```
 
 `Do`/`Then`, `StartWhen`/`Until`, and
 `OnTearDown`/`OnCleanup` are CQTest-compatible aliases.
+
+Neither facade stores a Suite, World, UObject, shared pointer, weak pointer,
+or executable function. Every global or builder call resolves the current
+leaf from a game-thread callback-scope stack. Nested calls restore the prior
+context on scope exit; multiple waiting leaves are never disambiguated by
+scanning the set of active contexts. Calls from `BeforeAll`, `AfterAll`, an
+advanced client callback, outside a leaf, or after cancellation fail with a
+source-located misuse diagnostic and never access stale state.
 
 Action callbacks are ordinary unmarked, non-static, zero-argument `void`
 methods on the current suite. Conditions are ordinary unmarked, non-static,
@@ -282,6 +299,11 @@ errors. `OnCleanup` may be registered from `BeforeEach`, the test method, or
 while building the main queue. Adding commands from an executing command
 callback is rejected, matching CQTest's mutation restriction.
 
+Only the framework's private controlled-assertion exception is consumed as
+already reported. An ordinary exception from `AfterEach` or a teardown
+callback is independently source-located and appended even when the leaf was
+already failed, so a primary failure cannot hide cleanup damage.
+
 ### Advanced latent command compatibility
 
 Keep `ULatentAutomationCommand` as the advanced extension point. Replace its
@@ -298,7 +320,13 @@ The execution context owns a strong reference while the command is queued or
 running and releases it on every terminal path. Client assertions continue to
 forward to the active server leaf. `bAlsoRunOnClient` requires an already
 network-capable current World; this change does not start PIE or create
-participants.
+participants. The configured timeout is one overall deadline for
+`CreateExecutor` through `FinishClient`. Reaching that deadline finalizes
+immediately: server `After` runs at most once, the weak client executor is
+destroyed when still valid, and the suite association is cleared. An allowed
+timeout suppresses only the timeout failure, not terminal cleanup. Losing the
+executor in any post-creation phase is a bounded leaf failure rather than a
+null dereference or infinite wait.
 
 ### Per-mask UE Automation bridges
 
@@ -332,9 +360,9 @@ Before compiling an affected active module, the runner reaches a callback
 boundary and cancels any affected active leaf while old code remains valid:
 
 1. Mark the leaf canceled and discard remaining main commands.
-2. Invoke old-generation `AfterEach`.
-3. Execute old-generation teardown callbacks.
-4. detach and release advanced commands.
+2. Finalize and detach any active advanced command.
+3. Invoke old-generation `AfterEach`.
+4. Execute old-generation teardown callbacks.
 5. destroy tracked actors, objects, GameInstance, and World.
 6. clear resolved suite/class/function references.
 7. complete the old leaf with a source-located hot-reload invalidation
@@ -352,6 +380,12 @@ Automatic hot-reload test work stores stable IDs plus generation. A newer
 reload cancels and replaces pending/active automatic work from an older
 generation. The scheduler supports both synchronous and latent leaves without
 blocking the compiler thread.
+
+The same ownership rule applies to explicit engine shutdown. Each active leaf
+and All-hook session records the `FAngelscriptEngine` that resolved it.
+`Shutdown()` cancels only that engine's leaves and closes only that engine's
+session while script functions remain callable, before extension detachment,
+context release, and `ShutDownAndRelease()`.
 
 Runtime exports a lightweight registry-changed multicast delegate.
 `AngelscriptEditor` subscribes and, only when AutomationController is already

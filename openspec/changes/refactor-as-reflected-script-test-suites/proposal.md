@@ -14,8 +14,8 @@ Automation registration, and hot-reload behavior are owned by the standalone
 ## What Changes
 
 - Add one abstract transient native `UAngelscriptTestSuite` base that script
-  test classes inherit; no separate World, Map, Network, or command-builder
-  UObject becomes part of the public AS API.
+  test classes inherit. Keep lifecycle, fail-fast assertions, and expected-log
+  expectations on that suite instance.
 - Discover arbitrary zero-argument `void` instance methods marked with
   `UFUNCTION(meta=(AngelscriptTest))`; test names no longer use a `Test_*`
   convention or `UFUNCTION(Test)`.
@@ -27,12 +27,17 @@ Automation registration, and hot-reload behavior are owned by the standalone
   lifecycle hooks with a fresh suite instance per test method.
 - Implement fail-fast `Assert*`, failure, and expected-log helpers in C++,
   exposed without a mutable test-context parameter.
-- Add explicit local test-world helpers directly on the suite base for World
-  creation, UObject/Actor/Component spawning, BeginPlay, world and precise
-  object ticking, time advancement, destruction, and automatic cleanup.
-- Add a CQTest-style fluent latent queue directly on the suite base:
+- Add an AS-visible, fieldless `FAngelscriptTest` USTRUCT facade whose
+  namespace-global functions provide explicit World creation,
+  UObject/Actor/Component spawning, BeginPlay, world and precise object
+  ticking, time advancement, destruction, and automatic cleanup.
+- Add a fieldless `FAngelscriptTestCommandBuilder` returned by
+  `FAngelscriptTest::Commands()` for the CQTest-style fluent latent queue:
   `Do`/`Then`, `StartWhen`/`Until`, `WaitDelay`,
   `OnTearDown`/`OnCleanup`, and `AddLatentCommand`.
+- **BREAKING**: Remove World, Spawn, Tick, and command helpers from the suite
+  base without compatibility aliases. Assertions, expected errors, and the
+  suite `GetWorld()` override retain their existing call shape.
 - Preserve and refactor `ULatentAutomationCommand` as the advanced extension
   point, including its existing server/client command protocol when the
   caller already supplies a network-capable World.
@@ -65,9 +70,9 @@ None.
 
 - `as-script-test-suite-runner`: Replace the archived naming-, fixture-, and
   suite-command design with metadata-marked methods, exact Automation flags,
-  independent leaves, fail-fast assertions, explicit World/Spawn tools,
-  CQTest-style latent commands, advanced command compatibility, and
-  generation-safe hot reload.
+  independent leaves, suite-owned fail-fast assertions, global
+  `FAngelscriptTest` World/Spawn tools, a value-style CQTest command builder,
+  advanced command compatibility, and generation-safe hot reload.
 
 ## Impact
 

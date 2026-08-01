@@ -92,20 +92,22 @@ non-static, zero-argument suite instance methods that return `void` and carry
 
 ### Requirement: Native base exposes test helper methods
 The native script test suite base SHALL provide C++-implemented script-callable
-helpers for failure, truth, null, identity, equality, near, relational,
-expected-log, local World, object spawn, BeginPlay, tick, time advancement,
-and destruction operations without requiring a mutable context parameter.
+helpers for failure, truth, null, identity, equality, near, relational, and
+expected-log operations without requiring a mutable context parameter. A
+fieldless `FAngelscriptTest` USTRUCT SHALL expose local World, object spawn,
+BeginPlay, tick, time advancement, destruction, and command-builder entry
+points as same-name namespace-global functions.
 
 #### Scenario: Test calls inherited assertion
 - **WHEN** a marked method calls an inherited helper such as `AssertEquals`
 - **THEN** the helper reports through the currently active Automation leaf
 
 #### Scenario: Test creates a local World
-- **WHEN** `BeforeEach` or a marked method calls `CreateTestWorld`
-- **THEN** the execution context creates one transient local test World and makes it available through `GetTestWorld`
+- **WHEN** `BeforeEach` or a marked method calls `FAngelscriptTest::CreateTestWorld`
+- **THEN** the execution context creates one transient local test World and makes it available through `FAngelscriptTest::GetTestWorld`
 
 #### Scenario: Test spawns tracked objects
-- **WHEN** a leaf uses `SpawnObject`, `SpawnActor`, or `SpawnComponent`
+- **WHEN** a leaf uses the `FAngelscriptTest::SpawnObject`, `SpawnActor`, or `SpawnComponent` global facade
 - **THEN** the framework validates the requested type and ownership and tracks the created object for terminal cleanup
 
 #### Scenario: Test dispatches lifecycle and ticks
@@ -121,8 +123,12 @@ and destruction operations without requiring a mutable context parameter.
 - **THEN** the assertion still fails the leaf
 
 #### Scenario: Helper is called outside an active leaf
-- **WHEN** a suite helper that requires an execution context is called without an active method leaf
+- **WHEN** a suite assertion or `FAngelscriptTest` facade/builder operation that requires an execution context is called without an active method leaf
 - **THEN** the framework reports lifecycle misuse and does not access stale test state
+
+#### Scenario: Environment helpers are not inherited suite methods
+- **WHEN** a suite attempts to call a World, Spawn, Tick, or command helper without the `FAngelscriptTest` facade
+- **THEN** script compilation rejects the removed inherited API while inherited assertions and `GetWorld()` remain available
 
 ### Requirement: Native base is a transient UClass
 The native script test suite base SHALL be an abstract transient native
@@ -144,7 +150,7 @@ framework test class required by ordinary AS authors.
 
 #### Scenario: Normal test does not require another framework object
 - **WHEN** an AS author writes a pure, World-backed, or ordinary latent test
-- **THEN** the author can express it through inherited `UAngelscriptTestSuite` methods without constructing a framework World or command-builder UObject
+- **THEN** the author can express it through inherited suite assertions and fieldless `FAngelscriptTest` value facades without constructing a framework World or command-builder UObject
 
 ### Requirement: Fixture selection is explicit
 The AngelScript test framework SHALL execute suites without a World by default
@@ -152,19 +158,19 @@ and SHALL create local World/GameInstance state only when the active method
 explicitly calls `CreateTestWorld`.
 
 #### Scenario: Pure test is the default
-- **WHEN** a suite method never calls `CreateTestWorld`
+- **WHEN** a suite method never calls `FAngelscriptTest::CreateTestWorld`
 - **THEN** the runner executes it without creating a test World or GameInstance
 
 #### Scenario: Local World is explicit
-- **WHEN** a method execution calls `CreateTestWorld`
+- **WHEN** a method execution calls `FAngelscriptTest::CreateTestWorld`
 - **THEN** the runner creates and owns a local World for that method execution only
 
 #### Scenario: Game subsystems are optional
-- **WHEN** `CreateTestWorld` requests game-subsystem initialization
+- **WHEN** `FAngelscriptTest::CreateTestWorld` requests game-subsystem initialization
 - **THEN** the framework creates and initializes the corresponding test GameInstance before returning
 
 #### Scenario: Duplicate World creation is rejected
-- **WHEN** one method execution calls `CreateTestWorld` twice without destroying the first World
+- **WHEN** one method execution calls `FAngelscriptTest::CreateTestWorld` twice without destroying the first World
 - **THEN** the second call fails the leaf and does not replace or leak the first World
 
 #### Scenario: World is automatically cleaned
@@ -278,10 +284,11 @@ flags through `UCLASS` metadata named `AngelscriptTestFlags`.
 - **WHEN** successful reload changes a suite's flag metadata
 - **THEN** the new registry generation moves its descriptors to the new exact-mask bridge without destroying either bridge
 
-### Requirement: Suite exposes a fluent latent command queue
-The native suite base SHALL expose chainable `Do`/`Then`,
-`StartWhen`/`Until`, `WaitDelay`, and `OnTearDown`/`OnCleanup` commands whose
-callbacks are ordinary methods on the active suite instance.
+### Requirement: Global facade exposes a fluent latent command queue
+`FAngelscriptTest::Commands()` SHALL return a fieldless value-style builder
+that exposes chainable `Do`/`Then`, `StartWhen`/`Until`, `WaitDelay`, and
+`OnTearDown`/`OnCleanup` commands whose callbacks are ordinary methods on the
+active suite instance.
 
 #### Scenario: Action commands run FIFO
 - **WHEN** a test queues multiple `Do` or `Then` action methods
@@ -315,6 +322,10 @@ callbacks are ordinary methods on the active suite instance.
 - **WHEN** setup, the marked method, an ordinary command, an assertion, or a timeout fails
 - **THEN** remaining main commands are skipped but `AfterEach`, teardown actions, and automatic World cleanup still run
 
+#### Scenario: Cleanup exceptions remain independently visible
+- **WHEN** `AfterEach` or a registered teardown callback throws an ordinary script exception after the leaf already recorded a primary failure
+- **THEN** the runner also reports that cleanup exception once with its script source location instead of suppressing it as a duplicate assertion
+
 #### Scenario: Callback cannot mutate the active queue
 - **WHEN** a running action, condition, or advanced command callback tries to enqueue another main command
 - **THEN** the framework rejects the mutation and reports command-lifecycle misuse
@@ -347,6 +358,18 @@ instead of the retired `FIntegrationTest`.
 #### Scenario: Existing client protocol is preserved
 - **WHEN** `bAlsoRunOnClient` is enabled and the current test World already provides supported server/client networking
 - **THEN** the existing client executor coordinates client phases and forwards client assertion failures to the active server leaf
+
+#### Scenario: Client command deadline includes finalization
+- **WHEN** a client-enabled command does not finish setup, polling, or `AfterOnClient` before its timeout
+- **THEN** the timeout terminates the command, runs server-side `After` once, destroys the client executor, clears the suite association, and completes the leaf without waiting forever
+
+#### Scenario: Allowed client timeout still terminates
+- **WHEN** the same client-enabled command allows timeout
+- **THEN** the leaf does not gain a timeout failure but still performs terminal server cleanup and releases the executor
+
+#### Scenario: Client executor disappears
+- **WHEN** the weak client executor becomes invalid after creation and before the command reaches `Done`
+- **THEN** the runner fails the leaf with the current client phase and finalizes the command without dereferencing the missing executor
 
 #### Scenario: Framework does not create network participants
 - **WHEN** a suite enqueues a client-enabled advanced command in a local non-networked test World
@@ -389,6 +412,10 @@ active execution state before old code is replaced.
 #### Scenario: Active state is never migrated
 - **WHEN** a suite reloads during a test session
 - **THEN** no suite object, callback frame, advanced command, World, Actor, component, or tracked UObject is transferred to the new generation
+
+#### Scenario: Owning engine shuts down with active test state
+- **WHEN** an AngelScript engine begins shutdown while it owns an active latent leaf or suite-level All-hook session
+- **THEN** the framework cancels the leaf, runs its old-engine cleanup, closes the All-hook session, and releases all script-backed test state before the engine detaches extensions or releases script functions
 
 ### Requirement: Editor refreshes cached Automation tests
 The Editor integration SHALL request a new Automation test list when the
