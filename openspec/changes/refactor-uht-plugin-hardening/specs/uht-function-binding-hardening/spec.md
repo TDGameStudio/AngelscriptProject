@@ -140,3 +140,24 @@ The implementation SHALL separate configuration resolution, function analysis, d
 
 - **WHEN** an emitter is tested with a fixed analysis result
 - **THEN** output and diagnostics are deterministic without re-reading UHT types or reclassifying the function
+
+### Requirement: C# naming matches the owning Unreal tool layer
+
+The implementation SHALL use PascalCase identifiers for `ModuleRules` `*.Build.cs` constructor parameters, method parameters, local variables, and loop variables, consistent with the repository's existing Unreal Build.cs style. The `AngelscriptUHTTool` SHALL retain the lower camel case local-variable and parameter style used by EpicGames.UHT while keeping types, methods, constants, record properties, and configuration keys in PascalCase.
+
+Active UHT binding implementation identifiers MUST use `Binding` terminology instead of the retired `Entry` terminology. This requirement MUST NOT rename generated C++ ABI identifiers, generated artifact filenames, configuration keys, or legacy cleanup patterns whose purpose is migration cleanup.
+
+#### Scenario: Build.cs FunctionBinding code is reviewed
+
+- **WHEN** a reviewer compares FunctionBinding additions with neighboring module-rule code
+- **THEN** constructor parameters, method parameters, locals, and loop variables use the established Build.cs PascalCase convention
+
+#### Scenario: UHT local variables are reviewed
+
+- **WHEN** a reviewer compares UHT implementation code with EpicGames.UHT
+- **THEN** lower camel case locals and parameters are accepted, while types, methods, constants, and properties remain PascalCase
+
+#### Scenario: Retired Entry terminology is searched
+
+- **WHEN** active UHT binding identifiers are searched for the old Entry vocabulary
+- **THEN** binding counts, indexes, and shard limits use `Binding` terminology, while generated C++ and legacy cleanup strings remain compatible

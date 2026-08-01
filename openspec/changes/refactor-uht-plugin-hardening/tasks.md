@@ -67,6 +67,12 @@
 - [ ] 8.5 Run source-engine late-load, unload, reload, and script-call safety tests. Blocked until the source-engine compatibility gap is resolved.
 - [x] 8.6 Run `openspec validate refactor-uht-plugin-hardening --strict` and record verification results.
 
+## 9. Normalize C# naming conventions
+
+- [x] 9.1 <!-- Non-TDD --> Rename FunctionBinding identifiers in `AngelscriptRuntime.Build.cs` to the repository's established UE Build.cs PascalCase convention without changing configuration keys or behavior.
+- [x] 9.2 <!-- Non-TDD --> Rename active UHT `Entry` terminology to `Binding` terminology and rename `runtimeBindings` to `generatedBindings` where the list includes reflective fallbacks; preserve generated C++ names and legacy cleanup globs.
+- [x] 9.3 <!-- Non-TDD --> Build the UHT tool and run focused FunctionBinding generation/validation checks; record the result in `verification.md`.
+
 ## 10. Simplify Runtime-linked generated output
 
 - [x] 10.1 <!-- TDD --> Add a generated-output contract test for one Runtime-linked source per module, `UHT.FunctionBinding.<Module>` bind names, and the absence of generated registration timing.

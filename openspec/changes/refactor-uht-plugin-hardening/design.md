@@ -88,6 +88,14 @@ The monolithic generator will be split into types with narrow responsibilities:
 
 The exact names may change during implementation, but configuration, analysis, declaration resolution, emission, artifact writing, and cleanup must be independently testable.
 
+### 9. Apply naming conventions by C# layer
+
+`*.Build.cs` files will use the repository's established Unreal `ModuleRules` convention: PascalCase for constructor parameters, method parameters, local variables, and loop variables, with the existing `b` prefix retained for boolean build settings. This keeps the FunctionBinding additions consistent with the neighboring module rules and existing `AngelscriptTest.Build.cs` implementation.
+
+`AngelscriptUHTTool` will retain the lower camel case convention used by the current `EpicGames.UHT` C# implementation for local variables and parameters. Its public and internal types, methods, constants, record properties, and configuration keys remain PascalCase. Active implementation identifiers using the retired `Entry` vocabulary will be renamed to `Binding` vocabulary; generated C++ symbol names, ABI field names, and legacy cleanup globs are not renamed as part of this pass.
+
+The semantic cleanup includes `MaxEntriesPerShard`, `entryCount`, and `entryIndex`, which become binding-oriented names. The generated runtime list is renamed from `runtimeBindings` to `generatedBindings` because it contains both `NativeRuntimeLinked` and `ReflectiveFallback` registrations.
+
 ## Risks / Trade-offs
 
 - **[Risk] Conservative analysis temporarily lowers native-binding coverage.** → Report every fallback reason and add policy-driven support incrementally rather than silently emitting unsafe pointers.
@@ -104,6 +112,7 @@ The exact names may change during implementation, but configuration, analysis, d
 4. Replace the header parser fallback behavior and migrate policy exceptions.
 5. Change Runtime-linked generation to one named source and one guarded aggregator per module, remove stale numeric-shard outputs, and remove runtime registration timing.
 6. Split the generator types, update documentation, and run default plus source-engine verification.
+7. Normalize Build.cs identifiers and active UHT binding terminology without changing generated artifact names or configuration keys.
 8. Replace Runtime-linked numeric shards with a single named source per module and verify the generated source contract.
 
 Rollback is configuration-safe: keep `NativeRuntimeLinked` as the default and allow `None` to disable automatic UHT output while a target-module implementation is being corrected. Generated artifacts are disposable and must be regenerated after rollback.

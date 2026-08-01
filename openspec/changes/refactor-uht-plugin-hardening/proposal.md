@@ -17,6 +17,7 @@ This change hardens the UHT plugin before the target-module method is used broad
 - Emit per-function failure reasons for both generated fallback and skipped target-module functions, with statistics that reconcile exactly with diagnostics.
 - Split the 1300-line generator into responsibility-oriented configuration, analysis, emission, artifact, and cleanup components.
 - Add source-engine end-to-end validation for target-module generation, registration, late loading, unload, and reload.
+- Normalize C# naming by keeping the repository's UE `Build.cs` PascalCase convention and removing retired `Entry` terminology from active UHT binding code.
 
 ## Capabilities
 
@@ -34,5 +35,7 @@ This change hardens the UHT plugin before the target-module method is used broad
 - `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_NativeModuleFunctionBinding.cpp` and the native-module binding registry.
 - `Plugins/Angelscript/Source/AngelscriptRuntime/FunctionBinding/NativeModuleFunctionBindingBridge.h` and generated target-module ABI payloads.
 - `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` generated wrapper strategy and dependency validation.
+- `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` FunctionBinding helper and local identifier naming.
+- Active identifiers in `Plugins/Angelscript/Source/AngelscriptUHTTool/`; generated C++ ABI names and migration cleanup patterns remain unchanged.
 - UHT, Runtime, Editor, and source-engine automation tests.
 - OpenSpec and build documentation for FunctionBinding diagnostics, source-engine requirements, and generated artifacts.
