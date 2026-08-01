@@ -2,7 +2,7 @@
 
 > **This matrix is the design specification header for networking tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageNetworkingTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork/headless unsupported.
 >
-> - Test file: `AngelscriptCoverageNetworkingTests.cpp`, 28 methods
+> - Test file: `AngelscriptCoverageNetworkingTests.cpp`, 27 methods
 > - Automation prefix: `Angelscript.TestModule.Coverage.Networking`
 > - See `../coverage-matrix.md` for the legend.
 > - Note: real RPC routing depends on `BlueprintCallableReflectiveFallback`; in headless mode, assertions primarily cover compilation, static metadata, reflection surfaces, and authority branches.
@@ -52,5 +52,5 @@
 
 ---
 
-**Corresponding test methods**: 28 methods.
+**Corresponding test methods**: 27 methods.
 **Pending (⬜)**: no hard gaps currently; real multi-machine network round trips are outside headless scope, and some network-mode queries are fork boundaries.

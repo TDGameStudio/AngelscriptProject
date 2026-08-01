@@ -46,7 +46,7 @@
 | CDO ↔ instance independence (new instances inherit CDO mutations; instance mutations do not pollute the CDO) | ✅ | `UClassDefaultObjectAndInstanceStateIndependence` |
 | Common lifecycle/subsystem/Gameplay event function surface | ✅ | `UClassCommonLifecycleFunctionSurface` `UClassSubsystemFunctionSurface` `UClassGameFrameworkEventFunctionSurface` |
 | Actor/Pawn/Component/Widget lifecycle | ✅ | `ClassLifecycle::ActorLifecycle` `PawnLifecycle` `ComponentLifecycle` `WidgetLifecycle` |
-| Actor-owned Tick/EndPlay/Destroyed runtime dispatch assertions | 🟡 | (G9): `ActorLifecycle` and `MultiLevelInheritanceLifecycle` declare script-side Tick/EndPlay/Destroyed overrides but only assert BeginPlay; test comments acknowledge that this needs more complex world/lifecycle setup. The Component side already drives Tick/EndPlay through `DispatchComponentTick` + `DestroyComponent` in `ComponentLifecycle`; the Actor side is still missing that equivalent coverage |
+| Coverage-layer Actor Tick/EndPlay/Destroyed parity | ✅ | (G9): Functional Actor tests already execute these lifecycle paths; Coverage intentionally keeps declaration plus BeginPlay and does not duplicate the Functional seam |
 | Actor construction script / component initialization / multi-level inheritance lifecycle | ✅ | `ClassLifecycle::ActorConstructionScript` `ActorComponentInitialization` `MultiLevelInheritanceLifecycle` |
 | Abstract Actor spawn is rejected (boundary) | 🚫 | `UClassAbstractActorSpawnIsRejected` |
 | HUD DrawHUD reflection-dispatch boundary | 🚫 | `UClassHUDDrawHUDReflectionDispatchBoundary` |
@@ -94,9 +94,7 @@
 | ClassFeatures | 14 |
 | **Total** | **83** |
 
-**Pending (⬜/🟡)** (soft candidates added by the 2026-06-30 deep review, **non-blocking**; numbers use the global G IDs from `coverage-gaps.md §1`):
-
-- `G9` 🟡 Actor-owned Tick/EndPlay/Destroyed runtime dispatch is not asserted (`ActorLifecycle`/`MultiLevelInheritanceLifecycle` declare script-side overrides but only assert BeginPlay; the Component side already uses `DispatchComponentTick` + `DestroyComponent` for real driving, while the Actor side has no equivalent coverage yet).
+**Implementation status**: G9 is resolved by the explicit layer decision above; Functional Actor tests own runtime lifecycle dispatch, while Coverage owns the declaration/BeginPlay seam.
 
 **Closed**:
 

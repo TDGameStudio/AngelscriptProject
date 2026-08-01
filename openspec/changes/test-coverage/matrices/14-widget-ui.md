@@ -2,7 +2,7 @@
 
 > **This matrix is the design specification header for Widget/UMG tests**: each row is a concrete verifiable scenario guiding `AngelscriptCoverageWidgetTests.cpp` implementation. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - Test file: `AngelscriptCoverageWidgetTests.cpp`, 24 methods
+> - Test file: `AngelscriptCoverageWidgetTests.cpp`, 25 methods
 > - Automation prefixes: `Angelscript.TestModule.Coverage.Widget` and `...Widget.RuntimeApi`, two prefixes in one file, which is why the global theme count is 90
 > - See `../coverage-matrix.md` for the legend.
 
@@ -47,11 +47,11 @@
 |------|------|------------|
 | Dynamic events invoke script handlers, including added coverage | ✅ | `WidgetDynamicEventsInvokeScriptHandlers` `AdditionalWidgetDynamicEventsInvokeScriptHandlers` |
 | Button event delegate reflection, including added coverage | ✅ | `ButtonEventDelegateReflectionSurfaces` `WidgetAdditionalEventDelegateReflectionSurfaces` |
-| Animation playback reflection | 🟡 | `WidgetAnimationPlaybackReflectionSurfaces`, reflection surface only; see G7 |
-| Focus and input mode reflection | 🟡 | `WidgetFocusAndInputModeReflectionSurfaces`, reflection surface only; see G7 |
+| Animation playback reflection and asset-free headless ceiling | 🟡 | `WidgetAnimationPlaybackReflectionSurfaces` `WidgetAnimationAssetFreePlaybackBoundary`; asset-free animations have no playable MovieScene in headless mode |
+| Focus and input mode reflection | 🟡 | `WidgetFocusAndInputModeReflectionSurfaces`; actual focus transfer remains outside the headless runtime ceiling |
 
 ---
 
-**Corresponding test methods**: 24 methods.
-**Enhancement pending (🟡)**: G7 — `WidgetAnimationPlaybackReflectionSurfaces` / `WidgetFocusAndInputModeReflectionSurfaces` currently assert only reflection surfaces, not runtime behavior such as animation advancement or actual focus transfer. Test whether headless can add runtime assertions; if not, keep the reflection ceiling, analogous to the networking ceiling.
+**Corresponding test methods**: 25 methods.
+**Implementation status**: G7 — `WidgetAnimationAssetFreePlaybackBoundary` confirms the asset-free animation ceiling; reflection remains the supported headless surface for animation and focus.
 **Boundary (🚫)**: runtime widget lookup through `GetWidgetFromName` is a fork boundary; see `../coverage-gaps.md §2.4`.

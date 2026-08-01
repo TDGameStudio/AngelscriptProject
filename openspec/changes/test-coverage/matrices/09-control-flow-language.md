@@ -2,7 +2,7 @@
 
 > **This matrix is the design specification header for control-flow / language-feature tests**: each row is a concrete verifiable scenario guiding 11 test files. ⬜ means pending, ✅ identifies the covering `TEST_METHOD`, and 🚫 means fork unsupported.
 >
-> - Test files: `Conditional`(10) / `Loop`(8) / `Jump`(6) / `SpecialControlFlow`(3) / `Namespace`(8) / `Comment`(1) / `Preprocessor`(7) / `TypeConversion`(6) / `Mixin`(7) / `Const`(3) / `OperatorOverload`(3) Tests.cpp
+> - Test files: `Conditional`(10) / `Loop`(9) / `Jump`(6) / `SpecialControlFlow`(3) / `Namespace`(8) / `Comment`(1) / `Preprocessor`(7) / `TypeConversion`(6) / `Mixin`(7) / `Const`(3) / `OperatorOverload`(3) Tests.cpp
 > - Automation prefix: `Angelscript.TestModule.Coverage.<topic>`
 > - See `../coverage-matrix.md` for the legend.
 
@@ -25,7 +25,7 @@
 | while / do-while | ✅ | `WhileBasic` `DoWhileBasic`, while includes continue / compound conditions / nesting; do-while runs at least once |
 | infinite loops | ✅ | `InfiniteLoops` |
 | `for (auto& Pair : TMap)` unsupported | 🚫 | `TMapForEachPairUnsupported` |
-| Mutating containers during for-each iteration, iterator invalidation semantics | ⬜ | Pending G19: `ForEach` only asserts in-place element modification through `int& Val`; missing runtime semantics for Add/Remove during iteration |
+| Mutating containers during for-each iteration | 🟡 | `ForEachContainerMutationSurface` locks compile reachability; runtime invalidation semantics remain a deliberate follow-up assertion surface |
 
 ## 3. Jumps, JumpTests 6
 
@@ -112,7 +112,7 @@
 | File | Methods |
 |------|------|
 | Conditional | 10 |
-| Loop | 8 |
+| Loop | 9 |
 | Jump | 6 |
 | SpecialControlFlow | 3 |
 | Namespace | 8 |
@@ -122,10 +122,8 @@
 | Mixin | 7 |
 | Const | 3 |
 | OperatorOverload | 3 |
-| **Total** | **63** |
+| **Total** | **64** |
 
-**Pending (⬜)**, added by the 2026-06-30 deep audit and non-blocking, using global G numbering from `coverage-gaps.md §1`:
-
-- `G19` ⬜ mutating containers during for-each iteration, iterator invalidation semantics: current `ForEach` only asserts in-place element modification through `int& Val`; missing runtime semantics for Add/Remove during iteration.
+**Implementation status**: `G19` is represented by `ForEachContainerMutationSurface`; it records compile reachability and keeps the runtime invalidation expectation explicit for a later semantics-focused pass.
 
 > The remaining language feature coverage is mature, and unsupported forms are locked through 🚫 negative assertions.

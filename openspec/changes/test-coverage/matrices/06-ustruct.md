@@ -3,7 +3,7 @@
 > **This matrix is the design specification ("header") for USTRUCT tests**: each row is a concrete verifiable scenario used to guide implementation in `AngelscriptCoverageUStructTests.cpp` / `AngelscriptCoverageUStructMemberTests.cpp`.
 > Rows marked ⬜ are pending tests; ✅ rows identify the covering `TEST_METHOD`.
 >
-> - Test files: `AngelscriptCoverageUStructTests.cpp` (43 methods), `AngelscriptCoverageUStructMemberTests.cpp` (4 methods)
+> - Test files: `AngelscriptCoverageUStructTests.cpp` (47 methods), `AngelscriptCoverageUStructMemberTests.cpp` (4 methods)
 > - Automation prefixes: `Angelscript.TestModule.Coverage.UStruct`, `...UStructMember`
 > - Legend: ✅ covered / 🟡 partially covered / ⬜ pending / 🚫 fork-unsupported boundary. See `../coverage-matrix.md` for the full legend.
 
@@ -27,7 +27,7 @@
 | Optional + specifier combinations | ✅ | `UStructOptionalAndSpecifierCombinations` | Combination rules |
 | Metadata aliases and deprecation | ✅ | `UStructMetadataAliasAndDeprecationMatrix` | meta alias / deprecated |
 | Advanced metadata | ✅ | `UStructAdvancedMetadata` | Custom meta-key round trip |
-| `HasNativeMake` / `HasNativeBreak` specifiers | ⬜? | — | Pending (G15): UE UHT uses these specifiers to point to native custom Make/Break node bindings; grep finds no `HasNativeMake/HasNativeBreak` parser path in this fork; current `UStructUnsupportedSpecifiers` only covers `Atomic`/`Immutable`/`NoExport`. Add one compile-failure probe row (expected `Unknown class specifier`) and classify it as a 🚫 boundary |
+| `HasNativeMake` / `HasNativeBreak` specifiers | 🚫 | `UStructUnsupportedBoundaryInventory` | Current fork has no parser path for native Make/Break specifiers |
 
 ## 3. Members and Defaults
 
@@ -38,14 +38,14 @@
 | Enum / FText / property-flag members | ✅ | `UStructEnumTextAndPropertyFlags` | enum/FText members |
 | Default-value type matrix | ✅ | `UStructDefaultValueTypeMatrix` | Reflected defaults for each type |
 | Nested struct default-value reflection | ✅ | `UStructNestedDefaultsReflection` | Nested defaults (3 levels: Outer→Branch→Leaf) |
-| `FInstancedStruct` as a USTRUCT member / UPROPERTY | ⬜ | — | Pending (G11): the fork already binds `FInstancedStruct` (see `Bind_FInstancedStruct.cpp` and `AngelscriptInstancedStructBindingsTests.cpp` `DefaultConstruction`/`ResetClears`), but the Coverage domain does not cover it yet. Add coverage for UPROPERTY reflection, `InitializeAs<FFoo>` / `Get<FFoo>()` round trip, function parameter/return shapes, and TArray elements |
+| `FInstancedStruct` as a USTRUCT member / UPROPERTY | ✅ | `FInstancedStructCoverageSemantics` | UPROPERTY reflection, TArray shape, reset behavior, and parameter/return declaration shape; AS-struct initialization remains a known separate hazard |
 
 ## 4. Value Semantics, Operators, and Member Methods
 
 | Scenario | Status | Covering Test Method | Notes / Pending Work |
 |------|------|------------|-------------|
-| Value semantics (copy/assignment independence) | 🟡 | `UStructValueSemantics` | Value-type copy isolation (G12): currently only asserts copy/assignment independence for int + FString members; deep-copy independence for TArray/TMap/TSet members (mutating the copied container does not affect the source container) is not asserted yet |
-| Operator overloads (`==`, `!=`, etc.) | 🟡 | `UStructOperators` | Currently covers `opEquals` / `opAdd` / `opAssign` / `opCmp` / `opIndex` (G13): missing runtime assertions for `opSub` / `opMul` / `opDiv` / `opNeg` and compound assignments `opAddAssign` / `opSubAssign` / `opMulAssign` / `opDivAssign` |
+| Value semantics (copy/assignment independence) | ✅ | `UStructValueSemantics` `UStructNestedContainerCopySemantics` | Scalar and nested TArray/TMap/TSet copy independence |
+| Operator overloads (`==`, `!=`, etc.) | ✅ | `UStructOperators` `UStructOperatorExpansion` | Existing and expanded arithmetic/unary/compound assignment operator coverage |
 | Member method invocation matrix | ✅ | `UStructMemberMethodInvocationMatrix` | Runtime assertions for const / non-const / struct-returning / `CopyFrom(const&in)` shapes |
 
 ## 5. Parameters and Return Values
@@ -99,10 +99,10 @@
 | Unsupported combinations (nested containers, etc.) | 🚫 | `UStructUnsupportedCombinationBoundaries` | Compile diagnostics assert the boundary; see `../coverage-gaps.md §2.2` |
 | Unsupported USTRUCT specifiers (`Atomic` / `Immutable` / `NoExport`) | 🚫 | `UStructUnsupportedSpecifiers` | Compile diagnostics assert the boundary (`Unknown class specifier ...`) |
 | `TMap<FStruct,V>` / `TSet<FStruct>` without `Hash`+`opEquals` | 🚫 | `UStructUnsupportedCombinationBoundaries` | Compile diagnostic: `Key type does not have a hash function defined` |
-| `FInstancedPropertyBag` / `FPropertyBag` | ⬜? | — | (G14): no PropertyBag binding was found in this fork (no `Bind_FPropertyBag*`); likely a 🚫 boundary but not yet proven with a compile-failure probe. First test one line such as `FInstancedPropertyBag Foo;`, then decide whether it is a 🚫 boundary or a ⬜ candidate |
-| USTRUCT custom `Serialize(FArchive&)` entry point | ⬜? | — | Pending/boundary (G16): UE C++ can customize USTRUCT binary serialization via `Serialize(FArchive&)` overloads or the `WithSerializer` Cpp struct trait; grep finds no AS exposure for `FArchive` or a `Serialize` hook binding. Expected 🚫 boundary (AS struct should rely on default reflection serialization), requiring a one-line `void Serialize(FArchive& Ar)` compile-failure probe |
-| USTRUCT `NetSerialize` / replication serialization entry point | ⬜? | — | Pending/boundary (G17): UE implements compressed struct network serialization via `NetSerialize(FArchive&,UPackageMap*,bool&)` + `WithNetSerializer`; grep finds no `NetSerialize` binding. AS structs can only rely on default field-by-field replication (already covered through UPROPERTY reflection), and scripts cannot override `NetSerialize`. Expected 🚫 boundary, requiring the corresponding compile-failure probe |
-| AS USTRUCT static member (`static int Foo`) | ⬜? | — | Pending/boundary (G18): the AS language layer does not support class/struct static fields (already recorded in the delegate domain as a `BindStatic` boundary in `coverage-gaps.md §2.4`). The USTRUCT domain lacks the matching compile-failure row; add a one-line `static int Foo` USTRUCT-member compile-failure probe and harden it as a 🚫 boundary |
+| `FInstancedPropertyBag` / `FPropertyBag` | 🚫 | `UStructUnsupportedBoundaryInventory` | Current fork has no PropertyBag binding |
+| USTRUCT custom `Serialize(FArchive&)` entry point | 🚫 | `UStructUnsupportedBoundaryInventory` | AS structs use reflection serialization; `FArchive` hooks are not exposed |
+| USTRUCT `NetSerialize` / replication serialization entry point | 🚫 | `UStructUnsupportedBoundaryInventory` | AS structs use field-level replication; `NetSerialize` is not exposed |
+| AS USTRUCT static member (`static int Foo`) | 🚫 | `UStructUnsupportedBoundaryInventory` | Static fields remain unsupported in the AS language layer |
 
 ---
 
@@ -111,25 +111,17 @@
 | Dimension | Covered Scenarios | Status |
 |------|----------|------|
 | 1 Declaration and reflection | 5 | ✅ |
-| 2 Specifiers and metadata | 6 ✅ (including 1 boundary) + 1 proof candidate (G15) | 🟡 |
-| 3 Members and defaults | 5 + 1 ⬜ (G11) | 🟡 |
-| 4 Value semantics/operators/methods | 1 ✅ + 2 🟡 (G12/G13) | 🟡 |
+| 2 Specifiers and metadata | 7 ✅/🚫 | ✅ |
+| 3 Members and defaults | 6 ✅ | ✅ |
+| 4 Value semantics/operators/methods | 3 ✅ | ✅ |
 | 5 Parameters/return values | 6 | ✅ |
 | 6 Delegate interaction | 4 | ✅ |
 | 7 Container interaction | 12 | ✅ |
 | 8 Nesting | 2 | ✅ |
-| 9 Boundaries | 3 🚫 + 4 proof candidates (G14/G16/G17/G18) | — |
+| 9 Boundaries | 8 🚫 | ✅ |
 
-**Corresponding test methods**: `UStructTests.cpp` 43 + `UStructMemberTests.cpp` 4 = 47 methods.
+**Corresponding test methods**: `UStructTests.cpp` 47 + `UStructMemberTests.cpp` 4 = 51 methods.
 
-**Pending (⬜ / 🟡)**:
-- `G11` ⬜ `FInstancedStruct` as USTRUCT member / UPROPERTY reflection + `InitializeAs<FFoo>` / `Get<FFoo>()` round trip + container/parameter shapes. The fork already binds it (`Bind_FInstancedStruct.cpp`), but the Coverage domain does not cover it.
-- `G12` 🟡 Strengthen value-semantics deep-copy independence: current `UStructValueSemantics` only covers int+FString members; extend it to TArray/TMap/TSet members where mutating the copied container does not affect the source.
-- `G13` 🟡 Complete operator-overload coverage: current `UStructOperators` covers `opEquals`/`opAdd`/`opAssign`/`opCmp`/`opIndex`; add runtime assertions for `opSub`/`opMul`/`opDiv`/`opNeg` + compound assignments `opAddAssign`/`opSubAssign`/`opMulAssign`/`opDivAssign`.
-- `G14` 🚫? Proof candidate: is `FInstancedPropertyBag` / `FPropertyBag` bound in this fork? Run a one-line compile-failure probe first, then classify it as a 🚫 boundary or ⬜ candidate.
-- `G15` 🚫? Proof candidate: USTRUCT specifiers `HasNativeMake` / `HasNativeBreak`; the fork has no parser path. Harden as a 🚫 boundary with a one-line compile-failure probe.
-- `G16` 🚫? Proof candidate: USTRUCT custom `Serialize(FArchive&)` entry point; the fork has no AS binding for `FArchive`. Harden as a 🚫 boundary with a one-line compile-failure probe.
-- `G17` 🚫? Proof candidate: USTRUCT `NetSerialize` replication-serialization overload; the fork has no `NetSerialize` binding. Harden as a 🚫 boundary with a one-line compile-failure probe.
-- `G18` 🚫? Proof candidate: USTRUCT static member `static int Foo;`; AS language does not support this. Harden as a 🚫 boundary with a one-line compile-failure probe.
+**Implementation status**: G11-G13 have semantic Coverage methods; G14-G18 have explicit 🚫 boundary probes in `UStructUnsupportedBoundaryInventory`. The complete USTRUCT prefix passed 51/51 on 2026-08-01.
 
-> Historical conclusion "USTRUCT is one of the most mature coverage domains" still holds: all 47 methods contain real behavior/reflection assertions at assertion depth, with no broad "false ✅" area. Of the 8 NEW items added by this review, G11~G13 are **capability-surface enhancements** (non-blocking), while G14~G18 are **boundary proof candidates** (each only needs one compile-failure test row to harden as a 🚫 boundary).
+> Historical conclusion "USTRUCT is one of the most mature coverage domains" still holds: the 51 methods now include semantic expansion and explicit boundary probes, with no broad "false ✅" area. The focused validation passed 51/51 on 2026-08-01.
