@@ -139,9 +139,11 @@ function New-ParallelRunnerFixture {
     New-Item -ItemType Directory -Path $savedRoot -Force | Out-Null
 
     Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\RunTestSuiteParallel.ps1') -Destination $toolsRoot
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\RunTestSuiteEntry.ps1') -Destination $toolsRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\Shared\UnrealCommandUtils.ps1') -Destination $sharedRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\Shared\TestShardPlanner.ps1') -Destination $sharedRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\Shared\TestSuiteDefinitions.ps1') -Destination $sharedRoot
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\Shared\TestSuiteEntryRunner.ps1') -Destination $sharedRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'Tools\Shared\TestLaunchProfile.ps1') -Destination $sharedRoot
 
     Set-Content -LiteralPath (Join-Path $ProjectRoot 'DummyProject.uproject') -Encoding UTF8 -Value @'
@@ -211,6 +213,64 @@ New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 
 exit 0
 '@
+
+    Set-Content -LiteralPath (Join-Path $toolsRoot 'RunTestSuiteEntry.ps1') -Encoding UTF8 -Value @'
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Suite,
+
+    [Parameter(Mandatory = $true)]
+    [int]$EntryIndex,
+
+    [Parameter(Mandatory = $true)]
+    [string]$RunLabel,
+
+    [Parameter(Mandatory = $true)]
+    [string]$ResultPath,
+
+    [string]$OutputRoot = '',
+
+    [int]$TimeoutMs = 0,
+
+    [int]$ExecutionSlot = 0,
+
+    [switch]$Fast
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$runRoot = Join-Path $projectRoot ('Saved\Tests\{0}' -f $RunLabel)
+New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
+$summaryPath = Join-Path $runRoot 'Summary.json'
+$metadataPath = Join-Path $runRoot 'RunMetadata.json'
+
+[PSCustomObject]@{
+    BucketName    = 'Standalone'
+    ExitCode      = 0
+    Passed        = 1
+    Failed        = 0
+    Total         = 1
+    SummarySource = 'CTest'
+} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Encoding UTF8
+
+[PSCustomObject]@{
+    Label         = $RunLabel
+    Target        = "$Suite[$EntryIndex]"
+    ExecutionSlot = $ExecutionSlot
+    DurationMs    = 10
+} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $metadataPath -Encoding UTF8
+
+$resultParent = Split-Path -Parent $ResultPath
+New-Item -ItemType Directory -Path $resultParent -Force | Out-Null
+[PSCustomObject]@{
+    RawExitCode = 0
+    MetadataPath = $metadataPath
+    SummaryPath = $summaryPath
+} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ResultPath -Encoding UTF8
+exit 0
+'@
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
@@ -255,6 +315,29 @@ Invoke-TestCase -Name 'ParallelSummarySerializesShardArray' -Body {
         -Message ('Parallel suite runner should aggregate passed tests. Output: {0}' -f $combined)
     Assert-True -Condition ($combined -match 'Parallel Suite Summary') `
         -Message ('Parallel suite runner should print its summary block. Output: {0}' -f $combined)
+}
+
+Invoke-TestCase -Name 'FineStandaloneRoutesThroughTypedEntryWithoutUnrealPrewarm' -Body {
+    $run = Invoke-CapturedProcess -FilePath 'powershell.exe' -ArgumentList @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $runnerScript,
+        '-Suite', 'Standalone',
+        '-Strategy', 'Fine',
+        '-LabelPrefix', 'standalone-dry',
+        '-MaxParallelHeavy', '1',
+        '-DryRun'
+    ) -WorkingDirectory $fixtureRoot
+
+    $combined = $run.StdOut + $run.StdErr
+    Assert-Equal -Expected 0 -Actual $run.ExitCode `
+        -Message ('Standalone parallel dry run should succeed. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match 'RequiresUnreal\s+:\s+False') `
+        -Message ('Standalone-only plan must not prewarm Unreal. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match 'RunTestSuiteEntry\.ps1') `
+        -Message ('CMakeCTest should route through the typed entry process boundary. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match '-Suite Standalone -EntryIndex 0') `
+        -Message ('Dry-run command should select the typed Standalone entry. Output: {0}' -f $combined)
 }
 
 Remove-TestDirectory -BasePath ([System.IO.Path]::GetTempPath()) -TargetPath $testRoot

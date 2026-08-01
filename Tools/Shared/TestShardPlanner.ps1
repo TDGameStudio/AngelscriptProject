@@ -141,7 +141,12 @@ function Get-AngelscriptPrefixTimingWeight {
         [double]$DefaultDurationSec = 35.0
     )
 
-    $prefix = [string]$Entry.Prefix
+    $prefix = if ($Entry.ContainsKey('Prefix')) {
+        [string]$Entry.Prefix
+    }
+    else {
+        '{0}:{1}' -f [string]$Entry.Kind, [string]$Entry.Label
+    }
     if ($TimingHints.ContainsKey($prefix)) {
         return [double]$TimingHints[$prefix].DurationSec
     }
@@ -158,7 +163,12 @@ function Get-AngelscriptPrefixTestCountHint {
         [hashtable]$TimingHints
     )
 
-    $prefix = [string]$Entry.Prefix
+    $prefix = if ($Entry.ContainsKey('Prefix')) {
+        [string]$Entry.Prefix
+    }
+    else {
+        '{0}:{1}' -f [string]$Entry.Kind, [string]$Entry.Label
+    }
     if ($TimingHints.ContainsKey($prefix) -and $null -ne $TimingHints[$prefix].TestCount) {
         return [int]$TimingHints[$prefix].TestCount
     }
@@ -265,8 +275,22 @@ function Get-AngelscriptCoarseDynamicPlan {
     . (Join-Path $PSScriptRoot 'TestSuiteDefinitions.ps1')
 
     $allEntries = @(Get-AngelscriptTestSuiteEntries -SuiteName 'All')
-    $testModuleEntries = @($allEntries | Where-Object { $_.Prefix -like 'Angelscript.TestModule*' })
-    $topLevelEntries = @($allEntries | Where-Object { $_.Prefix -notlike 'Angelscript.TestModule*' })
+    $testModuleEntries = @(
+        $allEntries |
+            Where-Object {
+                $_.Kind -eq 'UnrealAutomation' -and
+                $_.ContainsKey('Prefix') -and
+                $_.Prefix -like 'Angelscript.TestModule*'
+            }
+    )
+    $topLevelEntries = @(
+        $allEntries |
+            Where-Object {
+                $_.Kind -ne 'UnrealAutomation' -or
+                -not $_.ContainsKey('Prefix') -or
+                $_.Prefix -notlike 'Angelscript.TestModule*'
+            }
+    )
 
     if ($ExcludeSlow) {
         $slowPrefixes = @(Get-AngelscriptTestSlowPrefixExclusions)
@@ -361,7 +385,7 @@ function ConvertTo-AngelscriptWorkerPlanJson {
                 Prefixes           = @($bucket.Entries | ForEach-Object {
                         [PSCustomObject]@{
                             Label  = [string]$_.Label
-                            Prefix = [string]$_.Prefix
+                            Prefix = if ($_.ContainsKey('Prefix')) { [string]$_.Prefix } else { $null }
                             Tier   = if ($_.ContainsKey('Tier')) { [string]$_.Tier } else { $null }
                         }
                     })

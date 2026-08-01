@@ -123,7 +123,7 @@
 
 > 源文件：`AngelScriptSDK/Engine/`、`Frontend/`、`Compiler/`、`Runtime/`、`Module/`、`TypeSystem/`、`Language/`、`Embedding/`、`Conformance/`，以及仅供这些主题复用的 `AngelScriptSDK/Support/`。该层只测核心 SDK，不引入 `sdk/add_on`。
 >
-> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **683/683 PASS**（2026-07-28）。另有 14 个可发现的方法保留为 Disabled `#as-v238-backport` CQTest，用于表达尚未选择性回移的 2.38 语义，不计入活跃通过数。最终配置 `All` 套件为 35/35 前缀、2,396/2,396 测试通过。
+> Native SDK 最新验证快照：`Angelscript.TestModule.AngelScriptSDK` 为 **691/691 PASS**（2026-07-31，Standalone portability 收口后）。另有 14 个可发现的方法保留为 Disabled `#as-v238-backport` CQTest，用于表达尚未选择性回移的 2.38 语义，不计入活跃通过数。2026-07-28 的最终配置 `All` 套件历史快照仍为 35/35 前缀、2,396/2,396 测试通过；两次不同范围/日期的数字不得混写。
 
 | 测试前缀 | 代表源文件 | 验证内容 |
 |--------|----------|----------|
@@ -1280,6 +1280,25 @@
 | Widget `BindWidget` metadata 与 `UUserWidget` lifecycle 签名 | `Angelscript.TestModule.Functional.Widget.BindWidget` |
 | Property metadata/specifier flags | `Angelscript.TestModule.Functional.Property.MetaSpecifiersMatrix` |
 | UObject 默认值与 helper `UFUNCTION` | `Angelscript.TestModule.Functional.Objects.ReflectedDefaultsAndFunction` |
+
+---
+
+## 14.5 Standalone — 独立 CMake/CTest
+
+Standalone 不注册 UE Automation 测试，固定通过 `Tools\RunTestSuite.ps1 -Suite Standalone` 调度；最终发布 ZIP 另用 `-Suite StandaloneRelease`。当前 Debug/Release 各自都是独立的 `19/19` CTest 口径：
+
+| CTest | 验证内容 |
+|--------|----------|
+| Smoke / Runtime / Addons / CLI | maintained fork 原生编译执行、受限标准库、超时/内存/异常和 CLI 退出契约 |
+| AllocatorLifetime | MSVC AddressSanitizer 覆盖 allocator 销毁后延迟释放零字节分配的 owner-state 生命周期 |
+| Compat | maintained fork 所需 UE Core 拼写的 build-tree 私有兼容层、计数容器分配和线程/原始对象生命周期 |
+| Frontend / SemanticObserver | Standalone 私有 UTF-8 source/lexing/session/rewrite 值模型与 maintained fork 只读编译语义观察；UE frontend 保持原实现 |
+| OfflineContract / UEAnalysis | 单一完整 Bundle 的完整性、注册回放、source closure、class model 和 UE compile-only 边界 |
+| Adapters / Resources | TArray/TMap/TSet/TOptional/object wrapper 编译适配与 typed offline resource 状态 |
+| Architecture / Package | 无 Unreal 链接、无 Bind/ClassGenerator standalone 分支、隐私/安全扫描和安装态包检查 |
+| Corpus / Soak / Benchmarks | 版本化支持声明、重复确定性/泄漏检查与同环境 20% median 性能门禁 |
+
+`Tests/Corpus/corpus-index.json` 当前记录 13 个证据项：11 个 supported、1 个 `ue-required`、1 个 unsupported。这里的 CTest 数字必须与 catalogued C++、NativeCore、UE Automation 和 `All` suite 数字分开报告；`StandaloneRelease` 也不能再与 Debug 的 19 项相加成新的测试总数。
 
 ---
 

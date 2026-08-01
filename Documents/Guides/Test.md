@@ -106,6 +106,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite All -LabelPrefix all -TimeoutMs 600000
 ```
 
+Standalone 使用独立的 CMake/CTest suite。它会依次执行 configure、build 和 19 个当前 gate，覆盖 native runtime、Standalone 私有 frontend、Compat、offline contract、UE compile-only analysis、template adapters、resources、allocator lifetime、architecture/privacy、package、corpus、soak 与 benchmark：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite Standalone -LabelPrefix standalone -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite StandaloneRelease -TimeoutMs 1200000
+```
+
+结果写入 `Saved/StandaloneTests/<Label>/<RunId>/`，不能把其 `19/19` 与 UE Automation、NativeCore 前缀、`275/275` catalogued C++ 基线或 `All` suite 数字相加/替换。`Standalone` 的 Debug typed entry 已在 soak 稳定后加入 `All`；`StandaloneRelease` 会额外构建最终 package target，因此保持独立、不加入 `All`。
+
 插件测试主题前缀也按目录直接运行，常用入口包括：
 
 ```powershell
@@ -365,6 +374,41 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCommandlet.ps1 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCommandlet.ps1 -Commandlet AngelscriptBlueprintImpactScan -Label blueprint-impact-changed -TimeoutMs 600000 -ExtraArgs "-ChangedScript=Foo.as;Bar.as"
 ```
+
+Standalone 离线声明/资产 Bundle 使用
+`AngelscriptOfflineExport`。项目包默认导出完整最终符号表面和
+`/Game` 资产作用域；Commandlet 不接受模块/插件符号过滤：
+
+```powershell
+$bundleArgs = @("-BundleKind=Project", "-Output=D:\Exports\MyProjectAS", "-AssetRoots=/Game,/MyPlugin")
+& Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -Label offline-bundle-project -TimeoutMs 600000 -ExtraArgs $bundleArgs
+```
+
+为另一个消费项目导出时显式传入它的 `.uproject`；不传时仍使用 `AgentConfig.ini` 的默认项目：
+
+```powershell
+& Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -ProjectFile D:\Projects\MyGame\MyGame.uproject -Label offline-bundle-external -TimeoutMs 600000 -ExtraArgs $bundleArgs
+```
+
+若调用方必须使用 Windows PowerShell `powershell.exe -File` 且需要传多个以 `-` 开头的 Commandlet 参数，应把 JSON 字符串数组写入文件并使用 `-ExtraArgsFile <json>`，避免子 PowerShell 把后续参数解析成 runner 参数。发布态端到端验证使用：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunStandaloneExternalSmoke.ps1 -TimeoutMs 1200000
+```
+
+该 smoke 生成无 C++ host module 的临时外部项目，验证默认/显式 Project Bundle 逐字节一致，并从最终 Release ZIP 解压 CLI 消费显式 Bundle。结果位于 `Saved/StandaloneExternalSmoke/<RunId>/Summary.json`。
+
+未指定输出时写入已忽略的
+`Saved/AngelscriptStandalone/project/` 或
+`Saved/AngelscriptStandalone/default-engine/`。完整符号作用域是硬要求；
+资产作用域不完整时必须显式传入 `-AllowIncompleteAssets`。Bundle
+布局、隐私边界、版本与完整性规则见
+`Documents/Guides/AngelscriptStandaloneOfflineBundle.md`。
+
+`DefaultEngine` 仅表示 Standalone 省略 `--bundle` 时使用的发行默认值，
+不会过滤项目或可选插件符号。官方包使用 UE 5.8
+`AngelscriptProject` 的完整导出；其他项目应生成 `Project` Bundle 并显式传给
+Standalone。
 
 ### Blueprint impact commandlet 相关回归
 

@@ -248,7 +248,7 @@ Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900
 
 - **路径：** `Tools\RunCommandlet.ps1`
 - **用途：** 通过当前 worktree 的 `AgentConfig.ini` 执行项目 commandlet
-- **关键参数：** `-Commandlet`、`-Label`、`-OutputRoot`、`-TimeoutMs`、`-Render`、`-ExtraArgs`
+- **关键参数：** `-Commandlet`、`-Label`、`-OutputRoot`、`-TimeoutMs`、`-ProjectFile`、`-Render`、`-ExtraArgs`、`-ExtraArgsFile`
 - **默认输出：** `Saved/Commandlet/<Label>/<RunId>/Commandlet.log`、`RunMetadata.json`
 - **关键保护：** `TargetInfo.json` 预热、旧 `Build.bat` 锁防御等待、worktree 单飞锁、超时后清理进程树
 
@@ -257,7 +257,11 @@ Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900
 ```powershell
 Tools\RunCommandlet.ps1 -Commandlet AngelscriptStaticJITAotTest -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"
 Tools\RunCommandlet.ps1 -Commandlet AngelscriptBlueprintImpactScan -Label blueprint-impact-scan -TimeoutMs 600000
+Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -Label offline-bundle-project -TimeoutMs 600000 -ExtraArgs "-BundleKind=Project" "-Output=D:\Exports\MyProjectAS" "-AssetRoots=/Game"
+Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -ProjectFile D:\Projects\MyGame\MyGame.uproject -Label offline-bundle-external -TimeoutMs 600000 -ExtraArgsFile D:\Temp\offline-export-args.json
 ```
+
+`-ProjectFile` 省略时继续使用 `AgentConfig.ini` 的默认项目；显式值必须解析为存在的 `.uproject`。`-ExtraArgsFile` 是 JSON 字符串数组，适合 `powershell.exe -File` 子进程传递多个 dash-prefixed Commandlet 参数，并可与直接 `-ExtraArgs` 合并。`AngelscriptOfflineExport` 只导出最终注册声明与经过审查的资产索引，不导出地址、源码、函数体、字节码或资产 payload。它始终要求完整 symbol scope；不完整 asset scope 必须显式使用 `-AllowIncompleteAssets`。完整格式见 `Documents/Guides/AngelscriptStandaloneOfflineBundle.md`。
 
 ## RunTestSuite.ps1
 
@@ -271,8 +275,25 @@ Tools\RunCommandlet.ps1 -Commandlet AngelscriptBlueprintImpactScan -Label bluepr
 ```powershell
 Tools\RunTestSuite.ps1 -ListSuites
 Tools\RunTestSuite.ps1 -Suite Smoke -LabelPrefix smoke -TimeoutMs 600000
+Tools\RunTestSuite.ps1 -Suite Standalone -LabelPrefix standalone -TimeoutMs 600000
+Tools\RunTestSuite.ps1 -Suite StandaloneRelease -TimeoutMs 1200000
 Tools\RunTestSuite.ps1 -Suite Debugger -LabelPrefix debugger -TimeoutMs 600000 -DryRun
 ```
+
+`Standalone` 是 Debug typed `CMakeCTest` entry：依次执行 CMake configure/build/CTest，并把 `Configure.log`、`Build.log`、`CTest.log`、合并日志、metadata 和 summary 写入独立的 `Saved/StandaloneTests/` 目录。`StandaloneRelease` 使用同一 dispatcher，但会在 Release CTest 前额外构建 `AngelscriptStandalonePackage`；它不加入 `All`。子进程 stdout 不参与 dispatcher 返回对象，退出码与 timeout phase 会以结构化字段传播。
+
+## RunStandaloneExternalSmoke.ps1
+
+- **路径：** `Tools\RunStandaloneExternalSmoke.ps1`
+- **用途：** 验证无 C++ host module 的外部 content-only 项目可以运行插件 Commandlet，并由最终 Release ZIP 中的安装态 CLI 消费导出的 Project Bundle
+- **关键参数：** `-ReleaseArchive`（省略时使用标准 Release ZIP）、`-TimeoutMs`
+- **输出：** `Saved/StandaloneExternalSmoke/<RunId>/Summary.json`，以及两个 Commandlet 证据目录、两个 Bundle、安装包展开目录、CLI 日志和 compile artifacts
+
+```powershell
+Tools\RunStandaloneExternalSmoke.ps1 -TimeoutMs 1200000
+```
+
+该 smoke 会校验默认/显式输出逐字节一致、完整 scope、正确 producer project、无仓库 host module/机器路径泄漏，并要求安装态结果为 `ue-validation`、`ueValidationOnly`、显式 `project` Bundle identity。
 
 ## legacy 兼容层
 

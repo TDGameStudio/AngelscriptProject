@@ -157,7 +157,7 @@ A C# project (`.ubtplugin.csproj`) that plugs into Unreal Build Tool's pipeline.
 
 ### Test Module (AngelscriptTest)
 
-430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK tests are organized across Engine, Frontend, Compiler, Runtime, Module, TypeSystem, Language, Embedding, and Conformance; the latest full active prefix run is `683/683 PASS`, with fourteen discoverable Disabled `#as-v238-backport` future-script methods. See the root testing guides for layering rules.
+430 test `.cpp` files organized into 28+ thematic directories (Actor, AngelScriptSDK, Bindings, Blueprint, Component, Debugger, Delegate, GC, HotReload, Inheritance, Interface, Networking, Preprocessor, StaticJIT, Subsystem, etc.). This module owns C++ automation tests, CQTest, AngelScript SDK tests, and test fixtures. Tests use the Automation prefix convention `Angelscript.TestModule.<Theme>.*` for integration tests, `Angelscript.CppTests.*` for runtime C++ unit tests, and `Angelscript.Editor.*` for editor tests. Native AngelScript SDK tests are organized across Engine, Frontend, Compiler, Runtime, Module, TypeSystem, Language, Embedding, and Conformance; the latest full active prefix run on 2026-07-31 is `691/691 PASS`, with fourteen discoverable Disabled `#as-v238-backport` future-script methods. See the root testing guides for layering rules.
 
 ### Script Examples (`Script/`)
 
@@ -169,6 +169,15 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 2. **Class Registration**: AS class definitions → ClassGenerator → Live UClass/UStruct with UProperties and UFunctions → Visible to Blueprints and C++
 3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated FunctionBinding shards + target-module native function-address features + reflective fallback → Callable from AS scripts
 4. **Hot Reload**: File watcher detects changes → Recompile affected modules → ClassReloadHelper reinstances actors in editor
+
+### Standalone compilation and offline UE analysis
+
+- `Plugins/Angelscript/Standalone/` uses CMake to compile the same maintained fork and compiles its private standard-C++ frontend directly into `AngelscriptStandaloneHost`. It neither includes nor links Unreal Engine and does not require a shared Runtime `Language/` layer. UE keeps its original `FAngelscriptPreprocessor` and descriptor graph as the authoritative implementation; the two hosts exchange only the complete offline JSON bundle.
+- The `native-runtime` profile compiles and executes bounded native AngelScript. Its standard library is limited to UTF-8 string, array, dictionary, math, print, and assert; default time/memory limits apply and file, network, process, dynamic-library, and arbitrary FFI APIs are absent.
+- The `ue-validation` profile is compile/analyze-only. It consumes one complete `default-engine` or explicit project JSON bundle and registers UE declarations through non-executable traps. Its artifacts are not UE-loadable bytecode, and UE execution or UObject/GC/World/ClassGenerator simulation is forbidden.
+- The UE-side `AngelscriptOfflineExport` commandlet observes the final initialized engine surface. Manual `Bind_*.cpp`, generated bindings, reflective fallback, and ClassGenerator do not gain standalone branches or exporter macros.
+- An explicit project bundle replaces the packaged default completely; v1 performs no merge or cache search and never falls back after an invalid explicit selection. See `Documents/Guides/AngelscriptStandaloneOfflineBundle.md`.
+- For UE validation, `--script-root` denotes the project's `Script/` root. Relative logical paths map to `/Angelscript/Game/<logical-path>` for offline stable-module identity so current source exactly replaces its exported script baseline. V1 does not guess arbitrary directories as plugin or memory mounts.
 
 ### Binding Path Notes
 
@@ -192,17 +201,20 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 - Build instructions: see `Documents/Guides/Build.md`.
 - Test instructions: see `Documents/Guides/Test.md`.
+- Build and validate Standalone Debug through `Tools\RunTestSuite.ps1 -Suite Standalone`; build the final Win64 ZIP and run Release CTest through the independent `-Suite StandaloneRelease`. Both configurations currently have `19/19` CTests, and their reports/counts remain separate from UE Automation, NativeCore, and catalogued C++ baselines.
+- Before release, run `Tools\RunStandaloneExternalSmoke.ps1`; it creates a transient external project with no C++ host module, exports the Project bundle twice for byte determinism, and consumes it with the CLI extracted from the final Release ZIP.
 - State dump entry point: `FAngelscriptStateDump::DumpAll()` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`, plus console command `as.DumpEngineState` in `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`. The dump API also exposes `CaptureSnapshot`, `DiffSnapshots`, `DumpSnapshot`, and `DumpDiff`; `DumpAll()` writes `EngineStateSnapshot.csv` and category snapshot tables, while diff helpers write `StateDiff.csv` and `StateDiffSummary.csv`.
 - Preserve the dump architecture as a pure external observer: prefer reading existing public APIs over adding intrusive dump hooks to runtime/editor classes.
 - If documentation conflicts with the current plugin-centric goal, update the documentation first, then continue implementation.
 
 ## Test Number Baselines
 
-- Current test numbers must distinguish three separate scopes; future documents and roadmaps must not conflate them:
+- Current test numbers must distinguish the following independent scopes; future documents and roadmaps must not conflate them:
   - `275/275 PASS`: catalogued C++ baseline (`TestCatalog.md`).
   - `1518+` automation test definitions across `430` test `.cpp` files: source-code scan scale after `test-as-native-sdk-coverage`.
-  - `683/683 PASS`: active native AngelScript SDK prefix (`Angelscript.TestModule.AngelScriptSDK`), plus fourteen discoverable Disabled `#as-v238-backport` future-script methods.
+  - `691/691 PASS`: latest active native AngelScript SDK prefix on 2026-07-31 (`Angelscript.TestModule.AngelScriptSDK`), plus fourteen discoverable Disabled `#as-v238-backport` future-script methods.
   - `2396/2396 PASS`: final configured `All` suite across 35 prefixes on 2026-07-28; all reports have zero failures, skips, and timeouts.
+  - `19/19 PASS`: independent Standalone CMake/CTest scope; Debug and Release are configurations of the same tests, not additive counts and not replacements for UE Automation numbers.
   - Live full-suite run results: defer to the actual numbers in `TechnicalDebtInventory.md`.
   - Only `2` tests remain Disabled (`#ue57-headless`): `TestEngineHelperTests.cpp:106` and `SourceNavigationTests.cpp:125`.
 

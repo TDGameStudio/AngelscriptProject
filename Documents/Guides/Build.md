@@ -100,6 +100,35 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 
 该模式会基于 `EngineRoot` 获取命名互斥锁，避免多个 worktree 同时写引擎输出。
 
+### Standalone 无 UE 构建
+
+Standalone 位于 `Plugins/Angelscript/Standalone/`，直接编译插件中同一份 maintained fork，并把 `Standalone/Source/Compiler/Frontend/` 的私有标准 C++ frontend 编译进 `AngelscriptStandaloneHost`。它不读取 `AgentConfig.ini` 中的 UE include/lib，也不会启动 Unreal Editor；UE Runtime 不再为它提供共享 `Language/` 目录、公共宏或单独的 CMake library。仓库级推荐入口是：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite Standalone -LabelPrefix standalone -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -Suite StandaloneRelease -TimeoutMs 1200000
+```
+
+需要单独构建、测试或组装 Win64 Release 包时：
+
+```powershell
+Set-Location Plugins\Angelscript\Standalone
+cmake --preset win64-msvc
+cmake --build --preset win64-msvc-debug
+ctest --preset win64-msvc-debug --output-on-failure
+cmake --build --preset win64-msvc-release --target AngelscriptStandalonePackage
+```
+
+Release 目录与 zip 位于 `Standalone/out/build/win64-msvc/package/Release/`。安装包必须包含 `as-standalone.exe`、README、support matrix、licenses、schemas、native/UE-validation 分离示例和唯一的 `contracts/default-engine/`；不得包含第二份 project Bundle。当前默认 Bundle 从仓库的 UE 5.8 `AngelscriptProject` 及其正常启用插件导出，源码侧压缩存放在 `Standalone/Contracts/UE5.8/default-engine.zip`，CMake 展开并校验后才进入构建/安装树。`AngelscriptStandalone.Package` 会在安装态验证 `--help`、`--version`、native 执行和真实默认 Bundle 的 UE compile-only 分析。
+
+`StandaloneRelease` 不加入 `All`，因为它会重复构建同一套 CTest；它是发布 ZIP 的显式门。生成 ZIP 后，使用真实外部消费项目验证插件 Commandlet 和安装包 CLI 之间的端到端边界：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunStandaloneExternalSmoke.ps1 -TimeoutMs 1200000
+```
+
+该 smoke 在 `Saved/StandaloneExternalSmoke/<RunId>/` 下创建一个只有 `.uproject`、`Script/` 和插件引用的临时项目，不创建 host C++ module；它比较默认输出与显式输出的两个 Project Bundle，并从 Release ZIP 解压 CLI 完成显式 Bundle 的 UE-validation 编译。成功证据写入同目录 `Summary.json`。
+
 ## 常用参数
 
 ```powershell

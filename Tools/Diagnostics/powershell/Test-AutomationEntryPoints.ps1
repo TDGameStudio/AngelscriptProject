@@ -106,7 +106,13 @@ function Get-SuiteEntryPointPrefixes {
         [string]$ResolvedProjectRoot
     )
 
-    $suiteScriptPath = Join-Path $ResolvedProjectRoot 'Tools\RunTestSuite.ps1'
+    $definitionsPath = Join-Path $ResolvedProjectRoot 'Tools\Shared\TestSuiteDefinitions.ps1'
+    $suiteScriptPath = if (Test-Path -LiteralPath $definitionsPath -PathType Leaf) {
+        $definitionsPath
+    }
+    else {
+        Join-Path $ResolvedProjectRoot 'Tools\RunTestSuite.ps1'
+    }
     if (-not (Test-Path -LiteralPath $suiteScriptPath -PathType Leaf)) {
         return @()
     }
@@ -114,18 +120,18 @@ function Get-SuiteEntryPointPrefixes {
     $prefixes = @()
     $currentSuite = '<unknown>'
     foreach ($line in Get-Content -LiteralPath $suiteScriptPath -Encoding UTF8) {
-        $suiteMatch = [regex]::Match($line, '^\s*"([^"]+)"\s*=\s*@\(')
+        $suiteMatch = [regex]::Match($line, "^\s*['`"]?([A-Za-z0-9_-]+)['`"]?\s*=\s*@\(")
         if ($suiteMatch.Success) {
-            $currentSuite = [regex]::Replace($suiteMatch.Value, '^\s*"([^"]+)".*$', '$1')
+            $currentSuite = $suiteMatch.Groups[1].Value
             continue
         }
 
-        $prefixMatch = [regex]::Match($line, 'Prefix\s*=\s*"([^"]+)"')
+        $prefixMatch = [regex]::Match($line, "Prefix\s*=\s*['`"]([^'`"]+)['`"]")
         if ($prefixMatch.Success) {
             $prefixes += [PSCustomObject]@{
                     Kind   = 'Suite'
                     Name   = $currentSuite
-                    Prefix = [regex]::Replace($prefixMatch.Value, '^.*Prefix\s*=\s*"([^"]+)".*$', '$1')
+                    Prefix = $prefixMatch.Groups[1].Value
                 }
         }
     }

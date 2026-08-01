@@ -159,7 +159,7 @@ C# 项目（`.ubtplugin.csproj`），接入 Unreal Build Tool 管线。读取 C+
 
 ### 测试模块 (AngelscriptTest)
 
-430 个测试 `.cpp` 文件，组织在 28+ 个主题目录中（Actor、AngelScriptSDK、Bindings、Blueprint、Component、Debugger、Delegate、GC、HotReload、Inheritance、Interface、Networking、Preprocessor、StaticJIT、Subsystem 等）。这个模块负责 C++ 自动化测试、CQTest、AngelScript SDK 测试和测试 Fixture。测试使用自动化前缀约定：`Angelscript.TestModule.<Theme>.*` 用于集成测试，`Angelscript.CppTests.*` 用于运行时 C++ 单元测试，`Angelscript.Editor.*` 用于编辑器测试。Native AngelScript SDK 已按 Engine、Frontend、Compiler、Runtime、Module、TypeSystem、Language、Embedding、Conformance 九个主题组织；最新完整前缀验证为 `683/683 PASS`，另有 14 个可发现且带 `#as-v238-backport` 的 Disabled 2.38 预留方法。分层规则参见根目录测试指南。
+430 个测试 `.cpp` 文件，组织在 28+ 个主题目录中（Actor、AngelScriptSDK、Bindings、Blueprint、Component、Debugger、Delegate、GC、HotReload、Inheritance、Interface、Networking、Preprocessor、StaticJIT、Subsystem 等）。这个模块负责 C++ 自动化测试、CQTest、AngelScript SDK 测试和测试 Fixture。测试使用自动化前缀约定：`Angelscript.TestModule.<Theme>.*` 用于集成测试，`Angelscript.CppTests.*` 用于运行时 C++ 单元测试，`Angelscript.Editor.*` 用于编辑器测试。Native AngelScript SDK 已按 Engine、Frontend、Compiler、Runtime、Module、TypeSystem、Language、Embedding、Conformance 九个主题组织；2026-07-31 最新完整前缀验证为 `691/691 PASS`，另有 14 个可发现且带 `#as-v238-backport` 的 Disabled 2.38 预留方法。分层规则参见根目录测试指南。
 
 ### 脚本示例 (`Script/`)
 
@@ -171,6 +171,15 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 2. **类注册**：AS 类定义 → 类生成器 → 带 UProperty 和 UFunction 的活跃 UClass/UStruct → Blueprint 和 C++ 可见
 3. **绑定**：C++ 类型 → `Bind_*.cpp` 手动绑定 + UHT 生成函数表 + 跨模块 direct-bind feature 表 + 反射回退 → AS 脚本可调用
 4. **热重载**：文件监控器检测变更 → 重编译受影响模块 → ClassReloadHelper 在编辑器中重建实例
+
+### Standalone 编译与离线 UE 分析
+
+- `Plugins/Angelscript/Standalone/` 通过 CMake 直接编译同一份 maintained fork，并把自身私有的标准 C++ frontend 编译进 `AngelscriptStandaloneHost`；它不包含或链接 Unreal Engine，也不要求 UE Runtime 提供共享 `Language/` 层。UE 继续以原有 `FAngelscriptPreprocessor` 与 descriptor graph 为权威实现，两侧只通过完整离线 JSON Bundle 交换最终声明事实。
+- `native-runtime` profile 可编译并执行受限的原生 AngelScript；标准库只提供 UTF-8 string、array、dictionary、math、print 与 assert，并设默认时间/内存限制，不开放文件、网络、进程、动态库或任意 FFI。
+- `ue-validation` profile 只做编译与分析。它读取一个完整的 `default-engine` 或显式 project JSON Bundle，以不可执行 trap 注册 UE 声明；产物不是 UE-loadable 字节码，任何 UE 运行、UObject/GC/World/ClassGenerator 模拟都被禁止。
+- UE 端 `AngelscriptOfflineExport` Commandlet 观察最终完成注册的引擎表面。手写 `Bind_*.cpp`、UHT 生成 Binding、反射回退和 ClassGenerator 不添加 standalone 分支或导出宏。
+- 显式 project Bundle 会完整替换发行包中的默认 Bundle；v1 不合并、不搜索缓存，显式 Bundle 无效时也不回退。详细边界见 `Documents/Guides/AngelscriptStandaloneOfflineBundle.md`。
+- UE-validation 的 `--script-root` 表示项目 `Script/` 根；其相对逻辑路径按 `/Angelscript/Game/<logical-path>` 生成离线稳定模块身份，以便当前源码精确替换同一项目导出的 script baseline。v1 不把任意目录猜测为插件或 memory mount。
 
 ### 绑定路径维护说明
 
@@ -194,17 +203,20 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 - 构建说明统一参考 `Documents/Guides/Build.md`。
 - 测试说明统一参考 `Documents/Guides/Test.md`。
+- Standalone Debug 构建与验证统一使用 `Tools\RunTestSuite.ps1 -Suite Standalone`；最终 Win64 ZIP 使用独立的 `-Suite StandaloneRelease` 构建并执行 Release CTest。当前两套配置各为 `19/19`，报告与计数不能和 UE Automation、NativeCore 或 catalogued C++ 数字混写。
+- 发布前运行 `Tools\RunStandaloneExternalSmoke.ps1`：它创建无 C++ host module 的临时外部项目，两次确定性导出 Project Bundle，并用最终 Release ZIP 中解压出的 CLI 消费该 Bundle。
 - 状态导出入口：`FAngelscriptStateDump::DumpAll()`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`），控制台命令 `as.DumpEngineState`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`）。Dump API 还提供 `CaptureSnapshot`、`DiffSnapshots`、`DumpSnapshot` 和 `DumpDiff`；`DumpAll()` 会写出 `EngineStateSnapshot.csv` 与分类 snapshot 表，diff helper 会写出 `StateDiff.csv` 和 `StateDiffSummary.csv`。
 - 保持 dump 架构为纯外部观察者：优先通过已有 public/runtime API 读取，不要为 dump 侵入原有业务类型。
 - 若文档与当前插件化目标不一致，应先更新文档，再继续扩展实现。
 
 ## 测试数字基线
 
-- 当前测试数字需区分三套口径，后续文档与 roadmap 不能混写：
+- 当前测试数字需区分以下独立口径，后续文档与 roadmap 不能混写：
   - `275/275 PASS`：已编目 C++ 基线（`TestCatalog.md`）。
   - `1518+` 个自动化测试定义分布在 `430` 个测试 `.cpp` 文件中：`test-as-native-sdk-coverage` 后的源码扫描规模。
-  - `683/683 PASS`：native AngelScript SDK 活跃前缀（`Angelscript.TestModule.AngelScriptSDK`）；另有 14 个可发现且 Disabled 的 `#as-v238-backport` 脚本语义预留方法。
+  - `691/691 PASS`：2026-07-31 最新 native AngelScript SDK 活跃前缀（`Angelscript.TestModule.AngelScriptSDK`）；另有 14 个可发现且 Disabled 的 `#as-v238-backport` 脚本语义预留方法。
   - `2396/2396 PASS`：2026-07-28 最终配置 `All` 套件的 35 个前缀汇总；35 份报告均为零失败、零跳过、零超时。
+  - `19/19 PASS`：Standalone 独立 CMake/CTest 口径；Debug 与 Release 是同一组测试的不同配置，不相加，也不替换任何 UE Automation 数字。
   - live full-suite 运行结果：以 `TechnicalDebtInventory.md` 中的实际数字为准。
   - 仅余 `2` 个测试保持 Disabled（`#ue57-headless`）：`TestEngineHelperTests.cpp:106` 和 `SourceNavigationTests.cpp:125`。
 

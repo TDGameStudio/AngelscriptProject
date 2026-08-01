@@ -9,7 +9,11 @@ param(
 
     [int]$TimeoutMs = 0,
 
+    [string]$ProjectFile = '',
+
     [switch]$Render,
+
+    [string]$ExtraArgsFile = '',
 
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$ExtraArgs = @()
@@ -19,6 +23,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'Shared\UnrealCommandUtils.ps1')
+. (Join-Path $PSScriptRoot 'Shared\CommandletProjectUtils.ps1')
 
 $exitCodes = @{
     Success      = 0
@@ -28,7 +33,7 @@ $exitCodes = @{
     WorktreeBusy = 4
 }
 
-$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $worktreeMutex = $null
 $metadataPath = $null
 $scriptExitCode = $exitCodes.ConfigError
@@ -38,7 +43,14 @@ try {
         throw 'Commandlet is required.'
     }
 
-    $agentConfig = Resolve-AgentConfiguration -ProjectRoot $projectRoot
+    $agentConfig = Resolve-AgentConfiguration -ProjectRoot $repositoryRoot
+    $projectContext = Resolve-AngelscriptCommandletProjectContext `
+        -RepositoryRoot $repositoryRoot `
+        -ConfiguredProjectFile $agentConfig.ProjectFile `
+        -ProjectFileOverride $ProjectFile
+    $resolvedExtraArgs = @(Resolve-AngelscriptCommandletExtraArguments `
+            -InlineArguments $ExtraArgs `
+            -ArgumentsFile $ExtraArgsFile)
     $defaultTimeoutMs = $agentConfig.TestDefaultTimeoutMs
     $resolvedTimeoutMs = Resolve-TimeoutMs -RequestedTimeoutMs $TimeoutMs -DefaultTimeoutMs $defaultTimeoutMs -ParameterName 'TimeoutMs'
     $deadlineUtc = New-ExecutionDeadline -TimeoutMs $resolvedTimeoutMs
@@ -51,12 +63,12 @@ try {
         $Label = $Commandlet
     }
 
-    $outputLayout = New-CommandOutputLayout -ProjectRoot $projectRoot -Category 'Commandlet' -Label $Label -RequestedOutputRoot $OutputRoot -LogFileName 'Commandlet.log'
+    $outputLayout = New-CommandOutputLayout -ProjectRoot $repositoryRoot -Category 'Commandlet' -Label $Label -RequestedOutputRoot $OutputRoot -LogFileName 'Commandlet.log'
     $metadataPath = Join-Path $outputLayout.OutputRoot 'RunMetadata.json'
-    $targetInfoPath = Join-Path $projectRoot 'Intermediate\TargetInfo.json'
+    $targetInfoPath = $projectContext.TargetInfoPath
     $timedOutPhase = $null
 
-    $worktreeMutexName = Get-NamedMutexName -Scope 'ue-command-worktree' -KeyPath $projectRoot
+    $worktreeMutexName = Get-NamedMutexName -Scope 'ue-command-worktree' -KeyPath $repositoryRoot
     $worktreeMutex = Acquire-NamedMutex -Name $worktreeMutexName -TimeoutMs 0
     if ($null -eq $worktreeMutex) {
         Write-Host '[error] Another build, test, or commandlet is already running for this worktree.' -ForegroundColor Red
@@ -64,32 +76,17 @@ try {
         return
     }
 
-    $argumentList = @(
-        $agentConfig.ProjectFile
-        "-run=$Commandlet"
-        '-BUILDMACHINE'
-        '-Unattended'
-        '-NoPause'
-        '-NoSplash'
-        '-stdout'
-        '-FullStdOutLogOutput'
-        '-UTF8Output'
-        "-ABSLOG=$($outputLayout.LogPath)"
-        '-NOSOUND'
-    )
-
-    if (-not $Render) {
-        $argumentList += '-NullRHI'
-    }
-
-    if ($ExtraArgs.Count -gt 0) {
-        $argumentList += $ExtraArgs
-    }
+    $argumentList = New-AngelscriptCommandletArgumentList `
+        -ProjectFile $projectContext.ProjectFile `
+        -Commandlet $Commandlet `
+        -LogPath $outputLayout.LogPath `
+        -Render:$Render `
+        -ExtraArgs $resolvedExtraArgs
 
     $prewarmResult = Ensure-TargetInfoJson `
         -EngineRoot $agentConfig.EngineRoot `
-        -ProjectFile $agentConfig.ProjectFile `
-        -ProjectRoot $projectRoot `
+        -ProjectFile $projectContext.ProjectFile `
+        -ProjectRoot $projectContext.ProjectRoot `
         -TimeoutMs (Get-RemainingTimeoutMs -DeadlineUtc $deadlineUtc -PhaseName 'TargetInfo prewarm')
 
     if ($prewarmResult.Status -eq 'TimedOut') {
@@ -115,8 +112,9 @@ try {
     Write-Utf8JsonFile -Path $metadataPath -Value ([PSCustomObject]@{
             Label            = $Label
             Commandlet       = $Commandlet
-            ProjectRoot      = $projectRoot
-            ProjectFile      = $agentConfig.ProjectFile
+            RepositoryRoot   = $repositoryRoot
+            ProjectRoot      = $projectContext.ProjectRoot
+            ProjectFile      = $projectContext.ProjectFile
             EngineRoot       = $agentConfig.EngineRoot
             EditorCmd        = $editorCmd
             TimeoutMs        = $resolvedTimeoutMs
@@ -125,6 +123,7 @@ try {
             TargetInfoPath   = $targetInfoPath
             TimedOutPhase    = $timedOutPhase
             Arguments        = $argumentList
+            ExtraArgsFile    = $ExtraArgsFile
             Prewarm          = [PSCustomObject]@{
                 Status     = $prewarmResult.Status
                 DurationMs = $prewarmResult.DurationMs
@@ -144,7 +143,7 @@ try {
     Write-Host 'Angelscript Commandlet Runner'
     Write-Host '================================================================'
     Write-Host ('Commandlet      : {0}' -f $Commandlet)
-    Write-Host ('ProjectFile     : {0}' -f $agentConfig.ProjectFile)
+    Write-Host ('ProjectFile     : {0}' -f $projectContext.ProjectFile)
     Write-Host ('EditorCmd       : {0}' -f $editorCmd)
     Write-Host ('TimeoutMs       : {0}' -f $resolvedTimeoutMs)
     Write-Host ('LogPath         : {0}' -f $outputLayout.LogPath)
@@ -158,28 +157,25 @@ try {
     $result = Invoke-StreamingProcess `
         -FilePath $editorCmd `
         -ArgumentList $argumentList `
-        -WorkingDirectory $projectRoot `
+        -WorkingDirectory $projectContext.ProjectRoot `
         -TimeoutMs $remainingTimeoutMs `
         -LogPath $outputLayout.LogPath `
         -Label 'commandlet'
 
     $processExitCode = [int]$result.ExitCode
-    $scriptExitCode = if ($result.TimedOut) {
+    if ($result.TimedOut) {
         $timedOutPhase = 'CommandletExecution'
-        $exitCodes.TimedOut
     }
-    elseif ($processExitCode -eq 0) {
-        $exitCodes.Success
-    }
-    else {
-        $exitCodes.Failed
-    }
+    $scriptExitCode = Resolve-AngelscriptCommandletExitCode `
+        -ProcessExitCode $processExitCode `
+        -TimedOut:$result.TimedOut
 
     Write-Utf8JsonFile -Path $metadataPath -Value ([PSCustomObject]@{
             Label            = $Label
             Commandlet       = $Commandlet
-            ProjectRoot      = $projectRoot
-            ProjectFile      = $agentConfig.ProjectFile
+            RepositoryRoot   = $repositoryRoot
+            ProjectRoot      = $projectContext.ProjectRoot
+            ProjectFile      = $projectContext.ProjectFile
             EngineRoot       = $agentConfig.EngineRoot
             EditorCmd        = $editorCmd
             TimeoutMs        = $resolvedTimeoutMs
@@ -188,6 +184,7 @@ try {
             TargetInfoPath   = $targetInfoPath
             TimedOutPhase    = $timedOutPhase
             Arguments        = $argumentList
+            ExtraArgsFile    = $ExtraArgsFile
             Prewarm          = [PSCustomObject]@{
                 Status     = $prewarmResult.Status
                 DurationMs = $prewarmResult.DurationMs
@@ -216,7 +213,7 @@ catch {
         Write-Utf8JsonFile -Path $metadataPath -Value ([PSCustomObject]@{
                 Label          = $Label
                 Commandlet     = $Commandlet
-                ProjectRoot    = $projectRoot
+                RepositoryRoot = $repositoryRoot
                 TimeoutMs      = $TimeoutMs
                 Error          = $_.Exception.Message
                 ExitCode       = $scriptExitCode

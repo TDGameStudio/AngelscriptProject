@@ -72,8 +72,12 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Shared\UnrealCommandUtils.ps1')
 
 $runTestsPath = Join-Path $PSScriptRoot 'RunTests.ps1'
+$runSuiteEntryPath = Join-Path $PSScriptRoot 'RunTestSuiteEntry.ps1'
 if (-not (Test-Path -LiteralPath $runTestsPath -PathType Leaf)) {
     throw "RunTests.ps1 was not found at '$runTestsPath'."
+}
+if (-not (Test-Path -LiteralPath $runSuiteEntryPath -PathType Leaf)) {
+    throw "RunTestSuiteEntry.ps1 was not found at '$runSuiteEntryPath'."
 }
 
 if ($ListSuites) {
@@ -126,6 +130,18 @@ $entries = @(switch ($Strategy) {
         @(Get-AngelscriptTestSuiteEntries -SuiteName $Suite)
     }
 })
+$normalizedEntries = New-Object 'System.Collections.Generic.List[hashtable]'
+foreach ($entry in $entries) {
+    $normalizedEntry = @{}
+    foreach ($key in $entry.Keys) {
+        $normalizedEntry[$key] = $entry[$key]
+    }
+    if (-not $normalizedEntry.ContainsKey('Kind')) {
+        $normalizedEntry.Kind = 'UnrealAutomation'
+    }
+    $normalizedEntries.Add($normalizedEntry)
+}
+$entries = @($normalizedEntries)
 $effectiveLabelPrefix = if ([string]::IsNullOrWhiteSpace($LabelPrefix)) {
     switch ($Strategy) {
         'CoarseDynamic' { 'All-Dynamic' }
@@ -138,7 +154,8 @@ else { $LabelPrefix }
 $suiteStartedAt = Get-Date
 $summaryRoot = Join-Path $projectRoot ('Saved\Tests/{0}_{1:yyyyMMdd_HHmmss}' -f $effectiveLabelPrefix, $suiteStartedAt)
 
-if (-not $DryRun) {
+$requiresUnreal = @($entries | Where-Object { $_.Kind -eq 'UnrealAutomation' }).Count -gt 0
+if (-not $DryRun -and $requiresUnreal) {
     $agentConfig = Resolve-AgentConfiguration -ProjectRoot $projectRoot
     $prewarmTimeoutMs = if ($TimeoutMs -gt 0) { [Math]::Min($TimeoutMs, 120000) } else { 120000 }
     $prewarmResult = Ensure-TargetInfoJson `
@@ -163,7 +180,8 @@ Write-Host ("ExcludeSlow        : {0}" -f ([bool]$ExcludeSlow))
 Write-Host ("ContinueOnFail     : {0}" -f ([bool]$ContinueOnFail))
 Write-Host ("DryRun             : {0}" -f ([bool]$DryRun))
 Write-Host ("SummaryRoot        : {0}" -f $summaryRoot)
-Write-Host ("Runner             : {0}" -f $runTestsPath)
+Write-Host ("RequiresUnreal     : {0}" -f $requiresUnreal)
+Write-Host ("Runners            : UnrealAutomation={0}; CMakeCTest={1}" -f $runTestsPath, $runSuiteEntryPath)
 Write-Host '================================================================'
 
 if ($null -ne $workerPlan) {
@@ -190,13 +208,18 @@ function New-PlannedRun {
     )
 
     $runLabel = '{0}_{1:D2}_{2}' -f $effectiveLabelPrefix, ($Index + 1), $Entry.Label
-  return [PSCustomObject]@{
+    $identity = if ($Entry.Kind -eq 'UnrealAutomation') { $Entry.Prefix } else { "$($Entry.Kind):$($Entry.Label)" }
+    return [PSCustomObject]@{
         Index         = $Index
+        Entry         = $Entry
+        Kind          = $Entry.Kind
         Label         = $Entry.Label
-        Prefix        = $Entry.Prefix
+        Identity      = $identity
+        Prefix        = if ($Entry.ContainsKey('Prefix')) { $Entry.Prefix } else { '' }
         Tier          = Resolve-AngelscriptTestSuiteEntryTier -Entry $Entry
         RunLabel      = $runLabel
         ExecutionSlot = $ExecutionSlot
+        ResultPath    = Join-Path $summaryRoot ('EntryResult_{0:D2}_{1}.json' -f ($Index + 1), $Entry.Label)
     }
 }
 
@@ -206,14 +229,51 @@ function Start-PlannedRunProcess {
         [psobject]$PlannedRun
     )
 
-    $argList = @(
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', $runTestsPath,
-        '-TestPrefix', $PlannedRun.Prefix,
-        '-Label', $PlannedRun.RunLabel,
-        '-ExecutionSlot', $PlannedRun.ExecutionSlot
-    )
+    if ($PlannedRun.Kind -eq 'UnrealAutomation') {
+        $filePath = $runTestsPath
+        $argList = @(
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-File', $filePath,
+            '-TestPrefix', $PlannedRun.Prefix,
+            '-Label', $PlannedRun.RunLabel,
+            '-ExecutionSlot', $PlannedRun.ExecutionSlot
+        )
+    }
+    elseif ($PlannedRun.Kind -eq 'CMakeCTest') {
+        $entrySuite = $Suite
+        $entryIndex = $PlannedRun.Index
+        if ($Strategy -ne 'Fine') {
+            $entrySuite = 'All'
+            $allEntries = @(Get-AngelscriptTestSuiteEntries -SuiteName $entrySuite)
+            $entryIndex = -1
+            for ($candidateIndex = 0; $candidateIndex -lt $allEntries.Count; ++$candidateIndex) {
+                $candidate = $allEntries[$candidateIndex]
+                if ($candidate.Kind -eq $PlannedRun.Kind -and
+                    $candidate.Label -eq $PlannedRun.Label) {
+                    $entryIndex = $candidateIndex
+                    break
+                }
+            }
+            if ($entryIndex -lt 0) {
+                throw "CMakeCTest entry '$($PlannedRun.Identity)' is not present in suite '$entrySuite'."
+            }
+        }
+        $filePath = $runSuiteEntryPath
+        $argList = @(
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-File', $filePath,
+            '-Suite', $entrySuite,
+            '-EntryIndex', $entryIndex,
+            '-RunLabel', $PlannedRun.RunLabel,
+            '-ResultPath', $PlannedRun.ResultPath,
+            '-ExecutionSlot', $PlannedRun.ExecutionSlot
+        )
+    }
+    else {
+        throw "Unsupported suite entry kind '$($PlannedRun.Kind)'."
+    }
 
     if (-not [string]::IsNullOrWhiteSpace($OutputRoot)) {
         $argList += @('-OutputRoot', $OutputRoot)
@@ -232,7 +292,7 @@ function Start-PlannedRunProcess {
         return $null
     }
 
-    Write-Host ("[start][slot {0}] {1} ({2})" -f $PlannedRun.ExecutionSlot, $PlannedRun.Prefix, $PlannedRun.Tier)
+    Write-Host ("[start][slot {0}] [{1}] {2} ({3})" -f $PlannedRun.ExecutionSlot, $PlannedRun.Kind, $PlannedRun.Identity, $PlannedRun.Tier)
     $process = Start-Process -FilePath 'powershell.exe' `
         -ArgumentList $argList `
         -WorkingDirectory $projectRoot `
@@ -255,14 +315,34 @@ function Get-RunResultFromMetadata {
         [int]$ProcessExitCode
     )
 
-    $metadataGlob = Join-Path $projectRoot ('Saved\Tests/{0}/*/RunMetadata.json' -f $ActiveRun.PlannedRun.RunLabel)
-    $metadataPath = Get-ChildItem -Path (Join-Path $projectRoot 'Saved\Tests') -Recurse -Filter 'RunMetadata.json' -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -like "*$($ActiveRun.PlannedRun.RunLabel)*" } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
+    $entryResult = $null
+    if ($ActiveRun.PlannedRun.Kind -eq 'CMakeCTest' -and
+        (Test-Path -LiteralPath $ActiveRun.PlannedRun.ResultPath -PathType Leaf)) {
+        $entryResult = Get-Content -LiteralPath $ActiveRun.PlannedRun.ResultPath -Raw | ConvertFrom-Json
+    }
+
+    $metadataPath = if ($null -ne $entryResult -and
+        -not [string]::IsNullOrWhiteSpace([string]$entryResult.MetadataPath) -and
+        (Test-Path -LiteralPath ([string]$entryResult.MetadataPath) -PathType Leaf)) {
+        Get-Item -LiteralPath ([string]$entryResult.MetadataPath)
+    }
+    elseif ($ActiveRun.PlannedRun.Kind -eq 'UnrealAutomation') {
+        Get-ChildItem -Path (Join-Path $projectRoot 'Saved\Tests') -Recurse -Filter 'RunMetadata.json' -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -like "*$($ActiveRun.PlannedRun.RunLabel)*" } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+    }
+    else {
+        $null
+    }
 
     $summaryRecord = $null
-    if ($null -ne $metadataPath) {
+    if ($null -ne $entryResult -and
+        -not [string]::IsNullOrWhiteSpace([string]$entryResult.SummaryPath) -and
+        (Test-Path -LiteralPath ([string]$entryResult.SummaryPath) -PathType Leaf)) {
+        $summaryRecord = Get-Content -LiteralPath ([string]$entryResult.SummaryPath) -Raw | ConvertFrom-Json
+    }
+    elseif ($null -ne $metadataPath) {
         $summaryPath = Join-Path $metadataPath.Directory.FullName 'Summary.json'
         if (Test-Path -LiteralPath $summaryPath -PathType Leaf) {
             $summaryRecord = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
@@ -271,12 +351,15 @@ function Get-RunResultFromMetadata {
 
     return [PSCustomObject]@{
         Index         = $ActiveRun.PlannedRun.Index
+        Kind          = $ActiveRun.PlannedRun.Kind
         Label         = $ActiveRun.PlannedRun.Label
+        Identity      = $ActiveRun.PlannedRun.Identity
         Prefix        = $ActiveRun.PlannedRun.Prefix
         Tier          = $ActiveRun.PlannedRun.Tier
         RunLabel      = $ActiveRun.PlannedRun.RunLabel
         ExecutionSlot = $ActiveRun.PlannedRun.ExecutionSlot
         ExitCode      = $ProcessExitCode
+        RawExitCode   = if ($null -ne $entryResult) { [int]$entryResult.RawExitCode } else { $ProcessExitCode }
         DurationMs    = [int]((Get-Date) - $ActiveRun.StartedAt).TotalMilliseconds
         MetadataPath  = if ($null -ne $metadataPath) { $metadataPath.FullName } else { $null }
         Passed        = if ($null -ne $summaryRecord -and $null -ne $summaryRecord.Passed) { [int]$summaryRecord.Passed } else { $null }
@@ -298,7 +381,13 @@ if ($useFixedWorkerSlots) {
     for ($index = 0; $index -lt $entries.Count; ++$index) {
         $entry = $entries[$index]
         if (-not $entry.ContainsKey('PreferredSlot') -or $null -eq $entry.PreferredSlot) {
-            throw "CoarseDynamic entry '$($entry.Prefix)' is missing PreferredSlot."
+            $entryIdentity = if ($entry.Kind -eq 'UnrealAutomation') {
+                [string]$entry.Prefix
+            }
+            else {
+                "$($entry.Kind):$($entry.Label)"
+            }
+            throw "CoarseDynamic entry '$entryIdentity' is missing PreferredSlot."
         }
 
         $slotIndex = [int]$entry.PreferredSlot
@@ -425,7 +514,7 @@ while ((Test-HasPendingParallelWork) -or $activeBySlot.Count -gt 0) {
             $activeHeavyCount = [Math]::Max(0, $activeHeavyCount - 1)
         }
 
-        Write-Host ("[done][slot {0}] {1} exit={2} duration={3}ms tests={4}/{5}" -f $slot, $result.Prefix, $exitCode, $result.DurationMs, $(if ($null -ne $result.Passed) { $result.Passed } else { '?' }), $(if ($null -ne $result.Total) { $result.Total } else { '?' }))
+        Write-Host ("[done][slot {0}] [{1}] {2} exit={3} raw={4} duration={5}ms tests={6}/{7}" -f $slot, $result.Kind, $result.Identity, $exitCode, $result.RawExitCode, $result.DurationMs, $(if ($null -ne $result.Passed) { $result.Passed } else { '?' }), $(if ($null -ne $result.Total) { $result.Total } else { '?' }))
         $activeBySlot.Remove($slot) | Out-Null
 
         if ($exitCode -ne 0 -and -not $ContinueOnFail) {
@@ -558,7 +647,7 @@ Write-Host '================================================================'
 if ($failedShards.Count -gt 0) {
     Write-Host 'Failed shards:'
     foreach ($shard in $failedShards) {
-        Write-Host ("  - [{0}] {1} (exit {2})" -f $shard.Tier, $shard.Prefix, $shard.ExitCode)
+        Write-Host ("  - [{0}][{1}] {2} (exit {3}, raw {4})" -f $shard.Tier, $shard.Kind, $shard.Identity, $shard.ExitCode, $shard.RawExitCode)
     }
     exit 1
 }

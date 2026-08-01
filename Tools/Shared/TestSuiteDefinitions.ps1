@@ -15,6 +15,29 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
     NativeCore = @(
         @{ Prefix = 'Angelscript.TestModule.AngelScriptSDK'; Label = 'AngelScriptSDK'; Tier = 'Heavy' }
     )
+    Standalone = @(
+        @{
+            Kind = 'CMakeCTest'
+            Label = 'Standalone'
+            Tier = 'Heavy'
+            WorkingDirectory = 'Plugins\Angelscript\Standalone'
+            CMakeConfigurePreset = 'win64-msvc'
+            CMakeBuildPreset = 'win64-msvc-debug'
+            CTestPreset = 'win64-msvc-debug'
+        }
+    )
+    StandaloneRelease = @(
+        @{
+            Kind = 'CMakeCTest'
+            Label = 'StandaloneRelease'
+            Tier = 'Heavy'
+            WorkingDirectory = 'Plugins\Angelscript\Standalone'
+            CMakeConfigurePreset = 'win64-msvc'
+            CMakeBuildPreset = 'win64-msvc-release'
+            CMakeAdditionalBuildTargets = @('AngelscriptStandalonePackage')
+            CTestPreset = 'win64-msvc-release'
+        }
+    )
     RuntimeCpp = @(
         @{ Prefix = 'Angelscript.TestModule.Engine'; Label = 'Engine'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.CppTests'; Label = 'CppTestsLegacy'; Tier = 'Light' }
@@ -71,6 +94,15 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
         @{ Prefix = 'Angelscript.TestModule.Syntax'; Label = 'Syntax'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.Validation'; Label = 'Validation'; Tier = 'Light' }
         @{ Prefix = 'Angelscript.TestModule.WorldSubsystem'; Label = 'WorldSubsystem'; Tier = 'Light' }
+        @{
+            Kind = 'CMakeCTest'
+            Label = 'Standalone'
+            Tier = 'Heavy'
+            WorkingDirectory = 'Plugins\Angelscript\Standalone'
+            CMakeConfigurePreset = 'win64-msvc'
+            CMakeBuildPreset = 'win64-msvc-debug'
+            CTestPreset = 'win64-msvc-debug'
+        }
     )
 }
 
@@ -89,12 +121,25 @@ function Get-AngelscriptTestSuiteEntries {
         throw "Unknown suite '$SuiteName'. Use -ListSuites to inspect available values."
     }
 
-    return @($definitions[$SuiteName])
+    $normalizedEntries = New-Object 'System.Collections.Generic.List[hashtable]'
+    foreach ($entry in @($definitions[$SuiteName])) {
+        $normalizedEntry = @{}
+        foreach ($key in $entry.Keys) {
+            $normalizedEntry[$key] = $entry[$key]
+        }
+
+        if (-not $normalizedEntry.ContainsKey('Kind')) {
+            $normalizedEntry.Kind = 'UnrealAutomation'
+        }
+        $normalizedEntries.Add($normalizedEntry)
+    }
+
+    return @($normalizedEntries)
 }
 
 function Get-AngelscriptTestModuleSuiteEntries {
     return @(Get-AngelscriptTestSuiteEntries -SuiteName 'All' | Where-Object {
-            $_.Prefix -like 'Angelscript.TestModule*'
+            $_.Kind -eq 'UnrealAutomation' -and $_.Prefix -like 'Angelscript.TestModule*'
         })
 }
 
@@ -117,7 +162,13 @@ function Write-AngelscriptTestSuiteCatalog {
         Write-Host "- $suiteName"
         foreach ($entry in (Get-AngelscriptTestSuiteEntries -SuiteName $suiteName)) {
             $tier = Resolve-AngelscriptTestSuiteEntryTier -Entry $entry
-            Write-Host "    [$tier] $($entry.Prefix)"
+            $identity = if ($entry.Kind -eq 'UnrealAutomation') {
+                $entry.Prefix
+            }
+            else {
+                "$($entry.Kind):$($entry.Label)"
+            }
+            Write-Host "    [$tier][$($entry.Kind)] $identity"
         }
     }
 }
