@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="zh-CN" data-preview-state="idle" data-annotations="visible">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>源码内注释实验 07 · C++ 代码段批注</title>
+  <style>
+    :root {
+      --canvas: #f0f2f3;
+      --paper: #ffffff;
+      --code: #fafbfc;
+      --ink: #18212a;
+      --muted: #65727f;
+      --line: #cdd5dc;
+      --line-strong: #aeb9c3;
+      --accent: #b76812;
+      --accent-dark: #784109;
+      --accent-soft: #fff0dc;
+      --accent-wash: #fff9f0;
+      --green: #267058;
+      --blue: #326da8;
+      --violet: #71539d;
+      --shadow: 0 18px 50px rgba(48, 58, 67, 0.09);
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(135deg, rgba(183, 104, 18, 0.07), transparent 28rem),
+        var(--canvas);
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible {
+      outline: 3px solid rgba(183, 104, 18, 0.24);
+      outline-offset: 3px;
+    }
+
+    .page {
+      width: min(1020px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 44px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 820;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 790px;
+      margin: 0;
+      font-size: clamp(28px, 4.1vw, 48px);
+      line-height: 1.04;
+      letter-spacing: -0.045em;
+    }
+
+    .lede {
+      max-width: 790px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .actions { display: flex; gap: 8px; }
+
+    .action {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 780;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .action:hover { border-color: var(--accent); }
+    .action.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .action.primary:hover { background: var(--accent-dark); }
+
+    .paper {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .paper-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .paper-title { margin: 0; font-size: 14px; font-weight: 850; }
+    .paper-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+
+    .source-path {
+      max-width: 460px;
+      overflow: hidden;
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 720;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .excerpt-banner {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--accent-wash);
+      color: #745021;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .excerpt-banner strong {
+      flex: 0 0 auto;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #f3d7ad;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.06em;
+    }
+
+    .review-sheet {
+      padding: 20px 20px 30px;
+      background:
+        linear-gradient(90deg, transparent 34px, rgba(183, 104, 18, 0.12) 34px, rgba(183, 104, 18, 0.12) 35px, transparent 35px),
+        var(--code);
+    }
+
+    .commentary {
+      position: relative;
+      width: calc(100% - 28px);
+      margin: 17px 0 10px 28px;
+      padding: 0;
+      border: 1px solid #dfb77e;
+      border-radius: 7px;
+      background: var(--accent-wash);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+
+    .commentary:first-child { margin-top: 0; }
+
+    .commentary::before {
+      position: absolute;
+      top: 20px;
+      left: -18px;
+      width: 16px;
+      height: 1px;
+      background: #d09a54;
+      content: "";
+    }
+
+    .commentary::after {
+      position: absolute;
+      top: 17px;
+      left: -22px;
+      width: 7px;
+      height: 7px;
+      border: 2px solid #d09a54;
+      border-radius: 50%;
+      background: var(--code);
+      content: "";
+    }
+
+    .commentary:hover,
+    .commentary[data-active="true"],
+    .commentary[data-pinned="true"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    .commentary[data-pinned="true"] { box-shadow: inset 3px 0 0 var(--accent); }
+
+    .commentary-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      padding: 10px 13px;
+      border-bottom: 1px solid rgba(183, 104, 18, 0.22);
+    }
+
+    .block-label {
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .block-range {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 750;
+    }
+
+    .commentary dl {
+      display: grid;
+      grid-template-columns: 1.25fr 0.72fr 1.15fr;
+      gap: 0;
+      margin: 0;
+    }
+
+    .commentary dl div {
+      min-width: 0;
+      padding: 11px 13px 12px;
+    }
+
+    .commentary dl div + div { border-left: 1px solid rgba(183, 104, 18, 0.18); }
+
+    .commentary dt {
+      margin: 0 0 5px;
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .commentary dd {
+      margin: 0;
+      color: #4e5c69;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .ownership {
+      display: inline-block;
+      padding: 3px 5px;
+      border-radius: 4px;
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 820;
+    }
+
+    .ownership.test { color: var(--violet); }
+    .ownership.subsystem { color: var(--green); }
+    .ownership.borrowed { color: var(--blue); }
+    .ownership.module { color: var(--accent-dark); }
+
+    .code-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-color: var(--line-strong) transparent;
+    }
+
+    .code-block {
+      min-width: 820px;
+      padding: 8px 0 11px;
+      border-left: 3px solid transparent;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+
+    .code-block[data-active="true"],
+    .code-block[data-pinned="true"] {
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .code-row {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      min-height: 25px;
+      color: #27333e;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 25px;
+    }
+
+    .line-number {
+      padding-right: 12px;
+      color: #8d9aa7;
+      font-size: 9px;
+      text-align: right;
+      user-select: none;
+    }
+
+    .code-text { min-width: 0; padding: 0 18px 0 11px; white-space: pre; }
+
+    .kw { color: #a04682; }
+    .type { color: #276da9; }
+    .fn { color: #945b0f; }
+    .macro { color: #a45139; }
+    .null { color: #7658a8; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 18px;
+      border-top: 1px solid var(--line);
+      background: #f7f8f9;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .footer strong { color: var(--ink); }
+    html[data-preview-state="copied"] .footer strong { color: var(--green); }
+
+    html[data-annotations="hidden"] [data-annotation-id] { display: none; }
+    html[data-annotations="hidden"] .review-sheet { padding-top: 13px; }
+
+    .mobile-hint { display: none; }
+
+    @media (max-width: 760px) {
+      .page { width: min(100% - 18px, 720px); padding-top: 16px; }
+      .hero { grid-template-columns: 1fr; gap: 16px; align-items: start; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .paper-head { grid-template-columns: 1fr; gap: 8px; }
+      .source-path { max-width: 100%; }
+      .review-sheet { padding: 14px 9px 22px; background-position-x: -12px; }
+      .commentary { width: calc(100% - 12px); margin-left: 12px; }
+      .commentary::before, .commentary::after { display: none; }
+      .commentary dl { grid-template-columns: 1fr; }
+      .commentary dl div + div { border-top: 1px solid rgba(183, 104, 18, 0.18); border-left: 0; }
+      .footer { align-items: flex-start; flex-direction: column; }
+      .mobile-hint { display: inline; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Inline annotation / 07</p>
+        <h1>长 C++，按责任边界批注。</h1>
+        <p class="lede">
+          每张批注先回答为什么存在、谁持有实例、什么事实不能被改坏，
+          随后紧跟它负责的连续源码段。代码本身的先后顺序就是流程。
+        </p>
+      </div>
+      <div class="actions" aria-label="源码阅读控制">
+        <button class="action primary" type="button" data-action="copy">复制纯源码</button>
+        <button class="action" type="button" data-action="toggle-notes" aria-pressed="false">隐藏解释</button>
+      </div>
+    </header>
+
+    <article class="paper" aria-labelledby="paper-title">
+      <header class="paper-head">
+        <div>
+          <h2 class="paper-title" id="paper-title">FAngelscriptRuntimeModule::InitializeAngelscript</h2>
+          <p class="paper-subtitle">五段控制流、五份维护者批注；点击批注固定它负责的源码段。</p>
+        </div>
+        <div class="source-path">Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp:43</div>
+      </header>
+
+      <div class="excerpt-banner">
+        <strong>CONTROL-FLOW EXCERPT</strong>
+        <span>省略诊断日志与源码说明性注释；分支条件、返回、上下文压栈、初始化调用和所有权语义保持原样。<span class="mobile-hint">源码段可横向滚动。</span></span>
+      </div>
+
+      <div class="review-sheet">
+        <button class="commentary" data-annotation-id="gate" data-source-ids="src-gate-block" type="button">
+          <span class="commentary-head"><span class="block-label">ONE-SHOT GATE</span><span class="block-range">entry · L1–L9</span></span>
+          <dl>
+            <div><dt>WHY</dt><dd>兼容入口可能被不同启动方重复调用；首次调用先锁门，重复调用不得重跑初始化。</dd></div>
+            <div><dt>OWNERSHIP</dt><dd><span class="ownership module">unchanged</span></dd></div>
+            <div><dt>INVARIANT</dt><dd><code>bInitializeAngelscriptCalled</code> 必须在任何可重入工作之前设为 true。</dd></div>
+          </dl>
+        </button>
+        <div class="code-scroll">
+          <div class="code-block" data-source-id="src-gate-block">
+            <div class="code-row"><span class="line-number">1</span><span class="code-text"><span class="type">void</span> <span class="type">FAngelscriptRuntimeModule</span>::<span class="fn">InitializeAngelscript</span>()</span></div>
+            <div class="code-row"><span class="line-number">2</span><span class="code-text">{</span></div>
+            <div class="code-row"><span class="line-number">3</span><span class="code-text">    <span class="kw">if</span> (bInitializeAngelscriptCalled)</span></div>
+            <div class="code-row"><span class="line-number">4</span><span class="code-text">    {</span></div>
+            <div class="code-row"><span class="line-number">5</span><span class="code-text">        <span class="kw">return</span>;</span></div>
+            <div class="code-row"><span class="line-number">6</span><span class="code-text">    }</span></div>
+            <div class="code-row"><span class="line-number">7</span><span class="code-text"></span></div>
+            <div class="code-row"><span class="line-number">8</span><span class="code-text">    bInitializeAngelscriptCalled = <span class="kw">true</span>;</span></div>
+          </div>
+        </div>
+
+        <button class="commentary" data-annotation-id="test-seam" data-source-ids="src-test-block" type="button">
+          <span class="commentary-head"><span class="block-label">AUTOMATION TEST SEAM</span><span class="block-range">compile-time branch · L9–L20</span></span>
+          <dl>
+            <div><dt>WHY</dt><dd>允许自动化测试提供独立引擎，并完全绕开生产环境的 Subsystem 和实例创建路径。</dd></div>
+            <div><dt>OWNERSHIP</dt><dd><span class="ownership test">test-provided</span></dd></div>
+            <div><dt>INVARIANT</dt><dd>只要测试覆写存在，本分支结束后就必须 return；返回空测试引擎也不落入生产路由。</dd></div>
+          </dl>
+        </button>
+        <div class="code-scroll">
+          <div class="code-block" data-source-id="src-test-block">
+            <div class="code-row"><span class="line-number">9</span><span class="code-text">    <span class="macro">#if WITH_DEV_AUTOMATION_TESTS</span></span></div>
+            <div class="code-row"><span class="line-number">10</span><span class="code-text">    <span class="kw">if</span> (InitializeOverrideForTesting)</span></div>
+            <div class="code-row"><span class="line-number">11</span><span class="code-text">    {</span></div>
+            <div class="code-row"><span class="line-number">12</span><span class="code-text">        InitializedOverrideEngineForTesting = <span class="null">nullptr</span>;</span></div>
+            <div class="code-row"><span class="line-number">13</span><span class="code-text">        <span class="kw">if</span> (<span class="type">FAngelscriptEngine</span>* OverrideEngine = InitializeOverrideForTesting())</span></div>
+            <div class="code-row"><span class="line-number">14</span><span class="code-text">        {</span></div>
+            <div class="code-row"><span class="line-number">15</span><span class="code-text">            <span class="type">FAngelscriptEngineContextStack</span>::<span class="fn">Push</span>(OverrideEngine);</span></div>
+            <div class="code-row"><span class="line-number">16</span><span class="code-text">            InitializedOverrideEngineForTesting = OverrideEngine;</span></div>
+            <div class="code-row"><span class="line-number">17</span><span class="code-text">        }</span></div>
+            <div class="code-row"><span class="line-number">18</span><span class="code-text">        <span class="kw">return</span>;</span></div>
+            <div class="code-row"><span class="line-number">19</span><span class="code-text">    }</span></div>
+            <div class="code-row"><span class="line-number">20</span><span class="code-text">    <span class="macro">#endif</span></span></div>
+          </div>
+        </div>
+
+        <button class="commentary" data-annotation-id="subsystem" data-source-ids="src-subsystem-block" type="button">
+          <span class="commentary-head"><span class="block-label">SUBSYSTEM DELEGATION</span><span class="block-range">preferred host · L21–L27</span></span>
+          <dl>
+            <div><dt>WHY</dt><dd>EngineSubsystem 存在时，它是主引擎生命周期的正式宿主；兼容入口只负责把请求交过去。</dd></div>
+            <div><dt>OWNERSHIP</dt><dd><span class="ownership subsystem">subsystem-owned</span></dd></div>
+            <div><dt>INVARIANT</dt><dd>委托完成后必须 return，模块不能同时再创建 <code>OwnedPrimaryEngine</code>。</dd></div>
+          </dl>
+        </button>
+        <div class="code-scroll">
+          <div class="code-block" data-source-id="src-subsystem-block">
+            <div class="code-row"><span class="line-number">21</span><span class="code-text">    <span class="type">FModuleManager</span>::<span class="fn">Get</span>().<span class="fn">LoadModuleChecked</span>(<span class="macro">TEXT</span>("AngelscriptRuntime"));</span></div>
+            <div class="code-row"><span class="line-number">22</span><span class="code-text">    <span class="kw">if</span> (<span class="type">UAngelscriptSubsystem</span>* EngineSubsystem = <span class="type">UAngelscriptSubsystem</span>::<span class="fn">Get</span>())</span></div>
+            <div class="code-row"><span class="line-number">23</span><span class="code-text">    {</span></div>
+            <div class="code-row"><span class="line-number">24</span><span class="code-text">        EngineSubsystem-&gt;<span class="fn">EnsurePrimaryEngineInitialized</span>();</span></div>
+            <div class="code-row"><span class="line-number">25</span><span class="code-text">        <span class="kw">return</span>;</span></div>
+            <div class="code-row"><span class="line-number">26</span><span class="code-text">    }</span></div>
+          </div>
+        </div>
+
+        <button class="commentary" data-annotation-id="ambient" data-source-ids="src-ambient-block" type="button">
+          <span class="commentary-head"><span class="block-label">AMBIENT ADOPTION</span><span class="block-range">reuse before allocate · L27–L35</span></span>
+          <dl>
+            <div><dt>WHY</dt><dd>没有 Subsystem 时先尝试采用当前上下文已有的引擎，避免重复实例和重复初始化。</dd></div>
+            <div><dt>OWNERSHIP</dt><dd><span class="ownership borrowed">borrowed</span></dd></div>
+            <div><dt>INVARIANT</dt><dd>模块可以补齐未就绪实例的初始化，但不能因为调用 <code>Initialize()</code> 就宣称拥有它。</dd></div>
+          </dl>
+        </button>
+        <div class="code-scroll">
+          <div class="code-block" data-source-id="src-ambient-block">
+            <div class="code-row"><span class="line-number">27</span><span class="code-text">    <span class="kw">if</span> (<span class="type">FAngelscriptEngine</span>* CurrentEngine = <span class="type">FAngelscriptEngine</span>::<span class="fn">TryGetCurrentEngine</span>())</span></div>
+            <div class="code-row"><span class="line-number">28</span><span class="code-text">    {</span></div>
+            <div class="code-row"><span class="line-number">29</span><span class="code-text">        <span class="kw">if</span> (CurrentEngine-&gt;<span class="fn">GetScriptEngine</span>() == <span class="null">nullptr</span>)</span></div>
+            <div class="code-row"><span class="line-number">30</span><span class="code-text">        {</span></div>
+            <div class="code-row"><span class="line-number">31</span><span class="code-text">            CurrentEngine-&gt;<span class="fn">Initialize</span>();</span></div>
+            <div class="code-row"><span class="line-number">32</span><span class="code-text">        }</span></div>
+            <div class="code-row"><span class="line-number">33</span><span class="code-text">    }</span></div>
+          </div>
+        </div>
+
+        <button class="commentary" data-annotation-id="owned" data-source-ids="src-owned-block" type="button">
+          <span class="commentary-head"><span class="block-label">MODULE-OWNED FALLBACK</span><span class="block-range">last resort · L34–L40</span></span>
+          <dl>
+            <div><dt>WHY</dt><dd>只有正式宿主和可借用上下文都缺席时，模块才创建自己的主引擎，保证兼容入口仍能工作。</dd></div>
+            <div><dt>OWNERSHIP</dt><dd><span class="ownership module">module-owned</span></dd></div>
+            <div><dt>INVARIANT</dt><dd>创建、压入当前上下文、初始化三步构成一个闭合事务，顺序不能交换。</dd></div>
+          </dl>
+        </button>
+        <div class="code-scroll">
+          <div class="code-block" data-source-id="src-owned-block">
+            <div class="code-row"><span class="line-number">34</span><span class="code-text">    <span class="kw">else</span></span></div>
+            <div class="code-row"><span class="line-number">35</span><span class="code-text">    {</span></div>
+            <div class="code-row"><span class="line-number">36</span><span class="code-text">        OwnedPrimaryEngine = <span class="fn">MakeUnique</span>&lt;<span class="type">FAngelscriptEngine</span>&gt;();</span></div>
+            <div class="code-row"><span class="line-number">37</span><span class="code-text">        <span class="type">FAngelscriptEngineContextStack</span>::<span class="fn">Push</span>(OwnedPrimaryEngine.<span class="fn">Get</span>());</span></div>
+            <div class="code-row"><span class="line-number">38</span><span class="code-text">        OwnedPrimaryEngine-&gt;<span class="fn">Initialize</span>();</span></div>
+            <div class="code-row"><span class="line-number">39</span><span class="code-text">    }</span></div>
+            <div class="code-row"><span class="line-number">40</span><span class="code-text">}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <span><strong data-copy-status>纯控制流摘录尚未复制</strong> · 批注字段不会进入复制结果。</span>
+        <span>5 responsibility blocks · no parallel diagram</span>
+      </footer>
+    </article>
+  </main>
+
+  <script>
+    (() => {
+      const SOURCE = `void FAngelscriptRuntimeModule::InitializeAngelscript()
+{
+\tif (bInitializeAngelscriptCalled)
+\t{
+\t\treturn;
+\t}
+
+\tbInitializeAngelscriptCalled = true;
+\t#if WITH_DEV_AUTOMATION_TESTS
+\tif (InitializeOverrideForTesting)
+\t{
+\t\tInitializedOverrideEngineForTesting = nullptr;
+\t\tif (FAngelscriptEngine* OverrideEngine = InitializeOverrideForTesting())
+\t\t{
+\t\t\tFAngelscriptEngineContextStack::Push(OverrideEngine);
+\t\t\tInitializedOverrideEngineForTesting = OverrideEngine;
+\t\t}
+\t\treturn;
+\t}
+\t#endif
+
+\tFModuleManager::Get().LoadModuleChecked(TEXT("AngelscriptRuntime"));
+\tif (UAngelscriptSubsystem* EngineSubsystem = UAngelscriptSubsystem::Get())
+\t{
+\t\tEngineSubsystem->EnsurePrimaryEngineInitialized();
+\t\treturn;
+\t}
+
+\tif (FAngelscriptEngine* CurrentEngine = FAngelscriptEngine::TryGetCurrentEngine())
+\t{
+\t\tif (CurrentEngine->GetScriptEngine() == nullptr)
+\t\t{
+\t\t\tCurrentEngine->Initialize();
+\t\t}
+\t}
+\telse
+\t{
+\t\tOwnedPrimaryEngine = MakeUnique<FAngelscriptEngine>();
+\t\tFAngelscriptEngineContextStack::Push(OwnedPrimaryEngine.Get());
+\t\tOwnedPrimaryEngine->Initialize();
+\t}
+}`;
+
+      const root = document.documentElement;
+      const annotations = [...document.querySelectorAll("[data-annotation-id]")];
+      const sources = [...document.querySelectorAll("[data-source-id]")];
+      const sourceMap = new Map(sources.map((source) => [source.dataset.sourceId, source]));
+      const toggleButton = document.querySelector('[data-action="toggle-notes"]');
+      const copyStatus = document.querySelector("[data-copy-status]");
+      let pinnedId = null;
+      let receiptTimer = 0;
+
+      const sourceIds = (annotation) =>
+        (annotation.dataset.sourceIds || "").split(/\s+/).filter(Boolean);
+
+      function clearState() {
+        document.querySelectorAll("[data-active], [data-pinned]").forEach((element) => {
+          element.removeAttribute("data-active");
+          element.removeAttribute("data-pinned");
+        });
+      }
+
+      function apply(annotation, mode) {
+        clearState();
+        annotation.dataset[mode] = "true";
+        sourceIds(annotation).forEach((id) => {
+          const source = sourceMap.get(id);
+          if (source) source.dataset[mode] = "true";
+        });
+      }
+
+      function preview(annotation) {
+        if (!pinnedId) apply(annotation, "active");
+      }
+
+      function clearPreview() {
+        if (!pinnedId) clearState();
+      }
+
+      function pin(annotation) {
+        const id = annotation.dataset.annotationId;
+        if (pinnedId === id) {
+          pinnedId = null;
+          clearState();
+        } else {
+          pinnedId = id;
+          apply(annotation, "pinned");
+        }
+      }
+
+      annotations.forEach((annotation) => {
+        annotation.addEventListener("mouseenter", () => preview(annotation));
+        annotation.addEventListener("mouseleave", clearPreview);
+        annotation.addEventListener("focus", () => preview(annotation));
+        annotation.addEventListener("blur", clearPreview);
+        annotation.addEventListener("click", () => pin(annotation));
+      });
+
+      toggleButton.addEventListener("click", () => {
+        const willHide = root.dataset.annotations === "visible";
+        root.dataset.annotations = willHide ? "hidden" : "visible";
+        toggleButton.textContent = willHide ? "显示解释" : "隐藏解释";
+        toggleButton.setAttribute("aria-pressed", String(willHide));
+        pinnedId = null;
+        clearState();
+      });
+
+      async function copySource() {
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(SOURCE);
+          copied = true;
+        } catch {
+          const fallback = document.createElement("textarea");
+          fallback.value = SOURCE;
+          fallback.setAttribute("readonly", "");
+          fallback.style.position = "fixed";
+          fallback.style.opacity = "0";
+          document.body.appendChild(fallback);
+          fallback.select();
+          copied = document.execCommand("copy");
+          fallback.remove();
+        }
+        root.dataset.previewState = "copied";
+        copyStatus.textContent = copied ? "已复制纯控制流摘录" : "摘录已准备，可从页面源码模型读取";
+        clearTimeout(receiptTimer);
+        receiptTimer = setTimeout(() => {
+          root.dataset.previewState = "idle";
+        }, 1600);
+      }
+
+      document.querySelector('[data-action="copy"]').addEventListener("click", copySource);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          pinnedId = null;
+          clearState();
+        }
+      });
+
+      function validateModel() {
+        const errors = [];
+        annotations.forEach((annotation) => {
+          const ids = sourceIds(annotation);
+          if (!ids.length) errors.push(`${annotation.dataset.annotationId}: no sources`);
+          ids.forEach((id) => {
+            if (!sourceMap.has(id)) errors.push(`${annotation.dataset.annotationId}: missing ${id}`);
+          });
+        });
+        if (annotations.length !== 5) errors.push(`annotation count ${annotations.length}/5`);
+        if (!SOURCE.includes("InitializeAngelscript")) errors.push("source signature missing");
+        if (errors.length) {
+          root.dataset.previewState = "error";
+          copyStatus.textContent = `模型错误：${errors.join("；")}`;
+        }
+        return errors;
+      }
+
+      const modelErrors = validateModel();
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        audit() {
+          return {
+            errors: [...modelErrors],
+            annotationCount: annotations.length,
+            sourceCount: sources.length,
+            state: root.dataset.previewState,
+            annotations: root.dataset.annotations,
+          };
+        },
+        sourceText() {
+          return SOURCE;
+        },
+      };
+    })();
+  </script>
+</body>
+</html>

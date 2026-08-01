@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="zh-Hans" data-preview-state="idle">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AS 源码解释实验 01 · 行桥接</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #eef2f5;
+      --surface: #ffffff;
+      --code: #fafbfc;
+      --ink: #17212b;
+      --muted: #667483;
+      --line: #cbd5df;
+      --line-strong: #aab9c8;
+      --accent: #2f6fd0;
+      --accent-soft: #e7effd;
+      --accent-ink: #174a9a;
+      --success: #257a55;
+      --danger: #b74f59;
+      --keyword: #8959a8;
+      --type: #4271ae;
+      --string: #718c00;
+      --literal: #f5871f;
+      --shadow: 0 18px 44px rgba(32, 52, 73, 0.1);
+      font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(47, 111, 208, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(47, 111, 208, 0.035) 1px, transparent 1px),
+        var(--canvas);
+      background-size: 32px 32px;
+    }
+
+    button { font: inherit; }
+
+    .page {
+      width: min(1500px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: 0 2px 18px;
+    }
+
+    .eyebrow {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      margin-bottom: 7px;
+      color: var(--accent-ink);
+      font: 700 12px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 28px;
+      height: 2px;
+      background: var(--accent);
+      content: "";
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 40px);
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+    }
+
+    .lede {
+      max-width: 820px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .action,
+    .scenario {
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.86);
+      cursor: pointer;
+      transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+    }
+
+    .action { padding: 0 15px; font-weight: 700; }
+    .action.primary { border-color: var(--accent); color: #fff; background: var(--accent); }
+    .action:hover, .scenario:hover { border-color: var(--accent); }
+    .action:focus-visible, .scenario:focus-visible, .code-line:focus-visible, .flow-node:focus-visible {
+      outline: 3px solid rgba(47, 111, 208, 0.28);
+      outline-offset: 2px;
+    }
+
+    .scenario-strip {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      border-radius: 13px 13px 0 0;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .scenario-label {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .scenario {
+      min-height: 34px;
+      padding: 0 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .scenario[aria-pressed="true"] {
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      background: var(--accent-soft);
+    }
+
+    .workbench {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 52fr) minmax(58px, 5fr) minmax(0, 43fr);
+      min-height: 720px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 0 0 16px 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .pane { position: relative; z-index: 2; min-width: 0; }
+
+    .pane-head {
+      display: flex;
+      min-height: 62px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pane-head strong { display: block; font-size: 14px; }
+    .pane-head span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+
+    .source-pill {
+      flex: none;
+      max-width: 45%;
+      overflow: hidden;
+      color: var(--accent-ink);
+      font: 600 10px/1.4 "Cascadia Code", Consolas, monospace;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .code-pane {
+      border-right: 1px solid var(--line);
+      background: var(--code);
+    }
+
+    .code {
+      padding: 24px 16px 30px;
+      overflow-x: auto;
+      font: 14px/1.9 "Cascadia Code", Consolas, monospace;
+    }
+
+    .code-row,
+    .code-line {
+      position: relative;
+      display: grid;
+      grid-template-columns: 42px minmax(max-content, 1fr);
+      width: 100%;
+      min-width: 560px;
+      min-height: 34px;
+      align-items: center;
+      margin: 0;
+      padding: 0 8px 0 0;
+      border: 0;
+      border-radius: 6px;
+      color: var(--ink);
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      white-space: pre;
+    }
+
+    .code-line { cursor: pointer; }
+    .code-line::before, .code-row::before {
+      color: #91a0ae;
+      content: attr(data-line);
+      font-size: 11px;
+      text-align: right;
+      padding-right: 13px;
+    }
+
+    .code-line::after {
+      position: absolute;
+      top: 50%;
+      right: -12px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      background: var(--surface);
+      content: "";
+      opacity: 0.4;
+      transform: translateY(-50%);
+      transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease;
+    }
+
+    .code-line:hover, .code-line[data-active="true"], .code-line[data-pinned="true"] {
+      color: var(--accent-ink);
+      background: var(--accent-soft);
+    }
+
+    .code-line:hover::after, .code-line[data-active="true"]::after, .code-line[data-pinned="true"]::after {
+      background: var(--accent);
+      opacity: 1;
+      transform: translateY(-50%) scale(1.2);
+    }
+
+    .kw { color: var(--keyword); font-weight: 700; }
+    .type { color: var(--type); }
+    .str { color: var(--string); }
+    .lit { color: var(--literal); font-weight: 650; }
+    .fn { color: #3f6f8f; }
+
+    .bridge {
+      position: relative;
+      z-index: 3;
+      overflow: visible;
+      background:
+        linear-gradient(90deg, transparent 49%, rgba(47, 111, 208, 0.13) 50%, transparent 51%);
+    }
+
+    .bridge-label {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      color: var(--muted);
+      font: 700 9px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transform: translateX(-50%) rotate(90deg);
+      transform-origin: center;
+      white-space: nowrap;
+    }
+
+    .connector-layer {
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .connector {
+      fill: none;
+      stroke: var(--accent);
+      stroke-linecap: round;
+      stroke-width: 1.7;
+      opacity: 0.16;
+      vector-effect: non-scaling-stroke;
+      transition: opacity 200ms ease, stroke-width 200ms ease;
+    }
+
+    .connector[data-active="true"], .connector[data-pinned="true"] {
+      stroke-width: 3;
+      opacity: 0.95;
+    }
+
+    .explain-pane { background: #fff; }
+
+    .flow {
+      display: grid;
+      gap: 13px;
+      padding: 20px 22px 28px;
+    }
+
+    .flow-node {
+      position: relative;
+      width: 100%;
+      min-height: 104px;
+      padding: 15px 16px 14px 52px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--ink);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .flow-node::before {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      color: var(--muted);
+      background: #fff;
+      content: attr(data-step);
+      font: 700 10px/1 "Cascadia Code", Consolas, monospace;
+    }
+
+    .flow-node:not(:last-child)::after {
+      position: absolute;
+      right: 25px;
+      bottom: -14px;
+      width: 1px;
+      height: 13px;
+      background: var(--line-strong);
+      content: "";
+    }
+
+    .flow-node:hover, .flow-node[data-active="true"], .flow-node[data-pinned="true"] {
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(47, 111, 208, 0.13);
+      transform: translateX(2px);
+    }
+
+    .flow-node[data-active="true"]::before, .flow-node[data-pinned="true"]::before {
+      border-color: var(--accent);
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .node-title { display: flex; gap: 9px; align-items: center; font-size: 14px; font-weight: 750; }
+    .node-tag {
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: var(--accent-ink);
+      background: var(--accent-soft);
+      font: 700 9px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .node-copy { margin: 7px 0 0; color: #475766; font-size: 12px; line-height: 1.55; }
+    .node-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .node-meta span {
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--muted);
+      font: 600 9px/1.2 "Cascadia Code", Consolas, monospace;
+    }
+
+    .statusbar {
+      display: flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 10px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.76);
+      font-size: 12px;
+    }
+
+    .statusbar strong { color: var(--ink); }
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: var(--line-strong);
+    }
+
+    html[data-preview-state="playing"] .status-dot { background: var(--accent); }
+    html[data-preview-state="complete"] .status-dot { background: var(--success); }
+    html[data-preview-state="error"] .status-dot { background: var(--danger); }
+    .preview-error { display: none; color: var(--danger); font-weight: 700; }
+    html[data-preview-state="error"] .preview-error { display: block; }
+
+    .mobile-map { display: none; }
+
+    @media (max-width: 900px) {
+      .page { width: min(100% - 24px, 720px); padding-top: 14px; }
+      .topbar { grid-template-columns: 1fr; align-items: start; }
+      .actions { justify-content: flex-start; }
+      .scenario-strip { overflow-x: auto; }
+      .scenario { flex: none; }
+      .workbench { display: block; }
+      .code-pane { border-right: 0; border-bottom: 1px solid var(--line); }
+      .bridge, .connector-layer { display: none; }
+      .source-pill { max-width: 48%; }
+      .flow-node { padding-left: 48px; }
+      .mobile-map { display: inline; color: var(--accent-ink); }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: calc(100% - 16px); }
+      .topbar { padding-inline: 4px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+      .pane-head { align-items: flex-start; flex-direction: column; }
+      .source-pill { max-width: 100%; text-align: left; }
+      .code { padding-inline: 8px; }
+      .flow { padding-inline: 12px; }
+      .statusbar { align-items: flex-start; flex-direction: column; padding-block: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0s !important;
+        animation-duration: 0s !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Code explanation / 01</div>
+        <h1>一条关系线，只回答一个问题</h1>
+        <p class="lede">左侧保留干净的 AngelScript 函数；右侧承担“做什么、为什么、改变什么、下一步去哪”。桥接线不是装饰，它是可固定、可播放的源码关系。</p>
+      </div>
+      <div class="actions" aria-label="演示控制">
+        <button class="action primary" type="button" data-action="play">演示一次</button>
+        <button class="action" type="button" data-action="reset">重置</button>
+      </div>
+    </header>
+
+    <nav class="scenario-strip" aria-label="执行场景">
+      <span class="scenario-label">选择路径</span>
+      <button class="scenario" type="button" data-scenario-id="missing" aria-pressed="false">空目标</button>
+      <button class="scenario" type="button" data-scenario-id="survives" aria-pressed="true">目标存活</button>
+      <button class="scenario" type="button" data-scenario-id="dies" aria-pressed="false">目标死亡</button>
+    </nav>
+
+    <section class="workbench" data-workbench aria-label="源码行与函数流程的双栏对应">
+      <article class="pane code-pane">
+        <header class="pane-head">
+          <div>
+            <strong>源码 · ApplyDamageToTarget</strong>
+            <span>点击有圆点的行，固定对应解释</span>
+          </div>
+          <div class="source-pill" title="Script/Examples/Extended/Example_InterfaceDispatch.as">Script/Examples/Extended/Example_InterfaceDispatch.as</div>
+        </header>
+
+        <div class="code" aria-label="AngelScript 源码">
+          <div class="code-row" data-line="1"><span><span class="kw">UFUNCTION</span>(Category = <span class="str">"Example Dispatch"</span>)</span></div>
+          <div class="code-row" data-line="2"><span><span class="kw">void</span> <span class="fn">ApplyDamageToTarget</span>(<span class="type">AExampleDamageableBase</span> Target, <span class="type">float</span> Damage)</span></div>
+          <div class="code-row" data-line="3"><span>{</span></div>
+          <button class="code-line" type="button" data-line="4" data-source-id="src-guard-if"><span>    <span class="kw">if</span> (Target == <span class="kw">nullptr</span>)</span></button>
+          <button class="code-line" type="button" data-line="5" data-source-id="src-guard-return"><span>        <span class="kw">return</span>;</span></button>
+          <div class="code-row" data-line="6"><span> </span></div>
+          <button class="code-line" type="button" data-line="7" data-source-id="src-dispatch"><span>    <span class="type">float</span> Remaining = Target.<span class="fn">ApplyDamage</span>(Damage);</span></button>
+          <button class="code-line" type="button" data-line="8" data-source-id="src-alive"><span>    <span class="kw">if</span> (!Target.<span class="fn">IsAlive</span>())</span></button>
+          <div class="code-row" data-line="9"><span>    {</span></div>
+          <button class="code-line" type="button" data-line="10" data-source-id="src-print"><span>        <span class="fn">Print</span>(<span class="str">f"{Target.GetName()} is dead!"</span>);</span></button>
+          <div class="code-row" data-line="11"><span>    }</span></div>
+          <button class="code-line" type="button" data-line="12" data-source-id="src-close"><span>}</span></button>
+        </div>
+      </article>
+
+      <div class="bridge" aria-hidden="true"><span class="bridge-label">semantic bridge</span></div>
+
+      <article class="pane explain-pane">
+        <header class="pane-head">
+          <div>
+            <strong>函数流程 · 从守卫到副作用</strong>
+            <span>每个节点只解释一个责任</span>
+          </div>
+          <div class="source-pill">3 scenarios · 5 relations</div>
+        </header>
+
+        <div class="flow">
+          <button class="flow-node" type="button" data-node-id="node-guard" data-step="01">
+            <span class="node-title">先确认目标存在 <span class="node-tag">Guard</span></span>
+            <span class="node-copy">空目标不能接收方法调用。条件成立时直接结束；不成立才允许进入伤害分派。</span>
+            <span class="node-meta"><span>输入 Target</span><span>空值 → return</span><span class="mobile-map">对应 L4–L5</span></span>
+          </button>
+
+          <button class="flow-node" type="button" data-node-id="node-dispatch" data-step="02">
+            <span class="node-title">调用目标的实际实现 <span class="node-tag">Dispatch</span></span>
+            <span class="node-copy">静态类型是基类，运行时仍可进入派生类的 BlueprintOverride。调用会改变目标生命值，并返回 Remaining。</span>
+            <span class="node-meta"><span>副作用 CurrentHealth</span><span>输出 Remaining</span><span class="mobile-map">对应 L7</span></span>
+          </button>
+
+          <button class="flow-node" type="button" data-node-id="node-alive" data-step="03">
+            <span class="node-title">重新询问对象是否存活 <span class="node-tag">Decision</span></span>
+            <span class="node-copy">控制流没有直接使用 Remaining，而是再次调用 IsAlive()。这保留了对象自己定义“存活”的权力。</span>
+            <span class="node-meta"><span>true → 跳过日志</span><span>false → 死亡分支</span><span class="mobile-map">对应 L8</span></span>
+          </button>
+
+          <button class="flow-node" type="button" data-node-id="node-dead" data-step="04">
+            <span class="node-title">只在死亡路径输出调用方日志 <span class="node-tag">Side effect</span></span>
+            <span class="node-copy">这条 Print 不改变目标状态，只让调用者观察到死亡结果；存活路径完全跳过它。</span>
+            <span class="node-meta"><span>可见输出</span><span>仅 false 分支</span><span class="mobile-map">对应 L10</span></span>
+          </button>
+
+          <button class="flow-node" type="button" data-node-id="node-complete" data-step="05">
+            <span class="node-title">结束本次调用 <span class="node-tag">Return</span></span>
+            <span class="node-copy">函数没有显式返回值。最终可观察结果留在目标状态与可选日志中。</span>
+            <span class="node-meta"><span>void</span><span>状态已写回 Target</span><span class="mobile-map">对应 L12</span></span>
+          </button>
+        </div>
+      </article>
+
+      <svg class="connector-layer" aria-hidden="true">
+        <defs>
+          <marker id="bridge-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fd0"></path>
+          </marker>
+        </defs>
+        <g data-connectors></g>
+      </svg>
+    </section>
+
+    <footer class="statusbar">
+      <span><i class="status-dot"></i><strong data-status-title>准备就绪</strong> · <span data-status>悬停查看关系，或选择场景后演示一次。</span></span>
+      <span>AS source → semantic flow · no runtime dependency</span>
+      <span class="preview-error" data-error></span>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const model = {
+        relations: [
+          { id: "rel-guard", sources: ["src-guard-if", "src-guard-return"], node: "node-guard" },
+          { id: "rel-dispatch", sources: ["src-dispatch"], node: "node-dispatch" },
+          { id: "rel-alive", sources: ["src-alive"], node: "node-alive" },
+          { id: "rel-dead", sources: ["src-print"], node: "node-dead" },
+          { id: "rel-complete", sources: ["src-close"], node: "node-complete" }
+        ],
+        scenarios: [
+          { id: "missing", label: "空目标", steps: ["rel-guard", "rel-complete"] },
+          { id: "survives", label: "目标存活", steps: ["rel-guard", "rel-dispatch", "rel-alive", "rel-complete"] },
+          { id: "dies", label: "目标死亡", steps: ["rel-guard", "rel-dispatch", "rel-alive", "rel-dead", "rel-complete"] }
+        ]
+      };
+
+      const root = document.documentElement;
+      const workbench = document.querySelector("[data-workbench]");
+      const connectorGroup = document.querySelector("[data-connectors]");
+      const statusTitle = document.querySelector("[data-status-title]");
+      const status = document.querySelector("[data-status]");
+      const errorBox = document.querySelector("[data-error]");
+      const playButton = document.querySelector('[data-action="play"]');
+      const resetButton = document.querySelector('[data-action="reset"]');
+      const scenarioButtons = [...document.querySelectorAll("[data-scenario-id]")];
+      const sourceElements = new Map([...document.querySelectorAll("[data-source-id]")].map((el) => [el.dataset.sourceId, el]));
+      const nodeElements = new Map([...document.querySelectorAll("[data-node-id]")].map((el) => [el.dataset.nodeId, el]));
+      const relationElements = new Map();
+      let selectedScenario = "survives";
+      let pinnedRelation = null;
+      let playGeneration = 0;
+      let layoutFrame = 0;
+
+      function validatePreviewModel() {
+        const errors = [];
+        const relationIds = new Set();
+        const scenarioIds = new Set();
+        for (const relation of model.relations) {
+          if (relationIds.has(relation.id)) errors.push(`重复关系 ID: ${relation.id}`);
+          relationIds.add(relation.id);
+          if (!nodeElements.has(relation.node)) errors.push(`关系 ${relation.id} 缺少节点 ${relation.node}`);
+          for (const source of relation.sources) {
+            if (!sourceElements.has(source)) errors.push(`关系 ${relation.id} 缺少源码锚点 ${source}`);
+          }
+        }
+        for (const scenario of model.scenarios) {
+          if (scenarioIds.has(scenario.id)) errors.push(`重复场景 ID: ${scenario.id}`);
+          scenarioIds.add(scenario.id);
+          if (!scenario.steps.length) errors.push(`场景 ${scenario.id} 没有步骤`);
+          for (const step of scenario.steps) {
+            if (!relationIds.has(step)) errors.push(`场景 ${scenario.id} 引用了未知关系 ${step}`);
+          }
+        }
+        if (!model.relations.length) errors.push("页面没有可解释关系");
+        if (!model.scenarios.length) errors.push("页面没有演示场景");
+        return errors;
+      }
+
+      function relationForElement(element) {
+        const sourceId = element.dataset.sourceId;
+        const nodeId = element.dataset.nodeId;
+        return model.relations.find((relation) =>
+          sourceId ? relation.sources.includes(sourceId) : relation.node === nodeId
+        );
+      }
+
+      function createConnectors() {
+        connectorGroup.replaceChildren();
+        relationElements.clear();
+        for (const relation of model.relations) {
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.classList.add("connector");
+          path.dataset.relationId = relation.id;
+          path.setAttribute("marker-end", "url(#bridge-arrow)");
+          connectorGroup.append(path);
+          relationElements.set(relation.id, path);
+        }
+        scheduleConnectorLayout();
+      }
+
+      function layoutConnectors() {
+        layoutFrame = 0;
+        if (window.matchMedia("(max-width: 900px)").matches) return;
+        const rootRect = workbench.getBoundingClientRect();
+        for (const relation of model.relations) {
+          const sources = relation.sources.map((id) => sourceElements.get(id).getBoundingClientRect());
+          const target = nodeElements.get(relation.node).getBoundingClientRect();
+          const x1 = Math.max(...sources.map((rect) => rect.right)) - rootRect.left + 3;
+          const y1 = sources.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / sources.length - rootRect.top;
+          const x2 = target.left - rootRect.left - 5;
+          const y2 = target.top + target.height / 2 - rootRect.top;
+          const span = Math.max(36, x2 - x1);
+          const c1 = x1 + span * 0.42;
+          const c2 = x2 - span * 0.42;
+          relationElements.get(relation.id).setAttribute("d", `M ${x1} ${y1} C ${c1} ${y1}, ${c2} ${y2}, ${x2} ${y2}`);
+        }
+      }
+
+      function scheduleConnectorLayout() {
+        if (layoutFrame) cancelAnimationFrame(layoutFrame);
+        layoutFrame = requestAnimationFrame(layoutConnectors);
+      }
+
+      function clearStates() {
+        document.querySelectorAll("[data-active], [data-pinned]").forEach((element) => {
+          element.removeAttribute("data-active");
+          element.removeAttribute("data-pinned");
+        });
+      }
+
+      function applyRelations(relationIds, mode = "active") {
+        clearStates();
+        for (const relationId of relationIds) {
+          const relation = model.relations.find((item) => item.id === relationId);
+          if (!relation) continue;
+          relation.sources.forEach((id) => sourceElements.get(id).setAttribute(`data-${mode}`, "true"));
+          nodeElements.get(relation.node).setAttribute(`data-${mode}`, "true");
+          relationElements.get(relation.id).setAttribute(`data-${mode}`, "true");
+        }
+      }
+
+      function setStatus(title, message) {
+        statusTitle.textContent = title;
+        status.textContent = message;
+      }
+
+      function previewRelation(relationId) {
+        if (root.dataset.previewState === "playing" || pinnedRelation) return;
+        applyRelations([relationId]);
+      }
+
+      function clearPreview() {
+        if (root.dataset.previewState === "playing" || pinnedRelation) return;
+        clearStates();
+      }
+
+      function pinRelation(relationId) {
+        playGeneration += 1;
+        root.dataset.previewState = "idle";
+        pinnedRelation = pinnedRelation === relationId ? null : relationId;
+        if (pinnedRelation) {
+          applyRelations([pinnedRelation], "pinned");
+          const relation = model.relations.find((item) => item.id === pinnedRelation);
+          setStatus("关系已固定", `源码与“${nodeElements.get(relation.node).querySelector(".node-title").firstChild.textContent.trim()}”保持对应。`);
+        } else {
+          clearStates();
+          setStatus("准备就绪", "悬停查看关系，或选择场景后演示一次。");
+        }
+      }
+
+      function wait(duration, generation) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+        return new Promise((resolve) => {
+          window.setTimeout(() => resolve(generation === playGeneration), duration);
+        });
+      }
+
+      async function playScenario() {
+        const scenario = model.scenarios.find((item) => item.id === selectedScenario);
+        if (!scenario) return;
+        const generation = ++playGeneration;
+        pinnedRelation = null;
+        root.dataset.previewState = "playing";
+        setStatus(`正在演示 · ${scenario.label}`, "每一步同时点亮真实源码与对应解释。");
+        const visited = [];
+        for (const relationId of scenario.steps) {
+          if (generation !== playGeneration) return;
+          visited.push(relationId);
+          applyRelations(visited);
+          await wait(700, generation);
+        }
+        if (generation !== playGeneration) return;
+        root.dataset.previewState = "complete";
+        applyRelations(visited);
+        setStatus(`路径完成 · ${scenario.label}`, `共经过 ${visited.length} 个语义步骤；未经过的分支保持安静。`);
+      }
+
+      function resetPreview() {
+        playGeneration += 1;
+        pinnedRelation = null;
+        root.dataset.previewState = "idle";
+        clearStates();
+        setStatus("准备就绪", "悬停查看关系，或选择场景后演示一次。");
+      }
+
+      for (const element of [...sourceElements.values(), ...nodeElements.values()]) {
+        const relation = relationForElement(element);
+        if (!relation) continue;
+        element.addEventListener("pointerenter", () => previewRelation(relation.id));
+        element.addEventListener("pointerleave", clearPreview);
+        element.addEventListener("focus", () => previewRelation(relation.id));
+        element.addEventListener("blur", clearPreview);
+        element.addEventListener("click", () => {
+          if (window.matchMedia("(max-width: 900px)").matches && element.dataset.sourceId) {
+            nodeElements.get(relation.node).scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+          }
+          pinRelation(relation.id);
+        });
+      }
+
+      scenarioButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedScenario = button.dataset.scenarioId;
+          scenarioButtons.forEach((candidate) => candidate.setAttribute("aria-pressed", String(candidate === button)));
+          resetPreview();
+          setStatus("场景已选择", model.scenarios.find((item) => item.id === selectedScenario).label);
+        });
+      });
+
+      playButton.addEventListener("click", playScenario);
+      resetButton.addEventListener("click", resetPreview);
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        if (root.dataset.previewState === "playing") {
+          resetPreview();
+        } else if (pinnedRelation) {
+          pinRelation(pinnedRelation);
+        }
+      });
+
+      new ResizeObserver(scheduleConnectorLayout).observe(workbench);
+      window.addEventListener("resize", scheduleConnectorLayout, { passive: true });
+
+      const errors = validatePreviewModel();
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        audit: () => ({
+          errors: [...errors],
+          relationCount: model.relations.length,
+          scenarioCount: model.scenarios.length,
+          sourceCount: sourceElements.size,
+          nodeCount: nodeElements.size,
+          state: root.dataset.previewState
+        })
+      };
+
+      if (errors.length) {
+        root.dataset.previewState = "error";
+        errorBox.textContent = errors.join("；");
+        playButton.disabled = true;
+        setStatus("模型错误", errors[0]);
+      } else {
+        createConnectors();
+      }
+    })();
+  </script>
+</body>
+</html>

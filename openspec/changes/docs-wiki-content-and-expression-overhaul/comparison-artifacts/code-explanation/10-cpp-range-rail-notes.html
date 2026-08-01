@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="zh-CN" data-preview-state="idle" data-annotations="visible">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>10 · C++ 范围侧轨</title>
+  <style>
+    :root {
+      --page: #e9e7df;
+      --paper: #f7f5ef;
+      --ink: #243039;
+      --muted: #778086;
+      --line: #cbc9c0;
+      --code: #172126;
+      --code-line: #2e3a3f;
+      --code-ink: #d4dcda;
+      --accent: #c45d3b;
+      --teal: #497d74;
+      --connector: rgba(73, 125, 116, .36);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 0; background: var(--page); }
+    body {
+      min-width: 0;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(36, 48, 57, .028) 1px, transparent 1px) 0 0 / 100% 29px,
+        var(--page);
+      font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    }
+
+    button { font: inherit; }
+    .page-shell {
+      width: min(1320px, calc(100% - 32px));
+      margin-inline: auto;
+      padding: 40px 0 62px;
+    }
+
+    .page-header {
+      display: flex;
+      gap: 28px;
+      align-items: end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .15em;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Noto Serif SC", serif;
+      font-size: clamp(31px, 5vw, 50px);
+      font-weight: 500;
+      letter-spacing: -.035em;
+    }
+
+    .lede {
+      max-width: 800px;
+      margin: 13px 0 0;
+      color: #657078;
+      font-size: 14px;
+      line-height: 1.72;
+    }
+
+    .toolbar { display: flex; gap: 8px; flex: 0 0 auto; }
+    .toolbar button {
+      min-height: 38px;
+      padding: 0 13px;
+      color: #435159;
+      cursor: pointer;
+      border: 1px solid #bbbcb5;
+      background: rgba(247, 245, 239, .75);
+    }
+    .toolbar button:hover,
+    .toolbar button:focus-visible {
+      color: #1c2c32;
+      border-color: var(--teal);
+      outline: none;
+    }
+    html[data-preview-state="copied"] [data-action="copy"] {
+      color: white;
+      border-color: var(--teal);
+      background: var(--teal);
+    }
+
+    .annotation-viewport {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-inline: contain;
+      border: 1px solid #bbbcb5;
+      background: #d8d7d0;
+      box-shadow: 0 22px 55px rgba(43, 48, 50, .12);
+      scrollbar-color: #9b9c96 #deddd7;
+    }
+
+    .annotation-canvas {
+      position: relative;
+      width: 1480px;
+      min-width: 1480px;
+      height: 1390px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, transparent 0 1120px, rgba(36, 48, 57, .027) 1120px 100%),
+        var(--paper);
+    }
+
+    .canvas-caption {
+      position: absolute;
+      top: 20px;
+      left: 32px;
+      z-index: 5;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      color: #858b8b;
+      font-size: 10px;
+      letter-spacing: .07em;
+    }
+    .canvas-caption strong {
+      color: #44545b;
+      font: 500 11px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+    .canvas-caption span::before {
+      content: "";
+      display: inline-block;
+      width: 22px;
+      margin-right: 8px;
+      border-top: 1px solid var(--accent);
+      vertical-align: middle;
+    }
+
+    .code-paper {
+      position: absolute;
+      top: 58px;
+      left: 32px;
+      width: 1080px;
+      height: 1284px;
+      overflow: hidden;
+      border: 1px solid #11191d;
+      background: var(--code);
+      box-shadow: 0 18px 45px rgba(19, 27, 31, .18);
+    }
+
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 43px;
+      padding: 0 15px;
+      color: #718087;
+      border-bottom: 1px solid #2a363b;
+      font-size: 9px;
+      letter-spacing: .09em;
+    }
+    .code-head strong {
+      color: #aeb9b8;
+      font: 500 10px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+
+    [data-source-root] { position: relative; padding: 25px 0 26px; }
+    .code-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 53px minmax(0, 1fr);
+      width: 100%;
+      min-height: 22px;
+      color: var(--code-ink);
+      font: 11.4px/22px "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      white-space: pre;
+    }
+    .code-row::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      border-left: 2px solid var(--accent);
+      background: linear-gradient(90deg, rgba(196, 93, 59, .16), transparent 76%);
+      transition: opacity 120ms ease;
+    }
+    .line-number {
+      position: relative;
+      z-index: 1;
+      padding-right: 13px;
+      color: #526168;
+      text-align: right;
+      user-select: none;
+    }
+    .code-text {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      padding-right: 22px;
+    }
+    .tok-keyword { color: #e48767; }
+    .tok-type { color: #77ada0; }
+    .tok-string { color: #d0b876; }
+    .tok-number { color: #b9a0cb; }
+    .tok-function { color: #9bc1d5; }
+    .tok-pre { color: #c68dba; }
+    .tok-comment { color: #6f817d; font-style: italic; }
+
+    [data-source-port] {
+      position: absolute;
+      z-index: 4;
+      top: 50%;
+      right: -5px;
+      width: 9px;
+      height: 9px;
+      border: 2px solid #729188;
+      border-radius: 50%;
+      background: var(--code);
+      transform: translateY(-50%);
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    [data-note-rail] {
+      position: absolute;
+      top: 58px;
+      right: 28px;
+      width: 320px;
+      height: 1284px;
+      border-left: 1px solid #c7c5bc;
+    }
+    .rail-label {
+      position: absolute;
+      top: -30px;
+      left: 21px;
+      color: #8c918e;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+
+    [data-annotation-id] {
+      position: absolute;
+      left: 21px;
+      z-index: 8;
+      width: 279px;
+      margin: 0;
+    }
+    [data-annotation-id] > summary {
+      position: relative;
+      min-height: 37px;
+      padding: 9px 12px 9px 39px;
+      overflow: visible;
+      color: #6e7779;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: rgba(36, 48, 57, .025);
+      font-size: 12px;
+      line-height: 17px;
+      list-style: none;
+      white-space: nowrap;
+      transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    [data-annotation-id] > summary::-webkit-details-marker { display: none; }
+    [data-annotation-id] > summary::before {
+      content: attr(data-note-number);
+      position: absolute;
+      top: 9px;
+      left: 11px;
+      color: #9b7161;
+      font: 10px/17px "Cascadia Code", Consolas, monospace;
+    }
+    [data-note-port] {
+      position: absolute;
+      z-index: 4;
+      top: 50%;
+      left: -25px;
+      width: 7px;
+      height: 7px;
+      border: 1px solid #7f9891;
+      border-radius: 50%;
+      background: var(--paper);
+      transform: translateY(-50%);
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+    .note-detail {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 20;
+      display: block;
+      width: 266px;
+      padding: 13px 14px;
+      visibility: hidden;
+      opacity: 0;
+      color: #3f4b50;
+      border: 1px solid #b7b8b1;
+      background: #fffdf7;
+      box-shadow: 0 16px 34px rgba(40, 45, 47, .16);
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: normal;
+      pointer-events: none;
+      transform: translateY(-3px);
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+    .note-detail code {
+      color: #9a4c35;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+    [data-annotation-id]:hover,
+    [data-annotation-id]:focus-within,
+    [data-annotation-id][open] { z-index: 30; }
+    [data-annotation-id]:hover > summary,
+    [data-annotation-id]:focus-within > summary,
+    [data-annotation-id][open] > summary {
+      color: #26363d;
+      border-color: #a9b3ae;
+      background: #eeeee7;
+    }
+    [data-annotation-id]:hover .note-detail,
+    [data-annotation-id]:focus-within .note-detail,
+    [data-annotation-id][open] .note-detail {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    [data-connector-layer] {
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+    [data-connector-for] {
+      fill: none;
+      stroke: var(--connector);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      transition: stroke 120ms ease, stroke-width 120ms ease;
+    }
+
+    html[data-annotations="hidden"] [data-note-rail],
+    html[data-annotations="hidden"] [data-connector-layer] {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .code-row.is-active::before { opacity: 1; }
+    .code-row.is-active [data-source-port],
+    [data-annotation-id].is-active [data-note-port] {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+    [data-annotation-id].is-active > summary {
+      color: #26363d;
+      border-color: rgba(196, 93, 59, .4);
+    }
+    [data-connector-for].is-active {
+      stroke: var(--accent);
+      stroke-width: 1.4;
+    }
+
+    .reading-key {
+      display: flex;
+      gap: 20px;
+      margin-top: 13px;
+      color: #727b7d;
+      font-size: 11px;
+    }
+    .reading-key span::before {
+      content: "";
+      display: inline-block;
+      width: 22px;
+      margin-right: 7px;
+      border-top: 1px solid var(--teal);
+      vertical-align: middle;
+    }
+
+    @media (max-width: 720px) {
+      .page-shell { width: min(100% - 16px, 1320px); padding-top: 24px; }
+      .page-header { display: block; }
+      .toolbar { margin-top: 19px; }
+      h1 { font-size: 34px; }
+      .lede { font-size: 13px; }
+      .reading-key { display: block; }
+      .reading-key span { display: block; margin-top: 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">EXPERIMENT 10 · C++ / RANGE RAIL / SVG</p>
+        <h1>长函数用“范围收据”解释</h1>
+        <p class="lede">每个 note 对应一个连续代码阶段，不把解释插进 53 行真实 C++。SVG 只连接范围中点与侧轨端口；激活 note 时，对应整段源码才出现很淡的范围底色。</p>
+      </div>
+      <div class="toolbar" aria-label="预览控制">
+        <button type="button" data-action="toggle-notes">隐藏注解</button>
+        <button type="button" data-action="copy">复制纯源码</button>
+      </div>
+    </header>
+
+    <div class="annotation-viewport" tabindex="0" aria-label="可横向滚动的 C++ 源码注解画布">
+      <section class="annotation-canvas" data-layout-mode="rail" data-connector-mode="svg">
+        <div class="canvas-caption">
+          <strong>AngelscriptRuntimeModule.cpp</strong>
+          <span>真实仓库源码 · 43–95</span>
+        </div>
+
+        <article class="code-paper">
+          <div class="code-head">
+            <strong>FAngelscriptRuntimeModule::InitializeAngelscript()</strong>
+            <span>C++ · SOURCE LOCKED</span>
+          </div>
+          <div data-source-root aria-label="连续的 C++ 源码"></div>
+        </article>
+
+        <svg data-connector-layer aria-hidden="true">
+          <path data-connector-for="cpp-once"></path>
+          <path data-connector-for="cpp-test"></path>
+          <path data-connector-for="cpp-subsystem"></path>
+          <path data-connector-for="cpp-adopt"></path>
+          <path data-connector-for="cpp-own"></path>
+        </svg>
+
+        <aside data-note-rail aria-label="C++ 范围边注">
+          <span class="rail-label">RANGE RECEIPTS · 5</span>
+
+          <details data-annotation-id="cpp-once" data-source-ids="3-7" style="top: 117px">
+            <summary data-note-number="01"><span data-note-port></span>幂等门：重复调用直接退回
+              <span class="note-detail">标志位把初始化变成一次性动作。日志说明跳过原因，<code>return</code> 保证后面所有副作用都不会重放。</span>
+            </summary>
+          </details>
+
+          <details data-annotation-id="cpp-test" data-source-ids="11-23" style="top: 387px">
+            <summary data-note-number="02"><span data-note-port></span>测试覆盖：临时引擎接管
+              <span class="note-detail">自动化构建可注入 override engine。成功时先压入上下文栈并保存指针，然后无条件结束正式初始化路径。</span>
+            </summary>
+          </details>
+
+          <details data-annotation-id="cpp-subsystem" data-source-ids="25-31" style="top: 629px">
+            <summary data-note-number="03"><span data-note-port></span>首选路由：交给 EngineSubsystem
+              <span class="note-detail">模块加载后优先查找 <code>UAngelscriptSubsystem</code>。若存在，由 subsystem 保证主引擎完成初始化，兼容入口随即返回。</span>
+            </summary>
+          </details>
+
+          <details data-annotation-id="cpp-adopt" data-source-ids="33-45" style="top: 871px">
+            <summary data-note-number="04"><span data-note-port></span>环境已有引擎：检查后接管
+              <span class="note-detail">发现 ambient engine 后不会重新创建所有权；仅当底层 ScriptEngine 还为空时调用 <code>Initialize()</code>，否则直接采用已完成状态。</span>
+            </summary>
+          </details>
+
+          <details data-annotation-id="cpp-own" data-source-ids="46-52" style="top: 1091px">
+            <summary data-note-number="05"><span data-note-port></span>最终回退：创建自有主引擎
+              <span class="note-detail">没有 subsystem，也没有 ambient engine 时，模块才创建 <code>OwnedPrimaryEngine</code>，压栈后完成初始化。</span>
+            </summary>
+          </details>
+        </aside>
+      </section>
+    </div>
+
+    <div class="reading-key" aria-label="交互说明">
+      <span>短 note 常驻，详情覆盖显示，不改变源码高度</span>
+      <span>悬停 / focus 临时查看 · Enter 固定 · Escape 关闭</span>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const SOURCE = `void FAngelscriptRuntimeModule::InitializeAngelscript()
+{
+\tif (bInitializeAngelscriptCalled)
+\t{
+\t\tUE_LOG(Angelscript, Verbose, TEXT("[RuntimeStartup] InitializeAngelscript skipped because initialization already ran."));
+\t\treturn;
+\t}
+
+\tbInitializeAngelscriptCalled = true;
+\tUE_LOG(Angelscript, Display, TEXT("[RuntimeStartup] InitializeAngelscript begin."));
+\t#if WITH_DEV_AUTOMATION_TESTS
+\tif (InitializeOverrideForTesting)
+\t{
+\t\tInitializedOverrideEngineForTesting = nullptr;
+\t\tif (FAngelscriptEngine* OverrideEngine = InitializeOverrideForTesting())
+\t\t{
+\t\t\tFAngelscriptEngineContextStack::Push(OverrideEngine);
+\t\t\tInitializedOverrideEngineForTesting = OverrideEngine;
+\t\t\tUE_LOG(Angelscript, Verbose, TEXT("[RuntimeStartup] InitializeAngelscript used automation override engine=%p."), OverrideEngine);
+\t\t}
+\t\treturn;
+\t}
+\t#endif
+
+\tFModuleManager::Get().LoadModuleChecked(TEXT("AngelscriptRuntime"));
+\tif (UAngelscriptSubsystem* EngineSubsystem = UAngelscriptSubsystem::Get())
+\t{
+\t\tUE_LOG(Angelscript, Verbose, TEXT("[RuntimeStartup] Routing InitializeAngelscript to EngineSubsystem=%p."), EngineSubsystem);
+\t\tEngineSubsystem->EnsurePrimaryEngineInitialized();
+\t\treturn;
+\t}
+
+\tif (FAngelscriptEngine* CurrentEngine = FAngelscriptEngine::TryGetCurrentEngine())
+\t{
+\t\t// Adopt an already-initialized ambient engine instead of re-running full initialization.
+\t\tif (CurrentEngine->GetScriptEngine() == nullptr)
+\t\t{
+\t\t\tUE_LOG(Angelscript, Display, TEXT("[RuntimeStartup] Initializing existing ambient engine=%p."), CurrentEngine);
+\t\t\tCurrentEngine->Initialize();
+\t\t}
+\t\telse
+\t\t{
+\t\t\tUE_LOG(Angelscript, Verbose, TEXT("[RuntimeStartup] Adopted initialized ambient engine=%p."), CurrentEngine);
+\t\t}
+\t}
+\telse
+\t{
+\t\tOwnedPrimaryEngine = MakeUnique<FAngelscriptEngine>();
+\t\tFAngelscriptEngineContextStack::Push(OwnedPrimaryEngine.Get());
+\t\tUE_LOG(Angelscript, Display, TEXT("[RuntimeStartup] Created owned primary engine=%p."), OwnedPrimaryEngine.Get());
+\t\tOwnedPrimaryEngine->Initialize();
+\t}
+}`;
+
+      const sourceRoot = document.querySelector("[data-source-root]");
+      const keywords = new Set(["if", "else", "return", "void", "true", "nullptr"]);
+      const portLines = new Map([
+        [5, "cpp-once"],
+        [17, "cpp-test"],
+        [28, "cpp-subsystem"],
+        [39, "cpp-adopt"],
+        [49, "cpp-own"],
+      ]);
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function tokenize(line) {
+        const commentIndex = line.indexOf("//");
+        const codePart = commentIndex >= 0 ? line.slice(0, commentIndex) : line;
+        const commentPart = commentIndex >= 0 ? line.slice(commentIndex) : "";
+        const tokens = [...codePart.matchAll(/("(?:\\.|[^"])*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)|(\s+|.)/g)];
+        const code = tokens.map((match, index) => {
+          const token = match[0];
+          const next = tokens[index + 1]?.[0] ?? "";
+          let className = "";
+          if (token.startsWith('"')) className = "tok-string";
+          else if (/^\d/.test(token)) className = "tok-number";
+          else if (token.startsWith("#") || token === "WITH_DEV_AUTOMATION_TESTS") className = "tok-pre";
+          else if (keywords.has(token)) className = "tok-keyword";
+          else if (/^[A-Z]/.test(token)) className = "tok-type";
+          else if (/^[A-Za-z_]/.test(token) && next === "(") className = "tok-function";
+          const escaped = escapeHtml(token);
+          return className ? `<span class="${className}">${escaped}</span>` : escaped;
+        }).join("");
+        return commentPart
+          ? `${code}<span class="tok-comment">${escapeHtml(commentPart)}</span>`
+          : code;
+      }
+
+      function renderSource() {
+        SOURCE.split("\n").forEach((line, index) => {
+          const lineNumber = index + 1;
+          const row = document.createElement("div");
+          row.className = "code-row";
+          row.dataset.sourceLine = String(lineNumber);
+
+          const number = document.createElement("span");
+          number.className = "line-number";
+          number.textContent = String(42 + lineNumber);
+
+          const code = document.createElement("span");
+          code.className = "code-text";
+          code.innerHTML = tokenize(line);
+
+          row.append(number, code);
+          const portId = portLines.get(lineNumber);
+          if (portId) {
+            const port = document.createElement("span");
+            port.dataset.sourcePort = portId;
+            port.setAttribute("aria-hidden", "true");
+            row.append(port);
+          }
+          sourceRoot.append(row);
+        });
+      }
+
+      function sourceRowsFor(note) {
+        const [startText, endText = startText] = note.dataset.sourceIds.split("-");
+        const start = Number(startText);
+        const end = Number(endText);
+        return [...sourceRoot.children].filter((row) => {
+          const line = Number(row.dataset.sourceLine);
+          return line >= start && line <= end;
+        });
+      }
+
+      function setActive(id, active) {
+        const note = document.querySelector(`[data-annotation-id="${id}"]`);
+        const connector = document.querySelector(`[data-connector-for="${id}"]`);
+        note?.classList.toggle("is-active", active);
+        connector?.classList.toggle("is-active", active);
+        if (note) sourceRowsFor(note).forEach((row) => row.classList.toggle("is-active", active));
+      }
+
+      function refreshConnectors() {
+        const canvas = document.querySelector(".annotation-canvas");
+        const canvasRect = canvas.getBoundingClientRect();
+        document.querySelectorAll("[data-connector-for]").forEach((connector) => {
+          const id = connector.dataset.connectorFor;
+          const source = document.querySelector(`[data-source-port="${id}"]`);
+          const note = document.querySelector(`[data-annotation-id="${id}"] [data-note-port]`);
+          if (!source || !note) return;
+          const sourceRect = source.getBoundingClientRect();
+          const noteRect = note.getBoundingClientRect();
+          const startX = sourceRect.left + sourceRect.width / 2 - canvasRect.left;
+          const startY = sourceRect.top + sourceRect.height / 2 - canvasRect.top;
+          const endX = noteRect.left + noteRect.width / 2 - canvasRect.left;
+          const endY = noteRect.top + noteRect.height / 2 - canvasRect.top;
+          const midX = startX + Math.max(22, (endX - startX) * .52);
+          connector.setAttribute("d", `M ${startX} ${startY} H ${midX} V ${endY} H ${endX}`);
+          connector.dataset.startX = String(startX);
+          connector.dataset.startY = String(startY);
+          connector.dataset.endX = String(endX);
+          connector.dataset.endY = String(endY);
+        });
+      }
+
+      renderSource();
+
+      document.querySelectorAll("[data-annotation-id]").forEach((note) => {
+        const id = note.dataset.annotationId;
+        note.addEventListener("pointerenter", () => setActive(id, true));
+        note.addEventListener("pointerleave", () => {
+          if (!note.open && !note.matches(":focus-within")) setActive(id, false);
+        });
+        note.addEventListener("focusin", () => setActive(id, true));
+        note.addEventListener("focusout", () => {
+          queueMicrotask(() => {
+            if (!note.open && !note.matches(":focus-within")) setActive(id, false);
+          });
+        });
+        note.addEventListener("toggle", () => {
+          if (note.open) {
+            document.querySelectorAll("[data-annotation-id][open]").forEach((other) => {
+              if (other !== note) other.open = false;
+            });
+            setActive(id, true);
+          } else if (!note.matches(":hover, :focus-within")) {
+            setActive(id, false);
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          document.querySelectorAll("[data-annotation-id][open]").forEach((note) => {
+            note.open = false;
+            setActive(note.dataset.annotationId, false);
+          });
+        }
+      });
+
+      document.querySelector('[data-action="toggle-notes"]').addEventListener("click", (event) => {
+        const hidden = document.documentElement.dataset.annotations === "hidden";
+        document.documentElement.dataset.annotations = hidden ? "visible" : "hidden";
+        event.currentTarget.textContent = hidden ? "隐藏注解" : "显示注解";
+      });
+
+      document.querySelector('[data-action="copy"]').addEventListener("click", async (event) => {
+        document.documentElement.dataset.previewState = "copied";
+        event.currentTarget.textContent = "已复制纯源码";
+        try {
+          await navigator.clipboard.writeText(SOURCE);
+        } catch {
+          const helper = document.createElement("textarea");
+          helper.value = SOURCE;
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.append(helper);
+          helper.select();
+          document.execCommand("copy");
+          helper.remove();
+        }
+      });
+
+      function audit() {
+        const notes = [...document.querySelectorAll("[data-annotation-id]")];
+        const connectors = [...document.querySelectorAll("[data-connector-for]")];
+        const rows = [...sourceRoot.children];
+        const errors = [];
+        if (notes.length !== 5) errors.push("annotation-count");
+        if (connectors.length !== 5) errors.push("connector-count");
+        if (rows.length !== SOURCE.split("\n").length) errors.push("source-line-count");
+        if (!rows.every((row) => row.classList.contains("code-row"))) errors.push("source-children");
+        if (sourceRoot.querySelector("[data-annotation-id], [data-connector-for]")) errors.push("source-contamination");
+        return {
+          errors,
+          state: document.documentElement.dataset.previewState,
+          layoutMode: "rail",
+          connectorMode: "svg",
+          annotationCount: notes.length,
+          connectorCount: connectors.length,
+          sourceCount: rows.length,
+          sourceContinuous: errors.every((error) => !error.startsWith("source-")),
+          pinnedNoteId: notes.find((note) => note.open)?.dataset.annotationId ?? null,
+        };
+      }
+
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        audit,
+        sourceText: () => SOURCE,
+        refreshConnectors,
+      };
+      refreshConnectors();
+      window.addEventListener("resize", refreshConnectors, { passive: true });
+      document.fonts?.ready.then(refreshConnectors);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="zh-CN" data-preview-state="idle">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AS/C++ 源码解释实验 04 · 反射边界</title>
+  <style>
+    :root {
+      --canvas: #eef2f5;
+      --surface: #ffffff;
+      --code: #fafbfc;
+      --ink: #17212b;
+      --muted: #667483;
+      --line: #cbd5df;
+      --line-strong: #aebbc8;
+      --accent: #7557c7;
+      --accent-dark: #4e3695;
+      --accent-soft: #efeafd;
+      --accent-wash: #faf8ff;
+      --blue: #2f6fa6;
+      --blue-soft: #eaf3fb;
+      --teal: #187d78;
+      --teal-soft: #e6f5f3;
+      --amber: #9a630d;
+      --amber-soft: #fff3dc;
+      --green: #2b7457;
+      --green-soft: #e8f5ef;
+      --shadow: 0 18px 50px rgba(44, 60, 74, 0.09);
+      --radius: 18px;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(117, 87, 199, 0.1), transparent 31rem),
+        linear-gradient(180deg, #f5f6fa 0, var(--canvas) 28rem);
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible {
+      outline: 3px solid rgba(117, 87, 199, 0.24);
+      outline-offset: 3px;
+    }
+
+    .page {
+      width: min(1580px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 24px 0 42px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-dark);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 960px;
+      margin: 0;
+      font-size: clamp(26px, 3.3vw, 46px);
+      line-height: 1.03;
+      letter-spacing: -0.045em;
+    }
+
+    .lede {
+      max-width: 910px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .action {
+      min-height: 40px;
+      padding: 0 15px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 760;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .action:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .action.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .action.primary:hover { background: var(--accent-dark); }
+
+    .mode-strip {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(203, 213, 223, 0.8);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.67);
+    }
+
+    .mode-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .mode-list { display: flex; flex-wrap: wrap; gap: 7px; }
+
+    .mode {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 740;
+    }
+
+    .mode:hover { border-color: var(--line); background: #fff; color: var(--ink); }
+
+    .mode[aria-pressed="true"] {
+      border-color: rgba(117, 87, 199, 0.3);
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .mode-note {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.14fr) minmax(430px, 0.86fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid rgba(203, 213, 223, 0.9);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      min-height: 62px;
+      padding: 13px 16px;
+      border-bottom: 1px solid #e4e9ee;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 820;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .panel-mark {
+      flex: 0 0 auto;
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .source-block + .source-block { border-top: 1px solid #dfe6ec; }
+
+    .source-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid #e5eaef;
+      background: #f4f7f9;
+    }
+
+    .source-label strong {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+
+    .source-label span {
+      max-width: 70%;
+      overflow: hidden;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .source-label.as { background: var(--blue-soft); }
+    .source-label.cpp { background: var(--accent-soft); }
+
+    .fold-note {
+      padding: 8px 14px;
+      border-bottom: 1px solid #e8edf1;
+      background: #fff;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .code-wrap { overflow: auto; background: var(--code); }
+    .code-list { min-width: 720px; padding: 10px 0 12px; counter-reset: code-line; }
+
+    .code-row {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      min-height: 21px;
+      counter-increment: code-line;
+      color: #2b3540;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 21px;
+    }
+
+    .code-row::before {
+      content: counter(code-line);
+      padding-right: 11px;
+      color: #9aa5b0;
+      font-size: 9px;
+      text-align: right;
+      user-select: none;
+    }
+
+    .code-text {
+      min-width: 0;
+      padding: 0 17px 0 9px;
+      white-space: pre;
+    }
+
+    .source-anchor {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      padding: 0 32px 0 9px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      text-align: left;
+      white-space: pre;
+      transition: background 140ms ease, color 140ms ease, opacity 140ms ease;
+    }
+
+    .source-anchor::after {
+      position: absolute;
+      top: 7px;
+      right: 16px;
+      width: 6px;
+      height: 6px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      background: var(--code);
+      content: "";
+    }
+
+    .source-anchor:hover,
+    .source-anchor[data-active="true"],
+    .source-anchor[data-pinned="true"] {
+      background: var(--accent-soft);
+      color: #392671;
+    }
+
+    .source-anchor[data-active="true"]::after,
+    .source-anchor[data-pinned="true"]::after {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(117, 87, 199, 0.12);
+    }
+
+    .source-anchor[data-skipped="true"] { opacity: 0.46; }
+
+    .kw { color: #a14184; }
+    .type { color: #2a70a8; }
+    .fn { color: #82560d; }
+    .str { color: #2e7a59; }
+    .null { color: #7658a8; }
+
+    .trace-body { padding: 13px; }
+
+    .result-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 13px 14px;
+      border: 1px solid #d9cef6;
+      border-radius: 13px;
+      background: var(--accent-wash);
+    }
+
+    .result-kicker {
+      margin: 0 0 4px;
+      color: var(--accent-dark);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .result-title { margin: 0; font-size: 17px; letter-spacing: -0.025em; }
+
+    .result-copy {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .result-value {
+      min-width: 90px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .lane-ribbon {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin: 13px 0 8px;
+    }
+
+    .lane {
+      min-width: 0;
+      padding: 7px 5px;
+      border-radius: 8px;
+      background: #f0f3f6;
+      color: #556371;
+      font-size: 9px;
+      font-weight: 820;
+      text-align: center;
+    }
+
+    .lane:nth-child(1) { background: var(--blue-soft); color: var(--blue); }
+    .lane:nth-child(2) { background: var(--accent-soft); color: var(--accent-dark); }
+    .lane:nth-child(3) { background: var(--amber-soft); color: var(--amber); }
+    .lane:nth-child(4) { background: var(--teal-soft); color: var(--teal); }
+
+    .sequence {
+      position: relative;
+      display: grid;
+      gap: 7px;
+      padding-left: 26px;
+    }
+
+    .sequence::before {
+      position: absolute;
+      top: 19px;
+      bottom: 19px;
+      left: 12px;
+      width: 1px;
+      background: var(--line);
+      content: "";
+    }
+
+    .sequence-node {
+      position: relative;
+      width: 100%;
+      min-height: 66px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease, opacity 150ms ease, transform 150ms ease;
+    }
+
+    .sequence-node::before {
+      position: absolute;
+      top: 22px;
+      left: -19px;
+      width: 7px;
+      height: 7px;
+      border: 2px solid var(--line-strong);
+      border-radius: 50%;
+      background: var(--surface);
+      content: "";
+    }
+
+    .sequence-node:hover,
+    .sequence-node[data-active="true"],
+    .sequence-node[data-pinned="true"] {
+      z-index: 1;
+      border-color: var(--accent);
+      background: var(--accent-wash);
+      transform: translateX(2px);
+    }
+
+    .sequence-node[data-active="true"]::before,
+    .sequence-node[data-pinned="true"]::before {
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(117, 87, 199, 0.12);
+    }
+
+    .sequence-node[data-skipped="true"] { opacity: 0.4; }
+
+    .message-head {
+      display: grid;
+      grid-template-columns: 23px auto 16px auto minmax(0, 1fr);
+      gap: 6px;
+      align-items: center;
+    }
+
+    .step-index {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .endpoint {
+      overflow: hidden;
+      padding: 3px 6px;
+      border-radius: 5px;
+      background: #eef2f5;
+      color: #53616e;
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .arrow {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .message-title {
+      overflow: hidden;
+      font-size: 11px;
+      font-weight: 820;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .message-copy {
+      display: block;
+      margin: 5px 0 0 29px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.42;
+    }
+
+    .branch-badge {
+      float: right;
+      margin-left: 8px;
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 9px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 1px solid #e1e7ec;
+      border-radius: 10px;
+      background: #f7f9fa;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--line-strong);
+    }
+
+    html[data-preview-state="playing"] .status-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(117, 87, 199, 0.12);
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+
+    html[data-preview-state="complete"] .status-dot { background: var(--green); }
+    html[data-preview-state="error"] .status-dot { background: #b33b32; }
+
+    .evidence-note {
+      margin: 12px 2px 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .evidence-note code { color: var(--ink); }
+
+    @keyframes pulse { 50% { transform: scale(1.35); } }
+
+    @media (max-width: 1080px) {
+      .page { width: min(100% - 24px, 940px); }
+      .topbar { grid-template-columns: 1fr; align-items: start; }
+      .actions { justify-content: flex-start; }
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .page { width: min(100% - 18px, 680px); padding-top: 15px; }
+      .mode-strip { grid-template-columns: 1fr; gap: 7px; }
+      .mode-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .mode { border-color: var(--line); border-radius: 9px; }
+      .mode-note { text-align: left; }
+      .source-label span { display: none; }
+      .result-card { grid-template-columns: 1fr; }
+      .result-value { justify-self: start; }
+      .lane { font-size: 8px; }
+      .message-head { grid-template-columns: 20px auto 14px auto; }
+      .message-title { grid-column: 2 / -1; margin-top: 2px; white-space: normal; }
+      .message-copy { margin-left: 26px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Code explanation / 04</p>
+        <h1>一行 AngelScript，跨过了哪几层 C++ 边界？</h1>
+        <p class="lede">
+          左侧把测试验证过的 AS 调用与实际 fallback 入口放在同一视野；右侧按参与者说明
+          Generic 调用如何找到签名、目标对象、参数缓存与最终 UFunction，再把 <code>FString</code> 返回脚本。
+        </p>
+      </div>
+      <div class="actions" aria-label="演示控制">
+        <button class="action primary" id="play" type="button">演示一次</button>
+        <button class="action" id="reset" type="button">重置</button>
+      </div>
+    </header>
+
+    <section class="mode-strip" aria-label="反射 fallback 路径">
+      <span class="mode-label">选择运行路径</span>
+      <div class="mode-list">
+        <button class="mode" type="button" data-mode="cached" aria-pressed="true">Cached Invoke</button>
+        <button class="mode" type="button" data-mode="legacy">Legacy ProcessEvent</button>
+      </div>
+      <span class="mode-note">CVar 每次调用都重新读取</span>
+    </section>
+
+    <section class="workspace">
+      <article class="panel source-panel" aria-labelledby="source-title">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title" id="source-title">双语源码 · 调用点与桥接实现</h2>
+            <p class="panel-subtitle">点击有圆点的行固定解释；右侧步骤也可反查源码</p>
+          </div>
+          <span class="panel-mark">AS → C++</span>
+        </header>
+
+        <section class="source-block">
+          <div class="source-label as">
+            <strong>AngelScript · 已由自动化测试执行</strong>
+            <span>AngelscriptReflectiveFallbackCacheTests.cpp / NonPOD fixture</span>
+          </div>
+          <div class="fold-note">
+            测试模板中的 <code>$CALL_PREFIX$</code> 由 UBlueprintPathsLibrary 的脚本命名空间生成；这里展示当前状态中的 <code>FPaths::</code> 可读形式。
+          </div>
+          <div class="code-wrap">
+            <div class="code-list" aria-label="AngelScript 测试调用">
+              <div class="code-row"><span class="code-text"><span class="type">int</span> <span class="fn">RunNonPOD</span>()</span></div>
+              <div class="code-row"><span class="code-text">{</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-as-call" data-rel="r-call" type="button">    <span class="type">FString</span> Clean = <span class="type">FPaths</span>::<span class="fn">GetCleanFilename</span>(<span class="str">"C:/Reflective/Fallback/Cache.txt"</span>);</button></div>
+              <div class="code-row"><button class="source-anchor" id="src-as-check" data-rel="r-return" type="button">    <span class="kw">if</span> (Clean != <span class="str">"Cache.txt"</span>)</button></div>
+              <div class="code-row"><span class="code-text">        <span class="kw">return</span> 10;</span></div>
+              <div class="code-row"><span class="code-text">    <span class="kw">return</span> 1;</span></div>
+              <div class="code-row"><span class="code-text">}</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="source-block">
+          <div class="source-label cpp">
+            <strong>C++ · BlueprintCallable reflective fallback</strong>
+            <span>AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.cpp:688</span>
+          </div>
+          <div class="fold-note">
+            控制流摘录：保留所有判定与实参语义；长函数调用折叠为单行，异常文本与说明性注释省略。
+          </div>
+          <div class="code-wrap">
+            <div class="code-list" aria-label="C++ 反射桥接控制流摘录">
+              <div class="code-row"><span class="code-text"><span class="type">void</span> <span class="fn">CallBlueprintCallableReflectiveFallback</span>(<span class="type">asIScriptGeneric</span>* InGeneric)</span></div>
+              <div class="code-row"><span class="code-text">{</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-generic" data-rel="r-signature" type="button">    <span class="kw">auto</span>* Generic = <span class="kw">static_cast</span>&lt;<span class="type">asCGeneric</span>*&gt;(InGeneric);</button></div>
+              <div class="code-row"><span class="code-text">    <span class="kw">auto</span>* Function = <span class="kw">static_cast</span>&lt;<span class="type">asCScriptFunction</span>*&gt;(Generic-&gt;<span class="fn">GetFunction</span>());</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-signature" data-rel="r-signature" type="button">    <span class="kw">auto</span>* Signature = <span class="kw">static_cast</span>&lt;<span class="type">FBlueprintCallableReflectiveSignature</span>*&gt;(Function-&gt;<span class="fn">GetUserData</span>());</button></div>
+              <div class="code-row"><span class="code-text"></span></div>
+              <div class="code-row"><button class="source-anchor" id="src-valid" data-rel="r-validate" type="button">    <span class="kw">if</span> (Signature == <span class="null">nullptr</span> || Signature-&gt;UnrealFunction == <span class="null">nullptr</span>)</button></div>
+              <div class="code-row"><span class="code-text">    { <span class="type">FAngelscriptEngine</span>::<span class="fn">Throw</span>(...); <span class="kw">return</span>; }</span></div>
+              <div class="code-row"><span class="code-text"></span></div>
+              <div class="code-row"><button class="source-anchor" id="src-target" data-rel="r-target-resolve" type="button">    <span class="type">UObject</span>* TargetObject = Signature-&gt;StaticObject != <span class="null">nullptr</span></button></div>
+              <div class="code-row"><span class="code-text">        ? Signature-&gt;StaticObject : <span class="kw">static_cast</span>&lt;<span class="type">UObject</span>*&gt;(Generic-&gt;<span class="fn">GetObject</span>());</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-target-valid" data-rel="r-target-validate" type="button">    <span class="kw">if</span> (TargetObject == <span class="null">nullptr</span>)</button></div>
+              <div class="code-row"><span class="code-text">    { <span class="type">FAngelscriptEngine</span>::<span class="fn">Throw</span>(...); <span class="kw">return</span>; }</span></div>
+              <div class="code-row"><span class="code-text"></span></div>
+              <div class="code-row"><button class="source-anchor" id="src-cvar" data-rel="r-route" type="button">    <span class="kw">if</span> (CVarReflectiveFallbackUseCache.<span class="fn">GetValueOnAnyThread</span>())</button></div>
+              <div class="code-row"><span class="code-text">    {</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-cache" data-rel="r-cache" type="button">        <span class="kw">const</span> <span class="type">FReflectiveParamCache</span>&amp; Cache = Signature-&gt;<span class="fn">GetOrBuildCache</span>();</button></div>
+              <div class="code-row"><button class="source-anchor" id="src-cache-call" data-rel="r-cache-call" type="button">        <span class="fn">InvokeReflectiveUFunctionFromGenericCallCached</span>(</button></div>
+              <div class="code-row"><span class="code-text">            Generic, TargetObject, Signature-&gt;UnrealFunction, Cache, Signature-&gt;bInjectMixinObject);</span></div>
+              <div class="code-row"><span class="code-text">    }</span></div>
+              <div class="code-row"><span class="code-text">    <span class="kw">else</span></span></div>
+              <div class="code-row"><span class="code-text">    {</span></div>
+              <div class="code-row"><button class="source-anchor" id="src-legacy" data-rel="r-legacy" type="button">        <span class="fn">InvokeReflectiveUFunctionFromGenericCallProcessEvent</span>(</button></div>
+              <div class="code-row"><button class="source-anchor" id="src-legacy-call" data-rel="r-legacy-call" type="button">            Generic, TargetObject, Signature-&gt;UnrealFunction, Signature-&gt;bInjectMixinObject);</button></div>
+              <div class="code-row"><span class="code-text">    }</span></div>
+              <div class="code-row"><span class="code-text">}</span></div>
+            </div>
+          </div>
+        </section>
+      </article>
+
+      <article class="panel trace-panel" aria-labelledby="trace-title">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title" id="trace-title">边界时序 · 谁把什么交给谁</h2>
+            <p class="panel-subtitle">消息名对应真实对象与调用；解释承担目的、风险和结果</p>
+          </div>
+          <span class="panel-mark">BOUNDARY TRACE</span>
+        </header>
+
+        <div class="trace-body">
+          <section class="result-card" aria-live="polite">
+            <div>
+              <p class="result-kicker" id="result-kicker">Cached Invoke</p>
+              <h3 class="result-title" id="result-title">签名缓存负责参数搬运，UFunction 负责语义</h3>
+              <p class="result-copy" id="result-copy">缓存只优化反射参数布局；目标解析、UFunction 选择与最终返回值保持同一契约。</p>
+            </div>
+            <div class="result-value">"Cache.txt"</div>
+          </section>
+
+          <div class="lane-ribbon" aria-label="时序参与者">
+            <span class="lane">AS VM</span>
+            <span class="lane">Generic bridge</span>
+            <span class="lane">Signature / Target</span>
+            <span class="lane">UFunction</span>
+          </div>
+
+          <div class="sequence" aria-label="反射调用边界时序">
+            <button class="sequence-node" id="node-call" data-rel="r-call" type="button">
+              <span class="message-head">
+                <span class="step-index">01</span><span class="endpoint">AS VM</span><span class="arrow">→</span><span class="endpoint">Generic</span>
+                <span class="message-title">发出 FPaths::GetCleanFilename(path)</span>
+              </span>
+              <span class="message-copy">脚本看到的是普通静态函数调用；绑定层把它接入通用调用约定。</span>
+            </button>
+
+            <button class="sequence-node" id="node-signature" data-rel="r-signature" type="button">
+              <span class="message-head">
+                <span class="step-index">02</span><span class="endpoint">Generic</span><span class="arrow">→</span><span class="endpoint">Signature</span>
+                <span class="message-title">从当前脚本函数取回绑定元数据</span>
+              </span>
+              <span class="message-copy">GetFunction() 找到调用槽；UserData 保存对应的 reflective signature。</span>
+            </button>
+
+            <button class="sequence-node" id="node-validate" data-rel="r-validate" type="button">
+              <span class="message-head">
+                <span class="step-index">03</span><span class="endpoint">Signature</span><span class="arrow">→</span><span class="endpoint">Generic</span>
+                <span class="message-title">验证绑定的 UFunction 仍然存在</span>
+              </span>
+              <span class="message-copy">缺少 Signature 或 UnrealFunction 时立刻向脚本抛错，不进入参数搬运。</span>
+            </button>
+
+            <button class="sequence-node" id="node-target" data-rel="r-target-resolve r-target-validate" type="button">
+              <span class="message-head">
+                <span class="step-index">04</span><span class="endpoint">Generic</span><span class="arrow">↔</span><span class="endpoint">Target</span>
+                <span class="message-title">解析并验证调用目标</span>
+              </span>
+              <span class="message-copy">静态库调用优先用 StaticObject；实例调用退回 Generic::GetObject()。</span>
+            </button>
+
+            <button class="sequence-node" id="node-route" data-rel="r-route" type="button">
+              <span class="message-head">
+                <span class="step-index">05</span><span class="endpoint">Generic</span><span class="arrow">→</span><span class="endpoint">Router</span>
+                <span class="message-title">本次调用读取 CVar，选择参数路径</span>
+              </span>
+              <span class="message-copy">开关不是启动时快照；运行时切换会从下一次调用立即生效。</span>
+            </button>
+
+            <button class="sequence-node" id="node-cache" data-rel="r-cache r-cache-call" type="button">
+              <span class="branch-badge">cache = on</span>
+              <span class="message-head">
+                <span class="step-index">06A</span><span class="endpoint">Signature</span><span class="arrow">→</span><span class="endpoint">UFunction</span>
+                <span class="message-title">复用参数布局并执行 Cached Invoke</span>
+              </span>
+              <span class="message-copy">GetOrBuildCache() 固化反射参数描述，调用器负责装箱、执行与写回。</span>
+            </button>
+
+            <button class="sequence-node" id="node-legacy" data-rel="r-legacy r-legacy-call" type="button">
+              <span class="branch-badge">cache = off</span>
+              <span class="message-head">
+                <span class="step-index">06B</span><span class="endpoint">Generic</span><span class="arrow">→</span><span class="endpoint">UFunction</span>
+                <span class="message-title">走自包含的 ProcessEvent 路径</span>
+              </span>
+              <span class="message-copy">不构建缓存；每次按 Function 属性现场完成参数布局与 ProcessEvent 调用。</span>
+            </button>
+
+            <button class="sequence-node" id="node-return" data-rel="r-return" type="button">
+              <span class="message-head">
+                <span class="step-index">07</span><span class="endpoint">UFunction</span><span class="arrow">→</span><span class="endpoint">AS VM</span>
+                <span class="message-title">把 FString 结果写回脚本调用帧</span>
+              </span>
+              <span class="message-copy">测试以 Clean == "Cache.txt" 验证非 POD 返回值跨边界后仍保持语义。</span>
+            </button>
+          </div>
+
+          <div class="status-bar">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="status-text">已选择 Cached Invoke。点击“演示一次”查看一次完整跨边界调用。</span>
+          </div>
+          <p class="evidence-note">
+            证据来自 <code>AngelscriptReflectiveFallbackCacheTests.cpp::NonPOD</code> 与
+            <code>BlueprintCallableReflectiveFallback.cpp::CallBlueprintCallableReflectiveFallback</code>。
+            图中没有把缓存描述成另一套业务语义：两条分支的契约必须等价。
+          </p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const relations = {
+        "r-call":            { source: "src-as-call",      node: "node-call" },
+        "r-return":          { source: "src-as-check",     node: "node-return" },
+        "r-signature":       { source: "src-signature",    node: "node-signature", peers: ["src-generic"] },
+        "r-validate":        { source: "src-valid",        node: "node-validate" },
+        "r-target-resolve":  { source: "src-target",       node: "node-target" },
+        "r-target-validate": { source: "src-target-valid", node: "node-target" },
+        "r-route":           { source: "src-cvar",         node: "node-route" },
+        "r-cache":           { source: "src-cache",        node: "node-cache" },
+        "r-cache-call":      { source: "src-cache-call",   node: "node-cache" },
+        "r-legacy":          { source: "src-legacy",       node: "node-legacy" },
+        "r-legacy-call":     { source: "src-legacy-call",  node: "node-legacy" }
+      };
+
+      const modes = {
+        cached: {
+          label: "Cached Invoke",
+          title: "签名缓存负责参数搬运，UFunction 负责语义",
+          copy: "缓存只优化反射参数布局；目标解析、UFunction 选择与最终返回值保持同一契约。",
+          steps: ["r-call", "r-signature", "r-validate", "r-target-resolve", "r-target-validate", "r-route", "r-cache", "r-cache-call", "r-return"],
+          status: "Cached Invoke 完成：非 POD FString 已写回 AS，测试期望值为 \"Cache.txt\"。"
+        },
+        legacy: {
+          label: "Legacy ProcessEvent",
+          title: "关闭缓存后，现场遍历参数并调用 ProcessEvent",
+          copy: "Legacy 路径完全自包含，不触发 cache build；它必须产生与 cached path 相同的脚本可观察结果。",
+          steps: ["r-call", "r-signature", "r-validate", "r-target-resolve", "r-target-validate", "r-route", "r-legacy", "r-legacy-call", "r-return"],
+          status: "Legacy ProcessEvent 完成：路径不同，返回脚本的 FString 仍为 \"Cache.txt\"。"
+        }
+      };
+
+      const sourceAnchors = [...document.querySelectorAll(".source-anchor")];
+      const sequenceNodes = [...document.querySelectorAll(".sequence-node")];
+      const modeButtons = [...document.querySelectorAll(".mode")];
+      const playButton = document.querySelector("#play");
+      const resetButton = document.querySelector("#reset");
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+      let selectedMode = "cached";
+      let pinnedRelations = [];
+      let playToken = 0;
+
+      const relationIdsFor = element =>
+        (element.dataset.rel || "").split(/\s+/).filter(id => id in relations);
+
+      const elementsForRelations = ids => {
+        const elements = new Set();
+        ids.forEach(id => {
+          const relation = relations[id];
+          if (!relation) return;
+          elements.add(document.getElementById(relation.source));
+          elements.add(document.getElementById(relation.node));
+          (relation.peers || []).forEach(peer => elements.add(document.getElementById(peer)));
+        });
+        return [...elements].filter(Boolean);
+      };
+
+      function clearInteractionState() {
+        document.querySelectorAll("[data-active], [data-pinned]").forEach(element => {
+          element.removeAttribute("data-active");
+          element.removeAttribute("data-pinned");
+        });
+      }
+
+      function markModePath() {
+        const path = new Set(modes[selectedMode].steps);
+        sourceAnchors.forEach(source => {
+          const direct = relationIdsFor(source).some(id => path.has(id));
+          const isPeer = modes[selectedMode].steps.some(id => (relations[id].peers || []).includes(source.id));
+          source.toggleAttribute("data-skipped", !direct && !isPeer);
+        });
+        sequenceNodes.forEach(node => {
+          const isInPath = relationIdsFor(node).some(id => path.has(id));
+          node.toggleAttribute("data-skipped", !isInPath);
+        });
+      }
+
+      function applyRelations(ids, mode = "active") {
+        clearInteractionState();
+        elementsForRelations(ids).forEach(element => {
+          element.dataset[mode] = "true";
+        });
+        if (ids.length && mode === "pinned") pinnedRelations = [...ids];
+      }
+
+      function renderMode() {
+        const mode = modes[selectedMode];
+        document.querySelector("#result-kicker").textContent = mode.label;
+        document.querySelector("#result-title").textContent = mode.title;
+        document.querySelector("#result-copy").textContent = mode.copy;
+        document.querySelector("#status-text").textContent =
+          `已选择 ${mode.label}。点击“演示一次”查看一次完整跨边界调用。`;
+        modeButtons.forEach(button => {
+          button.setAttribute("aria-pressed", String(button.dataset.mode === selectedMode));
+        });
+        markModePath();
+      }
+
+      function resetPreview({ keepMode = true } = {}) {
+        playToken += 1;
+        pinnedRelations = [];
+        clearInteractionState();
+        document.documentElement.dataset.previewState = "idle";
+        playButton.disabled = false;
+        if (!keepMode) selectedMode = "cached";
+        renderMode();
+      }
+
+      async function playMode() {
+        const token = ++playToken;
+        const mode = modes[selectedMode];
+        const visited = [];
+        const delay = reducedMotion.matches ? 90 : 610;
+        pinnedRelations = [];
+        playButton.disabled = true;
+        document.documentElement.dataset.previewState = "playing";
+        for (let index = 0; index < mode.steps.length; index += 1) {
+          if (token !== playToken) return;
+          visited.push(mode.steps[index]);
+          applyRelations(visited);
+          const currentNode = document.getElementById(relations[mode.steps[index]].node);
+          document.querySelector("#status-text").textContent =
+            `${mode.label} · ${index + 1}/${mode.steps.length} · ${currentNode.querySelector(".message-title").textContent}`;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        if (token !== playToken) return;
+        document.querySelector("#status-text").textContent = mode.status;
+        document.documentElement.dataset.previewState = "complete";
+        playButton.disabled = false;
+      }
+
+      function previewElement(element) {
+        if (pinnedRelations.length || document.documentElement.dataset.previewState === "playing") return;
+        applyRelations(relationIdsFor(element));
+      }
+
+      function leavePreview() {
+        if (pinnedRelations.length || document.documentElement.dataset.previewState === "playing") return;
+        clearInteractionState();
+      }
+
+      function pinElement(element) {
+        const ids = relationIdsFor(element);
+        if (!ids.length) return;
+        const same = ids.length === pinnedRelations.length && ids.every(id => pinnedRelations.includes(id));
+        if (same) {
+          pinnedRelations = [];
+          clearInteractionState();
+        } else {
+          applyRelations(ids, "pinned");
+        }
+      }
+
+      [...sourceAnchors, ...sequenceNodes].forEach(element => {
+        element.addEventListener("mouseenter", () => previewElement(element));
+        element.addEventListener("mouseleave", leavePreview);
+        element.addEventListener("focus", () => previewElement(element));
+        element.addEventListener("blur", leavePreview);
+        element.addEventListener("click", () => pinElement(element));
+      });
+
+      modeButtons.forEach(button => {
+        button.addEventListener("click", () => {
+          selectedMode = button.dataset.mode;
+          resetPreview();
+        });
+      });
+
+      playButton.addEventListener("click", playMode);
+      resetButton.addEventListener("click", () => resetPreview({ keepMode: false }));
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          pinnedRelations = [];
+          clearInteractionState();
+        }
+      });
+
+      function validatePreviewModel() {
+        const errors = [];
+        Object.entries(relations).forEach(([id, relation]) => {
+          if (!document.getElementById(relation.source)) errors.push(`${id}: missing source ${relation.source}`);
+          if (!document.getElementById(relation.node)) errors.push(`${id}: missing node ${relation.node}`);
+          (relation.peers || []).forEach(peer => {
+            if (!document.getElementById(peer)) errors.push(`${id}: missing peer ${peer}`);
+          });
+        });
+        Object.entries(modes).forEach(([id, mode]) => {
+          mode.steps.forEach(relationId => {
+            if (!relations[relationId]) errors.push(`${id}: unknown relation ${relationId}`);
+          });
+        });
+        if (errors.length) {
+          document.documentElement.dataset.previewState = "error";
+          document.querySelector("#status-text").textContent = `模型校验失败：${errors.join("；")}`;
+        }
+        return errors;
+      }
+
+      const modelErrors = validatePreviewModel();
+      renderMode();
+
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        audit() {
+          return {
+            errors: [...modelErrors],
+            relationCount: Object.keys(relations).length,
+            modeCount: Object.keys(modes).length,
+            sourceCount: sourceAnchors.length,
+            nodeCount: sequenceNodes.length,
+            state: document.documentElement.dataset.previewState,
+            selectedMode
+          };
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

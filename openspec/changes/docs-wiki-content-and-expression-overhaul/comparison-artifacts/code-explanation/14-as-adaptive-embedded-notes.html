@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="zh-CN" data-preview-state="idle" data-annotations="visible">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>14 · note 会自己寻找代码里的空位</title>
+  <style>
+    :root {
+      --page: #ebeae5;
+      --canvas: #f3f2ed;
+      --paper: #fffefa;
+      --paper-soft: #f6f5f0;
+      --ink: #2e393e;
+      --muted: #7e8788;
+      --line: #d6d5ce;
+      --blue: #4f7686;
+      --rust: #b75b3d;
+      --green: #5f8174;
+      --connector: rgb(79 118 134 / 28%);
+      --connector-active: rgb(183 91 61 / 78%);
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 0; background: var(--page); }
+    body {
+      min-width: 0;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 83% -6%, rgb(79 118 134 / 11%), transparent 29rem),
+        var(--page);
+      font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    }
+    button, summary { font: inherit; }
+    .page-shell {
+      width: min(1280px, calc(100% - 32px));
+      margin-inline: auto;
+      padding: 38px 0 58px;
+    }
+    .page-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--rust);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .16em;
+    }
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Noto Serif SC", serif;
+      font-size: clamp(30px, 4.8vw, 48px);
+      font-weight: 500;
+      letter-spacing: -.035em;
+    }
+    .lede {
+      max-width: 820px;
+      margin: 12px 0 0;
+      color: #667175;
+      font-size: 13.5px;
+      line-height: 1.72;
+    }
+    .toolbar { display: flex; gap: 8px; }
+    .toolbar button {
+      min-height: 37px;
+      padding: 0 12px;
+      color: #46565c;
+      cursor: pointer;
+      border: 1px solid #bfc0b9;
+      border-radius: 3px;
+      background: rgb(255 254 250 / 80%);
+    }
+    .toolbar button:hover,
+    .toolbar button:focus-visible {
+      color: #26383f;
+      border-color: var(--blue);
+      outline: none;
+    }
+    html[data-preview-state="copied"] [data-action="copy"] {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+    .annotation-viewport {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-inline: contain;
+      border: 1px solid #c4c4bd;
+      background: #deddd7;
+      box-shadow: 0 22px 58px rgb(45 49 50 / 12%);
+      scrollbar-color: #979b96 #deddd7;
+    }
+    .annotation-canvas {
+      position: relative;
+      min-width: 1200px;
+      min-height: 680px;
+      overflow: hidden;
+      background:
+        linear-gradient(rgb(44 54 59 / 2.4%) 1px, transparent 1px) 0 0 / 100% 28px,
+        var(--canvas);
+    }
+    .canvas-caption {
+      position: absolute;
+      top: 19px;
+      left: 40px;
+      z-index: 8;
+      display: flex;
+      gap: 13px;
+      color: #888e8e;
+      font-size: 9px;
+      letter-spacing: .07em;
+    }
+    .canvas-caption strong {
+      color: #45565c;
+      font: 500 9px/1.2 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+    .canvas-caption span::before {
+      content: "—";
+      margin-right: 7px;
+      color: var(--rust);
+    }
+    .code-paper {
+      position: absolute;
+      top: 53px;
+      left: 40px;
+      min-width: 1120px;
+      overflow: hidden;
+      border: 1px solid #c7c8c1;
+      background: var(--paper);
+      box-shadow: 0 17px 43px rgb(48 52 53 / 13%);
+    }
+    .code-head {
+      position: relative;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 43px;
+      padding: 0 15px;
+      color: #8c9292;
+      border-bottom: 1px solid #deddd6;
+      background: #f4f3ee;
+      font-size: 8.5px;
+      letter-spacing: .09em;
+    }
+    .code-head strong {
+      color: #42545b;
+      font: 500 10px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+    .paper-stage {
+      position: relative;
+      min-height: 560px;
+      overflow: hidden;
+    }
+    [data-source-root] {
+      position: relative;
+      z-index: 1;
+      padding: 24px 0 30px;
+    }
+    .code-row {
+      display: grid;
+      grid-template-columns: 52px max-content;
+      width: 100%;
+      min-height: 30px;
+      color: #344148;
+      font: 12.5px/30px "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      white-space: pre;
+    }
+    .line-number {
+      padding-right: 13px;
+      color: #a3a7a4;
+      text-align: right;
+      user-select: none;
+    }
+    .code-text { min-width: 0; padding-right: 12px; }
+    .tok-keyword { color: #a94f36; }
+    .tok-type { color: #477b70; }
+    .tok-string { color: #8e7439; }
+    .tok-number { color: #755c89; }
+    .tok-function { color: #426f88; }
+    .tok-meta { color: #667d3f; }
+    .tok-comment { color: #9b9b91; font-style: italic; }
+    .code-row.is-active .code-text {
+      background: linear-gradient(90deg, rgb(183 91 61 / 8%), transparent 72%);
+      box-shadow: -3px 0 0 rgb(183 91 61 / 62%);
+    }
+    [data-anchor-layer],
+    [data-note-layer],
+    [data-connector-layer] {
+      position: absolute;
+      inset: 0;
+    }
+    [data-anchor-layer],
+    [data-connector-layer] { pointer-events: none; }
+    [data-anchor-layer] { z-index: 3; }
+    [data-connector-layer] { z-index: 2; overflow: visible; }
+    [data-note-layer] { z-index: 7; pointer-events: none; }
+    [data-source-port] {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border: 1px solid #78938c;
+      border-radius: 50%;
+      background: var(--paper);
+      transform: translate(-50%, -50%);
+    }
+    .range-bracket {
+      position: absolute;
+      width: 6px;
+      border: solid rgb(79 118 134 / 34%);
+      border-width: 1px 0 1px 1px;
+    }
+    [data-source-port].is-active {
+      border-color: var(--rust);
+      background: var(--rust);
+    }
+    [data-annotation-id] {
+      position: absolute;
+      width: 218px;
+      margin: 0;
+      pointer-events: auto;
+    }
+    [data-annotation-id] > [data-note-summary] {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-height: 31px;
+      padding: 6px 9px 6px 33px;
+      overflow: visible;
+      text-align: left;
+      color: #687477;
+      cursor: pointer;
+      border: 1px solid #d1d1ca;
+      border-radius: 3px;
+      background: rgb(248 247 242 / 96%);
+      box-shadow: 0 3px 11px rgb(45 52 54 / 5%);
+      font-size: 10.5px;
+      line-height: 17px;
+      list-style: none;
+      white-space: nowrap;
+      transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    [data-annotation-id] > [data-note-summary]::before {
+      content: attr(data-note-number);
+      position: absolute;
+      top: 6px;
+      left: 9px;
+      color: var(--rust);
+      font: 9px/17px "Cascadia Code", Consolas, monospace;
+    }
+    [data-note-port] {
+      position: absolute;
+      top: 50%;
+      left: -10px;
+      width: 6px;
+      height: 6px;
+      border: 1px solid #78938c;
+      border-radius: 50%;
+      background: var(--paper);
+      transform: translateY(-50%);
+    }
+    .note-detail {
+      position: absolute;
+      z-index: 30;
+      display: block;
+      width: 260px;
+      padding: 12px 13px;
+      visibility: hidden;
+      opacity: 0;
+      color: #3b494e;
+      border: 1px solid #b9bbb4;
+      border-radius: 3px;
+      background: #fffefa;
+      box-shadow: 0 15px 34px rgb(44 49 51 / 16%);
+      font-size: 11.5px;
+      line-height: 1.65;
+      white-space: normal;
+      pointer-events: none;
+    }
+    .note-detail code {
+      color: #94462f;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+    [data-annotation-id]:hover,
+    [data-annotation-id]:focus-within,
+    [data-annotation-id][open] { z-index: 40; }
+    [data-annotation-id]:hover > [data-note-summary],
+    [data-annotation-id]:focus-within > [data-note-summary],
+    [data-annotation-id][open] > [data-note-summary] {
+      color: #293b42;
+      border-color: #859d97;
+      background: #f1f1eb;
+    }
+    [data-annotation-id]:hover .note-detail,
+    [data-annotation-id]:focus-within .note-detail,
+    [data-annotation-id][open] .note-detail {
+      visibility: visible;
+      opacity: 1;
+    }
+    [data-annotation-id].is-active [data-note-port] {
+      border-color: var(--rust);
+      background: var(--rust);
+    }
+    [data-annotation-id].is-active > [data-note-summary] {
+      border-color: rgb(183 91 61 / 52%);
+    }
+    [data-connector-for] {
+      fill: none;
+      stroke: var(--connector);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      transition: stroke 120ms ease, opacity 120ms ease;
+    }
+    [data-connector-for].is-active { stroke: var(--connector-active); }
+    [data-linker-line-runtime] {
+      z-index: 2 !important;
+      opacity: .52;
+      pointer-events: none !important;
+      transition: opacity 120ms ease;
+    }
+    [data-linker-line-runtime].is-active { opacity: 1; }
+    html[data-annotations="hidden"] [data-annotation-id],
+    html[data-annotations="hidden"] [data-anchor-layer],
+    html[data-annotations="hidden"] [data-connector-layer],
+    html[data-annotations="hidden"] [data-linker-line-runtime] {
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .reading-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 13px;
+      color: #737d80;
+      font-size: 10.5px;
+    }
+    .reading-key span::before {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      margin-right: 7px;
+      border-top: 1px solid var(--blue);
+      vertical-align: middle;
+    }
+    .library-note {
+      margin-left: auto;
+      color: #8a8f8d;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+    @media (max-width: 720px) {
+      .page-shell { width: min(100% - 16px, 1280px); padding-top: 23px; }
+      .page-header { grid-template-columns: 1fr; }
+      .toolbar { justify-content: flex-start; }
+      h1 { font-size: 33px; }
+      .lede { font-size: 13px; }
+      .reading-key { display: block; }
+      .reading-key span { display: block; margin-top: 7px; }
+      .library-note { margin-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+</style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">EXPERIMENT 14 · NATIVE SVG / ADAPTIVE LANES / ANGELSCRIPT</p>
+        <h1>note 会自己寻找代码里的空位</h1>
+        <p class="lede">13 的无依赖进化版：短 note 仍然待在代码块内部，但不再写死 top / left。布局器根据真实源码宽度、锚点和已占位置分配内部 lane。</p>
+      </div>
+      <div class="toolbar" aria-label="预览控制">
+        <button type="button" data-action="toggle-notes">隐藏注解</button>
+        <button type="button" data-action="copy">复制纯源码</button>
+      </div>
+    </header>
+
+    <div class="annotation-viewport" tabindex="0" aria-label="可横向滚动的代码块内嵌 note 画布">
+      <section class="annotation-canvas" data-layout-mode="embedded-adaptive" data-connector-mode="svg-native">
+        <div class="canvas-caption">
+          <strong>Script/Examples/EnhancedInput/Example_EI_Component.as</strong>
+          <span>真实仓库源码 · 17–41</span>
+        </div>
+        <article class="code-paper">
+          <div class="code-head">
+            <strong>Example_EI_Component.as</strong>
+            <span>ANGELSCRIPT · SOURCE DOM UNTOUCHED</span>
+          </div>
+          <div class="paper-stage">
+            <div data-source-root aria-label="连续的 angelscript 源码"></div>
+            <svg data-connector-layer aria-hidden="true"><path data-connector-for="native-entry"></path><path data-connector-for="native-cast"></path><path data-connector-for="native-move"></path><path data-connector-for="native-started"></path><path data-connector-for="native-completed"></path></svg>
+            <div data-anchor-layer aria-hidden="true"></div>
+            <div data-note-layer>
+            <aside
+              data-annotation-id="native-entry"
+              data-source-start="1"
+              data-source-end="2"
+              data-anchor-line="1"
+              data-anchor-text="UFUNCTION(BlueprintOverride)"
+              data-preferred-lane="2"
+            >
+              <button
+                type="button"
+                data-note-summary
+                data-note-number="01"
+                aria-expanded="false"
+                aria-controls="detail-native-entry"
+              >
+                <span data-note-port aria-hidden="true"></span>这是引擎回调入口声明
+              </button>
+              <span class="note-detail" id="detail-native-entry"><code>BlueprintOverride</code> 让脚本覆盖 Pawn 的生命周期函数；真正执行从下面的函数体开始。</span>
+            </aside>
+            <aside
+              data-annotation-id="native-cast"
+              data-source-start="4"
+              data-source-end="6"
+              data-anchor-line="4"
+              data-anchor-text="Cast&lt;UEnhancedInputComponent&gt;"
+              data-preferred-lane="0"
+            >
+              <button
+                type="button"
+                data-note-summary
+                data-note-number="02"
+                aria-expanded="false"
+                aria-controls="detail-native-cast"
+              >
+                <span data-note-port aria-hidden="true"></span>先确认输入组件类型
+              </button>
+              <span class="note-detail" id="detail-native-cast">后面的绑定 API 属于 <code>UEnhancedInputComponent</code>。转换失败立即返回，避免建立无效 delegate。</span>
+            </aside>
+            <aside
+              data-annotation-id="native-move"
+              data-source-start="8"
+              data-source-end="12"
+              data-anchor-line="11"
+              data-anchor-text="BindUFunction"
+              data-preferred-lane="1"
+            >
+              <button
+                type="button"
+                data-note-summary
+                data-note-number="03"
+                aria-expanded="false"
+                aria-controls="detail-native-move"
+              >
+                <span data-note-port aria-hidden="true"></span>delegate 先绑定脚本函数
+              </button>
+              <span class="note-detail" id="detail-native-move">先把 <code>OnMove</code> 写进动态 delegate，再把它交给输入组件；两步分别建立目标函数和触发条件。</span>
+            </aside>
+            <aside
+              data-annotation-id="native-started"
+              data-source-start="15"
+              data-source-end="19"
+              data-anchor-line="19"
+              data-anchor-text="ETriggerEvent::Started"
+              data-preferred-lane="0"
+            >
+              <button
+                type="button"
+                data-note-summary
+                data-note-number="04"
+                aria-expanded="false"
+                aria-controls="detail-native-started"
+              >
+                <span data-note-port aria-hidden="true"></span>Started 只响应按下瞬间
+              </button>
+              <span class="note-detail" id="detail-native-started">这一条绑定只在动作进入 Started 阶段时调用 <code>OnJumpStarted</code>，不是每帧持续触发。</span>
+            </aside>
+            <aside
+              data-annotation-id="native-completed"
+              data-source-start="21"
+              data-source-end="23"
+              data-anchor-line="23"
+              data-anchor-text="ETriggerEvent::Completed"
+              data-preferred-lane="2"
+            >
+              <button
+                type="button"
+                data-note-summary
+                data-note-number="05"
+                aria-expanded="false"
+                aria-controls="detail-native-completed"
+              >
+                <span data-note-port aria-hidden="true"></span>Completed 收束一次跳跃输入
+              </button>
+              <span class="note-detail" id="detail-native-completed">同一个 JumpAction 使用第二个 delegate 监听 Completed，从而把开始和结束拆成两个明确回调。</span>
+            </aside>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <div class="reading-key">
+      <span>短 note 常显，详情按 hover / focus / click 展开</span>
+      <span>源码层只有连续行，note 与 connector 均为兄弟覆盖层</span>
+      <span class="library-note">native web-platform</span>
+    </div>
+  </main>
+
+  <!-- Native Web Platform APIs; no third-party runtime. -->
+  <script data-library-bundle data-library-name="native" data-library-version="web-platform" data-library-license="n/a"></script>
+  <script>
+    (() => {
+      const CONFIG = {"source":"UFUNCTION(BlueprintOverride)\n\tvoid BeginPlay()\n\t{\n\t\tUEnhancedInputComponent EIC = Cast<UEnhancedInputComponent>(GetInputComponent());\n\t\tif (EIC == nullptr)\n\t\t\treturn;\n\n\t\tif (MoveAction != nullptr)\n\t\t{\n\t\t\tFEnhancedInputActionHandlerDynamicSignature MoveDelegate;\n\t\t\tMoveDelegate.BindUFunction(this, n\"OnMove\");\n\t\t\tEIC.BindAction(MoveAction, ETriggerEvent::Triggered, MoveDelegate);\n\t\t}\n\n\t\tif (JumpAction != nullptr)\n\t\t{\n\t\t\tFEnhancedInputActionHandlerDynamicSignature JumpStartedDelegate;\n\t\t\tJumpStartedDelegate.BindUFunction(this, n\"OnJumpStarted\");\n\t\t\tEIC.BindAction(JumpAction, ETriggerEvent::Started, JumpStartedDelegate);\n\n\t\t\tFEnhancedInputActionHandlerDynamicSignature JumpCompletedDelegate;\n\t\t\tJumpCompletedDelegate.BindUFunction(this, n\"OnJumpCompleted\");\n\t\t\tEIC.BindAction(JumpAction, ETriggerEvent::Completed, JumpCompletedDelegate);\n\t\t}\n\t}","startLine":17,"language":"angelscript","connectorMode":"svg-native","layoutMode":"embedded-adaptive","library":{"name":"native","version":"web-platform","license":"n/a","upstream":"native"},"noteCount":5};
+      const SOURCE = CONFIG.source;
+      const sourceRoot = document.querySelector("[data-source-root]");
+      const annotationViewport = document.querySelector(".annotation-viewport");
+      const canvas = document.querySelector(".annotation-canvas");
+      const codePaper = document.querySelector(".code-paper");
+      const stage = document.querySelector(".paper-stage");
+      const anchorLayer = document.querySelector("[data-anchor-layer]");
+      const noteLayer = document.querySelector("[data-note-layer]");
+      const connectorLayer = document.querySelector("[data-connector-layer]");
+      const noteElements = [...document.querySelectorAll("[data-annotation-id]")];
+      const connectorElements = [...document.querySelectorAll("[data-connector-for]")];
+      const libraryBundle = document.querySelector("[data-library-bundle]");
+      const keywords = new Set([
+        "auto", "bool", "break", "case", "class", "const", "continue", "else", "enum",
+        "false", "float", "for", "if", "int", "nullptr", "public", "return", "struct",
+        "true", "void", "while"
+      ]);
+      const libraryLines = new Map();
+      const floatingCleanups = [];
+      let resizeFrame = 0;
+      let teardownComplete = false;
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function tokenize(line) {
+        const tokens = [...line.matchAll(/(\/\/.*$)|("(?:\\.|[^"])*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)|(\s+|.)/g)];
+        return tokens.map((match, index) => {
+          const token = match[0];
+          const next = tokens[index + 1]?.[0] ?? "";
+          let className = "";
+          if (token.startsWith("//")) className = "tok-comment";
+          else if (token.startsWith('"')) className = "tok-string";
+          else if (/^\d/.test(token)) className = "tok-number";
+          else if (/^(?:UFUNCTION|WITH_|AS_|LLM_|MALLOCLEAK_)/.test(token)) className = "tok-meta";
+          else if (keywords.has(token)) className = "tok-keyword";
+          else if (/^[A-Z]/.test(token)) className = "tok-type";
+          else if (/^[A-Za-z_]/.test(token) && next === "(") className = "tok-function";
+          const escaped = escapeHtml(token);
+          return className ? '<span class="' + className + '">' + escaped + "</span>" : escaped;
+        }).join("");
+      }
+
+      function renderSource() {
+        SOURCE.split("\n").forEach((line, index) => {
+          const row = document.createElement("div");
+          row.className = "code-row";
+          row.dataset.sourceLine = String(index + 1);
+          const number = document.createElement("span");
+          number.className = "line-number";
+          number.textContent = String(CONFIG.startLine + index);
+          const code = document.createElement("span");
+          code.className = "code-text";
+          code.innerHTML = tokenize(line);
+          row.append(number, code);
+          sourceRoot.append(row);
+        });
+      }
+
+      function textNodes(element) {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let node;
+        while ((node = walker.nextNode())) nodes.push(node);
+        return nodes;
+      }
+
+      function rangeForOffsets(element, startOffset, endOffset) {
+        const range = document.createRange();
+        const nodes = textNodes(element);
+        let cursor = 0;
+        let startSet = false;
+        for (const node of nodes) {
+          const next = cursor + node.data.length;
+          if (!startSet && startOffset >= cursor && startOffset <= next) {
+            range.setStart(node, Math.min(node.data.length, startOffset - cursor));
+            startSet = true;
+          }
+          if (endOffset >= cursor && endOffset <= next) {
+            if (!startSet) range.setStart(node, 0);
+            range.setEnd(node, Math.min(node.data.length, endOffset - cursor));
+            return range;
+          }
+          cursor = next;
+        }
+        const last = nodes.at(-1);
+        if (!last) return null;
+        if (!startSet) range.setStart(last, last.data.length);
+        range.setEnd(last, last.data.length);
+        return range;
+      }
+
+      function textRect(element, needle = "") {
+        const text = element.textContent ?? "";
+        const start = needle ? text.indexOf(needle) : 0;
+        const safeStart = start >= 0 ? start : 0;
+        const safeEnd = needle ? safeStart + needle.length : text.length;
+        return rangeForOffsets(element, safeStart, safeEnd)?.getBoundingClientRect() ?? element.getBoundingClientRect();
+      }
+
+      function rowFor(line) {
+        return sourceRoot.querySelector('[data-source-line="' + line + '"]');
+      }
+
+      function sourceRowsFor(note) {
+        const start = Number(note.dataset.sourceStart);
+        const end = Number(note.dataset.sourceEnd);
+        return [...sourceRoot.children].filter((row) => {
+          const line = Number(row.dataset.sourceLine);
+          return line >= start && line <= end;
+        });
+      }
+
+      function sourceInkRects(stageRect) {
+        return [...sourceRoot.querySelectorAll(".code-text")].map((element) => {
+          const rect = textRect(element);
+          return {
+            left: rect.left - stageRect.left,
+            right: rect.right - stageRect.left,
+            top: rect.top - stageRect.top,
+            bottom: rect.bottom - stageRect.top
+          };
+        }).filter((rect) => rect.right > rect.left);
+      }
+
+      function overlaps(a, b, gap = 0) {
+        return a.left < b.right + gap
+          && a.right > b.left - gap
+          && a.top < b.bottom + gap
+          && a.bottom > b.top - gap;
+      }
+
+      function buildAnchors(stageRect) {
+        if (CONFIG.connectorMode === "linkerline" && libraryLines.size) {
+          libraryLines.forEach((line) => line.remove());
+          libraryLines.clear();
+        }
+        anchorLayer.replaceChildren();
+        noteElements.forEach((note) => {
+          const line = Number(note.dataset.anchorLine);
+          const row = rowFor(line);
+          const code = row?.querySelector(".code-text");
+          if (!row || !code) return;
+          const anchorRect = textRect(code, note.dataset.anchorText || "");
+          const x = anchorRect.right - stageRect.left + 7;
+          const y = anchorRect.top + anchorRect.height / 2 - stageRect.top;
+          const port = document.createElement("span");
+          port.dataset.sourcePort = note.dataset.annotationId;
+          port.style.left = x + "px";
+          port.style.top = y + "px";
+          anchorLayer.append(port);
+
+          const rows = sourceRowsFor(note);
+          if (rows.length > 1) {
+            const first = rows[0].getBoundingClientRect();
+            const last = rows.at(-1).getBoundingClientRect();
+            const codeLeft = row.querySelector(".code-text").getBoundingClientRect().left - stageRect.left;
+            const bracket = document.createElement("span");
+            bracket.className = "range-bracket";
+            bracket.dataset.rangeFor = note.dataset.annotationId;
+            bracket.style.left = Math.max(4, codeLeft - 10) + "px";
+            bracket.style.top = first.top - stageRect.top + 3 + "px";
+            bracket.style.height = Math.max(7, last.bottom - first.top - 6) + "px";
+            anchorLayer.append(bracket);
+          }
+        });
+      }
+
+      function layoutNotes() {
+        const initialStageRect = stage.getBoundingClientRect();
+        const initialInk = sourceInkRects(initialStageRect);
+        const widestInk = initialInk.reduce((max, rect) => Math.max(max, rect.right), 0);
+        const paperWidth = Math.max(1120, Math.min(1660, Math.ceil(widestInk + 430)));
+        codePaper.style.width = paperWidth + "px";
+        stage.style.minHeight = Math.max(560, sourceRoot.scrollHeight + 34) + "px";
+        canvas.style.width = paperWidth + 80 + "px";
+        const stageRect = stage.getBoundingClientRect();
+        buildAnchors(stageRect);
+        const inkRects = sourceInkRects(stageRect);
+        const stageHeight = stage.clientHeight;
+        const viewportRect = annotationViewport.getBoundingClientRect();
+        const visibleStageWidth = annotationViewport.clientWidth >= 900
+          ? Math.min(
+              paperWidth,
+              annotationViewport.clientWidth - (stageRect.left - viewportRect.left) - 20
+            )
+          : paperWidth;
+        const lanes = [
+          visibleStageWidth - 690,
+          visibleStageWidth - 465,
+          visibleStageWidth - 240
+        ].map((x) => Math.max(560, x));
+        const placed = [];
+
+        noteElements
+          .sort((a, b) => Number(a.dataset.anchorLine) - Number(b.dataset.anchorLine))
+          .forEach((note) => {
+            const sourcePort = anchorLayer.querySelector('[data-source-port="' + note.dataset.annotationId + '"]');
+            const anchorY = Number.parseFloat(sourcePort?.style.top || "20");
+            const width = note.offsetWidth || 218;
+            const height = note.querySelector("[data-note-summary]")?.offsetHeight || 31;
+            const preferred = Number(note.dataset.preferredLane || 0);
+            const laneOrder = [preferred, 0, 1, 2].filter((value, index, values) =>
+              value >= 0 && value < lanes.length && values.indexOf(value) === index
+            );
+            const verticalOffsets = [0, -34, 34, -68, 68, -102, 102, -136, 136];
+            let chosen = null;
+
+            for (const lane of laneOrder) {
+              for (const offset of verticalOffsets) {
+                const left = lanes[lane];
+                const top = Math.max(12, Math.min(stageHeight - height - 12, anchorY - height / 2 + offset));
+                const candidate = { left, right: left + width, top, bottom: top + height };
+                if (inkRects.some((rect) => overlaps(candidate, rect, 10))) continue;
+                if (placed.some((rect) => overlaps(candidate, rect, 9))) continue;
+                chosen = candidate;
+                break;
+              }
+              if (chosen) break;
+            }
+
+            if (!chosen) {
+              const left = lanes.at(-1);
+              for (let top = 12; top <= stageHeight - height - 12; top += 34) {
+                const candidate = { left, right: left + width, top, bottom: top + height };
+                if (!inkRects.some((rect) => overlaps(candidate, rect, 10))
+                    && !placed.some((rect) => overlaps(candidate, rect, 9))) {
+                  chosen = candidate;
+                  break;
+                }
+              }
+            }
+
+            chosen ??= {
+              left: lanes.at(-1),
+              right: lanes.at(-1) + width,
+              top: Math.max(12, anchorY - height / 2),
+              bottom: Math.max(12, anchorY - height / 2) + height
+            };
+            note.style.left = chosen.left + "px";
+            note.style.top = chosen.top + "px";
+            note.classList.toggle("align-end", chosen.right > paperWidth - 24);
+            placed.push(chosen);
+          });
+
+        codePaper.style.height = 43 + stage.clientHeight + "px";
+        canvas.style.height = codePaper.offsetHeight + 104 + "px";
+        updateFallbackDetails();
+      }
+
+      function updateFallbackDetails() {
+        if (CONFIG.connectorMode === "floating-ui+svg") return;
+        const stageRect = stage.getBoundingClientRect();
+        noteElements.forEach((note) => {
+          const detail = note.querySelector(".note-detail");
+          const summary = note.querySelector("[data-note-summary]");
+          const noteTop = Number.parseFloat(note.style.top || "0");
+          const noteLeft = Number.parseFloat(note.style.left || "0");
+          const detailWidth = detail.offsetWidth || 260;
+          const detailHeight = detail.offsetHeight || 92;
+          const below = noteTop + summary.offsetHeight + 6;
+          const top = below + detailHeight <= stage.clientHeight - 8
+            ? summary.offsetHeight + 6
+            : -detailHeight - 6;
+          const left = Math.min(0, stageRect.width - noteLeft - detailWidth - 8);
+          detail.style.top = top + "px";
+          detail.style.left = left + "px";
+        });
+      }
+
+      function endpoints(id) {
+        const source = anchorLayer.querySelector('[data-source-port="' + id + '"]');
+        const notePort = noteLayer.querySelector('[data-annotation-id="' + id + '"] [data-note-port]');
+        if (!source || !notePort) return null;
+        const stageRect = stage.getBoundingClientRect();
+        const sourceRect = source.getBoundingClientRect();
+        const noteRect = notePort.getBoundingClientRect();
+        return {
+          startX: sourceRect.left + sourceRect.width / 2 - stageRect.left,
+          startY: sourceRect.top + sourceRect.height / 2 - stageRect.top,
+          endX: noteRect.left + noteRect.width / 2 - stageRect.left,
+          endY: noteRect.top + noteRect.height / 2 - stageRect.top
+        };
+      }
+
+      function writeEndpointMetadata(connector, points) {
+        connector.dataset.startX = String(points.startX);
+        connector.dataset.startY = String(points.startY);
+        connector.dataset.endX = String(points.endX);
+        connector.dataset.endY = String(points.endY);
+      }
+
+      function orthogonalPath(points) {
+        const midX = points.startX + Math.max(13, (points.endX - points.startX) * .56);
+        return [
+          "M", points.startX, points.startY,
+          "L", midX, points.startY,
+          "L", midX, points.endY,
+          "L", points.endX, points.endY
+        ].join(" ");
+      }
+
+      function ensureLinkerLines() {
+        if (CONFIG.connectorMode !== "linkerline" || libraryLines.size) return;
+        const LinkerLine = window.CodeNoteLibrary?.default ?? window.CodeNoteLibrary;
+        if (typeof LinkerLine !== "function") throw new Error("LinkerLine runtime is unavailable");
+        noteElements.forEach((note) => {
+          const id = note.dataset.annotationId;
+          const source = anchorLayer.querySelector('[data-source-port="' + id + '"]');
+          const target = note.querySelector("[data-note-port]");
+          const line = new LinkerLine({
+            parent: stage,
+            start: source,
+            end: target,
+            path: "grid",
+            minGridLength: 14,
+            size: 1,
+            color: "rgba(79, 118, 134, .34)",
+            startPlug: "behind",
+            endPlug: "disc",
+            endPlugSize: .65,
+            hide: false
+          });
+          line.element.dataset.linkerLineRuntime = "";
+          line.element.setAttribute("aria-hidden", "true");
+          libraryLines.set(id, line);
+        });
+      }
+
+      function refreshConnectors() {
+        if (CONFIG.connectorMode === "linkerline") {
+          ensureLinkerLines();
+          connectorElements.forEach((connector) => {
+            const id = connector.dataset.connectorFor;
+            const points = endpoints(id);
+            if (!points) return;
+            writeEndpointMetadata(connector, points);
+            libraryLines.get(id)?.position();
+          });
+          return;
+        }
+
+        connectorElements.forEach((connector) => {
+          const id = connector.dataset.connectorFor;
+          const points = endpoints(id);
+          if (!points) return;
+          writeEndpointMetadata(connector, points);
+          if (CONFIG.connectorMode === "perfect-arrows") {
+            const getArrow = window.CodeNoteLibrary?.getArrow;
+            if (typeof getArrow !== "function") throw new Error("Perfect Arrows runtime is unavailable");
+            const arrow = getArrow(points.startX, points.startY, points.endX, points.endY, {
+              bow: .08,
+              stretch: .28,
+              stretchMin: 0,
+              stretchMax: 220,
+              padStart: 2,
+              padEnd: 2,
+              straights: true
+            });
+            const [startX, startY, controlX, controlY, endX, endY] = arrow;
+            connector.setAttribute("d", ["M", startX, startY, "Q", controlX, controlY, endX, endY].join(" "));
+          } else {
+            connector.setAttribute("d", orthogonalPath(points));
+          }
+        });
+      }
+
+      function setupFloatingDetails() {
+        if (CONFIG.connectorMode !== "floating-ui+svg") return;
+        const FloatingUI = window.CodeNoteLibrary;
+        if (!FloatingUI?.computePosition) throw new Error("Floating UI runtime is unavailable");
+        noteElements.forEach((note) => {
+          const summary = note.querySelector("[data-note-summary]");
+          const detail = note.querySelector(".note-detail");
+          const update = () => FloatingUI.computePosition(summary, detail, {
+            strategy: "absolute",
+            placement: "bottom-start",
+            middleware: [
+              FloatingUI.offset(6),
+              FloatingUI.flip({ boundary: codePaper, padding: 8 }),
+              FloatingUI.shift({ boundary: codePaper, padding: 8 })
+            ]
+          }).then(({ x, y, placement }) => {
+            detail.style.left = x + "px";
+            detail.style.top = y + "px";
+            detail.dataset.placement = placement;
+          });
+          floatingCleanups.push(FloatingUI.autoUpdate(summary, detail, update, {
+            ancestorScroll: true,
+            ancestorResize: true,
+            elementResize: true,
+            layoutShift: true,
+            animationFrame: false
+          }));
+          update();
+        });
+      }
+
+      function refreshLayout() {
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(() => {
+          layoutNotes();
+          refreshConnectors();
+        });
+      }
+
+      function setActive(id, active) {
+        const note = noteLayer.querySelector('[data-annotation-id="' + id + '"]');
+        const connector = connectorLayer.querySelector('[data-connector-for="' + id + '"]');
+        const source = anchorLayer.querySelector('[data-source-port="' + id + '"]');
+        note?.classList.toggle("is-active", active);
+        connector?.classList.toggle("is-active", active);
+        source?.classList.toggle("is-active", active);
+        const runtimeLine = libraryLines.get(id)?.element;
+        runtimeLine?.classList.toggle("is-active", active);
+        if (libraryLines.has(id)) {
+          libraryLines.get(id).color = active
+            ? "rgba(183, 91, 61, .78)"
+            : "rgba(79, 118, 134, .34)";
+        }
+        if (note) sourceRowsFor(note).forEach((row) => row.classList.toggle("is-active", active));
+      }
+
+      function setupInteractions() {
+        const setPinned = (note, pinned) => {
+          if (pinned) {
+            noteElements.forEach((other) => {
+              if (other === note) return;
+              other.removeAttribute("open");
+              other.querySelector("[data-note-summary]")?.setAttribute("aria-expanded", "false");
+              if (!other.matches(":hover, :focus-within")) {
+                setActive(other.dataset.annotationId, false);
+              }
+            });
+            note.setAttribute("open", "");
+          } else {
+            note.removeAttribute("open");
+          }
+          note.querySelector("[data-note-summary]")?.setAttribute("aria-expanded", String(pinned));
+          setActive(note.dataset.annotationId, pinned || note.matches(":hover, :focus-within"));
+        };
+
+        noteElements.forEach((note) => {
+          const id = note.dataset.annotationId;
+          const summary = note.querySelector("[data-note-summary]");
+          note.addEventListener("pointerenter", () => setActive(id, true));
+          note.addEventListener("pointerleave", () => {
+            if (!note.hasAttribute("open") && !note.matches(":focus-within")) setActive(id, false);
+          });
+          note.addEventListener("focusin", () => setActive(id, true));
+          note.addEventListener("focusout", () => {
+            queueMicrotask(() => {
+              if (!note.hasAttribute("open") && !note.matches(":focus-within")) setActive(id, false);
+            });
+          });
+          summary.addEventListener("click", () => setPinned(note, !note.hasAttribute("open")));
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape") return;
+          noteElements.forEach((note) => {
+            note.removeAttribute("open");
+            note.querySelector("[data-note-summary]")?.setAttribute("aria-expanded", "false");
+            setActive(note.dataset.annotationId, false);
+          });
+        });
+
+        document.querySelector('[data-action="toggle-notes"]').addEventListener("click", (event) => {
+          const hidden = document.documentElement.dataset.annotations === "hidden";
+          document.documentElement.dataset.annotations = hidden ? "visible" : "hidden";
+          event.currentTarget.textContent = hidden ? "隐藏注解" : "显示注解";
+        });
+
+        document.querySelector('[data-action="copy"]').addEventListener("click", async (event) => {
+          document.documentElement.dataset.previewState = "copied";
+          event.currentTarget.textContent = "已复制纯源码";
+          try {
+            await navigator.clipboard.writeText(SOURCE);
+          } catch {
+            const helper = document.createElement("textarea");
+            helper.value = SOURCE;
+            helper.style.position = "fixed";
+            helper.style.opacity = "0";
+            document.body.append(helper);
+            helper.select();
+            document.execCommand("copy");
+            helper.remove();
+          }
+        });
+      }
+
+      function collisionAudit() {
+        const collisions = [];
+        const summaries = noteElements.map((note) => ({
+          id: note.dataset.annotationId,
+          rect: note.querySelector("[data-note-summary]").getBoundingClientRect()
+        }));
+        for (let left = 0; left < summaries.length; left += 1) {
+          for (let right = left + 1; right < summaries.length; right += 1) {
+            if (overlaps(summaries[left].rect, summaries[right].rect, 1)) {
+              collisions.push("note:" + summaries[left].id + "/" + summaries[right].id);
+            }
+          }
+        }
+        const ink = [...sourceRoot.querySelectorAll(".code-text")]
+          .map((element) => textRect(element))
+          .filter((rect) => rect.width > 0);
+        summaries.forEach((summary) => {
+          if (ink.some((rect) => overlaps(summary.rect, rect, 2))) {
+            collisions.push("source:" + summary.id);
+          }
+        });
+        return collisions;
+      }
+
+      function audit() {
+        const rows = [...sourceRoot.children];
+        const errors = [];
+        if (noteElements.length !== CONFIG.noteCount) errors.push("annotation-count");
+        if (connectorElements.length !== CONFIG.noteCount) errors.push("connector-count");
+        if (rows.length !== SOURCE.split("\n").length) errors.push("source-line-count");
+        if (!rows.every((row) => row.classList.contains("code-row"))) errors.push("source-children");
+        if (sourceRoot.querySelector("[data-annotation-id], [data-source-port], [data-connector-for]")) {
+          errors.push("source-contamination");
+        }
+        return {
+          errors,
+          state: document.documentElement.dataset.previewState,
+          layoutMode: CONFIG.layoutMode,
+          connectorMode: CONFIG.connectorMode,
+          annotationCount: noteElements.length,
+          connectorCount: connectorElements.length,
+          sourceCount: rows.length,
+          sourceContinuous: errors.every((error) => !error.startsWith("source-")),
+          pinnedNoteId: noteElements.find((note) => note.hasAttribute("open"))?.dataset.annotationId ?? null,
+          teardownComplete,
+          collisions: collisionAudit(),
+          library: {
+            ...CONFIG.library,
+            inlineBytes: libraryBundle?.textContent?.length ?? 0
+          }
+        };
+      }
+
+      function teardown() {
+        cancelAnimationFrame(resizeFrame);
+        resizeObserver.disconnect();
+        window.removeEventListener("resize", refreshLayout);
+        floatingCleanups.splice(0).forEach((cleanup) => cleanup());
+        libraryLines.forEach((line) => line.remove());
+        libraryLines.clear();
+        teardownComplete = floatingCleanups.length === 0 && libraryLines.size === 0;
+      }
+
+      renderSource();
+      setupInteractions();
+      layoutNotes();
+      refreshConnectors();
+      setupFloatingDetails();
+      const resizeObserver = new ResizeObserver(refreshLayout);
+      resizeObserver.observe(stage);
+      window.addEventListener("resize", refreshLayout, { passive: true });
+      window.addEventListener("pagehide", teardown, { once: true });
+      document.fonts?.ready.then(refreshLayout);
+
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        library: CONFIG.library,
+        sourceText: () => SOURCE,
+        refreshLayout,
+        refreshConnectors,
+        audit,
+        teardown
+      };
+    })();
+</script>
+</body>
+</html>

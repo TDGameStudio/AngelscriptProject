@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="zh-CN" data-annotations="visible" data-preview-state="idle">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>19 · 短 note 常驻，详细解释由原生锚点展开</title>
+  <style>
+    :root {
+      --page: #eceef2;
+      --paper: #fcfdff;
+      --paper-muted: #f2f4f8;
+      --ink: #2c3440;
+      --muted: #747d8b;
+      --line: #c7ccd5;
+      --line-soft: #dfe2e8;
+      --slate: #57637c;
+      --blue: #49718e;
+      --coral: #b45e54;
+      --green: #657f70;
+      --connector: rgb(73 113 142 / 24%);
+      --connector-active: rgb(180 94 84 / 74%);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 0;
+      background: var(--page);
+    }
+
+    body {
+      min-width: 0;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% -7%, rgb(73 113 142 / 9%), transparent 28rem),
+        var(--page);
+      font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .page-shell {
+      width: min(1340px, calc(100% - 32px));
+      margin-inline: auto;
+      padding: 36px 0 58px;
+    }
+
+    .page-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--coral);
+      font: 700 10px/1.2 "Cascadia Code", Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0;
+      font-family: "Noto Serif SC", "Songti SC", Georgia, serif;
+      font-size: clamp(30px, 4.5vw, 49px);
+      font-weight: 550;
+      letter-spacing: -.035em;
+      line-height: 1.08;
+    }
+
+    .lede {
+      max-width: 880px;
+      margin: 13px 0 0;
+      color: #606979;
+      font-size: 13.5px;
+      line-height: 1.72;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .toolbar button {
+      min-height: 36px;
+      padding: 0 12px;
+      color: #465168;
+      cursor: pointer;
+      border: 1px solid #bcc2ce;
+      border-radius: 3px;
+      background: rgb(252 253 255 / 78%);
+    }
+
+    .toolbar button:hover,
+    .toolbar button:focus-visible {
+      color: #2e3c58;
+      border-color: var(--blue);
+      outline: 2px solid rgb(73 113 142 / 15%);
+      outline-offset: 2px;
+    }
+
+    html[data-preview-state="copied"] [data-action="copy"] {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+
+    .annotation-viewport {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-inline: contain;
+      border: 1px solid #bcc2cd;
+      background: #dfe2e8;
+      box-shadow: 0 20px 54px rgb(42 48 61 / 13%);
+      scrollbar-color: #9299a7 #dfe2e8;
+    }
+
+    .annotation-canvas {
+      position: relative;
+      width: 1532px;
+      min-width: 1532px;
+      min-height: 1030px;
+      overflow: hidden;
+      background:
+        linear-gradient(rgb(47 55 72 / 2.2%) 1px, transparent 1px) 0 0 / 100% 29px,
+        #f1f3f6;
+    }
+
+    .canvas-caption {
+      position: absolute;
+      top: 17px;
+      left: 36px;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #7b8391;
+      font-size: 9px;
+      letter-spacing: .06em;
+    }
+
+    .canvas-caption strong {
+      color: #3b465c;
+      font: 500 9.5px/1.2 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+
+    .capability {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 7px;
+      border: 1px solid #c8cdd6;
+      border-radius: 99px;
+      background: rgb(255 255 255 / 50%);
+      font: 500 8.5px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+
+    .capability::before {
+      width: 6px;
+      height: 6px;
+      content: "";
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    html:not([data-capability-mode="native-anchor-popover"]) .capability::before {
+      background: var(--coral);
+    }
+
+    .code-paper {
+      position: absolute;
+      top: 51px;
+      left: 36px;
+      width: 1460px;
+      overflow: hidden;
+      border: 1px solid #bec4cf;
+      background: var(--paper);
+      box-shadow: 0 16px 43px rgb(43 48 62 / 13%);
+    }
+
+    .code-head {
+      position: relative;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 43px;
+      padding: 0 15px;
+      color: #7d8592;
+      border-bottom: 1px solid #dde0e7;
+      background: #f3f5f8;
+      font-size: 8.5px;
+      letter-spacing: .08em;
+    }
+
+    .code-head strong {
+      color: #3a465c;
+      font: 500 10px/1 "Cascadia Code", Consolas, monospace;
+      letter-spacing: 0;
+    }
+
+    .paper-stage {
+      position: relative;
+      min-height: 908px;
+      overflow: hidden;
+    }
+
+    [data-source-root] {
+      position: relative;
+      z-index: 1;
+      padding: 22px 0 28px;
+    }
+
+    .code-row {
+      display: grid;
+      grid-template-columns: 54px max-content;
+      width: 100%;
+      min-height: 28px;
+      color: #37404f;
+      font: 12.25px/28px "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      white-space: pre;
+    }
+
+    .line-number {
+      padding-right: 14px;
+      color: #a3a8b2;
+      text-align: right;
+      user-select: none;
+    }
+
+    .code-text {
+      min-width: 0;
+      padding-right: 12px;
+    }
+
+    .tok-keyword { color: #a34e45; }
+    .tok-type { color: #3f6c7c; }
+    .tok-function { color: #526b9b; }
+    .tok-string { color: #827039; }
+    .tok-number { color: #765b88; }
+    .tok-macro { color: #667d4b; }
+
+    [data-anchor-layer],
+    [data-note-layer],
+    [data-connector-layer] {
+      position: absolute;
+      inset: 0;
+    }
+
+    [data-anchor-layer],
+    [data-connector-layer] {
+      pointer-events: none;
+    }
+
+    [data-anchor-layer] { z-index: 3; }
+
+    [data-connector-layer] {
+      z-index: 2;
+      overflow: visible;
+    }
+
+    [data-note-layer] {
+      z-index: 7;
+      pointer-events: none;
+    }
+
+    .source-mark {
+      position: absolute;
+      border-bottom: 1px solid rgb(73 113 142 / 25%);
+      background: rgb(73 113 142 / 4%);
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    .source-mark.is-active {
+      border-bottom-color: rgb(180 94 84 / 70%);
+      background: rgb(221 140 126 / 14%);
+    }
+
+    [data-source-port] {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border: 1px solid #7c8fa0;
+      border-radius: 50%;
+      background: var(--paper);
+      transform: translate(-50%, -50%);
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    [data-source-port].is-active {
+      border-color: var(--coral);
+      background: var(--coral);
+    }
+
+    [data-note-id] {
+      position: absolute;
+      width: 212px;
+      margin: 0;
+      pointer-events: auto;
+    }
+
+    [data-note-summary] {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-height: 31px;
+      padding: 6px 9px 6px 32px;
+      color: #687184;
+      cursor: pointer;
+      border: 1px solid #d2d6de;
+      border-radius: 3px;
+      background: rgb(247 248 251 / 97%);
+      box-shadow: 0 3px 10px rgb(42 48 61 / 4%);
+      text-align: left;
+      font-size: 10.5px;
+      line-height: 17px;
+      white-space: nowrap;
+      transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    [data-note-summary]::before {
+      position: absolute;
+      top: 6px;
+      left: 9px;
+      content: attr(data-note-number);
+      color: var(--coral);
+      font: 9px/17px "Cascadia Code", Consolas, monospace;
+    }
+
+    [data-note-port] {
+      position: absolute;
+      top: 50%;
+      left: -9px;
+      width: 5px;
+      height: 5px;
+      border: 1px solid #7c8fa0;
+      border-radius: 50%;
+      background: var(--paper);
+      transform: translateY(-50%);
+    }
+
+    [data-note-id]:hover [data-note-summary],
+    [data-note-id]:focus-within [data-note-summary],
+    [data-note-id].is-active [data-note-summary] {
+      color: #303a50;
+      border-color: #8493aa;
+      background: #f0f3f8;
+    }
+
+    [data-note-id].is-active [data-note-port] {
+      border-color: var(--coral);
+      background: var(--coral);
+    }
+
+    [data-connector-for] {
+      fill: none;
+      stroke: var(--connector);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      transition: stroke 120ms ease;
+    }
+
+    [data-connector-for].is-active {
+      stroke: var(--connector-active);
+    }
+
+    html[data-annotations="hidden"] [data-note-layer],
+    html[data-annotations="hidden"] [data-anchor-layer],
+    html[data-annotations="hidden"] [data-connector-layer] {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .detail-popover {
+      position: fixed;
+      inset: auto;
+      width: min(320px, calc(100vw - 24px));
+      margin: 7px 0 0;
+      padding: 14px 15px 15px;
+      color: #354054;
+      border: 1px solid #b7beca;
+      border-radius: 4px;
+      background: #fcfdff;
+      box-shadow: 0 18px 42px rgb(37 43 58 / 20%);
+      font-size: 11.5px;
+      line-height: 1.7;
+      overflow: visible;
+    }
+
+    .detail-popover[popover] {
+      display: none;
+    }
+
+    .detail-popover:popover-open,
+    .detail-popover.fallback-open {
+      display: block;
+    }
+
+    .detail-popover::before {
+      position: absolute;
+      top: -5px;
+      left: 18px;
+      width: 9px;
+      height: 9px;
+      content: "";
+      border: solid #b7beca;
+      border-width: 1px 0 0 1px;
+      background: #fcfdff;
+      transform: rotate(45deg);
+    }
+
+    .detail-popover[data-placement="top"]::before {
+      top: auto;
+      bottom: -5px;
+      border-width: 0 1px 1px 0;
+    }
+
+    .detail-popover strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #384769;
+      font-size: 11px;
+    }
+
+    .detail-popover code {
+      color: #9c5048;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+
+    .detail-popover .decision {
+      display: block;
+      margin-top: 9px;
+      padding-top: 8px;
+      color: #626d80;
+      border-top: 1px solid #e0e3e9;
+    }
+
+    [data-note-id="ready"] [data-note-summary] { anchor-name: --note-ready; }
+    [data-note-id="ambient"] [data-note-summary] { anchor-name: --note-ambient; }
+    [data-note-id="borrowed"] [data-note-summary] { anchor-name: --note-borrowed; }
+    [data-note-id="initialize"] [data-note-summary] { anchor-name: --note-initialize; }
+    [data-note-id="owned"] [data-note-summary] { anchor-name: --note-owned; }
+
+    #detail-ready { position-anchor: --note-ready; }
+    #detail-ambient { position-anchor: --note-ambient; }
+    #detail-borrowed { position-anchor: --note-borrowed; }
+    #detail-initialize { position-anchor: --note-initialize; }
+    #detail-owned { position-anchor: --note-owned; }
+
+    @supports (anchor-name: --note) and (top: anchor(bottom)) {
+      .detail-popover {
+        top: anchor(bottom);
+        left: max(12px, min(anchor(left), calc(100vw - 332px)));
+        position-try-fallbacks: flip-block;
+      }
+    }
+
+    .reading-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 13px;
+      color: #697284;
+      font-size: 10.5px;
+    }
+
+    .reading-key span::before {
+      display: inline-block;
+      width: 18px;
+      margin-right: 7px;
+      content: "";
+      border-top: 1px solid var(--blue);
+      vertical-align: middle;
+    }
+
+    .reading-key .key-popover::before {
+      height: 8px;
+      border: 1px solid #adb5c2;
+      background: #fcfdff;
+    }
+
+    .mode-note {
+      margin-left: auto;
+      color: #7d8491;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+
+    @media (max-width: 720px) {
+      .page-shell {
+        width: calc(100% - 16px);
+        padding-top: 22px;
+      }
+
+      .page-header {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+
+      h1 { font-size: 32px; }
+      .lede { font-size: 13px; }
+
+      .reading-key {
+        display: block;
+      }
+
+      .reading-key span {
+        display: block;
+        margin-top: 7px;
+      }
+
+      .mode-note {
+        margin-left: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Experiment 19 · anchored disclosure</p>
+        <h1>短注释留在源码里，完整原理等点击再出现</h1>
+        <p class="lede">
+          常驻 note 只给出阅读线索，不在代码旁堆第二篇正文。点击后，Popover 在 top layer 展开；
+          支持时由 CSS Anchor Positioning 贴住 note，不支持时改用同样不触碰源码的定位回退。
+        </p>
+      </div>
+      <div class="toolbar" aria-label="预览操作">
+        <button type="button" data-action="toggle-notes">隐藏注解</button>
+        <button type="button" data-action="copy">复制纯源码</button>
+      </div>
+    </header>
+
+    <section class="annotation-viewport" aria-label="C++ 源码解释预览">
+      <div class="annotation-canvas">
+        <div class="canvas-caption">
+          <strong>AngelscriptSubsystem.cpp</strong>
+          <span>EnsurePrimaryEngineInitialized</span>
+          <span class="capability" data-capability-label>检测中</span>
+        </div>
+
+        <article class="code-paper">
+          <header class="code-head">
+            <strong>Plugins/Angelscript/.../Core/AngelscriptSubsystem.cpp</strong>
+            <span>短 note 常驻 · 详情进入 top layer</span>
+          </header>
+
+          <div class="paper-stage">
+            <div data-source-root aria-label="C++ source code"></div>
+            <svg data-connector-layer aria-hidden="true">
+              <path data-connector-for="ready"></path>
+              <path data-connector-for="ambient"></path>
+              <path data-connector-for="borrowed"></path>
+              <path data-connector-for="initialize"></path>
+              <path data-connector-for="owned"></path>
+            </svg>
+            <div data-anchor-layer aria-hidden="true"></div>
+
+            <div data-note-layer>
+              <article data-note-id="ready" data-preferred-lane="1">
+                <button
+                  type="button"
+                  data-note-summary
+                  data-note-number="01"
+                  popovertarget="detail-ready"
+                  aria-expanded="false"
+                >
+                  已就绪就直接返回
+                  <span data-note-port aria-hidden="true"></span>
+                </button>
+              </article>
+
+              <article data-note-id="ambient" data-preferred-lane="2">
+                <button
+                  type="button"
+                  data-note-summary
+                  data-note-number="02"
+                  popovertarget="detail-ambient"
+                  aria-expanded="false"
+                >
+                  优先接管当前引擎
+                  <span data-note-port aria-hidden="true"></span>
+                </button>
+              </article>
+
+              <article data-note-id="borrowed" data-preferred-lane="0">
+                <button
+                  type="button"
+                  data-note-summary
+                  data-note-number="03"
+                  popovertarget="detail-borrowed"
+                  aria-expanded="false"
+                >
+                  借来的实例不负责销毁
+                  <span data-note-port aria-hidden="true"></span>
+                </button>
+              </article>
+
+              <article data-note-id="initialize" data-preferred-lane="2">
+                <button
+                  type="button"
+                  data-note-summary
+                  data-note-number="04"
+                  popovertarget="detail-initialize"
+                  aria-expanded="false"
+                >
+                  只补齐缺失的脚本引擎
+                  <span data-note-port aria-hidden="true"></span>
+                </button>
+              </article>
+
+              <article data-note-id="owned" data-preferred-lane="1">
+                <button
+                  type="button"
+                  data-note-summary
+                  data-note-number="05"
+                  popovertarget="detail-owned"
+                  aria-expanded="false"
+                >
+                  没有现成实例才自建
+                  <span data-note-port aria-hidden="true"></span>
+                </button>
+              </article>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="reading-key" aria-label="阅读说明">
+      <span>常驻标签只保留一句判断</span>
+      <span class="key-popover">点击后才读取完整原理</span>
+      <span class="mode-note">0 third-party runtime · anchor/popover with JS fallback</span>
+    </div>
+  </main>
+
+  <div class="detail-popover" id="detail-ready" popover="auto" data-detail-for="ready">
+    <strong>入口是幂等的</strong>
+    只有“已经完成初始化”并且 <code>PrimaryEngine</code> 仍有效时才返回。
+    两个条件一起检查，避免布尔标记与指针状态意外分离后跳过恢复。
+    <span class="decision">阅读结果：重复调用成本很小，同时不会把半初始化状态误认为完成。</span>
+  </div>
+
+  <div class="detail-popover" id="detail-ambient" popover="auto" data-detail-for="ambient">
+    <strong>先复用线程/上下文里已经存在的引擎</strong>
+    <code>TryGetCurrentEngine()</code> 是非创建式查询。查到实例后，Subsystem 采用它作为
+    <code>PrimaryEngine</code>，避免在同一宿主中平行创建第二套脚本运行时。
+    <span class="decision">阅读结果：这是“采用现有资源”分支，不拥有被采用对象的生命周期。</span>
+  </div>
+
+  <div class="detail-popover" id="detail-borrowed" popover="auto" data-detail-for="borrowed">
+    <strong>所有权标志决定之后由谁 Shutdown</strong>
+    指针赋给 <code>PrimaryEngine</code> 后立刻把 <code>bOwnsPrimaryEngine</code> 设为
+    <code>false</code>。后续释放路径据此区分“借用”与“自有”，而不是仅凭指针非空判断。
+    <span class="decision">阅读结果：选择实例与声明所有权在同一个分支完成，减少悬空责任。</span>
+  </div>
+
+  <div class="detail-popover" id="detail-initialize" popover="auto" data-detail-for="initialize">
+    <strong>采用现有包装器，不代表底层脚本引擎已经建好</strong>
+    <code>GetScriptEngine() == nullptr</code> 时才调用 <code>Initialize()</code>；
+    已经初始化的 ambient engine 只记录采用日志，不做重复初始化。
+    <span class="decision">阅读结果：对象复用与底层资源就绪是两个独立判断。</span>
+  </div>
+
+  <div class="detail-popover" id="detail-owned" popover="auto" data-detail-for="owned">
+    <strong>兜底分支建立明确的自有生命周期</strong>
+    没有 ambient engine 时，<code>PrimaryEngine</code> 指向成员 <code>OwnedEngine</code>，
+    所有权标志设为 true，然后初始化。对应的释放路径只会 Shutdown 这一类实例。
+    <span class="decision">阅读结果：函数最终保证 PrimaryEngine 可用，同时保留准确的销毁责任。</span>
+  </div>
+
+  <script>
+    (() => {
+      const SOURCE = `void UAngelscriptSubsystem::EnsurePrimaryEngineInitialized()
+{
+\tif (bInitializedPrimaryEngine && PrimaryEngine != nullptr)
+\t{
+\t\treturn;
+\t}
+
+\tif (FAngelscriptEngine* CurrentEngine = FAngelscriptEngine::TryGetCurrentEngine())
+\t{
+\t\tPrimaryEngine = CurrentEngine;
+\t\tbOwnsPrimaryEngine = false;
+\t\tbInitializedPrimaryEngine = true;
+\t\tif (PrimaryEngine->GetScriptEngine() == nullptr)
+\t\t{
+\t\t\tUE_LOG(Angelscript, Display, TEXT("[EngineSubsystemStartup] Initializing ambient primary engine=%p."), PrimaryEngine);
+\t\t\tPrimaryEngine->Initialize();
+\t\t}
+\t\telse
+\t\t{
+\t\t\tUE_LOG(Angelscript, Verbose, TEXT("[EngineSubsystemStartup] Adopted ambient primary engine=%p."), PrimaryEngine);
+\t\t}
+\t\treturn;
+\t}
+
+\tPrimaryEngine = &OwnedEngine;
+\tbOwnsPrimaryEngine = true;
+\tbInitializedPrimaryEngine = true;
+\tUE_LOG(Angelscript, Display, TEXT("[EngineSubsystemStartup] Created owned primary engine=%p."), PrimaryEngine);
+\tPrimaryEngine->Initialize();
+}`;
+
+      const CONFIG = {
+        startLine: 72,
+        annotations: [
+          {
+            id: "ready",
+            segments: [
+              { line: 3, text: "bInitializedPrimaryEngine && PrimaryEngine != nullptr" },
+              { line: 5, text: "return;" }
+            ]
+          },
+          {
+            id: "ambient",
+            segments: [{ line: 8, text: "FAngelscriptEngine::TryGetCurrentEngine()" }]
+          },
+          {
+            id: "borrowed",
+            segments: [
+              { line: 10, text: "PrimaryEngine = CurrentEngine" },
+              { line: 11, text: "bOwnsPrimaryEngine = false" }
+            ]
+          },
+          {
+            id: "initialize",
+            segments: [
+              { line: 13, text: "PrimaryEngine->GetScriptEngine() == nullptr" },
+              { line: 16, text: "PrimaryEngine->Initialize()" }
+            ]
+          },
+          {
+            id: "owned",
+            segments: [
+              { line: 25, text: "PrimaryEngine = &OwnedEngine" },
+              { line: 26, text: "bOwnsPrimaryEngine = true" },
+              { line: 29, text: "PrimaryEngine->Initialize()" }
+            ]
+          }
+        ]
+      };
+
+      const anchorSupported =
+        typeof CSS !== "undefined" &&
+        typeof CSS.supports === "function" &&
+        CSS.supports("anchor-name: --note") &&
+        CSS.supports("top: anchor(bottom)");
+      const popoverSupported =
+        typeof HTMLElement.prototype.showPopover === "function" &&
+        typeof HTMLElement.prototype.hidePopover === "function";
+      const capabilityMode = anchorSupported && popoverSupported
+        ? "native-anchor-popover"
+        : popoverSupported
+          ? "popover-manual-position"
+          : "manual-fallback";
+      document.documentElement.dataset.capabilityMode = capabilityMode;
+      document.querySelector("[data-capability-label]").textContent =
+        capabilityMode === "native-anchor-popover"
+          ? "anchor + popover · native"
+          : capabilityMode === "popover-manual-position"
+            ? "popover + JS position"
+            : "manual disclosure · fallback";
+
+      const sourceRoot = document.querySelector("[data-source-root]");
+      const stage = document.querySelector(".paper-stage");
+      const canvas = document.querySelector(".annotation-canvas");
+      const codePaper = document.querySelector(".code-paper");
+      const noteLayer = document.querySelector("[data-note-layer]");
+      const anchorLayer = document.querySelector("[data-anchor-layer]");
+      const connectorLayer = document.querySelector("[data-connector-layer]");
+      const notes = [...noteLayer.querySelectorAll("[data-note-id]")];
+      const details = [...document.querySelectorAll("[data-detail-for]")];
+      const ranges = new Map();
+      let activeId = null;
+      let openId = null;
+      let layoutFrame = 0;
+      let baselineGeometry = null;
+
+      const keywords = new Set([
+        "bool", "else", "false", "if", "nullptr", "return", "true", "void"
+      ]);
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function tokenize(line) {
+        const tokens = [...line.matchAll(
+          /(\/\/.*$)|("(?:\\.|[^"])*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)|(\s+|.)/g
+        )];
+        return tokens.map((match, index) => {
+          const token = match[0];
+          const next = tokens[index + 1]?.[0] ?? "";
+          let className = "";
+          if (token.startsWith('"')) className = "tok-string";
+          else if (/^\d/.test(token)) className = "tok-number";
+          else if (/^(?:UE_LOG|TEXT)$/.test(token)) className = "tok-macro";
+          else if (keywords.has(token)) className = "tok-keyword";
+          else if (/^[A-Z]/.test(token)) className = "tok-type";
+          else if (/^[A-Za-z_]/.test(token) && (next === "(" || next === "::")) {
+            className = "tok-function";
+          }
+          const escaped = escapeHtml(token);
+          return className ? `<span class="${className}">${escaped}</span>` : escaped;
+        }).join("");
+      }
+
+      function renderSource() {
+        SOURCE.split("\n").forEach((line, index) => {
+          const row = document.createElement("div");
+          row.className = "code-row";
+          row.dataset.sourceLine = String(index + 1);
+
+          const number = document.createElement("span");
+          number.className = "line-number";
+          number.textContent = String(CONFIG.startLine + index);
+          number.setAttribute("aria-hidden", "true");
+
+          const code = document.createElement("span");
+          code.className = "code-text";
+          code.innerHTML = tokenize(line);
+
+          row.append(number, code);
+          sourceRoot.append(row);
+        });
+      }
+
+      function rowFor(line) {
+        return sourceRoot.querySelector('[data-source-line="' + line + '"]');
+      }
+
+      function textNodes(element) {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        const result = [];
+        let node;
+        while ((node = walker.nextNode())) result.push(node);
+        return result;
+      }
+
+      function rangeForOffsets(element, startOffset, endOffset) {
+        const nodes = textNodes(element);
+        const range = document.createRange();
+        let cursor = 0;
+        let started = false;
+        for (const node of nodes) {
+          const next = cursor + node.data.length;
+          if (!started && startOffset >= cursor && startOffset <= next) {
+            range.setStart(node, Math.min(node.data.length, startOffset - cursor));
+            started = true;
+          }
+          if (endOffset >= cursor && endOffset <= next) {
+            if (!started) range.setStart(node, 0);
+            range.setEnd(node, Math.min(node.data.length, endOffset - cursor));
+            return range;
+          }
+          cursor = next;
+        }
+        return null;
+      }
+
+      function rangeForSegment(segment) {
+        const code = rowFor(segment.line)?.querySelector(".code-text");
+        if (!code) return null;
+        const start = code.textContent.indexOf(segment.text);
+        return start < 0 ? null : rangeForOffsets(code, start, start + segment.text.length);
+      }
+
+      function buildRanges() {
+        CONFIG.annotations.forEach((annotation) => {
+          ranges.set(
+            annotation.id,
+            annotation.segments.map(rangeForSegment).filter(Boolean)
+          );
+        });
+      }
+
+      function overlaps(a, b, gap = 0) {
+        return a.left < b.right + gap &&
+          a.right > b.left - gap &&
+          a.top < b.bottom + gap &&
+          a.bottom > b.top - gap;
+      }
+
+      function buildAnchors() {
+        anchorLayer.replaceChildren();
+        const stageRect = stage.getBoundingClientRect();
+        ranges.forEach((annotationRanges, id) => {
+          annotationRanges.forEach((range) => {
+            [...range.getClientRects()].forEach((rect) => {
+              const mark = document.createElement("span");
+              mark.className = "source-mark";
+              mark.dataset.markFor = id;
+              mark.style.left = rect.left - stageRect.left + "px";
+              mark.style.top = rect.top - stageRect.top + 2 + "px";
+              mark.style.width = rect.width + "px";
+              mark.style.height = Math.max(8, rect.height - 3) + "px";
+              anchorLayer.append(mark);
+            });
+          });
+
+          const lastRect = [...annotationRanges.at(-1)?.getClientRects() ?? []].at(-1);
+          if (!lastRect) return;
+          const port = document.createElement("span");
+          port.dataset.sourcePort = id;
+          port.style.left = lastRect.right - stageRect.left + 6 + "px";
+          port.style.top = lastRect.top + lastRect.height / 2 - stageRect.top + "px";
+          anchorLayer.append(port);
+        });
+      }
+
+      function sourceInkRects(stageRect) {
+        return [...sourceRoot.querySelectorAll(".code-text")].map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            left: rect.left - stageRect.left,
+            right: rect.right - stageRect.left,
+            top: rect.top - stageRect.top,
+            bottom: rect.bottom - stageRect.top
+          };
+        }).filter((rect) => rect.right > rect.left);
+      }
+
+      function layoutNotes() {
+        stage.style.minHeight = Math.max(908, sourceRoot.scrollHeight + 10) + "px";
+        const stageRect = stage.getBoundingClientRect();
+        const ink = sourceInkRects(stageRect);
+        const lanes = [690, 900, 1060];
+        const placed = [];
+
+        notes
+          .sort((a, b) => {
+            const left = CONFIG.annotations.find((item) => item.id === a.dataset.noteId);
+            const right = CONFIG.annotations.find((item) => item.id === b.dataset.noteId);
+            return left.segments[0].line - right.segments[0].line;
+          })
+          .forEach((note) => {
+            const id = note.dataset.noteId;
+            const source = anchorLayer.querySelector('[data-source-port="' + id + '"]');
+            const anchorY = Number.parseFloat(source?.style.top || "20");
+            const width = note.offsetWidth || 212;
+            const height = note.querySelector("[data-note-summary]").offsetHeight || 31;
+            const preferred = Number(note.dataset.preferredLane || 0);
+            const laneOrder = [preferred, 0, 1, 2].filter(
+              (value, index, values) => values.indexOf(value) === index
+            );
+            const offsets = [0, -34, 34, -68, 68, -102, 102, -136, 136];
+            let chosen = null;
+
+            for (const lane of laneOrder) {
+              for (const offset of offsets) {
+                const left = lanes[lane];
+                const top = Math.max(
+                  10,
+                  Math.min(stage.clientHeight - height - 10, anchorY - height / 2 + offset)
+                );
+                const candidate = {
+                  left,
+                  right: left + width,
+                  top,
+                  bottom: top + height
+                };
+                if (ink.some((rect) => overlaps(candidate, rect, 10))) continue;
+                if (placed.some((rect) => overlaps(candidate, rect, 8))) continue;
+                chosen = candidate;
+                break;
+              }
+              if (chosen) break;
+            }
+
+            chosen ??= {
+              left: lanes.at(-1),
+              right: lanes.at(-1) + width,
+              top: Math.max(10, anchorY - height / 2),
+              bottom: Math.max(10, anchorY - height / 2) + height
+            };
+            note.style.left = chosen.left + "px";
+            note.style.top = chosen.top + "px";
+            placed.push(chosen);
+          });
+
+        codePaper.style.height = 43 + stage.clientHeight + "px";
+        canvas.style.height = codePaper.offsetHeight + 82 + "px";
+      }
+
+      function drawConnectors() {
+        const stageRect = stage.getBoundingClientRect();
+        connectorLayer.querySelectorAll("[data-connector-for]").forEach((path) => {
+          const id = path.dataset.connectorFor;
+          const source = anchorLayer.querySelector('[data-source-port="' + id + '"]');
+          const target = noteLayer.querySelector('[data-note-id="' + id + '"] [data-note-port]');
+          if (!source || !target) return;
+          const sourceRect = source.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const startX = sourceRect.left + sourceRect.width / 2 - stageRect.left;
+          const startY = sourceRect.top + sourceRect.height / 2 - stageRect.top;
+          const endX = targetRect.left + targetRect.width / 2 - stageRect.left;
+          const endY = targetRect.top + targetRect.height / 2 - stageRect.top;
+          const elbowX = Math.max(startX + 12, startX + (endX - startX) * .57);
+          path.setAttribute(
+            "d",
+            `M ${startX} ${startY} L ${elbowX} ${startY} L ${elbowX} ${endY} L ${endX} ${endY}`
+          );
+          path.dataset.startX = String(startX);
+          path.dataset.startY = String(startY);
+          path.dataset.endX = String(endX);
+          path.dataset.endY = String(endY);
+        });
+      }
+
+      function positionDetail(detail) {
+        if (capabilityMode === "native-anchor-popover") {
+          detail.removeAttribute("data-placement");
+          detail.style.removeProperty("top");
+          detail.style.removeProperty("left");
+          return;
+        }
+        const id = detail.dataset.detailFor;
+        const summary = noteLayer.querySelector(
+          '[data-note-id="' + id + '"] [data-note-summary]'
+        );
+        if (!summary) return;
+        const rect = summary.getBoundingClientRect();
+        const width = detail.offsetWidth || 320;
+        const height = detail.offsetHeight || 150;
+        const gap = 7;
+        const below = rect.bottom + gap;
+        const fitsBelow = below + height <= window.innerHeight - 10;
+        const top = fitsBelow ? below : Math.max(10, rect.top - height - gap);
+        const left = Math.max(10, Math.min(rect.left, window.innerWidth - width - 10));
+        detail.style.top = top + "px";
+        detail.style.left = left + "px";
+        detail.dataset.placement = fitsBelow ? "bottom" : "top";
+      }
+
+      function positionOpenDetails() {
+        details.forEach((detail) => {
+          const isOpen = popoverSupported
+            ? detail.matches(":popover-open")
+            : detail.classList.contains("fallback-open");
+          if (isOpen) positionDetail(detail);
+        });
+      }
+
+      function refreshLayout() {
+        cancelAnimationFrame(layoutFrame);
+        layoutFrame = requestAnimationFrame(() => {
+          buildAnchors();
+          layoutNotes();
+          drawConnectors();
+          positionOpenDetails();
+        });
+      }
+
+      function setActive(id) {
+        activeId = id;
+        notes.forEach((note) => {
+          note.classList.toggle("is-active", note.dataset.noteId === id);
+        });
+        connectorLayer.querySelectorAll("[data-connector-for]").forEach((connector) => {
+          connector.classList.toggle("is-active", connector.dataset.connectorFor === id);
+        });
+        anchorLayer.querySelectorAll("[data-source-port]").forEach((port) => {
+          port.classList.toggle("is-active", port.dataset.sourcePort === id);
+        });
+        anchorLayer.querySelectorAll("[data-mark-for]").forEach((mark) => {
+          mark.classList.toggle("is-active", mark.dataset.markFor === id);
+        });
+      }
+
+      function closeAllDetails() {
+        details.forEach((detail) => {
+          if (popoverSupported && detail.matches(":popover-open")) {
+            detail.hidePopover();
+          }
+          detail.classList.remove("fallback-open");
+        });
+        openId = null;
+        notes.forEach((note) => {
+          note.querySelector("[data-note-summary]").setAttribute("aria-expanded", "false");
+        });
+        setActive(null);
+      }
+
+      function setOpenState(id, open) {
+        const note = noteLayer.querySelector('[data-note-id="' + id + '"]');
+        note?.querySelector("[data-note-summary]")?.setAttribute("aria-expanded", String(open));
+        if (open) {
+          openId = id;
+          setActive(id);
+        } else if (openId === id) {
+          openId = null;
+          if (!note?.matches(":hover, :focus-within")) setActive(null);
+        }
+      }
+
+      function setupInteractions() {
+        notes.forEach((note) => {
+          const id = note.dataset.noteId;
+          const summary = note.querySelector("[data-note-summary]");
+          const detail = document.querySelector('[data-detail-for="' + id + '"]');
+
+          note.addEventListener("pointerenter", () => setActive(id));
+          note.addEventListener("pointerleave", () => {
+            if (openId !== id && !note.matches(":focus-within")) {
+              setActive(openId);
+            }
+          });
+          note.addEventListener("focusin", () => setActive(id));
+          note.addEventListener("focusout", () => {
+            queueMicrotask(() => {
+              if (openId !== id && !note.matches(":focus-within")) {
+                setActive(openId);
+              }
+            });
+          });
+
+          if (!popoverSupported) {
+            summary.addEventListener("click", () => {
+              const next = !detail.classList.contains("fallback-open");
+              closeAllDetails();
+              if (next) {
+                detail.classList.add("fallback-open");
+                positionDetail(detail);
+                setOpenState(id, true);
+              }
+            });
+          }
+        });
+
+        if (popoverSupported) {
+          details.forEach((detail) => {
+            detail.addEventListener("toggle", (event) => {
+              const isOpen = event.newState === "open";
+              setOpenState(detail.dataset.detailFor, isOpen);
+              if (isOpen) requestAnimationFrame(() => positionDetail(detail));
+            });
+          });
+        }
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !popoverSupported) closeAllDetails();
+        });
+
+        document.querySelector('[data-action="toggle-notes"]').addEventListener("click", (event) => {
+          const hidden = document.documentElement.dataset.annotations === "hidden";
+          document.documentElement.dataset.annotations = hidden ? "visible" : "hidden";
+          event.currentTarget.textContent = hidden ? "隐藏注解" : "显示注解";
+          if (!hidden) closeAllDetails();
+        });
+
+        document.querySelector('[data-action="copy"]').addEventListener("click", async (event) => {
+          try {
+            await navigator.clipboard.writeText(SOURCE);
+          } catch {
+            const helper = document.createElement("textarea");
+            helper.value = SOURCE;
+            helper.style.position = "fixed";
+            helper.style.opacity = "0";
+            document.body.append(helper);
+            helper.select();
+            document.execCommand("copy");
+            helper.remove();
+          }
+          document.documentElement.dataset.previewState = "copied";
+          event.currentTarget.textContent = "已复制纯源码";
+        });
+      }
+
+      function geometrySnapshot() {
+        const stageRect = stage.getBoundingClientRect();
+        return [...sourceRoot.querySelectorAll(".code-row")].map((row) => {
+          const rect = row.getBoundingClientRect();
+          return [
+            rect.left - stageRect.left,
+            rect.top - stageRect.top,
+            rect.width,
+            rect.height
+          ];
+        });
+      }
+
+      function geometryStable() {
+        if (!baselineGeometry) return false;
+        const current = geometrySnapshot();
+        return current.length === baselineGeometry.length &&
+          current.every((rect, index) =>
+            rect.every((value, axis) => Math.abs(value - baselineGeometry[index][axis]) < .5)
+          );
+      }
+
+      function collisionAudit() {
+        const result = [];
+        const summaries = notes.map((note) => ({
+          id: note.dataset.noteId,
+          rect: note.querySelector("[data-note-summary]").getBoundingClientRect()
+        }));
+        for (let left = 0; left < summaries.length; left += 1) {
+          for (let right = left + 1; right < summaries.length; right += 1) {
+            if (overlaps(summaries[left].rect, summaries[right].rect, 1)) {
+              result.push(`note:${summaries[left].id}/${summaries[right].id}`);
+            }
+          }
+        }
+        const ink = [...sourceRoot.querySelectorAll(".code-text")]
+          .map((element) => element.getBoundingClientRect())
+          .filter((rect) => rect.width > 0);
+        summaries.forEach((summary) => {
+          if (ink.some((rect) => overlaps(summary.rect, rect, 2))) {
+            result.push(`source:${summary.id}`);
+          }
+        });
+        return result;
+      }
+
+      function audit() {
+        const rows = [...sourceRoot.children];
+        const sourceText = rows.map((row) => row.querySelector(".code-text")?.textContent ?? "").join("\n");
+        const contaminated = Boolean(
+          sourceRoot.querySelector("[data-note-id], [data-detail-for], [data-source-port], [data-connector-for]")
+        );
+        const openDetails = details.filter((detail) =>
+          popoverSupported
+            ? detail.matches(":popover-open")
+            : detail.classList.contains("fallback-open")
+        );
+        const resources = performance
+          .getEntriesByType("resource")
+          .map((entry) => entry.name)
+          .filter((name) => /^https?:/i.test(name));
+        return {
+          errors: [
+            sourceText === SOURCE ? null : "source-text",
+            contaminated ? "source-contamination" : null,
+            notes.length === CONFIG.annotations.length ? null : "annotation-count",
+            geometryStable() ? null : "source-geometry"
+          ].filter(Boolean),
+          anchorSupported,
+          popoverSupported,
+          capabilityMode,
+          activeId,
+          openId,
+          sourceContinuous: sourceText === SOURCE && !contaminated,
+          sourceLineCount: rows.length,
+          annotationCount: notes.length,
+          connectorCount: connectorLayer.querySelectorAll("[data-connector-for]").length,
+          openPopoverCount: openDetails.length,
+          collisions: collisionAudit(),
+          geometryStable: geometryStable(),
+          externalRequests: resources
+        };
+      }
+
+      renderSource();
+      buildRanges();
+      setupInteractions();
+      refreshLayout();
+
+      document.fonts?.ready.then(() => {
+        refreshLayout();
+        requestAnimationFrame(() => {
+          baselineGeometry = geometrySnapshot();
+        });
+      });
+      window.addEventListener("resize", refreshLayout, { passive: true });
+
+      window.__CODE_EXPLANATION_PREVIEW__ = {
+        sourceText: () => SOURCE,
+        refreshLayout,
+        setActive,
+        closeAllDetails,
+        audit
+      };
+    })();
+  </script>
+</body>
+</html>
