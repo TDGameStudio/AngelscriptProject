@@ -1,4 +1,4 @@
-"ProductId","SourceCatalog","Theme","AxisCount","Axes","ExpectedCells","ExpandedCells","Classification","Owner"
+﻿"ProductId","SourceCatalog","Theme","AxisCount","Axes","ExpectedCells","ExpandedCells","Classification","Owner"
 "LANG-DECL-FAMILY-SCOPE-ORDER","declarations.md","Declarations","3","Family=15;Ordering=6;Scope=6","540","540","CurrentFork","Language/Declarations/AngelscriptNativeDeclarationPublicationTests.cpp|FDeclarationPublicationTests|DeclarationFamiliesByScopeAndOrder"
 "LANG-DECL-COLLISION","declarations.md","Declarations","3","InsertionOrder=2;NamespaceRelation=3;Pair=16","96","96","CurrentFork","Language/Declarations/AngelscriptNativeDeclarationCollisionTests.cpp|FDeclarationCollisionTests|PairsByNamespaceRelationAndInsertionOrder"
 "LANG-DECL-FAILURE-RECOVERY","declarations.md","Declarations","3","Form=6;LineEnding=2;Placement=3","36","36","RejectByFork","Language/Declarations/AngelscriptNativeDeclarationFailureRecoveryTests.cpp|FDeclarationFailureRecoveryTests|MalformedDeclarationsRecoverAcrossPlacementAndLineEnding"
@@ -132,6 +132,7 @@
 "ENG-ATOMIC-DEFAULT-CONSTRUCTION","native-domains.md","Engine","1","Observation=1","1","1","CurrentFork","Engine/AngelscriptNativeAtomicTests.cpp|FAtomicTests|DefaultConstructionStartsAtZero"
 "ENG-ATOMIC-RETURN-TRANSITIONS","native-domains.md","Engine","1","Transition=4","4","4","CurrentFork","Engine/AngelscriptNativeAtomicTests.cpp|FAtomicTests|IncrementAndDecrementReturnExpectedValues"
 "ENG-ATOMIC-BATCHED-CONCURRENCY","native-domains.md","Engine","1","Observation=3","3","3","CurrentFork","Engine/AngelscriptNativeAtomicTests.cpp|FAtomicTests|ConcurrentIncrementAndDecrementRemainBalanced"
+"ENG-PRODUCT-VERSION-CONTRACT","native-domains.md","Engine","1","Observation=8","8","8","CurrentFork","Engine/AngelscriptNativeEngineVersionTests.cpp|FEngineVersionTests|ReportsOwnedProductIdentity"
 "ENG-LIFECYCLE-CROSS-ENGINE-MESSAGE-CALLBACK","native-domains.md","Engine","1","State=5","5","5","CurrentFork","Engine/AngelscriptNativeEngineLifecycleTests.cpp|FEngineLifecycleTests|CreatesAndShutsDownRawEngine"
 "ENG-LIFECYCLE-MODULE-ENUMERATION","native-domains.md","Engine","1","Observation=7","7","7","CurrentFork","Engine/AngelscriptNativeEngineLifecycleTests.cpp|FEngineLifecycleTests|ModuleEnumeration"
 "ENG-LIFECYCLE-EMPTY-GC-MODES","native-domains.md","Engine","1","Scenario=7","7","7","CurrentFork","Engine/AngelscriptNativeEngineLifecycleTests.cpp|FEngineLifecycleTests|GarbageCollectCycle"

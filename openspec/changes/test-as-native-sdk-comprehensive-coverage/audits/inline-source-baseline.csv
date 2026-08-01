@@ -1,4 +1,4 @@
-"File","Line","Classification","Wrapper","Delimiter","ContentIndented","ClosingIndented","RegisteredException","Violations","Disposition"
+﻿"File","Line","Classification","Wrapper","Delimiter","ContentIndented","ClosingIndented","RegisteredException","Violations","Disposition"
 "Compiler/AngelscriptNativeBuilderBytecodeTests.cpp","164","OrdinaryScript","ASTEST_AS_ANSI","AS","True","True","False","","Conforming"
 "Compiler/AngelscriptNativeBuilderBytecodeTests.cpp","190","OrdinaryScript","ASTEST_AS_ANSI","AS","True","True","False","","Conforming"
 "Compiler/AngelscriptNativeBuilderBytecodeTests.cpp","218","OrdinaryScript","ASTEST_AS_ANSI","AS","True","True","False","","Conforming"
