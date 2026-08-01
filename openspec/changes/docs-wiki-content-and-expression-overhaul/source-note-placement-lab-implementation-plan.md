@@ -288,7 +288,7 @@ Expected: zero ESLint errors/warnings for targeted files; `check` exits 0.
 
 - [ ] **Step 1: Add the temporary hub**
 
-Use `type: text/vnd.tiddlywiki`, `tags: [[ASWiki/Showcase/LayoutExperiment]]`, an explicit removable-experiment warning, a compact comparison table, and four TW5 internal links. Do not add `as-doc-kind`, `as-showcase-id`, `as-showcase-tier`, or `ASWiki/Docs/showcase-lab`.
+Use `type: text/vnd.tiddlywiki`, `tags: [[Showcase/LayoutExperiment]]`, an explicit removable-experiment warning, a compact comparison table, and four TW5 internal links. Do not add `as-doc-kind`, `as-showcase-id`, `as-showcase-tier`, or the formal-document topic tag `ShowcaseLab`.
 
 - [ ] **Step 2: Add four pages with identical source and notes**
 

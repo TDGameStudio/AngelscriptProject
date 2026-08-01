@@ -41,10 +41,11 @@
 ## 3. 结构重构
 
 - [x] 3.0 修复 `AS/Docs` 知识体系视图一级主题展开后的同名重复：`<summary>` 主题名改为指向该 topic `/index` 的链接（点标题直达 landing），`<ul>` 用 `-[<landingTitle>]` 排除同名 index 条目；同步 `reader-capability-directory.spec.ts` 断言。（reader 场景视图受 90 条契约锁定、侧栏为任务型分组且测试要求 landing 可见，故不在本项范围）
-- [ ] 3.1 复核 15 topics × 7 nav-group × L0–L5 归属是否合理（不新增第三级、不恢复退役 tag）
-- [ ] 3.2 调整需要迁移的文档 `as-nav-group`/`as-nav-order`/`as-depth`/topic 归属
-- [ ] 3.3 校验每篇正式中文文档在两级主路径中恰好出现一次
-- [ ] 3.4 同步更新 `doc-status-matrix.md` 分组
+- [x] 3.1 <!-- TDD --> 将产品 Tag 收口为 UE 风格 PascalCase 主题 Tag（无 `ASWiki/` / `Docs/` 根），让主题与读者导航定义分别由 `as-topic-key` / `as-nav-key` 发现，仅保留有真实层级含义的 `Showcase/*`；不提供 alias/双读，继续校验定义元数据、父级与无环关系，并同步 WikiText 过滤器、生成器、测试与 Agents 约束（见 `tag-naming-correction-plan.md`、`verification-tag-namespace-2026-08-01.md`）
+- [ ] 3.2 复核 15 topics × 7 nav-group × L0–L5 归属是否合理（不新增第三级、不恢复退役 tag）
+- [ ] 3.3 调整需要迁移的文档 `as-nav-group`/`as-nav-order`/`as-depth`/topic 归属
+- [ ] 3.4 校验每篇正式中文文档在两级主路径中恰好出现一次
+- [ ] 3.5 同步更新 `doc-status-matrix.md` 分组
 
 ## 4. 内容分批补全与重写
 

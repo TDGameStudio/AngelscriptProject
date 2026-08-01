@@ -10,7 +10,7 @@
 
 - `<pre>/<code>` 中的源码文本、缩进、换行、显示行号、复制结果和行几何不得因 note 状态改变。
 - 现有组件未传实验参数时，DOM、布局选择、视觉状态和窄屏/打印行为保持不变。
-- 实验页面不新增 Showcase catalog ID，不使用 `ASWiki/Docs/showcase-lab` 正式文档标签，不改变 42 项 Showcase catalog 和正式中文读者文档数量。
+- 实验页面不新增 Showcase catalog ID，不使用 `ShowcaseLab` 正式文档主题 Tag，不改变 42 项 Showcase catalog 和正式中文读者文档数量。
 - 四个主实验都读取同一个 P04 C++ 源码 tiddler，不复制源码正文。
 - 实验 note 不显示视觉序号；源码流程、VM 前后步等真正具有顺序语义的控件不在本轮全局修改。
 - 未激活 note 的视觉强度接近编辑器辅助注释：透明或近透明底色、低对比边框与文字；hover/focus 只轻度增强；click/Enter/Space 固定当前关系并打开详情。

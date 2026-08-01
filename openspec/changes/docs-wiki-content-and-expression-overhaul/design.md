@@ -46,6 +46,8 @@
 ### D5. 结构重构保持两级导航不变
 `taxonomy`（15 topics）与 L0–L5 只作 `AS/Docs` 下的二级“知识体系”视图；`AS/Docs` 与左侧 `AS/Navigation` 主路径固定为两级：七个任务/学习组 → 具体正式 `.tid`。重构只调整归属与顺序，不新增第三级、不恢复退役 tag（`Home`/`Navigation`/`Status`/`Theme`/`Workflow`/`Maintainer`）。
 
+产品 Tag 采用一次性硬迁移，不提供 alias、双读或兼容 tiddler；`$:/ASWiki/**` 系统 tiddler 与 `AS/Docs/**`、`AS/Showcase/**` 内容标题不在迁移范围。十五个正式主题 Tag 使用 UE 风格 PascalCase：`Start`、`Language`、`UnrealLanguage`、`TypeObjectReflection`、`UnrealCore`、`CompileModulePreprocessor`、`HotReload`、`EditorIdeDebugging`、`TestingDiagnosticsRelease`、`RuntimeJitVm`、`BindingsUhtExtensions`、`ArchitectureMaintenance`、`TopicsIntegrations`、`ReferenceDifferencesVersion`、`ShowcaseLab`；kebab-case `as-topic-key` 继续作为稳定数据键，主题定义通过该字段发现。读者导航定义通过 `as-nav-key` 发现，不再用 `ReaderNav` Tag。只有有真实层级含义的 `Showcase/*` 保留产品命名空间；`ReferenceDifferencesVersion/Hazelight` 是登记过的主题子 Tag。每个被引用 Tag 必须有带 `caption`/`description` 的同名定义，多级 Tag 的父定义必须存在，定义关系不得成环。`Showcase/Detail` 与 `Showcase/LayoutExperiment` 是补充页面分类，不标记为 `Showcase` 子级稳定性层；稳定性层仍只有 Base、Pattern、Lab。
+
 ### D6. 父仓库/子模块分离提交（对齐 Agents.md §Git and Host Workflow）
 Wiki 内容改动在 `Wiki/` 内完成、测试、提交并推送到 Wiki 远端；回到父仓库后用 `git diff --submodule=log` 复核，仅暂存 `Wiki` gitlink 与相关 host 文档，父仓库单独提交。禁止在父仓库 `git add .`。OpenSpec 记录只在父仓库 `openspec/`。
 
@@ -127,10 +129,11 @@ connector 在 idle、hover、focus 和详情打开状态下都位于 Highlight �
 - [长源码与约 14rem 注解 lane 争夺宽度] → lane 只在可容纳它的代码表面内启用，源码保持 `white-space: pre` 和内部横向滚动；空间不足时移除 connector/range overlay，把 note 按源码顺序放到代码后。
 - [浏览器对 Anchor Positioning、Popover、Range 几何的能力不同] → 启动时分别检测能力，原生路径与手动 fixed-position/非-Popover 路径共享相同状态机、ARIA、关闭语义和源码范围解析，不让 fallback 改变读者结果。
 - [TiddlyWiki refresh 后残留 observer、listener、RAF 或 top-layer 详情] → widget refresh/destroy 前关闭披露、取消 RAF、断开 observer 并移除自有 listener；重复刷新与销毁测试验证没有跨实例残留。
+- [硬重命名导致外部保存的旧 Tag 链接失效] → 接受这项一次性断裂以避免长期维护冗余命名；站内数据、过滤器、生成器和测试必须同批迁移，内容契约拒绝任何 `ASWiki/*`、`Docs/*` 或 `ReaderNav` 产品 Tag 回流。
 
 ## Migration Plan
 
-无运行时迁移。推进节奏：先建记录（本次）→ 分批实现组件（`tasks §2`）→ 结构复核（`§3`）→ 内容分批推进（`§4`，维护者按矩阵优先级驱动）→ 每批与阶段性验证（`§5`）。回滚：仅按显式确认的路径回退，禁用 `git checkout -- .` / `git reset --hard`。
+不引入运行时迁移器或兼容双读。推进节奏：先建记录 → 分批实现组件（`tasks §2`）→ 产品 Tag 源码硬迁移并完成契约验证 → 结构复核（`§3`）→ 内容分批推进（`§4`，维护者按矩阵优先级驱动）→ 每批与阶段性验证（`§5`）。回滚：仅按显式确认的路径回退，禁用 `git checkout -- .` / `git reset --hard`。
 
 ## Open Questions
 

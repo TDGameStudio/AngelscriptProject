@@ -32,3 +32,23 @@ Batch content work organized by `nav-group` or topic SHALL preserve the existing
 - **THEN** each formal Chinese document SHALL still appear exactly once in the primary two-level path
 - **AND** the secondary fifteen-topic/depth view SHALL remain the ownership system
 - **AND** no third navigation level or retired tag SHALL be introduced
+
+### Requirement: Product tags use UE-style registered names
+
+All non-system product tags SHALL be either a registered UE-style PascalCase topic tag, a documented child of one of those topics, or a `Showcase` classification. The registered top-level topic tags SHALL be exactly `Start`, `Language`, `UnrealLanguage`, `TypeObjectReflection`, `UnrealCore`, `CompileModulePreprocessor`, `HotReload`, `EditorIdeDebugging`, `TestingDiagnosticsRelease`, `RuntimeJitVm`, `BindingsUhtExtensions`, `ArchitectureMaintenance`, `TopicsIntegrations`, `ReferenceDifferencesVersion`, and `ShowcaseLab`. Stable topic and reader-navigation keys SHALL remain in `as-topic-key` and `as-nav-key`; definition discovery SHALL use those fields instead of `Docs` or `ReaderNav` root tags. Product tags SHALL NOT use legacy `ASWiki/*`, `Docs/*`, `ReaderNav`, or a compatibility alias. Every referenced product tag SHALL have a same-title tiddler definition with non-empty `caption` and `description`; each hierarchical parent SHALL exist, and tag-definition relationships SHALL remain acyclic. System tiddlers under `$:/ASWiki/**` and content titles under `AS/Docs/**` or `AS/Showcase/**` SHALL remain outside this tag migration.
+
+#### Scenario: A product tag is added or renamed
+
+- **WHEN** a tiddler, filter, generator, or test introduces a non-system product tag
+- **THEN** it SHALL be a registered UE-style topic tag, a documented child of one, or a `Showcase` classification
+- **AND** it SHALL NOT use `ASWiki/*`, `Docs/*`, `ReaderNav`, or a legacy alias
+- **AND** topic/navigation definitions SHALL be discovered through `as-topic-key` / `as-nav-key`
+- **AND** a documented same-title definition and every hierarchical parent SHALL exist
+- **AND** the resulting tag-definition graph SHALL contain no cycle
+
+#### Scenario: Showcase supplemental classifications are defined
+
+- **WHEN** `Showcase/Detail` or `Showcase/LayoutExperiment` is used
+- **THEN** it SHALL have its own documented definition
+- **AND** it SHALL NOT be tagged as a `Showcase` stability-tier child
+- **AND** Base, Pattern, and Lab SHALL remain the only Showcase stability tiers
