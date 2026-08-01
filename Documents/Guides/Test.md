@@ -430,7 +430,441 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 - `FunctionalSamples`
 - `All`
 
-## CQTest 框架使用指南
+## AngelScript 反射测试类
+
+AngelScript 脚本测试使用一个原生基类 `UAngelscriptTestSuite`，写法借鉴
+CQTest 的 class/fixture、生命周期和命令队列，但不在脚本中使用
+`TEST_` 命名约定，也不使用 `UFUNCTION(Test)`。每个测试方法都是一个普通
+`void()` 方法，通过 `meta=(AngelscriptTest)` 标记：
+
+职责分为两层：suite 实例保存 fixture 状态、生命周期、`Fail`、`Assert*` 和
+`ExpectError*`；无字段的 `FAngelscriptTest` USTRUCT 以同名 AS namespace
+提供 World/Spawn/Tick 工具，`FAngelscriptTest::Commands()` 返回同样无字段的
+值类型 Builder。两个 facade 都不会保存 suite、World 或上下文指针，每次调用
+都从当前脚本 callback 的严格作用域栈解析正在执行的 leaf。
+
+硬迁移映射：
+
+| 旧 Suite 调用 | 新调用 |
+|---|---|
+| `CreateTestWorld` / `DestroyTestWorld` / `GetTestWorld` | `FAngelscriptTest::CreateTestWorld` / `DestroyTestWorld` / `GetTestWorld` |
+| `SpawnObject` / `SpawnActor` / `SpawnComponent` | `FAngelscriptTest::SpawnObject` / `SpawnActor` / `SpawnComponent` |
+| `BeginPlay*` / `Tick*` / `AdvanceTime` / `DestroyActor` | 对应的 `FAngelscriptTest::...` 全局函数 |
+| `Do` / `Then` / `Until` / `WaitDelay` / cleanup aliases | `FAngelscriptTest::Commands().<Command>(...)` |
+| `AddLatentCommand(Command, Timeout)` | `FAngelscriptTest::Commands().AddLatentCommand(Command, Timeout)` |
+
+`Assert*`、`Fail`、`ExpectError*` 和生命周期 override 不迁移，仍直接写在 suite
+实例上。旧环境/命令别名已硬删除，没有 deprecated 兼容层。
+
+```angelscript
+UCLASS(meta=(AngelscriptTestFlags="EditorContext;EngineFilter"))
+class UInventoryScriptTests : UAngelscriptTestSuite
+{
+	UFUNCTION(meta=(AngelscriptTest))
+	void AddingAnItemUpdatesTheCount()
+	{
+		AssertEquals(2, 1 + 1);
+	}
+
+	// 未标记的方法只是本 fixture 的 helper，不会注册为测试。
+	void BuildInventory()
+	{
+	}
+}
+```
+
+公开 Automation 路径为：
+
+```text
+Angelscript.ScriptTests.<Module>.<Suite>.<Method>
+```
+
+对普通 `Script/` 源码，`<Module>` 来自相对脚本路径：去掉 `.as`，再把目录
+分隔符替换成 `.`；`<Suite>` 与 `<Method>` 则使用反射类名和标记方法名。
+例如文件
+`Script/Tests/Test_ReflectedScriptSuites.as` 中的 fixture 测试完整路径是：
+
+```text
+Angelscript.ScriptTests.Tests.Test_ReflectedScriptSuites.UReflectedFixtureScriptTests.FirstLeafGetsFreshFixtureState
+```
+
+因此既可以运行整个 root，也可以把 `-TestPrefix` 精确到 module、suite 或
+单个 method。自定义 source provider 下若不确定 module 名，以 Editor 的
+Automation 列表或 `Saved/Tests/<Label>/.../Report/index.json` 里的
+`fullTestPath` 为准。
+
+宿主仓库运行全部脚本测试：
+
+```powershell
+Tools\RunTests.ps1 `
+  -TestPrefix "Angelscript.ScriptTests" `
+  -Label script-tests `
+  -TimeoutMs 600000
+```
+
+完整可运行示例见
+`Script/Tests/Test_ReflectedScriptSuites.as`。它同时覆盖纯逻辑、
+fixture 生命周期与状态隔离、预期错误、无 World 的 `SpawnObject`、
+GameInstance 模式、World/Spawn/Tick、fluent 延迟命令、高级
+`ULatentAutomationCommand`、Runtime 多上下文 flags 和 Editor-only 编译。
+
+### fixture 与生命周期隔离
+
+这里的 **fixture** 不是一张地图或一个额外 UObject 类型，而是“测试类及其为
+一条测试保存的成员状态、setup/teardown 和 helper”。框架只需要一个
+`UAngelscriptTestSuite` fixture 基类和无状态的 `FAngelscriptTest` 工具 facade，
+不需要
+`UAngelscriptTestWorld`、`UAngelscriptTestMap` 或
+`UAngelscriptTestNetwork`。
+
+可重载的生命周期方法是：
+
+```angelscript
+UFUNCTION(BlueprintOverride)
+void BeforeAll() {}
+
+UFUNCTION(BlueprintOverride)
+void BeforeEach() {}
+
+UFUNCTION(BlueprintOverride)
+void AfterEach() {}
+
+UFUNCTION(BlueprintOverride)
+void AfterAll() {}
+```
+
+生命周期契约如下：
+
+- 每条测试拥有一个全新的瞬态 suite 实例。`BeforeEach`、标记方法、延迟
+  callback 和 `AfterEach` 使用同一个实例，因此成员状态可以在这一条 leaf
+  内传递，但不会泄漏到下一条测试。
+- `BeforeAll` / `AfterAll` 使用另一个独立的 suite-scope 实例，按 Automation
+  worker、suite 和脚本注册表 generation 各执行一次；普通成员状态不会从
+  `BeforeAll` 复制到 method fixture。
+- All hooks 必须保持同步，不能调用 leaf-bound 断言、期望日志、World 或命令
+  队列 API。测试状态的初始化通常放在 `BeforeEach`。
+- 无论测试成功、断言失败、普通异常、超时、显式取消还是热更新失效，
+  `AfterEach`、LIFO cleanup 和 World 清理都会被尝试执行。
+- `BeforeAll` 抛出普通异常时，本 generation 的 leaf 不会继续执行，但仍会尝试
+  `AfterAll`；`BeforeAll` / `AfterAll` 异常都会保留脚本文件、行号和原始异常
+  文本。`AfterAll` 是 suite/session 失败，不会回写已经提交给 UE 的旧 leaf。
+
+下面是状态隔离的核心写法；完整可运行版本还用 `OnCleanup` 验证 cleanup 确实
+位于 `AfterEach` 之后：
+
+```angelscript
+UCLASS(meta=(AngelscriptTestFlags="EditorContext;EngineFilter"))
+class UFixtureIsolationTests : UAngelscriptTestSuite
+{
+	int SetupCount = 0;
+	int Value = 0;
+
+	UFUNCTION(BlueprintOverride)
+	void BeforeEach()
+	{
+		SetupCount += 1;
+		Value = 10;
+	}
+
+	UFUNCTION(meta=(AngelscriptTest))
+	void FirstLeafCanMutateItsFixture()
+	{
+		AssertEquals(1, SetupCount);
+		Value = 20;
+	}
+
+	UFUNCTION(meta=(AngelscriptTest))
+	void SecondLeafStartsFresh()
+	{
+		AssertEquals(1, SetupCount);
+		AssertEquals(10, Value);
+	}
+}
+```
+
+### 精确 Automation flags
+
+`AngelscriptTestFlags` 是以分号分隔的
+`EAutomationTestFlags` **精确掩码**，不是标签或模糊默认值。解析器会：
+
+- 去掉 token 两侧空白；
+- 拒绝空、重复或未知 token；
+- 要求至少一个运行上下文；
+- 要求且只允许一个 filter；
+- 保留 UE 原生 feature、priority 和 `Disabled` 语义。
+
+常用声明：
+
+```angelscript
+// 只允许编辑器 Automation 执行。
+UCLASS(meta=(AngelscriptTestFlags="EditorContext;EngineFilter"))
+class UEditorAutomationTests : UAngelscriptTestSuite
+{
+}
+
+// 同一 suite 可被 editor/client/server/commandlet 上下文选择。
+UCLASS(meta=(AngelscriptTestFlags=
+	"EditorContext;ClientContext;ServerContext;CommandletContext;EngineFilter"))
+class URuntimeCapableTests : UAngelscriptTestSuite
+{
+}
+```
+
+支持的 context 包括 `EditorContext`、`ClientContext`、`ServerContext`、
+`CommandletContext`、`ProgramContext`；常用 filter 包括 `SmokeFilter`、
+`EngineFilter`、`ProductFilter`、`PerfFilter`、`StressFilter` 和
+`NegativeFilter`。`NonNullRHI`、`RequiresUser`、`Disabled`、
+`SupportsAutoRTFM` 以及 UE priority flags 也保留原义。
+
+`#if EDITOR` 与 `EditorContext` 解决的是两件不同的事：
+
+- `#if EDITOR` 决定代码在非编辑器 target 中是否参与 **编译**。引用
+  Editor-only 类、属性或函数的声明必须放在这个编译块中。
+- `EditorContext` 决定已经成功编译的测试是否可在 Editor Automation
+  上下文中 **执行**。
+
+因此只写 `EditorContext` 不能使 Editor-only API 在 Runtime target 中合法；
+只写 `#if EDITOR` 也不会自动赋予 Automation 执行 flags。
+脚本类的 `StaticClass()` 就是一个容易踩到的例子：当前绑定把它视作
+Editor-only 函数，所以使用
+`FAngelscriptTest::SpawnObject(UMyScriptObject::StaticClass())` 的声明也要放进
+`#if EDITOR`；`EditorContext` 本身不会绕过编译检查。
+
+### 断言和预期日志
+
+suite 原生支持：
+
+- `Fail`
+- `AssertTrue` / `AssertFalse`
+- `AssertNull` / `AssertNotNull`
+- `AssertSame` / `AssertNotSame`
+- `AssertEquals` / `AssertNotEquals`
+- `AssertNear`
+- `AssertLessThan` / `AssertLessThanOrEqual`
+- `AssertGreaterThan` / `AssertGreaterThanOrEqual`
+- `ExpectError` / `ExpectErrorRegex`，可指定匹配次数
+
+断言覆盖常用整数、`float32`、`float64`、字符串、名称、UObject 和 UE 数学
+类型；`FTransform` 也支持 equality/near。失败会记录脚本文件与调用行并用受控
+异常结束当前 callback，不会把同一个断言重复报告为普通 AS 异常。期望日志
+规则不能“吃掉”断言失败。`ExpectError` / `ExpectErrorRegex` 不依赖当前是否
+正运行一个外层 UE Automation leaf；Automation bridge、Commandlet 和热更新
+自动调度都会对各自的独立结果做相同的日志捕获、次数核对和终态结算。
+普通 AS 异常同样适用于 fluent callback 与高级
+`ULatentAutomationCommand` 的 `Before` / `Update` / `After`：异常会进入
+当前 leaf 结果并停止后续主命令，不会因为 callback 同时受热更新保护而被静默
+忽略。即使 leaf 已经记录了主失败，后续 `AfterEach` 或
+`OnTearDown` / `OnCleanup` callback 抛出的普通异常仍会作为独立、带脚本
+位置的错误保留；只有框架内部用于终止当前 callback 的受控断言异常会去重。
+
+`ExpectError` 使用 contains 匹配，`ExpectErrorRegex` 使用正则匹配；最后一个
+参数是期望次数，实际次数少或多都会让 leaf 失败：
+
+```angelscript
+UFUNCTION(meta=(AngelscriptTest))
+void MatchesExpectedErrors()
+{
+	ExpectError("intentional warning", 1);
+	ExpectErrorRegex("item-[0-9]+ unavailable", 2);
+	Error("prefix intentional warning suffix");
+	Error("item-12 unavailable");
+	Error("item-34 unavailable");
+}
+```
+
+### 显式本地 World、Spawn 和 Tick
+
+纯逻辑测试不会隐式创建 World。需要时由当前 leaf 显式创建：
+
+```angelscript
+UFUNCTION(meta=(AngelscriptTest))
+void ActorTicksExactlyThreeTimes()
+{
+	FAngelscriptTest::CreateTestWorld(false);
+	AMyProbeActor Actor = Cast<AMyProbeActor>(
+		FAngelscriptTest::SpawnActor(
+			AMyProbeActor::StaticClass()));
+
+	FAngelscriptTest::BeginPlay(Actor);
+	FAngelscriptTest::TickActor(Actor, 0.01, 3);
+	AssertEquals(3, Actor.TickCount);
+
+	FAngelscriptTest::DestroyActor(Actor, true);
+	FAngelscriptTest::DestroyTestWorld();
+}
+```
+
+普通 UObject 不需要先创建 World；默认 Outer 是当前 leaf fixture，并且对象仍由
+终态清理跟踪：
+
+```angelscript
+#if EDITOR
+UReflectedPlainTestObject Object = Cast<UReflectedPlainTestObject>(
+	FAngelscriptTest::SpawnObject(
+		UReflectedPlainTestObject::StaticClass()));
+AssertSame(this, Object.GetOuter());
+AssertNull(FAngelscriptTest::GetTestWorld());
+#endif
+```
+
+需要 GameInstance 与 subsystem 初始化上下文时才选择较重的模式：
+
+```angelscript
+FAngelscriptTest::CreateTestWorld(true);
+AssertNotNull(FAngelscriptTest::GetTestWorld());
+AssertNotNull(FAngelscriptTest::GetTestWorld().GetGameInstance());
+FAngelscriptTest::DestroyTestWorld();
+```
+
+`FAngelscriptTest::` namespace 中的工具包括：
+
+- `CreateTestWorld(bool bInitializeGameSubsystems = true)`、
+  `GetTestWorld()`、`DestroyTestWorld()`；
+- `SpawnObject`、`SpawnActor`、`SpawnComponent`；
+- `BeginPlay`、`BeginPlayAll`；
+- `TickWorld`、`TickActor`、`TickComponent`、`AdvanceTime`；
+- `DestroyActor`。
+
+这些名字不再作为 `UAngelscriptTestSuite` 成员暴露；旧的无限定调用会编译失败，
+应显式写成 `FAngelscriptTest::...`。suite 的 `GetWorld()` override 仍保留，因为
+它是 UObject/UE WorldContext 语义；测试工具入口使用
+`FAngelscriptTest::GetTestWorld()`，两者在活动本地 World 上返回同一对象。
+
+`CreateTestWorld(true)` 还建立 GameInstance/subsystem 上下文；
+`CreateTestWorld(false)` 更轻。第二次创建会直接失败，不会悄悄替换已有 World。
+`TickWorld` / `AdvanceTime` 驱动 World scheduler；需要严格
+`TickCount == NumTicks` 时使用直接派发的 `TickActor` /
+`TickComponent`。所有创建对象都由 leaf 跟踪，并在终态反向清理。
+
+这套工具只创建本地测试 World，不自动加载 Map、不启动 PIE，也不建立
+server/client 网络参与者。需要真实 Map、PIE 或网络 session 的测试继续使用
+C++ Automation fixture 或显式高级基础设施。
+
+### 延迟操作：队列，不是 await
+
+常见延迟流程不需要为每一步写一个 `ULatentAutomationCommand` 子类：
+
+```angelscript
+UFUNCTION(meta=(AngelscriptTest))
+void LoadsInSteps()
+{
+	FAngelscriptTest::Commands()
+		.OnCleanup(n"RestoreState")
+		.Do(n"StartLoad")
+		.WaitDelay(0.05, "let async work start")
+		.Until(n"IsLoaded", 5.0, "asset loaded")
+		.Then(n"VerifyLoaded");
+
+	// 这一行现在就执行，不会等待上面的命令。
+}
+
+void StartLoad() {}
+bool IsLoaded() { return true; }
+void VerifyLoaded() { AssertTrue(IsLoaded()); }
+void RestoreState() {}
+```
+
+别名与顺序：
+
+- `Do` / `Then`：普通 `void()` helper，主队列 FIFO；
+- `StartWhen` / `Until`：普通 `bool()` helper，每次 Automation update
+  轮询；
+- `WaitDelay`：按单调真实时间等待，不推进测试 World；
+- `OnTearDown` / `OnCleanup`：teardown 队列 LIFO，即使主队列失败仍执行。
+
+Builder 是可复制但不携带状态的值；即使先保存到局部变量，每次方法调用仍会
+重新解析当前 callback 的 leaf。测试方法和 `BeforeEach` 的职责是**一次性构造
+队列**。enqueue 后面的语句会
+立刻继续；依赖等待结果的逻辑必须放进后续 `Then` callback。队列运行期间不
+允许再修改主队列。轮询默认超时 5 秒，安全上限 15 秒；确定性游戏时间应使用
+`FAngelscriptTest::AdvanceTime`，不要用 `WaitDelay` 假装 World 在 tick。
+
+更复杂的兼容场景仍可继承 `ULatentAutomationCommand`，重载
+`Before` / `Update` / `After` / `Describe`，用
+`FAngelscriptTest::Commands().AddLatentCommand(Command, TimeoutSeconds)`
+排队。服务器侧命令阶段也会建立当前 leaf callback 作用域；命令执行期间可通过
+`GetCurrentSuite()` 取回所属 fixture。`bAlsoRunOnClient` 只复用已存在且具备
+网络能力的 World，不会自动启动 PIE 或创建客户端。这里的 timeout 覆盖从
+client executor 创建到 `AfterOnClient` 收尾的完整生命周期；即使命令允许
+timeout，也会立即执行 server `After`、销毁 executor、解除 suite 关联并结束
+leaf，而不会卡在 `FinishClient`。executor 在中途失效时会报告所在阶段并走
+同一终态清理，不会解引用空指针。
+
+### 热更新语义
+
+注册表只在 class generation 成功后原子发布新 generation。失败的脚本编译
+保留 last-good 测试列表；成功重载可以增删 marker、重命名方法或把 suite
+移动到新的精确 flags bridge。
+
+若 affected module 正有 latent leaf：
+
+1. 等当前脚本 callback 返回并弹出当前 leaf 作用域，绝不在活动 AS 栈中重入编译；
+2. 用旧 generation 执行 `AfterEach` 和 LIFO teardown；
+3. 释放高级命令并清理对象/GameInstance/World；
+4. 编译、发布新 generation；
+5. 自动热更新调度只保存稳定 ID，取消并替换更旧 generation 的待执行工作。
+
+编辑器仅在 AutomationController 已经加载时刷新列表；测试运行中多次重载会
+合并为一次 idle refresh。缓存的旧 leaf 命令不会调用旧函数指针，而会提示
+刷新并重新运行。若重载发生在一个仍打开的 Automation suite section 中，
+框架会在编译前关闭旧 generation 的 All-hook session，并在下一条 leaf 开始
+时按新 generation 懒创建 session；自动调度的失败结果只上报一次，后续 idle
+tick 不会重复制造同一诊断。若拥有活动 leaf 或 All-hook session 的
+`FAngelscriptEngine` 被关闭，框架会在该 Engine 释放脚本函数之前，仅取消其
+自己的 leaf、执行旧 Engine cleanup 并关闭 session，不把悬空回调留到
+`ShutDownAndRelease()` 之后。
+
+### commandlet、旧协议迁移与明确非目标
+
+Runtime commandlet 和热更新自动测试都使用同一份 reflected registry 和同一
+同步/latent runner。宿主仓库可直接运行：
+
+```powershell
+Tools\RunCommandlet.ps1 `
+  -Commandlet AngelscriptTest `
+  -Label script-tests-commandlet `
+  -TimeoutMs 600000
+```
+
+`AngelscriptTest` commandlet 只选择精确 flags 含
+`CommandletContext` 且未 `Disabled` 的 leaf，结束时固定输出
+`selected` / `executed` / `passed` / `failed` 四项统计。没有任何 eligible
+leaf、没有执行完所有已选择 leaf、leaf 失败或 suite lifecycle 失败都会返回
+失败；诊断保留脚本源文件、行号和原始错误。若 `AfterAll` 是唯一失败，摘要会
+把一个原本通过的已执行 leaf 归入 `failed`，因此始终满足
+`passed + failed == executed`。
+
+旧的全局协议已移除：
+
+```angelscript
+// 旧：不再发现
+void Test_Add(FUnitTest& T) {}
+void IntegrationTest_Map(FIntegrationTest& T) {}
+
+// 新：迁移到 suite class
+UCLASS(meta=(AngelscriptTestFlags="CommandletContext;EngineFilter"))
+class UCommandletScriptTests : UAngelscriptTestSuite
+{
+	UFUNCTION(meta=(AngelscriptTest))
+	void Add() { AssertEquals(2, 1 + 1); }
+}
+```
+
+旧 `Angelscript.UnitTests` / `Angelscript.IntegrationTests` Automation root、
+`FUnitTest`、`FIntegrationTest`、全局 `GetParam`、隐式 Map/PIE 启动和旧的
+可变 current-test API 不再是可用入口。
+
+当前版本有意不提供：
+
+- 参数化 data provider；
+- 自动 Map/PIE/network session；
+- lambda 或 function-handle callback；
+- 可恢复 VM `await`。
+
+有重复输入矩阵时先拆成具名测试方法或普通 helper；确实需要以上能力时使用
+C++ Automation/CQTest fixture，而不是在 AS suite 中引入隐式全局状态。
+
+## C++ CQTest 框架使用指南
 
 ### 概述
 
