@@ -28,6 +28,7 @@ function Get-AutomationTestNames {
         'Plugins\Angelscript\Source\AngelscriptTest',
         'Plugins\Angelscript\Source\AngelscriptRuntime\Tests',
         'Plugins\Angelscript\Source\AngelscriptEditor\Tests',
+        'Plugins\AngelscriptGameplayTags\Source',
         'Plugins\AngelscriptGAS\Source'
     )
 
