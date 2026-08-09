@@ -130,6 +130,8 @@ Every project-owned concrete direct or indirect `FAngelscriptType` adapter SHALL
 
 Every implemented test gap SHALL use the narrowest behavior-owning layer: Bindings CQTests for AS-visible resolution and native reachability, Coverage/Functional for semantic matrices and lifecycle, TypeUsage/TypeRegistry/TypeDatabase for adapter registration behavior, and StaticJIT NativeForms for generated/native callability. The already-verified Actor provider-lambda regression is retained as a specific historical architecture guard; it SHALL NOT be generalized into canonical-header or comment-marker tests.
 
+For a compact provider selected by `refactor-as-compact-bind-functions`, a canonical family header is required only when another translation unit needs the declaration. The selected provider's named non-template callable bodies may live after its registrar in `Bind_<Family>.cpp`; this presentation-only decision does not change callable ownership or test responsibility.
+
 #### Scenario: A registrar inventory row lacks representative contract coverage
 - **WHEN** the exposed entry point or dynamic pattern has no representative compile/resolve/invoke or focused failure assertion
 - **THEN** the owning test layer MUST receive the smallest missing regression before the row is Verified

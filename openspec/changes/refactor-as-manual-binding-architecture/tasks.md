@@ -147,5 +147,5 @@ This checklist is updated incrementally as source implementation and focused ver
 
 ## 11. Explicit Phase Naming Follow-up
 
-- [ ] 11.1 <!-- Non-TDD --> Replace every test-only `EAngelscriptBindPhase::ManualBindings` reference and expected diagnostic/source-layout string with `ExplicitBindings`. This includes Runtime `AngelscriptBindSourceLayoutTests.cpp`, `AngelscriptDumpTests.cpp`, and the GAS and GameplayTags binding-architecture tests. Preserve the assertions' behaviour and phase-order intent; this is a name migration, not a new source-layout policy.
+- [x] 11.1 <!-- Non-TDD --> The obsolete Runtime `AngelscriptBindSourceLayoutTests.cpp` source-layout suite is removed by `refactor-as-compact-bind-functions` rather than renamed. Remaining test-only `ManualBindings` terminology is handled by the ExplicitBindings naming audit without preserving a physical-layout assertion.
 - [ ] 11.2 <!-- Non-TDD --> Update the Chinese-first binding architecture guides, knowledge articles, examples, phase tables, and migration matrices from `ManualBindings` to `ExplicitBindings`; retain the OpenSpec directory name as historical change identity. Run a repository search proving no obsolete production/test/documentation terminology remains, then run the focused binding-architecture tests and a build before closing this follow-up.
