@@ -22,6 +22,10 @@
 | Tencent puerts | 使用 `Tools\PullReference\PullReference.bat puerts` 默认拉取到当前项目的 `Reference\puerts`；GitHub `https://github.com/Tencent/puerts.git`；SSH `git@github.com:Tencent/puerts.git`；用于参考 TypeScript/JavaScript 脚本运行时、声明生成和多后端工程组织 |
 | Tencent sluaunreal | 使用 `Tools\PullReference\PullReference.bat sluaunreal` 默认拉取到当前项目的 `Reference\sluaunreal`；GitHub `https://github.com/Tencent/sluaunreal.git`；SSH `git@github.com:Tencent/sluaunreal.git`；用于参考另一套成熟 Lua 方案的静态导出、性能取舍和热更新工作流 |
 | Blender MCP | 使用 `Tools\PullReference\PullReference.bat blendermcp` 默认拉取到当前项目的 `Reference\blender_mcp`；Blender Forge `https://projects.blender.org/lab/blender_mcp.git`；无 SSH 地址；用于参考 Blender 官方 MCP Server 实现、MCP 协议接入方式和工具链集成模式 |
+| TiddlyWiki document migration sources | 通过 `itonnote-theme`、`itonnote-plugin`、`tiddlyseq`、`tw-command-palette`、`tiddlywiki-plugins`、`tiddlywiki-codemirror-6` 键拉取到 `Reference\tiddlywiki-*`；全部使用 SSH 并固定审计提交；用于 `Wiki/` 的 itonnote 主题迁移、document 插件决策和本地源码核查。运行时选中的外部插件源码已导入 `Wiki/src/`，由 Wiki 主仓库跟踪；Reference 只用于分析和复核。 |
+| TW Icons catalogue snapshot | 位于 `Reference\tw-icons`；GitHub `https://github.com/morosanuae/tw-icons.git`；固定提交 `d4a58efeddaa683af69fba1a43717a16e4f0d2ca`（`v1.10`）；一个约 56 MiB 的单文件 TiddlyWiki 图标目录快照。仅用于离线查找、审计和手动挑选极少量图标；最低优先级、非运行时依赖，严禁整库导入 `Wiki/`，单个图标采用前还须复核其所属上游图标库许可证。 |
+| Kookma TW5 plugin sources | 位于 `Reference\kookma\`；以 `git@github.com:kookma/<repo>.git` 独立 SSH 克隆可访问的 Kookma 插件和扩展源码，并保留 `TW-PluginLibrary` 的完整封装目录快照；用于 AngelScript Wiki 的 WikiText、宏、组件、样式和作者工作流二次开发研究。非运行时依赖，日常构建不会读取或联网更新。详见 `Reference\kookma\README.md`。 |
+| AngelScript code-generator research sources | 使用 SSH 拉取 `Reference\fuzzilli`、`Reference\grammarinator`、`Reference\csmith`、`Reference\yarpgen` 与 `Reference\creduce`；分别用于 ASIR 架构、parser fuzz、受控正例／oracle 与失败样本缩减的离线设计参考 |
 
 ## 参考源说明
 
@@ -184,6 +188,37 @@
 - 该参考源用于查看 Blender 官方 MCP Server 的实现方式、MCP 协议接入模式、工具定义与注册方式，以及 DCC 工具链如何通过 MCP 对外暴露能力。
 - 未来可能作为子仓库（submodule）独立管理；当前先以 Reference 形式引入做参考。
 
+### 13. TiddlyWiki Document Migration Sources
+
+- 默认路径与固定提交：
+  - `Reference\tiddlywiki-itonnote-theme`：`git@github.com:tiddly-gittly/itonnote-theme.git`，`f7e29d2f00c4d24a2eefee9b4b4f27dcf0e918e1`
+  - `Reference\tiddlywiki-itonnote-plugin`：`git@github.com:tiddly-gittly/itonnote-plugin.git`，`726a0f00b9fe46890fbdebfb33a38768a5515959`
+  - `Reference\tiddlywiki-seq`：`git@github.com:Gk0Wk/TiddlySeq.git`，`96e48da076b86b475948a930ab5f60abe5961d77`
+  - `Reference\tiddlywiki-command-palette`：`git@github.com:tiddly-gittly/tw-command-palette.git`，`b3d0535fd499e9fbe00312d0d51e7e5d9b7961df`
+  - `Reference\tiddlywiki-plugins`：`git@github.com:tiddly-gittly/tiddlywiki-plugins.git`，`d1ae085fbea63ff39f5474f5d165b3cb4af6704a`
+  - `Reference\tiddlywiki-codemirror-6`：`git@github.com:oeyoews/tiddlywiki-codemirror-6.git`，`3854131afe31fa225936808526e9c0cd29524661`
+- 拉取命令：`Tools\PullReference\PullReference.bat <对应 key>`。这些命令只在维护者显式执行时访问远端；日常 Wiki 构建只使用本地 `Wiki/src/` 中已导入的源码，不会访问 GitHub。
+- 用途边界：itonnote theme 是本地 `$:/themes/angelscript` 的迁移来源，其 Fira Code 资源现已随本地主题打包；itonnote-plugin 不启用，其选定的移动行为已移植到 TDGameStudio plugin；tiddlyseq、tw-command-palette 与 tiddlywiki-plugins 提供已选择 document 体验插件及其依赖。`tiddlywiki-codemirror-6` 仅保留为离线审计参考，不属于运行时导入集合。
+- 优先级：当调整 Wiki 的主题、代码展示、sidebar、命令面板或链接预览时，先检查此处固定本地 source 与 `Wiki/external-plugins.json`；运行时外部来源以 `Wiki/src/` 中由主仓库跟踪的导入源码维护，manifest 的 `baselineCommit` 记录最初审计状态。不要反复在线检索或未经审计地升级上游。若将来明确采用编辑器增强，先评估 TiddlyWiki 内置的 `tiddlywiki/codemirror`，不默认启用第三方 CodeMirror 6。
+
+### 14. TW Icons Catalogue Snapshot
+
+- 默认路径与固定提交：`Reference\tw-icons`；`https://github.com/morosanuae/tw-icons.git`，`master` 分支的 `d4a58efeddaa683af69fba1a43717a16e4f0d2ca`（提交说明 `v1.10`，2021-05-07）。
+- 形式与体积：上游仓库并未提供拆分式插件或构建工程；历史始终维护一个自包含的 TiddlyWiki `index.html`。当前快照约 56 MiB，内含约 17,000 个跨多个图标库的图标 tiddler，因此它适合本地搜索与逐项核查，不适合在浏览器或 Wiki 运行时加载。
+- 许可证边界：仓库没有 `LICENSE` 或打包清单；单文件仅带 TiddlyWiki 本体的 BSD-3-Clause 声明，不能推断其中各图标库的授权。必须在采用单个图标前追溯并复核其对应上游库的许可证和署名要求。
+- 优先级与用途：**最低优先级**。只有在当前 `Wiki/src/` 本地图标无法满足需求时，才将它作为离线目录挑选极少量单图标；不得整库导入、不得作为离线导出依赖、不得由日常构建自动 fetch 或更新。
+
+### 15. AngelScript Code-Generator Research Sources
+
+- 默认路径、SSH 来源与定位：
+  - `Reference\fuzzilli`：`git@github.com:googleprojectzero/fuzzilli.git`（`main`）；ASIR / ProgramBuilder、corpus、mutation、minimizer 与 lifter 的首要架构参考。
+  - `Reference\grammarinator`：`git@github.com:renatahodovan/grammarinator.git`（`master`）；仅作为 grammar-aware parser / lexer fuzz、变异与重组的辅助参考。
+  - `Reference\csmith`：`git@github.com:csmith-project/csmith.git`（`master`）；受控正例生成与稳定行为 oracle 的原则参考。
+  - `Reference\yarpgen`：`git@github.com:intel/yarpgen.git`（`main`）；可执行程序生成、checksum 和优化测试策略的补充参考。
+  - `Reference\creduce`：`git@github.com:csmith-project/creduce.git`（`master`）；保持失败性质的 test-case reduction 工作流参考。
+- 这些仓库对应 `AngelScriptCodeGeneratorResearch.md` 的调研结论：Fuzzilli 优先级最高；Grammarinator 不能替代有类型的正例生成器；Csmith/YARPGen 仅借鉴生成约束与 oracle；C-Reduce 仅借鉴 reducer 闭环。
+- 它们全部只用于离线设计、实现对照和失败分析，不是 Angelscript 插件的运行时或构建依赖；不应由日常构建自动 fetch。需要固定某次调研基线时，在相关 OpenSpec / 研究记录中记录具体 SHA。
+
 ## 如何选择参考源
 
 - AngelScript 语言或运行时本体问题，优先参考 `angelscript-v2.38.0`。
@@ -199,6 +234,7 @@
 - 需要参考 JavaScript / TypeScript 运行时、声明生成、脚本后端切换时，优先看 `puerts`。
 - 需要比较另一套 Lua 静态导出、性能优化与热更新工作流时，优先看 `sluaunreal`。
 - 需要参考 MCP 协议接入、MCP Server 实现方式或 DCC 工具链 MCP 暴露模式时，优先看 `blender_mcp`。
+- 需要调整 AngelscriptWiki 的 itonnote 迁移主题或选定 document 插件时，优先看本节固定的本地 TiddlyWiki source；其中运行时版本以 `Wiki/src/` 和 `Wiki/external-plugins.json` 为准。
 
 ## 使用约束
 
@@ -213,6 +249,7 @@
 - 对于 `UnrealCSharp`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理。
 - 对于 `UnLua`、`puerts`、`sluaunreal`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理。
 - 对于 `blender_mcp`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；该仓库位于 Blender Forge（非 GitHub），仅支持 HTTPS clone。
+- 对于 TiddlyWiki document migration sources，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理，并固定在上表列出的审计提交；日常构建不得自动 fetch 或更新它们。
 - 本地配置来源的参考仓库，使用前先读取 `AgentConfig.ini`，不要在通用文档或脚本中写死机器路径。
 - 当前本地配置来源包括：`HazelightAngelscriptEngineRoot`。
 - 如果不同参考源之间存在差异，应显式区分"语言本体行为""UE 插件集成差异""引擎侧改造差异"，不要混写。

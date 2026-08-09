@@ -192,6 +192,8 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 - 完整索引、拉取命令、用途边界与优先级说明见 `Reference/README.md`。
 - AngelscriptWiki 的主题与 document 插件迁移参考固定在 `Reference\tiddlywiki-*`：itonnote theme/plugin、TiddlySeq、command palette、preview-glass source 与 CodeMirror 6。它们通过 `Tools\PullReference\PullReference.bat` 的同名 key 按 SSH 和审计 SHA 手工拉取；`Wiki/vendor/` 才是运行时固定子模块，日常构建不会联网更新。
+- Kookma 的 TW5 插件与扩展源码参考固定在 `Reference\kookma\`：每个可访问上游均保留独立 SSH Git 克隆，`TW-PluginLibrary` 同时保留完整插件目录的封装快照。它们只用于 WikiText、宏、组件、样式和作者工作流的二次开发研究，不是 `Wiki/` 的运行时依赖或自动构建输入。调整 AngelScript Wiki 的原生表达组件前优先本地核查；实际产品代码必须在 `Wiki/src/` 的 TDGameStudio 命名空间中自行整合，并先核对许可与全局模板影响。
+- AngelScript 代码生成器调研参考固定在 `Reference\fuzzilli`、`Reference\grammarinator`、`Reference\csmith`、`Reference\yarpgen` 与 `Reference\creduce`。其中 Fuzzilli 是 ASIR / ProgramBuilder 架构的首要参考；Grammarinator 仅用于 parser fuzz；Csmith 与 YARPGen 用于受控正例和行为 oracle；C-Reduce 用于失败样本缩减。它们只供离线分析与设计复核，不属于运行时依赖或自动拉取项。
 
 ## 本地配置
 

@@ -114,6 +114,60 @@ if /I "%REFERENCE_KEY%"=="blendermcp" (
     goto :ValidateGit
 )
 
+if /I "%REFERENCE_KEY%"=="itonnote-theme" (
+    set "REPO_NAME=tiddlywiki-itonnote-theme"
+    set "REPO_SSH=git@github.com:tiddly-gittly/itonnote-theme.git"
+    set "REPO_HTTPS=https://github.com/tiddly-gittly/itonnote-theme.git"
+    set "REPO_COMMIT=f7e29d2f00c4d24a2eefee9b4b4f27dcf0e918e1"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-itonnote-theme"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="itonnote-plugin" (
+    set "REPO_NAME=tiddlywiki-itonnote-plugin"
+    set "REPO_SSH=git@github.com:tiddly-gittly/itonnote-plugin.git"
+    set "REPO_HTTPS=https://github.com/tiddly-gittly/itonnote-plugin.git"
+    set "REPO_COMMIT=726a0f00b9fe46890fbdebfb33a38768a5515959"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-itonnote-plugin"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="tiddlyseq" (
+    set "REPO_NAME=tiddlywiki-seq"
+    set "REPO_SSH=git@github.com:Gk0Wk/TiddlySeq.git"
+    set "REPO_HTTPS=https://github.com/Gk0Wk/TiddlySeq.git"
+    set "REPO_COMMIT=96e48da076b86b475948a930ab5f60abe5961d77"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-seq"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="tw-command-palette" (
+    set "REPO_NAME=tiddlywiki-command-palette"
+    set "REPO_SSH=git@github.com:tiddly-gittly/tw-command-palette.git"
+    set "REPO_HTTPS=https://github.com/tiddly-gittly/tw-command-palette.git"
+    set "REPO_COMMIT=b3d0535fd499e9fbe00312d0d51e7e5d9b7961df"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-command-palette"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="tiddlywiki-plugins" (
+    set "REPO_NAME=tiddlywiki-plugins"
+    set "REPO_SSH=git@github.com:tiddly-gittly/tiddlywiki-plugins.git"
+    set "REPO_HTTPS=https://github.com/tiddly-gittly/tiddlywiki-plugins.git"
+    set "REPO_COMMIT=d1ae085fbea63ff39f5474f5d165b3cb4af6704a"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-plugins"
+    goto :ValidateGit
+)
+
+if /I "%REFERENCE_KEY%"=="tiddlywiki-codemirror-6" (
+    set "REPO_NAME=tiddlywiki-codemirror-6"
+    set "REPO_SSH=git@github.com:oeyoews/tiddlywiki-codemirror-6.git"
+    set "REPO_HTTPS=https://github.com/oeyoews/tiddlywiki-codemirror-6.git"
+    set "REPO_COMMIT=3854131afe31fa225936808526e9c0cd29524661"
+    if "%TARGET_DIR%"=="" set "TARGET_DIR=%PROJECT_ROOT%\Reference\tiddlywiki-codemirror-6"
+    goto :ValidateGit
+)
+
 if /I "%REFERENCE_KEY%"=="hazelight" goto :Hazelight
 
 echo Unknown reference key: %REFERENCE_KEY%
@@ -133,6 +187,12 @@ echo   aura              - Pull Aura GAS course initial project into Reference\G
 echo   auracpp           - Pull Aura GAS course C++ project into Reference\GameplayAbilitySystem_Aura_Cpp
 echo   auraas            - Pull Aura GAS Angelscript rewrite into Reference\AngelscriptAura
 echo   blendermcp        - Pull Blender MCP into Reference\blender_mcp
+echo   itonnote-theme    - Pull itonnote theme source at the reviewed commit
+echo   itonnote-plugin   - Pull itonnote-plugin source at the reviewed commit
+echo   tiddlyseq         - Pull TiddlySeq source at the reviewed commit
+echo   tw-command-palette - Pull command palette source at the reviewed commit
+echo   tiddlywiki-plugins - Pull preview-glass source at the reviewed commit
+echo   tiddlywiki-codemirror-6 - Pull CodeMirror 6 source at the reviewed commit
 echo   hazelight         - Local config only, read AgentConfig.ini
 exit /b 0
 
@@ -159,6 +219,12 @@ echo   Tools\PullReference\PullReference.bat aura
 echo   Tools\PullReference\PullReference.bat auracpp
 echo   Tools\PullReference\PullReference.bat auraas
 echo   Tools\PullReference\PullReference.bat blendermcp
+echo   Tools\PullReference\PullReference.bat itonnote-theme
+echo   Tools\PullReference\PullReference.bat itonnote-plugin
+echo   Tools\PullReference\PullReference.bat tiddlyseq
+echo   Tools\PullReference\PullReference.bat tw-command-palette
+echo   Tools\PullReference\PullReference.bat tiddlywiki-plugins
+echo   Tools\PullReference\PullReference.bat tiddlywiki-codemirror-6
 echo   Tools\PullReference\PullReference.bat angelscript "J:\UnrealEngine\AngelscriptProject\Reference\angelscript-v2.38.0"
 echo   Tools\PullReference\PullReference.bat list
 exit /b 1
