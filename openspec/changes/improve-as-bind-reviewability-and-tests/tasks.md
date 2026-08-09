@@ -46,3 +46,40 @@
 - [x] 6.3 <!-- Non-TDD --> Fresh static reconciliation reports: registrars `120/120` documented, logical surface entries `2979`, `@param` notes `1052`, legacy headers/references `0/0`, `_Functions.cpp` canonical includes `95/95`, `_Type.cpp` canonical includes `41/41`, Type registrars/empty Type implementations `0/0`, matching registrar first-header includes `102/102`, obsolete Actor symbols `0`, and direct registrar Helper-Type includes `2`. `git diff --check` exits `0` (only checkout line-ending notices), the rejected `BindFamiliesUseCanonicalDeclarationHeaders`-style test is absent, and `openspec validate improve-as-bind-reviewability-and-tests --strict` passes.
 - [x] 6.4 <!-- Non-TDD --> Complete diff review and independent static audits found no lost callable declaration, phase, trait, export, template body, native form, GC/property hook, `GetCppForm`, `TemplateObjectForm`, or `NeverRequiresGC` contract. Of 492 moved out-of-line Type methods, 489 are token-exact and three FName methods are behavior-equivalent early-return rewrites; 168/168 moved container/Primitive inline bodies are token-exact. Full Bindings, StaticJIT, All, and Standalone behavior suites pass.
 - [x] 6.5 <!-- Non-TDD --> Plugin source was path-scoped, staged with zero unexpected paths, checked with cached `git diff --check`, and committed as `5345032` (`[Angelscript] Refactor: unify bind family ownership and documentation`). The parent commit stages only this OpenSpec directory and the `Plugins/Angelscript` gitlink; all unrelated parent/submodule workspace modifications remain untouched.
+
+## 7. Provider-locality Record and Audit
+
+- [x] 7.1 <!-- Non-TDD --> Preserved the completed 120-file Runtime documentation/header/Type evidence and recorded the separate three-plugin provider-locality scope without changing optional-plugin comments or headers.
+- [x] 7.2 <!-- Non-TDD --> Reconciled the baseline inventory: 126 registrar files, 242 logical registrars, 245 source definitions, five already-direct provider lambdas, 240 named provider pointers, and the three duplicated `Bind_UStruct` branch identities.
+
+## 8. Runtime Provider Migration
+
+- [x] 8.1 <!-- TDD --> Replaced every named Runtime provider with a body-expanded direct registrar-local lambda while preserving registrar symbols, logical names, phases, and callable/native registration forms.
+- [x] 8.2 <!-- TDD --> Retained named direct callable owners and pointer/native forms, rejected forwarding wrappers, and removed only anonymous namespaces emptied by provider inlining.
+- [x] 8.3 <!-- TDD --> Preserved both `AS_USE_BIND_DB` UStruct bodies and retained each large BlueprintType body in its branch with a same-identity direct lambda registrar.
+
+## 9. Optional Plugin Provider Migration and GameplayTags Audit
+
+- [x] 9.1 <!-- TDD --> Migrated all five AngelscriptGAS providers to body-expanded direct registrar-local lambdas without modifying headers, public API, logical names, phases, or native forms.
+- [x] 9.2 <!-- Non-TDD --> Audited the three existing direct AngelscriptGameplayTags providers; no source-locality correction or optional-plugin documentation/header change was needed.
+
+## 10. Test Scope Boundary
+
+- [x] 10.1 <!-- Non-TDD --> Do not add or alter `BindingArchitecture.SourceLayout` assertions for this presentation-only provider-locality migration. Reverted the temporary Core adaptations and removed the affected GAS lambda-shape assertion rather than replacing it with a new source-layout rule.
+- [ ] 10.2 <!-- Non-TDD --> Verify script-visible behavior only through the existing narrowest Bindings, Functional, Coverage, Type, StaticJIT, GAS, or GameplayTags owner; do not add a permanent provider-layout, filename, include-shape, or comment-marker test.
+
+## 11. Static Reconciliation
+
+- [x] 11.1 <!-- Non-TDD --> Re-ran the provider-locality audit and exact searches: 126 files, 242 logical registrars, 248 source definitions/direct registrar-local provider lambdas, zero named provider pointers, zero standalone provider functions, and zero forwarding wrappers. The three added source definitions are the paired `Bind_BlueprintType` conditional registrars.
+- [x] 11.2 <!-- Non-TDD --> Reviewed UStruct branch parity, BlueprintType identity preservation, anonymous-namespace disposition, and `git diff --check`; recorded final verification evidence for BIND-005.
+
+## 12. Centralized Validation After Complete Edit Set
+
+- [x] 12.1 <!-- Non-TDD --> Ran centralized `Tools/RunBuild.ps1` after the complete edit set; final build passed.
+- [x] 12.2 <!-- Non-TDD --> Ran focused behavior prefixes through `Tools/RunTests.ps1`: Bindings `275/275`, GAS `252/252`, and GameplayTags `15/15`, all with zero failures/skips. No source-layout test was added or used as a migration contract.
+- [x] 12.3 <!-- Non-TDD --> Ran `openspec validate improve-as-bind-reviewability-and-tests --strict`; it passed.
+
+## 13. Submodule-first Delivery
+
+- [x] 13.1 <!-- Non-TDD --> Inspected all three plugin submodules. Committed Runtime `3b50485` and GAS `cbff1cd` with path-scoped changes; GameplayTags was audit-only and remains uncommitted/unchanged for this task.
+- [x] 13.2 <!-- Non-TDD --> Staged only this change record and the Runtime/GAS gitlinks (GameplayTags remains excluded as audit-only), ran cached diff checks, and recorded the parent delivery commit after the plugin commits.

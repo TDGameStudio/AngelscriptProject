@@ -91,3 +91,46 @@ Comment-only batches require source inspection, inventory reconciliation, and `g
 4. Consolidate all 96 legacy callable headers into canonical family headers, auditing every separately retained support header.
 5. Move all non-Blueprint concrete Type declarations into those family headers and their out-of-line implementations into `_Type.cpp` files in template/container, reflection/complex, and scalar/value waves.
 6. Run final build and shared regressions, reconcile inventories, and commit the plugin before the parent gitlink.
+
+## Provider-locality Extension
+
+### Context and boundary
+
+The completed Runtime documentation/header/Type work remains historical evidence and is not reopened for optional-plugin comments or headers. A separate source-derived audit finds three production provider roots: Runtime (`120` registrar files), GameplayTags (`1`), and GAS (`5`). They contain `242` logical `FAngelscriptBind` registrars and `245` source definitions. The only source-definition duplication is `Bind_UStruct.cpp`, where three logical registrars are defined in both `AS_USE_BIND_DB` branches.
+
+The callback baseline is five direct non-capturing registrar-local lambdas—`AActor.Manual`, `AActor.PostReflection`, and three GameplayTags registrars—and 240 named provider callback pointers. All three plugins are in scope. The target is 248 direct registrar-local provider lambda definitions: the original 245 source definitions plus three branch-local `Bind_BlueprintType.cpp` definitions that replace its three formerly singular conditional providers.
+
+### Decision: inline provider bodies, not callable implementations
+
+At every existing `AS_FORCE_LINK const FAngelscriptBind` definition, retain its symbol, logical name, and `EAngelscriptBindPhase`, but replace a named provider callback pointer with its body-expanded non-capturing form:
+
+```cpp
+AS_FORCE_LINK const FAngelscriptBind Bind_Example(
+	TEXT("Example.LogicalName"),
+	EAngelscriptBindPhase::ManualBindings,
+	[](FAngelscriptBinds& Binds)
+	{
+		// Former provider body appears here.
+	});
+```
+
+The following is explicitly forbidden because it preserves indirection rather than registrar locality:
+
+```cpp
+[](FAngelscriptBinds& Binds)
+{
+	BindExample(Binds);
+}
+```
+
+This migration only inlines provider functions. Direct AngelScript callables remain their existing named `FAngelscript*Binds` owners or pointer/native forms; their callable spelling, native form, registration behavior, and ownership do not move into anonymous lambdas. An anonymous namespace remains when it still owns real private constants, helper types, or reusable algorithms, and is removed only if it becomes empty.
+
+### Conditional registrars and test adaptation
+
+`Bind_UStruct.cpp` keeps its existing branch-specific registrar definitions. The same three registrar identities remain independently body-expanded in both `AS_USE_BIND_DB` branches; the refactor does not hoist, merge, or otherwise normalize those branches. `Bind_BlueprintType.cpp` likewise keeps its large DB and non-DB bodies inside their existing preprocessor branches: each of the three conditional identities gains a branch-local direct lambda registrar, so only one definition compiles for a target configuration while the source remains locally reviewable without moving a large body across the file.
+
+Existing structural tests are adapted only where their current provider/callable-lambda classification would otherwise reject the direct provider form. No global layout-only, filename, comment, or provider-shape test is added. The final static reconciliation is the authoritative completeness guard.
+
+### Delivery and rollback
+
+Apply all source edits before one centralized build and focused/All validation; do not run a build for each lexical migration batch. Commit each affected plugin submodule first—Runtime, GameplayTags, and GAS as applicable—then commit this parent OpenSpec directory and resulting gitlinks without staging unrelated changes. A source-level rollback restores only the affected provider body and registrar definition together; no data migration or API rollback is required.

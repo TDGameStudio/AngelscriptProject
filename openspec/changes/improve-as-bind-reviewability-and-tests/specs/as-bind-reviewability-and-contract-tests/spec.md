@@ -149,3 +149,36 @@ An issue or inventory row SHALL become `Verified` only after its required comman
 - **THEN** its required commands, report paths, and pass/fail counts MUST already be recorded
 - **THEN** comment-only work MUST include source inspection and whitespace validation
 - **THEN** C++ ownership or runtime work MUST include the plugin build and every affected focused prefix
+
+### Requirement: Bind providers are direct and registrar-local across all production plugins
+
+Every production `FAngelscriptBind` provider in Runtime, AngelscriptGameplayTags, and AngelscriptGAS SHALL use a non-capturing `[](FAngelscriptBinds& Binds) { ... }` body expanded directly at its existing registrar definition. The migration SHALL preserve the registrar symbol, logical name, phase, callable/native forms, and script-visible behavior. Provider functions SHALL NOT remain as named callback pointers, standalone provider functions, or forwarding-wrapper lambdas.
+
+This presentation-only migration SHALL be reconciled by static source inspection, build/diff review, and behavior-owning binding tests. It SHALL NOT add or alter a UE automation test that asserts provider source layout.
+
+#### Scenario: A named Runtime, GameplayTags, or GAS provider is migrated
+- **WHEN** a registrar currently passes a named callback such as `&BindExample`
+- **THEN** the existing provider body MUST be expanded directly in the callback lambda at that same `FAngelscriptBind` definition
+- **THEN** the lambda MUST NOT merely call the former provider function
+- **THEN** actual AngelScript callables MUST retain their named `FAngelscript*Binds` owner or existing pointer/native form
+
+#### Scenario: A registrar is already direct
+- **WHEN** a registrar already has a direct non-capturing provider lambda
+- **THEN** its provider body, logical name, and phase MUST remain locally reviewable at the same definition
+- **THEN** it MUST still be included in the final direct-provider source-definition reconciliation
+
+#### Scenario: A conditional provider is migrated
+- **WHEN** `Bind_UStruct.cpp` defines the same three logical registrar identities in both `AS_USE_BIND_DB` branches
+- **THEN** each branch-specific source definition MUST keep its existing symbol, logical name, phase, and branch behavior
+- **THEN** each of the six source definitions MUST contain its own body-expanded direct provider lambda
+
+#### Scenario: BlueprintType keeps conditional provider bodies local
+- **WHEN** `Bind_BlueprintType.cpp` contains `AS_USE_BIND_DB` behavior inside a provider
+- **THEN** each DB/non-DB body MUST remain in its existing preprocessor branch
+- **THEN** each branch MUST define a same-identity direct provider lambda registrar, with only one branch compiling for a target configuration
+- **THEN** no named forwarding provider MAY remain
+
+#### Scenario: Completion is reconciled
+- **WHEN** the provider-locality work is proposed for verification
+- **THEN** the source audit MUST report 126 registrar files, 242 logical registrars, 248 source definitions, 248 direct registrar-local lambdas, and zero named provider pointers or forwarding wrappers
+- **THEN** validation MUST use the project `Tools/RunBuild.ps1`, `Tools/RunTests.ps1`, and `Tools/RunTestSuite.ps1` entry points plus strict OpenSpec validation
