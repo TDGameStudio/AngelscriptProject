@@ -1,140 +1,88 @@
 ## MODIFIED Requirements
 
-### Requirement: Bind descriptor calls return a chainable node view
+### Requirement: Direct registration calls return chainable bound results
 
-New `FAngelscriptBind` descriptor entry points SHALL return an `FAngelscriptBindNode` that identifies the descriptor node just created, not an AngelScript function/property ID. The node view SHALL retain the root reference plus owner kind/identity needed to resume the corresponding type/global/enum fluent surface without pointing at a temporary view object, so subsequent declarations remain fluent without a required `EndMember()` call.
+Function-like binding calls SHALL return a copyable short-lived `FAngelscriptBoundFunction` identifying the explicit engine and exact registered function. Property-like binding calls SHALL return a copyable short-lived `FAngelscriptBoundProperty` identifying the explicit engine and exact registered property. Neither value SHALL act as a process provider handle or extend the lifetime of its target engine. Discarding the value SHALL remain valid.
 
-Per-engine function/property IDs SHALL be stored only in `FAngelscriptBindingNodeResult` after explicit application.
+#### Scenario: Method registration returns a function result
 
-#### Scenario: Method descriptor returns a valid node view
+- **WHEN** a typed class view directly registers a method
+- **THEN** the returned `FAngelscriptBoundFunction` identifies that method's engine and registration result
+- **AND** it does not consult an engine-wide previous-function slot
 
-- **WHEN** a provider adds a method node
-- **THEN** the returned node view SHALL identify that method through a draft-local node key plus owner-generation token
-- **AND** options applied through the view SHALL update that method descriptor before any engine registration.
+#### Scenario: Property registration returns a property result
 
-#### Scenario: Frozen method receives a stable NodeId
+- **WHEN** a typed class view directly registers a property
+- **THEN** the returned `FAngelscriptBoundProperty` identifies that property's engine and registration result
+- **AND** it does not consult a previous-global-property slot
 
-- **WHEN** Registry registration parses, normalizes, validates, and freezes a valid method descriptor
-- **THEN** the immutable node SHALL receive its stable semantic NodeId
-- **AND** the NodeId SHALL be available through catalog/apply results rather than retroactively turning the consumed draft view into a live handle.
+#### Scenario: Return value is discarded
 
-#### Scenario: Applied method result exposes the AS ID
+- **WHEN** an author does not need traits or metadata and ignores the returned value
+- **THEN** registration remains complete and valid
 
-- **WHEN** the applier registers the method successfully
-- **THEN** its node result SHALL expose the non-negative function ID returned by that engine
-- **AND** the pre-application node view SHALL not be mutated into an engine-owned ID handle.
+### Requirement: Chainable options mutate the exact direct result
 
-#### Scenario: Property descriptor returns a valid node view
+`FAngelscriptBoundFunction` SHALL expose applicable function traits formerly supplied by PreviousBind helpers, documentation helpers, and native-form helpers. `FAngelscriptBoundProperty` SHALL expose applicable property metadata and pure-constant behavior. Each fluent method SHALL mutate only its stored direct result and SHALL return the same result value for further chaining.
 
-- **WHEN** a provider adds a global or object property
-- **THEN** the returned node view SHALL identify that property descriptor
-- **AND** a successful apply result SHALL carry the target engine's property ID or registration result separately.
-
-#### Scenario: Discarded node view remains valid usage
-
-- **WHEN** a provider ignores a returned node view
-- **THEN** registering the root `FAngelscriptBind` and applying its internal package SHALL still register that descriptor.
-
-### Requirement: Chainable trait setters mutate the just-bound function
-
-`FAngelscriptBindNode` SHALL expose fluent methods covering editor-only, deprecation, property-accessor, no-discard, world-context, callable, generated-accessor, implicit-constructor, compile-out, force-constant-arguments, output-type selection, script-function/script-object forwarding, pure-constant property, documentation, and native-form behavior. Each method SHALL write only the view's descriptor and return a chainable view.
-
-The applier SHALL translate descriptor values to the same applicable `asCScriptFunction`, `asCGlobalProperty`, documentation, and StaticJIT/native semantics after registration.
+Applicable behavior includes editor-only, deprecation, property accessor, no-discard, world context, callable/generated accessor, implicit constructor, compile-out forms, forced-const arguments, output-type selection, script-function/object first-parameter behavior, documentation, native/trivial metadata, and pure-constant property data.
 
 #### Scenario: Single chained trait
 
-- **WHEN** a provider writes `.Method(...).EditorOnly()`
-- **THEN** only that method descriptor SHALL contain the editor-only trait
-- **AND** its applied function SHALL have `asTRAIT_EDITOR_ONLY` under the existing configuration rules.
+- **WHEN** an author writes `FVector_.Method(...).NoDiscard()`
+- **THEN** only the newly registered method receives the no-discard trait
 
-#### Scenario: Multiple chained traits
+#### Scenario: Multiple traits and documentation
 
-- **WHEN** a provider writes `.Method(...).EditorOnly().Deprecated("Use NewBar")`
-- **THEN** that node SHALL contain both values
-- **AND** its applied function SHALL have the equivalent editor-only and deprecated behavior and message.
+- **WHEN** an author chains `.EditorOnly().Deprecated(...).Documentation(...)`
+- **THEN** all options apply to the same function result in source order
+- **AND** an intervening registration elsewhere cannot redirect them
 
-#### Scenario: Chaining advances to another node
+#### Scenario: Property pure constant
 
-- **WHEN** a provider writes `.Method(A).NoDiscard().Method(B).EditorOnly()`
-- **THEN** A SHALL receive only no-discard and B SHALL receive only editor-only
-- **AND** registration or configuration of another package SHALL not change either association.
+- **WHEN** an author chains `.PureConstant(Value)` from a direct property registration
+- **THEN** only that property's engine-owned metadata receives the encoded constant
 
-#### Scenario: Property pure-constant chain
+#### Scenario: Interleaved engines
 
-- **WHEN** a provider adds a const global property and applies `.PureConstant<int32>(42)`
-- **THEN** only that property descriptor SHALL carry the constant value
-- **AND** its applied `asCGlobalProperty` SHALL expose equivalent pure-constant behavior.
+- **WHEN** two engines register equivalent functions and their bound-result values coexist temporarily
+- **THEN** each fluent call mutates only the engine stored by its own value
 
-### Requirement: Fluent views cannot outlive or mutate a consumed Bind
+### Requirement: Invalid direct results preserve fail-closed initialization
 
-`TAngelscriptBindType<T>`, `FAngelscriptBindGlobals`, `FAngelscriptBindEnum`, and `FAngelscriptBindNode` SHALL be non-owning views into one `FAngelscriptBind`. Moving the root or consuming it through `FAngelscriptBindingRegistry::Register(FAngelscriptBind&&)` SHALL invalidate all views previously obtained from that root.
+When direct registration fails, the returned bound-result value SHALL be invalid and SHALL retain access to the binding context's first failure. Fluent calls on that value SHALL NOT fall back to another function/property or create a second error that hides the original failure.
 
-Development builds SHALL diagnose use of a stale view through an owner/generation token or equivalent check. A view SHALL NOT keep a consumed draft mutable and SHALL NOT auto-register on destruction.
+#### Scenario: Registration fails before a trait
 
-#### Scenario: Root Bind is moved
+- **WHEN** AngelScript rejects a declaration and the provider chains `.NoDiscard()`
+- **THEN** the original declaration error remains the active failure
+- **AND** no other registered function receives the trait
+- **AND** engine publication is rejected
 
-- **GIVEN** a node view obtained from Bind A
-- **WHEN** Bind A is moved into Bind B
-- **THEN** the old view SHALL be invalid
-- **AND** attempting to mutate through it in a development build SHALL produce a deterministic diagnostic rather than modifying Bind B accidentally.
+### Requirement: Direct trait semantics preserve baseline behavior
 
-#### Scenario: Registry consumes the Bind
+For the same provider source and engine inputs, the completed direct API SHALL preserve script-visible declarations, callable behavior, compiler traits, deprecation messages, documentation, native/StaticJIT forms, global-property constant values, and `Binds.Cache` behavior. Raw AS registration ids and obsolete callback/order observation formats are not required to be identical.
 
-- **GIVEN** a node view obtained from a valid draft
-- **WHEN** the root is passed to `Register(MoveTemp(Bind))`
-- **THEN** the root and all its prior views SHALL no longer be mutable
-- **AND** the registry SHALL own only the frozen internal package after successful registration.
+#### Scenario: Type and function surface is unchanged
 
-### Requirement: Legacy free-function trait setters remain functional with deprecation
+- **WHEN** pre/post engine-state observations are compared after migration
+- **THEN** declarations and applicable function/property traits match except for explicitly documented architecture-only observation changes
 
-When `WITH_ANGELSCRIPT_LEGACY_BINDS=1`, the old PreviousBind trait setters SHALL remain callable through an isolated Legacy adapter and preserve their existing observable behavior for downstream callbacks. When the gate is `0`, those declarations, PreviousBind slots, and opaque callback support SHALL be absent from the new binding core.
+#### Scenario: Binds cache contract is unchanged
 
-New in-tree providers and new binding-core consumers SHALL NOT use the legacy setters. The new applier SHALL NOT write `FAngelscriptBindState::PreviouslyBoundFunction` for descriptor nodes.
-
-#### Scenario: Legacy callback uses a previous-function setter
-
-- **GIVEN** a default compatibility build
-- **WHEN** an unmigrated downstream legacy callback registers a function and invokes a PreviousBind trait setter
-- **THEN** the Legacy adapter SHALL apply the same observable function trait
-- **AND** that state SHALL remain confined to the explicit legacy callback invocation for the selected engine.
-
-#### Scenario: New package and legacy callback coexist
-
-- **WHEN** one legacy callback and one non-colliding new package execute in a compatibility build
-- **THEN** both SHALL apply their own metadata correctly
-- **AND** the new node SHALL not read or overwrite Legacy PreviousBind state.
-
-#### Scenario: Legacy-disabled build removes dependency
-
-- **WHEN** the plugin builds with `WITH_ANGELSCRIPT_LEGACY_BINDS=0`
-- **THEN** all new production bindings and metadata consumers SHALL compile without PreviousBind declarations or state.
+- **WHEN** direct callbacks read or write `Binds.Cache` through the explicit engine database
+- **THEN** its schema and reflected binding behavior remain compatible
 
 ## REMOVED Requirements
 
-### Requirement: Trait-write semantics are byte-identical to baseline
+### Requirement: Legacy free-function PreviousBind setters remain functional
 
-**Reason**: Raw per-engine registration IDs and unrelated serialized artifacts are not a sound acceptance contract for trait attachment. Requiring them to be byte/number-identical would preserve static callback order as a permanent identity contract and prevent deterministic package ordering.
+**Reason**: PreviousBind APIs target an implicit most-recent registration and are unnecessary once direct calls return exact engine-bound results.
 
-**Migration**: Preserve script-visible declarations, registration counts, trait behavior, native metadata, documentation, and execution results. Compare observable behavior and treat `Binds.Cache` as its separate reflected `Structs`/`Classes` regression surface rather than adding catalog identity to it.
+**Migration**: Chain the equivalent option directly from `Method`, constructor, behaviour, global-function, or property calls returning `FAngelscriptBoundFunction` or `FAngelscriptBoundProperty`.
 
-## ADDED Requirements
+#### Scenario: Completed migration has no PreviousBind state
 
-### Requirement: Trait-write semantics preserve observable binding behavior
-
-For the same enabled binding surface, the descriptor/applier path SHALL preserve script-visible type/function/property counts, declarations, trait values, documentation, native behavior, and compile outcomes. Raw per-engine AS IDs MAY change when deterministic package order differs from legacy callback order. `Binds.Cache` SHALL retain its separate reflection-binding meaning and SHALL NOT become the catalog identity store in this change.
-
-#### Scenario: Type and function counts remain compatible
-
-- **WHEN** the editor initializes with the fully migrated package set
-- **THEN** object type, method, behavior, global function, and global property counts SHALL match the characterized enabled baseline except for separately approved binding changes.
-
-#### Scenario: Reflection bind cache remains compatible
-
-- **WHEN** provider migration exercises `Binds.Cache` creation and loading
-- **THEN** its reflected `Structs`/`Classes` records SHALL remain loadable and behaviorally compatible
-- **AND** the cache SHALL NOT require PackageId, NodeId, catalog fingerprint, or raw AS registration IDs.
-
-#### Scenario: Trait state remains equivalent
-
-- **WHEN** representative scripts compile and execute against migrated nodes
-- **THEN** no-discard, editor-only, deprecation, accessors, compile-out, native form, pure constants, and forwarding traits SHALL have the same observable behavior as the characterized baseline.
+- **WHEN** production migration is complete
+- **THEN** source contains no `PreviouslyBoundFunction`, `PreviouslyBoundGlobalProperty`, `GetPreviousBind*`, `SetPreviousBind*`, `DeprecatePreviousBind`, or `CompileOutPreviousBind*` dependency
+- **AND** tests target direct bound-result behavior

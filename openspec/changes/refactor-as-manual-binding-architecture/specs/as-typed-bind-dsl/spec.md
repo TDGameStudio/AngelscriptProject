@@ -1,234 +1,150 @@
 ## MODIFIED Requirements
 
-### Requirement: Typed class binding facade
+### Requirement: Typed class binding facade targets an explicit engine
 
-The system SHALL provide a descriptor-first typed fluent API rooted at a move-only `FAngelscriptBind` for C++ classes and structs. `FAngelscriptBind` SHALL directly own package metadata and mutable draft descriptors; it SHALL NOT delegate new registrations to the immediate, ambient-engine `FAngelscriptBinds` backend.
+The system SHALL provide `FAngelscriptBinds` as a typed hand-written binding facade constructed for one explicit `FAngelscriptEngine`. Class, struct, enum, global, and namespace helpers SHALL register immediately against that target and its engine-owned stores. Completed binding code SHALL NOT choose a mutation target through `FAngelscriptEngine::GetCurrent()` or an unpartitioned fallback.
 
-There SHALL be no separate public `FAngelscriptBindingPackageBuilder` or `FAngelscriptBindBuilder`, and providers SHALL NOT need to call `.Build()` or `.Finalize()`.
+#### Scenario: Direct member method registration
 
-Root configuration methods such as `Phase`, `Requires`, `Before`, and `After` SHALL return `FAngelscriptBind&`. Type/global/enum entry points SHALL return non-owning views into that same root, so package configuration and descriptor construction remain one fluent public abstraction.
+- **WHEN** a provider callback receives `FAngelscriptBinds& Binds`, obtains a typed class view, and calls `Method("float64 Size() const", &FVector::Size)`
+- **THEN** the method is immediately registered on the explicit target engine
+- **AND** the returned `FAngelscriptBoundFunction` identifies that exact result
 
-#### Scenario: Binding a member method through FAngelscriptBind
+#### Scenario: Class namespace static function
 
-- **GIVEN** an AngelScript type such as `FColor`
-- **WHEN** a provider calls `Bind.ExistingClass<FColor>("FColor").Method<&FColor::ToHex>("FString ToHex() const")`
-- **THEN** the draft SHALL contain a method descriptor whose owner, C++ callable, original AS declaration, and draft-local node key can be inspected before engine application
-- **AND** its normalized declaration and final stable NodeId SHALL be inspectable after Registry parse/normalize/freeze
-- **AND** applying the package SHALL preserve existing script code calling `FColor.ToHex()`.
+- **WHEN** a typed class view binds a supported free function as a class namespace function
+- **THEN** the complete AngelScript declaration and namespace target are registered on the same explicit engine
+- **AND** no process-global current-engine selection occurs
 
-#### Scenario: Binding a class namespace static function
+#### Scenario: Direct property registration
 
-- **GIVEN** a C++ static or free function that appears under an AngelScript class namespace
-- **WHEN** the provider adds it through a `TAngelscriptBindType<T>` or `FAngelscriptBindGlobals` view
-- **THEN** the descriptor SHALL record the `FColor` namespace explicitly
-- **AND** the applier SHALL restore the previous namespace after registering that node.
+- **WHEN** a typed class view binds a member offset or supported property form
+- **THEN** the property is immediately registered for that class on the explicit engine
+- **AND** the returned `FAngelscriptBoundProperty` identifies that exact property result
 
-#### Scenario: Binding a property through a Bind view
+### Requirement: Semi-typed declarations and callable forms are preserved
 
-- **GIVEN** a supported C++ data member or explicit offset
-- **WHEN** a provider calls `.Property("DWColor", &FColor::DWColor)` or the explicit declaration/offset overload
-- **THEN** the descriptor SHALL retain the typed member/offset and resolved AS declaration
-- **AND** property registration SHALL not occur until an explicit engine applies the package.
+The typed DSL SHALL retain an explicit complete AngelScript declaration and SHALL support the C++ callable forms accepted by the existing binding API. Direct registration SHALL pass the selected callable payload, native caller, call convention, user data, and native/StaticJIT form to the explicit engine without requiring automatic full declaration generation or a separate declaration parser.
 
-### Requirement: Complete AngelScript declarations are authoritative
+#### Scenario: Declaration remains explicit
 
-Every callable entry point in the fluent `FAngelscriptBind` API SHALL require one complete AngelScript declaration containing the script-visible return type, function name, parameter types, reference directions, method `const`, and declaration attributes where applicable, including parameter names and default expressions wherever the declaration defines them.
+- **WHEN** a provider binds an overloaded or script-specific signature
+- **THEN** the author supplies the complete AngelScript declaration string
+- **AND** that declaration remains the semantic input to AngelScript registration
 
-The Bind API SHALL NOT expose `ASParam`, `ASParams`, automatic declaration generation, or separate `MethodDecl`/`FunctionDecl`/`BehaviourDecl` escape-hatch families. Ordinary and complex signatures SHALL use the same complete-declaration entry points.
+#### Scenario: Existing macro and direct forms remain valid
 
-Callable validation level SHALL be derived from callable/descriptor capability. Typed callables with a complete mapping require `Full`; `Partial` is limited to documented adapter/type-mapping gaps and validates every comparable field; `SyntaxOnly` is limited to generic/native-erased call paths; `Custom` is limited to explicit custom nodes. A provider SHALL NOT downgrade validation to suppress a detectable mismatch.
+- **WHEN** a provider uses a supported raw pointer, `METHOD`, `METHODPR`, `FUNC`, trivial/native macro, direct form, or generic form
+- **THEN** the direct facade accepts the same callable shape
+- **AND** equivalent ASAutoCaller/native metadata reaches the target engine
 
-#### Scenario: Complete member declaration is parsed
+#### Scenario: Supported inner lambda remains valid
 
-- **WHEN** a provider supplies `.Method<&FVector::Equals>("bool Equals(const FVector& Other, float64 Tolerance = KINDA_SMALL_NUMBER) const")`
-- **THEN** the descriptor SHALL retain that complete declaration as the apply-time authority
-- **AND** preflight SHALL parse `bool`, `Equals`, both parameter types/names, the default expression, and the method `const`
-- **AND** the normalized declaration SHALL participate in stable NodeId and catalog fingerprint generation.
+- **WHEN** `FVector_.Method`, a constructor, or a global function uses a currently supported non-capturing lambda
+- **THEN** the direct facade converts and registers the callable as before
+- **AND** the requirement that the outer `FAngelscriptBind` callback is non-capturing does not remove inner binding-lambda support
 
-#### Scenario: Complex declaration uses the same entry point
+#### Scenario: Supported capturing auxiliary callable remains valid
 
-- **GIVEN** a declaration containing `?&`, template placeholders, object-first/object-last adaptation, or a generic call interface
-- **WHEN** the provider adds it through `Method`, `Function`, `Behaviour`, `Constructor`, `Factory`, or the applicable callable entry point
-- **THEN** the parser SHALL preserve and normalize the complete declaration through the same descriptor model
-- **AND** the descriptor SHALL record whether callable comparison is `Full`, `Partial`, `SyntaxOnly`, or `Custom`.
+- **WHEN** an existing type-finder or other explicitly owning auxiliary API accepts a capturing TFunction-like value
+- **THEN** the value is owned by the explicit engine's auxiliary store according to that API's lifetime contract
+- **AND** it is not placed in the process callback record
 
-#### Scenario: Callable disagrees with the declaration
+### Requirement: Explicit overload support remains available
 
-- **WHEN** a provider pairs a typed callable with a declaration whose supported return type, parameter count/type/ref qualifiers, or member `const` disagrees
-- **THEN** package validation SHALL fail before engine application
-- **AND** diagnostics SHALL identify the PackageId, draft node provenance and declaration, final NodeId if one was assigned, parsed AS shape, callable C++ shape, and each mismatch.
+The typed DSL SHALL support overloaded C++ functions through an explicit typed overload helper, `METHODPR`-style wrapper, or equivalent typed cast API. The chosen callable SHALL be registered immediately against the explicit engine while preserving its complete AngelScript declaration.
 
-#### Scenario: Provider attempts to weaken validation
+#### Scenario: Overloaded method is selected explicitly
 
-- **GIVEN** a typed callable whose mapped return/argument/member-const shape is fully comparable
-- **WHEN** a provider attempts to mark it `Partial` or `SyntaxOnly`
-- **THEN** package validation SHALL reject the unsupported downgrade
-- **AND** the provider SHALL NOT be able to hide a declaration/callable mismatch.
+- **WHEN** a provider selects one overload with an exact member-function type or `METHODPR`
+- **THEN** that overload is registered
+- **AND** no runtime overload inference or deferred callable selection occurs
 
-#### Scenario: Function traits identify callable shape
+### Requirement: Direct registrations expose chainable exact results
 
-- **GIVEN** a free function, non-const member function, const member function, or supported captureless lambda
-- **WHEN** callable traits are instantiated
-- **THEN** tests SHALL observe the callable category, return type, argument count/types, and const-member status used by declaration validation.
+Function-like calls SHALL return `FAngelscriptBoundFunction`, and property-like calls SHALL return `FAngelscriptBoundProperty`. Applicable fluent options SHALL mutate the exact newly registered result on the explicit engine. Discarding either return value SHALL remain valid.
 
-### Requirement: Declaration parsing reuses the AngelScript grammar without an engine target
+#### Scenario: No-discard method option
 
-Registry preflight SHALL parse complete declarations through a reusable dependency-inverted form of the existing AngelScript declaration grammar. The binding path SHALL NOT create a separate grammar and SHALL NOT require a current or target `FAngelscriptEngine` merely to parse syntax.
+- **WHEN** an author writes `FVector_.Method(...).NoDiscard()`
+- **THEN** `NoDiscard` is applied to the function returned by that `Method` call
+- **AND** no previous-function id is read
 
-The reusable maintained-fork frontend SHALL return AngelScript-owned engine-independent syntax values and structured diagnostics. A narrow Runtime adapter SHALL convert those values into plugin-owned parsed declaration records. Fork code SHALL NOT depend on Runtime binding descriptor types, and AngelScript parser nodes, resolved engine type objects, functions, or registration IDs SHALL NOT escape into `FAngelscriptBind` or immutable packages.
+#### Scenario: Property option
 
-`ThirdParty/Angelscript` SHALL be treated as maintained fork source rather than an immutable vendor boundary. The implementation MAY refactor or reorganize the relevant parser, builder, tokenizer, declaration syntax model, type-query, diagnostic, and internal frontend code needed to establish the shared parser. Acceptance SHALL be based on ownership boundaries and observable parser/registration behavior, not a changed-file allowlist.
+- **WHEN** an author writes `FType_.Property(...).PureConstant(Value)`
+- **THEN** the option targets the property returned by that `Property` call
+- **AND** no previous-global-property id is read
 
-#### Scenario: Registry parses with no engine
+#### Scenario: Return is ignored
 
-- **WHEN** a valid package containing complete method/global/behavior declarations is registered while no `FAngelscriptEngine` exists
-- **THEN** syntax parsing, normalization, and supported callable comparison SHALL succeed without invoking an `asIScriptEngine::Register*` API.
+- **WHEN** an author calls `Method`, constructor, behaviour, global function, or property without chaining an option
+- **THEN** the call compiles and the direct registration remains valid
 
-#### Scenario: Reusable and engine parser remain compatible
+### Requirement: Representative migration preserves behavior
 
-- **WHEN** the parser parity corpus is processed by the reusable declaration entry and by the existing engine registration parser
-- **THEN** accepted and rejected syntax, parsed names/parameters/defaults/const/attributes, and diagnostic source locations SHALL remain equivalent for the covered declarations.
+All in-tree manual providers SHALL migrate to file-static `FAngelscriptBind` callbacks using the explicit `FAngelscriptBinds` facade and one required phase per callback. Script-visible behavior SHALL be preserved, and completed production source SHALL no longer depend on legacy nested `FBind`, integer order, implicit PreviousBind state, or module-startup submission.
 
-#### Scenario: Shared frontend refactor spans maintained fork files
+#### Scenario: FColor migration parity
 
-- **WHEN** a cohesive engine-independent declaration frontend requires coordinated changes across multiple maintained AngelScript parser, builder, tokenizer, syntax-model, or type-query files
-- **THEN** those source changes SHALL be permitted without a file allowlist
-- **AND** the declaration parity corpus and native AngelScript SDK suite SHALL determine compatibility.
+- **WHEN** `Bind_FColor.cpp` is migrated
+- **THEN** its type, constructors, properties, methods, namespace functions, traits, and callable behavior match the baseline
+- **AND** declarations and methods are split into appropriate phase callbacks where required
 
-#### Scenario: Apply performs final semantic validation
+#### Scenario: FVector named production entries and callable forms remain available
 
-- **WHEN** a frozen descriptor is applied to an explicit engine
-- **THEN** the applier SHALL pass the retained complete declaration to the AngelScript registration API without generating a replacement
-- **AND** the target engine SHALL remain authoritative for type resolution, name conflicts, calling conventions, and final registration validity.
+- **WHEN** `Bind_FVector.cpp` is migrated
+- **THEN** its project-owned runtime callables use stable named `FAngelscriptFVectorBinds` entries while existing pointer, macro, overload, type-adapter/finder, ToString, documentation, and native metadata behavior remains covered
+- **AND** a separate focused fixture proves the supported method/global/constructor lambda overloads remain available
+- **AND** no expanded registration cache is introduced
 
-### Requirement: Author-written declaration text stays inside one non-multiline literal
+#### Scenario: Legacy registrar is gone
 
-Each ordinary author-written callable declaration SHALL be fully contained in one ordinary C++ string literal whose text has no physical or embedded line break. This requirement applies only to the declaration literal. The surrounding C++ call, template/callable expression, closing parenthesis, and fluent option chain MAY wrap freely across source lines. New-path author-written callsites SHALL NOT use adjacent string-literal concatenation, raw multiline literals, embedded line breaks, or runtime-composed declaration fragments.
+- **WHEN** migration is complete
+- **THEN** production source contains no legacy `FAngelscriptBinds::FBind`, `RegisterBinds`, integer `EOrder`, or binding submission from `StartupModule()`
+- **AND** all engines execute the same sealed direct callbacks
 
-The descriptor validator SHALL reject declaration values containing `\r` or `\n`. A token-aware source architecture test SHALL enforce that exactly one non-multiline string token contains each author-written complete signature, which is not observable after C++ compilation. The architecture test SHALL NOT require the complete C++ call expression to occupy one line. Long declaration literals SHALL remain intact inside one `"..."` token even when they exceed the ordinary C++ line-width preference.
+## ADDED Requirements
 
-Reflection-, bind-database-, table-, and catalog-derived declarations are not author-written literal callsites. They SHALL use the deterministic snapshot expansion requirement below; every materialized declaration still passes the same complete-declaration parser, normalization, identity, diagnostics, and apply path.
+### Requirement: Production hand-written callables have named bind-owned entries
 
-#### Scenario: Wrapped call with intact declaration literal is accepted
+Every project-owned C++ function directly registered as an AngelScript method, constructor, implicit constructor, factory, destructor, behaviour, template callback, global function, or global generic function by a production hand-written bind SHALL have a stable named entry owned by that bind. This source-organization requirement SHALL NOT remove supported lambda overloads from the typed DSL, add a function-level runtime metadata cache, or change the callable's ASAutoCaller, call convention, user data, native form, or trivial classification.
 
-- **WHEN** a provider wraps `.Method<&FVector::Equals>(`, the declaration argument, the closing parenthesis, and `.TrivialNative()` across separate source lines
-- **AND** the complete `bool Equals(const FVector& Other, float64 Tolerance = KINDA_SMALL_NUMBER) const` declaration remains inside one non-multiline string literal
-- **THEN** formatting validation SHALL accept the callsite.
+#### Scenario: Bind owns custom non-template callables
 
-#### Scenario: Adjacent fragments are rejected
+- **WHEN** `Bind_FVector.cpp` owns project-defined runtime callable implementations
+- **THEN** registration remains in `Bind_FVector.cpp`, one primary `FAngelscriptFVectorBinds` type owns the callable entries, and its high-complexity companion layout remains separate
+- **AND** one primary `FAngelscriptFVectorBinds` type owns those callable entries
 
-- **WHEN** a provider splits one declaration across two adjacent C++ string literal tokens
-- **THEN** the source architecture test SHALL fail with the provider path and declaration callsite.
+#### Scenario: Bind forwards only existing pointers
 
-#### Scenario: Declaration value contains a line break
+- **WHEN** a hand-written bind registers only existing UE member/free pointers and owns no custom callable implementation
+- **THEN** it is not required to create empty `_Functions.h/.cpp` companion files
 
-- **WHEN** a declaration reaches the descriptor validator with an embedded carriage return or newline
-- **THEN** package validation SHALL return `InvalidPackage` with the PackageId, node provenance, and declaration-literal requirement.
+#### Scenario: Existing named wrapper is migrated
 
-### Requirement: Derived declarations materialize through restricted snapshot expansion
+- **WHEN** a project-owned direct AS entry is currently a file-local free function, namespace function, static wrapper, or non-capturing lambda
+- **THEN** it moves to the bind's named callable owner regardless of its former C++ syntax
+- **AND** registration identifies it through a stable function address
 
-`FAngelscriptBind` SHALL expose an advanced expansion-definition entry with a stable ExpansionId, integer revision, provenance, declared input capabilities, and non-capturing/static expansion function. `Registry.Register()` SHALL validate and freeze the definition without executing it.
+#### Scenario: Template callable requires visible definition
 
-Catalog snapshot materialization SHALL execute expansions only after enabled-package/phase/dependency resolution and explicit reflection/config/loaded-bind-database input capture. The read-only expansion context SHALL expose no current/target AS engine, mutable registry/package, arbitrary service locator, clock, random source, or filesystem query.
+- **WHEN** a callable template must be visible at its instantiation point
+- **THEN** its definition remains in the canonical `Bind_<Name>.h` or another required header-visible owner
+- **AND** ordinary non-template body placement is governed by the compatible compact-provider policy when that bind family is selected
 
-The restricted expansion writer SHALL emit ordinary child descriptor families and approved auxiliary descriptors using a stable SourceKey and contributing PackageId. It SHALL create `FAngelscriptDerivedDeclaration` values that are not publicly or implicitly constructible from `FString`. The ordinary fluent type/global views SHALL continue to reject runtime-composed declaration strings.
+#### Scenario: Former ordinary lambda remains non-native
 
-#### Scenario: Catalog aggregate expansion sees all enabled contributors
+- **WHEN** a production lambda without StaticJIT native metadata becomes a named function
+- **THEN** it is registered through an ordinary `&FAngelscript<Name>Binds::Function` pointer
+- **AND** the migration does not assign `FUNC`, trivial, template-native, or custom-native metadata merely because the function now has a name
 
-- **GIVEN** multiple enabled packages contribute stable ToString auxiliary descriptors
-- **WHEN** the `FString.ToStringConversions` expansion materializes a snapshot
-- **THEN** it SHALL enumerate those descriptors through the read-only catalog view in stable contributor/SourceKey order
-- **AND** emit ordinary `FString` conversion child descriptors before snapshot freeze
-- **AND** a disabled contributor SHALL produce no conversion child.
+#### Scenario: Existing native form moves
 
-#### Scenario: Reflection-derived function becomes an ordinary child
+- **WHEN** a callable already registered with `FUNC`, `FUNC_TRIVIAL`, custom-native, or templated native metadata moves to a companion owner
+- **THEN** its native/trivial classification, generated C++ spelling, include reachability, and required link visibility remain valid
 
-- **WHEN** an Actor/component/delegate/struct expansion consumes a reflected record with a stable object path and SourceKey
-- **THEN** the writer SHALL emit the complete generated declaration plus callable/adapter evidence
-- **AND** the shared AS frontend and policy-derived callable validator SHALL process it exactly like an author-written child before application
-- **AND** its final NodeId, provenance, and apply result SHALL be independently observable.
+#### Scenario: Auxiliary lambda is not a direct AS entry
 
-#### Scenario: Expansion attempts an opaque escape
-
-- **WHEN** an expansion attempts recursive expansion, custom apply emission, missing/duplicate SourceKey, ambient engine lookup, or an arbitrary raw dynamic-declaration path
-- **THEN** compilation, architecture validation, or snapshot preflight SHALL reject it
-- **AND** no target AS engine or auxiliary engine store SHALL be mutated.
-
-#### Scenario: Equivalent inputs are deterministic
-
-- **WHEN** equivalent package definitions and explicit expansion inputs are materialized twice with different registration order, UObject/native addresses, or absolute process paths
-- **THEN** normalized generated child records, final NodeIds, and catalog fingerprints SHALL match
-- **AND** a declaration-relevant input change SHALL change the expansion-input/catalog fingerprint only for a later immutable snapshot.
-
-#### Scenario: Generated declaration is invalid
-
-- **WHEN** an expansion emits a declaration with a line break, invalid syntax, callable mismatch, or authored/generated identity collision
-- **THEN** snapshot acquisition SHALL fail before application
-- **AND** diagnostics SHALL identify PackageId, ExpansionId/revision, SourceKey, contributor, generated text, input provenance, and parse/validation location.
-
-### Requirement: Explicit overload support
-
-The fluent `FAngelscriptBind` API SHALL support overloaded C++ functions through a non-type template parameter, explicit typed overload helper, or equivalent compile-time cast API.
-
-#### Scenario: Overloaded method binding is explicit
-
-- **GIVEN** an overloaded C++ member function or operator
-- **WHEN** a provider registers one overload
-- **THEN** the callsite SHALL explicitly identify the desired C++ signature
-- **AND** the Bind API SHALL NOT choose an overload based on the complete AS declaration string.
-
-#### Scenario: Complete declaration disagrees with typed overload
-
-- **WHEN** a provider pairs a supported typed overload with an incompatible complete AS declaration
-- **THEN** package validation SHALL report the mismatch before engine application.
-
-### Requirement: Chainable bind options
-
-The fluent `FAngelscriptBind` API SHALL expose chainable options on an explicit `FAngelscriptBindNode` view. Each option SHALL mutate only the node identified by that view and SHALL preserve the corresponding applied AngelScript trait, metadata, documentation, compile-out, or StaticJIT/native behavior.
-
-#### Scenario: No-discard option
-
-- **WHEN** a provider writes `.Method(...).NoDiscard()`
-- **THEN** the no-discard value SHALL be stored on that method descriptor
-- **AND** the applied script function SHALL have the same no-discard behavior as the current binding surface.
-
-#### Scenario: Multiple members remain chainable without End
-
-- **WHEN** a provider writes `.Method(A).NoDiscard().Documentation(...).Method(B).Deprecated(...)`
-- **THEN** the first options SHALL belong only to A and the final option SHALL belong only to B
-- **AND** no global or engine-scoped previous-node slot SHALL be read or written.
-
-#### Scenario: Trivial native option
-
-- **GIVEN** a method or constructor descriptor
-- **WHEN** the provider applies its trivial/native option
-- **THEN** the node SHALL contain the native metadata before application
-- **AND** StaticJIT SHALL consume that descriptor together with the explicit per-engine node result.
-
-### Requirement: Representative migration parity
-
-All in-tree hand-written Runtime, GameplayTags, and GAS binding providers SHALL migrate to explicit packages. Existing script-visible declarations and behavior SHALL remain compatible, and the repository SHALL pass a build with the Legacy adapter disabled.
-
-The migration SHALL include reflection/type-derived declaration families and SHALL relocate non-AS provider side effects into the approved explicit lifetime/ownership paths. Neither category MAY remain as an opaque Legacy dependency in the legacy-disabled build.
-
-#### Scenario: Representative value-type parity
-
-- **GIVEN** migrated `FColor` or equivalent representative value-type bindings
-- **WHEN** automation tests compile and execute constructors, properties, member methods, namespace/static functions, overloads, and native forms
-- **THEN** those calls SHALL compile and behave as before migration.
-
-#### Scenario: Registration-kind matrix is covered
-
-- **WHEN** the representative migration stage completes
-- **THEN** tests SHALL cover a value type, UObject/reference type, enum, namespace/global, constant property, constructor/operator, compile-out/custom node, StaticJIT/native form, documentation, and optional-plugin package.
-
-#### Scenario: In-tree source compiles without legacy bindings
-
-- **WHEN** the plugin builds with `WITH_ANGELSCRIPT_LEGACY_BINDS=0`
-- **THEN** every in-tree production manual provider SHALL use the new `FAngelscriptBind` API
-- **AND** no migrated source SHALL include or invoke the Legacy adapter.
-
-#### Scenario: Downstream compatibility remains temporarily available
-
-- **WHEN** the plugin builds with the default legacy value `1`
-- **THEN** downstream source that still uses the old raw binding API SHALL remain buildable through the isolated compatibility surface.
+- **WHEN** a bind uses a capturing type finder, local algorithm lambda, or UE delegate/async callback that is not directly supplied to an AngelScript callable registration API
+- **THEN** the production named-entry rule does not require that lambda to become an AS callable-owner function

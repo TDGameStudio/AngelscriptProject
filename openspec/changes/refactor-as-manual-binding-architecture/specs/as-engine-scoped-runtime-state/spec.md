@@ -1,69 +1,81 @@
+## ADDED Requirements
+
+### Requirement: Process-wide binding state is limited to callback metadata
+
+The process-wide binding collection SHALL contain only logical name, phase, owner module, source provenance, and a process-lifetime callback pointer. It SHALL NOT contain resolved reflection results, AngelScript objects or ids, expanded declarations/methods/properties, engine-owned auxiliary values, enable/filter state, dependencies, or unload handles.
+
+#### Scenario: Process collection is inspected
+
+- **WHEN** diagnostics inspect the sealed bind collection
+- **THEN** they can report provider identity, phase, module, and source
+- **AND** no AS type/function/object pointer or registration id is present
+
+#### Scenario: Subsystem has initialized
+
+- **WHEN** `UAngelscriptSubsystem` has loaded modules and finalized the collection
+- **THEN** the one global collection remains the source of callback metadata
+- **AND** the subsystem owns no copy, pointer view, or expanded binding member
+
+### Requirement: Every callback mutation has an explicit engine target
+
+Each full engine binding pass SHALL construct `FAngelscriptBinds` for one explicit `FAngelscriptEngine`. Type adapters/finders, well-known type slots, ToString, BindDB, string factory/default array selection, interface signatures/user data, generated/reflection bindings, traits, and finalizers SHALL resolve their mutable targets through that context. Completed binding code SHALL NOT choose a target through an ambient current engine or unpartitioned fallback store.
+
+#### Scenario: Type and ToString work targets Engine B
+
+- **WHEN** Engine B replays callbacks that register a type adapter and ToString formatter
+- **THEN** those results are stored only in Engine B's databases/collections
+- **AND** Engine A's corresponding state is unchanged
+
+#### Scenario: BindDB is loaded and consumed
+
+- **WHEN** a direct callback consults `Binds.Cache`
+- **THEN** it reads the `FAngelscriptBindDatabase` owned by the explicit engine
+- **AND** no legacy fallback database receives the operation
+
+### Requirement: Multiple engines replay callbacks but isolate results
+
+The sealed process callback collection SHALL be reused by every full engine, while each engine SHALL independently own all AS registration ids/objects and auxiliary results produced by callback replay. Engine teardown SHALL release only that engine's state and SHALL NOT invalidate the callback collection or another engine.
+
+#### Scenario: Two engines execute one callback collection
+
+- **WHEN** Engine A and Engine B initialize in the same process
+- **THEN** both execute the same callback identities in the same phase order
+- **AND** their AS ids, type pointers, bind states, databases, finders, ToString entries, and interface state are distinct
+
+#### Scenario: One engine is destroyed
+
+- **WHEN** Engine A is torn down while Engine B remains valid
+- **THEN** Engine A's resolved binding state is released
+- **AND** the sealed callback collection and Engine B's state remain valid
+
 ## MODIFIED Requirements
 
-### Requirement: Legacy fallbacks cannot hide engine-owned state
+### Requirement: Engine-owned AngelScript objects are not unpartitioned process state
 
-No-current-engine fallback registries SHALL NOT become hidden cross-engine owners for AngelScript runtime objects, type adapters/finders, ToString entries, bind-database contributions, or per-engine registration IDs. The new Binding Package catalog MAY retain replayable UE/C++ descriptors, complete declarations, expansion definitions/explicit input fingerprints, auxiliary adapter factories/metadata, plugin-owned parsed declaration values, and native callable adapters, but it SHALL NOT cache `asITypeInfo*`, `asIScriptFunction*`, `asIScriptObject*`, `asCScriptNode*`, `asCDataType`, `asCContext*`, per-engine `FAngelscriptType` instances, function IDs, or global-property IDs.
+Runtime code SHALL NOT store engine-owned AngelScript objects or ids in unpartitioned process-wide statics. The process callback collection MAY store only replayable native callback metadata; all resolved types, functions, objects, ids, traits, and auxiliary stores SHALL belong to a specific engine.
 
-PreviousBind state and legacy fallback bind storage SHALL exist only when `WITH_ANGELSCRIPT_LEGACY_BINDS=1`, inside the isolated Legacy adapter, and only for the duration/engine scope required to execute an opaque legacy callback.
+#### Scenario: Runtime needs an AS object pointer
 
-#### Scenario: Binding catalog stores replayable descriptors
+- **WHEN** binding or runtime code stores an `asITypeInfo*`, `asIScriptFunction*`, `asIScriptObject*`, context, or registration id
+- **THEN** ownership is reachable from one explicit `FAngelscriptEngine`
+- **AND** teardown removes it with that engine
 
-- **WHEN** a module registers a `FAngelscriptBind` and the registry freezes it as an internal Binding Package
-- **THEN** the registry MAY retain names, original/normalized complete declarations, plugin-owned parsed type/parameter/attribute values, stable UE reflection references/paths, expansion definitions, auxiliary factories/metadata, function pointers/call adapters, traits, documentation, dependencies, and configuration
-- **AND** it SHALL NOT promote any applied engine's AS object pointer or registration ID into the package or catalog identity.
+#### Scenario: Direct bound result is used
 
-#### Scenario: Apply report stores engine-owned IDs
+- **WHEN** `FAngelscriptBoundFunction` or `FAngelscriptBoundProperty` applies a fluent option
+- **THEN** it uses the explicit engine and exact id/pointer held by that temporary value
+- **AND** the value is not added to process-global state
 
-- **WHEN** a descriptor is applied to Engine A
-- **THEN** its function/property/type ID SHALL be stored only in Engine A's apply result/lifecycle
-- **AND** replaying the descriptor to Engine B SHALL produce and store Engine B's result separately.
+## REMOVED Requirements
 
-#### Scenario: Legacy callback uses PreviousBind
+### Requirement: Legacy fallbacks may hide engine-owned binding state
 
-- **GIVEN** a compatibility build with an explicit target engine
-- **WHEN** the Legacy adapter invokes an opaque callback that uses PreviousBind
-- **THEN** the adapter SHALL scope that state to the selected engine and legacy invocation
-- **AND** a new descriptor node SHALL neither read nor write it.
+**Reason**: Fallback stores silently route binding work outside the explicit engine and can leak state across full-engine recreation.
 
-#### Scenario: Legacy-disabled build
+**Migration**: Route all binding-path database, finder, formatter, interface, and trait operations through the `FAngelscriptBinds` target engine.
 
-- **WHEN** the plugin compiles with `WITH_ANGELSCRIPT_LEGACY_BINDS=0`
-- **THEN** the Binding Package registry, fluent Bind types, applier, and migrated providers SHALL compile without `LegacyBindState`, `PreviouslyBoundFunction`, or `PreviouslyBoundGlobalProperty`.
+### Requirement: ToString fallback exposes cross-engine type info
 
-### Requirement: Auxiliary binding state is applied to explicit engine-owned stores
+**Reason**: Cached `asITypeInfo*` values are engine-specific and become stale after teardown.
 
-The new binding path SHALL use explicit instance references for `FAngelscriptTypeDatabase`, `FAngelscriptToStringRegistry`, and `FAngelscriptBindDatabase`. Migrated providers and new binding-core code SHALL NOT use `FAngelscriptType` static registration/lookup to select a target, `FToStringHelper` ambient registration, or static `FAngelscriptBindDatabase::Get()`.
-
-Static ambient forwarding and no-current-engine fallback storage MAY remain only inside the Legacy compatibility surface while `WITH_ANGELSCRIPT_LEGACY_BINDS=1`. The legacy-disabled build SHALL contain no production dependency on those fallbacks.
-
-#### Scenario: Same auxiliary package applies to two engines
-
-- **GIVEN** one snapshot containing type-adapter, finder, and ToString descriptors
-- **WHEN** it is applied independently to Engine A and Engine B
-- **THEN** each engine SHALL receive fresh adapter instances, finder closures resolving that engine's adapters, and independent ToString entries
-- **AND** neither engine SHALL observe or mutate the other's stores or resolved `asITypeInfo*`.
-
-#### Scenario: Bind database participates explicitly
-
-- **WHEN** Engine A loads its bind database and requests a materialized snapshot
-- **THEN** the expansion context SHALL receive only an immutable view of Engine A's database
-- **AND** bind-database contribution nodes SHALL write only to Engine A through the explicit apply context
-- **AND** the existing serialized `Structs`/`Classes` schema SHALL remain separate from catalog identity.
-
-#### Scenario: Draft construction has no fallback write
-
-- **WHEN** a provider constructs or moves a `FAngelscriptBind` while no engine is current
-- **THEN** no Legacy type, ToString, or bind-database fallback SHALL be created or mutated by the new path
-- **AND** all auxiliary work SHALL remain replayable descriptor data until explicit engine application.
-
-#### Scenario: Engine teardown clears auxiliary state
-
-- **WHEN** an engine using auxiliary descriptors is destroyed
-- **THEN** its resolved type adapters/finders, ToString entries/type infos, bind-database runtime contributions, and auxiliary node results SHALL be released before its snapshot lease
-- **AND** package metadata SHALL remain reusable for a future engine without retaining the destroyed engine's objects.
-
-#### Scenario: Context pool stores AS contexts
-
-- **WHEN** a context pool stores `asCContext*`
-- **THEN** taking a context SHALL match the requested script engine
-- **AND** destroying an engine SHALL release or invalidate contexts owned by that engine.
+**Migration**: Each engine callback replay registers and finalizes ToString contributions directly in that engine's store during the declared phases.
