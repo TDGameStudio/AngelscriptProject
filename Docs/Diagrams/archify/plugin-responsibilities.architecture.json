@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "脚本与插件的职责分工",
+    "subtitle": "你写 Script/，插件负责编译、绑定与热重载",
+    "output": "plugin-responsibilities.html"
+  },
+  "components": [
+    { "id": "script", "type": "frontend", "label": "Script/", "sublabel": "你的 .as 脚本", "pos": [60, 150], "size": [200, 84] },
+    { "id": "plugin", "type": "backend", "label": "Plugins/Angelscript", "sublabel": "运行时 · 绑定 · UHT", "pos": [460, 150], "size": [220, 84] }
+  ],
+  "connections": [
+    { "id": "compile", "from": "script", "to": "plugin", "label": "编译 / 加载", "variant": "emphasis", "fromSide": "right", "toSide": "left", "route": "straight" },
+    { "id": "reflect", "from": "plugin", "to": "script", "label": "反射 / 热重载", "variant": "dashed", "fromSide": "left", "toSide": "right", "route": "straight", "labelDy": 26 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "你负责", "items": ["在 Script/ 下写 .as 脚本", "类 / 属性 / 逻辑"] },
+    { "dot": "emerald", "title": "一般不用动", "items": ["插件 C++ 本体", "绑定与生成管线"] }
+  ]
+}

@@ -1,0 +1,399 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><title>第2章预览</title><style>body{background:#0b1220;color:#e2e8f0;font-family:"JetBrains Mono",ui-monospace,monospace;max-width:920px;margin:0 auto;padding:32px 24px;line-height:1.7}h1.pg{color:#22d3ee;border-bottom:1px solid #1e293b;padding-bottom:8px;margin-top:40px;font-size:20px}h1:not(.pg){font-size:17px;color:#a5f3fc;margin-top:28px}code,pre{background:#111c31;border:1px solid #1e293b;border-radius:6px}pre{padding:12px;overflow:auto}code{padding:1px 5px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #334155;padding:6px 10px;text-align:left}th{background:#111c31}a{color:#34d399}hr{border:none;border-top:2px dashed #1e293b;margin:48px 0}.banner{background:#111c31;border:1px solid #334155;border-radius:8px;padding:12px 16px;color:#94a3b8;font-size:13px}</style></head><body><div class="banner">第2章离线预览（★ 为本次新增的函数页）。宏/卡片未套 Wiki 主题样式；完整效果用 pnpm run dev:wiki。</div><section><h1 class="pg">AngelScript 语言基础 · 目录</h1><h1 class="">本章要解决什么</h1><p>建立变量、函数、类、枚举、控制流、句柄与引用的语言心智模型，并标出普通 AngelScript 与 Unreal 方言的分界。本章聚焦“与引擎无关的语言核心”：语法、语义，以及当前 fork 在语言层做的扩展（如 <code>foreach</code>、<code>fallthrough</code>、<code>struct</code>、<code>access</code> 等关键字）。掌握核心之后，再进入  学习反射、Blueprint 与绑定层的专有行为。</p><p>本章所有示例形状都对照仓库 <code>Script/Examples/Core/</code> 与 <code>Script/Game/</code> 下的可运行示例；需要更深的实现细节时，用页内链接进入对应的语法参考与内部文档。</p><p>如果你还没跑通第一个脚本，先完成 ，再回到本章逐层深入。语言核心与 Unreal 反射是两件事：本章只讲语言本身。
+</p><h1 class="">本章文档</h1><h1 class="">阅读顺序建议</h1><ol><li>先读  与 ，建立最小可运行语法。</li><li>深入函数：、、。</li><li>再读  与 ，组织脚本类型。</li><li>需要精确语义时，用  与  作查阅入口。</li></ol><p><code>UPROPERTY()</code>、<code>UFUNCTION()</code>、反射生成、热重载和 Blueprint 子类迁移属于当前 fork 的引擎集成行为，不是普通 AngelScript 语法本身。涉及发布契约时以当前插件设置、生成表、源码和测试为准。
+
+</p></section>
+<hr/>
+<section><h1 class="pg">基本类型与变量</h1><h1 class="">学完能做什么</h1><p>你将能在 <code>.as</code> 文件中声明局部变量、成员变量和常量，读懂常见基础类型，并判断一个值是普通 AngelScript 值、Unreal 结构体值，还是由 Unreal GC 管理的对象引用。</p><p>前置条件：已经能打开项目的 <code>Script/</code> 目录；如果还没有运行过脚本，请先阅读 。</p><h1 class="">最小示例</h1><p>下面的函数只使用脚本局部变量，可以放进任意 <code>.as</code> 文件。保存后，它会随脚本模块一起编译。</p><pre><code>void DescribeValues()
+{
+    bool bEnabled = true;
+    int Count = 3;
+    float Distance = 125.0;
+    FString Label = "Checkpoint";
+    FName StableName = n"Checkpoint";
+
+    auto DoubledCount = Count * 2;
+    const FVector Offset = FVector(0.0, Distance, 0.0);
+
+    Print(f"{Label}: enabled={bEnabled}, count={DoubledCount}, offset={Offset}");
+}</code></pre><p>这里有三类需要分开理解的值：</p><ul><li><code>bool</code>、<code>int</code>、<code>float</code> 等是普通标量。整数还可以按需要使用 <code>int8</code>、<code>uint8</code>、<code>int64</code> 等明确宽度的类型。</li><li><code>FString</code>、<code>FName</code>、<code>FVector</code> 等来自 Unreal 绑定。它们不是 AngelScript 标准库凭空提供的类型；可用成员和运算取决于当前插件绑定。</li><li><code>AActor</code>、<code>UObject</code>、<code>UActorComponent</code> 等变量表示 Unreal 对象引用。脚本中不写 C++ 的 <code>*</code> 和 <code>-&gt;</code>；用 <code>.</code> 访问，空引用用 <code>nullptr</code> 判断。</li></ul><p><code>auto</code> 让编译器从右侧表达式推断静态类型，但不会把语言变成动态类型。推断完成后，变量仍只接受兼容值。<code>const</code> 表示这个名字在当前作用域中不能被重新赋值；它不会自动让其引用到的整个 Unreal 对象成为不可变对象。</p><h1 class="">标量类型一览</h1><p>普通标量是与引擎无关的语言核心类型。整数类型带明确宽度和符号，按需要选择即可：</p><table><tbody><tr class="evenRow"><th align="left">类型</th><th align="left">说明</th></tr><tr class="oddRow"><td align="left"><code>bool</code></td><td align="left">布尔值 <code>true</code> / <code>false</code></td></tr><tr class="evenRow"><td align="left"><code>int8</code> <code>int16</code> <code>int</code> / <code>int32</code> <code>int64</code></td><td>有符号整数（<code>int</code> 等价于 <code>int32</code>）</td></tr><tr class="oddRow"><td align="left"><code>uint8</code> <code>uint16</code> <code>uint</code> / <code>uint32</code> <code>uint64</code></td><td>无符号整数（<code>uint</code> 等价于 <code>uint32</code>）</td></tr><tr class="evenRow"><td align="left"><code>float</code></td><td align="left">32 位浮点，字面量可写 <code>1.0f</code></td></tr><tr class="oddRow"><td align="left"><code>float64</code> / <code>double</code></td><td align="left">64 位浮点</td></tr></tbody></table><p>没有特殊理由时用 <code>int</code>（32 位有符号）即可。需要与 Unreal 的字节数据、位掩码或紧凑存储对齐时，才用 <code>uint8</code>、<code>int64</code> 等明确宽度的类型。混用不同宽度/符号的整数运算时留意隐式转换与溢出。
+</p><h1 class="">字符串与名字：FString / FName / FText</h1><p>这三者都来自 Unreal 绑定，用途不同，不要混用：</p><ul><li>**<code>FString</code>**：可变的通用字符串，适合拼接、临时构造、调试文本。</li><li>**<code>FName</code>**：不区分大小写、经过内部化的稳定名字，适合做查表键、标签、组件名等。字面量写作 <code>n"Name"</code>。</li><li>**<code>FText</code>**：面向**最终用户显示**的、可本地化的文本。凡是要展示给玩家的界面文字应使用 <code>FText</code>。</li></ul><pre><code>FString Label = "Checkpoint";       // 通用文本
+FName StableName = n"Checkpoint";   // 稳定名字，用于查表/标签</code></pre><h1 class="">字面量形式</h1><ul><li>**数值字面量**：<code>3</code>、<code>255</code>、<code>1.0</code>、<code>1.0f</code>；十六进制 <code>0x14</code>、二进制 <code>0b1010</code> 等。</li><li>**普通字符串**：<code>"..."</code>，得到 <code>FString</code>。</li><li>**名字字面量**：<code>n"..."</code>，直接得到 <code>FName</code>（见上）。</li><li>**格式化字符串**：<code>f"..."</code>，花括号中的表达式会被求值后插入，还支持格式说明符与对齐：</li></ul><pre><code>Print(f"Called from actor {GetName()} at location {Location}");
+Print(f"Three decimals: {Value :.3f}");   // 保留三位小数
+Print(f"Hex: {20 :#x}");                    // 0x14
+Print(f"{DeltaSeconds =}");                 // 打印 "DeltaSeconds = 0.01"</code></pre><p>上面的格式说明符形状对照仓库 <code>Script/Examples/Core/Example_FormatString.as</code>；完整规则见 。</p><h1 class="">auto 与 const 的边界</h1><ul><li><code>auto</code> 只是**类型推断**：编译器根据右侧表达式确定一个静态类型，之后变量仍然是强类型，不接受不兼容的值。它不会让语言变成动态类型。</li><li><code>const</code> 约束的是**当前这个名字不能被重新赋值**；它不会把所指向的整个 Unreal 对象变成不可变对象。</li></ul><pre><code>auto DoubledCount = Count * 2;              // 推断为 int
+const FVector Offset = FVector(0, 125, 0);  // Offset 不能再被重新赋值</code></pre><h1 class="">成员变量与 Unreal 可见性</h1><p>类体里的普通成员默认只供脚本使用。只有在需要编辑器、Blueprint、复制或其他反射能力时才添加 <code>UPROPERTY()</code>：</p><pre><code>class AValueExample : AActor
+{
+    int InternalCounter = 0;
+
+    UPROPERTY(Category = "Example")
+    float Speed = 300.0;
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        InternalCounter += 1;
+        Print(f"{GetName()}: speed={Speed}, starts={InternalCounter}");
+    }
+}</code></pre><p>这条边界很重要：普通 AngelScript 变量语义属于本页；<code>UPROPERTY</code> 的默认可编辑性、Blueprint 暴露和复制规则属于 Unreal 方言。继续阅读 。</p><h1 class="">常见错误与验证</h1><ul><li>不要把 <code>FString</code> 和 <code>FName</code> 当成同一种用途。用户文本通常用 <code>FString</code>；稳定名字和查表键常用 <code>FName</code>。</li><li>不要把 <code>auto</code> 当成“任意类型”。编译错误应在保存脚本后出现在当前编译诊断中。</li><li>对对象引用先判断 <code>nullptr</code>；需要跨帧保存对象时，还要理解对象生命周期和 GC。</li><li>本页适用于当前仓库的 UE 5.7 插件 fork，示例形状已对照 <code>Script/Game/Example_Actor.as</code> 与 Core 示例；具体绑定成员仍以当前源码和代码补全为准。</li></ul><p>验证方法：保存包含 <code>DescribeValues()</code> 的文件，确认没有编译错误；从一个 <code>BeginPlay()</code> 调用它，运行 PIE 并在输出日志中找到打印结果。</p><h1 class="">相关链接</h1><ul><li> —— 用函数与控制流组织逻辑</li><li> —— 对象引用与结构体引用的区别</li><li> —— 集合与离散状态</li><li> —— <code>f"..."</code> 的完整规则</li><li> —— 完整语法与实现细节</li></ul></section>
+<hr/>
+<section><h1 class="pg">函数与控制流</h1><h1 class="">学完能做什么</h1><p>你将能声明全局函数和类方法，使用参数、返回值、<code>if</code>、<code>for</code>、<code>while</code>、<code>switch</code>、<code>break</code> 与 <code>continue</code>，并知道普通脚本函数和 Unreal <code>UFUNCTION()</code> 的边界。</p><p>前置条件：熟悉 。</p><h1 class="">一个可直接运行的函数</h1><pre><code>int SumPositiveValues(const TArray&lt;int&gt;&amp; Values)
+{
+    int Total = 0;
+    for (int Value : Values)
+    {
+        if (Value &lt;= 0)
+            continue;
+
+        Total += Value;
+    }
+    return Total;
+}
+
+void PrintDifficulty(int Level)
+{
+    switch (Level)
+    {
+    case 0:
+        Print("Easy");
+        break;
+    case 1:
+        Print("Normal");
+        break;
+    default:
+        Print("Custom");
+        break;
+    }
+}</code></pre><p>函数签名在调用点之前必须可见于编译模块。参数和返回值具有静态类型；<code>return</code> 的值必须与声明兼容。只有一条语句的条件分支可以省略花括号，但教程和团队代码更推荐保留花括号，减少后续修改造成的歧义。</p><p>范围 <code>for</code> 适合遍历容器中的值；需要索引或原地修改时使用计数循环。不要在范围循环中随意改变容器长度，除非具体容器页面明确说明该操作安全。</p><h1 class="">控制流：条件与循环</h1><p>条件用 <code>if</code> / <code>else if</code> / <code>else</code>。循环有四种常用形式：</p><pre><code>// 1) 计数 for：需要索引、或要原地按下标修改时用它
+for (int Index = 0, Count = Values.Num(); Index &lt; Count; ++Index)
+    Sum += Values[Index];
+
+// 2) 范围 for：只需要逐个取值时最简洁
+for (int Value : Values)
+    Sum += Value;
+
+// 3) while：先判断后执行
+while (Remaining &gt; 0)
+    Remaining -= Step;
+
+// 4) do-while：至少执行一次再判断
+do
+{
+    Attempts += 1;
+}
+while (Attempts &lt; MaxAttempts);</code></pre><p><code>break</code> 跳出当前循环，<code>continue</code> 跳到下一次迭代。计数 for 的两种形式都对照仓库 <code>Script/Examples/Core/Example_Array.as</code>。</p><h1 class="">switch 与 fallthrough</h1><p><code>switch</code> 的每个 <code>case</code> 分支默认**不会**自动贯穿到下一个 <code>case</code>——你需要显式 <code>break</code>（或 <code>return</code>）。当前 fork 提供了一个专门的 <code>fallthrough</code> 关键字，用来**明确表达**“有意贯穿到下一个 case”，从而避免 C++ 中“忘了写 break”造成的隐蔽 bug：</p><pre><code>void PrintDifficulty(int Level)
+{
+    switch (Level)
+    {
+    case 0:
+        Print("Easy");
+        break;
+    case 1:
+    case 2:
+        Print("Normal");   // 1 和 2 共用同一分支
+        break;
+    default:
+        Print("Custom");
+        break;
+    }
+}</code></pre><p><code>case</code> 标签使用限定的枚举名（如 <code>EExampleEnum::A</code>）时同样适用，见  与 <code>Script/Examples/Core/Example_Enum.as</code>。</p><h1 class="">方法、全局函数与 Blueprint</h1><p>普通全局函数和类方法只参与脚本调用。需要让 Unreal 反射和 Blueprint 看见时，添加 <code>UFUNCTION()</code>：</p><pre><code>UFUNCTION(Category = "Examples")
+int ClampScore(int Score, int Minimum, int Maximum)
+{
+    return Math::Clamp(Score, Minimum, Maximum);
+}
+
+class AScoreActor : AActor
+{
+    UFUNCTION(BlueprintEvent)
+    void ScoreChanged(int NewScore)
+    {
+        Print(f"Score changed: {NewScore}");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        ScoreChanged(ClampScore(125, 0, 100));
+    }
+}</code></pre><p>当前 fork 中，全局 <code>UFUNCTION()</code> 可成为 Blueprint 节点；类内 <code>BlueprintEvent</code> 允许 Blueprint 子类提供覆盖；覆盖 Unreal 父类事件时使用 <code>BlueprintOverride</code>。完整 specifier 和 RPC 规则请进入 。</p><p>需要生成 Blueprint 输出 pin 时可使用 <code>&amp;out</code>。普通结构体可修改引用使用 <code>&amp;</code>；对象引用与结构体引用不是同一概念：</p><pre><code>void SplitLocation(const FVector&amp; Location, float&amp;out X, float&amp;out Y)
+{
+    X = Location.X;
+    Y = Location.Y;
+}</code></pre><h1 class="">参数传递方式</h1><p>参数默认按值传递。对结构体等值类型，用引用修饰可以避免拷贝或返回多个结果：</p><table><tbody><tr class="evenRow"><th align="left">写法</th><th align="left">含义</th><th align="left">典型用途</th></tr><tr class="oddRow"><td align="left"><code>const T&amp;</code></td><td align="left">只读引用，不拷贝</td><td align="left">传入较大的结构体/数组只读</td></tr><tr class="evenRow"><td align="left"><code>T&amp;out</code></td><td align="left">仅作为输出写入</td><td align="left">返回多个结果；在 Blueprint 中生成输出 pin</td></tr><tr class="oddRow"><td align="left"><code>T&amp;</code> / <code>T&amp;inout</code></td><td align="left">可读可写引用</td><td align="left">就地修改调用方传入的值</td></tr></tbody></table><pre><code>// 只读引用传入 + 两个输出参数
+void SplitLocation(const FVector&amp; Location, float&amp;out X, float&amp;out Y)
+{
+    X = Location.X;
+    Y = Location.Y;
+}
+
+// &amp;out 在 Blueprint 中会显示为节点右侧的输出 pin
+UFUNCTION(Category = "Examples")
+void ExampleFunctionWithOutputParameter(FVector&amp;out OutPosition)
+{
+    OutPosition = FVector(1.0, 1.0, 0.0);
+}</code></pre><p>上面 <code>&amp;out</code> 的形状对照 <code>Script/Examples/Core/Example_Functions.as</code>。注意**对象引用**（如 <code>AActor</code>）本身就是引用语义，与这里的结构体 <code>&amp;</code> 不是一回事；两者的区别见 。</p><h1 class="">命名参数与常用库函数</h1><p>调用时可以用 <code>名字 = 值</code> 的形式按参数名传参，提升可读性、也方便跳过带默认值的参数：</p><pre><code>Print("You selected A!", Duration = 30);
+float Clamped = Math::Clamp(X = 2.0, Min = 0.0, Max = 0.5);</code></pre><p>常用数学函数位于 <code>Math::</code> 命名空间，例如 <code>Math::Abs</code>、<code>Math::Min</code>、<code>Math::Max</code>、<code>Math::Clamp</code>、<code>Math::Sin</code>、<code>Math::RandRange</code> 等（见 <code>Script/Examples/Core/Example_Math.as</code>）。</p><h1 class="">失败边界与验证</h1><ul><li><code>switch</code> 的 <code>case</code> 默认不贯穿，需要显式 <code>break</code>；确需贯穿时使用 <code>fallthrough</code> 关键字明确表达。</li><li>空对象引用不是控制流异常；在访问前显式判断 <code>nullptr</code>。</li><li>热重载时，改变普通脚本函数体通常比改变反射签名影响更小；结构变化要按热重载文档验证。</li><li>本页示例已对照 <code>Script/Examples/Core/Example_Functions.as</code>、<code>Example_Array.as</code> 和 <code>Example_Enum.as</code>；适用于当前 UE 5.7 fork。</li></ul><p>验证方法：将示例放入 <code>Script/</code> 下的 <code>.as</code> 文件，从一个 Actor 的 <code>BeginPlay()</code> 调用它们，保存后确认编译成功并检查输出日志。若修改 <code>UFUNCTION</code> 签名，还要打开 Blueprint 子类确认节点和覆盖仍有效。</p><h1 class="">相关链接</h1><ul><li> —— 值/引用传参、&amp;out、默认值、命名参数</li><li> —— specifier 与蓝图节点/覆盖</li><li> —— 回调与多播派发</li><li> —— 组织脚本类型与多态派发</li><li> —— 完整语法与实现细节</li></ul></section>
+<hr/>
+<section><h1 class="pg">★ 函数参数与返回值</h1><h1 class="">学完能做什么</h1><p>你将能精确控制函数如何接收和返回数据：按值还是按引用、只读还是可写、如何输出多个结果、如何用默认值和命名参数写出清晰的调用。</p><p>前置条件：先读  建立最小函数语法。</p><h1 class="">参数传递方式一览</h1><p>参数默认**按值**传递（得到一份拷贝）。对结构体等值类型，用引用修饰可以避免拷贝或返回结果：</p><table><tbody><tr class="evenRow"><th align="left">写法</th><th align="left">含义</th><th align="left">典型用途</th></tr><tr class="oddRow"><td align="left"><code>T</code>（默认）</td><td align="left">按值传入拷贝</td><td align="left">小标量、不想影响调用方</td></tr><tr class="evenRow"><td align="left"><code>const T&amp;</code></td><td align="left">只读引用，不拷贝</td><td align="left">传入较大结构体 / 数组只读</td></tr><tr class="oddRow"><td align="left"><code>T&amp;out</code></td><td align="left">仅作为输出写入</td><td align="left">返回多个结果；蓝图右侧输出 pin</td></tr><tr class="evenRow"><td align="left"><code>T&amp;</code> / <code>T&amp;inout</code></td><td align="left">可读可写引用</td><td align="left">就地修改调用方传入的值</td></tr></tbody></table><p><code>AActor</code>、<code>UObject</code> 这类**对象引用本身就是引用语义**，与 <code>FVector&amp;</code> 这种“值类型上的引用参数”不是一回事。区别见 。
+</p><h1 class="">只读引用与输出参数</h1><pre><code>// const T&amp; 只读传入 + 两个 &amp;out 输出
+void SplitLocation(const FVector&amp; Location, float&amp;out X, float&amp;out Y)
+{
+    X = Location.X;
+    Y = Location.Y;
+}
+
+// &amp;out 在蓝图中显示为节点右侧的输出 pin
+UFUNCTION(Category = "Examples")
+void ExampleFunctionWithOutputParameter(FVector&amp;out OutPosition)
+{
+    OutPosition = FVector(1.0, 1.0, 0.0);
+}</code></pre><p>用 <code>&amp;out</code> 是脚本里“返回多个值”的常用方式：一个 <code>return</code> 值 + 若干 <code>&amp;out</code> 参数。以上形状对照 <code>Script/Examples/Core/Example_Functions.as</code>。</p><h1 class="">默认参数值</h1><p>参数可以带默认值；带默认值的参数必须放在参数列表**末尾**。调用时省略即用默认值：</p><pre><code>void SpawnPickups(int Count, float Spacing = 100.0, bool bAlignToGround = true)
+{
+    // Spacing / bAlignToGround 可省略
+}
+
+SpawnPickups(3);                 // Spacing=100.0, bAlignToGround=true
+SpawnPickups(3, 50.0);           // bAlignToGround=true
+SpawnPickups(3, 50.0, false);    // 全部显式</code></pre><h1 class="">命名参数</h1><p>调用时可以用 <code>名字 = 值</code> 按参数名传参，提升可读性、也方便只覆盖后面的某个默认参数：</p><pre><code>Print("You selected A!", Duration = 30);
+float Clamped = Math::Clamp(X = 2.0, Min = 0.0, Max = 0.5);</code></pre><p>以上对照 <code>Script/Examples/Core/Example_Enum.as</code> 与 <code>Example_Math.as</code>。命名参数与默认值配合，能避免为了传最后一个参数而把中间的默认值也写全。</p><h1 class="">返回值</h1><p>返回值有静态类型，<code>return</code> 的值必须与声明兼容。需要“返回多个结果”时，组合一个返回值与若干 <code>&amp;out</code>，或返回一个 <code>struct</code>：</p><pre><code>struct FSplitResult { float X; float Y; }
+
+FSplitResult SplitXY(const FVector&amp; V)
+{
+    FSplitResult R;
+    R.X = V.X;
+    R.Y = V.Y;
+    return R;
+}</code></pre><h1 class="">常见错误与验证</h1><ul><li>默认参数只能在**尾部**；把带默认值的参数放在必填参数前会编译错误。</li><li><code>&amp;out</code> 参数在函数内应被赋值；调用方拿到的是写回的值。</li><li>不要用值传递一个大 <code>struct</code> 却期望修改会影响调用方——那需要 <code>T&amp;</code>。</li><li>验证：把示例放入 <code>Script/</code> 下的 <code>.as</code>，从 <code>BeginPlay()</code> 调用，保存后确认编译成功；若改了 <code>UFUNCTION</code> 的 <code>&amp;out</code>，打开蓝图子类确认输出 pin 正确。</li></ul><h1 class="">相关链接</h1><ul><li> —— 让函数进入蓝图并控制其行为</li><li> —— 对象引用 vs 结构体引用</li><li> —— 函数与控制流基础</li><li> —— 深度参考</li></ul></section>
+<hr/>
+<section><h1 class="pg">★ UFUNCTION 与蓝图暴露</h1><h1 class="">学完能做什么</h1><p>你将能用 <code>UFUNCTION()</code> 及其规格（specifier）把脚本函数按需暴露给 Unreal 反射与蓝图：作为可调用节点、纯节点、可覆盖事件，或覆盖 C++ 生命周期事件，并知道哪些函数应保持脚本私有。</p><p>前置条件：熟悉  与 。</p><h1 class="">最基本：暴露与不暴露</h1><p>不加 <code>UFUNCTION()</code> 的函数只能被脚本调用；Unreal 不感知它们，因此它们的热重载也更快。加上 <code>UFUNCTION()</code> 才进入反射：**全局** <code>UFUNCTION()</code> 直接成为蓝图节点，**类内** <code>UFUNCTION()</code> 成为该类实例上的可调用方法。</p><pre><code>// 全局 UFUNCTION → 直接是蓝图节点
+// 函数正上方的注释会成为该节点的 tooltip；Category 决定它在蓝图菜单中的分组
+UFUNCTION(Category = "Example Functions")
+void ExecuteExampleFunction(AActor InputActor)
+{
+    Print("Called for actor: " + InputActor.GetName());
+}</code></pre><h1 class="">常用规格一览</h1><table><tbody><tr class="evenRow"><th align="left">规格</th><th align="left">作用</th></tr><tr class="oddRow"><td align="left">（无）</td><td align="left">蓝图可见的普通（非纯）节点</td></tr><tr class="evenRow"><td align="left"><code>BlueprintPure</code></td><td align="left">纯节点（无执行引脚），**必须有返回值**</td></tr><tr class="oddRow"><td align="left"><code>BlueprintCallable</code></td><td align="left">蓝图可调用（与 <code>BlueprintEvent</code> 组合时表示既可覆盖又可调用）</td></tr><tr class="evenRow"><td align="left"><code>BlueprintEvent</code></td><td align="left">蓝图可**覆盖**；默认不可调用，除非同时加 <code>BlueprintCallable</code></td></tr><tr class="oddRow"><td align="left"><code>BlueprintOverride</code></td><td align="left">覆盖 C++ 父类事件（<code>BeginPlay</code>、<code>Tick</code>、<code>ConstructionScript</code> 等）</td></tr><tr class="evenRow"><td align="left"><code>NotBlueprintCallable</code></td><td align="left">仅脚本可调；用于委托/定时器回调这类需要 <code>UFUNCTION</code> 但不想被手动调用的函数</td></tr><tr class="oddRow"><td align="left"><code>CallInEditor</code></td><td align="left">在 Details 面板加一个按钮，可在编辑器里执行（不进入最终发行版）</td></tr><tr class="evenRow"><td align="left"><code>Category = "..."</code></td><td align="left">决定节点在蓝图菜单里的分组标题</td></tr></tbody></table><p>规格可以用逗号链式组合：</p><pre><code>UFUNCTION(BlueprintPure, BlueprintEvent, Category = "Hi Mum")
+int ReallySpecifiedFunction()
+{
+    return 1337;
+}</code></pre><p>以上形状对照 <code>Script/Examples/Core/Example_FunctionSpecifiers.as</code>。</p><h1 class="">覆盖 C++ 事件 vs 声明可覆盖事件</h1><ul><li>覆盖引擎已有事件（<code>BeginPlay</code>、<code>Tick</code> 等）用 <code>BlueprintOverride</code>：</li></ul><pre><code>UFUNCTION(BlueprintOverride)
+void Tick(float DeltaTime) { /* 每帧逻辑 */ }</code></pre><ul><li>声明一个**让蓝图子类覆盖**的新事件用 <code>BlueprintEvent</code>：脚本里的实现作为默认，蓝图覆盖后调用蓝图版本。脚本里的 <code>BlueprintImplementableEvent</code> / <code>BlueprintNativeEvent</code> 在这里没有区别。</li></ul><pre><code>UFUNCTION(BlueprintEvent)
+void NewOverridableMethod() { Log("Blueprint did not override this event."); }</code></pre><p>以上对照 <code>Script/Examples/Core/Example_Functions.as</code> 与 <code>Script/Game/Example_Actor.as</code>。</p><p><code>UFUNCTION</code> 还支持网络 RPC 等更复杂的规格与规则，属于反射/网络层，超出本页范围。完整 specifier 列表与 RPC 规则见 。
+</p><h1 class="">常见错误与验证</h1><ul><li><code>BlueprintPure</code> 必须有返回值（纯节点没有执行引脚）。</li><li><code>BlueprintEvent</code> 默认只可覆盖、不可调用；要在蓝图里调用它，需同时加 <code>BlueprintCallable</code>。</li><li>委托/定时器回调函数需要是 <code>UFUNCTION()</code> 才能被绑定；不想被手动调用时加 <code>NotBlueprintCallable</code>。</li><li>改动 <code>UFUNCTION</code> 签名属于结构性变化，热重载后要检查蓝图子类节点与覆盖是否仍有效。</li><li>验证：保存后在蓝图中确认节点出现在正确 <code>Category</code>、tooltip 来自注释、纯/非纯与覆盖行为符合预期。</li></ul><h1 class="">相关链接</h1><ul><li> —— 参数与 <code>&amp;out</code> 输出 pin</li><li> —— 需要 <code>UFUNCTION</code> 的回调绑定</li><li> —— 属性侧的反射暴露</li><li> —— 完整 specifier 与 RPC 规则</li></ul></section>
+<hr/>
+<section><h1 class="pg">★ 委托、事件与 Mixin</h1><h1 class="">学完能做什么</h1><p>你将能用 <code>delegate</code> 声明单播回调、用 <code>event</code> 声明多播事件派发（可被蓝图绑定），并用 <code>mixin</code> 给已有类型“外挂”方法。</p><p>前置条件：熟悉  与 （绑定的目标函数必须是 <code>UFUNCTION()</code>）。</p><h1 class="">delegate：单播回调</h1><p>用 <code>delegate</code> 关键字声明一个函数签名类型，等价于 C++ 的 <code>DECLARE_DYNAMIC_DELEGATE()</code>。它可以作为函数参数传递：</p><pre><code>delegate void FExampleDelegate(UObject Object, float Value);
+
+UFUNCTION()
+void ExecuteExampleDelegate(FExampleDelegate InDelegate)
+{
+    if (!InDelegate.IsBound())        // 执行前可先判断是否已绑定
+    {
+        Log("Input delegate was not bound.");
+        return;
+    }
+    InDelegate.Execute(nullptr, 5.4);        // 未绑定时会报错
+    InDelegate.ExecuteIfBound(nullptr, 1.0); // 未绑定时什么也不做
+}</code></pre><p>绑定用 <code>.BindUFunction(this, n"FunctionName")</code>——注意 <code>n""</code> 是 FName 字面量，编译期解析，比动态构造更快：</p><pre><code>FExampleDelegate Local;
+Local.BindUFunction(this, n"ExampleFunction");   // 目标必须是 UFUNCTION()</code></pre><h1 class="">event：多播事件</h1><p>用 <code>event</code> 关键字声明多播事件，等价于 C++ 的 <code>DECLARE_DYNAMIC_MULTICAST_DELEGATE()</code>。事件**不能作为 UFUNCTION 参数**，但可以作为脚本类的 <code>UPROPERTY()</code>，从而让蓝图 / 关卡脚本绑定：</p><pre><code>event void FExampleEvent(UObject Object, float Value);
+
+class AExampleEventActor : AActor
+{
+    // 声明为 UPROPERTY() 后，蓝图可对它绑定
+    UPROPERTY(Category = "Example Events")
+    FExampleEvent ExampleEvent;
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        // Broadcast 调用所有绑定者；即使无人绑定也不报错，无需先 IsBound
+        ExampleEvent.Broadcast(nullptr, 100.0);
+    }
+
+    UFUNCTION()
+    void ExampleFunction(UObject InObject, float InValue)
+    {
+        Log("ExampleFunction: " + InValue);
+    }
+
+    UFUNCTION()
+    void BindExampleDelegates()
+    {
+        // 多播用 .AddUFunction 追加绑定；目标同样必须是 UFUNCTION()
+        ExampleEvent.AddUFunction(this, n"ExampleFunction");
+        ExampleEvent.Broadcast(nullptr, 12.5);   // 脚本绑定者 + 蓝图绑定节点都会被调用
+    }
+}</code></pre><p>以上对照 <code>Script/Examples/Core/Example_Delegates.as</code>。</p><h1 class="">delegate 与 event 的区别</h1><table><tbody><tr class="evenRow"><th align="left"></th><th align="left">delegate</th><th align="left">event</th></tr><tr class="oddRow"><td align="left">绑定数量</td><td align="left">单播（一个）</td><td align="left">多播（多个）</td></tr><tr class="evenRow"><td align="left">调用</td><td align="left"><code>Execute</code> / <code>ExecuteIfBound</code></td><td align="left"><code>Broadcast</code>（永不报错）</td></tr><tr class="oddRow"><td align="left">绑定方法</td><td align="left"><code>BindUFunction</code></td><td align="left"><code>AddUFunction</code></td></tr><tr class="evenRow"><td align="left">作为 UFUNCTION 参数</td><td align="left">可以</td><td align="left">不可以</td></tr><tr class="oddRow"><td align="left">作为 UPROPERTY</td><td align="left">——</td><td align="left">可以（供蓝图绑定）</td></tr><tr class="evenRow"><td align="left">C++ 对应</td><td align="left"><code>DECLARE_DYNAMIC_DELEGATE</code></td><td align="left"><code>DECLARE_DYNAMIC_MULTICAST_DELEGATE</code></td></tr></tbody></table><p>绑定目标必须是 <code>UFUNCTION()</code>；FName 用 <code>n""</code> 字面量。</p><h1 class="">mixin：给现有类型加方法</h1><p>用 <code>mixin</code> 关键字声明的全局函数只能**当作方法调用**，其第一个参数就是被调用的对象类型。使用前该模块仍需被 import。它与 C++ 函数库的 <code>ScriptMixin</code> 元标记行为类似：</p><pre><code>mixin void ExampleMixinActorMethod(AActor Self, FVector Location)
+{
+    Print("Mixin invoked on: " + Self.GetClass().GetName());
+}
+
+void Example_MixinMethod()
+{
+    AActor ActorReference;
+    ActorReference.ExampleMixinActorMethod(FVector(0.0, 0.0, 100.0));  // 当作方法调用
+}</code></pre><p>以上对照 <code>Script/Examples/Core/Example_MixinMethods.as</code>。</p><h1 class="">常见错误与验证</h1><ul><li>绑定的目标函数必须标记 <code>UFUNCTION()</code>，否则无法绑定。</li><li><code>Execute</code> 在未绑定时报错，不确定是否绑定时用 <code>ExecuteIfBound</code> 或先 <code>IsBound</code>；<code>Broadcast</code> 永不报错。</li><li>事件不能作为 UFUNCTION 参数传递；需要作为 <code>UPROPERTY()</code> 暴露给蓝图。</li><li>mixin 所在模块必须被 import 才能使用其方法。</li><li>验证：保存后在蓝图里对 <code>UPROPERTY</code> 事件绑定并触发，确认脚本与蓝图绑定者都被调用。</li></ul><h1 class="">相关链接</h1><ul><li> —— 绑定目标为何必须是 UFUNCTION</li><li> —— 深度参考</li><li> —— 深度参考</li><li> —— <code>n""</code> 的含义与优势</li></ul></section>
+<hr/>
+<section><h1 class="pg">类、继承与接口</h1><h1 class="">学完能做什么</h1><p>你将能用 <code>class</code> 和 <code>struct</code> 组织脚本类型，用继承和 <code>Super::</code> 复用父类逻辑，用基类可覆盖方法实现“接口式”多态派发，并理解脚本 <code>struct</code> 与访问修饰符的边界。</p><p>前置条件：熟悉  与 。</p><h1 class="">先选对类型：class 还是 struct</h1><ul><li>**<code>class</code>** 表示带身份的对象类型。继承 <code>AActor</code>、<code>UObject</code> 或组件类型后，它会进入 Unreal 的生成类型和对象生命周期，可作为 Blueprint 父类。</li><li>**<code>struct</code>** 更适合按值传递的数据聚合（位置、配置、结果等）。</li></ul><pre><code>struct FExampleStruct
+{
+    // struct 里带 UPROPERTY() 的字段会反射到生成类型上
+    UPROPERTY()
+    float ExampleNumber = 4.0;
+
+    UPROPERTY()
+    FString ExampleString = "Example String";
+
+    // 没有 UPROPERTY() 的字段仍在 struct 中，但 Blueprint 看不到
+    float ExampleHiddenNumber = 3.0;
+}</code></pre><p>1）**任何字段改动都需要完整 reload**——无论该字段是否为 <code>UPROPERTY()</code>，这是脚本 struct 的技术限制。2）脚本 struct 的 Blueprint Make/Break 节点**默认关闭**。以上对照仓库 <code>Script/Examples/Core/Example_Struct.as</code>。
+</p><h1 class="">继承与 Super::</h1><p>派生类用 <code>:</code> 指定基类；需要调用父类的脚本实现时用 <code>Super::Method()</code>。下面高亮行是子类覆盖父类可覆盖方法、并用 <code>Super::</code> 回调父实现的关键位置：</p>Undefined widget 'angelscript-code'<h1 class="">“接口式”多态：BlueprintEvent + BlueprintOverride</h1><p>需要“调用方只依赖行为契约、由不同派生类各自实现”时，当前插件版本中**最稳定**的做法是：在基类用 <code>UFUNCTION(BlueprintEvent)</code> 声明可覆盖方法，派生类用 <code>UFUNCTION(BlueprintOverride)</code> 覆盖，调用方只持有基类引用：</p><pre><code>class AExampleDamageableBase : AActor
+{
+    UFUNCTION(BlueprintEvent)
+    float ApplyDamage(float Amount) { /* 默认实现 */ return 0.0; }
+
+    UFUNCTION(BlueprintEvent)
+    bool IsAlive() { return true; }
+}
+
+class AExampleDamageableActor : AExampleDamageableBase
+{
+    UFUNCTION(BlueprintOverride)
+    float ApplyDamage(float Amount) { /* 自定义实现 */ return 0.0; }
+}
+
+// 任何 AExampleDamageableBase（含子类）都能传进来，运行时派发到实际实现
+UFUNCTION(Category = "Example Dispatch")
+void ApplyDamageToTarget(AExampleDamageableBase Target, float Damage)
+{
+    if (Target == nullptr)
+        return;
+    Target.ApplyDamage(Damage);
+    if (!Target.IsAlive())
+        Print(f"{Target.GetName()} is dead!");
+}</code></pre><p>上面的形状对照仓库 <code>Script/Examples/Extended/Example_InterfaceDispatch.as</code>。</p><p>AngelScript 语言本身有 <code>interface</code> 关键字（脚本级接口）。但要在 Unreal / Blueprint 之间稳定地做跨类派发，本仓库示例采用的是上面的基类 <code>BlueprintEvent</code> 模式，而不是把 C++ <code>UINTERFACE</code> 的习惯原样搬过来——真正的 Unreal 接口、脚本接口与绑定接口存在额外的反射与生成约束。在未对具体用例核对源码/测试前，优先使用已验证的 <code>BlueprintEvent</code> 模式。
+</p><h1 class="">访问修饰符（进阶）</h1><p>除了 <code>public</code> / <code>protected</code> / <code>private</code>，当前 fork 还支持用 <code>access</code> 声明更细粒度的访问契约：可以在 <code>private</code>/<code>protected</code> 基础上，额外授权特定的类（甚至用 <code>*</code> 授权全部），并加 <code>readonly</code>、<code>editdefaults</code>、<code>inherited</code> 等修饰：</p><pre><code>class UAccessSpecifierExample
+{
+    // 在 private 基础上，额外允许这两个类访问
+    access InternalWithCapability = private, UAccessSpecifierComponent, APlayerController;
+
+    access:InternalWithCapability
+    float AccessibleFloatValue = 1.0;
+}</code></pre><p>以上对照 <code>Script/Examples/Core/Example_AccessSpecifiers.as</code>；完整修饰符语义见 。</p><h1 class="">规则与边界</h1><ul><li>派生类使用 <code>:</code> 指定基类；脚本方法的覆盖与 Unreal <code>BlueprintOverride</code> 不是完全相同的层次——覆盖 C++/Blueprint 事件时需要 <code>BlueprintOverride</code>。</li><li>需要调用脚本父实现时使用 <code>Super::Method()</code>。</li><li><code>struct</code> 可以有普通脚本方法；要进入 Blueprint 的字段需要 <code>UPROPERTY()</code> 反射元数据。</li><li>类型的**反射生成、热重载和 Blueprint 子类迁移**属于当前 fork 的 ClassGenerator 行为，不是普通 AngelScript 语法本身。</li></ul><h1 class="">相关链接</h1><ul><li> —— 建立可运行的脚本类 + Blueprint 路径</li><li> —— 生成类型与反射机制</li><li> —— 结构变化的热重载影响</li><li> —— <code>access</code> 的完整语义</li><li> /  —— 属性与函数的完整 specifier</li></ul></section>
+<hr/>
+<section><h1 class="pg">容器与枚举</h1><h1 class="">学完能做什么</h1><p>你将能用 <code>TArray</code>、<code>TSet</code>、<code>TMap</code> 表达有序集合、去重集合与键值查找，用 <code>enum</code> 表达离散状态，并知道这些容器来自 Unreal 绑定、其成员方法与迭代规则以绑定为准。</p><p>前置条件：熟悉  与 。</p><h1 class="">选择容器</h1><table><tbody><tr class="evenRow"><th align="left">容器</th><th align="left">语义</th><th align="left">典型用途</th></tr><tr class="oddRow"><td align="left"><code>TArray&lt;T&gt;</code></td><td align="left">保留插入顺序、可按下标索引</td><td align="left">列表、队列、逐个遍历</td></tr><tr class="evenRow"><td align="left"><code>TSet&lt;T&gt;</code></td><td align="left">不重复集合</td><td align="left">去重、成员判断</td></tr><tr class="oddRow"><td align="left"><code>TMap&lt;K,V&gt;</code></td><td align="left">按键查找值</td><td align="left">查表、计数、关联</td></tr></tbody></table><p>它们来自 Unreal 绑定，不是普通 AngelScript 内建容器；可用方法与成本以当前绑定为准。</p><h1 class="">TArray：有序列表</h1><pre><code>TArray&lt;int&gt; Values;
+Values.Add(2);
+Values.Add(8);
+Values.Add(255);
+
+// 范围 for 逐个取值
+for (int Value : Values)
+    Log("Array contained " + Value);
+
+// 或按下标遍历
+for (int Index = 0, Count = Values.Num(); Index &lt; Count; ++Index)
+    Log("Array[" + Index + "] = " + Values[Index]);
+
+int Found = Values.FindIndex(255);   // 线性查找，返回下标
+if (Values.Contains(8)) { /* 线性查找是否存在 */ }
+
+Values.RemoveAt(Found);   // 按下标移除
+Values.Remove(8);         // 按值移除（线性查找）
+Values.Empty();           // 清空</code></pre><p>常用方法：<code>Add</code>、<code>Num</code>、<code>Contains</code>、<code>FindIndex</code>、<code>RemoveAt</code>、<code>Remove</code>、<code>Empty</code>、<code>[]</code> 索引。对照 <code>Script/Examples/Core/Example_Array.as</code>。</p><h1 class="">TMap：键值查找</h1><p><code>TMap</code> 因为脚本里没有裸指针，取值方式与 C++ 略有不同：</p><pre><code>TMap&lt;FString, int&gt; Counts;
+Counts.Add("Four", 4);
+Counts.Add("ChangeThis", 5);
+
+// Find(Key, Out)：返回是否找到，找到则把值拷进 Out
+int FoundValue = -1;
+if (Counts.Find("Four", FoundValue))
+    check(FoundValue == 4);
+
+// [] 返回引用，可读可写；键不存在会抛异常，先用 Contains 判断
+if (Counts.Contains("ChangeThis"))
+{
+    int&amp; Value = Counts["ChangeThis"];   // 取引用
+    Counts["ChangeThis"] = 12;           // 通过 [] 直接写
+}
+
+// FindOrAdd：不存在则以默认值插入，并返回引用
+Counts.FindOrAdd("Newb") = 9;
+
+// 范围 for 得到迭代器元素，用 GetKey/GetValue/SetValue
+for (auto Element : Counts)
+    Log(Element.GetKey() + " =&gt; " + Element.GetValue());</code></pre><p>要点：<code>Find(Key, Out)</code> 用输出参数返回值；<code>[]</code> 返回**引用**（键不存在会抛异常，先 <code>Contains</code>）；<code>FindOrAdd</code> 返回可写引用；迭代元素用 <code>GetKey()</code> / <code>GetValue()</code> / <code>SetValue()</code>。对照 <code>Script/Examples/Core/Example_Map.as</code>。</p><h1 class="">TSet：去重集合</h1><pre><code>TSet&lt;FName&gt; Unique;
+Unique.Add(n"Key");
+Unique.Add(n"Key");        // 重复添加不会增加元素
+if (Unique.Contains(n"Key")) { /* ... */ }</code></pre><h1 class="">枚举</h1><p><code>enum</code> 表达一组离散状态。所有脚本枚举默认绑定到 Unreal，无需额外处理。成员用限定名 <code>EExampleEnum::A</code> 引用；可以从整数构造枚举值：</p><pre><code>enum EExampleEnum { A, B, C }
+
+UFUNCTION()
+void TestExampleEnum(EExampleEnum Input)
+{
+    switch (Input)
+    {
+    case EExampleEnum::A:
+        Print("You selected A!");
+        break;
+    case EExampleEnum::B:
+        Print("You shouldn't select B.");
+        break;
+    default:
+        Print("What is this even?");
+        break;
+    }
+
+    EExampleEnum NumberAsEnum = EExampleEnum(0);   // 整数 -&gt; 枚举
+}</code></pre><p>对照 <code>Script/Examples/Core/Example_Enum.as</code>。在格式化字符串里，枚举默认打印完整调试名，<code>:n</code> 说明符只打印值名（见 ）。</p><h1 class="">边界与注意</h1><ul><li>容器的**复制、引用、迭代期间修改、反射暴露和绑定调用成本**需要按具体类型核对；不要在遍历时随意改变容器长度，除非该操作已被明确验证安全。</li><li>通过 <code>UPROPERTY()</code> / <code>UFUNCTION()</code> 暴露容器或枚举时，还要满足 Unreal 反射支持范围。</li></ul><h1 class="">相关链接</h1><ul><li> /  /  /  —— 各容器的完整成员与草稿</li><li> —— 引用语义</li><li> —— 枚举在 <code>f"..."</code> 中的打印说明符</li></ul></section>
+<hr/>
+<section><h1 class="pg">句柄、引用与类型转换</h1><h1 class="">学完能做什么</h1><p>你将能分清脚本里三种“引用”概念——Unreal 对象引用、结构体引用参数、输出参数——正确使用 <code>nullptr</code> 判断与 <code>Cast&lt;T&gt;()</code> 类型转换，并知道对象生命周期与 GC 会影响一个引用是否仍然可用。</p><p>前置条件：熟悉  与 。</p><h1 class="">三个不要混淆的概念</h1><p>脚本里没有照搬 C++ 裸指针的 <code>*</code> / <code>-&gt;</code> 写法。要区分三件事：</p><ul><li>**Unreal 对象引用**（如 <code>AActor</code>、<code>UObject</code>）：由对象系统和 GC 管理的引用。用 <code>.</code> 访问成员，用 <code>== nullptr</code> / <code>!= nullptr</code> 判断空。</li><li>**结构体引用参数 <code>T&amp;</code>**：函数参数上的可读写引用，用来就地修改调用方传入的结构体值。</li><li>**输出参数 <code>T&amp;out</code>**：只作为输出写入的参数（在 Blueprint 中显示为输出 pin）。</li></ul><pre><code>void InspectActor(AActor Actor)          // 对象引用
+{
+    if (Actor == nullptr)
+        return;
+
+    ACharacter Character = Cast&lt;ACharacter&gt;(Actor);
+    if (Character != nullptr)
+        Print(f"Character: {Character.GetName()}");
+}
+
+void MoveAlongX(FVector&amp; Location, float Amount)   // 结构体引用：就地修改
+{
+    Location.X += Amount;
+}
+
+void MakeLocation(FVector&amp;out Result)              // 输出参数：只写
+{
+    Result = FVector(100.0, 0.0, 0.0);
+}</code></pre><p>对象引用（<code>AActor</code> 等）本身就是引用语义，传递的是“对同一个对象的引用”；而 <code>FVector&amp;</code> 这类是**值类型上的引用参数**，用于避免拷贝或就地修改。两者写法相近，含义不同，别混为一谈。参数传递方式的完整表格见 。
+</p><h1 class="">Cast<T> 与 nullptr
+
+<code>Cast&lt;T&gt;()</code> 在运行时检查对象是否为目标类型：成功返回该类型的引用，**失败返回 <code>nullptr</code>**。因此转换后必须判空再使用：
+
+<code>`angelscript
+ACharacter Character = Cast&lt;ACharacter&gt;(Actor);
+if (Character != nullptr)
+    Character.Jump();
+</code><code>
+
+对访问对象成员前，养成先判 </code>nullptr<code> 的习惯——空对象引用不是控制流异常，直接访问会出错。
+
+! 生命周期与 GC
+
+对于可能**已经销毁或待 GC 回收**的对象，不能只凭“变量曾经非空”就断定现在仍可安全使用。是否需要 </code>IsValid<code>、以及弱引用/软引用的具体规则，依赖当前绑定与对象生命周期：
+
+* 需要**跨帧、跨 latent 操作或跨网络边界**长期持有对象时，要理解对象生命周期与 GC 模型，见 &lt;&lt;as-doc-link "runtime-jit-vm/object-lifecycle" "对象生命周期"&gt;&gt; 与 &lt;&lt;as-doc-link "runtime-jit-vm/garbage-collector" "垃圾回收"&gt;&gt;。
+* Unreal 提供了专用的引用包装类型，按场景选择：
+
+|!类型 |!用途 |
+|</code>TWeakObjectPtr<code> |弱引用，不阻止 GC；使用前检查有效性 |
+|</code>TSoftObjectPtr<code> |软引用，指向可能尚未加载的资产 |
+|</code>TSubclassOf<code> |受类型约束的“类引用”，用于生成/指定子类 |
+
+详见 &lt;&lt;as-doc-link "unreal-language/tweakobjectptr" "TWeakObjectPtr"&gt;&gt;、&lt;&lt;as-doc-link "unreal-language/tsoftobjectptr" "TSoftObjectPtr"&gt;&gt; 和 &lt;&lt;as-doc-link "unreal-language/tsubclassof" "TSubclassOf"&gt;&gt;。
+
+! 验证与注意
+
+* 访问对象成员前先判 </code>nullptr<code>；</code>Cast<T>()<code> 失败返回 </code>nullptr<code>。
+* 把对象引用**保存为成员**、或跨 latent / 网络边界持有前，应以当前源码、补全签名和对应自动化测试复核其有效性规则。
+
+! 相关链接
+
+* &lt;&lt;as-doc-link "runtime-jit-vm/object-lifecycle" "对象生命周期"&gt;&gt; / &lt;&lt;as-doc-link "runtime-jit-vm/garbage-collector" "垃圾回收"&gt;&gt; —— 对象存活与 GC 模型
+* &lt;&lt;as-doc-link "unreal-language/tweakobjectptr" "TWeakObjectPtr"&gt;&gt; / &lt;&lt;as-doc-link "unreal-language/tsoftobjectptr" "TSoftObjectPtr"&gt;&gt; / &lt;&lt;as-doc-link "unreal-language/tsubclassof" "TSubclassOf"&gt;&gt; —— 专用引用类型
+* &lt;&lt;as-doc-link "language/functions-control-flow" "函数与控制流"&gt;&gt; —— 参数传递方式完整表格
+* &lt;&lt;as-doc-link "language/syntax-reference" "语言语法参考（草稿）"&gt;&gt; —— 完整语法
+</code></T></T></h1></section></body></html>

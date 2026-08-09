@@ -1,0 +1,144 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><title>第1章预览</title><style>body{background:#0b1220;color:#e2e8f0;font-family:"JetBrains Mono",ui-monospace,monospace;max-width:920px;margin:0 auto;padding:32px 24px;line-height:1.7}h1.pg{color:#22d3ee;border-bottom:1px solid #1e293b;padding-bottom:8px;margin-top:40px;font-size:20px}h1:not(.pg){font-size:17px;color:#a5f3fc;margin-top:28px}code,pre{background:#111c31;border:1px solid #1e293b;border-radius:6px}pre{padding:12px;overflow:auto}code{padding:1px 5px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #334155;padding:6px 10px;text-align:left}th{background:#111c31}a{color:#34d399}svg{display:block;margin:16px 0}hr{border:none;border-top:2px dashed #1e293b;margin:48px 0}.banner{background:#111c31;border:1px solid #334155;border-radius:8px;padding:12px 16px;color:#94a3b8;font-size:13px}</style></head><body><div class="banner">离线预览：正文由 TiddlyWiki 渲染；宏/卡片未套 Wiki 主题样式，但<b>架构图 SVG 自包含，与 Wiki 中一致</b>。完整效果用 pnpm run dev:wiki。</div><section><h1 class="pg">认识与开始 · start/index</h1><h1 class="">本章要解决什么</h1><p>本章把当前仓库 Angelscript 插件的装载边界、<code>Script/</code> 目录、第一个脚本 Actor、保存后的编译反馈和验证迭代串成一条完整路径。走完这一章，你会有一个能在 Unreal Editor 中放置、并能在 PIE 中验证行为的脚本类，而不需要先理解编译器、绑定或热重载内部。</p><p>本章面向本仓库当前的 UE 5.7 独立插件 fork。Hazelight 公共站点的介绍仅用于帮助我们检查“读者第一条路径”是否清楚；它的自定义引擎安装假设不是本项目的本地安装契约。</p><p>本章的最终成果，是一个像下面这样、能放进关卡并在 PIE 中验证的脚本类：</p><pre><code>class AHelloActor : AActor
+{
+    UPROPERTY(Category = "Hello")
+    FString Message = "Hello from AngelScript";
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        Print(f"{GetName()}: {Message}");
+    }
+}</code></pre><p>按顺序读完下面三页即可：先  确认环境，再  写出可运行的类，最后  学会看编译反馈和热重载。
+</p><p>本章的三步路线，一眼看懂：</p><p><svg aria-label="本章三步路线：准备边界 → 第一个脚本 → 验证与迭代" role="img" viewBox="0 0 780 210" style="width:100%;max-width:780px;height:auto;font-family:'JetBrains Mono',ui-monospace,monospace;">
+  <defs>
+    <marker id="rm-arrow" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#34d399"></path></marker>
+  </defs>
+  <rect fill="#0f172a" height="208" rx="14" stroke="#1e293b" width="778" x="1" y="1"></rect>
+  <line marker-end="url(#rm-arrow)" stroke="#34d399" stroke-width="2" x1="222" x2="284" y1="82" y2="82"></line>
+  <line marker-end="url(#rm-arrow)" stroke="#34d399" stroke-width="2" x1="492" x2="554" y1="82" y2="82"></line>
+  <rect fill="#0f172a" height="84" rx="8" width="200" x="20" y="40"></rect>
+  <rect fill="rgba(8,51,68,0.4)" height="84" rx="8" stroke="#22d3ee" stroke-width="1.5" width="200" x="20" y="40"></rect>
+  <text fill="#ffffff" font-size="14" font-weight="600" text-anchor="middle" x="120" y="76">① 准备边界</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="120" y="98">确认插件 / 脚本位置</text>
+  <rect fill="#0f172a" height="84" rx="8" width="200" x="290" y="40"></rect>
+  <rect fill="rgba(6,78,59,0.4)" height="84" rx="8" stroke="#34d399" stroke-width="1.5" width="200" x="290" y="40"></rect>
+  <text fill="#ffffff" font-size="14" font-weight="600" text-anchor="middle" x="390" y="76">② 第一个脚本</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="390" y="98">写类 + 属性 + 事件</text>
+  <rect fill="#0f172a" height="84" rx="8" width="200" x="560" y="40"></rect>
+  <rect fill="rgba(76,29,149,0.4)" height="84" rx="8" stroke="#a78bfa" stroke-width="1.5" width="200" x="560" y="40"></rect>
+  <text fill="#ffffff" font-size="14" font-weight="600" text-anchor="middle" x="660" y="76">③ 验证与迭代</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="660" y="98">保存 → PIE → 热重载</text>
+  <text fill="#64748b" font-size="10" text-anchor="middle" x="120" y="160">确认环境就绪</text>
+  <text fill="#64748b" font-size="10" text-anchor="middle" x="390" y="160">写出可运行的类</text>
+  <text fill="#64748b" font-size="10" text-anchor="middle" x="660" y="160">看到它真正跑起来</text>
+</svg></p><h1 class="">本章文档</h1><h1 class="">阅读顺序建议</h1><ol><li>先读 ，弄清插件目录约定、<code>Script/</code> 布局，以及“哪些是本 fork 的本地契约、哪些只是上游假设”。</li><li>再读 ，写出第一个继承 <code>AActor</code> 的脚本类，并理解 <code>UPROPERTY()</code> / <code>UFUNCTION()</code> 如何改变 Unreal 可见表面。</li><li>最后读 ，学会读编译反馈、在关卡中放置实例、用 PIE 验证，并区分“改函数体”与“改签名/属性”两类热重载。</li></ol><h1 class="">当前 fork 的协作边界</h1><ul><li>脚本类可以成为 Blueprint 的父类；Blueprint 负责资产选择、可视节点和设计师覆盖，脚本负责文本逻辑和快速迭代。</li><li><code>UPROPERTY()</code> / <code>UFUNCTION()</code> 会改变 Unreal 可见表面；没有这些标记的成员仍可在脚本内部使用。</li><li>C++ API 是否可调用取决于手工绑定、UHT 生成路径或反射回退，不应从 Hazelight 页面推断本地绑定必然存在。</li></ul><h1 class="">相关链接</h1><ul><li> —— 把脚本类变成 Blueprint 父类并验证双向调用</li><li> —— 系统学习语言核心</li></ul></section>
+<hr/>
+<section><h1 class="pg">插件定位与准备边界 · start/plugin-and-boundaries</h1><h1 class="">学完能做什么</h1><p>读完本页，你会知道：这个 Angelscript 插件在项目里应该放在哪、脚本文件应该写在哪、编辑器如何找到并编译它们，以及在阅读文档时如何区分“本 fork 的本地契约”和“上游 / Hazelight 的安装假设”。这一步不写代码，但决定了后面所有页面能否顺利跑通。</p><h1 class="">插件在项目中的位置</h1><p>源码插件目录必须名为 <code>Angelscript</code>，并位于项目的 <code>Plugins/Angelscript/</code> 下。使用源码引擎或项目已有的 UE 5.7 构建环境生成项目文件、编译 Editor Target，并确认 <code>Angelscript.uplugin</code> 已启用。这个仓库本身已经采用以下布局：</p><pre class="hljs"><code class="text hljs">MyProject/
+├── MyProject.uproject
+├── Plugins/
+│   └── Angelscript/
+│       ├── Angelscript.uplugin
+│       └── Source/
+└── Script/</code></pre><ul><li>**<code>Plugins/Angelscript/</code>**：插件本体（C++ 运行时、绑定、UHT 扩展）。你通常不需要改动这里就能写脚本。</li><li>**<code>Script/</code>**：位于**项目根目录**，与 <code>.uproject</code> 平级。你写的 <code>.as</code> 脚本放在这里，编辑器加载项目时会一并编译。</li></ul><p>一句话记住两者的分工：</p><p><svg aria-label="脚本与插件的职责分工：你写 Script/，插件负责编译、绑定与热重载" role="img" viewBox="0 0 720 250" style="width:100%;max-width:720px;height:auto;font-family:'JetBrains Mono',ui-monospace,monospace;">
+  <defs>
+    <marker id="ah-emph" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#34d399"></path></marker>
+    <marker id="ah-dash" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#a78bfa"></path></marker>
+  </defs>
+  <rect fill="#0f172a" height="248" rx="14" stroke="#1e293b" width="718" x="1" y="1"></rect>
+  <line marker-end="url(#ah-emph)" stroke="#34d399" stroke-width="2" x1="262" x2="456" y1="98" y2="98"></line>
+  <line marker-end="url(#ah-dash)" stroke="#a78bfa" stroke-dasharray="4,4" stroke-width="1.75" x1="456" x2="266" y1="132" y2="132"></line>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="360" y="90">编译 / 加载</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="360" y="151">反射 / 热重载</text>
+  <rect fill="#0f172a" height="84" rx="8" width="200" x="60" y="72"></rect>
+  <rect fill="rgba(8,51,68,0.4)" height="84" rx="8" stroke="#22d3ee" stroke-width="1.5" width="200" x="60" y="72"></rect>
+  <text fill="#ffffff" font-size="14" font-weight="600" text-anchor="middle" x="160" y="108">Script/</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="160" y="130">你的 .as 脚本</text>
+  <rect fill="#0f172a" height="84" rx="8" width="200" x="460" y="72"></rect>
+  <rect fill="rgba(6,78,59,0.4)" height="84" rx="8" stroke="#34d399" stroke-width="1.5" width="200" x="460" y="72"></rect>
+  <text fill="#ffffff" font-size="14" font-weight="600" text-anchor="middle" x="560" y="108">Plugins/Angelscript</text>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="560" y="130">运行时 · 绑定 · UHT</text>
+  <circle cx="72" cy="196" fill="#22d3ee" r="3"></circle>
+  <text fill="#e2e8f0" font-size="11" x="84" y="200">你负责：在 Script/ 下写 .as —— 类 / 属性 / 逻辑</text>
+  <circle cx="72" cy="222" fill="#34d399" r="3"></circle>
+  <text fill="#e2e8f0" font-size="11" x="84" y="226">一般不用动：插件 C++ 本体、绑定与生成管线</text>
+</svg></p><p>插件目录名 <code>Angelscript</code> 与项目根下的 <code>Script/</code> 是加载约定的一部分。如果脚本类在编辑器里始终不出现，第一件事就是确认这两个目录名和层级没有被改动，而不是去复制 Hazelight 文档里的其它目录名或引擎参数来“绕过”问题。
+</p><h1 class="">脚本目录的组织</h1><p><code>Script/</code> 下可以自由建子目录来分类脚本。本仓库把可运行的教学示例放在 <code>Script/Examples/</code> 与 <code>Script/Game/</code> 下，例如：</p><ul><li><code>Script/Game/Example_Actor.as</code> —— 最小的脚本 Actor 类。</li><li><code>Script/Examples/Core/</code> —— 语言与常用特性的短示例（数组、映射、枚举、函数、委托等）。</li><li><code>Script/Examples/Extended/</code> —— 组合多种特性的进阶示例。</li></ul><p>在学习本章与  时，这些示例是最可靠的对照来源：文档里的每段代码都应能在这些文件中找到对应写法。</p><h1 class="">本地契约 vs 上游假设</h1><p>本 Wiki 描述的是**当前仓库的 UE 5.7 独立插件 fork**，它与上游 AngelScript、以及 Hazelight 的引擎集成假设并不完全一致。阅读任何文档（包括外部资料）时，用下面这张表判断哪些能直接当作事实：</p><table><tbody><tr class="evenRow"><th align="left">这是…</th><th align="left">包含</th><th align="left">能否当作本项目事实</th></tr><tr class="oddRow"><td align="left">本 fork 的本地契约</td><td align="left"><code>Plugins/Angelscript/</code> + 根目录 <code>Script/</code> 布局、插件 <code>README.md</code>、<code>Script/Examples/</code> 示例、自动化测试</td><td align="left">✅ 可以</td></tr><tr class="evenRow"><td align="left">上游 / Hazelight 假设</td><td align="left">自定义引擎发行版、特定引擎安装路径、“某个 C++ API 一定已绑定”的推断</td><td align="left">❌ 不能直接采信</td></tr></tbody></table><p>独立使用者的详细安装边界以插件 <code>README.md</code> 为准。本宿主仓库的机器相关路径来自 <code>AgentConfig.ini</code>；**不要**把个人引擎安装路径写进脚本、文档或 Wiki 页面。
+</p><h1 class="">检查清单</h1><p>在进入下一页之前，确认：</p><ol><li>项目下存在 <code>Plugins/Angelscript/Angelscript.uplugin</code> 且插件已启用。</li><li>项目根目录下存在 <code>Script/</code> 目录（与 <code>.uproject</code> 平级）。</li><li>Editor Target 能在你的 UE 5.7 环境中成功编译并打开项目。</li></ol><h1 class="">相关链接</h1><ul><li> —— 环境就绪后，写出第一个继承 <code>AActor</code> 的脚本类</li><li> —— 语言核心与示例对照来源</li></ul></section>
+<hr/>
+<section><h1 class="pg">第一个脚本 · start/first-script</h1><h1 class="">学完能做什么</h1><p>你将写出第一个继承 <code>AActor</code> 的脚本类，逐行理解它每一部分的含义，并分清“只对脚本可见的成员”和“通过 <code>UPROPERTY()</code> / <code>UFUNCTION()</code> 暴露给 Unreal 反射的成员”这条关键边界。</p><p>前置条件：已经完成 ，项目下存在可用的 <code>Plugins/Angelscript/</code> 与根目录 <code>Script/</code>。</p><h1 class="">创建 HelloActor.as</h1><p>在项目根目录的 <code>Script/</code> 下新建 <code>HelloActor.as</code>：</p>Undefined widget 'angelscript-code'<h1 class="">逐行理解</h1><ul><li>**第 1 行 <code>class AHelloActor : AActor</code>**：声明一个脚本类。类名使用 Unreal 约定的 <code>A</code> 前缀（表示继承自 <code>AActor</code>）；<code>:</code> 表示继承。脚本类可以继承 Blueprint 能继承的同一批引擎类。</li><li>**第 3–4 行 <code>UPROPERTY(Category = "Hello") FString Message = ...</code>**：<code>UPROPERTY()</code> 让 <code>Message</code> 进入 Unreal 反射，从而能在编辑器 Details 面板里编辑、被 Blueprint 访问。<code>Category</code> 决定它在 Details 里的分组标题。<code>FString</code> 是 Unreal 绑定的字符串类型。</li><li>**第 6–7 行 <code>UFUNCTION(BlueprintOverride) void BeginPlay()</code>**：<code>BeginPlay()</code> 是引擎在 Actor 进入关卡时调用的事件。因为它来自 C++ 父类，覆盖它需要标记 <code>UFUNCTION(BlueprintOverride)</code>。</li><li>**第 9 行 <code>Print(f"{GetName()}: {Message}")</code>**：<code>Print()</code> 把文本输出到屏幕与日志；<code>f"..."</code> 是格式化字符串，花括号里的表达式会被求值后插入。</li></ul><h1 class="">关键边界：脚本可见 vs 反射暴露</h1><p>这是理解整个插件最重要的一条边界：**普通类成员默认只对脚本可见；只有加了 <code>UPROPERTY()</code> / <code>UFUNCTION()</code> 才会进入 Unreal 反射表面**（编辑器、Blueprint、复制等）。</p><p><svg aria-label="成员是否加 UPROPERTY/UFUNCTION 决定它是否进入 Unreal 反射表面" role="img" viewBox="0 0 720 290" style="width:100%;max-width:720px;height:auto;font-family:'JetBrains Mono',ui-monospace,monospace;">
+  <defs>
+    <marker id="dv-arrow" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#64748b"></path></marker>
+  </defs>
+  <rect fill="#0f172a" height="288" rx="14" stroke="#1e293b" width="718" x="1" y="1"></rect>
+  <rect fill="rgba(120,53,15,0.3)" height="52" rx="8" stroke="#fbbf24" stroke-width="1.5" width="350" x="185" y="22"></rect>
+  <text fill="#ffffff" font-size="13" font-weight="600" text-anchor="middle" x="360" y="53">加了 UPROPERTY() / UFUNCTION() ?</text>
+  <polyline fill="none" marker-end="url(#dv-arrow)" points="360,74 360,112 200,112 200,146" stroke="#64748b" stroke-width="1.5"></polyline>
+  <polyline fill="none" marker-end="url(#dv-arrow)" points="360,74 360,112 520,112 520,146" stroke="#64748b" stroke-width="1.5"></polyline>
+  <text fill="#34d399" font-size="12" font-weight="600" text-anchor="middle" x="250" y="104">是</text>
+  <text fill="#94a3b8" font-size="12" font-weight="600" text-anchor="middle" x="470" y="104">否</text>
+  <rect fill="#0f172a" height="112" rx="8" width="280" x="60" y="150"></rect>
+  <rect fill="rgba(6,78,59,0.4)" height="112" rx="8" stroke="#34d399" stroke-width="1.5" width="280" x="60" y="150"></rect>
+  <text fill="#ffffff" font-size="13" font-weight="600" text-anchor="middle" x="200" y="184">进入 Unreal 反射表面</text>
+  <text fill="#cbd5e1" font-size="11" text-anchor="middle" x="200" y="212">编辑器 Details 可编辑</text>
+  <text fill="#cbd5e1" font-size="11" text-anchor="middle" x="200" y="234">Blueprint 可访问 / 覆盖</text>
+  <rect fill="#0f172a" height="112" rx="8" width="280" x="380" y="150"></rect>
+  <rect fill="rgba(30,41,59,0.5)" height="112" rx="8" stroke="#94a3b8" stroke-width="1.5" width="280" x="380" y="150"></rect>
+  <text fill="#ffffff" font-size="13" font-weight="600" text-anchor="middle" x="520" y="184">只对脚本可见</text>
+  <text fill="#cbd5e1" font-size="11" text-anchor="middle" x="520" y="212">Unreal / 蓝图看不到</text>
+  <text fill="#cbd5e1" font-size="11" text-anchor="middle" x="520" y="234">热重载更快</text>
+</svg></p><p>下面这张表把常见写法对应到“Unreal 能不能看到”：</p><table><tbody><tr class="evenRow"><th align="left">写法</th><th align="left">Unreal 是否可见</th><th align="left">典型用途</th></tr><tr class="oddRow"><td align="left"><code>int InternalCounter;</code></td><td align="left">❌ 仅脚本</td><td align="left">内部计数、临时状态</td></tr><tr class="evenRow"><td align="left"><code>UPROPERTY() int Value;</code></td><td align="left">✅ Details 可编辑、蓝图可读写</td><td align="left">需要设计师调、或蓝图访问的数据</td></tr><tr class="oddRow"><td align="left"><code>void Helper()</code></td><td align="left">❌ 仅脚本</td><td align="left">纯逻辑，热重载快</td></tr><tr class="evenRow"><td align="left"><code>UFUNCTION() void Foo()</code></td><td align="left">✅ 蓝图节点</td><td align="left">要在蓝图里调用</td></tr><tr class="oddRow"><td align="left"><code>UFUNCTION(BlueprintOverride) void BeginPlay()</code></td><td align="left">✅ 覆盖引擎事件</td><td align="left">响应生命周期事件</td></tr></tbody></table><p>再看一个把这几种写法放在一起的例子：</p>Undefined widget 'angelscript-code'<p>上面的形状来自仓库示例 <code>Script/Game/Example_Actor.as</code>。其中：</p><ul><li><code>UPROPERTY()</code> 成员会出现在关卡实例的 Details 面板中。</li><li><code>default SetReplicates(true);</code> 用 <code>default</code> 语句覆盖父类默认值，等价于在 C++ 构造函数里设置。</li><li>没有 <code>UFUNCTION()</code> 的方法只能被脚本调用；因为 Unreal 不需要感知它们，改动这类方法时的热重载也更快（详见下一页）。</li></ul><p>现在只需要记住“加不加 <code>UPROPERTY()</code> / <code>UFUNCTION()</code> 决定是否暴露给 Unreal”。完整的属性与函数 specifier（可编辑性、Blueprint 暴露、复制、RPC 等）在  与  中展开。
+</p><h1 class="">相关链接</h1><ul><li> —— 读编译反馈、放置实例、用 PIE 验证，并区分两类热重载</li><li> —— 属性 specifier 的完整规则</li><li> —— 函数 specifier 与 RPC 规则</li></ul></section>
+<hr/>
+<section><h1 class="pg">验证与迭代 · start/verify-and-iterate</h1><h1 class="">学完能做什么</h1><p>你将学会一个完整的“保存 → 看编译反馈 → 放置 → 验证 → 迭代”闭环：读懂保存脚本后的编译结果、把脚本类放进关卡、在 PIE 中确认行为，并分清“只改函数体”和“改签名/属性”这两类改动在热重载上的差别。</p><p>前置条件：已经在 <code>Script/</code> 下写好  里的 <code>HelloActor.as</code>。</p><h1 class="">验证闭环</h1><p>整个迭代过程是一个循环——写、存、看、改，再回到写：</p><p><svg aria-label="迭代循环：编辑 → 保存 → 看编译反馈 → 放置到关卡 → 运行 PIE，再回到编辑" role="img" viewBox="0 0 840 210" style="width:100%;max-width:840px;height:auto;font-family:'JetBrains Mono',ui-monospace,monospace;">
+  <defs>
+    <marker id="lp-arrow" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#34d399"></path></marker>
+    <marker id="lp-back" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#a78bfa"></path></marker>
+  </defs>
+  <rect fill="#0f172a" height="208" rx="14" stroke="#1e293b" width="838" x="1" y="1"></rect>
+  <line marker-end="url(#lp-arrow)" stroke="#34d399" stroke-width="2" x1="152" x2="183" y1="67" y2="67"></line>
+  <line marker-end="url(#lp-arrow)" stroke="#34d399" stroke-width="2" x1="317" x2="348" y1="67" y2="67"></line>
+  <line marker-end="url(#lp-arrow)" stroke="#34d399" stroke-width="2" x1="482" x2="513" y1="67" y2="67"></line>
+  <line marker-end="url(#lp-arrow)" stroke="#34d399" stroke-width="2" x1="647" x2="678" y1="67" y2="67"></line>
+  <polyline fill="none" marker-end="url(#lp-back)" points="745,94 745,165 85,165 85,96" stroke="#a78bfa" stroke-dasharray="4,4" stroke-width="1.75"></polyline>
+  <text fill="#94a3b8" font-size="11" text-anchor="middle" x="415" y="183">改一点，再跑一遍</text>
+  <text fill="#64748b" font-size="10" text-anchor="middle" x="415" y="122">有编译错误先修，再继续</text>
+  <g>
+    <rect fill="#0f172a" height="54" rx="8" width="130" x="20" y="40"></rect><rect fill="rgba(8,51,68,0.4)" height="54" rx="8" stroke="#22d3ee" stroke-width="1.5" width="130" x="20" y="40"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="85" y="72">编辑 .as</text>
+    <rect fill="#0f172a" height="54" rx="8" width="130" x="185" y="40"></rect><rect fill="rgba(30,41,59,0.5)" height="54" rx="8" stroke="#94a3b8" stroke-width="1.5" width="130" x="185" y="40"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="250" y="72">保存</text>
+    <rect fill="#0f172a" height="54" rx="8" width="130" x="350" y="40"></rect><rect fill="rgba(120,53,15,0.3)" height="54" rx="8" stroke="#fbbf24" stroke-width="1.5" width="130" x="350" y="40"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="415" y="72">看编译反馈</text>
+    <rect fill="#0f172a" height="54" rx="8" width="130" x="515" y="40"></rect><rect fill="rgba(8,51,68,0.4)" height="54" rx="8" stroke="#22d3ee" stroke-width="1.5" width="130" x="515" y="40"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="580" y="72">放置到关卡</text>
+    <rect fill="#0f172a" height="54" rx="8" width="130" x="680" y="40"></rect><rect fill="rgba(6,78,59,0.4)" height="54" rx="8" stroke="#34d399" stroke-width="1.5" width="130" x="680" y="40"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="745" y="72">运行 PIE</text>
+  </g>
+</svg></p><p>按下面的步骤走一遍：</p><ol><li>启动 Editor 并打开项目。</li><li>保存 <code>HelloActor.as</code>，在输出日志中观察 AngelScript 的编译结果；**先处理所有编译错误**，有错误时类不会更新。</li><li>在 Place Actors 面板或类选择器中搜索 <code>Hello Actor</code>，把它拖进关卡。</li><li>选中该实例，在 Details 面板里修改 <code>Message</code>（这正是 <code>UPROPERTY()</code> 带来的可编辑性）。</li><li>运行 PIE（Play In Editor），确认输出日志或屏幕打印里包含实例名和你设置的消息。</li><li>修改脚本并再次保存，观察热重载行为（见下一节）。</li></ol><h1 class="">两类改动，两种热重载</h1><p>保存脚本会触发热重载，但影响面取决于你改了什么：</p><table><tbody><tr class="evenRow"><th align="left">你改了什么</th><th align="left">例子</th><th align="left">热重载代价</th></tr><tr class="oddRow"><td align="left">只改函数体</td><td align="left">改一句 <code>Print</code> 文本、调整循环内计算</td><td align="left">小；重新编译逻辑，实例状态一般保持</td></tr><tr class="evenRow"><td align="left">改反射签名/属性</td><td align="left">增删 <code>UPROPERTY()</code>、改 <code>UFUNCTION()</code> 参数、改继承</td><td align="left">大；结构变化，需重新生成类型并检查实例与蓝图子类</td></tr></tbody></table><p>没有 <code>UFUNCTION()</code> 的脚本专有方法，Unreal 不需要感知它们的存在，因此改动这类方法的热重载明显快于改动一个 <code>UFUNCTION()</code> 签名。这也是把纯逻辑写成脚本专有方法的一个实际好处。
+</p><p>想拿一个“会动的例子”验证热重载，可以放置 <code>Script/Examples/Core/Example_MovingObject.as</code> 里的 <code>AExampleMovingObject</code>，在 PIE 运行时修改它的移动逻辑并保存，直接观察行为变化。</p><h1 class="">类没出现？按顺序排查</h1><p>如果类始终不出现在放置面板或类选择器里，按下面的顺序逐项排查——命中任一“否”就先解决它，不要靠复制外部文档的目录名或引擎参数来绕过诊断：</p><p><svg aria-label="类不出现的排查流程：依次检查目录、插件启用、编译错误、类名继承，每一步的否分支给出修复动作" role="img" viewBox="0 0 640 430" style="width:100%;max-width:640px;height:auto;font-family:'JetBrains Mono',ui-monospace,monospace;">
+  <defs>
+    <marker id="ts-yes" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#34d399"></path></marker>
+    <marker id="ts-no" markerHeight="9" markerWidth="9" orient="auto" refX="6" refY="3"><path d="M0,0 L6,3 L0,6 z" fill="#fb7185"></path></marker>
+  </defs>
+  <rect fill="#0f172a" height="428" rx="14" stroke="#1e293b" width="638" x="1" y="1"></rect>
+  <line marker-end="url(#ts-yes)" stroke="#34d399" stroke-width="1.5" x1="180" x2="180" y1="72" y2="108"></line>
+  <line marker-end="url(#ts-yes)" stroke="#34d399" stroke-width="1.5" x1="180" x2="180" y1="162" y2="198"></line>
+  <line marker-end="url(#ts-yes)" stroke="#34d399" stroke-width="1.5" x1="180" x2="180" y1="252" y2="288"></line>
+  <line marker-end="url(#ts-yes)" stroke="#34d399" stroke-width="1.5" x1="180" x2="180" y1="342" y2="378"></line>
+  <text fill="#34d399" font-size="11" x="192" y="94">是</text>
+  <text fill="#34d399" font-size="11" x="192" y="184">是</text>
+  <text fill="#34d399" font-size="11" x="192" y="274">是</text>
+  <text fill="#34d399" font-size="11" x="192" y="364">是</text>
+  <line marker-end="url(#ts-no)" stroke="#fb7185" stroke-width="1.5" x1="330" x2="376" y1="46" y2="46"></line>
+  <line marker-end="url(#ts-no)" stroke="#fb7185" stroke-width="1.5" x1="330" x2="376" y1="136" y2="136"></line>
+  <line marker-end="url(#ts-no)" stroke="#fb7185" stroke-width="1.5" x1="330" x2="376" y1="226" y2="226"></line>
+  <line marker-end="url(#ts-no)" stroke="#fb7185" stroke-width="1.5" x1="330" x2="376" y1="316" y2="316"></line>
+  <text fill="#fb7185" font-size="11" text-anchor="middle" x="353" y="38">否</text>
+  <text fill="#fb7185" font-size="11" text-anchor="middle" x="353" y="128">否</text>
+  <text fill="#fb7185" font-size="11" text-anchor="middle" x="353" y="218">否</text>
+  <text fill="#fb7185" font-size="11" text-anchor="middle" x="353" y="308">否</text>
+  <rect fill="#0f172a" height="52" rx="8" width="300" x="30" y="20"></rect><rect fill="rgba(120,53,15,0.3)" height="52" rx="8" stroke="#fbbf24" stroke-width="1.5" width="300" x="30" y="20"></rect><text fill="#ffffff" font-size="12" text-anchor="middle" x="180" y="51">文件在项目根 Script/ 下？</text>
+  <rect fill="#0f172a" height="52" rx="8" width="300" x="30" y="110"></rect><rect fill="rgba(120,53,15,0.3)" height="52" rx="8" stroke="#fbbf24" stroke-width="1.5" width="300" x="30" y="110"></rect><text fill="#ffffff" font-size="12" text-anchor="middle" x="180" y="141">插件已启用（.uplugin）？</text>
+  <rect fill="#0f172a" height="52" rx="8" width="300" x="30" y="200"></rect><rect fill="rgba(120,53,15,0.3)" height="52" rx="8" stroke="#fbbf24" stroke-width="1.5" width="300" x="30" y="200"></rect><text fill="#ffffff" font-size="12" text-anchor="middle" x="180" y="231">保存后无编译错误？</text>
+  <rect fill="#0f172a" height="52" rx="8" width="300" x="30" y="290"></rect><rect fill="rgba(120,53,15,0.3)" height="52" rx="8" stroke="#fbbf24" stroke-width="1.5" width="300" x="30" y="290"></rect><text fill="#ffffff" font-size="12" text-anchor="middle" x="180" y="321">类名 / 继承正确？</text>
+  <rect fill="#0f172a" height="46" rx="8" width="300" x="30" y="380"></rect><rect fill="rgba(6,78,59,0.4)" height="46" rx="8" stroke="#34d399" stroke-width="1.5" width="300" x="30" y="380"></rect><text fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle" x="180" y="408">应能在类选择器中看到它</text>
+  <rect fill="#0f172a" height="44" rx="8" width="234" x="378" y="24"></rect><rect fill="rgba(30,41,59,0.5)" height="44" rx="8" stroke="#94a3b8" stroke-width="1.5" width="234" x="378" y="24"></rect><text fill="#cbd5e1" font-size="11" text-anchor="middle" x="495" y="50">移动到项目根 Script/ 下</text>
+  <rect fill="#0f172a" height="44" rx="8" width="234" x="378" y="114"></rect><rect fill="rgba(30,41,59,0.5)" height="44" rx="8" stroke="#94a3b8" stroke-width="1.5" width="234" x="378" y="114"></rect><text fill="#cbd5e1" font-size="11" text-anchor="middle" x="495" y="140">在设置里启用并重启</text>
+  <rect fill="#0f172a" height="44" rx="8" width="234" x="378" y="204"></rect><rect fill="rgba(30,41,59,0.5)" height="44" rx="8" stroke="#94a3b8" stroke-width="1.5" width="234" x="378" y="204"></rect><text fill="#cbd5e1" font-size="11" text-anchor="middle" x="495" y="230">按输出日志修正错误</text>
+  <rect fill="#0f172a" height="44" rx="8" width="234" x="378" y="294"></rect><rect fill="rgba(30,41,59,0.5)" height="44" rx="8" stroke="#94a3b8" stroke-width="1.5" width="234" x="378" y="294"></rect><text fill="#cbd5e1" font-size="11" text-anchor="middle" x="495" y="320">修正声明（A 前缀等）</text>
+</svg></p><h1 class="">相关链接</h1><ul><li> —— 把脚本类作为 Blueprint 父类并验证双向调用</li><li> —— 系统学习语言核心</li><li> —— 热重载的日常实践</li><li> —— 深入两类改动的机制差别</li></ul></section></body></html>
