@@ -14,4 +14,3 @@ Report:
 6. which add-ons are required for the first native-runtime smoke versus safe to defer.
 
 Write the detailed report to `.superpowers/sdd/feature-ue-angelscript-standalone-compiler/audit-addons-report.md`. Return only status plus a one-line summary and concerns.
-

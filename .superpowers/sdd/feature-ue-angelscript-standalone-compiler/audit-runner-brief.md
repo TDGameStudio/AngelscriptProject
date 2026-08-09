@@ -14,4 +14,3 @@ Report:
 6. any conflict with OpenSpec tasks 0.8, 1.2, 6.16.
 
 Write the detailed report to `.superpowers/sdd/feature-ue-angelscript-standalone-compiler/audit-runner-report.md`. Return only status plus a one-line summary and concerns.
-

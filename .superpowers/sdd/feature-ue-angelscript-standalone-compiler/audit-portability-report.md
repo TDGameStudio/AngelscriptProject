@@ -1,6 +1,6 @@
 # Portability audit — maintained AngelScript fork
 
-Date: 2026-07-31  
+Date: 2026-07-31
 Scope: read-only inspection of `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript`, with the public header at `Core/angelscript.h`. No build was run.
 
 ## Conclusion

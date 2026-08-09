@@ -147,4 +147,3 @@ Recommended initial generic registration order is RegisterScriptArray(engine, tr
 This audit establishes availability, local provenance, license obligations, dependencies, generic dispatch, and one confirmed public API break. It does not establish that the current fork is already portable or that the add-ons meet the future allocation/cancellation contract.
 
 After tasks 0.1 and 1.10 provide a no-UE AS_MAX_PORTABILITY CMake target, compile the nine listed source/header units against the maintained header and execute the staged generic-registration smoke before claiming integration support.
-

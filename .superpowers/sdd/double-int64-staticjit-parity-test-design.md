@@ -1,7 +1,7 @@
 # Double-to-Int64 StaticJIT Parity Regression Design
 
-Date: 2026-07-27  
-Mode: read-only design / plan-only deliverable  
+Date: 2026-07-27
+Mode: read-only design / plan-only deliverable
 Target OpenSpec: `fix-as-double-int64-bytecode-execution`
 
 ## Recommendation

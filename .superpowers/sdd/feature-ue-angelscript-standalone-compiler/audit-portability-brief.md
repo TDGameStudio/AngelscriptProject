@@ -14,4 +14,3 @@ Inspect the actual fork and report:
 6. risks that contradict OpenSpec Phase 0 task 0.1.
 
 Write the detailed report to `.superpowers/sdd/feature-ue-angelscript-standalone-compiler/audit-portability-report.md`. Return only status plus a one-line summary and concerns.
-
