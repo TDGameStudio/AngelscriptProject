@@ -17,6 +17,13 @@
 - [ ] 3.3 Update the owning `FAngelscriptBind` file-header API table with purpose and non-obvious `@param` notes for every public API added by the wave.
 - [ ] 3.4 Run the focused binding tests and any justified StaticJIT regression, then record the command/result in the audit evidence.
 
+## 3A. Implement the actor spawn-parameter wave
+
+- [x] 3A.1 Add a functional Actor test that compiles and exercises `FActorSpawnParameters`, transform-based spawning, typed spawning, and deferred-spawn completion. <!-- TDD -->
+- [x] 3A.2 Register `FActorSpawnParameters` as a non-reflected AngelScript value type, including construction, copying, common spawn fields, and safe bitfield accessors.
+- [x] 3A.3 Register `ESpawnActorNameMode` and add transform-plus-parameter overloads for global, `UWorld`, and reflected typed Actor spawning.
+- [ ] 3A.4 Update the Actor provider API table and audit evidence with the chosen public surface and focused validation result.
+
 ## 4. Expand only after foundation evidence is complete
 
 - [ ] 4.1 Audit generic and object-wrapper families (containers, optional, object/class/function/struct, pointers, and paths), distinguishing template/reflection coverage from explicit-binding candidates.
