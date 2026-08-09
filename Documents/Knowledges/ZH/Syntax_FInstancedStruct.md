@@ -46,7 +46,7 @@
    if (S.IsValid()) ...                      ScriptStruct != null && Memory != null
    if (S.Contains(FMyStruct::StaticStruct()))…  ScriptStruct == StructType
    FMyStruct M = S.Get(FMyStruct);           const FScriptStructWildcard& 返回
-                                              + SetPreviousBindArgumentDeterminesOutputType(0)
+                                              + exact-result `.DeterminesOutputType(0)`
                                               → 编译期 narrow 为 const FMyStruct&
    FMyStruct& M = S.GetMutable(FMyStruct);   同上但 mutable
    S.Get(MyStruct);                          wildcard ?&out → TypeId 校验
@@ -84,7 +84,7 @@
           └──────────────────────────────────────────────────────┘
 ```
 
-后续按以下顺序展开：① 数据布局与设计动机；② StructUtils 模块依赖与启用链路；③ Bind_FInstancedStruct 注册全景（11 个入口）；④ Wildcard `?&in` / `?&out` × TypeId 反查 `UScriptStruct*`；⑤ `FScriptStructWildcard` 与 `SetPreviousBindArgumentDeterminesOutputType(0)`；⑥ `FAngelscriptAnyStructParameter` —— 脚本端 any-struct 参数；⑦ `FAngelscriptDelegateWithPayload` —— FInstancedStruct 作 payload 复用；⑧ UPROPERTY 与编辑器集成；⑨ 序列化与 cooked build；⑩ 与 `TSubclassOf` 的对照；⑪ 限制与避坑（含 AS USTRUCT × FInstancedStruct 已知 bug）。
+后续按以下顺序展开：① 数据布局与设计动机；② StructUtils 模块依赖与启用链路；③ Bind_FInstancedStruct 注册全景（11 个入口）；④ Wildcard `?&in` / `?&out` × TypeId 反查 `UScriptStruct*`；⑤ `FScriptStructWildcard` 与 exact-result `.DeterminesOutputType(0)`；⑥ `FAngelscriptAnyStructParameter` —— 脚本端 any-struct 参数；⑦ `FAngelscriptDelegateWithPayload` —— FInstancedStruct 作 payload 复用；⑧ UPROPERTY 与编辑器集成；⑨ 序列化与 cooked build；⑩ 与 `TSubclassOf` 的对照；⑪ 限制与避坑（含 AS USTRUCT × FInstancedStruct 已知 bug）。
 
 ---
 
@@ -213,34 +213,43 @@ AngelscriptDelegateWithPayload.h                      ← AS USTRUCT，含 FInst
 ```cpp
 // ============================================================================
 // 文件: AngelscriptRuntime/Binds/Bind_FInstancedStruct.cpp
-// 函数: Bind_FInstancedStruct（lambda）
+// 函数: BindFInstancedStructFunctions（显式目标 callback）
 // ============================================================================
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FInstancedStruct(
-    FAngelscriptBinds::EOrder::Late,
-    []
+namespace
+{
+    void BindFInstancedStructFunctions(FAngelscriptBinds& Binds)
     {
         auto FAngelscriptAnyStructParameter_ =
-            FAngelscriptBinds::ExistingClass("FAngelscriptAnyStructParameter");
-        FAngelscriptAnyStructParameter_.ImplicitConstructor(
-            "void f(const ?&in Struct)",
-            FUNC(FAngelscriptInstancedStructHelpers::ImplicitConstructAnyStruct));
-        FAngelscriptBinds::SetPreviousBindNoDiscard(true);
-        FAngelscriptAnyStructParameter_.ImplicitConstructor(
-            "void f(const FInstancedStruct& Struct)",
-            FUNC(FAngelscriptInstancedStructHelpers::ImplicitConstructAnyStructFromInstancedStruct));
-        FAngelscriptBinds::SetPreviousBindNoDiscard(true);
+            Binds.ExistingClassForTarget("FAngelscriptAnyStructParameter");
+        FAngelscriptAnyStructParameter_
+            .ImplicitConstructor(
+                "void f(const ?&in Struct)",
+                FUNC(FAngelscriptFInstancedStructBinds::ImplicitConstructAnyStruct))
+            .NoDiscard();
+        FAngelscriptAnyStructParameter_
+            .ImplicitConstructor(
+                "void f(const FInstancedStruct& Struct)",
+                FUNC(FAngelscriptFInstancedStructBinds::ImplicitConstructAnyStructFromInstancedStruct))
+            .NoDiscard();
 
-        auto FInstancedStruct_ = FAngelscriptBinds::ExistingClass("FInstancedStruct");
+        auto FInstancedStruct_ = Binds.ExistingClassForTarget("FInstancedStruct");
         // ... 11 个方法 + 1 个 namespaced 全局函数 Make ...
-    });
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FInstancedStruct(
+    TEXT("FInstancedStruct.Functions"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFInstancedStructFunctions);
 ```
 
 注意几个**形态特征**：
 
-- **`EOrder::Late`**：在所有 USTRUCT 反射注册完成后再补充方法——`FInstancedStruct` 自己的 USTRUCT 注册必须先发生，本文件才能 `ExistingClass("FInstancedStruct")` 拿到已注册的类型。
-- **`ExistingClass(...)`**：复用已有 type，不重复注册。这是绑定后置补丁的标准模式。
+- **`EAngelscriptBindPhase::ManualBindings`**：在 `TypeDeclarations` / `TypeInfrastructure` 建好 USTRUCT 类型和关联数据后补充方法——`FInstancedStruct` 自己的 USTRUCT 注册必须先发生，本文件才能拿到已注册的类型。
+- **callback 参数 `FAngelscriptBinds& Binds`**：所有注册都沿 callback 收到的显式目标执行；不能再通过 ambient current engine 选择写入对象。
+- **`ExistingClassForTarget(...)`**：在 `Binds` 的目标 engine 上复用已有 type，不重复注册。这是绑定后置补丁的标准模式。
 - **`ImplicitConstructor`**：让"任何 USTRUCT 实例可以隐式构造成 `FAngelscriptAnyStructParameter`"——这是 §六的脚本端 any-struct 参数的关键。
-- **`SetPreviousBindNoDiscard(true)`**：编译器对 "构造完丢弃" 报警告——避免 `FAngelscriptAnyStructParameter(MyStruct);` 这种写法（无副作用）。
+- **exact-result `.NoDiscard()`**：trait 直接链到刚返回的 `FAngelscriptBoundFunction`，编译器会对“构造完丢弃”报警告；它不再依赖全局“上一条绑定”槽位。
 
 ### 3.2 11 个方法 + 全局 Make 一览
 
@@ -265,12 +274,13 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FInstancedStruct(
 ### 3.3 注册顺序与依赖
 
 ```text
-EOrder::Early       注册 USTRUCT FInstancedStruct（自动 USTRUCT 反射注册）
-    │                + FAngelscriptAnyStructParameter（同上）
-    │                + FAngelscriptDelegateWithPayload（同上）
-    │                + FScriptStructWildcard（同上）
+TypeDeclarations    声明 USTRUCT FInstancedStruct 对应的 AS value type
+    │                + FAngelscriptAnyStructParameter / FAngelscriptDelegateWithPayload
+    │                + FScriptStructWildcard
     ▼
-EOrder::Late        Bind_FInstancedStruct 补充 11 个方法
+TypeInfrastructure  关联 UScriptStruct*、type adapter 与 TypeId 反查所需数据
+    ▼
+ManualBindings      Bind_FInstancedStruct 补充 11 个方法
     │                Bind_AngelscriptDelegateWithPayload 补充 4 个方法
     │
     ▼
@@ -279,7 +289,7 @@ EOrder::Late        Bind_FInstancedStruct 补充 11 个方法
                      脚本可调 InitializeAs(MyStruct) 等
 ```
 
-为什么 InitializeAs 必须在 Late 阶段：它依赖 §四的 TypeId → UScriptStruct 反查。AS 引擎需要先把所有 USTRUCT 注册并把 `UScriptStruct*` 写到对应 `asITypeInfo::userData`，TypeId 反查才能拿到非 null 结果。
+为什么 InitializeAs 必须在 `ManualBindings` 阶段：它依赖 §四的 TypeId → UScriptStruct 反查。`TypeDeclarations` 与 `TypeInfrastructure` 需要先注册 USTRUCT，并把 `UScriptStruct*` 写到对应 `asITypeInfo::userData`，TypeId 反查才能拿到非 null 结果。
 
 ---
 
@@ -326,37 +336,17 @@ void FAngelscriptInstancedStructHelpers::InitializeAs_Struct(
 ```cpp
 // ============================================================================
 // 文件: AngelscriptRuntime/Binds/Bind_FInstancedStruct.cpp
-// 函数: FInstancedStruct::Get(?&out) 的 inline lambda（节选）
+// 角色: 把具名 CopyTo callable 与文档、弃用 trait 绑定到同一个 exact result
 // ============================================================================
-FInstancedStruct_.Method("void Get(?&out Struct) const",
-[](const FInstancedStruct* Self, void* Data, int TypeId)
-{
-    if (!Self->IsValid())
-    {
-        FAngelscriptEngine::Throw("Source is empty or not valid. "
-            "Check `IsValid()` before trying to `Get()` the underlying struct.");
-        return;
-    }
-    const UStruct* StructDef =
-        FAngelscriptEngine::Get().GetUnrealStructFromAngelscriptTypeId(TypeId);
-    // ... 同 InitializeAs_Struct 的两层 cast 校验 ...
-    if (ScriptStructDef != Self->GetScriptStruct())
-    {
-        const FString Debug = FString::Printf(
-            TEXT("\nMismatching types. Got %s but expected %s."),
-            *ScriptStructDef->GetStructCPPName(),
-            *Self->GetScriptStruct()->GetStructCPPName());
-        FAngelscriptEngine::Throw(TCHAR_TO_ANSI(*Debug));        // ★ 类型错配
-        return;
-    }
-    ScriptStructDef->CopyScriptStruct(Data, Self->GetMemory());  // ★ 深拷贝
-});
-SCRIPT_BIND_DOCUMENTATION("Returns a copy of the struct...");
-FInstancedStruct_.DeprecatePreviousBind(
-    "Use Get() or GetMutable() that returns a reference instead of copying");
+FInstancedStruct_
+    .Method(
+        "void Get(?&out Struct) const",
+        &FAngelscriptFInstancedStructBinds::CopyTo)
+    .Documentation(TEXT("Returns a copy of the struct. This getter assumes that all data is valid."))
+    .Deprecated("Use Get() or GetMutable() that returns a reference instead of copying");
 ```
 
-注意末尾 `DeprecatePreviousBind`——这版"拷出 API"已被弃用，新代码应改用 `Get(StructType) -> const FScriptStructWildcard&`（§五）：原来的 `?&out` 路径每次调用都做 `CopyScriptStruct` 深拷贝，对大 struct 浪费严重；新路径直接返回内部内存的引用，零拷贝。
+注意末尾链在 exact result 上的 `.Deprecated(...)`——这版"拷出 API"已被弃用，新代码应改用 `Get(StructType) -> const FScriptStructWildcard&`（§五）：原来的 `?&out` 路径每次调用都做 `CopyScriptStruct` 深拷贝，对大 struct 浪费严重；新路径直接返回内部内存的引用，零拷贝。
 
 ### 4.3 `GetUnrealStructFromAngelscriptTypeId` 桥
 
@@ -438,7 +428,7 @@ struct FScriptStructWildcard
 - 返回值类型：`const FScriptStructWildcard& Get(const UScriptStruct StructType) const`
 - 返回值类型：`FScriptStructWildcard& GetMutable(const UScriptStruct StructType)`
 
-它的"通配"性质通过下一节的 `SetPreviousBindArgumentDeterminesOutputType(0)` 触发——AS 编译器在编译期把返回类型 narrow 成第 0 号实参所代表的具体 USTRUCT。
+它的"通配"性质通过下一节 exact-result `.DeterminesOutputType(0)` 触发——AS 编译器在编译期把返回类型 narrow 成第 0 号实参所代表的具体 USTRUCT。
 
 ### 5.2 `GetMemory` 的实现
 
@@ -477,25 +467,29 @@ FScriptStructWildcard& FAngelscriptInstancedStructHelpers::GetMemory(
 - **reinterpret 内部内存**：`Self->GetMemory()` 返回 `const uint8*`，强转成 `FScriptStructWildcard*`。后续靠 §5.3 的 narrow 让脚本编译器用正确字段偏移访问。
 - **`no_discard`**：让"调完不用返回值"产生编译警告，提醒脚本作者别把宝贵的"零拷贝引用"丢弃。
 
-### 5.3 `SetPreviousBindArgumentDeterminesOutputType(0)` —— 编译期类型 narrow
+### 5.3 exact-result `.DeterminesOutputType(0)` —— 编译期类型 narrow
 
 ```cpp
 // ============================================================================
 // 文件: AngelscriptRuntime/Binds/Bind_FInstancedStruct.cpp
 // 角色: 注册 Get / GetMutable 时 narrow 返回类型
 // ============================================================================
-FInstancedStruct_.Method(
-    "const FScriptStructWildcard& Get(const UScriptStruct StructType) const no_discard",
-    FUNC(FAngelscriptInstancedStructHelpers::GetMemory));
-FAngelscriptBinds::SetPreviousBindArgumentDeterminesOutputType(0);   // ★
+FInstancedStruct_
+    .Method(
+        "const FScriptStructWildcard& Get(const UScriptStruct StructType) const no_discard",
+        FUNC(FAngelscriptFInstancedStructBinds::GetMemory))
+    .Documentation(TEXT("Returns struct data of a particular type. Throws on a type mismatch."))
+    .DeterminesOutputType(0);   // ★
 
-FInstancedStruct_.Method(
-    "FScriptStructWildcard& GetMutable(const UScriptStruct StructType) no_discard",
-    FUNC(FAngelscriptInstancedStructHelpers::GetMemory));
-FAngelscriptBinds::SetPreviousBindArgumentDeterminesOutputType(0);   // ★
+FInstancedStruct_
+    .Method(
+        "FScriptStructWildcard& GetMutable(const UScriptStruct StructType) no_discard",
+        FUNC(FAngelscriptFInstancedStructBinds::GetMemory))
+    .Documentation(TEXT("Returns mutable struct data of a particular type. Throws on a type mismatch."))
+    .DeterminesOutputType(0);   // ★
 ```
 
-`SetPreviousBindArgumentDeterminesOutputType(0)` 告诉 AS 编译器：返回类型由第 0 号实参（`StructType`）决定。在脚本里写：
+`.DeterminesOutputType(0)` 告诉 AS 编译器：返回类型由第 0 号实参（`StructType`）决定。它直接修改 `Method(...)` 返回的准确 `FAngelscriptBoundFunction`，即使多个 engine 或多条注册交错也不会写到错误函数。在脚本里写：
 
 ```angelscript
 FInstancedStruct S;
@@ -511,14 +505,16 @@ Foo.SomeField;                                   // 直接按 FStructFoo 字段�
 ```cpp
 // ============================================================================
 // 文件: AngelscriptRuntime/Core/AngelscriptBinds.cpp
-// 函数: FAngelscriptBinds::SetPreviousBindArgumentDeterminesOutputType
+// 函数: FAngelscriptBoundFunction::DeterminesOutputType
 // ============================================================================
-void FAngelscriptBinds::SetPreviousBindArgumentDeterminesOutputType(int ArgumentIndex)
+FAngelscriptBoundFunction& FAngelscriptBoundFunction::DeterminesOutputType(
+    const int32 ArgumentIndex)
 {
-    if (auto* Function = (asCScriptFunction*)GetPreviousBind())
+    if (asCScriptFunction* Function = static_cast<asCScriptFunction*>(GetFunction()))
     {
-        Function->determinesOutputTypeArgumentIndex = ArgumentIndex;   // ★ 单字段标记
+        Function->determinesOutputTypeArgumentIndex = static_cast<int8>(ArgumentIndex);
     }
+    return *this;
 }
 ```
 
@@ -554,15 +550,17 @@ struct ANGELSCRIPTRUNTIME_API FAngelscriptAnyStructParameter
 // 文件: AngelscriptRuntime/Binds/Bind_FInstancedStruct.cpp
 // 角色: FAngelscriptAnyStructParameter 的两个 ImplicitConstructor
 // ============================================================================
-FAngelscriptAnyStructParameter_.ImplicitConstructor(
-    "void f(const ?&in Struct)",
-    FUNC(FAngelscriptInstancedStructHelpers::ImplicitConstructAnyStruct));
-FAngelscriptBinds::SetPreviousBindNoDiscard(true);
+FAngelscriptAnyStructParameter_
+    .ImplicitConstructor(
+        "void f(const ?&in Struct)",
+        FUNC(FAngelscriptFInstancedStructBinds::ImplicitConstructAnyStruct))
+    .NoDiscard();
 
-FAngelscriptAnyStructParameter_.ImplicitConstructor(
-    "void f(const FInstancedStruct& Struct)",
-    FUNC(FAngelscriptInstancedStructHelpers::ImplicitConstructAnyStructFromInstancedStruct));
-FAngelscriptBinds::SetPreviousBindNoDiscard(true);
+FAngelscriptAnyStructParameter_
+    .ImplicitConstructor(
+        "void f(const FInstancedStruct& Struct)",
+        FUNC(FAngelscriptFInstancedStructBinds::ImplicitConstructAnyStructFromInstancedStruct))
+    .NoDiscard();
 ```
 
 让脚本作者既能从**任意 USTRUCT** 隐式构造（`?&in` wildcard），也能从已有 `FInstancedStruct` 隐式构造。
@@ -1092,8 +1090,8 @@ S:                              ▼ FInstancedStruct = { ScriptStruct=FStructFoo
 ## 小结
 
 - `FInstancedStruct` = "**类型擦除 USTRUCT 容器**" —— 物理上 `UScriptStruct* + uint8*`，逻辑上"任意 USTRUCT 实例"。它由 UE `StructUtils` 模块/插件提供（5.0–5.4 plugin / 5.5+ CoreUObject 头文件 + StructUtils 模块），AS 插件通过 `Build.cs::PublicDependencyModuleNames` + `.uplugin::Plugins` 双重启用。
-- AS 实现采用**普通 USTRUCT + 后置方法补充**模式：`Bind_FInstancedStruct.cpp` (`EOrder::Late`) 注册 11 个方法 + 1 个 namespaced `Make`，所有"读写需类型信息"的入口靠 AS 通配参数 `?&in` / `?&out` 透传 `(void*, TypeId)`，配合 `GetUnrealStructFromAngelscriptTypeId(TypeId)` 反查 `UScriptStruct*`。
-- `FScriptStructWildcard` + `SetPreviousBindArgumentDeterminesOutputType(0)` 让 `Get(StructType)` / `GetMutable(StructType)` 在编译期把"占位空 USTRUCT 引用"narrow 成具体 struct 类型——零拷贝读写的关键机制。
+- AS 实现采用**普通 USTRUCT + 后置方法补充**模式：`Bind_FInstancedStruct.cpp` 的 `ManualBindings` callback 接收显式 `FAngelscriptBinds& Binds`，注册 11 个方法 + 1 个 namespaced `Make`；所有"读写需类型信息"的入口靠 AS 通配参数 `?&in` / `?&out` 透传 `(void*, TypeId)`，配合 `GetUnrealStructFromAngelscriptTypeId(TypeId)` 反查 `UScriptStruct*`。
+- `FScriptStructWildcard` + exact-result `.DeterminesOutputType(0)` 让 `Get(StructType)` / `GetMutable(StructType)` 在编译期把"占位空 USTRUCT 引用"narrow 成具体 struct 类型——零拷贝读写的关键机制。
 - `FAngelscriptAnyStructParameter`（UFUNCTION 任意 struct 入参 + ImplicitConstructor `?&in` 双路径）与 `FAngelscriptDelegateWithPayload`（payload 字段 + ProcessEvent 直喂内部 Memory + boxed primitive 兼容）是 FInstancedStruct 在公开 API 中的两个主要复用点。
 - 反射桥是普通 `FStructProperty(Struct=FInstancedStruct::StaticStruct())`——不像 `TSubclassOf` 有 `CPF_UObjectWrapper` 标志，`FInstancedStruct` 的"类型擦除"性质完全发生在数据布局而非 FProperty 元数据层；编辑器 `StructUtilsEditor` 模块的 `SInstancedStructDetails` widget 负责"动态结构选择 + 嵌入字段"的面板表现。
 - 当前 fork 存在两条已知边界：① AS 脚本端 USTRUCT 装入 FInstancedStruct 会因 `FASStructOps` 未就绪在 BeginPlay 崩溃；② AS 端数学类型（FVector 等）不能装入（无 UScriptStruct 关联）。两者都在 `Template_ReflectionAccess.cpp` 注释中显式记录。

@@ -52,7 +52,7 @@
 | --- | --- | --- |
 | `startup.total_seconds` | 一次引擎初始化总时长 | 建立 Full / Clone / CreateForTesting 基线 |
 | `startup.bind_script_types_seconds` | `BindScriptTypes()` 时长 | 区分总启动成本与 bind 成本 |
-| `startup.call_binds_seconds` | `FAngelscriptBinds::CallBinds()` 时长 | 跟踪 bind family 数量变化带来的回退 |
+| `startup.call_binds_seconds` | direct binding callback replay 时长（为指标兼容保留旧 key） | 跟踪 bind family 数量变化带来的回退 |
 | `reload.modify.soft_seconds` | modify 场景 soft reload 端到端时长 | 观察 body-only 改动成本 |
 | `reload.rename_window.full_seconds` | rename-window 触发 full reload 的端到端时长 | 单独观察 rename 特有回退 |
 | `reload.diagnostics_count` | 一次 reload 后的 diagnostics 数量 | 区分性能回退和失败路径 |

@@ -13,7 +13,7 @@
 
 | 代表文件 | 当前模式 | 已有 wrapper | 低风险收口判断 |
 | --- | --- | --- | --- |
-| `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_SystemTimers.cpp` | 直接读取 `FAngelscriptEngine::CurrentWorldContext`，但每个 bind 都显式 `SetPreviousBindRequiresWorldContext(true)` | `FAngelscriptGameThreadScopeWorldContext`、`FScopedTestWorldContextScope` | 已经具备显式“需要 world context”语义，后续可在更大去全局化计划中统一参数化 |
+| `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_SystemTimers.cpp` | 运行期 timer callable 读取 scoped world context；注册期通过精确 `FAngelscriptBoundFunction` 结果链 `.RequiresWorldContext()` | `FAngelscriptGameThreadScopeWorldContext`、`FScopedTestWorldContextScope` | binding trait 已无“上一条绑定”隐式状态；运行期 world-context 路由仍由既有 RAII scope 管理 |
 | `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UUserWidget.cpp` | 主要是 UMG 绑定与绘制辅助，当前未见直接 `CurrentWorldContext` 调用 | 无额外 wrapper 需求 | 暂不作为 `P5.2` 优先项 |
 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptGameInstanceSubsystem.cpp` | 通过 `CurrentWorldContext` 解析当前 subsystem，承接生产引擎附着 | `UAngelscriptGameInstanceSubsystem::GetCurrent()` 本身就是集中入口 | 适合作为文档分类样本，但不优先在本计划中重构 |
 

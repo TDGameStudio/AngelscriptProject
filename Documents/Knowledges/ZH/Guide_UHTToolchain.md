@@ -75,8 +75,8 @@
     │
     ├── UE 进程启动
     ├── AngelscriptRuntime.dll 加载
-    ├── 静态构造期：AS_FunctionBinding_*.cpp 内的 FBind 入队
-    └── FAngelscriptEngine::Initialize → 回放 Bind → AS 类型表就绪
+    ├── 静态构造期：AS_FunctionBinding_*.cpp 内的 FAngelscriptBind 记录入队
+    └── 生成模块加载 → collection seal → 每个 engine 回放 GeneratedBindings → AS 类型表就绪
 ```
 
 **直接结论**：
@@ -239,7 +239,7 @@ UHT 工具链**自带** `DeleteStaleOutputs` 逻辑——上一轮生成、本�
 
 ### 3.5 ✗ 不需要为 mixin / FunctionLibrary 担心 UHT
 
-UHT **不读** `meta=(ScriptMixin="...")` 这类 meta——mixin 走另一条路径（`Bind_Defaults` @ `EOrder::Late + 100`）。你给 `FunctionLibraries/` 下加新 mixin 时不需要担心 UHT 配置——参 `Guide_ScriptMixin.md`。
+UHT **不读** `meta=(ScriptMixin="...")` 这类 meta——mixin 走反射完成后的 `PostReflectionBindings` 路径。你给 `FunctionLibraries/` 下加新 mixin 时不需要担心 UHT 配置——参 `Guide_ScriptMixin.md`。
 
 ---
 
@@ -356,27 +356,42 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #include "Core/AngelscriptBinds.h"
 // ... 30+ 行 include 省略
 
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AS_FunctionBinding_AIModule(
-    TEXT("UHT.FunctionBinding.AIModule"), (int32)FAngelscriptBinds::EOrder::Late + 50, []()
+namespace
 {
-    // ★ NativeRuntimeLinked（UHT 拿到了 native 函数指针）
-    FAngelscriptBinds::RegisterFunctionBinding(AAIController::StaticClass(), "ClaimTaskResource",
-        { ERASE_AUTO_METHOD_PTR(AAIController, ClaimTaskResource) });
+    static void BindGeneratedFunctionBindings_AIModule(FAngelscriptBinds& Binds)
+    {
+        // ★ NativeRuntimeLinked（UHT 拿到了 native 函数指针）
+        Binds.RegisterGeneratedFunctionBindingForTarget(
+            AAIController::StaticClass(),
+            "ClaimTaskResource",
+            { ERASE_AUTO_METHOD_PTR(AAIController, ClaimTaskResource) });
 
-    // ★ ReflectiveFallback（UHT 拿不到指针，运行期反射 fallback）
-    FAngelscriptBinds::RegisterFunctionBinding(AAIController::StaticClass(), "GetAIPerceptionComponent",
-        { ERASE_NO_FUNCTION() });
-    // ... 150+ 行 function binding 省略
-});
+        // ★ ReflectiveFallback（含 RPC/Net；运行期必须保留 UE 路由）
+        Binds.RegisterGeneratedFunctionBindingForTarget(
+            AAIController::StaticClass(),
+            "GetAIPerceptionComponent",
+            { ERASE_NO_FUNCTION() });
+        // ... 其余 function binding；大模块拆成最多 256 条的 batch helper
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_AS_FunctionBinding_AIModule(
+    TEXT("UHT.FunctionBinding.AIModule"),
+    EAngelscriptBindPhase::GeneratedBindings,
+    &BindGeneratedFunctionBindings_AIModule);
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 ```
 
 **两类 function binding**：
 
 - `ERASE_AUTO_METHOD_PTR(...)` — **NativeRuntimeLinked**（最优）：UHT 拿到了真实的 native 函数指针，调用时无任何反射开销
-- `ERASE_NO_FUNCTION()` — **ReflectiveFallback**：UHT 拿不到符号（私有函数 / `MinimalAPI` 类 / 重载未消歧），运行期由 `Bind_BlueprintCallable.cpp` 的反射 fallback 兜底
+- `ERASE_NO_FUNCTION()` — **ReflectiveFallback**：UHT 拿不到符号、策略要求保留反射路径或函数是 RPC/Net UFunction 时，运行期由 `Bind_BlueprintCallable.cpp` 的 `BlueprintCallableReflectiveFallback` 兜底
 
 ——这两类 function binding 在 AS 调用时**对脚本作者透明**：你都能调到，只是性能差几倍。
+
+RuntimeLinked 每个模块只有一个 file-static provider，phase 固定为 `GeneratedBindings`。它接收明确的 `FAngelscriptBinds&`，不会从 ambient engine 取状态，也不会从生成模块 `StartupModule()` 提交 binding。Editor CodeGen 生成的 `ASRuntimeBind_*` / `ASEditorBind_*` 模块采用相同形态：file-static `FAngelscriptBind` + `GeneratedBindings`，而生成模块的 `StartupModule()` 保持空提交。
+
+这次 provider 架构变化不改变 `FAngelscriptType`、generic/`asIScriptGeneric` marshalling、`Script/Binds.Cache` schema、NativeModuleFunctionAddress 的 POD/`IModularFeatures` bridge 或 layout version。尤其 RPC/Net UFunction 不能改成 raw native thunk，否则会绕过 Unreal RPC routing。
 
 ### 5.3 大模块的内部 helper
 
@@ -566,7 +581,7 @@ METHOD_PTR   FUNCTION()
 **两个查表入口**：
 
 - **`as.DumpEngineState`**（编辑器控制台）：把当前 AS 引擎状态导出到 `Saved/AngelscriptStateDump/`，27+ 份 CSV。重点看 `AS_TypeRegistry.csv`（所有已注册类型）、`AS_ClassMethods.csv`（每个类的方法）、`AS_ReflectiveFallbackBindings.csv`（走反射 fallback 的方法）。详见 `RT_StateDump.md`。
-- **`FAngelscriptBinds::GetBindInfoList()` / 绑定执行观察**：Runtime-linked 模块以 `UHT.FunctionBinding.<Module>` 出现。需要定位模块来源时查询此稳定名称或 `AS_FunctionBindingDiagnostics.csv`；启动期不再为每个模块打印 `[UHT] Registered ...` 计时日志。
+- **sealed callback metadata / 绑定执行观察**：Runtime-linked 模块以 `UHT.FunctionBinding.<Module>` 的稳定逻辑名称出现。需要定位模块来源时查询 callback provenance 或 `AS_FunctionBindingDiagnostics.csv`；启动期不再为每个模块打印 `[UHT] Registered ...` 计时日志，也没有 runtime disable/filter 入口。
 
 ---
 

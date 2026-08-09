@@ -244,7 +244,7 @@ bPassed = CompileResult == ECompileResult::Error;
 
 ## 三、Phase 5：C++ UInterface 方法的自动注册
 
-`Bind_BlueprintType.cpp` 在 `Bind_Defaults`（`EOrder::Late + 100`）的最后一步 Phase 5 专门处理接口——这是**当前接口能用的核心入口**。
+`Bind_BlueprintType.cpp` 通过 `Bind_BlueprintType_ReflectionBindings` provider 在 `EAngelscriptBindPhase::ReflectionBindings` 执行 `BindBlueprintTypeReflectionBindings(FAngelscriptBinds& Binds)`；该 callback 的最后一个内部步骤 Phase 5 专门处理接口——这是**当前接口能用的核心入口**。
 
 ### 3.1 为什么需要 Phase 5：Phase 2 漏掉了接口
 
@@ -269,59 +269,69 @@ if (OwningClass->HasAnyClassFlags(CLASS_Interface))
 // ============================================================================
 // 文件: AngelscriptRuntime/Binds/Bind_BlueprintType.cpp
 // 角色: Phase 5 —— 接口方法自动注册
-// 节选自: ~1411-1547 行（精简）
+// 节选自: ~1619-1762 行（精简）
 // ============================================================================
 extern ANGELSCRIPTRUNTIME_API void CallInterfaceMethod(class asIScriptGeneric* InGeneric);
 
-int32 TotalInterfaceMethodsBound = 0;
-TArray<FInterfaceBindEntry> InterfacesToBind;
-
-// 收集已注册为 AS 类型的 native UInterface
-for (auto& BindOrder : ClassesToBind)
+static void BindBlueprintTypeReflectionBindings(FAngelscriptBinds& Binds)
 {
-    UClass* Class = BindOrder.Class;
-    if (Class == nullptr || Class == UInterface::StaticClass()) continue;
-    if (!Class->HasAnyClassFlags(CLASS_Interface)) continue;
-    if (!Class->HasAnyClassFlags(CLASS_Native))    continue;  // ★ 仅 C++ 原生
-    if (BindOrder.ScriptType == nullptr)           continue;
-    InterfacesToBind.Add({Class, BindOrder.Type->GetAngelscriptTypeName()});
-}
+    asIScriptEngine* ScriptEngine = &Binds.GetTargetScriptEngine();
+    FAngelscriptTypeDatabase& TypeDatabase = Binds.GetTargetTypeDatabase();
+    int32 TotalInterfaceMethodsBound = 0;
+    TArray<FInterfaceBindEntry> InterfacesToBind;
 
-// Round 1: 给每个接口注册它"自己"的方法（不含父接口）
-for (auto& Entry : InterfacesToBind)
-{
-    FAngelscriptBinds Binds = FAngelscriptBinds::ExistingClass(Entry.TypeName);
-
-    for (TFieldIterator<UFunction> FuncIt(Entry.InterfaceClass, EFieldIteratorFlags::ExcludeSuper);
-         FuncIt; ++FuncIt)
+    // 收集已注册为 AS 类型的 native UInterface
+    for (auto& BindOrder : ClassesToBind)
     {
-        UFunction* Function = *FuncIt;
-        if (Function->GetOuter() == UInterface::StaticClass()) continue;
-        if (!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_BlueprintPure))
-            continue;
-        if (FAngelscriptBinds::ShouldSkipBlueprintCallableFunction(Function)) continue;
+        UClass* Class = BindOrder.Class;
+        if (Class == nullptr || Class == UInterface::StaticClass()) continue;
+        if (!Class->HasAnyClassFlags(CLASS_Interface)) continue;
+        if (!Class->HasAnyClassFlags(CLASS_Native))    continue;  // ★ 仅 C++ 原生
+        if (BindOrder.ScriptType == nullptr)           continue;
+        InterfacesToBind.Add({Class, BindOrder.Type->GetAngelscriptTypeName()});
+    }
 
-        // ... 构造 Declaration（参数 / 返回值 / const）...
+    // Round 1: 给每个接口注册它"自己"的方法（不含父接口）
+    for (auto& Entry : InterfacesToBind)
+    {
+        FAngelscriptBinds InterfaceBinds = Binds.ExistingClassForTarget(Entry.TypeName);
 
-        FInterfaceMethodSignature* Sig =
-            FAngelscriptEngine::Get().RegisterInterfaceMethodSignature(FName(*FuncName));  // ★
-        Binds.GenericMethod(Declaration, CallInterfaceMethod, Sig);                        // ★
-        ++TotalInterfaceMethodsBound;
+        for (TFieldIterator<UFunction> FuncIt(Entry.InterfaceClass, EFieldIteratorFlags::ExcludeSuper);
+             FuncIt; ++FuncIt)
+        {
+            UFunction* Function = *FuncIt;
+            if (Function->GetOuter() == UInterface::StaticClass()) continue;
+            if (!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_BlueprintPure))
+                continue;
+            if (FAngelscriptBinds::ShouldSkipBlueprintCallableFunction(Function)) continue;
+
+            // ... 构造 Declaration（参数 / 返回值 / const）...
+
+            FInterfaceMethodSignature* Sig =
+                Binds.GetTargetEngine().RegisterInterfaceMethodSignature(FName(*FuncName));  // ★
+            InterfaceBinds.GenericMethod(Declaration, CallInterfaceMethod, Sig);              // ★
+            ++TotalInterfaceMethodsBound;
+        }
+    }
+
+    // Round 2: 父接口方法继承——子接口 CopySystemType(父接口)
+    for (auto& Entry : InterfacesToBind)
+    {
+        UClass* SuperInterface = Entry.InterfaceClass->GetSuperClass();
+        if (SuperInterface == nullptr || SuperInterface == UInterface::StaticClass()) continue;
+        if (!SuperInterface->HasAnyClassFlags(CLASS_Interface))                       continue;
+
+        asITypeInfo* ChildScriptType  = ScriptEngine->GetTypeInfoByName(...);
+        asITypeInfo* ParentScriptType = ScriptEngine->GetTypeInfoByName(...);
+        if (ChildScriptType != nullptr && ParentScriptType != nullptr)
+            ChildScriptType->CopySystemType(ParentScriptType);   // ★ 让子接口"看到"父接口方法
     }
 }
 
-// Round 2: 父接口方法继承——子接口 CopySystemType(父接口)
-for (auto& Entry : InterfacesToBind)
-{
-    UClass* SuperInterface = Entry.InterfaceClass->GetSuperClass();
-    if (SuperInterface == nullptr || SuperInterface == UInterface::StaticClass()) continue;
-    if (!SuperInterface->HasAnyClassFlags(CLASS_Interface))                       continue;
-
-    asITypeInfo* ChildScriptType  = ScriptEngine->GetTypeInfoByName(...);
-    asITypeInfo* ParentScriptType = ScriptEngine->GetTypeInfoByName(...);
-    if (ChildScriptType != nullptr && ParentScriptType != nullptr)
-        ChildScriptType->CopySystemType(ParentScriptType);   // ★ 让子接口"看到"父接口方法
-}
+AS_FORCE_LINK const FAngelscriptBind Bind_BlueprintType_ReflectionBindings(
+    TEXT("BlueprintType.ReflectionBindings"),
+    EAngelscriptBindPhase::ReflectionBindings,
+    &BindBlueprintTypeReflectionBindings);
 ```
 
 **为什么是两轮**：直接走 `IncludeSuper` 会让父接口的方法被**重复注册**到子接口（`ExistingType->GetMethodByName` 检测可去重，但更省事的是先各自注册自己的、再用 `CopySystemType` 拷贝指针）。`CopySystemType` 把父接口在 AS 引擎的方法表条目"贴"到子类型的方法表上——是 AS 内核里实现 OOP 继承的标准动作。
@@ -568,7 +578,7 @@ UE 反射里 `FInterfaceProperty` 对应 C++ 的 `TScriptInterface<I>`（包含 
 
 ### 6.5 接口测试中需要 `EnsureNativeInterfaceBound` 手动触发
 
-`Bind_BlueprintType.cpp::Phase 5` 在 `Bind_Defaults` 阶段对**已 cooked 的所有 BindOrder**做扫描——这意味着只有在引擎启动时被遍历到的接口才会自动注册方法表。**测试模块新声明的 `UINTERFACE` 类型**（如 `UAngelscriptNativeParentInterface`）在 BindOrder 扫描时可能不在内，必须由测试 helper 手动补齐：
+`Bind_BlueprintType.cpp::Phase 5` 由 `BlueprintType.ReflectionBindings` 回调在外层 `ReflectionBindings` 阶段执行，并对**已 cooked 的所有 BindOrder**做扫描——这意味着只有在引擎启动时被遍历到的接口才会自动注册方法表。**测试模块新声明的 `UINTERFACE` 类型**（如 `UAngelscriptNativeParentInterface`）在 BindOrder 扫描时可能不在内，必须由测试 helper 手动补齐：
 
 ```cpp
 // ============================================================================
@@ -576,21 +586,23 @@ UE 反射里 `FInterfaceProperty` 对应 C++ 的 `TScriptInterface<I>`（包含 
 // 函数: EnsureNativeInterfaceBound（节选）
 // 节选自: ~24-125 行
 // ============================================================================
-inline void EnsureNativeInterfaceBound(UClass* InterfaceClass)
+inline void EnsureNativeInterfaceBound(
+    FAngelscriptBinds& Binds,
+    UClass* InterfaceClass)
 {
     if (InterfaceClass == nullptr || InterfaceClass == UInterface::StaticClass()) return;
     if (!InterfaceClass->HasAnyClassFlags(CLASS_Interface | CLASS_Native))        return;
 
-    auto* ScriptEngine = FAngelscriptEngine::Get().Engine;
-    if (ScriptEngine == nullptr) return;
+    asIScriptEngine& ScriptEngine = Binds.GetTargetScriptEngine();
 
     const FString TypeName = FAngelscriptType::GetBoundClassName(InterfaceClass);
 
     // 1. 注册类型（若未注册）
-    asITypeInfo* ExistingType = ScriptEngine->GetTypeInfoByName(TCHAR_TO_ANSI(*TypeName));
+    asITypeInfo* ExistingType = ScriptEngine.GetTypeInfoByName(TCHAR_TO_ANSI(*TypeName));
     if (ExistingType == nullptr)
     {
-        FAngelscriptBinds Binds = FAngelscriptBinds::ReferenceClass(TypeName, InterfaceClass);
+        FAngelscriptBinds InterfaceBinds =
+            Binds.ReferenceClassForTarget(TypeName, InterfaceClass);
         // ... CopySystemType(UObject) 让 opCast 工作 ...
     }
 
@@ -601,7 +613,7 @@ inline void EnsureNativeInterfaceBound(UClass* InterfaceClass)
     UClass* SuperInterface = InterfaceClass->GetSuperClass();
     if (SuperInterface != nullptr && SuperInterface->HasAnyClassFlags(CLASS_Interface))
     {
-        EnsureNativeInterfaceBound(SuperInterface);
+        EnsureNativeInterfaceBound(Binds, SuperInterface);
         // ChildScriptType->CopySystemType(ParentScriptType);
     }
 }
@@ -654,7 +666,7 @@ void AdjustNativeValue(int32 Delta, UPARAM(ref) int32& Value);
 | 纯 AS `interface IFoo` 编译失败 | **插件未对接** + AS 内核兼容性 | AS 内核支持，但插件未加 UClass 壳生成；当前 fork 的负面断言固化 |
 | BP 定义的接口不进 Phase 5 自动方法注册 | **插件未实现** | Phase 5 显式 `CLASS_Native` 过滤；BP 接口只走 `UClass::Interfaces` 数组层 |
 | 脚本端没有 `TScriptInterface<>` 类型 | **AS 内核约束** + 设计取舍 | AS 类型系统需要为每个 `TScriptInterface<I>` 实例化生成模板特化；当前用 UObject 单视角统一处理 |
-| 测试模块新接口需手动 `EnsureNativeInterfaceBound` | **Phase 5 时机约束** | Phase 5 在 `Bind_Defaults` 一次性扫描，后置注册的接口不在扫描范围内 |
+| 测试模块新接口需手动 `EnsureNativeInterfaceBound` | **Phase 5 时机约束** | Phase 5 在 `BlueprintType.ReflectionBindings` 回调中一次性扫描，后置注册的接口不在扫描范围内 |
 | 接口方法不能用 `BlueprintOverride` | **UE 反射约束** | `BlueprintOverride` 是 `BlueprintImplementableEvent` 的脚本端语法糖；接口方法不需要"父类名重映射"——它们的 FName 就是接口里的原名 |
 | 多重 UClass 继承不支持 | **UE 反射约束** | `UClass::SetSuperStruct` 单继承；详见 `Type_BaseClass.md` §八 |
 
@@ -687,7 +699,7 @@ void AdjustNativeValue(int32 Delta, UPARAM(ref) int32& Value);
 
 | 现象 / 报错 | 第一时间检查 | 第二时间检查 |
 |----------|-----------|-----------|
-| `Class %s implements %s, but it is not a valid UInterface.` | 名字拼写、`U` 前缀大小写、对应 C++ 类是否带 `UINTERFACE()` 标注 | 该接口是否在 `Bind_BlueprintType` 的 BindOrder 中（即 `Bind_Defaults` 时是否可见） |
+| `Class %s implements %s, but it is not a valid UInterface.` | 名字拼写、`U` 前缀大小写、对应 C++ 类是否带 `UINTERFACE()` 标注 | 该接口是否在 `Bind_BlueprintType` 的 BindOrder 中（即 `BlueprintType.ReflectionBindings` 回放时是否可见） |
 | `Class %s implements interface %s but is missing required method '%s'.` | 脚本类有没有同名 UFUNCTION（FName 必须完全匹配，包括大小写） | 接口方法是否是 `BlueprintImplementableEvent`（无 `_Implementation`），脚本必须实现；若是 `BlueprintNativeEvent`，脚本不写时也会通过校验（默认走 `_Implementation`） |
 | 脚本端 `Iface.Foo()` 编译期 "no method named Foo" | Phase 5 是否注册了该方法（log 含 `[Interface] Auto-registered N methods`） | 该接口是否 `CLASS_Native`（BP 接口不进 Phase 5）；测试场景下是否已 `EnsureNativeInterfaceBound` |
 | 脚本写 `interface IMyThing { ... }` 编译失败 | 当前 fork **不支持** AS 原生接口接通 UE | 改用 C++ `UINTERFACE()` 定义，脚本侧只实现 |
@@ -703,7 +715,7 @@ void AdjustNativeValue(int32 Delta, UPARAM(ref) int32& Value);
 
 - **脚本作为接口"实现者"的能力是完整的**：单接口、多接口、继承接口、`Cast` 取得引用、调用方法、ref 参数双向、C++ `Execute_` 反向调用——全部由 6 个 Functional/Interface 测试 + 1 个 ClassGenerator 测试覆盖，无 Disabled。
 - **脚本作为接口"声明者"的能力被刻意移除**：`UINTERFACE()` 不可用（`EChunkType` 无 Interface），纯 AS `interface IFoo` 当前 fork 编译失败（负面断言固化在 `FAngelscriptInheritanceInterfaceTest`）。这条路径不是技术不可达，而是设计取舍：**消费端用 C++ 已存在的契约就行**。
-- **Phase 5 是接口能用的核心**：`Bind_BlueprintType.cpp::~1405-1547` 在 `Bind_Defaults` 阶段一次性扫描所有 BindOrder 中的 `CLASS_Native | CLASS_Interface` UClass，逐方法 `GenericMethod(CallInterfaceMethod, FInterfaceMethodSignature*)` 注册——**这是接口方法可调用的唯一注册入口**。BP 接口、运行期后置注册的接口需手动 `EnsureNativeInterfaceBound` 兜底。
+- **Phase 5 是接口能用的核心**：`Bind_BlueprintType.cpp` 的 `BlueprintType.ReflectionBindings` 回调在外层 `ReflectionBindings` 阶段一次性扫描所有 BindOrder 中的 `CLASS_Native | CLASS_Interface` UClass，逐方法 `GenericMethod(CallInterfaceMethod, FInterfaceMethodSignature*)` 注册——**这是接口方法可调用的唯一注册入口**。BP 接口、运行期后置注册的接口需手动 `EnsureNativeInterfaceBound` 兜底。
 - **接口方法不共享 BlueprintEvent thunk**：普通 `BlueprintEvent` 的 Sig 在编译期一对一绑死 UnrealFunction*；接口方法的 Sig 仅记 FName，调用时再到具体对象上 `FindFunction`——这是为了让同一签名服务任意实现该接口的对象（脚本/native/BP 三种）。两条路径共享的只是后端 `InvokeReflectionFallbackFromGenericCall`。
 - **接口方法不需要 `BlueprintOverride` 修饰符**——这与 `BeginPlay` / `Tick` 等覆盖父类 `BlueprintImplementableEvent` 的写法是**两种不同的语义**：接口方法用 FName 直查 `FuncMap` 命中即可，不走"父类同名方法名重映射"路径。
 - **多重 UClass 继承不支持是 UE 反射的硬约束**，与本文讨论的接口能力无直接关系；详见 `Type_BaseClass.md` §八。本文聚焦的是"在单父类基础上叠加 N 个接口"的现状，这条路径已稳定。

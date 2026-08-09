@@ -1,5 +1,7 @@
 # Angelscript Bind/Free Completeness Verification
 
+> Historical measurement report: instrumentation names and source locations below describe the pre-2026-08 direct-callback refactor. Current ownership and replay terminology is documented in `ASBindAllocationInventory.md` and `ASFullEngineRebindOverhead.md`; the memory conclusions remain historical evidence.
+
 > Companion to `ASTestSuiteMemoryPeakRootCause.md` and `ASFullEngineRebindOverhead.md`.
 > Question driven by the user: *"Are you sure ALL the memory really gets freed
 > when the test harness destroys an Angelscript engine?"*

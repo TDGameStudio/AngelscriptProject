@@ -230,7 +230,7 @@ void Demo(FQualifiedFrameTime Frame)
 }
 ```
 
-**这就够了**——你不需要写任何 `Bind_*.cpp`、不需要修改 Build.cs、不需要在脚本里 import 任何东西。插件启动时 `Bind_Defaults` 阶段自动扫到这条 meta 并完成注入。
+**这就够了**——你不需要写任何 `Bind_*.cpp`、不需要修改 Build.cs、不需要在脚本里 import 任何东西。插件启动时会在 `BlueprintType.ReflectionBindings` 回调中扫描这条 meta，并在外层 `ReflectionBindings` 阶段完成注入。
 
 ### 3.2 含 `this` 写操作：const vs 非 const
 
@@ -767,7 +767,7 @@ void Example_MixinMethod()
 
 7. **mixin 对 USTRUCT method 是首选路径** —— 因为 UHT 不为 USTRUCT 上的 UFUNCTION 自动生成绑定，加 mixin 比手写 `Bind_<Type>.cpp` 简单得多。
 
-8. **改 mixin 库后必须 rebuild C++** —— ScriptMixin meta 的注入发生在 `Bind_Defaults` C++ 静态初始化期，**没有热重载**。改了 helper header 一定要重启编辑器或 rebuild + Live Coding。
+8. **改 mixin 库后必须 rebuild C++** —— ScriptMixin meta 由已封存的 binding callback 在每个引擎的 `ReflectionBindings` 阶段重放，**没有运行期 callback 热替换**。改了 helper header 后需要重新编译 C++，并重启编辑器；仅重载脚本不会更新这组元数据。
 
 9. **mixin 函数会出现在蓝图节点面板** —— 当前 fork 把 helper 标为 `BlueprintCallable`，副作用是蓝图编辑器里多出节点。不想被看见就给目标 mixin 单加 `Meta=(BlueprintInternalUseOnly)` 或迁移到非蓝图通路（成本较高）。
 

@@ -1,14 +1,14 @@
 # RT_GlobalState — 全局状态治理
 
 > **所属前缀**: RT_（运行时子系统族）
-> **关注层面**: 全局/进程级状态的盘点、读写规则、隔离策略与 Test 复位协议（不重写 `Arch_RuntimeLifecycle.md` 的三层架构总览，也不重写 `Type_BindSystem.md` 的 `FBind` 单例细节，专注 "插件中"哪些是全局、为什么是全局、谁来清"这件事）
+> **关注层面**: 全局/进程级状态的盘点、读写规则、隔离策略与 Test 复位协议（不重写 `Arch_RuntimeLifecycle.md` 的三层架构总览，也不重写 `Type_BindSystem.md` 的 callback collection 细节，专注 "插件中"哪些是全局、为什么是全局、谁来清"这件事）
 > **关键源码**:
 > `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h` (~46 KB，`FAngelscriptEngine` / `FAngelscriptEngineContextStack` / `FAngelscriptEngineScope` / `FAngelscriptGameThreadScopeWorldContext`)
 > · `AngelscriptRuntime/Core/AngelscriptEngine.cpp` (~3000+ 行，`GAngelscriptEngineContextStack` / `GAmbientWorldContext` / `AssignWorldContext` / `TryGetCurrentEngine`)
 > · `AngelscriptRuntime/Core/AngelscriptRuntimeModule.cpp` (~109 行，`bInitializeAngelscriptCalled` / `OwnedPrimaryEngine`)
 > · `AngelscriptRuntime/Core/AngelscriptSubsystem.cpp`（生产 Subsystem 的 ambient-engine 采用与 owned-engine 生命周期）
 > · `AngelscriptRuntime/Core/AngelscriptGameInstanceSubsystem.cpp` (~120 行，`ActiveTickOwners`)
-> · `AngelscriptRuntime/Core/AngelscriptBinds.h` / `.cpp`（`GetBindArray` Meyers' singleton、`FAngelscriptBindState` per-engine）
+> · `AngelscriptRuntime/Core/AngelscriptBinds.h` / `.cpp`（sealed callback collection、`FAngelscriptBindState` per-engine）
 > · `AngelscriptRuntime/ClassGenerator/ASClass.cpp` (~3000+ 行，`GIsInAngelscriptThreadSafeFunction` / `GIsAngelscriptWorldContextAvailable` thread_local，`UASClass::OverrideConstructingObject`)
 > · `AngelscriptTest/Shared/AngelscriptTestUtilities.h` (~1094 行，`FScopedTestWorldContextScope` / `AcquireCleanSharedCloneEngine` / `DestroySharedTestEngine` 复位协议)
 > · `Documents/Guides/GlobalStateContainmentMatrix.md` — 全局状态分类基线
@@ -16,7 +16,7 @@
 > `Documents/Knowledges/ZH/Arch_RuntimeLifecycle.md` — 三层架构总览（本文沿用其骨架，不重复）
 > · `Documents/Knowledges/ZH/RT_HotReload.md` — HotReload 与 ContextStack 的复用边界
 > · `Documents/Knowledges/ZH/RT_StateDump.md` — Dump 的 27 张表分别对应哪一类全局状态
-> · `Documents/Knowledges/ZH/Type_BindSystem.md` — 全局 `FBind` 队列的进程级单例语义
+> · `Documents/Knowledges/ZH/Type_BindSystem.md` — 全局 callback collection 的进程级单例语义
 > · `Documents/Knowledges/ZH/AS_ScriptEngine.md` — `asCThreadManager` / TLS 的内核侧来源
 > · `Documents/Guides/GlobalStateContainmentMatrix.md` — `P5.1` / `P5.2` containment 决策基线
 
@@ -34,7 +34,7 @@
 
     ┌─────────────────────────────────────────────────────────────────┐
     │  Level 0 — 进程单例（procedural / static, 与 Engine 实例无关）  │
-    │  · FAngelscriptBinds::GetBindArray() Meyers singleton  ← Type_  │
+    │  · FAngelscriptBind sealed callback collection         ← Type_  │
     │  · GAngelscriptRecompileAvoidance / GAngelscriptLineReentry     │
     │  · FAngelscriptEngine::GameThreadTLD / bStaticJITTranspiled...  │
     │  · GAngelscriptPackageRefCount / GAngelscriptAssetsPackageRefCount│
@@ -69,7 +69,7 @@
 
 四个层级回答四个不同问题：
 
-- **Level 0**：链接器/进程加载就存在，与 `FAngelscriptEngine` 无关。多 Engine 并存时这些是**共享**的——典型例子是 `FBind` 全局队列。
+- **Level 0**：链接器/进程加载就存在，与 `FAngelscriptEngine` 无关。多 Engine 并存时这些是**共享**的——典型例子是已封存的 binding callback collection。
 - **Level 1**：进程级，但通过 RAII Scope 在每次"切换当前 Engine / 当前 World"时被推入/弹出。这是本文的重点。
 - **Level 2**：跨线程独立。每条线程一份 `FAngelscriptContextPool`，与 AS 内核的 `asCThreadManager` 配对。
 - **Level 3**：明确属于某个 `FAngelscriptEngine` 实例，多实例并存时各占一份。本文章只用以反衬"什么不该全局"。
@@ -82,32 +82,33 @@
 
 这一层的状态在 `IMPLEMENT_MODULE` 之前就已经被链接器初始化或在第一次访问时被 Meyers' singleton 创建。它们**与 `FAngelscriptEngine` 实例无关**——同一进程里 100 个 Engine 共享同一份。
 
-### 1.1 全局 `FBind` 注册队列
+### 1.1 全局 binding callback collection
 
-`Type_BindSystem.md` 已经把这件事讲完，简言之：
+`Type_BindSystem.md` 已经把这件事讲完，简言之：每个 provider 通过 file-static `FAngelscriptBind` 追加一个带明确 phase 和来源信息的紧凑 callback record；启动协调器在创建主引擎前加载 bind modules，并对唯一 collection 做 validate、stable sort 和 seal。
 
 ```cpp
 // ============================================================================
 // 文件: AngelscriptRuntime/Core/AngelscriptBinds.cpp
-// 函数: GetBindArray（Meyers' singleton，进程级唯一）
+// 角色: file-static callback（进程级 collection 唯一）
 // ============================================================================
-static TArray<FBindFunction>& GetBindArray()
+static void BindFVectorManualBindings(FAngelscriptBinds& Binds)
 {
-    static TArray<FBindFunction> BindArray;   // ★ 进程级唯一
-    return BindArray;
+    FAngelscriptBinds Type = Binds.ValueClassForTarget<FVector>("FVector");
+    Type.Method("bool IsNearlyZero(float Tolerance = KINDA_SMALL_NUMBER) const",
+        &FAngelscriptFVectorBinds::IsNearlyZero);
 }
 
-void FAngelscriptBinds::RegisterBinds(FName BindName, int32 BindOrder, TFunction<void()> Function)
-{
-    GetBindArray().Add({ ... });
-}
+AS_FORCE_LINK const FAngelscriptBind Bind_FVector_ManualBindings(
+    TEXT("FVector.ManualBindings"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFVectorManualBindings);
 ```
 
-`Bind_*.cpp` 的 121 个文件顶部 `AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FVector(...)` 在 DLL 加载时注册到这张数组。**全局只读**：每个 `FAngelscriptEngine::Initialize()` 进入 `BindScriptTypes()` 时都会重放整张数组（按 `EOrder` 升序），但写操作只发生在静态构造期。
+collection 封存后是**全局只读**的，顺序由七个固定 phase 和同 phase 的稳定键决定。每个 `FAngelscriptEngine::Initialize()` 进入 `BindScriptTypes()` 时，都用面向该引擎构造的 `FAngelscriptBinds&` 重放同一 backing collection；不再每个 Engine 复制或重新排序。
 
 **多 Engine 并存的语义**：
-- Engine A 与 Engine B 都会调 `CallBinds(...)`，两份各自跑一遍同一组 `FBindFunction::Function`。
-- `Function` 内部用 `FAngelscriptEngine::TryGetCurrentEngine()` 拿到"当前正在 init 的引擎"，因此能把绑定结果（types、global functions、global properties）写到正确的引擎实例。
+- Engine A 与 Engine B 各自执行一次 `FAngelscriptBind::ExecuteRegisteredBinds(...)`，但复用同一组 callback records。
+- callback 接收显式 `FAngelscriptBinds&`，通过 target engine、target AS engine、TypeDatabase、BindDB 等 accessor 写入选定实例；binding mutation 不依赖 ambient/current-engine fallback。
 
 ### 1.2 引擎全局 CVar 与重入哨兵
 
@@ -521,7 +522,7 @@ static thread_local UObject* GASDefaultConstructorOuter = nullptr;
 | `GAngelscriptEngineContextStack` | Level 1 | 同一栈，按生命周期串行 push | 每个 Test 走一次 SnapshotAndClear/Restore |
 | `GAmbientWorldContext` | Level 1 | 跟随栈顶 Engine 自动同步 | 每个 Test 用 `FScopedTestWorldContextScope` |
 | `ActiveTickOwners` | Level 1 | PIE 启停时 ++/-- | Test 中通常 == 0（无 GameInstance） |
-| `GetBindArray()` | Level 0 | 共享只读 | 共享只读 |
+| sealed bind callbacks | Level 0 | 共享只读 | 共享只读 |
 | `FAngelscriptEngine::GameThreadTLD` | Level 0 | 共享（指向同一 AS thread manager 槽） | 共享 |
 | `FAngelscriptEngine::WorldContextObject` | Level 3 | 各占一份 | 各占一份 |
 | `FAngelscriptEngine::BindState` | Level 3 | 各占一份 | 各占一份 |
@@ -815,7 +816,7 @@ void FAngelscriptRuntimeModule::ResetInitializeStateForTesting()
 | `GAngelscriptEngineContextStack` | `EngineOverview.csv` | `ContextStackDepth` 字段 |
 | `GAmbientWorldContext` | `EngineOverview.csv` | `AmbientWorldContext` 字段 |
 | `ActiveTickOwners` | `EngineOverview.csv` | `TickOwners` 字段 |
-| `GetBindArray()` | `BindRegistrations.csv` | 完整 BindName/BindOrder 表 |
+| sealed callback collection | `BindRegistrations.csv` | 完整 owner/name/phase/source 表 |
 | `FAngelscriptEngine::TypeDatabase` | `RegisteredTypes.csv` | per-engine 反射类型 |
 | `FAngelscriptEngine::BindState::BindModuleNames` | `BindModules.csv` | per-engine bind module 列表 |
 | `bInitializeAngelscriptCalled` | `EngineOverview.csv` | `InitializeAngelscriptCalled` 字段 |
@@ -825,8 +826,8 @@ void FAngelscriptRuntimeModule::ResetInitializeStateForTesting()
 
 ### 7.3 与 `Type_BindSystem.md` 的边界
 
-- 本文负责"`GetBindArray()` 是 Level 0 进程单例"这件**事实**。
-- `Type_BindSystem.md` 负责"`FBind` 单例怎么写、6 个重载、CallBinds 的执行顺序"等**机制**细节。
+- 本文负责"sealed callback collection 是 Level 0 进程单例"这件**事实**。
+- `Type_BindSystem.md` 负责 `FAngelscriptBind` 怎么写、七 phase 顺序、显式 target facade 与 fluent bound result 等**机制**细节。
 - `FAngelscriptBindState` 是 per-engine（Level 3），由 `BindState = MakeUnique<FAngelscriptBindState>()` 在 `Initialize_AnyThread` 里创建。多 Engine 各占一份 BindState，不会窜流。
 
 ---
@@ -855,7 +856,7 @@ AngelscriptEngine.cpp:GAngelscriptEngineContextStack
 `Tick` 末尾 `UE_CLOG(... Fatal, ...)` 的 crash 通常意味着某段业务代码切了 World 没还原。定位顺序：
 1. 把 `LogAngelscript` log level 调到 `VeryVerbose`，看 `[EngineScope] Push/Pop` 的栈深变化。
 2. grep 调用 `AssignWorldContext(...)` 的非 RAII 调用点——必须用 `FAngelscriptEngineScope` 或 `FAngelscriptGameThreadScopeWorldContext`。
-3. 检查 `Bind_*.cpp` 是否漏调 `SetPreviousBindRequiresWorldContext(true)`（详见 `GlobalStateContainmentMatrix.md` §2）。
+3. 检查 `Bind_*.cpp` 的目标函数结果是否漏链 `.RequiresWorldContext()`（详见 `GlobalStateContainmentMatrix.md` §2）；不要用“最近一次绑定”之类的隐式状态补 trait。
 
 ### 8.3 Test 残余调试
 
@@ -878,8 +879,8 @@ Test 中的"上一个 Spec 留下垃圾"：
    - 反例：早期把 `bGeneratePrecompiledData` 写成 file-static，导致 PIE 期间 StaticJIT 误以为 Editor 状态。修复后挪回 `FAngelscriptEngine` 实例字段（详见 `GlobalStateContainmentMatrix.md` §6）。
    - 正例：`BindState` / `TypeDatabase` 都是 per-engine 的 `TUniquePtr<>`。
 
-3. **"进程一次性"的事情才能走 Meyers' singleton**
-   - `GetBindArray()` 是合法的——`FBind` 静态构造期就把绑定登记好，整个进程不会改。
+3. **"进程一次性"的事情才能走 process collection**
+   - sealed binding callback collection 是合法的——file-static `FAngelscriptBind` 在 module load 期间登记，启动前统一 seal，之后整个进程不再改。
    - 反例（已修复）：早期把"已绑定 FName cache"放到 Meyers' singleton，多 Engine 时新 Engine 拿到的是上一个 Engine 的缓存。
 
 4. **Test 注入点用 `WITH_DEV_AUTOMATION_TESTS` 严格门控**
@@ -910,7 +911,7 @@ Test 中的"上一个 Spec 留下垃圾"：
 | `GIsAngelscriptWorldContextAvailable` | `bool` | thread_local (Editor) | `ASClass.cpp:41` | `SetAmbientWorldContext` | `default` 语句执行 |
 | `GASDefaultConstructorOuter` | `UObject*` | thread_local | `ASClass.cpp:1011` | default 构造闭包 push | default 构造闭包 read |
 | `UASClass::OverrideConstructingObject` | `UObject*` | static class | `ASClass.cpp:37` | 构造期 push | 构造期 read |
-| `GetBindArray()` | `TArray<FBindFunction>` | Meyers' singleton | `AngelscriptBinds.cpp:142` | `FBind` 静态构造 | `CallBinds` |
+| sealed bind callbacks | compact callback records | Process collection | `AngelscriptBinds.cpp` | `FAngelscriptBind` 静态构造、startup seal | 每个 Engine 的 direct replay |
 
 ---
 
@@ -937,9 +938,9 @@ Test 中的"上一个 Spec 留下垃圾"：
    - 含义：上一个 Spec 没正确析构 Fixture，shared engine 的 ActiveModules 没 reset。
    - 排查：spec 入口加 `AcquireFreshSharedCloneEngine()` 替代 `AcquireCleanSharedCloneEngine()`；或检查 Fixture 的析构是否被异常吞掉。
 
-6. **多 Engine Test 中 `BindArray` 行为反常**
-   - 含义：试图在 Test 中向 `GetBindArray()` 追加新条目（不该这么做——`FBind` 是静态构造期登记）。
-   - 排查：用 `FAngelscriptBindDatabase`（per-engine, Level 3）而不是改 `BindArray`（process, Level 0）。
+6. **多 Engine Test 中 callback collection 行为反常**
+   - 含义：试图在 seal 后追加新 `FAngelscriptBind`（普通 provider 只允许在 module-load/static-construction 窗口登记）。
+   - 排查：不要用动态 provider 修改 process collection；测试数据写入显式目标 Engine 的 `FAngelscriptBindDatabase` 或其他 engine-owned store。需要增加原生 provider 时，重新编译并重启进程。
 
 7. **`bInitializeAngelscriptCalled == true` 阻断 Test 二次 Bootstrap**
    - 含义：Test 想模拟"再次 Bootstrap"但哨兵卡住。

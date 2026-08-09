@@ -221,11 +221,13 @@ else if (Function->HasMetaData(NAME_ScriptCallable))
 
 `InType` 就是 `ClassName` 解析出的目标 `FAngelscriptType`，这一步把"原本属于 BlueprintFunctionLibrary 的 static UFUNCTION"挂载成"目标类型的成员方法"。
 
-注意 `else if (HasMetaData(NAME_ScriptCallable))` 这条分支——它是 Hazelight 风格的"脚本可见但蓝图不可见"通路：函数即使没有 `BlueprintCallable` 也能通过 `ScriptCallable` meta 进入脚本反射。当前 fork 的 `FunctionLibraries/` 大量保留了 Hazelight 上游对照位置但**整体改写成了 `BlueprintCallable`**（详见 §六），所以这条 `ScriptCallable` 分支在 runtime 上**实际命中很少**，主要在 native 层（`UObjectInWorld.h` / `UObjectTickable.h`）和 editor 层（`AssetToolsStatics.h` / `EditorStatics.h`）使用。
+注意 `else if (HasMetaData(NAME_ScriptCallable))` 这条分支——它是 Hazelight 风格的"脚本可见但蓝图不可见"通路：函数即使没有 `BlueprintCallable` 也能通过 `ScriptCallable` meta 进入脚本反射。当前 fork 的 `FunctionLibraries/` 大量保留了 Hazelight 上游对照位置但**整体改写成了 `BlueprintCallable`**（详见 §六），因此这条 `ScriptCallable` 分支在 runtime 上**实际命中很少**，现有已知使用点主要在 editor 层（`AssetToolsStatics.h` / `EditorStatics.h`）。
 
 ### 2.4 `Bind_FunctionLibraryMixins.cpp` 阶段：补漏与冲突回避
 
-`ScriptMixin` meta 路径在 `EOrder::Late+100` 自动注册（`Bind_BlueprintType.cpp` 内部的 `Bind_Defaults`）。但有些方法签名（含 `out` 引用、特殊 wrapper、需要直接 lambda 的形式）不适合走纯反射路径，由 `Bind_FunctionLibraryMixins.cpp`（`EOrder::Late+110`）补充——这是 mixin 的第三种触发路径，在 §三.3.3 单独展开。
+`ScriptMixin` meta 路径在 `EAngelscriptBindPhase::ReflectionBindings` 自动注册。有些方法签名（含 `out` 引用或特殊
+wrapper）不适合走纯反射路径，由 `Bind_FunctionLibraryMixins.cpp` 的 `PostReflectionBindings` callback 补充——这是
+mixin 的第三种触发路径，在 §三.4 单独展开。
 
 ---
 
@@ -286,34 +288,54 @@ UE 5.7 升级后 UHT 不再把函数级 `ScriptMethod` 元数据传播到类级 
 
 ### 3.4 方式 4：`Bind_*.cpp` 手动 `Method(...)` 注册（路径②补漏）
 
-适用于含 `out` 引用、需要 lambda wrapper、或有冲突需要幂等检查的场景。`Bind_FunctionLibraryMixins.cpp:47-75` 是典型样板：
+适用于含 `out` 引用、需要具名 wrapper、或有冲突需要幂等检查的场景。当前写法是具名 callback 接收明确的
+`FAngelscriptBinds&`，并在 `PostReflectionBindings` 阶段补充反射未覆盖的表面：
 
 ```cpp
-auto RuntimeFloatCurve_ = FAngelscriptBinds::ExistingClass("FRuntimeFloatCurve");
-asITypeInfo* RuntimeFloatCurveType = RuntimeFloatCurve_.GetTypeInfo();
-if (!RuntimeFloatCurve_.HasMethod(TEXT("AddDefaultKey")))
+namespace
 {
-    RuntimeFloatCurve_.Method(
-        "void AddDefaultKey(float32 InTime, float32 InValue)",
-        [](FRuntimeFloatCurve* Target, float InTime, float InValue)
-        {
-            URuntimeFloatCurveMixinLibrary::AddDefaultKey(*Target, InTime, InValue);
-        });
-}
-// ...
-RuntimeFloatCurve_.Method(
-    "void GetTimeRange(float32&out MinTime, float32&out MaxTime) const",
-    [](const FRuntimeFloatCurve* Target, float& MinTime, float& MaxTime)
+void BindRuntimeFloatCurveMixins(FAngelscriptBinds& Binds)
+{
+    auto RuntimeFloatCurve_ = Binds.ExistingClassForTarget("FRuntimeFloatCurve");
+    asITypeInfo* RuntimeFloatCurveType = RuntimeFloatCurve_.GetTypeInfo();
+    if (!RuntimeFloatCurve_.HasMethod(TEXT("AddDefaultKey")))
     {
-        URuntimeFloatCurveMixinLibrary::GetTimeRange(*Target, MinTime, MaxTime);
-    });
+        RuntimeFloatCurve_.Method(
+            "void AddDefaultKey(float32 InTime, float32 InValue)",
+            &FAngelscriptFunctionLibraryMixinsBinds::AddRuntimeFloatCurveKey);
+    }
+
+    if (RuntimeFloatCurveType == nullptr
+        || RuntimeFloatCurveType->GetMethodByDecl(
+            "void GetTimeRange(float32&out MinTime, float32&out MaxTime) const") == nullptr)
+    {
+        RuntimeFloatCurve_.Method(
+            "void GetTimeRange(float32&out MinTime, float32&out MaxTime) const",
+            &FAngelscriptFunctionLibraryMixinsBinds::GetRuntimeFloatCurveTimeRange);
+    }
+
+    FAngelscriptBinds::FNamespace Namespace(
+        Binds.GetTargetEngine(),
+        "URuntimeFloatCurveMixinLibrary");
+    Binds.BindGlobalFunctionForTarget(
+        "void GetTimeRange(const FRuntimeFloatCurve& Target, float32&out MinTime, float32&out MaxTime)",
+        &FAngelscriptFunctionLibraryMixinsBinds::GetRuntimeFloatCurveTimeRangeGlobal);
+}
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_RuntimeFloatCurveMixins(
+    TEXT("RuntimeFloatCurveMixins.PostReflection"),
+    EAngelscriptBindPhase::PostReflectionBindings,
+    &BindRuntimeFloatCurveMixins);
 ```
 
 要点：
 
-- `ExistingClass(name).Method(decl, lambda)` 直接挂成员方法。
-- `HasMethod(...)` / `GetMethodByDecl(...)` 在前面做幂等检查——因为 `ScriptMixin` meta 路径已经在 `EOrder::Late+100` 注册过基础函数，本文件运行在 `EOrder::Late+110` 是补漏，必须避开重复注册（`asALREADY_REGISTERED -13` 错误）。
-- 也可以同时用 `FAngelscriptBinds::FNamespace` + `BindGlobalFunction(...)` 让脚本既能 `Curve.GetTimeRange(...)` 又能 `URuntimeFloatCurveMixinLibrary::GetTimeRange(Curve, ...)` 双向调用。
+- `Binds.ExistingClassForTarget(name).Method(...)` 只修改 callback 对应的目标 engine。
+- `ReflectionBindings` 已经处理 `ScriptMixin` meta；`PostReflectionBindings` callback 用 `HasMethod(...)` /
+  `GetMethodByDecl(...)` 做幂等检查，避免重复注册（`asALREADY_REGISTERED -13`）。
+- `FNamespace(Binds.GetTargetEngine(), ...)` 与 `Binds.BindGlobalFunctionForTarget(...)` 可以让脚本同时使用成员方法和
+  `URuntimeFloatCurveMixinLibrary::GetTimeRange(Curve, ...)` 命名空间形式。
 
 ---
 
@@ -410,7 +432,11 @@ RuntimeFloatCurve_.Method(
 后续若要重启被关闭的 `//UCLASS(Meta = (ScriptMixin = "..."))`，必须先**审计每个文件的实际 AS 注入路径**——`Plan_FunctionLibrariesCleanup.md` Phase 4 实测验证了**四类不同状态**：
 
 - **类 1：已被 `Bind_*.cpp` 手工 lambda 接管**（fork 历史形态，2026-04-28 P4.4 已迁移完毕、当前实例数为 0）。历史典型例子是 `AngelscriptWorldLibrary.h` × `Bind_UWorld.cpp:79-82`：fork 早期用 `UWorld_.Method("TArray<ULevelStreaming> GetStreamingLevels() const", [...] { return UAngelscriptWorldLibrary::GetStreamingLevels(World); })` 显式注册成员方法、关闭 ScriptMixin meta，目的是强制 AS 端签名为 `TArray<ULevelStreaming>` 而非反射推导的 `TArray<ULevelStreaming@>`。**P4.4 实测结论**：删除手工 lambda + 重启 ScriptMixin 后 AS 调用 `World.GetStreamingLevels().Num()` / `[i] != Expected` 等用法零回归（2 个 WorldStreaming 测试 PASS），手工 lambda 是**冗余的历史包袱**——fork 已处理 `TObjectPtr` 路由，UObject 容器在 AS 中按引用语义传递，`@` 与无 `@` 形式在调用语义上等价。fork 现状：World 已切回 Hazelight 上游形态（`UCLASS(Meta = (ScriptMixin = "UWorld"))` + 无 `Bind_UWorld.cpp` 接管）。未来若有新文件被引入手工 lambda 模式，应重做"是否真有签名差异需求"的评估。
-- **类 1.5：`Bind_*.cpp` UHT 重载消歧 helper（fork 独有 / 非接管）**。`Bind_*.cpp` 仅含 `FAngelscriptBinds::RegisterFunctionBinding` + `ERASE_FUNCTION_PTR` 形态，注释自陈"UHT marks these wrappers overloaded-unresolved, so register the exact signatures before the generated function table falls back to reflective dispatch"。这条路径只是补充函数指针表（让 UHT 生成的反射函数表知道精确指针），它**不**注册 AS 成员方法 —— 跟 ScriptMixin 反射注入路径正交、可共存。典型例子：`InputComponentScriptMixinLibrary.h` × `Bind_InputComponentScriptMixins.cpp:6-26`。**P4.3 实测结论**：3 处类 1.5 锚点（UInputComponent / APlayerController / UPlayerInput）启用 ScriptMixin 后零回归，UHT 重载消歧 helper 与 mixin 注入并存正常工作。
+- **类 1.5：`Bind_*.cpp` UHT 重载消歧 helper（fork 独有 / 非接管）**。`ManualBindings` callback 通过
+  `Binds.RegisterFunctionBindingForTarget(...)` + `ERASE_FUNCTION_PTR` 补充精确函数指针，使随后执行的
+  `GeneratedBindings` 不必退到 reflective dispatch。这条路径不注册 AS 成员方法，跟 `ScriptMixin` 的
+  `ReflectionBindings` 正交、可共存。典型例子是 `InputComponentScriptMixinLibrary.h` ×
+  `Bind_InputComponentScriptMixins.cpp`。
 - **类 2：走 `BlueprintCallableReflectiveFallback` 反射兜底**（fork 内当前实例数为 0）。理论上：函数没有 native function pointer entry，由 `Bind_BlueprintCallable.cpp:74-91` 的 `BindBlueprintCallableReflectiveFallback` 接住。**P4.1 审计结论**：fork 候选 5 个文件（Math / Hit / TagContainer / Tag / AssetMgr）的 static 函数都是 `.h` 内 inline 实现、native function pointer 始终有效 —— 全部不会走 ReflectiveFallback。本类暂无实例。
 - **类 3：仅静态命名空间形式可见**。函数没被任何路径绑定为成员方法，AS 脚本里只能写 `Lib::Func(target, ...)`。**P4.x 实测进一步细分两个亚类**：
   - **类 3 净增益**（fork 测试 / 脚本用 `target.Func(...)` 实例形式）：HitResult / Tag / TagContainer / AssetMgr 共 4 处文件 / 5 处锚点，2026-04-28 P4.2 / P4.3 重启后零回归，对齐 Hazelight 上游。
@@ -451,8 +477,8 @@ P4.x 历史实施进度（2026-04-28）曾为 **16 处锚点中 8 处已重启 /
 | `Binds/Helper_FunctionSignature.h` | `32` | `NAME_Signature_ScriptMethod`（UE 5.7 增量） |
 | `Binds/Helper_FunctionSignature.h` | `329-404` | 第 0 参数剥离 + `ClassName` 改写核心逻辑 |
 | `Binds/Bind_BlueprintType.cpp` | `46`、`1321` | `NAME_ScriptCallable` 通路 |
-| `Binds/Bind_BlueprintType.cpp` | `1325-...` | `Bind_Defaults` `EOrder::Late+100` 自动 mixin 注册 |
-| `Binds/Bind_FunctionLibraryMixins.cpp` | `9-117` | `EOrder::Late+110` 手动 `Method()` 补漏样板 |
+| `Binds/Bind_BlueprintType.cpp` | `BindBlueprintTypeReflectionBindings` | `ReflectionBindings` 自动 mixin 注册 |
+| `Binds/Bind_FunctionLibraryMixins.cpp` | `BindFunctionLibraryMixins` | `PostReflectionBindings` 手动补漏样板 |
 | `FunctionLibraries/AngelscriptFrameTimeMixinLibrary.h` | 全文 | 单目标 `ScriptMixin` 最简模板 |
 | `FunctionLibraries/RuntimeFloatCurveMixinLibrary.h` | `16-17` | 多目标 `ScriptMixin = "FRuntimeFloatCurve UCurveFloat"` |
 | `FunctionLibraries/GameplayTagQueryMixinLibrary.h` | `13-38` | 启用状态的多函数 mixin 模板 |

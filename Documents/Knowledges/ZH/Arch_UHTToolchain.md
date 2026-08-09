@@ -1,7 +1,7 @@
 # Arch_UHTToolchain — UHT 工具链位置与边界
 
 > **所属前缀**: Arch_（插件总体架构族）
-> **关注层面**: 站在"构建期 vs 运行期"边界外侧看 `AngelscriptUHTTool` 这套 C# UBT plugin——读什么 C++ 头、产出哪些文件、怎么被 `AngelscriptRuntime` 模块消费、与手写 `Bind_*.cpp` 形成什么样的两层关系；不深入单个 `FBind` 内部如何把签名翻译成 `asITypeInfo*`（那是 `Type_BindSystem.md` / `AS_TypeRegistration.md` 的职责），也不深入反射 fallback 的具体绑定算法（那是 `Type_FunctionCaller.md` 的职责）
+> **关注层面**: 站在"构建期 vs 运行期"边界外侧看 `AngelscriptUHTTool` 这套 C# UBT plugin——读什么 C++ 头、产出哪些文件、怎么被 `AngelscriptRuntime` 模块消费、与手写 `Bind_*.cpp` 形成什么样的两层关系；不深入单个 `FAngelscriptBind` callback 如何把签名翻译成 `asITypeInfo*`（那是 `Type_BindSystem.md` / `AS_TypeRegistration.md` 的职责），也不深入反射 fallback 的具体绑定算法（那是 `Type_FunctionCaller.md` 的职责）
 > **关键源码**:
 > `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptUHTTool.ubtplugin.csproj` (~54 行，UBT plugin 项目文件)
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingExporter.cs` (~173 行，`[UhtExporter]` 入口)
@@ -13,7 +13,7 @@
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCleanup.cs`（UHT 产物清理）
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionSignatureBuilder.cs` (~135 行，签名抽取)
 > · `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptHeaderSignatureResolver.cs` (~772 行，重载消歧 / API 宏识别)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` (~600+ 行，`RegisterFunctionBinding` / `FAngelscriptFunctionBinding` 消费面)
+> · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` (~600+ 行，`RegisterGeneratedFunctionBindingForTarget` / `FAngelscriptFunctionBinding` 消费面)
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/FunctionCallers.h` (~430+ 行，`ERASE_*` 宏定义)
 > · `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_BlueprintCallable.cpp` (~600+ 行，运行期消费 + 反射 fallback 入口)
 > · `Plugins/Angelscript/Intermediate/Build/Win64/UnrealEditor/Inc/AngelscriptRuntime/UHT/AS_FunctionBinding_*.cpp` (生成产物示例)
@@ -21,7 +21,7 @@
 > `Documents/Knowledges/ZH/Arch_Overview.md` — 插件总体概览（顶层视角，本文是其 §二.5 与 §三 关于 UHT 工具的细化展开）
 > · `Documents/Knowledges/ZH/Arch_ModuleLoading.md` — 模块清单与装载关系（本文 §二 与其 §六"AngelscriptUHTTool 不在 UE 模块加载体系内"互为参照）
 > · `Documents/Knowledges/ZH/Type_BindSystem.md` — Bind 系统与 Native 绑定（运行期消费侧的内部细节）
-> · `Documents/Knowledges/ZH/AS_TypeRegistration.md` — AngelScript 类型注册 API（被 `FBind` 间接调用的下层）
+> · `Documents/Knowledges/ZH/AS_TypeRegistration.md` — AngelScript 类型注册 API（由 `FAngelscriptBind` callback 通过显式 `FAngelscriptBinds&` 调用的下层）
 
 ---
 
@@ -46,12 +46,12 @@
 │ ③ 产物落到 Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/          │
 │        AngelscriptRuntime/UHT/AS_FunctionBinding_*.cpp                         │
 └──────────────────── ★ 构建期边界结束 ────────────────────────────────────────┘
-                              │  [UhtExporter](ModuleName="AngelscriptRuntime")
+                              │  [UhtExporter], ModuleName = "AngelscriptRuntime"
                               ▼  →  UBT 编入 AngelscriptRuntime.dll/lib
 运行期（UE 进程内，C++）
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ ④ .dll 加载阶段：AS_FORCE_LINK 全局 FBind 注册到 EOrder::Late + 50           │
-│ ⑤ FAngelscriptEngine::Initialize → CallBinds → 三层叠加：                    │
+│ ④ .dll 加载阶段：AS_FORCE_LINK file-static FAngelscriptBind 记录入队        │
+│ ⑤ 加载生成模块 → callback collection seal → 每个 engine 回放七阶段：       │
 │     A. 121 个手写 Bind_*.cpp（直接调 AS API；与 ClassFunctionBindings 无关）         │
 │     B. UHT 直接绑定（ERASE_AUTO_*_PTR；FuncPtr.IsBound()==true）             │
 │     C. UHT reflectiveFallback + 运行期反射 fallback（ERASE_NO_FUNCTION；走 UFunction Invoke）│
@@ -135,9 +135,10 @@ UnrealBuildTool 启动 → 扫 .ubtplugin.csproj 并 build/load C# 程序集
                     ▼
 UE 进程启动 → PostDefault → AngelscriptRuntime.StartupModule()
                     │ AS_FunctionBinding_*.cpp 已是 .dll 一部分；
-                    │ 静态 FBind 在 .dll 加载时构造，回调被 Engine.Initialize 调用
+                    │ 静态 FAngelscriptBind 在 .dll 加载时构造，只登记 callback 元数据
                     ▼
-FAngelscriptEngine::Initialize → CallBinds → ClassFunctionBindings 已注册完毕
+加载 BindModules.Cache 模块 → validate/sort/seal → GeneratedBindings callback
+                    → ClassFunctionBindings 已注册完毕
 ```
 
 **关键结论**：UHT 工具没有 LoadingPhase（这是 UE 模块概念）；不出现在任何 `Build.cs` 的 ModuleNames；"在 StartupModule 里调 UHT 工具"在概念上就是错的——UHT 早已退出，进程边界都不一样。
@@ -286,7 +287,7 @@ return classHasApiMacro && !classIsMinimalApi;                           // ★ 
 
 ### 3.3 单模块 Runtime 源文件与目标模块 emit
 
-每个有注册的 Runtime-linked UE 模块只生成一个 `.gen.cpp`，例如 `AS_FunctionBinding_Engine.gen.cpp`。该文件的唯一公开 `FBind` 使用稳定名称 `UHT.FunctionBinding.Engine`。当一个模块的注册量很大时，生成器会在**同一文件内**以最多 256 条注册的私有 helper 函数承载调用，以规避 MSVC 的优化函数体大小上限；这不是多文件分片，也不会改变模块级 `FBind` 名称。
+每个有注册的 Runtime-linked UE 模块只生成一个 `.gen.cpp`，例如 `AS_FunctionBinding_Engine.gen.cpp`。该文件的唯一 file-static `FAngelscriptBind` 使用稳定名称 `UHT.FunctionBinding.Engine` 和 `GeneratedBindings` phase。当一个模块的注册量很大时，生成器会在**同一文件内**以最多 256 条注册的私有 helper 函数承载调用，以规避 MSVC 的优化函数体大小上限；这不是多文件分片，也不会改变模块级 provider 名称。
 
 目标模块函数地址输出仍使用 `NativeModuleFunctionAddress` 后缀和独立 thunk 分片，因为它属于 source-engine-only 的另一条 ABI/编译路径。
 
@@ -294,7 +295,7 @@ return classHasApiMacro && !classIsMinimalApi;                           // ★ 
 // ============================================================================
 // 文件: AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs
 // 函数: BuildGeneratedFunctionBindingModule（节选）
-// 角色: 单模块 .gen.cpp 源码模板；EOrder::Late + 50 让它在所有手写 Bind 之后跑
+// 角色: 单模块 .gen.cpp 源码模板；GeneratedBindings 明确生成表的语义阶段
 // ============================================================================
 if (editorOnly) builder.AppendLine("#if WITH_EDITOR");                  // ★ EditorOnly 模块整体 #if 包围
 builder.AppendLine("PRAGMA_DISABLE_DEPRECATION_WARNINGS");
@@ -304,14 +305,15 @@ builder.AppendLine("#include \"Core/AngelscriptEngine.h\"");
 builder.AppendLine("#include \"Core/FunctionCallers.h\"");
 foreach (string include in includes)                                    // 排序去重的最短 include 路径
     builder.Append("#include \"").Append(include).AppendLine("\"");
-builder.Append("AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AS_FunctionBinding_")
+builder.Append("AS_FORCE_LINK const FAngelscriptBind Bind_AS_FunctionBinding_")
     .Append(moduleShortName)
-    .Append("(TEXT(\"UHT.FunctionBinding.").Append(moduleShortName)
-    .AppendLine("\"), (int32)FAngelscriptBinds::EOrder::Late + 50, []()");
-// ... { RegisterGeneratedFunctionBindingBatch_<Module>_<NNN>() × N }
+    .AppendLine("(");
+builder.Append("\tTEXT(\"UHT.FunctionBinding.").Append(moduleShortName).AppendLine("\"),");
+builder.AppendLine("\tEAngelscriptBindPhase::GeneratedBindings,");
+builder.Append("\t&BindGeneratedFunctionBindings_").Append(moduleShortName).AppendLine(");");
 ```
 
-`EOrder::Late + 50` 是设计核心：手写 `Bind_*.cpp` 大多用 `EOrder::Normal` / `Late` / `Late - 1`，UHT 生成的总比它们都晚——意味着 UHT 写入 `ClassFunctionBindings` 后，再由 `Bind_BlueprintCallable.cpp`（最末批次）反查表完成真正的 AS 注册。
+生成 helper 的签名是 `void(FAngelscriptBinds&)`，batch 调用 `Binds.RegisterGeneratedFunctionBindingForTarget(...)`。`GeneratedBindings` 替代整数 order：UHT 先把 direct/fallback payload 写入目标 engine 的 `ClassFunctionBindings`，随后 `ReflectionBindings` 中的 `Bind_BlueprintCallable.cpp` 反查该表并完成 AS 注册。静态构造期不会触碰 engine 状态。
 
 ---
 
@@ -345,19 +347,30 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #include "AIController.h"
 // ... 27 行 include 省略
 
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AS_FunctionBinding_AIModule(
-    TEXT("UHT.FunctionBinding.AIModule"), (int32)FAngelscriptBinds::EOrder::Late + 50, []()
+namespace
 {
-    FAngelscriptBinds::RegisterFunctionBinding(AAIController::StaticClass(), "ClaimTaskResource",
-        { ERASE_AUTO_METHOD_PTR(AAIController, ClaimTaskResource) });        // ★ 直接绑定
-    FAngelscriptBinds::RegisterFunctionBinding(AAIController::StaticClass(), "GetAIPerceptionComponent",
-        { ERASE_NO_FUNCTION() });                                            // ★ reflectiveFallback（unexported-symbol）
-    // ... 153 行省略；大模块会从此处调用私有 RegisterGeneratedFunctionBindingBatch_* helper
-});
+    static void BindGeneratedFunctionBindings_AIModule(FAngelscriptBinds& Binds)
+    {
+        Binds.RegisterGeneratedFunctionBindingForTarget(
+            AAIController::StaticClass(),
+            "ClaimTaskResource",
+            { ERASE_AUTO_METHOD_PTR(AAIController, ClaimTaskResource) }); // ★ direct
+
+        Binds.RegisterGeneratedFunctionBindingForTarget(
+            AAIController::StaticClass(),
+            "GetAIPerceptionComponent",
+            { ERASE_NO_FUNCTION() }); // ★ BlueprintCallableReflectiveFallback
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_AS_FunctionBinding_AIModule(
+    TEXT("UHT.FunctionBinding.AIModule"),
+    EAngelscriptBindPhase::GeneratedBindings,
+    &BindGeneratedFunctionBindings_AIModule);
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 ```
 
-注意三件事：`AS_FORCE_LINK` 防止链接器 dead-strip（`__attribute__((used, retain))`）；`UHT.FunctionBinding.<Module>` 是可在 `FAngelscriptBinds::GetBindInfoList()`、禁用绑定配置和执行观察中检索的稳定模块名称；`RegisterFunctionBinding` 一行一个 entry——它**不**直接调 AS 注册 API，只把 `(UClass*, FunctionName) → FAngelscriptFunctionBinding` 塞进 `ClassFunctionBindings`（真正的 AS 注册在更晚阶段，详见 §五）。生成源码不再做运行时计时或打印 UHT 注册日志。
+注意四件事：`AS_FORCE_LINK` 防止链接器 dead-strip（`__attribute__((used, retain))`）；`UHT.FunctionBinding.<Module>` 是 callback provenance 与诊断 CSV 使用的稳定名称；`RegisterGeneratedFunctionBindingForTarget` 一行一个 entry，并且明确写入传入 `Binds` 的目标 engine；生成源码不从 `StartupModule()` 提交 binding，也没有 runtime disable/filter 入口。该调用只把 `(UClass*, FunctionName) → FAngelscriptFunctionBinding` 写入 `ClassFunctionBindings`，真正的 AS 注册在 `ReflectionBindings`，详见 §五。
 
 ### 4.2 `Summary.json`：当前产物的全局视图
 
@@ -400,9 +413,9 @@ overloaded-unresolved,287       // 重载消歧失败（多候选签名都对不
 
 ## 五、Runtime 端消费链路
 
-UHT 生成的 `AS_FunctionBinding_*.cpp` 编入 `AngelscriptRuntime.dll` 之后，运行期消费分两步：**(1) `.dll` 加载阶段**静态构造 `FBind` 对象，把 `(UClass*, Name) → FAngelscriptFunctionBinding` 注入 `ClassFunctionBindings`；**(2) `FAngelscriptEngine::Initialize`** 通过 `CallBinds` 触发所有 `FBind` 的 lambda 执行 + 接着用 `BindBlueprintCallable` 反向查表完成真正的 AS 注册。
+UHT 生成的 `AS_FunctionBinding_*.cpp` 编入 `AngelscriptRuntime.dll` 后，运行期消费分三步：**(1) `.dll` 加载阶段**构造 file-static `FAngelscriptBind`，只登记 callback 元数据；**(2) 生成模块到齐后** validate/sort/seal 唯一 callback collection；**(3) 每个 `FAngelscriptEngine`** 用显式 `FAngelscriptBinds&` 回放 `GeneratedBindings`，把 payload 注入该 engine 的 `ClassFunctionBindings`，再由 `ReflectionBindings` 的 `BindBlueprintCallable` 完成 AS 注册。
 
-### 5.1 `FAngelscriptFunctionBinding` / `RegisterFunctionBinding`：表结构
+### 5.1 `FAngelscriptFunctionBinding` / `RegisterGeneratedFunctionBindingForTarget`：表结构
 
 ```cpp
 // ============================================================================
@@ -411,8 +424,9 @@ UHT 生成的 `AS_FunctionBinding_*.cpp` 编入 `AngelscriptRuntime.dll` 之后�
 // ============================================================================
 struct FAngelscriptFunctionBinding
 {
-    FGenericFuncPtr FuncPtr;                      // ★ 类型擦除的函数指针
-    ASAutoCaller::FunctionCaller Caller;          // ★ 同上的"调用器"模板对象
+    FGenericFuncPtr FunctionPointer;              // ★ 类型擦除的函数指针
+    ASAutoCaller::FunctionCaller FunctionCaller;  // ★ 同上的“调用器”模板对象
+    void* UserData = nullptr;
     bool bReflectiveFallbackBound = false;        // 运行期反射 fallback 命中后置 true
 };
 
@@ -423,7 +437,7 @@ struct FAngelscriptFunctionBinding
 #define ERASE_FUNCTION_PTR(f,p,r)          /* 同上静态版本，略 */
 ```
 
-`RegisterFunctionBinding` 只是 `TMap<UClass*, TMap<FString, FAngelscriptFunctionBinding>>` 的一次插入——不调用任何 AS API；重复键的 entry **不覆盖**，先到先得（给"用户自己再生成一份补丁分片"留口子）。
+`Binds.RegisterGeneratedFunctionBindingForTarget(...)` 只向当前 `Binds.GetTargetBindState().ClassFunctionBindings` 插入 payload，不调用任何 AS API。重复键仍保持既有 first-wins 规则；变化只是 target engine 变为显式参数，不改变 payload、direct/generic caller 或 fallback 语义。
 
 ### 5.2 `BindBlueprintCallable`：三层 fallback 在哪触发
 
@@ -439,7 +453,7 @@ UClass* OwningClass = CastChecked<UClass>(Function->GetOuter());
 FAngelscriptFunctionBinding* FunctionBinding = nullptr;
 if (OwningClass != nullptr)
 {
-    auto* map = FAngelscriptBinds::GetClassFunctionBindings().Find(OwningClass);
+    auto* map = Binds.GetTargetBindState().ClassFunctionBindings.Find(OwningClass);
     if (map) FunctionBinding = map->Find(Function->GetFName().ToString());
 }
 if (FunctionBinding == nullptr) return;                         // ★ Layer 0: 表里没有 → 完全不绑
@@ -460,36 +474,41 @@ FunctionBinding->bReflectiveFallbackBound = false;              // ★ Layer B: 
 
 | 层 | 来源 | 注册时序 | 触发条件 | 适合 |
 |----|------|---------|---------|------|
-| A | 121 个手写 `Bind_*.cpp` | `EOrder::Normal` / `Late` / `Late - 1` | 直接调 `Method / BindGlobalFunction / ValueClass / ...` | 值类型 / 模板 / Mixin / 命名空间投影 / 时序敏感内核 |
-| B | UHT 直接绑定 | `EOrder::Late + 50` | `ERASE_AUTO_*_PTR`，`FuncPtr.IsBound() == true` | `BlueprintCallable / Pure` 公开导出方法（~56%） |
-| C | UHT reflectiveFallback + 运行期反射 fallback | 同上 + 当帧 fallback | `ERASE_NO_FUNCTION()`，`bReflectiveFallbackBound = true` | `non-public` / `unexported` / 重载未消歧（~44%） |
+| A | 121 个手写 `Bind_*.cpp` | `TypeDeclarations` / `TypeInfrastructure` / `ManualBindings` 等语义阶段 | 直接调 `Method / BindGlobalFunctionForTarget / ValueClassForTarget / ...` | 值类型 / 模板 / Mixin / 命名空间投影 / 时序敏感内核 |
+| B | UHT 直接绑定 | `GeneratedBindings` 产表，`ReflectionBindings` 消费 | `ERASE_AUTO_*_PTR`，`FuncPtr.IsBound() == true` | `BlueprintCallable / Pure` 公开导出方法（~56%） |
+| C | UHT reflectiveFallback + 运行期反射 fallback | 同样由 `GeneratedBindings` 产表，`ReflectionBindings` 消费 | `ERASE_NO_FUNCTION()`，`bReflectiveFallbackBound = true` | RPC/Net、策略 fallback、未解析 direct pointer（~44%） |
 
 A 层与 B/C 层并列，B 与 C 互斥。手写 Bind 通常完全不进 `ClassFunctionBindings`，bypass 掉 B/C 的 fallback 决策。
 
 ### 5.3 模块级可观测性
 
-Runtime-linked UHT 源码不再在启动期测量或打印单模块注册耗时。需要查来源时，用 `FAngelscriptBinds::GetBindInfoList()`、禁用绑定配置或自动化执行观察检索 `UHT.FunctionBinding.<Module>`；需要性能数据时使用既有的顶层 `AS_PERF_SCOPE_BINDS_CALL_BINDS()` / CSV 统计，而不是为每个生成注册回调额外打日志。
+Runtime-linked UHT 源码不再在启动期测量或打印单模块注册耗时。需要查来源时，用 sealed callback metadata、自动化执行观察或 `AS_FunctionBindingDiagnostics.csv` 检索 `UHT.FunctionBinding.<Module>`；需要性能数据时使用 collection finalization / phase execution 的顶层观察，而不是为每个生成 callback 增加 runtime tracing 或 descriptor。Bind surface 不提供按 provider 名称运行时禁用的配置面。
 
 ---
 
 ## 六、与手写 `Bind_*.cpp` 的边界对比
 
-`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/` 下有 121 个手写 `Bind_*.cpp` 与 UHT 生成的 `AS_FunctionBinding_*.cpp` 共存。它们看着像（都是 `FBind` 静态对象），实际目标完全不同。
+`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/` 下有 121 个手写 `Bind_*.cpp` 与 UHT 生成的 `AS_FunctionBinding_*.cpp` 共存。它们都通过 file-static `FAngelscriptBind` 进入阶段集合，但内容来源不同。
 
 ```cpp
 // ============================================================================
 // 文件: Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FApp.cpp
 // 性质: 手写 Bind_*.cpp 的极简形态——FApp 是纯静态命名空间，UHT 处理不了
 // ============================================================================
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FApp((int32)FAngelscriptBinds::EOrder::Late, []
+namespace
 {
-    FAngelscriptBinds::FNamespace ns("FApp");
-    FAngelscriptBinds::BindGlobalFunction("bool CanEverRender()", FUNC_TRIVIAL(FApp::CanEverRender));
-    FAngelscriptBinds::BindGlobalFunction("FString GetProjectName()", []() -> FString
+    void BindFAppManual(FAngelscriptBinds& Binds)
     {
-        return FApp::GetProjectName();
-    });
-});
+        FAngelscriptBinds::FNamespace Namespace(Binds.GetTargetEngine(), "FApp");
+        Binds.BindGlobalFunctionForTarget("bool CanEverRender()", FUNC_TRIVIAL(FApp::CanEverRender));
+        Binds.BindGlobalFunctionForTarget("FString GetProjectName()", &FAngelscriptFAppBinds::GetProjectName);
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FApp(
+    TEXT("FApp"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFAppManual);
 ```
 
 `Bind_Console.cpp` 进一步走 `ValueClass<FScriptConsoleVariable<int32>>` + 4 个 Constructor 重载 + Destructor + 多个 Method —— 这种带模板特化、显式 lambda 包装的注册 UHT 工具完全做不了，只能手写。这就是手写 Bind 的底盘价值。
@@ -499,8 +518,8 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FApp((int32)FAngelscriptBinds:
 | 文件数 | 121（成熟期 baseline） | 每个有注册的 Runtime-linked 模块 1 个 |
 | 输入源 | 直接的 C++ 类型 / 自定义结构 / 模板 | UE 反射元数据（`UCLASS` + `UFUNCTION(BlueprintCallable/Pure)`） |
 | 命名约定 | `Bind_<Topic>.cpp`（命名自由） | `AS_FunctionBinding_<Module>.gen.cpp`；`UHT.FunctionBinding.<Module>`（强制） |
-| 注册方式 | 直接调 `Method / BindGlobalFunction / ValueClass / ReferenceClass / ...` | 仅调 `RegisterFunctionBinding`，由 `Bind_BlueprintCallable.cpp` 反查表完成真正注册 |
-| 触发顺序 | `EOrder::Normal` / `Late` / `Late - 1`，按主题精细控制 | `EOrder::Late + 50`，统一在所有手写之后 |
+| 注册方式 | 通过显式 `FAngelscriptBinds&` 直接调 target-aware facade | `RegisterGeneratedFunctionBindingForTarget` 产表，由 `Bind_BlueprintCallable.cpp` 反查完成注册 |
+| 触发阶段 | 按职责选择七阶段；直接 callable 通常是 `ManualBindings` | provider 是 `GeneratedBindings`，实际 UFunction 注册是 `ReflectionBindings` |
 | 类型覆盖 | 值类型、模板、Mixin、Delegate、Subsystem、Component、Math、Container、... | 只 `BlueprintCallable / BlueprintPure` |
 | 直接 / ReflectiveFallback 比 | 几乎全部 100% 直接（手写时已知签名） | ~56% Direct + ~44% ReflectiveFallback（未来优化目标） |
 | 维护权 | 人工 review；OpenSpec 一人一改 | 自动；只能调输入或调过滤规则间接改 |
@@ -529,7 +548,7 @@ if (classObj.HeaderFile != null)
 
 **心智模型**：UHT 工具看作“输入：所有依赖模块的 `.h` + `Build.cs`；输出：每模块一个 Runtime-linked 源文件 + summary”的纯函数。任何上游变化都通过 UBT 的依赖追踪反映；UHT 自己不维护任何运行期状态。
 
-**`DeleteStaleOutputs`** 处理"上轮生成、本轮不生成"的孤儿分片：枚举 `outputDirectory/AS_FunctionBinding_*.cpp`，凡不在本轮 `generatedPaths` 集合内的全部删除——白名单 glob 与 `[UhtExporter](CppFilters)` 完全对齐。
+**`DeleteStaleOutputs`** 处理"上轮生成、本轮不生成"的孤儿分片：枚举 `outputDirectory/AS_FunctionBinding_*.cpp`，凡不在本轮 `generatedPaths` 集合内的全部删除——白名单 glob 与 `[UhtExporter]` 的 `CppFilters` 完全对齐。
 
 **头文件去注释化的进程内缓存**：`AngelscriptHeaderSignatureResolver.GetSanitizedHeader` 用一个进程内 `Dictionary<string, string>` 把读过、去过注释的 `.h` 内容缓存住——同一 UHT session 内 N 个 class 引用同一 `.h` 时只读盘一次。生命周期就是 UHT session 自己（一次构建 = 一次 session），不需要持久化。
 
@@ -563,7 +582,7 @@ UHT 跑在 UBT 进程内，结果作为 `.cpp` 编入 `.dll`；改动一定意�
 | 输入 | 读所有 UCLASS / UFUNCTION 头；读 `AngelscriptRuntime.Build.cs` 反推白名单 | 不读 `.as` 脚本（脚本侧反射在 Runtime 阶段） |
 | 接入 | 通过 `[UhtExporter]` 协议挂入 UHT 流水线 | 不出现在任何 `Build.cs` 的 ModuleNames；没有 LoadingPhase |
 | 产出 | 生成模块 `.gen.cpp` + `Summary.json` + 4 份 CSV | 不直接调 AngelScript API（连 `EpicGames.UHT.dll` 之外都不引） |
-| 时序 | 编入 `AngelscriptRuntime`；`EOrder::Late + 50` 在所有手写 Bind 之后跑 | 不参与 UE 模块装载；不与 BlueprintImpact / HotReload 联动 |
+| 时序 | 编入 `AngelscriptRuntime`；file-static provider 在 seal 前发现，以 `GeneratedBindings` 回放 | 不从生成模块 `StartupModule()` 提交；不与 BlueprintImpact / HotReload 联动 |
 | 覆盖面 | `BlueprintCallable` / `BlueprintPure`（直接 ~56% / reflectiveFallback ~44%） | 不绑 `Event` / `NetMulticast` / 普通 `UFUNCTION`；不替代手写 Bind |
 
 ---
@@ -590,7 +609,7 @@ UHT 跑在 UBT 进程内，结果作为 `.cpp` 编入 `.dll`；改动一定意�
 
 1. **新加的 `UFUNCTION(BlueprintCallable)` 没出现在模块源文件里**——查 `AS_FunctionBindingSkippedFunctions.csv`：常见原因是 `non-public`、`unexported-symbol`（`MinimalAPI` 类的方法）、或 `overloaded-unresolved`（重载未消歧）。前两者属于“刻意 reflectiveFallback”，第三者可考虑改类层 API 宏或显式重命名其中一个重载。
 2. **修改了 `AngelscriptRuntime.Build.cs` 加新依赖但 UHT 没生成对应模块源文件**——确认 `Build.cs` 改动后 UBT 真的重跑了 UHT。`AddExternalDependency(buildCsPath)` 让 Build.cs 进入依赖图；若改动后立即 build 但 UHT 未重跑，往往是 IDE 缓存问题——清 `Intermediate/Build` 后再来。
-3. **手写 Bind 与 UHT 生成"双重注册"了同一个函数**——不会冲突。`RegisterFunctionBinding` 内 `if (!Map.Contains(Name)) Add(...)` 保证后到的不覆盖，而手写 Bind 通常不调 `RegisterFunctionBinding`，走 `BindGlobalFunction / Method` 直接到 AS。冲突的是 AS 层的"同名同签名"重复注册，需要手写时显式跳过该函数。
+3. **手写 Bind 与 UHT 生成“双重注册”了同一个函数**——`RegisterGeneratedFunctionBindingForTarget` 保持 first-wins，不覆盖已有同键 payload；手写 Bind 通常通过 target-aware facade 直接注册到 AS。真正需要避免的是 AS 层的“同名同签名”重复注册，手写补绑前应先确认 UHT 是否已经覆盖。
 4. **想让 UHT 不为某个特定函数生成 reflectiveFallback**——加 meta `UFUNCTION(BlueprintCallable, meta=(NotInAngelscript))` 或 `meta=(BlueprintInternalUseOnly)`（不带 `UsableInAngelscript`），见 `ShouldGenerate` 的 ③。
 5. **`nativeRuntimeLinkedRate` 突然下降**——回归对比 `AS_FunctionBindingSkippedFunctionStatistics.csv` 的三类原因分布。`unexported-symbol` 涨了往往是 UE 升级时某些类改成 `MinimalAPI`；`non-public` 涨了通常是上游把 public 方法改成 protected；`overloaded-unresolved` 涨了大概率是新增重载未消歧。
 6. **新加的 UE 模块不在绑定集合里**——Runtime-linked 模式把它加入 `DefaultAngelscriptCompileOptions.ini` 的 `+NativeRuntimeLinkedModules=YourModule`；目标模块模式则加入 `+NativeModuleFunctionAddressModules=YourModule`。前者必须是 `AngelscriptRuntime` 的合法依赖，后者要求源码版引擎且只生成安全 thunk。
@@ -604,8 +623,9 @@ UHT 跑在 UBT 进程内，结果作为 `.cpp` 编入 `.dll`；改动一定意�
 - **UHT 工具是一套构建期 C# UBT plugin**，通过 `[UhtExporter]` 协议挂入 UnrealHeaderTool 流水线，**不属于** UE Module 体系，没有 LoadingPhase，与 `AngelscriptRuntime` 的 StartupModule 无运行时关联。
 - **输入**：UE 反射元数据（标记 `UFUNCTION(BlueprintCallable/Pure)` 的 C++ 头）+ `FunctionBindingMethod` 与两个 UE 模块数组；**不读** `.as` 脚本。
 - **生成 pipeline**：`Exporter`（入口）、共享 UFunction analysis、`HeaderSignatureResolver`/`SignatureBuilder`（Runtime-linked 签名解析）、Runtime/目标模块 emit、statistics/diagnostics writer 和 stale-output cleanup。
-- **产物**：`AS_FunctionBinding_<Module>.gen.cpp` Runtime-linked 模块源文件（大模块内部可有私有 helper）、目标模块 `NativeModuleFunctionAddress` 分片、`AS_FunctionBindingStatistics.json`、`AS_FunctionBindingModuleStatistics.csv`、`AS_FunctionBindingDiagnostics.csv` 和 `AS_FunctionBindingSkippedFunctions.csv`；通过 `[UhtExporter](ModuleName="AngelscriptRuntime")` 编入 Runtime 或目标模块。
-- **运行期消费三层**：Layer A 121 个手写 `Bind_*.cpp` 直接调 AS API；Layer B UHT `NativeRuntimeLinked`（`ERASE_AUTO_*_PTR`）；Layer C UHT `ReflectiveFallback` 后由运行期反射 fallback 处理。`EOrder::Late + 50` 让 Runtime-linked 注册在所有手写 Bind 之后；`RegisterFunctionBinding` 不覆盖同键。
+- **产物**：`AS_FunctionBinding_<Module>.gen.cpp` Runtime-linked 模块源文件（大模块内部可有私有 helper）、目标模块 `NativeModuleFunctionAddress` 分片、`AS_FunctionBindingStatistics.json`、`AS_FunctionBindingModuleStatistics.csv`、`AS_FunctionBindingDiagnostics.csv` 和 `AS_FunctionBindingSkippedFunctions.csv`；通过 `[UhtExporter]` 的 `ModuleName = "AngelscriptRuntime"` 编入 Runtime 或目标模块。
+- **运行期消费三层**：Layer A 手写 `Bind_*.cpp` 通过七阶段 direct callback 调 AS API；Layer B UHT `NativeRuntimeLinked`（`ERASE_AUTO_*_PTR`）；Layer C UHT `ReflectiveFallback`（`ERASE_NO_FUNCTION()`）由 `ReflectionBindings` 处理。RPC/Net UFunction 必须保留 `BlueprintCallableReflectiveFallback`，不能用 raw thunk 绕过 UE routing。
+- **架构不改领域语义**：`FAngelscriptType`、generic/`asIScriptGeneric` marshalling、`Binds.Cache` schema、NativeModuleFunctionAddress POD/`IModularFeatures` transport 和 layout version 均保持不变。Editor CodeGen 也生成 `GeneratedBindings` file-static provider，生成模块 `StartupModule()` 不提交 binding。
 - **手写与生成是互补，不是替代**：手写处理值类型 / 模板 / Mixin / 命名空间投影等机械不可推导面；UHT 处理 BlueprintCallable 公开方法的反射注册。121 这个数字不会因 UHT 覆盖率提升而下降——两者是不同维度的覆盖。
 - **增量靠 UBT**：`AddExternalDependency(.h) + AddExternalDependency(Build.cs) + CommitOutput(hash 比对)` 三件让 UHT 自身无需维护 mtime；`DeleteStaleOutputs` 处理依赖被删时的孤儿分片。
 - **与 BlueprintImpact / HotReload 不联动**：UHT 产物的变化只能通过 UE 进程重启来生效；BP 重扫与 UHT 工具属于完全独立的两条链路。

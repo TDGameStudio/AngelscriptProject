@@ -1056,7 +1056,7 @@ class UMyOpaqueBase : public UObject { ... };
 | C++ 基类 | manual bind 文件 | `ExistingClass` 调用次数 | 关键自定义 |
 |---------|------------------|----------------------|----------|
 | `AActor` | `Bind_AActor.cpp` | 1 处 | `GetComponentsByClass` 模板特化、Spawn helper |
-| `APawn` | `Bind_AActor.cpp`（合并）/ 通过 `Bind_Defaults` 反射 | — | 主要靠反射 fallback |
+| `APawn` | `Bind_AActor.cpp`（合并）/ 通过 `BlueprintType.ReflectionBindings` 反射 | — | 主要靠反射 fallback |
 | `AController` | `Bind_AActor.cpp`（合并） | — | 同上 |
 | `APlayerController` | `Bind_APlayerController.cpp` | 3 处 | `EnableInput` / `DisableInput` 等输入入口 |
 | `UActorComponent` | `Bind_UActorComponent.cpp` | 4 处 | Tick / Activate 系列、`GetOwner` |
@@ -1066,9 +1066,9 @@ class UMyOpaqueBase : public UObject { ... };
 
 **注**：脚本端 `class APickup : APawn` 在编译期能用——即使 `Bind_AActor.cpp` 里没有为 `APawn` 显式 `ExistingClass`。原因是：
 - `Bind_BlueprintType.cpp::Bind_BlueprintType_Declarations` 阶段从 `FAngelscriptBindDatabase::Get().Classes` 自动遍历**所有**已 cooked 的 UClass，调 `BindUClass(Class, "APawn")`——把 `APawn` 注册成 AS 引用类型；
-- 后续 `Bind_Defaults` 阶段再用反射把 `APawn` 的所有 `BlueprintCallable` / `BlueprintEvent` UFunction 通过 `BindBlueprintEvent` 路径暴露给 AS。
+- 后续 `BlueprintType.ReflectionBindings` callback 再用反射把 `APawn` 的所有 `BlueprintCallable` / `BlueprintEvent` UFunction 通过 `BindBlueprintEvent` 路径暴露给 AS。
 
-`ExistingClass` 是**第二轮微调**——往已注册的类上**追加**精心设计的 method（参数模板、out 参数等反射推不出来的形式）。`Bind_AActor.cpp` 的 `Bind_AActor_Base` 用 `EOrder::Late - 1` 保证它在 `Bind_Defaults`（`EOrder::Late + 100`）之前跑——这样反射路径不会用反射版本覆盖手写版本。
+`ExistingClassForTarget` 是**第二轮微调**——往已注册的类上**追加**精心设计的 method（参数模板、out 参数等反射推不出来的形式）。`Bind_AActor.cpp` 的手写 surface 位于 `ManualBindings`，固定早于 `ReflectionBindings`，因此反射路径不会用反射版本覆盖手写版本。
 
 ---
 
@@ -1084,7 +1084,7 @@ class UMyOpaqueBase : public UObject { ... };
 | 接口擦除 | 同上 (~1219-1257) | `Chunk.Content[Pos] = ' '` |
 | `BindScriptTypes` 阶段注册 UClass | `Bind_BlueprintType.cpp::BindUClass` (~691-717) | `MakeShared<FUObjectType>(Class, TypeName)` |
 | `Bind_*.cpp` 手写方法 | `Bind_AActor.cpp` / `Bind_APlayerController.cpp` / ... | `FAngelscriptBinds::ExistingClass` |
-| 反射 fallback 注册 | `Bind_BlueprintType.cpp::Bind_Defaults` (~762-826) | `BindBlueprintEvent` / `BindBlueprintCallable` |
+| 反射 fallback 注册 | `Bind_BlueprintType.cpp::BindBlueprintTypeReflectionBindings` | `BindBlueprintEvent` / `BindBlueprintCallable` |
 | 命名缓存 | `Bind_BlueprintEvent.cpp::GetBlueprintEventByScriptName` (~113-144) | `GBlueprintEventsByScriptName` |
 | 创建 `UASClass` | `AngelscriptClassGenerator.cpp::CreateFullReloadClass` (~2690-2733) | `NewObject<UASClass>(...) + ScriptType->SetUserData(NewClass)` |
 | `SetSuperStruct` 挂接 | `AngelscriptClassGenerator.cpp::DoFullReloadClass` (~3275-3415) | `NewClass->SetSuperStruct(SuperClass)` |

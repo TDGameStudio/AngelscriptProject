@@ -189,7 +189,7 @@ struct FAngelscriptFunctionBinding
 };
 ```
 
-`FAngelscriptFunctionBinding` 是 `Type_BindSystem` §六中 Layer A（UHT 灌库）的产物。`Bind_Defaults`（Layer C，`Late+100`）在按 UClass 遍历时取出这个 entry：
+`FAngelscriptFunctionBinding` 是 `Type_BindSystem` §六中 Layer A（UHT 灌库）的产物。`BlueprintType.ReflectionBindings`（Layer C，外层 `ReflectionBindings`）在按 UClass 遍历时取出这个 entry：
 
 - 若 `FunctionPointer.IsBound() == true`（意即 `flag != 0`，UHT 找到了真实函数指针）→ 走"Runtime-linked"路径，`memcpy(asSFuncPtr, FunctionPointer, 25)` + `FunctionCaller` 一起注册到 AS 引擎
 - 若 `FunctionPointer.IsBound() == false`（即 `ERASE_NO_FUNCTION()` 或 UHT 未生成此项）→ 走"反射 fallback"路径，注册一个 `asCALL_GENERIC` trampoline
@@ -632,7 +632,7 @@ void CallBlueprintCallableReflectiveFallback(asIScriptGeneric* InGeneric)
 
 ### 五.1 触发条件
 
-`Bind_Defaults`（Layer C，`Late+100`）按 UClass 遍历到一个 UFunction 时，会先查 `ClassFunctionBindings[OwningClass][FunctionName]`：
+`BlueprintType.ReflectionBindings`（Layer C）按 UClass 遍历到一个 UFunction 时，会先查 `ClassFunctionBindings[OwningClass][FunctionName]`：
 
 - 找到且 `Entry->FunctionPointer.IsBound() == true` → 走Runtime-linked（§三 caller 路径）
 - 找到但 `IsBound() == false` 或根本没找到 → 进入反射 fallback 决策
@@ -902,11 +902,15 @@ UE Fork 中**所有 native 调用约定都通过 caller 走同一条 `CallFuncti
   对一个 UFunction 的注册，三种来源走的代码形态对比
 ================================================================================
 
-[Layer A: UHT 灌库 — Late+50]
+[Layer A: UHT 灌库 — GeneratedBindings]
   AS_FunctionBinding_Engine.gen.cpp:
-  AS_FORCE_LINK const FBind Bind_AS_FunctionBinding_Engine(TEXT("UHT.FunctionBinding.Engine"), EOrder::Late+50, []
+  AS_FORCE_LINK const FAngelscriptBind Bind_AS_FunctionBinding_Engine(
+      TEXT("UHT.FunctionBinding.Engine"), EAngelscriptBindPhase::GeneratedBindings,
+      &BindGeneratedFunctionBindings_Engine);
+
+  static void BindGeneratedFunctionBindings_Engine(FAngelscriptBinds& Binds)
   {
-      FAngelscriptBinds::RegisterFunctionBinding(
+      Binds.RegisterFunctionBindingForTarget(
           AAngelscriptPropertyAccessorCarrier::StaticClass(), "FetchScore",
           { ERASE_AUTO_METHOD_PTR(AAngelscriptPropertyAccessorCarrier, FetchScore) });
                      │
@@ -918,12 +922,12 @@ UE Fork 中**所有 native 调用约定都通过 caller 走同一条 `CallFuncti
               bReflectiveFallbackBound = false
           }
       // ★ 只灌库到 ClassFunctionBindings，不调 RegisterObjectMethod
-  });
+  }
 
-[Layer B: 手写Runtime-linked — Late-1（如 Bind_AActor_Base）]
-  AS_FORCE_LINK const FBind Bind_AActor_Base(EOrder::Late-1, []
+[Layer B: 手写 Runtime-linked — ManualBindings]
+  static void BindAActorManualBindings(FAngelscriptBinds& Binds)
   {
-      auto AActor_ = ExistingClass("AActor");
+      auto AActor_ = Binds.ExistingClassForTarget("AActor");
       AActor_.Method("FVector GetActorLocation() const",
           METHOD_TRIVIAL(AActor, GetActorLocation));
                   │
@@ -936,10 +940,10 @@ UE Fork 中**所有 native 调用约定都通过 caller 走同一条 `CallFuncti
       // sysFunc->func    = method ptr (asSFuncPtr)
       // sysFunc->caller  = {MethodPtr=&ReNativeRuntimeLinkedMethodCaller<FVector,AActor>, type=2}
       // callConv          = asCALL_THISCALL
-  });
+  }
 
-[Layer C: 反射 fallback — Late+100（Bind_Defaults 内部）]
-  Bind_Defaults 遍历到 UClass = AActor、UFunction = SetActorRelativeLocation，
+[Layer C: 反射 fallback — ReflectionBindings]
+  BlueprintType.ReflectionBindings 遍历到 UClass = AActor、UFunction = SetActorRelativeLocation，
   发现 ClassFunctionBindings[AActor]["SetActorRelativeLocation"].FunctionPointer.IsBound() == false,
   且 EvaluateReflectionFallback() == Success:
 
@@ -1156,7 +1160,7 @@ Layer C 遇到 UClass.UFunction:
 
 9. **`passFirstParamMetaData` 与参数索引对齐**：开启 `ScriptFunction` 注入后，`FunctionArgs[1]` 是注入的 `descr`，trampoline 的实际第一个 user 参数从 `Arguments[2]` 开始。用 `MakeFunctionCaller` 推导的签名要包含这个隐藏参数
 
-10. **`bReflectiveFallbackBound = true` 后 UHT 灌库被忽略**：`Bind_Defaults` 二次进入时（如 PIE 多 engine 实例）若 entry 已标 `bReflectiveFallbackBound`，会跳过重新注册——确保 `ResetBindState` 时 `ClassFunctionBindings` 这个 flag 也被重置
+10. **`bReflectiveFallbackBound = true` 后 UHT 灌库被忽略**：`BlueprintType.ReflectionBindings` 在同一 Engine 再次处理 entry 时若已标 `bReflectiveFallbackBound`，会跳过重复注册。该 flag 属于显式目标 Engine 的 bind state，多 Engine 不共享；重建目标 state 时必须一起复位
 
 ---
 

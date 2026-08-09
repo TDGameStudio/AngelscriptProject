@@ -256,9 +256,9 @@ static FAngelscriptTypeDatabase& GetTypeDatabase()
 
 ---
 
-## 二、注册管线：`FBind` → `Register` → `TypeFinder`
+## 二、注册管线：`FAngelscriptBind` → explicit facade → `TypeFinder`
 
-类型注册由 `FAngelscriptBinds::FBind` 静态触发器驱动，分三层调用：**AS 引擎注册（`RegisterObjectType`）→ 插件桥接层注册（`FAngelscriptType::Register`）→ Type Finder 路由注册**。三层都在 `BindScriptTypes()` 阶段一次性跑完。
+类型注册由 file-static `FAngelscriptBind` callback 驱动，分三层调用：**AS 引擎注册（`RegisterObjectType`）→ 插件桥接层注册（`FAngelscriptType::Register`）→ Type Finder 路由注册**。三层都在 `BindScriptTypes()` 阶段按七个固定 phase 跑完。
 
 ### 2.1 总入口：`FAngelscriptEngine::BindScriptTypes`
 
@@ -268,31 +268,37 @@ static FAngelscriptTypeDatabase& GetTypeDatabase()
 // 函数: BindScriptTypes
 // 性质: 引擎 Initialize 时调用一次（也在多引擎重新 Compile 时再调）
 // ============================================================================
-void FAngelscriptEngine::BindScriptTypes()
+bool FAngelscriptEngine::BindScriptTypes()
 {
     AS_PERF_SCOPE_STARTUP_BIND_SCRIPT_TYPES();
     LLM_SCOPE_BYTAG(Angelscript);
 
-    FAngelscriptBinds::CallBinds(CollectDisabledBindNames());   // ★ 触发所有 FBind 静态实例
+    FAngelscriptBinds Binds(*this);
+    FString Diagnostic;
+    return FAngelscriptBind::ExecuteRegisteredBinds(Binds, Diagnostic);
 }
 ```
 
-`FAngelscriptBinds::CallBinds` 按 `EOrder`（Early=-100 / Normal=0 / Late=+100）排序后逐一执行所有 `FBind` 闭包。`Bind_*.cpp` 文件通过下列匿名静态实例把自己挂上：
+callback collection 在主引擎启动前一次性 validate、stable sort 和 seal。执行顺序是 `TypeDeclarations`、`TypeInfrastructure`、`ManualBindings`、`GeneratedBindings`、`ReflectionBindings`、`PostReflectionBindings`、`Finalization`；同 phase 内按 owner/name/source 稳定排序。`Bind_*.cpp` 文件通过下列 file-static 实例加入 collection：
 
 ```cpp
-// 范式: 类型族注册（Bind_UStruct.cpp:863, 行号容错~ Early+1）
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_StructDeclarations(
-    (int32)FAngelscriptBinds::EOrder::Early + 1, []
+// 范式: 类型族注册
+static void BindStructDeclarations(FAngelscriptBinds& Binds)
 {
-    for (auto& DBBind : FAngelscriptBindDatabase::Get().Structs)
+    for (auto& DBBind : Binds.GetTargetBindDatabase().Structs)
     {
         UScriptStruct* Struct = FindObject<UScriptStruct>(nullptr, *DBBind.UnrealPath);
         if (Struct == nullptr) continue;
         // ...
-        BindStructType(DBBind.TypeName, Struct, BindFlags);   // ★ 每个 struct 走一遍 ValueClass + Register
+        BindStructType(Binds, DBBind.TypeName, Struct, BindFlags);
     }
-    BindStructTypeLookups();
-});
+    BindStructTypeLookups(Binds);
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_StructDeclarations(
+    TEXT("UStruct.TypeDeclarations"),
+    EAngelscriptBindPhase::TypeDeclarations,
+    &BindStructDeclarations);
 ```
 
 ### 2.2 三层注册的具体落点
@@ -767,35 +773,36 @@ FSubclassOfType::BaseTypeInfo = FAngelscriptEngine::Get().Engine->GetTypeInfoByN
 ```cpp
 // ============================================================================
 // 文件: Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TArray.cpp
-// 节选自: Bind_TArray (位于行 1381-1410)
+// 节选自: BindTArrayTypeDeclarations / BindTArrayMethodSurface
 // ============================================================================
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrder::Early, []
+static void BindTArrayTypeDeclarations(FAngelscriptBinds& Binds)
 {
     FBindFlags Flags;
     Flags.bTemplate     = true;
     Flags.TemplateType  = "<T>";
     Flags.ExtraFlags    = asOBJ_TEMPLATE_SUBTYPE_COVARIANT;
+    Binds.ValueClassForTarget<FScriptArray>("TArray<class T>", Flags);
+}
 
-    auto TArray_ = FAngelscriptBinds::ValueClass<FScriptArray>("TArray<class T>", Flags);
+static void BindTArrayMethodSurface(FAngelscriptBinds& Binds)
+{
+    FAngelscriptBinds TArray_ = Binds.ExistingClassForTarget("TArray<T>");
     TArray_.Constructor("void f()", FUNC_TRIVIAL(FArrayOperations::Construct));
 
-    // ★ 注册为引擎的"默认数组类型"——脚本里写 [int] 字面量也会走它
-    FAngelscriptType::SetArrayTemplateTypeInfo(TArray_.GetTypeInfo());
-    FAngelscriptEngine::Get().Engine->RegisterDefaultArrayType("TArray<T>");
-
     // ★ TemplateCallback: 脚本写 TArray<XXX> 时，AS 引擎用它决定能不能实例化
-    TArray_.TemplateCallback("bool f(int&in Type, int&out ErrorMessage)",
-    [](asITypeInfo* TemplateType, asCString* ErrorMessage) -> bool
-    {
-        if (TemplateType->GetSubType(0)
-            && (TemplateType->GetSubType(0)->GetFlags() & asOBJ_TEMPLATE_SUBTYPE) != 0)
-            return true;                    // 泛型推迟检查
-        return ValidateArrayOperations(TemplateType, ErrorMessage) != nullptr;
-    });
+    TArray_.TemplateCallback(
+        "bool f(int&in Type, int&out ErrorMessage)",
+        &ValidateArrayTemplate);
 
     TArray_.Method("T& opIndex(int Index)", &FArrayOperations::OpIndex);
     // ...
-});
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_TArray_TypeDeclarations(
+    TEXT("TArray.Declaration"), EAngelscriptBindPhase::TypeDeclarations, &BindTArrayTypeDeclarations);
+
+AS_FORCE_LINK const FAngelscriptBind Bind_TArray_MethodSurface(
+    TEXT("TArray.MethodSurface"), EAngelscriptBindPhase::TypeInfrastructure, &BindTArrayMethodSurface);
 ```
 
 ### 5.3 模板的"实例化"在 AS 端是延迟的

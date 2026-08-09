@@ -340,21 +340,33 @@ UHT generated native-module-function-address shard
 
 ## Bind Registration Hook
 
-手写绑定和生成绑定都通过 `FAngelscriptBinds::FBind` 按 `EOrder` 排序注册。
+手写绑定和生成绑定都通过文件级 `FAngelscriptBind` 进入唯一的进程级 callback collection。静态构造只记录逻辑名称、七阶段之一、owner/source provenance 与 `void (*)(FAngelscriptBinds&)`；生成模块加载完毕后，collection 被验证、稳定排序并永久 seal。每个完整 engine 随后用自己的 `FAngelscriptBinds` 直接重放这些 callback。
 
 常见形态：
 
-```text
-static / AS_FORCE_LINK FAngelscriptBinds::FBind Bind_X(
-    FName(TEXT("Bind_X")),
-    Order,
-    []()
-    {
-        // Register AS types / functions / properties.
-    });
+```cpp
+namespace
+{
+	void BindExampleManual(FAngelscriptBinds& Binds)
+	{
+		auto FExample_ = Binds.ExistingClassForTarget("FExample");
+		FExample_.Method("bool IsValid() const", METHOD_TRIVIAL(FExample, IsValid)).NoDiscard();
+	}
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FExample(
+	TEXT("FExample"),
+	EAngelscriptBindPhase::ManualBindings,
+	&BindExampleManual);
 ```
 
-这是 bind phase 扩展面，适合把 C++ 类型、函数和属性暴露给 AS。不要用它持有长期 engine reload hook 订阅；长期订阅应该走 `IAngelscriptExtension`。
+七个 phase 是 `TypeDeclarations`、`TypeInfrastructure`、`ManualBindings`、`GeneratedBindings`、`ReflectionBindings`、`PostReflectionBindings` 与 `Finalization`。回调必须沿传入的 `Binds` 访问目标 engine；不要查 ambient/current engine，也不要从 `StartupModule()` 重复提交 provider。
+
+如果 bind 拥有插件自定义 callable，使用 `Bind_<Name>.cpp + Bind_<Name>_Functions.h/.cpp` 与一个 `FAngelscript<Name>Binds` owner。只转发现有 UE member/free pointer 的 pointer-only bind 不创建空 companion。lambda overload 仍可用于测试和局部 DSL；生产手写 direct entry 使用有语义的命名 callable。
+
+注册返回的 `FAngelscriptBoundFunction` / `FAngelscriptBoundProperty` 指向准确结果，trait 直接链在结果上。恰好一个短 trait 且整行不超过 120 列时可同行；长注册或多个 trait 时，registration 先闭合，每个 trait 各占一条续行。
+
+这是一次性 bind phase 扩展面，适合把 C++ 类型、函数和属性暴露给 AS。它没有 runtime disable/filter 表面。Collection seal 后新增或修改 native direct provider 需要重启进程；不要用它持有长期 engine reload hook 订阅，长期订阅应走 `IAngelscriptExtension`。完整约定见 [Type_BindSystem](../Knowledges/ZH/Type_BindSystem.md)。
 
 ## Editor / UE Hook 点
 
@@ -450,7 +462,7 @@ Need to own state for each FAngelscriptEngine?
     |   `-- FAngelscriptStateDump::OnDumpExtensions
     |
     +-- need to expose native C++ functions/types to AS?
-    |   `-- FAngelscriptBinds::FBind / Bind_*.cpp
+    |   `-- file-static FAngelscriptBind / Bind_*.cpp
     |
     +-- need generated NativeRuntimeLinked native bindings from another module?
     |   `-- UHT generated function table / IModularFeatures NativeModuleFunctionAddress feature
@@ -478,7 +490,7 @@ Need to own state for each FAngelscriptEngine?
 | `FAngelscriptCompilationEvents` | 进程级观察总线 | 结构化 telemetry、诊断、测试观察 | 修改 engine 状态。 |
 | `IAngelscriptSourceProvider` | Engine dependency | 替换脚本来源、测试注入、虚拟 source | Editor 热重载 UI 行为。 |
 | `FAngelscriptStateDump::OnDumpExtensions` | Dump 调用期间 | 增加额外 CSV dump 表 | 读取 Runtime 私有状态。 |
-| `FAngelscriptBinds::FBind` | Bind phase | 暴露 AS 类型、函数、属性 | Runtime 生命周期订阅。 |
+| file-static `FAngelscriptBind` | Seal 前发现、逐 engine phase 回放 | 暴露 AS 类型、函数、属性 | Runtime 生命周期订阅、seal 后动态追加或 runtime disabling。 |
 | `IModularFeatures` NativeModuleFunctionAddress bind | Module feature lifetime | 跨模块生成 NativeRuntimeLinked bind | 未版本化的 ABI 改动。 |
 | UE editor hooks | Editor module lifetime | 菜单、导航、Content Browser、文件监听 | Runtime-only 代码依赖 Editor。 |
 | `ForTesting` / `TestAccess` hooks | 自动化测试期间 | 可控测试注入 | 生产扩展 API。 |

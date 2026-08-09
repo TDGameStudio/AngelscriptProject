@@ -52,10 +52,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Diagnostics\powers
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings." -Label bindings -TimeoutMs 600000
 ```
 
-反射回退绑定专项前缀：
+反射回退绑定缓存专项前缀：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.BlueprintCallableReflectiveFallback" -Label reflective-fallback -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Bindings.ReflectiveFallbackCache" -Label reflective-fallback -TimeoutMs 600000
 ```
 
 GeneratedFunctionBinding 三分类统计专项前缀：

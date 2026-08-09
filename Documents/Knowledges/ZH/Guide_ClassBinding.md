@@ -21,7 +21,9 @@
 
 本文聚焦一个核心问题：**我手里有一个 C++ 类型，怎样以最低成本让 `.as` 脚本看见它？**
 
-`Type_BindSystem.md` 已经从维护者视角讲清楚了"125 份 `Bind_*.cpp` + 30+ 份 UHT 生成的 `AS_FunctionBinding_*.cpp` + `Bind_Defaults` 反射兜底"三层模型。本文翻过来，只回答一个问题——**作为业务侧 C++ 工程师，你应该走哪一层？**
+`Type_BindSystem.md` 已经从维护者视角讲清楚了“手写 `Bind_*.cpp` + UHT 生成的
+`AS_FunctionBinding_*.cpp` + `ReflectionBindings` 反射兜底”三层模型。本文翻过来，只回答一个问题：
+**作为业务侧 C++ 工程师，你应该走哪一层？**
 
 ```text
                 你的 C++ 类型 → 让脚本能用，三条路径
@@ -31,7 +33,7 @@
       │     ─────────────────────────────────────────────           │
       │     在你的 .h 上加 UFUNCTION(BlueprintCallable) /          │
       │     UPROPERTY() / UCLASS() / UENUM(BlueprintType)           │
-      │     ─→ Bind_Defaults @ Late+100 自动扫到 → 走               │
+      │     ─→ ReflectionBindings callback 自动扫描 → 走             │
       │     UFunction::Invoke + FFrame 反射 trampoline              │
       │     代价：性能比Runtime-linked慢 3–6 倍；最多 16 个参数                 │
       └────────────────┬────────────────────────────────────────────┘
@@ -52,9 +54,9 @@
       │  ③ 手写 Bind_*.cpp（高成本，但最自由）                       │
       │     ─────────────────────────────────────────────           │
       │     写一份 Plugins/Angelscript/Source/AngelscriptRuntime/   │
-      │     Binds/Bind_<YourType>.cpp，顶部写一个 FBind 全局对象      │
-      │     ─→ Lambda 内调 ValueClass / ReferenceClass /             │
-      │        ExistingClass + Constructor / Method / Property        │
+      │     Binds/Bind_<YourType>.cpp，声明具名 callback 与           │
+      │     file-static FAngelscriptBind                              │
+      │     ─→ callback 通过 Binds.*ForTarget 注册目标 engine         │
       │     代价：每条 method 都要手写签名；维护成本高                 │
       │     收益：可以写 ?& 模板、lambda 转换、特化运算符、no_discard │
       └─────────────────────────────────────────────────────────────┘
@@ -125,7 +127,8 @@
 
 ### 2.1 它在做什么
 
-插件启动期 `Bind_Defaults`（`EOrder::Late + 100`）会**遍历所有 UClass**，对每个 `UFUNCTION(BlueprintCallable)` / `BlueprintPure` 检查：
+插件启动期的 `ReflectionBindings` callback 会**遍历所有 UClass**，对每个
+`UFUNCTION(BlueprintCallable)` / `BlueprintPure` 检查：
 
 1. 这个 UFunction 在 UHT 表里有直接函数指针吗？
 2. 没有？那就给它包一层 `UFunction::Invoke + FFrame` 反射 trampoline，注册到 AS 引擎
@@ -166,7 +169,7 @@ void TestHelper()
 }
 ```
 
-**没有任何 `Bind_MyHelper.cpp`**——AS 引擎初始化时 `Bind_Defaults` 自动把它扫进类型表。
+**没有任何 `Bind_MyHelper.cpp`**——AS 引擎初始化时，`ReflectionBindings` 自动把它扫进类型表。
 
 ### 2.3 反射兜底覆盖什么 / 不覆盖什么
 
@@ -251,7 +254,7 @@ PrivateDependencyModuleNames.AddRange(new string[] {
 │  • UFUNCTION(meta=(NotInAngelscript))                              │
 │  • UFUNCTION(BlueprintInternalUseOnly) 但缺 UsableInAngelscript    │
 │  • UFUNCTION(CustomThunk)                                          │
-│  • mixin（ScriptMixin meta）—— UHT 不读，要靠 Bind_Defaults 处理    │
+│  • mixin（ScriptMixin meta）—— UHT 不读，由 ReflectionBindings 处理 │
 │  • .as 文件（UHT 不读 .as，只读 C++ 头）                           │
 │  • 模板函数 / 没出现在反射元数据里的纯 C++ 函数                     │
 └───────────────────────────────────────────────────────────────────┘
@@ -277,7 +280,8 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 
 ## 四、第三层：手写 `Bind_*.cpp`（你需要写什么）
 
-> **注意**：本节展示"你需要写什么"，**不**展示插件框架内部如何调度这些代码。深入实现细节（`FBind` 构造时机 / `BindArray` 排序 / `CallBinds` 回放）请阅读 `Type_BindSystem.md`。
+> **注意**：本节展示“你需要写什么”。file-static `FAngelscriptBind` 的收集、phase 排序、seal 与逐 engine 回放
+> 由框架完成；深入实现细节请阅读 `Type_BindSystem.md`。
 
 ### 4.1 最小骨架：一个 POD 数学结构
 
@@ -314,27 +318,37 @@ struct YOURGAME_API FMyVector2D
 #include "AngelscriptEngine.h"
 #include "YourGame/Public/MyVector2D.h"
 
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMyVector2D(
-    FAngelscriptBinds::EOrder::Early, []
+namespace
+{
+void DeclareFMyVector2D(FAngelscriptBinds& Binds)
 {
     FBindFlags Flags;
     Flags.bPOD = true;
     Flags.ExtraFlags |= asOBJ_BASICMATHTYPE;
 
-    auto FMyVector2D_ = FAngelscriptBinds::ValueClass<FMyVector2D>(
-        "FMyVector2D", Flags);
+    Binds.ValueClassForTarget<FMyVector2D>("FMyVector2D", Flags);
+}
+
+void BindFMyVector2DManual(FAngelscriptBinds& Binds)
+{
+    auto FMyVector2D_ = Binds.ExistingClassForTarget("FMyVector2D");
 
     // 默认构造
-    FMyVector2D_.Constructor("void f()", [](FMyVector2D* A) {
-        new(A) FMyVector2D();
-    });
+    FMyVector2D_.Constructor(
+        "void f()",
+        [](FMyVector2D* A)
+        {
+            new(A) FMyVector2D();
+        });
 
     // 带参构造（脚本里 FMyVector2D V(1.0, 2.0)）
-    FMyVector2D_.Constructor("void f(float64 X, float64 Y)",
-        [](FMyVector2D* A, double X, double Y) {
+    FMyVector2D_.Constructor(
+        "void f(float64 X, float64 Y)",
+        [](FMyVector2D* A, double X, double Y)
+        {
             new(A) FMyVector2D(X, Y);
-        });
-    FAngelscriptBinds::SetPreviousBindNoDiscard(true);   // 禁止 FMyVector2D(1,2);
+        })
+        .NoDiscard(); // 禁止 FMyVector2D(1,2);
 
     // 字段
     FMyVector2D_.Property("float64 X", &FMyVector2D::X);
@@ -345,7 +359,18 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMyVector2D(
         METHODPR_TRIVIAL(FMyVector2D, FMyVector2D, operator+, (const FMyVector2D&) const));
     FMyVector2D_.Method("bool opEquals(const FMyVector2D& Other) const",
         METHODPR_TRIVIAL(bool, FMyVector2D, operator==, (const FMyVector2D&) const));
-});
+}
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FMyVector2D_TypeDeclarations(
+    TEXT("FMyVector2D.TypeDeclarations"),
+    EAngelscriptBindPhase::TypeDeclarations,
+    &DeclareFMyVector2D);
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FMyVector2D_ManualBindings(
+    TEXT("FMyVector2D.ManualBindings"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFMyVector2DManual);
 ```
 
 脚本侧立即可用：
@@ -363,19 +388,20 @@ void TestVec()
 }
 ```
 
-### 4.2 三个核心函数：`ValueClass` / `ReferenceClass` / `ExistingClass`
+### 4.2 三个核心函数：`ValueClassForTarget` / `ReferenceClassForTarget` / `ExistingClassForTarget`
 
 | 函数 | 适合谁 | 一句话用途 |
 |------|--------|-----------|
-| `ValueClass<T>(name, flags)` | POD struct / 数学结构 / 容器 | 注册一个全新值类型（脚本里按值传递、栈上构造） |
-| `ReferenceClass(name, UClass*)` | UClass 反射类型首次注册 | 把一个 UCLASS 注册成 AS 引用类型（`@` 句柄） |
-| `ExistingClass(name)` | 给已被注册的类型补方法 | 不重复注册类型本身，只追加 `Method` / `Property` |
+| `Binds.ValueClassForTarget<T>(name, flags)` | POD struct / 数学结构 / 容器 | 给 callback 的目标 engine 注册全新值类型 |
+| `Binds.ReferenceClassForTarget(name, UClass*)` | UClass 反射类型首次注册 | 给目标 engine 注册 AS 引用类型（`@` 句柄） |
+| `Binds.ExistingClassForTarget(name)` | 给已注册类型补方法 | 在目标 engine 中复用类型，只追加 `Method` / `Property` |
 
 **99% 的业务场景**：
 
-- 你有个 USTRUCT → 用 `ValueClass<T>(...)`
-- 你有个 UCLASS 但还没人 binding 过 → 通常 UHT 已经覆盖；如果要补充手写方法用 `ExistingClass(name).Method(...)`
-- 你有个完全脱离 UE 反射的纯 C++ 类 → 用 `ValueClass<T>(...)` 但手动管理生命周期（罕见）
+- 你有个 USTRUCT → 在 `TypeDeclarations` callback 中用 `Binds.ValueClassForTarget<T>(...)`
+- 你有个 UCLASS 但还没人 binding 过 → 通常 UHT 已经覆盖；补充手写方法时用
+  `Binds.ExistingClassForTarget(name).Method(...)`
+- 你有个完全脱离 UE 反射的纯 C++ 类 → 用 `Binds.ValueClassForTarget<T>(...)`，但手动管理生命周期（罕见）
 
 ### 4.3 给一个已绑定的 UClass 补充手写方法
 
@@ -386,18 +412,29 @@ void TestVec()
 // 文件: Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AYourActor.cpp
 // 节选自: 给已绑定 UClass 追加手写方法
 // ============================================================================
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AYourActor_Base(
-    (int32)FAngelscriptBinds::EOrder::Late - 1, []
+namespace
 {
-    auto AYourActor_ = FAngelscriptBinds::ExistingClass("AYourActor");
+void GetTypedComponent(const AYourActor* Self, void* OutPtr, int TypeId)
+{
+    // 用 TypeId 反查 UClass，从 Self->GetComponents 里挑一个
+    // ...
+}
+
+void BindAYourActorManual(FAngelscriptBinds& Binds)
+{
+    auto AYourActor_ = Binds.ExistingClassForTarget("AYourActor");
 
     // 一个 UHT 不支持的脚本特化签名：?& 让脚本在调用点指定输出类型
-    AYourActor_.Method("void GetTypedComponent(?&out OutComp) const",
-        [](const AYourActor* Self, void* OutPtr, int TypeId) {
-            // 用 TypeId 反查 UClass，从 Self->GetComponents 里挑一个
-            // ...
-        });
-});
+    AYourActor_.Method(
+        "void GetTypedComponent(?&out OutComp) const",
+        &GetTypedComponent);
+}
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_AYourActor_Base(
+    TEXT("AYourActor.Base"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindAYourActorManual);
 ```
 
 ### 4.4 加一个全局函数（不在任何类里）
@@ -408,20 +445,29 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_AYourActor_Base(
 // ============================================================================
 // 文件: Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_MyGlobals.cpp
 // ============================================================================
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_MyGlobals(
-    FAngelscriptBinds::EOrder::Normal, []
+namespace
+{
+void BindMyGlobals(FAngelscriptBinds& Binds)
 {
     // 直接全局
-    FAngelscriptBinds::BindGlobalFunction("int32 RollD20()", FUNC_TRIVIAL(MyGlobals::RollD20));
+    Binds.BindGlobalFunctionForTarget(
+        "int32 RollD20()",
+        FUNC_TRIVIAL(MyGlobals::RollD20));
 
     // 或者收纳到命名空间下
     {
-        FAngelscriptBinds::FNamespace ns("MyGame");
-        FAngelscriptBinds::BindGlobalFunction(
+        FAngelscriptBinds::FNamespace Namespace(Binds.GetTargetEngine(), "MyGame");
+        Binds.BindGlobalFunctionForTarget(
             "int32 ComputeScore(int32 Base, int32 Bonus)",
             FUNC_TRIVIAL(MyGlobals::ComputeScore));
     }
-});
+}
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_MyGlobals(
+    TEXT("MyGlobals"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindMyGlobals);
 ```
 
 脚本里：
@@ -431,22 +477,23 @@ int v = RollD20();              // 全局
 int s = MyGame::ComputeScore(10, 3);   // 命名空间形式
 ```
 
-### 4.5 选 `EOrder` 的简易版规则
+### 4.5 选 `EAngelscriptBindPhase` 的简易版规则
 
 ```text
-你的 Bind 注册的是…                推荐 EOrder
-────────────────────────────────  ─────────────────────────
-全新的 POD 数学结构                EOrder::Early
-全新的容器模板（罕见）              EOrder::Early
-依赖 FString / FName / FVector
-等已存在类型的二级类型              EOrder::Early + 1
-全局函数 / FunctionLibrary 风格     EOrder::Normal（默认）
-给一个核心 UClass 补 5–10 条方法    EOrder::Late - 1
-跨类型转换运算符（FFoo↔FBar）       EOrder::Late + 10
-不确定                              EOrder::Normal，跑一次看顺序日志
+你的 Bind 注册的是…                       推荐 phase
+───────────────────────────────────────  ─────────────────────────────────────
+全新的值类型 / 引用类型 / 模板类型壳       TypeDeclarations
+类型 adapter、finder、生命周期基础设施     TypeInfrastructure
+手写方法、属性、构造器和全局函数           ManualBindings
+UHT 生成的函数地址表                       GeneratedBindings
+UFunction / UProperty 反射暴露             ReflectionBindings
+依赖反射结果的手写补漏                     PostReflectionBindings
+最终校验或封口动作                          Finalization
 ```
 
-完整阶段语义见 `Type_BindSystem.md` §二.3。**强烈建议**：写新的 Bind 时跟现有同类 `Bind_*.cpp` 保持一致——例如新数学结构对齐 `Bind_FBox.cpp`（Early 主体 + Late 二级方法），新 UClass 补充对齐 `Bind_AActor.cpp`。
+完整阶段语义见 `Type_BindSystem.md` §二。一个主题跨越多个阶段时，应拆成多个具名 callback；不要再用整数偏移表达依赖。
+例如新数学结构可对齐 `Bind_FBox.cpp` 的 `TypeDeclarations` + `ManualBindings`，新 UClass 补充可对齐
+`Bind_AActor.cpp` 的 `ManualBindings`。
 
 ### 4.6 完整一行 Method 的解构
 
@@ -517,7 +564,8 @@ public:
 
 脚本侧自动可用 `Damage.IsLethal()`。
 
-**选项 B**：手写 `Bind_FMyDamageInfo.cpp` 注册成员方法（与 §四.1 同样模式，但用 `ExistingClass`）。
+**选项 B**：手写 `Bind_FMyDamageInfo.cpp` 注册成员方法（与 §四.1 同样模式，但用
+`Binds.ExistingClassForTarget(...)`）。
 
 ### 5.3 USTRUCT 暴露面速查
 
@@ -536,7 +584,8 @@ public:
 
 ### 6.1 一行也不用写：UE 反射自动覆盖
 
-`Bind_Enums`（`EOrder::Early - 1`）启动时通过 `TObjectRange<UEnum>` 遍历**所有引擎已知的枚举**，按规则自动注册：
+`Bind_Enums` 的 `TypeDeclarations` callback 启动时通过 `TObjectRange<UEnum>` 遍历**所有引擎已知的枚举**，
+按规则自动注册：
 
 ```cpp
 // 你只要正常加 UENUM 标记即可
@@ -606,7 +655,8 @@ public:
 
 ### 7.2 脚本侧自动可见
 
-`Bind_Delegates.cpp` 在 `EOrder::Early` 阶段遍历所有 `UDelegateFunction`（也就是上面 `DECLARE_DYNAMIC_*_DELEGATE` 宏展开出的那个 UFunction），自动注册到 AS 端为：
+`Bind_Delegates.cpp` 在 `TypeDeclarations` 声明 delegate/event 类型，并在 `ManualBindings` 补齐函数表。它遍历所有
+`UDelegateFunction`（也就是上面 `DECLARE_DYNAMIC_*_DELEGATE` 宏展开出的 UFunction），自动注册到 AS 端为：
 
 - 单播 → `delegate void FMyOnHit(AActor HitActor)` 风格的 AS delegate 类型
 - 多播 → `event void FMyOnGameOver(AActor Winner, int32 FinalScore)` 风格的 AS event 类型
@@ -683,7 +733,8 @@ public:
 };
 ```
 
-`ScriptMixin = "USceneComponent"` 那一行 meta 让插件在 `EOrder::Late + 100` 阶段把每个 `static UFUNCTION` 改写成"USceneComponent 的成员方法"——剥掉第一个参数、把它当 `this`。脚本侧：
+`ScriptMixin = "USceneComponent"` 那一行 meta 让插件在 `ReflectionBindings` 阶段把每个 `static UFUNCTION`
+改写成“USceneComponent 的成员方法”：剥掉第一个参数并把它当作 `this`。脚本侧：
 
 ```angelscript
 USceneComponent Comp = ...;
@@ -730,12 +781,12 @@ property        ← 历史关键字（已移除，参 Syntax_PropertyAccessor）
 
 ### 9.3 命名空间：用 `FNamespace` 收纳
 
-全局函数太多容易污染 AS 全局符号表。用 `FNamespace` 收纳：
+全局函数太多容易污染 AS 全局符号表。在具名 callback 内，用绑定到目标 engine 的 `FNamespace` 收纳：
 
 ```cpp
 {
-    FAngelscriptBinds::FNamespace ns("MyGame");
-    FAngelscriptBinds::BindGlobalFunction(
+    FAngelscriptBinds::FNamespace Namespace(Binds.GetTargetEngine(), "MyGame");
+    Binds.BindGlobalFunctionForTarget(
         "int32 ComputeDamage(int32 Base, int32 Boost)",
         FUNC_TRIVIAL(MyGameMath::ComputeDamage));
 }
@@ -828,7 +879,7 @@ ScriptError: ... Type 'FMyVector2D' is not declared
 
 1. 你的 `Bind_*.cpp` 没加 `AS_FORCE_LINK` —— LTO 把全局对象 strip 掉了
 2. 你的 `Bind_*.cpp` 没加进 build —— 看 `AngelscriptRuntime.Build.cs` 默认会 glob 整个 `Source/AngelscriptRuntime` 目录，但**子目录**可能漏掉
-3. `EOrder` 用错了——比如 `FMyType` 的方法签名里出现 `FMyOtherType`，但 `Bind_FMyOtherType` 注册时机晚于 `Bind_FMyType`
+3. phase 选错或职责没有拆开——比如在 `TypeDeclarations` 之前引用尚未声明的类型；把类型壳与手写方法拆到正确 phase
 4. UFUNCTION 被 `NotInAngelscript` / `BlueprintInternalUseOnly` 过滤了
 
 ### 11.3 编译期错误："Method 'X' not found"
@@ -877,7 +928,7 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 | 暴露新 UENUM | 反射兜底 | 0 行 binding 代码，只标 `UENUM(BlueprintType)` |
 | 暴露新 Delegate | 反射兜底 | 0 行 binding 代码，只用 `DECLARE_DYNAMIC_*_DELEGATE` 宏 |
 | 注册自定义运算符（`opAdd` / `opEquals`） | 手写 Bind_*.cpp | 一份新的 `Bind_F<Type>.cpp` |
-| 用 `?&` 模板让脚本指定输出类型 | 手写 Bind_*.cpp | `ExistingClass(name).Method(...)` 加一条 lambda |
+| 用 `?&` 模板让脚本指定输出类型 | 手写 Bind_*.cpp | `Binds.ExistingClassForTarget(name).Method(...)` |
 | 屏蔽某个不想暴露的函数 | 反射元数据 | `meta=(NotInAngelscript)` 一行 |
 | 改 AS 端别名 | 反射元数据 | `meta=(ScriptName="...")` 一行 |
 | 暴露 nondefault 构造（`FFoo(A, B)`） | 手写 Bind_*.cpp | `Constructor("void f(...)", lambda)` |
@@ -888,7 +939,8 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 
 ## 附录 B：常见错误避坑（C++ 工程师视角）
 
-1. **以为加 `Bind_MyType.cpp` 就够了，结果脚本看不到** —— 漏写 `AS_FORCE_LINK`，全局对象被 link 优化扔掉。**所有** `FBind` 全局对象都必须带 `AS_FORCE_LINK`。
+1. **以为加 `Bind_MyType.cpp` 就够了，结果脚本看不到** —— 漏写 `AS_FORCE_LINK`，provider 被 linker 优化掉。
+   **所有 file-static `FAngelscriptBind` 都必须带 `AS_FORCE_LINK`。**
 
 2. **签名拼错却没编译错误** —— Method 签名是字符串。AS 引擎在脚本编译期才会发现不匹配。建议复制粘贴 C++ 类型名进签名字符串，**不要凭手感打**。
 
@@ -906,11 +958,13 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 
 9. **脚本侧 `MyClass.MyMethod()` 提示找不到，但 `as.DumpEngineState` 说类型存在** —— 可能是 mixin 的"第 0 参数剥离" target 写错了。检查 `UCLASS(meta=(ScriptMixin="USceneComponent"))` 里 target 类型名是否准确。
 
-10. **跨模块依赖问题：你的模块依赖另一个 binding 还没注册的类型** —— `EOrder` 用错。把你的 binding 调成 `Late+1` 或更晚，让被依赖类型先于你注册。
+10. **跨模块依赖问题：你的 callback 依赖另一个尚未注册的类型** —— phase 选错或职责没有拆开。把类型壳放在
+    `TypeDeclarations`，把方法/全局函数放在 `ManualBindings`；依赖反射结果的补漏放在 `PostReflectionBindings`。
 
 11. **`UFUNCTION(meta=(NotInAngelscript))` 是脚本不可见，不是不可编译** —— 加 meta 后 C++ 仍能调，只是脚本编译器看不到。**不要**用它做权限控制。
 
-12. **改了 `EOrder` 头文件后 UHT 产物里硬编码常量过期** —— `Type_BindSystem.md` §附录 B-10 的同样问题。改 `EOrder` 后 rebuild。
+12. **改了 provider 的 phase 或生成绑定入口却只做增量编译** —— file-static provider 会在启动期收集并 seal；这类改动后应
+    rebuild 并重启进程，不能依赖旧进程里的 collection。
 
 ---
 
@@ -920,7 +974,9 @@ Plugins/Angelscript/Intermediate/Build/<Plat>/<Tgt>/Inc/AngelscriptRuntime/UHT/
 
 - **暴露 USTRUCT 用 UPROPERTY；暴露 UENUM 几乎不用做事；暴露 Delegate 用标准 UE 宏即可**——这三类的"自动覆盖率"非常高，几乎不需要手写。
 
-- **手写 `Bind_*.cpp` 的最小骨架就一行 `FBind` + 一段 lambda**：lambda 内 `ValueClass` / `ReferenceClass` / `ExistingClass` 拿到对象，链式 `.Constructor` / `.Method` / `.Property` 注册。维护者视角的完整解释见 `Type_BindSystem.md`。
+- **手写 `Bind_*.cpp` 的最小骨架是具名 `void(FAngelscriptBinds&)` callback + file-static `FAngelscriptBind`**：
+  callback 通过 `ValueClassForTarget` / `ReferenceClassForTarget` / `ExistingClassForTarget` 修改明确的目标 engine，
+  并在精确返回结果上链式设置 `.NoDiscard()` 等 trait。维护者视角的完整解释见 `Type_BindSystem.md`。
 
 - **mixin 是给已有类型挂 helper 的最佳路径**：写一份 `FunctionLibraries/<X>Library.h`，`UCLASS(meta=(ScriptMixin="..."))`，剩下交给框架。完整指南见 `Guide_ScriptMixin.md`。
 

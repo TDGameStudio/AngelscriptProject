@@ -225,7 +225,9 @@ TEST_METHOD(OptionalCompat)
 - `FScopedAngelscriptModule` 应在对应 `TEST_METHOD` 内创建，module name 与场景名对应。
 - `ExpectGlobalInts` / `Execute...` 的返回值必须被 `ASSERT_THAT(IsTrue(...))` 或同等级断言消费，不要只调用后忽略返回值。
 - 如果测试开始验证大量值域、类型矩阵、返回值矩阵或运行时状态组合，应迁移到 `Coverage/` 或对应功能目录，而不是继续塞进 `Bindings/`。
-- 允许保留文件级 native bind 注册对象，例如 `AS_FORCE_LINK const FAngelscriptBinds::FBind ...`，因为这类对象必须在 AS bind 初始化期注册；但测试流程、fixture 和断言仍应留在 `TEST_CLASS_WITH_FLAGS` 内。
+- 允许保留文件级 native bind 注册对象，例如 `AS_FORCE_LINK const FAngelscriptBind ...`，因为其元数据必须在进程级 collection seal 前入队。每条都应显式选择 `EAngelscriptBindPhase`，callback 接收 `FAngelscriptBinds&`；测试流程、fixture 和断言仍应留在 `TEST_CLASS_WITH_FLAGS` 内。
+- 专门验证 DSL 兼容性的 fixture 可以保留受支持的非捕获 callable lambda；模拟生产源码布局时，自定义 callable 使用语义 owner，pointer-only bind 不创建空 `_Functions.h/.cpp` companion。
+- 注册后恰好一个短 fluent trait 时，只有完整 raw line 不超过 120 列才可同行；长 registration 自己闭合，多个 trait 各占一条同级缩进续行。trait 断言应使用准确返回的 `FAngelscriptBoundFunction` / `FAngelscriptBoundProperty`，不能依赖隐式 previous-bind 状态。
 
 ## 内联 AS fixture 规则
 

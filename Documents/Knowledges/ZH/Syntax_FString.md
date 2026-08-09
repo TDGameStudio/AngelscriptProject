@@ -507,46 +507,65 @@ if (Char == '=' && !bFoundFormat)
 
 ## 四、运行时绑定：`FString::ApplyFormat`
 
-**源码所在**：`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FString.cpp:1300-1313`。
+**源码所在**：`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FString.cpp::BindFStringManualBindings`。
 
-### 4.1 12 个 ApplyFormat 重载
+### 4.1 12 个具体 ApplyFormat 重载 + 通配兜底
 
 ```cpp
-// 整数类型 (8 个)
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(int32 Value, const FString& Specifier)",
-    &ApplyFormatInteger<int32, false, uint32>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(uint32 Value, const FString& Specifier)",
-    &ApplyFormatInteger<uint32, true, uint32>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(int64 Value, const FString& Specifier)",
-    &ApplyFormatInteger<int64, false, uint64>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(uint64 Value, const FString& Specifier)",
-    &ApplyFormatInteger<uint64, true, uint64>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(int16 Value, const FString& Specifier)",
-    &ApplyFormatInteger<int16, false, uint16>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(uint16 Value, const FString& Specifier)",
-    &ApplyFormatInteger<uint16, true, uint16>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(int8 Value, const FString& Specifier)",
-    &ApplyFormatInteger<int8, false, uint8>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(uint8 Value, const FString& Specifier)",
-    &ApplyFormatInteger<uint8, true, uint8>);
+static void BindFStringManualBindings(FAngelscriptBinds& Binds)
+{
+    FAngelscriptBinds::FNamespace Namespace(Binds.GetTargetEngine(), "FString");
 
-// 浮点 (2 个)
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(float32 Value, const FString& Specifier)",
-    &ApplyFormatFloat<float>);
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(float64 Value, const FString& Specifier)",
-    &ApplyFormatFloat<double>);
+    // 整数类型 (8 个)
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(int32 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatInt32);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(uint32 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatUInt32);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(int64 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatInt64);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(uint64 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatUInt64);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(int16 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatInt16);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(uint16 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatUInt16);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(int8 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatInt8);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(uint8 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatUInt8);
 
-// 布尔 (1 个)
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(bool Value, const FString& Specifier)",
-    &ApplyFormatBool);
+    // 浮点、布尔和 FString
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(float32 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatFloat);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(float64 Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatDouble);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(bool Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatBool);
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(const FString& Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatString);
 
-// FString (1 个)
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(const FString& Value, const FString& Specifier)",
-    &ApplyFormatString);
+    // (*) 任意类型兜底 (使用 ?& 通配引用)
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(const ?& Value, const FString& Specifier)",
+        &FAngelscriptFStringBinds::ApplyFormatValue);
+}
 
-// (*) 任意类型兜底 (使用 ?& 通配引用)
-FAngelscriptBinds::BindGlobalFunction("FString ApplyFormat(const ?& Value, const FString& Specifier)",
-    &ApplyFormat);
+AS_FORCE_LINK const FAngelscriptBind Bind_FString_ManualBindings(
+    TEXT("FString.ManualBindings"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFStringManualBindings);
 ```
 
 ### 4.2 重载选择规则
@@ -805,7 +824,7 @@ AS 字符串: const char* (字面量)
 
 ### 6.4 扩展自定义类型支持
 
-添加自定义类型的 `ApplyFormat` 支持需要在 C++ 端扩展 `Bind_FString.cpp`：
+添加自定义类型的 `ApplyFormat` 支持时，用单独的具名 callback 修改传入的目标 engine：
 
 ```cpp
 // 例: 给 FVector 添加 ApplyFormat 支持
@@ -816,9 +835,18 @@ static FString ApplyFormatVector(const FVector& V, const FString& Specifier)
     return FString::Printf(TEXT("(%.2f, %.2f, %.2f)"), V.X, V.Y, V.Z);
 }
 
-FAngelscriptBinds::BindGlobalFunction(
-    "FString ApplyFormat(const FVector& Value, const FString& Specifier)",
-    &ApplyFormatVector);
+static void BindFVectorStringFormat(FAngelscriptBinds& Binds)
+{
+    FAngelscriptBinds::FNamespace Namespace(Binds.GetTargetEngine(), "FString");
+    Binds.BindGlobalFunctionForTarget(
+        "FString ApplyFormat(const FVector& Value, const FString& Specifier)",
+        &ApplyFormatVector);
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_FVector_StringFormat(
+    TEXT("FVector.StringFormat"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindFVectorStringFormat);
 ```
 
 注意 AS 重载查找顺序：**精确类型 > 引用类型 > 通配 `?&`**。`FVector` 自定义版本会优先于通配兜底命中。

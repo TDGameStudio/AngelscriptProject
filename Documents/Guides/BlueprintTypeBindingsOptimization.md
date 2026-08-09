@@ -4,6 +4,8 @@
 
 Angelscript 插件 `Bind_Defaults` 在编辑器启动时的 **Phase 2（函数枚举 + Callable/Event 绑定）** 原本独占 36.22 s / 99.72%（平均 5.74 ms × 6312 个函数）。本次优化将该阶段压缩到 **147 ms**，总降幅 **−99.59%**，行为与 baseline 完全等价（`classes=7853`、`funcs_bound=6312` 计数一致）。
 
+> 本文记录优化发生时的历史函数名。当前同一内部 Phase 2 由 `BlueprintType.ReflectionBindings` callback 在外层 `ReflectionBindings` 阶段执行；性能优化本身没有被移除。
+
 **对应提交**：`3642f79 [Runtime] Perf: optimize Bind_Defaults Phase 2 function enumeration`
 
 ## 优化前后对比
