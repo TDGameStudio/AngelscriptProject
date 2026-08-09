@@ -1,0 +1,231 @@
+title: AS/Docs/zh-Hans/type-object-reflection/classgenerator-structure
+type: text/vnd.tiddlywiki
+tags: TypeObjectReflection
+caption: ClassGenerator 结构剖析
+description: 解析 FAngelscriptClassGenerator 的内部分层——各流水线阶段的职责边界、数据成员所有权，以及拆分式重构的架构约束。
+as-sdk-document: yes
+as-doc-key: type-object-reflection/classgenerator-structure
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 80
+as-content-revision: 1
+as-sources: [[openspec]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 80
+as-nav-parent: type-object-reflection/index
+as-feature-key: classgenerator-structure
+
+! 要解决的问题
+
+每当脚本类文件保存或热重载触发时，Unreal 引擎需要获得一个真正的 `UClass`/`UStruct`/`UFunction` 对象——而这些对象必须与原生 C++ 生成的反射形状完全对齐才能被 Blueprint、序列化和 GC 系统正确接受。历史上，这套转换逻辑被集中放置在一个单体文件中，随着功能积累，文件规模已超出单一职责的合理边界：分析、重载决策、整类重生成、软重载路径、实例迁移、finalize 后置处理等相互耦合，导致维护成本高、测试覆盖难度大。
+
+当前实现已经拆成按阶段命名的翻译单元；本文以仓库现存的 `AngelscriptClassGenerator_Analyze.cpp`、`_ReloadPlanning.cpp`、`_FullReload.cpp`、`_SoftReload.cpp`、`_Generation.cpp`、`_Finalize.cpp`、`_Reinstancing.cpp` 及 `AngelscriptClassGenerator.h` 为事实基线，不再把旧规格的占位内容当作实现说明。
+
+!! 架构约束：行为保全
+
+拆分是''纯结构性''重构，不允许改变任何运行时/编辑器可观测行为。规格明确列出以下不可变契约：
+
+* 生成的 `UClass`/`UStruct`/`UFunction` 反射形状
+* `UASFunction_*` 派发变体的选择逻辑
+* 热重载语义与 hot-reload 需求规则
+* 插件对外公开 API 的签名与导出符号
+* 默认对象（Default Object）状态
+* 重实例化（reinstance）行为
+
+只要上述契约未变，阶段划分、文件命名、函数提取均属于实现内部细节。
+
+! 流水线阶段与职责划分
+
+规格要求每个翻译单元只负责流水线的''一个阶段''。下表列出规格中命名的阶段及其职责描述：
+
+|!阶段名称 |!主要职责 |!备注 |
+|driver |整体调度，驱动各阶段顺序执行 |顶层入口 |
+|analyze |读取脚本类型信息，生成阶段所需的分析产物 |先于所有生成阶段 |
+|reload-planning |决策哪些类/属性需要完整重载，哪些可以走软重载路径 |依赖 analyze 产物 |
+|full reload |对需要完整重建的类执行 `DoFullReloadClass(FModuleData&, FClassData&)`，建立新反射类型 |结构变化路径 |
+|soft reload |执行 `DoSoftReload(FModuleData&, FClassData&)`，保留可复用反射身份并替换执行状态 |body/兼容 metadata 路径 |
+|generation |生成 `UClass`/`UStruct`/`UFunction` 等反射对象 |核心生成阶段 |
+|finalize |`FinalizeClass` 及 Actor/Component/Object 专用 finalize，完成 link、metadata、CDO/组件表 |发布前收口 |
+|reinstancing |旧实例迁移到新生成类型上 |与 GC 交互 |
+
+`AngelscriptClassGenerator.h` 当前公开的阶段入口包括 `PerformReload(bool)`、`Analyze(FModuleData&)`、class/delegate overload、`AnalyzeEnums`、`DoFullReloadClass`、`DoSoftReload`、`FinalizeClass`、`FinalizeActorClass`、`FinalizeComponentClass` 与 `FinalizeObjectClass`。文件拆分不能改变这些阶段之间的数据/提交语义。
+
+! 关键数据结构与稳定源码入口
+
+!! FAngelscriptClassGenerator 声明边界
+
+规格明确规定：''第一阶段拆分期间''，`FAngelscriptClassGenerator` 类型及其全部数据成员的声明必须集中在单一头文件 `AngelscriptClassGenerator.h` 中，不得分散到各阶段的私有头文件。将声明拆分到协作头文件（private-header/collaborator extraction）是后续独立重构的内容，不属于当前阶段的范围。
+
+!! UASClass 与 UASFunction 变体
+
+规格要求将以下类型迁移到独立翻译单元，但''必须等到 ClassGenerator 阶段拆分稳定之后''才执行：
+
+* `UASClass`：AngelScript 生成类的基类型
+* `UASFunction` 基类
+* `UASFunction_*` 系列派发变体子类
+
+<<as-callout warning "UHT 声明不可宏生成">>
+`UASFunction_*` 各子类的 `UCLASS()` 声明必须保持为显式提交的 C++ 代码，不能由宏或代码生成器在构建时产生 UHT 输入。允许用宏/代码生成器产生非 UHT 实现体（如函数体）或已检入的生成源文件，但产生的类和派发行为必须与重构前完全一致。
+<</as-callout>>
+
+!! 稳定源码目录
+
+| 路径 | 说明 |
+|`Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/` |ClassGenerator 全部源文件所在目录 |
+|`AngelscriptClassGenerator.h` |`FAngelscriptClassGenerator` 声明的唯一位置（第一阶段约束） |
+
+|`AngelscriptClassGenerator_Analyze.cpp`|descriptor/type/signature 合法性与 reload 输入分析|
+|`AngelscriptClassGenerator_ReloadPlanning.cpp`|old/new 差异传播与 soft/full 决策|
+|`AngelscriptClassGenerator_Generation.cpp`|FProperty/UFunction/class member 生成|
+|`AngelscriptClassGenerator_Finalize.cpp`|class link、专用类型 finalize、default/component 收口|
+|`AngelscriptClassGenerator_SoftReload.cpp`|保留类型身份的执行/局部状态更新|
+|`AngelscriptClassGenerator_FullReload.cpp`|新类型生成、版本关系与完整替换|
+|`AngelscriptClassGenerator_Reinstancing.cpp`|旧实例值/reference 保存、替换与恢复|
+|`ASClass.*` / `ASStruct.*` / `ASFunction*`|生成 UObject 类型及执行派发实现|
+
+! 聚合数据结构的所有权
+
+`FAngelscriptClassGenerator` 以一次 reload transaction 聚合状态。Header 中的主要数据族表达不同 identity：
+
+|!结构|!持有什么|!生命周期|
+|`FModuleData`|本轮 module、class/delegate/enum 分析及依赖|一次 generation/reload transaction|
+|`FClassData`|old/new class、descriptor、reload propagation 与成员分析|从 Analyze 到 Finalize/Reinstance|
+|`FEnumData`|enum old/new 及值/consumer 关系|本轮 reload|
+|`FDelegateData`|delegate signature old/new 与传播|本轮 reload；发布后由生成类型拥有|
+|`FReloadPropagation`|结构变化向 consumer 传播的理由/状态|planning 固定后只读消费|
+|`FDataRef`|跨数据族的稳定引用/索引|不得变成跨 transaction 裸指针缓存|
+
+阶段拆分后所有数据仍属于同一个 generator transaction；翻译单元不应新增 process-global side table，或把 `FClassData*` 保存到异步/下一轮 reload。
+
+! 完整阶段流水线
+
+```text
+compiled AS modules + descriptors + canonical old reflection
+  → build FModuleData/FClassData/FDelegateData/FEnumData
+  → Analyze types, parents, members, signatures, references
+  → ReloadPlanning propagates old/new structural effects
+  → choose per class:
+       SoftReload: preserve UClass/UFunction identity where legal
+       FullReload: allocate a new reflection generation
+  → Generation creates properties/functions/classes/structs/delegates
+  → Finalize links layouts, metadata, components, defaults and CDOs
+  → Reinstancing migrates objects/Blueprint references/values
+  → PerformReload publishes new canonical state
+  → retire old generation after every reader is moved
+```
+
+分析、生成和发布是三个不同提交边界。Analyze 可以引用 old/new 描述，但不能改变 canonical class；Generation 创建 candidate UObject，也不能让常规查询提前看到；Finalize 和 reload transaction 成功后才发布。
+
+! Analyze 阶段
+
+Analyze 负责尽早拒绝不能安全生成的形状，例如 parent/type 无效、property `CanCreateProperty()` 为 false、function return 不能 `CanBeReturned()`、argument 不能 `CanBeArgument()`、reference return 不可表示、override/RepNotify/default component 关系不合法。
+
+此阶段输出的不是 FProperty 本身，而是生成和 reload planning 所需的确定事实：owner、类型用法、old/new 对应、依赖传播、soft/full 可行性。错误需要绑定 source descriptor/location，不能等到 `UClass::Bind/StaticLink` 才用引擎断言失败。
+
+! Generation 与 Finalize
+
+Generation 调用各 `FAngelscriptTypeUsage::CreateProperty` 创建 concrete FProperty，设置 offset/flags/metadata，并处理 container inner/value/key 的 instanced/reference flags 向外传播。函数生成按 return/argument 顺序建立 property chain 与 UASFunction dispatch variant。
+
+Finalize 在所有 member 形状稳定后执行 class link、Actor/Component/Object 专用逻辑、default components、CDO/defaults 和注册关系。顺序不变量：
+
+```text
+all referenced types available
+  → property/function member creation complete
+  → class link/layout stable
+  → component/default tables stable
+  → CDO/default execution
+  → canonical publication
+```
+
+提前创建 CDO 会让 constructor/default 读取半成品 member map；提前发布 class 会让 Blueprint/GC 观察不完整 layout。
+
+! Soft 与 Full Reload 的 old/new 关系
+
+|!变化|!Soft 可做什么|!何时必须 Full|
+|函数 body|替换 AS executable/JIT dispatch，保留 UFunction identity|签名/flags/virtual relation 同时改变|
+|局部变量/debug lines|更新 function-local state/source mapping|不改变 UFunction parameter/property|
+|property metadata/default|仅在确认不改变 layout/下游合同的子集|类型、offset、flags/serialization/replication 结构变化|
+|class parent/interface|不可仅换 body|新 UClass generation|
+|component identity/root/attach|不可仅换函数|重建 component tables/CDO 并 reinstance|
+|delegate signature|不可复用旧 UDelegateFunction layout|生成新 signature 并更新引用/绑定|
+
+Full Reload 要让 old type 指向 newer version，但旧实例迁移完成前 old layout/schema/function 仍必须存活。New canonical consumers 指向 new；old 只服务迁移和仍在执行的 old generation。
+
+! Reinstancing 与 GC
+
+Reinstancing 需要先用旧 schema 读取/保存旧实例值和引用，再构建新实例，用新 schema 恢复兼容值，更新 external references，最后允许旧对象/类回收。`EmitReferenceInfo` 的 schema 也按 old/new type usage 分开；新 property 不能覆盖旧 inner property 指针来“就地升级”容器。
+
+```text
+old UObject + old UClass/layout
+  → capture compatible property values/references
+  → allocate/construct new UObject from new CDO
+  → restore mapped values
+  → replace references/Blueprint instances
+  → teardown old script/object state
+```
+
+失败发生在 restore/reinstance 时必须有回滚或明确 fatal boundary，不能留下同一对象一部分字段来自 old、一部分来自 new。
+
+! 失败原子性
+
+|!失败阶段|!可见状态|
+|Analyze|只有 diagnostics；last-good module/classes 不变|
+|Generation|candidate UObject 可清理；不得进入 canonical lookup|
+|Finalize/CDO|candidate transaction 失败；旧 CDO/default/component 继续服务|
+|Reload planning|不得开始局部 publish；修正 classification 后重做整轮|
+|Reinstance|必须保持 old objects/references 可恢复或按明确不可恢复策略终止|
+
+过期异步/重复保存的 generation result 还必须通过 transaction/generation identity 拒绝提交。
+
+! 兼容与维护影响
+
+拆文件属于内部重构时，必须保持 UClass/UFunction/FProperty 形状、public symbols、dispatch variant、reload classification、CDO bytes、reinstance 结果和 logs/dumps 的稳定语义。若确实要改其中任何一项，应拆成行为变更，单独记录 migration 与旧/新状态，不能夹在 decomposition diff 中。
+
+修改 `FClassData` 等共享结构时要搜索所有阶段 reader；新增 flag 必须说明谁写、从何时 immutable、谁消费。跨阶段传临时 lambda/static cache 会破坏 transaction ownership。
+
+! 清理顺序
+
+# 停止 candidate 继续生成并收集 diagnostics。
+# 释放尚未发布的 property/function/class UObject 与临时 maps。
+# 保持 last-good module、class、CDO、dispatch、source map 继续可用。
+# 成功发布时先切 canonical mapping/引用，再 retire old execution/type state。
+# 解除 old delegates/components/reinstance helper，最后释放 old schema/class。
+# Engine shutdown 时先停止 reload/watch/callback，再清 generator transaction 和 class registries。
+
+! 分层证据
+
+审查 ClassGenerator 不能只看“class 找得到”。应分别读取：Analyze diagnostics/reload reasons；生成 UClass/FProperty/UFunction flags/offsets；CDO/default/component 状态；old/new canonical/newer-version map；existing instance/Blueprint/delegate 调用；shutdown/second engine 残留。每层回答不同不变量。
+
+! 边界与失败模式
+
+!! 与其他在途变更的边界
+
+本次重构的范围''不包含''以下两项，必须留给各自的负责变更处理：
+
+* ''Haze 宏与 `WILL-EDIT` 标记的移除''：由变更 `refactor-as-audit-remove-with-angelscript-haze` 负责。
+* ''全局状态去中心化''：`FAngelscriptEngine::Get()` 和 `CurrentWorldContext` 等全局访问点可以随文件拆分一起被搬移，但不能被重写或消除——重写属于独立的去全局化计划。
+
+如果拆分过程中遭遇上述标记，应''原样搬移''并在 `decomposition-map.md` 中记录。
+
+<<as-callout warning "边界违反将导致变更冲突">>
+若在本次拆分中移除 Haze 宏或重写全局状态访问，将与并行进行的专项变更产生冲突，导致合并复杂度上升，审查时应将此类修改标记为超出范围。
+<</as-callout>>
+
+!! 不可接受的拆分结果
+
+* 拆分后仍有单一 `.cpp` 文件同时承载全部流水线阶段
+* `Analyze(class)`、`DoSoftReload`、`DoFullReloadClass`、`PerformReload` 等巨型函数在拆分后未被分解为命名步骤（即使控制流等效，也需要命名边界）
+* 公开 API 签名、导出符号或热重载语义因重构而发生变化
+* 各阶段新增隐式全局 side table，导致第二次 engine/reload 复用旧 transaction
+* candidate class 在 Finalize 完成前进入 canonical lookup
+* old schema/property 指针被直接改指 new type，破坏旧实例迁移
+
+! 相关链接
+
+* <<as-doc-link "type-object-reflection/index" "类型、对象与反射">> —— 本节总览
+* <<as-doc-link "hot-reload/change-classification" "热重载变更分类">> —— 软重载与完整重载的触发条件
+* <<as-doc-link "language/structs-and-value-types" "结构和值类型">> —— 脚本类型与反射值布局
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "函数生成与派发">>
+* <<as-doc-link "type-object-reflection/gc-reference-schema" "GC 引用 Schema">>

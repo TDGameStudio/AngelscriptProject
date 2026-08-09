@@ -1,0 +1,149 @@
+title: AS/Docs/zh-Hans/unreal-core/object-lifecycle-and-gc
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: UObject 生命周期与 GC
+description: 在正确 Outer/World 创建对象，区分强、弱、软引用，并在 teardown 解除跨生命周期持有。
+as-sdk-document: yes
+as-doc-key: unreal-core/object-lifecycle-and-gc
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 80
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: unreal-development
+as-nav-order: 70
+as-nav-parent: unreal-core/index
+as-feature-key: object-lifecycle-gc
+
+! 两套对象语义相遇
+
+脚本普通值/脚本引用由 AngelScript VM 管理，UObject 由 Unreal 的 Outer、World、引用图与 GC 管理。当前 fork 把 UObject 派生类型写成自动句柄：
+
+```angelscript
+AActor Target = FindTarget();
+if (Target != nullptr)
+    Log(Target.GetName());
+```
+
+赋值复制对象引用，不复制 Actor。没有 vanilla AngelScript 的 `@` 句柄语法，但这不意味着 UObject 变成普通值，也不意味着非空引用永久有效。
+
+! Outer、Owner 与 World
+
+创建 UObject 时，Outer 表达命名/生命周期层级；Actor 由 World spawn，Component 通常由 Actor owner 管理，Subsystem 由 Engine/GameInstance/World/LocalPlayer outer 自动创建。
+
+|!对象 |!自然 owner/outer |!典型错误 |
+|临时 gameplay UObject |当前 Actor、Component 或 fixture |挂到 Engine，切关后继续存活 |
+|Actor |World |用普通 UObject 创建方式绕过 spawn/注册 |
+|ActorComponent |Actor |创建后未注册或错误 outer |
+|World 服务 |WorldSubsystem |存进 process static，多个 PIE 串线 |
+|跨关卡会话 |GameInstanceSubsystem |强持有上一关 Actor |
+
+Outer 不一定单独决定 GC 存活；强引用图仍关键。但错误 outer 会让命名、序列化、world 查找和 teardown 变得不可预测。
+
+! 强、弱、软与 Class 引用
+
+|!形态 |!是否保活实例 |!用途 |
+|直接 UObject 字段/UPROPERTY |通常作为强引用参与 GC |依赖在 owner 生命周期内必须存在 |
+|`TWeakObjectPtr<T>` |否 |观察可能销毁的实例 |
+|`TSoftObjectPtr<T>` |保存路径，不等于已加载强引用 |可配置资产与延迟加载 |
+|`TSubclassOf<T>` |保存受父类约束的 UClass |选择要 spawn/create 的类型 |
+
+Weak pointer 每次使用时重新确认有效并取得临时强句柄；Soft pointer 解析可能触发加载边界，不在 Tick 中无条件同步加载；TSubclassOf 不是对象，必须在正确 World/Outer 创建实例。
+
+! “非空”与“可用于 gameplay”
+
+一个 Actor 引用可能非空，但已经 EndPlay、正在 Destroy、属于旧 World 或不再有 authority。调用前按业务检查：
+
+* 是否属于当前 World；
+* 是否已经结束 play/销毁；
+* 网络 ownership/authority 是否允许该操作；
+* weak pointer 是否仍 resolve；
+* soft asset 是否已加载且类型正确。
+
+单纯 `!= nullptr` 只能排除空句柄，不能表达所有 Unreal 生命周期状态。
+
+! GC 怎样看见脚本引用
+
+ClassGenerator 为 UPROPERTY 创建 `FProperty`，类型系统为脚本 class/struct/container 发射 reference schema。Unreal GC 由这些结构发现脚本中的 UObject：
+
+```
+UASClass instance
+  -> direct object property
+  -> script struct field
+  -> TArray element
+  -> TSet valid slot
+  -> TMap key/value
+```
+
+不带 UPROPERTY 的脚本成员仍可能需要 VM/生成 schema 追踪；“Blueprint 看不见”不等于“GC 可以忽略”。Set/Map 是稀疏存储，扫描只能访问有效 slot；旧/new struct layout 在热重载迁移期使用各自 schema。
+
+! 常见跨边界循环
+
+```text
+Subsystem 强引用 Actor
+  -> Actor delegate 绑定 Subsystem
+  -> World teardown
+  -> 两侧仍由全局/Engine 状态可达
+```
+
+Unreal GC 能处理许多 UObject 循环，但 process-static、外部 delegate、timer、debug context 或 native registry 可能成为根。设计时明确哪一侧负责解除关系，不依赖“GC 最后会处理”。
+
+! 生命周期结束时清什么
+
+Actor `EndPlay`、Component teardown、Subsystem `Deinitialize` 和 Engine shutdown 都应按 owner 清理：
+
+* timer handle；
+* delegate/event binding；
+* latent/async callback；
+* World/Actor cache；
+* debug/test/coverage session 对 context 的引用；
+* scoped override 与全局 registry entry。
+
+清理要对称且幂等：初始化失败到一半也能进入同一路径；恢复的是进入 scope 前的值，而不是硬写“默认值”。
+
+! 切关与 PIE
+
+GameInstance/Engine 比 World 活得久。切关前保存的 Actor、Component、WorldSubsystem 和 timer 都属于旧 World。正确策略通常是弱引用 + world teardown 清空 + 新 World 初始化后重建，而不是跨关卡复用对象指针。
+
+PIE 第二次启动是高价值观察：如果第二次回调翻倍、World 数量增加或旧对象仍出现在 state dump，说明第一轮 teardown 未闭合。
+
+! Hot reload 的对象版本
+
+Body-only reload 保持 class/对象身份；结构变化创建新 UASClass 并重实例化。迁移期间同时存在旧/new 类型和对象：
+
+* canonical lookup 指向新 class；
+* 外部引用应替换到新实例；
+* 旧 layout/schema 保持可解释直到安全回收；
+* timer/delegate 不能继续把旧实例保活；
+* Blueprint 子类/场景实例走 Editor recovery。
+
+Full reload 后“新对象正常”不足以证明旧对象已释放；还要观察旧实例、delegate target、World objects 和第二次 GC/reload。
+
+! 故障定位表
+
+|!症状 |!优先检查 |
+|对象在脚本字段中非空却被回收 |字段/reference schema 是否向 Unreal GC 发射 |
+|切关后旧 Actor 仍被调用 |GameInstance/Engine cache、timer、delegate、static root |
+|PIE 第二次对象数翻倍 |第一轮 teardown/registry 未清理 |
+|只在 TSet/TMap 中丢 UObject |有效稀疏 slot 与 element/key/value schema |
+|只在 reload 后 GC 崩溃 |旧/new layout 与 schema 错配、过早销毁旧类型 |
+|weak pointer“偶尔”失效 |对象本来就没有强 owner；重新评估 ownership |
+|soft asset 造成卡顿 |运行时热路径同步加载 |
+
+! 源码与知识入口
+
+* UObject binding：`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UObject.cpp`
+* 类型/reference schema：`AngelscriptRuntime/Core/AngelscriptType.*`
+* Class/Struct 生成：`AngelscriptRuntime/ClassGenerator/ASClass.*`、`ASStruct.*`
+* 容器绑定：`Bind_TArray.*`、`Bind_TSet.*`、`Bind_TMap.*`
+* 弱/软引用说明：`Documents/Knowledges/ZH/Syntax_TWeakObjectPtr.md`、`Syntax_TSoftObjectPtr.md`
+* 全局隔离：`Documents/Guides/GlobalStateContainmentMatrix.md`
+
+! 相关链接
+
+* <<as-doc-link "language/object-handles-and-smart-pointers" "UObject 句柄、弱引用与软引用">>
+* <<as-doc-link "type-object-reflection/gc-reference-schema" "GC 引用 Schema">>
+* <<as-doc-link "runtime-jit-vm/garbage-collector" "AngelScript GC 与 Unreal GC">>
+* <<as-doc-link "architecture-maintenance/global-state-containment" "全局状态隔离">>

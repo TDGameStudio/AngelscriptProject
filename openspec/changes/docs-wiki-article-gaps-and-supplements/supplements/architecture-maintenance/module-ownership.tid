@@ -1,0 +1,81 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/module-ownership
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 模块与插件所有权
+description: Runtime/Editor/Test/UHT 模块与可选插件的所有权、加载顺序与维护契约速查表。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/module-ownership
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 1
+as-sources: [[project-guide]] [[angelscript-plugin]] [[gameplaytags-plugin]] [[gas-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 30
+as-nav-parent: architecture-maintenance/index
+as-feature-key: module-ownership-map
+
+! 概述
+
+本页是三套 AngelScript 插件的 //模块所有权速查表//：核心 `Angelscript` 插件、可选 `AngelscriptGameplayTags` 插件、可选 `AngelscriptGAS` 插件。你可以用它快速回答三类问题：某项能力属于哪个 UE 模块、该模块依赖谁、以及改动落在哪个模块 / 插件边界内。
+
+所有条目都对照各插件的 `*.uplugin` 与 `*.Build.cs` 核实。三套插件的 UE 模块统一在 `PostDefault` 加载阶段初始化。核心插件默认启用（`EnabledByDefault: true`），两个扩展插件默认关闭（`EnabledByDefault: false`），需要显式启用。
+
+<<as-callout note "本页是 OpenSpec 附件草稿">>
+本页为 OpenSpec 变更附件草稿（`as-content-status: draft`），尚未走完 wiki 审阅流程。表中模块名、类型、依赖均取自当前仓库的 `*.uplugin` 与 `*.Build.cs`；下游行为契约请以对应源码与测试为准。
+<</as-callout>>
+
+! 核心插件：Angelscript
+
+`Plugins/Angelscript/Angelscript.uplugin` 声明了三个 UE 模块，均为 `PostDefault` 加载。此外 `AngelscriptUHTTool` 是一个 C# UBT 插件（`.ubtplugin.csproj`），它挂接到 Unreal Header Tool / UBT 流水线，//不是 .uplugin 里的 UE 运行时模块//，因此单列。
+
+|!模块 |!.uplugin 类型 |!职责 |!模块内主要依赖 |
+|`AngelscriptRuntime` |Runtime |引擎核心、类型系统、编译、`Bind_*.cpp` 引擎 API 绑定、ClassGenerator、DebugServer、StaticJIT、预处理器、状态 Dump、运行时侧 AngelScript 测试框架 |无插件内依赖（对外依赖 `Core` / `CoreUObject` / `Engine` 等；`bBuildEditor` 时追加 `UnrealEd` / `EditorSubsystem` / `UMGEditor`） |
+|`AngelscriptEditor` |Editor |热重载文件监听与类重实例化、编辑期代码生成、BlueprintImpact 扫描器与 Commandlet、跳转到源码、Content Browser 集成 |公共依赖 `AngelscriptRuntime`（另含 `UnrealEd` / `BlueprintGraph` / `Kismet` / `DirectoryWatcher` 等） |
+|`AngelscriptTest` |Editor |C++ 自动化测试、CQTest、AngelScript SDK 测试与测试夹具 |公共依赖 `AngelscriptRuntime`；`bBuildEditor` 时私有依赖 `AngelscriptEditor`（及 `CQTest` / `UnrealEd` 等） |
+|`AngelscriptUHTTool` |C# UBT 插件（非 UE 模块） |读取 C++ 头文件、抽取 `UFUNCTION` / `UPROPERTY` 元数据、生成 `AS_FunctionBinding_*` 分片 |独立于 UE 模块图，挂接 UBT / UHT 流水线 |
+
+<<as-callout note "AngelscriptRuntime 的编辑器依赖是条件式的">>
+`AngelscriptRuntime.Build.cs` 只在 `Target.bBuildEditor` 为真时才追加 `UnrealEd` / `EditorSubsystem`（公共）与 `UMGEditor`（私有）。它本身仍是 Runtime 类型模块，不对插件内其他模块产生依赖。上表“无插件内依赖”指的是不依赖 `AngelscriptEditor` / `AngelscriptTest`。
+<</as-callout>>
+
+! 可选插件：AngelscriptGameplayTags
+
+`AngelscriptGameplayTags.uplugin`：`EnabledByDefault: false`，仅声明 `Angelscript` 作为前置插件。三个模块均 `PostDefault` 加载。
+
+|!模块 |!.uplugin 类型 |!职责 |!主要依赖 |
+|`AngelscriptGameplayTags` |Runtime |GameplayTag 相关的运行时绑定 |公共依赖 `AngelscriptRuntime` + `GameplayTags`（及 `Core` / `CoreUObject` / `Engine`） |
+|`AngelscriptGameplayTagsEditor` |Editor |GameplayTag 编辑期桥接 |公共依赖 `AngelscriptRuntime` + `AngelscriptGameplayTags` + `GameplayTags` |
+|`AngelscriptGameplayTagsTest` |Editor |GameplayTags 专属自动化测试 |公共依赖 `AngelscriptRuntime` + `AngelscriptGameplayTags` + `AngelscriptGameplayTagsEditor` + `AngelscriptTest` + `GameplayTags`；`bBuildEditor` 时私有依赖 `CQTest` / `UnrealEd` |
+
+! 可选插件：AngelscriptGAS
+
+`AngelscriptGAS.uplugin`：`EnabledByDefault: false`，前置插件为 `Angelscript` + `AngelscriptGameplayTags` + `GameplayAbilities`。该插件只有 //两个// 模块（一个 Runtime、一个 Editor 测试），没有单独的编辑器功能模块。
+
+|!模块 |!.uplugin 类型 |!职责 |!主要依赖 |
+|`AngelscriptGAS` |Runtime |面向 GAS（Gameplay Ability System）的脚本集成绑定 |公共依赖 `AngelscriptRuntime` + `AngelscriptGameplayTags` + `GameplayAbilities` + `GameplayTags` + `GameplayTasks` |
+|`AngelscriptGASTest` |Editor |GAS 专属自动化测试 |公共依赖 `AngelscriptRuntime` + `AngelscriptGameplayTags` + `AngelscriptGAS` + `AngelscriptTest` + `GameplayAbilities` + `GameplayTags` + `GameplayTasks`；`bBuildEditor` 时私有依赖 `BlueprintGraph` / `CQTest` / `UnrealEd` |
+
+<<as-callout note "GAS 无独立编辑器模块">>
+与 `AngelscriptGameplayTags` 不同，`AngelscriptGAS` 的 `Source/` 下只存在 `AngelscriptGAS`（Runtime）与 `AngelscriptGASTest`（Editor）两个目录，没有 `AngelscriptGASEditor`。若后续新增编辑器专属能力，需要先补一个模块并同步更新本表与 `.uplugin`。
+<</as-callout>>
+
+! 打包与边界
+
+* `AngelscriptGameplayTags` 与 `AngelscriptGAS` 是 //可选插件//（optional-plugin）：默认关闭，启用后才随目标一起编译打包。
+** `AngelscriptGameplayTags` 依赖插件：`Angelscript`。
+** `AngelscriptGAS` 依赖插件：`Angelscript` + `AngelscriptGameplayTags` + `GameplayAbilities`；因此启用 GAS 会连带引入 GameplayTags 扩展。
+* 核心 `Angelscript` 插件默认启用，其 `AngelscriptEditor` / `AngelscriptTest` 是 `Editor` 类型模块，不进入纯运行时（非编辑器）目标。
+* 依赖方向是单向的：扩展插件依赖核心 `AngelscriptRuntime`，核心插件不反向依赖任何扩展插件。改动核心运行时前，需评估两个扩展插件的下游影响。
+
+<<as-callout warning "改动模块边界要同步文档与生成契约">>
+按 `AGENTS.md` 的维护约定：当插件边界、模块职责、构建步骤或测试入口变化时，需同步更新相关文档（中文文档优先）。此外，任何对 `FAngelscriptNativeModuleFunctionBinding` 布局的改动都要提升 `AngelscriptUHTTool/native-module-function-binding-layout-version.txt` 并保持 Runtime 桥接、生成器 emit 与测试同步。以上以当前源码与测试为准。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/index" "架构与维护">> —— 本章入口
+* <<as-doc-link "topics-integrations/gameplay-tags" "GameplayTags 集成">> —— 可选 GameplayTags 扩展插件
+* <<as-doc-link "topics-integrations/gas" "GAS 集成">> —— 可选 Gameplay Ability System 扩展插件

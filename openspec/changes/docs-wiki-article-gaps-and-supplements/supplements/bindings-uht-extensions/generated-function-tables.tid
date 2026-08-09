@@ -1,0 +1,237 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/generated-function-tables
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: UHT 生成函数表与 Shard
+description: 跟踪 UHT 从配置解析、资格分类、稳定 emit、旧产物清理到 Runtime 注册与统计对账的完整函数表流水线。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/generated-function-tables
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 170
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]] [[project-knowledge-zh]]
+as-nav-group: bindings-extensions
+as-nav-order: 270
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: generated-function-tables
+
+! 生成函数表把反射模型变成可编译注册代码
+
+`AngelscriptUHTTool` 运行在 UHT pipeline 内，直接读取 `UhtModule/UhtClass/UhtFunction/UhtProperty`，不在 Runtime 启动时重新扫描 header。输出是 C++ 注册产物和审计数据：
+
+```text
+DefaultAngelscriptCompileOptions.ini
+              │
+UHT reflected session ──> eligibility/policy ──> signature/category
+              │                                  │
+              │                                  ├ NativeRuntimeLinked
+              │                                  ├ ReflectiveFallback registration
+              │                                  ├ NativeModuleFunctionAddress
+              │                                  └ Skipped + reason
+              ▼
+  generated C++ + JSON/CSV diagnostics
+              ▼
+    UBT compile/link → Runtime bind registry
+```
+
+统计文件解释发生了什么；真正执行绑定的是被 C++ 构建包含的生成源。Runtime 不读取 CSV/JSON 来决定调用后端。
+
+! 配置必须被 UBT 与 UHT 同时看到
+
+全局 `FunctionBindingMethod` 为 `None`、`NativeRuntimeLinked` 或 `NativeModuleFunctionAddress`；模块集合来自 `NativeRuntimeLinkedModules` 或 `NativeModuleFunctionAddressModules`。配置位于项目 `Config/DefaultAngelscriptCompileOptions.ini`。
+
+UBT 的 `AngelscriptRuntime.Build.cs` 把配置文件加入 `ExternalDependencies`，用它决定额外 module dependency、稳定 wrapper 和 compile definition；UHTTool 通过 `AngelscriptFunctionBindingConfigurationResolver` 定位同一文件，也把它登记为外部依赖。两边若解析到不同集合，会出现“生成了但没链接”或“Build.cs 等待一个没生成的表”。
+
+UHT 还记录 `compileOptionsPath`、`engineDistribution` 和配置模块在本次 UHT session 中的 miss。模块名写错或 target 不包含该模块时不是静默零产物，而应在统计和 console 中出现 configured miss。
+
+! 第一层：UFunction eligibility
+
+`AngelscriptFunctionBindingPolicy.IsEligible` 先过滤：
+
+|!条件 |!处理 |
+|Header 必须受支持 |Private header 与明确排除 header 不进入通用生成 |
+|函数可被 AngelScript 调用 |通常来自 BlueprintCallable/Pure 等反射表面 |
+|无 `NotInAngelscript` |显式 opt-out |
+|`BlueprintInternalUseOnly` 需 `UsableInAngelscript` 才放行 |避免暴露内部 Blueprint compiler 节点 |
+|不在 explicit excluded pair |对已知特殊 UFunction 保守排除 |
+|不是 `CustomThunk` |通用生成无法模拟自定义 exec stack |
+|不是 BlueprintEvent |事件有自己的分派/override 绑定路径 |
+
+Eligibility 只回答“是否分析”，不保证一定 direct-bind。通过这一层后才计算 backend category 或 skipped reason。
+
+! NativeRuntimeLinked 的分类
+
+对配置 module 中的每个 eligible UFunction：
+
+# Interface/NativeInterface 直接标 `ReflectiveFallback`，reason 为 `interface-function`；
+# RPC/Net function 标 `ReflectiveFallback`，reason 为 `rpc-net-function`；
+# 其余尝试 `AngelscriptFunctionSignatureBuilder.TryBuild`；
+# 成功则 `NativeRuntimeLinked`，保存 erase macro；
+# 失败仍生成 `ReflectiveFallback` registration，并保留 `signature-unresolved` 或具体原因。
+
+这意味着 RuntimeLinked module 的输出不只是 direct function pointers，还显式记录哪些函数应由 Runtime reflection fallback 接住。后端选择不会因为追求覆盖率而牺牲 RPC/Interface 语义。
+
+! NativeModuleFunctionAddress 的分类
+
+该后端只为目标 module 生成明确安全的地址 thunk：
+
+* RPC/Net 直接 skipped，reason `rpc-net-function`；
+* header signature 必须能构建；
+* 不允许 WorldContext、out/reference、ref return、static array、container、interface、delegate、field path 或 ScriptMixin receiver projection；
+* return/parameter property 只能属于 policy allowlist；
+* owning header 与非 Core struct 的引用 header 必须可包含。
+
+不满足时写入 `AS_FunctionBindingSkippedFunctions.csv`，不会偷偷生成一个 ABI 不确定 thunk。与 RuntimeLinked 不同，NativeModuleFunctionAddress 当前 skipped 的复杂函数是否仍由一般 reflective binding 提供，要看 Runtime 的 BlueprintCallable fallback 主线；目标地址 shard 本身不承诺覆盖它们。
+
+! RuntimeLinked 产物的真实形状
+
+每个有输出的 module 生成一份 UHT source：
+
+```text
+AS_FunctionBinding_<Module>.gen.cpp
+```
+
+文件中：
+
+* includes 按 ordinal 排序去重；
+* Editor-only module 外包 `#if WITH_EDITOR`；
+* 单个 Editor-only UFunction 用 `WITH_EDITOR`/`WITH_EDITORONLY_DATA` guard；
+* registration 按 ClassName、FunctionName、Category 稳定排序；
+* 每 256 个 registration 分成一个 helper batch，避免单个函数体无限增大；
+* `AS_FORCE_LINK FBind` provider 名为 `UHT.FunctionBinding.<Module>`，执行顺序为 `Late + 50`。
+
+注意这里的“batch”是同一 `.gen.cpp` 内的 helper 分组，不是每 256 个都产生独立文件。UBT 生成稳定 aggregator：
+
+```cpp
+#if __has_include("AS_FunctionBinding_Engine.gen.cpp")
+#include UE_INLINE_GENERATED_CPP_BY_NAME(AS_FunctionBinding_Engine)
+#endif
+```
+
+Aggregator 文件名稳定，实际 UHT 源按当前 pass 存在与否被 include；这让 Build.cs 不必维护易变 shard 清单。
+
+! NativeModuleFunctionAddress 的 shard 形状
+
+地址后端直接在目标 module 的 UHT output directory 生成：
+
+```text
+AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_000.cpp
+AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_001.cpp
+...
+```
+
+每 shard 最多 256 条 binding，包含目标 header、具体 C++ thunk、POD table/view 和 ModularFeature 注册。分 shard 是 translation-unit/编译成本边界，也是 module 内发布单位；每个 view 带 ModuleName 与 LayoutVersion。
+
+两种后端的产物不能对同一 module 同时 emit。`GenerateModule` 若发现 `emitRuntimeLinked && emitNativeModuleFunctionAddress` 会直接抛出 backend conflict，而不是让两套地址争抢同名 binding。
+
+! Stable output 与增量生成
+
+确定性来自几个层次：
+
+|!层 |!规则 |
+|module/class/function 顺序 |显式 ordinal sort，不依赖 hash/dictionary 枚举 |
+|include |`SortedSet<StringComparer.Ordinal>` |
+|stable index |排序时在同名项后作为 tie-breaker |
+|文件提交 |通过 UHT `CommitOutput`，由 UHT 处理内容变化 |
+|统计 |固定列序、CSV escaping、JSON structured fields |
+|旧文件 |本次 `generatedPaths` 与现存 pattern 对账后删除 stale |
+
+删除 stale output 有强安全护栏：目录必须位于 `Intermediate`，否则 generator 拒绝清理；文件删除失败会上抛异常，不留下“新表 + 旧表同时编译”的模糊状态。清理 pattern 同时覆盖历史 `AS_FunctionTable_*`/cross-module 产物，防止旧架构残留继续进 build。
+
+! 统计必须数学对账
+
+输出包括：
+
+|!产物 |!用途 |
+|`AS_FunctionBindingStatistics.json` |全局 method、配置路径、engine distribution、各 category rate/count、module summaries |
+|`AS_FunctionBindingModuleStatistics.csv` |逐 module 的 analyzed/category/skipped/shard 数 |
+|`AS_FunctionBindingDiagnostics.csv` |逐函数的 category、reason、erase macro、artifact、shard index |
+|`AS_FunctionBindingSkippedFunctions.csv` |没有 emit 的函数与 failure reason |
+
+Generator 在写文件前验证：
+
+```text
+TotalAnalyzed
+  == NativeRuntimeLinked
+   + ReflectiveFallback
+   + NativeModuleFunctionAddress
+   + Skipped
+```
+
+不相等直接抛 `InvalidOperationException`。统计不是“尽量写一份日志”，而是生成策略闭包的账本；新增 category 时必须同步 model、module/global aggregation、CSV/JSON 与对账公式。
+
+! Runtime 如何消费 registration
+
+RuntimeLinked source 中每条记录调用：
+
+```cpp
+FAngelscriptBinds::RegisterGeneratedFunctionBinding(
+    UClass::StaticClass(),
+    "FunctionName",
+    { ERASE_METHOD_PTR(...) });
+```
+
+`RegisterGeneratedFunctionBinding` 把 origin 标为 `Generated` 后进入 `ClassFunctionBindings[UClass][Name]`。后续 BlueprintCallable bind phase 读取 cached binding：有 direct pointer 时按 signature 注册 native call；标成 no-function/fallback 时由 reflective path接管。
+
+`RegisterFunctionBinding` 不允许任意后到者覆盖有效已有绑定；若同一 Class/Name 已由手工 bind 占有，生成路径不能靠 link order 强抢。Provider/provenance 用于 dump/诊断解释来源。
+
+! Editor 与 Target 差异
+
+UHT session 只包含当前 target 能看到的 module/header。`UMGEditor`、`UnrealEd` 被标为 Editor-only；non-Editor target 的 Build.cs 也跳过这些 runtime-linked dependency。因而 Editor 生成/统计数字不能直接当 Game/Server baseline。
+
+配置一个本 target 不存在的 module 会形成 configured miss；EditorOnly function 的 guard 则决定同一 module 中哪些 registration 在 runtime translation unit 被编译。维护跨 target 统计时要先对齐 target 和配置，不能只比较总数。
+
+! 配置变化的收敛顺序
+
+# 修改 `DefaultAngelscriptCompileOptions.ini`；
+# UBT 重新解析 method/module arrays，更新 dependency 和 aggregator wrappers；
+# UHTTool 对同一配置重新分类与 emit；
+# stale cleanup 移除旧后端/旧 module artifacts；
+# 编译生成 C++，链接 Runtime 或目标 module；
+# 启动时 `FBind`/ModularFeature 把表注册到 Runtime；
+# 用 Statistics/Diagnostics 核对分类和实际 artifact。
+
+只删除 Intermediate 里的某个文件但不触发 UHT/UBT 配置更新，不能作为长期修复。配置、生成和编译是一条完整依赖链。
+
+! 常见故障与定位
+
+|!现象 |!优先证据 |!常见根因 |
+|配置了 module 但零函数 |configured misses、UHT session |module 名错或当前 target 不含该模块 |
+|有 `.gen.cpp` 但 Runtime 没 binding |aggregator、Build.cs dependency、provider |生成与链接集合不一致 |
+|删除配置后仍重复注册 |Intermediate stale files |旧 pattern 未清理或清理失败 |
+|统计总数漂移 |四类 outcome 对账 |新增分支没记 category/skipped |
+|Editor 有函数、Game 没有 |module/editor guard |Editor-only target 差异 |
+|NativeModule shard 编译找不到 struct |referenced include diagnostics |非 Core struct header 不可解析/Private |
+|RPC 被生成成 direct thunk |diagnostic category/policy |`IsRpcNetFunction` 分类回归，必须修复 |
+|输出每次无意义变化 |排序、路径、换行/编码 |使用了非确定枚举或不稳定绝对路径 |
+
+诊断从 `AS_FunctionBindingDiagnostics.csv` 的单函数行开始，再追 UHT policy、artifact、UBT aggregator 和 Runtime provenance；不要只凭最终 AS compile error猜哪一层失败。
+
+! 修改生成器的同步清单
+
+新增 property/backend/category 时同时检查：
+
+# Models record 与 category names；
+# eligibility、signature builder、policy/failure reasons；
+# emitter、include collection、Editor guard；
+# stable sort、batch/shard size；
+# stale cleanup pattern 与 `Intermediate` guard；
+# module/global statistics 和 outcome reconciliation；
+# UBT config parser、dependencies、wrappers；
+# Runtime registration结构与 provenance；
+# NativeModule POD 变化时 layout version。
+
+! 源码落点与继续阅读
+
+* `AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs`：module 循环、分类、产物、稳定排序与配置；
+* `AngelscriptFunctionBindingEmitters.cs`：RuntimeLinked batch 与 NativeModule shard 内容；
+* `AngelscriptFunctionBindingArtifacts.cs`：JSON/CSV 和 outcome 对账；
+* `AngelscriptFunctionBindingCleanup.cs`：stale output 安全清理；
+* `AngelscriptRuntime.Build.cs`：配置解析、module dependency 与 aggregator；
+* `AngelscriptRuntime/Core/AngelscriptBinds.h`：generated registration 与 origin；
+* <<as-doc-link "bindings-uht-extensions/function-table-incremental-generation" "函数表增量生成">>
+* <<as-doc-link "bindings-uht-extensions/generator-artifact-boundaries" "生成产物边界">>
+* <<as-doc-link "bindings-uht-extensions/native-runtime-linked" "NativeRuntimeLinked 后端">>
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress 后端">>

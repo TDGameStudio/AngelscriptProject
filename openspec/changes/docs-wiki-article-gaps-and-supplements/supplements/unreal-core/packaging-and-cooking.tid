@@ -1,0 +1,167 @@
+title: AS/Docs/zh-Hans/unreal-core/packaging-and-cooking
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Script Packaging 与 Cooking
+description: 从 ScriptRoot、目标预处理、Runtime 模块、脚本 Class 与资产依赖一路检查到 Cooked/Packaged 运行，而不是把 PIE 当成交付证明。
+as-sdk-document: yes
+as-doc-key: unreal-core/packaging-and-cooking
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 150
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: unreal-development
+as-nav-order: 140
+as-nav-parent: unreal-core/index
+as-feature-key: script-packaging-cooking
+
+! Packaging 失败通常不是“脚本文件没复制”这么简单
+
+交付链路至少有五层：
+
+```text
+ScriptRoot 发现 .as
+    ↓ 目标环境预处理与编译
+生成 UClass/UFunction/UProperty + 可选 Precompiled/StaticJIT 数据
+    ↓ Unreal 资产依赖收集与 Cooking
+Runtime modules/plugins + cooked assets 进入 staged package
+    ↓
+Packaged 进程初始化、解析脚本父类并运行
+```
+
+Editor PIE 只证明 Editor 目标中的某条路径能运行。它自带未 cook 内容、Editor 模块、DirectoryWatcher、热重载和更宽松的资产可见性，无法证明 packaged Client/Server/Shipping 的模块与内容闭包完整。
+
+! ScriptRoot 与正式脚本边界
+
+插件从项目 `Script/`、Engine `Script/`（若存在）和启用 content plugin 的 `Script/` 根发现 `.as`；`FAngelscriptEngine::MakeAllScriptRoots()`/dependencies 提供这些 root。`.as` 放在 `Source/`、`Content/Scripts/` 或任意临时目录不会自动成为脚本模块。
+
+仓库把示例按 `Script/Examples/` 组织，用于学习与开发验证；正式产品 Class 应放项目约定的正式区域，例如 `Script/Game/`，并避免正式 Blueprint 继承只为演示存在的 Class。关键不是目录名本身具有魔法，而是依赖边界：示例可以被删除/改写，产品资产不能把它当稳定 API。
+
+脚本文件被发现只说明进入编译输入，不等于所有引用资产会被 Cooker 收集，也不等于目标构建包含它使用的模块。
+
+! 目标预处理会改变可见 API
+
+当前 Preprocessor 根据进程/目标设置 flags：
+
+|!Flag |!当前来源 |!用途 |
+|`EDITOR` |是否使用 Editor scripts |隔离 Editor-only class/function |
+|`EDITORONLY_DATA` |目标与进程是否保留 Editor-only data |隔离只用于作者数据的字段 |
+|`COOK_COMMANDLET` |`IsRunningCookCommandlet()` |Cook 特定路径 |
+|`RELEASE` |Shipping 或 Test build |发布行为分支 |
+|`TEST` |非 Shipping |开发/诊断分支 |
+
+Editor-only 声明必须放在正确编译块内。只给 Class 写某个 EditorContext metadata，不能让它引用的 Editor-only UClass 在 Runtime target 中突然存在。最危险的情况是 Editor 编译成功，而 Cook/Shipping 预处理后留下不完整声明或 runtime 代码仍调用 Editor symbol。
+
+在 Editor 中还可以启用 simulate-cooked 上下文：它会关闭 `EDITOR`/Editor-only 表面，用来提前发现目标差异，但仍不等于真实 package 的模块装载和资产 stage。
+
+! Runtime、Editor 与 Test 模块
+
+|!模块 |!Packaged runtime |
+|`AngelscriptRuntime` |核心运行、绑定、ClassGenerator、preprocessor、VM/StaticJIT 等必须能力 |
+|`AngelscriptEditor` |不应成为 game package 的运行依赖；HotReload、ContentBrowser、SourceNavigation、BlueprintImpact 属于 Editor/Commandlet |
+|`AngelscriptTest` |不属于产品 runtime dependency |
+|`AngelscriptGameplayTags` / `AngelscriptGAS` |只有产品脚本/资产使用并在目标启用时进入 |
+
+运行代码不能通过 DirectoryWatcher、Editor 菜单、CallInEditor 按钮或自动化 fixture 才完成初始化。需要的派生数据应被保存/cook，或由 Runtime 路径在 packaged 启动时重建。
+
+可选插件尤其要做负向检查：核心脚本不能无条件引用 GameplayTags/GAS 类型，却只在某些 target 启用 plugin。要么把脚本放进对应 plugin ScriptRoot/模块边界，要么保证所有产品 target 都启用依赖。
+
+! 脚本 Class 与 Blueprint 父类
+
+Blueprint 资产会持久保存脚本生成 UClass 的 ParentClass 路径。Package 启动时，AS engine 必须先得到一致的脚本 Class 表面，资产才能正确解析父类、property 和 event。
+
+以下变更会影响已 cook 资产：
+
+* 脚本 Class rename/namespace/path 变化；
+* 父类或 UPROPERTY/UFUNCTION 合同变化；
+* 可选 plugin 被禁用；
+* Editor-only 条件让某 Class 在 runtime 消失；
+* StaticJIT/precompiled artifacts 与当前脚本/bind surface 不匹配。
+
+Class rename 需要真实旧/新 UClass 路径和 redirect/资产迁移。只把 `.as` 文件改名，不能修复已经序列化在 Blueprint 中的 ParentClass。
+
+! Cooker 如何发现资产
+
+硬 UObject 引用、Blueprint ParentClass/property、Primary Asset 规则、明确 cooking directory/label 都可以形成内容依赖。Runtime 拼字符串再 `LoadObject` 的路径通常不会自动成为依赖。
+
+|!引用方式 |!Cook 可发现性 |!维护建议 |
+|硬 UPROPERTY 资产/Class |高 |适合必需内容，但会增加常驻/加载耦合 |
+|`TSoftObjectPtr`/`TSoftClassPtr` 属性 |路径可序列化，是否 cook 取决于收集规则 |配合 Primary Asset/label 或明确引用链 |
+|Primary Asset Id/Asset Manager |由项目规则管理 |适合可选内容组和异步加载 |
+|运行时字符串拼路径 |低 |避免；若必须使用，显式纳入 Cook 配置并记录原因 |
+
+Editor 中 soft path `IsPending()` 只说明资产未加载；packaged 中回调为空可能是包未 cook、路径 redirect 丢失或类型不符。日志要保留完整 path 和目标类型。
+
+! ConstructionScript 与派生数据
+
+Actor runtime Spawn 仍会执行必要构建，但 packaged build 不具备完整 Editor 环境。把产品必需结果建立在“设计师曾在 Editor 里移动 Actor/点击按钮”上是不可靠的。
+
+* 可快速重算的派生数据：从保存输入在 Runtime 构建；
+* 昂贵烘焙结果：显式 bake、保存版本与输入 hash，让 Cooker 收集产物；
+* Editor-only preview：不进入 gameplay 不变量；
+* 动态资产：通过 Asset Manager/异步加载，并处理缺失结果。
+
+同样，CallInEditor 工具可以生成内容，但生成资产必须被保存到可 cook package，并形成收集规则；只存在于 transient Editor object 的结果不会进入 build。
+
+! StaticJIT、Precompiled Data 与解释执行
+
+项目支持 StaticJIT/precompiled data，但文档不能把它写成“Package 就只是把 `.as` 原样复制并现场热编译”。Cook/目标配置可能生成并加载与当前脚本、绑定数据库匹配的 artifacts；这些数据与 runtime module 中注册的函数/类型表面必须一致。
+
+维护时区分：
+
+|!问题 |!属于哪层 |
+|脚本语法/预处理在 Cook 目标失败 |Compiler/target flags |
+|生成 C++ 或 cache 与二进制不匹配 |StaticJIT/precompiled artifact |
+|Class 存在但 Blueprint missing parent |Class path/asset load order |
+|函数找不到或调用路径错误 |Runtime binding surface |
+|资产路径存在但包不在 stage |Cook dependency |
+
+Standalone 的 `native-runtime`/`ue-validation` 是独立产品面：它不加载 UE UObject、不会执行 Blueprint、GC、World 或 Cooker。Standalone compile-only 通过不能替代 UE packaged smoke。
+
+! 一条可执行的交付检查链
+
+!! 1. 脚本输入
+
+确认正式 `.as` 位于启用的 ScriptRoot，模块依赖明确，不从 Examples/Test/Editor 边界 import 产品能力；Cook 目标预处理后仍有完整声明。
+
+!! 2. 反射合同
+
+确认正式 Blueprint 的 ParentClass、property/enum/struct/delegate 都能在 runtime surface 注册；rename 有 redirect/迁移，结构变化完成 full reload 和资产保存。
+
+!! 3. 模块闭包
+
+审查目标 `.Target.cs`/`.uplugin` 和 optional plugins：Runtime modules 在，Editor/Test modules 没被业务依赖，Client/Server target 的能力差异明确。
+
+!! 4. 内容闭包
+
+从 Blueprint、hard/soft references、Primary Asset 和 Cook 规则确认所有动态内容被收集。记录故意依赖额外目录的原因，避免“加整个 Content 目录”掩盖真实依赖。
+
+!! 5. Packaged 运行
+
+在干净输出/独立进程观察启动、首个地图、Spawn 脚本 Blueprint、异步资产加载、travel、网络角色和 shutdown。重点检查日志：missing script class、missing package、Editor-only symbol、plugin/module load failure、StaticJIT/cache mismatch。
+
+! 常见故障矩阵
+
+|!现象 |!优先证据 |!常见根因 |
+|Editor/PIE 正常，Cook 编译失败 |目标预处理输出/首个诊断 |runtime 分支引用 Editor-only 类型 |
+|Package 打开 Blueprint 报 missing parent |UClass path、plugin load、脚本 compile log |Class rename、脚本未进入目标、可选插件关闭 |
+|Soft asset 在 package 回调空 |soft path、Cook manifest/stage |内容未收集、redirect 丢失、类型不符 |
+|只有 Server/Client 某目标失败 |target modules 与预处理 flags |把只在另一目标存在的 API 当共同表面 |
+|Construction 结果缺失 |保存资产与 runtime 重建路径 |只在 Editor transient 阶段生成 |
+|StaticJIT 路径启动异常 |artifact build id/函数表 |cache/生成 C++ 与当前二进制不配套 |
+|把 Standalone 结果当 package 证明 |验证环境 |Standalone 不模拟 UE runtime/Cook |
+
+排查按“脚本是否进入目标 → Class 是否注册 → 模块是否加载 → 资产是否 cook → runtime 行为”顺序，避免一上来把所有问题归为 Cooker。
+
+! 源码与资料落点
+
+* `AngelscriptRuntime/Core/AngelscriptEngine.*`：ScriptRoot 发现、enabled plugin roots 与 engine 初始化；
+* `AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.cpp`：`EDITOR`、`EDITORONLY_DATA`、`COOK_COMMANDLET`、`RELEASE`、`TEST`；
+* `AngelscriptRuntime/ClassGenerator/`：脚本反射 Class 与持久资产合同；
+* `AngelscriptRuntime/StaticJIT/`：precompiled data/生成执行路径；
+* `Plugins/Angelscript/Angelscript.uplugin` 与 optional plugin manifests：目标模块边界；
+* <<as-doc-link "architecture-maintenance/cooked-packaging-runtime" "Cooked Packaging Runtime">>
+* <<as-doc-link "unreal-core/asset-and-class-references" "资产、对象与 Class 引用">>
+* <<as-doc-link "unreal-core/construction-script" "ConstructionScript 与派生数据">>

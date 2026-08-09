@@ -1,0 +1,150 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/subsystem-engine-access
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: Subsystem 与主 Engine 访问
+description: UAngelscriptSubsystem 对主 FAngelscriptEngine 的拥有/接管、发布、Tick、解析优先级和作用域恢复语义。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/subsystem-engine-access
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 20
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 20
+as-feature-key: subsystem-engine-access
+as-nav-parent: architecture-maintenance/index
+
+! 当前生产模型
+
+当前 Runtime 的主入口类型是 `UAngelscriptSubsystem`，声明在 `AngelscriptRuntime/Core/AngelscriptSubsystem.h`：
+
+```cpp
+UCLASS()
+class UAngelscriptSubsystem
+    : public UEngineSubsystem
+    , public FTickableGameObject
+```
+
+它负责在 `GEngine` 生命周期内初始化、采用或拥有一个主 `FAngelscriptEngine`，并在允许时驱动其 tick。当前源码中没有名为 `UAngelscriptEngineSubsystem` 或 `UAngelscriptGameInstanceSubsystem` 的原生 owner；`UScriptGameInstanceSubsystem` 是供脚本继承的 `UGameInstanceSubsystem` 基类，不创建、不持有也不发布 `FAngelscriptEngine`。这两个概念不能因名称相似而合并。
+
+稳定入口：
+
+* `Core/AngelscriptSubsystem.h/.cpp`：Subsystem 生命周期和所有权；
+* `Core/AngelscriptRuntimeModule.cpp`：旧初始化 API 如何转交 Subsystem；
+* `Core/AngelscriptEngine.h/.cpp`：current-engine stack、scope 与解析；
+* `Subsystem/ScriptGameInstanceSubsystem.h`：脚本可继承基类，边界上不是 Engine owner。
+
+! 状态与所有权
+
+`UAngelscriptSubsystem` 的核心字段是：
+
+|!字段|!含义|
+|`UPROPERTY() FAngelscriptEngine OwnedEngine`|Subsystem 自己创建主引擎时使用的内嵌实例|
+|`FAngelscriptEngine* PrimaryEngine`|当前对外暴露的主引擎，可能指向 `OwnedEngine`，也可能指向外部 ambient Engine|
+|`bool bOwnsPrimaryEngine`|决定 Deinitialize 时是否有权调用 `Shutdown()`|
+|`bool bInitializedPrimaryEngine`|初始化和 tick 许可的一部分|
+
+关键区别是“暴露”不等于“拥有”。测试、工具或嵌套初始化可以先通过 Engine scope 提供 ambient Engine，Subsystem 会采用它，但必须把 `bOwnsPrimaryEngine` 设为 `false`；销毁 Subsystem 时只清空指针，不关闭借来的 Engine。
+
+! 初始化状态机
+
+`Initialize(FSubsystemCollectionBase&)` 调用 `EnsurePrimaryEngineInitialized()`。后者是幂等入口：只要 initialized flag 与 pointer 同时有效便直接返回。
+
+```text
+EnsurePrimaryEngineInitialized
+  │
+  ├─ FAngelscriptBind::PrepareForEngineInitialization
+  │    └─ failure: log + return, 不发布 Engine
+  │
+  ├─ TryGetCurrentEngine() 有 ambient Engine
+  │    ├─ ScriptEngine == null → 对该实例调用 Initialize()
+  │    ├─ 已有 ScriptEngine 但未 ready → error + return
+  │    └─ ready → PrimaryEngine = ambient, owns = false
+  │
+  └─ 没有 ambient Engine
+       ├─ OwnedEngine.Initialize()
+       ├─ failure → OwnedEngine.Shutdown() + return
+       └─ PrimaryEngine = &OwnedEngine, owns = true
+```
+
+“未 ready 的部分初始化 Engine”不会被采用。这保证 `GetEngine()` 非空时，Subsystem 已走完 Runtime 的发布前置条件，而不是仅创建了底层 `asIScriptEngine`。
+
+`FAngelscriptRuntimeModule::InitializeAngelscript()` 是兼容入口。它先做 direct-bind preparation；若 `UAngelscriptSubsystem::Get()` 可用，就调用 `EnsurePrimaryEngineInitialized()` 并返回。只有没有 `GEngine`/Subsystem 的环境才会采用已有 ambient Engine，或创建 module-owned `TUniquePtr<FAngelscriptEngine>` 并手工推入 context stack。因此新代码不应绕过 Subsystem 再创建第二个生产主引擎。
+
+! 精确访问 API
+
+```cpp
+static UAngelscriptSubsystem* UAngelscriptSubsystem::Get();
+FAngelscriptEngine* UAngelscriptSubsystem::GetEngine() const;
+static FAngelscriptEngine* FAngelscriptEngine::TryGetCurrentEngine();
+```
+
+`UAngelscriptSubsystem::Get()` 在 `GEngine != nullptr` 时调用 `GEngine->GetEngineSubsystem<UAngelscriptSubsystem>()`，否则返回空。调用方必须允许 commandlet 启动早期、engine teardown 或独立工具环境中没有 Subsystem。
+
+`TryGetCurrentEngine()` 的解析优先级是：
+
+# `FAngelscriptEngineContextStack::Peek()`：最内层 scope 的 Engine；
+# 仅自动化构建可用的 resolution suppression：激活时返回空；
+# `UAngelscriptSubsystem::Get()->GetEngine()`：生产主 Engine；
+# 都不可用时返回空。
+
+`TryGetGlobalEngine()` 当前只是 `TryGetCurrentEngine()` 的兼容别名。“Global”不表示存在另一份全局 owner。需要强制存在的旧 API `FAngelscriptEngine::Get()` 会在没有 current Engine 时断言；可失败路径和 teardown 代码应使用 `TryGetCurrentEngine()`。
+
+! FAngelscriptEngineScope
+
+真实签名是：
+
+```cpp
+explicit FAngelscriptEngineScope(
+    FAngelscriptEngine& InEngine,
+    UObject* InWorldContext = nullptr);
+```
+
+该类型不可复制、可以 move，析构时自动 `Reset()`。构造会把 Engine 压入 `FAngelscriptEngineContextStack`；若传入 world context，还会保存 Engine 原 world context 与 ambient world context，并调用 `AssignWorldContext()`。析构按 LIFO 弹栈，恢复该 Engine 的旧 world context，再从新的 stack top 同步 ambient world context。
+
+context stack 当前是进程静态 `TArray<FAngelscriptEngine*>`，不是 thread-local，也没有内部锁。它依赖受控、严格嵌套的调用栈和当前主线程使用约定；不能把一个 scope 跨线程移动，或在另一个线程析构。`Pop()` 会以 `ensureAlwaysMsgf` 检查 top 是否为目标 Engine，顺序不匹配时不会从中间删除，以免进一步破坏 stack。
+
+```text
+主 Engine（Subsystem fallback）
+  └─ Scope A: current = Engine A, optional world A
+       └─ Scope B: current = Engine B, optional world B
+       └─ B 析构: current/world 恢复 A
+  └─ A 析构: current 恢复 Subsystem 主 Engine
+```
+
+! Tick 与关闭
+
+Subsystem 的 tick 条件分三层：
+
+* template 的 `GetTickableTickType()` 为 `Never`；
+* `IsAllowedToTick()` 要求非 template、初始化 flag 为真且 `PrimaryEngine` 非空；
+* `Tick()` 内再次检查 pointer，只在 `PrimaryEngine->ShouldTick()` 为真时调用 `PrimaryEngine->Tick(DeltaTime)`。
+
+`GetTickableGameObjectWorld()` 返回空，`IsTickableInEditor()` 与 `IsTickableWhenPaused()` 均返回真。这说明 owner 是 engine-level，而不是依附某个 GameInstance/World 的 tick owner。
+
+`Deinitialize()` 调用 `ReleasePrimaryEngine()`：只有 `bOwnsPrimaryEngine` 为真才执行 `Shutdown()`，随后无条件清空 pointer、ownership 和 initialized flag，再调用 `Super::Deinitialize()`。借用 Engine 的关闭顺序仍归其创建者。
+
+! 不变量与常见错误
+
+|!错误|!后果|!正确做法|
+|把 `UScriptGameInstanceSubsystem` 当 Engine owner|产生第二条虚构初始化/tick 路径|只把它视为脚本继承表面|
+|Subsystem 采用 ambient Engine 后仍设 owns=true|teardown 双重 Shutdown 或悬空 owner|采用时 `bOwnsPrimaryEngine=false`|
+|只检查底层 ScriptEngine 非空|可能发布 partially initialized Engine|同时要求 `IsReadyForPublication()`|
+|跨线程使用 `FAngelscriptEngineScope`|无锁进程 stack 发生竞态或 LIFO 错乱|限制在受控同线程嵌套范围|
+|无条件调用 `UAngelscriptSubsystem::Get()->GetEngine()`|启动早期/关闭期空指针|逐层判空或用 `TryGetCurrentEngine()`|
+|Subsystem 和其他模块同时 tick 主 Engine|同帧重复推进 timer/debug/GC 状态|生产主 Engine 只由 Subsystem tick|
+|借用 Engine 时由 Subsystem Shutdown|破坏外部 scope/fixture 生命周期|关闭权跟随实际 owner|
+
+! 维护检查
+
+修改初始化或 owner 时，应按 old/new 状态审查：失败前 `PrimaryEngine` 是否仍为空；失败 Engine 是否被正确 Shutdown；ready flag 何时可见；extension 何时 attach；借入实例由谁关闭；当前 Engine scope 退出后 world/context 是否恢复；Subsystem teardown 后静态查找是否可能返回悬空指针。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/runtime-engine-create-factory" "Runtime Engine 创建工厂">>
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文、Engine scope 与 Context pool">>
+* <<as-doc-link "architecture-maintenance/engine-extension-registry" "Engine Extension 注册表">>
+* <<as-doc-link "architecture-maintenance/subsystem-production-surface" "Subsystem 生产接口边界">>

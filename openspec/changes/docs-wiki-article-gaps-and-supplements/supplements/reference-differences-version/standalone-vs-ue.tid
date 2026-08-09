@@ -1,0 +1,109 @@
+title: AS/Docs/zh-Hans/reference-differences-version/standalone-vs-ue
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: Standalone 与 UE Host 的能力边界
+description: 对比 UE Runtime、ue-validation 与 native-runtime，防止把声明可见误解为可执行 Unreal。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/standalone-vs-ue
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 70
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 90
+as-nav-parent: reference-differences-version/index
+as-feature-key: standalone-vs-ue
+
+|!能力 |!UE Host |!ue-validation |!native-runtime |
+|编译 portable AS |是 |是 |是 |
+|执行 portable AS |是 |否（compile/analyze only） |是（受限 stdlib） |
+|读取导出 UE 声明 |引擎内真实表面 |是，注册为 trap |否 |
+|执行 UObject/World/API |是 |禁止 |不可见 |
+|ClassGenerator/GC/资产 |真实 UE |不模拟 |无 |
+|文件/网络/进程/FFI |由 UE/绑定表面决定 |无执行 |明确没有 |
+
+UE-validation 的成功只证明源码与 bundle 声明兼容，不生成 UE-loadable bytecode。Native-runtime 执行 portable 脚本，但没有 UE API。两 profile 不能组合成“离线 Unreal runtime”。
+
+! 三个 host 的执行模型
+
+!! UE Host
+
+UE Editor、Commandlet 或 packaged runtime 使用 `AngelscriptRuntime` 中的权威预处理器、descriptor graph、manual binds、UHT function binding、reflective fallback、ClassGenerator、UObject/GC/World 生命周期。只有这里能执行真实 UE API、产生动态 UClass 并参与资产/Blueprint 关系。
+
+!! Standalone `ue-validation`
+
+此 profile 消费一个完整 Offline bundle，把声明安装成''非执行 trap''，随后对项目脚本进行编译/分析。它可以回答：
+
+* 类型、namespace、函数和属性声明是否存在；
+* 调用表达式与导出的签名是否匹配；
+* project `Script/` 当前源码是否能替换 bundle 中相同逻辑路径的基线；
+* 资源查询在 bundle 声明的 asset scope 内是否可判断。
+
+它不能回答调用后的 UObject 状态、World 行为、GC、网络、资产加载或 Blueprint 编译结果。trap 若被执行必须失败；给 trap 返回“合理默认值”会把不可执行误装成模拟器。
+
+!! Standalone `native-runtime`
+
+此 profile 编译并执行 bounded native AngelScript，标准库只包含 UTF-8 string、array、dictionary、math、print 和 assert 等有限能力，并应用默认时间/内存限制。它没有文件、网络、进程、动态库和任意 FFI，也不加载 Offline bundle 里的 UE declaration surface。
+
+适合算法、容器和 portable 语言行为；不适合以 mock UObject 方式运行游戏逻辑。
+
+! Bundle 选择与替换语义
+
+显式 `--bundle` 选择的是一个完整 Project 或 DefaultEngine bundle。V1 规则是''替换''：
+
+```text
+未显式选择 ──► packaged default
+显式选择有效 Project bundle ──► 只用该 bundle
+显式选择无效/不兼容 ──► 失败
+```
+
+不存在 default + project merge，也不会在显式 bundle 无效时悄悄回退 packaged default。这样编译结果可以明确归因于一个 manifest、record count 和 hash 集合。
+
+bundle 只含声明、规范化资产路径、provenance 与兼容元数据，不含地址、源码、函数体、bytecode、可执行代码或资产 payload。它不是把一个 UE 项目“打包成 Standalone VM”。
+
+! script-root 身份
+
+在 UE validation 中，`--script-root` 表示项目的 `Script/` 根。相对文件 `Foo/Bar.as` 映射到稳定虚拟路径：
+
+```text
+/Angelscript/Game/Foo/Bar.as
+```
+
+当前源码用同一身份替换 bundle 导出的脚本基线，避免同一模块被当作两个副本。V1 不从任意目录名猜测 plugin mount 或 memory mount；插件脚本若需要另一种身份必须由明确协议表达。
+
+! 选择指南
+
+|!目标|!使用|
+|验证完整 UE 运行行为|UE Host|
+|CI 中快速发现项目脚本与已导出声明不匹配|`ue-validation`|
+|执行不依赖 UE 的算法/语言片段|`native-runtime`|
+|验证外部项目最终可见的 UE API|先用该项目 commandlet 导出 Project bundle，再 `ue-validation`|
+|测试 UObject、World、GC、RPC|UE Host，不能用两种 Standalone profile 拼接|
+
+! 常见误读
+
+|!误读|!为什么错|
+|“bundle 里有 UWorld，所以 Standalone 能创建 World”|bundle 只有声明，调用入口是 trap|
+|“native-runtime 能执行 AS，所以也能执行 ue-validation 产物”|两 profile 的注册表面和安全合同不同|
+|“validation 产物是 UE bytecode”|它既不能加载进 UE，也不携带 UE 执行状态|
+|“显式 Project bundle 会补充默认 engine bundle”|显式选择完全替代 default|
+|“缺少资产就是资产不存在”|只有 asset scope 完整时 absence 才权威；incomplete scope 必须保留不确定性|
+|“Standalone 复制了 Runtime 的 ClassGenerator”|Standalone 不模拟 UClass/GC/World，UE 描述来自导出观察|
+
+! 失败诊断
+
+* manifest/schema/version 不兼容：修正 bundle producer/consumer 配对，不回退默认包；
+* declaration unknown：确认导出的是目标项目最终表面、可选插件已初始化、bundle scope 完整；
+* trap execution：脚本进入了 UE 执行路径，改用 UE Host 或把算法边界提取为 portable；
+* logical source duplicate：检查 `--script-root` 是否真指向项目 `Script/` 根；
+* native runtime resource/FFI 不可用：这是沙箱边界，不应添加隐蔽宿主逃逸。
+
+显式 Project bundle 完整替代 packaged default，不 merge/fallback；它提供声明/资产 metadata，不携带可执行代码或资产 payload。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/offline-bundle-contract" "Offline Bundle 合同">>
+* <<as-doc-link "runtime-jit-vm/native-runtime-sandbox" "Native Runtime 沙箱">>

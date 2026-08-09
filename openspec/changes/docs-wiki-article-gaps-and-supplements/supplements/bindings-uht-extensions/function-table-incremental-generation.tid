@@ -1,0 +1,343 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/function-table-incremental-generation
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: FunctionBinding 增量生成与物理分片边界
+description: 说明当前 RuntimeLinked 单模块文件与 NativeModuleFunctionAddress 256 条分片的真实粒度、确定性排序、输入依赖、stale cleanup，以及生成变化和 C++ 重编译触发之间的区别。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/function-table-incremental-generation
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 40
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: function-table-incremental-generation
+
+! 先纠正三个概念
+
+当前生成器输出 `AS_FunctionBinding_*`，不是旧 `AS_FunctionTable_*`。讨论增量行为时还必须区分：
+
+# ''物理生成文件''：UHT `CommitOutput()` 的单个 C++ 文件；
+# ''文件内部 helper 分组''：为了限制一个注册函数的体积而每 256 条切一个 helper，并不形成独立编译单元；
+# ''C++ 编译依赖''：即使生成内容未变化，生成文件 include 的 header 改动仍可能让编译器重编译该 translation unit。
+
+RuntimeLinked 当前是''每个模块一个物理 `.gen.cpp`''，文件内部每 256 条 registration 一个 helper。NativeModuleFunctionAddress 才是''每 256 条一个物理 `.cpp` shard''。旧页面将所有后端描述成细粒度 `AS_FunctionTable_*` shards，并承诺纯反射输入之外的变化绝不重编译，超出了源码能够保证的范围。
+
+<<as-callout warning "生成不变 ≠ 对象文件不重编译">>
+UHT 生成器可以对相同绑定模型提交相同文本，但生成 C++ include 了 owning class 的 public header。Header 的非反射 inline/声明变化仍可能触发正常的 C++ 依赖重编译；这不是 UHT “错误地重生成绑定”。排障要分别观察生成文件内容/时间和编译器 action graph。
+<</as-callout>>
+
+! 当前产物拓扑
+
+| !后端/产物 | !物理文件粒度 | !内部组织 | !编译所有者 |
+| NativeRuntimeLinked | 每个有 generated record 的模块一个 `AS_FunctionBinding_<Module>.gen.cpp` | 每 256 条一个 `RegisterGeneratedFunctionBindingBatch_<Module>_<NNN>()` helper | `AngelscriptRuntime.Build.cs` 生成 aggregator，用 `UE_INLINE_GENERATED_CPP_BY_NAME` 接入 |
+| NativeModuleFunctionAddress | 每 256 个安全 binding 一个 `AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_<NNN>.cpp` | 每个 shard 含自己的 includes、POD ABI、thunks、table/view 与 feature registration | 目标 UE module 的 UHT OutputDirectory |
+| NMFA bridge probe | 一个 `AS_FunctionBinding_Engine_NativeModuleFunctionBindingBridgeProbe.cpp` | 零 entry feature，仅携 layout version | Engine module；仅 Method=NMFA 且会话含 Engine 时 |
+| Diagnostics | 一个 JSON + 三个 CSV | 统计、模块、生成 outcome、skipped | UHT 输出；不直接作为绑定 C++ translation unit |
+
+`ShardCount` 在统计中表示物理 C++ 产物数：RuntimeLinked 模块通常为 1，NMFA 模块为 `ceil(bindingCount / 256)`；全局 `totalShardCount` 还会把 bridge probe 算进 generated file count。RuntimeLinked 内部 helper 数不能当成 ShardCount。
+
+! 生成入口与执行顺序
+
+`AngelscriptFunctionBindingCodeGenerator.Generate(factory)` 的高层流程：
+
+# 找到 `AngelscriptRuntime.Build.cs`，读取工程 compile options；
+# 加载 NMFA layout version；
+# 解析活动 method/set 与当前 UHT session 的模块目录；
+# Method=NMFA 时尝试先写 Engine bridge probe；
+# 遍历 session modules，仅进入活动 allowlist 的模块；
+# 递归收集 eligible UFunction，并做后端分析；
+# 对 binding records 做确定性排序；
+# 按后端写 RuntimeLinked 单文件或 NMFA 分片；
+# 写统计与逐函数诊断；
+# 用本轮 `generatedPaths` 与现有目录对账，删除 stale outputs。
+
+cleanup 在所有 live C++ 已经提交后执行，因此 live path set 是本轮真相。生成中途抛异常时不会继续把不完整结果伪装成完整成功；下一轮仍需正常 UHT 重建来恢复一致状态。
+
+! RuntimeLinked：单模块物理文件
+
+`generatedBindings` 先按以下 key 做 ordinal 排序：
+
+```text
+ClassName
+-> FunctionName
+-> FunctionBindingCategory
+```
+
+然后 `BuildGeneratedFunctionBindingModule()`：
+
+* 从全部 bindings 收集 `IncludePath`，用 `SortedSet<string>(Ordinal)` 排序/去重；
+* 写固定 Runtime headers 和所有 owning public headers；
+* 每 256 条生成一个 static registration helper；
+* 最后生成一个 `FBind`，按 helper 顺序调用它们；
+* `FBind` 在 Late+50 运行，名称包含模块短名。
+
+概念结构：
+
+```cpp
+namespace
+{
+    static void RegisterGeneratedFunctionBindingBatch_Engine_000()
+    {
+        // records 0..255
+    }
+
+    static void RegisterGeneratedFunctionBindingBatch_Engine_001()
+    {
+        // records 256..N
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBinds::FBind
+    Bind_AS_FunctionBinding_Engine(... Late + 50 ...);
+```
+
+这仍然是''一个 translation unit''。新增一个排在模块前部的函数会改变该 `.gen.cpp`，但 helper 边界移动只发生在同一个文件内；编译器不会只重编译 `_001` helper。
+
+!! RuntimeLinked 何时没有文件
+
+* 模块未在活动 allowlist；
+* 模块不在当前 UHT session；
+* 没有任何 analyzed function；
+* 生成列表为空。
+
+RuntimeLinked 的 `ReflectiveFallback` 仍会形成 generated record（`ERASE_NO_FUNCTION()`），所以只要有 analyzed RuntimeLinked function，通常会有列表和一个物理文件。反射回退不是 skipped。
+
+! NMFA：固定宽度物理分片
+
+`nativeModuleFunctionBindings` 的排序 key：
+
+```text
+ClassName
+-> FunctionName
+-> StableIndex
+```
+
+之后连续切片：
+
+```text
+shard 000 = records   0..255
+shard 001 = records 256..511
+shard 002 = records 512..767
+...
+```
+
+文件名使用三位零填充 index。每个 shard 只收集自己 records 的 `IncludePaths`，用 ordinal `SortedSet` 去重排序。这比让每个 shard include 模块的全部 header 更窄，但分片边界仍由排序后位置决定。
+
+!! 固定 256 不是内容寻址分桶
+
+若在排序序列开头加入一个新 binding，原第 255 条移入 shard 001，原第 511 条移入 shard 002，可能使后续多个物理文件都改变。当前没有按 class hash 的稳定 bucket，也没有“每个 header 一个 shard”机制。
+
+因此 NMFA 增量粒度的真实特征是：
+
+| !变化 | !可能影响 |
+| 在末尾追加，且未跨 256 边界 | 最后一个 shard |
+| 在末尾追加并跨边界 | 旧最后 shard + 新 shard |
+| 在排序前部插入/删除 | 从所在 shard 开始的后续多个 shards 都可能移动 |
+| 修改一个 existing binding 的 signature/include | 包含它的 shard；若排序 key 不变通常不移动其他边界 |
+| safe ↔ skipped 分类变化 | bindingCount 与后续边界可能改变 |
+| layout version 变化 | 所有 NMFA shards 与 bridge probe 文本都变化 |
+
+“256 条分片”降低单个 translation unit 规模，但不等价于最小化所有插入场景的增量重编译。
+
+! 确定性来源与边界
+
+!! 已明确的稳定化措施
+
+* RuntimeLinked records 按 class/function/category 排序；
+* NMFA records 按 class/function/stable index 排序；
+* include 集合按 ordinal 排序去重；
+* shard index 使用固定三位格式；
+* helper/shard 宽度都是常量 256；
+* 配置模块 miss 做大小写不敏感排序；
+* 生成代码不写当前时间、随机数或进程 ID；
+* layout version 来自明确的版本文件。
+
+这些措施保证在''相同 generator、相同配置、相同 UHT 模型、相同路径解析与相同 session 结构''下，单模块 C++ 内容具有稳定顺序。
+
+!! 不应承诺的跨环境字节一致
+
+* `AS_FunctionBindingStatistics.json` 包含 `compileOptionsPath`，跨机器绝对路径可能不同；
+* module summaries 的全局顺序跟随 UHT session module 遍历，源码没有在写出前统一按 module name 重排；
+* UHT/Engine 版本可能改变反射枚举、最短 include path 或生成 newline/encoding 行为；
+* generator 版本、policy 和 layout version 变化本就应该改变输出；
+* Diagnostics 用 `File.WriteAllText()` 直接写，而 C++ 产物通过 `factory.CommitOutput()`；两者的 timestamp/写入策略不同。
+
+所以“确定性”应验收为同一受控构建环境中的内容稳定与排序守恒，不能拿不同 workspace 的整个 Intermediate 目录做盲目 byte-for-byte 比较。
+
+! 插件自己没有反射输入快照/增量 guard
+
+旧设计文档提到“反射输入快照”“增量 guard”。当前 FunctionBinding generator 源码没有自建 per-shard hash manifest 或 guard token。C++ 输出统一交给 `IUhtExportFactory.CommitOutput()`；是否避免重写同内容由 UHT/构建系统的 output handling 决定。
+
+插件明确登记的 external dependencies 包括：
+
+* 实际采用的 `DefaultAngelscriptCompileOptions.ini`；
+* 每个 analyzed class 的 HeaderFile；
+* NMFA `native-module-function-binding-layout-version.txt`。
+
+这些依赖帮助 UHT/UBT 知道何时重新评估生成，但并不把任意 header 变化细分成“只改反射”与“只改非反射”。
+
+<<as-callout note "正确的性能问题拆分">>
+先问 UHT 是否重新运行，再问生成 C++ 文本是否改变，最后问编译器为何重编 translation unit。三者可能分别由 external dependency、CommitOutput 内容比较和 include/action graph 触发。
+<</as-callout>>
+
+! 输入变化矩阵
+
+| !变化 | !UHT 模型/生成内容 | !C++ 重编译预期 |
+| `.cpp` 函数实现变化，无 header/反射变化 | FunctionBinding 文本通常不变 | 修改的业务 `.cpp` 重编；生成 TU 理想情况下不因内容改变重编，但以 action graph 为准 |
+| owning public header 的普通声明/inline 变化，无 UFUNCTION 变化 | UHT binding model可能不变；include path不变 | 生成 TU include 该 header，可能正常重编 |
+| UFUNCTION 参数/返回/metadata 变化 | record/category/signature/include/diagnostic 可能变化 | 对应 RuntimeLinked 模块文件或 NMFA shard(s) 重编 |
+| 添加/删除 eligible UFUNCTION | bindingCount 与排序序列变化 | RuntimeLinked 整个模块 TU；NMFA 从受影响 shard 起可能连锁 |
+| 函数从 NMFA safe 变 skipped | 删除一个 table entry，增加 skipped row | 后续 shard 边界可能移动 |
+| allowlist 添加模块 | 新模块进入分析并新增产物/依赖 | 新 Runtime aggregator/TU 或目标模块 shards |
+| allowlist 删除模块 | 本轮不再生成，cleanup 删除旧 live 之外文件 | 旧 TU 从编译图消失；依赖也应同步收缩 |
+| RuntimeLinked ↔ NMFA | 产物位置、命名、ABI和模块依赖全部变化 | 属于后端迁移，预期较大重编，不是局部增量 |
+| Editor-only guard/Target 改变 | `#if WITH_EDITOR` 或 module/session 表面改变 | 对应 Target 重新生成/编译 |
+| layout version 改变 | 所有 NMFA ABI常量与 probe变化 | 全部 NMFA shards/probe必须重编 |
+| generator C# 逻辑改变 | 取决于 emitter/policy | 应视为 codegen tool升级，重新生成相关产物 |
+
+! Header include 边界
+
+RuntimeLinked 的一个模块文件 include 该模块所有 generated records 对应的 public headers。因此任一 include header 变化可能让整个模块生成 TU 重编。内部 helper 分组不收窄 include scope。
+
+NMFA 每个物理 shard 只 include 自己 256 条 records 所需的 header，再加 `CoreMinimal.h`、`IModularFeatures`、`CoreDelegates` 等固定依赖。它的 include scope 更窄，但排序边界移动会改变 shard 的 include 集合。
+
+维护 emitter 时要满足：
+
+* 只 include 调用/类型表达真正需要的 public headers；
+* include 排序稳定；
+* 不能为减少重编删除编译所需完整类型；
+* Private header 不进入 common eligibility；
+* shortest include path 变化应作为生成变化处理；
+* Editor-only function guard 与 header可用性一致。
+
+! Live paths 与 stale cleanup
+
+生成器维护本轮 `generatedPaths`，结束时转为大小写不敏感的绝对 `livePaths`。Cleanup 扫描：
+
+!! Runtime output directory
+
+```text
+AS_FunctionBinding_*.gen.cpp
+AS_FunctionBinding_*.cpp
+AS_FunctionTable_*.gen.cpp
+AS_FunctionTable_*.cpp
+AS_FunctionTable_*.json
+AS_FunctionTable_*.csv
+```
+
+后四类包含历史兼容清理，避免旧 FunctionTable 架构产物继续编译/污染诊断。
+
+!! 每个 UHT module output directory
+
+```text
+AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_*.cpp
+AS_FunctionBinding_<Module>_CrossModule_*.cpp
+```
+
+Engine 还会清理当前/历史 probe 名称。
+
+!! 安全护栏
+
+* output directory 不存在 → 写 warning，不能凭空判断旧文件；
+* resolved directory 路径必须包含 `Intermediate` 路径段；
+* 非 Intermediate 路径 → 抛 `InvalidOperationException`，拒绝删除；
+* live path → 保留；
+* stale path 删除发生 IOException/UnauthorizedAccessException → 包装为失败并中止，不静默留下重复符号风险。
+
+Cleanup 不是通用磁盘清理器，只处理严格 pattern 和已知 UHT output directories。新增产物命名时必须同步 live tracking 与 stale pattern。
+
+! 后端切换的 old/new 状态
+
+!! RuntimeLinked → NMFA
+
+变更前：
+
+```text
+Runtime output:
+  AS_FunctionBinding_Engine.gen.cpp
+Build.cs:
+  Engine is a RuntimeLinked dependency + aggregator
+```
+
+变更后：
+
+```text
+Engine module output:
+  AS_FunctionBinding_Engine_NativeModuleFunctionAddress_000.cpp
+  AS_FunctionBinding_Engine_NativeModuleFunctionBindingBridgeProbe.cpp
+Runtime output:
+  old .gen.cpp is no longer live and must be cleaned
+Build.cs:
+  no RuntimeLinked wrapper/dependency path for Engine
+```
+
+同时 diagnostic category 从 NativeRuntimeLinked/ReflectiveFallback 变为 NMFA/skipped。不能只比较生成文件数判断表面等价：NMFA 对 unsafe 签名不自动反射。
+
+!! NMFA → RuntimeLinked
+
+所有目标模块 shards/probe 不再 live；Runtime 重新生成每模块单 `.gen.cpp` 和 aggregator。RPC/interface/signature unresolved 可以重新出现为 ReflectiveFallback record。旧 target shards 若残留，可能重复注入 native-module records，因此 cleanup 是正确性要求。
+
+! 增量性能诊断流程
+
+# 记录本次 Target、Method、active modules 和 UHT 是否实际运行。
+# 比较相关 `AS_FunctionBinding_*.cpp/.gen.cpp` 的内容 hash，而不只看 timestamp。
+# 如果内容相同却重编，查看生成 TU 的 include dependency 和 build action reason。
+# 如果内容改变，先比较 record排序、include集合、layout version、配置与 generator版本。
+# RuntimeLinked 把粒度按模块计算，不按内部 `_000` helper计算。
+# NMFA 找到第一个变化的 sorted record，判断是否造成后续 shard boundary cascade。
+# 对新增/删除文件，检查 `generatedPaths`、statistics `ShardCount` 和 cleanup结果是否一致。
+# 分开观察 Diagnostics 文件重写；它们 timestamp改变不等于绑定 C++ 改变。
+# 若纯 `.cpp` 实现改动导致 UHT 全量运行，问题可能在更上层 UBT/UHT action graph，不要先改 FunctionBinding emitter。
+
+预期结果是能给每个重编 translation unit 一个具体原因：内容变化、include 依赖变化、后端/配置变化、tool变化或 stale/live 编译图变化。
+
+! 常见故障
+
+| !症状 | !原因候选 | !定位 |
+| 改一个 RuntimeLinked 函数，整个模块 binding TU 重编 | 当前物理粒度就是每模块一个 `.gen.cpp` | 这是现状；内部 256 helper不提供独立编译粒度 |
+| NMFA 在列表前加一个函数，很多 shards 都变化 | 顺序切片导致边界级联 | 比较排序位置和每 256 边界；不是随机生成 |
+| 生成文件内容没变仍重编 | owning public header/include dependency变化或 action graph策略 | 查 compiler dependency，不只查 UHT output |
+| 只改 `.cpp` 却所有 binding TU 重编 | 上层构建触发、PCH/shared dependency或生成文件被无条件触碰 | 对比 hash/timestamp，区分 CommitOutput 与编译动作 |
+| 删除 allowlist模块后旧符号重复 | stale文件未删除、目录不在cleanup映射或删除失败 | 查 cleanup warning/exception 与 Intermediate live paths |
+| Cleanup 试图处理源码目录时报错 | 输出目录解析错误；安全护栏拒绝非 Intermediate | 修复 UHT module OutputDirectory，不能放宽删除保护 |
+| 相同源码在两台机器统计 JSON hash不同 | `compileOptionsPath` 等环境字段不同 | 对比语义字段/受控路径，不承诺跨机器字节相同 |
+| `ShardCount` 比 NMFA模块文件数多 1 | 全局 total包含 Engine bridge probe | 分开看 per-module与全局 generated file count |
+| RuntimeLinked显示多个 batch却 ShardCount=1 | batch是同一物理文件里的helper | 按 translation unit计数 |
+| layout version改了只有部分NMFA文件变化 | live paths/生成未完整刷新 | 必须全量重生成所有 NMFA shards与probe |
+
+! 维护不变量
+
+* 当前产物前缀为 `AS_FunctionBinding_`；旧 `AS_FunctionTable_` 只保留 cleanup兼容，不是生成合同。
+* RuntimeLinked 的物理粒度是每模块一个文件；内部 256 batch是代码组织，不是增量 shard。
+* NMFA 每物理 shard最多256条，按稳定排序后的连续区间切分。
+* 相同受控输入下 records和includes顺序稳定，不写时间/随机状态。
+* 生成内容稳定与C++不重编是两个层级，不作超出include/action graph的保证。
+* Config、owning headers和layout version必须登记 external dependency。
+* Method/allowlist变化必须同时更新生成产物、Build.cs编译图和stale cleanup。
+* Cleanup只删除 Intermediate中的已知pattern；失败必须显式中止。
+* 后端切换不能只比较条目数，必须比较direct/fallback/skipped语义。
+* 任何新的分片策略都要同时维护排序、artifact name、ShardIndex、live paths和诊断守恒。
+
+! 源码定位
+
+| !职责 | !文件/符号 |
+| module分析、排序、Runtime单文件、NMFA 256分片 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs` |
+| Runtime helper batches、NMFA shard与bridge probe文本 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingEmitters.cs` |
+| live path对账、历史pattern与Intermediate护栏 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCleanup.cs` |
+| JSON/CSV写入、ShardCount与outcome守恒 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingArtifacts.cs` |
+| RuntimeLinked aggregator与模块依赖 | `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` |
+| NMFA layout version单一版本文件 | `Plugins/Angelscript/Source/AngelscriptUHTTool/native-module-function-binding-layout-version.txt` |
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/generated-function-tables" "生成函数绑定产物">> —— 四类产物与 Runtime消费关系。
+* <<as-doc-link "bindings-uht-extensions/native-runtime-linked" "NativeRuntimeLinked">> —— 单模块 `.gen.cpp` 与 aggregator。
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress">> —— 目标模块物理分片与布局版本。
+* <<as-doc-link "bindings-uht-extensions/generator-artifact-boundaries" "生成器产物边界">> —— 哪些目录和文件属于生成所有权。
+* <<as-doc-link "bindings-uht-extensions/cross-module-bind-diagnostics" "跨模块绑定诊断">> —— ShardCount、ArtifactName 与逐函数 outcome。
+* <<as-doc-link "hot-reload/change-classification" "热重载变更分类">> —— 运行时脚本热重载与C++增量构建的边界。

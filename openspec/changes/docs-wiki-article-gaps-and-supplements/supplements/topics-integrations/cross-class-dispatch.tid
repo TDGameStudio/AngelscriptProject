@@ -1,0 +1,129 @@
+title: AS/Docs/zh-Hans/topics-integrations/cross-class-dispatch
+type: text/vnd.tiddlywiki
+tags: TopicsIntegrations
+caption: 跨类多态与 BlueprintEvent 分派
+description: 以脚本基类合同和 BlueprintEvent 实现可由脚本或 Blueprint 覆盖的稳定跨类调用。
+as-sdk-document: yes
+as-doc-key: topics-integrations/cross-class-dispatch
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: pattern
+as-content-status: draft
+as-order: 120
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[script-examples]]
+as-integration-kind: engine-domain
+as-integration-system: BlueprintDispatch
+as-nav-group: unreal-development
+as-nav-order: 170
+as-nav-parent: topics-integrations/index
+as-feature-key: cross-class-dispatch
+
+! 当前稳定模式
+
+需要让不同脚本类和 Blueprint 子类以统一方式响应调用时，可以在脚本基类上声明 `BlueprintEvent`，由派生脚本使用 `BlueprintOverride`，再让调用方只依赖基类类型。`Script/Examples/Extended/Example_InterfaceDispatch.as` 把它作为当前插件中稳定的 cross-class dispatch 模式。
+
+这不是 Unreal `UINTERFACE` 的完整替代：它要求目标继承共同基类。但当对象本来就共享一个业务父类时，调用路径简单、反射可见，也容易给 Blueprint 扩展。
+
+! 定义基类合同
+
+```angelscript
+class AExampleDamageableBase : AActor
+{
+    UPROPERTY(Category = "Health")
+    float MaxHealth = 100.0;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Health")
+    float CurrentHealth = 100.0;
+
+    UFUNCTION(BlueprintEvent)
+    float ApplyDamage(float Amount)
+    {
+        CurrentHealth = Math::Max(CurrentHealth - Amount, 0.0);
+        return CurrentHealth;
+    }
+
+    UFUNCTION(BlueprintEvent)
+    bool IsAlive()
+    {
+        return CurrentHealth > 0.0;
+    }
+}
+```
+
+默认实现让没有覆盖的子类仍具备完整行为。`BlueprintEvent` 同时成为反射合同，因此参数、返回值和名称应比内部 helper 更稳定。
+
+! 在脚本派生类覆盖
+
+```angelscript
+class AExampleDamageableActor : AExampleDamageableBase
+{
+    UFUNCTION(BlueprintOverride)
+    float ApplyDamage(float Amount)
+    {
+        CurrentHealth = Math::Max(CurrentHealth - Amount, 0.0);
+        if (CurrentHealth <= 0.0)
+            Print(f"{GetName()} has been destroyed!");
+        return CurrentHealth;
+    }
+}
+```
+
+覆盖函数必须保持签名一致。是否调用父实现是业务选择：完全替代时像示例一样自己维护状态；只追加表现时更适合调用父实现后再扩展，避免复制核心规则。
+
+! 调用方只依赖基类
+
+```angelscript
+UFUNCTION(Category = "Example Dispatch")
+void ApplyDamageToTarget(AExampleDamageableBase Target, float Damage)
+{
+    if (Target == nullptr)
+        return;
+
+    float Remaining = Target.ApplyDamage(Damage);
+    if (!Target.IsAlive())
+        Print(f"{Target.GetName()} is dead!");
+}
+```
+
+传入基类实例、脚本派生实例或 Blueprint 子类实例时，调用都沿 override 分派。调用方不需要按具体类型 `Cast<>`，也不应通过 class 名字符串选择行为。
+
+! 何时选择真正的接口
+
+|!约束 |!推荐 |
+|目标天然共享一个业务父类 |基类 + `BlueprintEvent` |
+|完全不同继承树都要实现同一合同 |Unreal interface / 当前插件已验证的接口绑定路径 |
+|只需一对多通知，不关心返回值 |multicast delegate/event |
+|调用方可选地探测能力 |接口或明确的 capability component，避免深层 cast 链 |
+
+接口能跨继承树，但注册、反射和热重载路径更复杂。先根据领域模型选择，不要仅因“接口听起来更抽象”而增加绑定层。
+
+! 设计合同
+
+* 事件名称表达领域动作，而不是 UI 细节；
+* 参数包含完成动作所需的最小上下文；
+* 返回值应有清晰语义，避免同时用 out 参数和隐藏状态表示结果；
+* 默认实现要么完整可用，要么明确为空操作；
+* 基类维护共享状态不变量，派生类扩展表现；
+* 若 Blueprint 需要调用，把调用入口的 Category 和可见性设计清楚。
+
+! 热重载与 Blueprint 影响
+
+只改 override body 通常可走 soft reload；修改 `BlueprintEvent` 参数、返回值、metadata 或删除事件会改变反射签名，通常要求 full reload，并可能影响 Blueprint override 节点、call node 和 delegate/pin 类型。
+
+验证时用 reload 前已存在的派生实例再次调用，确认 virtual dispatch 进入新实现；对 Blueprint 子类，还要确认 impact scanner 报告节点依赖并完成 Blueprint 编译。
+
+! 常见问题
+
+|!症状 |!检查 |
+|总是调用基类默认实现 |派生函数是否标记 `BlueprintOverride` 且签名完全一致 |
+|Blueprint 看不到扩展点 |基类函数是否为 `BlueprintEvent`，生成 class 是否已刷新 |
+|覆盖后公共状态不再更新 |派生实现是否遗漏父逻辑或共享不变量 |
+|调用方出现大量具体类型 cast |合同是否应该上移到共同基类或接口 |
+|热重载后 Blueprint 节点失效 |事件签名是否变化，Blueprint impact/编译是否完成 |
+
+! 相关链接
+
+* <<as-doc-link "topics-integrations/blueprint-subclass-workflow" "脚本基类与 Blueprint 子类协作">>
+* <<as-doc-link "language/classes-inheritance-interfaces" "类、继承与接口">>
+* <<as-doc-link "language/delegates-events" "委托与事件">>

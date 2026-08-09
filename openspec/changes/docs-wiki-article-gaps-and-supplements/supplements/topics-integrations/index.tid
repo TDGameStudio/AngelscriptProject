@@ -1,0 +1,115 @@
+title: AS/Docs/zh-Hans/topics-integrations/index
+type: text/vnd.tiddlywiki
+tags: TopicsIntegrations
+caption: 专题与领域集成
+description: 区分可选插件与核心插件可达的 Unreal 领域集成。
+as-sdk-document: yes
+as-doc-key: topics-integrations/index
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: reference
+as-content-status: draft
+as-order: 10
+as-content-revision: 4
+as-sources: [[angelscript-plugin]] [[gameplaytags-plugin]] [[gas-plugin]] [[script-examples]]
+as-nav-group: unreal-development
+as-nav-order: 50
+as-feature-key: topics-integrations
+
+! 本章要解决什么
+
+这里是六个专题集成的入口。它们不进入核心学习顺序，而是按 Unreal 领域分组，帮助你在进入 GameplayTags、GAS、Enhanced Input、Networking/RPC、UI/UMG 与 AI/BehaviorTree 之前，先弄清楚每个主题的 //打包边界//：它究竟是一个独立可选插件，还是核心插件直接对接的引擎领域。
+
+判断标准很简单：如果一个主题需要额外启用独立插件包，它就是 `optional-plugin`；如果它只是核心 `Angelscript` 插件与某个 Unreal 引擎模块的集成面，它就是 `engine-domain`。
+
+<<as-callout warning "主题归属不暗示模块依赖">>
+把某个主题放进这个专题目录，//不代表// 你的项目因此产生任何新的模块依赖。只有明确标注了 `optional-plugin` 的主题才需要你额外启用插件；`engine-domain` 主题使用的是核心插件已经对接的引擎系统。进入任何子页前，先看它的集成类型与依赖字段，再决定项目配置。
+<</as-callout>>
+
+! 三类集成边界
+
+下表按打包语义对六个子主题分类。依赖列以插件 `.uplugin` 与模块 Build.cs 的实际声明为准。
+
+|!主题 |!集成类型 |!插件 / 引擎系统 |!必需依赖 |
+|GameplayTags |`optional-plugin` |插件 `AngelscriptGameplayTags` |`Angelscript` |
+|GAS |`optional-plugin` |插件 `AngelscriptGAS` |`Angelscript`、`AngelscriptGameplayTags`、`GameplayAbilities` |
+|Enhanced Input |`engine-domain` |Unreal `EnhancedInput` |核心 `Angelscript` 插件 |
+|Networking / RPC |`engine-domain`（边界主题） |Unreal `Networking/NetCore` |核心 `Angelscript` 插件 |
+|UI / UMG |`engine-domain`（边界主题） |Unreal `UMG/Slate` |核心 `Angelscript` 插件 |
+|AI / BehaviorTree |`engine-domain`（边界主题） |Unreal `AIModule/GameplayTasks` |核心 `Angelscript` 插件 |
+
+* ''`optional-plugin`''：GameplayTags 与 GAS 由独立插件包提供，两者的 `.uplugin` 都设置了 `EnabledByDefault: false`，需要你在项目里显式启用。GAS 插件在其 `.uplugin` 中显式声明了对 `AngelscriptGameplayTags` 与 `GameplayAbilities` 的启用依赖——先启用 GameplayTags，才能启用 GAS。
+* ''`engine-domain`''：Enhanced Input、Networking/RPC、UI/UMG、AI/BehaviorTree 都是核心插件对接的 Unreal 引擎领域，//不是// 可单独安装的 AngelScript 扩展包。
+* ''边界主题''：Networking/RPC、UI/UMG、AI/BehaviorTree 没有独立 AngelScript 可选插件，但仓库分别已有 `Example_NetworkReplication.as`、`Example_Widget_UMG.as` 与 `Example_BehaviorTreeNodes.as`。其子页已经把这些示例与当前绑定/生成源码接成可操作入口，同时明确不把未覆盖的整个引擎领域推断为已验证 API。
+
+这里还需要区分“Runtime module 依赖”与“使用者必须手工启用插件”：核心 `AngelscriptRuntime.Build.cs` 已直接依赖 AIModule、NetCore、Networking、Slate、SlateCore、UMG、EnhancedInput 等引擎模块，因此对应类型可由核心插件绑定或反射接入；这不产生另一个可选 AngelScript 插件。相反，GameplayTags 与 GAS 有独立 `.uplugin`、独立 module 和独立启用状态，缺少插件时连提供脚本包装类型的模块都不会加载。
+
+! 选择集成入口的实际流程
+
+# 先在项目插件设置或 `.uproject` 中确认需要的是核心 `Angelscript`、可选 `AngelscriptGameplayTags`，还是再叠加 `AngelscriptGAS`。
+# 对 optional plugin，检查 `.uplugin` 中 `Plugins` 依赖以及 module `LoadingPhase`；对 engine-domain，检查 `AngelscriptRuntime.Build.cs` 是否已有对应引擎 module。
+# 进入子页，先看它的证据状态：是否有真实 `Script/Examples`、是否只有内联测试 fixture、是否只定义打包边界。
+# 按最窄入口实现：GameplayTag 不需要为使用标签而启用 GAS；普通 Enhanced Input 不应引入 GAS；RPC 不应绕过 Unreal 的 ProcessEvent / 网络路由。
+# 出现“类型不存在”时先诊断加载与依赖；出现“类型存在但调用失败”时再诊断绑定、WorldContext、authority、生命周期或编辑器条件。
+
+预期结果是项目依赖最小且可解释：启用一个 optional plugin 会有明确模块来源，使用 engine-domain 则不需要寻找不存在的附加插件。
+
+! 当前子页成熟度
+
+|!子页|!当前深度|!可以依赖的内容|!不要从中推断|
+|GameplayTags|L3|可选插件依赖、绑定 API、命名空间常量、Editor reload 与多引擎 replay|项目中所有标签常量都与文中示意名相同|
+|GAS|L3|模块依赖、ASC / AttributeSet / Task / Cue 当前源码与测试边界|脚本 ability lifecycle override 已有完整示例|
+|Enhanced Input|L2|三个仓库示例、InputAction/MappingContext、BindAction 与 BeginPlay/EndPlay 清理|所有 trigger / modifier API 已逐项验证|
+|Networking / RPC|L2|复制属性、RepNotify、RPC 矩阵、ProcessEvent 路由与网络示例|完整多人运行环境在任何配置下都已验收|
+|UI / UMG|L2|`BindWidget`、Widget Blueprint 父类、创建/视口流程与仓库 UMG 示例|未列出的全部 UMG/Slate API 都已保证可用|
+|AI / BehaviorTree|L2|Decorator/Service/Task 回调、资产接入、abort/tick 边界与仓库示例|Blackboard、EQS、GameplayTasks 全表面已经覆盖|
+
+这张表是内容成熟度，不是功能可用性评分。L2 表示已经有可执行步骤、预期结果、常见失败与源码/示例证据；L3 还要解释 Runtime/Editor/多引擎或模块生命周期。它们仍是 `draft`：未列出的引擎 API、资产配置和平台组合不能由主题标题自动推断。
+
+! 本章文档
+
+<<as-doc-cards>>
+<<as-doc-card "topics-integrations/gameplay-tags">>
+<<as-doc-card "topics-integrations/gas">>
+<<as-doc-card "topics-integrations/enhanced-input">>
+<<as-doc-card "topics-integrations/networking-rpc">>
+<<as-doc-card "topics-integrations/ui-umg">>
+<<as-doc-card "topics-integrations/ai-behavior-tree">>
+<</as-doc-cards>>
+
+! 打包与边界
+
+<<as-callout note "可选插件的启用顺序">>
+`AngelscriptGameplayTags` 只依赖核心 `Angelscript`；`AngelscriptGAS` 在其 `.uplugin` 中同时依赖 `Angelscript`、`AngelscriptGameplayTags` 与 Unreal 的 `GameplayAbilities`。因此启用顺序是：核心 Angelscript → GameplayTags → GAS。反过来，安装 GAS 不是使用 GameplayTags 的前提——GameplayTags 可以独立启用。
+<</as-callout>>
+
+<<as-callout warning "索引页的证据边界">>
+本页已经核对插件 descriptor 与三个 Build.cs 的依赖归属，但不替代子页的 API 证据。六个核心子页现在都给出了具体源码、仓库示例或受限证据；仍应只依赖各页明确列出的表面，不能把导航文案扩张为整个 Unreal 模块的保证。
+<</as-callout>>
+
+! 常见错误
+
+|!现象|!原因与下一步|
+|启用 GAS 后提示 GameplayTags 依赖缺失|先启用 / 初始化 `AngelscriptGameplayTags`；GAS 明确依赖它|
+|只想使用 FGameplayTag，却被要求配置 GAS|依赖方向理解反了；GameplayTags 可独立启用，GAS 才依赖它|
+|寻找 `AngelscriptEnhancedInput` / `AngelscriptUMG` 插件|这些是核心 Runtime 的 engine-domain，不是独立插件包|
+|类型可见但 World / RPC / Widget 调用失败|打包边界已通过，继续进入子页按 world context、authority 或生命周期诊断|
+|子页没有列出某个引擎 API|该 API 尚不在本页证据边界；用当前生成表、IDE 数据库或源码核实后再采用|
+
+! 证据位置
+
+|!位置|!用途|
+|`Plugins/Angelscript/Angelscript.uplugin` 与 Runtime Build.cs|核心插件和 engine-domain 模块依赖|
+|`Plugins/AngelscriptGameplayTags/AngelscriptGameplayTags.uplugin`|GameplayTags 可选插件、Runtime / Editor / Test module|
+|`Plugins/AngelscriptGAS/AngelscriptGAS.uplugin` 与 Build.cs|GAS 对 Angelscript、GameplayTags、GameplayAbilities / Tasks 的依赖|
+|`Script/Examples/`|只有确实存在的示例才可作为教程入口|
+
+! 相关链接
+
+* <<as-doc-link "topics-integrations/gameplay-tags" "GameplayTags">> —— 可选 `AngelscriptGameplayTags` 插件的边界与依赖
+* <<as-doc-link "topics-integrations/gas" "Gameplay Ability System（GAS）">> —— 可选 `AngelscriptGAS` 插件及其对 GameplayTags 的显式依赖
+* <<as-doc-link "topics-integrations/enhanced-input" "Enhanced Input">> —— 核心插件对接 Unreal `EnhancedInput` 的输入绑定
+* <<as-doc-link "topics-integrations/networking-rpc" "Networking 与 RPC">> —— 复制与 RPC 的 `engine-domain` 边界
+* <<as-doc-link "topics-integrations/ui-umg" "UI 与 UMG">> —— UMG/Slate 的脚本集成边界
+* <<as-doc-link "topics-integrations/ai-behavior-tree" "AI 与 BehaviorTree">> —— AIModule/GameplayTasks 的脚本集成边界
+* <<as-doc-link "unreal-core/index" "Unreal 核心">> —— 进入专题前需要掌握的核心与绑定路径

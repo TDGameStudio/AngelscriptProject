@@ -1,0 +1,149 @@
+title: AS/Docs/zh-Hans/unreal-language/default-statement
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: default 语句与 CDO 默认值
+description: 解释 class body 中 default 语句如何进入 DefaultsFunction、按继承顺序应用到 CDO，并区分字段初始化、构造和运行时实例修改。
+as-sdk-document: yes
+as-doc-key: unreal-language/default-statement
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: guide
+as-content-status: draft
+as-order: 90
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 230
+as-nav-parent: unreal-language/index
+as-feature-key: default-statement
+
+! 解决什么问题
+
+`default` 在脚本类声明中描述类默认对象（CDO）应持有的值，尤其适合继承自 Unreal 类的反射属性与默认组件配置：
+
+```angelscript
+class AProjectile : AActor
+{
+    UPROPERTY(DefaultComponent, RootComponent)
+    USphereComponent Collision;
+
+    default Collision.SphereRadius = 24.0;
+    default InitialLifeSpan = 5.0;
+}
+```
+
+它不是普通运行时赋值，也不是每 Tick 执行。预处理/生成路径把这些语句收集进 defaults function，ClassGenerator 在建立默认对象时按类层级执行。
+
+! 与三种初始化区分
+
+|!写法|!时机|!目标|
+|字段 initializer `int X = 3`|脚本对象构造/默认布局语义|脚本字段|
+|`default X = 3`|CDO/default 初始化阶段|Unreal 类默认状态/组件模板|
+|constructor/BeginPlay 赋值|每个实例运行时|当前实例|
+
+若希望设计师在 Blueprint/defaults 上看到值，用 default；若值依赖运行时 World/owner，不应在 CDO 阶段查询。
+
+! 执行顺序
+
+```text
+native superclass CDO
+  → parent AS class DefaultsFunction
+  → child AS class DefaultsFunction
+  → default/override component template state
+  → instance construction copies defaults
+```
+
+子类可以覆盖父默认值。生成器还可能使用临时 `CDONoDefaults` 区分构造基线与应用脚本 defaults 后的状态；热重载据此迁移未被实例显式修改的默认值。
+
+! 合法目标
+
+default 左值必须在默认对象阶段可解析并可安全写：当前类/父类反射字段、已建立的 default component 属性链等。不能依赖实例 owner、动态 World、网络连接、timer 或 BeginPlay 状态。调用方法时也要确认它允许 construction/defaults 阶段；标记为 unsafe during construction 的入口应被拒绝。
+
+! 组件默认
+
+`default Mesh.Set...` 的 receiver 不是任意实例组件，而是 CDO 上由 `DefaultComponent`/`OverrideComponent` 描述建立的模板。组件必须先在 finalize/constructor 流程可解析；写错名字、类型不兼容或 attach/root 约束失败会使 class generation 失败。
+
+! Hot Reload
+
+只改变默认值通常不等于函数 body Soft Reload：CDO、Blueprint 子类 defaults 和现有实例可能需要默认传播/恢复。系统比较 old/new defaults，并避免覆盖用户/实例已编辑值。字段布局或组件结构同时变化则升级 Full Reload。
+
+编译失败保留旧 CDO/类；候选 defaults function 不应先写 canonical CDO。
+
+! 常见错误
+
+|!现象|!原因/处理|
+|新生成实例仍是旧值|reload/default propagation 未提交，或 Blueprint/实例已有 override|
+|Editor 启动时访问 World 崩溃|default 阶段没有运行时 World；移到 BeginPlay/Subsystem|
+|父类值被意外覆盖|子 DefaultsFunction 顺序和同一 property 的 child assignment|
+|组件为 null|DefaultComponent 描述未建立、类型/名字错误|
+|cooked 与 Editor 不同|default 依赖 EditorOnly 字段/API|
+
+! 从语句到 CDO 的所有权链
+
+`default` 的关键不是一条特殊赋值语法，而是一条跨编译与对象生成的所有权链：预处理/编译阶段把默认代码保存在 class descriptor 对应的 defaults function；ClassGenerator 创建/更新 `UASClass`，`UpdateConstructAndDefaultsFunctions` 把 construct/defaults 入口接到 class；`InitDefaultObjects` / `InitDefaultObject` 在 class 产物可用后建立默认对象；随后实例从 CDO/Blueprint defaults 取得基线。
+
+```text
+source `default ...`
+  → class descriptor / DefaultsFunction
+  → UASClass construct + defaults entries
+  → native/parent CDO baseline
+  → script CDO applies parent then child defaults
+  → Blueprint CDO may override
+  → instance copies effective defaults
+```
+
+每一层都只能消费前一层已完成的产物。若 component table 尚未 finalize，`default Mesh...` 不能安全解析 receiver；若候选 class 验证失败，不能把候选 defaults function 接到 canonical class。
+
+! Default 值的优先级与传播
+
+“新默认值有没有生效”必须指定观察层：
+
+|!层 |!值从哪里来 |!何时应保留旧值 |
+|原生父 CDO |C++ class defaults |脚本不能把未授权/不存在的父状态当任意内存改写 |
+|脚本父/子 CDO |父 DefaultsFunction 后执行子 DefaultsFunction |子类明确覆盖同一 property 时保留子语义 |
+|Blueprint CDO |Blueprint Class Defaults |用户/资产有显式 override 时不应被脚本传播覆盖 |
+|关卡/运行时实例 |effective CDO + 实例编辑/运行时状态 |实例已显式编辑或运行后改变时需区分来源 |
+
+Hot reload 的传播不是“把所有等于旧值的字段改成新值”这么简单。它需要区分 inherited default、Blueprint override、instance override 与运行时状态。否则一个数值恰好等于旧默认，就可能被误判为未编辑；反过来，真正继承默认的对象可能错过更新。
+
+! Defaults 阶段允许的操作
+
+安全操作应只依赖 class/default object 已有状态，并且重复执行得到同样结果：给反射 property 赋常量或纯计算值、配置已经建立的 component template、调用明确允许 construction/defaults 的 setter。以下依赖不属于这个阶段：
+
+* 当前 gameplay World、玩家、authority、网络连接或 GameInstance subsystem；
+* timer、latent/async 请求、delegate 的永久外部注册；
+* Editor selection、viewport、窗口或只在交互式 Editor 加载的服务；
+* 读取另一个运行时实例来决定 class default；
+* 产生不可逆外部副作用（写存档、spawn 持久 Actor、修改全局单例）。
+
+DefaultsFunction 可能在 Editor 启动、重编译、Blueprint 重建、Cook/commandlet 等路径执行。代码若只在普通 PIE 偶然安全，就不满足 CDO 合同。
+
+! 候选发布与失败原子性
+
+默认代码可能编译成功，但 component receiver、property 类型或 construction-safety 验证失败。此时应保留旧 canonical class/CDO/defaults；候选临时 CDO 和函数不能提前污染活动版本。可把流程理解为：构建候选 → 验证 property/component/函数入口 → 初始化候选 defaults → 成功后发布并传播。
+
+|!失败点 |!必须保留 |!必须丢弃/回滚 |
+|语句编译失败 |旧 module、旧 DefaultsFunction、旧 CDO |候选字节码与诊断之外的临时状态 |
+|组件/属性解析失败 |旧 component table 与 class defaults |候选 class/CDO/未发布 offset |
+|执行 defaults 抛错 |旧 canonical 默认对象 |候选对 canonical map 的任何提前写入 |
+|发布后 Blueprint 恢复失败 |已提交的新 generation + 明确恢复诊断 |不能只把 CDO 或单个 registry 偷偷切回旧版 |
+
+! 精确诊断路径
+
+遇到默认值异常时，不要只比较一个实例：先确认当前源码中的 DefaultsFunction 是否属于新 module，再查看新 `UASClass` 的 construct/defaults entry，接着看脚本 CDO，最后依次看 Blueprint CDO 和实例 override。组件属性还要确认 receiver 是 CDO template，而不是空的实例字段。
+
+如果“父值正确、子值错误”，检查父/子执行顺序与子 DefaultsFunction；如果“新 Script CDO 正确、Blueprint 仍旧”，检查资产是否显式 override 和 default propagation；如果“Editor 正确、Cooked 错”，搜索 Editor-only property/API/组件，并确认它没有参与运行时必需默认。
+
+! 维护清单
+
+# 修改前列出 default 左值的 owner class、是否为 component template、是否被 Blueprint/实例覆盖。
+# 方法调用要确认 construction/defaults-safe，而不是因为能在运行时调用就直接使用。
+# 改字段类型、组件结构或 attach/root 时按 Full Reload 处理；只改数值也要检查 CDO propagation。
+# 默认值承担网络/存档协议时，另外定义版本迁移；CDO 更新不会自动迁移历史数据。
+# 发布后用“新未覆盖实例 + 有 Blueprint override 的实例 + 有实例 override 的实例”区分传播行为。
+
+! 相关链接
+
+* <<as-doc-link "unreal-language/default-components" "默认与覆盖组件">>
+* <<as-doc-link "unreal-language/construction-script-semantics" "构造阶段语义">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint 子类与默认值热重载">>

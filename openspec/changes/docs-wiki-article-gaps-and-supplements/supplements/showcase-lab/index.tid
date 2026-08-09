@@ -1,0 +1,84 @@
+title: AS/Docs/zh-Hans/showcase-lab/index
+type: text/vnd.tiddlywiki
+tags: ShowcaseLab
+caption: Showcase 与实验室
+description: 区分稳定渲染基线、可复用文档模式与隔离实验。
+as-sdk-document: yes
+as-doc-key: showcase-lab/index
+as-locale: zh-Hans
+as-depth: L0
+as-doc-kind: guide
+as-content-status: draft
+as-order: 10
+as-content-revision: 1
+as-sources: [[openspec]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 110
+as-feature-key: showcase-lab
+
+! 本章要解决什么
+
+Showcase 是 AngelscriptWiki 自身的“文档展示与验证目录”，不是 Unreal 引擎功能，也不是 AngelScript 脚本能力。它把 Wiki 页面能用的渲染/交互/文档组合按“稳定性”分成三层——Base、Pattern、Lab——让作者知道：写文档时该复用哪一层，哪些东西只是研究项、还没有落地成可用页面。
+
+本章帮你回答三个问题：''我要展示一段代码/一张图/一个交互，该用哪一层？''、''目录里列着的东西是不是都已经能用了？''、''为什么某些实验不能直接放进产品首页？''
+
+<<as-callout warning "先分清三件事">>
+本页讲的 Base/Pattern/Lab 是 //Wiki 文档系统// 的展示稳定性分层，与运行时 AngelScript 脚本、Unreal 反射或热重载 //无关//。AngelscriptWiki 不在浏览器里构建 Unreal、不加载 `Plugins/Angelscript`、也不在浏览器直接执行 AngelScript。任何“运行时”行为都要通过明确的数据或服务边界，属于另一个变更。
+<</as-callout>>
+
+! 三层稳定性：Base / Pattern / Lab
+
+唯一的权威目录是 `AS/Showcase/Data/Catalog`，共 ''42 条'':Base `B01`–`B15`、Pattern `P01`–`P16`、Lab `L01`–`L11`。每条目录必须有标题、用途、状态(`mapped` / `gap` / `experiment`)与计划中的验证方式。三层的语义如下：
+
+|!层 |!ID 范围 |!含义 |!何时用这一层 |
+|Base |`B01`–`B15` |''稳定的原子能力''。已有稳定渲染或交互验收的作者基线（Markdown、WikiText、代码高亮、控件、图片等基础表现）。 |你只需要一段普通正文、一个表格、一段高亮代码或一个简单控件时。 |
+|Pattern |`P01`–`P16` |''可复用的组合''。有明确作者契约、阅读顺序、无障碍与窄屏包含边界的技术文档组合（逐行讲解、生命周期时间线、状态转换、调用序列、数据流等）。 |你要把多种基础能力组合成一个可复用的讲解结构，并且需要固定的阅读顺序与无障碍保证时。 |
+|Lab |`L01`–`L11` |''重型 / 实验 / 安全与打包边界''。隔离的研究目录，不是稳定产品能力（AST 联动、字节码/VM 追踪、反射生成、DebugServer、Web-embed 安全策略等）。 |你在做探索性研究，或需要评估重型渲染/嵌入/安全方案；成果先以静态记录形式存在，不承诺可用。 |
+
+<<as-callout note "状态字段决定“能不能用”，而不是“列没列”">>
+目录里出现某条(catalog presence)//不等于//已经有可读页面或产品功能。只有状态为 `mapped`(Base/Pattern 已映射到真实 reader page)或已实现的 `experiment`(Lab)才有对应页面；状态为 `gap` 的条目此刻只保留“目录 + 计划验证范围”，还没有页面。不要把研究项当成已交付能力去引用。
+<</as-callout>>
+
+! 目录只有 42 条：不要把研究项当产品能力
+
+`AS/Showcase/Data/Catalog` 是''唯一''的 42 条清单。判断某项是否可用，看它在目录里的 `state`：
+
+* ''`mapped``''——已有一个真实的中文 reader page 承载它（多见于 Base 与部分 Pattern）。这类条目的页面上 `as-showcase-id` 与 `as-showcase-tier` 必须与目录行一致。
+* ''`gap`''——只登记了标题、用途与“计划验证方式”，''还没有页面''。目前 Base 有约一半、Pattern 有多条处于 `gap`。
+* ''`experiment`''——Lab 专用状态，表示这是研究问题；即使已经实现了一个隔离页面，也仍然是实验，不进入稳定性统计。
+
+<<as-callout warning "别用目录条数冒充完成度">>
+“目录里有 42 项”不代表“有 42 个已审阅页面”。把 `gap` / `experiment` 混进完成度统计，会让文档系统显得比实际成熟。引用某项前请先在 `AS/Showcase/Data/Catalog` 里核对它的 `state` 与是否有 `page-title`。
+<</as-callout>>
+
+! Lab 依赖不进入初始 Home 启动路径
+
+这是硬边界:''Lab 依赖不放在初始 Home 启动路径上。''AngelscriptWiki 是单文件离线优先的 Wiki，初始页面必须保持轻量。因此：
+
+* 初始产品''不''加载浏览器端 AngelScript compiler、远程服务、Canvas/WebGL/WASM 重型 runtime 或第三方 embed。
+* 重型 Canvas、WebGL、WASM 或可视化代码必须''惰性加载''(lazy-load)，不能直接进入初始页面路径。
+* Lab 的 AST/VM/反射/嵌入类实验以''静态记录数据''(recorded fixture)为先，浏览器里不依赖真实编译器或 VM——例如 `L01`(AST 联动)、`L02`(字节码/VM 追踪)都用确定性的、已记录的样本，而''不''声称项目 AngelScript 在 Wiki 里执行。
+* Web-embed 类实验(如 `L11`)在通过 CSP、隐私、离线产物、无障碍与威胁模型审查前，''不得''毕业为稳定能力。
+
+<<as-callout danger "毕业标准">>
+一个 Lab 条目要“毕业”成 Base 或 Pattern，必须先满足其目录行 `planned-verification` 的全部要求，并补齐无障碍、离线、打印与失败态回退。在完成这些审查前，Lab 页面必须明确标注实验属性，绝不能被当作稳定产品功能对外承诺。
+<</as-callout>>
+
+! 目录导航（Base / Pattern / Lab）
+
+Base/Pattern/Lab 三层目录由 Showcase 根目录统一导航。注意：这些是 `AS/Showcase/*` 导航页，属于 Showcase 目录树，''不是'' `AS/Docs` 文档子页，所以这里用目录直链而不是文档卡片网格。
+
+|!层 |!目录入口 |!说明 |
+|Base |[[Base 稳定基线\|AS/Showcase/Base]] |稳定渲染与交互基线；可作为主题、文档与组件回归目标。 |
+|Pattern |[[Pattern 可复用组合\|AS/Showcase/Pattern]] |可复用技术文档组合；每项需要作者契约、无障碍、阅读顺序与窄屏包含。 |
+|Lab |[[Lab 隔离实验\|AS/Showcase/Lab]] |实验与研究目录；不计入稳定统计，也不进入初始启动路径。 |
+
+* [[Showcase 根目录\|AS/Showcase]] —— 三层稳定性树的统一入口
+* [[Showcase 42 项目录\|AS/Showcase/Data/Catalog]] —— 唯一权威清单（含每项 `state` 与 `planned-verification`）
+
+! 边界与相关链接
+
+* 表现组件是''作者写文档的工具''，不是脚本或引擎能力：本页描述的一切都在 Wiki 文档层，读者最终看到的还是文档页。
+* 判断“能不能用”始终以 `AS/Showcase/Data/Catalog` 的 `state` 为准；`gap` / `experiment` 不是已交付能力。
+* 涉及可运行的表现组件（代码高亮、注解、callout）的具体用法，参见语言与工作流章节内已 `reviewed` 的示例页面。
+* <<as-doc-link "start/installation-checklist" "安装与启用检查">> —— 若你还没跑通第一个脚本，先从安装和首次编译开始。

@@ -1,0 +1,398 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/as-bytecode-instruction-set
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: AS 字节码指令集
+description: AngelScript 字节码指令集完整参考：操作码分类、操作数编码格式、跳转语义、Finalize 管线与调试映射。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/as-bytecode-instruction-set
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 60
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: as-bytecode-instruction-set
+
+! 要解决的问题
+
+AngelScript 编译器将脚本源码翻译为一套紧凑的字节码表示，再由虚拟机（VM）解释执行，或交由 StaticJIT/JIT 编译器进一步翻译为本地机器码。要理解运行时行为、排查执行异常、或者扩展 VM 指令集，必须掌握字节码的编码格式、完整操作码语义以及编译到执行的管线结构。
+
+本文记录 `asCByteCode` 的内部模型及当前 fork `asEBCInstr` 的 0–212 共 213 个可输出 opcode，另含 251–255 五个编译期伪 opcode。字段、枚举与管线已对照 `ThirdParty/angelscript/source/as_bytecode.h/.cpp`、`Core/angelscript.h`、`as_context.cpp` 与 `as_restore.cpp`；`Documents/Knowledges/ZH/AS_ByteCode.md` 作为概念背景，不再代替当前源码。
+
+<<as-callout note "版本口径">>
+opcode 数字和 `asEBCType` 布局属于本仓库 fork 的内部 ABI。本文用函数名而非易漂移行号定位实现；吸收上游 bytecode 变更时必须同时核对 `asBCInfo`、`asBCTypeSize`、编译器发射、`asCContext::ExecuteNext()`、StaticJIT 生成器与 restore 读写器，不能只修改枚举。
+<</as-callout>>
+
+! 概念与管线模型
+
+!! 字节码的两种表示形式
+
+AngelScript 字节码在编译期和运行期以不同形式存在：
+
+* '''编译期（链表形式）'''：`asCByteCode` 以 `asCByteInstruction` 双向链表维护指令序列，允许插入、删除、重排。
+* '''运行期（数组形式）'''：`Finalize` 管线完成后，链表通过 `Output()` 展平为紧凑的 `asDWORD[]` 数组，供 VM 执行循环直接寻址。
+
+!! 关键源码入口
+
+| 文件 | 大小（参考） | 主要职责 |
+|------|------------|---------|
+| `ThirdParty/angelscript/source/as_bytecode.h` | 约 6 KB / 210 行 | `asCByteCode`、`asCByteInstruction` 声明 |
+| `ThirdParty/angelscript/source/as_bytecode.cpp` | 约 90 KB / 3052 行 | Finalize 管线、优化、序列化输出 |
+| `Core/angelscript.h` | 约 73 KB | `asEBCInstr`（213 条操作码）、`asEBCType`（22 种格式）枚举 |
+| `ThirdParty/angelscript/source/as_restore.h/.cpp` | — | 字节码二进制序列化（`asCReader`/`asCWriter`） |
+
+相关内部文档：`AS_Compiler.md`（编译器如何发射字节码）、`AS_VirtualMachine.md`（VM 如何执行字节码）。
+
+! 操作数编码格式
+
+!! 指令基本结构
+
+每条指令的物理布局以 DWORD（4 字节）为单位：
+
+```text
+指令物理布局（单位：DWORD = 4 字节）
+======================================
+Byte 0  : opcode（asEBCInstr 枚举值，0-255）
+Byte 1  : 0（始终为零，对齐填充）
+Byte 2-3: 第一个 WORD 参数（或 padding）
+DWORD 1 : 附加参数（按指令类型可为 DW / QW / PTR）
+DWORD 2 : 附加参数（仅 QW_ARG 及以上指令）
+
+常量：
+  BYTECODE_SIZE  = 4   // 基础指令大小：1 个 DWORD
+  MAX_DATA_SIZE  = 8   // 最大附加数据：2 个 DWORD
+  MAX_INSTR_SIZE = 12  // 单条指令最大：3 个 DWORD
+```
+
+!! 22 种操作数类型（asEBCType）
+
+`asEBCType` 枚举定义了 22 种参数组合格式，决定每条指令的实际字节长度：
+
+| 类型标识 | 大小（DWORD） | 参数布局 | 说明 |
+|---------|------------|---------|------|
+| `INFO` | 0 | — | 元信息，编译期专用，不输出到最终字节码 |
+| `NO_ARG` | 1 | op only | 无操作数 |
+| `W_ARG` | 1 | op + w16 | 单 WORD 参数 |
+| `wW_ARG` | 1 | op + w16 | 写目标 WORD 参数 |
+| `rW_ARG` | 1 | op + w16 | 读源 WORD 参数 |
+| `DW_ARG` | 2 | op + w16 + dw32 | 32 位 DWORD 参数 |
+| `rW_DW_ARG` | 2 | op + w16 + dw32 | 读寄存器 + DWORD 参数 |
+| `QW_ARG` | 3 | op + qw64 | 64 位参数 |
+| `DW_DW_ARG` | 3 | op + dw32 + dw32 | 两个 DWORD 参数 |
+| `wW_rW_rW_ARG` | 2 | op + w0 + w1 + w2 | 三 WORD：写一读二 |
+| `wW_QW_ARG` | 3 | op + w0 + qw64 | 写 WORD + QWORD |
+| `wW_rW_ARG` | 2 | op + w0 + w1 | 写一读一 |
+| `rW_ARG` | 1 | op + r0 | 单个读 WORD |
+| `wW_DW_ARG` | 2 | op + w0 + dw32 | 写 WORD + DWORD |
+| `wW_rW_DW_ARG` | 3 | op + w0 + r1 + dw32 | 写/读 WORD + DWORD |
+| `rW_rW_ARG` | 2 | op + r0 + r1 | 两个读 WORD |
+| `wW_W_ARG` | 2 | op + w0 + word1 | 写 WORD + 普通 WORD |
+| `QW_DW_ARG` | 4 | op + qw64 + dw32 | QWORD + DWORD |
+| `rW_QW_ARG` | 3 | op + r0 + qw64 | 读 WORD + QWORD |
+| `W_DW_ARG` | 2 | op + word0 + dw32 | 普通 WORD + DWORD |
+| `rW_W_DW_ARG` | 3 | op + r0 + word1 + dw32 | 读 WORD + WORD + DWORD |
+| `rW_DW_DW_ARG` | 3 | op + r0 + 两个 DWORD（共享 `arg` 区） |读 WORD + 双 DWORD |
+| `W_rW_ARG` | 2 | op + word0 + r1 |普通 WORD + 读 WORD |
+
+''前缀语义''：`w` = write（目标寄存器），`r` = read（源寄存器），`W` = WORD，`DW` = DWORD，`QW` = QWORD。
+
+<<as-callout note "大小的唯一真相源">>
+上表覆盖当前全部 22 个 `asEBCType`。实际 DWORD 数由紧邻枚举的 `asBCTypeSize[22]` 给出；`asCByteInstruction::GetSize()` 与最终 `Output()` 都必须使用同一映射。名称里的 `r` / `w` 描述临时变量读写方向，供局部优化器判断 liveness，不是 CPU 寄存器编码。
+<</as-callout>>
+
+! 操作码分类（asEBCInstr，213 条）
+
+`asEBCInstr` 枚举定义了 0-212 号操作码，按功能分为以下类别：
+
+!! 栈操作（opcode 0-5）
+
+| 操作码 | 说明 |
+|-------|------|
+| `PopPtr` | 弹出一个指针大小的值 |
+| `PshGPtr` | 将全局指针压栈 |
+| `PshC4` | 将 4 字节常量压栈 |
+| `PshV4` | 将变量（4 字节）压栈 |
+| `PSF` | 压入栈帧偏移 |
+| `SwapPtr` | 交换栈顶两个指针 |
+
+!! 控制流（opcode 9-17, 57）
+
+| 操作码 | 说明 |
+|-------|------|
+| `CALL` | 调用脚本函数 |
+| `RET` | 从函数返回 |
+| `JMP` | 无条件跳转 |
+| `JZ` / `JNZ` | 零标志条件跳转（等于 / 不等于） |
+| `JS` / `JNS` | 符号标志条件跳转（有符号小于 / 不小于） |
+| `JP` / `JNP` | 正数标志条件跳转 |
+| `JMPP` | 跳转表（switch 派发） |
+
+<<as-callout note "跳转语义细节">>
+这些条件跳转直接读取 `asSVMRegisters::valueRegister`：`JZ/JNZ` 读取其 `int` 视图，`JS/JNS/JP/JNP` 对有符号比较结果判断负、非负、正、非正。`CMPd/CMPu/CMPf/CMPi` 等把比较结果写为负/零/正，`TZ` 等则把条件归一化为布尔。`JLowZ/JLowNZ` 只读低字节。最终 jump argument 是以 DWORD 指令位置计的相对增量；解释器命中时执行 `l_bc += offset + 2`。`JMPP` 按索引跨越随后按两 DWORD 宽布局的 jump table entry。
+<</as-callout>>
+
+!! 比较与测试（opcode 18-23, 50-56）
+
+| 操作码 | 说明 |
+|-------|------|
+| `TZ` / `TNZ` | 测试零 / 非零 |
+| `TS` / `TNS` | 测试符号位（负 / 非负） |
+| `TP` / `TNP` | 测试正 / 非正 |
+| `CMPd` / `CMPu` / `CMPf` / `CMPi` | 双精度 / 无符号 / 单精度 / 整数比较 |
+
+!! 算术运算（opcode 24-38, 115-135）
+
+| 操作码 | 说明 |
+|-------|------|
+| `NEGi` / `NEGf` / `NEGd` | 整数 / 单精度 / 双精度取反 |
+| `INCi` / `DECi` | 整数自增 / 自减 |
+| `ADDi` / `SUBi` / `MULi` / `DIVi` / `MODi` | 整数四则运算 + 取模 |
+| `ADDf` / `SUBf` / `MULf` / `DIVf` / `MODf` | 单精度浮点运算 |
+| `ADDd` / `SUBd` / `MULd` / `DIVd` / `MODd` | 双精度浮点运算 |
+
+!! 位运算（opcode 39-45）
+
+| 操作码 | 说明 |
+|-------|------|
+| `BNOT` | 按位取反 |
+| `BAND` | 按位与 |
+| `BOR` | 按位或 |
+| `BXOR` | 按位异或 |
+| `BSLL` | 逻辑左移 |
+| `BSRL` | 逻辑右移 |
+| `BSRA` | 算术右移 |
+
+!! 类型转换（opcode 101-114, 140-155）
+
+| 操作码示例 | 说明 |
+|----------|------|
+| `iTOf` | 整数转单精度浮点 |
+| `fTOi` | 单精度浮点转整数 |
+| `dTOi64` | 双精度转 64 位整数 |
+| `i64TOf` | 64 位整数转单精度浮点 |
+
+<<as-callout note "当前转换分组">>
+101–114 依次是 `iTOf, fTOi, uTOf, fTOu, sbTOi, swTOi, ubTOi, uwTOi, dTOi, dTOu, dTOf, iTOd, uTOd, fTOd`；140–155 是 `iTOb, iTOw, SetV1, SetV2, Cast, i64TOi, uTOi64, iTOi64, fTOi64, dTOi64, fTOu64, dTOu64, i64TOf, u64TOf, i64TOd, u64TOd`。其中 `SetV1/SetV2` 与 `Cast` 位于数字区间内但不是数值转换矩阵成员，维护脚本不能只靠范围自动归类。
+<</as-callout>>
+
+!! 对象操作（opcode 64-75）
+
+| 操作码 | 说明 |
+|-------|------|
+| `ALLOC` | 堆分配对象（`largestStackUsed` 需额外 +2） |
+| `FREE` | 释放对象 |
+| `LOADOBJ` | 将对象加载到寄存器 |
+| `STOREOBJ` | 将寄存器中的对象存储到变量 |
+| `REFCPY` | 引用计数复制 |
+
+!! 变量操作（opcode 77-97）
+
+| 操作码 | 说明 |
+|-------|------|
+| `SetV4` / `SetV8` | 设置变量（4/8 字节） |
+| `CpyVtoV4` | 变量到变量复制（4 字节） |
+| `CpyVtoR4` | 变量到寄存器复制（4 字节） |
+| `LDG` / `LDV` | 加载全局变量 / 加载本地变量 |
+
+!! 64 位整数运算（opcode 145-172）
+
+提供完整的 64 位整数算术、比较和位运算指令集，是 32 位操作码的 64 位对应版本。
+
+<<as-callout note "64 位指令详单">>
+145–155 是 32/64 位与浮点转换；156–172 依次为 `NEGi64, INCi64, DECi64, BNOT64, ADDi64, SUBi64, MULi64, DIVi64, MODi64, BAND64, BOR64, BXOR64, BSLL64, BSRL64, BSRA64, CMPi64, CMPu64`。无符号除法/取模另在 182–183 的 `DIVu64/MODu64`，所以“145–172 是完整 64 位运算块”并不精确。
+<</as-callout>>
+
+!! 幂运算（opcode 193-199）
+
+| 操作码 | 说明 |
+|-------|------|
+| `POWi` | 整数幂 |
+| `POWu` | 无符号整数幂 |
+| `POWf` | 单精度浮点幂 |
+| `POWd` | 双精度浮点幂 |
+| `POWdi` | 双精度底数、整数指数幂 |
+| `POWi64` | 64 位整数幂 |
+| `POWu64` | 64 位无符号整数幂 |
+
+!! UE Fork 扩展指令（opcode 201-212）
+
+此 Unreal 插件 fork 在标准 AngelScript 指令集之外新增了 12 条专用指令：
+
+| 操作码 | 说明 |
+|-------|------|
+| `FinConstruct` | 终止构造（Finalize Construct） |
+| `DestructScript` | 析构脚本对象 |
+| `CopyScript` | 复制脚本对象 |
+| `ResolveObjectPtr` |把 Unreal/脚本对象表示解析为执行用对象指针 |
+| `FreeNullV8` |释放/清理 8 字节变量的空值状态 |
+| `TrackRef` |把引用加入 fork 的引用追踪 |
+| `UntrackRef` |从引用追踪移除 |
+| `ValidateRef` |在继续使用前验证被追踪引用 |
+| `CpyVtoR1` |把 1 字节变量复制到 value register |
+| `SaveReturnValue` |保存 fork 调用桥的返回值 |
+| `CmpPtrNull` |指针与 null 比较 |
+| `ThrowException` |触发脚本异常路径 |
+
+<<as-callout note "fork 边界">>
+201–212 的 12 个名字已与当前 `Core/angelscript.h` 对齐；`asBC_Thiscall1 = 200` 紧邻该区但不是 201–212 的一员。新增 fork opcode 时必须同时更新 `asBC_MAXBYTECODE`、`asBCInfo`、解释器、StaticJIT、debug string、栈/变量分析和 restore operand 翻译；只加枚举会让合法性检查或序列化读取越界。
+<</as-callout>>
+
+!! 编译期临时标记指令（opcode 251-255）
+
+这 5 条伪指令仅在编译期链表阶段存在，不输出到最终可执行字节码数组：
+
+| 操作码值 | 名称 | 用途 |
+|---------|------|------|
+| 251 | `VarDecl` | 变量声明位置标记 |
+| 252 | `Block` | 作用域块开始/结束标记 |
+| 253 | `ObjInfo` | 对象变量生命周期信息 |
+| 254 | `LINE` | 源码行号标记（Finalize 后转为 `SUSPEND` 或删除） |
+| 255 | `LABEL` | 跳转目标标签（Finalize 后解析为字节偏移量） |
+
+! 关键数据结构
+
+!! asCByteCode
+
+编译期字节码构造器，以双向链表维护指令序列：
+
+```text
+asCByteCode {
+    asCByteInstruction *first   // 链表头
+    asCByteInstruction *last    // 链表尾
+    int largestStackUsed        // 最大栈使用量（ALLOC 指令特殊处理需 +2）
+}
+```
+
+!! asCByteInstruction
+
+链表节点，表示单条指令：
+
+```text
+asCByteInstruction {
+    asEBCInstr op       // 操作码
+    asQWORD arg         // 最多 8 字节参数存储
+    short wArg[3]       // 三个 WORD 参数（寄存器操作数）
+    int size            // 指令大小（DWORD 单位）
+    int stackInc        // 该指令对栈深度的增量
+    *next, *prev        // 双向链表指针
+    bool marked         // PostProcess 可达性标记
+    int stackSize       // 该位置累计栈深度
+}
+```
+
+<<as-callout note "当前布局与可见性">>
+这些字段与当前 `as_bytecode.h` 一致。fork 只给 `asCByteCode` 与 `asCByteInstruction` 增加 `ANGELSCRIPTRUNTIME_API` 导出以供 `AngelscriptTest` 观察，没有改变字段布局。`marked` 与 `stackSize` 虽注释为 Testing，生产 `PostProcess()` 也直接用它们做可达性和栈深度分析。
+<</as-callout>>
+
+! Finalize 四阶段管线
+
+`Finalize(tempVariableOffsets)` 是将编译期链表转换为可执行数组的核心管线，包含四个有序阶段：
+
+!! 阶段 1：PostProcess — 验证与栈分析
+
+''源码入口''：`asCByteCode::PostProcess()`
+
+执行步骤：
+
+# 将所有指令标记为未访问（`marked=false`，`stackSize=-1`）
+# 从链表头 `first` 开始控制流分析：沿执行路径逐指令标记为可达，并累加 `stackInc` 计算每个位置的栈深度
+# 跟踪 `largestStackUsed`；`ALLOC` 指令需要额外 +2 的栈空间
+# 条件跳转指令（`JZ`/`JNZ`/`JS`/`JNS`/`JP`/`JNP`）将两条分支路径都加入待分析队列
+# `JMPP`（跳转表）遍历后续的 JMP 序列，收集所有可能的跳转目标
+# 删除所有未被标记的不可达指令
+
+!! 阶段 2：Optimize — 全局窥孔优化
+
+''源码入口''：`asCByteCode::Optimize()`
+
+单遍前向遍历整个函数，识别并化简以下指令模式：
+
+| 识别模式 | 优化动作 |
+|---------|---------|
+| `PopPtr` + `RET` | 删除 `PopPtr`（RET 自行恢复栈帧） |
+| `SUSPEND` + `SUSPEND` | 合并为单个 `SUSPEND` |
+| `LINE` + `LINE` | 合并为单个 `LINE` |
+| `JMP +0` | 删除（跳转到下一条指令等价于不跳） |
+| `SUSPEND` + `JitEntry` + `SUSPEND` | 删除前两条 |
+
+!! 阶段 3：ResolveJumpAddresses — 跳转目标解析
+
+将编译期的 `LABEL` 伪指令（opcode 255）解析为对应的字节偏移量，写入各跳转指令的操作数。
+
+`ResolveJumpAddresses()` 从 `first` 线性遍历，只处理 `JMP`、六个常规条件跳转以及 `JLowZ/JLowNZ`。每条指令的 `arg` 此时仍保存 label id；`FindLabel(label, instr, ..., &positionDelta)` 先按链表方向定位 label，并用沿途 `GetSize()` 累加出以 DWORD 为单位的相对位置差，成功后原地覆盖 argument。任一 label 不存在立即返回 `-1`，全部解析成功返回 `0`。`JMPP` 不走这段 label 替换，因为其 payload 是 max index，目标由紧随其后的 table entries 表达。
+
+!! 阶段 4：ExtractLineNumbers — 行号提取与调试映射
+
+''源码入口''：`asCByteCode::ExtractLineNumbers()`
+
+将 `LINE` 伪指令（opcode 254）转换为运行时行为，并提取调试信息：
+
+* '''`ep.buildWithoutLineCues == false`'''（调试构建）：`LINE` → `SUSPEND`，保留执行暂停点，供调试器插入断点
+* '''`ep.buildWithoutLineCues == true`'''（性能构建）：删除 `LINE` 指令，消除调试开销
+
+行号信息写入两个数组：`lineNumbers[]` 以成对元素保存 `[programPos, packedLineAndColumn]`，`sectionIdxs[]` 与每一对记录对应，保存 source section index。同一 `programPos` 连续遇到多个 `LINE` 时，旧记录会先弹出，最终保留最后一条映射。
+
+! 两级优化架构
+
+除 Finalize 内的全局 `Optimize` 外，编译器还在每个子表达式编译完成后调用局部优化：
+
+!! OptimizeLocally — 局部窥孔优化
+
+''源码入口''：`asCByteCode::OptimizeLocally()`
+
+逆向遍历刚生成的指令序列，执行三类局部简化：
+
+# '''`RemoveUnusedValue()`'''：检测写入后从未被读取的临时变量写指令，整体删除
+# '''`PostponeInitOfTemp()`'''：延迟临时变量的初始化时机，以便与后续的赋值指令合并
+# '''`SwapPtr` 消除'''：若两条 push 指令本身可交换顺序，则直接删除中间的 `SwapPtr`
+
+! 序列化：asCReader / asCWriter
+
+`as_restore.h/.cpp` 实现字节码的跨会话二进制持久化。
+
+!! Output — 链表到数组
+
+`asCByteCode::Output()` 将编译期双向链表展平为运行期 `asDWORD[]` 紧凑数组：
+
+```text
+对每条链表节点 instr：
+  *(asBYTE*)ap       = asBYTE(instr->op)  // 字节 0：opcode
+  *(((asBYTE*)ap)+1) = 0                   // 字节 1：始终为零
+  // 按 instr 的 asEBCType 写入后续参数字节...
+```
+
+!! ReadByteCode — 从二进制流还原
+
+`asCReader::ReadByteCode()` 从持久化流读取字节码并重建函数体：
+
+```text
+ReadByteCode(func):
+  1. ReadEncodedUInt() → 获取指令总数
+  2. 预分配 byteCode 数组
+  3. 逐指令读取：
+     a. 读 1 字节 opcode
+     b. 查 asBCInfo[opcode].type → 确定该指令大小和参数布局
+     c. 按 asEBCType 读取对应字节数的参数
+```
+
+<<as-callout note "序列化格式稳定性">>
+当前 fork 在 module bytecode stream 开头写 `magic 0xE3` 与 `version 2`。Reader 先 `InternalReset()`，拒绝旧的无 framing payload、错误 magic 和任何非 2 版本；失败后会清空已加载函数 bytecode并再次 reset module，避免半加载状态。V2 的关键修订是把 `REFCPY`、`RefCpyV`、`OBJTYPE`、`FinConstruct`、`DestructScript`、`CopyScript` 等脚本对象 type operand 都序列化为 `usedTypes` index，禁止把旧 stream 中可能存在的进程地址解释为 V2。它是严格的同版本格式，不提供任意前后版本自动兼容。
+<</as-callout>>
+
+! 边界与失败模式
+
+* '''本文无专用 AngelScript 插件或示例脚本'''：字节码指令集属于引擎内核层，`Script/Examples/` 目录下不存在可直接运行的字节码操控示例。
+* '''UE Fork 扩展指令（201-212）总计 12 条'''，其生产消费者不止 VM；StaticJIT、restore 和 debug 输出都属于兼容面。
+* '''源码以符号定位'''：本页不把行号当稳定契约，维护时从 `Finalize`、`PostProcess`、`Optimize`、`ResolveJumpAddresses`、`ExtractLineNumbers`、`Output` 进入。
+* '''`asEBCType` 共 22 种'''，上表与当前 `asBCTypeSize[22]` 一一对应。
+* '''调试映射依赖 `buildWithoutLineCues` 构建配置'''，生产构建中行号信息默认被裁剪，调试器无法映射到具体行。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文">> —— VM 调用链与执行上下文设计
+* <<as-doc-link "runtime-jit-vm/static-jit-aot-test" "StaticJIT AOT 测试工作流">> —— 字节码的 AOT 编译路径
+* <<as-doc-link "compile-module-preprocessor/index" "编译、模块与预处理器">> —— 编译器如何生成字节码

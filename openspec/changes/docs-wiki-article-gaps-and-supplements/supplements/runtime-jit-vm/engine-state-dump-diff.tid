@@ -1,0 +1,170 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/engine-state-dump-diff
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: 引擎状态快照与差分
+description: 诊断快照设施：将 FAngelscriptEngine 及 VM/模块内部状态捕获为稳定可差分的值行，并通过前后对比报告编译影响。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/engine-state-dump-diff
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 60
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: engine-state-dump-diff
+
+! 要解决的问题
+
+在调试编译失败、热重载异常或模块状态异常时，工程师需要回答一个核心问题："这次操作对引擎状态到底改变了什么？"在没有结构化快照能力之前，只能依赖人工解读诊断日志，或在调试器中手动检查 `FAngelscriptEngine` 字段，这对于大型脚本工程效率极低。
+
+规范定义的快照与差分设施（engine state dump/diff）旨在解决两个具体问题：
+
+# 任意时刻对引擎状态做全量快照，并将结果表达为可机械比较的值行集合。
+# 对两个快照做差分，自动报告增加、删除、变更的行，使编译影响、热重载影响或模块加载影响可直接从 CSV 工件中审计。
+
+当前实现位于 `AngelscriptRuntime/Dump/AngelscriptStateSnapshot.*`、`AngelscriptStateDiff.*` 与 `AngelscriptStateDump.*`。它是普通 C++ value-row 快照，不是 UE `USTRUCT` 反射镜像；完整的行模型与反射边界见 <<as-doc-link "runtime-jit-vm/engine-reflectable-state" "Engine 可观测状态快照">>。
+
+! 概念与管线模型
+
+!! 快照行的结构
+
+规范要求每行快照包含以下标识与内容字段：
+
+|!字段 |!说明 |
+|category |该行所属的逻辑分类（如 FAS 引擎成员、AS 引擎集合、模块内部等）|
+|identity |行所描述的具体对象标识（如模块名、类型名、函数声明等）|
+|field |该对象的具体属性名称 |
+|value |属性当前的文本化值 |
+|value kind |值的类型标记（标量、列表计数、路径等）|
+|source |该行来源的引擎层次（FAS 层或 AS 内部层）|
+
+''category + identity + field'' 三元组构成行的稳定键，差分算法以此键比较两个快照中的同一属性。
+
+!! 覆盖的状态层次
+
+规范将快照分为以下几个层次：
+
+; FAngelscriptEngine 成员状态
+: 生命周期标志、运行时配置值、脚本根路径、包/设置/世界上下文观测值、活跃模块摘要、诊断摘要、热重载摘要、服务存在行、静态名称缓存行、脚本枚举查找行、已绑定 Blueprint 事件参数特化行。私有容器以稳定值、计数、名称、路径或明确的"不可用"标记表示，不持有可变引用。
+
+; AS 引擎内部（asCScriptEngine 层）
+: 已注册类型、typedef、枚举、全局属性、全局函数、funcdef、模板/列表类型、全部注册/脚本声明、已导入函数、脚本模块、构建/延迟标志、脚本节（script sections）、类型 ID 映射条目、消息回调状态、垃圾回收器统计。
+
+; AS 模块内部（每个脚本模块）
+: 模块名/基础名、访问掩码/默认命名空间、脚本函数、全局函数、已导入绑定信息、模板实例、脚本全局变量、全局初始化状态、断点/丢弃状态、本地类型、已导入模块、模块依赖、class/enum/typedef/funcdef 列表、外部声明、重载状态。
+
+!! 确定性与可排序性
+
+规范要求：
+
+* 来自无序映射（unordered map）、集合（set）或符号映射的行，在输出前必须按稳定名称、声明文本、ID 或指针标识字符串排序。
+* 对未变化状态的重复捕获不得产生仅因行顺序不同而出现的噪声差分。
+
+这两条约束保证差分输出中的任何变化都反映真实状态变更，而非快照时的非确定性排列。
+
+!! 快照捕获的副作用约束
+
+规范明确要求快照捕获 ''不得'' 触发以下任何操作：
+
+* 编译新模块
+* 触发重载或模块丢弃
+* 发出诊断（将诊断标记为已发出、清除脏标志、追加新诊断）
+* 修改热重载队列
+* 初始化引擎
+
+捕获前后，活跃模块集、诊断集合和热重载队列必须保持不变。
+
+! 关键数据结构与稳定源码入口
+
+!! FAngelscriptStateDump
+
+规范明确命名了 `FAngelscriptStateDump` 作为状态转储系统的入口类型，其静态方法 `DumpAll()` 负责写出所有 CSV 表。
+
+真实 public API 位于 `AngelscriptRuntime/Dump/AngelscriptStateDump.h`：
+
+```cpp
+static FString DumpAll(FAngelscriptEngine& Engine,
+                       const FString& OutputDir = TEXT(""));
+static FAngelscriptStateSnapshot CaptureSnapshot(FAngelscriptEngine& Engine);
+static FAngelscriptStateDiff DiffSnapshots(
+    const FAngelscriptStateSnapshot& Before,
+    const FAngelscriptStateSnapshot& After);
+static FTableResult DumpSnapshot(
+    const FAngelscriptStateSnapshot& Snapshot,
+    const FString& OutputDir);
+static TArray<FTableResult> DumpDiff(
+    const FAngelscriptStateDiff& Diff,
+    const FString& OutputDir);
+```
+
+空 `OutputDir` 只由 `DumpAll()` 解析为 `Saved/Angelscript/Dump/<yyyyMMdd_HHmmss>`；直接调用 `DumpSnapshot` / `DumpDiff` 的调用者应先提供明确目录。
+
+!! 快照 CSV 表集合
+
+规范规定 `DumpAll()` 成功执行后，输出目录中除现有的诊断 CSV 表外，还应包含以下标准化快照表：
+
+|!实际文件名|!内容 |
+|`EngineMemberState.csv` |FAS 引擎成员的标量值行 |
+|`EngineCollections.csv` |FAS 引擎侧的集合类字段（计数、名称列表等）|
+|`AsEngineInternalState.csv` |asCScriptEngine 层的注册类型、函数、模块等行 |
+|`AsModuleInternalState.csv` |每个脚本模块的内部状态行 |
+|`AsTypeInternalState.csv` |脚本类型（class/struct/enum 等）的内部状态行 |
+|`AsFunctionInternalState.csv` |脚本函数的内部状态行 |
+
+`DumpSummary.csv` 中应包含上述新表的汇总行。
+
+同一批行还完整写入 `EngineStateSnapshot.csv`。六个 category 文件是按 `SnapshotRowMatchesCategoryTable` 过滤的分视图；它们不是六次独立捕获，因此同一次 `DumpAll()` 内不存在观察时刻漂移。
+
+!! StateDiff.csv
+
+当调用方对两个快照执行差分并写出结果时，输出目录应包含 `StateDiff.csv`，其中：
+
+* 包含按 category 和变更类型（added / removed / changed）分组的差分摘要表。
+* 每行包含足够的 identity、before value、after value 字段，支持从日志或保存的工件中直接审计编译影响。
+* 默认差分输出中，未变化的行被省略；仅 added、removed、changed 行可见。
+
+!! 编译器事件测试集成
+
+规范要求编译器事件（compiler-event）测试在需要全量引擎状态日志时，必须通过共享的 dump/diff API（即 `FAngelscriptStateDump` 及快照/差分工具）实现，''不得'' 在测试文件内维护本地的临时引擎差分实现。
+
+具体要求：
+* 测试在模块编译前后各捕获一次引擎状态快照。
+* 将快照和差分工件写入唯一的测试输出目录。
+* 记录工件路径和差分摘要计数（added/removed/changed 行数）供后续人工审查。
+
+共享测试适配位于 `AngelscriptTest/Dump/AngelscriptStateDumpDiffTestHelper.h`；它捕获 before/after、调用 `DiffSnapshots`，并输出两份 snapshot 与 diff。设施自身的语义覆盖位于 `AngelscriptTest/Dump/AngelscriptStateDumpDiffTests.cpp`。文章在这里记录复用边界，不要求业务主题复制一套 diff 算法。
+
+! 差分工作流
+
+典型差分使用模式是：
+
+# 在操作（编译、热重载、模块加载）''之前''捕获引擎状态快照 A。
+# 执行目标操作。
+# 在操作''之后''捕获引擎状态快照 B。
+# 对快照 A 与快照 B 执行差分，得到 added/removed/changed 行集合。
+# 将差分结果写出为 `StateDiff.csv`，可保存为 CI 工件或附加到问题报告。
+
+规范明确验证了以下可观测性：差分结果中应包含 FAS 层活跃模块状态的变更行、AS 引擎层的模块/函数/类型状态变更行，以及新编译模块的模块本地内部状态行。
+
+! 边界与失败模式
+
+* ''失败模式 — 捕获引入副作用''：如果快照实现不符合副作用约束，在生产环境中运行诊断可能意外触发模块编译或诊断发出，导致被诊断的状态与实际运行状态不一致。
+* ''失败模式 — 非确定性行顺序''：如果无序容器未在输出前排序，相同状态的两次快照将产生虚假差分，使差分输出失去信噪比。
+* ''失败模式 — 键不稳定''：如果行键（category+identity+field）包含地址、时间戳或其他会话内易变值，跨进程或跨重启的快照将无法机械比较。
+* ''失败模式 — 测试本地化实现''：如果编译器事件测试在本地维护独立的引擎差分逻辑，两套实现会产生行为差异，并使共享工具失去验证覆盖。
+
+<<as-callout warning "无写入不等于低成本">>
+builder 会遍历 Engine、VM、module、type 与 function 集合，复制大量字符串并排序。它不应为填充快照主动初始化、编译或清空状态，但仍是 O(可观察对象与字段总量) 的重型诊断操作；不要在每帧或每次函数调用中自动捕获。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/index" "运行时与 JIT/VM 概览">>
+* <<as-doc-link "runtime-jit-vm/engine-scoped-runtime-state" "引擎作用域的运行时状态">> —— AS 对象的引擎分区管理
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文">> —— 显式调用链上下文设计
+* <<as-doc-link "hot-reload/change-classification" "热重载变更分类">> —— 热重载对引擎状态的影响分类
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 编译器事件测试与诊断工具全景

@@ -1,0 +1,139 @@
+title: AS/Docs/zh-Hans/language/strings-names-and-formatting
+type: text/vnd.tiddlywiki
+tags: Language
+caption: FString、FName、FText 与格式化
+description: 按身份、可变文本和本地化语义选择字符串类型，并使用 f-string 输出可读诊断。
+as-sdk-document: yes
+as-doc-key: language/strings-names-and-formatting
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 100
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[script-examples]] [[angelscript-plugin]]
+as-nav-group: language-basics
+as-nav-order: 100
+as-nav-parent: language/index
+as-feature-key: language-strings-names-formatting
+
+! 三种文本类型的职责
+
+|!类型 |!主要语义 |!典型用途 |
+|`FString` |可组合、可处理的字符内容 |路径片段、日志、临时文本、格式结果 |
+|`FName` |大小写规则下的名称身份 |反射成员名、socket/tag-like key、`BindUFunction` 目标 |
+|`FText` |面向显示与本地化的文本 |玩家可见 UI、可本地化内容 |
+
+不要只按“都能显示文字”互换。`FName` 适合身份比较，不适合频繁拼接；`FText` 包含本地化语义，不应当作哈希 key 或内部协议字符串；`FString` 灵活但不代表每次比较都应替代 name。
+
+! 字符串与 name 字面量
+
+普通引号生成字符串语义：
+
+```angelscript
+FString Message = "Hello";
+Log(Message);
+```
+
+`n"OnInteract"` 是 name 字面量，常见于反射查找与 delegate/timer 绑定：
+
+```angelscript
+FEnhancedInputActionHandlerDynamicSignature Handler;
+Handler.BindUFunction(this, n"OnInteract");
+```
+
+被引用方法应是 `UFUNCTION()`，name 拼写必须和反射成员一致。重命名方法时，编译器不一定能把所有 name 字面量当作强类型引用自动迁移，应搜索同步更新。
+
+! f-string 插值
+
+`Script/Examples/Core/Example_FormatString.as` 展示了当前格式化语法：
+
+```angelscript
+Print(f"Called from actor {GetName()} at location {GetActorLocation()}");
+Print(f"{DeltaSeconds =}");
+Print(f"Three decimals: {DeltaSeconds :.3f}");
+Print(f"Hexadecimal: {20 :#x}");
+Print(f"Aligned: {GetName() :>40}");
+```
+
+`{Expression =}` 会同时输出表达式文字和值，适合临时诊断；冒号后可设置精度、进制、宽度、填充与对齐。
+
+Enum 默认格式包含类型、值名和数值；只想要枚举项名称时使用 `n` specifier：
+
+```angelscript
+Print(f"{ESlateVisibility::Collapsed}");    // 完整调试表示
+Print(f"{ESlateVisibility::Collapsed :n}"); // Collapsed
+```
+
+! 拼接还是格式化
+
+少量固定片段可以用 `+`；包含多个值、精度或对齐时优先 f-string。日志热路径中避免每帧构造大型字符串；需要玩家 UI 时，把最终显示语义保留在 `FText`/本地化层，而不是先把所有内容降为 `FString`。
+
+! 常见错误
+
+|!问题 |!建议 |
+|用 `FString` 作为反射函数名 |使用 `FName` / `n"..."` |
+|把玩家文案永久写成日志字符串 |使用可本地化 `FText` 流程 |
+|格式表达式难以阅读 |提取中间变量，减少花括号内副作用 |
+|每帧打印大量 f-string |降低频率或使用诊断开关 |
+|重命名 UFUNCTION 后绑定失效 |搜索 name 字面量、delegate 和 timer 绑定 |
+
+! 身份、内容与呈现是三层数据
+
+把三种文本类型理解成三个不同层次，会比背“性能差异”更稳定：
+
+* `FName` 是''身份层''：用于回答“是不是同一个名字”。它适合反射成员、socket、内部 key；不携带面向玩家的语言语义。
+* `FString` 是''内容处理层''：适合解析、拼接、日志和临时协议适配。它的内容相等不等于业务对象身份相同。
+* `FText` 是''呈现层''：面向本地化和玩家显示。转成 String 后再拼回 Text，可能丢失本地化历史或把内部值固化成不可翻译文本。
+
+同一功能可以同时用到三层。例如一个交互系统可用 `FName ActionId` 做稳定身份，用 `FString` 生成开发日志，再用 `FText DisplayName` 呈现给玩家。把它们压缩成一个 `FString` 字段，短期省事，长期会把重命名、本地化和协议兼容绑死。
+
+! Name 字面量的静态边界
+
+`n"HandleValue"` 避免运行时从任意字符串构造目标名，但它仍不是对 UFUNCTION 符号的强引用。调用链通常是：name 字面量进入 delegate/timer/reflection API → 运行时在目标 class 上查找 UFunction → 校验/调用匹配签名。任一层不一致都可能表现为“绑定没有触发”。
+
+排查时按顺序确认：
+
+# 目标方法是否带 `UFUNCTION()` 并已进入当前 class 的反射表；
+# name 的大小写和拼写是否与反射名一致；
+# delegate/timer 要求的参数、返回值是否完全匹配；
+# 热重载后 target object 与 UFunction 是否都属于新版本；
+# 初始化是否真的执行，以及是否随后被解绑或 owner 已 teardown。
+
+不要只在 name 上反复试拼写；签名或版本身份错误也会产生相似表象。
+
+! 格式化中的副作用与成本
+
+f-string 花括号中的表达式会为了生成文本而求值。日志表达式最好是无副作用查询；不要把状态推进、随机数、容器删除或昂贵 world 查询塞进格式化表达式，否则“开启日志”可能改变行为或成本。
+
+```angelscript
+FVector Location = GetActorLocation();
+FString ActorName = GetName();
+Log(f"Actor={ActorName}, Location={Location}");
+```
+
+先提取局部变量还有一个诊断优势：发生异常时能区分是数据查询失败，还是格式化/输出失败。对于 Tick 热路径，进一步考虑采样频率、条件开关和聚合统计，而不是每帧构造同一段文本。
+
+! 序列化与迁移政策
+
+|!用途 |!推荐保存内容 |!重命名时的责任 |
+|内部稳定标识 |受控 `FName` 或显式 ID |提供旧 ID → 新 ID 映射，不直接依赖显示文案 |
+|用户可编辑文本 |按产品数据模型保存 String/Text |验证长度、编码和本地化来源 |
+|玩家显示文案 |保留 `FText` 本地化语义 |通过本地化资源/稳定 key 更新，而非字符串替换 |
+|调试日志 |临时 `FString` |不应被下游当稳定机器协议解析 |
+
+日志格式尤其不应被默认为 API。如果外部工具确实要消费输出，使用结构化字段和版本化 schema；随手修改 f-string 标点不应破坏构建流程。
+
+! 评审问题
+
+* 这个字段表达稳定身份、可处理内容，还是玩家呈现？
+* name 字面量指向的 UFUNCTION 是否能被重命名工具发现？
+* String↔Text 转换是否丢失本地化语义？
+* 格式表达式是否有副作用或位于每帧热路径？
+* 日志是否错误地承担了机器协议或持久化格式？
+
+! 相关链接
+
+* <<as-doc-link "language/basic-types-variables" "基础类型与变量">>
+* <<as-doc-link "language/delegates-events" "委托与事件">>
+* <<as-doc-link "start/read-compile-diagnostics" "日志与诊断">>

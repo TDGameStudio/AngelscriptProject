@@ -1,0 +1,198 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/runtime-engine-create-factory
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: 引擎创建工厂（Create Factory）
+description: FAngelscriptEngine::Create 的唯一入口、完整/短初始化分派、失败原子性、依赖注入和调用方迁移约束。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/runtime-engine-create-factory
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 40
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: runtime-engine-create-factory
+
+! 为什么必须只有一个创建入口
+
+`FAngelscriptEngine` 同时服务生产启动、Editor 工具、Commandlet 和需要独立引擎的宿主。它们可能需要不同的''初始化深度''，但不应各自复制“构造对象、装入依赖、初始化、处理失败”的所有权协议。当前公开入口统一为：
+
+```cpp
+static TUniquePtr<FAngelscriptEngine> Create(
+    const FAngelscriptEngineConfig& InConfig,
+    const FAngelscriptEngineDependencies& InDependencies);
+```
+
+它位于 `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h/.cpp`。旧的 `CreateUncompiled` 分叉已经移除；调用方只表达配置，工厂负责选择实现路径并保证失败时不泄漏半初始化实例。
+
+! 工厂的真实算法
+
+当前实现可归纳为四步：
+
+# `MakeUnique<FAngelscriptEngine>(InConfig, InDependencies)`；
+# 记录包含实例地址和 `bSkipInitialCompile` 的 Verbose 生命周期日志；
+# `bSkipInitialCompile ? InitializeWithoutInitialCompile() : Initialize()`；
+# 初始化返回 `false` 时 `EngineInstance.Reset()`，成功时转移 `TUniquePtr`。
+
+```cpp
+TUniquePtr<FAngelscriptEngine> EngineInstance =
+    MakeUnique<FAngelscriptEngine>(InConfig, InDependencies);
+
+const bool bInitialized = InConfig.bSkipInitialCompile
+    ? EngineInstance->InitializeWithoutInitialCompile()
+    : EngineInstance->Initialize();
+
+if (!bInitialized)
+    EngineInstance.Reset();
+
+return EngineInstance;
+```
+
+因此 `nullptr` 是正式的初始化失败结果。调用方不能在没有 `IsValid()` 检查的情况下解引用返回值，也不能假定“对象构造成功”等于运行时已经可发布。
+
+! 配置与依赖在什么时刻固化
+
+构造函数把两个参数复制到实例字段：
+
+* `RuntimeConfig(InConfig)` 保存运行模式、Editor/Commandlet、首次编译和调试服务等选择；
+* `Dependencies(InDependencies)` 保存源提供者等注入依赖；
+* `LifetimeToken` 在构造时创建，用于让外部观察者识别实例生命周期；
+* 如果注入的 `SourceProvider` 无效，构造函数补成 `FAngelscriptDiskSourceProvider`。
+
+这意味着工厂分支不会重新组装另一份依赖。完整路径与短路径看到的是同一个实例内 `RuntimeConfig` 与 `Dependencies`；差异来自初始化算法，不来自调用两套构造器。
+
+`FAngelscriptEngineConfig::bSkipInitialCompile` 默认是 `false`。生产代码如果不明确要求“只建立绑定与服务、不扫描磁盘脚本”，就应保留默认值。不要把这个字段误解成普通性能开关：它改变引擎创建完成时已经存在的脚本模块集合。
+
+! 两条初始化路径的共同点与差异
+
+|!阶段 |!`Initialize()` |!`InitializeWithoutInitialCompile()` |
+|基本运行配置 |从 `RuntimeConfig` 建立 Editor/cooked/development 等状态 |同样建立所需运行状态 |
+|`PreInitialize_GameThread()` |执行 |执行 |
+|AngelScript engine properties、message/context callbacks |由完整初始化链建立 |短路径显式建立 |
+|类型、绑定和引擎自有数据库 |建立 |建立 |
+|磁盘 `Script/` 根扫描 |执行正常生产流程 |''不执行'' |
+|首次模块编译与 ClassGenerator 产物 |按发现的脚本执行 |''不执行'' |
+|主执行 context |建立 |建立 |
+|DebugServer / CodeCoverage 等运行服务 |按配置接入 |按配置接入 |
+|扩展注册表 `AttachEngine(*this)` |成功收尾时调用 |成功收尾时调用 |
+|`bReadyForPublication` |所有步骤成功后才为 `true` |所有步骤成功后才为 `true` |
+
+短路径并不是“裸 `asIScriptEngine`”，也不是跳过所有初始化。它的合同是：完成 UE/AS 类型绑定和运行服务，标记首次编译门槛已完成，但不扫描项目/插件脚本根、不编译磁盘 `.as`。之后调用方可以通过内存源或显式编译入口提供模块。
+
+! 发布门槛与失败原子性
+
+两条路径都只在最后设置 `bReadyForPublication = true`。完整初始化还用 `FAngelscriptEngineScope ScopedInitializingEngine(*this)` 把正在初始化的实例放进显式上下文，使仍依赖当前引擎查询的绑定代码解析到正确目标。
+
+失败时有三层保护：
+
+# 初始化函数返回 `false`，不会把 `bReadyForPublication` 提升为 `true`；
+# `Create` 重置唯一指针，不把半初始化对象交给调用方；
+# `FAngelscriptEngine` 析构调用 `Shutdown()`，回收已经建立的 VM、context、数据库和扩展状态。
+
+这种“构造成功、初始化失败、立即析构”的路径要求 `Shutdown()` 对部分状态幂等。新增初始化步骤时必须同时定义：失败前已经取得了哪些资源、`Shutdown()` 如何识别它们是否存在、是否应在扩展 Attach 前或后回滚。
+
+! 完整初始化中的线程边界
+
+`Initialize()` 先在 Game Thread 执行 `PreInitialize_GameThread()`，再根据 `ShouldInitializeThreaded()` 选择：
+
+* 在线程路径中，以 `FGCScopeGuard` 执行 `Initialize_AnyThread()`，临时切换 `GameThreadTLD`，主线程期间持续处理 TaskGraph 与 async-loading flush update；
+* 非线程路径直接执行 `Initialize_AnyThread()`；
+* 成功后回到 Game Thread 执行 `PostInitialize_GameThread()`；
+* 最后附加扩展并发布实例。
+
+所以工厂调用通常是同步的：即使内部有异步任务，`Create` 也要等初始化结束才返回。外部代码不能在另一线程窥视尚未发布的 `EngineInstance`。
+
+短路径当前直接执行其设置序列，不走磁盘扫描所需的 threaded initial compile。调用方仍需从符合 UE 生命周期要求的线程创建它；`bSkipInitialCompile` 不构成“可以从任意线程创建”的承诺。
+
+! 调用方如何选择
+
+|!调用方 |!选择 |!理由 |
+|Runtime/Editor 正常启动 |默认 `bSkipInitialCompile=false` |需要发现并编译当前工程脚本 |
+|只需要绑定面、随后显式提供内存模块的隔离宿主 |显式 `true` |避免意外扫描宿主工程脚本 |
+|`AngelscriptTest` 内的独立引擎 |`FAngelscriptTestEngine::Create` |包装器复制配置并统一设置短路径 |
+|`AngelscriptEditor/Tests` |本地配置紧邻创建点设置 `true` |Editor 模块不能依赖 Test 模块包装器 |
+
+`FAngelscriptTestEngine` 的实际实现位于 `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngine.h/.cpp`：
+
+```cpp
+FAngelscriptEngineConfig LocalConfig = Config;
+LocalConfig.bSkipInitialCompile = true;
+return FAngelscriptEngine::Create(LocalConfig, Dependencies);
+```
+
+它修改的是本地副本，调用方传入的 `Config` 保持不变。Editor 测试中的多个独立创建 helper 则在本地配置上设置字段后直接调用 Runtime 工厂，这与模块依赖边界一致。
+
+本页记录这些调用方式是为了说明工厂合同，不要求普通产品代码引入 Test 模块。
+
+! 迁移旧创建路径
+
+从旧 `CreateUncompiled` 或手工 `MakeUnique + Initialize` 迁移时：
+
+# 明确旧调用方是否依赖磁盘脚本已编译；
+# 若旧语义是“绑定完成但无磁盘脚本”，设置 `bSkipInitialCompile = true`；
+# 保留原有 `FAngelscriptEngineDependencies`，不要改成隐式默认依赖来掩盖装配差异；
+# 改用 `FAngelscriptEngine::Create` 并处理空返回；
+# 删除调用方自己的初始化与失败清理；
+# 检查持有者销毁时只通过 `TUniquePtr` 释放一次。
+
+不应保留兼容别名，因为两个公开工厂会重新制造语义分叉：新增依赖或生命周期步骤很容易只落到其中一条。
+
+! 生命周期所有权
+
+工厂返回 `TUniquePtr<FAngelscriptEngine>`，表达单一销毁责任。临时“当前引擎”应由 `FAngelscriptEngineScope` 建立，而不是把实例转成无期限裸指针。若子系统或工具需要借用：
+
+* 持有者保留唯一指针；
+* 借用方保存短生命周期指针/引用或 `LifetimeToken` 关联；
+* 销毁前撤销 scope、listener 和外部引用；
+* 让析构统一进入 `Shutdown()`。
+
+`FAngelscriptTestEngine::GetSharedEngine()` 也遵守这个次序：共享 scope 与共享 engine 分开保存，销毁时先重置 scope，再重置 engine。这个顺序避免引擎在 Shutdown 时仍被环境上下文声明为当前实例。
+
+! 常见失败与诊断
+
+|!现象 |!原因 |!检查 |
+|`Create` 返回空 |任一初始化阶段返回 `false` |查看 `[EngineLifecycle]`、绑定/编译诊断；不要继续解引用 |
+|创建成功但没有工程脚本类 |错误设置 `bSkipInitialCompile=true` |记录配置来源；确认调用方是否本来需要磁盘初编译 |
+|隔离宿主意外加载工程脚本 |沿用了默认 `false` |在配置构造处明确短路径意图 |
+|两个实例使用了错误源 |调用方在不同路径组装不同 Dependencies |比较传入 `SourceProvider` 和其它注入依赖 |
+|扩展只在完整路径可用 |扩展接入被放进扫描/编译分支 |确认两条路径成功收尾都调用 `AttachEngine` |
+|Shutdown 访问半初始化字段 |新增步骤失败后清理没有判空/状态门槛 |让每个资源拥有清晰的有效性检查和逆序释放 |
+|当前引擎查询指向旧实例 |scope 生命周期超过持有者 |销毁 engine 前先释放 `FAngelscriptEngineScope` |
+
+! 修改工厂时的维护地图
+
+|!改动 |!同步检查 |
+|增加配置字段 |`FAngelscriptEngineConfig` 默认值、`FromCurrentProcess()`、两条初始化路径 |
+|增加构造依赖 |`FAngelscriptEngineDependencies` 默认创建、所有 `Create` 调用点、短路径 |
+|增加运行服务 |完整/短路径的建立顺序、扩展 Attach 前后位置、Shutdown 对称清理 |
+|改变失败语义 |空返回合同、持有者检查、析构对部分状态的幂等性 |
+|改变测试包装器 |`Shared/AngelscriptTestEngine.cpp` 的配置复制合同；不要把 Test 依赖带入 Editor |
+|恢复第二工厂 |禁止；应把差异建模为配置或明确的后续操作 |
+
+! 必须保持的不变式
+
+* 对外只有一个 Runtime 静态创建工厂。
+* 构造参数在分派前进入同一个实例，两条路径不复制依赖装配。
+* 默认配置走完整生产初始化。
+* 短路径仍建立绑定、主 context、运行服务和扩展，不扫描/编译磁盘脚本。
+* 只有完全成功的实例才会被返回并标记 `bReadyForPublication`。
+* 初始化失败返回空指针，并由析构/Shutdown 回收部分资源。
+* 持有者在 engine 之前释放宣称该实例为当前引擎的 scope。
+
+! 源码证据
+
+* `Core/AngelscriptEngine.h`：配置默认值、工厂签名、初始化 API 与发布门槛。
+* `Core/AngelscriptEngine.cpp`：构造、工厂分派、失败 Reset、完整与短初始化。
+* `AngelscriptTest/Shared/AngelscriptTestEngine.h/.cpp`：本地配置副本、共享 scope/engine 所有权。
+* `AngelscriptEditor/Tests/*.cpp`：模块边界内的短路径直接调用样式。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文与当前引擎作用域">>
+* <<as-doc-link "runtime-jit-vm/engine-shutdown-resource-cleanup" "引擎关闭与资源清理">>
+* <<as-doc-link "runtime-jit-vm/engine-scoped-runtime-state" "引擎作用域运行时状态">>
+* <<as-doc-link "testing-diagnostics-release/test-engine-lifecycle" "测试引擎生命周期">>

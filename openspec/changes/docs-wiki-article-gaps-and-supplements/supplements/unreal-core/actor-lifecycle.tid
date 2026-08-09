@@ -1,0 +1,201 @@
+title: AS/Docs/zh-Hans/unreal-core/actor-lifecycle
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Actor 生命周期
+description: 按生成、Construction、BeginPlay、Tick、EndPlay 与销毁顺序放置初始化、运行和清理逻辑。
+as-sdk-document: yes
+as-doc-key: unreal-core/actor-lifecycle
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 50
+as-content-revision: 1
+as-sources: [[script-examples]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: unreal-development
+as-nav-order: 40
+as-nav-parent: unreal-core/index
+as-feature-key: actor-lifecycle
+
+! 生命周期全景
+
+脚本 Actor 最终是 Unreal `UClass` 的实例，生命周期仍由 World、关卡、spawn、replication 和 GC 驱动。AngelScript 提供的是函数实现与反射声明，不建立第二套 Actor 生命周期。
+
+```
+脚本 class 编译与 UASClass/CDO
+  -> 默认组件 template
+  -> Actor spawn / 关卡反序列化
+  -> ConstructionScript（Editor 中可能反复执行）
+  -> Component 注册与 World 加入
+  -> BeginPlay
+  -> Tick / overlap / input / timer / RPC
+  -> EndPlay(EEndPlayReason)
+  -> Destroy / 引用解除 / GC
+```
+
+这条顺序不是说所有回调都会发生：未启用 tick 的 Actor 不会 Tick；未开始 play 就被销毁的对象不会走正常 gameplay；Editor preview/Construction 不等于 runtime BeginPlay。代码应只依赖当前阶段明确保证的对象。
+
+! 一个完整的最小 Actor
+
+下面的例子同时展示默认状态、BeginPlay、DeltaTime 驱动、一次运行时绑定和对称清理。Timer API 的精确 overload 以当前生成表为准，这里使用仓库 `Example_Timers.as` 已出现的入口。
+
+<$angelscript-code lineNumbers="yes" highlightLines="13,22,30" code="""class AMovingBeacon : AActor
+{
+    UPROPERTY(Category = "Movement")
+    float Speed = 100.0;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Movement")
+    float Travelled = 0.0;
+
+    FTimerHandle ReportTimer;
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        ReportTimer = System::SetTimer(
+            this, n"ReportPosition", 1.0, bLooping=true);
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void Tick(float DeltaTime)
+    {
+        const float Step = Speed * DeltaTime;
+        AddActorWorldOffset(FVector(Step, 0.0, 0.0));
+        Travelled += Step;
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void EndPlay(EEndPlayReason EndPlayReason)
+    {
+        System::ClearAndInvalidateTimerHandle(ReportTimer);
+    }
+
+    UFUNCTION(NotBlueprintCallable)
+    void ReportPosition()
+    {
+        Log(f"{GetName()} travelled {Travelled :.1f}");
+    }
+}"""/>
+
+`ReportPosition` 必须是 `UFUNCTION`，因为 timer 通过 `FName` 查找反射函数；`NotBlueprintCallable` 阻止设计师把内部 callback 当成普通 Blueprint API。`EndPlay` 清理 handle，使关卡切换或 PIE 结束后不会留下旧 world 的工作。
+
+! Class defaults、实例初始化与 BeginPlay
+
+在 Actor 出现之前，ClassGenerator 已经创建脚本 class、CDO 和默认组件 template。成员 initializer 与 `default` 语句属于 class defaults 层；Blueprint 子类在其上保存 override；场景 actor 还可能有实例 override。
+
+因此 BeginPlay 不应重新无条件覆盖可配置属性：
+
+```angelscript
+// 不推荐：会抹掉 Blueprint/关卡实例对 Speed 的配置
+UFUNCTION(BlueprintOverride)
+void BeginPlay()
+{
+    Speed = 100.0;
+}
+```
+
+BeginPlay 更适合读取最终配置、建立运行时 delegate/timer、取得当前 World 服务和初始化只在 play 中存在的资源。默认值属于 CDO，不等同于“一进入游戏就重新赋值”。
+
+! ConstructionScript 与 BeginPlay 的边界
+
+ConstructionScript 在 Actor 放置、属性变化、Blueprint 编译或热重载时都可能执行多次，适合：
+
+* 根据 Details 参数计算可保存的派生属性；
+* 创建或调整可视化组件；
+* 给设计师即时预览。
+
+它不适合发送网络消息、注册进程级 delegate、启动长期 timer 或累计不可逆状态。运行时一次性副作用放 BeginPlay；对称解除放 EndPlay。具体幂等要求见 <<as-doc-link "unreal-core/construction-script" "ConstructionScript 与派生数据">>。
+
+! Tick：时间、启用和成本
+
+`Tick(float DeltaTime)` 的 DeltaTime 来自当前 world/frame。位移、冷却和插值使用 `Rate * DeltaTime`，不能假设每帧固定 1/60：
+
+```angelscript
+UFUNCTION(BlueprintOverride)
+void Tick(float DeltaTime)
+{
+    const FVector Delta(UnitsPerSecond * DeltaTime, 0.0, 0.0);
+    AddActorWorldOffset(Delta);
+}
+```
+
+需要区分：
+
+* override 了 Tick，不代表 Actor tick 一定已启用；
+* paused world、time dilation 和 editor tick 有不同时间语义；
+* server 与每个 client 有自己的 world/tick；
+* 数百个 Actor 的空 Tick 仍有调度成本；
+* 低频轮询用 timer，状态变化用 event，跨对象服务用 subsystem。
+
+仓库 `Script/Examples/Core/Example_MovingObject.as` 提供 BeginPlay 记录起点、Tick 往返移动的当前示例；`Example_FormatString.as` 也展示了 Tick 签名。
+
+! Event、Overlap 与输入
+
+Actor 级 overlap 可直接覆盖：
+
+```angelscript
+UFUNCTION(BlueprintOverride)
+void ActorBeginOverlap(AActor OtherActor)
+{
+    if (OtherActor != nullptr)
+        Log(f"Entered: {OtherActor.GetName()}");
+}
+```
+
+Component overlap 则是 delegate，需要在合适阶段 `AddUFunction` 并防止重复绑定。Actor 可能由多个 component 产生多条事件，业务去重不能依赖“BeginOverlap 只会调用一次”。输入还受到 controller/local-player ownership 约束，不应让所有 replicated Actor 都处理本地输入。
+
+! EndPlay 的多种原因
+
+EndPlay 可能来自显式 Destroy、level transition、PIE 结束、World teardown 或应用退出。清理代码应：
+
+* 可重复调用而不出错；
+* 允许其它 world 对象已经在 teardown；
+* 解除外部 delegate、timer、ticker 和 subsystem 注册；
+* 清空跨 world 强引用；
+* 不在清理中重新 spawn/注册长期工作。
+
+析构/GC 不是 EndPlay 的替代品。若长寿命 subsystem 持有 Actor，GC 可能迟迟不发生，但 EndPlay 时该 Actor 已不应继续参与 gameplay。
+
+! 网络生命周期
+
+Replicated Actor 在 server 和 client 都有实例，但 authority、ownership 和 relevancy 不同。权威状态由 server 修改；Client/Server/Multicast RPC 经过 Unreal 网络路由。BeginPlay 在各实例本地发生，不应把“客户端 BeginPlay”当作拥有修改权。
+
+多人 PIE 中至少记录：执行 world、NetMode、authority/owner 和 Actor 名称。只在单人 PIE 看见函数调用不能证明复制路径。
+
+! 热重载时看哪一代 Actor
+
+只改函数体时，reload 前已有实例应保持身份并进入新实现；新增 UPROPERTY、修改父类、组件或反射签名会 full reload 并重实例化。验证时区分：
+
+|!对象 |!要观察什么 |
+|reload 前 Actor |状态是否按合同迁移，外部引用是否替换 |
+|reload 后新 Actor |是否使用新 CDO/default components |
+|Blueprint 子类 Actor |ParentClass、override 与默认值是否恢复 |
+|replicated Actor |server/client 是否仍沿正确 RPC/replication 路径 |
+
+! 常见故障定位
+
+|!症状 |!优先检查 |
+|BeginPlay 没调用 |Actor 是否真正进入 play、class/override 签名是否正确 |
+|Tick 不调用 |tick 是否启用、world 是否推进、Actor 是否已 EndPlay |
+|速度随帧率变化 |是否漏乘 DeltaTime |
+|PIE 第二次回调翻倍 |EndPlay 未解绑 delegate/timer，或重复初始化 |
+|切关后旧 Actor 仍被访问 |GameInstance/Engine subsystem 或 static 强引用未清理 |
+|热重载后两个 Actor 同时工作 |旧实例/组件/timer 未被替换或取消 |
+|Client 修改后又弹回 |客户端写了 server authority 的 replicated 状态 |
+
+! 源码与示例入口
+
+* Actor 手工绑定：`Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AActor.cpp`、`Bind_Actor.h`
+* Component 绑定：`Bind_UActorComponent.cpp`、`Bind_USceneComponent.cpp`
+* 基础可打包示例：`Script/Game/Example_Actor.as`
+* 移动/Tick：`Script/Examples/Core/Example_MovingObject.as`
+* Overlap：`Script/Examples/Core/Example_Overlaps.as`
+* Timer：`Script/Examples/Core/Example_Timers.as`
+* 网络：`Script/Examples/Extended/Example_NetworkReplication.as`
+
+! 相关链接
+
+* <<as-doc-link "unreal-core/component-lifecycle" "Component 生命周期与事件">>
+* <<as-doc-link "unreal-core/object-lifecycle-and-gc" "UObject 生命周期与 GC">>
+* <<as-doc-link "topics-integrations/timers-and-callbacks" "Timer 与延迟回调">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint、CDO 与默认值迁移">>

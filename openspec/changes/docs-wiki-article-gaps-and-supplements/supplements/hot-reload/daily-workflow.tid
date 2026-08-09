@@ -1,0 +1,131 @@
+title: AS/Docs/zh-Hans/hot-reload/daily-workflow
+type: text/vnd.tiddlywiki
+tags: HotReload
+caption: 热重载日常工作流
+description: 从保存脚本到确认编译/重载结果的日常可恢复流程。
+as-sdk-document: yes
+as-doc-key: hot-reload/daily-workflow
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: tutorial
+as-content-status: draft
+as-order: 20
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[project-guide]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 10
+as-nav-parent: hot-reload/index
+as-feature-key: hot-reload-workflow
+
+! 目标与适用范围
+
+这条工作流用于日常修改项目 `Script/` 下的 `.as` 文件：保存后确认文件事件被观察、编译完成、正确的重载路径被采用，并用一个最小行为验证新代码已经生效。它的重点不是“看到编辑器没有崩溃”，而是建立一条可重复、失败后能回到已知状态的反馈回路。
+
+<<as-callout note "先判断是不是热重载问题">>
+如果脚本从未成功编译、目录不在当前脚本扫描范围，或编辑器没有加载 AngelScript 插件，这不是热重载失败。先确认基线脚本能在当前 Editor 会话编译并运行，再讨论保存后的增量更新。
+<</as-callout>>
+
+! 保存前：建立一个可观察基线
+
+# 确认当前脚本版本没有编译错误。
+# 打开会实际执行目标函数的 Editor、PIE 或自动化场景。
+# 记录一个容易区分的结果，例如返回值、日志文本、Actor 属性或 Blueprint 调用结果。
+# 如果准备修改类结构，先查看 <<as-doc-link "hot-reload/change-classification" "热重载变化分类矩阵">>，不要把结构变化当成普通函数体修改。
+
+一个好的最小基线只验证一件事。比如把 `GetValue()` 的返回值从 `1` 改为 `2`，比同时新增属性、改父类并重命名函数更容易判断失败发生在哪一步。
+
+! 保存后：按五个检查点确认
+
+!! 1. 文件事件是否进入编辑器
+
+Editor 模块的 `AngelscriptDirectoryWatcherInternal` 负责观察脚本目录变化并把事件交给后续编译路径。正常情况下，保存一个已被扫描的 `.as` 文件会触发编译反馈；如果完全没有反应：
+
+* 确认保存的是当前项目实际加载的文件，而不是副本、生成目录或另一个 workspace。
+* 确认扩展名仍是 `.as`。
+* 检查文件是否被工具以 rename + replace 的方式保存；watcher 会合并变化，但路径必须最终回到扫描根内。
+
+!! 2. 编译是否成功
+
+先读第一条编译错误，而不是继续反复保存。语法、类型和 UPROPERTY/UFUNCTION 契约错误会阻止新模块成为当前版本。回归目录中的 `HotReload.FailureKeepsOldCodeAndDiagnostics` 明确要求：热重载失败时保留旧代码可执行，并记录诊断；因此“场景仍按旧逻辑运行”可能正是失败保护，而不是保存事件丢失。
+
+<<as-callout warning "旧行为仍工作不等于新版本已加载">>
+编译失败后旧模块继续可用是安全特性。必须同时确认编译成功消息和新行为，不能只凭 Editor 仍可运行就判断 reload 成功。
+<</as-callout>>
+
+!! 3. 走的是 soft 还是 full reload
+
+函数体修改通常可以走 soft reload；属性数量、父类、函数签名、delegate/enum/struct 形状等结构变化会要求或建议 full reload。分类逻辑位于 Runtime `ClassGenerator/AngelscriptClassReloadPlanner.*` 与 `AngelscriptClassGenerator_ReloadPlanning.cpp`，回归集中在 `AngelscriptHotReloadChangeClassificationTests.cpp`。
+
+如果分类升级为 full reload，不要强迫它保持 soft。full reload 需要生成新类型、维护旧新版本链，并在 Editor 中处理对象/Blueprint 重实例化；耗时和可观察影响都比函数体替换更大。
+
+!! 4. 新代码是否在已有实例上生效
+
+对 body-only 修改，继续调用已有对象上的目标函数，确认返回值或日志已经切换。测试覆盖包括：
+
+* 普通函数与 namespace 函数更新；
+* 已 BeginPlay 的 Blueprint 子类实例经历多次 soft reload 后继续使用新父类函数体；
+* delegate handler 在 soft reload 后切换到新实现；
+* 其他模块不应被无关 soft reload 丢弃。
+
+对 full reload，除了新建对象，还要观察已有对象、Blueprint 子类、默认值和组件。新对象正确但旧实例错误，说明问题位于重实例化/迁移，而不是编译。
+
+!! 5. Blueprint 与资产是否仍可用
+
+脚本生成类可能是 Blueprint 的父类。结构变化后检查：
+
+* Blueprint 是否仍能打开和编译；
+* 父类链是否指向最新脚本类；
+* 既有实例是否保持预期状态；
+* 新建实例是否获得最新默认值；
+* 新增/删除属性和 default component 是否与资产表现一致。
+
+相关回归位于 `AngelscriptHotReloadBlueprintChildTests.cpp`、`AngelscriptHotReloadLevelBlueprintTests.cpp` 与 `AngelscriptHotReloadComponentTests.cpp`。
+
+! 推荐的日常最小循环
+
+<$angelscript-code lineNumbers="yes" highlightLines="5" code="""class AReloadWorkflowProbe : AActor
+{
+    UFUNCTION()
+    int GetProbeValue() const
+    {
+        return 2; // 先从 1 改成 2，只修改函数体
+    }
+};"""/>
+
+# 先让返回 `1` 的版本编译并在场景中调用一次。
+# 只把返回值改成 `2`，保存文件。
+# 确认编译成功且分类没有要求结构性 full reload。
+# 在同一个已有实例上再次调用，结果应为 `2`。
+# 再单独做结构变化实验，例如新增一个 UPROPERTY，并按 full reload 路径验证新旧实例。
+
+这种分两步的做法能把“函数分派更新”和“类型形状迁移”分开。不要用一次大改同时验证两个子系统。
+
+! PIE 中工作时
+
+PIE 给热重载增加了 World、Actor、组件和网络实例状态。body-only 修改通常最适合作为 PIE 内快速迭代；结构变化如果被分类为 full reload，应准备退出或重启 PIE，再检查 Editor World 和新的 PIE World。
+
+<<as-callout note "以分类和实际日志为准">>
+不是所有结构变化都必须立即重启整个 Editor。先让 planner 给出 soft/full 决策，再观察 ClassReloadHelper 和 Blueprint 重实例化结果；只有状态无法恢复或日志明确要求时才升级到 Editor restart。
+<</as-callout>>
+
+! 失败后的最小恢复顺序
+
+# 修复第一条编译错误并重新保存；确认成功前不要叠加新改动。
+# 若 planner 要求 full reload，结束当前 PIE，重新触发编译并验证结构。
+# 若 Blueprint/实例表现异常，新建一个实例对比，以区分“新类错误”和“旧实例迁移错误”。
+# 检查依赖脚本是否也发生变化，避免只保存下游文件却忽略上游编译失败。
+# 最后才考虑重启 Editor；重启用于清除无法证明一致的 Editor/World 状态，不是日常第一反应。
+
+完整分支见 <<as-doc-link "hot-reload/failures-and-recovery" "热重载失败与恢复">>。
+
+! 源码与回归入口
+
+* `Plugins/Angelscript/Source/AngelscriptEditor/HotReload/AngelscriptDirectoryWatcherInternal.*`：文件变化观察与队列入口。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassReloadPlanner.*`：变化分类。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator_SoftReload.cpp`：soft reload。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator_FullReload.cpp`：full reload。
+* `Documents/Guides/TestCatalog.md` 的 HotReload 章节：当前回归能力目录。
+
+! 完成检查
+
+一次日常 reload 只有同时满足以下条件才算完成：编译成功、重载等级符合变化类型、新行为在目标实例上可见、Blueprint/资产没有出现新的错误、失败时旧模块或恢复路径可解释。只看到“保存成功”不足以证明新代码已投入运行。

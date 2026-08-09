@@ -1,0 +1,151 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/engine-extension-registry
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 引擎扩展注册表
+description: FAngelscriptEngineExtensionRegistry 的所有权、即时附加、重放、分离、锁边界与扩展清理责任。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/engine-extension-registry
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[gameplaytags-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 40
+as-nav-parent: architecture-maintenance/index
+as-feature-key: engine-extension-registry
+
+! 这套注册表解决什么问题
+
+`AngelscriptRuntime` 不能反向依赖 `AngelscriptGameplayTags` 等可选插件，但可选插件又必须在每个 `FAngelscriptEngine` 实例上重建自己的引擎本地绑定。`FAngelscriptEngineExtensionRegistry` 把这两个要求拆开：Runtime 只维护扩展生命周期，不知道任何具体扩展；扩展以 `IAngelscriptExtension` 实现附加与分离，并用 `FDelegateHandle` 管理注册期。
+
+注册表是''进程级目录''，扩展回调操作的是''某个具体引擎实例''。这两个生命周期不能混为一谈：注册一次不等于只会附加一次；引擎重建后，同一扩展会收到针对新实例的附加回调。
+
+! 真实类型与入口
+
+实现位于：
+
+* `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.h`
+* `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngineExtensionRegistry.cpp`
+
+核心接口如下：
+
+```cpp
+class IAngelscriptExtension
+{
+public:
+    virtual void OnEngineAttached(FAngelscriptEngine& Engine) = 0;
+    virtual void OnEngineDetached(FAngelscriptEngine& Engine) = 0;
+};
+
+class FAngelscriptEngineExtensionRegistry
+{
+public:
+    static FAngelscriptEngineExtensionRegistry& Get();
+    FDelegateHandle RegisterExtension(TSharedRef<IAngelscriptExtension> Extension);
+    void UnregisterExtension(FDelegateHandle Handle);
+    void AttachEngine(FAngelscriptEngine& Engine);
+    void DetachEngine(FAngelscriptEngine& Engine);
+    void ReplayCurrentEngine();
+    void DetachCurrentEngine();
+    int32 NumExtensions() const;
+};
+```
+
+`Get()` 返回函数内静态注册表。`RegisteredExtensions` 是以句柄为键的 `TMap`，每个记录持有一个 `TSharedRef<IAngelscriptExtension>`；只要记录仍在表中，扩展对象便不会因外部引用释放而销毁。
+
+! 生命周期与状态转换
+
+|!当前状态 |!操作 |!结果 |!是否调用扩展 |
+|未注册、无当前引擎 |`RegisterExtension` |生成新句柄并保存强引用 |否 |
+|未注册、已有当前引擎 |`RegisterExtension` |先保存记录，再对当前引擎即时附加 |`OnEngineAttached(CurrentEngine)` |
+|已注册、新引擎初始化 |`AttachEngine(Engine)` |复制当前扩展快照并逐个附加 |每个快照成员一次 |
+|已注册、当前引擎重放 |`ReplayCurrentEngine()` |查询当前引擎，再委托给 `AttachEngine` |存在当前引擎时逐个调用 |
+|已注册、引擎关闭 |`DetachEngine(Engine)` |复制当前扩展快照并逐个分离 |每个快照成员一次 |
+|已注册、当前引擎显式分离 |`DetachCurrentEngine()` |查询当前引擎，再委托给 `DetachEngine` |存在当前引擎时逐个调用 |
+|已注册 |`UnregisterExtension(Handle)` |从表中移除记录 |''不会''自动调用 `OnEngineDetached` |
+
+`FAngelscriptEngine` 在两条初始化路径完成后都会调用 `AttachEngine(*this)`：完整初始化位于 `Initialize()` 的收尾，跳过首次编译的初始化位于 `InitializeWithoutInitialCompile()` 的收尾。关闭路径在释放引擎资源前调用 `DetachEngine(*this)`。因此扩展不能只验证生产初始化路径，还要保证跳过首次编译的独立实例也能建立同样的扩展本地状态。
+
+! Replay 不是第三种回调
+
+注册表没有 `OnReplay`。`ReplayCurrentEngine()` 的真实语义是：
+
+# 通过 `FAngelscriptEngine::TryGetCurrentEngine()` 查询环境中的当前引擎；
+# 没有当前引擎时直接返回；
+# 有当前引擎时调用 `AttachEngine(*CurrentEngine)`；
+# `AttachEngine` 再向快照中的每个扩展调用 `OnEngineAttached`。
+
+所以 `OnEngineAttached` 必须能处理“首次建立”与“对同一当前实例重新投放”两种情况。扩展若维护 `Engine -> LocalState` 映射，应按引擎身份查找或替换，避免重放后重复追加相同绑定记录。注册表本身不去重回调，也不追踪某扩展是否已经附加过某实例。
+
+! 锁边界与重入语义
+
+`CriticalSection` 只保护 `RegisteredExtensions`：
+
+* `RegisterExtension` 在锁内插入记录，随后释放锁，再执行即时附加；
+* `AttachEngine` 与 `DetachEngine` 在锁内把 `TSharedRef` 复制到局部 `TArray`，随后释放锁，再逐个执行回调；
+* `UnregisterExtension` 与 `NumExtensions` 在锁内完成移除或计数。
+
+''扩展回调不会在注册表锁内执行''。这是重要的不变式：回调可以触发其它需要注册表锁的操作，而不会因为同一把锁直接自锁；同时，局部 `TSharedRef` 快照保证即使回调期间记录被移除，本轮已快照的扩展对象仍存活。
+
+快照也带来明确的并发边界：在 `AttachEngine` 已完成快照之后再注销的扩展，仍可能收到这一轮已经排队的附加回调；在快照之后才注册的扩展不在本轮数组中，但 `RegisterExtension` 会自行对当前引擎即时附加。注册表没有承诺跨线程回调的全序，也没有把扩展回调自动切到 Game Thread。调用者必须在符合扩展实现线程要求的生命周期点调用这些 API。
+
+! 重复注册与句柄所有权
+
+每次 `RegisterExtension` 都用 `FDelegateHandle::GenerateNewHandle` 产生新键。注册表不按对象地址或逻辑名称去重，因此同一个 `TSharedRef` 可以被注册多次，并在附加/分离时收到多次回调。正确的模块所有权模式是：
+
+# 模块启动时构造一个扩展对象并保存 `TSharedPtr`；
+# 保存唯一的返回句柄；
+# 模块关闭时先完成当前引擎所需的扩展清理；
+# 用保存的句柄注销；
+# 清空扩展对象引用与句柄。
+
+无效句柄传给 `UnregisterExtension` 会直接返回；不存在的有效句柄执行 `Remove` 后也没有额外回调。不要用 `NumExtensions()` 推断某个特定扩展是否已注册，它只返回表项总数。
+
+! 注销为何不等于分离
+
+`UnregisterExtension` 只移除注册记录，''不会''调用 `OnEngineDetached`。这让注册表避免猜测扩展的销毁次序，却把清理责任明确交给扩展所有者：若扩展已在当前引擎写入引擎本地缓存、监听器或绑定状态，必须在注销前显式撤销。
+
+`AngelscriptGameplayTags` 是可核对的生产示例：模块持有 `FGameplayTagsAngelscriptExtension` 与 `ExtensionHandle`；扩展的 `OnEngineAttached` 调用 GameplayTags 重放入口，`OnEngineDetached` 清理对应引擎；模块关闭时注销句柄。代码位于 `Plugins/AngelscriptGameplayTags/Source/AngelscriptGameplayTags/Private/AngelscriptGameplayTagsModule.cpp` 与 `Private/Binds/Bind_FGameplayTag.cpp`。
+
+Runtime 内的 CodeCoverage 与 CrashSnapshot 也通过同一注册表接入，说明该机制不只用于跨插件绑定，还适合可选的引擎观察器。但“适合”不表示注册表替扩展完成清理：每个扩展仍需证明自己的 Attach/Detach 对称性。
+
+! 失败模式与诊断
+
+|!现象 |!根因 |!检查点 |!修复方向 |
+|新引擎缺少可选绑定 |模块未注册、注册句柄过早释放，或 `OnEngineAttached` 未针对传入引擎写入状态 |`NumExtensions()`、模块 Startup、扩展回调 |保存对象与句柄；以回调参数 `Engine` 为目标 |
+|重放后记录翻倍 |`OnEngineAttached` 只追加、不按引擎身份幂等处理 |扩展的引擎本地容器 |改为查找/替换，或附加前撤销旧记录 |
+|模块卸载后残留监听器 |只调用 `UnregisterExtension`，误以为它会分离 |Shutdown 顺序与 `OnEngineDetached` |注销前显式清理当前引擎状态 |
+|注销后仍收到一次回调 |回调快照已经在注销前建立 |Attach/Detach 与注销是否并发 |在扩展内部增加关闭状态保护；避免并发生命周期操作 |
+|回调线程不符合预期 |注册表不负责线程切换 |调用 Attach/Replay 的线程 |在合法生命周期线程调用，或由扩展显式调度 |
+|同一回调执行多次 |同一对象获得了多个注册句柄 |模块保存的句柄数、`NumExtensions()` |保证单所有者、单注册；逐个注销旧句柄 |
+
+! 维护与修改清单
+
+修改 `IAngelscriptExtension` 或注册表时，至少同步检查：
+
+* `Core/AngelscriptEngine.cpp` 中完整初始化、短初始化和关闭的 Attach/Detach 对称性；
+* `Extension/CodeCoverage/AngelscriptCodeCoverage.cpp` 与 `Dump/AngelscriptCrashSnapshot.cpp` 的注册所有权；
+* `AngelscriptGameplayTagsModule.cpp` 的可选插件启动/关闭顺序；
+* 回调是否仍在锁外执行；
+* 快照是否仍用强引用维持本轮回调对象生命周期；
+* 注销语义是否仍明确为“停止未来注册表投递”，而非隐式分离。
+
+若未来决定让注销自动分离，这不是局部实现细节：它会改变模块关闭顺序、重复清理风险与并发语义，应同步升级接口合同和所有现有扩展。
+
+! 源码证据
+
+* `Core/AngelscriptEngineExtensionRegistry.h/.cpp`：接口、存储、锁、快照、即时附加与重放实现。
+* `Core/AngelscriptEngine.cpp`：初始化/关闭生命周期中的 Attach/Detach 调用点。
+* `Plugins/AngelscriptGameplayTags/.../AngelscriptGameplayTagsModule.cpp`：跨插件扩展所有权。
+* `Plugins/AngelscriptGameplayTags/.../Bind_FGameplayTag.cpp`：重放与按引擎分离。
+* `Extension/CodeCoverage/AngelscriptCodeCoverage.cpp`、`Dump/AngelscriptCrashSnapshot.cpp`：Runtime 内观察型扩展。
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/module-ownership" "模块与插件所有权">>
+* <<as-doc-link "runtime-jit-vm/runtime-engine-create-factory" "引擎创建工厂">>
+* <<as-doc-link "topics-integrations/gameplay-tags" "GameplayTags 集成">>
+* <<as-doc-link "testing-diagnostics-release/code-coverage-extension" "覆盖率扩展">>

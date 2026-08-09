@@ -1,0 +1,69 @@
+title: AS/Docs/zh-Hans/type-object-reflection/actor-attached-actor-query
+type: text/vnd.tiddlywiki
+tags: TypeObjectReflection
+caption: 附加 Actor 按类查询
+description: GetAttachedActorsOfClass 的空安全契约——在 actor 或 class 任一无效时返回空数组，有效时返回符合类型的附加子 Actor 列表。
+as-sdk-document: yes
+as-doc-key: type-object-reflection/actor-attached-actor-query
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[angelscript-plugin]]
+as-nav-group: unreal-development
+as-nav-order: 40
+as-nav-parent: type-object-reflection/index
+as-feature-key: actor-attached-actor-query
+
+! 概述
+
+`GetAttachedActorsOfClass` 是一个空安全的附加 Actor 查询函数，接受一个 `TSubclassOf<AActor>` 类型参数，返回当前 Actor 所有附加子节点中运行时类型匹配指定类的 Actor 列表。当 Actor 引用为空或传入的类参数为空（`TSubclassOf<AActor>` 为无效值）时，该函数保证返回空数组，而不会触发空指针解引用。
+
+<<as-callout note "当前源码入口">>
+实现是 `UAngelscriptActorLibrary` 中的静态 mixin：`static TArray<AActor*> GetAttachedActorsOfClass(const AActor* Actor, TSubclassOf<AActor> ActorClass, bool bRecursivelyIncludeAttachedActors = false)`，位于 `AngelscriptRuntime/FunctionLibraries/AngelscriptActorLibrary.h`。`UFUNCTION` metadata 包含 `DeterminesOutputType="ActorClass"`，使脚本/编辑器调用面的返回元素类型随 class 参数收窄。
+<</as-callout>>
+
+! 行为契约表
+
+下表列出规范中定义的三个场景及其约束：
+
+|!场景|!输入条件|!返回结果|
+|有效 actor + 有效类|actor 非空，附加子节点包含多个不同类的 Actor，传入其中一个有效类|仅返回运行时类型匹配该类的子 Actor；其他类的子节点不出现在结果中|
+|有效 actor + 空类|actor 非空，`TSubclassOf<AActor>` 为空（无效值）|返回空数组；不以未过滤的完整列表作为回退|
+|空 actor + 有效类|actor 引用为 `nullptr`，传入有效类|返回空数组；不对空指针执行解引用|
+
+! 边界与约束
+
+<<as-callout warning "空类不等于"返回全部"">>
+当传入的 `TSubclassOf<AActor>` 为空时，函数返回空数组，而''不是''返回所有附加 Actor 的列表。调用方不应依赖空类参数作为"查询全部子节点"的快捷方式。
+<</as-callout>>
+
+<<as-callout warning "空 actor 不报错">>
+对空的 `AActor` 引用调用此函数时，函数会直接返回空数组，而不会崩溃或产生运行时错误。调用方应对返回的空数组与正常空结果加以区分（例如通过预先校验 actor 是否有效）。
+<</as-callout>>
+
+<<as-callout note "类型匹配与递归语义">>
+实现先调用 `Actor->GetAttachedActors(OutActors, false, bRecursivelyIncludeAttachedActors)`，再从数组尾部向前删除空元素以及 `!OutActors[i]->IsA(ActorClass)` 的元素。`IsA` 是''指定类或其派生类''匹配，不是 `GetClass() == ActorClass` 的精确类型相等。第三个参数默认 `false`，只查询直接 attached actor；显式传 `true` 时由 Unreal 的 `GetAttachedActors` 递归收集更深层级，随后对整个结果应用同一 class filter。倒序 `RemoveAt(..., EAllowShrinking::No)` 不会改变保留下来的相对顺序。
+<</as-callout>>
+
+! 实现顺序为何重要
+
+# 构造空 `OutActors`。
+# `Actor == nullptr` 时立即返回；不会调用成员函数。
+# `ActorClass.Get() == nullptr` 时立即返回；因此空 class 不会退化为“不过滤”。
+# 让 Unreal 收集直接或递归 attached actor。
+# 倒序删除空 actor 和所有不满足 `IsA(ActorClass)` 的元素。
+
+两个 guard 必须位于枚举 attached actors 之前。特别是空 class 分支若放到过滤之后，旧式 `if (ActorClass != nullptr) { filter }` 写法会跳过滤并意外返回完整列表，这正是本契约要排除的行为。
+
+! 可观察证据
+
+`AngelscriptActorMixinTests.cpp::GetAttachedActorsOfClassNullGuards` 同时覆盖三层：脚本生成两个不同派生类的 attached actor 后只保留目标类；脚本传默认构造的空 `TSubclassOf<AActor>` 得到长度 0；C++ 直接以 `Actor=nullptr` 调用 library 得到长度 0。前两项证明 mixin 调用面和 `IsA` 过滤，最后一项把无法在实例语法上表达的空 receiver guard 直接固定下来。
+
+! 相关链接
+
+* <<as-doc-link "type-object-reflection/index" "类型、对象与反射">> —— 反射与类型查询的整体入口
+* <<as-doc-link "type-object-reflection/class-generation-lifecycle" "TSubclassOf 用法">> —— `TSubclassOf<T>` 的有效性与传递规范
+* <<as-doc-link "unreal-core/actor-lifecycle" "Actor 生命周期">> —— Actor 附加关系与子节点管理

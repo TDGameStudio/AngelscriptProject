@@ -1,0 +1,171 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/static-jit-diagnostics
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: StaticJIT 诊断接口
+description: AS_WITH_STATIC_JIT_DIAGNOSTICS 下缓存加载、编译、ID 解析、JIT 注册、入口计数、GUID 配对与控制台诊断的真实接口。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/static-jit-diagnostics
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 60
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: static-jit-diagnostics
+
+! 作用与编译边界
+
+`FStaticJITDiagnostics` 是 AOT/StaticJIT 的开发诊断适配层，位于 `AngelscriptRuntime/StaticJIT/StaticJITDiagnostics.h/.cpp`。它把需要访问 `FAngelscriptEngine::PrecompiledData`、`FJITDatabase` 和私有 `asCScriptFunction` 字段的操作集中到一个 friend 类型中，避免继续在 Engine 公共 API 上添加 `*ForTesting` 方法。
+
+整套类型由 `AS_WITH_STATIC_JIT_DIAGNOSTICS` 包围；`StaticJITConfig.h` 默认定义为 `!UE_BUILD_SHIPPING`。Shipping 中不仅控制台命令不存在，`FStaticJITDiagnostics` 类型声明和所有方法也被预处理掉。消费者若跨此边界，应使用同一个宏，而不是只判断 `WITH_EDITOR`。
+
+! 接口地图
+
+|!接口|!读/写|!失败表达|
+|`LoadPrecompiledData(Engine, Filename, OutError)`|替换 Engine 的 `PrecompiledData`|`false` + 可选错误字符串|
+|`CompileLoadedPrecompiledData(Engine, CompileType, OutError)`|临时切配置并编译 cache modules|`false` + 错误字符串|
+|`ResolveFunctionId(Engine, asIScriptFunction/asCScriptFunction, OutId)`|只读映射|`false`，并将 id 先清零|
+|`IsFunctionRegistered(FunctionId)`|读进程 `FJITDatabase::Functions`|bool|
+|`HasJitFunction(Function)`|读 `asCScriptFunction::jitFunction`|bool|
+|`GetEntryCount` / `GetEntryCounterCount`|读进程计数表|未见 id 返回 0|
+|`ResetEntryCounters` / `MarkEntry`|写进程计数表|无返回值|
+|`CaptureSnapshot(Engine=null)`|只读摘要|以 bool/计数/GUID 表示缺失|
+|`DumpDiagnostics(Args)`|记录摘要并可解析一个函数|warning/log|
+
+另有 `ReferenceGlobalVariableTwice` 与 `ExerciseRepeatedGlobalReferenceLoad` 两个窄诊断 helper，用于验证 precompiled global-reference 的复用与 cache reload 后 pointer-cache 清除；它们不是通用 AOT 执行 API。
+
+! 缓存加载的所有权变化
+
+`LoadPrecompiledData` 的状态变化是：
+
+```text
+precondition: Engine.GetScriptEngine() != null
+              cache file exists
+old Engine.PrecompiledData
+  └─ delete + null
+new FAngelscriptPrecompiledData(script engine)
+  └─ Load(filename)
+       ├─ build id mismatch
+       │    └─ delete new + null + false
+       └─ valid
+            ├─ Engine.PrecompiledData = new
+            └─ if Engine.StaticJIT exists:
+                 StaticJIT->PrecompiledData = new
+```
+
+这是诊断专用''写操作''，不是纯观察器。调用失败可能已经删除旧 precompiled data；API 不承诺事务式恢复旧 cache。使用它的工具必须把 Engine 视为被重新配置，并在独立/受控生命周期中运行。
+
+build identifier 不匹配会 fail closed：删除新对象并返回明确错误，不能保留“已加载但与当前二进制不匹配”的数据继续解析 function id。
+
+! 编译已加载数据
+
+`CompileLoadedPrecompiledData` 要求 `Engine.PrecompiledData` 非空，并通过 `GetModulesToCompile()` 取得至少一个 module desc。编译期间使用两个 `TGuardValue<bool>`：
+
+* 临时将 `Engine.bUsePrecompiledData` 设为 `true`；
+* 临时将 `Engine.bScriptDevelopmentMode` 设为 `false`。
+
+然后调用 `Engine.CompileModules(CompileType, ModulesToCompile, CompiledModules)`。`FullyHandled` 与 `PartiallyHandled` 都算成功；其他结果返回 false。guard 保证所有 return path 恢复原值，这是诊断操作不污染后续模式的关键不变量。
+
+! Function ID、注册与三个 JIT 入口
+
+function id 来源于当前 Engine 的 `PrecompiledData->GetIdForFunction(Function, OutId)`，类型为 `uint32`。解析成立只说明 cache 有该函数的 id，不说明生成代码已注册或某种 dispatch 入口已安装：
+
+```text
+asCScriptFunction
+  └─ PrecompiledData mapping → FunctionId
+       ├─ FJITDatabase::Functions.Contains(id) → generated registration exists
+       ├─ function->jitFunction != null         → VM entry exists
+       ├─ function->jitFunction_Raw != null     → raw specialized entry exists
+       └─ function->jitFunction_ParmsEntry      → parms-buffer entry exists
+```
+
+public `HasJitFunction()` 只检查第一个 `jitFunction`；控制台输出会分别打印 VM、Raw、Parms 三个 pointer 状态。排查 `UASFunction` dispatch 时必须看对应入口，不应把 VM entry 存在等价成 raw/Parms specialization 可用。
+
+! 入口计数的准确语义
+
+StaticJIT code generator 在生成函数头时插入：
+
+```cpp
+FStaticJITDiagnosticEntryMarkers::MarkEntry(0x<FunctionId>u);
+```
+
+marker 在诊断宏启用时转调 `FStaticJITDiagnostics::MarkEntry`，后者递增函数内 static `TMap<uint32, int32>`。因此计数表示''生成的 StaticJIT 函数体实际进入了多少次''，不是所有逻辑脚本调用总数：解释器执行、没有命中该 generated entry 的 fallback、或在进入函数体前被路由到别处，都不会增加它。
+
+counter map 是进程级静态状态，不按 Engine 分区，也没有内部锁。它适合受控诊断，不应从多个执行线程无协调更新，亦不能用作生产 telemetry。`GetEntryCounterCount()` 是有计数条目的 function id 数量，不是所有执行次数之和。
+
+! Snapshot 字段
+
+`CaptureSnapshot(const FAngelscriptEngine* Engine = nullptr)` 在参数为空时使用 `TryGetCurrentEngine()`，并读取进程 `FJITDatabase` 与 `FStaticJITCompiledInfo::Get()`。`FSnapshot` 精确包含：
+
+|!组|!字段|
+|可用性|`bHasCurrentEngine`、`bHasScriptEngine`、`bHasPrecompiledData`、`bHasCompiledInfo`|
+|一致性|`bCompiledInfoMatchesPrecompiledData`|
+|规模|registered functions、entry counters、function/system pointer/global/type/property lookup counts|
+|identity|`PrecompiledDataGuid`、`CompiledInfoGuid`|
+
+只有两侧都存在且 GUID 相等时 match 才为 true。`CompiledInfo` 存在但 Engine/cache 缺失不是 match；这能区分“生成代码已链接”与“当前 Engine 加载了对应 cache”。
+
+! 控制台命令
+
+非 Shipping 自动注册：
+
+```text
+as.StaticJIT.DumpDiagnostics [FunctionNameOrDeclaration]
+```
+
+无参数时输出 snapshot 总览和可用 GUID。带参数时把所有 token 以空格重新拼接，去除前后空白、尾随分号和一对外层双引号，然后遍历 active modules：
+
+# 先用 module `GetFunctionByDecl`；
+# 再枚举 module functions，匹配简单 name、无 object declaration 或含 object declaration；
+# 再枚举 object types，以 `GetMethodByDecl` 和同样的逐 method 匹配查找。
+
+第一个匹配立即返回，所以仅给一个重载函数的简单 name 可能依赖 module/type 枚举顺序。重载环境应传完整 declaration；实例方法最好包含 object declaration，避免命中同名函数。
+
+成功输出 declaration、十六进制 FunctionId、Registered、VM/Raw/Parms 三个 JIT pointer bool 和 EntryCount。无法解析函数、没有 current Engine 或 cache 中没有 id 都输出不同 warning，不会用 id 0 冒充成功。
+
+! Global reference 窄诊断
+
+`ReferenceGlobalVariableTwice` 对同一 pointer 连续调用 `ReferenceGlobalVariable`，要求两次 `OldReference` 非零且相等，并要求第二次仍能给出名称。它验证 deduplication identity。
+
+`ExerciseRepeatedGlobalReferenceLoad`：
+
+# 先以 reference 解析地址；
+# 构造 `FJitRef_GlobalVar` 并让其缓存同一地址；
+# 重新 `Data.Load(CacheFilename)`；
+# 要求 `CachedPointerReferences` 已不含旧 reference；
+# 再解析后仍得到同一个全局地址；
+# `ON_SCOPE_EXIT` 从进程 JIT database 移除临时 lookup。
+
+这里验证的是 cache reload 清除 lookup cache、随后可重新解析；不是允许任意旧地址跨 module reload 永久有效。
+
+! 失败矩阵
+
+|!现象|!优先检查|
+|cache load false|ScriptEngine、文件存在、build identifier；注意旧 data 可能已被删除|
+|compile loaded false|cache 是否产生 modules、CompileResult 与错误字符串|
+|有 FunctionId 但 Registered=false|生成 registration 没链接/没注册，或 cache 与代码不是同一产物|
+|Registered=true 但 VM/Raw/Parms 某项 false|该 dispatch 入口没有安装；按调用形状检查，不要只看总注册|
+|EntryCount 始终 0|实际走解释器/fallback、marker 未编译进当前配置、或查询错 id|
+|GUID match=false|precompiled cache 与 linked compiled info 不成对|
+|简单函数名解析到错误 overload|改用完整 declaration|
+|多 Engine 数据混在 counter|counter/JITDatabase 是进程级，不是 Engine-scoped|
+
+! 不变量
+
+* Shipping 不暴露类型、实现或命令。
+* invalid cache 必须 fail closed，不保留到 Engine。
+* 临时 compile flags 用 guard 在失败路径恢复。
+* FunctionId、registration、三个入口 pointer、entry count 是四层不同证据。
+* snapshot 同时报告 availability 与 GUID，不能只比较数量。
+* counter 是开发诊断，不是线程安全的生产指标。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/static-jit-pipeline" "StaticJIT 管线">>
+* <<as-doc-link "runtime-jit-vm/uasfunction-dispatch-matrix" "UASFunction Dispatch 矩阵">>
+* <<as-doc-link "runtime-jit-vm/static-jit-aot-test" "StaticJIT AOT 场景">>
+* <<as-doc-link "runtime-jit-vm/engine-scoped-runtime-state" "Engine-scoped 状态边界">>

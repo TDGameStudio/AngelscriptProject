@@ -1,0 +1,167 @@
+title: AS/Docs/zh-Hans/unreal-core/construction-script
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: ConstructionScript 与派生数据
+description: 在 Editor 与 Actor 构建阶段根据可编辑输入计算派生值或组件结构，并让重复执行、热重载和 Cooking 保持确定。
+as-sdk-document: yes
+as-doc-key: unreal-core/construction-script
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 70
+as-content-revision: 2
+as-sources: [[script-examples]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: unreal-development
+as-nav-order: 60
+as-nav-parent: unreal-core/index
+as-feature-key: construction-script
+
+! 它是“从输入重建结果”，不是一次性初始化
+
+ConstructionScript 在 Actor 构建和 Editor 属性变化等路径中，把可编辑输入转换为派生状态。正确心智模型是纯函数式重建：
+
+```text
+可编辑输入 + 稳定 Class 结构
+              │ ConstructionScript（可重复）
+              ▼
+       可丢弃、可重算的派生结果
+```
+
+Editor 移动 Actor、修改 Details、编译 Blueprint、复制实例、撤销重做或脚本热重载，都可能再次执行它。执行次数不是业务合同，不能在里面累计积分、发网络请求、写全局存档或假定“只会跑一次”。
+
+! 仓库示例的实际含义
+
+`Script/Examples/Core/Example_ConstructionScript.as` 同时展示派生属性与动态组件：
+
+```angelscript
+class AConstructionPreview : AActor
+{
+    UPROPERTY(NotVisible)
+    UBillboardComponent Billboard;
+
+    UPROPERTY(Category = "Calculation")
+    int ValueA = 3;
+
+    UPROPERTY(Category = "Calculation")
+    int ValueB = 3;
+
+    UPROPERTY(BlueprintReadOnly, NotEditable, Category = "Calculation")
+    int Product;
+
+    UFUNCTION()
+    void ConstructionScript()
+    {
+        Billboard = UBillboardComponent::Create(this, n"Billboard");
+        Product = ValueA * ValueB;
+    }
+}
+```
+
+输入 `ValueA/ValueB` 由作者编辑，`Product` 是只读派生结果。组件使用稳定名称 `Billboard`，而不是每次拼一个新名字；属性保存组件引用，让重建流程能识别对应对象。真正的生产代码还要根据所用 `Create` helper 的重用/替换语义检查旧组件，不能把“名字相同”当成所有 API 都自动幂等。
+
+! 什么时候用哪一种机制
+
+|!需求 |!机制 |!原因 |
+|固定、每个实例都有的组件层级 |`DefaultComponent` + `RootComponent`/`Attach` |属于 Class 模板结构，Blueprint Components 面板和 CDO 都应稳定可见 |
+|根据实例属性决定数量/形状的预览组件 |ConstructionScript |输入变化时需要重建派生结构 |
+|进入游戏后只执行一次的启动逻辑 |`BeginPlay` |明确属于 runtime lifecycle |
+|运行中响应状态变化 |显式函数、delegate、RepNotify |输入变化时主动调用，不依赖 ConstructionScript |
+|作者手动触发的 Editor 操作 |CallInEditor/Editor 工具 |不应在每次构建时自动发生 |
+
+固定 Mesh/Collision/Scene root 不要为了“能创建”就搬进 ConstructionScript。DefaultComponent 更容易维护身份、继承和 Blueprint override。反过来，数量由 `SegmentCount` 决定的预览节点不适合硬编码成几十个默认组件。
+
+! 幂等的四条规则
+
+!! 1. 结果可以从零重建
+
+不要写 `Product += ValueA * ValueB`，应写 `Product = ...`。数组、实例组件和预览数据要么先清理旧派生结果，要么按稳定 key 做 diff/upsert。
+
+!! 2. 身份稳定
+
+组件/子对象名称、数组 key 和材质 slot 必须由稳定输入决定。使用执行次数、随机数或时间戳命名，会在每次 rerun 后留下新对象，使场景和事务历史膨胀。
+
+!! 3. 不产生外部不可逆副作用
+
+不发送 RPC、不扣库存、不写 SaveGame、不修改别的关卡 Actor 的长期状态、不注册无法对称解除的全局 delegate。ConstructionScript 可能在 Editor world 中运行，此时甚至没有 gameplay authority 的意义。
+
+!! 4. 输入和输出分离
+
+作者编辑输入；输出标成 `BlueprintReadOnly, NotEditable` 或保持内部。若同一字段既是输入又由脚本覆盖，作者会看到值“自己跳回去”，也无法判断资产保存了什么。
+
+! 组件重建策略
+
+动态组件最容易形成幽灵对象。按需求选择一种明确策略：
+
+|!策略 |!适用 |!要点 |
+|固定名称单组件 |一个派生预览组件 |找到/复用同名对象，类型变化时安全替换 |
+|全清再建 |数量少、无外部引用的纯预览 |只清理自己拥有并标记的派生组件，不碰手工组件 |
+|按 key 增量 diff |数量大或需要保留实例编辑 |稳定 key → 复用；删除消失 key；创建新增 key |
+
+每个派生组件都要有“由谁创建”的可识别边界，例如保存到专用属性/数组或使用受控命名空间。仅凭 class 类型批量删除会误伤 Blueprint/设计师创建的同类组件。
+
+Root 和 attach 顺序也要确定：先保证 root 存在，再创建/复用子组件，再设置 attach 与 transform，最后清除不再需要的旧结果。中途失败时不应留下半套层级；复杂构建可先计算目标描述，再统一 apply。
+
+! Editor、PIE 与 packaged runtime
+
+ConstructionScript 在 Editor 中经常执行，但 runtime Spawn Actor 时也会参与 Unreal 构建流程。不要让运行正确性依赖“作者曾在 Editor 中触发并保存过一次”。
+
+|!数据类型 |!建议 |
+|可从保存输入快速重算 |ConstructionScript/runtime 构建时重算 |
+|昂贵但稳定的烘焙数据 |显式 Editor bake，保存结果并记录版本 |
+|runtime 必需且无法 cook 保存 |在 runtime 初始化路径重新建立 |
+|仅 Editor 可视化 |用 `#if EDITOR`/Editor-only 组件隔离，不让正式逻辑依赖它 |
+
+Packaged build 没有 `AngelscriptEditor`、DirectoryWatcher 或 CallInEditor 环境。使用 Editor-only API 的 ConstructionScript 必须有清晰目标边界；如果派生组件是 gameplay 必需，它依赖的类型和代码必须在 runtime module 中。
+
+! 继承、Blueprint 与默认值
+
+脚本基类的 ConstructionScript 可以被 Blueprint 子类和 placed instance 消费。要分别考虑：
+
+* Blueprint CDO 保存的输入 override；
+* 场景实例保存的输入 override；
+* Blueprint 自己的 Construction Script/组件层级；
+* 热重载后 Class/组件 template 的新旧 generation。
+
+不要在脚本 ConstructionScript 无条件重置作者输入为默认值。父脚本计算自己的派生输出，并只管理自己拥有的组件。修改输入 property 名称/类型或动态组件 identity 时，相当于资产 schema 变化，需要迁移旧 Blueprint/实例数据。
+
+如果 Blueprint 也参与构建，要规定顺序和所有权：哪一层创建 root，哪一层只配置视觉，谁能删除组件。两层都“先清所有组件再建”会互相破坏。
+
+! 热重载分类
+
+|!变化 |!风险 |!检查 |
+|函数 body 变化 |通常较低 |现有 Actor rerun 后结果是否更新 |
+|输入默认值变化 |中 |BP CDO/实例 override 是否保留 |
+|新增/删除派生属性 |中 |序列化旧数据和 Details 展示 |
+|组件类型/名称/attach 变化 |高 |旧组件是否清除，Blueprint references 是否失效 |
+|Class/父类变化 |高 |full reload、CDO templates、placed instances |
+
+Reload 会让 ConstructionScript 再次执行，正好暴露非幂等问题：组件数量每次增加、属性累计、delegate 重复绑定。修复时不要只清当前地图里的坏实例，还要让算法从任意旧状态收敛到唯一目标状态。
+
+! 性能与作者体验
+
+ConstructionScript 运行在交互式编辑路径，过重会让拖动 Actor 或修改一个数字都卡顿。避免：全世界 Actor 扫描、同步资产加载、大数组无条件重建、复杂路径搜索、每次创建大量 transient UObject。
+
+先比较输入是否真的变化；把纯计算与 apply 分开；对大量结果做增量 diff；昂贵操作改成显式 bake。错误信息应包含 Actor、输入值与失败阶段，不能在每次鼠标移动时刷成千上万条无上下文日志。
+
+! 故障定位
+
+|!现象 |!先检查 |!常见原因 |
+|每改一次属性就多一个组件 |组件 identity 与旧结果清理 |每次 append/create，没有复用或删除 |
+|派生值越来越大 |赋值还是累计 |把重算写成了增量更新 |
+|Blueprint 手工组件消失 |清理选择范围 |按类型全删，误伤非脚本拥有对象 |
+|PIE 正常但 packaged 缺对象 |runtime module/Cook、Editor-only 分支 |依赖 Editor 曾经执行或 Editor-only API |
+|修改输入后 runtime 不更新 |输入何时变化 |ConstructionScript 不会替代运行时显式重算 |
+|reload 后出现同名/旧类型组件 |Class generation、组件替换策略 |结构变化没有清旧模板/实例组件 |
+|Editor 拖 Actor 卡顿 |每次执行的资产加载和遍历 |在交互路径做了同步重活 |
+
+排查时记录执行 Actor、World type、输入摘要、构建前后派生组件 key 集合和 reload generation。单纯记录“ConstructionScript ran”没有诊断价值。
+
+! 源码落点与继续阅读
+
+* `Script/Examples/Core/Example_ConstructionScript.as`：当前 `ConstructionScript`、动态组件与派生 property 示例；
+* `AngelscriptRuntime/ClassGenerator/`：脚本 Class、CDO、组件模板和反射属性生成；
+* `AngelscriptEditor/HotReload/`：结构变化后的 Class reinstancing 与实例迁移；
+* <<as-doc-link "unreal-core/actors-components-defaults" "Actor、Component 与默认值">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint、CDO 与默认值迁移">>
+* <<as-doc-link "unreal-core/packaging-and-cooking" "Packaging 与 Cooking">>

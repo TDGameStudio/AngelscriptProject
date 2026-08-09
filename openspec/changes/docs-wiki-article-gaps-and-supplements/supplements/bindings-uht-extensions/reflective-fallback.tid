@@ -1,0 +1,209 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/reflective-fallback
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: BlueprintCallable 反射回退
+description: 从绑定资格、参数缓存、FProperty 生命周期、OutParm 链到 RPC callspace，解释反射回退如何保留 Unreal 调用语义。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/reflective-fallback
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 180
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[project-knowledge-zh]]
+as-nav-group: bindings-extensions
+as-nav-order: 280
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: reflective-fallback
+
+! Fallback 是完整执行后端，不是绑定失败
+
+当 UFunction 不适合或不需要 native direct call 时，`BlueprintCallableReflectiveFallback` 把 AngelScript generic call 转成 Unreal 参数帧，再按 UFunction 反射合同执行。它覆盖复杂 property、out 参数、Blueprint dispatch 和网络路由；代价是构造/复制参数与 generic trampoline 的额外开销。
+
+```text
+AS call declaration
+    ↓ asCALL_GENERIC trampoline
+定位 target + UFunction
+    ↓
+初始化 UFunction parameter storage
+    ↓ FProperty copy-in / mixin injection
+建立 FFrame + FOutParmRec
+    ↓
+UFunction::Invoke 或 UObject::ProcessEvent
+    ↓ FProperty copy-out / return
+析构 parameter storage
+```
+
+“Direct 更快”不是选择依据的全部。只要 direct path 无法证明与 Unreal 的参数生命周期、虚拟分派或 NetDriver 行为等价，就应保留 fallback。
+
+! 它在哪里进入绑定主线
+
+UHT `NativeRuntimeLinked` 分析先尝试构建安全 native signature。Interface function 与 RPC/Net function由策略直接分类为 `ReflectiveFallback`；签名构建失败的 BlueprintCallable 也生成 fallback registration，并把原因写入诊断。
+
+Runtime 的 `BindBlueprintCallableReflectionFallback` 还会检查：
+
+|!条件 |!失败时含义 |
+|UFunction 非空且有 owning UClass |不能定位反射合同 |
+|owning class 不是 Interface |当前 generic fallback 不直接绑定 interface class |
+|不是 CustomThunk |自定义 exec stack 不能由通用 property frame 假装 |
+|非 return 参数不超过 16 个 |固定 generic bridge 上限 |
+|所有 AS type usage 有效 |声明无法安全表达 |
+|脚本 declaration 尚未存在 |手工/生成 binding 优先，避免重复注册 |
+
+绑定成功后，`FAngelscriptFunctionBinding.bReflectiveFallbackBound = true`，origin 记为 `Reflective`。这不是空 function pointer：脚本注册的是 `CallBlueprintCallableReflectiveFallback` generic trampoline，其 user data 持有实际 UFunction 和类型信息。
+
+! Target 的三种形态
+
+`BindReflectiveFunction` 根据脚本表面选择 target：
+
+|!函数形态 |!脚本注册 |!Target |
+|真正实例方法 |目标 AS type 的 method |`Generic->GetObject()` |
+|Unreal static、脚本表现为 mixin |目标 type 的 method |owning Class CDO，同时把脚本 receiver 注入第一个参数 |
+|脚本 static/global/namespace function |global/namespace declaration |owning Class CDO |
+
+Mixin 注入只消费 Unreal 参数列表的第一个 slot，不消费脚本显式参数。这里若 metadata/Signature 判断错一位，后面每个参数都会错位，因此 `bInjectMixinObject` 必须随绑定 signature 保存，而不是调用时猜测。
+
+! 参数缓存的结构
+
+默认路径为每个绑定 UFunction 懒构建 `FReflectiveParamCache`，以后复用。缓存包含：
+
+* `PropertiesSize` 作为完整 frame storage 大小；
+* 每个参数的 `FProperty*`、UE offset、size；
+* 是否需要 `InitializeValue_InContainer`/`DestroyValue_InContainer`；
+* 是否允许 raw copy；
+* 是否是 reference、是否需要 `FOutParmRec`、是否需要写回；
+* return property 与 `ReturnValueOffset`；
+* UFunction 是否带 `FUNC_Net`。
+
+参数按 AS argument order 缓存，return property 单独存放。缓存与 `FBlueprintCallableReflectiveSignature` 同寿命，signature 删除时释放；不能跨 UFunction generation 永久全局缓存，否则 full reload 后 `FProperty*` 会悬空。
+
+! Frame 的初始化与销毁是不变量
+
+缓存路径用 `Function->PropertiesSize` 分配并清零 frame。之所以不是只用 `ParmsSize`，是 Blueprint-defined function 可能还有 locals，`ProcessInternal` 需要完整 storage。随后只对不能零构造的 property 调 `InitializeValue_InContainer`。
+
+调用结束后，对需要析构的每个参数和 return slot 调 `DestroyValue_InContainer`。中途发现参数不足时也必须走同样清理。必须满足：
+
+```text
+每个成功 Initialize 的 non-trivial slot
+    在所有返回路径恰好 Destroy 一次
+```
+
+否则 `FString`、`FText`、容器、delegate、soft pointer 或自定义 USTRUCT 会泄漏、双释放或破坏引用计数。`FMemory_Alloca` 只回收裸内存，不会替代 property destructor。
+
+! Copy policy 不是“结构体就 memcpy”
+
+`IsPropertySimpleCopy` 允许两类快速复制：标记 `CPF_IsPlainOldData` 的 property，以及以指针表示的 `FObjectPropertyBase`。其余按 deny/conservative 规则处理：
+
+|!必须走 `FProperty::CopySingleValue` |!原因 |
+|`FString`、`FText`、`FName` |分配、引用计数或 name intern 语义 |
+|`TArray/TMap/TSet` |容器 ownership 和元素生命周期 |
+|delegate/multicast delegate |绑定对象和内部 storage |
+|soft object/class、field path、optional |包装类型有非平凡复制 |
+|有 destructor 或 `STRUCT_CopyNative` 的 USTRUCT |需要自定义析构/复制 |
+|未知 property 子类 |无法证明 ABI 安全 |
+
+只有 `STRUCT_NoDestructor` 且没有 `STRUCT_CopyNative` 的 struct 才可能 byte-copy。未来新增 property 类型时默认应落到虚拟 copy，而不是为性能假设裸字节安全。
+
+! 参数地址与引用层级
+
+AngelScript generic API 对值参数给出值地址；对 reference/out 参数，`GetAddressOfArg` 得到的 storage 还要解一层，`ResolveScriptArgumentAddress` 按 `CPF_ReferenceParm` 或非 return `CPF_OutParm` 解析真正值地址。
+
+Copy-in 依次执行：
+
+# 若是 mixin 的第一个 Unreal 参数，写入 receiver UObject；
+# 否则从 AS argument address 解出源地址；
+# simple property 用 `Memcpy`，其余 `CopySingleValue`；
+# 若是非 const out 参数，保存脚本侧地址用于调用后写回。
+
+空源地址会保持已初始化的默认值，但这不应被用来掩盖错误 declaration；注册阶段应保证类型和参数数量一致。
+
+! 为什么 const-ref 也要进入 OutParms
+
+Unreal 把部分 const reference 参数标为 `CPF_OutParm | CPF_ConstParm`。它们不应写回脚本，但 `FFrame::StepExplicitProperty` 仍会在 `OutParms` 链中查找记录；若链缺一项，native exec stub 可能解引用空记录。
+
+因此缓存区分：
+
+* `bRequiresOutParmRec`：所有非 return 的 `CPF_OutParm`，包括 const-ref；
+* `bIsWritebackOut`：只有非 const 的真正 out 参数。
+
+调用前为 `OutParamIndices` 构造 `FOutParmRec` 链，每条 record 指向 frame 中的 property slot；调用后只把 `bIsWritebackOut` 复制回 AS。把这两个概念合并是典型的“简单函数正常、const-ref 崩溃”问题。
+
+! 默认缓存路径与 legacy 路径
+
+当前 CVar `as.ReflectiveFallback.UseCache` 每次调用读取：
+
+|!值 |!路径 |!用途 |
+|`1`（默认） |预计算 cache + `FFrame` + `UFunction::Invoke` |减少每次 `TFieldIterator`/虚拟 property 分类成本 |
+|`0` |每次遍历 property + `UObject::ProcessEvent` |事故回滚、A/B 正确性比较 |
+
+Legacy 路径每次用 `ParmsSize` 分配、初始化全部参数、`ProcessEvent`、写回、析构。它慢但直接沿用 Unreal 的 frame、out parm、RPC 和 PreScriptCall 处理，可作为缓存路径的行为 oracle。
+
+缓存路径不能简单把 `ProcessEvent` 换成 `Invoke` 后结束；它必须自行建立 `FFrame`/OutParms，并单独处理 Net callspace。
+
+! RPC/Net 的正确路由
+
+对于 `FUNC_Net`，缓存路径执行：
+
+# `TargetObject->GetFunctionCallspace(Function, &Frame)` 判断 Local/Remote；
+# Remote 分支调用 `CallRemoteFunction`，把 parameter buffer 与 OutParms 交给网络层；
+# Local 分支恢复必要的 frame code 并 `Function->Invoke`；
+# 两者可能同时发生，例如 NetMulticast 的 Server 本地执行与远端发送。
+
+这就是 RPC 必须 fallback 的具体原因。把 UFunction native address 当普通 C++ 方法调用，只会在当前进程执行 body，不会检查 ownership/callspace、reliability 或 NetDriver。即便一个本地 PIE 测试“函数跑了”，语义仍是错的。
+
+! Return 与 out writeback
+
+调用完成后：
+
+* out 参数从 frame slot 按相同 simple/property copy policy 写回原 AS address；
+* return value写入 `Generic->GetAddressOfReturnLocation()`；
+* non-trivial return destination 先 `InitializeValue`，再 `CopySingleValue`；
+* 最后销毁 frame 内部的 return 与参数，不销毁 AS destination。
+
+谁构造、谁销毁必须明确：frame 内 storage 由 fallback 管；AS argument/return storage 由 VM 管。Return-by-ref 当前不应被误当成普通值复制 direct path，生成器会把相关签名保留在安全边界之外。
+
+! 重复绑定与优先级
+
+`IsScriptDeclarationAlreadyBound` 会检查 global namespace/name/declaration 或 type method，避免 fallback 覆盖已有手工/generated binding。Bind phase 用 `FScopedBindCaches` 为 global declaration 和 class function name 建立 thread-local 查询缓存；guard 不允许嵌套，离开 phase 后清空，避免长期持有 stale state。
+
+`RegisterFunctionBinding` 的替换规则同样保守：只有现有 entry 没有有效 function pointer、也不是 reflective fallback，而新 binding 有 pointer 时才补齐。不要依赖注册顺序让两条路径互相覆盖；所有权应由 policy/config 明确。
+
+! 失败与诊断
+
+|!现象 |!先检查 |!常见根因 |
+|函数没有进入 fallback |UHT diagnostic category/failure |CustomThunk、interface、>16 参数、无效 type |
+|调用报无 target |static/mixin classification、CDO |绑定形态错误或 CDO 未建立 |
+|out 参数崩溃/不回写 |CPF flags、OutParmRec、reference 解层 |const-ref 与 writeback 混淆 |
+|字符串/容器调用后内存损坏 |copy/init/destroy policy |误用 memcpy 或漏析构 |
+|RPC 只本地执行 |FUNC_Net branch/callspace |绕过 fallback 或未调用 `CallRemoteFunction` |
+|reload 后随机崩溃 |cache 中 UFunction/FProperty generation |signature cache 活得比绑定 generation 长 |
+|缓存路径异常、legacy 正常 |切换 CVar 并比对 |cache offset、OutParms 或 return policy 回归 |
+|同名 API 行为不稳定 |function provenance/重复 declaration |手工、generated、fallback 所有权冲突 |
+
+诊断至少记录 owning class、UFunction full name、function flags、AS declaration、binding origin、参数 ordinal/property class/flags，以及使用 cache 还是 legacy path。
+
+! 维护清单
+
+修改 reflective fallback 时逐项确认：
+
+# eligibility 与 UHT 分类是否一致，特别是 CustomThunk、interface、RPC；
+# `PropertiesSize`、offset 与 return offset 来自同一 UFunction generation；
+# 新 property 类型属于 simple copy 还是 virtual copy；
+# 所有 early return 都对称销毁已初始化 slots；
+# const-ref 加入 OutParms 但不写回；
+# Net Local/Remote 两分支保留；
+# static/global/mixin target 与参数注入一致；
+# CVar legacy 路径仍可作为回滚；
+# provenance 和统计能解释函数为什么落到 fallback。
+
+! 源码落点与继续阅读
+
+* `AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.cpp/.h`：资格、cache、两条执行路径、RPC 与 copy 生命周期；
+* `AngelscriptRuntime/Binds/Bind_BlueprintCallable.cpp`：prepared binding 如何选择 direct/fallback 并注册声明；
+* `AngelscriptRuntime/Binds/Helper_FunctionSignature.h`：UFunction 到 AS declaration/flags；
+* `AngelscriptUHTTool/AngelscriptFunctionBindingPolicy.cs`：UHT 分类与 fallback reason；
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "函数绑定路径选择">>
+* <<as-doc-link "bindings-uht-extensions/marshalling-safety-boundary" "Marshalling 安全边界">>
+* <<as-doc-link "topics-integrations/networking-rpc" "Networking 与 RPC">>
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "UFunction 生成与分派">>

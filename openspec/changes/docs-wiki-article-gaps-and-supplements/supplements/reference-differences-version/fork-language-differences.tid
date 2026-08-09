@@ -1,0 +1,104 @@
+title: AS/Docs/zh-Hans/reference-differences-version/fork-language-differences
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: Fork 与 Vanilla 的语言差异
+description: 汇总自动 UObject 句柄、const 全局、接口/mixin class、模块和内存模型等结构性分叉。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/fork-language-differences
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 30
+as-content-revision: 2
+as-sources: [[project-guide]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 50
+as-nav-parent: reference-differences-version/index
+as-feature-key: fork-language-differences
+
+! 结构性分叉
+
+|!领域 |!当前 fork |!Vanilla 常见行为 |
+|对象引用 |自动句柄语义，不写 `@` |显式 `@` handle |
+|全局变量 |只允许 const |允许可变 global |
+|脚本 interface |不支持脚本层 interface，走 UE UINTERFACE |原生支持 |
+|mixin class |不支持；支持 mixin 函数 |原生支持 mixin class |
+|内存 |`FMemory` + APV2 pool |标准 allocator |
+|模块 |APV2 符号/热重载状态 |标准 module storage |
+|类型 flags |含私有高位扩展 |上游标准 flags |
+|字节码恢复 |2.33 layout + fork 容器桥 |随上游版本实现 |
+
+这些差异服务 Unreal 反射、生命周期和热重载，不应被当作“落后上游”整体修回。
+
+! 差异的层级
+
+不是所有不同都属于“语言语法”。阅读 issue 或上游 patch 时应先分类：
+
+|!层|!示例|!主要兼容风险|
+|表面语法|自动 UObject handle、const global、移除 property accessor、UE specifier|现有 `.as` 源码编译结果|
+|类型/对象模型|UObject/UClass/UStruct 映射、UE interface、mixin function|GC、反射、继承与 overload resolution|
+|模块/热重载|APV2 符号、stable module identity、descriptor/ClassGenerator|旧新类型、函数指针和资产关系|
+|调用/绑定|手工 bind、UHT provider、reflective fallback、WorldContext/RPC|ABI、参数搬运和网络路由|
+|内存/字节码|FMemory/APV2 pool、fork flags、restore 格式|序列化兼容、allocator ownership|
+|工具链|DebugServer V2、CodeCoverage、Offline bundle、Static JIT|外部协议与发行产物|
+
+上游 parser 的一个小改动可能触及前三层；不能因为 diff 很短就当成低风险。
+
+! 自动 handle 与 UObject 生命周期
+
+本 fork 的 UObject 风格类型采用自动 handle 语义，脚本作者通常不写 vanilla 的 `@`。这不仅是 token 差异：赋值、null、const、参数传递和 GC reference schema 都与 Unreal 对象生命周期耦合。把上游示例中的 `@` 机械删除可能仍不正确，因为 vanilla reference type 不等同 UObject。
+
+portable/非 UObject 值类型、脚本结构与 wrapper（如弱/软/对象指针）又有各自声明模式。判断某类型时以 `FAngelscriptTypeUsage` 和实际绑定声明为准，不推广“一切都是自动 handle”。
+
+! Global、interface 与 mixin
+
+* 可变 global 被限制，长期状态应放入 UObject、subsystem、结构化 engine-scoped owner 或 const 数据，避免模块 reload 后悬挂共享状态。
+* 脚本层不采用 vanilla interface 作为产品表面；UE-facing interface 经过 UINTERFACE/UFunction/ClassGenerator 反射合同，包含 Unreal 的调用/Blueprint 语义。
+* 可用的是 mixin function/extension-method 风格，不是把 vanilla mixin class 整体复制进来。函数的首参、namespace 和可见性决定宿主表面。
+
+这些决策彼此相关：UE interface 和 mixin function 都需要进入绑定/反射/热重载图，不能只让 parser 接受一个上游关键字。
+
+! Property accessor 是一个典型反例
+
+vendored SDK 仍保留 property accessor 的底层结构，但本产品在 parser、engine property、compiler 和 bind promotion 四层关闭自动 `obj.X ↔ GetX/SetX`。如果只比较某个 enum/trait 是否存在，会得出错误结论。语言差异必须以''产品可达路径''判断，而不是以 dead-compatible code 是否还在判断。
+
+! 模块与 restore 的高风险区
+
+fork module storage 参与：
+
+* 虚拟源路径和稳定 module identity；
+* import、dependency graph 与 compile failure atomicity；
+* hot reload 的 old/new descriptor 与函数更新；
+* bytecode/precompiled data restore；
+* widened/private type flags 及 UE 容器桥。
+
+因此上游关于 module lookup、function traits、restore 或 object type layout 的 patch，必须按本 fork 数据结构逐字段移植。整体替换 `as_module.*` / `as_restore.*` 即使能编译，也可能在 reload 或 packaged restore 时破坏状态。
+
+! 外部示例迁移检查
+
+# 记录示例针对的 vanilla/fork 版本与 host。
+# 标出 `@`、mutable globals、interface、mixin class、property decorator/virtual property 等差异语法。
+# 把 native library API 映射到当前 binding surface；不存在时先确认可选 plugin 和 backend。
+# 检查 UObject、World、GC、Blueprint/RPC 的宿主语义，不能用 portable class 替代。
+# 检查 Editor/cooked/Standalone profile；能在 vanilla CLI 跑不代表能在 UE validation 执行。
+# 只迁移最小意图，不把示例所依赖的整套上游对象模型带入。
+
+! 差异诊断措辞
+
+|!观察|!推荐结论|
+|parser 明确拒绝旧语法|“本产品移除/不支持，并给出替代模式”|
+|底层代码存在但产品入口不可达|“保留兼容实现，当前产品路径禁用”|
+|上游能力未评估|“unknown / candidate”，不是“缺陷”|
+|能力由 optional plugin 提供|“核心不拥有；启用 owner plugin”|
+|有选择性 2.38 patch|“已适配回移该项”，不是“运行 2.38”|
+|行为因 UE host 不适用|“not applicable to this host model”|
+
+! 阅读外部代码
+
+看到 `@Handle`、mutable global、脚本 interface 或 mixin class 时，先查当前 fork 是否有等价 UE 模式，不要直接复制。反过来，`UPROPERTY`、`UFUNCTION`、default component 和 BlueprintEvent 是 UE 集成表面，vanilla 文档不会解释。
+
+! 相关链接
+
+* <<as-doc-link "reference-differences-version/selective-backport-policy" "选择性 Backport 策略">>
+* <<as-doc-link "unreal-language/cpp-blueprint-differences" "与 C++ / Blueprint 的差异">>

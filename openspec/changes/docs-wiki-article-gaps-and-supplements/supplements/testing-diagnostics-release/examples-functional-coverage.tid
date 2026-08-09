@@ -1,0 +1,139 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/examples-functional-coverage
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: ScriptExamples 退役与功能测试整合
+description: 解释为何退役低价值的 ScriptExamples 编译测试层、哪些行为证据被迁往主题功能测试，以及示例资产与测试所有权为何必须分离。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/examples-functional-coverage
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 50
+as-content-revision: 2
+as-sources: [[openspec]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 50
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: examples-functional-coverage
+
+! 先区分两个名字相似但所有权不同的东西
+
+项目仍然保留 `Script/Examples/`：当前有 27 个产品示例脚本，分为 Core 19、EnhancedInput 3、Extended 5。它们服务使用者阅读、复制和运行，不能因为测试层退役而删除。
+
+被退役的是旧的 C++ 自动化测试层：
+
+* 源目录 `Plugins/Angelscript/Source/AngelscriptTest/Examples/`；
+* 自动化前缀 `Angelscript.TestModule.ScriptExamples.*`；
+* group `AngelscriptExamples`；
+* `AngelscriptScriptExampleTestSupport.*` 与 `RunScriptExampleCompileTest()`。
+
+旧层大多把示例片段送去编译；它能发现语法漂移，却很少证明 Actor、Component、Delegate、Widget 或 UObject 在 Unreal 生命周期中的实际结果。退役的核心不是“少写测试”，而是把有价值的行为证据交给拥有该行为的主题测试，把纯编译重复交给已有语法 / binding / compiler 契约。
+
+! 为什么“示例能编译”不是充分的运行时证据
+
+一段定时器示例编译成功，只能证明声明可见和类型检查通过，不能证明：
+
+* timer handle 在 pause / unpause / clear 后的状态转移；
+* world tick 是否真的触发 callback；
+* clear 后 callback 是否停止，handle 是否失效；
+* actor 销毁或 world teardown 是否留下悬挂工作。
+
+类似地，`BindWidget` 的字段能编译，不等于反射 metadata 与 `FObjectProperty` 类型正确；组件声明能编译，也不等于 default component 被 materialize、root / attachment 正确、BeginPlay 与 tick 真的到达。测试所有权应落在能构造真实上下文并断言可观察结果的主题，而不是落在示例文件名上。
+
+! 迁移判定：Absorb 与 DeleteAsCovered
+
+归档变更先为原 Examples 目录建立逐文件分类，只有三种处置：
+
+|!分类|!含义|!关闭条件|
+|`Absorb`|原测试包含独有或值得保留的运行时行为|目标主题先具备等价或更强断言，再删旧注册|
+|`DeleteAsCovered`|只有编译检查，且同一契约已由语法、binding、compiler 或 runtime 测试承担|记录替代层及为何无需复制一个新功能测试|
+|`DeleteAfterDependencyMove`|旧 support 文件本身没有产品行为，只被旧层依赖|所有消费者迁走后删除|
+
+这个顺序是关键：先建立目标证据，再删来源。若先删再说“以后在 Functional 补”，迁移无法证明没有净覆盖损失。
+
+! 已吸收行为的当前源码地图
+
+下表不是抽象规划，而是按当前源树核对过的落点与代表性 `TEST_METHOD`。
+
+|!旧示例关注点|!当前所有者|!现有运行时 / 反射证据|
+|Actor defaults、BeginPlay、helper UFUNCTION、construction script|`Functional/Actor/AngelscriptActorLifecycleTests.cpp`|`DefaultsAndHelperFunction`、`BeginPlay`、`ConstructionScript`、`Reset`；前缀为 `Angelscript.TestModule.Actor.Lifecycle`|
+|timer pause / unpause / clear|`Functional/Actor/AngelscriptActorTimerRuntimeBehaviorTests.cpp`|`PauseUnpauseAndClearTransitionsAreObservable`；前缀为 `...Functional.Actor.TimerRuntimeBehavior`|
+|actor / component overlap 与 AddUFunction|`Functional/Actor/AngelscriptActorInteractionTests.cpp`|`ActorBeginOverlap`、`ActorEndOverlap`、`ComponentBeginOverlapAddUFunction`|
+|component BeginPlay、tick、owner、default component 与 attachment|`Functional/Component/AngelscriptComponentTests.cpp`|`BeginPlay`、`Tick`、`ActorOwner`、`Basic`、`Multiple`、`DeepAttachChain` 等|
+|unicast / multicast delegate|`Functional/Delegate/AngelscriptDelegateTests.cpp`|bound execute、unbound、clear、signature mismatch、broadcast、multiple subscribers、unbind|
+|BindWidget metadata 与属性类型|`Functional/Widget/AngelscriptWidgetBindWidgetTests.cpp`|`MetadataAndPropertyTypes`；当前只承诺已实现的 metadata / type 证据，不虚构完整 UI 生命周期|
+|属性 specifier|`Functional/Property/AngelscriptPropertyMetaMatrixTests.cpp`|`MetaSpecifiersAreReflectedOnFProperty` 检查真实 FProperty metadata / flags|
+|脚本 UObject 默认值与函数|`Functional/Objects/AngelscriptObjectModelTests.cpp`|`ReflectedDefaultsAndFunction`，另有 composition / zero-size / value layout|
+
+注意自动化路径不是机械地全部统一成 `Angelscript.TestModule.Functional.<Theme>`：历史主题同时存在 `Actor.*`、`Component.*`、`Delegate.*` 与 `Functional.*` 前缀，`Config/DefaultEngine.ini` 的 `AngelscriptFunctional` group 明确组合这些前缀。文档或运行脚本必须使用实际注册名，不能从目录路径猜 Automation ID。
+
+! 直接删除但由别层承担的内容
+
+旧示例中以下类别主要是编译重复：
+
+|!类别|!替代契约层|
+|access specifier、函数 / UFUNCTION specifier、mixin|语法、Compiler、ClassGenerator 与函数主题|
+|array、map、struct、enum|容器 binding、类型系统、结构 / 枚举语义测试|
+|format string|字符串插值、格式化与 FString / FText binding 测试|
+|math|数学 binding 的入口 smoke 与对应 Coverage 矩阵|
+|BehaviorTree node 示例|旧内容只有编译检查；真正执行需要 AI / BT harness，本迁移没有为保留示例分类而新建基础设施|
+|Character input 示例|编译表面已有输入 / class-generation 契约；真实 input dispatch 需要独立 harness|
+
+`DeleteAsCovered` 不等于断言“产品行为天然正确”。它只说明旧编译片段没有比现有契约提供更多证据。若未来需要 AI task 执行或 input dispatch，应在 AI / Input 主题建立真实 harness，而不是复活通用 Examples 桶。
+
+! 退役后的发现与配置状态
+
+当前只读核对结果：
+
+* `Plugins/Angelscript/Source/AngelscriptTest/Examples/` 不存在；
+* plugin test source 与 `Config/DefaultEngine.ini` 中不存在 `ScriptExamples`、`AngelscriptScriptExampleTestSupport` 或 `RunScriptExampleCompileTest`；
+* `Config/DefaultEngine.ini` 不再定义 `AngelscriptExamples` group；
+* `TestCatalog.md` 已明确记录 Examples 测试层退休，并把 `Script/Examples/**` 留作示例资产表面。
+
+但是 `Documents/Guides/Test.md` 的“常用 group”列表当前仍列出 `AngelscriptExamples`，与配置事实不一致。这是活跃文档漂移，不应在本 Wiki 页中继续宣称清理完全闭环；维护者应从该列表移除旧 group，或若要恢复同名聚合入口，则必须在 config 中重新定义清晰的新 filters，而不能让一个不存在的名字留作指令。
+
+<<as-callout warning "不要混淆历史计划引用">>
+`Documents/Plans/` 的旧 roadmap 仍可能提及 `AngelscriptExamples`，但该目录已被项目标记为 legacy。判断当前入口以 `Config/DefaultEngine.ini`、当前测试注册与 `Documents/Guides/` 为准；历史记录可保留上下文，不应被当成活跃 group。
+<</as-callout>>
+
+! 如何审查新的示例
+
+新增 `Script/Examples/*.as` 时，先问示例与测试分别拥有什么：
+
+# 示例是否为读者展示一个完整、清楚、可迁移的使用模式？
+# 已有 binding / syntax test 是否证明 API 可见？若已证明，不重复写“只编译”测试。
+# 示例是否依赖真实 runtime 行为？把该行为抽成主题功能测试，断言 world / UObject / component / delegate 的可观察状态。
+# 测试 fixture 是否能独立于示例文案存在？若测试只能靠复制整篇示例才能运行，通常说明行为边界还没提炼出来。
+# 示例变更是否引入新的产品承诺？若是，在对应主题补最小契约；若只是重排教学步骤，无需为每个版本复制自动化。
+
+好的分工是：示例回答“用户怎样写”，binding / compiler 测试回答“声明能否成立”，functional test 回答“在 Unreal 生命周期里会发生什么”。三者可以引用同一概念，但不应由一个 `ScriptExamples` 前缀混成一层。
+
+! 失败诊断
+
+|!现象|!优先检查|
+|运行 `-Group AngelscriptExamples` 无结果|该 group 已从 config 退休；改用 `AngelscriptFunctional` 或真实主题前缀|
+|示例编译通过但实际不工作|查拥有该行为的 Functional 主题是否构造了真实 world / actor / component，而不是给示例再加编译测试|
+|迁移后某行为找不到所有者|查归档 `examples-classification.md` 的 Absorb 目标，再核对现有 method；缺失时新增主题用例，不恢复 Examples 桶|
+|文档说 group 存在、配置查不到|这是文档漂移；配置和实际注册是执行事实|
+|想删除某功能用例因为“示例已覆盖”|反向依赖错误：产品示例不是自动化行为证据，必须先确认其他测试层有等价断言|
+
+! 维护证据
+
+|!位置|!用途|
+|`Script/Examples/{Core,EnhancedInput,Extended}/` |当前 27 个面向用户的示例资产 |
+|`Plugins/Angelscript/Source/AngelscriptTest/Functional/`|吸收后的主题行为测试|
+|`Config/DefaultEngine.ini`|实际 group filters；无 `AngelscriptExamples`|
+|`openspec/changes/archive/2026-05-20-refactor-examples-into-functional-tests/examples-classification.md`|逐文件 Absorb / DeleteAsCovered 依据|
+|同一归档变更的 `design.md` / `tasks.md`|迁移顺序、目标 prefix 与历史验证记录|
+|`Documents/Guides/TestCatalog.md`|当前目录口径与退休说明|
+
+<<as-callout warning "本文验证边界">>
+本轮只做文章与只读源码 / 配置核对，没有运行测试。历史归档记录当时的执行结果；本文陈述的当前状态来自源树、配置和注册名，不把历史 PASS 当成本轮结果。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/functional-runtime-behavior-coverage" "功能运行时行为覆盖">> —— 如何区分可执行断言与负向边界
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "测试范围与基线">> —— group、prefix 与不同计数口径
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 测试体系入口

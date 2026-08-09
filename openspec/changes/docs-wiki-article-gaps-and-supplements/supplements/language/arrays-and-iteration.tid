@@ -1,0 +1,140 @@
+title: AS/Docs/zh-Hans/language/arrays-and-iteration
+type: text/vnd.tiddlywiki
+tags: Language
+caption: TArray 与安全迭代
+description: 使用 Add、Contains、FindIndex、RemoveAt、range-for 和索引循环管理有序元素。
+as-sdk-document: yes
+as-doc-key: language/arrays-and-iteration
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: tutorial
+as-content-status: draft
+as-order: 120
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[script-examples]] [[angelscript-plugin]]
+as-nav-group: language-basics
+as-nav-order: 120
+as-nav-parent: language/index
+as-feature-key: language-arrays-iteration
+
+! 创建与添加
+
+```angelscript
+TArray<int> Values;
+Values.Add(2);
+Values.Add(8);
+Values.Add(255);
+```
+
+`TArray<T>` 是有序、连续语义的容器，索引从 0 开始。它适合需要保留插入顺序、按索引访问或高效连续遍历的数据。
+
+! 两种遍历
+
+Range-for 适合只关心元素：
+
+```angelscript
+for (int Value : Values)
+{
+    Log(f"Value = {Value}");
+}
+```
+
+需要索引时使用计数循环，并把 `Num()` 缓存为本轮上限：
+
+```angelscript
+for (int Index = 0, Count = Values.Num(); Index < Count; ++Index)
+{
+    Log(f"Values[{Index}] = {Values[Index]}");
+}
+```
+
+如果循环体会增删数组，不能继续使用缓存 Count 或 range iterator。最安全的删除方式通常是从末尾向前按索引遍历，或先收集待删除项再统一修改。
+
+! 查找与删除
+
+```angelscript
+if (Values.Contains(8))
+{
+    int Index = Values.FindIndex(8);
+    if (Index >= 0)
+        Values.RemoveAt(Index);
+}
+
+Values.Remove(255);
+Values.Empty();
+```
+
+`Contains`、`FindIndex` 和按值 `Remove` 都需要线性扫描。频繁按 key 查找时考虑 `TMap`，只需成员测试/去重时考虑 `TSet`。
+
+! 值、引用与修改
+
+Range-for 中元素声明是否为值或引用决定修改是否写回容器。对复杂类型或需要原地修改时，使用当前绑定支持的引用形态并验证语义；只读遍历优先保持局部不可变，避免无意中修改共享数组。
+
+对象元素保存 UObject 句柄，数组复制复制的是这些句柄，不会深拷贝 UObject。值 struct 元素则按类型复制合同处理。
+
+! UPROPERTY 与 GC
+
+`UPROPERTY() TArray<AActor>` 可生成 `FArrayProperty` 并参与 Unreal 反射/GC。局部临时数组是否能保护 UObject 生命周期取决于脚本 VM 的引用追踪，不应把裸外部指针缓存到不受追踪的全局状态。
+
+当前插件禁止某些容器嵌套形态；遇到 template subtype 诊断时，用命名 struct 包装层次或重新设计数据模型，不要假设所有 C++ `TArray<TArray<T>>` 都能直接映射。
+
+! 性能选择
+
+* `Add` 通常摊销高效，但大量已知元素可考虑预留能力（以当前绑定表面为准）；
+* `RemoveAt` 会移动后续元素，频繁删除要注意成本；
+* `Contains` 是 O(n)，热点查找用 set/map；
+* `Empty` 清空元素，容量回收细节与 `Reset` 可能不同，以当前绑定实现为准；
+* 每帧构造/清空大数组可能产生显著分配成本。
+
+! 修改策略要在循环前确定
+
+数组遍历最容易出错的地方不是语法，而是“遍历期间谁能改变长度”。可把操作分成三类：
+
+|!操作 |!索引/迭代器是否稳定 |!推荐方式 |
+|只读查询或修改元素字段，不改长度 |通常稳定 |range-for；需要索引时使用计数循环 |
+|删除若干元素 |删除点后的索引会移动 |从尾到头删除，或先收集索引再统一处理 |
+|新增、排序、整体替换 |元素地址与顺序都可能变化 |结束本轮遍历后再应用；不要缓存元素引用跨越修改 |
+
+从尾到头删除能保证尚未访问的较小索引不受移动影响：
+
+```angelscript
+for (int Index = Values.Num() - 1; Index >= 0; --Index)
+{
+    if (Values[Index] < 0)
+        Values.RemoveAt(Index);
+}
+```
+
+空数组时初始 `Index` 为 -1，循环不会进入。若使用无符号索引，这种写法会下溢，因此 Unreal 脚本容器循环通常使用与 `Num()` 对齐的有符号整数。若删除顺序本身参与业务语义，则应先把“保留哪些元素”计算成新数组，让结果顺序显式可读。
+
+! 复制、别名与生命周期
+
+`TArray` 的“复制”必须分两层理解：容器会产生另一组元素槽位，但每个元素的复制语义由元素类型决定。
+
+* `int`、`FVector` 和脚本 struct 等值类型复制值；修改副本元素不会自动写回原数组。
+* UObject 元素复制的是受追踪句柄；两个数组可以指向同一个 Actor，修改 Actor 本身会被双方观察到。
+* 从数组取得元素引用后，如果数组发生扩容、删除、排序或整体赋值，不应继续使用旧引用。把引用限制在最短局部作用域。
+* 把数组传给函数时，按值、只读引用和 inout 的选择同时决定复制成本与可修改性；API 应让调用者一眼看出函数会不会改变数组。
+
+这也是为什么“我复制了数组，所以对象一定隔离”经常是错误推断：隔离的是句柄集合，不是 UObject 实例。
+
+! 边界检查与失败定位
+
+任何来自搜索结果、配置或远端数据的索引，在使用 `Values[Index]` 前都要满足 `Index >= 0 && Index < Values.Num()`。`FindIndex` 的 -1 是“未找到”，不是可传给 `RemoveAt` 的值。崩溃或异常出现时，至少记录数组用途、当前 `Num()`、请求索引，以及本轮是否有增删操作。
+
+|!症状 |!高概率原因 |!第一检查点 |
+|偶发越界，日志中的 Index 原本合法 |检查后数组长度被另一个调用改变 |把检查与访问放在同一局部操作内，排除回调/事件修改 |
+|删除后跳过相邻元素 |正向删除导致后续元素左移 |改成反向删除或两阶段过滤 |
+|副本修改没有影响原容器 |range 元素/函数参数按值复制 |明确使用允许的引用形态，或修改后按索引写回 |
+|每帧出现分配尖峰 |循环内反复构造临时数组或增长容量 |复用生命周期明确的缓冲区；先估算数据规模 |
+|迭代中调用回调后行为异常 |回调间接修改了同一数组 |在广播前复制必要输入，或延迟结构修改 |
+
+! 面向接口的选择
+
+如果调用方只需要顺序读取，函数不应顺手暴露一个可写共享数组；可以提供只读查询、迭代回调或返回受控快照。如果调用方需要频繁按 key 查找，继续给它数组并要求每次 `FindIndex`，等于把 O(n) 策略固化进公共 API。先确定“顺序、重复、索引、查找、序列化稳定性”五个需求，再决定 Array / Set / Map，而不是按熟悉程度选择容器。
+
+! 相关链接
+
+* <<as-doc-link "language/sets-and-maps" "TSet 与 TMap">>
+* <<as-doc-link "language/structs-and-value-types" "结构体与值语义">>
+* <<as-doc-link "language/containers-enums" "容器与枚举总览">>

@@ -1,0 +1,140 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/include-dependency-graph
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: Include 依赖图与增量失效
+description: 理解直接文件变化如何沿 #include 与类型引用扩大为受影响模块，并避免循环和过度重编译。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/include-dependency-graph
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: internals
+as-content-status: draft
+as-order: 100
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 210
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: include-dependency-graph
+
+! 文件变化不等于模块影响
+
+保存一个 `.as` 文件只给出直接变化。预处理器解析 `#include` 和条件分支后，所有消费该声明的模块都可能需要重新编译；ClassGenerator 还会沿属性、父类、函数参数和 delegate 类型传播 reload 需求。
+
+```
+changed file
+  -> direct include consumers
+  -> compiled module descriptors
+  -> reflected type dependency graph
+  -> soft/full reload set
+```
+
+前两层是源码/编译依赖，后两层是反射结构依赖。不要用“include 了所以全部 full reload”混淆两者。
+
+! 依赖方向
+
+让基础声明位于低层、业务实现位于高层：
+
+* 基础值类型和合同不 include 具体 gameplay actor；
+* mixin/函数库避免反向引用使用方；
+* 大型公共 include 的每次变更都会扩大编译扇出；
+* 循环 include 应通过前置合同、拆分模块或更清晰 ownership 消除。
+
+! 路径身份
+
+Include 解析依赖规范化的逻辑路径和 source provider。磁盘、内存、plugin/project mount 的来源不能只按绝对路径字符串混为同一文件。移动文件时同时更新 include 边、模块记录和离线虚拟路径。
+
+! 两张图，而不是一张图
+
+```text
+Source graph Gs
+  node: canonical source file
+  edge: importer --#include(active condition)--> imported file
+
+Reflection graph Gr
+  node: published script/native type/function/module
+  edge: base/property/parameter/return/delegate/component reference
+```
+
+Gs 决定哪些源码要重新 preprocess/compile；Gr 决定成功候选发布时哪些 class 需要 soft/full reload、reinstance 或 Blueprint impact。一个纯实现 include 变化可能扩大 Gs，却不改变 Gr 的 layout；一个公共 struct 字段变化会同时沿两张图扩散。
+
+! Include 边的建立
+
+预处理器必须在当前 flags、provider 和 importer logical directory 下解析目标，记录最终 canonical path：
+
+```text
+raw include text
+  → resolve relative/mount path
+  → canonical provider identity
+  → read source or emit diagnostic
+  → preprocess active conditions
+  → record importer/imported edge + provenance
+```
+
+条件分支会影响活动边。`#if EDITOR` 下的 include 在 cooked graph 中不存在；切换 Target/flags 需要使用对应 graph 重新构建，不能复用 Editor graph 猜测非 Editor 依赖。
+
+! 增量失效算法
+
+# Canonicalize changed/added/deleted source identity。
+# 沿 reverse include edges 收集直接/传递 consumers。
+# 将受影响文件归并到 compiled module candidates，去重并拓扑排序。
+# 重新 preprocess/compile candidates，但继续保留 last-good published modules。
+# 构建 old/new reflection graph 差异，分类 body、metadata、layout、defaults、component/delegate。
+# 只有全部要求的 candidate 成功后提交；再执行 reload/reinstance/retire。
+
+```text
+changed leaf C
+  ← include consumer B
+  ← public umbrella A
+  → candidate modules {A,B,C owners}
+  → old/new descriptor diff
+  → minimal safe reload set
+```
+
+“minimal”不能牺牲正确性；“safe”也不等于全量 Full Reload。源依赖和结构依赖分开正是为了避免这两个极端。
+
+! 循环与强连通分量
+
+循环 include 使初始化/声明顺序、diagnostic 和增量排序不稳定。即使预处理器有 include guard/去重，也不应把业务模块环当成正常架构。把强连通分量视为一个必须共同编译的单元会扩大扇出；更好的修复是抽取低层合同、用 handle/接口减少实体依赖，或让高层通过事件/服务访问低层。
+
+|!环来源|!重构方式|
+|两个 Actor 互 include|抽共同 struct/interface，或一侧只依赖稳定 base type|
+|FunctionLibrary 反向 include 使用者|helper 下沉到无业务依赖模块|
+|delegate payload 引用高层 class|改小型 value/id/低层 contract|
+|默认组件类型反向引用 owner|组件模块位于 owner 更低层|
+
+! Old/new 图与失败
+
+Candidate compile 期间不得覆盖 last-good dependency edges。若新 include 不存在、产生 cycle error 或下游编译失败，活动模块仍使用旧 source/reflection graph；下一次修复保存再从真实文件状态构造新 candidate。把失败候选的边提交会造成“第二次保存才更新”或误删旧类型。
+
+删除文件时 reverse edges 仍需从旧 graph 找到消费者，完成 invalidation 后才移除该 node。先删 graph node再查 consumer 会漏失效集合。
+
+! 可观测性
+
+排查增量问题至少记录 changed canonical path、reverse consumers、candidate module set、compile generation、old/new reload classification。单条 DirectoryWatcher event 不是完整证据；编辑器可能 coalesce 多个 add/change/delete，过期 generation 的异步结果必须被拒绝提交。
+
+! 排障
+
+|!症状 |!检查 |
+|依赖文件改了，消费者不更新 |依赖图是否记录实际活动条件分支 |
+|无关模块大量重编译 |公共 include 扇出、路径 alias 重复身份 |
+|删除文件后仍有旧类型 |deletion queue 与 module record 清理 |
+|只在第二次保存更新 |失效集合提交时机或事件 coalescing |
+|Editor 修改正常、cooked 漏依赖|条件 include graph 被跨 Target 复用|
+|rename 后出现重复类型|old logical node 未删除，新 physical alias 又被注册|
+|失败编译后后续无关模块反复重编|candidate edges 污染 canonical graph|
+
+! 维护不变量
+
+* 每条 edge 两端都是 canonical provider identity；
+* reverse graph 与 forward graph 在同一 generation 原子更新；
+* failed candidate 不改变 canonical published graph；
+* deletion 先用旧 reverse edges 失效消费者，再退役 node；
+* reload 分类消费 descriptor/type graph，而不是把 include edge 直接当 Full Reload；
+* Editor/cooked flags 形成各自可重现依赖图。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/preprocessor-context" "预处理上下文">>
+* <<as-doc-link "compile-module-preprocessor/source-module-identity" "源码与模块身份">>
+* <<as-doc-link "hot-reload/reload-pipeline-internals" "热重载管线">>

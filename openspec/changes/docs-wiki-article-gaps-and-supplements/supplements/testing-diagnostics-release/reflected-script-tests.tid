@@ -1,0 +1,220 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/reflected-script-tests
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: Reflected Script Test Suite
+description: 用 UAngelscriptTestSuite、AngelscriptTest metadata、精确 Automation flags、fresh per-leaf fixture 与 generation-aware registry 定义脚本自动化测试。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/reflected-script-tests
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 160
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 270
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: reflected-script-tests
+
+! 当前协议以反射 metadata 为唯一发现入口
+
+脚本 suite 继承 Runtime-owned `UAngelscriptTestSuite`。只有带 `meta=(AngelscriptTest)` 的非 static `void()` instance method 才成为 UE Automation leaf：
+
+```angelscript
+UCLASS(meta=(AngelscriptTestFlags="EditorContext;EngineFilter"))
+class UInventoryScriptTests : UAngelscriptTestSuite
+{
+    UFUNCTION(BlueprintOverride)
+    void BeforeEach()
+    {
+        // fresh leaf fixture setup
+    }
+
+    UFUNCTION(meta=(AngelscriptTest))
+    void AddingAnItemUpdatesCount()
+    {
+        AssertEquals(2, 1 + 1);
+    }
+}
+```
+
+`TEST_` 名称、`UFUNCTION(Test)`、任意普通 `void` 方法都不参与发现。显式 metadata 避免 helper/hook 被名称规则误收集，也让同一 class 可以保留非测试方法。
+
+! Suite class 的必要条件
+
+Registry 遍历当前 active module descriptors，并只接受：
+
+* 继承 `UAngelscriptTestSuite` 的 script class；
+* 非 statics class、非 struct、非 abstract；
+* 带合法 `AngelscriptTestFlags` 的 concrete suite；
+* 方法带 `AngelscriptTest` metadata；
+* 方法非 static、无参数、返回 `void`。
+
+发现阶段从 descriptor 判断，而不是扫描 UObject 全局表。因此它能与一次成功 class generation 的 module snapshot 保持一致，也能在候选编译失败时继续保留 last-good tests。
+
+! Flags 是精确 mask，不存在隐式默认
+
+`AngelscriptTestFlags` 使用分号分隔，token 前后空白会 trim：
+
+```angelscript
+UCLASS(meta=(AngelscriptTestFlags=
+    "EditorContext;ClientContext;ServerContext;CommandletContext;EngineFilter"))
+```
+
+合法 token 分为：
+
+|!类别 |!当前名称 |
+|Application Context |`EditorContext`、`ClientContext`、`ServerContext`、`CommandletContext`、`ProgramContext` |
+|环境/选择 |`NonNullRHI`、`RequiresUser`、`Disabled`、`SupportsAutoRTFM` |
+|Priority |`CriticalPriority`、`HighPriority`、`MediumPriority`、`LowPriority` |
+|Filter |`SmokeFilter`、`EngineFilter`、`ProductFilter`、`PerfFilter`、`StressFilter`、`NegativeFilter` |
+
+必须至少有一个 Application Context，并且//恰好一个 Filter//。空字符串、空 token、重复 token、未知 token 都会产生带源码位置的 discovery diagnostic；系统不会猜 `EditorContext` 或 `EngineFilter`。
+
+`#if EDITOR` 与 `EditorContext` 不同：前者决定源码是否编译/发现，后者决定一个已发现 leaf 可在哪类 Automation application context 运行。引用 Editor-only API 时通常两层都要正确表达。
+
+! Registry snapshot 与 leaf 身份
+
+每个 descriptor 保存：
+
+```text
+Id = ModuleName + SuiteName + MethodName
+DisplayName
+EAutomationTestFlags
+Registry Generation
+SourceFile + SourceLine
+```
+
+Automation 展示名为：
+
+```text
+Angelscript.ScriptTests.<Module>.<Suite>.<Method>
+```
+
+普通 `Script/` source provider 的 module 来自稳定逻辑模块名；自定义 provider 应以 Automation 列表/报告中的完整路径为准，不要从物理绝对路径猜。
+
+Registry 会按 Automation 名的 normalized 结果检测碰撞。两个来源即使大小写或规范化细节不同，只要最终名字冲突，就都不发布，并分别给出 source diagnostic；不能让后者静默覆盖前者。最终 snapshot 按 module、suite、source line、method 稳定排序。
+
+! 每个 leaf 有 fresh fixture
+
+执行时 runner 从当前 registry snapshot 再解析 module、suite class 和 method，拒绝已经被移除、abstract、deprecated 或 `CLASS_NewerVersionExists` 的旧 class。随后创建 transient suite instance：
+
+```text
+fresh suite
+  → BeforeEach
+  → test method
+  → queued commands（若有）
+  → AfterEach
+  → teardown/cleanup
+  → release suite
+```
+
+`BeforeEach`、test method、command callbacks 与 `AfterEach` 共享这个 leaf instance；不同 leaf 不共享字段。需要共享昂贵的只读输入时，仍应确认其生命周期和并行安全，不能借 static/global 绕过 fixture 隔离。
+
+Hook 通过 `UFUNCTION(BlueprintOverride)` 覆盖 native `BlueprintNativeEvent`：
+
+```angelscript
+UFUNCTION(BlueprintOverride) void BeforeAll() {}
+UFUNCTION(BlueprintOverride) void BeforeEach() {}
+UFUNCTION(BlueprintOverride) void AfterEach() {}
+UFUNCTION(BlueprintOverride) void AfterAll() {}
+```
+
+! BeforeAll/AfterAll 的作用域
+
+`BeforeAll` / `AfterAll` 使用独立的 suite-scope instance，作用域是当前 worker 与 registry generation，而不是整个进程永久单例：
+
+```text
+open generation session
+  → suite BeforeAll once per worker/generation
+  → zero or more fresh leaves
+  → suite AfterAll when session closes
+```
+
+BeforeAll 失败会阻止该 worker/generation 中该 suite 的 leaves，但 session 仍尝试 AfterAll。AfterAll 失败作为 terminal suite diagnostic 保留，不应覆盖已有 leaf failure。
+
+World helper 属于 method leaf；`CreateTestWorld` 明确拒绝 BeforeAll/AfterAll phase。需要 World/actor/subsystem 的资源应在 BeforeEach/test method 创建，并由 leaf cleanup 回收。suite-scope hook 适合不依赖 leaf World、能明确恢复的外部准备。
+
+! 同步与 latent authoring
+
+普通断言可以直接写在 test method。需要跨帧等待时使用 `FAngelscriptTest::Commands()`：
+
+```angelscript
+UFUNCTION(meta=(AngelscriptTest))
+void CompletesOnNextTicks()
+{
+    FAngelscriptTest::CreateTestWorld(false);
+    auto Actor = FAngelscriptTest::SpawnActor(AMyActor);
+
+    FAngelscriptTest::Commands()
+        .Do(n"Kick")
+        .Until(n"IsComplete", 5.0f)
+        .Then(n"Verify")
+        .OnTearDown(n"RestoreGlobalOverride");
+}
+```
+
+队列构建仍是同步的；`Until` 后面的源码不会等条件完成。断言异步结果要放在 `Then` callback。SmokeFilter 和 SupportsAutoRTFM leaf 被要求保持同步，若排入 latent commands 会失败。
+
+World、objects、actors、components 与 queue 的详细所有权见 <<as-doc-link "testing-diagnostics-release/script-test-world-tools" "Script Test World 与清理工具">>。
+
+! 预期错误不是“忽略日志”
+
+测试失败应通过 suite 上的 assertion/expected-log helpers 进入当前 `FAutomationTestBase`。预期 error/warning 要提供非空 pattern、匹配方式与 occurrence；runner 会在终态核对，不应通过全局关闭日志或吞掉异常来让 leaf 变绿。
+
+脚本 assertion 会设置受控异常，runner 用 source/call stack 归因当前 leaf；非受控 VM exception 则保留 exception string 与调用位置。teardown/AfterEach 仍应运行，并将其错误追加为独立诊断。
+
+! Hot reload 的 generation 边界
+
+Registry 每次成功 rebuild 分配递增 generation，并让 Automation bridges 对应新 snapshot。active session 与命令 identity 都携带 generation，防止旧列表中的 leaf 错跑到新 class body。
+
+```text
+old generation callbacks active
+   ↓ file change queued
+callback boundary / cancel affected latent leaf
+   ↓ AfterEach + teardown + World cleanup
+old AfterAll while old suite still valid
+   ↓ successful class generation + registry rebuild
+new generation names/functions become visible
+```
+
+候选脚本编译失败时不发布新 registry，last-good generation 继续可发现。若 Automation 缓存命令已经不存在，runner 报“refresh and rerun”，而不是用相同字符串去猜一个新 method。
+
+! 常见不发现/不执行问题
+
+|!现象 |!原因 |!定位 |
+|suite 完全不出现 |abstract/statics/struct、未继承 base、缺/错 flags、discovery disabled |看 registry build diagnostics，不先查命名 |
+|只有某个 method 不出现 |缺 `AngelscriptTest`、static、有参数、非 void |看方法 source line diagnostic |
+|提示 exactly one Filter |没 filter 或同时写了两个 filter |保留一个 Smoke/Engine/Product/Perf/Stress/Negative |
+|Editor 编译报未知类型 |只有 `EditorContext`，没有 `#if EDITOR` 保护 Editor-only API |修正 compile-time boundary |
+|名字 collision |module/suite/method 规范化后相同 |更改稳定逻辑名称，不能依赖大小写区分 |
+|测试列表仍是旧版本 |新 compile/generation 未成功，或 Automation cache 未刷新 |先看 compile/rebuild diagnostics，再 refresh |
+|BeforeAll 失败后 leaves 未跑 |设计的 suite session gate |修复 setup；确认 AfterAll 诊断仍记录 |
+|BeforeAll 中 World helper 失败 |World 是 per-leaf 资源 |移到 BeforeEach/test method |
+|latent leaf reload 时取消 |generation/class stack 不能跨 reload 迁移 |让 teardown 幂等，刷新后重跑新 leaf |
+
+! 推荐的最小作者流程
+
+# 选择 suite 的 application contexts 与唯一 filter；
+# 建 concrete `UAngelscriptTestSuite` 子类并显式写 flags；
+# 用 `BeforeEach/AfterEach` 管理 per-leaf fixture；
+# 给每个目标 `void()` instance method 加 `meta=(AngelscriptTest)`；
+# 纯逻辑保持同步，需要 World/latent 时才使用 facade；
+# 在 Automation 列表中核对完整 display name、flags 和 source location；
+# 失败时先区分 discovery diagnostic、hook failure、leaf assertion、timeout 与 reload invalidation。
+
+! 源码锚点
+
+* `Testing/AngelscriptTestSuite.h/.cpp`：native abstract transient base 与四个 hooks；
+* `Testing/AngelscriptScriptTestRegistry.h/.cpp`：flags parser、descriptor validation、collision、sort 与 generation snapshot；
+* `Testing/AngelscriptScriptTestAutomation.h/.cpp`：Automation bridge 和 per-worker/generation BeforeAll/AfterAll session；
+* `Testing/AngelscriptScriptTestRunner.h/.cpp`：fresh leaf fixture、phase、callback、失败和 cleanup；
+* `Script/Tests/Test_ReflectedScriptSuites.as`：项目内的纯逻辑、fixture、expected error、World、fluent 与多-context 示例。
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/script-test-suite-runner" "脚本测试 Runner">>
+* <<as-doc-link "testing-diagnostics-release/script-test-world-tools" "脚本测试 World 工具">>
+* <<as-doc-link "compile-module-preprocessor/compile-failure-atomicity" "编译失败原子性">>
+* <<as-doc-link "compile-module-preprocessor/conditional-compilation" "条件编译与 Editor-only 边界">>

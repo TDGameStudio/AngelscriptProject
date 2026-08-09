@@ -1,0 +1,132 @@
+title: AS/Docs/zh-Hans/start/project-script-layout
+type: text/vnd.tiddlywiki
+tags: Start
+caption: Script 目录与文件布局
+description: 组织项目脚本、可打包内容、示例和测试，理解相对路径如何形成稳定模块身份。
+as-sdk-document: yes
+as-doc-key: start/project-script-layout
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[script-examples]] [[project-guide]]
+as-nav-group: getting-started
+as-nav-order: 60
+as-nav-parent: start/index
+as-feature-key: start-project-script-layout
+
+! 根目录约定
+
+项目 `.as` 文件放在与 `.uproject` 平级的 `Script/`。子目录可以按领域组织；相对路径会参与模块、诊断和离线验证中的稳定源码身份，因此文件布局最好从一开始就可维护。
+
+```text
+Script/
+├── Game/              # 可被项目运行/打包内容引用的正式脚本
+│   ├── Actors/
+│   ├── Components/
+│   └── Systems/
+├── Automation/        # 脚本自动化入口
+├── Tests/             # 脚本级测试 fixture
+└── Examples/          # 教学/演示，默认不作为正式 gameplay 资产依赖
+```
+
+本仓库的 `Script/Game/Example_Actor.as` 特意位于 Game 分支，因为测试 Blueprint 在打包后仍需解析其父类；教学示例则放在 `Script/Examples/`，避免把示例误当成产品依赖。
+
+! 命名建议
+
+* 文件名表达主要职责，如 `InventoryComponent.as`、`MatchSessionSubsystem.as`；
+* 一个文件可包含协作紧密的类型，但避免演变成无法定位的“所有脚本”；
+* 目录按业务域优先，而不是机械复制 C++ module 层级；
+* 会被 Blueprint/资产长期引用的 class 名保持稳定；
+* rename 文件与 rename class 是两件事，后者可能需要 CoreRedirect。
+
+! 相对路径为什么重要
+
+编译诊断、模块依赖、测试名称和离线 bundle 都需要稳定的逻辑路径。UE-validation profile 把 `--script-root` 视为项目 `Script/` 根；例如相对路径 `Foo/Bar.as` 映射到 `/Angelscript/Game/Foo/Bar.as`，用于精确替换导出 bundle 中的同一来源。
+
+不要把任意父目录当作 script root，也不要依赖个人机器绝对路径形成模块身份。显式 project bundle 会完整替代 packaged default，不会把两个不完整目录猜测合并。
+
+可以把同一个脚本的身份分成三层：
+
+|!层 |!示例 |!主要消费者 |
+|物理位置 |`<Project>/Script/Game/Inventory/InventoryComponent.as` |文件监视器、编辑器、版本控制 |
+|逻辑脚本路径 |`Game/Inventory/InventoryComponent.as` 或离线映射后的 `/Angelscript/Game/...` |预处理、诊断、模块身份、离线验证 |
+|反射类型身份 |`UInventoryComponent` 对应的生成类型与稳定 class 名 |Blueprint、资产、运行时对象、热重载 |
+
+移动文件主要改变前两层，重命名 class 会改变第三层；二者同时发生时，诊断路径、include 消费者与持久资产引用都会变化。把它们拆成两个可验证步骤，才能知道失败来自源码发现还是类型迁移。
+
+! 正式内容、示例与测试的边界
+
+|!目录 |!用途 |!可否被正式资产依赖 |
+|`Script/Game/` |项目 gameplay 与可打包脚本 |可以 |
+|`Script/Examples/` |可阅读/复制的教学资产 |不建议作为产品依赖 |
+|`Script/Tests/` |脚本级测试类与 fixture |只在对应测试配置中 |
+|`Script/Automation/` |自动化入口或运行编排 |不作为 gameplay API |
+
+把“临时尝试”放进正式 Game 路径后再删除，可能让 Blueprint 留下父类或属性引用。实验代码最好先放独立文件并避免创建持久资产依赖。
+
+! include 与依赖
+
+如果使用 `#include`，让依赖方向从高层业务指向更基础的声明，避免互相包含。移动被广泛 include 的文件会扩大重编译范围；删除文件前先搜索 include、生成 class 和 Blueprint 资产使用方。
+
+推荐让依赖大致保持单向：
+
+```
+Game/Features/*
+  -> Game/Systems/*
+    -> Game/Shared/*
+
+Examples/*  -X->  Game 的正式资产依赖
+Tests/*     -X->  shipping gameplay 依赖
+```
+
+这里的 `-X->` 表示不要让右侧的正式内容反向依赖教学或测试目录。目录本身不会自动建立 C++ module 一样的可见性边界；真正的边界仍由 include、类型引用、资产父类和构建配置形成，所以需要用搜索与构建结果验证。
+
+! 新增、移动和删除的工作流
+
+!! 新增正式脚本
+
+# 在对应业务域创建文件，不先堆进 `Game/Misc/`；
+# 给公开 class 选择能长期保持的名称；
+# 保存并确认诊断使用预期逻辑路径；
+# 如果生成 Unreal 类型，再确认 Blueprint/资产能从预期父类表面找到它；
+# 只有教学代码才进入 `Examples/`，只有验证 fixture 才进入 `Tests/`。
+
+!! 移动已有脚本
+
+# 先搜索直接 `#include`、类型使用者、测试/示例引用和离线配置；
+# 只移动文件，暂时保持 class 名不变；
+# 保存后确认旧逻辑来源退出、新逻辑来源进入，且没有同一类型被两个来源同时提供；
+# 修复 include 和工具参数，再验证 Blueprint/资产引用；
+# 若还需要重命名 class，作为下一次独立变更处理，并按类型迁移合同评估 CoreRedirect。
+
+!! 删除脚本
+
+删除前先证明没有生成类型的持久消费者。源码搜索只能找到文本引用，不能替代 Blueprint/资产依赖检查。删除后若最后成功模块仍在当前进程中可见，也不能据此判断交付已完成；重新启动或独立验证必须确认旧来源不再参与新构建。
+
+! 采用清单
+
+# 确定正式脚本与 Examples/Tests 的分界；
+# 为 gameplay 领域建立少量稳定顶层目录；
+# 保持相对路径、class 名与 Blueprint 依赖可追踪；
+# 文件移动或类型重命名时记录影响，而不是只看编译是否通过；
+# 需要离线验证时，把项目 `Script/` 本身传给 `--script-root`。
+
+! 结果检查与失败信号
+
+|!动作 |!成功结果 |!失败信号 |
+|新增文件 |只出现一个预期逻辑来源，诊断可回到该文件 |文件未扫描、重复模块身份、依赖了个人绝对路径 |
+|移动文件 |消费者改到新路径，旧路径不再提供来源 |旧新来源并存、include 仍指旧位置、离线结果与 Editor 不一致 |
+|重命名 class |新生成类型成为 canonical，资产迁移有明确策略 |同名冲突、ParentClass 丢失、旧类型只在当前热重载会话残留 |
+|删除文件 |新启动/新构建不再发现来源且无消费者断裂 |仅当前会话“看起来还可用”、Blueprint 仍依赖旧父类 |
+|离线验证 |相同相对路径替换导出 bundle 中相同来源 |错误 script root 产生第二套逻辑路径或验证了错误目录 |
+
+当 Editor 与离线工具对同一文件给出不同逻辑身份时，先停止内容修改，核对各自的 script root 和 bundle 选择。路径合同不一致时继续修语法，只会制造两套互不对应的诊断。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/source-module-identity" "模块与文件布局">>
+* <<as-doc-link "hot-reload/class-rename-and-removal" "类重命名、删除与重定向">>
+* <<as-doc-link "start/editor-compile-loop" "Editor 编译迭代">>

@@ -1,0 +1,96 @@
+title: AS/Docs/zh-Hans/showcase-lab/pattern-composition
+type: text/vnd.tiddlywiki
+tags: ShowcaseLab
+caption: Pattern 可复用组合
+description: 把代码、注释、时间线、状态、调用序列与来源信息组成有阅读顺序和文本回退的技术文档模式。
+as-sdk-document: yes
+as-doc-key: showcase-lab/pattern-composition
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 30
+as-content-revision: 2
+as-sources: [[openspec]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 130
+as-nav-parent: showcase-lab/index
+as-feature-key: showcase-pattern-composition
+
+! Pattern 比组件多一层合同
+
+P01–P16 描述完整讲解结构，例如可运行 Actor、逐行走读、注释范围、C++/Blueprint/AS 对照、生命周期时间线、状态机、调用序列、数据流、依赖图、决策树、证据矩阵和占位迁移模板。
+
+Pattern 必须规定：内容字段、阅读顺序、来源、失败/alternate path、窄屏布局和非视觉文本回退。仅把几个漂亮卡片拼在一起不构成可复用模式。
+
+当前 P02、P03、P04、P07、P08、P09、P10 已有映射页面；P01、P05、P06、P11–P16 仍是 gap。已映射也只证明各自 Catalog `planned-verification` 描述的组合，不是通用图表库。
+
+! 一份 Pattern 的作者合同
+
+|!部分|!必须说明|
+|目的|它比普通正文/表格解决了什么关系|
+|权威输入|完整 fixture、source key、revision、数据 schema|
+|参数|必填/可选字段、默认值、合法范围、escaping|
+|阅读顺序|视觉布局改变时仍保持的语义顺序|
+|交互|键盘操作、focus、选择/展开状态、reset|
+|alternate/failure|分支、错误、缺数据和不兼容 schema 怎样呈现|
+|responsive/print|窄屏堆叠顺序、局部滚动、打印/静态 fallback|
+|采用边界|哪些真实文档适用，哪些只需表格/正文|
+
+P09 call sequence 不能只画成功箭头；需要参与者、同步/异步含义、alternate/failure 和顺序文本。P10 data flow 需要节点 owner、输入/产物和 transform，而不是把一般控制流误标为“数据流”。
+
+! 选择最小表达
+
+|!关系 |!表达 |
+|连续步骤 |有序列表/时间线 |
+|状态与 guard |状态表/状态机 + 文本路径 |
+|多个参与者交互 |sequence + 逐步文字 |
+|来源到多个输出 |data-flow/依赖图 + 节点/边表 |
+|精确字段对比 |表格 |
+|单段解释 |正文，不需要图 |
+
+图不是默认升级。若关系只有两个值或一个步骤，用表/正文更容易复制、搜索和打印。只有多个参与者、三条以上依赖、状态转换或多输出映射使线性文字明显难读时才选择可视 Pattern。
+
+! 已映射 Pattern 的差异
+
+|!ID|!核心问题|!不可互换之处|
+|P02 Line explanation|哪些关键行做什么|按源码顺序逐行/范围说明，不表达跨参与者时序|
+|P03 Key-path annotations|长源码中哪些分支/范围重要|突出非连续路径，仍要有文本 note association|
+|P04 AS/C++ comparison|两种实现的 ownership/default/API 差异|“对应”不表示语义同一，必须标 provenance|
+|P07 Lifecycle timeline|事件按时间、owner、re-entry/skip 怎样发生|不是任意 numbered list；需生命周期边界|
+|P08 State transition|合法状态、trigger、guard、failure|必须覆盖非法/失败转换和表格 fallback|
+|P09 Call sequence|参与者之间消息顺序与替代路径|不能用 data-flow 的“产物转换”语义代替|
+|P10 Compilation data flow|输入经 owner/transform 变成哪些 artifact|不负责说明每个运行时调用的时序|
+
+! 从真实页面提取 Pattern
+
+# 先在真实中文文档用普通语义结构写清内容。
+# 识别重复关系，而不是重复 CSS 外观；至少有一个真实采用页。
+# 选择权威 fixture/data，把 source/revision 从页面装饰变成必填 evidence。
+# 定义参数和空/错状态，再实现视觉布局。
+# 保留与视觉区域等价的有序列表、表格或描述列表；DOM 顺序优先于 CSS 排列。
+# 在 Catalog 中登记 ID、tier、purpose、state、coverage 和 planned verification；只有真实 page-title 存在才 mapped。
+# 后续采用者调用 Pattern 合同，不复制内部 HTML/JS。
+
+! 反模式
+
+* 为一页内容抽象十几个可选参数，作者必须理解内部 DOM 才能用；
+* 数据写在组件实现里，来源 revision 无法更新；
+* 图上有信息但文本 fallback 只写“见上图”；
+* mobile 通过任意 CSS order 改变因果/时间阅读顺序；
+* 点击节点每次持久写 tiddler，造成脏状态和性能问题；
+* 组件在 missing data 时留下空白；
+* AS/C++/Blueprint 对照只比较行数或外观，隐去 lifecycle/ownership 差异。
+
+! 来源优先
+
+代码 walkthrough 的片段应来自权威 fixture，行号/注释范围随源码 revision 更新。架构图必须标 ownership 和 optional boundary；对照图明确“相似用途”不等于“语义完全相同”。
+
+! 维护与失效
+
+源码 revision 更新时，先检查行/range match 和语义说明；不能只把 commit 字符串改新。若组件 schema 改变，旧采用页需要兼容 adapter 或可读错误。Pattern 的 DOM/参数是作者 API：视觉重做也要保护阅读顺序、复制、打印和现有调用。
+
+! 相关链接
+
+* <<as-doc-link "showcase-lab/base-authoring-primitives" "Base 作者基线">>
+* <<as-doc-link "showcase-lab/recorded-fixtures" "Recorded Fixture">>

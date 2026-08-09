@@ -1,0 +1,114 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/configurable-script-skip-directories
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: 可配置脚本跳过目录
+description: 通过 UAngelscriptSettings 中的可配置列表替代硬编码目录名，控制 cooked 构建与编辑器构建中哪些脚本子目录被跳过。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/configurable-script-skip-directories
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 40
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: configurable-script-skip-directories
+
+! 概述
+
+在 Unreal AngelScript 的脚本源文件发现阶段，源文件遍历器（source walker）会根据构建模式跳过特定子目录，以避免将仅用于开发或仅用于编辑器的脚本文件编译进 cooked 构建产物。
+
+本特性将原先硬编码的目录名判断替换为项目可配置的列表，存放于 `UAngelscriptSettings` 的两个属性中：
+
+* `DevelopmentOnlyScriptDirectories`——开发专用目录列表，默认值 `Examples`、`Dev`。
+* `EditorOnlyScriptDirectories`——编辑器专用目录列表，默认值 `Editor`。
+
+项目可在不修改插件代码的前提下，通过配置覆盖上述默认值，从而扩展、缩减或重命名需要跳过的目录。
+
+! 配置属性参考
+
+!! DevelopmentOnlyScriptDirectories
+
+| 属性 | 说明 |
+|---|---|
+| 所属类型 | `UAngelscriptSettings` |
+| 属性名 | `DevelopmentOnlyScriptDirectories` |
+| 默认值 | `["Examples", "Dev"]` |
+| 生效条件 | `bSkipDevelopmentScripts` 为 `true` 时（cooked 构建、cook 命令行工具、模拟 cooked 模式） |
+| 空列表语义 | 不跳过任何目录（该类别） |
+
+!! EditorOnlyScriptDirectories
+
+| 属性 | 说明 |
+|---|---|
+| 所属类型 | `UAngelscriptSettings` |
+| 属性名 | `EditorOnlyScriptDirectories` |
+| 默认值 | `["Editor"]` |
+| 生效条件 | `bSkipEditorScripts` 为 `true` 时（编辑器脚本被排除的构建模式） |
+| 空列表语义 | 不跳过任何目录（该类别） |
+
+! 跳过逻辑
+
+源文件遍历器在遍历 `.as` 源文件时，按以下规则决定是否跳过某个子目录：
+
+# 检查 `bSkipDevelopmentScripts` 标志。若为 `true`，则将当前目录名与 `DevelopmentOnlyScriptDirectories` 中的每一项对比；命中则跳过该目录及其所有子目录。
+# 检查 `bSkipEditorScripts` 标志。若为 `true`，则将当前目录名与 `EditorOnlyScriptDirectories` 中的每一项对比；命中则跳过。
+# 两个标志均不命中时，目录正常遍历，其中的 `.as` 文件参与编译。
+
+所有脚本发现代码路径（包括 `FAngelscriptDiskSourceProvider` 和遗留的 `FindAllScriptFilenames` 路径）均查询同一份配置列表，保证行为一致。
+
+! 场景速查
+
+!! 场景 1：默认配置下 cooked 构建跳过哪些目录
+
+* 条件：`bSkipDevelopmentScripts` 为 `true`，未修改项目配置。
+* 结果：名为 `Examples` 和 `Dev` 的目录被跳过；名为 `Editor` 的目录在 `bSkipEditorScripts` 同为 `true` 时也被跳过。
+* 效果：上述目录中的 `.as` 文件不会被编译进该构建。
+
+!! 场景 2：添加自定义开发目录
+
+* 条件：项目将 `DevelopmentOnlyScriptDirectories` 配置为包含 `Sandbox`（追加或替换均可）。
+* 结果：`bSkipDevelopmentScripts` 为 `true` 时，`Sandbox` 目录被跳过。
+
+!! 场景 3：重命名编辑器目录
+
+* 条件：将 `EditorOnlyScriptDirectories` 配置为 `["EditorTools"]`。
+* 结果：`EditorTools` 被跳过；原来名为 `Editor` 的目录''不再''被跳过。
+
+!! 场景 4：编辑器内运行时不跳过任何目录
+
+* 条件：`bSkipDevelopmentScripts` 为 `false`（如编辑器内运行）。
+* 结果：`DevelopmentOnlyScriptDirectories` 中的目录均''不''被跳过，其文件正常编译。
+
+!! 场景 5：空列表使该类别不跳过任何目录
+
+* 条件：将 `DevelopmentOnlyScriptDirectories` 设为空数组。
+* 结果：即使 `bSkipDevelopmentScripts` 为 `true`，也不会因"开发专用"理由跳过任何目录。
+
+! 与先前行为的兼容性
+
+<<as-callout note "默认值保持向后兼容">>
+当项目未设置任何配置覆盖时，跳过目录的集合与旧版硬编码实现完全一致（`Examples`、`Dev` 为开发专用，`Editor` 为编辑器专用）。升级后无需修改任何配置即可维持相同行为。
+<</as-callout>>
+
+! 边界与注意事项
+
+<<as-callout warning "目录名匹配为精确匹配">>
+当前 `FAngelscriptDiskSourceProvider::FindScriptFiles` 直接用 `FoundDirectory == TEXT("Examples")`、`"Dev"`、`"Editor"` 比较，不支持通配符、路径前缀或用户自定义目录名。`FString::operator==` 默认是大小写敏感比较，因此只有精确大小写匹配才跳过。`Examples`/`Dev` 由 `bSkipDevelopmentScripts` 控制，`Editor` 由 `bSkipEditorScripts` 控制。
+<</as-callout>>
+
+<<as-callout warning "跳过作用于整棵子树">>
+一旦某目录被判定为跳过，其全部子目录也不再遍历，其中的所有 `.as` 文件均不参与此次编译。请避免在应跳过的目录下嵌套需要编译的脚本文件。
+<</as-callout>>
+
+<<as-callout note "配置类与配置文件路径">>
+`UAngelscriptSettings` 的具体配置文件路径及 ini 节名称待对照源码与项目文档核实。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/index" "编译模块预处理器">> —— 编译流水线入口
+* <<as-doc-link "compile-module-preprocessor/script-source-provider" "脚本源文件发现">> —— 源文件遍历器整体流程

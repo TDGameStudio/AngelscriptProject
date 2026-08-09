@@ -1,0 +1,153 @@
+title: AS/Docs/zh-Hans/unreal-language/editor-only-script
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: Editor-only 脚本的编译、绑定与打包边界
+description: 区分 #if EDITOR、EDITORONLY_DATA、Editor-only 类型/函数/属性、脚本目录筛选、Automation EditorContext 与 cooked runtime，并给出安全分层模式。
+as-sdk-document: yes
+as-doc-key: unreal-language/editor-only-script
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: guide
+as-content-status: draft
+as-order: 180
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: script-features
+as-nav-order: 320
+as-nav-parent: unreal-language/index
+as-feature-key: editor-only-script
+
+! 四个不同的开关
+
+“只在 Editor 用”至少涉及四层，不能互相替代：
+
+|!层|!控制什么|!不控制什么|
+|`#if EDITOR` / `#if EDITORONLY_DATA`|预处理后是否把源码声明/语句送给 compiler|Automation runner 是否选择测试|
+|`bUseEditorScripts` / `ShouldUseEditorScriptsForCurrentContext()`|当前 engine/context 是否加载 Editor 脚本、暴露 Editor-only bind|单个测试 flag|
+|UClass/UFunction/FProperty Editor-only flags|反射类型/成员在 runtime surface 是否存在|源码是否已用正确条件隔离|
+|`EAutomationTestFlags::EditorContext`|测试能否在 Editor runner 被选中|脚本符号是否能编译、cooked 是否携带 Editor 模块|
+
+最常见错误是用运行时 `if (IsEditor())` 或 `EditorContext` 期待编译器忽略不存在的类型。名字解析发生在运行前，必须使用预处理边界。
+
+! 推荐结构
+
+```angelscript
+class UInventoryRuntimeService : UObject
+{
+    void RefreshRuntimeState()
+    {
+        // Runtime-safe
+    }
+
+#if EDITOR
+    UFUNCTION(CallInEditor)
+    void RebuildPreview()
+    {
+        // Editor API；不要让 runtime 方法反向依赖它
+    }
+#endif
+}
+```
+
+更大的工具应整文件/目录放在 Editor source group，并让 runtime 文件只保留稳定数据合同。这样 cooked source discovery 可以整体跳过，而不是在一个大文件中留下大量空洞分支。
+
+! 预处理链
+
+`FAngelscriptPreprocessor` 构建 context 时，根据当前 engine/context 填入 `EDITOR` 和 `EDITORONLY_DATA` flags，并跟踪 editor-only block lines：
+
+```text
+process/target context
+  → FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext()
+  → PreprocessorFlags[EDITOR / EDITORONLY_DATA]
+  → #if branch selection + EditorOnlyBlockLines
+  → descriptor metadata bEditorOnly
+  → AS function/type editor-only trait
+  → UFunction/FProperty/ClassGenerator editor-only flags
+```
+
+`EDITORONLY_DATA` 与 `EDITOR` 不是简单别名：前者还受 `WITH_EDITORONLY_DATA`、game/dedicated-server context 等条件影响。需要 Editor 行为/API 时使用 `EDITOR`；需要只在含 editor-only data 的目标保存字段时，才评估 `EDITORONLY_DATA`。
+
+UPROPERTY/UFUNCTION 位于受支持的 Editor 条件块时，预处理器会把 EditorOnly metadata 传给生成层。例如 Editor-only default component 会在 Editor 构造走 `CreateEditorOnlyDefaultSubobject`，cooked 中不存在。引用它的 runtime 字段/方法也必须被相同或更严格的边界隔离。
+
+! Source discovery 与绑定表面
+
+非 Editor context 不只是删掉几行代码：source provider 可跳过 development/editor script 目录；Blueprint type binder 会过滤 `FUNC_EditorOnly`、`CPF_EditorOnly`，并给类型设置 `asOBJ_EDITOR_ONLY`；subsystem 和 docs/IDE surface 也根据 `ShouldUseEditorScriptsForCurrentContext()` 决定是否注册。
+
+因此以下证据强度不同：
+
+```text
+IDE 能补全
+  < Editor 初始编译成功
+  < Editor PIE 运行成功
+  < commandlet context 成功
+  < simulate-cooked / non-Editor compile 成功
+  < packaged target 实际运行成功
+```
+
+Editor 成功不能推出 cooked 成功；commandlet 也不是“没有窗口的普通 Editor”，其模块加载、World 和交互 API 都可能不同。
+
+! 安全分层
+
+```text
+Runtime layer
+  data contracts, pure transformations, gameplay services
+          ↑ narrow interface / serialized data
+Editor layer
+  asset scanning, menus, details panels, preview rebuild, source navigation
+```
+
+Runtime 类型不应持有 Editor class property、调用 UnrealEd/EditorSubsystem，或在默认值中创建 Editor-only 对象。Editor 工具可以依赖 Runtime；Runtime 不能为了“方便”反向依赖 Editor。需要把处理结果带入 cooked 时，在 Editor/commandlet 阶段生成 runtime-owned asset/data，而不是打包 Editor service。
+
+! 默认值、组件和热重载
+
+`#if EDITOR` 中的字段/函数/组件会改变 Editor 与 cooked 的反射布局。生成器必须在各自 context 下建立自洽 class；不能把 Editor offset 用于 cooked object。热重载从 Editor generation 切换时也要把 Editor-only 结构变化当作 class change，而不是只换函数 body。
+
+Editor-only default component 在 cooked 中没有实例。runtime 代码如果无条件读取该字段，即使编译时通过某个共享 declaration，也会产生 null/offset/serialization 风险。对应访问也应在条件块内，或改为 runtime-safe optional contract。
+
+! Automation 不是编译开关
+
+`EditorContext` 只参与测试注册/runner filter。例如测试代码调用 Editor API 时，通常同时需要：
+
+```text
+source declaration under #if EDITOR
+  + engine uses editor scripts
+  + owning Editor module is loaded
+  + Automation test marked EditorContext
+  + runner actually provides required World/UI context
+```
+
+少任一项都可能失败。相反，给纯 Runtime 测试滥加 EditorContext 会掩盖 packaged/commandlet 差异。
+
+! 故障矩阵
+
+|!症状|!根因/检查|
+|Shipping 编译 unknown type/function|Editor API 只放在运行时 `if`；改用 `#if EDITOR`|
+|加 EditorContext 仍编译失败|runner flag 不改变 preprocessor/binding surface|
+|Editor UI 有按钮，commandlet 崩溃|依赖 Slate/interactive Editor 或 World；拆 commandlet-safe 路径|
+|cooked 属性 offset/序列化异常|runtime declaration 引用了 Editor-only property/type|
+|Editor-only component 在 runtime 为 null|它本来就不会 cooked 创建；隔离访问|
+|simulate-cooked 仍看到旧符号|source/cache/reload generation 未完整刷新，检查 bUseEditorScripts 与 processed code|
+|Editor 模块形成 runtime 依赖循环|所有权方向错误；把数据合同下沉 Runtime|
+
+! 发布前审查
+
+# 搜索 Runtime 文件中的 `EditorSubsystem`、`UnrealEd`、Editor-only type 和 `CallInEditor`。
+# 确认声明与所有调用都处于一致条件边界，尤其是字段 initializer、default、delegate signature 和 component attachment。
+# 确认 runtime API shape 在无 Editor 分支时仍完整；若类型整体消失，runtime asset 不得引用它。
+# 在文档中明确 Editor、commandlet、PIE 和 packaged 的适用性，不写成笼统“编辑器能用”。
+# 生成给 runtime 消费的数据时，让产物 schema 归 Runtime owner，Editor 只负责生产。
+
+! 源码地图
+
+* `FAngelscriptEngine::ShouldUseEditorScriptsForCurrentContext` 与 `bUseEditorScripts`：context 总开关。
+* `AngelscriptSourceProvider`：development/editor source discovery 过滤。
+* `AngelscriptPreprocessor.cpp`：`EDITOR` / `EDITORONLY_DATA` flags、block line/metadata 标记。
+* `Bind_BlueprintType.cpp` / `Bind_UStruct.cpp`：Editor-only type/function/property 过滤。
+* ClassGenerator property/function/default component：把 editor-only descriptor 映射到反射/构造表面。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/conditional-compilation" "条件编译">>
+* <<as-doc-link "reference-differences-version/runtime-editor-commandlet" "Runtime、Editor 与 Commandlet">>
+* <<as-doc-link "architecture-maintenance/cooked-packaging-runtime" "Cooked 与打包运行时">>
+* <<as-doc-link "unreal-language/construction-script-semantics" "构造阶段语义">>

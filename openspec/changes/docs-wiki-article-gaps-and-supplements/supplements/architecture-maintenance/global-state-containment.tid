@@ -1,0 +1,164 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/global-state-containment
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 全局状态隔离与 Engine Ownership
+description: 把可变 runtime 状态归属到具体 FAngelscriptEngine、Subsystem 或 scoped override，并保证多 Engine 与 teardown。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/global-state-containment
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 110
+as-content-revision: 3
+as-sources: [[project-guide]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 310
+as-nav-parent: architecture-maintenance/index
+as-feature-key: global-state-containment
+
+! 原则
+
+与编译模块、context、测试 leaf、debug session、coverage 或 world 相关的可变状态应归属具体 `FAngelscriptEngine` / subsystem / owner，而不是 process-global 静态。多 PIE、多 engine、commandlet 和测试并行会把“通常只有一个”假设变成跨会话污染。
+
+! 合法的全局
+
+不可变注册描述、一次性类型表或有明确引用计数/engine key 的 registry 可以全局存在；可变 override 必须 scoped，并在所有退出路径恢复原值。`Documents/Guides/GlobalStateContainmentMatrix.md` 记录现有状态分类。
+
+! 四种所有权
+
+|!状态|!正确 owner|!例子|
+|不可变进程描述|module/static descriptor|`FAngelscriptBind` phase/owner/source 记录|
+|每 engine 可变状态|`FAngelscriptEngine`/engine-owned registry|bind state、module DB、coverage/debug extensions、context pool|
+|每 World/GameInstance|对应 subsystem/context|当前 World、tick owner、gameplay session|
+|临时 override|RAII scope|默认构造 outer、测试/编译配置临时切换|
+
+“registry 是 singleton”不等于其中条目可以不带 engine identity。全局扩展目录可以保存 factory/descriptor，但 attach 后的 session/state 应挂在目标 engine，并在 detach 时清除。
+
+! 生命周期状态机
+
+```text
+Registered descriptor
+  → engine attach / create engine-local state
+  → active callbacks and work
+  → stop accepting new work
+  → detach external callbacks
+  → cancel/drain active work
+  → release module/context/type state
+  → remove engine key
+```
+
+任何失败初始化都要从已经完成的阶段逆序回滚；不能只在正常 shutdown 清理。多 engine 交错时，销毁 A 不得清 B 的 descriptor/state。
+
+! Teardown 顺序
+
+先停止新工作和外部回调，再取消 latent/debug/test 执行，解除 delegate/ticker/watcher，然后释放 context/module/type，最后清理 engine registry。反序会让回调访问已销毁 engine。
+
+delegate handle、ticker id、modular feature registration、socket/session、World pointer 和 context association 都应由注册它的 owner 保存。清理函数必须幂等：初始化中断、显式 shutdown、module unload 重复到达时不 double-unregister。
+
+! 常见泄漏
+
+* static 保存最后一个 engine；
+* test hook 设置后失败路径未 reset；
+* subsystem shutdown 未解绑 delegate/ticker；
+* debug/coverage session 持有旧 context；
+* console variable 恢复“默认值”而非进入 scope 前的值；
+* transient World 被全局 UObject 引用保活。
+
+另一个常见错误是“恢复默认值”：嵌套 scope A→B 时，B 退出必须恢复 A 的值，不是配置默认。RAII scope 保存 previous 值，并处理异常/早退，是 override 唯一可靠模式。
+
+! 审查问题
+
+# 状态由哪个 engine/world/session 创建？
+# key 中是否包含 owner identity，还是隐含“当前唯一实例”？
+# 谁停止新 callback，谁持有解绑 token？
+# 初始化第 N 步失败时，前 N-1 步怎样撤销？
+# shutdown 后裸指针、UObject strong ref、function ID、source mapping 是否仍在全局容器？
+# 第二个 engine 与第一个交错执行时是否共享 previous/current 槽位？
+# observer/dump 能否在不修改产品状态下证明清理？
+
+! 验证思路
+
+单次成功不足以证明隔离。观察第二次初始化、两个 engine 交错、失败中断与 shutdown；state dump 作为外部 observer 对比前后注册表，不向产品类添加专用测试状态。
+
+! 当前源码中的状态分类
+
+仓库并未假装已经消灭所有 static。`Documents/Guides/GlobalStateContainmentMatrix.md` 把剩余状态按语义分类，关键是让每一项有明确理由和访问规则：
+
+|!状态/入口 |!当前分类 |!约束 |
+|`FAngelscriptEngine::bGeneratePrecompiledData` |Engine instance |StaticJIT 通过当前 engine scope 的 `IsGeneratingPrecompiledData()` 读取，不在进程间泄漏配置 |
+|Blueprint library namespace 配置 |Engine instance |当前上下文 accessor 取 owner engine 的设置 |
+|`FAngelscriptOwnedSharedState::StaticNames` / `StaticNamesByIndex` |Engine shared-state |Full engine 隔离；Clone 只共享明确的编译产物缓存 |
+|`bStaticJITTranspiledCodeLoaded` |Process state |描述当前二进制是否装载 transpiled JIT，不伪装成 per-engine |
+|`GameThreadTLD` |Process/thread bridge |VM game-thread 桥接点；必须遵守线程进入/退出边界 |
+|`GAngelscriptRecompileAvoidance` / `GAngelscriptLineReentry` |待继续分类的 process state |不能因暂留就扩展新依赖，后续需给出 owner/作用域 |
+
+这张表说明 containment 的目标不是“机械禁止 static”，而是防止把请求、World、session、测试 override 等可变状态误标成 process invariant。
+
+! Global engine 与 WorldContext 桥
+
+`Core/AngelscriptEngine.cpp` 集中实现 `TryGetGlobalEngine()`、`SetGlobalEngine()` 和 `CurrentWorldContext`。它们仍是兼容/执行桥，不是授权新代码永久保存“当前 engine/world”的理由。生产路径由 Engine/GameInstance subsystem 建立 owner，短期调用通过 `FScopedGlobalEngineOverride`、`FAngelscriptGameThreadScopeWorldContext` 等 scope 暂时安装上下文。
+
+一个正确的嵌套 scope 是栈语义：
+
+```text
+进入 A：save previous P，install A
+  进入 B：save previous A，install B
+  退出 B：restore A
+退出 A：restore P
+```
+
+若退出 B 直接设 null/default，A 后半段就会在错误上下文运行。若 scope 只在正常 return 恢复，编译错误、异常或早退会污染下一次执行。因此 wrapper 必须拥有 previous 值并靠析构恢复，调用者不能手工拼成 Set/Reset 对。
+
+! 注册描述与附着状态必须分离
+
+全局 extension/bind registry 可以保存不可变 descriptor 或 factory；真正 attach 到某个 engine 后产生的 callback、context、coverage buffer、debug session 和 module/type reference 必须进入 engine-local state。
+
+|!阶段 |!全局层可以保存 |!Engine 层必须保存 |
+|Register |feature key、factory、phase、来源描述 |无活动 session |
+|Attach(E) |仍只保存描述 |E 的 instance、delegate handle、资源、状态 token |
+|Run |查 descriptor |所有可变计数、context、source/module state |
+|Detach(E) |descriptor 可留给其它 engine |只撤销 E 的 callback/resource/key |
+|Module shutdown |注销 descriptor/factory |先确保所有 engine 已 detach |
+
+若 singleton registry 直接保存一个 `CurrentSession` 指针，第二个 engine attach 会覆盖第一个；若 detach 清空整个 registry，又会误删其它 engine 的状态。键中显式包含 engine identity，才能区分“共享目录”和“共享实例”。
+
+! World 与 GameInstance 所有权
+
+`UAngelscriptEngineSubsystem` 负责 engine/editor/commandlet bootstrap；`UAngelscriptGameInstanceSubsystem` 拥有 world/game-instance context，并在活动 owner 存在时抑制 engine-subsystem fallback tick。这里的重点是''唯一 tick owner''和''上下文生命周期''，不是谁能更方便地访问全局。
+
+PIE 多实例时，每个 GameInstance/World 都需要独立 context。一个 process-global `LastWorld` 在两个 PIE 交错 tick 后必然指向“最后运行的那个”，使 timer、spawn、subsystem 查询落到错误世界。若 API 必须从当前执行恢复 World，它应由 scope/context 明确安装并在回调返回时恢复，而不是跨帧缓存。
+
+! 初始化失败的逆序回滚
+
+把初始化写成阶段表，才能保证第 N 步失败后撤销 N-1..1：
+
+|!完成阶段 |!新拥有的资源 |!回滚动作 |
+|注册 modular feature/delegate |registration handle |先 unregister，阻止新 callback |
+|建立 socket/watcher/ticker |外部事件源与 handle |stop/cancel，再解除回调 |
+|创建 debug/coverage/context session |engine-local session |标记 closing，取消执行并 drain |
+|加载 module/type cache |VM/type references |释放 context 后再卸载 |
+|发布 engine registry key |identity → state 映射 |所有下游清理完成后 remove key |
+
+清理函数应能在“只完成前两步”和“完整初始化”两种状态安全调用。用 bool 状态或可空 handle 表示实际所有权；不要因为 shutdown 通常完整就无条件释放尚未获得的资源。
+
+! 源码审计地图
+
+* `Core/AngelscriptEngine.h/.cpp`：global engine、WorldContext、engine instance/shared/process 状态的主分类入口。
+* `Core/AngelscriptGameInstanceSubsystem.cpp`：生产 world/game-instance owner 与 tick 路由。
+* `Binds/Bind_SystemTimers.cpp`：显式声明 `SetPreviousBindRequiresWorldContext(true)` 的 WorldContext 消费样本。
+* `Debugging/AngelscriptDebugServer.cpp`：矩阵中仍需继续收口显式 owner engine/world 的代表路径。
+* `Documents/Guides/GlobalStateContainmentMatrix.md`：已分类、暂留原因与低风险候选的维护基线。
+
+审计一个新 static 时，必须写出它在这张地图中的类别、所有 writer/reader、Clone 是否共享、teardown 顺序和 observer。没有这些答案，就不应以“缓存”或“全局注册方便”为由加入。
+
+! 泄漏与串扰的证据模型
+
+只比较 object count 不够。需要按 owner identity 对比四个时点：attach 前、活动中、World/GameInstance teardown 后、engine shutdown 后。合法 descriptor 可以在最后仍存在；engine session、World pointer、context、delegate handle 和 per-run buffer 则应归零。两个 engine 交错时，快照必须能证明 A 的 detach 只删除 A 的 key，而 B 的状态保持不变。
+
+异常证据也应能区分：资源仍被合法 module descriptor 引用，还是旧 world 被强 UObject reference 保活；scope previous 值未恢复，还是调用本来就在无 World 的 commandlet；callback 未解绑，还是已经排队的工作未 drain。Observer dump 只读取现有公开状态，不能为了让报告“好看”而在 dump 时触发清理。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/engine-scoped-runtime-state" "Engine-scoped Runtime State">>
+* <<as-doc-link "architecture-maintenance/observer-dump-architecture" "Observer Dump 架构">>

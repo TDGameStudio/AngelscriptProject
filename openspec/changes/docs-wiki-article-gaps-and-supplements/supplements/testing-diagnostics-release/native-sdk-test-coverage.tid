@@ -1,0 +1,214 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/native-sdk-test-coverage
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 原生 SDK 测试覆盖
+description: 原生 AngelScript 核心测试的九域结构、raw engine fixture、白盒访问边界、证据轴、705 个方法口径与 2.38 Disabled 契约。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/native-sdk-test-coverage
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: native-sdk-test-coverage
+
+! “原生 SDK”在本项目里的准确含义
+
+`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/` 测试的是 vendored AngelScript fork 的核心与公开原生接口。测试本身仍由 Unreal Automation / CQTest 承载，也会使用 `FString`、`TArray`、matcher 和 UE 构建系统；“原生”指被测 engine 通常直接由 `asCreateScriptEngine(ANGELSCRIPT_VERSION)` 创建，不经 `FAngelscriptEngine`、ClassGenerator、World / UObject 集成，也不注册 `sdk/add_on`。
+
+这条边界让失败更容易归因：
+
+```text
+raw asIScriptEngine / asCScriptEngine 失败
+    → tokenizer / parser / builder / VM / module / type system / embedding core
+
+FAngelscriptEngine、UClass、World 或 binding 路径失败
+    → Runtime integration / Bindings / Functional 等其他层
+```
+
+Native Core 可以包含 AS 内部私有头并做白盒检查，但不能把 UE wrapper 的便利注册偷偷带进 fixture，否则测试通过不能证明裸 fork 自身成立。
+
+! 当前规模：三个数字必须分开
+
+当前源树只读扫描得到：
+
+* 272 个 `AngelScriptSDK/**/*.cpp`，全部含 `TEST_METHOD`；
+* 705 个 `TEST_METHOD` 定义；
+* 其中 14 个方法位于 `EAutomationTestFlags::Disabled` 且标记 `#as-v238-backport` 的类，因此源码可发现的活跃方法为 691；
+* 项目记录的最近完整活跃前缀结果是 2026-07-31 的 `691/691 PASS`。
+
+`705 = 691 active + 14 Disabled` 是源码定义口径；`691/691 PASS` 是一次历史执行快照。两者恰好对齐不代表以后扫描数自动等于运行报告，也不能与 `275/275` 编目基线、`2396/2396` All suite 或 Standalone `19/19` 相加。
+
+<<as-callout warning "本轮没有重跑 691">>
+本页的 272 / 705 / 14 来自当前源码扫描；691/691 引用项目已有的 2026-07-31 记录。本轮按任务要求没有运行测试。
+<</as-callout>>
+
+! 九个核心域与 Support
+
+|!目录|!当前 cpp / TEST_METHOD|!主要所有权|
+|`Engine/`|13 / 48|engine property、message callback、内存、线程、原子、GC cleanup、版本与 inventory|
+|`Frontend/`|29 / 169|tokenizer、parser、script node、字符串 / source range / recovery 等前端结构|
+|`Compiler/`|32 / 122|builder declaration / function / global / layout / dependency、bytecode 生成与优化|
+|`Runtime/`|22 / 47|context、exception、return、script object、GC 与 `Runtime/Debug` 调试元数据|
+|`Module/`|19 / 52|build / discard / lifecycle、import、namespace、section、global、function、save/load|
+|`TypeSystem/`|13 / 45|primitive、typedef、enum、data type qualifier、object type、global property、config group|
+|`Language/`|126 / 166|按 Constructors、Variables、Functions、Operators、References 等子域排列的语言语义|
+|`Embedding/`|7 / 31|calling convention、generic interface、object/global registration、host callback、JIT interface|
+|`Conformance/`|10 / 15|fork 选择性语义与 2.38 desired-behavior 契约|
+|`Support/`|1 / 10|对类型 catalogue、case ID、diagnostic matcher、module scope、lifecycle / debug recorder 等 helper 自身做契约测试|
+
+九域是产品分类；Support 是测试基础设施自证，不应被包装成第十个 AngelScript 产品域。`Runtime/Debug` 中两个类仍沿用 `AngelScriptSDK.NativeDebug.*` Automation 根，属于兼容注册名；文件所有权仍在 Runtime/Debug。按目录或按 prefix 聚合时必须知道这种不完全一一对应。
+
+! Raw engine fixture 的两种层级
+
+`Support/AngelscriptNativeCoreTestSupport.h` 提供两种刻意不同的 engine 创建路径。
+
+!! `CreateNativeEngine`
+
+它创建 public `asIScriptEngine`，安装 `CaptureNativeMessage`，并显式配置 fork 的测试属性：unsafe references、character literals、multiline strings、script scanner、bytecode optimize、关闭 auto GC、named-arg syntax、ref-type value assignment 限制、implicit handle、enum scope、默认构造 / copy 实现、member init mode、switch enum typecheck 与 double type 等。
+
+`FNativeTestEngine::Create` 在此基础上：
+
+* 保存当前 `FAutomationTestBase` 与 message collector；
+* 可把 callback 换成 `FSDKBufferedOutStream::Callback`；
+* 用固定 `NativeTestEngineUserDataSlot` 把 fixture 挂到 engine user data；
+* 以 `asCALL_GENERIC` 注册脚本侧 `void assert(bool bCondition)`；
+* 任一关键注册失败就 Destroy，避免半初始化 fixture 被后续用例使用。
+
+Destroy 统一走 `ShutDownAndRelease()`，再清空借用指针。Native 测试不能只 `Release` 一个仍有 module / context 的 engine 并假装 cleanup 被覆盖。
+
+!! `CreateBareSdkEngine`
+
+它只调用 `asCreateScriptEngine` 并向下转换为 `asCScriptEngine*`，不安装 message callback，也不设置上面的 fork 属性。它用于验证默认值、内部表结构或必须观察“未配置前”状态的白盒场景。
+
+选错 fixture 会改变被测语义：用 configured engine 测默认 property 会把测试自己的 setup 当产品默认值；用 bare engine 测依赖 fork 配置的语言用例，则可能在错误阶段失败。
+
+! 编译、执行与诊断链
+
+`CompileNativeModule` 的路径是：
+
+# 参数非空；
+# `GetModule(ModuleName, asGM_ALWAYS_CREATE)`；
+# `AddScriptSection(ModuleName, Source, strlen(Source))`；
+# `Module->Build()`；
+# 通过 out pointer 暴露 module，即使 Build 返回负码也能供诊断 / 状态检查。
+
+`BuildNativeModule` 只是成功时返回 module 的便利层；负向测试若只用它会丢失具体返回码，应直接用 Compile 或更窄的 diagnostic fixture。
+
+`Support/AngelscriptNativeExecutionTestSupport.h` 中的 `AngelscriptSDKTestSupport::FSdkFunctionInvoker` 负责公开 API 执行：按完整 declaration 查函数、创建 context、Prepare、按参数槽写入、要求参数数完全匹配、Execute，并在失败时报告 declaration、执行码与异常字符串。`ExecuteScriptFunction<T>` 是它之上的标准模板入口，替代数十个文件各自复制的 `ExecuteIntEntry` / `ExecuteBoolEntry`。
+
+当前真实头名是 `AngelscriptNativeExecutionTestSupport.h`，不是旧规范中写过的 `AngelscriptSDKTestExecutionHelpers.h`。
+
+! 白盒访问：public contract 与 internal shape 分层
+
+Native Core 有意检查私有实现，例如 `asCTokenizer`、`asCParser`、`asCScriptNode`、`asCByteCode`、`asCBuilder` 与 `asCModule`。内部头必须由：
+
+```cpp
+#include "StartAngelscriptHeaders.h"
+#include "source/as_parser.h"
+#include "source/as_module.h"
+#include "EndAngelscriptHeaders.h"
+```
+
+包裹，以控制第三方头的警告 / 宏边界。不要依赖同一 Unity chunk 的另一个 `.cpp` 先包含内部定义。
+
+共享 accessor 已在 `AngelscriptNativeCoreTestSupport.h` 中核实：
+
+* `AngelscriptNativeTestSupport::FTokenizerAccessor : asCTokenizer`；
+* `AngelscriptNativeTestSupport::FParserAccessor : asCParser`。
+
+某些文件仍有针对自身内部状态的局部同名 accessor，例如 `Frontend/AngelscriptNativeParserInternalTests.cpp` 的文件局部 `FParserAccessor`。使用者必须先判断需要共享 public helper 还是单文件白盒暴露，不能通过虚构的总 umbrella 解决所有访问。
+
+白盒测试应同时保留更高层 oracle：只断言某 vector 长度或某枚举值会与实现重排过度耦合。较强的测试通常把内部形状、稳定诊断和最终执行 / cleanup 串成多层证据。
+
+! 从四层初始扩展到当前深度
+
+早期 OpenSpec 把核心扩展描述为 Tokenizer、Parser、ScriptNode、Bytecode 四层，并给出 40 / 35 / 25 / 23 的目标数。那是实施起点，不是当前目录总览。当前源码按文件名扫描已扩展为：
+
+|!层|!当前 cpp / TEST_METHOD|!路径与证据|
+|Tokenizer|11 / 66|`Frontend/AngelscriptNativeTokenizer*Tests.cpp`；token kind、最长匹配、数字边界、文本 / 注释 / BOM / EOF、definition depth|
+|Parser|8 / 56|`Frontend/AngelscriptNativeParser*Tests.cpp`；declaration、expression、diagnostic、internal、source recovery、Cartesian depth|
+|ScriptNode|6 / 33|`Frontend/AngelscriptNativeScriptNode*Tests.cpp`；shape、source range、copy、ownership、Cartesian depth|
+|Bytecode|7 / 41|`Compiler/AngelscriptNative*Bytecode*Tests.cpp`；opcode、jump、generation、optimization、mutation 与 compiled shape|
+
+这些计数是按文件名主题切片，属于九域总数的子集。例如 `BuilderBytecodeTests` 同时是 Compiler / Builder 与 Bytecode 证据。不要把 66+56+33+41 再加到 705 上。
+
+! 数据驱动的证据轴
+
+`AngelscriptNativeCaseTestSupport.h` 维护一个 18 行 `NativeTypeCases` catalogue，覆盖：
+
+* int8 / int16 / int / int64 与对应无符号类型；
+* float32 / float64、bool、enum、typedef；
+* script / native value、script / native reference、null。
+
+每行记录脚本类型、值类别、访问器（Byte/Word/DWord/QWord/Float/Double/Address/Object）、字节宽度、signedness 与零 / 一 / 最小 / 最大 / 临界字面量。两个 `static_assert` 要求恰好 18 行且 catalogue name 唯一。
+
+同一文件还定义 `ENativeEvidence` 位集：Compile、Diagnostic、Runtime、Metadata、Bytecode、Lifecycle、Debug、Cleanup、Isolation、SaveLoad、Recovery。`AS_NATIVE_PRODUCT` 把 product ID 与证据组合关联；`FNativeCaseContext` 负责稳定 case ID、module name 和 `Declaration / Expected / Actual` 报告。
+
+这套结构的价值不是“减少代码行”，而是防止笛卡尔用例只扫语法表面。一个 product row 应声明它实际提供哪些证据；没有 runtime 能力时明确写 Diagnostic / Metadata，而不是用同一个 PASS 标签掩盖证据缺层。
+
+! 14 个 Disabled 2.38 契约
+
+当前 14 个方法分布在 11 个文件，全部带 `#as-v238-backport`：
+
+* Conformance：bool context、default special members（3）、lambda、member initialization（2）、selected desired behavior、template function、using namespace、variadic function；
+* Language/Properties：registered property、indexed property、property failure 各一。
+
+它们表达“可发现但尚未选择性回移”的未来语义，不计入 691 active pass，也不等于项目另外两个 `#ue57-headless` Disabled 限制。启用条件不是删掉 Disabled flag：应先确认 fork strategy 选择该 2.38 能力，再让 parse、compile、metadata、runtime 与 cleanup 的 expected behavior 全部变绿。
+
+! Automation 发现与运行边界
+
+`Config/DefaultEngine.ini` 的 `AngelscriptNative` group 以 `Angelscript.TestModule.AngelScriptSDK.` 且 `MatchFromStart=true` 匹配。新增 `.cpp` 由 UBT 编译，不需要把文件逐个列入 `AngelscriptTest.Build.cs`；但测试类仍必须注册在正确前缀，并受 `WITH_ANGELSCRIPT_UNITTESTS` 配置控制。
+
+九域的推荐入口是：
+
+```powershell
+Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Engine" -Label sdk-engine -TimeoutMs 600000
+Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Frontend" -Label sdk-frontend -TimeoutMs 600000
+Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK.Compiler" -Label sdk-compiler -TimeoutMs 600000
+```
+
+其余 Runtime、Module、TypeSystem、Language、Embedding、Conformance 同理；完整前缀为 `Angelscript.TestModule.AngelScriptSDK`，标准 suite 为 `NativeCore`。`NativeDebug.*` 等兼容 prefix 若未被某个九域前缀覆盖，完整前缀 / group 才是最终漏测检查。
+
+! 新增 Native Core 测试的决策流程
+
+# 先判定是否真的不需要 `FAngelscriptEngine`、UObject、World 或 addon；需要则换测试层。
+# 选择九域 owner，再以行为主题命名 `AngelscriptNative<Behavior>Tests.cpp`，不新增 `ASSDK` 身份。
+# 决定 public API 还是 internal shape；白盒头必须显式、wrapped、直接 include。
+# 选择 configured `FNativeTestEngine` 或 bare `asCScriptEngine`，并写清 engine property 假设。
+# 负向编译保留返回码与稳定诊断字段；运行测试按完整 declaration 查函数，不按名字猜 overload。
+# 对矩阵声明证据轴；确保 case/module identity 唯一，cleanup / isolation 是用例的一部分。
+# 若表达未来 2.38 行为，进入 Conformance / owning Language 主题并遵守 selective-backport 标记，不混入 active pass 数。
+
+! 常见误诊
+
+|!现象|!优先检查|
+|裸 Native 测试缺 `string` / `array`|本层不注册 `sdk/add_on`；不要偷偷引入 addon，改用本地最小 registration 或换层|
+|默认 property 断言与预期不同|是否误用了 `CreateNativeEngine`，其 setup 已主动覆盖多项 property|
+|函数按名字找不到或取错 overload|使用完整 declaration，并把可用 declarations 输出到失败消息|
+|单独编译失败、Unity 通过|缺 direct include；参见 Unity Build 符号卫生，不要把 Support import 放文件顶层|
+|内部结构断言因重排全红但行为正常|区分必要 fork invariant 与偶然 layout；补 public / runtime oracle 后再决定更新白盒|
+|报告显示 691，源码扫到 705|14 个 `#as-v238-backport` Disabled 是差额，不是 skip / failure|
+
+! 源码地图
+
+|!位置|!作用|
+|`AngelScriptSDK/Support/AngelscriptNativeCoreTestSupport.h`|raw engine、message、compile、accessor 与基础 fixture|
+|`AngelScriptSDK/Support/AngelscriptNativeExecutionTestSupport.h`|`FSdkFunctionInvoker` 与 `ExecuteScriptFunction<T>`|
+|`AngelScriptSDK/Support/AngelscriptNativeCaseTestSupport.h`|18 类 catalogue、证据轴与 case identity|
+|`AngelScriptSDK/Support/AngelscriptNativeCaseSupportTests.cpp`|Support helper 自身的 10 个契约方法|
+|`Documents/Guides/TestConventions.md`|九域、文件名与测试层边界|
+|`Documents/Guides/TestCatalog.md`|691/691 快照与分层目录|
+|`Config/DefaultEngine.ini`|`AngelscriptNative` group 的实际 filter|
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/test-unity-build-symbol-hygiene" "测试 Unity Build 符号卫生">> —— Support namespace 与 direct include
+* <<as-doc-link "testing-diagnostics-release/test-engine-lifecycle" "测试引擎生命周期">> —— wrapper engine 测试与 raw engine 的区别
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "测试范围与基线">> —— 691、705、275 与 All suite 的口径
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 本主题入口

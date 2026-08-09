@@ -1,0 +1,157 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/static-jit-pipeline
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: StaticJIT 生成与分派管线
+description: 从脚本函数/字节码生成 C++、编译链接并回接 dispatch，理解 fallback、诊断与兼容边界。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/static-jit-pipeline
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 180
+as-content-revision: 3
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: internals-reference
+as-nav-order: 260
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: static-jit-pipeline
+
+! StaticJIT 的位置
+
+StaticJIT 把可支持的脚本函数转换为编译进目标的 C++ 实现，使调用不必逐条解释字节码。它不改变脚本语言或反射表面：同一 `UASFunction` dispatch 根据构建/可用性进入 JIT 实现或 VM 路径。
+
+```
+compiled script + bytecode
+  -> StaticJIT analysis
+  -> generated C++
+  -> native build/link
+  -> register function pointer
+  -> ASFunction JIT dispatch
+```
+
+! 产物链与 owner
+
+|!阶段|!输入|!产物/责任|
+|AS compiler|预处理源码、绑定 declaration|稳定 bytecode/function metadata|
+|StaticJIT analyzer/emitter|支持的 instruction、type、call target|C++ body、native form/include 需求、明确 unsupported 诊断|
+|Unreal native build|生成 C++ 与目标 module deps|链接进目标的函数入口|
+|registration|脚本函数与构建产物|`jitFunction`、`jitFunction_Raw`、`jitFunction_ParmsEntry`|
+|`UASFunction::AllocateFunctionFor`|FunctionDesc、三个指针、final/thread-safe/shape|普通或 `_JIT` dispatch UClass|
+
+选择 `_JIT` 不是“任意指针存在”：当前 non-virtual JIT 快路径要求三个入口均非空且脚本函数为 final。否则 virtual override 或参数入口不能安全固定，应走普通 dispatch/fallback。
+
+! 支持边界
+
+不是所有 VM 指令、动态调用或绑定形态都必须 JIT。遇到不支持路径应产生明确诊断或保留解释执行 fallback，不能生成语义近似但错误的 C++。
+
+支持判定要在生成阶段稳定完成。运行到某条 unsupported bytecode 才临时换解释器，会让局部临时值、异常栈和引用计数难以衔接。允许的 fallback 单位通常是整个函数/明确 call site，而不是半个基本块。
+
+动态/虚调用、generic call、复杂对象返回、异常路径和依赖只在 Runtime 可见的反射 thunk，都要有显式策略。RPC/Blueprint routing 仍由 UFunction/ProcessEvent 入口保证，JIT 只优化脚本 body，不能改写网络语义。
+
+! 语义一致性
+
+JIT 与 VM 必须在参数/返回 ABI、引用计数、对象生命周期、异常、整数/浮点语义和绑定调用上等价。性能提升不能绕过 BlueprintEvent、RPC 或 GC 路由。
+
+一致性矩阵还包括：整数溢出/转换、float32/float64 扩展、短路求值、临时对象析构顺序、null/handle、out/ref alias、source line/stack trace、WorldContext 与 compile-out。`bTrivial`/native form 是语义承诺，不是随意的优化 hint。
+
+! Build 生命周期
+
+StaticJIT 生成物属于构建产物，不应要求用户在运行时编译任意代码。脚本变化后需要重新生成/构建才能更新静态实现；Editor 热重载的 VM 路径与最终 packaged JIT 结果要分别验证。
+
+生成 C++ 必须确定排序、稳定命名并携带正确 include/module dependency；陈旧 shard 要被清理或失效，不能让 linker 继续注册旧 body。Editor 中 last-good VM module 可在脚本编译失败时继续运行，但这不代表旧 JIT 产物适合下一次发行。
+
+! Dispatch 路径
+
+`UASFunction` 保存 generic、raw 和 parms-entry 三类 JIT 指针。形状特化子类分别处理 FFrame 与 ProcessEvent `Parms`；JIT 版本必须与非 JIT 的 Byte/DWord/QWord/Float/Double/Reference/ObjectReturn 行为成对。Thread-safe 函数当前走通用路径，不能因无参就擅自选择普通 no-params fast path。
+
+! 排障
+
+|!症状 |!检查 |
+|Editor VM 正常、JIT 构建失败 |生成 C++、unsupported instruction、include/type emit |
+|两路径结果不同 |ABI、引用/析构、异常和 binding route |
+|函数始终没进 JIT |支持判定、registration 与 dispatch pointer |
+|旧 JIT body |生成物/构建未随脚本更新 |
+|只在 virtual override 错|final/non-virtual 判定或 ResolveScriptVirtual 被绕过|
+|ProcessEvent 正常、native thunk 错|raw 与 parms-entry/FFrame 实现不一致|
+|异常行号缺失|生成 body 未保留 source mapping/异常桥|
+
+! 生成器的真实源码分工
+
+StaticJIT 不是一个“把字符串写成 cpp”的单函数。维护入口分布如下：
+
+|!文件/符号 |!职责 |
+|`StaticJIT/AngelscriptStaticJIT.h/.cpp` |`FAngelscriptStaticJIT`、`FStaticJITContext`；函数命名、字节码遍历、C++ body/三入口生成、type/global/property reference |
+|`StaticJIT/AngelscriptBytecodes.h/.cpp` |每类 instruction 的 prepass、stack usage、emit 与 unsupported 边界 |
+|`StaticJIT/PrecompiledData.h/.cpp` |预编译 descriptor、序列化/装载、把三个函数指针回接到 script function |
+|`StaticJIT/StaticJITHeader.*` / `StaticJITConfig.h` |生成单元共享 ABI、helper 与配置边界 |
+|`StaticJIT/StaticJITDiagnostics.*` |生成/入口诊断，不改变 dispatch 语义 |
+|`ClassGenerator/ASFunction.cpp` / `ASFunction_JITDispatch.cpp` / `ASFunction_Dispatch.cpp` |根据函数形状和 JIT 指针选择 UFunction dispatch，实现 JIT/VM 成对入口 |
+
+`FAngelscriptStaticJIT::CompileFunction` 建立生成过程；`FStaticJITContext::GenerateNewFunction` 组装函数，最终注册形态包含 `VMEntry`、可用时的 `ParmsEntry` 和 raw function。`PrecompiledData.cpp` 装载时把它们分别写入 `jitFunction`、`jitFunction_ParmsEntry`、`jitFunction_Raw`。这条链任一处只连接一个入口，都会产生“某种调用方式正常、另一种错误”的分裂。
+
+! 三个入口为什么不能合并
+
+|!入口 |!调用者/数据形态 |!必须负责 |
+|VM entry |AngelScript VM/JIT bridge |VM stack/context、异常和返回状态 |
+|Raw entry |已知原生签名的快速调用 |准确 C++ ABI、reference/object return、生命周期 |
+|Parms entry |Unreal `ProcessEvent`/反射参数 buffer |按 property/对齐规则解包输入、写回 out/return |
+
+`ParmsEntry` 的布局不是简单把参数连续相加。生成代码按 pointer/value/type alignment 计算 offset，并为 float/double、对象、reference、返回值分别处理。若某个参数无法安全表示，`bParmsEntryValid` 必须阻止发布该入口；不能生成一个“多数类型可用”的错误 thunk。
+
+这也是 `AllocateFunctionFor` 选择 non-virtual JIT fast path 时要求三个入口均非空、函数为 final 的原因：固定 raw/params dispatch 必须证明不会绕过派生 override，也必须覆盖 Unreal 与 VM 的所有调用形态。
+
+! Bytecode 到 C++ 的状态保持
+
+`FStaticJITContext` 同时追踪 bytecode offset、虚拟 stack 表达式、materialized locals、labels/control-flow、活跃对象和 source line。每条 `FAngelscriptBytecode` 实现不仅输出表达式，还要声明 stack size change、usage flags，以及是否会修改 volatile stack。
+
+控制流合流前，纯 C++ 表达式缓存可能需要 materialize 到局部变量；否则两条 predecessor 对同一 VM stack slot 的理解不同。异常路径则必须通过 `MarkLiveObjectsForExceptionCleanup` / `ExceptionCleanupAndReturn` 销毁当前活跃临时对象，再把异常返回到统一执行模型。漏做 materialization 会产生错误值，漏做 cleanup 会泄漏/双析构。
+
+! 语义核对矩阵
+
+|!维度 |!VM 基线 |!JIT 必须保持 |
+|数值 |字节码定义的宽度、signed/float 转换 |C++ 提升规则不能偷偷改变结果 |
+|引用/out |VM address/alias 语义 |raw 与 Parms buffer 写回到同一目标 |
+|对象返回 |VM handle/value 生命周期 |AddRef/Release、构造/析构与返回存储一致 |
+|虚拟调用 |运行时解析最新 override |final 之外不能固化旧 body |
+|UFunction/RPC |ProcessEvent/网络路由 |JIT 优化 body，不旁路 Unreal routing |
+|异常 |source/stack + 活跃对象清理 |生成路径保留 line marker 与 cleanup |
+|线程 |函数描述的 thread-safe 约束 |不能误用依赖 game-thread context 的 shape fast path |
+
+维护者不应只比较普通整数返回函数。最容易暴露 ABI 差异的是 out/ref alias、对象返回、异常中间临时量、virtual override 和 ProcessEvent 参数 buffer。
+
+! 构建产物的一致 generation
+
+生成源码、precompiled metadata、链接进二进制的注册表与运行时脚本 bytecode 必须来自同一输入 generation。稳定唯一命名解决链接碰撞，但不能自动解决陈旧产物；构建流程还需清理不再生成的 shard，并确保脚本签名/hash 变化会使旧注册失效。
+
+```text
+script generation G
+  → bytecode/function id G
+  → generated C++ symbols G
+  → native object/library G
+  → FStaticJITFunction registration G
+  → load only if runtime function identity matches G
+```
+
+如果运行时只按一个会复用的数字 ID 接受旧注册，表现可能是“能进入 JIT，但执行上一次 body”。诊断应同时记录 script function identity、生成文件/符号、注册的三个指针和构建配置，而不是只看某个全局“JIT 已启用”开关。
+
+! 支持边界与失败原子性
+
+Prepass/emit 发现 unsupported instruction、无法引用的 type/property/global、无效 Parms ABI 或缺失 include/dependency 时，应让该函数/明确单元保持 VM fallback，并产生带 function/source/bytecode offset 的诊断。不能先注册部分入口，再在 native build 或装载阶段失败。
+
+发布时遵循 all-or-fallback：三个入口满足目标 dispatch shape 后一次连接；不满足则保留普通 `UASFunction`/VM 路径。构建失败也不能污染 Editor 的 last-good VM module。反过来，发行构建必须确认没有把上一轮生成物误当本轮成功。
+
+! 维护流程
+
+# 从脚本函数与实际 bytecode 定位 `FStaticJITContext` 处理的 instruction，而不是从生成 C++ 结果倒猜。
+# 同时检查 prepass/stack flags、emit、异常 cleanup 和 source marker。
+# 若新增参数/返回 ABI，成对更新 VM/raw/Parms entry 与 `UASFunction` shape dispatch。
+# 新增原生 type/global/property reference 时，检查 include、module dependency、稳定 symbol 与 precompiled serialization。
+# 对 unsupported 明确选择函数级 fallback 或拒绝生成，禁止半基本块切换。
+# 发布前核对生成源码、注册 metadata、链接二进制与 runtime function identity 属于同一 generation。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/static-jit-diagnostics" "StaticJIT 诊断">>
+* <<as-doc-link "runtime-jit-vm/as-bytecode-instruction-set" "字节码指令集">>
+* <<as-doc-link "runtime-jit-vm/uasfunction-dispatch-matrix" "函数分派矩阵">>

@@ -1,0 +1,82 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/unit-test-gates
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 单元测试编译开关
+description: WITH_ANGELSCRIPT_UNITTESTS 宏对 CQTest 与 Unreal 自动化测试注册源文件的编译门控规则。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/unit-test-gates
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 1
+as-sources: [[openspec]] [[project-knowledge-zh]]
+as-nav-group: workflow-validation
+as-nav-order: 20
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: unit-test-gates
+
+! 概述
+
+`WITH_ANGELSCRIPT_UNITTESTS` 是 AngelscriptTest 模块使用的编译宏，用于门控所有注册 CQTest 测试类或 Unreal 自动化测试的 C++ 源文件。当该宏值为 `0` 时，受门控的注册代码不会被编译进二进制，从而使项目在禁用单元测试时仍能干净构建；当值为 `1` 时，所有测试注册保持完整。
+
+构建系统通过 `bCompileAngelscriptUnitTests` 配置项来控制 `WITH_ANGELSCRIPT_UNITTESTS` 是否被设置——两者各有其职责，不可混用。
+
+<<as-callout note "宏拼写约定">>
+门控新注册站点时必须使用 `WITH_ANGELSCRIPT_UNITTESTS`，不得使用旧拼写 `WITH_ANGELSCRIPT_TESTS`。配置层（`bCompileAngelscriptUnitTests`）继续保留原名，二者均无变化。
+<</as-callout>>
+
+!! 注册源文件门控规则
+
+下表列出哪些宏在 `AngelscriptTest` `.cpp` 文件中触发门控要求。
+
+| 宏 / 模式 | 来源框架 | 是否需要 `WITH_ANGELSCRIPT_UNITTESTS` 门控 |
+|---|---|---|
+| `TEST_CLASS_WITH_FLAGS` | CQTest | 必须门控 |
+| `TEST_METHOD` | CQTest | 必须门控 |
+| `IMPLEMENT_SIMPLE_AUTOMATION_TEST` | Unreal 自动化 | 必须门控 |
+| `IMPLEMENT_COMPLEX_AUTOMATION_TEST` | Unreal 自动化 | 必须门控 |
+| `DEFINE_SPEC` | Unreal 自动化 | 必须门控 |
+| `BEGIN_DEFINE_SPEC` | Unreal 自动化 | 必须门控 |
+| 无注册宏的辅助/生成文件 | 支持类 | 需逐文件人工分类，不得盲目包裹 |
+
+!! 辅助文件分类原则
+
+不包含任何测试注册宏的 `.cpp` 文件（辅助类型、生成 AOT 桩件、模块启动支持等）须经人工检查，按以下原则处理：
+
+* 若文件仅服务于模块启动、辅助类型或生成桩件，且不注册任何自动化测试，则该文件''可以''在 `WITH_ANGELSCRIPT_UNITTESTS=0` 时继续编译——无需加门控。
+* 若检查证明文件包含仅在单元测试场景下有意义的实现，则可以有条件地加门控，但须在文件旁注明原因。
+* 禁止对辅助文件进行"机械式全量包裹"——每个豁免决定须有明确记录。
+
+!! 扩展测试模块的继承策略
+
+依赖 `AngelscriptTest` 辅助头文件或共享辅助类型的可选扩展测试模块，须接收并遵循同一套 `WITH_ANGELSCRIPT_UNITTESTS` 编译定义：
+
+* 当 `WITH_ANGELSCRIPT_UNITTESTS=0` 时，扩展模块须能无诊断地编译（特别是不得出现 `C4668` 宏未定义警告），且其 Angelscript 辅助支持的测试注册须被省略。
+* 当 `WITH_ANGELSCRIPT_UNITTESTS=1` 时，扩展模块的现有 Angelscript 自动化测试须保持注册不变。
+
+!! 构建有效性要求
+
+无论编译开关如何设置，AngelscriptTest 模块均须能成功构建：
+
+| 条件 | 预期结果 |
+|---|---|
+| `bCompileAngelscriptUnitTests=false` | 构建成功，不注册 Angelscript 单元测试 |
+| `bCompileAngelscriptUnitTests=true` | 构建成功，代表性 Angelscript 单元测试前缀可被发现并执行 |
+
+! 边界与注意事项
+
+* 门控粒度为''整个注册文件''，而非函数级别——推荐在 `#include` 块之后对文件主体采用整体门控形式。
+* `WITH_ANGELSCRIPT_UNITTESTS` 只控制测试''注册''的编译；运行时测试发现与执行由 Unreal 的自动化框架负责。
+* 门控规则的规范性描述以 `Documents/UnitTest/UnitTest.md` 为准，该文档应说明首选的整文件门控形式，并明确辅助/生成/支持文件须显式分类。
+
+<<as-callout warning "文档更新同步">>
+当新增或重构 `AngelscriptTest` 单元测试注册 `.cpp` 文件时，须同步确认 `Documents/UnitTest/UnitTest.md` 已按规范描述 `WITH_ANGELSCRIPT_UNITTESTS` 惯例，且未引用旧宏拼写 `WITH_ANGELSCRIPT_TESTS`。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 本主题的索引页
+* <<as-doc-link "testing-diagnostics-release/unit-test-gates" "CQTest 概览">> —— CQTest 框架与 `TEST_CLASS_WITH_FLAGS` / `TEST_METHOD` 用法
+* <<as-doc-link "compile-module-preprocessor/index" "编译、模块与预处理">> —— 编译定义与模块构建配置

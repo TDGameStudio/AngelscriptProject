@@ -1,0 +1,209 @@
+title: AS/Docs/zh-Hans/unreal-core/network-authority
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: 网络 Authority 与复制思维
+description: 从 Server 权威状态、Actor ownership、属性复制、RepNotify 和 RPC 方向建立可诊断的多人游戏状态流。
+as-sdk-document: yes
+as-doc-key: unreal-core/network-authority
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 140
+as-content-revision: 2
+as-sources: [[script-examples]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: unreal-development
+as-nav-order: 130
+as-nav-parent: unreal-core/index
+as-feature-key: network-authority
+
+! 复制的是状态，不是“让两边执行同一段代码”
+
+Unreal 网络模型的主线是：Server 接受合法意图并修改权威状态，复制系统把结果发给相关 Client，Client 根据复制结果更新本地表现。RPC 负责把一次意图或通知送到正确机器，不代替持久状态。
+
+```text
+Owning Client input
+        │ Server RPC（请求）
+        ▼
+Server validation → 修改权威属性 → replication/relevancy
+        │                                 │
+        │ Client RPC（仅 owner）           └→ RepNotify（相关 Client）
+        └ NetMulticast（瞬时广播，谨慎使用）
+```
+
+如果 Client 直接写 `UPROPERTY(Replicated)`，通常只是改了自己的副本；下一次 Server 更新会覆盖它。把视觉响应和权威决策分开：本地可以先播放可回滚反馈，但伤害、库存、得分、胜负等结果应由 Server 决定。
+
+! 最小权威状态
+
+仓库的 `Script/Examples/Extended/Example_NetworkReplication.as` 展示了当前可用声明：
+
+```angelscript
+class AReplicatedHealth : AActor
+{
+    default SetReplicates(true);
+
+    UPROPERTY(ReplicatedUsing = OnRep_Health, Category = "Network")
+    float Health = 100.0;
+
+    UFUNCTION()
+    void ApplyDamageOnAuthority(float Amount)
+    {
+        if (!HasAuthority())
+            return;
+
+        Health = Math::Max(0.0, Health - Amount);
+        // Server 上若也需要表现更新，应显式调用共享表现函数；
+        // 不要假设 Server 写属性一定触发自己的 RepNotify。
+    }
+
+    UFUNCTION()
+    void OnRep_Health()
+    {
+        RefreshHealthPresentation();
+    }
+
+    void RefreshHealthPresentation()
+    {
+        Log(f"Health is now {Health}");
+    }
+}
+```
+
+`default SetReplicates(true)` 让 Actor 参与复制；属性 specifier 让 ClassGenerator 把字段放进 lifetime replication list；`ReplicatedUsing` 保存通知函数名。`HasAuthority()`、`GetLocalRole()` 和 `GetRemoteRole()` 当前都可从脚本调用，但业务判断优先表达成 `HasAuthority()`，不要直接读取旧式 `Role` 属性——该属性在当前 AS 表面是明确不支持的边界。
+
+! Authority、Ownership、Local Control 不是同一件事
+
+|!概念 |!回答的问题 |!典型判断 |
+|Authority |谁能决定这个 Actor 的权威状态？ |Actor 的 Server 实例通常 `HasAuthority()` |
+|Ownership |哪条 connection 拥有这个 Actor？ |决定 Client RPC 目的地与 Client→Server RPC 是否有合法通道 |
+|Local control |这个 Pawn/Controller 是否由本进程本地玩家控制？ |`APawn.IsLocallyControlled()`，用于输入、摄像机和本地表现 |
+|Relevancy |某 Client 当前是否应接收这个 Actor？ |由 Unreal replication graph/距离/owner 等规则决定 |
+
+Listen Server 上的本地玩家同时处在 Server 进程与本地控制路径，很容易把 `HasAuthority()` 和 `IsLocallyControlled()` 混为一谈。Dedicated Server 没有本地玩家表现；普通 Client 上，本地 Pawn 可以 locally controlled，但没有该 Pawn 的 authority。写分支时先说清楚要判断的是哪一个问题。
+
+! RPC 方向与适用场景
+
+|!声明 |!合法起点与目的地 |!适合 |!不适合 |
+|`UFUNCTION(Server)` |由拥有该 Actor 的 Client 请求，在 Server 执行 |输入意图、交互请求、可验证命令 |让任意 Client 控制无 ownership 的 world Actor |
+|`UFUNCTION(Client)` |Server 调用，发到 owning Client |私有结果、owner UI、局部校正 |广播给所有 Client |
+|`UFUNCTION(NetMulticast)` |Server 调用，在 Server 与相关 Client 执行 |短暂、无持久状态的表现通知 |库存/生命值等必须补发给 late joiner 的状态 |
+|`WithValidation` |Server RPC 配套 `_Validate` |拒绝明显非法参数 |代替完整的 Server 业务校验 |
+|`Unreliable` |允许丢包 |高频且下一次可覆盖的表现数据 |一次性购买、确认、状态切换 |
+
+一个完整请求应把“不可信输入”限制在最小范围：
+
+```angelscript
+UFUNCTION(Server, WithValidation)
+void ServerUseItem(int ItemId)
+{
+    // _Validate 通过后仍要检查库存、冷却、距离和当前状态。
+    ConsumeAuthoritativeItem(ItemId);
+}
+
+UFUNCTION()
+bool ServerUseItem_Validate(int ItemId)
+{
+    return ItemId > 0 && ItemId < 1000;
+}
+```
+
+`_Validate` 的签名必须与 RPC 参数一致并返回 `bool`。它适合做低成本结构校验，不能证明玩家真的拥有该物品。Server 实现仍是最终安全边界。
+
+! 属性复制、RepNotify 与初始状态
+
+普通 `Replicated` 字段用于同步结果；`ReplicatedUsing = OnRep_Name` 在 Client 收到变化后运行回调。通知函数应该消费已经落地的新状态，保持可重复执行，不在其中再次发 Server RPC 形成环路。
+
+需要注意四个时序问题：
+
+# Actor 在 Client 出现时可能一次性接收一组初始复制属性，不能假设每个回调间已经完成全部依赖；
+# 多个属性分别复制时，不保证它们组成应用层“事务”，强耦合状态可以合并为一个 struct 或显式版本；
+# RepNotify 是 Client 接收路径，不是 Server 本地变化通知的通用替代品；
+# late joiner 只会获得当前复制状态，不会重放早先的 Multicast 视觉事件。
+
+因此常用结构是：Server 写状态后调用一个纯表现刷新函数；Client 的 RepNotify 也调用同一个刷新函数。两边共享表现逻辑，但不会伪装成同一条网络执行路径。
+
+! 一个攻击请求的端到端检查
+
+```angelscript
+class ANetworkAttackActor : AActor
+{
+    default SetReplicates(true);
+
+    UPROPERTY(Replicated)
+    int DamageDealt = 0;
+
+    void RequestAttack()
+    {
+        // 只应由 owning client 的输入路径进入这里。
+        ServerRequestAttack();
+    }
+
+    UFUNCTION(Server)
+    void ServerRequestAttack()
+    {
+        if (!CanAttackNow())
+            return;
+
+        DamageDealt += 10;
+        ClientConfirmAttack(DamageDealt);
+        MulticastPlayAttackEffect();
+    }
+
+    UFUNCTION(Client)
+    void ClientConfirmAttack(int AuthoritativeTotal)
+    {
+        Log(f"Server confirmed total {AuthoritativeTotal}");
+    }
+
+    UFUNCTION(NetMulticast, Unreliable)
+    void MulticastPlayAttackEffect()
+    {
+        PlayCosmeticEffect();
+    }
+}
+```
+
+这段结构的关键不在 specifier 数量，而在职责：`DamageDealt` 是持久真相，Client RPC 是 owner 私有确认，Multicast 只是允许丢失的表现。实际项目还要确保 Actor 对请求 Client 有 ownership；否则 Client 发出的 Server RPC 可能不会按预期到达。
+
+! 多人 PIE 验证法
+
+单进程、单 viewport 里函数“调用成功”不能证明网络路由正确。最少用两个 PIE player，并在日志前缀里加入：
+
+* 当前 World 名称与 PIE instance；
+* `GetNetMode()` 或 Server/Client 身份；
+* Actor 名称、owner、`HasAuthority()`、`GetLocalRole()`；
+* RPC 入口参数和最终权威属性值；
+* RepNotify 到达次数与本地值。
+
+按顺序观察：Client 输入只发生一次；Server RPC 只在 Server 实例执行业务；Server 属性发生变化；相关 Client 收到复制；Client RPC 只到 owner；Multicast 没被当作状态存储。Listen Server 和 remote Client 都要看，因为 Host 路径可能同时具备 authority 与 local control，最容易掩盖错误。
+
+! 热重载和绑定边界
+
+网络 UFunction 的名字、参数、reliability、方向和 validation flag 都属于持久反射合同。改函数体通常可以沿用现有 UFunction；改 specifier 或签名属于结构变化，需要 full reload，并重新检查 Blueprint 节点、网络 function flags 与现存 Actor。
+
+RPC 必须通过 Unreal `ProcessEvent`/反射路由，才能进入 NetDriver、ownership 和可靠性逻辑。项目的 UHT direct binding 对 RPC 明确保留 `BlueprintCallableReflectiveFallback`；把 RPC 改成 raw thunk 直调会绕过网络 machinery，即便本地测试看起来“函数执行了”。
+
+属性 rename、类型变化或 RepNotify rename 同样是 class layout/反射合同变化。只保留旧对象上的值不足以证明修复成功，还要验证新 Class 的 lifetime replication list、Client 初始复制和 Blueprint 资产引用。
+
+! 常见故障与定位顺序
+
+|!现象 |!优先检查 |!常见原因 |
+|Client 写值后又跳回 |写入发生在哪一端 |Client 修改了复制副本，被 Server 覆盖 |
+|Server RPC 没执行 |Actor owner、replicates、调用端 |请求 Client 不拥有 Actor，或 Actor 未复制 |
+|Client RPC 没收到 |Server 调用点与 owning connection |Actor 没有正确 owner，或在 Client 本地直接调用 |
+|某些 Client 看不到 Multicast |relevancy、调用端、reliability |不是 Server 发起、Actor 不 relevant、Unreliable 丢失 |
+|RepNotify 不更新 Server 表现 |调用端日志 |Server 本地写值不依赖自己的 RepNotify |
+|Host 正常、remote Client 异常 |authority/local-control 分支 |把 Listen Server 的双重身份当成一般情况 |
+|旧 Client/资产在 reload 后报签名问题 |UFunction flags 与 full reload |RPC specifier/参数变更后仍使用旧反射结构 |
+
+先确认“代码在哪台机器执行”，再看值；先确认 ownership/relevancy，再怀疑 AngelScript 绑定。没有身份标记的日志几乎无法诊断多人 PIE。
+
+! 源码落点与继续阅读
+
+* `Script/Examples/Extended/Example_NetworkReplication.as`：当前 property replication、RepNotify 与三类 RPC 的可运行声明；
+* `AngelscriptRuntime/ClassGenerator/`：把脚本属性/函数描述转换为 Unreal replication flags；
+* `AngelscriptRuntime/StaticJIT/PrecompiledData.*`：保存 `bNetServer`、`bNetClient`、`bNetMulticast`、`bNetValidate`、`bRepNotify` 等合同；
+* UHT function binding generator：RPC 保留 reflective fallback，避免绕过 Unreal 网络路由；
+* <<as-doc-link "topics-integrations/networking-rpc" "Networking 与 RPC 详解">>
+* <<as-doc-link "unreal-core/world-context" "World Context">>
+* <<as-doc-link "hot-reload/change-classification" "热重载变化分类">>

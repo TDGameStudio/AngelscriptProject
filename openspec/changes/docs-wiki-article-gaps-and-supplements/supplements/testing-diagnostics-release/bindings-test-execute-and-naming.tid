@@ -1,0 +1,204 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/bindings-test-execute-and-naming
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 绑定测试执行与命名规范
+description: 解释 Bindings 契约测试从模块编译、函数解析、参数封送、执行断言到模块回收的完整链路，并区分规范目标、兼容入口与当前例外。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/bindings-test-execute-and-naming
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: bindings-test-execute-and-naming
+
+! 这套 API 要解决什么问题
+
+`AngelscriptTest/Bindings` 要证明 AS 可见的类、方法、属性、运算符、命名空间函数与 reflective fallback 入口确实按预期声明暴露，并能到达 native 路径。过去每个文件各写一套 `CreateContext → Prepare → SetArg → Execute → GetReturn`，会造成错误处理、资源释放、返回 ABI 与 helper 名称各不相同。
+
+当前收敛点是 `Shared/AngelscriptTestExecute.h` 中的 `FAngelscriptTestExecutor`，其上再提供 `Execute*` 运行时断言族与 `Compile*` 编译负向断言族。本页同时核对持久 OpenSpec 与当前源码：规范说明目标，源码说明现在；两者不一致处列为维护债，不把 SHALL 冒充“已经全部完成”。
+
+! 一次绑定测试的完整生命周期
+
+# 通过 `ASTEST_CREATE_ENGINE*` 或 fixture 获得 `FAngelscriptEngine`，用 `FAngelscriptEngineScope` 设置 current engine；
+# `FScopedAngelscriptModule` 调用 `BuildModule`，以明确模块名编译 `ASTEST_AS(...)` 源；
+# 从 `asIScriptModule` 按完整声明解析全局函数；
+# `FAngelscriptTestExecutor` 创建 context、Prepare、顺序写参数槽、Execute，并读取返回寄存器；
+# 测试断言消费 helper 的 bool 或由 helper 直接向 `FAutomationTestBase` 报错；
+# module scope 析构时用同一模块名 `DiscardModule`，context 则在 engine scope 撤销前 Release。
+
+Bindings 层的终点是“入口可达 + 最小 native parity”。语言位置、参数笛卡尔积、生命周期 / world 状态和跨特性交互属于 `Coverage/`。混合用例应在 Bindings 保留一个窄 smoke，再把深矩阵放到 Coverage，不能为了目录整齐删除唯一行为证据。
+
+! `FAngelscriptTestExecutor` 的状态机
+
+当前有两个构造入口：
+
+* `(FAutomationTestBase&, FAngelscriptEngine&, asIScriptFunction&)`；
+* `(FAutomationTestBase&, FAngelscriptEngine&, asIScriptModule&, FStringView Declaration)`，先按声明解析函数。
+
+两者都会建立 `FAngelscriptEngineScope`，通过 `Engine.CreateContext()` 获得 context，并立即 `Prepare(Function)`。创建或 Prepare 失败会向 Test 报告，执行器保持无效。
+
+```text
+构造
+  ├─ 函数不存在 / context 为空 / Prepare 失败 → Invalid → Execute 返回 false
+  └─ Prepare 成功 → Valid
+       ├─ AddArg 越界或底层 SetArg 失败 → Invalid
+       └─ 参数数量正好匹配 → Execute
+            ├─ 非 asEXECUTION_FINISHED → 报执行码与异常文本
+            └─ FINISHED → HasRun = true → 读取返回值
+```
+
+析构先 `Context->Release()`，再释放 `FAngelscriptEngineScope`，所以 context 不会在 current-engine 边界撤销后才销毁。类不可复制，避免两个对象重复释放同一 context。
+
+!! 参数写入
+
+|!入口|!底层槽写入|!所有权注意|
+|`AddArg(bool / int8...uint64 / float / double)`|对应 `SetArgByte/Word/DWord/QWord/Float/Double`|每次成功后 cursor 加一；不按调用者猜测跳槽|
+|`AddArgObject(void*)`|`SetArgObject`|用于 UObject / script handle 等对象式参数；不转移所有权|
+|`AddArgAddress(void*)`|`SetArgAddress`|调用者保证地址活到 Execute 返回|
+|`AddArgRef<T>(T&)`|经 `AddArgAddress`|用于 `&in` / `&out` / `&inout`，执行后可读回原存储|
+|`AddArgStruct<T>(T&)`|经 `SetArgObject`|传入活的 C++ 临时对象；engine 不负责销毁它|
+
+cursor 超过 `Function->GetParamCount()`，或任一 `SetArg*` 不返回 `asSUCCESS` 时，第一次失败会被报告，执行器转为无效。`Execute()` 还会再次要求 cursor 数量与声明参数数完全相等，从而同时捕获少传和多传。
+
+!! 返回值读取
+
+`ExecuteAndGet<T>(Fallback)` 支持 bool、8/16/32/64 位整数、float、double 与对象指针；执行失败返回 fallback。非这些类型会触发编译期 `static_assert`。结构体必须走 `ExecuteAndExtractStruct<T>`：它在成功执行后读取 `GetAddressOfReturnValue()` 并复制到调用者对象，空地址会报告失败。
+
+<<as-callout warning "float ABI">>
+当前 engine 使用 `asEP_FLOAT_IS_FLOAT64=1`。脚本 `float` 返回值在本测试层从 double 返回寄存器读取，所以 `ExecuteAndExpectNearFloat` 内部调用 `ExecuteAndGet<double>`；但参数仍必须按函数真实参数类型传入，例如 `AddArg(1.0f)`，不能把返回 ABI 规则套到参数上。
+<</as-callout>>
+
+`HasRun()` 用于区分“Prepare 完成”和“真正执行完成”。遗留的 `ReadReturnStruct` 保留旧两步语义：它不会再次 Execute，而是要求之前的 `Call()` 已成功。
+
+! 运行时 `Execute*` 族
+
+命名语法锁定为：
+
+```text
+Execute[AndGet|AndExpect|AndValidate|BatchAndExpect|(empty)]
+       [Near|AtLeast|(empty)][<Type>|<T>]
+```
+
+`Near` / `AtLeast` 修饰 Expect，`Batch` 修饰 Execute；自定义 predicate 使用独立动词 `Validate`，避免把 lambda 塞进 `ExecuteAndExpect<T>` 后产生重载歧义。
+
+|!需求|!入口|!它实际验证什么|
+|无参 int 精确值|`ExecuteAndExpectInt`|解析 / Prepare / 执行成功和 int32 相等|
+|int 下界|`ExecuteAndExpectIntAtLeast`|实际值 `>= Minimum`|
+|bool 精确值|`ExecuteAndExpectBool`|bool 返回寄存器与期望相等|
+|double 严格相等|`ExecuteAndExpectDouble`|无容差；不要用于普通浮点误差场景|
+|float / double 近似值|`ExecuteAndExpectNearFloat/Double`|`FMath::IsNearlyEqual` 与显式 / 默认 tolerance|
+|同族多个 int case|`ExecuteBatchAndExpectInt` + `FExpectedInt`|逐行 case label，聚合结果且不短路剩余 case|
+|结构体 / 容器自定义检查|`ExecuteAndValidate<T>`|复制返回对象，再调用 `bool(Test, const T&)` validator|
+|预期脚本异常|`ExecuteAndExpectException`|Prepare 成功、结果为 `asEXECUTION_EXCEPTION`、异常文本非空且含片段、异常行号为正|
+
+每个 helper 接受普通 `const TCHAR* CaseLabel` 并写入 info trace。执行层不依赖已删除的 `FBindingsCoverageProfile`；case identity 属于 CQTest method / label，模块生命周期只需要显式名称。
+
+! 编译负向 `Compile*` 族
+
+规范名称只有 `CompileAndExpectFailure`，源码为 `const TCHAR* Source` 与 `const FString& Source` 提供两个重载；“一个成员名”不等于只有一个 C++ 定义。
+
+helper 的证据链是：
+
+# 为调用者给出的每个诊断片段注册 expected error，并登记 hot-reload 包装错误；
+# 以 `ECompileType::FullReload` 调用 `CompileModuleWithSummary`；
+# 要求 `Summary.bCompileSucceeded == false` 且 `CompileResult == Error`；
+# 在 `Summary.Diagnostics` 的 error 项中逐一找到每个片段；
+# 失败或无诊断时把完整摘要写入 Test；
+# 最终按模块名 `DiscardModule`。
+
+因此“当前分支不支持某绑定”应写成可执行的负向契约：既证明编译失败，也证明失败在预期边界，而不是用永真占位符或只看引擎日志。
+
+! 临时模块的真实 RAII 边界
+
+当前类型名是 `FScopedAngelscriptModule`，位于 `Shared/AngelscriptTestModuleScope.h`：
+
+```cpp
+FScopedAngelscriptModule(
+    FAutomationTestBase& Test,
+    FAngelscriptEngine& Engine,
+    const TCHAR* ModuleName,
+    const FString& Source);
+```
+
+构造函数把名称转为 UTF-8 交给 `BuildModule`，保存 `asIScriptModule*`；析构总是对同名调用 `Engine.DiscardModule`，即使 Build 失败也依赖 discard missing-name 的幂等行为。调用者必须先查 `IsValid()`，再用 `GetModule()`；后者对 null 执行 `check`，不是可恢复分支。
+
+模块名应使用能反映场景的完整英文词，例如 `ASBodyInstance_Latent`、`ASMath_Orientation_FactoriesAndMutators`。重命名时必须同步诊断 expectation，因为编译消息常含模块名；只改 RAII 参数会让负向测试在正确失败时仍匹配旧文本。
+
+! 兼容层不是新 API
+
+为了不强迫历史调用点一次性迁移，以下入口是永久 inline forwarder：
+
+|!旧入口|!规范入口|
+|`FASGlobalFunctionInvoker`|`FAngelscriptTestExecutor` 类型别名|
+|`.Call()`|`.Execute()`|
+|`.CallAndReturn<T>()`|`.ExecuteAndGet<T>()`|
+|`.ReadReturnStruct<T>()`|读取已执行 context；注意它不是 `ExecuteAndExtractStruct` 的完全同义调用|
+|`ExpectGlobalInt/Bool/...`|对应 `ExecuteAndExpect*` / `ExecuteBatchAndExpectInt` / `ExecuteAndValidate`|
+|`ExpectBindingCompileFailure`|`CompileAndExpectFailure`|
+|`ExecuteFunctionExpectingScriptException`|`ExecuteAndExpectException`|
+|`ExecuteIntFunction`、`ExecuteIntFunctionExpectingScriptException`、`ExecuteInt64Function`|保留的旧执行三件套|
+
+当前 Bindings 源码仍广泛使用 `ExpectGlobal*` 和 `FASGlobalFunctionInvoker`，所以不能删兼容层；但新增代码不得扩展 `Expect*`、`Invoke*`、`Call*`、`Run*` 或 `Verify*` 作为另一套全局函数执行命名族。
+
+! 规范目标与当前源码例外
+
+历史规范要求 Bindings 和 Shared 除 canonical header 外不直接写 Prepare / Execute / SetArg。当前源码并未完全满足：DataTable、Debug、FStringFormatMultiEngine、GameInstanceLocalPlayer 与 `AngelscriptWorldCollisionBindingsTestHelpers.h` 等仍有直接 context 路径；Console / delegate 对象自身的 `.Execute()` 不属于 `asIScriptContext`，不能靠字符串 grep 混为一谈。
+
+这些路径中有的检查异常行号，有的写多种 address / object 参数，有的验证 context 级协议。维护时应逐个判断：
+
+* canonical executor 已能表达：迁移，删除重复资源管理；
+* 只缺一个可复用能力：扩展 executor，但不能塞入 WorldCollision 专属语义；
+* 本来就在测试 context 协议：保留窄 helper，写明为什么不能走高层断言；
+* 只是历史复制：收敛，且保持原有失败五元组与 cleanup 证据。
+
+同样，当前 95 个 Bindings `.cpp` 中 94 个含 `WITH_ANGELSCRIPT_UNITTESTS`，`AngelscriptContainerBindingsTests.cpp` 是需要独立确认编译所有权的现存例外。本文只记录事实，没有借文档变更修改测试源码。
+
+<<as-callout warning "不要把历史 TODO 当当前规则">>
+早期规范要求给私有 `Execute*Function*` 加迁移 TODO。`Shared/README.md` 已记录 11 个重复 helper 的迁移，当前源树也找不到该 TODO、`FBindingsCoverageProfile` 或 `AngelscriptBindingsCoverage.h`。今天应维护最终所有权，不应重新添加已经完成阶段的临时注释。
+<</as-callout>>
+
+仍然存在的主题辅助不一定是重复执行器：`AngelscriptMathBindingsTestCompare.h` 保存数学比较语义；`AngelscriptWorldCollisionBindingsTestHelpers.h` 保存 collision 特有的参数 / 返回形态。判断标准是“是否拥有领域语义”，不是 helper 是否含单词 Execute。
+
+! CQTest、门控与内联 AS
+
+* 测试注册、test-only bind object 与 fixture 应置于 `WITH_ANGELSCRIPT_UNITTESTS`；不得为了测试布局给 Runtime / Editor / generated table 增依赖。
+* 主要流程应从具体 `TEST_METHOD` 可读：编译什么、调用什么、期望什么。不用宽泛 `RunXxxSection()` 隐藏全部证据。
+* 返回 bool 的 helper 必须由 matcher / active Test 消费，或 helper 自身完整报告失败；静默丢弃会把 Prepare 失败伪装为 pass。
+* 内联源码统一经过 `ASTEST_AS(...)` / `ASTEST_AS_ANSI(...)`，并遵守 `Documents/Rules/ASInlineFormattingRule.md`；格式审计要覆盖 `.cpp` 与 `.h` 中所有 raw-string 拼法。
+
+! 维护审查清单
+
+# 模块名是否唯一、完整，并与 `AddExpectedError` / 诊断文本一致？
+# `FScopedAngelscriptModule::IsValid()` 是否先于 `GetModule()`？
+# 参数数量、引用存储寿命和 float64 模式是否与 AS 声明一致？
+# 负向用例是否验证具体诊断 / 异常，而不是只验证失败布尔值？
+# helper 返回值是否被消费，context 与 module 是否覆盖所有早退路径？
+# 新 helper 是通用执行能力，还是应留在主题层的领域语义？
+# 用例证明的是绑定入口，还是应迁到 Coverage 的宽行为矩阵？
+
+! 源码地图
+
+|!位置|!所有权|
+|`Shared/AngelscriptTestExecute.h`|canonical executor、Execute / Compile 命名族和永久 forwarders|
+|`Shared/AngelscriptTestModuleScope.h`|Build / Discard 临时模块 RAII|
+|`Shared/AngelscriptTestUtilities.h`|兼容 umbrella，不应重新长出执行实现|
+|`Shared/README.md`|头文件拆分、旧别名与 Bindings helper 迁移现状|
+|`Bindings/AngelscriptBindingsExampleSection.h`|规范模块名与执行形态示例|
+|`openspec/specs/as-bindings-test-execute-and-naming/spec.md`|持久目标规则；需结合当前例外审查|
+
+<<as-callout warning "本文验证边界">>
+本轮按任务要求只实现文章并进行只读源码核对，没有运行构建或测试。文中当前数量与例外是源码快照，不是新的通过结果。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/test-helper-api" "测试辅助 API">> —— 测试模块内外的可用入口
+* <<as-doc-link "testing-diagnostics-release/test-utilities-header-layout" "测试工具头文件布局">> —— canonical header、umbrella 与 shim
+* <<as-doc-link "testing-diagnostics-release/test-unity-build-symbol-hygiene" "测试 Unity Build 符号卫生">> —— 私有 helper 与直接 include
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 本主题入口

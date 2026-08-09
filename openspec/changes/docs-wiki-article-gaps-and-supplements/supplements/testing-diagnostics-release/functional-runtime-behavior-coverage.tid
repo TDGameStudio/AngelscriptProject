@@ -1,0 +1,146 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/functional-runtime-behavior-coverage
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 功能运行时行为覆盖
+description: 以 Objects、Operators、Handles、Inheritance 当前源码为例，解释正向结果、预期运行时异常、编译负向契约与 reload 分析边界各自证明什么。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/functional-runtime-behavior-coverage
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: functional-runtime-behavior-coverage
+
+! “功能覆盖”必须说清证据层
+
+功能测试不应以 `TestTrue("说明文字", true)` 伪装覆盖，但“不是永真占位符”也不自动等于正向运行成功。当前 Objects、Operators、Handles、Inheritance 源码实际包含四种不同证据：
+
+|!证据层|!通过意味着什么|!典型断言|
+|正向运行结果|脚本编译、函数解析并执行完成，返回 / UObject 状态符合预期|`Power == 8`、out-ref 写回 42、反射默认值 9|
+|预期运行时异常|路径可编译且能进入 VM，但当前 fork 稳定地在已知边界抛异常|结果为 exception、消息含 `Null pointer access`，必要时检查 callstack / 行列|
+|编译负向契约|语法 / 语义在当前分支明确不支持，且失败发生在编译期|`bCompiled == false` 且 `CompileResult == Error`|
+|reload / ClassGenerator 分析边界|带 `UCLASS` 的变更能否被分析，以及需要 soft/full reload 还是进入 Error|`bAnalyzed`、`ReloadRequirement`、`bWantsFullReload` / `bNeedsFullReload`|
+
+文章或目录若只写“已恢复运行时断言”，会掩盖第二到第四层仍是受限边界。本页按真实方法逐项说明，避免把 expected exception 当成完整功能成功。
+
+! 主题与真实发现前缀
+
+|!主题文件|!主要前缀|!补充分支|
+|`Functional/Objects/AngelscriptObjectModelTests.cpp`|`Angelscript.TestModule.Functional.Objects`|`...Objects.ZeroSize`|
+|`Functional/Operators/AngelscriptOperatorTests.cpp`|`Angelscript.TestModule.Functional.Operators`|无新 group|
+|`Functional/Handles/AngelscriptHandleTests.cpp`|`Angelscript.TestModule.Functional.Handles`|`...Handles.NativeObjectArgument`|
+|`Functional/Inheritance/AngelscriptInheritanceTests.cpp`|`Angelscript.TestModule.Functional.Inheritance`|裸 / 包装 engine 的语言级边界|
+|`Functional/Inheritance/AngelscriptInheritanceFunctionalTests.cpp`|`Angelscript.TestModule.Inheritance`|UCLASS、ClassGenerator 与 reload 分析|
+
+Inheritance 同时存在 `Functional.Inheritance` 和 `Inheritance` 两个前缀，不是笔误。`Config/DefaultEngine.ini` 的 `AngelscriptFunctional` group 同时匹配 `Functional.*` 与 `Inheritance.*`。维护脚本若只跑其中一个前缀，会漏掉另一种证据。
+
+! Objects：值类型成功，不代表脚本 class 所有路径都成功
+
+!! 已有正向证据
+
+* `ValueTypeConstruction` 构造 `FIntPoint(3, 4)` 并读取字段，要求结果 7；
+* `ValueTypeCopyAndArithmetic` 复制 `FIntPoint`、修改副本并证明原值不变，要求编码结果 57；
+* `ReflectedDefaultsAndFunction` 编译 `UCLASS` 派生 `UObject`，通过 `NewObject` 实例化，检查 `Counter == 9`、`ObjectLabel == "FunctionalObject"`，再用反射函数调用验证 `ComputeMarker() == 14`；
+* `ZeroSize` 证明空脚本对象可作为局部实例；独立的 `ByValueAndLocalLayout` 还把两个 zero-size 对象夹在普通局部之间并按值传参，要求结果 5622。
+
+这些用例分别覆盖 native value type、生成 UObject 反射路径和 zero-size layout，不应合并成一个“Objects 能运行”的模糊结论。
+
+!! 当前受限边界
+
+`Basic` 与 `Composition` 都先成功编译、解析 `int Run()`，随后明确要求 `ExecuteIntFunctionExpectingScriptException(..., "Null pointer access")` 成功。也就是说，当前证据是“脚本 class 的该执行路径稳定暴露 null dereference”，不是对象 getter / composition 正常返回 42。
+
+`Singleton` 则完全不进入运行时：它以 full engine 和隔离文件名编译 mutable global class instance，要求编译失败且结果为 Error。这里保护的是 mutable global class variable 的当前禁止边界。
+
+! Operators：一个成功路径与三个已知异常路径
+
+`Power` 使用 `FScopedAngelscriptModule` 编译 `2.0f ** 3.0f`，通过 `ExpectGlobalInt` 断言结果 8，是明确的正向运行证据。
+
+`Overload`、`GetSet`、`Const` 虽然都成功编译并解析 `Test()`，当前却要求执行时出现 `Null pointer access`。`GetSet` 还特意绕过高层 module builder：它取得 raw `asIScriptEngine`，清空 default namespace，用 `FScopedAutomaticImportsOverride` 禁用自动 import，`asGM_ALWAYS_CREATE` 建 module 后直接 `AddScriptSection/Build`。它证明 explicit Get / Set method 在裸模块可构建，以及运行期仍卡在已知脚本对象边界。
+
+因此维护者修复 script-class 值实例后，不能只把 expected exception helper 换成普通 Execute；还必须为三个方法分别添加可判别的返回值断言，确保 overload、getter/setter 与 const dispatch 各自真的工作。
+
+! Handles：三种“handle”不能混写
+
+|!方法|!当前证据|
+|`Basic`|`HandleBasicObject@` 声明与构造应编译失败；原因写明当前分支不支持 script-class handle declaration|
+|`Auto`|factory-style script-class handle 返回应编译失败，且 `CompileResult == Error`|
+|`Implicit`|按值传 script class 可编译，但执行预期 `Null pointer access`；helper 还要求调用栈含 `void SetValue(HandleImplicitObject)` 与 `int Test()`|
+|`RefArgument`|这不是 class handle；它验证普通 `int &out` 在执行后写回 42，是正向引用参数证据|
+|`NativeObjectArgument.NullAndNonNull`|把 native `UObject*` 作为对象参数直接 SetArgObject；同一 context 依次验证非空返回 1、null 返回 0|
+
+把 `RefArgument` 或 native UObject nullability 称为“script-class handle 已支持”是错误归纳。它们覆盖引用参数与 native object handle marshalling；`@` 脚本 class handle 的 Basic / Auto 仍是编译负向契约。
+
+! Inheritance：语言级与 UCLASS reload 级分开看
+
+!! `Functional.Inheritance`
+
+* `Basic`：base / derived class 与字段方法可编译，但运行预期 `Null pointer access`，并锁定 `int Test()` 的行列片段；
+* `VirtualMethod`：override 形态可编译，但运行同样预期 null exception 与具体源位置；
+* `Interface`：script interface implementation 目前编译失败；
+* `CastOp`：依赖 script-class handle construction 的 cast 场景编译失败；
+* `Mixin`：parser 不接受 `mixin class` 语法，要求编译失败。
+
+这些方法都不应写成“继承运行时已通过”。它们只是把各失败阶段拆开：有的 parser / compiler 就拒绝，有的到 VM 才触发已知异常。
+
+!! `Angelscript.TestModule.Inheritance`
+
+这一组先编译 baseline `UCLASS`，再用 `AnalyzeReloadFromMemory` 分析替换源码：
+
+* `ScriptToScript` 的 actor-to-actor inheritance + overridden UFUNCTION 当前要求 `bAnalyzed == false`、`ReloadRequirement == Error`；
+* `Super` 调用场景同样保持分析失败与 Error；
+* `IsA` / `Cast` syntax 要求分析成功，但必须选择 `FullReloadRequired` 或 `FullReloadSuggested`，不能落回 soft reload。
+
+这证明的是 ClassGenerator 的 reload 决策，不是生成 actor 已实例化并执行。要升级为完整正向运行覆盖，还需要在 full reload 后验证 UClass 继承、函数 dispatch、`Super` 返回值和 Cast 结果。
+
+! 负向契约怎样才不退化成占位符
+
+一个有价值的负向测试至少要锁定失败阶段和原因：
+
+# 编译负向：隔离 module / filename，压制预期日志噪声，要求 `bCompiled == false` 与 `CompileResult == Error`；更理想时还匹配诊断片段；
+# 运行负向：先证明 compile、module lookup、function lookup 成功，再要求 `asEXECUTION_EXCEPTION` 与具体文本；若边界涉及 dispatch，补 callstack / 行列；
+# reload 负向：先证明 baseline 可编译，再区分 analyze false、Error、full reload suggested / required，不能只断言一个 bool；
+# cleanup：无论负向从哪里返回，都 discard 当前 active modules 并恢复临时日志级别 / engine 状态。
+
+如果分支开始支持该功能，测试应发生“证据升级”：把负向断言替换为可观察的正向结果，同时保留原来覆盖的 compile、lookup、cleanup 阶段。不得直接删负向方法，也不得把 `IsFalse(bCompiled)` 翻成 `IsTrue(bCompiled)` 后不执行函数。
+
+! 所有权规则
+
+不支持用例必须留在 owning theme 中，因为它告诉读者“缺口属于哪个行为”。通用 `Skipped` / `KnownFailures` 桶会切断这个关系，也让 feature 修复后难以找到该升级哪些测试。
+
+但是 owning theme 不等于永远锁死一个文件：若同一行为发展出 native SDK 语义、UE wrapper 集成和 UCLASS / World 三层证据，可以分成多个文件与前缀，只要文档明确它们保护的阶段。Inheritance 当前就是这种分层实例。
+
+! 诊断表
+
+|!观察|!解释|
+|编译成功，执行 expected null exception|运行入口存在，但 script object 实例 / dispatch 仍不完整；不是正向 pass|
+|raw module Build 成功，高层路径失败|比较 automatic imports、preprocessor、wrapper registration，不要先归因 parser|
+|负向测试突然编译成功|可能是功能落地；继续执行并添加结果断言，不能仅反转 bool|
+|`Functional.Inheritance` 通过但 `Inheritance` 失败|两组保护不同层：裸语言执行 vs UCLASS reload 分析|
+|只跑 `Angelscript.TestModule.Functional` 漏用例|Actor / Component / Delegate / Inheritance 等还有并列前缀，应使用 group 或逐主题清单|
+
+! 源码地图
+
+|!位置|!作用|
+|`Functional/Objects/AngelscriptObjectModelTests.cpp`|value type、UObject 反射、script object 与 global 边界|
+|`Functional/Operators/AngelscriptOperatorTests.cpp`|operator、explicit getter/setter、const、power|
+|`Functional/Handles/AngelscriptHandleTests.cpp`|script class handle、ref argument、native UObject 参数|
+|`Functional/Inheritance/AngelscriptInheritanceTests.cpp`|语言级继承 / interface / cast / mixin|
+|`Functional/Inheritance/AngelscriptInheritanceFunctionalTests.cpp`|UCLASS 与 reload requirement|
+|`openspec/specs/functional-runtime-behavior-coverage/spec.md`|“支持走运行断言、不支持保留负向边界”的持久原则|
+
+<<as-callout warning "本文验证边界">>
+本轮只做文章与只读源码核对，没有运行这些前缀。文中“当前”描述的是测试实现所声明的契约，不是本轮重新获得的 PASS 结果。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/examples-functional-coverage" "ScriptExamples 退役与功能测试整合">> —— 行为如何迁入 owning theme
+* <<as-doc-link "testing-diagnostics-release/bindings-test-execute-and-naming" "绑定测试执行与命名">> —— binding smoke 与行为矩阵的边界
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "测试范围与基线">> —— prefix / group / suite 的计数口径
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 本主题入口

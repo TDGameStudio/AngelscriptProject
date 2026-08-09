@@ -1,0 +1,176 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/vm-call-lifecycle
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: VM 函数调用生命周期
+description: 从 Prepare、参数装载、Execute、异常到返回值和 Context 回收，追踪一次脚本调用。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/vm-call-lifecycle
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 150
+as-content-revision: 3
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 230
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: vm-call-lifecycle
+
+! 一次调用的阶段
+
+```
+resolve asIScriptFunction
+  -> acquire FAngelscriptContext
+  -> Prepare(function)
+  -> SetObject / SetArg*
+  -> Execute()
+  -> finished / suspended / exception / aborted
+  -> read return value
+  -> unprepare + release/reuse context
+```
+
+`FAngelscriptContext` 包装 AngelScript context，并负责把诊断、异常和引擎 ownership 接入插件。调用约定决定参数在寄存器/地址/对象槽中的表示，不能用错误的 SetArg 入口“碰巧可用”。
+
+! 调用者先选择入口
+
+|!入口|!准备职责|!典型 owner|
+|直接 VM/context|解析 `asIScriptFunction`、Prepare、SetObject/SetArg、Execute|Runtime helper、测试/工具、生成 dispatch fallback|
+|`UASFunctionNativeThunk`|从 `FFrame` 解析 Unreal 参数，再交给 `RuntimeCallFunction`|UFunction native 调用|
+|`ProcessEvent`/`RuntimeCallEvent`|已经有完整 `Parms` buffer，按 FProperty offset 搬运|Blueprint、RPC、反射调用|
+|JIT raw/parms entry|形状与指针完整且 final 时走已编译入口|`UASFunction_*_JIT`|
+
+入口不同，函数语义应相同，但参数来源和必须保留的 Unreal 路由不同。RPC validate/network dispatch 不能改成直接 `Execute()`；BlueprintEvent override 也要先解析真实目标函数。
+
+! Prepare 到 Execute 的不变量
+
+# Context 必须来自与函数相同的 `asIScriptEngine`；跨 engine 的 function ID/裸指针无效。
+# `Prepare` 成功后才装载 object/arguments。成员函数的 object 类型要与函数 object type 兼容。
+# 引用/对象参数的生命周期覆盖整个 Execute；临时值的构造与析构由调用桥成对负责。
+# WorldContext/隐藏 metadata 首参在系统函数 call interface 层注入，不能占用脚本可见参数位置。
+# Execute 返回状态决定后续动作；未 finished 不读取正常 return storage。
+# 任何退出路径都必须解除当前 suite/debug/world association，再把 context 放回池。
+
+`UASFunction::FinalizeArguments` 预先把每个参数分类为 ParmBehavior 与 VMBehavior，并记录 `PosInParmStruct`、`StackOffset`、`ValueBytes` 和 `DestroyArguments`。调用生命周期必须消费这份布局；从 C++ 类型大小重新猜测会与生成的 FProperty offset 漂移。
+
+! 结束状态
+
+Finished 才能读取正常返回；Exception 需要保留脚本文件、行和调用栈；Suspended 只在明确支持的执行模型中保留 context；Aborted 用于取消/shutdown，仍需释放临时对象和关联状态。
+
+|!状态|!允许动作|!禁止动作|
+|Finished|读取返回、复制 out、析构临时参数、释放 context|再次 Execute 而未 Prepare|
+|Suspended|仅由拥有调度合同的 latent/coroutine owner 保留并恢复|当作成功、回池后仍保留外部指针|
+|Exception|捕获 exception/stack/source，执行 teardown，清理并回池|读取未定义返回值、吞错继续主流程|
+|Aborted|报告取消原因，清理 context/临时值|把取消误报为正常返回|
+|Prepare/Execute error|保留 API 错误和函数身份，回滚本次调用|污染池中下一调用|
+
+! Return 与 out 参数
+
+primitive return 可以从 context return register 读取；对象/结构返回可能需要 caller-owned storage、复制/构造和异常时清理。UFunction `Parms` 路径还要遵守 `ReturnValueOffset` 和 FProperty 生命周期。out/ref 参数在异常前可能已被部分写入，API 必须明确是否提交；不能统一假设“抛异常自动回滚外部对象”。
+
+! UObject 方法
+
+成员函数调用先 `SetObject`，并保证 UObject 在执行期间有效。BlueprintEvent/RPC 可能必须走 Unreal ProcessEvent 路由，而非直接 VM 调用；调用生命周期相同，不代表所有入口都能绕过反射。
+
+! Context 重用
+
+池化 context 能减少分配，但重用前必须清除旧 function、object、exception、user data 与调试状态。多 engine context 不能混用；shutdown 应只回收归属该 engine 的活动/空闲项。
+
+池的安全顺序是：停止分配新调用 → abort/完成活动调用 → debugger/test/latent owner 解除关联 → Unprepare/reset → 回收到所属 engine 或销毁 → engine shutdown。只清空数组而不处理活动 context，会把 callback 和 VM stack 留给已释放 module。
+
+! 故障定位
+
+|!现象|!检查|
+|第二次调用继承上次异常|return-to-pool 是否清 exception/callstack/user data|
+|只在 Blueprint/RPC 路径参数错|FFrame/Parms offset 与 `FinalizeArguments` 是否一致|
+|临时 engine 偶发崩溃|context/function 是否来自默认全局 engine|
+|异常后对象泄漏|`DestroyArguments`、return object 和 teardown 是否执行|
+|暂停后热重载崩溃|旧 function/context 是否在 module replacement 前取消|
+
+! 真实源码入口
+
+|!文件/符号 |!职责 |
+|`Core/AngelscriptEngine.h` 的 `FAngelscriptContextPool` / `FAngelscriptContext` |池所有权、RAII context 包装与 engine 归属 |
+|`Core/AngelscriptEngine.cpp::AngelscriptRequestContext` / `AngelscriptReturnContext` |注册给 AS engine 的 acquire/return callback，按 engine 过滤空闲 context |
+|`PrepareAngelscriptContextWithLog` |Prepare 失败时保留 function/callsite 诊断 |
+|`ClassGenerator/ASFunction.cpp::FinalizeArguments` |把 `FProperty` 与 AS 参数固化为 Parm/VM behavior、offset、清理合同 |
+|`ASFunction_CallHelpers.h` |FFrame/Parms 参数装载、WorldContext scope、virtual resolve、Execute/return/out 清理 |
+|`ASFunction_Dispatch.cpp` / `_JITDispatch.cpp` |按函数形状实现成对 VM/JIT fast path |
+
+这张表也说明 context 并非普通可跨 engine 的线程池对象。Request/Return callback 由特定 `asIScriptEngine` 注册；shutdown 使用 `ReleaseContextsForScriptEngine` 只释放属于该 engine 的空闲项，最后才允许销毁 engine。
+
+! Argument 的两套表示
+
+一次 UFunction 调用同时涉及 Unreal 参数结构和 AngelScript VM stack。`UASFunction::FArgument` 把两者连接：
+
+|!维度 |!Unreal 侧 |!VM 侧 |
+|位置 |`PosInParmStruct` / FProperty offset |`StackOffset` / argument index |
+|类型行为 |构造、复制、out/return、destroy |SetArg primitive/address/object、WorldContext |
+|大小 |`ValueBytes` / property size+alignment |VM slot/寄存器约定 |
+|退出 |copy back out、destroy temp |Release handle/Unprepare/context reset |
+
+搬运不是 memcpy 通用规则。POD primitive、UObject handle、value struct、reference/out 和对象返回各自使用 type usage 行为。`DestroyArguments` 表示调用桥获得了需要在退出时销毁的临时所有权；Exception/Aborted 也必须执行，不能只在 Finished 清理。
+
+! 成员与虚拟调用
+
+成员调用在 Prepare 后 `SetObject`，但可覆盖函数的目标需要先经 `ResolveScriptVirtual(ASFunction, Object)` 得到当前对象版本的真实 `asCScriptFunction`。这一步把 Blueprint/script inheritance 与 hot reload version chain 纳入执行。
+
+固定缓存一个旧 script function pointer 会产生两类问题：派生 override 永远不进入；Full Reload 后 context 继续引用旧 module/function。只有 final/non-virtual 且 generation 匹配的入口才能安全固定；StaticJIT 的 fast path也以此为约束。
+
+! WorldContext 进入与恢复
+
+调用桥可能从 receiver object、声明参数或生成的隐藏 Parms slot 得到 WorldContext。进入脚本前保存 ambient context 并安装新值，退出时恢复 previous；嵌套调用必须是栈语义，不能无条件 reset null。
+
+```text
+caller ambient W0
+  → call function A, install W1
+      → nested call B, install W2
+      → B returns, restore W1
+  → A returns/throws, restore W0
+```
+
+任何 Exception、Prepare failure 或早退漏恢复，都会让后续无关调用落到错误 World。Thread-safe 函数若不允许触碰 game-thread WorldContext，也不能误走会安装 ambient world 的普通 shape dispatch。
+
+! 状态转换与资源所有权
+
+```text
+Pooled/clean
+  --Prepare succeeds--> Prepared
+  --args/object loaded--> Ready
+  --Execute--> Running
+      ├─ Finished  → read/copy outputs
+      ├─ Suspended → latent owner holds context
+      ├─ Exception → capture diagnostic, no normal return
+      └─ Aborted   → cancellation diagnostic
+  --destroy temps + unprepare/reset--> Pooled/clean
+```
+
+Suspended 是唯一会把 context 所有权跨出同步调用栈的状态。此时必须有明确 latent/coroutine owner，保存 engine、function generation、World/debug association，并在 module reload或 shutdown 前 abort/drain。普通函数 helper 不能把 Suspended 当 success 后立即回池。
+
+! Out/return 的提交边界
+
+Finished 时，从 VM storage 取得 return，并把 out/ref 写回 FFrame/Parms。Exception 前脚本可能已经修改外部引用或 UObject，VM 不提供自动事务回滚；但尚未从临时 buffer copy-back 的 out value可以选择不提交。API/调用桥必须分清''直接 alias 外部对象''与''临时 slot 最后写回''。
+
+|!形态 |!异常时可能发生 |
+|primitive/value out 经临时 Parms slot |若 copy-back 只在 Finished，可保持调用前值；临时仍要析构 |
+|`&inout`/reference 直接 alias |脚本已发生的写入可能可见，不能声称自动回滚 |
+|UObject 参数 |对象内部副作用已经发生，即使函数没有返回 |
+|对象/value return |正常 return storage 不可读，但已构造临时对象要清理 |
+
+这也是为什么异常处理文档必须说明 side-effect policy，而不能只打印 stack trace。
+
+! Context 池的清洁合同
+
+返回池前应清除 function/object、exception string/stack、user data、debugger step/break 状态、World/test suite association 和 suspended owner。下次 acquire 时最好仍按“可能来自任意旧调用”验证关键状态，而不是完全依赖上一次路径。
+
+Engine shutdown 顺序是：阻止新 RequestContext → abort/drain 活动执行 → 让 debugger/latent/test owner 释放 → Unprepare/reset → `ReleaseContextsForScriptEngine` 清空该 engine 的 free contexts → 卸载 module/type → destroy `asIScriptEngine`。若反过来先销毁 module，context stack 中的 function/type pointer 就失去解释。
+
+! 分层诊断证据
+
+一次问题报告至少记录：owner engine、context 是否新建/复用、入口（direct/FFrame/Parms/JIT）、UFunction 与真实 script function identity、参数 behavior/offset、WorldContext、Execute 状态、异常位置、退出时是否 destroy/reset/return。只记录“Execute 返回错误”不足以区分参数 ABI、旧 function、池污染和脚本异常。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行 Context">>
+* <<as-doc-link "runtime-jit-vm/exceptions-and-stacktraces" "异常与调用栈">>
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "UFunction 生成与分派">>

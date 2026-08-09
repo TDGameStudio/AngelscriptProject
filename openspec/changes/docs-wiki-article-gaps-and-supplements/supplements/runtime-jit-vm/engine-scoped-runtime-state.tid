@@ -1,0 +1,202 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/engine-scoped-runtime-state
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: 引擎作用域的运行时状态
+description: asITypeInfo、绑定/文档数据库、ToString 缓存、静态名称与 context pool 如何按 FAngelscriptEngine 隔离。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/engine-scoped-runtime-state
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 50
+as-content-revision: 2
+as-sources: [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 50
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: engine-scoped-runtime-state
+
+! 核心规则：AS 指针带有 engine 身份
+
+`asITypeInfo*`、`asIScriptFunction*`、`asCContext*` 与脚本 module 不是进程永久元数据。它们由一个具体 `asIScriptEngine` 创建，并且最迟在该 engine `ShutDownAndRelease()` 时失效。把这类指针放进无 engine 键的 static 缓存，会形成典型的跨代错误：Engine A 销毁后，Engine B 从同一进程静态变量读到 A 的类型或函数地址。
+
+当前 Runtime 的隔离策略不是“禁止所有 static”，而是按状态性质选择三种所有权：
+
+|!状态性质 |!正确位置 |!例子 |
+|包含 AS/VM 身份或某 engine 的注册结果 |`FAngelscriptEngine` 实例字段，或 `asIScriptEngine*` 分区表 |TypeDatabase、BindState、ToStringList、static type info |
+|纯 C++、可在 engine 出现前登记的元数据 |受限的 process fallback |类型描述器、ToString 函数与名字（TypeInfo 必须为空） |
+|一次执行/线程复用资源 |thread-local pool + engine-owned global pool |`asCContext*` |
+
+! 引擎直接拥有的数据库
+
+`FAngelscriptEngine` 当前直接持有：
+
+```cpp
+TUniquePtr<FAngelscriptTypeDatabase> TypeDatabase;
+TUniquePtr<FAngelscriptBindState> BindState;
+TUniquePtr<TArray<FToStringType>> ToStringList;
+TUniquePtr<FAngelscriptBindDatabase> BindDatabase;
+TUniquePtr<FBlueprintEventSignatureRegistry> BlueprintEventSignatureRegistry;
+TUniquePtr<FAngelscriptDocumentationState> DocumentationState;
+#if AS_CAN_GENERATE_JIT
+TUniquePtr<FAngelscriptNativeFormState> NativeFormState;
+#endif
+
+TArray<FName> StaticNames;
+TMap<FName, int32> StaticNamesByIndex;
+TArray<asCContext*> GlobalContextPool;
+FCriticalSection GlobalContextPoolLock;
+```
+
+这些字段在完整与短初始化路径中、在第一次消费前创建；Shutdown 在释放底层 AS engine 后重置数据库和名称表。访问器 `GetTypeDatabase()` 等返回该实例的裸借用指针，不转移所有权。
+
+! 绑定路径为何必须携带目标 engine
+
+`FAngelscriptBinds` 保存目标 `FAngelscriptEngine`，并通过窄访问器取得：
+
+* `GetTargetScriptEngine()`；
+* `GetTargetBindState()`；
+* `GetTargetTypeDatabase()`；
+* `GetTargetBindDatabase()`；
+* `GetTargetToStringList()`；
+* `GetTargetBlueprintEventSignatureRegistry()`。
+
+这种写法避免在一条显式绑定会话中反复调用“当前 engine”解析。如果创建了 Engine A 的 `FAngelscriptBinds`，类型、函数、文档和 ToString 条目都应落到 A；临时 scope 切换不应把会话中途改写到 B。
+
+`FAngelscriptType::Register(Database, Type)` 也提供显式数据库重载。无参数兼容入口仍通过当前 engine 解析，但新低层 helper 应优先接收目标数据库或 binds 上下文。
+
+! 静态类型信息按 engine 分区
+
+某些绑定 helper 需要快速取得模板类型的 `asITypeInfo*`。`TGetStaticTypeInfo<T>` 不再保存单一 static 指针，而是：
+
+```cpp
+static TMap<asIScriptEngine*, asITypeInfo*> TypeInfosByEngine;
+```
+
+`SetForEngine(ScriptEngine, TypeInfo)` 按底层 engine 写入；空 TypeInfo 删除该键。`GetForEngine` 与 `IsForEngine` 也要求显式 engine。每个模板实例第一次写入时向 `FAngelscriptStaticTypeInfoRegistry` 登记自己的 `ClearForEngine` 函数。
+
+Shutdown 在 `Engine->ShutDownAndRelease()` ''之前''调用：
+
+```cpp
+FAngelscriptStaticTypeInfoRegistry::ClearForEngine(Engine);
+```
+
+注册表遍历所有已去重的 clearer，逐个删除该 engine 的映射。清理必须发生在 VM 释放前后窗口的早侧，避免其它 teardown 代码查到悬空 `asITypeInfo*`。
+
+! ToString 的 process fallback 为什么只能含元数据
+
+`Bind_FString.cpp` 的 `GetToStringList()` 优先返回当前 engine 的 `ToStringList`；没有 engine 时回退到函数内 static `LegacyToStringList`。这个 fallback 允许静态注册阶段保存：类型名、C++ ToString 函数、隐式转换/handle 标志。
+
+`FToStringType::TypeInfo` 却是 engine-owned AS 指针。写它之前必须通过 `IsEngineOwnedToStringList(List)` 证明目标数组就是当前 engine 的列表。fallback 必须保持 `TypeInfo == nullptr`，否则第一代 engine 的类型会泄漏给第二代。
+
+所以“有 fallback”不代表两类列表语义相同：
+
+|!内容 |!engine list |!legacy fallback |
+|类型名/C++ 回调/flags |允许 |允许 |
+|`asITypeInfo*` |允许，且只属于该 engine |禁止 |
+|解析后的 engine 本地缓存 |允许 |禁止 |
+
+初始化新 engine 时可以重放纯元数据，再在目标 engine 内解析 TypeInfo；不能直接复制旧 engine 已解析的指针。
+
+! Type 与 Documentation 的兼容 fallback
+
+`FAngelscriptType.cpp` 的无参数 `GetTypeDatabase()` 优先取当前 engine 数据库，无 engine 或数据库尚未建立时返回 process `LegacyDatabase`。`FAngelscriptDocs.cpp` 对文档状态采取同样模式：显式 engine 重载总是要求 `Engine.GetDocumentationState()` 有效；兼容无参数入口才可能落到 `LegacyDocumentationState`。
+
+这些 fallback 用于静态注册/早期元数据，不应用来掩盖初始化顺序错误。源码中的实际教训是 BindDatabase：如果 `Load(Binds.Cache)` 发生在 engine 自有 `BindDatabase` 构造前，无参数 `Get()` 会把数据装入 legacy fallback，随后 engine 内读者看到空数据库。当前完整初始化已把 `BindDatabase` 的创建移到 Load 之前。
+
+判断原则是：
+
+* 早期、纯元数据、后续可重放：允许 fallback；
+* 含 VM 指针、已解析 ID、某 engine 的加载结果：必须要求目标 engine 字段已经存在；
+* fallback 命中不应被当成“初始化成功”的证据。
+
+! StaticNames 的路由与兼容边界
+
+静态名称索引当前有 engine 自有 `StaticNames/StaticNamesByIndex`，也保留 `GLegacyStaticNames/GLegacyStaticNamesByIndex`。`GetOrAddStaticName`、Reserve、Reset、AddFromPrecompiled 和 GetStaticNames 都先尝试 `TryGetCurrentEngine()`，否则使用 legacy 表。
+
+预编译/JIT 数据中的 name index 只在对应名称表内容和顺序一致时有意义。多 engine 工具应在正确 `FAngelscriptEngineScope` 内加载/生成，不能让一部分名称进入 legacy、另一部分进入 engine 表。Shutdown 重置实例名称表；legacy 表是无当前 engine 兼容路径，不携带 AS 指针，但仍可能造成索引空间混淆。
+
+! Context pool 的双层分区
+
+`asCContext*` 通过两层池复用：
+
+* `thread_local GAngelscriptContextPool.FreeContexts`：线程本地，但一个线程可能先后执行多个 engine，所以取出时仍按 `Context->GetEngine()` 匹配；
+* `FAngelscriptEngine::GlobalContextPool`：实例所有，以 `GlobalContextPoolLock` 保护；跨线程取出后调用 `MovedToNewThread()`。
+
+`FAngelscriptPooledContextBase` 析构只有在“当前 engine 的底层 engine == Context->GetEngine()`”时，才允许把 context 放进该实例的全局池。否则 local pool 满后直接 Release，不会把 A 的 context 塞进 B 的池。
+
+DiscardModule 与 Shutdown 也先从 local/global pool 删除属于目标 ScriptEngine 的 contexts，防止 module/VM 释放后池中残留可执行对象。
+
+! UObject 反射产物也保存 engine 身份
+
+`UASClass` 保存 `OwnerScriptEngine` 与 `ScriptTypePtr`；`UASFunction` 保存 `ScriptFunction`；`UASStruct` 保存 `ScriptType` 与经过校验的值头。Shutdown 对 `OwnerScriptEngine == Engine` 的类逐个清空：
+
+* `ScriptTypePtr`、`OwnerScriptEngine`；
+* Construct/Defaults function；
+* 每个 `UASFunction` 的 ScriptFunction/ValidateFunction；
+* script struct 的 ScriptType，并调用 `UpdateScriptType()` 刷新 ops；
+* rooted/standalone flags。
+
+这使 Unreal UObject 可以在 GC 窗口中暂时存在，而不会继续指向已释放 VM。条件必须按 `OwnerScriptEngine` 过滤，不能让 Engine A Shutdown 清空 Engine B 的反射产物。
+
+! 多 engine 状态转换
+
+```text
+静态注册期（无 engine）
+  └─ 只写可重放的 legacy 元数据
+
+创建 Engine A
+  ├─ 建立 A 的数据库/名称表/context pool
+  ├─ 绑定重放到 A，解析出 A 的 AS 指针
+  └─ static type info 以 asIScriptEngine A 为键
+
+销毁 Engine A
+  ├─ Detach 扩展
+  ├─ 清 A contexts、UAS* 指针、static type info[A]
+  ├─ ShutDownAndRelease(A)
+  └─ Reset A 数据库
+
+创建 Engine B
+  └─ 从纯元数据重新绑定；绝不复用 A 的 AS 指针
+```
+
+! 常见失败与诊断
+
+|!现象 |!错误状态 |!检查点 |
+|第二个 engine 格式化崩溃 |LegacyToStringList 保存了 A 的 TypeInfo |`IsEngineOwnedToStringList` 写入门槛 |
+|B 找不到类型但 legacy 数据库有记录 |初始化前无参数 Register/Load 落入 fallback |创建 engine-owned DB 的时序、显式目标 API |
+|Shutdown 后模板类型仍非空 |static type clearer 未注册或未执行 |`TGetStaticTypeInfo<T>::SetForEngine`、`ClearForEngine` |
+|跨线程执行拿到另一 VM context |池取出未按 ScriptEngine 过滤 |`TryTakeContextFromPool` 与 DesiredScriptEngine |
+|name index 在 JIT 中指向错误 FName |生成/加载期间 scope 错，名称分散到两张表 |当前 engine 与 StaticNames 数量/顺序 |
+|A Shutdown 破坏 B 类 |清理没有检查 OwnerScriptEngine |UASClass 过滤条件 |
+|文档/Bind cache 初始化后仍为空 |数据写入 Legacy state 而非实例 state |数据库构造必须先于无参数兼容 API |
+
+! 修改时的证据层
+
+任何新增 static 缓存都应回答：
+
+# 值是否包含 `asITypeInfo/asIScriptFunction/asCContext` 或 engine-local ID？
+# 如果包含，以哪个 `asIScriptEngine*` 分区？
+# 谁在 `ShutDownAndRelease` 前清除该键？
+# 如果提供无 engine fallback，如何证明其中只含可重放元数据？
+# 新 engine 如何从元数据建立自己的本地值，而不是复制旧指针？
+# 多 engine 同时存活时，访问 API 如何指定目标？
+
+只依赖“通常只有一个 engine”不是有效答案；Editor、独立工具、短初始化宿主和多周期创建都能破坏这个假设。
+
+! 源码证据
+
+* `Core/AngelscriptEngine.h/.cpp`：实例字段、StaticNames 路由、context pool、UAS* 失效与 Shutdown。
+* `Binds/Helper_GetTypeInfo.h`：以 `asIScriptEngine*` 为键的模板 static type info。
+* `Core/AngelscriptType.cpp`：TypeDatabase 实例优先与 legacy fallback。
+* `Core/AngelscriptDocs.cpp`：DocumentationState 的显式/兼容解析。
+* `Binds/Bind_FString.cpp`：ToStringList 与 metadata-only fallback 门槛。
+* `Core/AngelscriptBinds.cpp`：绑定会话显式目标数据库访问器。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/runtime-engine-shared-state-flattening" "引擎状态扁平化">>
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文与作用域">>
+* <<as-doc-link "runtime-jit-vm/engine-shutdown-resource-cleanup" "关闭与资源清理">>
+* <<as-doc-link "bindings-uht-extensions/bind-execution-timing" "绑定执行时机">>

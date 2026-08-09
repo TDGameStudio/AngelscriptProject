@@ -1,0 +1,115 @@
+title: AS/Docs/zh-Hans/start/editor-compile-loop
+type: text/vnd.tiddlywiki
+tags: Start
+caption: Editor 中的脚本编译循环
+description: 建立编辑、保存、阅读诊断、验证既有对象与决定 soft/full reload 的最短反馈环。
+as-sdk-document: yes
+as-doc-key: start/editor-compile-loop
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: tutorial
+as-content-status: draft
+as-order: 70
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[script-examples]] [[project-guide]]
+as-nav-group: getting-started
+as-nav-order: 70
+as-nav-parent: start/index
+as-feature-key: start-editor-compile-loop
+
+! 最短循环
+
+# 打开一个位于项目 `Script/` 下的 `.as` 文件；
+# 一次只做一个可描述的改动；
+# 保存文件，等待插件产生编译结果；
+# 有错误时先处理第一条根因诊断；
+# 编译成功后，在 reload 前已存在的对象上验证新行为；
+# 若改变了属性、父类或反射签名，再检查 Blueprint、默认值和新旧实例。
+
+这条循环把“文本保存”“脚本编译”“类型热重载”“Editor 对象恢复”分开观察，问题不会全部被归为一句“热重载坏了”。
+
+! 一次保存经历了什么
+
+```
+已发布的最后成功状态 S0
+  -> 文件变化被发现
+    -> 预处理与编译产生候选状态 C1
+      -> 失败：丢弃 C1，继续使用 S0
+      -> 成功：分类为 body-only 或结构变化
+        -> 发布新实现/新类型 S1
+          -> 恢复实例、CDO、Blueprint 与组件关系
+            -> 用观察点确认 S1 可用
+```
+
+“日志出现 compile success”只证明候选通过编译，不自动证明最后一段恢复完成。反过来，候选编译失败时，旧状态继续工作是失败原子性合同，不应误判为“修改其实生效了”。
+
+! 先从 body-only 修改开始
+
+第一次验证可以改 `BeginPlay` 或普通函数里的日志文本/常量，不改函数声明、UPROPERTY 或父类。它应是最清晰的 soft reload 候选：已有实例身份保持，再次调用时进入新函数体。
+
+如果只创建 reload 后的新对象，会漏掉旧实例仍绑定旧函数实现的问题。至少保留一个 reload 前对象作为对照。
+
+! 结构变化需要更多观察点
+
+新增属性、改变默认值、函数参数、Blueprint specifier、delegate/enum/struct 或继承关系时，系统可能执行 full reload。除了代码生效，还要看：
+
+* 最新生成 class/struct 是否成为 canonical；
+* 旧实例状态是否按合同迁移；
+* 新对象是否得到新默认值；
+* Blueprint 子类的父类、节点和 override 是否重新编译；
+* component template 与场景组件是否重复或漂移。
+
+Full reload 本身不是失败，也不必每次重启 Editor。只有恢复结果无法证明一致时，才停止叠加变更并按恢复指南处理。
+
+|!变化 |!至少观察 |
+|函数体/常量 |同一个 reload 前实例再次调用时进入新实现 |
+|函数签名/metadata |脚本调用、Blueprint 节点 pin、override 与公开表面一致 |
+|属性/默认值 |新 CDO、新实例、既有实例和 Blueprint override 分层正确 |
+|父类/接口 |生成类型层级、Blueprint ParentClass、旧实例迁移结果 |
+|DefaultComponent |组件模板、实例组件数量、attachment 与用户修改没有重复/丢失 |
+|delegate/enum/struct |消费者重编译，旧版描述符没有成为新对象的 canonical 类型 |
+
+! 编译失败时
+
+合法的失败原子性是：新源码被拒绝，旧的最后成功实现仍保持可用。先修复第一条语法/类型错误，再观察后续诊断是否消失；不要同时重命名文件、改父类和删属性，这会让错误与 reload 影响混在一起。
+
+失败后先回答两个不同问题：候选源码为什么没有通过？最后成功状态是否仍保持？若旧实例也损坏，问题已经跨过编译边界，需要保留日志和对象状态，转入 reload 恢复分析。若旧状态正常，只修候选首错即可，不要为了“清干净”重启并丢掉失败原子性的证据。
+
+! 一次变更的记录模板
+
+```text
+修改：只改 AExampleActor::ComputeScore 的函数体
+保存前：现有实例 /Game/... 返回 10
+编译：成功，soft reload
+保存后：同一实例返回 12；对象路径与 class 身份保持
+额外检查：Blueprint 子类调用父实现也返回 12
+```
+
+结构变化时把 CDO、新旧实例和 Blueprint 结果分别写出。短记录比“我看起来试过了”更容易定位回归。
+
+! 何时扩大验证
+
+* 只改私有 body：当前场景的既有实例行为；
+* 修改公开 `UFUNCTION`/`UPROPERTY`：加 Blueprint 调用与默认值；
+* 修改 subsystem/world 生命周期：加 PIE 重启与多 world；
+* 修改网络声明：分别在 authority/client 观察；
+* 修改绑定或编译器：使用项目统一验证入口，不以一个示例替代主题覆盖。
+
+! 常见误判
+
+|!现象 |!容易得出的错误结论 |!正确检查 |
+|新创建对象行为正确 |热重载成功 |再检查一个 reload 前已经存在的对象 |
+|编译失败后场景仍能运行 |失败源码被部分采用 |确认运行的是否为最后成功实现 S0 |
+|Blueprint 节点还在 |公开合同没有变化 |重新编译 Blueprint 并检查 pin、ParentClass 与调用目标 |
+|默认值看起来没变 |属性迁移失败 |区分 CDO、新实例、既有实例和资产 override |
+|重启后正常 |问题已解决 |说明增量状态相关；重启前证据仍应进入诊断 |
+
+! 这一轮何时结束
+
+一次编辑循环只有在四项都可陈述时结束：候选编译结果、reload 分类、旧/新观察对象、预期结果。若结构变化的恢复结果不确定，就撤回或修复这一项变化，不继续叠加第二项。这样后续的更大验证是在一个已知状态上扩展，而不是在不可解释的 Editor 会话上碰运气。
+
+! 相关链接
+
+* <<as-doc-link "start/read-compile-diagnostics" "阅读编译诊断">>
+* <<as-doc-link "hot-reload/change-classification" "变化分类矩阵">>
+* <<as-doc-link "start/verify-and-iterate" "验证与迭代">>

@@ -1,0 +1,196 @@
+title: AS/Docs/zh-Hans/topics-integrations/ai-behavior-tree
+type: text/vnd.tiddlywiki
+tags: TopicsIntegrations
+caption: AI 与 BehaviorTree
+description: AngelScript 对 AIModule、BehaviorTree 与 GameplayTasks 的 engine-domain 集成入口。
+as-sdk-document: yes
+as-doc-key: topics-integrations/ai-behavior-tree
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 70
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[script-examples]] [[hazelight-docs]]
+as-integration-kind: engine-domain
+as-integration-system: AIModule/GameplayTasks
+as-nav-group: unreal-development
+as-nav-order: 100
+as-nav-parent: topics-integrations/index
+as-feature-key: ai-behavior-tree
+
+! 学完能做什么
+
+你将能用 AngelScript 编写 Behavior Tree 的 Decorator、Service 和 Task 节点，把脚本类放进 Unreal 的 Behavior Tree 资产，并根据 `AAIController`、`APawn` 与 tick/abort 生命周期组织逻辑。你也会清楚这条能力是 Unreal `AIModule` / `GameplayTasks` 的 engine-domain 暴露，不是一个独立的 AngelScript AI 插件。
+
+前置条件：先熟悉 <<as-doc-link "language/classes-inheritance-interfaces" "类、继承与接口">>、`UFUNCTION(BlueprintOverride)` 和 Unreal Behavior Tree 资产的基本编辑流程。本页从仓库已有示例出发，不试图列出整个 AIModule API。
+
+<<as-callout note "打包语义：引擎域集成">>
+项目没有 `AngelscriptAI` 之类的可选插件。脚本节点继承 Unreal 已有的 BlueprintBase 类，并通过核心插件的反射/类生成能力参与 Behavior Tree。主题归属只表示使用 `AIModule` 与 `GameplayTasks`；是否在目标中包含对应引擎模块，仍由 Unreal 项目和资产依赖决定。
+<</as-callout>>
+
+! 三类节点分别解决什么
+
+|!节点 |!仓库示例基类 |!主要职责 |!示例覆盖的回调 |
+|Decorator |`UBTDecorator_BlueprintBase` |在分支进入或持续执行时判断条件 |`PerformConditionCheckAI`、`TickAI` |
+|Service |`UBTService_BlueprintBase` |分支活跃期间周期性更新信息 |`ActivationAI`、`TickAI` |
+|Task |`UBTTask_BlueprintBase` |执行一个具体动作或工作单元 |`ExecuteAI`、`TickAI`、`AbortAI` |
+
+三个基类都会把 AI 上下文交给脚本：`AAIController OwnerController` 表示控制器，`APawn ControlledPawn` 表示它当前控制的 Pawn。不要在类构造阶段假定这两个对象已经存在；使用回调参数取得当前执行上下文。
+
+! Decorator：用条件控制分支
+
+`Script/Examples/Core/Example_BehaviorTreeNodes.as` 中的 Decorator 使用一个可在编辑器配置的布尔字段返回条件结果：
+
+<$angelscript-code lineNumbers="yes" highlightLines="1,3,6,10,17" code="""class UBTDecorator_Example : UBTDecorator_BlueprintBase
+{
+    default NodeName = "Example Decorator";
+
+    UPROPERTY(Category=ExampleDecorator)
+    bool bShouldExecute = false;
+
+    UFUNCTION(BlueprintOverride)
+    bool PerformConditionCheckAI(AAIController OwnerController, APawn ControlledPawn)
+    {
+        Print("Performing condition check for Example Decorator!");
+        return bShouldExecute;
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void TickAI(AAIController OwnerController, APawn ControlledPawn, float DeltaSeconds)
+    {
+        Print("Ticking Example Decorator!");
+    }
+};"""/>
+
+`default NodeName` 决定资产编辑器中更容易识别的节点名称，`UPROPERTY(Category=...)` 让配置项进入相应分类。`PerformConditionCheckAI` 应返回当前是否允许分支执行；如果判断依赖 Pawn 或 Controller，先检查参数是否有效，再读取状态。
+
+<<as-callout warning "不要把高成本查询塞进每次条件检查">>
+Decorator 可能被 Behavior Tree 频繁重新求值。路径搜索、大范围 Actor 扫描或复杂数据转换更适合在 Service、感知系统或缓存状态中完成，然后让 Decorator 读取一个轻量结果。
+<</as-callout>>
+
+! Service：在活跃分支维护上下文
+
+Service 适合更新 Blackboard 输入、观察目标或刷新分支需要的派生状态。仓库示例覆盖激活与 tick 两个时机：
+
+<$angelscript-code lineNumbers="yes" highlightLines="1,3,8,15" code="""class UBTService_Example : UBTService_BlueprintBase
+{
+    default NodeName = "Example Service";
+
+    UPROPERTY(Category=ExampleService)
+    float SomeValue = 50.0;
+
+    UFUNCTION(BlueprintOverride)
+    void ActivationAI(AAIController OwnerController, APawn ControlledPawn)
+    {
+        Print("Activating Example Service!");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void TickAI(AAIController OwnerController, APawn ControlledPawn, float DeltaSeconds)
+    {
+        Print("Ticking Example Service!");
+    }
+};"""/>
+
+`ActivationAI` 是建立本次活跃期状态的入口，`TickAI` 用 `DeltaSeconds` 做周期更新。若逻辑需要跨 tick 保存对象引用，应考虑目标可能被销毁、Controller 可能换 Pawn，以及 Behavior Tree 分支退出后旧状态是否还应保留。
+
+! Task：执行、持续与中止
+
+Task 示例展示了三个最重要的生命周期回调：
+
+<$angelscript-code lineNumbers="yes" highlightLines="1,8,15,22" code="""class UBTTask_Example : UBTTask_BlueprintBase
+{
+    default NodeName = "Example Task";
+
+    UPROPERTY(Category=ExampleTask)
+    float SomeValue = 50.0;
+
+    UFUNCTION(BlueprintOverride)
+    void ExecuteAI(AAIController OwnerController, APawn ControlledPawn)
+    {
+        Print("Executing Example Task!");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void TickAI(AAIController OwnerController, APawn ControlledPawn, float DeltaSeconds)
+    {
+        Print("Ticking Example Task!");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void AbortAI(AAIController OwnerController, APawn ControlledPawn)
+    {
+        Print("Aborting Example Task!");
+    }
+};"""/>
+
+用这三个入口建立清晰状态机：
+
+# `ExecuteAI` 读取上下文并开始动作。
+# 若动作跨帧，`TickAI` 只推进当前动作，不重复初始化。
+# `AbortAI` 释放本节点启动的移动、委托或临时状态，使中止后不再回调旧目标。
+
+<<as-callout note "完成 API 需要按项目基线核实">>
+BlueprintBase Task 通常还提供成功/失败完成入口，但本仓库示例没有调用具体完成函数，本页不固定其脚本侧签名。采用本文草稿前，应在当前 UE 5.7 类型数据库或生成 API 中核实实际可见名称，再把完成调用补进一个可运行示例。
+<</as-callout>>
+
+! 把脚本节点放入 Behavior Tree
+
+# 保证 `Example_BehaviorTreeNodes.as` 位于项目会编译的 `Script/` 源树中；仓库 `Script/Examples/` 是示例输入，正式项目应按自己的脚本打包规则放置。
+# 编译脚本，使三个类生成对应的 Unreal `UClass`。
+# 在 Behavior Tree 资产中添加自定义 Decorator、Service 或 Task，并选择生成的脚本类。
+# 为 `UPROPERTY` 暴露的字段设置资产侧默认值。
+# 运行 AI，观察各回调日志，再根据节点职责替换示例逻辑。
+
+如果编辑器里找不到类，先判断问题发生在哪一层：脚本是否编译成功、基类是否在当前引擎目标中可见、生成类是否被资产选择器接受、Behavior Tree 是否实际运行到该分支。不要一开始就把“没有日志”等同于脚本函数没有绑定。
+
+! Blackboard 与 GameplayTasks 的边界
+
+本页 frontmatter 把集成系统记为 `AIModule/GameplayTasks`，但现有示例只证明三类 Behavior Tree BlueprintBase 节点和 AI 上下文回调的写法。它没有覆盖：
+
+* Blackboard key selector 的全部脚本 API；
+* AI Perception 事件和感知配置；
+* GameplayTask 的创建、激活、取消与资源竞争；
+* EQS 查询；
+* 多人网络中的 AI authority 与复制表现。
+
+这些能力可能通过 Unreal 反射表面可见，但不能只凭引擎 C++ API 名称推断脚本签名。需要时在 VS Code 类型数据库或编辑器 API 搜索中核实，并把新结论绑定到具体源码、生成表或运行 fixture。
+
+! 生命周期与故障诊断
+
+!! 回调完全没有进入
+
+* 确认 Behavior Tree 资产选择的是生成后的脚本节点类。
+* 确认 AIController 已运行这棵树，并且执行路径进入对应分支。
+* Decorator 返回 `false` 时，下游 Service/Task 不会开始。
+* 确认脚本编译日志中没有让旧生成类继续留在资产中的错误。
+
+!! Tick 没有持续发生
+
+* 节点基类和资产配置可能控制是否 tick；先与仓库示例的默认形状逐项对照。
+* Task 若已经完成或分支被 Decorator 中止，后续 tick 合理地停止。
+* 不要在每个 tick 重新启动同一个异步动作。
+
+!! 中止后仍有旧逻辑运行
+
+* 在 `AbortAI` 取消由节点发起的移动、timer 或 delegate 订阅。
+* 异步回调返回时重新确认当前 Pawn、Controller 和节点状态仍然有效。
+* 不要把单次执行上下文放进无生命周期保护的全局变量。
+
+! 源码与示例入口
+
+* `Script/Examples/Core/Example_BehaviorTreeNodes.as`：Decorator、Service、Task 三类脚本节点的直接示例。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/`：核心反射、生成类与函数调用路径；本领域没有独立 AI 插件目录。
+* `Wiki/wiki/tiddlers/docs/data/SourceRegistry.tid`：本页 `as-sources` 所用证据键的登记边界。
+
+<<as-callout warning "本页仍是 draft">>
+三类节点示例已逐字对照仓库文件，但 Blackboard、GameplayTasks 和完成函数尚未形成当前项目专用 fixture。本页只把已核实的示例路径写成可操作入口，不把未核 API 提升为正式保证。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "topics-integrations/index" "专题与领域集成">>
+* <<as-doc-link "unreal-core/actors-components-defaults" "Actor、Component 与默认值">>
+* <<as-doc-link "editor-ide-debugging/vscode-setup" "VS Code 配置">>
+* <<as-doc-link "testing-diagnostics-release/script-tests" "脚本与自动化测试">>

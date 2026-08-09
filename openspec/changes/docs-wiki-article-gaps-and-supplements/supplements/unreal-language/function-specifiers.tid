@@ -1,0 +1,163 @@
+title: AS/Docs/zh-Hans/unreal-language/function-specifiers
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: UFUNCTION 指定符与调用表面
+description: 说明脚本 UFUNCTION 如何生成 descriptor/UFunction，并区分 BlueprintCallable、BlueprintEvent、Override、RPC、WorldContext、CallInEditor 与访问控制。
+as-sdk-document: yes
+as-doc-key: unreal-language/function-specifiers
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 80
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 220
+as-nav-parent: unreal-language/index
+as-feature-key: function-specifiers
+
+! 从宏到 UFunction
+
+```text
+UFUNCTION(specifiers) Return Name(Args)
+  → preprocessor FMacro(Function)
+  → FAngelscriptFunctionDesc
+  → AS function/type checking
+  → UASFunction::AllocateFunctionFor
+  → UFunction flags + parameter FProperty + native thunk
+```
+
+指定符同时影响脚本编译、Blueprint 表面、网络路由和 UFunction 调用。不能只看到 `FUNC_Native` 就绕过 `ProcessEvent`。
+
+! 核心指定符
+
+|!类别|!指定符/形态|!语义|
+|普通 Blueprint|`BlueprintCallable`、`BlueprintPure`|生成可调用节点；Pure 仍应有合法返回/输出且不能借 pure 隐藏副作用|
+|事件|`BlueprintEvent` / `BlueprintOverride`|允许 Blueprint/脚本 override，调用需解析实际实现|
+|继承|`Override`、`final`|验证父签名；final 也允许 JIT 固定 non-virtual target|
+|网络|`Server`、`Client`、`NetMulticast`、`Reliable/Unreliable`、`WithValidation`|生成 `FUNC_Net*`，通过 Unreal RPC routing|
+|权限|`BlueprintAuthorityOnly`、private/protected|限制调用表面/metadata|
+|环境|`CallInEditor`、Editor-only 区域|只在相应 Editor 表面可用|
+|执行|`Exec`|控制台 exec 表面，仍遵守宿主/签名限制|
+|上下文|WorldContext/DefaultToSelf 等 metadata|生成参数 metadata/注入合同|
+|展示|`Category`、`DisplayName`、`ToolTip`、`AdvancedDisplay`|Editor metadata|
+
+具体支持集合由当前预处理器决定；C++ `UFUNCTION` 文档、Hazelight 私有指定符或另一个 UE minor 的列表不能直接当本 fork 合同。
+
+! 普通与事件调用
+
+普通脚本方法的 `UASFunction` native thunk 把 `FFrame`/`Parms` 搬到 AS context；BlueprintEvent/override 必须先解析 UObject 上最终 UFunction。若脚本调用的函数含 RPC flags，`ProcessEvent` 负责 authority/channel/网络发送，直接 raw thunk 会把远程调用错误地变成本地 body 调用。
+
+! RPC 规则
+
+```angelscript
+UFUNCTION(Server, Reliable)
+void ServerEquipItem(FName ItemId)
+{
+    // server implementation
+}
+```
+
+* `Server`、`Client`、`NetMulticast` 三选一；
+* reliability 与 function kind 组合必须有效；
+* `WithValidation` 需要匹配 validate 路径，签名由生成器关联；
+* RPC 参数必须是 Unreal 可反射/可网络序列化的安全形状；
+* 调用者仍需遵守 authority/ownership，声明成功不保证网络条件成立；
+* reflective fallback/生成直连选择不能绕过 RPC route。
+
+! 参数与 metadata
+
+每个参数/返回值生成 `FProperty`，顺序、out/ref/const、WorldContext offset 与 `ParmsSize` 必须和 `UASFunction::FArgument` 一致。WorldContext 是隐藏/自动填充语义时，脚本可见 declaration 与原生参数结构要明确映射；不能把任意 UObject 参数按名字猜为 World。
+
+! Override 诊断
+
+Override 要匹配父函数名、参数/返回、const/static 与可覆盖性。只同名但不同签名可能形成 overload，而不是 override。Blueprint event stub 与实际 script implementation 也要区分；`final` 后不允许进一步覆盖。
+
+! 环境边界
+
+`CallInEditor` 依赖 Editor 交互；`#if EDITOR` 决定脚本是否编译，Automation `EditorContext` 只决定运行资格。packaged runtime 不能依赖 Details 按钮、Editor World 或 SourceNavigation。
+
+! 故障矩阵
+
+|!现象|!检查|
+|函数脚本可调用但 Blueprint 不显示|BlueprintCallable/Pure、private、metadata、ClassGenerator flags|
+|Override 没进入子类|签名/const/static、父 UFunction 与 event flags|
+|RPC 只在本机执行|是否绕过 ProcessEvent、actor ownership/authority、Net flags|
+|WorldContext 为空|metadata/index/offset 与调用环境|
+|Editor 正常、cooked unknown|`#if EDITOR`、EditorOnly module/script|
+
+! 生成阶段的实际分工
+
+Specifier 会跨越三个代码区域，维护时必须同时看：
+
+|!区域 |!代表入口 |!负责的结果 |
+|Preprocessor |`FAngelscriptPreprocessor` 的 function macro 解析 |把 token/参数变成 `FAngelscriptFunctionDesc` flags、metadata、参数描述 |
+|ClassGenerator Analyze/FullReload |`AngelscriptClassGenerator_Analyze.cpp`、`_FullReload.cpp` |验证父函数/WorldContext/RPC 组合，创建 UFunction/FProperty、设置 `FUNC_*` 与 metadata |
+|Dispatch |`ASFunction.cpp`、`ASFunction_CallHelpers.h`、`ASFunction_Dispatch.cpp` |FFrame/Parms → AS 参数搬运、virtual resolve、WorldContext scope、VM/JIT 调用 |
+
+`UASFunction::AllocateFunctionFor` 根据返回形状、参数、thread-safe/final/JIT 能力选择具体 dispatch class；生成后 `FinalizeArguments()` 把每个参数固化为 property/VM behavior。Specifier 因此会影响实际执行对象，不只是 Editor 显示字符串。
+
+! RPC flags 到运行路由
+
+Full Reload 生成函数时把 Server/Client/NetMulticast 映射为 `FUNC_NetServer` / `FUNC_NetClient` / `FUNC_NetMulticast`，任何网络 kind 再带 `FUNC_Net`；Reliable 与 Validate 分别形成 `FUNC_NetReliable` / `FUNC_NetValidate`。这些 flags 被 Unreal `ProcessEvent`/网络层消费。
+
+```text
+script call to RPC UFunction
+  → resolve UObject/UFunction
+  → ProcessEvent observes FUNC_Net*
+  → authority/ownership/channel decides send or local receive
+  → receiving side enters UASFunctionNativeThunk
+  → RuntimeCallEvent / validation / script body
+```
+
+若 binding/JIT 直接拿 raw function pointer 调 body，第一、二步之后的网络判定会被跳过。即使参数 ABI 完全正确，语义仍是错的。因此 RPC 永远是“反射路由优先，body 优化其次”。
+
+! WorldContext 的两种形态
+
+Analyze 会识别对象参数与 `WorldContext` metadata。Full Reload 生成时可能使用声明中已有参数，也可能生成隐藏参数；`UASFunction` 记录 `WorldContextIndex`、`WorldContextOffsetInParms` 与 `bIsWorldContextGenerated`。`ASFunction_CallHelpers.h` 在调用边界安装 `FAngelscriptGameThreadScopeWorldContext`，返回后恢复旧上下文。
+
+|!形态 |!脚本可见参数 |!运行时读取 |
+|声明中已有 WorldContext |可见，index 指向真实 argument |从 AS arg 或 Parms offset 读取 |
+|生成 WorldContext |脚本不显式传入，位于参数结构末端 |native/reflective caller 注入，`bIsWorldContextGenerated=true` |
+
+不能按参数名临时猜 offset；最终真相是生成的 Argument/FProperty 顺序与 `WorldContextOffsetInParms`。也不能把 ambient World 永久保存到全局，scope 必须支持嵌套恢复。
+
+! Event / Override / Final 的调用解析
+
+`ResolveScriptVirtual` 在对象上解析实际脚本实现；普通 non-virtual/final 函数才允许固定 target。BlueprintEvent 或可覆盖函数若直接缓存旧 `asIScriptFunction*`，Blueprint child/热重载后可能继续调用父/旧版本。
+
+* `BlueprintEvent`：当前 class 新建可覆盖 UFunction，默认 body 只是没有派生 override 时的实现。
+* `BlueprintOverride` / Override：必须找到兼容父 UFunction，不能用同名 overload 假装覆盖。
+* `final`：关闭进一步 override，也给 StaticJIT/raw dispatch 提供固定目标前提。
+* Hot Reload：签名/flags/virtual contract 改变会让 owner class、Blueprint node、delegate/RPC consumer 一起进入结构迁移。
+
+! 参数结构的 ABI 不变量
+
+每个参数/return `FProperty` 的 `GetOffset_ForUFunction()`、`ParmsSize`、out/ref flags 和 `UASFunction::FArgument` 必须一致。生成顺序通常是：创建参数 property → link/计算 offset → `FinalizeArguments()` 固化 `PosInParmStruct`、`StackOffset`、ValueBytes/DestroyArguments → 记录 WorldContext/return offset。后续 FFrame、ParmsEntry、VM 和 JIT 都消费同一布局。
+
+|!错误 |!表象 |
+|Property 顺序与 argument desc 不同 |值进入错误参数，通常只在 Blueprint/ProcessEvent 暴露 |
+|out/ref behavior 错 |调用成功但写回丢失或临时对象双析构 |
+|ParmsSize 未包含隐藏 WorldContext |后续 buffer 越界或上下文为空 |
+|对象/struct return storage 错 |普通 void/primitive 正常，复杂返回崩溃 |
+
+! 变更与发布原子性
+
+函数指定符或签名错误可能到 ClassGenerator/Verify 才暴露。候选 UFunction 必须在 flags、参数 properties、WorldContext、override/RPC 验证和 dispatch class 都完成后发布；失败时保留 last-good class/function。不能先替换函数 map，再发现 RepValidate/WorldContext/参数 property 无效。
+
+发布后还需让 Blueprint child、delegate owner、RPC metadata、debug source map 和 JIT registration 指向同一 generation。只看到新 UFunction 存在，不代表所有调用路径已经切换。
+
+! 选择与诊断顺序
+
+# 先确定谁调用谁：普通 callable、父合同 override、新 event、RPC、Editor 按钮或内部反射 callback。
+# 再确认预处理 descriptor 的 flags/metadata，而不是从最终 UI 反推。
+# 检查 ClassGenerator 创建的 `FUNC_*`、参数 FProperty、WorldContext/ParmsSize 与 override target。
+# 最后按实际入口验证：脚本直接调用、Blueprint/ProcessEvent、网络 receive、JIT/raw 不能互相替代。
+# Hot Reload 后同时核对 owner class、UFunction、Blueprint node、delegate/RPC consumer 与实例版本。
+
+! 相关链接
+
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "UFunction 生成与派发">>
+* <<as-doc-link "topics-integrations/networking-rpc" "网络 RPC">>
+* <<as-doc-link "unreal-language/reflection-signature-limits" "反射签名限制">>

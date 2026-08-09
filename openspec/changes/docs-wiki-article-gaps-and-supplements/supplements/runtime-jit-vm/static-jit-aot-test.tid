@@ -1,0 +1,181 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/static-jit-aot-test
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: StaticJIT AOT 生成与验证工作流
+description: 解释 AOT fixture、生成源码与 cache 的配对关系、Generate/Verify 差异、两次构建顺序及运行时入口证据。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/static-jit-aot-test
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 40
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: static-jit-aot-test
+
+! 先理解“配对制品”
+
+StaticJIT AOT fixture 不是“运行测试时临时 JIT 一次”。Commandlet 先编译固定脚本并同时产生 C++ 源码和 precompiled cache；C++ 必须经过 UBT 编入 `AngelscriptTest`，运行时再加载与它同代的 cache，才能把 precompiled function id 连接到已链接的本地函数。
+
+当前目录是：
+
+```
+Plugins/Angelscript/Source/AngelscriptTest/StaticJIT/AOT/
+├── AngelscriptStaticJITAotFixture.cpp       # fixture 源码、GUID、期望值和路径
+├── AngelscriptStaticJITAotGeneration.cpp    # Generate / Verify
+├── AngelscriptStaticJITAotTestCommandlet.cpp
+└── Generated/
+    ├── ASStaticJITAotFixture.as.jit.hpp      # 已跟踪
+    ├── AngelscriptJitCode_0.jit.cpp          # 已跟踪并由 UBT 编译
+    ├── AngelscriptJitInfo.jit.cpp            # 已跟踪并由 UBT 编译
+    └── StaticJITAotFixture.Cache              # 本地生成，.gitignore
+```
+
+三个文本制品提交进插件仓库，cache 明确由 `Plugins/Angelscript/.gitignore` 排除。cache 不能从别处拷一个“看起来同 fixture”的版本：它包含 build identity、固定 GUID 和函数/类型元数据，必须与生成源码处于同一轮工作流。
+
+! Fixture 的能力面
+
+`AngelscriptStaticJITAotFixture::GetScriptSource()` 返回内存脚本，而不是读取磁盘 `.as` 文件。当前 fixture 包含：
+
+* `Entry()` 调用 `AddForAOT(35)`，期望返回 `42`。
+* `double → int64/uint64` 两个转换函数，用于 interpreter/AOT 等价性。
+* `FAotObjectLastProbe(int,int)` 的 `asCALL_CDECL_OBJLAST` native constructor，验证 explicit args 后才传 destination storage。
+* `UStaticJITAotFunctionCarrier` 上的 primitive arg/return、`int&inout` writeback 与 `UObject@` 返回。
+* 带 `WorldContext` metadata 的 static/global UFUNCTION。
+
+生成身份由固定 `FGuid(2f90f2a1-6df34d23-9bc4474a-a05de08c)` 约束。改变 fixture 的函数 shape 时不仅要改期望值，还要考虑是否需要更新 GUID/制品，以及 Verify 的必需函数/方法清单。
+
+! Commandlet 参数与退出码
+
+入口是 `UAngelscriptStaticJITAotTestCommandlet`，由 runner 以 commandlet 名 `AngelscriptStaticJITAotTest` 调用：
+
+|!参数 |!行为 |
+|未传 `Mode=` |默认为 `Verify` |
+|`-Mode=Generate` |重写三个生成文本文件，并把 local cache 写到 `Generated/StaticJITAotFixture.Cache` |
+|`-Mode=Verify` |在内存中重新生成文本，并把临时 cache 写到 `Saved/StaticJIT/AOT/Verify/StaticJITAotFixture.Cache`，只做比较 |
+|其他 Mode |记录允许值，退出 `2` |
+
+generation/verification 返回失败时退出 `1`，成功退出 `0`。Generate 成功后逐项输出 `StaticJIT AOT wrote <path>`；当前正常写入项包括三个文本文件和 local cache，共四项。
+
+! Generate 内部管线
+
+`AngelscriptStaticJITAotGeneration::Run(Generate)` 执行：
+
+# `CreateIsolatedFullEngine()` 创建独立完整引擎，并用 `FAngelscriptEngineScope` 建立当前引擎上下文。
+# 注册 fixture 的 object-last native surface；若类型已存在则视为已完成，否则注册 POD value type、constructor 与 `Value` property。
+# `CompileAnnotatedModuleFromMemory()` 把固定 source 编译为模块 `ASStaticJITAotFixture`。
+# 从 module desc 取得 `ScriptModule`，调用 `GenerateStaticJITAotArtifactsForDiagnostics()`，开启 debug metadata 和 diagnostic entry markers，同时写 cache。
+# 把返回的 filename→content map 写到 `Generated/`；任一文件写失败立即返回，已写文件不回滚。
+
+Diagnostic entry marker 会在每个生成函数入口插入 `FStaticJITDiagnosticEntryMarkers::MarkEntry(FunctionId)`。它不是业务逻辑；这是运行时能证明“执行确实进入生成 C++”而非只检查函数指针非空的观察点。
+
+! Verify 不是字节逐项比较所有内容
+
+Verify 重新编译同一 fixture、生成新的内存文本和临时 cache，然后分两层比较。
+
+!! 文本制品
+
+`.jit.cpp` 按字符串直接比较。`.jit.hpp` 会先把若干由运行时引用身份产生的 constructor argument 归一化为 `STATIC_JIT_REFERENCE`，覆盖：
+
+* `FJitRef_Function`、`FJitRef_SystemFunctionPointer`、`FJitRef_Type`、`FJitRef_GlobalVar`
+* `FJitVerifyPropertyOffset`、`FJitVerifyTypeSize` 的首个参数
+
+这允许无语义的地址/引用表示变化，不会掩盖其他生成文本变化。缺文件和归一化后内容不等都进入 `StaleFiles`。
+
+!! Cache 语义
+
+local 与 verify cache 都先检查固定 GUID 和 `IsValidForCurrentBuild()`。随后定位 fixture module，比较 module 名、函数/类/枚举/全局/import 数量、code hash、imported modules、statics class、declared event/delegate、脚本相对路径与 post-init functions。
+
+函数级比较包含 return/parameter type flags、参数名/flags/defaults、function traits、variable space、object variable 位置、stack needed、function id 与 `bIsUFunction`。当前还强制存在六个 global function 和 `UStaticJITAotFunctionCarrier` 的四个方法。Verify 并非任意 cache 的完整通用序列化 diff，而是针对这个 fixture 的显式语义比较。
+
+若文本或 cache 任一层不一致，Result 会给出 `StaleFiles` 和 `StaticJIT AOT generated files are stale or incomplete`；Verify 不应覆盖 committed output 来“自愈”。
+
+! 为什么必须 build → generate → build
+
+`Tools/RunStaticJITTests.ps1` 把顺序固定为：
+
+```
+1. baseline build
+2. commandlet -Mode=Generate
+3. build generated AOT sources
+4. run Angelscript.TestModule.StaticJIT（或 -AotOnly 时 .AOT）
+```
+
+第一次 build 是为了让本轮 commandlet/生成器代码可执行；Generate 在源树写出 `.jit.cpp/.jit.hpp` 与 cache；第二次 build 才把新 `.jit.cpp` 编进模块。如果省掉第二次 build，磁盘上的 cache/源码属于新一代，但 DLL 里仍是旧注册表，运行时可能表现为 function id 找不到或入口与 cache 不匹配。
+
+UBT 会扫描 module 源树中的 `.cpp`，因此不需要在 `AngelscriptTest.Build.cs` 维护生成文件列表。这个便利同时意味着误放到 module 之外的 `.jit.cpp` 不会自动参与构建。
+
+Runner 对一个 Unreal host 特例做了严格兜底：若 commandlet 自身日志已明确 result 0，但项目启动中的无关 error 让 host process 最终非零，它只在日志确认 commandlet 成功、恰有四条写出记录且四个配对文件都存在时继续；不满足任一条件仍失败。这不是一般性的“忽略退出码”。
+
+! 运行时加载和注册
+
+运行时证据先调用：
+
+```
+FStaticJITDiagnostics::LoadPrecompiledData(Engine, CacheFilename)
+FStaticJITDiagnostics::CompileLoadedPrecompiledData(Engine, ECompileType::Initial)
+```
+
+加载成功后，每个目标 `asCScriptFunction` 需要满足四层条件：
+
+|!层 |!观察 |
+|函数身份 |`ResolveFunctionId(Engine, Function, OutFunctionId)` 成功 |
+|生成注册表 |`IsFunctionRegistered(FunctionId)` 为真 |
+|入口连接 |`jitFunction`、`jitFunction_Raw`、`jitFunction_ParmsEntry` 均非空（对要求完整三入口的 fixture case） |
+|实际执行 |prepare/execute 返回完成、业务结果正确、`GetEntryCount(FunctionId)` 从 0 变为 1 |
+
+仅有 `jitFunction != nullptr` 不能证明调用经过了期望 wrapper；仅有正确返回值也可能来自 interpreter。function id 注册 + 三入口 + diagnostic counter + 业务结果共同构成 AOT 证据链。
+
+基础 `Entry()` 通过 `asIScriptContext::Prepare()` / `Execute()`，读取 `GetReturnDWord()==42`，并要求 entry count 为 1。UASFunction 路径另行覆盖 primitive argument/return、reference writeback、object return 和 static WorldContext，防止只验证 global no-argument function。
+
+! Interpreter 与 AOT 的对照
+
+`DoubleInt64ConversionsMatchInterpreter` 刻意创建两台''顺序使用''的隔离引擎：第一台从 source 编译且确认转换函数没有附着 AOT entries；第二台从配对 cache 加载，确认 function signature 与三入口，再对相同 double 输入执行。最终同时比较预期整数值、interpreter 结果与 AOT 结果，并要求两个生成入口各执行一次。
+
+这种对照避免把“生成代码和解释器一起错”误判为通过；显式期望值提供第三个 oracle。
+
+! 多引擎真实边界
+
+当前证据不是“两个引擎并发共享一份 AOT 全局状态”，而是 `Angelscript.TestModule.StaticJIT.AOT.MultiEngine.SequentialLoadsKeepGeneratedRegistryVisible`：顺序创建、加载、释放多台 engine，并确认进程中静态链接的 generated registry 对后续 engine 仍可见。
+
+生成函数注册和 diagnostic entry counters 含进程级状态；引擎的 precompiled data/module ownership 则是 engine 相关。不要把顺序可重入扩展成并发隔离保证，尤其是 entry counter map 并未宣称为多线程并发测量工具。
+
+! 失败矩阵
+
+|!症状 |!可能层次 |!处理 |
+|Verify 报 `.jit.cpp` stale |fixture / generator 变化 |Generate 更新文本与 cache，再执行生成后 build；检查 diff |
+|只报 local cache 缺失 |cache 被正确忽略或清理 |走完整 runner 的 Generate，不提交 cache |
+|GUID / build id 不符 |cache 来自旧 fixture 或旧 build |重新 Generate，不能单独复制文本源码 |
+|function registered 但 counter 为 0 |实际调用未进入带 marker 的生成入口 |检查调用 wrapper、选中的 function id、生成时 marker 开关 |
+|源码已更新但 runtime 使用旧行为 |跳过了第二次 build |重建包含 Generated `.jit.cpp` 的 `AngelscriptTest` |
+|host 非零但日志称成功 |可能是无关启动 error，也可能真失败 |只有 runner 的“四文件 + result 0 + 四条写出”证明成立时可继续 |
+|第二台 engine 看不到 entry |静态 registry 生命周期或清理越界 |区分进程注册表与 engine precompiled state，检查 sequential-load 边界 |
+
+! 维护不变量
+
+* committed `.jit.*` 与 ignored cache 是一个生成对；不能只更新一边并宣称 runtime 有效。
+* Generate 可以写源树，Verify 只能比较并报告 stale。
+* 改 fixture shape 时同步维护 required function/method 清单、期望值和必要的 identity 版本。
+* 生成入口证明必须包含 counter 或等价执行 marker；指针非空只是注册证据。
+* 每次 Generate 后必须重新 build；运行时不能为方便而现场重生 cache。
+* 清理 module/engine state 不能清掉进程中由已链接 `.jit.cpp` 提供的下一台 engine 所需注册表。
+
+! 源码落点
+
+* `AngelscriptTest/StaticJIT/AOT/AngelscriptStaticJITAotFixture.*` —— fixture、GUID、路径和 expected results
+* `AngelscriptTest/StaticJIT/AOT/AngelscriptStaticJITAotGeneration.*` —— Generate、Verify、归一化和 cache 语义比较
+* `AngelscriptTest/StaticJIT/AOT/AngelscriptStaticJITAotTestCommandlet.*` —— Mode 与退出码
+* `AngelscriptTest/StaticJIT/AngelscriptStaticJITAotTests.cpp` —— 注册、执行、ABI、WorldContext 和多 engine 证据
+* `AngelscriptRuntime/StaticJIT/StaticJITDiagnostics.*` —— load/compile/function id/entry counter 观察面
+* `Tools/RunStaticJITTests.ps1` —— 两次构建的唯一组合 runner
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/static-jit-diagnostics" "StaticJIT 诊断接口">> —— function id、注册表与 entry counter
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文">> —— Prepare/Execute/return value
+* <<as-doc-link "runtime-jit-vm/engine-scoped-runtime-state" "引擎作用域运行时状态">> —— engine-owned 与 process-global 状态
+* <<as-doc-link "testing-diagnostics-release/release-verification-matrix" "发布验证矩阵">> —— runner 的工作流位置

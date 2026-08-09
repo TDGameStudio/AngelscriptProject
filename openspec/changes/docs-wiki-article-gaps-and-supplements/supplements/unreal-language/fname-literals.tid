@@ -1,0 +1,115 @@
+title: AS/Docs/zh-Hans/unreal-language/fname-literals
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: FName 字面量
+description: 使用 n"Name" 表达编译期可识别的 FName，并用于委托、计时器和稳定键。
+as-sdk-document: yes
+as-doc-key: unreal-language/fname-literals
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 165
+as-content-revision: 1
+as-sources: [[script-examples]] [[angelscript-plugin]] [[hazelight-docs]]
+as-nav-group: script-features
+as-nav-order: 70
+as-nav-parent: unreal-language/feature-catalog
+as-feature-key: fname-literals
+
+! 基本写法
+
+```angelscript
+FName ActionName = n"Interact";
+System::SetTimer(this, n"OnTimer", 1.0, bLooping=false);
+Delegate.BindUFunction(this, n"OnDelegateExecuted");
+```
+
+`n"..."` 生成编译期 name literal，避免从动态 FString 反复构造 FName。它适合反射函数名、socket/row/key 等稳定身份，不适合玩家显示文本或动态用户输入。
+
+! 绑定目标
+
+`BindUFunction`/timer name 指向的方法必须是 `UFUNCTION()`，签名满足调用方合同。Name literal 是弱式名称引用：重命名函数时需搜索同步更新，它不会像强类型函数句柄自动迁移。
+
+! FName 与 FString/FText
+
+FName 适合身份比较，FString 适合内容处理/日志，FText 适合本地化显示。把 name 转成显示字符串可能丢失本地化语义；把动态 FString 当 name key 会增加 name table 和转换成本。
+
+! Reload
+
+只改 handler body 可保持 name binding；改名/删除方法或改变签名会让已有 timer/delegate 绑定失效或要求 full reload。验证 reload 前已有绑定。
+
+! 从字面量到运行时 FName
+
+`n"..."` 同样是插件预处理器扩展，不是 vendored AngelScript 的原生 literal。`ParseIntoChunks` 只在标识符起点、非字符串/注释环境并且 `n` 后紧跟双引号时记录 `NameLiteralStart`；闭合引号后调用 `GenerateStaticName`：
+
+```text
+n"OnTimer"
+  → GenerateStaticName("OnTimer")
+  → FAngelscriptEngine::GetOrAddStaticName(FName("OnTimer"))
+  → replace source with __STATIC_NAME(<integer id>)
+  → AS compiler sees a call returning const FName&
+```
+
+`Bind_FName.cpp` 把 `__STATIC_NAME(int Id)` 注册为返回 `const FName&` 的内部全局函数，最终从当前 engine 的静态 name 表取值。这比在每次回调绑定时从动态 FString 构造 FName 更明确，也让生成的 delegate/event helper 可以复用同一机制。
+
+这个整数 id 只对当前静态 name registry 有意义，不是存档、网络或跨进程稳定编号。业务数据必须保存 FName/字符串值，不能序列化 `__STATIC_NAME(42)` 中的 42。
+
+! 选择矩阵
+
+|!输入来源|!推荐类型/写法|!原因|
+|源码中固定的反射函数名|`n"HandleChanged"`|编译时登记、调用点明确|
+|固定 socket/row/key|`n"Muzzle"`|身份比较而非文本拼接|
+|运行时用户输入|先保留 FString，确需身份时显式转 FName|避免无界污染 name table|
+|玩家显示文案|FText|FName 没有本地化语义|
+|日志组合|FString/f-string|内容处理比身份比较重要|
+|网络协议或持久化 key|定义稳定字符串/FName 合同|不要依赖静态 registry id|
+
+FName 比较高效不等于所有字符串都应转成 FName。大量不可控、唯一的用户文本进入全局 name pool 会造成进程期增长；动态内容继续用 FString。
+
+! 与反射绑定的真实合同
+
+```angelscript
+UFUNCTION()
+void HandleTimer()
+{
+}
+
+void Start()
+{
+    System::SetTimer(this, n"HandleTimer", 1.0, false);
+}
+```
+
+name literal 只提供目标名字，不证明目标存在或签名兼容。Timer/delegate API 仍需：
+
+* receiver 非空且在调用时仍有效；
+* 目标方法进入 UFunction 反射表；
+* 参数/返回形状满足调用方 signature；
+* overload 不靠同一个 FName 猜测出唯一安全函数；
+* owner teardown 时清 timer/解绑，避免对销毁对象的延迟调用。
+
+重命名 `HandleTimer` 时，IDE 对 name 字面量的引用能力弱于直接函数调用。维护动作应搜索旧 name 的所有 timer、delegate、animation notify、socket/data key 和 C++ 引用，再决定 redirect 或同步迁移。
+
+! 边界与诊断
+
+|!现象|!先检查|
+|`n"..."` 附近出现普通字符串错误|前缀是否在标识符起点、引号是否同行闭合、是否位于异常 chunk|
+|BindUFunction 报目标不存在|目标是否 `UFUNCTION()`、名字/大小写、实际 receiver class|
+|绑定成功但调用时报签名不兼容|delegate/timer 要求与目标参数/返回值|
+|reload 后不再调用|函数是否改名/删除、旧 binding 是否重新建立|
+|静态 name id 跨运行变化|id 本就不是稳定外部合同，保存 FName 值而非 id|
+|name pool 持续增长|是否把无界动态 FString 转成 FName|
+
+! 源码入口
+
+* `AngelscriptPreprocessor.cpp::ParseIntoChunks`：`NameLiteralStart` 识别与替换时机。
+* `FAngelscriptPreprocessor::GenerateStaticName`：登记 FName 并生成 `__STATIC_NAME(id)`。
+* `FAngelscriptEngine::GetOrAddStaticName` / `GetStaticName`：engine-owned registry。
+* `Bind_FName.cpp`：内部函数 binding、debug/default value 的 name 反解。
+* delegate、timer 和 script examples：名字的实际消费者。
+
+! 相关链接
+
+* <<as-doc-link "language/strings-names-and-formatting" "字符串、Name 与格式化">>
+* <<as-doc-link "unreal-language/delegate-event-declarations" "Delegate/Event 声明">>

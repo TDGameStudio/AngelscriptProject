@@ -1,0 +1,102 @@
+title: AS/Docs/zh-Hans/hot-reload/change-classification
+type: text/vnd.tiddlywiki
+tags: HotReload
+caption: 热重载变化分类矩阵
+description: 按函数体、属性、组件、继承、接口和重命名判断 soft/full reload 边界。
+as-sdk-document: yes
+as-doc-key: hot-reload/change-classification
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 30
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[openspec]]
+as-nav-group: workflow-validation
+as-nav-order: 30
+as-nav-parent: hot-reload/index
+as-feature-key: hot-reload-change-classification
+
+! 怎样使用这张矩阵
+
+先找出一次保存中最强的变化。如果只改函数体，可以尝试 soft reload；只要同时改了属性、父类、反射函数签名、delegate/enum/struct 形状或类集合，就按结构变化处理。分类器可能给出“建议 full”和“必须 full”两种强度，但都不应被调用方强行降级为 soft。
+
+|!变化 |!典型分类 |!已有实例 |!Blueprint/资产检查 |!主要证据 |
+|普通函数体、namespace 函数体 |soft reload 候选 |应保留身份与运行状态，并切换到新函数体 |确认 Blueprint 子类仍调用新父类实现 |Function、NamespaceFunction、BlueprintChild tests |
+|没有语义变化 |soft/no-op 路径 |不应重建类型 |无额外影响 |`NoChange` 分类测试 |
+|新增/删除 UPROPERTY、属性数量变化 |full reload |需要新类型形状与实例迁移 |检查默认值、序列化与 Blueprint 字段 |Property、Component、ASClass replication tests |
+|修改父类或继承链 |full reload |旧新 class chain 需要重建 |检查 Blueprint 父类与 `IsA` |ChangeClassification、Inheritance tests |
+|新增/删除类 |full reload |更新模块记录与 canonical type |检查资产引用和 redirects |ClassAdded、ClassRemoved tests |
+|UFUNCTION 签名、参数名、默认参数、metadata 变化 |建议或要求 full |函数描述与反射属性需要重建 |重新编译调用该函数的 Blueprint |FunctionSignature/Metadata/DefaultArgument tests |
+|BlueprintEvent / BlueprintOverride 形状变化 |full reload |更新 override/dispatch 映射 |检查 Blueprint override 节点 |Blueprint specifier tests |
+|delegate/event 新增或签名/种类变化 |full reload |更新 delegate signature 与 property target |检查绑定和广播节点 |Delegate、EnumDelegate runtime tests |
+|enum 值或 metadata 变化 |full reload |维护旧新 enum 与名称列表 |检查序列化值和 Blueprint pin |Enum reload delegate tests |
+|USTRUCT layout 变化 |full reload |保留旧 layout 并更新 newest-version 链 |检查属性和函数参数 retarget |Struct tests |
+|default 语句或 default component 变化 |建议 full，按结构验证 |区分既有实例与新对象默认值 |检查 CDO、组件模板和 Blueprint defaults |DefaultStatement、Component tests |
+|类重命名 |full reload + redirect 判断 |旧类引用需指向新类 |检查 Blueprint child reparent |ClassRename tests、CoreRedirects |
+|删除脚本文件 |full/module 更新 |移除类型与函数可见性 |检查资产悬空引用 |FileRemoval、ModuleRecord tests |
+
+! Soft reload 的合同
+
+Soft reload 适用于类型反射形状不变、只需要替换执行实现的变化。它应满足：
+
+* 类对象和已有实例身份保持；
+* 其它未修改模块继续可用；
+* 新调用进入新的函数体；
+* 已运行的 Blueprint 子类、delegate 或 namespace 调用不会继续固定到旧实现；
+* reload 失败时保留旧实现并给出诊断。
+
+<<as-callout warning "函数看起来一样，不代表一定是 body-only">>
+修改 UFUNCTION 参数名、默认参数、Blueprint specifier 或 metadata 会改变 Unreal 反射合同，即使 C++/AS 返回类型和函数名没变，也可能建议或要求 full reload。
+<</as-callout>>
+
+! Full reload 的合同
+
+Full reload 会生成新的 `UASClass` / `UScriptStruct` / delegate 或 enum 版本，并维护旧到新的映射。它需要同时考虑：
+
+* canonical 类型查询返回新版本；
+* 旧 layout 在仍被旧对象引用时保持可解释；
+* 属性、函数参数和 delegate property retarget 到正确的新类型；
+* Editor 对象和 Blueprint 子类经过 ClassReloadHelper 恢复；
+* CDO、默认值和 default component 的迁移语义明确；
+* 对类重命名，只有无歧义的一对一场景才自动写入 CoreRedirect。
+
+! 常见变化的判断细节
+
+!! 只改函数中的常量或分支
+
+如果函数声明、metadata 和所属类型都不变，这是最清晰的 soft reload 候选。用已有实例重复调用验证，不要只创建新对象。
+
+!! 新增普通 UFUNCTION
+
+即使没有 Blueprint specifier，新增反射函数也会改变生成 `UClass` 的函数集合，因此测试把它归入建议 full。删除 UFUNCTION 的风险更高，因为 Blueprint 或反射调用可能仍持有旧引用。
+
+!! 属性默认值与 default 语句
+
+默认值变化必须区分：已有实例的当前值、新创建实例继承的新 CDO 默认值、Blueprint 子类已经覆盖的默认值。分类测试只证明 planner 能识别变化，具体迁移结果还需 Component/Blueprint fixture 验证。
+
+!! 重命名与删除
+
+重命名不是单纯“删除旧类 + 新增新类”。插件只在一个窗口内能够无歧义配对一旧一新时生成 Unreal CoreRedirect；多类同时变化或名字无法唯一匹配时必须由维护者显式处理。生成类名包含实际 `A` / `U` 前缀，redirect 不能照搬去前缀的普通 C++ 示例。
+
+! PIE 与重启建议
+
+|!场景 |!建议 |
+|body-only soft reload |可在 PIE 中验证，但必须调用已有实例确认分派更新 |
+|结构变化被 planner 提升为 full |优先结束当前 PIE，再验证 Editor 类型/Blueprint 和新 PIE 会话 |
+|full reload 后 Blueprint/对象恢复正常 |不需要仅因为发生 full reload 就重启 Editor |
+|类型查询、Blueprint 父类或实例映射无法证明一致 |保存日志与最小复现，停止叠加改动，必要时重启 Editor |
+
+! 证据入口
+
+分类矩阵的直接回归位于 `Plugins/Angelscript/Source/AngelscriptTest/HotReload/AngelscriptHotReloadChangeClassificationTests.cpp`。结果验证分散在同目录的 Function、Property、Component、BlueprintChild、Struct、Delegate、ClassRename、FileRemoval、PIESession 与 Networking 测试。维护者不应只新增一个分类断言；凡是改变分类规则，还应在对应运行时主题补最终行为回归。
+
+<<as-callout note "矩阵是当前基线，不是永久保证">>
+分类器会随 UE 版本、ClassGenerator 能力和重实例化支持演进。采用本文前应以当前 `AngelscriptClassReloadPlanner.*` 和对应测试为准；历史计划中的分类文字不能覆盖当前源码结果。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "hot-reload/daily-workflow" "热重载日常工作流">>
+* <<as-doc-link "hot-reload/failures-and-recovery" "热重载失败与恢复">>
+* <<as-doc-link "hot-reload/reload-pipeline-internals" "热重载管线实现原理">>

@@ -1,0 +1,93 @@
+title: AS/Docs/zh-Hans/editor-ide-debugging/content-browser-scripts
+type: text/vnd.tiddlywiki
+tags: EditorIdeDebugging
+caption: Content Browser 中的 .as 脚本
+description: 理解脚本数据源如何把项目文件映射到 Content Browser，并区分浏览、编辑、编译与资产语义。
+as-sdk-document: yes
+as-doc-key: editor-ide-debugging/content-browser-scripts
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 90
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 230
+as-nav-parent: editor-ide-debugging/index
+as-feature-key: content-browser-scripts
+
+! 它解决什么
+
+`AngelscriptEditor/ContentBrowser/` 提供自定义数据源，让项目 `.as` 文件能在 Unreal Content Browser 中被发现、显示并打开。它改善导航体验，但脚本仍是源码文件，不是普通 `.uasset`。
+
+! 三个边界
+
+* Content Browser 条目来自文件/source provider 映射，不代表 `.as` 已转换为资产；
+* 打开条目交给配置的源码编辑器/导航流程，编译由脚本编译管线负责；
+* 删除、重命名脚本可能改变生成 class/module，并影响 Blueprint 资产，不能按“删除一个普通文本条目”看待。
+
+! 数据流模型
+
+```text
+project/plugin Script roots
+  → script source provider / logical paths
+  → Angelscript Content Browser data source
+  → virtual folders + file items
+  → open/rename/delete request
+  → physical filesystem operation
+  → DirectoryWatcher/source provider change
+  → compile/reload/class impact
+```
+
+Content Browser data source 是已有 source identity 的 Editor 投影，不应发明第二套 module naming。UI item 的 internal path、display name 和物理 filename 需要保持可逆映射；同名文件必须靠完整 logical path 区分。
+
+! 日常工作流
+
+# 在项目 `Script/` 或已注册 plugin mount 创建 `.as` 文件。
+# 在 Content Browser 对应虚拟目录确认条目；打开后应进入配置的代码编辑器，而非资产编辑器。
+# 保存文件，观察脚本 compile 诊断和 reload 结果；UI item 可见不等于 compile 成功。
+# Rename/delete 前搜索 class、include、FName 绑定和 Blueprint parent 影响。
+# 操作后确认 watcher 产生 add/remove/change，旧逻辑路径不再活动，新路径只有一个 source record。
+
+! 与 `.uasset` 的差别
+
+|!行为|!.as source item|!.uasset|
+|身份|source provider logical path/module|package/object path|
+|编辑器|外部源码编辑器/VS Code|Unreal asset editor|
+|保存后动作|preprocess/compile/reload|asset serialize/recompile as needed|
+|rename|filesystem + include/module/class migration|asset rename + redirector workflows|
+|delete风险|类型消失、Blueprint parent/node、module dependency|资产引用/redirector|
+
+不要期待 `.as` 自动产生 UObject redirector。脚本类 rename 可能需要 CoreRedirect 或明确 Blueprint migration，单纯文件 rename 也可能保持/改变 class 名，两者分别评估。
+
+! 可用环境
+
+Content Browser integration 归 `AngelscriptEditor`，只在 Editor 模块和 Content Browser 子系统可用；commandlet、Game/Server、packaged runtime 不需要也不应加载该 UI data source。脚本编译 Runtime owner 仍可在非交互环境运行，不能把 UI data source 当 source provider 本身。
+
+! 找不到脚本时
+
+# 确认文件位于项目 `Script/` 根及支持的 mount；
+# 确认插件 Editor 模块已加载；
+# 检查 data source 注册和虚拟路径；
+# 区分“Content Browser 不显示”与“编译器没发现”——两者可能只有一个失败；
+# 刷新后仍缺失时记录逻辑路径，不只记录磁盘绝对路径。
+
+进一步区分三类失败：
+
+|!层|!症状|!检查|
+|source discovery|UI 和 compiler 都没有|Script root、skip directories、provider registration|
+|Content Browser projection|compiler 有，UI 没有|Editor module/data source、virtual path/filter/refresh|
+|source navigation|UI 有，双击不打开|source accessor、physical resolution、VS Code configuration|
+
+! 重命名与删除
+
+在 Content Browser 触发文件操作时，最终仍需让目录 watcher、module record 和 reload 收到正确 add/remove。类名变化还可能需要 CoreRedirect；UI 成功改名不证明 Blueprint 子类已迁移。
+
+操作失败或 reload 失败时，last-good class 可能仍活动，而磁盘/UI 已显示新路径。此时诊断要同时记录 filesystem state、canonical source records 和 active module generation；不要重复创建旧文件来“让 UI 好看”，以免形成两个来源。
+
+! 相关链接
+
+* <<as-doc-link "start/project-script-layout" "Script 目录与文件布局">>
+* <<as-doc-link "editor-ide-debugging/source-navigation" "源码导航">>
+* <<as-doc-link "hot-reload/class-rename-and-removal" "类重命名、删除与重定向">>

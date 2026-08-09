@@ -1,0 +1,159 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/conditional-compilation
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: 条件编译与 Editor-only 边界
+description: 解释 AngelScript #if/#ifdef 状态机、内建与自定义 flags、cooked 模拟覆盖、Editor-only 行记录和常见误用。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/conditional-compilation
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 110
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 210
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: conditional-compilation
+
+! 条件编译决定“符号是否存在”
+
+Editor-only API 在非 Editor 表面可能根本没有声明。运行时 `if (IsEditor())` 仍要求 parser/compiler 解析两边的类型和函数，因此不能保护不存在的符号。需要在预处理阶段移除：
+
+```angelscript
+#if EDITOR
+void OpenEditorTool()
+{
+    // 这里只在 Editor 脚本表面进入 parser/compiler
+}
+#endif
+```
+
+预处理器会把 directive 行替换为空白，并让 inactive branch 的源码不进入后续 chunk/descriptor/AS compiler。它控制的是编译可见性，不是运行时布尔分支，也不是 Automation runner 的环境过滤。
+
+! 当前内建 flags
+
+`FAngelscriptPreprocessorContext::CreateFromCurrentEngineContext()` 构造每次编译使用的 `TMap<FString, bool>`：
+
+|!Flag |!取值来源 |!典型用途 |
+|`EDITOR` |`ShouldUseEditorScriptsForCurrentContext()` |Editor-only 函数、类和工具调用 |
+|`EDITORONLY_DATA` |`WITH_EDITORONLY_DATA` 与当前 game/server/editor-script context |只在 editor data 存在时声明字段/资产数据 |
+|`COOK_COMMANDLET` |`IsRunningCookCommandlet()` |cook commandlet 特有路径 |
+|`RELEASE` |`UE_BUILD_SHIPPING` 或 `UE_BUILD_TEST` |Test/Shipping 共用的 release 表面 |
+|`TEST` |`!UE_BUILD_SHIPPING` |非 Shipping 的诊断/测试表面 |
+|`WITH_SERVER_CODE` |UE 的 `WITH_SERVER_CODE` |服务器代码是否编入目标 |
+
+`UAngelscriptSettings::PreprocessorFlags` 中的自定义名称随后以 `true` 加入同一个 map。自定义 flag 适合产品 feature surface，但它是 compile context 的输入；修改后需要重新预处理/编译受影响模块，不能期待已加载 bytecode 自动改变。
+
+! 支持的 directive 和表达式
+
+```angelscript
+#ifdef FEATURE_X
+#ifndef FEATURE_Y
+#if EDITOR
+#if !RELEASE
+#elif TEST
+#else
+#endif
+```
+
+当前 `#if` / `#elif` 表达式只接受//一个已知 flag 名//，可在开头加单个 `!`。它不是 C 预处理器表达式求值器：
+
+```angelscript
+#if EDITOR && TEST   // 不受支持
+#if defined(EDITOR)  // 不受支持
+#if 1                // 不受支持
+```
+
+对 `#if UNKNOWN`，`ParsePreProc()` 会报 `Invalid preprocessor condition` 并把编译标为错误。`#ifdef`/`#ifndef` 通过 map 查找真假；为了让 typo 能得到一致诊断，项目文章和新代码宜优先使用 `#if FLAG` / `#if !FLAG`，并确保 flag 已登记。
+
+! 分支状态机
+
+每层嵌套保存五个状态：当前值、是否已有 branch 命中、是否已出现 else、directive 行，以及条件文本。处理规则是：
+
+# `#if`/`#ifdef`/`#ifndef` push 一层；
+# `#elif` 只在前面没有分支命中、且外层均 active 时求值；
+# `#else` 只在本层尚无命中时 active，并禁止第二个 else；
+# `#endif` pop 一层；
+# 任意外层 inactive 时，当前源码整体 inactive。
+
+一个已经 inactive 的父分支中的子 `#if` 仍要平衡 stack，但其条件不会求值，也不会为未知子 flag 产生诊断。这种短路避免“本来不会参与目标构建的代码”污染当前编译，同时仍能发现结构不平衡。
+
+```angelscript
+#if EDITOR
+    #if EDITOR_TOOL_V2
+    void UseV2() {}
+    #elif EDITOR_TOOL_V1
+    void UseV1() {}
+    #else
+    void UseFallback() {}
+    #endif
+#endif
+```
+
+! Cooked 模拟与强制 Editor 预处理
+
+Editor 进程不一定意味着这次编译应得到 Editor 表面。启用 cooked simulation 时，context 会覆盖：
+
+```text
+EDITOR=false
+EDITORONLY_DATA=false
+RELEASE=true
+TEST=false
+```
+
+这用于在 Editor 主机中检查接近 cooked/release 的脚本集合。另一条显式的 “force preprocess editor code” 路径会把 `EDITOR` 和 `EDITORONLY_DATA` 强制为 true。诊断条件编译差异时，必须记录这些 context overrides，而不能只看当前 exe 是不是 Editor。
+
+! EDITOR 与 EDITORONLY_DATA 不等价
+
+`EDITOR` 表示编译 Editor 脚本行为；`EDITORONLY_DATA` 表示目标允许 editor-only 数据。某些运行环境可能使用 Editor 脚本，却不应保存特定数据；反之，数据布局与工具函数的生命周期也不同。字段只因资产编辑需要存在时优先考虑 `EDITORONLY_DATA`，调用 Editor module API 时使用 `EDITOR`，不要把二者机械成对复制。
+
+预处理器会追踪嵌套条件中的 `EDITOR` / `EDITORONLY_DATA`，在 module descriptor 的 `EditorOnlyBlockLines` 保存行区间。Editor tooling、source mapping 或 reload 分析可据此理解源码区域；这不是运行时 if 的副产物。
+
+! 与 Automation flags 的区别
+
+```angelscript
+#if EDITOR
+UCLASS(meta=(AngelscriptTestFlags="EditorContext|EngineFilter"))
+class UEditorOnlySuite : UAngelscriptTestSuite
+{
+}
+#endif
+```
+
+`#if EDITOR` 决定 suite 是否被编译、生成和发现；`EditorContext` 决定已发现的 Automation test 在什么 application context 可运行。只写 `EditorContext` 不能保护对 Editor-only 类型的引用，只写 `#if EDITOR` 也没有给 runner 合法的 `EAutomationTestFlags`。
+
+! 失败诊断
+
+|!诊断/现象 |!根因 |!处理 |
+|`Invalid preprocessor condition` |`#if` 名称未登记、包含复杂表达式或 typo |核对内建表/Settings，只用 `FLAG` 或 `!FLAG` |
+|`Invalid #elif, no matching #if found` |缺少 opener，或 `#else` 后又写 `#elif` |从报告行向上检查当前嵌套层 |
+|`Invalid #else...` |无匹配 opener 或同层第二个 else |每层最多一个 else |
+|`Invalid #endif...` |多余结束符 |删除多余项，不用注释“配平” |
+|`missing #endif` |文件结束时 stack 非空 |诊断指向最后一个未闭合 directive 行 |
+|Editor 正常、cooked 缺 symbol |行为只受 runtime if 保护，或 cooked simulation 改写 flags |把声明/引用共同放入 compile-time branch |
+|修改自定义 flag 没效果 |活动 module 尚未重新预处理 |触发正确的 compile/reload，而不是只改运行时配置 |
+|inactive include 仍被怀疑 |误读 include 图 |inactive branch 中的 `#include` 不会进入模块依赖处理 |
+
+! 维护规则
+
+* flag 名应稳定、含义单一；不要把环境检测和业务版本号混进同一个名称；
+* 声明和所有引用必须在兼容条件下共同可见，避免一边有类型、一边无类型；
+* 新自定义 flag 要记录设置来源、默认表面、cook/CI 覆盖和删除计划；
+* `RELEASE` 包含 UE Test 与 Shipping，而 `TEST` 表示非 Shipping；不要按日常英文含义猜；
+* 条件分支仍应保持 API 形状清晰，避免不同环境导出同名但不兼容的签名；
+* 对环境差异的证据至少覆盖 context flag dump/编译诊断，而不是只运行一个 Editor 实例。
+
+! 源码锚点
+
+* `Preprocessor/AngelscriptPreprocessor.h`：`FAngelscriptPreprocessorContext::PreprocessorFlags` 与 module preprocessing 状态；
+* `Preprocessor/AngelscriptPreprocessor.cpp`：内建 flags、cooked/forced-editor overrides、`FActiveIfDef` stack、`ParsePreProc()` 和缺失 `#endif` 诊断；
+* `Core/AngelscriptSettings.h`：项目自定义 `PreprocessorFlags` 配置；
+* module descriptor 的 `EditorOnlyBlockLines`：Editor-only 源码行区间。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/preprocessor-context" "预处理上下文">>
+* <<as-doc-link "compile-module-preprocessor/include-dependency-graph" "Include 依赖图">>
+* <<as-doc-link "testing-diagnostics-release/reflected-script-tests" "Reflected Script Tests">>

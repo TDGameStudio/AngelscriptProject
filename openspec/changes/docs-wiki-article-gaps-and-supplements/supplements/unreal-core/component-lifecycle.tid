@@ -1,0 +1,174 @@
+title: AS/Docs/zh-Hans/unreal-core/component-lifecycle
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Component 生命周期与事件
+description: 选择 ActorComponent、SceneComponent、PrimitiveComponent，处理注册、BeginPlay、Tick、attach 和 delegate。
+as-sdk-document: yes
+as-doc-key: unreal-core/component-lifecycle
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 60
+as-content-revision: 1
+as-sources: [[script-examples]] [[angelscript-plugin]]
+as-nav-group: unreal-development
+as-nav-order: 50
+as-nav-parent: unreal-core/index
+as-feature-key: component-lifecycle
+
+! 三类常用基类
+
+|!基类 |!自身能力 |!适合 |
+|`UActorComponent` |无 transform 的 Actor-owned 功能 |状态、规则、网络/能力封装 |
+|`USceneComponent` |相对/世界 transform 与 attach 层级 |挂点、逻辑空间节点、相机支点 |
+|`UPrimitiveComponent` |SceneComponent + 渲染/碰撞 |mesh、shape、触发区、可命中对象 |
+
+只需要可复用业务状态时，不要继承 PrimitiveComponent；额外的渲染/碰撞生命周期会增加注册和 world 依赖。反过来，需要 attach 的类型不能只用 UActorComponent。
+
+! 默认组件与动态组件
+
+默认组件由脚本 class 的 CDO/template 描述，Actor 实例化时随 owner 创建：
+
+```angelscript
+class AScannerActor : AActor
+{
+    UPROPERTY(DefaultComponent, RootComponent)
+    USceneComponent SceneRoot;
+
+    UPROPERTY(DefaultComponent, Attach = SceneRoot)
+    USphereComponent ScanVolume;
+}
+```
+
+动态组件则需要在正确 owner/outer 下创建、注册并 attach。`UBillboardComponent::Create(this, n"Billboard")` 是仓库 ConstructionScript 示例使用的当前入口。动态创建不只是 new 一个 UObject：未注册的 Scene/Primitive component 不会正常进入 world、渲染或碰撞。
+
+! 生命周期与 Actor 的关系
+
+默认组件一般先于 Actor BeginPlay 存在并完成注册；组件自己的 BeginPlay 与 owner play 状态相关。Actor EndPlay/销毁会带动 component teardown，但组件也可能被单独创建、注册、注销或销毁。
+
+```
+component template
+  -> owner instance 创建 component
+  -> attach + register
+  -> BeginPlay（owner/world 已进入 play）
+  -> Tick / events
+  -> EndPlay / unregister
+  -> destroy / GC
+```
+
+Component 代码不要假设 owner 永远非空且处于 gameplay；Editor preview、template/CDO 和 teardown 阶段的对象需要被排除或谨慎处理。
+
+! 一个带 Overlap 的组件
+
+`Script/Examples/Core/Example_Overlaps.as` 给出了实际 delegate 签名。下面保留 begin/end 两条绑定，并在 EndPlay 对称解除的具体函数名留给当前 delegate binding 表面；如果当前绑定没有 RemoveUFunction，应通过对象重实例化/清空 owner event 的既有合同完成清理，不能编造 API。
+
+<$angelscript-code lineNumbers="yes" highlightLines="6-7,11-15" code="""class UTriggerReporter : UPrimitiveComponent
+{
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        OnComponentBeginOverlap.AddUFunction(this, n"HandleBeginOverlap");
+        OnComponentEndOverlap.AddUFunction(this, n"HandleEndOverlap");
+    }
+
+    UFUNCTION()
+    void HandleBeginOverlap(
+        UPrimitiveComponent OverlappedComponent,
+        AActor OtherActor,
+        UPrimitiveComponent OtherComponent,
+        int OtherBodyIndex,
+        bool bFromSweep,
+        const FHitResult&in Hit)
+    {
+        if (OtherActor != nullptr)
+            Log(f"Entered {OtherActor.GetName()}");
+    }
+
+    UFUNCTION()
+    void HandleEndOverlap(
+        UPrimitiveComponent OverlappedComponent,
+        AActor OtherActor,
+        UPrimitiveComponent OtherComponent,
+        int OtherBodyIndex)
+    {
+        if (OtherActor != nullptr)
+            Log(f"Left {OtherActor.GetName()}");
+    }
+}"""/>
+
+Handler 必须是 UFUNCTION，name literal 与函数名一致，参数顺序/引用方向匹配 delegate。Begin 与 End 的签名不同，不能让两个事件绑定同一个错误形状的 handler。
+
+! 碰撞配置也是合同的一部分
+
+绑定成功不代表事件必然产生。还需检查：
+
+* component 已注册到正确 world；
+* collision enabled 与 object type；
+* 双方 response 是否为 overlap；
+* generate overlap events 是否启用；
+* Actor/组件是否已 EndPlay 或 hidden/disabled；
+* server/client 是否各自拥有需要的碰撞表示。
+
+一个 Actor 多个 component/body 可能产生多条事件。业务若关心“Actor 当前是否在区域内”，用 set/计数维护重叠来源，不把一次 begin 与一次 end 假设为严格一对一。
+
+! Attach 与 Transform
+
+默认层级在 class metadata 中用 `RootComponent` 和 `Attach`；运行时 attach 需要明确 transform rule（保持 world、保持 relative 或 snap）。修改 parent 时还要考虑：
+
+* 子组件 relative transform 的新解释；
+* parent socket 是否存在；
+* parent 未注册/销毁时的行为；
+* Blueprint 对继承组件 transform 的 override；
+* full reload 后 template 层级是否重复。
+
+把 attachment 当作可视层级字符串不足以验证，应该在实例上检查 `GetAttachParent`、relative/world transform 和组件注册状态（使用当前绑定可见的实际入口）。
+
+! Component Tick
+
+Component tick 与 Actor tick 分别配置。适合每帧更新的 component 仍要使用 DeltaTime；能由 owner event 驱动时无需独立 tick。大量细粒度 component tick 会增加调度成本，Subsystem 或聚合 manager 可能更合适。
+
+需要避免的模式：Actor Tick 调 Component.Update，同时 component 自己也启用 Tick，导致逻辑执行两次。
+
+! Owner、World 与网络
+
+Component 随 owner 进入 world，通过 owner/world 取得上下文。ActorComponent 自身的 replication 还依赖 owner Actor replication、component replicated 标记和正确 server authority；仅给成员写 `Replicated` 不会让未复制的 owner/component 自动同步。
+
+运行时保存 owner 之外的 Actor 引用时，根据生命周期选择强/弱引用，并在 owner EndPlay/Deinitialize 清理跨 world 关系。
+
+! Hot reload 与 DefaultComponent
+
+|!变化 |!期望路径 |!检查 |
+|只改 handler body |soft 候选 |已有组件 delegate 调到新 body |
+|新增/删除组件属性 |full |CDO template、实例、Blueprint Components 面板 |
+|改变组件类型 |full |旧 template/instance 移除，新类型注册 |
+|改变 Root/Attach/socket |full |层级、transform 与 Blueprint override |
+|改变 handler 签名 |full/重新绑定 |delegate property/signature 与现有绑定 |
+
+第二次 reload 特别重要：第一次遗留的组件 template、delegate binding 或 registry cache 常在第二次表现为重复 component/重复回调。
+
+! 故障定位表
+
+|!症状 |!优先检查 |
+|组件属性非空但不在场景工作 |是否只是普通引用、是否注册到 world |
+|Components 面板重复项 |ConstructionScript 非幂等或旧 default template 未清理 |
+|Overlap 不触发 |collision/generate overlap/注册，而非只看绑定代码 |
+|Overlap 一次进入多次回调 |多个 component/body 或重复 AddUFunction |
+|Actor 移动但子组件不跟随 |attach parent/rule 与注册顺序 |
+|热重载后旧组件仍 tick |旧实例/注册/tick function 未 teardown |
+|客户端组件状态不一致 |owner/component replication 与 authority |
+
+! 源码与证据入口
+
+* 绑定：`AngelscriptRuntime/Binds/Bind_UActorComponent.cpp`、`Bind_USceneComponent.cpp`
+* Actor/default component 生成：`AngelscriptRuntime/ClassGenerator/`
+* Component overlap 示例：`Script/Examples/Core/Example_Overlaps.as`
+* Construction 示例：`Script/Examples/Core/Example_ConstructionScript.as`
+* 热重载行为：`AngelscriptTest/HotReload/AngelscriptHotReloadComponentTests.cpp`
+
+! 相关链接
+
+* <<as-doc-link "unreal-core/actors-components-defaults" "Actor、Component 与默认值">>
+* <<as-doc-link "unreal-core/construction-script" "ConstructionScript 与派生数据">>
+* <<as-doc-link "topics-integrations/collision-and-overlap-events" "碰撞与 Overlap 事件">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint、CDO 与默认值迁移">>

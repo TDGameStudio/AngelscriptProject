@@ -1,0 +1,134 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/angelscript-compile-settings
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: AngelScript 编译设置
+description: DefaultAngelscriptCompileOptions.ini 配置文件的结构、字段与构建策略，包含 bCompileAngelscriptUnitTests 及函数绑定方式等编译期选项。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/angelscript-compile-settings
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 1
+as-sources: [[openspec]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: internals-reference
+as-nav-order: 55
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: angelscript-compile-settings
+
+! 概述
+
+`Config/DefaultAngelscriptCompileOptions.ini` 是 AngelScript 插件的''编译策略配置文件''。它使用 Unreal 标准 INI 格式，配置节为 `[/Script/AngelscriptRuntime.AngelscriptCompileOptions]`，对应运行时模块中的 `UAngelscriptCompileOptions` 设置对象。
+
+该文件的定位与普通编辑器偏好文件（如 `DefaultEditorSettings.ini`）不同：它''只包含影响 C++ 编译决策的选项''，当文件内容发生任何改变时，Unreal Build Tool（UBT）可以通过外部依赖机制正确地使包含 `AngelscriptTest` 模块的构建目标的 makefile 失效，触发增量重新编译。
+
+<<as-callout note "配置文件与 UBT 的联动">>
+`AngelscriptTest.Build.cs` 将 `Config/DefaultAngelscriptCompileOptions.ini` 注册为 UBT 外部依赖。这意味着每次修改该文件后，下次构建会自动检测到 makefile 失效并触发相应的重新编译，无需手动清理 Intermediate 目录。
+<</as-callout>>
+
+! 配置文件位置与格式
+
+文件路径（相对于项目根目录）：
+
+```
+Config/DefaultAngelscriptCompileOptions.ini
+```
+
+配置节名称固定为：
+
+```
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+```
+
+项目实际配置示例（来自 `Config/DefaultAngelscriptCompileOptions.ini`）：
+
+```
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+bCompileAngelscriptUnitTests=true
+FunctionBindingMethod=NativeRuntimeLinked
++NativeRuntimeLinkedModules=AIModule
++NativeRuntimeLinkedModules=AngelscriptRuntime
++NativeRuntimeLinkedModules=AssetRegistry
++NativeRuntimeLinkedModules=Engine
++NativeRuntimeLinkedModules=EngineSettings
++NativeRuntimeLinkedModules=EnhancedInput
++NativeRuntimeLinkedModules=Landscape
++NativeRuntimeLinkedModules=NavigationSystem
++NativeRuntimeLinkedModules=UMG
++NativeRuntimeLinkedModules=UMGEditor
++NativeRuntimeLinkedModules=UnrealEd
+```
+
+! 已记录的配置字段
+
+!! bCompileAngelscriptUnitTests
+
+| 字段 | 说明 |
+|---|---|
+| 键名 | `bCompileAngelscriptUnitTests` |
+| 类型 | 布尔（`true` / `false`） |
+| 作用 | 控制 `AngelscriptTest.Build.cs` 是否定义 `WITH_ANGELSCRIPT_UNITTESTS` 宏 |
+| 为 `true` 时 | 定义 `WITH_ANGELSCRIPT_UNITTESTS=1`，Unreal 自动化框架可发现并注册 AngelScript 测试前缀 |
+| 为 `false` 时 | 定义 `WITH_ANGELSCRIPT_UNITTESTS=0`，AngelScript C++ 自动化测试不向框架注册测试用例 |
+
+此字段是''测试编译开关''，它控制的是测试注册路径是否被编译进去，而不是 UBT 是否扫描或包含 `AngelscriptTest` 模块本身。
+
+<<as-callout warning "模块级排除需要单独的构建目标配置">>
+`bCompileAngelscriptUnitTests=false` 仅阻止 Unreal 自动化测试用例的注册和测试相关编译路径，并不从构建目标中移除 `AngelscriptTest` 模块。若需完全排除该模块（例如在发行目标中），须通过构建目标（`.Target.cs`）或插件级模块开关进行配置，而非仅调整此 INI 字段。
+<</as-callout>>
+
+!! FunctionBindingMethod
+
+| 字段 | 说明 |
+|---|---|
+| 键名 | `FunctionBindingMethod` |
+| 类型 | 枚举字符串 |
+| 当前值 | `NativeRuntimeLinked` |
+| 作用 | 指定 AngelScript 函数绑定到宿主引擎的方式 |
+
+`EAngelscriptFunctionBindingMethod` 在 `Core/AngelscriptCompileOptions.h` 中只有三个值：
+
+|!值 |!构建行为 |
+|`None` |不增加原生生成绑定路径；可用函数继续依赖手工绑定或反射回退 |
+|`NativeRuntimeLinked` |把配置模块加入 Runtime 依赖，并编译 UHT 生成的 `AS_FunctionBinding_<Module>_*.gen.cpp` wrapper；这是默认值 |
+|`NativeModuleFunctionAddress` |使用目标模块发布的 native-function-address shard；只允许 source-engine 构建 |
+
+`AngelscriptRuntime.Build.cs` 使用同名私有枚举解析 ini；未知值直接抛 `BuildException`，不会静默回退。
+
+!! NativeRuntimeLinkedModules
+
+| 字段 | 说明 |
+|---|---|
+| 键名 | `+NativeRuntimeLinkedModules` |
+| 类型 | 字符串数组（每行以 `+` 前缀追加） |
+| 作用 | 指定在 `NativeRuntimeLinked` 绑定方式下由运行时直接链接的 UE 模块列表 |
+
+项目当前列表包括：`AIModule`、`AngelscriptRuntime`、`AssetRegistry`、`Engine`、`EngineSettings`、`EnhancedInput`、`Landscape`、`NavigationSystem`、`UMG`、`UMGEditor`、`UnrealEd`。
+
+`AngelscriptRuntime.Build.cs` 只在 `Method == NativeRuntimeLinked` 时调用 `AddConfiguredRuntimeLinkedDependencies(...)` 与 `AddGeneratedFunctionBindingWrappers(...)`；其它方法仍会解析并保存该数组，但不会消费它。`NativeModuleFunctionAddress` 有自己的 `NativeModuleFunctionAddressModules` 数组，并在非 source engine 上于构建规则阶段报错。
+
+数组读取支持 Unreal ini 的 `+` 增加、`-` 移除、`!ClearArray` 清空和无前缀覆盖。模块集合用不区分大小写的 `HashSet` 去重，生成 wrapper 时再按名称稳定排序。
+
+! 在编辑器中修改设置
+
+`UAngelscriptCompileOptions` 在 Unreal 编辑器的 ''Project Settings → Plugins'' 中注册了独立的设置面板，与现有的 `Angelscript` 通用设置面板相互独立。通过编辑器界面修改 `bCompileAngelscriptUnitTests` 后，UE 会将新值保存到 `Config/DefaultAngelscriptCompileOptions.ini` 的对应配置节下，文件格式与上方示例一致。
+
+! 隔离性设计的意义
+
+将编译策略选项与编辑器日常偏好选项分离到独立 INI 文件，避免了以下问题：
+
+* 修改不影响编译决策的编辑器偏好（如 UI 显示配置）不会导致 `AngelscriptTest` 的 UBT makefile 失效，从而减少不必要的 C++ 重编译。
+* `Config/DefaultAngelscriptCompileOptions.ini` 中的任何改动都''可以接受'' makefile 失效，因为该文件专用于编译策略。
+
+! 边界与注意事项
+
+* 此配置控制的是测试代码注册路径的''编译期存在性''，不控制测试的运行时行为或测试数据。
+* 完整排除 `AngelscriptTest` 模块须在构建目标级别操作，此 INI 文件无法做到。
+* 修改此文件后须进行 C++ 重新构建才能使 `WITH_ANGELSCRIPT_UNITTESTS` 的新值生效；单纯保存文件不触发脚本重编译。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/index" "编译、模块与预处理">> —— 本主题概览
+* <<as-doc-link "compile-module-preprocessor/editor-only-script" "Editor-only 与 Cooked 脚本">> —— 预处理器条件编译
+* <<as-doc-link "testing-diagnostics-release/script-tests" "脚本测试">> —— 如何运行 AngelScript 自动化测试

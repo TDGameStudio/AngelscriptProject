@@ -1,0 +1,110 @@
+title: AS/Docs/zh-Hans/reference-differences-version/plugin-boundary-matrix
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: 核心与可选插件边界矩阵
+description: 快速判断一个能力属于 Angelscript 核心、GameplayTags、GAS、Editor、Test、VS Code 或 Standalone。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/plugin-boundary-matrix
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: reference
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]] [[gameplaytags-plugin]] [[gas-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 80
+as-nav-parent: reference-differences-version/index
+as-feature-key: plugin-boundary-matrix
+
+|!能力 |!所有者 |
+|语言 VM、编译、ClassGenerator、核心 binds |`AngelscriptRuntime` |
+|HotReload、CodeGen、BlueprintImpact、SourceNavigation、ContentBrowser |`AngelscriptEditor` |
+|C++ automation fixtures |`AngelscriptTest` |
+|UHT 生成工具 |`AngelscriptUHTTool` |
+|GameplayTag 类型/mixin/replay |`AngelscriptGameplayTags` |
+|GameplayTag Editor change listener |`AngelscriptGameplayTagsEditor` |
+|Ability/Attribute/Task/GAS binds |`AngelscriptGAS` |
+|LSP/Debug Adapter 客户端 |`Extensions/AngelscriptVSCode` |
+|无 UE 编译/分析/有界 native 执行 |`Standalone` |
+
+! 依赖方向
+
+```text
+AngelscriptRuntime
+    ├── AngelscriptEditor          (Editor only)
+    ├── AngelscriptTest            (Editor/test registration)
+    └── AngelscriptGameplayTags    (optional runtime plugin)
+            ├── AngelscriptGameplayTagsEditor
+            └── AngelscriptGameplayTagsTest
+
+AngelscriptGAS
+    ├── AngelscriptRuntime
+    └── AngelscriptGameplayTags
+
+AngelscriptUHTTool                 (UBT/UHT C# toolchain)
+Extensions/AngelscriptVSCode       (external editor client)
+Standalone                         (no UE link)
+```
+
+箭头表达“消费者依赖提供者”。核心 Runtime 不得反向包含 Editor、Test、GameplayTags 或 GAS；否则即使代码被 `#if` 包住，Build.cs 依赖、模块加载和发布包仍会被污染。
+
+! 逐类判断
+
+|!你要新增的能力|!默认 owner|!理由|
+|语言 parser/compiler/VM 行为|`AngelscriptRuntime`|所有 host 和核心编译路径共同需要|
+|UObject/ClassGenerator/手工核心 bind|`AngelscriptRuntime`|生成类型与核心执行合同|
+|文件监听、Content Browser、Blueprint 编辑器分析|`AngelscriptEditor`|依赖 Editor-only Unreal 模块和交互生命周期|
+|GameplayTag 类型、容器、query、reload replay|`AngelscriptGameplayTags`|避免 Runtime 强制依赖 GameplayTags module|
+|AbilitySystemComponent、GameplayAbility、AttributeSet|`AngelscriptGAS`|GAS domain API，并明确依赖 GameplayTags extension|
+|自动化 fixture/断言/测试宿主|`AngelscriptTest` 或 Runtime-owned script test protocol|按消费层分；不能让普通用户 API 依赖测试模块|
+|C++ header 到 function shard 的生成|`AngelscriptUHTTool`|发生在 UHT/UBT 工具链，不是运行时反射扫描|
+|LSP、DAP 客户端 UI|`Extensions/AngelscriptVSCode`|独立发布的编辑器扩展；协议服务端仍在 Runtime Debugging|
+|无 UE 的 portable 执行与 bundle 分析|`Standalone`|明确禁止链接/模拟 Unreal|
+
+! 可选插件不等于核心缺口
+
+项目没有启用 `AngelscriptGameplayTags` 时，脚本中缺少 GameplayTag API 是部署选择，不应通过把几条 Tag bind 复制进核心来“修复”。正确处理顺序是：
+
+# 确认 `.uproject`/`.uplugin` 是否启用 owner plugin；
+# 确认 owner runtime module 已加载；
+# Editor 中还需区分 editor companion 是否启用；
+# 若 GAS 使用 Tag，确认 `AngelscriptGAS` 对 `AngelscriptGameplayTags` 的依赖保持显式；
+# 只有确属跨领域、所有消费者都需要的低层机制才考虑下沉核心。
+
+GameplayTags 的注册还具有 engine-scoped replay/late activation 语义。把它改成 Runtime 静态全局注册不仅改变依赖，还会破坏临时引擎和 reload 生命周期。
+
+! Runtime / Editor / Test 的同名陷阱
+
+* `AngelscriptRuntime/Testing` 拥有脚本测试发现、执行、latent/network 与 Automation bridge，是 Runtime 可用的协议层；它不是 430 个 C++ automation test 的存放地。
+* `AngelscriptTest` 拥有 C++ automation definitions、CQTest 和 fixture；消费项目默认可以不注册这些测试。
+* `AngelscriptGameplayTagsTest` 只验证可选插件，不应被核心 Runtime 链接。
+* `AngelscriptEditor` 的 HotReload、SourceNavigation、ContentBrowser 能调用 Runtime 公共 API；Runtime 不能为了方便 include 回 Editor private header。
+
+! Ownership 评审记录
+
+新增跨模块能力时，至少写清：
+
+```text
+Capability:
+Runtime consumer(s):
+Editor/tool consumer(s):
+Required Unreal modules:
+Optional domain dependency:
+Cooked availability:
+Engine-scoped lifecycle owner:
+Why the lower-level module must know about it:
+```
+
+如果最后一个问题没有具体答案，能力通常应留在上层插件。若公共结构需要跨模块传递，优先设计窄的 POD/view 或 modular feature 合同，不要把上层 UObject/domain header 泄漏进 Runtime 核心。
+
+! 使用矩阵
+
+项目未启用可选 plugin 时，相应 API 不属于核心缺失。Runtime code 不能依赖 Editor module；Test helper 不是消费 API；Standalone 的 UE-validation 声明不可执行。
+
+新增能力先选 ownership，再决定依赖。把 domain API 放回核心会迫使所有消费者链接可选 UE module，破坏独立插件目标。
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/module-ownership" "模块所有权">>
+* <<as-doc-link "topics-integrations/index" "专题与集成">>

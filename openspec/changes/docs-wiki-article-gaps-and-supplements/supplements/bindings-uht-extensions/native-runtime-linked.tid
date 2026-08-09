@@ -1,0 +1,209 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/native-runtime-linked
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: NativeRuntimeLinked 后端
+description: 说明 UBT 如何为 Runtime 增加目标模块依赖、UHT 如何生成 direct/fallback 表，以及这些表怎样在 Late bind phase 注册。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/native-runtime-linked
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 190
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]]
+as-nav-group: bindings-extensions
+as-nav-order: 290
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: native-runtime-linked
+
+! 这个后端把目标模块链接进 AngelscriptRuntime
+
+`NativeRuntimeLinked` 的核心不是“从反射拿到一个地址”，而是让 UHT 为配置模块生成带真实 C++ erased function pointer 的 registration，并让 `AngelscriptRuntime` 在构建时依赖这些模块。地址由正常 C++ 编译/链接解决：
+
+```text
+Config module list
+   ├─ UBT: AngelscriptRuntime += target module dependencies
+   │       + stable generated-source aggregators
+   └─ UHT: analyze UFunctions
+           → NativeRuntimeLinked registration
+           → ReflectiveFallback registration + reason
+                    ↓
+           AS_FunctionBinding_<Module>.gen.cpp
+                    ↓ compile into AngelscriptRuntime
+           FBind Late+50 registers Class/Function entries
+```
+
+优点是 Runtime 拿到普通链接期地址，注册/调用主线简单；代价是核心 Runtime 的 module graph 与 binary link set 变大，所以模块集合必须受控。
+
+! 配置与数组语义
+
+```ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+FunctionBindingMethod=NativeRuntimeLinked
++NativeRuntimeLinkedModules=Engine
++NativeRuntimeLinkedModules=UMG
+```
+
+该文件是 `Config/DefaultAngelscriptCompileOptions.ini`。`FunctionBindingMethod` 是单值，不允许 `+/-/!`；module array 遵循当前 Build.cs/UHTTool 共同实现：
+
+|!写法 |!效果 |
+|`NativeRuntimeLinkedModules=Engine` |清空当前集合，再设为 `Engine` |
+|`+NativeRuntimeLinkedModules=UMG` |追加，大小写不敏感去重 |
+|`-NativeRuntimeLinkedModules=UMG` |删除 |
+|`!NativeRuntimeLinkedModules=ClearArray` |清空 |
+
+空模块名、未知 method、给单值 method 使用数组操作都会导致构建错误。配置被标为 restart/rebuild required；Editor Details 中改值不等于已生成/链接新代码。
+
+若 target 没有 ProjectFile 或配置文件不存在，Build.cs 默认 method 为 `NativeRuntimeLinked`，但 module set 为空；不会擅自把全部 Engine module 纳入依赖。
+
+! UBT 侧做了什么
+
+`AngelscriptRuntime.Build.cs` 读取配置后执行两步：
+
+!! 1. 增加依赖
+
+对配置 module 去重，若尚未在 public/private dependencies 中则加入 `PrivateDependencyModuleNames`。以下被过滤：
+
+* 空名；
+* `AngelscriptRuntime` 自己，避免自依赖；
+* non-Editor target 中的 `UMGEditor`/`UnrealEd`；
+* 已有 dependency，避免重复。
+
+这意味着配置一个大型 module 不只是生成表，还改变 Runtime 的编译和链接依赖。把项目私有/可选插件模块都塞进核心 Runtime，可能形成循环依赖或让插件无法独立分发。
+
+!! 2. 生成稳定 aggregator
+
+每个配置 module 通过 `FilesToGenerate` 得到：
+
+```text
+AngelscriptGeneratedFunctionBindingWrappers/
+  AS_FunctionBinding_<Module>_Aggregator.cpp
+```
+
+内容用 `__has_include` + `UE_INLINE_GENERATED_CPP_BY_NAME` 包含 UHT 当前产生的 `AS_FunctionBinding_<Module>.gen.cpp`。Aggregator 名单由配置稳定决定，UHT 文件由实际 eligible function 决定；两层组合避免手工维护易变 shard 名。
+
+! UHT 侧如何分类
+
+只有配置集合中且本次 UHT session 存在的 module 会 emit。每个 eligible UFunction 得到一个 outcome：
+
+|!Outcome |!条件 |!生成 registration |
+|`NativeRuntimeLinked` |非 interface/RPC，signature builder 成功 |携带 `ERASE_*` native pointer |
+|`ReflectiveFallback` |interface、RPC/Net 或 signature 无法 direct 构建 |携带 `ERASE_NO_FUNCTION()` + failure reason |
+|Skipped |未通过 eligibility |只进入 skipped diagnostic 或不进入 analyzed 集合 |
+
+所以配置 module 不等于所有 BlueprintCallable 都 direct。RuntimeLinked 的价值是“安全 direct 尽量生成，同时明确把剩余表面留给 reflection”。尤其 RPC 必须落到 fallback，不能因为真实 C++ 地址可链接就绕开 NetDriver。
+
+! 生成文件内部
+
+`AS_FunctionBinding_<Module>.gen.cpp`：
+
+* include `CoreMinimal`、Angelscript binds/engine/caller 和所有 owning headers；
+* registration 先按 Class、Function、Category 稳定排序；
+* 每 256 条分一个 `RegisterGeneratedFunctionBindingBatch_<Module>_NNN()` helper；
+* 最后由 `AS_FORCE_LINK FBind` 依次调用所有 helper；
+* provider 为 `UHT.FunctionBinding.<Module>`；
+* order 为 `FAngelscriptBinds::EOrder::Late + 50`；
+* Editor module/函数带正确编译 guard。
+
+单 module 输出是一份 `.gen.cpp`；“每 256 条”只是内部 helper 大小，不是独立 translation unit shard。诊断中的 `ShardCount` 对 RuntimeLinked module 因此通常为 1（有输出时）。
+
+! Runtime 注册与实际调用
+
+生成代码对每条函数调用：
+
+```cpp
+FAngelscriptBinds::RegisterGeneratedFunctionBinding(
+    UMyClass::StaticClass(),
+    "MyFunction",
+    { ERASE_METHOD_PTR(...) });
+```
+
+`RegisterGeneratedFunctionBinding` 把 origin 设为 `Generated`，存入 `ClassFunctionBindings[UClass][FunctionName]`。后续 `Bind_BlueprintCallable` Phase 2：
+
+# 从 UFunction 构建 AS `FAngelscriptFunctionSignature`；
+# 查 cached generated binding；
+# 有 function pointer 时按 static/instance/mixin 形态注册 native call；
+# 只有 no-function/fallback marker 时尝试 reflective fallback；
+# 修改注册后的 script function traits、WorldContext、no-discard 等。
+
+生成表不是直接创建 UFunction；它给已有 Unreal reflection surface 选择执行实现。UFunction name、metadata 和 AS declaration 仍由 signature layer决定。
+
+! 与手工 binding 的所有权
+
+同一 `UClass + FunctionName` 可能已经有手工 bind。`RegisterFunctionBinding` 不会让后到的 generated entry任意覆盖有效 pointer；反射绑定也会检查 AS declaration 是否已存在。正确设计是：
+
+* 手工 bind 负责需要语义改造、特殊 marshalling 或脚本专用 API；
+* 生成表负责规则化、安全的 reflected UFunction；
+* 明确 skip/排除重复表面；
+* 用 binding provenance 观察实际 owner，而不是依赖当前 link/order 恰好谁先执行。
+
+如果两个路径各自生成不同 AS declaration 但映射同一 UFunction name，更容易出现重载冲突；审查时同时看 Class/UnrealFunctionName 和最终 AS declaration。
+
+! Module graph 的取舍
+
+适合纳入 RuntimeLinked 的 module通常具有：稳定、核心 target 总是存在、依赖方向允许 Runtime 私有依赖、函数覆盖价值高。需要谨慎的包括：
+
+|!模块类型 |!风险 |
+|Editor-only |non-Editor target 不存在，必须 guard/过滤 |
+|可选 gameplay plugin |让核心 Runtime 反向依赖扩展，破坏可选性 |
+|项目私有 module |插件不再能独立复用，且容易循环依赖 |
+|重型 module |增加 compile/link time 和 binary footprint |
+|只少量函数有价值 |用整 module dependency 换少量 direct call 不划算 |
+
+GameplayTags/GAS 之类可选域应由自己的 extension plugin/手工注册承担，而不是为了自动表面把核心 `AngelscriptRuntime` 与它们绑死。
+
+! Target 与 Engine distribution
+
+与 NativeModuleFunctionAddress 不同，NativeRuntimeLinked 不要求 source-built Engine；但它要求目标模块的 public header 和 link dependency 在当前 target 可用。Installed Engine 仍可正常链接已公开 module 表面。
+
+Editor 生成的模块集合不能直接代表 Game/Server：Editor-only module被 Build.cs 过滤，UHT session 与 function guard 也不同。统计对比必须注明 target。
+
+! 配置变化后的完整动作
+
+# 修改 compile options；
+# 重新运行 UBT，使 dependency graph 和 aggregator 列表更新；
+# 重新运行 UHT，生成/清理 `.gen.cpp` 并更新统计；
+# 重编目标，使生成 registration 真正进入 `AngelscriptRuntime` binary；
+# 重启进程，避免继续使用旧 module/bind state；
+# 核对 `AS_FunctionBindingDiagnostics.csv` 和 runtime provenance。
+
+仅热重载 `.as` 不会重建 C++ UHT function tables；仅重启 Editor 也不会替代 UBT/UHT 编译。
+
+! 诊断路径
+
+|!现象 |!优先检查 |!常见根因 |
+|配置 module 没有统计 |configuredModuleMisses、UHT target |名称错误或 module 不在 session |
+|有统计但没有 aggregator |Build.cs 解析到的配置路径/集合 |UHT 与 UBT 配置源不同 |
+|有 `.gen.cpp` 但 unresolved external/header |Runtime dependency graph |没加入目标 module 或 header 非 public |
+|函数 category 是 fallback |diagnostic failure reason |RPC/interface/signature builder不支持 |
+|AS 仍找不到函数 |UFunction eligibility、Runtime provenance |NotInAngelscript、CustomThunk、重复 bind/声明 |
+|Editor 正常、Game missing |Editor-only module/guard |把 Editor 产物当 runtime 共同表面 |
+|插件出现循环依赖 |Build.cs module graph |核心 Runtime 依赖了本应可选/上层 module |
+|改配置后行为没变 |实际 binary 时间戳/生成产物 |没有完成 UBT→UHT→compile→restart |
+
+诊断的最小证据链是：config module → UBT dependency/aggregator → UHT per-function row → compiled provider → Runtime binding origin。
+
+! 维护清单
+
+调整 RuntimeLinked 时检查：
+
+# UBT/UHT config parser 的 method 与数组语义一致；
+# 配置文件是双方 external dependency；
+# target-specific Editor module 过滤一致；
+# eligible UFunction 分类仍把 RPC/interface 保留 fallback；
+# registration sort、batch 和 provider/order 稳定；
+# generated pointer 的 erase macro与实际 signature 一致；
+# 手工 bind 不被覆盖，provenance 可解释；
+# module graph 没破坏插件可选性和独立交付。
+
+! 源码落点与继续阅读
+
+* `AngelscriptRuntime/AngelscriptRuntime.Build.cs`：配置解析、module dependency 与 aggregator；
+* `AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs`：module 选择与 direct/fallback 分类；
+* `AngelscriptFunctionBindingEmitters.cs`：`.gen.cpp`、helper batch、provider/order；
+* `AngelscriptRuntime/Core/AngelscriptBinds.h`：generated registration/origin；
+* `AngelscriptRuntime/Binds/Bind_BlueprintCallable.cpp`：cached binding 的实际提交；
+* <<as-doc-link "bindings-uht-extensions/generated-function-tables" "UHT 生成函数表">>
+* <<as-doc-link "bindings-uht-extensions/reflective-fallback" "BlueprintCallable 反射回退">>
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress">>

@@ -1,0 +1,178 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/marshalling-safety-boundary
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: Direct Binding 的 Marshalling 安全边界
+description: 区分 RuntimeLinked、NativeModule call frame 与 FProperty 反射的类型契约，并给出扩展 direct ABI 前必须证明的事项。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/marshalling-safety-boundary
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: policy
+as-content-status: draft
+as-order: 210
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]] [[project-knowledge-zh]]
+as-nav-group: bindings-extensions
+as-nav-order: 310
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: marshalling-safety-boundary
+
+! 边界的定义
+
+Marshalling 不只是“把一段字节复制到另一边”。完整契约包括：脚本如何表示值，调用器传递地址还是值，谁构造和析构临时对象，谁对 out 参数回写，对象在调用返回后是否仍存活，以及 Unreal 是否还有机会执行 RPC、WorldContext、Blueprint override 和 `FProperty` 生命周期逻辑。
+
+当前的“安全边界”特指：只有当生成器、Runtime bridge、目标 thunk、AngelScript VM 与 StaticJIT 对上述契约给出同一答案时，才允许绕开 UFunction/FProperty 反射调度。“C++ 模板能编译”或“这个 struct 看起来只有 16 字节”都不是证明。
+
+! 三种调用模型的数据路径
+
+!! NativeRuntimeLinked direct
+
+```text
+AngelScript call
+  -> asSFuncPtr / ASAutoCaller
+  -> UHT 根据真实 C++ 原型生成的 erase macro
+  -> 编译进 AngelscriptRuntime 的目标 native function
+```
+
+这条路径的优势是生成 cpp 包含真实 header，编译器能检查 typed 函数指针、重载和模板实例。但它仍需要 `AngelscriptFunctionSignatureBuilder` 成功建立 AngelScript 声明与 C++ 类型的对应；失败时生成的是空 binding record，之后由 reflective fallback 决定能否继续。
+
+!! NativeModuleFunctionAddress call frame
+
+```text
+AngelScript generic call
+  -> GAngelscriptNativeModuleFunctionBindingGenericThunk
+  -> void* ArgSlots[] + ReturnSlot + ScriptSelf
+  -> target-module generated Thunk(Self, Frame)
+  -> typed native function
+```
+
+Runtime 的 generic thunk 对每个参数调用 `GetAddressOfArg`，把地址放进 `TArray<void*, TInlineAllocator<8>>`；非 static 函数从 `Generic->GetObject()` 取 `ScriptSelf`；有返回值时从 `GetAddressOfReturnLocation()` 取 `ReturnSlot`。当前 frame 将 `WorldContext` 设为 `nullptr`，所以 policy 必须在生成阶段拒绝需要 WorldContext 的函数，而不能指望 thunk 猜测一个 World。
+
+目标 shard 的 `PassNativeModuleFunctionBindingArg<T>` 根据 `T` 是引用、指针还是值类型解引 ArgSlot；`BuildNativeModuleFunctionBindingReturn` 对算术/枚举/指针做赋值，其他返回类型在 `ReturnSlot` 上 placement-construct。这些动作要求两侧对 slot 形状、alignment 和析构责任有一致理解。
+
+!! BlueprintCallable reflective fallback
+
+```text
+AngelScript generic call
+  -> FReflectiveParamCache / FProperty entries
+  -> UFunction::PropertiesSize parameter buffer
+  -> InitializeValue / copy-in
+  -> FFrame + UFunction::Invoke (or legacy ProcessEvent)
+  -> copy-out / return
+  -> DestroyValue
+```
+
+反射路径并不是“无类型”调用。它把类型知识交回 `FProperty`：参数 buffer 使用 `UFunction::PropertiesSize`，非平凡值由 property 初始化/销毁，out 参数记录脚本侧地址并在 Invoke 后回写，RPC 分支保留 Unreal callspace 路由。它比 direct path 更贵，但已经有更完整的 Unreal 参数生命周期模型。
+
+! 当前 NativeModuleFunctionAddress 安全集
+
+该安全集由 `AngelscriptFunctionBindingPolicy` 明确列出，不应根据文章主观扩大。
+
+|!位置 |!当前接受的主要类别 |!注意 |
+|参数 |bool、数值、枚举、struct、`FString`、`FName`、`FText`、UObject/class/soft object/weak object 属性 |必须是单元素、非 out、非 reference；“类别允许”不代表任意修饰形式都允许 |
+|返回 |`void`、bool/数值/枚举、struct、`FString`、`FName`、`FText`、以 pointer 形式返回的 UObject |不接受 ref return；某种类型能做参数并不必然能做返回值 |
+|Self |static 函数为 `nullptr`，member 函数为 `Generic->GetObject()` |需要真实 UClass 与 script type 投影一致 |
+|WorldContext |当前不支持 |frame 有字段不代表已有选择/注入策略；Runtime 当前传 `nullptr` |
+|out/ref | 当前不支持 |需要参数方向、alias、copy-back 和失败原子性合同 |
+
+额外门禁还包括 RPC/Net、static array、`TArray`/`TSet`/`TMap`、interface property、delegate/multicast delegate、field path，以及将 static UFunction 投影为 ScriptMethod/ScriptMixin 实例方法的 script-this 语义。被门禁拒绝时，NMFA 生成器会记录 `needs-*`/`rpc-net-function` 原因并 skip，不会自动生成 reflective record。
+
+! 为什么这些类别不能“顺手开启”
+
+!! out 与 inout
+
+out 参数至少需要回答：
+
+* 调用前是默认构造、复制脚本值，还是不初始化？
+* 多个 out 参数是否可以 alias 同一脚本存储？
+* native 函数抛出/触发脚本异常、对象失效或模块卸载时，已写入的部分 out 值是回写还是回滚？
+* 非平凡值 copy-back 时，谁销毁旧值和临时值？
+
+反射路径用 `FProperty` 和 `FOutParmRec`/脚本地址表提供已知语义。NMFA 的 `void** ArgSlots` 目前没有完整表达这些选择。
+
+!! ref return
+
+返回引用不能写入一块普通 `ReturnSlot` 就结束。它需要保证所指存储在脚本使用期间仍存活，明确 constness 与修改权，并处理 Self/容器变更后引用失效。当前 layout 虽有 `ReturnByRef` flag，policy 仍拒绝 ref return；flag 的存在是版布信息，不是功能已完成的证明。
+
+!! `TArray` / `TSet` / `TMap`
+
+容器表面是一个 C++ 值，实际契约还包含 allocator、element constructor/destructor、hash/equality、sparse layout、脚本元素类型、UObject 引用收集和跨 module template ABI。即使 `sizeof(TArray<...>)` 在一次构建中相同，也没有证明：
+
+* 两侧对 element type 和 allocator 有相同实例；
+* 临时容器的构造/移动/析构次数正确；
+* out container 在失败时不泄漏、不双重析构；
+* 容器中 UObject 在 VM、GC 和 native 调用期间均可达。
+
+因此当前保留在 reflective/deferred 状态是合同未完整，不是简单的 generator allowlist 漏项。
+
+!! WorldContext
+
+WorldContext 并不总是函数的显式脚本参数。系统需要从 Self、注入上下文或其他策略中选择正确 World，并区分 PIE world、Editor preview、Commandlet 和无 World 场景。当前 NMFA frame 的 WorldContext 为空，所以“去掉 policy 检查让它先跑”只会把生成期的明确拒绝变成运行期空上下文错误。
+
+!! RPC/Net
+
+RPC 的“函数体”不是唯一语义。Unreal 还要检查 callspace、连接/所有权，选择本地执行还是网络发送，并走 NetDriver 序列化。直接调 typed native thunk 会绕过这条路。`AngelscriptFunctionBindingPolicy.GetRuntimeFallbackReason` 将 Net 标记为 `rpc-net-function`；反射 cached path 也专门识别 `FUNC_Net` 并保留 callspace 逻辑。
+
+! 失败原子性与旧/新状态
+
+扩展 marshalling 时必须写出调用前后的状态表，特别是非平凡值与 out 参数。
+
+|!时点 |!必须定义的状态 |
+|进入 thunk 前 |Self 和模块 payload 仍有效；每个 ArgSlot 指向哪种表示；返回存储是否已构造 |
+|参数转换中 | 已构造哪些临时值；中途失败时按什么逆序销毁 |
+|native 执行后 | 哪些 out/inout 值已变更；返回值是赋值还是 placement-constructed |
+|copy-back 失败 | 已回写的值是否回滚；如何避免脚本旧值和 native 新值同时泄漏 |
+|返回 VM 前 |临时值全部销毁；返回对象所有权可解释；没有 slot 指向已卸载 module 的存储 |
+
+如果设计只描述“成功路径 memcpy 多少字节”，它还没有达到可实现的深度。
+
+! ABI 版布是跨模块公开合同
+
+NativeModuleFunctionAddress 的 Runtime header 与 UHT emitter 各自定义相同的 POD 布局：call frame、binding entry 和 view。当前 Runtime 用 compile-time assertion 锁定大小，view 还带 layout version token。任何一项变更都必须同步：
+
+# `FunctionBinding/NativeModuleFunctionBindingBridge.h` 的 Runtime struct/flags/sizes；
+# `AngelscriptFunctionBindingEmitters.cs` 写入目标 shard 的镜像 struct 和 thunk；
+# `AngelscriptFunctionBindingCodeGenerator.cs` 的签名分析与 include 收集；
+# `native-module-function-binding-layout-version.txt` 的 8 位十六进制 token；
+# Runtime bridge 的 view 校验、注册和卸载清理逻辑；
+# 统计/diagnostics 中对新类别的 reason 和去向。
+
+只修 policy 让函数“进入生成”，却没有修 frame/thunk/return/lifetime，会把一个可观测的 skipped 变成难诊断的 ABI 错误。
+
+! 扩展一种签名类别的方法
+
+不要提出“支持容器”这种无边界目标。一个可实施的变更应该像“支持 `const TArray<int32>&` 纯输入参数，不支持返回/out/嵌套 UObject”一样具体，然后按以下顺序收口：
+
+# ''形状''：定义 UHT property 类别、const/reference/out flags、static/member、return 与是否允许嵌套类型。
+# ''表示''：画出 AS slot、Runtime frame、target thunk 和 C++ 原型的每一次取地址/解引/构造。
+# ''生命周期''：定义成功、脚本异常、native 失败、模块卸载和部分 copy-back 下的销毁/回滚。
+# ''Unreal 语义''：确认没有绕过 RPC、BlueprintEvent、WorldContext、GC 或必需 property operation。
+# ''生成''：同步 policy、signature resolver、referenced include 收集、emitter、Runtime generic thunk 和 flags/layout token。
+# ''去向''：为不满足新类别的函数保留稳定 reason，不得从 skipped 中静默消失。
+# ''多路一致''：明确 VM、StaticJIT、Editor、Commandlet、packaged/Shipping、模块加载/卸载的预期。
+
+! 审查与诊断表
+
+|!问题 |!需要的证据 |!不充分的回答 |
+|AS 与 C++ 是否同一个类型 |signature builder 输出、property flags、slot 读写代码、size/alignment |“都叫 `FMyStruct`” |
+|值由谁构造/析构 | 成功和每个中途失败点的状态表 | “UE 会处理”，但路径已绕过 FProperty |
+|out/ref 是否安全 |alias、copy-in/out、异常、旧值销毁和 ref lifetime 契约 |“传的本来就是指针” |
+|是否保留 Unreal 隐式语义 |callspace、World 选择、Blueprint override/ProcessEvent 路由 |“直接调 native 结果一样” |
+|跨模块是否兼容 |layout token、POD sizes、flags、source-engine 门禁和卸载 UserData 清理 |“在我的 Development Editor 上跑过” |
+|新类别失败时去哪 |statistics/diagnostic reason 与明确 fallback/deferred 所有者 |“不支持就不会用到” |
+
+! 源码落点
+
+* `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingPolicy.cs`：NMFA 安全参数/返回集、World/out/ref/container/interface/delegate/field-path/mixin/RPC 分类。
+* `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs`：RuntimeLinked fallback 与 NMFA skipped 的不同去向，以及 referenced include 收集。
+* `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingEmitters.cs`：target shard 中的 mirrored ABI、ArgSlot 解引、return placement construction 和 flags。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/FunctionBinding/NativeModuleFunctionBindingBridge.h`：Runtime 侧 call frame/binding/view 布局与 compile-time 约束。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_NativeModuleFunctionBinding.cpp`：generic thunk、`GetAddressOfArg`、`GetAddressOfReturnLocation`、Self/WorldContext 组帧、payload 注册与卸载。
+* `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/BlueprintCallableReflectiveFallback.cpp`：FProperty parameter buffer、cached Invoke/legacy ProcessEvent、out/return copy-back 和 RPC 路由。
+
+! 继续阅读
+
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "函数绑定路径选择">>
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress">>
+* <<as-doc-link "bindings-uht-extensions/reflective-fallback" "反射回退">>
+* <<as-doc-link "bindings-uht-extensions/typed-bind-dsl" "Typed Bind DSL">>

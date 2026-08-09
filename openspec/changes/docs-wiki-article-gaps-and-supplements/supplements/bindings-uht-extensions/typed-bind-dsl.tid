@@ -1,0 +1,477 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/typed-bind-dsl
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: Target-aware 类型化绑定 DSL
+description: 介绍当前 FAngelscriptBind 阶段记录、FAngelscriptBinds 目标引擎门面、模板化函数/成员指针注册、类与属性 facade，以及失败与 provenance 合同。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/typed-bind-dsl
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 20
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: typed-bind-dsl
+
+! 当前 DSL 的真实组成
+
+当前源码没有 `FAngelscriptBindClass<T>` 或 `TAngelscriptFunctionTraits<F>`。可用的类型化绑定门面由四部分组成：
+
+```text
+FAngelscriptBind
+  └─ 声明 owner/name/phase/source/callback
+
+callback(FAngelscriptBinds& Binds)
+  ├─ 绑定到一个明确 FAngelscriptEngine
+  ├─ 创建/查找 class facade
+  ├─ 用 C++ function/member pointer 模板注册
+  └─ 返回 FAngelscriptBoundFunction / FAngelscriptBoundProperty
+
+bound handle
+  └─ 在刚注册的明确 engine/id 上链式设置 trait/JIT/docs/compile-out
+```
+
+它仍是''半类型化 DSL''：C++ callable 的形状由模板和 `ASAutoCaller` 在编译期约束；AngelScript 声明字符串必须由作者显式编写，DSL 不从 C++ 类型自动生成参数名、默认值、`no_discard` 或引用修饰。
+
+<<as-callout warning "不要照旧规范寻找不存在的类">>
+历史 `as-typed-bind-dsl` 规范中的 `FAngelscriptBindClass<T>`、独立 function traits 与 `.StaticFunction()` 不是当前 API 名。类内方法通过 `FAngelscriptBinds` class facade 的 `.Method()` 注册；类 namespace 静态函数通过 target-aware `FNamespace` + `BindGlobalFunctionForTarget()` 注册。
+<</as-callout>>
+
+! 适用范围
+
+本页面面向编写或迁移 `Bind_*.cpp` 的 C++ 维护者，覆盖：
+
+* 新阶段 record 如何发布 callback；
+* 如何始终绑定到传入的目标 engine，而非全局 current engine；
+* value class、existing class、method、behaviour、property、global function/variable、enum 的入口；
+* member pointer、free function、非捕获 lambda 与重载选择；
+* 注册失败为什么是 sticky/fail-closed；
+* 句柄 trait 与生命周期；
+* 一个真实 `FColor` 迁移的分层结构。
+
+它不取代 UHT 生成的反射函数绑定，也不自动处理 Unreal `UFUNCTION` metadata。复杂反射签名应走 UHT/反射路径；手工 DSL 用于明确所有权和非反射 C++ API。
+
+! 第 1 层：FAngelscriptBind record
+
+新绑定文件通常声明普通函数：
+
+```cpp
+namespace
+{
+    void BindExampleManual(FAngelscriptBinds& Binds)
+    {
+        // target-aware registrations
+    }
+}
+
+AS_FORCE_LINK const FAngelscriptBind Bind_Example(
+    TEXT("Example"),
+    EAngelscriptBindPhase::ManualBindings,
+    &BindExampleManual);
+```
+
+构造器自动捕获 `UE_MODULE_NAME`、source file 和 line。Collection 在 engine 初始化前加载 bind modules、校验并 seal，然后按：
+
+```text
+Phase -> OwnerModule -> BindName -> SourceFile -> SourceLine
+```
+
+执行。相同 owner/name/phase 是错误，不依赖静态初始化顺序决定谁先执行。
+
+!! 阶段选择
+
+| !Phase | !适合的职责 |
+| `TypeDeclarations` | 先建立脚本 type 名和最小 object type |
+| `TypeInfrastructure` | 注册 type database/finder 等后续 binding 依赖 |
+| `ManualBindings` | 手工 method/property/behaviour/global API |
+| `GeneratedBindings` | 生成记录适配/过渡阶段 |
+| `ReflectionBindings` | 依赖 UClass/UFunction 的反射表面 |
+| `PostReflectionBindings` | 反射完成后补充派生/交叉表面 |
+| `Finalization` | ToString、最终一致性/辅助注册等需要完整表面的工作 |
+
+不要把 phase 当成“随便选一个更大的优先级”。跨 phase 依赖应由语义顺序表达；同 phase 内不要依赖文件链接顺序。
+
+! 第 2 层：目标引擎门面
+
+Callback 参数 `FAngelscriptBinds& Binds` 在 `BindScriptTypes()` 中以当前目标 `FAngelscriptEngine` 构造。它提供：
+
+* `GetTargetEngine()` / `GetTargetScriptEngine()`；
+* per-engine BindState、TypeDatabase、BindDatabase、ToString list、BlueprintEvent registry；
+* `RegisterTypeForTarget()` / `RegisterTypeFinderForTarget()`；
+* `ValueClassForTarget<T>()` / `ExistingClassForTarget()`；
+* `BindGlobalFunctionForTarget()` / `BindGlobalVariableForTarget()`；
+* target-aware enum和namespace辅助。
+
+新 callback 应始终从这个参数派生操作。旧 static `FAngelscriptBinds::ExistingClass()`、`BindGlobalFunction()` 等兼容 API 依赖 `FAngelscriptEngine::Get()` 当前上下文，在多引擎重放中更容易写到错误 engine。
+
+!! Per-engine state
+
+Target facade 写入目标 engine 自己的：
+
+* function/property provenance；
+* class function binding map；
+* skip表；
+* runtime/editor class DB；
+* previous function/property兼容字段；
+* registration failure与diagnostic。
+
+因此同一 seal 后 callback 集可以为多个 engine 建立隔离表面。任何 helper 若仍直接读全局单例，应被视为迁移审计点。
+
+! 第 3 层：class facade
+
+`FAngelscriptBinds` 既是全局 target facade，也可以携带 `ClassName`/ScriptType 作为类上下文。
+
+!! ExistingClassForTarget
+
+```cpp
+auto FColor_ = Binds.ExistingClassForTarget("FColor");
+FColor_.Method("FString ToHex() const", METHOD_TRIVIAL(FColor, ToHex));
+```
+
+它不重新声明类型，只构造指向同一 target engine 和 class name 的 facade。使用前提是类型已经在更早阶段注册。
+
+!! ValueClassForTarget<T>
+
+```cpp
+FBindFlags Flags;
+Flags.bPOD = true;
+auto Value_ = Binds.ValueClassForTarget<FMyValue>("FMyValue", Flags);
+```
+
+模板会：
+
+* 缺省填 `alignof(T)`；
+* 合入 `asGetTypeTraits<T>()`；
+* 传入 `sizeof(T)`；
+* 根据 flags 组合 `asOBJ_VALUE/asOBJ_APP_CLASS/asOBJ_POD/asOBJ_TEMPLATE`；
+* 校验已存在类型的 size/flags/alignment兼容性。
+
+已有同名类型只有在size/flags兼容时可复用；不兼容会记录registration failure，而不是继续返回一个看似可用的class facade。
+
+!! Reference class
+
+UObject/UClass支持通常由反射type系统和现有 `ReferenceClass` 辅助建立。不要用ValueClass注册带GC/引用语义的UObject。手工DSL的“类型化”不能替代Unreal object lifetime模型。
+
+! 函数注册入口
+
+!! Global function
+
+```cpp
+Binds.BindGlobalFunctionForTarget(
+    "bool CanEverRender()",
+    &FApp::CanEverRender);
+```
+
+模板从 `Value (*)(Args...)` 获取真实C++ signature，将函数转换为AngelScript function pointer并用 `ASAutoCaller::MakeFunctionCaller()`生成caller。可选 `UserData` 写入注册的script function。
+
+若函数要位于类namespace：
+
+```cpp
+FAngelscriptBinds::FNamespace Namespace(
+    Binds.GetTargetEngine(),
+    "FColor");
+
+Binds.BindGlobalFunctionForTarget(
+    "FColor FromHex(const FString& HexString) no_discard",
+    &FColor::FromHex);
+```
+
+必须使用带target engine的 `FNamespace` 构造器，RAII结束后恢复之前namespace。
+
+!! Member method
+
+Class facade `.Method()` 对以下C++形状有模板重载：
+
+* 非const member；
+* `const` member；
+* `const&` member；
+* CDECL自由函数/静态函数作为extern method；
+* 可转换为function pointer的lambda；
+* 带`FBindParams`的extern method。
+
+普通member走 `asCALL_THISCALL`；extern method走 `asCALL_CDECL_OBJFIRST`，其第一个C++参数必须代表脚本对象。模板只保证你传入的是可支持的C++ callable形状，仍要让AS声明与实际caller语义一致。
+
+```cpp
+FColor_.Method(
+    "FString ToHex() const",
+    METHOD_TRIVIAL(FColor, ToHex));
+```
+
+`METHOD_TRIVIAL` 等宏还携带StaticJIT native form信息；直接传 `&FColor::ToHex` 只注册执行caller，不自动表达所有JIT元数据。
+
+!! Generic method
+
+`GenericMethod()` 接受 `void(asIScriptGeneric*)` 或可转换lambda，并可携带UserData。它给特殊marshalling最大控制权，也把参数槽、对象、返回值构造责任交给作者。常规签名优先typed caller；generic只用于无法由ASAutoCaller安全表达的边界。
+
+!! Constructor / Factory / Destructor
+
+Class facade提供：
+
+* `Constructor()` → `asBEHAVE_CONSTRUCT` + extern behaviour；
+* `ImplicitConstructor()` → 同上并链`.ImplicitConstructor()`；
+* `Factory()` → `asBEHAVE_FACTORY` + static behaviour；
+* `Destructor()` → `asBEHAVE_DESTRUCT` + extern behaviour；
+* `TemplateCallback()` → `asBEHAVE_TEMPLATE_CALLBACK`。
+
+带native name/trivial参数的重载会在注册后立刻链相应 `NativeConstructor/Destructor/Function`，让StaticJIT知道C++形式。
+
+```cpp
+FColor_.Constructor(
+    "void f(uint8 R, uint8 G, uint8 B, uint8 A = 255)",
+    &FAngelscriptFColorBinds::ConstructRGBA,
+    "FColor",
+    true)
+    .NoDiscard();
+```
+
+声明中的 `f`、默认参数、`no_discard` 等仍由作者控制。
+
+! 重载与 lambda
+
+!! C++ 重载必须消歧
+
+`&Type::Function` 若指向重载集合，C++模板无法从AS字符串替你选一个。使用精确 `static_cast` 或项目宏：
+
+```cpp
+METHODPR_TRIVIAL(
+    bool,
+    FColor,
+    operator==,
+    (const FColor&) const)
+```
+
+消歧后的pointer type既决定caller，也应与AS声明逐项一致。不要依赖编译器碰巧选择一个可转换overload。
+
+!! Lambda边界
+
+`.Method()`/behaviour helper的lambda重载通过 `TLambdaFuncPtr<T>::Type` 把lambda转换为函数指针。实际可用的是不捕获、能转换为所需CDECL function pointer的lambda。捕获lambda持有对象状态，不能作为进程期静态binding function pointer使用。
+
+需要状态时：
+
+* 将状态放在稳定UserData，由generic/明确caller读取；
+* 或写静态/free helper函数；
+* 不捕获engine/context裸指针跨生命周期。
+
+! Property注册
+
+Class facade `.Property()` 有三种入口：
+
+```cpp
+Property("uint DWColor", memberPointer)
+Property("uint DWColor", explicitOffset)
+Property("uint DWColor", explicitOffset, BindParams)
+```
+
+member pointer重载计算成员相对offset后调用 `BindProperty()`。它提供C++成员所有者/类型层面的编译期约束，但AS声明字符串仍可能写错类型或修饰；最终由AS engine注册结果和脚本行为暴露。
+
+适用前提：
+
+* 布局稳定且offset合法；
+* 对象value/reference语义与AS type注册一致；
+* 不是需要getter/setter、副作用、线程同步或UObject GC barrier的字段；
+* `FBindParams`中的protected等访问语义正确。
+
+全局变量用 `BindGlobalVariableForTarget(signature, address)`，返回 `FAngelscriptBoundProperty`。只有global property句柄的 `.PureConstant(asQWORD)`会写pure constant/storage；对象字段句柄调用该trait不会生效。
+
+! Enum 与自定义类型基础设施
+
+`Binds.EnumForTarget("EName")` 返回target-aware enum facade，再注册value。需要自定义 `FAngelscriptType` 的绑定应在TypeInfrastructure阶段调用：
+
+```cpp
+Binds.RegisterTypeForTarget(Type);
+Binds.RegisterTypeFinderForTarget(Finder);
+```
+
+Type finder会进入per-engine TypeDatabase。它不是普通方法binding，应在所有依赖该type usage的Manual/Reflection注册之前完成。
+
+不要在ManualBindings临时注册type finder后假定同phase其他module一定晚于它；phase内排序按owner/name，而非显式依赖图。
+
+! 半类型化模型的保证与空白
+
+!! C++编译期能保证
+
+* member pointer属于某个C++class；
+* const/nonconst/const& overload形状可区分；
+* free function参数/返回type进入ASAutoCaller模板；
+* 不捕获lambda转换到明确function pointer；
+* ValueClass的size/alignment/type traits来自T；
+* member property pointer来自C++member。
+
+!! 仍由作者/运行时保证
+
+* AS声明type name与C++ type mapper一致；
+* 引用、const、handle、默认值、参数名和修饰正确；
+* extern method首参数确实是script object；
+* 重载AS声明没有冲突；
+* namespace是公共API想要的名字；
+* property offset和lifetime安全；
+* generic marshalling正确；
+* trait链符合业务语义。
+
+“类型化”不能被写成“无需声明审查”。最危险的错误往往是C++能编译、AS engine registration却返回负错误码，或声明可以注册但调用ABI语义不匹配。
+
+! Sticky registration failure
+
+Target-aware路径在每次AS注册返回负值时调用 `RecordRegistrationFailure()`。只记录''第一次''失败，diagnostic包含：
+
+```text
+operation
+result code
+owner module
+bind provider
+phase
+source file:line
+declaration
+```
+
+BindState置 `bDirectBindFailed=true` 后，后续target-aware register入口通常短路并返回invalid handle/facade，避免在已破损surface上堆叠后续错误。Collection callback返回后立即检查failure并终止整个bind初始化。
+
+这是fail-closed链：
+
+```text
+AS register error
+-> sticky first diagnostic
+-> later registrations short-circuit
+-> phase execute returns false
+-> BindScriptTypes returns false
+-> partial engine must not be published
+```
+
+Legacy global API仍保留历史ensure/check行为，不具有同等完整provenance。迁移到target-aware DSL的价值之一就是错误不再只表现为后续脚本“找不到方法”。
+
+! Bound handle 生命周期
+
+`FAngelscriptBoundFunction` 保存target engine pointer和FunctionId；`FAngelscriptBoundProperty`保存engine/property id/global标志。它们是初始化期短句柄，不拥有engine或script function。
+
+建议：
+
+```cpp
+Class_.Method(...)
+    .NoDiscard()
+    .Documentation(...)
+    .NativeMethod(...);
+```
+
+立即链式设置，然后丢弃句柄。不要把句柄存进进程级static、跨engine reset/hot reload复用。`IsValid()`每次重新检查目标engine/id；trait setter遇invalid通常no-op，但这只防崩溃，不恢复意图。
+
+句柄可隐式转 `int32` 是兼容便利，不应因此把id当全局稳定标识。FunctionId/property index都是engine-local。
+
+! FColor 真实迁移示例
+
+`Bind_FColor.cpp`展示完整分层：
+
+```text
+FAngelscriptBind "FColor" / ManualBindings
+  -> ExistingClassForTarget("FColor")
+  -> constructors + properties + methods
+  -> target-aware FColor namespace globals/constants
+  -> FLinearColor补充方法
+
+FAngelscriptBind "FColor.ToString" / Finalization
+  -> FToStringHelper::Register(Binds, ...)
+```
+
+为什么拆成两个record：ToString helper依赖完整type/method基础，放Finalization比在Manual回调末尾靠文件内顺序更能表达生命周期。
+
+核心表面包括：
+
+* RGBA/packed constructor；
+* `DWColor` property；
+* equality/add-assign；
+* `ToHex`、`InitFromString`、`FromRGBE`、`ReinterpretAsLinear`；
+* `FColor::FromHex/MakeRandomColor/...`；
+* White/Black/Transparent等namespace global variables；
+* `FLinearColor::ToFColor`；
+* final ToString helper。
+
+这个例子不是 `FAngelscriptBindClass<FColor>`；class facade是 `auto FColor_ = Binds.ExistingClassForTarget("FColor")`。
+
+! 编写新绑定的工作流
+
+# 确定所有权module和唯一BindName，选择最早满足依赖的phase。
+# callback只接收 `FAngelscriptBinds&`，不捕获engine全局。
+# 类型尚未注册则在TypeDeclarations/Infrastructure建立；已有type用ExistingClassForTarget。
+# 为每个callable写准确AS声明，使用member/free pointer模板。
+# C++重载用精确cast或宏消歧；capturing lambda改静态helper/UserData。
+# 只有布局安全字段用Property；有语义的访问用显式method。
+# namespace使用带target engine的RAII构造器。
+# 紧跟注册链trait/JIT/docs，不保存handle。
+# 看到registration failure先修第一条provenance diagnostic；后续缺失是短路结果。
+# 需要后期辅助时拆成另一个phase record，不用相同order的静态初始化偶然顺序。
+
+预期结果：同一sealed collection能为新engine重放相同surface，所有错误可定位到owner/bind/phase/source/declaration。
+
+! 迁移旧 FBind
+
+旧：
+
+```cpp
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_X(..., []
+{
+    auto X_ = FAngelscriptBinds::ExistingClass("X");
+    X_.Method(...);
+});
+```
+
+迁移要点：
+
+# 把lambda改成 `void Callback(FAngelscriptBinds&)` function pointer；
+# 用 `FAngelscriptBind` + semantic phase；
+# `ExistingClass` → `ExistingClassForTarget`；
+# global bind → `...ForTarget`；
+# namespace传 `Binds.GetTargetEngine()`；
+# previous-bind trait → returned handle chain；
+# global type/toString/enum registry → target-aware overload；
+# 将原order依赖翻译成phase/独立record；
+# 不为保持旧代码形状继续读current engine singleton。
+
+迁移不是纯语法替换；必须审计所有helper是否把数据写进per-engine state。
+
+! 常见故障
+
+| !症状 | !原因 | !处理 |
+| 找不到`FAngelscriptBindClass<T>` | 当前实现没有该类型 | 使用FAngelscriptBind + FAngelscriptBinds class facade |
+| C++重载pointer无法推导 | overload集合歧义 | 精确static_cast/METHODPR/FUNC宏 |
+| 捕获lambda不能绑定 | 不能转换为静态function pointer | 静态helper或稳定UserData/generic path |
+| 第一条注册失败后后面全部invalid | target failure是sticky并短路 | 修第一条带provenance diagnostic |
+| 多engine第二个engine缺method | helper用了global static API/current engine | 全链迁移到target-aware入口 |
+| namespace注册到错误engine | 使用了不带target的FNamespace | 传Binds.GetTargetEngine() |
+| AS声明能注册但调用损坏 | 声明与C++caller ABI不一致 | 半类型化不自动校验语义；逐项核对type/ref/const |
+| Property读取错误内存 | offset/layout/type声明错误 | 使用member pointer或正确offset，评估字段是否适合直绑 |
+| Finalization helper早于依赖 | 放错phase或依赖同phase偶然顺序 | 使用明确后期phase/拆record |
+| seal后模块bind无法append | 模块未在预初始化cache加载 | 更新BindModules.Cache流程并重启 |
+
+! 维护不变量
+
+* 当前公开模型是FAngelscriptBind/FAngelscriptBinds/Bound handles，不记录不存在的wrapper API。
+* 每个direct callback绑定明确target engine，所有state/provenance按engine隔离。
+* AS声明字符串显式保留；C++模板不自动生成或完整校验声明。
+* ValueClass的size/alignment/traits来自真实T，已有类型不兼容时fail closed。
+* 重载必须显式消歧；capturing lambda不进入静态binding。
+* Target-aware首次registration error是sticky，阶段/整体初始化停止。
+* Namespace、type finder、ToString和辅助registry都必须有target-aware路径。
+* Bound handle不拥有engine，只在初始化期立即链式使用。
+* Phase表达依赖，不能用同phase链接顺序或相同legacy order制造隐式契约。
+* 手工DSL、UHT generated和reflection surface各有所有权，不重复注册同一声明。
+
+! 源码定位
+
+| !职责 | !文件/符号 |
+| FAngelscriptBind、phases、target facade模板、bound handles | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` |
+| direct collection、failure/provenance、target register实现 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp` |
+| record内部字段 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindsInternal.h` |
+| C++ callable到ASAutoCaller转换 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/FunctionCallers.h` |
+| FColor的Manual/Finalization真实示例 | `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FColor.cpp` |
+| FColor独立helper | `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FColor_Functions.h` |
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/bind-trait-fluent-api" "绑定Trait链式API">> —— BoundFunction/Property的精确setter语义。
+* <<as-doc-link "bindings-uht-extensions/bind-execution-timing" "绑定阶段与执行观测">> —— 七phase与legacy交错。
+* <<as-doc-link "bindings-uht-extensions/manual-bind-ownership" "手工绑定所有权">> —— 何时应使用DSL而非UHT自动绑定。
+* <<as-doc-link "bindings-uht-extensions/blueprintcallable-direct-bind" "BlueprintCallable直接绑定">> —— generated/reflective record与手工表面的协调。
+* <<as-doc-link "bindings-uht-extensions/compileout-bind-safety" "CompileOut安全">> —— 句柄失效与编译期调用改写。

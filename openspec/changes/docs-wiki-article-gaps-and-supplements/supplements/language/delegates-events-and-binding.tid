@@ -1,0 +1,158 @@
+title: AS/Docs/zh-Hans/language/delegates-events-and-binding
+type: text/vnd.tiddlywiki
+tags: Language
+caption: Delegate、Event 与绑定生命周期
+description: 声明 single-cast delegate 和 multicast event，绑定 UFUNCTION，并安全执行、广播与清理。
+as-sdk-document: yes
+as-doc-key: language/delegates-events-and-binding
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 210
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[script-examples]] [[angelscript-plugin]]
+as-nav-group: language-basics
+as-nav-order: 210
+as-nav-parent: language/index
+as-feature-key: language-delegates-events-binding
+
+! Single-cast delegate
+
+```angelscript
+delegate void FOnValueReady(UObject Source, float Value);
+```
+
+Delegate 表示一个可绑定目标，类似 dynamic single-cast delegate。执行前可以检查：
+
+```angelscript
+if (Callback.IsBound())
+    Callback.Execute(Source, 5.4);
+
+Callback.ExecuteIfBound(Source, 1.0);
+```
+
+`Execute` 在未绑定时出错；`ExecuteIfBound` 未绑定时无操作。需要返回值且未绑定时，应显式定义 fallback，不要掩盖缺失回调。
+
+! Multicast event
+
+```angelscript
+event void FOnValueChanged(UObject Source, float Value);
+
+class AValueSource : AActor
+{
+    UPROPERTY(Category = "Events")
+    FOnValueChanged OnValueChanged;
+
+    void Notify()
+    {
+        OnValueChanged.Broadcast(this, 10.0);
+    }
+}
+```
+
+Event 可有多个监听者，`Broadcast` 在没有绑定时也安全。Event 不能像 single-cast delegate 一样作为 UFUNCTION 参数传递，但可作为 UPROPERTY 暴露为 Blueprint dispatcher。
+
+! 绑定 UFUNCTION
+
+```angelscript
+UFUNCTION()
+void HandleValue(UObject Source, float Value)
+{
+}
+
+void BindCallbacks()
+{
+    OnValueChanged.AddUFunction(this, n"HandleValue");
+
+    FOnValueReady Callback;
+    Callback.BindUFunction(this, n"HandleValue");
+}
+```
+
+目标必须是 `UFUNCTION()`，签名与 delegate 完全一致。`n"..."` 是编译期 name 字面量，避免动态构造 name，但重命名方法时仍要同步更新。
+
+! 生命周期
+
+绑定者、publisher 和 owner 的寿命可能不同。长期 subsystem 监听短命 Actor 时尤其要在 teardown 解绑；重复 Initialize/BeginPlay 不能无限重复 `AddUFunction`。UObject-aware delegate 能避免部分悬空调用，但不能替你定义重复绑定和业务清理。
+
+! Delegate 还是 Event
+
+|!需求 |!选择 |
+|一个回调，有明确返回值 |delegate |
+|多个观察者，无聚合返回值 |event |
+|派生类替换行为 |`BlueprintEvent` / override |
+|一次延迟调用 |timer 或任务系统 |
+
+! 热重载
+
+只改 handler body 时，已有绑定应进入新实现。改变 delegate 参数、single/multicast 种类、handler 名或 owner property 属于结构变化，需要 full reload 并检查旧绑定、owner property、Blueprint pins 与 impact scanner。
+
+! 常见错误
+
+|!症状 |!检查 |
+|Bind 成功但无回调 |目标是否 UFUNCTION、name/签名是否一致 |
+|同一事件触发多次相同 handler |初始化是否重复 AddUFunction |
+|Execute 未绑定报错 |改用 IsBound/ExecuteIfBound 或修复必需绑定 |
+|Blueprint 看不到 dispatcher |event 是否为 UPROPERTY、类型是否成功生成 |
+|热重载后参数错位 |delegate signature 与 owner property 是否同一版本 |
+
+! 把绑定看成有所有权的边
+
+Delegate/event 绑定会在 publisher 与 listener 之间建立一条调用边。即使底层是 UObject-aware dynamic delegate，这条边仍需要业务 owner：谁建立、允许建立几次、在哪个生命周期撤销、publisher 比 listener 活得更久时怎么办。
+
+|!场景 |!建立位置 |!撤销位置 |!额外 invariant |
+|Actor 监听自己 component |BeginPlay/初始化完成后 |EndPlay/组件 teardown |重复 BeginPlay 不得叠加绑定 |
+|GameInstance subsystem 监听短命 Actor |Actor 注册时 |Actor EndPlay 或 subsystem Deinitialize |subsystem 不能保留跨 world 的陈旧业务状态 |
+|一次请求回调 |请求发起 |成功、失败或取消三条路径 |只能完成一次，owner 销毁后不得继续写状态 |
+|Editor 工具监听全局 delegate |工具/module 初始化 |module shutdown/hot reload |避免旧 module 实例残留 handler |
+
+“目标对象销毁后不会执行”只能减少悬空调用，不会阻止重复 Add、错误顺序或永不清理的注册记录。绑定 API 应配合明确 handle/remove 路径，或在初始化前检查/清除既有绑定。
+
+! Single-cast 与 multicast 的失败政策
+
+Single-cast 往往表示一个必需或可选的唯一策略。若回调是必需合同，在执行前发现未绑定应产生清楚诊断，而不是永久使用 `ExecuteIfBound` 吞掉错误；若本来就是可选扩展，`ExecuteIfBound` 才符合语义。
+
+Multicast event 表示通知，不适合让多个监听者共同决定一个返回值或修改同一个 out 参数。监听顺序也不应成为业务合同；如果处理有先后依赖，应建立显式 pipeline/协调器，而不是依赖当前 delegate invocation order。
+
+! Signature 是版本化反射类型
+
+Delegate/event 的参数列表会被生成成反射 signature，并被 owner property、handler UFUNCTION、Blueprint dispatcher/pins 和现有绑定共同引用。修改一个参数不是只重编译声明文件，而是生成新 signature version 并让所有消费者指向它。
+
+|!变化 |!需要复核 |
+|参数类型/顺序/方向 |handler UFUNCTION、Add/Bind 调用、Blueprint pins、调用 marshalling |
+|delegate ↔ event |single/multicast 执行模型、返回值、UPROPERTY dispatcher |
+|handler 改名 |所有 `n"Handler"` name 字面量、timer/delegate 注册 |
+|owner property 改名/类型 |Blueprint asset、序列化 default、reload retarget |
+|只改 handler body |绑定应进入新实现，但仍要确认对象已 reinstance 到新 class |
+
+Hot reload 后至少检查四个身份：新 delegate signature、新 owner property、新 handler UFunction、新对象实例。任何一项仍指旧版本，都可能出现参数错位、无回调或旧实现。
+
+! 广播期间的重入与修改
+
+Handler 可以同步触发其它事件、修改 publisher 状态，甚至请求解绑/销毁对象。广播方不应假设每个监听者返回后世界仍与广播前相同。
+
+* 广播前把本次通知所需值复制到局部，避免后续 handler 改掉正在读取的共享状态；
+* 不把容器迭代器/临时引用穿过 `Broadcast`，因为 handler 可能修改容器；
+* 对不允许重入的操作设置显式状态守卫，并定义嵌套调用是拒绝、排队还是合并；
+* handler 失败政策要清楚：一个监听者错误是否阻止其它监听者，不能靠偶然调用顺序决定；
+* 网络 RPC 与本地 event 是不同路由。Broadcast 不会自动产生跨网络通知。
+
+! 可靠绑定流程
+
+# 在 owner 初始化完成后建立绑定，记录 publisher、listener 和用途。
+# 若初始化可能重复，先判定/移除旧绑定，或使用能够保证唯一性的策略。
+# 绑定后在开发环境验证 `IsBound`/注册结果；必需回调缺失应尽早失败。
+# 执行/广播时不携带会在 handler 内失效的长期引用。
+# 在 EndPlay、取消、Deinitialize 和 module shutdown 等所有退出路径清理。
+# 改 signature/name 后搜索声明、绑定、handler、Blueprint owner 和热重载版本链。
+
+! 故障树
+
+出现“没触发”时，从上到下检查：publisher 是否真的执行 Broadcast/Execute；绑定初始化是否运行；对象是不是当前 world/新版本；name 与 UFUNCTION signature 是否匹配；绑定是否随后被清理；single-cast 是否被后一次 Bind 覆盖。出现“触发多次”则反向检查重复初始化、多个 publisher、旧 world/module 绑定和事件重入。
+
+! 相关链接
+
+* <<as-doc-link "language/delegates-events" "委托与事件基础">>
+* <<as-doc-link "hot-reload/versioned-types-and-delegates" "结构体、委托与类型版本链">>
+* <<as-doc-link "topics-integrations/timers-and-callbacks" "Timer 与延迟回调">>

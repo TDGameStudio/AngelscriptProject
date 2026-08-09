@@ -1,0 +1,140 @@
+title: AS/Docs/zh-Hans/hot-reload/reload-pipeline-internals
+type: text/vnd.tiddlywiki
+tags: HotReload
+caption: 热重载管线实现原理
+description: 追踪文件变化到编译、重载计划、类型生成、重实例化与 Blueprint 影响处理。
+as-sdk-document: yes
+as-doc-key: hot-reload/reload-pipeline-internals
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 50
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[openspec]]
+as-nav-group: workflow-validation
+as-nav-order: 90
+as-nav-parent: hot-reload/index
+as-feature-key: hot-reload-pipeline-internals
+
+! 从一次保存到新代码生效
+
+热重载不是一个“重新编译”函数，而是一条跨 Runtime 与 Editor 的状态管线。一次 `.as` 文件保存大致经历：
+
+# Editor 侧目录监听收到文件事件，并把短时间内的重复通知合并成待处理变化；
+# 预处理与编译层重新建立受影响模块，更新脚本声明与依赖信息；
+# `FAngelscriptClassGenerator::Setup()` 比较旧、新描述，注册 reload planner 节点并传播结构依赖；
+# planner 把变化归为无需重建、soft reload 候选或 full reload；
+# ClassGenerator 替换函数实现，或创建新 `UClass`、`UScriptStruct`、enum、delegate 并维护版本映射；
+# Editor 的 `FClassReloadHelper::FReloadState` 恢复对象、Blueprint 与编辑器缓存；
+# Blueprint impact 分析把受脚本类型影响的已加载 Blueprint 加入编译/重实例化队列。
+
+这条顺序很重要：文件监听只能回答“什么文件动了”，分类器才能回答“哪些反射类型必须重建”，而对象与 Blueprint 恢复必须在新类型已经可用之后进行。
+
+! 阶段一：文件观察与批处理
+
+入口位于 `AngelscriptEditor/HotReload/AngelscriptDirectoryWatcherInternal.*`。它属于 Editor 模块，因为目录监听、交互式保存和 PIE 生命周期都是编辑器职责。操作系统可能对一次保存发出多条 added/modified/removed 事件，编辑器也可能采用临时文件再 rename 的写入方式，因此监听结果不能直接等价为一次编译事务。
+
+维护时应保留三条边界：
+
+* watcher 负责观察与合并路径，不负责判断反射兼容性；
+* 删除与重命名不能被简单吞成“最后一次 modified”，否则旧模块记录和 CoreRedirect 机会会丢失；
+* 事件到来时若编译尚未安全执行，应排队到允许的 editor tick，而不是在目录回调中直接改写 UObject 状态。
+
+如果出现“保存一次却编译多次”，先记录原始事件序列、规范化路径和最终提交的变化集合；如果出现“保存后没反应”，先确认监听根目录和文件扩展名，再向后检查编译诊断。不要一开始就修改 ClassGenerator。
+
+! 阶段二：编译结果与模块边界
+
+预处理器解析 `#include` 与条件编译后，编译器得到的受影响集合可能大于直接修改的文件。ClassGenerator 消费的是编译后的模块描述，不是磁盘 diff；因此“只改一行”并不保证只更新一个类型。
+
+编译失败时，新模块不能进入 reload 阶段。正确结果是保留上一次可执行实现并展示本次诊断。只有编译成功，旧、新模块描述都完整时，后续比较才有意义。排障时应分清：
+
+|!观察 |!最可能停留的阶段 |
+|出现语法错误且旧实例仍可调用 |编译被拒绝，尚未进入 reload |
+|依赖文件已保存，但消费者没有更新 |预处理/模块依赖失效范围不完整 |
+|编译成功，但日志要求 full reload |旧新描述比较或依赖传播提升了级别 |
+|新类存在，但 Blueprint/场景对象仍异常 |生成完成，Editor 恢复阶段未闭合 |
+
+! 阶段三：reload planner
+
+`AngelscriptClassGenerator_Analyze.cpp` 中的 `Setup()` 建立本轮分析；`AngelscriptClassGenerator_ReloadPlanning.cpp` 把 class 与 delegate 注册为 planner 节点，通过 `CollectReloadDependencies()` 和 `AddReloadDependency()` 建边，再由 `ApplyReloadPlannerResults()` 写回结果。
+
+planner 的价值不只是分类单个类型。若 A 的属性、父类、函数参数或 delegate 签名引用 B，B 的结构变化可能要求 A 一起 full reload。传播图避免出现“B 已换版本，但 A 的反射属性仍指向旧 B”这种局部成功。
+
+`FAngelscriptClassReloadPlanner` 的节点结果可理解为单调升级：依赖传播可以把某个节点从 soft 候选提升为 full，但调用方不应把已判定的 full 强行降回 soft。判断依据的用户视图见 <<as-doc-link "hot-reload/change-classification" "变化分类矩阵">>。
+
+! 阶段四：soft reload
+
+`AngelscriptClassGenerator_SoftReload.cpp` 处理反射形状不变的实现替换。理想的 body-only reload 不创建新的 `UClass`，已有 UObject 身份、属性值和外部引用保持不变，新调用则进入新的脚本函数实现。
+
+Soft reload 仍需要照顾函数分派缓存：普通成员函数、namespace 函数、Blueprint 子类调用、delegate 绑定以及可能存在的 JIT dispatch 都不能继续永久指向旧实现。判断成功的证据不是“编译日志绿色”，而是同一个既有实例再次调用时得到新行为。
+
+! 阶段五：full reload 与版本链
+
+结构变化由 `AngelscriptClassGenerator_FullReload.cpp` 创建新的 class、struct、enum 或 delegate；`AngelscriptClassGenerator_Reinstancing.cpp` 与 finalize/generation 文件完成属性重定向、旧新类型映射和后续恢复。旧版本不能总是立即销毁，因为仍可能有对象、属性描述或序列化路径在迁移窗口中引用它。
+
+Full reload 必须同时维持这些不变量：
+
+* canonical 查询最终指向最新类型；
+* 旧 layout 在仍有存活引用时仍可解释；
+* class、struct、enum 与 delegate 的跨类型引用指向一致版本；
+* CDO 与 default component template 的旧值、新默认值和用户覆盖值不混淆；
+* 删除类不会残留可被正常查找的活动模块记录；
+* 无歧义的类重命名才可生成 CoreRedirect，不能猜测多对多变化。
+
+具体构造入口包括 `CreateFullReloadClass()`、`CreateFullReloadStruct()`、`CreateFullReloadDelegate()` 以及各类型的 `DoFullReload()`。这些函数属于 Runtime，因为它们负责脚本描述到 Unreal 反射类型的真实性；是否刷新编辑器 UI 则不属于这里。
+
+! 阶段六：Editor 重实例化
+
+`AngelscriptEditor/HotReload/ClassReloadHelper.*` 把 Runtime 生成结果接到编辑器对象世界。`FClassReloadHelper::FReloadState::PerformReinstance()` 会处理类替换，并根据变化刷新 Blueprint action、组件类缓存、actor factory、placeable assets 等编辑器状态。
+
+Blueprint 影响不是“所有 Blueprint 全编译”。`AngelscriptEditor/BlueprintImpact/AngelscriptBlueprintImpactScanner.*` 从变化模块构建 `FBlueprintImpactSymbols`，检查已加载 Blueprint 的脚本父类、节点依赖、pin 类型、变量类型、delegate 签名和引用资产；匹配项再进入编译与重实例化队列。独立 commandlet 使用同一 scanner 做资产级扫描，但它不是交互式热重载的替代品。
+
+<<as-callout warning "对象替换完成不等于 Editor 状态完整">>
+如果 actor 看似恢复，但组件面板、Blueprint 节点菜单或可放置资产列表仍旧，问题更可能在 `ClassReloadHelper` 的后处理和缓存失效，而不是 Runtime 类型生成。
+<</as-callout>>
+
+! 两次最小追踪
+
+!! 追踪 A：只改函数体
+
+# 在一个已有实例上记录对象路径、class 指针和函数返回值；
+# 修改函数常量，不改声明、metadata 或属性；
+# 确认分类未提升为 full；
+# 保存后对同一实例再次调用；
+# 预期对象/class 身份保持，返回值更新。
+
+!! 追踪 B：新增反射属性
+
+# 记录旧 class、CDO、已有实例值和 Blueprint 子类；
+# 新增一个带默认值的 UPROPERTY；
+# 确认 planner 选择 full，并观察新类型生成；
+# 确认 canonical class 指向新版本，已有实例按合同迁移；
+# 编译受影响 Blueprint，分别检查继承默认值与显式覆盖值。
+
+两次追踪共享同一保存入口，却应该在第三阶段后走向不同路径；这正是定位分类错误与恢复错误的最短对照。
+
+! 失败定位表
+
+|!症状 |!检查入口 |!不要先做什么 |
+|文件事件重复或丢失 |`AngelscriptDirectoryWatcherInternal.*` 的输入与合并结果 |不要先改 reload planner |
+|include 消费者未更新 |预处理依赖和受影响模块集合 |不要手工把所有变化升为 full |
+|body-only 被升为 full |旧新 descriptor 差异与 planner 传播边 |不要绕过分类结果 |
+|类型版本或属性仍指向旧类型 |FullReload、ReloadPlanning、VersionChain |不要只刷新 Content Browser |
+|实例、CDO、组件默认值漂移 |Reinstancing、ClassReloadHelper、Component fixtures |不要只创建新对象验证 |
+|Blueprint 未进入队列 |`BuildImpactSymbols()` / `AnalyzeLoadedBlueprint()` 的 reason |不要无条件编译全部资产掩盖遗漏 |
+
+! 源码地图
+
+* 监听：`Plugins/Angelscript/Source/AngelscriptEditor/HotReload/AngelscriptDirectoryWatcherInternal.*`
+* 分析与计划：`AngelscriptClassGenerator_Analyze.cpp`、`AngelscriptClassGenerator_ReloadPlanning.cpp`、`AngelscriptClassReloadPlanner.*`
+* 类型生成：`AngelscriptClassGenerator_SoftReload.cpp`、`AngelscriptClassGenerator_FullReload.cpp`、`AngelscriptClassGenerator_Reinstancing.cpp`
+* Editor 恢复：`AngelscriptEditor/HotReload/ClassReloadHelper.*`
+* Blueprint 影响：`AngelscriptEditor/BlueprintImpact/AngelscriptBlueprintImpactScanner.*`
+* 行为证据：`Plugins/Angelscript/Source/AngelscriptTest/HotReload/`
+
+! 相关链接
+
+* <<as-doc-link "hot-reload/daily-workflow" "热重载日常工作流">>
+* <<as-doc-link "hot-reload/change-classification" "热重载变化分类矩阵">>
+* <<as-doc-link "hot-reload/source-tests-maintenance" "热重载源码、测试与维护">>

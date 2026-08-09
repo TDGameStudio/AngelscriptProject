@@ -1,0 +1,128 @@
+title: AS/Docs/zh-Hans/topics-integrations/blueprint-subclass-workflow
+type: text/vnd.tiddlywiki
+tags: TopicsIntegrations
+caption: 脚本基类与 Blueprint 子类协作
+description: 用 AngelScript 定义稳定逻辑与反射接口，让 Blueprint 子类配置资产、默认值和视觉行为。
+as-sdk-document: yes
+as-doc-key: topics-integrations/blueprint-subclass-workflow
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: tutorial
+as-content-status: draft
+as-order: 90
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[script-examples]] [[project-guide]]
+as-integration-kind: engine-domain
+as-integration-system: Blueprint
+as-nav-group: unreal-development
+as-nav-order: 140
+as-nav-parent: topics-integrations/index
+as-feature-key: blueprint-subclass-workflow
+
+! 分工模型
+
+一种稳定的协作方式是：AngelScript 基类负责状态、规则与可复用流程，Blueprint 子类负责资源指派、数值调整、组件外观和可视化事件覆盖。这样设计师无需复制核心逻辑，脚本维护者也不必把每个材质、音效或 VFX 写死。
+
+`Script/Examples/Extended/Example_BlueprintSubclass.as` 用拾取物展示了完整模式。
+
+! 第一步：定义可配置属性
+
+```angelscript
+class AExamplePickupBase : AActor
+{
+    UPROPERTY()
+    USphereComponent CollisionSphere;
+
+    UPROPERTY(Category = "Pickup")
+    int PickupValue = 10;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Pickup")
+    bool bCollected = false;
+
+    default SetReplicates(true);
+}
+```
+
+`PickupValue` 可由 Blueprint 子类设置；`bCollected` 供 Blueprint 读取但不暴露任意写入；组件属性把脚本逻辑连接到 Blueprint/默认组件配置。Category 不是装饰性细节，它决定设计师在 Details 面板里能否快速找到合同参数。
+
+! 第二步：在脚本中固定流程
+
+脚本 `BeginPlay()` 绑定组件 overlap，并在第一次触发时设置 `bCollected`，然后调用一个可覆盖事件。状态门控留在基类，避免每个 Blueprint 重复实现“只能拾取一次”。
+
+```angelscript
+UFUNCTION()
+void OnOverlapBegin(
+    UPrimitiveComponent OverlappedComponent, AActor OtherActor,
+    UPrimitiveComponent OtherComponent, int OtherBodyIndex,
+    bool bFromSweep, const FHitResult&in Hit)
+{
+    if (!bCollected)
+    {
+        bCollected = true;
+        OnPickedUp(OtherActor);
+    }
+}
+```
+
+绑定目标必须是 `UFUNCTION()`，函数签名必须和 `OnComponentBeginOverlap` delegate 一致。
+
+! 第三步：暴露 BlueprintEvent 扩展点
+
+```angelscript
+UFUNCTION(BlueprintEvent)
+void OnPickedUp(AActor Collector)
+{
+    Print(f"{Collector.GetName()} picked up {GetName()} (value: {PickupValue})");
+}
+```
+
+`BlueprintEvent` 提供一个带脚本默认实现的虚拟扩展点。Blueprint 子类可以追加 VFX、音效或 UI，而脚本子类也可用 `BlueprintOverride` 覆盖：
+
+```angelscript
+class AExampleHealthPickup : AExamplePickupBase
+{
+    UPROPERTY(Category = "Pickup")
+    float HealAmount = 25.0;
+
+    default PickupValue = 25;
+
+    UFUNCTION(BlueprintOverride)
+    void OnPickedUp(AActor Collector)
+    {
+        Print(f"{Collector.GetName()} healed for {HealAmount} HP");
+    }
+}
+```
+
+如果需要在覆盖中保留父实现，应按当前语言的父类调用语法显式调用，而不要假设 Blueprint/脚本覆盖会自动串联。
+
+! 在 Editor 中采用
+
+# 编译脚本，确认生成的脚本 class 可选作 Blueprint 父类；
+# 创建 Blueprint 子类并指定 `CollisionSphere`、数值和视觉资源；
+# 需要定制表现时覆盖 `OnPickedUp`，不要复制整个 overlap 流程；
+# 在场景放置 Blueprint 子类，验证属性默认值和事件分派；
+# 修改脚本反射形状后，检查 Blueprint 编译与热重载影响，不只看脚本编译结果。
+
+! API 设计建议
+
+* 将不变量和防重复逻辑留在脚本基类；
+* 用少量语义明确的 `BlueprintEvent` 提供扩展点，不把每个内部步骤都暴露；
+* 可调参数使用稳定名称、Category 和默认值；
+* 只读状态用 `BlueprintReadOnly`，写操作封装成函数；
+* Blueprint 会长期引用的函数和属性应谨慎改名；必要时规划 redirect/迁移；
+* 事件参数传递业务所需的最小上下文，避免 Blueprint 再做昂贵全局查找。
+
+! 热重载边界
+
+只改事件函数体通常是 soft reload 候选；新增/删除属性、改变 `BlueprintEvent` 签名、改父类或 default component 属于结构变化。Full reload 后需确认 Blueprint ParentClass、GeneratedClass、override 节点、CDO 默认值和场景实例都恢复。
+
+<<as-callout warning "Blueprint 能打开不代表合同完整">>
+父类变化后，Blueprint 资产可能仍能显示，但节点 pin、delegate 签名或保存的默认值已经失配。对公开反射 API 的改动要按资产迁移对待。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "unreal-language/property-specifiers" "属性与 defaults">>
+* <<as-doc-link "unreal-language/function-specifiers" "函数、事件与覆盖">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint 子类、CDO 与默认值迁移">>

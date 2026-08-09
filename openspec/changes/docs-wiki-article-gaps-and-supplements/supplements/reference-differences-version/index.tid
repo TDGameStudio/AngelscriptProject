@@ -1,0 +1,77 @@
+title: AS/Docs/zh-Hans/reference-differences-version/index
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: 参考、差异、版本与项目
+description: 查明 fork、来源、版本、比较关系和项目状态的适用范围。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/index
+as-locale: zh-Hans
+as-depth: L0
+as-doc-kind: reference
+as-content-status: draft
+as-order: 10
+as-content-revision: 3
+as-sources: [[project-guide]] [[project-knowledge-zh]] [[hazelight-docs]] [[hazelight-private-source]] [[hazelight-engine-report]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 30
+as-feature-key: reference-differences-version
+
+! 先确认“你在比较什么”
+
+本分支解决四种常被混在一起的问题：产品版本与第三方源码血缘、当前 fork 与 vanilla AngelScript、独立插件与 Hazelight 环境、UE Runtime/Editor/Commandlet/Standalone 能力边界。
+
+任何差异结论都应包含：比较双方、固定 revision/版本、证据来源、当前影响和是否已采纳。没有 revision 的历史报告只能提供线索，不能覆盖当前源码。
+
+! 快速路由
+
+|!问题 |!页面 |
+|当前产品到底是什么版本？ |<<as-doc-link "reference-differences-version/product-version-and-lineage" "产品版本与源码血缘">> |
+为什么不是 vanilla 2.33/2.38？ |<<as-doc-link "reference-differences-version/fork-language-differences" "Fork 语言差异">> |
+如何吸收上游修复？ |<<as-doc-link "reference-differences-version/selective-backport-policy" "选择性 Backport">> |
+Hazelight 资料能否直接当事实？ |<<as-doc-link "reference-differences-version/hazelight-evidence-boundary" "Hazelight 证据边界">> |
+某 API 为什么不存在？ |<<as-doc-link "reference-differences-version/binding-availability" "绑定可用性">> |
+Standalone 能否运行 UE？ |<<as-doc-link "reference-differences-version/standalone-vs-ue" "Standalone 与 UE">> |
+
+! 来源优先级
+
+当前插件源码、项目指南、生成产物和实际报告优先；固定上游/外部仓库用于比较；历史计划不再是当前状态来源。私有 Hazelight 源只做 metadata 化差异，不在 Wiki 摘录或镜像。
+
+! 一条合格的差异结论
+
+本章不是“不同点列表”，而是给每个结论建立可审计坐标。至少记录：
+
+```text
+Subject: 比较的能力/符号/工作流
+Local: 产品版本、plugin revision、UE host、环境
+Other side: vanilla/upstream/Hazelight/另一个插件的 revision
+Evidence kind: local source / generated artifact / public docs / private metadata / historical report
+Observation: same / adapted / absent / unknown
+Impact: 对脚本作者、绑定维护、发布或迁移的影响
+Disposition: keep / document / investigate / propose separately
+```
+
+`absent` 只能表示在给定 scope 和证据中确认不存在；未启用可选插件、未生成目标 module 或没有访问私有 revision 时应写 `unknown`/`not applicable`，不能写成本地产品缺陷。
+
+! 先选比较坐标
+
+|!你看到的冲突|!先固定的坐标|
+|文档说 2.33，README 说 1.0.0|产品版本 vs source lineage|
+|C++ header 有函数，脚本 unknown|最终 binding surface、backend、module、可选 plugin|
+|Editor 能用，Commandlet 失败|module type、初始化生命周期、World/Slate/asset availability|
+|Hazelight 示例可运行，本地不可用|公开 docs vs 私有 engine bind vs 当前 local source|
+|Standalone 编译成功但不能调用 UObject|`ue-validation` compile-only vs UE Host execution|
+|上游 2.38 有修复，本地没有|选择性 backport 适用性与 fork 冲突|
+
+! 不属于本章的内容
+
+* “如何写第一个 Actor”属于开始/语言教程；
+* “某个绑定崩溃怎么修”属于对应绑定/运行时内部页；
+* “要不要实现某项差异”需要单独 OpenSpec，不由比较页自动创建承诺；
+* `Documents/Plans/` 是历史材料，不能作为当前实施状态的唯一证据。
+
+本章给这些工作提供版本、scope 和 provenance，避免正确的技术分析建立在错误比较对象上。
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/public-api-compatibility" "公共 API 与兼容性纪律">>
+* <<as-doc-link "reference-differences-version/external-reference-policy" "外部参考使用策略">>

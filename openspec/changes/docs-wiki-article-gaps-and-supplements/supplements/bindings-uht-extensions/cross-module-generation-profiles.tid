@@ -1,0 +1,285 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/cross-module-generation-profiles
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: 跨模块生成配置解析与引擎分发约束
+description: 解释 UBT 与 UHTTool 如何从同一工程 INI 解析函数绑定后端、模块集合和源码版引擎约束，并澄清旧 JSON profile 模型已不属于当前实现。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/cross-module-generation-profiles
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 40
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: cross-module-generation-profiles
+
+! 当前实现没有 JSON profiles
+
+历史 `as-cross-module-generation-profiles` 方案描述过 `common + source`、`common + installed` JSON 档案和 “module-binding-only” 模块集合。当前 `AngelscriptRuntime.Build.cs` 与 `AngelscriptUHTTool` 源码中不存在这套加载路径；不能再用 profile 名称推导生成范围。
+
+当前事实源是工程根目录：
+
+```text
+Config/DefaultAngelscriptCompileOptions.ini
+```
+
+以及同一 section 中的三个配置项：
+
+```ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+FunctionBindingMethod=NativeRuntimeLinked
++NativeRuntimeLinkedModules=Engine
++NativeRuntimeLinkedModules=UMG
+```
+
+`FunctionBindingMethod` 选择一次生成后端；与之对应的模块数组定义显式 allowlist。引擎分发分类不再选择模块 profile，只在 `NativeModuleFunctionAddress` 后端上执行''源码版引擎硬门控''。
+
+<<as-callout warning "历史规范不是当前配置说明">>
+`openspec/specs/as-cross-module-generation-profiles/` 可以作为设计沿革材料，但它提到的 JSON 文件、profile 组合、`EntryKind=ModuleBinding`、`ThunkStyle=FrameWrapper` 与 `AS_FunctionTable_Summary.json` 不是当前产物合同。排障必须从实际 `compileOptionsPath`、`functionBindingMethod` 和活动模块集合开始。
+<</as-callout>>
+
+! 读者与适用范围
+
+本页面向维护构建配置、切换引擎分发或集成新 UE 模块的人，重点回答：
+
+* UBT 与 UHTTool 分别从哪里找到配置；
+* 相同文本如何被两套解析器解释成同一模型；
+* source/installed/unknown 分类具体控制什么；
+* 为什么某个模块在一个 Target 中生成、另一个 Target 中被跳过；
+* 迁移旧 profile 时如何避免把历史模块池无条件复制进新后端。
+
+单个函数能否直接绑定、为什么退回反射或跳过，不属于配置 profile；那是 module gate 之后的函数资格与签名分析。
+
+! 有效配置模型
+
+解析结果可以表达为：
+
+```text
+FunctionBindingSettings
+├─ Method: None | NativeRuntimeLinked | NativeModuleFunctionAddress
+├─ NativeRuntimeLinkedModules: case-insensitive set<string>
+└─ NativeModuleFunctionAddressModules: case-insensitive set<string>
+```
+
+只有 `Method` 对应的集合是''活动范围''。另一个集合仍可被解析和记录，但不会参与当前生成。
+
+| !Method | !活动集合 | !UBT 责任 | !UHTTool 责任 |
+| `None` | 空 | 不接入自动函数绑定包装 | 不分析/生成模块函数绑定 |
+| `NativeRuntimeLinked` | `NativeRuntimeLinkedModules` | 给 AngelscriptRuntime 加目标模块依赖和聚合 wrapper | 为 allowlist 内且在会话中的模块生成 `AS_FunctionBinding_<Module>.gen.cpp` |
+| `NativeModuleFunctionAddress` | `NativeModuleFunctionAddressModules` | 发布后端宏并拒绝非 source Engine | 在目标模块输出目录生成 NMFA 分片与 Engine bridge probe |
+
+两个数组不是两级 profile，也不做 union。`NativeRuntimeLinkedModules` 中的条目不会在选择 NMFA 后端时自动转成 NMFA 模块。
+
+! UBT 的配置解析路径
+
+`AngelscriptRuntime.Build.cs` 从 `ReadOnlyTargetRules.Target.ProjectFile` 开始：
+
+# `Target.ProjectFile == null` → 返回 `NativeRuntimeLinked + 两个空集合`；
+# 无法取得 ProjectDirectory → 同样返回空集合；
+# 计算 `<ProjectDirectory>/Config/DefaultAngelscriptCompileOptions.ini`；
+# 无论文件是否存在，都将该路径加入 `ExternalDependencies`；
+# 文件存在时，只解析精确 section `/Script/AngelscriptRuntime.AngelscriptCompileOptions`；
+# 依据方法设置依赖、wrapper 和编译定义。
+
+加入 `ExternalDependencies` 的意义是让配置成为构建图的一部分。它不是普通运行时 ConsoleVariable，也不是编辑器里改完立即影响已编译二进制的动态设置。
+
+!! RuntimeLinked 对构建图的影响
+
+当方法为 `NativeRuntimeLinked` 时，Build.cs 对活动集合执行两件事：
+
+* `AddConfiguredRuntimeLinkedDependencies()`：把尚未存在的模块加入 `PrivateDependencyModuleNames`；`AngelscriptRuntime` 自身被跳过，非 Editor Target 还会跳过 `UMGEditor`/`UnrealEd`；
+* `AddGeneratedFunctionBindingWrappers()`：为每个模块生成一个聚合源码，内部用 `__has_include` 与 `UE_INLINE_GENERATED_CPP_BY_NAME` 接入 `AS_FunctionBinding_<Module>.gen.cpp`。
+
+所以 RuntimeLinked 的模块集合既是 UHT 生成范围，也是 Runtime 模块的链接依赖边界。盲目扩大它会扩大编译/链接耦合。
+
+!! NMFA 对构建图的影响
+
+NMFA 不把目标模块按 RuntimeLinked 方式加入 AngelscriptRuntime 依赖。目标模块自己编译 UHT 生成的地址分片，并通过 `IModularFeatures` 发布 POD view。Build.cs 会发布：
+
+```text
+WITH_ANGELSCRIPT_NATIVE_MODULE_FUNCTION_ADDRESS=1
+```
+
+并在配置读取完成后调用 `IsSourceEngine()`。不是 source 时直接抛 `BuildException`，不会自动降级成 RuntimeLinked 或反射。
+
+! UHTTool 如何找到同一份配置
+
+UHTTool 不持有 `Target.ProjectFile`，而是从 UHT 会话反推 Runtime Build.cs：
+
+# 在 `factory.Session.Modules` 中寻找短名精确等于 `AngelscriptRuntime` 的模块；
+# 从它的 ScriptPackage 递归找到第一个带 HeaderFile 的 UClass；
+# 在标准化路径中定位 `/Source/AngelscriptRuntime/`；
+# 得到 `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs`；
+# 从 Build.cs 所在目录开始逐级向上，最多八层，每层尝试 `Config/DefaultAngelscriptCompileOptions.ini`；
+# 使用第一个存在的候选文件，将它加入 UHT external dependency，并记录为 `compileOptionsPath`。
+
+没有候选文件时，它返回和 UBT 相同的默认：`NativeRuntimeLinked + 两个空集合`。找不到 Runtime Build.cs 则不是“默认配置”，而是结构解析失败，会抛出异常；这能避免 UHT 在错误仓库层级悄悄读取无关配置。
+
+<<as-callout note "为什么要记录 compileOptionsPath">>
+多层目录、插件嵌套和外部宿主工程可能同时存在多个同名 INI。看到生成范围异常时，首先读取统计中的 `compileOptionsPath`，确认 UHTTool 实际采用了哪一份；不要只打开你以为的工程根文件。
+<</as-callout>>
+
+! 两套解析器的同构规则
+
+UBT 使用 C# Build.cs 内部解析器，UHTTool 使用 `AngelscriptFunctionBindingConfiguration`。两者没有共享运行时 assembly，因此源码上是两份实现；合同必须保持同构。
+
+| !规则 | !行为 |
+| section | 只接受精确 `/Script/AngelscriptRuntime.AngelscriptCompileOptions` |
+| 注释/空行 | 跳过空行、`;` 与 `#` 开头行 |
+| 未知 key | 当前解析器忽略，不改变绑定设置 |
+| `FunctionBindingMethod` | 单值，只接受三个合法枚举字符串，不允许数组操作前缀 |
+| 模块集合 | `HashSet<string>`，`OrdinalIgnoreCase` 去重 |
+| 无前缀赋值 | 清空对应集合再加入当前值 |
+| `+` | 加入值 |
+| `-` | 删除值 |
+| `!` | 仅允许空值或 `ClearArray`，并清空集合 |
+| 空模块名 | 报错 |
+| 未知 method | 报错 |
+
+一个常见错误是连续写：
+
+```ini
+NativeRuntimeLinkedModules=Engine
+NativeRuntimeLinkedModules=UMG
+```
+
+第二行会再次清空集合，最终只剩 `UMG`。当前项目使用 `+NativeRuntimeLinkedModules=...` 逐项添加，就是为了避免这种覆盖语义。
+
+! Engine 分发分类
+
+UHTTool 从会话中任一位于 `/Engine/Source/` 或 `/Engine/Plugins/` 下的 header 提取 Engine 根；分类顺序为：
+
+# `<Engine>/Build/InstalledBuild.txt` 存在 → `installed`；
+# 否则 `<Engine>/Build/SourceDistribution.txt` 存在 → `source`；
+# 否则从 Engine 根向父目录寻找 `.git` 文件或目录，找到 → `source`；
+# 都没有 → `unknown`。
+
+Build.cs 的 `IsSourceEngine()` 使用相同证据顺序，但最终结果是 bool：installed 或 unknown 都视为非 source。
+
+!! 分类只对 NMFA 是硬门控
+
+| !后端 | !source | !installed | !unknown |
+| `None` | 可用 | 可用 | 可用 |
+| `NativeRuntimeLinked` | 可用 | 可用，只要公开头和模块依赖可链接 | 可进入配置；后续依赖/环境仍需有效 |
+| `NativeModuleFunctionAddress` | 可用 | ''生成前失败'' | ''生成前失败'' |
+
+历史 profile 模型曾用分发类型选择不同模块集合；当前实现不这样做。`engineDistribution` 是诊断事实和 NMFA 安全检查，不是 `source.json`/`installed.json` 的选择器。
+
+NMFA 必须在目标 UE 模块自己的输出目录编译 C++ 分片。Installed Engine 无法把任意新源码重新编入预构建 Engine module，因此 fail closed 比生成一批永远不会链接的文件更安全。
+
+! 配置与当前 UHT 会话的交集
+
+有效生成范围不是单纯的配置集合，而是：
+
+```text
+ActiveModuleSet
+∩ CurrentUhtSessionModules
+∩ ModulesWithEligibleUFunctions
+```
+
+这三层结果需要分开理解：
+
+| !状态 | !含义 | !诊断 |
+| 配置中没有模块 | 默认关闭或显式空集合 | 活动列表为空，没有 module rows |
+| 配置有模块，但不在会话 | Target/插件未包含它，或短名拼错 | `configuredModuleMisses` |
+| 模块在会话，但没有 eligible UFunction | 配置与 Target 正常，函数资格为空 | 模块统计中 analyzed 为 0 或无产物 |
+| 有 analyzed，但 RuntimeLinked 全部回退 | 模块接入成功，签名/策略选择反射 | `ReflectiveFallbackCount` 与逐函数 reason |
+| 有 analyzed，但 NMFA 全部 skipped | 模块接入成功，NMFA 安全集/声明解析未通过 | `AS_FunctionBindingSkippedFunctions.csv` |
+
+UHTTool 的 `configuredModuleMisses` 只针对''当前方法的活动集合''计算；非活动数组中的条目不会被当成本轮 miss。这也是为什么切换后端后必须检查新数组，而不是期待旧数组报错提醒。
+
+! Editor-only 目标差异
+
+同一配置文件可以列出 Runtime 和 Editor module，但当前 Target 决定实际依赖与会话：
+
+* 非 Editor Target 中，Build.cs 明确不为 `UMGEditor`/`UnrealEd` 增加 RuntimeLinked dependency；
+* UHTTool 根据已知 Editor-only 模块/函数 guard 包裹生成注册；
+* 一个在 Editor Target 正常出现的模块，在 Game/Server Target 中可能成为 miss 或根本不进入会话；
+* 不应为了消灭所有 Target 的 miss 而强行把 Editor module 加入 Runtime Target。
+
+配置是跨 Target 的意图集合，统计是某一次 Target 的有效视图。发布文档必须说明它引用的是哪个 Target/配置，而不能给出一个脱离构建上下文的“总生成数”。
+
+! 从旧 JSON profile 迁移
+
+如果旧记录仍列出 `common`、`source`、`installed`：
+
+# 先把列表按真实所有权重新分类，不要直接求 union；
+# 选择当前产品要支持的一个 `FunctionBindingMethod`；
+# 对 RuntimeLinked，评估每个模块加入 AngelscriptRuntime 私有依赖的成本与可用性；
+# 对 NMFA，只保留源码版引擎目标，并确认目标模块可编译 UHT 分片；
+# 将选定模块短名写入对应 INI 数组；旧 profile 名不进入新配置；
+# 对 Editor-only 模块分别观察 Editor 与非 Editor Target；
+# 执行正常构建生成，读取当前四类 `AS_FunctionBinding*` 诊断；
+# 删除对 `AS_FunctionTable_*`、`ModuleBinding`、`disabled-safe-module-binding` 基线的运维依赖。
+
+旧 profile 的模块池只能作为候选清单。当前后端对依赖、ABI 与签名的要求不同，历史上“safe”的标签不能替代重新分析。
+
+! 安全修改流程
+
+# 记录变更前的 `functionBindingMethod`、`compileOptionsPath`、active module set 和 per-module 计数。
+# 修改唯一工程 INI，使用 `+`/`-`/`!ClearArray` 明确表达集合变化。
+# 若切换方法，同时迁移对应集合和构建前提；不要只改枚举值。
+# 对照 UBT：RuntimeLinked 依赖/wrapper 或 NMFA 宏与 source gate 是否符合预期。
+# 对照 UHTTool：method、engineDistribution、configured miss 是否一致。
+# 对照模块统计：新增模块是否真正 analyzed，生成/回退/跳过是否守恒。
+# 对照逐函数诊断：不要用扩大集合解决签名安全问题。
+# 确认旧输出清理后，只有当前后端命名的 live files 进入编译。
+
+预期的验收式不再是“source profile 比 546 条多”，而是：
+
+```text
+TotalAnalyzedFunctions
+= NativeRuntimeLinkedCount
+ + ReflectiveFallbackCount
+ + NativeModuleFunctionAddressCount
+ + SkippedFunctionCount
+```
+
+再加上活动集合、UHT 会话与 generated file count 可解释。
+
+! 常见故障
+
+| !症状 | !原因 | !定位 |
+| 修改某个 JSON 后毫无变化 | 当前实现不读取 profile JSON | 查 `compileOptionsPath`，改工程 INI |
+| UBT 与 UHTTool 使用不同模块集 | 配置候选解析到不同文件，或两套解析器发生行为漂移 | 对照 Build.cs 项目路径和统计中的配置路径；核对数组操作 |
+| Source Engine 被识别为 unknown | 缺少 `SourceDistribution.txt` 且祖先路径没有 `.git` 证据 | 修复分发标记/仓库结构；不要绕过 NMFA gate |
+| Installed Engine 切 NMFA 立即失败 | 设计如此，目标模块不能重新编译生成分片 | 选择 RuntimeLinked/None 或使用 source Engine |
+| 配置十个模块只生成九个 | 第十个不在会话、无 eligible 函数或数组被后续赋值覆盖 | 依次查 active list、miss、module statistics |
+| Game Target 出现 Editor 模块 miss | 同一配置跨 Target，而模块不在该会话 | 评估是否应接受 Target 差异；不要强拉 Editor 依赖 |
+| 切换后端后统计为零 | 新后端对应数组为空 | 建立 `NativeModuleFunctionAddressModules` 或恢复 RuntimeLinked 方法 |
+| `FunctionBindingMethod` 前加 `+` 导致失败 | 方法是单值，不支持数组操作 | 改为无前缀赋值 |
+| 写多个无前缀模块只留下最后一项 | 每次赋值都会清空集合 | 使用 `+` 添加，或先 ClearArray 再逐项 `+` |
+
+! 维护不变量
+
+* 当前只有一个工程 INI 事实源，不增加第二套 JSON 模块 profile。
+* UBT 与 UHTTool 的 section、key、枚举值和数组操作必须保持同构；修改一侧必须审计另一侧。
+* 未找到配置时，两侧都回落为 RuntimeLinked 方法 + 空集合，而不是全模块生成。
+* 分发分类不选择模块列表；它只对 NMFA 建立 source-only 硬边界并进入诊断。
+* `compileOptionsPath`、`engineDistribution` 与 `configuredModuleMisses` 是可观测合同，不能用模糊“profile selected”替代。
+* RuntimeLinked allowlist 会改变 AngelscriptRuntime 依赖图；NMFA allowlist会改变目标模块生成输出，二者不是等价存储形式。
+* 未知/installed 环境不得自动把 NMFA 降级为另一后端，否则生成与运行表面会在不同机器悄然改变。
+* 配置范围与函数资格是两层门控，模块集不应承载签名例外规则。
+
+! 源码定位
+
+| !职责 | !文件/符号 |
+| UBT 工程路径、同构解析、RuntimeLinked 依赖/wrapper、source gate | `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` |
+| UHTTool 配置数据模型与 INI 操作语义 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingConfiguration.cs` |
+| Runtime Build.cs 反推、八层候选查找、Engine 分类 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingConfigurationResolver.cs` |
+| 读取首个候选、NMFA source gate、active set 与 session misses | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs` |
+| 当前工程方法与模块 allowlist | `Config/DefaultAngelscriptCompileOptions.ini` |
+| 当前统计字段与守恒检查 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingArtifacts.cs` |
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/crossmodule-default-off" "自动函数绑定的默认关闭边界">> —— 双重门控与空集合默认。
+* <<as-doc-link "bindings-uht-extensions/cross-module-generation-allowlist" "跨模块生成 allowlist">> —— 模块集合的当前资格语义。
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "绑定路径选择">> —— 三种全局方法与单函数结果的区别。
+* <<as-doc-link "bindings-uht-extensions/native-runtime-linked" "NativeRuntimeLinked">> —— Runtime 依赖与聚合 wrapper。
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress">> —— source-only 目标模块分片。
+* <<as-doc-link "bindings-uht-extensions/cross-module-bind-diagnostics" "跨模块绑定诊断">> —— 使用当前统计而非旧 profile 基线验收。

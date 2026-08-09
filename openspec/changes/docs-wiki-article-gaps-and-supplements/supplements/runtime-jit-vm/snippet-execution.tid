@@ -1,0 +1,200 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/snippet-execution
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: Snippet 编译与执行
+description: /Angelscript/Memory/Immediate 下内存源码的请求/结果类型、包装、预处理、软编译、执行、诊断映射和清理语义。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/snippet-execution
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 60
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: snippet-execution
+
+! 用途与边界
+
+`FAngelscriptSnippetRunner` 把一段内存字符串转换为唯一的 virtual source，经过正式 Preprocessor 与 `FAngelscriptEngine::CompileModules` 管线，在当前 Engine 中调用入口函数，并返回结构化诊断/异常。它适合 Editor 工具、控制台和开发期探查，但不是 Shipping gameplay API：`UE_BUILD_SHIPPING` 中 `Execute()` 直接返回 `DisabledInShipping`，控制台命令也不注册。
+
+真实源码入口：
+
+* `AngelscriptRuntime/Core/AngelscriptSnippet.h/.cpp`：公开 C++ 请求、结果和 runner；
+* `AngelscriptRuntime/Core/AngelscriptSource.*`：memory source 与 virtual path/module identity；
+* `AngelscriptEditor/Snippet/AngelscriptSnippetRunnerWindow.cpp`：Editor 对话框；
+* `AngelscriptEditor/Core/AngelscriptEditorModule.cpp`：Tools/Programming 菜单项。
+
+! 公开 C++ 数据模型
+
+!! 请求
+
+```cpp
+enum class EAngelscriptSnippetSourceMode : uint8
+{
+    Statements,
+    FullSource,
+};
+
+struct FAngelscriptSnippetRequest
+{
+    FString SourceText;
+    EAngelscriptSnippetSourceMode SourceMode = Statements;
+    FString Label;
+    UObject* WorldContextObject = nullptr;
+    bool bDiscardModuleAfterExecute = true;
+    bool bKeepModuleForDebugging = false;
+};
+```
+
+`Label` 只参与可读文件名，不是 module reuse key。非字母数字/下划线字符会替换为 `_`；每次请求仍通过原子递增 counter 获得唯一 id。`WorldContextObject` 同时进入 compile scope 与执行 context，决定 `WorldContext` 绑定解析到哪个世界。
+
+清理优先级是：只有 `bDiscardModuleAfterExecute && !bKeepModuleForDebugging` 才调用 `Engine.DiscardModule()`。因此 keep-for-debugging 会覆盖默认 discard；把 `bDiscardModuleAfterExecute` 设为 false 也会保留模块。
+
+!! 结果码与结果
+
+`EAngelscriptSnippetResultCode` 的真实枚举值为：`Succeeded`、`DisabledInShipping`、`InvalidRequest`、`PreprocessFailed`、`CompileFailed`、`EntryPointMissing`、`ExecutionException`。
+
+`FAngelscriptSnippetResult` 包含：
+
+|!字段|!语义|
+|`bSucceeded`|只有执行返回 `asEXECUTION_FINISHED` 时为真|
+|`ResultCode`|失败阶段或成功|
+|`VirtualPath` / `ModuleName`|本次唯一 source 与编译模块身份|
+|`EntryPointDeclaration`|Statements 的唯一包装函数，或 FullSource 的 `void Main()`|
+|`ErrorMessage`|调用方可直接显示的摘要|
+|`ExceptionMessage/Section/Line`|执行异常的结构化位置|
+|`Diagnostics`|预处理/编译诊断副本|
+
+单条 `FAngelscriptSnippetDiagnostic` 含 `Section`、原始 `Row/Column`、`bIsError`、`bIsInfo`、`Message` 和映射后的 `UserRow`。warning 由两个 bool 都为 false 表达，没有第三个 warning bool。
+
+! 唯一身份与虚拟路径
+
+counter 使用 `FPlatformAtomics::InterlockedIncrement`，产生：
+
+```text
+Entry name : __SnippetMain_001
+Leaf       : Snippet_001_<SanitizedLabel>.as
+Virtual    : /Angelscript/Memory/Immediate/Snippet_001_<Label>.as
+```
+
+最终 module name 由 `FAngelscriptSource::TryFromMemorySource` 根据 virtual path 计算，并写入结果。即使两个调用使用相同 label，它们的 id、entry、leaf 与 module 都不同，所以保留上一次模块也不会因重复定义同一个 `Main` 而冲突。
+
+counter 解决进程内唯一性，不承诺跨进程确定性，也不是安全凭据。工具若要关联请求，应保存结果里的 `VirtualPath/ModuleName`，不要从 label 猜测。
+
+! 两种源码模式
+
+!! Statements
+
+请求文本被包装为：
+
+```angelscript
+void __SnippetMain_001()
+{
+// 用户 SourceText
+}
+```
+
+包装在用户首行前占两行，因此 `StatementModeLineOffset = 2`。诊断和异常的 `UserRow` 使用 `max(1, RawRow - 2)`；原始 `Row` 仍保留，便于维护者定位生成 source。调用入口是本次唯一的 `void __SnippetMain_NNN()`。
+
+Statements 模式不能用“手写完整函数然后期待自动发现”的方式替代 FullSource，因为手写函数会被放进包装函数体，通常产生语法错误。
+
+!! FullSource
+
+源码原样进入 memory source，不加包装；入口声明固定为 `void Main()`，行号不偏移。若编译成功但找不到完全匹配的无参 void 函数，runner 返回 `EntryPointMissing`，错误为 `Snippet module does not define void Main().`。它不是静默成功，也不是执行阶段异常。
+
+! 完整执行状态机
+
+```text
+Execute(engine, request)
+  ├─ Shipping → DisabledInShipping
+  ├─ trim(source) empty → InvalidRequest
+  ├─ make unique identity / virtual memory source
+  │    └─ conversion failure → InvalidRequest
+  ├─ create fresh Engine.Diagnostics[VirtualPath]
+  ├─ Preprocessor.AddSource + Preprocess
+  │    ├─ false → PreprocessFailed
+  │    └─ no modules → PreprocessFailed
+  ├─ FAngelscriptEngineScope(engine, world)
+  │    └─ CompileModules(SoftReloadOnly, modules)
+  │         └─ neither FullyHandled nor PartiallyHandled → CompileFailed
+  ├─ Engine.GetModule(moduleName) + ScriptModule
+  │    └─ absent → CompileFailed (not published)
+  ├─ ScriptModule->GetFunctionByDecl(entry)
+  │    └─ absent → EntryPointMissing
+  ├─ FAngelscriptContext(world, engine.GetScriptEngine())
+  │    ├─ Prepare... fails → ExecutionException
+  │    ├─ Execute == asEXECUTION_EXCEPTION → capture AS exception
+  │    ├─ Execute != asEXECUTION_FINISHED → ExecutionException + numeric code
+  │    └─ finished → Succeeded
+  └─ every terminal path: conditional module discard + diagnostics cleanup
+```
+
+`CompileModules` 使用 `ECompileType::SoftReloadOnly`。这里不是绕过正常编译器的 `asIScriptModule::AddScriptSection` 快捷路径：source path、preprocessor、module desc、diagnostics 与 Engine publication 都参与，因此 snippet 可使用插件的正常语言表面，也会承担相应编译成本和 Engine 状态变化。
+
+! 诊断隔离与清理
+
+runner 在开始前删除本 virtual path 与空字符串 key 的旧诊断，随后创建 fresh `Engine.Diagnostics[VirtualPath]`，设置 filename、清空消息、`bHasEmittedAny=false`、`bIsCompiling=true`。
+
+失败收集时先查 virtual path；缺失时回退空 key。复制到结果后，无论成功还是失败，`RemoveSnippetDiagnostics` 都删除这两个 key。因此调用者要使用返回结果保存诊断，不能在 `Execute()` 返回后再从 Engine diagnostics 查找 snippet 条目。
+
+清理是“删除本请求临时诊断”，不是恢复调用前空-key 诊断的事务快照。如果其他工作同时使用空 key，存在互相影响的风险；当前 API应在受控 Editor/game-thread 操作中串行使用，而不是并发编译服务。
+
+模块清理同样覆盖大多数 terminal path：preprocess/compile/entry/prepare/execute/success 都调用 `DiscardModuleIfRequested`。但在 memory source 建立失败之前还没有 module name，无需 discard。
+
+! 异常映射
+
+`Context->Execute()` 返回 `asEXECUTION_EXCEPTION` 时，runner读取：
+
+* `GetExceptionString()` → `ExceptionMessage` 与 `ErrorMessage`；
+* `GetExceptionLineNumber(nullptr, &SectionName)` → section 与原始 line；
+* Statements 模式再减去两行包装 offset。
+
+这只把 AngelScript VM 异常结构化，不会捕获进程级访问冲突或 C++ fatal/assert。snippet 也没有沙箱：它能调用当前 Engine 注册给脚本的 API。非 Shipping gate 是发布策略，不是安全隔离边界；不要把不受信任文本交给该 runner。
+
+! 用户入口
+
+!! 控制台
+
+非 Shipping 注册：
+
+```text
+as.Snippet.ExecuteFile <path>
+```
+
+相对路径以 `ProjectDir` 解析，文件总以 Statements 模式执行，label 取 basename。命令先尝试 `TryGetCurrentEngine()`，必要时回退已初始化的 `FAngelscriptEngine::Get()`；没有 Engine 时只输出错误。控制台会打印 success 的 virtual path/module，或 failure 的摘要和映射后 diagnostic row/column。
+
+!! Editor
+
+`AngelscriptEditor` 在 Tools → Programming 注册 `Run Angelscript Snippet`（entry name `ASRunSnippet`），打开 `FAngelscriptSnippetRunnerWindow`。窗口允许选择 Statements/FullSource，编辑 label/source，再直接调用同一 Runtime runner；它不是另一个编译实现。
+
+! 失败矩阵
+
+|!结果码|!先查什么|!是否可能已有 module|
+|`DisabledInShipping`|target configuration|否|
+|`InvalidRequest`|空文本、memory virtual path/source conversion|通常否|
+|`PreprocessFailed`|result diagnostics、include/macro/source roots|可能已有 module name，按选项 discard|
+|`CompileFailed`|compile diagnostics；是否 published module|可能，按选项 discard|
+|`EntryPointMissing`|模式与精确 declaration|是，按选项 discard|
+|`ExecutionException`|exception fields 或 prepare/execute result|是，按选项 discard|
+|`Succeeded`|`bSucceeded=true`|默认执行后 discard，可选择保留|
+
+! 不变量
+
+* 每次调用必须有唯一 virtual path、module 与 Statements entry。
+* FullSource 只查 `void Main()`，不猜 overload、返回值或参数。
+* 用户行与生成行同时保留；Statements offset 固定与 wrapper 模板同步。
+* 所有 terminal path 都应按请求清理 module，并删除临时 diagnostics。
+* keep-for-debugging 的模块必须由工具/Engine 后续生命周期负责清理。
+* runner 不执行安全沙箱；只允许可信开发输入。
+* Shipping 必须在任何预处理、编译或执行前拒绝。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/virtual-script-paths" "虚拟脚本路径">>
+* <<as-doc-link "compile-module-preprocessor/preprocessor-context" "预处理器上下文">>
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文">>
+* <<as-doc-link "editor-ide-debugging/index" "Editor、IDE 与调试">>

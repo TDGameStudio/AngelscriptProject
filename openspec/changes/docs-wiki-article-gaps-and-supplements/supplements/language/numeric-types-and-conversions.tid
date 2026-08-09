@@ -1,0 +1,131 @@
+title: AS/Docs/zh-Hans/language/numeric-types-and-conversions
+type: text/vnd.tiddlywiki
+tags: Language
+caption: 数值类型、字面量与转换
+description: 选择有符号、无符号与浮点类型，控制窄化、枚举转换和 Unreal API 边界。
+as-sdk-document: yes
+as-doc-key: language/numeric-types-and-conversions
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: reference
+as-content-status: draft
+as-order: 110
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: language-basics
+as-nav-order: 110
+as-nav-parent: language/index
+as-feature-key: language-numeric-types-conversions
+
+! 常用选择
+
+|!类型 |!用途提示 |
+|`int` / `int32` |大多数 Unreal 计数、索引和 Blueprint 整数接口 |
+|`int64` |大型计数、时间戳或与 `int64` API 对齐 |
+|`uint32` / 其它无符号 |位标志、哈希与明确非负的底层合同 |
+|`float` / `float32` |Unreal gameplay 标量、向量分量、DeltaTime |
+|`double` |确实需要更高精度且 API 使用 double 时 |
+
+类型选择优先对齐被调用 API 与序列化属性，不要为了“更大更安全”无条件使用 `int64`/`double`。Blueprint、网络与反射边界中的类型变化是公开合同变化。
+
+! 显式转换
+
+可能丢失信息或跨 enum 的转换应写清目标类型：
+
+```angelscript
+float Ratio = float(Current) / float(Maximum);
+int RoundedDown = int(Ratio * 100.0);
+EExampleEnum Value = EExampleEnum(0);
+```
+
+整数除法先发生再转 float 会丢失小数，因此在运算前转换参与者。Enum 的整数转换只改变类型，不证明数值是已声明枚举项；来自存档/网络的整数应先做范围或名称映射验证。
+
+! 字面量与溢出
+
+* 整数字面量默认推断可能不满足较宽/无符号重载，必要时用显式目标类型；
+* 大值相乘先在参与者类型中发生，再赋给更宽类型不会挽回已经溢出的结果；
+* float 比较不要依赖复杂运算后精确相等，使用容差；
+* 角度、时间、距离和百分比虽然都是数值，仍应通过变量名/结构类型表达单位；
+* `DeltaTime` 可变化，不要把每帧增量当固定 1/60。
+
+! Unreal 数学函数
+
+`Script/Examples/Core/Example_Math.as` 展示 `Math::Abs`、`Min`、`Max`、`Clamp`、三角函数与随机范围等入口。优先使用与参数类型匹配的重载，并检查返回类型；多个整数/浮点重载并存时，中间变量能避免不明确调用。
+
+```angelscript
+float Health = Math::Clamp(NewHealth, 0.0, MaxHealth);
+float SafeRatio = MaxHealth > 0.0 ? Health / MaxHealth : 0.0;
+```
+
+! 反射和序列化边界
+
+修改 `UPROPERTY` 从 `int` 到 `int64`、从 `float` 到 `double` 会改变生成 `FProperty` 类型，并影响 Blueprint pin、默认值、存档和热重载分类。不要把它当作纯局部重构；先盘点资产与网络协议使用方。
+
+! 常见错误
+
+|!症状 |!原因 |
+|比例总是 0 |两个整数先做了整数除法 |
+|重载不明确 |整数/float 字面量与多个签名都可匹配 |
+|计数突然为负 |有符号溢出或无符号到有符号窄化 |
+|enum switch 无 case 命中 |整数值不对应已声明枚举项 |
+|热重载要求 full |反射数值类型或 metadata 改变 |
+
+! 把转换拆成四个阶段
+
+可靠的数值边界通常不是一次 cast，而是''读取 → 验证 → 计算 → 写出''四个阶段：
+
+# 读取时保留来源类型和单位，不要立刻把所有东西塞进目标属性。
+# 验证有限值、非负约束、分母、允许范围和 enum 映射；失败时给出来源上下文。
+# 在能覆盖中间结果的类型中计算。尤其是乘法、累计和时间换算，目标变量更宽并不会自动提升中间表达式。
+# 写出前再做舍入、截断或 clamp，并明确这是业务政策还是仅用于防御异常输入。
+
+```angelscript
+bool TryComputePercent(int Current, int Maximum, int&out OutPercent)
+{
+    OutPercent = 0;
+    if (Maximum <= 0 || Current < 0)
+        return false;
+
+    float Ratio = float(Current) / float(Maximum);
+    float Clamped = Math::Clamp(Ratio, 0.0, 1.0);
+    OutPercent = int(Clamped * 100.0);
+    return true;
+}
+```
+
+这个例子把失败政策、整数除法、范围和最终窄化都写在同一处。不要把 `Clamp` 当数据修复万能药：若 `Maximum <= 0` 表示配置损坏，静默 clamp 只会隐藏根因。
+
+! 精度、确定性与单位
+
+浮点误差是否重要，取决于结果是否跨边界。屏幕插值的小误差通常可接受；存档 key、网络仲裁、可复现测试或哈希输入则不能依赖“差不多相等”。
+
+|!场景 |!建议 |
+|位置/动画的连续计算 |使用 API 对齐的 float/double，并用容差比较 |
+|货币、次数、离散帧 |使用明确的整数最小单位，提前定义溢出范围 |
+|角度与弧度 |变量名带单位或封装类型；在单一边界转换 |
+|秒、毫秒、tick |不要混用裸数字；转换函数名表达来源与目标单位 |
+|网络/回放确定性 |定义量化、舍入和越界政策，不以平台浮点细节为协议 |
+
+`float` 改为 `double` 只能扩大精度/范围，不能修复单位混乱，也不能保证不同执行路径逐位一致。任何依赖精确重现的系统都应先定义输入量化和比较规则。
+
+! 重载解析也是 API 设计
+
+当一个函数同时存在整数、float、double 或不同向量重载时，裸字面量会把选择留给编译器。公共调用点可通过有类型的局部变量表达意图；库作者则应避免多个重载只靠容易隐式转换的参数区分。出现“不明确重载”时，不要连续尝试随意 cast：先查看实际脚本签名，确认哪个类型是合同，再只转换边界值。
+
+反射函数的数值类型还会进入 Blueprint pin。修改函数参数或 property 的数值宽度时，应盘点：已有 Blueprint 节点能否重连、默认值能否保留、序列化数据怎样迁移、网络两端是否同时升级。脚本重新编译成功不能替代这些消费者检查。
+
+! 诊断清单
+
+遇到数值错误时记录''输入值 + 输入类型/单位 + 中间结果 + 输出政策''，而不是只打印最终值：
+
+* 比例为 0：确认转换发生在除法之前；
+* 突然变负：检查中间乘加是否溢出，以及 signed/unsigned 边界；
+* 不同机器结果偏移：检查量化、运算顺序和是否把浮点结果当确定性标识；
+* Blueprint 节点断开：检查反射参数类型、名称和默认值是否改变；
+* enum 转换后进入 default：回到来源数据做映射验证，不在业务分支继续强转。
+
+! 相关链接
+
+* <<as-doc-link "language/basic-types-variables" "基础类型与变量">>
+* <<as-doc-link "language/enums-and-switch" "枚举与 switch">>
+* <<as-doc-link "unreal-language/property-specifiers" "属性与默认值">>

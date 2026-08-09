@@ -1,0 +1,136 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/test-helper-api
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 测试辅助 API 参考
+description: AngelscriptTest 模块为扩展插件测试模块提供的受支持辅助头文件接口。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/test-helper-api
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: test-helper-api
+
+! 要解决的问题
+
+可选扩展插件的测试模块（例如 `AngelscriptGASTest`、`AngelscriptGameplayTagsTest`）需要复用 Full test engine、模块 scope、执行断言和 test World，但不应把 `AngelscriptTest/Core`、`Dump` 或某个历史文件位置当作自己的源码。正确接入由两层组成：UBT module dependency 提供链接/定义/传递依赖，`Shared/` 头提供窄的源码接口。
+
+! Build.cs 契约
+
+`AngelscriptTest.Build.cs` 当前把 `ModuleDirectory` 加入 `PublicIncludePaths`，把 `ModuleDirectory/Shared` 额外加入自身的 `PrivateIncludePaths`。因此 include 形式取决于调用方：
+
+|!调用方|!推荐 include|
+|同一 `AngelscriptTest` 模块|`#include "AngelscriptTestExecute.h"`|
+|依赖 `AngelscriptTest` 的外部测试模块|`#include "Shared/AngelscriptTestExecute.h"`|
+
+外部模块首先应在 `PrivateDependencyModuleNames` 声明 `AngelscriptTest`；测试 helper 不应成为产品 runtime module 的 public dependency。依赖还带来 `WITH_ANGELSCRIPT_UNITTESTS` public definition 和 AngelscriptTest 的 public module dependencies，仅增加 include path 不能替代这些 build graph 语义。
+
+```csharp
+PrivateDependencyModuleNames.AddRange(new[]
+{
+    "AngelscriptRuntime",
+    "AngelscriptTest",
+});
+```
+
+<<as-callout warning "现有硬编码路径是迁移债务，不是示例">>
+当前 `AngelscriptGASTest.Build.cs` 与 `AngelscriptGameplayTagsTest.Build.cs` 仍可见指向兄弟插件 `Source/AngelscriptTest[/Shared]` 的 `PrivateIncludePaths`，同时也声明了 module dependency。那些路径解释了为何两种 include 风格都能在现状编译，但会耦合插件相对目录；新模块不要复制，后续迁移应先证明仅靠 dependency 能解析实际头文件。
+<</as-callout>>
+
+! 推荐的跨模块辅助面
+
+下表只列当前存在、且适合扩展测试复用的入口；它不是“ModuleDirectory 下所有头都永久 ABI 稳定”的承诺。
+
+|!外部 include|!用途|!新代码状态|
+|`Shared/AngelscriptTestMacros.h`|`ASTEST_AS`、共享/Full/native engine 获取与 reset 宏|推荐|
+|`Shared/AngelscriptTestModuleScope.h`|`FScopedAngelscriptModule`，显式 module name/source 的 RAII 编译与丢弃|推荐|
+|`Shared/AngelscriptTestExecute.h`|`FAngelscriptTestExecutor`、`Execute*` / `Compile*` 断言族|推荐|
+|`Shared/AngelscriptTestUtilities.h`|六主题 umbrella，保留旧调用点|兼容；新代码优先细粒度头|
+|`Shared/AngelscriptFunctionalTestUtils.h`|需要 UE World 的功能测试 fixture/helpers|按需；依赖更重|
+|`Shared/AngelscriptTestWorld.h`|底层 test World 所有权/初始化辅助|按需|
+|`Shared/AngelscriptReflectiveAccess.h`|反射属性/函数读写辅助|按需|
+|`Shared/AngelscriptTestEngineHelper.h`|编译/执行上下文等既有底层辅助|按需；优先更高层 Execute API|
+|`Shared/AngelscriptBindingsAssertions.h`|forward 到 `AngelscriptTestExecute.h`|旧 include 兼容|
+|`Shared/AngelscriptGlobalFunctionInvoker.h`|forward 到 `AngelscriptTestExecute.h`|旧 include 兼容|
+
+`AngelscriptBindingsCoverage.h` 已删除，`FBindingsCoverageProfile` / `FormatCaseLabel` / `MakeCoverageModuleName` 也已退役；绑定测试现在直接提供完整 module name 和普通 case label。`Shared/AngelscriptBindingsModuleBuilder.h` 也不是当前文件，module RAII 入口是 `AngelscriptTestModuleScope.h`。文档或扩展代码引用这些旧名都应迁移，而不是新增同名兼容层。
+
+! 最小绑定测试形状
+
+```cpp
+#include "Shared/AngelscriptTestMacros.h"
+#include "Shared/AngelscriptTestModuleScope.h"
+#include "Shared/AngelscriptTestExecute.h"
+
+FAngelscriptEngine& Engine = ASTEST_GET_ENGINE();
+FAngelscriptEngineScope Scope(Engine);
+FScopedAngelscriptModule Module(
+    *TestRunner,
+    Engine,
+    TEXT("ASGameplayTags_ContainerContract"),
+    ASTEST_AS(R"AS(
+        int Entry() { return 17; }
+    )AS"));
+
+if (Module.IsValid())
+{
+    ExecuteAndExpectInt(
+        *TestRunner,
+        Engine,
+        Module.GetModule(),
+        TEXT("int Entry()"),
+        TEXT("container contract"),
+        17);
+}
+```
+
+这段形状表达四个所有权点：engine 来源明确；current-engine scope 有界；module 名是完整可诊断标识；module RAII 在离开作用域时丢弃脚本产物。执行 helper 接收显式 `FAutomationTestBase`，失败进入 UE Automation 结果。
+
+! 不属于跨插件公共面的目录
+
+Module root 被公开意味着编译器''技术上可能''解析更多相对路径，但以下目录主要承载 AngelscriptTest 自身的测试实现或内部 fixture，不应成为扩展插件 include API：
+
+* `Core/`、`Debugger/`、`Dump/`、`Generator/`、`Preprocessor/`；
+* `Coverage/`、`Functional/`、`HotReload/` 等主题测试 `.cpp` 邻近私有 helper；
+* `AngelScriptSDK/Support/` 内为 native SDK 测试分层的细粒度 support headers。
+
+SDK 当前没有 `AngelScriptSDK/AngelscriptNativeTestSupport.h` 或 `AngelScriptSDK/AngelscriptTestAdapter.h` 这两个总入口。实际 support 位于 `AngelScriptSDK/Support/AngelscriptNative*TestSupport.h`，并按 tokenizer、parser depth、lifecycle、fixture、execution 等主题拆分；它们属于 SDK suite 内部维护面，扩展 UE 绑定测试不应依赖。
+
+! 选择与失败诊断
+
+|!需求/现象|!处理|
+|只执行函数，却包含整个 umbrella|改含 `Shared/AngelscriptTestExecute.h`|
+|`Shared/...` 找不到|先确认调用 module 真正依赖 `AngelscriptTest`，不要先加绝对路径|
+|不写 `Shared/` 也能找到|多半是调用模块自己硬编码了 Shared private path；移除路径后验证真实边界|
+|链接错误但头可见|include path 不等同于 module dependency；检查 Build.cs graph|
+|编辑器类型依赖扩散|避免 umbrella/Functional helpers，选择 Execute/ModuleScope 等窄入口|
+|文档建议 `AngelscriptBindingsCoverage.h`|这是过期接口，改显式 module name + Execute API|
+|想复用某主题测试目录下的 helper|若确有跨插件价值，先提升到 `Shared/` 并定义所有权；不要直接公开内部目录|
+
+! 兼容与维护规则
+
+* 外部 helper 是 C++ 源码兼容面，不是稳定二进制 ABI；插件/扩展通常需要同版本重编译。
+* forward shim 允许旧 include 保持工作，但新代码直接包含规范头，避免隐藏依赖。
+* 在 Shared 头新增 editor-only include 会传递影响所有下游 module；优先放进窄头并以 `WITH_EDITOR` 隔离。
+* 变更 public helper 签名时，至少搜索 `Plugins/AngelscriptGAS` 与 `Plugins/AngelscriptGameplayTags` 的消费者，而不只搜索主插件子模块。
+
+! 稳定源码入口
+
+* `Plugins/Angelscript/Source/AngelscriptTest/AngelscriptTest.Build.cs` — public root、private Shared path与依赖
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/README.md` — 当前入口和退役表
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestMacros.h`
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestModuleScope.h`
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestExecute.h`
+* `Plugins/AngelscriptGAS/Source/AngelscriptGASTest/AngelscriptGASTest.Build.cs` 与 GameplayTags 对应文件 — 当前跨插件消费证据
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/index" "测试与诊断">> —— 测试主题导航
+* <<as-doc-link "testing-diagnostics-release/test-utilities-header-layout" "测试工具头布局">> —— 六主题拆分与 umbrella
+* <<as-doc-link "testing-diagnostics-release/test-engine-lifecycle" "测试引擎生命周期">> —— `CREATE/GET/RESET` 的所有权差异

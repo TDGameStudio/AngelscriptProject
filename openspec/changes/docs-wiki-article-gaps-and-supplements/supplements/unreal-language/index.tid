@@ -1,0 +1,82 @@
+title: AS/Docs/zh-Hans/unreal-language/index
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: Unreal AngelScript 语言特性
+description: 汇总反射、默认对象、组件、委托、mixin 与格式化等 UE 方言。
+as-sdk-document: yes
+as-doc-key: unreal-language/index
+as-locale: zh-Hans
+as-depth: L0
+as-doc-kind: guide
+as-content-status: draft
+as-order: 10
+as-content-revision: 3
+as-sources: [[project-knowledge-zh]] [[hazelight-docs]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 1
+as-feature-key: unreal-language
+
+! 什么是 Unreal 方言
+
+当前 fork 在 AngelScript 语言上加入 Unreal 反射和作者工作流：`UPROPERTY`、`UFUNCTION`、`BlueprintEvent/Override`、`default`、DefaultComponent、delegate/event、access、mixin、f-string、FName literal、RPC 与 Editor/cooked 条件。
+
+这些能力分属不同层：有的是 parser token，有的是预处理 lowering，有的是 ClassGenerator metadata，还有的是 binding/runtime 行为。语法能被解析不等于对应 Unreal 后端一定完整。
+
+这个专题回答“在 Unreal 项目里如何写、它最终由谁实现、修改后影响哪一层”。普通控制流、容器和对象句柄仍在 <<as-doc-link "language/index" "AngelScript 语言基础">>；Actor、Component、Subsystem 等 gameplay 生命周期在 <<as-doc-link "unreal-core/index" "Unreal 核心脚本编程">>。三者不要混成一张无边界语法表。
+
+! 学习路径
+
+# <<as-doc-link "unreal-language/first-feature-path" "第一条功能路径">>
+# <<as-doc-link "unreal-language/property-specifiers" "UPROPERTY Specifier">> 与 <<as-doc-link "unreal-language/function-specifiers" "UFUNCTION Specifier">>
+# <<as-doc-link "unreal-language/default-statement" "default 语句">> 与 <<as-doc-link "unreal-language/default-components" "默认组件">>
+# Delegate、Mixin、格式化、网络与 Editor-only 专题；
+# <<as-doc-link "unreal-language/boundaries-and-differences" "方言边界与 fork 差异">>；
+# 维护者再进入实现原理和源码所有权。
+
+! 按任务选择文章
+
+|!你要解决的问题 |!先读 |!继续读 |
+|第一次把脚本能力交给 Unreal/Blueprint |<<as-doc-link "unreal-language/first-feature-path" "第一条功能路径">> |<<as-doc-link "unreal-language/cpp-blueprint-differences" "与 C++ / Blueprint 的差异">> |
+|公开属性、函数与访问入口 |<<as-doc-link "unreal-language/property-specifiers" "属性 specifier">>、<<as-doc-link "unreal-language/function-specifiers" "函数 specifier">> |<<as-doc-link "unreal-language/property-accessors" "属性访问器">>、<<as-doc-link "unreal-language/reflection-signature-limits" "反射签名边界">> |
+|构造默认对象和组件树 |<<as-doc-link "unreal-language/default-statement" "default 语句">>、<<as-doc-link "unreal-language/default-components" "DefaultComponent">> |<<as-doc-link "unreal-language/construction-script-semantics" "Construction Script 语义">> |
+|建立跨层回调 |<<as-doc-link "unreal-language/delegate-event-declarations" "delegate 与 event 声明">> |<<as-doc-link "unreal-language/network-specifiers" "网络 specifier">> |
+|组织可复用作者 API |<<as-doc-link "unreal-language/mixin-functions" "mixin 函数">>、<<as-doc-link "unreal-language/global-constants-and-namespaces" "全局常量与命名空间">> |<<as-doc-link "unreal-language/feature-catalog" "特性目录">> |
+|编写文本与标识字面量 |<<as-doc-link "unreal-language/format-strings" "格式化字符串">>、<<as-doc-link "unreal-language/fname-literals" "FName literal">> |检查目标绑定类型和格式化规则 |
+|处理 Editor/cooked 差异 |<<as-doc-link "unreal-language/editor-only-script" "Editor-only 脚本">> |<<as-doc-link "unreal-language/boundaries-and-differences" "方言边界与差异">> |
+|维护或扩展一种方言能力 |<<as-doc-link "unreal-language/feature-implementation-principles" "特性实现原则">> |<<as-doc-link "unreal-language/source-tests-maintenance" "源码与验证维护地图">> |
+
+! 一项特性的四层合同
+
+阅读任何“看起来像语言关键字”的能力时，按四层确认：
+
+# ''接受层''：parser 或预处理器是否识别这个写法，错误位置是否回到原始逻辑源码；
+# ''描述层''：声明被 lowering 成什么类型、函数、属性、组件或 metadata 描述；
+# ''发布层''：ClassGenerator、绑定或运行时是否把描述发布为当前 canonical Unreal 表面；
+# ''消费层''：Script、Blueprint、Editor、网络或 cooked build 实际如何使用，失败是否保留最后成功状态。
+
+例如 `UFUNCTION` 不是“parser 接受括号内容”就结束；它还要形成正确函数描述、生成兼容 UFunction、选择合法调用后端，并让 Blueprint/RPC/WorldContext 等消费者遵守各自合同。用这四层排查，能区分语法错误、metadata 错误、生成失败和调用分派错误。
+
+! 使用边界
+
+* Hazelight 文档可解释设计意图，但当前 fork 的源码、示例与生成表面决定本仓库实际支持范围；
+* C++ 中存在的 specifier、类型或 UFunction 不自动成为脚本 API，必须经过当前预处理、ClassGenerator 与 binding 路径；
+* Editor-only 写法必须在 cooked/commandlet 边界上有明确行为，不能只以 Editor 中成功作为交付依据；
+* 反射签名变化会影响 Blueprint、默认对象、热重载和持久资产，不能当作普通函数体修改；
+* 网络声明必须保留 Unreal RPC 路由，不能为了“更直接”绕过 reflective fallback 的语义；
+* 教学示例证明一种作者路径，不替代对解析、生成、恢复和消费者的分层证据。
+
+! 证据优先级
+
+`Script/Examples` 展示当前写法，`Documents/Knowledges/ZH/Syntax_*` 解释机制，最终由当前 Preprocessor/ClassGenerator/Binds/ThirdParty 源码和生成结果确认。Hazelight 公开文档只作对照入口。
+
+如果材料相互冲突，先记录冲突发生在哪一层：公开文档可能描述上游设计，知识文档可能解释旧实现，示例可能只覆盖一个成功路径。不要用“哪个文件更新日期新”替代符号级核对，也不要把未注册的外部页面写成当前事实。
+
+! 深入顺序
+
+L0 首页只负责范围和路由；作者工作流页面至少说明步骤、结果和常见失败；反射与生命周期页面需要解释生成对象、默认值、old/new 类型及恢复边界；维护者页面还要落到 Preprocessor、ClassGenerator、Binds、ThirdParty 和验证资产的实际所有权。读者可以按问题深度进入，不必先通读实现史。
+
+! 相邻分支
+
+* 普通语法：<<as-doc-link "language/index" "AngelScript 语言基础">>
+* Unreal gameplay：<<as-doc-link "unreal-core/index" "Unreal 核心脚本编程">>
+* 类型生成：<<as-doc-link "type-object-reflection/index" "类型、对象与反射模型">>

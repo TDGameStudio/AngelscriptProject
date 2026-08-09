@@ -1,0 +1,359 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/property-access-uniform
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: 统一属性访问：字段直访与显式方法
+description: 解释当前 fork 如何在两个引擎初始化入口固定关闭 property accessor 解析，同时保留底层兼容代码，并明确 UPROPERTY、BlueprintGetter 与显式 Get/Set 方法的可达语义。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/property-access-uniform
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-knowledge-zh]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 60
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: property-access-uniform
+
+! 当前结论
+
+Unreal AngelScript 当前只支持两种明确的访问意图：
+
+```text
+数据字段                         行为方法
+obj.Health                      obj.GetHealth()
+obj.Health = 50                 obj.SetHealth(50)
+    │                                  │
+    ▼                                  ▼
+已绑定 object property          已绑定 script/system function
+直接按字段偏移读写               进入普通函数调用流水线
+```
+
+编译器不会把 `obj.Health` 自动改写成 `obj.GetHealth()`，也不会把赋值自动改写成 `obj.SetHealth(Value)`。脚本源文件不能声明 `property` decorator 或 `T Name { get ... set ... }` 虚拟属性块。C++ 中名称以 `Get` / `Set` 开头的方法不会因为名字而被自动升级为 property accessor。
+
+这一选择的目的不是让所有数据都公开，而是让''字段访问''和''行为调用''在源码上可辨认：
+
+* 要暴露存储，使用可读/可写的 `UPROPERTY` 或明确的手工 property bind；
+* 要执行校验、延迟计算、权限检查或副作用，暴露并显式调用函数；
+* `BlueprintGetter` / `BlueprintSetter` 仍是 Unreal 反射元数据，不会改变 AngelScript 表达式语法。
+
+<<as-callout warning "不要从仍存在的底层代码推断产品能力">>
+vendored AngelScript 中仍保留 `asEP_PROPERTY_ACCESSOR_MODE`、`FindPropertyAccessor`、`asTRAIT_PROPERTY`、属性访问器验证与旧 builder 分支。这些代码用于 fork 兼容和历史结构，不代表当前产品路径可达。判断现行行为要同时看引擎初始化、parser 拒绝点和 compiler 提前返回。
+<</as-callout>>
+
+! 四层关闭模型
+
+属性访问器被关闭不是一处删除，而是四层一致的可达性合同。
+
+|!层|!当前实现|!阻止的旧行为|
+|引擎配置|两个初始化入口都调用 `SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 0)`|任何正常 Runtime/Editor/Commandlet 引擎实例启用 accessor 搜索|
+|编译器解析表达式|`FindPropertyAccessor` 在 mode 为 `0` 时立即返回 `0`|`obj.X` 回退搜索 `GetX` / `SetX`|
+|脚本 parser|遇到 `property` decorator 或虚拟属性块时发出专用错误|脚本自己产生带 property trait 的函数|
+|绑定层|`OnBind` / `OnBindForTarget` 不按 `Get` / `Set` 名称设置 `asTRAIT_PROPERTY`|普通 C++ 方法被隐式提升|
+
+这四层解决的问题不同。如果只清理绑定层，脚本自定义 property 仍可能进入 compiler；如果只把 parser 语法禁掉，手工注册的 property system function 仍可能被 `obj.X` 搜到；如果只设置 engine property，但以后某条初始化路径漏设，旧能力会悄然复活。因此维护时必须把它们视为一个跨层不变量。
+
+! 引擎初始化：所有受支持入口都固定为 0
+
+`Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp` 有两个需要分别维护的入口：
+
+|!入口|!用途|!设置位置附近的上下文|
+|`FAngelscriptEngine::InitializeWithoutInitialCompile()`|创建并配置引擎，但不立即进行首次源码编译|在 unsafe references、scanner、named args、implicit handles 等 engine property 之后设置|
+|`FAngelscriptEngine::Initialize_AnyThread()`|可在异步初始化路径配置底层引擎|在相同的核心属性集合中再次显式设置|
+
+两处都执行：
+
+```cpp
+Engine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 0);
+```
+
+当前 `UAngelscriptSettings` 没有 `bAllowImplicitPropertyAccessors`，源码中也没有可覆盖的 `AS_PROPERTY_ACCESSOR_MODE` 配置宏。这意味着项目设置、INI、构建宏或命令行都没有受支持的重开启入口。
+
+底层 `asCScriptEngine::SetEngineProperty` 仍认识 `asEP_PROPERTY_ACCESSOR_MODE` 并接受 engine property 值，这是 vendored SDK API 的一部分。插件内部把 mode=0 当作产品不变量；外部代码若越过插件生命周期直接改底层属性，属于破坏不变量的未支持行为，不能据此编写可交付脚本。
+
+为什么两处都要设置？临时引擎、无首次编译初始化和常规编译引擎不能出现语义差异。否则同一份脚本可能在扫描/分析引擎里拒绝、在生产引擎里接受，或者反过来，最终造成缓存、诊断与运行时不一致。
+
+! 编译器：保留实现，但统一入口不可达
+
+`ThirdParty/angelscript/source/as_compiler.cpp` 中仍有两个 `FindPropertyAccessor` overload。无参数版本转发给带可选索引实参的版本；后者的第一段逻辑是：
+
+```cpp
+if (engine->ep.propertyAccessorMode == 0)
+{
+    // direct fields still resolve normally
+    return 0;
+}
+```
+
+因此表达式解析的顺序可以简化为：
+
+```text
+读取 obj.Name
+    │
+    ├─ 找到真实 object property ──► 按属性类型、可读性和偏移处理
+    │
+    └─ 没找到字段
+          │
+          ▼
+       FindPropertyAccessor(Name)
+          │ mode == 0
+          ▼
+       不搜索 GetName / SetName，返回无匹配
+```
+
+mode 非零分支中的 getter/setter 候选收集、重载匹配、索引属性、const 检查、复合赋值和 `asTRAIT_PROPERTY` 筛选仍在源码里，但产品初始化不进入它。保留这些分支有两个维护意义：它减少对 vendored SDK 的无关大规模删除，也为解释历史字节码/源码差异提供上下文；它们不是让文档继续教授旧语法的理由。
+
+标准字段解析发生在调用 `FindPropertyAccessor` 之前，所以 mode=0 并不禁用 `obj.Health` 这种真实字段访问。它只禁用“字段找不到后，把名称当 accessor sugar 再猜一次”。
+
+! Parser：两类旧语法在源头失败
+
+!! property decorator
+
+以下写法会在 parser 的函数 decorator 扫描中失败：
+
+```angelscript
+int GetHealth() property
+{
+    return Health;
+}
+```
+
+`as_parser.cpp` 在类方法 decorator 扫描和通用 decorator 扫描两处都显式识别 `PROPERTY_TOKEN`，然后产生 `TXT_PROPERTY_DECORATOR_REMOVED`：
+
+```text
+The 'property' decorator has been removed. Use explicit GetX/SetX methods instead
+```
+
+迁移方式是去掉 decorator，保留普通方法：
+
+```angelscript
+int GetHealth() const
+{
+    return Health;
+}
+```
+
+调用方必须写 `Object.GetHealth()`。
+
+!! 虚拟属性块
+
+以下写法也不可用：
+
+```angelscript
+int Health
+{
+    get { return StoredHealth; }
+    set { StoredHealth = value; }
+}
+```
+
+parser 仍用 `IsVirtualPropertyDecl()` 识别其形状，但 `ParseVirtualPropertyDecl()` 立即发出 `TXT_VIRTUAL_PROPERTY_REMOVED` 并返回空节点：
+
+```text
+Virtual property syntax has been removed. Use explicit GetX/SetX methods instead
+```
+
+迁移后应显式声明两种行为：
+
+```angelscript
+int GetHealth() const
+{
+    return StoredHealth;
+}
+
+void SetHealth(int InHealth)
+{
+    StoredHealth = InHealth;
+}
+```
+
+旧 builder 中 `RegisterVirtualProperty`、`ValidatePropertyAccessorFunc` 以及把虚拟块拆成 `GetX` / `SetX` 并设置 `asTRAIT_PROPERTY` 的代码仍保留；源码注释明确标记它们在移除变更后不可达。文章或代码审查若只搜索 `asTRAIT_PROPERTY`，很容易把这段 dead-compatible implementation 误写成当前能力。
+
+! 绑定层：名字不再产生隐式 Trait
+
+`Core/AngelscriptBinds.cpp` 中 `OnBind()` 与 target-aware 的 `OnBindForTarget()` 当前只处理：
+
+* provider/origin provenance；
+* 可选 `UserData`；
+* `FBindParams::bProtected`；
+* previous-bound 兼容槽位；
+* target-aware 路径的注册失败记录。
+
+它们没有检查函数名是否以 `Get` / `Set` 开头，也没有自动调用 `SetProperty(true)`。因此：
+
+```cpp
+Binds.Method("int GetHealth() const", &FExample::GetHealth);
+Binds.Method("void SetHealth(int InHealth)", &FExample::SetHealth);
+```
+
+只会产生两个普通方法。脚本中 `Example.GetHealth()` / `Example.SetHealth(50)` 可用；`Example.Health` 只有在另有名为 `Health` 的真实 property 时才可用。
+
+链式 `.PropertyAccessor()` 仍是公开的低层 setter，会显式写 `asTRAIT_PROPERTY`。但在产品 mode=0 下，`FindPropertyAccessor` 在查看候选 Trait 之前已经返回，所以它不能恢复 `obj.X` sugar。该 setter 的存在主要是底层 API 完整性、状态导出或特殊兼容代码所需；不要把它当成绕过产品约束的开关。
+
+! UPROPERTY 到脚本字段的实际路径
+
+Unreal 反射属性由 `Binds/Bind_BlueprintType.cpp` 的 `BindProperties(...)` 暴露。当前流程是：
+
+```text
+TFieldIterator<FProperty>
+        │
+        ├─ 过滤 cooked 中的 EditorOnly
+        ├─ GetPropertyBindParams：可读/可写/可编辑/受保护
+        ├─ FAngelscriptTypeUsage::FromProperty
+        ├─ 可选 ScriptName 与编辑器文档
+        │
+        ├─ 类型自定义 BindProperty(...) 成功 ──► 记录 DB property
+        │
+        └─ 通用路径
+              ├─ 生成 "<AS type> <PropertyName>" 声明
+              └─ Binds.Property(offset, access flags)
+```
+
+通用 `FAngelscriptBinds::BindProperty` 最终调用 `RegisterObjectProperty`，传入字段声明、`FProperty::GetOffset_ForUFunction()` 以及由 `bCanEdit/bCanRead/bCanWrite` 生成的 exposed access。它不会合成 `GetName()` 或 `SetName(Value)` 函数。
+
+这条路径有三点需要区分：
+
+# ''直接字段''不等于任意写。读、写、编辑能力来自 `FBindParams` 和 Unreal property flags；编译器仍会拒绝不允许的访问。
+# 某些类型可以覆盖 `FAngelscriptType::BindProperty`，例如容器或特殊结构需要自己的绑定实现；但产物仍是属性语义，不应偷偷生成普通方法 sugar。
+# `ScriptName` 可以改变脚本侧字段名，但不会建立 `Get/Set` 名称配对。
+
+旧源码注释“Don't bind properties that have a Get or Set accessor bound already”位于当前 `GetBlueprintAccessorPropertyName` 附近，但函数实现只返回 `Property->GetName()`。维护文档应以实际控制流为准，不应把历史注释当成现行分支。
+
+! BlueprintGetter / BlueprintSetter 的边界
+
+`BlueprintGetter` 和 `BlueprintSetter` 服务于 Unreal 反射与 Blueprint 语义。它们仍需要被正确验证：脚本类属性指定这些元数据时，`FAngelscriptEngine::VerifyBlueprintGetFunc` / `VerifyBlueprintSetFunc` 会检查目标 `UFUNCTION` 是否存在、参数和返回类型是否匹配，getter 还必须是 `BlueprintPure`。
+
+但验证通过不等于 AngelScript 编译器进行属性改写。以原生类型为例：
+
+```cpp
+UPROPERTY(BlueprintReadWrite, BlueprintGetter=FetchScore)
+int32 Score = 7;
+
+UFUNCTION(BlueprintCallable, BlueprintPure)
+int32 FetchScore() const;
+```
+
+AngelScript 侧两条表达式含义不同：
+
+```angelscript
+int RawValue = Carrier.Score;        // 读取绑定字段 Score
+int Computed = Carrier.FetchScore(); // 显式调用绑定函数
+```
+
+第一条不会转调 `FetchScore()`。如果产品设计要求所有读写经过行为函数，就不应同时给脚本可直接读取/写入底层字段；应调整属性暴露标志或 API 设计，而不是依赖 Blueprint accessor 元数据改变 AngelScript 语法。
+
+`BlueprintGetter` 名称也不必遵循 `GetX`。当前测试载体使用 `Score` / `FetchScore`，正说明它是元数据指定关系，而不是字符串前缀约定。
+
+! 设计决策的实际收益
+
+!! 副作用在调用点可见
+
+`obj.Health` 看起来是数据读取；若它能悄然执行任意 `GetHealth()`，调用方无法仅从语法判断是否有日志、缓存填充、World 查询或异常。显式 `obj.GetHealth()` 把行为边界留在源码中。
+
+!! 避免 Get/Set 名称污染
+
+Unreal API 中大量方法以 `Get` / `Set` 开头，但并非属性：多输出参数查询、批量更新、带 WorldContext 的操作、命令式 setter 都很常见。旧式按前缀提升会让不符合 property 签名的方法进入候选与验证路径，增加歧义。
+
+!! Blueprint 与脚本职责分离
+
+Blueprint getter/setter 规定的是 Unreal 反射消费者如何呈现属性；AngelScript 直接字段绑定规定的是脚本 VM 如何访问内存。两者可共同存在，但不应被误认为同一 dispatch 路径。
+
+!! 临时引擎与生产引擎一致
+
+模式固定在每个 `FAngelscriptEngine` 实例初始化中，保证扫描、离线导出、编辑器编译、Commandlet 和运行时不会因为全局设置不同而解析出不同调用图。
+
+! 迁移手册
+
+!! 从脚本 property decorator 迁移
+
+```text
+旧：T GetValue() property
+新：T GetValue()
+调用：Object.GetValue()
+```
+
+保留原来的 `const`、访问控制、override/final 等独立语义；只删除 `property`。
+
+!! 从虚拟属性块迁移
+
+把 get/set 块拆成普通方法，并显式决定底层存储是否也要暴露：
+
+```angelscript
+private int StoredValue;
+
+int GetValue() const
+{
+    return StoredValue;
+}
+
+void SetValue(int InValue)
+{
+    StoredValue = Math::Max(0, InValue);
+}
+```
+
+调用者改为 `GetValue()` / `SetValue()`。不要再创建同名公开字段，除非绕过校验直接写入是有意设计。
+
+!! 从隐式 C++ accessor 迁移
+
+绑定代码通常无需改函数名，只需把脚本调用从 `.Value` 改为 `.GetValue()`。若原来同时存在真实 `Value` 字段，先确认旧表达式究竟应该访问存储还是行为；不能机械替换。
+
+!! 从 BlueprintGetter 误解中迁移
+
+先回答 API 意图：
+
+|!意图|!推荐表面|
+|暴露原始状态|可读/可写 `UPROPERTY`，脚本使用 `.Field`|
+|读取计算结果|普通/BlueprintPure 函数，脚本显式 `Get...()` 或领域名函数|
+|写入必须校验|不向脚本开放直接写；公开 `Set...()` 行为|
+|Blueprint 需要定制 getter，脚本仍可看原始值|保留两条明确路径，并在文档说明语义差异|
+
+! 故障诊断矩阵
+
+|!现象|!最可能的层|!检查点|!处理|
+|`obj.X` 报找不到成员，但 `GetX()` 可调用|符合当前设计|类型上是否真的注册了字段 `X`|改为显式方法，或有意暴露真实字段|
+|虚拟属性块报语法错误|parser|错误是否为 `TXT_VIRTUAL_PROPERTY_REMOVED`|拆成显式方法|
+|`property` 被报已移除|parser 两个 decorator 入口|修饰符所在位置|删除 decorator，保留其他函数修饰符|
+|某个引擎实例仍接受 `obj.X -> GetX()`|初始化不变量被破坏|两条初始化路径是否都设 0；是否有外部代码调用 raw `SetEngineProperty`|恢复 mode=0，删除未支持重开启逻辑|
+|`.PropertyAccessor()` 已调用但 sugar 不生效|compiler|`propertyAccessorMode` 是否为 0|这是预期行为；使用显式方法|
+|字段可读但不可写|属性权限，不是 accessor|`FBindParams`、CPF 标志、type-specific `BindProperty`|修正反射暴露意图，不要生成假 setter|
+|`BlueprintGetter` 返回值与字段不同|两条路径本来不同|调用代码用 `.Field` 还是 `.Getter()`|选择正确表面；必要时隐藏原始字段|
+|临时/离线引擎与生产引擎诊断不同|engine-scoped 初始化|是否绕过 `FAngelscriptEngine` 标准创建路径|统一从受支持工厂/初始化入口创建|
+
+! 维护不变量
+
+修改 parser、compiler、绑定或引擎创建代码时，应保持以下事实同时成立：
+
+# 两个 `FAngelscriptEngine` 初始化入口都把 mode 设为 0。
+# 配置类、INI 和构建宏不暴露重开启开关。
+# `FindPropertyAccessor` 的 mode=0 快速退出发生在任何 Get/Set 搜索之前。
+# parser 在类方法和一般函数 decorator 路径都拒绝 `property`。
+# `ParseVirtualPropertyDecl` 产生明确迁移诊断，而不是继续构造可注册 AST。
+# `OnBind` 与 `OnBindForTarget` 不按函数名前缀自动设置 property trait。
+# `BindProperties` 暴露真实属性和访问能力，不合成 Get/Set 方法。
+# `BlueprintGetter` / `BlueprintSetter` 的 Unreal 签名验证继续存在，但不改变脚本表达式解析。
+
+如果将来确实要重新引入类似能力，它必须作为新的公开语言设计处理：明确语法、权限、副作用、离线 bundle、调试器显示、热重载和迁移合同，而不能只把 engine property 从 0 改成 1。
+
+! 源码维护地图
+
+|!文件|!职责|
+|`Core/AngelscriptEngine.cpp`|两个 engine-scoped mode=0 初始化点；脚本属性 BlueprintGetter/Setter 签名验证|
+|`Core/AngelscriptBinds.cpp`|普通绑定的 OnBind 元数据；显式 `FAngelscriptBoundFunction::PropertyAccessor`；直接 property 注册|
+|`Binds/Bind_BlueprintType.cpp`|遍历 `FProperty`、派生读写权限、调用 type-specific 或通用 `BindProperty`|
+|`ThirdParty/angelscript/source/as_parser.cpp`|拒绝 `property` decorator 与虚拟属性块|
+|`ThirdParty/angelscript/source/as_texts.h`|两条面向作者的迁移诊断文本|
+|`ThirdParty/angelscript/source/as_compiler.cpp`|mode=0 的 `FindPropertyAccessor` 提前返回；非零兼容实现仍保留|
+|`ThirdParty/angelscript/source/as_builder.cpp`|不可达的旧 property 验证/虚拟块展开，保留历史兼容结构|
+|`Testing/AngelscriptPropertyAccessorRemovalTestTypes.*`|包含 `Field`、`Score/FetchScore` 和 `SetField` 的最小反射载体，可用于理解边界，不应被当作产品配置入口|
+|`Documents/Knowledges/ZH/Syntax_PropertyAccessor.md`|旧行为的历史附录与迁移说明|
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/bind-trait-fluent-api" "绑定 Trait 链式 API">> —— 显式 `PropertyAccessor()` 句柄操作为什么仍存在
+* <<as-doc-link "bindings-uht-extensions/typed-bind-dsl" "Target-aware 类型化绑定 DSL">> —— 字段与方法怎样绑定到具体引擎
+* <<as-doc-link "type-object-reflection/property-generation" "反射属性生成">> —— 脚本声明到 Unreal `FProperty` 的另一方向
+* <<as-doc-link "unreal-language/boundaries-and-differences" "Unreal AngelScript 语言边界">> —— fork 语法与标准 AngelScript 的差异入口
+* <<as-doc-link "compile-module-preprocessor/as-parser-internals" "Parser 内部结构">> —— 专用移除诊断所在的解析层

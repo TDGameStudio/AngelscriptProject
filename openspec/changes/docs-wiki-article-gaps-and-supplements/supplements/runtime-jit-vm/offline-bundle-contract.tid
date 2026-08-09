@@ -1,0 +1,137 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/offline-bundle-contract
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: Standalone Offline Bundle 合同
+description: 说明 UE 导出的完整声明/资产快照、DefaultEngine 与 Project 选择、确定性和非执行陷阱。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/offline-bundle-contract
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 190
+as-content-revision: 1
+as-sources: [[project-guide]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 300
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: offline-bundle-contract
+
+! Bundle 是观察结果
+
+`AngelscriptOfflineExport` commandlet 在 UE 完成初始化后观察最终脚本表面：手工 `Bind_*.cpp`、生成绑定、reflective fallback、可选插件、项目注册和最后成功脚本编译。它不要求这些生产路径增加 standalone 分支或 exporter 宏。
+
+! 文件集合
+
+一次原子发布包含 `manifest.json`、`symbols.jsonl` 与 `assets.jsonl`，使用 canonical UTF-8 JSON/JSONL，并在 manifest 记录数量和 SHA-256。内容只有声明、规范化资产路径、provenance 与兼容 metadata，不含源码正文、函数体、bytecode、native/object 地址、可执行代码或资产 payload。
+
+! Producer/consumer 边界
+
+```text
+UE commandlet producer
+  final initialized engine surface
+  → canonical symbol/asset records
+  → temporary complete bundle
+  → hashes/counts/manifest
+  → atomic publish directory
+
+Standalone consumer
+  explicit Project OR packaged DefaultEngine
+  → validate manifest/schema/hash/counts
+  → register declarations as compile-only traps
+  → overlay current source by exact virtual path
+  → parse/type-check/analyze only
+```
+
+Producer 必须从最终注册表观察 manual binds、generated bindings、reflective fallback、ClassGenerator 和已启用 optional plugins；不能要求每个生产路径再实现一份 exporter branch。Consumer 不能反向假设 bundle 记录就是可调用函数地址。
+
+! 原子发布与确定性
+
+先在临时位置写完整文件，计算 SHA-256/数量并验证 manifest 后再一次性替换最终目录。进程中断时不得留下“新 manifest + 旧 symbols”混合 bundle。
+
+Canonical 输出需要稳定 record key/排序、UTF-8、换行、JSON property order 和路径规范；不写时间戳、内存地址、随机迭代顺序或机器绝对路径。相同 UE surface 连续两次导出应字节一致，差异才具有审计价值。
+
+|!文件|!稳定身份|!禁止内容|
+|`symbols.jsonl`|类型/成员/全局的 stable declaration/id|函数体、native address、进程 function id|
+|`assets.jsonl`|规范化 asset path/class/provenance|资产 payload、机器 cache path|
+|`manifest.json`|schema/compatibility/role/count/hash|隐式搜索路径、未校验外部引用|
+
+! 选择状态机
+
+```text
+no explicit bundle
+  → load packaged DefaultEngine
+  → invalid => fail
+
+explicit Project bundle
+  → validate exactly that directory
+  → valid => use it as complete universe
+  → invalid => fail, never fall back
+```
+
+Project bundle 完整替代 default，V1 没有 merge 顺序、cache discovery 或“缺哪个从默认补哪个”。这使同一命令在不同机器可重现，也避免显式选择损坏时悄悄分析了另一套 API。
+
+! Compatibility 与 provenance
+
+Manifest 要让 consumer 在注册前判断 schema、产品/UE/profile、完整性和 selection role。具体字段以当前 guide/schema 为准，但原则是不兼容先拒绝，不能读到一半才发现 record 形状不同。
+
+每个 symbol/asset 的 provenance 应说明来自 engine/plugin/project/生成表面，便于诊断“声明为什么存在”；provenance 不授予执行权限，也不能用于猜 merge precedence。
+
+! 完整选择
+
+`DefaultEngine` 是 packaged selection role，不是“只含 Engine module”的过滤器。显式 `Project` bundle 完整替代 packaged default；V1 不 merge、不搜索 cache，也不会在显式 bundle 无效后偷偷 fallback。
+
+! UE-validation
+
+Standalone 的 `ue-validation` profile 只编译/分析，UE 声明注册为不可执行 trap。产物不是 UE 可加载 bytecode，不能执行 UObject/World/GC/ClassGenerator。调用 trap 代表违反 profile 边界，而不是“尝试模拟 Unreal”。
+
+`native-runtime` 是另一 profile，只执行受限标准 C++ host 中的 bounded native AngelScript，标准库限于 string/array/dictionary/math/print/assert，并受时间/内存约束；它也不因 bundle 而获得 Unreal UObject 能力。不要把两个 profile 的产物或成功条件混写。
+
+! Script root 替换
+
+项目 `--script-root` 的相对源码映射到 `/Angelscript/Game/<path>`，从而用当前源码精确替换 bundle 中导出的同逻辑路径。V1 不把任意目录猜成 plugin/memory mount。
+
+替换键是 canonical virtual path，不是 basename。`Foo/Player.as` 只能替换 bundle 中同一路径记录；同名 plugin file 仍是另一来源。若当前源码删除了某文件，是否从 baseline 移除必须按完整 current-source contract 处理，不能简单留下旧 declaration 让分析虚假成功。
+
+! 非目标
+
+* 不导出或加载 UE 可执行 bytecode；
+* 不序列化 UObject、GC graph、World、ClassGenerator 或 reflection instance；
+* 不开放 file/network/process/dynamic-library/任意 FFI；
+* 不让 explicit project bundle 与 default 自动拼接；
+* 不在 normal build 时联网更新 bundle/reference；
+* 不用 bundle 替代真实 UE packaged/runtime validation。
+
+! 故障矩阵
+
+|!现象|!应有行为|
+|显式目录不存在/manifest 损坏|立即失败并指出选择路径；不 fallback|
+|hash/count 不匹配|拒绝整包，不加载可读的部分 records|
+|schema/profile 不兼容|在注册前 fail closed，报告 expected/actual|
+|两次导出 bytes 不同|查排序、时间戳、路径、unordered iteration 和未稳定 metadata|
+|current source 没替换 baseline|比较 canonical `/Angelscript/Game/...` 路径与 script root|
+|分析过程中执行 UE declaration|触发 non-executable trap，修调用/profile 设计|
+|IDE 显示可调用但 UE 项目没有|bundle 是导出时 surface；检查 provenance、plugin/target 与新导出|
+
+! 维护不变量
+
+* exporter 是纯观察者，不给 bind/ClassGenerator 加 standalone 分支；
+* bundle 每次完整、原子、可 hash、可重复；
+* explicit selection invalid 时永不使用另一包；
+* record 不包含可执行地址、payload 或本机私密路径；
+* ue-validation 只编译/分析，所有 UE callable 是 trap；
+* current source 只按明确 project virtual path 替换；
+* Project 与 DefaultEngine 是完整 universe，不是 merge layer。
+
+! 源码与指南入口
+
+* `Documents/Guides/AngelscriptStandaloneOfflineBundle.md`：schema、CLI、selection 和 path 合同。
+* UE `AngelscriptOfflineExport` commandlet 与 Dump/offline exporter：最终 surface producer。
+* `Plugins/Angelscript/Standalone/`：bundle validation、profiles、trap registration 和 current-source overlay。
+* release/external smoke scripts：真实 ZIP/外部项目 producer-consumer 边界；不与 UE Automation 数量混合。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/source-module-identity" "Source Provider 与模块身份">>
+* <<as-doc-link "testing-diagnostics-release/release-verification-matrix" "发布验证矩阵">>
+* <<as-doc-link "reference-differences-version/standalone-vs-ue" "Standalone 与 UE">>

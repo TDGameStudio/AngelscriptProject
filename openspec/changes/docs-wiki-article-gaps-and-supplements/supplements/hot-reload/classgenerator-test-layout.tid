@@ -1,0 +1,133 @@
+title: AS/Docs/zh-Hans/hot-reload/classgenerator-test-layout
+type: text/vnd.tiddlywiki
+tags: HotReload
+caption: ClassGenerator 证据布局与重载规划器
+description: Generator 主题如何按生成表面组织证据，以及 FAngelscriptClassReloadPlanner 怎样传播重载需求。
+as-sdk-document: yes
+as-doc-key: hot-reload/classgenerator-test-layout
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[openspec]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: hot-reload/index
+as-feature-key: classgenerator-test-layout
+
+! 两个不同层次的问题
+
+`AngelscriptTest/Generator/` 的目录回答“某条证据主要验证哪一种生成表面或能力”；Runtime 的 `FAngelscriptClassReloadPlanner` 回答“一个类型的重载强度如何沿依赖边传播”。前者是证据组织，后者是生产算法的独立数据结构。把二者放在同一页，是为了让维护者知道：目录移动不应改变生产 API，而 planner 行为变化必须同时检查直接图算法证据和真实脚本集成证据。
+
+! 当前 Generator 目录
+
+仓库中实际存在七个语义子目录：
+
+|!子目录 |!主要生成表面 / 能力 |!代表文件 |
+|`ASClass` |`UASClass` 构造、组件、metadata、replication、tick 与引用 schema |`AngelscriptASClassConstructionContextTests.cpp`、`AngelscriptASClassMetadataTests.cpp` |
+|`ASFunction` |`UASFunction` 参数、dispatch、metadata、优化调用、`ProcessEvent` 与 WorldContext |`AngelscriptASFunctionDispatchTests.cpp`、`AngelscriptASFunctionWorldContextTests.cpp` |
+|`ASStruct` |生成 struct 身份、discard、hot reload 与 CppOps |`AngelscriptScriptStructHotReloadTests.cpp`、`AngelscriptStructCppOpsTests.cpp` |
+|`ScriptClass` |脚本类创建、shape、继承、Blueprint child 与 rename |`AngelscriptScriptClassCreationTests.cpp`、`AngelscriptScriptClassShapeTests.cpp` |
+|`ReloadPlanning` |interface list、真实类型依赖传播与独立 planner 图算法 |三个 `AngelscriptClass*Reload*Tests.cpp` 文件 |
+|`ComponentValidation` |默认组件/attach/override 等生成前验证 |`AngelscriptComponentMetadataValidationTests.cpp` |
+|`Core` |setup、name conflict、compose、额外 compile checks、default statement safety |`AngelscriptClassGeneratorSetupTests.cpp` 等 |
+
+这些文件的精确注册名继续细分为 `Angelscript.TestModule.Generator.<Area>...`，例如：
+
+* planner 直接证据：`Angelscript.TestModule.Generator.ReloadPlanning.Planner`
+* 真实描述符传播：`Angelscript.TestModule.Generator.ReloadPlanning.Propagation`
+* interface list：`Angelscript.TestModule.Generator.ReloadPlanning.InterfaceList`
+* 组件验证：`Angelscript.TestModule.Generator.ComponentValidation`
+
+因此 `Angelscript.TestModule.Generator` 是稳定的主题查询入口，星号是查询写法而不是注册字符串的一部分。
+
+! Planner 的生产接口
+
+`ClassGenerator/AngelscriptClassReloadPlanner.h` 暴露一个不需要编译脚本即可构造的有向图：
+
+```
+FNodeHandle AddNode(FName DebugName, EReloadRequirement InitialRequirement);
+void SetRequirement(FNodeHandle Node, EReloadRequirement Requirement);
+void AddDependency(FNodeHandle Dependee, FNodeHandle Dependency);
+void PropagateAll();
+EReloadRequirement GetRequirement(FNodeHandle Node) const;
+void Reset();
+```
+
+`FNodeHandle` 只是封装 `int32 Index`，默认值为 `INDEX_NONE`；只有 planner 自己能访问内部 index。`FNode` 保存调试名、当前 requirement 和 dependency index 数组。`AddDependency(Dependee, Dependency)` 的方向必须读成：''Dependee 依赖 Dependency，因此 Dependency 的更强要求传播到 Dependee''。
+
+! 重载强度是有序格
+
+`FAngelscriptClassGenerator::EReloadRequirement` 的声明顺序本身被算法用 `>` 比较：
+
+```
+SoftReload < FullReloadSuggested < FullReloadRequired < Error
+```
+
+|!值 |!含义 |
+|`SoftReload` |现有生成类型可保留，仅更新可执行/可软替换状态 |
+|`FullReloadSuggested` |完整重载能完整发布 shape，但某些运行环境可选择先软应用 body、延迟结构变化 |
+|`FullReloadRequired` |不能安全降级为 soft reload |
+|`Error` |规划/分析已不可继续，且作为最高严重度沿依赖传播 |
+
+如果未来重排枚举或插入一个不满足“数值越大越严重”的值，`PropagateAll()` 会静默得到错误结果；此处的枚举顺序是算法不变量，不只是展示顺序。
+
+! 固定点传播算法
+
+`PropagateAll()` 反复遍历全部 node 及其 dependencies。若 dependency 的 requirement 大于当前 node，就把 node 提升到 dependency requirement 并标记本轮发生变化；直到完整一轮没有提升才停止。
+
+由此得到几个精确性质：
+
+* requirement 只会上升，不会在传播中下降。
+* 单跳和多跳依赖最终都取得所有可达 dependency 中的最高 requirement。
+* 环不会造成无限循环，因为节点数与四级枚举均有限，且每个节点最多上升三次。
+* `AddUnique()` 去重同一个 dependency edge，但不检查自环；自环不会改变值。
+* handle 跨 `Reset()` 后失效；`SetRequirement`、`AddDependency` 与 `GetRequirement` 对失效 handle 使用 `check`，不是可恢复错误返回。
+* `DebugName` 当前只保存在 node 中，不参与传播和唯一性判断；同名节点是允许的。
+
+复杂度是朴素固定点扫描，而不是拓扑排序：最坏情况下要多轮遍历全部节点和边。ClassGenerator 图规模受一次 reload 的类型集合限制，这换取了环处理简单且结果确定。
+
+! ClassGenerator 如何使用 planner
+
+生产 `FAngelscriptClassGenerator` 的 class、enum 与 delegate 数据都含 `FReloadPropagation`：初始 `ReloadReq` 和 `ReloadPlannerNodeIndex`。`Setup()` 完成单个类型的变更分类后，依次：
+
+# `RegisterReloadPlannerNodes()` 为需要参与的生成数据创建节点并写回 node index。
+# `CollectReloadDependencies()` 从属性类型、函数签名、继承/接口和 delegate 使用关系收集边。
+# `PropagateAll()` 计算依赖闭包上的最高要求。
+# `ApplyReloadPlannerResults()` 把 planner 结果写回 ClassGenerator 数据，随后 `WantsFullReload()` / `NeedsFullReload()` 和实际 reload 路径使用这些结果。
+
+独立 planner 只证明图算法；`AngelscriptClassGeneratorReloadPropagationTests.cpp` 还通过真实脚本覆盖单跳、多跳、环、继承、函数签名、容器和 signal/delegate 依赖，防止“图算法正确但生产阶段漏建边”。`InterfaceListTests.cpp` 则专门区分 interface shape 变化和 body-only edit。
+
+! 失败与诊断
+
+|!症状 |!优先检查 |
+|consumer 没有继承 provider 的 full-reload requirement |`AddReloadDependency` 参数方向、对应类型 usage 是否进入 `CollectReloadDependencies()` |
+|无关类型被升级 |是否误建 dependency edge，或旧 planner 未 `Reset()` |
+|环上的节点结果不一致 |是否在 `PropagateAll()` 完成前读取，或新增 requirement 破坏数值严重度顺序 |
+|直接 planner 证据通过、集成仍失败 |生产 ClassGenerator 的 node 注册/edge 收集缺口，而不是固定点算法 |
+|移动 Generator 文件后不可发现 |`TEST_CLASS_WITH_FLAGS` 的精确前缀/Build.cs 源文件收集，而不是 Runtime include 路径 |
+
+! 维护边界
+
+* 目录归组以“主要验证对象”决定；一个涉及热重载的 `UASStruct` 行为仍可放 `ASStruct`，而跨类型 requirement 传播放 `ReloadPlanning`。
+* `AngelscriptClassReloadPlanner.h` 是 Runtime seam，不应为了测试目录调整而改变 include 路径。
+* planner 是索引拥有者；不要在外部缓存裸 index，也不要让 handle 跨 `Reset()` 生命周期。
+* 新增依赖类型时同时考虑独立图性质和真实边收集证据，二者不能互相替代。
+* 新增 requirement 级别前必须定义全序，并复核所有用枚举数值比较严重度的代码。
+
+! 源码落点
+
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassReloadPlanner.*` —— 节点、边与固定点传播
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator.h` —— requirement 全序和生产数据结构
+* `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator_ReloadPlanning.cpp` —— 生产 node/edge 集成
+* `Plugins/Angelscript/Source/AngelscriptTest/Generator/ReloadPlanning/` —— planner、传播与 interface list 的分层证据
+* `Plugins/Angelscript/Source/AngelscriptTest/Generator/README.md` —— Generator 目录归组说明
+
+! 相关链接
+
+* <<as-doc-link "hot-reload/index" "热重载概览">> —— reload 生命周期
+* <<as-doc-link "hot-reload/change-classification" "热重载变更分类">> —— 初始 requirement 如何产生
+* <<as-doc-link "hot-reload/hotreload-test-coverage" "热重载证据矩阵">> —— 非属性 shape 与 Blueprint child 边界
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "自动化测试约定">> —— 前缀和口径

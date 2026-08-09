@@ -1,0 +1,103 @@
+title: AS/Docs/zh-Hans/unreal-language/feature-catalog
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: Unreal AngelScript 功能目录
+description: 按功能族记录 Unreal 方言语法、组合、反射交互和验证入口。
+as-sdk-document: yes
+as-doc-key: unreal-language/feature-catalog
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 30
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[hazelight-docs]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 1
+as-feature-key: unreal-language-feature-catalog
+
+! 功能族
+
+|!族 |!入口 |!主要后端 |
+|反射声明 |UPROPERTY/UFUNCTION/UCLASS specifiers |Preprocessor + ClassGenerator |
+|默认对象 |member initializer、`default` |defaults lowering + CDO |
+|组件 |DefaultComponent/Root/Attach |ClassGenerator component templates |
+|调用/分派 |BlueprintEvent/Override、RPC |UFunction + ProcessEvent/network |
+|回调 |delegate/event、FName literal |生成 signature + binding |
+|脚本扩展 |access、mixin、property accessor |parser/compiler/binds |
+|表达 |f-string |parser/compiler/runtime formatting |
+|环境 |`#if EDITOR`、cooked |Preprocessor + module boundary |
+
+! 动态目录
+
+正式 Wiki 采用后可继续用 `as-feature-key` 元数据生成条目；状态必须同时显示，避免把 placeholder 当已支持教程。
+
+! 判断“支持”
+
+一个功能至少需要：语法接受、无效组合诊断、生成/反射或运行时后端、热重载边界和当前示例/证据。只有 parser token 不算闭环。
+
+! 按读者问题选择入口
+
+|!你要解决的问题|!先读|!再深入|
+|给字段增加 Details/Blueprint/复制语义|<<as-doc-link "unreal-language/property-specifiers" "UPROPERTY 指定符">>|<<as-doc-link "type-object-reflection/property-generation" "FProperty 生成">>|
+|把函数暴露给 Blueprint 或做 override|<<as-doc-link "unreal-language/function-specifiers" "UFUNCTION 指定符">>|<<as-doc-link "type-object-reflection/function-generation-and-dispatch" "UFunction 派发">>|
+|配置 CDO 和默认组件|<<as-doc-link "unreal-language/default-statement" "default 语句">>、<<as-doc-link "unreal-language/default-components" "默认组件">>|<<as-doc-link "unreal-core/actors-components-defaults" "Actor/组件/默认值">>|
+|声明单播/多播回调|<<as-doc-link "unreal-language/delegate-event-declarations" "delegate/event">>|<<as-doc-link "hot-reload/versioned-types-and-delegates" "委托热重载">>|
+|扩展已有类型|<<as-doc-link "unreal-language/mixin-functions" "Mixin 函数">>|<<as-doc-link "bindings-uht-extensions/bind-execution-timing" "绑定时序">>|
+|写日志和格式化|<<as-doc-link "unreal-language/format-strings" "f-string">>|<<as-doc-link "language/strings-names-and-formatting" "字符串类型">>|
+|写 Editor-only 工具|<<as-doc-link "unreal-language/editor-only-script" "Editor-only 脚本">>|<<as-doc-link "reference-differences-version/runtime-editor-commandlet" "环境差异">>|
+|设计 RPC/复制|<<as-doc-link "unreal-language/network-specifiers" "网络指定符">>|<<as-doc-link "topics-integrations/networking-rpc" "网络工作流">>|
+
+目录的职责是路由，不重复每篇参考手册；但每个入口都必须告诉读者下一层证据在哪里。
+
+! 功能闭环的五层模型
+
+```text
+source surface
+  → preprocess/parser representation
+  → descriptor/type-checking
+  → ClassGenerator or binding publication
+  → VM/JIT/ProcessEvent/domain execution
+```
+
+|!层|!必须回答|
+|输入|合法语法、specifier 组合、错误定位|
+|表示|AST、生成代码或 `FAngelscript*Desc` 保存了什么|
+|发布|生成 UClass/FProperty/UFunction，还是注册 AS bind|
+|执行|VM、StaticJIT、native direct、reflective fallback 或 Unreal domain routing|
+|演进|body、metadata、layout 改变怎样 reload；Editor/cooked 表面是否一致|
+
+例如 `Server` 被 parser 接受并不足以证明 RPC 支持：真正发布的 UFunction 要有 `FUNC_Net*`，调用还必须经 `ProcessEvent`。同理，C++ header 中存在函数不等于 AS 可用；它还要经过 module eligibility、binding、signature/marshalling 和目标环境。
+
+! 状态与证据怎么读
+
+所有本 change 文章仍标 `draft`，表示已按源码建立候选正文，但尚未迁入 Wiki、评审为 reviewed 或发布。`as-depth` 表示需要核验的正文层次，不表示功能成熟度。
+
+功能可用性应按证据阶梯判断：
+
+```text
+external/upstream description
+  < current source symbol
+  < generated/bound surface
+  < focused compile/runtime evidence
+  < target-specific Editor/commandlet/cooked evidence
+```
+
+上游说明能帮助理解意图，不能覆盖当前 fork。一个示例能编译，也不能单独证明热重载、网络或 packaged 行为。页面的 `as-sources` 只声明证据仓库；正文的文件/符号才说明具体落点。
+
+! 交叉功能的风险点
+
+* UPROPERTY、default 与 hot reload 共享 CDO/字段布局，不能分别改完就假设组合正确。
+* UFUNCTION、BlueprintEvent、RPC 与 binding optimization 共享派发合同；网络/override 不得 raw direct call。
+* Delegate 的声明、UDelegateFunction 和调用缓冲必须同 generation；签名变化需要重绑定。
+* Mixin 可能来自脚本、反射 metadata 或手工 bind；相同调用外观不代表相同 owner。
+* Editor-only 既影响源码筛选，也影响 type/member bindings 和 cooked layout。
+
+! 目录维护规则
+
+新增条目时必须有唯一读者问题、稳定 `as-doc-key`、一个正式 Topic Tag、一个 nav group、当前 source registry key 和明确 owner。不要为了凑目录拆出只含三行链接的“文章”；简单问题可短，但仍要包含适用范围、可验证步骤、失败诊断与下一步。
+
+! 相关链接
+
+* <<as-doc-link "unreal-language/feature-implementation-principles" "功能实现原理">>
+* <<as-doc-link "unreal-language/boundaries-and-differences" "边界与差异">>

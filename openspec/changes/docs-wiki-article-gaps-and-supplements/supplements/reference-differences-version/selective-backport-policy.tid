@@ -1,0 +1,120 @@
+title: AS/Docs/zh-Hans/reference-differences-version/selective-backport-policy
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: 选择性 Backport 策略
+description: 说明为何不整体升级到 2.38，以及如何评估、移植并标记单项语言、修复或性能改进。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/selective-backport-policy
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: policy
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[project-guide]] [[project-knowledge-zh]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 60
+as-nav-parent: reference-differences-version/index
+as-feature-key: selective-backport-policy
+
+! 为什么不是整体升级
+
+Fork 已在内存、模块、对象类型、compiler/parser、restore 和 UE 集成形成结构分叉。整体替换 2.38 会破坏 APV2 符号、热重载、ClassGenerator、binding 与调试合同；上游应视为改进来源，不是版本切换目标。
+
+这里的“选择性”有两个含义：只选择满足本产品需求的改动；移植时只吸收语义，不要求保留上游补丁的文件边界或数据结构。最终代码必须继续服从当前 fork 的内存、模块、对象和 UE host 合同。
+
+! 适合回移
+
+* 当前可复现的正确性/安全修复；
+* 能适配 fork parser/compiler 的语言能力；
+* 与 APV2/UE ABI 兼容的性能改进；
+* 当前类型系统明确需要的独立 API。
+
+! 不适合
+
+与自动句柄、const global、UE interface/mixin 边界冲突的改动；要求整体替换 module/restore/object model 的重构；只服务 vanilla 使用模式而本 fork 没有对应功能的修复。
+
+! 记录要求
+
+逐项固定上游 revision、说明适用性和影响面；ThirdParty 改动加 `[UE++]` 注释，保留与上游差异理由。已落地的 2.38 项包括 foreach lowering、模块查找 API、导入 function traits、restore 表面和宽 type flags 等，但实现已适配 fork，不等于完整 2.38。
+
+! 风险分层
+
+|!层|!例子|!默认风险|!必须联查|
+|局部诊断/正确性|错误位置、边界检查|中|parser/compiler 对应用例、现有错误文本消费者|
+|语法/lowering|foreach、conversion、overload|高|parser AST、builder、compiler bytecode、Static JIT|
+|公共 C API|module lookup、function trait 查询|高|随附 header、版本兼容、Standalone 与 UE runtime|
+|对象/type flags|扩展 flags、handle/reference 行为|很高|ClassGenerator、GC、binding、restore、dump/offline export|
+|module/restore/bytecode|序列化布局、import、module storage|最高|precompiled/cooked、hot reload、old artifacts、Standalone|
+|allocator/threading|pool、context、GC|最高|FMemory ownership、engine-scoped state、shutdown|
+
+补丁行数不能降低此评级。一个 enum 扩位可能只改几行，却改变序列化和所有按位存储消费者。
+
+! 六阶段评估流程
+
+!! 1. 固定问题与上游证据
+
+记录本地可复现问题或明确产品需求、当前 plugin/UE revision、上游 commit/tag 和它在 vanilla 中解决的场景。若只有“2.38 有新功能”而没有本地需求，先停止。
+
+!! 2. 建立语义 diff
+
+不要先 cherry-pick。列出上游改动触及的数据结构、入口、输出和测试意图，再映射本地对应物。重点查：
+
+* fork 是否已用另一方式解决；
+* 同名结构是否已被 APV2/UE 扩展；
+* 上游假设显式 handle、mutable globals 或 vanilla module；
+* Standalone 与 UE 是否共享这段 vendored source；
+* public header/API 是否需要产品版本决策。
+
+!! 3. 决定处置
+
+|!处置|!条件|
+|直接适配回移|语义独立、边界清楚、与 fork 不冲突|
+|重新实现同一效果|上游结构不适用，但需求成立|
+|部分回移|修复核心成立，附带重构/功能不适合|
+|保留本地实现|fork 已有等价或更强合同|
+|拒绝/延期|需整体对象/module/restore 替换，收益不足或证据不全|
+
+!! 4. 设计跨层变更
+
+明确 parser → builder → compiler → VM/JIT → restore/dump 的数据如何流动，以及 Runtime/Standalone 两 host 是否需要同步。公共字段布局变化还要列出版本、序列化和缓存失效策略。
+
+!! 5. 最小实现与 provenance
+
+只移入必要代码；在 vendored ThirdParty 修改处用项目约定标明 `[UE++]` 和为何偏离上游。保留 upstream commit、被省略部分和本地适配说明，避免未来维护者再次“完整回移”而覆盖本地决策。
+
+!! 6. 关闭记录
+
+更新 fork strategy、差异页、公共版本/发行说明（若需要）和对应源码注释。结论写“回移了 upstream X 的 Y 语义并适配 Z”，不写“升级至 2.38”。
+
+! 数据结构检查表
+
+涉及 ThirdParty 核心类型时逐项检查：
+
+* 枚举位宽、保留高位和序列化字段；
+* copy/move/restore 是否复制新增字段；
+* module load/unload 和 engine shutdown 是否释放状态；
+* hot reload old/new object 是否转换；
+* JIT 与解释器是否读取同一语义；
+* debug dump、offline contract、LSP/DAP 是否公开该字段；
+* Runtime 和 Standalone 是否编译同一文件/不同 adapter；
+* cooked/precompiled data 是否需要拒绝旧 artifact。
+
+! 失败与回退
+
+|!信号|!说明|!动作|
+|普通源码编译成功但 restore 崩溃|只迁移了 live build 路径|停止发布，补齐/拒绝旧格式，不能静默读错|
+|UE 正常、Standalone 不一致|共享 vendored source 或 adapter 漏同步|明确两 host 的权威层，补适配而非复制 UE branch|
+|解释器正常、Static JIT 结果不同|lowering/trait 新语义未进入 JIT|保持 fallback 或完成 JIT 合同|
+|hot reload 后才出错|old/new type/module 转换遗漏|检查 version map、descriptor 和 reload classification|
+|必须删除大量 fork 扩展才能套补丁|适用性判断失败|退回语义重实现或拒绝|
+|公共 header 需要破坏布局|不是普通 backport|进入产品 major/API 设计|
+
+! 与产品版本的关系
+
+回移上游修复不会把 source lineage 改成“2.38 runtime”，也不自动要求产品 major。用户可见的新功能可推动 `1.x` minor；兼容修复可进入 patch；公共 ABI 破坏必须按产品 major 处理。三者由本产品兼容合同决定，不由 upstream tag 决定。
+
+! 相关链接
+
+* <<as-doc-link "reference-differences-version/product-version-and-lineage" "产品版本与源码血缘">>
+* <<as-doc-link "reference-differences-version/external-reference-policy" "外部参考策略">>

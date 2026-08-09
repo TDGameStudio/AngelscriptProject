@@ -1,0 +1,142 @@
+title: AS/Docs/zh-Hans/unreal-language/network-specifiers
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: 网络指定符、RPC 路由与复制合同
+description: 从 UFUNCTION/UPROPERTY 网络指定符解析到 UFunction/FProperty flags、ProcessEvent、RepNotify 和热重载，给出 Server、Client、Multicast、可靠性与验证的作者规则。
+as-sdk-document: yes
+as-doc-key: unreal-language/network-specifiers
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 170
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 310
+as-nav-parent: unreal-language/index
+as-feature-key: network-specifiers
+
+! 声明能力不等于获得网络权限
+
+```angelscript
+UFUNCTION(Server, Reliable, WithValidation)
+void ServerEquip(FName ItemId)
+{
+    // 在服务器执行权威修改
+}
+
+UFUNCTION()
+bool ServerEquip_Validate(FName ItemId)
+{
+    return CanEquip(ItemId);
+}
+```
+
+指定符使生成的 `UFunction` 带上 Unreal 网络 flags，之后由 `ProcessEvent` / callspace / owning connection 决定本地执行还是发往远端。它不会自动赋予客户端 authority，也不会替错误 owner 建连接。
+
+! 函数指定符矩阵
+
+|!指定符|!合法发起方向|!执行目标|!关键前提|
+|`Server`|通常 client → server|服务器实例|调用方拥有可发送该 RPC 的 replicated object/channel|
+|`Client`|server → owning client|拥有者客户端|Actor 有 owning connection|
+|`NetMulticast`|server 发起|服务器和当前相关客户端|客户端发起不会成为全局广播|
+|`Reliable`|修饰 network RPC|沿上述方向可靠排队|不是即时、无限带宽或业务成功保证|
+|`Unreliable`|修饰 network RPC|允许丢失/被后续状态覆盖|事件必须可丢且不承担最终状态|
+|`WithValidation`|关联 validate function|目标执行前校验请求|validate 返回 bool，签名/命名匹配|
+
+Server、Client、NetMulticast 是互斥方向。不要照搬旧文档的 `NetServer` / `NetClient` 名称。未显式 `Unreliable` 的当前生成语义会带 reliable flag，但公共代码最好按项目约定明确写出关键意图。
+
+! 生成链
+
+```text
+UFUNCTION(Server, Reliable, WithValidation)
+  → preprocessor FMacro / FAngelscriptFunctionDesc
+  → validate specifier combination and signature
+  → UASFunction + parameter FProperty
+  → FUNC_Net | FUNC_NetServer | FUNC_NetReliable | FUNC_NetValidate
+  → call through UObject::ProcessEvent
+  → Unreal network routing / validation / target execution
+```
+
+网络标志必须存在于真正发布的 `UFunction`；只在 AS function descriptor 上记录文本没有作用。反过来，执行优化也不能绕过这些 flags。RPC 即使能取得 native function address，也必须保留反射/`ProcessEvent` 路由；直接 raw thunk 只会本地调用 body，跳过 callspace、发送、validation 和 multicast 语义。
+
+! 复制属性是另一条管线
+
+```angelscript
+UPROPERTY(ReplicatedUsing=OnRep_Health, ReplicationCondition=OwnerOnly)
+float Health = 100.0;
+
+UFUNCTION()
+void OnRep_Health(float OldHealth)
+{
+    UpdateHealthPresentation(OldHealth, Health);
+}
+```
+
+```text
+UPROPERTY network metadata
+  → property descriptor
+  → generated FProperty with CPF_Net / RepNotify name
+  → class lifetime replication list + condition
+  → server state delta replication
+  → client property apply
+  → RepNotify invocation
+```
+
+属性复制表达持久状态；RPC 表达一次调用。晚加入或重新 relevant 的客户端需要最终看到的事实，应由 replicated property/fast array 等状态模型承载，而不是只发一次 multicast。
+
+RepNotify 函数需能被 ClassGenerator 找到，参数通常为 0 或一个同类型旧值参数；名字或类型不匹配应在编译/生成阶段失败。`ReplicationCondition` 只选择 Unreal lifetime condition，不能替代业务权限检查。
+
+! 作者工作流
+
+# 先决定这是“最终状态”还是“一次请求/通知”。状态优先 replication；请求/瞬时表现才用 RPC。
+# 把权威状态修改放在 server。客户端输入通过有正确 owner 的 Server RPC 提交。
+# 在 validate 中检查范围、对象所有权、玩家状态、资源可用性；不能只检查参数非空。
+# 用 replicated property 表达成功结果，让丢包、晚加入和 relevancy 恢复后都能收敛。
+# Client RPC 只发给 owning client；广播表现才考虑 multicast，并确保可丢/重放语义合理。
+# 对高频数据优先状态压缩/复制，避免可靠 RPC 队列堆积。
+
+! 签名边界
+
+RPC 参数同时受 AngelScript type mapping、UFunction `FProperty` representability 和 Unreal 网络序列化约束。脚本能调用的普通函数签名，不代表适合作 RPC：
+
+* 不要依赖 ref return、任意 out alias 或 raw pointer；
+* UObject 引用必须具有网络上可解析的身份/生命周期；
+* 大型容器/struct 会增加序列化和带宽成本；
+* delegate、editor-only type、未稳定注册的脚本类型不应进入网络合同；
+* WorldContext 注入不是网络 receiver/owner 的替代品；
+* 网络 API 的参数变化是兼容性变化，热重载成功不代表已在线连接理解新协议。
+
+! Hot Reload 与兼容
+
+网络字段/函数 flags、参数和 RepNotify 变化属于结构性 reload。生成器需重建 UFunction/FProperty 和 lifetime replication list，旧 class/instance 再迁移到新 generation。候选失败时必须保留 last-good class，不能发布只有新 RPC 但旧 replication layout 的混合状态。
+
+多人 PIE 中已建立的 channel、远端客户端或序列化中的 packet 可能仍基于旧形状。开发时 reload 可加速迭代，但协议级改动仍应重新开始会话；发布版本需要常规网络兼容策略。
+
+! 故障矩阵
+
+|!现象|!检查顺序|
+|Server RPC 不执行|Actor replication、客户端 ownership、调用端角色、channel、validation 返回值|
+|Client RPC 无目标|是否由 server 调用；Actor 是否有 owning connection|
+|Multicast 只在服务器执行|是否由 client 发起；客户端 relevancy/channel 是否存在|
+|RPC 只本地跑|绑定路径是否直接调用 native thunk，绕过 `ProcessEvent`|
+|RepNotify 不触发|权威端是否实际改变；condition；回调名/签名；lifetime list|
+|客户端值被“改回去”|客户端修改了非权威副本，随后 server replication 覆盖|
+|可靠 RPC 延迟持续增长|高频事件挤压可靠队列；改为状态/降低频率|
+|reload 后 flags 丢失|new UFunction 与 replication metadata/lifetime rebuild 是否整体提交|
+
+! 证据与源码地图
+
+* `AngelscriptPreprocessor.cpp`：网络 function/property specifier 解析与组合诊断。
+* `UASFunction` / ClassGenerator function generation：把 descriptor 映射为 `FUNC_Net*` 和参数 properties。
+* ClassGenerator property/replication path：`CPF_Net`、RepNotify、lifetime conditions。
+* `BlueprintCallableReflectiveFallback.cpp`：需要 `ProcessEvent` 的调用路径；RPC 不得转为 raw direct call。
+* `Script/Examples/Extended/Example_NetworkReplication.as`：属性复制、RepNotify 和 RPC 组合示例。
+
+! 相关链接
+
+* <<as-doc-link "topics-integrations/networking-rpc" "Networking 与 RPC 工作流">>
+* <<as-doc-link "unreal-language/function-specifiers" "UFUNCTION 指定符">>
+* <<as-doc-link "unreal-language/property-specifiers" "UPROPERTY 指定符">>
+* <<as-doc-link "bindings-uht-extensions/reflective-fallback" "反射回退与 ProcessEvent">>

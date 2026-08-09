@@ -1,0 +1,256 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/native-module-function-address
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: NativeModuleFunctionAddress 后端
+description: 解释目标模块地址 shard、跨模块 POD ABI、ModularFeatures 注册、延迟 Class 解析、generic call frame 与卸载清理。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/native-module-function-address
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 200
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]]
+as-nav-group: bindings-extensions
+as-nav-order: 300
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: native-module-function-address
+
+! 目标模块发布地址，Runtime 不反向链接它
+
+`NativeModuleFunctionAddress` 把 direct thunk 编译进 UFunction 所属目标 module，再通过 Core `IModularFeatures` 发布一张只包含 POD/函数地址的 view。`AngelscriptRuntime` 订阅 feature 并把条目注入自己的 `ClassFunctionBindings`：
+
+```text
+UHT for target Module
+    ↓ safe signature only
+AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_NNN.cpp
+    ↓ compile inside target Module
+POD table + view --RegisterModularFeature-->
+    AngelscriptRuntime subscriber
+       ↓ resolve UClass now or pending
+    ClassFunctionBindings[Class][Function]
+       ↓
+    generic AS trampoline → target-module thunk → C++ method
+```
+
+它解决的依赖问题是：Runtime 不必对每个目标 module 增加 link dependency。代价是需要修改/生成目标 module 源，因此只支持 source-built Unreal Engine，并引入严格跨 DLL ABI 与 unload 生命周期。
+
+! 为什么只允许 Source Engine
+
+目标 shard 落在目标 UE module 的 UHT output directory，必须参与该 module 编译。Installed/binary Engine 无法重新编译这些 Engine module。
+
+项目在三层拒绝错误配置：
+
+|!层 |!行为 |
+|Editor settings |检测 distribution；非 source 时把 method 重置为 `None`，不给用户保存伪配置 |
+|UBT `AngelscriptRuntime.Build.cs` |根据 `InstalledBuild.txt`、`SourceDistribution.txt` 或 `.git` 线索分类；非 source 抛 `BuildException` |
+|UHTTool |再次分类；非 source 抛 `InvalidOperationException`，不生成半套 shard |
+
+“unknown” 也按不支持处理。不能通过跳过某个 UI 检查来绕开，因为生成目标 module代码的物理能力确实不存在。
+
+! 配置与 module 选择
+
+```ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+FunctionBindingMethod=NativeModuleFunctionAddress
++NativeModuleFunctionAddressModules=Engine
++NativeModuleFunctionAddressModules=UMG
+```
+
+该 method 与 `NativeRuntimeLinked` 互斥；同一 module 不允许两种 output 同时 emit。UHT 只遍历配置且在本次 session 存在的 module，missing module进入统计。
+
+Build.cs 定义：
+
+```text
+WITH_ANGELSCRIPT_NATIVE_MODULE_FUNCTION_ADDRESS=1
+```
+
+Runtime 的 subscriber/bridge 代码只在该宏启用时编译。切换 method 后必须完整重新生成、构建并重启。
+
+! Safe signature policy
+
+地址“拿得到”不等于脚本参数可以按 C++ ABI 直接解释。当前 policy要求：
+
+|!允许方向 |!仍需满足 |
+|void 或受支持值/对象返回 |非 ref return，return slot 构造规则已知 |
+|bool/numeric/enum |标量 ABI 明确 |
+|受支持 USTRUCT |header 可引用，copy/return 生成可表达 |
+|FString/FName/FText |在生成 C++ 中以准确类型调用 |
+|UObject/UClass/soft/weak 等受支持 property |header signature builder 可解析 |
+
+明确拒绝并记录 reason：WorldContext、out/ref parameter、ref return、static array、`TArray/TSet/TMap`、interface、delegate、field path、ScriptMethod/ScriptMixin receiver projection，以及 RPC/Net。不同拒绝原因分别是 `needs-*-marshalling`，不是一个笼统 unsupported。
+
+Address backend 当前对不安全项不 emit 地址条目；Runtime 的通用 BlueprintCallable 反射主线可以继续提供部分函数，但不能把“该 module 的地址 shard”统计当成全部 AS API coverage。
+
+! 生成 shard 的内容
+
+每 256 条生成一份：
+
+```text
+AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_000.cpp
+```
+
+Shard包含：
+
+* owning function header 和非 Core USTRUCT 的额外 public headers；
+* 与 Runtime bridge 字段顺序一致的 call frame/binding/view POD 声明；
+* 每个 UFunction 的类型化 C++ thunk；
+* `FAngelscriptNativeModuleFunctionBinding[]` table；
+* module name、count、layout version 的 view；
+* ModularFeature 注册与 pre-exit 注销。
+
+Thunk从 `Frame->ArgSlots[Index]` 按准确 C++ type 解引用；instance method 先检查 `Self`；return 对 arithmetic/enum/pointer 直接赋值，对复杂值在 return slot placement-new。生成器只有在类型/header 完整可见时才能写出这段代码。
+
+! 跨模块 POD ABI
+
+Runtime canonical 定义在 `FunctionBinding/NativeModuleFunctionBindingBridge.h`：
+
+```cpp
+struct FAngelscriptNativeModuleFunctionBindingCallFrame
+{
+    void** ArgSlots;
+    uint16 ArgCount;
+    uint16 Reserved0;
+    void* ReturnSlot;
+    UObject* ScriptSelf;
+    UObject* WorldContext;
+    uint32 Flags;
+    uint32 Reserved1;
+};
+```
+
+Binding保存 `ClassName`、`FunctionName`、thunk、ArgCount、RetSize、Flags；View保存 Table、Count、ModuleName、LayoutVersion。当前 64-bit static asserts 分别要求 call frame 48 bytes、binding 32 bytes、view 32 bytes。
+
+Flags 当前定义：Static、Const、WorldContext、HasOutParams、ReturnByRef；高位保留。即使 policy 当前拒绝后三种复杂语义，字段/flags 仍属于 ABI，不能随意重用。
+
+! Layout version 是硬协议
+
+当前 token 位于：
+
+```text
+AngelscriptUHTTool/native-module-function-binding-layout-version.txt
+```
+
+UHT 读取第一个非注释 token，要求严格匹配 `0x` + 8 位 hex，并把它写进生成 view；Runtime 比较 `LayoutVersionExpected`。以下变化必须 bump：
+
+* 字段新增、删除、重排；
+* width、alignment、size 变化；
+* flags/new reserved bits 获得新语义；
+* Runtime reader 与 emitter 对同一字段解释不同；
+* call frame/return construction 合同变化。
+
+只改 C++ struct 而不 bump，会让旧 shard 被新 Runtime 当成兼容，产生最危险的静默错读。Bump 后旧 view 被明确 skip 并警告 expected/actual version，迫使全量重新 UHT/编译。
+
+! Feature 注册与验证
+
+Runtime `Bind_NativeModuleFunctionBinding.cpp` 在 `Late + 60`：
+
+# 订阅 feature registered/unregistered；
+# 订阅 `FCoreUObjectDelegates::OnObjectConstructed`；
+# 枚举已经注册的同名 feature；
+# 为每个 feature 建 `FNativeModuleFunctionBindingRegistrationState`；
+# 验证 view version、count/table/module name；
+# 尝试解析并注入每条 binding。
+
+Feature 的 C++类型在 Runtime 只被 `reinterpret_cast` 为 view，因此 layout/version validation 是信任边界。Malformed payload（负 count、非零 count 但空 table、空 module name）直接 skip 并警告。
+
+! UClass 延迟解析
+
+目标 module feature 可能早于对应 UClass 注册。Runtime 先尝试完整路径：
+
+```text
+/Script/<ModuleName>.<ClassName>
+```
+
+失败后尝试 native class source name 的 `U/A` 前缀去除兼容，再用 native-first 查找。仍找不到就把 binding index 留在 `PendingBindingIndices`，不是立刻报错。
+
+`OnObjectConstructed` 观察新 UClass 后会重试所有 state；每轮只处理 pending 集合，已注入项不重复。这个时序允许 feature/class 任一方先到，但要求 Class resolution 保持 game thread。
+
+! Thread 与状态所有权
+
+Feature callback 可能不在 game thread。注入函数检测线程并 `AsyncTask(GameThread)`；全局 state map 有 mutex，每个 state 也有 mutex和 atomic `bRegistered`。
+
+State 保存：feature pointer、是否仍注册、pending indices，以及成功注入的 `(UClass, FunctionName, UserData)`。UserData 指向目标 module table 条目，因而只能在 feature/DLL 活着时使用。
+
+线程安全目标不是让 AS bind registry 并行写，而是把外部 feature 事件序列化到 game thread，并保证 unregister 与已排队 inject 不会复活已经失效的 feature。
+
+! 注入与重复所有权
+
+解析 Class 后，如果 `ClassFunctionBindings` 已包含同名 function，NativeModule entry 跳过，不覆盖手工/generated owner。否则创建：
+
+* generic function pointer：`GAngelscriptNativeModuleFunctionBindingGenericThunk`；
+* generic caller + binding UserData；
+* `bUsesGenericCall = true`；
+* origin `NativeModule`。
+
+Generic thunk收集每个 AS argument address到 `void*` array，区分 static/instance Self，设置 return slot/flags 后调用目标 module thunk。Runtime并不直接保存 C++ member function pointer ABI，而是统一通过 target-generated C function thunk。
+
+! Unregister 与 DLL 卸载
+
+目标 module feature 注销时，函数地址即将失效。Runtime必须先让 state `bRegistered=false`，再在 game thread 从 bind map 移除注入项。
+
+清理使用三元身份保护：Class、FunctionName，以及 existing binding 的 `UserData` 是否仍等于该 state 注入的 table entry。若后来有其他 owner 替换了 binding，不会误删新 owner。
+
+非 game thread unregister 会先断开 feature pointer，再排队 game-thread removal；shutting down 时 unsubscribe registered/unregistered/ObjectConstructed delegates，阻止新的 state 注入。若忘记这条清理，generic thunk会跳进已卸载 DLL 的悬空地址。
+
+! Reload 与重新排队
+
+重新执行 bind pass 时，`RequeueRegisteredNativeModuleFunctionBindings` 把仍注册 state 的 pending标志重置，再重新解析/注入新 UClass generation。旧 `UClass*`/binding map 条目不能无限沿用；feature table本身属于目标 module binary，Class identity属于当前 reflection generation，两者生命周期不同。
+
+这也是为什么 state 不能只用一次性“feature registered”事件：Class full reload 发生时 feature未必重新注册，但 UClass pointer 已变化。
+
+! Failure atomicity
+
+各失败点的行为必须明确：
+
+|!失败 |!状态 |
+|layout/malformed view |不注入；保留 state 但报告 warning |
+|某条 null class/function/thunk |只 skip 该条 |
+|Class 暂未注册 |保留 index，后续重试 |
+|同名 binding 已存在 |不覆盖，也不记为 injected |
+|feature unregister |标未注册并清掉由它注入的全部 entry |
+|pre-exit |停止订阅，禁止新注入 |
+
+不能在处理 200 条中的第 100 条失败后把前 99 条当成无主数据；State 的 `InjectedBindings` 必须记录成功集合，以便精确回滚。
+
+! 诊断矩阵
+
+|!现象 |!先检查 |!常见根因 |
+|Editor 设置自动回到 None |engine distribution |不是 source build |
+|UBT/UHT 报 source engine required |classification evidence |InstalledBuild/未知 distribution |
+|view skipped layout mismatch |token、Runtime expected、生成 shard |改 ABI 未全量重生成/重编 |
+|feature 存在但一直 pending |ModuleName/ClassName、UClass 注册时序 |路径解析失败或 Class 根本不在 target |
+|函数被 skip 不生成 |Skipped CSV failure reason |out/container/RPC/mixin 等安全边界 |
+|同名函数仍用旧 owner |ClassFunctionBindings/provenance |已有手工/generated binding 优先 |
+|module unload 后调用崩溃 |unregister cleanup、UserData |悬空 target thunk 未移除 |
+|reload 后函数消失 |requeue/ObjectConstructed |新 UClass generation 未重新注入 |
+|偶发线程竞态 |callback thread、state registered flag |非 game-thread 直接写 bind map |
+
+日志应包含 feature module、layout actual/expected、binding index、Class/Function、pending/injected 数、origin 和 unregister state。
+
+! 维护同步清单
+
+修改后端时同时检查：
+
+# Editor、UBT、UHT 三层 source-distribution gate；
+# UHT safe signature policy/failure reasons；
+# target include collection 和每 shard 256 条边界；
+# emitter POD 与 Runtime bridge 字段/flags/size；
+# layout token、expected constant、bridge probe；
+# feature register/unregister/pre-exit；
+# Class pending/ObjectConstructed/reload requeue；
+# game-thread handoff 与两层 mutex/registered flag；
+# UserData identity guarded removal；
+# generic frame argument/return ABI。
+
+! 源码落点与继续阅读
+
+* `AngelscriptUHTTool/AngelscriptFunctionBindingPolicy.cs`：safe signature 与具体 skip reason；
+* `AngelscriptFunctionBindingCodeGenerator.cs` / `Emitters.cs`：目标 shard、thunk、table/view；
+* `AngelscriptRuntime/FunctionBinding/NativeModuleFunctionBindingBridge.h`：canonical POD ABI、flags、sizes；
+* `AngelscriptRuntime/Binds/Bind_NativeModuleFunctionBinding.cpp`：feature state、pending、注入、卸载清理和 generic thunk；
+* `native-module-function-binding-layout-version.txt`：跨模块版本 token；
+* <<as-doc-link "architecture-maintenance/public-api-compatibility" "公共 API 与兼容性纪律">>
+* <<as-doc-link "bindings-uht-extensions/marshalling-safety-boundary" "Marshalling 安全边界">>
+* <<as-doc-link "bindings-uht-extensions/generated-function-tables" "UHT 生成函数表">>

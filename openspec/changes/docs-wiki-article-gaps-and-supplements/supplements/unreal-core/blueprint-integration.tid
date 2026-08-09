@@ -1,0 +1,198 @@
+title: AS/Docs/zh-Hans/unreal-core/blueprint-integration
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Blueprint 协作边界
+description: 用稳定的反射属性、函数与 BlueprintEvent 让脚本承担规则、Blueprint 承担配置和表现，并管理默认值与资产兼容。
+as-sdk-document: yes
+as-doc-key: unreal-core/blueprint-integration
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 130
+as-content-revision: 2
+as-sources: [[script-examples]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: unreal-development
+as-nav-order: 120
+as-nav-parent: unreal-core/index
+as-feature-key: blueprint-integration
+
+! 先设计一条稳定的分界线
+
+AngelScript Class 可以成为 Blueprint 的父类。最有效的分工不是“程序员用脚本、设计师随便用 Blueprint”，而是把稳定规则与可变内容分开：
+
+|!脚本基类负责 |!Blueprint 子类负责 |
+|状态、不变量、生命周期、网络 authority |Mesh、材质、音效、VFX、动画与关卡引用 |
+|跨多个资产复用的流程 |每个资产的参数和少量表现分支 |
+|验证、错误处理、统一扩展点 |实现明确开放的 `BlueprintEvent` |
+|稳定的反射合同 |消费合同，不复制核心规则 |
+
+如果 Blueprint graph 重新实现整套规则，脚本无法保证不变量；如果脚本把所有内容路径和视觉细节写死，设计师又失去资产迭代能力。好的父类 API 通常只有少量可编辑属性、少量可调用动作和更少的可覆盖事件。
+
+! 一个完整交接例子
+
+仓库的 `Script/Examples/Extended/Example_BlueprintSubclass.as` 用 Pickup 展示了当前写法。可以整理为下面这条主线：
+
+```angelscript
+class APickupBase : AActor
+{
+    UPROPERTY(DefaultComponent, RootComponent)
+    USphereComponent CollisionSphere;
+
+    UPROPERTY(Category = "Pickup")
+    int PickupValue = 10;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Pickup")
+    bool bCollected = false;
+
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        CollisionSphere.OnComponentBeginOverlap.AddUFunction(this, n"OnOverlapBegin");
+    }
+
+    UFUNCTION()
+    void OnOverlapBegin(
+        UPrimitiveComponent OverlappedComponent,
+        AActor OtherActor,
+        UPrimitiveComponent OtherComponent,
+        int OtherBodyIndex,
+        bool bFromSweep,
+        const FHitResult&in Hit)
+    {
+        if (bCollected || OtherActor == nullptr)
+            return;
+
+        bCollected = true;
+        OnPickedUp(OtherActor);
+    }
+
+    UFUNCTION(BlueprintEvent)
+    void OnPickedUp(AActor Collector)
+    {
+        Log(f"{Collector.GetName()} picked up {PickupValue}");
+    }
+}
+```
+
+Blueprint 子类可以选择外观、修改 `PickupValue`，并覆盖 `OnPickedUp` 添加 VFX/声音；`bCollected` 的写入和重复收集保护仍留在脚本。`BlueprintEvent` 有脚本默认实现：Blueprint 不覆盖时仍有完整行为，覆盖时由 Unreal 的事件分派进入 Blueprint。
+
+! 三类函数不要混用
+
+|!声明 |!语义 |!典型用途 |
+|普通 `UFUNCTION()` |进入 Unreal 反射，可供 delegate/timer/Blueprint 调用，具体可见性受 flags 控制 |对外动作、反射回调 |
+|`UFUNCTION(BlueprintEvent)` |本类定义一个可被 Blueprint/脚本子类覆盖的虚拟扩展点 |视觉反馈、项目定制钩子 |
+|`UFUNCTION(BlueprintOverride)` |当前脚本方法覆盖父类已经存在的 Blueprint event |`BeginPlay`、父脚本事件、引擎事件 |
+
+`BlueprintEvent` 是“声明扩展点”，`BlueprintOverride` 是“实现父合同”。父类事件可覆盖时却漏写 `BlueprintOverride`，当前 ClassGenerator 在 Editor 分析阶段会给出诊断；反过来，给没有对应父事件的方法加 override 也不是新建事件的正确方式。
+
+不要把每个内部 helper 都做成 BlueprintEvent。每个事件都会成为持久反射 API，未来改名/改参数会影响 Blueprint 节点。优先暴露语义稳定的时刻，例如 `OnPickupPresentationRequested(Context)`，而不是把十个内部步骤逐一开放。
+
+! 属性是作者合同
+
+一个公开属性同时影响脚本、Details 面板、Blueprint Class Defaults、场景实例与序列化。声明前要明确它允许在哪一层修改：
+
+|!意图 |!建议表达 |
+|项目/资产作者配置 |`UPROPERTY(Category = "...")`，再按实际需要限制实例编辑 |
+|Blueprint 可读但流程独占写入 |`BlueprintReadOnly` |
+|派生计算结果，不允许作者改 |`BlueprintReadOnly, NotEditable` |
+|内部强引用，只为 GC/序列化 |`UPROPERTY()`，不必公开 Category |
+|固定组件模板 |`DefaultComponent`，配合 `RootComponent`/`Attach` |
+
+Category、tooltip、显示名等元数据影响作者体验；名称、类型、容器形状、可编辑性、复制/保存 flags 则更接近行为和序列化合同。不要把“Blueprint 面板看起来没变”当作反射兼容证明。
+
+! 默认值有四个观察层
+
+```text
+脚本 Class 默认值（AS CDO）
+        ↓ 继承并可覆盖
+Blueprint Class 默认值（BP CDO）
+        ↓ 生成/放置并可覆盖
+场景或运行实例
+        ↓ 运行时状态变化
+当前实例值
+```
+
+脚本把 `PickupValue` 从 10 改成 20 后：新脚本 CDO 会是 20；从未覆盖该字段的 Blueprint 通常可以继承新值；已经在 Blueprint Class Defaults 显式保存 15 的资产应继续是 15；场景实例还可能有自己的 override。只检查一个新 Spawn 出来的纯脚本 Actor，会漏掉最重要的资产迁移问题。
+
+默认值重载后的检查表：
+
+# 纯脚本 CDO 是否是新值；
+# 未 override 的 Blueprint CDO 是否继承新值；
+# 显式 override 是否被保留；
+# 已放置实例是否按设计迁移；
+# 组件模板、attach 和 Blueprint Components 面板是否一致。
+
+需要强制改变既有资产含义时，不要依赖“改默认值会自动覆盖所有人”。把它当成数据迁移：识别旧值/版本，显式升级，并保留设计师主动 override 的意图。
+
+! 反射 API 为什么比普通脚本函数更难改
+
+Blueprint 资产会持久保存：
+
+* ParentClass 的 UClass 路径；
+* 调用节点对应的 UFunction 和 owning class；
+* pin 的名称、方向、类型与默认值；
+* 变量/容器/struct/enum 类型；
+* delegate signature 和事件节点；
+* 指向脚本生成资产的引用。
+
+因此以下改动都要按兼容变更处理：Class/函数/属性 rename，函数参数增删或改名，返回类型变化，property 类型/容器变化，delegate signature 变化，BlueprintEvent flags 变化，以及父类调整。仅改函数 body 风险最低；只改 tooltip/Category 通常偏作者体验，但仍要检查依赖 UI。
+
+安全演进常用“先加后删”：新增新函数，旧函数保留一段时间并转发；迁移 Blueprint 调用；扫描旧引用；最后删除旧合同。Class rename 需要实际旧/新反射路径与 CoreRedirect/资产迁移，不能只在脚本文本里改名字。
+
+! Blueprint Impact Scanner 能告诉你什么
+
+`AngelscriptEditor/BlueprintImpact/` 会从变化脚本模块建立 Class、Struct、Enum、Delegate 等 symbol 集，再分析 Blueprint 资产。当前匹配原因包括：
+
+|!Reason |!说明 |
+|`ScriptParentClass` |Blueprint 直接或间接继承受影响脚本 Class |
+|`NodeDependency` |Graph node 依赖受影响对象/UFunction |
+|`PinType` |节点 pin 使用受影响 Class/Struct/Enum |
+|`VariableType` |Blueprint 变量使用受影响类型 |
+|`DelegateSignature` |事件/delegate 节点使用受影响签名 |
+|`ReferencedAsset` |资产引用命中受影响对象 |
+
+Scanner/Commandlet 的职责是报告候选资产及原因，不等于证明所有资产已经成功迁移，也不应被描述成“它自己会完整编译所有匹配项”。调用流程可以据此做定向加载、编译或 CI 审计；发生 failed asset load 时，扫描结果本身也不完整，不能把零匹配当成零影响。
+
+结构变化后，先看匹配原因，再对高风险资产打开/编译/保存。无条件全量重编译虽然能暴露部分问题，却会掩盖“依赖分析有没有漏报”这一能力本身，并让每次迭代成本不可控。
+
+! 生命周期与 Blueprint 事件
+
+Blueprint 覆盖可以在脚本流程中执行任意 Blueprint graph，因此调用点就是外部扩展边界：
+
+* 调用前先建立脚本不变量，避免 Blueprint 看到半初始化状态；
+* 不假设事件一定调用父实现；必要核心逻辑放在不可覆盖 helper 中；
+* 事件返回后重新检查可能被 Blueprint 修改/销毁的对象；
+* 网络 Actor 上明确事件在哪一端调用，不把 Client VFX 扩展点误当 Server 规则；
+* teardown 中的事件保持最小，不让 Blueprint 重新注册长期 timer/delegate。
+
+如果事件允许 Blueprint 决定结果，名字和返回值要直说，例如 `CanCollect`；如果事件只通知表现，使用 `OnCollected` 一类命名。模糊的 `HandleThing` 会让作者不知道能否改变状态。
+
+! Packaging 与可选模块
+
+Blueprint 父类解析依赖脚本 Class 在 runtime 初始化时存在。正式资产不要继承 `Script/Examples`、Editor-only 或 Test 模块中的临时 Class；父脚本应位于产品正式脚本根，并且使用的可选插件在目标构建启用。
+
+Cooker 能沿 Blueprint ParentClass/属性引用收集依赖，但动态字符串查找的脚本 Class 和资产需要项目 cooking 规则。Editor 中能打开资产不代表 packaged build 中父类可用；交付验证应关注 missing parent、Editor-only symbol、未加载 optional plugin 与 uncooked asset。
+
+! 故障定位
+
+|!现象 |!先检查 |!常见原因 |
+|Blueprint 看不到函数 |函数是否 `UFUNCTION`、可调用 flags、Class 是否 reload |只有普通脚本函数，或仍在旧 Class generation |
+|事件无法 Override |`BlueprintEvent`/父事件和签名 |把定义写成 Override，或参数不匹配 |
+|脚本覆盖父事件报错 |`BlueprintOverride` 与父 UFunction |漏 specifier、父函数不是 Blueprint event |
+|改默认值但 Blueprint 不变 |BP CDO 是否保存 override |资产显式值优先于父脚本新默认值 |
+|节点断 pin |旧/新参数名、类型和方向 |直接破坏持久 UFunction 合同 |
+|只有部分资产出问题 |Impact reason、load failure、间接依赖 |扫描未成功加载资产，或存在更深依赖 |
+|Editor 正常、package missing parent |脚本路径、模块和 Cook 依赖 |正式资产依赖了 Editor/Examples/可选未启用模块 |
+
+诊断时同时记录脚本 Class、生成 UClass 路径、Blueprint 资产路径、ParentClass、reload 类型和 Impact reason。只说“蓝图坏了”无法区分父类失效、节点签名变化和默认值迁移。
+
+! 源码落点与继续阅读
+
+* `Script/Examples/Extended/Example_BlueprintSubclass.as`：脚本父类、可编辑属性与 `BlueprintEvent`；
+* `Script/Examples/Core/Example_Functions.as`、`Example_FunctionSpecifiers.as`：全局 Blueprint 节点和函数 flags；
+* `AngelscriptRuntime/ClassGenerator/`：脚本描述到 UClass/UFunction/UProperty 的生成与 override 诊断；
+* `AngelscriptEditor/BlueprintImpact/`：受影响 symbol、资产匹配原因与 Commandlet 输出；
+* <<as-doc-link "start/blueprint-handoff" "第一次交给 Blueprint">>
+* <<as-doc-link "topics-integrations/blueprint-subclass-workflow" "脚本基类与 Blueprint 子类">>
+* <<as-doc-link "hot-reload/blueprint-child-and-defaults" "Blueprint、CDO 与默认值迁移">>

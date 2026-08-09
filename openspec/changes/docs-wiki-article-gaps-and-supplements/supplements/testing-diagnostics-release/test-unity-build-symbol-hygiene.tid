@@ -1,0 +1,232 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/test-unity-build-symbol-hygiene
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 测试 Unity Build 符号卫生
+description: 解释 UBT Unity Build 为何会破坏单个测试 cpp 的表面隔离，并给出基于当前源码的命名空间、私有辅助、直接包含与 SDK 内部类型边界。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/test-unity-build-symbol-hygiene
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[openspec]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: test-unity-build-symbol-hygiene
+
+! 这篇文章解决什么问题
+
+`AngelscriptTest.Build.cs` 明确设置 `bUseUnity = true`。因此，开发者写下的多个测试 `.cpp` 并不一定分别成为独立翻译单元；Unreal Build Tool 可以生成 `Module.AngelscriptTest.<n>.cpp`，再以文本包含的方式把一组 `.cpp` 拼进同一个翻译单元。
+
+这会改变代码审查时最容易忽略的三个事实：
+
+# 某个 `.cpp` 顶层的 `using namespace` 会继续影响同一 Unity 文件中排在它后面的 `.cpp`；
+# 多个被拼接文件中的 `namespace {}` 属于同一个最终翻译单元，重复的短辅助名可能重定义或参与同一名称查找；
+# 某个 `.cpp` 因前一个 `.cpp` 先包含了头文件而“碰巧可编译”，不代表它具备独立编译所需的依赖。
+
+历史故障并非理论推演：归档变更 `fix-angelscript-test-unity-symbol-scope` 记录过两个 Binding 异步测试的 `WaitUntil` 重名、GameInstance 与 Subsystem 测试间的 `LocalPlayerControllerId` 歧义，以及 Core 文档测试中 `ScriptFilename` 触发 `/w4459`。本页把这些现象整理成可维护的源码边界，同时区分“项目规则”“当前源码状态”和“后续清理目标”。
+
+<<as-callout warning "适用范围">>
+本页只约束 `Plugins/Angelscript/Source/AngelscriptTest/**/*.cpp` 一类 C++ 测试翻译单元。它不约束 `.as` 脚本中的命名空间，也不建议通过关闭 Unity Build 来隐藏符号所有权问题。
+<</as-callout>>
+
+! Unity 拼接后的真实名称查找模型
+
+把两个文件简化为以下结构：
+
+```cpp
+// A.cpp
+namespace { bool WaitUntil(); }
+using namespace AngelscriptNativeTestSupport;
+
+// B.cpp
+namespace { bool WaitUntil(); }
+void RunCase() { BuildModule(...); }
+```
+
+非 Unity 构建时，A 与 B 是两个翻译单元，两个匿名命名空间彼此独立。Unity 构建近似于：
+
+```cpp
+#include "A.cpp"
+#include "B.cpp"
+```
+
+预处理后只剩一个翻译单元。A 的 using-directive 没有“文件结束自动失效”的语义；B 中未限定的 `BuildModule` 可能因此错误地解析成功。两个匿名命名空间也不再提供跨 `.cpp` 的隔离。更危险的是，UBT 只要调整 Unity 分组或包含顺序，原本被掩盖的缺失 include、二义性或重定义就会突然出现。
+
+因此，健康目标不是“当前 Unity 分组能编过”，而是：
+
+> 每个测试 `.cpp` 的名称查找只由它自己的直接包含、显式限定和函数局部导入决定；改变 Unity 分组不得改变解析结果。
+
+! 规则矩阵
+
+|!代码形态|!项目规则|!原因与修复|
+|文件顶层 `using namespace ...TestSupport;`|测试辅助命名空间不得这样导入|移到实际使用它的 `TEST_METHOD`、`BEFORE_*` / `AFTER_*` 函数体，或显式限定符号|
+|任意作用域 `using namespace Foo_Private;`|禁止|`_Private` 表示明确所有权；使用 `Foo_Private::MakeFixture()`，不要重新扩大查找范围|
+|仅供一个 `TEST_CLASS_WITH_FLAGS` 使用的文件级 helper|默认移入该测试类|放进 `private:`；在 CQTest 钩子和 `TEST_METHOD` 前恢复 `public:`，避免破坏宏注册可见性|
+|多个 CQTest 类共享 helper|不可强塞进其中一个类|建立有名称的共享 helper / 基类，或保留文件级所有者并逐处显式限定|
+|匿名命名空间中的 `Run`、`WaitUntil`、`Config` 等短名|需要主动评估冲突|改为带主题语义的名字，或移入唯一拥有者；`static` 不能恢复 Unity 前的文件隔离|
+|`AngelscriptFunctionalTestUtils` 等广域功能命名空间|历史首轮允许暂留|一旦发生歧义，应函数局部导入或用 `AngelscriptFunctionalTestUtils::` 限定；“暂留”不是推荐新写法|
+|依赖其他 `.cpp` 先 include 某头文件|禁止|本文件直接包含声明其所用宏、类型和函数的 owning header|
+|为解决内部/公开 SDK 指针转换而使用 `reinterpret_cast`|不推荐|包含使继承关系完整可见的内部头，再进行标准派生到基类转换；不要用不安全转换掩盖 incomplete type|
+
+! 命名空间所有权：什么可以局部导入
+
+!! 共享 SDK 支持命名空间
+
+`AngelscriptNativeTestSupport` 与 `AngelscriptSDKTestSupport` 是共享支持层，不是某个文件的私有所有者。一个较长的测试方法若大量使用其中的类型，可以在该函数体内局部导入：
+
+```cpp
+TEST_METHOD(CompilesAndExecutes)
+{
+    using namespace AngelscriptSDKTestSupport;
+
+    FSdkFunctionInvoker Invoker(...);
+    // ...
+}
+```
+
+若只用一两个符号，显式限定更能暴露依赖：
+
+```cpp
+AngelscriptSDKTestSupport::ExecuteScriptFunction(
+    *TestRunner, ScriptEngine, Module, "int Entry()", Result);
+```
+
+同一命名空间被五个方法使用时，在五个函数体中重复局部导入是有意的隔离成本。C++ 不允许在类作用域放置 using-directive，所以“放入 CQTest 类内”必须理解为放进方法或生命周期钩子的函数体，而不是宏展开后的类体。
+
+!! `_Private` 命名空间
+
+`Foo_Private` 的名字已经声明“这些符号有窄所有者”。项目规则要求在任何作用域都不写 `using namespace Foo_Private;`。如果辅助确实需要保留为文件级共享所有者，调用点写完整限定名：
+
+```cpp
+const auto Fixture = AngelscriptTest_Core_Docs_Private::MakeFixture();
+```
+
+如果辅助只服务于一个 `TEST_CLASS_WITH_FLAGS`，更好的终态是把常量、嵌套结构、静态函数和 fixture 状态移入类的 `private:` 区域：
+
+```cpp
+TEST_CLASS_WITH_FLAGS(FDocsTests, "Angelscript.Core.Docs", EAutomationTestFlags::EditorContext)
+{
+private:
+    static FString MakeScriptFilename();
+
+public:
+    TEST_METHOD(LoadsDocumentedExample)
+    {
+        const FString DocsScriptFilename = MakeScriptFilename();
+        // ...
+    }
+};
+```
+
+这里恢复 `public:` 不是风格偏好，而是为了让 CQTest 的钩子与测试注册宏继续处于预期访问区。若辅助被多个类共享，则不能为了消除命名空间而错误地改变所有权或复制实现。
+
+! 直接包含：按真实 owning header 选择
+
+当前仓库中，常用符号与声明位置如下。这里列的是已经核对过的真实路径，不沿用旧规范中已经过时的 `AngelscriptSDKTestExecutionHelpers.h` 或笼统的 `AngelscriptNativeTestSupport.h` 名称。
+
+|!需要的符号|!当前 owning header|!说明|
+|`FSdkFunctionInvoker`、`ExecuteScriptFunction<T>`|`AngelScriptSDK/Support/AngelscriptNativeExecutionTestSupport.h`|命名空间为 `AngelscriptSDKTestSupport`；模板为 `bool`、`int32`、`double`、`float` 等结果提供执行封装|
+|公共 native fixture、编译与核心访问辅助|`AngelScriptSDK/Support/AngelscriptNativeCoreTestSupport.h`|其中也定义共享的 `AngelscriptNativeTestSupport::FParserAccessor`|
+|更窄的 parser 深度辅助|`AngelScriptSDK/Support/AngelscriptNativeParserDepthTestSupport.h`|需要 `asCModule` 等内部实现时，它自行以 Start/End wrapper 包住内部头|
+|生命周期 fixture|`AngelScriptSDK/Support/AngelscriptNativeLifecycleTestSupport.h` 或 `...NativeFixtureTestSupport.h`|按实际使用的 fixture 选择，不要一律包含 Core 大头|
+|`ASTEST_CREATE_ENGINE`、`ASTEST_GET_ENGINE`、`ASTEST_CREATE_ENGINE_FULL`、`ASTEST_CREATE_ENGINE_NATIVE`、`ASTEST_RESET_ENGINE`|`Shared/AngelscriptTestMacros.h`|`AngelscriptTest.Build.cs` 为本模块加入 `Shared/` 私有 include path，模块内部通常写短 include 名|
+|`CreateIsolatedFullEngine`|`Shared/AngelscriptTestEngineAcquisition.h`|返回测试自有的完整 engine|
+|`AcquireTransientFullTestEngine`、`AcquireTransientFullTestEngineWithProbe`|`Shared/AngelscriptTestMemoryProbe.h`|这两个函数不在 Acquisition 头；MemoryProbe 依赖 Acquisition 与 Cleanup|
+
+一个常见误判是看到 `FParserAccessor` 在 `Frontend/AngelscriptNativeParserInternalTests.cpp` 还有文件局部同名结构，就断言所有 parser 测试都应包含该 `.cpp` 或某个虚构 umbrella。实际应先确认使用的是文件私有实现还是 `AngelscriptNativeCoreTestSupport.h` 中的共享实现，再包含相应的头。
+
+`AngelscriptTest.Build.cs` 把模块根目录设为 public include path，并把 `Shared/`、`AngelScriptSDK/` 等设为本模块 private include path。这只影响头文件查找写法，不改变依赖所有权：include path 能让一个短路径被找到，不代表其他 `.cpp` 已经替本文件声明了符号。
+
+! AngelScript 内部类型跨公开接口
+
+当前 fork 的 `source/as_module.h` 明确定义：
+
+```cpp
+class ANGELSCRIPTRUNTIME_API asCModule : public asIScriptModule
+```
+
+当测试持有 `asCModule*`，而目标 API 接受 `asIScriptModule*` 时，标准的派生到基类转换只有在编译器看得到上述继承关系时才成立。只看到 `class asCModule;` 的前置声明并不够。
+
+需要内部类型的 SDK 测试应使用项目的第三方头包装：
+
+```cpp
+#include "StartAngelscriptHeaders.h"
+#include "source/as_module.h"
+#include "EndAngelscriptHeaders.h"
+```
+
+随后可以把 `asCModule*` 直接传给接受 `asIScriptModule*` 的函数，或在边界写清晰的 `static_cast<asIScriptModule*>(Module)`。仅仅加 `reinterpret_cast` 并不能修复依赖自包含性，反而绕过了类型系统；如果转换是为了公开“只需 public interface”的所有权，优先在获得模块时就存成 `asIScriptModule*`。
+
+`FAngelscriptModuleDesc::ScriptModule` 的当前使用点已经可以直接传给 `GenerateStaticJITAotArtifactsForDiagnostics(asIScriptModule*, ...)`。维护者若再次遇到相关编译错误，第一检查项应是定义 `FAngelscriptModuleDesc` 的头是否使字段的实际静态类型与继承关系可见，而不是依赖另一个 Unity 成员偶然包含 `as_module.h`。
+
+! 当前源码状态：完成项与回归候选要分开
+
+归档变更曾记录首轮迁移前共有 127 个必改导入（97 个文件），并完成 `_Private` using-directive 清理。当前只读源码扫描仍能确认：`Plugins/Angelscript/Source/AngelscriptTest/**/*.cpp` 中没有 `using namespace ..._Private;`。
+
+但是，当前源码又出现了 11 个文件顶层的 `using namespace AngelscriptNativeTestSupport;`：
+
+* `AngelScriptSDK/Runtime/Debug/AngelscriptNativeExceptionCaughtQueryTests.cpp`
+* `AngelScriptSDK/Frontend/AngelscriptNativeStringOwnershipDepthTests.cpp`
+* `AngelScriptSDK/Frontend/AngelscriptNativeStringInternalTests.cpp`
+* `AngelScriptSDK/Language/Variables/AngelscriptNativeVariableInitializationTests.cpp`
+* `AngelScriptSDK/Language/Variables/AngelscriptNativeLanguageVariableScopeTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionArityTypeStressTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionParameterDirectionTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionParameterPositionTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionDirectionDefaultTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionTypedDefaultArgumentTests.cpp`
+* `AngelScriptSDK/Language/Functions/AngelscriptNativeFunctionValueLifecycleTests.cpp`
+
+这份清单是本文编写时的源码快照，不是声称这些文件已经被本文修改。它们属于规则回归候选：维护者应逐文件把导入移到需要它的测试方法 / hook，或显式限定符号，并检查每个文件是否直接包含对应 Support 头。本 OpenSpec 变更只补文章，因此没有借文档任务修改这些测试源码。
+
+<<as-callout note "为什么不能把历史完成状态当当前事实">>
+归档任务能证明当时的扫描与构建结果，不能证明后来新增的测试永远满足同一规则。文档同时保留历史基线和当前候选清单，才有诊断价值。
+<</as-callout>>
+
+! 从编译错误反推根因
+
+|!现象|!优先检查|!不要先做什么|
+|重复定义、匿名命名空间 helper 冲突|生成 Unity 文件中是否拼入两个同名 helper；给 helper 增加主题所有权或移入 CQTest 类|不要简单给两处都加 `static`；Unity 后仍在同一翻译单元|
+|未限定调用变成二义性|前序 `.cpp` 的 file-level using-directive；当前文件的短变量/函数名|不要根据当前包含顺序加另一条 using-directive|
+|`/w4459` 局部变量遮蔽|Unity 单元中更宽作用域是否已有同名；把 `ScriptFilename` 一类名字改成上下文名称|不要全局关闭该警告|
+|非 Unity 编译缺少声明|本 `.cpp` 是否直接包含 owning header|不要往 PCH 或 umbrella 塞头来“让所有文件都看见”|
+|`asCModule*` 不能转换成 `asIScriptModule*`|是否只有前置声明，是否遗漏 wrapped `source/as_module.h`|不要以 `reinterpret_cast` 掩盖 incomplete inheritance|
+|单独编译通过、Unity 才失败|匿名 helper、file-level using、宏或 include 状态是否跨 `.cpp` 泄漏|不要关闭 `bUseUnity` 作为最终修复|
+
+! 维护流程
+
+# 先定位错误所在的生成 Unity `.cpp`，确认它包含了哪些测试源文件以及顺序；生成文件是证据，不是要修改的源码。
+# 回到每个原始 `.cpp`，列出文件顶层 using-directive、匿名命名空间短名、所用 helper 与直接 include。
+# 按所有权修复：单类 helper 进类，`_Private` 显式限定，共享 SDK namespace 只在函数体局部导入，冲突短名改成主题名称。
+# 对每个 helper 查到真实声明头；不要从另一个 `.cpp` 的 include 清单复制推测。
+# 若接触 SDK 内部类，以 `StartAngelscriptHeaders.h` / `EndAngelscriptHeaders.h` 包住所需的 `source/*.h`，并在公开 API 边界保留标准类型转换。
+# 先做静态扫描，再分别考虑 Unity 与非 Unity / adaptive non-unity 的构建验证。后者用于证明每个文件自包含，前者用于证明拼接后无泄漏。
+
+本页对应的历史静态审计入口保存在归档 OpenSpec 变更的 `scan-file-level-using.ps1`。它适合复核规则，但归档路径不是产品构建入口；长期自动化若要依赖此检查，应把脚本迁到受维护的 `Tools/Diagnostics/` 或当前活动变更，而不是悄悄依赖归档文件。
+
+<<as-callout warning "本文的验证边界">>
+本轮只进行文章实现与只读源码核对，按任务要求没有运行构建或测试。本文列出的 11 个候选来自当前源码扫描；它们需要独立的测试源码清理变更才能宣称修复。
+<</as-callout>>
+
+! 源码地图
+
+|!位置|!用于核实什么|
+|`Plugins/Angelscript/Source/AngelscriptTest/AngelscriptTest.Build.cs`|`bUseUnity = true`、模块 include path 与依赖配置|
+|`Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/Support/`|Native SDK helper 的细粒度 owning headers|
+|`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestMacros.h`|`ASTEST_*` 宏的真实定义|
+|`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineAcquisition.h`|隔离 / 共享测试 engine 的获取接口|
+|`Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestMemoryProbe.h`|transient full engine 与内存探针接口|
+|`Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_module.h`|`asCModule : public asIScriptModule` 的真实继承|
+|`openspec/changes/archive/2026-06-24-fix-angelscript-test-unity-symbol-scope/`|历史故障、迁移决策、首轮数量与扫描脚本|
+|`openspec/specs/angelscript-test-unity-build-symbol-hygiene/spec.md`|持久规则；其中旧 helper header 示例需要以当前源码地图为准更新|
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/test-utilities-header-layout" "测试工具头文件布局">> —— umbrella、主题头与包含边界
+* <<as-doc-link "testing-diagnostics-release/test-helper-api" "测试辅助 API">> —— 模块内外的 include 入口与依赖边界
+* <<as-doc-link "testing-diagnostics-release/native-sdk-test-coverage" "原生 SDK 测试覆盖">> —— Native SDK 测试层级与支持工具
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 本主题导航首页

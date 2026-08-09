@@ -1,0 +1,148 @@
+title: AS/Docs/zh-Hans/editor-ide-debugging/debug-session-lifecycle
+type: text/vnd.tiddlywiki
+tags: EditorIdeDebugging
+caption: Debug Session 生命周期
+description: 从 DebugServer 握手、断点同步、暂停/继续到断连清理，理解 DAP 会话与脚本 Engine 的关系。
+as-sdk-document: yes
+as-doc-key: editor-ide-debugging/debug-session-lifecycle
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: internals
+as-content-status: draft
+as-order: 110
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 250
+as-nav-parent: editor-ide-debugging/index
+as-feature-key: debug-session-lifecycle
+
+! 会话不是全局永久状态
+
+DebugServer V2 为 VS Code Debug Adapter 提供 DAP 协议入口。一次会话经历监听/连接、能力初始化、source/breakpoint 同步、运行事件、暂停栈查询和断连。它绑定具体活跃脚本 engine/context，shutdown 或 engine replacement 时必须释放。
+
+! 典型顺序
+
+```
+server listen
+  -> client connect / initialize
+  -> source + breakpoint requests
+  -> execution starts
+  -> stopped event
+  -> stack / scopes / variables
+  -> continue or step
+  -> disconnect / engine shutdown cleanup
+```
+
+协议消息、transport 与 VM 调试状态分层：网络包到达不代表断点能解析；断点解析成功也不代表当前 context 会执行该 source line。
+
+! Owner 与状态机
+
+```text
+StoppedServer
+  → Listening
+  → ClientConnected
+  → Initialized/Configured
+  → Running ↔ Paused
+  → Disconnecting
+  → Listening or StoppedServer
+```
+
+|!状态|!允许的核心操作|!持有的引用|
+|Listening|接受连接|server/transport，不持有暂停 context|
+|Connected 未配置|initialize/capability negotiation|session + request ids|
+|Configured/Running|set breakpoints、continue/pause request|source maps、active engine weak identity|
+|Paused|stack/scopes/variables/evaluate/step|明确的 stopped context/function generation|
+|Disconnecting|拒绝新执行控制、取消 pending|按顺序释放 context/session/transport|
+
+Server/module owner 管监听与 transport；session 管 protocol state/pending requests；script engine/context 管执行；source map/breakpoint registry 管逻辑位置。任何 process-global convenience pointer 都必须验证当前 engine generation。
+
+! 协议层与执行层
+
+```text
+DAP JSON request/event
+  ↔ DebugServer V2 transport/session
+  ↔ editor debug bridge
+  ↔ AS engine debugger hooks
+  ↔ context/function/line table
+```
+
+`initialize` 成功只证明 wire capability 协商；`setBreakpoints` 还要解析 source；`continue` 还要有暂停 context。每层错误应返回对应 protocol error，而不是断开连接或访问 null context。
+
+! Breakpoint 生命周期
+
+Breakpoint 稳定输入是 canonical logical source path + 用户 line/column；运行时解析结果是特定 generation function + instruction/line entry：
+
+```text
+requested breakpoint
+  → normalize source/provider identity
+  → find active compiled functions/ranges
+  → choose executable line
+  → publish verified/unverified result
+```
+
+文件尚未编译、line 无指令或 module 缺失时可以保留 unverified request，待 compile/reload 后重解析。不能缓存裸 bytecode offset 跨 reload。
+
+! 断点与热重载
+
+断点应按逻辑 source path + line 表达。热重载替换函数 body 后，旧 bytecode offset 不再可靠，需要重新映射到新函数/行表。编译失败保留 last-good 模块时，断点仍对应旧活动实现，同时客户端应看到新诊断而不是半迁移断点。
+
+Reload 提交顺序应是：candidate 成功 → publish new functions/line tables → invalidate old resolved locations → re-resolve logical breakpoints → 发送 verified/changed 状态。若 active context 正停在旧 function，应允许它保持 old generation 的 stack 或先安全中止；不能用新 offsets 改写旧 instruction pointer。
+
+! 暂停时查询
+
+Stack、scope、变量和 evaluate 请求只在有效暂停 context 上有意义。对象/容器格式化要避免触发有副作用的任意脚本执行；失效 UObject、已卸载 module 或 teardown 中 context 应返回明确错误，而非访问旧地址。
+
+Paused snapshot 至少绑定 stop id/session id/context generation。Continue/step 后旧 variables reference 必须失效；客户端迟到的 variables/evaluate 请求不能落到已经恢复运行或被池复用的 context。
+
+|!请求|!安全边界|
+|stackTrace|读取暂停 frames/line tables，不触发脚本|
+|scopes|只枚举 frame-owned locals/this/globals 可见 view|
+|variables|格式化 bounded data；检测 UObject validity/递归深度|
+|evaluate|区分纯查看与允许执行；默认不在 teardown/错误 context 任意调用|
+|step|为当前 context 安装临时执行控制，完成/断连时清理|
+
+! 多 Engine、PIE 与线程
+
+Editor 进程可能经历多个 PIE/GameInstance context，甚至 engine recreate。Session 必须知道当前可调试 engine/context；World 结束时 stop/continue 事件不能误投另一个 PIE。VM 断点/对象查看通常依赖游戏线程，transport 收包线程需要把执行控制安全调度到 owner 线程，而不是直接读 VM state。
+
+! 清理
+
+断连、PIE 结束、Editor shutdown 与 engine 重建都需清除 socket/session、pending request、breakpoint mapping 和 context 引用。多 engine 场景不能由一个 process-global session 错绑到另一 engine。
+
+推荐 teardown 顺序：
+
+# 标记 session disconnecting，停止接受新的 evaluate/step/variables。
+# 取消或完成 pending requests，解除 VM pause/step/line callbacks。
+# 释放 stopped context/frame/variables reference，保留需要发送的纯值错误信息。
+# 清 resolved breakpoint offsets；逻辑 breakpoint 是否保留到重连由产品策略决定。
+# 关闭 client transport/socket，再停止 listener/module。
+# Engine shutdown 最后释放 function/module/line tables。
+
+顺序反转会让 socket callback 或变量格式器访问已释放 engine。
+
+! 故障矩阵
+
+|!现象|!优先检查|
+|连接成功但 breakpoint 一直 unverified|logical path/provider、module 是否编译、line 是否可执行|
+|reload 后停在错误行|缓存旧 function/bytecode offset，未按逻辑位置重解析|
+|Continue 后 variables 仍偶尔返回别的值|context pool 复用但 variables reference 没绑定 stop id|
+|PIE2 命中 PIE1 断点/context|session 使用 process-global current engine 指针|
+|断连/关 Editor 崩溃|transport/pending request 晚于 engine/function 释放|
+|VM 能停、JIT 不能|StaticJIT line/step hooks 与 VM debug metadata 未对齐|
+|只看到生成 helper stack|preprocessor/source mapping 未折回用户声明|
+
+! 维护不变量
+
+* DAP request 只能操作匹配 session/stop/context generation 的状态；
+* logical breakpoint 可跨 reload，resolved offset 不可；
+* compile failure 保留 last-good executable 与其 breakpoint mapping；
+* variable view 不执行无界/有副作用脚本，不持有裸对象跨 continue；
+* shutdown 先断回调/请求，再释放 engine-owned functions/contexts；
+* protocol version/capability 与 VS Code extension wire contract 同步演进。
+
+! 相关链接
+
+* <<as-doc-link "editor-ide-debugging/debugger-protocol-v2" "Debugger Protocol V2">>
+* <<as-doc-link "editor-ide-debugging/debugging-breakpoints" "断点调试">>
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行 Context">>

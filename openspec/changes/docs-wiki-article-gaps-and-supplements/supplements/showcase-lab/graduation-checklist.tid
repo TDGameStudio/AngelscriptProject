@@ -1,0 +1,121 @@
+title: AS/Docs/zh-Hans/showcase-lab/graduation-checklist
+type: text/vnd.tiddlywiki
+tags: ShowcaseLab
+caption: 实验毕业清单
+description: 判断 Lab 何时可升级为 Pattern/Base，并要求真实页面、作者合同、无障碍、离线、打印和失败态证据。
+as-sdk-document: yes
+as-doc-key: showcase-lab/graduation-checklist
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: checklist
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[openspec]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 160
+as-nav-parent: showcase-lab/index
+as-feature-key: showcase-graduation-checklist
+
+! Catalog 先行
+
+实验毕业不是把 `state` 从 `experiment` 手改成 `mapped`。先完成该 Catalog 行的 `planned-verification`，再决定它应成为稳定原子 Base，还是带组合合同的 Pattern。
+
+! 先决定毕业去向
+
+|!问题|!是|!否|
+|它是单一、可独立复用的作者原子能力吗？|候选 Base|继续下一问|
+|它把多个原子能力组成固定技术叙事、需要参数和阅读顺序吗？|候选 Pattern|可能继续留 Lab 或只做一次性页面|
+|真实文档没有采用需求，只是研究渲染可能性吗？|留 Lab|继续评审|
+
+毕业不要求每个实验都变成公共组件。一次性研究可以形成设计结论后归档；如果普通表格/正文已经足够，最好的毕业结果可能是“不创建新组件”。
+
+! 必需条件
+
+# 有至少一个真实文档页面采用，而非只在 showcase 自证；
+# 作者输入、默认值、escaping、空/错误行为和嵌套边界明确；
+# 键盘、focus、语义 DOM/ARIA、screen reader 顺序可用；
+# 窄屏、200% zoom、长 token、打印不丢内容；
+# reduced-motion 与无脚本/静态 fallback；
+# 离线构建无意外网络；
+# 来源、license、隐私和脱敏审查；
+# 初始包体/启动成本可接受，重型能力仍 lazy；
+# 失败态可读，不留下空白容器；
+# Catalog、页面 `as-showcase-id/tier` 与状态一致。
+
+! 证据包
+
+每项条件要有可定位证据，而不是一句“已考虑”：
+
+```text
+Candidate ID / target tier:
+Real adopting page(s):
+Author API: parameters, defaults, escaping, nesting
+Data/source provenance:
+Semantic DOM / keyboard / focus notes:
+Narrow / zoom / print / reduced-motion result:
+Offline/no-script/error fallback:
+Network/origin/sandbox/CSP review:
+Initial and lazy artifact size:
+Fixture schema/fidelity/sanitization:
+Known limits and rollback:
+Catalog planned-verification disposition:
+```
+
+采用页必须是真实技术文档，不是 Showcase 自己互相引用。否则只能证明 demo 能展示自己，不能证明长标题、复杂上下文、真实 source revision 和导航环境下可维护。
+
+! 分阶段门槛
+
+!! 内容门槛
+
+用途、术语、事实来源和静态文本先成立；关闭交互仍能完成阅读任务。若图只是装饰，删除图而不是为它制造 fallback。
+
+!! 作者门槛
+
+调用者不复制内部 HTML/JS；输入字段、默认、escaping、空/错、嵌套和版本清楚。对 Pattern 还要有阅读顺序、alternate/failure 与 source revision。
+
+!! 产品门槛
+
+真实主题、sidebar、搜索、长文环境中不破坏；初始启动不 eager load 重型依赖；临时状态隔离，卸载清理完整。
+
+!! 安全与发布门槛
+
+外部资源、license、CSP、privacy、sandbox/referrer、脱敏与离线 artifact 已有明确结论。任何需要真实 DebugServer、credentials 或生产网络的实验都不能按现有 Lab 合同毕业。
+
+! 状态变更事务
+
+# 保持原 Lab 页面和 ID，先准备目标 Base/Pattern author contract 与真实采用页。
+# 完成 Catalog 行 `planned-verification`，记录仍未覆盖的限制。
+# 若目标是新 ID/新 tier，建立映射关系；不要让同一个 ID 同时声称两个 tier。
+# 更新 page 的 `as-showcase-id`、`as-showcase-tier`、Catalog `state/page-title/coverage` 和对应 tier index。
+# 确认 gap/experiment 不再被稳定统计误计，旧入口有迁移说明。
+# 保留回退：若生产环境发现安全、可访问或性能问题，能撤销映射并让真实文章退回静态表示。
+
+Catalog 更新是最后的提交事实，不是第一步的愿望标记。
+
+! 不毕业的信号
+
+只支持鼠标、依赖远程服务、需要实时 Unreal、没有文本 fallback、每帧写 tiddler、在真实文章长内容中溢出，或作者必须复制内部 HTML/JS 才能使用——这些都说明仍应留在 Lab。
+
+其他停止信号：schema 不兼容时空白、source revision 漂移无告警、Canvas 销毁后 timer 仍运行、mobile 通过视觉 order 打乱因果顺序、synthetic 数据被误标 current、外部 iframe 需要过宽 sandbox、初始包无条件携带大型 WASM。
+
+! 评审结论
+
+|!结论|!含义|!Catalog 动作|
+|毕业 Base|原子能力与作者基线稳定|目标 Base 行 mapped，链接真实 page|
+|毕业 Pattern|组合合同与采用页稳定|目标 Pattern 行 mapped|
+|继续 experiment|价值存在但门槛未满足|保留 Lab `experiment`，具体记录缺口|
+|降为静态文档|交互收益不足或风险过高|不新增稳定组件，保留结论/fixture|
+|撤回|隐私、license、安全或维护成本不可接受|移除实验产物/入口，Catalog 记录处置|
+
+! 毕业后
+
+稳定能力需要维护兼容性。修改 DOM/参数/视觉时以实际采用页和 Catalog 验证范围为准，不能只更新孤立 demo。
+
+毕业后 source/schema/author API 仍会变化。破坏性调整必须列采用页、提供迁移或兼容层；若无法继续满足离线/无障碍/安全门槛，应诚实退回实验或静态 fallback，而不是保留 `mapped` 标签掩盖退化。
+
+! 相关链接
+
+* <<as-doc-link "showcase-lab/base-authoring-primitives" "Base 作者基线">>
+* <<as-doc-link "showcase-lab/pattern-composition" "Pattern 可复用组合">>
+* <<as-doc-link "showcase-lab/lab-safety-boundaries" "Lab 安全边界">>

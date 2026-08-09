@@ -1,0 +1,95 @@
+title: AS/Docs/zh-Hans/reference-differences-version/version-and-baseline-policy
+type: text/vnd.tiddlywiki
+tags: ReferenceDifferencesVersion
+caption: 版本、日期与基线记录策略
+description: 规定文档如何记录产品/UE/revision、测试范围、生成数据和“当前”事实，避免数字漂移。
+as-sdk-document: yes
+as-doc-key: reference-differences-version/version-and-baseline-policy
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: policy
+as-content-status: draft
+as-order: 100
+as-content-revision: 2
+as-sources: [[project-guide]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 120
+as-nav-parent: reference-differences-version/index
+as-feature-key: version-baseline-policy
+
+! “当前”必须可复核
+
+会变化的数字和状态记录日期、commit/revision、scope 与报告路径。产品版本、UE 版本、fork lineage 分字段写；不把文档生成日期当运行结果日期。
+
+! 测试基线
+
+Catalog、源码定义、prefix run、All suite、Standalone CTest、Disabled 是独立口径，不相加。文档引用历史通过数时明确“截至日期”；实时状态让位于实际报告/TechnicalDebtInventory。
+
+当前项目常见数字必须保持独立标签：
+
+|!口径|!当前记录|!它代表什么|
+|Catalogued C++ baseline|`275/275 PASS`|`TestCatalog.md` 中维护的目录化基线|
+|源码扫描规模|`1518+` definitions / `430` test `.cpp`|定义数量与文件规模，不是一次执行结果|
+|Native AngelScript SDK prefix|`691/691 PASS`（2026-07-31）|指定 prefix 的最后一次活动方法运行；另有 14 个 future-script Disabled method|
+|Configured All suite|`2396/2396 PASS`（2026-07-28）|35 个 prefix 的一次配置化运行|
+|Standalone CTest|`19/19 PASS`|Debug 与 Release 是同一测试集合的两个配置，不相加|
+|已知 UE headless Disabled|`2`|具体 `#ue57-headless` 限制，不等于所有 discoverable disabled 标签|
+
+写“总共有 275 个测试”会同时混淆 Catalog、源码定义和实际 All suite；写“Standalone 共 38 个”则把 Debug/Release 重复相加。任何数字都要带口径名。
+
+! 一条可复核记录应包含什么
+
+```text
+ObservedAt: 2026-07-31T...
+Repository/PluginRevision: <commit>
+Host: UE 5.7 / Win64 / Editor or Standalone profile
+Scope: exact prefix, suite, generator, dump or bundle kind
+CommandOrProducer: stable entry point + relevant arguments
+Result: selected/executed/passed/failed/skipped/timeout
+Artifact: repository-relative or Saved report path
+Notes: disabled tags, warnings, known environmental limits
+```
+
+如果报告目录是本机 `Saved/` 下的临时证据，发布文档可以记录其相对结构和摘要，但不能假设读者能访问作者机器的绝对路径。
+
+! 生成数据
+
+Binding 统计、state dump、offline bundle、Wiki status matrix 都说明生成入口和 source revision。确定性产物记录 hash/record count；手工编辑生成表会失去可信度。
+
+生成数据的“日期”至少有三种：源码 commit 日期、producer 执行日期、文档引用日期。应优先记录前两者；仅重新生成 Wiki 页面不意味着底层 binding/bundle 状态变新。
+
+|!产物|!最小可信证据|
+|UHT binding statistics/shards|compile options、UHT pass、module、backend、generator revision|
+|state dump/snapshot diff|初始化完成的 host、dump category、schema/列、捕获时间|
+|offline bundle|BundleKind、host project、manifest schema、record count、SHA-256、asset scope 完整性|
+|Wiki content matrix|扫描输入集合、locale、status 规则、生成脚本 revision|
+
+不要直接修生成表里的一个数字。若发现错误，修 producer 或输入，然后整体重生；若只是历史证据，保留原产物并另写解释。
+
+! 状态词
+
+`placeholder` 表示未成文，`draft` 表示可评审但未完成审阅，`reviewed` 需要内容/来源审阅，`published` 还需发布门槛。不要用标题存在或 Catalog presence 冒充完成。
+
+状态应描述''证据经过的门槛''，不能描述作者心情：
+
+|!状态|!可声称|!不可声称|
+|`placeholder`|已保留主题与导航位置|已有可用说明|
+|`draft`|已有完整草稿，可进行内容/来源审阅|事实已由领域 owner 确认|
+|`reviewed`|内容、来源、适用范围与链接已审阅|已经进入发布包|
+|`published`|满足发布流程并进入对外产物|未来事实会自动保持最新|
+
+Showcase 的 `mapped/gap/experiment` 是另一套目录状态：`mapped` 说明 Catalog 指向真实 reader page，不等于该页已 `reviewed`；`experiment` 也不应计入稳定能力。
+
+! 更新规则
+
+# 新结果只追加“截至某日”的证据，除非旧记录被明确标成滚动 current snapshot。
+# 更新一个总数时，检查所有引用它的中英文指南、README 与 Wiki 页面；不要只改最显眼的位置。
+# 数字发生变化但 scope 也变化时，新建一行而不是覆盖旧值。
+# “0 failure”要同时说明 selected/executed；空选择不能算全绿。
+# 环境限制必须精确到标签/用例，不用笼统“headless 不稳定”解释未知失败。
+# 最终实时状态优先以实际 report 和 `TechnicalDebtInventory.md` 为准，AGENTS 中的数值是协作基线，不取代新运行证据。
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "测试范围与数字口径">>
+* <<as-doc-link "reference-differences-version/product-version-and-lineage" "产品版本与源码血缘">>

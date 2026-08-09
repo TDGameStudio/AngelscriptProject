@@ -1,0 +1,139 @@
+title: AS/Docs/zh-Hans/type-object-reflection/gc-reference-schema
+type: text/vnd.tiddlywiki
+tags: TypeObjectReflection
+caption: GC 引用 Schema 与脚本对象
+description: 说明脚本字段、struct 和容器中的 UObject 引用如何进入 Unreal GC，并定位遗漏与过度保活。
+as-sdk-document: yes
+as-doc-key: type-object-reflection/gc-reference-schema
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 90
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 190
+as-nav-parent: type-object-reflection/index
+as-feature-key: gc-reference-schema
+
+! 两套生命周期相遇的位置
+
+AngelScript VM 管理脚本值与句柄，Unreal GC 管理 UObject。脚本生成 class/struct 中的 UObject 引用必须通过 `FProperty` 或 reference schema 对 Unreal 可见，否则脚本仍能读到非空地址时，对象也可能已被 GC。
+
+! 引用来源
+
+* 直接 UObject 成员；
+* `TArray` / `TSet` / `TMap` 元素、key 或 value；
+* 脚本 struct 的嵌套成员；
+* delegate target 与 UObject-aware 回调；
+* transient fixture/world 状态；
+* VM context 暂存的活动引用。
+
+生成器和各 `FAngelscriptType::EmitReferenceInfo` 路径需要为这些形态发射可遍历 schema。值类型不含引用时应避免多余扫描；含引用时不能因成员未暴露 Blueprint 就跳过。
+
+! Schema 生成流水线
+
+```text
+UASClass / UASStruct properties and local script layout
+  → FAngelscriptTypeUsage per member
+  → type-specific EmitReferenceInfo(FGCReferenceParams)
+  → UE::GC::FSchemaBuilder entries
+  → class/struct reference schema
+  → Unreal GC walks live object memory using that exact layout
+```
+
+`FGCReferenceParams` 至少携带目标 schema、当前 byte offset 和名字栈。Nested struct/container 通过新的 inner builder 和相对 offset 递归发射；不能把 inner member 的绝对 offset 直接写到 outer schema。
+
+! Member 类型与扫描方式
+
+|!形状|!Schema/行为|
+|直接强 UObject 引用|声明 reference member，GC 标记目标|
+|Array<UObject>|`ReferenceArray` 或含引用 element 的 `StructArray`|
+|Array<Struct>|element-size inner schema + `StructArray`|
+|Set/Map|sparse `StructSet` inner schema，仅访问有效 slot|
+|Map value|从 `MapLayout.ValueOffset` 发射 value schema|
+|弱引用|只维护弱引用记录，不把目标当强可达|
+|软引用|保存资产路径/soft state，非当前强引用|
+|delegate target|Unreal delegate storage/owner schema与解绑共同决定|
+
+`UPROPERTY` 可见性、BlueprintReadOnly 或 private access 不决定 GC。只要活对象内存中保存强 UObject reference，就必须由 FProperty/schema、collector hook 或明确 owner 上报。
+
+! 强、弱和软引用
+
+直接被追踪的 UObject 句柄会保持对象可达；`TWeakObjectPtr` 不应保活；`TSoftObjectPtr` 保存资产路径而非当前对象强引用。混淆三者会表现为对象过早消失或 world teardown 后仍无法回收。
+
+自动 handle 语法也不自动决定强弱；绑定的底层类型/TypeUsage 决定 schema。把 weak/soft 临时 Resolve 得到的 UObject 存进长期强字段，就会从那一刻保活；诊断时要找所有强 owner，而不是只看最初输入类型。
+
+! 容器扫描
+
+Array 连续遍历元素；Set/Map 使用稀疏 slot，只能扫描有效 index，并按 layout 找到 element/key/value offset。修改容器 binding layout 或 GC schema 时需要把构造/销毁与引用扫描作为同一合同维护。
+
+错误扫描 free/tombstone slot 可能把已析构 bytes 当 UObject 指针，导致错误保活或崩溃。Map 的 set element 包含 key+padding+value；value offset 随 key 对齐变化。Schema 必须由实际 script layout 产生，并与 container ops 同 generation。
+
+! VM/Context 临时根
+
+正在执行的 context 栈、参数、return value 和 native/Blueprint bridge buffer 可能临时持有 UObject。调用期间这些引用要通过相应 context/root机制保持有效；完成、异常、abort、pool reset 后必须解除。长期把 pooled context 或 debug variables reference 留在 registry，会阻止 World teardown。
+
+```text
+prepare call → root live inputs/receiver
+execute/suspend → context remains a root owner
+finish/exception/abort → copy valid results
+cleanup/reset → release temporary roots
+return to pool → no prior-call UObject references
+```
+
+! Hot reload 与旧版本
+
+旧实例迁移期间，旧 class/struct schema 仍需正确解释旧 layout；新类型使用新 schema。过早把旧 schema 改指新成员会漏扫或读错内存。版本链解决“找到最新类型”，不代表旧对象立即可按最新 layout 扫描。
+
+Reinstance 的安全顺序是 old schema 保活旧 references → 用 old property/type ops 捕获值 → 构造 new object/schema → 恢复并更新 external references → old object/schema 退役。若 GC 在迁移窗口运行，两个 generation 的必要 roots/schema 都必须有效。
+
+! 两类相反故障
+
+|!故障|!表现|!根因|
+|漏标记|对象被提前回收、字段仍像非空/悬空|缺 schema、offset/inner wrong、临时 root 提前释放|
+|过度保活|PIE World/Actor/asset 无法释放|global/cache/delegate/timer/context 中残留强引用|
+
+只加一个 AddReferencedObjects 式“保险根”会把漏标记变成泄漏，不能替代正确 property/schema。
+
+! Schema 不变量
+
+* schema offset/element size/layout 与被扫描实例 generation 完全一致；
+* direct/struct/container reference 各由唯一 owner 发射，不重复或遗漏；
+* weak/soft 不升级为强，除非业务字段明确保存 resolve 结果；
+* Set/Map 跳过无效 slot，Map value 使用实际 offset；
+* context pool reset、delegate/timer/subsystem teardown 解除临时/长期 roots；
+* old/new schema 共存到迁移完成，不就地改写 old descriptor。
+
+! 失败调查步骤
+
+# 确认目标 UObject 的预期强 owner 和生命周期。
+# 从 owner class/struct 的字段 offset 找到 TypeUsage/FProperty/schema entry。
+# 若在 container，核对 inner schema、valid slot 与 value offset。
+# 若只在调用期间，核对 context/bridge 的 temporary rooting 和异常 cleanup。
+# 若只在 reload 后，分别用 old/new schema/instance generation 检查。
+# 若是泄漏，沿 delegate、timer、subsystem/global registry、pooled context 反向查强引用。
+# 在 shutdown/PIE end 后复核 owner 是否已解除，而不是强制 GC 掩盖。
+
+! 源码入口
+
+* 各 `FAngelscriptType::EmitReferenceInfo` 与 `FGCReferenceParams`。
+* `Bind_TArray.cpp`、`Bind_TSet.cpp`、`Bind_TMap.cpp` 的 inner schema。
+* `AngelscriptClassGenerator_Reinstancing.cpp` 的 property/schema 与迁移关系。
+* AS object/context/GC bridge 与 Engine shutdown cleanup。
+
+! 排障
+
+|!症状 |!检查 |
+|脚本字段非空但对象被回收 |字段是否进入 property/schema，容器 inner 是否含引用 |
+|PIE 结束后对象/世界不释放 |全局强引用、delegate、timer、subsystem cache 是否清理 |
+|只在 Set/Map 中丢对象 |稀疏有效槽与 key/value schema |
+|只在 reload 后崩溃 |旧新 layout/schema 是否错配 |
+|弱引用意外保活 |是否在别处转换并缓存成强引用 |
+
+! 相关链接
+
+* <<as-doc-link "language/object-handles-and-smart-pointers" "UObject 句柄、弱引用与软引用">>
+* <<as-doc-link "runtime-jit-vm/garbage-collector" "AngelScript GC">>
+* <<as-doc-link "architecture-maintenance/global-state-containment" "全局状态隔离">>

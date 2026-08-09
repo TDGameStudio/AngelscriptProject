@@ -1,0 +1,131 @@
+title: AS/Docs/zh-Hans/unreal-language/property-accessors
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: 属性访问器已移除：字段与显式方法
+description: 说明当前 fork 为何禁用 AngelScript property accessor sugar，如何在真实字段、GetX/SetX 方法和 Blueprint getter/setter metadata 之间选择并迁移旧代码。
+as-sdk-document: yes
+as-doc-key: unreal-language/property-accessors
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 120
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: script-features
+as-nav-order: 260
+as-nav-parent: unreal-language/index
+as-feature-key: property-accessors
+
+! 先给结论
+
+当前 fork ''不支持''把 `GetHealth()` / `SetHealth()` 隐式伪装成 `Object.Health`。这不是文档遗漏或绑定顺序问题，而是明确的产品语义：两条引擎初始化路径都把 `asEP_PROPERTY_ACCESSOR_MODE` 设为 `0`；compiler 的 `FindPropertyAccessor` 在该模式下不会参与名字解析；parser 还会拒绝 `property` decorator 和 virtual-property block。
+
+因此脚本作者只能在两种清晰表面之间选择：
+
+|!需求|!当前写法|!语义|
+|对象确实保存一份反射字段|`Object.Health`|访问已注册的 object property / `FProperty`|
+|访问需要计算、校验、副作用或兼容逻辑|`Object.GetHealth()` / `Object.SetHealth(Value)`|普通方法调用|
+
+`BlueprintGetter` / `BlueprintSetter` metadata 可以影响 Blueprint 节点和生成验证，但不会在 AngelScript 表达式解析阶段恢复属性糖。
+
+! 被移除的是哪一种语法
+
+旧版 AngelScript 或其它宿主可能允许以下两类写法：
+
+```angelscript
+// 旧 property decorator；当前 parser 直接报错
+int get_Health() const property;
+void set_Health(int Value) property;
+
+// 旧 virtual property block；当前 parser 直接报错
+int Health
+{
+    get const { return InternalHealth; }
+    set { InternalHealth = value; }
+}
+```
+
+当前错误文本会明确要求改为显式 `GetX/SetX`。迁移后不要保留同名“虚拟字段”调用：
+
+```angelscript
+int GetHealth() const
+{
+    return InternalHealth;
+}
+
+void SetHealth(int Value)
+{
+    InternalHealth = Math::Max(Value, 0);
+}
+
+void ApplyDamage(int Amount)
+{
+    SetHealth(GetHealth() - Amount);
+}
+```
+
+如果本来就是公开数据，而不是行为合同，则声明真实字段：
+
+```angelscript
+UPROPERTY(EditAnywhere, BlueprintReadWrite)
+int Health = 100;
+
+void ApplyDamage(int Amount)
+{
+    Health = Math::Max(Health - Amount, 0);
+}
+```
+
+不要为了保留点号外观而同时维护 `Health` 字段和 `GetHealth/SetHealth` 两份状态；那会产生两个事实源。
+
+! 为什么要把字段与行为分开
+
+隐式 accessor 会让同一个 `Object.Name` 在阅读时无法判断是固定 offset 的字段读取，还是一次可能抛错、分配、跨模块、触发事件甚至访问 World 的函数调用。当前设计选择可见成本：
+
+* 字段访问可以由 type descriptor、offset、GC schema、序列化和复制系统共同描述；
+* 方法调用走 overload、virtual dispatch、UFunction 或 native binding 的明确路径；
+* 代码审查能直接看到 setter 是否可能校验或产生副作用；
+* 热重载能把“字段布局变化”和“函数 body 变化”分到不同 reload 类别；
+* C++、Blueprint 与 AngelScript 不必假定三套属性糖具有完全相同的优先级。
+
+这也解释了为什么底层 `FAngelscriptBoundFunction::PropertyAccessor(bool)` 仍存在却不能当作恢复开关：绑定 trait 只给函数附加候选标志，而全局 engine property、compiler 名字解析和 parser 语法仍把该能力关闭。局部绑定不能推翻三层共同合同。
+
+! 三种经常混淆的“属性”
+
+|!表面|!建立者|!执行路径|!热重载风险|
+|真实脚本字段|预处理器 + AS layout + ClassGenerator|按字段 offset 读写；反射字段还经过 `FProperty`|改类型/顺序/flags 属于结构变化|
+|显式方法|AS function 或 native binding|普通/virtual/UFunction dispatch|只改 body 通常较轻；改签名是结构变化|
+|Blueprint getter/setter metadata|UFunction/FProperty metadata|Blueprint 编译和反射调用规则|需同时保持函数与字段 metadata 一致|
+
+`BlueprintReadOnly` 也不是 accessor：它限制 Blueprint 写表面，不会把脚本字段改写成 getter。`EditAnywhere` 控制 Details 编辑，不定义运行时封装。应分别决定脚本访问、Blueprint 访问和 Editor 展示。
+
+! 迁移步骤
+
+# 搜索 `property` decorator、virtual-property block，以及只靠 `get_X/set_X` 名字期待 `.X` 生效的调用。
+# 判断状态是否真实存储。真实状态保留一个字段；计算值、验证入口或兼容门面改为显式方法。
+# 将 `Obj.X` 改为 `Obj.GetX()`，将赋值/复合赋值改为显式 `SetX(...)`；复合赋值要保留一次求值语义，避免重复调用 getter。
+# 若 Blueprint 仍需属性式节点，单独核对 `BlueprintGetter/BlueprintSetter` metadata 与 UFUNCTION 签名，不把它当成脚本语法保证。
+# 字段改成方法后，重新检查序列化、复制、GC、Details 和默认值：方法不会自动继承原字段的这些合同。
+
+例如 `Target.Value += ComputeDelta()` 不应机械改成两次求值 target 的表达式。先缓存 receiver/value，再调用 setter，尤其当 receiver 来自函数调用时。
+
+! 诊断顺序
+
+|!现象|!根因与处理|
+|parser 报 property decorator removed|删除 decorator，保留普通 `GetX/SetX`|
+|parser 报 virtual property removed|把 block 拆成显式方法或真实字段|
+|存在 GetX/SetX 但 `.X` unknown|这是预期行为，不要通过注册顺序“修复”|
+|Blueprint 有属性节点、脚本仍不能 `.X`|两者是不同消费者；脚本调用显式方法|
+|改成字段后 reload 变重|新增/删除 `FProperty` 改变布局，本来就不是 body-only 变化|
+|setter 的校验被绕过|字段公开造成双入口；收紧字段表面并统一走显式方法|
+
+! 维护者核对点
+
+这项产品语义由四处证据共同守住：`FAngelscriptEngine` 的两条初始化路径设置 mode 0；`asCCompiler::FindPropertyAccessor` 服从该 engine property；`as_parser.cpp` 拒绝 decorator 与 virtual property；`as_texts.h` 给出迁移诊断。以后若真要恢复，必须同时设计名字冲突优先级、反射字段/方法一致性、Blueprint metadata、热重载和测试迁移，不能只把 `.PropertyAccessor()` trait 打开。
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/property-access-uniform" "字段访问、显式方法与绑定合同">>
+* <<as-doc-link "unreal-language/property-specifiers" "UPROPERTY 指定符">>
+* <<as-doc-link "type-object-reflection/property-generation" "FProperty 生成">>

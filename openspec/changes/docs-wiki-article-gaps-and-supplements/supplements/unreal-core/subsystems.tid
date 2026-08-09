@@ -1,0 +1,208 @@
+title: AS/Docs/zh-Hans/unreal-core/subsystems
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Script Subsystems
+description: 为 World、GameInstance、LocalPlayer 与 Engine 选择正确生命周期，建立、获取、Tick 并对称清理脚本子系统。
+as-sdk-document: yes
+as-doc-key: unreal-core/subsystems
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[script-examples]] [[angelscript-plugin]] [[project-knowledge-zh]]
+as-nav-group: unreal-development
+as-nav-order: 30
+as-nav-parent: unreal-core/index
+as-feature-key: subsystems
+
+! Subsystem 的第一设计问题是“活多久”
+
+Subsystem 不是方便获取的全局单例，而是由 Unreal 根据 Outer 生命周期创建的服务对象。先选择作用域，再写 API：
+
+|!脚本基类 |!Outer / 实例数量 |!适合保存 |!不应保存 |
+|`UScriptWorldSubsystem` |每个符合条件的 `UWorld` 一个 |关卡/world 规则、streaming 观察、world actor 索引 |跨 travel 会话状态 |
+|`UScriptGameInstanceSubsystem` |每个 `UGameInstance` 一个 |跨关卡 session、匹配流程、当前用户会话 |旧 World 的 Actor/Timer handle |
+|`UScriptLocalPlayerSubsystem` |每个本地 `ULocalPlayer` 一个 |每玩家输入/UI/偏好与本地选择 |默认“玩家 0”或 Server 权威状态 |
+|`UScriptEngineSubsystem` |整个 `UEngine` 一个 |真正跨 World 的引擎级服务 |隐式绑定某个 game World 的 Actor |
+
+多 PIE 时会同时存在多个 World，可能也有多个 GameInstance/LocalPlayer。把 World 状态放进 EngineSubsystem 或 static，会让不同 PIE instance 互相污染；把 session 状态放进 WorldSubsystem，则每次 travel 都被销毁。
+
+! 最小 WorldSubsystem
+
+仓库 `Script/Examples/Extended/Example_SubsystemLifecycle.as` 展示了当前脚本合同：
+
+```angelscript
+UCLASS()
+class UQuestWorldSubsystem : UScriptWorldSubsystem
+{
+    UPROPERTY(BlueprintReadOnly, Category = "Quest")
+    int TickCount = 0;
+
+    UFUNCTION(BlueprintOverride)
+    void Initialize()
+    {
+        TickCount = 0;
+        Log("Quest world initialized");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void OnWorldBeginPlay()
+    {
+        DiscoverInitialQuestActors();
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void Tick(float DeltaTime)
+    {
+        TickCount += 1;
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void Deinitialize()
+    {
+        UnbindWorldDelegates();
+        ClearWorldTimers();
+    }
+}
+```
+
+C++ 基类中的事件名是 `BP_Initialize`、`BP_Deinitialize`、`BP_Tick` 等，脚本侧通过 ScriptName 看到去掉 `BP_` 的名称，仍要写 `BlueprintOverride`。World 基类还暴露 `PostInitialize`、`OnWorldBeginPlay`、`OnWorldComponentsUpdated` 和 `UpdateStreamingState`，让初始化阶段与 World 真正开始 Play 的阶段分开。
+
+! 生命周期顺序与可做的事
+
+WorldSubsystem 的主线可近似看成：
+
+```text
+ShouldCreateSubsystem
+        ↓ true
+Initialize
+        ↓
+PostInitialize
+        ↓
+OnWorldComponentsUpdated / OnWorldBeginPlay
+        ↓
+Tick + UpdateStreamingState ...
+        ↓
+Deinitialize
+```
+
+`Initialize` 时 subsystem 与 Outer 已建立，但 gameplay Actor 未必完成 BeginPlay；发现关卡中完整 Actor 集合更适合 `OnWorldBeginPlay`。`Deinitialize` 应对称解除在 Initialize/BeginPlay 中建立的 delegate、timer、缓存和外部注册。
+
+当前 `UScriptWorldSubsystem` 用 `bInitialized` 阻止 CDO/未初始化实例 Tick，并让 `GetTickableGameObjectWorld()` 返回自己的 World。Class 默认属性控制创建范围和 tick：
+
+|!属性 |!默认 |!意义 |
+|`bCreateForGameWorlds` |`true` |Game 与 PIE world 创建 |
+|`bCreateForLevelEditorWorlds` |`false` |是否也为 Level Editor world 创建/在 Editor tick |
+|`bTickWhenPaused` |`false` |暂停时是否继续 tick |
+
+不要为了“Editor 里能 Get 到”就打开 Level Editor world 创建；若业务代码假设有 GameMode、PlayerController 或网络 authority，它在 Editor world 会失败。
+
+! GameInstance、LocalPlayer 与 Engine 的差异
+
+!! GameInstance
+
+`UScriptGameInstanceSubsystem` 跨 level travel，支持 `Initialize/Deinitialize/Tick`，并可通过 `GetGameInstance()` 取得 owner。因为它的生命周期长于 World，持有 Actor、Component、WorldSubsystem 或 `FTimerHandle` 时必须监听 World teardown 并清理；下一张地图就绪后重新解析上下文。
+
+!! LocalPlayer
+
+`UScriptLocalPlayerSubsystem` 为每个本地玩家创建，支持 `ShouldCreateSubsystem/Initialize/Deinitialize`，并可 `GetLocalPlayer()`。Split-screen 时有多个实例；Dedicated Server 通常没有本地玩家。UI、输入映射和玩家本地选择适合这里，不能用 `GetPlayerController(0)` 偷换实例身份。
+
+!! Engine
+
+`UScriptEngineSubsystem` 生命周期最长并可 Tick，默认 `bIsTickableWhenPaused = true`、`bIsTickableInEditor = true`。它最容易误持 World 对象：每次执行 world 相关操作都应由调用者提供上下文，或维护明确的 per-world map 并在 teardown 删除。
+
+这里还要区分两个相似名字：`UScriptGameInstanceSubsystem` 是供业务脚本继承的基类；历史上的 native `UAngelscriptGameInstanceSubsystem` 曾管理 AS engine，但当前 runtime 已删除该 native manager，AS engine 的权威 owner 是 engine-level `UAngelscriptSubsystem`。业务文档不能继续描述已经删除的 `ActiveTickOwners`/fallback tick 握手。
+
+! `ShouldCreateSubsystem` 是环境过滤器
+
+四类脚本基类都会先执行 native `Super::ShouldCreateSubsystem`，拒绝 unreachable、新 generation 或无当前 AS engine 的 Class，再调用脚本侧 `ShouldCreateSubsystem(Outer)`。它适合根据项目模式、Outer 类型或配置决定是否创建，不适合访问尚未初始化的 gameplay 服务。
+
+```angelscript
+UFUNCTION(BlueprintOverride)
+bool ShouldCreateSubsystem(UObject Outer) const
+{
+    UWorld World = Cast<UWorld>(Outer);
+    return World != nullptr;
+}
+```
+
+实现要纯、快速、无副作用；不要在这里注册 delegate、Spawn Actor 或缓存 Outer。返回 false 后不会有 Initialize/Deinitialize，所有真正资源建立都放 Initialize 以后。
+
+! 获取具体类型
+
+预处理器会为具体 subsystem 子类生成静态 `Get()`，返回具体脚本类型：
+
+```angelscript
+UQuestWorldSubsystem Quests = UQuestWorldSubsystem::Get();
+if (Quests != nullptr)
+{
+    int Count = Quests.TickCount;
+}
+```
+
+生成路径根据基类调用 `USubsystemLibrary::GetWorldSubsystem`、`GetGameInstanceSubsystem`、`GetLocalPlayerSubsystem` 或 engine lookup，并用当前 WorldContext 解析 Outer。它不是进程全局查找：同一个 `UQuestWorldSubsystem::Get()` 在不同 PIE world 应返回不同实例。
+
+`Get()` 可能为空：Subsystem 被 `ShouldCreateSubsystem` 过滤、当前调用没有 WorldContext、目标 LocalPlayer 不存在、Class 刚在首次 hot compile 尚未完整注册，或当前环境不是该 scope。调用者应处理空值，不能因为某次 Editor PIE 成功就当成永远存在。
+
+! Tick 纪律
+
+Subsystem 支持 Tick 不代表应该默认每帧做工作。优先使用事件；必须 tick 时：
+
+* 用 `DeltaTime`，不要按帧数推演时间；
+* 对低频任务累计时间或使用 World timer；
+* WorldSubsystem 不扫描全世界 Actor，改为在 spawn/streaming 事件维护索引；
+* GameInstanceSubsystem tick 不能假设总有 active World；
+* EngineSubsystem tick 必须处理 Editor、Commandlet、无 game World 的环境；
+* Deinitialize 前停止所有能再次进入脚本的调度。
+
+当前各 Script subsystem 基类的 `CanCallScriptFunctions()` 会检查实例所属 `UASClass` 仍由当前 AS engine generation 拥有，避免 reload 后旧实例调用已失效脚本函数。这是 native 防线，不替代业务对旧缓存和 delegate 的清理。
+
+! World travel、多 PIE 与网络
+
+|!场景 |!WorldSubsystem |!GameInstanceSubsystem |!LocalPlayerSubsystem |
+|travel |旧实例 Deinitialize，新 World 新建 |保留同一 session 实例 |通常随 LocalPlayer 保留 |
+|多 PIE |每个 PIE world 各自实例 |每个 PIE GameInstance 各自实例 |每个本地玩家各自实例 |
+|Dedicated Server |有 server World 实例 |有 server GameInstance 实例 |通常无实例 |
+|Level Editor 非 PIE |默认不创建 |无 gameplay GI |无 gameplay LocalPlayer |
+
+网络 authority 仍属于 Actor/World gameplay 语义。WorldSubsystem 在 Server 和 Client world 都可能各有实例；需要权威规则时显式判断 World/NetMode，不要因为它叫 “Subsystem” 就误认为只在 Server。
+
+! 热重载与状态迁移
+
+函数 body 变化通常可沿用当前实例；property/class layout、基类和 lifecycle signature 变化可能触发 full reload。Subsystem 比普通 Actor 更敏感，因为它还登记在 Unreal collection 中。
+
+结构变化后检查：
+
+# collection 返回的是新 generation Class 实例；
+# 旧实例不再 tick，也不再响应 delegate/timer；
+# Initialize 没有重复注册全局回调；
+# Deinitialize 对旧 generation 安全执行或由 native generation guard 跳过；
+# GameInstance/Engine scope 的长期业务状态是否需要显式迁移。
+
+不要把状态挪到 static 只为躲过 reload。正确做法是区分可重建 cache、需要迁移的 session 数据和应随旧 generation 丢弃的 transient handle。
+
+! 故障定位
+
+|!现象 |!先检查 |!常见原因 |
+|`Get()` 返回空 |当前 WorldContext、创建 flags、`ShouldCreateSubsystem` |错误 scope、Editor world 默认不创建、Class 尚未注册 |
+|多 PIE 串状态 |状态 owner/static |把 per-world 数据放进 Engine/global |
+|切关后访问崩溃 |GameInstance 持有的 World/Actor |旧 World 引用未在 teardown 清理 |
+|Initialize 执行两次效果叠加 |delegate/timer identity |注册非幂等，reload 后未解除旧回调 |
+|Subsystem 不 Tick |是否初始化、Class 是否 CDO、环境 flags |实例未创建、旧 generation、Editor tick 未启用 |
+|Dedicated Server 缺服务 |选了 LocalPlayer scope |Server 没有本地玩家 |
+|reload 后调用旧 body/失效函数 |缓存实例 generation |外部保存了旧 subsystem handle |
+
+日志至少包含 subsystem Class、Outer/World、WorldType/PIE id、对象 generation、Initialize/Deinitialize 次数和创建过滤结果。
+
+! 源码落点与继续阅读
+
+* `AngelscriptRuntime/Subsystem/ScriptWorldSubsystem.h`：World 创建 flags、streaming lifecycle 与 tick guard；
+* `ScriptGameInstanceSubsystem.h`、`ScriptLocalPlayerSubsystem.h`、`ScriptEngineSubsystem.h`：各 scope 的实际事件与 owner accessor；
+* `AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.cpp`：具体 subclass 静态 `Get()` 生成；
+* `AngelscriptRuntime/Binds/Bind_Subsystems.cpp`、`FunctionLibraries/SubsystemLibrary.h`：scope lookup 与 WorldContext；
+* `Script/Examples/Extended/Example_SubsystemLifecycle.as`：当前可运行声明；
+* <<as-doc-link "topics-integrations/subsystem-lifecycle" "Subsystem 生命周期专题">>
+* <<as-doc-link "unreal-core/world-context" "World Context">>
+* <<as-doc-link "unreal-core/timers-and-world-time" "Timer、Tick 与 World Time">>

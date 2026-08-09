@@ -1,0 +1,142 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/submodule-delivery-workflow
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 插件 Submodule 交付工作流
+description: 说明核心插件、可选插件、Wiki 与父仓库 OpenSpec/gitlink 的所有权、提交顺序、可达性验证和失败恢复。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/submodule-delivery-workflow
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: policy
+as-content-status: draft
+as-order: 120
+as-content-revision: 2
+as-sources: [[project-guide]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 320
+as-nav-parent: architecture-maintenance/index
+as-feature-key: submodule-delivery-workflow
+
+! 先判断改动属于哪个仓库
+
+本项目的父仓库不是插件源码的唯一仓库。下列目录各自保存独立 Git 历史：
+
+|!路径 |!所有内容 |!父仓库保存什么 |
+|`Plugins/Angelscript/` |核心 Runtime、Editor、Test、UHT Tool 与 Standalone |一个指向插件 commit 的 gitlink |
+|`Plugins/AngelscriptGameplayTags/` |可选 GameplayTags runtime/editor/test |一个独立 gitlink |
+|`Plugins/AngelscriptGAS/` |依赖 Runtime 与 GameplayTags 的 GAS 集成 |一个独立 gitlink |
+|`Wiki/` |正式 Wiki 产品源码、主题、构建与文章 |一个独立 gitlink |
+|`openspec/`、`Documents/`、`Tools/` |跨仓库意图、项目指南和宿主工具 |普通父仓库文件 |
+
+因此，一个父仓库状态可能同时包含四种东西：普通文件 diff、submodule 工作区 diff、submodule 新 commit，以及父仓库尚未提交的 gitlink 更新。`git status` 中的一行 `modified: Plugins/Angelscript` 不能说明是哪一种，必须进入该 submodule 再看。
+
+! 可交付状态模型
+
+```text
+submodule 工作区修改
+        ↓ commit
+本地 submodule commit
+        ↓ push / 确认远端可达
+可取得的 submodule commit
+        ↓ 父仓库 stage gitlink
+父仓库指向新 commit
+        ↓ 提交并 push
+接收方可完整 checkout
+```
+
+关键不变量是：//父仓库公开的 gitlink 所指 commit，必须已经能从该 submodule 的约定远端取得//。父仓库提交并不会复制 submodule commit 的内容。若把顺序反过来，作者机器上看似正常，CI 或其他开发者执行 submodule update 时却会得到 “not our ref” 或找不到对象。
+
+! 当前 checkout 的标准流程
+
+项目默认在当前 main checkout 编辑；除非用户明确要求，不创建或切换 worktree。
+
+# 先在父仓库记录初始状态，辨认既有的用户修改；不要把不相关 diff 当成待清理内容。
+# 进入目标 submodule，确认当前 branch、remote 与修改范围。
+# 在 submodule 内完成实现和该任务所需验证，审查 `git diff` 与未跟踪文件。
+# 先提交 submodule；需要团队或 CI 消费时，先 push，并确认 commit 可从约定 remote 获取。
+# 回到父仓库，确认目标路径现在只表现为预期的 gitlink 变化。
+# 将 OpenSpec、父仓库文档和对应 gitlink 一起审查、提交。
+# 在一个干净 checkout 或等价只读检查中确认 `git submodule update --init --recursive` 能得到相同 commit。
+
+“先提交 submodule”不是要求把所有仓库强行合成一次提交；它是在建立依赖顺序。一个跨仓库交付至少包含两个 commit 身份，发布记录或 PR 说明应同时列出它们。
+
+! OpenSpec 与实现如何配对
+
+OpenSpec 位于父仓库，而核心代码通常位于 submodule，所以一次变更天然是双仓库交付：
+
+|!阶段 |!父仓库 |!目标 submodule |
+|记录意图 |创建/更新 `openspec/changes/<change>/` |通常无 commit |
+|实施中 |任务清单可随认识重写 |源码、插件内文档与验证证据变化 |
+|准备交付 |确认 proposal/design/tasks 与实际一致 |先形成可取得 commit |
+|父仓库收口 |提交 OpenSpec 与新 gitlink |commit 身份保持不变 |
+
+不要为了让 OpenSpec 和源码出现在“同一个 Git commit”里，把插件实现搬到 `Source/AngelscriptProject/`；宿主模块必须继续保持最小化。
+
+! 多插件依赖的提交顺序
+
+跨插件 API 变更应按依赖方向形成可取得 commit：
+
+```text
+AngelscriptRuntime
+        ↓
+AngelscriptGameplayTags
+        ↓
+AngelscriptGAS
+```
+
+若只有 GameplayTags 行为变化，不必无意义更新核心 gitlink。若 GAS 同时消费新的 GameplayTags API，则先让 GameplayTags commit 可达，再让 GAS commit 指向/适配该接口，最后由父仓库一次明确更新相关 gitlink。每个 submodule 都要分别审查 branch 和 remote；同名 branch 不代表它们共享历史。
+
+! Wiki 有两层“文章”
+
+OpenSpec change 中的 `.tid` 是评审附件或候选内容，不会自动进入正式 Wiki。正式采用需要另一条清晰链路：
+
+# 在 `Wiki/` submodule 中导入或编辑文章；
+# 执行 Wiki 自己的构建/检查边界；
+# 在 Wiki 仓库提交并让 commit 可达；
+# 回父仓库更新 `Wiki` gitlink。
+
+这一区分避免“OpenSpec 中已经有文章，所以网站已经发布”的误判。本 change 的 supplement 明确停在父仓库附件层，不能把父仓库的未跟踪 `.tid` 数量当成 Wiki 产物数量。
+
+! 需要 worktree 时
+
+原生 `git worktree add` 只创建父仓库 worktree，不会自动初始化其中的 submodule，也不会复制被忽略的 `AgentConfig.ini`。用户明确要求隔离工作区时，优先使用：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>
+```
+
+该入口负责创建父 worktree、初始化或回退 submodule、生成本机配置并建立 change 目录。已有 worktree 需要修复时才使用 `BootstrapWorktree.ps1`。如果网络不可用，可按 `Documents/Guides/SubmoduleWorktreeWorkflow.md` 使用本地对象库方案；仅把某个本地 HEAD 接上用于编译并不等于它已可交付，必须在记录中明确这种临时状态。
+
+! 交付前检查表
+
+* 目标 submodule 内没有混入与当前任务无关的用户修改；
+* submodule commit 身份、branch 和 remote 已记录；
+* 父 gitlink 精确指向预期 commit，而不是工作区偶然 checkout 的另一个 HEAD；
+* 该 commit 已 push，或接收方有明确且可验证的取得路径；
+* 多 submodule 之间的 API 依赖按顺序可构建；
+* OpenSpec 的完成状态描述的是实际落地范围；
+* Wiki 候选附件与正式 Wiki 提交没有混为一谈；
+* 接收方无需作者机器上的未提交文件或本地对象才能还原。
+
+! 常见失败与恢复
+
+|!现象 |!根因 |!恢复方向 |
+|父仓库只有目录 `modified` |submodule 有工作区 diff或 HEAD 改变 |进入目录分别查看 `git status`、`git diff` 和 HEAD |
+|CI 报找不到 submodule commit |父 gitlink 已公开，子 commit 未 push/不可达 |先发布正确子 commit，再重试取得；不要用另一个近似 commit 偷换 |
+|新 worktree 中目录为空 |只创建了父 worktree |使用项目 bootstrap 或显式初始化 submodule |
+|本机能构建，其他机器失败 |依赖未提交文件、本地 HEAD 或本机 `AgentConfig.ini` |在干净消费边界重现，并补齐可取得内容/配置说明 |
+|父仓库 diff 出现意外 gitlink |在 submodule 中切到了错误 branch/commit |先确认预期 SHA；仅在用户授权下切回，不覆盖已有工作区 |
+|多个插件接口版本不匹配 |依赖方向的 commit 顺序或 gitlink 组合错误 |列出三方 SHA，按 Runtime → GameplayTags → GAS 重新配对 |
+
+! 证据来源
+
+* `Documents/Guides/SubmoduleWorktreeWorkflow.md`：worktree/bootstrap、离线回退与双仓库提交顺序；
+* 根目录 `AGENTS.md` / `AGENTS_ZH.md`：当前 checkout 默认策略、插件边界与提交规则；
+* `.gitmodules`：实际 submodule 路径和远端配置；
+* `openspec/changes/<change>/`：父仓库中的意图、任务和候选附件。
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/plugin-dependencies" "插件依赖">>
+* <<as-doc-link "architecture-maintenance/module-ownership" "模块所有权">>
+* <<as-doc-link "testing-diagnostics-release/release-verification-matrix" "发布验证矩阵">>

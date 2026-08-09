@@ -1,0 +1,61 @@
+title: AS/Docs/zh-Hans/editor-ide-debugging/index
+type: text/vnd.tiddlywiki
+tags: EditorIdeDebugging
+caption: 编辑器、IDE 与调试
+description: 在 Unreal Editor 与项目自有 VS Code 扩展之间导航和调试脚本。
+as-sdk-document: yes
+as-doc-key: editor-ide-debugging/index
+as-locale: zh-Hans
+as-depth: L0
+as-doc-kind: guide
+as-content-status: draft
+as-order: 10
+as-content-revision: 2
+as-sources: [[project-guide]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 20
+as-feature-key: editor-ide-debugging
+
+! 本章要解决什么
+
+建立一张工具地图：脚本类型和资产在 ''Unreal Editor'' 与 ''Content Browser'' 中的落点、源码导航的入口、项目自有 ''VS Code 扩展''，以及断点、调用栈与变量检查的调试循环。你会知道每种工作从哪个工具开始、编辑器与 VS Code 之间靠什么连通，以及去哪一页读安装与调试的细节。
+
+本章聚焦“在哪里编辑、如何导航、怎样调试”，不重复语言语法。需要语言核心时回到 <<as-doc-link "language/index" "AngelScript 语言基础">>；需要测试口径时进入 <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">>。
+
+<<as-callout tip "DebugServer 是编辑器与 VS Code 的桥">>
+项目自有的 VS Code 扩展并不直接读取磁盘上的脚本状态，而是通过 Unreal 侧的 ''DebugServer'' 与运行中的编辑器通信：语义高亮、补全、诊断、导航，以及断点、调用栈、变量、求值与步进都经由这条连接。默认端口为 `27099`；如果通过启动参数改了端口，必须同步修改 VS Code 的 `UnrealAngelscript.unrealConnectionPort`。以上对照 `project-guide` 的 VSCodeAngelscript 指南。
+<</as-callout>>
+
+! 本章文档
+
+<<as-doc-cards>>
+<<as-doc-card "editor-ide-debugging/vscode-setup">>
+<<as-doc-card "editor-ide-debugging/debugging-breakpoints">>
+<</as-doc-cards>>
+
+! 工具地图
+
+* ''Unreal Editor'' —— 脚本类继承 `AActor` / `UObject` / 组件类型后进入 Unreal 的生成类型与对象生命周期，可作为 Blueprint 父类在编辑器中放置、编辑默认值并运行。
+* ''Content Browser'' —— 脚本生成的类型与其派生 Blueprint 在这里被浏览、实例化与关联；资产层面的操作仍走编辑器既有工作流。
+* ''源码导航'' —— 在 VS Code 中对 `.as` 打开定义跳转、引用搜索、重命名、Symbol 与 API 搜索；这些能力依赖扩展从 DebugServer 加载的 Unreal 类型数据库。
+* ''项目自有 VS Code 扩展'' —— 位于 `Extensions/AngelscriptVSCode/`，基于 Hazelight 公开的 `vscode-unreal-angelscript` 1.9.2，并作为本项目的一部分独立演进。安装、连接与设置见 <<as-doc-link "editor-ide-debugging/vscode-setup" "VS Code 扩展安装与连接">>。
+* ''断点·调用栈·变量'' —— 通过 DebugServer 提供断点、调用栈、变量、求值、步进与数据断点。调试循环见 <<as-doc-link "editor-ide-debugging/debugging-breakpoints" "断点、调用栈与变量检查">>。
+
+<<as-callout note "当前实现边界">>
+Runtime 的 `AngelscriptDebugServer.h` 将线协议版本定义为 `2`，`FAngelscriptEngineConfig::DebugServerPort` 的默认值为 `27099`，命令行 `-asdebugport=<port>` 可覆盖它。协议消息覆盖数据库同步、资产/Blueprint 操作、断点、暂停/继续/步进、调用栈、变量、求值与数据断点；`DebugDatabaseSettings` 自身的序列化版本 `7` 是另一条兼容性轴，不能与 DebugServer version 2 混为一谈。更重要的是，当前服务端把客户端上报的 adapter version 保存在进程级状态中，而不是按连接保存，因此同一进程混接不同协议代际的客户端并不是受支持的隔离场景。字段布局、帧封装与这一限制见 <<as-doc-link "editor-ide-debugging/debugger-protocol-v2" "DebugServer V2 线协议">>。
+<</as-callout>>
+
+! 边界与打包语义
+
+* ''参考副本不是开发目录'' —— `Reference/vscode-unreal-angelscript/` 仅为本地参考，不要在其中开发项目功能；VS Code 客户端改动放在 `Extensions/AngelscriptVSCode/`，Unreal 侧协议与数据源改动放在 `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/`。
+* ''协议一致性'' —— 协议变更必须同步更新 Debugger 自动化测试；`project-guide` 记录当前 Runtime 保持了 Hazelight `DebugDatabaseSettings` 的 version 7 线协议布局。
+* ''功能落差'' —— Hazelight 扩展中的 `StopPIE` 命令暂未接入当前项目 Runtime；普通编辑、诊断、导航与调试流程不受影响。
+* ''模块归属'' —— 编辑器、IDE 与调试属于工作流工具主题，不暗示对可选插件的模块依赖；调试与源码导航的运行时能力来自随 `Angelscript` 插件一同分发的 DebugServer。
+
+! 相关链接
+
+* <<as-doc-link "editor-ide-debugging/vscode-setup" "VS Code 扩展安装与连接">> —— 构建 VSIX、连接编辑器与端口设置
+* <<as-doc-link "editor-ide-debugging/debugging-breakpoints" "断点、调用栈与变量检查">> —— 从命中断点到检查变量的调试循环
+* <<as-doc-link "hot-reload/index" "热重载">> —— 结构变更如何影响正在生效的断点
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— 诊断证据与自动化测试口径
+* <<as-doc-link "language/classes-inheritance-interfaces" "类、继承与接口">> —— 脚本类型进入编辑器生成类型的规则

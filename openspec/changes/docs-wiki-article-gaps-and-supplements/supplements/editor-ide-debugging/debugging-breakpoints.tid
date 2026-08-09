@@ -1,0 +1,130 @@
+title: AS/Docs/zh-Hans/editor-ide-debugging/debugging-breakpoints
+type: text/vnd.tiddlywiki
+tags: EditorIdeDebugging
+caption: 断点与调试会话
+description: 通过 DebugServer 在 VS Code 中设置断点、检查调用栈与变量、单步执行脚本。
+as-sdk-document: yes
+as-doc-key: editor-ide-debugging/debugging-breakpoints
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 30
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 40
+as-nav-parent: editor-ide-debugging/index
+as-feature-key: script-debugging-session
+
+! 学完能做什么
+
+你将能把 VS Code 连接到正在运行的 Unreal Editor，在 `.as` 脚本里下断点让执行暂停，检查当前调用栈与局部变量，对表达式求值，单步执行代码，以及在变量地址被写入时用数据断点中断——整个调试会话由 Unreal 侧的 ''DebugServer'' 驱动。
+
+前置条件：先按 <<as-doc-link "editor-ide-debugging/index" "编辑器、IDE 与调试">> 的说明装好项目自有的 VS Code 扩展，并能正常打开 `Script/` 工作区、看到编译诊断与补全。
+
+! 调试的传输层：DebugServer
+
+VS Code 扩展不直接读取脚本内存，而是通过一条 TCP 连接与 Unreal 进程内的 DebugServer 通信：
+
+* Editor 侧监听端口 ''27099''（对照 `AngelscriptEngine.h` 中 `DebugServerPort = 27099`）。如果你用启动参数改了端口，必须同步修改 VS Code 的 `UnrealAngelscript.unrealConnectionPort`，否则连不上。
+* 客户端与服务端在握手时交换版本号：`StartDebugging` 消息携带 `DebugAdapterVersion`，服务端回以 `DebugServerVersion`。调用栈的模块名、变量的地址/大小由 Runtime 的 adapter-version gate 决定。当前版本值是进程全局而非按连接保存，混合版本多客户端的限制见 <<as-doc-link "editor-ide-debugging/debugger-protocol-v2" "DebugServer 协议 V2">>。
+* 调试数据库设置（`FAngelscriptDebugDatabaseSettings`）当前保持 ''version 7'' 的线协议布局，与 Hazelight 一致。
+
+<<as-callout note "消息类型来自源码枚举">>
+本页提到的 `SetBreakpoint`、`StepIn/StepOver/StepOut`、`RequestCallStack`、`RequestVariables`、`RequestEvaluate`、`SetDataBreakpoints`/`ClearDataBreakpoints`、`Pause`/`Continue` 都是 `AngelscriptDebugServer.h` 中 `EDebugMessageType` 定义、并由 `AngelscriptDebugServer.cpp` 的消息分发实际处理的消息类型。UI 上的按钮名称由 VS Code 决定，可能与这里的内部消息名不完全一致。
+<</as-callout>>
+
+! 开始一次调试会话
+
+# 用带 Angelscript 插件的 Unreal Editor 打开项目，让脚本先完成一次编译（VS Code 会收到诊断即说明已连上）。
+# 在 VS Code 里打开要调试的 `.as` 文件，在目标行左侧的沟槽处点击下一个断点。扩展会把这个断点作为 `SetBreakpoint` 消息发给 DebugServer。
+# 在 Editor 中触发会执行该脚本的路径（进入 PIE、调用相关函数等）。当执行走到下断点的那一行，DebugServer 会暂停脚本上下文并回报“已停止”。
+# 此时 VS Code 的调用栈、变量、监视面板都会填充数据；你可以单步或继续。
+
+下面用仓库里真实存在的示例作为“可下断点的目标”。`Script/Examples/Core/Example_Math.as` 里的 `ExecuteExampleMath()` 是一段纯脚本函数，很适合练习逐行观察局部变量的变化：
+
+<$angelscript-code lineNumbers="yes" highlightLines="3-4" code="""// 摘自 Script/Examples/Core/Example_Math.as
+void ExecuteExampleMath()
+{
+    float AbsoluteValue = Math::Abs(-1.0);   // 在此行下断点，暂停后查看 AbsoluteValue
+    check(AbsoluteValue == 1.0);
+
+    float MinimumValue = Math::Min(0.1, 1.0);
+    float MaximumValue = Math::Max(0.1, 1.0);
+
+    float ClampedValue = Math::Clamp(X = 2.0, Min = 0.0, Max = 0.5);
+}"""/>
+
+在高亮行下断点后，单步（Step Over）一次，就能在变量面板里看到 `AbsoluteValue` 已经算出、而 `MinimumValue` 尚未赋值——这就是逐行观察脚本状态的基本回路。
+
+! 检查调用栈
+
+暂停后 VS Code 请求 `RequestCallStack`，DebugServer 回以一组调用帧（`FAngelscriptCallFrame`）。每帧包含：
+
+|!字段 |!含义 |
+|`Name` |当前所在的脚本函数名 |
+|`Source` |对应的脚本源文件 |
+|`LineNumber` |该帧当前停在的行号 |
+|`ModuleName` |所属脚本模块名（仅当协商出的适配器版本足够高时才出现在线协议中） |
+
+点击不同调用帧时，变量与求值都会''相对该帧''解析——这一点在下面的求值路径里很关键。
+
+! 检查变量与求值表达式
+
+* ''变量''：VS Code 发送 `RequestVariables`，DebugServer 回以变量列表（`FAngelscriptVariable`：`Name` / `Value` / `Type`，并标记 `bHasMembers` 表示可展开）。可展开的对象在你点开时会再拉取其成员。
+* ''求值''：在监视窗口或悬停中输入一个表达式，走 `RequestEvaluate`。调试器路径按 ``{Frame}:Variable.Member.Member`` 的形式解析，例如 ``0:Owner.Name`` 表示“第 0 帧里 `Owner` 的 `Name` 成员”。
+
+当前 `RequestEvaluate` 是''路径读取''，不是任意 AngelScript 表达式解释器，更没有赋值入口。Server 读取 `Path` 与 `DefaultFrame`，调用 `GetDebuggerValue`，再把得到的 name/value/type/address/size/member flag 序列化返回；失败时返回字段为空的 variable。
+
+路径解析支持 frame 前缀、local/this/module/global scope、namespace global、enum value、成员链和 subscript。显式 scope 前缀为 `%local%`、`%this%`、`%module%`。成员访问通过 `FAngelscriptTypeUsage::GetDebuggerMember`，global property accessor 可能调用形如 `Get<Name>` 的 getter 来取得显示值，因此“只读协议”不等于所有 getter 都无业务副作用；供调试显示的 getter 仍应保持观察性。Server 用 `bIsEvaluatingDebuggerWatch` guard 标记这段调用。
+
+! 单步执行
+
+DebugServer 分别处理三种单步消息：
+
+* ''Step In''（`StepIn`）：进入被调用的脚本函数内部。
+* ''Step Over''（`StepOver`）：执行当前行，但不进入其中的函数调用。
+* ''Step Out''（`StepOut`）：执行到当前函数返回，回到调用者那一帧。
+
+配合 `Pause` / `Continue` 就是完整的“暂停—检查—推进”循环。
+
+! 条件断点
+
+`FAngelscriptBreakpoint` 带一个 `Condition` 字段：你可以在 VS Code 里给断点加条件表达式，只有条件成立时才真正中断。服务端解析形如 ``左值 运算符 右值`` 的比较（支持 `==` `!=` `>=` `<=` `>` `<`）。
+
+条件不是完整 AngelScript 语法树。实现按固定顺序寻找第一个 `==`、`!=`、`>=`、`<=`、`>`、`<`，左右各解析为：
+
+* `true` / `false`；
+* 可由 `LexTryParseString<int64>` 读取的整数；
+* 或 debugger value path（不含 frame 时自动补 `0:`）。
+
+value path 的显示字符串若是 bool/int 会转为对应类型，否则视为 string。bool 与 int 可混合，bool 映射为 0/1，并支持六种比较；只要一侧是非数值，只有 `==`/`!=` 可用。没有 operator 时执行 truthiness：bool 原值、int 非零、string 非空。
+
+解析/取值失败返回 unset；line callback 会记录 warning，随后''fail open''，即允许本次断点中断，避免一个写错的条件让用户永远错过断点。条件不支持算术、函数调用、`&&`/`||`、括号表达式或字符串字面量语法；未识别 token 会被当作 value path。
+
+! 数据断点
+
+数据断点在''某个变量的内存地址被写入''时中断，而不是执行到某行时中断。VS Code 通过 `SetDataBreakpoints` / `ClearDataBreakpoints` 管理它们。
+
+<<as-callout warning "硬件数据断点数量有限">>
+DebugServer 使用硬件断点实现数据断点，同时活跃的数量上限为 ''4''（`DATA_BREAKPOINT_HARDWARE_LIMIT = 4`）。超出后新的数据断点无法全部生效。若某个数据断点被高频触发导致卡死，源码提供了从调试器 Immediate 窗口调用的 `ClearAllAngelscriptDataBreakpointsFromHandler()` 作为逃生出口。
+<</as-callout>>
+
+! 边界与注意
+
+<<as-callout warning "本项目 Runtime 的调试边界">>
+* Hazelight 扩展中的 ''`StopPIE` 命令暂未接入本项目 Runtime''：普通编辑、诊断、导航与上述调试流程不受影响，但不要指望从扩展一键停止 PIE。
+* 任何''协议变更都必须同步更新 Debugger 自动化测试''（`Plugins/Angelscript/Source/AngelscriptTest/Debugger/` 下的断点、数据断点、单步、求值、会话等用例），并按 `Tools\RunBuild.ps1`、`Tools\RunTests.ps1` 验证。改了 `EDebugMessageType` 或任一消息的序列化布局却不改测试，会让线协议悄悄漂移。
+* 客户端改动放在 `Extensions/AngelscriptVSCode/`，Unreal 侧协议与数据源改动放在 `Plugins/Angelscript/Source/AngelscriptRuntime/Debugging/`。
+<</as-callout>>
+
+<<as-callout note "热重载后如何重应用">>
+成功编译/重载收尾时，`FAngelscriptEngine` 调用 `DebugServer->ReapplyBreakpoints()`。Server 保留 `Breakpoints` 中以 module name 为 key 的 line/condition 集合，重新用 `GetModuleByModuleName` 绑定最新 module desc，并在有行断点时把新 `asCModule::hasBreakPoints` 设为 true。失败编译保留旧 module；成功替换后才切到新 module。若模块名发生变化，旧 key 不会自动迁移，客户端需按新 module/source 重新提交断点。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "editor-ide-debugging/index" "编辑器、IDE 与调试">> —— 扩展安装、连接与本章工具地图
+* <<as-doc-link "hot-reload/change-classification" "热重载变更分类">> —— reload 对断点与脚本状态的影响
+* <<as-doc-link "testing-diagnostics-release/index" "测试、诊断与发布">> —— Debugger 自动化测试与协议验证入口

@@ -1,0 +1,143 @@
+title: AS/Docs/zh-Hans/unreal-language/boundaries-and-differences
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: Unreal 方言边界与 fork 差异
+description: 记录无效组合、编译诊断、运行时/打包差异与选择性兼容边界。
+as-sdk-document: yes
+as-doc-key: unreal-language/boundaries-and-differences
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: guide
+as-content-status: draft
+as-order: 40
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[project-guide]] [[angelscript-plugin]] [[openspec]]
+as-nav-group: script-features
+as-nav-order: 200
+as-nav-parent: unreal-language/index
+as-feature-key: unreal-language-boundaries
+
+! 五类“不能用”
+
+|!类别 |!例子 |!处置 |
+|语法不属于 fork |`@` handle、mutable global、script interface、mixin class |采用本 fork 模式，不当 bug |
+|无效 specifier 组合 |错误 Override、纯函数无返回、RPC 形状不合法 |编译诊断并修声明 |
+|绑定表面缺失 |C++ 有但未手工/生成/fallback 注册 |查 binding ownership |
+|环境边界 |Editor-only API 出现在 packaged/commandlet |`#if EDITOR` + 模块分层 |
+|未来 backport |2.38 有、当前仅 Disabled `#as-v238-backport` |单独适用性评审 |
+
+! 安全边界
+
+RPC 不能 direct raw thunk；容器/out/ref-return/WorldContext direct emit 当前保守；nested containers 可能被 template validation 拒绝；改变 struct/access/反射签名是结构 reload。
+
+! Haze 历史
+
+`WITH_ANGELSCRIPT_HAZE` inactive 分支和 Haze-only RPC 语法已移除。旧文档中的 Haze flag、actor instigator 别名或私有 engine 假设不能继续当兼容表面。
+
+! Editor 与 Cooked
+
+CallInEditor、ContentBrowser、SourceNavigation、DirectoryWatcher 不进入 packaged runtime。EditorContext test flag 不让 Editor-only symbol 在 runtime 编译。Examples 也不是正式 cooked 内容路径。
+
+! 判断缺口
+
+先固定产品/UE/插件配置，再查当前源码、生成表与诊断。外部/历史文档只能证明另一环境曾有某能力，不证明本地回归。
+
+! 边界不是一张“有/无”表
+
+判断一个功能时至少固定五个轴：
+
+|!轴|!必须记录的值|
+|产品|Unreal AngelScript 产品版本；不要拿底层 AS 2.33/2.38 当产品版本|
+|宿主|UE minor、source/installed Engine、目标平台|
+|插件|核心 Runtime 还是 GameplayTags/GAS 等可选扩展|
+|环境|Editor、PIE、Game、Server、Commandlet、cooked/Shipping|
+|后端|VM、StaticJIT、reflective fallback、RuntimeLinked、NMFA|
+
+同一 API 在 Editor + RuntimeLinked 可用，却可能在 Game target 因 Editor module 缺失而不可用；NMFA 对复杂签名 skipped，也不代表 reflective path 不支持。文档若只写“支持”，读者无法知道结论属于哪个坐标。
+
+! 从源码到可用性的证据链
+
+```text
+token / C++ UFUNCTION exists
+  → current preprocessor/parser accepts it
+  → descriptor/type usage represents it
+  → generator/binder publishes it
+  → selected module and backend load it
+  → target environment executes the intended semantics
+```
+
+每一箭头都可能失败：
+
+* token 存在但 fork 主动拒绝旧语法，如 property accessor/mixin class；
+* descriptor 存在但没有可生成的 FProperty/UFunction；
+* C++ UFUNCTION 通过反射但被 `NotInAngelscript`、Private header 或 module gate 排除；
+* direct emitter 因 out/ref/container/WorldContext 拒绝，但 reflective fallback 仍正确；
+* Editor bind 存在，cooked source/type filter 后消失；
+* RPC declaration 成功，错误 owner/callspace 仍让运行时不发送。
+
+! 当前 fork 的代表性语言取舍
+
+|!能力|!当前合同|!替代方式|
+|显式 `@` handle|不采用|UObject/脚本对象使用自动 handle 语义并显式 null 检查|
+|可变脚本全局|拒绝|World/GameInstance/Engine subsystem 或对象字段|
+|script interface|不作为普通 vanilla surface|使用 Unreal UINTERFACE/Blueprint contract 的当前绑定表面|
+|mixin class|拒绝|`mixin function`、ScriptMixin 或真实 component|
+|property accessor sugar|mode 0，parser 拒绝旧语法|真实字段或显式 GetX/SetX|
+|`using namespace` 等较新语法|按当前 backport 状态核实|显式 qualified name|
+
+这些不是临时“TODO 列表”。每项都与 UClass 单继承、对象 handle、global-state containment、反射或升级成本有关。是否 backport 必须单独做适用性设计。
+
+! 环境状态流
+
+```text
+Editor process
+  → bUseEditorScripts=true
+  → Editor source + Editor-only binds/classes
+  → PIE may add gameplay World but still lives in Editor process
+
+Commandlet
+  → selected Runtime/Editor modules by commandlet kind
+  → often no interactive UI or normal gameplay World
+
+Packaged Game/Server
+  → editor sources/types/fields removed
+  → only runtime-owned modules and cooked assets
+```
+
+`#if EDITOR` 决定源码可见性；Automation `EditorContext` 决定测试选择；`CallInEditor` 是 UFunction 交互表面。三者不能互换。Editor-only 字段还会改变反射布局，访问方必须处于一致条件边界。
+
+! 兼容与迁移分类
+
+|!变化|!风险|
+|只改函数 body|通常可 soft reload；仍核对正在执行 context/StaticJIT|
+|改指定符/metadata|可能改变 Blueprint、网络、Editor 表面|
+|改字段/参数/返回|UClass/UFunction/FProperty 结构变化与资产影响|
+|移动 namespace/module/plugin|稳定 declaration、依赖与打包表面变化|
+|切 binding backend|ABI、fallback/skipped 和 target modules 变化|
+|吸收 upstream 语法|parser/compiler/VM/JIT/diagnostic 与 fork contract 全链影响|
+
+旧/新状态不能混用：新 type descriptor 不能解释旧对象内存，新 UDelegateFunction 不能假设旧 binding 兼容，新 generated shard 不能与旧 layout version 组合。
+
+! 缺口分类和行动
+
+|!发现|!行动|
+|当前源码明确拒绝|记录产品差异与替代方式，不报“漏绑定”|
+|C++ 有、AS 没有，且符合产品目标|查 manual/generated/reflection ownership，建立独立 OpenSpec|
+|只有 Hazelight/vanilla 有|固定 revision，比较当前 fork 分叉，先做适用性评审|
+|只在一个 Target/后端失败|定位 module/environment/backend，不把结论扩大到全产品|
+|文档有 API、源码/生成表找不到|文档降为历史或修正；不能通过编造示例保留|
+
+! 诊断顺序
+
+# 记录完整坐标：产品、UE、Target、插件、backend。
+# 从实际编译诊断和最终 AS declaration 确认失败层。
+# 查 descriptor/生成表/绑定统计，区分未发现、被过滤、fallback、skipped。
+# 对 runtime 语义检查 owner、World、ProcessEvent、GC、reload generation。
+# 最后再比较外部 reference，明确它证明的是意图还是当前事实。
+
+! 相关链接
+
+* <<as-doc-link "reference-differences-version/fork-language-differences" "Fork 语言差异">>
+* <<as-doc-link "reference-differences-version/binding-availability" "绑定可用性">>
+* <<as-doc-link "reference-differences-version/runtime-editor-commandlet" "环境差异">>
+* <<as-doc-link "unreal-language/reflection-signature-limits" "反射签名限制">>

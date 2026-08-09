@@ -1,0 +1,251 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/as-compiler-pipeline
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: asCCompiler 编译流程
+description: asCCompiler 编译流程：语义分析、类型推导、字节码生成阶段与错误恢复策略。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/as-compiler-pipeline
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 20
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]]
+as-nav-group: internals-reference
+as-nav-order: 20
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: as-compiler-pipeline
+
+! 要解决的问题
+
+AngelScript 需要将一组 `.as` 源文件组合成一个可执行模块。这一过程涉及多个相互依赖的阶段：类型必须在函数体编译前完成布局，全局变量初始化顺序必须确定，重载决议必须在没有显式类型标注的情况下选出唯一最优函数。本文描述两层分工——`asCBuilder`（构建编排器）与 `asCCompiler`（单函数代码生成器）——以及它们的内部管线模型。
+
+! 概念与管线模型
+
+AngelScript 的编译分为两个明确层次：
+
+* ''`asCBuilder`'' 负责多阶段构建编排：将模块中所有脚本文件从源文本推进到可执行字节码，协调解析、类型注册、内存布局和函数编译。
+* ''`asCCompiler`'' 负责单个函数的代码生成：接收一个函数 AST 节点，输出该函数的字节码序列。
+
+关键源文件（均位于 `ThirdParty/angelscript/source/`）：
+
+| 文件 | 规模 | 职责 |
+|------|------|------|
+| `as_builder.h` / `as_builder.cpp` | 17 KB / 203 KB（7007 行） | 构建编排（asCBuilder） |
+| `as_compiler.h` / `as_compiler.cpp` | 25 KB / 604 KB（18945 行） | 单函数代码生成（asCCompiler） |
+
+`as_compiler.cpp` 以 604 KB / 18945 行成为整个引擎中最大的文件，其复杂性主要来自表达式编译、隐式转换和重载决议。
+
+!! asCBuilder — 五阶段构建流水线
+
+`asCModule::Build()` 调用 `asCBuilder` 并按以下顺序执行五个阶段：
+
+```
+asCModule::Build()
+  └→ asCBuilder 阶段流水线
+     ├── BuildParallelParseScripts()  // 阶段 0: 并行解析所有 .as 脚本
+     ├── BuildGenerateTypes()         // 阶段 1: 提取类型声明
+     │     └→ RegisterTypesFromScript()
+     ├── BuildGenerateFunctions()     // 阶段 2: 注册函数/方法签名
+     │     ├→ ParseScripts()           // 注册非类型声明
+     │     ├→ CompileInterfaces()      // 编译接口
+     │     ├→ CompileClasses()         // 编译类（属性+方法签名）
+     │     └→ RegisterGlobalVariables()
+     ├── BuildLayoutClasses()         // 阶段 3: 布局类内存
+     │     ├→ LayoutClass() for each class
+     │     └→ CreateDefaultDestructors()
+     ├── BuildLayoutFunctions()       // 阶段 3b: 布局函数参数
+     │     ├→ LayoutFunction() for each func
+     │     └→ CompileGlobalVariables()  // 全局变量初始化
+     └── BuildCompileCode()           // 阶段 4: 编译所有函数体
+           ├→ CompileFactory() for each factory
+           ├→ CompileFunctions()       // 遍历所有函数描述
+           └→ 清理 parsers 与 class declarations
+```
+
+!! CompileClasses 与按需依赖解析
+
+`CompileClasses`（`as_builder.cpp` 约 3259 行）遍历所有类声明并调用 `CompileClass()`。`CompileClass` 支持''按需编译''：当编译类 A 时发现依赖类 B，会通过 `EnsureClassCompiled()` 触发 B 类的编译，从而消除源文件内声明顺序的约束。
+
+!! CompileFunctions 与编译器实例隔离
+
+`CompileFunctions`（`as_builder.cpp` 约 959 行）遍历所有已注册函数，为''每个函数创建独立的 `asCCompiler` 实例''，保证编译状态完全隔离：
+
+```
+void asCBuilder::CompileFunctions()
+{
+    for( n = 0; n < functions.GetLength(); n++ )
+    {
+        asCCompiler compiler(this);
+        compiler.CompileFunction(this, script, paramNames, node, func, classDecl);
+    }
+}
+```
+
+! 关键数据结构与稳定源码入口
+
+!! asCCompiler::CompileFunction — 单函数生成主流程
+
+`CompileFunction`（`as_compiler.cpp` 约 993–1250 行）按以下步骤将函数 AST 转为字节码：
+
+```
+CompileFunction(builder, script, paramNames, funcNode, outFunc, classDecl)
+==========================================================================
+步骤 1: Reset() — 重置编译器状态
+步骤 2: SetupParametersAndReturnVariable() — 分配参数和返回值变量
+步骤 3: 解析函数体（按需 ParseStatementBlock）
+步骤 4: CompileStatementBlock(block, ..., &bc) — 编译语句块
+步骤 5: 拼接字节码:
+  - JitEntry 指令
+  - 构造函数: 基类构造调用 + 成员初始化
+  - 主体字节码
+  - 变量析构 + Label(0) 返回标签
+  - 参数析构
+步骤 6: FinalizeFunction() — 字节码后处理
+  - byteCode.Finalize()      // PostProcess + Optimize + ResolveJump + ExtractLine
+  - ExtractTryCatchInfo()
+  - ExtractObjectVariableInfo()
+  - 输出到 outFunc->scriptData->byteCode
+```
+
+!! 语句分发
+
+`CompileStatementBlock`（`as_compiler.cpp` 约 1695 行）遍历函数体中的每个子节点，区分声明（`CompileDeclaration`）和语句（`CompileStatement`），并在子节点之后执行不可达代码检测。`CompileStatement` 按节点类型分发至专用方法：
+
+| 节点类型 | 编译方法 |
+|---------|---------|
+| `snIf` | `CompileIfStatement` |
+| `snFor` | `CompileForStatement` |
+| `snForEach` | `CompileForeachStatement` |
+| `snWhile` | `CompileWhileStatement` |
+| `snDoWhile` | `CompileDoWhileStatement` |
+| `snSwitch` | `CompileSwitchStatement` |
+| `snReturn` | `CompileReturnStatement` |
+| `snBreak` | `CompileBreakStatement` |
+| `snContinue` | `CompileContinueStatement` |
+| 其他 | `CompileExpressionStatement` |
+
+!! 表达式编译：Shunting Yard → 后缀求值
+
+表达式编译采用''中缀 → 后缀 → 栈式求值''三步法（`as_compiler.cpp` 内 `CompileExpression`）：
+
+```
+CompileExpression(expr, ctx)
+============================
+1. ConvertToPostFix(expr, postfix)       // Shunting Yard 算法
+2. CompilePostFixExpression(postfix, ctx)
+   for each node in postfix:
+     if operand → CompileExpressionTerm(node, v)
+       → CompileExprPreOp()
+       → CompileExpressionValue()    // 常量/变量/函数调用/Cast
+       → CompileExprPostOp()         // 成员访问/索引/调用
+     if operator → CompileOperator(node, l, r, out)
+       → CompileOperatorOnHandles()
+       → CompileMathOperator()
+       → CompileBitwiseOperator()
+       → CompileComparisonOperator()
+       → CompileBooleanOperator()
+       → CompileOverloadedDualOperator()
+```
+
+!! asCExprContext — 表达式求值上下文
+
+编译期每个表达式的中间状态通过 `asCExprContext` 结构传递：
+
+| 字段 | 含义 |
+|------|------|
+| `bc` (`asCByteCode`) | 当前表达式已生成的字节码 |
+| `type` (`asCExprValue`) | 表达式的值类型（含常量值、栈偏移） |
+| `property_get` / `property_set` | 属性访问器的函数 ID |
+| `deferredParams` | 延迟清理的参数列表 |
+| `methodName` | 尚未完成重载解析的方法名 |
+
+!! 重载决议 — MatchFunctions
+
+重载决议是编译器最复杂的算法之一，入口为 `MatchFunctions`（`as_compiler.cpp` 约 2597–2855 行）：
+
+```
+MatchFunctions(funcs, args, node, name, namedArgs, ...)
+========================================================
+步骤 1: 按参数数量过滤（考虑默认参数）
+步骤 2: 对每个候选函数，逐参数调用 MatchArgument():
+  - ImplicitConversion(临时上下文, 参数类型, ..., false)
+  - 返回转换代价（EConvCost 枚举值之和）
+  - 代价 -1 = 不匹配
+步骤 3: 取交集——只保留所有参数都匹配的候选
+步骤 4: 匹配命名参数（namedArgs）
+步骤 5: 选择总代价最低的候选
+  - 相同代价 → 保留多个（后续报歧义错误）
+步骤 6: FilterConst() — 非 const 调用优先选非 const 重载
+```
+
+!! 隐式转换代价 EConvCost
+
+`ImplicitConversion` 用以下代价枚举量化每次参数转换的"匹配质量"：
+
+| 代价级别 | 枚举值 | 含义 |
+|---------|--------|------|
+| 0 | `asCC_NO_CONV` | 完全匹配，无需转换 |
+| 1 | `asCC_CONST_CONV` | 仅添加 const 修饰 |
+| 2–3 | `asCC_FLOAT_*_CONV` | 浮点精度宽窄转换 |
+| 4–5 | `asCC_INT_TO_FLOAT/DOUBLE` | 整数→浮点提升 |
+| 6 | `asCC_PRIMITIVE_SIZE_CONV` | 原始类型大小转换 |
+| 7 | `asCC_SIGNED_CONV` | 有符号/无符号互转 |
+| 8 | `asCC_SHADOW_CONV` | UE shadow 类型转换 |
+| 9–12 | `asCC_*_TO_*_CONV` | 对象/原始类型间转换 |
+
+代价为 -1 表示该候选函数对该参数完全不可转换，直接淘汰。
+
+!! 变量管理
+
+`asCCompiler` 内部用多个并行数组跟踪变量生命周期：
+
+| 数组 | 含义 |
+|------|------|
+| `variableAllocations[]` | 每个变量槽对应的类型 |
+| `variableIsTemporary[]` | 是否为临时变量 |
+| `variableIsOnHeap[]` | 是否为堆分配 |
+| `tempVariableOffsets[]` | 所有临时变量的栈偏移 |
+| `freeVariables[]` | 当前空闲可复用的变量槽 |
+| `tempVariables[]` | 当前活跃的临时变量 |
+| `reservedVariables[]` | 保留不可分配的变量槽 |
+
+`AllocateVariable()` 优先从 `freeVariables` 中复用已释放的槽，无可用槽时才分配新槽。`DeallocateVariable()` 将槽归还至 `freeVariables`。
+
+!! UE Fork 扩展点
+
+本仓库对上游 `as_compiler.cpp` 做了以下有记录的修改：
+
+| 位置（行号近似） | 修改内容 | 动机 |
+|----------------|---------|------|
+| L1001–1010 | `allowEditPropertyAccess` 判断 | `__InitDefaults` / `ConstructionScript` 等函数允许写 editable 属性 |
+| L5611 | `CompileForeachStatement` 扩展 | 将 `foreach` 语句降级为 `opForBegin`/`opForNext`/`opForValue` 调用序列 |
+| L236 | `ANGELSCRIPTRUNTIME_API` 导出宏 | 匹配 UE Runtime 模块导出规范 |
+| L1042–1052 | 比较运算符参数类型不匹配警告 | `opEquals`/`opCmp` 参数应与容器元素类型一致 |
+
+<<as-callout note "行号基准">>
+上表行号来自知识文档的记录，基于特定 fork 版本的源码快照。实际源码行号会随后续提交变化，核实时应以函数名或注释内容定位，而非直接跳行号。
+<</as-callout>>
+
+! 边界与失败模式
+
+<<as-callout note "错误记录与停止边界">>
+`asCCompiler::Error(msg,node)` 用节点 token 位置换算行列，调用 `builder->WriteError(...)`，并把实例字段 `hasCompileErrors` 设为 `true`；`Warning` 只写 warning，不改变该标志。编译器不是统一“遇错立即退出”：各编译例程在自己的安全边界检查 `hasCompileErrors` 或 builder error count，有的提前返回，有的继续完成当前结构以积累诊断。修改错误恢复时必须保留每个检查点的栈/变量作用域清理，不能只在 `Error()` 内 long-jump。
+<</as-callout>>
+
+<<as-callout note "语义分析与类型推导边界">>
+`as_compiler.cpp` 在表达式编译中直接维护 `asCExprValue::type` 并同时发射/调整字节码；当前 `asCCompiler` 没有一个独立、先完整类型检查再单独 codegen 的公共遍。类型匹配、隐式转换、重载解析与 codegen 在各 `Compile*` 递归方法中交织。维护者应按具体表达式入口追踪类型和值寄存器，而不是寻找不存在的统一 SemanticAnalysis pass。
+<</as-callout>>
+
+<<as-callout note "专用插件/示例说明">>
+本节为编译器内核实现的边界页。仓库中无专门针对 asCCompiler 管线的脚本示例或独立测试集；编译流程以白盒测试（C++ 单元测试）为主，脚本层面可观察到的行为包括重载决议结果、foreach 展开和 editable 属性访问——相关示例见 `Script/Examples/` 目录中的对应文件。
+<</as-callout>>
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/index" "编译与预处理总览">> —— 本主题的导航入口
+* <<as-doc-link "compile-module-preprocessor/as-parser-internals" "AST 解析器（asCParser）">> —— asCCompiler 的 AST 输入层
+* <<as-doc-link "compile-module-preprocessor/as-compiler-pipeline" "模块构建器（asCBuilder）">> —— 五阶段构建编排详解
+* <<as-doc-link "runtime-jit-vm/as-bytecode-instruction-set" "字节码格式">> —— asCCompiler 的输出
+* <<as-doc-link "runtime-jit-vm/index" "运行时与虚拟机">> —— 执行字节码的 VM 层

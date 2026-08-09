@@ -1,0 +1,146 @@
+title: AS/Docs/zh-Hans/unreal-language/mixin-functions
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: Mixin 函数的解析、绑定与维护
+description: 区分脚本 mixin function、UCLASS ScriptMixin、函数级 ScriptMethod 和手工 Method 注册，解释首参数裁剪、重载冲突、模块可见性与失败诊断。
+as-sdk-document: yes
+as-doc-key: unreal-language/mixin-functions
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: explanation
+as-content-status: draft
+as-order: 150
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 290
+as-nav-parent: unreal-language/index
+as-feature-key: mixin-functions
+
+! 先区分四条来源
+
+同样的 `Target.Helper()` 调用表面，可能来自完全不同的注册链：
+
+|!来源|!定义位置|!如何成为方法|
+|脚本 `mixin function`|`.as` 顶层函数|AS parser/compiler 把第一个参数当 receiver|
+|类级 `ScriptMixin`|C++ `UCLASS(meta=(ScriptMixin="Type"))` 静态函数库|签名分析裁掉第 0 参数，注册到目标类型|
+|函数级 `ScriptMethod`|单个静态 UFUNCTION metadata|当前 fork 从第 0 参数推断目标类型|
+|手工 bind|`Bind_*.cpp` 的 `Method(...)`|维护者直接给目标类型注册 declaration/函数指针|
+
+它们只共享“调用起来像成员方法”，并不共享可见性、绑定顺序和故障位置。排查时第一步不是找同名成员，而是确认 API 来源。
+
+! 脚本侧 mixin function
+
+```angelscript
+mixin void MoveUp(AActor Self, float Distance)
+{
+    Self.AddActorWorldOffset(FVector(0.0, 0.0, Distance));
+}
+
+void Use(AActor Actor)
+{
+    Actor.MoveUp(50.0);
+}
+```
+
+源码函数仍有两个参数，但方法式调用把 `Actor` 匹配到第一个参数 `Self`。Mixin 不向 `AActor` 增加字段、vtable slot 或继承关系；它只是候选函数解析规则。因此：
+
+* receiver 必须能转换到首参数类型；
+* 剩余实参按普通 overload 规则匹配；
+* 函数定义所在模块/namespace 必须在调用点可见；
+* mixin 不能保存 per-object 状态，也不能 override virtual function；
+* 当前 fork 支持 `mixin function`，明确不支持 `mixin class`。
+
+如果需要状态与生命周期，用 component/subsystem；需要多态合同，用基类/接口/BlueprintEvent；需要通知多个对象，用 event。
+
+! Native ScriptMixin 的签名变换
+
+以静态 helper 为例：
+
+```cpp
+UCLASS(meta=(ScriptMixin="FQualifiedFrameTime"))
+class UFrameTimeLibrary : public UBlueprintFunctionLibrary
+{
+    UFUNCTION(BlueprintCallable)
+    static double AsSeconds(const FQualifiedFrameTime& Self);
+};
+```
+
+`FAngelscriptFunctionSignature::InitFromFunction` 读取 class/function metadata，要求函数为 static，并检查第 0 参数能否成为目标类型。成功后执行概念变换：
+
+```text
+static double AsSeconds(FQualifiedFrameTime Self)
+  → MixinClass = FQualifiedFrameTime
+  → remove ArgumentTypes[0] / ArgumentNames[0]
+  → bStaticInScript = false
+  → register "double AsSeconds() const" on target type
+```
+
+class-level `ScriptMixin` 可以列出多个目标类型，但第 0 参数必须与其中一个目标匹配。函数级 `ScriptMethod` 则在 UE 5.7 metadata 不再自动传播时，由当前 fork 明确从第 0 参数推断目标。
+
+若匹配失败，部分路径会退回命名空间静态函数，而不是报一个显眼的“mixin failed”。这正是 API 只剩 `Library::Function(Target, ...)` 时应优先检查的地方。
+
+! 注册时序和重复保护
+
+自动反射路径在 late binding 阶段注册；`Bind_FunctionLibraryMixins.cpp` 一类手工补漏可能稍后运行，用于特殊 wrapper、out 形状或需要精确 lambda 的签名。后运行不等于覆盖：补漏前应查询 `HasMethod` / `GetMethodByDecl`，避免同一 declaration 再注册导致 `asALREADY_REGISTERED`。
+
+```text
+UHT/reflection function discovery
+  → FAngelscriptFunctionSignature
+  → automatic ScriptMixin registration
+  → manual late supplement (only missing declarations)
+  → finalized AS type method table
+```
+
+UHT 函数地址消歧 helper 也不一定注册 AS 方法；它可能只给 generated function table 提供精确 native pointer。看到 `Bind_*.cpp` include 某 library 时，仍要读它究竟调用 `Method()` 还是 `RegisterFunctionBinding()`。
+
+! Const、引用与返回值
+
+Receiver 的 C++ const/reference 形状会影响生成的 AS 方法 constness；不能只裁掉参数文本。out/ref、container、UObject handle 和 wrapper 类型还要经过相同的 type-usage/marshalling 校验。调用表面看起来简单，不代表可以绕过反射签名限制。
+
+命名冲突时，真实成员与所有可见 mixin overload 一起参与解析。首参数写得过宽（例如 `UObject`）会把 helper 注入大量类型，使常见名称如 `Get`、`Add` 产生模糊或意外遮蔽。优先使用窄 receiver 和领域化方法名。
+
+! 模块与插件边界
+
+脚本 mixin 只在定义模块可见；调用模块必须建立正确 import/include 依赖。Native mixin 还依赖拥有该 FunctionLibrary 的 UE module/plugin 已加载并执行注册。C++ header 能被索引、IDE stub 出现、或另一个开发机启用了插件，都不能证明目标构建中可调用。
+
+对于可选 GameplayTags/GAS 扩展，核心 Runtime 不应反向假设扩展 mixin 存在。共享脚本若需要可选能力，应放入同一可选模块或通过清晰的条件编译/依赖边界隔离。
+
+! 选型矩阵
+
+|!需求|!推荐|
+|纯脚本、局部领域 helper|脚本 `mixin function`|
+|为已有 Unreal 类型暴露稳定 native helper|`ScriptMixin` / `ScriptMethod`|
+|反射推导不了的少数签名|手工 `Method(...)`，并记录为何不能自动|
+|需要状态或 BeginPlay/teardown|component/subsystem，而不是 mixin|
+|需要 virtual override|真实成员/接口/BlueprintEvent|
+|需要保留 `Type::Function(Target)` API|显式 static namespace；不要同时无意注入成员形成双表面|
+
+! 故障矩阵
+
+|!现象|!检查顺序|
+|只有 `Library::Func(Target)`，没有 `Target.Func()`|metadata 是否激活；static；首参数类型；是否退回 `bStaticInScript`|
+|unknown method|定义模块/可选插件是否加载；绑定阶段是否执行；目标类型是否完全一致|
+|ambiguous call|真实成员与多个 mixin overload；首参数是否过宽；implicit conversion|
+|重复注册 -13|自动路径已注册，手工补漏缺少幂等查询|
+|const receiver 无法调用|生成 method constness 与 C++ 首参数 const/ref 不一致|
+|Editor 可用、cooked 缺失|owner module 是 Editor-only，或 optional plugin 未打包|
+|打开 ScriptMixin 后旧脚本失败|旧代码依赖 `Type::Func(Target)` namespace 形态，需要迁移或保留兼容入口|
+
+! 维护者源码地图
+
+* vendored `as_parser.cpp::ParseMixin`：当前只接受 function 路径，拒绝 mixin class。
+* `Binds/Helper_FunctionSignature.h::InitFromFunction`：class/function metadata、首参数匹配和裁剪。
+* `Bind_BlueprintType.cpp`：自动 function-library/mixin 注册阶段。
+* `Bind_FunctionLibraryMixins.cpp`：后置手工补漏与重复规避样板。
+* `FunctionLibraries/`：真实生产 API 及 module ownership。
+* `Script/Examples/Core/Example_MixinMethods.as`：脚本 mixin 的作者级例子。
+
+变更 native mixin 时要同时记录旧/新脚本 declaration、namespace 兼容、目标 plugin availability 和生成/手工路径；“文件名里有 Mixin”不是行为证据。
+
+! 相关链接
+
+* <<as-doc-link "language/mixins-and-extension-methods" "Mixin 入门与选型">>
+* <<as-doc-link "bindings-uht-extensions/bind-execution-timing" "绑定阶段与时序">>
+* <<as-doc-link "bindings-uht-extensions/bind-trait-fluent-api" "绑定 trait 合同">>
+* <<as-doc-link "reference-differences-version/binding-availability" "API 可用性证据">>

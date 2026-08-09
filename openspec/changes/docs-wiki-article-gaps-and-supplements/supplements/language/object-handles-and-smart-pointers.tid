@@ -1,0 +1,149 @@
+title: AS/Docs/zh-Hans/language/object-handles-and-smart-pointers
+type: text/vnd.tiddlywiki
+tags: Language
+caption: UObject 句柄、弱引用与软引用
+description: 区分直接 UObject 句柄、TWeakObjectPtr、TSoftObjectPtr 与 TSubclassOf 的身份和加载语义。
+as-sdk-document: yes
+as-doc-key: language/object-handles-and-smart-pointers
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: guide
+as-content-status: draft
+as-order: 140
+as-content-revision: 2
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: language-basics
+as-nav-order: 140
+as-nav-parent: language/index
+as-feature-key: language-object-handles-smart-pointers
+
+! 先区分四个问题
+
+|!类型/写法 |!回答的问题 |
+|`AActor Actor` |现在是否有一个具体 UObject 实例可用？ |
+|`TWeakObjectPtr<AActor>` |不延长生命周期地观察一个实例；它还活着吗？ |
+|`TSoftObjectPtr<UObject>` |通过资产路径引用可能尚未加载的对象 |
+|`TSubclassOf<AActor>` |选择一个符合父类约束的 `UClass`，不是实例 |
+
+它们不可互换。弱引用不是异步加载引用，soft object 不是活对象句柄，class reference 也不能直接调用实例方法。
+
+! 直接 UObject 句柄
+
+脚本里 UObject 派生类型通常直接写成 `AActor`、`UTexture2D` 等句柄语义，并用 `nullptr` 表示空：
+
+```angelscript
+AActor Target = FindTarget();
+if (Target != nullptr)
+    Log(Target.GetName());
+```
+
+赋值复制对象引用，不复制 UObject 本体。作为被追踪的脚本字段/UPROPERTY 时，它参与 GC 可达性；但 world teardown、destroyed actor 和 pending kill 语义仍需要业务判断，非空不总等于可继续执行任意 gameplay 操作。
+
+! TWeakObjectPtr
+
+弱引用适合缓存“有则使用、没了就放弃”的对象，不应阻止 GC 或 world teardown：
+
+```angelscript
+TWeakObjectPtr<AActor> CachedTarget;
+```
+
+访问前使用当前绑定提供的有效性/取值入口，取得强的临时对象句柄后再调用。不要跨多帧假设前一次有效性检查永久成立；在取到临时引用与使用之间，生命周期仍可能变化。
+
+适用：目标锁定、可选 editor selection、跨系统观察者。若对象必须存活完成任务，应由明确 owner/UPROPERTY/任务生命周期持有，而不是希望 weak pointer 替你管理。
+
+! TSoftObjectPtr
+
+软引用保存资产路径，可在资产未加载时存在，适合可配置内容引用和按需加载边界。解析 soft pointer 可能返回空，加载通常涉及同步/异步资源流程；不要在 Tick 热路径中无条件同步加载。
+
+路径重命名与资产迁移会影响 soft reference。把 soft pointer 当普通字符串拼接或手改路径，会绕过 Asset Registry/redirect 的安全工具。
+
+! TSubclassOf
+
+`TSubclassOf<ABase>` 让 Editor/Blueprint 只能选择 `ABase` 派生 class。它存的是 class，不是实例：需要对象时通过对应 spawn/new-object API，在正确 world/outer 上创建。
+
+```angelscript
+UPROPERTY(Category = "Spawning")
+TSubclassOf<AActor> ActorClass;
+```
+
+使用前检查是否有值，并确认目标环境允许创建该 class。Script-defined `StaticClass()` 在某些上下文具有 Editor-only 边界，测试/离线流程不要假设它总可执行。
+
+! Cast 与类型检查
+
+`Cast<UDerived>(Object)` 用于 Unreal 运行时类型转换，失败返回空。能用共同基类或接口表达合同，就不要反复尝试多个具体 cast；cast 链往往说明 API 边界没有建模。
+
+! 常见错误
+
+|!问题 |!建议 |
+|跨 world 长期保存 Actor 直接引用 |按 owner 生命周期清理，或使用 weak reference |
+|weak pointer 有效一次后永远不再检查 |每次取值边界重新确认 |
+|在 Tick 同步解析 soft asset |预加载或使用异步资源流程 |
+|把 `TSubclassOf` 当对象调用 |先在正确 world/outer 创建实例 |
+|用 class 名字符串代替类型合同 |用 `TSubclassOf`、基类或接口 |
+
+! 四种类型对应四种状态机
+
+这些类型最大的区别，是“什么时刻才算可用”：
+
+|!类型 |!空状态之外还要判断什么 |!从引用到使用的转换 |
+|直接 UObject 句柄 |对象是否仍属于有效 world/业务生命周期 |已经加载；验证对象和上下文后直接调用 |
+|`TWeakObjectPtr` |被观察对象是否仍存活 |取出当前强临时句柄，再在局部范围使用 |
+|`TSoftObjectPtr` |路径是否设置、资产是否已加载/能否加载 |解析或发起资源加载；完成后得到对象句柄 |
+|`TSubclassOf` |class 是否设置、是否满足父类与创建环境 |在正确 World/Outer 通过 spawn/new-object 创建实例 |
+
+因此，把类型互换会改变状态机。直接句柄换成 soft pointer 后，调用点突然多了异步/失败状态；weak 换成直接句柄后，owner graph 可能延长对象寿命；实例换成 class 后，调用者承担创建与初始化责任。
+
+! 所有权图要画到 World / Outer
+
+UObject 是否存活不只由“有一个变量指向它”决定。脚本字段是否被 VM/UPROPERTY 追踪、对象的 Outer、World 生命周期、Actor destroy 与 subsystem 持有关系共同决定可用性。设计长期引用时，写清：
+
+* 谁创建对象，使用哪个 World/Outer；
+* 谁负责在 EndPlay、world teardown 或 subsystem deinitialize 清理；
+* 引用应阻止 GC（直接受追踪句柄），还是只观察（weak）；
+* 跨关卡真正需要保存的是活实例、资产路径，还是稳定业务 ID；
+* 回调/latent 结束时 owner 可能已不存在，完成处理是否重新验证。
+
+直接句柄是正确选择时，不必为了“听起来安全”一律换 weak。任务必须拥有目标直到完成，就应建立明确强 owner；weak 只会把确定所有权问题变成每次使用都可能失败。
+
+! Soft reference 的加载边界
+
+Soft pointer 解决引用资产而不强制常驻的问题，不自动完成加载调度。同步解析可能阻塞，异步加载则需要 owner、取消、完成回调和错误政策。一个可靠流程是：检查路径 → 检查是否已解析 → 在受控加载层请求 → 回调时重新验证请求 owner/world → 使用对象 → 按缓存政策释放。
+
+不要让任意 gameplay leaf 在 Tick 中自行同步加载。把加载集中到 AssetManager/资源服务，才能统一优先级、去重、Cooked 可用性和诊断。若 soft 路径在 Editor 能解析而 Cooked 失败，应检查资产是否被打包/引用规则覆盖，而不是把 soft pointer 改成字符串或硬编码路径。
+
+! Class reference 的创建合同
+
+`TSubclassOf<ABase>` 只证明候选 class 满足父类约束，不证明可以在任意环境实例化。创建前还要确认：
+
+|!问题 |!Actor class |!UObject class |
+|需要什么上下文 |有效 World、transform、spawn policy |合适 Outer 与对象 flags/初始化政策 |
+|何时可创建 |World 允许 spawn 的生命周期 |Outer 有效且目标 class 可实例化 |
+|谁持有结果 |Actor 通常由 World + 明确 gameplay owner 管理 |Outer/UPROPERTY/VM 可达图 |
+|失败后怎么办 |处理 null、collision/spawn 限制、teardown |处理 class 无效、Outer 销毁或创建失败 |
+
+不要在配置字段的 setter 中隐式 spawn；让创建动作有明确入口，便于诊断、权限和生命周期控制。
+
+! 跨 World 与热重载
+
+PIE 重启、关卡切换和热重载都会使“类型名相同”与“对象属于当前版本/当前 world”分离。长期 subsystem 缓存 Actor 时，除了 null/weak validity，还要确认对象 world 与当前请求匹配。脚本 class full reload 后，旧对象可能被 reinstancing；不要缓存原始 class/property 指针绕过版本链。
+
+|!症状 |!可能根因 |!检查 |
+|对象非空但调用无效 |Actor destroyed、world 已 teardown、对象属旧 PIE world |world/owner/EndPlay 清理 |
+|weak 总是失效 |没有任何明确强 owner，或对象本就短命 |创建与持有图，而非 repeated validity check |
+|soft 在 Editor 成功、Cooked 失败 |资产未进入 Cooked 依赖/路径已迁移 |AssetManager、打包规则、redirect |
+|class 可选但 spawn 失败 |缺 World、抽象/不可创建、spawn policy 阻止 |class + 环境 + 返回值 |
+|reload 后 cast/identity 异常 |对象或 class 仍在旧版本链 |reinstance 与 newest type retarget |
+
+! 选择顺序
+
+# 需要的是实例、资产，还是 class？先排除类别错误。
+# 若是实例，引用是否应当延长寿命？是则建立受追踪 owner，否则使用 weak 观察。
+# 若是资产，是否允许尚未加载？允许则 soft + 明确加载流程；不允许则由上层预加载后传入对象。
+# 若是 class，谁在何处创建实例，失败/清理由谁负责？
+# 引用是否跨 World、存档、网络或 Cooked 边界？若跨越，活对象句柄通常不是稳定身份。
+
+! 相关链接
+
+* <<as-doc-link "language/handles-references-casts" "句柄、引用与类型转换">>
+* <<as-doc-link "unreal-core/object-lifecycle-and-gc" "UObject 生命周期与 GC">>
+* <<as-doc-link "type-object-reflection/class-generation-lifecycle" "脚本 Class 生成">>

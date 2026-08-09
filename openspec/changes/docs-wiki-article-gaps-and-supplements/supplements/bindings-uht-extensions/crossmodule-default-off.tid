@@ -1,0 +1,209 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/crossmodule-default-off
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: 自动函数绑定的默认关闭边界
+description: 说明为什么缺少配置或空模块集合不会生成跨模块函数绑定产物，以及当前项目如何显式选择生成后端与模块范围。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/crossmodule-default-off
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 20
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: crossmodule-default-off
+
+! 本页结论
+
+自动函数绑定不是“UHT 看见了模块就生成”。它同时受两个条件控制：
+
+# `FunctionBindingMethod` 选择了哪个生成后端；
+# 当前模块的短名称出现在该后端对应的显式模块集合中。
+
+任一条件不满足，`AngelscriptUHTTool` 都会在分析该模块的函数之前直接跳过。缺少工程配置时，方法值虽然回落为 `NativeRuntimeLinked`，但两个模块集合都为空，因此不会为任何模块生成函数绑定 C++ 文件。这是“默认关闭”的真实含义：''默认方法不等于默认生成范围''。
+
+<<as-callout warning "不要沿用旧名词">>
+当前实现不存在 `ModuleBinding` enabled gate、`common/source/installed` profile、`AS_FunctionTable_<Module>_ModuleBinding_*.cpp` 或 `AS_FunctionTable_Summary.json`。这些名称属于早期方案，不能用来解释现在的构建结果。当前配置项只有 `FunctionBindingMethod`、`NativeRuntimeLinkedModules` 与 `NativeModuleFunctionAddressModules`，诊断产物以 `AS_FunctionBinding*` 命名。
+<</as-callout>>
+
+! 适用范围
+
+本页面向以下读者：
+
+* 想给新的 UE 模块启用自动函数绑定的插件维护者；
+* 发现 UHT 正常执行、却没有生成 `AS_FunctionBinding_*.cpp` 的构建维护者；
+* 需要在 `NativeRuntimeLinked`、`NativeModuleFunctionAddress` 和 `None` 之间切换的集成人员。
+
+它解释的是 UBT 与 UHTTool 的''生成范围选择''。函数本身是否能走直接调用、是否退回反射、为什么某个签名被拒绝，由后续的资格分析和编组策略决定，参见 <<as-doc-link "bindings-uht-extensions/binding-path-selection" "绑定路径选择">> 与 <<as-doc-link "bindings-uht-extensions/marshalling-safety-boundary" "编组安全边界">>。
+
+! 双重门控模型
+
+`AngelscriptFunctionBindingCodeGenerator.Generate()` 对 UHT 会话中的每个模块计算两个互斥布尔值，逻辑可简化为：
+
+```text
+emitRuntimeLinked =
+    method == NativeRuntimeLinked
+    && NativeRuntimeLinkedModules.Contains(module.ShortName)
+
+emitNativeModuleFunctionAddress =
+    method == NativeModuleFunctionAddress
+    && NativeModuleFunctionAddressModules.Contains(module.ShortName)
+
+if (!emitRuntimeLinked && !emitNativeModuleFunctionAddress)
+    continue
+```
+
+因此，“模块出现在 UHT 会话中”“模块含有 `UFUNCTION`”“另一个后端的集合含有模块名”都不足以触发生成。方法选择和活动集合必须同时匹配。
+
+!! 四种配置状态
+
+| !状态 | !活动模块集合 | !生成行为 | !主要用途 |
+| 没有配置文件、没有项目文件或无法取得项目目录 | `FunctionBindingMethod` 回落为 `NativeRuntimeLinked`，两个集合为空 | 所有模块在入口处跳过，不生成模块 C++ 产物 | 插件被单独枚举、非项目构建或未接入工程时保持安静 |
+| `FunctionBindingMethod=None` | 两个集合即使解析到值也不成为活动集合 | 不生成函数绑定；统计中的方法为 `None` | 显式关闭自动函数绑定 |
+| `FunctionBindingMethod=NativeRuntimeLinked` 且模块位于 `NativeRuntimeLinkedModules` | 仅 RuntimeLinked 集合活动 | 对合格模块分析函数；有记录时生成一个 `AS_FunctionBinding_<Module>.gen.cpp` | 当前项目默认使用的编译期直接链接后端 |
+| `FunctionBindingMethod=NativeModuleFunctionAddress` 且模块位于 `NativeModuleFunctionAddressModules` | 仅 NativeModuleFunctionAddress 集合活动 | 对安全签名生成 `AS_FunctionBinding_<Module>_NativeModuleFunctionAddress_<NNN>.cpp`，每片最多 256 条，并生成桥接探针 | 源码版引擎中的目标模块函数地址后端 |
+
+这里的“有记录”也很重要。RuntimeLinked 会为分析到的反射函数形成直接或反射回退注册记录；模块没有可分析函数时不会凭空写一个空文件。NativeModuleFunctionAddress 只为通过安全策略和源声明解析的函数写分片；若全部被拒绝，模块分片数可以是零，但拒绝原因仍应进入诊断。
+
+! 当前工程如何显式启用
+
+工程根目录的 `Config/DefaultAngelscriptCompileOptions.ini` 当前使用：
+
+```ini
+[/Script/AngelscriptRuntime.AngelscriptCompileOptions]
+FunctionBindingMethod=NativeRuntimeLinked
++NativeRuntimeLinkedModules=AIModule
++NativeRuntimeLinkedModules=AngelscriptRuntime
++NativeRuntimeLinkedModules=AssetRegistry
++NativeRuntimeLinkedModules=Engine
++NativeRuntimeLinkedModules=EngineSettings
++NativeRuntimeLinkedModules=EnhancedInput
++NativeRuntimeLinkedModules=Landscape
++NativeRuntimeLinkedModules=NavigationSystem
++NativeRuntimeLinkedModules=UMG
++NativeRuntimeLinkedModules=UMGEditor
++NativeRuntimeLinkedModules=UnrealEd
+```
+
+这不是“自动发现常用模块”的结果，而是项目主动声明的白名单。增加一个模块时，维护者必须先确认该模块确实参与当前目标，再把''短模块名''加入活动后端的集合；不要填写包路径、脚本包名、头文件目录或 `.Build.cs` 文件名。
+
+<<as-callout note "后端切换不是只改一行">>
+把 `FunctionBindingMethod` 改为 `NativeModuleFunctionAddress` 后，`NativeRuntimeLinkedModules` 不再是活动范围。还必须在 `NativeModuleFunctionAddressModules` 中建立明确集合，并满足源码版引擎、目标模块产物编译、桥接布局版本一致等条件。两个数组不是共同白名单。
+<</as-callout>>
+
+! INI 数组语义
+
+UBT 的 `AngelscriptRuntime.Build.cs` 与 UHTTool 的 `AngelscriptFunctionBindingConfiguration` 使用相同的大小写不敏感集合语义。理解操作前缀可以避免“配置看起来有两项，实际只剩最后一项”。
+
+| !写法 | !效果 | !典型用法 |
+| `NativeRuntimeLinkedModules=Engine` | 先清空集合，再加入 `Engine` | 用单个无前缀值重建整个集合；连续写多个无前缀值会不断覆盖 |
+| `+NativeRuntimeLinkedModules=UMG` | 向现有集合加入 `UMG` | 逐项声明模块，当前工程采用这种形式 |
+| `-NativeRuntimeLinkedModules=UMG` | 从集合移除 `UMG` | 在分层配置中撤销上层条目 |
+| `!NativeRuntimeLinkedModules=ClearArray` | 清空集合 | 明确重置继承结果；空值也可用于清空 |
+
+`FunctionBindingMethod` 是单值，不接受 `+`、`-` 或 `!`。合法值精确对应 `None`、`NativeRuntimeLinked`、`NativeModuleFunctionAddress`。未知方法、空模块名、非法数组操作或 `!` 后的非清空值都会令配置解析失败，而不是静默猜测。
+
+这种 fail-closed 语义在 UBT 和 UHTTool 两边都存在。原因是两者必须看到同一份配置：如果一边把错误值当成默认、另一边却生成了不同后端的 C++，最终问题会在依赖、编译宏或链接阶段才暴露，定位成本更高。
+
+! 同一配置的两位消费者
+
+自动生成要成功，UBT 和 UHTTool 必须对方法与模块集合达成一致，但它们使用配置的目的不同。
+
+!! UBT：决定编译图
+
+`Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` 从 `Target.ProjectFile` 推导工程根目录，并读取：
+
+```text
+<ProjectRoot>/Config/DefaultAngelscriptCompileOptions.ini
+```
+
+该文件被加入 `ExternalDependencies`，所以配置变化能够参与构建依赖判断。解析完成后，Build.cs 会：
+
+* 为 `NativeRuntimeLinked` 活动模块补充动态模块依赖，并选择对应包装接入；
+* 发布 `WITH_ANGELSCRIPT_NATIVE_MODULE_FUNCTION_ADDRESS` 编译定义；
+* 在选择 `NativeModuleFunctionAddress` 时检查源码版引擎约束；
+* 保持未选择后端的模块不进入相应构建路径。
+
+UBT 关心的是“生成出来的代码能否被正确编译和链接”。只让 UHTTool 看见模块，却没有相应依赖，并不能形成完整功能。
+
+!! UHTTool：决定分析与输出
+
+UHTTool 以 `AngelscriptRuntime.Build.cs` 的路径为起点，逐级向父目录查找 `Config/DefaultAngelscriptCompileOptions.ini`，最多检查八层，采用第一个存在的候选文件，并把实际路径记录为 `compileOptionsPath`。随后它使用同样的配置解析器构造活动方法与两个集合。
+
+UHTTool 关心的是“当前 UHT 会话中哪些模块应该分析、用哪个 emitter 写什么产物”。若没有找到配置，返回 `NativeRuntimeLinked + 空集合`；这与 UBT 的默认结果一致。
+
+<<as-callout warning "不要在两个位置维护两套列表">>
+项目配置是共同事实源。不要通过修改生成器内置列表、Build.cs 私有默认或临时命令行逻辑让某一侧单独启用模块。双侧范围不一致会表现为缺失产物、缺少模块依赖、未定义符号或旧生成文件残留。
+<</as-callout>>
+
+! 哪些情况明确不会触发生成
+
+| !现象 | !为什么不生成 | !应查看什么 |
+| 模块存在于 UHT 会话，但不在当前活动集合 | 双重门控的集合条件为假，生成器直接 `continue` | 配置中的方法和值是否使用模块短名 |
+| 模块只写在非活动后端的数组 | 数组不会跨后端复用 | `FunctionBindingMethod` 与对应数组是否成对修改 |
+| 方法是 `None` | 没有活动集合 | 这是显式关闭；若非预期，恢复后端并建立范围 |
+| 配置模块没有出现在本次 UHT 会话 | 没有可遍历的 `UhtModule` | 诊断中的 `configuredModuleMisses`，以及目标/插件是否包含该模块 |
+| 模块进入分析，但没有可处理的反射函数 | emitter 没有记录可写 | 模块统计中的 analyzed、generated、skipped 计数 |
+| NativeModuleFunctionAddress 中所有签名均不安全或无法解析源码声明 | 该后端不会自动为它们生成反射回退分片 | `AS_FunctionBindingSkippedFunctions.csv` 的 reason 与 source resolution 信息 |
+| 只启用了插件、没有工程配置 | 插件启用不等于自动绑定模块 opt in | 配置文件是否存在、`compileOptionsPath` 是否正确 |
+
+旧方案中的 Engine link probe 不存在。当前只有 NativeModuleFunctionAddress 专用的 `AS_FunctionBinding_Engine_NativeModuleFunctionBindingBridgeProbe.cpp`，用于发布名为 `AngelscriptNativeModuleFunctionBindingBridgeProbe` 的 modular feature。它由''后端方法''控制，而不是一个通用 ModuleBinding enabled gate；不要把它当作 RuntimeLinked 是否启用的证据。
+
+! 安全接入一个新模块
+
+# 先确定模块所有权和分发形态：模块短名是什么，是否会进入目标，是否属于 Editor-only，是否允许源码版引擎专用后端。
+# 选择一个全局 `FunctionBindingMethod`。当前设计不是“每个模块任意选择一个后端”，而是一次配置选中一个生成后端。
+# 用 `+<ActiveModulesKey>=<ModuleShortName>` 把模块加入该后端集合；检查是否有后续无前缀赋值把集合清空重建。
+# 重新执行正常构建/UHT 流程，让 UBT 与 UHTTool 同时消费配置。不要手工复制生成文件。
+# 首先读取 `AS_FunctionBindingStatistics.json` 的 `functionBindingMethod`、`compileOptionsPath`、活动模块列表与 `configuredModuleMisses`。
+# 再看 `AS_FunctionBindingModuleStatistics.csv`，确认模块是否被分析、生成多少条、跳过多少条和分片数。
+# 若模块被分析但函数路径不符合预期，再下钻到 `AS_FunctionBindingDiagnostics.csv` 与 `AS_FunctionBindingSkippedFunctions.csv`，不要继续扩大白名单来掩盖签名问题。
+# 确认生成产物被目标编译。RuntimeLinked 预期是单个 `.gen.cpp`；NativeModuleFunctionAddress 预期是按 256 条分片的目标模块 `.cpp`，并受布局版本与桥接契约约束。
+
+预期结果不是“目录里出现很多文件”，而是：配置方法、活动集合、UHT 会话、诊断计数、生成文件和 UBT 编译图六者一致。
+
+! 常见故障与定位
+
+| !症状 | !高概率原因 | !定位动作 |
+| 配置已加模块，统计里出现 `configuredModuleMisses` | 模块不在当前 Target/UHT 会话，或短名写错 | 对照 `.Build.cs` 的模块名和本次 Target，不要用脚本包路径 |
+| 只生成了列表中最后一个模块 | 多次使用无前缀 `Key=Value`，每次都清空集合 | 改为首项重建后其余用 `+`，或全部使用 `+` |
+| 切换后端后所有模块消失 | 仍只维护旧后端数组 | 给新活动后端建立集合；不要假定两数组合并 |
+| RuntimeLinked 有统计但没有模块文件 | 模块没有形成任何生成注册记录，或查看了错误输出目录 | 对照模块统计的 generated/shard 计数与 UHT 输出路径 |
+| NativeModuleFunctionAddress 没有分片但有 skipped 行 | 所有候选都被安全策略或源码解析拒绝 | 按 reason 修签名、导出性或头文件可见性；它不会自动改走反射后端 |
+| Build.cs 与 UHTTool 显示不同配置 | 工程根解析不同、存在多个候选配置，或构建缓存仍指向旧工程 | 以统计中的 `compileOptionsPath` 为证据，再核对 `Target.ProjectFile` |
+| Installed Engine 选择 NativeModuleFunctionAddress 时构建失败 | 该后端是源码版引擎专用路径 | 改用 `NativeRuntimeLinked`/`None`，或在源码版引擎中完成目标模块接入 |
+| 删除模块配置后旧 `.cpp` 仍干扰编译 | 输出清理与实际活动产物不一致 | 先核对 live paths 与 UHTTool cleanup；不要手改后继续猜测 |
+
+! 维护不变量
+
+* 默认关闭由''空模块集合''保证，不应通过扫描所有 UHT 模块自动扩张。
+* 方法选择与模块范围是不同维度；文档、配置 UI 和诊断必须同时显示两者。
+* 两个模块集合按大小写不敏感的短模块名去重，但这不意味着可以填写任意大小写以外的别名。
+* `NativeRuntimeLinked` 与 `NativeModuleFunctionAddress` 对同一轮生成互斥；生成器发现两者同时为真会视为后端冲突。
+* 配置模块不在会话中不是“零函数模块”，而是 `configuredModuleMiss`；这两个状态必须分开诊断。
+* NativeModuleFunctionAddress 的桥接探针、分片和 Runtime bridge 是一套 ABI 契约。修改结构布局时必须同步提升 layout version，而不是仅扩大模块集合。
+* 自动生成范围不替代手工绑定所有权。需要自定义语义、生命周期或非反射 API 的类型仍应由手工 `FBind` 或可选扩展负责。
+
+! 源码定位
+
+| !职责 | !文件/符号 |
+| UBT 配置读取、数组语义、依赖与源码版检查 | `Plugins/Angelscript/Source/AngelscriptRuntime/AngelscriptRuntime.Build.cs` |
+| UHTTool 的配置模型与同构解析 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingConfiguration.cs` |
+| 从 Runtime Build.cs 向上查找工程配置 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingConfigurationResolver.cs` |
+| 双重门控、会话 miss、模块分析与分片数量 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingCodeGenerator.cs` |
+| RuntimeLinked 与 NativeModuleFunctionAddress emitter | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingEmitters.cs` |
+| 当前项目的显式模块集合 | `Config/DefaultAngelscriptCompileOptions.ini` |
+| 汇总、模块、逐函数与跳过诊断产物 | `Plugins/Angelscript/Source/AngelscriptUHTTool/AngelscriptFunctionBindingArtifacts.cs` |
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "绑定路径选择">> —— 区分全局生成后端与单个函数实际调用路径。
+* <<as-doc-link "bindings-uht-extensions/native-runtime-linked" "NativeRuntimeLinked">> —— 当前工程默认后端的生成、链接与回退模型。
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "NativeModuleFunctionAddress">> —— 源码版引擎目标模块地址后端与 ABI 边界。
+* <<as-doc-link "bindings-uht-extensions/cross-module-bind-diagnostics" "跨模块绑定诊断">> —— 从配置事实逐层定位到单个函数。
+* <<as-doc-link "bindings-uht-extensions/generated-function-tables" "生成函数表">> —— 生成产物的职责与维护边界。
+* <<as-doc-link "bindings-uht-extensions/manual-bind-ownership" "手工绑定所有权">> —— 自动范围之外何时仍需 `FBind`。

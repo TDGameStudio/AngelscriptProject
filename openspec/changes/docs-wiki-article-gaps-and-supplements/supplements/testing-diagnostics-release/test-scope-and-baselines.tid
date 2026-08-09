@@ -1,0 +1,131 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/test-scope-and-baselines
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 测试范围与数字口径
+description: 区分 catalog、源码定义、Native SDK prefix、All suite、Standalone CTest 与两类 Disabled，并给出结果报告和基线更新规则。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/test-scope-and-baselines
+as-locale: zh-Hans
+as-depth: L2
+as-doc-kind: reference
+as-content-status: draft
+as-order: 150
+as-content-revision: 2
+as-sources: [[project-guide]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 260
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: test-scope-baselines
+
+! 先问“这个数字在数什么”
+
+项目同时保存静态源码规模、目录化基线、某个 prefix 的运行结果、配置化 All suite 和无 UE 的 CTest。它们的全集、runner、日期和 Disabled 规则不同，不能相加成一个“总测试数”。
+
+|!口径 |!当前记录 |!对象/runner |!正确解读 |
+|Catalogued C++ baseline |`275/275 PASS` |`Documents/Guides/TestCatalog.md` 管理的目录化集合 |目录基线，不代表源码中的全部 automation definitions |
+|源码扫描规模 |`1518+` definitions / `430` test `.cpp` |静态扫描 |代码量快照，不是一次执行结果，也不表达 pass/fail |
+|Native AngelScript SDK prefix |`691/691 PASS` |`Angelscript.TestModule.AngelScriptSDK` |2026-07-31 的活动方法运行结果 |
+|Native future-script methods |`14 Disabled` |同一 Native SDK 发现表面 |`#as-v238-backport` 未来能力，不属于活动 691 |
+|Configured All suite |`2396/2396 PASS` |35 个配置 prefix |2026-07-28 的一次完整配置运行 |
+|Standalone CTest |`19/19 PASS` |CMake/CTest，无 UE |Debug 与 Release 是同 19 项的不同配置，不相加 |
+|UE 5.7 headless known limits |`2 Disabled` |UE Automation 的当前已知限制 |两个明确文件位置，不等于 Native 的 14 个 future methods |
+
+`275 + 691 + 2396 + 19` 没有统计意义：较大的集合可能包含较小集合的用例，静态定义数也不等于 runner 选择数。
+
+! 集合之间是什么关系
+
+```text
+源码中的 automation definitions
+        ├── catalogued C++ baseline（人工维护集合）
+        ├── configured All 的 35 prefixes
+        │       └── Native SDK active prefix（其中一个主题范围）
+        └── 未被当前 runner/config 选中的定义
+
+Standalone 19 CTests ── 独立 CMake 主机，不属于 UE Automation 树
+```
+
+这是概念关系，不应据此推算未给出的交集数量。实际选中哪些测试，以当次 runner 报告中的 prefix/filter 与 `selected` 为准。
+
+! 691、14 和 2 为什么可以同时成立
+
+Native SDK 当前发现表面包含活动方法与十四个 `#as-v238-backport` future-script methods。`691/691` 只陈述活动方法在 2026-07-31 的结果；十四个 Disabled 仍可发现，但不应被写成 skipped、failed，也不应混入 691 的分母。
+
+项目级“只剩 2 个 Disabled”描述的是另一类 UE 5.7 headless 已知限制：
+
+* `TestEngineHelperTests.cpp:106`；
+* `SourceNavigationTests.cpp:125`。
+
+因此，报告必须带 taxonomy：`Disabled(#as-v238-backport)` 与 `Disabled(#ue57-headless)` 表达不同决策。只写 “16 disabled” 会抹掉未来版本能力与当前平台限制之间的区别。
+
+! 历史基线不是实时查询
+
+这些数字都带日期。源码继续变化时，旧报告不会自动更新。文档之间出现冲突时，按以下顺序判断：
+
+# 当次生成的结构化 runner 报告；
+# `Documents/Guides/TechnicalDebtInventory.md` 中明确标注日期的 live full-suite 结果；
+# `TestCatalog.md` 和根 `AGENTS.md` / `AGENTS_ZH.md` 中声明的维护基线；
+# 旧报告、归档 OpenSpec 或未标日期的叙述。
+
+例如某份旧技术债清单仍显示较早的 Native 数字时，不能覆盖 2026-07-31 的 `691/691` 记录；应先比较日期、prefix 和活动/Disabled 口径，再更新陈旧文档。
+
+! 如何选择验证范围
+
+|!改动类型 |!至少需要观察的范围 |!为什么 |
+|文档/文章 |文档结构、链接、来源和内容审查 |不应伪称运行了代码测试 |
+|单一绑定 |该绑定主题 prefix + 相关反射/容器边界 |局部行为证据比源码定义数有用 |
+|ClassGenerator/HotReload |对应主题 + reload/Blueprint/GC 边界 |局部改动会跨所有权阶段传播 |
+|Native SDK frontend/VM |受影响域 + Native SDK active prefix |必须区分 raw engine 与 plugin fixture |
+|Standalone compiler/profile |Standalone Debug；发布时再加 Release |UE Automation 不能覆盖无 UE 主机 |
+|发布候选 |配置化 All + 独立 Standalone Release + external smoke |验证最终多产品面 |
+
+本 change 的范围是文章补充，并且用户明确要求不要搞测试，所以只做只读审查与内容审计；这不是把代码门禁标为已通过。
+
+! 结果报告必须能重建上下文
+
+```text
+日期 / 时区
+父仓库与相关 submodule commit
+runner、suite、prefix/filter
+selected / executed / passed / failed / skipped / timeout / disabled
+Disabled taxonomy 与原因
+环境：UE 版本、Editor/Commandlet、platform、Debug/Release
+报告或 Summary.json 路径
+```
+
+`selected` 与 `executed` 不同通常意味着过滤、Disabled、启动失败或发现/执行边界变化。若只写 passed，后来者无法判断少跑了多少。
+
+! 基线变更规则
+
+基线变化必须解释“为什么集合改变”，而不是机械替换数字：
+
+* 新增定义：说明属于哪个主题/prefix，是否进入 catalog；
+* Disabled → active：说明能力或环境限制如何闭合，并更新分母；
+* active → Disabled：记录明确标签、原因、所有者和解除条件，不能用它隐藏回归；
+* runner 配置变化：列出新增/移除 prefix，不能与测试本身新增混为一谈；
+* Debug/Release 结果：保持两份报告，不把相同 CTest 重复计数；
+* 历史快照：保留日期和原始证据，避免用新数字改写过去发生的结果。
+
+! 快速诊断
+
+|!现象 |!先检查 |
+|源码 definitions 增长但 All 总数不变 |新测试是否被 module/flags/prefix 发现，runner 配置是否包含其主题 |
+|All 通过但 catalog 不匹配 |二者集合定义不同；检查 catalog 维护，不要直接判定漏跑 |
+|691 活动方法变成 705 |是否错误把 14 个 future-script Disabled 加入活动分母 |
+|Standalone 显示 38 |是否把 Debug 19 与 Release 19 相加 |
+|Disabled 数量看似矛盾 |先区分 `#as-v238-backport` 与 `#ue57-headless` |
+|文档数字不同 |比较日期、commit、prefix 和报告来源优先级 |
+
+! 证据来源
+
+* `Documents/Guides/Test.md`：runner、suite 和 prefix 使用；
+* `Documents/Guides/TestCatalog.md`：`275/275` 目录化基线；
+* `Documents/Guides/TechnicalDebtInventory.md`：带日期的 live suite 记录；
+* `Plugins/Angelscript/Source/AngelscriptTest/`：源码定义与 Native SDK 主题；
+* `Plugins/Angelscript/Standalone/`：独立 CMake/CTest 集合；
+* 根 `AGENTS.md` / `AGENTS_ZH.md`：当前维护口径及两个 headless Disabled 位置。
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/release-verification-matrix" "发布验证矩阵">>
+* <<as-doc-link "testing-diagnostics-release/native-sdk-test-coverage" "Native SDK 测试覆盖">>
+* <<as-doc-link "reference-differences-version/version-and-baseline-policy" "版本与基线策略">>

@@ -1,0 +1,126 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/source-module-identity
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: Source Provider 与模块身份
+description: 区分磁盘文件、虚拟脚本路径和模块名，保持热重载、测试与离线验证中的稳定来源身份。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/source-module-identity
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: explanation
+as-content-status: draft
+as-order: 120
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: internals-reference
+as-nav-order: 220
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: source-module-identity
+
+! 三个名字
+
+* 物理路径：本机磁盘上文件位置；
+* 逻辑/虚拟源码路径：跨机器、provider 稳定识别来源；
+* 模块名：编译、注册、测试和 reload 使用的单元身份。
+
+它们相关但不等价。内存 source provider 没有普通磁盘文件，plugin/project mount 可能有不同逻辑前缀；不能用本机绝对路径作为所有层的公开身份。
+
+! 为什么要稳定
+
+模块身份用于依赖失效、最后成功编译保留、自动化 leaf 命名、诊断路径与离线 bundle 替换。相同源码被两个 alias 当成不同模块会重复声明；不同源码碰撞成同一模块会错误覆盖。
+
+! 项目 Script root
+
+UE-validation profile 把传入的 `--script-root` 视为项目 `Script/` 根。相对 `Foo/Bar.as` 映射为 `/Angelscript/Game/Foo/Bar.as`，从而精确替换导出 bundle 的同一源码基线。V1 不猜测任意目录是 plugin 或 memory mount。
+
+! Provider 合同
+
+Source provider 应提供规范化身份、源码内容与枚举/变化信息，并在删除时明确撤销来源。读取失败不能静默退回另一个同名 provider，否则显式 project bundle 或脚本选择会变得不可重复。
+
+! 身份流水线
+
+```text
+provider root + relative source path
+  → normalized logical/virtual path
+  → source record (content, timestamps/hash, provider provenance)
+  → preprocessor file/chunks/imports
+  → module name and compiled module record
+  → class/function source metadata
+  → reload, diagnostics, IDE and offline replacement
+```
+
+物理路径只用于本机打开/读取；逻辑路径用于跨工具身份；module identity 用于编译与发布。三者之间应有确定映射，但不能互为裸字符串别名。
+
+! 规范化不变量
+
+* separator、`.`/`..`、大小写策略和 mount prefix 在所有 provider 中一致；
+* 一个逻辑路径恰好由一个活动 provider 拥有，冲突必须报 provenance；
+* 同一文件的 add/change/delete 使用同一 canonical key；
+* module name 生成不依赖用户盘符、workspace 名或临时目录；
+* diagnostic/source navigation 保留逻辑身份，同时可解析到当前机器物理文件；
+* explicit bundle/source selection 失败时不偷偷搜索另一来源。
+
+Windows 文件系统可能大小写不敏感，但 bundle/Linux/工具比较未必如此。应在注册边界统一规范，而不是让每个 consumer 自己 ToLower/换斜杠。
+
+! 模块与文件不是总是一对一
+
+一个编译 module 可能消费主文件和 includes；生成 delegate/default helper 也属于同一 source/module 语义。相反，同一物理内容如果以两个 mount alias 注册，会形成两个模块/两套声明。Identity 设计需明确：
+
+|!对象|!稳定 key|
+|source file|provider/mount + canonical logical path|
+|include edge|canonical importer → canonical imported path + active condition|
+|compiled module|产品定义的 module name/base module，不是绝对 filename|
+|generated class/function|qualified declaration + owning module + source range|
+|offline replacement|bundle virtual path 与 current source logical path 完全相等|
+
+! Add、change、delete 状态转换
+
+```text
+Absent
+  --add--> Discovered → Preprocessed → Compiled/Published
+Published
+  --change--> Candidate compile → replace last-good OR keep last-good on failure
+Published
+  --delete--> dependency invalidation → remove/redirect plan → retire module/types
+```
+
+Delete 不是读取返回空字符串。Provider 必须发出撤销事件，reload 层找到原 canonical record，ClassGenerator 再处理类删除/rename 与 Blueprint 影响。错误 alias 会造成 UI 已删除、旧 module 仍活动的“幽灵类型”。
+
+! 多环境身份
+
+|!环境|!物理来源|!应保持的逻辑身份|
+|主工程 Editor|`<project>/Script/Foo.as`|project mount 下稳定路径|
+|可选 plugin|plugin 自己的 Script root|独立 plugin mount，不能伪装 Game|
+|memory/test provider|无普通磁盘文件|明确 memory/provider namespace|
+|offline current source|`--script-root` 下相对文件|`/Angelscript/Game/<relative>`|
+|exported bundle baseline|UE 初始化后观察到的 virtual path|与 current source 精确匹配才替换|
+
+V1 不猜任意目录属于哪个 plugin，是为了避免同一个文件在不同机器被映射成不同身份。
+
+! 变更模块身份的影响
+
+移动/rename 不只是 watcher path 变化，还会触及 include edges、module dependency、qualified static helper、class package/name、Blueprint parent、diagnostic breakpoint 和 offline bundle stable ID。需要选择“保留 logical identity 仅移动物理文件”还是“公开 rename 并迁移消费者”，不能让工具隐式决定。
+
+! 排障问题
+
+* 诊断显示的路径是否为预期逻辑来源？
+* 同一文件是否以大小写/斜杠/相对路径注册两次？
+* 删除事件是否能找到原 module record？
+* 测试 leaf 的 Module 段是否与逻辑路径一致？
+* 离线 current source 是否替换而非追加导出 baseline？
+* provider provenance 是否明确，还是从另一个 root 静默命中了同名文件？
+* last-good 与 candidate 是否使用同一 canonical module key？
+
+! 源码入口
+
+* `Core/AngelscriptSource.h/.cpp`：源码记录与逻辑信息。
+* `Core/AngelscriptSourceProvider.h/.cpp`：project/plugin/development source discovery 入口。
+* `Preprocessor/AngelscriptPreprocessor.*`：FFile、include/import 与 namespace/chunk 信息。
+* `FAngelscriptEngine` module compile/reload maps：last-good、candidate 与 removal。
+* `AngelscriptOfflineExport` 和 Standalone bundle consumer：virtual path replacement contract。
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/script-source-provider" "脚本 Source Provider">>
+* <<as-doc-link "compile-module-preprocessor/virtual-script-paths" "虚拟脚本路径">>
+* <<as-doc-link "runtime-jit-vm/offline-bundle-contract" "离线 Bundle 合同">>

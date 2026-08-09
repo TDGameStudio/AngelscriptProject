@@ -1,0 +1,130 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/public-api-compatibility
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 公共 API 与兼容性纪律
+description: 区分产品版本、C API/ABI、脚本反射表面、生成 binding layout 与资产兼容性。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/public-api-compatibility
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: policy
+as-content-status: draft
+as-order: 100
+as-content-revision: 1
+as-sources: [[project-guide]] [[angelscript-plugin]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 300
+as-nav-parent: architecture-maintenance/index
+as-feature-key: public-api-compatibility
+
+! 多层兼容合同
+
+|!层 |!例子 |
+|产品版本 |Unreal AngelScript 1.0.0 / encoded 10000 |
+|公共 C API/ABI |随插件发布的 `angelscript.h` 与 runtime |
+|脚本语言/反射表面 |语法、生成 UClass/UFunction/UPROPERTY 名称与签名 |
+|Binding transport ABI |NativeModuleFunctionBinding POD layout |
+|资产兼容 |Blueprint 父类、节点、property、CoreRedirect |
+|协议 |DebugServer V2、VS Code LSP/DAP wire |
+
+底层 fork lineage 升级不自动改变产品版本；反之产品补丁也可能不触碰第三方 VM。
+
+! 变更纪律
+
+破坏公共 C API/ABI 需要新的 major；兼容 1.x header/runtime 组合遵循当前公开合同。修改 `FAngelscriptNativeModuleFunctionBinding` 或 view layout 时必须 bump `native-module-function-binding-layout-version.txt`，并同步 Runtime bridge、generator emit 与消费者。
+
+脚本公开 UFUNCTION/UPROPERTY 改名还会影响 Blueprint/资产；即使 C++ ABI 不变也需要 redirect 或迁移。协议字段变化需保持 VS Code 扩展兼容或版本协商。
+
+! 兼容不是一个版本号
+
+对每个变更分别判定 source、binary、data 和 wire compatibility：
+
+|!变化|!Source|!Binary/ABI|!资产/数据|!Wire|
+|给 C++ struct 中间插字段|头文件可能仍编译|layout 破坏|若序列化该布局也受影响|通常无关|
+|脚本 UFUNCTION 改参数|调用点编译失败|UFunction ParmsSize/dispatch 改变|Blueprint node/pin 失效|RPC 时也成为网络合同|
+|UPROPERTY 改名|脚本/Blueprint 名称变化|C++ ABI 未必变化|序列化、Blueprint defaults 需 redirect|复制时可能变化|
+|新增可选协议字段|客户端源码可不变|进程 ABI 无关|配置可能受影响|需 capability/version 与 ignore rule|
+|NMFA view 字段变化|生成器/Runtime 源码都变|明确 POD ABI break|无资产|模块间 transport 破坏|
+
+因此“二进制兼容”不能替代“Blueprint 还能加载”，产品版本也不能自动决定所有子合同。
+
+! 脚本表面是持久 API
+
+一旦 `UASClass`、UFUNCTION、UPROPERTY 被 Blueprint/资产引用，它们就不只是热重载临时对象。稳定 identity 包括 package/class 名、property/function 名、signature、flags、component identity 和 namespace/module。变化可能影响：
+
+```text
+script callers
+Blueprint parent and graph nodes
+serialized property names/defaults
+replication/RepNotify
+delegate bindings and timers by FName
+IDE/offline symbol databases
+hot reload old/new mapping
+```
+
+Rename 需选择 CoreRedirect、兼容 wrapper 或显式资产迁移。保留旧 wrapper 时要避免同名 overload/双注册改变解析，并写删除版本/条件。
+
+! Binding transport ABI
+
+NMFA 的 `FAngelscriptNativeModuleFunctionBinding` / View 在目标模块与 Runtime 之间以固定 POD layout 交换。兼容步骤是：
+
+```text
+change bridge struct/flags/count semantics
+  → bump native-module-function-binding-layout-version.txt
+  → update UHT mirrored emitter
+  → update Runtime validator/consumer
+  → rebuild every producer target module
+  → reject mismatched old payload fail-closed
+```
+
+不能用 struct `sizeof` 恰好相同作为兼容证据：字段含义、flag bit、alignment、slot interpretation 变化也需版本。卸载 target module 前还要注销 feature/view，避免 Runtime 调用已卸载地址。
+
+! 产品与 lineage
+
+Unreal AngelScript 产品版本说明对消费者的发布承诺；AngelScript 2.33 WIP + selective 2.38 backports 说明源代码血缘。Backport 一个 parser/VM 修复可能保持产品 minor/patch，也可能改变脚本行为；是否 bump 由对外影响决定，而不是上游数字机械传播。
+
+UE minor 也是独立轴：UHT metadata、Engine API、Blueprint serialization 或 installed/source distribution 变化，可能要求同一产品线有目标限定说明。
+
+! 变更分类流程
+
+# 列出被改变的稳定 identity/declaration/layout/protocol field。
+# 列出所有 producer 与 consumer，包括旧版本是否会混装。
+# 判断编译期、加载期、运行期、资产加载/保存、网络握手的失败方式。
+# 选择兼容策略：additive、version negotiation、redirect、adapter、one-shot migration 或 major break。
+# 对 old/new 同时存在的窗口定义唯一 owner、优先级和 cleanup。
+# 更新 product/version/layout/schema，并记录不支持的组合应如何 fail closed。
+
+! 兼容策略矩阵
+
+|!情况|!优先策略|
+|可新增可选字段/函数且旧 consumer 忽略|additive minor|
+|旧名称可可靠转向新名称|redirect/adapter + deprecation|
+|序列化结构需重写|显式 versioned migration，不靠默认值猜|
+|模块 transport layout 改变|layout version bump + rebuild/reject|
+|wire client/server 可能错配|握手/capability/version negotiation|
+|语义无法同时满足|major break 或清晰 target gate|
+
+Fail closed 要可诊断：错误应显示 expected/actual version、owner/artifact 和重建/迁移动作，不能静默 reinterpret 或 fallback 到行为不同路径。
+
+! 发布与回滚
+
+兼容变更还需考虑回滚：新资产被新版本保存后，旧版本能否打开？新 generated shard 是否会留在 Intermediate 并被旧 Runtime 误加载？协议扩展是否在旧 VS Code 客户端中安全忽略？如果答案是否定，发布说明必须声明单向迁移或清理缓存/重建要求。
+
+! 审查清单
+
+* 影响哪一层合同？
+* 老消费者会编译失败、加载失败还是行为变化？
+* 是否有明确 version/layout bump？
+* 是否需 CoreRedirect 或 Blueprint migration？
+* 文档和发布验证是否同步？
+* 旧/新 producer 是否会在同一进程、资产库或网络中共存？
+* 失败是显式拒绝，还是可能静默产生错误行为？
+* 兼容层由谁删除、何时删除？
+
+! 相关链接
+
+* <<as-doc-link "reference-differences-version/product-version-and-lineage" "产品版本与源码血缘">>
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "Native Module 地址绑定">>
+* <<as-doc-link "reference-differences-version/version-and-baseline-policy" "版本与基线策略">>
+* <<as-doc-link "hot-reload/class-rename-and-removal" "类重命名与删除">>
+* <<as-doc-link "editor-ide-debugging/vscode-lsp-protocol-compat" "VS Code 协议兼容">>

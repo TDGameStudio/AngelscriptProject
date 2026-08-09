@@ -1,0 +1,178 @@
+title: AS/Docs/zh-Hans/unreal-core/timers-and-world-time
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Timer、Tick 与 World Time
+description: 在 Tick、一次性/循环 Timer 和事件之间选择，并正确处理 WorldContext、暂停、身份、teardown 与热重载。
+as-sdk-document: yes
+as-doc-key: unreal-core/timers-and-world-time
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 110
+as-content-revision: 2
+as-sources: [[script-examples]] [[angelscript-plugin]]
+as-nav-group: unreal-development
+as-nav-order: 100
+as-nav-parent: unreal-core/index
+as-feature-key: timers-world-time
+
+! Timer 不是后台线程
+
+AngelScript 的 `System::SetTimer` 最终使用当前 UObject/World 的 `FTimerManager`。回调仍在游戏线程上执行，由 World time 推进；World 暂停、time dilation、切关和 teardown 都会影响它。Timer 不会让阻塞工作自动变成异步，也不会跨 World 保持独立生命。
+
+|!需求 |!优先机制 |!为什么 |
+|每帧连续运动或模拟 |Tick + `DeltaTime` |采样频率就是帧率，需要按时间积分 |
+|几秒后执行一次 |non-looping timer |无需每帧轮询截止时间 |
+|低频、允许按 World time 推进 |looping timer |把周期调度交给 TimerManager |
+|等待对象状态变化 |delegate/event |事件发生时立即响应，不做轮询 |
+|跨线程 I/O/资产加载 |对应 async API |Timer 只是在未来 game-thread tick 回调 |
+
+高频循环 Timer 不一定比 Tick 更便宜；当间隔接近帧时间时，两者都会频繁调度。先按语义选工具，再用 profiler 判断成本。
+
+! 当前 API 的最小用法
+
+仓库的 `Script/Examples/Core/Example_Timers.as` 是当前绑定合同的直接示例：
+
+```angelscript
+class ARespawnCountdown : AActor
+{
+    FTimerHandle RespawnTimer;
+    bool bWaitingForRespawn = false;
+
+    UFUNCTION()
+    void StartRespawnCountdown(float DelaySeconds)
+    {
+        // 重入时先取消上一条倒计时，明确“最后一次请求获胜”。
+        if (bWaitingForRespawn)
+            System::ClearAndInvalidateTimerHandle(RespawnTimer);
+
+        bWaitingForRespawn = true;
+        RespawnTimer = System::SetTimer(this, n"CompleteRespawn", DelaySeconds, bLooping=false);
+    }
+
+    UFUNCTION()
+    void CompleteRespawn()
+    {
+        bWaitingForRespawn = false;
+        RespawnTimer = FTimerHandle();
+        Log("Respawn countdown completed");
+    }
+
+    UFUNCTION(BlueprintOverride)
+    void EndPlay(EEndPlayReason EndPlayReason)
+    {
+        if (bWaitingForRespawn)
+            System::ClearAndInvalidateTimerHandle(RespawnTimer);
+    }
+}
+```
+
+被 Timer 按名称调用的函数必须是 `UFUNCTION()`，因为 `SetTimer` 保存 UObject + `FName`，不是 AngelScript 局部闭包。当前签名为：
+
+```angelscript
+FTimerHandle System::SetTimer(
+    const UObject Object,
+    const FName& FunctionName,
+    float Time,
+    bool bLooping = false);
+```
+
+回调应无参数。传入对象决定 Timer 所属 World；`PauseTimerHandle`、`UnPauseTimerHandle`、`IsTimerPausedHandle` 和 `ClearAndInvalidateTimerHandle` 则从当前脚本调用上下文解析 WorldContext，因此在无 World 的 CDO、Editor utility 或 teardown 后调用可能找不到正确 TimerManager。
+
+! Handle 与“函数身份”
+
+当前底层使用 `K2_SetTimer(Object, FunctionName, ...)`。同一个对象、同一个函数名再次设置 Timer，会替换之前那条 Timer，而不是自动创建并行队列。这个行为可以实现 debounce，但也会造成隐蔽丢任务。
+
+|!需求 |!实现方式 |
+|只保留最后一次刷新请求 |重复对同一对象/函数调用 `SetTimer` |
+|允许多个独立倒计时 |使用不同 owner/函数身份，或建立自己的任务数据与统一调度器 |
+|稍后暂停、恢复、取消 |保存返回的 `FTimerHandle` |
+|fire-and-forget，生命周期短且无需取消 |可以不保存 handle，但仍要保证 owner 生命周期安全 |
+
+`ClearAndInvalidateTimerHandle` 的参数是引用；清除后 handle 被失效，代码不应继续把它当作活动 Timer。仅把成员改成空 handle 而不调用 clear，不会取消 TimerManager 中已经注册的回调。
+
+! 一次性与循环 Timer 的状态机
+
+不要只依赖 `FTimerHandle` 猜业务状态。Handle 表达调度器身份，业务仍应有清晰状态：
+
+```text
+Idle
+  │ Start
+  ▼
+Scheduled ── Pause ──> Paused
+  │                    │ UnPause
+  │ Fired / Cancel     └────────> Scheduled
+  ▼
+Idle
+```
+
+循环 Timer 的回调可能因为 World 卡顿而以不同节奏到达，逻辑不能假设每次实际间隔精确等于配置值。累计型模拟使用真实 `DeltaTime` 或读取权威时间；低频状态刷新则应让每次回调从当前状态重新计算，避免按“调用次数 × 间隔”累计漂移。
+
+对于一次性 Timer，回调开头就把业务状态切回 Idle，能避免回调内部触发的新 Start 被结尾错误清除。对循环 Timer，停止条件应在一个位置调用 clear，避免多条分支留下半活动状态。
+
+! World Time、暂停和 time dilation
+
+Timer 随所属 World 推进，不是系统墙钟。由此得到几个重要边界：
+
+* 游戏暂停时，普通 World Timer 是否推进取决于 Unreal TimerManager/Kismet 配置；当前简化 `System::SetTimer` 没暴露独立的“暂停时仍 tick”参数；
+* global/custom time dilation 会改变 gameplay 时间体验，不应拿 World Timer 测真实网络超时或外部服务 SLA；
+* Editor world、PIE server world 与每个 PIE client world 各有自己的 TimerManager；
+* seamless/non-seamless travel 前后的 World 不是同一个调度器。
+
+如果需求是 UI 使用真实时间、服务器租约或平台超时，应选择能明确表达该时间域的 API，而不是默认套用 World Timer。文章中的 `Time` 单位虽是秒，语义仍是目标 World 的调度时间。
+
+! 生命周期与对称清理
+
+|!Owner |!设置位置 |!清理位置 |!特殊风险 |
+|Actor |BeginPlay/显式动作 |EndPlay |销毁、关卡卸载、网络 relevancy |
+|ActorComponent |BeginPlay/OnRegister 后 |EndPlay/Unregister 对应路径 |owner 先销毁或组件被动态移除 |
+|WorldSubsystem |Initialize 后 |Deinitialize |多 PIE/preview world 有多实例 |
+|GameInstanceSubsystem |某个 World 可用后 |world teardown + subsystem Deinitialize |跨 travel 保存了旧 World handle |
+|EngineSubsystem |有明确 World owner 时 |owner 解绑/Engine teardown |错误地跨多个 World 共用 handle |
+
+TimerManager 通常会避免对已销毁 UObject 调用，但这不等于业务清理可以省略。对称 clear 能释放捕获的状态、消除 reload/teardown 竞态，并让“当前是否安排了任务”与业务字段一致。
+
+GameInstance 生命周期长于 World。若 GameInstanceSubsystem 需要跨关卡等待，不要保存旧 World 的 `FTimerHandle` 并期待新 World 继续推进；在 travel 通知中清除旧 handle，等新 World ready 后按剩余业务状态重新安排。
+
+! Timer 与网络
+
+权威 gameplay 倒计时一般由 Server 驱动，复制目标时间或状态给 Client。不要让每个 Client 独立设置同长度 Timer 后把本地结果当真相，因为延迟、加入时刻和暂停差异会造成漂移。
+
+常见做法是 Server 保存权威结束时间并更新 replicated state；Client 用本地 Timer/Tick 只刷新 UI，到期后等待 Server 状态确认。Unreliable RPC 也不适合充当“倒计时结束”的唯一真相，late joiner 更不会收到之前的瞬时通知。
+
+多人 PIE 排查 Timer 时，日志至少写明 World/NetMode、authority、本地时间、Timer owner 和 callback name。只看到两条“Timer popped”不能区分它们来自 Server 还是 Client 的各自副本。
+
+! 热重载语义
+
+Timer 按 UFunction 名称回调：
+
+* 只改回调函数 body 时，reload 后通常会进入新实现；
+* 重命名函数、改参数或移除 `UFUNCTION` 会破坏已经登记的名称合同；
+* 改 Owner class layout/full reload 时，旧对象可能被重实例化，业务应在新生命周期里重建需要持续的 Timer；
+* 不要为了“跨 reload 保留”而把 World timer handle 放进 static/global 状态，它会把旧 World/对象 generation 泄漏到新状态。
+
+长期任务需要可重建的业务数据，例如 `bWaitingForRespawn` 和权威截止时间，而不是只保存不可解释的 `FTimerHandle`。Reload、save/load 或网络重连后，都可从业务状态重新安排调度。
+
+! 常见故障与定位
+
+|!现象 |!先检查 |!常见原因 |
+|Timer 从不触发 |owner、函数名、`UFUNCTION`、World |回调未反射、没有 WorldContext、owner 已 EndPlay |
+|第二次 SetTimer 后第一次消失 |对象 + 函数名是否相同 |K2 Timer 身份相同，后一次覆盖前一次 |
+|Pause/Clear 没有效果 |handle 来自哪个 World |在另一个 PIE/新 World 中操作旧 handle |
+|循环节奏不稳定 |帧卡顿、暂停、dilation |把 Timer 当成精确墙钟或固定步长 |
+|切关后任务丢失 |owner 生命周期 |World Timer 不跨 travel；需要重建业务状态 |
+|reload 后旧回调报找不到函数 |UFunction 名称/签名变化 |结构变化后仍残留旧 Timer |
+|Server 与 Client 结果不一致 |Timer 设置端和 authority |各端独立推进并修改权威状态 |
+
+定位顺序是：确认对象仍有效 → 确认回调是无参 `UFUNCTION` → 确认 Timer 属于预期 World → 确认没有被同名 SetTimer 覆盖 → 检查暂停/dilation/teardown → 最后再看业务回调。
+
+! 源码落点与继续阅读
+
+* `Script/Examples/Core/Example_Timers.as`：`SetTimer`、pause/unpause、clear 的当前脚本写法；
+* `AngelscriptRuntime/Binds/Bind_SystemTimers.cpp`：`System` namespace 的实际签名和 WorldContext 要求；
+* Unreal `UKismetSystemLibrary::K2_SetTimer*` / `FTimerManager`：对象+函数身份与 World 调度语义；
+* <<as-doc-link "topics-integrations/timers-and-callbacks" "Timer 与延迟回调">>
+* <<as-doc-link "unreal-core/actor-lifecycle" "Actor 生命周期">>
+* <<as-doc-link "unreal-core/subsystems" "Script Subsystems">>
+* <<as-doc-link "unreal-core/world-context" "World Context">>

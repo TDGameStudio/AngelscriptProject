@@ -1,0 +1,161 @@
+title: AS/Docs/zh-Hans/unreal-language/delegate-event-declarations
+type: text/vnd.tiddlywiki
+tags: UnrealLanguage
+caption: delegate 与 event 声明的完整执行链
+description: 从预处理器生成包装 struct，到 UDelegateFunction 签名、绑定、Execute/Broadcast、参数搬运、线程限制和热重载替换，解释单播与多播委托。
+as-sdk-document: yes
+as-doc-key: unreal-language/delegate-event-declarations
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 130
+as-content-revision: 1
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[script-examples]]
+as-nav-group: script-features
+as-nav-order: 270
+as-nav-parent: unreal-language/index
+as-feature-key: delegate-event-declarations
+
+! 两个声明，两个调用模型
+
+```angelscript
+delegate void FOnResolved(UObject Source, int32 Count);
+event void FOnChanged(int32 OldValue, int32 NewValue);
+```
+
+`delegate` 是单播：同一时刻保存一个目标，调用入口是 `Execute` / `ExecuteIfBound`。`event` 是多播：保存调用列表，入口是 `Broadcast`。它们是插件预处理器扩展，不是 vendored AngelScript parser 原生关键字。
+
+|!声明|!内部 Unreal 存储|!绑定|!调用|!未绑定行为|
+|`delegate`|`FScriptDelegate`|`BindUFunction`|`Execute` / `ExecuteIfBound`|`Execute` 抛异常；`ExecuteIfBound` 静默|
+|`event`|`FMulticastScriptDelegate`|`AddUFunction`|`Broadcast`|空列表无调用|
+
+多播没有返回值聚合合同；需要请求/响应或单一返回值时用 delegate/显式函数，而不是让多个 listener 竞争结果。
+
+! 声明不是一个薄 typedef
+
+预处理器会把声明展开为生成 struct。概念形状如下：
+
+```text
+delegate FOnResolved
+  → struct FOnResolved
+      _FScriptDelegate _Inner
+      Execute(...)
+      ExecuteIfBound(...)
+      BindUFunction(Object, Name)
+      GetUObject / GetFunctionName / IsBound / Clear
+
+event FOnChanged
+  → struct FOnChanged
+      _FMulticastScriptDelegate _Inner
+      Broadcast(...)
+      AddUFunction(Object, Name)
+      Unbind / UnbindObject / IsBound / Clear
+```
+
+随后 `FAngelscriptDelegateDesc` 保存编译期返回/参数 `FAngelscriptTypeUsage`；ClassGenerator 生成或关联 `UDelegateFunction`；绑定层为生成类型注册操作；实际调用再把 AS 参数搬进 Unreal `FProperty` 参数缓冲区。
+
+```text
+source declaration
+  → ProcessDelegates expansion
+  → AS generated struct/type
+  → FAngelscriptDelegateDesc
+  → UDelegateFunction signature
+  → FBlueprintEventSignature
+  → FScriptCall argument buffer
+  → ProcessEvent / delegate invocation
+```
+
+因此错误可能来自三层：展开后的 AS 代码、反射签名生成、或运行时目标兼容性。只看调用点会漏掉真正失败层。
+
+! 基本使用
+
+```angelscript
+delegate void FOnLoaded(UObject Asset);
+event void FOnHealthChanged(float OldHealth, float NewHealth);
+
+UFUNCTION()
+void HandleLoaded(UObject Asset)
+{
+    Print(f"Loaded {Asset}");
+}
+
+void Configure()
+{
+    FOnLoaded Callback;
+    Callback.BindUFunction(this, n"HandleLoaded");
+    Callback.ExecuteIfBound(this);
+
+    OnHealthChanged.AddUFunction(this, n"HandleHealthChanged");
+}
+```
+
+name 指向的目标必须进入 Unreal 反射表，通常需要 `UFUNCTION()`。绑定时不仅比较名字：参数个数、方向、底层类型、返回值和可兼容的枚举/引用规则都要与签名 `UDelegateFunction` 对齐。对象为空或函数不兼容会在绑定层报错。
+
+! 为什么生成代码显式传签名
+
+生成的 `BindUFunction` / `AddUFunction` 最终会传入 `__DelegateSignature(this)`，而不是长期把签名指针藏在易过期 userdata 中：
+
+```text
+generated wrapper this
+  → __DelegateSignature(?& Delegate)
+  → 当前 AS delegate type
+  → 当前 UDelegateFunction
+  → BindUFunction_Signature / AddUFunction_Signature
+```
+
+这个间接层对热重载很重要。重新编译 delegate 后，旧 `UDelegateFunction` 可能被新签名替换；每次从当前 delegate type 解析签名，比继续持有旧 userdata 更能避免跨 generation 指针。它仍不意味着任意签名变更都可无损迁移：参数增删、类型/方向和返回值变化会使已有绑定失效，调用方必须重新绑定或接受 reload 重建。
+
+! 调用时参数如何移动
+
+底层调用由 `FScriptCall` 一类结构组织：为每个参数记录 `FProperty`/类型操作，把值写入一块连续 argument buffer，处理引用/out 参数，然后调用单播或遍历多播列表。返回值需要初始化、执行后再搬回 AS 表达式。
+
+关键硬边界：
+
+|!边界|!当前值|!后果|
+|参数个数|最多 16|超过不是“慢一点”，而是越过固定 metadata 数组合同|
+|参数缓冲区|合计最多 1024 字节|大型按值 struct/过多参数可能超限|
+|线程|游戏线程|调用前提会检查 `IsInGameThread()`|
+|嵌套|同一调用状态不支持任意重入|回调中再次复用同一非重入调用路径有风险|
+|稀疏委托|需先解析 sparse owner/storage|不能把 sparse delegate 当普通参数/返回值任意搬运|
+
+“16 个参数”不是建议值；“1024 字节”按反射后的参数布局计算，不是源码字符长度。若接近边界，应重构成小型 payload struct 或领域对象，并确认该类型自身可以安全反射/复制，而不是继续堆参数。
+
+! 生命周期与解绑
+
+Unreal script delegate 保存 UObject 弱引用与函数名语义，不拥有目标对象生命周期。组件/Actor 被销毁后，目标可能失效；多播列表还可能积累重复绑定。推荐 owner 对称管理：
+
+```text
+BeginPlay / Activate       → BindUFunction / AddUFunction
+EndPlay / Deactivate       → Clear / UnbindObject / Unbind
+hot reload before replace  → 保存可迁移关系或解除旧 generation
+hot reload after publish   → 用新签名重新建立必要绑定
+```
+
+不要在可重入 Construction Script 中无条件 Add；每次重跑都会增加一个 listener。也不要把 `ExecuteIfBound` 当作签名校验：它只处理“是否绑定”，不使错误绑定变合法。
+
+! 失败诊断矩阵
+
+|!现象|!先检查|!证据层|
+|`Execute` 报 unbound|是否从未 Bind、目标已失效或 reload 后关系被清理|delegate storage|
+|`ExecuteIfBound` 什么都没发生|`IsBound()`、目标生命周期、函数名|runtime binding|
+|Bind 报 incompatible|目标 UFUNCTION 的参数/返回/out/ref 是否与 `UDelegateFunction` 一致|reflection signature|
+|event listener 调用多次|是否在 Construction/Activate 中重复 Add；是否缺少对称 Unbind|owner lifecycle|
+|Editor reload 后崩溃/旧函数|是否缓存旧 `UDelegateFunction` 或旧 type descriptor|generation boundary|
+|复杂签名断言|参数是否超过 16 或布局超过 1024 字节|`FScriptCall` fixed limits|
+|后台线程触发检查|回到 game thread 再触发 UObject delegate|thread contract|
+
+! 维护者源码地图
+
+* `AngelscriptPreprocessor.cpp` 的 delegate processing：识别声明并生成包装 struct/操作方法。
+* `Bind_Delegates.cpp`：声明 delegate 类型、`__DelegateSignature`、绑定/解绑操作。
+* `Bind_BlueprintEvent.cpp`：`FBlueprintEventSignature`、`FScriptCall` 与 Execute/Broadcast 参数搬运。
+* ClassGenerator delegate 数据与 reload map：建立 `UDelegateFunction` 并在 generation 交换时替换引用。
+
+修改任一层时都要保持生成方法名、AS declaration、UDelegateFunction 参数布局和运行时搬运顺序一致；只改展开模板会制造能编译但调用时错位的 ABI 问题。
+
+! 相关链接
+
+* <<as-doc-link "language/delegates-events-and-binding" "委托与事件入门">>
+* <<as-doc-link "hot-reload/versioned-types-and-delegates" "版本化类型与委托热重载">>
+* <<as-doc-link "unreal-language/reflection-signature-limits" "反射签名边界">>

@@ -1,0 +1,117 @@
+title: AS/Docs/zh-Hans/start/troubleshooting-first-run
+type: text/vnd.tiddlywiki
+tags: Start
+caption: 首次运行排错
+description: 按插件加载、脚本发现、编译、生成类型和 Blueprint 可见性逐层定位首次接入问题。
+as-sdk-document: yes
+as-doc-key: start/troubleshooting-first-run
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: troubleshooting
+as-content-status: draft
+as-order: 100
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[script-examples]]
+as-nav-group: getting-started
+as-nav-order: 100
+as-nav-parent: start/index
+as-feature-key: start-troubleshooting-first-run
+
+! 从最外层开始
+
+第一次接入时按下面顺序排查。每一层都依赖上一层，跳到后面的热重载或 Blueprint 设置通常只会增加噪声。
+
+```
+Editor Target 能启动
+  -> Angelscript 插件模块已加载
+    -> 项目 Script/ 根被发现
+      -> .as 文件通过编译
+        -> Unreal 反射类型生成
+          -> Blueprint / 场景能采用
+```
+
+每通过一层，就记录一条可复查证据；每失败一层，就停止修改更内层的输入。这个顺序既能减少无效尝试，也能防止“重装后碰巧好了”掩盖真实原因。
+
+! 1. Editor 无法启动或插件加载失败
+
+检查插件是否位于 `Plugins/Angelscript/`，是否用当前 UE 5.7 环境重新生成并编译 Editor Target。引擎升级、编译选项变化或旧二进制混用时，先修复 C++/module 构建；此时 `.as` 内容尚未参与。
+
+证据应至少包含实际启动的引擎、构建的 Editor Target 和第一条失败模块。Plugin Browser 中“已启用”只表示配置意图，不等于二进制已经由当前引擎成功加载。
+
+! 2. 没有任何脚本编译日志
+
+确认 `Script/` 与 `.uproject` 平级，文件扩展名是 `.as`，而不是编辑器隐藏扩展后形成 `.as.txt`。先放一个最小、独立文件，避免 include 与业务依赖干扰。
+
+```angelscript
+class AFirstScriptActor : AActor
+{
+    UFUNCTION(BlueprintOverride)
+    void BeginPlay()
+    {
+        Print("AngelScript is active");
+    }
+}
+```
+
+预期结果不是一定进入 `BeginPlay`，而是日志先显示这个逻辑脚本来源被发现并编译，随后生成 `AFirstScriptActor`。若文件完全没有进入发现阶段，继续改函数体没有诊断价值。
+
+! 3. 脚本被发现但编译失败
+
+处理第一条文件/行列诊断。对照 `Script/Examples/` 的当前写法，不把 C++ 指针、引用或宏语法直接复制到 AngelScript。若错误是“类型或函数不存在”，确认它是否真的由本 fork 绑定，而不是仅存在于 Unreal C++ 或外部 Hazelight 环境。
+
+修复后应产生一个新的候选编译批次。旧实现仍能运行不代表失败候选已发布；先确认日志中的成功结果，再判断运行行为。
+
+! 4. 编译成功但找不到生成 class
+
+确认声明的是支持生成的 Unreal class，父类有效，且没有在 Editor-only 条件外引用只在 Editor 存在的 API。查看 class generation 诊断；不要通过手工创建同名 C++ class 绕过，这会引入名称冲突。
+
+把“纯语言类型可编译”和“Unreal 反射类型已发布”分开。前者证明 parser/compiler 接受源码，后者还要求 ClassGenerator 能把声明映射到合法的 UClass/UStruct/UEnum 表面。
+
+! 5. Blueprint 看不到 class 或成员
+
+* class 是否已成功生成并属于预期父类类别；
+* 属性/函数是否带正确 `UPROPERTY` / `UFUNCTION`；
+* Category、BlueprintReadOnly、BlueprintEvent 等 specifier 是否匹配意图；
+* Content Browser/Blueprint action cache 是否在 full reload 后刷新；
+* 公开签名是否包含当前绑定层不支持的类型。
+
+! 6. 第一次正常，保存后异常
+
+这时安装已经成功，问题属于增量编译/热重载。记录本次是 body-only 还是结构变化，检查最后成功实现是否保留、既有实例是否进入新实现，以及 Blueprint/组件恢复结果。不要把“重启后正常”当成最终解决。
+
+! 一页式决策表
+
+|!最早失败证据 |!当前范围 |!下一项只读/最小检查 |!此时不要做 |
+|项目生成阶段找不到模块 |插件布局/UBT |`.uplugin` 位置、目标引擎、模块声明 |修改 `.as` 语法 |
+|Editor Target 编译或链接失败 |C++ 构建 |第一条失败模块与旧产物来源 |创建 Blueprint |
+|模块加载成功但零脚本来源 |发现/路径 |`.uproject` 与 `Script/` 相对位置、扩展名 |改 UPROPERTY specifier |
+|存在逻辑路径和行列错误 |预处理/编译 |同一批次第一条根因 |逐条修尾部连锁错误 |
+|compile success 但无 Unreal class |ClassGenerator/反射形状 |父类、声明种类、生成诊断 |创建同名 C++ 类型 |
+|class 存在但成员不可见 |反射 metadata/Editor 表面 |specifier、Category、签名支持范围 |反复移动脚本文件 |
+|只在第二次保存后失败 |hot reload/recovery |变化分类、old/new 对象、Blueprint/CDO |立即重启丢掉证据 |
+
+! 快速症状表
+
+|!症状 |!层级 |
+|Editor 报模块缺失 |插件构建/加载 |
+|没有扫描到文件 |目录发现 |
+|有文件行列错误 |脚本编译 |
+|编译成功无 UClass |ClassGenerator/声明形状 |
+|UClass 有但 Blueprint 表面缺失 |反射 specifier/编辑器缓存 |
+|仅保存后出错 |热重载/重实例化 |
+
+! 提交问题前
+
+保留 UE 版本、插件产品版本、逻辑脚本路径、第一条诊断、最小源码、是否只在热重载复现。删掉个人绝对路径和项目私密数据，但不要删掉有用的阶段与符号信息。
+
+建议把证据包写成：环境身份、操作序列、最后一个已知成功层、第一条失败、预期、实际、最小输入、首次启动/热重载差异。这样维护者无需先猜“没运行”究竟指模块、编译、类型生成还是 gameplay 行为。
+
+! 排错完成的定义
+
+排错结束时，应能把问题放进上面某一个层级，并说明一次最小改动为何使该层从失败变为成功。若只是清空缓存、重装或重启后暂时消失，应记录为恢复手段，而不是根因；继续观察时从最后一个有证据的成功层开始，不需要重新怀疑整条安装链。
+
+! 相关链接
+
+* <<as-doc-link "start/installation-checklist" "源码插件安装检查表">>
+* <<as-doc-link "start/read-compile-diagnostics" "阅读第一条编译诊断">>
+* <<as-doc-link "hot-reload/failures-and-recovery" "热重载失败与恢复">>

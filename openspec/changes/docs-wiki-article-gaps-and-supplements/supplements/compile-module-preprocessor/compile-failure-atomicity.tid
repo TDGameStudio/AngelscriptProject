@@ -1,0 +1,156 @@
+title: AS/Docs/zh-Hans/compile-module-preprocessor/compile-failure-atomicity
+type: text/vnd.tiddlywiki
+tags: CompileModulePreprocessor
+caption: 编译失败原子性
+description: 说明失败编译为何必须保留最后成功模块、类型与测试注册，并在成功后一次性发布新状态。
+as-sdk-document: yes
+as-doc-key: compile-module-preprocessor/compile-failure-atomicity
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 130
+as-content-revision: 3
+as-sources: [[project-knowledge-zh]] [[angelscript-plugin]] [[project-guide]]
+as-nav-group: workflow-validation
+as-nav-order: 220
+as-nav-parent: compile-module-preprocessor/index
+as-feature-key: compile-failure-atomicity
+
+! Last-good 原则
+
+增量编译失败时，运行中的 world 不应得到半个新模块。旧的最后成功函数、生成类型、脚本测试 registry 与依赖状态继续作为活动版本；新诊断单独报告。只有新编译、ClassGenerator 和必要的 reload 恢复完成，才发布新状态。
+
+```
+old active module
+  + compile candidate
+      failure -> discard candidate, keep old active
+      success -> generate/reload -> publish new active
+```
+
+! 事务包含哪些层
+
+|!候选状态|!发布前位置|!提交后消费者|
+|预处理 code sections/include graph|candidate module descriptors|增量失效与诊断|
+|AS module/functions/bytecode|候选 script module|VM/JIT/debugger|
+|class/struct/function descriptors|generator batch data|UClass/FProperty/UFunction|
+|reload plan 与新版本产物|未 canonical 的 replacement|现有实例、Blueprint、subsystem|
+|脚本测试 leaves|candidate registry generation|Automation/commandlet/hot-reload runner|
+|source/breakpoint mapping|candidate line tables|DebugServer/session|
+
+原子性不是要求底层内存只有一次写，而是任何外部消费者始终只看完整 old generation 或完整 new generation。候选内部可以分阶段构建，但不能提前更新 canonical map/delegate。
+
+! 为什么“部分成功”危险
+
+如果先替换函数表，再在属性生成失败，旧 class 可能调用新函数但参数/layout 仍是旧版；如果先发布测试名称，再在 class generation 失败，Automation 会列出无法执行的 leaf。原子边界必须覆盖编译结果的所有下游消费者。
+
+热重载还会创建临时 CDO、重命名 replaced class、计算 redirect 和迁移实例。执行这些不可逆步骤前必须完成足够分析；中途失败时至少保持 canonical old class 与 last-good module 可用，并清理 candidate/临时对象。不能把 `_REPLACED_` 对象误当成功发布。
+
+! 失败后应保持
+
+* 旧模块函数仍可执行；
+* canonical class/struct 仍是上一成功版本；
+* 已有实例和 Blueprint 不被半重实例化；
+* registry 保留上一成功测试集合；
+* 新错误保留真实逻辑路径与行号；
+* 下一次修复保存能从一致 last-good 状态继续。
+
+! 成功发布点
+
+新 descriptor 完整、reload plan 已应用、类型生成完成后，才更新 canonical registries 并通知 Editor/Automation。Editor 恢复仍可能报告对象/Blueprint 错误，但不能回到“新旧函数表各一半”的状态。
+
+建议把发布看成 generation token：compile、ClassGenerator、test registry、debug mapping 和通知携带同一 token；消费者忽略未提交或旧 token。通知必须最后发出，因为 observer 收到事件后会立即查询 canonical state。
+
+! 三种失败
+
+|!失败点|!保留|!清理|
+|preprocess/parser/compiler|完整 old module/descriptor|candidate sections、临时 module、candidate diagnostics 之外的状态|
+|ClassGenerator/Verify|old canonical UClass/module/registry|新未发布产物、临时 CDO、candidate mapping|
+|发布后 Editor 恢复|new generation 已提交，报告恢复错误|不能偷偷回滚一部分；按明确 recovery/下一次 reload 处理|
+
+最后一种与编译原子失败不同：若事务已经提交，再发生 Blueprint reinstance/editor restoration 问题，需要显式恢复策略，不能把 registry 单独切回 old。
+
+! 排障
+
+“编译失败后旧代码也不能运行”通常说明候选状态过早写入全局表；“修复后仍列旧错误/旧测试”则可能是失败候选未清理或成功发布事件缺失。记录失败前活动 generation、失败 candidate 与修复后 generation 能最快定位。
+
+|!现象|!重点检查|
+|失败后 breakpoint 落到新行但执行旧 body|debug mapping 早于 module commit|
+|Automation 列出不存在 method|test registry candidate 提前 publish|
+|第二次修复仍报告第一次 descriptor|candidate cache 未按 generation 丢弃|
+|Blueprint 父类指向 `_REPLACED_`|canonical class/redirect 发布顺序|
+|模块成功但通知缺失|commit 完成后 event 未发或被错误 coalesce|
+
+! 源码中的候选/错误标记
+
+Class generation 的主入口位于 `ClassGenerator/AngelscriptClassGenerator.cpp::PerformReload`。`Setup` / `Analyze` 建立 old/new module 与 reload requirement，Full/Soft Reload 分支生成/链接新类型，Finalize/Verify 再检查 property、component、function 和 class invariant。候选模块遇到不可接受错误会设置 `NewModule->bModuleSwapInError`；下一轮 Analyze 也会看到旧 module 的 swap error，并把安全策略升级，而不是假装上次发布完整。
+
+|!源码区域 |!原子性责任 |
+|`AngelscriptClassGenerator_Analyze.cpp` |比较 old/new descriptor，收集 reload 需求与依赖，不提前破坏 old canonical 类型 |
+|`AngelscriptClassGenerator_ReloadPlanning.cpp` |把 class/struct/delegate/enum 依赖传播到一致 reload plan |
+|`AngelscriptClassGenerator_FullReload.cpp` |创建 replacement，迁移旧实例/类型引用，并保持 old layout 可读 |
+|`AngelscriptClassGenerator_SoftReload.cpp` |只在结构兼容时重接函数/type usage |
+|`AngelscriptClassGenerator_Finalize.cpp` |Finalize/Verify/默认对象；错误写入 candidate swap 状态 |
+|Testing registry snapshot |Automation 读取不可变 snapshot，不应看到正在构建的 leaves |
+
+这张地图比“compile 返回 bool”更接近实际事务边界：parser 成功后仍可能在 class finalize、default component、reference schema 或 Editor 恢复阶段失败。
+
+! Reload plan 是事务的依赖闭包
+
+单个 class 的变化可能通过 superclass、property type、function/delegate 参数、interface、component 或 Blueprint child 传播。若只 reload 直接修改的类型，未修改的消费者会继续持有旧 `UClass/UScriptStruct/UFunction`。
+
+```text
+changed descriptor
+  → register planner node
+  → collect old/new type dependencies
+  → propagate Soft / Full / Removal requirement
+  → freeze complete plan
+  → generate/apply in dependency order
+```
+
+计划冻结前可以扩张，应用开始后不能再悄悄发现一个依赖并单独发布。否则 observer 可能在依赖闭包尚未完成时看到新 class。确实只能在 apply 阶段发现的错误，应让 candidate generation 失败并走清理/明确恢复，而不是留下半个 plan。
+
+! 可逆阶段与不可逆阶段
+
+|!阶段 |!是否应可直接丢弃 |!原因 |
+|preprocess/parse/compile candidate |是 |尚未成为活动 module，可保留诊断后释放 |
+|descriptor analysis/reload planning |是 |只构建候选 graph/data |
+|创建未 canonical replacement/type |原则上是 |命名/临时对象需清理，但消费者尚不应可见 |
+|reinstance/redirect/canonical map 切换 |进入提交区 |开始改变外部对象/资产身份，必须按固定顺序完成或进入显式 recovery |
+|通知 Editor/Automation/debugger |不可先于提交 |observer 收到通知立即读取 canonical state |
+
+设计改动时应尽量把可能失败的验证前移到前三阶段。将“component parent 不存在”“property 类型不支持”“Parms ABI 无法生成”等错误拖到 canonical 切换后，恢复成本会急剧上升。
+
+! Registry snapshot 的一致性
+
+脚本测试 registry、debug source map 和 coverage/source identity 都是编译产物的观察表面。它们不一定与 UClass 存在同一容器，但必须随同一 generation 提交。Automation 通过 `FAngelscriptScriptTestRegistrySnapshot` 读取稳定快照；构建新 leaves 应先产生新的不可变 snapshot，成功发布时整体替换，而不是在共享数组上逐项增删。
+
+同理，debugger 不应拿到 candidate line map 后继续执行 old body；coverage 不应把 old bytecode 的计数记到 new source identity。Generation token/完整 snapshot 让 observer 可以判断当前数据属于哪次成功编译。
+
+! Last-good 不等于静默忽略错误
+
+失败后继续运行旧代码是可用性政策，但 UI/日志必须清楚区分：当前源码 candidate 失败、活动执行仍是 generation G、下一次保存将从 G 构建。若只显示“运行正常”，开发者可能误以为新修改已生效；若立即销毁旧 module，则一个语法错误会破坏整个 Editor session。
+
+建议诊断至少包含：失败逻辑路径/行、candidate generation、last-good generation、失败阶段、是否进入任何 reload/reinstance 步骤、被保留的活动 module。下一次成功后应清除/归档旧 candidate 错误，而不是让它继续污染当前状态。
+
+! 提交后的恢复边界
+
+Blueprint reinstance、默认值恢复或 Editor object restoration 可能在 canonical 类型切换后报告错误。此时不能把单个 module map 或 test registry 回滚到 old 而让对象保持 new。必须把系统状态标为“new generation 已提交但恢复不完整”，保留足够 old/new mapping 供诊断/下一次 reload，或由更高层执行完整恢复策略。
+
+这与 compile candidate 失败不同：前者允许丢弃候选；后者已经有外部副作用。文档和日志应使用不同术语，避免所有错误都叫“compile failed”。
+
+! 维护审查清单
+
+# 新增的编译产物在 publish 前存在哪里，observer 是否可能提前读取？
+# 它与 module/class/test/debug/coverage 哪个 generation 对齐？
+# 哪些验证可以移到 canonical 切换前？
+# 第 N 阶段失败时，临时 UObjects、module、mapping、delegate 通知怎样清理？
+# old layout/schema 要保留到哪一步，谁保证不被 new offset 读取？
+# commit 后恢复失败是否有独立状态，而不是局部回滚？
+# 下一次保存如何确定从 last-good 而不是失败 candidate 继续？
+
+! 相关链接
+
+* <<as-doc-link "compile-module-preprocessor/compilation-events" "编译事件">>
+* <<as-doc-link "hot-reload/failures-and-recovery" "热重载失败与恢复">>
+* <<as-doc-link "testing-diagnostics-release/reflected-script-tests" "反射脚本测试 Registry">>

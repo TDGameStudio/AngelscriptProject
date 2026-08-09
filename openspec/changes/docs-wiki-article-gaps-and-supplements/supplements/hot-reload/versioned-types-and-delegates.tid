@@ -1,0 +1,123 @@
+title: AS/Docs/zh-Hans/hot-reload/versioned-types-and-delegates
+type: text/vnd.tiddlywiki
+tags: HotReload
+caption: 结构体、委托与类型版本链
+description: 说明结构体 layout、函数参数、属性、enum 与 delegate 在 full reload 中如何保持旧新版本一致。
+as-sdk-document: yes
+as-doc-key: hot-reload/versioned-types-and-delegates
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 90
+as-content-revision: 1
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: workflow-validation
+as-nav-order: 130
+as-nav-parent: hot-reload/index
+as-feature-key: hot-reload-versioned-types-delegates
+
+! 结构类型为什么不能原地改写
+
+当脚本 struct 新增字段、delegate 改变签名或 enum 改变值集合时，旧对象、属性描述和已编译调用点仍可能引用旧形状。直接在原 `UScriptStruct` 或 delegate signature 上原地改写，会让旧内存按新 layout 解释，风险比暂时保留旧类型更高。
+
+Full reload 因此采用版本化结果：创建新反射对象，让 canonical 查询指向新版本，同时让旧版本通过 newest-version 链找到新版本，并在迁移窗口内保持自己的旧 layout。
+
+! Struct 的三个核心不变量
+
+以 V1 struct 只有 `Value`、V2 新增 `Bonus` 为例：
+
+* `StructBeforeReload != StructAfterReload`：结构变化创建新 `UScriptStruct`；
+* `StructBeforeReload->GetNewestVersion() == StructAfterReload`：旧版本可追到最新版本；
+* 旧 struct 仍没有 `Bonus`，新 struct 同时拥有 `Value` 与 `Bonus`：旧 layout 不被原地污染。
+
+`AngelscriptHotReloadStructTests.cpp` 的 `StructFullReloadReplacesScriptStructAndKeepsVersionChain` 直接覆盖这三点，并确认 struct reload 通知只广播一次且携带正确 old/new 指针。
+
+! 所有引用位置都要 retarget
+
+生成新 struct 只是第一步。凡是新版本反射对象中的 `FStructProperty` 都应指向新 struct，包括：
+
+* class/struct 成员属性；
+* `UFunction` 输入参数；
+* out 参数和返回参数；
+* 容器元素中间接引用的 struct；
+* delegate 参数中的 struct。
+
+旧 owner 的旧 property 可以继续指向旧 struct，供仍处于迁移期的旧对象解释内存；新 owner 的 property 必须指向新 struct。把全局所有 property 一次性改到新 struct 会破坏旧 layout，把新 owner 留在旧 struct 则会让新字段永远不可见。
+
+`StructPropertyRetargetsToReloadedStruct` 与 `StructUFunctionParameterExecutesAfterReload` 分别验证成员属性和函数参数。维护者新增容器或参数形态支持时，应把它看作新的 retarget 位置，而不是假设基础案例自动覆盖。
+
+! Delegate 的双重身份
+
+Delegate 同时有“签名函数”与“持有该签名的 property/绑定实例”。签名变化后需要确认：
+
+* 新 delegate signature function 代表新参数列表；
+* 新 delegate property 指向新 signature；
+* class property、函数参数和 Blueprint pin 没有停留在旧签名；
+* reload 前已有绑定的调用策略明确：可安全保留、重新绑定或诊断失效；
+* multicast 与 single-cast 不会在 reload 中互换语义；
+* Blueprint impact 能把 delegate signature 依赖报告出来。
+
+对应证据分布在 `AngelscriptHotReloadDelegateTests.cpp`、`AngelscriptHotReloadDelegateRuntimeTests.cpp` 和 `AngelscriptHotReloadEnumDelegateTests.cpp`。静态反射形状正确不等于广播仍正确，因此需要同时阅读 runtime 行为案例。
+
+! Enum 变化与序列化值
+
+Enum 增删或重排枚举项会改变名称表，现有整数值却可能已经保存在对象或资产中。热重载可以更新反射 enum 并 retarget 引用，但不能凭空知道业务上旧数值应映射到哪个新枚举项。
+
+因此维护时应区分：
+
+* 只新增末尾枚举项：通常保留旧数值含义；
+* 重命名枚举项：反射名称变化可能需要显式迁移；
+* 重排/删除枚举项：检查序列化资产和默认值，不只检查 dropdown；
+* enum 用作 delegate/function/property 类型：所有新反射引用必须指向新版本。
+
+! 依赖传播示例
+
+假设 `FCombatPayload` 被 `UCombatState::Payload` 使用，同时作为 `FOnCombatChanged` 的参数，Blueprint 又绑定该 delegate。给 struct 新增字段后，传播链是：
+
+```
+FCombatPayload layout change
+  -> UCombatState property needs new struct reference
+  -> FOnCombatChanged signature needs new parameter type
+  -> owning classes need new delegate property
+  -> Blueprint pins/bindings become impact candidates
+```
+
+只 full reload struct 会留下混合版本图。`FAngelscriptClassReloadPlanner` 通过类型依赖边把需要重建的 owner 一并升级；Editor scanner 再处理 Blueprint 依赖。Runtime graph 与 Editor impact 是相邻两层，不是重复实现。
+
+! 多轮 reload 的版本链
+
+V1 → V2 → V3 后，V1 与 V2 的 `GetNewestVersion()` 最终都应解析到 V3，V3 解析到自己。与此同时，每一代旧 layout 都应保持它被创建时的字段形状，直到安全回收。
+
+需要特别警惕：
+
+* 只把 V2 链到 V3，却让 V1 仍停在 V2；
+* rename-back 时通过名字找到第一代旧类型而非新创建版本；
+* delegate/enum 有自己的新版本，但 owner class 的 property 仍指向中间版本；
+* teardown 后版本注册残留，使下一 fixture 从 V2 而不是干净 V1 开始。
+
+`AngelscriptHotReloadVersionChainTests.cpp` 是多轮版本关系的直接入口；struct、class rename 与 delegate 主题提供具体类型终态。
+
+! 排障清单
+
+|!症状 |!检查 |
+|新字段在 struct 上可见，但 owner property 读不到 |新 owner 的 `FStructProperty::Struct` 是否 retarget |
+|函数反射显示新参数，执行仍失败 |`UFunction` parameter property、脚本调用桥与 owner 版本是否一致 |
+|delegate 能找到但广播参数错位 |signature function 与 runtime binding 是否来自同一版本 |
+|Blueprint 节点断线 |impact scanner 是否报告 PinType/DelegateSignature，编译队列是否 flush |
+|第二次 reload 指向上一版 |planner 依赖图与 newest-version 链压缩/更新 |
+|旧实例读取崩溃 |旧 layout 是否被原地修改或过早释放 |
+
+! 源码入口
+
+* 版本对象：`AngelscriptRuntime/ClassGenerator/ASStruct.*`、`ASClass.*`
+* 计划与 retarget：`AngelscriptClassGenerator_ReloadPlanning.cpp`、`AngelscriptClassGenerator_FullReload.cpp`
+* struct 证据：`AngelscriptHotReloadStructTests.cpp`
+* delegate/enum 证据：`AngelscriptHotReloadDelegateTests.cpp`、`AngelscriptHotReloadDelegateRuntimeTests.cpp`、`AngelscriptHotReloadEnumDelegateTests.cpp`
+* 多轮链：`AngelscriptHotReloadVersionChainTests.cpp`
+
+! 相关链接
+
+* <<as-doc-link "hot-reload/reload-pipeline-internals" "热重载管线实现原理">>
+* <<as-doc-link "hot-reload/class-rename-and-removal" "类重命名、删除与重定向">>
+* <<as-doc-link "type-object-reflection/classgenerator-structure" "结构体、枚举与委托反射">>

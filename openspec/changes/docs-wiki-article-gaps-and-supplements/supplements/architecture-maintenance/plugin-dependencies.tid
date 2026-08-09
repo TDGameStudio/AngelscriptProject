@@ -1,0 +1,124 @@
+title: AS/Docs/zh-Hans/architecture-maintenance/plugin-dependencies
+type: text/vnd.tiddlywiki
+tags: ArchitectureMaintenance
+caption: 插件与模块依赖卫生
+description: 区分 uplugin 启用依赖、Build.cs 编译依赖、公开/私有传播、Editor gate 与生成绑定动态依赖。
+as-sdk-document: yes
+as-doc-key: architecture-maintenance/plugin-dependencies
+as-locale: zh-Hans
+as-depth: L3
+as-doc-kind: reference
+as-content-status: draft
+as-order: 20
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: internals-reference
+as-nav-order: 20
+as-nav-parent: architecture-maintenance/index
+as-feature-key: plugin-dependencies
+
+! 先区分三种“依赖”
+
+维护插件时，不能把 `.uplugin` 和 `Build.cs` 当作重复清单：
+
+|!层|!解决的问题|!写错后的典型表现|
+|`.uplugin` 的 `Plugins`|目标启用本插件时，还必须启用哪些 UE/项目插件|descriptor 检查、plugin load 或 packaging 阶段失败|
+|`PublicDependencyModuleNames`|本模块的公共头、inline/API 表面要求消费者也能看到哪些模块|消费者编译、include path 或链接传播失败|
+|`PrivateDependencyModuleNames`|只为本模块实现提供哪些模块|本模块编译/链接失败；不应扩大消费者依赖|
+
+此外，`AngelscriptRuntime.Build.cs` 还会依据 `DefaultAngelscriptCompileOptions.ini` 的 function-binding method 动态加入目标模块依赖并生成 wrapper。那是''生成绑定 transport 的构建输入''，不是应复制进 `.uplugin` 的固定插件列表。
+
+! 当前核心插件清单
+
+`Plugins/Angelscript/Angelscript.uplugin` 当前启用两个插件依赖：
+
+|!插件|!为什么在 descriptor 层|
+|`PropertyBindingUtils`|核心/测试集成使用该插件所提供能力，启用关系需随 AngelScript 插件进入目标|
+|`EnhancedInput`|手写绑定与示例表面包含 Enhanced Input，descriptor 保证插件可用|
+
+它不声明 `GameplayTags`、`GameplayAbilities` 或 `StructUtils`。GameplayTags/GAS 已拆为可选插件，不应为了可选功能把它们重新变成核心插件的强启用依赖。
+
+`AngelscriptRuntime.Build.cs` 的固定 public modules 当前包括：
+
+```text
+ApplicationCore, Core, CoreUObject, Engine, EngineSettings,
+DeveloperSettings, Json, JsonUtilities
+```
+
+`CoreUObject` 明确位于 `PublicDependencyModuleNames`。`FInstancedStruct` 绑定所需基础类型通过当前引擎的 CoreUObject 表面消费；核心 `.uplugin` 与 Runtime Build.cs 均不存在 `StructUtils`。若未来兼容一个仍把相关类型放在独立模块的旧 UE 分支，应做目标版本条件和独立构建验证，不能在所有版本无条件恢复废弃依赖。
+
+Runtime 的 private modules 包括 AI、Navigation、Networking/Sockets、Input、Slate/UMG、AssetRegistry、Projects、PhysicsCore、EnhancedInput 等实现依赖。`Target.bBuildEditor` 时，Runtime 才额外公开加入 `UnrealEd` 与 `EditorSubsystem`，并私有加入 `UMGEditor`。
+
+<<as-callout warning "公开依赖不是越多越安全">>
+把 private module 迁到 public 会把 include/link 负担传播到所有消费者，并可能让 Runtime 公共头意外依赖 Editor-only API。只有公共 header、inline/template 或导出签名需要该模块时才应 public；`.cpp` 内部使用通常保持 private。
+<</as-callout>>
+
+! 核心模块依赖方向
+
+```text
+AngelscriptRuntime
+  ▲             ▲
+  │ public      │ public
+AngelscriptEditor     AngelscriptTest
+                          └─ private AngelscriptEditor when bBuildEditor
+```
+
+`AngelscriptEditor.Build.cs` public 依赖 Runtime，并公开列出 UnrealEd、BlueprintGraph、Kismet、DirectoryWatcher、AssetTools/AssetRegistry 等，因为其编辑器表面和头文件直接参与这些系统。`AngelscriptTest` public 依赖 Runtime；只在 `Target.bBuildEditor` 的 private 列表加入 `AngelscriptEditor`、CQTest、UnrealEd 等。
+
+Runtime 不能依赖 Editor 或 Test 来取得实现。Runtime Build.cs 中的 `Target.bBuildEditor` 分支只表示“同一个 Runtime 在 Editor target 中可以编译 Editor guarded 代码”，不改变模块图的 owner 方向，也不授权未加 `WITH_EDITOR` 保护的公共 Runtime API 暴露 Editor 类型。
+
+! 可选插件链
+
+|!插件|!descriptor 依赖|!Runtime module public 依赖|
+|`AngelscriptGameplayTags`|`Angelscript`|`AngelscriptRuntime`、`GameplayTags`（加 Core/CoreUObject/Engine）|
+|`AngelscriptGAS`|`Angelscript`、`AngelscriptGameplayTags`、`GameplayAbilities`|`AngelscriptRuntime`、`AngelscriptGameplayTags`、`GameplayAbilities`、`GameplayTags`、`GameplayTasks`（加 Core/CoreUObject/Engine）|
+
+这条链表达 GameplayTags 是 GAS 的基础扩展。核心 Runtime 不应反向 include 可选插件类型；可选插件向 Runtime 注册 binding/extension。否则关闭可选插件时核心将无法独立交付。
+
+! Function binding 带来的动态依赖
+
+`AngelscriptRuntime.Build.cs` 从项目 `Config/DefaultAngelscriptCompileOptions.ini` 读取：
+
+* `FunctionBindingMethod`；
+* `NativeRuntimeLinkedModules`；
+* `NativeModuleFunctionAddressModules`。
+
+在 `NativeRuntimeLinked` 模式下，`AddConfiguredRuntimeLinkedDependencies()` 会遍历配置模块，跳过空名、自身模块和非 Editor target 中的 Editor-only module，避免重复后将其加入 Runtime private dependencies；`AddGeneratedFunctionBindingWrappers()` 同时为各模块安排 `AS_FunctionBinding_<Module>_Aggregator.cpp`。
+
+因此遇到 generated shard 链接错误，要问的是“配置是否让 Runtime 直接链接该目标模块”，而不是机械地把模块追加到固定 public 列表。`NativeModuleFunctionAddress` 则通过目标模块的 modular feature 交换地址 payload，其依赖、layout version 和卸载纪律另有合同。
+
+! 依赖变更流程
+
+# 定位使用点在 public header、template/inline、还是 `.cpp`；决定 public/private。
+# 确认依赖对象是 UE module 还是 UE plugin；需要启用插件时再修改 `.uplugin`。
+# 确认目标类型属于核心 Runtime、Editor-only，还是可选插件；不要逆转 owner 方向。
+# 检查所有 target gate：Editor、Commandlet、Game、Shipping，以及 source/installed Engine 差异。
+# 若来自 UHT generated binding，先确认 binding method 与配置模块集合，不要重复建立固定依赖。
+# 删除依赖时搜索 include、导出签名、generated shard、descriptor 与可选插件 consumer，而不是只删一行 Build.cs。
+
+! 故障定位
+
+|!现象|!优先检查|
+|插件加载时报 missing plugin|`.uplugin` 的 `Plugins` 名称、Enabled、目标是否安装该插件|
+|本模块能编译，消费者 include 公共头失败|公共签名依赖被错误放在 private|
+|Game target 引用了 UnrealEd|Runtime public header 或无 `WITH_EDITOR` 守卫的 `.cpp` 路径|
+|关闭 GameplayTags/GAS 后核心失败|核心对可选插件产生反向 include/依赖|
+|generated native wrapper unresolved external|binding method、配置模块集合、动态 private dependency 与生成 shard 是否一致|
+|升级 UE 后出现废弃模块 warning|同时检查 descriptor plugin 条目和所有 Build.cs；确认类型是否已迁入 CoreUObject|
+|移除依赖后 unity build 仍通过、non-unity 失败|源码依赖了其他 translation unit 偶然带入的 include|
+
+! 不变量
+
+* 核心 `Angelscript` 必须能在两个可选插件关闭时独立构建和运行。
+* Editor/Test 不得成为 Runtime 的反向 module dependency。
+* `CoreUObject` 当前是 Runtime public dependency；`StructUtils` 当前不在核心 descriptor 或 Runtime module list。
+* NMFA/NativeRuntimeLinked 的动态模块集合由 binding 配置与生成器合同管理，不应污染稳定 public API。
+* 删除依赖与新增依赖同样需要审查 installed/source Engine、Editor/Game target 和 packaging。
+
+! 相关链接
+
+* <<as-doc-link "architecture-maintenance/module-ownership" "模块所有权">>
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "Function Binding 路径选择">>
+* <<as-doc-link "bindings-uht-extensions/native-module-function-address" "Native Module Function Address">>
+* <<as-doc-link "topics-integrations/gameplay-tags" "GameplayTags 可选集成">>
+* <<as-doc-link "topics-integrations/gas" "GAS 插件边界">>

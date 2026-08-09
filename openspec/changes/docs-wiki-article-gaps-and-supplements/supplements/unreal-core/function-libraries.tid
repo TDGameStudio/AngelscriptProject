@@ -1,0 +1,153 @@
+title: AS/Docs/zh-Hans/unreal-core/function-libraries
+type: text/vnd.tiddlywiki
+tags: UnrealCore
+caption: Function Libraries
+description: 理解 namespace、ScriptMixin、WorldContext 和多条绑定路径，可靠地查找与维护 Unreal 的脚本函数表面。
+as-sdk-document: yes
+as-doc-key: unreal-core/function-libraries
+as-locale: zh-Hans
+as-depth: L1
+as-doc-kind: guide
+as-content-status: draft
+as-order: 30
+as-content-revision: 2
+as-sources: [[script-examples]] [[project-knowledge-zh]] [[angelscript-plugin]]
+as-nav-group: unreal-development
+as-nav-order: 20
+as-nav-parent: unreal-core/index
+as-feature-key: function-libraries
+
+! 脚本表面不是 C++ 类名的机械翻译
+
+Unreal 中很多静态 helper 来自 `UBlueprintFunctionLibrary` 或插件自有 C++ library；在 AngelScript 中，它们可能变成 namespace 函数、对象上的 mixin 方法、重命名后的 overload，或保守的反射调用。脚本作者不应创建 `UKismet...Library` 实例。
+
+```angelscript
+float Safe = Math::Clamp(Value, 0.0, 1.0);
+FTimerHandle Handle = System::SetTimer(this, n"OnTimer", 1.0, bLooping=false);
+
+// ScriptMixin 让静态 C++ helper 看起来像目标对象的方法。
+SceneComponent.SetWorldRotation(TargetRotation);
+```
+
+`Math`、`System`、`Gameplay` 等名字是脚本 API 设计的一部分，不保证等于 C++ owning class。`Meta = (ScriptName = "...")` 可以改名；`ScriptMixin = "USceneComponent"` 可以把第一个目标参数折叠成实例调用；WorldContext 还可能被调用栈隐式注入。
+
+! 三种外观
+
+|!脚本外观 |!来源 |!例子 |
+|namespace/global |手工 `FNamespace`/全局绑定，或 Function Library 映射 |`Math::Clamp`、`System::SetTimer` |
+|mixin 实例方法 |C++ class metadata `ScriptMixin` |把 `USceneComponent*` 第一参数表现为 `Component.Method()` |
+|脚本全局 UFUNCTION |项目 `.as` 顶层函数 |直接成为 Blueprint node，也可供脚本调用 |
+
+仓库 `Script/Examples/Core/Example_Functions.as` 声明顶层 `UFUNCTION(Category = "Example Functions") void ExecuteExampleFunction(AActor)`；它会进入 Unreal 反射并成为 Blueprint 节点。函数上方注释用于 tooltip，Category 决定 Blueprint 菜单分组。与 C++ Function Library 不同，它没有 UObject class owner 的业务实例，但仍是一项需要兼容维护的反射 API。
+
+! 当前 Runtime FunctionLibraries 的职责
+
+`AngelscriptRuntime/FunctionLibraries/` 不是普通脚本示例目录，而是插件为 UE 类型补齐/重塑 API 的 runtime 层。当前文件覆盖：
+
+|!区域 |!代表文件 |!作用 |
+|Actor/SceneComponent |`AngelscriptActorLibrary.h`、`AngelscriptComponentLibrary.h` |补 quaternion overload、transform 与 attach helper |
+|World/LevelStreaming |`AngelscriptWorldLibrary.h`、`AngelscriptLevelStreamingLibrary.h` |作为 `UWorld`/`ULevelStreaming` mixin |
+|Math/Curve/HitResult |`AngelscriptMathLibrary.h`、curve mixin、`AngelscriptHitResultLibrary.h` |提供脚本友好 overload 与值类型操作 |
+|Subsystem |`SubsystemLibrary.h` |World/GameInstance/LocalPlayer subsystem 查找 |
+|Asset |`SoftReferenceStatics.h`、`UAssetManagerMixinLibrary.h` |soft reference 与 Asset Manager helper |
+|Input/UI/Gameplay |InputComponent、Widget、Gameplay library |桥接常用领域 API |
+
+这些 library 属于 Runtime 模块，packaged build 可用；若某能力只在 Editor module 或可选插件中注册，就不能把它当成核心 runtime 默认表面。
+
+! 一次调用可能走哪条绑定路径
+
+脚本看到相同的函数形状，底层实现仍可能不同：
+
+|!路径 |!适用 |!关键边界 |
+|手工 bind/FunctionLibrary |需要重塑签名、特殊 marshalling、mixin 或手写 helper |维护者负责空值、World、lifetime 与 overload 合同 |
+|UHT generated function table |签名满足生成器安全条件 |根据 FunctionBindingMethod 进入相应 shard/backend |
+|NativeRuntimeLinked / NativeModuleFunctionAddress |受支持的 native direct 路径 |只覆盖明确安全的 POD/签名集合 |
+|BlueprintCallableReflectiveFallback |复杂签名、RPC、WorldContext 等需要 Unreal 路由 |通过 ProcessEvent 保留 reflection/network semantics |
+
+Direct 并不自动“更正确”。Out 参数、WorldContext injection、ref return、static array、`TArray/TSet/TMap` 等受当前 marshalling 合同限制；RPC 必须保留 reflective fallback。脚本作者通常无需选择 backend，但维护者在修改生成器或绑定时必须知道路径，因为错误的 direct call 会绕过 Unreal 行为。
+
+! WorldContext 为什么看不见
+
+C++/Blueprint Function Library 常把一个 `UObject* WorldContextObject` 标成 `Meta = (WorldContext = "...")`。Blueprint 会隐藏 pin，AngelScript 也可能从当前调用对象/脚本上下文解析 World。
+
+例如 `SubsystemLibrary.h` 的 `GetWorldSubsystem`、`GetGameInstanceSubsystem` 都有 WorldContext metadata；`System::PauseTimerHandle` 则在手工绑定后标记 `SetPreviousBindRequiresWorldContext(true)`。表面上没有 World 参数，不代表调用与 World 无关。
+
+调用失败时检查当前上下文：Actor/Component 方法通常能提供 World；WorldSubsystem 也有明确 owner；CDO、static 初始化、Editor utility、Commandlet 或 teardown 期间可能没有 game World，或者解析到另一个 PIE world。不要为了让 C++ 签名“看起来对”就手工传一个随便找到的 WorldContext。
+
+! Mixin 的语义
+
+C++ 中：
+
+```cpp
+UCLASS(meta = (ScriptMixin = "USceneComponent"))
+class UAngelscriptComponentLibrary : public UObject
+{
+    UFUNCTION(BlueprintCallable, Meta = (ScriptName = "SetWorldRotation"))
+    static void SetWorldRotationQuat(USceneComponent* Component, const FQuat& Rotation);
+};
+```
+
+脚本中可表现为：
+
+```angelscript
+Component.SetWorldRotation(NewRotation);
+```
+
+第一个参数成为 receiver，`ScriptName` 统一 overload 名称。维护 mixin 时要避免与目标 class 原生方法发生模糊 overload；空 receiver 的处理也必须和普通对象调用一致。Mixin 只是调用语法和发现性优化，不改变函数仍由 library 实现这一事实。
+
+! 如何查找一个 API
+
+按从“产品表面”到“实现证据”的顺序查：
+
+# 在 VS Code completion/生成 API 中按脚本想表达的动词搜索，不只搜 C++ class 名；
+# 查看相邻仓库示例是否已有真实调用；
+# 在 `FunctionLibraries/` 搜 `ScriptName`、`ScriptMixin` 或目标 UE 类型；
+# 在 `Binds/Bind_*.cpp` 搜 namespace 和声明字符串；
+# 查看 UHT 生成统计/CSV，确认目标 UFunction 选择了哪条 binding method；
+# 最后根据编译诊断核对 overload、引用方向和可选模块是否存在。
+
+如果 completion 没有某函数，先确认模块/plugin 是否启用，再确认它是否 BlueprintCallable/允许进入 AS，最后才考虑补绑定。照 C++ 文档猜一个 `KismetSystemLibrary::...` 名称通常不会得到正确脚本 API。
+
+! 设计项目自己的脚本函数表面
+
+项目顶层 `UFUNCTION` 适合无状态、可复用且要提供给 Blueprint 的操作。设计时遵守：
+
+* 函数名表达动作，不把 owner class/namespace 信息重复塞进名字；
+* Category 稳定且面向作者任务，不按内部模块名随意分组；
+* tooltip 说明副作用、World/authority 要求、失败返回；
+* out 参数只用于明确多返回值，避免把所有输入都做成可写引用；
+* 需要 World 时让调用合同明确，不从全局随便取第一个 World；
+* runtime API 不依赖 Editor 类型；可选插件能力留在对应 plugin。
+
+如果函数只给脚本内部使用且不需要反射、delegate 或 Blueprint，不必加 `UFUNCTION`。过度反射会扩大兼容面和 Blueprint 菜单噪声。
+
+! API 演进与热重载
+
+全局 UFUNCTION、mixin 和 namespace function 都可能被脚本/Blueprint 长期引用。改名或改参数前搜索：`.as` 调用、Blueprint node dependency、生成 API/stub、测试夹具和文档。
+
+函数 body 变化通常可轻量 reload；反射函数签名、Blueprint flags、namespace/ScriptName、mixin receiver 或 binding backend 变化属于更高风险合同变化。需要 full reload 时还要验证 Blueprint 节点 pin 和已有 delegate/timer 名称引用。
+
+维护 C++ FunctionLibrary 时，metadata 是实现的一部分：删除 `ScriptMixin` 会把实例方法变回不可发现的静态表面；改 `ScriptName` 会打断脚本调用；误加 direct eligibility 可能跳过 ProcessEvent。代码能编译不代表脚本表面兼容。
+
+! 常见故障与定位
+
+|!现象 |!先检查 |!常见原因 |
+|按 C++ 名称找不到 |completion、`ScriptName`、namespace |API 被重命名或作为 mixin 暴露 |
+|函数在 Editor 有、package 没有 |owning module/plugin |依赖 Editor-only 或可选未启用模块 |
+|调用报没有 WorldContext |调用 owner、World type、teardown |在 CDO/static/错误 PIE world 调用隐式 World API |
+|overload 模糊 |receiver、参数类型、mixin 原生方法 |新增 ScriptName 与现有方法冲突 |
+|Blueprint node 断开 |反射签名、out/return pin |改了参数名、方向或类型 |
+|RPC 本地执行但不走网络 |binding method |错误使用 direct thunk，绕过 ProcessEvent |
+|C++ 有 BlueprintCallable 但 AS 没有 |生成统计、签名限制、metadata |被过滤、fallback 未注册或 module 未加载 |
+
+诊断记录应包含脚本调用形状、resolved declaration、owning module、binding method 和 WorldContext。只贴 C++ UFUNCTION 声明无法说明脚本实际看到什么。
+
+! 源码落点与继续阅读
+
+* `AngelscriptRuntime/FunctionLibraries/`：Runtime-owned mixin、namespace 和脚本友好 helper；
+* `AngelscriptRuntime/Binds/Bind_*.cpp`：手工声明、namespace、WorldContext 与特殊 marshalling；
+* `AngelscriptUHTTool/`：生成 function table、binding method 选择与统计；
+* `Script/Examples/Core/Example_Functions.as`、`Example_FunctionSpecifiers.as`：项目全局 UFUNCTION 与 Blueprint 表面；
+* <<as-doc-link "language/mixins-and-extension-methods" "Mixin 与扩展方法">>
+* <<as-doc-link "bindings-uht-extensions/binding-path-selection" "绑定路径选择">>
+* <<as-doc-link "unreal-core/world-context" "World Context">>

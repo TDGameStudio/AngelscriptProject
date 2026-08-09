@@ -1,0 +1,334 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/bind-execution-timing
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: 绑定阶段、旧顺序与执行观测
+description: 解释新 FAngelscriptBind 七阶段集合如何与旧 FBind 数值顺序交错执行，以及 DisabledBindNames、失败传播和开发构型快照实际能观测什么。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/bind-execution-timing
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 40
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: bind-execution-timing
+
+! 当前存在两套注册调度模型
+
+绑定初始化不是简单的 `Early -> Normal -> Late` 三段循环。当前 Runtime 同时维护：
+
+* ''直接阶段集合''：`FAngelscriptBind` + `EAngelscriptBindPhase` 七个语义阶段，带 owner/source provenance、finalize/seal 与显式失败传播；
+* ''旧式数值顺序集合''：`FAngelscriptBinds::FBind` + `int32 BindOrder`，仍承载大量 `Bind_*.cpp`、UHT RuntimeLinked records 与反射 Defaults。
+
+`FAngelscriptEngine::BindScriptTypes()` 将两者''交错''执行，以保持旧 Late+50/Late+100 等边界，同时让新直接绑定阶段逐步接管所有权。只看 `EOrder` 或只看 `EAngelscriptBindPhase` 都无法解释完整时序。
+
+<<as-callout warning "当前没有逐绑定 DurationMs 记录">>
+`FAngelscriptBindExecutionObservation` 当前只在 `WITH_DEV_AUTOMATION_TESTS` 下保存：执行次数、disabled 名单、已执行的旧式 bind 名单、整个 `CallBinds` 耗时和整个 `BindScriptTypes` 耗时。它不保存每个 bind 的 `BindOrder/DurationMs`，`CallBinds` 也没有 `AS_PRINT_STATS` Top-N 慢绑定摘要。不要按旧规范编写读取不存在字段的诊断工具。
+<</as-callout>>
+
+! 两套记录结构
+
+!! 新直接阶段：FAngelscriptBindRecord
+
+每个 record 包含：
+
+| !字段 | !职责 |
+| `OwnerModule` | 发布此 binding 的 Unreal module；默认来自 `UE_MODULE_NAME` |
+| `BindName` | owner + phase 范围内的稳定逻辑名 |
+| `Phase` | 七阶段之一 |
+| `SourceFile` / `SourceLine` | 构造点 provenance，默认来自 compiler builtin |
+| `Callback` | `void (*)(FAngelscriptBinds&)`，明确接收目标 engine 的 bind facade |
+
+七阶段按枚举值递增：
+
+```text
+TypeDeclarations
+TypeInfrastructure
+ManualBindings
+GeneratedBindings
+ReflectionBindings
+PostReflectionBindings
+Finalization
+```
+
+它们描述依赖语义，而不是任意优先级数字。例如类型必须先声明，再装基础设施，手工/生成函数 record 必须先于反射函数消费，最终检查放在 Finalization。
+
+!! 旧式：FBindFunction
+
+旧 record 只有：
+
+```text
+BindName + BindOrder + TFunction<void()>
+```
+
+`EOrder` 只是三个基准：
+
+| !枚举 | !数值 |
+| `Early` | -100 |
+| `Normal` | 0 |
+| `Late` | 100 |
+
+大量绑定使用偏移，例如 Late+49、Late+50、Late+60、Late+100、Late+110。旧数组执行前复制并按 `BindOrder` 排序；比较器没有 name/source tie-breaker，所以''相同 BindOrder 的相对次序不应作为 API 契约''。真正存在依赖的旧 binding 应使用明确不同的 order，或迁移到语义 phase。
+
+! 直接集合的收集与封口
+
+`FAngelscriptBind` 的全局构造只把 record append 到 collection，不立即触碰 AS Engine。引擎初始化前必须调用 `PrepareForEngineInitialization()`：
+
+# 要求当前在 GameThread；
+# 定位 `Angelscript` 插件；
+# 读取 `<PluginBase>/BindModules.Cache`；
+# 依次通过 `FModuleManager` 加载 cache 列出的生成绑定模块，让它们的静态 record 有机会 append；
+# 调用 `Finalize()` 校验、排序、查重并把 collection seal。
+
+!! Finalize 校验
+
+每条 record 必须有非空 owner、bind name、有效 phase、非空 source file、正 source line 和非空 callback。排序 key 为：
+
+```text
+Phase
+-> OwnerModule lexical
+-> BindName lexical
+-> SourceFile strcmp
+-> SourceLine
+```
+
+排序后，相同 `OwnerModule + BindName + Phase` 的两条记录被视为重复身份，即使 source 不同，也会返回包含两个位置的 diagnostic 并拒绝封口。
+
+Seal 后再 append 会失败，并明确提示需要重启进程才能加载该 bind。这个边界让每个 engine context 看到同一稳定 record 集，而不是在初始化中途被晚加载 module 改写。
+
+<<as-callout note "晚加载的边界">>
+`BindModules.Cache` 的目的之一是提前加载会发布直接 bind 的模块。若 cache 缺失某个模块而 collection 已 seal，之后模块加载时其静态 `FAngelscriptBind` 无法加入当前进程集合；这与可选 engine extension 的 replay 不是一回事。
+<</as-callout>>
+
+! BindScriptTypes 的完整时间线
+
+当前执行骨架：
+
+```text
+Begin BindScriptTypes observation (dev automation only)
+
+Direct: TypeDeclarations
+Direct: TypeInfrastructure
+
+Call legacy FBind loop, interleaving:
+  before first order >= Late+50  -> Direct: ManualBindings
+  before first order >= Late+100 -> Direct: GeneratedBindings
+  before first order >= Late+110 -> Direct: ReflectionBindings
+                                  -> Direct: PostReflectionBindings
+
+after legacy loop / MAX sentinel:
+  ensure every threshold phase has advanced
+
+Direct: Finalization
+
+End BindScriptTypes observation
+```
+
+具体阈值：
+
+```text
+LegacyGeneratedBindingsOrder     = Late + 50 = 150
+LegacyReflectionBindingsOrder    = Late + 100 = 200
+LegacyPostReflectionBindingsOrder= Late + 110 = 210
+```
+
+名称说明的是''阈值附近的旧表面''，直接 phase 在阈值前推进：ManualBindings 在旧 generated bindings 开始前，GeneratedBindings 在旧 reflection Defaults 开始前，Reflection/PostReflection 在旧 post-reflection 工作开始前。
+
+! 为什么需要 BeforeLegacyBindOrder
+
+`CallBinds(disabled, BeforeLegacyBindOrder)` 在处理''每一条''旧 bind 之前先调用 callback，参数是它的 `BindOrder`。即使该旧 bind 随后因 DisabledBindNames 被跳过，阶段推进也已经发生。
+
+循环完成后再调用一次：
+
+```text
+BeforeLegacyBindOrder(MAX_int32)
+```
+
+这保证某个构建没有恰好位于 150/200/210 之后的旧 record 时，所有尚未执行的 direct phases 仍会在退出前运行一次。每个 phase 还有 `bExecuted` guard，不会因多个旧 record跨过同一阈值重复执行。
+
+如果 phase callback 或 legacy advance 返回 false，`CallBinds` 立即结束并向 `BindScriptTypes()` 传播失败；Finalization 不会在部分成功状态上继续假装完成。
+
+! 典型旧顺序的角色
+
+| !旧顺序 | !当前代表工作 | !之前已推进的 direct phase |
+| Late+49 | 少数手工函数指针缺口修补 | TypeDeclarations、TypeInfrastructure；ManualBindings 还未必由阈值推进 |
+| Late+50 | UHT RuntimeLinked generated function records | ManualBindings |
+| Late+60 | NMFA feature 注入 | ManualBindings |
+| Late+100 | `Bind_Defaults` 反射 UClass 函数/属性消费 | ManualBindings、GeneratedBindings |
+| Late+110 及以后 | 反射后依赖工作 | 再加 ReflectionBindings、PostReflectionBindings |
+
+旧 Late+49 等仍通过 legacy callback 执行；表中的 direct phase 不是同名旧工作的替代计数，而是迁移架构中的交错边界。
+
+! Direct phase 的执行不变量
+
+`FAngelscriptBindCollection::Execute()` 要求：
+
+* collection 已 seal；
+* phase range 不是倒序；
+* `FAngelscriptBinds` 尚无 registration failure；
+* 只执行 `[FirstPhase, LastPhase]` 范围内记录；
+* callback 前用 `TGuardValue` 设置 active owner、provider、phase、source file/line；
+* callback 后检查 registration failure，有错立即返回 diagnostic。
+
+Active provenance 会被底层 `Bind*ForTarget` 注册写入函数/属性来源记录。失败诊断因此能指出哪个 module/bind/phase/source 发布了冲突，而不是只有 AngelScript 的负数错误码。
+
+Direct callback 显式接收 `FAngelscriptBinds&`，应使用 target-aware API；不能偷偷调用只依赖全局 current engine 的旧入口，否则多引擎绑定隔离会被破坏。
+
+! DisabledBindNames 的真实作用域
+
+`CollectDisabledBindNames()` 合并：
+
+* `UAngelscriptSettings::DisabledBindNames`；
+* 当前 `FAngelscriptRuntimeConfig::DisabledBindNames`。
+
+这个 set 只传给''旧 `FAngelscriptBinds::CallBinds()`''。旧循环在阶段 advance 之后检查：
+
+```text
+if DisabledBindNames contains Bind.BindName:
+    log "Skipping bind '<name>'"
+    continue
+```
+
+因此：
+
+* 被 disabled 的旧 callback 不执行；
+* 它仍可能触发阈值前的 direct phase 推进；
+* direct `FAngelscriptBind` records 不按 DisabledBindNames 过滤；
+* Finalization 也不会被同名 disabled 值禁用；
+* `GetBindInfoList(disabled)` 只列旧 FBind，不能当作全架构 bind catalogue。
+
+<<as-callout warning "不要用 DisabledBindNames 关闭新 direct bind">>
+把 direct record 名写进 settings 不会禁用它。若产品需要 direct-phase feature gate，应在 record callback 内使用明确配置或从 collection 设计层提供受控机制；不能依赖旧名单的偶然同名。
+<</as-callout>>
+
+! BindName 的生成与唯一性
+
+旧 `FBind` 可以显式传 `FName`。未显式命名时，系统从 `__builtin_FILE()` 的 base filename 生成名字；同 stem 的后续记录依次加 `#1`、`#2`。完全无法推导时使用 unnamed 序列。
+
+`GetAllRegisteredBindNames()` 按旧排序遍历并去重，`GetBindInfoList()` 则为每条旧 record 输出 name/order/enabled。因为同名旧 record可以存在（不同 order或来自自动 stem collision 后缀），用 DisabledBindNames 会禁用所有精确匹配的同名 record。
+
+新 direct identity更严格：同 owner+name+phase 直接在 Finalize失败，且 source provenance始终存在。新代码应优先使用稳定显式逻辑名，而不是依赖文件 stem。
+
+! 开发构型观测快照
+
+`Testing/AngelscriptBindExecutionObservation.*` 完全包在 `WITH_DEV_AUTOMATION_TESTS` 中。Snapshot 字段：
+
+| !字段 | !写入时机 | !语义 |
+| `InvocationCount` | 每次 `BeginObservationPass` +1 | `CallBinds` 被调用次数，不是 bind条目数 |
+| `DisabledBindNames` | observation pass开始 | 输入 set转数组后按 FName lexical排序 |
+| `ExecutedBindNames` | 每个未disabled旧 callback调用前 | 实际旧 bind执行顺序；不含direct records |
+| `CallBindsDurationSeconds` | begin/end observation pass | 包含legacy循环和在阈值callback中执行的interleaved direct phases |
+| `BindScriptTypesDurationSeconds` | `BindScriptTypes()`入口/所有退出路径 | 包含早期direct phases、CallBinds、Finalization及周边绑定工作 |
+
+`GetLastSnapshot()` 在 mutex 下''复制''当前 snapshot，不消费数据；多次读取相同，直到下一次 begin/reset。`Reset()` 归零整个结构。`GetInvocationCount()` 只读计数。
+
+!! 失败路径也结束计时
+
+* Early direct phase失败 → 结束 BindScriptTypes timing 后返回 false；
+* `BeforeLegacyBindOrder` 失败 → `CallBinds` 先 EndObservationPass，再返回 false；
+* MAX sentinel失败 → 同样结束 pass；
+* interleaved/finalization失败 → BindScriptTypes结束总计时并返回 false；
+* 正常成功 → 两层计时都闭合。
+
+这样快照不会因为已知 early return 永久保留一个活动 start time。但 observation是单个进程级槽位，不是嵌套/并发 profiler；绑定初始化仍应按引擎规定的线程/生命周期串行使用。
+
+! 性能观测的正确选择
+
+当前 snapshot适合回答：
+
+* `BindScriptTypes` 是否执行过；
+* 哪些旧 bind实际执行/被禁用；
+* 整个旧循环（含交错direct阶段）耗时多少；
+* 整体绑定耗时多少。
+
+它不能回答：
+
+* 哪个单独 bind 最慢；
+* direct phase内每条 record耗时；
+* Early/Normal/Late各自累计时间；
+* callback内部CPU采样热点。
+
+需要细粒度性能时，应使用现有 `AS_PERF_SCOPE_BINDS_CALL_BINDS`、`AS_PERF_SCOPE_STARTUP_BIND_SCRIPT_TYPES`、Unreal Insights/LLM/MallocLeak contexts，或另行设计低侵入的phase/record profiler。不要从 `ExecutedBindNames` 数组顺序推算时间。
+
+! 初始化失败与原子性
+
+绑定初始化不是事务性 rollback：某个后续 callback失败时，之前已经向 AS Engine 注册的类型/函数不会自动逐项撤销。安全模型是：
+
+* collection在执行前完整seal和查重；
+* 每条direct callback后立即检查registration failure；
+* 任何失败让`BindScriptTypes()`返回false；
+* 上层不得发布这个部分初始化engine为可用current engine；
+* 修复配置/record后创建干净engine或重启，而不是在破损engine上继续追加。
+
+这也是为什么 late append被拒绝：如果执行集合可以在半程变化，无法定义旧/新engine是否拥有相同surface。
+
+! 多引擎与重复调用
+
+Record collection是进程级、seal后稳定；`FAngelscriptBinds DirectBinds(*this)` 与 per-engine `FAngelscriptBindState` 是目标engine相关。每个新engine可以重放同一collection，但：
+
+* callback必须使用传入target facade；
+* active provenance通过target bind state隔离；
+* legacy API中仍有current-engine兼容路径，维护者要防止绑定到错误context；
+* observation snapshot是进程级最后一次调用，不按engine保存历史；
+* `InvocationCount` 可证明多engine场景调用多次，但不能直接映射engine identity。
+
+! 排障流程
+
+# 先确认 `PrepareForEngineInitialization()` 是否在GameThread成功加载 BindModules.Cache并seal集合。
+# direct record失败时读取完整diagnostic：owner、bind、phase、source。
+# 判断目标工作属于direct phase还是legacy order；不要只搜`FBind`。
+# 对legacy bind用`GetBindInfoList()`确认name/order/enabled，并核对DisabledBindNames合并结果。
+# 对interleaving问题比较order与150/200/210阈值，确认phase guard是否已执行。
+# 读取dev snapshot：ExecutedBindNames只解释legacy实际执行，不代表direct遗漏。
+# 若CallBinds总耗时高而单项未知，用Insights/perf scopes下钻；snapshot没有per-bind duration。
+# registration conflict后不要继续复用部分engine，先修复重复surface/provenance。
+# 若模块晚加载提示collection finalized，更新BindModules.Cache/加载时机并重启进程。
+
+! 常见故障
+
+| !症状 | !原因 | !处理 |
+| Disabled名单有名字但绑定仍出现 | 目标是direct `FAngelscriptBind`，名单只过滤legacy | 识别注册模型，使用明确direct gate或调整record所有权 |
+| Snapshot里没有某个direct bind | `ExecutedBindNames`只记录legacy | 查direct collection/provenance，不把snapshot当全量catalogue |
+| 想读取DurationMs编译失败 | 当前snapshot没有per-bind duration字段 | 使用两个总duration或profiling工具 |
+| 相同order的旧bind次序在重构后变化 | sort只比较BindOrder | 给依赖项不同order或迁移到phase/显式依赖 |
+| Late+100前Generated direct phase未执行 | threshold callback/CallBinds路径被绕过或失败 | 必须通过BindScriptTypes交错入口，不直接手调legacy callback |
+| 新模块加载时提示restart required | collection已seal后append | 将模块加入预初始化加载cache并重启 |
+| duplicate direct identity | 同owner+name+phase两处声明 | 根据diagnostic保留唯一所有者；改source不解决身份冲突 |
+| callback注册冲突但初始化继续 | 调用方绕过了Binds failure检查 | 只能通过collection Execute/BindScriptTypes标准入口 |
+| CallBinds耗时包含不认识的工作 | interleaved direct phases在BeforeLegacy回调内执行 | 用BindScriptTypes timeline拆分，而非假定纯legacy |
+| Shipping找不到Observation类型 | 整个接口只在WITH_DEV_AUTOMATION_TESTS编译 | 不把测试观测用于产品逻辑 |
+
+! 维护不变量
+
+* Direct collection在engine初始化前加载模块、校验、排序并seal；seal后不追加。
+* Direct排序使用phase/owner/name/source，重复身份fail closed。
+* Legacy相同order无稳定tie-break；有序依赖必须显式表达。
+* TypeDeclarations/Infrastructure先执行，Finalization最后执行。
+* Manual/Generated/Reflection/PostReflection direct phases按150/200/210阈值与legacy交错，且每phase至多一次。
+* DisabledBindNames只过滤legacy callback，不得误写成全绑定feature gate。
+* Direct callback使用target-aware facade，registration failure立即向上返回。
+* Observation只在dev automation存在，只记录legacy names和两层总duration。
+* 任何失败都结束已开始的observation，但不承诺逐条rollback；部分engine不得发布。
+* 新phase、阈值或迁移边界变化时，必须同步timeline、provenance和诊断文档。
+
+! 源码定位
+
+| !职责 | !文件/符号 |
+| 七phase、`FAngelscriptBind`、legacy `EOrder/FBind`声明 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.h` |
+| Direct record/collection内部结构 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindsInternal.h` |
+| append/finalize/execute、legacy排序/CallBinds | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp` |
+| 完整interleaving与Disabled名单合并 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp` 中 `BindScriptTypes` / `CollectDisabledBindNames` |
+| Snapshot结构和线程保护 | `Plugins/Angelscript/Source/AngelscriptRuntime/Testing/AngelscriptBindExecutionObservation.h/.cpp` |
+| settings端Disabled名单 | `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptSettings.h` |
+
+! 相关链接
+
+* <<as-doc-link "bindings-uht-extensions/manual-bind-ownership" "手工绑定所有权">> —— phase、provider与模块职责。
+* <<as-doc-link "bindings-uht-extensions/blueprintcallable-direct-bind" "BlueprintCallable直接绑定">> —— Late+49/+50/+60/+100的具体record消费者。
+* <<as-doc-link "bindings-uht-extensions/typed-bind-dsl" "类型化绑定DSL">> —— 新 `FAngelscriptBind` callback的target-aware写法。
+* <<as-doc-link "bindings-uht-extensions/cross-module-bind-diagnostics" "跨模块绑定诊断">> —— UHT生成阶段与Runtime执行阶段的证据拼接。
+* <<as-doc-link "testing-diagnostics-release/test-scope-and-baselines" "测试范围与基线">> —— dev-only观测与产品行为边界。

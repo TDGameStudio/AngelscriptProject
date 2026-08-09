@@ -1,0 +1,233 @@
+title: AS/Docs/zh-Hans/runtime-jit-vm/uasfunction-runtime-dispatch-coverage
+type: text/vnd.tiddlywiki
+tags: RuntimeJitVm
+caption: UASFunction 运行时派发覆盖
+description: UASFunction 的 direct helper、Blueprint VM、ProcessEvent、虚拟 override、返回写回和模块失效路径的实现覆盖面。
+as-sdk-document: yes
+as-doc-key: runtime-jit-vm/uasfunction-runtime-dispatch-coverage
+as-locale: zh-Hans
+as-depth: L5
+as-doc-kind: internals
+as-content-status: draft
+as-order: 50
+as-content-revision: 2
+as-sources: [[angelscript-plugin]]
+as-nav-group: internals-reference
+as-nav-order: 50
+as-nav-parent: runtime-jit-vm/index
+as-feature-key: uasfunction-runtime-dispatch-coverage
+
+! 本页关注“哪些执行面必须保持等价”
+
+`UASFunction` 不是一个单一调用函数，而是一组从 Unreal 反射 ABI 到 AngelScript VM/JIT ABI 的桥。一个脚本方法可能从 C++ optimized helper、Blueprint VM native thunk、`UObject::ProcessEvent`、RPC validate 或热重载后保留的旧反射引用到达。
+
+“运行时派发覆盖”在这里指实现与维护覆盖面，不是测试数量清单。本页逐层说明每个入口消费什么内存、选择什么执行后端、怎样写回，以及失效时的安全边界；实际包装类选择参见 <<as-doc-link "runtime-jit-vm/uasfunction-dispatch-matrix" "UASFunction 派发矩阵">>。
+
+! 四层模型
+
+```text
+调用入口
+├─ OptimizedCall_* C++ helper
+├─ UASFunctionNativeThunk / RuntimeCallFunction(FFrame)
+└─ ProcessEvent / RuntimeCallEvent(Parms)
+        │
+        ▼
+函数身份与执行保护
+├─ ScriptFunction 是否仍有效
+├─ thread-safe / Game Thread 检查
+└─ final 非虚入口或 ResolveScriptVirtual
+        │
+        ▼
+参数/返回编组
+├─ FFrame StepCompiledIn
+├─ FProperty offset in Parms
+├─ VMBehavior / ParmBehavior
+└─ WorldContext 与引用临时值
+        │
+        ▼
+执行后端
+├─ raw JIT
+├─ general JIT / ParmsEntry
+└─ FAngelscriptContext / FAngelscriptGameThreadContext
+```
+
+四层任一层改变，都要检查其它入口仍产生同一脚本可观察结果。
+
+! Direct optimized helpers
+
+`UASFunction` 当前直接暴露六个 helper：
+
+|!函数 |!输入/输出 |!失败默认 |
+|`OptimizedCall()` |实例对象，无参数、无返回 |void return |
+|`OptimizedCall_ByteReturn()` |实例对象，返回 `uint8` |`0` |
+|`OptimizedCall_FloatArg()` |一个 `float` 参数 |void return |
+|`OptimizedCall_DoubleArg()` |一个 `double` 参数 |void return |
+|`OptimizedCall_RefArg()` |一个地址参数 |void return |
+|`OptimizedCall_RefArg_ByteReturn()` |一个地址参数并返回 byte |`0` |
+
+它们的选择顺序是：
+
+# 热重载支持开启时，`ScriptFunction == nullptr` 立即安全返回；
+# 包装对象已有 `JitFunction_Raw` 时直接调用；
+# 否则 `ResolveScriptVirtual(this, Object)` 找到实际 override；
+# 实际函数有 `jitFunction_Raw` 时调用该入口；
+# 否则建立 `FAngelscriptGameThreadContext(Object, RealFunction->GetEngine())`，prepare、设置对象/参数并解释执行；
+# 有返回值时检查执行状态，异常返回默认值。
+
+这里最重要的是第 3 步：optimized 不等于静态绑定。只要包装没有合法的 final raw 入口，它仍要以运行时对象解析子类实现。
+
+! Blueprint VM 入口
+
+生成 `UFunction` 的 native function 指向 `UASFunctionNativeThunk`。Thunk 从 `FFrame` 解析权威函数：优先 `Stack.CurrentNativeFunction`，否则使用 `Stack.Node`，然后调用该包装类的：
+
+```cpp
+RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL)
+```
+
+通用路径 `AngelscriptCallFromBPVM<TThreadSafe,TNonVirtual>` 使用 `Stack.StepCompiledIn` / `StepCompiledInRef` 按 `FProperty` 消费每个参数。它不能直接把 `Stack.Locals` 强转为某个 C++ struct，因为 Blueprint VM frame 可能包含生成 wrapper，属性也需要处理引用、对象、默认值和 WorldContext。
+
+对于非线程安全函数，`CheckGameThreadExecution` 在初编译完成后拒绝：
+
+* 非 Game Thread 调用；
+* Editor 中从正在构造脚本对象的 `default` 语句调用 BlueprintEvent/Override。
+
+初编译期间允许其它线程执行必要初始化；Shipping/Test 编译中这组开发期 ensure 检查不产生同样的诊断。不要把构建配置差异误读成脚本函数自动变成线程安全。
+
+! ProcessEvent / Parms 入口
+
+`RuntimeCallEvent(UObject* Object, void* Parms)` 接收 Unreal 已按 `UFunction` 属性布局构造的连续参数内存。通用路径 `AngelscriptCallFromParms` 依据每个 `FArgument::PosInParmStruct` 定位值，而不是假设声明顺序等于无填充的字节顺序。
+
+`FinalizeArguments()` 已为每个参数区分：
+
+|!行为 |!编组含义 |
+|`Value1/2/4/8Byte` |按固定宽度读取 VM 值并在返回时写回 |
+|`FloatExtendedToDouble` |UE float 槽与 AS double 参数/返回之间显式转换 |
+|`ObjectPointer` |传 UObject 指针值 |
+|`WorldContextObject` |既作为参数，又更新本次调用的环境 WorldContext |
+|`ReferencePOD` |传地址，写回不需要对象生命周期 |
+|`Reference` |构造 VM 临时值、传地址，结束时复制/析构 |
+|`ReturnObjectPointer` |把 UObject 指针写回 return property |
+|`ReturnObjectPOD/Value` |处理 return-on-stack 的值对象；Value 需要先析构 UE 已初始化返回槽 |
+
+因此引用写回和对象返回不能由 wrapper class 名称单独判断。它们依赖 ClassGenerator 生成的 `FProperty`、TypeUsage 生命周期能力与这两个行为枚举一致。
+
+! 通用 JIT 编组
+
+非线程安全通用路径在 JIT 入口存在时，会构造 VM 参数数组：
+
+* 实例函数首先压入 `Object`；
+* return-on-stack 值把 `RESULT_PARAM` 地址作为隐藏参数；
+* 原始值按 dword/qword 放入；
+* 对象与引用按指针放入；
+* float 扩展成 double；
+* WorldContext 从对象、显式参数或生成参数取得；
+* `FScriptExecution` 绑定当前 GameThread TLD；
+* `FAngelscriptGameThreadScopeWorldContext` 在 JIT 调用期间安装并自动恢复上下文。
+
+JIT 返回到 `asQWORD OutValue` 或调用方提供的 return-on-stack 内存，随后按 `ReturnArgument.VMBehavior` 写回。`Reference` 返回使用 `Type.CopyValue`，`ReferencePOD` 使用确定字节数 memcpy；float-to-double 再缩回 float。
+
+最后遍历 `DestroyArguments`，释放为非 POD 引用构造的临时存储。遗漏这一阶段不会立即表现为错误返回，却会累积引用或对象资源泄漏。
+
+! 形状特化的两种入口必须成对
+
+`ASFunction_Dispatch.cpp` 和 `ASFunction_JITDispatch.cpp` 中，每个包装类都同时实现：
+
+* `RuntimeCallFunction`：从 `FFrame` 逐步取参；
+* `RuntimeCallEvent`：从 `Parms` 固定位置取参/写回。
+
+例如 `UASFunction_DWordArg_JIT` 的 FFrame 入口调用 `Stack.StepCompiledIn<FProperty>(&ArgumentValue)`，而 Parms 入口直接读取首槽 dword；两者最终都执行 `MakeRawJITCall_Arg<asDWORD>`。`UASFunction_DWordReturn_JIT` 则把 raw JIT 返回写入 `RESULT_PARAM` 或 `Parms` 的 return offset（此简单形状断言为 0）。
+
+维护时应把每个类视为一对 ABI adapter。只验证一侧会漏掉典型错误：C++/Blueprint 调用正确，但 `ProcessEvent` 返回槽损坏；或反过来。
+
+! 虚拟 override 的覆盖面
+
+`ResolveScriptVirtual` 使用声明函数的 `vfTableIdx` 与实际对象的第一层 `UASClass::ScriptTypePtr` 查表。以下情况回退声明函数：
+
+* `vfTableIdx == -1`；
+* 对象没有可识别的 `UASClass`；
+* 对象类型指针为空；
+* vtable 槽为空。
+
+有有效槽时返回子类函数。非 final 的普通包装和 optimized helper 都必须经过这一解析。
+
+final `_JIT` 包装不做动态解析，而在开发构建用 `VerifyScriptVirtualResolved` 证明槽仍等于声明函数。若未来取消 final 条件却保留 raw 缓存，父类入口会绕过 override，这是不可接受的语义回归。
+
+! RPC Validate 是反射管线的一部分
+
+带 `FUNC_NetValidate` 的函数由 thunk 检测。`ExecuteValidateFunctionForProcessEvent`：
+
+# 取得缓存的 `ValidateFunction` 并要求它也是 `UASFunction`；
+# 用 `FStructOnScope` 构造 validate 的独立参数缓冲区；
+# 按两边 `FProperty` 复制每个非 return 参数，并检查 `SameType`；
+# 调用 validate 的 `RuntimeCallEvent`；
+# 读取返回 byte；true 才派发原函数，false 调 `RPC_ValidateFailed`。
+
+这条路径说明 RPC/Net UFunction 必须保留 Unreal 的 ProcessEvent/native thunk 语义。把 RPC 直接接到某个 raw JIT 地址会绕过网络路由和 Validate。
+
+! 源位置与模块失效
+
+`GetSourceFilePath()` 从 `ScriptFunction->GetModule()` 查 `FAngelscriptModuleDesc`，返回第一段代码的 `AbsoluteFilename`；任何一级无效都返回空字符串。`GetSourceLineNumber()` 从 `asCScriptFunction::scriptData->declaredAt` 解出 1-based 行号，无函数或无 scriptData 返回 `-1`。
+
+模块丢弃/重实例化路径会把旧 `UASFunction::ScriptFunction` 置空。此后：
+
+* 源文件为空、行号 `-1`；
+* 支持热重载的调用 helper 直接安全返回；
+* 旧反射对象仍可能暂存，但不能再执行已释放的 AS 函数。
+
+这是“旧元数据对象不立即导致 UAF”的防线，不是旧函数继续可用的承诺。调用方必须重新从新类解析函数。
+
+! 失效与异常返回矩阵
+
+|!入口 |!失效条件 |!行为 |
+|void optimized helper |`ScriptFunction == nullptr` 或 prepare 失败 |直接返回 |
+|byte-return helper |同上或 context exception |返回 `0` |
+|通用 FFrame/Parms |空 ScriptFunction |热重载构建下返回，不执行旧地址 |
+|非线程安全调用 |线程/构造阶段不合法 |ensure 后返回 |
+|虚拟解析找不到脚本类/槽 |对象非脚本类或元数据暂不可用 |回退声明函数 |
+|引用返回地址为空 |脚本异常等未提供地址 |不写回调用方 return slot |
+|RPC validate false |脚本拒绝参数 |不调用原函数，报告 validate failure |
+
+默认值只用于故障隔离；业务代码不应把 `0` 当成“模块丢弃后的有效脚本结果”。
+
+! 维护审查清单
+
+改动派发代码时逐项审查：
+
+# `AllocateFunctionFor` 选出的类是否与 thread-safe/static/final/JIT 条件一致；
+# 该类的 FFrame 与 Parms 入口是否都存在；
+# 参数宽度、float 扩展、对象返回和引用写回是否相同；
+# 非 final 路径是否解析运行时对象 override；
+# `_JIT` 路径是否仍只用于能证明非虚的函数；
+# WorldContext 是否在调用后恢复；
+# `DestroyArguments` 是否在所有返回路径上完成清理；
+# ScriptFunction 失效、prepare 失败与异常是否不解引用旧内存；
+# RPC validate 是否仍先于原函数并使用独立参数缓冲区；
+# 源文件/行号在模块丢弃后是否不读取失效 scriptData。
+
+! 常见故障定位
+
+|!现象 |!优先检查 |
+|Blueprint 调用对，C++ ProcessEvent 错 |对应类的 `RuntimeCallEvent`、`PosInParmStruct`、return offset |
+|ProcessEvent 对，Blueprint 节点错 |`RuntimeCallFunction` 的 `StepCompiledIn` 类型和 `P_FINISH` |
+|子类 override 不执行 |`bHasNonVirtualJitFunction` final 条件、`ResolveScriptVirtual` |
+|Editor async/default 中静默不执行 |`CheckGameThreadExecution` 与函数是否声明 thread-safe |
+|float 数值截断或栈损坏 |`FloatExtendedToDouble` 与普通 Value4Byte 是否混用 |
+|复杂引用调用后泄漏 |`DestroyArguments`、NeedConstruct/NeedDestruct 分类 |
+|热重载后旧函数崩溃 |失效路径是否把 `ScriptFunction` 清空；helper 是否先判空 |
+|RPC 未进入 Validate |native thunk、`FUNC_NetValidate`、ValidateFunction 缓存 |
+
+! 源码证据
+
+* `ClassGenerator/ASFunction.h`：入口、参数行为和包装类定义。
+* `ClassGenerator/ASFunction.cpp`：optimized helper、源位置、native thunk、RPC validate、通用类入口。
+* `ClassGenerator/ASFunction_CallHelpers.h`：Game Thread、虚拟解析、FFrame/Parms、JIT 编组与写回。
+* `ClassGenerator/ASFunction_Dispatch.cpp`：可虚拟/解释型特化。
+* `ClassGenerator/ASFunction_JITDispatch.cpp`：final raw JIT 特化。
+* `ClassGenerator/AngelscriptClassGenerator_FullReload.cpp` 与 `..._Reinstancing.cpp`：函数生成和旧 ScriptFunction 失效。
+
+! 相关链接
+
+* <<as-doc-link "runtime-jit-vm/uasfunction-dispatch-matrix" "包装类选择矩阵">>
+* <<as-doc-link "runtime-jit-vm/execution-context" "执行上下文">>
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "函数生成与反射派发">>
+* <<as-doc-link "topics-integrations/networking-rpc" "网络与 RPC">>

@@ -1,0 +1,139 @@
+title: AS/Docs/zh-Hans/testing-diagnostics-release/test-engine-lifecycle
+type: text/vnd.tiddlywiki
+tags: TestingDiagnosticsRelease
+caption: 测试引擎生命周期
+description: FAngelscriptTestEngine 单例的生命周期——首次创建、跨用例保活、模块重置隔离与显式销毁的内部机制。
+as-sdk-document: yes
+as-doc-key: testing-diagnostics-release/test-engine-lifecycle
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 60
+as-content-revision: 2
+as-sources: [[openspec]] [[angelscript-plugin]]
+as-nav-group: workflow-validation
+as-nav-order: 60
+as-nav-parent: testing-diagnostics-release/index
+as-feature-key: test-engine-lifecycle
+
+! 要解决的问题
+
+多数 C++ 自动化用例需要“已经注册完整 UE/AngelScript 类型、但没有项目脚本模块”的引擎。每个方法都冷启动会重复绑定；只复用引擎又会让前一用例编译出的模块、动态 `UClass` / `UStruct` 和底层 raw AS module 污染后一用例。`FAngelscriptTestEngine` 把这两个问题拆成两种生命周期：
+
+* ''共享 Full 引擎''：绑定和 VM 长期保留，通过显式模块清理复用；
+* ''独立 Full 引擎''：由调用方独占，适合测试引擎本身、隔离性或关闭路径。
+
+这里的 `FAngelscriptTestEngine` 是 `AngelscriptTest` 模块中的静态方法结构体，不是 `FAngelscriptEngine` 子类，也不存在 `FAngelscriptOwnedSharedState`。共享所有权由两个函数内静态的 `TUniquePtr` 直接表达。
+
+! 公开契约
+
+`Shared/AngelscriptTestEngine.h` 当前只有四个入口：
+
+```cpp
+static TUniquePtr<FAngelscriptEngine> Create(
+    const FAngelscriptEngineConfig& Config,
+    const FAngelscriptEngineDependencies& Dependencies);
+static FAngelscriptEngine& GetSharedEngine();
+static void DestroySharedEngine();
+static void ResetModules(FAngelscriptEngine& Engine);
+```
+
+|!入口|!所有权|!是否重建绑定|!是否自动清模块|
+|`Create`|返回新的 `TUniquePtr`|是|新引擎本来没有脚本模块|
+|`GetSharedEngine`|返回静态存储中的引用|仅首次创建时|否|
+|`ResetModules`|不改变引擎所有权|否|是|
+|`DestroySharedEngine`|释放共享 scope 后释放共享 engine|下次获取时才重建|随引擎销毁|
+
+<<as-callout warning "Get 不代表 Clean">>
+`GetSharedEngine()` 只保证“存在并成为当前引擎”，不会调用 `ResetModules()`。需要干净共享引擎时应使用 `ASTEST_CREATE_ENGINE()`，或显式执行 reset；`ASTEST_GET_ENGINE()` 只适合上层生命周期已经完成清理的代码。
+<</as-callout>>
+
+! 创建与共享状态管线
+
+!! Create：强制跳过磁盘初始编译
+
+`Create` 复制调用方的 `FAngelscriptEngineConfig`，强制 `LocalConfig.bSkipInitialCompile = true`，再调用 `FAngelscriptEngine::Create(LocalConfig, Dependencies)`。结果仍是 Full 引擎：UE/AS 类型绑定和初始化门已完成，但不会扫描项目或插件的 `Script/` 根，也不会编译磁盘 `.as`；用例通过内存模块辅助器提供源码。
+
+因此传入 config 中的 `bSkipInitialCompile` 值不是调用方可选项——测试包装器总会覆盖为 `true`。依赖对象则原样传递，隔离测试可以注入非默认依赖。
+
+!! GetSharedEngine：engine 与 current-engine scope 成对保活
+
+共享状态位于 `Shared/AngelscriptTestEngineAcquisition.h`：
+
+```cpp
+inline TUniquePtr<FAngelscriptEngine>& GetSharedTestEngineStorage();
+inline TUniquePtr<FAngelscriptEngineScope>& GetSharedTestEngineScopeStorage();
+```
+
+两者各自返回一个函数内静态 `TUniquePtr`。首次获取的顺序是：
+
+# 清掉可能残留的 scope；
+# 创建默认 config 与 `FAngelscriptEngineDependencies::CreateDefault()`；
+# 调用 `FAngelscriptTestEngine::Create`；
+# 为新引擎创建持久 `FAngelscriptEngineScope`，使 `TryGetCurrentEngine()` 等当前引擎入口可解析它；
+# 返回 engine 引用。
+
+若 engine 仍在但 scope 意外为空，入口会重建 scope，而不是重建 engine。存储没有互斥锁，设计使用域是自动化测试的受控主线程，不是并发引擎池 API。
+
+! ResetModules 的四层清理
+
+`ResetModules` 不只是遍历 `GetActiveModules()`。当前实现按下列顺序闭合高层描述、底层 VM 和 Unreal 反射对象：
+
+# ''快照高层模块''：复制 `Engine.GetActiveModules()`，避免丢弃过程中修改原容器；逐个调用 `Engine.DiscardModule(*Module->ModuleName)`。
+# ''兜底清 raw AS module''：把 `Engine.GetScriptEngine()` 解释为 `asCScriptEngine`，先收集 `GetModuleByIndex()` 返回的所有名字，再逐名 `DiscardModule`，最后调用 `DeleteDiscardedModules()`。这一步捕获未出现在高层 active-module 表里的底层模块。
+# ''断开生成反射类型''：`CleanupDetachedASTypesForGarbageCollection(&ActiveModules)` 处理脱离模块的 `UASClass`、`UASStruct`、丢弃的 `UEnum` 和 delegate function，并清理 Blueprint action / subsystem node action 缓存。
+# ''同步 GC''：调用 `CollectGarbage(RF_NoFlags, true)`，使上一步解除 root/引用的对象在 reset 返回前进入一致状态。
+
+|!状态|!Reset 后结果|
+|`FAngelscriptEngine`、底层 `asCScriptEngine`|同一实例，保留|
+|已注册原生类型与绑定数据库|保留|
+|高层 `FAngelscriptModuleDesc` 活跃模块|丢弃|
+|高层表之外的 raw AS module|丢弃并物理删除|
+|由这些模块生成且已脱离的反射类型|解除持有关系并交给 GC|
+|Blueprint action 缓存中的失效类型入口|按清理结果失效化|
+
+这解释了为什么只在测试代码中调用 `Engine.DiscardModule` 不能替代标准 reset：它没有证明 raw module、动态反射类型和编辑器缓存已经同时闭合。
+
+! 宏层生命周期
+
+`Shared/AngelscriptTestMacros.h` 将常见意图编码为三条不同路径：
+
+|!宏|!实际行为|!典型位置|
+|`ASTEST_CREATE_ENGINE()`|`GetSharedEngine()` 后立即 `ResetModules()`|测试类 `BEFORE_ALL`，或需要已知干净起点的方法|
+|`ASTEST_GET_ENGINE()`|只获取共享引用|已由外层清理、并以模块 scope 隔离的测试方法|
+|`ASTEST_RESET_ENGINE(Engine)`|调用 `ResetModules(Engine)`|`AFTER_ALL` / `AFTER_EACH`|
+|`ASTEST_CREATE_ENGINE_FULL()`|取得独立 Full 引擎|引擎核心、绑定环境、热重载与销毁语义测试|
+|`ASTEST_CREATE_ENGINE_NATIVE()`|直接 `asCreateScriptEngine`|纯 AngelScript SDK API 测试，不含 UE 绑定|
+
+<<as-callout note "引用的有效期">>
+从共享入口取得的是 `FAngelscriptEngine&`，有效期受静态 `TUniquePtr` 控制。任何调用 `DestroySharedEngine()` / `DestroySharedTestEngine()` 的路径都会让既有引用失效；不能跨销毁点缓存引用、模块描述或原始 `asIScriptEngine*`。
+<</as-callout>>
+
+! 完全销毁与失败边界
+
+`DestroySharedEngine()` 必须先 `SharedScopeStorage.Reset()`，让正在销毁的引擎不再被视为 current engine，再 `SharedEngineStorage.Reset()`。顺序反过来会让 scope 在短暂窗口内指向已释放对象。下次 `GetSharedEngine()` 会重新执行 Full 创建和绑定。
+
+常见故障可按现象定位：
+
+|!现象|!最可能的边界错误|!检查点|
+|后一用例仍找到前一用例的函数/类|使用了 `ASTEST_GET_ENGINE`，但上层未 reset；或只丢了一个模块|确认类级 setup/teardown，并走 `ResetModules` 四层清理|
+|`TryGetCurrentEngine()` 返回空|共享 engine 存在但 scope 被提前释放|重新经 `GetSharedEngine()` 建立持久 scope，不要直接操作静态存储|
+|reset 后仍有 Blueprint 菜单项指向旧脚本类型|绕过了 detached-type / action-cache 清理|使用标准 `FAngelscriptTestEngine::ResetModules`|
+|测试需要验证冷启动，却复用了旧绑定状态|选错共享模式|改用独立 Full 引擎并由局部 `TUniquePtr` 持有|
+|持有的 engine 引用突然无效|会话中调用了共享销毁入口|缩短引用作用域，明确谁拥有 destroy 权限|
+
+! 稳定源码入口
+
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngine.h` — 四个公开入口与所有权注释
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngine.cpp` — 创建、scope 顺序和四层 reset
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineAcquisition.h` — 两个静态存储与更高层获取/销毁辅助器
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestEngineCleanup.h` — detached AS 类型和 Blueprint 缓存清理
+* `Plugins/Angelscript/Source/AngelscriptTest/Shared/AngelscriptTestMacros.h` — `CREATE` / `GET` / `RESET` 调用意图
+
+! 相关链接
+
+* <<as-doc-link "testing-diagnostics-release/index" "测试与诊断概览">> —— 测试体系导航入口
+* <<as-doc-link "testing-diagnostics-release/script-test-suite-runner" "脚本测试套件运行器">> —— Runtime 自带的反射式脚本测试，不等同于这里的 C++ 测试引擎辅助器
+* <<as-doc-link "testing-diagnostics-release/test-helper-api" "测试辅助 API">> —— 模块构建与执行辅助函数
+* <<as-doc-link "runtime-jit-vm/engine-shutdown-resource-cleanup" "引擎关闭与资源清理">> —— 生产引擎的完整关闭顺序

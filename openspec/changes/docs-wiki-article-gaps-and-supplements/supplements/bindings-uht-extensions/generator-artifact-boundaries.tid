@@ -1,0 +1,402 @@
+title: AS/Docs/zh-Hans/bindings-uht-extensions/generator-artifact-boundaries
+type: text/vnd.tiddlywiki
+tags: BindingsUhtExtensions
+caption: AS-to-Unreal 生成产物边界
+description: 区分 ClassGenerator 编排器、UASClass/UASStruct 反射产物、UASFunction 调用桥与显式派发子类，并说明 full reload、soft reload、UHT 可见性和维护不变量。
+as-sdk-document: yes
+as-doc-key: bindings-uht-extensions/generator-artifact-boundaries
+as-locale: zh-Hans
+as-depth: L4
+as-doc-kind: internals
+as-content-status: draft
+as-order: 40
+as-content-revision: 2
+as-sources: [[angelscript-plugin]] [[project-guide]] [[openspec]]
+as-nav-group: bindings-extensions
+as-nav-order: 40
+as-nav-parent: bindings-uht-extensions/index
+as-feature-key: generator-artifact-boundaries
+
+! 本文讨论的“生成器”是哪一个
+
+这里的 Generator 是 Runtime 内的 ''AS-to-Unreal ClassGenerator''：它把已编译的 AngelScript 模块描述转换成 Unreal 可反射、可实例化、可热重载的运行时对象。
+
+它不是 `AngelscriptUHTTool`。后者读取 C++/UHT 信息并生成 `AS_FunctionBinding_*` 绑定表，让原生 Unreal API 可从 AngelScript 调用；本文这一方向相反：
+
+```text
+AngelscriptUHTTool / FunctionBinding            Runtime ClassGenerator
+
+C++ UFUNCTION / UPROPERTY                      已编译 AS class/struct/function
+             │                                              │
+             ▼                                              ▼
+AngelScript 可调用的原生绑定                   Unreal UClass/UScriptStruct/UFunction
+```
+
+两个系统都会出现“生成函数”字样，但不能共用产物所有权规则。`AS_FunctionBinding_*.gen.cpp` 的分片、跨模块 provider 和 reflective fallback 属于 UHT FunctionBinding；`UASClass`、`UASStruct`、`UASFunction`、CDO、默认组件和重实例化属于 Runtime ClassGenerator。
+
+! 从描述到 Unreal 产物
+
+完整路径不是“`UASClass` 一种对象包办一切”，而是编排器根据描述种类建立多种 Unreal 产物：
+
+```text
+FAngelscriptModuleDesc
+  ├─ FAngelscriptClassDesc (class/interface/statics class)
+  │      ├─ UASClass : UClass
+  │      ├─ generated FProperty children
+  │      └─ UASFunction : UFunction
+  │             └─ UASFunction_* dispatch subclass
+  │
+  ├─ FAngelscriptClassDesc (script struct)
+  │      ├─ UASStruct : UScriptStruct
+  │      └─ generated FProperty children
+  │
+  ├─ FAngelscriptDelegateDesc
+  │      └─ UDelegateFunction
+  │
+  └─ FAngelscriptEnumDesc
+         └─ UEnum
+
+          FAngelscriptClassGenerator
+       analyze → plan → create/reload → generate → finalize → reinstance
+```
+
+`FAngelscriptClassGenerator` 是一次编译/重载批次的''编排器''，持有 `FModuleData`、`FClassData`、`FDelegateData`、旧/新描述和传播状态。`UASClass` / `UASStruct` / `UASFunction` 是被发布到 Unreal 对象系统里的''产物''。把编排算法和产物运行时行为混为一谈，会导致热重载状态被塞进 UClass，或把对象构造逻辑塞回 reload planner。
+
+! 所有权总表
+
+|!层|!拥有的状态与行为|!不应该拥有|
+|`FAngelscriptClassGenerator`|模块分析、名称/父类解析、reload requirement、依赖传播、Full/Soft Reload、生成 FProperty、Finalize、重实例化批次|对象每次构造时的运行时行为；每次 UFunction 调用的参数搬运|
+|`UASClass`|脚本类身份、容器尺寸/属性偏移、构造/Defaults 函数、默认与覆盖组件、CDO 默认值、脚本对象分配/引用、最新版本链、运行时销毁和类元数据查询|函数参数布局；按签名选择 dispatch 子类；整个模块的 reload 规划|
+|`UASStruct`|脚本结构值头、`ICppStructOps`、构造/析构/复制、脚本类型身份、GUID、`NewerVersion`|UObject 构造、默认组件；UFunction thunk|
+|`UASFunction`|脚本函数指针、参数/返回属性布局、参数搬运策略、WorldContext、JIT 入口、RPC validate、源位置、通用调用桥|类 CDO/组件；跨类型 reload 依赖传播|
+|`UASFunction_*`|一种明确的普通或 JIT 派发策略|生成 FProperty、修改 ClassDesc、决定全局 reload 类型|
+
+这张表是''行为所有权''，不是“一类只能有一个 `.cpp`”。例如 `UASClass` 当前实现按构造与元数据再拆成 `ASClass_Construction.cpp`、`ASClass_Metadata.cpp`；这些仍属于同一产物层。
+
+! 编排器：阶段拆分与单一状态源
+
+`ClassGenerator/AngelscriptClassGenerator.h` 是 `FAngelscriptClassGenerator` 的单一声明源。公开入口包括：
+
+* `AddModule`：加入新模块描述；
+* `Setup`：建立本批次的数据与分析状态；
+* `PerformFullReload` / `PerformSoftReload`：执行选择后的 reload；
+* `WantsFullReload` / `NeedsFullReload` / `GetFullReloadLines`：查询分类结果与来源行。
+
+私有状态集中保存旧/新 module、class、delegate、enum 描述，`ReloadReq`，reload planner node，已分析/已 reload/已 finalize 标记，被替换的 `UASClass` / `UStruct`，临时 CDO 与已更新 script type map。
+
+实现按阶段分到以下翻译单元：
+
+|!单元|!核心职责|
+|`AngelscriptClassGenerator.cpp`|driver、模块加入、执行总流程、按 ID/类型确保 reload/finalize|
+|`_Analyze.cpp`|分析 class/struct/delegate/enum，名称与描述一致性|
+|`_ReloadPlanning.cpp`|reload requirement、依赖边、传播、反射类型变化判断|
+|`_FullReload.cpp`|新建或替换 Unreal 产物、函数和属性结构、旧新版本关系|
+|`_SoftReload.cpp`|结构不变时更新函数/类型引用，迁移现有实例数据|
+|`_Generation.cpp`|`AddClassProperties`、函数返回值/参数 FProperty、类型解析|
+|`_Finalize.cpp`|接口、Actor/Component/Object 特化、tick、CDO、默认组件、验证与发布|
+|`_Reinstancing.cpp`|脚本对象析构/重构、引用 schema、debug value、移除清理|
+
+阶段文件不是可独立调用的公共服务，它们共同实现同一个含私有状态的编排器。不要复制 `FClassData` 到多个“局部版本”，也不要为了少 include 创建第二个半公开 `FAngelscriptClassGenerator` 声明；旧/新描述与一次性标记必须保持单一所有者。
+
+! UASClass：生成类的运行时身份
+
+`UASClass : UClass` 不是单纯的标签类型。它承载脚本类在 Unreal 运行期必须持续存在的状态。
+
+!! 身份与版本
+
+|!字段/入口|!用途|
+|`CodeSuperClass`|描述脚本继承链最终依附的原生代码父类|
+|`NewerVersion`|Full Reload 后指向更新的 `UASClass`|
+|`bHasASClassParent`|区分父链中是否仍有脚本类|
+|`GetMostUpToDateClass()`|沿版本关系取得当前类|
+|`ScriptTypePtr` / `OwnerScriptEngine` / `bIsScriptClass`|桥接底层脚本类型和所属引擎身份|
+|`ContainerSize` / `ScriptPropertyOffset`|Unreal/AS 对象布局边界|
+
+`CreateFullReloadClass` 在 `/Script/Angelscript` package 下 `NewObject<UASClass>`。若同名旧类存在，旧类先标记 `CLASS_NewerVersionExists`，必要时重命名为 `_REPLACED_<n>`；若是重命名场景，还可经 core redirect 找到被替换类。新 `UASClass` 写回 `asITypeInfo::SetUserData` 和 `ClassDesc->Class`，并填充由预处理器生成的 `StaticClass` 全局变量。
+
+这些是''新产物建立''职责；`UASClass` 本身不应该扫描整个模块来决定自己是否需要 Full Reload。
+
+!! 构造、默认值与组件
+
+`UASClass` 保存：
+
+* `ConstructFunction` 与 `DefaultsFunction`；
+* `FDefaultComponent` 列表：组件类、名字、脚本变量偏移、root/editor-only、attach 和 socket；
+* `FOverrideComponent` 列表：覆盖类、被覆盖组件名、变量名和偏移；
+* Actor、Component、普通 UObject 三种静态构造入口；
+* `ApplyScriptDefaults`、脚本对象分配/完成构造、默认 constructor outer scope。
+
+Finalize 阶段负责''从描述建立这些表并选择 constructor''：Actor 走 `FinalizeActorClass`，组件走 `FinalizeComponentClass`，其他对象走 `FinalizeObjectClass`。真正实例化对象时，`ASClass_Construction.cpp` 根据已经建立的产物状态创建默认/覆盖组件、应用脚本默认值并完成脚本对象生命周期。
+
+这个先后关系是关键边界：
+
+```text
+编译/Reload 批次                          对象实例化
+FinalizeActorClass                       UASClass::StaticActorConstructor
+  ├─ 验证组件类型/Root/Attach               ├─ 使用 DefaultComponents
+  ├─ 填充 DefaultComponents                ├─ 写入对应变量偏移
+  └─ 设置 ClassConstructor                 └─ ApplyScriptDefaults
+```
+
+若把组件描述扫描放进每次对象构造，会重复编译期工作并让错误延迟到运行时；若把实际 UObject 构造放进 generator finalize，又会错误地把 CDO/实例生命周期和一次 reload 批次绑定。
+
+!! 运行时对象与 GC 边界
+
+`UASClass` 还负责脚本对象原始内存的登记与引用计数协作：`RegisterRawScriptObject`、`AddRawScriptObjectReference`、`BeginReleaseRawScriptObjectReference`、`FinishReleaseRawScriptObjectReference`、按 engine 清理登记，以及 `RuntimeAddReferencedObjects` / `RuntimeDestroyObject` 接缝。
+
+这些函数属于生成类产物，因为对象可以在 generator 批次结束后长期存活。反过来，''检测某个新 ClassDesc 需要怎样的 GC reference schema'' 属于 `_Reinstancing.cpp`/生成阶段；检测结果才写入 `UASClass` 的运行时 prototype/state。
+
+! UASStruct：值生命周期是独立产物
+
+旧的“三层模型”若只写 `UASClass`、`UASFunction`、派发子类，会漏掉脚本结构体。当前 `UASStruct : UScriptStruct` 有自己的生命周期合同：
+
+* 每个结构值前部包含 `FScriptStructValueHeader`，记录 magic、`asITypeInfo*` 和 `ICppStructOps*`；
+* `ScriptValueOffset` 按指针对齐计算 header 后的实际脚本值起点；
+* `InitializeStruct` / `DestroyStruct`、`CreateCppStructOps` / `PrepareCppStructOps` 对接 Unreal 容器、复制和析构；
+* `Guid` 保持结构身份；Full Reload 替换时旧 GUID 可传给新结构；
+* `NewerVersion` 与 `GetNewestVersion()` 支持热重载后的类型更新；
+* `ScriptType` 和 `UpdateScriptType()` 维持底层脚本类型关系。
+
+`CreateFullReloadStruct` 新建 `UASStruct`、设置名字/GUID/metadata、写 `ScriptType->SetUserData` 并通知 Unreal registration。`DoFullReloadStruct` 再设置 alignment、`CppStructOps`、生成 `FProperty`、`StaticLink`；若替换旧结构，则设置旧结构的 `NewerVersion`。
+
+结构值不能复用 `UASClass` 的 UObject 构造逻辑，也不能把值头和 `CppStructOps` 塞进 `UASFunction` 参数搬运器。`UASFunction::FArgument` 可以''引用''一个 struct type usage，但不拥有该结构的生命周期定义。
+
+! UASFunction：反射形状与调用桥
+
+`UASFunction : UFunction` 把一个脚本函数同时呈现给 Unreal 反射和 AngelScript VM。
+
+!! 持久字段
+
+|!字段|!意义|
+|`ScriptFunction`|底层 `asIScriptFunction*`，调用与源位置入口|
+|`GeneratedSourceLineNumber`|没有完整 script data 时的生成行号回退信息|
+|`ValidateFunction`|RPC `_Validate` UFunction 缓存|
+|`Arguments` / `ReturnArgument`|每个 Unreal `FProperty` 与 `FAngelscriptTypeUsage` 的对应关系|
+|`DestroyArguments`|调用完成后需要析构的参数集合|
+|`ArgStackSize`|AngelScript VM 栈布局总量|
+|`WorldContextIndex` / `WorldContextOffsetInParms`|生成/注入 WorldContext 参数定位|
+|`JitFunction` / `JitFunction_ParmsEntry` / `JitFunction_Raw`|三种 JIT 入口|
+|`bIsNoOp`|脚本 no-op 函数表面|
+
+`FArgument` 同时保存两类行为：
+
+* `EArgumentParmBehavior`：Unreal 参数结构一侧怎样解释值，例如 1/2/4/8 字节、引用、POD 引用、float 扩 double、对象指针返回；
+* `EArgumentVMBehavior`：AngelScript VM 栈一侧怎样压入/取回，例如 WorldContext object、object pointer、reference、return object value/POD。
+
+`FinalizeArguments()` 根据 `FAngelscriptTypeUsage`、引用性、primitive 大小、构造/复制/析构需求和 `FProperty` offset 计算这些字段。这里的“不变量”是 Unreal `Parms` 布局、AS 栈布局和清理列表三者一致。只改某一个 enum 分支而不更新其他侧，会造成 ABI 级内存错误。
+
+!! Full Reload 时如何生成 UFunction
+
+`DoFullReloadClass` 对 `ClassDesc->Methods` 逐一处理：
+
+# 在父类按名字寻找 parent `UFunction`；
+# 调用 `UASFunction::AllocateFunctionFor` 选择实际派发子类；
+# 设置 `SuperStruct`、脚本函数、生成行、no-op、JIT 指针；
+# 设 `FUNC_Native` 和 `UASFunctionNativeThunk`；
+# 应用 BlueprintCallable/Pure/Event、Static、NetServer/Client/Multicast/Validate、Exec 等 flags 和 metadata；
+# 为返回值和每个参数生成 `FProperty`；
+# Finalize 参数布局并把函数加入类的 children/function map；
+# 在所有函数建立后解析 Validate 配对与类验证。
+
+函数产物的所有权因此分两半：generator 决定''创建哪个 UFunction、带哪些反射属性''；`UASFunction` 决定''产物发布后每次调用怎样搬运和执行''。
+
+! 派发子类：为什么是显式 UCLASS
+
+当前 `ASFunction.h` 有 32 个显式 `UCLASS()` 声明：一个 `UASFunction` 基类，加上普通/JIT 派发子类。声明目前仍集中在同一个已提交 header 中，并没有单独的 `ASFunctionDispatchVariants.h`。实现体分布为：
+
+|!文件|!内容|
+|`ASFunction.cpp`|基类、参数 finalize、optimized call helper、allocator、native thunk、通用/NotThreadSafe fallback|
+|`ASFunction_Dispatch.cpp`|非 JIT 的形状专用 `RuntimeCallFunction` / `RuntimeCallEvent`|
+|`ASFunction_JITDispatch.cpp`|对应 JIT 变体的调用实现|
+
+显式变体包含：
+
+* `NoParams`；
+* `ByteArg`、`DWordArg`、`QWordArg`、`FloatArg`、`DoubleArg`、`FloatExtendedToDoubleArg`；
+* `ReferenceArg`；
+* `ByteReturn`、`DWordReturn`、`FloatReturn`、`DoubleReturn`、`FloatExtendedToDoubleReturn`、`ObjectReturn`；
+* generic `UASFunction` 和 `NotThreadSafe` fallback；
+* 上述适用形状的 `_JIT` 对应类。
+
+这些不是为了在反射浏览器里制造类型数量，而是把高频、形状稳定的参数搬运路径固化为虚函数派发，避免每次调用都走完整通用分支。
+
+<<as-callout warning "UHT 可见性是硬边界">>
+每个派发子类都是反射类型。其 `UCLASS()` 与类声明必须在 UHT 运行前以显式、已提交的 C++ 源码可见。可以用共享表减少非 UHT 实现体的重复，但不能让宏展开、运行时 factory 表或构建后才生成的临时文件成为这些类型的唯一声明源。
+<</as-callout>>
+
+! AllocateFunctionFor 的选择矩阵
+
+`UASFunction::AllocateFunctionFor` 先计算 `bHasNonVirtualJitFunction`。它要求底层脚本函数同时有：
+
+* `jitFunction`；
+* `jitFunction_Raw`；
+* `jitFunction_ParmsEntry`；
+* `asTRAIT_FINAL`。
+
+也就是说，“任意一个 JIT 指针非空”不足以选择 `_JIT` 变体；final 保证调用不需要再按脚本虚函数覆盖改派。
+
+然后按以下优先级选择：
+
+|!条件|!非 JIT 产物|!满足完整 non-virtual JIT 时|
+|`FunctionDesc->bThreadSafe`|`UASFunction`|`UASFunction_JIT`|
+|非 static、无返回、0 参数|`UASFunction_NoParams`|`UASFunction_NoParams_JIT`|
+|非 static、无返回、1 个按值 primitive|按 1/4/8 字节与 float/double 特化|对应 `_JIT`|
+|非 static、无返回、1 个引用参数|`UASFunction_ReferenceArg`|对应 `_JIT`|
+|非 static、0 参数、返回 primitive|按大小与 float/double 特化|对应 `_JIT`|
+|非 static、0 参数、返回 object value|`UASFunction_ObjectReturn`|对应 `_JIT`|
+|其他非线程安全形状|`UASFunction_NotThreadSafe`|`UASFunction_NotThreadSafe_JIT`|
+
+当前代码注释指出 thread-safe 函数必须走最通用路径，因此它们不会进入 NoParams/primitive 特化。static 函数也跳过非 static 的形状分支，落入 fallback。选择逻辑属于 `UASFunction` 产物工厂；它依赖 `FunctionDesc` 的公开形状，不应该由每个 dispatch 子类自行再次猜测。
+
+! 两个运行时入口
+
+Unreal 调用生成函数主要经两个方向进入：
+
+```text
+UObject native thunk / FFrame                ProcessEvent-style Parms
+          │                                          │
+          ▼                                          ▼
+UASFunctionNativeThunk                     RuntimeCallEvent(Object, Parms)
+          │
+          ├─ CurrentNativeFunction / Stack.Node
+          ▼
+RuntimeCallFunction(Object, Stack, RESULT_DECL)
+```
+
+每个派发子类覆盖 `RuntimeCallFunction` 和 `RuntimeCallEvent`。非 JIT 单元准备/执行 AngelScript context，按特化形状从 `FFrame` 或 `Parms` 取值；JIT 单元使用已缓存 JIT 入口，并在需要时处理脚本虚函数解析。通用 `UASFunction` 处理完整参数矩阵，`NotThreadSafe` fallback 使用非线程安全上下文合同。
+
+RPC validate 是额外的前置约束。`ValidateFunction` 指向对应 `_Validate`；运行时入口在执行主函数前解析并调用 validate，失败时按 Unreal RPC 规则处理。它仍属于函数调用桥，不属于类构造层。
+
+! Full Reload、Soft Reload 与版本关系
+
+!! Full Reload
+
+结构变化、父类/接口变化或 planner 判定要求重建时，流程创建新的 Unreal 产物：
+
+```text
+Analyze + ReloadPlanning
+        │ FullReload
+        ▼
+CreateFullReloadClass/Struct/Delegate
+        │
+        ▼
+DoFullReloadClass/Struct
+  ├─ 建属性
+  ├─ 建 UASFunction 与参数
+  ├─ link / function map
+  └─ 旧产物 NewerVersion
+        │
+        ▼
+Finalize + Reinstance + defaults
+```
+
+旧 `UASClass` / `UASStruct` 不会简单原地变形：它们通过 `NewerVersion`、替换命名和实例迁移与新产物衔接。这是避免旧对象、序列化引用和编辑器状态突然指向布局不兼容内存的核心。
+
+!! Soft Reload
+
+结构保持兼容时，不重建整个 UClass。`SoftReloadFunction` 遍历 `Arguments`、`DestroyArguments` 与 `ReturnArgument`，`SoftReloadType` 用 `UpdatedScriptTypeMap` 替换其中的 script class type，并递归更新 subtype。函数体与脚本类型引用可以更新，而 Unreal 反射布局保持稳定。
+
+因此 `UASFunction::Arguments` 不能被当作一次创建后永远不变的纯缓存；Soft Reload 明确拥有更新其中 type usage 的权限。与此同时，它不应重算 FProperty offset 或切换 dispatch UClass——若形状已改变到需要这些操作，分类应升级为 Full Reload。
+
+! Finalize 与发布边界
+
+`FinalizeClass` 使用 `bFinalized` 防止重复执行，随后：
+
+* 建立 runtime replication data；
+* 解析 `ComposeOntoClass`；
+* 解析接口及其父接口，验证实现方法；
+* 分派 Actor/Component/Object finalize；
+* 向 loading system 发送 `NRP_Finished` registration event。
+
+Actor finalize 会校验默认组件确实派生自 `UActorComponent`，Root/Attach 必须是 `USceneComponent`，抽象组件不能放入非抽象宿主，并检查 root 冲突。失败会写 `ScriptCompileError` 且把 `ModuleData.NewModule->bModuleSwapInError` 设为 `true`。
+
+这说明“已经 `NewObject<UASClass>`”不等于“生成成功并可发布”。产物建立是多阶段事务；模块 swap-in error 必须阻止不完整描述成为当前有效模块。新增生成步骤时应把验证放在发布之前，并维持重复调用 guard。
+
+! 维护时必须保持的边界不变量
+
+!! 反射等价性
+
+纯文件拆分或 helper 提取不得改变：
+
+* `UClass`/`UScriptStruct` 名字、父类、flags、metadata；
+* FProperty 类型、offset、flags、容器内部属性与引用标志；
+* UFunction flags、参数顺序、返回值、ParmsSize、WorldContext 与 validate 配对；
+* CDO 默认值、默认/覆盖组件表、构造器选择；
+* dispatch 子类选择和普通/JIT 调用结果；
+* old/new version 链、reload 分类和实例迁移。
+
+!! 单一反射声明源
+
+`UASClass`、`UASStruct`、`UASFunction_*` 的 `UCLASS()` / `GENERATED_BODY()` 声明必须只有一个权威 header。实现文件可以继续按职责拆，但不能复制一个“内部简化声明”。
+
+!! 编排器与产物状态分离
+
+一次 reload 批次的 `bAnalyzed`、`ReloadReq`、planner node 和 `CDONoDefaults` 属于 generator data；长期跟随对象的 script type、NewerVersion、参数布局和组件表属于产物。判断标准是：generator 对象销毁后，运行时是否仍需要该状态。
+
+!! JIT 与非 JIT 成对演进
+
+新增一个参数形状特化时，要回答：
+
+# allocator 何时选择它；
+# 非 JIT 的 FFrame 与 Parms 两个入口怎样实现；
+# JIT 是否有对应变体，若没有为何安全回退；
+# `FinalizeArguments` 的 Parm/VM behavior 是否覆盖；
+# static、thread-safe、virtual/non-final 情况落到哪里。
+
+只复制一个 `RuntimeCallFunction` 而漏掉 `RuntimeCallEvent`，会造成同一个 UFunction 从不同 Unreal 入口表现不同。
+
+! 常见错误与诊断
+
+|!现象|!可能的边界错误|!优先检查|
+|生成类存在但字段反射缺失|Generation/FullReload 未把 FProperty 挂入 ChildProperties 或 link 顺序错误|`AddClassProperties`、PropertiesSize、StaticLink|
+|CDO 正确但普通实例组件缺失|Finalize 表已建，UASClass runtime constructor 未消费或 offset 错|`DefaultComponents` 与 `ASClass_Construction.cpp`|
+|函数在反射中存在但调用崩溃|UFunction shape 与 FArgument/dispatch 选择不一致|`FinalizeArguments`、`AllocateFunctionFor`、Parms offset|
+|ProcessEvent 正常，直接 native thunk 异常|两个 RuntimeCall 入口实现漂移|对应 dispatch 类的 Function/Event 成对实现|
+|解释器正常，JIT 版本错值|`_JIT` 选择条件或 raw/parms entry 使用错误|三个 JIT 指针、final trait、`ASFunction_JITDispatch.cpp`|
+|修改函数签名后仍走 Soft Reload|reload classifier 没把反射形状变化升级|`_Analyze.cpp`、`_ReloadPlanning.cpp`、old/new FunctionDesc 比较|
+|旧实例引用新 struct 时复制/析构异常|UASStruct header/CppStructOps 与 NewerVersion 更新不一致|`ASStruct.cpp`、`DoFullReloadStruct`|
+|新类已创建但模块不可用|Finalize/Verify 把 `bModuleSwapInError` 置位|最早的 `ScriptCompileError`，不要只看 NewObject 成功|
+|UHT 找不到某个派发类|反射声明被藏进宏、条件或未提交生成文件|`ASFunction.h` 的显式 32 个 UCLASS 声明|
+|编辑器热重载后源位置为空|`ScriptFunction`/module code 或 generated line 没更新|`GetSourceFilePath`、`GetSourceLineNumber` 与 reload 更新|
+
+! 一次安全的修改工作流
+
+假设要为“一参数 2 字节 primitive”增加专用派发：
+
+# 先确认性能或 ABI 需求确实需要新 UClass；通用 fallback 本身应保持正确。
+# 在 `ASFunction.h` 添加显式、无条件且可被 UHT 看到的普通/JIT 声明。
+# 在 `AllocateFunctionFor` 的 primitive size 分支加入选择，同时明确 thread-safe、static、non-final/JIT 不完整时的 fallback。
+# 在普通 dispatch 单元实现 `RuntimeCallFunction` 与 `RuntimeCallEvent`，两者使用相同 2 字节语义。
+# 若 JIT 入口合同完备，在 JIT dispatch 单元加入对应实现；否则 allocator 不应选择 `_JIT` 新类。
+# 核对 `FinalizeArguments` 已把 2 字节 primitive 标为 `Value2Byte`，以及返回/参数 offset 对齐。
+# 检查 Full Reload 创建、Soft Reload type update、RPC validate 和 source location 不需要特殊分支。
+# 只比较公开产物与调用合同；不要为了验证文件拆分而向 Runtime 暴露私有计数器。
+
+本文描述的是维护推理路径；实际改动需要哪一层验证，应由行为风险决定，不能仅凭文件是否移动来判断。
+
+! 当前源码地图
+
+|!区域|!权威内容|
+|`ClassGenerator/AngelscriptClassGenerator.h`|编排器公开入口、批次数据和所有 phase 方法的单一声明|
+|`AngelscriptClassGenerator*.cpp`|driver、Analyze、ReloadPlanning、Full/Soft Reload、Generation、Finalize、Reinstancing|
+|`ClassGenerator/ASClass.h`|`UASClass` 状态、默认/覆盖组件、运行时构造与对象引用接口|
+|`ASClass.cpp`|静态状态和构造函数；当前很小|
+|`ASClass_Construction.cpp`|对象分配、原始脚本对象登记、默认值和 Actor/Component/Object 构造|
+|`ASClass_Metadata.cpp`|版本、复制、源文件、developer-only 等类元数据|
+|`ClassGenerator/ASStruct.h/.cpp`|脚本结构值 header、CppStructOps、GUID、版本与值生命周期|
+|`ClassGenerator/ASFunction.h`|`UASFunction` 参数模型以及 32 个显式 UHT 类声明|
+|`ASFunction.cpp`|基类、参数布局、优化 helper、variant allocator、native thunk、fallback|
+|`ASFunction_Dispatch.cpp`|非 JIT 特化实现|
+|`ASFunction_JITDispatch.cpp`|JIT 特化实现|
+|`AngelscriptClassReloadPlanner.*`|reload 依赖图与传播算法|
+|`AngelscriptClassRedirects.*`|类重命名 redirect 解析和维护|
+
+! 相关链接
+
+* <<as-doc-link "type-object-reflection/class-generation-lifecycle" "类生成生命周期">> —— 从描述到 UClass 发布的用户视角
+* <<as-doc-link "type-object-reflection/classgenerator-structure" "ClassGenerator 阶段结构">> —— 编排器分解与 reload 阶段
+* <<as-doc-link "type-object-reflection/function-generation-and-dispatch" "函数生成与派发">> —— UFunction 参数和运行时调用的专题
+* <<as-doc-link "type-object-reflection/script-struct-value-lifecycle" "脚本结构值生命周期">> —— UASStruct header 与 CppStructOps
+* <<as-doc-link "runtime-jit-vm/uasfunction-dispatch-matrix" "UASFunction 派发矩阵">> —— 普通/JIT 形状选择的详细矩阵
+* <<as-doc-link "hot-reload/reload-pipeline-internals" "热重载内部流水线">> —— Full/Soft Reload 和实例迁移
+* <<as-doc-link "bindings-uht-extensions/generated-function-tables" "UHT 生成函数表">> —— 与本文方向相反的 C++ 到 AS 绑定产物
