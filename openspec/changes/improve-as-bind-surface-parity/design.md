@@ -78,6 +78,17 @@ When a wave adds a user-facing API, its actual `FAngelscriptBind` definition rec
 
 ## Open Questions
 
+### Approved value-type wave
+
+The approved high- and medium-priority implementation wave is documented in
+`high-medium-value-types-wave.md`: AssetManager value types
+(`FPrimaryAssetType`, `FPrimaryAssetId`, `FAssetBundleEntry`,
+`FAssetBundleData`), `FBox2D`, `FFrameNumber`, `FFrameTime`, and `FMatrix`.
+It uses the configured engine's default `FMatrix` and `FBox2D` aliases rather
+than initially exposing separate float/double matrix types. Asset bundles use
+the current `FTopLevelAssetPath` representation, and `FindEntry` needs a safe
+copied script result rather than a leaked value-owned native pointer.
+
 - Which first family has the strongest immediate script demand after the current binding architecture work settles: color/time/GUID utilities or geometry helpers?
 - Should the long-lived matrix remain as Markdown in this change directory or graduate to a maintained guide after more than one completed wave demonstrates a stable format?
 - Which existing focused binding test prefixes best partition value-type regression coverage without duplicating broad StaticJIT tests?

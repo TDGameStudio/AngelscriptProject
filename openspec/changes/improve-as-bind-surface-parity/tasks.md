@@ -31,6 +31,30 @@
 - [ ] 4.3 Audit specialty families (`FMatrix`, `FBox2D`, ranges/intervals, frame values, asset bundle data, and polyglot text data) only when a concrete script need or supported dependency path exists.
 - [ ] 4.4 Record specialty candidates that are unsuitable or dependency-blocked as explicit dispositions rather than carrying them as implied missing work.
 
+## 4A. Implement the approved high- and medium-priority value-type wave
+
+- [x] 4A.1 Verify exact current-engine declarations, target module availability, and existing AngelScript registrations; record confirmed public type representations in `high-medium-value-types-wave.md`.
+- [x] 4A.2 Add failing CQTest scenarios for `FPrimaryAssetType` / `FPrimaryAssetId` construction/parsing plus `FAssetBundleEntry` / `FAssetBundleData` mutation and safe lookup. <!-- TDD -->
+- [x] 4A.3 Bind the AssetManager value cluster in direct-lambda `ExplicitBindings` providers, using `FTopLevelAssetPath` and a non-escaping `FindEntry` adaptation.
+- [x] 4A.4 Add failing CQTest scenarios and implement `FBox2D`, covering the geometry operations selected in the wave record. <!-- TDD -->
+- [x] 4A.5 Add failing CQTest scenarios and implement `FFrameNumber` / `FFrameTime`, including construction, conversion, rounding, and scalar arithmetic. <!-- TDD -->
+- [x] 4A.6 Add a failing CQTest and implement the bounded engine-default `FMatrix` API (`FMatrix` public alias, not parallel float/double types). <!-- TDD -->
+- [x] 4A.7 Add or update each provider's file-header API table, including non-obvious `@param` notes and the final safe `FindEntry` form.
+- [x] 4A.8 Run each new focused binding prefix, then run `Tools\\RunBuild.ps1`; add StaticJIT coverage only for a demonstrated declaration/operator risk.
+- [x] 4A.9 Update the audit inventory and wave record with final signatures, intentionally deferred members, test/build evidence, and next priority order.
+
+## 4B. Close range and matrix parity deltas
+
+- [x] 4B.1 Add and observe failing public AngelScript tests for float/int
+  range bounds, ranges, intervals, and the required range algebra. <!-- TDD -->
+- [x] 4B.2 Supplement reflection-owned range/interval types in
+  `PostReflectionBindings`, without duplicate class/default-constructor
+  registration.
+- [x] 4B.3 Correct `FMatrix` transform return types to `FVector4`, expose the
+  selected native matrix operations, and provide script-visible `FMatrix::Zero()`
+  instead of the unavailable `EForceInit` token. <!-- TDD -->
+- [x] 4B.4 Record the registration constraint and focused build/test evidence.
+
 ## 5. Maintain the long-lived record
 
 - [ ] 5.1 Keep `reference-inventory.md` and the audit matrix current as reference providers or AngelScript surfaces change.

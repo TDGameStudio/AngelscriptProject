@@ -37,3 +37,19 @@ For example, UnrealCSharp's `FRegisterString.cpp` and `FRegisterText.cpp` contai
 - `FVector` comparisons must account for existing constructors, operators, constants, instance methods, and `FMath` helpers before considering vector helpers missing.
 - The C# catalogue includes color conversion, date/time factory and parsing, GUID parsing/generation, quaternion/rotator interpolation, transform, and random-stream helpers. Each is only a candidate until equivalent AngelScript coverage and script usefulness are established.
 - C# has provider families for `FBox2D`, `FMatrix`, ranges/intervals, frame values, asset bundles, and polyglot text data. Their absence from an AngelScript explicit provider would not by itself prove an API gap: dependencies, reflection, template coverage, and intended module boundaries must be examined first.
+
+## Approved high- and medium-priority wave (2026-08-09)
+
+The following entries have moved from audit candidates to an approved
+implementation wave. The detailed scope, current-engine representation, and
+test plan are in `high-medium-value-types-wave.md`.
+
+| Reference family | AngelScript disposition before the wave | Approved direction |
+| --- | --- | --- |
+| `FRegisterPrimaryAssetType` / `FRegisterPrimaryAssetId` | `AvailableEquivalent` for the existing AssetManager flow; selected for ergonomic value-type completion | Add missing construction/parsing/string value operations without duplicating existing `UAssetManager` loading APIs. |
+| `FRegisterAssetBundleEntry` / `FRegisterAssetBundleData` | `MissingCandidate` | Bind current-engine bundle values with `FTopLevelAssetPath`; adapt `FindEntry` so no owner-internal pointer escapes. |
+| `FRegisterBox2D` | `MissingCandidate` | Add a bounded default `FBox2D` value binding and focused geometry tests. |
+| `FRegisterFrameNumber` / `FRegisterFrameTime` | `MissingCandidate` | Add value construction, conversion, rounding, and arithmetic; retain the existing `FQualifiedFrameTime` mixin as complementary. |
+| `FRegisterMatrix` | `MissingCandidate` | Add a bounded public `FMatrix` binding using the configured engine's default alias, not a copied historical float-only surface. |
+| Range / interval / polyglot families | `MissingCandidate` | Deferred: no immediate script caller selected for this wave. |
+| `FRegisterLazyObjectPtr` | `IntentionalNonGoal` | Do not add a legacy pointer wrapper without a concrete compatibility consumer. |

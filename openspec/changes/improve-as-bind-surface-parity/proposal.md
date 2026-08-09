@@ -12,6 +12,10 @@ Ad-hoc filename and member-name comparisons therefore produce false gaps. We nee
 - Prioritize small type-family waves, beginning with commonly used foundation value types and wrappers, and require behavioral script tests for every newly hand-authored API.
 - Preserve the existing `EAngelscriptBindPhase` lifecycle, including `ExplicitBindings`; this work must not introduce a new phase or disturb generated/reflection binding paths merely to improve inventory coverage.
 - Keep source-layout checks out of the parity work. Tests must validate script-visible behavior rather than the location or declaration style of a provider.
+- Approve a high- and medium-priority wave for AssetManager value types,
+  `FBox2D`, `FFrameNumber`, `FFrameTime`, and `FMatrix`; its concrete scope
+  and current-engine type decisions are recorded in
+  `high-medium-value-types-wave.md`.
 
 ## Capabilities
 

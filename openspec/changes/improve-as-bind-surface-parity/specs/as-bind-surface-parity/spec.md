@@ -49,3 +49,34 @@ Each completed implementation wave SHALL update its audit evidence and provider-
 
 - **WHEN** the selected family has completed implementation and focused validation
 - **THEN** the audit record SHALL capture the resulting disposition and validation evidence, and the owning bind provider SHALL document any added public API and non-obvious parameters in its file-header API table
+
+### Requirement: Approved value-type wave uses current engine representations
+
+The approved high- and medium-priority wave SHALL provide focused
+AngelScript-facing value bindings for `FPrimaryAssetType`, `FPrimaryAssetId`,
+`FAssetBundleEntry`, `FAssetBundleData`, `FBox2D`, `FFrameNumber`,
+`FFrameTime`, and the engine-default `FMatrix` alias. The wave SHALL bind
+current engine representations rather than mechanically reproduce historical
+reference signatures.
+
+#### Scenario: A script assembles an asset-bundle description
+
+- **WHEN** a script creates an `FAssetBundleData` and adds or replaces bundle asset paths
+- **THEN** the paths SHALL use the current `FTopLevelAssetPath` representation and the script SHALL be able to observe the resulting bundle data through a safe value/query API
+
+#### Scenario: A script uses a matrix value
+
+- **WHEN** a script declares `FMatrix` and uses its approved transform-oriented operations
+- **THEN** the operations SHALL use the engine-default matrix representation without requiring the script to choose a float or double matrix type
+
+### Requirement: Value-owned native references do not escape into AngelScript
+
+An approved value-type binding SHALL NOT expose a native pointer or reference
+whose lifetime is owned by another script value as an independently retained
+AngelScript object/reference. Such APIs SHALL use a copied result, an index,
+or an explicit boolean-plus-`out` query form.
+
+#### Scenario: A script searches asset-bundle data
+
+- **WHEN** a script queries `FAssetBundleData` for a named bundle entry
+- **THEN** the query SHALL return a result that remains valid without retaining a pointer or reference into the source `FAssetBundleData`
