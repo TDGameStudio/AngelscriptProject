@@ -1,0 +1,24 @@
+# 03 — Containers Corpus And Script Tests
+
+| ID | User scenario / AS surface | Corpus target | Script-test target | Existing evidence to audit | Fixture / log policy | Initial disposition |
+|---|---|---|---|---|---|---|
+| CONT-01 | TArray build, reserve, add, index, contains, find | `Script/Containers/InventoryArray.as` | `Script/Tests/Containers/Test_InventoryArray.as` | TArray binds; TArray Bindings; Coverage TArrayAdvanced | Pure; realistic inventory records; API table | `CorpusGap`, `ScriptTestGap` |
+| CONT-02 | TArray update, remove, swap, reset/empty, capacity | `Script/Containers/ArrayMutation.as` | `Script/Tests/Containers/Test_ArrayMutation.as` | Coverage TArrayAdvanced; container compare tests | Pure; assert order/count/capacity-relevant behavior | `CorpusGap`, `ScriptTestGap` |
+| CONT-03 | TArray range-for and explicit iterator behavior | `Script/Containers/ArrayIteration.as` | `Script/Tests/Containers/Test_ArrayIteration.as` | Foreach/Iterator Bindings; Coverage loop/container | Pure; no per-element log by default | `CorpusGap`, `ScriptTestGap` |
+| CONT-04 | TArray structs and UObject/reference element identity | `Script/Containers/ArrayElementTypes.as` | `Script/Tests/Containers/Test_ArrayElementTypes.as` | Coverage container type rows; object reference matrix | Pure structs plus SpawnObject for object identity | `CorpusGap`, `ScriptTestGap` |
+| CONT-05 | TMap add/overwrite/find/find-or-add/remove/keys/values | `Script/Containers/LookupMap.as` | `Script/Tests/Containers/Test_LookupMap.as` | TMap binds; Map Bindings; Coverage TMapAdvanced | Pure; domain lookup/index; API table | `CorpusGap`, `ScriptTestGap` |
+| CONT-06 | TMap iteration and value mutation | `Script/Containers/MapIteration.as` | `Script/Tests/Containers/Test_MapIteration.as` | Map/Iterator Bindings; Coverage map iteration | Pure; assert final map, not logs | `CorpusGap`, `ScriptTestGap` |
+| CONT-07 | TMap user-struct values and supported key types | `Script/Containers/StructuredMapValues.as` | `Script/Tests/Containers/Test_StructuredMapValues.as` | Coverage `TMapUserStructValues`, key/value matrices | Pure; use meaningful record | `CorpusGap`, `ScriptTestGap` |
+| CONT-08 | TSet uniqueness, contains, remove, append/union, conversion | `Script/Containers/UniqueSelectionSet.as` | `Script/Tests/Containers/Test_UniqueSelectionSet.as` | TSet binds; Set Bindings; Coverage TSetAdvanced | Pure; API table | `CorpusGap`, `ScriptTestGap` |
+| CONT-09 | Container parameters: value, const/in/out/inout | `Script/Containers/ContainerParameters.as` | `Script/Tests/Containers/Test_ContainerParameters.as` | Coverage ContainerParameter; UFUNCTION coverage | Pure AS plus native interop row for reflected boundary | `CorpusGap`, `ScriptTestGap` |
+| CONT-10 | Container return values and copy independence | `Script/Containers/ContainerReturns.as` | `Script/Tests/Containers/Test_ContainerReturns.as` | Coverage return/reference/copy rows | Pure; assert deep/copy behavior | `CorpusGap`, `ScriptTestGap` |
+| CONT-11 | Optional values and null/IsSet/Get/Reset behavior | `Script/Containers/OptionalValues.as` | `Script/Tests/Containers/Test_OptionalValues.as` | TOptional binds; Optional Bindings; script optional spec | Pure; API table | `CorpusGap`, `ScriptTestGap` |
+| CONT-12 | Range values and iteration bounds | `Script/Containers/Ranges.as` | `Script/Tests/Containers/Test_Ranges.as` | `Bind_FRange`; Range Bindings; Syntax range tests | Pure | `CorpusGap`, `ScriptTestGap` |
+| CONT-13 | Container out-of-bounds and missing-key exceptions | No normal positive corpus beyond safe-query alternatives | `Script/Tests/Containers/Test_ContainerErrors.as` | Coverage TArray out-of-bounds, TMap missing behavior | `ExpectError*`; pure | `ScriptTestGap` |
+| CONT-14 | Nested container rejection and supported struct-wrapped alternative | `Script/Containers/StructuredNestingAlternative.as` | `Script/Tests/Containers/Test_ContainerNestingBoundaries.as` | Coverage ContainerNested, array-of-struct-containing-array | Pure; positive alternative plus expected compile boundary | `CorpusGap`, `ScriptTestGap`, `Unsupported` |
+| CONT-15 | Native UFUNCTION struct/container round trip | Corpus remains independent; reader-facing equivalent stays in `ContainerParameters.as` | `Script/Tests/Interop/Test_NativeContainerMarshalling.as` | UFUNCTION/Coverage marshalling; reflective fallback tests | `FAngelscriptScriptInteropRecord` and native library; no World | `ScriptTestGap`, `NeedsNativeFixture`, `CxxBehaviorGap` |
+
+## API Table Ownership
+
+Every positive Containers corpus file includes a table verified against `Bind_TArray*`, `Bind_TMap*`, `Bind_TSet*`, `Bind_TOptional*`, range/foreach/iterator registrations, and corresponding binding tests. Unsupported C++ algorithms and nested-container forms are never listed as positive AS APIs.
+
