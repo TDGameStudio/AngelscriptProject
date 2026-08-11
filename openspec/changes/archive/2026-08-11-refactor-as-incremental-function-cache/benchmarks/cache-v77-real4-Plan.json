@@ -1,0 +1,506 @@
+[
+  {
+    "scenario": "cold-no-cache",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "cold-no-cache",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "cold-no-cache",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "cold-no-cache",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "unchanged-warm",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "unchanged-warm",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "unchanged-warm",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "unchanged-warm",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "one-body-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "one-body-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "one-body-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "one-body-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "type-schema-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "type-schema-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "type-schema-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "type-schema-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "module-state-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "module-state-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "module-state-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "module-state-edit",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "diagnostics-disabled",
+    "diagnosticsMode": "Disabled",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-disabled",
+    "diagnosticsMode": "Disabled",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-disabled",
+    "diagnosticsMode": "Disabled",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "diagnostics-disabled",
+    "diagnosticsMode": "Disabled",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "diagnostics-summary",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-summary",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-summary",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "diagnostics-summary",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "diagnostics-verbose",
+    "diagnosticsMode": "Verbose",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-verbose",
+    "diagnosticsMode": "Verbose",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "diagnostics-verbose",
+    "diagnosticsMode": "Verbose",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "diagnostics-verbose",
+    "diagnosticsMode": "Verbose",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-4-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 4,
+    "maxWorkers": 1,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-4-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 4,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-4-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 4,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-4-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 4,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-4-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 4,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-4-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 4,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-4-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 4,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-4-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 4,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-16-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 16,
+    "maxWorkers": 1,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-16-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 16,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-16-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 16,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-16-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 16,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-16-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 16,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-16-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 16,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-16-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 16,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-16-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 16,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-64-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 64,
+    "maxWorkers": 1,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-64-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 64,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-64-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 64,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-64-serial",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Serial",
+    "packTargetMiB": 64,
+    "maxWorkers": 1,
+    "isWarmup": false,
+    "runIndex": 2
+  },
+  {
+    "scenario": "pack-64-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": true,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-64-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 0
+  },
+  {
+    "scenario": "pack-64-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 1
+  },
+  {
+    "scenario": "pack-64-parallel",
+    "diagnosticsMode": "Summary",
+    "preparationMode": "Parallel",
+    "packTargetMiB": 64,
+    "maxWorkers": 4,
+    "isWarmup": false,
+    "runIndex": 2
+  }
+]

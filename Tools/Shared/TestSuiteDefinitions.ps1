@@ -48,6 +48,13 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
     HotReload = @(
         @{ Prefix = 'Angelscript.TestModule.HotReload'; Label = 'HotReload'; Tier = 'Heavy' }
     )
+    Cache = @(
+        @{ Prefix = 'Angelscript.TestModule.Cache'; Label = 'Cache'; Tier = 'Heavy' }
+    )
+    CachePackage = @(
+        @{ Kind = 'PackageSmoke'; Configuration = 'Development'; Label = 'Development'; Tier = 'Heavy' }
+        @{ Kind = 'PackageSmoke'; Configuration = 'Shipping'; Label = 'Shipping'; Tier = 'Heavy' }
+    )
     Debugger = @(
         @{ Prefix = 'Angelscript.TestModule.Engine.Debugger.AutoEvaluate'; Label = 'AutoEvaluate'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Debugger.'; Label = 'TestModuleDebugger'; Tier = 'Heavy' }
@@ -67,6 +74,7 @@ $script:AngelscriptTestSuiteDefinitions = [ordered]@{
         @{ Prefix = 'Angelscript.TestModule.AngelScriptSDK'; Label = 'AngelScriptSDK'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Bindings'; Label = 'Bindings'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Blueprint'; Label = 'Blueprint'; Tier = 'Heavy' }
+		@{ Prefix = 'Angelscript.TestModule.Cache'; Label = 'Cache'; Tier = 'Heavy' }
 		@{ Prefix = 'Angelscript.TestModule.Generator'; Label = 'Generator'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Compiler'; Label = 'Compiler'; Tier = 'Heavy' }
         @{ Prefix = 'Angelscript.TestModule.Component'; Label = 'Component'; Tier = 'Light' }

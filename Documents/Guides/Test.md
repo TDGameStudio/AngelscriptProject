@@ -254,11 +254,11 @@ Tools\RunTestSuite.ps1 -Suite FunctionalSamples -LabelPrefix functional -Timeout
 - `-ListSuites`：列出内置 suite 与对应前缀
 - `-DryRun`：只打印将要执行的命令
 
-### `Tools\RunTestSuiteFast.ps1`（推荐：全量 ~5–8 分钟）
+### `Tools\RunTestSuiteFast.ps1`（UE Automation 快速粗分片 ~5–8 分钟）
 
 **不要开 RHI。** 默认已是 `-NullRHI`（关闭渲染、只用 CPU），比真实 RHI 更快。`-Render` 仅用于必须 GPU 的测试。
 
-全量测试的瓶颈是 **36 次 UE Editor 冷启动**，不是单个测试本身。Fast 入口改为 **4 路粗分片并行**（4 次冷启动，wall time ≈ 最慢分片）：
+UE Automation 的主要瓶颈是多次 UE Editor 冷启动。Fast 入口把五个顶层前缀粗分片并行，wall time 接近最慢分片：
 
 ```powershell
 Tools\RunTestSuiteFast.ps1 -LabelPrefix all-fast -TimeoutMs 900000 -ContinueOnFail
@@ -270,7 +270,10 @@ Tools\RunTestSuiteFast.ps1 -LabelPrefix all-fast -TimeoutMs 900000 -ContinueOnFa
 Tools\RunTestSuiteParallel.ps1 -Strategy Coarse -Fast -MaxParallelHeavy 4 -ContinueOnFail -TimeoutMs 900000
 ```
 
-4 个分片：`Angelscript.TestModule` / `Angelscript.Editor` / `Angelscript.GAS` / `Angelscript.Template`
+五个分片：`Angelscript.TestModule` / `Angelscript.Editor` /
+`Angelscript.GAS` / `Angelscript.GameplayTags` / `Angelscript.Template`。该快速
+入口不包含独立 Standalone CMake/CTest；发布前完整 `All` 使用下一节的
+`CoarseDynamic`。
 
 `-Fast` 追加启动参数：`-NoLoadStartupPackages`、`-NoLiveCoding`、`-NoScreenMessages`、`-DisableAutomaticShaderCompilerLaunch`（均与 `-NullRHI` 叠加）。
 
@@ -278,9 +281,9 @@ Tools\RunTestSuiteParallel.ps1 -Strategy Coarse -Fast -MaxParallelHeavy 4 -Conti
 
 | 模式 | 冷启动次数 | 典型 wall time |
 |------|-----------|----------------|
-| `RunTestSuite.ps1 -Suite All`（串行 36 前缀） | 36 | 30–60+ min |
-| `RunTestSuiteParallel -Strategy Fine` | 36 | 15–30 min |
-| `RunTestSuiteFast` / `Strategy Coarse` | 4 | **~5–8 min** |
+| `RunTestSuite.ps1 -Suite All`（逐项串行） | 37 左右 | 30–60+ min |
+| `RunTestSuiteParallel -Strategy Fine` | 37 左右 | 15–30 min |
+| `RunTestSuiteFast` / `Strategy Coarse` | 5 | **~5–8 min** |
 | `Strategy Monolithic`（单次普通前缀组合，不含 `Angelscript.CrashOnly.*`） | 1 | ~6–12 min |
 
 Debugger / Performance / HotReload 可能拖慢 `TestModule` 分片；CI 门禁可单独跑 Fast，慢套件夜间跑。
@@ -293,17 +296,22 @@ Tools\RunTestSuiteParallel.ps1 -Strategy Monolithic -Fast -LabelPrefix all-monol
 
 ### `Tools\RunTestSuiteParallel.ps1`
 
-全量/大 suite 的并行入口。Light 前缀默认 4 路并发；Heavy 前缀（完整引擎、大绑定面、GAS、Debugger 等）默认单进程独占 slot，避免多个 full engine 同时抢资源。
+全量/大 suite 的并行入口。默认 `CoarseDynamic` 使用历史 timing hint 把全部
+TestModule 主题、Editor/GAS/GameplayTags/Template 和独立 Standalone CTest
+均衡分配到四个固定 slot；同一 slot 内串行，不同 slot 并行。Light/Heavy 的
+默认全局并发上限都是 4，可按机器内存下调 Heavy。
 
 ```powershell
-Tools\RunTestSuiteParallel.ps1 -Suite All -LabelPrefix all-parallel -TimeoutMs 900000 -ContinueOnFail
-Tools\RunTestSuiteParallel.ps1 -Suite All -MaxParallelLight 4 -MaxParallelHeavy 1 -DryRun
+Tools\RunTestSuiteParallel.ps1 -Suite All -Strategy CoarseDynamic -TestModuleWorkers 4 -MaxParallelLight 4 -MaxParallelHeavy 4 -LabelPrefix all-parallel -TimeoutMs 3600000 -ContinueOnFail
+Tools\RunTestSuiteParallel.ps1 -Suite All -Strategy CoarseDynamic -TestModuleWorkers 4 -MaxParallelHeavy 2 -DryRun
 ```
 
 - `-MaxParallelLight`：Light tier 最大并发 worker 数，默认 `4`
-- `-MaxParallelHeavy`：Heavy tier 最大并发 worker 数，默认 `1`
+- `-MaxParallelHeavy`：Heavy tier 最大并发 worker 数，默认 `4`；内存较小的机器建议降为 `1` 或 `2`
+- `-TestModuleWorkers`：`CoarseDynamic` 的固定 worker/slot 数，默认 `4`
 - `-ContinueOnFail`：某个 shard 失败后继续调度剩余前缀
 - 每个 worker 通过 `RunTests.ps1 -ExecutionSlot <N>` 使用独立 mutex，可在同一 worktree 上并行
+- 每个并行 UE worker 自动附加 `-NoAssetRegistryCacheWrite`：可读取现有 UE AssetRegistry 缓存，但不争写共享的 `Intermediate/CachedAssetRegistry` 临时/引用文件
 - 汇总写入 `Saved/Tests/<LabelPrefix>_<timestamp>/ParallelSuiteSummary.json`
 
 串行全量仍可用 `RunTestSuite.ps1 -Suite All -ContinueOnFail`；耗时高时优先用 Parallel 版本。
@@ -434,6 +442,37 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCommandlet.ps1 
 ```
 
 `Tools\RunCommandlet.ps1` 会从当前 worktree 的 `AgentConfig.ini` 读取 `<ProjectFile>`，不要在常规执行说明里写死其他 worktree 的 `.uproject` 路径。
+
+### Cache V2 相关回归
+
+增量 Cache 的快速功能回归使用独立前缀；测试通过测试专用虚拟 `.as` 输入、隔离
+Store root 和多个完整 `FAngelscriptEngine` 实例覆盖生成、恢复、失效、发布、诊断和
+损坏拒绝，不修改项目业务脚本：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.Cache" -Label cache-v2 -TimeoutMs 3600000
+```
+
+Python dump 是独立的只读工具，使用自己的 wrapper 测试，无需再复制一套 C++
+decoder 测试：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCacheV2DumpTests.ps1
+```
+
+真实打包、多次进程启动和 benchmark 不属于普通 `All` 自动化进程，使用专用入口：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptCachePackageSmoke.ps1 -Configuration Development -TimeoutMs 3600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptCachePackageSmoke.ps1 -Configuration Shipping -TimeoutMs 3600000
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptCacheBenchmark.ps1 -ArchiveRoot <Development-Archive> -Configuration Development -WarmupRuns 1 -MeasuredRuns 3 -TimeoutMs 3600000
+```
+
+package smoke 在 disposable archive 内生成专用 fixture 和 Cache root，覆盖 cold、
+unchanged warm、函数体修改、非法源码、源码恢复以及结构 cold/warm；benchmark 另外
+覆盖类型、模块状态、诊断档位和 4/16/64 MiB 串并行 writer 策略。完整运维、dump、
+调试和失效语义见 `Documents/Guides/AngelscriptCacheV2_ZH.md`。
 
 ### StaticJIT AOT 相关回归
 

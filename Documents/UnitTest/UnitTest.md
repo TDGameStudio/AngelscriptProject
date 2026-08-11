@@ -11,7 +11,7 @@
 
 ### 0. 测试注册必须使用 `WITH_ANGELSCRIPT_UNITTESTS` 总开关
 
-`WITH_ANGELSCRIPT_UNITTESTS` 是 AngelscriptTest C++ automation 的唯一注册开关，由 `AngelscriptTest.Build.cs` 从 `Config/DefaultAngelscriptCompileOptions.ini` 读取 `bCompileAngelscriptUnitTests` 后定义为 `0` 或 `1`。当前仓库是插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`；消费者工程可以改成 `false` 来保留模块编译但禁用测试注册。
+`WITH_ANGELSCRIPT_UNITTESTS` 是 Angelscript C++ automation 与 Runtime 测试专用 API 的唯一编译开关。`AngelscriptRuntime.Build.cs` 是该宏的单一 owner：它从 `Config/DefaultAngelscriptCompileOptions.ini` 读取 `bCompileAngelscriptUnitTests`，把宏定义为 `0` 或 `1`，并通过 Runtime 的 public compile environment 传播给 `AngelscriptTest` 及可选扩展测试模块；它还公开传播固定为 `1` 的 `ANGELSCRIPT_RUNTIME_UNITTEST_POLICY_OWNER` 哨兵，让测试编译验证能够区分真实 Runtime 传播与 CQTest fallback。测试模块只消费这些定义，不再各自解析配置或重复定义宏。非 Editor target、没有 ProjectFile 或配置缺失时，测试开关均 fail closed 为 `0`。当前仓库是插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`；消费者工程可以改成 `false` 来保留模块编译但禁用测试注册。
 
 新增或重构 `Plugins/Angelscript/Source/AngelscriptTest` 下的 C++ test registration `.cpp` 时，必须让测试注册在 `WITH_ANGELSCRIPT_UNITTESTS=0` 时不发生。推荐形态是 include block 保持在外面，然后用一个 body gate 包住 `TEST_CLASS_WITH_FLAGS`、`TEST_METHOD` 和文件级 test-only 注册对象：
 

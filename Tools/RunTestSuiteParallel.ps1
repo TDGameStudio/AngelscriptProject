@@ -181,7 +181,7 @@ Write-Host ("ContinueOnFail     : {0}" -f ([bool]$ContinueOnFail))
 Write-Host ("DryRun             : {0}" -f ([bool]$DryRun))
 Write-Host ("SummaryRoot        : {0}" -f $summaryRoot)
 Write-Host ("RequiresUnreal     : {0}" -f $requiresUnreal)
-Write-Host ("Runners            : UnrealAutomation={0}; CMakeCTest={1}" -f $runTestsPath, $runSuiteEntryPath)
+Write-Host ("Runners            : UnrealAutomation={0}; typed non-Unreal={1}" -f $runTestsPath, $runSuiteEntryPath)
 Write-Host '================================================================'
 
 if ($null -ne $workerPlan) {
@@ -240,7 +240,7 @@ function Start-PlannedRunProcess {
             '-ExecutionSlot', $PlannedRun.ExecutionSlot
         )
     }
-    elseif ($PlannedRun.Kind -eq 'CMakeCTest') {
+    elseif ($PlannedRun.Kind -ne 'UnrealAutomation') {
         $entrySuite = $Suite
         $entryIndex = $PlannedRun.Index
         if ($Strategy -ne 'Fine') {
@@ -256,7 +256,7 @@ function Start-PlannedRunProcess {
                 }
             }
             if ($entryIndex -lt 0) {
-                throw "CMakeCTest entry '$($PlannedRun.Identity)' is not present in suite '$entrySuite'."
+                throw "Typed entry '$($PlannedRun.Identity)' is not present in suite '$entrySuite'."
             }
         }
         $filePath = $runSuiteEntryPath
@@ -285,6 +285,15 @@ function Start-PlannedRunProcess {
 
     if ($Fast) {
         $argList += '-Fast'
+    }
+
+    if ($PlannedRun.Kind -eq 'UnrealAutomation') {
+        # Parallel editor processes share Project/Intermediate by default. UE's
+        # AssetRegistry writer uses fixed temp/ref names there, so concurrent
+        # publication can surface an unrelated LogFileManager error in whichever
+        # automation test happens to be active. Keep cache reads, but make every
+        # parallel worker read-only for this process-global optimization cache.
+        $argList += @('-ExtraArgs', '-NoAssetRegistryCacheWrite')
     }
 
     if ($DryRun) {
@@ -316,7 +325,7 @@ function Get-RunResultFromMetadata {
     )
 
     $entryResult = $null
-    if ($ActiveRun.PlannedRun.Kind -eq 'CMakeCTest' -and
+    if ($ActiveRun.PlannedRun.Kind -ne 'UnrealAutomation' -and
         (Test-Path -LiteralPath $ActiveRun.PlannedRun.ResultPath -PathType Leaf)) {
         $entryResult = Get-Content -LiteralPath $ActiveRun.PlannedRun.ResultPath -Raw | ConvertFrom-Json
     }

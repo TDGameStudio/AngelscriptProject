@@ -184,7 +184,7 @@ FunctionBindingMethod=NativeRuntimeLinked
 +NativeRuntimeLinkedModules=UMG
 ```
 
-本仓库是 Angelscript 插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`。此时 `AngelscriptTest.Build.cs` 会定义 `WITH_ANGELSCRIPT_UNITTESTS=1`，Angelscript C++ automation 测试会向 Unreal Automation 注册，测试模块启动时也会保留 test engine pool 预热和测试初始化 override。
+本仓库是 Angelscript 插件开发工程，checked-in 默认值保持 `bCompileAngelscriptUnitTests=true`。此时 `AngelscriptRuntime.Build.cs` 会定义并公开传播 `WITH_ANGELSCRIPT_UNITTESTS=1`，同时传播 `ANGELSCRIPT_RUNTIME_UNITTEST_POLICY_OWNER=1` 作为不可由 CQTest fallback 冒充的 owner 哨兵；Angelscript C++ automation 测试会向 Unreal Automation 注册，Runtime 的测试专用 API 与测试模块启动时的 test engine pool 预热、测试初始化 override 也会同时保留。
 
 如需模拟插件消费者或本地轻量构建，可临时把该值改为 `false` 后重新构建。此时 `WITH_ANGELSCRIPT_UNITTESTS=0`，`AngelscriptTest` 模块仍在既有 plugin module layout 中构建，但 Angelscript C++ automation 测试不会向 Unreal Automation 注册，测试模块启动时也不会预热 test engine pool 或安装测试初始化 override。
 
@@ -195,7 +195,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.AngelScriptSDK" -TimeoutMs 600000
 ```
 
-`AngelscriptTest.Build.cs` 将 `Config/DefaultAngelscriptCompileOptions.ini` 注册为 `ExternalDependencies`。修改该文件后，包含 `AngelscriptTest` 的目标会因为该外部依赖变化而让 UBT makefile 失效。这个 gate 控制测试注册和测试专用编译路径，不表示 UBT 完全跳过扫描或包含 `AngelscriptTest` 模块；完整模块级排除需要单独的 target/plugin-level module gate。
+`AngelscriptRuntime.Build.cs` 是该设置与宏的单一 owner，并将 `Config/DefaultAngelscriptCompileOptions.ini` 注册为 `ExternalDependencies`。修改该文件后，包含 Runtime 的目标会因为该外部依赖变化而让 UBT makefile 失效；`AngelscriptTest` 和可选扩展测试模块通过 Runtime public compile environment 消费同一个宏值，不再重复读取配置。这个 gate 控制测试注册和测试专用编译路径，不表示 UBT 完全跳过扫描或包含 `AngelscriptTest` 模块；完整模块级排除需要单独的 target/plugin-level module gate。非 Editor target、没有 ProjectFile 或配置缺失时该宏均 fail closed 为 `0`。
 
 `FunctionBindingMethod` 是全局自动绑定策略，可选 `None`、`NativeRuntimeLinked` 和 `NativeModuleFunctionAddress`。前者关闭所有 UHT 自动注册；Runtime-linked 模式从 `NativeRuntimeLinkedModules` 动态增加 Runtime 依赖并生成 wrapper；target-module 模式从 `NativeModuleFunctionAddressModules` 生成目标模块 shard，并定义 `WITH_ANGELSCRIPT_NATIVE_MODULE_FUNCTION_ADDRESS=1`。target-module 模式只支持源码版引擎：编辑器中修改时会弹错并拒绝保存，直接改 ini 时 UBT 和 UHT 都会硬失败；构建版、安装版以及无法识别的引擎都按非源码处理。
 

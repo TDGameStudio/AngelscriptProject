@@ -60,6 +60,47 @@ Invoke-TestCase -Name 'CatalogKeepsReleaseStandaloneIndependentAndBuildsPackage'
     Assert-Equal 0 $allRelease.Count 'StandaloneRelease must not be duplicated in All.'
 }
 
+Invoke-TestCase -Name 'CatalogKeepsCacheAutomationInAllAndRealPackagesIsolated' -Body {
+    $cache = @(Get-AngelscriptTestSuiteEntries -SuiteName 'Cache')
+    Assert-Equal 1 $cache.Count 'Cache should contain one focused automation prefix.'
+    Assert-Equal 'UnrealAutomation' $cache[0].Kind 'Cache should use UE automation.'
+    Assert-Equal 'Angelscript.TestModule.Cache' $cache[0].Prefix `
+        'Cache should select the complete Cache prefix.'
+
+    $allCache = @(
+        Get-AngelscriptTestSuiteEntries -SuiteName 'All' |
+            Where-Object { $_.Kind -eq 'UnrealAutomation' -and $_.Prefix -eq 'Angelscript.TestModule.Cache' }
+    )
+    Assert-Equal 1 $allCache.Count 'All should contain Cache automation exactly once.'
+
+    $package = @(Get-AngelscriptTestSuiteEntries -SuiteName 'CachePackage')
+    Assert-Equal 2 $package.Count 'CachePackage should contain Development and Shipping.'
+    Assert-True (-not (@($package.Kind | Where-Object { $_ -ne 'PackageSmoke' }).Count -gt 0)) `
+        'CachePackage entries should use the typed PackageSmoke runner.'
+    Assert-Equal 'Development' $package[0].Configuration `
+        'The first CachePackage entry should be Development.'
+    Assert-Equal 'Shipping' $package[1].Configuration `
+        'The second CachePackage entry should be Shipping.'
+    $allPackages = @(
+        Get-AngelscriptTestSuiteEntries -SuiteName 'All' |
+            Where-Object { $_.Kind -eq 'PackageSmoke' }
+    )
+    Assert-Equal 0 $allPackages.Count 'Expensive real packages must remain outside All.'
+}
+
+Invoke-TestCase -Name 'PackageSmokeDryRunUsesMaintainedWrapper' -Body {
+    $entry = @(Get-AngelscriptTestSuiteEntries -SuiteName 'CachePackage')[0]
+    $result = Invoke-AngelscriptTestSuiteEntry `
+        -Entry $entry `
+        -ProjectRoot $repoRoot `
+        -RunTestsPath (Join-Path $repoRoot 'Tools\RunTests.ps1') `
+        -RunLabel 'cache-package-selftest' `
+        -TimeoutMs 3600000 `
+        -DryRun
+    Assert-Equal 'PackageSmoke' $result.Kind 'Dry run should retain typed PackageSmoke identity.'
+    Assert-Equal 0 $result.ExitCode 'PackageSmoke dry run should succeed without packaging.'
+}
+
 Invoke-TestCase -Name 'LegacyEntriesNormalizeToUnrealAutomation' -Body {
     $smoke = @(Get-AngelscriptTestSuiteEntries -SuiteName 'Smoke')
     Assert-True ($smoke.Count -gt 0) 'Smoke should not be empty.'

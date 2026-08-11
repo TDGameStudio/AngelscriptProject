@@ -16,12 +16,22 @@ The project SHALL define Angelscript compile-time build policy in `Config/Defaul
 #### Scenario: Build tests disabled
 
 - **WHEN** `bCompileAngelscriptUnitTests=false`
-- **THEN** `AngelscriptTest.Build.cs` defines `WITH_ANGELSCRIPT_UNITTESTS=0`
+- **THEN** `AngelscriptRuntime.Build.cs` defines `WITH_ANGELSCRIPT_UNITTESTS=0`
+- **AND** it publicly defines `ANGELSCRIPT_RUNTIME_UNITTEST_POLICY_OWNER=1` so consumers can prove the value came from the Runtime policy owner rather than a local fallback
+- **AND** the Runtime public compile environment propagates that same value to `AngelscriptTest` and optional extension test modules without a second config parser or macro owner
 
 #### Scenario: Build tests enabled
 
 - **WHEN** `bCompileAngelscriptUnitTests=true`
-- **THEN** `AngelscriptTest.Build.cs` defines `WITH_ANGELSCRIPT_UNITTESTS=1`
+- **THEN** `AngelscriptRuntime.Build.cs` defines `WITH_ANGELSCRIPT_UNITTESTS=1`
+- **AND** it publicly defines `ANGELSCRIPT_RUNTIME_UNITTEST_POLICY_OWNER=1` so consumers can prove the value came from the Runtime policy owner rather than a local fallback
+- **AND** the Runtime public compile environment propagates that same value to `AngelscriptTest` and optional extension test modules without a second config parser or macro owner
+
+#### Scenario: Tests are unavailable for the target
+
+- **WHEN** the target is not an Editor target, has no project file, or the compile-options file/setting is unavailable
+- **THEN** `AngelscriptRuntime.Build.cs` defines `WITH_ANGELSCRIPT_UNITTESTS=0`
+- **AND** Runtime test-only declarations and definitions are compiled out together with their consumer call sites
 
 ### Requirement: Editor settings surface writes the compile options file
 
@@ -47,12 +57,12 @@ The editor SHALL expose the compile option through a dedicated runtime-owned `UA
 
 ### Requirement: Compile option changes invalidate UBT makefiles
 
-The `AngelscriptTest` module rules SHALL register `Config/DefaultAngelscriptCompileOptions.ini` as an external dependency so changes to the file invalidate UBT makefiles for targets that include the test module.
+The `AngelscriptRuntime` module rules SHALL register `Config/DefaultAngelscriptCompileOptions.ini` as an external dependency so changes to the file invalidate UBT makefiles for targets that include Runtime. Runtime SHALL remain the single owner of the propagated unit-test compile definition.
 
 #### Scenario: Build config is modified
 
 - **WHEN** `Config/DefaultAngelscriptCompileOptions.ini` is modified after a target including `AngelscriptTest` has been built
-- **THEN** a subsequent UBT build treats the makefile as stale because the external dependency changed
+- **THEN** a subsequent UBT build treats the makefile as stale because the Runtime-owned external dependency changed
 
 ### Requirement: Compile settings stay isolated from editor settings
 
