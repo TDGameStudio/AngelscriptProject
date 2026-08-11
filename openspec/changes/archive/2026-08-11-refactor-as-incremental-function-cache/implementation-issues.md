@@ -11923,9 +11923,10 @@ snapshot. If later source changed, approval does not transfer to the new SHA.
 
 ## IC-506 — main integration exposed bind-state API drift and a Unity include leak
 
-- Severity/state: final dual-repository integration failure / fixed in plugin
-  main merge `c52af6c` on 2026-08-12; merged-parent acceptance remains covered
-  by the final build and parallel `All` rerun.
+- Severity/state: final dual-repository integration failure / fixed by plugin
+  main merge `c52af6c` plus explicit-include follow-up `02d05ab` on 2026-08-12;
+  merged-parent acceptance remains covered by the final build and parallel
+  `All` rerun.
 - Exact boundary/evidence: merging plugin change commit `a66b7af` into the newer
   plugin `main` produced content conflicts in `Bind_FName.cpp`,
   `AngelscriptEngine.cpp/.h`, `AngelscriptOfflineSymbolMetadata.cpp`,
@@ -11949,7 +11950,8 @@ snapshot. If later source changed, approval does not transfer to the new SHA.
   tests now set `bCollectStaticJITCompatibilityBinds`; the Subsystem explicitly
   includes `AngelscriptBinds.h`. The identical build command then passed at
   `Saved/Build/build/20260812_031118_567_8b196316`. The plugin merge commit is
-  `c52af6c7973c9485370289a17a6de2d48565d896`. Final parent-main build and
+  `c52af6c7973c9485370289a17a6de2d48565d896`; the verified include correction
+  is `02d05ab6e4aad0e5b3b384f2cc9252be732f145f`. Final parent-main build and
   tiered-parallel `All` remain the acceptance evidence for the combined tree.
 
 The next issue ID is IC-507. Append an issue here when it affects current work;
