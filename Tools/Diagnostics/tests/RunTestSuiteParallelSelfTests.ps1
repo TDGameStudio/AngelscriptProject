@@ -340,5 +340,23 @@ Invoke-TestCase -Name 'FineStandaloneRoutesThroughTypedEntryWithoutUnrealPrewarm
         -Message ('Dry-run command should select the typed Standalone entry. Output: {0}' -f $combined)
 }
 
+Invoke-TestCase -Name 'ParallelUnrealShardsDisableSharedAssetRegistryCacheWrites' -Body {
+    $run = Invoke-CapturedProcess -FilePath 'powershell.exe' -ArgumentList @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $runnerScript,
+        '-Suite', 'Smoke',
+        '-Strategy', 'CoarseDynamic',
+        '-LabelPrefix', 'asset-registry-dry',
+        '-DryRun'
+    ) -WorkingDirectory $fixtureRoot
+
+    $combined = $run.StdOut + $run.StdErr
+    Assert-Equal -Expected 0 -Actual $run.ExitCode `
+        -Message ('Parallel suite dry run should succeed. Output: {0}' -f $combined)
+    Assert-True -Condition ($combined -match '-ExtraArgs -NoAssetRegistryCacheWrite') `
+        -Message ('Every parallel Unreal shard should disable the shared AssetRegistry cache writer. Output: {0}' -f $combined)
+}
+
 Remove-TestDirectory -BasePath ([System.IO.Path]::GetTempPath()) -TargetPath $testRoot
 Write-Host 'RunTestSuiteParallel self-tests passed.'

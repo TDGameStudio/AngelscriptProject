@@ -252,6 +252,68 @@ function Invoke-AngelscriptCMakeCTestEntry {
     }
 }
 
+function Invoke-AngelscriptPackageSmokeEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Entry,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string]$RunLabel,
+
+        [string]$OutputRoot = '',
+
+        [int]$TimeoutMs = 3600000,
+
+        [switch]$DryRun
+    )
+
+    $runnerPath = Join-Path $ProjectRoot 'Tools\RunAngelscriptCachePackageSmoke.ps1'
+    if (-not (Test-Path -LiteralPath $runnerPath -PathType Leaf)) {
+        throw "Cache package-smoke runner was not found: $runnerPath"
+    }
+    if (-not $Entry.ContainsKey('Configuration') -or
+        [string]::IsNullOrWhiteSpace([string]$Entry.Configuration)) {
+        throw "PackageSmoke entry '$($Entry.Label)' is missing Configuration."
+    }
+    $effectiveTimeoutMs = Resolve-TimeoutMs `
+        -RequestedTimeoutMs $TimeoutMs `
+        -DefaultTimeoutMs 3600000 `
+        -ParameterName 'TimeoutMs'
+    $arguments = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $runnerPath,
+        '-Configuration', [string]$Entry.Configuration,
+        '-Label', $RunLabel,
+        '-TimeoutMs', $effectiveTimeoutMs
+    )
+    if (-not [string]::IsNullOrWhiteSpace($OutputRoot)) {
+        $arguments += @('-OutputRoot', $OutputRoot)
+    }
+
+    if ($DryRun) {
+        Write-Host "[DryRun] powershell.exe $($arguments -join ' ')"
+        return [PSCustomObject]@{
+            Kind = 'PackageSmoke'
+            Label = $RunLabel
+            ExitCode = 0
+            RawExitCode = 0
+        }
+    }
+
+    & powershell.exe @arguments | Out-Host
+    $rawExitCode = [int]$LASTEXITCODE
+    return [PSCustomObject]@{
+        Kind = 'PackageSmoke'
+        Label = $RunLabel
+        ExitCode = if ($rawExitCode -eq 0) { 0 } else { 1 }
+        RawExitCode = $rawExitCode
+    }
+}
+
 function Invoke-AngelscriptTestSuiteEntry {
     param(
         [Parameter(Mandatory = $true)]
@@ -326,6 +388,15 @@ function Invoke-AngelscriptTestSuiteEntry {
                 -RunLabel $RunLabel `
                 -OutputRoot $OutputRoot `
                 -TimeoutMs $effectiveTimeoutMs `
+                -DryRun:$DryRun
+        }
+        'PackageSmoke' {
+            return Invoke-AngelscriptPackageSmokeEntry `
+                -Entry $Entry `
+                -ProjectRoot $ProjectRoot `
+                -RunLabel $RunLabel `
+                -OutputRoot $OutputRoot `
+                -TimeoutMs $TimeoutMs `
                 -DryRun:$DryRun
         }
         default {

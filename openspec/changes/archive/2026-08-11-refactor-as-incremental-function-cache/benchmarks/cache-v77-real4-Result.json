@@ -1,0 +1,12 @@
+{
+  "kind": "AngelscriptCacheV2Benchmark",
+  "status": "Passed",
+  "rowCount": 56,
+  "warmupRows": 14,
+  "measuredRows": 42,
+  "raw": "D:\\Workspace\\AngelscriptProject\\.worktree\\as-cache\\Saved\\CacheBenchmark\\cache-v77-real4\\Raw.csv",
+  "summary": "D:\\Workspace\\AngelscriptProject\\.worktree\\as-cache\\Saved\\CacheBenchmark\\cache-v77-real4\\Summary.csv",
+  "context": "D:\\Workspace\\AngelscriptProject\\.worktree\\as-cache\\Saved\\CacheBenchmark\\cache-v77-real4\\Context.json",
+  "packageEvidenceRoot": "D:\\Workspace\\AngelscriptProject\\.worktree\\as-cache\\Saved\\CachePackage\\cache-v77-parallel-development1-Development\\20260812_005543_023_59f48f29\\Archive\\Windows\\AngelscriptProject\\Saved\\CacheBenchmark\\cache-v77-real4-20260812_010820_280",
+  "completedAtUtc": "2026-08-11T17:21:44.3294687Z"
+}
