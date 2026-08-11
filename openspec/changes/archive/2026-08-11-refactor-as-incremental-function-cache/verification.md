@@ -6956,3 +6956,49 @@ Diagnostic broad-prefix evidence and ceiling:
   one unrelated pre-existing invalid change,
   `docs-as-mutable-global-feasibility`; this closure does not modify or claim
   that sibling change. No process is listening on the temporary Zen port 8558.
+
+### Post-archive merged-main integration verification GREEN
+
+- Parent `main` merge `1af9064` and plugin `main` merge/follow-up `c52af6c` /
+  `02d05ab` build successfully through the official wrapper at `Saved/Build/
+  build/20260812_031610_789_a9fb19ad`.
+- The first official merged-main four-slot run used `Tools\RunTestSuiteParallel.ps1
+  -Suite All -Strategy CoarseDynamic -TestModuleWorkers 4 -MaxParallelLight 4
+  -MaxParallelHeavy 4 -LabelPrefix cache-v2-merged-main-all -TimeoutMs 3600000
+  -ContinueOnFail`. It completed all 37 shards at `Saved/Tests/
+  cache-v2-merged-main-all_20260812_031708/ParallelSuiteSummary.json` with
+  `3047/3058`; Cache itself remained GREEN `536/536`. The eleven failures are
+  retained as integration RED and classified in IC-507 through IC-509 rather
+  than being hidden by the historical feature-branch `2971/2971` result.
+- The unified repair build passed `116/116` actions at `Saved/Build/
+  cache-v2-merged-main-repair-build1/20260812_034354_530_7f55048e`.
+  Focused complete prefixes passed Engine `130/130`, Bindings `281/281` and Dump
+  `13/13`. Exact corrections passed FunctionLibraries `1/1`, Functional `1/1`
+  with permanent result-code log `1`, GAS `1/1` and GameplayTags `1/1`; their
+  immutable paths are recorded in IC-507/IC-508.
+- The final compiled fixture correction passed the official build at
+  `Saved/Build/cache-v2-merged-main-repair-build3/
+  20260812_035852_178_05cdb786` with four actions and wrapper/process exit `0`.
+- Dedicated `Tools\RunStaticJITTests.ps1 -LabelPrefix
+  cache-v2-repair-staticjit` passed its baseline build, generation commandlet,
+  generated build and complete StaticJIT prefix. The test result is `32/32` at
+  `Saved/Tests/cache-v2-repair-staticjit_04_tests/
+  20260812_040043_325_26d3a9dc`; IC-509 records every stage root.
+- The authoritative merged-main acceptance command was
+  `Tools\RunTestSuiteParallel.ps1 -Suite All -Strategy CoarseDynamic
+  -TestModuleWorkers 4 -MaxParallelLight 4 -MaxParallelHeavy 4 -LabelPrefix
+  cache-v2-merged-main-all-final -TimeoutMs 3600000 -ContinueOnFail`. It passed
+  all `37/37` shards, failed shards `0`, and `3090/3090` tests in `1094880 ms` at
+  `Saved/Tests/cache-v2-merged-main-all-final_20260812_040301/
+  ParallelSuiteSummary.json`.
+- The final aggregate includes Cache `536/536`, StaticJIT `32/32`, Standalone
+  `19/19`, AngelScriptSDK `691/691`, GAS `252/252`, GameplayTags `15/15`, Engine
+  `130/130`, Functional `128/128`, FunctionLibraries `56/56`, Bindings
+  `281/281`, HotReload `122/122`, Debugger `39/39`, Compiler `81/81` and zero
+  failures in every remaining shard. Every UE command uses
+  `-NoAssetRegistryCacheWrite`. This result supersedes the merged-main RED while
+  retaining that RED as the integration discovery record.
+- The exact tested follow-up revisions are Angelscript plugin `974e281`, GAS
+  `095f407` and GameplayTags `6485ca3`. The parent follow-up commit advances all
+  three gitlinks together with IC-507 through IC-510 and this verification
+  record; no remote push is part of this local integration.

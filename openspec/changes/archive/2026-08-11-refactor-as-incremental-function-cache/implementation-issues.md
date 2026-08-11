@@ -11954,7 +11954,120 @@ snapshot. If later source changed, approval does not transfer to the new SHA.
   is `02d05ab6e4aad0e5b3b384f2cc9252be732f145f`. Final parent-main build and
   tiered-parallel `All` remain the acceptance evidence for the combined tree.
 
-The next issue ID is IC-507. Append an issue here when it affects current work;
+## IC-507 — newer main renamed the explicit bind phase and changed an UE 5.8 value-type return
+
+- Severity/state: merged-main test-contract drift outside Cache Runtime / source
+  expectations corrected and final aggregate GREEN on 2026-08-12.
+- Exact boundary/evidence: the first authoritative run against merged parent
+  `main`, `Saved/Tests/cache-v2-merged-main-all_20260812_031708/
+  ParallelSuiteSummary.json`, completed all 37 shards but reported `3047/3058`
+  with eleven failures. GAS, GameplayTags and Dump still expected semantic bind
+  phase `ManualBindings`, while newer production commits publish
+  `ExplicitBindings`. `AngelscriptValueTypeParityBindingsTests` also expected
+  `FMatrix::TransformPosition` to return `FVector`, but the UE 5.8 production
+  surface and the existing Matrix binding test correctly expose `FVector4`.
+- Decision: update only the stale architecture/value-shape assertions; do not
+  add compatibility aliases for the obsolete phase name and do not change the
+  production matrix binding to satisfy an outdated fixture. This project is in
+  plugin development and the change explicitly does not require old-cache or
+  old-test compatibility.
+- Resolution evidence/task impact: the combined tree passed Dump `13/13` at
+  `Saved/Tests/
+  cache-v2-repair-dump/20260812_035158_850_79d1c90f` and Bindings `281/281` at
+  `Saved/Tests/cache-v2-repair-bindings/20260812_034742_899_c144f584`. The exact
+  GAS correction passed `1/1` at `Saved/Tests/cache-v2-repair-gas-exact1/
+  20260812_035739_032_7d6b697e`; GameplayTags passed `1/1` at `Saved/Tests/
+  cache-v2-repair-gameplay-tags-exact1/20260812_035817_114_ad00efed`.
+  The replacement All then passed GAS `252/252`, GameplayTags `15/15`, Dump
+  `13/13`, Bindings `281/281` and aggregate `3090/3090` at `Saved/Tests/
+  cache-v2-merged-main-all-final_20260812_040301`.
+
+## IC-508 — newer binding refactors hid exact-engine support and valid overloads
+
+- Severity/state: merged-main Runtime integration regressions outside the Cache
+  record/store implementation / fixed with focused and final aggregate GREEN on
+  2026-08-12.
+- Exact boundary/evidence: the same merged-main aggregate exposed three Engine,
+  two FunctionLibraries and two Functional failures. Newer main had accidentally
+  stopped using the supplied Engine/TypeDatabase in `Helper_FunctionSignature`,
+  treated any same-name reflected function as already bound, omitted the simple
+  `USceneComponent::SetRelativeRotation(FRotator)` supplement, and only generated
+  the legacy location/rotation static Spawn helper for script-defined Actor
+  classes. These failures were not reproducible on the isolated Cache branch;
+  they arise from integrating Cache V2's explicit per-Engine ownership with
+  later main binding work.
+- Decision: preserve exact target Engine/TypeDatabase authority; compare complete
+  semantic callable shape before suppressing a duplicate; apply reflected
+  metadata to an exact pre-existing manual/native declaration; restore the
+  simple SceneComponent overload; and generate a second typed Actor Spawn helper
+  forwarding the complete `FTransform + FActorSpawnParameters` contract. Do not
+  reintroduce global type state or same-name-only suppression.
+- Resolution evidence/task impact: the unified official repair build passed all
+  `116/116` actions at `Saved/Build/cache-v2-merged-main-repair-build1/
+  20260812_034354_530_7f55048e`. Engine passed `130/130` at `Saved/Tests/
+  cache-v2-repair-engine/20260812_034742_899_52d1df5f`; Bindings passed
+  `281/281`. The first repair reduced Functional from two failures to one and
+  logged result code `30`, proving the remaining assertion read location before
+  deferred construction completed on a rootless fixture. The corrected fixture
+  declares a root component, finishes with the explicit transform, retains the
+  permanent stage-code log and passed `1/1` with result code `1` at `Saved/Tests/
+  cache-v2-repair-functional-exact3/20260812_035911_801_c5ae875a`.
+  FunctionLibraries' second direct-native duplicate path now decorates the exact
+  existing function and passed `1/1` at `Saved/Tests/
+  cache-v2-repair-function-libraries-exact2/20260812_035508_032_8f56420f`.
+  Final incremental build passed at `Saved/Build/
+  cache-v2-merged-main-repair-build3/20260812_035852_178_05cdb786`; the
+  replacement All passed Engine `130/130`, Functional `128/128`,
+  FunctionLibraries `56/56`, Bindings `281/281` and aggregate `3090/3090`.
+
+## IC-509 — StaticJIT AOT fixture cache predates the merged binding surface
+
+- Severity/state: generated-artifact compatibility failure, not a Cache V2
+  corruption / regenerated and GREEN on 2026-08-12.
+- Exact boundary/evidence: the merged-main StaticJIT shard terminated in
+  `FAngelscriptPrecompiledData` while resolving a null stored function reference.
+  The ignored local `StaticJITAotFixture.Cache` was generated on 2026-07-27,
+  before the newer main binding surface, while the tracked generated JIT header
+  reflects newer source. The project documents the cache and generated source as
+  one matched pair.
+- Decision: do not weaken the precompiled-data assertion or add fallback lookup
+  for a known mismatched test artifact. Run `Tools\RunStaticJITTests.ps1`, whose
+  supported sequence rebuilds the baseline, regenerates AOT data, rebuilds the
+  generated target and executes the complete StaticJIT prefix. Commit only
+  genuine tracked regenerated source; the local `.Cache` remains ignored.
+- Resolution evidence/task impact: `Tools\RunStaticJITTests.ps1 -LabelPrefix
+  cache-v2-repair-staticjit` passed baseline build, generation commandlet and
+  generated build with exit 0 at `Saved/Build/
+  cache-v2-repair-staticjit_01_baseline_build`, `Saved/StaticJIT/Preflight/
+  Commandlet/cache-v2-repair-staticjit_02_generate` and `Saved/Build/
+  cache-v2-repair-staticjit_03_generated_build`. Its complete prefix passed
+  `32/32` at `Saved/Tests/cache-v2-repair-staticjit_04_tests/
+  20260812_040043_325_26d3a9dc`. The tracked generated JIT header changed only
+  regenerated references/property verification identity and is committed with
+  the repair. Final All independently passed StaticJIT `32/32` and aggregate
+  `3090/3090`.
+
+## IC-510 — ordinary focused-test wrappers intentionally serialize a worktree
+
+- Severity/state: validation-orchestration observation / handled by using the
+  supported parallel suite entry point.
+- Exact boundary/evidence: after the first focused processes had been launched
+  simultaneously, later `RunTests.ps1` invocations for GAS and GameplayTags
+  returned `[error] Another build or test command is already running for this
+  worktree.` The ordinary wrapper owns a worktree mutex; simultaneous success
+  from a start-time race is not a supported scheduling contract.
+- Decision: do not bypass the mutex. Use `RunTestSuiteParallel.ps1` for official
+  parallel full-suite execution because it owns session-slot and shard
+  orchestration; use ordinary focused wrappers sequentially when a custom prefix
+  is not represented as a suite shard. Continue forwarding
+  `-NoAssetRegistryCacheWrite` through the supported parallel runner.
+- Resolution evidence/task impact: supported sequential focused runs passed GAS
+  and GameplayTags `1/1` each. The official parallel runner then scheduled all
+  37 tasks over four slots, dynamically refilled each slot, passed GAS
+  `252/252`, GameplayTags `15/15` and aggregate `3090/3090`. The opportunistic
+  focused launch is retained only as the discovery record, not acceptance.
+
+The next issue ID is IC-511. Append an issue here when it affects current work;
 also preserve discovery order even when fixed in the same session. Each issue must
 record severity/state, exact boundary, decision, required evidence and task impact.
 Build/test/PIE/package failures include the wrapper command, label, artifact path,
