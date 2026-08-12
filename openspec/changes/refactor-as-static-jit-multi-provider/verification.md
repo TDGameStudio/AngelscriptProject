@@ -36,6 +36,7 @@ Normative/working artifacts now include:
 - `implementation-plan.md`
 - `verification.md`
 - historical progressive `research.md`, retained and marked with a 2026-08-12 supersession section
+- historical `history/pre-multi-provider-shared-identity-contract.md`, preserved from the removed Cache worktree without treating its old task numbering as current requirements
 - new focused `jit-interface-238-test-module-research.md`
 - seven capability delta specs:
   - `as-jit-lifecycle-interface`
