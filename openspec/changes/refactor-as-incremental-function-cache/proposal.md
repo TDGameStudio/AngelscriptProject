@@ -35,5 +35,5 @@
 - Editor impact: reuse the existing directory watcher, hot-reload dependency analysis, class reinstancing, and PIE safe points while publishing Cache V2 only from successful transactions.
 - Test impact: add a dedicated `Angelscript.TestModule.Cache.*` automation family and reuse the existing real-PIE harness.
 - Packaging impact: `Script/` becomes loose NonUFS source, `RunPackage.ps1` stops pre-generating script cache data, and a separate heavy `CachePackage` suite launches actual Development and Shipping executables repeatedly.
-- StaticJIT impact: `refactor-as-static-jit-external-module` consumes stable function key/content/profile contracts but owns its provider ABI, generated project module, Live Coding refresh, and Native fallback independently of Cache V2 storage.
+- StaticJIT impact: `refactor-as-static-jit-multi-provider` consumes stable function key/content/profile contracts but owns its provider ABI, generated project module, Live Coding refresh, and Native fallback independently of Cache V2 storage.
 - Unaffected: the AngelScript language syntax, existing project `.as` source conventions, `Binds.Cache` format, Standalone offline JSON bundles, and unrelated Unreal DDC/cooked-content caches.

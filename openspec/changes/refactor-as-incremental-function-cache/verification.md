@@ -15,7 +15,7 @@ Recorded artifacts:
 - TDD-ordered `tasks.md` and file/API/command-complete `implementation-plan.md`;
 - requirement-to-task/test/package mapping in `traceability.md`;
 - benchmark schema/procedure under `benchmarks/README.md`;
-- corrected cross-change boundary notes for `refactor-as-static-jit-external-module`.
+- corrected cross-change boundary notes for `refactor-as-static-jit-multi-provider`.
 
 ## Implementation Status
 
@@ -47,8 +47,8 @@ commands returned exit code `0`:
 ```powershell
 openspec status --change "refactor-as-incremental-function-cache" --json
 openspec validate "refactor-as-incremental-function-cache" --strict
-openspec status --change "refactor-as-static-jit-external-module" --json
-openspec validate "refactor-as-static-jit-external-module" --strict
+openspec status --change "refactor-as-static-jit-multi-provider" --json
+openspec validate "refactor-as-static-jit-multi-provider" --strict
 ```
 
 Both status results reported `isComplete: true` and both strict validators

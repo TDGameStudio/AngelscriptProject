@@ -13,7 +13,7 @@ StaticJIT currently follows AngelScript's bytecode-oriented JIT contract, so its
 - Reject unsupported signatures or semantics with typed, source-located eligibility reasons and fall back per function to the existing bytecode StaticJIT or VM.
 - Add deterministic HIR dumps, backend/fallback diagnostics, and test-only dual generation/execution that compares legacy and semantic results on isolated fixtures.
 - Retain the existing bytecode StaticJIT implementation and generated entry ABI; this change contains no removal task for the legacy backend.
-- Keep artifact identity, external provider ABI, fixed-bucket packaging, Editor routing, and Live Coding refresh owned by `refactor-as-static-jit-external-module`; Semantic AOT integrates with that provider contract after its ABI lands.
+- Keep artifact identity, external provider ABI, fixed-bucket packaging, Editor routing, and Live Coding refresh owned by `refactor-as-static-jit-multi-provider`; Semantic AOT integrates with that provider contract after its ABI lands.
 
 ## Capabilities
 
@@ -36,4 +36,4 @@ StaticJIT currently follows AngelScript's bytecode-oriented JIT contract, so its
 - Does not persist HIR in `PrecompiledScript.Cache`, add an independent IR cache, or change the bytecode archive schema.
 - Keeps RPC, BlueprintEvent, suspend/coroutine, object/reference/container signatures, and complex lifetime/exception cleanup on the legacy/VM paths in the first version.
 - Does not make every `FAngelscript*Binds` provider type a public ABI. Only explicitly selected external call symbols receive an owning-module export contract; private helpers remain reachable through exported thunks or the call bridge.
-- Coordinates with `refactor-as-static-jit-external-module` but does not duplicate its stable identity, provider registration, routing, scaffolding, or hot-refresh responsibilities.
+- Coordinates with `refactor-as-static-jit-multi-provider` but does not duplicate its stable identity, provider registration, routing, scaffolding, or hot-refresh responsibilities.

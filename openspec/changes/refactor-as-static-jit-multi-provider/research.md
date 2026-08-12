@@ -1,7 +1,14 @@
 # StaticJIT 外置模块与稳定函数路由研究记录
 
-> 状态：研究中（plan-only，不实施）
-> OpenSpec change：`refactor-as-static-jit-external-module`
+> 状态：历史增量研究记录（plan-only）；2026-08-12 的规范性结论见 `jit-interface-238-test-module-research.md`、`design.md` 与 capability deltas
+> OpenSpec change：`refactor-as-static-jit-multi-provider`
+>
+> 名称迁移记录：本 change 于 2026-08-12 从
+> `refactor-as-static-jit-external-module` 重命名为
+> `refactor-as-static-jit-multi-provider`。新名称强调稳定身份、多 Provider
+> Registry、Engine 路由快照、Provider Generation 与热替换才是架构主轴；
+> `AngelscriptTestJIT` 和项目 `AngelscriptJIT` 是该体系的两个模块承载者。
+> 已归档快照继续保留旧名称，以维持历史记录的真实性。
 > 首次记录：2026-08-07
 > 记录方式：按研究轮次增量追加；已证实事实、推断、候选方案和未决问题分开记录。
 
@@ -745,7 +752,7 @@ AS Data Cache 更新成功不要求 Native 更新成功。Live Coding 失败时�
 联合研究已经拆为两个可独立验收的 change：
 
 - `refactor-as-incremental-function-cache`：稳定脚本实体/函数工件身份、Cache V2、类型/全局/函数增量命中、Saved-only generation store、首次启动生成、并行准备与原子提交。
-- `refactor-as-static-jit-external-module`：外置 Provider、engine-owned route、Editor/PIE、Live Coding、UASFunction 安全分派。
+- `refactor-as-static-jit-multi-provider`：多 Provider、engine-owned route、Editor/PIE、Live Coding、UASFunction 安全分派。
 
 依赖只发生在共享身份层：Cache change 先交付 `StableFunctionKey + FunctionContentHash + ArtifactProfileKey`，之后 Cache store 与 StaticJIT Provider 可以独立推进。Provider mismatch 不使 AS Cache 失效，Cache miss 也不要求生成 Native 工件。
 
@@ -773,3 +780,123 @@ AS Data Cache 更新成功不要求 Native 更新成功。Live Coding 失败时�
 - 根 Profile 不包含完整 binding-surface hash；Cache 与 StaticJIT entry 都通过实际使用的 environment-symbol ABI fingerprints 做局部失效。
 - 共享身份使用完整 BLAKE3-256；StaticJIT bucket 直接取稳定 key 的固定字节，不再对 key 二次 SHA-256。
 - StaticJIT 只消费 `StableFunctionKey + FunctionContentHash + ArtifactProfileKey`。Provider/Live Coding 失败仍只回退 VM，不影响 AS Cache generation。
+
+## 15. 2026-08-12 / AS 2.38、测试 JIT 模块与统一生命周期修订
+
+本文件按用户要求继续保留早期调查、候选方案和当时的名称，作为设计演进历史；本节只标记哪些内容已经被新版 OpenSpec 覆盖。完整源码证据、方案比较和否决项另见 `jit-interface-238-test-module-research.md`。
+
+### 新增确认的事实
+
+- 本地 AngelScript 2.38 参考的 v2 JIT 接口提供 `NewFunction`、延迟 `SetJITFunction` 与替换/销毁时 `CleanFunction`；它改善了生命周期，但仍只有一个 `asJITFunction`，并通过 `asEP_JIT_INTERFACE_VERSION` 在 v1/v2 间选择。
+- 当前 fork 同时存在 VM、Raw、Parms 三类入口，但 `asIJITCompiler::ReleaseJITFunction` 只拿到 VM 入口；现有 SDK 测试还明确记录 module discard 不会完成 release。因此问题必须下沉到 AS fork 生命周期，而不能只在 UE Provider 层包一层。
+- 当前生成器临时替换 Engine 的 JIT compiler，生成注册依赖 FunctionId、`DataGuid`、`FJITDatabase` 和单一 active compiled info。这些耦合必须在真正的外置模块之前拆除。
+- Cache V2 已经提供稳定函数身份、执行/调试内容分离与 fresh-Engine 恢复基础。StaticJIT 不再创建自己的稳定键或独立 route manager；Cache 前缀下可复用的 route/reference 值需要中性化。
+- UE Live Coding 公共模块提供会话状态、compile、compiling 状态与 patch-complete delegate，可用于显式 Native 刷新；但 patch 完成后仍必须验证更新的 Provider generation，且新模块需要先完成一次正常全量构建。
+
+### 覆盖早期命名和结构
+
+- 2026-08-12 当时把真实项目模块后缀从早期 `<ProjectName>AngelscriptStaticJIT` 改为 `<ProjectName>AngelscriptJIT`；这一历史命名随后被第 17 节的固定 `AngelscriptJIT` 模块覆盖。
+- 新增 Editor-only `AngelscriptTestJIT`，只承载由插件测试 fixture 生成的 JIT C++ 和测试 Native probe；`AngelscriptTest` 继续承载测试、fixture、独立的 `-run=AngelscriptTestJIT -Mode=Generate|Verify` 和 runner，并单向依赖 `AngelscriptTestJIT`。它不读取或修改任何项目 JIT 输入/输出。
+- 项目 commandlet 固定为 `-run=AngelscriptJIT -Mode=Scaffold|Generate|Verify`，由 `AngelscriptEditor` 所有，不依赖测试模块。
+- 项目 Provider module 使用 Runtime/PostDefault；测试 Provider module 使用 Editor/PostDefault。
+- 生成布局采用 content-addressed 函数 slice + 固定 32 个 bucket translation unit，不采用一函数一个 `.cpp`，也不保留单体大 `.cpp`。
+
+### 统一 JIT 生命周期定案
+
+- fork 最终只保留一个非版本化 `asIJITCompiler` 生命周期接口，不保留 `asIJITCompilerV2`、abstract 基类、engine property 或旧接口适配器。
+- function ready 后允许延迟发布一个完整 Binding；Binding 同时包含 VM/Raw/Parms/UserData。
+- 替换、clear、module/function/engine 销毁、compiler 更换/移除都必须恰好 release 一次；正在执行的调用通过 immutable snapshot 延迟退休。
+- StaticJIT generator 不再通过临时 `SetJITCompiler` 替换正在服务执行的 compiler。
+
+### Cache V2 与 StaticJIT 的最终交界
+
+```text
+Current AS source / preprocessor / compiler
+                 |
+                 +--> Cache V2 semantic artifacts + fresh Engine restore
+                 |
+                 +--> stable identity / execution+debug hashes
+                                   |
+                                   v
+                     neutral Engine-local route/reference values
+                                   ^
+                                   |
+                  StaticJIT provider generation + Native entries
+```
+
+- 共享：稳定 identity、execution/debug/profile/environment/ABI 维度、中性 route/reference value、每 Engine 解析与发布。
+- Cache 独占：Saved store、manifest/pack、事务、依赖失效、class/module/function 恢复。
+- StaticJIT 独占：C++ 生成、Provider ABI、Native entry、Live Coding generation、JIT diagnostics。
+- 测试不再依赖旧 `StaticJITAotFixture.Cache`；改为 Engine A 从源码生成隔离 Cache V2 generation，销毁后 Engine B 从头恢复，再匹配同一 TestJIT Provider。
+
+### Editor/PIE 与 Shipping
+
+- Editor/PIE 当前 AS compile 永远权威：脚本保存/热重载先使不匹配函数回退 VM；只有显式 Generate/Refresh 才触发 C++ 生成与可选 Live Coding。
+- 空格、回车、注释通常只改变 source/debug identity，不改变 execution identity；函数逻辑改变只使相关 execution artifact 失配；签名、UFUNCTION metadata、类布局、继承等结构变化仍由 compiler/ClassGenerator/hot reload 决定实际影响面。
+- Development/Shipping 使用独立 profile。只有完整 immutable artifact set 通过校验才允许 cooked direct call；缺失/失配按打包策略回退 VM 或给出明确错误，不引入 Editor/LiveCoding 依赖。
+
+### 实施顺序修订
+
+新版顺序为：
+
+1. AS fork 完整 Binding 生命周期；
+2. Cache route/reference 中性化并保持 Cache V2 回归；
+3. Provider ABI、稳定引用槽与多 Engine 路由；
+4. 当前 callee/UASFunction dispatch；
+5. content-addressed generator、32 buckets、Scaffold/Generate/Verify；
+6. `AngelscriptTestJIT` source + Cache V2 fresh-Engine 闭环；
+7. 项目 `AngelscriptJIT`、Editor/PIE、显式 Live Coding；
+8. Development/Shipping、旧全局体系删除、诊断与全量验收。
+
+这组结论覆盖本文件早期“先把现有生成物搬到外部模块”“独立 StaticJIT route manager”“旧项目后缀”和“测试 `.Cache` 配对”的实现倾向，但历史内容不删除。
+
+## 16. 2026-08-12 / TestJIT 与多 Provider 模块边界补充
+
+用户进一步确认：`AngelscriptTestJIT` 与宿主项目没有内容或生成关系，它只是插件测试模块中专门承载测试 JIT 生成物的模块。本节覆盖第 15 节中仍可能被理解为“测试模块是项目 JIT 的一种实例”的表述。
+
+### 当前 `FJITDatabase` 的真实多模块能力
+
+- 多个生成 `.cpp` 或已加载 UE module 中的 `FStaticJITFunction` 静态构造可以汇入同一个 `FJITDatabase::Get()`。
+- 但 `Functions.Add(FunctionId, ...)` 以进程 FunctionId 覆盖，Entry 没有 Provider owner；`FStaticJITCompiledInfo` 只允许一个 active info；`Clear()` 全部清空；module unload/Live Coding 不能精确注销一代 Provider。
+- 因此当前只是“多个注册点汇入一个全局表”，不是真正支持多个 Provider module 的 Registry。
+
+### 新 Registry 必须支持的三种多模块
+
+1. 多个 UE Provider module 同时注册，例如测试、项目和可选插件 Provider；
+2. 一个 Provider 内包含多个 AS module，每个 Entry 保留 `StableModuleKey + StableFunctionKey`；
+3. 多个 AS Engine 共享只读 Provider catalog，但各自解析 current function/reference/Binding/route/counter。
+
+每个 Provider 使用稳定完整 `ProviderId` 和内容派生的 `ProviderGeneration`。同 ProviderId 新 generation 在安全点替换旧 generation；不同 ProviderId 并存并独立卸载。若不同 ProviderId 精确声明同一完整函数 identity，不允许按加载顺序覆盖，而是产生 `AmbiguousExactProvider` 并让该函数回退 VM；冲突 Provider 离开后可重新选择唯一候选。
+
+### TestJIT 与项目 JIT 的最终隔离
+
+```text
+插件测试链：
+AngelscriptTest committed fixtures
+  -> -run=AngelscriptTestJIT -Mode=Generate|Verify
+  -> AngelscriptTestJIT/Private/Generated
+  -> fixed test ProviderId
+
+项目链：
+<Project>/Script
+  -> AngelscriptEditor: -run=AngelscriptJIT -Mode=Scaffold|Generate|Verify
+  -> <Project>/Source/AngelscriptJIT
+  -> project ProviderId
+```
+
+两条链只共享 Runtime 的稳定 identity、JIT Binding、reference slot、Provider ABI、函数 emitter、32-bucket 算法和 deterministic comparison primitives。它们不共享 source discovery、target descriptor、ProviderId、command、manifest、module、output root 或 lifecycle；项目工具也不依赖 `AngelscriptTest`/`AngelscriptTestJIT`。
+
+## 17. 2026-08-12 / 项目模块固定命名为 AngelscriptJIT
+
+用户最终选择简化项目生成模块名称，不再拼接项目名：
+
+```text
+<Project>/Source/AngelscriptJIT
+UE module: AngelscriptJIT
+```
+
+- `Scaffold` 固定创建 `AngelscriptJIT`，不再生成 `<ProjectName>AngelscriptJIT` 或 `AngelscriptProjectAngelscriptJIT`。
+- `.uproject` 固定登记 `AngelscriptJIT` 为 Runtime/PostDefault。
+- 如果目标项目已经存在不兼容或用户所有的同名模块，Scaffold 明确报冲突，不自行退化成长名称，也不覆盖。
+- 固定 UE module name 不等于固定 Provider identity。ProviderId 仍从 canonical project/source ownership domain 派生，因此不同项目都可使用易读的 `AngelscriptJIT` 模块名，而不会共享稳定 ProviderId。
+- `AngelscriptTestJIT` 的隔离边界不变；测试模块和项目 `AngelscriptJIT` 仍是两个独立 Provider。

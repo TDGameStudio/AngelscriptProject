@@ -6,7 +6,7 @@ That architecture is valid when only bytecode is available, but this project's A
 
 Unreal-facing script functions marked by the preprocessor's `UFUNCTION()` macro already have `FAngelscriptFunctionDesc` records. During ClassGenerator analysis each descriptor is matched to the exact `asCScriptFunction` and stored in `FunctionDesc->ScriptFunction`; global UFUNCTIONs are represented through the generated statics-class surface. `FAngelscriptStaticJIT` defers output until `WriteOutputCode()`, so the final descriptor graph can define Semantic AOT roots without changing the AngelScript parser or public JIT callback.
 
-The adjacent `refactor-as-static-jit-external-module` change owns stable artifact identity, provider ABI, project module scaffolding, fixed buckets, route snapshots, Editor/PIE behavior, and Live Coding refresh. This change must produce the same entry shapes and later publish through that provider, but it must not invent a competing provider or persistence format.
+The adjacent `refactor-as-static-jit-multi-provider` change owns stable artifact identity, provider ABI, project module scaffolding, fixed buckets, route snapshots, Editor/PIE behavior, and Live Coding refresh. This change must produce the same entry shapes and later publish through that provider, but it must not invent a competing provider or persistence format.
 
 The external provider also changes the C++ linkage boundary. A generated `<ProjectName>AngelscriptStaticJIT` Runtime module is a different DLL from `AngelscriptRuntime`. Today `FScriptFunctionNativeForm` is exported, but its ordinary function/method forms record C++ spelling, optional include text, and triviality rather than external linkage. For example, `Binds/Bind_FMath.h` declares `FAngelscriptFMathBinds` without `ANGELSCRIPTRUNTIME_API`, while `Binds/Bind_FApp.cpp` declares `FAngelscriptFAppBinds` only inside the implementation file. These bindings may be callable through stored pointers inside Runtime, yet their named out-of-line helpers are not thereby linkable from a generated project DLL. Registration lambdas are unrelated: they install the binding and are not the callable target.
 
@@ -114,7 +114,7 @@ The emitter produces structured C++ blocks and typed locals from HIR. It uses ex
 
 Extract or introduce a shared entry-plan layer that describes the function symbol, literal C++ parameter/return representation, VM stack mapping, reflected parameter offsets, and available VM/raw/parameter wrappers. Both emitters consume that plan. The legacy generated text and behavior remain protected by existing golden/AOT tests; extracting the plan must not remove or collapse `FStaticJITContext` or `AngelscriptBytecodes.cpp`.
 
-Generated Semantic AOT entries register through the same current `FStaticJITFunction` seam. After `refactor-as-static-jit-external-module` publishes its ABI, both legacy and semantic entry sets use the same provider entry record, stable identity, and route snapshot. Backend kind may be added as diagnostics metadata, but it is never a second identity namespace.
+Generated Semantic AOT entries register through the same current `FStaticJITFunction` seam. After `refactor-as-static-jit-multi-provider` publishes its ABI, both legacy and semantic entry sets use the same provider entry record, stable identity, and route snapshot. Backend kind may be added as diagnostics metadata, but it is never a second identity namespace.
 
 ### Native direct calls require a separate external-linkage descriptor
 
@@ -185,7 +185,7 @@ Human-readable `as.StaticJIT.DumpDiagnostics` prints the same information in sta
 
 Compiler HIR, eligibility, emitter, current entry registration, and Dual AOT tests can proceed against the existing three-entry seam. No task in this change creates a stable key, provider catalog, route snapshot, project module, bucket layout, or Live Coding action.
 
-The final integration task begins only after the provider ABI task group from `refactor-as-static-jit-external-module` lands. It maps the Semantic entry plan to the same provider record and proves mixed providers may contain legacy and semantic entries without changing stable function identity. The provider change may remove the old global `FJITDatabase` registration after its own parity gate; that does not remove the legacy bytecode-to-C++ generator required by this change.
+The final integration task begins only after the provider ABI task group from `refactor-as-static-jit-multi-provider` lands. It maps the Semantic entry plan to the same provider record and proves mixed providers may contain legacy and semantic entries without changing stable function identity. The provider change may remove the old global `FJITDatabase` registration after its own parity gate; that does not remove the legacy bytecode-to-C++ generator required by this change.
 
 ## Risks / Trade-offs
 

@@ -14,7 +14,7 @@ The existing compiler and hot-reload architecture nevertheless provides the requ
 - Editor has a directory watcher, class reload helper, and real PIE lifecycle harness.
 - Runtime compiler code remains available in configured Development and Shipping targets.
 
-This change owns stable script-artifact identity and Cache V2. The sibling `refactor-as-static-jit-external-module` consumes the function identity contract but remains independent of Cache V2 storage and lifecycle.
+This change owns stable script-artifact identity and Cache V2. The sibling `refactor-as-static-jit-multi-provider` consumes the function identity contract but remains independent of Cache V2 storage and lifecycle.
 
 ## Goals / Non-Goals
 

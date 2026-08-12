@@ -2,7 +2,7 @@
 
 ## 记录范围与当前结论
 
-本记录是 `refactor-as-incremental-function-cache` 的渐进研究主档，专门处理预编译脚本 Cache；兄弟 change `refactor-as-static-jit-external-module` 处理外置 Native Provider、生成模块工具、Editor/PIE Native 路由和 Live Coding。两者只共享稳定函数工件身份，不共享磁盘存储、generation、失效状态或回退策略。
+本记录是 `refactor-as-incremental-function-cache` 的渐进研究主档，专门处理预编译脚本 Cache；兄弟 change `refactor-as-static-jit-multi-provider` 处理多 Provider、生成模块工具、Editor/PIE Native 路由和 Live Coding。两者只共享稳定函数工件身份，不共享磁盘存储、generation、失效状态或回退策略。
 
 最终方向不是“每函数一个 cache 文件”，也不是“继续保存一个完整 `.cache`”：
 

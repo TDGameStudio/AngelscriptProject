@@ -167,7 +167,7 @@ AngelScript numeric FunctionIds MAY be used only inside an engine-owned routing 
 
 ### Requirement: StaticJIT consumes identity without owning Cache V2
 
-The stable function key, execution/debug content hash, artifact profile, and environment ABI coordinates SHALL be usable by `refactor-as-static-jit-external-module` without exposing Cache V2 manifests, packs, generations, pointers, source-authority policy, filesystem store, codec, publication, or compaction state. Cache RecordId/RawChecksum/PackId/GenerationId and StaticJIT ProviderGeneration SHALL remain distinct domains; a Cache physical repack or pointer rotation MUST NOT change Native route identity or eligibility.
+The stable function key, execution/debug content hash, artifact profile, and environment ABI coordinates SHALL be usable by `refactor-as-static-jit-multi-provider` without exposing Cache V2 manifests, packs, generations, pointers, source-authority policy, filesystem store, codec, publication, or compaction state. Cache RecordId/RawChecksum/PackId/GenerationId and StaticJIT ProviderGeneration SHALL remain distinct domains; a Cache physical repack or pointer rotation MUST NOT change Native route identity or eligibility.
 
 #### Scenario: Native provider entry is missing or stale
 
