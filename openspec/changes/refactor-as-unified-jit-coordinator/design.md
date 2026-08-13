@@ -151,12 +151,16 @@ Process configuration accepts:
 
 Defaults are `Auto`, `none`, and `EagerSync`. `Auto` selects exact Static AOT, then the selected Runtime Binding, then VM. `VMOnly` bypasses all Native entries. `StaticAOTOnly` allows AOT then VM. `RuntimeOnly` bypasses AOT for differential tests/benchmarks and selects Runtime then VM.
 
-An unknown mode/policy/backend or duplicate BackendId is a configuration diagnostic and disables Runtime compilation for that Engine. The coordinator never selects a backend by plugin registration order, UE module load order, address, or display name.
+An unknown mode is a configuration diagnostic and deterministically fails the
+Engine closed to `VMOnly`. An unknown Runtime policy/backend or duplicate
+BackendId disables Runtime compilation for that Engine without disabling an
+otherwise exact Static AOT route. The coordinator never selects a backend by
+plugin registration order, UE module load order, address, or display name.
 
 ### All three compile policies share one request/publication state machine
 
-- `EagerSync`: function-ready builds the snapshot, calls the session synchronously, validates the result, and publishes before returning.
-- `EagerBackground`: function-ready publishes/retains VM, queues one snapshot, and later schedules result validation/publication at an Engine safe point.
+- `EagerSync`: the first authoritative route-ready safe point builds the snapshot, calls the session synchronously, validates the result, and publishes before that safe point returns. The earlier maintained-fork function-ready callback only records lifecycle state because verified stable route identity is not yet available there.
+- `EagerBackground`: the first authoritative route-ready safe point publishes/retains VM, queues one snapshot, and later schedules result validation/publication at an Engine safe point.
 - `LazyFirstCall`: the current route contains a coordinator-owned trigger state. The first caller atomically claims compilation, but that invocation retains and executes its VM lease. A completed result is visible only to later calls.
 
 Concurrent triggers coalesce by stable identity plus revision. A function has at most one active request for the selected backend/policy generation. Unsupported and deterministic compile failures are memoized for that revision so every call does not retry. Backend-unavailable and transient cancellation may be retried only after a backend/configuration generation changes.

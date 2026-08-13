@@ -50,12 +50,13 @@ The coordinator SHALL implement `EagerSync`, `EagerBackground`, and `LazyFirstCa
 
 #### Scenario: Eager synchronous compilation succeeds
 
-- **WHEN** an eligible function becomes ready under `EagerSync`
-- **THEN** the coordinator compiles, validates, and publishes its Runtime Binding before the function-ready callback returns
+- **WHEN** an eligible function first appears in an authoritative verified route under `EagerSync`
+- **THEN** the coordinator compiles, validates, and publishes its Runtime Binding before that route-ready safe point returns
+- **AND** the earlier function-ready callback does not invoke the backend before verified stable identity exists
 
 #### Scenario: Eager background compilation succeeds
 
-- **WHEN** an eligible function becomes ready under `EagerBackground`
+- **WHEN** an eligible function first appears in an authoritative verified route under `EagerBackground`
 - **THEN** calls use VM while its immutable snapshot is compiled off-thread
 - **AND** later calls use Runtime Native only after safe revision-checked publication
 

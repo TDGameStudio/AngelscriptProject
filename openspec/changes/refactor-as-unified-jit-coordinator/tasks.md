@@ -46,11 +46,11 @@
 
 ## 6. Move Compiler Ownership To The Coordinator
 
-- [ ] 6.1 <!-- TDD --> Add lifecycle tests that fail if a Runtime plugin/factory installs or replaces `asIJITCompiler`, or if one Engine owns more than one coordinator.
-- [ ] 6.2 <!-- TDD --> Introduce `FAngelscriptJITCoordinator` and move function-ready/release callbacks from the temporary `FAngelscriptStaticJIT` facade without changing maintained-fork Binding lifecycle.
-- [ ] 6.3 <!-- TDD --> Remove the old class facade after Coordinator ownership is proven; retain BytecodeJIT and generation compatibility functions under the Static generator.
-- [ ] 6.4 <!-- TDD --> Implement `Auto`, `VMOnly`, `StaticAOTOnly`, and `RuntimeOnly` with exact AOT-before-Runtime ordering in Auto and deterministic invalid-configuration behavior.
-- [ ] 6.5 <!-- TDD --> Publish Runtime VMEntry-only Bindings through current immutable routes and prove two Engines selecting the same Runtime backend have isolated sessions, requests, helpers, routes, and teardown.
+- [x] 6.1 <!-- TDD --> Add lifecycle tests that fail if a Runtime plugin/factory installs or replaces `asIJITCompiler`, or if one Engine owns more than one coordinator.
+- [x] 6.2 <!-- TDD --> Introduce `FAngelscriptJITCoordinator` and move function-ready/release callbacks from the temporary `FAngelscriptStaticJIT` facade without changing maintained-fork Binding lifecycle.
+- [x] 6.3 <!-- TDD --> Remove the old class facade after Coordinator ownership is proven; retain BytecodeJIT and generation compatibility functions under the Static generator.
+- [x] 6.4 <!-- TDD --> Implement `Auto`, `VMOnly`, `StaticAOTOnly`, and `RuntimeOnly` with exact AOT-before-Runtime ordering in Auto and deterministic invalid-configuration behavior.
+- [x] 6.5 <!-- TDD --> Publish Runtime VMEntry-only Bindings through current immutable routes and prove two Engines selecting the same Runtime backend have isolated sessions, requests, helpers, routes, and teardown.
 
 ## 7. Enforce Lifetime, Host And Dispatch Boundaries
 
