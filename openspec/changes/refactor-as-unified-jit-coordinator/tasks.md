@@ -54,11 +54,11 @@
 
 ## 7. Enforce Lifetime, Host And Dispatch Boundaries
 
-- [ ] 7.1 <!-- TDD --> Add replacement/plugin-unload tests where active calls finish on old code while new calls use replacement Runtime, AOT, or VM routes.
-- [ ] 7.2 <!-- TDD --> Prove Runtime results never enter the AOT provider registry, Static generation, Cache V2, precompiled data, another Engine, or typed-HIR storage.
-- [ ] 7.3 <!-- TDD --> Add whole-function Runtime eligibility/fallback tests for unsupported calls, managed values, receiver profiles, suspend/latent behavior, cleanup/exception state, and Entry ABI mismatch.
-- [ ] 7.4 <!-- TDD --> Add DebugServer/CodeCoverage gates and UASFunction coverage proving a Runtime VMEntry does not fabricate Raw/Parms entries and reflected execution remains VM-correct.
-- [ ] 7.5 <!-- Non-TDD --> Enforce that Runtime backend worker/lowering headers include no UObject, UFunction, Blueprint, ClassGenerator, World, GC, Editor, typed-HIR, or Static backend APIs.
+- [x] 7.1 <!-- TDD --> Add replacement/plugin-unload tests where active calls finish on old code while new calls use replacement Runtime, AOT, or VM routes.
+- [x] 7.2 <!-- TDD --> Prove Runtime results never enter the AOT provider registry, Static generation, Cache V2, precompiled data, another Engine, or typed-HIR storage.
+- [x] 7.3 <!-- TDD --> Add whole-function Runtime eligibility/fallback tests for unsupported calls, managed values, receiver profiles, suspend/latent behavior, cleanup/exception state, and Entry ABI mismatch.
+- [x] 7.4 <!-- TDD --> Add DebugServer/CodeCoverage gates and UASFunction coverage proving a Runtime VMEntry does not fabricate Raw/Parms entries and reflected execution remains VM-correct.
+- [x] 7.5 <!-- Non-TDD --> Enforce that Runtime backend worker/lowering headers include no UObject, UFunction, Blueprint, ClassGenerator, World, GC, Editor, typed-HIR, or Static backend APIs.
 
 ## 8. Add Diagnostics, Documentation And Verification
 
