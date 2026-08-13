@@ -615,14 +615,14 @@ Current->Counts.NumExecutableLines = Coverage.NumExecutableLines();
 
 如 §3.3 所述，JIT 翻译里 `asBC_SUSPEND` 是 no-op，因此**JIT 化的脚本函数不会触发 line callback、不会被 Coverage 看到**。具体表现：
 
-| 场景 | jitFunction 是否存在 | Coverage 看到的覆盖率 |
-|------|---------------------|------------------------|
-| 标准 Editor 构建（无 cooked PrecompiledData） | `nullptr`（解释器执行） | 准确 |
-| Cooked 构建 + PrecompiledData 装载成功 | 非空（直接调用 .exe 中 transpile 后的 C++） | **0%**（看不到任何 hit） |
-| Cooked 构建 + DataGuid 不匹配 → `FJITDatabase::Clear()` | `nullptr`（fallback 解释器） | 恢复准确 |
-| `bScriptDevelopmentMode` | `nullptr`（HotReload 路径不走 JIT） | 准确 |
+| 当前函数路由 | Coverage 看到的覆盖率 |
+|-------------|------------------------|
+| VM（无 Provider、entry 失配或稳定引用无法解析） | 准确 |
+| Native VMEntry（EditorDevelopment 或 packaged exact Provider） | **0%**（生成代码不触发 line callback） |
+| 修改后的函数在新 Provider patch 前回退 VM | 该函数恢复可见；未改且仍 Native 的函数仍不可见 |
+| Provider 卸载/退注册后刷新为 VM | 恢复准确 |
 
-实践含义：**Coverage 报告应在 Editor 内 / 非 cooked 构建上跑**。CI 的 cook 构建走 JIT 路径，跑 Coverage 等于得到全 0 覆盖率。详见 `RT_StaticJIT.md` 的"`bUsePrecompiledData` 何时成立"判定式。
+实践含义：**不能再用“Editor 构建天然没有 StaticJIT”作为 Coverage 前提**。Editor/PIE 现在也能消费 `EditorDevelopment` Provider。需要完整行覆盖时，应明确让待测函数走 VM，并用 `as.StaticJIT.DumpDiagnostics` 确认 route；不要依赖旧 `DataGuid`、`FJITDatabase` 或构建类型猜测。Native 生成代码的行级埋点是独立能力，当前未实现。
 
 ### 6.2 与 HotReload 的关系
 

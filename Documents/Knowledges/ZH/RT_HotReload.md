@@ -1102,6 +1102,27 @@ for (auto& [ModuleName, FileBP] : Breakpoints)
 | `DelegateSignature` | 委托 K2Node_Event 的签名函数命中 |
 | `ReferencedAsset`   | 节点 / 变量上的默认值是被 reload 的 LiteralAsset |
 
+### 9.4 与 StaticJIT Provider / Live Coding 的协同
+
+当前 HotReload 与 StaticJIT 是“同一权威编译代上的两个消费者”，不再是互斥功能：
+
+1. `.as` 保存先走本文的重编译、module swap 和 ClassGenerator/ClassReloadHelper；
+2. 成功后 `FAngelscriptJITProviderRouter` 针对新权威函数重新匹配；
+3. 内容已改而 Provider 仍旧的函数因 ExecutionHash 失配回退 VM；未改函数继续 Native；
+4. 普通保存到此为止，不自动生成 C++，也不自动触发 Live Coding；
+5. 用户显式执行 Editor 的 **Generate/Refresh AngelScript JIT** 后，`FAngelscriptJITRefreshService` 重新生成 `EditorDevelopment` owned files；
+6. `.jit.cpp` 源集合未变化且 Live Coding 可用时才请求 patch；patch 后必须看到严格更新且兼容的 ProviderGeneration，Router 才把改动函数重新切回 Native。
+
+如果新增/删除整个 AS 模块，严格 per-module 生成会新增/删除一个
+`<StableModuleKey>.EditorDevelopment.jit.cpp`。这个源文件尚未进入（或需要退出）当前
+UBT action graph，必须普通完整构建。Live Coding 不可用、编译中、patch 失败、generation
+未更新或 route refresh 失败时都保留 VM 正确性，不回滚已经成功的 AS HotReload。
+
+结构变化仍完全由本文的 reload 级别与 ClassGenerator 处理；StaticJIT 不重建 UClass，
+只给新编译代里实际存在、身份完全匹配的函数发布 VM/Raw/Parms binding。Provider DLL
+卸载时，Registry 先阻止未来 route 选择，旧 binding 再通过代码镜像 lease 保活到最后
+一个执行者退出。详细生成、Cache V2 和诊断契约见 `RT_StaticJIT.md`。
+
 ---
 
 ## 十、性能：reload 各阶段大致占比
@@ -1254,6 +1275,7 @@ Tick 入口判定:
 | `bWillBecomeCorrect` / `GetMostUpToDateClass` 的语义 | `Type_BaseClass.md` |
 | Debugger 协议 / 断点存储结构 | `RT_Debugger.md`（待写） |
 | BlueprintImpact 离线 commandlet 走的扫描路径 | `Arch_EditorTestDumpCollaboration.md` §1.2 |
+| StaticJIT Provider、显式 Generate/Refresh、Live Coding、Cache V2 与 DLL 生命周期 | `RT_StaticJIT.md` |
 | Initial compile 的失败重试模态对话框 | 本文 §四间接提到，详细在 `Arch_RuntimeLifecycle.md` §四 |
 
 ---
@@ -1265,3 +1287,4 @@ Tick 入口判定:
 - SoftReload / FullReloadSuggested / FullReloadRequired / Error 四档由 `ClassGenerator.Setup()` 的 Analyze 阶段算出，再经 `(CompileType, ReloadRequirement)` 二维派发表得出实际行为，PIE / GameWorld 一律强制只能 Soft。
 - 失败永远走"原子回退 + 自动重试"——`PreviouslyFailedReloadFiles` 与 `QueuedFullReloadFiles` 双队列保证开发者只要"修好就保存"即可，不需要手动 retry。
 - ClassReloadHelper 是 Editor 模块挂在 `OnFullReload` 上的唯一 Reinstance 入口，它通过 `FBlueprintCompilationManager::ReparentHierarchies` 把 UE 反射系统拉进来，配合 `AnalyzeLoadedBlueprint` 把受影响 BP 子类一并重编，断点由 `DebugServer::ReapplyBreakpoints` 在每次编译成功后重建。
+- StaticJIT 在成功 reload 后按新权威函数逐条重路由；旧 Provider 对改动函数只会得到 VM fallback。普通保存不会自动生成 C++/Live Coding，显式 Generate/Refresh 只在 source set 不变时 patch。

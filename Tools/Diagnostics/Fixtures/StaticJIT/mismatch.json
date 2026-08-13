@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 2,
+  "providerAbiRevision": 2,
+  "hasCurrentEngine": true,
+  "hasScriptEngine": true,
+  "query": "",
+  "queryMatched": false,
+  "targetProfile": "EditorDevelopment",
+  "providerPublicationOrdinal": "8",
+  "routeGeneration": "12",
+  "vmRouteCount": 1,
+  "nativeRouteCount": 0,
+  "matchResultCounts": {"Exact": 0, "MissingArtifactIdentity": 0, "MissingProviderEntry": 0, "ContentMismatch": 1, "DebugMismatch": 0, "ProfileMismatch": 0, "EnvironmentMismatch": 0, "EntryAbiMismatch": 0, "MissingReference": 0, "AmbiguousReference": 0, "WrongReferenceKind": 0, "ReferenceAbiMismatch": 0, "StaleProviderGeneration": 0, "DuplicateProviderEntry": 0, "AmbiguousExactProvider": 0, "ArtifactSetMismatch": 0, "InvalidProvider": 0, "MissingEntryPoint": 0},
+  "providers": [
+    {
+      "providerId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "providerGeneration": "2222222222222222222222222222222222222222222222222222222222222222",
+      "artifactSetDigest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "artifactProfile": "4444444444444444444444444444444444444444444444444444444444444444",
+      "nativeEnvironment": "5555555555555555555555555555555555555555555555555555555555555555",
+      "providerName": "StaleFixtureProvider",
+      "ownerModuleName": "StaleFixtureJIT",
+      "compatibleEntryCount": 0,
+      "rejectedEntryCount": 1,
+      "conflictingEntryCount": 0,
+      "modules": [{"moduleKey": "6666666666666666666666666666666666666666666666666666666666666666", "generatedModuleSource": "Modules/6666666666666666666666666666666666666666666666666666666666666666.EditorDevelopment.jit.cpp", "moduleArtifactDigest": "7777777777777777777777777777777777777777777777777777777777777777", "functionCount": 1}],
+      "entries": [{"providerEntryIndex": 0, "flags": 0, "moduleKey": "6666666666666666666666666666666666666666666666666666666666666666", "functionKey": "8888888888888888888888888888888888888888888888888888888888888888", "executionHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "debugHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "artifactProfile": "4444444444444444444444444444444444444444444444444444444444444444", "entryAbiHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "nativeEnvironment": "5555555555555555555555555555555555555555555555555555555555555555", "hasVmEntry": true, "hasRawEntry": true, "hasParmsEntry": true, "generatedModuleSource": "Modules/6666666666666666666666666666666666666666666666666666666666666666.EditorDevelopment.jit.cpp", "references": []}]
+    }
+  ],
+  "routes": [
+    {"moduleKey": "6666666666666666666666666666666666666666666666666666666666666666", "functionKey": "8888888888888888888888888888888888888888888888888888888888888888", "executionHash": "9999999999999999999999999999999999999999999999999999999999999999", "debugHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "artifactProfile": "4444444444444444444444444444444444444444444444444444444444444444", "canonicalDeclaration": "void Fixture()", "numericFunctionId": 87, "selectedRoute": "Vm", "matchResult": "ContentMismatch", "verifiedArtifactIdentity": true, "hasVmEntry": false, "hasRawEntry": false, "hasParmsEntry": false, "immutableCookedDirectDispatch": false, "providerId": "0000000000000000000000000000000000000000000000000000000000000000", "providerGeneration": "0000000000000000000000000000000000000000000000000000000000000000", "providerEntryIndex": -1, "referenceSlotCount": 0, "resolvedReferenceSlotCount": 0, "vmExecutionCount": "0", "rawExecutionCount": "0", "parmsExecutionCount": "0", "candidates": [{"providerId": "1111111111111111111111111111111111111111111111111111111111111111", "providerGeneration": "2222222222222222222222222222222222222222222222222222222222222222", "providerEntryIndex": 0, "matchResult": "ContentMismatch"}]}
+  ]
+}

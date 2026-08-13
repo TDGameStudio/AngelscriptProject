@@ -1,883 +1,674 @@
-# RT_StaticJIT — StaticJIT 与执行性能
+# RT_StaticJIT — Provider 化 StaticJIT 生命周期与模块生成
 
-> **所属前缀**: RT_（运行时子系统族）
-> **关注层面**: 站在"如何让 AngelScript 字节码绕过解释器，以原生 C++ 函数指针的形式被 `asCContext` 直接调用"的视角看 `StaticJIT/` 子系统——`FAngelscriptStaticJIT` 怎么在 cook 期把每个脚本函数翻译成等价 C++、`FAngelscriptPrecompiledData` 怎么序列化字节码与符号引用、`FStaticJITCompiledInfo` 怎么用 GUID 把"transpile 时的字节码"和"link 时的 .jit.cpp"绑定、`FJITDatabase` 怎么把翻译产物按 FunctionId 注册回 `asCScriptFunction::jitFunction`、以及 `asCContext::ExecuteNext` / `CallScriptFunction` 怎么走"先看 jitFunction 指针"的快路径。本文不重写传统运行期 JIT（LLVM / asmjit）原理，不重写 `FunctionCallers.h` 的 C++ → C++ trampoline 模板族（那是 `Type_FunctionCaller` 的事），不重写预处理 / 编译流水线（那是 `Arch_RuntimeLifecycle`、`RT_HotReload`、`Type_Preprocessor` 的事）；本文聚焦的是**Static JIT 这条"既不在运行期产生机器码，也不依赖 IR / asmjit / LLVM"的特殊执行加速通路**——它把"脚本函数 → 字节码 → 解释器"这条链路，**额外**生成一份"脚本函数 → 编译期翻译的 C++ → 由编译器 / 链接器固化为机器码"的旁路；运行期只剩"指针存在则走 jit、否则走 interpreter"的二选一。
-> **关键源码**:
-> `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/AngelscriptStaticJIT.{h,cpp}` (~3970 行 .cpp + ~521 行 .h，`FAngelscriptStaticJIT` / `FStaticJITContext` / `FJITDatabase` / `WriteOutputCode` / `GenerateCppCode`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/PrecompiledData.{h,cpp}` (~3071 行 .cpp + ~674 行 .h，`FAngelscriptPrecompiledData` / `FAngelscriptPrecompiledModule` / `FAngelscriptPrecompiledFunction` / `Save` / `Load` / `ApplyToModule_Stage1/2/3`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/AngelscriptBytecodes.{h,cpp}` (~6671 行 .cpp + ~155 行 .h，`FAngelscriptBytecode` 基类与 ~200+ 个 opcode 的 `Implement` 翻译)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/StaticJITHeader.{h,cpp}` (~393 行 .h + ~311 行 .cpp，`FStaticJITFunction` / `FJitRef_*` / `FStaticJITCompiledInfo`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/StaticJITConfig.h` (~20 行，`AS_CAN_GENERATE_JIT` / `AS_SKIP_JITTED_CODE` / `AS_JIT_VERIFY_PROPERTY_OFFSETS` / `AS_WITH_STATIC_JIT_DIAGNOSTICS`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/StaticJITBinds.{h,cpp}` (~1042 行 .cpp + ~121 行 .h，`FScriptFunctionNativeForm` 子类族：构造 / 析构 / 赋值 / 模板实例化 / TArray 迭代器 / Delegate 执行 / UObject Cast 等)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/StaticJITDiagnostics.{h,cpp}` (~421 行 .cpp + ~51 行 .h，`as.StaticJIT.DumpDiagnostics` 控制台命令、`FStaticJITDiagnostics::CaptureSnapshot`)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp` (~1625–1830 行，`Initialize` 中 `SetJITCompiler` / `WriteOutputCode` / `bStaticJITTranspiledCodeLoaded` / `FStaticJITCompiledInfo::Get` 校验链路)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp::ExecuteNext / CallScriptFunction` (~970–1010 / 1455–1495 行，`jitFunction != nullptr` 快路径)
-> · `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_module.cpp::JITCompile` / `as_scriptfunction.cpp::JITCompile` — AS 内核唯一调用 `asIJITCompiler::CompileFunction` 的两个入口
-> **关联文档**:
-> `Documents/Knowledges/ZH/AS_VirtualMachine.md` — `asCContext::Execute` / `ExecuteNext` 解释器主循环（StaticJIT 在其前面插一层 jit 指针检测）
-> · `Documents/Knowledges/ZH/AS_ByteCode.md` — `asEBCInstr` 指令集与 `asBCInfo` 元表（StaticJIT 按指令分发翻译）
-> · `Documents/Knowledges/ZH/Type_FunctionCaller.md` — `CallFunctionCaller` / `sysFunc->caller` 路径（StaticJIT 翻译 `CALLSYS` 时直接调用同一个 caller，而不是再走解释器分发）
-> · `Documents/Knowledges/ZH/Type_BindSystem.md` — `FBind` 注册时的 `SCRIPT_NATIVE_*` 宏，决定 StaticJIT 能否走 native 形式
-> · `Documents/Knowledges/ZH/RT_HotReload.md` — bScriptDevelopmentMode 与 bUsePrecompiledData 互斥时的 cache 装载策略
-> · `Documents/Knowledges/ZH/AS_ForkDifferences.md` — UE Fork 的 `[UE++]` 改动如何与上游 JIT v2 接口分叉
-> **外部参考**:
-> [AngelscriptForkStrategy](../../Guides/AngelscriptForkStrategy.md) — fork 演进策略，含 `Plan_AS238JITv2Port` 索引
+> **所属前缀**：RT_（运行时子系统）
+> **适用版本**：Unreal AngelScript 1.0.0，Provider ABI Revision 2
+> **关注范围**：StaticJIT 的 C++ 生成、Provider 注册、Engine 路由、Cache V2 协作、Editor/PIE 与 Live Coding、DLL 生命周期和诊断。
+> **不再适用的旧概念**：`FJITDatabase`、`FStaticJITCompiledInfo::ActiveInfo`、按瞬时 FunctionId 注册、`DataGuid` 整盘配对、`PrecompiledScript.Cache` 与 `.jit.hpp` 成对加载。这些兼容路径已删除，不能再用来解释当前实现。
 
----
+## 一句话理解
 
-## 概览
+当前 StaticJIT 可以理解成两半：
 
-本文聚焦一个核心问题：**Angelscript 默认靠 `asCContext::ExecuteNext` 解释字节码运行，每条 `asEBCInstr` 都要 switch-case 派发；UE Fork 的 StaticJIT 子系统选了一条**完全不同**的路：cook 期把字节码翻译成等价 C++ 源码、跟随游戏一起编译进 .exe，运行期通过 `jitFunction` 函数指针直接跳过去执行。它既不是 LLVM/asmjit 那种运行期生成机器码的"传统 JIT"，也不是简单的 caching；它在 fork 中扮演的是"AOT 静态预编译 + 字节码归档 + 符号 GUID 校验"的复合角色。本文展开它从 `cook → link → load → run` 四阶段的全部链路。**
+1. **生成侧**把已经编译成功的 AngelScript 函数翻译成普通 C++，并严格按“一个 AS 模块一个 `<源文件名>.<短模块键>.<TargetProfile>.jit.cpp`”落盘；
+2. **运行侧**由一个 UE 模块把编译进 DLL/EXE 的原生入口作为 Provider 发布，Engine 再用稳定模块键、稳定函数键、内容摘要、目标 Profile、原生环境和 ABI 逐函数匹配。完全一致才挂 Native binding；不一致就只让该函数走 VM。
+
+所以这里虽然沿用 `StaticJIT` 名称，本质上是 **静态 AOT 代码生成 + 运行期稳定身份路由**，不是 LLVM、asmjit 那种运行时生成机器码的传统 JIT。
+
+## 核心链路
 
 ```text
-================================================================================
-  StaticJIT 全景：从 .as 源码到运行期 jitFunction(...) 的四阶段链路
-================================================================================
-
-  阶段一：Cook 期 transpile（命令行: -as-generate-precompiled-data）
-  -------------------------------------------------------------------
-  .as 文件                       FAngelscriptEngine::Initialize
-     │                                    │
-     │ Preprocessor.Preprocess            │ if (bGeneratePrecompiledData)
-     │ Compiler.Build → asCModule         │   PrecompiledData = new (...)
-     │ scriptFunctions[].byteCode         │   StaticJIT = new FAngelscriptStaticJIT
-     │                                    │   Engine->SetJITCompiler(StaticJIT)
-     │                                    │
-     ▼                                    ▼
-  asCModule::JITCompile()        FAngelscriptStaticJIT::CompileFunction
-     │ for each scriptFunc:        ┌─ bGenerateOutputCode == true
-     │   func->JITCompile()        │  → FunctionsToGenerate.Add(func, {})
-     │     → jit->CompileFunction  │  → *OutJITFunction = nullptr; return 1
-     │                             └─（不在这里产出代码，仅记录待生成列表）
-     ▼
-  Engine->WriteOutputCode()  ←  Initialize 末尾 if (bGenerateOutputCode)
-     │                                    │
-     │  ┌──────────────────────────────┐  │
-     │  │ DetectScriptType (扫描所有  │  │
-     │  │   asCObjectType 的稳定性)   │  │
-     │  │ AnalyzeScriptFunction       │  │
-     │  │ GenerateCppCode (按 opcode)│  │
-     │  │   → File->Content (.hpp)   │  │
-     │  └──────────────────────────────┘  │
-     ▼                                    ▼
-  AS_JITTED_CODE/                    PrecompiledScript.Cache
-    AngelscriptJitCode_N.jit.cpp        (FAngelscriptPrecompiledData binary)
-    XxxModule.as.jit.hpp                 ・DataGuid (FGuid)
-    AngelscriptJitInfo.jit.cpp           ・Modules.Functions[].ByteCode
-      └─ static FStaticJITCompiledInfo   ・TypeReferences / FunctionReferences
-         Info(FGuid(...));               ・StaticNames / BuildIdentifier
-                                         ・GlobalReferences / PropertyRefs
-
-  阶段二：Link 期固化（普通 UE 构建，无任何 JIT 行为）
-  -------------------------------------------------------------------
-  生成的 .jit.cpp 文件被纳入 AngelscriptRuntime/AngelscriptScripts 模块
-    AS_FORCE_LINK static const FStaticJITCompiledInfo JitInfo(FGuid(A,B,C,D));
-    AS_FORCE_LINK static const FStaticJITFunction AS_xxx__yyy_Register(0x..u, ...);
-    AS_FORCE_LINK FJitRef_Function FREF_xxx__yyy(0xRRRu);
-  → 这些静态对象的构造函数把符号塞进 FJITDatabase::Get()，
-    跨模块由 [[gnu::used,gnu::retain]] / pragma 防止链接器丢弃。
-
-  阶段三：Run 期 load（普通 cooked build 启动）
-  -------------------------------------------------------------------
-  FAngelscriptEngine::Initialize
-    bUsePrecompiledData = true (条件: !bGenerate && !bIgnore && !cmdlet
-                                       && !WITH_EDITOR && !DevMode)
-    PrecompiledData->Load(PrecompiledScript.Cache)
-    if (CompiledInfo->PrecompiledDataGuid == PrecompiledData->DataGuid)
-       → JIT 入口表保留
-    else
-       → FJITDatabase::Get().Clear()  (放弃所有 jitFunction)
-    InitialCompile() → CompileModule_Code_Stage3 → ScriptModule->JITCompile()
-       → asCScriptFunction::JITCompile()
-         → engine->GetJITCompiler() == nullptr (cook build 已不再 SetJITCompiler)
-         → 此调用是 no-op；jitFunction 由 FStaticJITFunction 静态对象写入
-
-  阶段四：Run 期 dispatch（hot path）
-  -------------------------------------------------------------------
-  asCContext::ExecuteNext / CallScriptFunction
-    if (m_currentFunction->jitFunction != nullptr) {
-       FScriptExecution Execution(this);
-       jitFunction(Execution, stackFramePtr, &outValue);  // ★ 直接调用 .exe 中的 C++
-       if (!Execution.bExceptionThrown) return asEXECUTION_FINISHED;
-       else                              return asEXECUTION_EXCEPTION;
-    }
-    // 否则正常进入 PushCallState() + opcode switch (保留作为 fallback)
-```
-
-后续章节按 [概念边界 → 字节码翻译机制 → 预编译数据 schema → Engine 整合点 →
-            CallFunctionCaller 桥接 → 性能模型 → fork 与 2.38 演化 → 限制矩阵 →
-            BlueprintImpact 协作 → 调试与诊断] 的顺序展开。
-
----
-
-## 一、概念边界：StaticJIT 不是"传统 JIT"
-
-### 1.1 一张比对表先把"我是谁 / 我不是谁"钉死
-
-| 维度 | 传统运行期 JIT (asmjit / LLVM JIT / V8) | UE Fork 的 StaticJIT |
-|------|-------------------------------------|---------------------|
-| 代码生成时刻 | 运行时（首次调用 / 热点检测后） | **Cook 期，命令行 `-as-generate-precompiled-data` 一次性产出** |
-| 输出形式 | 内存中的可执行机器码（mmap PROT_EXEC） | **磁盘上的 .jit.cpp / .jit.hpp 源文件**，靠 UE 后续构建链路编译进 .exe |
-| 是否需要 IR | 通常需要（LLVM IR / asm DSL） | **不需要**——直接把 `asEBCInstr` 翻译成 C++ 表达式 |
-| 是否需要 asmjit / LLVM | 是 | **否**——零额外依赖，运行期甚至没有任何代码生成器存在 |
-| 失败 fallback | 抛弃 JIT，回退解释器 | **抛弃 JIT 入口表（`FJITDatabase::Clear`）**，回退解释器；本身没有第二次编译机会 |
-| 内存占用 | JIT 缓冲区随热点增长 | **零运行期分配**——所有 JIT 函数都是普通 .text 段 |
-| 与 ASLR / Code Sign 兼容 | 需要 mmap RWX 或者 W^X switch | **完全兼容**——是普通 .exe 代码段，不涉及可写代码页 |
-| 平台限制 | 取决于 asmjit/LLVM 平台支持 | 受限于"能否生成 C++ 文件 + 重编译" → 对运行期目标无平台限制；**生成阶段**仅限 Windows/Linux（`AS_CAN_GENERATE_JIT`） |
-
-`StaticJIT/StaticJITConfig.h` 把这一边界用三个宏写得很直白：
-
-```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/StaticJIT/StaticJITConfig.h
-// 角色: StaticJIT 的"我能不能跑"开关族
-// ============================================================================
-#ifndef AS_CAN_GENERATE_JIT
-#define AS_CAN_GENERATE_JIT (PLATFORM_WINDOWS || PLATFORM_LINUX)  // ★ 仅生成阶段
-#endif
-
-#if WITH_EDITOR
-#ifndef AS_ENABLE_EDITOR_JITTED_CODE
-#define AS_SKIP_JITTED_CODE                                       // ★ 编辑器永不用 jit
-#endif
-#endif
-
-#ifndef AS_JIT_VERIFY_PROPERTY_OFFSETS
-#define AS_JIT_VERIFY_PROPERTY_OFFSETS (!UE_BUILD_SHIPPING && !UE_BUILD_TEST)
-#endif
-
-#ifndef AS_WITH_STATIC_JIT_DIAGNOSTICS
-#define AS_WITH_STATIC_JIT_DIAGNOSTICS (!UE_BUILD_SHIPPING)
-#endif
-```
-
-`AS_SKIP_JITTED_CODE` 由 `WITH_EDITOR` 自动开启意味着：**编辑器永远走解释器**——这与热重载、调试器、Blueprint 反查等编辑器特有功能的语义需求是匹配的。Static JIT 的位置非常窄：**Shipping/Test/Development cooked build 的 `bUsePrecompiledData==true` 分支**。
-
-### 1.2 "Static" 这个词的双重含义
-
-- **Static-1（无运行期 codegen）**：所有翻译动作都发生在 cook 期 `WriteOutputCode`，运行期 `FAngelscriptStaticJIT::CompileFunction` 实际上是个 no-op（参见 §三）。
-- **Static-2（静态注册表）**：JIT 入口由 `FStaticJITFunction Register(...)` 这种 static const 对象在程序启动期通过其构造函数把自己塞进 `FJITDatabase::Get().Functions`。这与传统 JIT 的"运行期 emit + map" 形成强对比。
-
-这两层"static"叠在一起，让本子系统的运行期表面非常薄——只有一个 `TMap<uint32, FJITFunctions>` 加几个查找列表。
-
----
-
-## 二、字节码翻译流水线：`FAngelscriptStaticJIT` 内部
-
-### 2.1 入口：`asIJITCompiler::CompileFunction` 的"伪实现"
-
-AS 内核里 `asCModule::JITCompile()` 会扫描 `scriptFunctions` 调用 `func->JITCompile() → jit->CompileFunction(this, &jitFunction)`。UE Fork 的实现做了关键的"延后处理"：
-
-```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/StaticJIT/AngelscriptStaticJIT.cpp
-// 函数: FAngelscriptStaticJIT::CompileFunction
-// ============================================================================
-int FAngelscriptStaticJIT::CompileFunction(asIScriptFunction* ScriptFunction, asJITFunction* OutJITFunction)
-{
-#if AS_CAN_GENERATE_JIT
-    if (bGenerateOutputCode)
-    {
-        FunctionsToGenerate.Add((asCScriptFunction*)ScriptFunction, FGenerateFunction());
-        *OutJITFunction = nullptr;     // ★ 这里**不**返回函数指针
-        return 1;                      // ★ 仅登记到 FunctionsToGenerate 列表
-    }
-#endif
-    check(false);                      // ★ 未在 generate 模式下被调用是非法路径
-    return 0;
-}
-```
-
-也就是说，每次 `asCModule::JITCompile` 仅完成"采集本模块所有脚本函数清单"，真正翻译动作在 `Initialize` 末尾的 `WriteOutputCode()` 一次性遍历 `FunctionsToGenerate` 来做。这一点是与上游 AS 抽象 `asIJITCompiler` 接口最大的语义偏离——上游期望返回值就是 `jitFunction`，UE Fork 把它解耦为"先收集，再生成磁盘文件"。
-
-### 2.2 `WriteOutputCode` 的三次循环
-
-```text
-WriteOutputCode(OutGeneratedFiles?):
-  ── 1) DetectScriptType (扫描 asCObjectType)
-  │     标记哪些类型在 cook 与 link 之间"可能尺寸不同"，
-  │     对应每个 type 决定要不要写 `bCanHardcodeSize` 还是用
-  │     `Func->ReferenceTypeSize(...)` 间接查找
+.as 源码
   │
-  ── 2) AnalyzeScriptFunction (统计调用图、devirtualize 候选)
-  │     for each FunctionsToGenerate:
-  │       决定 FunctionSymbolName / FunctionDeclaration
-  │       识别 always-jit、virtual override 候选
+  ├─ 预处理、编译、Cache V2 恢复
+  │      产生当前 Engine 权威的模块/函数和稳定身份
   │
-  ── 3) GenerateCppCode (真正出 C++)
-        for each FunctionsToGenerate:
-          构造 FStaticJITContext (per-function)
-            FunctionHead: 签名 + "alignas(8) asBYTE l_stack[N]"
-                         + asQWORD/asBYTE/asDWORD/float/double/void* 寄存器
-                         + (debug builds) SCRIPT_DEBUG_CALLSTACK_FRAME
-            遍历字节码:
-              For each instruction (asEBCInstr):
-                FAngelscriptBytecode::GetBytecode(Instr).Implement(ctx);
-                  → 写入 FunctionContent 一行行 C++
-            FunctionFoot: return / 异常清理 label
-          WriteOutFunction → File->Content.Add(Head + Body + Foot)
+  ├─ Generate
+  │      每个 AS 模块生成一个 <AS相对目录>/<源文件名>.<短ModuleKey>.<Profile>.jit.cpp
+  │      Provider.generated.cpp/.h 汇总入口与稳定元数据
+  │
+  ├─ UBT/C++ 编译
+  │      产物进入 AngelscriptJIT 或 AngelscriptTestJIT 的 DLL/EXE
+  │
+  ├─ UE 模块 StartupModule
+  │      以 IAngelscriptJITArtifactProvider 注册 Modular Feature
+  │
+  ├─ Runtime Registry
+  │      校验 Provider ABI，复制成不可变 Catalog，发布 Snapshot
+  │
+  └─ Engine Router::Refresh
+         当前函数 + Provider entry 完全匹配 -> Native
+         任一条件不匹配/引用无法解析/出现歧义 -> 该函数 VM
 ```
 
-`AngelscriptBytecodes.cpp` 6671 行就是 ~200+ 个 opcode 的 `Implement` 定义集合，每个 opcode 一个 `IMPL_BYTECODE_BEGIN(asBC_xxx) ... IMPL_BYTECODE_END(asBC_xxx)` 块；它们都通过 `bRegistered` static 模板成员，在静态初始化阶段把自己注册到 `FAngelscriptBytecode::GetBytecodeMap()`。
+这里最重要的边界是：
 
-### 2.3 一段真实翻译产物（取自 `Plugins/.../AngelscriptTest/StaticJIT/AOT/Generated/`）
+- `.as` 编译结果或 Cache V2 恢复结果始终是当前 Engine 的权威状态；
+- Provider 只提供“这个精确函数版本可以调用哪些原生入口”；
+- Provider 不能替换当前脚本模块、类型、函数或 Cache V2；
+- 数字 FunctionId、对象地址、注册顺序和 Cache 创建顺序都不是跨进程身份。
 
-cook 出的 `.hpp` 内容极具说明性：
+## 关键源码
 
-```cpp
-// ============================================================================
-// 文件: AngelscriptTest/StaticJIT/AOT/Generated/ASStaticJITAotFixture.as.jit.hpp
-// 角色: cook 阶段产出的"AS 字节码 → C++ 等价"的真实样本
-// ============================================================================
-AS_FORCE_LINK FJitRef_Type TREF_UStaticJITAotFunctionCarrier(0x1f806ba3300);
-AS_FORCE_LINK FJitRef_GlobalVar GREF___StaticType_UStaticJITAotFunctionCarrier(0x1f806c15060);
+| 职责 | 入口 |
+|---|---|
+| 字节码到 C++ 翻译 | `AngelscriptRuntime/StaticJIT/AngelscriptStaticJIT.*`、`AngelscriptBytecodes.*` |
+| 生成模型与严格模块分组 | `AngelscriptJITGeneration.*` |
+| 原子写入、owned-file 管理、未变化文件保留 | `AngelscriptJITGeneratedFileStore.*` |
+| Provider ABI | `AngelscriptJITProvider.*` |
+| 多 Provider Registry | `AngelscriptJITProviderRegistry.*` |
+| Provider 与当前 Engine 路由匹配 | `AngelscriptJITProviderMatcher.*`、`AngelscriptJITProviderRouter.*` |
+| 稳定引用解析 | `AngelscriptJITReferenceResolver.*` |
+| binding 执行与生命周期 | `AngelscriptJITBindingContext.*`、`AngelscriptJITExecutionContext.*`、`AngelscriptJITProviderLifetime.h` |
+| 运行期诊断 | `StaticJITDiagnostics.*` |
+| 项目生成/校验 Commandlet | `AngelscriptEditor/StaticJIT/AngelscriptJITProjectGeneration.*`、`AngelscriptJITCommandlet.*` |
+| Editor 显式刷新 | `AngelscriptEditor/StaticJIT/AngelscriptJITRefreshService.*` |
+| 项目 Provider 载体 | `Source/AngelscriptJIT/` |
+| 固定测试 Provider 载体 | `Plugins/Angelscript/Source/AngelscriptTestJIT/` |
 
-constexpr SIZE_T POFFSET_UStaticJITAotFunctionCarrier_StoredValue = Align(sizeof(UObject) + 0, 4);
-AS_FORCE_LINK FJitVerifyPropertyOffset PVERIFY_UStaticJITAotFunctionCarrier_StoredValue(0x601000612b, POFFSET_...);
+## 1. 为什么严格一个 AS 模块一个 `.jit.cpp`
 
-void AS_UStaticJITAotFunctionCarrier__StorePrimitiveArg(FScriptExecution& Execution, UObject* l_This, asDWORD p_Value)
-{
-    SCRIPT_DEBUG_CALLSTACK_FRAME_UOBJECT("void UStaticJITAotFunctionCarrier::StorePrimitiveArg(int)", 19);
-    SCRIPT_ASSUME_NO_EXCEPTION()
-    asQWORD l_valueRegister = 0; /* + 其它寄存器 */
-    asDWORD v_TEMP_dword_1 = {};
-    // SUSPEND
-    // ADDIi v1, v-2, 3
-    ((int32&)v_TEMP_dword_1) = ((int32&)p_Value) + value_as<int>((asDWORD)0x3u);   // ★ 字节码 → C++
-    // LoadThisR +48
-    l_valueRegister = ((asQWORD)l_This) + POFFSET_UStaticJITAotFunctionCarrier_StoredValue;
-    // WRTV4 v1
-    memcpy((void*)l_valueRegister, (void*)(&v_TEMP_dword_1), 4);
-    return;
-}
-static void AS_..._VMEntry(FScriptExecution& Execution, asDWORD* l_fp, asQWORD* l_outValue) {
-    AS_..._StorePrimitiveArg(Execution, *(UObject**)l_fp, *(asDWORD*)(l_fp + 2));
-}
-AS_FORCE_LINK static const FStaticJITFunction AS_..._Register(
-    0x581ba130u, &AS_..._VMEntry, &AS_..._ParmsEntry, (asJITFunction_Raw)(void*)&AS_...StorePrimitiveArg);
-```
+### 1.1 当前目录布局
 
-可以看到几个关键模式：
-
-- **以 BC 注释为分隔**：`// ADDIi v1, v-2, 3` 注释来自 `WriteDebugComment`，用于人类理解原字节码（参见 `FAngelscriptBytecodeImpl::WriteDebugComment`）。
-- **本地变量映射成 `v_TEMP_dword_1` / `p_Value`**：`FStaticJITContext::AllocateLocalVariable` 与 `FVariableAsLocal` 体系负责把 AS 栈变量重写为 C++ 局部变量。
-- **属性偏移**通过 `POFFSET_xxx = Align(sizeof(UObject) + 0, 4)` 在编译期推导 + `FJitVerifyPropertyOffset` 在运行期校验。
-- **三种入口** `VMEntry`（解释器栈接入）、`ParmsEntry`（FFrame/Parms 接入）、`Raw`（C++ 直调）通过 `FStaticJITFunction` 构造函数同时注册。
-
-### 2.4 `FStaticJITContext`：每函数一份的翻译"记账本"
-
-`AngelscriptStaticJIT.h` 中的 `FStaticJITContext` 是字节码翻译的临时上下文，关键字段一览：
-
-| 字段族 | 含义 |
-|--------|------|
-| `BC_FunctionStart / BC_End / BC` | 当前正在翻译的字节码游标 |
-| `Instructions[] / CurrentInstructionIndex` | 跳转目标分析（Pre-pass 标记 label 与 conditional jump） |
-| `LocalVariables / LocalNamesUsed` | AS 栈位 ↔ C++ 局部名映射 |
-| `FloatingStackExpressions / LocalStackOffset / LocalStackSize` | 栈表达式延迟物化（避免每次都 store/load） |
-| `StateVars` | 跨指令的 `static`/`thread_local` 持久量 |
-| `ExceptionCleanupLabels` | 异常清理 goto label 池（参见 §九） |
-| `ValueRegisterState` | AS `valueRegister` 是否已经物化到具体类型寄存器（`bAllowIndeterminate`） |
-
-`PushVolatile` / `MaterializeStackVolatiles` / `MaterializeWholeStack` 这一组 API 实现的是"AS 栈惰性求值器"——只有当下一条指令真的需要"物化的栈"才回写 `l_stack[N]`，否则把表达式留在 C++ 局部里以便编译器做常量折叠。这是 StaticJIT 比解释器更快的关键来源之一。
-
-### 2.5 跳转分析：Pre-pass 把 AS 跳转映射成 C++ `goto`
-
-```cpp
-// ============================================================================
-// 文件: AngelscriptStaticJIT.h
-// 角色: 跳转目标登记，决定哪些字节码偏移需要在 C++ 输出中放 label
-// ============================================================================
-struct FInstruction
-{
-    TArray<int32> JumpTargets;
-    TArray<int32> ReceivedJumps;
-    asDWORD* BC;
-    struct FAngelscriptBytecode* Bytecode;
-    FString Label;
-    bool bMarked = false;
-    int32 StackOffsetBeforeInstr = 0;
-    bool bJumpPartOfSwitch = false;
-    bool bIsConditionalJump = false;
-    EValueRegisterState ValueRegisterStateFromJump = EValueRegisterState::Indeterminate;
-    bool bHasMultipleValueRegisterStates = false;        // ★ 同一 label 多源 → 不能假设寄存器状态
-};
-```
-
-如果某个目标 label 来自多个跳转源，且各源的 `valueRegister` 类型不一致，`bHasMultipleValueRegisterStates=true`，后续翻译会保守地强制物化值寄存器。这是为什么 cooked .jit.hpp 里偶尔能看到看似冗余的 memcpy ↔ register 来回——并非翻译质量差，而是必须保证语义正确。
-
----
-
-## 三、预编译数据 schema：`FAngelscriptPrecompiledData`
-
-JIT 翻译产物只是 StaticJIT 的"代码侧"。要让运行期把翻译好的入口正确地接到 `asCScriptFunction::jitFunction` 上，还需要"数据侧"——一份与 .jit.cpp 一一对应的字节码归档：`PrecompiledScript.Cache`。
-
-### 3.1 顶层 schema
-
-```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/StaticJIT/PrecompiledData.h
-// 节选自: FAngelscriptPrecompiledData (~550–650 行)
-// ============================================================================
-struct FAngelscriptPrecompiledData
-{
-    FMemMark AllocMark;                                    // memstack 顶端，析构次序保护
-
-    FGuid DataGuid;                                        // ★ 与 .jit.cpp 一一对应
-    TMap<FString, FAngelscriptPrecompiledModule> Modules;  // ★ 每个 .as module 一项
-    TMapAsPtr<int64, FAngelscriptTypeReference> TypeReferences;
-    TMap<int, int64> TypeIdReferenceToPointer;
-    TMapAsPtr<int64, FAngelscriptFunctionReference> FunctionReferences;
-    TMap<int, int64> FunctionIdReferenceToPointer;
-    TMapAsPtr<int64, FAngelscriptGlobalReference> GlobalReferences;
-    TMapAsPtr<int64, FAngelscriptPropertyReference> PropertyReferences;
-    TArray<FStringInArchive> StaticNames;
-    int32 BuildIdentifier = -1;                            // ★ cache schema + Debug/Dev/Test/Shipping 不互通
-
-    TArray<uint8> LoadedData;                              // 原始字节，FStringInArchive 字符串借用其底
-    bool bMinimizeMemoryUsage = false;
-};
-```
-
-`FStringInArchive` 是个非常工业风的优化：所有 `FString` 字段都不持有自己的字符存储，而是指向 `LoadedData` 中的偏移；运行期只要 `LoadedData` 不释放，`FStringInArchive` 就有效。`bMinimizeMemoryUsage` 在 cooked build 启动后会被设置为 `true`，丢弃部分调试用元数据，但保留运行期必需的引用。
-
-### 3.2 每个函数都序列化什么
-
-```cpp
-// ============================================================================
-// 文件: PrecompiledData.h
-// 节选自: FAngelscriptPrecompiledFunction (~80–180 行)
-// ============================================================================
-struct FAngelscriptPrecompiledFunction
-{
-    // ── Angelscript 数据 ──
-    FStringInArchive FunctionName;
-    FAngelscriptPrecompiledDataType ReturnType;
-    TArray<FAngelscriptPrecompiledDataType, TPrecompiledAllocator<>> ParameterTypes;
-    int32 FunctionTraits;
-    TArray<int32, TPrecompiledAllocator<>> ByteCode;                  // ★ 字节码本体
-    TArray<int32, TPrecompiledAllocator<>> ByteCodeReferences;        // ★ 字节码内的指针/类型 ID 位置
-    int32 VariableSpace = -1;
-    TArray<FAngelscriptPrecompiledReference, TPrecompiledAllocator<>> ObjVariableTypes;
-    TArray<int32, TPrecompiledAllocator<>> ObjVariablePos;
-    int32 ObjVariablesOnHeap = -1;
-    int32 StackNeeded = -1;
-    uint32 Id;                                                        // ★ 与 .jit.cpp 中 Register(0x..u, ...) 对应
-    int32 DeclaredAt = 0;
-    TArray<int32, TPrecompiledAllocator<>> LineNumbers;
-
-    // ── 预处理器数据 ──
-    bool bIsUFunction = false;
-    bool bBlueprintCallable; bool bBlueprintOverride; bool bBlueprintEvent; bool bBlueprintPure;
-    bool bNetMulticast; bool bNetClient; bool bNetServer; ...
-};
-```
-
-关键点：
-
-- **字节码不是按"原始 asDWORD" 直接 dump**：通过 `FAngelscriptBytecodeReferencer` 把字节码内出现的指针字段（global ptr / function id / type info / type id）替换为序列化时的"references"，加载时再反向解析回当前进程的真实指针。这是为什么 `PrecompiledScript.Cache` 在不同进程间 portable。
-- **每个 `Id` 与 .jit.hpp 中 `FStaticJITFunction Register(0x..u, ...)` 是同一个值**：通过 `CreateFunctionId` 用模块名 + 类型声明 + 函数声明的 CRC 派生而来。
-- **bBlueprint* 标志同时在 `FAngelscriptPrecompiledFunction` 和原始预处理器中存放**：cooked 构建跳过预处理器，直接从 cache 还原 UFunction 的修饰属性。
-
-### 3.3 `Save / Load / IsValidForCurrentBuild` 三件套
-
-```cpp
-// ============================================================================
-// 文件: PrecompiledData.cpp
-// 函数: GetCurrentBuildIdentifier / IsValidForCurrentBuild / Save / Load
-// ============================================================================
-int32 FAngelscriptPrecompiledData::GetCurrentBuildIdentifier()
-{
-    constexpr int32 SchemaVersion = 10;
-
-#if   UE_BUILD_DEBUG       return SchemaVersion * 10 + 1;
-#elif UE_BUILD_DEVELOPMENT return SchemaVersion * 10 + 2;
-#elif UE_BUILD_TEST        return SchemaVersion * 10 + 3;
-#elif UE_BUILD_SHIPPING    return SchemaVersion * 10 + 4;
-#else                      return -1;       // ★ 未知配置 → 永远视为无效
-#endif
-}
-
-bool FAngelscriptPrecompiledData::IsValidForCurrentBuild()
-{
-    return BuildIdentifier == GetCurrentBuildIdentifier() && BuildIdentifier != -1;
-}
-
-void FAngelscriptPrecompiledData::Save(const FString& Filename)
-{
-    TArray<uint8> Data;
-    FMemoryWriter Writer(Data, /*bIsPersistent*/ true);
-    Writer.SetWantBinaryPropertySerialization(true);
-    Writer << *this;
-    FFileHelper::SaveArrayToFile(Data, *Filename);
-}
-
-void FAngelscriptPrecompiledData::Load(const FString& Filename)
-{
-    CachedPointerReferences.Reserve(32000);
-    ProcessedFunctionToId.Reserve(16000);
-    FFileHelper::LoadFileToArray(LoadedData, *Filename);
-    FMemoryReaderWithPtr Reader(LoadedData);
-    Reader.SetWantBinaryPropertySerialization(true);
-    Reader << *this;
-    ResetRuntimeState();   // ★ 旧的 transient 解析缓存清掉，避免上一次 Load 残留
-}
-```
-
-注意 `Load` 末尾必须调用 `ResetRuntimeState`：fork 历史里曾出现"两次 `Load` 同一文件后 `CachedPointerReferences` 残留旧 engine 解析的指针，导致 use-after-free"的 bug；现在 `ExerciseRepeatedGlobalReferenceLoad` 测试专门覆盖这条路径（见 `StaticJITDiagnostics::ExerciseRepeatedGlobalReferenceLoad`）。
-
-### 3.4 三阶段 `ApplyToModule_Stage1/2/3`
-
-cooked build 启动期，每个 module 经过：
+项目 Provider 的真实生成目录是：
 
 ```text
-Stage1 (CompileModule_PreClass_Stage1):
-  ScriptModule->builder → 构造空 module 骨架，把类预声明
-  Module->ScriptModule = ScriptModule; Module->bLoadedPrecompiledCode = true
-
-Stage2 (CompileModule_Properties_Stage2):
-  PrecompiledData->ApplyToModule_Stage2 → 创建 properties / class 内成员
-
-Stage3 (CompileModule_Code_Stage3):
-  PrecompiledData->ApplyToModule_Stage3 → 把 ByteCode 还原到 asCScriptFunction::scriptData
-  ScriptModule->JITCompile()  ← 但此时 GetJITCompiler() == nullptr，所以是 no-op
+Source/AngelscriptJIT/Generated/
+├── Provider.generated.h
+├── Provider.generated.cpp
+├── EditorDevelopment/
+│   ├── Provider.generated.h
+│   ├── Provider.generated.inl
+│   ├── ProviderManifest.generated.json
+│   ├── OwnedFiles.generated.json
+│   ├── Tests/Test_Handles.07a7af43.EditorDevelopment.jit.cpp
+│   └── Examples/Core/Example_Math.7fca3709.EditorDevelopment.jit.cpp
+├── GameDevelopment/
+│   └── ……同样按 AS 源码目录组织……
+└── GameShipping/
+    └── ……同样按 AS 源码目录组织……
 ```
 
-cooked 路径下 `JITCompile()` 是空操作，因为 `bGeneratePrecompiledData==false` 时没 `SetJITCompiler`。`jitFunction` 字段是怎么填上的？由阶段二（link 期）的 `FStaticJITFunction(...)` 构造器代理写入 `FJITDatabase::Get().Functions[FuncId]`，但要把它"绑回" `asCScriptFunction::jitFunction` 还需要在 `ApplyToModule_Stage3` 末尾根据 `FuncId` 反查 `FJITDatabase` 完成最后一步赋值（参见 `FAngelscriptPrecompiledFunction::Process`，把 `Function->jitFunction = Funcs.VMEntry; Function->jitFunction_Raw = Funcs.RawFunction; ...` 写回）。
+当前 Profile：
 
----
+- `EditorDevelopment`
+- `GameDevelopment`
+- `GameShipping`
 
-## 四、Engine.Initialize 中的启用 / 失败回退
+`Provider.generated.*` 是 UE Provider 汇总表，不代表某个 AS 模块。`ProviderManifest.generated.json` 和 `OwnedFiles.generated.json` 是元数据，也不属于 AS 模块翻译单元。因此“一个 AS 模块一个 `.jit.cpp`”约束只针对按 AS 源码目录生成的翻译源文件。
 
-`Core/AngelscriptEngine.cpp` ~1620–1830 行是 StaticJIT 与运行期联动的"全部交互面"：
+路径映射规则是：
+
+- `/Angelscript/Game/Tests/Test_Handles.as` → `EditorDevelopment/Tests/Test_Handles.<短键>.EditorDevelopment.jit.cpp`；
+- `/Angelscript/Plugin/MyPlugin/Foo/Bar.as` → `<Profile>/Plugin/MyPlugin/Foo/Bar.<短键>.<Profile>.jit.cpp`；
+- 内存模块 → `<Profile>/Memory/<Provider>/...`。
+
+### 1.2 可读文件名和完整稳定身份怎样配合
+
+文件名使用“AS 源文件 stem + 稳定模块键短前缀 + Profile”。短键默认取 8 个十六进制字符；如果整个生成集合里出现不区分大小写的 basename 冲突，就确定性地扩到 12、16 位，直到唯一。这样既能一眼看出对应哪个 `.as`，又能避免同名模块和 UBT 把不同目录的 `.cpp` basename 压平时产生对象文件冲突。
+
+短键只用于物理文件名。完整 256 位 `StableModuleKey` 仍保存在文件头和 manifest，内部 C++ symbol 仍是完整 `ASJIT_<StableFunctionKey>_<ExecutionHash>...`，没有缩短。每个 `.jit.cpp` 的 revision-2 ownership marker 仍是第一行，随后有模块元数据块；每个函数还有声明、虚拟源位置、完整函数键与各类 hash，并在 Raw/VM/Parms 入口正上方重复一行易读的 AS 函数/源位置注释。
+
+完整稳定键继续避免：
+
+- 两个挂载点或插件里出现同名模块；
+- 路径大小写、重命名和特殊字符影响 UBT；
+- 生成顺序变化导致文件重排；
+- 瞬时模块地址或 FunctionId 泄漏到持久化产物。
+
+manifest schema revision 3 同时保存 canonical module/source 和每个函数的声明、行列号；ownership revision 与 Provider ABI 仍分别保持 2。
+
+### 1.3 一个 AS 函数改动时会发生什么
+
+假设 `Inventory.as` 所属稳定模块键为 `abc...`：
+
+```text
+修改前：Tests/Inventory.abc12345.EditorDevelopment.jit.cpp
+修改后：Tests/Inventory.abc12345.EditorDevelopment.jit.cpp
+```
+
+函数 body、常量或该模块内部内容改变时：
+
+1. 文件路径不变；
+2. 生成器只重写这个模块文件和必要的 Provider 元数据；
+3. 其他 AS 模块的 `.jit.cpp` 字节和时间戳保持不变；
+4. UBT 增量构建只需编译这个 `.jit.cpp`，再链接它所属的 UE Provider 模块；
+5. 新 DLL/patch 发布前，改动函数因内容摘要不匹配回退 VM；未改函数仍可 Native；
+6. 新一代 Provider 成功发布并刷新路由后，改动函数恢复 Native。
+
+若新增或删除了整个 AS 模块，生成目录下的 C++ 源文件集合也会变化。UBT/Live Coding 不能把未进入当前 target action graph 的全新源文件安全补进来，因此这类变化要求一次普通完整构建。
+
+旧的 `Private/Generated/<Profile>` 和 `Private/Generated/Profiles/<Profile>` 只由 Generate 迁移：Verify 只读报告 stale；Generate 必须先验证 revision-2 inventory、Profile、ProviderId 和每个现存清单文件的 ownership marker，之后只删除清单列出的文件。旧的固定模块源码与 selector 由 Scaffold 在内容完全匹配受管模板时迁到模块根及 `Generated/`。清单无效、文件被用户替换或混入非 owned 内容时会拒绝迁移并原样保留。迁移改变 UBT source set，必须普通构建，不能直接 Live Coding。
+
+### 1.4 全局函数放在哪里
+
+全局函数完全支持 StaticJIT。它与类方法一样，根据**所属 AS 模块**进入该模块唯一的 `.jit.cpp`。
+
+“类图不能放全局函数”的意思只是 UML 表达规则：全局函数不属于某个类，所以不要为了画图硬塞进类框。可以这样表示：
+
+```text
+AS 模块 Inventory
+├── 全局函数 CreateInventory()
+├── 全局函数 FindItem(...)
+├── class UInventoryComponent
+│   ├── AddItem(...)
+│   └── RemoveItem(...)
+└── class FInventoryEntry
+    └── IsValid()
+
+生成结果：Inventory 对应的唯一 Inventory.<短StableModuleKey>.<Profile>.jit.cpp
+```
+
+生成拓扑按模块，不按“全局函数/类方法”分类，也不按类拆文件。
+
+## 2. JIT 函数怎样注册
+
+### 2.1 不再注册进一个全局 Database
+
+旧实现依赖静态构造器把 `FunctionId -> 原生指针` 写进 `FJITDatabase`，再用 whole-cache `DataGuid` 判断整盘能不能用。它存在几个根本问题：
+
+- FunctionId 是当前 Engine 的瞬时编号，跨启动、编译顺序和 Cache 恢复不稳定；
+- 一个进程里很难安全容纳项目、插件、测试和 Live Coding 多个 Provider；
+- 全局表无法自然描述 DLL 卸载和旧代码仍被执行中的生命周期；
+- 一个函数变化可能迫使整盘 JIT 清空。
+
+当前实现改为 UE Modular Feature：每个承载生成代码的 UE 模块实现 `IAngelscriptJITArtifactProvider`。
+
+项目载体 `Source/AngelscriptJIT/AngelscriptJITModule.cpp` 的核心行为等价于：
 
 ```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/Core/AngelscriptEngine.cpp
-// 节选自: Initialize（仅保留与 StaticJIT 相关的语句）
-// ============================================================================
-bGeneratePrecompiledData = RuntimeConfig.bGeneratePrecompiledData;
-bScriptDevelopmentMode  = RuntimeConfig.bIsEditor || RuntimeConfig.bDevelopmentMode;
-bUsePrecompiledData     = !bGeneratePrecompiledData && !RuntimeConfig.bIgnorePrecompiledData
-                         && !RuntimeConfig.bRunningCommandlet && !WITH_EDITOR && !bScriptDevelopmentMode;
-
-if (bGeneratePrecompiledData)                                  // ★ 分支 A: cook 期 transpile
+class FAngelscriptJITModule
+    : public IModuleInterface
+    , public IAngelscriptJITArtifactProvider
 {
-    PrecompiledData = new FAngelscriptPrecompiledData(Engine);
-    StaticJIT = new FAngelscriptStaticJIT();
-    StaticJIT->PrecompiledData = PrecompiledData;
-#if AS_CAN_GENERATE_JIT
-    StaticJIT->bGenerateOutputCode = true;
-#endif
-    Engine->SetEngineProperty(asEP_BUILD_WITHOUT_LINE_CUES, 1); // ★ cook 期减少噪声
-    Engine->SetJITCompiler(StaticJIT);
-}
-// ... InitialCompile() 期间 asCModule::JITCompile 会通过 StaticJIT 收集 FunctionsToGenerate
-
-if (bUsePrecompiledData)                                       // ★ 分支 B: cooked 期 load
-{
-    FString Filename = ChooseFilenameByBuildConfig();          // PrecompiledScript_{Shipping/Test/Development}.Cache
-    if (IFileManager::Get().FileExists(*Filename))
+    void StartupModule() override
     {
-        PrecompiledData = new FAngelscriptPrecompiledData(Engine);
-        PrecompiledData->Load(Filename);
-        if (!PrecompiledData->IsValidForCurrentBuild())        // ★ Build identifier 不匹配 → 整盘丢弃
-        {
-            delete PrecompiledData; PrecompiledData = nullptr;
-            UE_LOG(Angelscript, Warning, TEXT("...Discarding all precompiled data."));
-        }
-        else
-        {
-            if (StaticJIT != nullptr) StaticJIT->PrecompiledData = PrecompiledData;
-            if (!bScriptDevelopmentMode) PrecompiledData->bMinimizeMemoryUsage = true;
-            const FStaticJITCompiledInfo* CompiledInfo = FStaticJITCompiledInfo::Get();
-            if (CompiledInfo != nullptr && CompiledInfo->PrecompiledDataGuid != PrecompiledData->DataGuid)
-            {
-                UE_LOG(Angelscript, Warning, TEXT("...Transpiled code will not be used!"));
-                FJITDatabase::Get().Clear();                   // ★ 双 GUID 不一致 → 单独丢 JIT，保留字节码
-            }
-        }
+        IModularFeatures::Get().RegisterModularFeature(
+            IAngelscriptJITArtifactProvider::FeatureName(), this);
     }
-}
-// ...
-InitialCompile();                                              // 阶段三：还原 modules
-#if AS_CAN_GENERATE_JIT
-if (StaticJIT != nullptr && StaticJIT->bGenerateOutputCode)
-{
-    StaticJIT->WriteOutputCode();                              // ★ 把 .jit.cpp/.hpp 写到 AS_JITTED_CODE/
-    bForcedExit = true;
-}
-#endif
-if (bGeneratePrecompiledData)
-{
-    PrecompiledData->InitFromActiveScript();
-    PrecompiledData->Save(GetScriptRootDirectory() / TEXT("PrecompiledScript.Cache"));
-    bForcedExit = true;                                        // ★ cook 完后立即退出进程
-}
 
-if (PrecompiledData != nullptr)
-{
-    bStaticJITTranspiledCodeLoaded = FJITDatabase::Get().Functions.Num() > 0;   // ★ 状态指示位
-    if (!bScriptDevelopmentMode && !bGeneratePrecompiledData)
-        PrecompiledData->ClearUnneededRuntimeData();
-    delete PrecompiledData; PrecompiledData = nullptr;
-    FJITDatabase::Clear();                                     // 已经把 jitFunction 写回 asCScriptFunction
-}
+    void ShutdownModule() override
+    {
+        IModularFeatures::Get().UnregisterModularFeature(
+            IAngelscriptJITArtifactProvider::FeatureName(), this);
+    }
+
+    const FAngelscriptJITProviderView*
+    GetAngelscriptJITProviderView() const override
+    {
+        return GetCurrentGeneratedAngelscriptJITProviderView();
+    }
+};
 ```
 
-四个核心分支：
+Provider View 包含：
 
-| `bGenerateP` | `bUseP` | `WITH_EDITOR` | `bDevMode` | 行为 |
-|--------------|---------|---------------|------------|------|
-| true | false | 任意 | 任意 | **Cook 路径**：`SetJITCompiler` + `WriteOutputCode` + `Save` + 进程退出 |
-| false | true | false | false | **Cooked 运行路径**：`Load` + 校验 GUID + `bMinimizeMemoryUsage` |
-| false | false | true | 任意 | **编辑器路径**：完全不用 cache，全量解释器；`AS_SKIP_JITTED_CODE` 让 link 进来的 .jit.cpp 也变 inactive |
-| false | false | false | true | **Standalone Dev 路径**：`bScriptDevelopmentMode=true`，热重载启用，cache 不用，jit 不用 |
+- ABI Revision；
+- 稳定 `ProviderId`；
+- 内容派生的 `ProviderGeneration`；
+- 完整 artifact-set digest；
+- Target Profile 与 native environment fingerprint；
+- Provider/Owner UE 模块名；
+- 按稳定模块键、稳定函数键排序的 entry 表；
+- 每个 entry 的 execution/debug/entry ABI 摘要；
+- VM、Raw、Parms 三种原生入口；
+- 所需的稳定引用槽描述。
 
-`bStaticJITTranspiledCodeLoaded` 是个外部可观测的布尔位，可以通过 `as.DumpEngineState` 或 `as.StaticJIT.DumpDiagnostics` 查询，用来判断"我这次启动到底跑没跑 jit"。
+### 2.2 Registry 做什么
 
----
+`FAngelscriptRuntimeModule::StartupModule()` 启动 `FAngelscriptJITProviderRegistry` 的 Modular Feature 发现。Registry 同时处理：
 
-## 五、与 CallFunctionCaller 的对接
+- Runtime 启动前已经注册的 Provider；
+- Runtime 启动后新加载的 Provider；
+- Provider 模块卸载；
+- Live Coding 发布的新一代 Provider。
 
-StaticJIT 翻译某个调用 `Actor.GetActorLocation()` 时面临一个抉择：要不要把它内联展开成"直接 `((AActor*)l_This)->GetActorLocation()`"？答案取决于该 native 函数**是否注册了 `FScriptFunctionNativeForm`**。
+注册时 Registry 会完整校验 ABI、结构大小、数量上限、稳定键、摘要、排序、重复项、引用槽和 artifact-set 一致性，然后**复制** Provider View，形成 Runtime 自己持有的不可变 Catalog。运行时不会长期借用生成模块的 view 数组。
 
-### 5.1 `SCRIPT_NATIVE_*` 宏的 cook-only 注册
+每次接受注册、替换或卸载，Registry 都发布新的不可变 Snapshot，并增加 `PublicationOrdinal`。读取者拿共享快照，不依赖 UE 模块加载顺序。
+
+同一个 `ProviderId` 被不同 owner 冲突注册，或者不同 Provider 都对同一函数声称 exact，都会 fail closed；不会“后注册者覆盖前注册者”。
+
+## 3. Engine 初始化时怎样消费
+
+### 3.1 当前 Engine 状态先成为权威
+
+Engine 的初始编译有两种来源：
+
+- 从当前 `.as` 源码编译；
+- 从 Cache V2 恢复完全匹配的记录。
+
+无论来源是哪一种，最终都先建立当前 Engine 私有的模块、函数、类型、引用和稳定 route snapshot。Provider 不能跳过这一步。
+
+### 3.2 Router 逐函数匹配
+
+成功初始编译/恢复之后，Engine 调用：
 
 ```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/StaticJIT/StaticJITBinds.cpp
-// 函数: FScriptFunctionNativeForm::BindNativeMethod
-// ============================================================================
-void FScriptFunctionNativeForm::BindNativeMethod(FAngelscriptBinds& Binds, const ANSICHAR* Name, bool bTrivial)
-{
-    if (!FAngelscriptEngine::IsGeneratingPrecompiledData())     // ★ 非 cook 期是 no-op
-        return;
-    GScriptNativeForms.Add(FAngelscriptBinds::GetPreviousBind(), new FScriptNativeMethod(Name, bTrivial));
+FAngelscriptJITProviderRouter::Refresh(*this);
+```
+
+热重载成功后也会在结构变更 guard 释放、post-compile consumer 运行前刷新。
+
+对每个当前函数，Router 检查：
+
+1. 稳定 ModuleKey；
+2. 稳定 FunctionKey；
+3. ExecutionHash；
+4. 需要时的 DebugHash；
+5. Target Profile；
+6. Native environment fingerprint；
+7. Entry ABI；
+8. Provider artifact set 完整性；
+9. 稳定引用槽能否在**当前 Engine**唯一解析；
+10. 是否只有一个无歧义的 exact Provider。
+
+全部通过后，Router 构造包含入口、引用槽和代码生命周期 lease 的完整 immutable binding，并一次发布给当前 `asCScriptFunction`。否则该函数保持或回退 VM，同时记录类型化 mismatch reason。
+
+### 3.3 VM、Raw、Parms 分别是什么
+
+| 入口 | 典型消费者 | 作用 |
+|---|---|---|
+| `VMEntry` | AngelScript VM 调用脚本函数 | 从 VM 栈/寄存器进入生成代码 |
+| `RawEntry` | 满足 ABI 的原生直调路径 | 避免通用 VM 分发 |
+| `ParmsEntry` | `UASFunction`、反射/FFrame 参数块 | 从 UE Parms 内存进入生成代码 |
+
+三者属于一个 binding 快照，不能分别写入并形成半更新状态。函数替换、模块丢弃、compiler 更换或卸载时，由 `asCScriptFunction` 的统一 binding 生命周期安全退休。
+
+### 3.4 为什么不能直接按 FunctionId 查
+
+FunctionId 只用于当前进程诊断上下文。以下情况都可能改变它：
+
+- 模块编译顺序变化；
+- Cache V2 恢复顺序变化；
+- 热重载创建新函数版本；
+- 两个 Engine 以不同顺序创建；
+- 函数删除后编号复用。
+
+因此 Provider 只发布稳定键，Router 在每个 Engine 内重建“稳定键 -> 当前函数对象/FunctionId”的本地关系。两个 Engine 可以共享同一份 Provider Catalog，但绝不共享 Engine-local 指针或解析后的引用槽。
+
+## 4. Stable Reference Slot
+
+生成代码可能需要引用：
+
+- 另一个脚本函数；
+- 脚本或原生类型；
+- 脚本属性/全局存储；
+- 字符串字面量；
+- import；
+- Runtime helper；
+- 最终初始化后的 UE 环境符号。
+
+Provider 中只存指针无关的 `FAngelscriptArtifactReference` 描述。Router 刷新时把描述解析成当前 Engine 的 immutable slots，再交给生成入口使用。
+
+`EnvironmentSymbol` 的解析当前采用一次批量索引：先收集本轮请求的稳定键，再单次遍历当前 UClass、注册类型/属性和脚本函数。它不会为每个引用重复扫描整个 Engine，也不会把进程指针缓存到下一轮或另一个 Engine。
+
+最新基准中，46 条 route/37 个稳定引用的这部分从约 12.1–12.5 秒降到约 0.70–0.76 秒，减少约 94.3%。
+
+## 5. Cache V2 与 StaticJIT 的关系
+
+两者共享稳定 artifact identity，但职责不同：
+
+```text
+Cache V2：恢复“当前脚本是什么”
+Provider：提供“这个精确脚本函数是否有原生入口”
+Router：证明两者一致，并把入口挂到当前 Engine
+```
+
+Cache V2 不保存 Provider 代码指针；Provider 也不保存 Cache V2 的瞬时 FunctionId。Cache 命中不等于一定 Native，Provider 存在也不等于可以绕开脚本恢复。
+
+典型结果：
+
+| 当前状态 | Cache | Provider | 路由 |
+|---|---|---|---|
+| 源码、Profile、环境、ABI 全匹配 | 命中或源码编译 | exact | Native |
+| 一个函数 body 改动 | 该函数重新编译/失效 | 旧 entry content mismatch | 该函数 VM |
+| 另一个未改函数 | 仍有效 | exact | 仍 Native |
+| Provider DLL 未加载 | Cache 可正常恢复 | 无 entry | VM |
+| Cache 关闭/无缓存 | 源码正常编译 | exact | 仍可 Native |
+
+这也是修复 Cache 问题时必须保持的边界：Cache V2 负责内容恢复和依赖失效，StaticJIT 只负责精确 Native 绑定，不能重新引入 whole-cache GUID 耦合。
+
+## 6. Editor、PIE、热重载与 Live Coding
+
+### 6.1 Editor 现在可以消费 StaticJIT
+
+旧文档里“Editor 永远禁用 JIT”“StaticJIT 与热重载无关”的说法已经失效。当前 `EditorDevelopment` Provider 可以在 Editor/PIE 中被发现和路由。
+
+普通 `.as` 保存仍只做：
+
+1. AS 源码重编译；
+2. ClassGenerator/热重载处理结构变化；
+3. StaticJIT route 失效和重新匹配；
+4. 改动函数在新原生代码到来前走 VM。
+
+系统**不会**每保存一次 `.as` 就自动生成 C++ 并触发 Live Coding。这样可以避免保存风暴、重复链接和编辑器不可预测停顿。
+
+### 6.2 显式 Generate/Refresh
+
+Editor 显式动作由 `FAngelscriptJITRefreshService` 承担：
+
+1. 先编译权威 AS 源码；
+2. 为 `EditorDevelopment` 生成 owned files；
+3. 判断 `.jit.cpp` 源文件集合是否已经属于当前 target；
+4. 集合未变化且 Live Coding 可用时，请求 patch；
+5. patch 完成后只接受**严格更新**且 ABI/Profile/环境兼容的新 ProviderGeneration；
+6. 刷新 Router；新 entry exact 的函数恢复 Native。
+
+以下情况要求普通完整构建，并继续保持 VM 正确性：
+
+- 第一次 scaffold 后尚未完成完整构建；
+- 新增或删除 AS 模块，导致 `.jit.cpp` 源文件集合变化；
+- Live Coding 不可用、正在编译或 patch 失败；
+- patch 没有产生严格更新的兼容 Provider；
+- AS 本身编译失败。
+
+### 6.3 结构变化谁负责
+
+StaticJIT 只绑定“新权威编译代里确实存在、身份完全匹配”的函数，不接管 UObject/UClass 结构变更。
+
+- 类布局、继承、属性、函数签名变化：仍由 AS 编译、ClassGenerator 和 ClassReloadHelper 处理；
+- 函数执行内容变化：Router 用 ExecutionHash 决定旧 Native 是否还能用；
+- whitespace/debug-only 变化：根据 execution/debug identity 和 entry flags 决定是否保留 Native；
+- 删除函数：新 route snapshot 中没有该函数，旧 binding 随旧函数版本退休。
+
+### 6.4 怎样做一次真实 Editor Live Coding 验收
+
+这项测试不是只看“C++ 编译成功”，而是验证同一个 Editor 进程里的完整状态迁移：
+
+```text
+正常构建的 AS/JIT 内容一致
+  -> Native / Exact
+临时修改一个 AS 函数 body，旧 Provider 仍在
+  -> VM / ContentMismatch
+显式 EditorRefresh 生成 C++ 并完成 Live Coding
+  -> 新 ProviderGeneration
+Router 重新匹配
+  -> Native / Exact
+```
+
+为什么一定要看三段状态：
+
+- 第一段证明基线 DLL 真的装载并被 Router 消费，而不是一开始就在 VM；
+- 第二段证明旧原生代码不会错误执行新脚本，即 fail-closed 生效；
+- 第三段才证明 Live Coding 后运行中 Provider、Registry 和函数 binding 都换成了新代；
+- `Live coding succeeded` 只证明 UE 编译/链接/patch 流程返回成功，不能代替第三段的 Provider/Route 证据。
+
+这套验收采用“由小到大”的测试分层：
+
+1. **契约单测**：先用假 Provider/假 patch backend 精确复现一个规则，例如旧 generation 替换、代码镜像 lease、Provider owner 交接和失败错误码；
+2. **编译门禁**：确认 Runtime、Editor、生成器和测试模块的接口同时成立；
+3. **相关前缀回归**：把 ProviderRegistry、MultiProvider、RefreshService、Cache/EditorRouting 等相邻行为一起跑，防止局部修复破坏冲突拒绝或 VM fallback；
+4. **真实进程状态迁移**：在一个 `UnrealEditor.exe` 进程中观察 Native → VM → Native，而不是把“Live Coding 编译成功”当作最终结果；
+5. **恢复与复验**：恢复 AS 源码后重新 Generate、Build、Verify，证明测试临时内容没有留在生成 C++ 或 DLL 中。
+
+这种顺序的关键是：单测负责快速定位规则，真实 Editor 负责证明 UE/Live++/DLL/Registry 的组合行为，JSON 负责给出可重复、可机器判断的最终结论。
+
+推荐选一个**只改函数 body**的探针，保持 AS 模块名、函数声明和 `.jit.cpp` 文件集合不变。新增/删除 AS 模块会改变 UBT 源文件集合，本来就应走普通完整构建，不属于这个 smoke。
+
+先建立匹配基线：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile EditorDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label static-jit-livecoding-baseline -TimeoutMs 1800000 -NoXGE
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Verify -Profile EditorDevelopment
+```
+
+临时编辑 `.as` 后，以真实 `UnrealEditor.exe` 启动一次隐藏的完整 Editor。核心参数如下：
+
+```powershell
+$exec = "as.StaticJIT.DumpDiagnostics -Function=<FunctionKey> -Output=<before.json>,as.StaticJIT.EditorRefresh,as.StaticJIT.DumpDiagnostics -Function=<FunctionKey> -Output=<after.json>,QUIT_EDITOR"
+$arguments = @(
+    '<Project>.uproject',
+    '-LiveCoding', '-Unattended', '-NoPause', '-NoSplash',
+    '-stdout', '-FullStdOutLogOutput', '-UTF8Output',
+    '-NOSOUND', '-NullRHI',
+    '-ABSLOG=<Editor.log>',
+    "-ExecCmds=$exec"
+)
+$startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+$startInfo.FileName = '<UE>/Engine/Binaries/Win64/UnrealEditor.exe'
+$startInfo.UseShellExecute = $false
+$startInfo.CreateNoWindow = $true
+foreach ($argument in $arguments) {
+    [void]$startInfo.ArgumentList.Add($argument)
 }
+$process = [System.Diagnostics.Process]::Start($startInfo)
+$process.WaitForExit()
+if ($process.ExitCode -ne 0) { throw "Editor smoke failed: $($process.ExitCode)" }
 ```
 
-`GScriptNativeForms` 是 `TMap<asIScriptFunction*, FScriptFunctionNativeForm*>`——只在 cook 进程中存在；一旦进入 `WriteOutputCode`，遍历每个调用点查 `GetNativeForm(CalledFunc)`，根据其类型选择不同的 C++ 翻译策略：
+Windows 上这里有五个容易误判的点：
 
-| 子类（部分） | 翻译策略 |
-|--------------|---------|
-| `FScriptNativeMethod` | `obj->Method(args...)` 直接调用 |
-| `FScriptNativeFunction` | `Func(args...)` 全局函数直调 |
-| `FScriptNativeConstructor` | `new (objAddr) Type(args...)` placement new |
-| `FScriptNativeUObjectCast` | `Cast<TargetType>((UObject*)obj)`，guaranteed 时省去 IsA 检查 |
-| `FScriptNativeUFunction` | 静态方法：`Class::Func(args...)`；非静态：`obj->Func(args...)` |
-| `FScriptNativeTArrayIndex` / `*Iterator*` | 内联生成 `FArrayOperations::OpIndex_Template_Unchecked<T>` |
-| `FScriptNativeTemplateInstantiation` | 模板特化，cook 期把 `_Template<T>` 实例化 |
-| `FScriptNativePushArg` / `BindDelegateExecute` / 等 | 特殊 RPC / Delegate / 反射调用 |
+1. 用 `ProcessStartInfo.ArgumentList` 保留每个参数的真实边界；`-ExecCmds` 自身包含空格，`Start-Process -ArgumentList` 可能重新拼接字符串并丢掉整体引号，表现为 UE 只执行第一个无参数命令；
+2. 必须 `WaitForExit()`；直接调用 GUI 程序时 PowerShell 可能提前返回，脚本会在 Editor 读到改动前就把源文件恢复；
+3. `-ExecCmds` 用逗号分隔多条 UE 控制台命令，不是分号；
+4. 完整 Editor 用 `QUIT_EDITOR` 退出；
+5. `-Unattended -NullRHI` 会让普通 Editor 窗口不可见，但 Live Coding Console 仍可能出现。`Quick restart disabled when re-instancing is enabled.` 只是 Quick Restart 能力提示，不等于编译失败。
 
-### 5.2 `SCRIPT_CALL_NATIVE` 宏：jit 路径上的"通用 fallback"
+最终以 JSON 为准：
 
-如果 `GetNativeForm` 返回 `nullptr`（即调用点没注册 native form，也没明确 forbid），翻译器会退化为发出"通用 native 调用"宏：
-
-```cpp
-// ============================================================================
-// 文件: StaticJIT/StaticJITHeader.h
-// 角色: jit 代码内统一的 native 调用入口
-// ============================================================================
-#define SCRIPT_CALL_NATIVE(Function, StackPosition) \
-    FStaticJITFunction::ScriptCallNative(Execution, Function, &l_stack[StackPosition], &l_valueRegister, &l_objectRegister);
+```powershell
+python Tools\Diagnostics\InspectStaticJITDump.py <before.json>
+python Tools\Diagnostics\InspectStaticJITDump.py <after.json> --fail-on-mismatch
 ```
 
-`ScriptCallNative` 在 `StaticJITHeader.cpp` 里实现，对 `sysFunc->callConv` 做分类：
+`before.json` 应看到改动函数走 `Vm`，旧候选是 `ContentMismatch`；`after.json` 必须看到新 `ProviderGeneration`、`Native` 和 `Exact`，且 Inspector 返回 0。测试无论成功失败都要先恢复 `.as`，再重新 Generate、Build、Verify，避免“源码已恢复但生成 C++ 仍是临时版本”。
 
-```cpp
-// ============================================================================
-// 文件: StaticJIT/StaticJITHeader.cpp
-// 函数: FStaticJITFunction::ScriptCallNative（节选）
-// ============================================================================
-if (callConv == ICC_GENERIC_FUNC || callConv == ICC_GENERIC_METHOD)
-{
-    asCGeneric gen(SCRIPT_ENGINE, descr, currentObject, args);
-    func(&gen);                                          // ★ Generic 形式，内核 fallback
-    *valueRegister = gen.returnVal;
-    *objectRegister = (void*)gen.objectRegister;
-    return;
-}
+本变更的固定探针、完整命令、哈希、RED/GREEN 证据和失败实验解释记录在 `openspec/changes/refactor-as-static-jit-multi-provider/attachments/real-editor-livecoding-smoke.md`。2026-08-13 的最终真实进程 `r9` 已完成验收：`before.json` 为 `Vm + ContentMismatch`，Live Coding 发布 generation `e3113f...`，`after.json` 为 `Native + Exact`、Registry publication `2 → 3`、引用 `7/7`，严格 Inspector 返回 0。随后已把源码恢复为 `* 2.0`，重新 Generate、Build、Verify，基线 generation 回到 `cd4129...`。
 
-if (sysFunc->caller.IsBound())                          // ★ ★ ★ Type_FunctionCaller 路径
-{
-    // 拆 AS 栈、拼 void* FunctionArgs[32]
-    if (sysFunc->caller.type == 1)
-        sysFunc->caller.FunctionCaller(sysFunc->func,   &FunctionArgs[0], ReturnAddress);
-    else
-        sysFunc->caller.MethodCaller  (sysFunc->method, &FunctionArgs[0], ReturnAddress);
-    return;
-}
-checkf(false, TEXT("Function %s had no way to call it."), ...);
-```
+## 7. DLL 加载、卸载和 Live Coding 旧镜像
 
-也就是说：**StaticJIT 与 `Type_FunctionCaller` 是同一调用桥的两个调用方**。`asCContext::CallSystemFunction → CallFunctionCaller` 是**解释器**侧的入口；`FStaticJITFunction::ScriptCallNative` 是 **JIT** 侧的入口；两者在底层都最终汇合到 `sysFunc->caller.MethodCaller(...)` 这一行。这种"双入口、单实现"的设计让 StaticJIT 可以一劳永逸地承接已有的 ABI 桥而不需要重复实现 16 种 calling convention。
+UE ModuleManager 仍然拥有 DLL 的主加载/卸载流程，StaticJIT 不自己 `LoadLibrary`/`FreeLibrary`。
 
-### 5.3 翻译策略的层级
+安全性由两层保证：
 
-对一次 `obj.Func(args)` 调用，StaticJIT 按下列优先级选择：
+1. **Registry owner 退注册**：Provider 的 `ShutdownModule()` 注销 Modular Feature，Registry 从之后发布的 Snapshot 移除它，新 route 不再选择该 Provider；
+2. **代码生命周期 lease**：已发布 binding 持有包含入口地址的代码镜像生命周期。旧 Catalog、旧 binding 或正在执行的调用还持有共享引用时，对应代码不能提前失效。
+
+因此卸载顺序是逻辑上的：
 
 ```text
-1) FScriptFunctionNativeForm 注册 + CanCallCustom?
-     YES → GenerateCustomCall（最优，可消除 informSystemFunction、跳过查表）
-2) FScriptFunctionNativeForm 注册 + CanCallNative?
-     YES → 直接 obj->Func(args) C++ 表达式（跨模块需 IS_MONOLITHIC 或 whitelist）
-3) 否则
-     → 发出 SCRIPT_CALL_NATIVE 宏，运行期通过 sysFunc->caller 调用
+Provider 从新 Snapshot 消失
+  -> 新刷新不再选择它
+  -> 已发布旧 binding 被替换/退休
+  -> 最后一个执行者释放 lease
+  -> 旧代码镜像才具备安全释放条件
 ```
 
-这是 StaticJIT 性能收益的核心：**热路径（容器、UObject Cast、Delegate Execute、TArray 索引）走层级 1，普通绑定函数走层级 2，未知函数走层级 3**。
+Live Coding patch 可能把新旧入口放在不同 patch 镜像中。生命周期实现会按地址确定并保留对应镜像，而不是假设“模块名相同就是同一段代码”。Monolithic 构建没有独立 Provider DLL，代码镜像自然随进程存活。
 
----
+这套设计避免两类错误：
 
-## 六、性能模型：哪些 hot path 受益最大
+- Provider 一卸载，正在执行的原生函数立刻跳进已释放代码；
+- 为保住一个 Provider，永久钉住其他无关 Provider 或整个全局 JIT 表。
 
-### 6.1 解释器 vs StaticJIT 的开销分布
+## 8. 生成和构建命令
+
+首次启用项目 Provider：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Scaffold
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label jit-first-build -TimeoutMs 1800000 -NoXGE
+```
+
+生成单一 Profile：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile EditorDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameShipping
+```
+
+生成三个 Profile：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile All
+```
+
+只读校验：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Verify -Profile All
+```
+
+推荐完整顺序：
 
 ```text
-解释器 ExecuteNext 单步开销:
-  fetch:  asEBCInstr instr = *(asBYTE*)bc;
-  decode: const asSBCInfo& info = asBCInfo[instr];
-  switch: switch(instr) { case asBC_PSF: ...; case asBC_CALLSYS: ... }
-  pcadv:  bc += asBCTypeSize[info.type];
-  典型 ~10-30 cycles per instruction，分支预测 miss 占主导。
-
-StaticJIT 翻译后:
-  fetch / decode / switch / pcadv 全部消失（编译期已展开）
-  CALLSYS 通过 SCRIPT_CALL_NATIVE 仍要走 caller 桥（~30-50 cycles）
-  纯算术 / 局部变量 ~ 1-3 cycles per AS 指令
-  典型加速 5-10x 对密集循环 / 数学运算，1.5-3x 对 UFUNCTION 调用密集的脚本
+Scaffold（仅第一次）
+  -> 完整 Editor/Game 构建，让 UBT 发现模块和所有源文件
+  -> Generate 指定 Profile
+  -> 再构建
+  -> Verify
+  -> 运行目标测试或 package smoke
 ```
 
-### 6.2 受益最大的代码模式
+`Verify` 是只读的：会报告 Provider/Profile/ABI、StableModuleKey、模块源、函数键、符号以及 missing/unexpected/mismatched owned files，发现差异返回非零。
 
-| 代码模式 | StaticJIT 翻译产物 | 收益 |
-|---------|---------------------|------|
-| 密集算术循环 `for (i; i<N; ++i) Sum += a[i]*b[i];` | 内联 `OpIndex_Template_Unchecked<float>` + 编译器 SIMD vectorize | 极高（~10x） |
-| `TArray<int>` 遍历 | `FArrayIterator` 直接增量；`OpIndex_Stride_Unchecked` | 高（5-8x） |
-| `Cast<AMyActor>(obj)` | `bGuaranteed` 时纯指针赋值；否则 `IsA(DestClass)` | 中（2-3x） |
-| `DelegateName.Execute(args)` | 直接 invoke 委托链表 | 中（2x） |
-| `BlueprintCallable` 调用 | 反射 fallback 时收益小；绑定到原生 UFunction 时收益大 | 视绑定形态而定 |
-| 字符串拼接 / `TMap` 操作 | StaticJIT 不内联（容器复杂） | 低（~1.2x） |
+生成器只会改带版本化 owner marker 的 owned files。遇到用户文件、marker 不匹配或保留路径冲突会拒绝覆盖。
 
-### 6.3 不受益的场景
+## 9. 增量构建规模
 
-- **编辑器内热重载循环**：`AS_SKIP_JITTED_CODE` 强制走解释器。
-- **首次加载冷启动**：JIT 入口靠 `static const FStaticJITFunction Register(...)` 在程序启动期注册，对运行期热路径无开销，但有少量初始化开销（~ms 级）。
-- **GUID 不匹配的 cooked build**：`FJITDatabase::Clear()` 后等同没 JIT。
-- **未在 .as 模块里的"动态构造的 asCScriptFunction"**（如 lambda fallback）——它们 cook 期不存在，运行期没有对应入口。
+当前实测：
 
----
+| 样本 | `.jit.cpp` 大小/函数数 | 增量动作 | 首次/暖构建 |
+|---|---:|---|---:|
+| 项目代表模块 | 11,948 bytes / 4 | 只编译该 `.jit.cpp`，链接 `AngelscriptJIT` | 21.47s / 6.49s |
+| 当前最大测试模块 | 136,259 bytes / 44 | 只编译该 `.jit.cpp`，链接 `AngelscriptTestJIT` | 8.24s / 6.29s |
 
-## 七、Fork 中的演化：2.33 起步、2.38 的 JIT v2 暂未吸收
+未改模块不会重复生成或编译。连续相同 Generate 已验证 39/39 owned files 的路径、哈希、长度和时间戳全部保持不变。
 
-### 7.1 当前 fork 的 StaticJIT 在演化层级中的位置
+当前生成规模：
 
-按 `Documents/Guides/AngelscriptForkStrategy.md` 的分类：
+| Provider/Profile | 模块文件 | 函数 | 总字节 |
+|---|---:|---:|---:|
+| 项目 EditorDevelopment | 9 | 19 | 64,835 |
+| 项目 GameDevelopment | 8 | 18 | 54,918 |
+| 项目 GameShipping | 8 | 18 | 54,650 |
+| AngelscriptTestJIT EditorDevelopment | 2 | 46 | 141,221 |
 
-- **AS 2.33** 没有 StaticJIT 概念（连 asmjit-AS 也是社区贡献，主线没正式集成）。UE Fork 的 StaticJIT **是 UE 工程师独立设计的**，不是从上游 cherry-pick 来的。
-- **AS 2.38** 引入了官方的 **JIT v2 接口**（`asEP_INIT_GLOBAL_VARS_AFTER_BUILD` / `asJITFunction_Raw` 风格，与 fork 这里的 `asJITFunction_Raw` 形似但语义不同）。
-- 待办项 `Plan_AS238JITv2Port.md` **未开始**。
+严格按 AS 模块聚合后，文件数量随“有生成代码的 AS 模块数”增长，不再随函数数增长，也没有每函数 slice 或固定 bucket 文件爆炸。
 
-### 7.2 为什么不直接升级到 2.38 的 JIT v2
+## 10. Packaged 与直接调用状态
 
-| 阻塞点 | 描述 |
-|--------|------|
-| **`asJITFunction` 签名分叉** | UE Fork 的 `asJITFunction` 第一个参数是 `FScriptExecution&`（其中 `tld` / `bExceptionThrown` / `debugCallStack` 都是 `[UE++]` 字段）；上游 2.38 是 `asIScriptContext*`。两套 ABI 在 cooked .jit.cpp 中已固化为常量字符串，整盘替换将让所有已 cook 的 cache 失效。 |
-| **`PrecompiledData` 与 JIT 解耦** | 上游 JIT v2 没有"字节码归档 + 代码生成"分层；fork 的 `PrecompiledScript.Cache` 是预处理 / cook / hot-reload 三个子系统的**共同**前向 cache，不能为单纯升级 JIT 而拆分。 |
-| **`FScriptFunctionNativeForm` 体系是 fork 原生** | 上游没有"native form 注册表"概念；它是 fork 的 cook-only 优化层。upgrade JIT v2 不会带来这部分能力。 |
-| **`as_callfunc.cpp` 已被 `caller.IsBound` 接管** | 上游 2.38 的 ABI 桥仍依赖平台汇编；fork 已用 `Type_FunctionCaller` 把它绕过，JIT 也跟着绕。 |
+`GameDevelopment` 和 `GameShipping` Provider 都走相同的稳定匹配和 fail-closed 规则，不依赖 Editor、Live Coding 或 `AngelscriptTestJIT`。
 
-结论按 ForkStrategy：**保留当前 StaticJIT，把 2.38 视为"改进来源"而非"升级目标"**——重点选取性能改进点（如 computed goto / 更细粒度类型 trait），而不是整体替换。
+当前 package multi-start 证据中，Development 和 Shipping 都是：
 
-### 7.3 已落地的 2.38 吸收里与 StaticJIT 相关的项
+- 18/18 route Native；
+- 0 VM fallback；
+- 12/12 stable references 解析成功；
+- 两次独立进程启动结果一致。
 
-| 能力 | 与 StaticJIT 的交集 |
-|------|--------------------|
-| 模块函数 / 声明查找 API | `FStaticJITDiagnostics::FindFunctionInModule` 利用 `GetFunctionByDecl` 解析参数 |
-| 对象类型 / 类型信息宽标志位 | `IsTypePotentiallyDifferent` 依赖 fork 高位标志，决定 cook 期能否硬编码尺寸 |
-| 恢复器表面 | 与 `PrecompiledData` 共用底层 `FStringInArchive` 序列化 + `[UE++]` 容器 |
+Provider ABI 已保留 `ImmutableDirectCallSet` 能力，但生产生成器当前显式关闭 script-to-script content-specific direct call emission。也就是说，函数自身可以通过 Native binding 执行，但生成的函数调用另一个脚本函数时仍走当前 binding/route，保证 Editor/PIE 和可重载 Profile 的正确性。
 
----
+严格 per-module `.jit.cpp` 下的跨翻译单元直调需要额外证明完整 cooked artifact set、链接可见性和 stale-set 原子拒绝。它属于后续独立性能优化，不能把“已支持 Native binding”误写成“已经启用生产直接调用”。
 
-## 八、限制矩阵：哪些"不会"被 StaticJIT 翻译
+## 11. 诊断
 
-| 场景 | 是否 jit | 原因 |
-|------|---------|------|
-| 编辑器 PIE / 热重载 | ❌ | `AS_SKIP_JITTED_CODE` 强制路由解释器 |
-| 任何 `asFUNC_DELEGATE` / `asFUNC_INTERFACE` | ❌ | `JITCompile` 中 `if (funcType != asFUNC_SCRIPT) return;` |
-| 含 `asBC_REFCPY` 等少数 opcode 的特殊路径 | ❌（部分） | `FAngelscriptBytecode::Implement` 返回 `false` → 翻译器自动 fall through 到解释器 |
-| `bScriptDevelopmentMode` 路径 | ❌ | bUsePrecompiledData 直接为 false，无 cache 也无 jit |
-| GUID 不匹配的 cooked build | ❌ | `FJITDatabase::Clear()` 后 `jitFunction` 全部为 nullptr |
-| Build identifier 不匹配 | ❌ | 整盘 PrecompiledData 丢弃，连字节码都重建 |
-| Lambda / 匿名函数 | ❌ | 当前 fork 不支持 lambda（未吸收 2.38），自然没有 jit |
-| 含 `asBC_LoadThisR` 跨模块的指针访问 | ⚠️ | 翻译时通过 `FJitVerifyPropertyOffset` 保护：cook 期假设的偏移在 link 后被 `FJitDatabase` 填实际值；不一致即触发 verify 异常 |
-| 调用 `FScriptFunctionNativeForm::CanCallNative=false` 的函数 | ⚠️ | 仅退到 `SCRIPT_CALL_NATIVE` 走 caller 桥，仍 jit |
-
-`AS_JIT_VERIFY_PROPERTY_OFFSETS` 默认在 Debug/Development 开启，Test/Shipping 关闭：cook 期的属性偏移与 link 期实际偏移不一致会 `check`-fail，提示 ABI 漂移。
-
----
-
-## 九、与 BlueprintImpact / HotReload 的协作边界
-
-### 9.1 StaticJIT 不参与热重载
+### 11.1 控制台命令
 
 ```text
-                ┌──── 编辑器（WITH_EDITOR=1）─────┐
-                │   AS_SKIP_JITTED_CODE 开启      │
-RT_HotReload ──►│   bScriptDevelopmentMode=true    │
-                │   bUsePrecompiledData=false      │
-                │   jitFunction == nullptr 全程     │
-                │   解释器单线运行                  │
-                └─────────────────────────────────┘
-
-                ┌──── Cooked Shipping/Test/Dev ────┐
-                │   bUsePrecompiledData=true       │
-                │   AS_SKIP_JITTED_CODE 关闭        │
-                │   jitFunction != nullptr 即走 jit │
-                │   不存在热重载                    │
-                └─────────────────────────────────┘
+as.StaticJIT.DumpDiagnostics
+as.StaticJIT.DumpDiagnostics -Output=<absolute-or-project-relative-json>
+as.StaticJIT.DumpDiagnostics -Function=<canonical-declaration-or-64-hex-function-key>
 ```
 
-热重载 / 文件变更链路（参见 `RT_HotReload.md`）只在编辑器 + standalone dev 模式下激活——这两个模式 jit 都被禁。**因此 StaticJIT 与 ClassReloadHelper / DirectoryWatcher 没有直接交互**。
+当前机器可读 JSON Schema Revision 为 2。主要内容包括：
 
-### 9.2 BlueprintImpact 与 StaticJIT 的关系
+- Registry publication ordinal；
+- 多 ProviderId、owner UE 模块、generation、Profile 和环境；
+- Provider 内 AS 模块成员与生成源文件；
+- 当前 Engine route、瞬时 FunctionId 上下文；
+- exact/mismatch 结果和类型化原因；
+- VM/Raw/Parms 是否发布；
+- stable reference slot 请求/解析；
+- Native/VM 执行计数；
+- route refresh 各阶段耗时。
 
-`BlueprintImpact` 的 Commandlet（编辑器扩展）做的是"BP 改动后，哪些 .as 受影响"的扫描。它的输出影响**下次 cook 时哪些模块需要重 transpile**：
+离线查看：
 
-```text
-BP 改动 → BlueprintImpact 标记 affected modules
-          ↓
-重新 cook（RunUAT BuildCookRun -as-generate-precompiled-data）
-          ↓
-StaticJIT 重新生成 .jit.cpp / PrecompiledScript.Cache
-DataGuid 重新分配（FGuid::NewGuid()）
-          ↓
-re-link 进 .exe → 新一份 cooked build 携带新的 FStaticJITCompiledInfo
+```powershell
+python Tools\Diagnostics\InspectStaticJITDump.py <dump.json>
+python Tools\Diagnostics\InspectStaticJITDump.py <dump.json> --fail-on-mismatch
 ```
 
-也就是说，**StaticJIT 不需要"运行期感知 BP 变化"**——它已经把 cook 时的 BP 类型 layout 通过 `POFFSET_xxx = Align(...)` 静态嵌入翻译产物中。BP 在 PIE 期改了 layout，由 `AS_JIT_VERIFY_PROPERTY_OFFSETS` 兜底（Debug/Development 中报错），但生产环境不会修 BP layout，所以没问题。
+Inspector 不启动 Unreal，也不修改 Cache/Registry。仓库内有 valid、mismatch、malformed fixture 独立验证 Schema 行为。
 
----
+### 11.2 常见 mismatch
 
-## 十、调试与诊断
+| 现象 | 常见原因 | 处理 |
+|---|---|---|
+| 只有一个改动函数 VM | ExecutionHash 不一致 | 重新 Generate + build/Live Coding；这是正常 fail-closed |
+| 全部函数 VM | Provider 模块未加载或 Profile/环境不匹配 | 查 Provider 列表、Target Profile、build 配置 |
+| `AmbiguousExactProvider` | 两个不同 ProviderId 同时声称同一 exact entry | 修正 Provider 边界/生成输入，不依赖加载顺序 |
+| 引用槽失败 | 类型/函数/属性缺失、歧义或 kind/ABI 不符 | 用 function filter 查看具体 reference |
+| Generate 要求 full build | `.jit.cpp` 源集合新增/删除，或尚未完成首次 build | 普通 `RunBuild.ps1`，不要强行 Live Coding |
+| Live Coding 后仍 VM | patch 失败或 ProviderGeneration 未严格更新 | 查看 refresh service 和 Registry generation |
+| Verify 报 unexpected file | 旧生成拓扑残留或 owned inventory 不一致 | 先核对 owner marker，再运行 Generate 清理 owned stale output |
 
-### 10.1 控制台命令 `as.StaticJIT.DumpDiagnostics`
+### 11.3 排查顺序
 
-```cpp
-// ============================================================================
-// 文件: StaticJIT/StaticJITDiagnostics.cpp
-// 角色: 运行期把 JIT 状态打印到 LogStaticJITDiagnostics
-// ============================================================================
-FAutoConsoleCommand GStaticJITDumpDiagnosticsCommand(
-    TEXT("as.StaticJIT.DumpDiagnostics"),
-    TEXT("Dump StaticJIT process and optional function diagnostics. "
-         "Optional: as.StaticJIT.DumpDiagnostics [FunctionNameOrDeclaration]"),
-    FConsoleCommandWithArgsDelegate::CreateStatic(&FStaticJITDiagnostics::DumpDiagnostics));
-```
+1. 确认 AS 源码本身编译成功；
+2. 看诊断里目标 Provider 是否存在、Profile/环境是否正确；
+3. 用 `-Function=` 定位 StableModuleKey/FunctionKey 和 mismatch reason；
+4. 检查 stable reference slots；
+5. 运行 `RunAngelscriptJIT.ps1 -Mode Verify -Profile <Profile>`；
+6. 只有 source set 没变时才尝试 Live Coding；否则完整构建；
+7. package 问题用独立多启动 smoke，避免被当前 Editor 进程状态掩盖。
 
-输出示例：
+不要再查 `DataGuid`、`FJITDatabase::Functions`、`bStaticJITTranspiledCodeLoaded` 或旧 `.Cache/.jit.hpp` 配对；它们不是当前 Provider 路由的事实来源。
 
-```text
-StaticJIT diagnostics: RegisteredFunctions=842 EntryCounters=1573 CompiledInfo=true
-                       CurrentEngine=true ScriptEngine=true PrecompiledData=true
-                       CompiledInfoMatchesPrecompiledData=true
-StaticJIT diagnostics: PrecompiledDataGuid=A1B2C3D4-...
-StaticJIT diagnostics: CompiledInfoGuid=A1B2C3D4-...
-```
+## 12. 设计不变量
 
-带函数参数时还会输出该函数的 FunctionId / 是否注册 / EntryCount：
+维护当前实现时必须保持：
 
-```text
-StaticJIT diagnostics function: Argument='void AMyActor::Tick(float)'
-                                Declaration='void AMyActor::Tick(float DeltaTime)'
-                                FunctionId=0xa1b2c3d4 Registered=true HasJitFunction=true
-                                HasRawJitFunction=true HasParmsJitFunction=true EntryCount=42
-```
+1. **一个非空 AS 模块严格对应一个 Profile 下的独立 `.jit.cpp`**；
+2. 全局函数和类方法都按所属 AS 模块聚合；
+3. Provider ABI 不暴露 bucket、slice、翻译单元拓扑或瞬时 FunctionId；
+4. Engine/Cache V2 是当前脚本状态权威，Provider 只提供原生入口；
+5. Provider 注册先校验再复制，Runtime 不长期借用 view 内存；
+6. 多 Provider 选择不依赖 UE 模块加载顺序；
+7. exact 冲突、ABI/Profile/环境/引用不匹配全部逐函数回退 VM；
+8. binding 一次发布 VM/Raw/Parms/UserData，替换与释放 exactly once；
+9. 解析后的函数/类型/属性指针只属于当前 Engine；
+10. Provider 卸载先退出未来 Snapshot，旧代码由 lease 保活到最后使用者退出；
+11. `.as` 普通保存不自动触发 C++ 生成和 Live Coding；
+12. 生产 direct script-call emission 未启用，不能在文档或基准中声称已启用。
 
-`EntryCount` 来自 `FStaticJITDiagnosticEntryMarkers::MarkEntry`，在 `bEmitDiagnosticEntryMarkersInOutput=true` 的 cook 中每个 jit 函数入口都会 ++ 一次计数。
+## 13. 与 maintained AngelScript fork 的关系
 
-### 10.2 如何关闭 StaticJIT 走解释器对比性能
+当前 fork 的 JIT 生命周期不是旧 UE fork 接口，也不是照搬 upstream 2.38 的版本切换 API。维护分支拥有一个非版本化 `asIJITCompiler` 契约：
 
-在 cooked build 启动命令行加：
+- compiled/restored function 完成后通知当前 compiler；
+- compiler 延后发布完整 `asSJITFunctionBinding`；
+- `asCScriptFunction` 私有持有 binding 和 owner；
+- 替换、clear、函数销毁、模块 discard、compiler replacement/removal 都走同一退休协议；
+- 生成器只观察已经编译的函数，不临时替换 live Engine 的执行 compiler。
 
-```bat
-GameBin.exe -as-ignore-precompiled-data
-```
+这是有意的 ABI 不兼容。外部集成必须使用本仓库随附的公共头文件，不能把旧 fork 或 vanilla 2.38 的 JIT 头直接混进来。
 
-会让 `bUsePrecompiledData=false`，进入"无 cache 重新编译 .as"路径——同时也跳过 `FStaticJITCompiledInfo::Get` 校验。配合 `as.DumpEngineState` 或 `STAT Angelscript` 观察解释器单步耗时。
+## 附录：快速回答
 
-### 10.3 验证翻译产物：`GenerateStaticJITSourceTextForDiagnostics`
+### JIT 函数怎么注册到某个 database？
 
-诊断 API 允许在编辑器中临时跑一遍 transpile 流程产出某个模块的 .jit.hpp 文本（无需真的 cook 整个项目），用于"我修改了 opcode `Implement` 之后，输出对吗？"这种局部验证：
+现在不注册到 database。承载生成代码的 UE 模块实现 `IAngelscriptJITArtifactProvider`，在 `StartupModule()` 注册 Modular Feature；Runtime Registry 校验并复制为不可变 Catalog。
 
-```cpp
-// ============================================================================
-// 文件: StaticJIT/AngelscriptStaticJIT.h
-// 角色: 仅 AS_WITH_STATIC_JIT_DIAGNOSTICS 暴露的诊断入口
-// ============================================================================
-ANGELSCRIPTRUNTIME_API bool GenerateStaticJITSourceTextForDiagnostics(
-    asIScriptModule* Module,
-    FString& OutSourceText,
-    bool bEmitDebugMetadata,
-    FString* OutError = nullptr);
-```
+### Engine 初始化怎么消费？
 
-测试集 `AngelscriptStaticJITGeneratedOutputTests.cpp` 用它把 fixture 模块的产物对比 golden 文件，确保 opcode 翻译没退化。
+先完成当前 AS 源码编译或 Cache V2 恢复，再由 `FAngelscriptJITProviderRouter::Refresh` 按稳定身份逐函数匹配 Provider。exact 才发布 Native binding，否则该函数 VM。
 
-### 10.4 callstack 与异常调试
+### AS 函数改了，怎样更新对应 `jit.cpp`？
 
-`AS_JIT_DEBUG_CALLSTACKS` 默认 `!UE_BUILD_SHIPPING`，开启时每个 jit 函数体首部插入：
+重新 Generate。函数仍落在所属 AS 模块同一个 `<源文件名>.<短StableModuleKey>.<Profile>.jit.cpp`；其他模块文件不变。Editor 中旧 Native 立即因内容不匹配失效，先 VM，显式 Live Coding 或普通 build 发布新 Provider 后再 Native。
 
-```cpp
-SCRIPT_DEBUG_CALLSTACK_FRAME_UOBJECT("void AMyActor::Tick(float)", 19);
-// ... 每条 BC 翻译之间穿插
-SCRIPT_DEBUG_CALLSTACK_LINE(LineNumber);
-```
+### 文件数会不会随函数爆炸？
 
-`FScopeJITDebugCallstack` RAII 把当前函数 + 行号挂到 `Execution.debugCallStack` 链表，异常发生时 `HandleExceptionFromJIT` 通过它生成可读 callstack。这弥补了"jit 后字节码 PC 不再可用"的可观测性缺口。
+不会按函数增长。每个 Profile 下 `.jit.cpp` 文件数等于有生成代码的 AS 模块数；一个模块内所有全局函数和类方法都在同一个 `.jit.cpp`。
 
----
+### DLL 要自己加载卸载吗？
 
-## 附录 A：StaticJIT 入口速查
+不用。UE ModuleManager 负责；StaticJIT 负责 Provider 注册/退注册、不可变 Catalog 和代码镜像 lease，保证卸载/Live Coding 时旧入口不会悬空。
 
-| 符号 / 入口 | 文件 | 何时被调用 / 何时存在 |
-|-------------|------|----------------------|
-| `FAngelscriptStaticJIT::CompileFunction` | `AngelscriptStaticJIT.cpp` | cook 期 `asCModule::JITCompile` 内 |
-| `FAngelscriptStaticJIT::WriteOutputCode` | `AngelscriptStaticJIT.cpp` | cook 期 `Initialize` 末尾、`InitialCompile` 之后 |
-| `FAngelscriptPrecompiledData::Save` | `PrecompiledData.cpp` | cook 期同上，紧跟 `WriteOutputCode` |
-| `FAngelscriptPrecompiledData::Load` | `PrecompiledData.cpp` | cooked 启动期，`bUsePrecompiledData==true` 分支 |
-| `FAngelscriptPrecompiledData::IsValidForCurrentBuild` | `PrecompiledData.cpp` | `Load` 之后立即调用 |
-| `FStaticJITCompiledInfo::FStaticJITCompiledInfo` | `StaticJITHeader.cpp` | link 期通过 `AngelscriptJitInfo.jit.cpp` 中的 static const 触发 |
-| `FStaticJITFunction::FStaticJITFunction` | `StaticJITHeader.cpp` | link 期通过每函数 `Register` 触发，写入 `FJITDatabase::Get().Functions` |
-| `FJitRef_Function/Type/GlobalVar/SystemFunctionPointer` 构造器 | `StaticJITHeader.cpp` | link 期，把 references 加到对应 `Lookups` 数组 |
-| `FJITDatabase::Clear` | `AngelscriptStaticJIT.cpp` | GUID 不匹配 / `Initialize` 末尾 / 进程退出时 |
-| `FStaticJITDiagnostics::DumpDiagnostics` | `StaticJITDiagnostics.cpp` | 控制台命令 `as.StaticJIT.DumpDiagnostics` |
-| `FStaticJITFunction::ScriptCallNative` | `StaticJITHeader.cpp` | jit 代码内通过 `SCRIPT_CALL_NATIVE` 宏 |
+### Cache 有问题会不会导致整个 JIT 清空？
 
----
-
-## 附录 B：性能调优建议
-
-适用于"我有一段 .as 性能不达标，想看是不是 StaticJIT 没接住"的场景。
-
-1. **先确认 cook 用了 `-as-generate-precompiled-data` 标志**——少这个 flag，cooked build 启动期会发现 `PrecompiledScript.Cache` 不存在，走"重新解释" fallback；性能远不如预期。
-2. **确认 `bStaticJITTranspiledCodeLoaded==true`**：在程序启动后用 `as.StaticJIT.DumpDiagnostics` 查 RegisteredFunctions 数量是否符合预期。如果是 0，意味着 `FJITDatabase::Get().Functions.Num()==0`，所有调用都走解释器。
-3. **GUID 不匹配是常见的"灰色失败"**：交付链路里 .jit.cpp 是 cook 后产生的，必须随同 `PrecompiledScript.Cache` 一起被打包；漏掉任意一份都会让 `CompiledInfo->PrecompiledDataGuid != PrecompiledData->DataGuid`，触发 `FJITDatabase::Get().Clear()`。日志里关键字 `Transpiled code will not be used!`。
-4. **热点函数没绑定 `SCRIPT_NATIVE_*`**：jit 翻译会保守走 `SCRIPT_CALL_NATIVE`，比内联 native 调用慢 5-10x。如果你写的 C++ 函数频繁被脚本调用，考虑在对应 `Bind_*.cpp` 加 `SCRIPT_NATIVE_METHOD(Binds, "Foo", true)`（`bTrivial=true` 表示无 throw）。
-5. **`CanCallNative` 在非 monolithic 构建中需要 whitelist**：`/Script/<ProjectName>` 和 `/Script/Engine` 两个 package 自动允许；其他 package 的函数走 fallback。
-6. **Build identifier 不要混用**：同一 cache 不能跨 Debug/Dev/Test/Shipping 复用——这是设计上的隔离，不是 bug。
-7. **跨平台 cook**：Linux cook 出的 `.jit.cpp` 在 Windows link 时可能因 `alignof` 差异导致 `FJitVerifyPropertyOffset` 失败；以**目标平台**做 cook 是当前推荐做法。
-8. **属性偏移漂移**：如果运行时崩在 `FJitVerifyPropertyOffset`，绝大多数情况是某个绑定 C++ 类的成员排列在 cook 与 link 之间变了——通常因 cook 用旧分支、link 用新分支。重新 cook 即可。
-9. **不要试图在编辑器中验证 StaticJIT**：`AS_SKIP_JITTED_CODE` 让 jit 永远 inactive；性能验证必须用 cooked Development/Test build。
-10. **诊断 marker 在 ship 中不会编译**：`AS_WITH_STATIC_JIT_DIAGNOSTICS=(!UE_BUILD_SHIPPING)`——shipping build 想看 entry count 需自行重建为 Test。
-
----
-
-## 小结
-
-- **StaticJIT 是 AOT，不是 JIT**：cook 期 `WriteOutputCode` 把字节码翻译成 C++ 文件，跟随 .exe 一起编译；运行期不存在代码生成，因此与 ASLR / Code Sign / 各平台沙箱完全兼容。
-- **两份产物，一份签名**：`PrecompiledScript.Cache`（字节码归档 + symbol references）与 `AS_JITTED_CODE/*.jit.cpp/.hpp`（C++ 源码）共享 `FGuid DataGuid`，运行期由 `FStaticJITCompiledInfo::Get()->PrecompiledDataGuid` 校验；任一不一致即整盘抛弃 jit 入口表（保留字节码继续解释执行）。
-- **解释器与 jit 是"双入口、单语义"**：`asCContext::ExecuteNext` / `CallScriptFunction` 仅在最外层做 `if (jitFunction != nullptr)` 检测，jit 与解释器共享异常模型 / 寄存器布局 / 栈布局；fallback 顺滑无副作用。
-- **Native 调用桥共享**：`Type_FunctionCaller` 的 `sysFunc->caller.MethodCaller(...)` 同时被解释器和 StaticJIT 复用（前者经 `CallSystemFunction`，后者经 `FStaticJITFunction::ScriptCallNative`）；`SCRIPT_NATIVE_*` 宏体系是 cook-only 的额外 inline 优化层。
-- **fork 中的位置**：StaticJIT 是 UE Fork 自家创新（不来自上游），与 2.38 的 JIT v2 ABI 不兼容；`Plan_AS238JITv2Port` 标 "未开始"，按 ForkStrategy 当前优先选择性吸收性能改进、不整盘升级。
-- **观测面**：`as.StaticJIT.DumpDiagnostics` + `bStaticJITTranspiledCodeLoaded` + `LogStaticJITDiagnostics` + `AS_JIT_VERIFY_PROPERTY_OFFSETS` 一起构成线上故障的可定位三件套；编辑器 / standalone dev 路径下 jit 永不激活，与 `RT_HotReload` 没有直接交互。
+当前不再按 whole-cache GUID 整盘绑定。Cache V2 与 Provider 独立，Router 逐函数 exact 匹配；单个函数或引用失配只影响对应 route。

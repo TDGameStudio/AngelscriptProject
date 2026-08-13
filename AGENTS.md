@@ -5,7 +5,7 @@
 - This file is guidance for AI agents working in `AngelscriptProject`.
 - The primary goal is not to extend a regular game project, but to organize, verify, and solidify `Plugins/Angelscript` as a standalone, reusable Angelscript plugin for Unreal Engine. This repository serves as the host project for plugin development and validation; the real deliverable is the `Angelscript` plugin itself.
 - The plugin is **no longer in prototype or foundation-building phase**. It has entered a maturity stage where the core runtime, editor integration, and test infrastructure are established, but external delivery entry points and several key capability closures still need attention.
-- Current baseline: `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` three-UE-module structure is stable, with `121` `Bind_*.cpp` files, `27+` CSV state export tables, `1518+` automation test definitions across `430` test `.cpp` files, `DebugServer V2` protocol, `CodeCoverage`, `StaticJIT`, and `BlueprintImpact Commandlet` all landed. GameplayTags support now lives in the optional `AngelscriptGameplayTags` plugin, while `AngelscriptGAS` depends on it for GAS-facing integration. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
+- Current baseline: the `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTestJIT` / `AngelscriptTest` four-UE-module structure is stable, with `AngelscriptTestJIT` serving only as the fixed Editor StaticJIT test carrier. The plugin also has `121` `Bind_*.cpp` files, `27+` CSV state export tables, `1518+` automation test definitions across `430` test `.cpp` files, DebugServer V2, CodeCoverage, provider-based StaticJIT, and BlueprintImpact Commandlet. GameplayTags support now lives in the optional `AngelscriptGameplayTags` plugin, while `AngelscriptGAS` depends on it for GAS-facing integration. Only `2` tests remain Disabled (both `#ue57-headless` known limitations).
 - The current product version is `Unreal AngelScript 1.0.0`; its source lineage is `AngelScript 2.33.0 WIP + selective 2.38 backports`. Product versions advance independently while the fork continues to absorb selected higher-version improvements. See `Documents/Guides/AngelscriptForkStrategy.md`.
 - `Plugins/Angelscript/` is the core workspace. The vast majority of implementation, fixes, cleanup, and tests should land here first. `Source/AngelscriptProject/` retains only the minimal host project content — do not push plugin logic back into the project module unless the task explicitly requires it.
 
@@ -40,6 +40,7 @@ AngelscriptProject/
 │       │   ├── BlueprintImpact/             # BP change scanner & commandlet
 │       │   ├── SourceNavigation/            # Jump-to-source support
 │       │   └── ContentBrowser/              # .as files in Content Browser
+│       ├── AngelscriptTestJIT/              # Editor-only fixed StaticJIT test provider
 │       ├── AngelscriptTest/                 # Test module (430 .cpp, 28+ themes)
 │       └── AngelscriptUHTTool/              # UHT C# code gen toolchain
 │
@@ -124,8 +125,11 @@ AngelscriptRuntime  (Runtime module, no intra-plugin dependencies)
        │
        ├──► AngelscriptEditor  (Editor module, public dependency on Runtime)
        │
-       └──► AngelscriptTest    (Editor module, public dependency on Runtime,
-                                private dependency on Editor when bBuildEditor)
+       ├──► AngelscriptTestJIT (Editor-only fixed StaticJIT Provider, public Runtime dependency)
+       │           │
+       │           └──► AngelscriptTest (test-side dependency on TestJIT)
+       └──► AngelscriptTest    (public Runtime dependency,
+                                private Editor dependency when bBuildEditor)
 
 AngelscriptGameplayTags  (Runtime module, public dependency on Runtime; optional)
        │
@@ -137,7 +141,7 @@ AngelscriptGAS  (Runtime module, public dependency on Runtime + AngelscriptGamep
 AngelscriptUHTTool  (C# UBT plugin, independent — hooks into Unreal Header Tool pipeline)
 ```
 
-All three UE modules load at `PostDefault` phase. `AngelscriptRuntime` owns the editor/commandlet bootstrap through `UAngelscriptEngineSubsystem`, while `FAngelscriptRuntimeModule::InitializeAngelscript()` remains a compatibility API and routes to that subsystem when `GEngine` is available. `UAngelscriptGameInstanceSubsystem` owns world/game-instance contexts and suppresses the engine-subsystem fallback tick while an active game-instance tick owner exists. The host project module `AngelscriptProject` is intentionally minimal — it exists only to give UE a valid target; all real logic belongs in the plugin.
+All four plugin UE modules load at `PostDefault`. `AngelscriptRuntime` owns the editor/commandlet bootstrap through `UAngelscriptEngineSubsystem`, while `FAngelscriptRuntimeModule::InitializeAngelscript()` remains a compatibility API and routes to that subsystem when `GEngine` is available. `UAngelscriptGameInstanceSubsystem` owns world/game-instance contexts and suppresses the engine-subsystem fallback tick while an active game-instance tick owner exists. The host `AngelscriptProject` module remains intentionally minimal; the optional project `AngelscriptJIT` Runtime/PreDefault module only carries generated StaticJIT provider code.
 
 ### Editor Subsystems (AngelscriptEditor)
 
@@ -170,6 +174,15 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 3. **Binding**: C++ types → `Bind_*.cpp` manual bindings + UHT-generated FunctionBinding shards + target-module native function-address features + reflective fallback → Callable from AS scripts
 4. **Hot Reload**: File watcher detects changes → Recompile affected modules → ClassReloadHelper reinstances actors in editor
 
+### StaticJIT Provider Data Flow
+
+- StaticJIT emits exactly one `<StableModuleKey>.<TargetProfile>.jit.cpp` for each non-empty AS module. Global functions and class methods from the same AS module share that translation unit; per-function slices and fixed buckets are forbidden.
+- The project `AngelscriptJIT` carrier and Editor-only `AngelscriptTestJIT` carrier publish ABI Revision 2 entry tables through `IAngelscriptJITArtifactProvider`; `FAngelscriptJITProviderRegistry` validates and copies them into immutable multi-provider snapshots.
+- Each Engine first establishes authoritative current functions through source compilation or Cache V2 restore. `FAngelscriptJITProviderRouter` then matches stable module/function keys, content, target profile, native environment, entry ABI, and stable references. Only an unambiguous exact match publishes a complete VM/Raw/Parms binding; any mismatch falls back only that function to VM.
+- A normal `.as` save never generates C++ or triggers Live Coding automatically. The explicit Editor Generate/Refresh action may patch when the source-file set is unchanged; adding or removing an AS module requires a normal full build.
+- UE ModuleManager owns provider DLL loading/unloading. Registry owner unregistration prevents future selection, while published bindings retain a code-image lease until the last active reader exits. Never reintroduce `FJITDatabase`, persisted FunctionId/DataGuid, or whole-cache pairing.
+- Production content-specific script-to-script direct-call emission is currently disabled. Native binding execution is supported; cross-translation-unit direct calls remain a separate future optimization.
+
 ### Standalone compilation and offline UE analysis
 
 - `Plugins/Angelscript/Standalone/` uses CMake to compile the same maintained fork and compiles its private standard-C++ frontend directly into `AngelscriptStandaloneHost`. It neither includes nor links Unreal Engine and does not require a shared Runtime `Language/` layer. UE keeps its original `FAngelscriptPreprocessor` and descriptor graph as the authoritative implementation; the two hosts exchange only the complete offline JSON bundle.
@@ -193,6 +206,12 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - TW Icons is pinned at `Reference\tw-icons` from `https://github.com/morosanuae/tw-icons.git`, commit `d4a58efeddaa683af69fba1a43717a16e4f0d2ca` (`v1.10`). It is a 56 MiB standalone TiddlyWiki icon catalogue rather than a split plugin source tree. Use it only as a **lowest-priority**, offline catalogue when manually selecting an occasional icon; it is not a runtime dependency, must never be imported wholesale, and each selected icon library needs its own license review because the repository has no repository-level license.
 - Kookma TW5 plugin and extension sources are retained beneath `Reference\kookma\`: every reachable upstream is an independent SSH Git clone, while `TW-PluginLibrary` also preserves the packaged catalogue snapshots. They are source references for secondary development of WikiText, macros, components, styles, and authoring workflows; they are not runtime dependencies or normal `Wiki/` build inputs. Before changing AngelScript-native document components, inspect this local source first; product code must be integrated under the TDGameStudio namespace in `Wiki/src/` only after licence and global-template impact review.
 - AngelScript code-generator research references are maintained at `Reference\fuzzilli`, `Reference\grammarinator`, `Reference\csmith`, `Reference\yarpgen`, and `Reference\creduce`. Fuzzilli is the primary ASIR / ProgramBuilder architecture reference; Grammarinator is parser-fuzz-only; Csmith and YARPGen inform controlled valid programs and behavioral oracles; C-Reduce informs failing-case reduction. They are offline analysis/design references only, never runtime dependencies or automatic network inputs.
+- Angelsea is retained at `Reference\angelsea` from `https://github.com/asumagic/angelsea.git`, including its pinned MIR, AngelScript, fmt, Catch2, and nanobench submodules. It is a secondary research reference for `asIJITCompilerV2`, AngelScript bytecode-to-C, MIR, lazy/asynchronous JIT, and interpreter fallback. The plugin's StaticJIT, UE integration, and maintained AngelScript fork always take precedence; Angelsea is not a runtime or build dependency.
+- Daslang (repository name `daScript`) is retained at `Reference\daScript` from `https://github.com/GaijinEntertainment/daScript.git`. It is a cross-language architecture reference for zero-copy C++ interop, a tree interpreter, AOT-to-C++, LLVM JIT, hot reload, semantic hashing, compile-time macros, and compiler-backed MCP tooling. It is not authoritative for AngelScript semantics, ABI, or this project's StaticJIT, and is never a build dependency.
+- Typed/native compiler research snapshots are retained at `Reference\Cython`, `Reference\numba`, and `Reference\luau` from `cython/cython`, `numba/numba`, and `luau-lang/luau`. Use Cython primarily for typed-AST-to-C/C++ Static AOT emission, Numba for bytecode-to-untyped/typed-IR-to-LLVM staging, specialization, and object caching, and Luau for bytecode-native code generation, type guards, fallback blocks, VM exits, and x64/A64 code lifecycle. They are offline research sources rather than plugin dependencies; exact SHAs, licenses, clone commands, and source entry points are recorded in `Reference/README.md` and `openspec/changes/feature-as-typed-semantic-aot/research/`.
+- GenericMessagePlugin is retained at `Reference\GenericMessagePlugin` from `https://github.com/wangjieest/GenericMessagePlugin.git`. Use it to study a UE key-based message bus spanning C++, Blueprint, AngelScript, and other script backends, including signature collection, type checking, generated AS declarations, K2 nodes, request/response, sticky messages, and call-site tracing. It is a focused secondary message/script-interoperability reference, not plugin code to import directly.
+- GenericStorages is retained at `Reference\GenericStorages` from `https://github.com/UnrealBytes/GenericStorages.git`. It is a low-priority utility reference for UE registry/storage/singleton/subsystem templates, editor pickers, platform persistence, permissions/deep links, and S3 helpers; it is neither an AngelScript architecture baseline nor a runtime dependency.
+- UECling is retained at `Reference\UECling` from `https://github.com/Evianaive/UECling.git`. It is a low-priority cross-reference for embedding Cling/CppInterOp in Unreal, runtime C++ interpretation, REPL/notebook tooling, Blueprint nodes, and script-generated classes; it is not a runtime or build dependency. Upstream provides no repository-level LICENSE and directly carries LLVM/Clang headers, so any implementation use or redistribution requires a separate provenance and license review.
 
 ## Local Configuration
 

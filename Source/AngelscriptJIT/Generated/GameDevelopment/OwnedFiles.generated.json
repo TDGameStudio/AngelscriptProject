@@ -1,0 +1,20 @@
+{
+  "ownershipRevision": 2,
+  "targetProfile": "GameDevelopment",
+  "providerId": "a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5",
+  "providerGeneration": "fa76083850a30f231f6e1eb8eca356770733769a1500e32e11c89637386610e6",
+  "files": [
+    "OwnedFiles.generated.json",
+    "Provider.generated.h",
+    "Provider.generated.inl",
+    "ProviderManifest.generated.json",
+    "Tests/Test_ActorLifecycle.7c60060e.GameDevelopment.jit.cpp",
+    "Tests/Test_Enums.812970d9.GameDevelopment.jit.cpp",
+    "Tests/Test_ExampleActorFixture.3cc55dac.GameDevelopment.jit.cpp",
+    "Tests/Test_GameplayTags.349ffd2e.GameDevelopment.jit.cpp",
+    "Tests/Test_Handles.07a7af43.GameDevelopment.jit.cpp",
+    "Tests/Test_Inheritance.f77b2646.GameDevelopment.jit.cpp",
+    "Tests/Test_MathNamespace.7a4e7104.GameDevelopment.jit.cpp",
+    "Tests/Test_SystemUtils.26e1442a.GameDevelopment.jit.cpp"
+  ]
+}

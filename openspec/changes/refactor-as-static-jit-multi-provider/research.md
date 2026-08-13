@@ -1,5 +1,7 @@
 # StaticJIT 外置模块与稳定函数路由研究记录
 
+> **布局结论已更新（2026-08-12）：** 本文中任何“每函数 slice”或“固定 bucket”的生成建议均已被用户确认的“每个目标 Profile 下，一个 AS 模块严格对应一个 `<Module>.jit.cpp`”设计取代。Runtime/Provider/JIT 生命周期研究证据仍然有效；生成布局以 `design.md` 和 capability deltas 为准。
+
 > 状态：历史增量研究记录（plan-only）；2026-08-12 的规范性结论见 `jit-interface-238-test-module-research.md`、`design.md` 与 capability deltas
 > OpenSpec change：`refactor-as-static-jit-multi-provider`
 >

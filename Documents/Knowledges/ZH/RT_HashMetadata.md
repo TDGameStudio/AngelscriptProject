@@ -1,7 +1,9 @@
 # RT_HashMetadata — Hash / 元数据辅助
 
+> **当前 StaticJIT 身份说明（2026-08-13）**：本文第 4、5 节和第 9.3 节保留的是已删除的 `DataGuid + FJITDatabase + FunctionId` whole-cache 方案历史，用于理解旧报告，不代表当前实现。当前 Cache V2/StaticJIT 使用 BLAKE3-256 稳定模块/函数键、execution/debug/profile/environment/entry-ABI 摘要和 ProviderGeneration；每个 Engine 本地重建瞬时 FunctionId route。规范见 `RT_StaticJIT.md`，禁止按本文历史章节重新实现旧配对路径。
+
 > **所属前缀**: RT_（运行时子系统族）
-> **关注层面**: 把"插件里散落各处的 hash 调用"和"AS 端可见的 metadata 信息流"合在一处看——`GetTypeHash` 桥接如何让 TMap/TSet 容器能用 UE 类型当 key、xxHash 算出的 `CodeHash`/`CombinedDependencyHash` 如何在增量预处理与 PrecompiledData 装载时做内容指纹、StaticJIT 与 Cache 的 `FGuid DataGuid` + `BuildIdentifier` 双重校验链路、以及 UPROPERTY/UFUNCTION/UCLASS 的元数据从注释和 specifier 走到 UE 反射树并回查的全链路。本文不写 TMap/TSet 容器语法（那是 `Syntax_TMap.md` / `Syntax_TSet.md` 的事），不写 PrecompiledData 整体 schema（那是 `RT_StaticJIT.md` 的事），不写预处理器 chunk 切分细节（那是 `Type_Preprocessor.md` 的事）；本文聚焦的是 **hash 与 metadata 这两个跨子系统的"装订辅料"**，把它们的来源、消费端、失效语义、失败回退串成一篇可查的索引。
+> **关注层面**: 把“插件里散落各处的 hash 调用”和“AS 端可见的 metadata 信息流”合在一处看——`GetTypeHash` 桥接如何让 TMap/TSet 用 UE 类型当 key、xxHash `CodeHash`/`CombinedDependencyHash` 如何支持预处理与热重载、Cache V2/StaticJIT 如何用 BLAKE3-256 稳定 identity 和内容/ABI/profile/environment 摘要逐记录或逐函数失效，以及 UPROPERTY/UFUNCTION/UCLASS metadata 如何进入 UE 反射树。本文第 4、5 节另保留旧 whole-cache 方案历史，但不作为当前规范。
 > **关键源码**:
 > `Plugins/Angelscript/Source/AngelscriptRuntime/Hash/xxhash.{h,inl}` (~244 行，xxHash 0.6.5 单文件库 vendored)
 > · `AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.cpp` (`#define XXH_PRIVATE_API` + `XXH64` 算 `Section.CodeHash` / `Module->CodeHash`，~530 行；`Meta` 字段填充散布于 `Process(Class|Property|Function|Enum)Macro`)
@@ -12,14 +14,15 @@
 > · `AngelscriptRuntime/Binds/Bind_TMap.cpp` / `Bind_TSet.cpp` (`KeyType.CanHashValue()` 检查 + 回退到脚本端 `Hash()` 方法)
 > · `AngelscriptRuntime/ClassGenerator/ASStruct.cpp` (~261 行，`FASStructOps::HashFunction` + `Capabilities.HasGetTypeHash` + `CPF_HasGetValueTypeHash`)
 > · `AngelscriptRuntime/Binds/Bind_Hash.cpp` (~49 行，`Hash::CityHash32/64` 全局函数暴露)
-> · `AngelscriptRuntime/StaticJIT/PrecompiledData.{h,cpp}` (`FAngelscriptPrecompiledModule::CodeHash` / `FAngelscriptPrecompiledData::DataGuid` / `BuildIdentifier`、`CreateFunctionId` 用 `FCrc::StrCrc_DEPRECATED + HashCombine`)
-> · `AngelscriptRuntime/StaticJIT/StaticJITHeader.{h,cpp}` (`FStaticJITCompiledInfo::PrecompiledDataGuid` 与 `Get()` 单例)
+> · `AngelscriptRuntime/Artifacts/AngelscriptArtifactIdentity.*`（稳定模块/函数 identity、execution/debug/profile/ABI 摘要）
+> · `AngelscriptRuntime/Cache/AngelscriptCache*`（Cache V2 content-addressed generation/record identity）
+> · `AngelscriptRuntime/StaticJIT/AngelscriptJITProvider.*`（artifact-set digest 与 ProviderGeneration）
 > · `AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator.cpp` (`for (Elem : ClassDesc->Meta) NewClass->SetMetaData(Elem.Key, *Elem.Value)` 等多处把 `Meta` 抄写进 UE 反射)
 > · `AngelscriptRuntime/Binds/Helper_FunctionSignature.h` (`Function->FindMetaData(K)` 优化路径)
 > **关联文档**:
 > `Documents/Knowledges/ZH/RT_HotReload.md` — 增量 reload 何时实际比对 `CodeHash`
-> · `Documents/Knowledges/ZH/RT_StaticJIT.md` — `DataGuid` / `BuildIdentifier` 双重校验下 cooked artifact 的接受 / 拒绝
-> · `Documents/Knowledges/ZH/RT_GlobalState.md` — `bStaticJITTranspiledCodeLoaded` 是进程级状态
+> · `Documents/Knowledges/ZH/RT_StaticJIT.md` — Provider/Engine 对 stable identity、content、Profile、environment、ABI 与引用的逐函数接受/拒绝
+> · `Documents/Knowledges/ZH/RT_GlobalState.md` — 进程级 Provider Registry 与 Engine-local route 的边界
 > · `Documents/Knowledges/ZH/Type_Preprocessor.md` — §九 增量预处理：当一个文件 hash 没变就不重编
 > · `Documents/Knowledges/ZH/Syntax_TMap.md` / `Syntax_TSet.md` — `KeyFuncs` 怎样调用 `GetTypeHash`
 > · `Documents/Knowledges/ZH/Type_ClassGeneration.md` — `SetMetaData` 在 `Finalize` 步骤的位置
@@ -332,7 +335,7 @@ if (PrecompiledData != nullptr && bAllImportsPreCompiled && bUsePrecompiledData)
 
 ---
 
-## 四、Hash 角色 3：cooked artifact 完整性校验
+## 四、历史实现：已删除的 cooked whole-cache 完整性校验
 
 ### 4.1 `FGuid DataGuid`：cache 与 .jit.cpp 的"配对码"
 
@@ -445,7 +448,7 @@ bool IsValidForCurrentBuild()
 
 ---
 
-## 五、Hash 角色 4：函数 ID（FunctionId）
+## 五、历史实现：已删除的持久化 FunctionId 配对
 
 ### 5.1 为什么要给每个函数派生稳定 ID
 
@@ -749,7 +752,7 @@ Row = { Module->ModuleName, LexToString(Module->Code.Num()),
 
 走法：控制台 `as.DumpEngineState`，CSV 在 `Saved/AngelscriptDump/Modules.csv`。同行可比对两份 hash 是否符合 import 拓扑预期。
 
-### 9.3 验证 PrecompiledData 与 .jit.cpp 配对
+### 9.3 历史诊断：旧 PrecompiledData 与 .jit.cpp 配对（已删除）
 
 `RT_StaticJIT.md` §10.1 已经讲过 `as.StaticJIT.DumpDiagnostics`：
 

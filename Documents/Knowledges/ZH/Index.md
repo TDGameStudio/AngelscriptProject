@@ -21,6 +21,7 @@
 ## AS_ — AngelScript 引擎内核
 
 ```
+├── AS_UEEmbeddedVersion.md                // 产品版本与深度嵌入 UE 的特殊性（审阅稿）
 ├── AS_ScriptEngine.md                     // asCScriptEngine 核心架构
 ├── AS_TypeRegistration.md                 // 类型注册 API
 ├── AS_Compiler.md                         // asCCompiler 编译流程
@@ -30,6 +31,7 @@
 ├── AS_GarbageCollector.md                 // GC 策略
 ├── AS_ObjectLifecycle.md                  // 脚本对象生命周期
 ├── AS_CallingConventions.md               // 调用约定
+├── AS_RuntimePerformanceOptimizationResearch.md // 底层运行时性能优化难度、证据与分阶段路线研究
 ├── AS_StringFactory.md                    // 字符串工厂
 ├── AS_ForkDifferences.md                  // Fork 差异清单
 └── AS_LanguageSyntax.md                   // 语言语法速查
@@ -52,6 +54,7 @@
 
 ```
 ├── RT_HotReload.md                        // 热重载与文件变更链路
+├── RT_CacheV2.md                          // 增量 Cache V2：通俗总览、存储、改动识别、依赖、强制重编、启动编挂与性能插桩
 ├── RT_StaticJIT.md                        // StaticJIT 与执行性能
 ├── RT_Debugger.md                         // 调试协议集成
 ├── RT_StateDump.md                        // State Dump 可观测性
@@ -102,6 +105,9 @@
 ## Diff_ — 与参考实现的差异分析
 
 ```
+├── Diff_AngelseaRuntimeJIT.md              // Angelsea MIR Runtime JIT、统一 coordinator、LLVM 并行后端与 UE 接入边界
+├── Diff_DaslangAngelseaJIT.md              // Daslang AST/LLVM JIT、LLVM 动态接入与 Angelsea 字节码 JIT 对比
+├── Diff_DaslangAngelScriptInterpreterPerformance.md // Daslang SimNode/Fusion 解释器性能原理与本项目 AS 对比
 ├── Diff_HazelightDefaultStatement.md       // default 语句实现与 Hazelight 引擎的偏离分析
 ├── Diff_HazelightInsightsToBorrow.md       // 全插件视角：Hazelight 中可借鉴的设计点汇总
 └── Diff_VerseArchitecture.md               // Verse vs AS 插件：语言/编译器/VM/反射/GC/并发架构差异 + 优劣判断与选型指南 + 优劣判断与选型指南

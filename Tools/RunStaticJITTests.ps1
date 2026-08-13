@@ -1,17 +1,24 @@
 <#
 .SYNOPSIS
-    Prepare the paired StaticJIT AOT artifacts and run the StaticJIT automation prefix.
+    Generate, rebuild, verify, and test the Editor-only AngelscriptTestJIT provider.
 
 .DESCRIPTION
-    StaticJIT AOT precompiled data serializes reference identities that are embedded
-    in the generated .jit.cpp/.jit.hpp sources. The cache is therefore valid only
-    after the commandlet has generated both artifacts and UBT has compiled the
-    generated sources. This runner keeps that required build -> generate -> build
-    -> test sequence in one explicit, test-only entry point.
+    The committed TestJIT provider is generated from isolated plugin-owned source
+    fixtures and compiled by the normal Editor target. Runtime proof uses current
+    source compilation and a fresh Engine restored from an isolated Cache V2 root;
+    no legacy paired .Cache artifact is read or written beside generated C++.
+
+    Mode All runs the reproducible end-to-end order:
+      baseline build -> Generate -> generated-source rebuild -> Verify -> tests.
+    Mode Generate runs the first two stages so callers can inspect/commit output.
+    Mode Verify runs read-only Verify followed by the focused automation tests.
 #>
 [CmdletBinding()]
 param(
-    [string]$LabelPrefix = 'staticjit-aot',
+    [ValidateSet('All', 'Generate', 'Verify')]
+    [string]$Mode = 'All',
+
+    [string]$LabelPrefix = 'staticjit-testjit',
 
     [int]$BuildTimeoutMs = 1800000,
 
@@ -63,10 +70,11 @@ function Invoke-StaticJITStep {
     }
 }
 
-function Invoke-StaticJITGeneration {
+function Invoke-TestJITCommandlet {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ScriptPath,
+        [ValidateSet('Generate', 'Verify')]
+        [string]$CommandMode,
 
         [Parameter(Mandatory = $true)]
         [string]$GenerationLabel,
@@ -76,62 +84,23 @@ function Invoke-StaticJITGeneration {
     )
 
     $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-    $outputRoot = Join-Path $projectRoot 'Saved\StaticJIT\Preflight'
-    $outputLabelRoot = Join-Path (Join-Path $outputRoot 'Commandlet') $GenerationLabel
-
-    Write-Host '----------------------------------------------------------------'
-    Write-Host 'StaticJIT step: Generate paired AOT artifacts'
-    Write-Host ("Command       : powershell.exe -File {0}" -f $ScriptPath)
-    Write-Host '----------------------------------------------------------------'
-
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ScriptPath `
-        -Commandlet 'AngelscriptStaticJITAotTest' `
-        -Label $GenerationLabel `
-        -OutputRoot $outputRoot `
-        -TimeoutMs $TimeoutMs `
-        -ExtraArgs '-Mode=Generate'
-    $processExitCode = $LASTEXITCODE
-    if ($processExitCode -eq 0) {
-        return
+    $outputRoot = Join-Path $projectRoot 'Saved\StaticJIT\TestJIT'
+    $modeArgument = if ($CommandMode -eq 'Generate') {
+        '-Mode=Generate'
     }
-
-    # Unreal can convert unrelated project-startup log errors into a non-zero
-    # host process code after this commandlet has already returned result 0.
-    # Do not generally suppress commandlet failures: only continue after
-    # proving this invocation reported success and wrote every paired artifact.
-    $metadataPath = Get-ChildItem -Path $outputLabelRoot -Filter 'RunMetadata.json' -File -Recurse -ErrorAction SilentlyContinue |
-        Sort-Object LastWriteTimeUtc -Descending |
-        Select-Object -First 1 -ExpandProperty FullName
-    if ([string]::IsNullOrWhiteSpace($metadataPath)) {
-        throw "StaticJIT generation failed with exit code $processExitCode and wrote no run metadata."
+    else {
+        '-Mode=Verify'
     }
-
-    $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
-    $logPath = [string]$metadata.LogPath
-    if ([string]::IsNullOrWhiteSpace($logPath) -or -not (Test-Path -LiteralPath $logPath -PathType Leaf)) {
-        throw "StaticJIT generation failed with exit code $processExitCode and wrote no commandlet log."
-    }
-
-    $logText = Get-Content -LiteralPath $logPath -Raw
-    $reportedSuccess = $logText -match 'Commandlet .*AngelscriptStaticJITAotTestCommandlet.*finished execution \(result 0\)'
-    $writtenArtifactCount = [regex]::Matches($logText, 'StaticJIT AOT wrote ').Count
-    $generatedDirectory = Join-Path $projectRoot 'Plugins\Angelscript\Source\AngelscriptTest\StaticJIT\AOT\Generated'
-    $requiredArtifacts = @(
-        'ASStaticJITAotFixture.as.jit.hpp',
-        'AngelscriptJitCode_0.jit.cpp',
-        'AngelscriptJitInfo.jit.cpp',
-        'StaticJITAotFixture.Cache'
-    )
-    $missingArtifacts = @($requiredArtifacts | Where-Object {
-        -not (Test-Path -LiteralPath (Join-Path $generatedDirectory $_) -PathType Leaf)
-    })
-
-    if (-not $reportedSuccess -or $writtenArtifactCount -ne $requiredArtifacts.Count -or $missingArtifacts.Count -ne 0) {
-        throw ("StaticJIT generation failed with exit code {0}; commandlet success={1}, written artifacts={2}, missing artifacts={3}. See {4}" -f `
-            $processExitCode, $reportedSuccess, $writtenArtifactCount, ($missingArtifacts -join ', '), $logPath)
-    }
-
-    Write-Warning ("StaticJIT generation completed successfully, but Unreal returned exit code {0} after unrelated project-startup errors. Artifact success was verified from {1}." -f $processExitCode, $logPath)
+    Invoke-StaticJITStep `
+        -Name ("AngelscriptTestJIT {0}" -f $CommandMode) `
+        -ScriptPath $runCommandletPath `
+        -Arguments @(
+            '-Commandlet', 'AngelscriptTestJIT',
+            '-Label', $GenerationLabel,
+            '-OutputRoot', $outputRoot,
+            '-TimeoutMs', $TimeoutMs,
+            '-ExtraArgs', $modeArgument
+        )
 }
 
 $testPrefix = if ($AotOnly) {
@@ -142,8 +111,9 @@ else {
 }
 
 Write-Host '================================================================'
-Write-Host '  Angelscript StaticJIT AOT Test Runner'
+Write-Host '  Angelscript TestJIT Provider Runner'
 Write-Host '================================================================'
+Write-Host ("Mode                : {0}" -f $Mode)
 Write-Host ("LabelPrefix         : {0}" -f $LabelPrefix)
 Write-Host ("TestPrefix          : {0}" -f $testPrefix)
 Write-Host ("BuildTimeoutMs      : {0}" -f $BuildTimeoutMs)
@@ -151,26 +121,42 @@ Write-Host ("CommandletTimeoutMs : {0}" -f $CommandletTimeoutMs)
 Write-Host ("TestTimeoutMs       : {0}" -f $TestTimeoutMs)
 Write-Host '================================================================'
 
-Invoke-StaticJITStep -Name 'Baseline build' -ScriptPath $runBuildPath -Arguments @(
-    '-Label', ("{0}_01_baseline_build" -f $LabelPrefix),
-    '-TimeoutMs', $BuildTimeoutMs
-)
+if ($Mode -in @('All', 'Generate')) {
+    Invoke-StaticJITStep -Name 'Baseline Editor build' -ScriptPath $runBuildPath -Arguments @(
+        '-Label', ("{0}_01_baseline_build" -f $LabelPrefix),
+        '-TimeoutMs', $BuildTimeoutMs,
+        '-NoXGE'
+    )
 
-Invoke-StaticJITGeneration `
-    -ScriptPath $runCommandletPath `
-    -GenerationLabel ("{0}_02_generate" -f $LabelPrefix) `
-    -TimeoutMs $CommandletTimeoutMs
+    Invoke-TestJITCommandlet `
+        -CommandMode 'Generate' `
+        -GenerationLabel ("{0}_02_generate" -f $LabelPrefix) `
+        -TimeoutMs $CommandletTimeoutMs
+}
 
-Invoke-StaticJITStep -Name 'Build generated AOT sources' -ScriptPath $runBuildPath -Arguments @(
-    '-Label', ("{0}_03_generated_build" -f $LabelPrefix),
-    '-TimeoutMs', $BuildTimeoutMs
-)
+if ($Mode -eq 'All') {
+    Invoke-StaticJITStep -Name 'Build generated TestJIT sources' -ScriptPath $runBuildPath -Arguments @(
+        '-Label', ("{0}_03_generated_build" -f $LabelPrefix),
+        '-TimeoutMs', $BuildTimeoutMs,
+        '-NoXGE'
+    )
+}
 
-Invoke-StaticJITStep -Name 'Run StaticJIT automation' -ScriptPath $runTestsPath -Arguments @(
-    '-TestPrefix', $testPrefix,
-    '-Label', ("{0}_04_tests" -f $LabelPrefix),
-    '-TimeoutMs', $TestTimeoutMs
-)
+if ($Mode -in @('All', 'Verify')) {
+    $verifyOrdinal = if ($Mode -eq 'All') { '04' } else { '01' }
+    $testOrdinal = if ($Mode -eq 'All') { '05' } else { '02' }
+
+    Invoke-TestJITCommandlet `
+        -CommandMode 'Verify' `
+        -GenerationLabel ("{0}_{1}_verify" -f $LabelPrefix, $verifyOrdinal) `
+        -TimeoutMs $CommandletTimeoutMs
+
+    Invoke-StaticJITStep -Name 'Run StaticJIT automation' -ScriptPath $runTestsPath -Arguments @(
+        '-TestPrefix', $testPrefix,
+        '-Label', ("{0}_{1}_tests" -f $LabelPrefix, $testOrdinal),
+        '-TimeoutMs', $TestTimeoutMs
+    )
+}
 
 Write-Host ''
-Write-Host 'StaticJIT AOT preparation and automation tests completed successfully.' -ForegroundColor Green
+Write-Host ("Angelscript TestJIT mode '{0}' completed successfully." -f $Mode) -ForegroundColor Green

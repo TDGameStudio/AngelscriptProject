@@ -1,6 +1,18 @@
 # AngelScript Cache V2 使用与排障指南
 
-本文面向插件使用者和维护者，说明增量 Cache V2 在 Editor、PIE、Development、Shipping 与 StaticJIT 路由中的实际职责、磁盘布局、配置、调试入口和验证方法。完整设计推导与变更分类见 `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`。
+本文面向插件使用者和维护者，说明增量 Cache V2 在 Editor、PIE、Development、Shipping 与 StaticJIT 路由中的实际职责、磁盘布局、配置、调试入口和验证方法。完整设计推导与变更分类见 `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`。通俗总览、强制重编、启动编挂、冷/热启动怎么量以及测试/依赖说明见 `Documents/Knowledges/ZH/RT_CacheV2.md`。Cache 测试树的结构问题见 `Documents/Guides/CacheV2TestReview_20260813.md`。
+
+## 0. 通俗总览
+
+Cache V2 是脚本编译结果的仓库，不是一个大 `.cache` 文件。`.as` 永远是对的；对不上就重编，绝不拿过期代码充数。
+
+- **CompatibilityHash / ContextHash**：进哪栋仓库（机芯/格式 vs Editor·Shipping·自动 import 等设定）。改 `.as` 不换这两层目录。
+- **七种货**：进货清单、模块对外说明书、类型样子、全局状态、函数能跑的那包、行号、模块购物小票。字节码在 FunctionBody 里。
+- **RecordId**：每包货的快递单号（种类 + 内容指纹）。用来找货、和上一代比能不能复用、相同内容只存一份。
+- **改脚本**：先看哪些文件原始字节变了，再按语义决定换哪几包；相关调用方靠上次记下的“用过谁、当时指纹是什么”，不是靠 `import` 行。
+- **写盘**：热更/启动编译成功当时就冻货、后台装袋；关机只把已经在写的那笔写完，不再编译。
+
+完整人话说明见 `Documents/Knowledges/ZH/RT_CacheV2.md` 第 0 节（过程案例含冷启动 / 再开不变 / 改函数体 / 改签名 / 只改注释 / 关着编辑器改坏再开），以及第 7–9 节（强制重编、启动编挂、冷/热启动怎么量）。
 
 ## 1. 它解决什么问题
 
@@ -124,6 +136,7 @@ as.Cache.Verify Generation=Previous Deep=0
 as.Cache.Compact Timeout=5
 as.Cache.ForceClean
 as.Cache.ForceClean Module=<canonical-name-or-stable-module-key>
+as.ReloadScripts
 as.Cache.Trace Enable Capacity=4096
 as.Cache.Trace Dump Json=Diagnostics/cache-trace.json
 as.Cache.Trace Clear
@@ -132,6 +145,10 @@ as.Cache.Explain Transaction=<ordinal> Module=<64-hex-key>
 ```
 
 `Json=` 路径必须位于 Project `Saved` 下。`Status` 和 `-as-cache-report` 生成相同的 pointer-free schema 4 session JSON，可与不同进程、Editor 或游戏启动的离线 dump 按 stable coordinates 关联。Blueprint 可调用 `Get AngelScript Cache Status JSON`。C++ 可使用 `CaptureAngelscriptCacheDiagnosticSnapshot`、`CaptureCurrentAngelscriptCacheDiagnosticJson`、`VerifyAngelscriptCacheStore`、`FlushCurrentAngelscriptCacheToStore`、`CompactAngelscriptCacheStoreForEngine`、`ForceCleanAngelscriptCache` 和 `ExplainAngelscriptCacheDecisions` 等 typed API。
+
+`as.Cache.ForceClean` 是「Cache + 整套 `.as`」的强制重编：选中模块（或不写 `Module=` 则全部 active 模块）走 `FullReload`，关掉函数级 Hit。它不删磁盘 pack；清文件另跑 `Compact`。`as.ReloadScripts` 只在打包运行时排队一次 loose 源重载，编辑器里是 `Disabled`，且仍允许 Cache Hit。`Flush` / `Verify` / `Status` / `Explain` / `Trace` 都不编译。没有单独的 `as.RecompileAll`，也不重编 C++ / UHT / StaticJIT。
+
+启动时 SourceIndex 对不上会触发重编。这回编挂则**不激活**磁盘上那份不同源的 Current：编辑器弹编译错误窗，修完保存再 FullReload；打包 / unattended / commandlet 以状态码 3 退出。restore 半截失败（`FatalPartialRestore`）连编译回退都不走。热更失败才保住内存 last-good。细节见 `RT_CacheV2.md` 第 8 节。
 
 ## 9. Python 只读 dump
 
@@ -183,7 +200,9 @@ Tools\RunTestSuiteParallel.ps1 -Suite All -Strategy CoarseDynamic `
     -TestModuleWorkers 4 -MaxParallelLight 4 -MaxParallelHeavy 4
 ```
 
-基准使用 disposable package fixture 和隔离 cache roots，覆盖 cold、exact warm、函数体、类型、模块状态、诊断开销与 4/16/64 MiB 串并行组合。计时只做观测，不设置未经真实基线证明的机器时间 pass threshold；semantic parity、process exit、report/dump 关联和确定性才是硬性断言。
+基准使用 disposable package fixture 和隔离 cache roots，覆盖 cold、exact warm、函数体、类型、模块状态、诊断开销与 4/16/64 MiB 串并行组合。`totalMs` 是整进程墙钟，不是纯 `InitialCompile`。计时只做观测，不设置未经真实基线证明的机器时间 pass threshold；semantic parity、process exit、report/dump 关联和确定性才是硬性断言。
+
+单次启动对比不必跑完整矩阵：带 `-as-cache-report` / `-as-cache-trace`，看 schema-4 的 `functionReuse.restoredFunctionCount` / `compiledMissCount` / `notCacheableCount`，以及决策事件 `StartupSelection` / `StartupRestore` 的 `elapsedMicroseconds`。引擎日志里的 `script compilation total`（`FAngelscriptScopeTimer`）和 Insights 的 `Angelscript.Compile.Initial` 更接近纯编译时间。整仓 restore 成功时这些编译 timer 不会出现。session JSON 目前没有预处理/解析/每函数拆账；Editor 启动也没有自动 A/B。日常最小对比：空仓（或 ForceClean 后再关开）与源未改再开各出一份 report。拆法见 `RT_CacheV2.md` 第 9 节。
 
 2026-08-12 的 V7.7 Development 小型 fixture 基准包含 38 个 staged source、
 一个 32.7 KiB Pack。其 cold median 为 11093 ms，unchanged warm 为

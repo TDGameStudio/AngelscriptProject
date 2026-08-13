@@ -110,9 +110,9 @@ IAngelscriptJITArtifactProvider
 FAngelscriptJITProviderRegistry
 ```
 
-A Provider view contains `StructSize`, `AbiRevision`, full stable `ProviderId`, diagnostic provider name, content-derived `ProviderGeneration`, artifact-set digest, artifact profile, Native environment fingerprint, entry table/count, and bucket count. `ProviderId` identifies one generated ownership domain independently of load order or process address. `AbiRevision` is a DLL layout revision, not an alternate JIT behavior version. Runtime accepts only its current revision and has no old-view adapter.
+A Provider view contains `StructSize`, `AbiRevision`, full stable `ProviderId`, diagnostic provider name, content-derived `ProviderGeneration`, artifact-set digest, artifact profile, Native environment fingerprint, and entry table/count. `ProviderId` identifies one generated ownership domain independently of load order or process address. `AbiRevision` is a DLL layout revision, not an alternate JIT behavior version. Runtime accepts only its current revision and has no old-view adapter. Generated translation-unit count and layout are build-tool metadata, not Runtime ABI, so the provider view does not expose or validate a bucket count.
 
-Runtime synchronously copies and validates each view returned through `IModularFeatures`; it never retains provider-owned view/array/string memory. One UE module may register one or more fixed provider feature objects in `StartupModule()` and unregister only those objects in `ShutdownModule()`. Each feature object exposes one current view and calls a generated accessor whenever the view is requested, so Live Coding can patch its manifest without relying on duplicate static-constructor registration.
+Runtime synchronously copies and validates each view returned through `IModularFeatures`; it never retains provider-owned view/array/string memory. For every accepted generation it also creates a Runtime-owned lifetime lease. A modular-build lease resolves every VM/Raw/Parms address to its actual base or Live Coding patch image and adds one platform reference per distinct DLL; a monolithic lease records process-image lifetime. Every Registry registration path is rejected when Runtime cannot prove that all entry code remains mapped. Catalogs, Bindings, routes, and active execution readers retain this lease until the generation's last reader exits, and replacement/unregistration defers final catalog/snapshot destruction until after the Registry lock is released. One UE module may register one or more fixed provider feature objects in `StartupModule()` and unregister only those objects in `ShutdownModule()`. Generated carrier modules disable ordinary dynamic unloading, while primary loading remains owned by UE. Each feature object exposes one current view and calls a generated accessor whenever the view is requested, so Live Coding can patch its manifest without relying on duplicate static-constructor registration. Detailed UE evidence and the pin/retirement sequence are recorded in `attachments/provider-dll-lifetime-and-retirement.md`.
 
 Each entry contains full 256-bit values:
 
@@ -129,7 +129,7 @@ StableFunctionKey
 
 The environment fingerprint covers platform/architecture, target/configuration, UE build, Unreal AngelScript fork/runtime ABI, generator and bridge revisions, toolchain identity, optimization/debug profile, and binding surface. Entry ABI additionally covers the exact referenced layouts/functions used by that entry. A display GUID is diagnostic only.
 
-Provider generations are content hashes, not counters. For one `ProviderId`, a new compatible generation supersedes its older generation at a safe publication point. Duplicate `ProviderId + ProviderGeneration` with different bytes is rejected. Provider departure removes only routes supplied by that ProviderId/generation at the next safe point.
+Provider generations are content hashes, not counters. For one `ProviderId`, a new compatible generation supersedes its older generation at a safe publication point. Duplicate `ProviderId + ProviderGeneration` with different bytes is rejected. Provider departure prevents new Registry selection immediately and removes only routes supplied by that ProviderId/generation at the next Engine safe point. Retired metadata, Engine-local references, Binding state, and the Provider code pin remain alive until the last active reader exits.
 
 ### The Runtime registry supports multiple UE and AngelScript modules
 
@@ -164,6 +164,8 @@ ReferenceKind + full StableKey + ExpectedAbi + SlotIndex
 
 The Runtime adapter resolves those records against the current Engine/binding environment into an immutable engine-local table. A missing, ambiguous, or ABI-mismatched required slot makes only that entry a VM miss. `FScriptExecution` carries the current Engine/function/Binding context so generated code can read resolved slots without `FAngelscriptEngine::Get()`.
 
+The generator emits accessors for the semantic use rather than embedding the resolved value: script functions, system-function pointer payloads, type/object-type records, script-global storage, string-literal storage, and script-property offsets are all obtained from the current Binding's slot table. String literals require an explicit content-addressed `StringLiteral` descriptor because the VM owns their process-local storage even when the Cache V2 dependency graph does not otherwise expose them as function dependencies. Provider sources and manifests therefore contain no process pointer literals, archive-local `FJitRef_*` initializers, or address-verification objects; independent Generate and Verify processes must produce byte-identical owned output.
+
 Cache V2 and StaticJIT use the same neutral stable reference kind/key/ABI value. This is a type extraction and shared semantic contract, not a new JIT persistence format inside Cache packs.
 
 ### Function matching is granular and debug identity is separate
@@ -197,11 +199,11 @@ Add `AngelscriptTestJIT` to `Angelscript.uplugin` before `AngelscriptTest` as `E
 AngelscriptRuntime <- AngelscriptTestJIT <- AngelscriptTest
 ```
 
-`AngelscriptTestJIT` depends on Runtime and contains fixed provider module code, generated buckets/slices/manifests, and narrowly scoped exported Native probes used by generated test functions. It contains no CQTest/Automation registrations and no project/runtime feature. It is never created by project Scaffold, never reads the host `Script/` root or project JIT settings, never updates `.uproject`, and never emits into project `Source/AngelscriptJIT`. `AngelscriptTest` privately depends on it and continues to own committed plugin-test fixtures, assertions, the canonical runner, and a separate test-only `-run=AngelscriptTestJIT -Mode=Generate|Verify` entry.
+`AngelscriptTestJIT` depends on Runtime and contains fixed provider module code, generated per-AS-module `.jit.cpp` sources/manifests, and narrowly scoped exported Native probes used by generated test functions. It contains no CQTest/Automation registrations and no project/runtime feature. It is never created by project Scaffold, never reads the host `Script/` root or project JIT settings, never updates `.uproject`, and never emits into project `Source/AngelscriptJIT`. `AngelscriptTest` privately depends on it and continues to own committed plugin-test fixtures, assertions, the canonical runner, and a separate test-only `-run=AngelscriptTestJIT -Mode=Generate|Verify` entry.
 
-Existing generated `.jit.cpp/.jit.hpp` output moves from `AngelscriptTest/StaticJIT/AOT/Generated` to `AngelscriptTestJIT/Private/Generated`. Checked-in generated C++ remains a reproducible build input. The legacy ignored `StaticJITAotFixture.Cache` pair is removed. Fresh-Engine tests instead create Cache V2 data under an isolated `Saved/Automation/...` root, restore a second Engine, and prove the same provider matches the restored stable identities.
+Existing generated `.jit.cpp/.jit.hpp` output moves from `AngelscriptTest/StaticJIT/AOT/Generated` to `AngelscriptTestJIT/Generated` and is regenerated into the strict per-AS-module layout. `AngelscriptTestJITModule.cpp`, `AngelscriptTestJITProbes.cpp`, and `AngelscriptTestJITProbes.h` live directly at the UE module root; this fixed internal test carrier intentionally has neither `Private` nor `Public`. `AngelscriptTest` reaches the root probe header through a private include path and retains a private module dependency. `ANGELSCRIPTTESTJIT_API` still owns the cross-DLL symbol export; it does not require a physical `Public` directory. Checked-in generated C++ remains a reproducible build input. The legacy ignored `StaticJITAotFixture.Cache` pair is removed. Fresh-Engine tests instead create Cache V2 data under an isolated `Saved/Automation/...` root, restore a second Engine, and prove the same provider matches the restored stable identities.
 
-The test Provider registers into the same Runtime multi-provider Registry and uses the production ABI, stable identity, Binding, reference-slot, and 32-bucket emission primitives so it tests the real boundary. That shared protocol is the full extent of the relationship: test and project Providers have different ProviderIds, source roots, target descriptors, commands, manifests, generated outputs, and lifecycles. There is no simplified test-only registration path and no project-owned input in the test Provider.
+The test Provider registers into the same Runtime multi-provider Registry and uses the production ABI, stable identity, Binding, reference-slot, and per-AS-module emission primitives so it tests the real boundary. That shared protocol is the full extent of the relationship: test and project Providers have different ProviderIds, source roots, target descriptors, commands, manifests, generated outputs, and lifecycles. There is no simplified test-only registration path and no project-owned input in the test Provider.
 
 ### Project code lives in the fixed `AngelscriptJIT` module
 
@@ -213,17 +215,62 @@ The `AngelscriptEditor`-owned project commandlet is:
 -run=AngelscriptJIT -Mode=Verify [-Profile=...]
 ```
 
-Scaffold creates the reserved project module `AngelscriptJIT` beneath `Source/AngelscriptJIT` and adds a `Runtime/PostDefault` `.uproject` descriptor. It never prefixes or suffixes the host project name. The generated module privately depends on `AngelscriptRuntime`; Runtime discovers it through `IModularFeatures` and never depends back on it.
+Scaffold creates the reserved project module `AngelscriptJIT` beneath `Source/AngelscriptJIT` and adds a `Runtime/PreDefault` `.uproject` descriptor. The earlier phase is an explicit lifecycle contract: the Provider must be registered before the Runtime's first authoritative Engine compile in monolithic Development and Shipping targets, without relying on coincidental ordering among modules in the same phase. It never prefixes or suffixes the host project name. The generated module privately depends on `AngelscriptRuntime`; Runtime discovers it through `IModularFeatures` and never depends back on it.
 
 The fixed UE module name is not the Provider identity. The generated ProviderId is derived from the canonical project/source ownership domain and generation contract, so projects all use the readable UE module name `AngelscriptJIT` without collapsing their stable Provider identities. Within one target, an existing incompatible module named `AngelscriptJIT` is a scaffold conflict and is never overwritten.
 
-Scaffold creates exactly 32 bucket `.cpp` translation units. Function slices map by `ReadLE64(StableFunctionKey[0..7]) mod 32`; entries and includes sort by full hash. New functions change an existing bucket include rather than creating a new `.cpp`, which keeps the active Live Coding target graph stable.
+The generated project layout intentionally has no `Private` wrapper:
 
-Generated source is partitioned into `EditorDevelopment`, `GameDevelopment`, and `GameShipping` profiles. Fixed bucket source selects the current target's profile through compile-time target macros. The generator uses an explicit generation profile on an isolated `FAngelscriptEngine`, including AS `EDITOR`, `EDITORONLY_DATA`, `RELEASE`, `TEST`, cooked binding selection, and artifact identity inputs; it must not assume the Editor commandlet's compile macros describe a Shipping script surface.
+```text
+Source/AngelscriptJIT/
+├── AngelscriptJIT.Build.cs
+├── AngelscriptJITModule.cpp
+└── Generated/
+    ├── Provider.generated.h                 # stable scaffold selector declaration
+    ├── Provider.generated.cpp               # stable target-profile selector TU
+    ├── EditorDevelopment/
+    │   ├── Provider.generated.h
+    │   ├── Provider.generated.inl
+    │   ├── ProviderManifest.generated.json
+    │   ├── OwnedFiles.generated.json
+    │   ├── Tests/Test_Handles.07a7af43.EditorDevelopment.jit.cpp
+    │   └── Examples/Core/Example_Math.7fca3709.EditorDevelopment.jit.cpp
+    ├── GameDevelopment/
+    │   └── ...same source-relative shape...
+    └── GameShipping/
+        └── ...same source-relative shape...
+```
 
-Scaffold and Generate write only files with a recognized ownership/revision marker, via temporary-file replacement, and preserve byte-identical files/timestamps. A conflicting unowned file aborts the operation. Verify generates into a temporary root and compares paths, bytes, stable identities, bucket membership, reference slots, and manifest semantics without mutating project source.
+`AngelscriptTestJIT` uses the same module-root convention:
 
-Alternative rejected: one `.cpp` per function because active target discovery and build overhead scale badly.
+```text
+Plugins/Angelscript/Source/AngelscriptTestJIT/
+├── AngelscriptTestJIT.Build.cs
+├── AngelscriptTestJITModule.cpp
+├── AngelscriptTestJITProbes.cpp
+├── AngelscriptTestJITProbes.h
+└── Generated/EditorDevelopment/...
+```
+
+The physical path mirrors the readable virtual source domain: `/Angelscript/Game/<path>` maps directly beneath the profile, `/Angelscript/Plugin/<Name>/<path>` maps beneath `Plugin/<Name>`, and memory-backed modules map beneath `Memory/<Provider>`. The basename is `<SourceStem>.<ShortStableModuleKey>.<TargetProfile>.jit.cpp`. The short key starts at eight hexadecimal characters and extends deterministically in four-character steps when any case-insensitive basename would collide across the complete generated source set; the full StableModuleKey remains authoritative in the file header and manifest. The explicit profile suffix remains mandatory because UE 5.8 UBT may flatten `.cpp` basenames for intermediate object naming.
+
+Each module source starts with the unchanged revision-2 ownership marker, followed by a deterministic metadata block containing virtual source path, canonical module name, target profile, full StableModuleKey, ProviderId, artifact profile, native environment, and function count. Each function has a metadata block containing its canonical AS declaration, virtual source line/column, full StableFunctionKey, execution/debug/entry-ABI hashes, plus an immediate declaration/source/entry-kind comment above every Raw, VM, and Parms entry. Internal C++ symbols remain the complete `ASJIT_<StableFunctionKey>_<ExecutionHash>...` form; readable filenames and comments do not shorten linkage identity.
+
+Scaffold creates only the stable UE module shell, provider selector, Build.cs, and module entry point. Generate groups the complete sorted function set by full `StableModuleKey` and emits exactly one real source-relative `<SourceStem>.<ShortStableModuleKey>.<TargetProfile>.jit.cpp` for every non-empty AS module in each selected target profile. Every generated function retains its full content-addressed symbol based on `StableFunctionKey + ExecutionHash`, but function identity no longer creates a filesystem node. Within a module source, functions and their reference metadata sort by full stable function key. Two modules never share a generated `.jit.cpp`, and one module is never split across generated implementation files.
+
+Generated source is partitioned into `EditorDevelopment`, `GameDevelopment`, and `GameShipping` profiles. The same logical AS module therefore has one independent `.jit.cpp` under each generated profile, because preprocessing, bindings, entry ABI, and environment identity may differ. Each profile source is compile-time guarded so UBT may discover every generated `.cpp` while only the current target's matching source contributes definitions. The generator uses an explicit generation profile on an isolated `FAngelscriptEngine`, including AS `EDITOR`, `EDITORONLY_DATA`, `RELEASE`, `TEST`, cooked binding selection, and artifact identity inputs; it must not assume the Editor commandlet's compile macros describe a Shipping script surface.
+
+A function body/add/delete/rename inside an existing AS module rewrites only that module's `.jit.cpp` plus provider metadata. Byte-identical module sources preserve timestamps. Adding or removing a whole AS module adds or removes one `.jit.cpp` for that profile and changes UBT's source-file set; Generate succeeds and writes the authoritative output, but Refresh refuses Live Coding and requires one normal Editor/Game build before that source-set change can become the active module binary. Deleting a module removes it from the current provider manifest immediately; already loaded historical code may remain mapped until the full rebuild but is unreachable from current routes.
+
+Scaffold and Generate write only files with a recognized ownership/revision marker, via temporary-file replacement, and preserve byte-identical files/timestamps. A conflicting unowned file aborts the operation. Verify generates into a temporary root and compares paths, bytes, stable module membership, per-function identities, reference slots, profile guards, provider metadata, and manifest semantics without mutating project source.
+
+This readability refinement bumps the manifest schema to revision 3 while retaining ownership marker/inventory revision 2 and Provider ABI revision 2. Verify treats both `Private/Generated/<Profile>` and the still older `Private/Generated/Profiles/<Profile>` as stale without mutating either root. Generate migrates legacy profile roots only when their revision-2 inventory, profile, ProviderId, and every existing inventory-listed file marker validate; it deletes only inventory-listed paths and then removes empty legacy directories non-recursively. Scaffold likewise moves the project-owned module entry and selector files from `Private` only when their scaffold ownership markers validate. Invalid or user-replaced legacy output blocks migration and is preserved. Checked-in `AngelscriptTestJIT` implementation sources are repository moves rather than generated-file migration. Every source-path move changes UBT's source set, so a normal build is mandatory and Live Coding refresh is refused.
+
+The selected layout flattens both carriers consistently. Two alternatives were rejected: moving only `Generated` while keeping module implementation files under `Private`, and flattening the project carrier while leaving `AngelscriptTestJIT/Private` intact. Both retain a distinction that is irrelevant for these internal generated-code carriers and leave two path conventions for tooling, documentation, and reviewers to remember.
+
+Alternative rejected: one `.cpp` or include slice per function because filesystem, source discovery, indexing, version-control, and verification overhead scale with function count without improving the actual UE compilation-unit granularity enough to justify it.
+
+Alternative rejected: fixed hash buckets because they allow unrelated AS modules to share one C++ translation unit and violate the required strict one-AS-module-to-one-`.jit.cpp` ownership boundary.
 
 Alternative rejected: one monolithic generated `.cpp` because every edit recompiles the complete project provider.
 
@@ -237,11 +284,12 @@ The explicit `Generate/Refresh AngelScript JIT` Editor operation:
 
 1. rejects AS errors, missing scaffold/active target, or overlapping compile/generation/patch requests;
 2. generates only the `EditorDevelopment` profile changes;
-3. verifies that Live Coding is available, started, and enabled for the session;
-4. subscribes to patch completion and calls `ILiveCodingModule::Compile()`;
-5. after completion, requires the expected newer provider generation/artifact-set digest;
-6. re-enumerates providers, builds a route snapshot, and publishes it at the Engine safe point;
-7. reports written files, compile/patch result, provider rejection reasons, and Native/VM counts.
+3. compares the previous and current generated module-source sets and requires a normal full build if an AS module added or removed a `.jit.cpp`;
+4. for an unchanged source set, verifies that Live Coding is available, started, and enabled for the session;
+5. subscribes to patch completion and calls `ILiveCodingModule::Compile()`;
+6. after completion, requires the expected newer provider generation/artifact-set digest;
+7. re-enumerates providers, builds a route snapshot, and publishes it at the Engine safe point;
+8. reports changed module sources, source-set changes, compile/patch result, provider rejection reasons, and Native/VM counts.
 
 Unavailable Live Coding leaves valid source on disk and reports the required full build/restart. Compile failure, cancellation, timeout, no provider update, stale generation, or invalid manifest publishes nothing. Runtime and packaged modules have no LiveCoding dependency.
 
@@ -251,9 +299,17 @@ Development and Shipping builds may load the project JIT module plus other expli
 
 When no provider exists or a provider is stale, bytecode/VM remains the correctness path. Shipping may compile out human diagnostics but retains manifest validation and fallback. A full immutable provider-set match may enable direct-call optimization; partial mismatch cannot invoke stale direct symbols.
 
+The current migration keeps production `bUseImmutableDirectScriptCalls`
+disabled for every profile. Development and Shipping use validated Native
+VM/Raw/Parms Bindings; the complete immutable-set validator remains the safety
+boundary for a future direct-call emitter. Enabling and benchmarking direct
+script-to-script symbols is a separate optimization change because it requires
+explicit cross-translation-unit declaration and whole-set generation coverage
+under the strict one-AS-module-per-`.jit.cpp` layout.
+
 ### Diagnostics observe providers and routes without test-only Engine APIs
 
-Retain `as.StaticJIT.DumpDiagnostics` in non-Shipping builds and change its model to ProviderIds/UE modules/generations, per-Provider AS-module membership, conflicts, Bindings, stable keys, content/profile/environment/ABI comparisons, stable reference slots, current transient FunctionId, route generation, Native/VM selection, typed miss reason, bucket/slice, and execution counts.
+Retain `as.StaticJIT.DumpDiagnostics` in non-Shipping builds and change its model to ProviderIds/UE modules/generations, per-Provider AS-module membership, conflicts, Bindings, stable keys, content/profile/environment/ABI comparisons, stable reference slots, current transient FunctionId, route generation, Native/VM selection, typed miss reason, owning generated module source, and execution counts.
 
 Provider manifests also emit deterministic JSON metadata beside generated C++ for commandlet Verify and offline inspection. The JSON contains no process addresses and is not a runtime authority. Tests use the same diagnostics/provider surfaces rather than adding `FAngelscriptEngine::*ForTesting` cache/JIT methods.
 
@@ -266,7 +322,9 @@ Provider manifests also emit deterministic JSON metadata beside generated C++ fo
 - **Live Coding completion can race active script calls** → publish only at Engine safe points and retain old immutable route/provider state for in-flight execution.
 - **Editor commandlet cannot naturally represent Shipping preprocess/build flags** → introduce an explicit isolated generation profile and prove profile-specific source/binding surfaces before package acceptance.
 - **Extracting Cache-named types risks Cache regressions** → perform a representation-preserving type move first and run Cache prefixes before adding provider fields.
-- **Generated stale slices can accumulate** → remove them from active manifests immediately; prune physical files only when unreferenced and outside an active patch rollback requirement.
+- **Adding/removing an AS module changes the UBT source graph** → Generate the authoritative per-module file set, refuse Live Coding refresh for that transition, retain VM correctness, and print the exact full-build requirement. Function changes inside an existing module retain a stable `.jit.cpp` path.
+- **Large individual AS modules produce large C++ translation units** → keep the strict user-selected module boundary, report per-module generated bytes/function counts, and benchmark the largest modules; do not silently split a module into buckets or function slices.
+- **Generated stale module sources can accumulate** → remove them from active manifests immediately and atomically prune only files proven owned by the prior inventory; already loaded historical code remains unreachable until the required full build unloads it.
 - **Public provider layout drifts** → keep `StructSize`, current `AbiRevision`, golden layout/hash tests, and deterministic reject-before-read behavior; do not carry old revisions.
 - **Two independently packaged Providers claim the same function** → never choose by load order; publish `AmbiguousExactProvider`/VM for that function, report all candidates, and keep unrelated Providers/routes active.
 
@@ -275,16 +333,16 @@ Provider manifests also emit deterministic JSON metadata beside generated C++ fo
 1. Add red lifecycle tests, replace the fork JIT interface, and remove interface-version selection while leaving existing StaticJIT generation behavior otherwise intact.
 2. Extract neutral route/reference values from Cache naming, preserve Cache V2 behavior, and install the per-Engine JIT adapter.
 3. Add the current multi-provider ABI/Registry, ProviderId/generation selection, multi-AS-module ownership, stable reference slots, exact match/miss/conflict model, safe publication, and diagnostics.
-4. Refactor Runtime generation into content-addressed function slices and fixed buckets; add separate `AngelscriptEditor` project and `AngelscriptTest` fixture orchestration without cross-dependencies.
+4. Refactor Runtime generation into deterministic one-AS-module-per-profile `.jit.cpp` sources with content-addressed function symbols; add separate `AngelscriptEditor` project and `AngelscriptTest` fixture orchestration without cross-dependencies.
 5. Create the fixed `AngelscriptTestJIT`, move one minimal committed fixture through its independent ProviderId, and expand it through multi-provider and Cache V2 fresh-Engine proof.
 6. Use the Editor-owned project Scaffold/Generate/Verify path to generate `Source/AngelscriptJIT` and prove it coexists with TestJIT without consuming it.
 7. Enable Editor/PIE current routes, routed script-to-script calls, and route-aware UASFunction dispatch.
 8. Add the explicit Live Coding state machine, fake-backend tests, and one opt-in real Editor patch smoke.
 9. Validate Development/Shipping multi-module load and immutable-set behavior, then remove the old database/ActiveInfo/DataGuid/FunctionId activation and Editor skip.
-10. Update Chinese guidance first, then English guidance, benchmarks, package evidence, All-suite evidence, and final OpenSpec verification.
+10. Update Chinese guidance first, then English guidance, benchmarks, package evidence, the complete impact-focused verification matrix, and final OpenSpec verification. A configured `All` run may provide extra diagnostic evidence but is not required when it repeats unrelated product surfaces outside this change.
 
 During migration, VM is the rollback path. The old global path is removed only after the new provider test module and immutable packaged proof cover VM/Raw/Parms execution and multiple engines.
 
 ## Open Questions
 
-None. Test/project command and source/output isolation, multi-Provider/multi-AS-module Registry behavior, ProviderId conflict policy, module names, single lifecycle interface, provider/route ownership, fixed bucket count, target profiles, explicit refresh policy, Live Coding role, Cache V2 relationship, UASFunction policy, and no-legacy-compatibility policy are fixed by this design.
+None. Test/project command and source/output isolation, multi-Provider/multi-AS-module Registry behavior, ProviderId conflict policy, module names, single lifecycle interface, provider/route ownership, strict one-AS-module-per-profile-`.jit.cpp` layout, target profiles, full-build requirement for module-source-set changes, explicit refresh policy, Live Coding role, Cache V2 relationship, UASFunction policy, and no-legacy-compatibility policy are fixed by this design.

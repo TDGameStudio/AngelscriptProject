@@ -1,0 +1,3 @@
+phase,test_duration_ms,restored_functions,candidate_modules,compiled_misses,not_cacheable,frontend_events,final_verified_routes,final_jit_bind_ms,result,evidence
+before,102150,46,2,3,3,6,2,0.676,pass,Saved/Tests/static-jit-routing-timings/20260813_115911_960_b922646e/Report/index.json
+after,86540,46,2,3,3,6,2,0.616,pass,Saved/Tests/Tests/static-jit-reference-batch-index-benchmark/20260813_121237_229_646d65ab/Report/index.json

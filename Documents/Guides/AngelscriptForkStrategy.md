@@ -95,6 +95,21 @@
 | 恢复器表面 | `as_restore.cpp`, `as_scriptfunction.cpp` | 已落地，桥接 2.33 字节码布局 |
 | 对象类型/类型信息宽标志位 | `as_objecttype.cpp`, `as_typeinfo.cpp`, `as_scriptengine.cpp` | 已落地，兼容 APV2 私有高位 |
 | 内存池清理逻辑 | `as_memory.cpp` | 已落地，保持 FMemory 后端 |
+| 统一 JIT binding 生命周期 | 参考 2.38 延后发布/按函数清理思想，本 fork 独立 ABI | 已落地；非版本化 `asIJITCompiler` 发布完整 VM/Raw/Parms/UserData binding |
+
+### JIT 生命周期的维护分支边界
+
+当前 JIT API 既不兼容旧 UE fork 的 `FJITDatabase`/公开分裂指针路径，也不照搬
+upstream 2.38 的 JIT 接口版本切换。维护分支拥有一个非版本化生命周期：函数完成
+编译或恢复后通知当前 compiler；compiler 延后发布完整 `asSJITFunctionBinding`；
+`asCScriptFunction` 私有持有 owner，并在替换、clear、函数销毁、模块 discard、
+compiler replacement/removal 时 exactly-once 退休。StaticJIT 生成器只观察已经编译的
+函数，不通过临时 `SetJITCompiler` 交换 live Engine 的执行 compiler。
+
+StaticJIT 运行时通过 ABI Revision 2 的 `IAngelscriptJITArtifactProvider` 发布稳定
+entry，由每个 Engine 按稳定模块/函数键、内容、Profile、环境、entry ABI 和引用
+逐函数路由。数字 FunctionId、`DataGuid` 和 whole-cache `.Cache/.jit.hpp` 配对已经
+删除，也不得作为兼容层重新引入。外部接入方必须使用仓库随附头文件。
 
 ## 待评估 / 进行中的吸收项
 
@@ -110,7 +125,7 @@
 | using namespace | `Plan_AS238UsingNamespacePort.md` | 未开始 |
 | 成员初始化模式 | `Plan_AS238MemberInitPort.md` | 未开始 |
 | 关键 Bug 修复回移 | `Plan_AS238BugfixCherryPick.md` | 未开始 |
-| JIT v2 接口 | `Plan_AS238JITv2Port.md` | 未开始 |
+| JIT 生命周期 | `openspec/changes/refactor-as-static-jit-multi-provider` | 已落地 maintained-fork-owned 统一 binding 生命周期与 Provider ABI；不是直接移植 upstream v2 |
 | Computed goto | `Plan_AS238ComputedGotoPort.md` | 未开始 |
 | 非 Lambda 类型系统 | `Plan_AS238NonLambdaPort.md` | 未开始 |
 
@@ -129,4 +144,5 @@
 ## 文档更新历史
 
 - **2026-07-30**: 建立 `Unreal AngelScript 1.0.0` 产品版本，分离产品身份与 2.33/2.38 源码 lineage，并定义 1.x SemVer 兼容规则
+- **2026-08-13**: 记录统一 JIT binding 生命周期、Provider ABI Revision 2、稳定 Engine-local 路由及旧 FunctionId/DataGuid 路径移除
 - **2026-04-06**: 初始创建，明确 fork 演进策略定位，记录结构性分叉点和选择性吸收原则

@@ -84,6 +84,21 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 - 通过 `-Log=` 把 UBT 日志重定向到当前 run 的私有目录，避免写入共享 `Log.txt`
 - 不依赖 `Build.bat` 的全局脚本锁，因此允许不同 worktree 并发构建
 
+默认 Target 仍读取 `AgentConfig.ini` 的 `Build.EditorTarget`。需要执行同一
+项目的 Game Target 首次发现或定向构建时，继续使用同一个 runner，并显式
+传入 Target；日志、超时、worktree 单飞锁和 `-NoEngineChanges` 保护保持不变：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Target AngelscriptProject -Label game-build -TimeoutMs 180000 -NoXGE
+```
+
+需要验证非默认构建配置时，用 `-Configuration` 显式覆盖
+`AgentConfig.ini` 的 `Build.Configuration`。例如构建 Game Shipping：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Target AngelscriptProject -Configuration Shipping -Label game-shipping-build -TimeoutMs 1800000 -NoXGE
+```
+
 常用命令模板也可以通过 `Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1` 直接获取；当前会同时返回：
 
 - `BuildCommand`
@@ -99,6 +114,57 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ```
 
 该模式会基于 `EngineRoot` 获取命名互斥锁，避免多个 worktree 同时写引擎输出。
+
+### 项目 StaticJIT 生成与构建
+
+StaticJIT 生成物由项目 `Source/AngelscriptJIT` UE 模块承载。生成器严格为每个
+非空 AS 模块输出一个
+`Generated/<Profile>/<AS相对目录>/<源文件名>.<短StableModuleKey>.<Profile>.jit.cpp`；
+同一 AS 模块中的全局函数和类方法不会拆成独立文件。
+
+`/Angelscript/Game` 前缀不会形成额外 `Game/` 目录；插件脚本进入
+`Plugin/<插件名>/...`，内存脚本进入 `Memory/<Provider>/...`。短键默认 8 位，遇到
+不区分大小写的 basename 冲突会确定性扩到 12/16 位。完整模块键、函数键和执行
+hash 仍保存在文件头、manifest 与内部 C++ symbol 中；manifest schema 为 3，
+ownership revision 和 Provider ABI 均保持 2。
+
+首次接入需要 scaffold 并完成一次普通完整构建，让 UBT 发现新 UE 模块和已有
+`.jit.cpp` 源文件集合：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Scaffold
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label jit-first-build -TimeoutMs 1800000 -NoXGE
+```
+
+之后按目标显式生成、重建并只读校验：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile EditorDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameShipping
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label jit-generated-build -TimeoutMs 1800000 -NoXGE
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Verify -Profile All
+```
+
+也可用 `-Mode Generate -Profile All` 一次生成三个 Profile。`Verify` 不写文件，
+遇到缺失、意外或内容不匹配的 owned file 会返回非零。
+
+旧 `Private/Generated/<Profile>` 和
+`Private/Generated/Profiles/<Profile>` 由 `Generate` 做一次安全迁移；旧的固定模块
+源码与 selector 则由 `Scaffold` 迁到模块根及 `Generated/`。`Verify` 只读报告旧目录；
+Generate 只在 revision-2 inventory、Profile、ProviderId 和清单文件 marker 全部有效时
+删除 inventory 明确列出的旧文件，用户文件或无效清单会阻止迁移。迁移后必须运行
+普通完整构建。
+
+函数 body 改动不会改变所属模块 `.jit.cpp` 的路径；未改 AS 模块的文件内容和
+时间戳会保留，UBT 通常只编译改动的翻译单元并链接 `AngelscriptJIT`。新增或删除
+整个 AS 模块会改变 C++ source set，必须普通完整构建，不能强制用 Live Coding
+补入尚未进入当前 target action graph 的源文件。
+
+`GameDevelopment` / `GameShipping` package 必须先生成对应 Profile，再使用本指南
+的 `RunBuild.ps1 -Target AngelscriptProject -Configuration <...>` 入口构建。Provider
+只在稳定身份、内容、Profile、原生环境、ABI 和引用全部 exact 时启用 Native；
+package 不依赖 Editor、Live Coding 或测试 Provider。
 
 ### Standalone 无 UE 构建
 
@@ -135,6 +201,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunStandaloneExter
 Tools\RunBuild.ps1 -Label compile-bindings -TimeoutMs 120000
 Tools\RunBuild.ps1 -Label compile-bindings -TimeoutMs 180000 -NoXGE
 Tools\RunBuild.ps1 -Label compile-bindings -TimeoutMs 180000 -- -Verbose
+Tools\RunBuild.ps1 -Target AngelscriptProject -Configuration Shipping -Label game-shipping -TimeoutMs 1800000 -NoXGE
 Tools\RunBuild.ps1 -Label engine-write -TimeoutMs 180000 -SerializeByEngine
 Tools\RunBuild.ps1 -Label local-log-root -TimeoutMs 180000 -LogRoot "D:\Tmp\AngelscriptLogs"
 ```
@@ -143,6 +210,8 @@ Tools\RunBuild.ps1 -Label local-log-root -TimeoutMs 180000 -LogRoot "D:\Tmp\Ange
 
 - `-TimeoutMs`：本次构建超时，必须大于 `0` 且不超过 `3600000`
 - `-Label`：输出目录标签
+- `-Target`：可选的 UBT Target；默认读取 `Build.EditorTarget`
+- `-Configuration`：可选的 UBT 配置（`Debug`、`DebugGame`、`Development`、`Shipping` 或 `Test`）；默认读取 `Build.Configuration`
 - `-LogRoot`：自定义输出根目录；脚本会把它当成父目录，再创建独立的 `Build/<Label>/<RunId>/`
 - `-NoXGE`：禁用 XGE / Incredibuild 入口，避免外部分布式执行器容量影响验证结果
 - `-SerializeByEngine`：启用引擎级串行锁

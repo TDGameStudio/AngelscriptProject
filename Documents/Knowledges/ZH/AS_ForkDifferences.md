@@ -147,6 +147,21 @@
 |------|------|
 | `as_scriptengine.cpp` L5457-5477 | `BeginConfigGroup`/`EndConfigGroup`/`RemoveConfigGroup`/`FindConfigGroupFor*` 全部返回 0 |
 
+### 11. 统一 JIT binding 生命周期
+
+**动机**：让运行时 provider 能在函数编译完成后发布 VM、Raw、Parms 和 UserData 的完整入口集合，并让 `asCScriptFunction` 对替换、卸载与销毁期间的释放负责。
+
+| 表面 | 此 fork 的契约 |
+|------|----------------|
+| 编译器通知 | `asIJITCompiler::OnFunctionReady(asIScriptFunction*)` |
+| 入口发布 | `asIScriptFunction::SetJITBinding(const asSJITFunctionBinding&)` |
+| 入口读取 | `GetJITBinding()` 返回完整值快照 |
+| 释放 | 原发布 owner 收到 `ReleaseFunctionBinding(Function, Binding)`，且每个非空 binding 恰好一次 |
+| 生成边界 | StaticJIT 生成器直接观察已编译模块，不交换引擎的 live compiler |
+| 版本策略 | 无 `asEP_JIT_INTERFACE_VERSION`；数值 35 保留为空洞，36 以后的既有属性不重排 |
+
+这不是旧 fork V1 的兼容扩展，也不是原样 backport 上游 V2。旧 `CompileFunction` / `ReleaseJITFunction`、公开 `jitFunction*` 字段、上游 `asIJITCompilerV2` / `SetJITFunction` 都不属于当前 ABI，外部 provider 必须针对这一维护分支重新编译。
+
 ---
 
 ## 修改统计
@@ -163,6 +178,7 @@
 | 字节码指令 | 12 条新指令 | 1 (angelscript.h) |
 | VM/Context 扩展 | 6 | 1 |
 | 配置组 stub | 1 | 1 |
+| 统一 JIT 生命周期 | 1 组公开契约 | 5 |
 | **合计** | **~65+ 处** | **~25 个文件** |
 
 ---

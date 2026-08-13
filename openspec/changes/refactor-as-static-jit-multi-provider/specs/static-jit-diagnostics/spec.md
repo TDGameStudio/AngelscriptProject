@@ -69,7 +69,7 @@ The Runtime SHALL keep a non-Shipping `as.StaticJIT.DumpDiagnostics` console com
 #### Scenario: Dump function-level StaticJIT diagnostics
 
 - **WHEN** a developer supplies a canonical declaration or full stable-key hex
-- **THEN** the command prints full and display identity, transient FunctionId, execution/debug/profile/environment/ABI comparisons, VM/Raw/Parms binding state, stable reference slots, selected or conflicting ProviderIds/generations, route state, miss reason, bucket/slice ownership, and execution count
+- **THEN** the command prints full and display identity, transient FunctionId, execution/debug/profile/environment/ABI comparisons, VM/Raw/Parms binding state, stable reference slots, selected or conflicting ProviderIds/generations, route state, miss reason, owning StableModuleKey and generated module-source path, and execution count
 - **AND** it reports a clear message when the identity cannot be resolved
 
 #### Scenario: Dump output is compared across processes

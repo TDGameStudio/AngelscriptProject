@@ -16,7 +16,7 @@
 > `Documents/Knowledges/ZH/AS_ForkDifferences.md` — `[UE++]/[UE--]` 标记的修改分类汇总（本文不重复其细目，仅给出摘要 + 跳转）
 > · `Documents/Knowledges/ZH/AS_ScriptEngine.md` — `asCScriptEngine` 的内部架构（本文聚焦其外层"vendored 源" 的边界）
 > · `Documents/Knowledges/ZH/AS_Compiler.md` / `AS_Parser.md` / `AS_VirtualMachine.md` — 各子系统内部实现（本文不重复其细节）
-> · `Documents/Knowledges/ZH/RT_StaticJIT.md` — JIT v1 当前实现 + JIT v2 为何暂未 backport
+> · `Documents/Knowledges/ZH/RT_StaticJIT.md` — 维护分支统一 JIT binding 生命周期与 StaticJIT 生成/执行边界
 > · `Documents/Knowledges/ZH/RT_HotReload.md` — `asCModule::ReloadState` / `PreClassData` 与热重载链路如何耦合
 > · `Documents/Knowledges/ZH/RT_HashMetadata.md` — `CombinedDependencyHash` 在 fork 中如何挂到 `asIScriptModule::SetUserData`
 > **外部参考**:
@@ -76,7 +76,7 @@
   └──────────────────────────────────────────────────────────────────────┘
 ```
 
-后续按 (一) vendored 现状 → (二) 标记体系 → (三) 已吸收 2.38 → (四) 拒绝吸收 → (五) JIT v2 案例 → (六) 边界守则 → (七) 升级流程 → 附录的顺序展开。
+后续按 (一) vendored 现状 → (二) 标记体系 → (三) 已吸收 2.38 → (四) 拒绝吸收 → (五) 维护分支 JIT 生命周期 → (六) 边界守则 → (七) 升级流程 → 附录的顺序展开。
 
 ---
 
@@ -403,7 +403,7 @@ Documents/Plans/
 | using namespace | 未开始 | 与 fork 的 namespace 解析路径耦合 |
 | 成员初始化模式 | 未开始 | 与 fork 自创的 `default` 语句相互作用待理清 |
 | 关键 Bug 修复回移 | 未开始 | 需先建立 cherry-pick 候选清单 |
-| **JIT v2 接口** | **未开始** | **见 §五的详细案例** |
+| **统一 JIT binding 生命周期** | **已落地** | **见 §五；选择性吸收延后发布/清理语义，但不保留上游版本切换 API** |
 | Computed goto | 未开始 | 与 fork 的解释器主循环 dispatcher 兼容性需评估 |
 | 非 Lambda 类型系统 | 未开始 | Lambda 的前置依赖 |
 
@@ -411,48 +411,48 @@ Documents/Plans/
 
 ---
 
-## 五、JIT v2 案例：为何"暂不 backport"是合理决策
+## 五、维护分支自有的统一 JIT 生命周期
 
-### 5.1 V1 vs V2 接口差异
+### 5.1 当前唯一接口
 
-`Plan_AS238JITv2Port.md` 中列出的对比表：
-
-| 方面 | V1 (`asIJITCompiler`) | V2 (`asIJITCompilerV2`) |
-|------|-----------------------|---------------------------|
-| 编译时机 | `CompileFunction` 同步调用，`Build()` 末尾阻塞 | `NewFunction` 通知，可异步挂载 |
-| 清理 | `ReleaseJITFunction(jit)` | `CleanFunction(scriptFunc, jit)` |
-| 全模块可见性 | 单函数视角 | 可见所有函数，做全局 inline / 布局 |
-| `SetJITFunction` | 返回 `asNOT_SUPPORTED` | 可用，支持延后挂载 |
-| 热重载语义 | 替换需 `Release` 旧的 | 自动 `CleanFunction` 旧的，原地 `SetJITFunction` 新的 |
-
-### 5.2 当前 fork 的 JIT 形态
-
-`RT_StaticJIT.md` 详细描述了 StaticJIT 怎样把字节码 transpile 成 C++ 在 cook 期固化。关键事实是：
+本 fork 已不再同时暴露 V1/V2 两套 JIT 协议，也不再提供 `asEP_JIT_INTERFACE_VERSION`。属性数值 `35` 被有意留空，后续既有属性仍从 `36` 开始，避免无关编号漂移。当前唯一契约是：
 
 ```cpp
-// ============================================================================
-// 文件: AngelscriptRuntime/StaticJIT/AngelscriptStaticJIT.h
-// 节选自: FAngelscriptStaticJIT 继承关系（约 90 行起）
-// ============================================================================
-class FAngelscriptStaticJIT : public asIJITCompiler   // ★ 只继承 V1
+struct asSJITFunctionBinding
 {
-    virtual int  CompileFunction(asIScriptFunction*, asJITFunction* outJit) override;
-    virtual void ReleaseJITFunction(asJITFunction jit) override;
-    // ...
+    asJITFunction VMEntry = nullptr;
+    asJITFunction_Raw RawEntry = nullptr;
+    asJITFunction_ParmsEntry ParmsEntry = nullptr;
+    void* UserData = nullptr;
+};
+
+class asIJITCompiler
+{
+public:
+    virtual void OnFunctionReady(asIScriptFunction* Function) = 0;
+    virtual void ReleaseFunctionBinding(
+        asIScriptFunction* Function,
+        const asSJITFunctionBinding& Binding) = 0;
 };
 ```
 
-`as_scriptengine.cpp` 已经在 `SetEngineProperty` 接受 `asEP_JIT_INTERFACE_VERSION = 1 / 2`，但**只有 V1 路径在跑**——把它设为 2 不会触发任何新行为。
+函数完成编译、分离函数完成编译或字节码恢复后，内核只对包含 `asBC_JitEntry` 的脚本函数调用 `OnFunctionReady`。provider 可以同步或延后调用 `asIScriptFunction::SetJITBinding`，一次发布 VM、Raw、Parms 与 UserData 四个字段；消费者只通过 `GetJITBinding` 读取完整快照。
 
-### 5.3 不 backport 的理由
+### 5.2 所有权与释放
 
-`Plan_AS238JITv2Port.md` 列了三条："为什么 V2 看起来更好但目前不做"：
+`asCScriptFunction` 私有保存完整 binding 和发布它的 compiler owner。替换、显式清空、模块丢弃、函数析构、引擎关闭、compiler 替换或移除时，旧 owner 恰好收到一次 `ReleaseFunctionBinding`。实现会先清空当前 binding，再回调 owner，因此 release 回调内重入执行或再次发布不会看到已经退休的入口，也不会发生双重释放。
 
-1. **当前路径已经满足 fork 主诉求**：StaticJIT 是 cook-time AOT，不是 run-time JIT；V2 的"延迟绑定 / 异步挂载"在 cook 模型下没有实际收益。FunctionsToGenerate 列表已经是"延后处理"模型，区别只是接口形状。
-2. **V2 改动面比看起来大**：`as_scriptengine.h` 中 `jitCompiler` 成员需要双类型存储（`asIJITCompiler*` vs `asIJITCompilerV2*`），`as_module.cpp::JITCompile` / `as_scriptfunction.cpp::JITCompile` 需要按 property 分支，所有 `[UE++]` 安全检查需要对 V1/V2 双面验证。
-3. **没有用户面证据**：当前用户场景（cook + StaticJIT）没有任何 bottleneck 指向"V1 的同步阻塞"。Plan 自身的 ROI 论证段是空的。
+`SetJITCompiler` 仍是单个引擎的生命周期通知槽；它不是 StaticJIT 代码生成器的临时借用点。StaticJIT 生成直接观察已编译模块并采集 `scriptFunctions`，不得替换 live compiler，也不得清空或重放现有执行 binding。
 
-**结论**：JIT v2 是"接口看起来更好、但移植成本与潜在收益不匹配"的典型案例。fork 选择**保留 V1 + 等待真实需求出现** 而不是预先吸收。这正是 `AngelscriptForkStrategy.md` 所说的"把上游视为'改进来源'而非'升级目标'"的实际操作示范。
+### 5.3 与上游/旧 fork 的兼容边界
+
+这是一套**维护分支自有协议**：它选择性吸收了上游较新接口的“函数就绪后发布、按函数清理”思想，同时保留 UE 所需的 VM/Raw/Parms 三入口和 `FScriptExecution` ABI。它有意不兼容：
+
+- 旧 fork 的同步 `CompileFunction` / `ReleaseJITFunction` 和公开分裂指针字段；
+- 上游 `asIJITCompilerV2`、`NewFunction` / `CleanFunction` / `SetJITFunction` 以及接口版本属性；
+- 任何根据接口版本在运行期分支的适配器。
+
+因此集成外部 JIT provider 时必须直接实现当前 `asIJITCompiler`，并把完整 binding 作为一个所有权单元发布和退休；不能复用旧二进制 provider，也不能只更新某一个入口字段。
 
 ---
 
@@ -670,7 +670,7 @@ vendored 源任一处改动，潜在影响如下：
 | `as_module.cpp` PreClassData / ReloadState | 影响热重载 | `HotReload.*` 主题 |
 | `as_memory.cpp` allocator 路径 | 影响 LLM 报告 | `Memory.*` 主题（如有） |
 
-**特别注意**：vendored 源的改动 **不会** 自动触发 BlueprintImpact Commandlet 重扫——那是 plugin core `BlueprintImpact/AngelscriptBlueprintImpactScanner` 的职责，针对 `.as` 源文件变化。但如果改动了字节码 schema（如 `as_restore.cpp` 序列化布局），**老的 `PrecompiledScript.Cache` 必须人为删除**，否则 cooked build 启动时 `FAngelscriptPrecompiledData::Load` 会因 `BuildIdentifier` / `DataGuid` 不匹配把整盘字节码丢弃（详见 `RT_StaticJIT.md` 阶段三）。
+**特别注意**：vendored 源的改动 **不会** 自动触发 BlueprintImpact Commandlet 重扫——那是 plugin core `BlueprintImpact/AngelscriptBlueprintImpactScanner` 的职责，针对 `.as` 源文件变化。若改动字节码/恢复 schema（如 `as_restore.cpp` 布局），必须同步提升或失效 Cache V2 的对应 schema/build identity，并验证 fresh-engine restore；StaticJIT Provider 的 execution/entry ABI/native-environment identity 也必须随语义变化失配。当前不再存在需要人工配对的 `PrecompiledScript.Cache + DataGuid + .jit.hpp` whole-cache 协议。
 
 ---
 
@@ -710,7 +710,7 @@ vendored 源任一处改动，潜在影响如下：
 | 4 | 是否在 fork 已扩宽到 `asQWORD` 的 flags 路径上？ | 是 → 检查上游 `asDWORD` 的所有访问点 |
 | 5 | 是否要求新的 `userAlloc/userFree` hook？ | 是 → 跳过；fork 路径已是 `FMemory + LLM tag` |
 | 6 | 是否更改字节码 schema？ | 是 → 必须 bump `BuildIdentifier`（`PrecompiledData.{h,cpp}`） |
-| 7 | 改动后是否能保证现有 `PrecompiledScript.Cache` 仍可加载？ | 否 → 必须发布 cache 失效说明 |
+| 7 | 改动后现有 Cache V2 record/schema 是否仍安全兼容，Provider entry ABI/environment identity 是否会正确失配？ | 否 → bump 对应版本/身份并发布 cache 失效说明 |
 | 8 | 改动是否需要 plugin core 同步修改？ | 是 → ThirdParty + Core 同次 commit，不要 split |
 | 9 | 是否补了 failing test？ | 是 → 进入 PR；否 → 退回 Step 4 |
 | 10 | `[UE++] / [UE--]` 标记是否齐全 + 有动机说明？ | 是 → 通过；否 → 退回 Step 5 |
@@ -758,8 +758,12 @@ vendored 源任一处改动，潜在影响如下：
                                                        │     type flags widening,
                                                        │     memory pool cleanup logic
                                                        │
+                                                       ├── 已选择性吸收并重塑:
+                                                       │     统一 JIT binding 生命周期
+                                                       │     （维护分支自有 ABI，无版本切换）
+                                                       │
                                                        └── 暂未 backport:
-                                                             JIT v2, lambda 端到端,
+                                                             lambda 端到端,
                                                              foreach 直接字节码,
                                                              using namespace, computed goto,
                                                              bool conversion, default copy,
@@ -780,7 +784,7 @@ vendored 源任一处改动，潜在影响如下：
 - **vendored 源不是"AS 2.33 快照"**，而是基于 2.33 持续偏离的独立 fork：唯一目录 `ThirdParty/angelscript/source/` 88 个文件中 32 个含 `[UE++]` 标记，累计 98 处 / 76 处闭区间标记，物理上无 `include/` / `VERSION` / `CHANGELOG`。
 - **`[UE++] / [UE--]` 标记是 fork 演进的唯一可靠线索**，每条都必须附带"为什么改 + 与上游分叉点的关系"动机说明；这是 3-way merge 的硬要求，不可省略。
 - **已 backport 的 2.38 能力 = 7 项**：foreach 解析 / 模块 lookup / 导入函数 traits / 恢复器表面 / 类型 flags 宽位 / 内存池清理 / asEP_* property 命名占位；其中 foreach 是"半 backport"——拿了语法没拿字节码生成。
-- **暂不 backport 的清单 = 10+ 份 Plan**，包括 JIT v2 / lambda / 上下文 bool / 默认拷贝 / using namespace / computed goto / 关键 Bug 修复回移；每份都有 Phase 0 评估文字但全部 status=未开始。
+- **历史待办中的 JIT v2 项已被当前实现取代**：fork 没有原样 backport 上游 V2，而是落地一个无版本切换、完整 binding、恰好一次退休的维护分支协议。lambda / 上下文 bool / 默认拷贝 / using namespace / computed goto 等仍按各自 OpenSpec 或历史记录评估。
 - **不该 patch 的边界**：与 fork 五大分叉点（自动引用 / `const` 全局 / 无脚本 interface / 无 mixin class / APV2 模块系统）冲突的上游改动全部跳过；删 `[UE++]` 改回 vanilla 是最严重反模式。
 - **与 plugin core 的接缝**有四道：内存分配（`AngelscriptMemoryTags.h`）、调试器回调（`asCContext::SetXxxCallback`）、热重载状态（`PreClassData`/`ReloadState`）、HashMetadata（`SetUserData(0)`）；所有反向 include 都在 `[UE++]` 标记下。
 - **升级流程**：识别 → 适用性评审 → 影响面分析 → 先补 failing test → 最小实现 → 全量回归；任何字节码 schema 变化都必须 bump `BuildIdentifier` 让老 cache 失效，否则 cooked build 启动时整盘丢字节码。

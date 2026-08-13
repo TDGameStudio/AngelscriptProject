@@ -2,7 +2,7 @@
 
 ### Requirement: Modules publish current-revision JIT provider views
 
-`AngelscriptRuntime` SHALL define `IAngelscriptJITArtifactProvider` and POD-style entry/provider views. A view MUST declare struct size, current ABI revision, full stable ProviderId, diagnostic provider name, content-derived ProviderGeneration, complete artifact-set digest, artifact profile, Native environment fingerprint, entry table/count, and bucket count. Runtime SHALL NOT provide old-revision adapters.
+`AngelscriptRuntime` SHALL define `IAngelscriptJITArtifactProvider` and POD-style entry/provider views. A view MUST declare struct size, current ABI revision, full stable ProviderId, diagnostic provider name, content-derived ProviderGeneration, complete artifact-set digest, artifact profile, Native environment fingerprint, and entry table/count. Runtime SHALL NOT provide old-revision adapters. Generated translation-unit count or layout MUST NOT be part of the Runtime provider ABI.
 
 #### Scenario: Compatible provider is enumerated
 
@@ -176,13 +176,22 @@ Runtime SHALL build a complete immutable route snapshot from one validated set o
 
 - **WHEN** refresh is requested while script calls can still execute old entries
 - **THEN** publication waits for a safe point or retains the old immutable snapshot/provider state for those calls
-- **AND** no active call dereferences released route or reference memory
+- **AND** the retained generation owns Runtime-copied route/reference data and a code-lifetime lease for every base or Live Coding patch image containing its published entry addresses
+- **AND** no active call dereferences released route, reference memory, or unmapped VM/Raw/Parms entry code
 
 #### Scenario: Provider module unloads
 
 - **WHEN** a provider unregisters or departs
 - **THEN** only its selected entries are removed at the next safe publication
 - **AND** affected functions select another exact provider or VM without invalidating Cache V2 state
+- **AND** Registry removal prevents new matching from that Provider immediately
+- **AND** the old Provider image remains mapped until all retired Binding, route, and execution snapshots release their generation lease
+
+#### Scenario: Provider code lifetime cannot be retained
+
+- **WHEN** a Provider claims an owner module that is not loaded or Runtime cannot resolve and retain every image containing its VM/Raw/Parms entry addresses
+- **THEN** registration fails with a typed code-lifetime result
+- **AND** Runtime does not publish callable entry pointers from that Provider
 
 ### Requirement: Immutable packaged direct calls require complete set validation
 

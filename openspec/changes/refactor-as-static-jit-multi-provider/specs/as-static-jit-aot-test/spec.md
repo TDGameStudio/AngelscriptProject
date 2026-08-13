@@ -2,27 +2,28 @@
 
 ### Requirement: StaticJIT AOT source generation is reproducible
 
-The `AngelscriptTest` module SHALL own a documented test-only `-run=AngelscriptTestJIT -Mode=Generate|Verify` workflow that converts committed plugin AngelScript fixtures into deterministic provider source under the Editor-only `AngelscriptTestJIT` module. The workflow SHALL use the Runtime stable identity, current provider ABI, execution profile, per-function slice, and fixed 32-bucket emission primitives, but SHALL NOT read, scaffold, generate, verify, name, or modify any project JIT module. It SHALL NOT require or emit a legacy whole-module `.Cache` file beside the generated C++ source.
+The `AngelscriptTest` module SHALL own a documented test-only `-run=AngelscriptTestJIT -Mode=Generate|Verify` workflow that converts committed plugin AngelScript fixtures into deterministic provider source under the Editor-only `AngelscriptTestJIT` module. The workflow SHALL use the Runtime stable identity, current provider ABI, execution profile, and strict one-AS-module-per-profile-`.jit.cpp` emission primitives, but SHALL NOT read, scaffold, generate, verify, name, or modify any project JIT module. It SHALL NOT require or emit a legacy whole-module `.Cache` file beside the generated C++ source.
 
 #### Scenario: Generate checked-in AOT provider source
 
 - **WHEN** the test JIT commandlet runs in Generate mode for committed fixtures
-- **THEN** it writes deterministic provider metadata, content-addressed per-function slices, and exactly 32 sorted bucket translation units under `AngelscriptTestJIT`
+- **THEN** it writes deterministic provider metadata and exactly one sorted `.jit.cpp` implementation source per non-empty fixture AS module under `AngelscriptTestJIT`
 - **AND** every generated entry records the full stable function key, execution-content hash, profile key, ABI revision, entry-point set, and stable reference-slot requirements
-- **AND** unchanged fixture functions preserve their generated paths, symbols, bucket assignment, and bytes
+- **AND** unchanged fixture modules preserve their generated paths, symbols, and bytes
+- **AND** it emits no per-function implementation slices or fixed bucket translation units
 - **AND** no generated output is paired with a legacy test `.Cache` file
 
 #### Scenario: Detect stale generated source
 
 - **WHEN** the test JIT commandlet runs in Verify mode after a fixture, generator, profile, or ABI input changed
-- **THEN** it regenerates into an isolated temporary root and compares provider metadata, slices, symbols, bucket membership, and owned-file inventory
-- **AND** it reports every stale, missing, or unexpected artifact with its stable key and relevant content/profile/ABI hash
+- **THEN** it regenerates into an isolated temporary root and compares provider metadata, module sources, symbols, module membership, and owned-file inventory
+- **AND** it reports every stale, missing, or unexpected artifact with its StableModuleKey, affected stable function keys, and relevant content/profile/ABI values
 - **AND** it does not modify checked-in generated output
 
 #### Scenario: Test workflow uses the production Runtime emission contract
 
 - **WHEN** the test provider is generated
-- **THEN** generation calls the same Runtime identity, function-emission, bucket, provider-ABI, and deterministic-comparison primitives exercised by production providers
+- **THEN** generation calls the same Runtime identity, per-AS-module function-emission, provider-ABI, owned-file, and deterministic-comparison primitives exercised by production providers
 - **AND** test orchestration supplies its own committed fixture selection, fixed test ProviderId, command, output root, expected probes, and isolated cache paths
 - **AND** it has no dependency on project generation orchestration or the project `AngelscriptJIT` module
 
@@ -32,10 +33,10 @@ Generated AOT fixtures SHALL compile in the Editor-only `AngelscriptTestJIT` mod
 
 #### Scenario: Rebuild after generation compiles generated source
 
-- **WHEN** generated slices and bucket translation units exist under `AngelscriptTestJIT`
-- **THEN** the normal Editor target build discovers and compiles the fixed bucket `.cpp` files
+- **WHEN** generated per-AS-module translation units exist under `AngelscriptTestJIT`
+- **THEN** the normal Editor target build discovers and compiles every fixture module's one `.jit.cpp`
 - **AND** module startup publishes one current provider view through the Runtime-owned provider contract
-- **AND** the build does not manually enumerate per-function slices in `AngelscriptTestJIT.Build.cs`
+- **AND** the build does not manually enumerate function implementations in `AngelscriptTestJIT.Build.cs`
 
 #### Scenario: Non-Editor target excludes the test provider
 

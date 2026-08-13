@@ -1,0 +1,9 @@
+phase,scenario,provider_count,verified_routes,requested_references,resolved_references,catalog_ms,discovery_ms,reference_resolution_ms,route_match_publish_ms,total_ms,native_routes,vm_routes,match_results,evidence
+before,current_source_engine_46,2,46,37,37,0.001,0.032,12116.510,0.092,12116.643,46,0,0:46,Saved/Tests/static-jit-routing-timings/20260813_115911_960_b922646e/Automation.log
+before,fresh_cache_source_engine_46,2,46,37,37,0.001,0.033,12518.721,0.090,12518.853,46,0,0:46,Saved/Tests/static-jit-routing-timings/20260813_115911_960_b922646e/Automation.log
+before,project_startup_19,2,19,19,19,0.003,0.010,5820.531,0.408,5820.971,19,0,0:19,Saved/Tests/static-jit-routing-timings/20260813_115911_960_b922646e/Automation.log
+after,current_source_engine_46,2,46,37,37,0.001,0.018,696.227,0.093,696.346,46,0,0:46,Saved/Tests/Tests/static-jit-reference-batch-index-benchmark/20260813_121237_229_646d65ab/Automation.log
+after,fresh_cache_source_engine_46,2,46,37,37,0.001,0.018,763.188,0.130,763.346,46,0,0:46,Saved/Tests/Tests/static-jit-reference-batch-index-benchmark/20260813_121237_229_646d65ab/Automation.log
+after,project_startup_19,2,19,19,19,0.001,0.008,764.636,0.306,764.969,19,0,0:19,Saved/Tests/Tests/static-jit-reference-batch-index-benchmark/20260813_121237_229_646d65ab/Automation.log
+after,fresh_cache_final_bind_2,2,2,0,0,0.001,0.002,0.574,0.032,0.616,2,0,0:2,Saved/Tests/Tests/static-jit-reference-batch-index-benchmark/20260813_121237_229_646d65ab/Automation.log
+after,editor_content_mismatch_diagnostic_refresh,3,2,0,0,0.000,0.000,0.345,0.008,0.358,1,1,0:1|3:1,Saved/Tests/Tests/static-jit-editor-vm-fallback-benchmark/20260813_120444_034_2dbc8dd0/Automation.log

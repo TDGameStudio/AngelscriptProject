@@ -1,6 +1,6 @@
 # AngelScript Cache V2 Operations and Troubleshooting
 
-This guide describes the implemented incremental Cache V2 contract for Editor, PIE, Development, Shipping, and StaticJIT routing. The Chinese guide, maintained first for this repository, is `Documents/Guides/AngelscriptCacheV2_ZH.md`. Design rationale and the complete change-classification model live in `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`.
+This guide describes the implemented incremental Cache V2 contract for Editor, PIE, Development, Shipping, and StaticJIT routing. The Chinese guide, maintained first for this repository, is `Documents/Guides/AngelscriptCacheV2_ZH.md`. Design rationale and the complete change-classification model live in `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`. Cache test-suite structure problems are reviewed in `Documents/Guides/CacheV2TestReview_20260813.md`. A Chinese walkthrough (plain-language overview, process cases including a failed startup recompile, force-recompile commands, and how to measure cold vs warm startup) is in `Documents/Knowledges/ZH/RT_CacheV2.md`.
 
 ## Purpose and authority
 
@@ -114,6 +114,7 @@ as.Cache.Verify Generation=Previous Deep=0
 as.Cache.Compact Timeout=5
 as.Cache.ForceClean
 as.Cache.ForceClean Module=<canonical-name-or-stable-module-key>
+as.ReloadScripts
 as.Cache.Trace Enable Capacity=4096
 as.Cache.Trace Dump Json=Diagnostics/cache-trace.json
 as.Cache.Trace Clear
@@ -122,6 +123,10 @@ as.Cache.Explain Transaction=<ordinal> Module=<64-hex-key>
 ```
 
 `Json=` paths must remain beneath Project `Saved`. `Status` and `-as-cache-report` expose the same pointer-free schema-4 session document, so separate Editor/game processes can be correlated by stable coordinates. Blueprint exposes **Get AngelScript Cache Status JSON**. C++ has typed capture, JSON, flush, verify, compact, force-clean, and explain APIs in `AngelscriptCacheDiagnostics.h`.
+
+`as.Cache.ForceClean` is the force recompile for both Cache and the live AngelScript modules: selected modules (or all active modules) take `FullReload` with function Hits disabled. It does not delete on-disk packs; use `Compact` to reclaim files. `as.ReloadScripts` queues one packaged loose-source reload and still allows Hits; in the Editor it returns `Disabled`. `Flush` / `Verify` / `Status` / `Explain` / `Trace` do not compile. There is no `as.RecompileAll`, and none of these commands rebuild C++ / UHT / StaticJIT.
+
+If startup SourceIndex misses and the resulting compile fails, the different-source disk `Current` is not activated. The Editor shows a compile-error modal and retries via FullReload after save; packaged / unattended / commandlet hosts exit with status 3. A `FatalPartialRestore` refuses compile fallback. A hot-reload failure after modules are already live keeps last-good in memory. See `RT_CacheV2.md` sections 7–8.
 
 ## Read-only Python inspection
 
@@ -163,7 +168,9 @@ Tools\RunTestSuiteParallel.ps1 -Suite All -Strategy CoarseDynamic `
     -TestModuleWorkers 4 -MaxParallelLight 4 -MaxParallelHeavy 4
 ```
 
-The package benchmark uses a disposable source fixture and isolated cache roots. It covers cold, exact warm, body, type, module state, diagnostic overhead, and 4/16/64 MiB serial/parallel policies. Time is observational until a representative baseline supports a threshold; semantic parity, process exit, report/dump correlation, and deterministic bytes are hard assertions.
+The package benchmark uses a disposable source fixture and isolated cache roots. It covers cold, exact warm, body, type, module state, diagnostic overhead, and 4/16/64 MiB serial/parallel policies. `totalMs` is whole-process wall time, not `InitialCompile` alone. Time is observational until a representative baseline supports a threshold; semantic parity, process exit, report/dump correlation, and deterministic bytes are hard assertions.
+
+A single-launch comparison does not need the full matrix: pass `-as-cache-report` / `-as-cache-trace` and read schema-4 `functionReuse` counts plus `StartupSelection` / `StartupRestore` `elapsedMicroseconds`. Engine `FAngelscriptScopeTimer` lines (`script compilation total`) and Insights `Angelscript.Compile.Initial` are closer to compile cost; those compile timers are absent on a whole-generation ExactStartup hit. The session JSON has no per-stage preprocess/parse/function split, and Editor startup has no automated A/B. The smallest local contrast is one empty-root (or ForceClean then relaunch) report versus one unchanged-source report. See `RT_CacheV2.md` section 9.
 
 The 2026-08-12 V7.7 Development sample contains 38 staged sources and one
 32.7 KiB Pack. Cold median was 11093 ms and unchanged warm was 14055 ms. The

@@ -7,7 +7,7 @@
 - 本文件用于指导在 `AngelscriptProject` 中工作的 AI Agent。
 - 当前第一目标不是继续扩展一个普通游戏工程，而是把 `Plugins/Angelscript` 整理、验证并沉淀为可独立使用的 Angelscript 插件。当前仓库是插件开发与验证的承载工程；真正的主产物是 `Angelscript` 插件本身。
 - 插件已经**不处于原型或底座搭建阶段**，而是进入了"核心运行时、编辑器集成、测试基础设施都已成型，但对外交付入口和若干关键能力闭环仍需收口"的成熟期。
-- 当前基线：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 三个 UE 模块已稳定，`121` 个 `Bind_*.cpp`、`27+` 张 CSV 状态导出表、`1518+` 个自动化测试定义分布在 `430` 个测试 `.cpp` 文件中、`DebugServer V2` 协议、`CodeCoverage`、`StaticJIT`、`BlueprintImpact Commandlet` 均已落地。`GameplayTags` 支持现在拆到可选的 `AngelscriptGameplayTags` 插件里，而 `AngelscriptGAS` 依赖它做 GAS 侧集成。仅余 `2` 个测试保持 Disabled（均为 `#ue57-headless` 已知限制）。
+- 当前基线：`AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTestJIT` / `AngelscriptTest` 四个 UE 模块已稳定，其中 `AngelscriptTestJIT` 是 Editor-only 固定 StaticJIT 测试载体；另有 `121` 个 `Bind_*.cpp`、`27+` 张 CSV 状态导出表、`1518+` 个自动化测试定义分布在 `430` 个测试 `.cpp` 文件中、`DebugServer V2` 协议、`CodeCoverage`、Provider 化 `StaticJIT`、`BlueprintImpact Commandlet` 均已落地。`GameplayTags` 支持现在拆到可选的 `AngelscriptGameplayTags` 插件里，而 `AngelscriptGAS` 依赖它做 GAS 侧集成。仅余 `2` 个测试保持 Disabled（均为 `#ue57-headless` 已知限制）。
 - 当前产品版本为 `Unreal AngelScript 1.0.0`；源码 lineage 为 `AngelScript 2.33.0 WIP + 选择性 2.38 回移`。产品版本独立演进，fork 策略仍是从高版本选择性吸收改进。详见 `Documents/Guides/AngelscriptForkStrategy.md`。
 - `Plugins/Angelscript/` 是核心工作区，绝大多数实现、修复、清理和测试都应优先落在这里。`Source/AngelscriptProject/` 仅保留宿主工程必须的最小内容，除非任务明确需要，不要把插件逻辑塞回项目模块。
 
@@ -42,6 +42,7 @@ AngelscriptProject/
 │       │   ├── BlueprintImpact/             # BP 变更扫描与 Commandlet
 │       │   ├── SourceNavigation/            # 跳转到源码支持
 │       │   └── ContentBrowser/              # .as 文件在内容浏览器中显示
+│       ├── AngelscriptTestJIT/              # Editor-only 固定 StaticJIT 测试 Provider
 │       ├── AngelscriptTest/                 # 测试模块（430 .cpp，28+ 个主题）
 │       └── AngelscriptUHTTool/              # UHT C# 代码生成工具链
 │
@@ -126,8 +127,10 @@ AngelscriptRuntime  (Runtime 模块，无插件内依赖)
        │
        ├──► AngelscriptEditor  (Editor 模块，公开依赖 Runtime)
        │
-       └──► AngelscriptTest    (Editor 模块，公开依赖 Runtime，
-                                bBuildEditor 时私有依赖 Editor)
+       ├──► AngelscriptTestJIT (Editor-only 固定 StaticJIT Provider，公开依赖 Runtime)
+       │           │
+       │           └──► AngelscriptTest (Editor 模块，测试侧依赖 TestJIT)
+       └──► AngelscriptTest    (公开依赖 Runtime，bBuildEditor 时私有依赖 Editor)
 
 AngelscriptGameplayTags  (Runtime 模块，公开依赖 Runtime；可选)
        │
@@ -139,7 +142,7 @@ AngelscriptGAS  (Runtime 模块，公开依赖 Runtime + AngelscriptGameplayTags
 AngelscriptUHTTool  (C# UBT 插件，独立 — 接入 Unreal Header Tool 管线)
 ```
 
-三个 UE 模块均在 `PostDefault` 阶段加载。`AngelscriptRuntime` 通过 `UAngelscriptEngineSubsystem` 负责 Editor/Commandlet 主启动初始化，`FAngelscriptRuntimeModule::InitializeAngelscript()` 保留为兼容 API 并在 `GEngine` 可用时路由到该 Subsystem。`UAngelscriptGameInstanceSubsystem` 管理 World/GameInstance 上下文，当存在活跃 GameInstance tick owner 时会抑制 EngineSubsystem 的回退 tick。宿主工程模块 `AngelscriptProject` 有意保持最小化 — 仅为 UE 提供有效 Target，所有实际逻辑归属插件。
+四个插件 UE 模块均在 `PostDefault` 阶段加载。`AngelscriptRuntime` 通过 `UAngelscriptEngineSubsystem` 负责 Editor/Commandlet 主启动初始化，`FAngelscriptRuntimeModule::InitializeAngelscript()` 保留为兼容 API 并在 `GEngine` 可用时路由到该 Subsystem。`UAngelscriptGameInstanceSubsystem` 管理 World/GameInstance 上下文，当存在活跃 GameInstance tick owner 时会抑制 EngineSubsystem 的回退 tick。宿主工程模块 `AngelscriptProject` 有意保持最小化；可选项目 `AngelscriptJIT` Runtime/PreDefault 模块只承载生成的 StaticJIT Provider，不把插件逻辑推回宿主业务模块。
 
 ### 编辑器子系统 (AngelscriptEditor)
 
@@ -172,6 +175,15 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 3. **绑定**：C++ 类型 → `Bind_*.cpp` 手动绑定 + UHT 生成函数表 + 跨模块 direct-bind feature 表 + 反射回退 → AS 脚本可调用
 4. **热重载**：文件监控器检测变更 → 重编译受影响模块 → ClassReloadHelper 在编辑器中重建实例
 
+### StaticJIT Provider 数据流
+
+- StaticJIT 严格按“一个非空 AS 模块对应一个 `<StableModuleKey>.<TargetProfile>.jit.cpp`”生成；同一模块的全局函数和类方法进入同一个翻译单元，不再生成每函数 slice 或固定 bucket。
+- 项目 `AngelscriptJIT` 与 Editor-only `AngelscriptTestJIT` 都通过 `IAngelscriptJITArtifactProvider` 发布 ABI Revision 2 的稳定 entry 表；`FAngelscriptJITProviderRegistry` 校验并复制为不可变多 Provider 快照。
+- Engine 先以源码编译或 Cache V2 恢复结果建立权威函数状态，再由 `FAngelscriptJITProviderRouter` 按稳定模块/函数键、内容、Profile、环境、ABI 和稳定引用逐函数匹配。exact 才发布完整 VM/Raw/Parms binding，失配只让对应函数回退 VM。
+- 普通 `.as` 保存不会自动生成 C++ 或触发 Live Coding。Editor 显式 Generate/Refresh 在源文件集合不变时可 patch；新增/删除 AS 模块需要普通完整构建。
+- UE ModuleManager 负责 Provider DLL 加载/卸载；Registry owner 退注册阻止未来选择，已发布 binding 通过代码镜像 lease 保活到最后一个执行者退出。禁止重新引入 `FJITDatabase`、FunctionId/DataGuid 或 whole-cache 配对路径。
+- 当前生产生成器未启用 content-specific script-to-script direct-call emission；Native binding 已可用，但跨模块直接调用仍是独立的后续优化。
+
 ### Standalone 编译与离线 UE 分析
 
 - `Plugins/Angelscript/Standalone/` 通过 CMake 直接编译同一份 maintained fork，并把自身私有的标准 C++ frontend 编译进 `AngelscriptStandaloneHost`；它不包含或链接 Unreal Engine，也不要求 UE Runtime 提供共享 `Language/` 层。UE 继续以原有 `FAngelscriptPreprocessor` 与 descriptor graph 为权威实现，两侧只通过完整离线 JSON Bundle 交换最终声明事实。
@@ -194,6 +206,12 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - AngelscriptWiki 的主题与 document 插件迁移参考固定在 `Reference\tiddlywiki-*`：itonnote theme/plugin、TiddlySeq、command palette、preview-glass source 与 CodeMirror 6。它们通过 `Tools\PullReference\PullReference.bat` 的同名 key 按 SSH 和审计 SHA 手工拉取；`Wiki/vendor/` 才是运行时固定子模块，日常构建不会联网更新。
 - Kookma 的 TW5 插件与扩展源码参考固定在 `Reference\kookma\`：每个可访问上游均保留独立 SSH Git 克隆，`TW-PluginLibrary` 同时保留完整插件目录的封装快照。它们只用于 WikiText、宏、组件、样式和作者工作流的二次开发研究，不是 `Wiki/` 的运行时依赖或自动构建输入。调整 AngelScript Wiki 的原生表达组件前优先本地核查；实际产品代码必须在 `Wiki/src/` 的 TDGameStudio 命名空间中自行整合，并先核对许可与全局模板影响。
 - AngelScript 代码生成器调研参考固定在 `Reference\fuzzilli`、`Reference\grammarinator`、`Reference\csmith`、`Reference\yarpgen` 与 `Reference\creduce`。其中 Fuzzilli 是 ASIR / ProgramBuilder 架构的首要参考；Grammarinator 仅用于 parser fuzz；Csmith 与 YARPGen 用于受控正例和行为 oracle；C-Reduce 用于失败样本缩减。它们只供离线分析与设计复核，不属于运行时依赖或自动拉取项。
+- Angelsea 固定在 `Reference\angelsea`，来源为 `https://github.com/asumagic/angelsea.git`，并递归保留其上游锁定的 MIR、AngelScript、fmt、Catch2 与 nanobench 子模块。它只作为 `asIJITCompilerV2`、AngelScript bytecode-to-C、MIR、lazy/async JIT 和解释器回退策略的次级研究参考；当前插件的 StaticJIT、UE 集成和 maintained AngelScript fork 始终拥有更高优先级，Angelsea 不是运行时或构建依赖。
+- Daslang（仓库名 `daScript`）固定在 `Reference\daScript`，来源为 `https://github.com/GaijinEntertainment/daScript.git`。它只作为游戏脚本语言的 C++ 零拷贝互操作、tree interpreter、AOT-to-C++、LLVM JIT、hot reload、semantic hashing、宏系统和 compiler-backed MCP 的横向架构参考；不是 AngelScript 语义、ABI 或本项目 StaticJIT 的权威源，也不是构建依赖。
+- Typed/native 编译器研究快照固定在 `Reference\Cython`、`Reference\numba` 与 `Reference\luau`，分别来源于 `cython/cython`、`numba/numba` 与 `luau-lang/luau`。Cython 优先用于 typed AST → C/C++ Static AOT emitter；Numba 优先用于 bytecode → untyped/typed IR → LLVM、specialization 与 object cache；Luau 优先用于 bytecode native codegen、type guard、fallback block、VM exit 和 x64/A64 code lifecycle。三者只供离线研究，不是插件依赖；完整 SHA、许可证、拉取命令和源码入口见 `Reference/README.md` 与 `openspec/changes/feature-as-typed-semantic-aot/research/`。
+- GenericMessagePlugin 固定在 `Reference\GenericMessagePlugin`，来源为 `https://github.com/wangjieest/GenericMessagePlugin.git`。它用于研究 UE 中跨 C++、Blueprint、AngelScript 与其他脚本后端的 key-based message bus、签名收集、类型校验、AS 声明 codegen、K2 节点、request/response、sticky message 和调用追踪；属于消息/脚本互操作的专项次级参考，不直接并入插件。
+- GenericStorages 固定在 `Reference\GenericStorages`，来源为 `https://github.com/UnrealBytes/GenericStorages.git`。它仅作为 UE registry/storage/singleton/subsystem 模板、编辑器 picker、平台持久化、权限/deep-link 与 S3 helper 的低优先级工具类参考；不是 AngelScript 插件架构基准或运行时依赖。
+- UECling 固定在 `Reference\UECling`，来源为 `https://github.com/Evianaive/UECling.git`。它只作为在 Unreal 中嵌入 Cling/CppInterOp、运行时 C++ 解释、REPL/notebook、Blueprint 节点与脚本生成类的低优先级横向参考；不是当前插件的运行时或构建依赖。上游未提供仓库级 LICENSE，且直接携带 LLVM/Clang 头文件，因此借鉴或分发任何实现前必须单独完成来源与许可证审查。
 
 ## 本地配置
 

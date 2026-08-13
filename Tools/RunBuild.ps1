@@ -1,8 +1,12 @@
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [int]$TimeoutMs = 0,
 
     [string]$Label = 'build',
+
+    [string]$Target = '',
+
+    [string]$Configuration = '',
 
     [string]$LogRoot = '',
 
@@ -38,6 +42,34 @@ $scriptExitCode = $exitCodes.ConfigError
 
 try {
     $agentConfig = Resolve-AgentConfiguration -ProjectRoot $projectRoot
+	$resolvedTarget = if ([string]::IsNullOrWhiteSpace($Target)) {
+		$agentConfig.EditorTarget
+	}
+	else {
+		$Target.Trim()
+	}
+	if ($resolvedTarget.StartsWith('-') -or
+		$resolvedTarget.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()) -ge 0) {
+		throw "Target is not a valid Unreal target name: $resolvedTarget"
+	}
+	$requestedConfiguration = if ([string]::IsNullOrWhiteSpace($Configuration)) {
+		$agentConfig.Configuration
+	}
+	else {
+		$Configuration.Trim()
+	}
+	$configurationLookup = @{
+		debug       = 'Debug'
+		debuggame   = 'DebugGame'
+		development = 'Development'
+		shipping    = 'Shipping'
+		test        = 'Test'
+	}
+	$configurationKey = $requestedConfiguration.ToLowerInvariant()
+	if (-not $configurationLookup.ContainsKey($configurationKey)) {
+		throw "Configuration must be one of Debug, DebugGame, Development, Shipping, or Test: $requestedConfiguration"
+	}
+	$resolvedConfiguration = $configurationLookup[$configurationKey]
 
     if ($UniqueBuildEnvironment) {
         throw 'Using -UniqueBuildEnvironment is prohibited in this repository. It triggers a worktree-private engine rebuild. Use -SerializeByEngine or a dedicated EngineRoot instead.'
@@ -99,9 +131,9 @@ try {
     $ubtLogPath = Join-Path $outputLayout.OutputRoot 'UBT.log'
     $argumentList = @(
         $ubtPaths.UbtDllPath
-        $agentConfig.EditorTarget
+        $resolvedTarget
         $agentConfig.Platform
-        $agentConfig.Configuration
+        $resolvedConfiguration
         "-Project=$($agentConfig.ProjectFile)"
         "-architecture=$($agentConfig.Architecture)"
         "-Log=$ubtLogPath"
@@ -125,6 +157,8 @@ try {
             Mode              = $buildMode
             ProjectRoot       = $projectRoot
             ProjectFile       = $agentConfig.ProjectFile
+            Target            = $resolvedTarget
+            Configuration     = $resolvedConfiguration
             EngineRoot        = $agentConfig.EngineRoot
             DotNetExecutable  = $ubtPaths.DotNetExecutablePath
             UbtDllPath        = $ubtPaths.UbtDllPath
@@ -146,9 +180,9 @@ try {
     Write-Host 'Angelscript UBT Build Runner'
     Write-Host '================================================================'
     Write-Host ('Mode            : {0}' -f $buildMode)
-    Write-Host ('Target          : {0}' -f $agentConfig.EditorTarget)
+    Write-Host ('Target          : {0}' -f $resolvedTarget)
     Write-Host ('Platform        : {0}' -f $agentConfig.Platform)
-    Write-Host ('Configuration   : {0}' -f $agentConfig.Configuration)
+    Write-Host ('Configuration   : {0}' -f $resolvedConfiguration)
     Write-Host ('ProjectFile     : {0}' -f $agentConfig.ProjectFile)
     Write-Host ('EngineRoot      : {0}' -f $agentConfig.EngineRoot)
     Write-Host ('DotNet          : {0} ({1})' -f $ubtPaths.DotNetExecutablePath, $ubtPaths.DotNetSource)
@@ -217,6 +251,8 @@ try {
             Mode              = $buildMode
             ProjectRoot       = $projectRoot
             ProjectFile       = $agentConfig.ProjectFile
+            Target            = $resolvedTarget
+            Configuration     = $resolvedConfiguration
             EngineRoot        = $agentConfig.EngineRoot
             DotNetExecutable  = $ubtPaths.DotNetExecutablePath
             UbtDllPath        = $ubtPaths.UbtDllPath

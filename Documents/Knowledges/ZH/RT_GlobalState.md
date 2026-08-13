@@ -36,7 +36,8 @@
     │  Level 0 — 进程单例（procedural / static, 与 Engine 实例无关）  │
     │  · FAngelscriptBind sealed callback collection         ← Type_  │
     │  · GAngelscriptRecompileAvoidance / GAngelscriptLineReentry     │
-    │  · FAngelscriptEngine::GameThreadTLD / bStaticJITTranspiled...  │
+    │  · FAngelscriptEngine::GameThreadTLD                           │
+    │  · FAngelscriptJITProviderRegistry immutable snapshots         │
     │  · GAngelscriptPackageRefCount / GAngelscriptAssetsPackageRefCount│
     │  · LogCategory(Angelscript) / 各种 NAME_ static FName            │
     └─────────────────────────────────────────────────────────────────┘
@@ -127,7 +128,7 @@ static FAutoConsoleVariableRef CVar_AngelscriptRecompileAvoidance(
 - `GAngelscriptLineReentry`：line callback 重入门票（防止断点逻辑无限递归触发自己）。设计上**不应**多 Engine 同时进入 line callback——Tick 让位机制已经保证这一点。
 - `GAngelscriptRecompileAvoidance`：通过控制台 CVar 暴露的进程级开关。多 Engine 共享 CVar 是 UE 的设计，并非问题。
 
-### 1.3 `FAngelscriptEngine` 的几个 `static` 字段
+### 1.3 `FAngelscriptEngine` 的 VM 线程桥与 Provider Registry
 
 `FAngelscriptEngine` 这个 USTRUCT 看上去像实例，但暴露了一些**类静态**字段：
 
@@ -137,12 +138,11 @@ static FAutoConsoleVariableRef CVar_AngelscriptRecompileAvoidance(
 // 节选自: FAngelscriptEngine 类静态成员
 // ============================================================================
 static class asCThreadLocalData* GameThreadTLD;     // ★ AS VM 的 game-thread TLS 桥
-static bool bStaticJITTranspiledCodeLoaded;         // 进程层"是否已加载 transpiled JIT 代码"
 ```
 
-`GameThreadTLD` 是 AS 内核 `asCThreadManager::GetLocalData()` 的"主线程指针缓存"，让游戏线程不必每次都查 TLS map。`bStaticJITTranspiledCodeLoaded` 反映的是当前进程的二进制是否加载了 transpiled JIT 代码——同一进程只能加载一次。
+`GameThreadTLD` 是 AS 内核 `asCThreadManager::GetLocalData()` 的“主线程指针缓存”，让游戏线程不必每次都查 TLS map。旧的 `bStaticJITTranspiledCodeLoaded` 已随单一全局 JIT 数据库删除；当前不能用一个进程 bool 表示多 Provider、多代 DLL/Live Coding 和逐函数 Native/VM 混合状态。
 
-`GlobalStateContainmentMatrix.md` §6 把它们归为 "Process state，暂保留为静态状态" 类。
+当前进程级 StaticJIT 状态是 `FAngelscriptJITProviderRegistry` 发布的不可变 Provider Catalog Snapshot。它只保存经过校验并复制的稳定元数据、入口和代码生命周期 lease；每个 Engine 的函数 route、瞬时 FunctionId 和解析引用仍是 Engine-local。Provider owner 卸载只从未来 Snapshot 移除它，旧 binding 持有 lease 到最后一个读者退出。
 
 ### 1.4 包引用计数
 
@@ -904,7 +904,7 @@ Test 中的"上一个 Spec 留下垃圾"：
 | `GAngelscriptRecompileAvoidance` | `int32 (CVar)` | Process | `AngelscriptEngine.cpp:96` | `as.UseRecompileAvoidance` CVar | InitialCompile / HotReload |
 | `GAngelscriptPackageRefCount` | `int32` | Process | `AngelscriptEngine.cpp:89` | Acquire/Release Process Packages | 同左 |
 | `GAngelscriptStack` | `FAngelscriptDebugStack*` | Process | `AngelscriptEngine.cpp:91` | game-thread callback | line/stack-pop callback |
-| `bStaticJITTranspiledCodeLoaded` | `bool` (static class) | Process | `AngelscriptEngine.h:137` | StaticJIT 加载 | StaticJIT bind 路径 |
+| `FAngelscriptJITProviderRegistry` Snapshot | immutable shared catalogs | Process | `StaticJIT/AngelscriptJITProviderRegistry.*` | Modular Feature 注册/退注册 | 每个 Engine 的 ProviderRouter 刷新 |
 | `GameThreadTLD` | `asCThreadLocalData*` (static class) | Process bridge | `AngelscriptEngine.h:136` | `PreInitialize_GameThread` | 线程切换桥 |
 | `GAngelscriptContextPool` | `FAngelscriptContextPool` | thread_local | `AngelscriptEngine.h:672` | `FAngelscriptPooledContextBase` | 同左 |
 | `GIsInAngelscriptThreadSafeFunction` | `bool` | thread_local (Editor) | `ASClass.cpp:40` | thread-safe scope | `CheckGameThreadExecution` |

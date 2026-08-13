@@ -48,7 +48,7 @@
 | `FAngelscriptEngine::bGeneratePrecompiledData` | Engine instance | 已迁移为 `FAngelscriptEngine::bGeneratePrecompiledData` 实例字段；StaticJIT 绑定通过 `IsGeneratingPrecompiledData()` 读取当前 scope |
 | Blueprint library namespace 配置 | Engine instance | 已迁移为 `FAngelscriptEngine` 实例字段；`Helper_FunctionSignature.h` 通过 current-context accessor 读取 |
 | Static FName literal 缓存 | Engine shared-state | 已迁移为 `FAngelscriptOwnedSharedState::StaticNames` / `StaticNamesByIndex`；Full 引擎隔离，Clone 引擎共享 |
-| `FAngelscriptEngine::bStaticJITTranspiledCodeLoaded` | Process state | 反映当前进程二进制是否加载 transpiled JIT code，暂保留为静态状态 |
+| `FAngelscriptJITProviderRegistry` immutable Snapshot | Process registry state | 多 Provider 校验/复制/发布；只保存稳定 Catalog 与代码 lease，每个 Engine 的 route/FunctionId/解析引用保持实例隔离 |
 | `FAngelscriptEngine::GameThreadTLD` | Process/thread bridge | AngelScript VM 的 game-thread TLS 桥接点，暂保留为静态状态 |
 | `GAngelscriptRecompileAvoidance` / `GAngelscriptLineReentry` | Misc process state | 留给 DeGlobal V2 Phase 4 继续分类和收口 |
 

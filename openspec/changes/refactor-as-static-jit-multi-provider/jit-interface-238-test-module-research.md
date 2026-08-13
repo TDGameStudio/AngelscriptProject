@@ -1,7 +1,9 @@
 # JIT Interface 2.38, Test Module, Cache V2, And Live Coding Research
 
+> **Historical layout note (2026-08-12):** The evidence in this document remains useful, but its per-function-slice/fixed-32-bucket recommendation was superseded by the user-approved strict one-AS-module-per-profile-`<Module>.jit.cpp` design. `design.md` and the delta specs are authoritative.
+
 > Date: 2026-08-12
-> Status: design evidence for this OpenSpec refactor; no implementation is claimed.
+> Status: original design evidence for this OpenSpec refactor. Milestone 1 implementation evidence is recorded in section 13 and `verification.md`.
 > Authority: local source trees and current repository code. Normative decisions live in `proposal.md`, `design.md`, capability deltas, and `tasks.md`.
 
 ## 1. Questions Resolved
@@ -77,6 +79,36 @@ The upstream interface remains insufficient for this plugin:
 Copying v2 literally would leave Raw/Parms ownership outside the lifecycle and would make the Runtime adapter maintain a second release protocol. That would perpetuate the current split rather than fix it.
 
 ## 3. Current Fork Evidence
+
+### 3.0 Implementation recheck on 2026-08-12
+
+Immediately before implementation, the current `main` checkout was re-read
+against the pinned 2.38 source. The lifecycle evidence below still holds, with
+one important fork drift from the original research wording:
+
+- `Core/angelscript.h` now declares `asEP_JIT_INTERFACE_VERSION = 35`, and
+  `as_scriptengine.cpp` accepts/stores values 1 or 2. This was added by the
+  earlier stock-2.38 public-property-number compatibility work.
+- The stored value is inert for JIT dispatch. `SetJITCompiler` still accepts
+  only `asIJITCompiler*`; the public header still exposes only
+  `CompileFunction` / `ReleaseJITFunction`; there is no
+  `asIJITCompilerAbstract`, `asIJITCompilerV2`, `NewFunction`,
+  `SetJITFunction`, `GetJITFunction`, or `CleanFunction` in the maintained
+  fork.
+- `asIScriptFunction` exposes only `GetByteCode` for JIT compilation. The
+  internal `asCScriptFunction` still stores `jitFunction`,
+  `jitFunction_Raw`, and `jitFunction_ParmsEntry` as three independently
+  mutable public fields.
+- `asCModule::Build` and `LoadByteCode` still call `JITCompile`, which invokes
+  the synchronous old callback. `asCScriptFunction::DestroyInternal` still
+  has no JIT retirement step, so the native SDK test's module-discard release
+  limitation remains reproducible in source.
+
+This drift strengthens rather than changes the selected design: task 1 removes
+the inert version-selection property while keeping subsequent stock property
+numeric values stable, and replaces the split old lifecycle with the single
+maintained-fork complete-Binding contract. It does not add upstream v1/v2
+adapters merely because the compatibility property was previously restored.
 
 ### 3.1 Primary local sources
 
@@ -417,3 +449,40 @@ This avoids growing the already-large AOT, diagnostics, or Cache schema test fil
 - **Live Coding:** explicit Generate/Refresh after one full build; validate newer provider before binding.
 - **Shipping:** immutable exact provider where available, correct VM fallback/rejection policy, no Editor dependency.
 - **Compatibility:** none for old JIT APIs, providers, FunctionId maps, DataGuid pairing, or test `.Cache`.
+
+## 13. Milestone 1 Implementation Follow-Up
+
+The 2026-08-12 implementation rechecked the research against the maintained fork and completed the first lifecycle cut:
+
+- `asIJITCompiler` is now one non-versioned `OnFunctionReady` / `ReleaseFunctionBinding` contract;
+- `asSJITFunctionBinding` owns VM, Raw, Parms, and opaque user data as one public value;
+- eligible source-compiled, detached-compiled, and bytecode-restored functions receive readiness notification without requiring immediate publication;
+- `asCScriptFunction` clears a retired Binding before the callback and releases it exactly once on replacement, clear, module discard, function destruction, compiler replacement/removal, and engine shutdown;
+- delayed publication is valid while the publishing compiler remains installed on the function's engine;
+- source generation now enumerates completed module functions explicitly and no longer installs itself as the engine's execution compiler;
+- the removed fork callbacks, separate public JIT entry fields, and interface-version engine property have no remaining source use.
+
+Active-reader snapshot retention and concurrent Native publication are intentionally not claimed here; they remain task 4.5.
+
+## 14. Milestone 2 Neutral Artifact Follow-Up
+
+The pre-implementation recheck found that canonical module, type, function,
+execution-content, debug-content, profile, environment, and compatibility
+identity builders were already neutral Runtime artifacts under
+`Core/Artifacts`. The remaining reusable concepts were the Cache-named stable
+reference value, execution route, live route, snapshot, ordinal, and
+per-Engine route state. Cache persistence policy and restore coordination were
+not moved into StaticJIT.
+
+The implementation therefore:
+
+- introduced `FAngelscriptArtifactReference` with the existing frozen reference-kind wire values;
+- introduced neutral `FAngelscriptFunctionRoute`, typed route generation, immutable shared snapshots, and `EAngelscriptArtifactMatchResult`;
+- made `FAngelscriptEngine` the sole per-Engine owner of the neutral route state and renamed the public lookup to `ResolveFunctionRoute`;
+- migrated Cache V2 codecs, restore, diagnostics, dependency graphs, tests, ClassGenerator, dump, and StaticJIT consumers to the neutral value vocabulary without adding a second identity or route manager;
+- retained Cache diagnostics' `PublicationOrdinal` field as a Cache-specific DTO compatibility surface while sourcing it from the neutral typed generation;
+- proved equal stable identity and independent live function/reference resolution in two Engines whose transient FunctionIds were deliberately reordered.
+
+Provider matching, stable provider reference slots, ProviderId generations,
+and multi-Provider ambiguity policy are not claimed by this milestone; they
+begin in task group 3.

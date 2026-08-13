@@ -1,0 +1,20 @@
+{
+  "ownershipRevision": 2,
+  "targetProfile": "GameShipping",
+  "providerId": "a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5",
+  "providerGeneration": "917bb4e18da7a1f3e816f289e0db0c6b2ec2e176b0508757b048df94f57011ce",
+  "files": [
+    "OwnedFiles.generated.json",
+    "Provider.generated.h",
+    "Provider.generated.inl",
+    "ProviderManifest.generated.json",
+    "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp",
+    "Tests/Test_Enums.812970d9.GameShipping.jit.cpp",
+    "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp",
+    "Tests/Test_GameplayTags.349ffd2e.GameShipping.jit.cpp",
+    "Tests/Test_Handles.07a7af43.GameShipping.jit.cpp",
+    "Tests/Test_Inheritance.f77b2646.GameShipping.jit.cpp",
+    "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp",
+    "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp"
+  ]
+}

@@ -7,7 +7,7 @@ Editor and PIE SHALL keep source preprocessing, AS compilation, module replaceme
 #### Scenario: Editor starts with a matching project provider
 
 - **WHEN** Editor compiles scripts whose full identities match the loaded project `AngelscriptJIT` provider
-- **THEN** matching functions receive complete Native Bindings before reflected dispatch is finalized
+- **THEN** ClassGenerator first accepts the authoritative structural generation and matching functions then receive complete Native Bindings before post-compile consumers or the first reflected dispatch observe that generation
 - **AND** unmatched functions remain executable through current VM functions
 
 #### Scenario: PIE uses the current Editor engine state
@@ -82,7 +82,7 @@ The Editor SHALL expose `Generate/Refresh AngelScript JIT`. The action SHALL gen
 #### Scenario: User requests Generate/Refresh
 
 - **WHEN** current scripts compile, the project scaffold is valid, and no generation/patch is active
-- **THEN** changed slices, bucket includes, manifest, and deterministic JSON metadata are generated
+- **THEN** changed per-AS-module `.jit.cpp` sources, provider metadata, owned-file inventory, and deterministic JSON metadata are generated
 - **AND** byte-identical owned files are not rewritten
 
 #### Scenario: Current AS state has errors
@@ -97,13 +97,20 @@ The Editor SHALL expose `Generate/Refresh AngelScript JIT`. The action SHALL gen
 - **THEN** the action refuses Live Coding refresh and reports the required build/restart
 - **AND** script execution remains VM-correct
 
+#### Scenario: Generated AS module source set changes
+
+- **WHEN** Generate adds or removes a profile `.jit.cpp` because an AS module was added or removed
+- **THEN** the owned output and expected ProviderGeneration are updated
+- **AND** the action refuses Live Coding refresh and reports the added/removed StableModuleKeys plus the required normal Editor build
+- **AND** current execution remains VM-correct until that build loads a compatible provider generation
+
 ### Requirement: Live Coding refresh validates the expected patched generation
 
 When UE Live Coding is available, started, and enabled for the session, Generate/Refresh SHALL subscribe to patch completion, call `ILiveCodingModule::Compile()`, and require the expected newer provider generation/artifact-set digest before publishing routes.
 
 #### Scenario: Live Coding patch succeeds
 
-- **WHEN** changed buckets compile, patch completion fires, and the provider accessor exposes the expected generation
+- **WHEN** changed existing per-AS-module `.jit.cpp` sources compile, patch completion fires, and the provider accessor exposes the expected generation
 - **THEN** Runtime re-enumerates providers and atomically publishes exact routes at an Engine safe point
 - **AND** diagnostics report generation, written files, and Native/VM counts
 

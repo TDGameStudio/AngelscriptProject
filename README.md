@@ -1,8 +1,6 @@
 # AngelscriptProject
 
-Unreal Engine 5.7 的 AngelScript 集成插件开发工程。
-
-本仓库的真正交付物是 `Plugins/Angelscript/` —— 一个让 AngelScript 成为 UE5 中与 Blueprint、C++ 并列的脚本语言的独立插件。仓库本身只是承载该插件开发与验证的 Host Project。
+本仓库是 **Unreal AngelScript 1.0.0** 的宿主工程。真正交付物是 `Plugins/Angelscript/`：一份深度嵌入 Unreal Engine 5.7 的 AngelScript 方言与运行时，让脚本成为和 Blueprint、C++ 并列的选项。仓库本身只负责开发与验证。
 
 ---
 
@@ -10,14 +8,29 @@ Unreal Engine 5.7 的 AngelScript 集成插件开发工程。
 
 | 维度 | 说明 |
 |------|------|
+| **产品** | Unreal AngelScript `1.0.0`（编码 `10000`） |
 | **目标** | 把 `Plugins/Angelscript` 维护为一个**独立可复用**的 AngelScript 插件 |
-| **来源** | Fork 自 Hazelight Games 公开的 [Unreal Angelscript](http://angelscript.hazelight.se) 项目 |
-| **基线** | AngelScript `2.33` + 选择性回 backport `2.38` 的 bugfix 与特性 |
+| **来源** | 最初来自 Hazelight Games 公开的 [Unreal Angelscript](http://angelscript.hazelight.se) 集成；本仓库走纯插件路线，不改 UE 引擎核心 |
 | **引擎版本** | Unreal Engine `5.7` |
-| **范围约束** | 不修改 UE 引擎核心代码（Hazelight 原版需要改引擎，本项目走"纯插件"路线） |
 | **当前阶段** | 核心运行时、编辑器集成、测试基础设施已稳定；正在补齐若干能力闭环与对外交付入口 |
 
-详见 `Documents/Guides/AngelscriptForkStrategy.md`。
+---
+
+## AngelScript 版本
+
+当前交付的不是外挂在 UE 上的原版 AngelScript，而是 **Unreal AngelScript 1.0.0**：语言、内核和对象模型都按 Unreal 改过。脚本类型会进入 UE 反射树，Blueprint、序列化、GC 和网络复制都能看见。接入方必须使用插件自带的公共头，不能拿官方 SDK 头创建引擎。
+
+- **UE 方言语法**：`UFUNCTION` / `UPROPERTY`、`default`、mixin 函数、脚本子系统；对象引用按 UE 生命周期管理。
+- **脚本类变成活的 `UClass`**：`.as` 类 / 结构体生成 `UASClass` / `UASStruct`，对编辑器和 Blueprint 透明。
+- **引擎 API 绑定**：手写 `Bind_*.cpp`、UHT 生成函数表、反射回退；RPC / Net 走 UE 路由。
+- **编辑器热重载**：改 `.as` 后重编译并 Reinstance，支持类改名 CoreRedirects。
+- **DAP 调试**：断点、单步、变量、调用栈，可对齐 Blueprint 帧。
+- **StaticJIT**：每个 AS 模块生成一个稳定 `.jit.cpp`，通过多 Provider/Engine-local 路由精确挂接 Native 入口，失配逐函数回退 VM。
+- **增量缓存**：Cache V2 用稳定函数身份复用编译结果，缺原生条目回退 VM。
+- **Standalone**：无 UE 的受限执行，以及离线 UE 声明校验（不模拟 UObject / World）。
+- **可选扩展**：GameplayTags、GAS 拆成独立插件，不绑进核心。
+
+版本身份和能力细节见 [AS_UEEmbeddedVersion.md](Documents/Knowledges/ZH/AS_UEEmbeddedVersion.md)，知识库总索引见 [Documents/Knowledges/ZH/Index.md](Documents/Knowledges/ZH/Index.md)。
 
 ---
 
@@ -57,13 +70,13 @@ UE 模块默认在 `PostDefault` 阶段加载。`GameplayTags` 脚本绑定拆�
 | **类型绑定** | `Binds/` | `Bind_*.cpp` 暴露核心 UE 类型（数学/Actor/Component/Physics/UMG/Delegate/Container/JSON/EnhancedInput 等）+ `BlueprintCallableReflectiveFallback` 兜底 |
 | **类生成器** | `ClassGenerator/` | AS class → 活跃 UClass/UStruct，支持属性布局、函数 stub、热重载版本链 |
 | **预处理器** | `Preprocessor/` | `#include` / `#if` / 条件编译 / 注释式文档提取 |
-| **Static JIT** | `StaticJIT/` | AS 字节码 → 优化的近原生执行；`PrecompiledData` 负责模块持久化 |
+| **Static JIT** | `StaticJIT/` | AS 字节码 → 每模块 C++ AOT；Provider Registry、稳定引用与 Engine-local Native/VM 路由 |
 | **DAP 调试** | `Debugging/` | 兼容 DAP 协议的 TCP 调试服务器（断点/单步/变量检视/调用栈） |
 | **脚本子系统** | `Subsystem/` | `ScriptWorldSubsystem` / `ScriptGameInstanceSubsystem` / `ScriptEngineSubsystem` / `ScriptLocalPlayerSubsystem` |
 | **函数库** | `FunctionLibraries/` | Mixin 库为数学类型/Actor/Component/Widget 等增加辅助方法 |
 | **状态导出** | `Dump/` | 27+ CSV 表导出器；纯外部观察者，不入侵运行时 |
 | **代码覆盖率** | `CodeCoverage/` | AngelScript 行级覆盖率追踪 + HTML/JSON 报告 |
-| **第三方 AS 内核** | `ThirdParty/angelscript/` | Vendored AngelScript 2.33 源码 + 本地补丁 |
+| **第三方 AS 内核** | `ThirdParty/angelscript/` | 与 Runtime 同模块编译的深度定制内核，不是可替换的官方 SDK |
 
 ### 可选扩展插件（AngelscriptGameplayTags / AngelscriptGAS）
 

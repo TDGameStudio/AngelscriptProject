@@ -458,8 +458,8 @@ Phase D — 诊断 / 文档 / 调试器 / JIT / 覆盖率
   ScriptEngineState.csv     asCScriptEngine 的可见运行状态
   HotReloadState.csv        热重载相关的 bool / 队列长度
   DocumentationStats.csv    文档统计
-  JITDatabase.csv           FJITDatabase::Get().Functions
-  PrecompiledData.csv       Cooked / 预编译数据指标
+  JITProviders.csv          ProviderId / generation / owner UE 模块 / AS 模块与 entry 数
+  JITRoutes.csv             稳定函数 route、Native/VM、binding、引用槽与执行计数
   StaticJITState.csv        StaticJIT 模块状态
   DebugServerState.csv      DebugServer.HasAnyClients 等
   DebugBreakpoints.csv      已注册的断点

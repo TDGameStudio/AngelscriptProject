@@ -1,5 +1,7 @@
 # Test 指南
 
+当前测试框架问题、覆盖缺口和官方 suite 口径见 `Documents/Guides/TestFrameworkReview_20260813.md`。并行/Fast 入口契约见同日的 `Documents/Guides/TestBuildPowerShellToolingReview_20260813.md`。
+
 ## 强制规则
 
 - 本仓库的标准自动化测试入口是 `Tools\RunTests.ps1`。
@@ -476,31 +478,55 @@ unchanged warm、函数体修改、非法源码、源码恢复以及结构 cold/
 
 ### StaticJIT AOT 相关回归
 
-StaticJIT AOT 测试验证的是“生成 C++ → 二次构建 → 运行时注册和执行”整条链路。cache 内部保存的引用 ID 与生成的 `.jit.cpp` / `.jit.hpp` 中的引用 ID 成对出现，因此不能在测试运行时单独刷新 cache，也不能用另一轮生成产生的 cache 去驱动旧 DLL。
+StaticJIT AOT 测试验证“编译权威 AS → 每 AS 模块生成一个 `.jit.cpp` → 二次构建 → Provider 注册 → 当前 Engine 稳定路由 → Native/VM 执行”整条链路。当前 owned output 不再发布 `.jit.hpp` 或测试专用 `.Cache`，也不再用 FunctionId/DataGuid 把 whole-cache 与 DLL 成对绑定；translator 内部若使用 `.jit.hpp` 命名的临时文本，不构成 UBT source 或运行期协议。
 
-日常执行请使用专用入口；它将按顺序完成基线构建、生成配套 artifacts、二次构建和 StaticJIT 测试：
+日常执行使用专用入口；它会完成基线 Editor 构建、固定 `AngelscriptTestJIT` fixture 生成、二次构建、Verify 和 focused tests：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunStaticJITTests.ps1 -LabelPrefix staticjit-aot
 ```
 
-只运行 AOT 子集时追加 `-AotOnly`。默认会运行完整 `Angelscript.TestModule.StaticJIT` 前缀，以便同时覆盖 AOT 与不依赖生成 cache 的 StaticJIT 诊断测试。
+只运行 AOT 子集时追加 `-AotOnly`。默认运行完整 `Angelscript.TestModule.StaticJIT` 前缀，同时覆盖 Provider ABI/Registry、稳定引用、多 Provider、Editor 路由、UASFunction、诊断和 AOT 执行。
 
-如需单独排查每一步，等价的标准流程固定为：
+测试 Provider 是插件内固定的 Editor-only `AngelscriptTestJIT` UE 模块，不依赖项目名、项目 scaffold 或项目 `Source/AngelscriptJIT`。如需单独排查，使用 `AngelscriptTestJIT` commandlet 的 `Generate|Verify` 模式；正常情况下优先使用上述 runner，避免跳过必要的二次构建。
 
-1. 先构建一次，让 AOT commandlet 与生成 helper 进入 `AngelscriptTest` 模块。
-2. 运行 `AngelscriptStaticJITAotTest` commandlet 的 `Generate` 模式，更新 `Plugins/Angelscript/Source/AngelscriptTest/StaticJIT/AOT/Generated/` 下的 `.jit.cpp`、`.jit.hpp`，并在同目录生成本地 `StaticJITAotFixture.Cache`。
-3. 再构建一次，让 UBT 自动发现并编译生成的 `.jit.cpp` 文件。
-4. 运行 `Angelscript.TestModule.StaticJIT.AOT` 或更宽的 `Angelscript.TestModule.StaticJIT` 前缀。
+项目自己的 Provider workflow 独立使用：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label staticjit-aot-build -TimeoutMs 180000
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunCommandlet.ps1 -Commandlet AngelscriptStaticJITAotTest -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label staticjit-aot-generated -TimeoutMs 180000
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.StaticJIT.AOT" -Label staticjit-aot -TimeoutMs 600000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile EditorDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label project-jit-generated -TimeoutMs 1800000 -NoXGE
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Verify -Profile EditorDevelopment
 ```
 
-生成物校验由 `Angelscript.TestModule.StaticJIT.AOT.GeneratedOutputVerify` 覆盖：源码文本严格比对；`StaticJITAotFixture.Cache` 是与当前已编译 `.jit.cpp` / `.jit.hpp` 配对的本地生成产物，不提交到 git。测试会要求它存在，并按 fixture GUID、build id、模块与函数元数据做语义校验。cache 内部保存旧指针引用，因此不能用裸文件 hash 作为 stale 判断依据。fresh checkout 后需要先执行 generate -> rebuild -> test 流程，不能直接只跑 AOT runtime 测试。
+生成器通过 `OwnedFiles.generated.json`、版本化 owner marker 和内容比较保证只改 owned files；同一 AS 模块的全局函数和类方法都进入唯一 `<AS相对目录>/<源文件名>.<短StableModuleKey>.<Profile>.jit.cpp`。模块头和函数入口注释可直接反查 canonical AS 声明与虚拟源位置，完整稳定键和内部 symbol 不缩短。重复 Generate 必须保持未变化文件的字节与时间戳。新增/删除 AS 模块或从旧 `Private/Generated/<Profile>`、`Private/Generated/Profiles/<Profile>` 迁移都会改变 UBT source set，必须普通完整构建；Verify 对旧目录只读报错。当前项目载体固定在 `Source/AngelscriptJIT/Generated/<Profile>`，TestJIT 固定在 `Plugins/Angelscript/Source/AngelscriptTestJIT/Generated/EditorDevelopment`，两者都不保留 `Private`/`Public` 包装目录。
+
+StaticJIT 与 Cache V2 是独立层：测试先通过源码编译或隔离 Cache V2 root 建立当前 Engine 权威状态，再验证同一个 Provider 能否按稳定键在 source-engine、fresh cache-engine 和多 Engine 中得到相同路由。Provider 不保存 Cache 的瞬时 FunctionId，单个函数内容或引用不匹配只让该 route 回退 VM。
+
+运行期诊断与离线 Schema inspector：
+
+```powershell
+python Tools\Diagnostics\InspectStaticJITDump.py <dump.json>
+python Tools\Diagnostics\InspectStaticJITDump.py <dump.json> --fail-on-mismatch
+```
+
+真实 Editor Live Coding smoke 需要在不关闭 Editor 的同一会话中观察 changed function 在 patch 前为 VM、严格更新 ProviderGeneration 的 patch 后为 Native；普通保存不会自动触发 C++ 生成/Live Coding。Development/Shipping package multi-start smoke 是独立发布门，不计入普通 `All` 单进程自动化数量。
+
+package smoke 要求对应 Profile 已经 Generate 并编译进 Game target；它会检查 manifest、
+Game link response、archive 模块表面，并启动两个独立进程证明选择不受 FunctionId、指针、
+publication ordinal 或 Cache root 创建顺序影响：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameDevelopment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJITPackageSmoke.ps1 -Configuration Development -TimeoutMs 3600000
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJIT.ps1 -Mode Generate -Profile GameShipping
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunAngelscriptJITPackageSmoke.ps1 -Configuration Shipping -TimeoutMs 3600000
+```
+
+成功证据写入 `Saved/StaticJITPackage/<Label>-<Configuration>/<RunId>/Summary.json`。
+`-SkipPackage -OutputRoot <exact-prior-run-root>` 只用于重放已有 archive 的两次启动检查，
+不能替代最终发布构建。当前生产 direct script-call emission 显式关闭；package smoke
+验证的是完整 Native binding route，不得把它描述成已启用跨 `.jit.cpp` 的直接调用。
 
 常用具名 suite 以 `Tools\RunTestSuite.ps1 -ListSuites` 的输出为准，当前重点包括：
 

@@ -13,6 +13,11 @@
 			"Name": "AngelscriptProjectTest",
 			"Type": "Editor",
 			"LoadingPhase": "PostDefault"
+		},
+		{
+			"Name": "AngelscriptJIT",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
 		}
 	],
 	"Plugins": [

@@ -239,7 +239,42 @@ TestNotNull("Should compile", Module);
 
 ---
 
-## 6. 测试编写最佳实践
+## 6. JIT provider 生命周期与 ABI 差异
+
+此 fork 只暴露一个维护分支自有、非版本化的 JIT 生命周期。它不是旧 fork 同步 JIT API 的兼容扩展，也不是原样复制 vanilla 2.38 的版本选择接口。
+
+```cpp
+struct asSJITFunctionBinding
+{
+    asJITFunction VMEntry = nullptr;
+    asJITFunction_Raw RawEntry = nullptr;
+    asJITFunction_ParmsEntry ParmsEntry = nullptr;
+    void* UserData = nullptr;
+};
+
+class asIJITCompiler
+{
+public:
+    virtual void OnFunctionReady(asIScriptFunction* Function) = 0;
+    virtual void ReleaseFunctionBinding(
+        asIScriptFunction* Function,
+        const asSJITFunctionBinding& Binding) = 0;
+};
+```
+
+使用规则：
+
+1. 在 `OnFunctionReady` 中立即或延后调用 `Function->SetJITBinding(Binding)`；VM、Raw、Parms 与 UserData 必须作为一个完整所有权单元发布。
+2. 只通过 `GetJITBinding()` 读取入口值，不缓存或访问 `asCScriptFunction` 内部字段。
+3. binding 被替换、显式清空、模块丢弃、函数析构、引擎关闭、compiler 替换或移除时，原发布 compiler 会收到一次 `ReleaseFunctionBinding`。回调进入前函数已清空当前 binding，可安全重入。
+4. `SetJITCompiler` 是执行生命周期槽。StaticJIT 代码生成器直接观察已编译模块，不会临时交换此槽。
+5. `asEP_JIT_INTERFACE_VERSION` 已删除；枚举数值 35 有意保留为空洞，36 之后的既有属性编号不变。
+
+以下表面不兼容且没有适配层：旧 fork 的 `CompileFunction` / `ReleaseJITFunction` 与公开 `jitFunction*` 字段；vanilla 的 `asIJITCompilerV2`、`NewFunction` / `CleanFunction` / `SetJITFunction` 和接口版本选择。外部 provider 必须针对当前头文件重新实现并重新编译。
+
+---
+
+## 7. 测试编写最佳实践
 
 ### 安全模式
 
@@ -295,7 +330,7 @@ bool FTest::RunTest(const FString& Parameters) {
 
 ---
 
-## 7. 版本与兼容性矩阵
+## 8. 版本与兼容性矩阵
 
 | 特性 | Vanilla AS 2.38 | 此 Fork | 状态 |
 |------|-----------------|---------|------|
@@ -310,10 +345,12 @@ bool FTest::RunTest(const FString& Parameters) {
 | 默认参数 | ✅ | ✅ | 兼容 |
 | 值类型 | ✅ | ✅ | 兼容 |
 | 继承 | ✅ | ✅ | 兼容 |
+| JIT 接口版本选择 | ✅/依上游版本 | ❌ 单一维护分支协议 | ABI 差异 |
+| 完整 VM/Raw/Parms binding | ❌/接口形态不同 | ✅ `asSJITFunctionBinding` | Fork 扩展 |
 
 ---
 
-## 8. 跳过的上游测试
+## 9. 跳过的上游测试
 
 以下上游测试因 fork 差异无法直接集成：
 
@@ -329,7 +366,9 @@ bool FTest::RunTest(const FString& Parameters) {
 
 ---
 
-## 9. 文档更新历史
+## 10. 文档更新历史
+
+- **2026-08-12**: 记录统一、非版本化的 JIT binding 生命周期；明确完整入口发布、原 owner 恰好一次释放、生成器不交换 live compiler，以及与旧 fork/vanilla JIT API 的有意 ABI 不兼容。
 
 - **2026-07-23**: 原生核心回归按九个主题重组。独立 raw engine 中脚本对象构造会进入 UE class allocator，不能作为普通执行成功路径；测试改为安全验证编译、类型元数据及明确限制。当前 float64 配置下 double-backed 值类型 native call 的受限异常与可执行整数调用路径分别固定；future 2.38 脚本语义以 Disabled `#as-v238-backport` CQTest 记录。
 
