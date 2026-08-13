@@ -1,8 +1,10 @@
 # Unified Static/Runtime JIT Architecture Implementation Plan
 
-> Plan-only record: do not begin source implementation merely by editing or validating this change. When implementation is explicitly authorized, execute in the current main checkout as required by the repository instructions, preserve unrelated work, and record the exact pre-implementation status rather than resetting it. Every behavior task uses TDD and project-owned build/test entry points.
+> Implementation was explicitly authorized on 2026-08-13. Work proceeds in the current main checkout as required by the repository instructions, preserves unrelated work, and records the exact pre-implementation status rather than resetting it. Every behavior task uses TDD and project-owned build/test entry points.
 
 The architecture review baseline is parent `e0766f3fea75cd73179a4232407ef5d8f532f8e0` with `Plugins/Angelscript` at `3d6f231ab0d902e14a4fe944cf2ea9c1191711e7`; that plugin commit contains the multi-provider artifact foundation. The plugin submodule was clean during the 2026-08-13 plan review, while the parent contained unrelated and OpenSpec work. Re-check both repositories when implementation actually begins; this baseline is evidence, not permission to overwrite later changes.
+
+Implementation began from parent `58e860ee52eb113f5115dbd4d0adcd2dea33d37f` and plugin `3d6f231ab0d902e14a4fe944cf2ea9c1191711e7`, both with clean working trees. The parent already records that plugin gitlink. Prerequisite evidence in `3d6f231` includes complete immutable Binding publication (`AngelscriptJITBindingPublicationTests`), stable reference slots and Engine-local resolution (`AngelscriptJITReferenceSlotTests`), deterministic multi-provider registration and generation replacement (`AngelscriptJITMultiProviderTests`), immutable direct-set validation (`AngelscriptJITImmutableArtifactSetTests`), and Runtime-owned Provider code-image leases (`AngelscriptJITProviderLifetime`). This satisfies the implementation dependency gate without depending on later project scaffolding or Live Coding work.
 
 ## Dependency And Workspace Gate
 
@@ -31,6 +33,8 @@ Record the exact prerequisite plugin commit and dirty paths when a milestone beg
 Do not create a second Provider registry, route authority, stable identity type, or generated-file packager.
 
 ## Milestone A: BytecodeJIT Characterization And Extraction
+
+Completed and verified on 2026-08-13. `FAngelscriptBytecodeJIT` now owns bytecode analysis and emission beneath `StaticJIT/BytecodeJIT/`; `FAngelscriptStaticJIT` remains only the temporary `asIJITCompiler` lifecycle/publication facade. Compatibility and direct-generator output are compared byte-for-byte in the generated-output fixture. Exact commands and results are recorded in `implementation-notes.md`.
 
 1. Extend existing deterministic generation tests before production edits. Capture request normalization, implementation templates, references, symbols, module files, manifest, and owned-file inventory.
 2. Run the focused test and retain the expected pre-feature failure if the wished-for BytecodeJIT class boundary does not yet exist.

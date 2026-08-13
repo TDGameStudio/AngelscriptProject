@@ -1,12 +1,12 @@
-> Plan-only status (2026-08-13): this checklist records a future implementation sequence. Do not modify plugin source or run implementation builds until the user explicitly authorizes code implementation.
+> Implementation status (2026-08-13): the user explicitly authorized implementation in the current main checkout. Keep this checklist synchronized with verified milestones and put detailed evidence or problems in the change attachments.
 
 ## 1. Freeze BytecodeJIT Behavior And Extract The Current Generator
 
-- [ ] 1.1 <!-- Non-TDD --> Confirm `refactor-as-static-jit-multi-provider` has complete Binding publication, stable references/routes/readers, and safe per-Provider generation publication/retirement; record the exact prerequisite plugin/parent commits or dirty-workspace baseline in `implementation-plan.md`.
-- [ ] 1.2 <!-- TDD --> Extend the current deterministic StaticJIT fixture so generation request fields, emitted implementation text, references, symbols, per-module files, Provider manifest, and owned-file inventory are captured before structural edits.
-- [ ] 1.3 <!-- TDD --> Add a class-boundary characterization proving the existing generation entry points use one bytecode generator and retain current cross-function/two-pass analysis and one-module-one-TU behavior.
-- [ ] 1.4 <!-- TDD --> Create `StaticJIT/BytecodeJIT/FAngelscriptBytecodeJIT` and move the bytecode analyzer, `FStaticJITContext`, opcode handlers, bind lowering, reference analysis, and body/entry emission together without formatting or behavior changes.
-- [ ] 1.5 <!-- TDD --> Keep `FAngelscriptStaticJIT` as a temporary delegating lifecycle facade and prove all pre-extraction golden/determinism tests remain byte-for-byte equal.
+- [x] 1.1 <!-- Non-TDD --> Confirm `refactor-as-static-jit-multi-provider` has complete Binding publication, stable references/routes/readers, and safe per-Provider generation publication/retirement; record the exact prerequisite plugin/parent commits or dirty-workspace baseline in `implementation-plan.md`.
+- [x] 1.2 <!-- TDD --> Extend the current deterministic StaticJIT fixture so generation request fields, emitted implementation text, references, symbols, per-module files, Provider manifest, and owned-file inventory are captured before structural edits.
+- [x] 1.3 <!-- TDD --> Add a class-boundary characterization proving the existing generation entry points use one bytecode generator and retain current cross-function/two-pass analysis and one-module-one-TU behavior.
+- [x] 1.4 <!-- TDD --> Create `StaticJIT/BytecodeJIT/FAngelscriptBytecodeJIT` and move the bytecode analyzer, `FStaticJITContext`, opcode handlers, bind lowering, reference analysis, and body/entry emission together without formatting or behavior changes.
+- [x] 1.5 <!-- TDD --> Keep `FAngelscriptStaticJIT` as a temporary delegating lifecycle facade and prove all pre-extraction golden/determinism tests remain byte-for-byte equal.
 
 ## 2. Define The Internal Static Backend Contract
 
