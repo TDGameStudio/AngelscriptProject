@@ -7,13 +7,13 @@ A generated StaticJIT project module SHALL directly name a native binding target
 #### Scenario: Exported Runtime symbol is direct-callable
 
 - **WHEN** a Runtime-owned scalar call target has external linkage, an includable declaration marked `ANGELSCRIPTRUNTIME_API`, a declared owning module/header, a matching typed ABI, and safe routing
-- **THEN** Semantic AOT may emit a direct call from the generated project module
+- **THEN** TypedASTJIT may emit a direct call from the generated project module
 - **AND** the generated module includes the declared header instead of redeclaring the symbol
 
 #### Scenario: Existing native form has no external contract
 
 - **WHEN** a binding has a legacy `NativeFunction` or `NativeMethod` spelling but no explicit external linkage descriptor
-- **THEN** external Semantic AOT classifies it as non-direct
+- **THEN** TypedASTJIT classifies it as non-direct
 - **AND** it uses a proven scalar bridge or makes the root ineligible rather than guessing that the symbol is exported
 
 #### Scenario: Declaration is visible but symbol is not exported
@@ -73,7 +73,7 @@ Failure to prove cross-module native linkage SHALL NOT produce generated code th
 #### Scenario: Private target has a scalar bridge
 
 - **WHEN** the resolved target has no external direct symbol but its scalar parameters, return, exception behavior, and routing are supported by the bridge
-- **THEN** the Semantic caller remains eligible and invokes the bridge
+- **THEN** the TypedASTJIT caller remains eligible and invokes the bridge
 - **AND** diagnostics identify the call as bridged because its native target is provider-private or unexported
 
 #### Scenario: Private target cannot be bridged

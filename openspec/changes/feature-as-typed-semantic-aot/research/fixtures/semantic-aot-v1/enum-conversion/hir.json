@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 3,
+  "functionDeclaration": "bool SemanticEnumEnabled(ESemanticMode Mode)",
+  "functionHeader": {
+    "declaredTraitBits": 0,
+    "invocationKind": "Global",
+    "receiver": { "kind": "None", "symbol": null, "parameterIndex": -1, "type": null },
+    "compileOutType": "CompileCalls",
+    "hiddenArgumentIndex": -1,
+    "determinesOutputTypeArgumentIndex": -1,
+    "returnsOnStack": false,
+    "hasSuspendState": false,
+    "hasExceptionCleanup": false
+  },
+  "symbols": [
+    { "id": 0, "kind": "Parameter", "name": "Mode", "type": "ESemanticMode:int32", "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "expressions": [
+    { "id": 0, "kind": "Symbol", "type": "ESemanticMode:int32", "symbol": 0, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Conversion", "type": "int", "targetType": "int", "operand": 0, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 2, "kind": "Literal", "type": "int", "value": "0", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 3, "kind": "Binary", "type": "bool", "operator": "!=", "operands": [1, 2], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "statements": [
+    { "id": 0, "kind": "Return", "valueExpression": 3, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Block", "children": [0], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "rootStatement": 1
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 3,
+  "functionDeclaration": "void SemanticExternalInit(UReceiver Receiver) external_implicit_this",
+  "functionHeader": {
+    "declaredTraitBits": 2097152,
+    "invocationKind": "Global",
+    "receiver": { "kind": "ExplicitParameterAlias", "symbol": 0, "parameterIndex": 0, "type": "UReceiver" },
+    "compileOutType": "CompileCalls",
+    "hiddenArgumentIndex": -1,
+    "determinesOutputTypeArgumentIndex": -1,
+    "returnsOnStack": false,
+    "hasSuspendState": false,
+    "hasExceptionCleanup": false
+  },
+  "symbols": [
+    { "id": 0, "kind": "Parameter", "name": "Receiver", "type": "UReceiver", "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "expressions": [
+    { "id": 0, "kind": "Symbol", "type": "UReceiver", "symbol": 0, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Literal", "type": "int", "value": "7", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 2, "kind": "Unsupported", "type": "void", "category": "UnsupportedPropertyWrite", "operands": [0, 1], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "statements": [
+    { "id": 0, "kind": "Expression", "expression": 2, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Block", "children": [0], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "rootStatement": 1
+}

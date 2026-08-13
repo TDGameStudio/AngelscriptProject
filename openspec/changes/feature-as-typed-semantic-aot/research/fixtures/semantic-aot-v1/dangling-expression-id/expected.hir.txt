@@ -1,0 +1,10 @@
+function int SemanticInvalidFixture(int Value)
+header traits=0 invocation=Global receiver=None receiverSymbol=none receiverParameter=-1 receiverType=none compileOut=CompileCalls hiddenArgument=-1 determinesOutputType=-1 returnsOnStack=false suspend=false cleanup=false
+root=T1
+symbols:
+  S0 kind=Parameter name=Value type=int span=input.as@0+1
+expressions:
+  E0 kind=Symbol type=int symbol=S0 span=input.as@0+1
+statements:
+  T0 kind=Return value=E9 span=input.as@0+1
+  T1 kind=Block children=[T0] span=input.as@0+1

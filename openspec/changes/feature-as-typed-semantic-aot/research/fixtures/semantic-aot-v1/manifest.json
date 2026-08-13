@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 3,
+  "cases": [
+    {
+      "name": "scalar-branch",
+      "artifacts": {
+        "source": "scalar-branch/input.as",
+        "hir": "scalar-branch/hir.json",
+        "dump": "scalar-branch/expected.hir.txt",
+        "cpp": "scalar-branch/expected.cpp"
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Semantic",
+        "fallbackReason": null
+      },
+      "sha256": {
+        "source": "80f297314cf1f4398ad182a8fa25058c3a8e464e2662e960a100e8cdf3701e88",
+        "hir": "440ef6d33e82c1f69179d321f0e2e45ba5843e5980716d3ee3ed035b79f3fcbb",
+        "dump": "e21380bf6a13435bc115b7e3a6083bbc66456eaecb845892cf7688b58d2b7199",
+        "cpp": "dd9945447955fcd942cedfdf8f0e36400d54c783dead35ddc86c6b40d24db3cf"
+      }
+    },
+    {
+      "name": "short-circuit",
+      "artifacts": {
+        "source": "short-circuit/input.as",
+        "hir": "short-circuit/hir.json",
+        "dump": "short-circuit/expected.hir.txt",
+        "cpp": "short-circuit/expected.cpp"
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Semantic",
+        "fallbackReason": null
+      },
+      "sha256": {
+        "source": "0ff40a1896f6501e32a5889bc17dccea21296f9aa5ab125443112eb19c003f29",
+        "hir": "3f71425bee37391f6756cfea19d59e863f70e7d3b7224023aa74c0ad56a0d69a",
+        "dump": "0df3a8bb2e8c92a8c3f164955aea5b84f82efd04c10e8341f54594b94f73cf24",
+        "cpp": "2807057e3d88d3751f30c6aced3afcf86824b21c13a955019baef0d6bc793841"
+      }
+    },
+    {
+      "name": "loop-switch",
+      "artifacts": {
+        "source": "loop-switch/input.as",
+        "hir": "loop-switch/hir.json",
+        "dump": "loop-switch/expected.hir.txt",
+        "cpp": "loop-switch/expected.cpp"
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Semantic",
+        "fallbackReason": null
+      },
+      "sha256": {
+        "source": "37fd75bd345c87610a9311840c51ef45fbc3a264177a7928e4f4f4f292d99e36",
+        "hir": "e96b6e5ef84623690674ca8116e152fb4af50ea073afff00a53d6e557d398aed",
+        "dump": "7ca362c92c22418a9ee3a1d6e1a611712d6d9ead89d52a8d44e09cd0d240c0d7",
+        "cpp": "7e71867dbef647379a2b43590631273b33d5d7133d8bff85d5aeee921b9e970b"
+      }
+    },
+    {
+      "name": "enum-conversion",
+      "artifacts": {
+        "source": "enum-conversion/input.as",
+        "hir": "enum-conversion/hir.json",
+        "dump": "enum-conversion/expected.hir.txt",
+        "cpp": "enum-conversion/expected.cpp"
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Semantic",
+        "fallbackReason": null
+      },
+      "sha256": {
+        "source": "07fcd9c3b97b5baadfa59f28b6ec26034f51521ce6378346651845386364c5fc",
+        "hir": "c96d5b5db928c3f98e07a4e2379f8d5fe2f9601c60f4897b7a53103219aefa46",
+        "dump": "f303f647ebe771c4557b8b4ab49c90a62c16225a1abb3ee464066c6dd08547e8",
+        "cpp": "6e3f17e0670cbcafaad5a68fe031c8d8097b1e75333745ec7cf82fc4425c5f09"
+      }
+    },
+    {
+      "name": "unsupported-property",
+      "artifacts": {
+        "source": "unsupported-property/input.as",
+        "hir": "unsupported-property/hir.json",
+        "dump": "unsupported-property/expected.hir.txt",
+        "cpp": null
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Fallback",
+        "fallbackReason": "UnsupportedExpression"
+      },
+      "sha256": {
+        "source": "d2c55f8e935187f2b74c8d41bd10a698b3a8121617fed7295b23502addbff491",
+        "hir": "9b06320d90965ec4be7fbb32200c7f819fc187d7e04071a8fa5bfc8fb19bfb03",
+        "dump": "f76cfaba412b8dbe3f85356c160f6afa3bb17c948c4546836fad479c679cfdbd",
+        "cpp": null
+      }
+    },
+    {
+      "name": "dangling-expression-id",
+      "artifacts": {
+        "source": "dangling-expression-id/input.as",
+        "hir": "dangling-expression-id/hir.json",
+        "dump": "dangling-expression-id/expected.hir.txt",
+        "cpp": null
+      },
+      "expectation": {
+        "validation": "Fail",
+        "validationCode": "DanglingExpressionId",
+        "eligibility": "NotEvaluated",
+        "fallbackReason": "InvalidIR"
+      },
+      "sha256": {
+        "source": "3617bcf965080a9361efa8eeb7da91ff33ee59e0b434878de09d3bc6fa58ab97",
+        "hir": "15847e22c49007eb60c4f50f81fb913b9587dc24ceb60cbb62720892533529f3",
+        "dump": "11ccc26c8750bc9051c29eef6de9e3cc2145f77ae47ff887e1d39e5f7b62e430",
+        "cpp": null
+      }
+    },
+    {
+      "name": "external-implicit-this",
+      "artifacts": {
+        "source": "external-implicit-this/input.as",
+        "hir": "external-implicit-this/hir.json",
+        "dump": "external-implicit-this/expected.hir.txt",
+        "cpp": null
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Fallback",
+        "fallbackReason": "UnsupportedReceiver"
+      },
+      "sha256": {
+        "source": "9a5ba899ac3fa7b687dcb7ca92a9c99a81997e96eff6c37ebb382bc67c49c28c",
+        "hir": "702fd009851656db19a9f3bff969d354bff925d99b6792547270cb417284c7d3",
+        "dump": "966413e4f4c039a9b7a1ec95affc83371eee2ab1a9cb8662af12ab04db5044f0",
+        "cpp": null
+      }
+    },
+    {
+      "name": "invalid-effective-receiver",
+      "artifacts": {
+        "source": "invalid-effective-receiver/input.as",
+        "hir": "invalid-effective-receiver/hir.json",
+        "dump": "invalid-effective-receiver/expected.hir.txt",
+        "cpp": null
+      },
+      "expectation": {
+        "validation": "Fail",
+        "validationCode": "InvalidEffectiveReceiver",
+        "eligibility": "NotEvaluated",
+        "fallbackReason": "InvalidIR"
+      },
+      "sha256": {
+        "source": "0980317a74a846ac0f72b15ce014af1e8f15db85ff269842b19413e5e536b772",
+        "hir": "65b2c73cc56d55536435727ff8615b9ef79a918a80f365e09529851fe0670df9",
+        "dump": "e693d40f0dac6a3cec8bce4827b886a8a81ecfa1cd86103b28285e73abcbb92f",
+        "cpp": null
+      }
+    },
+    {
+      "name": "call-reverse-evaluation",
+      "artifacts": {
+        "source": "call-reverse-evaluation/input.as",
+        "hir": "call-reverse-evaluation/hir.json",
+        "dump": "call-reverse-evaluation/expected.hir.txt",
+        "cpp": "call-reverse-evaluation/expected.cpp"
+      },
+      "expectation": {
+        "validation": "Pass",
+        "validationCode": null,
+        "eligibility": "Semantic",
+        "fallbackReason": null
+      },
+      "sha256": {
+        "source": "6e3dd301ba8580e7fd558b04338b10f655897390310c914dbec7c236311ebc4b",
+        "hir": "2af4dbabe3a01d7662f8c01e891e6776aa470d64ddb69b373256fb1474855e46",
+        "dump": "db284baa05e51bf44bd5814d2961a30a838deebff044f70aa943daf07e2ae3bd",
+        "cpp": "0433363b310c610964c7f695810c96ecf88386c90f9b9a9e9b8714a7c20553de"
+      }
+    },
+    {
+      "name": "invalid-call-evaluation-sequence",
+      "artifacts": {
+        "source": "invalid-call-evaluation-sequence/input.as",
+        "hir": "invalid-call-evaluation-sequence/hir.json",
+        "dump": "invalid-call-evaluation-sequence/expected.hir.txt",
+        "cpp": null
+      },
+      "expectation": {
+        "validation": "Fail",
+        "validationCode": "InvalidCallEvaluationSequence",
+        "eligibility": "NotEvaluated",
+        "fallbackReason": "InvalidIR"
+      },
+      "sha256": {
+        "source": "7ed3e4c7dbd319a2a4b03946ea64e25e392a4811970a12740f71aaad77db3096",
+        "hir": "904d563ef0f1a07860483d909c3163feb5af7e70c64d74cefb4f5ce9812a3ed5",
+        "dump": "0a025bfed0a436781995e77e68d846437cb81c5854859306df328b7f7454a0dd",
+        "cpp": null
+      }
+    }
+  ]
+}

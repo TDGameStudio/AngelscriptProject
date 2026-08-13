@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 3,
+  "functionDeclaration": "void SemanticInvalidReceiver(UReceiver Receiver) external_implicit_this",
+  "functionHeader": {
+    "declaredTraitBits": 2097152,
+    "invocationKind": "Global",
+    "receiver": { "kind": "ExplicitParameterAlias", "symbol": 9, "parameterIndex": 0, "type": "UReceiver" },
+    "compileOutType": "CompileCalls",
+    "hiddenArgumentIndex": -1,
+    "determinesOutputTypeArgumentIndex": -1,
+    "returnsOnStack": false,
+    "hasSuspendState": false,
+    "hasExceptionCleanup": false
+  },
+  "symbols": [
+    { "id": 0, "kind": "Parameter", "name": "Receiver", "type": "UReceiver", "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "expressions": [],
+  "statements": [
+    { "id": 0, "kind": "Block", "children": [], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "rootStatement": 0
+}

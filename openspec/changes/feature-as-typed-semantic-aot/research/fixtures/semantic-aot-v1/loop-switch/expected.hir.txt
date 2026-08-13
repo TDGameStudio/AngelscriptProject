@@ -1,0 +1,36 @@
+function int SemanticLoopSwitch(int Limit)
+header traits=0 invocation=Global receiver=None receiverSymbol=none receiverParameter=-1 receiverType=none compileOut=CompileCalls hiddenArgument=-1 determinesOutputType=-1 returnsOnStack=false suspend=false cleanup=false
+root=T12
+symbols:
+  S0 kind=Parameter name=Limit type=int span=input.as@0+1
+  S1 kind=Local name=Total type=int span=input.as@0+1
+  S2 kind=Local name=Index type=int span=input.as@0+1
+expressions:
+  E0 kind=Literal type=int value=0 span=input.as@0+1
+  E1 kind=Literal type=int value=0 span=input.as@0+1
+  E2 kind=Symbol type=int symbol=S2 span=input.as@0+1
+  E3 kind=Symbol type=int symbol=S0 span=input.as@0+1
+  E4 kind=Binary type=bool operator=< operands=[E2,E3] span=input.as@0+1
+  E5 kind=Symbol type=int symbol=S2 span=input.as@0+1
+  E6 kind=Unary type=int operator=post++ operand=E5 span=input.as@0+1
+  E7 kind=Symbol type=int symbol=S2 span=input.as@0+1
+  E8 kind=Literal type=int value=0 span=input.as@0+1
+  E9 kind=Literal type=int value=2 span=input.as@0+1
+  E10 kind=Symbol type=int symbol=S1 span=input.as@0+1
+  E11 kind=Symbol type=int symbol=S2 span=input.as@0+1
+  E12 kind=Assignment type=int operator=+= target=E10 value=E11 span=input.as@0+1
+  E13 kind=Symbol type=int symbol=S1 span=input.as@0+1
+statements:
+  T0 kind=LocalDeclaration symbol=S1 initializer=E0 span=input.as@0+1
+  T1 kind=LocalDeclaration symbol=S2 initializer=E1 span=input.as@0+1
+  T2 kind=Continue target=T10 span=input.as@0+1
+  T3 kind=Case match=E8 children=[T2] span=input.as@0+1
+  T4 kind=Break target=T8 span=input.as@0+1
+  T5 kind=Case match=E9 children=[T4] span=input.as@0+1
+  T6 kind=Expression expression=E12 span=input.as@0+1
+  T7 kind=Case match=default children=[T6] span=input.as@0+1
+  T8 kind=Switch selector=E7 cases=[T3,T5,T7] span=input.as@0+1
+  T9 kind=Block children=[T8] span=input.as@0+1
+  T10 kind=For initializer=T1 condition=E4 increment=E6 body=T9 span=input.as@0+1
+  T11 kind=Return value=E13 span=input.as@0+1
+  T12 kind=Block children=[T0,T10,T11] span=input.as@0+1

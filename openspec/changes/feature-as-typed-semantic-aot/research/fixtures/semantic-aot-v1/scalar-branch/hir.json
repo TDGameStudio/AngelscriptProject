@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 3,
+  "functionDeclaration": "int SemanticScalarBranch(int A, int B)",
+  "functionHeader": {
+    "declaredTraitBits": 0,
+    "invocationKind": "Global",
+    "receiver": { "kind": "None", "symbol": null, "parameterIndex": -1, "type": null },
+    "compileOutType": "CompileCalls",
+    "hiddenArgumentIndex": -1,
+    "determinesOutputTypeArgumentIndex": -1,
+    "returnsOnStack": false,
+    "hasSuspendState": false,
+    "hasExceptionCleanup": false
+  },
+  "symbols": [
+    { "id": 0, "kind": "Parameter", "name": "A", "type": "int", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Parameter", "name": "B", "type": "int", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 2, "kind": "Local", "name": "Sum", "type": "int", "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "expressions": [
+    { "id": 0, "kind": "Symbol", "type": "int", "symbol": 0, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Symbol", "type": "int", "symbol": 1, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 2, "kind": "Binary", "type": "int", "operator": "+", "operands": [0, 1], "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 3, "kind": "Symbol", "type": "int", "symbol": 2, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 4, "kind": "Literal", "type": "int", "value": "10", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 5, "kind": "Binary", "type": "bool", "operator": ">", "operands": [3, 4], "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 6, "kind": "Symbol", "type": "int", "symbol": 2, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 7, "kind": "Literal", "type": "int", "value": "2", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 8, "kind": "Binary", "type": "int", "operator": "*", "operands": [6, 7], "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 9, "kind": "Symbol", "type": "int", "symbol": 2, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 10, "kind": "Literal", "type": "int", "value": "1", "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 11, "kind": "Binary", "type": "int", "operator": "-", "operands": [9, 10], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "statements": [
+    { "id": 0, "kind": "LocalDeclaration", "symbol": 2, "initializerExpression": 2, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 1, "kind": "Return", "valueExpression": 8, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 2, "kind": "Block", "children": [1], "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 3, "kind": "If", "conditionExpression": 5, "thenStatement": 2, "elseStatement": null, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 4, "kind": "Return", "valueExpression": 11, "span": { "section": "input.as", "offset": 0, "length": 1 } },
+    { "id": 5, "kind": "Block", "children": [0, 3, 4], "span": { "section": "input.as", "offset": 0, "length": 1 } }
+  ],
+  "rootStatement": 5
+}

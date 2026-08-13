@@ -1,0 +1,12 @@
+function void SemanticExternalInit(UReceiver Receiver) external_implicit_this
+header traits=2097152 invocation=Global receiver=ExplicitParameterAlias receiverSymbol=S0 receiverParameter=0 receiverType=UReceiver compileOut=CompileCalls hiddenArgument=-1 determinesOutputType=-1 returnsOnStack=false suspend=false cleanup=false
+root=T1
+symbols:
+  S0 kind=Parameter name=Receiver type=UReceiver span=input.as@0+1
+expressions:
+  E0 kind=Symbol type=UReceiver symbol=S0 span=input.as@0+1
+  E1 kind=Literal type=int value=7 span=input.as@0+1
+  E2 kind=Unsupported type=void category=UnsupportedPropertyWrite operands=[E0,E1] span=input.as@0+1
+statements:
+  T0 kind=Expression expression=E2 span=input.as@0+1
+  T1 kind=Block children=[T0] span=input.as@0+1

@@ -1,0 +1,15 @@
+function int SemanticCallOrder()
+header traits=0 invocation=Global receiver=None receiverSymbol=none receiverParameter=-1 receiverType=none compileOut=CompileCalls hiddenArgument=-1 determinesOutputType=-1 returnsOnStack=false suspend=false cleanup=false
+root=T1
+symbols:
+expressions:
+  E0 kind=Literal type=int value=1 span=input.as@0+1
+  E1 kind=ResolvedCall type=int targetKind=ScriptFunction target=int Step(int Id) formal=[F0=E0:SourcePositional] evaluation=[Argument(F0)=E0] exception=MaySetScriptException span=input.as@0+1
+  E2 kind=Literal type=int value=2 span=input.as@0+1
+  E3 kind=ResolvedCall type=int targetKind=ScriptFunction target=int Step(int Id) formal=[F0=E2:SourcePositional] evaluation=[Argument(F0)=E2] exception=MaySetScriptException span=input.as@0+1
+  E4 kind=Literal type=int value=3 span=input.as@0+1
+  E5 kind=ResolvedCall type=int targetKind=ScriptFunction target=int Step(int Id) formal=[F0=E4:SourcePositional] evaluation=[Argument(F0)=E4] exception=MaySetScriptException span=input.as@0+1
+  E6 kind=ResolvedCall type=int targetKind=ScriptFunction target=int Collect(int A, int B, int C) formal=[F0=E1:SourcePositional,F1=E3:SourcePositional,F2=E5:SourcePositional] evaluation=[Argument(F2)=E5,Argument(F1)=E3,Argument(F0)=E1] exception=MaySetScriptException span=input.as@0+1
+statements:
+  T0 kind=Return value=E6 span=input.as@0+1
+  T1 kind=Block children=[T0] span=input.as@0+1
