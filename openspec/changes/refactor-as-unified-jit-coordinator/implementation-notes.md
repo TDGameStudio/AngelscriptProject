@@ -142,3 +142,31 @@ A mixed reflected/raw-type TDD probe also demonstrated that a coarse Engine-wide
 - Final Runtime contract prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.RuntimeJIT.Coordinator.Contract" -Label runtime-jit-contract-review-green -TimeoutMs 900000` — `9/9 PASS`, exit code 0, 53.076 seconds.
 - Independent post-fix review — `READY TO COMMIT`; all five scoped Group 4 ABI/session findings were verified closed with no new concrete blocker.
 - Plugin milestone commit: `cb0469f [RuntimeJIT] Feat: define backend session contract`.
+
+## 2026-08-14: Immutable Runtime JIT snapshots completed
+
+- Added `FAngelscriptRuntimeJITCompileSnapshot`, an owning Engine-thread capture object whose worker view contains copied header values, bytecode, scalar frame descriptors, instruction boundaries, control-flow edges, ordered helper/reference tokens, hashes, and diagnostic strings. Worker-visible state retains no `asIScriptFunction`, `asCScriptFunction`, module, UObject, UFunction, source AST, typed HIR, or raw fork-trait storage.
+- Capture normalizes Global, ScriptMethod, Mixin, and external-implicit-this invocation shapes. External implicit receivers retain declared parameter zero and mark it as a receiver alias; scalar Runtime compilation rejects that receiver before concrete backend invocation and remains on VM fallback.
+- Frame capture converts parameters, results, and compiler local-frame coordinates into explicit scalar layout descriptors. Reused compiler debug records for one identical physical local slot are canonicalized on the Engine thread, while conflicting layouts and all malformed externally supplied overlaps fail closed.
+- Bytecode capture uses the maintained fork's opcode metadata to copy and validate the complete instruction stream and CFG. Legacy `JitEntry` pointer payloads are zeroed; unsupported pointer/reference operands fail capture closed.
+- `CALL`, `CALLINTF`, `CALLBND`, `CALLSYS`, `Thiscall1`, and `FuncPtr` operands are resolved synchronously while Engine/module state is alive. Engine-local IDs and function pointers are replaced in copied bytecode by encounter-order token slots with stable ScriptFunction/SystemFunction identity and expected ABI hashes.
+- Function revision hashes cover stable function identity, execution content, Entry ABI, profile, canonicalized bytecode, frame layout, instruction boundaries, CFG, and helper-token sequence. Runtime backend ABI revision is now `2`; the independent VM Entry ABI revision remains `1`.
+- The queued-discard regression moves only the owning snapshot into background work, destroys the script module before releasing the worker, and proves the backend reads copied state without dereferencing released Engine data.
+
+### Review findings and closure
+
+- The first review reopened the milestone for three Important gaps: legal reused local slots were emitted as overlapping descriptors; Engine capture rejected every reference-bearing opcode rather than producing ordered stable tokens; and the exported snapshot/validation layout changed while Runtime backend ABI still advertised revision `1`. Each gap received focused RED evidence and was closed before the first milestone commit.
+- A second review found incomplete proof for the mandatory pre-backend rejection matrix. The final test submits truncated bytecode, invalid CFG, overlapping frame layout, unknown invocation, unknown receiver, unknown profile, Entry ABI mismatch, and a real captured external-implicit-this snapshot through `FAngelscriptRuntimeJITBackendSessionOwner`. A valid control invokes the fake backend exactly once; every rejection leaves that count unchanged.
+- Controller review also found that pointer-bearing token operands were narrowed from `asPWORD` to `uint32` during validation. On Win64, `0x0000000100000000` could therefore masquerade as token slot zero. A `CALLSYS` regression reproduced the bug (`0/1 PASS`) before production changed; validation now compares pointer operands at full width and the exact test is `1/1 PASS`.
+- Final independent review of `4509229..1049a9f` returned `READY` with no Critical or Important finding. Two non-blocking items remain for final diagnostics/audit: broader dynamic fixtures for the other function-reference opcode paths, and finer top-level capture diagnostic mapping when the detailed validation result already carries the exact code.
+
+### Verification evidence
+
+- First complete snapshot implementation commit: `4509229 [RuntimeJIT] Feat: add immutable compile snapshots`.
+- Final review-repair commit: `1049a9f [RuntimeJIT] Fix: harden snapshot rejection validation`.
+- Final incremental build: `Tools\RunBuild.ps1 -Label runtime-jit-rejection-matrix-build -TimeoutMs 1800000 -NoXGE` — PASS, exit code `0`, 4 actions in 15.2 seconds.
+- Exact full-width pointer-slot TDD cycle: label `runtime-jit-pointer-slot-red` — `0/1 PASS` before the fix; label `runtime-jit-pointer-slot-green` — `1/1 PASS` after the fix.
+- Focused pre-backend rejection methods: label `runtime-jit-rejection-matrix-focused` — `2/2 PASS`, exit code `0`.
+- Complete Snapshot prefix: label `runtime-jit-snapshot-review-green` — `9/9 PASS`, `0` failed, `0` skipped, exit code `0`.
+- Complete Contract prefix: label `runtime-jit-contract-review-green` — `9/9 PASS`, `0` failed, `0` skipped, exit code `0`.
+- `git diff --check` and strict OpenSpec validation passed before the parent milestone commit.
