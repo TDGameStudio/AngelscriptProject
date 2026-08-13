@@ -115,3 +115,30 @@ A mixed reflected/raw-type TDD probe also demonstrated that a coarse Engine-wide
 - `openspec validate refactor-as-unified-jit-coordinator --strict` — PASS after the milestone record was synchronized.
 - Independent post-fix review — `READY TO COMMIT`; all seven reopened lifecycle/contract findings were verified closed, with no new Critical, Important, or Minor concrete issue.
 - Plugin milestone commit: `56c51fb [StaticJIT] Feat: isolate generation engine snapshots`.
+
+## 2026-08-13: Runtime JIT backend contract completed
+
+- Added the exported current-revision `JIT/AngelscriptRuntimeJITBackend.h` contract. Runtime BackendId uses fixed 64-byte lowercase ASCII storage and is intentionally type-distinct from Static BackendId.
+- Factory metadata reports copied stable ID/display name, supported platform/configuration masks, ABI revision, and serialized/concurrent per-session capability. Modular Feature discovery validates metadata before selection, rejects duplicate IDs deterministically, and never retains the factory's transient metadata strings.
+- The compile snapshot ABI already reserves the complete first-slice boundary: stable module/function/revision/Entry ABI, Engine namespace, target shape, normalized invocation/receiver/profile, bytecode, scalar frame values, verified instruction/control-flow tables, and ordered helper tokens. Group 5 will implement authoritative Engine-thread capture and deeper structural validation against this current-revision view.
+- One `FAngelscriptRuntimeJITBackendSessionOwner` wraps one selected session for one Engine namespace. It rejects cross-Engine or malformed snapshots before backend invocation and honors `SerializedPerSession` versus `ConcurrentPerSession` with an owner-side lock.
+- Compile results use explicit `Compiled`, `Unsupported`, `Cancelled`, `Stale`, `BackendFailure`, and `InvalidInput` outcomes plus stable diagnostic reasons. A compiled result requires a matching revision/Entry ABI, one VMEntry, nonzero code size, and a valid code lease; non-compiled results cannot smuggle executable entries or leases.
+- `FAngelscriptRuntimeJITCodeLease` adopts a validated release callback into a thread-safe shared owner. Unpublished results, replacements, active readers, and future-held results release the backend resource exactly once when their final reference exits.
+
+### TDD and compatibility findings
+
+- The intended RED build failed first on the absent `JIT/AngelscriptRuntimeJITBackend.h`. Adding a new test directory also changed unity shard composition and exposed an existing hidden include dependency: `AngelscriptJITExecutionContextTests.cpp` used `ASTEST_AS_ANSI` without directly including `Shared/AngelscriptTestMacros.h`. The direct include was added; no test behavior changed.
+- The first focused run was `5/6`; the fake session snapshot carried Engine namespace `17` while the owner was created for `71`. Production correctly returned `InvalidInput` before invoking the backend. The fixture now explicitly aligns its namespace and retains a separate invalid-bytecode assertion.
+- The first concurrency/lifetime extension was `6/7`; a `TFuture` still retained each returned shared code lease after the local result reset, so the expected release count remained zero. Moving futures into a nested scope proved the intended active-reader lifetime: resources stay live while the future retains them and release exactly once after the final owner exits.
+- A blocking fake compile with two worker calls observes maximum concurrency `1` for serialized sessions and at least `2` for concurrent sessions. No concrete MIR or LLVM backend participates.
+- Independent review then tightened five fail-closed boundaries before commit: typed outcome/reason/bytecode-offset compatibility; exact session BackendId/Engine/platform/configuration matching; per-element `StructSize` validation with element indices; duplicate-ID detection before unique-candidate metadata validation; and cancellation that remains callable while a serialized compile holds the compile-only mutex. Dedicated malformed-result, wrong-target, malformed-element, valid-plus-invalid duplicate, and blocking-compile cancellation regressions cover each finding.
+
+### Verification evidence
+
+- Initial full unity rebuild after adding RuntimeJIT directories: `Tools\RunBuild.ps1 -Label runtime-jit-contract-green-1 -TimeoutMs 1800000 -NoXGE` — PASS, 173 actions, 127.522 seconds.
+- Final incremental build: `Tools\RunBuild.ps1 -Label runtime-jit-contract-final -TimeoutMs 1800000 -NoXGE` — PASS, 4 actions, 13.81 seconds.
+- Pre-review Runtime contract prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.RuntimeJIT.Coordinator.Contract" -Label runtime-jit-contract-final -TimeoutMs 900000` — `7/7 PASS`, exit code 0, 52.289 seconds.
+- Post-review incremental build: `Tools\RunBuild.ps1 -Label runtime-jit-contract-review-green -TimeoutMs 1800000 -NoXGE` — PASS, 8 actions, 13.82 seconds.
+- Final Runtime contract prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.RuntimeJIT.Coordinator.Contract" -Label runtime-jit-contract-review-green -TimeoutMs 900000` — `9/9 PASS`, exit code 0, 53.076 seconds.
+- Independent post-fix review — `READY TO COMMIT`; all five scoped Group 4 ABI/session findings were verified closed with no new concrete blocker.
+- Plugin milestone commit: `cb0469f [RuntimeJIT] Feat: define backend session contract`.

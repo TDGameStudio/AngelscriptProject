@@ -27,12 +27,12 @@
 
 ## 4. Define The Backend-Neutral Runtime JIT Contract
 
-- [ ] 4.1 <!-- TDD --> Add failing ABI/layout tests for Runtime BackendId, factory metadata, compile snapshot headers, typed outcomes, and code-lease ownership, including invalid size/revision/count/pointer/platform cases.
-- [ ] 4.2 <!-- TDD --> Add a fake Runtime factory/session that can succeed, block, cancel, fail, report unsupported, return stale revisions, and expose code-lifetime counters without MIR or LLVM.
-- [ ] 4.3 <!-- TDD --> Implement `FAngelscriptRuntimeJITBackendId`, current factory ABI metadata, modular-feature discovery, deterministic duplicate rejection, and copied validated factory snapshots.
-- [ ] 4.4 <!-- TDD --> Implement one selected Runtime backend session per AngelScript Engine, including serialized/concurrent capability handling and teardown ordering.
-- [ ] 4.5 <!-- TDD --> Define supported/unsupported/failure/cancel/stale outcomes and stable diagnostic reasons without exposing concrete backend types in `AngelscriptRuntime`.
-- [ ] 4.6 <!-- TDD --> Implement `FAngelscriptRuntimeJITCodeLease` and prove unpublished, replaced, active, and teardown resources release exactly once.
+- [x] 4.1 <!-- TDD --> Add failing ABI/layout tests for Runtime BackendId, factory metadata, compile snapshot headers, typed outcomes, and code-lease ownership, including invalid size/revision/count/pointer/platform cases.
+- [x] 4.2 <!-- TDD --> Add a fake Runtime factory/session that can succeed, block, cancel, fail, report unsupported, return stale revisions, and expose code-lifetime counters without MIR or LLVM.
+- [x] 4.3 <!-- TDD --> Implement `FAngelscriptRuntimeJITBackendId`, current factory ABI metadata, modular-feature discovery, deterministic duplicate rejection, and copied validated factory snapshots.
+- [x] 4.4 <!-- TDD --> Implement one selected Runtime backend session per AngelScript Engine, including serialized/concurrent capability handling and teardown ordering.
+- [x] 4.5 <!-- TDD --> Define supported/unsupported/failure/cancel/stale outcomes and stable diagnostic reasons without exposing concrete backend types in `AngelscriptRuntime`.
+- [x] 4.6 <!-- TDD --> Implement `FAngelscriptRuntimeJITCodeLease` and prove unpublished, replaced, active, and teardown resources release exactly once.
 
 ## 5. Build Runtime Snapshots And The Request State Machine
 

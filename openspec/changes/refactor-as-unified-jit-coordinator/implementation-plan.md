@@ -89,6 +89,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 
 ## Milestone D: Runtime Contract, Snapshots And Policies
 
+Runtime contract group 4 completed and verified on 2026-08-13. The exported current-revision factory/session ABI, fixed-storage BackendId, copied deterministic Modular Feature selection, typed results/reasons, serialized/concurrent per-Engine session owner, and shared executable code lease are implemented with a fake backend only. Snapshot capture, request coalescing, publication policies, and coordinator attachment remain the next work; no MIR/LLVM implementation or real execution route is enabled by this contract milestone.
+
 1. Add ABI/layout/configuration tests and the fake Runtime factory/session.
 2. Implement factory metadata validation, deterministic duplicate rejection, one selected session per Engine, typed outcomes, and code leases.
 3. Add owned bytecode/frame/control-flow/profile snapshot validation and module-discard safety.
