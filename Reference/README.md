@@ -22,6 +22,14 @@
 | Tencent puerts | 使用 `Tools\PullReference\PullReference.bat puerts` 默认拉取到当前项目的 `Reference\puerts`；GitHub `https://github.com/Tencent/puerts.git`；SSH `git@github.com:Tencent/puerts.git`；用于参考 TypeScript/JavaScript 脚本运行时、声明生成和多后端工程组织 |
 | Tencent sluaunreal | 使用 `Tools\PullReference\PullReference.bat sluaunreal` 默认拉取到当前项目的 `Reference\sluaunreal`；GitHub `https://github.com/Tencent/sluaunreal.git`；SSH `git@github.com:Tencent/sluaunreal.git`；用于参考另一套成熟 Lua 方案的静态导出、性能取舍和热更新工作流 |
 | Blender MCP | 使用 `Tools\PullReference\PullReference.bat blendermcp` 默认拉取到当前项目的 `Reference\blender_mcp`；Blender Forge `https://projects.blender.org/lab/blender_mcp.git`；无 SSH 地址；用于参考 Blender 官方 MCP Server 实现、MCP 协议接入方式和工具链集成模式 |
+| Angelsea | 使用 `git clone --recurse-submodules https://github.com/asumagic/angelsea.git Reference\angelsea` 拉取；SSH `git@github.com:asumagic/angelsea.git`；C++20、BSD-2-Clause、alpha 阶段的 AngelScript JIT compiler，用于参考 `asIJITCompilerV2`、bytecode-to-C、MIR、lazy/async JIT 与解释器回退策略；仅为次级研究源 |
+| Daslang / daScript | 使用 `git clone --recurse-submodules https://github.com/GaijinEntertainment/daScript.git Reference\daScript` 拉取；SSH `git@github.com:GaijinEntertainment/daScript.git`；BSD-3-Clause 的高性能游戏脚本语言，用于横向参考 C++ 零拷贝互操作、tree interpreter、AOT-to-C++、LLVM JIT、hot reload、semantic hashing、宏系统和 compiler-backed MCP |
+| Cython | 使用 `git clone --depth 1 --recurse-submodules https://github.com/cython/cython.git Reference\Cython` 拉取研究快照；SSH `git@github.com:cython/cython.git`；Apache-2.0，用于优先研究 typed AST、declaration/expression/type analysis、C/C++ emitter、temporary cleanup、引用生命周期与异常 lowering |
+| Numba | 使用 `git clone --depth 1 --recurse-submodules https://github.com/numba/numba.git Reference\numba` 拉取研究快照；SSH `git@github.com:numba/numba.git`；BSD-2-Clause，用于优先研究 bytecode → untyped/typed IR → LLVM、specialization、typed rewrite、native lowering 与 object cache |
+| Luau | 使用 `git clone --depth 1 --recurse-submodules https://github.com/luau-lang/luau.git Reference\luau` 拉取研究快照；SSH `git@github.com:luau-lang/luau.git`；MIT，用于优先研究 bytecode native codegen、bytecode type analysis、guard、fallback block、VM exit 与 x64/A64 code lifecycle |
+| GenericMessagePlugin | 使用 `git clone --recurse-submodules https://github.com/wangjieest/GenericMessagePlugin.git Reference\GenericMessagePlugin` 拉取；SSH `git@github.com:wangjieest/GenericMessagePlugin.git`；Apache-2.0 的 UE message bus，用于参考跨 C++、Blueprint、AngelScript 与其他脚本后端的消息签名、类型校验、代码生成和编辑器工作流 |
+| GenericStorages | 使用 `git clone --recurse-submodules https://github.com/UnrealBytes/GenericStorages.git Reference\GenericStorages` 拉取；SSH `git@github.com:UnrealBytes/GenericStorages.git`；MIT 的 UE 通用工具插件，用于低优先级参考 registry/storage/singleton/subsystem、编辑器 picker、平台持久化与 S3 helper |
+| UECling | 使用 `git clone --recurse-submodules https://github.com/Evianaive/UECling.git Reference\UECling` 拉取；SSH `git@github.com:Evianaive/UECling.git`；在 Unreal 中集成 Cling/CppInterOp 的运行时 C++ 解释器插件，用于低优先级参考 interpreter pool、REPL/notebook、Blueprint C++ script node、脚本生成类与语义信息；上游无仓库级 LICENSE，采用前必须单独审查 |
 | TiddlyWiki document migration sources | 通过 `itonnote-theme`、`itonnote-plugin`、`tiddlyseq`、`tw-command-palette`、`tiddlywiki-plugins`、`tiddlywiki-codemirror-6` 键拉取到 `Reference\tiddlywiki-*`；全部使用 SSH 并固定审计提交；用于 `Wiki/` 的 itonnote 主题迁移、document 插件决策和本地源码核查。运行时选中的外部插件源码已导入 `Wiki/src/`，由 Wiki 主仓库跟踪；Reference 只用于分析和复核。 |
 | TW Icons catalogue snapshot | 位于 `Reference\tw-icons`；GitHub `https://github.com/morosanuae/tw-icons.git`；固定提交 `d4a58efeddaa683af69fba1a43717a16e4f0d2ca`（`v1.10`）；一个约 56 MiB 的单文件 TiddlyWiki 图标目录快照。仅用于离线查找、审计和手动挑选极少量图标；最低优先级、非运行时依赖，严禁整库导入 `Wiki/`，单个图标采用前还须复核其所属上游图标库许可证。 |
 | Kookma TW5 plugin sources | 位于 `Reference\kookma\`；以 `git@github.com:kookma/<repo>.git` 独立 SSH 克隆可访问的 Kookma 插件和扩展源码，并保留 `TW-PluginLibrary` 的完整封装目录快照；用于 AngelScript Wiki 的 WikiText、宏、组件、样式和作者工作流二次开发研究。非运行时依赖，日常构建不会读取或联网更新。详见 `Reference\kookma\README.md`。 |
@@ -219,6 +227,136 @@
 - 这些仓库对应 `AngelScriptCodeGeneratorResearch.md` 的调研结论：Fuzzilli 优先级最高；Grammarinator 不能替代有类型的正例生成器；Csmith/YARPGen 仅借鉴生成约束与 oracle；C-Reduce 仅借鉴 reducer 闭环。
 - 它们全部只用于离线设计、实现对照和失败分析，不是 Angelscript 插件的运行时或构建依赖；不应由日常构建自动 fetch。需要固定某次调研基线时，在相关 OpenSpec / 研究记录中记录具体 SHA。
 
+### 16. Angelsea
+
+- 默认路径：当前项目的 `Reference\angelsea`
+- GitHub：`https://github.com/asumagic/angelsea.git`
+- SSH：`git@github.com:asumagic/angelsea.git`
+- 拉取命令：`git clone --recurse-submodules https://github.com/asumagic/angelsea.git Reference\angelsea`
+- 分支与本次初始快照：跟随 `main`；2026-08-12 拉取时为 `1d367d431cdfd7e5e51b2341312078fd40cc10a4`。
+- 许可证与成熟度：Angelsea 本体为 BSD-2-Clause；上游明确标记为 alpha quality，依赖 AngelScript 2.37.0+ 与其下游 MIR fork。
+- 重点目录：
+  - `Reference\angelsea\include\`：公共 JIT API 与配置。
+  - `Reference\angelsea\src\`：AngelScript bytecode-to-C、MIR codegen、lazy/async compilation 与 VM fallback 实现。
+  - `Reference\angelsea\tests\`：JIT 语义、配置与 benchmark 覆盖。
+  - `Reference\angelsea\vendor\`：上游锁定的 AngelScript、fmt 与 MIR 子模块；测试依赖另见 `tests\vendor\`。
+- 用途与优先级：只在研究 `asIJITCompilerV2`、跨平台 runtime JIT、bytecode-to-C、MIR、lazy/async 编译或解释器回退策略时作为**次级横向参考**。当前项目的 StaticJIT、UE 生命周期与平台约束、maintained AngelScript fork 以及相应测试始终是实现和兼容性判断的首要依据。
+- 边界：它不是当前插件的运行时或构建依赖，不直接替换 UE-coupled StaticJIT，也不得因参考其 AngelScript 2.37+ API 而绕过本项目的 2.33 WIP + selective 2.38 backport fork strategy。
+
+### 17. Daslang / daScript
+
+- 默认路径：当前项目的 `Reference\daScript`
+- GitHub：`https://github.com/GaijinEntertainment/daScript.git`
+- SSH：`git@github.com:GaijinEntertainment/daScript.git`
+- 拉取命令：`git clone --recurse-submodules https://github.com/GaijinEntertainment/daScript.git Reference\daScript`
+- 分支与本次初始快照：跟随 `master`；2026-08-12 拉取时为 `ae21253fea2b8184f81c00013f2684c98c31174d`。
+- 许可证与依赖形态：Daslang 本体为 BSD-3-Clause；当前 checkout 的 `.gitmodules` 为空，第三方源码直接保留在 `3rdparty\` 等目录中。
+- 重点目录：
+  - `Reference\daScript\include\` 与 `src\`：语言 runtime、compiler、interpreter 和 C++ embedding surface。
+  - `Reference\daScript\doc\source\reference\embedding\`：C/C++ 嵌入、外部模块和 AOT 工作流。
+  - `Reference\daScript\modules\dasLLVM\`：LLVM JIT、缓存与跨目标 codegen。
+  - `Reference\daScript\tree-sitter-daslang\` 与 `utils\mcp\`：结构化语法工具和 compiler-backed MCP server。
+  - `Reference\daScript\tests\`、`tests-cpp\` 与 `dastest\`：语言和 runtime 验证组织。
+- 用途与优先级：用于横向比较游戏脚本语言的 C++ 数据布局/低开销互操作、tree interpreter、AOT-to-C++、LLVM JIT、hot reload、semantic hashing、compile-time macros、包管理与编译器工具暴露。它是**跨语言次级架构参考**，可启发 standalone、StaticJIT、codegen 或 IDE/tooling 设计，但不能作为 AngelScript 语义、ABI、fork backport 或 UE 集成行为的依据。
+- 边界：不是本项目的运行时、编译时或发布依赖；不得把 Daslang 语言设计直接投射成 AngelScript 能力，也不得绕过当前插件的 maintained fork、UE lifecycle 和测试基线。
+
+### 18. Cython
+
+- 默认路径：当前项目的 `Reference\Cython`
+- GitHub：`https://github.com/cython/cython.git`
+- SSH：`git@github.com:cython/cython.git`
+- 拉取命令：`git clone --depth 1 --recurse-submodules https://github.com/cython/cython.git Reference\Cython`
+- 分支与本次研究快照：`master`；2026-08-12 为 `86b94cef002aa23aea0b390335ea3d9e9b62c19e`。
+- 许可证与仓库形态：Apache-2.0；本轮使用浅克隆，只保留当前研究所需源码，不作为构建依赖。
+- 重点目录：
+  - `Cython\Compiler\Pipeline.py`：parse、declaration、control-flow、expression/type analysis、typed transform 与 codegen stage。
+  - `Cython\Compiler\Nodes.py`、`ExprNodes.py`：statement/expression AST、resolved type、coercion、temporary 和 codegen 行为。
+  - `Cython\Compiler\ModuleNode.py`、`Code.py`：C/C++ module emitter、writer、异常和 cleanup 生成。
+  - `docs\src\devguide\` 与 `docs\src\userguide\`：compiler internals、C/C++ compilation、对象生命周期和异常契约。
+- 用途与优先级：这是 typed semantic HIR → C++ Static AOT emitter 的**第一梯队近邻参考**。优先研究 frontend 已解析语义如何直接驱动 C/C++ codegen，以及类型、coercion、temporary cleanup、引用计数和 error path 如何显式 lowering。
+- 边界：不得照搬 CPython C API、GIL、引用计数、extension-module ABI 或表达式级 object-mode slow path；AngelScript/UE ABI、GC 和 dispatch 仍以当前插件为准。
+
+### 19. Numba
+
+- 默认路径：当前项目的 `Reference\numba`
+- GitHub：`https://github.com/numba/numba.git`
+- SSH：`git@github.com:numba/numba.git`
+- 拉取命令：`git clone --depth 1 --recurse-submodules https://github.com/numba/numba.git Reference\numba`
+- 分支与本次研究快照：`main`；2026-08-12 为 `43b83d9a0ea3c07108cb73484fcbcc5284615958`。
+- 许可证与仓库形态：BSD-2-Clause；本轮使用浅克隆，只作 compiler pipeline 离线研究。
+- 重点目录：
+  - `numba\core\compiler.py`：untyped、typed、lowering pipeline 组合。
+  - `numba\core\untyped_passes.py`、`typed_passes.py`：bytecode/IR analysis、type inference、typed rewrite、IR legalization。
+  - `numba\core\lowering.py`、`codegen.py`：typed IR → LLVM 与 executable materialization。
+  - `numba\core\caching.py`：signature、target、bytecode/closure identity 和 serialized object cache。
+- 用途与优先级：这是 future structured HIR → typed CFG/SSA → LLVM 分层、specialization key、typed pass 和 native cache 的**第一梯队参考**。它不证明当前 Static AOT 必须从 bytecode 起步；Numba 的 bytecode boundary 来自 CPython 输入模型。
+- 边界：不引入 Python object mode、NumPy 特定优化、CPython ABI 或 Numba runtime；只借鉴 pass boundary、typed IR contract、cache identity 和错误/回退可观察性。
+
+### 20. Luau
+
+- 默认路径：当前项目的 `Reference\luau`
+- GitHub：`https://github.com/luau-lang/luau.git`
+- SSH：`git@github.com:luau-lang/luau.git`
+- 拉取命令：`git clone --depth 1 --recurse-submodules https://github.com/luau-lang/luau.git Reference\luau`
+- 分支与本次研究快照：`master`；2026-08-12 为 `ca128af4c531310d6f5c1b354df4b79fdd782ede`。
+- 许可证与仓库形态：MIT；本轮使用浅克隆，仓库不作为 Runtime 或发布依赖。
+- 重点目录：
+  - `CodeGen\src\IrBuilder.cpp`、`BytecodeAnalysis.cpp`：从 `Proto` bytecode 重建 CFG、读取 type info 并建立 native IR。
+  - `CodeGen\src\IrTranslation.cpp`：instruction lowering、type guard、fallback block 和 `vmExit(pc)`。
+  - `CodeGen\src\IrLoweringX64.cpp`、`IrLoweringA64.cpp`：architecture-specific lowering。
+  - `CodeGen\src\CodeGenContext.cpp`：native code allocation、entry/metadata 安装、销毁和 VM handoff。
+- 用途与优先级：这是 Angelsea/LLVM Runtime JIT 的**第一梯队 bytecode-native 参考**，重点用于 VM exit、guard、fallback、code lifecycle 和多架构 backend；不用于证明 typed semantic Static AOT 应放弃 source HIR。
+- 边界：Luau 的渐进类型、Lua object model、VM register layout、GC 和 native ABI 都不可直接移植；任何结论必须映射回 AngelScript bytecode、context、GC 和 UE 平台约束。
+
+### 21. GenericMessagePlugin
+
+- 默认路径：当前项目的 `Reference\GenericMessagePlugin`
+- GitHub：`https://github.com/wangjieest/GenericMessagePlugin.git`
+- SSH：`git@github.com:wangjieest/GenericMessagePlugin.git`
+- 拉取命令：`git clone --recurse-submodules https://github.com/wangjieest/GenericMessagePlugin.git Reference\GenericMessagePlugin`
+- 分支与本次初始快照：跟随 `main`；2026-08-12 拉取时为 `85283fbec0edba1a04c1cff8181455c5d97ba60a`。
+- 许可证与仓库形态：Apache-2.0；当前没有 Git submodule。实际插件位于 `Reference\GenericMessagePlugin\Plugins\GMP\`。
+- 重点目录：
+  - `Plugins\GMP\Source\GMP\`：Runtime key/message、signature、storage、request/response、serialization 与 script bridge 基础。
+  - `Plugins\GMP\Source\GMPEditor\GMPEditor\`：K2 message nodes、签名索引、脚本 codegen 与编辑器集成。
+  - `GMPEditor\Private\GMPAngelScriptCodeGen.*`：从消息签名表生成强类型 `Script\GMPMessages.as` 声明的 AngelScript 专项实现。
+  - `docs\` 与 `wiki\`：dispatch layer、parameter compatibility、transparent rewrite、jump tracing 等设计说明。
+- 用途与优先级：当研究 UE 内跨 C++、Blueprint、AngelScript、UnLua/slua、Puerts 与 C# 的 key-based message bus，或研究签名收集、编辑期类型检查、K2 pin 生成、request/response、sticky/collection message、AS declaration codegen 和调用点追踪时，作为**专项次级参考**。AngelScript 接入结论仍须回到当前插件的 binding、preprocessor、codegen 和测试约定验证。
+- 边界：不是当前项目依赖，不直接复制为插件公共 API；其 MessageTags、可选脚本后端和第三方代码需分别审查模块边界、UE 5.7 兼容性及许可证后方可借鉴。
+
+### 22. GenericStorages
+
+- 默认路径：当前项目的 `Reference\GenericStorages`
+- GitHub：`https://github.com/UnrealBytes/GenericStorages.git`
+- SSH：`git@github.com:UnrealBytes/GenericStorages.git`
+- 拉取命令：`git clone --recurse-submodules https://github.com/UnrealBytes/GenericStorages.git Reference\GenericStorages`
+- 分支与本次初始快照：跟随 `master`；2026-08-12 拉取时为 `3291175f699fa836799006cf8d03c0db70548ab0`。
+- 许可证与仓库形态：MIT；当前没有 Git submodule。实际插件位于 `Reference\GenericStorages\GenericStorages\`，`.uplugin` 版本为 `0.9`，包含一个 `PreDefault` Runtime 模块。
+- 重点目录：
+  - `GenericStorages\Source\GenericStorages\Public\`：world/subsystem/class/object/member storage、generic singleton/system、deferred component、platform storage 等工具。
+  - `GenericStorages\Source\GenericStorages\Template\`：兼容层、property accessor、type-table 和 component/attribute helpers。
+  - `GenericStorages\Source\GenericStorages\Private\Editor\`：class/object/data-table/component picker 与 details customization。
+  - `GenericStorages\Source\GenericStorages\Classes\S3Helper.*`：S3 upload/download、断点续传与 Blueprint wrapper。
+- 用途与优先级：仅作为**低优先级工具类参考**，用于比较 UE registry/storage/singleton/subsystem 模板、延迟组件注册、编辑器 picker、移动端权限/deep-link、持久化 KV 与 S3 helper。它不提供 AngelScript 语义或插件集成基线；涉及类似能力时优先复用 UE 公共 API 和当前插件既有架构。
+- 边界：不是当前项目依赖；借鉴前须逐项审查其广泛 public include surface、Runtime 模块内的 editor 条件代码、平台分支、UE 版本兼容宏和安全敏感的凭据/网络处理。
+
+### 23. UECling
+
+- 默认路径：当前项目的 `Reference\UECling`
+- GitHub：`https://github.com/Evianaive/UECling.git`
+- SSH：`git@github.com:Evianaive/UECling.git`
+- 拉取命令：`git clone --recurse-submodules git@github.com:Evianaive/UECling.git Reference\UECling`
+- 分支与本次初始快照：跟随 `master`；2026-08-12 拉取时为 `1723959c48ae9316d229cdefece54daf47526427`。
+- 仓库形态：当前没有 Git submodule，也没有 README 或仓库级 LICENSE；工作副本约 159 MiB，并直接携带 LLVM/Clang 22 与 CppInterOp 头文件。其 `.tps` 仍是未声明真实第三方来源的 sample 文本，因此不能据此推断许可证或再分发权限。
+- 重点目录：
+  - `Source\ClingRuntime\`：CppInterOp interpreter wrapper/pool、PCH profile、语义信息、notebook、property bag 和运行时执行入口。
+  - `Source\ClingEditor\`：REPL/notebook 编辑器、C++ 语义高亮、Cling notebook/script Blueprint asset factory 与编辑器界面。
+  - `Source\ClingKismet\`：`Execute C++ Script` K2 节点、脚本 Blueprint compiler 与恢复代码生成。
+  - `Source\ThirdParty\ClingLibrary\`：Cling/CppInterOp 外部模块、LLVM/Clang 22 头文件和 Win64 library/runtime dependency 配置。
+  - `Content\`：运行 C++ script、数学和结构体交互的示例资产。
+- 用途与优先级：仅作为**低优先级横向参考**，用于研究 Unreal 内嵌增量 C++ interpreter、预热 interpreter pool、PCH/build-info 输入、REPL/notebook、Blueprint 动态参数、脚本生成类和编辑器语义信息。涉及当前项目的语言语义、StaticJIT、热重载、绑定、UObject 生命周期或产品能力时，仍以 Angelscript maintained fork、当前插件实现、Hazelight 参考和现有测试为准。
+- 边界：它不是当前项目的运行时、构建或发布依赖，不得直接复制或分发其源码、LLVM/Clang/CppInterOp 内容或示例资产；任何采用都必须先确认上游代码来源、第三方版本、许可证、UE 5.7/5.8 兼容性和平台支持。
+
 ## 如何选择参考源
 
 - AngelScript 语言或运行时本体问题，优先参考 `angelscript-v2.38.0`。
@@ -234,6 +372,14 @@
 - 需要参考 JavaScript / TypeScript 运行时、声明生成、脚本后端切换时，优先看 `puerts`。
 - 需要比较另一套 Lua 静态导出、性能优化与热更新工作流时，优先看 `sluaunreal`。
 - 需要参考 MCP 协议接入、MCP Server 实现方式或 DCC 工具链 MCP 暴露模式时，优先看 `blender_mcp`。
+- 需要研究 `asIJITCompilerV2`、bytecode-to-C、MIR、lazy/async runtime JIT 或解释器回退时，可查看 `angelsea`；涉及当前插件落地时仍优先依据本地 StaticJIT、UE 集成边界和 maintained fork。
+- 需要横向比较游戏脚本语言的 C++ 互操作、interpreter/AOT/JIT/hot-reload 分层、宏系统或 compiler-backed tooling 时，可查看 `daScript`；AngelScript 行为判断仍回到本项目和官方 AngelScript 参考源。
+- 需要研究 typed AST → C/C++ emitter、coercion、temporary cleanup 和异常 lowering 时，优先查看 `Cython`。
+- 需要研究 untyped/typed IR 分层、future CFG/SSA、LLVM lowering、specialization 或 object cache 时，优先查看 `numba`。
+- 需要研究 bytecode native codegen、type guard、fallback block、VM exit 或 x64/A64 code lifecycle 时，优先查看 `luau`。
+- 需要研究 UE 跨 C++、Blueprint、AngelScript 与其他脚本后端的消息签名、编辑期校验、AS codegen、K2 节点或调用追踪时，可查看 `GenericMessagePlugin`。
+- 需要参考通用 UE registry/storage/singleton/subsystem、picker、平台持久化或 S3 helper 时，最后再查看 `GenericStorages`，并优先评估 UE 原生能力和当前项目既有工具。
+- 需要横向研究 Unreal 内嵌 Cling/CppInterOp、运行时 C++ interpreter、REPL/notebook、Blueprint C++ script node 或预热 interpreter pool 时，可查看 `UECling`；实现判断仍回到当前插件边界，并先核对许可证和第三方来源。
 - 需要调整 AngelscriptWiki 的 itonnote 迁移主题或选定 document 插件时，优先看本节固定的本地 TiddlyWiki source；其中运行时版本以 `Wiki/src/` 和 `Wiki/external-plugins.json` 为准。
 
 ## 使用约束
@@ -249,6 +395,10 @@
 - 对于 `UnrealCSharp`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理。
 - 对于 `UnLua`、`puerts`、`sluaunreal`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理。
 - 对于 `blender_mcp`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；该仓库位于 Blender Forge（非 GitHub），仅支持 HTTPS clone。
+- 对于 `angelsea`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；首次 clone 必须递归初始化其固定子模块，后续更新时应同时核对主仓库 SHA 与 submodule 状态。
+- 对于 `daScript`、`GenericMessagePlugin` 与 `GenericStorages`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；即便当前某仓库没有活动 submodule，统一 clone 命令仍保留 `--recurse-submodules`，后续上游新增依赖时不留下空目录。
+- 对于 `Cython`、`numba` 与 `luau`，当前按 OpenSpec 研究所需保留浅克隆快照；更新前先在 `feature-as-typed-semantic-aot` 研究附件记录新 SHA 和结论变化。它们不由日常构建读取，也不自动联网更新。
+- 对于 `UECling`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；只作为本地研究副本，不由日常构建读取或自动更新。因为上游没有仓库级 LICENSE，任何实现借鉴或再分发之前必须先补齐代码来源和第三方许可证审查。
 - 对于 TiddlyWiki document migration sources，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理，并固定在上表列出的审计提交；日常构建不得自动 fetch 或更新它们。
 - 本地配置来源的参考仓库，使用前先读取 `AgentConfig.ini`，不要在通用文档或脚本中写死机器路径。
 - 当前本地配置来源包括：`HazelightAngelscriptEngineRoot`。
