@@ -62,9 +62,9 @@
 
 ## 8. Add Diagnostics, Documentation And Verification
 
-- [ ] 8.1 <!-- TDD --> Extend non-Shipping diagnostics with requested/actual Static BackendId, capture profile, Static fallback chain, execution mode, Runtime backend/policy, factory/session availability, actual tier, request/result state, latency, code size, and code-lease counts.
-- [ ] 8.2 <!-- TDD --> Preserve `as.StaticJIT.DumpDiagnostics` AOT behavior, add generic coordinator diagnostics, and extend state snapshots only through public observer surfaces.
-- [ ] 8.3 <!-- TDD --> Add compile/execution markers consumable by BytecodeJIT, TypedASTJIT, and Runtime backend tests without public AngelScript test hooks.
-- [ ] 8.4 <!-- Non-TDD --> Update Chinese StaticJIT/compiler/runtime architecture first, then English consumer guidance, with the independent Static/Runtime contracts, generation-only Engine, backend IDs, fallbacks, and five execution paths.
-- [ ] 8.5 <!-- Non-TDD --> Run strict OpenSpec validation, the canonical build, focused StaticJIT/RuntimeJIT/Native compiler prefixes, Standalone, and the configured All suite; record exact current results and dirty submodule/parent gitlink state.
-- [ ] 8.6 <!-- Non-TDD --> Freeze the Runtime ABI revision and fake-backend conformance harness consumed by the MIR/LLVM plugin changes; hand the Static contract to `feature-as-typed-semantic-aot` after groups 1-3 pass.
+- [x] 8.1 <!-- TDD --> Extend non-Shipping diagnostics with requested/actual Static BackendId, capture profile, Static fallback chain, execution mode, Runtime backend/policy, factory/session availability, actual tier, request/result state, latency, code size, and code-lease counts.
+- [x] 8.2 <!-- TDD --> Preserve `as.StaticJIT.DumpDiagnostics` AOT behavior, add generic coordinator diagnostics, and extend state snapshots only through public observer surfaces.
+- [x] 8.3 <!-- TDD --> Add compile/execution markers consumable by BytecodeJIT, TypedASTJIT, and Runtime backend tests without public AngelScript test hooks.
+- [x] 8.4 <!-- Non-TDD --> Update Chinese StaticJIT/compiler/runtime architecture first, then English consumer guidance, with the independent Static/Runtime contracts, generation-only Engine, backend IDs, fallbacks, and five execution paths.
+- [x] 8.5 <!-- Non-TDD --> Run strict OpenSpec validation, the canonical build, focused StaticJIT/RuntimeJIT/Native compiler prefixes, Standalone, and the configured All suite; record exact current results and dirty submodule/parent gitlink state.
+- [x] 8.6 <!-- Non-TDD --> Freeze the Runtime ABI revision and fake-backend conformance harness consumed by the MIR/LLVM plugin changes; hand the Static contract to `feature-as-typed-semantic-aot` after groups 1-3 pass.

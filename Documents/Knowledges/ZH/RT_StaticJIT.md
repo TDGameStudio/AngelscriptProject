@@ -1,18 +1,27 @@
-# RT_StaticJIT — Provider 化 StaticJIT 生命周期与模块生成
+# RT_StaticJIT — 统一 JIT 协调器、StaticJIT 与 Runtime JIT
 
 > **所属前缀**：RT_（运行时子系统）
-> **适用版本**：Unreal AngelScript 1.0.0，Provider ABI Revision 2
-> **关注范围**：StaticJIT 的 C++ 生成、Provider 注册、Engine 路由、Cache V2 协作、Editor/PIE 与 Live Coding、DLL 生命周期和诊断。
+> **适用版本**：Unreal AngelScript 1.0.0，Static Provider ABI Revision 2，Runtime Backend ABI Revision 2
+> **关注范围**：统一 JIT 协调器、StaticJIT 的 C++ 生成、可选 Runtime JIT、Provider/Backend 注册、Engine 路由、Cache V2 协作、Editor/PIE 与 Live Coding、DLL 生命周期和诊断。
 > **不再适用的旧概念**：`FJITDatabase`、`FStaticJITCompiledInfo::ActiveInfo`、按瞬时 FunctionId 注册、`DataGuid` 整盘配对、`PrecompiledScript.Cache` 与 `.jit.hpp` 成对加载。这些兼容路径已删除，不能再用来解释当前实现。
 
 ## 一句话理解
 
-当前 StaticJIT 可以理解成两半：
+当前 JIT 可以先理解成两个彼此独立的原生代码来源，再由每个 Engine
+自己的协调器统一选择：
 
-1. **生成侧**把已经编译成功的 AngelScript 函数翻译成普通 C++，并严格按“一个 AS 模块一个 `<源文件名>.<短模块键>.<TargetProfile>.jit.cpp`”落盘；
-2. **运行侧**由一个 UE 模块把编译进 DLL/EXE 的原生入口作为 Provider 发布，Engine 再用稳定模块键、稳定函数键、内容摘要、目标 Profile、原生环境和 ABI 逐函数匹配。完全一致才挂 Native binding；不一致就只让该函数走 VM。
+1. **StaticJIT / AOT**：生成侧把已经编译成功的 AngelScript 函数翻译成普通 C++，并严格按“一个 AS 模块一个 `<源文件名>.<短模块键>.<TargetProfile>.jit.cpp`”落盘；承载模块再把编进 DLL/EXE 的入口作为 Provider 发布。
+2. **Runtime JIT**：可选 backend 插件为每个 Engine 创建独立 session，消费不含 Engine 指针的只读字节码快照，返回当前函数版本专属的 `VMEntry + CodeLease`；结果只在版本仍完全一致时发布。
+
+每个 `asIScriptEngine` 只安装一个 `FAngelscriptJITCoordinator` 作为
+`asIJITCompiler`。`Auto` 模式逐函数按“精确 Static AOT → 已发布 Runtime
+JIT → VM”选择；两个 backend 体系不会互相替换 compiler，也不共用一个
+含糊的 backend 基类。
 
 所以这里虽然沿用 `StaticJIT` 名称，本质上是 **静态 AOT 代码生成 + 运行期稳定身份路由**，不是 LLVM、asmjit 那种运行时生成机器码的传统 JIT。
+Runtime JIT 才是运行进程内生成可执行代码的扩展点，但首版只支持保守的
+whole-function `VMEntry`，不生成 Raw/Parms 入口，也不进入 Cache V2 或
+Static Provider。
 
 ## 核心链路
 
@@ -40,6 +49,19 @@
          任一条件不匹配/引用无法解析/出现歧义 -> 该函数 VM
 ```
 
+可选 Runtime JIT 是另一条链：
+
+```text
+当前 Engine 的 verified function route
+  -> Coordinator 在 Engine 线程复制 immutable compile snapshot
+  -> 选定 Runtime factory 为该 Engine 创建 session
+  -> session 同步/后台/首次调用时编译
+  -> Coordinator 校验 BackendId、Engine namespace、函数 revision、
+     Entry ABI 与 cancellation generation
+  -> exact result 在 Engine safe point 发布 VMEntry + CodeLease
+  -> unsupported/stale/cancelled/backend failure 保持 VM
+```
+
 这里最重要的边界是：
 
 - `.as` 编译结果或 Cache V2 恢复结果始终是当前 Engine 的权威状态；
@@ -57,13 +79,106 @@
 | Provider ABI | `AngelscriptJITProvider.*` |
 | 多 Provider Registry | `AngelscriptJITProviderRegistry.*` |
 | Provider 与当前 Engine 路由匹配 | `AngelscriptJITProviderMatcher.*`、`AngelscriptJITProviderRouter.*` |
+| 每 Engine 唯一 JIT 协调器与 tier 选择 | `RuntimeJIT/AngelscriptJITCoordinator.*`、`AngelscriptJITConfiguration.*` |
+| Runtime backend 公共 ABI | `Public/JIT/AngelscriptRuntimeJITBackend.h` |
+| Runtime factory/session 发现 | `RuntimeJIT/AngelscriptRuntimeJITBackendRegistry.*` |
+| Runtime immutable snapshot | `RuntimeJIT/AngelscriptRuntimeJITSnapshot.*` |
+| Runtime 请求、取消和发布状态机 | `RuntimeJIT/AngelscriptRuntimeJITState.*` |
+| Runtime host 调用与代码租约 | `RuntimeJIT/AngelscriptRuntimeJITBindingContext.*` |
 | 稳定引用解析 | `AngelscriptJITReferenceResolver.*` |
 | binding 执行与生命周期 | `AngelscriptJITBindingContext.*`、`AngelscriptJITExecutionContext.*`、`AngelscriptJITProviderLifetime.h` |
-| 运行期诊断 | `StaticJITDiagnostics.*` |
+| 统一/Runtime 诊断 | `RuntimeJIT/AngelscriptJITDiagnostics.*` |
+| Static AOT 专用诊断 | `StaticJITDiagnostics.*` |
 | 项目生成/校验 Commandlet | `AngelscriptEditor/StaticJIT/AngelscriptJITProjectGeneration.*`、`AngelscriptJITCommandlet.*` |
 | Editor 显式刷新 | `AngelscriptEditor/StaticJIT/AngelscriptJITRefreshService.*` |
 | 项目 Provider 载体 | `Source/AngelscriptJIT/` |
 | 固定测试 Provider 载体 | `Plugins/Angelscript/Source/AngelscriptTestJIT/` |
+
+## 0. 统一协调器和两套独立 backend 契约
+
+### 0.1 为什么不能让每个 backend 自己安装 compiler
+
+maintained AngelScript fork 的一个 `asIScriptEngine` 同时只能持有一个
+`asIJITCompiler`。如果 StaticJIT、MIR 和 LLVM 插件都调用
+`SetJITCompiler()`，后加载的模块会覆盖先加载的模块，执行结果会依赖 UE
+模块加载顺序。
+
+现在只有 Engine 拥有的 `FAngelscriptJITCoordinator` 可以安装到
+`asIScriptEngine`。它接收 function-ready/release 回调，维护 Engine-local
+Runtime 请求状态，在 safe point 发布 binding，并和 Static Provider Router
+共同决定最终 tier。Static 字节码/Typed AST 生成器仍是一次生成任务里的
+普通同步对象，不再假装成 live Engine compiler。
+
+### 0.2 Static 与 Runtime 为什么必须分开
+
+| 维度 | Static backend | Runtime backend |
+|---|---|---|
+| 用途 | 构建期生成 C++ 和 Provider artifact | 进程内为一个 Engine 编译可执行入口 |
+| 契约可见性 | Runtime 模块私有 `IAngelscriptStaticJITBackend` | 导出的版本化 factory/session ABI |
+| 初始 BackendId | `bytecode`、`typed-ast` | 插件自有，例如 `angelsea-mir`、`angelsea-llvm` |
+| 输入 | 同步 complete source graph + 独立 emit set | 当前函数的 owned immutable bytecode snapshot |
+| 输出 | C++ body、稳定引用和逐函数实际 backend | whole-function `VMEntry`、诊断和 `CodeLease` |
+| 生命周期 | UBT 编译后随 Provider DLL/EXE | 随 Engine session、函数 revision 和 reader lease |
+| 持久化 | Provider artifact/manifest | 不进 Cache V2，不发布为 Provider，不落盘 |
+
+Static `typed-ast` 请求要求 generation Engine 已捕获 verified typed HIR；其
+逐函数后备链是 `typed-ast → bytecode → VM`。生成器的 pointer-free output
+记录 requested BackendId、capture profile、fallback chain，以及每个函数的
+actual BackendId/disposition 和按顺序保留的 backend attempt/reason，便于
+TypedASTJIT 和 BytecodeJIT 做一致性测试。
+
+### 0.3 generation-only Engine 做什么
+
+Static 生成不借用当前 Editor Engine，也不会创建第二套脚本 UObject。每次
+生成任务创建 `StaticJITGeneration` purpose 的临时 Engine：完整重放 sealed
+native Bind、编译完整 source graph、执行纯 descriptor/Entry Plan 分析，随后
+只把 emit set 中的模块交给 backend。
+
+这个 Engine 不安装普通 primary context、DebugServer、CodeCoverage、测试
+发现、热重载路由或全局 editor/package cache；不创建脚本 `UClass`、
+`UFunction`、CDO，也不做 reinstancing、redirect 或默认对象初始化。backend
+可在同步调用期间查看该任务的 Engine-local handle，但输出和异步工作只能
+保留稳定键、hash、声明、布局等 pointer-free 值。
+
+### 0.4 执行模式、Runtime 策略和五条执行路径
+
+执行模式：
+
+- `Auto`：精确 Static AOT 优先，其次已配置 Runtime JIT，最后 VM；
+- `VMOnly`：绕过两种原生 tier；
+- `StaticAOTOnly`：只允许 Static AOT，否则 VM；
+- `RuntimeOnly`：绕过 AOT，只尝试 Runtime JIT，否则 VM，主要用于差分测试和基准。
+
+Runtime 编译策略：
+
+- `EagerSync`：第一个 authoritative route-ready safe point 同步编译、校验并发布；
+- `EagerBackground`：先保留 VM，后台编译，结果只能在之后的 Engine safe point 发布；
+- `LazyFirstCall`：首次调用只负责 claim/编译，并继续走它已经保留的 VM；后续调用才能看到新入口。
+
+从实际调用入口看共有五条路径：
+
+1. 普通 AngelScript VM；
+2. Static AOT `VMEntry`，由 VM 调用生成的 C++；
+3. Static AOT `RawEntry`，满足原生 ABI 时直接调用；
+4. Static AOT `ParmsEntry`，由 `UASFunction`/反射参数块进入；
+5. Runtime JIT `VMEntry`，先经过 Runtime host trampoline 统计执行并保住 binding/code lease，再进入 backend 代码。
+
+首版 Runtime JIT 是 whole-function 加速器。只要函数包含不支持的调用、
+managed lifetime、对象 receiver、suspend/latent、exception cleanup，或 Entry
+ABI 不匹配，就整函数保持 VM。Debugger 或 CodeCoverage 需要字节码可见性
+时也只 gate Runtime tier；既有 Static AOT 调试语义不因此改变。
+
+进程配置项为：
+
+```text
+-as-jit-mode=auto|vm|aot|runtime
+-as-runtime-jit-backend=none|<backend-id>
+-as-runtime-jit-compile=eager-sync|eager-background|lazy-first-call
+```
+
+非法 execution mode 确定性退到 `VMOnly`。非法/未知 Runtime BackendId 或
+compile policy 只关闭该 Engine 的 Runtime 编译，不会清掉本来 exact 的
+Static AOT。
 
 ## 1. 为什么严格一个 AS 模块一个 `.jit.cpp`
 
@@ -458,7 +573,8 @@ python Tools\Diagnostics\InspectStaticJITDump.py <after.json> --fail-on-mismatch
 
 ## 7. DLL 加载、卸载和 Live Coding 旧镜像
 
-UE ModuleManager 仍然拥有 DLL 的主加载/卸载流程，StaticJIT 不自己 `LoadLibrary`/`FreeLibrary`。
+UE ModuleManager 仍然拥有 DLL 的主加载/卸载流程，StaticJIT 和 Runtime JIT
+都不自己 `LoadLibrary`/`FreeLibrary`。
 
 安全性由两层保证：
 
@@ -476,6 +592,26 @@ Provider 从新 Snapshot 消失
 ```
 
 Live Coding patch 可能把新旧入口放在不同 patch 镜像中。生命周期实现会按地址确定并保留对应镜像，而不是假设“模块名相同就是同一段代码”。Monolithic 构建没有独立 Provider DLL，代码镜像自然随进程存活。
+
+Runtime backend 插件也通过 Modular Features 发布 factory，但可执行代码不
+进入全局 Provider Registry。每个 Engine 的 coordinator 复制并校验 factory
+metadata，再创建独立 session。重新配置或 Engine shutdown 时顺序是：
+
+```text
+关闭新请求 admission
+  -> 对当前 session/cancellation generation 发 Cancel
+  -> 等待已经 admission 的同步、后台和 lazy 操作结束
+  -> 丢弃 stale completion，退休当前 Runtime binding
+  -> 等待最后一个 binding reader 退出
+  -> 释放 CodeLease 和 session
+  -> backend/factory 所属 UE 模块才具备安全卸载条件
+```
+
+单个函数被替换或丢弃时不会调用 generation-wide `Cancel`，只移除该函数的
+exact record 并让旧结果按 revision 检查 stale-drop，避免误取消同一 session
+中其他函数。代码释放由 backend 提供的 `CodeLease` 完成且 exactly once；
+Runtime host trampoline 确保最后一次调用返回前，session/DLL 中的真正入口
+不会失效。
 
 这套设计避免两类错误：
 
@@ -567,6 +703,8 @@ Provider ABI 已保留 `ImmutableDirectCallSet` 能力，但生产生成器当�
 
 ### 11.1 控制台命令
 
+Static AOT 原有命令保持不变：
+
 ```text
 as.StaticJIT.DumpDiagnostics
 as.StaticJIT.DumpDiagnostics -Output=<absolute-or-project-relative-json>
@@ -594,6 +732,27 @@ python Tools\Diagnostics\InspectStaticJITDump.py <dump.json> --fail-on-mismatch
 
 Inspector 不启动 Unreal，也不修改 Cache/Registry。仓库内有 valid、mismatch、malformed fixture 独立验证 Schema 行为。
 
+统一 coordinator/Runtime JIT 使用独立的非 Shipping 命令：
+
+```text
+as.JIT.DumpDiagnostics
+as.JIT.DumpDiagnostics -Output=<json-file>
+as.JIT.DumpDiagnostics -Function=<canonical-declaration-or-function-key>
+```
+
+其 schema revision 1 是确定性、pointer-free 的当前状态快照，主要记录：
+
+- execution mode 是否有效、Runtime BackendId/compile policy 和配置错误；
+- Runtime factory/session 是否可用，以及 debugger/coverage gate；
+- 每个函数的 requested/actual tier、Static match、Runtime profile/state/reason；
+- compile attempt/result/stale/cancel 总数、编译耗时和代码大小；
+- Runtime execution marker、active operation、live/retired code lease 数量。
+
+`FAngelscriptStateDump::CaptureSnapshot()` 只通过公开的
+`FAngelscriptJITDiagnostics` observer 增加 `JITCoordinator` 行；Dump 模块不
+读取 coordinator 的私有 map、queue、session 或 lease。命令和这些细粒度
+lease/queue 诊断不在 Shipping 暴露。
+
 ### 11.2 常见 mismatch
 
 | 现象 | 常见原因 | 处理 |
@@ -609,12 +768,13 @@ Inspector 不启动 Unreal，也不修改 Cache/Registry。仓库内有 valid、
 ### 11.3 排查顺序
 
 1. 确认 AS 源码本身编译成功；
-2. 看诊断里目标 Provider 是否存在、Profile/环境是否正确；
-3. 用 `-Function=` 定位 StableModuleKey/FunctionKey 和 mismatch reason；
-4. 检查 stable reference slots；
-5. 运行 `RunAngelscriptJIT.ps1 -Mode Verify -Profile <Profile>`；
-6. 只有 source set 没变时才尝试 Live Coding；否则完整构建；
-7. package 问题用独立多启动 smoke，避免被当前 Editor 进程状态掩盖。
+2. 用 `as.JIT.DumpDiagnostics` 确认 execution mode、requested/actual tier 和 Runtime factory/session/gate；
+3. 若选择 Static，再看 `as.StaticJIT.DumpDiagnostics` 中 Provider、Profile/环境是否正确；
+4. 用 `-Function=` 定位 StableModuleKey/FunctionKey、Static mismatch 或 Runtime reason；
+5. Static 引用失败时检查 stable reference slots；
+6. 运行 `RunAngelscriptJIT.ps1 -Mode Verify -Profile <Profile>`；
+7. 只有 source set 没变时才尝试 Live Coding；否则完整构建；
+8. package 问题用独立多启动 smoke，避免被当前 Editor 进程状态掩盖。
 
 不要再查 `DataGuid`、`FJITDatabase::Functions`、`bStaticJITTranspiledCodeLoaded` 或旧 `.Cache/.jit.hpp` 配对；它们不是当前 Provider 路由的事实来源。
 
@@ -633,19 +793,33 @@ Inspector 不启动 Unreal，也不修改 Cache/Registry。仓库内有 valid、
 9. 解析后的函数/类型/属性指针只属于当前 Engine；
 10. Provider 卸载先退出未来 Snapshot，旧代码由 lease 保活到最后使用者退出；
 11. `.as` 普通保存不自动触发 C++ 生成和 Live Coding；
-12. 生产 direct script-call emission 未启用，不能在文档或基准中声称已启用。
+12. 生产 direct script-call emission 未启用，不能在文档或基准中声称已启用；
+13. 一个 Engine 只有一个 `FAngelscriptJITCoordinator`，Runtime 插件不能自行替换 `asIJITCompiler`；
+14. Static backend 与 Runtime backend 契约、BackendId 类型、输出和生命周期彼此独立；
+15. Runtime worker 只消费 owned immutable snapshot，不持有 AngelScript/UE 对象指针；
+16. Runtime result 必须 exact revision 才发布，且只发布 whole-function VMEntry；
+17. Runtime code、typed HIR 和 session 状态不进入 Cache V2 或 Static Provider；
+18. Runtime shutdown 先关 admission 并等待已接纳操作，再释放 binding、CodeLease 和 session。
 
 ## 13. 与 maintained AngelScript fork 的关系
 
-当前 fork 的 JIT 生命周期不是旧 UE fork 接口，也不是照搬 upstream 2.38 的版本切换 API。维护分支拥有一个非版本化 `asIJITCompiler` 契约：
+当前 fork 的 JIT 生命周期不是旧 UE fork 接口，也不是照搬 upstream 2.38
+的版本切换 API。维护分支拥有一个非版本化 `asIJITCompiler` 契约，当前只
+由 `FAngelscriptJITCoordinator` 实现：
 
 - compiled/restored function 完成后通知当前 compiler；
 - compiler 延后发布完整 `asSJITFunctionBinding`；
 - `asCScriptFunction` 私有持有 binding 和 owner；
 - 替换、clear、函数销毁、模块 discard、compiler replacement/removal 都走同一退休协议；
-- 生成器只观察已经编译的函数，不临时替换 live Engine 的执行 compiler。
+- Static 生成器只观察 generation-only Engine 中已经编译的函数，不临时替换 live Engine 的执行 compiler；
+- Runtime backend 永远不能直接写 `asCScriptFunction`，只能把结果交回 coordinator 做 exact 校验和发布。
 
-这是有意的 ABI 不兼容。外部集成必须使用本仓库随附的公共头文件，不能把旧 fork 或 vanilla 2.38 的 JIT 头直接混进来。
+这是有意的 maintained-fork ABI 不兼容。外部 Runtime backend 必须使用本
+仓库的 `Public/JIT/AngelscriptRuntimeJITBackend.h`。当前 Runtime Backend
+ABI Revision 固定为 `2`，Entry ABI Revision 为 `1`；任何结构布局、枚举
+语义、结果验证或 helper token 契约变化都必须增加 Backend ABI revision，
+不能只靠 `StructSize` 假装仍兼容。MIR/LLVM 插件应先通过仓库 fake-backend
+conformance tests，再声明支持该 revision。
 
 ## 附录：快速回答
 
@@ -667,7 +841,14 @@ Inspector 不启动 Unreal，也不修改 Cache/Registry。仓库内有 valid、
 
 ### DLL 要自己加载卸载吗？
 
-不用。UE ModuleManager 负责；StaticJIT 负责 Provider 注册/退注册、不可变 Catalog 和代码镜像 lease，保证卸载/Live Coding 时旧入口不会悬空。
+不用。UE ModuleManager 负责；StaticJIT 负责 Provider 注册/退注册、不可变 Catalog 和代码镜像 lease。Runtime JIT 由每 Engine session、关闭 admission、operation drain 和 CodeLease 保活。两条路径都保证卸载/Live Coding 时旧入口不会悬空。
+
+### Runtime backend 怎么注册、由谁消费？
+
+插件实现 `IAngelscriptRuntimeJITBackendFactory` 并注册 Modular Feature。每个
+Engine 的 coordinator 按明确 BackendId 选择唯一 factory、校验 ABI 与目标
+平台/配置，并创建独立 session；worker 只收到 copied snapshot。backend
+返回的入口在 revision/ABI/generation 全匹配后才由 coordinator 发布。
 
 ### Cache 有问题会不会导致整个 JIT 清空？
 
