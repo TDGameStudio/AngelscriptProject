@@ -99,3 +99,4 @@
 ## 6. 修订记录
 
 - 2026/06/30：基于 5 个并行调查 agent 的交叉印证创建初版。
+- 2026/08/13：后续框架问题、覆盖完整度和官方 suite 缺口见 `Documents/Guides/TestFrameworkReview_20260813.md`。本文中 Functional 为空、C2 改写 Subsystem、4 套 namespace 仍存在等条目已过时，以新审查为准。
