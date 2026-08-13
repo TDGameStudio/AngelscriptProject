@@ -52,6 +52,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 
 ## Milestone B: Static Backend Contract And Generator
 
+Completed and verified on 2026-08-13. Static BackendIds, the Runtime-module-owned per-task contract, deterministic registry/generator, BytecodeJIT factory, explicit backend/capture request, typed per-function fallback, and backend-neutral Provider packaging are implemented. The built-in bytecode factory is registered explicitly from Runtime module startup. Exact TDD incidents and verification results are recorded in `implementation-notes.md`.
+
 1. Add failing pure value/registry tests for Static BackendId and fake per-task backends.
 2. Define the private contract. Keep request/view types internal; expose only the explicit generation settings needed by Editor/test modules. Model the complete `CompiledSourceGraph` separately from `EmitModuleSet` so output filtering never hides semantic dependencies from a backend.
 3. Implement deterministic explicit registration during Runtime module initialization; do not rely on static constructor order or `IModularFeatures` for Static backends.

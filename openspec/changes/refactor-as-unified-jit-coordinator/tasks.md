@@ -10,11 +10,11 @@
 
 ## 2. Define The Internal Static Backend Contract
 
-- [ ] 2.1 <!-- TDD --> Add failing value/validation tests for `FAngelscriptStaticJITBackendId`, including exact `"bytecode"`/`"typed-ast"` spelling, empty/unknown values, duplicate factories, and type separation from Runtime BackendId.
-- [ ] 2.2 <!-- TDD --> Define private per-task `IAngelscriptStaticJITBackend`, immutable task-wide request/view with separate complete `CompiledSourceGraph` and `EmitModuleSet`, emitted-function result, typed per-function disposition, and factory contract with no exported third-party ABI.
-- [ ] 2.3 <!-- TDD --> Implement `FAngelscriptStaticJITGenerator` with deterministic factory lookup, one backend instance per task, no retained Engine-local pointers, and backend-neutral handoff to `FAngelscriptJITGeneration`.
-- [ ] 2.4 <!-- TDD --> Register BytecodeJIT as `"bytecode"`; preserve existing `GenerateStaticJITProviderArtifacts(...)` overloads as bytecode-default facades and add an explicit backend/capture generation request for programmatic callers.
-- [ ] 2.5 <!-- TDD --> Add fake Static backends proving task-wide analysis, per-function TypedASTJIT-to-BytecodeJIT-to-VM fallback, fatal task errors, mixed-backend functions in one module TU, and backend provenance outside Provider identity.
+- [x] 2.1 <!-- TDD --> Add failing value/validation tests for `FAngelscriptStaticJITBackendId`, including exact `"bytecode"`/`"typed-ast"` spelling, empty/unknown values, duplicate factories, and type separation from Runtime BackendId.
+- [x] 2.2 <!-- TDD --> Define private per-task `IAngelscriptStaticJITBackend`, immutable task-wide request/view with separate complete `CompiledSourceGraph` and `EmitModuleSet`, emitted-function result, typed per-function disposition, and factory contract with no exported third-party ABI.
+- [x] 2.3 <!-- TDD --> Implement `FAngelscriptStaticJITGenerator` with deterministic factory lookup, one backend instance per task, no retained Engine-local pointers, and backend-neutral handoff to `FAngelscriptJITGeneration`.
+- [x] 2.4 <!-- TDD --> Register BytecodeJIT as `"bytecode"`; preserve existing `GenerateStaticJITProviderArtifacts(...)` overloads as bytecode-default facades and add an explicit backend/capture generation request for programmatic callers.
+- [x] 2.5 <!-- TDD --> Add fake Static backends proving task-wide analysis, per-function TypedASTJIT-to-BytecodeJIT-to-VM fallback, fatal task errors, mixed-backend functions in one module TU, and backend provenance outside Provider identity.
 
 ## 3. Add A Side-Effect-Free StaticJIT Generation Engine
 
