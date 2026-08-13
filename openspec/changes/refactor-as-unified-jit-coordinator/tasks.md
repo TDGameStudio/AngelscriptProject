@@ -40,9 +40,9 @@
 - [x] 5.2 <!-- TDD --> Implement Engine-thread snapshot capture with no worker-visible `asIScriptFunction`, module, UObject, UFunction pointer, raw fork trait bits, source AST, or typed HIR.
 - [x] 5.3 <!-- TDD --> Add malformed-bytecode, invalid-control-flow, wrong-stack-layout, unknown-profile, external-implicit-this, and ABI-mismatch cases that fail closed before concrete backend invocation.
 - [x] 5.4 <!-- TDD --> Prove immediate module discard after queueing cannot make a background backend dereference released Engine data.
-- [ ] 5.5 <!-- TDD --> Add Engine-local revision state, selected backend/configuration generation, request coalescing, terminal-unsupported memoization, and retry rules.
-- [ ] 5.6 <!-- TDD --> Implement `EagerSync`, `EagerBackground`, and `LazyFirstCall` through one publication state machine, including concurrent claim, VM-while-pending, cancellation, and exception-safe resource release.
-- [ ] 5.7 <!-- TDD --> Add Hot Reload/module-replacement tests proving stale results never attach to replacement functions.
+- [x] 5.5 <!-- TDD --> Add Engine-local revision state, selected backend/configuration generation, request coalescing, terminal-unsupported memoization, and retry rules.
+- [x] 5.6 <!-- TDD --> Implement `EagerSync`, `EagerBackground`, and `LazyFirstCall` through one publication state machine, including concurrent claim, VM-while-pending, cancellation, and exception-safe resource release.
+- [x] 5.7 <!-- TDD --> Add Hot Reload/module-replacement tests proving stale results never attach to replacement functions.
 
 ## 6. Move Compiler Ownership To The Coordinator
 
