@@ -18,12 +18,12 @@
 
 ## 3. Add A Side-Effect-Free StaticJIT Generation Engine
 
-- [ ] 3.1 <!-- TDD --> Add failing generation tests with unique UCLASS/USTRUCT/delegate/UFUNCTION names proving complete descriptor/Entry-Plan information is produced while no script reflection object, CDO, reload/reinstancing event, class redirect, or current Editor route is created.
-- [ ] 3.2 <!-- TDD --> Add two-simultaneous-Engine tests proving complete Bind replay per target profile, Engine-local raw type/function identity, equal normalized stable identities, and independent teardown.
-- [ ] 3.3 <!-- TDD --> Add `EAngelscriptEnginePurpose::StaticJITGeneration` to `FAngelscriptEngineConfig`, keep ordinary Runtime/Editor initialization as the default purpose, and route project/test generation through the explicit purpose without accumulating unrelated generation booleans.
-- [ ] 3.4 <!-- TDD --> Factor ClassGenerator descriptor analysis from reload planning/materialization so generation resolves script functions, receivers, UFUNCTION roots, signatures, and Entry Plans without calling Soft/Full Reload or creating UObjects.
-- [ ] 3.5 <!-- TDD --> Publish a generation-local complete compiled module/function/type/global/descriptor/dependency view plus a separate `EmitModuleSet`, freeze the backend-neutral generation view while the temporary Engine is alive, and reject pointer/ID retention in backend output.
-- [ ] 3.6 <!-- TDD --> Compile the complete Provider source graph for the selected target profile but emit only the requested module set; keep project and plugin Provider source domains separate.
+- [x] 3.1 <!-- TDD --> Add failing generation tests with unique UCLASS/USTRUCT/delegate/UFUNCTION names proving complete descriptor/Entry-Plan information is produced while no script reflection object, CDO, reload/reinstancing event, class redirect, or current Editor route is created.
+- [x] 3.2 <!-- TDD --> Add two-simultaneous-Engine tests proving complete Bind replay per target profile, Engine-local raw type/function identity, equal normalized stable identities, and independent teardown.
+- [x] 3.3 <!-- TDD --> Add `EAngelscriptEnginePurpose::StaticJITGeneration` to `FAngelscriptEngineConfig`, keep ordinary Runtime/Editor initialization as the default purpose, and route project/test generation through the explicit purpose without accumulating unrelated generation booleans.
+- [x] 3.4 <!-- TDD --> Factor ClassGenerator descriptor analysis from reload planning/materialization so generation resolves script functions, receivers, UFUNCTION roots, signatures, and Entry Plans without calling Soft/Full Reload or creating UObjects.
+- [x] 3.5 <!-- TDD --> Publish a generation-local complete compiled module/function/type/global/descriptor/dependency view plus a separate `EmitModuleSet`, freeze the backend-neutral generation view while the temporary Engine is alive, and reject pointer/ID retention in backend output.
+- [x] 3.6 <!-- TDD --> Compile the complete Provider source graph for the selected target profile but emit only the requested module set; keep project and plugin Provider source domains separate.
 
 ## 4. Define The Backend-Neutral Runtime JIT Contract
 

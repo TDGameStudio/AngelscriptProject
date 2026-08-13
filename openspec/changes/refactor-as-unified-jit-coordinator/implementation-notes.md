@@ -47,3 +47,71 @@
 - The first Static BackendId red build failed because the contract header did not yet exist, as intended. The first green compile then exposed two test-only C++ issues: `is_constructible` cannot inspect an incomplete future Runtime BackendId, and a parenthesized default-ID factory declaration was parsed as a function. The type-separation assertion was kept, the invalid factory used brace initialization, and no production behavior was weakened.
 - A later single-test invocation passed before its newly edited assertion had been compiled. `RunTests.ps1` runs the existing Editor DLL and does not build source changes. The test module was rebuilt, after which the assertion correctly failed and exposed that a Bytecode fallback backend received the primary `typed-ast` ID. The generator now passes an active per-backend request; a fresh compile and rerun closed the regression.
 - Self-review also added deterministic rejection for duplicate function results and, once the generation graph supplies function views, results outside the complete graph. Identical backend preamble fragments are de-duplicated before packaging so mixed backends cannot duplicate the same generated declarations.
+
+## 2026-08-13: Milestone C completed after review
+
+- Added `EAngelscriptEnginePurpose::StaticJITGeneration`; ordinary Runtime/Editor initialization remains the default. Project generation and non-persistent TestJIT generation fixtures now request this purpose explicitly, while Cache V2 restoration fixtures intentionally retain Runtime purpose.
+- The generation purpose always compiles source and replays the complete Bind surface for its target Engine, but it skips test discovery, asset/Editor route publication, reload/reinstancing, redirects, and script reflection materialization.
+- ClassGenerator now exposes descriptor-only StaticJIT analysis. It resolves class/struct/delegate/function descriptors, receivers, signatures, roots, and Entry Plans without creating UClasses, UStructs, UFunctions, CDOs, or calling Soft/Full Reload.
+- Each generation Engine freezes an immutable `FAngelscriptStaticJITGenerationSnapshot` containing modules, functions, types, globals, descriptors, dependencies, external native calls, target-local handles, and stable copied identities. The backend-neutral request receives that complete graph separately from `EmitModuleSet`.
+- Stable source-based content identities cover functions that do not have Cache-verified artifact identity/reference data. Raw bytecode remains copied generation input, but is not used as a cross-Engine stable hash because it embeds Engine-local numeric IDs.
+- `FAngelscriptStaticJITGenerator` maps the complete snapshot to backend-neutral views. BytecodeJIT receives local compatibility route/publication adapters for verified functions only; nothing is published into the global Engine route authority or persisted Cache.
+- `FPrecompiledData::InitFromActiveScript` now resolves the owning `FAngelscriptEngine` from the supplied script Engine rather than the global primary Engine. This removed the last production generation path dependency on `FAngelscriptEngine::Get()`.
+- The generation fixture proves two simultaneously live Engines replay Binds independently, use different raw type/function addresses, produce equal normalized stable identities, and survive independent teardown.
+- The final two-module fixture freezes 2 modules, 22 functions, 5 types, 3 globals, and 8 descriptors. The backend observes every function in the complete graph, while packaging emits only the selected module from `EmitModuleSet`.
+- Project generation runs each selected target profile in its own generation Engine and preserves project/plugin Provider source-domain separation. TestJIT generation uses the same production snapshot path without reading or writing project JIT artifacts.
+
+### TDD and compatibility findings
+
+- The initial RED compile failed on the intentionally missing generation snapshot header. Subsequent failures exposed the required boundary in stages: generation could not depend on mutable global fixtures, Cache eligibility was narrower than the complete generation graph, raw bytecode hashes changed across Engines because of local IDs, and empty route pointers are valid for functions that are intentionally VM-only.
+- The first TestJIT `GeneratedOutputVerify` after switching fixture generation to the new purpose found one C++ body difference. The previous ordinary Engine had materialized a UClass in `asCObjectType::UserData`; the generation Engine correctly leaves it null, and BytecodeJIT had incorrectly treated that implementation detail as a raw-script-reference semantic decision.
+- BytecodeJIT now asks `IsRawScriptReference(...)` with explicit knowledge that the target Runtime Engine will materialize script reflection. This keeps generation side-effect-free while preserving the existing emitted AddRef/Release behavior. Regeneration then produced zero diff for the committed `.jit.cpp` and `ProviderManifest.generated.json`.
+- Documentation named the commandlet after its source filename (`AngelscriptStaticJITAotTest`), but the actual UCLASS is `UAngelscriptTestJITCommandlet`; the executable commandlet name is `AngelscriptTestJIT`. `Documents/Tools/Tool.md` now records the working name.
+
+### Verification evidence
+
+- Canonical build after the complete graph implementation: `Tools\RunBuild.ps1 -Label static-jit-generation-graph-green-1 -TimeoutMs 1800000 -NoXGE` — PASS, 14 actions, 20.50 seconds.
+- Incremental graph build: `Tools\RunBuild.ps1 -Label static-jit-generation-graph-green-2 -TimeoutMs 1800000 -NoXGE` — PASS, 4 actions, 9.49 seconds.
+- Final output-compatibility build: `Tools\RunBuild.ps1 -Label static-jit-generation-output-compat -TimeoutMs 1800000 -NoXGE` — PASS, 24 actions, 25.86 seconds.
+- Generation Engine prefix: label `static-jit-generation-graph-2` — `3/3 PASS`.
+- Static backend regression: label `static-jit-generation-backend-regression` — `7/7 PASS`.
+- Generated-output regression: label `static-jit-generation-output-regression` — `6/6 PASS`.
+- Project-generation regression: label `static-jit-project-generation-regression` — `11/11 PASS`.
+- Project commandlet regression: label `static-jit-commandlet-generation-regression` — `6/6 PASS`; the production builder ran three times through generation-only Engines.
+- TestJIT commandlet: `Tools\RunCommandlet.ps1 -Commandlet AngelscriptTestJIT -Label staticjit-generation-purpose-compat-refresh -TimeoutMs 600000 -ExtraArgs '-Mode=Generate'` — exit 0, 0 errors, committed generated output unchanged.
+- Exact TestJIT output compatibility: `Tools\RunTests.ps1 -TestPrefix 'Angelscript.TestModule.StaticJIT.AOT.FAngelscriptStaticJITAotTests.GeneratedOutputVerify' -Label static-jit-generation-output-compat-verify -TimeoutMs 600000` — `1/1 PASS`, exit code 0, 144.110 seconds.
+
+### Pre-commit review reopened Milestone C
+
+The first implementation passed its focused functional suites and preserved generated bytes, but an independent lifecycle/contract review found that this was not yet sufficient evidence for the side-effect-free and complete-view requirements. Tasks 3.1, 3.2, 3.4, and 3.5 were reopened before commit. The identified gaps are:
+
+- generation initialization overwrites the thread-global AngelScript primary context, while shutdown releases whichever context is currently in that slot rather than one owned by the terminating Engine;
+- full initialization registers a raw global on-screen-message delegate without removing it, leaving a dangling callback after a temporary generation Engine dies;
+- generation suppresses only compile Begin/End while intermediate global compilation events still escape, producing an externally visible malformed event sequence;
+- generation shutdown walks the process-shared AngelScript package and clears reflected structs/delegates/enums, then clears process-wide Blueprint-event and Editor class caches it does not own;
+- commandlet-shaped generation can still write the independent legacy `Binds.Cache` because Cache V2 persistence control does not govern bind-database output;
+- the backend-neutral descriptor adapter drops kind/name/receiver/UFUNCTION-root and Entry Plan flags; global functions can retain a zero Entry ABI and class methods currently hardcode Parms eligibility;
+- Bytecode lowering still has ambient `FAngelscriptEngine::Get()` lookups and the public request path does not establish the graph owner's Engine scope.
+
+A mixed reflected/raw-type TDD probe also demonstrated that a coarse Engine-wide reflection-target flag is too broad. Top-level project classes are implicitly reflected even without an explicit `UCLASS`, so the final contract must carry the reflection decision per type and use a genuinely non-reflected type for the raw reference path.
+
+### Review closure
+
+- Generation initialization no longer installs a process-wide primary context, extension registry attachment, DebugServer, CodeCoverage attachment, test runners, checker thread, or on-screen-message callback. Ordinary Engines retain their existing behavior and now remove their own on-screen delegate during teardown.
+- Generation teardown releases a primary context only when that context belongs to the terminating Engine and skips process-shared package reflection cleanup, Blueprint-event cache cleanup, Editor class cache cleanup, coverage/debug/test teardown, and ambient world synchronization.
+- A thread-local `FAngelscriptCompilationEventSuppressionScope` suppresses every compilation event for generation work, rather than suppressing only Begin/End and leaking malformed intermediate sequences.
+- Generation can read existing Blueprint-event and Editor-class caches to reproduce the initialized Bind surface but cannot append to them. It also cannot write the independent legacy `Binds.Cache`, including commandlet-shaped/forced configurations.
+- Frozen functions now carry nonzero stable Entry ABI plus exact VM/Raw/Parms eligibility. Frozen descriptors and backend-neutral descriptor views retain kind, canonical name, receiver, UFUNCTION-root flag, and exact Entry Plan flags. Funcdefs and delegate wrapper types are enumerated explicitly so completeness validation rejects missing stable descriptor facts.
+- Target reflection materialization is represented per type. BytecodeJIT raw-reference lowering consumes that set and every generation lowering lookup uses the request Engine instead of ambient `FAngelscriptEngine::Get()` state.
+- The two-Engine fixture now compares the process primary context, global on-screen delegate binding, Blueprint-event cache size, compilation event count, stable/raw identities, and independent destruction before and after generation Engines. A stricter snapshot completeness check first exposed a delegate descriptor with no stable identity; delegate signature and stable-key capture were added before the tests could pass.
+- The last RED assertion was a test-fixture error: it marked two script classes as target-materialized but inserted only one into BytecodeJIT's target set. Populating the set from the frozen per-type contract made the test exercise the production rule and retained a synthetic non-reflected script object as the positive raw-reference case.
+
+### Post-review verification evidence
+
+- Canonical incremental build: `Tools\RunBuild.ps1 -Label static-jit-generation-review-final -TimeoutMs 1800000 -NoXGE` — PASS, 4 actions, 15.154 seconds.
+- Generation Engine lifecycle/descriptor prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.StaticJIT.ProjectGeneration.Engine" -Label static-jit-generation-engine-review-final -TimeoutMs 900000` — `3/3 PASS`, exit code 0, 71.010 seconds.
+- Static backend contract prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.StaticJIT.Backend" -Label static-jit-generation-backend-review -TimeoutMs 600000` — `7/7 PASS`, exit code 0, 61.440 seconds.
+- Generated-output prefix: `Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.StaticJIT.GeneratedOutput" -Label static-jit-generation-output-review -TimeoutMs 600000` — `6/6 PASS`, exit code 0, 69.385 seconds.
+- `openspec validate refactor-as-unified-jit-coordinator --strict` — PASS after the milestone record was synchronized.
+- Independent post-fix review — `READY TO COMMIT`; all seven reopened lifecycle/contract findings were verified closed, with no new Critical, Important, or Minor concrete issue.
+- Plugin milestone commit: `56c51fb [StaticJIT] Feat: isolate generation engine snapshots`.

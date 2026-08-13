@@ -70,6 +70,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Test
 
 ## Milestone C: Generation-Only Engine And Descriptor View
 
+Completed and verified on 2026-08-13 after an independent pre-commit review. Project and test generation use an explicit `StaticJITGeneration` Engine purpose, descriptor-only ClassGenerator analysis, and an immutable Engine-local snapshot containing the complete compiled graph independently from `EmitModuleSet`. The review's ordinary-Engine lifecycle and backend-view coupling findings were fixed: generation no longer owns or tears down process-wide primary context/package/Blueprint/Editor state, all compilation events are suppressed, temporary global delegates are avoided, the full descriptor/Entry-Plan contract reaches the backend, and BytecodeJIT lowering uses the graph owner's Engine. Generated TestJIT output remains byte-for-byte unchanged. Exact review findings, fixes, TDD incidents, and focused verification are recorded in `implementation-notes.md`.
+
 1. Add the no-UClass regression first with unique reflected script names and observations for UObject lookup, CDO, reload/reinstancing delegates, and current routes.
 2. Add two-live-Engine Bind/profile isolation coverage. Never require numeric type/function IDs to differ; assert they are interpreted only by their owning Engine and compare stable identities across Engines.
 3. Add an explicit `EAngelscriptEnginePurpose::StaticJITGeneration` (ordinary runtime/editor remains the default purpose) and a generation-local module result; avoid spreading unrelated boolean branches when later engine purposes may be added.

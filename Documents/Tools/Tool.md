@@ -96,7 +96,7 @@ Tools/
 - **RunCommandlet**
   - 路径：`Tools\RunCommandlet.ps1`
   - 用途：标准 commandlet 入口，负责配置解析、日志、超时与进程树清理
-  - 常用命令：`Tools\RunCommandlet.ps1 -Commandlet AngelscriptStaticJITAotTest -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"`
+  - 常用命令：`Tools\RunCommandlet.ps1 -Commandlet AngelscriptTestJIT -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"`
   - 输出：`Saved/Commandlet/<Label>/<RunId>/`
   - 备注：用于生成类 commandlet 和手工 commandlet 验证；不要手写 `UnrealEditor-Cmd.exe`
 
@@ -255,7 +255,7 @@ Tools\RunTests.ps1 -Group AngelscriptFunctional -Label functional -TimeoutMs 900
 示例：
 
 ```powershell
-Tools\RunCommandlet.ps1 -Commandlet AngelscriptStaticJITAotTest -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"
+Tools\RunCommandlet.ps1 -Commandlet AngelscriptTestJIT -Label staticjit-aot-generate -TimeoutMs 600000 -ExtraArgs "-Mode=Generate"
 Tools\RunCommandlet.ps1 -Commandlet AngelscriptBlueprintImpactScan -Label blueprint-impact-scan -TimeoutMs 600000
 Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -Label offline-bundle-project -TimeoutMs 600000 -ExtraArgs "-BundleKind=Project" "-Output=D:\Exports\MyProjectAS" "-AssetRoots=/Game"
 Tools\RunCommandlet.ps1 -Commandlet AngelscriptOfflineExport -ProjectFile D:\Projects\MyGame\MyGame.uproject -Label offline-bundle-external -TimeoutMs 600000 -ExtraArgsFile D:\Temp\offline-export-args.json
