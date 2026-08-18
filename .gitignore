@@ -153,3 +153,9 @@ Documents/Temp_memory.md
 Script/Binds.Cache
 Script/Binds.Cache.Headers
 Script/PrecompiledScript.Cache
+
+# Full Typed AOT callable inventories are reproducible local analysis dumps.
+# Keep the generator, summary, hashes, and conclusions in OpenSpec, not the
+# tens-of-megabytes row-level CSV.
+/openspec/changes/feature-as-typed-semantic-aot/research/native-call-export-inventory.csv
+/openspec/changes/feature-as-typed-semantic-aot/research/native-call-source-reconciliation.csv

@@ -37,7 +37,7 @@ The two Static backends therefore coexist without sharing body IR: BytecodeJIT a
 **Non-Goals:**
 
 - Removing, disabling, or feature-freezing BytecodeJIT.
-- Replacing VM bytecode as the runtime correctness format or changing `PrecompiledScript.Cache`.
+- Replacing VM bytecode as the runtime correctness format or reintroducing/migrating the removed legacy `PrecompiledScript*.Cache` path.
 - Persisting HIR, inventing an HIR cache, or loading HIR when only precompiled bytecode is available.
 - Publishing a stable typed-IR ABI through `angelscript.h` in the first version.
 - Retaining raw `asCScriptNode` parser trees after compilation or extending parser `FMemStack` lifetime for StaticJIT.
@@ -64,7 +64,7 @@ The initial model contains:
 - `asSTypedSemanticStatement`: kind, source span, ordered child statement/expression IDs, explicit block/loop/switch phases, and verified target-statement IDs for control transfers.
 - `asSTypedSemanticUnsupported`: category, source span, and stable detail token for syntax or semantic forms outside the current model.
 
-Expression kinds initially cover primitive/enum literals, parameter/local reads, assignment and compound assignment, prefix/postfix increment/decrement, unary operations, arithmetic/comparison/bitwise/logical binary operations, explicit compiler-selected conversion, and resolved calls. Assignment/compound/prefix/postfix nodes preserve a single-evaluation mutation plan rather than only an operator token. Statement kinds initially cover block, local declaration, expression statement, if/else, for, while, do-while, switch/case/default, break, continue, and return. Loop nodes retain their ordered initializer/condition/body/increment phases; `Break` and `Continue` retain a verified target statement ID. Source-point/safe-point roles are captured independently of whether the initial output profile instruments them. Logical `&&` and `||` remain explicit short-circuit nodes rather than ordinary eager binary operations. Ternary expressions, property access, object construction/lifetime, references, handles, containers, lambdas, exceptions, and suspend points initially produce unsupported nodes.
+Expression kinds initially cover primitive/enum literals, parameter/local reads, assignment and compound assignment, prefix/postfix increment/decrement, unary operations, arithmetic/comparison/bitwise/logical binary operations, explicit compiler-selected conversion, and resolved calls. Assignment/compound/prefix/postfix nodes preserve a single-evaluation mutation plan rather than only an operator token. Statement kinds initially cover block, local declaration, expression statement, if/else, for, while, do-while, switch/case/default, break, continue, and return. Loop nodes retain their ordered initializer/condition/body/increment phases; `Break` and `Continue` retain a verified target statement ID. Source-point/safe-point roles are captured independently of whether the initial output profile instruments them. Logical `&&` and `||` remain explicit short-circuit nodes rather than ordinary eager binary operations. Ternary expressions, property access, object construction/lifetime, references, handles, containers, lambdas, exceptions, and actual resumable suspend state initially produce unsupported nodes. The maintained fork's `asBC_SUSPEND` instructions currently represent line/loop polling safe points only: because `asCContext::Suspend()` returns `asERROR` and no cooperative state machine is active, those instructions retain `LoopEntry`/`LoopBackedge` roles without setting `hasSuspendState` or fabricating a `SuspendPoint` marker.
 
 `asCScriptFunction::ScriptFunctionData` owns an optional `asCTypedSemanticFunction*`. It is allocated only for source compilation when HIR capture is enabled, committed only after successful function compilation and verification, and discarded at the start of function destruction before existing type/function references are released. Exact `asCDataType` descriptors and resolved function IDs are valid only while the owning engine/module/function graph is alive, matching existing bytecode reference lifetime; consumers must not retain IR pointers across module replacement.
 
@@ -78,7 +78,7 @@ Alternative rejected: define an Unreal-only `TArray`/`FString` IR. It would intr
 
 ### HIR capture is opt-in and cannot perturb bytecode
 
-Add a fork-private engine flag, set through the internal `asCScriptEngine` API rather than `asEEngineProp` or another public `angelscript.h` ABI. The disposable generation `FAngelscriptEngine` enables it before module compilation only when the frozen request selects BackendId `"typed-ast"`. Standalone tests may enable the same internal flag directly because the Standalone host already compiles the maintained private frontend.
+Add a fork-private engine flag, set through the internal `asCScriptEngine` API rather than `asEEngineProp` or another public `angelscript.h` ABI. For a Static artifact request, the disposable generation `FAngelscriptEngine` enables it before module compilation only when the frozen request selects BackendId `"typed-ast"`. The separate UE HIR dump request also enables capture before its own restricted source compile without selecting a Static BackendId. Native compiler and Standalone tests may enable the same internal flag directly on a test-owned engine because those tests already compile the maintained private frontend.
 
 Backend selection has a two-stage contract. The generation request freezes BackendId (`"bytecode"` or `"typed-ast"`) and the expected capture profile before constructing/building the generation Engine. Final output generation revalidates that request against the Engine that produced the functions. A programmatic helper or provider-artifact path requesting `"typed-ast"` from a capture-off Engine fails the generation task with `CaptureProfileMismatch`; it does not attempt a hidden recompile and cannot claim a TypedASTJIT artifact. Per-function eligibility/emitter failures occur only after this task-level validation and may fall back through BytecodeJIT to VM. `"dual"` is not a BackendId. Command-line parsing is one way to populate the request; it is not hidden global authority for programmatic generation.
 
@@ -86,9 +86,34 @@ Backend selection has a two-stage contract. The generation request freezes Backe
 
 The builder is a provisional function transaction created from `asCCompiler::Reset()`. If compilation reports any error, the provisional HIR is discarded. It is published into `ScriptFunctionData` only after normal bytecode finalization succeeds and the complete HIR verifies. If HIR verification fails despite a successful script compile, the function retains bytecode but receives an invalid-HIR diagnostic; TypedASTJIT must fall back rather than consuming a partial model. Default constructors/destructors, factories, lambdas/accessors, and other compiler-synthesized function variants must either follow the same commit/discard rule or record a deterministic unsupported disposition; none may publish a half-built HIR.
 
-Bytecode invariance is a release criterion: compiling an identical source/module/engine configuration with capture disabled and enabled must produce identical bytecode, debug metadata when enabled, dependency information, and script execution results. HIR is never added to `FAngelscriptPrecompiledFunction`, `FAngelscriptPrecompiledData`, `SaveByteCode`, or `LoadByteCode`. A module loaded only from bytecode therefore has no HIR and deterministically selects legacy/VM.
+Bytecode invariance is a release criterion: compiling an identical source/module/engine configuration with capture disabled and enabled must produce identical bytecode, debug metadata when enabled, dependency information, and script execution results. HIR is never added to the current Cache V2 function-artifact writer, `FAngelscriptPrecompiledFunction`, `FAngelscriptPrecompiledData`, `SaveByteCode`, or `LoadByteCode`. The legacy `PrecompiledScript*.Cache` files have no production reader, writer, migration, or dual-write path and are not reconstructed for this change. A module loaded only from bytecode therefore has no HIR and deterministically selects legacy/VM.
 
 Alternative rejected: make HIR the source for VM bytecode in the first version. That is a desirable possible future consolidation, but it would combine a VM compiler rewrite with the first TypedASTJIT proof and eliminate bytecode as an independent oracle.
+
+### Test-only HIR inspection and StaticJIT generation are different request kinds
+
+HIR capture has two callers, but they do not share orchestration semantics or durable artifacts:
+
+1. **Test-only HIR inspection** proves frontend capture, verification, normalization, source provenance, and deterministic serialization. Native compiler and Standalone tests use a private helper around a test-owned `asCScriptEngine`. UE integration tests and developers may invoke a dedicated `UAngelscriptHIRDumpCommandlet`, which owns one restricted generation Engine for the requested concrete target profile. Both forms compile the complete relevant source graph with HIR capture enabled and emit only normalized `.hir.txt`, `.hir.json`, or both.
+2. **StaticJIT generation** is an ordinary Static generation request with BackendId `"typed-ast"`. Its one generation-only `FAngelscriptEngine` captures HIR during the same single authoritative source compile that constructs `CompiledSourceGraph`; `FAngelscriptTypedASTJIT` then consumes those function-owned HIR objects synchronously in memory. The request produces generated C++/Provider artifacts and per-function fallback information, but no HIR dump by default.
+
+The dedicated dump entry point is intentionally not a mode on `UAngelscriptJITCommandlet` and is not implemented by calling the Static backend. Its development/test contract is:
+
+```text
+-run=AngelscriptHIRDump
+  -Project=<uproject>
+  -Profile=<EditorDevelopment|GameDevelopment|GameShipping>
+  [-Output=<directory>]
+  [-Module=<stable-module-filter>]
+  [-Function=<stable-function-filter>]
+  [-Format=<Text|Json|Both>]
+```
+
+`Profile` is required and concrete. `Format` defaults to `Both`; output defaults to `Saved/Angelscript/HIRDump/<Profile>/`. Module/function filters affect only dump selection, not Bind replay or the source graph compiled for semantic authority. Output ordering and IDs are deterministic and pointer-free. The helper/Commandlet never packages Provider entries, emits C++, runs BytecodeJIT fallback, or reports a successful StaticJIT artifact. Conversely, StaticJIT never reads `.hir.txt`/`.hir.json` as compiler input; dump files are disposable golden/diagnostic evidence, not a cache or interchange format.
+
+The request-kind split is structural rather than a command-line convention: `TestHIRSnapshot`/`DeveloperHIRDump` and `StaticJITArtifact` have distinct result types and cannot be silently converted into each other. Unsupported-but-valid source may still yield a successful HIR snapshot containing deterministic unsupported markers; a verifier-invalid HIR fails the snapshot. StaticJIT instead applies task-level capture validation and, after that succeeds, its defined per-function TypedASTJIT-to-BytecodeJIT-to-VM fallback.
+
+Alternative rejected: add `Mode=DumpHIR` to `UAngelscriptJITCommandlet` or model HIR dumping as another Static backend. That would make diagnostic output appear Provider-loadable, entangle fallback and packaging with compiler tests, and invite persisted HIR to become an accidental production input.
 
 ### Function traits are normalized into an effective receiver and call shape
 
@@ -100,7 +125,7 @@ Receivers are modeled as one of `None`, `NativeObjectThis`, `ExplicitParameterAl
 
 Resolved calls record three distinct views after mixin receiver insertion, named/default/hidden arguments, concrete determines-output-type resolution, and call rewrites: source receiver/argument roles, effective formal bindings, and the authoritative evaluation sequence. The maintained fork compiles ordinary call, constructor, index, and chained-call operands in reverse formal order; method receiver placement is call-shape dependent, assignment compiles RHS before LHS, and ordinary eager binary expressions may use a different order. HIR therefore never reduces these rules to a generic source-order or left-to-right flag. Default expressions retain both callee-declaration/parameter origin and caller processed-source provenance. `CompileOutEntirely`, `ReplaceWithFirstParam`, and `CompileOutAsMethodChain` are captured as the final expression semantics before a call node is created; TypedASTJIT must not emit a native call that the authoritative compiler compiled out. Host-only arguments such as WorldContext defaults or a native `PassScriptFunctionAsFirstParam` value remain distinct from source parameters and from receivers.
 
-The first scalar emitter recognizes and verifies these shapes but supports only ordinary receiver-free scalar functions. Object receivers, member/property access, mixin object calls, constructors/destructors, return-on-stack, and complex lifetime/cleanup initially receive a source-located typed fallback. This is a capability boundary, not a reason to omit receiver information: later object slices open eligibility against the same verified HIR and must preserve null checks, access/property resolution, evaluation order, virtual/RPC/Blueprint routing, and exception behavior.
+The first scalar emitter recognizes and verifies these shapes. Its base slice supports ordinary receiver-free scalar functions; task 6.2 additionally admits final, non-virtual native-object instance UFUNCTION roots when the verified HIR never reads the receiver. That narrow instance slice preserves the existing Raw ABI by forwarding the authoritative `void* Object` through VM/raw/parameter entry wrappers while the pure Typed body receives only declared scalar parameters. Receiver reads, member/property access, mixin object calls, virtual/event/RPC routes, constructors/destructors, return-on-stack, and complex lifetime/cleanup still receive a source-located typed fallback. This is a capability boundary, not a reason to omit receiver information: later object slices open eligibility against the same verified HIR and must preserve null checks, access/property resolution, evaluation order, virtual/RPC/Blueprint routing, and exception behavior.
 
 Production roots are still selected from the final UFUNCTION descriptor graph, but an ordinary helper, mixin, or generated lifecycle function can appear in a root's reachable call closure. `NotUFunctionRoot` means that the helper does not publish an independent UASFunction entry; it does not make the helper body irrelevant. Each reachable callee must be emitted as an internal TypedASTJIT helper, called through a proven bridge, or cause the caller root to fall back. The full trait matrix, source evidence, verifier rules, Singleton lowering constraint, and test axes are recorded in `research/function-traits-and-effective-receiver.md`.
 
@@ -110,9 +135,9 @@ Alternative rejected: rewrite all methods, mixins, and external implicit receive
 
 ### The first implementation milestone is a provider-independent functional slice
 
-The first implementation milestone proves actual generated-code behavior before production provider publication or Runtime JIT coordination. It captures one global scalar UFUNCTION fixture named `SemanticScalarBranch` (the historical fixture name is retained), verifies and dumps its function-owned HIR, emits C++ through a core API that cannot receive bytecode/provider state, compiles a checked-in test probe, and compares isolated VM, BytecodeJIT, and TypedASTJIT execution for the same inputs. Production packaging still waits for the shared generation view/backend contract.
+The first implementation milestone proves both compiler capture and actual generated-code behavior before production provider publication or Runtime JIT coordination, but it does so with two explicit test requests. A compiler snapshot request captures one global scalar UFUNCTION fixture named `SemanticScalarBranch` (the historical fixture name is retained), verifies its function-owned HIR, and returns normalized test output without constructing an emitter/backend. A separate provider-independent emitter/AOT test consumes verified in-memory HIR from its own source compilation, emits C++ through a core API that cannot receive bytecode/provider state, compiles a checked-in test probe, and compares isolated VM, BytecodeJIT, and TypedASTJIT execution for the same inputs. Production packaging still waits for the shared generation view/backend contract.
 
-The test probe is intentionally not a production provider entry. It reuses the maintained AOT generated-file workflow only to prove that real compiler output can become a compiled native function. A test-only entry counter must show that the TypedASTJIT body ran; matching results without the counter do not satisfy the milestone. Completing this slice does not complete provider identity, UASFunction attachment, native-call linkage, hot reload, or Runtime JIT tasks.
+The snapshot's success proves only compiler HIR capture/verification/determinism; it cannot claim that TypedASTJIT emitted or executed anything. The test probe is intentionally not a production provider entry. It reuses the maintained AOT generated-file workflow only to prove that real compiler output can become a compiled native function. A test-only entry counter must show that the TypedASTJIT body ran; matching results without the counter do not satisfy the emitter milestone. Completing this slice does not complete provider identity, UASFunction attachment, native-call linkage, hot reload, or Runtime JIT tasks.
 
 The concrete patch sequence, interface skeletons, compiler hook map, execution matrix, and verification commands are recorded in `research/typed-semantic-staticjit-patch-cookbook.md`. Synthetic positive, fallback, and invalid HIR examples live under `research/fixtures/semantic-aot-v1/`. Those JSON files are research test vectors only: Runtime never loads them, they are not an HIR persistence schema, and the real C++ model remains the implementation under test.
 
@@ -144,11 +169,23 @@ Alternative rejected: let `FAngelscriptTypedASTJIT` trigger compilation when HIR
 
 For each target profile, the orchestrator creates one disposable `FAngelscriptEngine` in StaticJIT-generation mode. Process-level Bind callback discovery/sealing is reused, but every callback is replayed into the new `asIScriptEngine`; its type info, FunctionId, PropertyId, module objects, and HIR are Engine-local. The Engine compiles the complete Provider source graph so overloads, imports, globals, helper closure, and target-profile declarations are authoritative, while the output request may select a smaller module set.
 
-The generation Engine performs ClassGenerator descriptor analysis only. It may read existing native Unreal reflection during Bind and ABI classification, but it does not create script `UClass`, `UScriptStruct`, `UDelegateFunction`, `UFunction`, or CDO objects; execute class redirects, Soft/Full Reload, reinstancing, or default-object initialization; or publish into the live Editor Engine. TypedASTJIT roots and Entry Plans come from the resulting generation-local descriptor view.
+The generation Engine performs ClassGenerator descriptor analysis only, reusing the semantic work needed by `SetupModule` and `Analyze` through a narrow analysis seam. It may read existing native Unreal reflection during Bind and ABI classification, but it does not create script `UClass`, `UScriptStruct`, `UDelegateFunction`, `UFunction`, or CDO objects; call `GetDefaultObject()` when doing so would create a CDO; execute class redirects, reload planning, Soft/Full Reload, reinstancing, default-object initialization, or UObject materialization; or publish into the live Editor Engine. If a requested ABI classification cannot be established from already-existing reflection without materialization, generation fails closed or marks the function ineligible. TypedASTJIT roots and Entry Plans come from the resulting generation-local descriptor view.
+
+The compile purpose also suppresses services unrelated to semantic compilation: DebugServer; CodeCoverage/crash-extension attachment; Hot Reload file watching/thread startup; script test discovery; `PostEngineInit` or equivalent runtime bootstrap delegates; Provider registry refresh/publication; writable BindDB or generation cache publication; and Cache V2 restore as a substitute for a source compile that owns HIR. The generation path may replay the already sealed Bind callbacks and may hold generation-local read-only snapshots, but it must not register itself as a runtime/world Engine.
+
+Process-global Unreal state remains owned by the primary Engine and runtime/editor bootstrap. The generation Engine neither acquires nor sweeps the shared `/Script/Angelscript` or `/Script/AngelscriptAssets` package domains, and neither clears nor replaces `GBlueprintEventsByScriptName`, Editor class caches, primary route/module/type registries, global descriptor caches, or pooled contexts belonging to another Engine. Destruction and every early-failure path release only the temporary AngelScript engine, its modules/functions/type information, generation-local contexts and descriptor/HIR arenas, and any database/snapshot explicitly owned by that request. Containment tests compare primary global/package/registry state before and after both successful and failed generation.
 
 HIR and descriptor pointers remain valid only until synchronous backend analysis/emission finishes. The backend output contains stable identity, C++ text, stable references, provenance, and typed reasons, never a raw AngelScript/UE pointer or Engine-local numeric ID. Destroying the generation Engine releases its HIR and cannot invalidate Provider output.
 
 Alternative rejected: use the live Editor Engine and toggle capture before an in-place compile. Existing modules may have come from Cache V2 or capture-off compilation, and generation would race Hot Reload/world state. Alternative rejected: run a second process in v1; descriptor-only generation provides the required UObject isolation without introducing another serialized IR and IPC lifecycle.
+
+### Editor refresh is a read-only freshness gate
+
+An Editor Generate/Refresh action may request `"typed-ast"` only from an authoritative source snapshot that the primary Engine already considers current. The action compares the current source inventory/content identity and target profile with the primary Engine's authoritative compilation state. When current, it passes that snapshot to one generation Engine, which performs the only source recompile introduced by TypedASTJIT generation. When stale, it returns `AuthoritativeEngineStale` and directs the user/caller to the existing normal hot-reload/recompile path before retrying.
+
+StaticJIT refresh does not call `ForceCleanCacheModules`, initiate primary-Engine compile/reload, clear primary compiler caches, or combine Hot Reload and artifact generation into one hidden operation. This keeps reflection/reinstancing ownership in the established live Engine flow and avoids the sequence “force primary compile, then compile again in the temporary Engine.” A Commandlet has no live freshness problem: its explicit source/profile request is authoritative for that isolated invocation, but it still uses exactly one restricted generation Engine and the same containment contract.
+
+Alternative rejected: have Generate/Refresh repair stale Editor state itself. That would expand a build-artifact action into a live reload transaction, duplicate compilation, and make failure cleanup responsible for both primary and temporary Engine state.
 
 ### The final descriptor graph defines UFUNCTION roots
 
@@ -164,7 +201,7 @@ An initial TypedASTJIT root must satisfy all of the following:
 
 An instance method may retain an opaque `this` pointer for entry ABI purposes, but using object properties, object casts, virtual calls, or object-valued expressions makes the body ineligible. A global/static UFUNCTION can be eligible when it otherwise meets the same rules.
 
-Eligibility returns `FAngelscriptTypedASTJITEligibility`, containing actual disposition, stable fallback enum, source span when applicable, and a deterministic detail token. Initial fallback categories are `NotUFunctionRoot`, `MissingTypedHIR`, `UnsupportedFunctionKind`, `UnsupportedFunctionTrait`, `UnsupportedReceiver`, `UnsupportedUFunctionFlags`, `UnsupportedSignature`, `UnsupportedType`, `UnsupportedStatement`, `UnsupportedExpression`, `UnsupportedCall`, `UnsupportedGlobalStorage`, `UnsupportedGlobalInitializer`, `UnsupportedImportedRoute`, `TypedSemanticDependencyMismatch`, `NonPortableNumericConversion`, `UnsupportedExecutionObservability`, `UnsupportedExecutionControl`, `UnsupportedLifetime`, `SuspendOrExceptionState`, `InvalidEffectiveReceiver`, `InvalidCallEvaluationSequence`, `InvalidControlTarget`, `InvalidTypedHIR`, `EmitterFailure`, and `BackendUnavailable`. Execution categories use stable details such as `DebuggerStepUnavailable`, `CoverageHookUnavailable`, `LoopTimeoutSafepointUnavailable`, `RecursionGuardUnavailable`, and `DirectCalleeProfileMismatch` rather than introducing a new enum for every capability bit.
+Eligibility returns `FAngelscriptTypedASTJITEligibility`, containing actual disposition, stable fallback enum, source span when applicable, and a deterministic detail token. Initial fallback categories are `NotUFunctionRoot`, `MissingTypedHIR`, `UnsupportedFunctionKind`, `UnsupportedFunctionTrait`, `UnsupportedReceiver`, `UnsupportedUFunctionFlags`, `UnsupportedSignature`, `UnsupportedType`, `UnsupportedStatement`, `UnsupportedExpression`, `UnsupportedCall`, `UnsupportedGlobalStorage`, `UnsupportedGlobalInitializer`, `UnsupportedImportedRoute`, `SemanticDependencyMismatch`, `NonPortableNumericConversion`, `UnsupportedExecutionObservability`, `UnsupportedExecutionControl`, `UnsupportedLifetime`, `SuspendOrExceptionState`, `InvalidEffectiveReceiver`, `InvalidCallEvaluationSequence`, `InvalidControlTarget`, `InvalidTypedHIR`, `EmitterFailure`, and `BackendUnavailable`. Execution categories use stable details such as `DebuggerStepUnavailable`, `CoverageHookUnavailable`, `LoopTimeoutSafepointUnavailable`, `RecursionGuardUnavailable`, and `DirectCalleeProfileMismatch` rather than introducing a new enum for every capability bit.
 
 Alternative rejected: compile every AS helper semantically in the first version. UFUNCTION roots provide an existing Unreal ABI and a representative product path; helpers remain callable through legacy/raw/VM bridges and can become roots in a later capability extension.
 
@@ -172,7 +209,7 @@ Alternative rejected: compile every AS helper semantically in the first version.
 
 Add `StaticJIT/TypedASTJIT` containing eligibility analysis, reference/dependency planning, scalar ABI/type spelling, structured C++ emission, and call marshalling. Neither the TypedASTJIT analyzer nor emitter calls `GetByteCode()`: tests must assert that no bytecode reference scan, bytecode cursor, or `FAngelscriptBytecode` implementation participates from TypedASTJIT eligibility through C++ body generation. TypedASTJIT references come from resolved HIR calls/types/symbols, shared Entry Plans, explicit external-native-call descriptors, and Provider route metadata. BytecodeJIT retains its existing bytecode analysis and reference resolver.
 
-The emitter produces structured C++ blocks and typed locals from HIR. It uses explicit casts and helper functions where C++ would otherwise differ from AngelScript for signedness, narrowing, shifts, integer division, divide-by-zero, overflow boundaries, enum representation, float/double conversion, and boolean normalization. Runtime errors enter the same `FScriptExecution` exception contract used by legacy StaticJIT. Because the first slice has no managed object temporaries, exception cleanup does not own destructors; a function requiring cleanup is ineligible.
+The emitter produces structured C++ blocks and typed locals from HIR. It uses explicit casts and helper functions where C++ would otherwise differ from AngelScript for signedness, narrowing, shifts, integer division, divide-by-zero, overflow boundaries, enum representation, float/double conversion, and boolean normalization. The emitted typed implementation and pure scalar helpers do not receive, construct, or name `FAngelscriptJITExecutionContext`; that Runtime dispatcher remains outside generated body logic. Pure wrap/narrow/shift operations are context-free and force-inlineable. Only an operation that can actually fail uses the narrow `FScriptExecution` exception primitive, while a dynamic legacy/VM call uses the dedicated TypedASTJIT scalar bridge. Existing VM/raw/parameter ABI thunks may carry `FScriptExecution&` where their shared entry plan requires it, but they do not propagate a generic execution-context object through ordinary expressions or direct typed helper calls. Runtime errors enter the same `FScriptExecution` exception contract used by legacy StaticJIT. Because the first slice has no managed object temporaries, exception cleanup does not own destructors; a function requiring cleanup is ineligible.
 
 Structured output preserves compiler phases rather than translating only surface syntax. `for` continue executes the increment list then condition, `while` continue reevaluates its condition, and `do-while` continue reaches the trailing condition. Every `Break`/`Continue` names and verifies the nearest legal lexical target; the analyzer computes exited scopes and accepts only trivial cleanup in the first scalar slice. Switch lowering preserves the current 32-bit selector normalization, constant/duplicate/type rules, ordered fallthrough/default disposition, explicit case scopes, and the exhaustive-enum invalid-value exception edge. A C++ `switch` with an omitted default is not equivalent when the compiler requires `Invalid enum value passed to switch`.
 
@@ -186,11 +223,24 @@ Extract or introduce a shared entry-plan layer that describes the function symbo
 
 Generated TypedASTJIT entries use the same current Static Provider entry seam. BytecodeJIT and TypedASTJIT results pass through `FAngelscriptStaticJITGenerator` and `FAngelscriptJITGeneration`, use the same Provider entry record, stable identity, and route snapshot, and may coexist in one module TU. Backend kind is diagnostics metadata, never a second identity namespace.
 
-### Native direct calls require a separate external-linkage descriptor
+Runtime Provider identity is not equivalent to Cache V2 restorable-module
+eligibility. A current module can contain a generated native entry whose exact
+function facts are stable while another declaration (for example an external
+managed value in a signature) keeps the complete module graph out of the
+restorable Cache. After a normal successful compile, Runtime may therefore run
+the existing function-facts-only capture for a non-cacheable module only when
+the immutable loaded Provider registry snapshot contains an entry for that
+module key. The resulting identities may feed the current route snapshot, but
+they never enter the Cache publication input, packs, manifest, or lifecycle
+roots. Unrelated non-cacheable modules are not re-serialized. This preserves
+Cache fail-closed behavior while preventing Cache coverage from silently
+disabling an otherwise exact Static JIT Provider entry.
+
+### Native current-binding calls require a separate callable descriptor
 
 Keep the existing native forms and `.NativeFunction()`/`.NativeMethod()` behavior for BytecodeJIT compatibility, but do not reinterpret those APIs as cross-DLL proof. Extend the native-form/call-plan surface with an explicit `FAngelscriptExternalNativeCall`-style descriptor whose stable data includes:
 
-- linkage class: `ExportedSymbol`, `HeaderInline`, or `ExportedRuntimeThunk`;
+- linkage class: `ExportedSymbol`, `HeaderInline`, `ExportedRuntimeCallable`, or `ExportedRuntimeThunk`;
 - exact C++ symbol expression and includable header;
 - owning UE module and legal consumer dependency classification;
 - normalized parameter/return ABI identity and supported calling form;
@@ -198,19 +248,24 @@ Keep the existing native forms and `.NativeFunction()`/`.NativeMethod()` behavio
 
 Absence of this descriptor means “not externally direct-callable,” even when BytecodeJIT already has a call spelling. The descriptor is attached deliberately by the owning FBind registration or native-form implementation; TypedASTJIT does not scan source text, infer `_API` macros from symbol names, or emit its own `extern` redeclaration.
 
-There are three valid outward implementations:
+There are four valid outward descriptions:
 
 1. **Owning-module export:** the callee already has a public declaration marked by its owning module's API macro. Engine functions keep their Engine-module API; Runtime-owned functions use `ANGELSCRIPTRUNTIME_API`.
 2. **Header inline/template:** the complete definition is in the included header and all dependencies are legal for the generated module. It does not need DLL export merely for linkage, but still needs typed ABI and routing proof.
-3. **Exported Runtime thunk:** a narrow `ANGELSCRIPTRUNTIME_API` function in an AOT-callable Runtime header forwards to a provider-private helper. This is preferred when exposing `FAngelscript*Binds` would make binding organization a public ABI or leak Runtime-private module dependencies.
+3. **Exported Runtime callable:** a narrow `ANGELSCRIPTRUNTIME_API` function in an AOT-callable Runtime header is the actual implementation registered with AngelScript. Generated C++ records that spelling for audit, but loads the current Engine registration's native address from its adopted reference slot instead of freezing the symbol as executable identity.
+4. **Exported Runtime thunk:** a narrow `ANGELSCRIPTRUNTIME_API` function in an AOT-callable Runtime header forwards to a provider-private helper. This is reserved for implementations whose ownership cannot safely move without exposing binding-provider internals.
 
-The implementation inventory classifies every existing native form and direct-pointer binding as `ExportedSymbol`, `HeaderInline`, `ExportedRuntimeThunk`, `ProviderPrivate`, or `UnknownBytecodeNativeForm`. Only the initial supported scalar subset must be migrated in this change; the inventory records deferred functions and why. Adding `ANGELSCRIPTRUNTIME_API` only to a `.cpp` definition is invalid because the generated consumer needs the same imported declaration. Exporting a whole provider struct merely to expose one member is also rejected when a narrow thunk suffices.
+The implementation inventory classifies every installed native form and direct-pointer binding as `ExportedSymbol`, `HeaderInline`, `ExportedRuntimeCallable`, `ProviderPrivateBridge`, `CompileOut`, or explicit `Unsupported`. This change does not leave unreviewed Bind functions in an implicit unknown bucket: every installed AS callable receives a stable disposition, even when its current TypedASTJIT route is bridge or unsupported. Adding `ANGELSCRIPTRUNTIME_API` only to a `.cpp` definition is invalid because the generated consumer needs the same imported declaration.
+
+For Runtime-owned native-slot cases, a public `AngelscriptStaticJITNativeCallables` spelling remains useful for ABI review and external consumers, but it is not the generated artifact's executable identity. The Provider adopts stable key + expected ABI against the selected Engine, retains the current `asCScriptFunction`, and the generated call loads that registration's current native address through a deterministic slot. A thin exported forwarding callable remains valid when implementation ownership cannot safely move, while registrar and helper organization stays private. Target-specific exports are therefore not used as a substitute for current-Engine binding semantics.
+
+Descriptor attachment proves two deliberately separate layers. The normalized native-call contract identifies the exact installed function after call convention, parameter/return layout, traits, default arguments, compile-out and hidden-argument policies are applied; attachment is rejected if that identity does not match the current Engine function. A lowering-domain identity then proves that the current emitter can materialize the values. Scalar functions carry both the installed contract and scalar ABI. A managed-value function such as `Print(FString,float,FLinearColor)` may already carry accurate export, default, WorldContext, exception and lifetime metadata while its lowering domain remains `ManagedValuesDeferred`; validation reports `TypedABIUnavailable`, so it is visible in the complete inventory but cannot be direct-emitted until object materialization and cleanup are implemented.
 
 A separate UE consumer module must include, link, and invoke every Runtime-owned external symbol/thunk advertised by the initial slice. Golden generated text and tests compiled inside `AngelscriptRuntime` cannot detect a Windows DLL import/export defect. The final generated provider fixture repeats the same proof at the actual module boundary.
 
 Alternative rejected: infer external linkability from `FScriptFunctionNativeForm::GenerateCall()`. It proves only the emitted expression and was designed before the separate project-DLL boundary.
 
-Alternative rejected: add `ANGELSCRIPTRUNTIME_API` to all `FAngelscript*Binds` classes. It expands a large internal implementation surface into a supported public ABI, can expose private dependency headers, and still does not describe routing or typed-call safety.
+Alternative rejected: mechanically add `ANGELSCRIPTRUNTIME_API` to all `FAngelscript*Binds` classes without producing public declarations and descriptors. The current inventory contains registrar-local `.cpp` classes and functions with compiler-private, generic, hidden-argument, reflection, container, and lifetime-sensitive signatures; a DLL export alone would still be uncallable or unsafe from generated C++. The required outcome is nevertheless complete: every installed Bind function is classified, and every direct-capable Runtime target is exposed as an actual imported DLL callable.
 
 ### Globals, source provenance, and compiler dependencies fail closed
 
@@ -219,6 +274,78 @@ Global initialization remains the separate `CompileGlobalVariables()`/`CompileGl
 The maintained compiler already captures function signatures/content, type declaration/layout, property layout, mutable global storage, and pure-constant hard values in `ScriptFunctionData::artifactDependencies`. TypedASTJIT analysis derives a typed `SemanticUseManifest` from verified HIR and requires every use to be covered by a compatible authoritative compiler dependency. Extra compiler dependencies are preserved. Missing or incompatible coverage, or failure to map an engine-local coordinate to the current stable artifact identity, returns `SemanticDependencyMismatch`; TypedASTJIT analysis does not invoke the BytecodeJIT reference scanner to repair the manifest.
 
 Imported calls are represented as current-binding slots using source module and canonical signature, not as a direct body edge to the current `boundFunctionId`. Shared/external declarations separately record declaration identity, body owner, and calling module. An imported call requires a bridge/provider route that observes the current binding on every call, and a shared/external body may be emitted only by its authoritative owner; otherwise the caller receives `UnsupportedImportedRoute` or `UnsupportedCall`.
+
+### Direct Typed closures publish per-entry semantic dependency tables
+
+TypedASTJIT adds a code-generation dependency only when its selected lowering
+embeds a semantic fact that the maintained compiler's ordinary source
+dependency does not promise to invalidate. This is a lowering rule, not a
+reflection rule: whether the callee is a `UFUNCTION` does not decide it.
+
+- Root self-recursion is covered by the root entry's own `ExecutionHash` and
+  does not add a duplicate self-content row.
+- A fixed direct call to a non-root helper, including another member of a
+  directly emitted recursive SCC, preserves the compiler's `Signature` edge
+  and adds a Typed-codegen `FunctionContent` edge for that callee.
+- A call through a current Engine/Provider/VM slot records signature, expected
+  ABI and route/reference identity but does not embed callee content.
+- A compiler-folded constant preserves its authoritative `HardValue` edge and
+  expected content/value fingerprint.
+
+Every installable Provider entry owns a forward semantic dependency slice.
+The physical ABI uses one Provider-owned, canonical flat array plus
+`DependencyStartIndex` and `DependencyCount` in each entry; it does not emit a
+callee-owned list of call sites. Calling the same helper more than once creates
+one canonical row. A direct transitive closure is flattened into the root
+entry: if `Root -> HelperB -> HelperC` is emitted as fixed direct C++, Root's
+slice contains content rows for both B and C. If several roots embed the same
+helper, each root owns its own row because each entry can become stale
+independently.
+
+The versioned dependency row is POD-like and carries `StructSize`, semantic
+dependency kind, stable artifact-reference kind/key, expected ABI/shape
+identity, and an optional `ExpectedContentOrValue`. It never carries an
+`asIScriptFunction*`, Engine-local FunctionId, raw native address, or display
+string as executable identity. Generation preserves authoritative compiler
+dependencies, adds only the Typed-codegen direct-content edges above, then
+normalizes, sorts, deduplicates and conflict-checks the complete row set.
+Canonical rows participate in Provider generation/artifact identity. The
+Provider ABI revision is bumped whenever the public row or entry layout
+changes, and old-revision providers fail closed.
+
+Provider adoption validates every entry slice before publishing it. Bounds,
+row `StructSize`, enum/reference kind, stable key, required expected hashes,
+canonical order, duplicate/conflicting rows and digest participation are
+validated first. The selected Engine then resolves each row through its
+current semantic authority. In particular, `FunctionContent` compares against
+`FunctionRoute.Identity.Content.Execution`; hard-value, layout and storage
+rows compare against their corresponding current publications. Missing,
+ambiguous, wrong-kind, wrong-ABI or changed values produce the typed
+`SemanticDependencyMismatch` result, leave the stale entry unpublished and
+retain BytecodeJIT/VM fallback.
+
+After successful adoption, the Engine builds a per-Engine reverse in-memory
+index from `(stable target key, dependency kind)` to the affected Provider
+entries. A route/content/value refresh revalidates only entries selected by
+that index and withdraws mismatches before new calls can acquire the stale
+entry. It does not mutate the generated forward table and it is never a
+process-global cross-Engine cache. Withdrawal follows the existing Provider
+publication/lease protocol: calls that already acquired an entry may finish,
+the DLL is not forcibly unloaded underneath them, and subsequent calls use the
+current replacement or BytecodeJIT/VM fallback.
+
+Invalidation and regeneration are separate operations. A helper change first
+withdraws affected entries immediately; generating the owning
+`<Module>.jit.cpp`, compiling/loading a replacement DLL and adopting its new
+Provider later restores Typed execution. No semantic dependency lookup is
+added to the generated direct-call hot path. This keeps ordinary typed calls
+equivalent to direct C++ while preserving Editor/hot-reload correctness.
+
+BytecodeJIT's reloadable Provider mode remains the compatibility comparison:
+it routes script-to-script calls through the current runtime function route
+and therefore does not embed the same helper-body dependency. Immutable direct
+call sets remain a separately validated cooked-only option, not the Editor
+solution for TypedASTJIT.
 
 Every HIR node owns the processed source section/range used by the compiler. It may additionally retain an authored origin or generated-origin record only when the preprocessor can supply a reliable mapping. Diagnostics prefer a precise authored origin, then a generated anchor, then the processed span; they never label a processed offset as an authored-file offset. Source provenance affects diagnostics and reproducibility, not semantic decisions or bytecode.
 
@@ -229,9 +356,172 @@ The complete evidence, v1 global matrix, imported/shared rules, scalar helper re
 HIR call nodes retain target kind, engine-local target or binding-slot coordinate, exact argument/result types, source roles, formal bindings, authoritative evaluation sequence, default/hidden origins, and source provenance. The TypedASTJIT analyzer resolves those coordinates only against the same generation Engine/function graph; the HIR itself does not own a target function pointer. The emitter materializes receiver/argument effects exactly once in the recorded sequence, checks script exception state at each required boundary, then supplies the temporaries in formal ABI order to one of four lowering forms:
 
 1. **Direct script entry:** a concrete non-virtual script target has a proven scalar raw ABI and the active provider/profile permits that direct route. Emit the resolved entry/reference mechanism owned by the provider contract.
-2. **Direct external native entry:** a registered native target has a matching external-call descriptor and is `ExportedSymbol`, `HeaderInline`, or `ExportedRuntimeThunk`. Emit the declared include and typed call without redeclaring the target.
+2. **Current native binding:** a registered non-generic native target has a matching callable descriptor and reviewed scalar ABI. Except for `HeaderInline`, emit a stable key + expected ABI + reference-slot row and call the actual native address retained by the selected Engine through `InvokeBoundNative<Return, Args...>`. No target address, FunctionId, or target symbol is executable identity in the artifact.
 3. **Scalar bridge:** marshal scalar arguments into the existing StaticJIT/VM call frame contract, invoke the current script/native target, propagate exception state, and convert the scalar result back to the HIR type. This covers ordinary non-UFUNCTION AS helpers and bindings whose callable implementation remains provider-private.
 4. **Unsupported call:** object/reference/container marshalling, suspend behavior, ambiguous dynamic dispatch, missing external linkage without a bridge, or any target that cannot preserve routing produces `UnsupportedCall` for the root.
+
+No bound-call artifact embeds a native pointer or an Engine-local function ID.
+Both native-slot and VM-bridge calls name a stable function/reference identity
+and expected ABI. Provider or Engine initialization resolves that identity to
+a current binding slot; the exported Runtime core validates and loads the slot
+at invocation time. This keeps generated providers compatible with ASLR,
+Engine reconstruction, module unload/reload, rebinding, and Live Coding. A
+reviewed non-generic scalar native slot calls the current registration's actual
+`sysFuncIntf->func` through the emitted C++ scalar shape. Generic or otherwise
+unreviewed forms prepare and execute the retained `asCScriptFunction` through
+the VM bridge. Neither path guesses identity from the AS declaration string.
+
+Generated bridge source retains the canonical AS declaration and registered
+target spelling in an immutable call-site metadata row emitted into the same
+`.jit.cpp`, while a typed `InvokeBound<Return, Args...>` template owns the
+compile-time C++ argument shape. The generated call passes that row to the
+bridge, so the function name is visible at the exact converted C++ call site
+and is available to diagnostics without opening a separate manifest. The row
+also carries a deterministic Provider reference-slot index, stable identity and
+expected ABI. It is descriptive, not executable identity: the bridge reads the
+already-resolved slot and never parses or looks up the name on the hot path.
+Overload-safe stable identity plus expected ABI is resolved during
+Provider/Engine adoption, and the slot then follows the same current-reference
+refresh/invalidation contract used by generated StaticJIT references. The
+Runtime core uses the maintained `FAngelscriptContext` pool, prepares the
+current slot's `asCScriptFunction`, marshals only reviewed scalar/enum arguments
+through `SetArg*`, and executes that context. For a registered system function,
+`asCContext::Execute()` therefore reaches the same
+`CallSystemFunction -> CallFunctionCaller/CallGeneric` path as the VM; the
+registration's real caller, call convention, object placement, metadata
+arguments, parameter offsets and return rules remain authoritative. For an
+ordinary script helper, the same prepared-context path executes its current
+script/JIT route. The bridge does not cast or call the private pointer itself
+and does not duplicate the legacy native caller. Generation inventory records
+that selection as a pointer-free `FunctionCaller`, `GenericFunction`,
+`GenericMethod`, or `NativeCallingConvention` dispatch kind, with
+`FunctionCaller` taking the same precedence as `CallSystemFunction`.
+The registered native scalar ABI is evidence only for an explicit direct C++
+call; it is never used to cast a generic callback. VM-bridge admission instead
+uses a separate AS-visible marshalling shape plus the stable target ABI, and a
+generic callback becomes bridge-eligible only after its dedicated
+`Prepare/SetArg*/Execute -> CallGeneric` routing, exception, and lifetime tests
+exist. Hidden/object forms likewise remain closed until their own tests land.
+The maintained-fork evidence and exact algorithm are recorded in
+`research/typed-native-call-vm-bridge.md`.
+
+Generated source must make the effective call target auditable without turning
+display text into runtime identity. Every native-call site carries a compact
+metadata comment block with the canonical AS declaration, route, stable target
+key, expected ABI and, when the registration owns one, the registered C++
+callable spelling. `HeaderInline` additionally names and invokes the exact
+inline C++ symbol. Current-native and VM-bridge routes expose deliberately
+different generated and registered targets:
+
+1. `Emitted C++ Callee` is the literal generated call to either the
+   header-defined `InvokeBoundNative<Return, Args...>` or
+   `InvokeBound<Return, Args...>` template;
+2. `Runtime DLL Core` is respectively the fixed exported current-native
+   resolver or `ANGELSCRIPTRUNTIME_API InvokeBoundViaVM` after typed packing;
+3. `Registered Target` is the current AS function/C++ Bind callable that the
+   validated reference slot reaches through the Engine binding database.
+
+The generated `Return, Args...` template arguments own the compile-time C++
+marshalling shape. Every bridged call emits one named, immutable metadata row
+in the generated translation unit. That row stores the canonical declaration,
+registered-target display name, stable key, expected ABI and reference-slot
+index, and the generated expression passes the row by reference to
+`InvokeBound`. The display strings are used only by generated-source readers,
+manifests, dumps and failures; they are never copied, parsed, hashed or searched
+to choose the target during an invocation. Provider/Engine initialization
+resolves stable key + expected ABI once to a current slot, and the bridge uses
+the row's numeric slot index to load it. This avoids ambiguous overloads and
+keeps reload/rebind correct while retaining the readable function name
+requested for generated C++.
+
+The generated C++ identifier for that row is also deliberately readable. It
+uses a sanitized function-name stem plus a short deterministic suffix derived
+from the full stable identity, for example `ASJIT_Call_PrivateAdd_a13f09c2`.
+The suffix prevents overload, namespace and same-name collisions without
+putting the full hash into every expression. The complete canonical AS
+declaration, registered C++ callable spelling, stable key and expected ABI stay
+in the row/comment block. Neither the readable stem nor the short suffix is a
+runtime lookup key; the Provider-owned numeric slot remains the only hot-path
+selector after adoption.
+
+The function name is deliberately **not** a C++ template argument and the
+generated expression does not pass a bare name/declaration string to a lookup
+API. C++ template parameters describe types well, but a target spelling is not
+an overload-safe or reload-safe identity and a provider-private spelling is not
+a linkable symbol. Instead, the source-visible named call-site row answers
+which AS/Bind function the expression represents, while
+`InvokeBound<Return, Args...>` answers which C++ function is literally called
+and what marshalling shape is compiled. Passing the row by `const&` lets failure
+and dump paths read its immutable labels without copying them; successful
+dispatch consumes only its prevalidated numeric slot. Therefore the converted
+source is readable without introducing a per-call string lookup.
+
+Conceptually, generated call sites look like:
+
+```cpp
+// AS Bind       : void Print(const FString&, float32, FLinearColor)
+// Registered Target : AngelscriptStaticJITNativeCallables::Print
+// Route              : CurrentNativeBinding
+// Stable Key         : <stable-function-key>; Expected ABI: <abi-hash>; Slot: 3
+// Emitted C++ Callee : AngelscriptTypedASTJIT::InvokeBoundNative<...>
+// Runtime DLL Core   : AngelscriptTypedASTJIT::ResolveBoundNative
+return AngelscriptTypedASTJIT::InvokeBoundNative<void, FString, float, FLinearColor>(
+    Execution, ASJIT_Call_Print_4f21c90a, Text, Duration, Color);
+
+// AS Bind       : int PrivateAdd(int, int)
+// Registered Target : FProviderPrivateBinds::PrivateAdd (registered, unexported)
+// Route              : CurrentBindingSlot
+// Stable Key         : <stable-function-key>; Expected ABI: <abi-hash>; Slot: 7
+// Emitted C++ Callee : AngelscriptTypedASTJIT::InvokeBound<int32, int32, int32>
+// Runtime DLL Core   : AngelscriptTypedASTJIT::InvokeBoundViaVM
+static const FAngelscriptTypedASTJITBoundCallSite ASJIT_Call_PrivateAdd_a13f09c2 = {
+    "int PrivateAdd(int, int)",
+    "FProviderPrivateBinds::PrivateAdd",
+    <stable-function-key>, <abi-hash>, 7
+};
+return AngelscriptTypedASTJIT::InvokeBound<int32, int32, int32>(
+    Execution, ASJIT_Call_PrivateAdd_a13f09c2, Left, Right);
+```
+
+The second form does not claim that the generated DLL links the private C++
+symbol. Its literal C++ callee is the exported typed bridge; the target label is
+human-readable provenance, and the validated current slot supplies the actual
+registered `asCScriptFunction` and caller/calling-convention record just as the
+AS VM would. Passing `ASJIT_Call_PrivateAdd_a13f09c2` does not perform name-based
+dispatch: its strings are diagnostic labels, while its numeric slot selects a
+Provider-owned record that was resolved and ABI-validated during adoption. A
+diagnostic/dump view therefore renders the complete chain as
+`AS declaration -> InvokeBound<...> -> slot -> current registered target`,
+including unbound/stale/ABI-mismatch state, without pretending the generated
+DLL links the private target symbol.
+
+In other words, the generated source intentionally exposes all three layers
+rather than pretending they are the same function. The converted expression
+literally calls `InvokeBound<Return, Args...>`; that inline template packs the
+compile-time parameter/return shape and imports the fixed Runtime DLL core
+`InvokeBoundViaVM`; the row's canonical declaration and registered-target
+string explain which AS/Bind function the current slot represents. Static
+strings provide readability only and the resolved slot provides runtime
+identity. Changing either display string while retaining the same validated
+key/ABI/slot must not change the invoked target. `InvokeBoundViaVM` then uses
+the maintained `FAngelscriptContext::Prepare/SetArg*/Execute` path, so an
+unexported registered system function reaches its existing
+`CallFunctionCaller` or `CallGeneric` implementation exactly as an AS VM call
+would.
+
+The current Provider raw, VM and Parms adapters already receive
+`FScriptExecution& Execution`, but the initial pure Typed body intentionally
+does not. Emission therefore carries an explicit `bRequiresExecutionState`
+fact. A body whose transitive call closure contains a bridge takes one hidden
+first `FScriptExecution& Execution` parameter, and each generated adapter
+passes through the exact reference it already owns. A body containing only
+direct script/exported/inline calls keeps the existing ordinary C++ signature
+without this hidden parameter. This is narrow state threading, not a return to
+`FAngelscriptJITExecutionContext`: generated semantic expressions never name
+that generic dispatcher, and `InvokeBound` reads the current reference table,
+exception state and Engine identity directly from the passed execution record.
+Nested emitted helpers inherit the same requirement when any reachable call is
+bridged, so no helper silently loses the current slot or outer exception frame.
 
 Calls to RPC, BlueprintEvent, BlueprintOverride, or virtual Unreal surfaces are never raw-direct even when a pointer is discoverable. They must use the existing current-function/`ProcessEvent`/VM route; if the first-version scalar bridge cannot demonstrate that route, the root is ineligible.
 
@@ -248,6 +538,8 @@ Generated code participates in the maintained `FScriptExecution` chain. A TypedA
 The route evaluates an execution-requirements snapshot against the complete direct TypedASTJIT call closure. The conceptual capabilities are frame position, line callback, debugger stepping/locals, coverage, loop timeout, abort/suspend polling, and recursion budget. They may be represented as flags/profile data rather than another provider kind. A root cannot satisfy an instrumented session while directly calling an uninstrumented child; every direct callee/SCC must satisfy the same required profile or the call/root routes through an approved bridge/VM fallback. Instrumentation profile participates in content/profile identity and invalidation.
 
 The maintained VM implements line callback and loop-timeout polling at `asBC_SUSPEND`; BytecodeJIT currently emits debug frame/line metadata but treats that bytecode as a no-op. Debug position is therefore not debugger, coverage, or timeout parity. The first TypedASTJIT version routes active breakpoints, stepping, local inspection, CodeCoverage recording, and required timeout/abort/suspend sessions to VM unless the generated profile explicitly contains approved equivalent source/safe-point hooks. It never calls the game-thread-only line/coverage pipeline directly from an arbitrary worker thread.
+
+The `AbortSuspend` capability is deliberately reserved and fail-closed rather than advertised as a live v1 runtime state. In the maintained fork, `asCContext::Abort()` and `asCContext::Suspend()` both return `asERROR`; the retained `m_doAbort`, `m_doSuspend`, and `m_externalSuspendRequest` fields have no complete request/polling path, and the fork does not contain the 2.38 `m_regs.doProcessSuspend` checks at bytecode and system-call boundaries. Consequently `CaptureCurrentJITExecutionRequirements()` must not invent an abort/suspend requirement today. If cooperative control is restored later, that work must backport the complete context state machine and polling boundaries, then publish `AbortSuspend` as a live requirement so every installed JIT entry lacking approved safe points routes to VM. Copying only the two public methods or adding a test-only global flag is rejected because it would claim interruption safety that neither VM nor generated code actually provides.
 
 Direct JIT-to-JIT recursion also bypasses the nested VM `m_callStack` depth guard. Every TypedASTJIT frame/helper/SCC must consume a bounded script recursion budget and turn exhaustion into the maintained script exception before native stack overflow. Until that guard exists, a recursive closure reports `UnsupportedExecutionControl` with `RecursionGuardUnavailable` or routes to VM.
 
@@ -285,6 +577,7 @@ Production `"typed-ast"` generation never executes two bodies and never reports 
 
 Extend non-Shipping StaticJIT diagnostics with:
 
+- request kind (`StaticJITArtifact`, never `TestHIRSnapshot`/`DeveloperHIRDump`), so a compiler snapshot cannot be reported as a generated Provider;
 - requested backend and whether HIR capture was enabled;
 - per-function UFUNCTION-root state and HIR availability/validity;
 - selected actual backend (`"bytecode"`, `"typed-ast"`, or no Static entry/VM);
@@ -296,6 +589,8 @@ Extend non-Shipping StaticJIT diagnostics with:
 - in differential tests, both generated symbol identities and the VM/BytecodeJIT/TypedASTJIT comparison result.
 
 Human-readable `as.StaticJIT.DumpDiagnostics` prints the same information in stable field order. Diagnostics must not expose new `FAngelscriptEngine::*ForTesting` methods and remain compiled out of Shipping according to the existing capability.
+
+The separate `AngelscriptHIRDump` result reports its concrete profile, complete-graph identity, output filters, capture/verifier state, normalized output paths and deterministic diagnostic counts. It does not report actual execution backend, Provider entries, fallback success, or execution counters, because none exist for a test/developer HIR snapshot.
 
 ### External provider integration is deliberately sequenced
 
@@ -330,6 +625,10 @@ The final integration maps TypedASTJIT results into the shared emitted-function 
 - **Exporting FBind helpers expands Runtime's public ABI** → Export only the reviewed scalar callable surface, prefer thin Runtime thunks for provider-private helpers, and keep a generated inventory of direct/inline/thunk/private/deferred classifications.
 - **UFUNCTION descriptor resolution happens after frontend compilation** → Collect all functions first and classify roots only during final `WriteOutputCode()` when `FunctionDesc->ScriptFunction` is resolved.
 - **HIR memory increases generation builds** → Capture only in explicit `"typed-ast"` generation Engines/tests, use indexed arenas, and destroy HIR with the source function; ordinary Editor/game and `"bytecode"` generation remain off by default.
+- **A diagnostic HIR dump becomes an accidental production cache** → Keep dump and StaticJIT request/result types separate, never read dump files back, and make real TypedASTJIT consume only same-compilation in-memory HIR.
+- **TypedASTJIT generation starts a second temporary Engine** → Use exactly the one generation Engine already required by the Static artifact request; the separate HIR dump Engine exists only when the caller explicitly runs the independent test/developer dump request.
+- **A temporary Engine tears down primary global or UObject state** → Gate services by compile purpose, use analysis-only ClassGenerator seams, snapshot containment boundaries in tests, and release only request-owned AngelScript/descriptor/HIR state on success and failure.
+- **Editor Generate silently recompiles the live Engine before generation** → Treat primary freshness as a read-only prerequisite and return `AuthoritativeEngineStale`; normal Hot Reload remains the sole owner of primary compilation/reinstancing.
 - **BytecodeJIT and TypedASTJIT changes collide with Provider refactoring** → Consume the unified Static request/result and shared Entry Plan; never modify BytecodeJIT or duplicate Provider packaging from this change.
 - **TypedASTJIT output still depends on hidden bytecode analysis** → Keep the backend analyzer/reference collection HIR-only, then use bytecode-access sentinels for the complete TypedASTJIT eligibility/reference/emission pipeline.
 - **Differential execution can observe order-dependent effects** → Run isolated generation/execution state for VM, BytecodeJIT, and TypedASTJIT; reject non-cloneable cases instead of claiming equivalence.
@@ -337,19 +636,19 @@ The final integration maps TypedASTJIT results into the shared emitted-function 
 
 ## Migration Plan
 
-1. Preserve completed research evidence, then add the private HIR model, verifier, dump, optional function sidecar, provisional commit/discard transaction, and default-off capture flag with capture-disabled/capture-enabled bytecode equality tests.
+1. Preserve completed research evidence, then add the private HIR model, verifier, deterministic test snapshot helper/dump, optional function sidecar, provisional commit/discard transaction, and default-off capture flag with capture-disabled/capture-enabled bytecode equality tests; snapshot output is never a persisted backend input.
 2. Propagate HIR expression identity through `asCExprContext` lifecycle operations and capture only the scalar expression/statement set required by `SemanticScalarBranch`; represent every other encountered form as an explicit unsupported node without changing bytecode.
 3. After the unified Static backend contract is available, add a provider-independent `FAngelscriptTypedASTJIT` analyzer/emitter whose input cannot contain bytecode/Provider state, require an explicitly empty cleanup plan, generate a checked-in test probe, and require VM/BytecodeJIT/TypedASTJIT parity plus a non-zero TypedASTJIT execution counter.
-4. Route explicit `"typed-ast"` generation through the no-UClass generation Engine, enable capture before its complete source build, freeze the generation view, and fail task-level profile mismatch rather than recompiling inside the backend.
+4. Route explicit `"typed-ast"` generation through exactly one contained no-UClass generation Engine, enable capture before its single complete source build, pass HIR in memory, freeze the generation view, and fail task-level profile mismatch rather than recompiling inside the backend or writing/reading HIR dumps.
 5. Expand scalar/enum and structured-control-flow support, including failure successors, transfer targets, loop phases, switch invalid-value edges, mutation plans, deterministic output, edge semantics, and compiler-synthesized dispositions.
 6. Add first-failure exception payload/adoption, frame/depth RAII, recursion protection, execution capability closure, source/safe-point profile identity, and VM routing for unsupported debugger/coverage/timeout/abort sessions before enabling mixed, recursive, or observable production execution.
 7. Add descriptor-view UFUNCTION root indexing, shared Entry Plan consumption, typed eligibility, actual-backend/fallback diagnostics, and per-function TypedASTJIT-to-BytecodeJIT-to-VM fallback while `"bytecode"` remains the default.
 8. Inventory FBind/native-form targets, add explicit external-linkage metadata, export or thunk the reviewed scalar subset, prove it from a separate consumer module, and then add direct/bridge lowering.
 9. Add isolated differential generation/execution and require VM/BytecodeJIT/TypedASTJIT parity for every claimed supported construct and execution route.
-10. Publish both Static backend results through the one unified generator/Provider contract, validate mixed-backend module routing, then update Chinese guidance before English consumer documentation.
+10. Add the separate test/developer `AngelscriptHIRDump` surface, the Editor read-only freshness gate, and success/failure containment checks; publish both Static backend results through the one unified generator/Provider contract, validate mixed-backend module routing, then update Chinese guidance before English consumer documentation.
 
 Rollback at every stage is selection of `"bytecode"` or absence of TypedASTJIT entries. No cache migration is required because HIR is not persisted and bytecode remains authoritative.
 
 ## Open Questions
 
-None. Ownership, parser-AST non-retention, expression-ID propagation, provisional commit, capture timing, full-source generation Engine, no-UClass descriptor analysis, profile-mismatch failure, public visibility, persistence, initial node/type/function scope, transfer/mutation/failure semantics, exception payload/adoption, cleanup, source-handler rejection, execution capabilities, recursion, UFUNCTION eligibility, HIR-only analysis/reference collection, stable BackendIds, native-call linkage, fallback, differential-test policy, Entry ABI reuse, and Provider boundary are fixed by this design.
+None. Ownership, parser-AST non-retention, expression-ID propagation, provisional commit, capture timing, test/developer snapshot versus Static artifact request kinds, full-source single generation Engine, success/failure global-state containment, no-UClass descriptor analysis, Editor freshness gating, profile-mismatch failure, public visibility, non-persistence/non-readback, initial node/type/function scope, transfer/mutation/failure semantics, exception payload/adoption, cleanup, source-handler rejection, execution capabilities, recursion, UFUNCTION eligibility, HIR-only analysis/reference collection, stable BackendIds, native-call linkage, fallback, differential-test policy, Entry ABI reuse, and Provider boundary are fixed by this design.

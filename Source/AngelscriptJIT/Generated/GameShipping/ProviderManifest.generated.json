@@ -1,24 +1,24 @@
 {
   "ownershipRevision": 2,
-  "schemaRevision": 3,
-  "providerAbiRevision": 2,
+  "schemaRevision": 8,
+  "providerAbiRevision": 8,
   "targetProfile": "GameShipping",
-  "providerId": "a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5",
-  "providerGeneration": "917bb4e18da7a1f3e816f289e0db0c6b2ec2e176b0508757b048df94f57011ce",
-  "artifactSetDigest": "c8746384ef806b598a8812ff05bb5a9ceaac259dc42cd926fb15c7b9d722d54f",
+  "providerId": "d68adf88aff3b35bb80e41f44e00648d55f4fce2b35f700ae9b4bfdc65f87969",
+  "providerGeneration": "d6b65cb980f09bf184ac96f972b0ce5b83a5a39f2c6d8c7ad93e615cb83ec988",
+  "artifactSetDigest": "25a5997acc6b6bcee7f762786af0f267cfdfb05eceeaa766e2b15444b18f77c9",
   "artifactProfile": "5dc64764efed88608c4266d9449cbdb105571ca28fafba2603c771dc4f50e9aa",
-  "nativeEnvironment": "cf0f93f6716a0e67b6ba26d9ec2243de153175c1fbc951b949dd7f9b4b8bbc54",
+  "nativeEnvironment": "a8e1b284849067b4b68e7af94e6d337cd071c3644a8b33d155878b808dea6f2a",
   "providerName": "AngelscriptProject StaticJIT",
   "ownerModuleName": "AngelscriptJIT",
   "modules": [
-    {"moduleKey": "07a7af43d0abfe46c97bf81499c0c86fe0d7d07d42e7283fc3612829ca0b07c1", "canonicalName": "Tests.Test_Handles", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Handles.as", "source": "Tests/Test_Handles.07a7af43.GameShipping.jit.cpp", "contentHash": "ebd3b353157b8dd04d84de71ec57121d9d4e031e537174bf70748bc1910ec606", "functionCount": 1},
-    {"moduleKey": "26e1442a2b3061a6991aca97425443063f5df46f86eed2ec869f0b8560b7bd7b", "canonicalName": "Tests.Test_SystemUtils", "virtualSourcePath": "/Angelscript/Game/Tests/Test_SystemUtils.as", "source": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp", "contentHash": "2b6546a6226fc102d3fc41ce0abe339f5fbe56145e5b00dc585f3e5df77e4e12", "functionCount": 4},
-    {"moduleKey": "349ffd2e6836e03e6c2aa6965c6577612ee202c79fb2bb944880d36228b9f3a8", "canonicalName": "Tests.Test_GameplayTags", "virtualSourcePath": "/Angelscript/Game/Tests/Test_GameplayTags.as", "source": "Tests/Test_GameplayTags.349ffd2e.GameShipping.jit.cpp", "contentHash": "03c10731e8359c63d711cd7172da9c1a65f421193f147506fa647dde0b7ad4a4", "functionCount": 1},
-    {"moduleKey": "3cc55dac535fff7251c45430b2ee1fbba18cd2a924553eb3329f85e8c9b6864f", "canonicalName": "Tests.Test_ExampleActorFixture", "virtualSourcePath": "/Angelscript/Game/Tests/Test_ExampleActorFixture.as", "source": "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp", "contentHash": "da2041c71ff19a984b544738176666f54b4418aaca3b9571c2a852e10cc3386b", "functionCount": 3},
-    {"moduleKey": "7a4e7104487826a501ef08fa7ba1704bf15f17eb5a69431c669465c0200c5927", "canonicalName": "Tests.Test_MathNamespace", "virtualSourcePath": "/Angelscript/Game/Tests/Test_MathNamespace.as", "source": "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp", "contentHash": "90c8a2962e8d217e06f059f389b6300f5e006f4236bf8e6cdb0eb33ad5141647", "functionCount": 3},
-    {"moduleKey": "7c60060e0047a87caee5c0fefdc5e76787a9a11051104d045290be587e7a9654", "canonicalName": "Tests.Test_ActorLifecycle", "virtualSourcePath": "/Angelscript/Game/Tests/Test_ActorLifecycle.as", "source": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp", "contentHash": "5513094f2922f8982f5a87ae261a3dd72811965e04d6e81db30c6462a8312de8", "functionCount": 4},
-    {"moduleKey": "812970d941c3edf2c6076c1ea72b7ad592c8cd79bb1a9307c13677adb73b7441", "canonicalName": "Tests.Test_Enums", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Enums.as", "source": "Tests/Test_Enums.812970d9.GameShipping.jit.cpp", "contentHash": "aa67ce148aabf5610b6db43869fb660b26e5f18fa2da96b4f447b7363c4ecf47", "functionCount": 1},
-    {"moduleKey": "f77b2646df95206b9e3c0a6dff95d867c285aae42b2da94e7b6ffee579c5e70c", "canonicalName": "Tests.Test_Inheritance", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Inheritance.as", "source": "Tests/Test_Inheritance.f77b2646.GameShipping.jit.cpp", "contentHash": "db4a5a20cd7d03576da8d06acffbae2530d84dbafb478614bf59264f6444d705", "functionCount": 1}
+    {"moduleKey": "07a7af43d0abfe46c97bf81499c0c86fe0d7d07d42e7283fc3612829ca0b07c1", "canonicalName": "Tests.Test_Handles", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Handles.as", "source": "Tests/Test_Handles.07a7af43.GameShipping.jit.cpp", "contentHash": "1dfc80b52f336d15e6ec73cfe21365b0eaf4b9741ca09da5ff924ee3858b8c6f", "functionCount": 1},
+    {"moduleKey": "26e1442a2b3061a6991aca97425443063f5df46f86eed2ec869f0b8560b7bd7b", "canonicalName": "Tests.Test_SystemUtils", "virtualSourcePath": "/Angelscript/Game/Tests/Test_SystemUtils.as", "source": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp", "contentHash": "3598fa3ceb2244cb36ed220fb963251ebeb4c2e9ca132b473d336ed9285a3c95", "functionCount": 4},
+    {"moduleKey": "349ffd2e6836e03e6c2aa6965c6577612ee202c79fb2bb944880d36228b9f3a8", "canonicalName": "Tests.Test_GameplayTags", "virtualSourcePath": "/Angelscript/Game/Tests/Test_GameplayTags.as", "source": "Tests/Test_GameplayTags.349ffd2e.GameShipping.jit.cpp", "contentHash": "6ea3b56a56054b2e021ec2a41540837f81f9183f069627b1e9301add7b263a60", "functionCount": 1},
+    {"moduleKey": "3cc55dac535fff7251c45430b2ee1fbba18cd2a924553eb3329f85e8c9b6864f", "canonicalName": "Tests.Test_ExampleActorFixture", "virtualSourcePath": "/Angelscript/Game/Tests/Test_ExampleActorFixture.as", "source": "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp", "contentHash": "29c2bb5ea82bbe5dd268c786688ac02abeeb8fdcefc7a9c66f26c869abd1ae8e", "functionCount": 3},
+    {"moduleKey": "7a4e7104487826a501ef08fa7ba1704bf15f17eb5a69431c669465c0200c5927", "canonicalName": "Tests.Test_MathNamespace", "virtualSourcePath": "/Angelscript/Game/Tests/Test_MathNamespace.as", "source": "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp", "contentHash": "dff1dae886dffb5c3dcd5a5ed1d65b003d03f739c3f17771e46c25b32d545330", "functionCount": 3},
+    {"moduleKey": "7c60060e0047a87caee5c0fefdc5e76787a9a11051104d045290be587e7a9654", "canonicalName": "Tests.Test_ActorLifecycle", "virtualSourcePath": "/Angelscript/Game/Tests/Test_ActorLifecycle.as", "source": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp", "contentHash": "e4a56c0d402bc22abbe614dda048afbad58cbf87b5342deecbaa1c3e469ade45", "functionCount": 4},
+    {"moduleKey": "812970d941c3edf2c6076c1ea72b7ad592c8cd79bb1a9307c13677adb73b7441", "canonicalName": "Tests.Test_Enums", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Enums.as", "source": "Tests/Test_Enums.812970d9.GameShipping.jit.cpp", "contentHash": "65fd704c144d70f119539ff8c19abf4937ea7056f692e710a9ee3300d3c2c4ba", "functionCount": 1},
+    {"moduleKey": "f77b2646df95206b9e3c0a6dff95d867c285aae42b2da94e7b6ffee579c5e70c", "canonicalName": "Tests.Test_Inheritance", "virtualSourcePath": "/Angelscript/Game/Tests/Test_Inheritance.as", "source": "Tests/Test_Inheritance.f77b2646.GameShipping.jit.cpp", "contentHash": "6d54f0efc5dce69a8e84e2cb32ddbaa40e62b122e25b994248d0148d21d9d895", "functionCount": 1}
   ],
   "functions": [
     {
@@ -26,7 +26,7 @@
       "functionKey": "beb370979382d9574b5996c6d8b34141260f267800c1ada8e7013b667b4a6066",
       "executionHash": "dcd05aaa4e95df3f804e18200c35f05b31337d4b316d00f4e33f108cff13c866",
       "debugHash": "a77b8b859d705675548e6e9da0df7d740daa22a97e3ce62210a4719125e8140e",
-      "entryAbiHash": "d6864a82fb6beb24c274bdafeb6b19a0ddac190f3a59c4686115cdebd47090f0",
+      "entryAbiHash": "281adb83be2827d957dfa7aa7828b0dce06bdfc671eb8c88c8f3f082e084fcd9",
       "canonicalDeclaration": "int HandlesFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_Handles.as",
       "sourceLine": 1,
@@ -35,7 +35,11 @@
       "moduleSource": "Tests/Test_Handles.07a7af43.GameShipping.jit.cpp",
       "symbol": "ASJIT_beb370979382d9574b5996c6d8b34141260f267800c1ada8e7013b667b4a6066_dcd05aaa4e95df3f804e18200c35f05b31337d4b316d00f4e33f108cff13c866",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -43,7 +47,7 @@
       "functionKey": "220bbfb94814bb7323283df8fd59557dcff5fcb136737bc8d475856abd3b29f2",
       "executionHash": "6990be897d2fefa5e54ebf57f429d704b26b19fff6ce4942613d67d84208dda2",
       "debugHash": "556b13ff6a1abc4c49f5c655995bf25c7942f5f5a8cf71100740c13adc45e1a4",
-      "entryAbiHash": "b1a48032c6b7b2258c3be1253bd1b62cf69b6552b5250ef4ee6863b2ce503b79",
+      "entryAbiHash": "b3e4cf87d21dec1a4a04e3d77cea49f1fa4c9f7d86c1f75d29aef3a5fbef9e26",
       "canonicalDeclaration": "FPhase2SystemUtilsFixture FPhase2SystemUtilsFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_SystemUtils.as",
       "sourceLine": 1,
@@ -52,9 +56,13 @@
       "moduleSource": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp",
       "symbol": "ASJIT_220bbfb94814bb7323283df8fd59557dcff5fcb136737bc8d475856abd3b29f2_6990be897d2fefa5e54ebf57f429d704b26b19fff6ce4942613d67d84208dda2",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "548d8bb1132562eb7d32901fa02cdef4a57c476c7b0ac558402290ace55baa95", "expectedAbi": "f209e244a1ec90f42e67da86d7d9391eda6896d83f7ab4acdde8de1737203842"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "a4cc5a5fe75bf1dd97db6680c5115f1fdb7c3c59332c1a3688bc99ba868b827c", "expectedAbi": "5607381f66a30ab91c5b0f76dfc60747ec04c296d9f94e25109742b8c3b3288f"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -62,7 +70,7 @@
       "functionKey": "25b272c29c722c1b0aa85cb11797c57e405cb305c66120bb49becadbe0b12982",
       "executionHash": "0bf1192af8a1ce5d9dad4aaaf61519d5adb3168e974894dd4bc9d48e3a04c487",
       "debugHash": "d3f44d9a84ad166337fced429827893e98e85c8b225ff04edfeed842117c9c91",
-      "entryAbiHash": "3c3bf4ce8d5db5c3a64763b607c90ce36c618640bd49f8f661b33ebb330c1dc5",
+      "entryAbiHash": "c6f57806578793b4cbc185bcfec86676b31a44de2b69ed24dccfa24921dabc82",
       "canonicalDeclaration": "int SystemUtilsFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_SystemUtils.as",
       "sourceLine": 9,
@@ -71,9 +79,13 @@
       "moduleSource": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp",
       "symbol": "ASJIT_25b272c29c722c1b0aa85cb11797c57e405cb305c66120bb49becadbe0b12982_0bf1192af8a1ce5d9dad4aaaf61519d5adb3168e974894dd4bc9d48e3a04c487",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "548d8bb1132562eb7d32901fa02cdef4a57c476c7b0ac558402290ace55baa95", "expectedAbi": "f209e244a1ec90f42e67da86d7d9391eda6896d83f7ab4acdde8de1737203842"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "80dc85c6729024bc7fe6b5f26ba41cd266a0f87211d9b10dac36fcd54c5bf004", "expectedAbi": "801736098384e85afe82b34d3dc7811681f8ba0a9c66f237beb72a061822a92a"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -81,7 +93,7 @@
       "functionKey": "80dc85c6729024bc7fe6b5f26ba41cd266a0f87211d9b10dac36fcd54c5bf004",
       "executionHash": "440f19ec9f5314e99b4fd6ffe36599142ada9985b28c3a7f2cd46fbafd88fcdb",
       "debugHash": "c643b329e8d445cd5380dc0580f15abd816567d76dba8a991f028d2fb5fda117",
-      "entryAbiHash": "47a042f066950748298934117ac41a9b388d5d3aefa5f784929bc3f8d0e16dcd",
+      "entryAbiHash": "7a751028eed26ce1a10a4d8d0cd270b486bec83fde1e19a176cf47ae8eca07b3",
       "canonicalDeclaration": "int Read()",
       "sourceSection": "/Angelscript/Game/Tests/Test_SystemUtils.as",
       "sourceLine": 3,
@@ -90,8 +102,12 @@
       "moduleSource": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp",
       "symbol": "ASJIT_80dc85c6729024bc7fe6b5f26ba41cd266a0f87211d9b10dac36fcd54c5bf004_440f19ec9f5314e99b4fd6ffe36599142ada9985b28c3a7f2cd46fbafd88fcdb",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "548d8bb1132562eb7d32901fa02cdef4a57c476c7b0ac558402290ace55baa95", "expectedAbi": "f209e244a1ec90f42e67da86d7d9391eda6896d83f7ab4acdde8de1737203842"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -99,7 +115,7 @@
       "functionKey": "a4cc5a5fe75bf1dd97db6680c5115f1fdb7c3c59332c1a3688bc99ba868b827c",
       "executionHash": "b7ffab0bb94b0a92fcc5783714a0504de32e9354cc1d80c53f41f4b708a56a57",
       "debugHash": "556b13ff6a1abc4c49f5c655995bf25c7942f5f5a8cf71100740c13adc45e1a4",
-      "entryAbiHash": "1d763d65b2d2623654a4749028548ce74cfb96550bcbf1a130377a7ae746dca6",
+      "entryAbiHash": "5a3325e53655a6b08c4fdb23a198d75997dd96990fa8090fe9ea188f17f77c50",
       "canonicalDeclaration": "FPhase2SystemUtilsFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_SystemUtils.as",
       "sourceLine": 1,
@@ -108,8 +124,12 @@
       "moduleSource": "Tests/Test_SystemUtils.26e1442a.GameShipping.jit.cpp",
       "symbol": "ASJIT_a4cc5a5fe75bf1dd97db6680c5115f1fdb7c3c59332c1a3688bc99ba868b827c_b7ffab0bb94b0a92fcc5783714a0504de32e9354cc1d80c53f41f4b708a56a57",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "548d8bb1132562eb7d32901fa02cdef4a57c476c7b0ac558402290ace55baa95", "expectedAbi": "f209e244a1ec90f42e67da86d7d9391eda6896d83f7ab4acdde8de1737203842"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -117,7 +137,7 @@
       "functionKey": "e287d06910fa1a23ac426f4f1292d0dafa2d7bcd7e51ce0106d72c0d4a3cbfbd",
       "executionHash": "93e497ed6aed7f6bab79b5d40b261590b9373b1e7f38c64556d7c0a951b7c195",
       "debugHash": "f82d573d8e058d232546f1e31c25d1a32ff9dc9a2a54d45e3be6950618a3631b",
-      "entryAbiHash": "f0c1ad689f0b1a3d7580f4036ab0f1f0f2c9e454374906e50fcc56e4bf6d18e1",
+      "entryAbiHash": "db791d9427e1a00928e676f0d1e75821db8c52dc8d6619dff0c48e5a0abd7705",
       "canonicalDeclaration": "int GameplayTagsFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_GameplayTags.as",
       "sourceLine": 1,
@@ -126,7 +146,11 @@
       "moduleSource": "Tests/Test_GameplayTags.349ffd2e.GameShipping.jit.cpp",
       "symbol": "ASJIT_e287d06910fa1a23ac426f4f1292d0dafa2d7bcd7e51ce0106d72c0d4a3cbfbd_93e497ed6aed7f6bab79b5d40b261590b9373b1e7f38c64556d7c0a951b7c195",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -134,7 +158,7 @@
       "functionKey": "6d9c4dc6976d06a988fd7b2bf7fe7ed78e19583d12cab2e7fde6ecdfc2d604a1",
       "executionHash": "3e4db0c934e102096056116906ac515231a22dccda3306066a14f026a9878211",
       "debugHash": "7512fb65fd676a622c19923217b5f7c79c7db707ef9bcfe8e4d221af5af66acd",
-      "entryAbiHash": "151729d758bdf52160f5130a578eef6f062a29f69a62bca7f82867212e227793",
+      "entryAbiHash": "0ecff72d5a6b857b8568190b01d9b6774439d4f4f9c35f1de9bd392393f1cf38",
       "canonicalDeclaration": "FPhase2ExampleActorFixture FPhase2ExampleActorFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ExampleActorFixture.as",
       "sourceLine": 1,
@@ -143,9 +167,13 @@
       "moduleSource": "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp",
       "symbol": "ASJIT_6d9c4dc6976d06a988fd7b2bf7fe7ed78e19583d12cab2e7fde6ecdfc2d604a1_3e4db0c934e102096056116906ac515231a22dccda3306066a14f026a9878211",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "9fb2c8e9e1b4d74ec3d57d9c4b9dbce7b2d8c1cf57f1a6c26bd107defb443450", "expectedAbi": "84047546cbe26ca984f58de7980f206b255915ca24eb0df8c094ded8aab64ee4"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "f23a1003283e86d8b62122f5bd873f13f840af678fc6becccf89b97d2ee9b4c4", "expectedAbi": "2a02924c97b22a4d22fc8dcdcfc7e1d2cde1b3fc94475d52014b61dc3f9d2dad"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -153,7 +181,7 @@
       "functionKey": "bfc99b6e3c39b342cacec317e04fa4365cc67a7c3ba30f1471b28bcc49fb8a72",
       "executionHash": "2940bb3c245ea8b01443327ab465d8b6a492a3afc417a9f9ebd9337e543fade8",
       "debugHash": "1579abff946df92517a0eaa9250e9b7fe437c5aee88653c778baa836b1a2806e",
-      "entryAbiHash": "284ee8225c1528677f9aa60ccae2e863dddbeb2568b32c96a11f301e5a07d0ef",
+      "entryAbiHash": "113eb7e01a237bd939b0ea8b298e61866047a6670f35d92b64103cf3fa0998ad",
       "canonicalDeclaration": "int ExampleActorFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ExampleActorFixture.as",
       "sourceLine": 6,
@@ -162,9 +190,13 @@
       "moduleSource": "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp",
       "symbol": "ASJIT_bfc99b6e3c39b342cacec317e04fa4365cc67a7c3ba30f1471b28bcc49fb8a72_2940bb3c245ea8b01443327ab465d8b6a492a3afc417a9f9ebd9337e543fade8",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "9fb2c8e9e1b4d74ec3d57d9c4b9dbce7b2d8c1cf57f1a6c26bd107defb443450", "expectedAbi": "84047546cbe26ca984f58de7980f206b255915ca24eb0df8c094ded8aab64ee4"},
         {"slot": 1, "flags": 0, "kind": "ScriptProperty", "stableKey": "766f7ef7e59b7d7f0fe07181fd499abe1888dcbb0be349135c0b0885e57e9a51", "expectedAbi": "acb6a216edc1fa6397f7ff95669b9d5f7e2b602aebebcb4976bc1fd5d1d5143c"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -172,7 +204,7 @@
       "functionKey": "f23a1003283e86d8b62122f5bd873f13f840af678fc6becccf89b97d2ee9b4c4",
       "executionHash": "34bd823bbf1c30f77a9246b22f8726f690db52d267aa2001005f1a5dda9c8118",
       "debugHash": "ebb330b5dbbe9883014abc4aaa6d080b4a55b081be9082fd3f016b5cb234f382",
-      "entryAbiHash": "740a8cc143fe9d3508c66748bd043504677756c6fa602b7311c5101c9d838cb6",
+      "entryAbiHash": "d8c856d37f9c152157c0c357e2e4783f29873a6841baf07a51b958b3fdf1c9e7",
       "canonicalDeclaration": "FPhase2ExampleActorFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ExampleActorFixture.as",
       "sourceLine": 1,
@@ -181,9 +213,13 @@
       "moduleSource": "Tests/Test_ExampleActorFixture.3cc55dac.GameShipping.jit.cpp",
       "symbol": "ASJIT_f23a1003283e86d8b62122f5bd873f13f840af678fc6becccf89b97d2ee9b4c4_34bd823bbf1c30f77a9246b22f8726f690db52d267aa2001005f1a5dda9c8118",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "9fb2c8e9e1b4d74ec3d57d9c4b9dbce7b2d8c1cf57f1a6c26bd107defb443450", "expectedAbi": "84047546cbe26ca984f58de7980f206b255915ca24eb0df8c094ded8aab64ee4"},
         {"slot": 1, "flags": 0, "kind": "ScriptProperty", "stableKey": "766f7ef7e59b7d7f0fe07181fd499abe1888dcbb0be349135c0b0885e57e9a51", "expectedAbi": "acb6a216edc1fa6397f7ff95669b9d5f7e2b602aebebcb4976bc1fd5d1d5143c"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -191,7 +227,7 @@
       "functionKey": "1d4d6c1b5a90c438755d3e96844d6c15c88bafe6f88fe2970bc71325447a31d2",
       "executionHash": "14803d86fd6337275bf228b4195b2e07b35e2c9dd8aeff1b8b8612778fa61179",
       "debugHash": "30df7186f9db920b1ba580726010505e8fffb5c0b8ddd55d6c2be68f90adac61",
-      "entryAbiHash": "c98356268de0b96c22ed04df1e14d40db4caee3d09349983f9f53b07d8419fc1",
+      "entryAbiHash": "9ca04842a8d481866d43a7c491871fb6480e9a848b2f072572f2ecc689a5523f",
       "canonicalDeclaration": "int MathNamespaceFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_MathNamespace.as",
       "sourceLine": 6,
@@ -200,9 +236,13 @@
       "moduleSource": "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp",
       "symbol": "ASJIT_1d4d6c1b5a90c438755d3e96844d6c15c88bafe6f88fe2970bc71325447a31d2_14803d86fd6337275bf228b4195b2e07b35e2c9dd8aeff1b8b8612778fa61179",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "19e2a8fcc136b261b6230d1d43cb156a70b5d46f069ba4dd30ee74a5a7d66aa6", "expectedAbi": "7306b48edfa81311f9e15e7a7a9770fdfef76f974db469c94957d74cc0a7fd15"},
         {"slot": 1, "flags": 0, "kind": "ScriptProperty", "stableKey": "becc4d47228e9e8f61fffde3a83e0563042aff268d37c35528598c89cfedb0e8", "expectedAbi": "e69e5ef0822686d894983292792b9e757aa2769434b4b60d196f920ef0a4da1d"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -210,7 +250,7 @@
       "functionKey": "292e25ac162bcd0a97770292c0b0b8bf980038789180a2ccf7d4c7769ab6823c",
       "executionHash": "ed7d6b573cae5439c6537a023c4f7589bb009326b4d918793807b621a45c212c",
       "debugHash": "7b5cf9b724de2c986d1182919a6c00526ea84b8578bd932a7b7ccd34bae897af",
-      "entryAbiHash": "abc74e1833048b626e61a2594214aa6ae6a6643d9672d45d63a7bb1b7e49c0e3",
+      "entryAbiHash": "7dd05efd81ba1afb7d1e425513f38c9b25d5027fa6bc63e0b952e2427c8ec1e4",
       "canonicalDeclaration": "FPhase2MathFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_MathNamespace.as",
       "sourceLine": 1,
@@ -219,9 +259,13 @@
       "moduleSource": "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp",
       "symbol": "ASJIT_292e25ac162bcd0a97770292c0b0b8bf980038789180a2ccf7d4c7769ab6823c_ed7d6b573cae5439c6537a023c4f7589bb009326b4d918793807b621a45c212c",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "19e2a8fcc136b261b6230d1d43cb156a70b5d46f069ba4dd30ee74a5a7d66aa6", "expectedAbi": "7306b48edfa81311f9e15e7a7a9770fdfef76f974db469c94957d74cc0a7fd15"},
         {"slot": 1, "flags": 0, "kind": "ScriptProperty", "stableKey": "becc4d47228e9e8f61fffde3a83e0563042aff268d37c35528598c89cfedb0e8", "expectedAbi": "e69e5ef0822686d894983292792b9e757aa2769434b4b60d196f920ef0a4da1d"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -229,7 +273,7 @@
       "functionKey": "e2a445f5e2b4bc1a570a3cc7a94d4181044901fa64eff454950f6706ae48d7c2",
       "executionHash": "49ea23553df00a305d5a46bfbf4e0097f0f4d7d1ef93afc477cf2e805a0b636b",
       "debugHash": "036a118ab1dda21f113368fa21488ef9105049cec36d040dd09c2fa0bde8e3b5",
-      "entryAbiHash": "c1a97a9eb9f61fc24e6069b4094ec4e19e3f19a6cd5e17f25a62c50aa762c9a1",
+      "entryAbiHash": "ec26b5d870688a8288407da6bac92673f792df091cbbd7289e00a0f5d85b1e85",
       "canonicalDeclaration": "FPhase2MathFixture FPhase2MathFixture()",
       "sourceSection": "/Angelscript/Game/Tests/Test_MathNamespace.as",
       "sourceLine": 1,
@@ -238,9 +282,13 @@
       "moduleSource": "Tests/Test_MathNamespace.7a4e7104.GameShipping.jit.cpp",
       "symbol": "ASJIT_e2a445f5e2b4bc1a570a3cc7a94d4181044901fa64eff454950f6706ae48d7c2_49ea23553df00a305d5a46bfbf4e0097f0f4d7d1ef93afc477cf2e805a0b636b",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "19e2a8fcc136b261b6230d1d43cb156a70b5d46f069ba4dd30ee74a5a7d66aa6", "expectedAbi": "7306b48edfa81311f9e15e7a7a9770fdfef76f974db469c94957d74cc0a7fd15"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "292e25ac162bcd0a97770292c0b0b8bf980038789180a2ccf7d4c7769ab6823c", "expectedAbi": "3e3aca6169b2d7d3353283a71439523b570c1c845b0e4145f110f410f0e96ccd"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -248,7 +296,7 @@
       "functionKey": "3665c6f0bd909f8c636a04b1227641f4c3dbf6337673b21655ccd4d0bbcab1a5",
       "executionHash": "ca6fabd7775c6c63dddc8ffa38672c08f96e6d4b9937dab80a7395fae9be382d",
       "debugHash": "a3e63655e86b552d471e7c5d39e67607d09bc3c2d8329242e14ac66d7fe3006f",
-      "entryAbiHash": "df1ef0a4260e999971ecb79ee5b0209ffdb3c9d2ca66407b2b38b3c4b0967369",
+      "entryAbiHash": "ddb2329d49c6693a715b39ae708f5b0e32a5fe9a6a366e04712dbebd2fe3ecba",
       "canonicalDeclaration": "FPhase2ActorLifecycleProbe()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ActorLifecycle.as",
       "sourceLine": 1,
@@ -257,8 +305,12 @@
       "moduleSource": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp",
       "symbol": "ASJIT_3665c6f0bd909f8c636a04b1227641f4c3dbf6337673b21655ccd4d0bbcab1a5_ca6fabd7775c6c63dddc8ffa38672c08f96e6d4b9937dab80a7395fae9be382d",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "b4fef3bd8a58a3237d315fd17930210fa5d11608242c6143d7abe1ef1657f786", "expectedAbi": "619f7a84c1d3d87191c13c28dda6cb183c3aa993241de71f29dd4907a811c9f4"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -266,7 +318,7 @@
       "functionKey": "36cd16feb9e2616fdff166c0af9585e486ed881286b7eeb93c2042c72430cf52",
       "executionHash": "bcd390541d140543482f776efac83cf772dec10cc22732d78df474371a8deb36",
       "debugHash": "a3e63655e86b552d471e7c5d39e67607d09bc3c2d8329242e14ac66d7fe3006f",
-      "entryAbiHash": "d726bec9239ca01301ee679577127b5ec7d2972225504c1123cb5e1c61079ef9",
+      "entryAbiHash": "81cd6c3f2863f660ec4bf02e87ff1009edee3b276e03730287c0474118b6527f",
       "canonicalDeclaration": "FPhase2ActorLifecycleProbe FPhase2ActorLifecycleProbe()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ActorLifecycle.as",
       "sourceLine": 1,
@@ -275,9 +327,13 @@
       "moduleSource": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp",
       "symbol": "ASJIT_36cd16feb9e2616fdff166c0af9585e486ed881286b7eeb93c2042c72430cf52_bcd390541d140543482f776efac83cf772dec10cc22732d78df474371a8deb36",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "b4fef3bd8a58a3237d315fd17930210fa5d11608242c6143d7abe1ef1657f786", "expectedAbi": "619f7a84c1d3d87191c13c28dda6cb183c3aa993241de71f29dd4907a811c9f4"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "3665c6f0bd909f8c636a04b1227641f4c3dbf6337673b21655ccd4d0bbcab1a5", "expectedAbi": "edb6ee61122f4a43dfbfb5292e57817fb1c0b9160123a82842ecc6496e43cf0c"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -285,7 +341,7 @@
       "functionKey": "b93ccfb0585b8376f81e1af50ca1675710cd728589b9304d894892a017e2b0d9",
       "executionHash": "407489dd94e408291cf18e1af30b108152a0e667dbaa43865d56fc69c6402a41",
       "debugHash": "d614f4bcb72a2a9f1fd5f1197c419cf2ab2c7c086f4762c7741e192fe3813f12",
-      "entryAbiHash": "d780d090ee77199f30b983082bb625cd3f4c0d372b8042530fa3f2d35e773a8f",
+      "entryAbiHash": "30efc0e6bde07cf8f753be0d560765db25216d47c2e102d2287c39a85c5ad858",
       "canonicalDeclaration": "int ActorLifecycleFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ActorLifecycle.as",
       "sourceLine": 9,
@@ -294,9 +350,13 @@
       "moduleSource": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp",
       "symbol": "ASJIT_b93ccfb0585b8376f81e1af50ca1675710cd728589b9304d894892a017e2b0d9_407489dd94e408291cf18e1af30b108152a0e667dbaa43865d56fc69c6402a41",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "b4fef3bd8a58a3237d315fd17930210fa5d11608242c6143d7abe1ef1657f786", "expectedAbi": "619f7a84c1d3d87191c13c28dda6cb183c3aa993241de71f29dd4907a811c9f4"},
         {"slot": 1, "flags": 0, "kind": "ScriptFunction", "stableKey": "c799c0e4d6d9cb1a15fc22f64a878ccaf1c540364b80642e15b54025d5602525", "expectedAbi": "7c8e34356a500be23dc0b3c182190b2757f951ab400b34095bd13cc74221f3df"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -304,7 +364,7 @@
       "functionKey": "c799c0e4d6d9cb1a15fc22f64a878ccaf1c540364b80642e15b54025d5602525",
       "executionHash": "d701668260611469705557c62607db2a7d86093871db4d161e0ba74c23274dd8",
       "debugHash": "1c5aa58d216244b96891b7617a6b9630469c610c789ce5e7f0b4a9f83df1e4bf",
-      "entryAbiHash": "a49c93dd3af0ebc4e6443d38f1573603219e705896285dac9f7df16663fb3bfd",
+      "entryAbiHash": "244e3ab9e25363c01d19cd7f5dda587ee52379f00e48164adf14542bf1069939",
       "canonicalDeclaration": "int Step()",
       "sourceSection": "/Angelscript/Game/Tests/Test_ActorLifecycle.as",
       "sourceLine": 3,
@@ -313,8 +373,12 @@
       "moduleSource": "Tests/Test_ActorLifecycle.7c60060e.GameShipping.jit.cpp",
       "symbol": "ASJIT_c799c0e4d6d9cb1a15fc22f64a878ccaf1c540364b80642e15b54025d5602525_d701668260611469705557c62607db2a7d86093871db4d161e0ba74c23274dd8",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
         {"slot": 0, "flags": 0, "kind": "ScriptType", "stableKey": "b4fef3bd8a58a3237d315fd17930210fa5d11608242c6143d7abe1ef1657f786", "expectedAbi": "619f7a84c1d3d87191c13c28dda6cb183c3aa993241de71f29dd4907a811c9f4"}
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -322,7 +386,7 @@
       "functionKey": "b9a54f666b9cb90dcbdbdc03855718f9fe18162d358e36f485c2a29c89748093",
       "executionHash": "df6aa93718f17fe0530a220a6169edd7406dcfedc2f8728472ed46fb29797402",
       "debugHash": "de8d49e053db74bfebf9dd86c22ed52b3db2d1ad9c7df6ab519425473185f496",
-      "entryAbiHash": "6895e66d7665da189c1e497f564679d7b6c721b022f196db86eed892a88ebc48",
+      "entryAbiHash": "a380b1af16c9094cf38322450fcdd446f7ee5037bde038ae1653e4cf6df012e0",
       "canonicalDeclaration": "int EnumsFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_Enums.as",
       "sourceLine": 1,
@@ -331,7 +395,11 @@
       "moduleSource": "Tests/Test_Enums.812970d9.GameShipping.jit.cpp",
       "symbol": "ASJIT_b9a54f666b9cb90dcbdbdc03855718f9fe18162d358e36f485c2a29c89748093_df6aa93718f17fe0530a220a6169edd7406dcfedc2f8728472ed46fb29797402",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
+      ],
+      "semanticDependencies": [
       ]
     },
     {
@@ -339,7 +407,7 @@
       "functionKey": "1accffceeaece6046fe2a22dd19c25cdb1849fd02d1b8367cf98d16d285de925",
       "executionHash": "5baa707427dfe0d573be1038edbc3a767d8fbd93a26a3218186e1f9b704427db",
       "debugHash": "d7e7aa3652a75ab6691f6db06aa1626e8fa9d07ccf0d69e63531988abe2ea90e",
-      "entryAbiHash": "11fa7e2d5fb132da7c3909fdbecb45d8f91001881304657258e395d881ece21f",
+      "entryAbiHash": "5e5a6eda6852fd27a7309cfdbd8a4c9659080edcbea436768ffaa63e0b475239",
       "canonicalDeclaration": "int InheritanceFixtureValue()",
       "sourceSection": "/Angelscript/Game/Tests/Test_Inheritance.as",
       "sourceLine": 1,
@@ -348,7 +416,11 @@
       "moduleSource": "Tests/Test_Inheritance.f77b2646.GameShipping.jit.cpp",
       "symbol": "ASJIT_1accffceeaece6046fe2a22dd19c25cdb1849fd02d1b8367cf98d16d285de925_5baa707427dfe0d573be1038edbc3a767d8fbd93a26a3218186e1f9b704427db",
       "entryPoints": {"vm": true, "raw": true, "parms": true},
+      "nativeCallSites": [
+      ],
       "references": [
+      ],
+      "semanticDependencies": [
       ]
     }
   ]

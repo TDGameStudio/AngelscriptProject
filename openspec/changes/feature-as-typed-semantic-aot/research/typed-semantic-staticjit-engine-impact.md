@@ -31,6 +31,16 @@ bytecode -> Angelsea/MIR or LLVM Runtime JIT（由另外两个 OpenSpec 规划�
 
 生成时会创建专用的临时 `FAngelscriptEngine`，重新回放完整目标 Bind surface，并以 HIR capture 打开状态重新编译完整 Provider 源码图；它只发出请求的模块。这个路径必须调用 ClassGenerator 的纯 descriptor-analysis seam，禁止普通 `Setup()`、Soft/Full Reload、UObject materialization、reinstancing 和 route publication，因此不会创建脚本 `UClass`、`UScriptStruct`、`UDelegateFunction`、`UFunction` 或 CDO。现有 native UE reflection 只读复用，不需要为临时 Engine 重新创建 native `UClass`。
 
+这里必须固定三个不同入口，不能都叫“生成 HIR”：
+
+| 请求 | Engine | 输出 | 明确禁止 |
+| --- | --- | --- | --- |
+| compiler/Standalone HIR test snapshot | 测试自有 `asCScriptEngine` | 内存 HIR + deterministic text/JSON/diagnostics | `FAngelscriptEngine`、ClassGenerator、Static backend、C++/Provider、fallback |
+| UE integration/developer `AngelscriptHIRDump` | 每个 concrete Profile 一台受限 generation Engine | `.hir.txt`/`.hir.json` 测试诊断文件 | `UAngelscriptJITCommandlet` mode、BackendId、C++/Provider、fallback、dump readback |
+| StaticJIT `BackendId="typed-ast"` | 每个 artifact/Profile 恰好一台 generation Engine | C++/Provider + typed fallback diagnostics | 第二台 HIR Engine、backend recompile、默认 HIR 落盘、从 dump 读回 |
+
+StaticJIT 的 bytecode 与 HIR 来自同一次完整 source build，HIR 在 Engine 存活期内同步以内存方式交给 TypedASTJIT。单独的 HIR dump 只在明确运行测试/开发请求时存在；它不是生产缓存、Provider owned artifact 或后续编译输入。`BackendId="bytecode"` 始终 capture-off，也不创建额外 HIR Engine。
+
 ## 2. 为什么不能在 `WriteOutputCode()` 直接读取 parser AST
 
 当前源码编译时序已经决定了 raw parser tree 不能成为 StaticJIT 的延迟输入：
@@ -124,7 +134,7 @@ HIR builder 必须是函数编译事务的一部分：
 - 到最终 output generation 才切换为 TypedASTJIT 已经太晚，因为 parser/compiler 临时状态已经销毁；
 - TypedASTJIT generation 必须重新从完整源码图编译；从 bytecode-only cache/load 得到的函数不能补造 HIR。
 
-命令行 `-as-static-jit-backend=bytecode|typed-ast` 只是一个入口。programmatic generation API、测试 helper、provider artifact generation 也必须显式携带 BackendId/capture profile，不能依赖当前进程恰好带了命令行。`dual` 不是生产 BackendId。
+命令行 `-as-static-jit-backend=bytecode|typed-ast` 只是一个 Static artifact 入口。programmatic Provider generation API 和 StaticJIT AOT fixture 必须显式携带 BackendId/capture profile，不能依赖当前进程恰好带了命令行。普通 compiler HIR test helper 与 `AngelscriptHIRDump` 不携带 Static BackendId，只携带自己的 capture/profile/snapshot 设置。`dual` 不是生产 BackendId，`DumpHIR` 也不是 BackendId。
 
 ## 4. `FAngelscriptEngine` / generation orchestration 需要的改造
 
@@ -167,6 +177,25 @@ HIR builder 必须是函数编译事务的一部分：
 - 在 TypedASTJIT backend 内实现 Runtime JIT coordinator、code memory、hotness 或 invalidation。
 
 ClassGenerator 的纯分析 seam 在临时 Engine 内提供最终 `FAngelscriptFunctionDesc::ScriptFunction` identity 和 Entry Plan 所需描述符，但不执行 UObject materialization、reload 或 route publication。统一 coordinator 只负责加载后的 Provider/Runtime/VM 路由，不参与 HIR lowering。
+
+### 4.3 generation Engine 的影响面必须按 owner 隔离
+
+临时 Engine 不是“完整启动一次插件 Runtime”。它只允许执行 Bind replay、完整源码编译、HIR capture、descriptor analysis 和同步 output planning。compile purpose 必须禁止：
+
+- 获取、清扫或修改共享 `/Script/Angelscript`、`/Script/AngelscriptAssets` package domain；
+- 创建脚本 UObject、native/script CDO，或通过 `GetDefaultObject()` 隐式创建 CDO；
+- redirect、reload planner、Soft/Full Reload、reinstancing、default initialization；
+- DebugServer、CodeCoverage/Crash extension、Hot Reload watcher/thread、test discovery、`PostEngineInit` delegate；
+- runtime Provider refresh/publication、BindDB 写入、Cache V2 restore 冒充 HIR source build、cache publication；
+- 清空或替换 `GBlueprintEventsByScriptName`、Editor class cache、primary route/module/type/descriptor registry、其他 Engine 的 pooled contexts。
+
+native reflection 只读复用；如果不创建 CDO/UObject 就无法证明某个 ABI/route，该函数必须 fail closed。无论成功、source compile failure、HIR verify failure、descriptor/backend/packaging failure，销毁都只释放该请求拥有的 `asIScriptEngine`、modules/functions/types、contexts、descriptor/HIR arenas 和 owned database/snapshot；主 Engine 的 package、registry、cache、route、UObject、delegate、world、context pool 前后快照必须不变。
+
+### 4.4 Editor Generate/Refresh 只做 freshness gate
+
+Editor 的 Typed StaticJIT Generate/Refresh 先只读比较 primary Engine authoritative source inventory/content/profile 与当前请求。若已 current，才把同一 source snapshot 交给一台临时 generation Engine；若 stale，则返回 `AuthoritativeEngineStale`，要求用户/调用者先走现有普通 Hot Reload/recompile，再重试。
+
+StaticJIT action 不调用 `ForceCleanCacheModules()`，不触发 primary `CompileModules()`、ClassGenerator reload/reinstancing 或 Live Coding，也不负责把 live Engine 修到最新。这样 fresh path 只有 generation Engine 的一次完整 source compile，避免“主 Engine 编译一次 + 临时 Engine 再编译一次”。隔离 Commandlet 的显式 source/profile request 自身就是该进程内 authority，但仍只创建一台受限 Engine。
 
 ## 5. StaticJIT 需要的结构性拆分
 
@@ -242,6 +271,8 @@ BytecodeJIT 继续使用现有 bytecode reference scan。测试应在 analyzer �
 | 情况 | Bytecode | HIR | TypedASTJIT | 结果 |
 | --- | --- | --- | --- | --- |
 | BytecodeJIT/default generation | 正常 | 不捕获 | 不请求 | BytecodeJIT/VM |
+| compiler/Standalone HIR snapshot | 正常 | test engine capture + verify | 不构造 | text/JSON/diagnostics；无 C++/Provider/fallback |
+| `AngelscriptHIRDump` | 正常 | restricted generation Engine capture + verify | 不构造 | filtered deterministic dump；无 C++/Provider/fallback |
 | `"typed-ast"`，支持函数 | 正常 | valid | eligible | HIR -> C++ |
 | `"typed-ast"`，HIR 有 unsupported marker | 正常 | valid but ineligible | fallback | 该函数 BytecodeJIT/VM，模块内其他函数仍可 TypedASTJIT |
 | `"typed-ast"`，HIR verifier 失败 | 正常 | 不发布/invalid | fallback + diagnostic | 保留 bytecode，禁止 partial TypedASTJIT entry |
@@ -249,6 +280,7 @@ BytecodeJIT 继续使用现有 bytecode reference scan。测试应在 analyzer �
 | bytecode-only load | 正常 | absent | 不允许用于本次 typed generation | orchestration 从完整源码图重新编译 |
 | generation BackendId/capture profile mismatch | 正常 | absent/unexpected | `CaptureProfileMismatch` | 整个任务失败，不得伪装为成功 TypedASTJIT artifact |
 | TypedASTJIT emitter 声称支持但失败 | 正常 | valid | `EmitterFailure` | production 逐函数回退；差分 fixture 失败 |
+| Editor authoritative source/profile stale | 不启动 generation compile | 不捕获 | 不构造 | `AuthoritativeEngineStale`；先走普通 Hot Reload |
 
 ## 8. 推荐实施顺序
 
@@ -257,12 +289,12 @@ BytecodeJIT 继续使用现有 bytecode reference scan。测试应在 analyzer �
 1. 先验证 synthetic HIR corpus，再实现 HIR 数据模型、ownership、verifier、dump 和 capture-off 零行为测试。
 2. 实现 provisional transaction、`ScriptFunctionData` commit/destruction，以及 `asCExprContext` expression ID 的 `Clear/Copy/Merge/conversion` 传播。
 3. 只捕获 `SemanticScalarBranch` 所需的 scalar expression 和 block/if/return；证明 capture-on/off bytecode 与 VM 行为一致。
-4. 实现不接收 bytecode/provider state 的纯 HIR analyzer/emitter，生成并编译测试专用 TypedASTJIT probe。
+4. 实现独立的 compiler/Standalone snapshot helper，验证 deterministic text/JSON 与不读回；再以另一个请求实现不接收 bytecode/provider state 的纯 HIR analyzer/emitter，生成并编译测试专用 TypedASTJIT probe。
 5. 对同一源码和四组输入执行隔离的 VM、BytecodeJIT、TypedASTJIT 三路对照，并用 entry counter 证明 TypedASTJIT body 真正执行。
 6. 在功能纵切转绿后扩展 scalar/enum、structured control flow 和异常边界。
-7. 等 unified change 的 groups 1-3 完成后，再接入 Static BackendId/capture 两阶段生产配置、完整 `CompiledSourceGraph`/`EmitModuleSet`、UFUNCTION root、shared entry plan 和 programmatic generation mismatch tests。
+7. 等 unified change 的 groups 1-3 完成后，再接入 Static BackendId/capture 两阶段生产配置、单 generation Engine/单 source build/内存 HIR 交接、完整 `CompiledSourceGraph`/`EmitModuleSet`、UFUNCTION root、shared entry plan 和 programmatic generation mismatch tests。
 8. 实现 native direct/bridge call contract 和 external DLL linkage 测试。
-9. 最后对接稳定后的 provider ABI、诊断、基准和全套验证。
+9. 增加独立 `AngelscriptHIRDump`、全影响面 success/failure containment、Editor read-only freshness gate，再对接稳定后的 provider ABI、诊断、基准和全套验证。
 
 前两步是 compiler 前提；第 3-5 步构成功能闭环。provider/runtime 架构不是这个闭环的前置条件，也不能用 test-only probe 冒充生产 provider/UASFunction 接入完成。
 
@@ -285,6 +317,6 @@ BytecodeJIT 继续使用现有 bytecode reference scan。测试应在 analyzer �
 
 1. 在 frontend 语义决定仍然存在时，稳定、无副作用地捕获 typed HIR；
 2. 把 capture backend 在源码编译前冻结，并在 final generation 验证 profile 一致；
-3. 让 Semantic analyzer/reference/emitter 真正独立于 bytecode，同时复用现有 entry/provider ABI 并保留逐函数 Legacy/VM fallback。
+3. 让 TypedASTJIT analyzer/reference/emitter 真正独立于 bytecode，同时复用现有 entry/provider ABI 并保留逐函数 BytecodeJIT/VM fallback。
 
 一旦这三个边界处理好，scalar/enum HIR -> C++ emitter 本身是可控、可渐进扩展的工作。它应作为现有 StaticJIT 的第二个可配置静态 backend，而不是 Runtime JIT，也不是对 bytecode backend 的替换。

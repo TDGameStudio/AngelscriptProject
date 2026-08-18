@@ -15,10 +15,11 @@ StaticJIT generation SHALL use the internal stable BackendIds `"bytecode"` and `
 - **WHEN** generation selects `"typed-ast"`
 - **THEN** typed HIR capture is enabled before any target module source is compiled
 - **AND** eligible functions use TypedASTJIT while other functions fall back per function through BytecodeJIT to VM
+- **AND** captured HIR is handed to TypedASTJIT in memory from that same compilation without creating another Engine or writing a default HIR dump
 
 #### Scenario: Programmatic generation validates the compiled capture profile
 
-- **WHEN** a Provider-artifact API or test helper requests `"typed-ast"` output for functions produced by a capture-off Engine
+- **WHEN** a Provider-artifact API or StaticJIT AOT fixture requests `"typed-ast"` output for functions produced by a capture-off Engine
 - **THEN** the complete generation fails with `CaptureProfileMismatch`
 - **AND** it does not recompile inside the backend or relabel BytecodeJIT output as TypedASTJIT output
 
@@ -42,19 +43,22 @@ StaticJIT generation SHALL use the internal stable BackendIds `"bytecode"` and `
 
 ### Requirement: TypedASTJIT generation uses a complete side-effect-free source build
 
-The orchestrator SHALL create one generation-only `FAngelscriptEngine` for the selected target profile, replay the complete sealed Bind collection into that Engine, compile the complete Provider source graph from source with typed-HIR capture enabled, and perform ClassGenerator descriptor analysis without materializing script reflection. The immutable backend input SHALL expose the full result as `CompiledSourceGraph` and carry a separate `EmitModuleSet`. `FAngelscriptTypedASTJIT` MUST NOT trigger compilation itself.
+The orchestrator SHALL create exactly one generation-only `FAngelscriptEngine` for the selected target profile and artifact request, replay the complete sealed Bind collection into that Engine, compile the complete Provider source graph exactly once from source with typed-HIR capture enabled, and perform ClassGenerator descriptor analysis without materializing script reflection. The immutable backend input SHALL expose the full result as `CompiledSourceGraph` and carry a separate `EmitModuleSet`. `FAngelscriptTypedASTJIT` MUST NOT trigger compilation itself, create another Engine, or read/write a serialized HIR intermediate.
 
 #### Scenario: Reflected scripts are compiled for generation
 
 - **WHEN** the source graph declares UCLASS, USTRUCT, delegate, UPROPERTY, and UFUNCTION surfaces
 - **THEN** `CompiledSourceGraph` resolves descriptors, function roots, receivers, signatures, shared Entry Plans, artifact dependencies, and external native-call descriptors
 - **AND** no script UClass, UScriptStruct, UDelegateFunction, UFunction, CDO, class redirect, reload, or reinstancing state is created
+- **AND** ClassGenerator uses only the narrow `SetupModule`/`Analyze` descriptor work and does not execute reload planning, Soft/Full Reload, default initialization, or UObject materialization
 
 #### Scenario: Temporary Engine has a complete native type surface
 
 - **WHEN** TypedASTJIT source compilation resolves a native bound type or callable
 - **THEN** that declaration and its native-call metadata come from the complete target-profile Bind replay into the temporary `asIScriptEngine`
 - **AND** existing native UE reflection is observed rather than recreated or rebound as new `UClass` objects
+- **AND** classification does not call `GetDefaultObject()` when doing so would create a CDO
+- **AND** a route that cannot be proven from already-existing reflection fails closed rather than materializing reflection state
 
 #### Scenario: Complete graph is compiled but selected modules are emitted
 
@@ -62,11 +66,91 @@ The orchestrator SHALL create one generation-only `FAngelscriptEngine` for the s
 - **THEN** Bind, overload, import, global, and helper semantics come from one complete target-profile source compile
 - **AND** Provider packaging emits only `EmitModuleSet`
 
+#### Scenario: Generation compile purpose suppresses runtime and editor services
+
+- **WHEN** the temporary Engine is initialized for a TypedASTJIT artifact request
+- **THEN** it does not attach DebugServer, CodeCoverage/crash extensions, Hot Reload watchers/threads, script test discovery, post-engine bootstrap delegates, runtime Provider refresh/publication, or writable BindDB/cache publication
+- **AND** Cache V2 restore is not used as a substitute for the source compilation that owns HIR
+
+#### Scenario: Primary package and global state remain externally owned
+
+- **WHEN** the generation Engine compiles, analyzes, emits, or is destroyed
+- **THEN** it does not acquire or sweep shared `/Script/Angelscript` or `/Script/AngelscriptAssets` package ownership
+- **AND** it does not clear or replace `GBlueprintEventsByScriptName`, Editor class caches, primary route/module/type registries, global descriptor caches, or pooled contexts owned by another Engine
+
+#### Scenario: Successful generation releases only request-owned state
+
+- **WHEN** synchronous analysis, emission, and packaging succeed
+- **THEN** destruction releases only the temporary AngelScript engine/modules/functions/types, generation-local contexts, descriptor/HIR arenas, and explicitly request-owned database/snapshot state
+- **AND** primary Engine packages, registries, caches, routes, UObjects, delegates, worlds, and contexts are observably unchanged
+
+#### Scenario: Failed generation has the same containment boundary
+
+- **WHEN** Bind replay, source compilation, HIR verification, descriptor analysis, backend emission, or packaging fails
+- **THEN** every early-exit path applies the same request-owned cleanup boundary as successful destruction
+- **AND** before/after containment snapshots show no primary package, registry, cache, route, UObject, delegate, world, or pooled-context mutation
+
 #### Scenario: Generation Engine is destroyed
 
 - **WHEN** synchronous TypedASTJIT analysis/emission and Provider packaging finish
 - **THEN** all HIR, type/function objects, descriptors, and Engine-local IDs are destroyed with the generation Engine
 - **AND** output retains only stable identity, stable references, generated C++, provenance, and diagnostics
+
+### Requirement: Test/developer HIR dumps are separate from StaticJIT artifact generation
+
+The implementation SHALL represent compiler test snapshots, developer HIR dumps, and StaticJIT artifacts as distinct request/result kinds. A dedicated `UAngelscriptHIRDumpCommandlet` MAY expose UE integration snapshots, but HIR dumping MUST NOT be a `UAngelscriptJITCommandlet` mode, a registered Static backend, a Provider generation shortcut, or a persisted TypedASTJIT input.
+
+#### Scenario: Compiler test helper avoids StaticJIT orchestration
+
+- **WHEN** a native compiler or Standalone test requests normalized HIR for fixture source
+- **THEN** it uses a private test helper with a test-owned `asCScriptEngine`
+- **AND** it emits deterministic snapshot data without constructing a Static backend, C++ artifact, Provider entry, or fallback chain
+
+#### Scenario: Dedicated UE HIR dump uses a concrete isolated profile
+
+- **WHEN** a developer or UE integration test runs `-run=AngelscriptHIRDump` with `Profile=EditorDevelopment`, `GameDevelopment`, or `GameShipping`
+- **THEN** the command creates one restricted generation Engine for that explicit profile, replays the complete Bind surface, and compiles the complete relevant source graph with capture enabled
+- **AND** default output is deterministic text and JSON beneath `Saved/Angelscript/HIRDump/<Profile>/`
+
+#### Scenario: HIR dump filters affect output only
+
+- **WHEN** the dump request supplies module or function filters
+- **THEN** the Engine still compiles the complete source graph needed for authoritative overload, import, global, helper, descriptor, and dependency semantics
+- **AND** only normalized dump selection is filtered
+
+#### Scenario: HIR dump never claims generation success
+
+- **WHEN** a dump contains supported or unsupported-but-valid HIR
+- **THEN** it reports capture/verifier/snapshot results only
+- **AND** it does not emit C++, publish Provider entries, run TypedASTJIT-to-BytecodeJIT fallback, or report an actual execution backend
+
+#### Scenario: StaticJIT ignores prior HIR dump files
+
+- **WHEN** `BackendId="typed-ast"` generates an artifact while `.hir.txt` or `.hir.json` files already exist
+- **THEN** it consumes only HIR owned by its same-compilation `CompiledSourceGraph`
+- **AND** dump file presence, absence, or contents cannot change eligibility, generated C++, Provider identity, or fallback
+
+### Requirement: Editor TypedASTJIT refresh is freshness-gated and does not compile the primary Engine
+
+An Editor Generate/Refresh action SHALL treat current primary-Engine source state as a read-only prerequisite. It SHALL create the contained generation Engine only after the authoritative source inventory/content/profile is current, and SHALL NOT force-clean, compile, reload, or reinstance the primary Engine as part of StaticJIT artifact generation.
+
+#### Scenario: Current Editor state requires one generation compile
+
+- **WHEN** the primary Engine's authoritative source inventory, content identity, and target profile are current
+- **THEN** Generate/Refresh passes that source snapshot to exactly one generation Engine
+- **AND** no primary-Engine compile/reload occurs before or after the temporary Engine's single complete source compile
+
+#### Scenario: Stale Editor state is rejected without mutation
+
+- **WHEN** the primary Engine source state is stale or its profile cannot be proven current
+- **THEN** Generate/Refresh returns `AuthoritativeEngineStale` and directs the caller to the existing normal Hot Reload/recompile path
+- **AND** it does not call `ForceCleanCacheModules`, clear primary compiler caches, create a generation Engine, or begin Provider packaging
+
+#### Scenario: Commandlet source request is isolated authority
+
+- **WHEN** a non-Editor Commandlet performs an explicit StaticJIT artifact request for one source domain and concrete profile
+- **THEN** that request is authoritative for its isolated invocation and uses exactly one contained generation Engine
+- **AND** it does not initialize or mutate a live Editor primary Engine merely to establish freshness
 
 ### Requirement: TypedASTJIT initially targets a safe UFUNCTION subset
 
@@ -131,6 +215,14 @@ TypedASTJIT eligibility and emission SHALL consume the verified normalized funct
 - **THEN** direct emission is eligible only if the call plan and external descriptor represent the same behavior and argument order
 - **AND** otherwise the call uses a proven bridge or causes a typed root fallback
 
+#### Scenario: First-parameter metadata is not a visible scalar argument
+
+- **WHEN** the installed system function uses `asEFirstParamMetaData::ScriptFunction` or `asEFirstParamMetaData::ScriptObjectType`
+- **THEN** TypedASTJIT records that mode as one host-injected ABI argument distinct from every AS-visible source/formal argument
+- **AND** scalar direct/current-native lowering is rejected unless a versioned typed host-argument plan explicitly supplies the exact current-Engine pointer with proven lifetime
+- **AND** a VM bridge is valid only when it enters the authoritative context `Execute -> CallSystemFunction` path that already injects the exact selected `asCScriptFunction*` or `objectType`
+- **AND** no generated artifact persists that pointer, fabricates a source parameter, or silently omits the metadata argument
+
 ### Requirement: Reachable non-root helpers are validated as a call closure
 
 Production TypedASTJIT roots SHALL be selected from the generation-only descriptor view, but every reachable ordinary AS helper, mixin, generated function, and lifecycle entry needed by a TypedASTJIT root SHALL receive its own body/receiver/call-route disposition. Non-root status SHALL NOT be treated as permission to omit or guess a helper implementation.
@@ -183,6 +275,97 @@ For an eligible function, the complete TypedASTJIT analysis/reference/emission p
 - **AND** extra compiler dependencies remain part of the artifact dependency set
 - **AND** missing, mismatched, or unmappable coverage reports `SemanticDependencyMismatch` before emission
 
+### Requirement: Typed direct closures publish versioned per-entry semantic dependencies
+
+Every installable TypedASTJIT Provider entry SHALL publish a deterministic
+forward slice of the semantic dependencies whose content or value is embedded
+by that entry. The Provider SHALL store all slices in one canonical flat table
+addressed by per-entry start/count fields, SHALL use stable artifact identity
+rather than pointers, FunctionIds or display strings, and SHALL version the
+Provider ABI when the row or entry layout changes.
+
+#### Scenario: Direct helper content is an entry dependency
+
+- **WHEN** a root emits a fixed direct C++ call to a non-root helper or another member of a directly emitted recursive SCC
+- **THEN** the root entry preserves the compiler's `Signature` dependency and also publishes one deduplicated `FunctionContent` row for every transitively embedded non-root body
+- **AND** the row carries the stable target reference, expected ABI/shape and expected current content hash
+
+#### Scenario: Self-recursion uses the root content identity
+
+- **WHEN** an otherwise eligible root directly recurses into itself
+- **THEN** its own `ExecutionHash` is the body invalidation authority
+- **AND** the analyzer does not require the maintained compiler to upgrade its ordinary signature-only call edge or emit a duplicate self-content row
+
+#### Scenario: Dynamic call does not claim embedded content
+
+- **WHEN** a call is lowered through a current Engine, Provider or VM route rather than a fixed direct helper body
+- **THEN** the entry records the compatible signature, expected ABI and route/reference dependency
+- **AND** it does not publish a `FunctionContent` dependency merely because the target is or is not a `UFUNCTION`
+
+#### Scenario: Folded value retains hard-value identity
+
+- **WHEN** TypedASTJIT embeds a compiler-folded constant
+- **THEN** the entry preserves the authoritative `HardValue` dependency and `ExpectedContentOrValue`
+- **AND** an origin-free or incompatible folded value remains `SemanticDependencyMismatch`
+
+#### Scenario: Provider dependency rows are canonical and bounded
+
+- **WHEN** generation serializes the dependency table
+- **THEN** rows are normalized, deterministically sorted, deduplicated, conflict-checked and included in Provider generation/artifact identity
+- **AND** repeated generation from the same semantic input produces byte-identical table order and digests independent of HIR discovery order
+
+#### Scenario: Malformed dependency table fails closed
+
+- **WHEN** a Provider has an old ABI revision, invalid entry slice, invalid row `StructSize`, unknown dependency/reference kind, zero or unmappable stable key, missing required expected value, duplicate conflict, wrong expected ABI, or digest mismatch
+- **THEN** adoption rejects the affected Provider or entry before exposing an executable pointer
+- **AND** it reports a typed Provider validation or `SemanticDependencyMismatch` diagnostic rather than ignoring the malformed row
+
+### Requirement: Engine-local semantic dependency invalidation withdraws stale entries
+
+Provider adoption and semantic route refresh SHALL validate every published
+entry dependency against the selected Engine's current authority. The Engine
+SHALL maintain a per-Engine reverse index from stable target key and dependency
+kind to affected Provider entries, SHALL withdraw mismatched entries before
+new invocations can acquire them, and SHALL preserve the existing
+publication/lease lifetime contract for invocations already in progress.
+
+#### Scenario: Initial adoption validates current semantic authority
+
+- **WHEN** a Provider entry is considered for installation
+- **THEN** `FunctionContent` rows compare with the current `FunctionRoute.Identity.Content.Execution`, while hard-value/layout/storage rows compare with their corresponding current publications
+- **AND** missing, ambiguous, wrong-kind, wrong-ABI or changed authority leaves the entry unpublished with `SemanticDependencyMismatch` and BytecodeJIT/VM fallback available
+
+#### Scenario: Helper body refresh invalidates only dependent entries
+
+- **WHEN** a helper body changes without changing a caller body or the helper signature
+- **THEN** the Engine uses its reverse dependency index to revalidate and withdraw every installed entry that directly embedded the old helper content
+- **AND** unrelated entries and entries that reach the helper only through a current dynamic route remain installed
+
+#### Scenario: Withdrawal is safe for active calls
+
+- **WHEN** a stale entry is withdrawn while an invocation already owns its execution lease
+- **THEN** that invocation may finish under the existing Provider lifetime rules and the DLL is not forcibly unloaded underneath it
+- **AND** later invocations use a matching replacement entry or BytecodeJIT/VM rather than entering the withdrawn code
+
+#### Scenario: Regeneration restores Typed execution separately
+
+- **WHEN** source regeneration later emits, builds and loads a replacement `<Module>.jit.cpp` whose dependency rows match the current Engine
+- **THEN** Provider adoption may republish the Typed entry
+- **AND** correctness does not depend on regeneration completing before stale-entry withdrawal
+
+#### Scenario: Dependency state is isolated per Engine
+
+- **WHEN** two Engines have different current routes or semantic content for the same stable key
+- **THEN** each Engine validates and indexes its own adopted entries independently
+- **AND** refreshing or destroying one Engine does not mutate another Engine's dependency index or Provider publication state
+
+### Requirement: TypedASTJIT structured lowering preserves verified HIR semantics
+
+After reference and dependency validation succeeds, TypedASTJIT SHALL lower
+structured control flow, scalar operations, evaluation order, exception edges
+and cleanup eligibility from the verified HIR without reconstructing semantics
+from bytecode or inventing an emitter-local execution order.
+
 #### Scenario: Structured control flow remains structured
 
 - **WHEN** HIR contains nested if/else, loops, switch cases, break, continue, and returns
@@ -208,6 +391,14 @@ For an eligible function, the complete TypedASTJIT analysis/reference/emission p
 - **THEN** signed add/subtract/multiply use unsigned-width bit-domain helpers, signed division/remainder checks zero and minimum-value divided by minus one before the operator, shift counts are masked to 31 or 63, arithmetic right shift performs explicit sign fill, and booleans are normalized
 - **AND** non-finite/out-of-range float-to-integer conversion uses a reviewed shared helper with toolchain differential coverage or returns `NonPortableNumericConversion`
 - **AND** runtime errors enter the same `FScriptExecution` exception contract as legacy StaticJIT
+
+#### Scenario: Pure typed code has no generic execution-context dependency
+
+- **WHEN** TypedASTJIT emits ordinary typed locals, scalar arithmetic, conversion, comparison, control flow, or a direct emitted helper call
+- **THEN** the generated implementation and its pure scalar helpers do not receive, construct, or name `FAngelscriptJITExecutionContext`
+- **AND** wrapping arithmetic, narrowing, normalization, and shift helpers are context-free and force-inlineable rather than Runtime dispatch calls
+- **AND** only a genuinely failing operation uses the narrow `FScriptExecution` exception contract, while a dynamic legacy/VM target uses the dedicated scalar bridge
+- **AND** a shared VM/raw/parameter entry thunk may retain the `FScriptExecution&` required by its existing ABI without propagating a generic context object through ordinary typed expressions
 
 #### Scenario: Scalar mutation is single-evaluation
 
@@ -289,6 +480,14 @@ Every TypedASTJIT entry and directly emitted TypedASTJIT helper SHALL participat
 - **THEN** every loop/backedge and required boundary in the direct TypedASTJIT closure has an approved source/safe-point hook or the invocation routes to VM
 - **AND** position-only line metadata is not accepted as a safe point
 
+#### Scenario: Disabled cooperative-control APIs do not create a synthetic live requirement
+
+- **GIVEN** the maintained fork's `asCContext::Abort()` and `asCContext::Suspend()` return `asERROR` and no complete context polling channel is enabled
+- **WHEN** the Engine captures current JIT execution requirements
+- **THEN** it does not fabricate an `AbortSuspend` request from a test-only flag or dormant context fields
+- **AND** the provider ABI still reserves `AbortSuspend` and rejects a synthetic requirement when the selected profile lacks approved safe points
+- **AND** enabling a real cooperative-control request later requires the complete maintained-context request, polling, status, and thread-safety contract before TypedASTJIT may claim parity
+
 #### Scenario: Capability is closed over direct calls
 
 - **WHEN** a root satisfies an execution requirement but one direct TypedASTJIT callee/SCC does not
@@ -343,7 +542,8 @@ The TypedASTJIT emitter SHALL lower each resolved call independently, using a pr
 #### Scenario: Safe exported native target is called directly
 
 - **WHEN** a resolved scalar native target has an explicit matching external-call descriptor for an exported symbol, header-inline definition, or exported Runtime thunk
-- **THEN** the emitted caller includes the declared header and uses the typed target directly
+- **THEN** the emitted caller includes the declared header and invokes the actual underlying UE/C++ callable, or the explicitly reviewed exported Runtime thunk, through its concrete typed ABI
+- **AND** an otherwise direct UE/FBind call is not replaced by a generic execution-context dispatch helper
 - **AND** it does not infer external linkability from legacy native-form call spelling
 
 #### Scenario: Provider-private FBind target uses scalar bridge
@@ -351,6 +551,19 @@ The TypedASTJIT emitter SHALL lower each resolved call independently, using a pr
 - **WHEN** a resolved scalar binding target is implemented by a provider-private helper, an unexported out-of-line symbol, or a native form without an explicit external contract
 - **THEN** it is not emitted as a named direct C++ call
 - **AND** the TypedASTJIT caller remains eligible when the scalar bridge can preserve its call ABI, routing, result, and exception state
+- **AND** generated source emits an immutable call-site metadata row beside the call and identifies the literal `InvokeBound<Return, Args...>` template, its fixed exported `InvokeBoundViaVM` Runtime DLL core, and the registered private target ultimately selected by the current Engine slot as three separate layers
+- **AND** the generated `InvokeBound<Return, Args...>` expression takes that row by reference so its C++ source exposes both the typed marshalling shape and readable registered-target name
+- **AND** the bridge loads the current registered `asCScriptFunction` from the validated numeric slot, prepares a maintained pooled `FAngelscriptContext`, marshals reviewed scalar/enum arguments through `SetArg*`, executes it, and reads the reviewed scalar result
+- **AND** an unexported system function consequently runs through `CallSystemFunction -> CallFunctionCaller/CallGeneric` rather than linking, freezing or casting the private pointer
+- **AND** the row's display strings are diagnostic-only while stable key plus expected ABI resolves the Provider-owned slot before invocation
+
+#### Scenario: Execution state is threaded only when a bridge needs it
+
+- **WHEN** a root or transitive emitted helper contains a bridged call
+- **THEN** its Typed body takes one hidden first `FScriptExecution& Execution` parameter
+- **AND** raw, VM and Parms adapters pass through the exact execution reference they already own
+- **AND** `InvokeBound` reads the current resolved reference table and exception state from that reference without naming or constructing `FAngelscriptJITExecutionContext`
+- **AND** a body whose complete call closure is direct retains the ordinary C++ body signature without the hidden execution parameter
 
 #### Scenario: Ordinary AS helper uses scalar bridge
 

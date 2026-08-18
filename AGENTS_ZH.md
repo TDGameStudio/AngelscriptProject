@@ -183,6 +183,7 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - 普通 `.as` 保存不会自动生成 C++ 或触发 Live Coding。Editor 显式 Generate/Refresh 在源文件集合不变时可 patch；新增/删除 AS 模块需要普通完整构建。
 - UE ModuleManager 负责 Provider DLL 加载/卸载；Registry owner 退注册阻止未来选择，已发布 binding 通过代码镜像 lease 保活到最后一个执行者退出。禁止重新引入 `FJITDatabase`、FunctionId/DataGuid 或 whole-cache 配对路径。
 - 当前生产生成器未启用 content-specific script-to-script direct-call emission；Native binding 已可用，但跨模块直接调用仍是独立的后续优化。
+- TypedASTJIT（`typed-ast`）补充而不是删除 BytecodeJIT/VM，也不是 Runtime JIT。它要求在同一次 generation 源码编译前打开 HIR capture，只消费内存中的 verified HIR。普通调用实参按反向形式参数顺序物化；变异目标只求值一次；循环/switch 保留显式阶段和转移目标。位置帧不是 debugger/coverage/timeout 对等能力。直接递归需要 native frame 预算。`bExceptionThrown` 不是完整公共异常 payload。cleanup plan 必须显式、反向、只覆盖当时存活的槽。当前源级 `try`/`catch` 仍被拒绝。可变全局和 import 槽需要生命周期路由。native-form 显示名本身不能证明跨 DLL 可链接。生产没有 `dual` backend。
 
 ### Standalone 编译与离线 UE 分析
 

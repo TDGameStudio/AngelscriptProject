@@ -127,6 +127,19 @@ Static `typed-ast` 请求要求 generation Engine 已捕获 verified typed HIR�
 actual BackendId/disposition 和按顺序保留的 backend attempt/reason，便于
 TypedASTJIT 和 BytecodeJIT 做一致性测试。
 
+TypedASTJIT 是对 BytecodeJIT/VM 的补充，不是替换，也不是 Runtime JIT。
+它只消费同一次源码编译得到的内存 HIR，不回读 `.hir.txt` / `.hir.json`。
+生产环境没有 `dual` backend。普通调用实参按 AngelScript 的反向形式参数
+顺序物化，不是从左到右；变异目标只求值一次。循环/switch 保留显式阶段和
+转移目标。位置帧不是 debugger / coverage / loop-timeout 对等能力。直接
+递归需要 native frame 预算。`bExceptionThrown` 只是快路径，不是完整公共
+异常 payload。cleanup plan 必须显式、反向、只覆盖当时仍存活的槽；不能把
+C++ 词法作用域当成 AngelScript 清理。当前源级 `try` / `catch` 仍被拒绝。
+可变全局和 import 槽需要生命周期路由。native-form 显示名本身不能证明跨
+DLL 可链接：`HeaderInline` 才直接嵌入符号；非 inline 导出走
+`CurrentNativeBinding` / `InvokeBoundNative`；未导出标量走
+`InvokeBound` → `InvokeBoundViaVM`。
+
 ### 0.3 generation-only Engine 做什么
 
 Static 生成不借用当前 Editor Engine，也不会创建第二套脚本 UObject。每次

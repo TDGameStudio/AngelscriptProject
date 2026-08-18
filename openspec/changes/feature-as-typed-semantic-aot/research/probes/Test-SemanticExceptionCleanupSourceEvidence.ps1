@@ -42,8 +42,8 @@ $Files = @{
 	Bytecode = Join-Path $ThirdPartySource 'as_bytecode.cpp'
 	Compiler = Join-Path $ThirdPartySource 'as_compiler.cpp'
 	StaticJITHeaderSource = Join-Path $RuntimeRoot 'StaticJIT/StaticJITHeader.cpp'
-	LegacyGenerator = Join-Path $RuntimeRoot 'StaticJIT/AngelscriptStaticJIT.cpp'
-	LegacyBytecodes = Join-Path $RuntimeRoot 'StaticJIT/AngelscriptBytecodes.cpp'
+	LegacyGenerator = Join-Path $RuntimeRoot 'StaticJIT/BytecodeJIT/AngelscriptBytecodeJIT.cpp'
+	LegacyBytecodes = Join-Path $RuntimeRoot 'StaticJIT/BytecodeJIT/AngelscriptBytecodes.cpp'
 	Engine = Join-Path $RuntimeRoot 'Core/AngelscriptEngine.cpp'
 	HandlingRejectionTest = Join-Path $ProjectRoot 'Plugins/Angelscript/Source/AngelscriptTest/AngelScriptSDK/Language/Exceptions/AngelscriptNativeExceptionHandlingRejectionTests.cpp'
 }
@@ -122,20 +122,20 @@ Assert-SourcePatternAbsent -Name 'JIT execution has no exception text field' `
 	-Pattern 'exception(String|Text|Message|Function|Line|Column)'
 Assert-SourcePattern -Name 'Runtime Throw prefers active JIT execution' `
 	-Text $Texts.Engine `
-	-Pattern 'void\s+FAngelscriptEngine::Throw.*activeExecution\s*!=\s*nullptr.*activeExecution->bExceptionThrown\s*=\s*true;.*HandleExceptionFromJIT\(Exception\);.*else\s+if\s*\(tld->activeContext\s*!=\s*nullptr\).*activeContext->SetException\(Exception\);'
+	-Pattern 'void\s+FAngelscriptEngine::Throw.*activeExecution\s*!=\s*nullptr.*SetExternalException\(\s*\*tld->activeExecution,\s*Exception\);.*else if \(tld->activeContext != nullptr\).*activeContext->SetException\(Exception\);'
 Assert-SourcePattern -Name 'JIT exception handler currently only logs' `
 	-Text $Texts.Engine `
 	-Pattern 'void\s+FAngelscriptEngine::HandleExceptionFromJIT\([^)]*\)\s*\{\s*LogAngelscriptException\(ExceptionString\);\s*\}'
-Assert-SourcePattern -Name 'StaticJIT exception helpers set flag and log' `
+Assert-SourcePattern -Name 'StaticJIT exception helpers record then log through HandleExceptionFromJIT' `
 	-Text $Texts.StaticJITHeaderSource `
-	-Pattern 'Execution\.bExceptionThrown\s*=\s*true;\s*FAngelscriptEngine::HandleExceptionFromJIT' `
-	-MinimumMatches 7
+	-Pattern 'FAngelscriptEngine::HandleExceptionFromJIT' `
+	-MinimumMatches 2
 Assert-SourcePattern -Name 'top and nested VM entries collapse JIT failure to context status' `
 	-Text $Texts.Context `
-	-Pattern 'if\s*\(!Execution\.bExceptionThrown\).*m_status\s*=\s*asEXECUTION_FINISHED;.*else\s*\{\s*m_status\s*=\s*asEXECUTION_EXCEPTION;'
+	-Pattern 'if\s*\(!Execution\.bExceptionThrown\).*m_status\s*=\s*asEXECUTION_FINISHED;.*else\s*\{\s*if\s*\(!Execution\.PublishException\(\*this\)\)\s*m_status\s*=\s*asEXECUTION_EXCEPTION;'
 Assert-SourcePattern -Name 'nested JIT entry also maps failure to context status' `
 	-Text $Texts.Context `
-	-Pattern 'void\s+asCContext::CallScriptFunction.*if\s*\(!Execution\.bExceptionThrown\).*else\s*\{\s*m_status\s*=\s*asEXECUTION_EXCEPTION;'
+	-Pattern 'void\s+asCContext::CallScriptFunction.*if\s*\(!Execution\.bExceptionThrown\).*else\s*\{\s*if\s*\(!Execution\.PublishException\(\*this\)\)\s*m_status\s*=\s*asEXECUTION_EXCEPTION;'
 Assert-SourcePattern -Name 'direct generated script calls share execution state' `
 	-Text $Texts.LegacyBytecodes `
 	-Pattern 'FunctionSymbolName,\s*ArgumentString,\s*HeadCode,\s*FootCode\);.*if\s*\(Execution\.bExceptionThrown\)'
@@ -163,12 +163,12 @@ Assert-SourcePattern -Name 'Legacy computes before or after operation liveness' 
 Assert-SourcePattern -Name 'Legacy emits deduplicated cleanup labels' `
 	-Text $Texts.LegacyGenerator `
 	-Pattern 'ExistingLabel\.Positions\s*==\s*Cleanup\.Positions.*ExistingLabel\.Types\s*==\s*Cleanup\.Types.*goto\s+\{0\};'
-Assert-SourcePattern -Name 'Legacy exception cleanup currently emits forward order' `
+Assert-SourcePattern -Name 'Legacy exception cleanup emits reverse declaration order' `
 	-Text $Texts.LegacyGenerator `
-	-Pattern 'for\s*\(int\s+i\s*=\s*0,\s*Count\s*=\s*Cleanup\.Positions\.Num\(\);\s*i\s*<\s*Count;\s*\+\+i\)'
-Assert-SourcePattern -Name 'script cleanup destructors currently ignore exceptions' `
+	-Pattern 'for\s*\(int\s+i\s*=\s*Cleanup\.Positions\.Num\(\)\s*-\s*1;\s*i\s*>=\s*0;\s*--i\)'
+Assert-SourcePattern -Name 'script cleanup destructors isolate from the failed execution' `
 	-Text $Texts.LegacyBytecodes `
-	-Pattern 'FCallScriptFunction\s+ScriptCall\(DestroyFunc,\s*FCallScriptFunction::ELookupType::NoLookup,\s*/\*bIgnoreExceptions=\*/true\);'
+	-Pattern 'AngelscriptDestroyScriptObjectIsolated\(Execution,\s*SCRIPT_ENGINE'
 Assert-SourcePattern -Name 'generated functions assume no incoming exception' `
 	-Text $Texts.LegacyGenerator `
 	-Pattern 'FunctionHead\s*\+=\s*TEXT\("SCRIPT_ASSUME_NO_EXCEPTION\(\)\\n"\);'

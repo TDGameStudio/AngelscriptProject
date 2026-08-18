@@ -1,8 +1,8 @@
 {
   "ownershipRevision": 2,
   "targetProfile": "GameShipping",
-  "providerId": "a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5",
-  "providerGeneration": "917bb4e18da7a1f3e816f289e0db0c6b2ec2e176b0508757b048df94f57011ce",
+  "providerId": "d68adf88aff3b35bb80e41f44e00648d55f4fce2b35f700ae9b4bfdc65f87969",
+  "providerGeneration": "d6b65cb980f09bf184ac96f972b0ce5b83a5a39f2c6d8c7ad93e615cb83ec988",
   "files": [
     "OwnedFiles.generated.json",
     "Provider.generated.h",

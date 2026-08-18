@@ -5,20 +5,16 @@
  * CanonicalModuleName : Examples.Core.Example_Math
  * TargetProfile       : EditorDevelopment
  * StableModuleKey     : 7fca37092c5c2190e0f260bc2042b7bf9b5624688450cfef86d9ebac2c0eb40e
- * ProviderId          : a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5
+ * ProviderId          : d68adf88aff3b35bb80e41f44e00648d55f4fce2b35f700ae9b4bfdc65f87969
  * ArtifactProfile     : fc019b75324eb9505dfa8aeaadc5dbbceb8d476837af625df9dfcb6a7d62ef7e
- * NativeEnvironment   : c8d9638e7c34100b327617ea9a4769bd7692413e17eb4705818e6b120acc9651
+ * NativeEnvironment   : 76d620ec7d0db38aa2028996e595f75523f201e7e560c05d8c9000d60d04cd73
  * FunctionCount       : 1
  */
 
 #if WITH_EDITOR && UE_BUILD_DEVELOPMENT
 #include "StaticJIT/StaticJITConfig.h"
 #ifndef AS_SKIP_JITTED_CODE
-
-
 #include "StaticJIT/StaticJITHeader.h"
-
-
 constexpr SIZE_T POFFSET_FPhase2ExampleActorFixture_Value = Align(sizeof(UObject) + 0, 4);
 constexpr SIZE_T PALIGN_FPhase2ExampleActorFixture_Value = AlignmentMax(alignof(UObject), 4);
 constexpr SIZE_T TALIGN_FPhase2ExampleActorFixture = PALIGN_FPhase2ExampleActorFixture_Value;
@@ -34,7 +30,10 @@ constexpr SIZE_T TSIZE_FPhase2MathFixture = Align(POFFSET_FPhase2MathFixture_Val
  * StableFunctionKey  : 283edffc1d10fd79397f21a0539a2a1412991441ce7568df98fb21efeab04112
  * ExecutionHash      : 94a2e4d4f07ce258cc97431d4df646f00c4e4f0bdb1e6c6c93086e4098bcceff
  * DebugHash          : 87aa4ce443c4ad49d5974a48874887034825a2f5b2e4578b65f26389ed6d0663
- * EntryAbiHash       : e8c0e341a718465045f8c67751be91ee33b7d19102164052bcd47aa0225b063e
+ * EntryAbiHash       : 7e7174702258f80970558612aa5296d3f134896288642bdc5a4a9d8f35ac368a
+ * ExecutionCaps      : 0
+ * RuntimeTriggers    : 0
+ * CapabilityHash     : 0000000000000000000000000000000000000000000000000000000000000000
  */
 #if AS_JIT_DEBUG_CALLSTACKS
 #undef SCRIPT_DEBUG_FILENAME
@@ -77,7 +76,7 @@ double v_TEMP_double_22 = {};
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 5u).GetFunction();
   auto CastedFuncPtr = (double(*)(double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(8);
+SCRIPT_DEBUG_CALLSTACK_POSITION(8, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0xbff0000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]
@@ -109,7 +108,7 @@ v_TEMP_byte_7 = l_byteRegister;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 4u).GetFunction();
   auto CastedFuncPtr = (void(*)(bool))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(9);
+SCRIPT_DEBUG_CALLSTACK_POSITION(9, 2);
 CastedFuncPtr(value_as<bool>((v_TEMP_byte_7)));
 if (Execution.bExceptionThrown) [[unlikely]]
 {
@@ -126,7 +125,7 @@ return;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 3u).GetFunction();
   auto CastedFuncPtr = (double(*)(double,double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(11);
+SCRIPT_DEBUG_CALLSTACK_POSITION(11, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0x3fb999999999999au)),value_as<double>(((asQWORD)0x3ff0000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]
@@ -158,7 +157,7 @@ v_TEMP_byte_7 = l_byteRegister;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 4u).GetFunction();
   auto CastedFuncPtr = (void(*)(bool))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(12);
+SCRIPT_DEBUG_CALLSTACK_POSITION(12, 2);
 CastedFuncPtr(value_as<bool>((v_TEMP_byte_7)));
 if (Execution.bExceptionThrown) [[unlikely]]
 {
@@ -175,7 +174,7 @@ return;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 2u).GetFunction();
   auto CastedFuncPtr = (double(*)(double,double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(14);
+SCRIPT_DEBUG_CALLSTACK_POSITION(14, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0x3fb999999999999au)),value_as<double>(((asQWORD)0x3ff0000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]
@@ -207,7 +206,7 @@ v_TEMP_byte_7 = l_byteRegister;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 4u).GetFunction();
   auto CastedFuncPtr = (void(*)(bool))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(15);
+SCRIPT_DEBUG_CALLSTACK_POSITION(15, 2);
 CastedFuncPtr(value_as<bool>((v_TEMP_byte_7)));
 if (Execution.bExceptionThrown) [[unlikely]]
 {
@@ -225,7 +224,7 @@ return;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 0u).GetFunction();
   auto CastedFuncPtr = (double(*)(double,double,double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(17);
+SCRIPT_DEBUG_CALLSTACK_POSITION(17, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0x4000000000000000u)),value_as<double>(((asQWORD)0x0u)),value_as<double>(((asQWORD)0x3fe0000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]
@@ -257,7 +256,7 @@ v_TEMP_byte_7 = l_byteRegister;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 4u).GetFunction();
   auto CastedFuncPtr = (void(*)(bool))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(18);
+SCRIPT_DEBUG_CALLSTACK_POSITION(18, 2);
 CastedFuncPtr(value_as<bool>((v_TEMP_byte_7)));
 if (Execution.bExceptionThrown) [[unlikely]]
 {
@@ -273,7 +272,7 @@ return;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 1u).GetFunction();
   auto CastedFuncPtr = (double(*)(double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(21);
+SCRIPT_DEBUG_CALLSTACK_POSITION(21, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0x4000000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]
@@ -293,7 +292,7 @@ v_WaveValue = l_doubleRegister;
 {
   asFUNCTION_t RawFuncPtr = FAngelscriptJITGeneratedReferenceAccess::GetSystemFunctionPointer(Execution, 6u).GetFunction();
   auto CastedFuncPtr = (double(*)(double,double))RawFuncPtr;
-SCRIPT_DEBUG_CALLSTACK_LINE(24);
+SCRIPT_DEBUG_CALLSTACK_POSITION(24, 2);
 double FunctionReturnValue = CastedFuncPtr(value_as<double>(((asQWORD)0x0u)),value_as<double>(((asQWORD)0x4024000000000000u)));
 l_doubleRegister = FunctionReturnValue;
 if (Execution.bExceptionThrown) [[unlikely]]

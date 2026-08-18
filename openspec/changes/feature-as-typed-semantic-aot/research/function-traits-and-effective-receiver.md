@@ -466,3 +466,36 @@ Research fixtures under `research/fixtures/semantic-aot-v1/` include a valid ext
 | Singleton lowering | `Preprocessor/AngelscriptPreprocessor.*` plus Singleton descriptor/Registry tests |
 
 The existing Legacy bytecode StaticJIT remains the compatibility oracle. It already consumes bytecode in which these frontend decisions have been lowered; this research exists because a source-known HIR backend observes the decisions earlier and must preserve them explicitly.
+
+## 12. Implemented normalized trait summary checkpoint
+
+The maintained private HIR now owns one canonical classifier rather than asking
+eligibility, emission and diagnostics to reinterpret `asEFuncTrait` separately.
+`asSTypedSemanticFunctionHeader` retains the raw `declaredTraitBits` snapshot and
+adds an `asSTypedSemanticFunctionTraitSummary` with these explicit bit groups:
+
+| Field | Meaning |
+| --- | --- |
+| `knownTraitBits` / `unknownTraitBits` | Exact current-fork coverage and future-bit preservation |
+| `sourcePolicyTraitBits` | Declaration/access/call-site policy retained for diagnostics and later eligibility |
+| `receiverTraitBits` | Const, mixin, temporary-object and external-this receiver semantics |
+| `invocationTraitBits` | Constructor/destructor/implicit-constructor/mixin/external-this call shape |
+| `dispatchTraitBits` | Virtual/shared/external/property/local/template/world-context/callable routing |
+| `bodyAvailabilityTraitBits` | Whether the body is shared, external, local, generated, editor-only or generic-template owned |
+| `lifetimeTraitBits` | Construction/destruction/temporary/default-construction lifetime constraints |
+| `profileTraitBits` | Target-profile/world-context/generated/editor/construction restrictions |
+
+The classifier lists all 27 current bits and has a compile-time assertion tied
+to the private `0x07ffffff` known mask. A table-driven Standalone test lists the
+same 27 rows independently and proves the visited union exactly matches the
+known mask. An unknown `0x80000000` bit stays in `unknownTraitBits`, enters no
+known category, and remains structurally valid HIR so TypedASTJIT eligibility
+can produce its existing typed `UnsupportedFunctionTrait` fallback instead of
+misreporting malformed capture. The verifier recomputes the summary from the
+raw snapshot and returns stable `InvalidFunctionTraitSummary` for any corrupted
+or stale normalized field. Deterministic text dumps expose every group.
+
+This closes the fork/Standalone production slice of task 1.8. The task remains
+unchecked until the UE test module is rebuilt and its existing unknown-trait
+eligibility case is rerun, because the unrelated SigilProject Live Coding
+process still owns the UE 5.8 build mutex.

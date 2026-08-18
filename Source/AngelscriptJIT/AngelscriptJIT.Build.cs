@@ -11,7 +11,7 @@ public class AngelscriptJIT : ModuleRules
 		{
 			PrivateDefinitions.Add("AS_ENABLE_EDITOR_JITTED_CODE=1");
 		}
-		PrivateDependencyModuleNames.AddRange(new string[]
+		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core",
 			"AngelscriptRuntime",

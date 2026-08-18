@@ -42,8 +42,8 @@ $Files = @{
 	Compiler = Join-Path $ThirdPartySource 'as_compiler.cpp'
 	StaticJITHeader = Join-Path $RuntimeRoot 'StaticJIT/StaticJITHeader.h'
 	StaticJITHeaderSource = Join-Path $RuntimeRoot 'StaticJIT/StaticJITHeader.cpp'
-	LegacyGenerator = Join-Path $RuntimeRoot 'StaticJIT/AngelscriptStaticJIT.cpp'
-	LegacyBytecodes = Join-Path $RuntimeRoot 'StaticJIT/AngelscriptBytecodes.cpp'
+	LegacyGenerator = Join-Path $RuntimeRoot 'StaticJIT/BytecodeJIT/AngelscriptBytecodeJIT.cpp'
+	LegacyBytecodes = Join-Path $RuntimeRoot 'StaticJIT/BytecodeJIT/AngelscriptBytecodes.cpp'
 	Engine = Join-Path $RuntimeRoot 'Core/AngelscriptEngine.cpp'
 }
 
@@ -124,10 +124,10 @@ Assert-SourcePattern -Name 'Legacy StaticJIT suspend is a no-op' `
 	-Pattern 'IMPL_BYTECODE_BEGIN\(asBC_SUSPEND\).*bool\s+Implement\([^)]*\)\s+const\s+override\s*\{\s*return\s+true;\s*\}'
 Assert-SourcePattern -Name 'Legacy JIT debug frame links and restores' `
 	-Text $Texts.StaticJITHeader `
-	-Pattern 'PrevFrame\s*=\s*\(FScopeJITDebugCallstack\*\)Execution\.debugCallStack;\s*Execution\.debugCallStack\s*=\s*this;.*~FScopeJITDebugCallstack\(\)\s*\{\s*Execution\.debugCallStack\s*=\s*PrevFrame;'
-Assert-SourcePattern -Name 'Legacy generator emits debug frame and line metadata' `
+	-Pattern 'PrevFrame\s*=\s*\(FScopeJITDebugCallstack\*\)Execution\.debugCallStack;.*if\s*\(bLinked\).*Execution\.debugCallStack\s*=\s*this;.*~FScopeJITDebugCallstack\(\).*if\s*\(bLinked\).*Execution\.debugCallStack\s*=\s*PrevFrame;'
+Assert-SourcePattern -Name 'Legacy generator emits debug frame and position metadata' `
 	-Text $Texts.LegacyGenerator `
-	-Pattern 'SCRIPT_DEBUG_CALLSTACK_LINE.*bEmitDebugMetadataInOutput.*SCRIPT_DEBUG_CALLSTACK_FRAME'
+	-Pattern 'void\s+FStaticJITContext::DebugLineNumber.*SCRIPT_DEBUG_CALLSTACK_POSITION.*bEmitDebugMetadataInOutput.*SCRIPT_DEBUG_CALLSTACK_FRAME'
 Assert-SourcePattern -Name 'configured VM contexts install line and loop callbacks' `
 	-Text $Texts.Engine `
 	-Pattern 'SetLineCallback\(AngelscriptLineCallback\).*SetLoopDetectionCallback\(AngelscriptLoopDetectionCallback\)'
@@ -160,7 +160,7 @@ Assert-SourcePattern -Name 'switch default-last and exhaustive exception are exp
 	-Pattern 'TXT_DEFAULT_MUST_BE_LAST.*bSwitchIsExhaustive.*InstrWORD\(asBC_ThrowException,\s*0\)'
 Assert-SourcePattern -Name 'switch invalid enum value has the maintained JIT exception' `
 	-Text $Texts.StaticJITHeaderSource `
-	-Pattern 'SetSwitchValueInvalidException.*bExceptionThrown\s*=\s*true;.*Invalid enum value passed to switch'
+	-Pattern 'SetSwitchValueInvalidException.*SetExternalException\(Execution,\s*"Invalid enum value passed to switch"\)'
 Assert-SourcePattern -Name 'assignment compiles RHS before LHS' `
 	-Text $Texts.Compiler `
 	-Pattern 'int\s+rr\s*=\s*CompileAssignment\(lexpr->next->next,\s*&rctx\);\s*int\s+lr\s*=\s*CompileCondition\(lexpr,\s*&lctx\);'

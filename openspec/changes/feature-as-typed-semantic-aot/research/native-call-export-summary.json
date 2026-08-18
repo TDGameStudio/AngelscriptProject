@@ -1,0 +1,88 @@
+{
+  "Schema": "typed-aot-native-call-export-inventory-v4",
+  "TargetProfile": "Win64/EditorDevelopment",
+  "FinalInventorySha256": "9aba620e0efaf176f4d49de12bedf542a1a1fdb26b5ce66bf1ed56da87048dc0",
+  "FinalInventoryBytes": 90579196,
+  "SourceReconciliationSha256": "52002ae60cd414a2b81cd4859ce2b339555fca5a215b5347e3f094f05883113c",
+  "SourceReconciliationBytes": 1537070,
+  "InstalledInventorySha256": "8ba7420c5bb39657e50aac0cede9f8dbc42dba7f8bf5fd8f1d5a999a94dec9cf",
+  "SourceCallsitesSha256": "86a6dbd0788de01de5c14ab621e3b4dd732a9c5edef262db3d4994f9fc036083",
+  "SourceProvidersSha256": "03839df1e9a868912aa583dd2cc16abcba7cf74b1669cb6f7f896f53d8c604aa",
+  "InstalledRowCount": 78082,
+  "StableIdentityCount": 78082,
+  "UnknownOriginCount": 0,
+  "DistinctInstalledProviderCount": 146,
+  "SourceCallsiteCount": 2920,
+  "SourceProviderDeclarationCount": 253,
+  "Dispositions": {
+    "bridge": 834,
+    "direct-export": 1,
+    "exported-callable": 1,
+    "inline": 1,
+    "unsupported": 77245
+  },
+  "CallsiteJoinStatuses": {
+    "exact-source-callsite": 9413,
+    "provider-authority-only": 2982,
+    "provider-dynamic-expansion": 34621,
+    "reflective-provider-expansion": 31065,
+    "single-provider-callsite": 1
+  },
+  "Origins": {
+    "1": 45656,
+    "4": 32426
+  },
+  "DispatchKinds": {
+    "FunctionCaller": 72240,
+    "GenericFunction": 1175,
+    "GenericMethod": 4667
+  },
+  "NativeUFunctionRouteFlagValues": {
+    "0": 77489,
+    "3": 138,
+    "6": 455
+  },
+  "NativeUFunctionRouteFacts": {
+    "AnyRouted": 593,
+    "RpcOrNet": 138,
+    "Event": 593,
+    "BlueprintEvent": 455,
+    "RawDirectConflict": 0
+  },
+  "SourceReconciliation": {
+    "InstalledProviderCallsite": 1407,
+    "InactiveOrAlternateProviderCallsite": 1499,
+    "InactiveProfileBranchCallsite": 4,
+    "InstalledDynamicAuthorityCallsite": 10,
+    "UnresolvedSourceCallsite": 0
+  },
+  "DynamicAuthorityInstalledRows": {
+    "DirectBlueprintCallable": 1041,
+    "ReflectiveBlueprintCallableFallback": 4785,
+    "BoolBitfieldGetter": 1186,
+    "BoolBitfieldSetter": 2929
+  },
+  "DispositionReasonCodes": {
+    "exported-symbol-descriptor": "Validated importable DLL symbol.",
+    "header-inline-descriptor": "Validated public inline definition.",
+    "exported-runtime-thunk-descriptor": "Validated exported Runtime thunk.",
+    "exported-runtime-callable-descriptor": "Validated exported implementation shared by Bind and generated C++.",
+    "provider-private-scalar-bridge": "Provider-private target with reviewed scalar current-slot bridge ABI.",
+    "current-binding-slot-scalar-bridge": "No external descriptor; reviewed scalar current-slot bridge ABI.",
+    "typed-scalar-abi-unavailable": "Current TypedASTJIT scalar bridge cannot marshal the installed signature.",
+    "target-profile-compile-out": "The maintained fork selected a compile-out rewrite for this exact profile."
+  },
+  "Completeness": "complete-installed-editor-development-inventory",
+  "Notes": [
+    "Every output row is authoritative for one function accepted by the fresh StaticJITGeneration Engine.",
+    "EngineLocalFunctionId is retained only in the raw Saved installed export as transient same-Engine evidence; the final local-only inventory excludes it and sorts by the existing CacheV2 EnvironmentSymbol key.",
+    "DispatchKind records the pointer-free CallSystemFunction route: FunctionCaller takes precedence, otherwise GenericFunction, GenericMethod, or NativeCallingConvention.",
+    "NativeUFunctionRouteFlags snapshots authoritative FUNC_Net, FUNC_Event, and FUNC_BlueprintEvent facts; any nonzero value forbids raw-direct linkage and preserves Unreal routing.",
+    "NativeScalarABI describes only a proven C++ direct-call shape. A GenericFunction or GenericMethod never becomes direct-callable from that field; its later VM bridge eligibility is a separate AS-visible marshalling contract.",
+    "One source registration expression may expand to many installed functions. Ambiguous dynamic and reflective expansions retain exact provider authority rather than guessing a callsite.",
+    "Of the fourteen source rows without lexical Provider names, four are the inactive AS_USE_BIND_DB path for this Editor profile and ten are active direct/fallback/bool dynamic helper sites reconciled to installed BlueprintType.ReflectionBindings and UStruct.ReflectionBindings rows; unresolved source rows are zero.",
+    "CompileOutKind is the actual selected target-profile result. SourceCompileOutMethods records source rewrite rules independently, and NonRewrittenDisposition preserves the fallback route.",
+    "ExpectedNativeABIHash plus the explicit call-convention, receiver, size, default/hidden, trait, routing and lifetime columns carry the exact installed ABI evidence without repeating a long canonical ABI string in every row.",
+    "Display spellings are provenance only and are never dispatch identity."
+  ]
+}

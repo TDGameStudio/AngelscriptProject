@@ -5,20 +5,16 @@
  * CanonicalModuleName : Tests.Test_Inheritance
  * TargetProfile       : GameShipping
  * StableModuleKey     : f77b2646df95206b9e3c0a6dff95d867c285aae42b2da94e7b6ffee579c5e70c
- * ProviderId          : a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5
+ * ProviderId          : d68adf88aff3b35bb80e41f44e00648d55f4fce2b35f700ae9b4bfdc65f87969
  * ArtifactProfile     : 5dc64764efed88608c4266d9449cbdb105571ca28fafba2603c771dc4f50e9aa
- * NativeEnvironment   : cf0f93f6716a0e67b6ba26d9ec2243de153175c1fbc951b949dd7f9b4b8bbc54
+ * NativeEnvironment   : a8e1b284849067b4b68e7af94e6d337cd071c3644a8b33d155878b808dea6f2a
  * FunctionCount       : 1
  */
 
 #if !WITH_EDITOR && UE_BUILD_SHIPPING
 #include "StaticJIT/StaticJITConfig.h"
 #ifndef AS_SKIP_JITTED_CODE
-
-
 #include "StaticJIT/StaticJITHeader.h"
-
-
 constexpr SIZE_T POFFSET_FPhase2ExampleActorFixture_Value = Align(sizeof(UObject) + 0, 4);
 constexpr SIZE_T PALIGN_FPhase2ExampleActorFixture_Value = AlignmentMax(alignof(UObject), 4);
 constexpr SIZE_T TALIGN_FPhase2ExampleActorFixture = PALIGN_FPhase2ExampleActorFixture_Value;
@@ -34,7 +30,10 @@ constexpr SIZE_T TSIZE_FPhase2MathFixture = Align(POFFSET_FPhase2MathFixture_Val
  * StableFunctionKey  : 1accffceeaece6046fe2a22dd19c25cdb1849fd02d1b8367cf98d16d285de925
  * ExecutionHash      : 5baa707427dfe0d573be1038edbc3a767d8fbd93a26a3218186e1f9b704427db
  * DebugHash          : d7e7aa3652a75ab6691f6db06aa1626e8fa9d07ccf0d69e63531988abe2ea90e
- * EntryAbiHash       : 11fa7e2d5fb132da7c3909fdbecb45d8f91001881304657258e395d881ece21f
+ * EntryAbiHash       : 5e5a6eda6852fd27a7309cfdbd8a4c9659080edcbea436768ffaa63e0b475239
+ * ExecutionCaps      : 0
+ * RuntimeTriggers    : 0
+ * CapabilityHash     : 0000000000000000000000000000000000000000000000000000000000000000
  */
 #if AS_JIT_DEBUG_CALLSTACKS
 #undef SCRIPT_DEBUG_FILENAME

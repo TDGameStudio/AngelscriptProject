@@ -16,6 +16,14 @@ TypedASTJIT SHALL reuse existing `UASFunction` VM/raw/parameter Provider entry d
 - **THEN** that wrapper may invoke the TypedASTJIT raw entry through the current dispatch helper
 - **AND** it does not require a TypedASTJIT-specific `UASFunction` subclass
 
+#### Scenario: Typed publication preserves the existing script-origin classifier
+
+- **WHEN** normal class generation publishes a reflected AngelScript function whose current binding contains TypedASTJIT entries
+- **THEN** the wrapper remains a member of the existing `UASFunction` family and `IsAngelscriptGenerated(const UFunction*)` returns true
+- **AND** `IsAngelscriptGenerated(const FProperty*)` returns true for the wrapper's owned argument and return properties while ordinary native function properties remain false
+- **AND** discarding or replacing the backing script module does not reclassify the retained stale `UASFunction` UObject as a native function
+- **AND** the isolated generation Engine derives root identity from its authoritative descriptor/function graph rather than an AssetRegistry tag, UObject pointer, or duplicate persistent script-origin flag
+
 #### Scenario: Virtual override is not bypassed
 
 - **WHEN** a parent UFUNCTION has TypedASTJIT entries but the receiver resolves to an overriding child implementation

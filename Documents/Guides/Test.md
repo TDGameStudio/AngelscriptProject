@@ -480,6 +480,8 @@ unchanged warm、函数体修改、非法源码、源码恢复以及结构 cold/
 
 StaticJIT AOT 测试验证“编译权威 AS → 每 AS 模块生成一个 `.jit.cpp` → 二次构建 → Provider 注册 → 当前 Engine 稳定路由 → Native/VM 执行”整条链路。当前 owned output 不再发布 `.jit.hpp` 或测试专用 `.Cache`，也不再用 FunctionId/DataGuid 把 whole-cache 与 DLL 成对绑定；translator 内部若使用 `.jit.hpp` 命名的临时文本，不构成 UBT source 或运行期协议。
 
+`typed-ast` AOT 只补充 BytecodeJIT/VM，不是 Runtime JIT。生成前必须打开 HIR capture，只消费同一次编译的内存 HIR。测试应把意外 Typed 回退当成失败，而不是引入生产 `dual` backend。普通调用实参按反向形式参数顺序；变异目标只求值一次；循环/switch 保留显式阶段和转移目标。位置帧不是 debugger/coverage/timeout 对等能力。直接递归需要 native frame 预算。`bExceptionThrown` 不是完整异常 payload。cleanup plan 必须显式、反向、只覆盖当时存活的槽。当前源级 `try`/`catch` 仍被拒绝。可变全局和 import 槽需要生命周期路由。native-form 显示名不能证明跨 DLL 可链接。
+
 日常执行使用专用入口；它会完成基线 Editor 构建、固定 `AngelscriptTestJIT` fixture 生成、二次构建、Verify 和 focused tests：
 
 ```powershell

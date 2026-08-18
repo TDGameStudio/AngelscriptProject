@@ -18,7 +18,7 @@ Non-Shipping StaticJIT diagnostics SHALL distinguish the requested generation ba
 #### Scenario: Bytecode-only function reports missing HIR
 
 - **WHEN** diagnostics inspect a function without source-compiled typed HIR under a `typed-ast` request
-- **THEN** they report `MissingTypedIR`
+- **THEN** they report `MissingTypedHIR`
 - **AND** they do not claim that BytecodeJIT fallback is TypedASTJIT output
 
 #### Scenario: Dump command preserves deterministic fields
@@ -103,3 +103,31 @@ Non-Shipping StaticJIT diagnostics SHALL distinguish the requested generation ba
 
 - **WHEN** the runtime is compiled for Shipping
 - **THEN** HIR inspection, eligibility details, differential symbols, and TypedASTJIT fallback diagnostics are not exposed through the non-Shipping diagnostics surface
+
+### Requirement: Diagnostics distinguish HIR inspection from StaticJIT artifact generation
+
+Diagnostic surfaces SHALL carry an explicit request kind and SHALL NOT present a compiler/test HIR snapshot as a StaticJIT backend result. `AngelscriptHIRDump` output and `as.StaticJIT.DumpDiagnostics` SHALL remain separate commands with non-overlapping success semantics.
+
+#### Scenario: StaticJIT diagnostics describe an artifact request
+
+- **WHEN** `as.StaticJIT.DumpDiagnostics` inspects TypedASTJIT generation or loaded entries
+- **THEN** request kind is `StaticJITArtifact` and diagnostics may include requested/actual backend, entries, fallback, routes, capabilities, and execution counters
+- **AND** they do not claim that a `.hir.txt` or `.hir.json` file was an input to the artifact
+
+#### Scenario: HIR dump diagnostics describe a snapshot request
+
+- **WHEN** `AngelscriptHIRDump` completes a test/developer snapshot
+- **THEN** its result reports concrete profile, complete source-graph identity, output filters, capture/verifier state, normalized output paths, and deterministic diagnostic counts
+- **AND** it reports no Provider entries, actual execution backend, fallback success, route counters, or runtime execution counts
+
+#### Scenario: Stale Editor authority is diagnosed before generation
+
+- **WHEN** an Editor TypedASTJIT Generate/Refresh request cannot prove current primary source/profile authority
+- **THEN** it reports `AuthoritativeEngineStale` before creating the generation Engine or beginning Provider packaging
+- **AND** the diagnostic directs the caller to the established Hot Reload/recompile flow without claiming that StaticJIT repaired primary state
+
+#### Scenario: Generation Engine containment failure is source-visible
+
+- **WHEN** success/failure containment checks observe forbidden primary package, registry, cache, route, UObject, delegate, world, or pooled-context mutation
+- **THEN** the generation request fails with a stable containment category and affected boundary
+- **AND** it does not publish a partial Provider artifact or relabel the failure as per-function BytecodeJIT fallback

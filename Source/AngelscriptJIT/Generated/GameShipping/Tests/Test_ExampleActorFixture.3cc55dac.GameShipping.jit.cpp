@@ -5,20 +5,16 @@
  * CanonicalModuleName : Tests.Test_ExampleActorFixture
  * TargetProfile       : GameShipping
  * StableModuleKey     : 3cc55dac535fff7251c45430b2ee1fbba18cd2a924553eb3329f85e8c9b6864f
- * ProviderId          : a3ac00735be3d508aaa9d19ed244c9e0b93eaa2d6e55778b99453b291a186ce5
+ * ProviderId          : d68adf88aff3b35bb80e41f44e00648d55f4fce2b35f700ae9b4bfdc65f87969
  * ArtifactProfile     : 5dc64764efed88608c4266d9449cbdb105571ca28fafba2603c771dc4f50e9aa
- * NativeEnvironment   : cf0f93f6716a0e67b6ba26d9ec2243de153175c1fbc951b949dd7f9b4b8bbc54
+ * NativeEnvironment   : a8e1b284849067b4b68e7af94e6d337cd071c3644a8b33d155878b808dea6f2a
  * FunctionCount       : 3
  */
 
 #if !WITH_EDITOR && UE_BUILD_SHIPPING
 #include "StaticJIT/StaticJITConfig.h"
 #ifndef AS_SKIP_JITTED_CODE
-
-
 #include "StaticJIT/StaticJITHeader.h"
-
-
 constexpr SIZE_T POFFSET_FPhase2ExampleActorFixture_Value = Align(sizeof(UObject) + 0, 4);
 constexpr SIZE_T PALIGN_FPhase2ExampleActorFixture_Value = AlignmentMax(alignof(UObject), 4);
 constexpr SIZE_T TALIGN_FPhase2ExampleActorFixture = PALIGN_FPhase2ExampleActorFixture_Value;
@@ -34,7 +30,10 @@ constexpr SIZE_T TSIZE_FPhase2MathFixture = Align(POFFSET_FPhase2MathFixture_Val
  * StableFunctionKey  : 6d9c4dc6976d06a988fd7b2bf7fe7ed78e19583d12cab2e7fde6ecdfc2d604a1
  * ExecutionHash      : 3e4db0c934e102096056116906ac515231a22dccda3306066a14f026a9878211
  * DebugHash          : 7512fb65fd676a622c19923217b5f7c79c7db707ef9bcfe8e4d221af5af66acd
- * EntryAbiHash       : 151729d758bdf52160f5130a578eef6f062a29f69a62bca7f82867212e227793
+ * EntryAbiHash       : 0ecff72d5a6b857b8568190b01d9b6774439d4f4f9c35f1de9bd392393f1cf38
+ * ExecutionCaps      : 0
+ * RuntimeTriggers    : 0
+ * CapabilityHash     : 0000000000000000000000000000000000000000000000000000000000000000
  */
 #if AS_JIT_DEBUG_CALLSTACKS
 #undef SCRIPT_DEBUG_FILENAME
@@ -69,7 +68,7 @@ UObject* v_TEMP_ptr_2 = nullptr;
   if(a != nullptr) *a = (asPWORD)mem;
 value_assign_safe<asQWORD>(&l_stack[0], mem);
 // FPhase2ExampleActorFixture::FPhase2ExampleActorFixture()
-SCRIPT_DEBUG_CALLSTACK_LINE(0);
+SCRIPT_DEBUG_CALLSTACK_POSITION(0, 0);
 {
   asCScriptFunction* CallFunction = FAngelscriptJITGeneratedReferenceAccess::GetScriptFunction(Execution, 1u);
   FStaticJITCurrentFunctionCall CurrentFunctionCall(Execution, FAngelscriptStableFunctionKey{{FAngelscriptHash256{{FBlake3Hash(FWideStringView(TEXT("f23a1003283e86d8b62122f5bd873f13f840af678fc6becccf89b97d2ee9b4c4")))}}}}, CallFunction, (void*)(((asQWORD&)l_stack[0])), true);
@@ -82,9 +81,13 @@ return {};
   FAngelscriptContext CallContext(CallFunction->GetEngine());
   CallContext->Prepare(CallFunction);
   CallContext->SetObject((void*)((asQWORD&)l_stack[0]));
-  CallContext->Execute();
+  {
+     FScopeStaticJITNestedExceptionAdoption ExceptionAdoption(*CallContext);
+     CallContext->Execute();
+  }
   if (Execution.bExceptionThrown || CallContext->m_status != asEXECUTION_FINISHED)
   {
+     FStaticJITFunction::AdoptContextException(Execution, *CallContext);
      Execution.bExceptionThrown = true;
 return {};
   }
@@ -120,7 +123,10 @@ void ASJIT_6d9c4dc6976d06a988fd7b2bf7fe7ed78e19583d12cab2e7fde6ecdfc2d604a1_3e4d
  * StableFunctionKey  : bfc99b6e3c39b342cacec317e04fa4365cc67a7c3ba30f1471b28bcc49fb8a72
  * ExecutionHash      : 2940bb3c245ea8b01443327ab465d8b6a492a3afc417a9f9ebd9337e543fade8
  * DebugHash          : 1579abff946df92517a0eaa9250e9b7fe437c5aee88653c778baa836b1a2806e
- * EntryAbiHash       : 284ee8225c1528677f9aa60ccae2e863dddbeb2568b32c96a11f301e5a07d0ef
+ * EntryAbiHash       : 113eb7e01a237bd939b0ea8b298e61866047a6670f35d92b64103cf3fa0998ad
+ * ExecutionCaps      : 0
+ * RuntimeTriggers    : 0
+ * CapabilityHash     : 0000000000000000000000000000000000000000000000000000000000000000
  */
 #if AS_JIT_DEBUG_CALLSTACKS
 #undef SCRIPT_DEBUG_FILENAME
@@ -150,7 +156,7 @@ asDWORD v_TEMP_dword_3 = {};
 // LoadRObjR
 if (v_Fixture == nullptr) [[unlikely]]
 {
-SCRIPT_DEBUG_CALLSTACK_LINE(9);
+SCRIPT_DEBUG_CALLSTACK_POSITION(9, 2);
 SCRIPT_NULL_POINTER_EXCEPTION();
 return {};
 }
@@ -196,7 +202,10 @@ void ASJIT_bfc99b6e3c39b342cacec317e04fa4365cc67a7c3ba30f1471b28bcc49fb8a72_2940
  * StableFunctionKey  : f23a1003283e86d8b62122f5bd873f13f840af678fc6becccf89b97d2ee9b4c4
  * ExecutionHash      : 34bd823bbf1c30f77a9246b22f8726f690db52d267aa2001005f1a5dda9c8118
  * DebugHash          : ebb330b5dbbe9883014abc4aaa6d080b4a55b081be9082fd3f016b5cb234f382
- * EntryAbiHash       : 740a8cc143fe9d3508c66748bd043504677756c6fa602b7311c5101c9d838cb6
+ * EntryAbiHash       : d8c856d37f9c152157c0c357e2e4783f29873a6841baf07a51b958b3fdf1c9e7
+ * ExecutionCaps      : 0
+ * RuntimeTriggers    : 0
+ * CapabilityHash     : 0000000000000000000000000000000000000000000000000000000000000000
  */
 #if AS_JIT_DEBUG_CALLSTACKS
 #undef SCRIPT_DEBUG_FILENAME
