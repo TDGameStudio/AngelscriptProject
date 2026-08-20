@@ -2,7 +2,7 @@
 
 The host `Script/` tree is too small and uneven to serve as a dependable AngelScript learning corpus or project-level validation surface. Most current script-test fixtures outside `Test_ReflectedScriptSuites.as` are only a few lines long and return arbitrary constants, while the much richer behavior covered by the plugin's Bindings, Coverage, Functional, FunctionLibraries, and Syntax tests is not available as organized, runnable `.as` material.
 
-This change records a comprehensive, theme-based expansion plan so later implementation can build useful script examples and independent script-side functional tests without copying low-value inline test snippets or weakening the plugin-centric architecture.
+This change records a comprehensive, theme-based expansion plan so later implementation can build useful script examples and independent script-side functional tests without copying low-value inline test snippets or weakening the plugin-centric architecture. Direction id: `world-story` (`docs-as-test-direction-map`) for `Script/<Theme>/` teaching examples and `Script/Tests/` reflected suites.
 
 ## What Changes
 
