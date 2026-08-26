@@ -13,6 +13,7 @@ RalphLoop lives under `Tools/RalphLoop` and is intended to become the standalone
 ```text
 Tools/
 ├── RalphLoop/                      # standalone-ready RalphLoop tool
+├── openspec/                       # submodule: TDGameStudio/openspec (portable OpenSpec CLI)
 ├── RunBuild.ps1                    # project build runner
 ├── RunTests.ps1                    # project automation test runner
 ├── RunTestSuite.ps1                # project test-suite orchestrator

@@ -30,6 +30,8 @@
 | GenericMessagePlugin | 使用 `git clone --recurse-submodules https://github.com/wangjieest/GenericMessagePlugin.git Reference\GenericMessagePlugin` 拉取；SSH `git@github.com:wangjieest/GenericMessagePlugin.git`；Apache-2.0 的 UE message bus，用于参考跨 C++、Blueprint、AngelScript 与其他脚本后端的消息签名、类型校验、代码生成和编辑器工作流 |
 | GenericStorages | 使用 `git clone --recurse-submodules https://github.com/UnrealBytes/GenericStorages.git Reference\GenericStorages` 拉取；SSH `git@github.com:UnrealBytes/GenericStorages.git`；MIT 的 UE 通用工具插件，用于低优先级参考 registry/storage/singleton/subsystem、编辑器 picker、平台持久化与 S3 helper |
 | UECling | 使用 `git clone --recurse-submodules https://github.com/Evianaive/UECling.git Reference\UECling` 拉取；SSH `git@github.com:Evianaive/UECling.git`；在 Unreal 中集成 Cling/CppInterOp 的运行时 C++ 解释器插件，用于低优先级参考 interpreter pool、REPL/notebook、Blueprint C++ script node、脚本生成类与语义信息；上游无仓库级 LICENSE，采用前必须单独审查 |
+| OpenSpec (official Node CLI) | 使用 `git clone git@github.com:Fission-AI/OpenSpec.git Reference\openspec` 拉取，跟随 `main`；HTTPS `https://github.com/Fission-AI/OpenSpec.git`；2026-08-26 更新到 `6926ccb18afa4ff621112813e9968334576ee11a`（`@fission-ai/openspec` **1.10.0**，`main` 比 `v1.10.0` 标签多一次 website deps bump）。官方规格驱动 CLI 对照源；不是运行时依赖 |
+| OpenSpec-rs | 使用 `git clone --recurse-submodules git@github.com:oonid/OpenSpec-rs.git Reference\OpenSpec-rs` 拉取，跟随 `master`；HTTPS `https://github.com/oonid/OpenSpec-rs.git`；2026-08-26 克隆为 `36efb88d552fe91a8a6e69f2a742abf47d9a1b6c`（**v0.3.0**，跟踪上游 OpenSpec **v1.4.1**）。便携单二进制 Rust 移植，后续自研分发以此为起点 |
 | TiddlyWiki document migration sources | 通过 `itonnote-theme`、`itonnote-plugin`、`tiddlyseq`、`tw-command-palette`、`tiddlywiki-plugins`、`tiddlywiki-codemirror-6` 键拉取到 `Reference\tiddlywiki-*`；全部使用 SSH 并固定审计提交；用于 `Wiki/` 的 itonnote 主题迁移、document 插件决策和本地源码核查。运行时选中的外部插件源码已导入 `Wiki/src/`，由 Wiki 主仓库跟踪；Reference 只用于分析和复核。 |
 | TW Icons catalogue snapshot | 位于 `Reference\tw-icons`；GitHub `https://github.com/morosanuae/tw-icons.git`；固定提交 `d4a58efeddaa683af69fba1a43717a16e4f0d2ca`（`v1.10`）；一个约 56 MiB 的单文件 TiddlyWiki 图标目录快照。仅用于离线查找、审计和手动挑选极少量图标；最低优先级、非运行时依赖，严禁整库导入 `Wiki/`，单个图标采用前还须复核其所属上游图标库许可证。 |
 | Kookma TW5 plugin sources | 位于 `Reference\kookma\`；以 `git@github.com:kookma/<repo>.git` 独立 SSH 克隆可访问的 Kookma 插件和扩展源码，并保留 `TW-PluginLibrary` 的完整封装目录快照；用于 AngelScript Wiki 的 WikiText、宏、组件、样式和作者工作流二次开发研究。非运行时依赖，日常构建不会读取或联网更新。详见 `Reference\kookma\README.md`。 |
@@ -357,6 +359,36 @@
 - 用途与优先级：仅作为**低优先级横向参考**，用于研究 Unreal 内嵌增量 C++ interpreter、预热 interpreter pool、PCH/build-info 输入、REPL/notebook、Blueprint 动态参数、脚本生成类和编辑器语义信息。涉及当前项目的语言语义、StaticJIT、热重载、绑定、UObject 生命周期或产品能力时，仍以 Angelscript maintained fork、当前插件实现、Hazelight 参考和现有测试为准。
 - 边界：它不是当前项目的运行时、构建或发布依赖，不得直接复制或分发其源码、LLVM/Clang/CppInterOp 内容或示例资产；任何采用都必须先确认上游代码来源、第三方版本、许可证、UE 5.7/5.8 兼容性和平台支持。
 
+### 24. OpenSpec (official Node CLI)
+
+- 默认路径：当前项目的 `Reference\openspec`
+- GitHub：`https://github.com/Fission-AI/OpenSpec.git`
+- SSH：`git@github.com:Fission-AI/OpenSpec.git`
+- 拉取命令：`git clone git@github.com:Fission-AI/OpenSpec.git Reference\openspec`；已有副本时 `git -C Reference\openspec pull --ff-only origin main`
+- 分支与本次快照：跟随 `main`；2026-08-26 更新到 `6926ccb18afa4ff621112813e9968334576ee11a`。`package.json` 版本 `@fission-ai/openspec` **1.10.0**（发布标签 `v1.10.0`；`main` 另含 website 依赖更新）。
+- 许可证：MIT
+- 重点目录：
+  - `src\`：CLI、artifact graph、validate/archive、config、skill/command 生成
+  - `test\`：Vitest（`core/`、`commands/`、`cli-e2e/`）
+  - `openspec\`：工具自身的 specs
+- 用途与优先级：官方 Node CLI 的行为、schema、skill 布局和测试对照源。做便携 Rust 发行或自研扩展时，**最新 CLI 行为以这里为准**，再回看 `OpenSpec-rs` 已移植到哪一版。
+- 边界：不是插件运行时或构建依赖；`Reference/` 已整体 gitignore。不要和 `Reference\openspec2` 混淆——后者是内部 `git.woa.com:terryzhong/OpenSpec.git` fork，不是这次拉取的官方仓。
+
+### 25. OpenSpec-rs
+
+- 默认路径：当前项目的 `Reference\OpenSpec-rs`
+- GitHub：`https://github.com/oonid/OpenSpec-rs.git`
+- SSH：`git@github.com:oonid/OpenSpec-rs.git`
+- 拉取命令：`git clone --recurse-submodules git@github.com:oonid/OpenSpec-rs.git Reference\OpenSpec-rs`
+- 分支与本次快照：跟随 `master`；2026-08-26 克隆为 `36efb88d552fe91a8a6e69f2a742abf47d9a1b6c`（tag **v0.3.0**，`Cargo.toml` `openspec = 0.3.0`）。README 声明跟踪上游 OpenSpec **v1.4.1**。
+- 许可证：MIT（`Cargo.toml`；仓库根目录当前无独立 LICENSE 文件）
+- 重点目录：
+  - `src\`：Rust CLI 实现
+  - `tests\`：`cargo test` 集成测试
+  - `templates\`、`openspec\`：内嵌模板与自身 specs
+- 用途与优先级：**便携单二进制 OpenSpec 的继续开发起点**。要对照 TypeScript 实现时看 `Reference\openspec`（当前已是 1.10.0），不要假设 rs 已追上官方最新。
+- 边界：不是当前 Angelscript 插件的运行时或构建依赖。上游 `.gitmodules` 声明了 `vendor/OpenSpec`（指向 `Fission-AI/OpenSpec`），但 **v0.3.0 树中没有对应 gitlink**，`git submodule update --init` 不会检出该目录；上游对照请直接用 `Reference\openspec`。
+
 ## 如何选择参考源
 
 - AngelScript 语言或运行时本体问题，优先参考 `angelscript-v2.38.0`。
@@ -380,6 +412,8 @@
 - 需要研究 UE 跨 C++、Blueprint、AngelScript 与其他脚本后端的消息签名、编辑期校验、AS codegen、K2 节点或调用追踪时，可查看 `GenericMessagePlugin`。
 - 需要参考通用 UE registry/storage/singleton/subsystem、picker、平台持久化或 S3 helper 时，最后再查看 `GenericStorages`，并优先评估 UE 原生能力和当前项目既有工具。
 - 需要横向研究 Unreal 内嵌 Cling/CppInterOp、运行时 C++ interpreter、REPL/notebook、Blueprint C++ script node 或预热 interpreter pool 时，可查看 `UECling`；实现判断仍回到当前插件边界，并先核对许可证和第三方来源。
+- 需要对照官方 OpenSpec CLI、schema、Vitest 或最新 skill 布局时，看 `Reference\openspec`（当前 1.10.0）。
+- 需要在便携 Rust 二进制上继续开发 OpenSpec 时，以 `Reference\OpenSpec-rs`（v0.3.0 / 上游 v1.4.1）为起点，再用官方仓补齐 1.4.1 之后的行为差。
 - 需要调整 AngelscriptWiki 的 itonnote 迁移主题或选定 document 插件时，优先看本节固定的本地 TiddlyWiki source；其中运行时版本以 `Wiki/src/` 和 `Wiki/external-plugins.json` 为准。
 
 ## 使用约束
@@ -399,6 +433,7 @@
 - 对于 `daScript`、`GenericMessagePlugin` 与 `GenericStorages`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；即便当前某仓库没有活动 submodule，统一 clone 命令仍保留 `--recurse-submodules`，后续上游新增依赖时不留下空目录。
 - 对于 `Cython`、`numba` 与 `luau`，当前按 OpenSpec 研究所需保留浅克隆快照；更新前先在 `feature-as-typed-semantic-aot` 研究附件记录新 SHA 和结论变化。它们不由日常构建读取，也不自动联网更新。
 - 对于 `UECling`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；只作为本地研究副本，不由日常构建读取或自动更新。因为上游没有仓库级 LICENSE，任何实现借鉴或再分发之前必须先补齐代码来源和第三方许可证审查。
+- 对于 `openspec` 与 `OpenSpec-rs`，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理；不由日常构建读取或自动更新。官方仓跟随 `main`；Rust 移植跟随 `master`。二者版本不对齐：rs v0.3.0 停在上游 v1.4.1，官方本次快照是 1.10.0。
 - 对于 TiddlyWiki document migration sources，同样按"每个项目各自拉取到自己的 `Reference/` 目录"处理，并固定在上表列出的审计提交；日常构建不得自动 fetch 或更新它们。
 - 本地配置来源的参考仓库，使用前先读取 `AgentConfig.ini`，不要在通用文档或脚本中写死机器路径。
 - 当前本地配置来源包括：`HazelightAngelscriptEngineRoot`。

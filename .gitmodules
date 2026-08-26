@@ -10,3 +10,6 @@
 [submodule "Wiki"]
 	path = Wiki
 	url = git@github.com:TDGameStudio/AngelscriptWiki.git
+[submodule "Tools/openspec"]
+	path = Tools/openspec
+	url = git@github.com:TDGameStudio/openspec.git

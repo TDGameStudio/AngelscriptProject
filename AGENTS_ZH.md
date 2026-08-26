@@ -213,6 +213,8 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - GenericMessagePlugin 固定在 `Reference\GenericMessagePlugin`，来源为 `https://github.com/wangjieest/GenericMessagePlugin.git`。它用于研究 UE 中跨 C++、Blueprint、AngelScript 与其他脚本后端的 key-based message bus、签名收集、类型校验、AS 声明 codegen、K2 节点、request/response、sticky message 和调用追踪；属于消息/脚本互操作的专项次级参考，不直接并入插件。
 - GenericStorages 固定在 `Reference\GenericStorages`，来源为 `https://github.com/UnrealBytes/GenericStorages.git`。它仅作为 UE registry/storage/singleton/subsystem 模板、编辑器 picker、平台持久化、权限/deep-link 与 S3 helper 的低优先级工具类参考；不是 AngelScript 插件架构基准或运行时依赖。
 - UECling 固定在 `Reference\UECling`，来源为 `https://github.com/Evianaive/UECling.git`。它只作为在 Unreal 中嵌入 Cling/CppInterOp、运行时 C++ 解释、REPL/notebook、Blueprint 节点与脚本生成类的低优先级横向参考；不是当前插件的运行时或构建依赖。上游未提供仓库级 LICENSE，且直接携带 LLVM/Clang 头文件，因此借鉴或分发任何实现前必须单独完成来源与许可证审查。
+- 官方 OpenSpec（Node CLI）固定在 `Reference\openspec`，来源为 `https://github.com/Fission-AI/OpenSpec.git`，跟随 `main`。2026-08-26 快照为 `6926ccb18afa4ff621112813e9968334576ee11a`（`@fission-ai/openspec` 1.10.0）。它是便携 OpenSpec 继续开发时对照最新 CLI 行为、schema、skill 布局和 Vitest 的参考源，不是插件运行时或构建依赖。不要和 `Reference\openspec2`（内部 fork）混淆。
+- OpenSpec-rs 固定在 `Reference\OpenSpec-rs`，来源为 `https://github.com/oonid/OpenSpec-rs.git`，跟随 `master`。2026-08-26 快照为 `36efb88d552fe91a8a6e69f2a742abf47d9a1b6c`（v0.3.0，跟踪上游 OpenSpec v1.4.1）。它是便携单二进制 Rust 移植的继续开发起点；拉取命令、SHA 以及上游未提交的 `vendor/OpenSpec` gitlink 见 `Reference/README.md`。
 
 ## 本地配置
 

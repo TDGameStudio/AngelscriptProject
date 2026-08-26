@@ -11,6 +11,7 @@
 | `Plugins/Angelscript` | `TDGameStudio/UnrealAngelscriptPlugin` | 核心插件，绝大多数代码改动在此 |
 | `Plugins/AngelscriptGAS` | `TDGameStudio/AngelscriptGAS` | GAS 扩展插件 |
 | `Wiki` | `TDGameStudio/AngelscriptWiki` | 独立 TiddlyWiki 工作区与后续 AS Wiki 内容 |
+| `Tools/openspec` | `TDGameStudio/openspec` | 便携 OpenSpec Rust CLI；工具源码，不是项目根目录 `openspec/` 规格数据 |
 
 `git worktree add` 只处理父仓库的工作树，**不会自动初始化或检出子模块**。新 worktree 中子模块目录只有 gitlink 占位，没有源码。直接构建或访问源码会失败。
 
