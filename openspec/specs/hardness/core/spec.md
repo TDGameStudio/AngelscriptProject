@@ -1,8 +1,10 @@
+# Hardness Core
+
 ## Purpose
 
 This capability defines how the AngelscriptProject Skill harness selects a workspace, dispatches project commands, maintains a resumable execution plan, and performs autonomous Review and Replan without crossing user authority boundaries.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Progressive skill routing
 

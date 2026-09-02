@@ -169,7 +169,7 @@ task_graph:
   3. Explicitly record that no UE implementation or validation belongs to this scope; Editor, Automation, Smoke, Standalone, complete All, and StaticJIT All are not run.
   4. Have an independent reviewer inspect the core fixed snapshot across all dimensions, resolve every Critical/Required finding, and close the re-review.
 
-- [ ] 4.2 Synchronize durable specs and prepare the completed closure — verify: `pwsh.exe -NoProfile -Command '$ErrorActionPreference = "Stop"; Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1; $context = New-HardnessContext -Mode Current; $result = Invoke-Hardness -Command openspec.validate -Context $context -ArgumentList @("hardness/refactor-skill-system","--strict","--json"); if ($result.status -ne "Succeeded") { throw $result.error.message }'`
+- [x] 4.2 Synchronize durable specs and prepare the completed closure — verify: `pwsh.exe -NoProfile -Command '$ErrorActionPreference = "Stop"; Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1; $context = New-HardnessContext -Mode Current; $result = Invoke-Hardness -Command openspec.validate -Context $context -ArgumentList @("hardness/refactor-skill-system","--strict","--json"); if ($result.status -ne "Succeeded") { throw $result.error.message }'`
   > Files: `openspec/specs/hardness/core/**`, `openspec/changes/hardness/refactor-skill-system/**`
 
   1. Merge the delta spec idempotently into the current spec and record sync evidence.
