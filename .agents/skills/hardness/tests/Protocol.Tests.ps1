@@ -176,8 +176,10 @@ function Test-ReviewClosureGate {
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $referenceRoot = Join-Path $projectRoot '.agents\skills\hardness\references'
-$changeRoot = Join-Path $projectRoot 'openspec\changes\hardness\refactor-skill-system'
+$changeRoot = Join-Path $projectRoot 'openspec\archive\changes\hardness\2026-09-03-refactor-skill-system'
 $exePath = Join-Path $projectRoot '.agents\skills\openspec\bin\openspec.exe'
+
+Assert-True (Test-Path -LiteralPath $changeRoot -PathType Container) 'The archived Hardness dogfood record is required for protocol audit'
 
 $taskProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'task-dag.md') -Raw
 $replanProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'replan.md') -Raw

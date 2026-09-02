@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "1.0",
+  "recordType": "HardnessPerformanceBaseline",
+  "acceptedAt": "2026-09-03T07:28:34.8238744+08:00",
+  "taskChange": "fixture/performance",
+  "series": "hermetic-task-status-v1",
+  "parameters": {
+    "warmupRuns": 3,
+    "measurementRuns": 15,
+    "persistentBatchSize": 1000,
+    "freshProcessTimeoutMs": 30000
+  },
+  "source": {
+    "hardnessModuleSha256": "1ebdb251d5b10df1062558edbcd50fa9ade59d3aa1e1fab6f4d9cc9e3e5632e1",
+    "gateRunnerSha256": "042697be046e54e93a058946c08b79fb136cd83d12a997a957ecf34f5e2f7801",
+    "performanceLeafSha256": "4c4a4e6677d694a8b239a0532a3ca5b381d26496937d34510852f8d0c282fec1"
+  },
+  "predecessor": {
+    "archive": "openspec/archive/changes/hardness/2026-09-03-refactor-skill-system",
+    "aggregate": "attachments/data/hardness-performance-baseline-20260903-014536.json",
+    "relationship": "immutable original delivery evidence; TaskStatus belongs to the earlier active-change series"
+  },
+  "policy": {
+    "hardGate": "per-host absolute P95 disaster budget",
+    "priorBaselineDrift": "not calculated because TaskStatus moved from an active dogfood record to a hermetic fixture",
+    "crossHostComparison": "forbidden",
+    "rawRetention": "ignored Saved artifacts are retained and never overwritten or automatically deleted"
+  },
+  "hosts": [
+    {
+      "hostClass": "WindowsPowerShell-Desktop-x64",
+      "version": "5.1.26100.8875",
+      "rawRunPath": "Saved/Harness/Hardness/Performance/gate-20260902T232306788Z-d089c5fb-PS5",
+      "rawSummarySha256": "03b4a6d80d070cf226d170248bde7d4d459c6e0e7bead90e8f87906689cf37e0",
+      "rawSamplesSha256": "336035e4384a7125289e66cb88480258d1f9967a80f3d8823b33e374249c0d8e",
+      "overallStatus": "Passed",
+      "scenarios": [
+        {
+          "name": "FreshProcess",
+          "unit": "ms",
+          "min": 308.4252,
+          "median": 321.2983,
+          "p95": 332.8491,
+          "max": 332.8491,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "PersistentApi",
+          "unit": "us/op",
+          "operationsPerSample": 1000,
+          "min": 520.3386,
+          "median": 571.7929,
+          "p95": 645.2233,
+          "max": 645.2233,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "TaskStatus",
+          "unit": "ms",
+          "min": 33.2923,
+          "median": 39.9064,
+          "p95": 69.9747,
+          "max": 69.9747,
+          "p95Budget": 2000,
+          "budgetStatus": "Passed"
+        }
+      ]
+    },
+    {
+      "hostClass": "PowerShell-Core-x64",
+      "version": "7.6.0",
+      "rawRunPath": "Saved/Harness/Hardness/Performance/gate-20260902T232306788Z-d089c5fb-PS7",
+      "rawSummarySha256": "12915e721b3fcb958372a101ee697f59e7557a8df5b3d8999dbf15caebdc90c3",
+      "rawSamplesSha256": "0c7193a38381beb818ba8c2e1ea072913d7ff859e790ae9bcc0362365fa9e480",
+      "overallStatus": "Passed",
+      "scenarios": [
+        {
+          "name": "FreshProcess",
+          "unit": "ms",
+          "min": 354.2935,
+          "median": 397.461,
+          "p95": 415.5496,
+          "max": 415.5496,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "PersistentApi",
+          "unit": "us/op",
+          "operationsPerSample": 1000,
+          "min": 37.8602,
+          "median": 44.2008,
+          "p95": 58.5083,
+          "max": 58.5083,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "TaskStatus",
+          "unit": "ms",
+          "min": 36.2533,
+          "median": 40.0506,
+          "p95": 48.7868,
+          "max": 48.7868,
+          "p95Budget": 2000,
+          "budgetStatus": "Passed"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "TaskStatus is a new hermetic-fixture series and must not be compared directly with the earlier active-change series.",
+    "PowerShell hosts are evaluated only against their own absolute budget and are not ranked against each other."
+  ],
+  "excluded": [
+    "unreal-engine-develop and all UE execution or validation"
+  ]
+}

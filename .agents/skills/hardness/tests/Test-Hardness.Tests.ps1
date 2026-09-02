@@ -24,6 +24,7 @@ Assert-Equal 0 @($errors).Count 'Test-Hardness.ps1 parses in the current host'
 
 $quick = @(& $runner -Profile Quick -ListChecks -PowerShellHosts Both)
 $performance = @(& $runner -Profile Performance -ListChecks -PowerShellHosts Both -WarmupRuns 1 -MeasurementRuns 1)
+$explicitPerformance = @(& $runner -Profile Performance -ListChecks -PowerShellHosts Both -WarmupRuns 1 -MeasurementRuns 1 -TaskChange 'fixture/custom')
 $integration = @(& $runner -Profile Integration -ListChecks -PowerShellHosts Both)
 
 foreach ($name in @(
@@ -58,6 +59,12 @@ foreach ($check in @($performance)) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references the private performance leaf"
     Assert-True ('-WarmupRuns' -in @($check.Arguments)) "$($check.Name) forwards WarmupRuns"
     Assert-True ('-MeasurementRuns' -in @($check.Arguments)) "$($check.Name) forwards MeasurementRuns"
+    Assert-True ('-TaskChange' -notin @($check.Arguments)) "$($check.Name) uses the self-contained Task Graph fixture by default"
+}
+foreach ($check in @($explicitPerformance)) {
+    $taskChangeIndex = [array]::IndexOf([object[]]@($check.Arguments), '-TaskChange')
+    Assert-True ($taskChangeIndex -ge 0) "$($check.Name) forwards an explicit TaskChange"
+    Assert-Equal 'fixture/custom' $check.Arguments[$taskChangeIndex + 1] "$($check.Name) preserves the explicit TaskChange"
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
@@ -88,6 +95,7 @@ try {
     Assert-Equal '1.0' $summary.SchemaVersion 'the performance summary schema is versioned'
     Assert-Equal 'HardnessPerformanceRaw' $summary.RecordType 'the performance summary identifies its record type'
     Assert-Equal 'Passed' $summary.OverallStatus 'the minimal performance correctness sample passes its budgets'
+    Assert-Equal 'fixture/performance' $summary.Parameters.TaskChange 'the default performance run uses its self-contained Task Graph fixture'
     Assert-Equal 3 @($summary.Scenarios).Count 'the performance summary contains all three scenarios'
 
     $samples = @(Import-Csv -LiteralPath $samplesPath)

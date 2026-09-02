@@ -16,8 +16,8 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
     [string]$RunId = '',
 
-    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$')]
-    [string]$TaskChange = 'hardness/refactor-skill-system',
+    [ValidateScript({ [string]::IsNullOrWhiteSpace($_) -or $_ -match '^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$' })]
+    [string]$TaskChange = '',
 
     [ValidateRange(1, 600000)]
     [double]$FreshProcessP95BudgetMs = 5000,
@@ -440,11 +440,64 @@ $scenarioValues = [ordered]@{
 $hostExecutable = (Get-Process -Id $PID).Path
 Assert-PerformanceCondition (Test-Path -LiteralPath $hostExecutable -PathType Leaf) 'current PowerShell executable must be resolvable'
 
+$taskContext = $null
+$effectiveTaskChange = $TaskChange
+$taskFixtureRoot = ''
 Import-Module $manifest -Force -ErrorAction Stop
 try {
     $context = New-HardnessContext -Mode Current -ProjectRoot $ProjectRoot
     Assert-PerformanceCondition ($context.Mode -eq 'Current') 'persistent context must use Current mode'
     Assert-PerformanceCondition ($context.ProjectRoot -eq $ProjectRoot) 'persistent context must use ProjectRoot'
+
+    if ([string]::IsNullOrWhiteSpace($effectiveTaskChange)) {
+        $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+        $taskFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path $temporaryRoot ('hardness-performance-task-' + [guid]::NewGuid().ToString('N'))))
+        Assert-PerformanceCondition ($taskFixtureRoot.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase)) 'TaskStatus fixture escaped the system temp directory'
+
+        $sourceOpenSpec = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\openspec\bin\openspec.exe'))
+        Assert-PerformanceCondition (Test-Path -LiteralPath $sourceOpenSpec -PathType Leaf) 'packaged OpenSpec is required for the TaskStatus fixture'
+        $fixtureExeDirectory = Join-Path $taskFixtureRoot '.agents\skills\openspec\bin'
+        [void](New-Item -ItemType Directory -Path $fixtureExeDirectory -Force)
+        $fixtureExe = Join-Path $fixtureExeDirectory 'openspec.exe'
+        Copy-Item -LiteralPath $sourceOpenSpec -Destination $fixtureExe
+
+        $initOutput = @(& $fixtureExe init $taskFixtureRoot --project-id hardness-performance-fixture --title 'Hardness Performance Fixture' --workflow spec-driven --language en 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture init failed: {0}" -f ($initOutput -join [Environment]::NewLine))
+        Push-Location -LiteralPath $taskFixtureRoot
+        try {
+            $domainOutput = @(& $fixtureExe domain create fixture --title Fixture --description Fixture --json 2>&1)
+            Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture domain creation failed: {0}" -f ($domainOutput -join [Environment]::NewLine))
+            $changeOutput = @(& $fixtureExe change create fixture/performance --title 'Performance Task Graph' --goal 'Measure the real task.status route' --json 2>&1)
+            Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture change creation failed: {0}" -f ($changeOutput -join [Environment]::NewLine))
+        }
+        finally {
+            Pop-Location
+        }
+
+        $taskSeparator = [string][char]0x2014
+        $tasksPath = Join-Path $taskFixtureRoot 'openspec\changes\fixture\performance\tasks.md'
+        $tasksDocument = @'
+---
+task_graph:
+  version: 1
+  depends_on:
+    "1.1": []
+---
+
+## Tasks
+
+- [ ] 1.1 Measure TaskStatus __TASK_SEPARATOR__ verify: `fixture`
+  > Files: `fixture`
+'@
+        $tasksDocument = $tasksDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
+        [System.IO.File]::WriteAllText($tasksPath, $tasksDocument, [System.Text.UTF8Encoding]::new($false))
+
+        $effectiveTaskChange = 'fixture/performance'
+        $taskContext = New-HardnessContext -Mode Current -ProjectRoot $taskFixtureRoot
+    }
+    else {
+        $taskContext = $context
+    }
 
     $stopFreshScenario = $false
     foreach ($phase in @('Warmup', 'Measurement')) {
@@ -513,10 +566,10 @@ try {
         $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
         for ($iteration = 1; $iteration -le $runCount; $iteration++) {
             $timer = [System.Diagnostics.Stopwatch]::StartNew()
-            $result = Invoke-Hardness -Command 'task.status' -Context $context -Parameters @{ Change = $TaskChange }
+            $result = Invoke-Hardness -Command 'task.status' -Context $taskContext -Parameters @{ Change = $effectiveTaskChange }
             $timer.Stop()
-            Assert-PerformanceCondition ($result.status -eq 'Succeeded' -and $result.exitCode -eq 0) "task.status failed for '$TaskChange'"
-            Assert-PerformanceCondition ($result.data.changeId -eq $TaskChange) 'task.status returned a different change'
+            Assert-PerformanceCondition ($result.status -eq 'Succeeded' -and $result.exitCode -eq 0) "task.status failed for '$effectiveTaskChange'"
+            Assert-PerformanceCondition ($result.data.changeId -eq $effectiveTaskChange) 'task.status returned a different change'
             Assert-PerformanceCondition ($null -ne $result.data.tasks -and @($result.data.tasks).Count -gt 0) 'task.status returned no parsed tasks'
             $value = [double]$timer.Elapsed.TotalMilliseconds
             Add-PerformanceSample -Samples $samples -Scenario 'TaskStatus' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
@@ -526,6 +579,15 @@ try {
 }
 finally {
     Remove-Module Hardness -Force -ErrorAction SilentlyContinue
+    if (-not [string]::IsNullOrWhiteSpace($taskFixtureRoot) -and (Test-Path -LiteralPath $taskFixtureRoot)) {
+        $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+        $resolvedFixture = [System.IO.Path]::GetFullPath($taskFixtureRoot)
+        if (-not $resolvedFixture.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+            -not ([System.IO.Path]::GetFileName($resolvedFixture)).StartsWith('hardness-performance-task-', [System.StringComparison]::Ordinal)) {
+            throw "Refusing to clean an unexpected TaskStatus fixture path: $resolvedFixture"
+        }
+        Remove-Item -LiteralPath $resolvedFixture -Recurse -Force
+    }
 }
 
 $scenarioSummaries = @(
@@ -556,7 +618,7 @@ $summary = [pscustomobject][ordered]@{
         WarmupRuns     = $WarmupRuns
         MeasurementRuns = $MeasurementRuns
         BatchSize      = $BatchSize
-        TaskChange     = $TaskChange
+        TaskChange     = $effectiveTaskChange
         FreshProcessTimeoutMs = $FreshProcessTimeoutMs
         FreshProcessProbeMode = $FreshProcessProbeMode
     }

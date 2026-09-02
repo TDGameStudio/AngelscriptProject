@@ -59,4 +59,4 @@ pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Pro
 pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration -PowerShellHosts Both
 ```
 
-Performance measures each PowerShell host independently and validates every timed sample. Raw `Summary.json`/`Samples.csv` runs remain below ignored `Saved/Harness/Hardness/Performance/`; change evidence keeps only a privacy-trimmed aggregate with hashes. Use `-TaskChange domain/change` when measuring a different active Task Graph, and never rank PS5 against PS7.
+Performance measures each PowerShell host independently and validates every timed sample. Raw `Summary.json`/`Samples.csv` runs remain below ignored `Saved/Harness/Hardness/Performance/`; change evidence keeps only a privacy-trimmed aggregate with hashes. The default TaskStatus measurement uses an isolated temporary Task Graph; pass `-TaskChange domain/change` only when intentionally measuring an active project change. Register an accepted aggregate in the current change and its attachment index before archive; ignored raw data alone is not durable change evidence. Never rank PS5 against PS7.

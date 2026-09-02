@@ -15,7 +15,7 @@ param(
     [ValidateRange(1, 100000)]
     [int]$BatchSize = 1000,
 
-    [string]$TaskChange = 'hardness/refactor-skill-system',
+    [string]$TaskChange = '',
 
     [string]$PerformanceOutputRoot = '',
 
@@ -101,11 +101,13 @@ function Get-HardnessGateChecks {
                 '-ProjectRoot', $projectRoot,
                 '-OutputRoot', $PerformanceOutputRoot,
                 '-RunId', $hostRunId,
-                '-TaskChange', $TaskChange,
                 '-WarmupRuns', [string]$WarmupRuns,
                 '-MeasurementRuns', [string]$MeasurementRuns,
                 '-BatchSize', [string]$BatchSize
             )
+            if (-not [string]::IsNullOrWhiteSpace($TaskChange)) {
+                $arguments += @('-TaskChange', $TaskChange)
+            }
             $checks.Add((New-HardnessGateCheck -Name "HardnessPerformance.$($hostInfo.Suffix)" -Kind 'Performance' -Path $testPath -Executable $hostInfo.Executable -Arguments $arguments -WorkingDirectory $projectRoot)) | Out-Null
         }
     }
