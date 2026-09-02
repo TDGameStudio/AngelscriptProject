@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0",
+  "recordType": "HardnessPowerShell7Acceptance",
+  "changeId": "hardness/standardize-powershell-7",
+  "fixedCommit": "3867512b1dd7cd57c0d0b06f26d5d57de1949733",
+  "createdUtc": "2026-09-02T23:53:47.6660753Z",
+  "supportBoundary": {
+    "minimumVersion": "7.0",
+    "edition": "Core",
+    "runner": "pwsh.exe",
+    "measuredVersion": "7.6.0",
+    "architecture": "X64",
+    "windowsPowerShell51Supported": false
+  },
+  "integration": {
+    "command": "pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration -PerformanceRunId powershell7-20260903T075200 -Json",
+    "passed": 10,
+    "failed": 0,
+    "summedCheckDurationMs": 77992,
+    "durationSemantics": "Sum of the ten runner-reported check durations; not an external wall-clock measurement.",
+    "checks": [
+      { "name": "Hardness.PS7", "kind": "Script", "durationMs": 16676, "status": "Passed" },
+      { "name": "HardnessGateContract.PS7", "kind": "Script", "durationMs": 4943, "status": "Passed" },
+      { "name": "Protocol.PS7", "kind": "Script", "durationMs": 705, "status": "Passed" },
+      { "name": "Workspace.PS7", "kind": "Script", "durationMs": 40770, "status": "Passed" },
+      { "name": "OpenSpecSkill.PS7", "kind": "Script", "durationMs": 3855, "status": "Passed" },
+      { "name": "HardnessPerformance.PS7", "kind": "Performance", "durationMs": 10373, "status": "Passed" },
+      { "name": "Hardness.Installation", "kind": "Hardness", "durationMs": 514, "status": "Passed" },
+      { "name": "OpenSpec.Doctor", "kind": "Hardness", "durationMs": 65, "status": "Passed" },
+      { "name": "OpenSpec.Workflow", "kind": "Hardness", "durationMs": 38, "status": "Passed" },
+      { "name": "OpenSpec.Validate", "kind": "Hardness", "durationMs": 53, "status": "Passed" }
+    ]
+  },
+  "performance": {
+    "runId": "powershell7-20260903T075200-PS7",
+    "parameters": {
+      "warmupRuns": 3,
+      "measurementRuns": 15,
+      "batchSize": 1000,
+      "taskChange": "fixture/performance",
+      "freshProcessTimeoutMs": 30000,
+      "freshProcessProbeMode": "Normal"
+    },
+    "sampleCount": 54,
+    "incorrectSamples": 0,
+    "scenarios": [
+      { "name": "FreshProcess", "unit": "ms", "min": 391.4106, "median": 404.5099, "p95": 448.3612, "max": 448.3612, "p95Budget": 5000.0, "budgetStatus": "Passed" },
+      { "name": "PersistentApi", "unit": "us/op", "min": 56.621, "median": 60.4555, "p95": 66.6766, "max": 66.6766, "p95Budget": 5000.0, "budgetStatus": "Passed" },
+      { "name": "TaskStatus", "unit": "ms", "min": 39.689, "median": 44.0945, "p95": 55.4976, "max": 55.4976, "p95Budget": 2000.0, "budgetStatus": "Passed" }
+    ],
+    "rawArtifacts": [
+      {
+        "path": "Saved/Harness/Hardness/Performance/powershell7-20260903T075200-PS7/Summary.json",
+        "sha256": "5bc29931d79667b7ad6c66b91a3bb6c279b6a8a270cc53c6f02354b138fa2df5"
+      },
+      {
+        "path": "Saved/Harness/Hardness/Performance/powershell7-20260903T075200-PS7/Samples.csv",
+        "sha256": "9c706f406311cc10cdfaae6fc4d3241b92b6c5d490d795f7e6103ce6e21dffa5"
+      }
+    ]
+  },
+  "sourceHashes": [
+    { "path": ".agents/skills/hardness/scripts/Hardness.psm1", "sha256": "1ebdb251d5b10df1062558edbcd50fa9ade59d3aa1e1fab6f4d9cc9e3e5632e1" },
+    { "path": ".agents/skills/hardness/scripts/Hardness.psd1", "sha256": "bc5e7444f071ed65db5b281c1d76063d1e44cfbade389b3e1ab9a166ba6a7b20" },
+    { "path": ".agents/skills/git-workflow/scripts/Workspace.psd1", "sha256": "bc886fe7f1d00e7c677f4dc9a3fee6ed2a3775b85d01d30848a0ac732b3a301a" },
+    { "path": ".agents/skills/hardness/scripts/Test-Hardness.ps1", "sha256": "f24ee7c0ab13d305720102d10c1dd9439125d1a14975fb60974e2e28ef063822" },
+    { "path": ".agents/skills/hardness/tests/Hardness.Performance.Tests.ps1", "sha256": "97ff3cf520b42f131f55b0ecc2ea2fa72e6b4076b9ed2879caa073f12f8783ba" },
+    { "path": ".agents/skills/hardness/tests/Test-Hardness.Tests.ps1", "sha256": "f0dfd7e41e925eb6ac8656020cc1cf14acde9c77781d5c4cc48992067ec9ccb0" }
+  ],
+  "comparisonBoundary": {
+    "freshProcessAndPersistentApi": "Advisory-comparable with prior accepted runs on the same PowerShell host.",
+    "taskStatus": "Continues the hermetic-task-status-v1 fixture series introduced by the post-archive gate repair.",
+    "legacyPS5": "Historical PS5 evidence is retained but is not a current support target or gate baseline."
+  },
+  "privacy": {
+    "containsAbsoluteProjectPath": false,
+    "containsUserName": false,
+    "containsMachineName": false
+  }
+}

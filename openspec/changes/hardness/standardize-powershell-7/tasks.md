@@ -27,7 +27,7 @@ task_graph:
 
 ## 2. Evidence and closure
 
-- [ ] 2.1 Run and retain the PS7-only gates — verify: `pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration`
+- [x] 2.1 Run and retain the PS7-only gates — verify: `pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration`
   > Files: `openspec/changes/hardness/standardize-powershell-7/attachments/data/hardness-performance-powershell7-*.json`, `openspec/changes/hardness/standardize-powershell-7/attachments/INDEX.md`
 
   1. Run the complete Integration profile once; it includes the five Quick checks, one Performance check, and four route checks.
