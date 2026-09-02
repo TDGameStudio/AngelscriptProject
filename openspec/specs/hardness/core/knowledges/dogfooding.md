@@ -27,7 +27,7 @@ real harness run
 - Task DAG parsing, readiness, completed-task preservation, and closure ordering.
 - Workflow template and prompt-language behavior.
 - Review resolution, independent re-review, and immutable release snapshots.
-- PowerShell 5.1/7 module reuse and structured failure envelopes.
+- PowerShell 7 module reuse and structured failure envelopes.
 - Workspace physical containment, submodule exactness, and destructive-operation refusal.
 
 Do not turn one incident into a universal rule. Preserve incident detail in its Review or implementation attachment; capability knowledge keeps only the generalized behavior that remains true after repair.

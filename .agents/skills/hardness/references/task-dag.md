@@ -13,7 +13,7 @@ task_graph:
     "2.1": ["1.2"]
 ---
 
-- [ ] 2.1 Implement the route contract — verify: `powershell -File .agents/skills/hardness/tests/Hardness.Tests.ps1`
+- [ ] 2.1 Implement the route contract — verify: `pwsh.exe -NoProfile -File .agents/skills/hardness/tests/Hardness.Tests.ps1`
   > Files: `.agents/skills/hardness/scripts/Hardness.psm1`, `.agents/skills/hardness/tests/Hardness.Tests.ps1`
 
   1. Add the failing contract test.

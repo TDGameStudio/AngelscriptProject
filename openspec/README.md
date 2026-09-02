@@ -15,7 +15,7 @@ Configuration and templates are reloaded for every `instructions` call, so an Ag
 
 ## Invocation
 
-Import Hardness once in a PowerShell session and reuse the context:
+Import Hardness once in a PowerShell 7.0-or-later (`Core`) session and reuse the context. The maintained harness does not support Windows PowerShell 5.1:
 
 ```powershell
 Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1

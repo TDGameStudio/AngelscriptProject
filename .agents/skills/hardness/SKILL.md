@@ -39,7 +39,7 @@ Investigate technical uncertainty, compare in-scope options, and choose the stro
 
 ## PowerShell entry
 
-Keep one PowerShell session and import once:
+PowerShell 7.0 or later (`Core`) is the only supported harness host. Keep one `pwsh.exe` session and import once:
 
 ```powershell
 Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
@@ -54,9 +54,9 @@ Every invocation returns the same small result envelope. `task.status` returns t
 Run the core gates through one public test entry:
 
 ```powershell
-pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Quick -PowerShellHosts Both
-pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Performance -PowerShellHosts Both -WarmupRuns 3 -MeasurementRuns 15
-pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration -PowerShellHosts Both
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Quick
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Performance -WarmupRuns 3 -MeasurementRuns 15
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration
 ```
 
-Performance measures each PowerShell host independently and validates every timed sample. Raw `Summary.json`/`Samples.csv` runs remain below ignored `Saved/Harness/Hardness/Performance/`; change evidence keeps only a privacy-trimmed aggregate with hashes. The default TaskStatus measurement uses an isolated temporary Task Graph; pass `-TaskChange domain/change` only when intentionally measuring an active project change. Register an accepted aggregate in the current change and its attachment index before archive; ignored raw data alone is not durable change evidence. Never rank PS5 against PS7.
+Performance measures PowerShell 7 and validates every timed sample. Raw `Summary.json`/`Samples.csv` runs remain below ignored `Saved/Harness/Hardness/Performance/`; change evidence keeps only a privacy-trimmed aggregate with hashes. The default TaskStatus measurement uses an isolated temporary Task Graph; pass `-TaskChange domain/change` only when intentionally measuring an active project change. Register an accepted aggregate in the current change and its attachment index before archive; ignored raw data alone is not durable change evidence.

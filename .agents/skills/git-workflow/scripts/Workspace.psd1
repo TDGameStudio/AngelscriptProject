@@ -6,7 +6,8 @@
     CompanyName       = 'AngelscriptProject'
     Copyright         = '(c) AngelscriptProject contributors'
     Description       = 'Safe project-local Git worktree operations for Hardness.'
-    PowerShellVersion = '5.1'
+    PowerShellVersion = '7.0'
+    CompatiblePSEditions = @('Core')
     FunctionsToExport = @(
         'Get-HardnessWorkspaceStatus',
         'New-HardnessWorkspace',

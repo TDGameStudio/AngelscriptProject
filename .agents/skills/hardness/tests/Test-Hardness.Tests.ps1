@@ -22,35 +22,52 @@ $errors = $null
 [void][System.Management.Automation.Language.Parser]::ParseFile($runner, [ref]$tokens, [ref]$errors)
 Assert-Equal 0 @($errors).Count 'Test-Hardness.ps1 parses in the current host'
 
-$quick = @(& $runner -Profile Quick -ListChecks -PowerShellHosts Both)
-$performance = @(& $runner -Profile Performance -ListChecks -PowerShellHosts Both -WarmupRuns 1 -MeasurementRuns 1)
-$explicitPerformance = @(& $runner -Profile Performance -ListChecks -PowerShellHosts Both -WarmupRuns 1 -MeasurementRuns 1 -TaskChange 'fixture/custom')
-$integration = @(& $runner -Profile Integration -ListChecks -PowerShellHosts Both)
+$runnerCommand = Get-Command -Name $runner -ErrorAction Stop
+Assert-True ('PowerShellHosts' -notin @($runnerCommand.Parameters.Keys)) 'the public runner exposes no legacy multi-host selector'
+
+$quick = @(& $runner -Profile Quick -ListChecks)
+$performance = @(& $runner -Profile Performance -ListChecks -WarmupRuns 1 -MeasurementRuns 1)
+$explicitPerformance = @(& $runner -Profile Performance -ListChecks -WarmupRuns 1 -MeasurementRuns 1 -TaskChange 'fixture/custom')
+$integration = @(& $runner -Profile Integration -ListChecks)
 
 foreach ($name in @(
-        'Hardness.PS5', 'Hardness.PS7',
-        'HardnessGateContract.PS5', 'HardnessGateContract.PS7',
-        'Protocol.PS5', 'Protocol.PS7',
-        'Workspace.PS5', 'Workspace.PS7',
-        'OpenSpecSkill.PS5', 'OpenSpecSkill.PS7')) {
+        'Hardness.PS7',
+        'HardnessGateContract.PS7',
+        'Protocol.PS7',
+        'Workspace.PS7',
+        'OpenSpecSkill.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 10 @($quick).Count 'Quick profile remains a focused core two-host test matrix'
+Assert-Equal 5 @($quick).Count 'Quick profile remains a focused PowerShell 7 core matrix'
+Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
-foreach ($name in @('HardnessPerformance.PS5', 'HardnessPerformance.PS7')) {
+foreach ($name in @('HardnessPerformance.PS7')) {
     Assert-True ($name -in @($performance.Name)) "Performance profile contains $name"
 }
-Assert-Equal 2 @($performance).Count 'Performance profile measures both PowerShell hosts independently'
+Assert-Equal 1 @($performance).Count 'Performance profile measures only PowerShell 7'
 
 foreach ($name in @('Hardness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workflow', 'OpenSpec.Validate')) {
     Assert-True ($name -in @($integration.Name)) "Integration profile contains $name"
 }
-foreach ($name in @('HardnessPerformance.PS5', 'HardnessPerformance.PS7')) {
+foreach ($name in @('HardnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
+Assert-Equal 10 @($integration).Count 'Integration contains five scripts, one performance run, and four route checks'
 Assert-Equal 0 @($integration | Where-Object { $_.Name -match '^(UE\.|Unreal|StaticJIT|Cache|Coverage|Standalone|Engine|Execution|Toolchain)' }).Count 'the deferred UE leaf is absent from every core gate'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'
+
+foreach ($check in @($integration | Where-Object Kind -in @('Script', 'Performance'))) {
+    Assert-Equal 'pwsh.exe' ([System.IO.Path]::GetFileName($check.Executable)) "$($check.Name) launches PowerShell 7"
+    Assert-True ($check.Name -notmatch 'PS5|WindowsPowerShell') "$($check.Name) has no legacy host identity"
+}
+
+$hardnessManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\scripts\Hardness.psd1')
+$workspaceManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\git-workflow\scripts\Workspace.psd1')
+foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData)) {
+    Assert-Equal '7.0' ([string]$manifestData.PowerShellVersion) 'public module manifests require PowerShell 7.0 or later'
+    Assert-Equal 'Core' (@($manifestData.CompatiblePSEditions) -join '|') 'public module manifests support only the Core edition'
+}
 
 foreach ($check in @($quick | Where-Object Kind -eq 'Script')) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references an existing test script"

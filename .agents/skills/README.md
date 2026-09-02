@@ -2,6 +2,8 @@
 
 `hardness` is the project entrypoint. It selects a static route and loads only the matching leaf Skill/reference. It is not a daemon, workflow database, or custom agent loop.
 
+The prepared harness requires PowerShell 7.0 or later (`Core`) and uses `pwsh.exe`; Windows PowerShell 5.1 is not a supported Skill host.
+
 ```text
 Goal mode    -> .worktrees/<goal> on goal/<goal> -> implement -> verify -> review -> ready to integrate
 Current mode -> current workspace -> protect existing changes -> implement and verify in place

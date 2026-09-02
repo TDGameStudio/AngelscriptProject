@@ -6,7 +6,8 @@
     CompanyName       = 'AngelscriptProject'
     Copyright         = '(c) AngelscriptProject contributors'
     Description       = 'Lightweight, synchronous route dispatcher for AngelscriptProject skills.'
-    PowerShellVersion = '5.1'
+    PowerShellVersion = '7.0'
+    CompatiblePSEditions = @('Core')
     FunctionsToExport = @(
         'New-HardnessContext',
         'Get-HardnessCommand',

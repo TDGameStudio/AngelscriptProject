@@ -1,3 +1,5 @@
+#requires -Version 7.0
+
 [CmdletBinding()]
 param(
     [ValidateRange(0, 1000)]
@@ -150,8 +152,7 @@ function Stop-PerformanceOwnedProcessTree {
         [void]$Process.WaitForExit(5000)
     }
     catch {
-        # Windows PowerShell 5.1 has no Process.Kill(bool) overload. taskkill /T
-        # is the bounded process-tree fallback on the supported Windows hosts.
+        # taskkill /T remains the bounded Windows fallback if Kill(true) fails.
     }
 
     try { $processExited = $Process.HasExited } catch { $processExited = $true }
@@ -216,9 +217,6 @@ function New-FreshHardnessSampleCommand {
         $descendantCommand = "while (`$true) { Start-Sleep -Milliseconds 200 }"
         $descendantEncodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($descendantCommand))
         $descendantArguments = @('-NoLogo', '-NoProfile', '-NonInteractive')
-        if ($PSVersionTable.PSEdition -eq 'Desktop') {
-            $descendantArguments += @('-ExecutionPolicy', 'Bypass')
-        }
         $descendantArguments += @('-EncodedCommand', $descendantEncodedCommand)
         $escapedDescendantArguments = ($descendantArguments -join ' ').Replace("'", "''")
         $probeCommand = @"
@@ -265,9 +263,6 @@ function Invoke-FreshHardnessProcessSample {
         -ProbeMode $ProbeMode
     $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($sampleCommand))
     $arguments = @('-NoLogo', '-NoProfile', '-NonInteractive')
-    if ($PSVersionTable.PSEdition -eq 'Desktop') {
-        $arguments += @('-ExecutionPolicy', 'Bypass')
-    }
     $arguments += @('-EncodedCommand', $encodedCommand)
 
     $startInfo = New-Object System.Diagnostics.ProcessStartInfo

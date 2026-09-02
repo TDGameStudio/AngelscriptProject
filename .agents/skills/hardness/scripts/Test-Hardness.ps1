@@ -1,10 +1,9 @@
+#requires -Version 7.0
+
 [CmdletBinding()]
 param(
     [ValidateSet('Quick', 'Performance', 'Integration')]
     [string]$Profile = 'Quick',
-
-    [ValidateSet('Both', 'PowerShell7', 'WindowsPowerShell')]
-    [string]$PowerShellHosts = 'Both',
 
     [ValidateRange(0, 1000)]
     [int]$WarmupRuns = 3,
@@ -67,13 +66,9 @@ function Resolve-HardnessPowerShellHost {
 
 function Get-HardnessGateChecks {
     $checks = New-Object System.Collections.Generic.List[object]
-    $hosts = @()
-    if ($PowerShellHosts -in @('Both', 'WindowsPowerShell')) {
-        $hosts += [pscustomobject]@{ Suffix = 'PS5'; Executable = (Resolve-HardnessPowerShellHost 'powershell.exe'); Arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass') }
-    }
-    if ($PowerShellHosts -in @('Both', 'PowerShell7')) {
-        $hosts += [pscustomobject]@{ Suffix = 'PS7'; Executable = (Resolve-HardnessPowerShellHost 'pwsh.exe'); Arguments = @('-NoProfile') }
-    }
+    $hosts = @(
+        [pscustomobject]@{ Suffix = 'PS7'; Executable = (Resolve-HardnessPowerShellHost 'pwsh.exe'); Arguments = @('-NoProfile') }
+    )
 
     if ($Profile -in @('Quick', 'Integration')) {
         $scriptTests = [ordered]@{
