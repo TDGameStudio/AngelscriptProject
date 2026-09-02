@@ -1,5 +1,0 @@
-configuration,launch_id,module_files,functions,manifest_direct_flag_entries,native_routes,vm_routes,resolved_references,requested_references,launch_duration_ms,direct_optimization_enabled,result,evidence
-GameDevelopment,01,8,18,0,18,0,12,12,23398,false,pass,Saved/StaticJITPackage/staticjit-provider-development-predefault-final-Development/20260813_100413_445_817f3901/Summary.json
-GameDevelopment,02,8,18,0,18,0,12,12,20724,false,pass,Saved/StaticJITPackage/staticjit-provider-development-predefault-final-Development/20260813_100413_445_817f3901/Summary.json
-GameShipping,01,8,18,0,18,0,12,12,17980,false,pass,Saved/StaticJITPackage/staticjit-provider-shipping-sideeffect-fixed-Shipping/20260813_100132_684_a63da84f/Summary.json
-GameShipping,02,8,18,0,18,0,12,12,12934,false,pass,Saved/StaticJITPackage/staticjit-provider-shipping-sideeffect-fixed-Shipping/20260813_100132_684_a63da84f/Summary.json

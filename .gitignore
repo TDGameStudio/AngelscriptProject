@@ -159,3 +159,6 @@ Script/PrecompiledScript.Cache
 # tens-of-megabytes row-level CSV.
 /openspec/changes/feature-as-typed-semantic-aot/research/native-call-export-inventory.csv
 /openspec/changes/feature-as-typed-semantic-aot/research/native-call-source-reconciliation.csv
+
+# Retired OpenSpec tree kept locally during repository refactor.
+/openspec-old/

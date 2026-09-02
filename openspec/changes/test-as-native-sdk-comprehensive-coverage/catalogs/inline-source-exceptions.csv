@@ -1,3 +1,0 @@
-"File","Line","Classification","Reason","ExpectedLayout"
-"Frontend/AngelscriptNativeTokenizerCoreTests.cpp","102","ExactTokenizerInput","The tokenizer assertion owns the exact trailing LF and byte length 9 of a one-line comment input; indentation or a dedent wrapper would change the observed token buffer.","// hello followed by one LF; exactly 9 bytes"
-"Frontend/AngelscriptNativeTokenizerWhitespaceTests.cpp","27","ExactTokenizerInput","The tokenizer assertion owns the exact trailing LF and byte length 3 of an empty line-comment input; normal source formatting would change the observed token buffer.","// followed by one LF; exactly 3 bytes"

@@ -1,8 +1,0 @@
-function void SemanticInvalidReceiver(UReceiver Receiver) external_implicit_this
-header traits=2097152 invocation=Global receiver=ExplicitParameterAlias receiverSymbol=S9 receiverParameter=0 receiverType=UReceiver compileOut=CompileCalls hiddenArgument=-1 determinesOutputType=-1 returnsOnStack=false suspend=false cleanup=false
-root=T0
-symbols:
-  S0 kind=Parameter name=Receiver type=UReceiver span=input.as@0+1
-expressions:
-statements:
-  T0 kind=Block children=[] span=input.as@0+1

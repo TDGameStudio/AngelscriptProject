@@ -1,5 +1,0 @@
-sample,carrier,canonical_module,file_bytes,function_count,cache_state,compiled_jit_cpp_count,ubt_actions,uba_executor_ms,ubt_total_ms,runner_duration_ms,result,evidence
-representative_cold,AngelscriptJIT,Tests.Test_ActorLifecycle,11948,4,cold_or_unknown,1,4,20500,21470,21898,pass,Saved/Build/static-jit-rebuild-representative/20260813_120637_655_5b998d64
-largest_first,AngelscriptTestJIT,ASStaticJITAotFixture,136259,44,warming,1,4,7300,8240,8676,pass,Saved/Build/static-jit-rebuild-largest/20260813_120707_870_ebe567eb
-representative_warm,AngelscriptJIT,Tests.Test_ActorLifecycle,11948,4,warm,1,4,5490,6490,6941,pass,Saved/Build/static-jit-rebuild-representative-warm/20260813_120727_804_b6b65575
-largest_warm,AngelscriptTestJIT,ASStaticJITAotFixture,136259,44,warm,1,4,5350,6290,6637,pass,Saved/Build/static-jit-rebuild-largest-warm/20260813_120744_465_552eafc1
