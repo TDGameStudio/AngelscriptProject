@@ -161,7 +161,7 @@ task_graph:
 
 ## 4. Verification and closure
 
-- [ ] 4.1 Run layered validation and independent final Review — verify: `pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration`
+- [x] 4.1 Run layered validation and independent final Review — verify: `pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration`
   > Files: `Saved/Harness/Hardness/**`, `openspec/changes/hardness/refactor-skill-system/attachments/reviews/**`, `openspec/changes/hardness/refactor-skill-system/attachments/implementation/**`, `openspec/changes/hardness/refactor-skill-system/attachments/INDEX.md`
 
   1. Run the Hardness/Protocol/Workspace/OpenSpec two-host matrix, retained Performance profile, package checks, and strict change validation.
