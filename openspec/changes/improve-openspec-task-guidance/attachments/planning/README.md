@@ -14,5 +14,6 @@
 | `openspec-customization.md` | 需要 config/schema 定制细节 |
 | `explore.md` | 需要官方 explore 行为 |
 | `prompts.md` | 需要临时纠偏提示词 |
+| `portable-openspec-rebaseline-2026-08-27.md` | 需要理解全面重构期、Rust 生命周期/验证核心、Web 预览、独立 Skill、Superpowers 退场和 spec 重基线边界 |
 | `repo-attachment-conventions.md` | 需要其它 change 的附件种类样例 |
 | `issues.md` / `progress.md` | 规划阶段发现的问题与日期检查点 |

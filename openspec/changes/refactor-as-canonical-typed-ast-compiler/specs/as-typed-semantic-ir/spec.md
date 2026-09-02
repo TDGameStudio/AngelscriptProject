@@ -1,24 +1,25 @@
 ## ADDED Requirements
 
-### Requirement: Legacy HIR retirement is consumer-gated
-The maintained fork SHALL retain the existing function-owned TypedSemantic HIR only as a temporary shadow-convergence oracle. It MUST NOT be removed until canonical AST covers its semantics, TypedASTJIT and diagnostics no longer consume it, Cache V2 targets canonical AST DTOs, and all associated tests have migrated.
+### Requirement: Retired function-owned HIR remains absent
+The maintained fork SHALL keep the completed physical retirement of function-owned TypedSemantic HIR closed. Canonical AST, its snapshot-owned semantic protocols, and transient deterministic derived verification views SHALL NOT recreate a separately captured/persisted/published function-owned HIR under a new name. AngelScript's native `asCScriptNode` syntax tree and explicitly selected LEGACY Parser/Builder/Compiler remain a separate retained boundary and are not HIR.
 
-#### Scenario: A HIR consumer still exists
-- **WHEN** any production TypedASTJIT, dump, cache, diagnostic, or compiler test still requires `asCTypedSemanticFunction`
-- **THEN** the HIR deletion milestone remains incomplete
-- **AND** no compatibility shim may silently reconstruct old HIR from Bytecode
+#### Scenario: Retired HIR symbol or transport returns
+- **WHEN** a production/test source, build list, public/cache/provider schema, dump command, or backend again requires `asCTypedSemanticFunction`, `asCTypedSemanticIRBuilder`, `GetTypedSemanticFunction`, `VerifiedTypedHIR`, `TypedHIRSidecar`, or the retired HIR model files
+- **THEN** the architecture gate fails
+- **AND** no compatibility shim may reconstruct HIR from AST, Bytecode, Cache, or dump files
 
-#### Scenario: All HIR consumers have migrated
-- **WHEN** canonical AST verifier/dump and all Bytecode/StaticJIT/cache/public consumers satisfy the migrated semantic tests
-- **THEN** function-owned HIR, capture accessors, builder state, and HIR-only files are removed together
-- **AND** canonical AST becomes the only retained high-level semantic representation
+#### Scenario: Derived lifetime view is not HIR
+- **WHEN** final verification, Bytecode, or TypedASTJIT constructs the approved shared lifetime/control view from a Frozen/Publishable snapshot
+- **THEN** the view is deterministic, transient, non-persisted, non-published, and contains no independent semantic selection or backend transport state
+- **AND** it is destroyed or discarded without affecting the sealed snapshot
+- **AND** Canonical AST remains the only retained high-level semantic representation for CANONICAL
 
 ## REMOVED Requirements
 
 ### Requirement: Typed semantic IR capture is explicit and function-owned
 **Reason**: A separate function-owned sidecar duplicates the canonical module AST and is unnecessary after every source compile and consumer uses ASTContext.
 
-**Migration**: Use module AST retention policy and `asIASTSnapshot`; function bodies live in the module snapshot and optional Cache V2 `ASTBodySidecar` DTOs.
+**Migration**: Use module AST retention policy and `asIASTSnapshot`; function bodies live in the module snapshot. The retained Cache V2 `ASTBodySidecar` prototype is optional and default-disabled.
 
 ### Requirement: Typed semantic IR preserves resolved structured semantics
 **Reason**: Resolved structured semantics move to canonical Decl/Type/Stmt/Expr nodes.
@@ -33,7 +34,7 @@ The maintained fork SHALL retain the existing function-owned TypedSemantic HIR o
 ### Requirement: HIR makes failure and cleanup edges explicit
 **Reason**: Failure and cleanup are required language semantics for all backends and therefore belong in canonical AST/Sema.
 
-**Migration**: Move cleanup/failure plans and verifier cases into canonical AST before changing backend input.
+**Migration**: Store exact action, activation, region, phase, construction and supported exit-kind facts in the sealed Canonical lifetime protocol. Derive committed-live sets and reverse cleanup routes through one shared transient verifier view. Do not require every failure/cleanup edge to be copied as an ordinary statement child, and do not persist the derived view as HIR.
 
 ### Requirement: Typed semantic IR normalizes function traits and effective receivers
 **Reason**: Normalized declarations/calls/effective receivers become canonical Sema output.

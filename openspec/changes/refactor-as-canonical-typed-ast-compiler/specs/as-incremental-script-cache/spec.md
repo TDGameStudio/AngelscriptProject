@@ -1,55 +1,67 @@
 ## ADDED Requirements
 
-### Requirement: FunctionBody may link an optional canonical AST body sidecar
-A Cache V2 FunctionBody MAY link one versioned `ASTBodySidecar` for the same FunctionKey and complete artifact profile. The sidecar SHALL contain pointer-free canonical function-body AST DTOs, snapshot-local integer IDs, stable source/type/declaration/function keys, semantic dependencies, and a content hash. It MUST NOT contain live AST objects, Parser nodes, `asCTypeInfo*`, `asCScriptFunction*`, or Engine-local numeric IDs as durable identity.
+### Requirement: Cache V2 is disabled by default
+`UAngelscriptCacheSettings::bEnableCacheV2` SHALL default to `false`. Engine
+construction SHALL resolve that setting once into an Engine-local enablement
+decision. Hosts and focused tests MAY explicitly override the decision for one
+Engine, but ordinary Runtime, Editor, commandlet, and test Engines SHALL not
+enter Cache V2 merely because the service code is present.
 
-#### Scenario: Capture-on function publishes AST body data
-- **WHEN** a retain-policy source compile seals and verifies a function body and publishes Cache V2
-- **THEN** its FunctionBody may link an `ASTBodySidecar` with matching owner/profile/schema identity
-- **AND** the FunctionBody VM payload is byte-identical to the payload produced when only AST retention differs
+#### Scenario: Engine uses product defaults
+- **WHEN** an Engine is constructed without a project or host override
+- **THEN** Cache V2 is disabled for that Engine
+- **AND** later Cache-specific settings cannot accidentally turn that existing Engine into a partially enabled lifecycle
 
-#### Scenario: Capture-off publication omits AST body data
-- **WHEN** a discard-policy Engine publishes the same VM function
-- **THEN** its FunctionBody records the canonical AST-sidecar absence coordinate
-- **AND** no empty-payload record is used to impersonate absence
+#### Scenario: Focused Cache test opts in
+- **WHEN** a focused Cache V2 test explicitly overrides enablement to true before Engine construction
+- **THEN** that Engine may exercise the retained experimental Cache V2 implementation
+- **AND** the opt-in does not change the product default or another Engine's decision
 
-### Requirement: Cache V2 rebuilds a complete verified module AST snapshot
-For retain-policy ExactStartup, Cache V2 SHALL reconstruct SourceManager, declarations, types, globals, and every required function body from version-compatible stable records, remap them into the target Engine, seal the ASTContext, and rerun the canonical verifier before module activation. Publication SHALL remain module-atomic.
+### Requirement: Disabled Cache V2 is a complete compiler-lifecycle bypass
+When Cache V2 is disabled, startup SHALL not attempt ExactStartup or
+cross-Engine restore, source compilation SHALL not prepare or publish Cache
+capture transactions, Hot Reload SHALL not prepare or publish Cache capture
+transactions, and shutdown SHALL not persist a Cache generation. Authoritative
+`.as` source compilation and normal module publication SHALL continue without
+requiring Cache V2.
 
-#### Scenario: Exact restore publishes retained AST
-- **WHEN** SourceIndex, ModuleInterface, TypeSchema, ModuleState, FunctionBody, ASTBodySidecar, dependencies, profile, and environment all match
-- **THEN** ExactStartup restores VM state and one complete retained canonical AST snapshot without preprocessing, parsing, Sema, or Bytecode CodeGen
+#### Scenario: Default-disabled Engine compiles source
+- **WHEN** a default-disabled Engine starts with valid `.as` source
+- **THEN** preprocessing, canonical/legacy-selected compilation, module publication, and executable function discovery succeed from source
+- **AND** Current and PendingColdStart Cache publications remain absent
+- **AND** no function-reuse summary or persisted Cache files are produced
 
-#### Scenario: AST fragment is missing or invalid
-- **WHEN** a required sidecar is missing, wrong-kind, owner/profile mismatched, corrupt, unsupported, unremappable, or verifier-invalid
-- **THEN** the retain-policy module is a safe restore miss before Engine mutation
-- **AND** no partial AST or VM module is published
+#### Scenario: Default-disabled Engine hot reloads source
+- **WHEN** a default-disabled Editor Engine accepts a valid source Hot Reload
+- **THEN** the replacement module and canonical snapshot follow the ordinary compile/publication path
+- **AND** no Cache capture context or Cache transaction is created
 
-#### Scenario: Discard-policy Engine sees sidecars
-- **WHEN** a discard-policy Engine restores a valid ModuleSnapshot containing AST sidecars
-- **THEN** it may restore VM state while ignoring AST sidecars
-- **AND** `AcquireASTSnapshot` remains unavailable
+### Requirement: Cache V2 redesign is not a canonical compiler cutover gate
+The canonical compiler cutover SHALL NOT require Cache V2. The canonical typed
+AST, Sema, Bytecode CodeGen, snapshot, Hot Reload, public
+tooling, TypedASTJIT migration, HIR retirement, and production cutover SHALL be
+verifiable with Cache V2 disabled. The retained `ASTBodySidecar`, ExactStartup,
+and restore prototypes MUST remain separated from `SaveByteCode`, VM
+FunctionBody bytes, public snapshot memory, and textual/JSON dumps, but this
+change does not require unfinished cross-Engine remap or function-granular
+incremental reuse to become production-ready. Prototype type/property identity
+MUST use complete stable keys and explicit target/profile compatibility; it
+MUST NOT persist a publishing-Engine numeric type ID, type/property pointer,
+snapshot-local AST type reference, or hash-only identity.
 
-### Requirement: Incremental cache reuses canonical AST at function granularity
-After the authoritative frontend re-establishes current declaration/type/source authority and validates actual dependency inputs, a changed module SHALL be able to reuse unchanged FunctionBody/ASTBodySidecar pairs and compile only function misses. The final replacement module and canonical AST snapshot SHALL still publish atomically.
+#### Scenario: Canonical cutover is evaluated
+- **WHEN** the canonical compiler completion gates are run with product-default settings
+- **THEN** Cache V2 restore/capture is absent from the path under test
+- **AND** an unfinished opt-in Cache V2 prototype cannot block or masquerade as canonical compiler completion
 
-#### Scenario: One function body changes
-- **WHEN** one function source/input digest changes while sibling declarations, types, bodies, and actual dependencies remain valid
-- **THEN** exactly that function's Bytecode and AST body are rebuilt
-- **AND** unchanged body records are reused in the new complete module snapshot
+#### Scenario: Retained prototype is incompatible or incomplete
+- **WHEN** an explicitly enabled prototype encounters an unsupported schema, unremappable declaration/type, incomplete invocation family, or invalid sidecar
+- **THEN** it fails closed according to its focused test contract
+- **AND** no partial module or AST snapshot becomes authoritative
+- **AND** production remains protected because Cache V2 is disabled by default
 
-#### Scenario: Type layout change invalidates AST references
-- **WHEN** a declaration/type schema change affects body type or member references
-- **THEN** the existing typed dependency closure selects every affected FunctionBody/ASTBodySidecar as a miss
-- **AND** no stale stable type/member reference enters the new snapshot
-
-### Requirement: AST persistence remains separate from SaveByteCode and dumps
-AngelScript `SaveByteCode`, Cache V2 FunctionBody VM bytes, textual/JSON AST or HIR dumps, and public snapshot memory SHALL remain separate persistence domains. Only validated Cache V2 AST DTO records or the live same-build AST MAY supply a retained snapshot.
-
-#### Scenario: SaveByteCode module is loaded
-- **WHEN** a module is restored only through `SaveByteCode` data without canonical AST sidecars
-- **THEN** VM functions may execute but no public or TypedASTJIT AST snapshot is available
-
-#### Scenario: Dump files are present
-- **WHEN** AST/HIR dump files exist beside Cache V2 packs or source
-- **THEN** the loader ignores them and derives no AST identity or content from them
+#### Scenario: Prototype restores into an Engine with different numeric type IDs
+- **WHEN** an explicitly enabled pointer-free AST prototype is decoded in a target Engine whose registration order assigns different numeric type IDs
+- **THEN** admission compares complete stable type/property identity and target/profile compatibility rather than the publishing integers
+- **AND** any live numeric ID or pointer is assigned only after exact remap and verification
+- **AND** a failed remap publishes no partial executable, snapshot, or Cache generation

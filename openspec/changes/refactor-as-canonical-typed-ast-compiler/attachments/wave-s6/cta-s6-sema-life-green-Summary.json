@@ -1,0 +1,14 @@
+{
+  "BucketName": "Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.MaterializeCleanupPlansAndTryCatchStayRejectedOnCompileSealPath",
+  "ExitCode": 0,
+  "ReportPath": "D:\\as-cta\\Saved\\Tests\\cta-s6-sema-life-green\\20260826_232620_384_120516ba\\Report",
+  "LogPath": "D:\\as-cta\\Saved\\Tests\\cta-s6-sema-life-green\\20260826_232620_384_120516ba\\Automation.log",
+  "ReportJsonPath": "D:\\as-cta\\Saved\\Tests\\cta-s6-sema-life-green\\20260826_232620_384_120516ba\\Report\\index.json",
+  "Total": 1,
+  "Passed": 1,
+  "Failed": 0,
+  "Skipped": 0,
+  "FailedTests": [],
+  "LogFailureHints": [],
+  "SummarySource": "ReportJson"
+}

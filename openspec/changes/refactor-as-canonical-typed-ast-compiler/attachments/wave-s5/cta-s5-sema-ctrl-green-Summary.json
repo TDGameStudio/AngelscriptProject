@@ -1,0 +1,18 @@
+﻿{
+    "BucketName":  "Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.ControlTargetsAndNamedPhasesSealTogetherOnCompileSealPath",
+    "ExitCode":  0,
+    "ReportPath":  "D:\\as-cta\\Saved\\Tests\\cta-s5-sema-ctrl-green\\20260826_231322_198_d86fd579\\Report",
+    "LogPath":  "D:\\as-cta\\Saved\\Tests\\cta-s5-sema-ctrl-green\\20260826_231322_198_d86fd579\\Automation.log",
+    "ReportJsonPath":  "D:\\as-cta\\Saved\\Tests\\cta-s5-sema-ctrl-green\\20260826_231322_198_d86fd579\\Report\\index.json",
+    "Total":  1,
+    "Passed":  1,
+    "Failed":  0,
+    "Skipped":  0,
+    "FailedTests":  [
+
+                    ],
+    "LogFailureHints":  [
+
+                        ],
+    "SummarySource":  "ReportJson"
+}

@@ -18,7 +18,7 @@ The Static backend selection and AST retention policy SHALL freeze before the au
 - **AND** it does not reconstruct AST from Bytecode
 
 ### Requirement: Generation Engine containment includes AST ownership
-A non-matching generation Engine SHALL own and release its SourceManager, canonical ASTContext, Runtime type resolution view, descriptors, functions, types, and request-local state. Destroying it MUST NOT sweep or invalidate primary Engine AST snapshots, packages, routes, reflection, caches, contexts, or Provider bindings.
+A non-matching generation Engine SHALL own and release its SourceManager, canonical ASTContext, immutable Runtime type-resolution view, descriptors, functions, types, and request-local state. Runtime resolution SHALL verify stable type/declaration keys plus target/profile ABI-layout compatibility; Provider identity and persisted output MUST NOT use that Engine's numeric type IDs or type pointers as durable symbols. Destroying the generation Engine MUST NOT sweep or invalidate primary Engine AST snapshots, packages, routes, reflection, caches, contexts, or Provider bindings.
 
 #### Scenario: Generation Engine succeeds
 - **WHEN** a contained generation Engine completes analysis/emission/packaging
@@ -29,3 +29,9 @@ A non-matching generation Engine SHALL own and release its SourceManager, canoni
 - **WHEN** parsing, Sema, AST verification, descriptor analysis, or StaticJIT emission fails
 - **THEN** the same request-owned cleanup boundary runs
 - **AND** no partial AST or Provider state publishes into the primary Engine
+
+#### Scenario: Two generation Engines assign different type IDs
+- **WHEN** equivalent canonical type/declaration inputs are compiled in two contained Engines whose registration order produces different numeric type IDs
+- **THEN** typed generation compares stable keys and target/profile ABI compatibility
+- **AND** equivalent Provider identity/output does not depend on either numeric ID
+- **AND** generation-local pointers and IDs are released with their owning request after stable output is produced

@@ -1,0 +1,14 @@
+{
+  "BucketName": "Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.DeclarationSemaOwnsSignaturesMixinLambdaAndBasesOnCompileSealPath",
+  "ExitCode": 0,
+  "ReportPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-green\\20260826_234950_571_b51db429\\Report",
+  "LogPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-green\\20260826_234950_571_b51db429\\Automation.log",
+  "ReportJsonPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-green\\20260826_234950_571_b51db429\\Report\\index.json",
+  "Total": 1,
+  "Passed": 1,
+  "Failed": 0,
+  "Skipped": 0,
+  "FailedTests": [],
+  "LogFailureHints": [],
+  "SummarySource": "ReportJson"
+}

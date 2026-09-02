@@ -1,0 +1,22 @@
+{
+  "BucketName": "Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.ContainerDelegateLambdaFuncdefAndImportSealTogetherOnCompileSealPath",
+  "ExitCode": 255,
+  "ReportPath": "D:\\as-cta\\Saved\\Tests\\cta-s7-sema-bind-red\\20260826_233334_927_329db74e\\Report",
+  "LogPath": "D:\\as-cta\\Saved\\Tests\\cta-s7-sema-bind-red\\20260826_233334_927_329db74e\\Automation.log",
+  "ReportJsonPath": "D:\\as-cta\\Saved\\Tests\\cta-s7-sema-bind-red\\20260826_233334_927_329db74e\\Report\\index.json",
+  "Total": 1,
+  "Passed": 0,
+  "Failed": 1,
+  "Skipped": 0,
+  "FailedTests": [
+    {
+      "Name": "ContainerDelegateLambdaFuncdefAndImportSealTogetherOnCompileSealPath",
+      "Message": "0"
+    }
+  ],
+  "LogFailureHints": [
+    "[2026.08.26-15.34.02:046][287]LogAutomationController: Error: Test Completed. Result={Fail} Name={ContainerDelegateLambdaFuncdefAndImportSealTogetherOnCompileSealPath} Path={Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.ContainerDelegateLambdaFuncdefAndImportSealTogetherOnCompileSealPath}",
+    "[2026.08.26-15.34.02:047][287]LogAutomationController: Error: Callback Stored = Double must seal a Conversion, not a raw DeclRef. AST:"
+  ],
+  "SummarySource": "ReportJson"
+}

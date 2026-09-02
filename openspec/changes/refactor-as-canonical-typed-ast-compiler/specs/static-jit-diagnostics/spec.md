@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Diagnostics identify canonical AST generation and eligibility
-StaticJIT diagnostics SHALL report requested/actual backend, target profile, module/function stable identity, AST retention policy, snapshot generation key, current/stale state, verification result, eligibility/call disposition, fallback reason, and Provider output identity without exposing raw AST or Engine pointer values.
+StaticJIT diagnostics SHALL report requested/actual backend, target profile, module/function stable identity, AST retention policy, snapshot generation key, current/stale state, final verification result, Canonical lifetime protocol revision/coverage category, eligibility/call disposition, fallback reason, and Provider output identity without exposing raw AST, protocol, or Engine pointer values.
 
 #### Scenario: Typed generation succeeds
 - **WHEN** a verified retained canonical AST function emits through TypedASTJIT
@@ -11,6 +11,11 @@ StaticJIT diagnostics SHALL report requested/actual backend, target profile, mod
 - **WHEN** canonical AST is valid but the native emitter rejects a current unsupported form or unproven route/linkage contract
 - **THEN** diagnostics distinguish AST validity from TypedASTJIT ineligibility
 - **AND** report the selected BytecodeJIT/VM fallback
+
+#### Scenario: Lifetime protocol blocks native eligibility
+- **WHEN** a function has non-empty or partial-construction lifetime facts that are valid for Bytecode but unsupported by the current native object-frame ABI
+- **THEN** diagnostics report the verified protocol category and exact typed fallback reason
+- **AND** do not report verified-empty, expose snapshot-local IDs, or imply that semantic validity grants native eligibility
 
 ### Requirement: AST inspection is distinct from artifact generation
 AST snapshot dump/inspection diagnostics SHALL identify source-built versus Cache-restored origin, API/schema version, verification, retention, generation, and stale/current state. They MUST NOT report that a dump request generated a Provider, selected a fallback backend, or supplied a compiler/cache input.

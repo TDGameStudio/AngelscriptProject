@@ -1,0 +1,22 @@
+{
+  "BucketName": "Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.DeclarationSemaOwnsSignaturesMixinLambdaAndBasesOnCompileSealPath",
+  "ExitCode": 255,
+  "ReportPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-red\\20260826_234841_199_caee6e31\\Report",
+  "LogPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-red\\20260826_234841_199_caee6e31\\Automation.log",
+  "ReportJsonPath": "D:\\as-cta\\Saved\\Tests\\cta-s8-sema-decl-red\\20260826_234841_199_caee6e31\\Report\\index.json",
+  "Total": 1,
+  "Passed": 0,
+  "Failed": 1,
+  "Skipped": 0,
+  "FailedTests": [
+    {
+      "Name": "DeclarationSemaOwnsSignaturesMixinLambdaAndBasesOnCompileSealPath",
+      "Message": "0"
+    }
+  ],
+  "LogFailureHints": [
+    "[2026.08.26-15.49.09:130][518]LogAutomationController: Error: Test Completed. Result={Fail} Name={DeclarationSemaOwnsSignaturesMixinLambdaAndBasesOnCompileSealPath} Path={Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST.SemaAuthority.FCanonicalASTSemaAuthorityTests.DeclarationSemaOwnsSignaturesMixinLambdaAndBasesOnCompileSealPath}",
+    "[2026.08.26-15.49.09:131][518]LogAutomationController: Error: mixin origin must be the mixed-into class T, not empty. AST:"
+  ],
+  "SummarySource": "ReportJson"
+}

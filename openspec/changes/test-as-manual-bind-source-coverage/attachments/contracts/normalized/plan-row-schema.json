@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "testsource-contract-v2-plan-row-v1",
+  "title": "TestSource Contract V2 normalized planning row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planRevision",
+    "planRowId",
+    "taskId",
+    "wave",
+    "batch",
+    "fileTaskId",
+    "sourcePath",
+    "sourceSha256",
+    "caseId",
+    "sourceOnly",
+    "current",
+    "proposal",
+    "comment",
+    "vectors",
+    "fixture",
+    "coverage",
+    "status",
+    "blockers",
+    "verification",
+    "provenance"
+  ],
+  "properties": {
+    "planRevision": { "type": "string", "pattern": "^plan-v[0-9]+$" },
+    "planRowId": { "type": "string", "minLength": 1 },
+    "taskId": { "type": "string", "pattern": "^W[0-9]{2}\\.B[0-9]{2}\\.F[0-9]{4}\\.(?:C[0-9]{4}|S[0-9]{3})$" },
+    "wave": { "type": "string", "pattern": "^W[0-9]{2}$" },
+    "batch": { "type": "string", "pattern": "^B[0-9]{2}$" },
+    "fileTaskId": { "type": "string", "pattern": "^W[0-9]{2}\\.B[0-9]{2}\\.F[0-9]{4}$" },
+    "sourcePath": { "type": "string", "pattern": "^TestSource/(?!Generation/).+\\.as$" },
+    "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "caseId": { "type": "string", "pattern": "^TS-[A-Z0-9-]+$" },
+    "sourceOnly": { "type": "boolean" },
+    "current": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["identity", "line", "owner", "kind", "annotations", "declaration", "bodySha256"],
+      "properties": {
+        "identity": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["function", "method", "constructor", "destructor", "operator", "delegate", "event", "import", "mixin", "lambda"] },
+        "annotations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "declaration": { "type": "string", "minLength": 1 },
+        "bodySha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "proposal": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["subcaseId", "owner", "semanticName", "disposition", "requiredNameReason", "declaration", "parameters", "returnType", "writebacks", "bodyPlan", "prohibitedCalls"],
+      "properties": {
+        "subcaseId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "owner": { "type": "string", "minLength": 1 },
+        "semanticName": { "type": "string", "minLength": 1 },
+        "disposition": { "enum": ["hard-rename", "semantic-keep", "required-name", "split", "new-high-risk-phase", "retire-with-replacement"] },
+        "requiredNameReason": { "type": ["string", "null"] },
+        "declaration": { "type": ["string", "null"], "minLength": 1 },
+        "parameters": { "type": "array", "items": { "$ref": "#/$defs/parameter" } },
+        "returnType": { "type": ["string", "null"], "minLength": 1 },
+        "writebacks": { "type": "array", "items": { "type": "object" } },
+        "bodyPlan": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "prohibitedCalls": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    },
+    "sourceAssertion": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["kind", "exactSourceFacts", "diagnosticOrState", "cleanup"],
+      "properties": {
+        "kind": { "enum": ["compile-diagnostic", "type-declaration", "property-declaration", "version-state", "source-shape"] },
+        "exactSourceFacts": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "diagnosticOrState": { "type": "object", "minProperties": 1 },
+        "cleanup": { "type": "string", "minLength": 1 }
+      }
+    },
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exactText", "placement", "caseAndSubcase", "purpose", "inputsOrFixture", "outputsOrEffects", "boundary", "cleanup"],
+      "properties": {
+        "exactText": { "type": "string", "minLength": 3, "pattern": "^//" },
+        "placement": { "enum": ["above-declaration", "above-first-annotation", "above-containing-lambda-expression", "source-level"] },
+        "caseAndSubcase": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "inputsOrFixture": { "type": "string", "minLength": 1 },
+        "outputsOrEffects": { "type": "string", "minLength": 1 },
+        "boundary": { "type": "string", "minLength": 1 },
+        "cleanup": { "type": "string", "minLength": 1 }
+      }
+    },
+    "vectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["vectorId", "phase", "arguments", "omittedArguments", "fixtureInputs", "expected", "postFailureState"],
+        "properties": {
+          "vectorId": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "arguments": { "type": "object" },
+          "omittedArguments": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "fixtureInputs": { "type": "object" },
+          "expected": { "type": "object", "minProperties": 1 },
+          "postFailureState": { "type": "array", "items": { "type": "object" } }
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionMode", "requiredHarness", "kind", "instanceKind", "identity", "owner", "invocationDriver", "phases", "cleanupOwner", "cleanupActions", "cleanupOn", "isolation"],
+      "properties": {
+        "executionMode": { "enum": ["Runtime", "CompileOnly", "DiagnosticOnly", "Framework"] },
+        "requiredHarness": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "kind": { "type": "string", "minLength": 1 },
+        "instanceKind": { "type": "string", "minLength": 1 },
+        "identity": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "invocationDriver": { "type": "string", "minLength": 1 },
+        "phases": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "cleanupOwner": { "type": "string", "minLength": 1 },
+        "cleanupActions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "cleanupOn": { "type": "array", "minItems": 1, "items": { "enum": ["success", "assertion-failure", "expected-diagnostic", "timeout", "early-exit"] }, "uniqueItems": true },
+        "isolation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoredRule", "bindingIds", "surfaceIds", "primaryApis", "cppEvidence", "inventoryEvidence", "highRiskDirectives"],
+      "properties": {
+        "authoredRule": { "type": ["string", "null"] },
+        "bindingIds": { "type": "array", "items": { "type": "string" } },
+        "surfaceIds": { "type": "array", "items": { "type": "string" } },
+        "primaryApis": { "type": "array", "items": { "type": "string" } },
+        "cppEvidence": { "type": "array", "items": { "type": "string" } },
+        "inventoryEvidence": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "highRiskDirectives": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["design", "implementation", "sourceStrict", "compile", "runtime", "externalOracle"],
+      "properties": {
+        "design": { "enum": ["blocked", "review-ready", "reviewed"] },
+        "implementation": { "enum": ["not-started", "existing-unaccepted-snapshot", "materialized"] },
+        "sourceStrict": { "enum": ["not-run", "blocked", "pass"] },
+        "compile": { "enum": ["not-run", "runner-blocked", "pass", "fail"] },
+        "runtime": { "enum": ["not-run", "runner-blocked", "pass", "fail"] },
+        "externalOracle": { "enum": ["not-run", "runner-blocked", "pass", "fail"] }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "field", "reason", "evidenceNeeded", "resolutionTaskId"],
+        "properties": {
+          "code": { "enum": ["inventory-drift", "owner-kind-unresolved", "signature-unresolved", "vector-unresolved", "fixture-unresolved", "coverage-unresolved", "comment-unresolved", "external-oracle-unresolved", "line-map-unresolved", "compile-probe-required", "runner-blocked"] },
+          "field": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "evidenceNeeded": { "type": "string", "minLength": 1 },
+          "resolutionTaskId": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["staticCommands", "expectedStaticResult", "runtimeCommand", "expectedRuntimeResult"],
+      "properties": {
+        "staticCommands": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "expectedStaticResult": { "type": "string", "minLength": 1 },
+        "runtimeCommand": { "type": ["string", "null"] },
+        "expectedRuntimeResult": { "type": "string", "minLength": 1 }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auditPath", "auditSha256", "rawPointer", "normalizedRowSha256"],
+      "properties": {
+        "auditPath": { "type": "string", "minLength": 1 },
+        "auditSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "rawPointer": { "type": "string", "minLength": 1 },
+        "normalizedRowSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "sourceOnly": { "const": true } }, "required": ["sourceOnly"] },
+      "then": { "properties": { "current": { "type": "null" }, "proposal": { "type": "null" }, "sourceAssertion": { "type": "object" } }, "required": ["sourceAssertion"] },
+      "else": { "properties": { "current": { "type": ["object", "null"] }, "proposal": { "type": "object" }, "sourceAssertion": { "type": ["null"] } }, "required": ["sourceAssertion"] }
+    },
+    {
+      "if": { "properties": { "proposal": { "type": "object", "properties": { "disposition": { "const": "retire-with-replacement" } }, "required": ["disposition"] } } },
+      "then": { "properties": { "proposal": { "properties": { "declaration": { "type": "null" }, "returnType": { "type": "null" } } } } },
+      "else": { "properties": { "proposal": { "properties": { "declaration": { "type": "string", "minLength": 1 }, "returnType": { "type": "string", "minLength": 1 } } } } }
+    }
+  ],
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "name", "asType", "direction", "default", "valueSource"],
+      "properties": {
+        "declaration": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "asType": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["value", "in", "out", "inout"] },
+        "default": { "type": ["string", "null"] },
+        "valueSource": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

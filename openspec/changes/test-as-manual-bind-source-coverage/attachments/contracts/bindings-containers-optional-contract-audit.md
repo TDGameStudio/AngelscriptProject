@@ -1,0 +1,953 @@
+# Bindings / Containers / Optional Contract V2 exhaustive audit
+
+> Read-only design artifact. The exhaustive old-declaration → stable CaseId/subcase → semantic name → exact declaration mapping is in `bindings-containers-optional-contract-audit.json`. This Markdown file records the review conclusions and deterministic implementation order; it does not claim runner execution.
+
+## Scope and evidence
+
+- Audited `812` `.as` files and `3255` callable definitions: `568` Bindings files, `128` Containers files, and `116` Optional files.
+- Designed `3526` replacement declarations because `3255` current wrappers include compound/overload cases that must split. `2330` declarations are surface-reviewed exact, `284` preserve required engine/runner names, `317` have complete candidate signatures but still need the body refactor, and `595` are explicitly blocked pending concrete placeholder/operator resolution.
+- Excluded both `TestSource/Bindings/TArray/**` and `TestSource/Containers/TArray/**`; the dedicated TArray audit owns those subtrees.
+- Stable IDs and original C++ evidence come from `planned-theme-sources.csv`; Bindings additionally use every authored rule's `testScope`, `surfaceIds`, `referenceIds`, harness, and ownership notes.
+- The audit inspected current `.as` bodies, exact existing declarations, adjacent comments/annotations, and C++ name references under `Plugins/**`.
+
+## Contract decisions
+
+1. Case identity and callable name are independent. `caseId`/`subcaseId` remain stable while legacy `Observe_*`, `SurfaceNNN`, and `_Nominal` names are hard-renamed without aliases.
+2. `Expected*` and `bExpect*` parameters are removed. The `.as` callable returns the raw value or exposes exact `&out`/`&inout` state; expected values exist only in the contract vector/runner.
+3. References use explicit `&in`, `&out`, or `&inout`. UObject handles remain by-value AS handles where that is the established binding spelling.
+4. Compound boolean wrappers are split during implementation whenever they exercise independent surfaces. The JSON records all matched binding surfaces and flags every compound wrapper.
+5. Every callable receives an adjacent English knowledge comment containing behavior, typed inputs, raw result/writeback oracle boundary, and setup/cleanup ownership.
+6. Fixed engine/test-framework/constructor names are recorded in `requiredNameException`; these are not legacy aliases.
+7. A generated declaration marked `ordinal-fallback` or `existing declaration normalized` is an exact implementation target only after the executor confirms it against the recorded surface/C++ evidence. No source edit may silently retain hard-coded input when `hard-coded-zero-argument-fixture` is present.
+8. `declarationReviewStatus=blocking-review-required` is a hard pre-edit gate, not a suggestion. It exists where an authored surface is declarative/generic/operator syntax or where a future runner contract is still missing enough concrete type information.
+
+## Coverage findings
+
+- `boolean-wrapper-hides-raw-result`: 1648
+- `compound-comparison-wrapper`: 2067
+- `constant-or-compile-only-oracle`: 3
+- `expected-value-in-function-arguments`: 144
+- `generic-nominal-name`: 2425
+- `hard-coded-zero-argument-fixture`: 2567
+- `missing-adjacent-callable-comment`: 2592
+- `null-check-without-observed-production-path`: 263
+- `opaque-surface-number-name`: 340
+
+The dominant defect is not merely naming: most generated binding probes bake values into zero-argument functions, then collapse multiple raw observations into one boolean. This prevents the runner from proving parameter marshalling, exact returns, writeback, aliasing, repeat-call behavior, and negative boundaries independently.
+
+## Deterministic disjoint implementation batches
+
+### B01-bindings-core-pure
+
+- Scope: 162 files / 648 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Bindings/APlayerController/Test_Queries_02.as`
+  - `TestSource/Bindings/AssetBundleData/Test_Behavior_01.as`
+  - `TestSource/Bindings/AssetBundleData/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/AssetBundleData/Test_Queries_01.as`
+  - `TestSource/Bindings/AssetManagerScriptMixins/Test_Behavior_01.as`
+  - `TestSource/Bindings/AssetManagerScriptMixins/Test_Queries_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_Queries_01.as`
+  - `TestSource/Bindings/BlueprintEvent/Test_Behavior_01.as`
+  - `TestSource/Bindings/BlueprintEvent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/BlueprintEvent/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_Behavior_01.as`
+  - `TestSource/Bindings/Console/Test_Behavior_01.as`
+  - `TestSource/Bindings/Console/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/Console/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/Console/Test_Queries_01.as`
+  - `TestSource/Bindings/CoreGlobals/Test_Queries_01.as`
+  - `TestSource/Bindings/Debugging/Test_Behavior_01.as`
+  - `TestSource/Bindings/Debugging/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/Debugging/Test_Queries_01.as`
+  - `TestSource/Bindings/Delegates/Test_Behavior_01.as`
+  - `TestSource/Bindings/Delegates/Test_Behavior_02.as`
+  - `TestSource/Bindings/Delegates/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/Delegates/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/Delegates/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/Delegates/Test_Queries_01.as`
+  - `TestSource/Bindings/FAnchors/Test_Behavior_01.as`
+  - `TestSource/Bindings/FAnchors/Test_Operators_01.as`
+  - `TestSource/Bindings/FAnchors/Test_Queries_01.as`
+  - `TestSource/Bindings/FAngelscriptDelegateWithPayload/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FAngelscriptDelegateWithPayload/Test_Queries_01.as`
+  - `TestSource/Bindings/FApp/Test_Queries_01.as`
+  - `TestSource/Bindings/FBodyInstance/Test_Behavior_01.as`
+  - `TestSource/Bindings/FCommandLine/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FCommandLine/Test_Queries_01.as`
+  - `TestSource/Bindings/FFormatArgumentValue/Test_Behavior_01.as`
+  - `TestSource/Bindings/FFormatArgumentValue/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FFrameTime/Test_Behavior_01.as`
+  - `TestSource/Bindings/FGenericPlatformMisc/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FGeometry/Test_Behavior_01.as`
+  - `TestSource/Bindings/FGeometry/Test_Queries_01.as`
+  - `TestSource/Bindings/FInputActionKeyMapping/Test_Operators_01.as`
+  - `TestSource/Bindings/FInputActionValue/Test_Behavior_01.as`
+  - `TestSource/Bindings/FInputActionValue/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FInputActionValue/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FInputActionValue/Test_Queries_01.as`
+  - `TestSource/Bindings/FInputBindingHandle/Test_Behavior_01.as`
+  - `TestSource/Bindings/FInputBindingHandle/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FInputBindingHandle/Test_Operators_01.as`
+  - `TestSource/Bindings/FInputBindingHandle/Test_Queries_01.as`
+  - `TestSource/Bindings/FInstancedStruct/Test_Behavior_01.as`
+  - `TestSource/Bindings/FInstancedStruct/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FInstancedStruct/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FInstancedStruct/Test_Operators_01.as`
+  - `TestSource/Bindings/FInstancedStruct/Test_Queries_01.as`
+  - `TestSource/Bindings/FLatentActionInfo/Test_Behavior_01.as`
+  - `TestSource/Bindings/FLinearColor/Test_Behavior_02.as`
+  - `TestSource/Bindings/FLinearColor/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FLinearColor/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FLinearColor/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FLinearColor/Test_Operators_01.as`
+  - `TestSource/Bindings/FLinearColor/Test_Queries_01.as`
+  - `TestSource/Bindings/FMatrix/Test_Behavior_01.as`
+  - `TestSource/Bindings/FMatrix/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FMemoryReader/Test_Behavior_01.as`
+  - `TestSource/Bindings/FMemoryReader/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FMemoryReader/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FMemoryReader/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/FMessageDialog/Test_Operators_01.as`
+  - `TestSource/Bindings/FNumberFormattingOptions/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FNumberFormattingOptions/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FNumberFormattingOptions/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FNumberFormattingOptions/Test_Operators_01.as`
+  - `TestSource/Bindings/FNumberFormattingOptions/Test_Queries_01.as`
+  - `TestSource/Bindings/FPlatformApplicationMisc/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FPlatformMisc/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FPlatformMisc/Test_Queries_01.as`
+  - `TestSource/Bindings/FPlatformProcess/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FPlatformProcess/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FPlatformProcess/Test_Queries_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_Behavior_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_Behavior_02.as`
+  - `TestSource/Bindings/FRandomStream/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_Operators_01.as`
+  - `TestSource/Bindings/FRandomStream/Test_Queries_01.as`
+  - `TestSource/Bindings/FRange/Test_Behavior_01.as`
+  - `TestSource/Bindings/FRange/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FRange/Test_Queries_01.as`
+  - `TestSource/Bindings/FStringTableRegistry/Test_Behavior_01.as`
+  - `TestSource/Bindings/FStringTableRegistry/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FStringTableRegistry/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FunctionLibraryMixins/Test_Queries_01.as`
+  - `TestSource/Bindings/Hash/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/InputEvents/Test_Behavior_01.as`
+  - `TestSource/Bindings/InputEvents/Test_Behavior_02.as`
+  - `TestSource/Bindings/InputEvents/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/InputEvents/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/InputEvents/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/InputEvents/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/InputEvents/Test_Operators_01.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_01.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_02.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_03.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_04.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_05.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_06.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_07.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_08.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_09.as`
+  - `TestSource/Bindings/InputEvents/Test_Queries_10.as`
+  - `TestSource/Bindings/JsonObjectConverter/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/JsonObjectConverter/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/Logging/Test_Behavior_01.as`
+  - `TestSource/Bindings/Logging/Test_Behavior_02.as`
+  - `TestSource/Bindings/Logging/Test_Behavior_03.as`
+  - `TestSource/Bindings/Primitives/Test_Behavior_01.as`
+  - `TestSource/Bindings/Primitives/Test_Behavior_02.as`
+  - `TestSource/Bindings/Primitives/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/Stats/Test_Behavior_01.as`
+  - `TestSource/Bindings/Stats/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UAssetManager/Test_Behavior_01.as`
+  - `TestSource/Bindings/UAssetManager/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UAssetManager/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UAssetManager/Test_Operators_01.as`
+  - `TestSource/Bindings/UAssetManager/Test_Queries_01.as`
+  - `TestSource/Bindings/UDataTable/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/UDataTable/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UDataTable/Test_Operators_01.as`
+  - `TestSource/Bindings/UDataTable/Test_Queries_01.as`
+  - `TestSource/Bindings/UEnhancedInputComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UEnum/Test_Behavior_01.as`
+  - `TestSource/Bindings/UEnum/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/UEnum/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/UEnum/Test_Queries_01.as`
+  - `TestSource/Bindings/UGameInstance/Test_Queries_01.as`
+  - `TestSource/Bindings/UInputMappingContext/Test_Behavior_01.as`
+  - `TestSource/Bindings/UInputMappingContext/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UInputMappingContext/Test_Operators_01.as`
+  - `TestSource/Bindings/UInputMappingContext/Test_Queries_01.as`
+  - `TestSource/Bindings/UInputSettings/Test_Behavior_01.as`
+  - `TestSource/Bindings/UInputSettings/Test_Queries_01.as`
+  - `TestSource/Bindings/UObject/Test_Behavior_01.as`
+  - `TestSource/Bindings/UObject/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UObject/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/UObject/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UObject/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/UObject/Test_Operators_01.as`
+  - `TestSource/Bindings/UObject/Test_Queries_01.as`
+  - `TestSource/Bindings/UObject/Test_Queries_02.as`
+  - `TestSource/Bindings/UObject/Test_Queries_03.as`
+  - `TestSource/Bindings/UObject/Test_Queries_04.as`
+  - `TestSource/Bindings/UPackage/Test_Queries_01.as`
+  - `TestSource/Bindings/UStruct/Test_Behavior_01.as`
+  - `TestSource/Bindings/UStruct/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UUserWidget/Test_Behavior_01.as`
+  - `TestSource/Bindings/UUserWidget/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UUserWidget/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UUserWidget/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/UUserWidget/Test_Queries_01.as`
+  - `TestSource/Bindings/UWorld/Test_NamespaceAndGlobalFunctions_02.as`
+
+### B02-bindings-value-math
+
+- Scope: 111 files / 453 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Bindings/FBox/Test_Behavior_02.as`
+  - `TestSource/Bindings/FBox/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FBox/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FBox/Test_Operators_01.as`
+  - `TestSource/Bindings/FBox/Test_Queries_02.as`
+  - `TestSource/Bindings/FBox2D/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBox2D/Test_Queries_01.as`
+  - `TestSource/Bindings/FBox3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FBox3f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FBox3f/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FBox3f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FBox3f/Test_Operators_01.as`
+  - `TestSource/Bindings/FBox3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_Behavior_02.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_Queries_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_Operators_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FColor/Test_Behavior_01.as`
+  - `TestSource/Bindings/FColor/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FColor/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FColor/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FColor/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FColor/Test_Operators_01.as`
+  - `TestSource/Bindings/FIntPoint/Test_Queries_01.as`
+  - `TestSource/Bindings/FIntVector/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FIntVector/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FMath/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FMath/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_03.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_05.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_06.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_07.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_08.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_09.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_10.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_11.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_12.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_13.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_14.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_15.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_16.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_18.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_19.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_20.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_21.as`
+  - `TestSource/Bindings/FMath/Test_Queries_01.as`
+  - `TestSource/Bindings/FMath/Test_Queries_02.as`
+  - `TestSource/Bindings/FMath/Test_Queries_03.as`
+  - `TestSource/Bindings/FPlane/Test_Behavior_01.as`
+  - `TestSource/Bindings/FPlane/Test_Queries_01.as`
+  - `TestSource/Bindings/FPlane4f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FPlane4f/Test_Queries_01.as`
+  - `TestSource/Bindings/FQuat/Test_Behavior_03.as`
+  - `TestSource/Bindings/FQuat/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FQuat/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FQuat/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FQuat/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FQuat/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FQuat/Test_Operators_01.as`
+  - `TestSource/Bindings/FQuat/Test_Queries_01.as`
+  - `TestSource/Bindings/FQuat/Test_Queries_02.as`
+  - `TestSource/Bindings/FQuat4f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FQuat4f/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FQuat4f/Test_Queries_02.as`
+  - `TestSource/Bindings/FRotator/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FRotator/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FRotator/Test_Queries_02.as`
+  - `TestSource/Bindings/FRotator3f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FRotator3f/Test_Operators_01.as`
+  - `TestSource/Bindings/FSphere/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FSphere3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FTransform/Test_Behavior_02.as`
+  - `TestSource/Bindings/FTransform/Test_Behavior_03.as`
+  - `TestSource/Bindings/FTransform/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FTransform/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FTransform/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FTransform/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FTransform/Test_Queries_01.as`
+  - `TestSource/Bindings/FTransform/Test_Queries_02.as`
+  - `TestSource/Bindings/FTransform3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FTransform3f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FVector/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FVector/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FVector/Test_Queries_03.as`
+  - `TestSource/Bindings/FVector2D/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FVector2D/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FVector2D/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FVector2D/Test_Operators_02.as`
+  - `TestSource/Bindings/FVector2D/Test_Queries_02.as`
+  - `TestSource/Bindings/FVector2f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FVector2f/Test_Queries_02.as`
+  - `TestSource/Bindings/FVector3f/Test_Behavior_03.as`
+  - `TestSource/Bindings/FVector3f/Test_Behavior_04.as`
+  - `TestSource/Bindings/FVector3f/Test_Behavior_05.as`
+  - `TestSource/Bindings/FVector3f/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FVector3f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FVector3f/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FVector3f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FVector3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FVector3f/Test_Queries_02.as`
+  - `TestSource/Bindings/FVector3f/Test_Queries_03.as`
+  - `TestSource/Bindings/FVector4f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FVector4f/Test_MutationAndLifecycle_01.as`
+
+### B03-bindings-text-path-serialization
+
+- Scope: 56 files / 260 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Bindings/FDateTime/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FDateTime/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FDateTime/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FDateTime/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FDateTime/Test_Operators_01.as`
+  - `TestSource/Bindings/FFileHelper/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FFileHelper/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FGuid/Test_Behavior_01.as`
+  - `TestSource/Bindings/FGuid/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FGuid/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FGuid/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FGuid/Test_Operators_01.as`
+  - `TestSource/Bindings/FGuid/Test_Queries_01.as`
+  - `TestSource/Bindings/FName/Test_Behavior_01.as`
+  - `TestSource/Bindings/FName/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FName/Test_Operators_01.as`
+  - `TestSource/Bindings/FParse/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FPaths/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FPaths/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FPaths/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FPaths/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/FPaths/Test_NamespaceAndGlobalFunctions_03.as`
+  - `TestSource/Bindings/FPaths/Test_Queries_02.as`
+  - `TestSource/Bindings/FString/Test_Behavior_01.as`
+  - `TestSource/Bindings/FString/Test_Behavior_02.as`
+  - `TestSource/Bindings/FString/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FString/Test_ConversionAndFormatting_02.as`
+  - `TestSource/Bindings/FString/Test_ConversionAndFormatting_03.as`
+  - `TestSource/Bindings/FString/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/FString/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FString/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/FString/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FString/Test_Operators_01.as`
+  - `TestSource/Bindings/FString/Test_Queries_01.as`
+  - `TestSource/Bindings/FString/Test_Queries_02.as`
+  - `TestSource/Bindings/FText/Test_Behavior_01.as`
+  - `TestSource/Bindings/FText/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FText/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FText/Test_ConversionAndFormatting_02.as`
+  - `TestSource/Bindings/FText/Test_ConversionAndFormatting_03.as`
+  - `TestSource/Bindings/FText/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FText/Test_Queries_01.as`
+  - `TestSource/Bindings/FTimespan/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FTimespan/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FTimespan/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FTimespan/Test_Operators_01.as`
+  - `TestSource/Bindings/FTimespan/Test_Queries_02.as`
+  - `TestSource/Bindings/Json/Test_Behavior_01.as`
+  - `TestSource/Bindings/Json/Test_Behavior_02.as`
+  - `TestSource/Bindings/Json/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/Json/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/Json/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/Json/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/Json/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/Json/Test_Queries_01.as`
+  - `TestSource/Bindings/Json/Test_Queries_02.as`
+
+### B04-bindings-containers-smart-references
+
+- Scope: 19 files / 67 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Bindings/TMap/Test_Behavior_01.as`
+  - `TestSource/Bindings/TMap/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/TMap/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/TMap/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/TMap/Test_Operators_01.as`
+  - `TestSource/Bindings/TMap/Test_Queries_01.as`
+  - `TestSource/Bindings/TMap/Test_Queries_02.as`
+  - `TestSource/Bindings/TOptional/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/TOptional/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/TOptional/Test_Operators_01.as`
+  - `TestSource/Bindings/TOptional/Test_Queries_01.as`
+  - `TestSource/Bindings/TSet/Test_Behavior_01.as`
+  - `TestSource/Bindings/TSet/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/TSet/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/TSet/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/TSet/Test_Operators_01.as`
+  - `TestSource/Bindings/TSet/Test_Queries_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_Behavior_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_MutationAndLifecycle_01.as`
+
+### B05-bindings-world-uobject-lifecycle
+
+- Scope: 220 files / 1067 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Bindings/AActor/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/AActor/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/AActor/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/AActor/Test_Queries_01.as`
+  - `TestSource/Bindings/AActor/Test_Queries_02.as`
+  - `TestSource/Bindings/APlayerController/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/APlayerController/Test_Queries_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_Behavior_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_Operators_01.as`
+  - `TestSource/Bindings/AssetRegistry/Test_Queries_02.as`
+  - `TestSource/Bindings/AVolume/Test_Behavior_01.as`
+  - `TestSource/Bindings/AVolume/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/AVolume/Test_Queries_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_Behavior_02.as`
+  - `TestSource/Bindings/BlueprintType/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_Operators_01.as`
+  - `TestSource/Bindings/BlueprintType/Test_Queries_01.as`
+  - `TestSource/Bindings/CollisionProfile/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/ConfigEnums/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/Deprecations/Test_Behavior_01.as`
+  - `TestSource/Bindings/FActorSpawnParameters/Test_Behavior_01.as`
+  - `TestSource/Bindings/FActorSpawnParameters/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FActorSpawnParameters/Test_Operators_01.as`
+  - `TestSource/Bindings/FAngelscriptGameThreadScopeWorldContext/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBodyInstance/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FBodyInstance/Test_Queries_01.as`
+  - `TestSource/Bindings/FBox/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBox/Test_Queries_01.as`
+  - `TestSource/Bindings/FBox3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds/Test_Operators_01.as`
+  - `TestSource/Bindings/FBoxSphereBounds3f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Behavior_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Behavior_02.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Behavior_03.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Behavior_04.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Behavior_05.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_MutationAndLifecycle_03.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Operators_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Queries_01.as`
+  - `TestSource/Bindings/FCollisionQueryParams/Test_Queries_02.as`
+  - `TestSource/Bindings/FCollisionShape/Test_Behavior_01.as`
+  - `TestSource/Bindings/FCollisionShape/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FCollisionShape/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FCollisionShape/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FCollisionShape/Test_Queries_01.as`
+  - `TestSource/Bindings/FCollisionShape/Test_Queries_02.as`
+  - `TestSource/Bindings/FCpuProfilerTraceScoped/Test_Behavior_01.as`
+  - `TestSource/Bindings/FDateTime/Test_Behavior_01.as`
+  - `TestSource/Bindings/FDateTime/Test_Queries_01.as`
+  - `TestSource/Bindings/FDateTime/Test_Queries_02.as`
+  - `TestSource/Bindings/FHitResult/Test_Behavior_01.as`
+  - `TestSource/Bindings/FHitResult/Test_Behavior_02.as`
+  - `TestSource/Bindings/FHitResult/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FHitResult/Test_Queries_01.as`
+  - `TestSource/Bindings/FIntPoint/Test_Behavior_01.as`
+  - `TestSource/Bindings/FIntPoint/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FIntPoint/Test_Operators_01.as`
+  - `TestSource/Bindings/FIntVector/Test_Behavior_01.as`
+  - `TestSource/Bindings/FIntVector/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FIntVector/Test_Operators_01.as`
+  - `TestSource/Bindings/FIntVector/Test_Queries_01.as`
+  - `TestSource/Bindings/FIntVector2/Test_Behavior_01.as`
+  - `TestSource/Bindings/FIntVector2/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FIntVector2/Test_Operators_01.as`
+  - `TestSource/Bindings/FIntVector4/Test_Behavior_01.as`
+  - `TestSource/Bindings/FIntVector4/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FIntVector4/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FIntVector4/Test_Operators_01.as`
+  - `TestSource/Bindings/FLinearColor/Test_Behavior_01.as`
+  - `TestSource/Bindings/FLinearColor/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FMargin/Test_Behavior_01.as`
+  - `TestSource/Bindings/FMargin/Test_Operators_01.as`
+  - `TestSource/Bindings/FMargin/Test_Queries_01.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_04.as`
+  - `TestSource/Bindings/FMath/Test_NamespaceAndGlobalFunctions_17.as`
+  - `TestSource/Bindings/FMath/Test_Queries_04.as`
+  - `TestSource/Bindings/FName/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FName/Test_Queries_01.as`
+  - `TestSource/Bindings/FOverlapResult/Test_Behavior_01.as`
+  - `TestSource/Bindings/FOverlapResult/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FOverlapResult/Test_Queries_01.as`
+  - `TestSource/Bindings/FPaths/Test_Queries_01.as`
+  - `TestSource/Bindings/FQuat/Test_Behavior_01.as`
+  - `TestSource/Bindings/FQuat/Test_Behavior_02.as`
+  - `TestSource/Bindings/FQuat4f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FQuat4f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FQuat4f/Test_Behavior_03.as`
+  - `TestSource/Bindings/FQuat4f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FQuat4f/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FQuat4f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FQuat4f/Test_Operators_01.as`
+  - `TestSource/Bindings/FQuat4f/Test_Queries_01.as`
+  - `TestSource/Bindings/FRotator/Test_Behavior_01.as`
+  - `TestSource/Bindings/FRotator/Test_Behavior_02.as`
+  - `TestSource/Bindings/FRotator/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FRotator/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FRotator/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FRotator/Test_Operators_01.as`
+  - `TestSource/Bindings/FRotator/Test_Queries_01.as`
+  - `TestSource/Bindings/FRotator3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FRotator3f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FRotator3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FRotator3f/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/FRotator3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FSphere/Test_Behavior_01.as`
+  - `TestSource/Bindings/FSphere/Test_Queries_01.as`
+  - `TestSource/Bindings/FSphere3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FSphere3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FString/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FTimespan/Test_Behavior_01.as`
+  - `TestSource/Bindings/FTimespan/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FTimespan/Test_Queries_01.as`
+  - `TestSource/Bindings/FTransform/Test_Behavior_01.as`
+  - `TestSource/Bindings/FTransform3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FTransform3f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FTransform3f/Test_Behavior_03.as`
+  - `TestSource/Bindings/FTransform3f/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FTransform3f/Test_Queries_01.as`
+  - `TestSource/Bindings/FTransform3f/Test_Queries_02.as`
+  - `TestSource/Bindings/FunctionLibraryMixins/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/FVector/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector/Test_Behavior_02.as`
+  - `TestSource/Bindings/FVector/Test_Behavior_03.as`
+  - `TestSource/Bindings/FVector/Test_Behavior_04.as`
+  - `TestSource/Bindings/FVector/Test_Behavior_05.as`
+  - `TestSource/Bindings/FVector/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FVector/Test_Operators_01.as`
+  - `TestSource/Bindings/FVector/Test_Queries_01.as`
+  - `TestSource/Bindings/FVector/Test_Queries_02.as`
+  - `TestSource/Bindings/FVector2D/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector2D/Test_Behavior_02.as`
+  - `TestSource/Bindings/FVector2D/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector2D/Test_Operators_01.as`
+  - `TestSource/Bindings/FVector2D/Test_Queries_01.as`
+  - `TestSource/Bindings/FVector2f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector2f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FVector2f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector2f/Test_ConstructionAndAssignment_02.as`
+  - `TestSource/Bindings/FVector2f/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/FVector2f/Test_Operators_01.as`
+  - `TestSource/Bindings/FVector2f/Test_Queries_01.as`
+  - `TestSource/Bindings/FVector3f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector3f/Test_Behavior_02.as`
+  - `TestSource/Bindings/FVector3f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector3f/Test_Operators_01.as`
+  - `TestSource/Bindings/FVector4/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector4/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector4/Test_Operators_01.as`
+  - `TestSource/Bindings/FVector4f/Test_Behavior_01.as`
+  - `TestSource/Bindings/FVector4f/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/FVector4f/Test_Operators_01.as`
+  - `TestSource/Bindings/InputComponentScriptMixins/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/LandscapeProxy/Test_Queries_01.as`
+  - `TestSource/Bindings/Logging/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/NativeModuleFunctionBinding/Test_Behavior_01.as`
+  - `TestSource/Bindings/SoftObjectPath/Test_Behavior_01.as`
+  - `TestSource/Bindings/SoftObjectPath/Test_Operators_01.as`
+  - `TestSource/Bindings/SoftObjectPath/Test_Queries_01.as`
+  - `TestSource/Bindings/SoftObjectPath/Test_Queries_02.as`
+  - `TestSource/Bindings/Subsystems/Test_Queries_01.as`
+  - `TestSource/Bindings/SystemTimers/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/SystemTimers/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/SystemTimers/Test_Queries_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_Behavior_02.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_Operators_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_Queries_01.as`
+  - `TestSource/Bindings/TSoftObjectPtr/Test_Queries_02.as`
+  - `TestSource/Bindings/UActorComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/UActorComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UActorComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/UCollisionProfile/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/UEnhancedInputComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/UEnhancedInputComponent/Test_MutationAndLifecycle_02.as`
+  - `TestSource/Bindings/UEnhancedInputComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/UEnum/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UFXSystemComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/UGameInstance/Test_IndexAndIteration_01.as`
+  - `TestSource/Bindings/UGameInstance/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/ULocalPlayer/Test_Queries_01.as`
+  - `TestSource/Bindings/UPoseableMeshComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/UPrimitiveComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UPrimitiveComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/UProjectileMovementComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UProjectileMovementComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/USceneComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/USceneComponent/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/USceneComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/USceneComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/USkeletalMeshComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/USkeletalMeshComponent/Test_Queries_01.as`
+  - `TestSource/Bindings/USkinnedMeshComponent/Test_Behavior_01.as`
+  - `TestSource/Bindings/USkinnedMeshComponent/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UWorld/Test_Behavior_01.as`
+  - `TestSource/Bindings/UWorld/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/UWorld/Test_MutationAndLifecycle_01.as`
+  - `TestSource/Bindings/UWorld/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/UWorld/Test_Queries_01.as`
+  - `TestSource/Bindings/UWorld/Test_Queries_02.as`
+  - `TestSource/Bindings/WorldCollision/Test_Behavior_01.as`
+  - `TestSource/Bindings/WorldCollision/Test_Behavior_02.as`
+  - `TestSource/Bindings/WorldCollision/Test_ConstructionAndAssignment_01.as`
+  - `TestSource/Bindings/WorldCollision/Test_ConversionAndFormatting_01.as`
+  - `TestSource/Bindings/WorldCollision/Test_NamespaceAndGlobalFunctions_01.as`
+  - `TestSource/Bindings/WorldCollision/Test_NamespaceAndGlobalFunctions_02.as`
+  - `TestSource/Bindings/WorldCollision/Test_NamespaceAndGlobalFunctions_03.as`
+  - `TestSource/Bindings/WorldCollision/Test_NamespaceAndGlobalFunctions_04.as`
+  - `TestSource/Bindings/WorldCollision/Test_Operators_01.as`
+  - `TestSource/Bindings/WorldCollision/Test_Queries_01.as`
+
+### B06-containers-value
+
+- Scope: 83 files / 242 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Containers/TMap/Test_EnhancedInputMappingContextAndActionValues.as`
+  - `TestSource/Containers/TMap/Test_EnhancedInputRuntimeMappingContextMatrix.as`
+  - `TestSource/Containers/TMap/Test_MapOfMaps_TwoDimensionalMapping.as`
+  - `TestSource/Containers/TMap/Test_StringFamilyMapKeyValueCombinations.as`
+  - `TestSource/Containers/TMap/Test_SupportedLogLevelsMapToAutomationSafeVerbosity.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_01.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_02.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_03.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_04.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_05.as`
+  - `TestSource/Containers/TMap/Test_TMap_Negative_06.as`
+  - `TestSource/Containers/TMap/Test_TMap_Positive_01.as`
+  - `TestSource/Containers/TMap/Test_TMap_Positive_02.as`
+  - `TestSource/Containers/TMap/Test_TMap_Positive_03.as`
+  - `TestSource/Containers/TMap/Test_TMap_Positive_04.as`
+  - `TestSource/Containers/TMap/Test_TMap_Positive_05.as`
+  - `TestSource/Containers/TMap/Test_TMapAdvancedOperations.as`
+  - `TestSource/Containers/TMap/Test_TMapAsParameter_01.as`
+  - `TestSource/Containers/TMap/Test_TMapAsParameter_02.as`
+  - `TestSource/Containers/TMap/Test_TMapEdgeCases.as`
+  - `TestSource/Containers/TMap/Test_TMapFindOrAdd.as`
+  - `TestSource/Containers/TMap/Test_TMapForEachPairUnsupported.as`
+  - `TestSource/Containers/TMap/Test_TMapIteration.as`
+  - `TestSource/Containers/TMap/Test_TMapKeyTypes.as`
+  - `TestSource/Containers/TMap/Test_TMapOverwriteRemoveContainsKeysValues.as`
+  - `TestSource/Containers/TMap/Test_TMapRemoveOperations.as`
+  - `TestSource/Containers/TMap/Test_TMapUnsupportedApiAliases.as`
+  - `TestSource/Containers/TMap/Test_TMapUserStructValues.as`
+  - `TestSource/Containers/TMap/Test_TMapValueTypes_01.as`
+  - `TestSource/Containers/TMap/Test_TMapValueTypes_02.as`
+  - `TestSource/Containers/TObjectPtr/Test_EnhancedInputBindingHandlesAndRemoval.as`
+  - `TestSource/Containers/TObjectPtr/Test_NativeInterfaceReferenceHandles.as`
+  - `TestSource/Containers/TObjectPtr/Test_NullAndNonNull.as`
+  - `TestSource/Containers/TObjectPtr/Test_SingleShotAndMultipleHandlesCompile.as`
+  - `TestSource/Containers/TObjectPtr/Test_UObjectHandleAndNewObject.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_01.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_02.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_03.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_04.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_05.as`
+  - `TestSource/Containers/TOptional/Test_TOptional_Mixed_06.as`
+  - `TestSource/Containers/TSet/Test_ActorOwnerAndRelevancySettings.as`
+  - `TestSource/Containers/TSet/Test_AssetRegistryLiveQueryParity.as`
+  - `TestSource/Containers/TSet/Test_CharacterMovementPhysicsSettings.as`
+  - `TestSource/Containers/TSet/Test_FVectorSpecifierAndSetProperties.as`
+  - `TestSource/Containers/TSet/Test_GlobalLoadObject.as`
+  - `TestSource/Containers/TSet/Test_InputSettingsAndRuntimeMappingApi.as`
+  - `TestSource/Containers/TSet/Test_SoftPathStringIdentityAndMissingClassBoundaries.as`
+  - `TestSource/Containers/TSet/Test_TextBlockSetFontAppliesSlateFontInfoFields.as`
+  - `TestSource/Containers/TSet/Test_TSet_Negative_01.as`
+  - `TestSource/Containers/TSet/Test_TSet_Negative_02.as`
+  - `TestSource/Containers/TSet/Test_TSet_Negative_03.as`
+  - `TestSource/Containers/TSet/Test_TSet_Positive_01.as`
+  - `TestSource/Containers/TSet/Test_TSet_Positive_02.as`
+  - `TestSource/Containers/TSet/Test_TSet_Positive_03.as`
+  - `TestSource/Containers/TSet/Test_TSet_Positive_04.as`
+  - `TestSource/Containers/TSet/Test_TSetAsParameter_01.as`
+  - `TestSource/Containers/TSet/Test_TSetAsParameter_02.as`
+  - `TestSource/Containers/TSet/Test_TSetAsReturnValue.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrAsyncLoad.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftReferenceAsyncBoundaries.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftReferencePathConstructionAndPending.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SynchronousSoftObjectPathLoad.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Negative_01.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Negative_02.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Negative_03.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Negative_04.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Negative_05.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Positive_02.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Positive_03.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Negative_01.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Negative_02.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Negative_03.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Negative_04.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Positive_02.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Positive_03.as`
+  - `TestSource/Containers/TSubclassOf/Test_UObjectNewObjectTObjectPtrAndSubclassReferences.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Negative_01.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Negative_02.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Negative_03.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Negative_04.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Positive_02.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrBreaksBackReferenceCycle.as`
+
+### B07-containers-uobject-world
+
+- Scope: 45 files / 136 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Containers/TObjectPtr/Test_GCReachabilityAndWeakInvalidationBoundary.as`
+  - `TestSource/Containers/TObjectPtr/Test_HandleSetContainer.as`
+  - `TestSource/Containers/TObjectPtr/Test_ObjectReferenceBasics.as`
+  - `TestSource/Containers/TObjectPtr/Test_ObjectReferenceOperations.as`
+  - `TestSource/Containers/TObjectPtr/Test_ReferenceValidityChecks.as`
+  - `TestSource/Containers/TObjectPtr/Test_TObjectPtrRouting.as`
+  - `TestSource/Containers/TObjectPtr/Test_UObjectHandleAssignmentAndActorOuter.as`
+  - `TestSource/Containers/TSet/Test_InputBindingCollectionsVisibleAfterSetup.as`
+  - `TestSource/Containers/TSet/Test_PhysicsConstraintComponentSettings.as`
+  - `TestSource/Containers/TSet/Test_PhysicsConstraintPresetRecipes.as`
+  - `TestSource/Containers/TSet/Test_PrimitiveCollisionSetup.as`
+  - `TestSource/Containers/TSet/Test_ProjectileMovementSettings.as`
+  - `TestSource/Containers/TSet/Test_SetupPlayerInputComponent.as`
+  - `TestSource/Containers/TSet/Test_SynchronousSoftClassPathLoad.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftClassPtrAsProperty.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftClassPtrBasics.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftClassPtrConfiguredPath.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftClassPtrPath.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrAsProperty.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrBasics.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrInContainers.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrNullChecks.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrPath.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftObjectPtrPathConstructionAndPending.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftReferencePathConstructionAndPendingBoundary.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_SoftReferenceUsage.as`
+  - `TestSource/Containers/TSoftObjectPtr/Test_TSoftObjectPtr_Positive_01.as`
+  - `TestSource/Containers/TSubclassOf/Test_GetAllComponentsFiltersSubclassesAndAppends.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Negative_05.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOf_Positive_01.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfAsProperty.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfBasics.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfParameterAndNewObject.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfSpawn.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfTypeCheck.as`
+  - `TestSource/Containers/TSubclassOf/Test_TSubclassOfUsage.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Negative_05.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Positive_01.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_TWeakObjectPtr_Positive_03.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrArrayContainer.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrArrayContainerAndReassignment.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrAsProperty.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrBasics.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrInvalidation.as`
+  - `TestSource/Containers/TWeakObjectPtr/Test_WeakObjectPtrNullComparisonAndReassignment.as`
+
+### B08-optional-gameplaytags
+
+- Scope: 8 files / 75 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagCompat.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagContainerCompat.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagContainerEmptyContracts.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagContainerHierarchyFilters.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagExactQueryCompat.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagHierarchySemantics.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagNamespaceGlobals.as`
+  - `TestSource/Optional/GameplayTags/Bindings/Test_GameplayTagQueryCompat.as`
+
+### B09-optional-gas-bindings
+
+- Scope: 23 files / 78 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Optional/GAS/Bindings/Test_ActiveCountDefault.as`
+  - `TestSource/Optional/GAS/Bindings/Test_BitFieldActivateOnce.as`
+  - `TestSource/Optional/GAS/Bindings/Test_BitFieldInputPressed.as`
+  - `TestSource/Optional/GAS/Bindings/Test_BitFieldPendingRemove.as`
+  - `TestSource/Optional/GAS/Bindings/Test_BitFieldRemoveAfterActivation.as`
+  - `TestSource/Optional/GAS/Bindings/Test_ConstructorSetsInputID.as`
+  - `TestSource/Optional/GAS/Bindings/Test_ConstructorSetsLevel.as`
+  - `TestSource/Optional/GAS/Bindings/Test_ConstructorWithClassSetsAbility.as`
+  - `TestSource/Optional/GAS/Bindings/Test_DynamicAbilityTagsDefaultEmpty.as`
+  - `TestSource/Optional/GAS/Bindings/Test_FGameplayAbilitySpecDefault.as`
+  - `TestSource/Optional/GAS/Bindings/Test_FGameplayAttributeDefault.as`
+  - `TestSource/Optional/GAS/Bindings/Test_FGameplayAttributeFromScriptSetIsValid.as`
+  - `TestSource/Optional/GAS/Bindings/Test_FGameplayAttributeGetAttributeSetClassReturnsCorrectClass.as`
+  - `TestSource/Optional/GAS/Bindings/Test_FGameplayAttributeGetAttributeSetClassReturnsNullWhenInvalid.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GameplayEffectSpecNullDefGuard.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GameplayTagPropertyMapNullGuards.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GetAttributeBaseValueCheckedReturnsCorrectValue.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GetAttributeCurrentValueCheckedReturnsCorrectValue.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GetGameplayAttributeReturnsAttribute.as`
+  - `TestSource/Optional/GAS/Bindings/Test_GetPrimaryInstanceReturnsNullByDefault.as`
+  - `TestSource/Optional/GAS/Bindings/Test_IsActiveDefaultFalse.as`
+  - `TestSource/Optional/GAS/Bindings/Test_SetByCallerTagMagnitudesDefaultEmpty.as`
+  - `TestSource/Optional/GAS/Bindings/Test_TrySetAttributeBaseValueReturnsTrueOnSuccess.as`
+
+### B10-optional-gas-functional
+
+- Scope: 85 files / 229 current callables.
+- Entry: all listed exact declarations and adjacent comment facts reviewed; no file in another batch is edited concurrently.
+- Exit: source callable count maps 1:1, semantic names are unique in file, Expected* args absent, explicit ref directions present, focused audit passes.
+- Files:
+
+  - `TestSource/Optional/GAS/Functional/Test_ASCModAttributeUnsafeAppliesModifier.as`
+  - `TestSource/Optional/GAS/Functional/Test_AttributeChangeFromZeroToPositive.as`
+  - `TestSource/Optional/GAS/Functional/Test_AttributeChangeToNegativeValue.as`
+  - `TestSource/Optional/GAS/Functional/Test_AttributeSetTryGetCurrentValueFromSelf.as`
+  - `TestSource/Optional/GAS/Functional/Test_AttributeSetTrySetBaseValueFromSelf.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_GetActorInfoReturnsValidAfterInit.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_GetOwningAbilitySystemComponentReturnsCorrectASC.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_GetOwningAbilitySystemComponentReturnsNullWithoutASC.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_GetOwningActorReturnsCorrectActor.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_GetOwningActorReturnsNullWithoutASC.as`
+  - `TestSource/Optional/GAS/Functional/Test_BP_SetRemoveAbilityOnEndClearsInactiveSpec.as`
+  - `TestSource/Optional/GAS/Functional/Test_CallbackFiredWhenBaseValueIsApplied.as`
+  - `TestSource/Optional/GAS/Functional/Test_CanActivateAbilityByClassReturnsFalseWhenNotGranted.as`
+  - `TestSource/Optional/GAS/Functional/Test_CanActivateAbilityByClassReturnsTrueWhenGranted.as`
+  - `TestSource/Optional/GAS/Functional/Test_CanActivateAbilitySpecReturnsTrueForValidSpec.as`
+  - `TestSource/Optional/GAS/Functional/Test_CancelAbilityDoesNotCrashOnInactiveAbility.as`
+  - `TestSource/Optional/GAS/Functional/Test_CaptureGameplayAttributeReturnsValidDefinition.as`
+  - `TestSource/Optional/GAS/Functional/Test_CaptureGameplayAttributeTargetNotSnapshot.as`
+  - `TestSource/Optional/GAS/Functional/Test_CaptureGameplayAttributeWithoutSnapshotClearsFlag.as`
+  - `TestSource/Optional/GAS/Functional/Test_CaptureGameplayAttributeWithSnapshotSetsFlag.as`
+  - `TestSource/Optional/GAS/Functional/Test_ClearAbilityRemovesAbility.as`
+  - `TestSource/Optional/GAS/Functional/Test_CompareGameplayAttributesEqual.as`
+  - `TestSource/Optional/GAS/Functional/Test_DefaultBPEventsDoNotAlterBehavior.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetAbilitySpecSourceObjectReturnsNullWhenNotSet.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetAndRegisterAttributeChangedCallbackReturnsCurrentValue.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetAndRegisterCallbackForAttributeAlsoBindsTrampoline.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetAndRegisterCallbackForAttributeReturnsCurrentValue.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetAttributeCurrentValueReturnsDefault.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetCooldownTimeRemainingReturnsZeroForNoCooldown.as`
+  - `TestSource/Optional/GAS/Functional/Test_GetGameplayAttributeFromScriptSubclass.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityAndActivateOnceReturnsValidHandle.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityFromScriptReturnsValidHandle.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityTwiceDoesNotDuplicate.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityWithInputIDSetsSpecInputID.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityWithLevelSetsSpecLevel.as`
+  - `TestSource/Optional/GAS/Functional/Test_GiveAbilityWithSourceObjectSetsSpecSourceObject.as`
+  - `TestSource/Optional/GAS/Functional/Test_HasAbilityReturnsFalseBeforeGive.as`
+  - `TestSource/Optional/GAS/Functional/Test_HasAbilityReturnsTrueAfterGive.as`
+  - `TestSource/Optional/GAS/Functional/Test_IsAbilityActiveReturnsFalseWhenNotActivated.as`
+  - `TestSource/Optional/GAS/Functional/Test_MakeExecutionScopedModifierInfoSetsCaptureDef.as`
+  - `TestSource/Optional/GAS/Functional/Test_MakeGameplayEffectExecutionScopedModifierInfoPreservesCaptureDef.as`
+  - `TestSource/Optional/GAS/Functional/Test_MakeGameplayModifierEvaluationDataSetsFields.as`
+  - `TestSource/Optional/GAS/Functional/Test_ModAttributeUnsafeBypassesPreAttributeChange.as`
+  - `TestSource/Optional/GAS/Functional/Test_MultipleAttributeChangesFireEventsInOrder.as`
+  - `TestSource/Optional/GAS/Functional/Test_MultipleAttributeFieldsGetCorrectNames.as`
+  - `TestSource/Optional/GAS/Functional/Test_MultipleAttributesEachGetOwnCallback.as`
+  - `TestSource/Optional/GAS/Functional/Test_MultipleGiveAbilityFiresOnAbilityGivenEachTime.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAbilityGivenBroadcastsOnGiveAbility.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAbilityGivenPassesCorrectSpec.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAbilityRemovedBroadcastsOnClearAbility.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAbilityRemovedPassesCorrectSpec.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAttributeChangedNotFiredWithoutRegistration.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAttributeChangedTrampolineBroadcastsCorrectData.as`
+  - `TestSource/Optional/GAS/Functional/Test_OnAttributeSetRegisteredDelegateFires.as`
+  - `TestSource/Optional/GAS/Functional/Test_PostAttributeBaseChangeIsCalled.as`
+  - `TestSource/Optional/GAS/Functional/Test_PostAttributeChangeIsCalled.as`
+  - `TestSource/Optional/GAS/Functional/Test_PostInitPropertiesSetsAttributeName.as`
+  - `TestSource/Optional/GAS/Functional/Test_PreAttributeBaseChangeIsCalled.as`
+  - `TestSource/Optional/GAS/Functional/Test_PreAttributeChangeIsCalled.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterAttributeChangedCallbackWithNoneNameDoesNotCrash.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterAttributeChangedCallbackWithNullObjectDoesNotCrash.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterAttributeChangedCallbackWithValidParamsDoesNotCrash.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterAttributeSetCreatesInstance.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterAttributeSetNoDuplicates.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterCallbackForAttributeBindsTrampoline.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterCallbackForAttributeNoDuplicateBinding.as`
+  - `TestSource/Optional/GAS/Functional/Test_RegisterCallbackForDifferentAttributesIndependent.as`
+  - `TestSource/Optional/GAS/Functional/Test_ScriptSubclassCompiles.as`
+  - `TestSource/Optional/GAS/Functional/Test_ScriptSubclassInheritsASCFromGASActor.as`
+  - `TestSource/Optional/GAS/Functional/Test_ScriptSubclassOfGASCharacterInheritsInterfaces.as`
+  - `TestSource/Optional/GAS/Functional/Test_ScriptSubclassOfGASPawnInheritsASC.as`
+  - `TestSource/Optional/GAS/Functional/Test_SetAbilitySpecSourceObjectStoresObject.as`
+  - `TestSource/Optional/GAS/Functional/Test_SetAbilitySpecSourceObjectUpdatesExistingSpec.as`
+  - `TestSource/Optional/GAS/Functional/Test_SetAttributeBaseValueCheckedAndGetChecked.as`
+  - `TestSource/Optional/GAS/Functional/Test_SetAttributeBaseValueTriggersBothPreAndPostBaseChange.as`
+  - `TestSource/Optional/GAS/Functional/Test_SetAttributeBaseValueWithInvalidAttributeDoesNotCrash.as`
+  - `TestSource/Optional/GAS/Functional/Test_SubclassRegistersAttributeFieldsAndOnRepFunction.as`
+  - `TestSource/Optional/GAS/Functional/Test_TryActivateAbilitySpecReturnsTrueOnSuccess.as`
+  - `TestSource/Optional/GAS/Functional/Test_TryGetAttributeBaseValueFromSelf.as`
+  - `TestSource/Optional/GAS/Functional/Test_TryGetCurrentValueWithInvalidNameReturnsFalse.as`
+  - `TestSource/Optional/GAS/Functional/Test_TryGetGameplayAttributeFailure.as`
+  - `TestSource/Optional/GAS/Functional/Test_TryGetGameplayAttributeSuccess.as`
+  - `TestSource/Optional/GAS/Functional/Test_TrySetAndGetAttributeBaseValue.as`
+  - `TestSource/Optional/GAS/Functional/Test_TrySetBaseValueFailsWithoutASC.as`
+  - `TestSource/Optional/GAS/Functional/Test_TrySetBaseValueWithInvalidNameReturnsFalse.as`
+
+## Completeness validation
+
+- Source callable coverage complete: `True`.
+- Missing inventory mappings: `0`.
+- Files with no callable definition: `2`.
+- Duplicate proposed semantic names within a file: `0`.
+- Bindings files with at least one authored surface not confidently paired to a current wrapper: `117`. These are explicitly listed in JSON and must be resolved/split before that file is edited.
+- Blocking replacement declarations: `595`; candidate declarations requiring body refactor/review: `317`.
+- Legacy replacement names: `0`; declarations with `Expected*`/`bExpect*` arguments: `0`; unresolved placeholder/variadic declarations: `0`.
+
+## Required implementation gates
+
+- Before editing a batch, filter the JSON by `batch`, review every `exactDeclaration`, and resolve every `surfaceMatchConfidence != name-or-body` against `matchedSurfaceSignatures`, `surfaceIds`, `cppEvidence`, and `cppRunnerReferences`.
+- Reject any declaration still containing `Expected`, `bExpect`, an implicit bare `&`, `Observe_`, `SurfaceNNN`, or `_Nominal`, except names documented by `requiredNameException`.
+- For every `compound-comparison-wrapper`, split independent API calls into separate subcases and give each a raw result/writeback vector.
+- For every `hard-coded-zero-argument-fixture`, externalize the typed receiver and operation arguments unless the callable is a fixed engine/framework callback or a genuinely input-free global query; record the zero-argument reason.
+- World/UObject/GAS batches require runner-owned setup and cleanup on success, expected diagnostic, timeout, and early exit. Compile-only materialization is not execution coverage.
+- Re-run a source parser after each batch and require a 1:1 mapping from all callable definitions to reviewed v2 contract entries, with no unmapped or duplicate entries.
+
+## Machine-readable record
+
+`bindings-containers-optional-contract-audit.json` contains, for every callable: source line and body hash, old declaration, stable CaseId/subcaseId, semantic replacement name, proposed AS declaration, declaration review status, required-name exception, adjacent English comment facts, typed inputs, raw result, writebacks, expected-diagnostic vector, fixture/cleanup/runner status, matched authored binding surfaces, C++ runner references, and shallow-coverage findings. Only `reviewed-exact` and `reviewed-required-name` declarations are pre-approved for direct implementation; candidates and blockers must be resolved first.
