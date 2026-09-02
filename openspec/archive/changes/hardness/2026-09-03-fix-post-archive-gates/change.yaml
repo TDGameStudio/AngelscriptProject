@@ -4,7 +4,6 @@ metadata:
   uid: change_6bd0b45c-2b1f-450f-b62d-ea7002216338
   id: hardness/fix-post-archive-gates
   title: Keep Hardness gates valid after archive
-  aliases: []
 workflow: angelscript
 created_at: 2026-09-02T23:28:04Z
 goal: Remove active-change coupling from reusable Hardness gates and retain the post-archive performance evidence without modifying the completed dogfood archive.
@@ -12,3 +11,8 @@ affected_areas:
 - .agents/skills/hardness
 - .agents/skills/openspec-archive-change
 - openspec/specs/hardness/core
+archived_at: 2026-09-02T23:43:35Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The archive-stable Hardness gates use hermetic or immutable inputs, the replacement performance evidence is retained with verified hashes, the durable hardness/core specification is synchronized, and independent fixed-snapshot review approved the completed follow-up with no findings.
