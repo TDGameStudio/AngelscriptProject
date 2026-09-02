@@ -28,7 +28,7 @@ operations:
   apply:
     - Preserve unrelated dirty-worktree changes and keep plugin logic in the owning plugin.
     - In Goal mode, investigate and resolve in-scope failures autonomously; stop only at a real authorization boundary.
-    - Import Hardness once and route build/test/OpenSpec commands through Invoke-Hardness, selecting the smallest relevant verification scope first.
+    - While AGENTS.md temporarily disables project Skills, do not invoke a project Skill. After that restriction is explicitly lifted, import Hardness once and route build/test/OpenSpec commands through Invoke-Hardness, selecting the smallest relevant verification scope first.
   archive:
     - Use completed closure only after every task and Review Gate is closed; abandoned or superseded closure requires reasons and incomplete-task dispositions.
     - Sync durable behavior into openspec/specs or explicitly record why sync is not applicable before preserving history.

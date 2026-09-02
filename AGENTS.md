@@ -1,5 +1,8 @@
 # AGENTS.md
 
+
+当前项目正处于, 重构阶段, 所有skill 都先禁止使用, 重构好之后再使用
+
 ## Project Overview
 
 - This file is guidance for AI agents working in `AngelscriptProject`.
@@ -79,6 +82,7 @@ AngelscriptProject/
 │   │   ├── TestMacroStatus.md               # Macro migration status
 │   │   ├── TestFixSummary_20260430.md       # Fix snapshot 2026-04-30
 │   │   ├── TechnicalDebtInventory.md        # Tech debt & live suite status
+│   │   ├── OpenSpecSystemRefactor.md        # OpenSpec Rust/Web/Skill refactor boundaries
 │   │   ├── AngelscriptForkStrategy.md       # Fork strategy (selective)
 │   │   ├── ASSDK_Fork_Differences.md        # ASSDK fork differences
 │   │   ├── GlobalStateContainmentMatrix.md  # Global state containment
@@ -106,6 +110,7 @@ AngelscriptProject/
 │   ├── RunBuild.ps1                         # Build entry
 │   ├── RunTests.ps1                         # Test entry
 │   ├── RunTestSuite.ps1                     # Suite runner
+│   ├── openspec/                            # Portable Rust OpenSpec CLI (git submodule)
 │   ├── Bootstrap/                           # First-time setup
 │   ├── Shared/                              # Shared utility modules
 │   ├── Diagnostics/                         # Health check & debug
@@ -209,7 +214,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - AngelScript code-generator research references are maintained at `Reference\fuzzilli`, `Reference\grammarinator`, `Reference\csmith`, `Reference\yarpgen`, and `Reference\creduce`. Fuzzilli is the primary ASIR / ProgramBuilder architecture reference; Grammarinator is parser-fuzz-only; Csmith and YARPGen inform controlled valid programs and behavioral oracles; C-Reduce informs failing-case reduction. They are offline analysis/design references only, never runtime dependencies or automatic network inputs.
 - Angelsea is retained at `Reference\angelsea` from `https://github.com/asumagic/angelsea.git`, including its pinned MIR, AngelScript, fmt, Catch2, and nanobench submodules. It is a secondary research reference for `asIJITCompilerV2`, AngelScript bytecode-to-C, MIR, lazy/asynchronous JIT, and interpreter fallback. The plugin's StaticJIT, UE integration, and maintained AngelScript fork always take precedence; Angelsea is not a runtime or build dependency.
 - Daslang (repository name `daScript`) is retained at `Reference\daScript` from `https://github.com/GaijinEntertainment/daScript.git`. It is a cross-language architecture reference for zero-copy C++ interop, a tree interpreter, AOT-to-C++, LLVM JIT, hot reload, semantic hashing, compile-time macros, and compiler-backed MCP tooling. It is not authoritative for AngelScript semantics, ABI, or this project's StaticJIT, and is never a build dependency.
-- Typed/native compiler research snapshots are retained at `Reference\Cython`, `Reference\numba`, and `Reference\luau` from `cython/cython`, `numba/numba`, and `luau-lang/luau`. Use Cython primarily for typed-AST-to-C/C++ Static AOT emission, Numba for bytecode-to-untyped/typed-IR-to-LLVM staging, specialization, and object caching, and Luau for bytecode-native code generation, type guards, fallback blocks, VM exits, and x64/A64 code lifecycle. They are offline research sources rather than plugin dependencies; exact SHAs, licenses, clone commands, and source entry points are recorded in `Reference/README.md` and `openspec/changes/feature-as-typed-semantic-aot/research/`.
+- Typed/native compiler research snapshots are retained at `Reference\Cython`, `Reference\numba`, `Reference\luau`, and `Reference\llvm-project` from `cython/cython`, `numba/numba`, `luau-lang/luau`, and `llvm/llvm-project`. Use Cython primarily for typed-AST-to-C/C++ Static AOT emission, Numba for bytecode-to-untyped/typed-IR-to-LLVM staging, specialization, and object caching, Luau for bytecode-native code generation, type guards, fallback blocks, VM exits, and x64/A64 code lifecycle, and LLVM 22.1.8 for IR/IRBuilder, Clang AST/CodeGen, and ORC JIT. They are offline research sources rather than plugin dependencies; exact versions, licenses, clone/junction commands, and source entry points are recorded in `Reference/README.md` and `openspec/changes/feature-as-typed-semantic-aot/research/`. The local LLVM source is `D:\LLVM\llvm-project-22.1.8.src`, junctioned to `Reference\llvm-project` and aligned with `Paths.LLVMRoot`.
 - GenericMessagePlugin is retained at `Reference\GenericMessagePlugin` from `https://github.com/wangjieest/GenericMessagePlugin.git`. Use it to study a UE key-based message bus spanning C++, Blueprint, AngelScript, and other script backends, including signature collection, type checking, generated AS declarations, K2 nodes, request/response, sticky messages, and call-site tracing. It is a focused secondary message/script-interoperability reference, not plugin code to import directly.
 - GenericStorages is retained at `Reference\GenericStorages` from `https://github.com/UnrealBytes/GenericStorages.git`. It is a low-priority utility reference for UE registry/storage/singleton/subsystem templates, editor pickers, platform persistence, permissions/deep links, and S3 helpers; it is neither an AngelScript architecture baseline nor a runtime dependency.
 - UECling is retained at `Reference\UECling` from `https://github.com/Evianaive/UECling.git`. It is a low-priority cross-reference for embedding Cling/CppInterOp in Unreal, runtime C++ interpretation, REPL/notebook tooling, Blueprint nodes, and script-generated classes; it is not a runtime or build dependency. Upstream provides no repository-level LICENSE and directly carries LLVM/Clang headers, so any implementation use or redistribution requires a separate provenance and license review.
@@ -262,19 +267,28 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 ## Harness, Submodule & Worktree
 
-- `.agents/skills/hardness/SKILL.md` is the project Skill entrypoint. Hardness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop.
-- The current Hardness core exposes only `workspace.*`, `openspec.*`, and `task.status`. Unreal routes and public `Tools` wrapper migration are deferred to a separate `unreal-engine-develop` change.
-- Native Goal mode defaults to canonical `.worktrees/<goal>` on branch `goal/<goal>`. Explicit Current/direct work stays in the current workspace and protects existing changes. Neither mode automatically merges, pushes, publishes, or removes a worktree.
+- During the current project-wide refactor, all project Skills remain disabled until the user explicitly lifts the restriction at the top of this file. The following rules document the prepared Hardness contract and do not authorize Skill invocation by themselves.
+- Default editing remains in the Current/main workspace. Do **not** create, switch to, or continue in a worktree unless the user explicitly requests one or explicitly starts a Goal that owns it. Once Goal mode is selected, it uses canonical `.worktrees/<goal>` on branch `goal/<goal>`.
+- `.agents/skills/hardness/SKILL.md` is the prepared project Skill entrypoint. Hardness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop. Its current core exposes only `workspace.*`, `openspec.*`, and `task.status`; Unreal routes and public `Tools` wrapper migration remain deferred to a separate `unreal-engine-develop` change.
 - `Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`, and `Tools/openspec` are **git submodules**, not ordinary directories. A parent worktree must initialize the exact recorded gitlink OIDs; a verified local-object fallback is allowed when an upstream no longer serves an OID.
-- Commit/tag `Tools/openspec` first. For each release, the parent history receives only one final accepted package update containing the gitlink, manifest/docs, and bundled `openspec.exe`; candidate executables never receive parent commits.
-- Use Hardness `workspace.new` / `workspace.bootstrap` for setup. Resolve the project root from the Skill module, copy `AgentConfig.ini` only after confirming it is ignored, never discard a dirty submodule, and do not scaffold an OpenSpec change as a worktree side effect.
-- The Goal workflow stops at committed, verified, reviewed, ready-to-integrate. `workspace.finish` performs only canonical Goal Git closure and reports `GitStateComplete`; verification and Review Gates remain separate agent-owned gates. When code belongs to a submodule, commit the submodule first and the parent gitlink second.
-- Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
+- Commit and tag `Tools/openspec` first. For each release, the parent history receives only one final accepted package update containing the gitlink, manifest/docs, and bundled `openspec.exe`; candidate executables never receive parent commits.
+- After the temporary Skill restriction is lifted, use Hardness `workspace.new` / `workspace.bootstrap` for setup. Resolve the project root from the Skill module, copy `AgentConfig.ini` only after confirming it is ignored, never discard a dirty submodule, and do not scaffold an OpenSpec change as a worktree side effect.
+- The Goal workflow stops at committed, verified, reviewed, ready-to-integrate. `workspace.finish` performs only canonical Goal Git closure and reports `GitStateComplete`; verification and Review Gates remain separate agent-owned gates. Neither Goal nor Current mode automatically merges, pushes, publishes, or removes a worktree.
+- When code belongs to a submodule, commit the submodule first and the parent gitlink second. Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
 
 ## OpenSpec & TODO
 
+### 2026-08-27 comprehensive-refactor transition
+
+- AngelscriptProject is currently in a **comprehensive refactor**. Existing `openspec/specs/` and active changes come from different eras and mix inconsistent granularity, overlapping capability boundaries, historical goals, current implementation, and future intent that can look like established fact. Do not treat the spec corpus as uniformly authoritative. Implementation decisions must triangulate current code, tests, the latest applicable change, and related documentation.
+- Rebaseline before restructuring the spec system. Classify records as current-authoritative, partially valid, future intent, overlapping/conflicting, or historical-only. Prefer marking, migration, and archive over deletion; do not bulk-rewrite, remove, or compile old specs into a new Skill without a scoped change.
+- `Tools/openspec` is the tracked portable Rust distribution. Its product direction has two primary surfaces: a Node/npm-free change/spec lifecycle and validation core, plus a local Web preview that reuses the same Rust parsing and validation model. Web V1 is read-only and offline by default and must not establish a second source of truth.
+- Project OpenSpec Skills are decoupled from the Rust tool and are versioned, distributed, and maintained independently by projects or users. The Rust CLI does not generate, refresh, or overwrite Skills and does not write into Agent configuration directories such as `.agents/`, `.claude/`, or `.cursor/`. The AngelscriptProject Skill continues to carry AS plugin boundaries, test-layer selection, validation entry points, record conventions, and refactor-era spec-trust rules.
+- Extend the spec system by selectively absorbing community mechanisms: project context/rules, replaceable schemas, research/review/test-plan/retrospective artifacts, requirements-to-tasks traceability, and narrowly justified hooks/checks. Record provenance, the adopted subset, rejected parts, and verification for each import; never copy a community schema wholesale by default.
+- The stable architecture boundary is recorded in `Documents/Guides/OpenSpecSystemRefactor.md`.
+
 - `Documents/Plans/` is **deprecated** — retained for historical reference only. All new planning, design, task tracking, and archive lifecycle uses OpenSpec under `openspec/changes/<change>/`.
-- OpenSpec is used only when the user or Goal explicitly names/owns an OpenSpec change. The portable Rust CLI is a deterministic record primitive; lifecycle policy is split across `openspec-explore`, `openspec-continue-change`, `openspec-update-change`, `openspec-apply-change`, `openspec-verify-change`, `openspec-sync-specs`, and `openspec-archive-change`.
+- OpenSpec is used only when the user or Goal explicitly names or owns an OpenSpec change. The portable Rust CLI is a deterministic record primitive; lifecycle policy is split across `openspec-explore`, `openspec-continue-change`, `openspec-update-change`, `openspec-apply-change`, `openspec-verify-change`, `openspec-sync-specs`, and `openspec-archive-change`.
 - `tasks.md` is the sole current Task DAG: its top-of-file YAML `task_graph.depends_on` map owns dependency edges for stable `X.Y` IDs, and OpenSpec derives `after` and `ready`. Keep exact `Files` and verification in each task; do not maintain a second DAG, GraphRevision, snapshot tree, or resume state.
 - Goal mode investigates, replans, implements, verifies, and re-reviews autonomously inside the authorized objective. A Review finding is triaged first and triggers Replan only when a requirement, design, acceptance condition, task boundary, dependency edge, or completion evidence is invalid.
 - Change attachments are structured under `attachments/` and loaded through `attachments/INDEX.md` only. Review, implementation, talk, replan, knowledge, script, and data records must not duplicate task state.

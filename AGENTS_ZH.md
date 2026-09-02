@@ -2,6 +2,8 @@
 
 > **本文件是 `AGENTS.md` 的中文翻译版本，内容应与英文版保持同步。**
 
+> 当前项目正处于重构阶段；在重构完成且用户明确解除限制前，禁止使用所有 Skill。
+
 ## 项目概览
 
 - 本文件用于指导在 `AngelscriptProject` 中工作的 AI Agent。
@@ -81,6 +83,7 @@ AngelscriptProject/
 │   │   ├── TestMacroStatus.md               # 宏迁移状态
 │   │   ├── TestFixSummary_20260430.md       # 修复快照 2026-04-30
 │   │   ├── TechnicalDebtInventory.md        # 技术债与 live suite 状态
+│   │   ├── OpenSpecSystemRefactor.md        # OpenSpec Rust/Web/Skill 重构边界
 │   │   ├── AngelscriptForkStrategy.md       # Fork 策略（选择性吸收）
 │   │   ├── ASSDK_Fork_Differences.md        # ASSDK fork 差异分析
 │   │   ├── GlobalStateContainmentMatrix.md  # 全局状态收容分析
@@ -108,6 +111,7 @@ AngelscriptProject/
 │   ├── RunBuild.ps1                         # 构建入口
 │   ├── RunTests.ps1                         # 测试入口
 │   ├── RunTestSuite.ps1                     # Suite 运行器
+│   ├── openspec/                            # 便携 Rust OpenSpec CLI（git 子模块）
 │   ├── Bootstrap/                           # 首次配置
 │   ├── Shared/                              # 共享工具模块
 │   ├── Diagnostics/                         # 健康检查与调试
@@ -209,7 +213,7 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - AngelScript 代码生成器调研参考固定在 `Reference\fuzzilli`、`Reference\grammarinator`、`Reference\csmith`、`Reference\yarpgen` 与 `Reference\creduce`。其中 Fuzzilli 是 ASIR / ProgramBuilder 架构的首要参考；Grammarinator 仅用于 parser fuzz；Csmith 与 YARPGen 用于受控正例和行为 oracle；C-Reduce 用于失败样本缩减。它们只供离线分析与设计复核，不属于运行时依赖或自动拉取项。
 - Angelsea 固定在 `Reference\angelsea`，来源为 `https://github.com/asumagic/angelsea.git`，并递归保留其上游锁定的 MIR、AngelScript、fmt、Catch2 与 nanobench 子模块。它只作为 `asIJITCompilerV2`、AngelScript bytecode-to-C、MIR、lazy/async JIT 和解释器回退策略的次级研究参考；当前插件的 StaticJIT、UE 集成和 maintained AngelScript fork 始终拥有更高优先级，Angelsea 不是运行时或构建依赖。
 - Daslang（仓库名 `daScript`）固定在 `Reference\daScript`，来源为 `https://github.com/GaijinEntertainment/daScript.git`。它只作为游戏脚本语言的 C++ 零拷贝互操作、tree interpreter、AOT-to-C++、LLVM JIT、hot reload、semantic hashing、宏系统和 compiler-backed MCP 的横向架构参考；不是 AngelScript 语义、ABI 或本项目 StaticJIT 的权威源，也不是构建依赖。
-- Typed/native 编译器研究快照固定在 `Reference\Cython`、`Reference\numba` 与 `Reference\luau`，分别来源于 `cython/cython`、`numba/numba` 与 `luau-lang/luau`。Cython 优先用于 typed AST → C/C++ Static AOT emitter；Numba 优先用于 bytecode → untyped/typed IR → LLVM、specialization 与 object cache；Luau 优先用于 bytecode native codegen、type guard、fallback block、VM exit 和 x64/A64 code lifecycle。三者只供离线研究，不是插件依赖；完整 SHA、许可证、拉取命令和源码入口见 `Reference/README.md` 与 `openspec/changes/feature-as-typed-semantic-aot/research/`。
+- Typed/native 编译器研究快照固定在 `Reference\Cython`、`Reference\numba`、`Reference\luau` 与 `Reference\llvm-project`，分别来源于 `cython/cython`、`numba/numba`、`luau-lang/luau` 与 `llvm/llvm-project`。Cython 优先用于 typed AST → C/C++ Static AOT emitter；Numba 优先用于 bytecode → untyped/typed IR → LLVM、specialization 与 object cache；Luau 优先用于 bytecode native codegen、type guard、fallback block、VM exit 和 x64/A64 code lifecycle；LLVM 22.1.8 优先用于 IR/IRBuilder、Clang AST/CodeGen 和 ORC JIT。它们只供离线研究，不是插件依赖；完整版本、许可证、拉取/junction 命令和源码入口见 `Reference/README.md` 与 `openspec/changes/feature-as-typed-semantic-aot/research/`。本机源码为 `D:\LLVM\llvm-project-22.1.8.src`，junction 到 `Reference\llvm-project`，并与 `Paths.LLVMRoot` 对齐。
 - GenericMessagePlugin 固定在 `Reference\GenericMessagePlugin`，来源为 `https://github.com/wangjieest/GenericMessagePlugin.git`。它用于研究 UE 中跨 C++、Blueprint、AngelScript 与其他脚本后端的 key-based message bus、签名收集、类型校验、AS 声明 codegen、K2 节点、request/response、sticky message 和调用追踪；属于消息/脚本互操作的专项次级参考，不直接并入插件。
 - GenericStorages 固定在 `Reference\GenericStorages`，来源为 `https://github.com/UnrealBytes/GenericStorages.git`。它仅作为 UE registry/storage/singleton/subsystem 模板、编辑器 picker、平台持久化、权限/deep-link 与 S3 helper 的低优先级工具类参考；不是 AngelScript 插件架构基准或运行时依赖。
 - UECling 固定在 `Reference\UECling`，来源为 `https://github.com/Evianaive/UECling.git`。它只作为在 Unreal 中嵌入 Cling/CppInterOp、运行时 C++ 解释、REPL/notebook、Blueprint 节点与脚本生成类的低优先级横向参考；不是当前插件的运行时或构建依赖。上游未提供仓库级 LICENSE，且直接携带 LLVM/Clang 头文件，因此借鉴或分发任何实现前必须单独完成来源与许可证审查。
@@ -262,16 +266,25 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 ## Harness、子模块与 Worktree
 
-- `.agents/skills/hardness/SKILL.md` 是项目 Skill 体系入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop。
-- 当前 Hardness 核心只公开 `workspace.*`、`openspec.*` 与 `task.status`；Unreal 路由及公共 `Tools` wrapper 迁移延后到独立的 `unreal-engine-develop` change。
-- 原生 Goal 模式默认使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`；明确的 Current/直接工作留在当前 workspace，并保护已有改动。两种模式都不会自动 merge、push、publish 或删除 worktree。
+- 当前项目处于全面重构期；在用户明确解除本文件顶部限制前，所有项目 Skill 继续禁用。以下规则只记录已经准备好的 Hardness 契约，本身不构成调用授权。
+- 默认编辑位置仍是 Current/main workspace。除非用户明确要求 worktree，或明确启动了由 Goal 持有的任务，否则不要创建、切换或继续使用 worktree。一旦选择 Goal 模式，它使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`。
+- `.agents/skills/hardness/SKILL.md` 是准备好的项目 Skill 入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前核心只公开 `workspace.*`、`openspec.*` 与 `task.status`。Unreal 路由和公共 `Tools` wrapper 迁移仍延后到独立 `unreal-engine-develop` change。
 - `Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS` 与 `Tools/openspec` 都是 **git 子模块**。父 worktree 必须初始化 gitlink 记录的精确 OID；远端不再提供该对象时，只允许从已验证的本机对象库回退。
 - 先提交并标记 `Tools/openspec`。每个 release 在父仓库历史中只允许一次最终 accepted package 更新，其中包含 gitlink、manifest/docs 与 bundled `openspec.exe`；候选 EXE 不得进入父仓库提交。
-- 使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化。项目根从 Skill module 自身解析；仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
-- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`workspace.finish` 只完成 canonical Goal 的 Git 收口并报告 `GitStateComplete`；验证和 Review Gate 仍是 agent 独立负责的门禁。涉及子模块时先提交子模块，再提交父仓库 gitlink。
-- 完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
+- 临时 Skill 限制解除后，使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化。项目根从 Skill module 自身解析；仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
+- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`workspace.finish` 只完成 canonical Goal 的 Git 收口并报告 `GitStateComplete`；验证和 Review Gate 仍是 agent 独立负责的门禁。Goal 与 Current 都不会自动 merge、push、publish 或删除 worktree。
+- 目标代码位于子模块时，先提交子模块，再提交父仓库 gitlink。完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 
 ## OpenSpec 与 TODO
+
+### 2026-08-27 全面重构期说明
+
+- AngelscriptProject 当前处于**全面重构期**。现有 `openspec/specs/` 与活动 change 源自不同时期，存在粒度不一、能力边界重叠、历史目标与当前实现混杂、以及“未来目标看起来像已实现事实”等问题。不得将整个 spec 集合无差别视为权威现状；作出实现判断时必须交叉核对当前代码、测试、最新有效 change 和相关文档。
+- 重构 spec 体系时先做可信度分类：当前权威、部分有效、未来目标、重叠/冲突、纯历史记录。优先通过标记、迁移或归档澄清状态，不要未经专项 change 就批量重写、删除或将旧 spec 编译进新 Skill。
+- `Tools/openspec` 是项目跟踪的 Rust 便携版子模块。产品收敛为两个主要交付面：无 Node/npm 运行时依赖的 change/spec 生命周期与验证内核，以及复用同一 Rust 解析/校验模型的本地 Web 预览工具。Web V1 默认只读、离线，不建立第二套事实来源。
+- 项目 OpenSpec Skill 与 Rust 工具解耦，由项目或用户独立版本化、下发和维护；Rust CLI 不生成、刷新或覆盖 Skill，也不写入 `.agents/`、`.claude/`、`.cursor/` 等 Agent 配置目录。AngelscriptProject 的 Skill 继续承载 AS 插件边界、测试层、验证入口、记录约定和重构期 spec 可信度规则。
+- spec 扩展优先选择性吸收社区机制：项目 context/rules、可替换 schema、research/review/test-plan/retrospective 等 artifact、requirements-to-tasks trace 和必要的 hook/check。每项吸收必须记录来源、采用部分、拒绝部分与验证方式；不整包复制社区 schema。
+- 稳定的架构边界见 `Documents/Guides/OpenSpecSystemRefactor.md`。
 
 - `Documents/Plans/` **已废弃** — 仅保留作历史参考。所有新的计划、设计、任务跟踪与归档生命周期使用 `openspec/changes/<change>/` 下的 OpenSpec 产物。
 - 只有用户或 Goal 明确命名/拥有 OpenSpec change 时才启用 OpenSpec。便携 Rust CLI 只提供确定性记录原语；生命周期策略拆分到 `openspec-explore`、`openspec-continue-change`、`openspec-update-change`、`openspec-apply-change`、`openspec-verify-change`、`openspec-sync-specs` 与 `openspec-archive-change`。

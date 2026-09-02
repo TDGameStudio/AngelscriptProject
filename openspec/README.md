@@ -1,5 +1,7 @@
 # AngelscriptProject OpenSpec
 
+> Project Skills are temporarily disabled by `AGENTS.md` during the repository-wide refactor. The invocation section documents the prepared interface and becomes active only after that restriction is explicitly lifted.
+
 This directory is the current OpenSpec record system. The ignored `openspec-old/` directory is only a historical backup and is never scanned or migrated automatically.
 
 ## Customization

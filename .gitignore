@@ -163,5 +163,8 @@ Script/PrecompiledScript.Cache
 /openspec/changes/feature-as-typed-semantic-aot/research/native-call-export-inventory.csv
 /openspec/changes/feature-as-typed-semantic-aot/research/native-call-source-reconciliation.csv
 
+# Knot project-local downloaded skills and metadata.
+/.agent/
+
 # Retired OpenSpec tree kept locally during repository refactor.
 /openspec-old/

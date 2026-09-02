@@ -1,5 +1,7 @@
 # 子模块 Worktree 工作流
 
+> `AGENTS.md` 当前在仓库全面重构期间禁用所有项目 Skill。以下命令只记录解除该限制后启用的准备接口；在用户明确解除限制前不得调用。
+
 本文说明 Hardness 如何在 AngelscriptProject 中管理父仓库、多个子模块、Goal worktree 与 Current workspace。Hardness 只是 Skill/PowerShell 路由，不维护 daemon 或隐藏状态库。
 
 ## 模式
