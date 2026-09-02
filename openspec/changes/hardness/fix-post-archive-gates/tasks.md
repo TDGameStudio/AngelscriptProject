@@ -36,14 +36,14 @@ task_graph:
 
 ## 2. Review and closure
 
-- [ ] 2.1 Review the fixed committed snapshot — verify: `A closed independent review reports no open Critical or Required finding`
+- [x] 2.1 Review the fixed committed snapshot — verify: `A closed independent review reports no open Critical or Required finding`
   > Files: `openspec/changes/hardness/fix-post-archive-gates/attachments/reviews/review-*.md`, `openspec/changes/hardness/fix-post-archive-gates/attachments/INDEX.md`
 
   1. Bind the review to the committed implementation and evidence hashes.
   2. Check PS5/PS7 behavior, timing boundaries, cleanup containment, archive immutability, and binary/gitlink history.
   3. Resolve every blocking finding before closure.
 
-- [ ] 2.2 Synchronize the durable delta and archive the follow-up — verify: `openspec.exe validate --archived --strict --json`
+- [x] 2.2 Synchronize the durable delta and archive the follow-up — verify: `openspec.exe validate --archived --strict --json`
   > Files: `openspec/specs/hardness/core/spec.md`, `openspec/changes/hardness/fix-post-archive-gates/**`
 
   1. Merge the archive-stable gate and retained-evidence requirements into `hardness/core`.
