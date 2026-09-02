@@ -13,7 +13,7 @@ Use this skill for read-only review of recent updates in `Hazelight/UnrealEngine
 - The only files this skill may update during audit are its own state and log files, and only when the user explicitly asks to record the result.
 - Never print GitHub tokens, SSH keys, credential helper contents, or secret environment variables.
 - Use `gh` for GitHub access. If auth or repo access fails, report the exact missing prerequisite and stop.
-- If the user asks to implement a sync, route the work through `openspec-work`.
+- If the user asks to implement a sync, record it as an OpenSpec change via the `openspec` skill and implement through `openspec-apply-change`.
 - Prefer `gh api` over local clone state for freshness. Use the local clone only as an optional reference source.
 
 ## Quick Workflow

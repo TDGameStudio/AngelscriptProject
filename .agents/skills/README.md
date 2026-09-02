@@ -1,191 +1,48 @@
-# OpenSpec Skills for AngelscriptProject
+# Project Skills for AngelscriptProject
 
-## Overview
+`.agents/skills/` hosts the project-local skills. The single entry point is **`hardness`** — its route table maps task types to skill files, defines the unattended loop protocol for `Tools/RalphLoop`, and owns the feedback loop for evolving the harness. When unsure which skill applies, read `hardness/SKILL.md` first; this README does not duplicate the route table.
 
-This directory contains project-local skills that integrate [OpenSpec](https://github.com/fission-ai/openspec) (spec-driven development CLI) with [Superpowers](https://github.com/anthropics/superpowers-claude-plugins-official) (AI coding methodology plugins).
+## Architecture
 
-**How it fits together**
+**Entry / orchestration**
 
-```
-OpenSpec (what/where/when)          Superpowers (how)
-─────────────────────────           ─────────────────
-change lifecycle                    brainstorming
-artifact structure                  test-driven-development
-free-form records                   systematic-debugging
-archive                             verification-before-completion
-```
+- `hardness` — route table, loop iteration protocol, feedback protocol, and the `scripts/openspec.ps1` wrapper every OpenSpec CLI call goes through.
 
-- **OpenSpec** controls the change lifecycle and artifact outputs (proposal, specs, design, tasks) plus free-form supporting files.
-- **Superpowers** provides disciplined thinking and execution methods (brainstorming, TDD, debugging, verification).
-- The single `openspec-work` skill weaves these together: it routes Superpowers outputs into OpenSpec paths and inlines project-specific conventions directly in the skill text.
+**OpenSpec family** (record system; lightweight, no phase wall)
 
-**Project rule:** OpenSpec is the authoritative **record** system for AngelscriptProject, used in a lightweight way — not as a heavy procedural gate. Legacy `Documents/Plans/Plan_*.md` files are historical references only; do not create or extend them for active work. The current change's `tasks.md` is the working checklist, but it is a disposable living record you may rewrite freely; background notes, research, and performance/benchmark data may be stored alongside it in the change directory.
+- `openspec` — the portable Rust CLI primitive (`bin/openspec.exe`), command surface, and shared operation rules (Start / Update / Verify). Never invoke bare `openspec`: PATH resolves to the incompatible official Node CLI.
+- `openspec-schema` — the on-disk schema of both trees (change tree, specs tree) and the three-level knowledge architecture with promotion rules.
+- `openspec-continue-change` — create the next planning artifact.
+- `openspec-apply-change` — implement the task list with verification discipline.
+- `openspec-sync-specs` — merge delta specs into current specs (always agent-driven; the CLI never merges).
+- `openspec-archive-change` — the project close policy plus the archive primitive.
+- `openspec-explore` — thinking partner before decisions; structured question rounds.
 
-## Skills
+**Engineering discipline**
 
-### OpenSpec lifecycle skill
+- `test-driven-development` — TDD for any feature or bugfix.
+- `code-review/receiving-code-review`, `code-review/requesting-code-review` — review workflows.
+- `git-workflow` — worktree, branch, and commit flow (includes `NewWorktree.ps1`).
 
-OpenSpec is a lightweight **record**, not a procedural gate. `openspec-explore`, `openspec-propose`, `openspec-apply-change`, and `openspec-archive-change` have all been **merged into the single `openspec-work` skill** — there is no phase wall between exploring, proposing, implementing, and closing.
+**Domain knowledge**
 
-| Skill | Trigger | Phase | Description |
-|-------|---------|-------|-------------|
-| `openspec-work` | `/opsx:work` (also `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, and the `/openspec:` equivalents) | Explore + Record + Implement + Archive | One flow for the whole lifecycle. Supports explore/think-only sessions (no change created), plan-only deliverables (a thorough, ready-to-execute plan at `superpowers:writing-plans` quality, then stop without implementing), record-while-implementing, continuing an existing change, or archiving a finished one. Record depth follows intent — plan-only is thorough, implement-now can start lean. Explore/think uses `superpowers:brainstorming`. Plans are disposable; edit artifacts and code together. Archiving is an ordinary closing action (`openspec archive "<name>"`), not a gate. |
+- `angelscript-test-guide` — C++ automation test patterns (CQTest, inline AS fixtures).
+- `unreal-engine-develop` — build/test/commandlet entry points and UE knowledge.
+- `unreal-engine-debug` — WIP placeholder, not yet activated.
+- `hazelight-update-audit` — upstream update comparison and sync decisions.
 
-### Auxiliary skills
+**Presentation**
 
-Auxiliary skills are NOT part of the OpenSpec lifecycle and do not own a slash command. They are read IMMEDIATELY by the lifecycle skills (typically `openspec-work` during TDD steps) or directly by the developer when a matching task surfaces. They never alter the OpenSpec change state.
+- `visual-explain`, `external/archify`, `external/tiddlywiki-wikitext`, `web/*`.
 
-| Skill | Trigger | Phase | Description |
-|-------|---------|-------|-------------|
-| `angelscript-test-guide` _(WIP — disabled)_ | Currently disabled; directory renamed to `_angelscript-test-guide/` so the skill loader cannot discover `SKILL.md` | Implement (test layer) | Pattern handbook for picking the test layer, helper, template, and applying Positive/Negative/Boundary/RoundTrip/Exception coverage. Re-enable by restoring the directory name to `angelscript-test-guide/`. |
+## Project rules
 
-## Lifecycle Flow
+- OpenSpec is the authoritative **record** system. `Documents/Plans/` is legacy, historical reference only.
+- Change IDs are `<domain>/<leaf>`; the leaf follows `<type>-<scope>-<outcome>` in lowercase kebab-case with type one of `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, `chore` (`feature`, not `feat`; Git commits may still use `Feat`). Choose `refactor` for structural boundary/module-shape changes, `improve` for quality/diagnostics/performance work without structural reshaping.
+- Removed skills — never follow if they resurface in history: `openspec-work`, `openspec-Implementation`, `openspec-replan`. The global Superpowers plugin dependency is being internalized into project-local skills; do not add new hard dependencies on `superpowers:*` names.
 
-```
-                openspec-work (one skill, whole lifecycle)
-  ┌───────────────────────────────────────────────────────────┐
-  │  explore/think ──► record ◄──┐                             │
-  │  (brainstorming)     │       │  iterate: edit artifacts +  │
-  │                      └───────┘  code together, overturn    │
-  │                      │          the plan freely            │
-  │                      ▼                                      │
-  │                  archive  (openspec archive "<name>";       │
-  │                            ordinary closing action, no gate)│
-  └───────────────────────────────────────────────────────────┘
+## Maintenance
 
-Explore/think-only is a valid session (no change need be created).
-Plan-only is also valid: produce a thorough, ready-to-execute plan
-(writing-plans quality) and stop — implement later on the same change.
-Superpowers methods (brainstorming, TDD, systematic-debugging,
-verification-before-completion) are used actively throughout.
-What is relaxed is OpenSpec's own ceremony, not the engineering discipline.
-Verify at key milestones (not every step); verification may be a task in tasks.md.
-```
-
-Note: `openspec-work` supports stopping after recording only — either a lean record or a full plan-only deliverable — with no implementation yet. Implementation can continue later, or in another session, on the same change. Record depth follows intent: plan-only should be thorough, not a skeleton.
-
-## Prerequisites
-
-### OpenSpec CLI
-
-```powershell
-# Verify installation
-openspec --version
-
-# Should output 1.x.x
-```
-
-If not installed, install via npm:
-
-```powershell
-npm install -g @fission-ai/openspec
-```
-
-### Superpowers Plugin
-
-Superpowers must be installed as a Claude Code plugin. The skills reference these Superpowers skills:
-
-- `superpowers:brainstorming` — requirement discovery and design thinking
-- `superpowers:writing-plans` — plan structure and task decomposition methods
-- `superpowers:test-driven-development` — TDD discipline for implementation
-- `superpowers:systematic-debugging` — root cause investigation
-- `superpowers:verification-before-completion` — evidence before claims
-- `superpowers:finishing-a-development-branch` — branch completion options
-- `superpowers:using-git-worktrees` — worktree isolation guidance
-- `superpowers:receiving-code-review` / `superpowers:requesting-code-review` — review workflows
-
-## Platform Compatibility
-
-| Platform | Status | Notes |
-|----------|--------|-------|
-| Codex | Primary | Skills live in `.codex/skills/`, auto-discovered |
-| Claude Code | Manual | `.codex/skills/` is not auto-discovered; requires `.claude/commands/` wrappers or CLAUDE.md references |
-| Cursor | Separate | `.cursor/skills/` has its own skills (e.g., `full-test-suite`) |
-
-## Upgrading
-
-### OpenSpec CLI Upgrade
-
-```powershell
-# Upgrade CLI
-npm update -g @fission-ai/openspec
-
-# Sync instruction files after upgrade
-openspec update
-
-# Verify schema compatibility
-openspec schemas --json
-openspec templates --json
-```
-
-After CLI upgrade, check:
-1. Schema structure unchanged (`openspec templates --json` shows same artifact IDs)
-2. `openspec instructions <artifact> --change "<name>" --json` returns expected fields (`outputPath`, `template`, `instruction`, `dependencies`, `unlocks`)
-3. `openspec validate --all --json` passes on any existing changes
-
-### Superpowers Plugin Upgrade
-
-Superpowers is managed externally by the plugin system. After upgrade:
-1. Check if referenced skill names still exist (e.g., `superpowers:brainstorming`)
-2. Verify default output paths haven't changed (adapters override `docs/superpowers/specs/` and `docs/superpowers/plans/`)
-3. If new methods are added, evaluate whether `openspec-work` should reference them
-
-### Skill Maintenance
-
-When modifying the skill:
-- `openspec-work` references Superpowers methods inline in its step text — adjust those references to change how Superpowers integrates with OpenSpec.
-- Step numbering must be sequential within the skill.
-- References should use the skill name (`openspec-work`) as primary, with `/opsx:` as supplementary.
-- Project test/build conventions are inlined in `openspec-work`'s "Record the change" and project-test-conventions text — update these when `Documents/Guides/TestConventions.md` or `Documents/Guides/Test.md` change.
-- Both copies of the skill (`.claude/skills/` and `.agents/skills/`) must be kept identical; verify with `Get-FileHash` after edits.
-
-## Project Conventions Injected
-
-These skills inject the following project-specific knowledge that Superpowers does not have:
-
-### Test Conventions (from `Documents/Guides/TestConventions.md`)
-- Test layer matrix (Runtime CppTests / Editor / Native Core / Runtime Integration / UE Functional / Bindings CQTest / Learning)
-- File naming: `Angelscript` prefix required
-- Automation prefix: theme-first for functional, layer-first for native/learning
-- Harness: `FAngelscriptTestWorld`, `FCoverageModuleScope`, `AngelscriptNativeTestSupport.h`
-- Templates in `Plugins/Angelscript/Source/AngelscriptTest/Template/`
-
-### Build Conventions (from `Documents/Guides/Build.md`)
-- Only `Tools\RunBuild.ps1` as build entry point
-- Never hand-write UBT/Build.bat/RunUBT.bat commands
-- Timeout constraints and `-NoXGE` / `-SerializeByEngine` rules
-
-### Test Execution (from `Documents/Guides/Test.md`)
-- Only `Tools\RunTests.ps1` and `Tools\RunTestSuite.ps1` as test entry points
-- Standard groups and suites
-- CQTest framework patterns
-
-### OpenSpec Change Names
-- Format: `<type>-<scope>-<outcome>` in lowercase kebab-case.
-- Allowed type prefixes: `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, `chore`.
-- Use `feature` rather than `feat`; Git commits may still use `Feat`.
-- Choose `refactor` for structural boundary/dependency/module-shape changes, and `improve` for quality, diagnostics, performance, readability, or ergonomics improvements without major structural reshaping.
-
-## Troubleshooting
-
-### "openspec: command not found"
-
-CLI not in PATH. Install or check scoop/npm/nvm setup.
-
-### "No active changes" when expecting one
-
-Check you're in the right directory. OpenSpec discovers changes relative to project root (where `openspec/` lives).
-
-### Validate reports errors after propose
-
-Read the JSON output from `openspec validate "<name>" --strict --json`. Common issues:
-- Missing `## Capabilities` in proposal.md
-- Spec file name doesn't match kebab-case capability name in proposal
-- tasks.md missing checkbox syntax
-
-### Skills not triggering in Claude Code
-
-`.codex/skills/` is not auto-discovered by Claude Code. Either:
-- Add wrapper commands in `.claude/commands/`
-- Reference skill paths in CLAUDE.md
-- Use Codex as the primary platform for OpenSpec workflows
+- Routing or protocol changes land in the `hardness` route table with a version bump, via its feedback review process (developer-attended sessions only).
+- CLI upgrades: rebuild from the `Tools/openspec` submodule and refresh the bundled `openspec/bin/openspec.exe` copy — procedure in the `openspec` skill.
+- Skills are maintained in English; a `_ZH` mirror exists only where intentionally kept in sync (`hardness`, `openspec`). When they conflict, `SKILL.md` wins.
