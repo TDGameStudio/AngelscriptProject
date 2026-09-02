@@ -2,9 +2,11 @@
 
 This guide describes the implemented incremental Cache V2 contract for Editor, PIE, Development, Shipping, and StaticJIT routing. The Chinese guide, maintained first for this repository, is `Documents/Guides/AngelscriptCacheV2_ZH.md`. Design rationale and the complete change-classification model live in `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`. Cache test-suite structure problems are reviewed in `Documents/Guides/CacheV2TestReview_20260813.md`. A Chinese walkthrough (plain-language overview, process cases including a failed startup recompile, force-recompile commands, and how to measure cold vs warm startup) is in `Documents/Knowledges/ZH/RT_CacheV2.md`.
 
+> **Current product status (2026-08-24):** Cache V2 is a retained experimental feature and is disabled by default pending a possible redesign. A default Engine does not attempt ExactStartup/cross-Engine restore, compile or Hot Reload capture, or shutdown persistence; it compiles authoritative `.as` source directly. The Pack, restore, incremental, and Runtime-reload sections below describe the explicitly enabled prototype and are not canonical-compiler cutover prerequisites.
+
 ## Purpose and authority
 
-Cache V2 persists previously validated AngelScript compilation artifacts as content-addressed records. A first launch with no valid generation compiles the authoritative source normally and publishes a cache. A later exact launch restores it; a changed launch reuses only records whose identities and current dependency fingerprints still match.
+When explicitly enabled, Cache V2 persists previously validated AngelScript compilation artifacts as content-addressed records. A first launch with no valid generation compiles the authoritative source normally and publishes a cache. A later exact launch restores it; a changed launch reuses only records whose identities and current dependency fingerprints still match. With product defaults, all Cache restore/capture/persistence steps are bypassed.
 
 Loose `.as` source remains the correctness authority. Corrupt bytes, incompatible schema/profile/context, source mismatch, or failed dependency validation becomes a typed miss or startup failure. The loader never runs a stale generation for different source merely to keep the process alive.
 
@@ -23,6 +25,9 @@ One `.as` file is neither a permanently indivisible cache unit nor expanded into
 | `FunctionBody` | stable function identity, input digest, VM execution, actual dependencies | body, call ABI, or dependency fingerprint change |
 | `DebugSidecar` | line/source mapping | line mapping or debug-profile change; may be omitted in Shipping |
 | `ModuleSnapshot` | complete record set needed to restore one module | any required record or assembly relationship changes |
+| `ASTBodySidecar` (kind 8) | pointer-free sealed canonical AST body for retain-policy restore | function-body rebuild, type/decl remap failure, or verifier-invalid fragment |
+
+`ASTBodySidecar` never replaces `FunctionBody` and is never written into `SaveByteCode`. Discard-policy restore loads VM state and ignores sidecars. Retain-policy ExactStartup restore republishes one complete verified module AST without preprocess/parse/Sema/Bytecode CodeGen. There is no `TypedHIRSidecar` record kind.
 
 Records can therefore be reused independently while module restoration and activation remain atomic. A partially old and partially new module is never exposed to the Engine.
 
@@ -78,7 +83,7 @@ Packs and Manifests are immutable and content-addressed. Small pointer files are
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `bEnableCacheV2` | `true` | produce and consume Cache V2 |
+| `bEnableCacheV2` | `false` | experimental opt-in; produce and consume Cache V2 only when explicitly enabled |
 | `ShutdownFlushTimeoutSeconds` | `5.0` | maximum bounded shutdown wait |
 | `PackTargetMiB` | `64` | canonical raw-byte target per immutable Pack, range 1..256 MiB |
 | `bEnableParallelPreparation` | `true` | compress immutable records and build independent Packs concurrently |
@@ -100,6 +105,8 @@ Diagnostic and benchmark process overrides are:
 ```
 
 The normal production writer uses a 64 MiB target and at most four bounded workers. Workers only touch immutable DTOs, compression, and independent Pack assembly. Declarations, type/layout materialization, globals/initializers, module swap, ClassGenerator, stable routes, and generation selection remain serialized by the per-Engine mutation gate. Forced-serial and bounded-parallel preparation must emit byte-identical Packs, Manifests, RecordIds, and GenerationIds.
+
+The process overrides above configure diagnostics, paths, or writer behavior; they do not implicitly enable Cache V2. Enable `bEnableCacheV2` in Project Settings before using the prototype. Focused Cache automation uses a per-Engine override so the product default remains untouched.
 
 ## Runtime diagnostics
 

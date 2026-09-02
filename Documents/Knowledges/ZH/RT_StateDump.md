@@ -25,6 +25,8 @@
 
 本文聚焦一个核心问题：**`FAngelscriptStateDump::DumpAll()` 是如何把整个 `FAngelscriptEngine` 的运行时状态以 27 张 CSV 表的形式同步落盘的？它如何在不破坏"纯外部观察者"原则的前提下接受 Editor 模块的扩展、并被 Test 模块通过控制台命令复用？**
 
+canonical AST、Sema、Bytecode CodeGen 和 Runtime/Editor 类都不拥有 dump。State dump 与开发者 AST/HIR dump 只做只读观察，不能成为 Cache、Provider 或编译输入。公开 snapshot 诊断只报告 origin/version/generation/current/verification，不暴露节点地址。
+
 `Arch_EditorTestDumpCollaboration.md` 已经从"协作边界"角度完整列出了 27 张表的命名与所属 Phase（详见该文 §3.2），并定义了"Editor 不动 Runtime 私有字段"的契约。本文不重复那份清单，转而从实现侧给出：
 
 ```text

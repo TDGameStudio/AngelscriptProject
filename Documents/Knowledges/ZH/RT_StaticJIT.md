@@ -19,6 +19,7 @@ JIT → VM”选择；两个 backend 体系不会互相替换 compiler，也不�
 含糊的 backend 基类。
 
 所以这里虽然沿用 `StaticJIT` 名称，本质上是 **静态 AOT 代码生成 + 运行期稳定身份路由**，不是 LLVM、asmjit 那种运行时生成机器码的传统 JIT。
+TypedASTJIT 在有密封 AST 快照时可以消费它；HIR oracle 仍在，生产默认不捕获 sidecar HIR。匹配 profile 的 Generate 租用主引擎已编译图/AST，不会为同一 profile 另起编译引擎。
 Runtime JIT 才是运行进程内生成可执行代码的扩展点，但首版只支持保守的
 whole-function `VMEntry`，不生成 Raw/Parms 入口，也不进入 Cache V2 或
 Static Provider。

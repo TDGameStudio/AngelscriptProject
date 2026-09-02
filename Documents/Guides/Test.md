@@ -1,5 +1,7 @@
 # Test 指南
 
+canonical AST 回归入口包括 Native SDK `Angelscript.TestModule.AngelScriptSDK.Compiler.CanonicalAST`、Cache AST sidecar、Hot Reload snapshot leases、StaticJIT TypedASTJIT，以及 Standalone CTest `AngelscriptStandalone.CanonicalAST`。公开契约见 `Documents/Guides/AngelscriptCanonicalAST.md`。
+
 当前测试框架问题、覆盖缺口和官方 suite 口径见 `Documents/Guides/TestFrameworkReview_20260813.md`。并行/Fast 入口契约见同日的 `Documents/Guides/TestBuildPowerShellToolingReview_20260813.md`。
 
 ## 强制规则

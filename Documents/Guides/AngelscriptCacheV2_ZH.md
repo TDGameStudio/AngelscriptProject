@@ -2,9 +2,11 @@
 
 本文面向插件使用者和维护者，说明增量 Cache V2 在 Editor、PIE、Development、Shipping 与 StaticJIT 路由中的实际职责、磁盘布局、配置、调试入口和验证方法。完整设计推导与变更分类见 `openspec/changes/refactor-as-incremental-function-cache/cache-v2-flow-and-change-classification.md`。通俗总览、强制重编、启动编挂、冷/热启动怎么量以及测试/依赖说明见 `Documents/Knowledges/ZH/RT_CacheV2.md`。Cache 测试树的结构问题见 `Documents/Guides/CacheV2TestReview_20260813.md`。
 
+> **当前产品状态（2026-08-24）**：Cache V2 是保留的实验功能，默认关闭，后续可能重新设计。默认路径不会尝试 ExactStartup/跨 Engine 恢复，不会在 initial compile 或 Hot Reload 后捕获 Cache，也不会在 shutdown 落盘；它直接从权威 `.as` 源码编译。下面关于 Pack、恢复、增量和运行时 reload 的章节描述显式开启后的现有原型，不代表这些能力已经成为新版 AST/编译器切换的生产前提。
+
 ## 0. 通俗总览
 
-Cache V2 是脚本编译结果的仓库，不是一个大 `.cache` 文件。`.as` 永远是对的；对不上就重编，绝不拿过期代码充数。
+显式开启时，Cache V2 是脚本编译结果的仓库，不是一个大 `.cache` 文件。默认关闭时这一环完全绕过。无论是否开启，`.as` 永远是对的；对不上就重编，绝不拿过期代码充数。
 
 - **CompatibilityHash / ContextHash**：进哪栋仓库（机芯/格式 vs Editor·Shipping·自动 import 等设定）。改 `.as` 不换这两层目录。
 - **七种货**：进货清单、模块对外说明书、类型样子、全局状态、函数能跑的那包、行号、模块购物小票。字节码在 FunctionBody 里。
@@ -16,7 +18,7 @@ Cache V2 是脚本编译结果的仓库，不是一个大 `.cache` 文件。`.as
 
 ## 1. 它解决什么问题
 
-Cache V2 把 AngelScript 启动时已经验证过的编译产物保存为内容寻址、可增量复用的记录。第一次启动没有合法缓存时，源码仍按正常流程编译；编译成功后生成缓存。后续启动优先尝试精确恢复，源码或环境变化时只复用仍然有效的记录并重新编译失效部分。
+显式开启 Cache V2 后，它把 AngelScript 启动时已经验证过的编译产物保存为内容寻址、可增量复用的记录。第一次启动没有合法缓存时，源码仍按正常流程编译；编译成功后生成缓存。后续启动优先尝试精确恢复，源码或环境变化时只复用仍然有效的记录并重新编译失效部分。产品默认关闭时不执行这些 capture/restore/persist 步骤。
 
 源码永远是正确性权威。缓存损坏、版本不兼容、源码身份不匹配或依赖验证失败都会转成类型化 miss 或启动失败，不会为了“尽量启动”而执行另一份旧源码对应的缓存。
 
@@ -35,6 +37,9 @@ Cache V2 不把一个 `.as` 文件简单保存成一个不可拆分的大对象�
 | `FunctionBody` | 稳定函数身份、输入摘要、VM 执行产物和实际依赖 | 函数逻辑、调用 ABI 或实际依赖 fingerprint 变化 |
 | `DebugSidecar` | 行号、源码映射等调试信息 | 行映射或 debug profile 变化；Shipping 可省略 |
 | `ModuleSnapshot` | 一个可恢复模块引用的完整记录集合 | 任一必需组成记录或模块装配关系变化 |
+| `ASTBodySidecar`（kind 8） | retain 策略下的无指针密封 canonical AST 函数体 | 函数体重编、类型/声明无法 remap、或 verifier 失败 |
+
+`ASTBodySidecar` 不替换 `FunctionBody`，也不会写入 `SaveByteCode`。discard 恢复只装 VM 状态并忽略 sidecar；retain 的 ExactStartup 恢复会发布一份完整已验证模块 AST，且不再预处理/解析/Sema/Bytecode CodeGen。没有 `TypedHIRSidecar` 记录种类。
 
 因此“模块是恢复和激活的原子单元”与“函数、类型、模块状态可以独立复用”可以同时成立。恢复不会把半个新模块和半个旧模块暴露给 Engine。
 
@@ -100,7 +105,7 @@ Project Settings 中的 `AngelScript Incremental Cache` 对应 `UAngelscriptCach
 
 | 设置 | 默认值 | 说明 |
 | --- | ---: | --- |
-| `bEnableCacheV2` | `true` | Editor 与 packaged runtime 生成/消费 Cache V2 |
+| `bEnableCacheV2` | `false` | 实验开关；显式开启后 Editor 与 packaged runtime 才生成/消费 Cache V2 |
 | `ShutdownFlushTimeoutSeconds` | `5.0` | shutdown 等待已冻结发布的最长秒数 |
 | `PackTargetMiB` | `64` | 每个不可变 Pack 的 canonical raw byte 目标，范围 1..256 MiB |
 | `bEnableParallelPreparation` | `true` | 并行压缩不可变 records 并构建互相独立的 Packs |
@@ -120,6 +125,8 @@ Project Settings 中的 `AngelScript Incremental Cache` 对应 `UAngelscriptCach
 -as-cache-preparation-workers=<1..64>
 -as-cache-force-serial-preparation
 ```
+
+这些 process 参数只调整诊断、路径或 writer 行为，不会隐式开启 Cache V2。需要使用原型时，先在 Project Settings 中显式设置 `bEnableCacheV2=true`；Cache 专项自动化测试使用 per-Engine override，避免污染产品默认值。
 
 正常生产策略是 64 MiB、最多 4 个 worker 的 bounded parallel preparation。worker 只处理不可变 DTO、压缩和独立 Pack 构造，不调用 AngelScript Engine API，也不读取可变 descriptor。声明创建、类型/layout materialization、globals/initializers、module swap、ClassGenerator、stable route 和 generation 选择仍由每 Engine mutation gate 串行化。forced-serial 和并行模式必须产生 byte-identical Pack、Manifest、RecordId 和 GenerationId。
 

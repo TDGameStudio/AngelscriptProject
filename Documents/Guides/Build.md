@@ -1,5 +1,7 @@
 # Build 指南
 
+新引擎仍默认 `asCOMPILER_PIPELINE_LEGACY`；嵌入方可以在编译前显式选择 `asCOMPILER_PIPELINE_CANONICAL`。显式 CANONICAL `Build()` 已从 sealed AST 调用 `asCBytecodeCodeGen::Generate()`，`CompileFunction()` 使用临时 sealed function closure 和 `GenerateFunction()`；不支持的形式 fail-closed，不能静默借用 `asCCompiler`。`IsCanonicalBytecodeCodeGenReady()` 表示当前 Engine 已显式选择 CANONICAL 且后端入口可用，不代表产品默认切换门槛已经闭合。Standalone CMake 必须编进同一套 maintained fork 源，且不得链接 LLVM/Clang。公开契约见 `Documents/Guides/AngelscriptCanonicalAST.md`。
+
 ## 强制规则
 
 - 本仓库的标准构建入口只有 `Tools\RunBuild.ps1`。

@@ -25,6 +25,10 @@
 ├── AS_ScriptEngine.md                     // asCScriptEngine 核心架构
 ├── AS_TypeRegistration.md                 // 类型注册 API
 ├── AS_Compiler.md                         // asCCompiler 编译流程
+├── AS_CanonicalTypedAST.md                // canonical 密封 typed AST、公开 V1、Bytecode CodeGen
+├── AS_TypedSemanticHIR.md                 // Typed Semantic HIR：语义快照、验证、TypedASTJIT 输入与回退边界
+├── AS_TypedSemanticHIRToLLVM.md           // Typed Semantic HIR 到 LLVM IR：分层、cppvm/ORC 对比、难度与验证路线
+├── AS_TypedSemanticHIRLLVMDiscussionLog.md // HIR / canonical AST / Lexer / LLVM / JIT 会话记录：问题、OpenSpec、证据与决策
 ├── AS_Parser.md                           // asCParser 解析器
 ├── AS_ByteCode.md                         // 字节码指令集
 ├── AS_VirtualMachine.md                   // asCContext 虚拟机
@@ -108,6 +112,7 @@
 ├── Diff_AngelseaRuntimeJIT.md              // Angelsea MIR Runtime JIT、统一 coordinator、LLVM 并行后端与 UE 接入边界
 ├── Diff_DaslangAngelseaJIT.md              // Daslang AST/LLVM JIT、LLVM 动态接入与 Angelsea 字节码 JIT 对比
 ├── Diff_DaslangAngelScriptInterpreterPerformance.md // Daslang SimNode/Fusion 解释器性能原理与本项目 AS 对比
+├── Diff_DaslangSemanticHashCacheV2.md       // Daslang / AngelScript 持续架构对比：Semantic Hash、Cache V2、词法前端与讨论决策
 ├── Diff_HazelightDefaultStatement.md       // default 语句实现与 Hazelight 引擎的偏离分析
 ├── Diff_HazelightInsightsToBorrow.md       // 全插件视角：Hazelight 中可借鉴的设计点汇总
 └── Diff_VerseArchitecture.md               // Verse vs AS 插件：语言/编译器/VM/反射/GC/并发架构差异 + 优劣判断与选型指南 + 优劣判断与选型指南

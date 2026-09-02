@@ -15,7 +15,9 @@
 
 ## 概览
 
-AngelScript 的编译分为两个层次：**asCBuilder** 负责多阶段构建编排（解析 → 类型注册 → 布局 → 编译），**asCCompiler** 负责单个函数的 AST → 字节码代码生成。`as_compiler.cpp` 以 604 KB / 18945 行成为整个引擎中最大的文件，其复杂性主要来自表达式编译、隐式转换和重载决议。
+当前生产默认是 **LEGACY 流水线**。新引擎默认 `asCOMPILER_PIPELINE_LEGACY`。`asCOMPILER_PIPELINE_CANONICAL` 是可选的捕获/旁路挂接，直到 `asCModule::Build()` 从 `asCBytecodeCodeGen::Generate()` 发布字节码；`IsCanonicalBytecodeCodeGenReady()` 当前为 false。生产字节码仍由 `asCCompiler` 发出。`asCBytecodeCodeGen` 是隔离的只读后端，覆盖已实现的语言子集，不是公开 dual 选择。HIR oracle 仍在，默认不捕获。LLVM 不是目标。公开契约见 `Documents/Guides/AngelscriptCanonicalAST.md`。
+
+AngelScript 的编译分为两个层次：**asCBuilder** 负责多阶段构建编排（解析 → 类型注册 → 布局 → 编译），**asCCompiler** 负责单个函数的语法树 → 字节码代码生成。`as_compiler.cpp` 以 604 KB / 18945 行成为整个引擎中最大的文件，其复杂性主要来自表达式编译、隐式转换和重载决议。
 
 ---
 

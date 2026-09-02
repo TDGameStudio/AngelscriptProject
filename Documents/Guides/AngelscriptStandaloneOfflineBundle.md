@@ -6,7 +6,7 @@
 
 - 导出发生在引擎配置、手写 Binding、UHT 生成 Binding、反射回退、可选插件注册和当前成功脚本编译之后。
 - 导出器只观察最终 `FAngelscriptEngine` / `asIScriptEngine`；`Bind_*.cpp`、ClassGenerator 和第三方 Binding 不需要添加 standalone 分支、宏或导出调用。
-- Standalone 进程只读取 JSON 文件，不加载 Unreal Engine、项目 DLL、插件 DLL、UObject 或 Asset Registry。
+- Standalone 进程只读取 JSON 文件，不加载 Unreal Engine、项目 DLL、插件 DLL、UObject 或 Asset Registry。它编译同一套 maintained fork（含 Parser/Sema/密封 AST 脚手架）。新引擎默认 `asCOMPILER_PIPELINE_LEGACY`；`asCOMPILER_PIPELINE_CANONICAL` 是可选的捕获/旁路挂接，直到 `Build()` 从 `asCBytecodeCodeGen::Generate()` 发布。`IsCanonicalBytecodeCodeGenReady()` 当前为 false。生产字节码仍由 `asCCompiler` 发出。不链接 LLVM/Clang。
 - Bundle 不记录原生函数地址、对象地址、C++ 源码、AngelScript 源文、函数体、字节码、资产 payload 或可变 Editor 状态。
 - JSON 中的稳定 ID 来自规范化语义身份，不使用进程内 type/function ID，因此不受 ASLR、热重载和原生地址变化影响。
 

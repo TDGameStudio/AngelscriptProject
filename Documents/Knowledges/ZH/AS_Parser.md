@@ -15,7 +15,9 @@
 
 ## 概览
 
-`asCParser` 是 AngelScript 的手写**递归下降解析器**，负责将 Token 流转换为 `asCScriptNode` AST 树。它的核心难点在于**声明 vs 函数歧义的消解**——通过 `IsVarDecl()` / `IsFuncDecl()` / `IsVirtualPropertyDecl()` 三个前瞻函数实现无回溯的 LL(k) 解析。源码中内嵌了 51 条 BNF 规则注释，构成了完整的语言形式文法。
+生产默认仍是 `asCOMPILER_PIPELINE_LEGACY`：Parser 产出 `asCScriptNode` 语法树，由 `asCCompiler` 发出生产字节码。可选的 `asCOMPILER_PIPELINE_CANONICAL` 捕获挂接可在解析同时通过 Sema 动作填充密封 typed AST，但在 `Build()` 从 `asCBytecodeCodeGen::Generate()` 发布之前，`IsCanonicalBytecodeCodeGenReady()` 为 false。`ScriptFunctionData` 不保存解析器节点。公开 AST V1 是不透明 snapshot ID，不是具体节点 ABI。HIR oracle 仍在，默认不捕获。
+
+`asCParser` 是 AngelScript 的手写**递归下降解析器**，负责将 Token 流转换为 `asCScriptNode` 语法树。它的核心难点在于**声明 vs 函数歧义的消解**——通过 `IsVarDecl()` / `IsFuncDecl()` / `IsVirtualPropertyDecl()` 三个前瞻函数实现无回溯的 LL(k) 解析。源码中内嵌了 51 条 BNF 规则注释，构成了完整的语言形式文法。
 
 ---
 

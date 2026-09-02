@@ -5,13 +5,15 @@
 > 规范与变更分类以归档 OpenSpec `openspec/changes/archive/2026-08-11-refactor-as-incremental-function-cache/` 为准。
 > 测试树结构问题见 `Documents/Guides/CacheV2TestReview_20260813.md`。
 
+> **2026-08-24 状态更新**：Cache V2 当前作为实验原型保留，但产品默认关闭，后续可能独立重新设计。默认 Engine 直接从 `.as` 源码编译，不做 ExactStartup/跨 Engine 恢复、编译/Hot Reload capture 或 shutdown persistence。本文其余“仓库”流程均应理解为显式开启后的现有实现和研究资料，不是当前 canonical AST 切换的阻塞项。
+
 本文先给通俗总览，再写测试分层、改动分类、磁盘/字节码、互相依赖、自动 import、强制重编、启动编挂和冷/热启动怎么量。
 
 ---
 
 ## 0. 通俗总览
 
-把它想成一套 **脚本编译结果的智能仓库**，目的只有一个：下次启动或热更时少编一点，又绝对不能拿错过期的代码去跑。
+显式开启时，可以把它想成一套 **脚本编译结果的智能仓库**，目的只有一个：下次启动或热更时少编一点，又绝对不能拿错过期的代码去跑。默认关闭时，编译链不会经过这座仓库。
 
 AngelScript 从 `.as` 编到能跑，要预处理、解析、生成类型、编函数。项目一大，全编会很慢。旧办法是打成 **一个大包裹** `PrecompiledScript.Cache`：声明、类型、全局、所有函数的字节码搅在一起。改一个 `Tick`，整包都很难只留下其余部分。新 Cache 换成 **仓库**：货按种类分开放，改了哪包只换哪包；没改的继续用货架上原来那一段。
 
@@ -48,6 +50,7 @@ Saved/Angelscript/CacheV2/
 | FunctionBody | 一个函数真正能跑的那包（字节码 + 它用过谁） |
 | DebugSidecar | 这个函数的行号，和能不能跑分开存，Shipping 可以没有 |
 | ModuleSnapshot | 购物小票：这个模块是由上面哪些货组装成的 |
+| ASTBodySidecar | retain 策略才有的密封 canonical AST 函数体（kind 8）。它不是字节码，也不进 `SaveByteCode`。默认不捕获 sidecar HIR。 |
 
 记货、复用可以很细（按函数、按类型）。端给引擎用必须整模块一起上：不能新类型 + 旧全局 + 一半新函数混成正在跑的模块。函数的字节码就在 FunctionBody 那包货里。
 

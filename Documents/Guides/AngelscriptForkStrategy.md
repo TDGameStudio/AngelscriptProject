@@ -8,6 +8,12 @@
 
 1.x 运行时遵循 SemVer 兼容规则：请求版本与运行时主版本相同且请求版本不高于运行时版本时允许创建引擎。破坏公共 C API 或 ABI 的更改必须提升主版本，不能伪装成兼容的 minor 或 patch 更新。
 
+## Canonical typed AST
+
+The maintained fork now has a Clang-shaped frontend scaffold (`SourceManager` → Parser Sema actions → interned typed AST) plus an isolated read-only Bytecode CodeGen backend. New engines default to `asCOMPILER_PIPELINE_LEGACY`. `asCOMPILER_PIPELINE_CANONICAL` is a selectable capture/shadow attach; `IsCanonicalBytecodeCodeGenReady()` stays false until `Build()` publishes from `asCBytecodeCodeGen::Generate()`. LLVM/Clang remain research-only: production and Standalone must not link, include, or copy `llvm::` / `clangAST` types. Public AST V1 is opaque snapshot IDs, not a concrete node ABI. Cache AST bodies are pointer-free `ASTBodySidecar` records and are never mixed into `SaveByteCode` / VM FunctionBody. TypedASTJIT may consume a sealed AST when present; sidecar HIR capture stays off by default.
+
+Embedding clients, retention timing, snapshot leases, Cache/`SaveByteCode` boundaries, and residual internals are documented in `Documents/Guides/AngelscriptCanonicalAST.md`. That note is the public-API migration record for this cutover.
+
 ## 核心定位
 
 **当前 ThirdParty/angelscript 已经是一个深度定制的 fork，不是、也不再可能是 vanilla AngelScript 的某个版本。**

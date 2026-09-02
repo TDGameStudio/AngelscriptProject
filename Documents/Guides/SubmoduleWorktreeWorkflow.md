@@ -11,7 +11,7 @@
 | `Plugins/Angelscript` | `TDGameStudio/UnrealAngelscriptPlugin` | 核心插件，绝大多数代码改动在此 |
 | `Plugins/AngelscriptGAS` | `TDGameStudio/AngelscriptGAS` | GAS 扩展插件 |
 | `Wiki` | `TDGameStudio/AngelscriptWiki` | 独立 TiddlyWiki 工作区与后续 AS Wiki 内容 |
-| `Tools/openspec` | `TDGameStudio/openspec` | 便携 OpenSpec Rust CLI；工具源码，不是项目根目录 `openspec/` 规格数据 |
+| `Tools/openspec` | `TDGameStudio/openspec` | 便携 OpenSpec Rust 生命周期/验证内核与 Web 预览工具；独立 Skill 不由它生成；工具源码不是项目根目录 `openspec/` 规格数据 |
 
 `git worktree add` 只处理父仓库的工作树，**不会自动初始化或检出子模块**。新 worktree 中子模块目录只有 gitlink 占位，没有源码。直接构建或访问源码会失败。
 
@@ -202,6 +202,14 @@ git rm --cached <stale-path>
 ### `git status` 显示 `D` 或 `M` 的子模块条目
 
 策略 B/C 的预期行为。提交时只暂存实际改动文件，不要全量 `git add .`。
+
+### UBT 报 `action paths are longer than 260 characters`
+
+这不是 C++ 编译错误，也不是引擎路径问题。UHT 往往已经成功，随后 `ActionGraph.CheckPathLengths` 在启动 `cl.exe` 前拒绝任何超过 260 字符的 action 路径。提示里的 “move the engine” 具有误导性：本仓库触发点几乎总是 worktree 前缀太长，叠加 UHT 生成的 `AS_FunctionBinding_*_Aggregator.cpp` 或 Native SDK 深层测试文件名。
+
+处理方式与 `D:\as-lns` 相同：为该 worktree 建短路径 junction，并把 **仅该 worktree** 的 `AgentConfig.ini` `Paths.ProjectFile` 指到 junction 下的 `.uproject`，然后通过短路径调用 `Tools\RunBuild.ps1`。不要改主工作区配置，也不要为了过这个检查去改生成物文件名。
+
+完整事故记录见 `openspec/changes/refactor-as-canonical-typed-ast-compiler/attachments/worktree-max-path-build-failure.md`。
 
 ## 检查清单
 
