@@ -1,88 +1,62 @@
 ---
 name: hardness
-description: Entry harness that chains all AngelscriptProject skills together. Provides the skill route table, the unattended loop iteration protocol (RalphLoop), and the feedback loop for evolving the harness itself. Use as the first skill to read when starting an unattended agent loop iteration, when unsure which project skill applies to a task, or when recording a harness problem discovered during work.
-disable-model-invocation: true
+description: Lightweight entry router for AngelscriptProject work in native Goal mode or the current workspace. Use after project instructions enable skills, when choosing the project workflow, resuming an unattended goal, handling a replan or review gate, or invoking project OpenSpec and workspace routes.
 ---
 
-# Hardness (Harness)
+# Hardness
 
-Version: 0.2.0 (2026-09-02)
+Hardness is a skill router, not a loop runtime. Native Goal mode owns persistence and continuation; leaf skills own domain behavior. There is no daemon, database, event store, or generic async process layer.
 
-The single entry point that chains project skills together. It does three things:
+## Choose the workspace mode
 
-1. **Route** — a dispatch table mapping task types to the skill file to read.
-2. **Loop protocol** — the fixed iteration contract for unattended runs driven by `Tools/RalphLoop`.
-3. **Feedback loop** — problems found while using the harness are recorded under `feedback/`; a developer + AI session later evaluates them and updates the harness. Agents never update the harness themselves.
+- **Goal**: default for an autonomous goal. Create `.worktrees/<goal>` on `goal/<goal>` through `workspace.new`, then stay there. Finish committed, verified, reviewed, and ready to integrate.
+- **Current**: use the current checkout when the user asks for direct work. Do not create or switch worktrees implicitly.
 
-How other skills or prompts should reference this skill: "Read and follow `.agents/skills/hardness/SKILL.md`".
+Neither mode merges, pushes, or removes a worktree automatically.
 
-## Route Table
+## Load only what is needed
 
-Read the target SKILL.md (by path) before doing that kind of work. Status reflects the ongoing skill refactor; do not use `pending` skills as authority until activated.
+Start with `AGENTS.md`, this file, the current `tasks.md` when a change exists, and that change's `attachments/INDEX.md`. Then load exactly one applicable leaf skill or reference. Do not bulk-load command docs, attachments, history, or scripts.
 
-| Task type | Skill path | Status |
-|---|---|---|
-| OpenSpec CLI primitive + shared operation rules (Start/Update/Verify) | `.agents/skills/openspec/SKILL.md` — CLI calls go through `scripts/openspec.ps1` wrapper (below) | active |
-| Write / organize any file under `openspec/` (change tree & specs tree schema) | `.agents/skills/openspec-schema/SKILL.md` | active |
-| Create the next planning artifact for a change | `.agents/skills/openspec-continue-change/SKILL.md` | active |
-| Implement a change's tasks (implementation discipline) | `.agents/skills/openspec-apply-change/SKILL.md` | active |
-| Merge delta specs into current specs | `.agents/skills/openspec-sync-specs/SKILL.md` | active |
-| Close and archive a change (close policy) | `.agents/skills/openspec-archive-change/SKILL.md` | active |
-| Explore / research before deciding | `.agents/skills/openspec-explore/SKILL.md` | active |
-| Receiving code review feedback | `.agents/skills/code-review/receiving-code-review/SKILL.md` | active |
-| Requesting code review before completion | `.agents/skills/code-review/requesting-code-review/SKILL.md` | active |
-| C++ automation tests (CQTest, inline AS fixtures) | `.agents/skills/angelscript-test-guide/SKILL.md` | active |
-| TDD discipline for any feature/bugfix | `.agents/skills/test-driven-development/SKILL.md` | active |
-| Git worktree, branch, commit workflow | `.agents/skills/git-workflow/SKILL.md` | active |
-| Hazelight upstream update audit | `.agents/skills/hazelight-update-audit/SKILL.md` | active |
-| Unreal Engine development knowledge | `.agents/skills/unreal-engine-develop/SKILL.md` | active |
-| Visual explanation / diagrams for discussion | `.agents/skills/visual-explain/SKILL.md` | active |
-| Polished standalone diagrams (HTML/SVG) | `.agents/skills/external/archify/SKILL.md` | active |
-| TiddlyWiki / WikiText editing | `.agents/skills/external/tiddlywiki-wikitext/SKILL.md` | active |
+Use [routing.md](references/routing.md) only when the route is unclear. Load the focused protocol only when its event occurs:
 
-Removed — never follow if they resurface in history or transcripts: `openspec-work` (replaced by openspec + the four operation skills + openspec-schema + openspec-explore plus this harness), `openspec-Implementation` and `openspec-replan` (superseded by `openspec-apply-change`).
+- [task-dag.md](references/task-dag.md) for planning or selecting ready work.
+- [replan.md](references/replan.md) after evidence invalidates the current plan.
+- [review.md](references/review.md) at a planned review gate or explicit review request.
+- [closure.md](references/closure.md) only when closing or archiving a goal.
 
-Do not use `npx @fission-ai/openspec`, a globally installed openspec, or `Tools/openspec` build outputs directly; all OpenSpec CLI calls go through `scripts/openspec.ps1`.
+OpenSpec is opt-in: create or mutate an OpenSpec change only when the user or active goal explicitly selects it.
 
-## Loop Iteration Protocol (unattended runs)
+## Native Goal iteration
 
-Every RalphLoop iteration starts fresh with no memory. Follow these steps in order:
+1. Call `task.status` for the selected change, choose a node whose derived `ready` field is true, and read only its linked context.
+2. Implement the smallest complete slice, verify with the task's exact command, and preserve evidence.
+3. At planned high-risk slice gates and the final gate, run review and close its findings before completing the gate.
+4. If evidence invalidates a requirement, design boundary, verification contract, dependency edge, or artifact, apply the Replan protocol and continue autonomously.
+5. Mark a task done only after its verification passes. Never uncheck it; create a new follow-up task.
 
-1. Read this SKILL.md fully (route table + rules below).
-2. Locate the task source named in the loop prompt — normally `openspec/changes/<change>/tasks.md`. Pick the first unchecked task.
-3. Consult the route table and read the relevant skill file(s) before touching code.
-4. Do the smallest complete step for that task. Apply TDD where code behavior changes.
-5. Run the verification command given by the loop prompt (or the task's own verify note). Do not claim success without passing output.
-6. On success, check off the task in `tasks.md` and end with a concise final message: what was done, what was verified, what is next.
-7. If you hit a harness deficiency (wrong route, stale path, unclear protocol, missing skill), record it under `feedback/open/` per `feedback/README.md`. Check for an existing similar entry first; append evidence instead of duplicating.
-8. Stop signals in the final message line:
-   - `HARNESS_COMPLETE` — all tasks checked and verification passes.
-   - `HARNESS_BLOCKED: <reason>` — cannot proceed without human input (also record a feedback entry).
+Investigate technical uncertainty, compare in-scope options, and choose the strongest evidence-backed implementation without interrupting the goal. Stop only when progress requires new authority: a product-goal change, destructive or external action outside scope, unavailable credentials, or irreconcilable user decisions.
 
-## Protected Files (hard rule)
+## PowerShell entry
 
-During unattended runs, agents must NOT modify:
-
-- `.agents/skills/hardness/SKILL.md`, `SKILL_ZH.md`
-- `.agents/skills/hardness/feedback/README.md`
-- `.agents/skills/hardness/scripts/`
-
-The only allowed write inside this skill is adding/appending entries under `feedback/open/`. Harness updates happen exclusively in a developer-attended review session (below). Wrapper-level verification may reject any iteration whose diff touches protected paths.
-
-## Feedback Review (developer + AI, interactive only)
-
-1. Read all entries in `feedback/open/`.
-2. For each: accept (update route table / protocol / scripts, bump the Version line) or reject (state why).
-3. Move the entry to `feedback/archived/` with a `Verdict:` line appended — rejected entries are archived too, so future iterations stop re-proposing them.
-4. Keep `SKILL.md` and `SKILL_ZH.md` in sync.
-
-## Scripts
-
-**`scripts/openspec.ps1`** — wrapper for the project-local OpenSpec CLI (`.agents/skills/openspec/bin/openspec.exe`). Works from any cwd; passes all arguments through; preserves exit code.
+Keep one PowerShell session and import once:
 
 ```powershell
-# print resolved exe path
-.agents/skills/hardness/scripts/openspec.ps1 -GetPath
-# run any openspec command
-.agents/skills/hardness/scripts/openspec.ps1 validate "my-change" --strict
+Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
+$context = New-HardnessContext -Mode Current
+Get-HardnessCommand
+Invoke-Hardness -Command workspace.status -Context $context
+Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = 'domain/change' }
 ```
+
+Every invocation returns the same small result envelope. `task.status` returns the OpenSpec TaskPlan JSON in `data`; OpenSpec parses and validates the frontmatter Graph while Hardness owns workspace selection and scheduling. Unreal command routing is deliberately absent from this core snapshot and will be added only by a separately planned and verified `unreal-engine-develop` change.
+
+Run the core gates through one public test entry:
+
+```powershell
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Quick -PowerShellHosts Both
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Performance -PowerShellHosts Both -WarmupRuns 3 -MeasurementRuns 15
+pwsh.exe -NoProfile -File .agents/skills/hardness/scripts/Test-Hardness.ps1 -Profile Integration -PowerShellHosts Both
+```
+
+Performance measures each PowerShell host independently and validates every timed sample. Raw `Summary.json`/`Samples.csv` runs remain below ignored `Saved/Harness/Hardness/Performance/`; change evidence keeps only a privacy-trimmed aggregate with hashes. Use `-TaskChange domain/change` when measuring a different active Task Graph, and never rank PS5 against PS7.
