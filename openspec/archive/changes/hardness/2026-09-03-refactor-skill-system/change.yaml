@@ -12,3 +12,8 @@ goal: Build lightweight Skill routing for Goal worktrees and the current workspa
 affected_areas:
 - .agents/skills
 - Tools/openspec
+archived_at: 2026-09-02T18:27:58Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The committed Hardness core, Workspace, and OpenSpec lifecycle delivery is verified in Windows PowerShell 5.1 and PowerShell 7, independently approved, and synchronized to hardness/core. Deferred Unreal Engine work remains explicitly outside this change.
