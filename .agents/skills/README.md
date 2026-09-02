@@ -1,48 +1,57 @@
-# Project Skills for AngelscriptProject
+# AngelscriptProject Skills
 
-`.agents/skills/` hosts the project-local skills. The single entry point is **`hardness`** — its route table maps task types to skill files, defines the unattended loop protocol for `Tools/RalphLoop`, and owns the feedback loop for evolving the harness. When unsure which skill applies, read `hardness/SKILL.md` first; this README does not duplicate the route table.
+`hardness` is the project entrypoint. It selects a static route and loads only the matching leaf Skill/reference. It is not a daemon, workflow database, or custom agent loop.
 
-## Architecture
+```text
+Goal mode    -> .worktrees/<goal> on goal/<goal> -> implement -> verify -> review -> ready to integrate
+Current mode -> current workspace -> protect existing changes -> implement and verify in place
+```
 
-**Entry / orchestration**
+Neither mode automatically merges, pushes, publishes, or removes a worktree.
 
-- `hardness` — route table, loop iteration protocol, feedback protocol, and the `scripts/openspec.ps1` wrapper every OpenSpec CLI call goes through.
+## Hardness command surface
 
-**OpenSpec family** (record system; lightweight, no phase wall)
+```text
+workspace.{status,new,bootstrap,verify,finish,remove}
+openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,completion}
+task.status
+```
 
-- `openspec` — the portable Rust CLI primitive (`bin/openspec.exe`), command surface, and shared operation rules (Start / Update / Verify). Never invoke bare `openspec`: PATH resolves to the incompatible official Node CLI.
-- `openspec-schema` — the on-disk schema of both trees (change tree, specs tree) and the three-level knowledge architecture with promotion rules.
-- `openspec-continue-change` — create the next planning artifact.
-- `openspec-apply-change` — implement the task list with verification discipline.
-- `openspec-sync-specs` — merge delta specs into current specs (always agent-driven; the CLI never merges).
-- `openspec-archive-change` — the project close policy plus the archive primitive.
-- `openspec-explore` — thinking partner before decisions; structured question rounds.
+The current core publishes no `ue.*` or `toolchain.check` route.
 
-**Engineering discipline**
+## Supporting Skills
 
-- `test-driven-development` — TDD for any feature or bugfix.
-- `code-review/receiving-code-review`, `code-review/requesting-code-review` — review workflows.
-- `git-workflow` — worktree, branch, and commit flow (includes `NewWorktree.ps1`).
+- `hardness` — context, command routing, result envelope, and progressive-loading rules.
+- `git-workflow` (`using-git-worktrees`) — safe workspace lifecycle and submodule ordering.
+- `systematic-debugging` — evidence-first diagnosis before fixes or Replan.
+- `test-driven-development` — RED/GREEN/refactor for behavior changes.
+- `code-review/code-reviewer` — fixed-snapshot five-dimension review.
+- `angelscript-test-guide` — project C++/CQTest/inline AngelScript testing patterns.
+- `hazelight-update-audit` — upstream comparison and adoption decisions.
 
-**Domain knowledge**
+## OpenSpec lifecycle Skills
 
-- `angelscript-test-guide` — C++ automation test patterns (CQTest, inline AS fixtures).
-- `unreal-engine-develop` — build/test/commandlet entry points and UE knowledge.
-- `unreal-engine-debug` — WIP placeholder, not yet activated.
-- `hazelight-update-audit` — upstream update comparison and sync decisions.
+OpenSpec is used only when the user/Goal explicitly names or owns an OpenSpec change. The portable Rust CLI provides deterministic record primitives; Hardness owns orchestration and Replan/Review policy.
 
-**Presentation**
+- `openspec` — binary/package contract, command lookup, and lifecycle routing.
+- `openspec-explore` — read-only investigation of unclear work.
+- `openspec-continue-change` — create the next missing artifact.
+- `openspec-update-change` — revise current artifacts and apply an evidence-gated Replan.
+- `openspec-apply-change` — implement Ready Task DAG nodes.
+- `openspec-verify-change` — fixed-snapshot verification and Review Gate input.
+- `openspec-sync-specs` — agent-driven durable-spec merge.
+- `openspec-archive-change` — explicit closure policy plus deterministic archive primitive.
 
-- `visual-explain`, `external/archify`, `external/tiddlywiki-wikitext`, `web/*`.
+Record schemas are references under `openspec/references/`, not an independently triggered Skill.
 
-## Project rules
+## Other leaves
 
-- OpenSpec is the authoritative **record** system. `Documents/Plans/` is legacy, historical reference only.
-- Change IDs are `<domain>/<leaf>`; the leaf follows `<type>-<scope>-<outcome>` in lowercase kebab-case with type one of `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, `chore` (`feature`, not `feat`; Git commits may still use `Feat`). Choose `refactor` for structural boundary/module-shape changes, `improve` for quality/diagnostics/performance work without structural reshaping.
-- Removed skills — never follow if they resurface in history: `openspec-work`, `openspec-Implementation`, `openspec-replan`. The global Superpowers plugin dependency is being internalized into project-local skills; do not add new hard dependencies on `superpowers:*` names.
+- `unreal-engine-develop` remains an existing standalone Skill, but the current Hardness core does not route it. UE integration and public wrapper migration require a separate planned and verified change.
+- Presentation and specialized work remain under `visual-explain`, `external/`, and `web/`. Read their `SKILL.md` only when the request matches.
 
 ## Maintenance
 
-- Routing or protocol changes land in the `hardness` route table with a version bump, via its feedback review process (developer-attended sessions only).
-- CLI upgrades: rebuild from the `Tools/openspec` submodule and refresh the bundled `openspec/bin/openspec.exe` copy — procedure in the `openspec` skill.
-- Skills are maintained in English; a `_ZH` mirror exists only where intentionally kept in sync (`hardness`, `openspec`). When they conflict, `SKILL.md` wins.
+- Skills, references, and maintained OpenSpec records are English; only files explicitly named with exact uppercase `_ZH` remain temporarily exempt.
+- Validate every changed Skill with the system `quick_validate.py` and execute changed scripts against controlled inputs.
+- `Tools/openspec` is a submodule: commit/tag it first. For each release, the parent records only one final accepted package commit containing the gitlink, manifest/docs, and bundled `openspec.exe`; never stage or commit candidate EXE builds.
+- Keep entry Skills short. Move conditional schemas or procedures to a linked reference and load only the one needed.

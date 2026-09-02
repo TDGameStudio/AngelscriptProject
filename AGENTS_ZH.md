@@ -260,25 +260,26 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - 如果 `origin` 已存在但指向了其他仓库，应使用 `git remote set-url origin <your-remote-url>` 更新地址，而不是再添加一个重复远端。
 - 除非用户明确要求，否则不要对 `main` 执行 force push。
 
-## 子模块与 Worktree
+## Harness、子模块与 Worktree
 
-- 默认编辑位置是当前 workspace / 主干 checkout。除非用户明确要求本次任务新建或使用 worktree，否则不要创建、切换到、或继续在 git worktree 中工作。
-- 插件目录（`Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS`）是 **git 子模块**，不是普通目录。`git worktree add` 不会自动初始化子模块。
-- 一键流程：`powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>` 一次性完成"父 worktree + 所有子模块 init/fallback + AgentConfig.ini + `openspec/changes/<change-name>/` 空骨架"。
-- `BootstrapWorktree.ps1` 仍是"对*已存在*的 worktree 重新初始化"的入口（如切换 EngineRoot 后），并被 `NewWorktree.ps1` 内部调用；只在修复已有 worktree 时直接执行它。
-- 当目标代码在子模块中时，属于双仓库变更：OpenSpec artifacts 在父仓库，源码在子模块。先提交子模块，再更新父仓库的 gitlink。
+- `.agents/skills/hardness/SKILL.md` 是项目 Skill 体系入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop。
+- 当前 Hardness 核心只公开 `workspace.*`、`openspec.*` 与 `task.status`；Unreal 路由及公共 `Tools` wrapper 迁移延后到独立的 `unreal-engine-develop` change。
+- 原生 Goal 模式默认使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`；明确的 Current/直接工作留在当前 workspace，并保护已有改动。两种模式都不会自动 merge、push、publish 或删除 worktree。
+- `Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS` 与 `Tools/openspec` 都是 **git 子模块**。父 worktree 必须初始化 gitlink 记录的精确 OID；远端不再提供该对象时，只允许从已验证的本机对象库回退。
+- 先提交并标记 `Tools/openspec`。每个 release 在父仓库历史中只允许一次最终 accepted package 更新，其中包含 gitlink、manifest/docs 与 bundled `openspec.exe`；候选 EXE 不得进入父仓库提交。
+- 使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化。项目根从 Skill module 自身解析；仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
+- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`workspace.finish` 只完成 canonical Goal 的 Git 收口并报告 `GitStateComplete`；验证和 Review Gate 仍是 agent 独立负责的门禁。涉及子模块时先提交子模块，再提交父仓库 gitlink。
 - 完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 
 ## OpenSpec 与 TODO
 
 - `Documents/Plans/` **已废弃** — 仅保留作历史参考。所有新的计划、设计、任务跟踪与归档生命周期使用 `openspec/changes/<change>/` 下的 OpenSpec 产物。
-- OpenSpec 是轻量**记录**，不是流程门禁。只有一个技能 `openspec-work`，覆盖完整生命周期（探索 + 记录 + 实现 + 归档，一体流程）。原 `openspec-explore`、`openspec-propose`、`openspec-apply-change`、`openspec-archive-change` 已全部合并进它；探索/思考阶段在 `openspec-work` 内用 `superpowers:brainstorming` 承担。
-- 使用 `openspec-work`（或 `/opsx:work`，也可经 `/opsx:propose` / `/opsx:apply` / `/opsx:archive` 触发）创建、继续或归档变更。没有阶段墙：可以只记录意图就停、边记录边实现、稍后再继续实现、或直接归档已完成的变更——OpenSpec 产物与代码可同时、任意顺序修改。初始规划是可丢弃的，随认知推进可随时推翻并重写 `tasks.md`。
-- 记录深度由意图决定。**只规划不实现（plan-only）**是一等模式：产出一份完整、可直接照做的计划（文件映射、bite-sized 任务、精确验证命令，达到 `superpowers:writing-plans` 的严谨度），然后停下、先不实现——不是草草的最小骨架。而"边记边做"模式才可以从 lean 记录起步、按需扩展。
-- 继续积极使用 Superpowers 方法（brainstorming、TDD、systematic-debugging、verification-before-completion）。放宽的是 OpenSpec 自身的仪式，不是工程纪律。在关键里程碑验证即可（不必每步验证）；"验证"本身可作为 `tasks.md` 里的显式任务。
-- change 目录为**自由存储**：除 `proposal/design/specs/tasks` 外，可在 `openspec/changes/<name>/` 下保留背景笔记、调研、性能/基准数据（`benchmarks/*.csv`）、日志等。`tasks.md` 保持干净清单，附加说明/数据放单独文件。
-- 归档是 `openspec-work`（`/opsx:archive`）内的普通收尾动作，经 `openspec archive "<name>"` 完成——不是验证门禁。未完成任务或被重写的规划都不阻塞归档。
-- 对于不影响行为、架构或对外 API 的小型、局部、低风险修改，先询问用户是否跳过 OpenSpec。如用户明确要求跳过，简要记录原因。
+- 只有用户或 Goal 明确命名/拥有 OpenSpec change 时才启用 OpenSpec。便携 Rust CLI 只提供确定性记录原语；生命周期策略拆分到 `openspec-explore`、`openspec-continue-change`、`openspec-update-change`、`openspec-apply-change`、`openspec-verify-change`、`openspec-sync-specs` 与 `openspec-archive-change`。
+- `tasks.md` 是唯一当前 Task DAG：文件顶部 YAML `task_graph.depends_on` 为稳定 `X.Y` ID 保存依赖边，OpenSpec 派生 `after` 与 `ready`。每个任务继续保留精确 `Files` 与验证；不要维护第二份 DAG、GraphRevision、snapshot tree 或 resume 状态。
+- Goal 模式在已授权目标内自主调查、Replan、实现、验证和 re-review。Review finding 必须先 triage；只有 requirement、design、验收、Task 边界、依赖边或完成证据失效时才 Replan。
+- Change 附件固定放在 `attachments/`，默认只从 `attachments/INDEX.md` 渐进加载。Review、implementation、talk、replan、knowledge、script 和 data 记录都不能复制任务状态。
+- Archive 是明确 closure gate。`completed` 要求任务完成、Review Gate 关闭、证据齐全并处理 spec sync；`abandoned` / `superseded` 必须提供原因和每个未完成任务的 disposition。CLI archive 始终是纯确定性 move，不合并 specs。
+- Plan-only 仍是一等模式：产出可直接执行的 proposal/spec/design/Task DAG 后停止；记录深度与风险相称。
 - TODO 应围绕插件目标拆解。涉及重命名、模块迁移、对外 API 调整时，同步梳理受影响文件和文档。
 
 ## 最近完成里程碑

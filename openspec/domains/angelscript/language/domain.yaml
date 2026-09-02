@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_18018485-0e84-4b2d-b9c3-ee68c0b0c7d6
+  id: angelscript/language
+  title: language

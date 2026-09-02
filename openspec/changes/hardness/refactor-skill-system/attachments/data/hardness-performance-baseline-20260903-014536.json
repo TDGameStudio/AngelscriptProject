@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0",
+  "recordType": "HardnessPerformanceBaseline",
+  "acceptedAt": "2026-09-03T01:45:36+08:00",
+  "taskChange": "hardness/refactor-skill-system",
+  "parameters": {
+    "warmupRuns": 3,
+    "measurementRuns": 15,
+    "persistentBatchSize": 1000,
+    "freshProcessTimeoutMs": 30000
+  },
+  "source": {
+    "hardnessModuleSha256": "1ebdb251d5b10df1062558edbcd50fa9ade59d3aa1e1fab6f4d9cc9e3e5632e1",
+    "gateRunnerSha256": "3c0aff69a3239f9d28d20cbf2352be9662320e2f7f258388b9a6a80853dbaec6",
+    "performanceLeafSha256": "7d342727cbe484f44ac210a6b5f387e6319fcc22ac131e26c2ab5f00be0a12b7"
+  },
+  "policy": {
+    "hardGate": "per-host absolute P95 disaster budget",
+    "priorBaselineDrift": "warning-only until representative same-host history exists",
+    "crossHostComparison": "forbidden",
+    "rawRetention": "ignored Saved artifacts are retained and never overwritten or automatically deleted"
+  },
+  "hosts": [
+    {
+      "hostClass": "WindowsPowerShell-Desktop-x64",
+      "version": "5.1.26100.8875",
+      "rawRunPath": "Saved/Harness/Hardness/Performance/gate-20260902T174450411Z-f11306fb-PS5",
+      "rawSummarySha256": "0be5a02e5e061bb321ec206e5f276a551a461e33a19e83ba83b4f5b6065b381b",
+      "rawSamplesSha256": "1b525f7aa3b6b8c01ec4389eecb1ab5f149222fceed59da257b981b973d9d13f",
+      "overallStatus": "Passed",
+      "scenarios": [
+        {
+          "name": "FreshProcess",
+          "unit": "ms",
+          "min": 307.9814,
+          "median": 314.2345,
+          "p95": 340.4644,
+          "max": 340.4644,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "PersistentApi",
+          "unit": "us/op",
+          "operationsPerSample": 1000,
+          "min": 574.5245,
+          "median": 620.2389,
+          "p95": 668.2376,
+          "max": 668.2376,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "TaskStatus",
+          "unit": "ms",
+          "min": 37.3328,
+          "median": 41.5464,
+          "p95": 44.6358,
+          "max": 44.6358,
+          "p95Budget": 2000,
+          "budgetStatus": "Passed"
+        }
+      ]
+    },
+    {
+      "hostClass": "PowerShell-Core-x64",
+      "version": "7.6.0",
+      "rawRunPath": "Saved/Harness/Hardness/Performance/gate-20260902T174450411Z-f11306fb-PS7",
+      "rawSummarySha256": "43b1280acf42659815e55423b5eab396a3597509321f73d73ab4647f6571524a",
+      "rawSamplesSha256": "55bc3ce73f06e51aae524fa22dc2d8c66995443c9c9660c7c3ee23cd7d9432d1",
+      "overallStatus": "Passed",
+      "scenarios": [
+        {
+          "name": "FreshProcess",
+          "unit": "ms",
+          "min": 380.3874,
+          "median": 395.42,
+          "p95": 414.7068,
+          "max": 414.7068,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "PersistentApi",
+          "unit": "us/op",
+          "operationsPerSample": 1000,
+          "min": 40.2093,
+          "median": 47.7611,
+          "p95": 62.9869,
+          "max": 62.9869,
+          "p95Budget": 5000,
+          "budgetStatus": "Passed"
+        },
+        {
+          "name": "TaskStatus",
+          "unit": "ms",
+          "min": 30.436,
+          "median": 32.2224,
+          "p95": 34.4554,
+          "max": 34.4554,
+          "p95Budget": 2000,
+          "budgetStatus": "Passed"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "This is the first accepted baseline, so no prior-baseline regression ratio is available.",
+    "PowerShell hosts are evaluated only against their own absolute budget and are not ranked against each other."
+  ],
+  "excluded": [
+    "unreal-engine-develop and all UE execution or validation"
+  ]
+}

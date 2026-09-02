@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_96d0ba36-d839-423e-8a76-f49973b87e18
+  id: hardness/refactor-skill-system
+  title: Refactor the Hardness Skill system
+  aliases:
+  - angelscript/tooling/refactor-hardness-skill-system
+workflow: angelscript
+created_at: 2026-09-02T10:37:45Z
+goal: Build lightweight Skill routing for Goal worktrees and the current workspace, traceable Replan/Review, and a reproducible English-only portable OpenSpec release.
+affected_areas:
+- .agents/skills
+- Tools/openspec

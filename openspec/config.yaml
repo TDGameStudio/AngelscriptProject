@@ -1,0 +1,34 @@
+workflow: angelscript
+context: |
+  Language: English. All maintained OpenSpec records, manifests, workflows, templates, and attachments are written in English.
+  Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception.
+  AngelscriptProject is an Unreal Engine 5.7 host repository whose primary deliverable is Plugins/Angelscript.
+  Keep Source/AngelscriptProject minimal; plugin behavior belongs in the owning plugin or extension.
+  Plugins/Angelscript, Plugins/AngelscriptGameplayTags, Plugins/AngelscriptGAS, and Tools/openspec are independent Git submodules. Source changes land in the owning submodule before the parent gitlink is updated.
+  The repository may contain unrelated work from an ongoing large refactor. Inspect the current tree and preserve unrelated user changes.
+  Build and test through the repository entry points under Tools instead of inventing direct Unreal command lines.
+rules:
+  proposal:
+    - State the current problem, intended outcome, scope, explicit non-goals, and affected ownership boundaries.
+    - Identify whether the work changes a submodule, the parent project, or both.
+  specs:
+    - Record durable externally observable behavior rather than implementation steps.
+    - Under the requirements workflow, put each delta at specs/<capability-id>/spec.md and use ADDED, MODIFIED, REMOVED, or RENAMED Requirements sections.
+  design:
+    - Separate decisions and rationale from implementation detail; record alternatives only when they materially affect the choice.
+    - Call out compatibility, migration, module boundaries, failure modes, and rollback when relevant.
+  tasks:
+    - Treat each top-level checkbox as one permanent X.Y DAG node; nested execution steps are numbered lists, never checkboxes.
+    - Keep the sole dependency graph in top-of-file task_graph.version 1 frontmatter; depends_on maps each quoted task ID to quoted direct prerequisites and uses [] for roots.
+    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only; each body still declares exact Files and an exact verify command or observable outcome.
+    - Never reuse task IDs, uncheck completed tasks, mix live After fields with frontmatter, or maintain a second graph or status store. Derive parallel work only after checking file, artifact, and resource-lease conflicts.
+  apply:
+    - Update checkbox state only after the associated work and stated verification have actually completed.
+operations:
+  apply:
+    - Preserve unrelated dirty-worktree changes and keep plugin logic in the owning plugin.
+    - In Goal mode, investigate and resolve in-scope failures autonomously; stop only at a real authorization boundary.
+    - Import Hardness once and route build/test/OpenSpec commands through Invoke-Hardness, selecting the smallest relevant verification scope first.
+  archive:
+    - Use completed closure only after every task and Review Gate is closed; abandoned or superseded closure requires reasons and incomplete-task dispositions.
+    - Sync durable behavior into openspec/specs or explicitly record why sync is not applicable before preserving history.

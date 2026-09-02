@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_51661d5b-58a9-4999-b57c-aee1ffc792df
+  id: angelscript/language/ast
+  title: ast

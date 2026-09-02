@@ -260,25 +260,26 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - If `origin` already exists but points to another repository, update it with `git remote set-url origin <your-remote-url>` instead of adding a duplicate remote.
 - Do not force-push `main` unless the user explicitly requests it.
 
-## Submodule & Worktree
+## Harness, Submodule & Worktree
 
-- Default editing location is the current workspace/main checkout. Do **not** create, switch to, or continue work inside a git worktree unless the user explicitly asks to create/use a worktree for that task.
-- The plugin directories (`Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`) are **git submodules**, not ordinary directories. `git worktree add` does not initialize them.
-- One-shot setup: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>` creates the parent worktree, initializes/fallbacks all submodules, writes `AgentConfig.ini`, and scaffolds an empty `openspec/changes/<change-name>/` directory in one step.
-- `BootstrapWorktree.ps1` remains the entry point for re-initializing an *existing* worktree (e.g. after switching engine root). It is invoked internally by `NewWorktree.ps1`; you only need to call it directly when fixing up a worktree that already exists.
-- When the target code lives inside a submodule, it is a dual-repo change: OpenSpec artifacts in the parent, source code in the submodule. Commit submodule first, then update the parent gitlink.
+- `.agents/skills/hardness/SKILL.md` is the project Skill entrypoint. Hardness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop.
+- The current Hardness core exposes only `workspace.*`, `openspec.*`, and `task.status`. Unreal routes and public `Tools` wrapper migration are deferred to a separate `unreal-engine-develop` change.
+- Native Goal mode defaults to canonical `.worktrees/<goal>` on branch `goal/<goal>`. Explicit Current/direct work stays in the current workspace and protects existing changes. Neither mode automatically merges, pushes, publishes, or removes a worktree.
+- `Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`, and `Tools/openspec` are **git submodules**, not ordinary directories. A parent worktree must initialize the exact recorded gitlink OIDs; a verified local-object fallback is allowed when an upstream no longer serves an OID.
+- Commit/tag `Tools/openspec` first. For each release, the parent history receives only one final accepted package update containing the gitlink, manifest/docs, and bundled `openspec.exe`; candidate executables never receive parent commits.
+- Use Hardness `workspace.new` / `workspace.bootstrap` for setup. Resolve the project root from the Skill module, copy `AgentConfig.ini` only after confirming it is ignored, never discard a dirty submodule, and do not scaffold an OpenSpec change as a worktree side effect.
+- The Goal workflow stops at committed, verified, reviewed, ready-to-integrate. `workspace.finish` performs only canonical Goal Git closure and reports `GitStateComplete`; verification and Review Gates remain separate agent-owned gates. When code belongs to a submodule, commit the submodule first and the parent gitlink second.
 - Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
 
 ## OpenSpec & TODO
 
 - `Documents/Plans/` is **deprecated** — retained for historical reference only. All new planning, design, task tracking, and archive lifecycle uses OpenSpec under `openspec/changes/<change>/`.
-- OpenSpec is a lightweight **record**, not a procedural gate. There is a single skill, `openspec-work`, covering the whole lifecycle (explore + record + implement + archive, one flow). The former `openspec-explore`, `openspec-propose`, `openspec-apply-change`, and `openspec-archive-change` are all merged into it; explore/think work uses `superpowers:brainstorming` inside `openspec-work`.
-- Use `openspec-work` (or `/opsx:work`, also reachable via `/opsx:propose` / `/opsx:apply`) to create or continue a change. There is no phase wall: you may record intent only and stop, record while implementing, or continue implementing later — editing OpenSpec artifacts and code together, in any order. The initial plan is disposable; overturn and rewrite `tasks.md` as you learn.
-- Record depth follows intent. A **plan-only deliverable** (plan now, implement later) is a first-class mode: produce a thorough, ready-to-execute plan (file map, bite-sized tasks, exact verification commands, at `superpowers:writing-plans` quality), then stop without implementing — not a minimal skeleton. The "record + implement now" mode may instead start from a lean record and expand as it goes.
-- Keep using Superpowers methods actively (brainstorming, TDD, systematic-debugging, verification-before-completion). What is relaxed is OpenSpec's own ceremony, not the engineering discipline. Verify at key milestones (not every step); verification may itself be an explicit task in `tasks.md`.
-- The change directory is **free-form storage**: beyond `proposal/design/specs/tasks`, you may keep background notes, research, performance/benchmark data (`benchmarks/*.csv`), and logs under `openspec/changes/<name>/`. Keep `tasks.md` a clean checklist and put commentary/data in separate files.
-- Archiving is an ordinary closing action handled inside `openspec-work` (`/opsx:archive`) via `openspec archive "<name>"` — not a verification gate. Incomplete tasks or a rewritten plan do not block archiving.
-- For small, local, low-risk changes that don't affect behavior, architecture, or public APIs, ask the user whether to skip OpenSpec. If the user explicitly requests skipping, record the reason briefly.
+- OpenSpec is used only when the user or Goal explicitly names/owns an OpenSpec change. The portable Rust CLI is a deterministic record primitive; lifecycle policy is split across `openspec-explore`, `openspec-continue-change`, `openspec-update-change`, `openspec-apply-change`, `openspec-verify-change`, `openspec-sync-specs`, and `openspec-archive-change`.
+- `tasks.md` is the sole current Task DAG: its top-of-file YAML `task_graph.depends_on` map owns dependency edges for stable `X.Y` IDs, and OpenSpec derives `after` and `ready`. Keep exact `Files` and verification in each task; do not maintain a second DAG, GraphRevision, snapshot tree, or resume state.
+- Goal mode investigates, replans, implements, verifies, and re-reviews autonomously inside the authorized objective. A Review finding is triaged first and triggers Replan only when a requirement, design, acceptance condition, task boundary, dependency edge, or completion evidence is invalid.
+- Change attachments are structured under `attachments/` and loaded through `attachments/INDEX.md` only. Review, implementation, talk, replan, knowledge, script, and data records must not duplicate task state.
+- Archive is an explicit closure gate. `completed` requires complete tasks, closed Review Gates, evidence, and spec-sync disposition; `abandoned` or `superseded` requires a reason and disposition for every incomplete task. The CLI archive remains a pure deterministic move and never merges specs.
+- Plan-only remains first-class: produce a ready-to-execute proposal/spec/design/Task DAG and stop. Record depth stays proportional to risk.
 - TODOs should be broken down around the plugin goal. When renaming, migrating modules, or adjusting public APIs, identify all affected files and documentation.
 
 ## Recently Completed Milestones

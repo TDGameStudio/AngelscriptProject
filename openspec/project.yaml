@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: project
+metadata:
+  uid: project_ff91be10-654c-4e6e-97b2-9f1fb2ed0105
+  id: angelscript-project
+  title: AngelscriptProject
+default_workflow: angelscript

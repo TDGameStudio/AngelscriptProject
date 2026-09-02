@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_ece2c4a4-0d7e-4874-843e-da811d7c5ba1
+  id: angelscript/language/ast/core
+  title: AST Core
+  description: Core structures and invariants of the AngelScript abstract syntax tree

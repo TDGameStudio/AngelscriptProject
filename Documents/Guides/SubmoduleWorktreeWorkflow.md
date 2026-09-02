@@ -1,223 +1,102 @@
 # 子模块 Worktree 工作流
 
-> 本文档覆盖 AngelscriptProject 中"父仓库 + 多子模块 + worktree + OpenSpec"组合场景的标准流程。
+本文说明 Hardness 如何在 AngelscriptProject 中管理父仓库、多个子模块、Goal worktree 与 Current workspace。Hardness 只是 Skill/PowerShell 路由，不维护 daemon 或隐藏状态库。
 
-## 背景
+## 模式
 
-本仓库的插件目录是子模块，不是普通目录：
+| 模式 | 工作位置 | 成功终态 |
+|---|---|---|
+| Goal | canonical `.worktrees/<goal>`，分支 `goal/<goal>` | committed、verified、reviewed、ready-to-integrate |
+| Current | 当前 checkout | 验证完成并保留已有工作区改动 |
 
-| 子模块路径 | 远端仓库 | 说明 |
-|-----------|---------|------|
-| `Plugins/Angelscript` | `TDGameStudio/UnrealAngelscriptPlugin` | 核心插件，绝大多数代码改动在此 |
-| `Plugins/AngelscriptGAS` | `TDGameStudio/AngelscriptGAS` | GAS 扩展插件 |
-| `Wiki` | `TDGameStudio/AngelscriptWiki` | 独立 TiddlyWiki 工作区与后续 AS Wiki 内容 |
-| `Tools/openspec` | `TDGameStudio/openspec` | 便携 OpenSpec Rust 生命周期/验证内核与 Web 预览工具；独立 Skill 不由它生成；工具源码不是项目根目录 `openspec/` 规格数据 |
+两种模式都不会自动 merge、push、publish 或删除 worktree。普通直接任务使用 Current；原生 Goal 默认使用 Goal。OpenSpec change 只在目标明确要求时创建，不是 worktree 初始化副作用。
 
-`git worktree add` 只处理父仓库的工作树，**不会自动初始化或检出子模块**。新 worktree 中子模块目录只有 gitlink 占位，没有源码。直接构建或访问源码会失败。
-
-`Wiki/` 同样是独立 Git 仓库。修改 Wiki 内容时先在 `Wiki/` 子仓库提交并推送，再回到父仓库提交新的 Wiki gitlink；不要把 `Experiment/` 下的备份或实验目录复制回初始 Wiki 子模块。
-
-## 核心约束
-
-1. **父仓库记录的子模块 commit 远端不一定可取** — 本地开发分支的子模块 commit 可能还没 push 到远端，`git submodule update --init` 会失败。
-2. **每个子模块是独立 git 仓库** — 子模块需要自己的 branch/worktree，不能假设 `git submodule update` 一步到位。
-3. **OpenSpec 在父仓库，源码改动可能在子模块** — 天然是"双仓库变更"，合并/提交需要分别处理。
-4. **新 worktree 没有 `AgentConfig.ini`** — 构建前必须 bootstrap，且新 worktree 无法自动解析主 workspace 的本机配置，需要显式传 `EngineRoot`。
-
-## 一键流程（推荐）
-
-绝大多数情况下，下面这一行就能完成"父 worktree + 子模块 init/fallback + AgentConfig.ini + OpenSpec change 骨架"：
+## 统一入口
 
 ```powershell
-# 在主 workspace 根目录执行
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-    -File Tools\Bootstrap\NewWorktree.ps1 -Name <change-name>
+Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
+
+$goal = New-HardnessContext -Mode Goal -GoalName refactor-example
+Invoke-Hardness -Command workspace.new -Context $goal
+Invoke-Hardness -Command workspace.verify -Context $goal
+
+$current = New-HardnessContext -Mode Current
+Invoke-Hardness -Command workspace.status -Context $current
 ```
 
-`<change-name>` 同时作为：
+需要修复已有 worktree 时使用 `workspace.bootstrap`；canonical Goal 准备 Git 收口时使用 `workspace.finish`。Current 留在当前 checkout，通过 `workspace.status` / `workspace.verify` 检查并保留已有改动，不调用 `workspace.finish`。`workspace.remove` 是独立、显式操作，并且拒绝 dirty parent/submodule。
 
-- 父 worktree 目录：`.worktrees/<change-name>`
-- 父分支名：`<change-name>`（从当前 HEAD 开分）
-- OpenSpec change 目录：`openspec/changes/<change-name>/`（含空的 `proposal.md` / `tasks.md` / `design.md` / `specs/.gitkeep`）
+## 子模块边界
 
-常用开关：
+以下目录是独立 Git 仓库：
 
-| 参数 | 用途 |
-|------|------|
-| `-DryRun` | 仅打印将执行的命令，不改文件系统/git |
-| `-NoOpenSpec` | 跳过 OpenSpec 骨架（小改动不需要 OpenSpec 时使用） |
-| `-NoPrewarm` | 跳过 `TargetInfo.json` 预热（首次执行仍建议保留预热） |
-| `-EngineRoot <path>` | 显式指定 EngineRoot（默认从主 workspace 的 `AgentConfig.ini` 读取） |
-| `-Verify` | bootstrap 完成后跑一次 `RunBuild.ps1` 验证构建链路 |
-| `-Force` | 透传给 BootstrapWorktree，强制重写 `AgentConfig.ini` / 覆盖已有 OpenSpec 目录 |
+| 路径 | 所有权 |
+|---|---|
+| `Plugins/Angelscript` | 核心插件 |
+| `Plugins/AngelscriptGameplayTags` | GameplayTags 扩展 |
+| `Plugins/AngelscriptGAS` | GAS 扩展 |
+| `Tools/openspec` | 便携 OpenSpec Rust CLI |
+| `Wiki` | 独立 Wiki 工作区 |
 
-执行成功后，按提示 `cd .worktrees/<change-name>` 即可继续 OpenSpec 流程或构建/测试。
+父 worktree 创建后必须初始化父提交记录的精确 gitlink OID。`git submodule update --init --recursive` 是首选；不能因为远端缺失对象就改用“最新 HEAD”。
 
-如果一键流程在某个子模块上失败（典型场景：父仓库记录的子模块 commit 远端不可取且本地对象库也没有），脚本**不会回滚** worktree，让你按下面的标准流程接手手工处理。
+## 远端缺失 gitlink 对象
 
----
+当远端返回 `not our ref` 或 `reference is not a tree`：
 
-## 标准流程（手工版本，用于排查或脚本无法覆盖的场景）
+1. 从父仓库 `git ls-tree HEAD -- <submodule>` 读取期望 OID。
+2. 在主 checkout 的同一子模块中用 `git cat-file -e <oid>^{commit}` 验证本机确实拥有对象。
+3. 只把该 OID fetch 到新 worktree 的独立子模块仓库，并 detached checkout 精确 OID。
+4. 验证目标子模块 clean、HEAD 等于 gitlink；否则 workspace verification 失败。
 
-### Phase 1：创建父仓库 worktree
+不得清理、reset 或覆盖主 checkout 的 dirty 子模块。也不得用本机任意 HEAD 冒充父仓库记录的构建基线。
 
-```powershell
-# 从主 workspace 根目录执行
-git worktree add .worktrees/<change-name> -b <branch-name>
+## 本机配置
+
+`AgentConfig.ini` 是被忽略的机器配置。Goal 创建时仅在以下条件全部成立后复制：
+
+- 来源位于已确认的项目根；
+- 目标位于刚创建的 worktree 根；
+- `git check-ignore AgentConfig.ini` 成功；
+- 目标文件尚不存在，或调用者明确选择了可恢复的覆盖策略。
+
+配置中的 `Paths.ProjectFile` 必须指向目标 worktree 的 `.uproject`。`workspace.bootstrap` 只在安全条件下复制缺失且已被忽略的 `AgentConfig.ini`，并初始化或恢复父仓库记录的精确 gitlink；它不重写配置、不执行 toolchain preflight，也不创建 OpenSpec change。
+
+## 并行与资源
+
+- 父 workspace 和每个子模块分别检查 dirty 状态。
+- Task DAG 只有在 `task_graph.depends_on` 的直接前置任务完成，并且 Files、生成产物与 exclusive execution lease 不冲突时才可并行。
+- 每个 run 使用独立目录与 run ID，禁止跨 worktree 共享日志文件。
+
+## 提交与完成
+
+涉及子模块的提交顺序固定：
+
+```text
+submodule tests
+  -> submodule commit/tag
+  -> parent gitlink update
+  -> parent tests/review
+  -> parent commit
 ```
 
-此时 `.worktrees/<change-name>/Plugins/Angelscript` 等子模块目录只有 gitlink，没有源码。
+`workspace.finish` 必须列出：
 
-### Phase 2：初始化子模块
+- `ProjectRoot` 与 Goal branch；
+- parent commit；
+- 每个已提交子模块的 commit；
+- 最终 `GitStateComplete`。
 
-进入新 worktree 后，**按优先级尝试以下策略**：
+测试证据、Review Gate 与 ready-to-integrate 判断由 Goal 工作流单独记录，不属于 `workspace.finish` 的返回契约。
 
-#### 策略 A：标准 init + update（优先尝试）
+它不执行 merge、push 或 remove。任何删除 worktree 前都要重新验证目标绝对路径位于预期 worktree 根，并拒绝 parent 或子模块的未提交内容。
 
-```powershell
-cd .worktrees/<change-name>
-git submodule init
-git submodule update
-```
+`Tools/openspec` 的源码提交与 annotated tag 位于子模块。每个 release 在父仓库只提交一次最终 accepted package 更新：gitlink、release manifest/docs 与 bundled `openspec.exe`；候选 executable 不进入父仓库历史。
 
-如果父仓库记录的子模块 commit 在远端可取，这一步就够了。验证：
+## 常见故障
 
-```powershell
-git submodule status
-# 所有条目应显示 commit hash，无 '-' 前缀（表示未初始化）
-```
-
-#### 策略 B：从本地子模块对象库创建 worktree（远端不可取时）
-
-当 `git submodule update` 失败（通常报 `fatal: reference is not a tree`），说明父仓库记录的子模块 commit 远端没有。此时从主 workspace 已有的子模块对象库创建 worktree：
-
-```powershell
-# 以 Plugins/Angelscript 为例
-# 从主 workspace 的子模块 git 目录创建 worktree 到新父 worktree 中
-git -C Plugins/Angelscript worktree add `
-    "D:/Workspace/AngelscriptProject/.worktrees/<change-name>/Plugins/Angelscript" `
-    -b <change-name>-plugin
-```
-
-**命名约定**：子模块 worktree 分支名用 `<父branch>-plugin` 后缀。
-
-#### 策略 C：用本地 HEAD 临时补齐构建环境
-
-如果只是为了验证构建通过（不需要精确匹配父仓库记录的 commit），可以用本地子模块的 HEAD：
-
-```powershell
-git -C Plugins/Angelscript worktree add `
-    "D:/Workspace/AngelscriptProject/.worktrees/<change-name>/Plugins/Angelscript" `
-    HEAD --detach
-```
-
-**必须记录**：在 commit message 或 tasks.md 中注明"用了本地 HEAD 作为 build env，非提交内容"。此方式会导致 `git status` 中出现 `M Plugins/Angelscript` 噪音，不是本次代码改动。
-
-### Phase 3：Bootstrap AgentConfig
-
-新 worktree 没有 `AgentConfig.ini`，bootstrap 需要显式传 `EngineRoot`：
-
-```powershell
-# 从新 worktree 根目录执行
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-    -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1 `
-    -EngineRoot "<EngineRoot>" -NoPrewarm
-```
-
-`EngineRoot` 从主 workspace 的 `AgentConfig.ini` 读取。如果主 workspace 也没有，需要用户提供。
-
-### Phase 4：验证构建环境
-
-```powershell
-# 确认所有子模块目录有源码
-Test-Path .worktrees/<change-name>/Plugins/Angelscript/Source
-Test-Path .worktrees/<change-name>/Plugins/AngelscriptGAS/Source
-
-# 确认 AgentConfig.ini 存在且 ProjectFile 指向当前 worktree
-Get-Content .worktrees/<change-name>/AgentConfig.ini
-
-# 尝试构建
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-    -File Tools\RunBuild.ps1 -Label worktree-verify -TimeoutMs 180000
-```
-
-### Phase 5：处理 git status 噪音
-
-使用策略 B/C 补齐的子模块会导致 `git status` 出现 `D Plugins/Angelscript` 或 `M Plugins/Angelscript` 等条目。这不是本次代码改动：
-
-- 提交时只 `git add` 实际改动的文件，不要 `git add .` 全量暂存
-- 在 PR 描述中注明哪些子模块是临时 build env
-
-## OpenSpec 双仓库变更
-
-当 OpenSpec change 的实际代码改动在子模块中时：
-
-| 内容 | 存放位置 |
-|------|---------|
-| OpenSpec artifacts（design.md, tasks.md, spec/） | 父仓库 `openspec/changes/<change>/` |
-| 源码实现（.cpp, .h, .as） | 子模块对应的分支 |
-| 构建/测试验证 | 在父 worktree 中执行，消费子模块源码 |
-
-**提交顺序**：
-1. 先在子模块中提交源码改动
-2. 在父仓库中 `git add Plugins/<submodule>` 更新 gitlink
-3. 在父仓库中提交 OpenSpec artifacts + gitlink 更新
-
-## Scope Guard
-
-在子模块中做实现时，必须明确 scope boundary：
-
-- **Angelscript plugin**：按 `AngelscriptRuntime` / `AngelscriptEditor` / `AngelscriptTest` 模块边界工作。
-
-批量操作（rg 扫描、include 替换等）时用明确的路径参数，不要扫整个 `Plugins/<submodule>/Source/`。
-
-## PowerShell 注意事项
-
-- `rg` 正则在 PowerShell 中**必须用单引号**，双引号中的 `|`、`"`、`$` 会被 shell 解析
-- 大型文件移动优先用 `git mv`，保留 rename detection 可读性
-- 路径分隔符用 `/` 或转义 `\\`，裸 `\` 在正则中是转义符
-
-## 故障排查
-
-### `git submodule update` 报 `fatal: reference is not a tree`
-
-父仓库记录的子模块 commit 远端没有。使用策略 B（从本地对象库创建 worktree）或策略 C（用本地 HEAD）。
-
-### 子模块目录存在但为空
-
-`git worktree add` 创建了父 worktree 但没初始化子模块。执行 Phase 2。
-
-### `git submodule status` 报 `fatal: no submodule mapping found`
-
-git index 中有 160000（submodule）条目但 `.gitmodules` 没有对应映射。清理残留：
-
-```powershell
-git rm --cached <stale-path>
-```
-
-### 新 worktree 构建失败 `AgentConfig.ini not found`
-
-执行 Phase 3，从主 workspace 读取 `EngineRoot` 后 bootstrap。
-
-### `git status` 显示 `D` 或 `M` 的子模块条目
-
-策略 B/C 的预期行为。提交时只暂存实际改动文件，不要全量 `git add .`。
-
-### UBT 报 `action paths are longer than 260 characters`
-
-这不是 C++ 编译错误，也不是引擎路径问题。UHT 往往已经成功，随后 `ActionGraph.CheckPathLengths` 在启动 `cl.exe` 前拒绝任何超过 260 字符的 action 路径。提示里的 “move the engine” 具有误导性：本仓库触发点几乎总是 worktree 前缀太长，叠加 UHT 生成的 `AS_FunctionBinding_*_Aggregator.cpp` 或 Native SDK 深层测试文件名。
-
-处理方式与 `D:\as-lns` 相同：为该 worktree 建短路径 junction，并把 **仅该 worktree** 的 `AgentConfig.ini` `Paths.ProjectFile` 指到 junction 下的 `.uproject`，然后通过短路径调用 `Tools\RunBuild.ps1`。不要改主工作区配置，也不要为了过这个检查去改生成物文件名。
-
-完整事故记录见 `openspec/changes/refactor-as-canonical-typed-ast-compiler/attachments/worktree-max-path-build-failure.md`。
-
-## 检查清单
-
-创建新 worktree 时按顺序验证：
-
-- [ ] 父 worktree 创建成功（`git worktree add`）
-- [ ] 所有必要子模块已初始化（`git submodule status` 无 `-` 前缀，或已通过策略 B/C 补齐）
-- [ ] 每个子模块的 `Source/` 目录有实际文件
-- [ ] `AgentConfig.ini` 存在且 `ProjectFile` 指向当前 worktree
-- [ ] 构建通过（`Tools\RunBuild.ps1`）
-- [ ] 明确记录哪些子模块用了非标准初始化方式
+- **目标目录未被忽略**：先修正并提交 `.gitignore`，不要创建 worktree。
+- **目标分支/路径已存在**：使用 `workspace.status` 判断是否为可恢复的同一 Goal；不要覆盖未知目录。
+- **子模块远端缺 OID且本机也没有**：这是外部对象缺失，记录精确 OID 后停止；不要替换为新版本。
+- **主工作区很 dirty**：Goal 仍从明确 base commit 创建；只按批准的 pathspec 迁移本次 WIP，不 stash/reset/clean 或 blanket-copy。
+- **worktree 初始化或结构状态错误**：先运行 `workspace.bootstrap`，再运行 `workspace.verify`；不要用任意本地 HEAD 替换父仓库记录的 gitlink。

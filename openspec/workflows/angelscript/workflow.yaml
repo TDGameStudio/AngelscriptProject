@@ -1,0 +1,76 @@
+name: angelscript
+version: 1
+description: Lightweight AngelscriptProject records for refactors, documentation, maintenance, and changes that do not require specification deltas
+artifacts:
+- id: proposal
+  generates: proposal.md
+  description: Motivation, outcomes, boundaries, and impact
+  template: proposal.md
+  required: true
+  instruction: |
+    Write this record in English. Explain the current problem, expected outcome, scope, and non-goals.
+    Identify affected repositories, submodules, modules, and user entry points. Keep depth proportional
+    to risk; a small documentation or maintenance change may remain concise.
+  requires: []
+  context: []
+- id: specs
+  generates: specs/**/*.md
+  description: Optional durable behavior or capability records
+  template: spec.md
+  required: false
+  instruction: |
+    Write this record in English and only when the change adds or modifies behavior worth preserving.
+    Describe observable outcomes, boundaries, and verification evidence instead of disguising
+    implementation steps as requirements. This workflow does not force Requirement/Scenario syntax;
+    the project may continue customizing the workflow and templates directly.
+  requires: []
+  context:
+  - proposal
+  - design
+- id: design
+  generates: design.md
+  description: Optional technical decisions and trade-offs
+  template: design.md
+  required: false
+  instruction: |
+    Write this record in English when architecture, compatibility, migration, risk, or a non-obvious
+    trade-off requires explanation. Focus on decisions and reasons, state plugin/host/submodule
+    ownership boundaries, and do not duplicate the task list.
+  requires: []
+  context:
+  - proposal
+  - specs
+- id: tasks
+  generates: tasks.md
+  description: Required implementation, dependency, and verification plan
+  template: tasks.md
+  required: true
+  instruction: |
+    Write this record in English. Put the sole dependency graph in top-of-file YAML frontmatter under
+    task_graph.version 1 and depends_on. Quote every permanent X.Y task id, map every top-level task
+    exactly once, and use [] for roots. Keep Files and exact verification in each task body, and use
+    ordered lists for nested execution steps. Markdown order is presentation-only. Derive parallelism
+    from completed dependencies and disjoint files, artifacts, and resource leases; do not create a
+    second graph, status store, or runtime database.
+  requires: []
+  context:
+  - proposal
+  - specs
+  - design
+apply:
+  requires:
+  - tasks
+  tracks: tasks.md
+  instruction: |
+    Use the existing English records and project-local prompt configuration as context, preserve
+    unrelated workspace changes, and update task state only after its verification succeeds.
+archive:
+  requires:
+  - proposal
+  - tasks
+  tracks: null
+  instruction: |
+    Preserve the change directory as English history. Before archive, confirm every task is complete
+    and decide whether durable behavior belongs in the current specification tree.
+validation:
+  profile: record-v1
