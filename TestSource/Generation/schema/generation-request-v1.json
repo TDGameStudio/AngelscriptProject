@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generation-request-v1",
+  "title": "Angelscript generation request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "caseKey",
+    "origin",
+    "recipeId",
+    "recipeVersion",
+    "seed"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "generation-request-v1"
+    },
+    "caseKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Logical slash-separated CaseKey without .as and without absolute paths."
+    },
+    "origin": {
+      "type": "string",
+      "enum": ["Authored", "NativeSDK", "Coverage", "Inline"]
+    },
+    "recipeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipeVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "description": "Unsigned 64-bit seed as a decimal string."
+    },
+    "explicitAxes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "integer", "boolean"]
+      },
+      "description": "Complete explicit axis selection. Omit or set enumerateAll true for canonical full enumeration."
+    },
+    "enumerateAll": {
+      "type": "boolean",
+      "default": false
+    },
+    "outputMode": {
+      "type": "string",
+      "enum": ["memory", "saved", "golden", "release"],
+      "default": "memory"
+    },
+    "referenceIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "requiredHarness": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

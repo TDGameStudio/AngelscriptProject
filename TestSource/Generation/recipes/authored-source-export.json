@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "recipe-v1",
+  "recipeId": "authored-source-export",
+  "recipeVersion": "1",
+  "owner": "TestSource/Generation/Rules/Authored",
+  "explicitAxes": [],
+  "constraints": [],
+  "randomSlots": [],
+  "oracleKinds": ["authored", "compile"],
+  "negativePolicy": "preserve authored negative and recovery units",
+  "commentPolicy": "knowledge comments explain feature, inputs, expectations, and important boundary",
+  "emits": "source + canonical manifest + typed oracle metadata",
+  "mandatoryCellCount": 1
+}

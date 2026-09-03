@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "comment-facts-v1",
+  "title": "Knowledge comment facts v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "feature", "inputs", "expectations"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "comment-facts-v1" },
+    "feature": { "type": "string", "minLength": 1 },
+    "inputs": { "type": "string", "minLength": 1 },
+    "expectations": { "type": "string", "minLength": 1 },
+    "boundary": { "type": "string" },
+    "references": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "attachment": {
+      "type": "string",
+      "description": "Logical source unit or function the comments attach to."
+    }
+  }
+}

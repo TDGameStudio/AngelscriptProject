@@ -1,0 +1,2157 @@
+{
+  "authority": "projection-only; edit per-source V2 contracts",
+  "coverageState": "migration-pending",
+  "domains": [
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/AActor",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/APlayerController",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/AVolume",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/AssetBundleData",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/AssetManagerScriptMixins",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/AssetRegistry",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/BlueprintEvent",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/BlueprintType",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/CollisionProfile",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/ConfigEnums",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Console",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/CoreGlobals",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Debugging",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Delegates",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Deprecations",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FActorSpawnParameters",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FAnchors",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FAngelscriptDelegateWithPayload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FAngelscriptGameThreadScopeWorldContext",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FApp",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBodyInstance",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBox",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBox2D",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBox3f",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBoxSphereBounds",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FBoxSphereBounds3f",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FCollisionQueryParams",
+      "reviewedCount": 0,
+      "sourceCount": 14
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FCollisionShape",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FColor",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FCommandLine",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FCpuProfilerTraceScoped",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FDateTime",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FFileHelper",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FFormatArgumentValue",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FFrameTime",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FGenericPlatformMisc",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FGeometry",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FGuid",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FHitResult",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FInputActionKeyMapping",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FInputActionValue",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FInputBindingHandle",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FInstancedStruct",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FIntPoint",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FIntVector",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FIntVector2",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FIntVector4",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FLatentActionInfo",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FLinearColor",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FMargin",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FMath",
+      "reviewedCount": 0,
+      "sourceCount": 27
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FMatrix",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FMemoryReader",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FMessageDialog",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FName",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FNumberFormattingOptions",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FOverlapResult",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FParse",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPaths",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPlane",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPlane4f",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPlatformApplicationMisc",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPlatformMisc",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FPlatformProcess",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FQuat",
+      "reviewedCount": 0,
+      "sourceCount": 11
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FQuat4f",
+      "reviewedCount": 0,
+      "sourceCount": 11
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FRandomStream",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FRange",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FRotator",
+      "reviewedCount": 0,
+      "sourceCount": 10
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FRotator3f",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FSphere",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FSphere3f",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FString",
+      "reviewedCount": 0,
+      "sourceCount": 13
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FStringTableRegistry",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FText",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FTimespan",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FTransform",
+      "reviewedCount": 0,
+      "sourceCount": 9
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FTransform3f",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector",
+      "reviewedCount": 0,
+      "sourceCount": 13
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector2D",
+      "reviewedCount": 0,
+      "sourceCount": 10
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector2f",
+      "reviewedCount": 0,
+      "sourceCount": 9
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector3f",
+      "reviewedCount": 0,
+      "sourceCount": 14
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector4",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FVector4f",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/FunctionLibraryMixins",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Hash",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/InputComponentScriptMixins",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/InputEvents",
+      "reviewedCount": 0,
+      "sourceCount": 17
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Json",
+      "reviewedCount": 0,
+      "sourceCount": 9
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/JsonObjectConverter",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/LandscapeProxy",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Logging",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/NativeModuleFunctionBinding",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Primitives",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/SoftObjectPath",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Stats",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/Subsystems",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/SystemTimers",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/TArray",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/TMap",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/TOptional",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/TSet",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/TSoftObjectPtr",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UActorComponent",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UAssetManager",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UCollisionProfile",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UDataTable",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UEnhancedInputComponent",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UEnum",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UFXSystemComponent",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UGameInstance",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UInputMappingContext",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UInputSettings",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/ULocalPlayer",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UObject",
+      "reviewedCount": 0,
+      "sourceCount": 10
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UPackage",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UPoseableMeshComponent",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UPrimitiveComponent",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UProjectileMovementComponent",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/USceneComponent",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/USkeletalMeshComponent",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/USkinnedMeshComponent",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UStruct",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UUserWidget",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/UWorld",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Bindings/WorldCollision",
+      "reviewedCount": 0,
+      "sourceCount": 10
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TArray",
+      "reviewedCount": 0,
+      "sourceCount": 58
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TMap",
+      "reviewedCount": 0,
+      "sourceCount": 30
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TObjectPtr",
+      "reviewedCount": 0,
+      "sourceCount": 12
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TOptional",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TSet",
+      "reviewedCount": 0,
+      "sourceCount": 25
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TSoftObjectPtr",
+      "reviewedCount": 0,
+      "sourceCount": 24
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TSubclassOf",
+      "reviewedCount": 0,
+      "sourceCount": 16
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Containers/TWeakObjectPtr",
+      "reviewedCount": 0,
+      "sourceCount": 15
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Debugger/FunctionEvaluationGuards",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Debugger/GetterPropertyTracking",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Debugger/InheritedGetterTracksBasePropertyAddress",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/Meta",
+      "reviewedCount": 0,
+      "sourceCount": 52
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UClass",
+      "reviewedCount": 0,
+      "sourceCount": 122
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UEnum",
+      "reviewedCount": 0,
+      "sourceCount": 16
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UFunction",
+      "reviewedCount": 0,
+      "sourceCount": 128
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UInterface",
+      "reviewedCount": 0,
+      "sourceCount": 24
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UProperty",
+      "reviewedCount": 0,
+      "sourceCount": 80
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Definitions/UStruct",
+      "reviewedCount": 0,
+      "sourceCount": 97
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Access",
+      "reviewedCount": 0,
+      "sourceCount": 26
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Asset",
+      "reviewedCount": 0,
+      "sourceCount": 11
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Attach",
+      "reviewedCount": 0,
+      "sourceCount": 18
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Default",
+      "reviewedCount": 0,
+      "sourceCount": 34
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/DefaultComponent",
+      "reviewedCount": 0,
+      "sourceCount": 49
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Delegates",
+      "reviewedCount": 0,
+      "sourceCount": 127
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Inheritance",
+      "reviewedCount": 0,
+      "sourceCount": 51
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/Mixin",
+      "reviewedCount": 0,
+      "sourceCount": 29
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Feature/PropertyAccess",
+      "reviewedCount": 0,
+      "sourceCount": 22
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Anim",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Assets",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/CVar",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Debug",
+      "reviewedCount": 0,
+      "sourceCount": 49
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FLinearColor",
+      "reviewedCount": 0,
+      "sourceCount": 18
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FQuat",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FRotator",
+      "reviewedCount": 0,
+      "sourceCount": 19
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FTransform",
+      "reviewedCount": 0,
+      "sourceCount": 23
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FVector",
+      "reviewedCount": 0,
+      "sourceCount": 25
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/FVector2D",
+      "reviewedCount": 0,
+      "sourceCount": 18
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Input",
+      "reviewedCount": 0,
+      "sourceCount": 15
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Material",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Net",
+      "reviewedCount": 0,
+      "sourceCount": 22
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Physics",
+      "reviewedCount": 0,
+      "sourceCount": 19
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Timer",
+      "reviewedCount": 0,
+      "sourceCount": 24
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Gameplay/Widget",
+      "reviewedCount": 0,
+      "sourceCount": 18
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/AddModifyLookupFlow",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BlueprintDelegatePropertyReloadsAfterInstanceRuntime",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BlueprintDelegateWorldTickContinuesAfterSoftReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BlueprintEventAddedRequiresFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastDelegateSignatureSwap",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastEnumChangeAndFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastEnumChangedOnFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastEnumCreatedOnFirstCompile",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastOldAndNewTypes",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/BroadcastsReloadedObjectReplacement",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/CDOAndInstanceConsistency",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ClassAdded",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ClassAndEnumMetadataUpdateAfterFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ClassFlagChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ClassMetadataChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ClassRemoved",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/CreateEditorLevelBlueprintWithAngelscriptParent",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DefaultComponentMetadataAndRuntimeHierarchySurviveSoftReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DefaultStatementChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DelegateAddedSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DelegateArgumentAndReturnRoundTripAcrossReloads",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DelegateKindChangeRequiresFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DelegateReceiverLifecycleBoundaryAcrossReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DelegateSignatureChange",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DiscardAndRecompile",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DiscardModule",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DiscardModuleRemovesGlobalFunctionAvailability",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/DoesNotReplayBeginPlayOnLiveActor",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/EditSpecifierReloadKeepsBlueprintChildInstanceAlive",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/EnumMetadataChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/EnumReloadMarksBlueprintVariablesAndPinsImpacted",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/EnumValueChange",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FailedReloadDoesNotBroadcastReloadDelegates",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FailedReloadKeepsOldClassAndProperties",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FailureKeepsOldCodeAndDiagnostics",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FullReloadAddsPropertyAndUpdatesDefaults",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FullReloadKeepsOpenEditorLevelBlueprintRecoverableAfterParentShapeChange",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FullReloadUpdatesEnumValueAndDefault",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionAddedSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionArgumentNameChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionBlueprintSpecifierChangeRequiresFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionDefaultArgumentChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionMetadataAndDefaultsUpdateAfterFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionMetadataChangeSuggestsFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionRemovedRequiresFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/FunctionSignatureChanged",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/GameInstanceSubsystemSoftReloadUpdatesCallableBehavior",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/GlobalDelegateCallerRunsAcrossReloads",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InheritanceChainPropertyReloadPropagatesToChild",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InvokeContainerSignatureAfterReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InvokeNativeStructSignatureAfterReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InvokePrimitiveSignatureAfterParameterExpansion",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InvokeReferenceSignatureAfterReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/InvokeScriptStructSignatureAfterReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ModuleRecordTracking",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/MultiClassModuleReloadUpdatesChangedClassAndKeepsSiblingQueryable",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/MulticastDelegateRuntimeRunsAcrossReloads",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/MultiplePIESessionsAndReloadsStayConsistent",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/MultipleSoftReloadsUpdateRunningBlueprintChildFunction",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/NativeInterfaceDispatchUsesReloadedSoftBody",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/NegativeDelegateRuntimeErrorsStayExplicitAcrossReloads",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/NoChange",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PIEReloadMatrixCoversBeforeDuringAfterAndRepeatedSessions",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PostReloadModeFlagMatchesReloadPath",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PropertyCountChange",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PropertyRemovalDropsFieldFromReplacementClass",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PropertySpecifierReloadUpdatesFlags",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/PropertyTypeChangeReplacesFieldType",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ProviderSoftReloadRebindsDeclaredImportConsumer",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ProviderStructFullReloadRetargetsConsumerFunctionParameter",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ReloadAfterPIEEndsAppliesToNextPIESession",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ReloadBeforePIEStartsUsesReloadedScriptInPIE",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/RemovedScriptFileQueuesDeletionReload",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/ReplicationMetadataAndLifetimeListUpdateAfterFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/RequiredFullReloadDuringPIEKeepsOldCodeActive",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/RpcFlagsAndValidateCacheUpdateAfterFullReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SeparatesVirtualPathState",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadDuringPIEUpdatesLiveLevelScriptBody",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadDuringTwoPlayerPIEUpdatesServerAndClientLevelScripts",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadKeepsBlueprintChildInstanceOnUpdatedParentBody",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadKeepsOpenEditorLevelBlueprintParentAndUpdatesBody",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadPreservesNamespaceOverloadDispatch",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadPreservesUnrelatedModuleExecution",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadRequirement",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadUpdatesMemberFunctionBodyWithoutReplacingClass",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadUpdatesNamespaceFunctionDispatch",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SoftReloadUpdatesNestedNamespaceFunctionDispatch",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/StructFullReloadReplacesScriptStructAndKeepsVersionChain",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/StructLayoutReloadMarksBlueprintVariablesAndPinsImpacted",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/StructPropertyRetargetsToReloadedStruct",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/StructUFunctionParameterExecutesAfterReload",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/StructuralReloadKeepsExistingAndFreshBlueprintChildDefaults",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SuggestedFullReloadDuringPIESoftAppliesBodyButDefersShape",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SuggestedFullReloadDuringTwoPlayerPIEDefersShapeToNextSession",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SuperClassChange",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/SuppressTimestampOnlyChange",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "HotReload/WorldSubsystemSoftReloadUpdatesCallableBehavior",
+      "reviewedCount": 0,
+      "sourceCount": 2
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Access",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Casting",
+      "reviewedCount": 0,
+      "sourceCount": 54
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Const",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/ControlFlow/Foreach",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/ControlFlow/If",
+      "reviewedCount": 0,
+      "sourceCount": 12
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/ControlFlow/Jump",
+      "reviewedCount": 0,
+      "sourceCount": 24
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/ControlFlow/Switch",
+      "reviewedCount": 0,
+      "sourceCount": 16
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/ControlFlow/While",
+      "reviewedCount": 0,
+      "sourceCount": 9
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Literals/FString",
+      "reviewedCount": 0,
+      "sourceCount": 73
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Namespace",
+      "reviewedCount": 0,
+      "sourceCount": 15
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Arithmetic",
+      "reviewedCount": 0,
+      "sourceCount": 18
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Assignment",
+      "reviewedCount": 0,
+      "sourceCount": 12
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Bitwise",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Comparison",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Logical",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Overload",
+      "reviewedCount": 0,
+      "sourceCount": 22
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Operators/Ternary",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Preprocessor",
+      "reviewedCount": 0,
+      "sourceCount": 72
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Syntax/Comments",
+      "reviewedCount": 0,
+      "sourceCount": 11
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Syntax/EdgeCases",
+      "reviewedCount": 0,
+      "sourceCount": 238
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Syntax/Keywords",
+      "reviewedCount": 0,
+      "sourceCount": 10
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Syntax/Reference",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Language/Syntax/Variable",
+      "reviewedCount": 0,
+      "sourceCount": 11
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Optional/GAS/Bindings",
+      "reviewedCount": 0,
+      "sourceCount": 23
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Optional/GAS/Functional",
+      "reviewedCount": 0,
+      "sourceCount": 85
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "Optional/GameplayTags/Bindings",
+      "reviewedCount": 0,
+      "sourceCount": 8
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/Assertions",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/Automation",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/Commands",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/Discovery",
+      "reviewedCount": 0,
+      "sourceCount": 4
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/HotReload",
+      "reviewedCount": 0,
+      "sourceCount": 7
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/Lifecycle",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/SelfHosted",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "TestFramework/World",
+      "reviewedCount": 0,
+      "sourceCount": 5
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Actor",
+      "reviewedCount": 0,
+      "sourceCount": 40
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Blueprint",
+      "reviewedCount": 0,
+      "sourceCount": 6
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Component",
+      "reviewedCount": 0,
+      "sourceCount": 72
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Subsystem/GameInstance",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Subsystem/World",
+      "reviewedCount": 0,
+      "sourceCount": 3
+    },
+    {
+      "contractCount": 0,
+      "coverageState": "unmigrated",
+      "domain": "World/Widget",
+      "reviewedCount": 0,
+      "sourceCount": 1
+    }
+  ],
+  "entries": [],
+  "schemaVersion": "authored-case-index-v2",
+  "totals": {
+    "contractCount": 0,
+    "reviewedContractCount": 0,
+    "sourceCount": 3041,
+    "strictPassContractCount": 0,
+    "uncontractedSourceCount": 3041
+  }
+}
