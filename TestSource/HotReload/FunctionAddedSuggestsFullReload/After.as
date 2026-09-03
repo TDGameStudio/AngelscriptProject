@@ -7,12 +7,14 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionAddedTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{
 		return 1;
 	}
 
+	/** Returns the extra value. */
 	UFUNCTION()
 	int GetExtraValue()
 	{

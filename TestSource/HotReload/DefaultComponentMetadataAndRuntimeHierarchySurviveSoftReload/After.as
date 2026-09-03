@@ -35,6 +35,7 @@ class AHotReloadComponentSoftDerivedActor : AHotReloadComponentSoftBaseActor
 	UPROPERTY(OverrideComponent = Billboard)
 	UHotReloadComponentReplacementComponent ReplacementBillboard;
 
+	/** Returns the version. */
 	UFUNCTION()
 	int GetVersion()
 	{

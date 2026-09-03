@@ -4,6 +4,7 @@
 // Replaced: HandleTickCompute TickIndex + 10 -> TickIndex + 100.
 // Oracle: TickCount 4, Total 230, BeginPlayCount stays 1. FixtureIsolated.
 
+/** Delegate FHotReloadTickCompute: carries (int TickIndex) for this reload scenario. */
 delegate int FHotReloadTickCompute(int TickIndex);
 
 UCLASS()
@@ -21,6 +22,7 @@ class AHotReloadDelegateRuntimeTickParent : AActor
 	UPROPERTY()
 	int Total = 0;
 
+	/** Blueprint begin-play override: binds the delegate and records the entry. */
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
@@ -28,6 +30,7 @@ class AHotReloadDelegateRuntimeTickParent : AActor
 		OnTickCompute.BindUFunction(this, n"HandleTickCompute");
 	}
 
+	/** Blueprint tick override: runs the per-frame compute and records the delta. */
 	UFUNCTION(BlueprintOverride)
 	void Tick(float DeltaTime)
 	{
@@ -41,6 +44,7 @@ class AHotReloadDelegateRuntimeTickParent : AActor
 		Total += OnTickCompute.Execute(TickCount);
 	}
 
+	/** Handles the tick compute callback. */
 	UFUNCTION()
 	int HandleTickCompute(int TickIndex)
 	{

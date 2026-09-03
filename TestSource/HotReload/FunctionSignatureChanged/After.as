@@ -7,6 +7,7 @@
 UCLASS()
 class UReloadFunctionTarget : UObject
 {
+	/** Computes the value and returns the result. */
 	UFUNCTION()
 	float ComputeValue(float Scale)
 	{

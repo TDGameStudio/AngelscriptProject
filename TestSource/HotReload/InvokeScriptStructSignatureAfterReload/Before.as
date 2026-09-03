@@ -11,19 +11,22 @@ struct FHotReloadScriptPayload
 	int Value = 0;
 }
 
-delegate int FHotReloadScriptStructSignal(const FHotReloadScriptPayload& Payload);
+/** Delegate FHotReloadScriptStructSignal: carries (const FHotReloadScriptPayload&in Payload) for this reload scenario. */
+delegate int FHotReloadScriptStructSignal(const FHotReloadScriptPayload&in Payload);
 
 UCLASS()
 class UHotReloadScriptStructReceiver : UObject
 {
+	/** Handles the payload callback. */
 	UFUNCTION()
-	int HandlePayload(const FHotReloadScriptPayload& Payload)
+	int HandlePayload(const FHotReloadScriptPayload&in Payload)
 	{
 		Log(n"HotReloadDelegateTests", "ScriptStruct V1 HandlePayload Value=" + Payload.Value);
 		return Payload.Value;
 	}
 }
 
+/** Runs the payload path and returns the observed result. */
 int RunPayload(UHotReloadScriptStructReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "ScriptStruct V1 RunPayload: building payload");

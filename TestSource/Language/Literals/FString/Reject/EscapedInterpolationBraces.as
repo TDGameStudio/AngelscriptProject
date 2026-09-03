@@ -14,6 +14,7 @@
  * @Return does not compile; diagnostic "malformed interpolation braces"
  */
 
+/** */
 void Test()
 {
 	int X = 5;

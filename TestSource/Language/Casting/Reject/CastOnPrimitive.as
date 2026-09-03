@@ -14,6 +14,7 @@
  * @Provenance Expected compile failure: "Cast on primitive type should fail".
  */
 
+/** */
 void Test()
 {
 	int X = 5;

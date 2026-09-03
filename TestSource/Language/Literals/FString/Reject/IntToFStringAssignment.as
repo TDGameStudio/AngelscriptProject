@@ -14,6 +14,7 @@
  * @Return does not compile; diagnostic "cannot convert int to FString"
  */
 
+/** */
 void Test()
 {
 	FString S = 42;

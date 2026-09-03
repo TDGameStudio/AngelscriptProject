@@ -4,6 +4,7 @@
 // Replaced: FReloadAnalysisSignal(int Value) -> (int Value, int Tag). FullReloadRequired.
 // FixtureIsolated.
 
+/** Delegate FReloadAnalysisSignal: carries (int Value, int Tag) for this reload scenario. */
 delegate void FReloadAnalysisSignal(int Value, int Tag);
 
 UCLASS()

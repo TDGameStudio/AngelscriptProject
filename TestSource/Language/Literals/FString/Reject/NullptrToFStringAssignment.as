@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "cannot convert nullptr to FString"
  */
 
+/** */
 void Test()
 {
 	FString S = nullptr;

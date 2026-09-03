@@ -12,6 +12,7 @@ class UDiscardRecompileTarget : UObject
 
 	default Version = 1;
 
+	/** Returns the version. */
 	UFUNCTION()
 	int GetVersion()
 	{

@@ -4,6 +4,7 @@
 // Replaced later: HandleCompute body, then property specifiers, then delegate arity.
 // Oracle: RunDelegate(40) -> 41, LastValue 40, BeginPlayCount 1. FixtureIsolated.
 
+/** Delegate FHotReloadRuntimeCompute: carries (int Value) for this reload scenario. */
 delegate int FHotReloadRuntimeCompute(int Value);
 
 UCLASS()
@@ -18,6 +19,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 	UPROPERTY()
 	int BeginPlayCount = 0;
 
+	/** Blueprint begin-play override: binds the delegate and records the entry. */
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
@@ -25,6 +27,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 		OnCompute.BindUFunction(this, n"HandleCompute");
 	}
 
+	/** Handles the compute callback. */
 	UFUNCTION()
 	int HandleCompute(int Value)
 	{
@@ -32,6 +35,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 		return Value + 1;
 	}
 
+	/** Runs the delegate path and returns the observed result. */
 	UFUNCTION()
 	int RunDelegate(int Value)
 	{

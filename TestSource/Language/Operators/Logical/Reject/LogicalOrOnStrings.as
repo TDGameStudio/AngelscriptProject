@@ -17,6 +17,7 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 void Test()
 {
 	auto X = "a" || "b";

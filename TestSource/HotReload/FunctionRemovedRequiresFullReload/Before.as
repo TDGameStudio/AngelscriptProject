@@ -8,12 +8,14 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionRemovedTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{
 		return 1;
 	}
 
+	/** Returns the removed value. */
 	UFUNCTION()
 	int GetRemovedValue()
 	{

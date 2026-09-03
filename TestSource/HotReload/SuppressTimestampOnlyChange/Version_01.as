@@ -4,6 +4,7 @@
 // Replaced: none. Content hash change queues a reload of the same source, not a second script version.
 // FixtureIsolated.
 
+/** Script entry point: runs the probe and returns its result. */
 int Entry()
 {
 	return 41;

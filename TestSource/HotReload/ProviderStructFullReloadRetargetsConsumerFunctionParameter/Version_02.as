@@ -9,6 +9,7 @@ import HotReload.Dependency.HotReloadDependencyProvider;
 UCLASS()
 class UHotReloadDependencyConsumer : UObject
 {
+	/** ReadPayload: exercises the read payload behaviour. */
 	UFUNCTION()
 	int ReadPayload(FHotReloadDependencyPayload Payload)
 	{

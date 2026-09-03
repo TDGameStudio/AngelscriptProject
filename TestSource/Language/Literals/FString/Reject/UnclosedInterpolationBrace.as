@@ -14,6 +14,7 @@
  * @Return does not compile; diagnostic "unterminated interpolation"
  */
 
+/** */
 void Test()
 {
 	int X = 5;

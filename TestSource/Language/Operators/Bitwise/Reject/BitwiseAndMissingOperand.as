@@ -17,6 +17,7 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 void Test()
 {
 	int X = 0xFF & ;

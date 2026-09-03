@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — modifying a const local (Value = 2).
  */
 
+/** */
 void Test()
 {
 	const int Value = 1;

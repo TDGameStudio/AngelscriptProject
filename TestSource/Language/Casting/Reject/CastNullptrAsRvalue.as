@@ -16,6 +16,7 @@
  * @Provenance Expected compile failure: "Cast on nullptr should fail".
  */
 
+/** */
 void Test()
 {
 	auto X = Cast<APawn>(nullptr);

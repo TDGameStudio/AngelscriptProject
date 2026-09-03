@@ -32,6 +32,7 @@ class UBadCarrier : UObject
 	 * @Return 1, never reached
 	 */
 	UFUNCTION(BlueprintEvent, BlueprintOverride)
+/** */
 	int Conflict()
 	{
 		return 1;

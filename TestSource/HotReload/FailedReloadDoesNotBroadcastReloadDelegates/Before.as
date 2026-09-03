@@ -7,6 +7,7 @@
 UCLASS()
 class UFailedReloadEventTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

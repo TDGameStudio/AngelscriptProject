@@ -14,6 +14,7 @@ class AHotReloadBlueprintChildStructuralParent : AActor
 	UPROPERTY()
 	int Bonus = 7;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

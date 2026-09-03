@@ -17,6 +17,7 @@
  * @Provenance Do not cast or drop either branch to make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	auto X = true ? 1 : "hello";

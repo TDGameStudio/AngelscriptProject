@@ -16,6 +16,7 @@
  * @Provenance sha256 from TS-LANG-0136; lines 705-712.
  */
 
+/** */
 bool TryNameOrdering()
 {
 	FName Left = n"Alpha";

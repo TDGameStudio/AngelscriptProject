@@ -17,6 +17,7 @@ class AHotReloadPIEAfterLevelScript : ALevelScriptActor
 	UPROPERTY()
 	int ExistingValue = 12;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

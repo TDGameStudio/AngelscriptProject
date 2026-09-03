@@ -4,6 +4,7 @@
 // Replaced in After: extra const FString& Label parameter.
 // Oracle: DelegateReloadCount 1; old vs new function identity. FixtureIsolated.
 
+/** Delegate FHotReloadSignal: carries (int Value) for this reload scenario. */
 delegate void FHotReloadSignal(int Value);
 
 UCLASS()

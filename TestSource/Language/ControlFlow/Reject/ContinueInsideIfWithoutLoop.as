@@ -17,6 +17,7 @@
  * @Provenance Oracle: compile fails — Invalid 'continue' inside if but not a loop.
  */
 
+/** */
 void Test()
 {
 	if (true)

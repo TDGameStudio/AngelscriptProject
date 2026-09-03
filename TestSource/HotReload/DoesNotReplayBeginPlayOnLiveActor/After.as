@@ -13,6 +13,7 @@ class AHotReloadLifecycleTarget : AActor
 	UPROPERTY()
 	int PersistentCounter = 0;
 
+	/** Blueprint begin-play override: binds the delegate and records the entry. */
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
@@ -20,6 +21,7 @@ class AHotReloadLifecycleTarget : AActor
 		Log(n"HotReloadLifecycleTests", "V2 BeginPlay Count=" + BeginPlayCount + " PersistentCounter=" + PersistentCounter);
 	}
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

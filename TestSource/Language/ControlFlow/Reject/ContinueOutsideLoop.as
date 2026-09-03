@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — Invalid 'continue' outside a loop.
  */
 
+/** */
 void Test()
 {
 	continue;

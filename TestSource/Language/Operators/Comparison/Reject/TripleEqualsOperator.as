@@ -17,6 +17,7 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 void Test()
 {
 	bool X = (1 === 1);

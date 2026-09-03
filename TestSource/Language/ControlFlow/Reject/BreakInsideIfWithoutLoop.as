@@ -17,6 +17,7 @@
  * @Provenance Oracle: compile fails — Invalid 'break' inside if but not a loop.
  */
 
+/** */
 void Test()
 {
 	if (true)

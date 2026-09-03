@@ -5,6 +5,7 @@
 // Oracle: FullReloadRequired, bWantsFullReload true, bNeedsFullReload true.
 // FixtureIsolated. Load Before then After in recorded order.
 
+/** Delegate FHotReloadChangeClassificationDelegateKindSignal: carries (int Value) for this reload scenario. */
 delegate void FHotReloadChangeClassificationDelegateKindSignal(int Value);
 
 UCLASS()

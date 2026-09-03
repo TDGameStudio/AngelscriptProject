@@ -19,12 +19,14 @@
 
 namespace Math
 {
+/** */
 	int Add(int A, int B)
 	{
 		return A + B;
 	}
 }
 
+/** */
 int UseSpecificFunction()
 {
 	using Math::Add;

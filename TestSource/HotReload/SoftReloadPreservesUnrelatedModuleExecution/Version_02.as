@@ -5,6 +5,7 @@
 // Oracle: GetValueB==20 before and after A reload.
 // FixtureIsolated. Load Version_01 (A), Version_02 (B), then Version_03 (A v2).
 
+/** Returns the value b. */
 int GetValueB()
 {
 	return 20;

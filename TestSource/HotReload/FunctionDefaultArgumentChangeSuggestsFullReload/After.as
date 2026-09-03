@@ -7,6 +7,7 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionDefaultTarget : UObject
 {
+	/** SumWithDefault: exercises the sum with default behaviour. */
 	UFUNCTION()
 	int SumWithDefault(int Value = 2)
 	{

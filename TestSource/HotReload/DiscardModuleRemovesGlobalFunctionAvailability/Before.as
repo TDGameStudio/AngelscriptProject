@@ -4,6 +4,7 @@
 // Replaced after DiscardModule: this Entry is gone so a second module may publish the same signature.
 // FixtureIsolated. C++ ExecuteIntFunction oracle is 1.
 
+/** Script entry point: runs the probe and returns its result. */
 int Entry()
 {
 	return 1;

@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptCoverageFStringExpressionTests.cpp::UnsupportedStringExpressionBoundaries block 4
  */
 
+/** */
 int TryFCStringAtoi()
 {
 	FString Value = "42";

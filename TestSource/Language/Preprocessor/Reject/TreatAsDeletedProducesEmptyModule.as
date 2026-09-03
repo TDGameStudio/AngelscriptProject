@@ -35,6 +35,7 @@ class UDeletedFileProbe : UObject
 	 * @Return 7, never reached
 	 */
 	UFUNCTION()
+/** */
 	int Entry()
 	{
 		return 7;

@@ -13,6 +13,7 @@ class UReloadNoChangeTarget : UObject
 
 	default Value = 10;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

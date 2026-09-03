@@ -17,11 +17,13 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 int Foo()
 {
 	return 1;
 }
 
+/** */
 void Test()
 {
 	Foo() = 5;

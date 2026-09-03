@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptCoverageFStringExpressionTests.cpp::UnsupportedStringExpressionBoundaries block 2
  */
 
+/** */
 int TryStringToIntMethod()
 {
 	FString Value = "42";

@@ -18,6 +18,7 @@ class UHotReloadStructPropertyOwner : UObject
 	UPROPERTY()
 	FHotReloadStructPropertyPayload Payload;
 
+	/** ConfigureAndRead: exercises the configure and read behaviour. */
 	UFUNCTION()
 	int ConfigureAndRead()
 	{
@@ -26,6 +27,7 @@ class UHotReloadStructPropertyOwner : UObject
 	}
 }
 
+/** Runs the owner path and returns the observed result. */
 int RunOwner(UHotReloadStructPropertyOwner Owner)
 {
 	return Owner.ConfigureAndRead();

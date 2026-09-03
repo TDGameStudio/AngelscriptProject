@@ -11,6 +11,7 @@ class AHotReloadSoftReloadConsistencyTarget : AActor
 	UPROPERTY()
 	int Counter = 5;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

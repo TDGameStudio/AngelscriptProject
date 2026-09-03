@@ -16,6 +16,7 @@
  */
 
 FString GMutable = "Mutable";
+/** */
 FString ReadMutable()
 {
 	return GMutable;

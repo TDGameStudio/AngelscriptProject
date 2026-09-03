@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadReflectionFunctionCarrier : UObject
 {
+	/** Computes the value and returns the result. */
 	UFUNCTION(BlueprintCallable, meta=(DisplayName="Beta Function", ToolTip="Beta tooltip"))
 	int ComputeValue(int Value = 7)
 	{

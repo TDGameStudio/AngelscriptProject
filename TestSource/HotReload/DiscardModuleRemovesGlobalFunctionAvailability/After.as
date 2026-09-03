@@ -4,6 +4,7 @@
 // Replaced: Before Entry=1 is no longer callable.
 // FixtureIsolated. C++ ExecuteIntFunction oracle is 2.
 
+/** Script entry point: runs the probe and returns its result. */
 int Entry()
 {
 	return 2;

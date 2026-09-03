@@ -17,6 +17,7 @@
  * @Provenance Do not insert a true-branch expression that would make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = true ? : 0;

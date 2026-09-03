@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadReflectionFunctionCarrier : UObject
 {
+	/** Computes the value and returns the result. */
 	UFUNCTION(meta=(DisplayName="Alpha Function", ToolTip="Alpha tooltip"))
 	int ComputeValue(int Value = 3)
 	{

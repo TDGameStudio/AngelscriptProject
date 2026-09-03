@@ -5,6 +5,7 @@
 // Oracle: RunMulticast returns 1. Error codes 10/20/30/40/50 on failed steps.
 // FixtureIsolated.
 
+/** Event FHotReloadMulticastSignal: carries (int Value) for this reload scenario. */
 event void FHotReloadMulticastSignal(int Value);
 
 UCLASS()
@@ -19,18 +20,21 @@ class AHotReloadDelegateRuntimeMulticastActor : AActor
 	UPROPERTY()
 	int CountB = 0;
 
+	/** Handles the r a callback. */
 	UFUNCTION()
 	void HandlerA(int Value)
 	{
 		CountA += Value;
 	}
 
+	/** Handles the r b callback. */
 	UFUNCTION()
 	void HandlerB(int Value)
 	{
 		CountB += Value * 10;
 	}
 
+	/** Runs the multicast path and returns the observed result. */
 	UFUNCTION()
 	int RunMulticast()
 	{

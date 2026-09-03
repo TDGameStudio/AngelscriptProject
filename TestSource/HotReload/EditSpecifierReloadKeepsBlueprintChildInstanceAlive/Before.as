@@ -10,6 +10,7 @@ class AHotReloadBlueprintChildEditSpecifierParent : AActor
 	UPROPERTY(NotEditable)
 	int ExampleValue = 15;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

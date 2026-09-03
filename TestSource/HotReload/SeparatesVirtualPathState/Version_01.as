@@ -4,6 +4,7 @@
 // Replaced: none. Hash state is keyed by virtual path, not by this body changing.
 // FixtureIsolated.
 
+/** Script entry point: runs the probe and returns its result. */
 int Entry()
 {
 	return 1;

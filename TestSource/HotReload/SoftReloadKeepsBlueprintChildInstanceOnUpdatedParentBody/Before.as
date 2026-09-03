@@ -11,6 +11,7 @@ class AHotReloadBlueprintChildSoftReloadParent : AActor
 	UPROPERTY()
 	int ExampleValue = 30;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

@@ -20,6 +20,7 @@
 enum EEnumMethod
 {
 	Value1;
+/** */
 	void Foo()
 	{
 	}

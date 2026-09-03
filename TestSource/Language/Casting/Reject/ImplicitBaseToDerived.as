@@ -14,10 +14,12 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Implicit_Negative AssertFailsToCompile
  */
 
+/** */
 void TakePawn(APawn P)
 {
 }
 
+/** */
 void Test(AActor A)
 {
 	TakePawn(A);

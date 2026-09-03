@@ -7,6 +7,7 @@
 UCLASS()
 class UPostReloadModeTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

@@ -26,6 +26,7 @@ class UBadFunctionConditionalCarrier : UObject
 {
 #ifndef UNKNOWN_FLAG
 	UFUNCTION()
+/** */
 	int BadFunction()
 	{
 		return 1;

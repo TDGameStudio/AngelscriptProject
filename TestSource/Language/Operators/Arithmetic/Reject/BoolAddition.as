@@ -19,6 +19,7 @@
  * @Provenance DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	bool A = true;

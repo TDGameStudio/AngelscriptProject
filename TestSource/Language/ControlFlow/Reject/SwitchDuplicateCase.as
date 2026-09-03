@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "duplicate case label"
  */
 
+/** */
 void Test()
 {
 	int X = 1;

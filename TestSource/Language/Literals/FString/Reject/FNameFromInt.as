@@ -15,6 +15,7 @@
  * @Provenance C++: AngelscriptCoverageFStringExpressionTests.cpp::FName_Mixed block 4
  */
 
+/** */
 void Test()
 {
 	FName N = FName(42);

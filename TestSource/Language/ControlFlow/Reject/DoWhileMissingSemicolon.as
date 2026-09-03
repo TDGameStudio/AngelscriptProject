@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "expected ';' after the do-while condition"
  */
 
+/** */
 void Test()
 {
 	do

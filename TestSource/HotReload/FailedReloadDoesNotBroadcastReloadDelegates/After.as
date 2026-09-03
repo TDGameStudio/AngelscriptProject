@@ -8,6 +8,7 @@
 UCLASS()
 class UFailedReloadEventTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	MissingType GetValue()
 	{

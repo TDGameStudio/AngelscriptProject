@@ -4,6 +4,7 @@
 // Replaced: FHotReloadRuntimeCompute(int Value, int Bonus); HandleCompute sums; RunDelegate rebinds if unbound and Execute(Value, 7).
 // Oracle: RunDelegate(30) -> 42, LastValue 37. FixtureIsolated.
 
+/** Delegate FHotReloadRuntimeCompute: carries (int Value, int Bonus) for this reload scenario. */
 delegate int FHotReloadRuntimeCompute(int Value, int Bonus);
 
 UCLASS()
@@ -18,6 +19,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 	UPROPERTY()
 	int BeginPlayCount = 0;
 
+	/** Blueprint begin-play override: binds the delegate and records the entry. */
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
@@ -25,6 +27,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 		OnCompute.BindUFunction(this, n"HandleCompute");
 	}
 
+	/** Handles the compute callback. */
 	UFUNCTION()
 	int HandleCompute(int Value, int Bonus)
 	{
@@ -32,6 +35,7 @@ class AHotReloadDelegateRuntimeBlueprintParent : AActor
 		return LastValue + 5;
 	}
 
+	/** Runs the delegate path and returns the observed result. */
 	UFUNCTION()
 	int RunDelegate(int Value)
 	{

@@ -41,6 +41,7 @@ class ACoverageEventAddDynamicBoundaryActor : AActor
 	 * @Return nothing
 	 */
 	UFUNCTION()
+/** */
 	void Handler()
 	{
 	}
@@ -53,6 +54,7 @@ class ACoverageEventAddDynamicBoundaryActor : AActor
 	 * @Return does not compile
 	 */
 	UFUNCTION()
+/** */
 	void TryAddDynamic()
 	{
 		OnBoundary.AddDynamic(this, n"Handler");

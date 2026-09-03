@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — switch expressions must be integral numbers (FName is rejected).
  */
 
+/** */
 int SwitchFName(FName Name)
 {
 	switch (Name)

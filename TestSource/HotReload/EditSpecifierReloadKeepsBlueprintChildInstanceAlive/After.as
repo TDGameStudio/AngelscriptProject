@@ -11,6 +11,7 @@ class AHotReloadBlueprintChildEditSpecifierParent : AActor
 	UPROPERTY(EditAnywhere)
 	int ExampleValue = 15;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

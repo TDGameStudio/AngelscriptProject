@@ -13,17 +13,20 @@ class AHotReloadBlueprintChildSoftSequenceParent : AActor
 	UPROPERTY()
 	int BeginPlayCount = 0;
 
+	/** Blueprint begin-play override: binds the delegate and records the entry. */
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
 		BeginPlayCount += 1;
 	}
 
+	/** Computes the bonus and returns the result. */
 	int ComputeBonus()
 	{
 		return 1;
 	}
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

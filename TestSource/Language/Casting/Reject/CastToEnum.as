@@ -14,6 +14,7 @@
  * @Provenance Expected compile failure: "Cast to enum type should fail".
  */
 
+/** */
 void Test(AActor A)
 {
 	auto X = Cast<ENetRole>(A);

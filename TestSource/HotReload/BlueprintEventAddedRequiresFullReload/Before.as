@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadChangeClassificationBlueprintEventAddedTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

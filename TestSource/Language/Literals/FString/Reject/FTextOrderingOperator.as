@@ -15,6 +15,7 @@
  * @Provenance C++: AngelscriptCoverageFStringExpressionTests.cpp::UnsupportedStringExpressionBoundaries block 8
  */
 
+/** */
 bool TryTextOrdering()
 {
 	FText Left = FText::FromString("A");

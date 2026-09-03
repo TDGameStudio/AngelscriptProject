@@ -31,6 +31,7 @@ class UBadCarrier : UObject
 	 * @Return nothing, never reached
 	 */
 	UFUNCTION(DefinitelyUnknownSpecifier)
+/** */
 	void Unknown()
 	{
 	}

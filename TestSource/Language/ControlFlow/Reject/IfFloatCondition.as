@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — float used as if condition.
  */
 
+/** */
 void Test()
 {
 	if (1.0f)

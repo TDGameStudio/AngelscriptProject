@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptCoverageFStringExpressionTests.cpp::UnsupportedStringExpressionBoundaries block 3
  */
 
+/** */
 float TryStringToFloatMethod()
 {
 	FString Value = "3.14";

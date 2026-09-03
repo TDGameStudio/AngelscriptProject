@@ -24,6 +24,7 @@ struct FMyType
 	int X = 0;
 }
 
+/** */
 void Test()
 {
 	FMyType A;

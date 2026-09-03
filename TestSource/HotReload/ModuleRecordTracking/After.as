@@ -12,6 +12,7 @@ class UTrackedObjectB : UObject
 
 	default ValueB = 20;
 
+	/** Returns the value b. */
 	UFUNCTION()
 	int GetValueB()
 	{

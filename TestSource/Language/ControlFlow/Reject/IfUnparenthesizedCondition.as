@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — missing parentheses around if condition.
  */
 
+/** */
 void Test()
 {
 	if true

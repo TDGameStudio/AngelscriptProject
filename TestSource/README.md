@@ -29,6 +29,8 @@ TestSource/
   Language/  Definitions/  Containers/  Feature/  World/
   Gameplay/  Optional/  HotReload/  Debugger/
   Generation/   (independent generation-rules corpus; not a test theme)
+  ReloadHistory.md            # SourceHistory .as comment markers + generated diffs
+  TestFramework.md            # Suite protocol tests + thin Usage corpus (Math/Containers)
 ```
 
 There are no `_Type` or `_Functions` shard directories. Multiple physical

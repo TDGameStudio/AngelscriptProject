@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadGameInstanceSubsystemTarget : UScriptGameInstanceSubsystem
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

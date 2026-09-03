@@ -4,11 +4,13 @@
 // Replaced: FVector2D Offset, FTransform, FLinearColor Tint, FColor PackedColor, FGuid Id.
 // Oracle: Execute packed values -> 126. Extra: default/zero structs add 0. FixtureIsolated.
 
+/** Delegate FHotReloadNativeStructSignal: carries (FVector Location, FVector2D Offset, FTransform Transform, FLinearColor Tint, FColor PackedColor, FGuid Id) for this reload scenario. */
 delegate int FHotReloadNativeStructSignal(FVector Location, FVector2D Offset, FTransform Transform, FLinearColor Tint, FColor PackedColor, FGuid Id);
 
 UCLASS()
 class UHotReloadNativeStructReceiver : UObject
 {
+	/** Handles the structs callback. */
 	UFUNCTION()
 	int HandleStructs(FVector Location, FVector2D Offset, FTransform Transform, FLinearColor Tint, FColor PackedColor, FGuid Id)
 	{
@@ -26,6 +28,7 @@ class UHotReloadNativeStructReceiver : UObject
 	}
 }
 
+/** Runs the native struct path and returns the observed result. */
 int RunNativeStruct(UHotReloadNativeStructReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "NativeStruct V2 RunNativeStruct: binding HandleStructs");

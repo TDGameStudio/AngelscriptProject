@@ -6,6 +6,7 @@
 
 namespace HotReloadNamespaceFunctionBasic
 {
+	/** Square: exercises the square behaviour. */
 	int Square(int X)
 	{
 		return X * X + 1;
@@ -15,6 +16,7 @@ namespace HotReloadNamespaceFunctionBasic
 UCLASS()
 class UHotReloadNamespaceFunctionBasicCarrier : UObject
 {
+	/** Computes the square and returns the result. */
 	UFUNCTION()
 	int ComputeSquare(int X)
 	{

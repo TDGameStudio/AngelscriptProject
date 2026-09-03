@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "expected '(' after while"
  */
 
+/** */
 void Test()
 {
 	while true

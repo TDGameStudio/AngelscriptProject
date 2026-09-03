@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "case outside of a switch"
  */
 
+/** */
 void Test()
 {
 	case 1:

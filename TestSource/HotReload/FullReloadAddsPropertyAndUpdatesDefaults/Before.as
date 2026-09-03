@@ -13,6 +13,7 @@ class UFullReloadTarget : UObject
 
 	default Version = 1;
 
+	/** Returns the version. */
 	UFUNCTION()
 	int GetVersion()
 	{

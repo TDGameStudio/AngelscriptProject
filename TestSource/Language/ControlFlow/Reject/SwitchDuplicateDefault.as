@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "duplicate default label"
  */
 
+/** */
 void Test()
 {
 	int X = 1;

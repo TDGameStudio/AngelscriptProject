@@ -4,11 +4,13 @@
 // Replaced: TArray<FVector> Vectors, TMap<FString,int> Scores, TSet<FName> Tags.
 // Oracle: Execute -> 147. Extra: Tags.Contains Missing is 0; empty map Find leaves 0. FixtureIsolated.
 
+/** Delegate FHotReloadContainerSignal: carries (TArray<int> Values, TArray<FVector> Vectors, TMap<FString, int> Scores, TSet<FName> Tags) for this reload scenario. */
 delegate int FHotReloadContainerSignal(TArray<int> Values, TArray<FVector> Vectors, TMap<FString, int> Scores, TSet<FName> Tags);
 
 UCLASS()
 class UHotReloadContainerReceiver : UObject
 {
+	/** Handles the containers callback. */
 	UFUNCTION()
 	int HandleContainers(TArray<int> Values, TArray<FVector> Vectors, TMap<FString, int> Scores, TSet<FName> Tags)
 	{
@@ -29,6 +31,7 @@ class UHotReloadContainerReceiver : UObject
 	}
 }
 
+/** Runs the containers path and returns the observed result. */
 int RunContainers(UHotReloadContainerReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "Container V2 RunContainers: building containers");

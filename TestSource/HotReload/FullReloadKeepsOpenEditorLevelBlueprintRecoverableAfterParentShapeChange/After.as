@@ -13,6 +13,7 @@ class AHotReloadLevelBlueprintStructuralParent : ALevelScriptActor
 	UPROPERTY()
 	int AddedValue = 33;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

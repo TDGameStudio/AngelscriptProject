@@ -4,11 +4,13 @@
 // Replaced in After: Offset, Transform, Tint, PackedColor, Id parameters.
 // Oracle: Execute(FVector(1,2,3)) -> 6. Extra: zero vector would sum 0. FixtureIsolated.
 
+/** Delegate FHotReloadNativeStructSignal: carries (FVector Location) for this reload scenario. */
 delegate int FHotReloadNativeStructSignal(FVector Location);
 
 UCLASS()
 class UHotReloadNativeStructReceiver : UObject
 {
+	/** Handles the structs callback. */
 	UFUNCTION()
 	int HandleStructs(FVector Location)
 	{
@@ -18,6 +20,7 @@ class UHotReloadNativeStructReceiver : UObject
 	}
 }
 
+/** Runs the native struct path and returns the observed result. */
 int RunNativeStruct(UHotReloadNativeStructReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "NativeStruct V1 RunNativeStruct: binding HandleStructs");

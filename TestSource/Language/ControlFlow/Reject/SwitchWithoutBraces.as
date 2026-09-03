@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "expected '{' after the switch expression"
  */
 
+/** */
 void Test()
 {
 	int X = 1;

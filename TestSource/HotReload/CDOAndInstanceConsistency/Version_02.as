@@ -14,12 +14,14 @@ class AHotReloadVersionChainTarget : AActor
 	UPROPERTY()
 	int Mana = 5;
 
+	/** Returns the version. */
 	UFUNCTION()
 	int GetVersion()
 	{
 		return Version;
 	}
 
+	/** Returns the mana. */
 	UFUNCTION()
 	int GetMana()
 	{

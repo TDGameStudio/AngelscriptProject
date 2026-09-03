@@ -13,6 +13,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Explicit_Negative AssertFailsToCompile
  */
 
+/** */
 void Test()
 {
 	int X = int(1, 2, 3);

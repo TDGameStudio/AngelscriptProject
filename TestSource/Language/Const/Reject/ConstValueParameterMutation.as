@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — modifying a const value parameter (Value = 2).
  */
 
+/** */
 void Test(const int Value)
 {
 	Value = 2;

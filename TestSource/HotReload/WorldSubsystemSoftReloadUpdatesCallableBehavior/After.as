@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadWorldSubsystemTarget : UScriptWorldSubsystem
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

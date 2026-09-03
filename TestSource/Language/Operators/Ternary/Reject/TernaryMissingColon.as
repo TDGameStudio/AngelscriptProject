@@ -17,6 +17,7 @@
  * @Provenance Do not add : 0 that would make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = true ? 1;

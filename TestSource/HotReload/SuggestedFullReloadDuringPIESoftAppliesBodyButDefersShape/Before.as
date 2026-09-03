@@ -26,6 +26,7 @@ class AHotReloadPIEDuringSuggestedLevelScript : ALevelScriptActor
 
 	default State = EHotReloadPIESuggestedState::Alpha;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

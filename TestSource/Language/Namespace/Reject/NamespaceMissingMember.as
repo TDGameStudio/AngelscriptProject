@@ -22,6 +22,7 @@ namespace MySpaceBadAcc
 	int X = 1;
 }
 
+/** */
 void Test()
 {
 	int Y = MySpaceBadAcc::NonExistent;

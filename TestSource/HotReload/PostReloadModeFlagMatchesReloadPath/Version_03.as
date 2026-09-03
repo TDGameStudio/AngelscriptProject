@@ -11,6 +11,7 @@ class UPostReloadModeTarget : UObject
 	UPROPERTY()
 	int Epoch = 3;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

@@ -8,6 +8,7 @@ namespace HotReloadNamespaceFunctionNested
 {
 	namespace Math
 	{
+		/** Apply: exercises the apply behaviour. */
 		int Apply(int X)
 		{
 			return X + 4;
@@ -18,6 +19,7 @@ namespace HotReloadNamespaceFunctionNested
 UCLASS()
 class UHotReloadNamespaceFunctionNestedCarrier : UObject
 {
+	/** ApplyNestedRule: exercises the apply nested rule behaviour. */
 	UFUNCTION()
 	int ApplyNestedRule(int X)
 	{

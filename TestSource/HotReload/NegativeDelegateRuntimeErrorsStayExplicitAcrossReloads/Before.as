@@ -5,35 +5,41 @@
 // Oracle: "Executing unbound delegate."; missing UFUNCTION name; incompatible signature.
 // FixtureIsolated. Isolated failing Execute/Bind, not extra declarations.
 
+/** Delegate FHotReloadNegativeCompute: carries (int Value) for this reload scenario. */
 delegate int FHotReloadNegativeCompute(int Value);
 
 UCLASS()
 class UHotReloadDelegateRuntimeNegativeReceiver : UObject
 {
+	/** Handles the compute callback. */
 	UFUNCTION()
 	int HandleCompute(int Value)
 	{
 		return Value + 1;
 	}
 
+	/** WrongSignature: exercises the wrong signature behaviour. */
 	UFUNCTION()
 	void WrongSignature()
 	{
 	}
 }
 
+/** Builds and returns the receiver. */
 UHotReloadDelegateRuntimeNegativeReceiver MakeReceiver()
 {
 	return Cast<UHotReloadDelegateRuntimeNegativeReceiver>(
 		NewObject(GetTransientPackage(), UHotReloadDelegateRuntimeNegativeReceiver::StaticClass()));
 }
 
+/** Triggers the unbound execute path. */
 void TriggerUnboundExecute()
 {
 	FHotReloadNegativeCompute Compute;
 	Compute.Execute(5);
 }
 
+/** Triggers the missing handler path. */
 void TriggerMissingHandler()
 {
 	UHotReloadDelegateRuntimeNegativeReceiver Receiver = MakeReceiver();
@@ -41,6 +47,7 @@ void TriggerMissingHandler()
 	Compute.BindUFunction(Receiver, n"MissingHandler");
 }
 
+/** Triggers the signature mismatch path. */
 void TriggerSignatureMismatch()
 {
 	UHotReloadDelegateRuntimeNegativeReceiver Receiver = MakeReceiver();

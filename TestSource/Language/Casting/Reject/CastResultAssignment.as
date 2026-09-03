@@ -14,6 +14,7 @@
  * @Provenance Expected compile failure: "assignment to a Cast result should fail".
  */
 
+/** */
 void Test(AActor A)
 {
 	Cast<APawn>(A) = nullptr;

@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "range-for requires a container"
  */
 
+/** */
 void Test()
 {
 	for (int Val : 42)

@@ -12,6 +12,7 @@ class UDiscardableObject : UObject
 
 	default Score = 42;
 
+	/** Returns the score. */
 	UFUNCTION()
 	int GetScore()
 	{

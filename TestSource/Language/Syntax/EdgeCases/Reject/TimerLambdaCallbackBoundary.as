@@ -30,6 +30,7 @@ class ACoverageEventTimerLambdaBoundaryActor : AActor
 	 * @Return does not compile
 	 */
 	UFUNCTION()
+/** */
 	void TryTimerLambda()
 	{
 		/**

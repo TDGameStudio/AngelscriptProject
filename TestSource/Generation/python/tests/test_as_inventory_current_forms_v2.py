@@ -4,6 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from angelscript_generation.as_inventory import inventory_source
+from angelscript_generation.reload_history import is_reload_history_path
 
 
 TESTSOURCE = Path(__file__).resolve().parents[3]
@@ -48,6 +49,8 @@ def test_current_corpus_has_all_34_legal_cross_owner_collision_files_visible() -
     collision_files: list[str] = []
     for path in sorted(TESTSOURCE.rglob("*.as")):
         if path.relative_to(TESTSOURCE).parts[0] == "Generation":
+            continue
+        if is_reload_history_path(path):
             continue
         result = inventory_source(path.read_text(encoding="utf-8-sig"), "TestSource/" + path.relative_to(TESTSOURCE).as_posix())
         owners_by_declaration: dict[str, set[str]] = defaultdict(set)

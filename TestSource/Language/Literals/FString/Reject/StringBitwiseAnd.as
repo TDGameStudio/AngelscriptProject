@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "operator '&' is not supported for FString"
  */
 
+/** */
 void Test()
 {
 	FString A = "Hello";

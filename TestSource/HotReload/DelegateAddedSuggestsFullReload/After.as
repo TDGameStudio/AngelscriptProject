@@ -4,11 +4,13 @@
 // Replaced: module gains FHotReloadChangeClassificationAddedSignal. FullReloadSuggested.
 // FixtureIsolated.
 
+/** Delegate FHotReloadChangeClassificationAddedSignal: carries (int Value) for this reload scenario. */
 delegate void FHotReloadChangeClassificationAddedSignal(int Value);
 
 UCLASS()
 class UHotReloadChangeClassificationDelegateAddedTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

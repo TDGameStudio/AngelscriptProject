@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionMetadataTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION(meta=(DisplayName="Alpha"))
 	int GetValue()
 	{

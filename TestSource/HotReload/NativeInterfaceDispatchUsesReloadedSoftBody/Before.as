@@ -13,20 +13,23 @@ class AHotReloadInterfaceNativeBridgeActor : AActor, UAngelscriptNativeParentInt
 	UPROPERTY()
 	FName NativeMarker = NAME_None;
 
+	/** Returns the native value. */
 	UFUNCTION()
 	int GetNativeValue() const
 	{
 		return NativeValue + 1;
 	}
 
+	/** Assigns the native marker. */
 	UFUNCTION()
 	void SetNativeMarker(FName Marker)
 	{
 		NativeMarker = Marker;
 	}
 
+	/** Adjusts the native value in place. */
 	UFUNCTION()
-	void AdjustNativeValue(int Delta, int& Value)
+	void AdjustNativeValue(int Delta, int&inout Value)
 	{
 		Value += Delta;
 	}

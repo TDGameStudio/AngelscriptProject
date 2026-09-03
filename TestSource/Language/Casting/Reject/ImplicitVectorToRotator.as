@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Implicit_Negative AssertFailsToCompile
  */
 
+/** */
 void Test()
 {
 	FVector V = FVector(1, 0, 0);

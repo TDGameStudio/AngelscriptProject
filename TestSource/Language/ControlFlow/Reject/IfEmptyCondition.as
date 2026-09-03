@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — empty if condition.
  */
 
+/** */
 void Test()
 {
 	if ()

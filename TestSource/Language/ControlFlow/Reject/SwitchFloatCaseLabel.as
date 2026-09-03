@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "case label must be an integral constant"
  */
 
+/** */
 void Test()
 {
 	int X = 1;

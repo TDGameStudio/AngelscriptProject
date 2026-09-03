@@ -19,6 +19,7 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 int opAdd(int A, int B)
 {
 	return A + B;

@@ -21,6 +21,7 @@ class AHotReloadPIEMatrixLevelScript : ALevelScriptActor
 	UPROPERTY()
 	int AddedValue = 40;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

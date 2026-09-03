@@ -4,11 +4,13 @@
 // Replaced in After: UClass, TSubclassOf, TSoftObjectPtr, TSoftClassPtr parameters.
 // Oracle: valid texture -> 17; null texture would return 0. FixtureIsolated.
 
+/** Delegate FHotReloadReferenceSignal: carries (UTexture2D Texture) for this reload scenario. */
 delegate int FHotReloadReferenceSignal(UTexture2D Texture);
 
 UCLASS()
 class UHotReloadReferenceReceiver : UObject
 {
+	/** Handles the references callback. */
 	UFUNCTION()
 	int HandleReferences(UTexture2D Texture)
 	{
@@ -18,6 +20,7 @@ class UHotReloadReferenceReceiver : UObject
 	}
 }
 
+/** Runs the references path and returns the observed result. */
 int RunReferences(UHotReloadReferenceReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "Reference V1 RunReferences: creating texture");

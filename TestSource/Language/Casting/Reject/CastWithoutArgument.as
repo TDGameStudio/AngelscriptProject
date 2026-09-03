@@ -14,6 +14,7 @@
  * @Provenance Expected compile failure: "Cast without an argument should fail".
  */
 
+/** */
 void Test()
 {
 	auto X = Cast<AActor>();

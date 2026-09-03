@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Explicit_Negative AssertFailsToCompile
  */
 
+/** */
 void Test()
 {
 	FString S = "hello";

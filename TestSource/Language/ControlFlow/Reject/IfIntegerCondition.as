@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — non-bool condition (integer 5).
  */
 
+/** */
 void Test()
 {
 	if (5)

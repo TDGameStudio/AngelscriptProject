@@ -13,6 +13,7 @@ class USoftReloadTarget : UObject
 
 	default Version = 1;
 
+	/** Returns the version. */
 	UFUNCTION()
 	int GetVersion()
 	{
@@ -20,6 +21,7 @@ class USoftReloadTarget : UObject
 	}
 }
 
+/** Returns the soft reload version. */
 int GetSoftReloadVersion()
 {
 	return 1;

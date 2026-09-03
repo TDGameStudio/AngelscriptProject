@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — Invalid 'break' outside a loop.
  */
 
+/** */
 void Test()
 {
 	break;

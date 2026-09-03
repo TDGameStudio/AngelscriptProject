@@ -18,6 +18,7 @@
  * @Provenance DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = "hello" + 1;

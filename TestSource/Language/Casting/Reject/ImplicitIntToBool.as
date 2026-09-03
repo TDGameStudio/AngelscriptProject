@@ -14,6 +14,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Implicit_Negative AssertFailsToCompile
  */
 
+/** */
 void Test()
 {
 	int X = 1;

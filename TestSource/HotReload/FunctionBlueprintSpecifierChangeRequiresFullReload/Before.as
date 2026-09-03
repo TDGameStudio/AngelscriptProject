@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionSpecifierTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION(BlueprintCallable)
 	int GetValue()
 	{

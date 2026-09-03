@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "do-while condition must be a boolean expression"
  */
 
+/** */
 void Test()
 {
 	do

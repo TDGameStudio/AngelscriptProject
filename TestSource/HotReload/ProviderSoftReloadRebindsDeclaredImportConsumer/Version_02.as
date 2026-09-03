@@ -4,6 +4,7 @@
 // Replaced: return 11 -> 29. Oracle: consumer Entry() == 29 after provider-only reload.
 // FixtureIsolated. Provider file, pairs with Version_01.
 
+/** SharedValue: exercises the shared value behaviour. */
 int SharedValue()
 {
 	return 29;

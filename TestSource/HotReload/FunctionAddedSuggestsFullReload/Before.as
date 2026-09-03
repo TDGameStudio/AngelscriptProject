@@ -8,6 +8,7 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionAddedTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

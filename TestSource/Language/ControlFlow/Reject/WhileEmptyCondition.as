@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "expected an expression inside the while condition"
  */
 
+/** */
 void Test()
 {
 	while ()

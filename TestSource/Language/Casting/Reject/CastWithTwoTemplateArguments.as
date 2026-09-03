@@ -15,6 +15,7 @@
  * @Provenance Expected compile failure: "Cast with two template arguments should fail".
  */
 
+/** */
 void Test(AActor A)
 {
 	auto X = Cast<APawn, AActor>(A);

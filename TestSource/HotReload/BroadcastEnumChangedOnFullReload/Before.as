@@ -20,6 +20,7 @@ class UHotReloadEnumChangedCarrier : UObject
 	default State = EHotReloadChangedState::Alpha;
 }
 
+/** Runs the changed enum probe path and returns the observed result. */
 int RunChangedEnumProbe()
 {
 	EHotReloadChangedState State = EHotReloadChangedState::Beta;

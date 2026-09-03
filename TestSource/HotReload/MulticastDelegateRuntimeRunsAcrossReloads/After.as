@@ -4,6 +4,7 @@
 // Replaced: HandlerA Value*2, HandlerB Value*20; checks 4/40 then 4/100.
 // Oracle: RunMulticast returns 1 on the existing actor. FixtureIsolated.
 
+/** Event FHotReloadMulticastSignal: carries (int Value) for this reload scenario. */
 event void FHotReloadMulticastSignal(int Value);
 
 UCLASS()
@@ -18,18 +19,21 @@ class AHotReloadDelegateRuntimeMulticastActor : AActor
 	UPROPERTY()
 	int CountB = 0;
 
+	/** Handles the r a callback. */
 	UFUNCTION()
 	void HandlerA(int Value)
 	{
 		CountA += Value * 2;
 	}
 
+	/** Handles the r b callback. */
 	UFUNCTION()
 	void HandlerB(int Value)
 	{
 		CountB += Value * 20;
 	}
 
+	/** Runs the multicast path and returns the observed result. */
 	UFUNCTION()
 	int RunMulticast()
 	{

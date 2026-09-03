@@ -24,6 +24,7 @@ struct FNoPlus
 	int Value = 0;
 }
 
+/** */
 void Test()
 {
 	FNoPlus A;

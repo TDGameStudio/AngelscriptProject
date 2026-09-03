@@ -13,6 +13,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Implicit_Negative AssertFailsToCompile
  */
 
+/** */
 void Test()
 {
 	TArray<int> Arr;

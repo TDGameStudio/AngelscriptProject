@@ -6,11 +6,13 @@
 
 namespace HotReloadNamespaceFunctionOverload
 {
+	/** Mix: exercises the mix behaviour. */
 	int Mix(int X)
 	{
 		return X + 1;
 	}
 
+	/** Mix: exercises the mix behaviour. */
 	int Mix(int X, int Y)
 	{
 		return X + Y;
@@ -20,12 +22,14 @@ namespace HotReloadNamespaceFunctionOverload
 UCLASS()
 class UHotReloadNamespaceFunctionOverloadCarrier : UObject
 {
+	/** UseSingle: exercises the use single behaviour. */
 	UFUNCTION()
 	int UseSingle(int X)
 	{
 		return HotReloadNamespaceFunctionOverload::Mix(X);
 	}
 
+	/** UsePair: exercises the use pair behaviour. */
 	UFUNCTION()
 	int UsePair(int X, int Y)
 	{

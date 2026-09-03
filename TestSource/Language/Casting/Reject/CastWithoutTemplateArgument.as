@@ -15,6 +15,7 @@
  * @Provenance Expected compile failure: "Cast without template argument should fail".
  */
 
+/** */
 void Test(AActor A)
 {
 	auto X = Cast(A);

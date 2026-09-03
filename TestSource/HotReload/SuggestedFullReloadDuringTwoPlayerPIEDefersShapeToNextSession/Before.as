@@ -17,6 +17,7 @@ class AHotReloadMultiplayerPIESuggestedLevelScript : ALevelScriptActor
 	UPROPERTY()
 	int ExistingValue = 10;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

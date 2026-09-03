@@ -48,6 +48,7 @@ class ACoverageEventLambdaUnsupportedActor : AActor
 	 * @Return nothing
 	 */
 	UFUNCTION()
+/** */
 	void Handler()
 	{
 	}

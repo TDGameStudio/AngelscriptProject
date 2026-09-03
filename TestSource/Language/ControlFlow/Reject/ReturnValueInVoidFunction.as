@@ -17,6 +17,7 @@
  * @Provenance CSV SourceShape is Positive; C++ AssertFailsToCompile is the TrailingOracle.
  */
 
+/** */
 void Test()
 {
 	return 5;

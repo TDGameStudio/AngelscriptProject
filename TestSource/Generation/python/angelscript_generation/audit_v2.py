@@ -10,6 +10,7 @@ import re
 from typing import Any, Iterable
 
 from .as_inventory import CallableDeclaration, has_compound_boolean_return, inventory_source, legacy_name
+from .reload_history import is_reload_history_path
 from .contract_v2 import (
     Diagnostic,
     contract_paths,
@@ -74,6 +75,8 @@ def discover_sources(testsource_root: Path, domains: Iterable[str] = ()) -> tupl
     for path in testsource_root.rglob("*.as"):
         relative = path.relative_to(testsource_root)
         if relative.parts and relative.parts[0].lower() == "generation":
+            continue
+        if is_reload_history_path(path):
             continue
         logical = "TestSource/" + relative.as_posix()
         if _selected(logical, normalized):

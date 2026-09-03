@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "expected ':' in the range-for"
  */
 
+/** */
 void Test()
 {
 	TArray<int> Arr;

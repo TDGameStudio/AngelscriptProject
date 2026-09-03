@@ -32,6 +32,7 @@ class ACoverageEventHttpBoundaryActor : AActor
 	 * @Return does not compile
 	 */
 	UFUNCTION()
+/** */
 	void TryHttpRequestCallback()
 	{
 		HttpRequest.OnProcessRequestComplete.BindLambda(this, n"Handler");

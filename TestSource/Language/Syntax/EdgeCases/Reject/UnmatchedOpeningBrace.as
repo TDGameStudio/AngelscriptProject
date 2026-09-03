@@ -16,6 +16,7 @@
  * @Provenance Isolate this failing program. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = 1;

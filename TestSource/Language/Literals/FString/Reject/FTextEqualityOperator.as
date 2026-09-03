@@ -16,6 +16,7 @@
  * @Provenance sha256 from TS-LANG-0137; lines 723-730.
  */
 
+/** */
 bool TryTextEqualsOperator()
 {
 	FText Left = FText::FromString("A");

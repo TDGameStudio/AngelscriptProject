@@ -7,6 +7,7 @@
 UCLASS(Blueprintable, NotPlaceable)
 class AHotReloadLevelBlueprintSoftParent : ALevelScriptActor
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

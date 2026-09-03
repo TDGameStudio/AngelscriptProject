@@ -17,11 +17,13 @@
  * @Provenance Oracle: compile fails — Invalid 'break' inside a function called from a loop.
  */
 
+/** */
 void Foo()
 {
 	break;
 }
 
+/** */
 void Test()
 {
 	for (int I = 0; I < 5; ++I)

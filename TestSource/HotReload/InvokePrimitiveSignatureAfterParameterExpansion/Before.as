@@ -4,11 +4,13 @@
 // Replaced in After: extra bool/float/FString/FName parameters.
 // Oracle: RunPrimitive -> 15. Extra vectors live in After (false/empty/non-Ready). FixtureIsolated.
 
+/** Delegate FHotReloadPrimitiveSignal: carries (int Value) for this reload scenario. */
 delegate int FHotReloadPrimitiveSignal(int Value);
 
 UCLASS()
 class UHotReloadPrimitiveReceiver : UObject
 {
+	/** Handles the primitive callback. */
 	UFUNCTION()
 	int HandlePrimitive(int Value)
 	{
@@ -18,6 +20,7 @@ class UHotReloadPrimitiveReceiver : UObject
 	}
 }
 
+/** Runs the primitive path and returns the observed result. */
 int RunPrimitive(UHotReloadPrimitiveReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "Primitive V1 RunPrimitive: binding HandlePrimitive");

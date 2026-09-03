@@ -4,6 +4,7 @@
 // Replaced: HandleSignal Calls += Value * 2; first check Calls != 6; stay-6 success path returns 1.
 // Oracle: C++ expects controlled error 0 for destroyed bound target after reload. FixtureIsolated.
 
+/** Event FHotReloadLifecycleSignal: carries (int Value) for this reload scenario. */
 event void FHotReloadLifecycleSignal(int Value);
 
 UCLASS()
@@ -12,6 +13,7 @@ class AHotReloadDelegateRuntimeLifecycleReceiver : AActor
 	UPROPERTY()
 	int Calls = 0;
 
+	/** Handles the signal callback. */
 	UFUNCTION()
 	void HandleSignal(int Value)
 	{
@@ -25,6 +27,7 @@ class AHotReloadDelegateRuntimeLifecycleBroadcaster : AActor
 	UPROPERTY()
 	FHotReloadLifecycleSignal OnSignal;
 
+	/** Runs the lifecycle check path and returns the observed result. */
 	UFUNCTION()
 	int RunLifecycleCheck(AHotReloadDelegateRuntimeLifecycleReceiver Receiver)
 	{

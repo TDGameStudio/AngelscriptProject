@@ -14,6 +14,7 @@ class AHotReloadPIEDuringRequiredLevelScript : ALevelScriptActor
 {
 	default SetReplicates(false);
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

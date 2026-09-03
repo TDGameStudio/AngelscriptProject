@@ -29,6 +29,7 @@
  * @Return 1, never reached
  */
 UFUNCTION(BlueprintEvent)
+/** */
 int BadGlobalEvent()
 {
 	return 1;

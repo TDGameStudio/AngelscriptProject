@@ -7,6 +7,7 @@
 UCLASS()
 class UHotReloadFileRemovalTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

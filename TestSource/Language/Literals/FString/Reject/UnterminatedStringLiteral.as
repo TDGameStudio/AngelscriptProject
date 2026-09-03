@@ -14,6 +14,7 @@
  * @Return does not compile; diagnostic "unterminated string literal"
  */
 
+/** */
 void Test()
 {
 	FString S = "unterminated;

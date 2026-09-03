@@ -12,6 +12,7 @@ class AHotReloadNetworkingReplicationActor : AActor
 	UPROPERTY(ReplicatedUsing=OnRep_Score, ReplicationCondition=OwnerOnly)
 	int Score = 2;
 
+	/** Handles the rep score callback. */
 	UFUNCTION()
 	void OnRep_Score()
 	{

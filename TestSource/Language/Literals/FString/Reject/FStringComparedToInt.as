@@ -13,6 +13,7 @@
  * @Return does not compile; diagnostic "cannot compare FString with int"
  */
 
+/** */
 void Test()
 {
 	FString S = "5";

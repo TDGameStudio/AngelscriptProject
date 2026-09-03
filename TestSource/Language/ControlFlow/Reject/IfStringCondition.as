@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — string used as if condition.
  */
 
+/** */
 void Test()
 {
 	if ("hello")

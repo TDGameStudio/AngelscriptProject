@@ -17,6 +17,7 @@
  * @Provenance Do not compare the float to make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = 1.0f ? 1 : 0;

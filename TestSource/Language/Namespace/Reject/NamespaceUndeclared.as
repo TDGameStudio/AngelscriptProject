@@ -16,6 +16,7 @@
  * @Provenance CSV SourceShape is Positive / DefaultSafe; C++ uses AssertFailsToCompile.
  */
 
+/** */
 void Test()
 {
 	int X = FakeNamespace::Value;

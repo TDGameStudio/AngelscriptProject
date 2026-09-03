@@ -8,6 +8,7 @@
 UCLASS()
 class UReloadSoftRequirementTarget : UObject
 {
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{

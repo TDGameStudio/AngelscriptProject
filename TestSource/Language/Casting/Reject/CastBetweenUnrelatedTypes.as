@@ -15,6 +15,7 @@
  * @Provenance Expected compile failure: "Cast between unrelated types should fail".
  */
 
+/** */
 void Test()
 {
 	FString S = "hello";

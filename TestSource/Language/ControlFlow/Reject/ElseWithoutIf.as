@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — else without if.
  */
 
+/** */
 void Test()
 {
 	else

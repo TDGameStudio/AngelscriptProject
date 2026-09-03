@@ -17,6 +17,7 @@
  * @Provenance Do not compare the string to make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = "yes" ? 1 : 0;

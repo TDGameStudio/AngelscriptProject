@@ -9,6 +9,7 @@ class AHotReloadNetworkingRpcActor : AActor
 {
 	default SetReplicates(true);
 
+	/** RoutedAction: exercises the routed action behaviour. */
 	UFUNCTION(Client, Reliable)
 	void RoutedAction(int Value)
 	{

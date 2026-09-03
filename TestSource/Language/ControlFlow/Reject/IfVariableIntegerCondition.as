@@ -17,6 +17,7 @@
  * @Provenance Oracle: compile fails — integer used as if condition.
  */
 
+/** */
 void Test()
 {
 	int X = 0;

@@ -5,6 +5,7 @@
 // Oracle Before: GetValueA==10.
 // FixtureIsolated. Load Version_01 (A), Version_02 (B), then Version_03 (A v2).
 
+/** Returns the value a. */
 int GetValueA()
 {
 	return 10;

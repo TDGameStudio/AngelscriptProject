@@ -18,6 +18,7 @@
  * @Provenance Do not wrap 5 in a comparison that would make this compile. DiagnosticOnly.
  */
 
+/** */
 void Test()
 {
 	int X = 5 ? 1 : 0;

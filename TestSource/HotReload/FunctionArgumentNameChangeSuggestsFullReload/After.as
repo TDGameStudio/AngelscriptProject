@@ -7,6 +7,7 @@
 UCLASS()
 class UHotReloadChangeClassificationFunctionArgumentNameTarget : UObject
 {
+	/** Echo: exercises the echo behaviour. */
 	UFUNCTION()
 	int Echo(int SecondValue)
 	{

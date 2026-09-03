@@ -15,6 +15,7 @@
  * @Provenance Expected compile failure: "Cast to non-existent type should fail".
  */
 
+/** */
 void Test(AActor A)
 {
 	auto X = Cast<NonExistentClass>(A);

@@ -4,6 +4,7 @@
 // Replaced: unicast delegate -> event. FullReloadRequired.
 // FixtureIsolated.
 
+/** Event FHotReloadChangeClassificationDelegateKindSignal: carries (int Value) for this reload scenario. */
 event void FHotReloadChangeClassificationDelegateKindSignal(int Value);
 
 UCLASS()

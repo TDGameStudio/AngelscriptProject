@@ -18,6 +18,7 @@
  * @Provenance DiagnosticOnly. Isolated failing program.
  */
 
+/** */
 void Test()
 {
 	float X = 10.0f % 3.0f;

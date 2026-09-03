@@ -4,11 +4,13 @@
 // Replaced: UClass TextureClass, TSubclassOf<AActor> ActorClass, TSoftObjectPtr SoftTexture, TSoftClassPtr SoftActorClass.
 // Oracle: Execute live refs -> 63 (1|2|4|8|16|32). Extra: null Texture/class names "null". FixtureIsolated.
 
+/** Delegate FHotReloadReferenceSignal: carries (UTexture2D Texture, UClass TextureClass, TSubclassOf<AActor> ActorClass, TSoftObjectPtr<UTexture2D> SoftTexture, TSoftClassPtr<AActor> SoftActorClass) for this reload scenario. */
 delegate int FHotReloadReferenceSignal(UTexture2D Texture, UClass TextureClass, TSubclassOf<AActor> ActorClass, TSoftObjectPtr<UTexture2D> SoftTexture, TSoftClassPtr<AActor> SoftActorClass);
 
 UCLASS()
 class UHotReloadReferenceReceiver : UObject
 {
+	/** Handles the references callback. */
 	UFUNCTION()
 	int HandleReferences(UTexture2D Texture, UClass TextureClass, TSubclassOf<AActor> ActorClass, TSoftObjectPtr<UTexture2D> SoftTexture, TSoftClassPtr<AActor> SoftActorClass)
 	{
@@ -55,6 +57,7 @@ class UHotReloadReferenceReceiver : UObject
 	}
 }
 
+/** Runs the references path and returns the observed result. */
 int RunReferences(UHotReloadReferenceReceiver Receiver)
 {
 	Log(n"HotReloadDelegateTests", "Reference V2 RunReferences: creating reference parameters");

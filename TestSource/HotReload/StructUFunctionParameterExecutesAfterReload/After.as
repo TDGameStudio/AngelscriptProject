@@ -18,13 +18,15 @@ struct FHotReloadStructFunctionPayload
 UCLASS()
 class UHotReloadStructFunctionReceiver : UObject
 {
+	/** Consumes the payload and returns the derived value. */
 	UFUNCTION()
-	int ConsumePayload(const FHotReloadStructFunctionPayload& Payload)
+	int ConsumePayload(const FHotReloadStructFunctionPayload&in Payload)
 	{
 		return Payload.Value + Payload.Bonus;
 	}
 }
 
+/** Runs the payload path and returns the observed result. */
 int RunPayload(UHotReloadStructFunctionReceiver Receiver)
 {
 	FHotReloadStructFunctionPayload Payload;

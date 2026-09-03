@@ -12,6 +12,7 @@
  * @Return does not compile; diagnostic "cannot convert the element to the loop variable type"
  */
 
+/** */
 void Test()
 {
 	TArray<int> Arr;

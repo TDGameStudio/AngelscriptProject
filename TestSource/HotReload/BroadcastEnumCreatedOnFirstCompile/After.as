@@ -11,6 +11,7 @@ enum class EHotReloadCreatedState : uint8
 	Beta
 }
 
+/** Runs the created enum probe path and returns the observed result. */
 int RunCreatedEnumProbe()
 {
 	EHotReloadCreatedState State = EHotReloadCreatedState::Beta;

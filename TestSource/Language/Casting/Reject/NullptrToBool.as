@@ -13,6 +13,7 @@
  * @Provenance C++: AngelscriptSyntaxCastingTests.cpp::Nullptr_Mixed
  */
 
+/** */
 void Test()
 {
 	bool B = nullptr;

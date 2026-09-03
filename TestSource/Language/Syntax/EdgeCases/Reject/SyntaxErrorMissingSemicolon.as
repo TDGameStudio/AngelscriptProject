@@ -29,6 +29,7 @@ class UBrokenCarrier : UObject
 	 * @Return does not compile in this file
 	 */
 	UFUNCTION()
+/** */
 	int GetValue()
 	{
 		return 8

@@ -16,6 +16,7 @@
  * @Provenance Oracle: compile fails — switch expressions must be integral numbers (bool is rejected).
  */
 
+/** */
 int SwitchBool(bool Value)
 {
 	switch (Value)

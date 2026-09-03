@@ -18,6 +18,7 @@ class UFullReloadFailureTarget : UObject
 	default Value = 99;
 	default PollutedValue = 13;
 
+	/** Returns the missing value. */
 	UFUNCTION()
 	MissingType GetMissingValue()
 	{

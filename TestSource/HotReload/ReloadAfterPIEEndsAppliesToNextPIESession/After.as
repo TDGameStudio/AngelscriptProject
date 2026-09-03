@@ -20,6 +20,7 @@ class AHotReloadPIEAfterLevelScript : ALevelScriptActor
 	UPROPERTY()
 	int AddedValue = 30;
 
+	/** Returns the value. */
 	UFUNCTION()
 	int GetValue()
 	{
