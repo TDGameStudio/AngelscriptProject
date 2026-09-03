@@ -24,7 +24,9 @@ Promote a learning only when all are true:
 
 Archive never promotes knowledge automatically. Closure names the source attachment, target capability knowledge, and verification that still passes after promotion.
 
-Raw `hardness.observe` records stay ignored under `Saved/Hardness/` and are not capability knowledge. Before completed closure, summarize only reusable timing, friction, repairs, deferred work, and raw-data provenance in one compact tracked workflow evaluation. Promote an invariant from that evaluation only through the same evidence and verification gate above.
+Raw `hardness.observe` records stay ignored under `Saved/Hardness/` and are not capability knowledge. Before closure, summarize only reusable timing, friction, repairs, transferred owners, and raw-data provenance in one indexed `hardness-workflow-evaluation-v1` record. Promote an invariant from that evaluation only through the same evidence and verification gate above.
+
+If self-hosting exposes a repeatable safety, correctness, lifecycle, evidence, or high-friction gap, admit it to one exact active Change as an indexed `openspec-material-issue-v2` record. An admitted issue cannot remain in conversation, raw observations, or a handoff: resolve or reject it with exact evidence, or supersede it with an exact existing v2 owner. When the source Change has already moved to the immutable archive, use a suitable active owner or create a successor rather than rewriting history. Admission alone starts neither Review nor Replan.
 
 ## Evolution loop
 

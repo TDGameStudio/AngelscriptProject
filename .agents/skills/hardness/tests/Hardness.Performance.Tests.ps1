@@ -42,6 +42,9 @@ param(
     [ValidateRange(1, 600000)]
     [double]$ObservationWriteP95BudgetMs = 10000,
 
+    [ValidateRange(1, 600000)]
+    [double]$EvolutionStatusP95BudgetMs = 10000,
+
     [ValidateRange(100, 600000)]
     [int]$FreshProcessTimeoutMs = 30000,
 
@@ -446,6 +449,7 @@ $scenarioValues = [ordered]@{
     HardnessStatus = New-Object System.Collections.Generic.List[double]
     DetailedWorkspaceStatus = New-Object System.Collections.Generic.List[double]
     ObservationWrite = New-Object System.Collections.Generic.List[double]
+    EvolutionStatus = New-Object System.Collections.Generic.List[double]
 }
 
 $hostExecutable = (Get-Process -Id $PID).Path
@@ -454,14 +458,64 @@ Assert-PerformanceCondition (Test-Path -LiteralPath $hostExecutable -PathType Le
 $taskContext = $null
 $effectiveTaskChange = $TaskChange
 $taskFixtureRoot = ''
+$evolutionContext = $null
+$evolutionFixtureRoot = ''
+$evolutionChange = 'fixture/evolution-status'
 Import-Module $manifest -Force -ErrorAction Stop
 try {
     $context = New-HardnessContext -WorkspaceRoot $ProjectRoot
     Assert-PerformanceCondition ($context.WorkspaceRoot -eq $ProjectRoot) 'persistent context must use WorkspaceRoot'
     Assert-PerformanceCondition ($context.Topology -in @('Primary', 'Worktree')) 'persistent context must derive Git topology'
 
+    $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    $evolutionFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path $temporaryRoot ('hardness-performance-evolution-' + [guid]::NewGuid().ToString('N'))))
+    Assert-PerformanceCondition ($evolutionFixtureRoot.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase)) 'EvolutionStatus fixture escaped the system temp directory'
+    [void](New-Item -ItemType Directory -Path $evolutionFixtureRoot)
+    $evolutionGitInit = @(& git -C $evolutionFixtureRoot init -b main 2>&1)
+    Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git init failed: {0}" -f ($evolutionGitInit -join [Environment]::NewLine))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionFixtureRoot '.gitignore'), "Saved/`nAgentConfig.ini`n", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionFixtureRoot 'Fixture.uproject'), "{}`n", [System.Text.UTF8Encoding]::new($false))
+    $evolutionGitAdd = @(& git -C $evolutionFixtureRoot add .gitignore Fixture.uproject 2>&1)
+    Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git add failed: {0}" -f ($evolutionGitAdd -join [Environment]::NewLine))
+    $evolutionGitCommit = @(& git -C $evolutionFixtureRoot -c user.name='Hardness Performance Fixture' -c user.email=hardness-performance@example.invalid commit -m 'fixture baseline' 2>&1)
+    Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git commit failed: {0}" -f ($evolutionGitCommit -join [Environment]::NewLine))
+
+    $evolutionChangeRoot = Join-Path $evolutionFixtureRoot 'openspec\changes\fixture\evolution-status'
+    $evolutionDataRoot = Join-Path $evolutionChangeRoot 'attachments\data'
+    [void](New-Item -ItemType Directory -Path $evolutionDataRoot -Force)
+    [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'change.yaml'), @'
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_performance-evolution-status
+  id: fixture/evolution-status
+  title: Evolution status performance fixture
+workflow: angelscript
+created_at: 2026-09-03T00:00:00Z
+goal: Measure exact frontmatter-only evolution status.
+'@, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionDataRoot 'workflow-evaluation.md'), @'
+---
+record: hardness-workflow-evaluation-v1
+result: passed
+change: fixture/evolution-status
+captured_at: 2026-09-03T18:00:00+08:00
+---
+
+# Workflow Evaluation
+
+Body sentinel: result: failed; captured_at: invalid. The measured route must stop at the frontmatter delimiter.
+'@, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'attachments\INDEX.md'), @'
+# INDEX
+
+## Attachment index
+
+- `data/workflow-evaluation.md` - terminal workflow evaluation fixture.
+'@, [System.Text.UTF8Encoding]::new($false))
+    $evolutionContext = New-HardnessContext -WorkspaceRoot $evolutionFixtureRoot
+
     if ([string]::IsNullOrWhiteSpace($effectiveTaskChange)) {
-        $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
         $taskFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path $temporaryRoot ('hardness-performance-task-' + [guid]::NewGuid().ToString('N'))))
         Assert-PerformanceCondition ($taskFixtureRoot.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase)) 'TaskStatus fixture escaped the system temp directory'
 
@@ -639,6 +693,23 @@ task_graph:
             $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
             for ($iteration = 1; $iteration -le $runCount; $iteration++) {
                 $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                $evolutionResult = Invoke-Hardness -Command 'hardness.evolution.status' -Context $evolutionContext -Parameters @{ Change = $evolutionChange; RequireTerminal = $true }
+                $timer.Stop()
+                Assert-PerformanceCondition ($evolutionResult.status -eq 'Succeeded' -and $evolutionResult.exitCode -eq 0) 'hardness.evolution.status failed'
+                Assert-PerformanceCondition ($evolutionResult.data.ChangeId -eq $evolutionChange) 'hardness.evolution.status returned a different change'
+                Assert-PerformanceCondition ($evolutionResult.data.LatestEvaluationResult -eq 'passed') 'hardness.evolution.status did not use workflow-evaluation frontmatter'
+                Assert-PerformanceCondition ([bool]$evolutionResult.data.ClosureReady) 'hardness.evolution.status fixture was not terminal'
+                Assert-PerformanceCondition (-not [bool]$evolutionResult.data.RawBodiesLoaded) 'hardness.evolution.status loaded attachment bodies'
+                $value = [double]$timer.Elapsed.TotalMilliseconds
+                Add-PerformanceSample -Samples $samples -Scenario 'EvolutionStatus' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.EvolutionStatus.Add($value) | Out-Null }
+            }
+        }
+
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
                 $detailedResult = Invoke-Hardness -Command 'workspace.status' -Context $statusContext -Parameters @{ Detailed = $true }
                 $timer.Stop()
                 Assert-PerformanceCondition ($detailedResult.status -eq 'Succeeded' -and $detailedResult.exitCode -eq 0) 'detailed workspace.status failed'
@@ -691,6 +762,15 @@ finally {
         }
         Remove-Item -LiteralPath $resolvedFixture -Recurse -Force
     }
+    if (-not [string]::IsNullOrWhiteSpace($evolutionFixtureRoot) -and (Test-Path -LiteralPath $evolutionFixtureRoot)) {
+        $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+        $resolvedEvolutionFixture = [System.IO.Path]::GetFullPath($evolutionFixtureRoot)
+        if (-not $resolvedEvolutionFixture.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+            -not ([System.IO.Path]::GetFileName($resolvedEvolutionFixture)).StartsWith('hardness-performance-evolution-', [System.StringComparison]::Ordinal)) {
+            throw "Refusing to clean an unexpected EvolutionStatus fixture path: $resolvedEvolutionFixture"
+        }
+        Remove-Item -LiteralPath $resolvedEvolutionFixture -Recurse -Force
+    }
 }
 
 $scenarioSummaryList = New-Object System.Collections.Generic.List[object]
@@ -702,6 +782,7 @@ if ($FreshProcessProbeMode -eq 'Normal' -and -not $stopFreshScenario) {
     $scenarioSummaryList.Add((New-ScenarioSummary -Name 'HardnessStatus' -Metric 'Fast hardness.status orientation route' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.HardnessStatus) -P95Budget $HardnessStatusP95BudgetMs)) | Out-Null
     $scenarioSummaryList.Add((New-ScenarioSummary -Name 'DetailedWorkspaceStatus' -Metric 'Explicit detailed workspace.status scan' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.DetailedWorkspaceStatus) -P95Budget $DetailedWorkspaceStatusP95BudgetMs)) | Out-Null
     $scenarioSummaryList.Add((New-ScenarioSummary -Name 'ObservationWrite' -Metric 'Bounded ignored hardness.observe write' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.ObservationWrite) -P95Budget $ObservationWriteP95BudgetMs)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'EvolutionStatus' -Metric 'Exact frontmatter-only hardness.evolution.status closure gate' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.EvolutionStatus) -P95Budget $EvolutionStatusP95BudgetMs)) | Out-Null
 }
 $scenarioSummaries = @($scenarioSummaryList | ForEach-Object { $_ })
 $failedBudgets = @($scenarioSummaries | Where-Object BudgetStatus -eq 'Failed')
@@ -730,6 +811,7 @@ $summary = [pscustomobject][ordered]@{
         TaskChange     = $effectiveTaskChange
         FreshProcessTimeoutMs = $FreshProcessTimeoutMs
         FreshProcessProbeMode = $FreshProcessProbeMode
+        EvolutionStatusP95BudgetMs = $EvolutionStatusP95BudgetMs
     }
     Scenarios     = @($scenarioSummaries)
     OverallStatus = $(if ($failedBudgets.Count -eq 0 -and $failedCorrectness.Count -eq 0) { 'Passed' } else { 'Failed' })

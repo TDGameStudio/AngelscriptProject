@@ -100,7 +100,7 @@ function Initialize-HardnessRoutes {
 
     $routes.Add((New-HardnessRoute 'hardness.status' 'Internal' '' 'Get-HardnessStatus' @() @{} 'Inspect the selected workspace and installed harness through a fast read-only route.')) | Out-Null
     $routes.Add((New-HardnessRoute 'hardness.observe' 'Internal' '' 'Add-HardnessObservation' @() @{} 'Record one bounded ignored workflow observation.')) | Out-Null
-    $routes.Add((New-HardnessRoute 'hardness.evolution.status' 'Internal' '' 'Get-HardnessEvolutionStatus' @() @{} 'Summarize local observations and the latest tracked workflow evaluation.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'hardness.evolution.status' 'Internal' '' 'Get-HardnessEvolutionStatus' @() @{} 'Summarize observations or inspect one exact Change evolution lifecycle and optional terminal gate.')) | Out-Null
     $routes.Add((New-HardnessRoute 'openspec.maintenance.status' 'Internal' '' 'Get-HardnessOpenSpecMaintenanceStatus' @() @{} 'Compare packaged OpenSpec identity with its tracked source without mutation.')) | Out-Null
 
     $script:HardnessRoutes = @($routes | ForEach-Object { $_ })
@@ -600,9 +600,218 @@ function Add-HardnessObservation {
     }
 }
 
+function ConvertFrom-HardnessFrontmatterScalar {
+    param([AllowEmptyString()][string]$Value)
+
+    if ($null -eq $Value) { return '' }
+    $normalized = $Value.Trim()
+    if ($normalized.Length -ge 2) {
+        $first = $normalized.Substring(0, 1)
+        $last = $normalized.Substring($normalized.Length - 1, 1)
+        if (($first -eq '"' -and $last -eq '"') -or ($first -eq "'" -and $last -eq "'")) {
+            return $normalized.Substring(1, $normalized.Length - 2).Trim()
+        }
+    }
+    return $normalized
+}
+
+function Read-HardnessFrontmatter {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [ValidateRange(4, 256)][int]$MaximumLines = 96,
+        [ValidateRange(256, 131072)][int]$MaximumCharacters = 32768
+    )
+
+    $metadata = @{}
+    $collectionBuilders = @{}
+    $errors = New-Object System.Collections.Generic.List[string]
+    $reader = $null
+    $linesRead = 0
+    $charactersRead = 0
+    $closed = $false
+    try {
+        $reader = [System.IO.StreamReader]::new($Path, [System.Text.UTF8Encoding]::new($false), $true)
+        $first = $reader.ReadLine()
+        $linesRead++
+        if ($null -eq $first) {
+            $errors.Add('frontmatter is missing') | Out-Null
+        }
+        else {
+            $first = $first.TrimStart([char]0xFEFF)
+            $charactersRead += $first.Length
+            if ($first.Trim() -ne '---') {
+                $errors.Add('frontmatter opening delimiter is missing') | Out-Null
+            }
+            else {
+                $currentCollection = ''
+                while ($linesRead -lt $MaximumLines -and $charactersRead -le $MaximumCharacters) {
+                    $line = $reader.ReadLine()
+                    if ($null -eq $line) { break }
+                    $linesRead++
+                    $charactersRead += $line.Length
+                    if ($charactersRead -gt $MaximumCharacters) { break }
+                    if ($line -match '^---[ \t]*$') {
+                        $closed = $true
+                        break
+                    }
+                    if ([string]::IsNullOrWhiteSpace($line) -or $line -match '^[ \t]*#') { continue }
+
+                    $scalarMatch = [regex]::Match($line, '^(?<name>[A-Za-z_][A-Za-z0-9_-]*)[ \t]*:[ \t]*(?<value>.*)$')
+                    if ($scalarMatch.Success) {
+                        $name = $scalarMatch.Groups['name'].Value
+                        if ($metadata.ContainsKey($name)) {
+                            $errors.Add("duplicate frontmatter key '$name'") | Out-Null
+                        }
+                        else {
+                            $metadata[$name] = ConvertFrom-HardnessFrontmatterScalar $scalarMatch.Groups['value'].Value
+                        }
+                        $currentCollection = if ([string]::IsNullOrWhiteSpace([string]$metadata[$name])) { $name } else { '' }
+                        continue
+                    }
+
+                    $itemMatch = [regex]::Match($line, '^[ \t]+-[ \t]+(?<value>\S.*)$')
+                    if (-not [string]::IsNullOrWhiteSpace($currentCollection) -and $itemMatch.Success) {
+                        if (-not $collectionBuilders.ContainsKey($currentCollection)) {
+                            $collectionBuilders[$currentCollection] = New-Object System.Collections.Generic.List[string]
+                        }
+                        $collectionBuilders[$currentCollection].Add((ConvertFrom-HardnessFrontmatterScalar $itemMatch.Groups['value'].Value)) | Out-Null
+                        continue
+                    }
+                    $currentCollection = ''
+                }
+                if (-not $closed) {
+                    $errors.Add("frontmatter closing delimiter was not found within $MaximumLines lines and $MaximumCharacters characters") | Out-Null
+                }
+            }
+        }
+    }
+    catch {
+        $errors.Add("frontmatter could not be read: $($_.Exception.Message)") | Out-Null
+    }
+    finally {
+        if ($null -ne $reader) { $reader.Dispose() }
+    }
+
+    $collections = @{}
+    foreach ($key in @($collectionBuilders.Keys)) {
+        $collections[$key] = @($collectionBuilders[$key] | ForEach-Object { [string]$_ })
+    }
+    return [pscustomobject][ordered]@{
+        Metadata       = $metadata
+        Collections    = $collections
+        Errors         = @($errors | ForEach-Object { [string]$_ })
+        LinesRead      = $linesRead
+        CharactersRead = $charactersRead
+        BodyRead       = $false
+    }
+}
+
+function Get-HardnessFrontmatterValue {
+    param(
+        [Parameter(Mandatory = $true)]$Frontmatter,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    if ($Frontmatter.Metadata.ContainsKey($Name)) { return [string]$Frontmatter.Metadata[$Name] }
+    return ''
+}
+
+function Get-HardnessFrontmatterCollection {
+    param(
+        [Parameter(Mandatory = $true)]$Frontmatter,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    if ($Frontmatter.Collections.ContainsKey($Name)) { return @($Frontmatter.Collections[$Name]) }
+    $inline = Get-HardnessFrontmatterValue -Frontmatter $Frontmatter -Name $Name
+    $match = [regex]::Match($inline, '^\[(?<items>.*)\]$')
+    if (-not $match.Success) { return @() }
+    $values = New-Object System.Collections.Generic.List[string]
+    foreach ($item in ($match.Groups['items'].Value -split ',')) {
+        $value = ConvertFrom-HardnessFrontmatterScalar $item
+        if (-not [string]::IsNullOrWhiteSpace($value)) { $values.Add($value) | Out-Null }
+    }
+    return @($values | ForEach-Object { [string]$_ })
+}
+
+function Test-HardnessIsoTimestamp {
+    param([AllowEmptyString()][string]$Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value) -or $Value -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$') { return $false }
+    $parsed = [DateTimeOffset]::MinValue
+    return [DateTimeOffset]::TryParse(
+        $Value,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::RoundtripKind,
+        [ref]$parsed)
+}
+
+function Get-HardnessChangeYamlId {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+    foreach ($line in @(Get-Content -LiteralPath $Path -TotalCount 32)) {
+        $match = [regex]::Match([string]$line, '^[ \t]+id[ \t]*:[ \t]*(?<value>[^#\r\n]+)')
+        if ($match.Success) { return ConvertFrom-HardnessFrontmatterScalar $match.Groups['value'].Value }
+    }
+    return ''
+}
+
+function Resolve-HardnessEvolutionChange {
+    param(
+        [Parameter(Mandatory = $true)]$Context,
+        [Parameter(Mandatory = $true)][ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')][string]$Change
+    )
+
+    $segments = @($Change -split '/', 2)
+    $candidates = New-Object System.Collections.Generic.List[object]
+    $activeRoot = Join-Path $Context.WorkspaceRoot ("openspec/changes/{0}/{1}" -f $segments[0], $segments[1])
+    $activeYaml = Join-Path $activeRoot 'change.yaml'
+    if ((Test-Path -LiteralPath $activeYaml -PathType Leaf) -and (Get-HardnessChangeYamlId -Path $activeYaml) -eq $Change) {
+        $candidates.Add([pscustomobject]@{ Root = [System.IO.Path]::GetFullPath($activeRoot); Archived = $false }) | Out-Null
+    }
+
+    $archiveDomain = Join-Path $Context.WorkspaceRoot ("openspec/archive/changes/{0}" -f $segments[0])
+    if (Test-Path -LiteralPath $archiveDomain -PathType Container) {
+        foreach ($directory in @(Get-ChildItem -LiteralPath $archiveDomain -Directory -ErrorAction SilentlyContinue)) {
+            $changeYaml = Join-Path $directory.FullName 'change.yaml'
+            if ((Test-Path -LiteralPath $changeYaml -PathType Leaf) -and (Get-HardnessChangeYamlId -Path $changeYaml) -eq $Change) {
+                $candidates.Add([pscustomobject]@{ Root = $directory.FullName; Archived = $true }) | Out-Null
+            }
+        }
+    }
+
+    if ($candidates.Count -eq 0) { throw "Exact Change '$Change' was not found in the selected workspace." }
+    if ($candidates.Count -gt 1) { throw "Exact Change '$Change' is ambiguous across active and archived records." }
+    return $candidates[0]
+}
+
+function Get-HardnessWorkspaceRelativePath {
+    param(
+        [Parameter(Mandatory = $true)][string]$WorkspaceRoot,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $root = [System.IO.Path]::GetFullPath($WorkspaceRoot).TrimEnd('\', '/')
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $prefix = $root + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $fullPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Path '$fullPath' is outside selected workspace '$root'."
+    }
+    return $fullPath.Substring($prefix.Length).Replace('\', '/')
+}
+
 function Get-HardnessEvolutionStatus {
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)]$Context)
+    param(
+        [Parameter(Mandatory = $true)]$Context,
+        [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')][string]$Change = '',
+        [switch]$RequireTerminal
+    )
+
+    if ($RequireTerminal -and [string]::IsNullOrWhiteSpace($Change)) {
+        throw 'RequireTerminal requires one exact Change identity.'
+    }
 
     $observationRoot = Join-Path $Context.WorkspaceRoot 'Saved/Hardness/Observations'
     $observations = @(
@@ -611,33 +820,199 @@ function Get-HardnessEvolutionStatus {
         }
     )
 
-    $evaluations = New-Object System.Collections.Generic.List[System.IO.FileInfo]
-    foreach ($root in @(
-        (Join-Path $Context.WorkspaceRoot 'openspec/changes'),
-        (Join-Path $Context.WorkspaceRoot 'openspec/archive/changes')
-    )) {
-        if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
-        foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -Filter 'workflow-evaluation.md' -File -ErrorAction SilentlyContinue)) {
-            $evaluations.Add($file) | Out-Null
+    if ([string]::IsNullOrWhiteSpace($Change)) {
+        $evaluations = New-Object System.Collections.Generic.List[object]
+        foreach ($root in @(
+            (Join-Path $Context.WorkspaceRoot 'openspec/changes'),
+            (Join-Path $Context.WorkspaceRoot 'openspec/archive/changes')
+        )) {
+            if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
+            foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -Filter 'workflow-evaluation.md' -File -ErrorAction SilentlyContinue)) {
+                $frontmatter = Read-HardnessFrontmatter -Path $file.FullName
+                $record = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'record'
+                $capturedAt = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'captured_at'
+                if ($frontmatter.Errors.Count -eq 0 -and $record -eq 'hardness-workflow-evaluation-v1' -and (Test-HardnessIsoTimestamp $capturedAt)) {
+                    $evaluations.Add([pscustomobject]@{
+                        Path       = Get-HardnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+                        Result     = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'result'
+                        Change     = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'change'
+                        CapturedAt = [DateTimeOffset]::Parse($capturedAt, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+                    }) | Out-Null
+                }
+            }
+        }
+        $latestEvaluation = @($evaluations | Sort-Object CapturedAt -Descending | Select-Object -First 1)
+        return [pscustomobject][ordered]@{
+            ObservationRoot            = $observationRoot
+            ObservationCount           = $observations.Count
+            LatestObservationUtc       = if ($observations.Count -gt 0) { $observations[0].LastWriteTimeUtc.ToString('o') } else { '' }
+            LatestEvaluationPath       = if ($latestEvaluation.Count -eq 1) { $latestEvaluation[0].Path } else { '' }
+            LatestEvaluationResult     = if ($latestEvaluation.Count -eq 1) { $latestEvaluation[0].Result } else { '' }
+            LatestEvaluationChange     = if ($latestEvaluation.Count -eq 1) { $latestEvaluation[0].Change } else { '' }
+            LatestEvaluationCapturedAt = if ($latestEvaluation.Count -eq 1) { $latestEvaluation[0].CapturedAt.ToString('o') } else { '' }
+            RawBodiesLoaded            = $false
         }
     }
-    $latestEvaluation = @($evaluations | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1)
+
+    $resolvedChange = Resolve-HardnessEvolutionChange -Context $Context -Change $Change
+    $changeRoot = [string]$resolvedChange.Root
+    $attachmentRoot = Join-Path $changeRoot 'attachments'
+    $implementationRoot = Join-Path $attachmentRoot 'implementation'
+    $indexPath = Join-Path $attachmentRoot 'INDEX.md'
+    $indexText = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/') } else { '' }
+    $structuralErrors = New-Object System.Collections.Generic.List[string]
+    $closureBlockers = New-Object System.Collections.Generic.List[string]
+    $openIssuePaths = New-Object System.Collections.Generic.List[string]
+    $issueRecords = New-Object System.Collections.Generic.List[object]
+    $counts = [ordered]@{ Open = 0; Resolved = 0; Rejected = 0; Superseded = 0 }
+    $legacyIssueCount = 0
+
+    if (Test-Path -LiteralPath $implementationRoot -PathType Container) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -File -Filter 'issue-*.md' | Sort-Object Name)) {
+            $relativePath = Get-HardnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+            $attachmentRelativePath = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
+            $frontmatter = Read-HardnessFrontmatter -Path $file.FullName
+            foreach ($problem in @($frontmatter.Errors)) { $structuralErrors.Add("${relativePath}: $problem") | Out-Null }
+            $schema = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'issue_schema'
+            $issueId = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'issue_id'
+            $status = (Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'status').ToLowerInvariant()
+            if ([string]::IsNullOrWhiteSpace($schema)) {
+                $legacyIssueCount++
+                $issueRecords.Add([pscustomobject]@{ Path = $relativePath; IssueId = $issueId; Status = $status; Schema = ''; Frontmatter = $frontmatter }) | Out-Null
+                continue
+            }
+            if ($schema -ne 'openspec-material-issue-v2') {
+                $structuralErrors.Add("${relativePath}: unsupported issue_schema '$schema'") | Out-Null
+                continue
+            }
+            if ($file.BaseName -cnotmatch '^issue-\d{8}-\d{6}-[a-z0-9][a-z0-9-]*$') { $structuralErrors.Add("${relativePath}: invalid material issue filename") | Out-Null }
+            if ($issueId -ne $file.BaseName) { $structuralErrors.Add("${relativePath}: issue_id must match the filename stem") | Out-Null }
+            if ($status -notin @('open', 'resolved', 'rejected', 'superseded')) {
+                $structuralErrors.Add("${relativePath}: invalid status '$status'") | Out-Null
+            }
+            else {
+                $counts[(Get-Culture).TextInfo.ToTitleCase($status)]++
+            }
+            $source = (Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'source').ToLowerInvariant()
+            if ($source -notin @('dogfooding', 'implementation', 'verification', 'review', 'dependency', 'user')) { $structuralErrors.Add("${relativePath}: invalid source '$source'") | Out-Null }
+            if ([string]::IsNullOrWhiteSpace((Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'source_ref'))) { $structuralErrors.Add("${relativePath}: source_ref is required") | Out-Null }
+            $affectedTasks = @(Get-HardnessFrontmatterCollection -Frontmatter $frontmatter -Name 'affected_tasks')
+            if ($affectedTasks.Count -eq 0) { $structuralErrors.Add("${relativePath}: affected_tasks requires at least one task ID") | Out-Null }
+            foreach ($taskId in $affectedTasks) {
+                if ($taskId -cnotmatch '^\d+\.\d+$') { $structuralErrors.Add("${relativePath}: affected_tasks contains invalid task ID '$taskId'") | Out-Null }
+            }
+            $createdAt = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'created_at'
+            if (-not (Test-HardnessIsoTimestamp $createdAt)) { $structuralErrors.Add("${relativePath}: created_at must be an ISO-8601 timestamp") | Out-Null }
+            $resolvedAt = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'resolved_at'
+            $resolutionRef = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'resolution_ref'
+            $supersededBy = Get-HardnessFrontmatterValue -Frontmatter $frontmatter -Name 'superseded_by'
+            if ($status -in @('resolved', 'rejected')) {
+                if (-not (Test-HardnessIsoTimestamp $resolvedAt)) { $structuralErrors.Add("${relativePath}: $status status requires an ISO-8601 resolved_at") | Out-Null }
+                if ([string]::IsNullOrWhiteSpace($resolutionRef)) { $structuralErrors.Add("${relativePath}: $status status requires resolution_ref") | Out-Null }
+                if (-not [string]::IsNullOrWhiteSpace($supersededBy)) { $structuralErrors.Add("${relativePath}: $status status forbids superseded_by") | Out-Null }
+            }
+            elseif ($status -eq 'superseded') {
+                if (-not (Test-HardnessIsoTimestamp $resolvedAt)) { $structuralErrors.Add("${relativePath}: superseded status requires an ISO-8601 resolved_at") | Out-Null }
+                if ($supersededBy -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}#issue-\d{8}-\d{6}-[a-z0-9][a-z0-9-]*$') { $structuralErrors.Add("${relativePath}: superseded_by must name one exact material issue") | Out-Null }
+                if (-not [string]::IsNullOrWhiteSpace($resolutionRef)) { $structuralErrors.Add("${relativePath}: superseded status forbids resolution_ref") | Out-Null }
+            }
+            elseif ($status -eq 'open') {
+                if (-not [string]::IsNullOrWhiteSpace($resolvedAt) -or -not [string]::IsNullOrWhiteSpace($resolutionRef) -or -not [string]::IsNullOrWhiteSpace($supersededBy)) { $structuralErrors.Add("${relativePath}: open status forbids terminal fields") | Out-Null }
+                $openIssuePaths.Add($relativePath) | Out-Null
+            }
+            if ([string]::IsNullOrWhiteSpace($indexText)) {
+                $structuralErrors.Add("${relativePath}: attachments/INDEX.md is required") | Out-Null
+            }
+            else {
+                $indexCount = [regex]::Matches($indexText, [regex]::Escape($attachmentRelativePath)).Count
+                if ($indexCount -ne 1) { $structuralErrors.Add("${relativePath}: must appear in attachments/INDEX.md exactly once (actual $indexCount)") | Out-Null }
+            }
+            $issueRecords.Add([pscustomobject]@{ Path = $relativePath; IssueId = $issueId; Status = $status; Schema = $schema; SupersededBy = $supersededBy; Frontmatter = $frontmatter }) | Out-Null
+        }
+    }
+
+    foreach ($issue in @($issueRecords | Where-Object { $_.Schema -eq 'openspec-material-issue-v2' -and $_.Status -eq 'superseded' })) {
+        $ownReference = "$Change#$($issue.IssueId)"
+        if ($issue.SupersededBy -eq $ownReference) {
+            $structuralErrors.Add("$($issue.Path): superseded_by cannot reference itself") | Out-Null
+            continue
+        }
+        if ($issue.SupersededBy -notmatch '^(?<change>[^#]+)#(?<issue>issue-.+)$') { continue }
+        try {
+            $targetChange = Resolve-HardnessEvolutionChange -Context $Context -Change $Matches['change']
+            $targetPath = Join-Path ([string]$targetChange.Root) ("attachments/implementation/{0}.md" -f $Matches['issue'])
+            if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) { throw 'target issue file does not exist' }
+            $targetFrontmatter = Read-HardnessFrontmatter -Path $targetPath
+            if ($targetFrontmatter.Errors.Count -gt 0 -or
+                (Get-HardnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'issue_schema') -ne 'openspec-material-issue-v2' -or
+                (Get-HardnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'issue_id') -ne $Matches['issue']) {
+                throw 'target is not an exact v2 material issue'
+            }
+            $targetSupersededBy = Get-HardnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'superseded_by'
+            if ($targetSupersededBy -eq $ownReference) { throw 'direct supersession cycle detected' }
+        }
+        catch {
+            $structuralErrors.Add("$($issue.Path): superseded_by '$($issue.SupersededBy)' is invalid ($($_.Exception.Message))") | Out-Null
+        }
+    }
+
+    $evaluationPath = Join-Path $attachmentRoot 'data/workflow-evaluation.md'
+    $evaluationRelativePath = ''
     $evaluationResult = ''
-    $evaluationPath = ''
-    if ($latestEvaluation.Count -eq 1) {
-        $evaluationPath = $latestEvaluation[0].FullName.Substring($Context.WorkspaceRoot.Length).TrimStart('\', '/').Replace('\', '/')
-        $header = @(Get-Content -LiteralPath $latestEvaluation[0].FullName -TotalCount 24)
-        $resultLine = @($header | Where-Object { $_ -match '^result:\s*([A-Za-z0-9_-]+)\s*$' } | Select-Object -First 1)
-        if ($resultLine.Count -eq 1) { $evaluationResult = [regex]::Match($resultLine[0], '^result:\s*([^\s]+)').Groups[1].Value }
+    $evaluationCapturedAt = ''
+    $evaluationValid = $false
+    if (Test-Path -LiteralPath $evaluationPath -PathType Leaf) {
+        $evaluationRelativePath = Get-HardnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $evaluationPath
+        $evaluation = Read-HardnessFrontmatter -Path $evaluationPath
+        foreach ($problem in @($evaluation.Errors)) { $structuralErrors.Add("${evaluationRelativePath}: $problem") | Out-Null }
+        $evaluationRecord = Get-HardnessFrontmatterValue -Frontmatter $evaluation -Name 'record'
+        $evaluationResult = (Get-HardnessFrontmatterValue -Frontmatter $evaluation -Name 'result').ToLowerInvariant()
+        $evaluationChange = Get-HardnessFrontmatterValue -Frontmatter $evaluation -Name 'change'
+        $evaluationCapturedAt = Get-HardnessFrontmatterValue -Frontmatter $evaluation -Name 'captured_at'
+        if ($evaluationRecord -ne 'hardness-workflow-evaluation-v1') { $structuralErrors.Add("${evaluationRelativePath}: record must be hardness-workflow-evaluation-v1") | Out-Null }
+        if ($evaluationResult -notin @('passed', 'failed')) { $structuralErrors.Add("${evaluationRelativePath}: result must be passed or failed") | Out-Null }
+        if ($evaluationChange -ne $Change) { $structuralErrors.Add("${evaluationRelativePath}: change must equal '$Change'") | Out-Null }
+        if (-not (Test-HardnessIsoTimestamp $evaluationCapturedAt)) { $structuralErrors.Add("${evaluationRelativePath}: captured_at must be an ISO-8601 timestamp") | Out-Null }
+        if ([string]::IsNullOrWhiteSpace($indexText)) {
+            $structuralErrors.Add("${evaluationRelativePath}: attachments/INDEX.md is required") | Out-Null
+        }
+        else {
+            $evaluationIndexPath = $evaluationPath.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
+            $evaluationIndexCount = [regex]::Matches($indexText, [regex]::Escape($evaluationIndexPath)).Count
+            if ($evaluationIndexCount -ne 1) { $structuralErrors.Add("${evaluationRelativePath}: must appear in attachments/INDEX.md exactly once (actual $evaluationIndexCount)") | Out-Null }
+        }
+        $evaluationValid = $evaluation.Errors.Count -eq 0 -and $evaluationRecord -eq 'hardness-workflow-evaluation-v1' -and $evaluationResult -in @('passed', 'failed') -and $evaluationChange -eq $Change -and (Test-HardnessIsoTimestamp $evaluationCapturedAt)
     }
-    return [pscustomobject][ordered]@{
-        ObservationRoot       = $observationRoot
-        ObservationCount      = $observations.Count
-        LatestObservationUtc  = if ($observations.Count -gt 0) { $observations[0].LastWriteTimeUtc.ToString('o') } else { '' }
-        LatestEvaluationPath  = $evaluationPath
-        LatestEvaluationResult = $evaluationResult
-        RawBodiesLoaded       = $false
+
+    foreach ($problem in @($structuralErrors)) { $closureBlockers.Add([string]$problem) | Out-Null }
+    foreach ($path in @($openIssuePaths)) { $closureBlockers.Add("open material issue: $path") | Out-Null }
+    if (-not (Test-Path -LiteralPath $evaluationPath -PathType Leaf)) { $closureBlockers.Add('workflow evaluation is missing') | Out-Null }
+    elseif (-not $evaluationValid) { $closureBlockers.Add('workflow evaluation frontmatter is invalid') | Out-Null }
+    elseif ($evaluationResult -ne 'passed') { $closureBlockers.Add("workflow evaluation result is '$evaluationResult'") | Out-Null }
+
+    $result = [pscustomobject][ordered]@{
+        ChangeId                  = $Change
+        ChangeRoot                = $changeRoot
+        Archived                  = [bool]$resolvedChange.Archived
+        ObservationRoot           = $observationRoot
+        ObservationCount          = $observations.Count
+        LatestObservationUtc      = if ($observations.Count -gt 0) { $observations[0].LastWriteTimeUtc.ToString('o') } else { '' }
+        V2IssueCount              = @($issueRecords | Where-Object Schema -eq 'openspec-material-issue-v2').Count
+        LegacyIssueCount          = $legacyIssueCount
+        IssueCounts               = [pscustomobject]$counts
+        OpenIssuePaths            = @($openIssuePaths | ForEach-Object { [string]$_ })
+        StructuralErrors          = @($structuralErrors | ForEach-Object { [string]$_ })
+        LatestEvaluationPath      = $evaluationRelativePath
+        LatestEvaluationResult    = $evaluationResult
+        LatestEvaluationCapturedAt = $evaluationCapturedAt
+        ClosureReady              = $closureBlockers.Count -eq 0
+        ClosureBlockers           = @($closureBlockers | ForEach-Object { [string]$_ })
+        RawBodiesLoaded           = $false
     }
+    if ($RequireTerminal -and -not $result.ClosureReady) {
+        throw "Evolution closure gate failed for '$Change': $($result.ClosureBlockers -join '; ')"
+    }
+    return $result
 }
 
 function Get-HardnessOpenSpecMaintenanceStatus {

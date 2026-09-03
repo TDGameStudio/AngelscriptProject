@@ -325,14 +325,16 @@ function Test-ImplementationIssueFile {
     }
 
     $issueId = Get-ReviewMetadataValue -Text $frontmatter -Names @('issue_id')
+    $issueSchema = Get-ReviewMetadataValue -Text $frontmatter -Names @('issue_schema')
     $status = (Get-ReviewMetadataValue -Text $frontmatter -Names @('status')).ToLowerInvariant()
     $source = (Get-ReviewMetadataValue -Text $frontmatter -Names @('source')).ToLowerInvariant()
     $sourceRef = Get-ReviewMetadataValue -Text $frontmatter -Names @('source_ref')
     $createdAt = Get-ReviewMetadataValue -Text $frontmatter -Names @('created_at')
 
+    if (-not [string]::IsNullOrWhiteSpace($issueSchema) -and $issueSchema -ne 'openspec-material-issue-v2') { $issues += "issue-schema: $($File.Name) has unsupported issue_schema '$issueSchema'" }
     if ($issueId -ne $File.BaseName) { $issues += "issue-id: $($File.Name) issue_id must match its filename stem" }
-    if ($status -notin @('open', 'resolved', 'superseded')) { $issues += "issue-status: $($File.Name) has invalid status '$status'" }
-    if ($source -notin @('implementation', 'verification', 'review', 'dependency', 'user')) { $issues += "issue-source: $($File.Name) has invalid source '$source'" }
+    if ($status -notin @('open', 'resolved', 'rejected', 'superseded')) { $issues += "issue-status: $($File.Name) has invalid status '$status'" }
+    if ($source -notin @('dogfooding', 'implementation', 'verification', 'review', 'dependency', 'user')) { $issues += "issue-source: $($File.Name) has invalid source '$source'" }
     if ([string]::IsNullOrWhiteSpace($sourceRef)) { $issues += "issue-source-ref: $($File.Name) requires source_ref" }
     $affectedTasks = @(Get-FrontmatterCollectionValues -Frontmatter $frontmatter -Name 'affected_tasks')
     if ($affectedTasks.Count -eq 0) { $issues += "issue-affected-tasks: $($File.Name) requires at least one affected task" }
@@ -344,14 +346,15 @@ function Test-ImplementationIssueFile {
     $resolvedAt = Get-ReviewMetadataValue -Text $frontmatter -Names @('resolved_at')
     $resolutionRef = Get-ReviewMetadataValue -Text $frontmatter -Names @('resolution_ref')
     $supersededBy = Get-ReviewMetadataValue -Text $frontmatter -Names @('superseded_by')
-    if ($status -eq 'resolved') {
+    if ($status -in @('resolved', 'rejected')) {
         if (-not (Test-IsoTimestamp -Value $resolvedAt)) { $issues += "issue-resolved-at: $($File.Name) requires an ISO-8601 resolved_at" }
         if ([string]::IsNullOrWhiteSpace($resolutionRef)) { $issues += "issue-resolution-ref: $($File.Name) requires resolution_ref" }
-        if (-not [string]::IsNullOrWhiteSpace($supersededBy)) { $issues += "issue-status-fields: $($File.Name) resolved status forbids superseded_by" }
+        if (-not [string]::IsNullOrWhiteSpace($supersededBy)) { $issues += "issue-status-fields: $($File.Name) $status status forbids superseded_by" }
     }
     elseif ($status -eq 'superseded') {
+        if (-not (Test-IsoTimestamp -Value $resolvedAt)) { $issues += "issue-resolved-at: $($File.Name) requires an ISO-8601 resolved_at" }
         if ([string]::IsNullOrWhiteSpace($supersededBy)) { $issues += "issue-superseded-by: $($File.Name) requires superseded_by" }
-        if (-not [string]::IsNullOrWhiteSpace($resolvedAt) -or -not [string]::IsNullOrWhiteSpace($resolutionRef)) { $issues += "issue-status-fields: $($File.Name) superseded status forbids resolution fields" }
+        if (-not [string]::IsNullOrWhiteSpace($resolutionRef)) { $issues += "issue-status-fields: $($File.Name) superseded status forbids resolution_ref" }
     }
     elseif ($status -eq 'open') {
         if (-not [string]::IsNullOrWhiteSpace($resolvedAt) -or -not [string]::IsNullOrWhiteSpace($resolutionRef) -or -not [string]::IsNullOrWhiteSpace($supersededBy)) { $issues += "issue-status-fields: $($File.Name) open status forbids closure fields" }
@@ -408,6 +411,24 @@ function Test-ActiveImplementationIssueGate {
                 $indexCount = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
                 if ($indexCount -ne 1) { $issues += "issue-index-entry: $($file.Name) must appear in INDEX.md exactly once (actual $indexCount)" }
             }
+        }
+    }
+    return $issues
+}
+
+function Test-ImplementationIssueClosureGate {
+    param([Parameter(Mandatory = $true)][string]$ChangeRoot)
+
+    $issues = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $ChangeRoot)
+    $implementationRoot = Join-Path $ChangeRoot 'attachments\implementation'
+    if (-not (Test-Path -LiteralPath $implementationRoot -PathType Container)) { return $issues }
+    foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -File -Filter 'issue-*.md')) {
+        $record = Get-Content -LiteralPath $file.FullName -Raw
+        $frontmatter = Get-ReviewFrontmatter $record
+        $issueSchema = Get-ReviewMetadataValue -Text $frontmatter -Names @('issue_schema')
+        $status = (Get-ReviewMetadataValue -Text $frontmatter -Names @('status')).ToLowerInvariant()
+        if ($issueSchema -eq 'openspec-material-issue-v2' -and $status -eq 'open') {
+            $issues += "issue-open: $($file.Name) must reach resolved, rejected, or superseded before closure"
         }
     }
     return $issues
@@ -854,6 +875,7 @@ try {
     $validIssueName = 'issue-20260903-143000-shared-root-cause.md'
     $validIssue = @'
 ---
+issue_schema: openspec-material-issue-v2
 issue_id: issue-20260903-143000-shared-root-cause
 status: resolved
 source: review
@@ -917,6 +939,25 @@ It does not prove unrelated OpenSpec CLI behavior.
     [System.IO.File]::WriteAllText((Join-Path $fixtureAttachmentRoot 'INDEX.md'), $fixtureIndex, [System.Text.UTF8Encoding]::new($false))
     Assert-Equal 0 @(Test-ImplementationIssueFile -File (Get-Item -LiteralPath $validIssuePath)).Count 'valid material implementation issue passes'
     Assert-Equal 0 @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot).Count 'valid active implementation issue and INDEX pass'
+    Assert-Equal 0 @(Test-ImplementationIssueClosureGate -ChangeRoot (Join-Path $issueFixtureRoot 'fixture\sample')).Count 'resolved v2 material issue passes the closure gate'
+
+    $legacyIssue = $validIssue -replace '(?m)^issue_schema: openspec-material-issue-v2\r?\n', ''
+    [System.IO.File]::WriteAllText($validIssuePath, $legacyIssue, [System.Text.UTF8Encoding]::new($false))
+    Assert-Equal 0 @(Test-ImplementationIssueFile -File (Get-Item -LiteralPath $validIssuePath)).Count 'legacy material issue without issue_schema remains readable'
+    [System.IO.File]::WriteAllText($validIssuePath, $validIssue, [System.Text.UTF8Encoding]::new($false))
+
+    $rejectedIssue = $validIssue.Replace('status: resolved', 'status: rejected')
+    [System.IO.File]::WriteAllText($validIssuePath, $rejectedIssue, [System.Text.UTF8Encoding]::new($false))
+    Assert-Equal 0 @(Test-ImplementationIssueFile -File (Get-Item -LiteralPath $validIssuePath)).Count 'evidence-backed rejected v2 material issue is terminal'
+    Assert-Equal 0 @(Test-ImplementationIssueClosureGate -ChangeRoot (Join-Path $issueFixtureRoot 'fixture\sample')).Count 'rejected v2 material issue passes the closure gate'
+    [System.IO.File]::WriteAllText($validIssuePath, $validIssue, [System.Text.UTF8Encoding]::new($false))
+
+    $openIssue = ($validIssue.Replace('status: resolved', 'status: open') -replace '(?m)^resolved_at: 2026-09-03T15:20:00\+08:00\r?\n', '') -replace '(?m)^resolution_ref: commit:0123456789abcdef\r?\n', ''
+    [System.IO.File]::WriteAllText($validIssuePath, $openIssue, [System.Text.UTF8Encoding]::new($false))
+    Assert-Equal 0 @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot).Count 'an open v2 material issue remains structurally valid during active work'
+    $openClosureProblems = @(Test-ImplementationIssueClosureGate -ChangeRoot (Join-Path $issueFixtureRoot 'fixture\sample'))
+    Assert-Equal 1 @($openClosureProblems | Where-Object { $_ -like 'issue-open:*' }).Count 'an open v2 material issue fails only the closure gate'
+    [System.IO.File]::WriteAllText($validIssuePath, $validIssue, [System.Text.UTF8Encoding]::new($false))
 
     [System.IO.File]::WriteAllText((Join-Path $fixtureAttachmentRoot 'INDEX.md'), "# INDEX`n", [System.Text.UTF8Encoding]::new($false))
     $missingIndexProblems = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot)

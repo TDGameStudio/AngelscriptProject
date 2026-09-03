@@ -31,7 +31,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 | Event | Record | Boundary |
 |---|---|---|
 | Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
-| Material investigated technical problem | `implementation/` | One shared root cause and repair lifecycle; never a final summary or second task list. |
+| Material investigated technical or workflow problem | `implementation/` | One shared root cause and disposition lifecycle, including admitted dogfooding findings; never a final summary or second task list. |
 | Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
 | Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
 | Reusable learning candidate | `knowledges/` | Change-local evidence until verification establishes whether it should be promoted, superseded, or retired. |
@@ -57,6 +57,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 ## Implementation issues and talks
 
 - Use [implementation-issues.md](implementation-issues.md) only after a technical problem crosses its material threshold. `implementation/` is issue-only; final integration evidence, routine TDD cycles, closure preparation, and progress summaries belong in their owning task evidence, `data/`, Review, INDEX, or closure record.
+- Ignored `Saved/Hardness/Observations` records are inexpensive evidence, not durable owners. When a dogfooding observation crosses the material threshold, admit it to one indexed `openspec-material-issue-v2` record in an exact active Change before handoff. Once admitted, it must become `resolved`, `rejected`, or `superseded`; free-floating deferral is not a terminal state.
 - Non-obvious major decisions go to `talks/talk-YYYYMMDD-HHmmss-<theme>.md`, then lift the settled truth into proposal/spec/design before replan.
 
 ## Exploration carryover
@@ -99,4 +100,17 @@ review or verification evidence
 - `scripts/`: one reusable purpose per script, with usage and dependencies in its header.
 - `data/`: trimmed text-first evidence. Files over 100 KB or 1000 lines must be reduced with source run ID, trim rationale, and original line ranges.
 
-Before archive, trim data, decide knowledge promotion, close any existing Review and issue state, record spec-sync disposition, and provide the requested closure manifest. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.
+Every Hardness or OpenSpec self-hosting Change keeps one indexed canonical `data/workflow-evaluation.md` before completed closure. Its machine-readable header is:
+
+```yaml
+---
+record: hardness-workflow-evaluation-v1
+result: passed | failed
+change: hardness/exact-change-id
+captured_at: 2026-09-03T18:00:00+08:00
+---
+```
+
+The compact body records elapsed lifecycle stages, material friction, corrective actions, transferred/superseded owners, and raw-data provenance. `hardness.evolution.status` reads only this frontmatter and material-issue frontmatter; it does not replay attachment bodies or ignored observation bodies. A parseable `failed` result remains inspectable but cannot pass terminal closure.
+
+Before archive, trim data, decide knowledge promotion, close any existing Review and v2 issue state, record spec-sync disposition, and provide the requested closure manifest. Run `hardness.evolution.status` for the exact Change with `RequireTerminal = $true`; ordinary status remains inspectable while an issue is open, but the terminal call fails. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.

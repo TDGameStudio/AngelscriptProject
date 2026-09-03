@@ -136,11 +136,11 @@ try {
     Assert-Equal 'HardnessPerformanceRaw' $summary.RecordType 'the performance summary identifies its record type'
     Assert-Equal 'Passed' $summary.OverallStatus 'the minimal performance correctness sample passes its budgets'
     Assert-Equal 'fixture/performance' $summary.Parameters.TaskChange 'the default performance run uses its self-contained Task Graph fixture'
-    Assert-Equal 7 @($summary.Scenarios).Count 'the performance summary contains all seven focused scenarios'
-    Assert-Equal 'FreshProcess|PersistentApi|TaskStatus|FastWorkspaceStatus|HardnessStatus|DetailedWorkspaceStatus|ObservationWrite' (@($summary.Scenarios.Name) -join '|') 'the performance summary keeps the focused scenario order'
+    Assert-Equal 8 @($summary.Scenarios).Count 'the performance summary contains all eight focused scenarios'
+    Assert-Equal 'FreshProcess|PersistentApi|TaskStatus|FastWorkspaceStatus|HardnessStatus|DetailedWorkspaceStatus|ObservationWrite|EvolutionStatus' (@($summary.Scenarios.Name) -join '|') 'the performance summary keeps the focused scenario order'
 
     $samples = @(Import-Csv -LiteralPath $samplesPath)
-    Assert-Equal 7 $samples.Count 'one measured sample is retained for each scenario'
+    Assert-Equal 8 $samples.Count 'one measured sample is retained for each scenario'
     Assert-Equal 0 @($samples | Where-Object Correct -ne 'True').Count 'every retained sample passed its behavior assertion'
     Assert-Equal 'Scenario|Phase|Iteration|Unit|Value|Correct' (@($samples[0].PSObject.Properties.Name) -join '|') 'the raw sample table schema remains stable'
     Assert-True ($summaryText -notmatch [regex]::Escape($projectRoot)) 'the performance summary omits the absolute project path'

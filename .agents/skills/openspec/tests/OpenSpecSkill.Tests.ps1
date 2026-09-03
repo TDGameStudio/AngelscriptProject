@@ -551,7 +551,7 @@ foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Codex /goal 
 }
 Assert-True ($openSpecReadmeText.Contains('New-HardnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'
 Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HardnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
-foreach ($token in @('all project Skills remain disabled', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
+foreach ($token in @('user explicitly lifted the temporary Skill restriction', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
     Assert-True ($agentsText.Contains($token)) "Prepared AGENTS workflow contract is missing: $token"
 }
 

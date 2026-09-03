@@ -205,18 +205,176 @@ function Resolve-GitCommitScopes {
     return $resolved
 }
 
+function Get-GitStagedPaths {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [switch]$IncludeIntentToAdd
+    )
+    $arguments = @('-c', 'core.quotepath=false', 'diff', '--cached', '--name-only', '--no-renames')
+    if ($IncludeIntentToAdd) { $arguments += '--ita-visible-in-index' }
+    return @((Invoke-GitOperation -Repository $Repository -Arguments $arguments).Output | Where-Object { $_ } | Sort-Object -Unique)
+}
+
+function Get-GitIntentToAddPaths {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+    $ordinary = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($path in @(Get-GitStagedPaths -Repository $Repository)) { [void]$ordinary.Add([string]$path) }
+    return @(Get-GitStagedPaths -Repository $Repository -IncludeIntentToAdd | Where-Object { -not $ordinary.Contains([string]$_) })
+}
+
+function Get-GitUnmergedPaths {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+    $paths = New-Object System.Collections.Generic.List[string]
+    $result = Invoke-GitOperation -Repository $Repository -Arguments @('-c', 'core.quotepath=false', 'ls-files', '--unmerged')
+    foreach ($line in $result.Output) {
+        $separator = $line.IndexOf("`t", [System.StringComparison]::Ordinal)
+        if ($separator -lt 0) { throw "Unable to parse unmerged index entry in '$Repository': $line" }
+        $paths.Add($line.Substring($separator + 1)) | Out-Null
+    }
+    return @($paths | Sort-Object -Unique)
+}
+
+function Assert-GitNoCrossScopeRenameOrCopy {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Scopes
+    )
+    $result = Invoke-GitOperation -Repository $Repository -Arguments @(
+        '-c', 'core.quotepath=false', 'diff', '--cached', '--name-status', '--no-ext-diff',
+        '--find-renames', '--find-copies-harder'
+    )
+    foreach ($line in $result.Output) {
+        if ($line -notmatch '^[RC][0-9]+\t') { continue }
+        $parts = @($line -split "`t", 3)
+        if ($parts.Count -ne 3) { throw "Unable to parse staged rename/copy entry in '$Repository': $line" }
+        $sourceCovered = Test-GitPathCovered -Path $parts[1] -Scopes $Scopes
+        $targetCovered = Test-GitPathCovered -Path $parts[2] -Scopes $Scopes
+        if ($sourceCovered -ne $targetCovered) {
+            throw "Repository '$Repository' has a staged rename/copy crossing the requested scope: $($parts[1]) -> $($parts[2])."
+        }
+    }
+}
+
+function Get-GitOutsideStagedSnapshot {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Scopes
+    )
+    [string[]]$outsidePaths = @(Get-GitStagedPaths -Repository $Repository |
+        Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $Scopes) })
+    [Array]::Sort($outsidePaths, [System.StringComparer]::Ordinal)
+
+    [string[]]$metadata = @()
+    [byte[]]$patchBytes = @()
+    if ($outsidePaths.Count -gt 0) {
+        $metadata = @((Invoke-GitOperation -Repository $Repository -Arguments (
+            @('--literal-pathspecs', 'ls-files', '--stage', '--') + @($outsidePaths)
+        )).Output | ForEach-Object { [string]$_ })
+        [Array]::Sort($metadata, [System.StringComparer]::Ordinal)
+
+        $patchPath = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-git-staged-{0}.patch" -f [guid]::NewGuid().ToString('N'))
+        try {
+            [void](Invoke-GitOperation -Repository $Repository -Arguments (
+                @(
+                    '--literal-pathspecs', 'diff', '--cached', '--binary', '--full-index', '--no-ext-diff',
+                    '--no-textconv', '--no-renames', "--output=$patchPath", '--'
+                ) + @($outsidePaths)
+            ))
+            $patchBytes = [System.IO.File]::ReadAllBytes($patchPath)
+        }
+        finally {
+            if (Test-Path -LiteralPath $patchPath -PathType Leaf) {
+                & {
+                    $WhatIfPreference = $false
+                    Remove-Item -LiteralPath $patchPath -Force
+                }
+            }
+        }
+    }
+
+    $stream = [System.IO.MemoryStream]::new()
+    $writer = [System.IO.BinaryWriter]::new($stream, [System.Text.UTF8Encoding]::new($false), $true)
+    try {
+        $writer.Write([int]$outsidePaths.Count)
+        foreach ($path in $outsidePaths) {
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($path)
+            $writer.Write([int]$bytes.Length)
+            $writer.Write([byte[]]$bytes)
+        }
+        $writer.Write([int]$metadata.Count)
+        foreach ($entry in $metadata) {
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($entry)
+            $writer.Write([int]$bytes.Length)
+            $writer.Write([byte[]]$bytes)
+        }
+        $writer.Write([long]$patchBytes.LongLength)
+        $writer.Write([byte[]]$patchBytes)
+        $writer.Flush()
+        $payload = $stream.ToArray()
+    }
+    finally {
+        $writer.Dispose()
+        $stream.Dispose()
+    }
+    $hash = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($payload)).ToLowerInvariant()
+    return [pscustomobject]@{ Paths = @($outsidePaths); Sha256 = "sha256:$hash" }
+}
+
+function Assert-GitOutsideStagedSnapshot {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Scopes,
+        [Parameter(Mandatory = $true)]$Expected
+    )
+    $actual = Get-GitOutsideStagedSnapshot -Repository $Repository -Scopes $Scopes
+    $samePaths = @($Expected.Paths).Count -eq @($actual.Paths).Count
+    if ($samePaths) {
+        for ($index = 0; $index -lt @($Expected.Paths).Count; $index++) {
+            if (-not ([string]$Expected.Paths[$index]).Equals([string]$actual.Paths[$index], [System.StringComparison]::Ordinal)) {
+                $samePaths = $false
+                break
+            }
+        }
+    }
+    if (-not $samePaths -or $Expected.Sha256 -ne $actual.Sha256) {
+        throw "Repository '$Repository' did not preserve staged paths outside the requested scope (before $($Expected.Sha256), after $($actual.Sha256))."
+    }
+    return $actual
+}
+
+function Assert-GitCommitPathsCovered {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$OldHead,
+        [Parameter(Mandatory = $true)][string]$NewHead,
+        [Parameter(Mandatory = $true)][string[]]$Scopes
+    )
+    $changedPaths = @((Invoke-GitOperation -Repository $Repository -Arguments @(
+        '-c', 'core.quotepath=false', 'diff-tree', '--no-commit-id', '--name-only', '--no-renames', '-r', $OldHead, $NewHead
+    )).Output | Where-Object { $_ })
+    $outside = @($changedPaths | Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $Scopes) })
+    if ($outside.Count -gt 0) {
+        throw "Commit '$NewHead' in '$Repository' contains paths outside the requested scope: $($outside -join ', ')"
+    }
+    return $changedPaths
+}
+
 function Complete-HardnessGitCommit {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
         [hashtable]$RepositoryScopes = @{},
         [switch]$AllChanges,
+        [switch]$PreserveOutsideStaged,
         [Parameter(Mandatory = $true)][string]$CommitMessage,
         [hashtable]$SubmoduleCommitMessages = @{},
         [hashtable]$TargetBranches = @{}
     )
     $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $primary = Get-GitPrimaryRoot -Repository $root
+    if ($PreserveOutsideStaged -and $AllChanges) {
+        throw 'PreserveOutsideStaged requires exact RepositoryScopes and cannot be combined with AllChanges.'
+    }
     if ($AllChanges -and ((Test-GitPathEqual -Left $root -Right $primary) -or -not (Test-GitRegisteredRoot -Repository $primary -Candidate $root))) {
         throw 'AllChanges is allowed only for an exact registered linked worktree; primary-workspace commits require RepositoryScopes.'
     }
@@ -229,12 +387,80 @@ function Complete-HardnessGitCommit {
     $repositories = @{ '.' = $root }
     foreach ($submodule in $submodules) { $repositories[$submodule.Path] = $submodule.FullPath }
 
-    foreach ($repoKey in $scopes.Keys) {
+    $states = @{}
+    $scopedDirtyPaths = @{}
+    $preflightHeads = @{}
+    $preflightBranches = @{}
+    $branchPlans = @{}
+    foreach ($repoKey in @($scopes.Keys | Sort-Object)) {
         $repoRoot = $repositories[$repoKey]
         if (-not (Test-GitRepository -Path $repoRoot)) { throw "Scoped repository '$repoKey' is not initialized." }
         $state = Get-GitPathState -Repository $repoRoot
-        $outsideStaged = @($state.Staged | Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey]) })
-        if ($outsideStaged.Count -gt 0) { throw "Repository '$repoKey' has staged paths outside the requested scope: $($outsideStaged -join ', ')" }
+        $states[$repoKey] = $state
+        $scopedDirtyPaths[$repoKey] = @($state.Staged + $state.Unstaged + $state.Untracked |
+            Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] } |
+            Sort-Object -Unique)
+        $preflightHeads[$repoKey] = Get-GitHead -Repository $repoRoot
+        $preflightBranches[$repoKey] = Get-GitBranch -Repository $repoRoot
+        $unmerged = @(Get-GitUnmergedPaths -Repository $repoRoot)
+        if ($unmerged.Count -gt 0) { throw "Repository '$repoKey' has unmerged index paths: $($unmerged -join ', ')" }
+    }
+
+    foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
+        if (@($scopedDirtyPaths[$repoKey]).Count -eq 0) { continue }
+        $repoRoot = $repositories[$repoKey]
+        $branch = [string]$preflightBranches[$repoKey]
+        $targetBranch = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } else { $branch }
+        if ([string]::IsNullOrWhiteSpace($targetBranch)) { throw "Detached scoped repository '$repoKey' requires an explicit TargetBranches entry." }
+        $branchExists = $false
+        if ([string]::IsNullOrWhiteSpace($branch)) {
+            $branchExists = (Invoke-GitOperation -Repository $repoRoot -Arguments @('show-ref', '--verify', '--quiet', "refs/heads/$targetBranch") -AllowFailure).ExitCode -eq 0
+            if ($branchExists) {
+                $branchHead = Get-GitHead -Repository $repoRoot -Revision "refs/heads/$targetBranch"
+                if ($branchHead -ne [string]$preflightHeads[$repoKey]) { throw "Existing target branch '$targetBranch' for '$repoKey' is not at the detached checkout HEAD." }
+            }
+        }
+        elseif ($branch -ne $targetBranch) { throw "Scoped repository '$repoKey' is on '$branch', expected target branch '$targetBranch'." }
+        $branchPlans[$repoKey] = [pscustomobject]@{ Branch = $branch; TargetBranch = $targetBranch; BranchExists = $branchExists }
+    }
+
+    $effectiveScopes = @{}
+    foreach ($repoKey in $scopes.Keys) { $effectiveScopes[$repoKey] = @($scopes[$repoKey]) }
+    $parentScopes = New-Object System.Collections.Generic.List[string]
+    if ($scopes.ContainsKey('.')) { foreach ($path in $scopes['.']) { $parentScopes.Add($path) | Out-Null } }
+    foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
+        if (@($scopedDirtyPaths[$repoKey]).Count -gt 0) { $parentScopes.Add([string]$repoKey) | Out-Null }
+    }
+    if ($parentScopes.Count -gt 0) {
+        $effectiveScopes['.'] = @($parentScopes | Sort-Object -Unique)
+        if (-not $states.ContainsKey('.')) {
+            $states['.'] = Get-GitPathState -Repository $root
+            $preflightHeads['.'] = Get-GitHead -Repository $root
+            $preflightBranches['.'] = Get-GitBranch -Repository $root
+            $unmerged = @(Get-GitUnmergedPaths -Repository $root)
+            if ($unmerged.Count -gt 0) { throw "Repository '.' has unmerged index paths: $($unmerged -join ', ')" }
+        }
+    }
+
+    $outsideSnapshots = @{}
+    foreach ($repoKey in @($effectiveScopes.Keys | Sort-Object)) {
+        $repoRoot = $repositories[$repoKey]
+        $repoScopes = @($effectiveScopes[$repoKey])
+        $outsideStaged = @(Get-GitStagedPaths -Repository $repoRoot |
+            Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $repoScopes) })
+        $outsideIntentToAdd = @(Get-GitIntentToAddPaths -Repository $repoRoot |
+            Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $repoScopes) })
+        if ($outsideIntentToAdd.Count -gt 0) {
+            throw "Repository '$repoKey' has unsupported outside intent-to-add paths: $($outsideIntentToAdd -join ', ')"
+        }
+        if (-not $PreserveOutsideStaged -and $outsideStaged.Count -gt 0) {
+            throw "Repository '$repoKey' has staged paths outside the requested scope: $($outsideStaged -join ', ')"
+        }
+        if ($PreserveOutsideStaged) {
+            Assert-GitNoCrossScopeRenameOrCopy -Repository $repoRoot -Scopes $repoScopes
+            $snapshot = Get-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes $repoScopes
+            if (@($snapshot.Paths).Count -gt 0) { $outsideSnapshots[$repoKey] = $snapshot }
+        }
     }
 
     $includedChanges = New-Object System.Collections.Generic.List[object]
@@ -249,56 +475,113 @@ function Complete-HardnessGitCommit {
     }
 
     $commits = New-Object System.Collections.Generic.List[object]
-    foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
-        $repoRoot = $repositories[$repoKey]
-        $state = Get-GitPathState -Repository $repoRoot
-        $scopedDirty = @($state.Staged + $state.Unstaged + $state.Untracked | Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] })
-        if ($scopedDirty.Count -eq 0) { continue }
-        $branch = Get-GitBranch -Repository $repoRoot
-        $targetBranch = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } else { $branch }
-        if ([string]::IsNullOrWhiteSpace($targetBranch)) { throw "Detached scoped repository '$repoKey' requires an explicit TargetBranches entry." }
-        $branchExists = $false
-        if ([string]::IsNullOrWhiteSpace($branch)) {
-            $branchExists = (Invoke-GitOperation -Repository $repoRoot -Arguments @('show-ref', '--verify', '--quiet', "refs/heads/$targetBranch") -AllowFailure).ExitCode -eq 0
-            if ($branchExists) {
-                $branchHead = Get-GitHead -Repository $repoRoot -Revision "refs/heads/$targetBranch"
-                if ($branchHead -ne (Get-GitHead -Repository $repoRoot)) { throw "Existing target branch '$targetBranch' for '$repoKey' is not at the detached checkout HEAD." }
+    try {
+        foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
+            if (@($scopedDirtyPaths[$repoKey]).Count -eq 0) { continue }
+            $repoRoot = $repositories[$repoKey]
+            $plan = $branchPlans[$repoKey]
+            $message = if ($SubmoduleCommitMessages.ContainsKey($repoKey)) { [string]$SubmoduleCommitMessages[$repoKey] } else { $CommitMessage }
+            if ($PSCmdlet.ShouldProcess($repoKey, "commit scoped paths on '$($plan.TargetBranch)'")) {
+                if ((Get-GitHead -Repository $repoRoot) -ne [string]$preflightHeads[$repoKey] -or
+                    (Get-GitBranch -Repository $repoRoot) -ne [string]$preflightBranches[$repoKey]) {
+                    throw "Repository '$repoKey' changed after commit preflight."
+                }
+                if ($outsideSnapshots.ContainsKey($repoKey)) {
+                    [void](Assert-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes @($effectiveScopes[$repoKey]) -Expected $outsideSnapshots[$repoKey])
+                }
+                if ([string]::IsNullOrWhiteSpace($plan.Branch)) {
+                    $checkoutArguments = if ($plan.BranchExists) { @('checkout', $plan.TargetBranch) } else { @('checkout', '-b', $plan.TargetBranch) }
+                    [void](Invoke-GitOperation -Repository $repoRoot -Arguments $checkoutArguments)
+                }
+                $repoScopes = @($effectiveScopes[$repoKey])
+                [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $repoScopes))
+                $hasStaged = (Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'diff', '--cached', '--quiet', '--') + $repoScopes) -AllowFailure).ExitCode
+                if ($hasStaged -eq 1) {
+                    $oldHead = Get-GitHead -Repository $repoRoot
+                    if ($PreserveOutsideStaged) {
+                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'commit', '--dry-run', '--only', '--') + $repoScopes))
+                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'commit', '--only', '-m', $message, '--') + $repoScopes))
+                    }
+                    else {
+                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments @('commit', '-m', $message))
+                    }
+                    $newHead = Get-GitHead -Repository $repoRoot
+                    [void](Assert-GitCommitPathsCovered -Repository $repoRoot -OldHead $oldHead -NewHead $newHead -Scopes $repoScopes)
+                    $commits.Add([pscustomobject]@{ Repository = $repoKey; Commit = $newHead; Branch = $plan.TargetBranch; Paths = $repoScopes }) | Out-Null
+                }
+                elseif ($hasStaged -ne 0) { throw "Unable to inspect scoped staged changes in '$repoKey'." }
             }
         }
-        elseif ($branch -ne $targetBranch) { throw "Scoped repository '$repoKey' is on '$branch', expected target branch '$targetBranch'." }
-        $message = if ($SubmoduleCommitMessages.ContainsKey($repoKey)) { [string]$SubmoduleCommitMessages[$repoKey] } else { $CommitMessage }
-        if ($PSCmdlet.ShouldProcess($repoKey, "commit scoped paths on '$targetBranch'")) {
-            if ([string]::IsNullOrWhiteSpace($branch)) {
-                $checkoutArguments = if ($branchExists) { @('checkout', $targetBranch) } else { @('checkout', '-b', $targetBranch) }
-                [void](Invoke-GitOperation -Repository $repoRoot -Arguments $checkoutArguments)
+
+        if ($effectiveScopes.ContainsKey('.')) {
+            $repoScopes = @($effectiveScopes['.'])
+            if ($PSCmdlet.ShouldProcess('.', 'commit scoped parent paths and updated gitlinks')) {
+                if ((Get-GitHead -Repository $root) -ne [string]$preflightHeads['.'] -or
+                    (Get-GitBranch -Repository $root) -ne [string]$preflightBranches['.']) {
+                    throw "Repository '.' changed after commit preflight."
+                }
+                if ($outsideSnapshots.ContainsKey('.')) {
+                    [void](Assert-GitOutsideStagedSnapshot -Repository $root -Scopes $repoScopes -Expected $outsideSnapshots['.'])
+                }
+                [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $repoScopes))
+                $hasStaged = (Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'diff', '--cached', '--quiet', '--') + $repoScopes) -AllowFailure).ExitCode
+                if ($hasStaged -eq 1) {
+                    $oldHead = Get-GitHead -Repository $root
+                    if ($PreserveOutsideStaged) {
+                        [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'commit', '--dry-run', '--only', '--') + $repoScopes))
+                        [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'commit', '--only', '-m', $CommitMessage, '--') + $repoScopes))
+                    }
+                    else {
+                        [void](Invoke-GitOperation -Repository $root -Arguments @('commit', '-m', $CommitMessage))
+                    }
+                    $newHead = Get-GitHead -Repository $root
+                    [void](Assert-GitCommitPathsCovered -Repository $root -OldHead $oldHead -NewHead $newHead -Scopes $repoScopes)
+                    $commits.Add([pscustomobject]@{ Repository = '.'; Commit = $newHead; Branch = Get-GitBranch $root; Paths = $repoScopes }) | Out-Null
+                }
+                elseif ($hasStaged -ne 0) { throw 'Unable to inspect scoped staged parent changes.' }
             }
-            [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('add', '-A', '--') + @($scopes[$repoKey])))
-            $hasStaged = (Invoke-GitOperation -Repository $repoRoot -Arguments @('diff', '--cached', '--quiet') -AllowFailure).ExitCode
-            if ($hasStaged -eq 1) {
-                [void](Invoke-GitOperation -Repository $repoRoot -Arguments @('commit', '-m', $message))
-                $commits.Add([pscustomobject]@{ Repository = $repoKey; Commit = Get-GitHead $repoRoot; Branch = $targetBranch; Paths = @($scopes[$repoKey]) }) | Out-Null
-            }
-            elseif ($hasStaged -ne 0) { throw "Unable to inspect staged changes in '$repoKey'." }
         }
     }
 
-    $parentScopes = New-Object System.Collections.Generic.List[string]
-    if ($scopes.ContainsKey('.')) { foreach ($path in $scopes['.']) { $parentScopes.Add($path) | Out-Null } }
-    foreach ($commit in @($commits | ForEach-Object { $_ })) { if ($commit.Repository -ne '.') { $parentScopes.Add([string]$commit.Repository) | Out-Null } }
-    if ($parentScopes.Count -gt 0) {
-        $parentState = Get-GitPathState -Repository $root
-        $outsideStaged = @($parentState.Staged | Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes @($parentScopes)) })
-        if ($outsideStaged.Count -gt 0) { throw "Parent repository has staged paths outside the requested scope: $($outsideStaged -join ', ')" }
-        if ($PSCmdlet.ShouldProcess('.', 'commit scoped parent paths and updated gitlinks')) {
-            [void](Invoke-GitOperation -Repository $root -Arguments (@('add', '-A', '--') + @($parentScopes | Sort-Object -Unique)))
-            $hasStaged = (Invoke-GitOperation -Repository $root -Arguments @('diff', '--cached', '--quiet') -AllowFailure).ExitCode
-            if ($hasStaged -eq 1) {
-                [void](Invoke-GitOperation -Repository $root -Arguments @('commit', '-m', $CommitMessage))
-                $commits.Add([pscustomobject]@{ Repository = '.'; Commit = Get-GitHead $root; Branch = Get-GitBranch $root; Paths = @($parentScopes | Sort-Object -Unique) }) | Out-Null
+    catch {
+        $commitFailure = $_
+        $completed = @($commits | ForEach-Object { "$($_.Repository)=$($_.Commit)" }) -join ', '
+        if ([string]::IsNullOrWhiteSpace($completed)) { $completed = '<none>' }
+        $preservationFailures = New-Object System.Collections.Generic.List[string]
+        foreach ($repoKey in @($outsideSnapshots.Keys | Sort-Object)) {
+            try {
+                [void](Assert-GitOutsideStagedSnapshot -Repository $repositories[$repoKey] -Scopes @($effectiveScopes[$repoKey]) -Expected $outsideSnapshots[$repoKey])
             }
-            elseif ($hasStaged -ne 0) { throw 'Unable to inspect staged parent changes.' }
+            catch { $preservationFailures.Add("$repoKey`: $($_.Exception.Message)") | Out-Null }
+        }
+        $preservation = if ($preservationFailures.Count -eq 0) { 'outside staged snapshots preserved' } else { $preservationFailures -join '; ' }
+        throw "Scoped Git commit failed without rollback. Completed commits: $completed. Preservation: $preservation. Cause: $($commitFailure.Exception.Message)"
+    }
+
+    $preservedStaged = New-Object System.Collections.Generic.List[object]
+    foreach ($repoKey in @($outsideSnapshots.Keys | Sort-Object)) {
+        $before = $outsideSnapshots[$repoKey]
+        if ($WhatIfPreference) {
+            $preservedStaged.Add([pscustomobject]@{
+                Repository = $repoKey
+                Paths = @($before.Paths)
+                BeforeSha256 = $before.Sha256
+                AfterSha256 = $null
+                Validation = 'Pending'
+            }) | Out-Null
+        }
+        else {
+            $after = Assert-GitOutsideStagedSnapshot -Repository $repositories[$repoKey] -Scopes @($effectiveScopes[$repoKey]) -Expected $before
+            $preservedStaged.Add([pscustomobject]@{
+                Repository = $repoKey
+                Paths = @($before.Paths)
+                BeforeSha256 = $before.Sha256
+                AfterSha256 = $after.Sha256
+                Validation = 'Preserved'
+            }) | Out-Null
         }
     }
+
     $finalStatus = Get-HardnessGitStatus -WorkspaceRoot $root
     $scopedGitStateComplete = $true
     foreach ($repoKey in $scopes.Keys) {
@@ -310,7 +593,9 @@ function Complete-HardnessGitCommit {
         WorkspaceRoot = $root
         PrimaryRoot = $primary
         AllChanges = [bool]$AllChanges
+        PreserveOutsideStaged = [bool]$PreserveOutsideStaged
         IncludedChanges = @($includedChanges | ForEach-Object { $_ })
+        PreservedStaged = @($preservedStaged | ForEach-Object { $_ })
         Preview = [bool]$WhatIfPreference
         Commits = @($commits | ForEach-Object { $_ })
         GitStateComplete = -not $finalStatus.Dirty

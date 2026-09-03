@@ -64,6 +64,7 @@ Import-Module $manifest -Force
 
 $commitCommand = Get-Command Complete-HardnessGitCommit
 Assert-True ('WorkspaceRoot' -in @($commitCommand.Parameters.Keys)) 'commit requires an exact WorkspaceRoot'
+Assert-True ('PreserveOutsideStaged' -in @($commitCommand.Parameters.Keys)) 'commit exposes explicit outside-staged preservation'
 $mergeCommand = Get-Command Merge-HardnessGitWorkspace
 Assert-True ('SourceWorkspaceRoot' -in @($mergeCommand.Parameters.Keys)) 'integration requires an exact source workspace root'
 $exportedCommands = @((Get-Command -Module GitOperations).Name | Sort-Object)
@@ -106,12 +107,44 @@ try {
     Remove-Item -LiteralPath $nestedRoot
 
     [System.IO.File]::WriteAllText((Join-Path $parentRoot 'scoped.txt'), "commit only this path`n")
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'literal[1].txt'), "literal pathspec content`n")
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'literal1.txt'), "must not match bracket pathspec`n")
     [System.IO.File]::WriteAllText((Join-Path $parentRoot 'unrelated.txt'), "preserve this path`n")
     [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', 'unrelated.txt'))
+    $primaryHeadBefore = Get-TestHead -Repository $parentRoot
+    $primaryOutsideIndexBefore = ((Invoke-TestGit -Repository $parentRoot -Arguments @('ls-files', '--stage', '--', 'unrelated.txt')).Output -join "`n")
     Assert-ThrowsMatch {
-        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'scoped primary commit' | Out-Null
+        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('scoped.txt', 'literal[1].txt') } -CommitMessage 'scoped primary commit' | Out-Null
     } 'staged paths outside|unrelated' 'Primary scoped commit rejects unrelated pre-staged content'
+    Assert-Equal $primaryHeadBefore (Get-TestHead -Repository $parentRoot) 'default outside-staged rejection preserves primary HEAD'
+    Assert-Equal $primaryOutsideIndexBefore ((Invoke-TestGit -Repository $parentRoot -Arguments @('ls-files', '--stage', '--', 'unrelated.txt')).Output -join "`n") 'default outside-staged rejection preserves the outside index entry'
+
+    $primaryPreview = Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('scoped.txt', 'literal[1].txt') } -CommitMessage 'scoped primary preview' -PreserveOutsideStaged -WhatIf
+    Assert-True $primaryPreview.Preview 'preserving outside staged content supports a non-mutating preview'
+    Assert-True $primaryPreview.PreserveOutsideStaged 'preview reports the explicit preservation mode'
+    Assert-Equal 1 @($primaryPreview.PreservedStaged).Count 'preview inventories the repository with outside staged content'
+    Assert-Equal 'Pending' $primaryPreview.PreservedStaged[0].Validation 'preview does not claim an unexecuted preservation postcondition'
+    Assert-Equal $primaryHeadBefore (Get-TestHead -Repository $parentRoot) 'preservation preview does not change primary HEAD'
+    Assert-Equal $primaryOutsideIndexBefore ((Invoke-TestGit -Repository $parentRoot -Arguments @('ls-files', '--stage', '--', 'unrelated.txt')).Output -join "`n") 'preservation preview does not change the outside index entry'
+
+    $currentCommit = Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('scoped.txt', 'literal[1].txt') } -CommitMessage 'scoped primary commit' -PreserveOutsideStaged
+    Assert-Equal 1 @($currentCommit.Commits).Count 'Primary scoped preservation creates one parent commit'
+    Assert-True $currentCommit.PreserveOutsideStaged 'actual result reports the explicit preservation mode'
+    Assert-Equal 'Preserved' $currentCommit.PreservedStaged[0].Validation 'actual result proves the outside staged snapshot was preserved'
+    Assert-Equal $currentCommit.PreservedStaged[0].BeforeSha256 $currentCommit.PreservedStaged[0].AfterSha256 'outside staged fingerprint is identical before and after commit'
+    Assert-Equal $primaryOutsideIndexBefore ((Invoke-TestGit -Repository $parentRoot -Arguments @('ls-files', '--stage', '--', 'unrelated.txt')).Output -join "`n") 'path-only primary commit preserves the exact outside index entry'
+    Assert-Equal 'literal[1].txt,scoped.txt' (((Invoke-TestGit -Repository $parentRoot -Arguments @('diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD^', 'HEAD')).Output | Where-Object { $_ } | Sort-Object) -join ',') 'path-only primary commit contains only literal requested paths'
+    Assert-True (((Invoke-TestGit -Repository $parentRoot -Arguments @('status', '--short', '--', 'literal1.txt')).Output -join "`n") -match '^\?\?') 'literal pathspec never expands to an adjacent matching name'
+    Assert-True (-not $currentCommit.GitStateComplete) 'outside staged content keeps aggregate Git state incomplete'
+    Assert-True $currentCommit.ScopedGitStateComplete 'the requested primary scope is complete after path-only commit'
+
+    $noScopedHead = Get-TestHead -Repository $parentRoot
+    $noScopedResult = Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('README.md') } -CommitMessage 'must not commit outside staged content' -PreserveOutsideStaged
+    Assert-Equal 0 @($noScopedResult.Commits).Count 'outside staged content alone never creates a scoped commit'
+    Assert-Equal $noScopedHead (Get-TestHead -Repository $parentRoot) 'outside staged content alone preserves HEAD'
+    Assert-Equal $primaryOutsideIndexBefore ((Invoke-TestGit -Repository $parentRoot -Arguments @('ls-files', '--stage', '--', 'unrelated.txt')).Output -join "`n") 'outside staged content alone preserves the index entry'
     [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--staged', 'unrelated.txt'))
+    [System.IO.File]::Delete((Join-Path $parentRoot 'literal1.txt'))
 
     [System.IO.File]::WriteAllText((Join-Path $parentRoot '.hidden-scope.txt'), "hidden staged path`n")
     [System.IO.File]::WriteAllText((Join-Path $parentRoot 'hidden-scope.txt'), "different visible path`n")
@@ -123,11 +156,59 @@ try {
     [System.IO.File]::Delete((Join-Path $parentRoot '.hidden-scope.txt'))
     [System.IO.File]::Delete((Join-Path $parentRoot 'hidden-scope.txt'))
 
-    $currentCommit = Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'scoped primary commit'
-    Assert-Equal 1 @($currentCommit.Commits).Count 'Primary scoped commit creates one parent commit'
     Assert-True (Test-Path -LiteralPath (Join-Path $parentRoot 'unrelated.txt') -PathType Leaf) 'Primary scoped commit preserves unrelated untracked content'
     Assert-True (((Invoke-TestGit -Repository $parentRoot -Arguments @('status', '--short', '--', 'unrelated.txt')).Output -join "`n") -match '^\?\?') 'unrelated path remains untracked after scoped commit'
     [System.IO.File]::Delete((Join-Path $parentRoot 'unrelated.txt'))
+
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'outside-ita.txt'), "intent to add outside scope`n")
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', '--intent-to-add', '--', 'outside-ita.txt'))
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('README.md') } -CommitMessage 'reject outside intent to add' -PreserveOutsideStaged | Out-Null
+    } 'intent-to-add|outside-ita' 'preservation rejects an outside intent-to-add entry before mutation'
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('reset', '--', 'outside-ita.txt'))
+    [System.IO.File]::Delete((Join-Path $parentRoot 'outside-ita.txt'))
+
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('README.md') } -AllChanges -CommitMessage 'ambiguous preservation mode' -PreserveOutsideStaged -WhatIf | Out-Null
+    } 'PreserveOutsideStaged|AllChanges' 'preservation requires exact RepositoryScopes and rejects AllChanges'
+
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'rename-source.txt'), "rename boundary fixture`n")
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', 'rename-source.txt'))
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('commit', '-m', 'add rename boundary fixture'))
+    [System.IO.File]::Move((Join-Path $parentRoot 'rename-source.txt'), (Join-Path $parentRoot 'rename-target.txt'))
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', '-A', '--', 'rename-source.txt', 'rename-target.txt'))
+    $renameBoundaryHead = Get-TestHead -Repository $parentRoot
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('rename-target.txt') } -CommitMessage 'must reject cross-scope rename' -PreserveOutsideStaged | Out-Null
+    } 'rename/copy crossing|rename-source.*rename-target' 'preservation rejects a staged rename crossing the exact scope before mutation'
+    Assert-Equal $renameBoundaryHead (Get-TestHead -Repository $parentRoot) 'cross-scope rename rejection preserves HEAD'
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--source=HEAD', '--staged', '--worktree', '--', 'rename-source.txt', 'rename-target.txt'))
+    [System.IO.File]::Copy((Join-Path $parentRoot 'rename-source.txt'), (Join-Path $parentRoot 'copy-target.txt'))
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', '--', 'copy-target.txt'))
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('copy-target.txt') } -CommitMessage 'must reject cross-scope copy' -PreserveOutsideStaged | Out-Null
+    } 'rename/copy crossing|rename-source.*copy-target' 'preservation rejects a staged copy crossing the exact scope before mutation'
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--staged', '--', 'copy-target.txt'))
+    [System.IO.File]::Delete((Join-Path $parentRoot 'copy-target.txt'))
+
+    $unmergedRoot = Join-Path $fixtureRoot 'unmerged'
+    Initialize-TestRepository -Path $unmergedRoot
+    [System.IO.File]::WriteAllText((Join-Path $unmergedRoot 'conflict.txt'), "base`n")
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('add', 'conflict.txt'))
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('commit', '-m', 'unmerged base'))
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('checkout', '-b', 'unmerged-side'))
+    [System.IO.File]::WriteAllText((Join-Path $unmergedRoot 'conflict.txt'), "side`n")
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('commit', '-am', 'unmerged side'))
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('checkout', 'main'))
+    [System.IO.File]::WriteAllText((Join-Path $unmergedRoot 'conflict.txt'), "main`n")
+    [void](Invoke-TestGit -Repository $unmergedRoot -Arguments @('commit', '-am', 'unmerged main'))
+    $mergeConflict = Invoke-TestGit -Repository $unmergedRoot -Arguments @('merge', 'unmerged-side') -AllowFailure
+    Assert-True ($mergeConflict.ExitCode -ne 0) 'unmerged fixture produces an actual merge conflict'
+    $unmergedHead = Get-TestHead -Repository $unmergedRoot
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -WorkspaceRoot $unmergedRoot -RepositoryScopes @{ '.' = @('conflict.txt') } -CommitMessage 'must reject unmerged index' -PreserveOutsideStaged | Out-Null
+    } 'unmerged index paths|conflict.txt' 'preservation rejects an unmerged index during global preflight'
+    Assert-Equal $unmergedHead (Get-TestHead -Repository $unmergedRoot) 'unmerged preflight rejection preserves HEAD'
 
     $baseParentRemote = Get-TestHead -Repository $parentRoot -Revision 'refs/remotes/origin/main'
     $baseChildRemote = Get-TestHead -Repository (Join-Path $parentRoot 'Modules/Child') -Revision 'refs/remotes/origin/main'
@@ -168,6 +249,32 @@ try {
     Assert-True (@($commitPreview.IncludedChanges.Paths) -notcontains 'ignored-local.txt') 'AllChanges preview excludes ignored paths'
     Assert-Equal $previewChildHead (Get-TestHead -Repository $linkedChild) 'Linked-worktree commit preview preserves the detached submodule HEAD'
     Assert-Equal 1 (Invoke-TestGit -Repository $linkedChild -Arguments @('show-ref', '--verify', '--quiet', 'refs/heads/integration-fixture') -AllowFailure).ExitCode 'Linked-worktree commit preview creates no submodule branch'
+
+    [System.IO.File]::WriteAllText((Join-Path $worktreeRoot 'parent-outside.txt'), "preserve parent staged state`n")
+    [System.IO.File]::WriteAllText((Join-Path $linkedChild 'child-outside.txt'), "preserve child staged state`n")
+    [void](Invoke-TestGit -Repository $worktreeRoot -Arguments @('add', 'parent-outside.txt'))
+    [void](Invoke-TestGit -Repository $linkedChild -Arguments @('add', 'child-outside.txt'))
+    $parentOutsideBefore = ((Invoke-TestGit -Repository $worktreeRoot -Arguments @('ls-files', '--stage', '--', 'parent-outside.txt')).Output -join "`n")
+    $childOutsideBefore = ((Invoke-TestGit -Repository $linkedChild -Arguments @('ls-files', '--stage', '--', 'child-outside.txt')).Output -join "`n")
+    $preservedMultiRepositoryCommit = Complete-HardnessGitCommit -WorkspaceRoot $worktreeRoot -RepositoryScopes @{
+        '.' = @('workspace.txt')
+        'Modules/Child' = @('child.txt')
+    } -CommitMessage 'linked parent scoped preservation' -SubmoduleCommitMessages @{ 'Modules/Child' = 'linked child scoped preservation' } -TargetBranches $commitBranches -PreserveOutsideStaged
+    Assert-Equal 2 @($preservedMultiRepositoryCommit.Commits).Count 'scoped preservation commits the dirty child and parent'
+    Assert-Equal 'Modules/Child' $preservedMultiRepositoryCommit.Commits[0].Repository 'scoped preservation commits the child before the parent'
+    Assert-Equal '.' $preservedMultiRepositoryCommit.Commits[1].Repository 'scoped preservation commits the parent after the child'
+    Assert-Equal 2 @($preservedMultiRepositoryCommit.PreservedStaged).Count 'scoped preservation proves outside staged state in both repositories'
+    Assert-True (@($preservedMultiRepositoryCommit.PreservedStaged | Where-Object Validation -ne 'Preserved').Count -eq 0) 'every multi-repository outside staged snapshot is preserved'
+    Assert-Equal $parentOutsideBefore ((Invoke-TestGit -Repository $worktreeRoot -Arguments @('ls-files', '--stage', '--', 'parent-outside.txt')).Output -join "`n") 'parent outside index entry remains exact'
+    Assert-Equal $childOutsideBefore ((Invoke-TestGit -Repository $linkedChild -Arguments @('ls-files', '--stage', '--', 'child-outside.txt')).Output -join "`n") 'child outside index entry remains exact'
+    Assert-Equal (Get-TestHead -Repository $linkedChild) (Get-TestHead -Repository $worktreeRoot -Revision 'HEAD:Modules/Child') 'scoped parent commit records the newly committed child gitlink'
+    [void](Invoke-TestGit -Repository $worktreeRoot -Arguments @('restore', '--staged', 'parent-outside.txt'))
+    [void](Invoke-TestGit -Repository $linkedChild -Arguments @('restore', '--staged', 'child-outside.txt'))
+    [System.IO.File]::Delete((Join-Path $worktreeRoot 'parent-outside.txt'))
+    [System.IO.File]::Delete((Join-Path $linkedChild 'child-outside.txt'))
+
+    [System.IO.File]::AppendAllText((Join-Path $linkedChild 'child.txt'), "linked child all changes`n")
+    [System.IO.File]::AppendAllText((Join-Path $worktreeRoot 'workspace.txt'), "linked parent all changes`n")
 
     $commit = Complete-HardnessGitCommit -WorkspaceRoot $worktreeRoot -AllChanges -CommitMessage 'linked parent result' -SubmoduleCommitMessages @{ 'Modules/Child' = 'linked child result' } -TargetBranches $commitBranches
     Assert-True (-not $commit.Preview) 'actual linked-worktree commit is not reported as a preview'
