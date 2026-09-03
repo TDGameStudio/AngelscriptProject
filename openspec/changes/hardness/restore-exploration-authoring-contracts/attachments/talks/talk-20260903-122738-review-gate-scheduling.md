@@ -24,6 +24,7 @@ The marker/carryover increment was implemented and tested quickly, but an immedi
 - ✅ Settled: Accept user/agent-started External Reviews at any time, but reproduce and triage findings before they affect planning.
 - ✅ Settled: Run reviewer subagents asynchronously against immutable snapshots. The main thread may continue disjoint work but cannot close or integrate the affected Change before the applicable gate.
 - ✅ Settled: Preserve detailed Review records without a line cap. Reduce repeated scans and premature dispatch, not evidence quality.
+- ✅ Settled: Final Review is the last semantic gate. Complete planned capability knowledge, verification, and closure inputs before assignment; only Review/Task/INDEX bookkeeping and the deterministic archive lifecycle follow approval.
 
 ## Consequences and Flip Condition
 
@@ -33,9 +34,10 @@ scope freeze -> broad impact --------------> Final Review
 scope freeze -> verified low impact --------> Final Review: not required
 user / other agent starts review ----------> External Review intake
 
-fixed snapshot -> async reviewer
+all semantic deliverables complete -> fixed snapshot -> async final reviewer
 moving main workspace -> disjoint work only
-reviewed final scope changes -> batch -> one incremental Final Review
+reviewed deliverable changes -> batch -> one incremental Final Review
+approval -> lifecycle bookkeeping -> deterministic archive move
 ```
 
 Revisit this policy only if measured missed defects show that the impact classifier routinely skips necessary independent review, or if immutable asynchronous snapshots cannot be reproduced reliably.

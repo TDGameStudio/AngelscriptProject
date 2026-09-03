@@ -16,9 +16,9 @@ task_graph:
     "4.8": ["4.6"]
     "4.9": ["4.8"]
     "4.10": ["4.9"]
-    "4.11": ["4.10"]
-    "4.12": ["4.11"]
-    "5.3": ["4.12"]
+    "4.13": ["4.10"]
+    "5.4": ["4.13"]
+    "5.5": ["5.4"]
 ---
 
 ## 1. Recovery record
@@ -129,25 +129,27 @@ task_graph:
   2. Absorb all accepted user changes, run focused and Quick verification, and stage only exact task-owned paths and root README hunks.
   3. Stop before dispatch so the Final Review receives one stable snapshot rather than a sequence of small moving increments.
 
-- [ ] 4.11 Run the asynchronous Final Review — verify: `one review-v2 Final Review is closed with APPROVE against the scope-frozen final snapshot and no open or deferred Critical or Required finding`
-  > Files: `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/reviews/review-*-hardness-workflow-subagent.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`
+- [x] 4.13 Correct Final Review ordering and materialize capability knowledge — verify: `the complete intended capability knowledge is indexed exactly once, focused tests pass, and protocol text makes Final Review the last semantic gate`
+  > Files: `.agents/skills/hardness/references/review.md`, `.agents/skills/openspec/references/attachments.md`, `.agents/skills/openspec/references/knowledge.md`, `.agents/skills/hardness/tests/Protocol.Tests.ps1`, `.agents/skills/openspec/tests/OpenSpecSkill.Tests.ps1`, `openspec/specs/hardness/core/knowledges/exploration-carryover.md`, `openspec/specs/hardness/core/knowledges/review-gate-scheduling.md`, `openspec/specs/hardness/core/knowledges/INDEX.md`, `openspec/specs/hardness/core/spec.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/proposal.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/design.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/specs/hardness/core/spec.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/replans/replan-20260903-130536-place-final-review-after-deliverables.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`
 
-  1. Materialize an immutable snapshot reference, allocate one unique Review file, and dispatch a reviewer subagent asynchronously.
-  2. Continue only disjoint work while Review runs; if task-owned scope changes, batch it and run one incremental Final Review after re-freeze.
-  3. Triage findings, append resolution and re-review evidence, and let the coordinator record actual closure time and final state.
-
-- [ ] 4.12 Promote reviewed exploration and Review scheduling knowledge — verify: `the Hardness capability knowledge INDEX covers both promoted rules exactly once and focused protocol tests still pass`
-  > Files: `openspec/specs/hardness/core/knowledges/exploration-carryover.md`, `openspec/specs/hardness/core/knowledges/review-gate-scheduling.md`, `openspec/specs/hardness/core/knowledges/INDEX.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`
-
-  1. Promote only the reusable marker/carryover and Review scheduling decisions after the Final Review.
-  2. Keep timing details, option history, marker assessment, and snapshot-specific evidence in the Change attachments.
-  3. Re-run focused knowledge, attachment, and strict active validation gates.
+  1. Record that the user caught Final Review before remaining semantic work, remove the unused assignment, and supersede the invalid pending nodes without pretending a Review occurred.
+  2. Materialize the complete intended exploration-carryover and Review-scheduling capability knowledge so the final reviewer sees the actual bytes and paths.
+  3. Guard the rule that only Review/Task/INDEX bookkeeping and deterministic archive metadata or move may follow Final Review without re-freeze.
 
 ## 5. Closure
 
-- [ ] 5.3 Prepare completed closure and exact commit scope — verify: `strict active validation passes, every task is complete, attachment INDEX is exact, and cached diff contains only reviewed paths and hunks`
+- [x] 5.4 Freeze the complete semantic snapshot and closure inputs — verify: `strict active validation and PS7 Quick pass, exact task-owned content is committed, and task.status derives 5.5 as the only Ready node`
   > Files: `openspec/changes/hardness/restore-exploration-authoring-contracts/change.yaml`, `openspec/changes/hardness/restore-exploration-authoring-contracts/tasks.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`
 
-  1. Confirm current `hardness/core` already contains the reviewed delta and record the sync disposition.
-  2. Complete all task checkboxes without unchecking or renumbering any node.
-  3. Archive with completed closure, run strict archived validation and Quick, then stage only reviewed exact paths and root README hunks.
+  1. Confirm current `hardness/core` contains the complete delta and both intended capability knowledge files.
+  2. Record completed verification, spec-sync disposition, broad-impact Review requirement, closure inputs, and all excluded unrelated workspace paths.
+  3. Commit the exact complete semantic snapshot before allocating the Final Review.
+
+- [ ] 5.5 Run the last semantic Final Review — verify: `one review-v2 Final Review is closed with APPROVE against the complete committed snapshot and no open or deferred Critical or Required finding`
+  > Files: `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/reviews/review-*-hardness-workflow-subagent.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/tasks.md`
+
+  1. Confirm every earlier DAG node is complete, allocate one immutable commit snapshot and unique Review file, and dispatch the reviewer subagent asynchronously.
+  2. Continue only disjoint work; any deliverable-content edit requires re-freeze and one incremental Final Review.
+  3. Triage findings, append resolution and re-review evidence, close the Review, and complete this last Task DAG node.
+
+After Task 5.5 closes, create the completed closure input, run the deterministic archive move, validate the archived record strictly, run the smallest applicable lifecycle gate, and commit only Review/Task/INDEX bookkeeping plus the archive move. Archive is outside the Task DAG because completed closure requires every DAG node already complete.

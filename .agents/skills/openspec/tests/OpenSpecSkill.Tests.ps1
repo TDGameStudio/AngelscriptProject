@@ -495,7 +495,7 @@ foreach ($token in @('pre-change ambiguity -> deep Explore', 'Ready task uncerta
 foreach ($token in @('before creating the target Change only', 'Task-local technical uncertainty inside a Ready node')) {
     Assert-True ($routingText.Contains($token)) "Hardness route map is missing: $token"
 }
-foreach ($token in @('Incident Review', 'Final Review: not required', 'External Review', 'Diff size alone does not determine impact', 'asynchronous subagent', 'immutable snapshot', 'no Review file line limit', 'one batched incremental Final Review')) {
+foreach ($token in @('Incident Review', 'Final Review: not required', 'External Review', 'Diff size alone does not determine impact', 'asynchronous subagent', 'immutable snapshot', 'no Review file line limit', 'one batched incremental Final Review', 'planned capability-knowledge content', 'deterministic closure/archive metadata or move')) {
     Assert-True ($reviewReferenceText.Contains($token)) "Review scheduling contract is missing: $token"
 }
 foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'explicitly bounded package-wide glob with exclusions', 'interface, artifact, or state it consumes and produces', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
@@ -506,6 +506,9 @@ foreach ($token in @('## Material threshold', 'One root cause and its repair lif
 }
 foreach ($token in @('change evidence', 'capability knowledge plus knowledges/INDEX.md', 'AGENTS project instruction only for cross-capability invariants', 'Every capability `knowledges/` directory has one `INDEX.md`', 'Promote only after evidence', 'Archive never promotes automatically')) {
     Assert-True ($knowledgeReferenceText.Contains($token)) "Knowledge promotion contract is missing: $token"
+}
+foreach ($token in @('materialize the complete intended capability file and INDEX entry before scope freeze', 'provisional until the Final Review approves it', 'approval admits it without a post-Review content rewrite')) {
+    Assert-True ($knowledgeReferenceText.Contains($token)) "Final Review knowledge-order contract is missing: $token"
 }
 foreach ($token in @('## Exploration carryover', 'decision-critical visualization', 'reusable evidence-backed insights', 'transcript prose', 'candidate', 'promoted', 'superseded', 'retired')) {
     Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"

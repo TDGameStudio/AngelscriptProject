@@ -2,7 +2,7 @@
 
 ## Current position
 
-The accepted pre-Change exploration existed, but implementation began before the active Change was registered. The honest recovery, marker/carryover expansion, two closed Reviews, resolved issue, and active-Change checkpoint promotion remain valid. The event-driven Review policy and review-v2 fixtures pass. This cross-capability protocol change is classified broad impact; its exact task-owned scope is frozen and ready for one asynchronous Final Review, which has not yet been dispatched. Promotion and closure remain behind that gate. `tasks.md` remains the only execution state.
+The accepted pre-Change exploration existed, but implementation began before the active Change was registered. The honest recovery, marker/carryover expansion, two closed Reviews, resolved issue, and active-Change checkpoint promotion remain valid. The user caught and corrected premature Final Review ordering before any reviewer was dispatched. Every semantic deliverable, capability-knowledge file, protocol test, strict validation result, and closure input is now complete; the commit containing this INDEX is the fixed semantic snapshot. Final Review is the only remaining Task DAG node. `tasks.md` remains the only execution state.
 
 ## Hard conclusions
 
@@ -14,6 +14,7 @@ The accepted pre-Change exploration existed, but implementation began before the
 - Accepted exploration carryover is selective: current truth enters planning artifacts, decision rationale enters talks, reusable insights enter change-local knowledge, and transient transcript state is discarded.
 - Review is event-driven: demonstrated major incidents may trigger Incident Review, broad scope-frozen changes require Final Review, verified small low-impact changes record `not required`, and user/agent input enters as External Review.
 - Reviewer subagents may run asynchronously only against immutable snapshots; Review detail has no line cap, while repeated scans and premature dispatch are avoided.
+- Final Review is the last semantic gate: every deliverable and planned capability-knowledge file precedes it; only Review/Task/INDEX bookkeeping and deterministic archive lifecycle follow approval.
 
 ## Forbidden
 
@@ -23,13 +24,15 @@ The accepted pre-Change exploration existed, but implementation began before the
 - Do not stage unrelated root README hunks, plugin/submodule changes, `Tools/openspec`, binaries, UE work, or other dirty workspace files.
 - Do not use historical `🔴`/`🟢` marker meanings that conflict with visual risk legends, or copy the full exploration transcript into attachments.
 - Do not review every task or small increment, infer impact from diff size alone, let a reviewer follow a moving live workspace, or treat an External Review finding as an automatic Replan.
+- Do not allocate Final Review while any substantive Task DAG node, intended promotion, verification result, or closure input remains incomplete.
 
 ## Closure disposition
 
-- Spec sync: no merge is required because `openspec/specs/hardness/core/spec.md` already contains the reviewed delta requirements and scenarios; the change-local delta remains historical evidence.
-- Knowledge: the active-Change checkpoint is promoted; marker/carryover and Review-scheduling candidates await the new Final Review and explicit promotion.
-- Review: the independent 29-entry original snapshot and the 17-entry marker/carryover increment are both closed with `APPROVE` and no findings; the broad-impact final policy snapshot is ready but not assigned.
-- Verification: direct strict active validation reports `1/1` valid with zero issues; the PS7 Quick Skill-only gate reports `5/5` passed; focused `OpenSpecSkill.Tests.ps1`, `Protocol.Tests.ps1`, and cached `git diff --check` pass. UE, StaticJIT, Performance, and Integration remain out of scope.
+- Spec sync: no merge is required because `openspec/specs/hardness/core/spec.md` contains the complete intended delta; the change-local delta remains historical evidence.
+- Knowledge: the active-Change checkpoint is admitted; complete marker/carryover and Review-scheduling capability files and INDEX entries are materialized in their intended final form for Final Review.
+- Review: the independent 29-entry original snapshot and the 17-entry marker/carryover increment are closed with `APPROVE`; one review-v2 Final Review of the complete committed semantic snapshot remains.
+- Verification: final `Protocol.Tests.ps1` and `OpenSpecSkill.Tests.ps1` pass; strict active validation reports `1/1` valid with zero issues; the fresh PS7 Quick gate reports `5/5` passed (`Hardness` 17198 ms, gate contract 4753 ms, Protocol 826 ms, Workspace 40069 ms, OpenSpec Skill 4288 ms); focused diff checks pass. UE, StaticJIT, Performance, and Integration are explicitly out of scope.
+- Closure input: completed closure after Final Review; all existing Reviews must be closed, capability knowledge is already in the reviewed snapshot, archive performs only Review/Task/INDEX bookkeeping plus deterministic metadata/move, and unrelated dirty workspace paths remain excluded.
 
 ## Attachment index
 
@@ -39,6 +42,7 @@ The accepted pre-Change exploration existed, but implementation began before the
 - `replans/replan-20260903-112507-order-review-before-knowledge-promotion.md` — applied semantic diff that moves knowledge promotion behind independent Review — read when auditing the recovery DAG or knowledge admission order.
 - `replans/replan-20260903-115455-preserve-exploration-marker-carryover.md` — applied user-triggered expansion that restores reviewed markers and selective talk/knowledge carryover before closure — read when auditing why a second Review and new closure task exist.
 - `replans/replan-20260903-122738-gate-review-by-incident-and-impact.md` — applied user-triggered replacement of task-cadence Review with incident/impact/external routing and asynchronous snapshots — read when auditing Review timing or the final DAG.
+- `replans/replan-20260903-130536-place-final-review-after-deliverables.md` — applied correction placing every semantic output before Final Review after an unused assignment was removed — read when auditing the final ordering or archive boundary.
 - `reviews/review-20260903-113000-exploration-authoring-independent.md` — closed approving fixed-snapshot Review with no findings — read before trusting the recovered contracts or closure decision.
 - `reviews/review-20260903-120000-marker-carryover-independent.md` — closed approving Review of the marker/carryover increment with no findings — read before promoting the carryover rule.
 - `talks/talk-20260903-115455-exploration-marker-carryover.md` — settled marker review, rejected historical meanings, carryover routing, and compact visual — read when the vocabulary rationale or user decision matters.

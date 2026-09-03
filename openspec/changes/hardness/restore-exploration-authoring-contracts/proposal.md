@@ -6,6 +6,8 @@ Dogfooding exposed the practical consequence: this implementation began from an 
 
 A second dogfood observation showed that small follow-up edits were cheap to implement and test but expensive when every expansion immediately launched another broad Review. The user selected three explicit routes: exceptional Incident Review for demonstrated major problems, Final Review after scope freeze only for broad-impact work, and user/agent-started External Review. Small low-impact changes skip Review with an explicit rationale. Reviewer subagents should run asynchronously against immutable snapshots while the coordinator continues disjoint work.
 
+A third dogfood correction caught the first revised DAG placing Final Review before planned capability-knowledge materialization and closure preparation. No reviewer was dispatched. Final Review must be the last semantic gate: every deliverable and intended promotion is present in the reviewed snapshot, while only Review/Task/INDEX lifecycle bookkeeping and the deterministic archive move follow approval.
+
 ## What Changes
 
 - Restore `openspec-explore` as a deep read-only entry used only before the target Change is created, with progressively loaded exploration and question-round references.
@@ -14,7 +16,7 @@ A second dogfood observation showed that small follow-up edits were cheap to imp
 - Require an active Change checkpoint before Apply; a decision-complete handoff is planning input, not an active record.
 - Restore focused task-authoring, material-issue, attachment-routing, and knowledge-promotion contracts without reviving the deleted `openspec-schema` Skill.
 - Add protocol tests for active implementation issues, immutable archive indexes, local references, capability knowledge indexes, and stale workflow entry points.
-- Replace task-cadence Review with Incident, impact-gated Final, and External routes; define low-impact skip disposition, asynchronous fixed-snapshot execution, truthful lifecycle timestamps, and final-snapshot closure.
+- Replace task-cadence Review with Incident, impact-gated Final, and External routes; define low-impact skip disposition, asynchronous fixed-snapshot execution, truthful lifecycle timestamps, and a Final Review that follows every substantive deliverable.
 - Record this late-Change-registration incident and promote only its reusable checkpoint into Hardness capability knowledge after verification and review.
 
 ## Capabilities

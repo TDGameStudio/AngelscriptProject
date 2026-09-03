@@ -8,6 +8,8 @@ After the first independent Review, the user restored one deliberate part of the
 
 The marker increment then exposed a Review scheduling problem. Implementation and focused tests took only minutes, while immediate broad Review added most of the elapsed time and was launched before the user had frozen scope. Review must remain detailed, but its trigger, snapshot, and asynchronous execution need sharper boundaries.
 
+Before the new Final Review was dispatched, the user caught another ordering defect: the DAG still placed capability-knowledge materialization and closure preparation after Final Review. A Review cannot be final when planned semantic outputs remain. The unused assignment was removed and the DAG must put every substantive deliverable before the last Review gate.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -59,7 +61,7 @@ Every marker line also carries a plain English label. Emoji never appears in YAM
 
 Hardness has exactly three Review routes. Incident Review is automatic only when evidence demonstrates a major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion problem. Final Review is a single scope-frozen gate for broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact. A verified small low-impact change records `Final Review: not required` with rationale and creates no Review file. External Review is explicit user/agent input that Hardness registers and triages without treating the report itself as a Replan. Diff size alone never determines impact.
 
-Reviewer subagents run asynchronously against an immutable content reference and write only one unique Review file. The main thread may continue disjoint work. If it changes task-owned final scope after assignment, the result remains historical evidence but cannot close the current Final Review; late changes are batched into one incremental Final Review after the next freeze. Review records use actual assignment, completion, and closure timestamps. Reports retain as much detailed evidence as needed and do not have a line limit.
+Reviewer subagents run asynchronously against an immutable content reference and write only one unique Review file. Final scope includes implementation, documentation, specs, tests, scripts, planned capability knowledge, verification, and closure inputs. The main thread may continue disjoint work. After assignment, only Review/Task/INDEX lifecycle bookkeeping and deterministic closure/archive metadata or move may follow without invalidating coverage. Any deliverable-content change makes the result historical evidence rather than the current final gate; late changes are batched into one incremental Final Review after the next freeze. Review records use actual assignment, completion, and closure timestamps. Reports retain as much detailed evidence as needed and do not have a line limit.
 
 ## Risks / Trade-offs
 

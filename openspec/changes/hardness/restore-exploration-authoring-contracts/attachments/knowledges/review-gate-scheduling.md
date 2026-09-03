@@ -17,11 +17,13 @@ Review should be triggered by demonstrated incident severity, broad final impact
 - Verified small low-impact work records `Final Review: not required` with rationale and creates no placeholder Review.
 - External Review is evidence input until Hardness binds its snapshot, reproduces findings, and triages them.
 - A reviewer subagent reads an immutable snapshot, never a moving live workspace. Main-thread changes to reviewed final scope require one batched incremental Final Review after re-freeze.
+- Final Review is the last semantic gate. Planned capability knowledge, verification, and closure inputs are complete before assignment; only Review/Task/INDEX bookkeeping and deterministic archive metadata or move follow approval.
 
 ## Application
 
 ```text
-classify trigger -> classify impact -> freeze immutable scope
+classify trigger -> classify impact -> complete every semantic deliverable
+                 -> freeze immutable scope
                  -> dispatch reviewer asynchronously when required
                  -> continue disjoint work
                  -> triage findings without automatic Replan

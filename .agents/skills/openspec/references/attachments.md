@@ -34,7 +34,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 | Material investigated technical problem | `implementation/` | One shared root cause and repair lifecycle; never a final summary or second task list. |
 | Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
 | Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
-| Reusable learning candidate | `knowledges/` | Change-local evidence until explicit capability promotion. |
+| Reusable learning candidate | `knowledges/` | Change-local evidence until capability content is materialized for the last applicable Review and admitted by its disposition. |
 | Reusable helper | `scripts/` | One purpose with usage and dependencies in the header. |
 | Benchmark, matrix, or trimmed output | `data/` | Text-first aggregate with source/run provenance. |
 
@@ -46,7 +46,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 - Finding state: `open | resolved | rejected | deferred`.
 - Each finding keeps its original text and records severity, fixed snapshot, evidence, affected requirement/tasks, disposition, appended resolution, and verification evidence.
 - Incident Review is exceptional and requires demonstrated major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion evidence. Routine slices and local defects do not trigger it.
-- Final Review runs once after scope freeze for broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact and must cover the current final snapshot. Verified small low-impact work records `Final Review: not required` with rationale and creates no placeholder Review. Diff size alone does not decide impact. A post-assignment task-owned change invalidates final-gate coverage; batch late changes and request one incremental Final Review after the next freeze.
+- Final Review runs once after every substantive deliverable, planned capability-knowledge file, verification result, and closure input reaches scope freeze for broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact. Verified small low-impact work records `Final Review: not required` with rationale and creates no placeholder Review. Diff size alone does not decide impact. A post-assignment deliverable-content change invalidates final-gate coverage; Review/Task/INDEX lifecycle bookkeeping and deterministic archive metadata or move do not. Batch late semantic changes and request one incremental Final Review after the next freeze.
 - A user or another agent may create one unique External Review file at any time. Hardness indexes and triages it at the nearest safe boundary. An unbound report remains open input until its snapshot is reproduced or it is superseded with rationale.
 - Dispatch fixed-snapshot Review asynchronously when a reviewer subagent is available. The main thread may continue disjoint work, but it cannot promote knowledge, close, archive, integrate, or claim completion before the applicable gate closes.
 - A reviewer may edit only its unique Review file. It may not edit code, tasks, design, INDEX, implementation, replans, or existing Reviews.

@@ -62,7 +62,7 @@ Before a Task DAG is accepted, planning MUST map affected files, artifacts, and 
 
 Hardness MUST expose exactly three Review routes: Incident Review, Final Review, and External Review. Incident Review MUST start automatically only after evidence demonstrates a major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion problem. A completed Change with broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact MUST receive one approving Final Review after scope freeze against its current final snapshot. A verified small low-impact Change MUST instead record `Final Review: not required` with rationale and MUST NOT create a placeholder Review. Diff size alone MUST NOT determine impact. The user or another agent MAY start an External Review at any time; Hardness MUST register, reproduce, and triage it without treating the report or its severity as an automatic Replan.
 
-Every new Review MUST use a unique Review file and immutable content reference. When a reviewer subagent is available, Hardness SHOULD dispatch it asynchronously and MAY continue disjoint main-thread work. Knowledge promotion, closure, archive, integration, and completion claims MUST wait for the applicable gate. If task-owned final scope changes after assignment, that result MUST NOT close the current Final Review; Hardness MUST absorb late changes and request one batched incremental Final Review after the next scope freeze. Review records MUST preserve actual assignment, completion, and closure times and MUST NOT impose a report line limit.
+Every new Review MUST use a unique Review file and immutable content reference. Before a required Final Review, every implementation, documentation, specification, test, script, planned capability-knowledge output, proving verification result, and closure input MUST be complete in the fixed semantic snapshot. When a reviewer subagent is available, Hardness SHOULD dispatch it asynchronously and MAY continue disjoint main-thread work. Knowledge admission, closure, archive, integration, and completion claims MUST wait for the applicable gate. After assignment, only Review/Task/INDEX lifecycle bookkeeping and deterministic closure/archive metadata or move MAY follow without invalidating coverage. If deliverable content changes, that result MUST NOT close the current Final Review; Hardness MUST absorb late changes and request one batched incremental Final Review after the next scope freeze. Review records MUST preserve actual assignment, completion, and closure times and MUST NOT impose a report line limit.
 
 #### Scenario: Finish a small ordinary change
 - **WHEN** routine tasks and expected local repairs complete without a demonstrated major incident
@@ -70,7 +70,11 @@ Every new Review MUST use a unique Review file and immutable content reference. 
 
 #### Scenario: Finish a broad-impact change
 - **WHEN** completed scope crosses a public, multi-boundary, safety, compatibility, release, production-performance, or architectural impact boundary
-- **THEN** Hardness starts one Final Review only after implementation, verification, accepted Replans, and queued user changes reach scope freeze
+- **THEN** Hardness starts one Final Review only after every deliverable, planned capability-knowledge output, verification result, closure input, accepted Replan, and queued user change reaches scope freeze
+
+#### Scenario: Admit reviewed capability knowledge without changing final content
+- **WHEN** a broad-impact Change promotes reusable guidance
+- **THEN** the complete intended capability file and INDEX entry are present in the Final Review snapshot, and approval admits them without a post-Review content rewrite
 
 #### Scenario: Review a major incident asynchronously
 - **WHEN** evidence demonstrates a qualifying major incident and an immutable review snapshot is available

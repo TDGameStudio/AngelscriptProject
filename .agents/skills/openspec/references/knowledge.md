@@ -36,6 +36,6 @@ INDEX is the only default entry; load the linked knowledge file only when the cu
 
 ## Admission and promotion
 
-Promote only after evidence establishes the finding, repair and regression verification pass, required re-review closes, and the learning proves reusable beyond one task. Archive never promotes automatically.
+Promote only after evidence establishes the finding, repair and regression verification pass, and the learning proves reusable beyond one task. When a Final Review is required, materialize the complete intended capability file and INDEX entry before scope freeze so the reviewer sees the actual final bytes and path. That material is provisional until the Final Review approves it; approval admits it without a post-Review content rewrite. For a low-impact Change with `Final Review: not required`, the verified impact disposition admits the material. Archive never promotes automatically.
 
-Copy the generalized learning from the change into capability knowledge and keep the archived original frozen. Record source and status in the capability INDEX. If a later change invalidates the guidance, update or supersede it through that later change while retaining provenance; do not rewrite an archive.
+Copy the generalized learning from the change into capability knowledge and keep the archived original frozen. Record source and intended final status in the capability INDEX before the last applicable Review. After approval, change only Review/Task/INDEX lifecycle bookkeeping and deterministic closure metadata; changing capability-knowledge content requires re-freeze and another Final Review. If a later Change invalidates the guidance, update or supersede it through that later Change while retaining provenance; do not rewrite an archive.

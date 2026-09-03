@@ -451,7 +451,10 @@ foreach ($token in @(
     'A digest alone can verify content but is not sufficient to materialize an asynchronous snapshot',
     '`assigned_at` is never reused as a guessed completion time',
     'There is no Review file line limit',
-    'one batched incremental Final Review'
+    'one batched incremental Final Review',
+    'planned capability-knowledge content',
+    'the only expected writes for that Change are the assigned Review lifecycle, Task/INDEX bookkeeping, and deterministic closure/archive metadata or move',
+    'If any implementation, documentation, specification, test, script, or capability-knowledge content changes'
 )) {
     Assert-True ($reviewProtocol.Contains($token)) "Review protocol is missing: $token"
 }
