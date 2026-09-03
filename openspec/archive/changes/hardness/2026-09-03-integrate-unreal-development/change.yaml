@@ -1,0 +1,20 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_b15fae73-fa08-42fd-9331-3b334bce3ed8
+  id: hardness/integrate-unreal-development
+  title: Integrate Unreal development operations into Hardness
+  description: Replace legacy project PowerShell execution surfaces with a PS7-only Unreal skill module routed by Hardness, backed by explicit workspace identity, machine-local configuration, safe multi-worktree concurrency, and reproducible run evidence.
+workflow: angelscript
+created_at: 2026-09-03T10:13:19Z
+goal: Provide fast, safe, and composable Unreal build, test, commandlet, target, UBT, process, and run-management operations for any selected AngelscriptProject workspace.
+affected_areas:
+- .agents/skills/unreal-engine-develop
+- .agents/skills/hardness
+- .agents/skills/workspace-lifecycle
+- AgentConfig.ini
+archived_at: 2026-09-03T12:55:22Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 11 Task DAG nodes are implemented and verified; the exact PS7 ue.* surface, controlled multi-worktree build lanes, trusted progress, declarative suites, AgentConfig guards, and retained performance evidence are synchronized to current specs, with no requested Review or unresolved implementation issue.

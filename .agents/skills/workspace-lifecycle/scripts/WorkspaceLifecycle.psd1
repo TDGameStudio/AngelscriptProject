@@ -19,6 +19,7 @@
         'Remove-HardnessWorkspace',
         'Get-HardnessWorkspaceConfigStatus',
         'Get-HardnessWorkspaceConfigValue',
+        'Get-HardnessWorkspaceConfigValues',
         'Set-HardnessWorkspaceConfigValue',
         'Set-HardnessWorkspaceSession',
         'Assert-HardnessWorkspaceExecution'

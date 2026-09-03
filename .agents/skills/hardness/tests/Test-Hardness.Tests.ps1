@@ -39,10 +39,11 @@ foreach ($name in @(
         'Protocol.PS7',
         'Workspace.PS7',
         'GitOperations.PS7',
-        'OpenSpecSkill.PS7')) {
+        'OpenSpecSkill.PS7',
+        'UnrealIntegration.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 6 @($quick).Count 'Quick profile remains a focused PowerShell 7 core matrix'
+Assert-Equal 7 @($quick).Count 'Quick profile remains a focused PowerShell 7 fixture-only matrix'
 Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
 foreach ($name in @('HardnessPerformance.PS7')) {
@@ -56,8 +57,8 @@ foreach ($name in @('Hardness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workfl
 foreach ($name in @('HardnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
-Assert-Equal 11 @($integration).Count 'Integration contains six scripts, one performance run, and four route checks'
-Assert-Equal 0 @($integration | Where-Object { $_.Name -match '^(UE\.|Unreal|StaticJIT|Cache|Coverage|Standalone|Engine|Execution|Toolchain)' }).Count 'the deferred UE leaf is absent from every core gate'
+Assert-Equal 12 @($integration).Count 'Integration contains seven scripts, one performance run, and four route checks'
+Assert-Equal 1 @($integration | Where-Object Name -eq 'UnrealIntegration.PS7').Count 'Integration contains the fixture-only Unreal route gate exactly once'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'
 
@@ -69,7 +70,8 @@ foreach ($check in @($integration | Where-Object Kind -in @('Script', 'Performan
 $hardnessManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\scripts\Hardness.psd1')
 $workspaceManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1')
 $gitManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\git-operations\scripts\GitOperations.psd1')
-foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData, $gitManifestData)) {
+$unrealManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\unreal-engine-develop\scripts\UnrealEngineDevelop.psd1')
+foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData, $gitManifestData, $unrealManifestData)) {
     Assert-Equal '7.0' ([string]$manifestData.PowerShellVersion) 'public module manifests require PowerShell 7.0 or later'
     Assert-Equal 'Core' (@($manifestData.CompatiblePSEditions) -join '|') 'public module manifests support only the Core edition'
 }
@@ -77,6 +79,13 @@ foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData, $gitM
 foreach ($check in @($quick | Where-Object Kind -eq 'Script')) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references an existing test script"
 }
+Assert-True ($runnerText -match '(?m)^#requires -PSEdition Core\s*$') 'the public runner rejects Windows PowerShell'
+
+$unrealQuickCheck = $quick | Where-Object Name -eq 'UnrealIntegration.PS7' | Select-Object -First 1
+Assert-True ($null -ne $unrealQuickCheck) 'Quick exposes the fixture-only Unreal integration check'
+Assert-True ('-Tag' -in @($unrealQuickCheck.Arguments)) 'the Unreal Quick check selects a bounded tag'
+$unrealTagIndex = [array]::IndexOf([object[]]@($unrealQuickCheck.Arguments), '-Tag')
+Assert-Equal 'Integration' $unrealQuickCheck.Arguments[$unrealTagIndex + 1] 'the Unreal Quick check never runs the full or real-UE suite'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $commandTemplateScript = Join-Path $projectRoot 'Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1'

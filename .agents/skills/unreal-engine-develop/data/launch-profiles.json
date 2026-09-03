@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "hardness-unreal-launch-profiles-v1",
+  "profiles": [
+    {
+      "name": "headless",
+      "description": "Default unattended Automation and commandlet launch.",
+      "arguments": ["-Unattended", "-NoPause", "-NoSplash", "-stdout", "-FullStdOutLogOutput", "-UTF8Output", "-NOSOUND", "-NullRHI"]
+    },
+    {
+      "name": "fast-headless",
+      "description": "Headless launch with optional startup work disabled.",
+      "arguments": ["-Unattended", "-NoPause", "-NoSplash", "-stdout", "-FullStdOutLogOutput", "-UTF8Output", "-NOSOUND", "-NullRHI", "-NoLoadStartupPackages", "-NoLiveCoding", "-NoScreenMessages", "-DisableAutomaticShaderCompilerLaunch", "-NoAssetRegistryCacheWrite"]
+    },
+    {
+      "name": "render",
+      "description": "Unattended launch that retains rendering.",
+      "arguments": ["-Unattended", "-NoPause", "-NoSplash", "-stdout", "-FullStdOutLogOutput", "-UTF8Output", "-NOSOUND"]
+    }
+  ]
+}

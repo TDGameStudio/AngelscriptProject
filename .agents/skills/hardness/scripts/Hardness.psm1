@@ -58,6 +58,7 @@ function Initialize-HardnessRoutes {
 
     $workspaceModule = '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
     $gitModule = '.agents/skills/git-operations/scripts/GitOperations.psd1'
+    $unrealModule = '.agents/skills/unreal-engine-develop/scripts/UnrealEngineDevelop.psd1'
     $openspecExecutable = '.agents/skills/openspec/bin/openspec.exe'
     $routes = New-Object System.Collections.Generic.List[object]
 
@@ -76,6 +77,21 @@ function Initialize-HardnessRoutes {
     $routes.Add((New-HardnessRoute 'git.commit' 'PowerShell' $gitModule 'Complete-HardnessGitCommit' @() @{} 'Commit exact scopes with dirty submodules before parent gitlinks.')) | Out-Null
     $routes.Add((New-HardnessRoute 'git.integrate' 'PowerShell' $gitModule 'Merge-HardnessGitWorkspace' @() @{} 'Explicitly integrate an exact reviewed workspace into the primary workspace.')) | Out-Null
     $routes.Add((New-HardnessRoute 'git.push' 'PowerShell' $gitModule 'Publish-HardnessGitBranches' @() @{} 'Explicitly push named local branches without force.')) | Out-Null
+
+    $routes.Add((New-HardnessRoute 'ue.status' 'PowerShell' $unrealModule 'Get-HardnessUnrealStatus' @() @{} 'Inspect Unreal readiness for the selected workspace.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.engine.list' 'PowerShell' $unrealModule 'Get-HardnessUnrealEngineList' @() @{} 'List configured and registered Unreal Engine installations.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.target.list' 'PowerShell' $unrealModule 'Get-HardnessUnrealTargetList' @() @{} 'List project targets by source scan or an explicit UBT query.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.process.list' 'PowerShell' $unrealModule 'Get-HardnessUnrealProcessList' @() @{} 'List bounded Unreal-related processes for workspace diagnostics.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.ubt.capabilities' 'PowerShell' $unrealModule 'Get-HardnessUnrealUbtCapabilities' @() @{} 'Inspect the maintained UBT capability catalog.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.ubt.invoke' 'PowerShell' $unrealModule 'Invoke-HardnessUnrealUbt' @() @{} 'Plan or invoke one maintained UBT capability.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.build' 'PowerShell' $unrealModule 'Invoke-HardnessUnrealBuild' @() @{ BuildConcurrency = 'Auto' } 'Plan or execute one typed Unreal project build.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.test' 'PowerShell' $unrealModule 'Invoke-HardnessUnrealTest' @() @{} 'Plan or execute one Unreal Automation selection.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.commandlet' 'PowerShell' $unrealModule 'Invoke-HardnessUnrealCommandlet' @() @{} 'Plan or execute one named Unreal commandlet.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.suite.list' 'PowerShell' $unrealModule 'Get-HardnessUnrealSuiteList' @() @{} 'List maintained declarative Unreal Automation suites.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.suite.plan' 'PowerShell' $unrealModule 'New-HardnessUnrealSuitePlan' @() @{} 'Create one deterministic Unreal suite plan.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.suite.run' 'PowerShell' $unrealModule 'Invoke-HardnessUnrealSuite' @() @{} 'Plan or execute one sequential Unreal suite.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.run.status' 'PowerShell' $unrealModule 'Get-HardnessUnrealRunStatus' @() @{} 'Inspect one exact Unreal run identity.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'ue.run.cancel' 'PowerShell' $unrealModule 'Stop-HardnessUnrealRun' @() @{} 'Explicitly cancel one exact Unreal run.')) | Out-Null
 
     foreach ($command in @('init', 'doctor', 'status', 'instructions', 'validate', 'domain', 'spec', 'change', 'workflow', 'completion')) {
         $routes.Add((New-HardnessRoute "openspec.$command" 'Native' $openspecExecutable '' @($command) @{} "Run openspec $command.")) | Out-Null
@@ -372,6 +388,13 @@ function Add-HardnessContextDefaults {
         foreach ($key in @($Parameters.Keys)) { $values[$key] = $Parameters[$key] }
     }
     switch ($Route.Name) {
+        { $_ -like 'ue.*' } {
+            if ($values.ContainsKey('WorkspaceRoot') -and
+                -not (Test-HardnessPathEqual -Left ([string]$values.WorkspaceRoot) -Right ([string]$Context.WorkspaceRoot))) {
+                throw "Unreal route WorkspaceRoot '$($values.WorkspaceRoot)' must match the selected context WorkspaceRoot '$($Context.WorkspaceRoot)'."
+            }
+            $values.WorkspaceRoot = $Context.WorkspaceRoot
+        }
         { $_ -in @('workspace.list', 'workspace.status') } {
             if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
         }
@@ -440,12 +463,12 @@ function Invoke-Hardness {
             $data = & $function @invokeParameters @ArgumentList
         }
         elseif ($route.Kind -eq 'PowerShell') {
+            $invokeParameters = Add-HardnessContextDefaults -Route $route -Context $Context -Parameters $Parameters
             if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
                 throw "Leaf module for '$Command' was not found: $target"
             }
             Import-Module $target -ErrorAction Stop
             $function = Get-Command -Name $route.EntryPoint -CommandType Function -ErrorAction Stop
-            $invokeParameters = Add-HardnessContextDefaults -Route $route -Context $Context -Parameters $Parameters
             $data = & $function @invokeParameters @ArgumentList
         }
         elseif ($route.Kind -eq 'Native') {
@@ -970,6 +993,13 @@ function Test-HardnessInstallation {
     }
     else {
         try { Test-ModuleManifest -Path $gitManifest -ErrorAction Stop | Out-Null } catch { $errors.Add($_.Exception.Message) | Out-Null }
+    }
+    $unrealManifest = Join-Path $root '.agents/skills/unreal-engine-develop/scripts/UnrealEngineDevelop.psd1'
+    if (-not (Test-Path -LiteralPath $unrealManifest -PathType Leaf)) {
+        $errors.Add("Missing Unreal module manifest: $unrealManifest") | Out-Null
+    }
+    else {
+        try { Test-ModuleManifest -Path $unrealManifest -ErrorAction Stop | Out-Null } catch { $errors.Add($_.Exception.Message) | Out-Null }
     }
     try {
         $openSpecPackage = Assert-HardnessOpenSpecPackage -ProjectRoot $root

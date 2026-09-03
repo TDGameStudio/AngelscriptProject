@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "hardness-unreal-suites-v1",
+  "launchProfile": "headless",
+  "description": "Tracked Unreal Automation-only suites for the AngelscriptProject host.",
+  "deferredCapabilities": [
+    {
+      "id": "Standalone",
+      "status": "Deferred",
+      "kind": "CMakeCTest",
+      "reason": "Standalone CMake and CTest execution is outside the Unreal Automation runner."
+    },
+    {
+      "id": "StandaloneRelease",
+      "status": "Deferred",
+      "kind": "CMakeCTestRelease",
+      "reason": "Release CTest and ZIP validation require a separate release pipeline."
+    },
+    {
+      "id": "CachePackage",
+      "status": "Deferred",
+      "kind": "PackageSmoke",
+      "reason": "Cache package smoke mutates packaged outputs and is outside this Change."
+    },
+    {
+      "id": "package",
+      "status": "Deferred",
+      "kind": "Pipeline",
+      "reason": "Packaging is not an Unreal Automation suite entry."
+    },
+    {
+      "id": "coverage",
+      "status": "Deferred",
+      "kind": "Pipeline",
+      "reason": "Coverage collection requires its own orchestration and evidence contract."
+    },
+    {
+      "id": "release",
+      "status": "Deferred",
+      "kind": "Pipeline",
+      "reason": "Release validation and publication require explicit release authority."
+    }
+  ],
+  "suites": [
+    {
+      "name": "Smoke",
+      "description": "Fast engine ownership and parity confidence set.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Engine.MultiEngine", "label": "MultiEngine", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Engine.DependencyInjection", "label": "DependencyInjection", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Engine.EngineSubsystem", "label": "EngineSubsystem", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Engine.BindConfig", "label": "BindConfig", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Shared.EngineHelper", "label": "SharedEngineHelper", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Parity", "label": "Parity", "tier": "Light" }
+      ]
+    },
+    {
+      "name": "NativeCore",
+      "description": "Maintained native AngelScript SDK Automation coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.AngelScriptSDK", "label": "AngelScriptSDK", "tier": "Heavy" }
+      ]
+    },
+    {
+      "name": "RuntimeCpp",
+      "description": "Runtime engine and legacy C++ Automation coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Engine", "label": "Engine", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.CppTests", "label": "CppTestsLegacy", "tier": "Light" }
+      ]
+    },
+    {
+      "name": "Bindings",
+      "description": "AngelScript binding Automation coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Bindings", "label": "Bindings", "tier": "Heavy" }
+      ]
+    },
+    {
+      "name": "HotReload",
+      "description": "AngelScript hot-reload Automation coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.HotReload", "label": "HotReload", "tier": "Heavy" }
+      ]
+    },
+    {
+      "name": "Cache",
+      "description": "AngelScript cache Automation coverage without package smoke.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Cache", "label": "Cache", "tier": "Heavy" }
+      ]
+    },
+    {
+      "name": "Debugger",
+      "description": "Debugger and auto-evaluate Automation coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Engine.Debugger.AutoEvaluate", "label": "AutoEvaluate", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Debugger.", "label": "TestModuleDebugger", "tier": "Heavy" }
+      ]
+    },
+    {
+      "name": "FunctionalSamples",
+      "description": "Representative actor, component, delegate, and interface coverage.",
+      "entries": [
+        { "prefix": "Angelscript.TestModule.Actor", "label": "Actor", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Component", "label": "Component", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Delegate", "label": "Delegate", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Interface", "label": "Interface", "tier": "Light" }
+      ]
+    },
+    {
+      "name": "All",
+      "description": "All maintained UE Automation prefixes; external CMake and package pipelines are excluded.",
+      "entries": [
+        { "prefix": "Angelscript.Editor", "label": "Editor", "tier": "Heavy" },
+        { "prefix": "Angelscript.GAS", "label": "GAS", "tier": "Heavy" },
+        { "prefix": "Angelscript.GameplayTags", "label": "GameplayTags", "tier": "Heavy" },
+        { "prefix": "Angelscript.Template", "label": "Template", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Actor", "label": "Actor", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.AngelScriptSDK", "label": "AngelScriptSDK", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Bindings", "label": "Bindings", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Blueprint", "label": "Blueprint", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Cache", "label": "Cache", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Generator", "label": "Generator", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Compiler", "label": "Compiler", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Component", "label": "Component", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Core", "label": "Core", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Debugger", "label": "Debugger", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Delegate", "label": "Delegate", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Dump", "label": "Dump", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Editor", "label": "TestModuleEditor", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Engine", "label": "Engine", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.FileSystem", "label": "FileSystem", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Functional", "label": "Functional", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.FunctionLibraries", "label": "FunctionLibraries", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.GameInstanceSubsystem", "label": "GameInstanceSubsystem", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.GC", "label": "GC", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.HotReload", "label": "HotReload", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Inheritance", "label": "Inheritance", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Interface", "label": "Interface", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Memory", "label": "Memory", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Networking", "label": "Networking", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Parity", "label": "Parity", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Performance", "label": "Performance", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Preprocessor", "label": "Preprocessor", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Shared", "label": "Shared", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.StaticJIT", "label": "StaticJIT", "tier": "Heavy" },
+        { "prefix": "Angelscript.TestModule.Syntax", "label": "Syntax", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.Validation", "label": "Validation", "tier": "Light" },
+        { "prefix": "Angelscript.TestModule.WorldSubsystem", "label": "WorldSubsystem", "tier": "Light" }
+      ]
+    }
+  ]
+}

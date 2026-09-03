@@ -718,6 +718,7 @@ function Test-WorkspaceManagedIdentity {
     }
     if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'WorkspaceKind')) { return $false }
     if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'GoalName')) { return $false }
+    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'References' -Key 'HazelightAngelscriptEngineRoot')) { return $false }
     return $true
 }
 
@@ -851,6 +852,9 @@ function Get-HardnessWorkspaceConfigStatus {
                 $errors.Add("AgentConfig.ini [Hardness] $obsoleteKey is obsolete in schema v2.") | Out-Null
             }
         }
+        if ($null -ne (Get-WorkspaceIniValue -Path $path -Section 'References' -Key 'HazelightAngelscriptEngineRoot')) {
+            $errors.Add('AgentConfig.ini [References] HazelightAngelscriptEngineRoot is obsolete; run workspace.bootstrap to remove it.') | Out-Null
+        }
         $expectedProject = Get-WorkspaceProjectFile -ProjectRoot $root
         $configuredProject = Get-WorkspaceIniValue -Path $path -Section 'Paths' -Key 'ProjectFile'
         if ([string]::IsNullOrWhiteSpace([string]$configuredProject) -or -not (Test-WorkspacePathEqual -Left $configuredProject -Right $expectedProject)) {
@@ -879,12 +883,55 @@ function Get-HardnessWorkspaceConfigValue {
         [Parameter(Mandatory = $true)][string]$Section,
         [Parameter(Mandatory = $true)][string]$Key
     )
-    [void](Assert-WorkspaceIniName -Value $Section -Kind 'section')
-    [void](Assert-WorkspaceIniName -Value $Key -Kind 'key')
-    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    $snapshot = Get-HardnessWorkspaceConfigValues -ProjectRoot $ProjectRoot -Entries @(
+        [pscustomobject]@{ Section = $Section; Key = $Key }
+    )
+    return $snapshot.Values[0]
+}
+
+function Get-HardnessWorkspaceConfigValues {
+    [CmdletBinding()]
+    param(
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
+        [Parameter(Mandatory = $true)][ValidateCount(1, 64)][object[]]$Entries,
+        [switch]$RequireExecutionGuard,
+        [string]$CallerPath = ''
+    )
+
+    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $status = if ($RequireExecutionGuard) {
+        Assert-HardnessWorkspaceExecution -ProjectRoot $root -SelectedWorkspaceRoot $root -CallerPath $CallerPath
+    }
+    else {
+        Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
+    }
     if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
-    $value = Get-WorkspaceIniValue -Path $status.Path -Section $Section -Key $Key
-    return [pscustomobject]@{ ProjectRoot = $status.ProjectRoot; Section = $Section; Key = $Key; Exists = $null -ne $value; Value = $value }
+
+    $values = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in @($Entries)) {
+        if ($null -eq $entry -or $null -eq $entry.PSObject.Properties['Section'] -or $null -eq $entry.PSObject.Properties['Key']) {
+            throw 'Each configuration entry must provide Section and Key.'
+        }
+        $section = [string]$entry.Section
+        $key = [string]$entry.Key
+        [void](Assert-WorkspaceIniName -Value $section -Kind 'section')
+        [void](Assert-WorkspaceIniName -Value $key -Kind 'key')
+        $value = Get-WorkspaceIniValue -Path $status.Path -Section $section -Key $key
+        $values.Add([pscustomobject][ordered]@{
+            ProjectRoot = $status.ProjectRoot
+            Section     = $section
+            Key         = $key
+            Exists      = $null -ne $value
+            Value       = $value
+        }) | Out-Null
+    }
+
+    return [pscustomobject][ordered]@{
+        ProjectRoot = $status.ProjectRoot
+        ConfigPath  = $status.Path
+        Identity    = $status.Identity
+        Values      = @($values | ForEach-Object { $_ })
+    }
 }
 
 function Set-HardnessWorkspaceConfigValue {
@@ -900,6 +947,10 @@ function Set-HardnessWorkspaceConfigValue {
     if ($Section.Equals('Hardness', [System.StringComparison]::OrdinalIgnoreCase) -or
         ($Section.Equals('Paths', [System.StringComparison]::OrdinalIgnoreCase) -and $Key.Equals('ProjectFile', [System.StringComparison]::OrdinalIgnoreCase))) {
         throw "AgentConfig.ini [$Section] $Key is managed by Hardness and cannot be set directly."
+    }
+    if ($Section.Equals('References', [System.StringComparison]::OrdinalIgnoreCase) -and
+        $Key.Equals('HazelightAngelscriptEngineRoot', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'AgentConfig.ini [References] HazelightAngelscriptEngineRoot is obsolete and cannot be set.'
     }
     $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
     if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
@@ -1338,6 +1389,7 @@ Export-ModuleMember -Function @(
     'Remove-HardnessWorkspace',
     'Get-HardnessWorkspaceConfigStatus',
     'Get-HardnessWorkspaceConfigValue',
+    'Get-HardnessWorkspaceConfigValues',
     'Set-HardnessWorkspaceConfigValue',
     'Set-HardnessWorkspaceSession',
     'Assert-HardnessWorkspaceExecution'

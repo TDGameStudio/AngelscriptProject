@@ -10,6 +10,8 @@ Select the route first, then read only the owning leaf Skill. Every route operat
 | Exact commits, reviewed workspace integration, or explicit non-force push | `git-operations/SKILL.md` | `git.*` |
 | Bounded local workflow observation | `hardness/SKILL.md` | `hardness.observe` |
 | Aggregated self-evolution status | `hardness/SKILL.md` | `hardness.evolution.status` |
+| UE readiness, engines, targets, processes, or UBT capabilities | `unreal-engine-develop/SKILL.md` | `ue.status`, `ue.engine.list`, `ue.target.list`, `ue.process.list`, `ue.ubt.capabilities` |
+| UE build, test, commandlet, suite, or managed-run lifecycle | `unreal-engine-develop/SKILL.md` | `ue.build`, `ue.test`, `ue.commandlet`, `ue.suite.*`, `ue.run.*`; use `ue.ubt.invoke` only for a declared generic capability |
 | Portable OpenSpec source/package alignment | `openspec/SKILL.md` | `openspec.maintenance.status` |
 | OpenSpec command or CLI maintenance | `openspec/SKILL.md` | `openspec.*` |
 | Deep discovery before a new feature, architecture refactor, or major behavior Change | `openspec-explore/SKILL.md` | Agent-driven before creating that Change |
@@ -44,6 +46,8 @@ hardness.status/observe/evolution.status
 openspec.init/doctor/status/instructions/validate/domain/spec/change/workflow/completion
 openspec.maintenance.status
 task.status
+ue.status/engine.list/target.list/process.list/ubt.capabilities/ubt.invoke
+ue.build/test/commandlet/suite.list/suite.plan/suite.run/run.status/run.cancel
 ```
 
-The Unreal command leaf is deliberately outside this core snapshot. Do not publish placeholder `ue.*` routes until the separately planned `unreal-engine-develop` Change supplies and verifies the complete contract.
+All `ue.*` routes receive the exact selected `WorkspaceRoot` from the Hardness context and lazy-load one maintained leaf module. A caller-supplied workspace mismatch is rejected. Root `Tools` wrappers are not fallback routes.

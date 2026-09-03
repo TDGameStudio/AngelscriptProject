@@ -67,6 +67,7 @@ foreach ($commandName in @(
     'Test-HardnessWorkspace',
     'Get-HardnessWorkspaceConfigStatus',
     'Get-HardnessWorkspaceConfigValue',
+    'Get-HardnessWorkspaceConfigValues',
     'Set-HardnessWorkspaceConfigValue',
     'Set-HardnessWorkspaceSession',
     'Assert-HardnessWorkspaceExecution'
@@ -240,8 +241,47 @@ Profile=fixture
 
     [void](Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Profile -Value 'external-fixture')
     Assert-Equal 'external-fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Profile).Value 'controlled config mutation updates non-managed data'
+    $configValues = Get-HardnessWorkspaceConfigValues -ProjectRoot $externalRoot -RequireExecutionGuard -CallerPath $externalRoot -Entries @(
+        [pscustomobject]@{ Section = 'Paths'; Key = 'ProjectFile' }
+        [pscustomobject]@{ Section = 'LocalAgent'; Key = 'Profile' }
+        [pscustomobject]@{ Section = 'LocalAgent'; Key = 'Missing' }
+    )
+    Assert-Equal $externalRoot $configValues.ProjectRoot 'batched configuration binds the exact workspace once'
+    Assert-Equal (Join-Path $externalRoot 'AgentConfig.ini') $configValues.ConfigPath 'batched configuration retains its validated source path'
+    Assert-Equal $managedExternal.GitCommonDir $configValues.Identity.GitCommonDir 'batched configuration retains validated workspace identity'
+    Assert-Equal 3 @($configValues.Values).Count 'batched configuration retains every requested entry'
+    Assert-Equal (Join-Path $externalRoot 'Fixture.uproject') $configValues.Values[0].Value 'batched configuration returns the managed project path'
+    Assert-Equal 'external-fixture' $configValues.Values[1].Value 'batched configuration returns a non-managed value'
+    Assert-False $configValues.Values[2].Exists 'batched configuration represents a missing value without another status query'
     Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section Hardness -Key WorkspaceRoot -Value other | Out-Null } 'managed|cannot be set' 'managed identity cannot be overwritten'
     Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Notes -Value "line1`nline2" | Out-Null } 'single-line|NUL' 'multiline config injection is rejected'
+
+    $externalConfigPath = Join-Path $externalRoot 'AgentConfig.ini'
+    $configBeforeObsoleteSet = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($externalConfigPath))
+    Assert-ThrowsMatch {
+        Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section References -Key HazelightAngelscriptEngineRoot -Value 'C:\Obsolete' | Out-Null
+    } 'obsolete|cannot be set' 'the obsolete Hazelight reference cannot be recreated through the controlled setter'
+    $configAfterObsoleteSet = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($externalConfigPath))
+    Assert-Equal $configBeforeObsoleteSet $configAfterObsoleteSet 'obsolete-key rejection happens before any AgentConfig.ini write'
+
+    & $workspaceModule {
+        param($path)
+        Set-WorkspaceIniValueInternal -Path $path -Section References -Key HazelightAngelscriptEngineRoot -Value 'C:\Obsolete'
+    } $externalConfigPath
+    $obsoleteStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $externalRoot
+    Assert-False $obsoleteStatus.IdentityValid 'the obsolete Hazelight reference invalidates config identity status'
+    Assert-True (@($obsoleteStatus.Errors | Where-Object { $_ -match 'HazelightAngelscriptEngineRoot.*obsolete' }).Count -eq 1) 'config status identifies the obsolete Hazelight reference exactly'
+    Assert-False (Get-HardnessWorkspaceContext -ProjectRoot $externalRoot -Refresh).Managed 'the obsolete Hazelight reference invalidates the managed identity projection'
+    Assert-ThrowsMatch {
+        Assert-HardnessWorkspaceExecution -ProjectRoot $externalRoot -CallerPath $externalRoot | Out-Null
+    } 'HazelightAngelscriptEngineRoot.*obsolete' 'the execution guard rejects a workspace carrying the obsolete Hazelight reference'
+
+    [void](Initialize-HardnessWorkspace -ProjectRoot $externalRoot)
+    $repairedStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $externalRoot
+    Assert-True $repairedStatus.IdentityValid 'bootstrap repairs config identity by removing the obsolete Hazelight reference'
+    Assert-True (Get-HardnessWorkspaceContext -ProjectRoot $externalRoot -Refresh).Managed 'bootstrap restores the managed identity projection'
+    Assert-False (Get-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section References -Key HazelightAngelscriptEngineRoot).Exists 'bootstrap removes the obsolete Hazelight reference'
+    [void](Assert-HardnessWorkspaceExecution -ProjectRoot $externalRoot -CallerPath $externalRoot)
 
     $gitmodulesPath = Join-Path $parentRoot '.gitmodules'
     $validGitmodules = [System.IO.File]::ReadAllText($gitmodulesPath)

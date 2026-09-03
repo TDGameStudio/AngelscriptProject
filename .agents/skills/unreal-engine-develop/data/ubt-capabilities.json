@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "hardness-ubt-capabilities-v1",
+  "sourceBaseline": "Unreal Engine 5.8",
+  "capabilities": [
+    {
+      "id": "build",
+      "mode": "Build",
+      "available": true,
+      "mutability": "project-and-possible-engine",
+      "requiresEngineLease": true,
+      "description": "Build one typed project target through UBT.",
+      "reservedArguments": ["-Project", "-WaitMutex", "-NoMutex", "-NoEngineChanges", "-Log", "-Session", "-Mode"]
+    },
+    {
+      "id": "query-targets",
+      "mode": "QueryTargets",
+      "available": true,
+      "mutability": "run-output-and-rules-cache",
+      "requiresEngineLease": true,
+      "description": "Query project targets into a run-local JSON file.",
+      "reservedArguments": ["-Project", "-Output", "-WaitMutex", "-NoMutex", "-Log", "-Session", "-Mode"]
+    },
+    {
+      "id": "generate-project-files",
+      "mode": "GenerateProjectFiles",
+      "available": true,
+      "mutability": "project",
+      "requiresEngineLease": true,
+      "description": "Generate project files for the selected workspace.",
+      "reservedArguments": ["-Project", "-WaitMutex", "-NoMutex", "-Log", "-Session", "-Mode"]
+    },
+    {
+      "id": "clean",
+      "mode": "Clean",
+      "available": false,
+      "mutability": "destructive",
+      "requiresEngineLease": true,
+      "description": "Deferred because destructive clean authority is outside this Change.",
+      "reservedArguments": ["-Project", "-WaitMutex", "-NoMutex", "-Log", "-Session", "-Mode"]
+    }
+  ]
+}

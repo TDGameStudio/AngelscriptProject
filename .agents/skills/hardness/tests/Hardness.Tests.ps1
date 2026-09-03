@@ -62,14 +62,18 @@ function New-InstallationFixture {
 
     $workspaceTarget = Join-Path $Root '.agents\skills\workspace-lifecycle\scripts'
     $gitTarget = Join-Path $Root '.agents\skills\git-operations\scripts'
+    $unrealTarget = Join-Path $Root '.agents\skills\unreal-engine-develop\scripts'
     $openspecTarget = Join-Path $Root '.agents\skills\openspec'
     [void](New-Item -ItemType Directory -Path $workspaceTarget -Force)
     [void](New-Item -ItemType Directory -Path $gitTarget -Force)
+    [void](New-Item -ItemType Directory -Path $unrealTarget -Force)
     [void](New-Item -ItemType Directory -Path (Join-Path $openspecTarget 'bin') -Force)
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psm1') -Destination $workspaceTarget
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1') -Destination $workspaceTarget
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-operations\scripts\GitOperations.psm1') -Destination $gitTarget
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-operations\scripts\GitOperations.psd1') -Destination $gitTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\unreal-engine-develop\scripts\UnrealEngineDevelop.psm1') -Destination $unrealTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\unreal-engine-develop\scripts\UnrealEngineDevelop.psd1') -Destination $unrealTarget
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\bin\openspec.exe') -Destination (Join-Path $openspecTarget 'bin\openspec.exe')
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\commands') -Destination $openspecTarget -Recurse
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\release-manifest.json') -Destination $openspecTarget
@@ -105,6 +109,7 @@ try {
     try {
         Import-Module $manifest -Force
         Assert-Equal 0 @(Get-ChildItem -LiteralPath $scratch -Force).Count 'module import must not write to the current directory'
+        Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'importing Hardness must not import the Unreal leaf'
     }
     finally {
         Pop-Location
@@ -146,7 +151,37 @@ try {
     )) {
         Assert-True ($name -in @($routes.Name)) "route '$name' must be registered"
     }
-    Assert-Equal 0 @($routes | Where-Object { $_.Name -match '^(ue\.|staticjit\.|cache\.|coverage$|standalone\.|engine\.|execution\.|toolchain\.)' }).Count 'deferred Unreal leaf routes are not published by the Hardness core snapshot'
+    $expectedUnrealRoutes = [ordered]@{
+        'ue.status'           = 'Get-HardnessUnrealStatus'
+        'ue.engine.list'      = 'Get-HardnessUnrealEngineList'
+        'ue.target.list'      = 'Get-HardnessUnrealTargetList'
+        'ue.process.list'     = 'Get-HardnessUnrealProcessList'
+        'ue.ubt.capabilities' = 'Get-HardnessUnrealUbtCapabilities'
+        'ue.ubt.invoke'       = 'Invoke-HardnessUnrealUbt'
+        'ue.build'            = 'Invoke-HardnessUnrealBuild'
+        'ue.test'             = 'Invoke-HardnessUnrealTest'
+        'ue.commandlet'       = 'Invoke-HardnessUnrealCommandlet'
+        'ue.suite.list'       = 'Get-HardnessUnrealSuiteList'
+        'ue.suite.plan'       = 'New-HardnessUnrealSuitePlan'
+        'ue.suite.run'        = 'Invoke-HardnessUnrealSuite'
+        'ue.run.status'       = 'Get-HardnessUnrealRunStatus'
+        'ue.run.cancel'       = 'Stop-HardnessUnrealRun'
+    }
+    $unrealRoutes = @($routes | Where-Object { $_.Name -like 'ue.*' })
+    Assert-Equal $expectedUnrealRoutes.Count $unrealRoutes.Count 'Hardness publishes exactly the complete Unreal route surface'
+    Assert-Equal (($expectedUnrealRoutes.Keys | Sort-Object) -join '|') (($unrealRoutes.Name | Sort-Object) -join '|') 'Hardness publishes no missing or extra Unreal route'
+    foreach ($routeName in $expectedUnrealRoutes.Keys) {
+        $route = $unrealRoutes | Where-Object Name -eq $routeName | Select-Object -First 1
+        Assert-Equal 'PowerShell' $route.Kind "$routeName is a PowerShell leaf route"
+        Assert-Equal '.agents/skills/unreal-engine-develop/scripts/UnrealEngineDevelop.psd1' $route.Target "$routeName resolves the reviewed Unreal manifest from HarnessRoot"
+        Assert-Equal $expectedUnrealRoutes[$routeName] $route.EntryPoint "$routeName maps to its exact public function"
+    }
+    $buildRoute = $unrealRoutes | Where-Object Name -eq 'ue.build' | Select-Object -First 1
+    Assert-True $buildRoute.Defaults.ContainsKey('BuildConcurrency') 'ue.build exposes the typed BuildConcurrency route default'
+    Assert-Equal 'Auto' $buildRoute.Defaults.BuildConcurrency 'ue.build defaults BuildConcurrency to Auto'
+    $cancelRoute = $unrealRoutes | Where-Object Name -eq 'ue.run.cancel' | Select-Object -First 1
+    Assert-True (-not $cancelRoute.Defaults.ContainsKey('Confirm')) 'ue.run.cancel does not silently disable confirmation'
+    Assert-Equal 0 @($routes | Where-Object { $_.Name -match '^(staticjit\.|cache\.|coverage$|standalone\.|engine\.|execution\.|toolchain\.)' }).Count 'unimplemented non-Unreal leaf routes remain unpublished'
 
     $first = Invoke-Hardness -Command 'workspace.status' -Context $context
     $second = Invoke-Hardness -Command 'workspace.status' -Context $context
@@ -334,6 +369,7 @@ task_graph:
         Stage = 'apply'
         DurationMs = 42
     }
+    Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'non-Unreal routes must not import the Unreal leaf'
     Assert-Equal 'Succeeded' $observation.status 'hardness.observe writes one ignored bounded record'
     Assert-Equal 1 @($observation.artifacts).Count 'observation path is exposed as an artifact'
     Assert-True (Test-Path -LiteralPath $observation.data.Path -PathType Leaf) 'observation file exists below the selected workspace'
@@ -392,13 +428,21 @@ task_graph:
 
     $incompleteHealth = Test-HardnessInstallation -ProjectRoot $fixtureProject
     Assert-True (-not $incompleteHealth.IsValid) 'installation fails when the required OpenSpec leaf is missing'
-    Assert-Equal 1 @($incompleteHealth.Errors | Where-Object { $_ -match 'missing|required.*OpenSpec|manifest|package' }).Count 'the required OpenSpec package is reported as an error'
+    Assert-Equal 1 @($incompleteHealth.Errors | Where-Object { $_ -match 'OpenSpec' }).Count 'the required OpenSpec package is reported as an error'
 
     $validFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-valid') -SourceRoot $repoRoot
     $validFixtureHealth = Test-HardnessInstallation -ProjectRoot $validFixture
     Assert-True $validFixtureHealth.IsValid 'a complete fixed OpenSpec 0.8.1 package passes installation health'
     Assert-Equal '0.8.1' $validFixtureHealth.OpenSpecPackage.Version 'health reports the verified final OpenSpec identity'
     Assert-True $validFixtureHealth.OpenSpecPackage.Verified 'health distinguishes a verified package from mere file presence'
+    Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'installation validation checks the Unreal manifest without importing it'
+
+    $missingUnrealFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-missing-unreal') -SourceRoot $repoRoot
+    Remove-Item -LiteralPath (Join-Path $missingUnrealFixture '.agents\skills\unreal-engine-develop\scripts\UnrealEngineDevelop.psd1') -Force
+    $missingUnrealHealth = Test-HardnessInstallation -ProjectRoot $missingUnrealFixture
+    Assert-True (-not $missingUnrealHealth.IsValid) 'installation fails when the required Unreal leaf manifest is missing'
+    Assert-Match (@($missingUnrealHealth.Errors) -join ' ') 'Unreal.*manifest|manifest.*Unreal' 'the missing Unreal manifest has a bounded diagnostic'
+    Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'a missing Unreal manifest check does not import another Unreal module'
 
     $corruptFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-corrupt-exe') -SourceRoot $repoRoot
     [System.IO.File]::WriteAllBytes((Join-Path $corruptFixture '.agents\skills\openspec\bin\openspec.exe'), [byte[]](1, 2, 3, 4))

@@ -1,4 +1,5 @@
 #requires -Version 7.0
+#requires -PSEdition Core
 
 [CmdletBinding()]
 param(
@@ -78,11 +79,15 @@ function Get-HardnessGateChecks {
             Workspace           = '.agents\skills\workspace-lifecycle\tests\WorkspaceLifecycle.Tests.ps1'
             GitOperations       = '.agents\skills\git-operations\tests\GitOperations.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
+            UnrealIntegration   = '.agents\skills\unreal-engine-develop\tests\UnrealEngineDevelop.Tests.ps1'
         }
         foreach ($testName in $scriptTests.Keys) {
             $testPath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $scriptTests[$testName]))
             foreach ($hostInfo in $hosts) {
                 $arguments = @($hostInfo.Arguments) + @('-File', $testPath)
+                if ($testName -eq 'UnrealIntegration') {
+                    $arguments += @('-Tag', 'Integration')
+                }
                 $checks.Add((New-HardnessGateCheck -Name "$testName.$($hostInfo.Suffix)" -Kind 'Script' -Path $testPath -Executable $hostInfo.Executable -Arguments $arguments -WorkingDirectory $projectRoot)) | Out-Null
             }
         }
@@ -230,8 +235,8 @@ $summary = [pscustomobject][ordered]@{
     Failed        = $failed.Count
     Results       = @($results | ForEach-Object { $_ })
     Excluded      = @(
-        'The unreal-engine-develop leaf and its public wrappers are deferred to a separate change.',
-        'No Editor build, Automation, Smoke, Standalone, complete All, or StaticJIT All belongs to this core gate.',
+        'Fixture-only Unreal route integration is included; no real Editor, UBT, build, Automation, suite, or commandlet process is started.',
+        'Smoke, Standalone, complete All, and StaticJIT All remain outside this core gate.',
         'The fixed OpenSpec 0.8.1 source and package gates are reused from their closed independent review.'
     )
 }

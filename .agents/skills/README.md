@@ -21,15 +21,17 @@ openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,c
 task.status
 hardness.{status,observe,evolution.status}
 openspec.maintenance.status
+ue.{status,engine.list,target.list,process.list,ubt.capabilities,ubt.invoke,build,test,commandlet,suite.list,suite.plan,suite.run,run.status,run.cancel}
 ```
 
-The current core publishes no `ue.*` or `toolchain.check` route.
+Every `ue.*` route uses the selected Hardness workspace, lazy-loads one maintained Unreal module, and rejects a mismatched caller-supplied root. Use `PlanOnly` before execution, `NoWait` for an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for bounded machine-wide UE/UBT visibility. Progress remains explicitly unknown when a process cannot be correlated to trusted run-local evidence.
 
 ## Supporting Skills
 
 - `hardness` — context, command routing, result envelope, and progressive-loading rules.
 - `workspace-lifecycle` — workspace identity, exact submodule bootstrap, local configuration, session activation, verification, and explicit cleanup.
 - `git-operations` — scoped parent/submodule commits, reviewed local integration, and explicit non-force push.
+- `unreal-engine-develop` — UE 5.8 discovery, typed builds, Automation tests and suites, commandlets, UBT capabilities, process observation, progress, and explicit cancellation through `ue.*` routes.
 - `systematic-debugging` — evidence-first diagnosis before fixes or replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.
 - `code-review/code-reviewer` — fixed-snapshot Review only after an explicit user or external-agent request.
@@ -55,7 +57,6 @@ Record schemas are focused references under `openspec/references/`, not an indep
 
 ## Other leaves
 
-- `unreal-engine-develop` remains an existing standalone Skill, but the prepared Hardness core does not route it yet. UE integration and replacement of legacy root `Tools` PowerShell wrappers require a separate planned and verified change.
 - Use `visual-explain` proactively when three or more relationships, a sequence/state transition, hierarchy/layout, or a decision structure is materially clearer visually. Skip trivial one-step work. Other specialized work remains under `external/` and `web/`.
 
 ## Maintenance

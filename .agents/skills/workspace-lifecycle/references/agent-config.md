@@ -16,6 +16,8 @@ Hardness owns these four keys and `[Paths] ProjectFile`. `Topology`, `WorktreeNa
 
 Explicit bootstrap migrates schema v1 in place. It removes the former workspace-kind and goal-name identity keys plus `[References] HazelightAngelscriptEngineRoot`, rebinds `ProjectFile`, and preserves unrelated values, sections, comments, and newline style. When a new linked workspace has no local file, machine-shared values are copied from the canonical primary checkout before its managed fields are rebound.
 
+`[References] HazelightAngelscriptEngineRoot` is forbidden after migration. Its presence makes workspace identity invalid, blocks execution, and cannot be recreated through `workspace.config.set`; run `workspace.bootstrap` to remove it without disturbing unrelated local settings.
+
 ## Configuration Routes
 
 ```powershell
@@ -34,6 +36,8 @@ Invoke-Hardness -Command workspace.config.set -Context $context -Parameters @{
 ```
 
 `status` reports identity and key availability without dumping values. `get` reads one exact key. `set` updates one non-managed, single-line value atomically while preserving unrelated local content.
+
+Trusted leaf modules may call the exported `Get-HardnessWorkspaceConfigValues` function to read up to 64 named entries after one live status or execution-guard check. This batch boundary avoids repeating Git identity validation for every key; it does not cache configuration bytes, authorization, or mutation preconditions, and it is not an additional Hardness route.
 
 ## Process-local Selection
 

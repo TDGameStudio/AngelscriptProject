@@ -70,9 +70,12 @@ Invoke-Hardness -Command hardness.status -Context $context
 Invoke-Hardness -Command workspace.list -Context $context
 Invoke-Hardness -Command workspace.status -Context $context
 Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = 'domain/change' }
+Invoke-Hardness -Command ue.status -Context $context
 ```
 
 Every invocation returns the same small result envelope. `task.status` returns OpenSpec TaskPlan JSON in `data`; OpenSpec validates the frontmatter graph while Hardness owns workspace selection and scheduling. Task Card detail below the machine-readable surface remains ordinary Markdown for agents and people.
+
+Unreal execution uses the same context and lazy-loads `unreal-engine-develop` only on the first `ue.*` route. Prefer `PlanOnly` before committing resources, `NoWait` when the caller wants an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for a bounded machine view. Same-workspace operations remain exclusive; eligible Installed Engine builds may share an Engine lane across distinct worktrees. Load the leaf's [concurrency reference](../unreal-engine-develop/references/concurrency.md) only when selecting `Auto`, `Parallel`, or `Serialize`, choosing `Auto`, `Wait`, or `Fail`, or interpreting unknown progress.
 
 The optional project Codex hooks run only fast, read-only `hardness.status` at `SessionStart` (`startup|resume`) and `SubagentStart`. They add bounded orientation context when the repository hooks are trusted. Hook failure is never a correctness dependency; Cursor, Grok, and ordinary terminal use continue to call the same public routes directly.
 
