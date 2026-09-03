@@ -1027,6 +1027,99 @@ function Set-HarnessWorkspaceConfigValue {
     return Get-HarnessWorkspaceConfigValue -ProjectRoot $status.ProjectRoot -Section $Section -Key $Key
 }
 
+function Get-HarnessAngelscriptMainBaselineStatus {
+    param(
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$ParentBranch
+    )
+
+    $pluginRelativePath = 'Plugins/Angelscript'
+    $pluginPath = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot $pluginRelativePath))
+    $errors = New-Object System.Collections.Generic.List[string]
+    $configuredSubmodule = @(
+        Get-WorkspaceSubmodules -Repository $ProjectRoot |
+            Where-Object { ([string]$_.Path).Replace('\', '/').Equals($pluginRelativePath, [System.StringComparison]::OrdinalIgnoreCase) }
+    )
+    $configured = $configuredSubmodule.Count -eq 1
+    $applicable = $ParentBranch.Equals('main', [System.StringComparison]::Ordinal) -and $configured
+    $initialized = $false
+    $head = ''
+    $localMain = ''
+    $originMain = ''
+    $baseline = ''
+    $baselineSource = 'None'
+    $originContained = $true
+
+    if ($applicable) {
+        if (-not (Test-WorkspacePathInside -Parent $ProjectRoot -Child $pluginPath)) {
+            $errors.Add("Plugins/Angelscript path escapes workspace '$ProjectRoot'.") | Out-Null
+        }
+        elseif (-not (Test-WorkspaceSubmoduleRepository -Repository $ProjectRoot -Submodule $configuredSubmodule[0] -Path $pluginPath)) {
+            $errors.Add("Plugins/Angelscript is configured but not initialized in '$ProjectRoot'.") | Out-Null
+        }
+        else {
+            $initialized = $true
+            $headResult = Invoke-WorkspaceGit -Repository $pluginPath -Arguments @('rev-parse', '--verify', 'HEAD^{commit}') -AllowFailure
+            if ($headResult.ExitCode -eq 0) {
+                $head = (($headResult.Output | Select-Object -Last 1).Trim()).ToLowerInvariant()
+            }
+            else {
+                $errors.Add('Plugins/Angelscript HEAD is not a valid commit.') | Out-Null
+            }
+
+            $localResult = Invoke-WorkspaceGit -Repository $pluginPath -Arguments @('rev-parse', '--verify', 'refs/heads/main^{commit}') -AllowFailure
+            if ($localResult.ExitCode -eq 0) {
+                $localMain = (($localResult.Output | Select-Object -Last 1).Trim()).ToLowerInvariant()
+            }
+            $originResult = Invoke-WorkspaceGit -Repository $pluginPath -Arguments @('rev-parse', '--verify', 'refs/remotes/origin/main^{commit}') -AllowFailure
+            if ($originResult.ExitCode -eq 0) {
+                $originMain = (($originResult.Output | Select-Object -Last 1).Trim()).ToLowerInvariant()
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($localMain)) {
+                $baseline = $localMain
+                $baselineSource = 'LocalMain'
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($originMain)) {
+                $baseline = $originMain
+                $baselineSource = 'OriginMain'
+            }
+            else {
+                $errors.Add('Plugins/Angelscript has no local main ref or fetched origin/main ref for the primary main baseline.') | Out-Null
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($localMain) -and -not [string]::IsNullOrWhiteSpace($originMain)) {
+                $contains = Invoke-WorkspaceGit -Repository $pluginPath -Arguments @('merge-base', '--is-ancestor', $originMain, $localMain) -AllowFailure
+                $originContained = $contains.ExitCode -eq 0
+                if (-not $originContained) {
+                    $errors.Add("Plugins/Angelscript local main '$localMain' is behind or diverged from fetched origin/main '$originMain'; origin/main is not contained by local main.") | Out-Null
+                }
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($head) -and -not [string]::IsNullOrWhiteSpace($baseline) -and $head -ne $baseline) {
+                $errors.Add("Plugins/Angelscript HEAD '$head' does not match latest known main baseline '$baseline' from $baselineSource.") | Out-Null
+            }
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        Applicable       = $applicable
+        Configured       = $configured
+        Aligned          = -not $applicable -or $errors.Count -eq 0
+        ParentBranch     = $ParentBranch
+        PluginPath       = $pluginPath
+        Initialized      = $initialized
+        Head             = $head
+        LocalMain        = $localMain
+        OriginMain       = $originMain
+        Baseline         = $baseline
+        BaselineSource   = $baselineSource
+        OriginContained  = $originContained
+        NetworkRefreshed = $false
+        Errors           = @($errors | ForEach-Object { [string]$_ })
+    }
+}
+
 function Assert-HarnessWorkspaceExecution {
     [CmdletBinding()]
     param(
@@ -1057,6 +1150,11 @@ function Assert-HarnessWorkspaceExecution {
             throw "The current shell belongs to workspace '$($callerWorkspace[0])' but the command targets '$($status.ProjectRoot)'."
         }
     }
+    $baseline = Get-HarnessAngelscriptMainBaselineStatus -ProjectRoot $status.ProjectRoot -ParentBranch $status.Identity.Branch
+    if (-not $baseline.Aligned) {
+        throw "AngelScript main baseline validation failed: $($baseline.Errors -join '; ')"
+    }
+    $status | Add-Member -NotePropertyName AngelscriptMainBaseline -NotePropertyValue $baseline -Force
     return $status
 }
 
@@ -1234,6 +1332,7 @@ function Get-HarnessWorkspaceStatus {
     $result.Changes = $dirty
     $result.IgnoredFiles = $ignoredFiles
     $result.Submodules = @($submodules | ForEach-Object { $_ })
+    $result.AngelscriptMainBaseline = Get-HarnessAngelscriptMainBaselineStatus -ProjectRoot $root -ParentBranch $identity.Branch
     return [pscustomobject]$result
 }
 

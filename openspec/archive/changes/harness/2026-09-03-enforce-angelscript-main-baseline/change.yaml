@@ -1,0 +1,20 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_36d18110-583f-46a2-a0d0-64b8b70031b8
+  id: harness/enforce-angelscript-main-baseline
+  title: Enforce the AngelScript main baseline
+  description: Advance the parent gitlink to the integrated CanonicalAST main tip and make Harness reject main-workspace execution when the AngelScript checkout is behind its known main baseline.
+workflow: angelscript
+created_at: 2026-09-03T18:25:09Z
+goal: Keep the primary main workspace pinned to the latest known Plugins/Angelscript main baseline and prove the integrated CanonicalAST editor build succeeds.
+affected_areas:
+- Harness
+- Workspace
+- Unreal
+- Plugins/Angelscript
+archived_at: 2026-09-03T18:37:52Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The integrated AngelScript local main tip is selected, full and incremental UE 5.8 builds pass, the primary-main Harness guard passes TDD and complete Harness gates, durable workspace behavior is synchronized, and no unresolved issue or review remains.

@@ -229,6 +229,78 @@ Profile=fixture
     Assert-False ($traceText -match '(?m)built-in: git status(?:\s|$)') 'fast status never invokes git status'
     Assert-False ($traceText -match '(?m)built-in: git submodule(?:\s|$)') 'fast status never recursively inspects submodules'
 
+    $baselineSourceRoot = Join-Path $fixtureRoot 'angelscript-main-source'
+    $baselineParentRoot = Join-Path $fixtureRoot 'angelscript-main-parent'
+    Initialize-TestRepository -Path $baselineSourceRoot
+    [System.IO.File]::WriteAllText((Join-Path $baselineSourceRoot 'plugin.txt'), "base`n")
+    Invoke-TestGit -Repository $baselineSourceRoot -Arguments @('add', 'plugin.txt') | Out-Null
+    Invoke-TestGit -Repository $baselineSourceRoot -Arguments @('commit', '-m', 'plugin base') | Out-Null
+    [System.IO.File]::AppendAllText((Join-Path $baselineSourceRoot 'plugin.txt'), "integrated main`n")
+    Invoke-TestGit -Repository $baselineSourceRoot -Arguments @('commit', '-am', 'plugin integrated main') | Out-Null
+
+    Initialize-TestRepository -Path $baselineParentRoot
+    [System.IO.File]::WriteAllText((Join-Path $baselineParentRoot '.gitignore'), "AgentConfig.ini`n")
+    [System.IO.File]::WriteAllText((Join-Path $baselineParentRoot 'Baseline.uproject'), "{}`n")
+    Invoke-TestGit -Repository $baselineParentRoot -Arguments @('add', '.gitignore', 'Baseline.uproject') | Out-Null
+    Invoke-TestGit -Repository $baselineParentRoot -Arguments @('commit', '-m', 'baseline parent') | Out-Null
+    Invoke-TestGit -Repository $baselineParentRoot -Arguments @('-c', 'protocol.file.allow=always', 'submodule', 'add', '--name', 'Angelscript', $baselineSourceRoot, 'Plugins/Angelscript') | Out-Null
+    Invoke-TestGit -Repository $baselineParentRoot -Arguments @('commit', '-am', 'add angelscript plugin') | Out-Null
+    [void](Initialize-HarnessWorkspace -ProjectRoot $baselineParentRoot)
+
+    $baselinePluginRoot = Join-Path $baselineParentRoot 'Plugins\Angelscript'
+    $savedBaselineSession = @{}
+    foreach ($name in @('HARNESS_WORKSPACE_ROOT', 'HARNESS_PRIMARY_ROOT', 'HARNESS_GIT_COMMON_DIR')) {
+        $savedBaselineSession[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+        [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+    }
+    try {
+        $alignedStatus = Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed
+        Assert-True ('AngelscriptMainBaseline' -in $alignedStatus.PSObject.Properties.Name) 'detailed status exposes the AngelScript main baseline'
+        Assert-True $alignedStatus.AngelscriptMainBaseline.Applicable 'the parent main branch activates the baseline check'
+        Assert-True $alignedStatus.AngelscriptMainBaseline.Aligned 'an attached plugin main tip is aligned'
+        Assert-Equal 'LocalMain' $alignedStatus.AngelscriptMainBaseline.BaselineSource 'local main is the preferred baseline'
+        [void](Assert-HarnessWorkspaceExecution -ProjectRoot $baselineParentRoot -SelectedWorkspaceRoot $baselineParentRoot -CallerPath $baselineParentRoot)
+
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('checkout', '--detach', 'main') | Out-Null
+        Assert-True (Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed).AngelscriptMainBaseline.Aligned 'detached checkout at the main tip remains aligned by commit identity'
+
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('checkout', '--detach', 'HEAD~1') | Out-Null
+        $staleStatus = Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed
+        Assert-False $staleStatus.AngelscriptMainBaseline.Aligned 'an intermediate plugin commit is not aligned to main'
+        Assert-ThrowsMatch {
+            Assert-HarnessWorkspaceExecution -ProjectRoot $baselineParentRoot -SelectedWorkspaceRoot $baselineParentRoot -CallerPath $baselineParentRoot | Out-Null
+        } 'Plugins/Angelscript.*HEAD.*main baseline' 'execution rejects an intermediate plugin commit on parent main'
+
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('checkout', '--detach', 'main') | Out-Null
+        [System.IO.File]::AppendAllText((Join-Path $baselineSourceRoot 'plugin.txt'), "remote newer`n")
+        Invoke-TestGit -Repository $baselineSourceRoot -Arguments @('commit', '-am', 'remote main advances') | Out-Null
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('fetch', 'origin', 'main:refs/remotes/origin/main') | Out-Null
+        $remoteAheadStatus = Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed
+        Assert-False $remoteAheadStatus.AngelscriptMainBaseline.Aligned 'a fetched origin/main ahead of local main is not aligned'
+        Assert-ThrowsMatch {
+            Assert-HarnessWorkspaceExecution -ProjectRoot $baselineParentRoot -SelectedWorkspaceRoot $baselineParentRoot -CallerPath $baselineParentRoot | Out-Null
+        } 'origin/main.*not contained|local main.*behind' 'execution rejects local main when the fetched remote is ahead'
+
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('update-ref', '-d', 'refs/heads/main') | Out-Null
+        Invoke-TestGit -Repository $baselinePluginRoot -Arguments @('update-ref', '-d', 'refs/remotes/origin/main') | Out-Null
+        $missingRefsStatus = Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed
+        Assert-False $missingRefsStatus.AngelscriptMainBaseline.Aligned 'main execution is not aligned without any known main ref'
+        Assert-ThrowsMatch {
+            Assert-HarnessWorkspaceExecution -ProjectRoot $baselineParentRoot -SelectedWorkspaceRoot $baselineParentRoot -CallerPath $baselineParentRoot | Out-Null
+        } 'main ref|baseline' 'execution rejects a primary main checkout with no known plugin main ref'
+
+        Invoke-TestGit -Repository $baselineParentRoot -Arguments @('checkout', '-b', 'feature/plugin-work') | Out-Null
+        $featureStatus = Get-HarnessWorkspaceStatus -ProjectRoot $baselineParentRoot -Detailed
+        Assert-False $featureStatus.AngelscriptMainBaseline.Applicable 'a non-main parent branch is exempt from the primary baseline'
+        Assert-True $featureStatus.AngelscriptMainBaseline.Aligned 'the non-main exemption does not block feature execution'
+        [void](Assert-HarnessWorkspaceExecution -ProjectRoot $baselineParentRoot -SelectedWorkspaceRoot $baselineParentRoot -CallerPath $baselineParentRoot)
+    }
+    finally {
+        foreach ($name in $savedBaselineSession.Keys) {
+            [Environment]::SetEnvironmentVariable($name, $savedBaselineSession[$name], 'Process')
+        }
+    }
+
     [System.IO.File]::WriteAllText((Join-Path $externalRoot 'dirty.txt'), "dirty`n")
     $detailedStatus = Get-HarnessWorkspaceStatus -ProjectRoot $externalRoot -Detailed
     Assert-Equal 'Detailed' $detailedStatus.DetailLevel 'Detailed opts into the expensive tier'
