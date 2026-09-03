@@ -1,11 +1,13 @@
 ---
 name: visual-explain
-description: Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
+description: Proactively clarify non-trivial relationships, workflows, state, layout, or decisions with concise diagrams, code-shape sketches, and focused HTML artifacts.
 ---
 
 ## guidance
 
 - Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
+- Trigger proactively when the explanation contains three or more important relationships or mappings, dependent branches, a multi-step sequence or state transition, hierarchy or layout, or a decision structure that is materially easier to scan than prose. Also trigger when the user explicitly asks to visualize or compare.
+- Do not add a visual for a single fact, a trivial one-step action, a simple edit, or information already clear in a short paragraph or list. Prefer a lightweight inline text diagram; create a focused HTML artifact only when exploration, navigation, interaction, or export materially helps.
 - Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
 - You may use one visual, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user. Treat every example as a shape hint, not a fill-in-the-blanks form.
 - A proven pairing for walking through a function or class: a call tree for navigation plus a simplified-code excerpt for depth — the tree shows where, the excerpt shows how.

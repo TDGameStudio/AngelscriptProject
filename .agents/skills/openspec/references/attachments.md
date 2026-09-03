@@ -30,29 +30,29 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 | Event | Record | Boundary |
 |---|---|---|
-| Incident, Final, or External fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
+| Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
 | Material investigated technical problem | `implementation/` | One shared root cause and repair lifecycle; never a final summary or second task list. |
 | Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
 | Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
-| Reusable learning candidate | `knowledges/` | Change-local evidence until capability content is materialized for the last applicable Review and admitted by its disposition. |
+| Reusable learning candidate | `knowledges/` | Change-local evidence until verification establishes whether it should be promoted, superseded, or retired. |
 | Reusable helper | `scripts/` | One purpose with usage and dependencies in the header. |
 | Benchmark, matrix, or trimmed output | `data/` | Text-first aggregate with source/run provenance. |
 
 ## Reviews
 
 - Filename: `reviews/review-YYYYMMDD-HHmmss-<theme>-<reviewer>.md`.
-- New records declare `review_schema: review-v2`, `review_kind: incident | final | external`, `requested_by`, actual `assigned_at` / `reviewed_at` / `closed_at` lifecycle times, immutable `snapshot_ref`, `snapshot_sha256`, and verdict.
+- New records declare `review_schema: review-v2`, `review_kind: incident | final | external`, `requested_by: user | external-agent`, actual `assigned_at` / `reviewed_at` / `closed_at` lifecycle times, immutable `snapshot_ref`, `snapshot_sha256`, and verdict. Historical `requested_by: hardness` remains readable but is not written for new Reviews.
 - Review state: `open | closed | superseded`.
 - Finding state: `open | resolved | rejected | deferred`.
 - Each finding keeps its original text and records severity, fixed snapshot, evidence, affected requirement/tasks, disposition, appended resolution, and verification evidence.
-- Incident Review is exceptional and requires demonstrated major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion evidence. Routine slices and local defects do not trigger it.
-- Final Review runs once after every substantive deliverable, planned capability-knowledge file, verification result, and closure input reaches scope freeze for broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact. Verified small low-impact work records `Final Review: not required` with rationale and creates no placeholder Review. Diff size alone does not decide impact. A post-assignment deliverable-content change invalidates final-gate coverage; Review/Task/INDEX lifecycle bookkeeping and deterministic archive metadata or move do not. Batch late semantic changes and request one incremental Final Review after the next freeze.
-- A user or another agent may create one unique External Review file at any time. Hardness indexes and triages it at the nearest safe boundary. An unbound report remains open input until its snapshot is reproduced or it is superseded with rationale.
-- Dispatch fixed-snapshot Review asynchronously when a reviewer subagent is available. The main thread may continue disjoint work, but it cannot promote knowledge, close, archive, integrate, or claim completion before the applicable gate closes.
+- Create Review records only after an explicit request from the user or an external agent. Hardness never auto-starts Incident or Final Review based on risk, impact, diff size, or completion state.
+- Incident, Final, and External remain `review-v2` report kinds selected by the requester; they are classifications, not automatic lifecycle gates.
+- Bind every Review to an immutable, reproducible snapshot. An unbound external report remains open input until its snapshot is reproduced or it is superseded with rationale.
+- A Review may run inline or asynchronously. Async is optional. The main thread may continue disjoint work, but cannot close or archive the reviewed work before its Review lifecycle resolves.
 - A reviewer may edit only its unique Review file. It may not edit code, tasks, design, INDEX, implementation, replans, or existing Reviews.
-- Review files have no line limit. Retain detailed findings, evidence, impact, resolution conditions, disposition, repair evidence, and re-review history; a per-file manifest is optional rather than mandatory.
-- A Review Gate is complete only after triage, resolution, re-review, and review closure. A delivered report is not a completed gate.
-- Completed archive requires either one closed approving Final Review for a broad-impact current final snapshot or a recorded low-impact `Final Review: not required` disposition. Every existing Review is closed/superseded and no Critical or Required finding is open/deferred. Advisory findings may defer with an explicit follow-up.
+- Review files have no line limit. Retain a detailed report with findings, evidence, impact, resolution conditions, disposition, repair evidence, and re-review history; a per-file manifest is optional rather than mandatory.
+- A delivered report alone does not resolve its lifecycle. Triage each finding, fix local defects, and Replan only when evidence invalidates accepted planning truth.
+- Verified work may close and archive directly with no Review record or not-required classification. If Review files exist, every one is closed or superseded and no Critical or Required finding is open or deferred. Advisory findings may defer with an explicit follow-up.
 
 ## Implementation issues and talks
 
@@ -67,7 +67,7 @@ Pre-Change Explore remains read-only. Its accepted handoff may classify decision
 |---|---|---|
 | Settled requirement, scope, architecture, or executable boundary | proposal/spec/design/tasks | Canonical current truth; do not leave it only in an attachment. |
 | Non-obvious decision, dropped alternative, flip condition, or decision-critical visualization | `talks/talk-YYYYMMDD-HHmmss-<theme>.md` | Preserve only when the rationale prevents likely re-decision. |
-| Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and Review. |
+| Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and an explicit disposition. |
 | Temporary question-round state, transcript prose, or one-off visual | discard | No durable decision or reuse value. |
 
 A carryover talk uses concise plain headings such as Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual, and Sources. A change-local knowledge candidate uses Reusable Insight, Evidence, Boundaries, Application, and Sources. Embed the smallest useful Markdown table or text diagram in the owning file; a separate visual file is allowed only when it is itself indexed exactly once.
@@ -99,4 +99,4 @@ review or verification evidence
 - `scripts/`: one reusable purpose per script, with usage and dependencies in its header.
 - `data/`: trimmed text-first evidence. Files over 100 KB or 1000 lines must be reduced with source run ID, trim rationale, and original line ranges.
 
-Before archive, trim data, decide knowledge promotion, close review/issue state, record spec-sync disposition, and provide the requested closure manifest. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.
+Before archive, trim data, decide knowledge promotion, close any existing Review and issue state, record spec-sync disposition, and provide the requested closure manifest. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.

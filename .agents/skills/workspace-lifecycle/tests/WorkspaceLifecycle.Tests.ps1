@@ -9,6 +9,11 @@ function Assert-True {
     if (-not $Condition) { throw "Assertion failed: $Message" }
 }
 
+function Assert-False {
+    param([bool]$Condition, [string]$Message)
+    if ($Condition) { throw "Assertion failed: $Message" }
+}
+
 function Assert-Equal {
     param($Expected, $Actual, [string]$Message)
     if ($Expected -ne $Actual) { throw "Assertion failed: $Message (expected '$Expected', actual '$Actual')" }
@@ -47,23 +52,49 @@ function Initialize-TestRepository {
 
 $workspaceManifest = Join-Path $PSScriptRoot '..\scripts\WorkspaceLifecycle.psd1'
 $workspaceModuleFile = Join-Path $PSScriptRoot '..\scripts\WorkspaceLifecycle.psm1'
-$gitManifest = Join-Path $PSScriptRoot '..\..\git-operations\scripts\GitOperations.psd1'
 $tokens = $null
 $parseErrors = $null
 [void][System.Management.Automation.Language.Parser]::ParseFile($workspaceModuleFile, [ref]$tokens, [ref]$parseErrors)
 Assert-Equal 0 @($parseErrors).Count 'WorkspaceLifecycle.psm1 must parse without errors'
 Import-Module $workspaceManifest -Force
-Import-Module $gitManifest -Force
 $workspaceModule = Get-Module WorkspaceLifecycle
+
+foreach ($commandName in @(
+    'Get-HardnessWorkspaceContext',
+    'Get-HardnessWorkspaceList',
+    'Get-HardnessWorkspaceStatus',
+    'Initialize-HardnessWorkspace',
+    'Test-HardnessWorkspace',
+    'Get-HardnessWorkspaceConfigStatus',
+    'Get-HardnessWorkspaceConfigValue',
+    'Set-HardnessWorkspaceConfigValue',
+    'Set-HardnessWorkspaceSession',
+    'Assert-HardnessWorkspaceExecution'
+)) {
+    $command = Get-Command $commandName -ErrorAction Stop
+    $hasWorkspaceRoot = $command.Parameters.ContainsKey('WorkspaceRoot')
+    if (-not $hasWorkspaceRoot -and $command.Parameters.ContainsKey('ProjectRoot')) {
+        $aliases = @($command.Parameters['ProjectRoot'].Aliases)
+        $hasWorkspaceRoot = 'WorkspaceRoot' -in $aliases
+    }
+    Assert-True $hasWorkspaceRoot "$commandName accepts the common WorkspaceRoot contract"
+}
 
 $fixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-workspace-{0}" -f [guid]::NewGuid().ToString('N'))
 $childRoot = Join-Path $fixtureRoot 'child'
 $parentRoot = Join-Path $fixtureRoot 'parent'
-$savedSession = @{
-    Root = [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process')
-    Primary = [Environment]::GetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', 'Process')
-    Mode = [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', 'Process')
-    Goal = [Environment]::GetEnvironmentVariable('HARDNESS_GOAL_NAME', 'Process')
+$externalRoot = Join-Path $fixtureRoot 'heterogeneous\custom-location'
+$refreshRoot = Join-Path $fixtureRoot 'heterogeneous\refresh-location'
+$sessionNames = @(
+    'HARDNESS_WORKSPACE_ROOT',
+    'HARDNESS_PRIMARY_ROOT',
+    'HARDNESS_GIT_COMMON_DIR',
+    'HARDNESS_WORKSPACE_MODE',
+    'HARDNESS_GOAL_NAME'
+)
+$savedSession = @{}
+foreach ($name in $sessionNames) {
+    $savedSession[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 
 try {
@@ -82,130 +113,155 @@ try {
     Invoke-TestGit -Repository $parentRoot -Arguments @('commit', '-am', 'add child') | Out-Null
 
     $primaryProjectFile = [System.IO.Path]::GetFullPath((Join-Path $parentRoot 'Fixture.uproject'))
-    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'AgentConfig.ini'), "; preserve this comment`n[Paths]`nEngineRoot=C:\FixtureEngine`nProjectFile=$primaryProjectFile`n`n[LocalAgent]`nProfile=fixture`n")
-    [void](Initialize-HardnessWorkspace -ProjectRoot $parentRoot)
-    $primaryConfig = Get-HardnessWorkspaceConfigStatus -ProjectRoot $parentRoot
-    Assert-True $primaryConfig.IdentityValid 'bootstrap stamps the primary workspace identity'
-    Assert-Equal 'Primary' $primaryConfig.Identity.WorkspaceKind 'primary workspace is identified explicitly'
+    $commonDirRaw = ((Invoke-TestGit -Repository $parentRoot -Arguments @('rev-parse', '--git-common-dir')) | Select-Object -Last 1).Trim()
+    $commonDir = if ([System.IO.Path]::IsPathRooted($commonDirRaw)) { [System.IO.Path]::GetFullPath($commonDirRaw) } else { [System.IO.Path]::GetFullPath((Join-Path $parentRoot $commonDirRaw)) }
+    $legacyConfig = @"
+; preserve this comment
+[Paths]
+EngineRoot=C:\FixtureEngine
+ProjectFile=C:\Stale\Fixture.uproject
 
-    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'primary-user-work.txt'), "must stay uncommitted`n")
-    Assert-ThrowsMatch {
-        Complete-HardnessGitCommit -ProjectRoot $parentRoot -Mode Goal -GoalName fixture-goal -AllChanges -CommitMessage 'must refuse primary' -WhatIf | Out-Null
-    } 'primary|Goal worktree' 'Goal commit refuses the primary checkout even under WhatIf'
-    [System.IO.File]::Delete((Join-Path $parentRoot 'primary-user-work.txt'))
+[References]
+HazelightAngelscriptEngineRoot=C:\Obsolete
+KeepReference=C:\Keep
+
+[Hardness]
+SchemaVersion=1
+WorkspaceKind=Primary
+PrimaryRoot=$parentRoot
+WorkspaceRoot=$parentRoot
+GitCommonDir=$commonDir
+GoalName=
+
+[LocalAgent]
+Profile=fixture
+"@
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'AgentConfig.ini'), $legacyConfig)
+
+    $bootstrap = Initialize-HardnessWorkspace -ProjectRoot $parentRoot
+    $primaryConfig = Get-HardnessWorkspaceConfigStatus -ProjectRoot $parentRoot
+    Assert-True $primaryConfig.IdentityValid 'bootstrap stamps exact schema-v2 workspace identity'
+    Assert-Equal '2' $primaryConfig.Identity.SchemaVersion 'bootstrap upgrades the managed schema to v2'
+    Assert-Equal $primaryProjectFile (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section Paths -Key ProjectFile).Value 'bootstrap rebinds ProjectFile to the selected root'
+    Assert-False (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section Hardness -Key WorkspaceKind).Exists 'migration removes WorkspaceKind'
+    Assert-False (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section Hardness -Key GoalName).Exists 'migration removes GoalName'
+    Assert-False (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section References -Key HazelightAngelscriptEngineRoot).Exists 'migration removes the obsolete Hazelight path'
+    Assert-Equal 'C:\Keep' (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section References -Key KeepReference).Value 'migration preserves unrelated reference data'
+    Assert-Equal 'fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $parentRoot -Section LocalAgent -Key Profile).Value 'migration preserves local agent data'
+    Assert-True ((Get-Content -LiteralPath (Join-Path $parentRoot 'AgentConfig.ini') -Raw).Contains('; preserve this comment')) 'migration preserves comments'
+    Assert-True $bootstrap.Configuration.Identity.Managed 'bootstrap returns a managed Git-derived identity'
+
+    $harnessRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
+    $primaryContext = Get-HardnessWorkspaceContext -ProjectRoot $parentRoot
+    foreach ($field in @('SchemaVersion', 'HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'WorktreeName', 'Branch', 'Head', 'Managed')) {
+        Assert-True ($field -in $primaryContext.PSObject.Properties.Name) "context exposes $field"
+    }
+    Assert-Equal $harnessRoot $primaryContext.HarnessRoot 'HarnessRoot identifies the checkout supplying the loaded module'
+    Assert-Equal $parentRoot $primaryContext.WorkspaceRoot 'WorkspaceRoot identifies the selected command target'
+    Assert-Equal 'Primary' $primaryContext.Topology 'the canonical checkout has Primary topology'
+    Assert-Equal '' $primaryContext.WorktreeName 'the canonical checkout has no linked-worktree name'
+    Assert-True $primaryContext.Managed 'the bootstrapped primary checkout is managed'
+
+    $created = New-HardnessWorkspace -Name 'fixture-workspace' -RepositoryRoot $parentRoot
+    $worktreeRoot = Join-Path $parentRoot '.worktrees\fixture-workspace'
+    Assert-Equal $worktreeRoot $created.WorktreeRoot 'new creates under the canonical local container'
+    Assert-Equal 'fixture-workspace' $created.Branch 'the default branch is exactly Name'
+    Assert-Equal 'fixture-workspace' (((Invoke-TestGit -Repository $worktreeRoot -Arguments @('branch', '--show-current')) | Select-Object -Last 1).Trim()) 'Git receives the exact default branch'
+    Assert-False (Test-Path -LiteralPath (Join-Path $worktreeRoot 'openspec\changes\fixture-workspace')) 'creation does not scaffold workflow records'
+
+    $linkedContext = Get-HardnessWorkspaceContext -ProjectRoot $worktreeRoot
+    Assert-Equal 'Worktree' $linkedContext.Topology 'a linked checkout has Worktree topology'
+    Assert-Equal 'fixture-workspace' $linkedContext.WorktreeName 'the worktree name is derived from Git registration metadata'
+    Assert-True $linkedContext.Managed 'new bootstraps a managed local configuration'
+    Assert-Equal ([System.IO.Path]::GetFullPath((Join-Path $worktreeRoot 'Fixture.uproject'))) (Get-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section Paths -Key ProjectFile).Value 'ProjectFile is rebound in a linked checkout'
+    Assert-Equal 'fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section LocalAgent -Key Profile).Value 'shared local values are copied from the primary checkout'
+
+    [void](New-Item -ItemType Directory -Path (Split-Path -Parent $externalRoot) -Force)
+    Invoke-TestGit -Repository $parentRoot -Arguments @('worktree', 'add', '-b', 'topic/no-prefix', $externalRoot, 'HEAD') | Out-Null
+    $unmanagedContext = Get-HardnessWorkspaceContext -ProjectRoot $externalRoot
+    Assert-Equal 'Worktree' $unmanagedContext.Topology 'a heterogeneous registered checkout is accepted'
+    Assert-Equal 'custom-location' $unmanagedContext.WorktreeName 'heterogeneous name comes from registered worktree metadata'
+    Assert-Equal 'topic/no-prefix' $unmanagedContext.Branch 'heterogeneous branch naming is preserved'
+    Assert-False $unmanagedContext.Managed 'a registered checkout is valid before explicit bootstrap'
+    [void](Initialize-HardnessWorkspace -ProjectRoot $externalRoot)
+    $managedExternal = Get-HardnessWorkspaceContext -ProjectRoot $externalRoot -Refresh
+    Assert-True $managedExternal.Managed 'bootstrap manages a heterogeneous worktree in place'
+    Assert-Equal $externalRoot $managedExternal.WorkspaceRoot 'bootstrap does not relocate heterogeneous worktrees'
+    Assert-Equal 'topic/no-prefix' $managedExternal.Branch 'bootstrap does not rename heterogeneous branches'
+
+    $workspaces = @(Get-HardnessWorkspaceList -ProjectRoot $externalRoot)
+    Assert-Equal 3 $workspaces.Count 'workspace.list returns every registered checkout'
+    Assert-Equal 1 @($workspaces | Where-Object { $_.Topology -eq 'Primary' }).Count 'workspace.list identifies one primary checkout'
+    Assert-Equal 2 @($workspaces | Where-Object { $_.Topology -eq 'Worktree' }).Count 'workspace.list identifies linked checkouts without path policy'
+    Assert-Equal 1 @($workspaces | Where-Object { $_.WorkspaceRoot -eq $externalRoot -and $_.Managed }).Count 'workspace.list reports live managed state'
+
+    [void](New-Item -ItemType Directory -Path (Split-Path -Parent $refreshRoot) -Force)
+    Invoke-TestGit -Repository $parentRoot -Arguments @('worktree', 'add', '-b', 'refresh-visible', $refreshRoot, 'HEAD') | Out-Null
+    $refreshed = @(Get-HardnessWorkspaceList -ProjectRoot $parentRoot -Refresh)
+    Assert-Equal 4 $refreshed.Count 'explicit refresh sees newly registered worktrees'
+    Assert-Equal 1 @($refreshed | Where-Object WorkspaceRoot -eq $refreshRoot).Count 'refresh returns the newly registered root'
+
+    $gitTrace = Join-Path $fixtureRoot 'fast-status.git-trace'
+    $oldTrace = $env:GIT_TRACE
+    $env:GIT_TRACE = $gitTrace
+    try { $fastStatus = Get-HardnessWorkspaceStatus -ProjectRoot $externalRoot }
+    finally { $env:GIT_TRACE = $oldTrace }
+    Assert-Equal 'Fast' $fastStatus.DetailLevel 'status defaults to the fast tier'
+    Assert-False ('Dirty' -in $fastStatus.PSObject.Properties.Name) 'fast status does not pretend to contain dirty-state diagnostics'
+    Assert-False ('Submodules' -in $fastStatus.PSObject.Properties.Name) 'fast status does not contain submodule diagnostics'
+    $traceText = if (Test-Path -LiteralPath $gitTrace) { Get-Content -LiteralPath $gitTrace -Raw } else { '' }
+    Assert-False ($traceText -match '(?m)built-in: git status(?:\s|$)') 'fast status never invokes git status'
+    Assert-False ($traceText -match '(?m)built-in: git submodule(?:\s|$)') 'fast status never recursively inspects submodules'
+
+    [System.IO.File]::WriteAllText((Join-Path $externalRoot 'dirty.txt'), "dirty`n")
+    $detailedStatus = Get-HardnessWorkspaceStatus -ProjectRoot $externalRoot -Detailed
+    Assert-Equal 'Detailed' $detailedStatus.DetailLevel 'Detailed opts into the expensive tier'
+    Assert-True $detailedStatus.Dirty 'detailed status reports parent dirty state'
+    Assert-True @($detailedStatus.Changes).Count -gt 0 'detailed status includes exact parent changes'
+    Assert-True @($detailedStatus.Submodules).Count -eq 1 'detailed status includes top-level submodule diagnostics'
+    Assert-True @($detailedStatus.IgnoredFiles).Count -gt 0 'detailed status inventories ignored workspace payload'
+    [System.IO.File]::Delete((Join-Path $externalRoot 'dirty.txt'))
+
+    foreach ($legacyName in @('HARDNESS_WORKSPACE_MODE', 'HARDNESS_GOAL_NAME')) {
+        [Environment]::SetEnvironmentVariable($legacyName, 'legacy', 'Process')
+    }
+    $activation = Set-HardnessWorkspaceSession -ProjectRoot $externalRoot
+    Assert-Equal $externalRoot $activation.WorkspaceRoot 'selection binds the exact registered workspace'
+    Assert-Equal $parentRoot ([Environment]::GetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', 'Process')) 'selection publishes the primary root'
+    Assert-Equal $managedExternal.GitCommonDir ([Environment]::GetEnvironmentVariable('HARDNESS_GIT_COMMON_DIR', 'Process')) 'selection publishes the common Git directory'
+    Assert-True ([string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', 'Process'))) 'selection clears legacy mode state'
+    Assert-True ([string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable('HARDNESS_GOAL_NAME', 'Process'))) 'selection clears legacy goal-name state'
+    Assert-False ('Mode' -in $activation.PSObject.Properties.Name) 'selection result has no repository mode'
+    Assert-False ('GoalName' -in $activation.PSObject.Properties.Name) 'selection result has no goal identity'
+    Assert-False ((Get-Command Set-HardnessWorkspaceSession).Parameters.ContainsKey('Mode')) 'selection API has no Mode parameter'
+    Assert-False ((Get-Command Set-HardnessWorkspaceSession).Parameters.ContainsKey('GoalName')) 'selection API has no GoalName parameter'
+    [void](Assert-HardnessWorkspaceExecution -ProjectRoot $externalRoot -CallerPath $externalRoot)
+    Assert-ThrowsMatch { Assert-HardnessWorkspaceExecution -ProjectRoot $parentRoot -CallerPath $externalRoot | Out-Null } 'selected workspace|targets' 'a selected linked workspace cannot accidentally target primary'
+
+    [void](Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Profile -Value 'external-fixture')
+    Assert-Equal 'external-fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Profile).Value 'controlled config mutation updates non-managed data'
+    Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section Hardness -Key WorkspaceRoot -Value other | Out-Null } 'managed|cannot be set' 'managed identity cannot be overwritten'
+    Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $externalRoot -Section LocalAgent -Key Notes -Value "line1`nline2" | Out-Null } 'single-line|NUL' 'multiline config injection is rejected'
 
     $gitmodulesPath = Join-Path $parentRoot '.gitmodules'
     $validGitmodules = [System.IO.File]::ReadAllText($gitmodulesPath)
     [System.IO.File]::WriteAllText($gitmodulesPath, "[submodule `"broken`"`n  path = Modules/Child`n")
-    Assert-ThrowsMatch { Get-HardnessWorkspaceStatus -ProjectRoot $parentRoot | Out-Null } 'gitmodules|config|failed|parse' 'malformed .gitmodules is an error'
+    Assert-Equal 'Fast' (Get-HardnessWorkspaceStatus -ProjectRoot $parentRoot).DetailLevel 'fast status does not parse submodule configuration'
+    Assert-ThrowsMatch { Get-HardnessWorkspaceStatus -ProjectRoot $parentRoot -Detailed | Out-Null } 'gitmodules|config|failed|parse' 'detailed status reports malformed submodule configuration'
     [System.IO.File]::WriteAllText($gitmodulesPath, $validGitmodules)
 
     $submoduleRecords = @(& $workspaceModule { param($root) Get-WorkspaceSubmodules -Repository $root } $parentRoot)
-    Assert-Equal 'sdk' $submoduleRecords[0].Name 'submodule parser preserves the logical name'
-    Assert-Equal 'Modules/Child' $submoduleRecords[0].Path 'submodule parser preserves the checkout path'
+    Assert-Equal 'sdk' $submoduleRecords[0].Name 'submodule parser preserves its logical name'
+    Assert-Equal 'Modules/Child' $submoduleRecords[0].Path 'submodule parser preserves its checkout path'
     $moduleStore = & $workspaceModule { param($root) Get-WorkspaceSubmoduleStore -Repository $root -Name 'sdk' } $parentRoot
     Assert-True ($moduleStore.EndsWith((Join-Path 'modules' 'sdk'), [System.StringComparison]::OrdinalIgnoreCase)) 'fallback storage is keyed by logical name'
-
-    $created = New-HardnessWorkspace -Name 'fixture-goal' -Branch 'goal/fixture-goal' -RepositoryRoot $parentRoot
-    $worktreeRoot = Join-Path $parentRoot '.worktrees\fixture-goal'
-    Assert-Equal $worktreeRoot $created.WorktreeRoot 'workspace is created in the canonical local directory'
-    Assert-True (-not (Test-Path -LiteralPath (Join-Path $worktreeRoot 'openspec\changes\fixture-goal'))) 'workspace creation does not scaffold OpenSpec records'
-
-    $goalConfig = Get-HardnessWorkspaceConfigStatus -ProjectRoot $worktreeRoot
-    Assert-True $goalConfig.IdentityValid 'new workspace receives a valid local identity'
-    Assert-Equal 'Goal' $goalConfig.Identity.WorkspaceKind 'new workspace is identified as Goal'
-    Assert-Equal 'fixture-goal' $goalConfig.Identity.GoalName 'Goal name is persisted in managed metadata'
-    Assert-Equal ([System.IO.Path]::GetFullPath((Join-Path $worktreeRoot 'Fixture.uproject'))) (Get-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section Paths -Key ProjectFile).Value 'ProjectFile is rebound to the Goal workspace'
-    Assert-Equal 'fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section LocalAgent -Key Profile).Value 'local settings are copied from the primary workspace'
-    Assert-True ((Get-Content -LiteralPath (Join-Path $worktreeRoot 'AgentConfig.ini') -Raw).Contains('; preserve this comment')) 'configuration comments survive managed updates'
-    [void](Set-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section LocalAgent -Key Profile -Value 'goal-fixture')
-    Assert-Equal 'goal-fixture' (Get-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section LocalAgent -Key Profile).Value 'controlled config set updates a non-reserved key'
-    Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section Hardness -Key GoalName -Value other | Out-Null } 'managed|cannot be set' 'managed identity fields cannot be overwritten'
-    Assert-ThrowsMatch { Set-HardnessWorkspaceConfigValue -ProjectRoot $worktreeRoot -Section LocalAgent -Key Notes -Value "line1`nline2" | Out-Null } 'single-line|NUL' 'multiline config injection is rejected'
-
-    $sourceProjectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
-    foreach ($fixtureWorkspaceRoot in @($parentRoot, $worktreeRoot)) {
-        $fixtureModuleRoot = Join-Path $fixtureWorkspaceRoot '.agents\skills\workspace-lifecycle\scripts'
-        [void](New-Item -ItemType Directory -Path $fixtureModuleRoot -Force)
-        Copy-Item -LiteralPath (Join-Path $sourceProjectRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psm1') -Destination $fixtureModuleRoot
-        Copy-Item -LiteralPath (Join-Path $sourceProjectRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1') -Destination $fixtureModuleRoot
-    }
-    . (Join-Path $sourceProjectRoot 'Tools\Shared\UnrealCommandUtils.ps1')
-
-    $activation = Set-HardnessWorkspaceSession -ProjectRoot $worktreeRoot -Mode Goal -GoalName fixture-goal
-    Assert-Equal $worktreeRoot $activation.WorkspaceRoot 'Goal activation selects only the current process session'
-    [void](Assert-HardnessWorkspaceExecution -ProjectRoot $worktreeRoot -CallerPath $worktreeRoot)
-    Assert-ThrowsMatch { Assert-HardnessWorkspaceExecution -ProjectRoot $parentRoot -CallerPath $worktreeRoot | Out-Null } 'selected workspace|targets' 'a Goal session cannot target the primary workspace'
-    Assert-ThrowsMatch { Assert-HardnessWorkspaceExecution -ProjectRoot $worktreeRoot -SelectedWorkspaceRoot $worktreeRoot -CallerPath $parentRoot | Out-Null } 'current shell belongs|targets' 'a primary-root caller cannot target the Goal by accident'
-    Push-Location $worktreeRoot
-    try {
-        $resolvedGoalConfig = Resolve-AgentConfiguration -ProjectRoot $worktreeRoot
-        Assert-Equal ([System.IO.Path]::GetFullPath((Join-Path $worktreeRoot 'Fixture.uproject'))) $resolvedGoalConfig.ProjectFile 'shared Unreal configuration accepts the matching Goal execution without launching UE'
-        Assert-ThrowsMatch { Resolve-AgentConfiguration -ProjectRoot $parentRoot | Out-Null } 'selected workspace|targets' 'shared Unreal configuration rejects a primary launch from the Goal session before UE starts'
-        $alternateConfig = Join-Path $worktreeRoot 'AlternateAgentConfig.ini'
-        [System.IO.File]::Copy((Join-Path $worktreeRoot 'AgentConfig.ini'), $alternateConfig)
-        Assert-ThrowsMatch { Resolve-AgentConfiguration -ProjectRoot $worktreeRoot -ConfigPath $alternateConfig | Out-Null } 'Hardness-managed|ConfigPath' 'a custom config path cannot bypass managed workspace identity'
-        [System.IO.File]::Delete($alternateConfig)
-    }
-    finally { Pop-Location }
-    [void](Set-HardnessWorkspaceSession -ProjectRoot $parentRoot -Mode Current)
-    Push-Location $parentRoot
-    try {
-        $resolvedPrimaryConfig = Resolve-AgentConfiguration -ProjectRoot $parentRoot
-        Assert-Equal $primaryProjectFile $resolvedPrimaryConfig.ProjectFile 'shared Unreal configuration accepts matching Current execution without launching UE'
-    }
-    finally { Pop-Location }
-    [void](Set-HardnessWorkspaceSession -ProjectRoot $worktreeRoot -Mode Goal -GoalName fixture-goal)
-
-    $expectedChild = ((Invoke-TestGit -Repository $parentRoot -Arguments @('rev-parse', 'HEAD:Modules/Child')) | Select-Object -Last 1).Trim()
-    $actualChild = ((Invoke-TestGit -Repository (Join-Path $worktreeRoot 'Modules\Child') -Arguments @('rev-parse', 'HEAD')) | Select-Object -Last 1).Trim()
-    Assert-Equal $expectedChild $actualChild 'submodule checkout matches the exact parent gitlink'
-    $nestedPreview = New-HardnessWorkspace -Name 'nested-probe' -RepositoryRoot $worktreeRoot -WhatIf
-    Assert-Equal (Join-Path $parentRoot '.worktrees\nested-probe') $nestedPreview.WorktreeRoot 'new resolves the canonical container from a linked workspace'
-
-    $childMarker = Join-Path $worktreeRoot 'Modules\Child\marker.txt'
-    [System.IO.File]::AppendAllText($childMarker, "dirty-preserved`n")
-    [void](Initialize-HardnessWorkspace -ProjectRoot $worktreeRoot)
-    Assert-True ((Get-Content -LiteralPath $childMarker -Raw) -match 'dirty-preserved') 'bootstrap preserves dirty submodule work at the exact gitlink'
-    Assert-True (Test-HardnessWorkspace -ProjectRoot $worktreeRoot).IsValid 'dirty content does not invalidate exact gitlink identity'
-    Assert-True (-not (Test-HardnessWorkspace -ProjectRoot $worktreeRoot -RequireClean).IsValid) 'RequireClean rejects dirty submodule work'
-    Assert-ThrowsMatch { Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot | Out-Null } 'dirty' 'cleanup refuses a dirty workspace'
-
-    [System.IO.File]::WriteAllText((Join-Path $worktreeRoot 'goal.txt'), "goal result`n")
-    $worktreeCountBeforeCommit = @((Invoke-TestGit -Repository $parentRoot -Arguments @('worktree', 'list', '--porcelain')) | Where-Object { $_ -like 'worktree *' }).Count
-    $remoteRefsBeforeCommit = @((Invoke-TestGit -Repository $parentRoot -Arguments @('for-each-ref', '--format=%(refname)', 'refs/remotes/'))).Count
-    $commitResult = Complete-HardnessGitCommit -ProjectRoot $worktreeRoot -Mode Goal -GoalName fixture-goal -AllChanges -CommitMessage 'finish fixture goal' -SubmoduleCommitMessages @{ 'Modules/Child' = 'finish fixture child' }
-    Assert-Equal 2 @($commitResult.Commits).Count 'Goal commit records the dirty submodule before the parent'
-    Assert-True $commitResult.GitStateComplete 'Goal commit leaves the selected workspace clean'
-    $finishedChild = ((Invoke-TestGit -Repository (Join-Path $worktreeRoot 'Modules\Child') -Arguments @('rev-parse', 'HEAD')) | Select-Object -Last 1).Trim()
-    $recordedChild = ((Invoke-TestGit -Repository $worktreeRoot -Arguments @('rev-parse', 'HEAD:Modules/Child')) | Select-Object -Last 1).Trim()
-    Assert-Equal $finishedChild $recordedChild 'parent commit records the committed submodule gitlink'
-    Assert-True (Test-Path -LiteralPath $worktreeRoot -PathType Container) 'commit never removes the workspace'
-    Assert-Equal $worktreeCountBeforeCommit @((Invoke-TestGit -Repository $parentRoot -Arguments @('worktree', 'list', '--porcelain')) | Where-Object { $_ -like 'worktree *' }).Count 'commit does not create or remove worktrees'
-    Assert-Equal $remoteRefsBeforeCommit @((Invoke-TestGit -Repository $parentRoot -Arguments @('for-each-ref', '--format=%(refname)', 'refs/remotes/'))).Count 'commit does not publish refs'
-
-    Assert-ThrowsMatch { Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot | Out-Null } 'ignored|AgentConfig' 'cleanup refuses ignored local data without explicit discard intent'
-    [void](Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot -DiscardIgnoredFiles)
-    Assert-True (-not (Test-Path -LiteralPath $worktreeRoot)) 'explicit cleanup removes a clean registered workspace'
-    Assert-True (((Invoke-TestGit -Repository $parentRoot -Arguments @('branch', '--list', 'goal/fixture-goal')) -join "`n") -match 'goal/fixture-goal') 'workspace cleanup preserves the Goal branch'
-
-    [void](New-Item -ItemType Directory -Path $worktreeRoot)
-    Assert-ThrowsMatch { Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot | Out-Null } 'not a registered' 'unregistered empty-root recovery requires explicit cleanup intent'
-    $preview = Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot -DiscardIgnoredFiles -WhatIf
-    Assert-True (-not $preview.Removed) 'cleanup WhatIf leaves an orphan directory untouched'
-    $recovered = Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot -DiscardIgnoredFiles
-    Assert-True $recovered.Removed 'explicit cleanup can recover an empty canonical orphan'
-    Assert-True $recovered.BranchPreserved 'orphan cleanup preserves the Goal branch'
 }
 finally {
-    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', $savedSession.Root, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', $savedSession.Primary, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', $savedSession.Mode, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_GOAL_NAME', $savedSession.Goal, 'Process')
-    Remove-Module GitOperations -Force -ErrorAction SilentlyContinue
+    foreach ($name in $sessionNames) {
+        [Environment]::SetEnvironmentVariable($name, $savedSession[$name], 'Process')
+    }
     Remove-Module WorkspaceLifecycle -Force -ErrorAction SilentlyContinue
     if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }
 }
 
-[void](& (Join-Path $PSScriptRoot 'WorkspaceLifecycle.Safety.Tests.ps1'))
 Write-Output 'WorkspaceLifecycle.Tests.ps1: PASS'

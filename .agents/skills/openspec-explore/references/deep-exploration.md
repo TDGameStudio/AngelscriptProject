@@ -39,7 +39,7 @@ Use the optional [marker vocabulary](markers.md), compact Markdown tables, and s
 
 ## 5. Converge
 
-Resolve blocking engineering decisions before Change creation. Non-blocking assumptions and explicit out-of-scope questions may remain. If Current/interactive planning still contains at least three dependent user-owned choices, use [question-rounds.md](question-rounds.md); Goal mode settles in-scope technical choices autonomously.
+Resolve blocking engineering decisions before Change creation. Non-blocking assumptions and explicit out-of-scope questions may remain. If interactive planning still contains at least three dependent user-owned choices, use [question-rounds.md](question-rounds.md). During a Codex `/goal` continuation, settle in-scope technical choices autonomously; `/goal` does not create a repository mode or select a workspace.
 
 ## Decision-complete handoff
 

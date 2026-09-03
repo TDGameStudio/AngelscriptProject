@@ -63,7 +63,8 @@ function Resolve-WorkspaceRepository {
     param([string]$Path)
 
     $candidate = if ([string]::IsNullOrWhiteSpace($Path)) {
-        Get-WorkspaceRepositoryRootFromModule
+        $selected = [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process')
+        if ([string]::IsNullOrWhiteSpace($selected)) { Get-WorkspaceRepositoryRootFromModule } else { $selected }
     }
     else {
         $Path
@@ -130,6 +131,28 @@ function Assert-WorkspacePathChainSafe {
         }
         if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
             throw "Refusing $Purpose because the physical path chain contains reparse point '$candidate'."
+        }
+    }
+    return $targetPath
+}
+
+function Assert-WorkspaceExistingPathSafe {
+    param(
+        [Parameter(Mandatory = $true)][string]$Target,
+        [string]$Purpose = 'workspace operation'
+    )
+
+    $targetPath = [System.IO.Path]::GetFullPath($Target).TrimEnd('\', '/')
+    $root = [System.IO.Path]::GetPathRoot($targetPath)
+    $relative = $targetPath.Substring($root.Length).TrimStart('\', '/')
+    $current = $root
+    foreach ($segment in @($relative -split '[\\/]')) {
+        if ([string]::IsNullOrWhiteSpace($segment)) { continue }
+        $current = Join-Path $current $segment
+        $item = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
+        if ($null -eq $item) { break }
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing $Purpose because the physical path chain contains reparse point '$current'."
         }
     }
     return $targetPath
@@ -565,24 +588,184 @@ function Set-WorkspaceIniValueInternal {
     }
 }
 
+function Update-WorkspaceIniDocument {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [object[]]$Updates = @(),
+        [object[]]$Removals = @()
+    )
+
+    foreach ($operation in @($Updates) + @($Removals)) {
+        [void](Assert-WorkspaceIniName -Value ([string]$operation.Section) -Kind 'section')
+        [void](Assert-WorkspaceIniName -Value ([string]$operation.Key) -Kind 'key')
+    }
+    foreach ($update in @($Updates)) {
+        $value = [string]$update.Value
+        if ($value.Contains("`r") -or $value.Contains("`n") -or $value.Contains([char]0)) {
+            throw 'AgentConfig.ini values must be single-line text without NUL characters.'
+        }
+    }
+
+    $raw = if (Test-Path -LiteralPath $Path -PathType Leaf) { [System.IO.File]::ReadAllText($Path) } else { '' }
+    $newLine = if ($raw.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $sourceLines = @()
+    if (-not [string]::IsNullOrEmpty($raw)) {
+        $sourceLines = @([regex]::Split($raw, '\r?\n'))
+    }
+    if ($sourceLines.Count -gt 0 -and $sourceLines[-1] -eq '' -and $raw.EndsWith("`n")) {
+        $sourceLines = if ($sourceLines.Count -eq 1) { @() } else { @($sourceLines[0..($sourceLines.Count - 2)]) }
+    }
+
+    $managedKeys = @($Updates) + @($Removals)
+    $lines = New-Object System.Collections.Generic.List[string]
+    $activeSection = ''
+    foreach ($line in $sourceLines) {
+        $trimmed = $line.Trim()
+        if ($trimmed -match '^\[([^]]+)\]$') {
+            $activeSection = $matches[1].Trim()
+            $lines.Add([string]$line) | Out-Null
+            continue
+        }
+        $removeLine = $false
+        if (-not [string]::IsNullOrWhiteSpace($activeSection) -and
+            -not [string]::IsNullOrWhiteSpace($trimmed) -and
+            -not $trimmed.StartsWith(';') -and -not $trimmed.StartsWith('#')) {
+            $separator = $line.IndexOf('=')
+            if ($separator -ge 0) {
+                $candidateKey = $line.Substring(0, $separator).Trim()
+                foreach ($managedKey in $managedKeys) {
+                    if ($activeSection.Equals([string]$managedKey.Section, [System.StringComparison]::OrdinalIgnoreCase) -and
+                        $candidateKey.Equals([string]$managedKey.Key, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $removeLine = $true
+                        break
+                    }
+                }
+            }
+        }
+        if (-not $removeLine) { $lines.Add([string]$line) | Out-Null }
+    }
+
+    foreach ($update in @($Updates)) {
+        $section = [string]$update.Section
+        $key = [string]$update.Key
+        $value = [string]$update.Value
+        $sectionStart = -1
+        $sectionEnd = $lines.Count
+        for ($index = 0; $index -lt $lines.Count; $index++) {
+            $trimmed = $lines[$index].Trim()
+            if ($trimmed -match '^\[([^]]+)\]$') {
+                if ($sectionStart -ge 0) {
+                    $sectionEnd = $index
+                    break
+                }
+                if ($matches[1].Trim().Equals($section, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $sectionStart = $index
+                }
+            }
+        }
+        if ($sectionStart -lt 0) {
+            if ($lines.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($lines[$lines.Count - 1])) {
+                $lines.Add('') | Out-Null
+            }
+            $lines.Add("[$section]") | Out-Null
+            $lines.Add("$key=$value") | Out-Null
+        }
+        else {
+            $lines.Insert($sectionEnd, "$key=$value")
+        }
+    }
+
+    $directory = Split-Path -Parent $Path
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+        throw "AgentConfig.ini target directory does not exist: $directory"
+    }
+    $text = (@($lines) -join $newLine) + $newLine
+    $temporary = Join-Path $directory ('.AgentConfig.{0}.tmp' -f [guid]::NewGuid().ToString('N'))
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    try {
+        [System.IO.File]::WriteAllText($temporary, $text, $encoding)
+        [System.IO.File]::Move($temporary, $Path, $true)
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) {
+            Remove-Item -LiteralPath $temporary -Force
+        }
+    }
+}
+
+function Test-WorkspaceManagedIdentity {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)]$Identity
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    foreach ($entry in @(
+        @('SchemaVersion', '2'),
+        @('WorkspaceRoot', $Identity.WorkspaceRoot),
+        @('PrimaryRoot', $Identity.PrimaryRoot),
+        @('GitCommonDir', $Identity.GitCommonDir)
+    )) {
+        $actual = Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key $entry[0]
+        if ([string]::IsNullOrWhiteSpace([string]$actual)) { return $false }
+        $matches = if ($entry[0] -in @('WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir')) {
+            Test-WorkspacePathEqual -Left $actual -Right ([string]$entry[1])
+        }
+        else {
+            ([string]$actual).Equals([string]$entry[1], [System.StringComparison]::OrdinalIgnoreCase)
+        }
+        if (-not $matches) { return $false }
+    }
+    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'WorkspaceKind')) { return $false }
+    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'GoalName')) { return $false }
+    return $true
+}
+
+function New-WorkspaceIdentityFromRegistration {
+    param(
+        [Parameter(Mandatory = $true)]$Registration,
+        [Parameter(Mandatory = $true)][string]$GitCommonDir
+    )
+
+    $identity = [pscustomobject][ordered]@{
+        SchemaVersion = '2'
+        HarnessRoot   = [System.IO.Path]::GetFullPath((Get-WorkspaceRepositoryRootFromModule))
+        WorkspaceRoot = [System.IO.Path]::GetFullPath($Registration.WorkspaceRoot)
+        PrimaryRoot   = [System.IO.Path]::GetFullPath($Registration.PrimaryRoot)
+        GitCommonDir  = [System.IO.Path]::GetFullPath($GitCommonDir)
+        Topology      = $Registration.Topology
+        WorktreeName  = $Registration.WorktreeName
+        Branch        = $Registration.Branch
+        Head          = $Registration.Head
+        Managed       = $false
+    }
+    $identity.Managed = Test-WorkspaceManagedIdentity -Path (Join-Path $identity.WorkspaceRoot 'AgentConfig.ini') -Identity $identity
+    return $identity
+}
+
 function Get-WorkspaceIdentity {
     param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $primary = Get-PrimaryWorkspaceRoot -Repository $root
-    $registered = @(Get-RegisteredWorkspaceRoots -Repository $primary)
-    if (-not (@($registered | Where-Object { Test-WorkspacePathEqual -Left $_ -Right $root }).Count -eq 1)) {
+    $registrations = @(Get-WorkspaceRegistrationRecords -Repository $root)
+    $record = @($registrations | Where-Object { Test-WorkspacePathEqual -Left $_.WorkspaceRoot -Right $root })
+    if ($record.Count -ne 1) {
         throw "Workspace is not registered with Git: $root"
     }
-    $isPrimary = Test-WorkspacePathEqual -Left $root -Right $primary
-    $goalName = if ($isPrimary) { '' } else { Split-Path -Leaf $root }
-    return [pscustomobject][ordered]@{
-        SchemaVersion = '1'
-        WorkspaceKind = if ($isPrimary) { 'Primary' } else { 'Goal' }
-        PrimaryRoot   = [System.IO.Path]::GetFullPath($primary)
-        WorkspaceRoot = [System.IO.Path]::GetFullPath($root)
-        GitCommonDir  = [System.IO.Path]::GetFullPath((Get-WorkspaceCommonGitDirectory -Repository $root))
-        GoalName      = $goalName
-    }
+    $commonDirectory = Get-WorkspaceCommonGitDirectory -Repository $root
+    return New-WorkspaceIdentityFromRegistration -Registration $record[0] -GitCommonDir $commonDirectory
+}
+
+function Get-HardnessWorkspaceContext {
+    [CmdletBinding()]
+    param(
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
+        [switch]$Refresh
+    )
+
+    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
+    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    return Get-WorkspaceIdentity -ProjectRoot $root
 }
 
 function Get-WorkspaceProjectFile {
@@ -617,23 +800,26 @@ function Set-WorkspaceManagedConfiguration {
     }
 
     $projectFile = Get-WorkspaceProjectFile -ProjectRoot $root
-    Set-WorkspaceIniValueInternal -Path $target -Section 'Paths' -Key 'ProjectFile' -Value $projectFile
-    foreach ($entry in @(
-        @('SchemaVersion', $identity.SchemaVersion),
-        @('WorkspaceKind', $identity.WorkspaceKind),
-        @('PrimaryRoot', $identity.PrimaryRoot),
-        @('WorkspaceRoot', $identity.WorkspaceRoot),
-        @('GitCommonDir', $identity.GitCommonDir),
-        @('GoalName', $identity.GoalName)
-    )) {
-        Set-WorkspaceIniValueInternal -Path $target -Section 'Hardness' -Key $entry[0] -Value ([string]$entry[1])
-    }
+    $updates = @(
+        [pscustomobject]@{ Section = 'Paths'; Key = 'ProjectFile'; Value = $projectFile },
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'SchemaVersion'; Value = $identity.SchemaVersion },
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'WorkspaceRoot'; Value = $identity.WorkspaceRoot },
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'PrimaryRoot'; Value = $identity.PrimaryRoot },
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'GitCommonDir'; Value = $identity.GitCommonDir }
+    )
+    $removals = @(
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'WorkspaceKind' },
+        [pscustomobject]@{ Section = 'Hardness'; Key = 'GoalName' },
+        [pscustomobject]@{ Section = 'References'; Key = 'HazelightAngelscriptEngineRoot' }
+    )
+    Update-WorkspaceIniDocument -Path $target -Updates $updates -Removals $removals
+    $identity = Get-WorkspaceIdentity -ProjectRoot $root
     return [pscustomobject]@{ Path = $target; Copied = $copied; Identity = $identity; ProjectFile = $projectFile }
 }
 
 function Get-HardnessWorkspaceConfigStatus {
     [CmdletBinding()]
-    param([string]$ProjectRoot = '')
+    param([Alias('WorkspaceRoot')][string]$ProjectRoot = '')
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
     $path = Join-Path $root 'AgentConfig.ini'
     $errors = New-Object System.Collections.Generic.List[string]
@@ -648,11 +834,9 @@ function Get-HardnessWorkspaceConfigStatus {
         if (-not $ignored) { $errors.Add('AgentConfig.ini exists but is not ignored.') | Out-Null }
         foreach ($entry in @(
             @('SchemaVersion', $identity.SchemaVersion),
-            @('WorkspaceKind', $identity.WorkspaceKind),
-            @('PrimaryRoot', $identity.PrimaryRoot),
             @('WorkspaceRoot', $identity.WorkspaceRoot),
-            @('GitCommonDir', $identity.GitCommonDir),
-            @('GoalName', $identity.GoalName)
+            @('PrimaryRoot', $identity.PrimaryRoot),
+            @('GitCommonDir', $identity.GitCommonDir)
         )) {
             $actual = Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key $entry[0]
             $expected = [string]$entry[1]
@@ -661,6 +845,11 @@ function Get-HardnessWorkspaceConfigStatus {
             }
             else { ([string]$actual).Equals($expected, [System.StringComparison]::OrdinalIgnoreCase) }
             if (-not $matches) { $errors.Add("AgentConfig.ini [Hardness] $($entry[0]) does not match this workspace.") | Out-Null }
+        }
+        foreach ($obsoleteKey in @('WorkspaceKind', 'GoalName')) {
+            if ($null -ne (Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key $obsoleteKey)) {
+                $errors.Add("AgentConfig.ini [Hardness] $obsoleteKey is obsolete in schema v2.") | Out-Null
+            }
         }
         $expectedProject = Get-WorkspaceProjectFile -ProjectRoot $root
         $configuredProject = Get-WorkspaceIniValue -Path $path -Section 'Paths' -Key 'ProjectFile'
@@ -686,7 +875,7 @@ function Get-HardnessWorkspaceConfigStatus {
 function Get-HardnessWorkspaceConfigValue {
     [CmdletBinding()]
     param(
-        [string]$ProjectRoot = '',
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [Parameter(Mandatory = $true)][string]$Section,
         [Parameter(Mandatory = $true)][string]$Key
     )
@@ -701,7 +890,7 @@ function Get-HardnessWorkspaceConfigValue {
 function Set-HardnessWorkspaceConfigValue {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [string]$ProjectRoot = '',
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [Parameter(Mandatory = $true)][string]$Section,
         [Parameter(Mandatory = $true)][string]$Key,
         [AllowEmptyString()][Parameter(Mandatory = $true)][string]$Value
@@ -723,7 +912,7 @@ function Set-HardnessWorkspaceConfigValue {
 function Assert-HardnessWorkspaceExecution {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [Alias('WorkspaceRoot')][Parameter(Mandatory = $true)][string]$ProjectRoot,
         [string]$SelectedWorkspaceRoot = '',
         [string]$CallerPath = ''
     )
@@ -732,6 +921,14 @@ function Assert-HardnessWorkspaceExecution {
     $selected = if (-not [string]::IsNullOrWhiteSpace($SelectedWorkspaceRoot)) { $SelectedWorkspaceRoot } else { [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process') }
     if (-not [string]::IsNullOrWhiteSpace($selected) -and -not (Test-WorkspacePathEqual -Left $selected -Right $status.ProjectRoot)) {
         throw "Hardness selected workspace '$selected' but the command targets '$($status.ProjectRoot)'."
+    }
+    $selectedPrimary = [Environment]::GetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($selectedPrimary) -and -not (Test-WorkspacePathEqual -Left $selectedPrimary -Right $status.Identity.PrimaryRoot)) {
+        throw "Hardness selected primary root '$selectedPrimary' but the command targets workspace '$($status.ProjectRoot)' owned by '$($status.Identity.PrimaryRoot)'."
+    }
+    $selectedCommon = [Environment]::GetEnvironmentVariable('HARDNESS_GIT_COMMON_DIR', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($selectedCommon) -and -not (Test-WorkspacePathEqual -Left $selectedCommon -Right $status.Identity.GitCommonDir)) {
+        throw "Hardness selected Git common directory '$selectedCommon' but the command targets '$($status.Identity.GitCommonDir)'."
     }
     $caller = if ([string]::IsNullOrWhiteSpace($CallerPath)) { (Get-Location).Path } else { $CallerPath }
     if (Test-Path -LiteralPath $caller) {
@@ -747,73 +944,152 @@ function Assert-HardnessWorkspaceExecution {
 
 function Set-HardnessWorkspaceSession {
     [CmdletBinding()]
-    param(
-        [string]$ProjectRoot = '',
-        [ValidateSet('Current', 'Goal')][string]$Mode = 'Current',
-        [string]$GoalName = ''
-    )
+    param([Alias('WorkspaceRoot')][string]$ProjectRoot = '')
+
     $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
-    if (-not $status.IdentityValid) { throw "Workspace activation identity is invalid: $($status.Errors -join '; ')" }
-    if ($Mode -eq 'Goal' -and $status.Identity.WorkspaceKind -ne 'Goal') { throw 'Goal activation requires a registered Goal workspace.' }
-    if ($Mode -eq 'Goal' -and -not [string]::IsNullOrWhiteSpace($GoalName) -and $GoalName -ne $status.Identity.GoalName) {
-        throw "GoalName '$GoalName' does not match workspace Goal '$($status.Identity.GoalName)'."
-    }
+    if (-not $status.IdentityValid) { throw "Workspace selection identity is invalid: $($status.Errors -join '; ')" }
     [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', $status.ProjectRoot, 'Process')
     [Environment]::SetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', $status.Identity.PrimaryRoot, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', $Mode, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_GOAL_NAME', $status.Identity.GoalName, 'Process')
-    return [pscustomobject]@{ WorkspaceRoot = $status.ProjectRoot; PrimaryRoot = $status.Identity.PrimaryRoot; Mode = $Mode; GoalName = $status.Identity.GoalName; Activated = $true }
+    [Environment]::SetEnvironmentVariable('HARDNESS_GIT_COMMON_DIR', $status.Identity.GitCommonDir, 'Process')
+    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', $null, 'Process')
+    [Environment]::SetEnvironmentVariable('HARDNESS_GOAL_NAME', $null, 'Process')
+    [void](Clear-HardnessWorkspaceCache)
+    return [pscustomobject][ordered]@{
+        WorkspaceRoot = $status.ProjectRoot
+        PrimaryRoot   = $status.Identity.PrimaryRoot
+        GitCommonDir  = $status.Identity.GitCommonDir
+        Topology      = $status.Identity.Topology
+        WorktreeName  = $status.Identity.WorktreeName
+        Activated     = $true
+    }
+}
+
+function Get-WorkspaceRegistrationRecords {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+
+    $result = Invoke-WorkspaceGit -Repository $Repository -Arguments @('worktree', 'list', '--porcelain')
+    $rawRecords = New-Object System.Collections.Generic.List[object]
+    $current = [ordered]@{}
+    foreach ($line in @($result.Output) + '') {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            if ($current.Contains('WorkspaceRoot')) {
+                $rawRecords.Add([pscustomobject]$current) | Out-Null
+            }
+            $current = [ordered]@{}
+            continue
+        }
+        if ($line -like 'worktree *') {
+            $current.WorkspaceRoot = [System.IO.Path]::GetFullPath($line.Substring(9).Trim())
+        }
+        elseif ($line -like 'HEAD *') {
+            $current.Head = $line.Substring(5).Trim().ToLowerInvariant()
+        }
+        elseif ($line -like 'branch refs/heads/*') {
+            $current.Branch = $line.Substring(18).Trim()
+        }
+        elseif ($line -eq 'detached') {
+            $current.Branch = ''
+        }
+        elseif ($line -like 'locked*') {
+            $current.Locked = $true
+        }
+        elseif ($line -eq 'prunable') {
+            $current.Prunable = $true
+        }
+    }
+    if ($rawRecords.Count -eq 0) {
+        throw "Git returned no registered worktrees for '$Repository'."
+    }
+
+    $primary = [System.IO.Path]::GetFullPath($rawRecords[0].WorkspaceRoot)
+    $records = New-Object System.Collections.Generic.List[object]
+    foreach ($raw in $rawRecords) {
+        $root = [System.IO.Path]::GetFullPath($raw.WorkspaceRoot)
+        $isPrimary = Test-WorkspacePathEqual -Left $root -Right $primary
+        $records.Add([pscustomobject][ordered]@{
+            WorkspaceRoot = $root
+            PrimaryRoot   = $primary
+            Topology      = if ($isPrimary) { 'Primary' } else { 'Worktree' }
+            WorktreeName  = if ($isPrimary) { '' } else { Split-Path -Leaf $root }
+            Branch        = if ($raw.PSObject.Properties.Name -contains 'Branch') { [string]$raw.Branch } else { '' }
+            Head          = if ($raw.PSObject.Properties.Name -contains 'Head') { [string]$raw.Head } else { '' }
+            Locked        = ($raw.PSObject.Properties.Name -contains 'Locked') -and [bool]$raw.Locked
+            Prunable      = ($raw.PSObject.Properties.Name -contains 'Prunable') -and [bool]$raw.Prunable
+        }) | Out-Null
+    }
+    return @($records | ForEach-Object { $_ })
 }
 
 function Get-PrimaryWorkspaceRoot {
     param([Parameter(Mandatory = $true)][string]$Repository)
-    $result = Invoke-WorkspaceGit -Repository $Repository -Arguments @('worktree', 'list', '--porcelain')
-    foreach ($line in $result.Output) {
-        if ($line -like 'worktree *') {
-            return [System.IO.Path]::GetFullPath($line.Substring(9).Trim())
-        }
-    }
-    return $Repository
+    return [System.IO.Path]::GetFullPath((@(Get-WorkspaceRegistrationRecords -Repository $Repository)[0]).PrimaryRoot)
 }
 
 function Get-RegisteredWorkspaceRoots {
     param([Parameter(Mandatory = $true)][string]$Repository)
-    $result = Invoke-WorkspaceGit -Repository $Repository -Arguments @('worktree', 'list', '--porcelain')
-    return @($result.Output | ForEach-Object {
-        if ($_ -like 'worktree *') {
-            [System.IO.Path]::GetFullPath($_.Substring(9).Trim())
-        }
-    } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    return @(Get-WorkspaceRegistrationRecords -Repository $Repository | ForEach-Object { $_.WorkspaceRoot })
 }
 
-function Assert-WorkspaceIsCanonicalGoal {
-    param([Parameter(Mandatory = $true)][string]$WorkspaceRoot)
+function Clear-HardnessWorkspaceCache {
+    [CmdletBinding()]
+    param()
+    return [pscustomobject]@{ Cleared = $true; Scope = 'Process'; CachedEntries = 0 }
+}
 
-    $root = Resolve-WorkspaceRepository -Path $WorkspaceRoot
-    $primary = Get-PrimaryWorkspaceRoot -Repository $root
-    if ([System.IO.Path]::GetFullPath($root) -eq [System.IO.Path]::GetFullPath($primary)) {
-        throw "Refusing Goal lifecycle operation on the primary checkout '$root'. Use a registered Goal worktree."
+function Get-HardnessWorkspaceList {
+    [CmdletBinding()]
+    param(
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
+        [switch]$Refresh
+    )
+
+    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
+    $repository = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $records = @(Get-WorkspaceRegistrationRecords -Repository $repository)
+    $commonDirectory = Get-WorkspaceCommonGitDirectory -Repository $repository
+    $contexts = New-Object System.Collections.Generic.List[object]
+    foreach ($record in $records) {
+        $contexts.Add((New-WorkspaceIdentityFromRegistration -Registration $record -GitCommonDir $commonDirectory)) | Out-Null
     }
-    $container = Join-Path $primary '.worktrees'
-    if (-not (Test-WorkspacePathInside -Parent $container -Child $root)) {
-        throw "Refusing Goal lifecycle operation outside the canonical '$container' directory: $root"
-    }
-    [void](Assert-WorkspacePathChainSafe -Root $primary -Target $root -Purpose 'Goal lifecycle operation')
-    if ($root -notin @(Get-RegisteredWorkspaceRoots -Repository $primary)) {
-        throw "Refusing Goal lifecycle operation on an unregistered worktree: $root"
-    }
-    return [pscustomobject]@{ Root = $root; PrimaryRoot = $primary; Container = $container }
+    return @($contexts | ForEach-Object { $_ })
 }
 
 function Get-HardnessWorkspaceStatus {
     [CmdletBinding()]
-    param([string]$ProjectRoot = '')
+    param(
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
+        [switch]$Detailed,
+        [switch]$Refresh
+    )
 
+    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $branchResult = Invoke-WorkspaceGit -Repository $root -Arguments @('branch', '--show-current')
-    $gitDirectory = (Invoke-WorkspaceGit -Repository $root -Arguments @('rev-parse', '--git-dir')).Output | Select-Object -Last 1
-    $commonDirectory = (Invoke-WorkspaceGit -Repository $root -Arguments @('rev-parse', '--git-common-dir')).Output | Select-Object -Last 1
+    $configStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
+    $identity = $configStatus.Identity
+    $result = [ordered]@{
+        ProjectRoot        = $root
+        DetailLevel        = if ($Detailed) { 'Detailed' } else { 'Fast' }
+        Context            = $identity
+        SchemaVersion      = $identity.SchemaVersion
+        HarnessRoot        = $identity.HarnessRoot
+        WorkspaceRoot      = $identity.WorkspaceRoot
+        PrimaryRoot        = $identity.PrimaryRoot
+        GitCommonDir       = $identity.GitCommonDir
+        Topology           = $identity.Topology
+        WorktreeName       = $identity.WorktreeName
+        Branch             = $identity.Branch
+        Head               = $identity.Head
+        Managed            = $identity.Managed
+        Registered         = $true
+        ConfigurationReady = $configStatus.ConfigurationReady
+        Configuration      = $configStatus
+    }
+    if (-not $Detailed) {
+        return [pscustomobject]$result
+    }
+
     $dirty = @(Get-WorkspaceDirtyLines -Repository $root)
+    $ignoredFiles = @(Get-WorkspaceIgnoredLines -Repository $root | ForEach-Object { $_.Substring(3) })
     $submodules = New-Object System.Collections.Generic.List[object]
     foreach ($submodule in @(Get-WorkspaceSubmodules -Repository $root)) {
         $path = $submodule.Path
@@ -825,24 +1101,19 @@ function Get-HardnessWorkspaceStatus {
         if (Test-WorkspaceSubmoduleRepository -Repository $root -Submodule $submodule -Path $fullPath) {
             $actual = ((Invoke-WorkspaceGit -Repository $fullPath -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim().ToLowerInvariant()
             $subDirty = @(Get-WorkspaceDirtyLines -Repository $fullPath)
-            $submodules.Add([pscustomobject]@{ Name = $submodule.Name; Path = $path; Initialized = $true; Expected = $expected; Actual = $actual; Exact = $actual -eq $expected; Dirty = $subDirty.Count -gt 0; Payload = @() }) | Out-Null
+            $subIgnored = @(Get-WorkspaceIgnoredLines -Repository $fullPath | ForEach-Object { $_.Substring(3) })
+            $submodules.Add([pscustomobject]@{ Name = $submodule.Name; Path = $path; Initialized = $true; Expected = $expected; Actual = $actual; Exact = $actual -eq $expected; Dirty = $subDirty.Count -gt 0; Payload = @(); IgnoredFiles = $subIgnored }) | Out-Null
         }
         else {
             $payload = @(Get-WorkspacePathPayload -Path $fullPath)
-            $submodules.Add([pscustomobject]@{ Name = $submodule.Name; Path = $path; Initialized = $false; Expected = $expected; Actual = $null; Exact = $false; Dirty = $false; Payload = $payload }) | Out-Null
+            $submodules.Add([pscustomobject]@{ Name = $submodule.Name; Path = $path; Initialized = $false; Expected = $expected; Actual = $null; Exact = $false; Dirty = $false; Payload = $payload; IgnoredFiles = @() }) | Out-Null
         }
     }
-
-    $configStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
-    return [pscustomobject]@{
-        ProjectRoot = $root
-        Branch      = [string](($branchResult.Output | Select-Object -Last 1).Trim())
-        IsWorktree  = ([string]$gitDirectory).Trim() -ne ([string]$commonDirectory).Trim()
-        Dirty       = $dirty.Count -gt 0
-        Changes     = $dirty
-        Submodules  = @($submodules | ForEach-Object { $_ })
-        Configuration = $configStatus
-    }
+    $result.Dirty = $dirty.Count -gt 0
+    $result.Changes = $dirty
+    $result.IgnoredFiles = $ignoredFiles
+    $result.Submodules = @($submodules | ForEach-Object { $_ })
+    return [pscustomobject]$result
 }
 
 function New-HardnessWorkspace {
@@ -856,7 +1127,7 @@ function New-HardnessWorkspace {
 
     $requestedRepository = Resolve-WorkspaceRepository -Path $RepositoryRoot
     $repository = Get-PrimaryWorkspaceRoot -Repository $requestedRepository
-    $branchName = if ([string]::IsNullOrWhiteSpace($Branch)) { "goal/$Name" } else { $Branch }
+    $branchName = if ([string]::IsNullOrWhiteSpace($Branch)) { $Name } else { $Branch }
     $branchCheck = Invoke-WorkspaceGit -Repository $repository -Arguments @('check-ref-format', '--branch', $branchName) -AllowFailure
     if ($branchCheck.ExitCode -ne 0) {
         throw "Invalid worktree branch '$branchName'."
@@ -891,6 +1162,7 @@ function New-HardnessWorkspace {
     }
     [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace creation')
     [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'add', '-b', $branchName, $target, $startCommit))
+    [void](Clear-HardnessWorkspaceCache)
     try {
         $configResult = Set-WorkspaceManagedConfiguration -ProjectRoot $target -SourceRoot $repository
         $submodules = @(Initialize-WorkspaceSubmodules -Repository $target)
@@ -914,26 +1186,27 @@ function New-HardnessWorkspace {
 function Initialize-HardnessWorkspace {
     [CmdletBinding()]
     param(
-        [string]$ProjectRoot = ''
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = ''
     )
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
     $source = Get-PrimaryWorkspaceRoot -Repository $root
     $config = Set-WorkspaceManagedConfiguration -ProjectRoot $root -SourceRoot $source
     $submodules = @(Initialize-WorkspaceSubmodules -Repository $root)
+    [void](Clear-HardnessWorkspaceCache)
     return [pscustomobject]@{ ProjectRoot = $root; SourceRoot = $source; AgentConfigCopied = $config.Copied; Configuration = $config; Submodules = $submodules }
 }
 
 function Test-HardnessWorkspace {
     [CmdletBinding()]
     param(
-        [string]$ProjectRoot = '',
+        [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [switch]$RequireClean
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
-    $status = Get-HardnessWorkspaceStatus -ProjectRoot $ProjectRoot
+    $status = Get-HardnessWorkspaceStatus -ProjectRoot $ProjectRoot -Detailed -Refresh
     foreach ($submodule in @($status.Submodules)) {
         if (-not $submodule.Initialized) {
             $payloadSuffix = if (@($submodule.Payload).Count -gt 0) { " Local payload is present: $(@($submodule.Payload) -join ', ')." } else { '' }
@@ -975,20 +1248,17 @@ function Remove-HardnessWorkspace {
     $repository = Get-PrimaryWorkspaceRoot -Repository $requestedRepository
     $target = (Resolve-Path -LiteralPath $WorktreeRoot -ErrorAction Stop).Path
     $container = Join-Path $repository '.worktrees'
-    if (-not (Test-WorkspacePathInside -Parent $container -Child $target)) {
-        throw "Refusing to remove '$target': target is outside '$container'."
-    }
-    [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
-    if ([System.IO.Path]::GetFullPath($target) -eq [System.IO.Path]::GetFullPath($repository)) {
+    if (Test-WorkspacePathEqual -Left $target -Right $repository) {
         throw 'Refusing to remove the primary repository checkout.'
     }
 
     $registered = @(Get-RegisteredWorkspaceRoots -Repository $repository)
-    if ($target -notin $registered) {
+    $isRegistered = @($registered | Where-Object { Test-WorkspacePathEqual -Left $_ -Right $target }).Count -eq 1
+    if (-not $isRegistered) {
         $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
         $remainingEntries = @(if ($targetItem.PSIsContainer) { Get-ChildItem -LiteralPath $target -Force -ErrorAction Stop } else { $targetItem })
-        $isCanonicalGoalRoot = Test-WorkspacePathEqual -Left (Split-Path -Parent $target) -Right $container
-        if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0 -and $isCanonicalGoalRoot -and $DiscardIgnoredFiles) {
+        $isCanonicalResidueRoot = Test-WorkspacePathEqual -Left (Split-Path -Parent $target) -Right $container
+        if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0 -and $isCanonicalResidueRoot -and $DiscardIgnoredFiles) {
             if ($PSCmdlet.ShouldProcess($target, 'remove empty unregistered worktree residue; preserve branches')) {
                 [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'empty workspace residue removal')
                 Remove-Item -LiteralPath $target -Force -ErrorAction Stop
@@ -996,6 +1266,12 @@ function Remove-HardnessWorkspace {
             return [pscustomobject]@{ WorktreeRoot = $target; Removed = -not (Test-Path -LiteralPath $target); BranchPreserved = $true; DiscardedIgnoredFiles = @() }
         }
         throw "Refusing to remove '$target': it is not a registered Git worktree."
+    }
+    if (Test-WorkspacePathInside -Parent $repository -Child $target) {
+        [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
+    }
+    else {
+        [void](Assert-WorkspaceExistingPathSafe -Target $target -Purpose 'workspace removal')
     }
     $verification = Test-HardnessWorkspace -ProjectRoot $target -RequireClean
     $status = $verification.Status
@@ -1017,11 +1293,17 @@ function Remove-HardnessWorkspace {
         throw "Refusing to remove worktree '$target' because it contains ignored local data. Review it and rerun with -DiscardIgnoredFiles only when deletion is intended: $($ignoredFiles -join ', ')"
     }
     if ($PSCmdlet.ShouldProcess($target, 'remove clean registered worktree; preserve branch')) {
-        [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
+        if (Test-WorkspacePathInside -Parent $repository -Child $target) {
+            [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace removal')
+        }
+        else {
+            [void](Assert-WorkspaceExistingPathSafe -Target $target -Purpose 'workspace removal')
+        }
         # Git requires --force for any worktree that has ever initialized a
         # submodule. The explicit clean checks above are the safety gate; this
         # flag only bypasses Git's structural submodule refusal.
         [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'remove', '--force', $target))
+        [void](Clear-HardnessWorkspaceCache)
         if (Test-Path -LiteralPath $target) {
             $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
             if (-not $targetItem.PSIsContainer) {
@@ -1046,7 +1328,10 @@ function Remove-HardnessWorkspace {
 }
 
 Export-ModuleMember -Function @(
+    'Get-HardnessWorkspaceContext',
+    'Get-HardnessWorkspaceList',
     'Get-HardnessWorkspaceStatus',
+    'Clear-HardnessWorkspaceCache',
     'New-HardnessWorkspace',
     'Initialize-HardnessWorkspace',
     'Test-HardnessWorkspace',

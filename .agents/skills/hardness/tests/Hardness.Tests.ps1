@@ -120,15 +120,27 @@ try {
     Assert-Equal (($expectedFunctions | Sort-Object) -join '|') (($exported | Sort-Object) -join '|') 'public API must stay minimal'
 
     $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
-    $context = New-HardnessContext -Mode Current -ProjectRoot $repoRoot
-    Assert-Equal 'Current' $context.Mode 'current mode is explicit'
-    Assert-Equal $repoRoot $context.ProjectRoot 'context uses the requested project root'
+    $context = New-HardnessContext -WorkspaceRoot $repoRoot
+    foreach ($property in @('SchemaVersion', 'HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'WorktreeName', 'Branch', 'Head', 'Managed')) {
+        Assert-True ($property -in @($context.PSObject.Properties.Name)) "context must contain '$property'"
+    }
+    Assert-Equal '2' $context.SchemaVersion 'workspace context schema is versioned'
+    Assert-Equal $repoRoot $context.HarnessRoot 'context loads the harness from this checkout'
+    Assert-Equal $repoRoot $context.WorkspaceRoot 'context targets the requested registered workspace'
+    Assert-Equal 'Primary' $context.Topology 'the main checkout derives Primary topology from Git'
+    Assert-True ('Mode' -notin @($context.PSObject.Properties.Name)) 'repository mode is not part of context'
+    Assert-True ('GoalName' -notin @($context.PSObject.Properties.Name)) 'Goal name is not part of context'
+    $contextParameters = @((Get-Command New-HardnessContext).Parameters.Keys)
+    Assert-True ('Mode' -notin $contextParameters) 'New-HardnessContext exposes no mode compatibility parameter'
+    Assert-True ('GoalName' -notin $contextParameters) 'New-HardnessContext exposes no Goal-name compatibility parameter'
+    Assert-True ('ProjectRoot' -notin $contextParameters) 'WorkspaceRoot is the only repository-selection parameter'
 
     $routes = @(Get-HardnessCommand)
     foreach ($name in @(
-        'workspace.status', 'workspace.new', 'workspace.bootstrap', 'workspace.verify', 'workspace.remove', 'workspace.activate',
+        'workspace.list', 'workspace.status', 'workspace.new', 'workspace.bootstrap', 'workspace.verify', 'workspace.remove', 'workspace.activate',
         'workspace.config.status', 'workspace.config.get', 'workspace.config.set',
         'git.status', 'git.commit', 'git.integrate', 'git.push',
+        'hardness.status', 'hardness.observe', 'hardness.evolution.status', 'openspec.maintenance.status',
         'task.status',
         'openspec.validate', 'openspec.change'
     )) {
@@ -161,29 +173,32 @@ try {
     Assert-True (@($nativeFailure.data.Output).Count -gt 0) 'native failure preserves stdout and stderr output'
 
     $sourceOpenSpec = Join-Path $repoRoot '.agents\skills\openspec\bin\openspec.exe'
-    $taskCurrentRoot = Join-Path $scratch 'task-current'
-    $taskCurrentExeDirectory = Join-Path $taskCurrentRoot '.agents\skills\openspec\bin'
-    [void](New-Item -ItemType Directory -Path $taskCurrentExeDirectory -Force)
-    Copy-Item -LiteralPath $sourceOpenSpec -Destination (Join-Path $taskCurrentExeDirectory 'openspec.exe')
-    $taskCurrentContext = New-HardnessContext -Mode Current -ProjectRoot $taskCurrentRoot
+    $taskWorkspaceRoot = Join-Path $scratch 'task-workspace'
+    $taskWorkspaceExeDirectory = Join-Path $taskWorkspaceRoot '.agents\skills\openspec\bin'
+    [void](New-Item -ItemType Directory -Path $taskWorkspaceExeDirectory -Force)
+    Copy-Item -LiteralPath $sourceOpenSpec -Destination (Join-Path $taskWorkspaceExeDirectory 'openspec.exe')
+    [void](Invoke-FixtureGit -Repository $taskWorkspaceRoot -Arguments @('init', '-b', 'main'))
+    [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot '.gitignore'), "Saved/`nAgentConfig.ini`n")
+    [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'Fixture.uproject'), "{}`n")
+    $taskWorkspaceContext = New-HardnessContext -WorkspaceRoot $taskWorkspaceRoot
 
-    $taskCurrentInit = Invoke-Hardness -Command 'openspec.init' -Context $taskCurrentContext -ArgumentList @(
-        '--project-id', 'hardness-task-current',
-        '--title', 'Hardness Task Current Fixture'
+    $taskWorkspaceInit = Invoke-Hardness -Command 'openspec.init' -Context $taskWorkspaceContext -ArgumentList @(
+        '--project-id', 'hardness-task-workspace',
+        '--title', 'Hardness Task Workspace Fixture'
     )
-    Assert-Equal 'Succeeded' $taskCurrentInit.status 'Current Task Graph fixture initializes through the selected workspace'
-    $taskCurrentDomain = Invoke-Hardness -Command 'openspec.domain' -Context $taskCurrentContext -ArgumentList @(
+    Assert-Equal 'Succeeded' $taskWorkspaceInit.status 'Task Graph fixture initializes through the selected workspace'
+    $taskWorkspaceDomain = Invoke-Hardness -Command 'openspec.domain' -Context $taskWorkspaceContext -ArgumentList @(
         'create', 'fixture', '--title', 'Fixture', '--description', 'Fixture', '--json'
     )
-    Assert-Equal 'Succeeded' $taskCurrentDomain.status 'Current Task Graph fixture domain is created'
-    $taskCurrentChange = Invoke-Hardness -Command 'openspec.change' -Context $taskCurrentContext -ArgumentList @(
+    Assert-Equal 'Succeeded' $taskWorkspaceDomain.status 'Task Graph fixture domain is created'
+    $taskWorkspaceChange = Invoke-Hardness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
         'create', 'fixture/dag', '--title', 'Task DAG', '--goal', 'Verify Hardness task recognition', '--json'
     )
-    Assert-Equal 'Succeeded' $taskCurrentChange.status 'Current Task Graph fixture change is created'
+    Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
 
     $taskSeparator = [string][char]0x2014
-    $taskCurrentPath = Join-Path $taskCurrentRoot 'openspec\changes\fixture\dag\tasks.md'
-    $taskCurrentDocument = @'
+    $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\dag\tasks.md'
+    $taskWorkspaceDocument = @'
 ---
 task_graph:
   version: 1
@@ -208,11 +223,11 @@ task_graph:
 - [x] 1.1 Completed base __TASK_SEPARATOR__ verify: `base`
   > Files: `base`
 '@
-    $taskCurrentDocument = $taskCurrentDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
-    [System.IO.File]::WriteAllText($taskCurrentPath, $taskCurrentDocument, [System.Text.UTF8Encoding]::new($false))
+    $taskWorkspaceDocument = $taskWorkspaceDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
+    [System.IO.File]::WriteAllText($taskWorkspacePath, $taskWorkspaceDocument, [System.Text.UTF8Encoding]::new($false))
 
-    $taskStatus = Invoke-Hardness -Command 'task.status' -Context $taskCurrentContext -Parameters @{ Change = 'fixture/dag' }
-    Assert-Equal 'Succeeded' $taskStatus.status 'task.status recognizes a Current workspace Task Graph'
+    $taskStatus = Invoke-Hardness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/dag' }
+    Assert-Equal 'Succeeded' $taskStatus.status 'task.status recognizes a selected workspace Task Graph'
     Assert-Equal 'fixture/dag' $taskStatus.data.changeId 'task.status returns the selected change'
     Assert-True ('tasks' -in @($taskStatus.data.PSObject.Properties.Name)) 'task.status returns parsed TaskPlan data'
     Assert-True ('Output' -notin @($taskStatus.data.PSObject.Properties.Name)) 'task.status does not expose an untyped native-output wrapper'
@@ -249,14 +264,14 @@ task_graph:
   > Files: `second`
 '@
     $taskCycleDocument = $taskCycleDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
-    [System.IO.File]::WriteAllText($taskCurrentPath, $taskCycleDocument, [System.Text.UTF8Encoding]::new($false))
-    $cycleStatus = Invoke-Hardness -Command 'task.status' -Context $taskCurrentContext -Parameters @{ Change = 'fixture/dag' }
+    [System.IO.File]::WriteAllText($taskWorkspacePath, $taskCycleDocument, [System.Text.UTF8Encoding]::new($false))
+    $cycleStatus = Invoke-Hardness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/dag' }
     Assert-Equal 'Succeeded' $cycleStatus.status 'task.status preserves a successfully inspected invalid Task Graph in its envelope'
     Assert-Equal 'waiting' $cycleStatus.data.state 'an invalid Task Graph remains waiting instead of becoming schedulable'
     Assert-True ('cycle' -in @($cycleStatus.data.taskIssues.code)) 'task.status preserves OpenSpec cycle diagnostics'
     Assert-Equal 0 @($cycleStatus.data.tasks | Where-Object ready).Count 'task.status never produces Ready work from a cycle'
 
-    $missingTaskStatus = Invoke-Hardness -Command 'task.status' -Context $taskCurrentContext -Parameters @{ Change = 'fixture/missing' }
+    $missingTaskStatus = Invoke-Hardness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/missing' }
     Assert-Equal 'Failed' $missingTaskStatus.status 'task.status reports a missing change through the common failed envelope'
     Assert-True ($missingTaskStatus.exitCode -ne 0) 'task.status preserves the missing-change native exit code'
     Assert-True (-not [string]::IsNullOrWhiteSpace([string]$missingTaskStatus.error.message)) 'task.status preserves the missing-change diagnostic'
@@ -264,173 +279,116 @@ task_graph:
     $fixtureProject = Join-Path $scratch 'fixture-project'
     [void](New-Item -ItemType Directory -Path $fixtureProject)
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('init', '-b', 'main'))
-    $fixtureModuleDirectory = Join-Path $fixtureProject '.agents\skills\workspace-lifecycle\scripts'
-    $fixtureGitModuleDirectory = Join-Path $fixtureProject '.agents\skills\git-operations\scripts'
+    $fixtureModuleDirectory = Join-Path $fixtureProject '.agents\\skills\\workspace-lifecycle\\scripts'
+    $fixtureGitModuleDirectory = Join-Path $fixtureProject '.agents\\skills\\git-operations\\scripts'
     [void](New-Item -ItemType Directory -Path $fixtureModuleDirectory -Force)
     [void](New-Item -ItemType Directory -Path $fixtureGitModuleDirectory -Force)
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psm1') -Destination $fixtureModuleDirectory
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1') -Destination $fixtureModuleDirectory
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-operations\scripts\GitOperations.psm1') -Destination $fixtureGitModuleDirectory
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-operations\scripts\GitOperations.psd1') -Destination $fixtureGitModuleDirectory
-    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`nAgentConfig.ini`n")
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\workspace-lifecycle\\scripts\\WorkspaceLifecycle.psm1') -Destination $fixtureModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\workspace-lifecycle\\scripts\\WorkspaceLifecycle.psd1') -Destination $fixtureModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psm1') -Destination $fixtureGitModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psd1') -Destination $fixtureGitModuleDirectory
+    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`nAgentConfig.ini`nSaved/`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'fixture.txt'), "fixture`n")
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('add', '--', '.'))
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('-c', 'user.name=Hardness Tests', '-c', 'user.email=hardness-tests@example.invalid', 'commit', '-m', 'fixture'))
 
-    $fixtureWorkspace = Join-Path $fixtureProject '.worktrees\fixture-goal'
-    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'add', '-b', 'goal/fixture-goal', $fixtureWorkspace, 'HEAD'))
+    $externalContainer = Join-Path $scratch 'external-worktrees'
+    [void](New-Item -ItemType Directory -Path $externalContainer)
+    $fixtureWorkspace = Join-Path $externalContainer 'fixture-workspace'
+    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'add', '-b', 'feature/fixture-workspace', $fixtureWorkspace, 'HEAD'))
 
-    Assert-Throws { New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName '..\escape' } 'GoalName|safe|invalid|traversal' 'GoalName traversal is rejected before route selection'
-    Assert-Throws { New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName 'nested/escape' } 'GoalName|safe|invalid|traversal' 'GoalName path separators are rejected'
-    Assert-Throws { New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName 'fixture-goal' -WorkspaceRoot (Join-Path $scratch 'outside-goal') } 'canonical|workspace|outside|match' 'an arbitrary explicit Goal workspace root is rejected'
+    $fixturePrimaryContext = New-HardnessContext -WorkspaceRoot $fixtureProject
+    $workspaceContext = New-HardnessContext -WorkspaceRoot $fixtureWorkspace
+    Assert-Equal $repoRoot $workspaceContext.HarnessRoot 'a target worktree does not change the loaded harness root'
+    Assert-Equal $fixtureWorkspace $workspaceContext.WorkspaceRoot 'context targets an arbitrary registered worktree'
+    Assert-Equal $fixtureProject $workspaceContext.PrimaryRoot 'context records the registered primary checkout'
+    Assert-Equal 'Worktree' $workspaceContext.Topology 'linked topology derives from Git registration'
+    Assert-Equal 'feature/fixture-workspace' $workspaceContext.Branch 'context preserves the actual branch name'
+    Assert-True ('Mode' -notin @($workspaceContext.PSObject.Properties.Name)) 'linked context has no repository mode'
+    Assert-True ('GoalName' -notin @($workspaceContext.PSObject.Properties.Name)) 'linked context has no Goal name'
 
-    $linkedOriginContext = New-HardnessContext -Mode Goal -ProjectRoot $fixtureWorkspace -GoalName 'fixture-goal'
-    Assert-Equal $fixtureWorkspace $linkedOriginContext.WorkspaceRoot 'a linked origin resolves Goal workspaces from the canonical primary .worktrees container'
-    Assert-Equal $fixtureProject $linkedOriginContext.PrimaryRoot 'a linked origin records the canonical primary checkout'
+    $fastStatus = Invoke-Hardness -Command 'workspace.status' -Context $workspaceContext
+    Assert-Equal 'Succeeded' $fastStatus.status 'fast workspace status succeeds for an arbitrary registered worktree'
+    Assert-Equal 'Fast' $fastStatus.data.DetailLevel 'workspace status defaults to the fast tier'
+    Assert-True ('Changes' -notin @($fastStatus.data.PSObject.Properties.Name)) 'fast status does not perform a dirty-state scan'
+    $detailedStatus = Invoke-Hardness -Command 'workspace.status' -Context $workspaceContext -Parameters @{ Detailed = $true }
+    Assert-Equal 'Succeeded' $detailedStatus.status 'detailed workspace status is an explicit route option'
+    Assert-Equal 'Detailed' $detailedStatus.data.DetailLevel 'detailed status identifies its cost tier'
+    Assert-True ('Changes' -in @($detailedStatus.data.PSObject.Properties.Name)) 'detailed status includes live dirty state'
 
-    $createContext = New-HardnessContext -Mode Goal -ProjectRoot $fixtureWorkspace -GoalName 'future-goal'
-    $expectedCreateRoot = Join-Path $fixtureProject '.worktrees\future-goal'
-    Assert-Equal $expectedCreateRoot $createContext.WorkspaceRoot 'a create candidate is derived below the primary .worktrees container'
-    $candidateRoute = Invoke-Hardness -Command 'workspace.status' -Context $createContext
-    Assert-Equal 'Failed' $candidateRoute.status 'a non-create Goal route rejects a not-yet-created candidate'
-    Assert-Match $candidateRoute.error.message 'registered worktree|registered Goal workspace' 'candidate rejection occurs at the Goal authority boundary'
-    $createResult = Invoke-Hardness -Command 'workspace.new' -Context $createContext
-    Assert-Equal 'Succeeded' $createResult.status 'workspace.new alone may use and create a canonical candidate'
-    Assert-True $createResult.data.Created 'workspace.new creates the requested registered Goal workspace'
-    Assert-Equal $expectedCreateRoot $createResult.data.WorktreeRoot 'workspace.new returns the same canonical root selected by the context'
-    $createdRoute = Invoke-Hardness -Command 'workspace.status' -Context $createContext
-    Assert-Equal 'Succeeded' $createdRoute.status 'the same Goal context routes successfully after workspace.new registers its candidate'
-    Assert-Equal $expectedCreateRoot $createdRoute.data.ProjectRoot 'create and subsequent route resolution agree exactly'
+    $workspaceList = Invoke-Hardness -Command 'workspace.list' -Context $workspaceContext
+    Assert-Equal 'Succeeded' $workspaceList.status 'workspace.list enumerates the selected common Git directory'
+    Assert-Equal 2 @($workspaceList.data).Count 'workspace.list returns the primary and arbitrary linked worktree'
+    Assert-True ($fixtureWorkspace -in @($workspaceList.data.WorkspaceRoot)) 'workspace.list preserves the actual external worktree path'
 
-    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $expectedCreateRoot))
-    [void](New-Item -ItemType Directory -Path $expectedCreateRoot)
-    $orphanWithoutIntent = Invoke-Hardness -Command 'workspace.remove' -Context $createContext
-    Assert-Equal 'Failed' $orphanWithoutIntent.status 'an empty unregistered Goal root still requires explicit recovery intent'
-    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'a rejected orphan recovery preserves the empty root'
-    $overrideTarget = Join-Path $fixtureProject '.worktrees\override-target'
-    [void](New-Item -ItemType Directory -Path $overrideTarget)
-    $orphanOverride = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true; WorktreeRoot = $overrideTarget }
-    Assert-Equal 'Failed' $orphanOverride.status 'Goal recovery parameters cannot redirect removal away from the authorized context target'
-    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'a rejected target override preserves the authorized orphan root'
-    Assert-True (Test-Path -LiteralPath $overrideTarget -PathType Container) 'a rejected target override preserves the alternate directory'
-    $orphanPreview = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true; WhatIf = $true }
-    Assert-Equal 'Succeeded' $orphanPreview.status 'explicit WhatIf previews empty unregistered Goal recovery through Hardness'
-    Assert-True (-not $orphanPreview.data.Removed) 'orphan recovery WhatIf does not remove the empty root'
-    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'orphan recovery WhatIf preserves the empty root'
-    $orphanRecovery = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true }
-    Assert-Equal 'Succeeded' $orphanRecovery.status 'explicit recovery removes an empty unregistered Goal root through Hardness'
-    Assert-True $orphanRecovery.data.Removed 'Hardness reports successful empty-root recovery'
-    Assert-True (-not (Test-Path -LiteralPath $expectedCreateRoot)) 'empty unregistered Goal recovery removes the residual directory'
-    $preservedFutureBranch = @((Invoke-FixtureGit -Repository $fixtureProject -Arguments @('branch', '--list', 'goal/future-goal')))
-    Assert-True (($preservedFutureBranch -join "`n") -match 'goal/future-goal') 'empty-root recovery preserves the Goal branch'
+    $hardnessStatus = Invoke-Hardness -Command 'hardness.status' -Context $workspaceContext
+    Assert-Equal 'Succeeded' $hardnessStatus.status 'hardness.status provides a fast cross-client status surface'
+    Assert-Equal $fixtureWorkspace $hardnessStatus.data.Workspace.WorkspaceRoot 'hardness.status stays bound to the selected workspace'
+    Assert-True (-not $hardnessStatus.data.DetailedScan) 'hardness.status never opts into detailed repository scans'
 
-    $unregisteredRoot = Join-Path $fixtureProject '.worktrees\unregistered-goal'
-    $unregisteredModuleDirectory = Join-Path $unregisteredRoot '.agents\skills\workspace-lifecycle\scripts'
+    $observation = Invoke-Hardness -Command 'hardness.observe' -Context $workspaceContext -Parameters @{
+        Category = 'Timing'
+        Summary = 'Fixture status timing remained bounded.'
+        Change = 'hardness/refactor-unified-workspace-core'
+        Stage = 'apply'
+        DurationMs = 42
+    }
+    Assert-Equal 'Succeeded' $observation.status 'hardness.observe writes one ignored bounded record'
+    Assert-Equal 1 @($observation.artifacts).Count 'observation path is exposed as an artifact'
+    Assert-True (Test-Path -LiteralPath $observation.data.Path -PathType Leaf) 'observation file exists below the selected workspace'
+    $observationRecord = Get-Content -LiteralPath $observation.data.Path -Raw | ConvertFrom-Json
+    Assert-Equal 'hardness-observation-v1' $observationRecord.schemaVersion 'observation records use a versioned schema'
+    Assert-Equal $fixtureWorkspace $observationRecord.workspaceRoot 'observation records cannot drift to the harness checkout'
+    Assert-Equal 42 $observationRecord.durationMs 'observation preserves an optional timing span'
+    Assert-Equal 0 @((Invoke-FixtureGit -Repository $fixtureWorkspace -Arguments @('status', '--porcelain=v1')) | Where-Object { $_ -like '*Saved/Hardness*' }).Count 'ignored observations never enter Git status'
+
+    $evolution = Invoke-Hardness -Command 'hardness.evolution.status' -Context $workspaceContext
+    Assert-Equal 'Succeeded' $evolution.status 'hardness.evolution.status summarizes ignored evidence'
+    Assert-Equal 1 $evolution.data.ObservationCount 'evolution status counts observation files without replaying bodies'
+    Assert-True (-not $evolution.data.RawBodiesLoaded) 'evolution status reports that raw bodies were not loaded'
+
+    $maintenance = Invoke-Hardness -Command 'openspec.maintenance.status' -Context $context
+    Assert-Equal 'Succeeded' $maintenance.status 'OpenSpec maintenance status is a read-only route'
+    Assert-True ('RecordedCommit' -in @($maintenance.data.PSObject.Properties.Name)) 'maintenance status reports the parent gitlink'
+    Assert-True ('PackagedSha256' -in @($maintenance.data.PSObject.Properties.Name)) 'maintenance status reports the actual package hash'
+    Assert-True (-not $maintenance.data.Mutated) 'maintenance status never mutates source or package state'
+
+    $unregisteredRoot = Join-Path $scratch 'unregistered-workspace'
+    $unregisteredModuleDirectory = Join-Path $unregisteredRoot '.agents\\skills\\workspace-lifecycle\\scripts'
     [void](New-Item -ItemType Directory -Path $unregisteredModuleDirectory -Force)
     $unregisteredSentinel = Join-Path $scratch 'unregistered-leaf-imported.txt'
     $escapedSentinel = $unregisteredSentinel.Replace("'", "''")
-    $maliciousModule = @"
-[System.IO.File]::WriteAllText('$escapedSentinel', 'imported')
-function Get-HardnessWorkspaceStatus { [pscustomobject]@{ Imported = `$true } }
-Export-ModuleMember -Function 'Get-HardnessWorkspaceStatus'
-"@
-    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'WorkspaceLifecycle.psm1'), $maliciousModule)
-    $maliciousManifest = @"
-@{
-    RootModule = 'WorkspaceLifecycle.psm1'
-    ModuleVersion = '1.0.0'
-    GUID = '$([guid]::NewGuid())'
-    FunctionsToExport = @('Get-HardnessWorkspaceStatus')
-    CmdletsToExport = @()
-    VariablesToExport = @()
-    AliasesToExport = @()
-}
-"@
-    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'WorkspaceLifecycle.psd1'), $maliciousManifest)
-    $unregisteredOpenSpecDirectory = Join-Path $unregisteredRoot '.agents\skills\openspec\bin'
-    [void](New-Item -ItemType Directory -Path $unregisteredOpenSpecDirectory -Force)
-    [System.IO.File]::WriteAllBytes((Join-Path $unregisteredOpenSpecDirectory 'openspec.exe'), [byte[]](1, 2, 3, 4))
+    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'WorkspaceLifecycle.psm1'), "[System.IO.File]::WriteAllText('$escapedSentinel', 'imported')")
+    Assert-Throws { New-HardnessContext -WorkspaceRoot $unregisteredRoot | Out-Null } 'Git|repository|registered|workspace' 'an unregistered path cannot become a Hardness context'
+    Assert-True (-not (Test-Path -LiteralPath $unregisteredSentinel)) 'target workspace content is never imported as harness code'
 
-    $unregisteredContext = New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName 'unregistered-goal'
-    $unregisteredPowerShell = Invoke-Hardness -Command 'workspace.status' -Context $unregisteredContext
-    Assert-Equal 'Failed' $unregisteredPowerShell.status 'an unregistered Goal workspace cannot run a PowerShell leaf'
-    Assert-Match $unregisteredPowerShell.error.message 'registered worktree|registered Goal workspace' 'PowerShell leaf rejection reports missing registration'
-    Assert-True (-not (Test-Path -LiteralPath $unregisteredSentinel)) 'an unregistered Goal workspace is rejected before importing its leaf module'
-    $unregisteredNative = Invoke-Hardness -Command 'openspec.status' -Context $unregisteredContext -ArgumentList @('--json')
-    Assert-Equal 'Failed' $unregisteredNative.status 'an unregistered Goal workspace cannot run a native leaf'
-    Assert-Match $unregisteredNative.error.message 'registered worktree|registered Goal workspace' 'native leaf rejection reports missing registration rather than executing the file'
-    $unregisteredRemoval = Invoke-Hardness -Command 'workspace.remove' -Context $unregisteredContext -Parameters @{ DiscardIgnoredFiles = $true }
-    Assert-Equal 'Failed' $unregisteredRemoval.status 'explicit recovery never authorizes a nonempty unregistered Goal root'
-    Assert-True (-not (Test-Path -LiteralPath $unregisteredSentinel)) 'a rejected nonempty recovery never imports an unregistered leaf module'
+    $created = Invoke-Hardness -Command 'workspace.new' -Context $fixturePrimaryContext -Parameters @{ Name = 'future-workspace' }
+    Assert-Equal 'Succeeded' $created.status 'workspace.new creates an explicitly named workspace from the selected primary'
+    Assert-Equal 'future-workspace' $created.data.Branch 'new workspace branch defaults exactly to Name'
+    $createdContext = New-HardnessContext -WorkspaceRoot $created.data.WorktreeRoot
+    $removePreview = Invoke-Hardness -Command 'workspace.remove' -Context $createdContext -Parameters @{ WhatIf = $true; DiscardIgnoredFiles = $true }
+    Assert-Equal 'Succeeded' $removePreview.status 'workspace.remove is explicitly previewable from the exact linked context'
+    Assert-True (-not $removePreview.data.Removed) 'removal preview leaves the worktree registered'
 
-    $goalContext = New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName 'fixture-goal' -WorkspaceRoot $fixtureWorkspace
-    $goalResult = Invoke-Hardness -Command 'workspace.status' -Context $goalContext
-    Assert-Equal 'Succeeded' $goalResult.status 'goal route can load its leaf from the isolated workspace'
-    Assert-Equal $fixtureWorkspace $goalResult.data.ProjectRoot 'goal routes operate on WorkspaceRoot, not the primary checkout'
-
-    $fixtureOpenSpecDirectory = Join-Path $fixtureWorkspace '.agents\skills\openspec\bin'
-    [void](New-Item -ItemType Directory -Path $fixtureOpenSpecDirectory -Force)
-    Copy-Item -LiteralPath $sourceOpenSpec -Destination (Join-Path $fixtureOpenSpecDirectory 'openspec.exe')
     Push-Location $fixtureProject
     try {
         $callerLocation = (Get-Location).Path
-        $nativeInit = Invoke-Hardness -Command 'openspec.init' -Context $goalContext -ArgumentList @(
-            '--project-id', 'hardness-goal-fixture',
-            '--title', 'Hardness Goal Fixture'
+        $nativeInit = Invoke-Hardness -Command 'openspec.init' -Context $workspaceContext -ArgumentList @(
+            '--project-id', 'hardness-workspace-fixture',
+            '--title', 'Hardness Workspace Fixture'
         )
-        Assert-Equal 'Succeeded' $nativeInit.status 'Goal native mutation succeeds in the selected workspace'
-        Assert-Equal $callerLocation (Get-Location).Path 'Goal native mutation restores the caller location'
-        Assert-True (Test-Path -LiteralPath (Join-Path $fixtureWorkspace 'openspec\project.yaml') -PathType Leaf) 'Goal native mutation writes inside WorkspaceRoot'
-        Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureProject 'openspec'))) 'Goal native mutation never writes into the primary checkout'
-
-        $nativeCreate = Invoke-Hardness -Command 'openspec.domain' -Context $goalContext -ArgumentList @(
-            'create', 'goal/fixture', '--title', 'Goal Fixture', '--json'
-        )
-        Assert-Equal 'Succeeded' $nativeCreate.status 'Goal native domain creation succeeds in the selected workspace'
-        $nativeRead = Invoke-Hardness -Command 'openspec.domain' -Context $goalContext -ArgumentList @('list', '--json')
-        Assert-Equal 'Succeeded' $nativeRead.status 'Goal native read succeeds in the selected workspace'
-        Assert-True ((@($nativeRead.data.Output) -join "`n") -match 'goal/fixture') 'Goal native read observes the selected workspace data'
-        Assert-Equal $callerLocation (Get-Location).Path 'Goal native read restores the caller location'
-
-        $goalTaskChange = Invoke-Hardness -Command 'openspec.change' -Context $goalContext -ArgumentList @(
-            'create', 'goal/fixture/task-route', '--title', 'Goal Task Route', '--goal', 'Verify Goal Task Graph routing', '--json'
-        )
-        Assert-Equal 'Succeeded' $goalTaskChange.status 'Goal Task Graph fixture change is created inside WorkspaceRoot'
-        $goalTaskPath = Join-Path $fixtureWorkspace 'openspec\changes\goal\fixture\task-route\tasks.md'
-        $goalTaskDocument = @'
----
-task_graph:
-  version: 1
-  depends_on:
-    "1.1": []
----
-
-## Tasks
-
-- [ ] 1.1 Goal workspace task __TASK_SEPARATOR__ verify: `goal`
-  > Files: `goal`
-'@
-        $goalTaskDocument = $goalTaskDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
-        [System.IO.File]::WriteAllText($goalTaskPath, $goalTaskDocument, [System.Text.UTF8Encoding]::new($false))
-        $goalTaskStatus = Invoke-Hardness -Command 'task.status' -Context $goalContext -Parameters @{ Change = 'goal/fixture/task-route' }
-        Assert-Equal 'Succeeded' $goalTaskStatus.status 'task.status recognizes the Goal workspace Task Graph'
-        Assert-Equal 'goal/fixture/task-route' $goalTaskStatus.data.changeId 'Goal task.status reads the selected WorkspaceRoot change'
-        Assert-True (($goalTaskStatus.data.tasks | Where-Object id -eq '1.1').ready) 'Goal task.status returns Ready work from WorkspaceRoot'
-        Assert-Equal $callerLocation (Get-Location).Path 'Goal task.status restores the caller location'
+        Assert-Equal 'Succeeded' $nativeInit.status 'native mutation succeeds in the selected workspace'
+        Assert-Equal $callerLocation (Get-Location).Path 'native mutation restores the caller location'
+        Assert-True (Test-Path -LiteralPath (Join-Path $fixtureWorkspace 'openspec\\project.yaml') -PathType Leaf) 'native mutation writes inside WorkspaceRoot'
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureProject 'openspec'))) 'native mutation never writes into the primary checkout'
     }
     finally {
         Pop-Location
     }
 
+    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $created.data.WorktreeRoot))
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $fixtureWorkspace))
-    [void](New-Item -ItemType Directory -Path $fixtureWorkspace)
-    $staleOriginRecovery = Invoke-Hardness -Command 'workspace.remove' -Context $linkedOriginContext -Parameters @{ DiscardIgnoredFiles = $true }
-    Assert-Equal 'Succeeded' $staleOriginRecovery.status 'empty-root recovery uses PrimaryRoot after the context origin worktree disappears'
-    Assert-True $staleOriginRecovery.data.Removed 'stale-origin recovery removes the empty residual directory'
-    Assert-True (-not (Test-Path -LiteralPath $fixtureWorkspace)) 'stale-origin recovery leaves no directory behind'
-    $preservedFixtureBranch = @((Invoke-FixtureGit -Repository $fixtureProject -Arguments @('branch', '--list', 'goal/fixture-goal')))
-    Assert-True (($preservedFixtureBranch -join "`n") -match 'goal/fixture-goal') 'stale-origin recovery preserves the original Goal branch'
 
     $incompleteHealth = Test-HardnessInstallation -ProjectRoot $fixtureProject
     Assert-True (-not $incompleteHealth.IsValid) 'installation fails when the required OpenSpec leaf is missing'

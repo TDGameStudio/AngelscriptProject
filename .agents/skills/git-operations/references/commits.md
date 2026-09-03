@@ -8,10 +8,10 @@ Invoke-Hardness -Command git.status -Context $context
 
 The result reports parent and initialized top-level submodule heads, branches, and staged/unstaged/untracked paths.
 
-## Commit Exact Current Paths
+## Commit Exact Paths
 
 ```powershell
-Invoke-Hardness -Command git.commit -Context $current -Parameters @{
+Invoke-Hardness -Command git.commit -Context $context -Parameters @{
   RepositoryScopes = @{
     '.' = @(
       '.agents/skills/workspace-lifecycle'
@@ -22,20 +22,21 @@ Invoke-Hardness -Command git.commit -Context $current -Parameters @{
 }
 ```
 
-Map `.` to parent-repository paths and a top-level submodule path to paths relative to that submodule. Current mode rejects an omitted scope and any pre-staged path outside it.
+Map `.` to parent-repository paths and a top-level submodule path to paths relative to that submodule. `WorkspaceRoot` comes from the selected context. An omitted scope and any pre-staged path outside the selected scope are rejected.
 
-## Commit an Isolated Goal
+## Commit an Entire Linked Worktree
 
-Use exact scopes when possible. `AllChanges` is available only in Goal mode and remains explicit:
+Use exact scopes when possible. `AllChanges` is available only for an exact Git-registered linked worktree and remains explicit. Preview it first so every included non-ignored path is visible:
 
 ```powershell
-Invoke-Hardness -Command git.commit -Context $goal -Parameters @{
+Invoke-Hardness -Command git.commit -Context $linked -Parameters @{
   AllChanges = $true
-  CommitMessage = '[Hardness] Refactor: complete workspace and Git operation split'
+  CommitMessage = '[Hardness] Refactor: complete workspace changes'
   TargetBranches = @{
-    'Plugins/Angelscript' = 'goal/refactor-workspace-git-operations'
+    'Plugins/Angelscript' = 'refactor-workspace-git-operations'
   }
+  WhatIf = $true
 }
 ```
 
-Dirty submodules commit first. The parent then commits its selected paths plus the resulting gitlinks. The result reports Git facts only; verification, Review, and closure remain separate gates.
+Repeat without `WhatIf` only after checking `IncludedChanges`. Dirty submodules commit first. The parent then commits its selected paths plus the resulting gitlinks. Attached repositories use their actual branches without any required prefix; a detached dirty repository needs an explicit `TargetBranches` entry. The result reports Git facts only; verification, Review, and closure remain separate gates.

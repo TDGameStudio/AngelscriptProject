@@ -6,7 +6,8 @@ context: |
   Keep Source/AngelscriptProject minimal; plugin behavior belongs in the owning plugin or extension.
   Plugins/Angelscript, Plugins/AngelscriptGameplayTags, Plugins/AngelscriptGAS, and Tools/openspec are independent Git submodules. Source changes land in the owning submodule before the parent gitlink is updated.
   The repository may contain unrelated work from an ongoing large refactor. Inspect the current tree and preserve unrelated user changes.
-  Build and test through the repository entry points under Tools instead of inventing direct Unreal command lines.
+  Use one explicit or current-directory-discovered WorkspaceRoot for every operation. A Codex /goal invocation is external unattended continuation, not a repository mode, branch convention, or workspace selector.
+  Root Tools PowerShell entry points are legacy deletion candidates and are not the live Hardness route. Tools/openspec remains the tracked Rust source submodule; normal runtime uses .agents/skills/openspec/bin/openspec.exe.
 rules:
   proposal:
     - State the current problem, intended outcome, scope, explicit non-goals, and affected ownership boundaries.
@@ -20,15 +21,16 @@ rules:
   tasks:
     - Treat each top-level checkbox as one permanent X.Y DAG node; nested execution steps are numbered lists, never checkboxes.
     - Keep the sole dependency graph in top-of-file task_graph.version 1 frontmatter; depends_on maps each quoted task ID to quoted direct prerequisites and uses [] for roots.
-    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only; each body still declares exact Files and an exact verify command or observable outcome.
+    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only; each Task Card keeps a concise one-line node with an exact verify command or observable outcome plus a following Files line.
+    - Add only useful concise detail. Context, Inputs, Produces, Constraints, numbered steps, examples, and ordinary prose are optional Markdown authoring aids, not parser fields or a rigid template.
     - Never reuse task IDs, uncheck completed tasks, mix live After fields with frontmatter, or maintain a second graph or status store. Derive parallel work only after checking file, artifact, and resource-lease conflicts.
   apply:
     - Update checkbox state only after the associated work and stated verification have actually completed.
 operations:
   apply:
     - Preserve unrelated dirty-worktree changes and keep plugin logic in the owning plugin.
-    - In Goal mode, investigate and resolve in-scope failures autonomously; stop only at a real authorization boundary.
+    - Investigate and resolve in-scope failures autonomously in the selected workspace; stop only at a real authorization boundary. Codex /goal continuation does not change this policy.
     - While AGENTS.md temporarily disables project Skills, do not invoke a project Skill. After that restriction is explicitly lifted, import Hardness once and route build/test/OpenSpec commands through Invoke-Hardness, selecting the smallest relevant verification scope first.
   archive:
-    - Use completed closure only after every task and Review Gate is closed; abandoned or superseded closure requires reasons and incomplete-task dispositions.
+    - Use completed closure only after every task and verification passes, durable specs and attachments are ready, and every explicitly requested Review is closed or superseded. Do not create an automatic Final Review or a not-required placeholder; abandoned or superseded closure requires reasons and incomplete-task dispositions.
     - Sync durable behavior into openspec/specs or explicitly record why sync is not applicable before preserving history.

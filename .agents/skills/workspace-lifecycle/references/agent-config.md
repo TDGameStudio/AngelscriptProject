@@ -1,20 +1,20 @@
 # Local Agent Configuration
 
-`AgentConfig.ini` is ignored, machine-local, and owned by Hardness at each workspace root. It is configuration, not a credential store or global agent database.
+`AgentConfig.ini` is ignored, machine-local, and owned by Hardness at each workspace root. It is configuration, not a credential store, shared database, or source of Git topology.
 
 ## Managed Identity
 
 ```ini
 [Hardness]
-SchemaVersion=1
-WorkspaceKind=Primary
-PrimaryRoot=D:\Workspace\AngelscriptProject
+SchemaVersion=2
 WorkspaceRoot=D:\Workspace\AngelscriptProject
+PrimaryRoot=D:\Workspace\AngelscriptProject
 GitCommonDir=D:\Workspace\AngelscriptProject\.git
-GoalName=
 ```
 
-Hardness owns every `[Hardness]` key and `[Paths] ProjectFile`. Branch and HEAD remain live Git facts and are never persisted.
+Hardness owns these four keys and `[Paths] ProjectFile`. `Topology`, `WorktreeName`, `Branch`, and `Head` are live Git facts and are never persisted. `HarnessRoot` is the checkout supplying the loaded Hardness module and may differ from the selected `WorkspaceRoot`.
+
+Explicit bootstrap migrates schema v1 in place. It removes the former workspace-kind and goal-name identity keys plus `[References] HazelightAngelscriptEngineRoot`, rebinds `ProjectFile`, and preserves unrelated values, sections, comments, and newline style. When a new linked workspace has no local file, machine-shared values are copied from the canonical primary checkout before its managed fields are rebound.
 
 ## Configuration Routes
 
@@ -35,8 +35,16 @@ Invoke-Hardness -Command workspace.config.set -Context $context -Parameters @{
 
 `status` reports identity and key availability without dumping values. `get` reads one exact key. `set` updates one non-managed, single-line value atomically while preserving unrelated local content.
 
-## Execution Binding
+## Process-local Selection
 
-`workspace.activate` binds the selected context to the current PowerShell process. Child build/test processes inherit that identity. Command startup rejects a requested project root that differs from the selected session, the managed INI identity, the registered Git worktree, or the configured root `.uproject`.
+`workspace.activate` writes only these process environment variables for child commands:
 
-The binding is process-local. Separate agents may activate separate Goal worktrees concurrently. Read-only UBT process discovery remains able to enumerate all registered worktrees.
+```text
+HARDNESS_WORKSPACE_ROOT
+HARDNESS_PRIMARY_ROOT
+HARDNESS_GIT_COMMON_DIR
+```
+
+A later explicit selection replaces all three. No repository mode or workflow name is stored. Separate PowerShell 7 processes can therefore select different registered worktrees without modifying each other's local configuration.
+
+Before a workspace-sensitive command launches an external process, the execution guard compares the requested root, Git registration and common directory, schema-v2 identity, root `.uproject`, optional process selection, and caller location. Read-only listing remains available across all registered worktrees.

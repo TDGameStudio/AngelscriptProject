@@ -5,7 +5,7 @@ description: Create the next missing planning artifact for an active project Ope
 
 # Continue a Change
 
-1. Use the explicit change, or the Goal context's change. A new feature, architecture refactor, or major behavior change consumes the decision-complete exploration handoff accepted before this Change was created. Never invoke [`openspec-explore`](../openspec-explore/SKILL.md) after target Change creation; route corrections to existing planning truth through `openspec-update-change`. Clear fixes and mechanical documentation work may have skipped the pre-creation gate.
+1. Use the explicit Change or resolve the canonical active Change in the selected workspace. A new feature, architecture refactor, or major behavior change consumes the decision-complete exploration handoff accepted before this Change was created. Never invoke [`openspec-explore`](../openspec-explore/SKILL.md) after target Change creation; route corrections to existing planning truth through `openspec-update-change`. Clear fixes and mechanical documentation work may have skipped the pre-creation gate.
 2. Call `openspec.status --change <id> --json` and select one missing artifact. Proposal and tasks are required; specs exist only for durable behavior; design exists only for non-obvious decisions.
 3. Call `openspec.instructions <artifact> --change <id> --json`. Re-read its concrete context files. Apply context/rules as constraints, never copied prose.
 4. Write one artifact to `writePath`; for a glob choose a concrete path permitted by `outputPattern`. Use the matching record/task reference from the `openspec` skill.
@@ -16,4 +16,4 @@ description: Create the next missing planning artifact for an active project Ope
 status -> instructions -> one concrete artifact -> strict validate
 ```
 
-Fast-forward through all missing planning artifacts only when implementation was requested or Goal mode already carries an approved objective and decision-complete handoff. In Goal mode, settle in-scope technical choices autonomously. Do not hand-create manifest files, write implementation code, or replace existing artifacts in this skill.
+Fast-forward through all missing planning artifacts only when implementation was requested or a Codex `/goal` continuation already carries an approved objective and decision-complete handoff. During unattended continuation, settle in-scope technical choices autonomously. Codex `/goal` is not a repository mode or workspace selector. Do not hand-create manifest files, write implementation code, or replace existing artifacts in this skill.

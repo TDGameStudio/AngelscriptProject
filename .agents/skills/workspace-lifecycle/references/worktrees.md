@@ -1,34 +1,45 @@
 # Worktree Lifecycle
 
-## Commands
+## Inspect and Select
 
 ```powershell
 Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
 
-$goal = New-HardnessContext -Mode Goal -ProjectRoot $PWD -GoalName refactor-example
-Invoke-Hardness -Command workspace.new -Context $goal
-Invoke-Hardness -Command workspace.status -Context $goal
-Invoke-Hardness -Command workspace.verify -Context $goal
-Invoke-Hardness -Command workspace.activate -Context $goal
+$context = New-HardnessContext -WorkspaceRoot $PWD
+Invoke-Hardness -Command workspace.list -Context $context
+Invoke-Hardness -Command workspace.status -Context $context
+Invoke-Hardness -Command workspace.status -Context $context -Parameters @{ Detailed = $true }
+Invoke-Hardness -Command workspace.activate -Context $context
 ```
 
-Removal is separate and explicit:
+The default status is intentionally fast: it returns Git-derived identity, branch, HEAD, registration, and configuration readiness without a dirty or recursive submodule scan. Request `Detailed` only when current file, gitlink, submodule, or ignored-payload diagnostics are needed.
+
+## Create and Bootstrap
 
 ```powershell
-Invoke-Hardness -Command workspace.remove -Context $goal
+Invoke-Hardness -Command workspace.new -Context $context -Parameters @{
+  Name = 'feature-x'
+}
+
+Invoke-Hardness -Command workspace.bootstrap -Context $existingWorktree
+Invoke-Hardness -Command workspace.verify -Context $existingWorktree
+```
+
+`workspace.new` creates `.worktrees/feature-x` on branch `feature-x` unless `Branch` or `StartPoint` is supplied explicitly. It initializes exact top-level gitlinks and projects the local configuration, but does not create an OpenSpec Change.
+
+`workspace.bootstrap` accepts every worktree registered in the same Git common directory. It repairs the checkout in place; it does not move the root, rename its branch, commit, integrate, push, or select it for the current process.
+
+## Remove Explicitly
+
+```powershell
+Invoke-Hardness -Command workspace.remove -Context $existingWorktree
 
 # Only after inspecting the returned ignored-data inventory:
-Invoke-Hardness -Command workspace.remove -Context $goal -Parameters @{
+Invoke-Hardness -Command workspace.remove -Context $existingWorktree -Parameters @{
   DiscardIgnoredFiles = $true
 }
 ```
 
-## Lifecycle Boundaries
-
-- `workspace.new` creates `.worktrees/<goal>` on `goal/<goal>` from the requested start commit.
-- `workspace.bootstrap` repairs configuration identity and initializes exact top-level gitlinks.
-- `workspace.verify` checks registration, gitlinks, submodule dirtiness, configuration identity, and optional cleanliness.
-- `workspace.remove` never deletes the Goal branch and never serves as Git integration.
-- Worktree creation does not create `openspec/changes/<goal>`; OpenSpec registration is a separate workflow checkpoint.
+Removal requires an exact, clean, registered linked worktree and preserves its branch. Ignored local data requires explicit discard intent. An unsafe reparse path, dirty parent, dirty or inexact submodule, uninitialized payload, or primary checkout is refused without deletion.
 
 If bootstrap cannot obtain an exact gitlink, it preserves the workspace and reports the missing object or unsafe local state. Recover that exact object or repair the explicit submodule checkout; never substitute a nearby branch tip.

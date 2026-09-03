@@ -2,37 +2,37 @@
 
 ## Purpose
 
-This capability defines how the AngelscriptProject Skill harness selects a workspace, dispatches project commands, maintains a resumable execution plan, and performs autonomous Review and Replan without crossing user authority boundaries.
+This capability defines how the AngelscriptProject Skill harness selects a workspace, dispatches project commands, maintains a resumable execution plan, handles explicit Review input, and replans autonomously without crossing user authority boundaries.
 
 ## Requirements
 
 ### Requirement: Progressive skill routing
 
-Hardness SHALL be the single short entry for the project Skill system and SHALL load only the selected leaf Skill or reference from a static route. Workspace lifecycle and Git mutation SHALL route to separate leaves: `workspace.*` cannot create commits or integrate branches, while `git.*` cannot create, bootstrap, remove, or globally select worktrees. Default context MUST NOT bulk-load command documentation, attachments, Replan history, or script implementations.
+Hardness SHALL remain the single short entry for project workflow and SHALL load only the selected leaf module or focused reference. Workspace lifecycle, Git mutation, OpenSpec primitives, task status, and Hardness observation SHALL retain separate routes and authority boundaries. Default context MUST NOT bulk-load command documentation, attachments, historical observations, Replans, or leaf implementations. Unreal development routes are intentionally absent until their independent Change is complete.
 
 #### Scenario: Route one project command
-- **WHEN** an agent requests a registered command in a session that imported Hardness
-- **THEN** the system loads only that command's leaf module and returns the common structured result
+- **WHEN** a caller requests one installed Hardness command
+- **THEN** the dispatcher loads only the owning leaf, returns the common result envelope, and does not acquire unrelated workflow authority
 
-#### Scenario: Exclude an unfinished leaf
-- **WHEN** a project command leaf is intentionally deferred to a separate change
-- **THEN** Hardness does not publish placeholder routes or report that leaf as installed until its complete contract is independently verified
+#### Scenario: Exclude the deferred Unreal leaf
+- **WHEN** this Change completes before Unreal development integration
+- **THEN** no `unreal.*` placeholder route is published and the existing Unreal Skill remains independently invocable until its own Change is verified
 
-#### Scenario: Keep workspace and Git ownership separate
-- **WHEN** an agent selects a workspace or Git route
-- **THEN** Hardness loads only the matching lifecycle or Git leaf and preserves the other leaf's authority boundary
+### Requirement: Unified workspace context
 
-### Requirement: Explicit workspace modes
+Hardness MUST use one Git-derived workspace model in both the primary checkout and any registered linked worktree. Codex `/goal` is an external continuation facility only and MUST NOT select a repository mode, imply worktree creation, constrain branch names, or change Git authority. New worktrees default to `.worktrees/<name>` on branch `<name>`, while existing registered worktrees remain valid at their current path and branch. Integration, non-force push, and worktree removal MUST remain three separate operations requiring explicit user intent.
 
-The system MUST support Goal and Current modes. Goal uses an isolated Git worktree by default, while Current remains in the current checkout. Neither mode may automatically integrate, push, or remove the workspace after completion. Local integration, non-force push, and worktree cleanup MUST remain three separate operations that each require explicit user intent.
+#### Scenario: Work in the primary checkout
+- **WHEN** the caller selects the registered primary checkout
+- **THEN** Hardness targets that exact root without creating, switching, or assigning a repository mode and preserves unrelated local changes
 
-#### Scenario: Start a Goal task
-- **WHEN** native Goal mode starts a change that requires implementation
-- **THEN** the system creates an isolated branch below the ignored worktree root, restores exact submodule gitlinks, and safely copies machine-local configuration
+#### Scenario: Work in an existing linked worktree
+- **WHEN** the caller selects any worktree registered in the same Git common directory
+- **THEN** Hardness accepts its actual path and branch without requiring `.worktrees/<name>` or a branch prefix
 
-#### Scenario: Work directly
-- **WHEN** the user explicitly requests work in the current checkout
-- **THEN** the system does not create or switch worktrees and preserves existing uncommitted changes
+#### Scenario: Interpret Codex Goal continuation
+- **WHEN** work is running under Codex `/goal`
+- **THEN** repository selection still comes from the explicit or discoverable WorkspaceRoot and no repository-mode state is created
 
 ### Requirement: Retained Hardness performance evidence
 
@@ -88,25 +88,19 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 ### Requirement: Two-tier exploration
 
-Hardness MUST distinguish deep pre-creation discovery from task-local technical exploration. A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff MUST pass a read-only Explore Gate before its target OpenSpec Change is created. After target Change creation, that Change MUST NOT invoke deep Explore; existing truth changes through update/replan. A clear defect repair, mechanical documentation change, or approved ready-to-execute plan MAY skip the pre-creation gate. Technical uncertainty inside a Ready task MUST remain in the implementation leaf unless evidence invalidates current requirements, design, verification, dependency, or artifact truth.
-
-For OpenSpec-scoped implementation, a decision-complete handoff MUST NOT substitute for an active Change. Hardness MUST resolve the canonical active Change and Ready Task DAG before implementation mutation in either Current or Goal mode.
+Hardness MUST distinguish deep pre-creation discovery from task-local technical exploration. Before a new feature, architecture refactor, or major behavior-change Change is created, unresolved scope, architecture, or integration choices MUST trigger the read-only Explore Gate. A decision-complete handoff or an already explicit approved plan MAY proceed directly to Change creation. After target Change creation, deep Explore MUST NOT restart; task-local uncertainty stays in Apply unless evidence invalidates canonical planning truth and triggers update/replan. A request to explain architecture, workflow, state, ownership, or three or more related branches SHOULD invoke `visual-explain`; routine one-step work and already-clear prose MUST NOT incur that cost.
 
 #### Scenario: Shape a major change before planning
-- **WHEN** a major behavior change has unresolved scope, architecture, or integration choices
-- **THEN** deep exploration establishes evidence, viable options, a recommendation and flip condition, failures, verification, and an OpenSpec handoff with no blocking engineering decision left
+- **WHEN** a major change still contains blocking design choices before registration
+- **THEN** `openspec-explore` produces a decision-complete handoff before the target Change is created
 
-#### Scenario: Begin implementation from an accepted handoff
-- **WHEN** an OpenSpec-scoped objective has an accepted handoff but no canonical active Change and Ready task
-- **THEN** Hardness creates and plans the Change before implementation mutation instead of treating the handoff as execution state
+#### Scenario: Continue from an explicit accepted plan
+- **WHEN** scope, boundaries, and verification are already decision-complete
+- **THEN** Hardness creates or updates the canonical Change without repeating deep exploration
 
-#### Scenario: Discover missing registration after work starts
-- **WHEN** dogfooding finds implementation work that began before its required Change was registered
-- **THEN** the coordinator preserves the working tree, records one material process issue, creates an honest recovery Change before commit, maps the existing diff, and reruns verification and review without fabricating prior compliance
-
-#### Scenario: Investigate inside a Ready task
-- **WHEN** implementation exposes an in-scope technical uncertainty without invalidating the accepted plan
-- **THEN** Goal mode investigates and selects the evidence-backed repair inside that task without restarting deep Explore or interrupting the user
+#### Scenario: Explain a multi-branch workflow
+- **WHEN** the user needs to understand a workflow with multiple states, branches, or owners
+- **THEN** Hardness routes a small useful visualization and keeps the underlying canonical state in plain text
 
 ### Requirement: Exploration markers and durable carryover
 
@@ -126,11 +120,15 @@ Pre-Change exploration MAY use the project marker vocabulary and compact Markdow
 
 ### Requirement: Ready-to-execute Task authoring
 
-Before a Task DAG is accepted, planning MUST map affected files, artifacts, and exclusive resources; divide work into the smallest independently reviewable outcomes; state exact or explicitly bounded paths, cross-task interfaces, and exact verification; and map every requirement and acceptance condition to at least one node. Task text MUST NOT defer unresolved design through placeholders. A plan-only delivery MUST be executable without another planning pass.
+Before a Task DAG is accepted, planning MUST map affected files, artifacts, and exclusive resources; divide work into independently reviewable outcomes; state exact or explicitly bounded paths, cross-task interfaces, and exact verification; and map every requirement and acceptance condition to at least one node. Each task card MAY add concise free-form detail such as Context, Constraints, Inputs, Produces, Watch, Notes, or Evidence when it materially helps execution, but those labels are optional prose rather than a fixed schema. Only the existing DAG frontmatter, checkbox ID, `Files:`, and verify text remain machine-readable, and this Change MUST NOT modify the OpenSpec parser or executable for task-card enrichment.
 
-#### Scenario: Accept a plan-only delivery
-- **WHEN** planning stops before implementation
-- **THEN** a zero-context implementer can select each Ready node and determine its outcome, scope, inputs, outputs, files, execution steps, and proving verification directly from the accepted records
+#### Scenario: Execute a detailed task card
+- **WHEN** a node needs local constraints, inputs, or known hazards beyond its outcome and paths
+- **THEN** the card includes only the useful prose needed by a zero-context implementer and OpenSpec derives the same task ID, dependencies, files, verification, and Ready state
+
+#### Scenario: Keep a simple task card small
+- **WHEN** outcome, files, and verification already make a node executable
+- **THEN** the card omits optional labels instead of adding empty or boilerplate sections
 
 ### Requirement: Material implementation issue history
 
@@ -156,37 +154,23 @@ A Review finding MUST NOT directly trigger Replan. Hardness may apply a Replan o
 - **WHEN** verified evidence invalidates part of the existing Task DAG
 - **THEN** the system records old-task dispositions, preserves valid work, updates current artifacts/tasks, and creates one `status: applied` Replan file
 
-### Requirement: Event-driven asynchronous Review and closure
+### Requirement: Explicit Review intake and direct closure
 
-Hardness MUST expose exactly three Review routes: Incident Review, Final Review, and External Review. Incident Review MUST start automatically only after evidence demonstrates a major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion problem. Routine tasks, expected TDD failures, local repairs, documentation edits, and Advisory observations MUST NOT trigger Review. A completed Change with broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact MUST receive one approving Final Review after scope freeze against its current final snapshot. A verified small low-impact Change MUST instead record `Final Review: not required` with rationale and MUST NOT create a placeholder Review. Diff size alone MUST NOT determine impact. The user or another agent MAY start an External Review at any time; Hardness MUST register, reproduce, and triage it without treating the report or its severity as an automatic Replan.
+Hardness MUST NOT start Incident Review, Final Review, or any other Review automatically from impact, diff size, task count, a local defect, or a verification result. When no Review has been explicitly requested, verified work MAY proceed directly to completed closure and archive after tasks, durable-spec sync, attachments, and evidence are ready; it MUST NOT create a placeholder Review or a not-required Review disposition. A problem found during implementation or verification SHALL be diagnosed and repaired inside the current task when planning truth remains valid, or SHALL trigger the evidence-gated replan path when requirements, design, verification, artifacts, or Task DAG truth became invalid.
 
-Every new Review MUST use a unique Review file and immutable content reference. Before a required Final Review, every implementation, documentation, specification, test, script, planned capability-knowledge output, proving verification result, and closure input MUST be complete in the fixed semantic snapshot. When a reviewer subagent is available, Hardness SHOULD dispatch it asynchronously and MAY continue disjoint main-thread work. Knowledge admission, closure, archive, integration, and completion claims MUST wait for the applicable gate. After assignment, only Review/Task/INDEX lifecycle bookkeeping and deterministic closure/archive metadata or move MAY follow without invalidating coverage. If deliverable content changes, that result MUST NOT close the current Final Review; Hardness MUST absorb late changes and request one batched incremental Final Review after the next scope freeze. Review records MUST preserve actual assignment, completion, and closure times and MUST NOT impose a report line limit.
+The user or an external agent MAY explicitly request a fixed-snapshot Review. Hardness SHALL register that Review with a unique file and materializable immutable content reference, reproduce and triage its findings, and MAY run the assigned reviewer asynchronously when useful; asynchronous execution is optional and does not become the default lifecycle. A finding never directly triggers replan. Before completed archive, every explicitly registered Review file MUST be `closed` or `superseded`, no Critical or Required finding may remain open or deferred, and resolutions MUST retain evidence. Review records MUST preserve actual lifecycle times, concrete findings, and detailed resolution history without a report line limit.
 
-Before completed archive, broad-impact work MUST have one approving Final Review `closed` against the current final snapshot, while verified small low-impact work MUST record `Final Review: not required` with rationale. Every existing Review file MUST be `closed` or `superseded`; no Critical or Required finding may remain open or deferred; and every resolved finding MUST include resolution and evidence.
+#### Scenario: Archive verified work without Review
+- **WHEN** every task and required verification passes, durable truth is synchronized, closure evidence is ready, and no Review was explicitly requested
+- **THEN** Hardness prepares completed closure and archives directly without creating a Review record or impact classification ceremony
 
-#### Scenario: Finish a small ordinary change
-- **WHEN** routine tasks and expected local repairs complete without a demonstrated major incident
-- **THEN** Hardness records `Final Review: not required` with low-impact rationale and closes from focused verification without creating a Review file
+#### Scenario: Replan a discovered planning failure
+- **WHEN** implementation or verification evidence invalidates a requirement, design boundary, verification contract, required artifact, or Task DAG edge
+- **THEN** Hardness applies the replan protocol, preserves valid work, repairs the new plan, and verifies again without starting Review automatically
 
-#### Scenario: Finish a broad-impact change
-- **WHEN** completed scope crosses a public, multi-boundary, safety, compatibility, release, production-performance, or architectural impact boundary
-- **THEN** Hardness starts one Final Review only after every deliverable, planned capability-knowledge output, verification result, closure input, accepted Replan, and queued user change reaches scope freeze
-
-#### Scenario: Admit reviewed capability knowledge without changing final content
-- **WHEN** a broad-impact Change promotes reusable guidance
-- **THEN** the complete intended capability file and INDEX entry are present in the Final Review snapshot, and approval admits them without a post-Review content rewrite
-
-#### Scenario: Review a major incident asynchronously
-- **WHEN** evidence demonstrates a qualifying major incident and an immutable review snapshot is available
-- **THEN** Hardness assigns an Incident Review to a reviewer subagent while the main thread may continue disjoint work without crossing the affected gate
-
-#### Scenario: Change reviewed scope while Final Review runs
-- **WHEN** task-owned content changes after the Final Review snapshot was assigned
-- **THEN** the returned report remains evidence for its immutable snapshot but cannot close the current final gate, and late changes are batched before one incremental Final Review
-
-#### Scenario: Ingest an externally started review
-- **WHEN** the user or another agent creates a unique External Review file
-- **THEN** Hardness indexes it, binds or reproduces its snapshot and findings, and triages it at the nearest safe boundary without directly triggering Replan
+#### Scenario: Process an explicitly requested Review
+- **WHEN** the user or an external agent requests Review of an exact snapshot
+- **THEN** Hardness registers and triages the Review, optionally delegates it asynchronously, and blocks archive only until that explicit Review is resolved or superseded
 
 #### Scenario: Preserve detailed Review evidence
 - **WHEN** findings require extensive evidence, impact analysis, resolution conditions, or re-review history
@@ -218,22 +202,26 @@ All maintained OpenSpec source documentation, Skills, command references, projec
 
 ### Requirement: Harness dogfooding feedback
 
-Hardness SHALL support self-hosted evolution in which Hardness and OpenSpec changes are executed through the same harness being developed. Every discovered problem MUST be classified from evidence before it changes durable policy: a local implementation defect remains in the current task or an implementation issue, an invalid planning boundary creates Replan, and a recurring reusable invariant may be promoted to capability knowledge.
+Hardness SHALL expose cheap visible feedback during self-hosted evolution. `hardness.status` MUST report installation and selected-workspace identity without a detailed repository scan. `hardness.observe` MUST append a versioned, timestamped observation or lifecycle span under ignored `Saved/Hardness/` data without changing tracked workflow truth. `hardness.evolution.status` MUST summarize ignored observation availability and the most recent tracked workflow evaluation without replaying all raw history. Every Hardness or OpenSpec self-hosting Change MUST create one compact tracked workflow evaluation before completed closure, covering elapsed lifecycle stages, friction, corrective actions, deferred items, and raw-data provenance.
 
-#### Scenario: Dogfooding exposes a local defect
-- **WHEN** a self-hosted run finds behavior that violates an existing requirement without invalidating the plan
-- **THEN** the coordinator records reproducible evidence, adds a regression test, repairs the current task, and does not create Replan
+#### Scenario: Record a local workflow observation
+- **WHEN** an agent detects workflow friction, a useful timing boundary, or a candidate invariant
+- **THEN** `hardness.observe` appends an independent ignored record and returns its run ID and exact local path
 
-#### Scenario: Dogfooding invalidates the plan
-- **WHEN** self-hosted evidence proves that a requirement, acceptance contract, task boundary, or dependency edge is false
-- **THEN** the coordinator applies the Replan protocol, preserves valid work, and resumes without asking the user for an in-scope technical decision
+#### Scenario: Review evolution without loading raw history
+- **WHEN** a caller invokes `hardness.evolution.status`
+- **THEN** the result reports counts, latest timestamps, and the latest tracked evaluation reference without bulk-loading observation bodies
+
+#### Scenario: Close a self-hosting Change
+- **WHEN** a Hardness or OpenSpec Change is ready for completed closure
+- **THEN** one indexed compact workflow evaluation is already tracked in that Change and raw Saved observations remain ignored
 
 ### Requirement: Progressive harness knowledge promotion
 
 Reusable harness knowledge MUST be loaded progressively and promoted explicitly. Change attachments own current evidence; capability-side `knowledges/` owns stable reusable guidance; project instructions own only cross-capability invariants. Every capability knowledge directory MUST have one `INDEX.md` that links every knowledge file exactly once with summary, served requirement/capability, source, and status. Archive MUST NOT promote knowledge implicitly.
 
 #### Scenario: Promote a stable learning
-- **WHEN** a finding is evidence-backed, remains valid after repair and re-review, applies beyond one task, and changes future agent decisions
+- **WHEN** a finding is evidence-backed, remains valid after repair and verification, applies beyond one task, and changes future agent decisions
 - **THEN** closure copies a concise generalized record into the Hardness capability knowledge and indexes it without copying transient logs, hashes, or incident chronology
 
 #### Scenario: Retain one-off evidence locally
@@ -246,36 +234,56 @@ Reusable harness knowledge MUST be loaded progressively and promoted explicitly.
 
 ### Requirement: Reusable PowerShell entry
 
-Hardness SHALL require PowerShell 7.0 or later with the Core edition and SHALL support repeated Workspace and OpenSpec invocations in one supported session without polluting the caller environment. Windows PowerShell 5.1 is not a supported harness host. Every invocation SHALL return an independent run ID and the common result envelope.
+Hardness SHALL require PowerShell 7.0 or later with the Core edition and SHALL support repeated Workspace, Git, observation, and OpenSpec invocations in one session without polluting caller location or shared global state. Every invocation SHALL return an independent run ID and the common result envelope. Session-local caches MAY retain bounded stable facts but MUST NOT cache dirty state, branch tips, authorization decisions, or mutation preconditions.
 
 #### Scenario: Reuse one PowerShell 7 session
-- **WHEN** Hardness invokes Workspace or OpenSpec commands repeatedly in one supported PowerShell 7 session
-- **THEN** modules remain reusable, the caller location is restored, and each invocation returns an independent run ID and result
+- **WHEN** Hardness commands run repeatedly in one supported session
+- **THEN** leaf modules remain reusable, caller location is restored, every invocation has an independent run ID, and no Windows PowerShell 5.1 path is exposed
 
-#### Scenario: List the gate matrix
-- **WHEN** a caller lists Quick, Performance, or Integration checks
-- **THEN** every script and performance check launches `pwsh.exe`, every host-qualified result is labeled `PS7`, and no PS5 or multi-host selector is exposed
+#### Scenario: Invalidate safety-sensitive facts
+- **WHEN** a command depends on current branch, HEAD, registration, dirtiness, or explicit authority
+- **THEN** Hardness reads the current fact instead of trusting a stale cache
 
-### Requirement: Autonomous Goal execution within authority
+### Requirement: Autonomous execution within authority
 
-Goal mode SHALL autonomously investigate, choose in-scope technical solutions, replan, implement, verify, and re-review without interrupting the user for ordinary technical choices or Review findings. It MUST stop when progress requires new authority, risks destructive user-data changes, requires merge/push/publication without authorization, lacks external credentials, or faces irreconcilable explicit instructions.
+Hardness SHALL autonomously investigate, select in-scope technical solutions, update/replan, implement, verify, and resolve explicitly registered Review findings in the selected workspace without interrupting the user for ordinary technical choices. It MUST stop when progress requires new authority, risks destructive user-data changes, requires integration, push, publication, or removal without authorization, lacks external credentials, or faces irreconcilable explicit instructions. This autonomy is independent of whether Codex `/goal` is active.
 
-#### Scenario: Reviewer finds a required defect
-- **WHEN** a Required finding can be resolved within the existing goal and authority
-- **THEN** Hardness completes triage, repair, verification, and re-review without requesting an ordinary technical decision
+#### Scenario: Resolve an in-scope Review finding
+- **WHEN** a Required finding can be repaired within the accepted scope and current authority
+- **THEN** Hardness completes triage, repair, verification, and re-review in the same selected workspace without requesting an ordinary technical decision
 
-### Requirement: Ready-to-integrate finish state
+### Requirement: Ready-to-deliver finish state
 
-A successful Goal MUST reach committed, verified, reviewed, and ready-to-integrate while preserving its branch and worktree for inspection. `git.commit` MAY establish scoped Git closure without claiming verification or Review completion. `git.integrate` MAY occur only as a later explicitly authorized action against the exact reviewed source HEAD and MUST leave remote state and the source workspace unchanged. `git.push` and `workspace.remove` MUST remain distinct later operations that each require explicit user intent.
+Successful work MUST reach committed, verified, and closure-ready state while preserving its selected workspace and branch for inspection. Any explicitly registered Review MUST also be resolved or superseded. `git.commit` MAY establish scoped Git closure without claiming verification completion. `git.integrate` MAY run only after explicit user authorization against the exact verified source workspace and HEAD. `git.push` and `workspace.remove` MUST remain distinct later operations requiring separate explicit user intent.
 
-#### Scenario: Finish a successful Goal
-- **WHEN** all tasks, verification, and Review Gates are closed
-- **THEN** the system reports commits, evidence, non-gating tests not run, and integration commands without automatically merging, pushing, or removing the worktree
+#### Scenario: Finish in the selected workspace
+- **WHEN** all tasks and verification complete and any explicitly registered Review is resolved
+- **THEN** Hardness reports commits, evidence, excluded tests, elapsed workflow evaluation, and delivery options without automatically integrating, pushing, or removing a workspace
 
 #### Scenario: Integrate after explicit authorization
-- **WHEN** the user explicitly requests integration after all gates pass
-- **THEN** the coordinator audits overlap with the primary checkout, preserves unrelated dirty changes, integrates affected submodules before the parent, and leaves remote state and the source workspace unchanged
+- **WHEN** the user explicitly requests local integration
+- **THEN** the coordinator checks the exact reviewed source HEAD, preserves unrelated target changes, integrates affected submodules before the parent, and leaves remote state and source workspace unchanged
 
-#### Scenario: Publish or clean up later
-- **WHEN** local integration is complete
-- **THEN** no remote or worktree changes occur until the user separately requests non-force push or worktree cleanup
+### Requirement: Optional low-cost Codex hooks
+
+The repository MAY provide project-local Codex `SessionStart` and `SubagentStart` hooks that call the same fast Hardness status contract. Hooks MUST be optional, bounded, PowerShell 7-only, non-mutating, and fail open with concise diagnostics. They MUST NOT run detailed Git/submodule scans, create workflow records automatically, become required by Cursor or Grok, or add `Stop` or `PostToolUse` hooks in this Change.
+
+#### Scenario: Start a trusted Codex session
+- **WHEN** Codex trusts the project hook configuration and emits `SessionStart` or `SubagentStart`
+- **THEN** the hook resolves the event workspace from its working directory and injects a bounded status summary without changing repository state
+
+#### Scenario: Run in another client
+- **WHEN** Cursor, Grok, or a Codex session without trusted project hooks uses Hardness
+- **THEN** all cross-client workflow routes remain functional without the hooks
+
+### Requirement: Visible OpenSpec maintenance state
+
+Hardness SHALL expose a read-only `openspec.maintenance.status` route that compares the packaged executable and release manifest with the recorded `Tools/openspec` source submodule state. It MUST report source path, source HEAD, source dirtiness, packaged version/hash, and alignment or maintenance-needed reasons without fetching, rebuilding, tagging, replacing, or committing the executable. Upgrade execution remains an explicit future OpenSpec maintenance Change.
+
+#### Scenario: Inspect an aligned package
+- **WHEN** the packaged manifest, executable identity, and recorded source commit agree
+- **THEN** maintenance status reports aligned with the exact source and package identities
+
+#### Scenario: Detect maintenance work
+- **WHEN** source state, manifest, or package identity differs
+- **THEN** the route reports evidence and recommends a separate maintenance Change without mutating either repository

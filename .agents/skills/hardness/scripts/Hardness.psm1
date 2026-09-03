@@ -1,8 +1,11 @@
+#requires -Version 7.0
+#requires -PSEdition Core
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:HardnessSchemaVersion = '1.0'
-$script:HardnessProjectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
+$script:HardnessHarnessRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
+$script:HardnessContextSchemaVersion = '2'
 $script:HardnessRoutes = $null
 $script:HardnessRouteByName = $null
 $script:HardnessResolvedRoots = @{}
@@ -58,8 +61,9 @@ function Initialize-HardnessRoutes {
     $openspecExecutable = '.agents/skills/openspec/bin/openspec.exe'
     $routes = New-Object System.Collections.Generic.List[object]
 
-    $routes.Add((New-HardnessRoute 'workspace.status' 'PowerShell' $workspaceModule 'Get-HardnessWorkspaceStatus' @() @{} 'Inspect workspace and submodule state.')) | Out-Null
-    $routes.Add((New-HardnessRoute 'workspace.new' 'PowerShell' $workspaceModule 'New-HardnessWorkspace' @() @{} 'Create and bootstrap an isolated goal worktree.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.list' 'PowerShell' $workspaceModule 'Get-HardnessWorkspaceList' @() @{} 'List registered Git workspaces without a dirty-state scan.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.status' 'PowerShell' $workspaceModule 'Get-HardnessWorkspaceStatus' @() @{} 'Inspect fast workspace identity or opt into detailed repository state.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.new' 'PowerShell' $workspaceModule 'New-HardnessWorkspace' @() @{} 'Create and bootstrap an explicitly named worktree.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.bootstrap' 'PowerShell' $workspaceModule 'Initialize-HardnessWorkspace' @() @{} 'Bootstrap an existing worktree safely.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.verify' 'PowerShell' $workspaceModule 'Test-HardnessWorkspace' @() @{} 'Verify exact gitlinks and local configuration safety.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.remove' 'PowerShell' $workspaceModule 'Remove-HardnessWorkspace' @() @{} 'Explicitly remove a clean registered worktree or recover its empty residual root.')) | Out-Null
@@ -70,13 +74,18 @@ function Initialize-HardnessRoutes {
 
     $routes.Add((New-HardnessRoute 'git.status' 'PowerShell' $gitModule 'Get-HardnessGitStatus' @() @{} 'Inspect parent and top-level submodule Git state.')) | Out-Null
     $routes.Add((New-HardnessRoute 'git.commit' 'PowerShell' $gitModule 'Complete-HardnessGitCommit' @() @{} 'Commit exact scopes with dirty submodules before parent gitlinks.')) | Out-Null
-    $routes.Add((New-HardnessRoute 'git.integrate' 'PowerShell' $gitModule 'Merge-HardnessGitGoal' @() @{} 'Explicitly integrate an exact reviewed Goal into the primary workspace.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'git.integrate' 'PowerShell' $gitModule 'Merge-HardnessGitWorkspace' @() @{} 'Explicitly integrate an exact reviewed workspace into the primary workspace.')) | Out-Null
     $routes.Add((New-HardnessRoute 'git.push' 'PowerShell' $gitModule 'Publish-HardnessGitBranches' @() @{} 'Explicitly push named local branches without force.')) | Out-Null
 
     foreach ($command in @('init', 'doctor', 'status', 'instructions', 'validate', 'domain', 'spec', 'change', 'workflow', 'completion')) {
         $routes.Add((New-HardnessRoute "openspec.$command" 'Native' $openspecExecutable '' @($command) @{} "Run openspec $command.")) | Out-Null
     }
     $routes.Add((New-HardnessRoute -Name 'task.status' -Kind 'Native' -Target $openspecExecutable -Prefix @('instructions', 'apply', '--json') -Description 'Inspect the selected Task Graph through the OpenSpec parser.' -OutputFormat 'TaskPlanJson')) | Out-Null
+
+    $routes.Add((New-HardnessRoute 'hardness.status' 'Internal' '' 'Get-HardnessStatus' @() @{} 'Inspect the selected workspace and installed harness through a fast read-only route.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'hardness.observe' 'Internal' '' 'Add-HardnessObservation' @() @{} 'Record one bounded ignored workflow observation.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'hardness.evolution.status' 'Internal' '' 'Get-HardnessEvolutionStatus' @() @{} 'Summarize local observations and the latest tracked workflow evaluation.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'openspec.maintenance.status' 'Internal' '' 'Get-HardnessOpenSpecMaintenanceStatus' @() @{} 'Compare packaged OpenSpec identity with its tracked source without mutation.')) | Out-Null
 
     $script:HardnessRoutes = @($routes | ForEach-Object { $_ })
     $script:HardnessRouteByName = @{}
@@ -90,7 +99,7 @@ function Initialize-HardnessRoutes {
 
 function Resolve-HardnessProjectRoot {
     param([string]$ProjectRoot)
-    $candidate = if ([string]::IsNullOrWhiteSpace($ProjectRoot)) { $script:HardnessProjectRoot } else { $ProjectRoot }
+    $candidate = if ([string]::IsNullOrWhiteSpace($ProjectRoot)) { $script:HardnessHarnessRoot } else { $ProjectRoot }
     try {
         $resolved = [System.IO.Path]::GetFullPath($candidate)
     }
@@ -154,7 +163,7 @@ function Assert-HardnessPathChainSafe {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
         [Parameter(Mandatory = $true)][string]$Target,
-        [string]$Purpose = 'Goal workspace routing'
+        [string]$Purpose = 'workspace routing'
     )
 
     $rootPath = [System.IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
@@ -183,118 +192,22 @@ function Assert-HardnessPathChainSafe {
     return $targetPath
 }
 
-function Get-HardnessRepositoryAuthority {
-    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+function Import-HardnessLeafModule {
+    param([Parameter(Mandatory = $true)][string]$RelativeManifest)
 
-    $requestedRoot = Resolve-HardnessProjectRoot -ProjectRoot $ProjectRoot
-    $topLevelResult = Invoke-HardnessGit -Repository $requestedRoot -Arguments @('rev-parse', '--show-toplevel')
-    $checkoutRoot = [System.IO.Path]::GetFullPath(([string]($topLevelResult.Output | Select-Object -Last 1)).Trim())
-    $worktreeResult = Invoke-HardnessGit -Repository $checkoutRoot -Arguments @('worktree', 'list', '--porcelain')
-    $registered = New-Object System.Collections.Generic.List[string]
-    foreach ($line in @($worktreeResult.Output)) {
-        if ($line -like 'worktree *') {
-            $registered.Add([System.IO.Path]::GetFullPath($line.Substring(9).Trim())) | Out-Null
-        }
+    $manifest = Join-Path $script:HardnessHarnessRoot $RelativeManifest
+    if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+        throw "Hardness leaf module was not found: $manifest"
     }
-    if ($registered.Count -eq 0) {
-        throw "Git did not report a canonical primary worktree for '$checkoutRoot'."
-    }
-    $primaryRoot = [string]$registered[0]
-    if (-not (@($registered | Where-Object { Test-HardnessPathEqual -Left $_ -Right $checkoutRoot }).Count -eq 1)) {
-        throw "The requested checkout is not a registered worktree: $checkoutRoot"
-    }
-    return [pscustomobject]@{
-        CheckoutRoot    = $checkoutRoot
-        PrimaryRoot     = $primaryRoot
-        WorkspaceRoot   = [System.IO.Path]::GetFullPath((Join-Path $primaryRoot '.worktrees'))
-        RegisteredRoots = @($registered | ForEach-Object { $_ })
-    }
+    Import-Module $manifest -ErrorAction Stop
+    return Get-Module -Name ([System.IO.Path]::GetFileNameWithoutExtension($manifest)) -ErrorAction Stop
 }
 
-function Assert-HardnessGoalName {
-    param([Parameter(Mandatory = $true)][string]$GoalName)
+function Get-HardnessLiveHead {
+    param([Parameter(Mandatory = $true)][string]$WorkspaceRoot)
 
-    if ([string]::IsNullOrWhiteSpace($GoalName) -or
-        $GoalName -notmatch '^[A-Za-z0-9._-]{1,80}$' -or
-        $GoalName -eq '.' -or
-        $GoalName -eq '..') {
-        throw "Invalid GoalName '$GoalName': use 1-80 letters, digits, dots, underscores, or hyphens without traversal or path separators."
-    }
-    return $GoalName
-}
-
-function Resolve-HardnessGoalSelection {
-    param(
-        [Parameter(Mandatory = $true)]$Authority,
-        [string]$GoalName,
-        [string]$WorkspaceRoot
-    )
-
-    $hasName = -not [string]::IsNullOrWhiteSpace($GoalName)
-    $hasRoot = -not [string]::IsNullOrWhiteSpace($WorkspaceRoot)
-    if (-not $hasName -and -not $hasRoot) {
-        throw 'Goal mode requires -GoalName or -WorkspaceRoot so the isolated workspace is explicit.'
-    }
-
-    $explicitRoot = if ($hasRoot) {
-        try { [System.IO.Path]::GetFullPath($WorkspaceRoot) }
-        catch { throw "Goal WorkspaceRoot is not a valid file-system path: $WorkspaceRoot" }
-    }
-    else { '' }
-    $selectedName = if ($hasName) { Assert-HardnessGoalName -GoalName $GoalName } else { Split-Path -Leaf $explicitRoot.TrimEnd('\', '/') }
-    [void](Assert-HardnessGoalName -GoalName $selectedName)
-    $canonicalRoot = [System.IO.Path]::GetFullPath((Join-Path $Authority.WorkspaceRoot $selectedName))
-    if (-not (Test-HardnessPathEqual -Left (Split-Path -Parent $canonicalRoot) -Right $Authority.WorkspaceRoot)) {
-        throw "Goal workspace must be a direct child of the canonical '$($Authority.WorkspaceRoot)' directory."
-    }
-    if ($hasRoot -and -not (Test-HardnessPathEqual -Left $explicitRoot -Right $canonicalRoot)) {
-        throw "Explicit Goal WorkspaceRoot '$explicitRoot' does not match canonical workspace '$canonicalRoot'."
-    }
-    [void](Assert-HardnessPathChainSafe -Root $Authority.PrimaryRoot -Target $canonicalRoot -Purpose 'Goal workspace routing')
-    return [pscustomobject]@{ GoalName = $selectedName; WorkspaceRoot = $canonicalRoot }
-}
-
-function Assert-HardnessGoalRouteAuthority {
-    param(
-        [Parameter(Mandatory = $true)]$Context,
-        [switch]$AllowCreateCandidate,
-        [switch]$AllowEmptyUnregisteredRemoval
-    )
-
-    $authorityRoot = if ($AllowEmptyUnregisteredRemoval -and
-        'PrimaryRoot' -in @($Context.PSObject.Properties.Name) -and
-        -not [string]::IsNullOrWhiteSpace([string]$Context.PrimaryRoot)) {
-        [string]$Context.PrimaryRoot
-    }
-    else {
-        [string]$Context.ProjectRoot
-    }
-    $authority = Get-HardnessRepositoryAuthority -ProjectRoot $authorityRoot
-    $selection = Resolve-HardnessGoalSelection -Authority $authority -GoalName ([string]$Context.GoalName) -WorkspaceRoot ([string]$Context.WorkspaceRoot)
-    if ($AllowCreateCandidate) {
-        return $selection.WorkspaceRoot
-    }
-    if (-not [System.IO.Directory]::Exists($selection.WorkspaceRoot)) {
-        throw "Goal workspace is not an existing registered worktree: $($selection.WorkspaceRoot)"
-    }
-    [void](Assert-HardnessPathChainSafe -Root $authority.PrimaryRoot -Target $selection.WorkspaceRoot -Purpose 'Goal route execution')
-    $isRegistered = @($authority.RegisteredRoots | Where-Object { Test-HardnessPathEqual -Left $_ -Right $selection.WorkspaceRoot }).Count -eq 1
-    if (-not $isRegistered) {
-        if ($AllowEmptyUnregisteredRemoval) {
-            $targetItem = Get-Item -LiteralPath $selection.WorkspaceRoot -Force -ErrorAction Stop
-            $remainingEntries = @(Get-ChildItem -LiteralPath $selection.WorkspaceRoot -Force -ErrorAction Stop)
-            if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0) {
-                return $selection.WorkspaceRoot
-            }
-        }
-        throw "Goal workspace is not a registered worktree: $($selection.WorkspaceRoot)"
-    }
-    $workspaceTop = Invoke-HardnessGit -Repository $selection.WorkspaceRoot -Arguments @('rev-parse', '--show-toplevel')
-    $resolvedTop = [System.IO.Path]::GetFullPath(([string]($workspaceTop.Output | Select-Object -Last 1)).Trim())
-    if (-not (Test-HardnessPathEqual -Left $resolvedTop -Right $selection.WorkspaceRoot)) {
-        throw "Goal workspace does not resolve to its registered worktree root: $($selection.WorkspaceRoot)"
-    }
-    return $selection.WorkspaceRoot
+    $result = Invoke-HardnessGit -Repository $WorkspaceRoot -Arguments @('rev-parse', 'HEAD')
+    return ([string]($result.Output | Select-Object -Last 1)).Trim().ToLowerInvariant()
 }
 
 function ConvertTo-HardnessNativeArguments {
@@ -410,36 +323,28 @@ function New-HardnessResult {
 function New-HardnessContext {
     [CmdletBinding()]
     param(
-        [ValidateSet('Goal', 'Current')][string]$Mode = 'Goal',
-        [string]$ProjectRoot = '',
-        [string]$GoalName = '',
-        [string]$WorkspaceRoot = ''
+        [string]$WorkspaceRoot = '',
+        [switch]$Refresh
     )
 
-    $root = Resolve-HardnessProjectRoot -ProjectRoot $ProjectRoot
-    $primaryRoot = $root
-    $workspaceContainer = ''
-    $resolvedGoalName = $GoalName
-    $resolvedWorkspace = $root
-    if ($Mode -eq 'Goal') {
-        $authority = Get-HardnessRepositoryAuthority -ProjectRoot $root
-        $selection = Resolve-HardnessGoalSelection -Authority $authority -GoalName $GoalName -WorkspaceRoot $WorkspaceRoot
-        $root = $authority.CheckoutRoot
-        $primaryRoot = $authority.PrimaryRoot
-        $workspaceContainer = $authority.WorkspaceRoot
-        $resolvedGoalName = $selection.GoalName
-        $resolvedWorkspace = $selection.WorkspaceRoot
+    $selected = $WorkspaceRoot
+    if ([string]::IsNullOrWhiteSpace($selected)) {
+        $selected = [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process')
     }
-    return [pscustomobject]@{
-        PSTypeName    = 'AngelscriptProject.HardnessContext'
-        Mode          = $Mode
-        ProjectRoot   = $root
-        PrimaryRoot   = $primaryRoot
-        WorkspaceContainer = $workspaceContainer
-        GoalName      = $resolvedGoalName
-        WorkspaceRoot = [System.IO.Path]::GetFullPath($resolvedWorkspace)
-        CreatedAt     = [DateTimeOffset]::UtcNow
+    if ([string]::IsNullOrWhiteSpace($selected)) {
+        $selected = (Get-Location).Path
     }
+    $selected = Resolve-HardnessProjectRoot -ProjectRoot $selected
+
+    $workspaceModule = Import-HardnessLeafModule -RelativeManifest '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
+    $command = $workspaceModule.ExportedCommands['Get-HardnessWorkspaceContext']
+    if ($null -eq $command) { throw 'workspace-lifecycle does not expose Get-HardnessWorkspaceContext.' }
+    $identity = & $command -ProjectRoot $selected -Refresh:$Refresh
+    $identity.PSObject.TypeNames.Insert(0, 'AngelscriptProject.HardnessContext')
+    if ([string]$identity.SchemaVersion -ne $script:HardnessContextSchemaVersion) {
+        throw "Unsupported workspace context schema '$($identity.SchemaVersion)'."
+    }
+    return $identity
 }
 
 function Get-HardnessCommand {
@@ -467,48 +372,38 @@ function Add-HardnessContextDefaults {
         foreach ($key in @($Parameters.Keys)) { $values[$key] = $Parameters[$key] }
     }
     switch ($Route.Name) {
-        'workspace.status'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
-        'workspace.new'      {
-            if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.ProjectRoot }
-            if (-not $values.ContainsKey('Name') -and -not [string]::IsNullOrWhiteSpace($Context.GoalName)) { $values.Name = $Context.GoalName }
+        { $_ -in @('workspace.list', 'workspace.status') } {
+            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
         }
-        'workspace.bootstrap' { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
-        'workspace.verify'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
+        'workspace.new'      {
+            if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.PrimaryRoot }
+        }
+        'workspace.bootstrap' { if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot } }
+        'workspace.verify'   { if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot } }
         'workspace.activate' {
-            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
-            if (-not $values.ContainsKey('Mode')) { $values.Mode = $Context.Mode }
-            if (-not $values.ContainsKey('GoalName')) { $values.GoalName = $Context.GoalName }
+            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
         }
         { $_ -in @('workspace.config.status', 'workspace.config.get', 'workspace.config.set', 'git.status', 'git.push') } {
-            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
+            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
         }
         'git.commit' {
-            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
-            if (-not $values.ContainsKey('Mode')) { $values.Mode = $Context.Mode }
-            if (-not $values.ContainsKey('GoalName')) { $values.GoalName = $Context.GoalName }
+            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
         }
         'git.integrate' {
-            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.PrimaryRoot }
+            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.PrimaryRoot }
         }
         'workspace.remove'   {
-            if ([string]$Context.Mode -eq 'Goal') {
-                if ($values.ContainsKey('RepositoryRoot') -and
-                    ([string]::IsNullOrWhiteSpace([string]$values.RepositoryRoot) -or
-                    -not (Test-HardnessPathEqual -Left ([string]$values.RepositoryRoot) -Right ([string]$Context.PrimaryRoot)))) {
-                    throw 'Goal workspace.remove RepositoryRoot must match the context PrimaryRoot.'
-                }
-                if ($values.ContainsKey('WorktreeRoot') -and
-                    ([string]::IsNullOrWhiteSpace([string]$values.WorktreeRoot) -or
-                    -not (Test-HardnessPathEqual -Left ([string]$values.WorktreeRoot) -Right ([string]$Context.WorkspaceRoot)))) {
-                    throw 'Goal workspace.remove WorktreeRoot must match the context WorkspaceRoot.'
-                }
-                $values.RepositoryRoot = $Context.PrimaryRoot
-                $values.WorktreeRoot = $Context.WorkspaceRoot
+            if ($values.ContainsKey('RepositoryRoot') -and -not (Test-HardnessPathEqual -Left ([string]$values.RepositoryRoot) -Right ([string]$Context.PrimaryRoot))) {
+                throw 'workspace.remove RepositoryRoot must match the context PrimaryRoot.'
             }
-            else {
-                if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.ProjectRoot }
-                if (-not $values.ContainsKey('WorktreeRoot')) { $values.WorktreeRoot = $Context.WorkspaceRoot }
+            if ($values.ContainsKey('WorktreeRoot') -and -not (Test-HardnessPathEqual -Left ([string]$values.WorktreeRoot) -Right ([string]$Context.WorkspaceRoot))) {
+                throw 'workspace.remove WorktreeRoot must match the context WorkspaceRoot.'
             }
+            $values.RepositoryRoot = $Context.PrimaryRoot
+            $values.WorktreeRoot = $Context.WorkspaceRoot
+        }
+        { $_ -in @('hardness.status', 'hardness.observe', 'hardness.evolution.status', 'openspec.maintenance.status') } {
+            if (-not $values.ContainsKey('Context')) { $values.Context = $Context }
         }
     }
     return $values
@@ -527,38 +422,24 @@ function Invoke-Hardness {
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         if ($null -eq $Context) {
-            $Context = New-HardnessContext -Mode Current
+            $Context = New-HardnessContext
         }
         $route = Get-HardnessCommand -Name $Command
         if ($null -eq $route) {
             throw "Unknown Hardness command '$Command'. Use Get-HardnessCommand to list routes."
         }
-        $allowEmptyUnregisteredRemoval = $false
-        if ($route.Name -eq 'workspace.remove' -and $null -ne $Parameters -and $Parameters.ContainsKey('DiscardIgnoredFiles')) {
-            $discardValue = $Parameters['DiscardIgnoredFiles']
-            $allowEmptyUnregisteredRemoval = ($discardValue -is [bool] -and $discardValue)
+        foreach ($required in @('HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'Branch', 'Head')) {
+            if ($required -notin @($Context.PSObject.Properties.Name)) { throw "Invalid Hardness context: missing '$required'." }
         }
-        if ([string]$Context.Mode -eq 'Goal') {
-            [void](Assert-HardnessGoalRouteAuthority -Context $Context -AllowCreateCandidate:($route.Name -eq 'workspace.new') -AllowEmptyUnregisteredRemoval:$allowEmptyUnregisteredRemoval)
-        }
-        $routeRoot = if ($Context.Mode -eq 'Goal') {
-            if ($route.Name -eq 'workspace.new') {
-                $Context.ProjectRoot
-            }
-            elseif ($route.Name -in @('workspace.remove', 'git.integrate', 'git.push')) {
-                $Context.PrimaryRoot
-            }
-            else {
-                $Context.WorkspaceRoot
-            }
-        }
-        else {
-            $Context.ProjectRoot
-        }
-        $target = Join-Path $routeRoot $route.Target
+        $target = if ($route.Kind -eq 'Internal') { '' } else { Join-Path ([string]$Context.HarnessRoot) $route.Target }
         $data = $null
         $exitCode = 0
-        if ($route.Kind -eq 'PowerShell') {
+        if ($route.Kind -eq 'Internal') {
+            $invokeParameters = Add-HardnessContextDefaults -Route $route -Context $Context -Parameters $Parameters
+            $function = Get-Command -Name $route.EntryPoint -CommandType Function -ErrorAction Stop
+            $data = & $function @invokeParameters @ArgumentList
+        }
+        elseif ($route.Kind -eq 'PowerShell') {
             if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
                 throw "Leaf module for '$Command' was not found: $target"
             }
@@ -576,7 +457,7 @@ function Invoke-Hardness {
             $ErrorActionPreference = 'Continue'
             $locationPushed = $false
             try {
-                Push-Location -LiteralPath $routeRoot
+                Push-Location -LiteralPath $Context.WorkspaceRoot
                 $locationPushed = $true
                 $output = & $target @nativeArguments 2>&1
                 $exitCode = $LASTEXITCODE
@@ -616,11 +497,192 @@ function Invoke-Hardness {
     }
 }
 
+function Get-HardnessStatus {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Context)
+
+    $workspaceModule = Import-HardnessLeafModule -RelativeManifest '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
+    $statusCommand = $workspaceModule.ExportedCommands['Get-HardnessWorkspaceStatus']
+    if ($null -eq $statusCommand) { throw 'workspace-lifecycle does not expose Get-HardnessWorkspaceStatus.' }
+    $workspace = & $statusCommand -ProjectRoot $Context.WorkspaceRoot
+
+    Initialize-HardnessRoutes
+    $manifestPath = Join-Path $Context.HarnessRoot '.agents/skills/openspec/release-manifest.json'
+    $packageVersion = ''
+    if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+        try { $packageVersion = [string](Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -ErrorAction Stop).version }
+        catch { $packageVersion = 'invalid-manifest' }
+    }
+    return [pscustomobject][ordered]@{
+        SchemaVersion = $script:HardnessContextSchemaVersion
+        HarnessRoot   = $Context.HarnessRoot
+        Workspace     = $workspace
+        RouteCount    = $script:HardnessRoutes.Count
+        PowerShell    = [pscustomobject]@{ Edition = $PSVersionTable.PSEdition; Version = [string]$PSVersionTable.PSVersion }
+        OpenSpec      = [pscustomobject]@{ Installed = Test-Path -LiteralPath $manifestPath -PathType Leaf; Version = $packageVersion }
+        DetailedScan  = $false
+    }
+}
+
+function Add-HardnessObservation {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]$Context,
+        [Parameter(Mandatory = $true)][ValidatePattern('^[A-Za-z][A-Za-z0-9._-]{0,63}$')][string]$Category,
+        [Parameter(Mandatory = $true)][ValidateLength(1, 1000)][string]$Summary,
+        [ValidatePattern('^[A-Za-z0-9._/-]{0,160}$')][string]$Change = '',
+        [ValidatePattern('^[A-Za-z0-9._-]{0,80}$')][string]$Stage = '',
+        [ValidatePattern('^[A-Za-z0-9._-]{0,100}$')][string]$CorrelationId = '',
+        [ValidateRange(0, [long]::MaxValue)][long]$DurationMs = 0
+    )
+
+    $relativeProbe = 'Saved/Hardness/Observations/__hardness_probe__.json'
+    $ignored = Invoke-HardnessGit -Repository $Context.WorkspaceRoot -Arguments @('check-ignore', '--quiet', '--', $relativeProbe) -AllowFailure
+    if ($ignored.ExitCode -ne 0) {
+        throw "Refusing to write Hardness observations because '$relativeProbe' is not ignored."
+    }
+
+    $runId = [guid]::NewGuid().ToString('N')
+    $observedAt = [DateTimeOffset]::UtcNow
+    $directory = Join-Path $Context.WorkspaceRoot 'Saved/Hardness/Observations'
+    [void][System.IO.Directory]::CreateDirectory($directory)
+    $path = Join-Path $directory ("{0}-{1}.json" -f $observedAt.ToString('yyyyMMddTHHmmssfffZ'), $runId)
+    $temporary = Join-Path $directory (".{0}.tmp" -f $runId)
+    $record = [ordered]@{
+        schemaVersion = 'hardness-observation-v1'
+        runId         = $runId
+        observedAtUtc = $observedAt.ToString('o')
+        category      = $Category
+        summary       = $Summary.Trim()
+        change        = $Change
+        stage         = $Stage
+        correlationId = $CorrelationId
+        durationMs    = $DurationMs
+        workspaceRoot = $Context.WorkspaceRoot
+        head           = Get-HardnessLiveHead -WorkspaceRoot $Context.WorkspaceRoot
+    }
+    try {
+        [System.IO.File]::WriteAllText($temporary, ($record | ConvertTo-Json -Depth 6), [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::Move($temporary, $path, $false)
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force }
+    }
+    return [pscustomobject][ordered]@{
+        RunId       = $runId
+        Path        = $path
+        ObservedAt  = $observedAt
+        Category    = $Category
+        Artifacts   = @($path)
+    }
+}
+
+function Get-HardnessEvolutionStatus {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Context)
+
+    $observationRoot = Join-Path $Context.WorkspaceRoot 'Saved/Hardness/Observations'
+    $observations = @(
+        if (Test-Path -LiteralPath $observationRoot -PathType Container) {
+            Get-ChildItem -LiteralPath $observationRoot -Filter '*.json' -File | Sort-Object LastWriteTimeUtc -Descending
+        }
+    )
+
+    $evaluations = New-Object System.Collections.Generic.List[System.IO.FileInfo]
+    foreach ($root in @(
+        (Join-Path $Context.WorkspaceRoot 'openspec/changes'),
+        (Join-Path $Context.WorkspaceRoot 'openspec/archive/changes')
+    )) {
+        if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
+        foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -Filter 'workflow-evaluation.md' -File -ErrorAction SilentlyContinue)) {
+            $evaluations.Add($file) | Out-Null
+        }
+    }
+    $latestEvaluation = @($evaluations | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1)
+    $evaluationResult = ''
+    $evaluationPath = ''
+    if ($latestEvaluation.Count -eq 1) {
+        $evaluationPath = $latestEvaluation[0].FullName.Substring($Context.WorkspaceRoot.Length).TrimStart('\', '/').Replace('\', '/')
+        $header = @(Get-Content -LiteralPath $latestEvaluation[0].FullName -TotalCount 24)
+        $resultLine = @($header | Where-Object { $_ -match '^result:\s*([A-Za-z0-9_-]+)\s*$' } | Select-Object -First 1)
+        if ($resultLine.Count -eq 1) { $evaluationResult = [regex]::Match($resultLine[0], '^result:\s*([^\s]+)').Groups[1].Value }
+    }
+    return [pscustomobject][ordered]@{
+        ObservationRoot       = $observationRoot
+        ObservationCount      = $observations.Count
+        LatestObservationUtc  = if ($observations.Count -gt 0) { $observations[0].LastWriteTimeUtc.ToString('o') } else { '' }
+        LatestEvaluationPath  = $evaluationPath
+        LatestEvaluationResult = $evaluationResult
+        RawBodiesLoaded       = $false
+    }
+}
+
+function Get-HardnessOpenSpecMaintenanceStatus {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Context)
+
+    $root = [string]$Context.HarnessRoot
+    $sourcePath = Join-Path $root 'Tools/openspec'
+    $manifestPath = Join-Path $root '.agents/skills/openspec/release-manifest.json'
+    $executablePath = Join-Path $root '.agents/skills/openspec/bin/openspec.exe'
+    $reasons = New-Object System.Collections.Generic.List[string]
+    $recordedCommit = ''
+    $workingHead = ''
+    $sourceDirty = $false
+    $manifest = $null
+    $actualHash = ''
+
+    $recorded = Invoke-HardnessGit -Repository $root -Arguments @('rev-parse', 'HEAD:Tools/openspec') -AllowFailure
+    if ($recorded.ExitCode -eq 0) { $recordedCommit = ([string]($recorded.Output | Select-Object -Last 1)).Trim().ToLowerInvariant() }
+    else { $reasons.Add('The parent commit does not record a Tools/openspec gitlink.') | Out-Null }
+
+    if (Test-Path -LiteralPath $sourcePath -PathType Container) {
+        $head = Invoke-HardnessGit -Repository $sourcePath -Arguments @('rev-parse', 'HEAD') -AllowFailure
+        if ($head.ExitCode -eq 0) {
+            $workingHead = ([string]($head.Output | Select-Object -Last 1)).Trim().ToLowerInvariant()
+            $sourceStatus = Invoke-HardnessGit -Repository $sourcePath -Arguments @('status', '--porcelain=v1') -AllowFailure
+            $sourceDirty = @($sourceStatus.Output).Count -gt 0
+        }
+        else { $reasons.Add('The Tools/openspec working tree is not initialized.') | Out-Null }
+    }
+    else { $reasons.Add('The Tools/openspec source path is missing.') | Out-Null }
+
+    if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+        try { $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -ErrorAction Stop }
+        catch { $reasons.Add('The packaged OpenSpec release manifest is invalid JSON.') | Out-Null }
+    }
+    else { $reasons.Add('The packaged OpenSpec release manifest is missing.') | Out-Null }
+    if (Test-Path -LiteralPath $executablePath -PathType Leaf) {
+        $actualHash = (Get-FileHash -LiteralPath $executablePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    else { $reasons.Add('The packaged OpenSpec executable is missing.') | Out-Null }
+
+    if ($null -ne $manifest) {
+        if ($recordedCommit -ne [string]$manifest.sourceCommit) { $reasons.Add('The parent gitlink does not match the packaged source commit.') | Out-Null }
+        if (-not [string]::IsNullOrWhiteSpace($workingHead) -and $workingHead -ne [string]$manifest.sourceCommit) { $reasons.Add('The initialized source HEAD does not match the packaged source commit.') | Out-Null }
+        if ($actualHash -ne [string]$manifest.sha256) { $reasons.Add('The packaged executable hash does not match the release manifest.') | Out-Null }
+    }
+    if ($sourceDirty) { $reasons.Add('The Tools/openspec source working tree is dirty.') | Out-Null }
+
+    return [pscustomobject][ordered]@{
+        SourcePath       = $sourcePath
+        RecordedCommit   = $recordedCommit
+        WorkingHead      = $workingHead
+        SourceDirty      = $sourceDirty
+        PackagedVersion  = if ($null -ne $manifest) { [string]$manifest.version } else { '' }
+        PackagedSha256   = $actualHash
+        ManifestSha256   = if ($null -ne $manifest) { [string]$manifest.sha256 } else { '' }
+        Aligned          = $reasons.Count -eq 0
+        Reasons          = @($reasons | ForEach-Object { $_ })
+        Mutated          = $false
+    }
+}
+
 function Get-HardnessPackageSafetyModule {
     if ($null -ne $script:HardnessPackageSafetyModule) {
         return $script:HardnessPackageSafetyModule
     }
-    $modulePath = Join-Path $script:HardnessProjectRoot '.agents\skills\openspec\scripts\OpenSpecPackageSafety.psm1'
+    $modulePath = Join-Path $script:HardnessHarnessRoot '.agents\skills\openspec\scripts\OpenSpecPackageSafety.psm1'
     if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
         throw "Trusted OpenSpec package-safety verifier is missing: $modulePath"
     }

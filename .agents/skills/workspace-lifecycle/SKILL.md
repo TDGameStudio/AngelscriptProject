@@ -1,11 +1,11 @@
 ---
 name: workspace-lifecycle
-description: Manage canonical AngelscriptProject Current and Goal workspaces, exact submodule bootstrap, Hardness-owned AgentConfig.ini, session workspace selection, verification, and explicit safe removal. Do not use for commits, branch integration, push, or publication.
+description: Manage Git-registered AngelscriptProject workspaces, exact submodule bootstrap, Hardness-owned AgentConfig.ini, process-local workspace selection, verification, listing, and explicit safe removal. Do not use for commits, branch integration, push, or publication.
 ---
 
 # Workspace Lifecycle
 
-Hardness selects `Current` or `Goal` mode and dispatches every operation. Import Hardness once; use `workspace.status/new/bootstrap/verify/remove`, `workspace.activate`, and `workspace.config.status/get/set`.
+Hardness derives workspace identity from Git and dispatches every operation. Import Hardness once; use `workspace.list/status/new/bootstrap/verify/remove`, `workspace.activate`, and `workspace.config.status/get/set`.
 
 Load only the relevant reference:
 
@@ -15,7 +15,8 @@ Load only the relevant reference:
 Safety invariants:
 
 - Resolve the canonical primary checkout and registered Git worktrees before mutation.
-- Goal worktrees are direct children of ignored `.worktrees/` and use `goal/<goal>`.
+- Accept existing registered worktrees in place, regardless of their path or branch naming convention.
+- Create new worktrees beneath ignored `.worktrees/`; the default branch is exactly the requested name.
 - Restore each top-level submodule at the exact parent gitlink; preserve dirty or payload-bearing paths.
 - Reject reparse-backed workspace paths and unsafe module-store redirection.
 - Treat ignored files as user data; removal needs explicit discard intent.

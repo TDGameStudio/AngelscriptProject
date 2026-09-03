@@ -11,7 +11,8 @@ Read the [closure schema](../openspec/references/record-schema.md) and [attachme
 
 - `doctor` and strict change validation pass.
 - Every real Task DAG node is complete and its evidence remains valid.
-- Broad-impact work has one approving Final Review `closed` against the current scope-frozen final snapshot; verified small low-impact work instead records `Final Review: not required` with impact rationale. Every existing Review is `closed` or `superseded`; no Critical/Required finding is open or deferred; resolutions include evidence and re-review.
+- Verification found no unresolved local defect or planning-invalidating evidence. Repair local defects and verify them; Replan only when accepted planning truth is invalid. Otherwise close and archive directly without creating or classifying a Review.
+- If an explicitly requested Review file exists, it is `closed` or `superseded`; no Critical/Required finding is open or deferred, and resolutions include evidence and any required re-review. Review absence is valid.
 - Implementation issues are resolved/superseded, data is trimmed, INDEX is current, and knowledge promotion is decided.
 - The closing canonical change ID is not configured as a reusable gate's default fixture. A gate that needs an active Task DAG uses a hermetic default or an explicit override; archived tasks never become schedulable input.
 - Accepted performance aggregates and raw-artifact hashes are indexed before archive.

@@ -31,7 +31,16 @@ param(
     [double]$TaskStatusP95BudgetMs = 2000,
 
     [ValidateRange(1, 600000)]
-    [double]$WorkspaceReadP95BudgetMs = 15000,
+    [double]$FastWorkspaceStatusP95BudgetMs = 10000,
+
+    [ValidateRange(1, 600000)]
+    [double]$HardnessStatusP95BudgetMs = 10000,
+
+    [ValidateRange(1, 600000)]
+    [double]$DetailedWorkspaceStatusP95BudgetMs = 180000,
+
+    [ValidateRange(1, 600000)]
+    [double]$ObservationWriteP95BudgetMs = 10000,
 
     [ValidateRange(100, 600000)]
     [int]$FreshProcessTimeoutMs = 30000,
@@ -241,9 +250,9 @@ while (`$true) { Start-Sleep -Milliseconds 200 }
     return @"
 `$ErrorActionPreference = 'Stop'
 Import-Module '$escapedManifest' -Force -ErrorAction Stop
-`$context = New-HardnessContext -Mode Current -ProjectRoot '$escapedRoot'
+`$context = New-HardnessContext -WorkspaceRoot '$escapedRoot'
 `$route = Get-HardnessCommand -Name 'task.status'
-if (`$context.Mode -ne 'Current' -or `$context.ProjectRoot -ne '$escapedRoot' -or `$route.Name -ne 'task.status') { throw 'Fresh-process API validation failed.' }
+if (`$context.WorkspaceRoot -ne '$escapedRoot' -or `$context.Topology -notin @('Primary', 'Worktree') -or `$route.Name -ne 'task.status') { throw 'Fresh-process API validation failed.' }
 [Console]::Out.WriteLine(('HARDNESS_PERF_CHILD_PID=' + `$PID))
 [Console]::Out.Flush()
 $probeCommand
@@ -408,7 +417,7 @@ $manifest = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\scripts\H
 Assert-PerformanceCondition (Test-Path -LiteralPath $manifest -PathType Leaf) 'Hardness module manifest must exist'
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot = Join-Path $ProjectRoot 'Saved\Harness\Hardness\Performance'
+    $OutputRoot = Join-Path $ProjectRoot 'Saved\Hardness\Performance'
 }
 $OutputRoot = [System.IO.Path]::GetFullPath($OutputRoot)
 if ([string]::IsNullOrWhiteSpace($RunId)) {
@@ -433,7 +442,10 @@ $scenarioValues = [ordered]@{
     FreshProcess = New-Object System.Collections.Generic.List[double]
     PersistentApi = New-Object System.Collections.Generic.List[double]
     TaskStatus = New-Object System.Collections.Generic.List[double]
-    WorkspaceReadRoutes = New-Object System.Collections.Generic.List[double]
+    FastWorkspaceStatus = New-Object System.Collections.Generic.List[double]
+    HardnessStatus = New-Object System.Collections.Generic.List[double]
+    DetailedWorkspaceStatus = New-Object System.Collections.Generic.List[double]
+    ObservationWrite = New-Object System.Collections.Generic.List[double]
 }
 
 $hostExecutable = (Get-Process -Id $PID).Path
@@ -444,9 +456,9 @@ $effectiveTaskChange = $TaskChange
 $taskFixtureRoot = ''
 Import-Module $manifest -Force -ErrorAction Stop
 try {
-    $context = New-HardnessContext -Mode Current -ProjectRoot $ProjectRoot
-    Assert-PerformanceCondition ($context.Mode -eq 'Current') 'persistent context must use Current mode'
-    Assert-PerformanceCondition ($context.ProjectRoot -eq $ProjectRoot) 'persistent context must use ProjectRoot'
+    $context = New-HardnessContext -WorkspaceRoot $ProjectRoot
+    Assert-PerformanceCondition ($context.WorkspaceRoot -eq $ProjectRoot) 'persistent context must use WorkspaceRoot'
+    Assert-PerformanceCondition ($context.Topology -in @('Primary', 'Worktree')) 'persistent context must derive Git topology'
 
     if ([string]::IsNullOrWhiteSpace($effectiveTaskChange)) {
         $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
@@ -459,6 +471,21 @@ try {
         [void](New-Item -ItemType Directory -Path $fixtureExeDirectory -Force)
         $fixtureExe = Join-Path $fixtureExeDirectory 'openspec.exe'
         Copy-Item -LiteralPath $sourceOpenSpec -Destination $fixtureExe
+        $gitInitOutput = @(& git -C $taskFixtureRoot init -b main 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture git init failed: {0}" -f ($gitInitOutput -join [Environment]::NewLine))
+        [System.IO.File]::WriteAllText((Join-Path $taskFixtureRoot '.gitignore'), "Saved/`nAgentConfig.ini`n", [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText((Join-Path $taskFixtureRoot 'Fixture.uproject'), "{}`n", [System.Text.UTF8Encoding]::new($false))
+        foreach ($identity in @(
+            @('user.name', 'Hardness Performance Fixture'),
+            @('user.email', 'hardness-performance@example.invalid')
+        )) {
+            $configOutput = @(& git -C $taskFixtureRoot config $identity[0] $identity[1] 2>&1)
+            Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture git config failed: {0}" -f ($configOutput -join [Environment]::NewLine))
+        }
+        $addOutput = @(& git -C $taskFixtureRoot add .gitignore Fixture.uproject 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture git add failed: {0}" -f ($addOutput -join [Environment]::NewLine))
+        $commitOutput = @(& git -C $taskFixtureRoot commit -m 'fixture baseline' 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture git commit failed: {0}" -f ($commitOutput -join [Environment]::NewLine))
 
         $initOutput = @(& $fixtureExe init $taskFixtureRoot --project-id hardness-performance-fixture --title 'Hardness Performance Fixture' --workflow spec-driven --language en 2>&1)
         Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("TaskStatus fixture init failed: {0}" -f ($initOutput -join [Environment]::NewLine))
@@ -492,7 +519,7 @@ task_graph:
         [System.IO.File]::WriteAllText($tasksPath, $tasksDocument, [System.Text.UTF8Encoding]::new($false))
 
         $effectiveTaskChange = 'fixture/performance'
-        $taskContext = New-HardnessContext -Mode Current -ProjectRoot $taskFixtureRoot
+        $taskContext = New-HardnessContext -WorkspaceRoot $taskFixtureRoot
     }
     else {
         $taskContext = $context
@@ -544,22 +571,22 @@ task_graph:
         if ($stopFreshScenario) { break }
     }
 
-    foreach ($phase in @('Warmup', 'Measurement')) {
-        $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
-        for ($iteration = 1; $iteration -le $runCount; $iteration++) {
-            $timer = [System.Diagnostics.Stopwatch]::StartNew()
-            for ($operation = 0; $operation -lt $BatchSize; $operation++) {
-                $apiContext = New-HardnessContext -Mode Current -ProjectRoot $ProjectRoot
-                $route = Get-HardnessCommand -Name 'task.status'
-                Assert-PerformanceCondition ($apiContext.Mode -eq 'Current' -and $apiContext.ProjectRoot -eq $ProjectRoot) 'persistent context lookup returned incorrect data'
-                Assert-PerformanceCondition ($route.Name -eq 'task.status') 'persistent route lookup returned the wrong route'
+    if ($FreshProcessProbeMode -eq 'Normal' -and -not $stopFreshScenario) {
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                for ($operation = 0; $operation -lt $BatchSize; $operation++) {
+                    $route = Get-HardnessCommand -Name 'task.status'
+                    Assert-PerformanceCondition ($context.WorkspaceRoot -eq $ProjectRoot) 'persistent context drifted during route lookup'
+                    Assert-PerformanceCondition ($route.Name -eq 'task.status') 'persistent route lookup returned the wrong route'
+                }
+                $timer.Stop()
+                $value = ($timer.Elapsed.TotalMilliseconds * 1000.0) / $BatchSize
+                Add-PerformanceSample -Samples $samples -Scenario 'PersistentApi' -Phase $phase -Iteration $iteration -Unit 'us/op' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.PersistentApi.Add($value) | Out-Null }
             }
-            $timer.Stop()
-            $value = ($timer.Elapsed.TotalMilliseconds * 1000.0) / $BatchSize
-            Add-PerformanceSample -Samples $samples -Scenario 'PersistentApi' -Phase $phase -Iteration $iteration -Unit 'us/op' -Value $value
-            if ($phase -eq 'Measurement') { $scenarioValues.PersistentApi.Add($value) | Out-Null }
         }
-    }
 
     foreach ($phase in @('Warmup', 'Measurement')) {
         $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
@@ -576,23 +603,80 @@ task_graph:
         }
     }
 
-    foreach ($phase in @('Warmup', 'Measurement')) {
-        $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
-        for ($iteration = 1; $iteration -le $runCount; $iteration++) {
-            $timer = [System.Diagnostics.Stopwatch]::StartNew()
-            $configResult = Invoke-Hardness -Command 'workspace.config.status' -Context $context
-            $workspaceResult = Invoke-Hardness -Command 'workspace.status' -Context $context
-            $gitResult = Invoke-Hardness -Command 'git.status' -Context $context
-            $timer.Stop()
-            foreach ($routeResult in @($configResult, $workspaceResult, $gitResult)) {
-                Assert-PerformanceCondition ($routeResult.status -eq 'Succeeded' -and $routeResult.exitCode -eq 0) "$($routeResult.command) failed"
+        $statusContext = $taskContext
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                $workspaceResult = Invoke-Hardness -Command 'workspace.status' -Context $statusContext
+                $timer.Stop()
+                Assert-PerformanceCondition ($workspaceResult.status -eq 'Succeeded' -and $workspaceResult.exitCode -eq 0) 'fast workspace.status failed'
+                Assert-PerformanceCondition ($workspaceResult.data.WorkspaceRoot -eq $statusContext.WorkspaceRoot) 'fast workspace.status targeted a different workspace root'
+                Assert-PerformanceCondition ($workspaceResult.data.DetailLevel -eq 'Fast') 'default workspace.status did not remain fast'
+                Assert-PerformanceCondition ('Changes' -notin @($workspaceResult.data.PSObject.Properties.Name)) 'fast workspace.status performed detailed change reporting'
+                $value = [double]$timer.Elapsed.TotalMilliseconds
+                Add-PerformanceSample -Samples $samples -Scenario 'FastWorkspaceStatus' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.FastWorkspaceStatus.Add($value) | Out-Null }
             }
-            Assert-PerformanceCondition $configResult.data.IdentityValid 'workspace.config.status returned invalid managed identity'
-            Assert-PerformanceCondition ($workspaceResult.data.ProjectRoot -eq $ProjectRoot) 'workspace.status returned a different project root'
-            Assert-PerformanceCondition ($gitResult.data.ProjectRoot -eq $ProjectRoot) 'git.status returned a different project root'
-            $value = [double]$timer.Elapsed.TotalMilliseconds
-            Add-PerformanceSample -Samples $samples -Scenario 'WorkspaceReadRoutes' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
-            if ($phase -eq 'Measurement') { $scenarioValues.WorkspaceReadRoutes.Add($value) | Out-Null }
+        }
+
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                $statusResult = Invoke-Hardness -Command 'hardness.status' -Context $statusContext
+                $timer.Stop()
+                Assert-PerformanceCondition ($statusResult.status -eq 'Succeeded' -and $statusResult.exitCode -eq 0) 'hardness.status failed'
+                Assert-PerformanceCondition ($statusResult.data.Workspace.WorkspaceRoot -eq $statusContext.WorkspaceRoot) 'hardness.status targeted a different workspace root'
+                Assert-PerformanceCondition (-not [bool]$statusResult.data.DetailedScan) 'hardness.status performed a detailed scan'
+                $value = [double]$timer.Elapsed.TotalMilliseconds
+                Add-PerformanceSample -Samples $samples -Scenario 'HardnessStatus' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.HardnessStatus.Add($value) | Out-Null }
+            }
+        }
+
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                $detailedResult = Invoke-Hardness -Command 'workspace.status' -Context $statusContext -Parameters @{ Detailed = $true }
+                $timer.Stop()
+                Assert-PerformanceCondition ($detailedResult.status -eq 'Succeeded' -and $detailedResult.exitCode -eq 0) 'detailed workspace.status failed'
+                Assert-PerformanceCondition ($detailedResult.data.WorkspaceRoot -eq $statusContext.WorkspaceRoot) 'detailed workspace.status targeted a different workspace root'
+                Assert-PerformanceCondition ($detailedResult.data.DetailLevel -eq 'Detailed') 'explicit workspace.status did not perform a detailed scan'
+                foreach ($field in @('Changes', 'IgnoredFiles', 'Submodules')) {
+                    Assert-PerformanceCondition ($field -in @($detailedResult.data.PSObject.Properties.Name)) "detailed workspace.status omitted $field"
+                }
+                $value = [double]$timer.Elapsed.TotalMilliseconds
+                Add-PerformanceSample -Samples $samples -Scenario 'DetailedWorkspaceStatus' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.DetailedWorkspaceStatus.Add($value) | Out-Null }
+            }
+        }
+
+        foreach ($phase in @('Warmup', 'Measurement')) {
+            $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+            for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                $observationResult = Invoke-Hardness -Command 'hardness.observe' -Context $statusContext -Parameters @{
+                    Category      = 'performance-probe'
+                    Summary       = 'Measure the bounded Hardness observation write path.'
+                    Change        = $effectiveTaskChange
+                    Stage         = 'performance'
+                    CorrelationId = "performance-$($phase.ToLowerInvariant())-$iteration"
+                }
+                $timer.Stop()
+                Assert-PerformanceCondition ($observationResult.status -eq 'Succeeded' -and $observationResult.exitCode -eq 0) 'hardness.observe failed'
+                Assert-PerformanceCondition (@($observationResult.artifacts).Count -eq 1) 'hardness.observe did not return exactly one raw artifact'
+                $observationPath = [string]$observationResult.artifacts[0]
+                Assert-PerformanceCondition (Test-Path -LiteralPath $observationPath -PathType Leaf) 'hardness.observe artifact does not exist'
+                $observation = Get-Content -LiteralPath $observationPath -Raw | ConvertFrom-Json -ErrorAction Stop
+                Assert-PerformanceCondition ($observation.schemaVersion -eq 'hardness-observation-v1') 'hardness.observe wrote the wrong schema'
+                Assert-PerformanceCondition ($observation.workspaceRoot -eq $statusContext.WorkspaceRoot) 'hardness.observe recorded a different workspace root'
+                Assert-PerformanceCondition ($observation.category -eq 'performance-probe') 'hardness.observe recorded the wrong category'
+                $value = [double]$timer.Elapsed.TotalMilliseconds
+                Add-PerformanceSample -Samples $samples -Scenario 'ObservationWrite' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+                if ($phase -eq 'Measurement') { $scenarioValues.ObservationWrite.Add($value) | Out-Null }
+            }
         }
     }
 }
@@ -609,12 +693,17 @@ finally {
     }
 }
 
-$scenarioSummaries = @(
-    New-ScenarioSummary -Name 'FreshProcess' -Metric 'Hardness import plus context and route lookup' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.FreshProcess) -P95Budget $FreshProcessP95BudgetMs
-    New-ScenarioSummary -Name 'PersistentApi' -Metric 'Context plus route lookup batch' -Unit 'us/op' -OperationsPerSample $BatchSize -Values @($scenarioValues.PersistentApi) -P95Budget $PersistentApiP95BudgetUsPerOp
-    New-ScenarioSummary -Name 'TaskStatus' -Metric 'Real task.status route' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.TaskStatus) -P95Budget $TaskStatusP95BudgetMs
-    New-ScenarioSummary -Name 'WorkspaceReadRoutes' -Metric 'workspace.config.status plus workspace.status plus git.status' -Unit 'ms' -OperationsPerSample 3 -Values @($scenarioValues.WorkspaceReadRoutes) -P95Budget $WorkspaceReadP95BudgetMs
-)
+$scenarioSummaryList = New-Object System.Collections.Generic.List[object]
+$scenarioSummaryList.Add((New-ScenarioSummary -Name 'FreshProcess' -Metric 'Hardness import plus context and route lookup' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.FreshProcess) -P95Budget $FreshProcessP95BudgetMs)) | Out-Null
+if ($FreshProcessProbeMode -eq 'Normal' -and -not $stopFreshScenario) {
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'PersistentApi' -Metric 'Persistent route lookup with retained context' -Unit 'us/op' -OperationsPerSample $BatchSize -Values @($scenarioValues.PersistentApi) -P95Budget $PersistentApiP95BudgetUsPerOp)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'TaskStatus' -Metric 'Real task.status route' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.TaskStatus) -P95Budget $TaskStatusP95BudgetMs)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'FastWorkspaceStatus' -Metric 'Default workspace.status route without detailed scan' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.FastWorkspaceStatus) -P95Budget $FastWorkspaceStatusP95BudgetMs)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'HardnessStatus' -Metric 'Fast hardness.status orientation route' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.HardnessStatus) -P95Budget $HardnessStatusP95BudgetMs)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'DetailedWorkspaceStatus' -Metric 'Explicit detailed workspace.status scan' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.DetailedWorkspaceStatus) -P95Budget $DetailedWorkspaceStatusP95BudgetMs)) | Out-Null
+    $scenarioSummaryList.Add((New-ScenarioSummary -Name 'ObservationWrite' -Metric 'Bounded ignored hardness.observe write' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.ObservationWrite) -P95Budget $ObservationWriteP95BudgetMs)) | Out-Null
+}
+$scenarioSummaries = @($scenarioSummaryList | ForEach-Object { $_ })
 $failedBudgets = @($scenarioSummaries | Where-Object BudgetStatus -eq 'Failed')
 $failedCorrectness = @($failures.ToArray())
 

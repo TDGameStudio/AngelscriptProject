@@ -8,6 +8,10 @@
 
 Load only the level needed by the current task. Do not bulk-load historical attachments or duplicate the same rule at every level.
 
+## Plan the live surface once
+
+Begin a broad harness Change with one compact map of the complete live surface: public entrypoints, current specs and metadata, publication and ignore rules, coupled contract tests, and explicitly deferred owners. Use that map to bound Task Cards before implementation. This avoids repeated replans caused by discovering one coupled file at a time while keeping cards free to include only useful local detail.
+
 ## Promotion gate
 
 Promote a learning only when all are true:
@@ -19,6 +23,8 @@ Promote a learning only when all are true:
 - The promoted text can omit chronology, logs, and implementation trivia.
 
 Archive never promotes knowledge automatically. Closure names the source attachment, target capability knowledge, and verification that still passes after promotion.
+
+Raw `hardness.observe` records stay ignored under `Saved/Hardness/` and are not capability knowledge. Before completed closure, summarize only reusable timing, friction, repairs, deferred work, and raw-data provenance in one compact tracked workflow evaluation. Promote an invariant from that evaluation only through the same evidence and verification gate above.
 
 ## Evolution loop
 

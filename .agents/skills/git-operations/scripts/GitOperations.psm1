@@ -44,6 +44,35 @@ function Resolve-GitRepositoryRoot {
     return [System.IO.Path]::GetFullPath(([string]($result.Output | Select-Object -Last 1)).Trim())
 }
 
+function Resolve-GitExactWorkspaceRoot {
+    param([Parameter(Mandatory = $true)][string]$WorkspaceRoot)
+    if ([string]::IsNullOrWhiteSpace($WorkspaceRoot)) { throw 'WorkspaceRoot must name an exact Git worktree root.' }
+    $requested = [System.IO.Path]::GetFullPath($WorkspaceRoot)
+    $resolved = Resolve-GitRepositoryRoot -Path $requested
+    if (-not (Test-GitPathEqual -Left $requested -Right $resolved)) {
+        throw "WorkspaceRoot must be the exact Git worktree root '$resolved', not '$requested'."
+    }
+    return $resolved
+}
+
+function Get-GitCommonDirectory {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+    $value = ([string]((Invoke-GitOperation -Repository $Repository -Arguments @('rev-parse', '--git-common-dir')).Output | Select-Object -Last 1)).Trim()
+    if ([System.IO.Path]::IsPathRooted($value)) { return [System.IO.Path]::GetFullPath($value) }
+    return [System.IO.Path]::GetFullPath((Join-Path $Repository $value))
+}
+
+function Test-GitRegisteredRoot {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Candidate
+    )
+    foreach ($registered in @(Get-GitRegisteredRoots -Repository $Repository)) {
+        if (Test-GitPathEqual -Left $registered -Right $Candidate) { return $true }
+    }
+    return $false
+}
+
 function Get-GitPrimaryRoot {
     param([Parameter(Mandatory = $true)][string]$Repository)
     $result = Invoke-GitOperation -Repository $Repository -Arguments @('worktree', 'list', '--porcelain')
@@ -110,8 +139,8 @@ function Test-GitRepository {
 
 function Get-HardnessGitStatus {
     [CmdletBinding()]
-    param([string]$ProjectRoot = '')
-    $root = Resolve-GitRepositoryRoot -Path $ProjectRoot
+    param([Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot)
+    $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $repositories = New-Object System.Collections.Generic.List[object]
     $parentState = Get-GitPathState -Repository $root
     $repositories.Add([pscustomobject]@{ Path = '.'; Root = $root; Branch = Get-GitBranch $root; Head = Get-GitHead $root; Initialized = $true; State = $parentState }) | Out-Null
@@ -123,7 +152,7 @@ function Get-HardnessGitStatus {
             $repositories.Add([pscustomobject]@{ Path = $submodule.Path; Root = $submodule.FullPath; Branch = ''; Head = ''; Initialized = $false; State = $null }) | Out-Null
         }
     }
-    return [pscustomobject]@{ ProjectRoot = $root; PrimaryRoot = Get-GitPrimaryRoot -Repository $root; Repositories = @($repositories | ForEach-Object { $_ }); Dirty = @($repositories | Where-Object { $_.Initialized -and $_.State.Dirty }).Count -gt 0 }
+    return [pscustomobject]@{ WorkspaceRoot = $root; PrimaryRoot = Get-GitPrimaryRoot -Repository $root; Repositories = @($repositories | ForEach-Object { $_ }); Dirty = @($repositories | Where-Object { $_.Initialized -and $_.State.Dirty }).Count -gt 0 }
 }
 
 function Assert-GitRelativeScope {
@@ -152,13 +181,11 @@ function Test-GitPathCovered {
 function Resolve-GitCommitScopes {
     param(
         [string]$Root,
-        [ValidateSet('Current', 'Goal')][string]$Mode,
         [hashtable]$RepositoryScopes,
         [switch]$AllChanges
     )
-    if ($AllChanges -and $Mode -ne 'Goal') { throw 'AllChanges is allowed only in Goal mode.' }
     if ($AllChanges -and $null -ne $RepositoryScopes -and $RepositoryScopes.Count -gt 0) { throw 'Choose RepositoryScopes or AllChanges, not both.' }
-    if (-not $AllChanges -and ($null -eq $RepositoryScopes -or $RepositoryScopes.Count -eq 0)) { throw 'RepositoryScopes is required unless Goal mode explicitly uses AllChanges.' }
+    if (-not $AllChanges -and ($null -eq $RepositoryScopes -or $RepositoryScopes.Count -eq 0)) { throw 'RepositoryScopes is required unless AllChanges is explicitly selected.' }
     $known = @{ '.' = $Root }
     foreach ($submodule in @(Get-GitTopLevelSubmodules -Repository $Root)) { $known[$submodule.Path] = $submodule.FullPath }
     $resolved = @{}
@@ -181,28 +208,23 @@ function Resolve-GitCommitScopes {
 function Complete-HardnessGitCommit {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [string]$ProjectRoot = '',
-        [ValidateSet('Current', 'Goal')][string]$Mode = 'Current',
-        [string]$GoalName = '',
+        [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
         [hashtable]$RepositoryScopes = @{},
         [switch]$AllChanges,
         [Parameter(Mandatory = $true)][string]$CommitMessage,
         [hashtable]$SubmoduleCommitMessages = @{},
         [hashtable]$TargetBranches = @{}
     )
-    $root = Resolve-GitRepositoryRoot -Path $ProjectRoot
+    $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $primary = Get-GitPrimaryRoot -Repository $root
-    if ($Mode -eq 'Goal') {
-        if (Test-GitPathEqual -Left $root -Right $primary) { throw 'Goal git.commit requires a registered Goal worktree, not the primary checkout.' }
-        $expectedGoal = Split-Path -Leaf $root
-        if ([string]::IsNullOrWhiteSpace($GoalName)) { $GoalName = $expectedGoal }
-        if ($GoalName -ne $expectedGoal -or -not (Test-GitPathEqual -Left (Split-Path -Parent $root) -Right (Join-Path $primary '.worktrees'))) { throw 'Goal git.commit workspace does not match its canonical Goal name/root.' }
+    if ($AllChanges -and ((Test-GitPathEqual -Left $root -Right $primary) -or -not (Test-GitRegisteredRoot -Repository $primary -Candidate $root))) {
+        throw 'AllChanges is allowed only for an exact registered linked worktree; primary-workspace commits require RepositoryScopes.'
     }
     $parentBranch = Get-GitBranch -Repository $root
-    $targetParentBranch = if ($TargetBranches.ContainsKey('.')) { [string]$TargetBranches['.'] } elseif ($Mode -eq 'Goal') { "goal/$GoalName" } else { $parentBranch }
+    $targetParentBranch = if ($TargetBranches.ContainsKey('.')) { [string]$TargetBranches['.'] } else { $parentBranch }
     if ([string]::IsNullOrWhiteSpace($targetParentBranch)) { throw "Detached parent repository requires an explicit TargetBranches entry for '.'." }
     if ($parentBranch -ne $targetParentBranch) { throw "Parent repository is on '$parentBranch', expected target branch '$targetParentBranch'." }
-    $scopes = Resolve-GitCommitScopes -Root $root -Mode $Mode -RepositoryScopes $RepositoryScopes -AllChanges:$AllChanges
+    $scopes = Resolve-GitCommitScopes -Root $root -RepositoryScopes $RepositoryScopes -AllChanges:$AllChanges
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     $repositories = @{ '.' = $root }
     foreach ($submodule in $submodules) { $repositories[$submodule.Path] = $submodule.FullPath }
@@ -215,6 +237,17 @@ function Complete-HardnessGitCommit {
         if ($outsideStaged.Count -gt 0) { throw "Repository '$repoKey' has staged paths outside the requested scope: $($outsideStaged -join ', ')" }
     }
 
+    $includedChanges = New-Object System.Collections.Generic.List[object]
+    foreach ($repoKey in @($scopes.Keys | Sort-Object)) {
+        $state = Get-GitPathState -Repository $repositories[$repoKey]
+        $paths = @($state.Staged + $state.Unstaged + $state.Untracked |
+            Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] } |
+            Sort-Object -Unique)
+        if ($paths.Count -gt 0) {
+            $includedChanges.Add([pscustomobject]@{ Repository = $repoKey; Paths = $paths }) | Out-Null
+        }
+    }
+
     $commits = New-Object System.Collections.Generic.List[object]
     foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
         $repoRoot = $repositories[$repoKey]
@@ -222,7 +255,7 @@ function Complete-HardnessGitCommit {
         $scopedDirty = @($state.Staged + $state.Unstaged + $state.Untracked | Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] })
         if ($scopedDirty.Count -eq 0) { continue }
         $branch = Get-GitBranch -Repository $repoRoot
-        $targetBranch = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } elseif ($Mode -eq 'Goal') { "goal/$GoalName" } else { $branch }
+        $targetBranch = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } else { $branch }
         if ([string]::IsNullOrWhiteSpace($targetBranch)) { throw "Detached scoped repository '$repoKey' requires an explicit TargetBranches entry." }
         $branchExists = $false
         if ([string]::IsNullOrWhiteSpace($branch)) {
@@ -266,14 +299,24 @@ function Complete-HardnessGitCommit {
             elseif ($hasStaged -ne 0) { throw 'Unable to inspect staged parent changes.' }
         }
     }
-    $finalStatus = Get-HardnessGitStatus -ProjectRoot $root
+    $finalStatus = Get-HardnessGitStatus -WorkspaceRoot $root
     $scopedGitStateComplete = $true
     foreach ($repoKey in $scopes.Keys) {
         $remainingState = Get-GitPathState -Repository $repositories[$repoKey]
         $remaining = @($remainingState.Staged + $remainingState.Unstaged + $remainingState.Untracked | Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] })
         if ($remaining.Count -gt 0) { $scopedGitStateComplete = $false }
     }
-    return [pscustomobject]@{ ProjectRoot = $root; Mode = $Mode; Preview = [bool]$WhatIfPreference; Commits = @($commits | ForEach-Object { $_ }); GitStateComplete = -not $finalStatus.Dirty; ScopedGitStateComplete = $scopedGitStateComplete; Status = $finalStatus }
+    return [pscustomobject]@{
+        WorkspaceRoot = $root
+        PrimaryRoot = $primary
+        AllChanges = [bool]$AllChanges
+        IncludedChanges = @($includedChanges | ForEach-Object { $_ })
+        Preview = [bool]$WhatIfPreference
+        Commits = @($commits | ForEach-Object { $_ })
+        GitStateComplete = -not $finalStatus.Dirty
+        ScopedGitStateComplete = $scopedGitStateComplete
+        Status = $finalStatus
+    }
 }
 
 function Get-GitMergeAction {
@@ -326,27 +369,41 @@ function Get-GitCrossRepositoryComparison {
     }
 }
 
-function Merge-HardnessGitGoal {
+function Merge-HardnessGitWorkspace {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [string]$ProjectRoot = '',
-        [Parameter(Mandatory = $true)][ValidatePattern('^[A-Za-z0-9._-]{1,80}$')][string]$GoalName,
+        [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
+        [Parameter(Mandatory = $true)][string]$SourceWorkspaceRoot,
         [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ExpectedSourceHead,
         [Parameter(Mandatory = $true)][hashtable]$TargetBranches,
         [string]$CommitMessage = ''
     )
-    $targetRoot = Resolve-GitRepositoryRoot -Path $ProjectRoot
+    $targetRoot = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $primary = Get-GitPrimaryRoot -Repository $targetRoot
     if (-not (Test-GitPathEqual -Left $targetRoot -Right $primary)) { throw 'git.integrate must run from the canonical primary workspace.' }
-    if (-not $TargetBranches.ContainsKey('.')) { throw "TargetBranches must include the parent repository key '.'." }
-    $targetBranch = [string]$TargetBranches['.']
+    $sourceRoot = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $SourceWorkspaceRoot
+    if (Test-GitPathEqual -Left $sourceRoot -Right $targetRoot) { throw 'SourceWorkspaceRoot must select a registered linked worktree, not the primary target.' }
+    if (-not (Test-GitPathEqual -Left (Get-GitCommonDirectory -Repository $targetRoot) -Right (Get-GitCommonDirectory -Repository $sourceRoot))) {
+        throw 'SourceWorkspaceRoot and the primary target do not share the same Git common directory.'
+    }
+    if (-not (Test-GitRegisteredRoot -Repository $primary -Candidate $sourceRoot)) {
+        throw "SourceWorkspaceRoot is not a registered linked worktree: $sourceRoot"
+    }
+    $normalizedTargetBranches = @{}
+    foreach ($keyValue in $TargetBranches.Keys) {
+        $key = ([string]$keyValue).Replace('\', '/').TrimEnd('/')
+        if ($normalizedTargetBranches.ContainsKey($key)) { throw "Target branch repository '$key' was specified more than once after path normalization." }
+        $branchValue = ([string]$TargetBranches[$keyValue]).Trim()
+        if ([string]::IsNullOrWhiteSpace($branchValue)) { throw "Target branch for repository '$key' must not be empty." }
+        $normalizedTargetBranches[$key] = $branchValue
+    }
+    if (-not $normalizedTargetBranches.ContainsKey('.')) { throw "TargetBranches must include the parent repository key '.'." }
+    $targetBranch = [string]$normalizedTargetBranches['.']
     if ((Get-GitBranch $targetRoot) -ne $targetBranch) { throw "Primary workspace is not on target branch '$targetBranch'." }
-    $sourceRoot = [System.IO.Path]::GetFullPath((Join-Path (Join-Path $primary '.worktrees') $GoalName))
-    if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container) -or $sourceRoot -notin @(Get-GitRegisteredRoots -Repository $primary)) { throw "Goal workspace is not registered: $sourceRoot" }
     $actualSourceHead = Get-GitHead -Repository $sourceRoot
-    if ($actualSourceHead -ne $ExpectedSourceHead.ToLowerInvariant()) { throw "Goal source HEAD '$actualSourceHead' does not match reviewed ExpectedSourceHead '$ExpectedSourceHead'." }
-    $sourceStatus = Get-HardnessGitStatus -ProjectRoot $sourceRoot
-    if ($sourceStatus.Dirty) { throw 'Goal source workspace or one of its initialized submodules is dirty.' }
+    if ($actualSourceHead -ne $ExpectedSourceHead.ToLowerInvariant()) { throw "Source workspace HEAD '$actualSourceHead' does not match reviewed ExpectedSourceHead '$ExpectedSourceHead'." }
+    $sourceStatus = Get-HardnessGitStatus -WorkspaceRoot $sourceRoot
+    if ($sourceStatus.Dirty) { throw 'Source workspace or one of its initialized submodules is dirty.' }
     $targetState = Get-GitPathState -Repository $targetRoot
     if ($targetState.Staged.Count -gt 0) { throw "Primary target has staged changes: $($targetState.Staged -join ', ')" }
 
@@ -356,10 +413,12 @@ function Merge-HardnessGitGoal {
     $incomingPaths = @((Invoke-GitOperation -Repository $targetRoot -Arguments @('diff', '--name-only', $base, $actualSourceHead)).Output | Where-Object { $_ })
     $localPaths = @(Get-GitLocalPaths -Repository $targetRoot)
     $overlap = @($localPaths | Where-Object { $local = $_; @($incomingPaths | Where-Object { Test-GitPathOverlap -Left $local -Right $_ }).Count -gt 0 })
-    if ($overlap.Count -gt 0) { throw "Primary target local paths overlap the incoming Goal: $($overlap -join ', ')" }
+    $sourceSubmodules = @(Get-GitTopLevelSubmodules -Repository $sourceRoot)
+    $sourceSubmodulePaths = @($sourceSubmodules | ForEach-Object { $_.Path })
+    $ordinaryOverlap = @($overlap | Where-Object { $_ -notin $sourceSubmodulePaths })
+    if ($ordinaryOverlap.Count -gt 0) { throw "Primary target local paths overlap the incoming source workspace: $($ordinaryOverlap -join ', ')" }
 
     $plans = New-Object System.Collections.Generic.List[object]
-    $sourceSubmodules = @(Get-GitTopLevelSubmodules -Repository $sourceRoot)
     foreach ($sourceSubmodule in $sourceSubmodules) {
         $path = $sourceSubmodule.Path
         $sourceOidResult = Invoke-GitOperation -Repository $sourceRoot -Arguments @('rev-parse', "$actualSourceHead`:$path") -AllowFailure
@@ -368,26 +427,44 @@ function Merge-HardnessGitGoal {
         $sourceOid = ([string]($sourceOidResult.Output | Select-Object -Last 1)).Trim()
         $targetOid = ([string]($targetOidResult.Output | Select-Object -Last 1)).Trim()
         if ($sourceOid -eq $targetOid) { continue }
-        if (-not $TargetBranches.ContainsKey($path)) { throw "TargetBranches must explicitly select a branch for changed submodule '$path'." }
+        if (-not $normalizedTargetBranches.ContainsKey($path)) { throw "TargetBranches must explicitly select a branch for changed submodule '$path'." }
         $targetSubRoot = Join-Path $targetRoot $path
         if (-not (Test-GitRepository -Path $targetSubRoot)) { throw "Target submodule is not initialized: $path" }
         $sourceSubRoot = Join-Path $sourceRoot $path
-        if (-not (Test-GitRepository -Path $sourceSubRoot)) { throw "Goal source submodule is not initialized: $path" }
+        if (-not (Test-GitRepository -Path $sourceSubRoot)) { throw "Source workspace submodule is not initialized: $path" }
         $subState = Get-GitPathState -Repository $targetSubRoot
         if ($subState.Staged.Count -gt 0) { throw "Target submodule '$path' has staged changes." }
         $targetSubHead = Get-GitHead $targetSubRoot
-        if ($targetSubHead -ne $targetOid) { throw "Target submodule '$path' is at $targetSubHead, but the primary parent records $targetOid." }
-        $comparison = Get-GitCrossRepositoryComparison -TargetRepository $targetSubRoot -TargetHead $targetOid -SourceRepository $sourceSubRoot -SourceHead $sourceOid
+        $selectedTargetBranch = [string]$normalizedTargetBranches[$path]
+        $currentTargetBranch = Get-GitBranch -Repository $targetSubRoot
+        if (-not [string]::IsNullOrWhiteSpace($currentTargetBranch) -and $currentTargetBranch -ne $selectedTargetBranch) {
+            throw "Target submodule '$path' is on '$currentTargetBranch', expected '$selectedTargetBranch'."
+        }
+        $resumedIntegration = $false
+        if ($targetSubHead -ne $targetOid) {
+            $containsRecordedTarget = (Invoke-GitOperation -Repository $targetSubRoot -Arguments @('merge-base', '--is-ancestor', $targetOid, $targetSubHead) -AllowFailure).ExitCode -eq 0
+            $containsReviewedSource = (Invoke-GitOperation -Repository $targetSubRoot -Arguments @('merge-base', '--is-ancestor', $sourceOid, $targetSubHead) -AllowFailure).ExitCode -eq 0
+            if ([string]::IsNullOrWhiteSpace($currentTargetBranch) -or -not $containsRecordedTarget -or -not $containsReviewedSource) {
+                throw "Target submodule '$path' is at $targetSubHead, but the primary parent records $targetOid and no completed integration can be proven."
+            }
+            $resumedIntegration = $true
+        }
+        $comparison = if ($resumedIntegration) {
+            [pscustomobject]@{ Action = 'AlreadyIntegrated'; IncomingPaths = @() }
+        }
+        else {
+            Get-GitCrossRepositoryComparison -TargetRepository $targetSubRoot -TargetHead $targetOid -SourceRepository $sourceSubRoot -SourceHead $sourceOid
+        }
         $subIncoming = @($comparison.IncomingPaths)
         $subLocal = @(Get-GitLocalPaths -Repository $targetSubRoot)
         $subOverlap = @($subLocal | Where-Object { $local = $_; @($subIncoming | Where-Object { Test-GitPathOverlap -Left $local -Right $_ }).Count -gt 0 })
-        if ($subOverlap.Count -gt 0) { throw "Target submodule '$path' local paths overlap the incoming Goal: $($subOverlap -join ', ')" }
-        $plans.Add([pscustomobject]@{ Repository = $path; Root = $targetSubRoot; SourceRoot = $sourceSubRoot; SourceHead = $sourceOid; TargetHead = $targetSubHead; TargetBranch = [string]$TargetBranches[$path]; Action = $comparison.Action; LocalPaths = $subLocal }) | Out-Null
+        if ($subOverlap.Count -gt 0) { throw "Target submodule '$path' local paths overlap the incoming source workspace: $($subOverlap -join ', ')" }
+        $plans.Add([pscustomobject]@{ Repository = $path; Root = $targetSubRoot; SourceRoot = $sourceSubRoot; SourceHead = $sourceOid; TargetHead = $targetOid; CurrentHead = $targetSubHead; TargetBranch = $selectedTargetBranch; Action = $comparison.Action; Resumed = $resumedIntegration; LocalPaths = $subLocal }) | Out-Null
     }
     $parentAction = Get-GitMergeAction -Repository $targetRoot -TargetHead $targetHead -SourceHead $actualSourceHead
-    $plans.Add([pscustomobject]@{ Repository = '.'; Root = $targetRoot; SourceHead = $actualSourceHead; TargetHead = $targetHead; TargetBranch = $targetBranch; Action = $parentAction; LocalPaths = $localPaths }) | Out-Null
+    $plans.Add([pscustomobject]@{ Repository = '.'; Root = $targetRoot; SourceRoot = $sourceRoot; SourceHead = $actualSourceHead; TargetHead = $targetHead; CurrentHead = $targetHead; TargetBranch = $targetBranch; Action = $parentAction; Resumed = $false; LocalPaths = $localPaths }) | Out-Null
     if ($WhatIfPreference) {
-        return [pscustomobject]@{ ProjectRoot = $targetRoot; SourceRoot = $sourceRoot; SourceHead = $actualSourceHead; Preview = $true; Plans = @($plans | ForEach-Object { $_ }); Integrated = $false; RemoteChanged = $false; SourcePreserved = $true }
+        return [pscustomobject]@{ WorkspaceRoot = $targetRoot; SourceWorkspaceRoot = $sourceRoot; SourceHead = $actualSourceHead; Preview = $true; Plans = @($plans | ForEach-Object { $_ }); Integrated = $false; RemoteChanged = $false; SourcePreserved = $true }
     }
 
     $completed = New-Object System.Collections.Generic.List[object]
@@ -407,7 +484,7 @@ function Merge-HardnessGitGoal {
             $completed.Add([pscustomobject]@{ Repository = $plan.Repository; Action = $plan.Action; Head = Get-GitHead $plan.Root }) | Out-Null
             continue
         }
-        $arguments = if ($plan.Action -eq 'FastForward') { @('merge', '--ff-only', $plan.SourceHead) } else { @('merge', '--no-ff', '--no-edit', '-m', "Integrate Goal $GoalName into $($plan.TargetBranch)", $plan.SourceHead) }
+        $arguments = if ($plan.Action -eq 'FastForward') { @('merge', '--ff-only', $plan.SourceHead) } else { @('merge', '--no-ff', '--no-edit', '-m', "Integrate workspace '$sourceRoot' into $($plan.TargetBranch)", $plan.SourceHead) }
         $merge = Invoke-GitOperation -Repository $plan.Root -Arguments $arguments -AllowFailure
         if ($merge.ExitCode -ne 0) {
             [void](Invoke-GitOperation -Repository $plan.Root -Arguments @('merge', '--abort') -AllowFailure)
@@ -450,22 +527,23 @@ function Merge-HardnessGitGoal {
             }
             [void](Invoke-GitOperation -Repository $targetRoot -Arguments @('add', '--', $plan.Repository))
         }
-        $message = if ([string]::IsNullOrWhiteSpace($CommitMessage)) { "[Hardness] Refactor: integrate $GoalName" } else { $CommitMessage }
+        $sourceLabel = Split-Path -Leaf $sourceRoot
+        $message = if ([string]::IsNullOrWhiteSpace($CommitMessage)) { "[Hardness] Refactor: integrate workspace $sourceLabel" } else { $CommitMessage }
         [void](Invoke-GitOperation -Repository $targetRoot -Arguments @('commit', '-m', $message))
         $completed.Add([pscustomobject]@{ Repository = '.'; Action = $parentPlan.Action; Head = Get-GitHead $targetRoot }) | Out-Null
     }
-    return [pscustomobject]@{ ProjectRoot = $targetRoot; SourceRoot = $sourceRoot; SourceHead = $actualSourceHead; Preview = $false; Plans = @($plans | ForEach-Object { $_ }); Completed = @($completed | ForEach-Object { $_ }); Integrated = $true; RemoteChanged = $false; SourcePreserved = (Test-Path -LiteralPath $sourceRoot -PathType Container) }
+    return [pscustomobject]@{ WorkspaceRoot = $targetRoot; SourceWorkspaceRoot = $sourceRoot; SourceHead = $actualSourceHead; Preview = $false; Plans = @($plans | ForEach-Object { $_ }); Completed = @($completed | ForEach-Object { $_ }); Integrated = $true; RemoteChanged = $false; SourcePreserved = (Test-Path -LiteralPath $sourceRoot -PathType Container) }
 }
 
 function Publish-HardnessGitBranches {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [string]$ProjectRoot = '',
+        [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
         [Parameter(Mandatory = $true)][hashtable]$RepositoryBranches,
         [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$')][string]$Remote = 'origin'
     )
     if ($RepositoryBranches.Count -eq 0) { throw 'RepositoryBranches must explicitly name at least one repository and branch.' }
-    $root = Resolve-GitRepositoryRoot -Path $ProjectRoot
+    $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $known = @{ '.' = $root }
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     foreach ($submodule in $submodules) { $known[$submodule.Path] = $submodule.FullPath }
@@ -508,7 +586,7 @@ function Publish-HardnessGitBranches {
 
     $orderedPlans = @($plans | Sort-Object @{ Expression = { if ($_.Repository -eq '.') { 1 } else { 0 } } }, Repository)
     if ($WhatIfPreference) {
-        return [pscustomobject]@{ ProjectRoot = $root; Preview = $true; Plans = $orderedPlans; Pushed = $false; Forced = $false }
+        return [pscustomobject]@{ WorkspaceRoot = $root; Preview = $true; Plans = $orderedPlans; Pushed = $false; Forced = $false }
     }
     $results = New-Object System.Collections.Generic.List[object]
     foreach ($plan in $orderedPlans) {
@@ -517,12 +595,12 @@ function Publish-HardnessGitBranches {
             $results.Add([pscustomobject]@{ Repository = $plan.Repository; Branch = $plan.Branch; Head = $plan.Head; Remote = $plan.Remote; Output = @($push.Output) }) | Out-Null
         }
     }
-    return [pscustomobject]@{ ProjectRoot = $root; Preview = $false; Plans = $orderedPlans; Results = @($results | ForEach-Object { $_ }); Pushed = $true; Forced = $false }
+    return [pscustomobject]@{ WorkspaceRoot = $root; Preview = $false; Plans = $orderedPlans; Results = @($results | ForEach-Object { $_ }); Pushed = $true; Forced = $false }
 }
 
 Export-ModuleMember -Function @(
     'Get-HardnessGitStatus',
     'Complete-HardnessGitCommit',
-    'Merge-HardnessGitGoal',
+    'Merge-HardnessGitWorkspace',
     'Publish-HardnessGitBranches'
 )

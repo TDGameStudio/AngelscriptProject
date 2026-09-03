@@ -24,6 +24,9 @@ Assert-Equal 0 @($errors).Count 'Test-Hardness.ps1 parses in the current host'
 
 $runnerCommand = Get-Command -Name $runner -ErrorAction Stop
 Assert-True ('PowerShellHosts' -notin @($runnerCommand.Parameters.Keys)) 'the public runner exposes no legacy multi-host selector'
+$runnerText = Get-Content -LiteralPath $runner -Raw
+Assert-True ($runnerText.Contains('Saved\Hardness\Performance')) 'the public runner defaults raw evidence below Saved/Hardness'
+Assert-True (-not $runnerText.Contains('Saved\Harness\Hardness\Performance')) 'the retired nested performance path is absent'
 
 $quick = @(& $runner -Profile Quick -ListChecks)
 $performance = @(& $runner -Profile Performance -ListChecks -WarmupRuns 1 -MeasurementRuns 1)
@@ -125,10 +128,11 @@ try {
     Assert-Equal 'HardnessPerformanceRaw' $summary.RecordType 'the performance summary identifies its record type'
     Assert-Equal 'Passed' $summary.OverallStatus 'the minimal performance correctness sample passes its budgets'
     Assert-Equal 'fixture/performance' $summary.Parameters.TaskChange 'the default performance run uses its self-contained Task Graph fixture'
-    Assert-Equal 4 @($summary.Scenarios).Count 'the performance summary contains all four scenarios'
+    Assert-Equal 7 @($summary.Scenarios).Count 'the performance summary contains all seven focused scenarios'
+    Assert-Equal 'FreshProcess|PersistentApi|TaskStatus|FastWorkspaceStatus|HardnessStatus|DetailedWorkspaceStatus|ObservationWrite' (@($summary.Scenarios.Name) -join '|') 'the performance summary keeps the focused scenario order'
 
     $samples = @(Import-Csv -LiteralPath $samplesPath)
-    Assert-Equal 4 $samples.Count 'one measured sample is retained for each scenario'
+    Assert-Equal 7 $samples.Count 'one measured sample is retained for each scenario'
     Assert-Equal 0 @($samples | Where-Object Correct -ne 'True').Count 'every retained sample passed its behavior assertion'
     Assert-Equal 'Scenario|Phase|Iteration|Unit|Value|Correct' (@($samples[0].PSObject.Properties.Name) -join '|') 'the raw sample table schema remains stable'
     Assert-True ($summaryText -notmatch [regex]::Escape($projectRoot)) 'the performance summary omits the absolute project path'

@@ -1,30 +1,32 @@
 ---
 name: openspec-verify-change
-description: Verify an OpenSpec change against a fixed implementation snapshot for an Incident Review, scope-frozen Final Review, or External Review. Verification does not edit implementation.
+description: Verify an OpenSpec change for completion or evaluate an explicitly requested immutable-snapshot Review. Verification does not edit implementation.
 ---
 
 # Verify a Change
 
 Use the portable CLI through Hardness as defined by the `openspec` skill.
 
-- Fix the reviewed state first with an immutable `snapshot_ref` that remains readable while the main thread continues; a digest of a moving dirty diff is not enough for asynchronous Review.
+## Completion verification
+
 - Read proposal, relevant delta/current specs, design, tasks, and `attachments/INDEX.md`; open only linked evidence.
-- Run `doctor`, strict change validation, task DAG validation, and the exact task verification commands appropriate to the gate.
-- Compare observable implementation and tests to requirements. Review correctness, readability, architecture, security, and performance.
-- Classify findings as Critical, Required, or Advisory. Include exact evidence, affected requirements/tasks, and a concrete resolution path.
+- Run `doctor`, strict change validation, Task DAG validation, and the exact task verification commands appropriate to the completed scope.
+- Compare observable implementation and tests to requirements, including correctness, maintainability, architecture, security, performance, and bounded side effects where relevant.
+- Preserve exact commands, results, scope, exclusions, and content identity as completion evidence.
 
 ```text
-fixed snapshot
-  -> artifact and DAG validation
-  -> implementation/evidence comparison
-  -> findings
-  -> Hardness triage and resolution
-  -> re-review
-  -> close or supersede review
+verified scope
+  -> local defect -> repair and verify inside the task
+  -> planning-invalidating evidence -> Hardness Replan
+  -> otherwise -> direct closure and archive
 ```
 
-Automatic Review occurs only for a demonstrated major Incident Review and one Final Review after scope freeze when the completed Change has broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact. A verified small low-impact Change records `Final Review: not required` with rationale and creates no placeholder Review. The user or another agent may start an External Review at any time. Incident and External Reviews do not replace a required Final Review unless the assignment itself satisfies the frozen final scope and is recorded as `review_kind: final`. A report arriving does not complete the Review Gate.
+Hardness never auto-starts an Incident or Final Review. A completed Change does not need a Review file, impact classification, or not-required Review placeholder.
 
-Hardness should dispatch a reviewer subagent asynchronously when available. The reviewer may create or complete only its unique assigned Review file against the immutable snapshot; it must not edit code, planning artifacts, INDEX, implementation records, replans, or existing Reviews. The main thread may continue disjoint work, but knowledge promotion, closure, archive, and integration wait for the applicable gate.
+## Explicit Review
 
-A finding never directly triggers Replan. Hardness validates the snapshot/evidence and decides whether the current plan is actually invalid. Finish is blocked while any review is open or any Critical/Required finding lacks a resolution, evidence, re-review, and closure.
+Enter Review only after an explicit user or external-agent request. Fix the reviewed state with an immutable `snapshot_ref` that remains readable independently of the live workspace; a digest of a moving dirty diff is not enough. Classify findings as Critical, Required, or Advisory, and include exact evidence, affected requirements/tasks, and a concrete resolution condition.
+
+The Review may run inline or asynchronously. Async is optional. A reviewer may create or complete only its unique assigned Review file against the immutable snapshot; it must not edit code, planning artifacts, INDEX, implementation records, Replans, or existing Reviews. The main thread may continue disjoint work while an asynchronous Review runs.
+
+A finding never directly triggers Replan. Hardness validates the snapshot and evidence, fixes local defects, and Replans only when accepted requirements, design, Task DAG, verification contract, or another planning truth is invalid. Before archive, every existing Review is closed or superseded, with no open or deferred Critical or Required finding and with required resolution evidence retained.

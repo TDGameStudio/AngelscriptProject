@@ -18,6 +18,14 @@ task_graph:
 - [ ] 2.1 Implement the parser boundary — verify: `cargo test parser_boundary`
   > Files: `src/parser.rs`, `tests/parser.rs`
 
+  > Context: Preserve the public parser contract while rejecting ambiguous input.
+
+  > Inputs: The accepted grammar and the failing fixture from exploration.
+
+  > Produces: A parser change and focused regression coverage.
+
+  > Constraints: Do not widen the grammar or change diagnostics outside this boundary.
+
   1. Add the failing behavior test and observe the expected failure.
   2. Implement the smallest passing change.
   3. Run the exact verification command.
@@ -28,10 +36,10 @@ Rules:
 - One top-level checkbox is one DAG node. Nested steps are ordered-list items, never checkboxes.
 - `task_graph.version` is `1`; `depends_on` is incoming adjacency (`task -> direct prerequisites`).
 - Every body task ID appears exactly once as a quoted Graph key, every dependency ID is quoted, and roots use `[]`.
-- The Graph key set exactly matches the body task ID set. Every task body has a permanent unique `X.Y` ID, an exact verify command/outcome, and `Files:`.
+- The Graph key set exactly matches the body task ID set. Every task body has a permanent unique `X.Y` ID, a one-line node statement with an exact verify command or observable outcome, and a `Files:` line.
 - Present Graph keys and task blocks in natural numeric order, but never infer dependencies from their order.
 - IDs are never reused. A completed task is never unchecked.
-- Replan adds new IDs. A completed task that needs more work keeps `[x]`, receives `needs_followup`, and points to a new task.
+- A replan adds new IDs. A completed task that needs more work keeps `[x]`, receives `needs_followup`, and points to a new task.
 - Allowed old-task dispositions are `preserved`, `superseded`, `cancelled`, and `needs_followup`.
 - Historical body-level `After` records are read-only compatibility. A current task plan writes frontmatter only, and mixed syntax is invalid.
 - No `> Graph:` line, Mermaid source of truth, separate `task-dag.yaml`, GraphRevision, snapshot tree, or hidden task database.
@@ -42,10 +50,10 @@ Build a file, artifact, and exclusive-resource map before drawing dependencies. 
 
 Every node states:
 
-- the concrete outcome and scope boundary;
-- exact paths, or an explicitly bounded package-wide glob with exclusions;
-- the interface, artifact, or state it consumes and produces when another node depends on it;
-- one exact verification command and the result that proves the outcome.
+- on its one-line checkbox statement, the concrete outcome plus one exact verification command or directly observable result;
+- on a following `> Files:` line, exact paths or an explicitly bounded package-wide glob with exclusions.
+
+Add only the concise detail that helps a zero-context implementer. A Task Card may freely use ordinary Markdown such as short prose, `> Context:`, `> Inputs:`, `> Produces:`, `> Constraints:`, numbered steps, examples, or other useful notes. These are authoring aids, not parser fields or a rigid template. When another node depends on an interface, artifact, or state, explain that handoff somewhere in the card using the clearest compact form.
 
 Nested numbered steps are real execution order, including RED/GREEN/refactor when behavior changes; they are not placeholder examples. Do not use `TBD`, "appropriate handling", "similar to Task N", or other prose that delegates design back to the implementer.
 

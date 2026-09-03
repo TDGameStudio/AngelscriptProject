@@ -15,10 +15,13 @@ Normal agent calls go through the imported Hardness module so one PowerShell ses
 
 ```powershell
 Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext -Mode Current
+$context = New-HardnessContext                         # discover the registered workspace from the current directory
+# $context = New-HardnessContext -WorkspaceRoot D:\work\my-linked-workspace
 Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 Invoke-Hardness -Command openspec.change -Context $context -ArgumentList @('list', '--json')
 ```
+
+One context selects one explicit or discovered `WorkspaceRoot`. A Codex `/goal` invocation may continue the work unattended, but it is not a repository mode, branch convention, or alternate OpenSpec lifecycle.
 
 Routes are `openspec.init|doctor|status|instructions|validate|domain|spec|change|workflow|completion`. Never invoke bare `openspec`, `npx @fission-ai/openspec`, or a `target/` build for project operations. Direct EXE invocation is reserved for package self-test and release verification.
 
@@ -30,7 +33,7 @@ Read [commands/README.md](commands/README.md), then only the one command documen
 
 - Deep discovery before creating a new feature, architecture refactor, or major behavior-change record: `openspec-explore`; its accepted decision-complete handoff feeds `change create` and planning. Never invoke it after the target Change exists.
 - Create the next missing artifact: `openspec-continue-change`.
-- Revise current artifacts or apply a Replan: `openspec-update-change`.
+- Revise existing artifacts or apply an evidence-gated replan: `openspec-update-change`.
 - Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`; do not restart deep Explore inside a Ready task.
 - Verify a fixed snapshot: `openspec-verify-change`.
 - Merge durable delta specs: `openspec-sync-specs`.
@@ -40,10 +43,10 @@ For record layout, load only the relevant reference: [record schema](references/
 
 ## Deterministic boundary
 
-The CLI owns manifests, identities, moves, workflow/status/instructions, validation, explicit closure metadata, completion scripts, and a pure archive move. It does not decide requirements, merge specs, run implementation, schedule worktrees, update Skills, detect AI tools, send telemetry, or make Review/Replan decisions.
+The CLI owns manifests, identities, moves, workflow/status/instructions, validation, explicit closure metadata, completion scripts, and a pure archive move. It does not decide requirements, merge specs, run implementation, schedule worktrees, update Skills, detect AI tools, send telemetry, or make review/replan decisions.
 
 `instructions --json` constraints are prompts, not artifact text. A glob has no writable path; use `existingOutputPaths` and a concrete workflow-permitted file. Prefer JSON for automation and preserve non-zero exit codes.
 
 ## CLI maintenance
 
-Source lives in the `Tools/openspec` submodule. Use the [package publisher](scripts/Publish-OpenSpecPackage.ps1) only from a clean source commit with an exact annotated `v<version>` tag. It runs locked fmt, Clippy, all-target tests, command-doc parity, and Release-build gates before staging any package files; it then verifies and transactionally swaps the EXE, command docs, and manifest with rollback. The manifest binds the peeled tag target, gate results, target/profile/toolchain, EXE SHA-256, and command-doc digest. Commit the packaged EXE in the parent only after the final fixed snapshot is approved, and replace it once per accepted release; never create parent commits for candidate binaries. Startup is intentionally process-per-call; do not add a daemon.
+Source lives in the tracked `Tools/openspec` submodule; this is the intentional exception to the retirement of root `Tools` PowerShell entrypoints. Runtime calls use the packaged `.agents/skills/openspec/bin/openspec.exe`. Use the [package publisher](scripts/Publish-OpenSpecPackage.ps1) only from a clean source commit with an exact annotated `v<version>` tag. It runs locked fmt, Clippy, all-target tests, command-doc parity, and Release-build gates before staging any package files; it then verifies and transactionally swaps the EXE, command docs, and manifest with rollback. The manifest binds the peeled tag target, gate results, target/profile/toolchain, EXE SHA-256, and command-doc digest. Commit the packaged EXE in the parent only after the final fixed snapshot is approved, and replace it once per accepted release; never create parent commits for candidate binaries. Startup is intentionally process-per-call; do not add a daemon.

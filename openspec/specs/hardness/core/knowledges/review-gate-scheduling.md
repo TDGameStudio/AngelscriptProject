@@ -1,29 +1,30 @@
-# Review Gate Scheduling
+# Explicit Review Intake and Direct Closure
 
 ## Rule
 
-Review is triggered by demonstrated incident severity, broad final impact, or explicit external intent—not by task count, diff size, or small-change cadence.
+Hardness never starts Review automatically from incident severity, impact, task count, diff size, or ordinary verification. Review is an explicit user or external-agent request.
 
 ```text
-demonstrated major incident --------> Incident Review
-scope freeze + broad impact --------> Final Review
-scope freeze + verified low impact -> Final Review: not required
-user / other agent request ---------> External Review
+local defect -----------------------> repair in current task -> verify
+planning truth invalid ------------> replan -> implement -> verify
+verified work, no explicit Review -> completed closure -> archive
+user / external-agent Review ------> register -> triage -> resolve -> archive
 ```
 
-## Final Ordering
+## Direct closure
 
-Final Review is the last semantic gate. Before assignment, complete every implementation, document, specification, test, script, planned capability-knowledge output, proving verification result, accepted Replan, queued user change, and closure input. After assignment, only the assigned Review lifecycle, Task/attachment-INDEX bookkeeping, and deterministic closure/archive metadata or move may follow without re-freeze.
+When tasks, verification, durable-spec sync, attachments, and closure evidence are complete and no explicit Review exists, archive directly. Do not create a placeholder Review, an impact classification, or a not-required Review record.
 
-If any deliverable content changes, retain the report as evidence for its immutable snapshot, batch all late changes, and run one incremental Final Review after the next scope freeze.
+Evidence that invalidates a requirement, design boundary, verification contract, required artifact, or DAG edge triggers replan. Otherwise repair the local defect inside the current task and verify again.
 
-## Asynchronous Review
+## Explicit Review
 
-Give the reviewer subagent an immutable `snapshot_ref`, digest, scope, exclusions, requirements, and existing verification evidence. The reviewer reads that snapshot rather than a moving workspace and writes only its unique Review file. The coordinator may continue disjoint work but cannot claim completion, integrate, or archive before the applicable gate closes.
+When the user or an external agent explicitly requests Review, register one unique file and bind it to a materializable immutable snapshot. It may run asynchronously, but delegation is optional rather than a default workflow phase. Any registered Review must be closed or superseded before archive, with no open or deferred Critical or Required finding.
 
-Review files have no line cap. Preserve specific findings, evidence, impact, resolution conditions, disposition, repair evidence, and re-review history. Reduce elapsed time by avoiding premature dispatch and duplicate broad scans, not by deleting useful detail.
+Review files have no line cap. Preserve specific findings, evidence, impact, resolution conditions, disposition, repair evidence, and re-review history. A finding is evidence to triage; only invalid planning truth triggers replan.
 
 ## Source
 
 - `openspec/archive/changes/hardness/2026-09-03-restore-exploration-authoring-contracts/attachments/knowledges/review-gate-scheduling.md`
 - `openspec/archive/changes/hardness/2026-09-03-restore-exploration-authoring-contracts/attachments/talks/talk-20260903-122738-review-gate-scheduling.md`
+- User-directed Replan `remove-automatic-final-review` in `hardness/refactor-unified-workspace-core`.

@@ -35,12 +35,13 @@ Need a Hardness-managed `AgentConfig.ini` at the selected workspace root (`Paths
 
 ```powershell
 Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext -Mode Current
+$context = New-HardnessContext                         # discover from the current directory
+# $context = New-HardnessContext -WorkspaceRoot D:\work\my-linked-workspace
 Invoke-Hardness -Command workspace.bootstrap -Context $context
 Invoke-Hardness -Command workspace.activate -Context $context
 ```
 
-Build and test entry points verify the managed workspace identity and the active PowerShell-session selection before resolving UE paths. A Goal session therefore cannot accidentally target the primary checkout.
+Build and test entry points verify the managed workspace identity and the active PowerShell-session selection before resolving UE paths. Work selected for one registered worktree therefore cannot accidentally target the primary checkout. Codex `/goal` continuation does not change the selected workspace.
 
 Every command must pass an explicit timeout. Build max `3600000`; test max `900000` unless a dedicated long runner (package/cache) says otherwise.
 

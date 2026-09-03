@@ -19,7 +19,7 @@ Import Hardness once in a PowerShell 7.0-or-later (`Core`) session and reuse the
 
 ```powershell
 Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
-$context = New-HardnessContext -Mode Current
+$context = New-HardnessContext -WorkspaceRoot $PWD
 
 Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 Invoke-Hardness -Command openspec.workflow -Context $context -ArgumentList @('validate', 'angelscript')

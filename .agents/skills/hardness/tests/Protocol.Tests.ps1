@@ -1,3 +1,6 @@
+#requires -Version 7.0
+#requires -PSEdition Core
+
 [CmdletBinding()]
 param()
 
@@ -154,9 +157,12 @@ function Test-ReviewClosureGate {
     param([string]$ReviewRoot)
 
     $issues = @()
+    if (-not (Test-Path -LiteralPath $ReviewRoot -PathType Container)) {
+        return $issues
+    }
     $reviewFiles = @(Get-ChildItem -LiteralPath $ReviewRoot -File -Filter 'review-*.md')
     if ($reviewFiles.Count -eq 0) {
-        return 'no-review-files: review closure gate requires at least one review record'
+        return $issues
     }
 
     foreach ($file in $reviewFiles) {
@@ -189,6 +195,8 @@ function Test-ReviewClosureGate {
             if ($reviewKind -notin @('incident', 'final', 'external')) {
                 $issues += "review-kind: $($file.Name) has invalid review_kind '$reviewKind'"
             }
+            # Historical review-v2 records may retain the retired Hardness requester.
+            # Live policy assertions below forbid creating new automatic Reviews.
             if ($requestedBy -notin @('hardness', 'user', 'external-agent')) {
                 $issues += "review-requester: $($file.Name) has invalid requested_by '$requestedBy'"
             }
@@ -431,14 +439,97 @@ $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\
 $referenceRoot = Join-Path $projectRoot '.agents\skills\hardness\references'
 $changeRoot = Join-Path $projectRoot 'openspec\archive\changes\hardness\2026-09-03-refactor-skill-system'
 $exePath = Join-Path $projectRoot '.agents\skills\openspec\bin\openspec.exe'
+$hardnessSkillPath = Join-Path $projectRoot '.agents\skills\hardness\SKILL.md'
+$routingPath = Join-Path $referenceRoot 'routing.md'
+$hookScriptPath = Join-Path $projectRoot '.agents\skills\hardness\scripts\Invoke-HardnessCodexHook.ps1'
+$hookConfigPath = Join-Path $projectRoot '.codex\hooks.json'
 
 Assert-True (Test-Path -LiteralPath $changeRoot -PathType Container) 'The archived Hardness dogfood record is required for protocol audit'
 
+$hardnessSkill = Get-Content -LiteralPath $hardnessSkillPath -Raw
+$routingProtocol = Get-Content -LiteralPath $routingPath -Raw
 $taskProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'task-dag.md') -Raw
 $replanProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'replan.md') -Raw
 $reviewProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'review.md') -Raw
 $closureProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'closure.md') -Raw
 $implementationProtocol = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\implementation-issues.md') -Raw
+
+foreach ($legacyPattern in @('native Goal mode', 'Choose the workspace mode', 'Native Goal iteration', 'New-HardnessContext -Mode', '\.worktrees/<goal>', 'goal/<goal>')) {
+    Assert-True ($hardnessSkill -notmatch $legacyPattern) "Hardness entry still exposes legacy repository mode text: $legacyPattern"
+}
+foreach ($token in @(
+    'one Git-derived workspace model',
+    'Codex `/goal`',
+    'external continuation',
+    'deep Explore',
+    'lightweight investigation',
+    'multiple relationships, a sequence, or state transitions'
+)) {
+    Assert-True ($hardnessSkill.Contains($token)) "Hardness entry is missing the unified workflow contract: $token"
+}
+foreach ($token in @('`workspace.list`', '`hardness.status`', '`hardness.observe`', '`hardness.evolution.status`', '`openspec.maintenance.status`')) {
+    Assert-True ($routingProtocol.Contains($token)) "Route map is missing: $token"
+}
+Assert-Contains $taskProtocol 'Optional Task Card detail is ordinary Markdown' 'Task Card detail remains flexible Markdown'
+Assert-Contains $taskProtocol 'Hardness does not parse or require those optional sections' 'Hardness adds no Task Card parser contract'
+Assert-Contains $reviewProtocol '(?i)explicit user or external-agent request' 'Review starts only from an explicit user or external-agent request'
+Assert-Contains $reviewProtocol '(?i)(?:impact|incident).*never.*(?:auto|automatic).*Review|never.*(?:auto|automatic).*Review.*(?:impact|incident)' 'Impact and incident evidence never auto-start Review'
+Assert-Contains $reviewProtocol '(?i)verified work.*close and archive directly.*(?:without|no).*Review' 'Verified work may close and archive without Review'
+Assert-Contains $reviewProtocol '(?i)local defect.*(?:fix|repair)|(?:fix|repair).*local defect' 'Local defects are repaired directly'
+Assert-Contains $reviewProtocol '(?i)planning-invalidating evidence.*Replan|Replan.*planning-invalidating evidence' 'Planning-invalidating evidence triggers Replan'
+Assert-Contains $reviewProtocol '(?i)asynchronous' 'An explicitly requested Review may run asynchronously'
+Assert-Contains $reviewProtocol '(?i)immutable snapshot' 'Every explicitly requested Review uses an immutable snapshot'
+Assert-Contains $closureProtocol 'workspace or worktree' 'Closure is independent from workspace removal'
+
+Assert-True (Test-Path -LiteralPath $hookScriptPath -PathType Leaf) 'The bounded Codex hook adapter is required'
+Assert-True (Test-Path -LiteralPath $hookConfigPath -PathType Leaf) 'Project Codex hook configuration is required'
+$null = & git -C $projectRoot check-ignore --no-index --quiet -- '.codex/hooks.json' 2>$null
+$hookIgnoreExitCode = $LASTEXITCODE
+Assert-Equal 1 $hookIgnoreExitCode '.codex/hooks.json remains trackable'
+$null = & git -C $projectRoot check-ignore --no-index --quiet -- '.codex/local.json' 2>$null
+$localCodexIgnoreExitCode = $LASTEXITCODE
+Assert-Equal 0 $localCodexIgnoreExitCode 'Unrelated project-local .codex files remain ignored'
+$hookScript = Get-Content -LiteralPath $hookScriptPath -Raw
+foreach ($token in @('#requires -Version 7.0', '#requires -PSEdition Core', '[Console]::In.ReadToEnd()', 'rev-parse', 'hardness.status', 'hookSpecificOutput', 'additionalContext')) {
+    Assert-True ($hookScript.Contains($token)) "Codex hook adapter is missing: $token"
+}
+foreach ($forbiddenHookToken in @('hardness.observe', 'workspace.bootstrap', 'workspace.config.set', 'git.commit', 'git.push', 'Stop-Hardness')) {
+    Assert-True (-not $hookScript.Contains($forbiddenHookToken)) "Codex hook adapter must remain non-mutating: $forbiddenHookToken"
+}
+
+$hookConfig = Get-Content -LiteralPath $hookConfigPath -Raw | ConvertFrom-Json -ErrorAction Stop
+$hookEventNames = @($hookConfig.hooks.PSObject.Properties.Name)
+Assert-True ('SessionStart' -in $hookEventNames) 'SessionStart hook is required'
+Assert-True ('SubagentStart' -in $hookEventNames) 'SubagentStart hook is required'
+Assert-True ('Stop' -notin $hookEventNames) 'Stop hook is intentionally absent'
+Assert-True ('PostToolUse' -notin $hookEventNames) 'PostToolUse hook is intentionally absent'
+$sessionRegistration = @($hookConfig.hooks.SessionStart)[0]
+Assert-Equal 'startup|resume' ([string]$sessionRegistration.matcher) 'SessionStart is limited to startup and resume'
+$hookCommands = @($sessionRegistration.hooks) + @(@($hookConfig.hooks.SubagentStart)[0].hooks)
+Assert-True ($hookCommands.Count -eq 2) 'Exactly one command is registered for each supported hook event'
+foreach ($hookCommand in $hookCommands) {
+    Assert-Equal 'command' ([string]$hookCommand.type) 'Codex hook uses the command adapter'
+    Assert-Equal 3 ([int]$hookCommand.timeout) 'Codex hook timeout stays bounded at three seconds'
+    Assert-True ([int]$hookCommand.additionalContextLimit -gt 0 -and [int]$hookCommand.additionalContextLimit -le 1200) 'Codex hook context limit stays positive and bounded'
+    Assert-Contains ([string]$hookCommand.commandWindows) 'pwsh(?:\.exe)?[ \t]+-NoProfile' 'Codex hook explicitly uses PowerShell 7 without a profile'
+}
+
+$hookPayload = [ordered]@{
+    cwd = (Join-Path $projectRoot '.agents\skills\hardness')
+    hook_event_name = 'SessionStart'
+    source = 'startup'
+} | ConvertTo-Json -Compress
+$hookTimer = [System.Diagnostics.Stopwatch]::StartNew()
+$hookOutput = @($hookPayload | & (Get-Command pwsh.exe -ErrorAction Stop).Source -NoProfile -File $hookScriptPath 2>&1)
+$hookExitCode = $LASTEXITCODE
+$hookTimer.Stop()
+Assert-Equal 0 $hookExitCode "Optional Codex hook fails open: $($hookOutput -join [Environment]::NewLine)"
+$hookResponse = ($hookOutput -join [Environment]::NewLine) | ConvertFrom-Json -ErrorAction Stop
+Assert-Equal 'SessionStart' ([string]$hookResponse.hookSpecificOutput.hookEventName) 'Codex hook echoes the supported event name'
+$additionalContext = [string]$hookResponse.hookSpecificOutput.additionalContext
+Assert-True (-not [string]::IsNullOrWhiteSpace($additionalContext)) 'Codex hook returns concise optional context'
+Assert-True ($additionalContext.Length -le [int]$hookCommands[0].additionalContextLimit) 'Codex hook output respects additionalContextLimit'
+Assert-True ($hookTimer.ElapsedMilliseconds -lt 5000) "Codex hook remains lightweight (actual $($hookTimer.ElapsedMilliseconds) ms)"
 
 Assert-Contains $taskProtocol 'only current Task DAG' 'tasks.md remains the only current DAG'
 foreach ($token in @(
@@ -458,30 +549,37 @@ Assert-Contains $replanProtocol 'status: applied' 'Replan records are applied-on
 foreach ($token in @('base_commit:', 'base_tasks_sha256:', 'result_tasks_sha256:', 'resume_task:', 'Old Task Disposition', 'Diff Snapshot', 'Preserved Work', 'attachments/talks/')) {
     Assert-True ($replanProtocol.Contains($token)) "Replan protocol is missing: $token"
 }
-Assert-Contains $reviewProtocol 'finding never directly triggers Replan' 'Review findings require triage before Replan'
+Assert-Contains $reviewProtocol 'finding never directly triggers Replan' 'Review findings require evidence triage before Replan'
 Assert-Contains $reviewProtocol 'open \| resolved \| rejected \| deferred' 'Review finding states are explicit'
-Assert-Contains $reviewProtocol 'Critical and Required findings' 'Critical and Required findings gate closure'
+Assert-Contains $reviewProtocol 'Critical or Required finding' 'Critical and Required findings gate explicit Review closure'
 foreach ($token in @(
-    'There are exactly three routes',
-    '**Incident Review**',
-    '**Final Review**',
-    '**External Review**',
-    'Final Review: not required',
-    'Diff size alone does not determine impact',
-    'asynchronous subagent',
+    'explicit user or external-agent request',
+    'inline or asynchronously',
     '`snapshot_ref`',
-    'A digest alone can verify content but is not sufficient to materialize an asynchronous snapshot',
+    'A digest verifies content but does not by itself materialize an asynchronous snapshot',
     '`assigned_at` is never reused as a guessed completion time',
     'Every populated lifecycle timestamp is a real ISO-8601 instant with an explicit offset',
     '`assigned_at <= reviewed_at <= closed_at`',
     'superseded before completion may omit `reviewed_at`',
+    'detailed report',
     'There is no Review file line limit',
-    'one batched incremental Final Review',
-    'planned capability-knowledge content',
-    'the only expected writes for that Change are the assigned Review lifecycle, Task/INDEX bookkeeping, and deterministic closure/archive metadata or move',
-    'If any implementation, documentation, specification, test, script, or capability-knowledge content changes'
+    'closed or superseded',
+    'open or deferred Critical or Required'
 )) {
     Assert-True ($reviewProtocol.Contains($token)) "Review protocol is missing: $token"
+}
+foreach ($retiredReviewPattern in @(
+    '(?i)Final Review:[ \t]*not required',
+    '(?i)There are exactly three routes',
+    '(?i)one batched incremental Final Review',
+    '(?i)Diff size alone does not determine impact',
+    '(?i)demonstrated major incident',
+    '(?i)small low-impact',
+    '(?i)Final Review is required',
+    '(?i)requires? (?:an? )?Final Review',
+    '(?i)must (?:run|perform|complete) (?:an? )?Final Review'
+)) {
+    Assert-True ($reviewProtocol -notmatch $retiredReviewPattern) "Review protocol still contains retired automatic or mandatory Review policy: $retiredReviewPattern"
 }
 foreach ($kind in @('`completed`', '`abandoned`', '`superseded`')) {
     Assert-True ($closureProtocol.Contains($kind)) "Closure protocol is missing $kind"
@@ -510,6 +608,9 @@ $reviewFixtureRoot = [System.IO.Path]::Combine(
 )
 try {
     [void](New-Item -ItemType Directory -Path $reviewFixtureRoot)
+    Assert-Equal 0 @(Test-ReviewClosureGate -ReviewRoot (Join-Path $reviewFixtureRoot 'reviews-absent')).Count 'verified work may close when no Review directory exists'
+    Assert-Equal 0 @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot).Count 'verified work without an explicitly requested Review may close directly'
+
     $validReview = @'
 ---
 state: closed
@@ -541,7 +642,7 @@ follow_up: optimize-review-parser
 ---
 review_schema: review-v2
 review_kind: final
-requested_by: hardness
+requested_by: user
 state: closed
 assigned_at: 2026-09-03T14:30:00+08:00
 reviewed_at: 2026-09-03T14:42:00+08:00
@@ -591,7 +692,7 @@ The assignment was superseded before review completion.
 ---
 review_schema: review-v2
 review_kind: final
-requested_by: hardness
+requested_by: user
 state: closed
 assigned_at: 2026-99-99T99:99:99+99:99
 reviewed_at: 2026-09-03T15:01:00+08:00
@@ -615,7 +716,7 @@ verdict: APPROVE
 ---
 review_schema: review-v2
 review_kind: final
-requested_by: hardness
+requested_by: user
 state: closed
 assigned_at: 2026-09-03T15:00:00+08:00
 reviewed_at: 2026-09-03T14:59:00+08:00
@@ -639,7 +740,7 @@ verdict: APPROVE
 ---
 review_schema: review-v2
 review_kind: final
-requested_by: hardness
+requested_by: user
 state: closed
 assigned_at: 2026-09-03T15:00:00+08:00
 reviewed_at: 2026-09-03T15:02:00+08:00

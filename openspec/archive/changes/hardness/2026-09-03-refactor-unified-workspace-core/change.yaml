@@ -1,0 +1,20 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_db24396d-24b8-4ad0-8580-51715750cba2
+  id: hardness/refactor-unified-workspace-core
+  title: Unify Hardness workspace context
+  description: Remove repository Goal/Current modes, add fast workspace identity, visible workflow evolution, lightweight Codex hooks, and efficient task authoring.
+workflow: angelscript
+created_at: 2026-09-03T08:21:42Z
+goal: Make Hardness use one Git-derived workspace model while exposing low-cost self-evolution and timing.
+affected_areas:
+- .agents/skills/hardness
+- .agents/skills/workspace-lifecycle
+- .agents/skills/git-operations
+- openspec/specs/hardness
+archived_at: 2026-09-03T10:08:02Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The unified PS7 workspace lifecycle, exact-root Git operations, mode-free Hardness routing, optional Codex hooks, performance evidence, and direct closure policy are implemented, synchronized to durable specifications, and verified. Unreal Engine execution integration remains a separate follow-up change.

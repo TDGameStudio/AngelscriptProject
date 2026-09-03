@@ -31,7 +31,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $hardnessManifest = Join-Path $PSScriptRoot 'Hardness.psd1'
 if ([string]::IsNullOrWhiteSpace($PerformanceOutputRoot)) {
-    $PerformanceOutputRoot = Join-Path $projectRoot 'Saved\Harness\Hardness\Performance'
+    $PerformanceOutputRoot = Join-Path $projectRoot 'Saved\Hardness\Performance'
 }
 $PerformanceOutputRoot = [System.IO.Path]::GetFullPath($PerformanceOutputRoot)
 if ([string]::IsNullOrWhiteSpace($PerformanceRunId)) {
@@ -150,7 +150,7 @@ function Invoke-HardnessGateProcess {
 function Invoke-HardnessGateRoute {
     param($Check)
     Import-Module $hardnessManifest -Force -ErrorAction Stop
-    $context = New-HardnessContext -Mode Current -ProjectRoot $projectRoot
+    $context = New-HardnessContext -WorkspaceRoot $projectRoot
     switch ($Check.Name) {
         'Hardness.Installation' {
             $health = Test-HardnessInstallation -ProjectRoot $projectRoot

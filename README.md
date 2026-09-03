@@ -172,7 +172,7 @@ AngelscriptProject/
 
 ```powershell
 Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
-$context = New-HardnessContext -Mode Current
+$context = New-HardnessContext -WorkspaceRoot $PWD
 Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 ```
 
@@ -202,7 +202,7 @@ pnpm dev
 
 ```powershell
 Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext -Mode Current
+$context = New-HardnessContext -WorkspaceRoot $PWD
 Invoke-Hardness -Command workspace.bootstrap -Context $context
 Invoke-Hardness -Command workspace.activate -Context $context
 ```

@@ -4,4 +4,4 @@ metadata:
   uid: spec_44e4d03e-3ce6-43fa-9479-e496459653c0
   id: hardness/workspace
   title: Hardness Workspace Lifecycle
-  description: Canonical Current and Goal workspace lifecycle, local identity, configuration, activation, verification, and explicit cleanup.
+  description: Git-derived workspace lifecycle, AgentConfig v2 identity, process-local selection, tiered status, guarded execution, and explicit cleanup.

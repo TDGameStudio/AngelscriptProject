@@ -349,7 +349,7 @@ Assert-True (Test-Path -LiteralPath $exePath -PathType Leaf) 'Bundled openspec.e
 Assert-True (Test-Path -LiteralPath $manifestPath -PathType Leaf) 'OpenSpec release manifest is missing.'
 
 Import-Module $hardnessManifest -Force
-$context = New-HardnessContext -Mode Current -ProjectRoot $projectRoot
+$context = New-HardnessContext -WorkspaceRoot $projectRoot
 $doctor = Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 Assert-Equal $doctor.schemaVersion '1.0' 'Hardness returned the wrong schema version.'
 Assert-Equal $doctor.status 'Succeeded' 'OpenSpec doctor did not succeed through Hardness.'
@@ -458,7 +458,18 @@ $deepExplorationText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents
 $questionRoundsText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\references\question-rounds.md') -Raw
 $markerText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\references\markers.md') -Raw
 $applyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-apply-change\SKILL.md') -Raw
+$archiveText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-archive-change\SKILL.md') -Raw
 $continueText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-continue-change\SKILL.md') -Raw
+$updateText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-update-change\SKILL.md') -Raw
+$verifyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-verify-change\SKILL.md') -Raw
+$openSpecEntryText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\SKILL.md') -Raw
+$visualExplainText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\visual-explain\SKILL.md') -Raw
+$unrealDevelopText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\unreal-engine-develop\SKILL.md') -Raw
+$skillsReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\README.md') -Raw
+$liveConfigText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\config.yaml') -Raw
+$openSpecReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\README.md') -Raw
+$projectReadmeRoutingText = Get-Content -LiteralPath (Join-Path $projectRoot 'README.md') -Raw
+$agentsText = Get-Content -LiteralPath (Join-Path $projectRoot 'AGENTS.md') -Raw
 $hardnessText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\SKILL.md') -Raw
 $routingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\routing.md') -Raw
 $reviewReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\review.md') -Raw
@@ -473,7 +484,7 @@ foreach ($token in @('references/deep-exploration.md', 'references/question-roun
 foreach ($token in @('Problem', 'Success Criteria', 'Evidence', 'Scope and Exclusions', 'Constraints', 'Options', 'Decision and Rationale', 'Flip Condition', 'Architecture, Components, and Data Flow', 'Failures and Edge Cases', 'Verification', 'OpenSpec Handoff', 'Exploration Carryover', 'Talk candidate', 'Knowledge candidate', 'Discard')) {
     Assert-True ($deepExplorationText.Contains($token)) "Deep exploration handoff is missing: $token"
 }
-foreach ($token in @('Current/Plan', 'at least three', 'user-owned', 'independent', 'Settled', 'Held', 'Reopened', 'Dropped', 'Pinned fact', 'Never use them for Goal execution or task-local implementation uncertainty')) {
+foreach ($token in @('interactive pre-change work', 'at least three', 'user-owned', 'independent', 'Settled', 'Held', 'Reopened', 'Dropped', 'Pinned fact', 'Never use them for unattended Codex `/goal` continuation or task-local implementation uncertainty', '`/goal` is not a repository mode')) {
     Assert-True ($questionRoundsText.Contains($token)) "Question-round contract is missing: $token"
 }
 foreach ($token in @('markers.md', '✅ Settled:', '❌ Dropped:', '🔁 Reopened:', '⏳ Held:', '📌 Pinned fact:', '❔ Open decision:', '👉 Recommendation:', '❗ Flip condition:', '✨ New:', '💡 Knowledge candidate:', 'Do not use the historical red/green circles', 'materialize them only after the target Change is created')) {
@@ -489,17 +500,64 @@ foreach ($token in @('before implementation mutation', 'not an active Change or 
 foreach ($token in @('new feature, architecture refactor, or major behavior change', 'decision-complete exploration handoff', 'before this Change was created', 'Never invoke', 'Exploration Carryover', 'attachments/talks/', 'attachments/knowledges/', 'discard temporary round state or transcript prose')) {
     Assert-True ($continueText.Contains($token)) "Continue contract is missing: $token"
 }
-foreach ($token in @('pre-change ambiguity -> deep Explore', 'Ready task uncertainty -> local investigation', 'A decision-complete handoff is not an active Change', 'before implementation mutation', 'Once the target Change exists, never invoke deep Explore')) {
+foreach ($token in @('canonical active Change in the selected workspace', 'Codex `/goal` continuation', 'not a repository mode or workspace selector')) {
+    Assert-True ($continueText.Contains($token)) "Continue workspace contract is missing: $token"
+    Assert-True ($updateText.Contains($token)) "Update workspace contract is missing: $token"
+}
+foreach ($token in @('canonical active Change in the selected workspace', 'lightweight task-local investigation', 'Codex `/goal` is not a repository mode or workspace selector')) {
+    Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
+}
+foreach ($token in @('new feature, architecture refactor, or major behavior change', 'deep Explore before Change creation', 'decision-complete exploration handoff is not an active Change', 'Ready Task DAG before implementation mutation', 'After Change creation, do not restart deep Explore', 'lightweight investigation inside the Ready task')) {
     Assert-True ($hardnessText.Contains($token)) "Hardness exploration route is missing: $token"
 }
-foreach ($token in @('before creating the target Change only', 'Task-local technical uncertainty inside a Ready node')) {
+foreach ($token in @('before creating that Change', 'Lightweight investigation inside a Ready task')) {
     Assert-True ($routingText.Contains($token)) "Hardness route map is missing: $token"
 }
-foreach ($token in @('Incident Review', 'Final Review: not required', 'External Review', 'Diff size alone does not determine impact', 'asynchronous subagent', 'immutable snapshot', 'no Review file line limit', 'one batched incremental Final Review', 'planned capability-knowledge content', 'deterministic closure/archive metadata or move')) {
+foreach ($token in @('explicit user or external-agent request', 'never auto-starts Review', 'Verified work', 'close and archive directly', 'Local defects', 'planning-invalidating evidence', 'Replan', 'inline or asynchronously', 'immutable snapshot', 'detailed report', 'no Review file line limit', 'closed or superseded', 'open or deferred Critical or Required')) {
     Assert-True ($reviewReferenceText.Contains($token)) "Review scheduling contract is missing: $token"
 }
-foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'explicitly bounded package-wide glob with exclusions', 'interface, artifact, or state it consumes and produces', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
+$liveReviewPolicyText = @($hardnessText, $reviewReferenceText, $attachmentReferenceText, $knowledgeReferenceText, $applyText, $archiveText, $verifyText) -join "`n"
+foreach ($retiredReviewPattern in @(
+    '(?i)Final Review:[ \t]*not required',
+    '(?i)There are exactly three routes',
+    '(?i)one batched incremental Final Review',
+    '(?i)Diff size alone does not determine impact',
+    '(?i)demonstrated major incident',
+    '(?i)small low-impact',
+    '(?i)Final Review runs once',
+    '(?i)Completed archive requires (?:either )?(?:one )?closed approving Final Review',
+    '(?i)provisional until the Final Review approves',
+    '(?i)Final Review is required',
+    '(?i)requires? (?:an? )?Final Review',
+    '(?i)must (?:run|perform|complete) (?:an? )?Final Review'
+)) {
+    Assert-True ($liveReviewPolicyText -notmatch $retiredReviewPattern) "Live protocol text still contains retired automatic or mandatory Review policy: $retiredReviewPattern"
+}
+foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'one-line checkbox statement', 'exact verification command or directly observable result', '`> Files:` line', 'explicitly bounded package-wide glob with exclusions', 'ordinary Markdown', '`> Context:`', '`> Inputs:`', '`> Produces:`', '`> Constraints:`', 'not parser fields or a rigid template', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
     Assert-True ($taskReferenceText.Contains($token)) "Task authoring contract is missing: $token"
+}
+
+foreach ($token in @('New-HardnessContext -WorkspaceRoot', 'one explicit or discovered `WorkspaceRoot`', 'Codex `/goal` invocation', 'not a repository mode', 'tracked `Tools/openspec` submodule', 'packaged `.agents/skills/openspec/bin/openspec.exe`')) {
+    Assert-True ($openSpecEntryText.Contains($token)) "Portable OpenSpec workspace/package contract is missing: $token"
+}
+foreach ($token in @('three or more important relationships or mappings', 'multi-step sequence or state transition', 'hierarchy or layout', 'decision structure', 'Do not add a visual for a single fact', 'trivial one-step action', 'lightweight inline text diagram')) {
+    Assert-True ($visualExplainText.Contains($token)) "Visual-explain trigger contract is missing: $token"
+}
+foreach ($token in @('explicit/discovered WorkspaceRoot', 'Codex /goal', 'no repository mode or branch convention', 'hardness.{status,observe,evolution.status}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
+    Assert-True ($skillsReadmeText.Contains($token)) "Skills README routing contract is missing: $token"
+}
+foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Codex /goal invocation is external unattended continuation', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'optional Markdown authoring aids, not parser fields or a rigid template')) {
+    Assert-True ($liveConfigText.Contains($token)) "Live OpenSpec configuration is missing: $token"
+}
+Assert-True ($openSpecReadmeText.Contains('New-HardnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'
+Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HardnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
+foreach ($token in @('all project Skills remain disabled', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
+    Assert-True ($agentsText.Contains($token)) "Prepared AGENTS workflow contract is missing: $token"
+}
+
+$modeFreeTexts = @($openSpecEntryText, $exploreText, $deepExplorationText, $questionRoundsText, $continueText, $updateText, $applyText, $unrealDevelopText, $skillsReadmeText, $liveConfigText, $openSpecReadmeText, $projectReadmeRoutingText, $agentsText) -join "`n"
+foreach ($staleModePattern in @('(?i)\bGoal mode\b', '(?i)\bCurrent mode\b', '(?i)-Mode[ \t]+(?:Current|Goal)\b', '(?i)\.worktrees/<goal>', '(?i)goal/<goal>', '(?i)explicit/Goal', '(?i)Goal context')) {
+    Assert-True ($modeFreeTexts -notmatch $staleModePattern) "Prepared authoring guidance still contains retired repository-mode syntax: $staleModePattern"
 }
 foreach ($token in @('## Material threshold', 'One root cause and its repair lifecycle', 'issue_id', 'source_ref', 'affected_tasks', 'Failure Evidence (RED)', 'Resolution Evidence (GREEN)', 'Rejected Evidence', 'What This Proves', 'What This Does Not Prove', 'update `attachments/INDEX.md` in the same edit')) {
     Assert-True ($issueReferenceText.Contains($token)) "Implementation issue contract is missing: $token"
@@ -507,13 +565,10 @@ foreach ($token in @('## Material threshold', 'One root cause and its repair lif
 foreach ($token in @('change evidence', 'capability knowledge plus knowledges/INDEX.md', 'AGENTS project instruction only for cross-capability invariants', 'Every capability `knowledges/` directory has one `INDEX.md`', 'Promote only after evidence', 'Archive never promotes automatically')) {
     Assert-True ($knowledgeReferenceText.Contains($token)) "Knowledge promotion contract is missing: $token"
 }
-foreach ($token in @('materialize the complete intended capability file and INDEX entry before scope freeze', 'provisional until the Final Review approves it', 'approval admits it without a post-Review content rewrite')) {
-    Assert-True ($knowledgeReferenceText.Contains($token)) "Final Review knowledge-order contract is missing: $token"
-}
 foreach ($token in @('## Exploration carryover', 'decision-critical visualization', 'reusable evidence-backed insights', 'transcript prose', 'candidate', 'promoted', 'superseded', 'retired')) {
     Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"
 }
-foreach ($token in @('review_schema: review-v2', 'review_kind: incident | final | external', 'Final Review: not required', 'user or another agent', 'asynchronously', 'no line limit', 'per-file manifest is optional')) {
+foreach ($token in @('review_schema: review-v2', 'review_kind: incident | final | external', 'requested_by: user | external-agent', 'only after an explicit request', 'asynchronously', 'no line limit', 'per-file manifest is optional')) {
     Assert-True ($attachmentReferenceText.Contains($token)) "Review attachment contract is missing: $token"
 }
 foreach ($token in @('attachments/knowledges/', '## Exploration candidates', 'accepted pre-Change handoff', 'plausible reuse across tasks or later work', 'candidate | promoted | superseded | retired', 'Emoji is optional presentation')) {

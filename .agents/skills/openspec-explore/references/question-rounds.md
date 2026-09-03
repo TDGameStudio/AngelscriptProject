@@ -1,6 +1,6 @@
 # Question Rounds
 
-Use question rounds only during Current/Plan interactive pre-change work when at least three dependent decisions genuinely belong to the user. Never use them for Goal execution or task-local implementation uncertainty.
+Use question rounds only during interactive pre-change work when at least three dependent decisions genuinely belong to the user. Never use them for unattended Codex `/goal` continuation or task-local implementation uncertainty; `/goal` is not a repository mode.
 
 ## Before a round
 

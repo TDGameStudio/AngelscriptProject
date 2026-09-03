@@ -33,10 +33,16 @@ Rules:
 - Update the DAG before starting newly discovered work. Preserve the old node's disposition in a Replan when the plan boundary changed.
 - Historical body-level `After` records remain readable. Current records write only frontmatter; mixing frontmatter with a live `After` field is invalid.
 
+## Flexible Task Cards
+
+Optional Task Card detail is ordinary Markdown. After the validated node surface, authors may add only the context that helps execution: intent, constraints, examples, ordered steps, expected output, risks, evidence links, or useful implementation notes. A simple task may need none of these; a difficult task may use several short sections or lists.
+
+Hardness does not parse or require those optional sections, labels, or ordering. Do not invent another Task Card schema, encode dependencies in prose, or duplicate completion with nested checkboxes. The frontmatter graph remains the dependency authority, while the body remains readable guidance for agents and people.
+
 Inspect through Hardness:
 
 ```powershell
 Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = 'domain/change' }
 ```
 
-A Review Gate is a normal node whose verification is review closure. It is complete only after triage, resolution, required re-review, and closing or superseding the review file; report arrival alone is not completion.
+Do not add a Review node as normal lifecycle cadence. When the user or an external agent explicitly requests a Review and the accepted Task DAG must wait for it, add or retain a node whose verification is Review closure. It is complete only after triage, resolution, any required re-review, and closing or superseding the Review file; report arrival alone is not completion.
