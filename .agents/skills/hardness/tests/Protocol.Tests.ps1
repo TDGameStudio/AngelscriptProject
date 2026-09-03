@@ -137,11 +137,17 @@ function Test-ConcreteReviewFollowUp {
     return $false
 }
 
-function Test-ReviewIso8601Timestamp {
+function Test-IsoTimestamp {
     param([string]$Value)
 
     if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
-    return $Value -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$'
+    if ($Value -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$') { return $false }
+    $parsed = [DateTimeOffset]::MinValue
+    return [DateTimeOffset]::TryParse(
+        $Value,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::RoundtripKind,
+        [ref]$parsed)
 }
 
 function Test-ReviewClosureGate {
@@ -174,6 +180,11 @@ function Test-ReviewClosureGate {
             $snapshotRef = Get-ReviewMetadataValue -Text $frontmatter -Names @('snapshot_ref')
             $snapshotSha256 = Get-ReviewMetadataValue -Text $frontmatter -Names @('snapshot_sha256')
             $verdict = (Get-ReviewMetadataValue -Text $frontmatter -Names @('verdict')).ToUpperInvariant()
+            $assignedAtValid = Test-IsoTimestamp $assignedAt
+            $reviewedAtPresent = -not [string]::IsNullOrWhiteSpace($reviewedAt)
+            $reviewedAtValid = $reviewedAtPresent -and (Test-IsoTimestamp $reviewedAt)
+            $closedAtPresent = -not [string]::IsNullOrWhiteSpace($closedAt)
+            $closedAtValid = $closedAtPresent -and (Test-IsoTimestamp $closedAt)
 
             if ($reviewKind -notin @('incident', 'final', 'external')) {
                 $issues += "review-kind: $($file.Name) has invalid review_kind '$reviewKind'"
@@ -181,14 +192,38 @@ function Test-ReviewClosureGate {
             if ($requestedBy -notin @('hardness', 'user', 'external-agent')) {
                 $issues += "review-requester: $($file.Name) has invalid requested_by '$requestedBy'"
             }
-            if (-not (Test-ReviewIso8601Timestamp $assignedAt)) {
+            if (-not $assignedAtValid) {
                 $issues += "review-assigned-at: $($file.Name) requires an actual ISO-8601 assigned_at"
             }
-            if ($reviewState -eq 'closed' -and -not (Test-ReviewIso8601Timestamp $reviewedAt)) {
+            if ($reviewState -eq 'closed' -and -not $reviewedAtValid) {
                 $issues += "review-reviewed-at: $($file.Name) closed review requires an actual ISO-8601 reviewed_at"
             }
-            if ($reviewState -in @('closed', 'superseded') -and -not (Test-ReviewIso8601Timestamp $closedAt)) {
+            elseif ($reviewedAtPresent -and -not $reviewedAtValid) {
+                $issues += "review-reviewed-at: $($file.Name) populated reviewed_at must be an actual ISO-8601 timestamp"
+            }
+            if ($reviewState -in @('closed', 'superseded') -and -not $closedAtValid) {
                 $issues += "review-closed-at: $($file.Name) closed/superseded review requires an actual ISO-8601 closed_at"
+            }
+            elseif ($closedAtPresent -and -not $closedAtValid) {
+                $issues += "review-closed-at: $($file.Name) populated closed_at must be an actual ISO-8601 timestamp"
+            }
+            if ($assignedAtValid) {
+                $assignedInstant = [DateTimeOffset]::Parse($assignedAt, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+                if ($reviewedAtValid) {
+                    $reviewedInstant = [DateTimeOffset]::Parse($reviewedAt, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+                    if ($reviewedInstant -lt $assignedInstant) {
+                        $issues += "review-lifecycle-order: $($file.Name) reviewed_at must not precede assigned_at"
+                    }
+                }
+                if ($closedAtValid) {
+                    $closedInstant = [DateTimeOffset]::Parse($closedAt, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+                    if ($closedInstant -lt $assignedInstant) {
+                        $issues += "review-lifecycle-order: $($file.Name) closed_at must not precede assigned_at"
+                    }
+                    if ($reviewedAtValid -and $closedInstant -lt $reviewedInstant) {
+                        $issues += "review-lifecycle-order: $($file.Name) closed_at must not precede reviewed_at"
+                    }
+                }
             }
             if ([string]::IsNullOrWhiteSpace($snapshotRef) -or $snapshotRef -match '(?i)^(?:live|current|dirty|working[-_ ]?tree|live[-_ ]?worktree)$') {
                 $issues += "review-snapshot-ref: $($file.Name) requires an immutable snapshot_ref"
@@ -265,19 +300,6 @@ function Get-FrontmatterCollectionValues {
         if (-not [string]::IsNullOrWhiteSpace($value)) { $values.Add($value) | Out-Null }
     }
     return @($values)
-}
-
-function Test-IsoTimestamp {
-    param([string]$Value)
-
-    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
-    if ($Value -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$') { return $false }
-    $parsed = [DateTimeOffset]::MinValue
-    return [DateTimeOffset]::TryParse(
-        $Value,
-        [System.Globalization.CultureInfo]::InvariantCulture,
-        [System.Globalization.DateTimeStyles]::RoundtripKind,
-        [ref]$parsed)
 }
 
 function Test-ImplementationIssueFile {
@@ -450,6 +472,9 @@ foreach ($token in @(
     '`snapshot_ref`',
     'A digest alone can verify content but is not sufficient to materialize an asynchronous snapshot',
     '`assigned_at` is never reused as a guessed completion time',
+    'Every populated lifecycle timestamp is a real ISO-8601 instant with an explicit offset',
+    '`assigned_at <= reviewed_at <= closed_at`',
+    'superseded before completion may omit `reviewed_at`',
     'There is no Review file line limit',
     'one batched incremental Final Review',
     'planned capability-knowledge content',
@@ -536,6 +561,127 @@ No Critical, Required, or Advisory finding.
         [System.Text.UTF8Encoding]::new($false)
     )
     Assert-Equal 0 @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot).Count 'valid review-v2 fixture passes closure gate'
+
+    $validSupersededV2Review = @'
+---
+review_schema: review-v2
+review_kind: external
+requested_by: user
+state: superseded
+assigned_at: 2026-09-03T14:30:00+08:00
+reviewed_at:
+closed_at: 2026-09-03T14:31:00+08:00
+snapshot_ref: commit:123456789abcdef0123456789abcdef012345678
+snapshot_sha256: 123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+verdict: PENDING
+---
+
+# Valid superseded review-v2
+
+The assignment was superseded before review completion.
+'@
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reviewFixtureRoot 'review-valid-superseded-v2.md'),
+        $validSupersededV2Review,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    Assert-Equal 0 @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot).Count 'superseded review may close after assignment without a completion timestamp'
+
+    $impossibleTimestampV2Review = @'
+---
+review_schema: review-v2
+review_kind: final
+requested_by: hardness
+state: closed
+assigned_at: 2026-99-99T99:99:99+99:99
+reviewed_at: 2026-09-03T15:01:00+08:00
+closed_at: 2026-09-03T15:02:00+08:00
+snapshot_ref: commit:23456789abcdef0123456789abcdef0123456789
+snapshot_sha256: 23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+verdict: APPROVE
+---
+
+# Impossible review-v2 timestamp
+'@
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reviewFixtureRoot 'review-impossible-timestamp-v2.md'),
+        $impossibleTimestampV2Review,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $impossibleTimestampIssues = @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot)
+    Assert-True (@($impossibleTimestampIssues | Where-Object { $_ -like 'review-assigned-at:*review-impossible-timestamp-v2.md*' }).Count -eq 1) 'lexically shaped but impossible review timestamp is rejected'
+
+    $reversedLifecycleV2Review = @'
+---
+review_schema: review-v2
+review_kind: final
+requested_by: hardness
+state: closed
+assigned_at: 2026-09-03T15:00:00+08:00
+reviewed_at: 2026-09-03T14:59:00+08:00
+closed_at: 2026-09-03T15:01:00+08:00
+snapshot_ref: commit:3456789abcdef0123456789abcdef0123456789a
+snapshot_sha256: 3456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+verdict: APPROVE
+---
+
+# Reversed review-v2 lifecycle
+'@
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reviewFixtureRoot 'review-reversed-lifecycle-v2.md'),
+        $reversedLifecycleV2Review,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $reversedLifecycleIssues = @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot)
+    Assert-True (@($reversedLifecycleIssues | Where-Object { $_ -like 'review-lifecycle-order:*review-reversed-lifecycle-v2.md*reviewed_at*assigned_at*' }).Count -eq 1) 'review completion before assignment is rejected'
+
+    $earlyClosureV2Review = @'
+---
+review_schema: review-v2
+review_kind: final
+requested_by: hardness
+state: closed
+assigned_at: 2026-09-03T15:00:00+08:00
+reviewed_at: 2026-09-03T15:02:00+08:00
+closed_at: 2026-09-03T15:01:00+08:00
+snapshot_ref: commit:456789abcdef0123456789abcdef0123456789ab
+snapshot_sha256: 456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123
+verdict: APPROVE
+---
+
+# Early closure review-v2 lifecycle
+'@
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reviewFixtureRoot 'review-early-closure-v2.md'),
+        $earlyClosureV2Review,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $earlyClosureIssues = @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot)
+    Assert-True (@($earlyClosureIssues | Where-Object { $_ -like 'review-lifecycle-order:*review-early-closure-v2.md*closed_at*reviewed_at*' }).Count -eq 1) 'review closure before completion is rejected'
+
+    $earlySupersededClosureV2Review = @'
+---
+review_schema: review-v2
+review_kind: external
+requested_by: external-agent
+state: superseded
+assigned_at: 2026-09-03T15:00:00+08:00
+reviewed_at:
+closed_at: 2026-09-03T14:59:00+08:00
+snapshot_ref: commit:56789abcdef0123456789abcdef0123456789abc
+snapshot_sha256: 56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234
+verdict: PENDING
+---
+
+# Early superseded review-v2 lifecycle
+'@
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reviewFixtureRoot 'review-early-superseded-v2.md'),
+        $earlySupersededClosureV2Review,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $earlySupersededIssues = @(Test-ReviewClosureGate -ReviewRoot $reviewFixtureRoot)
+    Assert-True (@($earlySupersededIssues | Where-Object { $_ -like 'review-lifecycle-order:*review-early-superseded-v2.md*closed_at*assigned_at*' }).Count -eq 1) 'superseded closure before assignment is rejected'
 
     $invalidReview = @'
 ---

@@ -2,7 +2,7 @@
 
 ## Current position
 
-The accepted pre-Change exploration existed, but implementation began before the active Change was registered. The honest recovery, marker/carryover expansion, two closed Reviews, resolved issue, and active-Change checkpoint promotion remain valid. The user caught and corrected premature Final Review ordering before any reviewer was dispatched. Every semantic deliverable, capability-knowledge file, protocol test, strict validation result, and closure input is now complete; the commit containing this INDEX is the fixed semantic snapshot. Final Review is the only remaining Task DAG node. `tasks.md` remains the only execution state.
+The accepted pre-Change exploration existed, but implementation began before the active Change was registered. The honest recovery, marker/carryover expansion, two closed Reviews, resolved issue, and active-Change checkpoint promotion remain valid. The user caught and corrected premature Final Review ordering before any reviewer was dispatched. The final review-v2 run against committed snapshot `09c7978d111a31f5b1f251cdbff03e3f27911524` found one Required timestamp-validation defect and no other findings. The local Task `5.5` repair now passes focused verification and awaits one incremental immutable-snapshot re-review; Task `5.5` remains the only incomplete Task DAG node. `tasks.md` remains the only execution state.
 
 ## Hard conclusions
 
@@ -30,7 +30,7 @@ The accepted pre-Change exploration existed, but implementation began before the
 
 - Spec sync: no merge is required because `openspec/specs/hardness/core/spec.md` contains the complete intended delta; the change-local delta remains historical evidence.
 - Knowledge: the active-Change checkpoint is admitted; complete marker/carryover and Review-scheduling capability files and INDEX entries are materialized in their intended final form for Final Review.
-- Review: the independent 29-entry original snapshot and the 17-entry marker/carryover increment are closed with `APPROVE`; one review-v2 Final Review of the complete committed semantic snapshot remains.
+- Review: the independent 29-entry original snapshot and the 17-entry marker/carryover increment are closed with `APPROVE`; the review-v2 Final Review of snapshot `09c7978d111a31f5b1f251cdbff03e3f27911524` remains open with one Required finding whose focused repair is ready for incremental re-review.
 - Verification: final `Protocol.Tests.ps1` and `OpenSpecSkill.Tests.ps1` pass; strict active validation reports `1/1` valid with zero issues; the fresh PS7 Quick gate reports `5/5` passed (`Hardness` 17198 ms, gate contract 4753 ms, Protocol 826 ms, Workspace 40069 ms, OpenSpec Skill 4288 ms); focused diff checks pass. UE, StaticJIT, Performance, and Integration are explicitly out of scope.
 - Closure input: completed closure after Final Review; all existing Reviews must be closed, capability knowledge is already in the reviewed snapshot, archive performs only Review/Task/INDEX bookkeeping plus deterministic metadata/move, and unrelated dirty workspace paths remain excluded.
 
@@ -45,5 +45,6 @@ The accepted pre-Change exploration existed, but implementation began before the
 - `replans/replan-20260903-130536-place-final-review-after-deliverables.md` — applied correction placing every semantic output before Final Review after an unused assignment was removed — read when auditing the final ordering or archive boundary.
 - `reviews/review-20260903-113000-exploration-authoring-independent.md` — closed approving fixed-snapshot Review with no findings — read before trusting the recovered contracts or closure decision.
 - `reviews/review-20260903-120000-marker-carryover-independent.md` — closed approving Review of the marker/carryover increment with no findings — read before promoting the carryover rule.
+- `reviews/review-20260903-131501-hardness-workflow-subagent.md` — open review-v2 Final Review with one repaired Required timestamp-lifecycle finding awaiting incremental re-review — read when triaging the final gate or auditing closure.
 - `talks/talk-20260903-115455-exploration-marker-carryover.md` — settled marker review, rejected historical meanings, carryover routing, and compact visual — read when the vocabulary rationale or user decision matters.
 - `talks/talk-20260903-122738-review-gate-scheduling.md` — timing evidence, considered Review cadences, accepted impact classifier, and asynchronous snapshot decision — read when the scheduling rationale matters.

@@ -51,7 +51,7 @@ verdict: PENDING | APPROVE | CHANGES_REQUIRED
 ---
 ```
 
-`assigned_at` is never reused as a guessed completion time. The reviewer records `reviewed_at` and its verdict when analysis actually finishes; the coordinator owns triage, `closed_at`, and final state. An External Review that arrives without a reproducible snapshot remains open input until Hardness binds and reproduces it or supersedes it with an explicit rationale. It cannot close a Review Gate while unbound.
+`assigned_at` is never reused as a guessed completion time. Every populated lifecycle timestamp is a real ISO-8601 instant with an explicit offset. A completed Review satisfies `assigned_at <= reviewed_at <= closed_at`. A Review superseded before completion may omit `reviewed_at`, but its `closed_at` still cannot precede `assigned_at`; when `reviewed_at` is present, the complete order applies. The reviewer records `reviewed_at` and its verdict when analysis actually finishes; the coordinator owns triage, `closed_at`, and final state. An External Review that arrives without a reproducible snapshot remains open input until Hardness binds and reproduces it or supersedes it with an explicit rationale. It cannot close a Review Gate while unbound.
 
 There is no Review file line limit. Preserve concrete findings, evidence, impact, affected files and requirements, reproduction, proposed resolution conditions, disposition, resolution evidence, and re-review history. Detailed evidence is valuable; avoid repeated scans by supplying the fixed snapshot and existing verification evidence once. A per-file manifest is optional when it materially improves reproducibility, not mandatory for every Review.
 
