@@ -1,7 +1,0 @@
-api_version: openspec.dev/v1
-kind: spec
-metadata:
-  uid: spec_dd953549-b512-47c3-a4d0-8fded29122db
-  id: hardness/git
-  title: Hardness Git Operations
-  description: Scoped parent/submodule status and commits, reviewed local integration, and explicit ordered non-force push.

@@ -3,7 +3,7 @@
 ## Inspect
 
 ```powershell
-Invoke-Hardness -Command git.status -Context $context
+Invoke-Harness -Command git.status -Context $context
 ```
 
 The result reports parent and initialized top-level submodule heads, branches, and staged/unstaged/untracked paths.
@@ -11,14 +11,14 @@ The result reports parent and initialized top-level submodule heads, branches, a
 ## Commit Exact Paths
 
 ```powershell
-Invoke-Hardness -Command git.commit -Context $context -Parameters @{
+Invoke-Harness -Command git.commit -Context $context -Parameters @{
   RepositoryScopes = @{
     '.' = @(
       '.agents/skills/workspace-lifecycle'
       '.agents/skills/git-operations'
     )
   }
-  CommitMessage = '[Hardness] Refactor: split workspace and Git operations'
+  CommitMessage = '[Harness] Refactor: split workspace and Git operations'
 }
 ```
 
@@ -29,15 +29,15 @@ Map `.` to parent-repository paths and a top-level submodule path to paths relat
 The default rejection remains the safest choice. When a primary or linked workspace intentionally contains independently staged work, opt into path-only commit semantics explicitly:
 
 ```powershell
-Invoke-Hardness -Command git.commit -Context $context -Parameters @{
+Invoke-Harness -Command git.commit -Context $context -Parameters @{
   RepositoryScopes = @{
     '.' = @(
       '.agents/skills/unreal-engine-develop'
-      'openspec/archive/changes/hardness/2026-09-03-integrate-unreal-development'
+      'openspec/archive/changes/harness/2026-09-03-integrate-unreal-development'
     )
   }
   PreserveOutsideStaged = $true
-  CommitMessage = '[Hardness] Feat: integrate workspace-safe Unreal development routes'
+  CommitMessage = '[Harness] Feat: integrate workspace-safe Unreal development routes'
   WhatIf = $true
 }
 ```
@@ -51,9 +51,9 @@ Inspect `IncludedChanges` and `PreservedStaged`, then repeat without `WhatIf`. P
 Use exact scopes when possible. `AllChanges` is available only for an exact Git-registered linked worktree and remains explicit. Preview it first so every included non-ignored path is visible:
 
 ```powershell
-Invoke-Hardness -Command git.commit -Context $linked -Parameters @{
+Invoke-Harness -Command git.commit -Context $linked -Parameters @{
   AllChanges = $true
-  CommitMessage = '[Hardness] Refactor: complete workspace changes'
+  CommitMessage = '[Harness] Refactor: complete workspace changes'
   TargetBranches = @{
     'Plugins/Angelscript' = 'refactor-workspace-git-operations'
   }

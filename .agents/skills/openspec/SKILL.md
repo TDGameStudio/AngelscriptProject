@@ -11,14 +11,14 @@ The packaged Release executable is:
 <project>/.agents/skills/openspec/bin/openspec.exe
 ```
 
-Normal agent calls go through the imported Hardness module so one PowerShell session can reuse context and receive a stable result envelope:
+Normal agent calls go through the imported Harness module so one PowerShell session can reuse context and receive a stable result envelope:
 
 ```powershell
-Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext                         # discover the registered workspace from the current directory
-# $context = New-HardnessContext -WorkspaceRoot D:\work\my-linked-workspace
-Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
-Invoke-Hardness -Command openspec.change -Context $context -ArgumentList @('list', '--json')
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext                         # discover the registered workspace from the current directory
+# $context = New-HarnessContext -WorkspaceRoot D:\work\my-linked-workspace
+Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--json')
+Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('list', '--json')
 ```
 
 One context selects one explicit or discovered `WorkspaceRoot`. A Codex `/goal` invocation may continue the work unattended, but it is not a repository mode, branch convention, or alternate OpenSpec lifecycle.

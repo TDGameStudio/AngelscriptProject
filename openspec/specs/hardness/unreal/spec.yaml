@@ -1,7 +1,0 @@
-api_version: openspec.dev/v1
-kind: spec
-metadata:
-  uid: spec_3cad124c-52d6-4e95-b285-27948b9d8b00
-  id: hardness/unreal
-  title: Hardness Unreal Development
-  description: Workspace-safe PS7 Unreal Engine discovery, planning, execution, concurrency, process observation, progress, suites, and run lifecycle through Hardness.

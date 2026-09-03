@@ -34,15 +34,15 @@ function Get-UnrealConcurrencyDecision {
             $arguments.Add('-NoEngineChanges')
             $engineLane = 'Shared'
             $decision = 'ParallelInstalledProjectBuild'
-            $reasons.Add('An ordinary installed-engine project build may share the Hardness engine lane across distinct workspace leases.')
-            $reasons.Add('Hardness owns the paired NoMutex and NoEngineChanges guards plus run-local temp and log paths.')
+            $reasons.Add('An ordinary installed-engine project build may share the Harness engine lane across distinct workspace leases.')
+            $reasons.Add('Harness owns the paired NoMutex and NoEngineChanges guards plus run-local temp and log paths.')
         }
         else {
             $arguments.Add('-WaitMutex')
             if ($InstalledEngine) { $arguments.Add('-NoEngineChanges') }
             $engineLane = 'Exclusive'
             $decision = 'SerializedEngineUbt'
-            $reasons.Add('The typed project build explicitly or conservatively selected the exclusive Hardness engine lane.')
+            $reasons.Add('The typed project build explicitly or conservatively selected the exclusive Harness engine lane.')
             $reasons.Add('UBT WaitMutex also coordinates with external UBT processes using the same assembly mutex.')
         }
     }
@@ -54,7 +54,7 @@ function Get-UnrealConcurrencyDecision {
         $engineLane = 'Exclusive'
         $decision = 'SerializedEngineUbt'
         $arguments.Add('-WaitMutex')
-        $reasons.Add("$Operation is a conservative UBT operation and uses the exclusive Hardness engine lane keyed by canonical EngineRoot.")
+        $reasons.Add("$Operation is a conservative UBT operation and uses the exclusive Harness engine lane keyed by canonical EngineRoot.")
         $reasons.Add('UBT WaitMutex also coordinates with external UBT processes using the same assembly mutex.')
         if ($Operation -eq 'Build' -and $InstalledEngine) {
             $arguments.Add('-NoEngineChanges')

@@ -1,26 +1,26 @@
 ---
 name: unreal-engine-develop
-description: Use after project Skills are enabled when Unreal Engine 5.8 targets, Automation tests, suites, commandlets, UBT capabilities, active processes, run progress, or cancellation must be handled through Hardness in an exact AngelscriptProject workspace.
+description: Use after project Skills are enabled when Unreal Engine 5.8 targets, Automation tests, suites, commandlets, UBT capabilities, active processes, run progress, or cancellation must be handled through Harness in an exact AngelscriptProject workspace.
 ---
 
 # Unreal Engine Develop
 
-This leaf provides the PowerShell 7 Unreal surface behind Hardness. Enter through `Invoke-Hardness`; do not call UE executables, private module functions, Skill-local scripts, or legacy root `Tools` wrappers directly.
+This leaf provides the PowerShell 7 Unreal surface behind Harness. Enter through `Invoke-Harness`; do not call UE executables, private module functions, Skill-local scripts, or legacy root `Tools` wrappers directly.
 
 The restriction at the top of `AGENTS.md` remains authoritative. This prepared Skill does not enable itself during the project-wide refactor.
 
 ## Start once
 
-Keep one PowerShell 7 process, import Hardness once, and bind one exact workspace context:
+Keep one PowerShell 7 process, import Harness once, and bind one exact workspace context:
 
 ```powershell
-Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext -WorkspaceRoot (Get-Location).Path
-Invoke-Hardness -Command workspace.activate -Context $context
-Invoke-Hardness -Command ue.status -Context $context
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot (Get-Location).Path
+Invoke-Harness -Command workspace.activate -Context $context
+Invoke-Harness -Command ue.status -Context $context
 ```
 
-The selected workspace must have a Hardness-managed `AgentConfig.ini` with `Paths.EngineRoot`, a workspace-owned `Paths.ProjectFile`, and a matching process-local activation. Repair it with `workspace.bootstrap`; never reuse another worktree's project path.
+The selected workspace must have a Harness-managed `AgentConfig.ini` with `Paths.EngineRoot`, a workspace-owned `Paths.ProjectFile`, and a matching process-local activation. Repair it with `workspace.bootstrap`; never reuse another worktree's project path.
 
 ## Route map
 
@@ -38,14 +38,14 @@ The selected workspace must have a Hardness-managed `AgentConfig.ini` with `Path
 | List, plan, or run declarative UE suites | `ue.suite.list`, `ue.suite.plan`, `ue.suite.run` |
 | Inspect or explicitly cancel a managed run | `ue.run.status`, `ue.run.cancel` |
 
-Use `Get-HardnessCommand <route>` for the live parameter contract.
+Use `Get-HarnessCommand <route>` for the live parameter contract.
 
 ## Plan, launch, observe
 
 Inspect a deterministic plan without launching UE:
 
 ```powershell
-$plan = Invoke-Hardness -Command ue.build -Context $context -Parameters @{
+$plan = Invoke-Harness -Command ue.build -Context $context -Parameters @{
     BuildConcurrency = 'Auto'
     ConcurrencyPolicy = 'Auto'
     PlanOnly = $true
@@ -55,21 +55,21 @@ $plan = Invoke-Hardness -Command ue.build -Context $context -Parameters @{
 Launch asynchronously, keep the returned `RunId`, and query the same selected workspace:
 
 ```powershell
-$run = Invoke-Hardness -Command ue.build -Context $context -Parameters @{
+$run = Invoke-Harness -Command ue.build -Context $context -Parameters @{
     BuildConcurrency = 'Auto'
     ConcurrencyPolicy = 'Auto'
     NoWait = $true
     TimeoutMs = 900000
 }
 
-Invoke-Hardness -Command ue.run.status -Context $context -Parameters @{ RunId = $run.Data.RunId }
-Invoke-Hardness -Command ue.process.list -Context $context
+Invoke-Harness -Command ue.run.status -Context $context -Parameters @{ RunId = $run.Data.RunId }
+Invoke-Harness -Command ue.process.list -Context $context
 ```
 
 Cancellation is a separate explicit action and retains PowerShell confirmation semantics:
 
 ```powershell
-Invoke-Hardness -Command ue.run.cancel -Context $context -Parameters @{ RunId = $run.Data.RunId }
+Invoke-Harness -Command ue.run.cancel -Context $context -Parameters @{ RunId = $run.Data.RunId }
 ```
 
 `PlanOnly` and `NoWait` are mutually exclusive. Synchronous invocation waits for the terminal result. Asynchronous states include `Queued`, `WaitingWorkspace`, `WaitingEngine`, `Running`, `Succeeded`, `Failed`, `TimedOut`, `Cancelled`, and effective `Orphaned` detection.
@@ -81,12 +81,12 @@ Read [concurrency.md](references/concurrency.md) before overriding either concur
 Run exactly one Automation prefix or configured group:
 
 ```powershell
-Invoke-Hardness -Command ue.test -Context $context -Parameters @{
+Invoke-Harness -Command ue.test -Context $context -Parameters @{
     TestPrefix = 'Angelscript.TestModule.Bindings.'
     TimeoutMs = 600000
 }
 
-Invoke-Hardness -Command ue.test -Context $context -Parameters @{
+Invoke-Harness -Command ue.test -Context $context -Parameters @{
     Group = 'AngelscriptSmoke'
     NoWait = $true
     TimeoutMs = 600000
@@ -103,10 +103,10 @@ Standalone, package, coverage, release, CachePackage, and full StaticJIT pipelin
 
 - PowerShell 7.0 or later (`Core`) is the only supported host; there is no Windows PowerShell 5.1 path.
 - Every executable operation requires a positive bounded timeout. The maximum accepted timeout is one hour.
-- Hardness owns workspace identity, engine selection, leases, UBT concurrency flags, private logs, temporary directories, report paths, and run metadata. Reserved raw arguments that would override those fields are rejected.
+- Harness owns workspace identity, engine selection, leases, UBT concurrency flags, private logs, temporary directories, report paths, and run metadata. Reserved raw arguments that would override those fields are rejected.
 - Same-workspace execution is always exclusive. Eligible ordinary Installed Engine project builds may run concurrently across distinct worktrees; source/unknown engines and conservative UBT operations serialize.
 - A zero UE process exit is not sufficient when an enforced Automation report is missing, malformed, empty, incomplete, or failing.
 - A detected shared-engine UHT `Timestamp` contention is promoted to failure with serialize-or-isolate guidance, even if the native process returned zero.
-- Managed artifacts live under ignored `Saved/Hardness/Unreal/Runs/<RunId>/`. Do not share logs or temporary paths between workspaces.
+- Managed artifacts live under ignored `Saved/Harness/Unreal/Runs/<RunId>/`. Do not share logs or temporary paths between workspaces.
 
 Legacy entrypoint mappings and removed files are documented in [migration.md](references/migration.md).

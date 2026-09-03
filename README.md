@@ -135,7 +135,7 @@ AngelscriptProject/
 │   ├── Knowledges/              # 架构知识库（中文，按主题前缀组织）
 │   ├── Plans/                   # 历史 Plan 文档（OpenSpec 前，仅作参考）
 │   └── Rules/                   # Git 提交规则、参考对照规则等
-├── .agents/                     # Hardness + OpenSpec 项目技能适配说明
+├── .agents/                     # Harness + OpenSpec 项目技能适配说明
 ├── openspec/                    # OpenSpec change 产物目录（由 CLI 在存在 change 时维护）
 ├── Reference/                   # 外部参考仓库（不入库，仅本地比对用）
 ├── Tools/                       # 本地辅助脚本（构建/测试/引导/分析）
@@ -161,24 +161,24 @@ AngelscriptProject/
 
 ### 1.1 AI 协作与计划管理依赖
 
-本项目的计划管理与 AI 协作流程依赖项目内的 **Hardness** 与便携版 **OpenSpec**：
+本项目的计划管理与 AI 协作流程依赖项目内的 **Harness** 与便携版 **OpenSpec**：
 
 | 依赖 | 用途 |
 |------|------|
-| Hardness | 选择 Current/Goal 工作区、渐进加载 Skill，并管理 review/replan/closure 门禁 |
+| Harness | 选择 Current/Goal 工作区、渐进加载 Skill，并管理 review/replan/closure 门禁 |
 | Portable OpenSpec | 管理 Change 生命周期：`proposal.md`、`design.md`、`specs/*`、`tasks.md`、验证与归档 |
 
-在 PowerShell 7 会话中通过 Hardness 检查项目内 OpenSpec：
+在 PowerShell 7 会话中通过 Harness 检查项目内 OpenSpec：
 
 ```powershell
-Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
-$context = New-HardnessContext -WorkspaceRoot $PWD
-Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
+Import-Module .\.agents\skills\harness\scripts\Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot $PWD
+Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 ```
 
 不要调用 `PATH` 中的同名程序、官方 Node CLI 或 `Tools/openspec/target` 构建；项目工作流说明见 `.agents/skills/README.md`。
 
-关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `openspec-explore`，形成 decision-complete handoff 后再创建 Change。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，只有证据证明当前计划失效时才由 Hardness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
+关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `openspec-explore`，形成 decision-complete handoff 后再创建 Change。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，只有证据证明当前计划失效时才由 Harness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -198,19 +198,19 @@ pnpm dev
 
 `Experiment/` 下的旧 MkDocs 备份和实验性 TiddlyWiki 工作区不属于当前 Wiki 子模块的初始内容；AS Wiki 功能将在后续变更中逐步迁移。
 
-仓库根目录有大量自动化脚本依赖 `AgentConfig.ini` 中的本机路径配置和 workspace 身份。该文件已 `.gitignore`，每个 workspace 都需要通过 Hardness 初始化，并在同一 PowerShell 7 会话中激活：
+仓库根目录有大量自动化脚本依赖 `AgentConfig.ini` 中的本机路径配置和 workspace 身份。该文件已 `.gitignore`，每个 workspace 都需要通过 Harness 初始化，并在同一 PowerShell 7 会话中激活：
 
 ```powershell
-Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
-$context = New-HardnessContext -WorkspaceRoot $PWD
-Invoke-Hardness -Command workspace.bootstrap -Context $context
-Invoke-Hardness -Command workspace.activate -Context $context
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot $PWD
+Invoke-Harness -Command workspace.bootstrap -Context $context
+Invoke-Harness -Command workspace.activate -Context $context
 ```
 
 也可通过受控配置入口设置引擎根目录：
 
 ```powershell
-Invoke-Hardness -Command workspace.config.set -Context $context -Parameters @{
+Invoke-Harness -Command workspace.config.set -Context $context -Parameters @{
   Section = 'Paths'
   Key = 'EngineRoot'
   Value = 'J:\UnrealEngine\UERelease'
@@ -285,7 +285,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 | 文档 | 用途 |
 |------|------|
 | `AGENTS.md` / `AGENTS_ZH.md` | AI Agent / 协作者的工作指引（**项目规范的权威来源**） |
-| `.agents/skills/README.md` | Hardness + OpenSpec 协作流程与项目技能适配说明 |
+| `.agents/skills/README.md` | Harness + OpenSpec 协作流程与项目技能适配说明 |
 | `Documents/Knowledges/ZH/Index.md` | 知识库主索引，按主题前缀组织所有原理性文档 |
 | `Documents/Guides/Build.md` | 构建规则、超时约束、并发安全 |
 | `Documents/Guides/Test.md` | 测试入口与超时约束 |
@@ -308,7 +308,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 ### OpenSpec 计划管理
 
-OpenSpec 是当前项目的权威记录系统；便携 CLI 负责确定性的记录操作，Hardness 负责探索、执行、review、replan 与 closure 策略。明确采用 OpenSpec 的工作统一进入 `openspec/changes/<domain>/<change>/`：
+OpenSpec 是当前项目的权威记录系统；便携 CLI 负责确定性的记录操作，Harness 负责探索、执行、review、replan 与 closure 策略。明确采用 OpenSpec 的工作统一进入 `openspec/changes/<domain>/<change>/`：
 
 - `openspec-explore`：仅在目标 Change 创建前进行深度探索并形成 decision-complete handoff。
 - `openspec-continue-change` / `openspec-update-change`：创建下一份规划产物，或在证据门禁下修订现有真相。
@@ -368,5 +368,5 @@ Tools\PullReference\PullReference.bat <name>
 ## 联系与反馈
 
 - 项目状态分析：`Documents/ProjectStatusAnalysis.md`
-- Hardness / OpenSpec 协作说明：`.agents/skills/README.md`
+- Harness / OpenSpec 协作说明：`.agents/skills/README.md`
 - 历史优先级路线图：`Documents/Plans/Plan_StatusPriorityRoadmap.md`

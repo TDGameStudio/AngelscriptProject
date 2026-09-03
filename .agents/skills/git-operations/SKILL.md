@@ -5,7 +5,7 @@ description: Inspect and commit exact AngelscriptProject workspace changes acros
 
 # Git Operations
 
-Hardness selects the workspace and authority. Use `git.status`, `git.commit`, `git.integrate`, or explicitly authorized `git.push`; never bypass the selected context with an implicit repository root.
+Harness selects the workspace and authority. Use `git.status`, `git.commit`, `git.integrate`, or explicitly authorized `git.push`; never bypass the selected context with an implicit repository root.
 
 Load only the relevant reference:
 

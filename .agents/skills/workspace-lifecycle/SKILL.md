@@ -1,11 +1,11 @@
 ---
 name: workspace-lifecycle
-description: Manage Git-registered AngelscriptProject workspaces, exact submodule bootstrap, Hardness-owned AgentConfig.ini, process-local workspace selection, verification, listing, and explicit safe removal. Do not use for commits, branch integration, push, or publication.
+description: Manage Git-registered AngelscriptProject workspaces, exact submodule bootstrap, Harness-owned AgentConfig.ini, process-local workspace selection, verification, listing, and explicit safe removal. Do not use for commits, branch integration, push, or publication.
 ---
 
 # Workspace Lifecycle
 
-Hardness derives workspace identity from Git and dispatches every operation. Import Hardness once; use `workspace.list/status/new/bootstrap/verify/remove`, `workspace.activate`, and `workspace.config.status/get/set`.
+Harness derives workspace identity from Git and dispatches every operation. Import Harness once; use `workspace.list/status/new/bootstrap/verify/remove`, `workspace.activate`, and `workspace.config.status/get/set`.
 
 Load only the relevant reference:
 

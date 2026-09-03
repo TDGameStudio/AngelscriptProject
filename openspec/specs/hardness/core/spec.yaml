@@ -1,7 +1,0 @@
-api_version: openspec.dev/v1
-kind: spec
-metadata:
-  uid: spec_b5a761f2-b345-4f43-98a5-aa051f8d274c
-  id: hardness/core
-  title: Hardness Core
-  description: Project-wide Skill harness routing, unified Git workspace context, Task DAG, explicit Review intake, evidence-gated replan, direct closure, dogfooding feedback, OpenSpec maintenance visibility, and authority-bound autonomous execution.

@@ -1,0 +1,23 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_54421dd0-8fee-4c5b-8bb6-02e146ac286f
+  id: harness/rename-hardness-to-harness
+  title: Rename Hardness framework to Harness
+  description: Perform a hard public naming cutover from Hardness to Harness across the live project framework while preserving immutable archives and explicitly migrating machine-local state.
+  aliases:
+  - hardness/rename-hardness-to-harness
+workflow: angelscript
+created_at: 2026-09-03T17:47:42Z
+goal: Replace the mistaken Hardness identity with the canonical Harness identity and verify all live routes, modules, workspace data, Unreal registry state, and OpenSpec records.
+affected_areas:
+- Skills
+- OpenSpec
+- Workspace
+- Git
+- Unreal
+archived_at: 2026-09-03T18:15:30Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The Harness hard cutover, bounded persisted-state migrations, synchronized specifications, fixture gates, strict OpenSpec validation, old-name audit, and real AngelscriptSmoke acceptance all passed with no unresolved owner.

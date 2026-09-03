@@ -14,7 +14,7 @@ function Get-UnrealMutexName {
         [Parameter(Mandatory = $true)][string] $Key
     )
     $hash = Get-UnrealSha256Text -Value $Key
-    return "AngelscriptProject.Hardness.Unreal.$Scope.$($hash.Substring(0, 32))"
+    return "AngelscriptProject.Harness.Unreal.$Scope.$($hash.Substring(0, 32))"
 }
 
 function Enter-UnrealLease {
@@ -185,7 +185,7 @@ function Get-UnrealRunPaths {
     )
     [void](Assert-UnrealRunId -RunId $RunId)
     $root = ConvertTo-UnrealCanonicalPath -Path $WorkspaceRoot
-    $runsRoot = [System.IO.Path]::GetFullPath((Join-Path $root 'Saved/Hardness/Unreal/Runs'))
+    $runsRoot = [System.IO.Path]::GetFullPath((Join-Path $root 'Saved/Harness/Unreal/Runs'))
     $runRoot = [System.IO.Path]::GetFullPath((Join-Path $runsRoot $RunId))
     [void](Assert-UnrealPathContained -Root $runsRoot -Path $runRoot -Purpose 'Unreal run directory')
     return [pscustomobject][ordered]@{
@@ -505,7 +505,7 @@ function Test-UnrealIgnoredRunRoot {
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & git -C $WorkspaceRoot check-ignore --quiet -- 'Saved/Hardness/Unreal/Runs/__probe__'
+        & git -C $WorkspaceRoot check-ignore --quiet -- 'Saved/Harness/Unreal/Runs/__probe__'
         $exitCode = $LASTEXITCODE
     }
     finally { $ErrorActionPreference = $previousPreference }
@@ -777,7 +777,7 @@ function Get-UnrealRunStatusRecord {
     }
 }
 
-function Get-HardnessUnrealRunStatus {
+function Get-HarnessUnrealRunStatus {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -793,7 +793,7 @@ function Start-UnrealRunRequest {
     $paths = Get-UnrealRunPaths -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
     Assert-UnrealRequestPaths -Request $Request -ExpectedPaths $paths
     Assert-UnrealExecutionDescription -Request $Request
-    if (-not (Test-UnrealIgnoredRunRoot -WorkspaceRoot ([string] $Request.workspaceRoot))) { throw 'Saved/Hardness/Unreal/Runs must be ignored before a run can start.' }
+    if (-not (Test-UnrealIgnoredRunRoot -WorkspaceRoot ([string] $Request.workspaceRoot))) { throw 'Saved/Harness/Unreal/Runs must be ignored before a run can start.' }
     if (Test-Path -LiteralPath $paths.RunRoot) { throw "Run directory already exists: $($paths.RunRoot)" }
     $Request = Set-UnrealRunExecutionAssignment -Request $Request
     $reservedMapping = [pscustomobject]@{ Execution = $Request.execution; Created = $false }
@@ -816,9 +816,9 @@ function Start-UnrealRunRequest {
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $true
     foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $worker, '-RequestPath', $paths.RequestPath)) { [void] $startInfo.ArgumentList.Add([string] $argument) }
-    $startInfo.Environment['HARDNESS_WORKSPACE_ROOT'] = [string] $Request.workspaceRoot
-    $startInfo.Environment['HARDNESS_PRIMARY_ROOT'] = [string] $Request.primaryRoot
-    $startInfo.Environment['HARDNESS_GIT_COMMON_DIR'] = [string] $Request.gitCommonDir
+    $startInfo.Environment['HARNESS_WORKSPACE_ROOT'] = [string] $Request.workspaceRoot
+    $startInfo.Environment['HARNESS_PRIMARY_ROOT'] = [string] $Request.primaryRoot
+    $startInfo.Environment['HARNESS_GIT_COMMON_DIR'] = [string] $Request.gitCommonDir
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     try { $workerStarted = $process.Start() }
@@ -837,7 +837,7 @@ function Start-UnrealRunRequest {
     [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = [DateTimeOffset]::UtcNow.ToString('o') })
     if ($NoWait) {
         $process.Dispose()
-        return Get-HardnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
+        return Get-HarnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
     }
 
     $parentWaitMs = [Math]::Min([int]::MaxValue, [int64] $Request.timeoutMs + 30000)
@@ -847,7 +847,7 @@ function Start-UnrealRunRequest {
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'TimedOut'; exitCode = 2; timedOut = $true; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Worker exceeded the operation timeout plus shutdown allowance.' })
     }
     $process.Dispose()
-    return Get-HardnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
+    return Get-HarnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
 }
 
 function Get-UnrealRemainingTimeout {
@@ -919,7 +919,7 @@ function Invoke-UnrealNativeProcess {
     $startInfo.RedirectStandardError = $true
     foreach ($argument in @($Request.arguments)) { [void] $startInfo.ArgumentList.Add([string] $argument) }
     foreach ($property in @($Request.environment.PSObject.Properties)) { $startInfo.Environment[$property.Name] = [string] $property.Value }
-    $startInfo.Environment['HARDNESS_UNREAL_RUN_ID'] = [string] $Request.runId
+    $startInfo.Environment['HARNESS_UNREAL_RUN_ID'] = [string] $Request.runId
 
     $stdoutStream = [System.IO.File]::Open([string] $paths.StdOutPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
     $stderrStream = [System.IO.File]::Open([string] $paths.StdErrPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
@@ -1102,7 +1102,7 @@ function Get-UnrealProcessRecordById {
     catch { return $null }
 }
 
-function Stop-HardnessUnrealRun {
+function Stop-HarnessUnrealRun {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,

@@ -1,5 +1,5 @@
 {
-  "description": "Optional, read-only Hardness workspace orientation for Codex sessions and subagents.",
+  "description": "Optional, read-only Harness workspace orientation for Codex sessions and subagents.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,8 +7,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/hardness/scripts/Invoke-HardnessCodexHook.ps1\") }'",
-            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/hardness/scripts/Invoke-HardnessCodexHook.ps1') }\"",
+            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1\") }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
             "timeout": 3,
             "additionalContextLimit": 1000
           }
@@ -20,8 +20,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/hardness/scripts/Invoke-HardnessCodexHook.ps1\") }'",
-            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/hardness/scripts/Invoke-HardnessCodexHook.ps1') }\"",
+            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1\") }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
             "timeout": 3,
             "additionalContextLimit": 1000
           }

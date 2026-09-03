@@ -13,7 +13,7 @@ Create or update an issue when any condition is true:
 - a Critical or Required Review finding needs non-trivial repair;
 - a deferred or superseded technical problem needs a durable handoff;
 - a failed path is likely to recur unless its evidence is preserved.
-- dogfooding exposes a material Hardness/OpenSpec workflow gap that otherwise exists only in conversation, ignored observations, or a final handoff.
+- dogfooding exposes a material Harness/OpenSpec workflow gap that otherwise exists only in conversation, ignored observations, or a final handoff.
 
 Do not record a normal TDD RED, the first expected failure, a typo, formatting repair, obvious immediate correction, ordinary final success, or another symptom already covered by the same root cause. One root cause and its repair lifecycle produce one issue even when several tests or Review findings expose it.
 
@@ -32,7 +32,7 @@ affected_tasks: ["2.1"]
 created_at: 2026-09-03T14:30:00+08:00
 resolved_at: 2026-09-03T15:20:00+08:00
 resolution_ref: commit-or-evidence-reference
-superseded_by: hardness/successor-change#issue-20260903-160000-successor
+superseded_by: harness/successor-change#issue-20260903-160000-successor
 ---
 ```
 
@@ -43,7 +43,7 @@ New records use `issue_schema: openspec-material-issue-v2`; historical records w
 - `rejected` means an evidence-backed decision deliberately did not implement the finding; it also requires `resolved_at` and an exact decision/evidence `resolution_ref`.
 - `superseded` requires `resolved_at` and `superseded_by`. The latter names one existing v2 owner as `<domain>/<change>#<issue-id>`; it cannot self-reference or form a direct cycle.
 
-During active work, an open v2 issue is structurally valid. Before any archive closure kind, `hardness.evolution.status` with the exact Change and `RequireTerminal = $true` must pass. That terminal check rejects open or malformed v2 records, invalid INDEX membership, and a missing, invalid, or failed canonical workflow evaluation. It never turns raw observations into issues automatically.
+During active work, an open v2 issue is structurally valid. Before any archive closure kind, `harness.evolution.status` with the exact Change and `RequireTerminal = $true` must pass. That terminal check rejects open or malformed v2 records, invalid INDEX membership, and a missing, invalid, or failed canonical workflow evaluation. It never turns raw observations into issues automatically.
 
 ## Body
 

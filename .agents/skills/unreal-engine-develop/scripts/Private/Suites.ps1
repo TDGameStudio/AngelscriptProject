@@ -1,7 +1,7 @@
-$script:UnrealSuiteDataSchema = 'hardness-unreal-suites'
-$script:UnrealSuitePlanSchema = 'hardness-unreal-suite-plan'
-$script:UnrealSuiteRequestSchema = 'hardness-unreal-suite-request'
-$script:UnrealSuiteSummarySchema = 'hardness-unreal-suite-summary'
+$script:UnrealSuiteDataSchema = 'harness-unreal-suites'
+$script:UnrealSuitePlanSchema = 'harness-unreal-suite-plan'
+$script:UnrealSuiteRequestSchema = 'harness-unreal-suite-request'
+$script:UnrealSuiteSummarySchema = 'harness-unreal-suite-summary'
 $script:UnrealSuiteNames = @('Smoke', 'NativeCore', 'RuntimeCpp', 'Bindings', 'HotReload', 'Cache', 'Debugger', 'FunctionalSamples', 'All')
 $script:UnrealDeferredSuiteCapabilities = @('Standalone', 'StandaloneRelease', 'CachePackage', 'package', 'coverage', 'release')
 
@@ -95,7 +95,7 @@ function ConvertTo-UnrealDeferredCapabilityRecords {
     )
 }
 
-function Get-HardnessUnrealSuiteList {
+function Get-HarnessUnrealSuiteList {
     [CmdletBinding()]
     param([string] $WorkspaceRoot = '')
     if (-not [string]::IsNullOrWhiteSpace($WorkspaceRoot)) { [void](Get-UnrealWorkspaceConfiguration -WorkspaceRoot $WorkspaceRoot) }
@@ -116,7 +116,7 @@ function Get-HardnessUnrealSuiteList {
     )
 }
 
-function New-HardnessUnrealSuitePlan {
+function New-HarnessUnrealSuitePlan {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -215,7 +215,7 @@ function New-UnrealSuiteOperation {
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto'
     )
-    $plan = New-HardnessUnrealSuitePlan -WorkspaceRoot $WorkspaceRoot -Suite $Suite -TimeoutMs $TimeoutMs -ConcurrencyPolicy $ConcurrencyPolicy
+    $plan = New-HarnessUnrealSuitePlan -WorkspaceRoot $WorkspaceRoot -Suite $Suite -TimeoutMs $TimeoutMs -ConcurrencyPolicy $ConcurrencyPolicy
     $profile = Get-UnrealLaunchProfileRecord -Name ([string] $plan.LaunchProfile)
     $request = New-UnrealRunRequest `
         -WorkspaceRoot $plan.WorkspaceRoot `
@@ -411,7 +411,7 @@ function Invoke-UnrealSuiteRequest {
     finally { $timer.Stop() }
 }
 
-function Invoke-HardnessUnrealSuite {
+function Invoke-HarnessUnrealSuite {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -422,7 +422,7 @@ function Invoke-HardnessUnrealSuite {
         [switch] $NoWait
     )
     if ($PlanOnly -and $NoWait) { throw '-PlanOnly and -NoWait cannot be combined.' }
-    if ($PlanOnly) { return New-HardnessUnrealSuitePlan -WorkspaceRoot $WorkspaceRoot -Suite $Suite -TimeoutMs $TimeoutMs -ConcurrencyPolicy $ConcurrencyPolicy }
+    if ($PlanOnly) { return New-HarnessUnrealSuitePlan -WorkspaceRoot $WorkspaceRoot -Suite $Suite -TimeoutMs $TimeoutMs -ConcurrencyPolicy $ConcurrencyPolicy }
     $operation = New-UnrealSuiteOperation -WorkspaceRoot $WorkspaceRoot -Suite $Suite -TimeoutMs $TimeoutMs -ConcurrencyPolicy $ConcurrencyPolicy
     return Start-UnrealRunRequest -Request $operation.Request -NoWait:$NoWait
 }

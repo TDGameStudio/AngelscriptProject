@@ -4,7 +4,7 @@ Load this reference only when choosing build concurrency, deciding what to do wi
 
 ## Two independent choices
 
-`BuildConcurrency` controls how a typed `ue.build` shares one Engine installation. `ConcurrencyPolicy` controls what the caller does when a required Hardness lease is already busy.
+`BuildConcurrency` controls how a typed `ue.build` shares one Engine installation. `ConcurrencyPolicy` controls what the caller does when a required Harness lease is already busy.
 
 | Parameter | Value | Result |
 |---|---|---|
@@ -27,7 +27,7 @@ exact WorkspaceRoot -> exclusive workspace lease
 
 The same workspace never runs two UE operations concurrently. Distinct worktrees may overlap only when each operation is eligible for its lane.
 
-For controlled parallel Installed Engine builds, Hardness supplies the paired UBT flags `-NoMutex -NoEngineChanges` and isolates run-local temporary and log paths. `-NoMutex` is not inherently unsafe; the safe boundary is the whole owned combination. For serialized UBT work, Hardness supplies `-WaitMutex` and coordinates with external UBT processes that use the same assembly mutex. Callers cannot inject `-NoMutex`, `-WaitMutex`, or `-NoEngineChanges` through extra arguments.
+For controlled parallel Installed Engine builds, Harness supplies the paired UBT flags `-NoMutex -NoEngineChanges` and isolates run-local temporary and log paths. `-NoMutex` is not inherently unsafe; the safe boundary is the whole owned combination. For serialized UBT work, Harness supplies `-WaitMutex` and coordinates with external UBT processes that use the same assembly mutex. Callers cannot inject `-NoMutex`, `-WaitMutex`, or `-NoEngineChanges` through extra arguments.
 
 Before committing resources, use `PlanOnly` to inspect the selected lane and owned arguments. Use `NoWait` to launch and decide later whether to wait, start eligible work in another workspace, or cancel explicitly. `PlanOnly` and `NoWait` cannot be combined.
 
@@ -35,10 +35,10 @@ Before committing resources, use `PlanOnly` to inspect the selected lane and own
 
 `ue.process.list` performs a bounded machine process scan and reports recognizable UE/UBT identity, workspace and Engine matches, elapsed activity, concurrency guards, and progress when evidence is trusted. `ue.run.status -RunId <id>` is authoritative for one managed run, including lease-wait states that have no native process yet.
 
-Progress is known only when Hardness can correlate all of the following:
+Progress is known only when Harness can correlate all of the following:
 
 - a valid managed `RunId` carried as the UBT session;
-- contained Hardness run metadata;
+- contained Harness run metadata;
 - the matching native process identity; and
 - a private run-local log beneath that run directory.
 
@@ -46,7 +46,7 @@ The parser uses the latest bounded `@progress ... N%` or `[current/total] action
 
 ## Known shared-engine conflict
 
-Installed Engine project outputs are largely workspace-private, but UHT can still contend on a shared Engine-side `UHT/Timestamp`. Hardness scans bounded private evidence for that signature. Detection changes an otherwise successful native result to failure and recommends either:
+Installed Engine project outputs are largely workspace-private, but UHT can still contend on a shared Engine-side `UHT/Timestamp`. Harness scans bounded private evidence for that signature. Detection changes an otherwise successful native result to failure and recommends either:
 
 - rerun with `BuildConcurrency = 'Serialize'`; or
 - use a dedicated `EngineRoot` for genuinely isolated parallel work.

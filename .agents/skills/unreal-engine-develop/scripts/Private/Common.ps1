@@ -111,7 +111,7 @@ function Get-UnrealWorkspaceConfiguration {
 
     Assert-UnrealPowerShell
     $workspaceModule = Import-UnrealWorkspaceModule
-    $valuesCommand = $workspaceModule.ExportedCommands['Get-HardnessWorkspaceConfigValues']
+    $valuesCommand = $workspaceModule.ExportedCommands['Get-HarnessWorkspaceConfigValues']
     if ($null -eq $valuesCommand) {
         throw 'workspace-lifecycle does not expose the required batched configuration API.'
     }

@@ -81,8 +81,8 @@ function Initialize-TestRepository {
         & git -C $Path init 2>&1 | Out-Null
         [void](Invoke-TestGit -Repository $Path -Arguments @('checkout', '-b', 'main'))
     }
-    [void](Invoke-TestGit -Repository $Path -Arguments @('config', 'user.name', 'Hardness Safety Fixture'))
-    [void](Invoke-TestGit -Repository $Path -Arguments @('config', 'user.email', 'hardness-safety@example.invalid'))
+    [void](Invoke-TestGit -Repository $Path -Arguments @('config', 'user.name', 'Harness Safety Fixture'))
+    [void](Invoke-TestGit -Repository $Path -Arguments @('config', 'user.email', 'harness-safety@example.invalid'))
 }
 
 function New-SimpleParentFixture {
@@ -171,7 +171,7 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'pre-existing junction container is rejected before create'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-junction-create-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-junction-create-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $parent = New-SimpleParentFixture -FixtureRoot $fixture
@@ -179,7 +179,7 @@ $regressions = @(
                 [void](New-Item -ItemType Directory -Path $external -Force)
                 [void](New-Item -ItemType Junction -Path (Join-Path $parent '.worktrees') -Target $external)
                 Assert-ThrowsMatch {
-                    New-HardnessWorkspace -Name 'escaped-physical' -RepositoryRoot $parent | Out-Null
+                    New-HarnessWorkspace -Name 'escaped-physical' -RepositoryRoot $parent | Out-Null
                 } 'reparse|physical|canonical' 'creation refuses a junction-backed canonical container'
                 Assert-True (-not (Test-Path -LiteralPath (Join-Path $external 'escaped-physical'))) 'refused creation writes nothing through the junction'
             }
@@ -191,11 +191,11 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'post-registration junction swap is rejected before remove'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-junction-remove-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-junction-remove-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $parent = New-SimpleParentFixture -FixtureRoot $fixture
-                $created = New-HardnessWorkspace -Name 'swapped' -RepositoryRoot $parent
+                $created = New-HarnessWorkspace -Name 'swapped' -RepositoryRoot $parent
                 $container = Join-Path $parent '.worktrees'
                 $external = Join-Path $fixture 'external-container'
                 [void](New-Item -ItemType Directory -Path $external -Force)
@@ -207,7 +207,7 @@ $regressions = @(
                 [System.IO.File]::WriteAllText($payload, "preserve me`n")
 
                 Assert-ThrowsMatch {
-                    Remove-HardnessWorkspace -WorktreeRoot (Join-Path $container 'swapped') -RepositoryRoot $parent -DiscardIgnoredFiles | Out-Null
+                    Remove-HarnessWorkspace -WorktreeRoot (Join-Path $container 'swapped') -RepositoryRoot $parent -DiscardIgnoredFiles | Out-Null
                 } 'reparse|physical|canonical' 'remove refuses after the canonical container is replaced by a junction'
                 Assert-True (Test-Path -LiteralPath $payload -PathType Leaf) 'refused removal preserves the external physical payload'
             }
@@ -219,11 +219,11 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'bootstrap preserves dirty tracked work and HEAD before update'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-dirty-tracked-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-dirty-tracked-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HardnessWorkspace -Name 'tracked' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-HarnessWorkspace -Name 'tracked' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 $marker = Join-Path $submodule 'stable.txt'
@@ -231,7 +231,7 @@ $regressions = @(
                 $beforeBytes = [System.IO.File]::ReadAllBytes($marker)
 
                 Assert-ThrowsMatch {
-                    Initialize-HardnessWorkspace -ProjectRoot $worktree | Out-Null
+                    Initialize-HarnessWorkspace -ProjectRoot $worktree | Out-Null
                 } 'dirty|cannot be moved|refus' 'bootstrap refuses before moving a dirty tracked submodule'
                 $afterHead = ((Invoke-TestGit -Repository $submodule -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
                 Assert-Equal $data.CommitB $afterHead 'dirty tracked submodule HEAD remains unchanged'
@@ -245,11 +245,11 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'bootstrap preserves untracked work and HEAD before update'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-dirty-untracked-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-dirty-untracked-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HardnessWorkspace -Name 'untracked' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-HarnessWorkspace -Name 'untracked' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 $payload = Join-Path $submodule 'untracked.bin'
@@ -257,7 +257,7 @@ $regressions = @(
                 [System.IO.File]::WriteAllBytes($payload, $beforeBytes)
 
                 Assert-ThrowsMatch {
-                    Initialize-HardnessWorkspace -ProjectRoot $worktree | Out-Null
+                    Initialize-HarnessWorkspace -ProjectRoot $worktree | Out-Null
                 } 'dirty|cannot be moved|refus' 'bootstrap refuses before moving a submodule with untracked content'
                 $afterHead = ((Invoke-TestGit -Repository $submodule -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
                 Assert-Equal $data.CommitB $afterHead 'untracked submodule HEAD remains unchanged'
@@ -271,17 +271,17 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'remove refuses a clean submodule at the wrong HEAD despite ignore=all'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-remove-wrong-head-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-remove-wrong-head-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HardnessWorkspace -Name 'wrong-head' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-HarnessWorkspace -Name 'wrong-head' -RepositoryRoot $data.Parent).WorktreeRoot
                 $submodule = Join-Path $worktree 'Modules/Child'
                 [void](Invoke-TestGit -Repository $submodule -Arguments @('checkout', '--detach', $data.CommitB))
                 [void](Invoke-TestGit -Repository $data.Parent -Arguments @('config', 'submodule.sdk.ignore', 'all'))
 
                 Assert-ThrowsMatch {
-                    Remove-HardnessWorkspace -WorktreeRoot $worktree -RepositoryRoot $data.Parent | Out-Null
+                    Remove-HarnessWorkspace -WorktreeRoot $worktree -RepositoryRoot $data.Parent | Out-Null
                 } 'exact|expected|submodule|valid' 'remove refuses a clean non-exact submodule even when the parent hides it'
                 Assert-True (Test-Path -LiteralPath $worktree -PathType Container) 'refused non-exact removal preserves the worktree'
                 $afterHead = ((Invoke-TestGit -Repository $submodule -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
@@ -295,11 +295,11 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'remove refuses payload under a deinitialized submodule path'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-remove-deinitialized-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-remove-deinitialized-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $data = New-SubmoduleFixture -FixtureRoot $fixture
-                $worktree = (New-HardnessWorkspace -Name 'deinitialized' -RepositoryRoot $data.Parent).WorktreeRoot
+                $worktree = (New-HarnessWorkspace -Name 'deinitialized' -RepositoryRoot $data.Parent).WorktreeRoot
                 [void](Invoke-TestGit -Repository $worktree -Arguments @('submodule', 'deinit', '-f', '--', 'Modules/Child'))
                 $submodulePath = Join-Path $worktree 'Modules/Child'
                 [void](New-Item -ItemType Directory -Path $submodulePath -Force)
@@ -307,7 +307,7 @@ $regressions = @(
                 [System.IO.File]::WriteAllText($payload, "preserve me`n")
 
                 Assert-ThrowsMatch {
-                    Remove-HardnessWorkspace -WorktreeRoot $worktree -RepositoryRoot $data.Parent | Out-Null
+                    Remove-HarnessWorkspace -WorktreeRoot $worktree -RepositoryRoot $data.Parent | Out-Null
                 } 'not initialized|payload|submodule|refus' 'remove refuses a deinitialized submodule path that contains local payload'
                 Assert-True (Test-Path -LiteralPath $payload -PathType Leaf) 'refused deinitialized removal preserves local payload'
             }
@@ -319,7 +319,7 @@ $regressions = @(
     [pscustomobject]@{
         Name = 'malicious logical names and reparse stores cannot escape modules root'
         Action = {
-            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-store-containment-{0}" -f [guid]::NewGuid().ToString('N'))
+            $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-store-containment-{0}" -f [guid]::NewGuid().ToString('N'))
             try {
                 [void](New-Item -ItemType Directory -Path $fixture -Force)
                 $parent = New-SimpleParentFixture -FixtureRoot $fixture

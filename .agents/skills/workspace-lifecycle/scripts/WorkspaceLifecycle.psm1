@@ -63,7 +63,7 @@ function Resolve-WorkspaceRepository {
     param([string]$Path)
 
     $candidate = if ([string]::IsNullOrWhiteSpace($Path)) {
-        $selected = [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process')
+        $selected = [Environment]::GetEnvironmentVariable('HARNESS_WORKSPACE_ROOT', 'Process')
         if ([string]::IsNullOrWhiteSpace($selected)) { Get-WorkspaceRepositoryRootFromModule } else { $selected }
     }
     else {
@@ -501,6 +501,60 @@ function Get-WorkspaceIniKeyNames {
     return @($keys | Sort-Object -Unique)
 }
 
+function Test-WorkspaceIniSection {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Section
+    )
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        if ($line.Trim() -match '^\[([^]]+)\]$' -and
+            $matches[1].Trim().Equals($Section, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Rename-WorkspaceIniSection {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$From,
+        [Parameter(Mandatory = $true)][string]$To
+    )
+    [void](Assert-WorkspaceIniName -Value $From -Kind 'section')
+    [void](Assert-WorkspaceIniName -Value $To -Kind 'section')
+    if (-not (Test-WorkspaceIniSection -Path $Path -Section $From)) { return $false }
+    if (Test-WorkspaceIniSection -Path $Path -Section $To) {
+        throw "AgentConfig.ini contains both [$From] and [$To]; refusing to merge managed workspace identity."
+    }
+
+    $raw = [System.IO.File]::ReadAllText($Path)
+    $newLine = if ($raw.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $lines = @([regex]::Split($raw, '\r?\n'))
+    $renamed = $false
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        if ($lines[$index].Trim() -match '^\[([^]]+)\]$' -and
+            $matches[1].Trim().Equals($From, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $lines[$index] = "[$To]"
+            $renamed = $true
+            break
+        }
+    }
+    if (-not $renamed) { return $false }
+    $text = $lines -join $newLine
+    $directory = Split-Path -Parent $Path
+    $temporary = Join-Path $directory ('.AgentConfig.{0}.tmp' -f [guid]::NewGuid().ToString('N'))
+    try {
+        [System.IO.File]::WriteAllText($temporary, $text, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::Move($temporary, $Path, $true)
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force }
+    }
+    return $true
+}
+
 function Set-WorkspaceIniValueInternal {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -701,12 +755,12 @@ function Test-WorkspaceManagedIdentity {
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
     foreach ($entry in @(
-        @('SchemaVersion', '2'),
+        @('SchemaVersion', '3'),
         @('WorkspaceRoot', $Identity.WorkspaceRoot),
         @('PrimaryRoot', $Identity.PrimaryRoot),
         @('GitCommonDir', $Identity.GitCommonDir)
     )) {
-        $actual = Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key $entry[0]
+        $actual = Get-WorkspaceIniValue -Path $Path -Section 'Harness' -Key $entry[0]
         if ([string]::IsNullOrWhiteSpace([string]$actual)) { return $false }
         $matches = if ($entry[0] -in @('WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir')) {
             Test-WorkspacePathEqual -Left $actual -Right ([string]$entry[1])
@@ -716,8 +770,8 @@ function Test-WorkspaceManagedIdentity {
         }
         if (-not $matches) { return $false }
     }
-    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'WorkspaceKind')) { return $false }
-    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Hardness' -Key 'GoalName')) { return $false }
+    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Harness' -Key 'WorkspaceKind')) { return $false }
+    if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'Harness' -Key 'GoalName')) { return $false }
     if ($null -ne (Get-WorkspaceIniValue -Path $Path -Section 'References' -Key 'HazelightAngelscriptEngineRoot')) { return $false }
     return $true
 }
@@ -729,7 +783,7 @@ function New-WorkspaceIdentityFromRegistration {
     )
 
     $identity = [pscustomobject][ordered]@{
-        SchemaVersion = '2'
+        SchemaVersion = '3'
         HarnessRoot   = [System.IO.Path]::GetFullPath((Get-WorkspaceRepositoryRootFromModule))
         WorkspaceRoot = [System.IO.Path]::GetFullPath($Registration.WorkspaceRoot)
         PrimaryRoot   = [System.IO.Path]::GetFullPath($Registration.PrimaryRoot)
@@ -757,14 +811,14 @@ function Get-WorkspaceIdentity {
     return New-WorkspaceIdentityFromRegistration -Registration $record[0] -GitCommonDir $commonDirectory
 }
 
-function Get-HardnessWorkspaceContext {
+function Get-HarnessWorkspaceContext {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [switch]$Refresh
     )
 
-    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
+    if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
     return Get-WorkspaceIdentity -ProjectRoot $root
 }
@@ -800,17 +854,25 @@ function Set-WorkspaceManagedConfiguration {
         }
     }
 
+    if (Test-WorkspaceIniSection -Path $target -Section 'Hardness') {
+        $legacySchema = Get-WorkspaceIniValue -Path $target -Section 'Hardness' -Key 'SchemaVersion'
+        if ([string]$legacySchema -cne '2') {
+            throw "AgentConfig.ini [Hardness] uses unsupported schema '$legacySchema'; only schema v2 can migrate through workspace.bootstrap."
+        }
+        [void](Rename-WorkspaceIniSection -Path $target -From 'Hardness' -To 'Harness')
+    }
+
     $projectFile = Get-WorkspaceProjectFile -ProjectRoot $root
     $updates = @(
         [pscustomobject]@{ Section = 'Paths'; Key = 'ProjectFile'; Value = $projectFile },
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'SchemaVersion'; Value = $identity.SchemaVersion },
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'WorkspaceRoot'; Value = $identity.WorkspaceRoot },
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'PrimaryRoot'; Value = $identity.PrimaryRoot },
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'GitCommonDir'; Value = $identity.GitCommonDir }
+        [pscustomobject]@{ Section = 'Harness'; Key = 'SchemaVersion'; Value = $identity.SchemaVersion },
+        [pscustomobject]@{ Section = 'Harness'; Key = 'WorkspaceRoot'; Value = $identity.WorkspaceRoot },
+        [pscustomobject]@{ Section = 'Harness'; Key = 'PrimaryRoot'; Value = $identity.PrimaryRoot },
+        [pscustomobject]@{ Section = 'Harness'; Key = 'GitCommonDir'; Value = $identity.GitCommonDir }
     )
     $removals = @(
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'WorkspaceKind' },
-        [pscustomobject]@{ Section = 'Hardness'; Key = 'GoalName' },
+        [pscustomobject]@{ Section = 'Harness'; Key = 'WorkspaceKind' },
+        [pscustomobject]@{ Section = 'Harness'; Key = 'GoalName' },
         [pscustomobject]@{ Section = 'References'; Key = 'HazelightAngelscriptEngineRoot' }
     )
     Update-WorkspaceIniDocument -Path $target -Updates $updates -Removals $removals
@@ -818,7 +880,7 @@ function Set-WorkspaceManagedConfiguration {
     return [pscustomobject]@{ Path = $target; Copied = $copied; Identity = $identity; ProjectFile = $projectFile }
 }
 
-function Get-HardnessWorkspaceConfigStatus {
+function Get-HarnessWorkspaceConfigStatus {
     [CmdletBinding()]
     param([Alias('WorkspaceRoot')][string]$ProjectRoot = '')
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
@@ -833,23 +895,27 @@ function Get-HardnessWorkspaceConfigStatus {
     else {
         $ignored = (Invoke-WorkspaceGit -Repository $root -Arguments @('check-ignore', '--quiet', '--', 'AgentConfig.ini') -AllowFailure).ExitCode -eq 0
         if (-not $ignored) { $errors.Add('AgentConfig.ini exists but is not ignored.') | Out-Null }
+        if (Test-WorkspaceIniSection -Path $path -Section 'Hardness') {
+            $legacySchema = Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key 'SchemaVersion'
+            $errors.Add("AgentConfig.ini contains legacy [Hardness] schema v$legacySchema; run workspace.bootstrap to migrate it to [Harness] schema v3.") | Out-Null
+        }
         foreach ($entry in @(
             @('SchemaVersion', $identity.SchemaVersion),
             @('WorkspaceRoot', $identity.WorkspaceRoot),
             @('PrimaryRoot', $identity.PrimaryRoot),
             @('GitCommonDir', $identity.GitCommonDir)
         )) {
-            $actual = Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key $entry[0]
+            $actual = Get-WorkspaceIniValue -Path $path -Section 'Harness' -Key $entry[0]
             $expected = [string]$entry[1]
             $matches = if ($entry[0] -in @('PrimaryRoot', 'WorkspaceRoot', 'GitCommonDir')) {
                 -not [string]::IsNullOrWhiteSpace([string]$actual) -and (Test-WorkspacePathEqual -Left $actual -Right $expected)
             }
             else { ([string]$actual).Equals($expected, [System.StringComparison]::OrdinalIgnoreCase) }
-            if (-not $matches) { $errors.Add("AgentConfig.ini [Hardness] $($entry[0]) does not match this workspace.") | Out-Null }
+            if (-not $matches) { $errors.Add("AgentConfig.ini [Harness] $($entry[0]) does not match this workspace.") | Out-Null }
         }
         foreach ($obsoleteKey in @('WorkspaceKind', 'GoalName')) {
-            if ($null -ne (Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key $obsoleteKey)) {
-                $errors.Add("AgentConfig.ini [Hardness] $obsoleteKey is obsolete in schema v2.") | Out-Null
+            if ($null -ne (Get-WorkspaceIniValue -Path $path -Section 'Harness' -Key $obsoleteKey)) {
+                $errors.Add("AgentConfig.ini [Harness] $obsoleteKey is obsolete in schema v3.") | Out-Null
             }
         }
         if ($null -ne (Get-WorkspaceIniValue -Path $path -Section 'References' -Key 'HazelightAngelscriptEngineRoot')) {
@@ -876,20 +942,20 @@ function Get-HardnessWorkspaceConfigStatus {
     }
 }
 
-function Get-HardnessWorkspaceConfigValue {
+function Get-HarnessWorkspaceConfigValue {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [Parameter(Mandatory = $true)][string]$Section,
         [Parameter(Mandatory = $true)][string]$Key
     )
-    $snapshot = Get-HardnessWorkspaceConfigValues -ProjectRoot $ProjectRoot -Entries @(
+    $snapshot = Get-HarnessWorkspaceConfigValues -ProjectRoot $ProjectRoot -Entries @(
         [pscustomobject]@{ Section = $Section; Key = $Key }
     )
     return $snapshot.Values[0]
 }
 
-function Get-HardnessWorkspaceConfigValues {
+function Get-HarnessWorkspaceConfigValues {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
@@ -900,10 +966,10 @@ function Get-HardnessWorkspaceConfigValues {
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
     $status = if ($RequireExecutionGuard) {
-        Assert-HardnessWorkspaceExecution -ProjectRoot $root -SelectedWorkspaceRoot $root -CallerPath $CallerPath
+        Assert-HarnessWorkspaceExecution -ProjectRoot $root -SelectedWorkspaceRoot $root -CallerPath $CallerPath
     }
     else {
-        Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
+        Get-HarnessWorkspaceConfigStatus -ProjectRoot $root
     }
     if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
 
@@ -934,7 +1000,7 @@ function Get-HardnessWorkspaceConfigValues {
     }
 }
 
-function Set-HardnessWorkspaceConfigValue {
+function Set-HarnessWorkspaceConfigValue {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
@@ -944,42 +1010,43 @@ function Set-HardnessWorkspaceConfigValue {
     )
     [void](Assert-WorkspaceIniName -Value $Section -Kind 'section')
     [void](Assert-WorkspaceIniName -Value $Key -Kind 'key')
-    if ($Section.Equals('Hardness', [System.StringComparison]::OrdinalIgnoreCase) -or
+    if ($Section.Equals('Harness', [System.StringComparison]::OrdinalIgnoreCase) -or
+        $Section.Equals('Hardness', [System.StringComparison]::OrdinalIgnoreCase) -or
         ($Section.Equals('Paths', [System.StringComparison]::OrdinalIgnoreCase) -and $Key.Equals('ProjectFile', [System.StringComparison]::OrdinalIgnoreCase))) {
-        throw "AgentConfig.ini [$Section] $Key is managed by Hardness and cannot be set directly."
+        throw "AgentConfig.ini [$Section] $Key is managed by Harness and cannot be set directly."
     }
     if ($Section.Equals('References', [System.StringComparison]::OrdinalIgnoreCase) -and
         $Key.Equals('HazelightAngelscriptEngineRoot', [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'AgentConfig.ini [References] HazelightAngelscriptEngineRoot is obsolete and cannot be set.'
     }
-    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    $status = Get-HarnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
     if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
     if ($PSCmdlet.ShouldProcess($status.Path, "set [$Section] $Key")) {
         Set-WorkspaceIniValueInternal -Path $status.Path -Section $Section -Key $Key -Value $Value
     }
-    return Get-HardnessWorkspaceConfigValue -ProjectRoot $status.ProjectRoot -Section $Section -Key $Key
+    return Get-HarnessWorkspaceConfigValue -ProjectRoot $status.ProjectRoot -Section $Section -Key $Key
 }
 
-function Assert-HardnessWorkspaceExecution {
+function Assert-HarnessWorkspaceExecution {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][Parameter(Mandatory = $true)][string]$ProjectRoot,
         [string]$SelectedWorkspaceRoot = '',
         [string]$CallerPath = ''
     )
-    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    $status = Get-HarnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
     if (-not $status.IdentityValid) { throw "Workspace execution identity is invalid: $($status.Errors -join '; ')" }
-    $selected = if (-not [string]::IsNullOrWhiteSpace($SelectedWorkspaceRoot)) { $SelectedWorkspaceRoot } else { [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process') }
+    $selected = if (-not [string]::IsNullOrWhiteSpace($SelectedWorkspaceRoot)) { $SelectedWorkspaceRoot } else { [Environment]::GetEnvironmentVariable('HARNESS_WORKSPACE_ROOT', 'Process') }
     if (-not [string]::IsNullOrWhiteSpace($selected) -and -not (Test-WorkspacePathEqual -Left $selected -Right $status.ProjectRoot)) {
-        throw "Hardness selected workspace '$selected' but the command targets '$($status.ProjectRoot)'."
+        throw "Harness selected workspace '$selected' but the command targets '$($status.ProjectRoot)'."
     }
-    $selectedPrimary = [Environment]::GetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', 'Process')
+    $selectedPrimary = [Environment]::GetEnvironmentVariable('HARNESS_PRIMARY_ROOT', 'Process')
     if (-not [string]::IsNullOrWhiteSpace($selectedPrimary) -and -not (Test-WorkspacePathEqual -Left $selectedPrimary -Right $status.Identity.PrimaryRoot)) {
-        throw "Hardness selected primary root '$selectedPrimary' but the command targets workspace '$($status.ProjectRoot)' owned by '$($status.Identity.PrimaryRoot)'."
+        throw "Harness selected primary root '$selectedPrimary' but the command targets workspace '$($status.ProjectRoot)' owned by '$($status.Identity.PrimaryRoot)'."
     }
-    $selectedCommon = [Environment]::GetEnvironmentVariable('HARDNESS_GIT_COMMON_DIR', 'Process')
+    $selectedCommon = [Environment]::GetEnvironmentVariable('HARNESS_GIT_COMMON_DIR', 'Process')
     if (-not [string]::IsNullOrWhiteSpace($selectedCommon) -and -not (Test-WorkspacePathEqual -Left $selectedCommon -Right $status.Identity.GitCommonDir)) {
-        throw "Hardness selected Git common directory '$selectedCommon' but the command targets '$($status.Identity.GitCommonDir)'."
+        throw "Harness selected Git common directory '$selectedCommon' but the command targets '$($status.Identity.GitCommonDir)'."
     }
     $caller = if ([string]::IsNullOrWhiteSpace($CallerPath)) { (Get-Location).Path } else { $CallerPath }
     if (Test-Path -LiteralPath $caller) {
@@ -993,18 +1060,21 @@ function Assert-HardnessWorkspaceExecution {
     return $status
 }
 
-function Set-HardnessWorkspaceSession {
+function Set-HarnessWorkspaceSession {
     [CmdletBinding()]
     param([Alias('WorkspaceRoot')][string]$ProjectRoot = '')
 
-    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    $status = Get-HarnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
     if (-not $status.IdentityValid) { throw "Workspace selection identity is invalid: $($status.Errors -join '; ')" }
-    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', $status.ProjectRoot, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', $status.Identity.PrimaryRoot, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_GIT_COMMON_DIR', $status.Identity.GitCommonDir, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', $null, 'Process')
-    [Environment]::SetEnvironmentVariable('HARDNESS_GOAL_NAME', $null, 'Process')
-    [void](Clear-HardnessWorkspaceCache)
+    [Environment]::SetEnvironmentVariable('HARNESS_WORKSPACE_ROOT', $status.ProjectRoot, 'Process')
+    [Environment]::SetEnvironmentVariable('HARNESS_PRIMARY_ROOT', $status.Identity.PrimaryRoot, 'Process')
+    [Environment]::SetEnvironmentVariable('HARNESS_GIT_COMMON_DIR', $status.Identity.GitCommonDir, 'Process')
+    [Environment]::SetEnvironmentVariable('HARNESS_WORKSPACE_MODE', $null, 'Process')
+    [Environment]::SetEnvironmentVariable('HARNESS_GOAL_NAME', $null, 'Process')
+    foreach ($legacyName in @('HARDNESS_WORKSPACE_ROOT', 'HARDNESS_PRIMARY_ROOT', 'HARDNESS_GIT_COMMON_DIR', 'HARDNESS_WORKSPACE_MODE', 'HARDNESS_GOAL_NAME')) {
+        [Environment]::SetEnvironmentVariable($legacyName, $null, 'Process')
+    }
+    [void](Clear-HarnessWorkspaceCache)
     return [pscustomobject][ordered]@{
         WorkspaceRoot = $status.ProjectRoot
         PrimaryRoot   = $status.Identity.PrimaryRoot
@@ -1081,20 +1151,20 @@ function Get-RegisteredWorkspaceRoots {
     return @(Get-WorkspaceRegistrationRecords -Repository $Repository | ForEach-Object { $_.WorkspaceRoot })
 }
 
-function Clear-HardnessWorkspaceCache {
+function Clear-HarnessWorkspaceCache {
     [CmdletBinding()]
     param()
     return [pscustomobject]@{ Cleared = $true; Scope = 'Process'; CachedEntries = 0 }
 }
 
-function Get-HardnessWorkspaceList {
+function Get-HarnessWorkspaceList {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
         [switch]$Refresh
     )
 
-    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
+    if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
     $repository = Resolve-WorkspaceRepository -Path $ProjectRoot
     $records = @(Get-WorkspaceRegistrationRecords -Repository $repository)
     $commonDirectory = Get-WorkspaceCommonGitDirectory -Repository $repository
@@ -1105,7 +1175,7 @@ function Get-HardnessWorkspaceList {
     return @($contexts | ForEach-Object { $_ })
 }
 
-function Get-HardnessWorkspaceStatus {
+function Get-HarnessWorkspaceStatus {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
@@ -1113,9 +1183,9 @@ function Get-HardnessWorkspaceStatus {
         [switch]$Refresh
     )
 
-    if ($Refresh) { [void](Clear-HardnessWorkspaceCache) }
+    if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $configStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
+    $configStatus = Get-HarnessWorkspaceConfigStatus -ProjectRoot $root
     $identity = $configStatus.Identity
     $result = [ordered]@{
         ProjectRoot        = $root
@@ -1167,7 +1237,7 @@ function Get-HardnessWorkspaceStatus {
     return [pscustomobject]$result
 }
 
-function New-HardnessWorkspace {
+function New-HarnessWorkspace {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][ValidatePattern('^[A-Za-z0-9._-]{1,80}$')][string]$Name,
@@ -1197,7 +1267,7 @@ function New-HardnessWorkspace {
     if (Test-Path -LiteralPath $target) {
         throw "Worktree target already exists: $target"
     }
-    $ignored = Invoke-WorkspaceGit -Repository $repository -Arguments @('check-ignore', '--quiet', '--', '.worktrees/__hardness_probe__') -AllowFailure
+    $ignored = Invoke-WorkspaceGit -Repository $repository -Arguments @('check-ignore', '--quiet', '--', '.worktrees/__harness_probe__') -AllowFailure
     if ($ignored.ExitCode -ne 0) {
         throw "'$container' is not ignored. Add .worktrees/ to .gitignore before creating a workspace."
     }
@@ -1213,7 +1283,7 @@ function New-HardnessWorkspace {
     }
     [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace creation')
     [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'add', '-b', $branchName, $target, $startCommit))
-    [void](Clear-HardnessWorkspaceCache)
+    [void](Clear-HarnessWorkspaceCache)
     try {
         $configResult = Set-WorkspaceManagedConfiguration -ProjectRoot $target -SourceRoot $repository
         $submodules = @(Initialize-WorkspaceSubmodules -Repository $target)
@@ -1234,7 +1304,7 @@ function New-HardnessWorkspace {
     }
 }
 
-function Initialize-HardnessWorkspace {
+function Initialize-HarnessWorkspace {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = ''
@@ -1244,11 +1314,11 @@ function Initialize-HardnessWorkspace {
     $source = Get-PrimaryWorkspaceRoot -Repository $root
     $config = Set-WorkspaceManagedConfiguration -ProjectRoot $root -SourceRoot $source
     $submodules = @(Initialize-WorkspaceSubmodules -Repository $root)
-    [void](Clear-HardnessWorkspaceCache)
+    [void](Clear-HarnessWorkspaceCache)
     return [pscustomobject]@{ ProjectRoot = $root; SourceRoot = $source; AgentConfigCopied = $config.Copied; Configuration = $config; Submodules = $submodules }
 }
 
-function Test-HardnessWorkspace {
+function Test-HarnessWorkspace {
     [CmdletBinding()]
     param(
         [Alias('WorkspaceRoot')][string]$ProjectRoot = '',
@@ -1257,7 +1327,7 @@ function Test-HardnessWorkspace {
 
     $errors = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
-    $status = Get-HardnessWorkspaceStatus -ProjectRoot $ProjectRoot -Detailed -Refresh
+    $status = Get-HarnessWorkspaceStatus -ProjectRoot $ProjectRoot -Detailed -Refresh
     foreach ($submodule in @($status.Submodules)) {
         if (-not $submodule.Initialized) {
             $payloadSuffix = if (@($submodule.Payload).Count -gt 0) { " Local payload is present: $(@($submodule.Payload) -join ', ')." } else { '' }
@@ -1287,7 +1357,7 @@ function Test-HardnessWorkspace {
     return [pscustomobject]@{ IsValid = $errors.Count -eq 0; Errors = @($errors | ForEach-Object { $_ }); Warnings = @($warnings | ForEach-Object { $_ }); Status = $status }
 }
 
-function Remove-HardnessWorkspace {
+function Remove-HarnessWorkspace {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
         [Parameter(Mandatory = $true)][string]$WorktreeRoot,
@@ -1324,7 +1394,7 @@ function Remove-HardnessWorkspace {
     else {
         [void](Assert-WorkspaceExistingPathSafe -Target $target -Purpose 'workspace removal')
     }
-    $verification = Test-HardnessWorkspace -ProjectRoot $target -RequireClean
+    $verification = Test-HarnessWorkspace -ProjectRoot $target -RequireClean
     $status = $verification.Status
     if (-not $verification.IsValid) {
         throw "Refusing to remove invalid or dirty worktree '$target': $($verification.Errors -join '; ')"
@@ -1354,7 +1424,7 @@ function Remove-HardnessWorkspace {
         # submodule. The explicit clean checks above are the safety gate; this
         # flag only bypasses Git's structural submodule refusal.
         [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'remove', '--force', $target))
-        [void](Clear-HardnessWorkspaceCache)
+        [void](Clear-HarnessWorkspaceCache)
         if (Test-Path -LiteralPath $target) {
             $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
             if (-not $targetItem.PSIsContainer) {
@@ -1379,18 +1449,18 @@ function Remove-HardnessWorkspace {
 }
 
 Export-ModuleMember -Function @(
-    'Get-HardnessWorkspaceContext',
-    'Get-HardnessWorkspaceList',
-    'Get-HardnessWorkspaceStatus',
-    'Clear-HardnessWorkspaceCache',
-    'New-HardnessWorkspace',
-    'Initialize-HardnessWorkspace',
-    'Test-HardnessWorkspace',
-    'Remove-HardnessWorkspace',
-    'Get-HardnessWorkspaceConfigStatus',
-    'Get-HardnessWorkspaceConfigValue',
-    'Get-HardnessWorkspaceConfigValues',
-    'Set-HardnessWorkspaceConfigValue',
-    'Set-HardnessWorkspaceSession',
-    'Assert-HardnessWorkspaceExecution'
+    'Get-HarnessWorkspaceContext',
+    'Get-HarnessWorkspaceList',
+    'Get-HarnessWorkspaceStatus',
+    'Clear-HarnessWorkspaceCache',
+    'New-HarnessWorkspace',
+    'Initialize-HarnessWorkspace',
+    'Test-HarnessWorkspace',
+    'Remove-HarnessWorkspace',
+    'Get-HarnessWorkspaceConfigStatus',
+    'Get-HarnessWorkspaceConfigValue',
+    'Get-HarnessWorkspaceConfigValues',
+    'Set-HarnessWorkspaceConfigValue',
+    'Set-HarnessWorkspaceSession',
+    'Assert-HarnessWorkspaceExecution'
 )

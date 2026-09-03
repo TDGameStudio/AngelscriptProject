@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "hardness-ubt-capabilities",
+  "schemaVersion": "harness-ubt-capabilities",
   "sourceBaseline": "Unreal Engine 5.8",
   "capabilities": [
     {

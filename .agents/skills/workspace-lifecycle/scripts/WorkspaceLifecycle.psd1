@@ -1,28 +1,28 @@
 @{
     RootModule        = 'WorkspaceLifecycle.psm1'
-    ModuleVersion     = '2.0.0'
+    ModuleVersion     = '3.0.0'
     GUID              = 'ba79e4fe-c71b-4fc1-a429-154e8fd860d7'
     Author            = 'AngelscriptProject'
     CompanyName       = 'AngelscriptProject'
     Copyright         = '(c) AngelscriptProject contributors'
-    Description       = 'Safe project-local workspace lifecycle and local configuration for Hardness.'
+    Description       = 'Safe project-local workspace lifecycle and local configuration for Harness.'
     PowerShellVersion = '7.0'
     CompatiblePSEditions = @('Core')
     FunctionsToExport = @(
-        'Get-HardnessWorkspaceContext',
-        'Get-HardnessWorkspaceList',
-        'Get-HardnessWorkspaceStatus',
-        'Clear-HardnessWorkspaceCache',
-        'New-HardnessWorkspace',
-        'Initialize-HardnessWorkspace',
-        'Test-HardnessWorkspace',
-        'Remove-HardnessWorkspace',
-        'Get-HardnessWorkspaceConfigStatus',
-        'Get-HardnessWorkspaceConfigValue',
-        'Get-HardnessWorkspaceConfigValues',
-        'Set-HardnessWorkspaceConfigValue',
-        'Set-HardnessWorkspaceSession',
-        'Assert-HardnessWorkspaceExecution'
+        'Get-HarnessWorkspaceContext',
+        'Get-HarnessWorkspaceList',
+        'Get-HarnessWorkspaceStatus',
+        'Clear-HarnessWorkspaceCache',
+        'New-HarnessWorkspace',
+        'Initialize-HarnessWorkspace',
+        'Test-HarnessWorkspace',
+        'Remove-HarnessWorkspace',
+        'Get-HarnessWorkspaceConfigStatus',
+        'Get-HarnessWorkspaceConfigValue',
+        'Get-HarnessWorkspaceConfigValues',
+        'Set-HarnessWorkspaceConfigValue',
+        'Set-HarnessWorkspaceSession',
+        'Assert-HarnessWorkspaceExecution'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

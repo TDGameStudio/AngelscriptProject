@@ -105,14 +105,14 @@ function Assert-UnrealUbtArgumentsSafe {
         $separatorIndex = $body.IndexOfAny([char[]] @('=', ':'))
         $key = if ($separatorIndex -lt 0) { $body } else { $body.Substring(0, $separatorIndex) }
         if ($key -in @('NoMutex', 'WaitMutex', 'NoEngineChanges')) {
-            throw "UBT argument '$text' is a concurrency ownership conflict; Hardness owns '$key' through its typed build and engine-lane policy."
+            throw "UBT argument '$text' is a concurrency ownership conflict; Harness owns '$key' through its typed build and engine-lane policy."
         }
         if ($key.Equals('UniqueBuildEnvironment', [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "UBT argument '$text' is prohibited because it bypasses Hardness workspace and engine isolation."
+            throw "UBT argument '$text' is prohibited because it bypasses Harness workspace and engine isolation."
         }
         if (($text.StartsWith('-', [System.StringComparison]::Ordinal) -or $text.StartsWith('/', [System.StringComparison]::Ordinal)) -and
             $reserved.Contains($key)) {
-            throw "UBT argument '$text' is reserved or unsafe; Hardness owns '$key'."
+            throw "UBT argument '$text' is reserved or unsafe; Harness owns '$key'."
         }
     }
 }
@@ -250,7 +250,7 @@ function New-UnrealBuildOperation {
     }
 }
 
-function Invoke-HardnessUnrealUbt {
+function Invoke-HarnessUnrealUbt {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -271,7 +271,7 @@ function Invoke-HardnessUnrealUbt {
         default { 'Ubt' }
     }
     if ($operation -eq 'Build' -and @($Arguments).Count -lt 3) {
-        throw "The generic build capability requires ordered Target, Platform, and Configuration arguments; use Invoke-HardnessUnrealBuild for configured defaults."
+        throw "The generic build capability requires ordered Target, Platform, and Configuration arguments; use Invoke-HarnessUnrealBuild for configured defaults."
     }
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.BuildDefaultTimeoutMs -FallbackMs 900000
     $concurrency = Get-UnrealConcurrencyDecision -Operation $operation -EngineRoot $context.Engine.EngineRoot -Policy $ConcurrencyPolicy -InstalledEngine ([bool] $context.Engine.Installed)
@@ -322,7 +322,7 @@ function Invoke-HardnessUnrealUbt {
     return Start-UnrealRunRequest -Request $request -NoWait:$NoWait
 }
 
-function Invoke-HardnessUnrealBuild {
+function Invoke-HarnessUnrealBuild {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -401,7 +401,7 @@ function Assert-UnrealEditorArgumentsSafe {
         $body = $text.TrimStart('-', '/')
         $separator = $body.IndexOfAny([char[]] @('=', ':'))
         $key = if ($separator -lt 0) { $body } else { $body.Substring(0, $separator) }
-        if ($reserved.Contains($key)) { throw "Editor argument '$text' is reserved; Hardness owns '$key'." }
+        if ($reserved.Contains($key)) { throw "Editor argument '$text' is reserved; Harness owns '$key'." }
     }
 }
 
@@ -521,7 +521,7 @@ function New-UnrealEditorPlan {
     }
 }
 
-function Invoke-HardnessUnrealTest {
+function Invoke-HarnessUnrealTest {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -593,7 +593,7 @@ function Invoke-HardnessUnrealTest {
     return Start-UnrealRunRequest -Request $request -NoWait:$NoWait
 }
 
-function Invoke-HardnessUnrealCommandlet {
+function Invoke-HarnessUnrealCommandlet {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,

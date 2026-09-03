@@ -1,10 +1,11 @@
-$script:UnrealDriveAssignmentSchema = 'hardness-unreal-drive-assignments'
+$script:UnrealDriveAssignmentSchema = 'harness-unreal-drive-assignments'
+$script:UnrealLegacyDriveAssignmentSchema = 'hardness-unreal-drive-assignments'
 $script:UnrealDriveLetters = @([char[]](90..71) | ForEach-Object { "$_`:" })
 $script:UnrealDriveAssignmentLimit = 256
 
 function Initialize-UnrealDosDeviceInterop {
     if (-not [System.OperatingSystem]::IsWindows()) { return }
-    if ($null -ne ('Hardness.Unreal.Interop.DosDeviceNative' -as [type])) { return }
+    if ($null -ne ('Harness.Unreal.Interop.DosDeviceNative' -as [type])) { return }
     Add-Type -TypeDefinition @'
 using System;
 using System.ComponentModel;
@@ -12,7 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-namespace Hardness.Unreal.Interop
+namespace Harness.Unreal.Interop
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ByHandleFileInformation
@@ -120,13 +121,49 @@ namespace Hardness.Unreal.Interop
 }
 
 function Get-UnrealDriveAssignmentStorePath {
-    if ($env:HARDNESS_UNREAL_TEST_MODE -ceq '1' -and -not [string]::IsNullOrWhiteSpace($env:HARDNESS_UNREAL_TEST_STATE_ROOT)) {
-        $testRoot = ConvertTo-UnrealCanonicalPath -Path $env:HARDNESS_UNREAL_TEST_STATE_ROOT -AllowMissing
+    if ($env:HARNESS_UNREAL_TEST_MODE -ceq '1' -and -not [string]::IsNullOrWhiteSpace($env:HARNESS_UNREAL_TEST_STATE_ROOT)) {
+        $testRoot = ConvertTo-UnrealCanonicalPath -Path $env:HARNESS_UNREAL_TEST_STATE_ROOT -AllowMissing
         return Join-Path $testRoot 'DriveAssignments.json'
     }
     $base = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-    if ([string]::IsNullOrWhiteSpace($base)) { throw 'LOCALAPPDATA is unavailable for the Hardness drive-assignment registry.' }
+    if ([string]::IsNullOrWhiteSpace($base)) { throw 'LOCALAPPDATA is unavailable for the Harness drive-assignment registry.' }
+    return Join-Path $base 'TDGameStudio/Harness/Unreal/DriveAssignments.json'
+}
+
+function Get-UnrealLegacyDriveAssignmentStorePath {
+    if ($env:HARNESS_UNREAL_TEST_MODE -ceq '1') {
+        $legacyTestRoot = if (-not [string]::IsNullOrWhiteSpace($env:HARNESS_UNREAL_TEST_LEGACY_STATE_ROOT)) {
+            ConvertTo-UnrealCanonicalPath -Path $env:HARNESS_UNREAL_TEST_LEGACY_STATE_ROOT -AllowMissing
+        }
+        else {
+            Join-Path (ConvertTo-UnrealCanonicalPath -Path $env:HARNESS_UNREAL_TEST_STATE_ROOT -AllowMissing) 'LegacyHardness'
+        }
+        return Join-Path $legacyTestRoot 'DriveAssignments.json'
+    }
+    $base = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+    if ([string]::IsNullOrWhiteSpace($base)) { throw 'LOCALAPPDATA is unavailable for the legacy Hardness drive-assignment registry.' }
     return Join-Path $base 'TDGameStudio/Hardness/Unreal/DriveAssignments.json'
+}
+
+function Initialize-UnrealDriveAssignmentStoreMigration {
+    $currentPath = Get-UnrealDriveAssignmentStorePath
+    $legacyPath = Get-UnrealLegacyDriveAssignmentStorePath
+    if (Test-UnrealPathEqual -Left $currentPath -Right $legacyPath) { return $false }
+    if (-not (Test-Path -LiteralPath $legacyPath -PathType Leaf)) { return $false }
+
+    if (Test-Path -LiteralPath $currentPath -PathType Leaf) {
+        $legacyBytes = [System.IO.File]::ReadAllBytes($legacyPath)
+        $currentBytes = [System.IO.File]::ReadAllBytes($currentPath)
+        if ([Convert]::ToBase64String($legacyBytes) -ceq [Convert]::ToBase64String($currentBytes)) { return $false }
+        throw "Legacy Hardness and current Harness drive-assignment registries conflict; refusing to overwrite either file: '$legacyPath' and '$currentPath'."
+    }
+
+    $currentDirectory = Split-Path -Parent $currentPath
+    if (-not (Test-Path -LiteralPath $currentDirectory -PathType Container)) {
+        [void](New-Item -ItemType Directory -Path $currentDirectory -Force)
+    }
+    Move-Item -LiteralPath $legacyPath -Destination $currentPath
+    return $true
 }
 
 function New-UnrealDriveAssignmentStore {
@@ -141,7 +178,8 @@ function Read-UnrealDriveAssignmentStore {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return New-UnrealDriveAssignmentStore }
     if ((Get-Item -LiteralPath $path).Length -gt (1024 * 1024)) { throw "Drive-assignment registry exceeds 1 MiB: $path" }
     $store = Read-UnrealJsonFile -Path $path
-    if ([string] $store.schemaVersion -cne $script:UnrealDriveAssignmentSchema) {
+    if ([string] $store.schemaVersion -cne $script:UnrealDriveAssignmentSchema -and
+        [string] $store.schemaVersion -cne $script:UnrealLegacyDriveAssignmentSchema) {
         throw "Unsupported drive-assignment registry schema: $($store.schemaVersion)"
     }
     $assignments = @($store.assignments)
@@ -231,7 +269,7 @@ function Get-UnrealDosDeviceTarget {
     param([Parameter(Mandatory = $true)][ValidatePattern('^[G-Z]:$')][string] $DriveLetter)
     if (-not [System.OperatingSystem]::IsWindows()) { return '' }
     Initialize-UnrealDosDeviceInterop
-    $raw = [Hardness.Unreal.Interop.DosDeviceNative]::Query($DriveLetter.ToUpperInvariant())
+    $raw = [Harness.Unreal.Interop.DosDeviceNative]::Query($DriveLetter.ToUpperInvariant())
     $value = if ($null -eq $raw) { '' } else { [string] $raw }
     return $value
 }
@@ -324,7 +362,7 @@ function Remove-UnrealStaleDriveAssignments {
         $target = Get-UnrealDosDeviceTarget -DriveLetter ([string] $assignment.driveLetter)
         if (-not [string]::IsNullOrWhiteSpace($target) -and [bool] $assignment.mappingOwned -and
             (Test-UnrealDosDeviceTargetsWorkspace -RawTarget $target -WorkspaceRoot $workspace) -and $ownerState -eq 'Stale') {
-            try { [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact([string] $assignment.driveLetter, [string] $assignment.rawTarget) }
+            try { [Harness.Unreal.Interop.DosDeviceNative]::RemoveExact([string] $assignment.driveLetter, [string] $assignment.rawTarget) }
             catch { }
         }
         if ($identityExists) {
@@ -433,6 +471,7 @@ function Get-UnrealExecutionPath {
         if ($Assign) {
             $lease = Enter-UnrealLease -Scope 'drive-registry' -Key (Get-UnrealDriveAssignmentStorePath) -Policy Wait -TimeoutMs 10000
             if ($null -eq $lease) { throw 'Timed out acquiring the drive-assignment registry lease.' }
+            [void](Initialize-UnrealDriveAssignmentStoreMigration)
         }
         $store = Read-UnrealDriveAssignmentStore
         if ($Assign) { $store = Remove-UnrealStaleDriveAssignments -Store $store }
@@ -488,8 +527,8 @@ function Assert-UnrealSameFileIdentity {
         [Parameter(Mandatory = $true)][string] $ExecutionPath
     )
     Initialize-UnrealDosDeviceInterop
-    $physicalIdentity = [Hardness.Unreal.Interop.DosDeviceNative]::FileIdentity($PhysicalPath)
-    $executionIdentity = [Hardness.Unreal.Interop.DosDeviceNative]::FileIdentity($ExecutionPath)
+    $physicalIdentity = [Harness.Unreal.Interop.DosDeviceNative]::FileIdentity($PhysicalPath)
+    $executionIdentity = [Harness.Unreal.Interop.DosDeviceNative]::FileIdentity($ExecutionPath)
     if ($physicalIdentity -cne $executionIdentity) {
         throw "Execution project file does not resolve to the configured project file: $ExecutionPath"
     }
@@ -533,7 +572,7 @@ function Enter-UnrealExecutionDriveMapping {
     if ([string]::IsNullOrWhiteSpace($raw)) {
         Set-UnrealDriveMappingIntent -Execution $Execution -RunId $RunId
         Initialize-UnrealDosDeviceInterop
-        [Hardness.Unreal.Interop.DosDeviceNative]::Create($drive, [string] $Execution.rawTarget)
+        [Harness.Unreal.Interop.DosDeviceNative]::Create($drive, [string] $Execution.rawTarget)
         $created = $true
         $mappingState = 'Owned'
     }
@@ -575,7 +614,7 @@ function Enter-UnrealExecutionDriveMapping {
             try {
                 $current = Get-UnrealDosDeviceTarget -DriveLetter $drive
                 if (Test-UnrealDosDeviceTargetsWorkspace -RawTarget $current -WorkspaceRoot ([string] $Execution.physicalWorkspaceRoot)) {
-                    [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact($drive, [string] $Execution.rawTarget)
+                    [Harness.Unreal.Interop.DosDeviceNative]::RemoveExact($drive, [string] $Execution.rawTarget)
                 }
             }
             catch { }
@@ -600,7 +639,7 @@ function Exit-UnrealExecutionDriveMapping {
         $target = Get-UnrealDosDeviceTarget -DriveLetter ([string] $execution.driveLetter)
         if ([bool] $record[0].mappingOwned -and (Test-UnrealDosDeviceTargetsWorkspace -RawTarget $target -WorkspaceRoot ([string] $execution.physicalWorkspaceRoot))) {
             Initialize-UnrealDosDeviceInterop
-            [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact([string] $execution.driveLetter, [string] $execution.rawTarget)
+            [Harness.Unreal.Interop.DosDeviceNative]::RemoveExact([string] $execution.driveLetter, [string] $execution.rawTarget)
         }
         $record[0].ownerRunId = ''
         $record[0].ownerPid = $null

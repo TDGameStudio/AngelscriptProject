@@ -5,7 +5,7 @@ description: Verify an OpenSpec change for completion or evaluate an explicitly 
 
 # Verify a Change
 
-Use the portable CLI through Hardness as defined by the `openspec` skill.
+Use the portable CLI through Harness as defined by the `openspec` skill.
 
 ## Completion verification
 
@@ -17,11 +17,11 @@ Use the portable CLI through Hardness as defined by the `openspec` skill.
 ```text
 verified scope
   -> local defect -> repair and verify inside the task
-  -> planning-invalidating evidence -> Hardness Replan
+  -> planning-invalidating evidence -> Harness Replan
   -> otherwise -> direct closure and archive
 ```
 
-Hardness never auto-starts an Incident or Final Review. A completed Change does not need a Review file, impact classification, or not-required Review placeholder.
+Harness never auto-starts an Incident or Final Review. A completed Change does not need a Review file, impact classification, or not-required Review placeholder.
 
 ## Explicit Review
 
@@ -29,4 +29,4 @@ Enter Review only after an explicit user or external-agent request. Fix the revi
 
 The Review may run inline or asynchronously. Async is optional. A reviewer may create or complete only its unique assigned Review file against the immutable snapshot; it must not edit code, planning artifacts, INDEX, implementation records, Replans, or existing Reviews. The main thread may continue disjoint work while an asynchronous Review runs.
 
-A finding never directly triggers Replan. Hardness validates the snapshot and evidence, fixes local defects, and Replans only when accepted requirements, design, Task DAG, verification contract, or another planning truth is invalid. Before archive, every existing Review is closed or superseded, with no open or deferred Critical or Required finding and with required resolution evidence retained.
+A finding never directly triggers Replan. Harness validates the snapshot and evidence, fixes local defects, and Replans only when accepted requirements, design, Task DAG, verification contract, or another planning truth is invalid. Before archive, every existing Review is closed or superseded, with no open or deferred Critical or Required finding and with required resolution evidence retained.

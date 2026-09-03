@@ -137,7 +137,7 @@ function Test-GitRepository {
     return $probe.ExitCode -eq 0 -and (Test-GitPathEqual -Left ([string]($probe.Output | Select-Object -Last 1)) -Right $Path)
 }
 
-function Get-HardnessGitStatus {
+function Get-HarnessGitStatus {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot)
     $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
@@ -272,7 +272,7 @@ function Get-GitOutsideStagedSnapshot {
         )).Output | ForEach-Object { [string]$_ })
         [Array]::Sort($metadata, [System.StringComparer]::Ordinal)
 
-        $patchPath = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-git-staged-{0}.patch" -f [guid]::NewGuid().ToString('N'))
+        $patchPath = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-git-staged-{0}.patch" -f [guid]::NewGuid().ToString('N'))
         try {
             [void](Invoke-GitOperation -Repository $Repository -Arguments (
                 @(
@@ -359,7 +359,7 @@ function Assert-GitCommitPathsCovered {
     return $changedPaths
 }
 
-function Complete-HardnessGitCommit {
+function Complete-HarnessGitCommit {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
@@ -582,7 +582,7 @@ function Complete-HardnessGitCommit {
         }
     }
 
-    $finalStatus = Get-HardnessGitStatus -WorkspaceRoot $root
+    $finalStatus = Get-HarnessGitStatus -WorkspaceRoot $root
     $scopedGitStateComplete = $true
     foreach ($repoKey in $scopes.Keys) {
         $remainingState = Get-GitPathState -Repository $repositories[$repoKey]
@@ -633,7 +633,7 @@ function Get-GitCrossRepositoryComparison {
         [Parameter(Mandatory = $true)][string]$SourceRepository,
         [Parameter(Mandatory = $true)][string]$SourceHead
     )
-    $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-git-compare-{0}" -f [guid]::NewGuid().ToString('N'))
+    $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-git-compare-{0}" -f [guid]::NewGuid().ToString('N'))
     [void][System.IO.Directory]::CreateDirectory($scratch)
     try {
         [void](Invoke-GitOperation -Repository $scratch -Arguments @('init', '--bare'))
@@ -654,7 +654,7 @@ function Get-GitCrossRepositoryComparison {
     }
 }
 
-function Merge-HardnessGitWorkspace {
+function Merge-HarnessGitWorkspace {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
@@ -687,7 +687,7 @@ function Merge-HardnessGitWorkspace {
     if ((Get-GitBranch $targetRoot) -ne $targetBranch) { throw "Primary workspace is not on target branch '$targetBranch'." }
     $actualSourceHead = Get-GitHead -Repository $sourceRoot
     if ($actualSourceHead -ne $ExpectedSourceHead.ToLowerInvariant()) { throw "Source workspace HEAD '$actualSourceHead' does not match reviewed ExpectedSourceHead '$ExpectedSourceHead'." }
-    $sourceStatus = Get-HardnessGitStatus -WorkspaceRoot $sourceRoot
+    $sourceStatus = Get-HarnessGitStatus -WorkspaceRoot $sourceRoot
     if ($sourceStatus.Dirty) { throw 'Source workspace or one of its initialized submodules is dirty.' }
     $targetState = Get-GitPathState -Repository $targetRoot
     if ($targetState.Staged.Count -gt 0) { throw "Primary target has staged changes: $($targetState.Staged -join ', ')" }
@@ -813,14 +813,14 @@ function Merge-HardnessGitWorkspace {
             [void](Invoke-GitOperation -Repository $targetRoot -Arguments @('add', '--', $plan.Repository))
         }
         $sourceLabel = Split-Path -Leaf $sourceRoot
-        $message = if ([string]::IsNullOrWhiteSpace($CommitMessage)) { "[Hardness] Refactor: integrate workspace $sourceLabel" } else { $CommitMessage }
+        $message = if ([string]::IsNullOrWhiteSpace($CommitMessage)) { "[Harness] Refactor: integrate workspace $sourceLabel" } else { $CommitMessage }
         [void](Invoke-GitOperation -Repository $targetRoot -Arguments @('commit', '-m', $message))
         $completed.Add([pscustomobject]@{ Repository = '.'; Action = $parentPlan.Action; Head = Get-GitHead $targetRoot }) | Out-Null
     }
     return [pscustomobject]@{ WorkspaceRoot = $targetRoot; SourceWorkspaceRoot = $sourceRoot; SourceHead = $actualSourceHead; Preview = $false; Plans = @($plans | ForEach-Object { $_ }); Completed = @($completed | ForEach-Object { $_ }); Integrated = $true; RemoteChanged = $false; SourcePreserved = (Test-Path -LiteralPath $sourceRoot -PathType Container) }
 }
 
-function Publish-HardnessGitBranches {
+function Publish-HarnessGitBranches {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot,
@@ -884,8 +884,8 @@ function Publish-HardnessGitBranches {
 }
 
 Export-ModuleMember -Function @(
-    'Get-HardnessGitStatus',
-    'Complete-HardnessGitCommit',
-    'Merge-HardnessGitWorkspace',
-    'Publish-HardnessGitBranches'
+    'Get-HarnessGitStatus',
+    'Complete-HarnessGitCommit',
+    'Merge-HarnessGitWorkspace',
+    'Publish-HarnessGitBranches'
 )

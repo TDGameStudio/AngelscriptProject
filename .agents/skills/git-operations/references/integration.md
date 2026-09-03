@@ -10,11 +10,11 @@ $parameters = @{
     '.' = 'main'
     'Plugins/Angelscript' = 'main'
   }
-  CommitMessage = '[Hardness] Refactor: integrate refactor-example'
+  CommitMessage = '[Harness] Refactor: integrate refactor-example'
 }
 
-Invoke-Hardness -Command git.integrate -Context $primary -Parameters ($parameters + @{ WhatIf = $true })
-Invoke-Hardness -Command git.integrate -Context $primary -Parameters $parameters
+Invoke-Harness -Command git.integrate -Context $primary -Parameters ($parameters + @{ WhatIf = $true })
+Invoke-Harness -Command git.integrate -Context $primary -Parameters $parameters
 ```
 
 Target branches are explicit because a detached submodule may intentionally target a branch other than its remote default.
@@ -28,7 +28,7 @@ Integration never pushes, deletes a source branch, removes a source worktree, or
 Only invoke this route after the user explicitly requests push/publication:
 
 ```powershell
-Invoke-Hardness -Command git.push -Context $primary -Parameters @{
+Invoke-Harness -Command git.push -Context $primary -Parameters @{
   RepositoryBranches = @{
     'Plugins/Angelscript' = 'main'
     '.' = 'main'

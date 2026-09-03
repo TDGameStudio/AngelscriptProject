@@ -1,11 +1,11 @@
 ---
 name: openspec-update-change
-description: Revise existing OpenSpec planning artifacts when scope, requirements, design, evidence, or the Task DAG changes. Use for an explicit plan update or an evidence-gated Hardness replan; do not implement code in this skill.
+description: Revise existing OpenSpec planning artifacts when scope, requirements, design, evidence, or the Task DAG changes. Use for an explicit plan update or an evidence-gated Harness replan; do not implement code in this skill.
 ---
 
 # Update a Change
 
-Use the portable CLI through Hardness as defined by the `openspec` skill.
+Use the portable CLI through Harness as defined by the `openspec` skill.
 
 1. Select the explicit Change or resolve the canonical active Change in the selected workspace, then read `status --json`, the existing proposal/specs/design/tasks, and `attachments/INDEX.md`.
 2. Load only the attachment or finding that triggered the update. Verify its snapshot and evidence before changing current truth.

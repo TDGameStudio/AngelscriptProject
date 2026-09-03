@@ -46,7 +46,7 @@ Focused authoring contracts are separate so they load only when needed:
 - [implementation-issues.md](implementation-issues.md) owns material problem history during implementation, verification, or review repair.
 - [knowledge.md](knowledge.md) owns explicit promotion from change evidence to capability knowledge and, only for cross-capability invariants, project instructions.
 
-There is no independent schema Skill and no project-level `openspec/knowledges/` tree. The portable CLI validates record structure and Task DAGs; Hardness protocol tests own attachment and knowledge policy that the CLI does not parse.
+There is no independent schema Skill and no project-level `openspec/knowledges/` tree. The portable CLI validates record structure and Task DAGs; Harness protocol tests own attachment and knowledge policy that the CLI does not parse.
 
 ## Instructions output
 

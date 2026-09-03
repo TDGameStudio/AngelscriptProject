@@ -60,7 +60,7 @@ function New-UnrealMeasureFixture {
     [System.IO.File]::WriteAllText((Join-Path $workspace 'Source/FixtureEditor.Target.cs'), "public class FixtureEditorTarget {}`n", $utf8)
     Invoke-MeasureGit -Repository $workspace -Arguments @('add', '--', '.gitignore', 'Fixture.uproject', 'Source/FixtureEditor.Target.cs')
     Invoke-MeasureGit -Repository $workspace -Arguments @(
-        '-c', 'user.name=Hardness Fixture',
+        '-c', 'user.name=Harness Fixture',
         '-c', 'user.email=fixture@example.invalid',
         'commit', '-m', 'fixture'
     )
@@ -93,15 +93,15 @@ ProjectFile=$projectFile
 [Test]
 DefaultTimeoutMs=120000
 
-[Hardness]
-SchemaVersion=2
+[Harness]
+SchemaVersion=3
 WorkspaceRoot=$workspace
 PrimaryRoot=$workspace
 GitCommonDir=$gitCommonDir
 "@
     [System.IO.File]::WriteAllText((Join-Path $workspace 'AgentConfig.ini'), $configuration, $utf8)
 
-    $runsRoot = Join-Path $workspace 'Saved/Hardness/Unreal/Runs'
+    $runsRoot = Join-Path $workspace 'Saved/Harness/Unreal/Runs'
     $runRoot = Join-Path $runsRoot '11111111111111111111111111111111'
     [void][System.IO.Directory]::CreateDirectory($runRoot)
     $ubtLog = Join-Path $runRoot 'Ubt.log'
@@ -225,9 +225,9 @@ $workspaceSkillRoot = [System.IO.Path]::GetFullPath((Join-Path $skillRoot '../wo
 $workspaceManifest = Join-Path $workspaceSkillRoot 'scripts/WorkspaceLifecycle.psd1'
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $skillRoot '../../..'))
 $temporaryBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/')
-$fixtureRoot = Join-Path $temporaryBase ("hardness-unreal-measure-{0}" -f [guid]::NewGuid().ToString('N'))
+$fixtureRoot = Join-Path $temporaryBase ("harness-unreal-measure-{0}" -f [guid]::NewGuid().ToString('N'))
 $savedSelection = @{}
-foreach ($name in @('HARDNESS_WORKSPACE_ROOT', 'HARDNESS_PRIMARY_ROOT', 'HARDNESS_GIT_COMMON_DIR')) {
+foreach ($name in @('HARNESS_WORKSPACE_ROOT', 'HARNESS_PRIMARY_ROOT', 'HARNESS_GIT_COMMON_DIR')) {
     $savedSelection[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 
@@ -245,24 +245,24 @@ try {
         Assert-Measure -Condition ($null -ne (Get-Module UnrealEngineDevelop)) -Message 'Unreal module import did not produce the expected module'
     }))
 
-    $measurements.Add((Invoke-MeasuredOperation -Id 'fixture-status' -Operation 'Get-HardnessUnrealStatus -WorkspaceRoot <fixture>' -Action {
-        $status = Get-HardnessUnrealStatus -WorkspaceRoot $fixture.WorkspaceRoot
+    $measurements.Add((Invoke-MeasuredOperation -Id 'fixture-status' -Operation 'Get-HarnessUnrealStatus -WorkspaceRoot <fixture>' -Action {
+        $status = Get-HarnessUnrealStatus -WorkspaceRoot $fixture.WorkspaceRoot
         Assert-Measure -Condition ([bool] $status.Ready) -Message 'fixture Unreal status is not ready'
     }))
-    $measurements.Add((Invoke-MeasuredOperation -Id 'source-target-scan' -Operation 'Get-HardnessUnrealTargetList -WorkspaceRoot <fixture>' -Action {
-        $targets = @(Get-HardnessUnrealTargetList -WorkspaceRoot $fixture.WorkspaceRoot)
+    $measurements.Add((Invoke-MeasuredOperation -Id 'source-target-scan' -Operation 'Get-HarnessUnrealTargetList -WorkspaceRoot <fixture>' -Action {
+        $targets = @(Get-HarnessUnrealTargetList -WorkspaceRoot $fixture.WorkspaceRoot)
         Assert-Measure -Condition ($targets.Count -eq 1 -and [string] $targets[0].Name -ceq 'FixtureEditor' -and [string] $targets[0].Source -ceq 'SourceScan') -Message 'source-only target scan was not exact'
     }))
-    $measurements.Add((Invoke-MeasuredOperation -Id 'bounded-process-scan' -Operation "Get-HardnessUnrealProcessList -WorkspaceRoot <fixture> -Limit $ProcessLimit" -Action {
-        $processes = @(Get-HardnessUnrealProcessList -WorkspaceRoot $fixture.WorkspaceRoot -Limit $ProcessLimit)
+    $measurements.Add((Invoke-MeasuredOperation -Id 'bounded-process-scan' -Operation "Get-HarnessUnrealProcessList -WorkspaceRoot <fixture> -Limit $ProcessLimit" -Action {
+        $processes = @(Get-HarnessUnrealProcessList -WorkspaceRoot $fixture.WorkspaceRoot -Limit $ProcessLimit)
         Assert-Measure -Condition ($processes.Count -le $ProcessLimit) -Message 'process scan exceeded its public result bound'
     }))
-    $measurements.Add((Invoke-MeasuredOperation -Id 'suite-plan' -Operation 'New-HardnessUnrealSuitePlan -WorkspaceRoot <fixture> -Suite Smoke' -Action {
-        $plan = New-HardnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke
-        Assert-Measure -Condition ([string] $plan.SchemaVersion -ceq 'hardness-unreal-suite-plan' -and [string] $plan.Suite -ceq 'Smoke' -and $plan.EntryCount -gt 0) -Message 'suite plan contract was not exact'
+    $measurements.Add((Invoke-MeasuredOperation -Id 'suite-plan' -Operation 'New-HarnessUnrealSuitePlan -WorkspaceRoot <fixture> -Suite Smoke' -Action {
+        $plan = New-HarnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke
+        Assert-Measure -Condition ([string] $plan.SchemaVersion -ceq 'harness-unreal-suite-plan' -and [string] $plan.Suite -ceq 'Smoke' -and $plan.EntryCount -gt 0) -Message 'suite plan contract was not exact'
     }))
-    $measurements.Add((Invoke-MeasuredOperation -Id 'typed-build-plan' -Operation 'Invoke-HardnessUnrealBuild -WorkspaceRoot <fixture> -PlanOnly' -Action {
-        $plan = Invoke-HardnessUnrealBuild -WorkspaceRoot $fixture.WorkspaceRoot -PlanOnly
+    $measurements.Add((Invoke-MeasuredOperation -Id 'typed-build-plan' -Operation 'Invoke-HarnessUnrealBuild -WorkspaceRoot <fixture> -PlanOnly' -Action {
+        $plan = Invoke-HarnessUnrealBuild -WorkspaceRoot $fixture.WorkspaceRoot -PlanOnly
         Assert-Measure -Condition ([bool] $plan.PlanOnly -and [string] $plan.Operation -ceq 'Build' -and [string] $plan.Target -ceq 'FixtureEditor') -Message 'typed build PlanOnly contract was not exact'
     }))
     $measurements.Add((Invoke-MeasuredOperation -Id 'contained-progress-parse' -Operation 'Get-UnrealBuildProgressSnapshot(<contained fixture run paths>)' -Action {
@@ -272,8 +272,8 @@ try {
         Assert-Measure -Condition ([long] $progress.BytesInspected -le (256 * 1024)) -Message 'progress parser exceeded its bounded tail'
     }))
 
-    $suitePlanA = New-HardnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke | ConvertTo-Json -Depth 20 -Compress
-    $suitePlanB = New-HardnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke | ConvertTo-Json -Depth 20 -Compress
+    $suitePlanA = New-HarnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke | ConvertTo-Json -Depth 20 -Compress
+    $suitePlanB = New-HarnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke | ConvertTo-Json -Depth 20 -Compress
     Assert-Measure -Condition ($suitePlanA -ceq $suitePlanB) -Message 'identical suite planning inputs did not produce byte-identical JSON'
 
     $unrealSourceFiles = @(
@@ -289,11 +289,11 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($ActualWorkspaceRoot)) {
         $actualRoot = (Resolve-Path -LiteralPath $ActualWorkspaceRoot -ErrorAction Stop).Path
         Import-Module $workspaceManifest -Force -ErrorAction Stop
-        [void](Set-HardnessWorkspaceSession -ProjectRoot $actualRoot)
+        [void](Set-HarnessWorkspaceSession -ProjectRoot $actualRoot)
         $activated = $true
 
-        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'status' -Operation 'Get-HardnessUnrealStatus -WorkspaceRoot <actual-workspace>' -Action {
-            $status = Get-HardnessUnrealStatus -WorkspaceRoot $actualRoot
+        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'status' -Operation 'Get-HarnessUnrealStatus -WorkspaceRoot <actual-workspace>' -Action {
+            $status = Get-HarnessUnrealStatus -WorkspaceRoot $actualRoot
             [pscustomobject][ordered]@{
                 Ready      = [bool] $status.Ready
                 EngineKind = [string] $status.Engine.Kind
@@ -301,20 +301,20 @@ try {
                 ErrorCount = @($status.Errors).Count
             }
         }))
-        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'source-target-scan' -Operation 'Get-HardnessUnrealTargetList -WorkspaceRoot <actual-workspace>' -Action {
-            $targets = @(Get-HardnessUnrealTargetList -WorkspaceRoot $actualRoot)
+        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'source-target-scan' -Operation 'Get-HarnessUnrealTargetList -WorkspaceRoot <actual-workspace>' -Action {
+            $targets = @(Get-HarnessUnrealTargetList -WorkspaceRoot $actualRoot)
             [pscustomobject][ordered]@{ Count = $targets.Count; Names = @($targets.Name | Sort-Object) }
         }))
-        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'bounded-process-scan' -Operation "Get-HardnessUnrealProcessList -WorkspaceRoot <actual-workspace> -Limit $ProcessLimit" -Action {
-            $processes = @(Get-HardnessUnrealProcessList -WorkspaceRoot $actualRoot -Limit $ProcessLimit)
+        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'bounded-process-scan' -Operation "Get-HarnessUnrealProcessList -WorkspaceRoot <actual-workspace> -Limit $ProcessLimit" -Action {
+            $processes = @(Get-HarnessUnrealProcessList -WorkspaceRoot $actualRoot -Limit $ProcessLimit)
             [pscustomobject][ordered]@{
                 Count           = $processes.Count
                 RecognizedBuild = @($processes | Where-Object RecognizedBuild).Count
                 ProgressKnown   = @($processes | Where-Object { $_.Progress.ProgressKnown }).Count
             }
         }))
-        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'suite-plan' -Operation 'New-HardnessUnrealSuitePlan -WorkspaceRoot <actual-workspace> -Suite Smoke' -Action {
-            $plan = New-HardnessUnrealSuitePlan -WorkspaceRoot $actualRoot -Suite Smoke
+        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'suite-plan' -Operation 'New-HarnessUnrealSuitePlan -WorkspaceRoot <actual-workspace> -Suite Smoke' -Action {
+            $plan = New-HarnessUnrealSuitePlan -WorkspaceRoot $actualRoot -Suite Smoke
             [pscustomobject][ordered]@{
                 SchemaVersion = [string] $plan.SchemaVersion
                 Suite         = [string] $plan.Suite
@@ -323,8 +323,8 @@ try {
                 Execution     = [string] $plan.Execution
             }
         }))
-        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'typed-build-plan' -Operation 'Invoke-HardnessUnrealBuild -WorkspaceRoot <actual-workspace> -PlanOnly' -Action {
-            $plan = Invoke-HardnessUnrealBuild -WorkspaceRoot $actualRoot -PlanOnly
+        $actualChecks.Add((Invoke-ActualWorkspaceCheck -Id 'typed-build-plan' -Operation 'Invoke-HarnessUnrealBuild -WorkspaceRoot <actual-workspace> -PlanOnly' -Action {
+            $plan = Invoke-HarnessUnrealBuild -WorkspaceRoot $actualRoot -PlanOnly
             Assert-Measure -Condition ([bool] $plan.PlanOnly) -Message 'actual workspace build route did not remain PlanOnly'
             [pscustomobject][ordered]@{
                 PlanOnly        = [bool] $plan.PlanOnly
@@ -340,7 +340,7 @@ try {
     }
 
     $document = [pscustomobject][ordered]@{
-        SchemaVersion = 'hardness-unreal-workflow-measurement'
+        SchemaVersion = 'harness-unreal-workflow-measurement'
         Environment   = [pscustomobject][ordered]@{
             PSEdition      = [string] $PSVersionTable.PSEdition
             PSVersion      = [string] $PSVersionTable.PSVersion
@@ -388,7 +388,7 @@ try {
     }
 
     [pscustomobject][ordered]@{
-        SchemaVersion = 'hardness-unreal-workflow-measurement-result'
+        SchemaVersion = 'harness-unreal-workflow-measurement-result'
         RawJsonSha256 = $rawHash
         RawJson       = $rawJson
         Data          = $document
@@ -404,7 +404,7 @@ finally {
         $resolvedFixture = [System.IO.Path]::GetFullPath($fixtureRoot).TrimEnd('\', '/')
         $temporaryPrefix = $temporaryBase + [System.IO.Path]::DirectorySeparatorChar
         if (-not $resolvedFixture.StartsWith($temporaryPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
-            -not [System.IO.Path]::GetFileName($resolvedFixture).StartsWith('hardness-unreal-measure-', [System.StringComparison]::Ordinal)) {
+            -not [System.IO.Path]::GetFileName($resolvedFixture).StartsWith('harness-unreal-measure-', [System.StringComparison]::Ordinal)) {
             throw "Refusing to remove unexpected measurement fixture path: $resolvedFixture"
         }
         Remove-Item -LiteralPath $resolvedFixture -Recurse -Force

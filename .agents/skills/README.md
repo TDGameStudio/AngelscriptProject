@@ -1,6 +1,6 @@
 # AngelscriptProject Skills
 
-`hardness` is the project entrypoint. It selects a static route and loads only the matching leaf Skill/reference. It is not a daemon, workflow database, or custom agent loop.
+`harness` is the project entrypoint. It selects a static route and loads only the matching leaf Skill/reference. It is not a daemon, workflow database, or custom agent loop.
 
 The prepared harness requires PowerShell 7.0 or later (`Core`) and uses `pwsh.exe`; Windows PowerShell 5.1 is not a supported Skill host.
 
@@ -12,23 +12,23 @@ Codex /goal -> external unattended continuation of the same workspace lifecycle;
 
 Workspace selection and Codex `/goal` continuation never automatically integrate, push, publish, or remove a worktree. Integration, non-force push, and cleanup are separate user-requested operations.
 
-## Hardness command surface
+## Harness command surface
 
 ```text
 workspace.{status,list,new,bootstrap,verify,remove,activate,config.status,config.get,config.set}
 git.{status,commit,integrate,push}
 openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,completion}
 task.status
-hardness.{status,observe,evolution.status}
+harness.{status,observe,evolution.status}
 openspec.maintenance.status
 ue.{status,engine.list,target.list,process.list,ubt.capabilities,ubt.invoke,build,test,commandlet,suite.list,suite.plan,suite.run,run.status,run.cancel}
 ```
 
-Every `ue.*` route uses the selected Hardness workspace, lazy-loads one maintained Unreal module, and rejects a mismatched caller-supplied root. Use `PlanOnly` before execution, `NoWait` for an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for bounded machine-wide UE/UBT visibility. Progress remains explicitly unknown when a process cannot be correlated to trusted run-local evidence.
+Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintained Unreal module, and rejects a mismatched caller-supplied root. Use `PlanOnly` before execution, `NoWait` for an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for bounded machine-wide UE/UBT visibility. Progress remains explicitly unknown when a process cannot be correlated to trusted run-local evidence.
 
 ## Supporting Skills
 
-- `hardness` — context, command routing, result envelope, and progressive-loading rules.
+- `harness` — context, command routing, result envelope, and progressive-loading rules.
 - `workspace-lifecycle` — workspace identity, exact submodule bootstrap, local configuration, session activation, verification, and explicit cleanup.
 - `git-operations` — scoped parent/submodule commits, reviewed local integration, and explicit non-force push.
 - `unreal-engine-develop` — UE 5.8 discovery, typed builds, Automation tests and suites, commandlets, UBT capabilities, process observation, progress, and explicit cancellation through `ue.*` routes.
@@ -40,7 +40,7 @@ Every `ue.*` route uses the selected Hardness workspace, lazy-loads one maintain
 
 ## OpenSpec lifecycle Skills
 
-OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. A Codex `/goal` may continue that work unattended but does not create a second lifecycle. The portable Rust CLI provides deterministic record primitives; Hardness owns orchestration, evidence-gated Replan, and explicit Review intake.
+OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. A Codex `/goal` may continue that work unattended but does not create a second lifecycle. The portable Rust CLI provides deterministic record primitives; Harness owns orchestration, evidence-gated Replan, and explicit Review intake.
 
 For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation.
 
@@ -63,5 +63,5 @@ Record schemas are focused references under `openspec/references/`, not an indep
 
 - Skills, references, and maintained OpenSpec records are English; only files explicitly named with exact uppercase `_ZH` remain temporarily exempt.
 - Validate every changed Skill with the system `quick_validate.py` and execute changed scripts against controlled inputs.
-- Root `Tools` PowerShell entrypoints are legacy deletion candidates and are not the live Hardness command surface. `Tools/openspec` is the intentional tracked-source exception: commit/tag that submodule first, while runtime uses `.agents/skills/openspec/bin/openspec.exe`. For each release, the parent records only one final accepted package commit containing the gitlink, manifest/docs, and bundled EXE; never stage or commit candidate EXE builds.
+- Root `Tools` PowerShell entrypoints are legacy deletion candidates and are not the live Harness command surface. `Tools/openspec` is the intentional tracked-source exception: commit/tag that submodule first, while runtime uses `.agents/skills/openspec/bin/openspec.exe`. For each release, the parent records only one final accepted package commit containing the gitlink, manifest/docs, and bundled EXE; never stage or commit candidate EXE builds.
 - Keep entry Skills short. Move conditional schemas or procedures to a linked reference and load only the one needed.

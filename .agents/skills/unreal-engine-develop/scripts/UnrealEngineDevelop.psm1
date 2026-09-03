@@ -6,8 +6,8 @@ $ErrorActionPreference = 'Stop'
 
 $script:UnrealSkillRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $script:UnrealDataRoot = Join-Path $script:UnrealSkillRoot 'data'
-$script:UnrealRunSchema = 'hardness-unreal-run'
-$script:UnrealRequestSchema = 'hardness-unreal-request'
+$script:UnrealRunSchema = 'harness-unreal-run'
+$script:UnrealRequestSchema = 'harness-unreal-request'
 $script:UnrealTerminalStates = @('Succeeded', 'Failed', 'TimedOut', 'Cancelled')
 
 foreach ($privateFile in @(
@@ -28,18 +28,18 @@ foreach ($privateFile in @(
 }
 
 Export-ModuleMember -Function @(
-    'Get-HardnessUnrealStatus'
-    'Get-HardnessUnrealEngineList'
-    'Get-HardnessUnrealTargetList'
-    'Get-HardnessUnrealProcessList'
-    'Get-HardnessUnrealUbtCapabilities'
-    'Invoke-HardnessUnrealUbt'
-    'Invoke-HardnessUnrealBuild'
-    'Invoke-HardnessUnrealTest'
-    'Get-HardnessUnrealSuiteList'
-    'New-HardnessUnrealSuitePlan'
-    'Invoke-HardnessUnrealSuite'
-    'Invoke-HardnessUnrealCommandlet'
-    'Get-HardnessUnrealRunStatus'
-    'Stop-HardnessUnrealRun'
+    'Get-HarnessUnrealStatus'
+    'Get-HarnessUnrealEngineList'
+    'Get-HarnessUnrealTargetList'
+    'Get-HarnessUnrealProcessList'
+    'Get-HarnessUnrealUbtCapabilities'
+    'Invoke-HarnessUnrealUbt'
+    'Invoke-HarnessUnrealBuild'
+    'Invoke-HarnessUnrealTest'
+    'Get-HarnessUnrealSuiteList'
+    'New-HarnessUnrealSuitePlan'
+    'Invoke-HarnessUnrealSuite'
+    'Invoke-HarnessUnrealCommandlet'
+    'Get-HarnessUnrealRunStatus'
+    'Stop-HarnessUnrealRun'
 )

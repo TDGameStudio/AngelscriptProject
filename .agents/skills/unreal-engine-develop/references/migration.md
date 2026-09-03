@@ -1,10 +1,10 @@
 # Unreal Runner Migration
 
-Load this reference only when translating an old command or deciding whether a missing workflow belongs in the new Hardness surface.
+Load this reference only when translating an old command or deciding whether a missing workflow belongs in the new Harness surface.
 
 ## Public replacements
 
-| Removed Skill-local entry | Hardness route |
+| Removed Skill-local entry | Harness route |
 |---|---|
 | `Get-EngineInstallations.ps1` | `ue.engine.list` |
 | `Get-UbtProcess.ps1` | `ue.process.list` |
@@ -35,4 +35,4 @@ A future scoped Change must define each capability, safety boundary, result cont
 
 ## Configuration and host
 
-Use only PowerShell 7 and one Hardness-selected `WorkspaceRoot`. `AgentConfig.ini` owns local paths; `workspace.bootstrap` creates or repairs managed identity and `workspace.config.set` changes exact non-managed values. The obsolete `References.HazelightAngelscriptEngineRoot` key is invalid and must not be recreated.
+Use only PowerShell 7 and one Harness-selected `WorkspaceRoot`. `AgentConfig.ini` owns local paths; `workspace.bootstrap` creates or repairs managed identity and `workspace.config.set` changes exact non-managed values. The obsolete `References.HazelightAngelscriptEngineRoot` key is invalid and must not be recreated.

@@ -35,13 +35,13 @@ else {
 
 $powerShellCommand = Get-Command -Name 'pwsh.exe' -CommandType Application -ErrorAction Stop | Select-Object -First 1
 $powerShell = $powerShellCommand.Source
-$hardnessManifest = Join-Path $resolvedProjectRoot '.agents\skills\hardness\scripts\Hardness.psd1'
+$harnessManifest = Join-Path $resolvedProjectRoot '.agents\skills\harness\scripts\Harness.psd1'
 $buildScript = Join-Path $resolvedProjectRoot 'Tools\RunBuild.ps1'
 $testScript = Join-Path $resolvedProjectRoot 'Tools\RunTests.ps1'
 $testSuiteScript = Join-Path $resolvedProjectRoot 'Tools\RunTestSuite.ps1'
 $ubtProcessScript = Join-Path $resolvedProjectRoot 'Tools\Diagnostics\powershell\Get-UbtProcess.ps1'
 
-$bootstrapCommand = '{0} -NoProfile -Command "& {{ Import-Module ''{1}''; $context = New-HardnessContext -Mode Current -ProjectRoot ''{2}''; Invoke-Hardness -Command workspace.bootstrap -Context $context; Invoke-Hardness -Command workspace.activate -Context $context }}"' -f $powerShell, $hardnessManifest.Replace("'", "''"), $resolvedProjectRoot.Replace("'", "''")
+$bootstrapCommand = '{0} -NoProfile -Command "& {{ Import-Module ''{1}''; $context = New-HarnessContext -Mode Current -ProjectRoot ''{2}''; Invoke-Harness -Command workspace.bootstrap -Context $context; Invoke-Harness -Command workspace.activate -Context $context }}"' -f $powerShell, $harnessManifest.Replace("'", "''"), $resolvedProjectRoot.Replace("'", "''")
 
 $resolved = [ordered]@{
     Status                  = 'BootstrapRequired'

@@ -269,7 +269,7 @@ function Get-CapabilityKnowledgeIndexIssues {
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
-$hardnessManifest = Join-Path $projectRoot '.agents\skills\hardness\scripts\Hardness.psd1'
+$harnessManifest = Join-Path $projectRoot '.agents\skills\harness\scripts\Harness.psd1'
 $exePath = Join-Path $projectRoot '.agents\skills\openspec\bin\openspec.exe'
 $manifestPath = Join-Path $projectRoot '.agents\skills\openspec\release-manifest.json'
 $sourceDocs = Join-Path $projectRoot 'Tools\openspec\docs\commands'
@@ -344,15 +344,15 @@ finally {
 $englishViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $projectRoot)
 Assert-Equal $englishViolations.Count 0 "Maintained OpenSpec surfaces must use English; only explicitly named *_ZH files are exempt: $($englishViolations -join ', ')"
 
-Assert-True (Test-Path -LiteralPath $hardnessManifest -PathType Leaf) 'Hardness module manifest is missing.'
+Assert-True (Test-Path -LiteralPath $harnessManifest -PathType Leaf) 'Harness module manifest is missing.'
 Assert-True (Test-Path -LiteralPath $exePath -PathType Leaf) 'Bundled openspec.exe is missing.'
 Assert-True (Test-Path -LiteralPath $manifestPath -PathType Leaf) 'OpenSpec release manifest is missing.'
 
-Import-Module $hardnessManifest -Force
-$context = New-HardnessContext -WorkspaceRoot $projectRoot
-$doctor = Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
-Assert-Equal $doctor.schemaVersion '1.0' 'Hardness returned the wrong schema version.'
-Assert-Equal $doctor.status 'Succeeded' 'OpenSpec doctor did not succeed through Hardness.'
+Import-Module $harnessManifest -Force
+$context = New-HarnessContext -WorkspaceRoot $projectRoot
+$doctor = Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--json')
+Assert-Equal $doctor.schemaVersion '1.0' 'Harness returned the wrong schema version.'
+Assert-Equal $doctor.status 'Succeeded' 'OpenSpec doctor did not succeed through Harness.'
 Assert-Equal $doctor.exitCode 0 'OpenSpec doctor returned a non-zero exit code.'
 
 $versionText = (& $exePath --version | Out-String).Trim()
@@ -470,9 +470,9 @@ $liveConfigText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\con
 $openSpecReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\README.md') -Raw
 $projectReadmeRoutingText = Get-Content -LiteralPath (Join-Path $projectRoot 'README.md') -Raw
 $agentsText = Get-Content -LiteralPath (Join-Path $projectRoot 'AGENTS.md') -Raw
-$hardnessText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\SKILL.md') -Raw
-$routingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\routing.md') -Raw
-$reviewReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\review.md') -Raw
+$harnessText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\SKILL.md') -Raw
+$routingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\references\routing.md') -Raw
+$reviewReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\references\review.md') -Raw
 $taskReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\tasks.md') -Raw
 $issueReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\implementation-issues.md') -Raw
 $knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\knowledge.md') -Raw
@@ -508,15 +508,15 @@ foreach ($token in @('canonical active Change in the selected workspace', 'light
     Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
 }
 foreach ($token in @('new feature, architecture refactor, or major behavior change', 'deep Explore before Change creation', 'decision-complete exploration handoff is not an active Change', 'Ready Task DAG before implementation mutation', 'After Change creation, do not restart deep Explore', 'lightweight investigation inside the Ready task')) {
-    Assert-True ($hardnessText.Contains($token)) "Hardness exploration route is missing: $token"
+    Assert-True ($harnessText.Contains($token)) "Harness exploration route is missing: $token"
 }
 foreach ($token in @('before creating that Change', 'Lightweight investigation inside a Ready task')) {
-    Assert-True ($routingText.Contains($token)) "Hardness route map is missing: $token"
+    Assert-True ($routingText.Contains($token)) "Harness route map is missing: $token"
 }
 foreach ($token in @('explicit user or external-agent request', 'never auto-starts Review', 'Verified work', 'close and archive directly', 'Local defects', 'planning-invalidating evidence', 'Replan', 'inline or asynchronously', 'immutable snapshot', 'detailed report', 'no Review file line limit', 'closed or superseded', 'open or deferred Critical or Required')) {
     Assert-True ($reviewReferenceText.Contains($token)) "Review scheduling contract is missing: $token"
 }
-$liveReviewPolicyText = @($hardnessText, $reviewReferenceText, $attachmentReferenceText, $knowledgeReferenceText, $applyText, $archiveText, $verifyText) -join "`n"
+$liveReviewPolicyText = @($harnessText, $reviewReferenceText, $attachmentReferenceText, $knowledgeReferenceText, $applyText, $archiveText, $verifyText) -join "`n"
 foreach ($retiredReviewPattern in @(
     '(?i)Final Review:[ \t]*not required',
     '(?i)There are exactly three routes',
@@ -537,20 +537,20 @@ foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-reso
     Assert-True ($taskReferenceText.Contains($token)) "Task authoring contract is missing: $token"
 }
 
-foreach ($token in @('New-HardnessContext -WorkspaceRoot', 'one explicit or discovered `WorkspaceRoot`', 'Codex `/goal` invocation', 'not a repository mode', 'tracked `Tools/openspec` submodule', 'packaged `.agents/skills/openspec/bin/openspec.exe`')) {
+foreach ($token in @('New-HarnessContext -WorkspaceRoot', 'one explicit or discovered `WorkspaceRoot`', 'Codex `/goal` invocation', 'not a repository mode', 'tracked `Tools/openspec` submodule', 'packaged `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($openSpecEntryText.Contains($token)) "Portable OpenSpec workspace/package contract is missing: $token"
 }
 foreach ($token in @('three or more important relationships or mappings', 'multi-step sequence or state transition', 'hierarchy or layout', 'decision structure', 'Do not add a visual for a single fact', 'trivial one-step action', 'lightweight inline text diagram')) {
     Assert-True ($visualExplainText.Contains($token)) "Visual-explain trigger contract is missing: $token"
 }
-foreach ($token in @('explicit/discovered WorkspaceRoot', 'Codex /goal', 'no repository mode or branch convention', 'hardness.{status,observe,evolution.status}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
+foreach ($token in @('explicit/discovered WorkspaceRoot', 'Codex /goal', 'no repository mode or branch convention', 'harness.{status,observe,evolution.status}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($skillsReadmeText.Contains($token)) "Skills README routing contract is missing: $token"
 }
 foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Codex /goal invocation is external unattended continuation', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'optional Markdown authoring aids, not parser fields or a rigid template')) {
     Assert-True ($liveConfigText.Contains($token)) "Live OpenSpec configuration is missing: $token"
 }
-Assert-True ($openSpecReadmeText.Contains('New-HardnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'
-Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HardnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
+Assert-True ($openSpecReadmeText.Contains('New-HarnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'
+Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HarnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
 foreach ($token in @('user explicitly lifted the temporary Skill restriction', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
     Assert-True ($agentsText.Contains($token)) "Prepared AGENTS workflow contract is missing: $token"
 }

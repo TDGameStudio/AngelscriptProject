@@ -212,7 +212,7 @@ function Get-UnrealRegisteredEngineCandidates {
     return @($candidates)
 }
 
-function Get-HardnessUnrealStatus {
+function Get-HarnessUnrealStatus {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string] $WorkspaceRoot)
 
@@ -238,7 +238,7 @@ function Get-HardnessUnrealStatus {
     }
 }
 
-function Get-HardnessUnrealEngineList {
+function Get-HarnessUnrealEngineList {
     [CmdletBinding()]
     param([string] $WorkspaceRoot = '')
 
@@ -326,13 +326,13 @@ function Read-UnrealUbtTargetList {
     return @($results | Sort-Object Name, Path)
 }
 
-function Get-HardnessUnrealTargetList {
+function Get-HarnessUnrealTargetList {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string] $WorkspaceRoot, [switch] $QueryUbt)
 
     $configuration = Get-UnrealWorkspaceConfiguration -WorkspaceRoot $WorkspaceRoot
     if ($QueryUbt) {
-        $run = Invoke-HardnessUnrealUbt -WorkspaceRoot $configuration.WorkspaceRoot -Capability query-targets
+        $run = Invoke-HarnessUnrealUbt -WorkspaceRoot $configuration.WorkspaceRoot -Capability query-targets
         if ([string] $run.State -ne 'Succeeded') {
             throw "UBT QueryTargets failed with state '$($run.State)'. Inspect '$($run.LogPath)'."
         }
@@ -513,7 +513,7 @@ function ConvertTo-UnrealProcessView {
     return $result
 }
 
-function Get-HardnessUnrealProcessList {
+function Get-HarnessUnrealProcessList {
     [CmdletBinding()]
     param(
         [string] $WorkspaceRoot = '',
@@ -587,7 +587,7 @@ function Get-HardnessUnrealProcessList {
     return @($results)
 }
 
-function Get-HardnessUnrealUbtCapabilities {
+function Get-HarnessUnrealUbtCapabilities {
     [CmdletBinding()]
     param([string] $WorkspaceRoot = '')
 

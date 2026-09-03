@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_0748f9ae-c576-4908-9e2a-34d3096fe516
+  id: harness
+  title: Harness
+  description: Project-wide AI execution, review, replan, workspace, OpenSpec, and Unreal orchestration.
+  aliases:
+  - hardness

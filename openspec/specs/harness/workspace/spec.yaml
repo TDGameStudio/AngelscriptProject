@@ -1,0 +1,9 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_44e4d03e-3ce6-43fa-9479-e496459653c0
+  id: harness/workspace
+  title: Harness Workspace Lifecycle
+  description: Git-derived workspace lifecycle, AgentConfig v3 identity and migration, process-local selection, tiered status, guarded execution, and explicit cleanup.
+  aliases:
+  - hardness/workspace

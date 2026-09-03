@@ -15,16 +15,16 @@ Configuration and templates are reloaded for every `instructions` call, so an Ag
 
 ## Invocation
 
-Import Hardness once in a PowerShell 7.0-or-later (`Core`) session and reuse the context. The maintained harness does not support Windows PowerShell 5.1:
+Import Harness once in a PowerShell 7.0-or-later (`Core`) session and reuse the context. The maintained harness does not support Windows PowerShell 5.1:
 
 ```powershell
-Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
-$context = New-HardnessContext -WorkspaceRoot $PWD
+Import-Module .\.agents\skills\harness\scripts\Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot $PWD
 
-Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
-Invoke-Hardness -Command openspec.workflow -Context $context -ArgumentList @('validate', 'angelscript')
-Invoke-Hardness -Command openspec.validate -Context $context -ArgumentList @('--all', '--strict', '--json')
-Invoke-Hardness -Command openspec.validate -Context $context -ArgumentList @('--archived', '--strict', '--json')
+Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--json')
+Invoke-Harness -Command openspec.workflow -Context $context -ArgumentList @('validate', 'angelscript')
+Invoke-Harness -Command openspec.validate -Context $context -ArgumentList @('--all', '--strict', '--json')
+Invoke-Harness -Command openspec.validate -Context $context -ArgumentList @('--archived', '--strict', '--json')
 ```
 
 Do not invoke a bare `openspec` from `PATH`, the official Node CLI, or a `Tools/openspec/target` build for project operations.

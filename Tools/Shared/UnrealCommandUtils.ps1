@@ -913,10 +913,10 @@ function Resolve-AgentConfiguration {
     $resolvedProjectRoot = Normalize-PathValue -Path $ProjectRoot
     $workspaceLifecycleManifest = Join-Path $resolvedProjectRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1'
     if (-not (Test-Path -LiteralPath $workspaceLifecycleManifest -PathType Leaf)) {
-        throw "Hardness workspace lifecycle module was not found: $workspaceLifecycleManifest"
+        throw "Harness workspace lifecycle module was not found: $workspaceLifecycleManifest"
     }
     Import-Module $workspaceLifecycleManifest -ErrorAction Stop
-    [void](Assert-HardnessWorkspaceExecution -ProjectRoot $resolvedProjectRoot -CallerPath (Get-Location).Path)
+    [void](Assert-HarnessWorkspaceExecution -ProjectRoot $resolvedProjectRoot -CallerPath (Get-Location).Path)
     $resolvedConfigPath = if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
         Join-Path $resolvedProjectRoot 'AgentConfig.ini'
     }
@@ -925,11 +925,11 @@ function Resolve-AgentConfiguration {
     }
     $managedConfigPath = Normalize-PathValue -Path (Join-Path $resolvedProjectRoot 'AgentConfig.ini')
     if (-not $resolvedConfigPath.Equals($managedConfigPath, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "ConfigPath must select the Hardness-managed AgentConfig.ini for this workspace: $managedConfigPath"
+        throw "ConfigPath must select the Harness-managed AgentConfig.ini for this workspace: $managedConfigPath"
     }
 
     if (-not (Test-Path -LiteralPath $resolvedConfigPath -PathType Leaf)) {
-        throw "AgentConfig.ini was not found: $resolvedConfigPath. Use Hardness workspace.bootstrap to initialize this workspace."
+        throw "AgentConfig.ini was not found: $resolvedConfigPath. Use Harness workspace.bootstrap to initialize this workspace."
     }
 
     $config = Read-IniFile -Path $resolvedConfigPath
@@ -948,7 +948,7 @@ function Resolve-AgentConfiguration {
 
     $resolvedProjectFile = Normalize-PathValue -Path $projectFile
     if ($resolvedProjectFileCandidates -notcontains $resolvedProjectFile) {
-        throw "AgentConfig.ini [Paths] ProjectFile does not belong to project root '$resolvedProjectRoot'. Use Hardness workspace.bootstrap for this workspace."
+        throw "AgentConfig.ini [Paths] ProjectFile does not belong to project root '$resolvedProjectRoot'. Use Harness workspace.bootstrap for this workspace."
     }
 
     return [PSCustomObject]@{

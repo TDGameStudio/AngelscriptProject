@@ -45,7 +45,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 - Review state: `open | closed | superseded`.
 - Finding state: `open | resolved | rejected | deferred`.
 - Each finding keeps its original text and records severity, fixed snapshot, evidence, affected requirement/tasks, disposition, appended resolution, and verification evidence.
-- Create Review records only after an explicit request from the user or an external agent. Hardness never auto-starts Incident or Final Review based on risk, impact, diff size, or completion state.
+- Create Review records only after an explicit request from the user or an external agent. Harness never auto-starts Incident or Final Review based on risk, impact, diff size, or completion state.
 - Incident, Final, and External remain `review-v2` report kinds selected by the requester; they are classifications, not automatic lifecycle gates.
 - Bind every Review to an immutable, reproducible snapshot. An unbound external report remains open input until its snapshot is reproduced or it is superseded with rationale.
 - A Review may run inline or asynchronously. Async is optional. The main thread may continue disjoint work, but cannot close or archive the reviewed work before its Review lifecycle resolves.
@@ -57,7 +57,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 ## Implementation issues and talks
 
 - Use [implementation-issues.md](implementation-issues.md) only after a technical problem crosses its material threshold. `implementation/` is issue-only; final integration evidence, routine TDD cycles, closure preparation, and progress summaries belong in their owning task evidence, `data/`, Review, INDEX, or closure record.
-- Ignored `Saved/Hardness/Observations` records are inexpensive evidence, not durable owners. When a dogfooding observation crosses the material threshold, admit it to one indexed `openspec-material-issue-v2` record in an exact active Change before handoff. Once admitted, it must become `resolved`, `rejected`, or `superseded`; free-floating deferral is not a terminal state.
+- Ignored `Saved/Harness/Observations` records are inexpensive evidence, not durable owners. When a dogfooding observation crosses the material threshold, admit it to one indexed `openspec-material-issue-v2` record in an exact active Change before handoff. Once admitted, it must become `resolved`, `rejected`, or `superseded`; free-floating deferral is not a terminal state.
 - Non-obvious major decisions go to `talks/talk-YYYYMMDD-HHmmss-<theme>.md`, then lift the settled truth into proposal/spec/design before replan.
 
 ## Exploration carryover
@@ -92,7 +92,7 @@ review or verification evidence
 - Body: Trigger/Evidence, Decision, Impact, Old Task Disposition, Diff Snapshot, Preserved Work, References/Result.
 - Diff Snapshot records affected-path `git status --short`, `git diff --stat`, task `+/-/~`, DAG edge `+/-`, and artifact changes. Do not embed a full unified diff.
 - Optional `data/replans/<id>-before.patch` is allowed only for small uncommitted text work that Git cannot recover. Never include binary, generated, large, or already committed content.
-- A finding triggers Replan only after Hardness proves a requirement, design, acceptance condition, task boundary, dependency edge, or completion evidence became invalid. Severity alone never triggers it.
+- A finding triggers Replan only after Harness proves a requirement, design, acceptance condition, task boundary, dependency edge, or completion evidence became invalid. Severity alone never triggers it.
 
 ## Other attachment types
 
@@ -100,17 +100,17 @@ review or verification evidence
 - `scripts/`: one reusable purpose per script, with usage and dependencies in its header.
 - `data/`: trimmed text-first evidence. Files over 100 KB or 1000 lines must be reduced with source run ID, trim rationale, and original line ranges.
 
-Every Hardness or OpenSpec self-hosting Change keeps one indexed canonical `data/workflow-evaluation.md` before completed closure. Its machine-readable header is:
+Every Harness or OpenSpec self-hosting Change keeps one indexed canonical `data/workflow-evaluation.md` before completed closure. Its machine-readable header is:
 
 ```yaml
 ---
-record: hardness-workflow-evaluation-v1
+record: harness-workflow-evaluation-v1
 result: passed | failed
-change: hardness/exact-change-id
+change: harness/exact-change-id
 captured_at: 2026-09-03T18:00:00+08:00
 ---
 ```
 
-The compact body records elapsed lifecycle stages, material friction, corrective actions, transferred/superseded owners, and raw-data provenance. `hardness.evolution.status` reads only this frontmatter and material-issue frontmatter; it does not replay attachment bodies or ignored observation bodies. A parseable `failed` result remains inspectable but cannot pass terminal closure.
+The compact body records elapsed lifecycle stages, material friction, corrective actions, transferred/superseded owners, and raw-data provenance. `harness.evolution.status` reads only this frontmatter and material-issue frontmatter; it does not replay attachment bodies or ignored observation bodies. A parseable `failed` result remains inspectable but cannot pass terminal closure.
 
-Before archive, trim data, decide knowledge promotion, close any existing Review and v2 issue state, record spec-sync disposition, and provide the requested closure manifest. Run `hardness.evolution.status` for the exact Change with `RequireTerminal = $true`; ordinary status remains inspectable while an issue is open, but the terminal call fails. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.
+Before archive, trim data, decide knowledge promotion, close any existing Review and v2 issue state, record spec-sync disposition, and provide the requested closure manifest. Run `harness.evolution.status` for the exact Change with `RequireTerminal = $true`; ordinary status remains inspectable while an issue is open, but the terminal call fails. The portable CLI validates structural closure, not attachment semantics; the applicable Harness/OpenSpec protocol gate supplies that evidence.
