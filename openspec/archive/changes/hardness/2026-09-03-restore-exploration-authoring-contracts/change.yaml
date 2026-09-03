@@ -12,3 +12,8 @@ affected_areas:
 - openspec/specs/hardness/core
 - README.md
 - AGENTS.md
+archived_at: 2026-09-03T05:32:45Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The restored exploration, authoring, marker/carryover, knowledge, Replan, and event-driven Review contracts are synchronized to hardness/core; all 17 Task DAG nodes and focused verification pass; the final review-v2 gate approved immutable snapshot 38f10812502cca293b06d25714ee36d96a681a2d after resolving its only Required finding.

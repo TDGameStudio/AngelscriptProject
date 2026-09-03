@@ -2,13 +2,13 @@
 review_schema: review-v2
 review_kind: final
 requested_by: hardness
-state: open
-assigned_at: 2026-09-03T13:15:01+08:00
-reviewed_at: 2026-09-03T13:20:52.5294379+08:00
-closed_at:
-snapshot_ref: commit:09c7978d111a31f5b1f251cdbff03e3f27911524
-snapshot_sha256: a543f69b6415a8263a1532104530bcd3d891a81f552a78c14bef62e46d71aacb
-verdict: CHANGES_REQUIRED
+state: closed
+assigned_at: 2026-09-03T13:27:54+08:00
+reviewed_at: 2026-09-03T13:29:58.2781946+08:00
+closed_at: 2026-09-03T13:31:12+08:00
+snapshot_ref: commit:38f10812502cca293b06d25714ee36d96a681a2d
+snapshot_sha256: 9f08486a2b96b2252f81e72ccf5df9b8e1b5e2c7ca4af6428159d01b9dcc3e78
+verdict: APPROVE
 ---
 
 # Hardness Workflow Final Review
@@ -128,8 +128,10 @@ The broad Quick gate was not rerun. Review work added only immutable-object insp
 
 ### Finding 1 — `review-v2` accepts impossible and causally reversed lifecycle timestamps
 
+```yaml
 severity: Required
-status: open
+status: resolved
+```
 
 Affected content:
 
@@ -185,3 +187,45 @@ Finding counts: 0 Critical, 1 Required, 0 Advisory.
 - Documentation: `review.md` now states the same real-instant and causal-order contract guarded by Protocol assertions.
 - GREEN: `Protocol.Tests.ps1` PASS; `OpenSpecSkill.Tests.ps1` PASS; strict active validation reports `1/1` valid with zero issues. The earlier PS7 Quick `5/5` remains the broad pre-review baseline; the focused repair did not touch its other four suites.
 - State: repair is complete and awaits incremental fixed-snapshot re-review. Finding status remains open until the reviewer verifies the new immutable commit.
+
+## Incremental re-review assignment
+
+- Original assignment: snapshot `09c7978d111a31f5b1f251cdbff03e3f27911524`, assigned `2026-09-03T13:15:01+08:00`, reviewed `2026-09-03T13:20:52.5294379+08:00`, verdict `CHANGES_REQUIRED` with Finding 1 only.
+- Incremental assignment: snapshot `38f10812502cca293b06d25714ee36d96a681a2d`, assigned `2026-09-03T13:27:54+08:00`, tree `81137056bcb4ab60d6990f947fc8ecfdf63b502c`.
+- Snapshot manifest: all `5763` lines from `git ls-tree -r --full-tree 38f10812502cca293b06d25714ee36d96a681a2d`, joined with LF plus one trailing LF and hashed as UTF-8 SHA-256, produce `9f08486a2b96b2252f81e72ccf5df9b8e1b5e2c7ca4af6428159d01b9dcc3e78`.
+- Incremental scope: only the four paths changed from `09c7978d111a31f5b1f251cdbff03e3f27911524` to `38f10812502cca293b06d25714ee36d96a681a2d`; inspect the strict timestamp parser, lifecycle ordering, regression fixtures, Review protocol wording, and the retained Review/INDEX evidence.
+- Re-review may rely on the original complete-scope analysis for unchanged content. It must not repeat the 47-file scan.
+
+## Incremental re-review result
+
+Finding 1 is resolved on immutable snapshot `38f10812502cca293b06d25714ee36d96a681a2d`. No new Critical, Required, or Advisory finding was identified in the four-path increment.
+
+### Snapshot and scope verification
+
+- The repaired commit is a direct child of the prior reviewed snapshot and resolves to tree `81137056bcb4ab60d6990f947fc8ecfdf63b502c`, matching the assignment.
+- Recomputing the full-tree manifest from all `5763` `git ls-tree -r --full-tree` lines, LF-joined with one trailing LF and hashed as UTF-8 SHA-256, produced `9f08486a2b96b2252f81e72ccf5df9b8e1b5e2c7ca4af6428159d01b9dcc3e78` exactly.
+- The incremental diff contains exactly four paths: `.agents/skills/hardness/references/review.md`, `.agents/skills/hardness/tests/Protocol.Tests.ps1`, the active Change attachment `INDEX.md`, and this Review record. `git diff --check` passed.
+- Unchanged content retains the original complete-scope review. No implementation, specification, capability-knowledge, task, Replan, plugin, binary, `Tools/openspec`, or other excluded content changed in the repair commit.
+
+### Resolution verification for Finding 1
+
+- `Test-IsoTimestamp` now requires the offset-bearing lexical form and then calls invariant `DateTimeOffset.TryParse` with `RoundtripKind`. The earlier impossible value `2026-99-99T99:99:99+99:99` therefore fails real-instant validation.
+- The Review closure gate parses only values already proven valid and compares `DateTimeOffset` instants. A completed Review requires real `assigned_at`, `reviewed_at`, and `closed_at`, rejects completion before assignment, and rejects closure before either assignment or completion.
+- A superseded Review still requires real assignment and closure instants. It may omit `reviewed_at` when superseded before completion, while closure before assignment is rejected. If `reviewed_at` is populated, the same unconditional instant comparisons enforce the complete assignment/completion/closure order.
+- Positive fixtures cover a completed Review in causal order and a superseded-before-completion Review with an omitted completion timestamp. Negative fixtures cover the lexically shaped impossible instant, completion before assignment, closure before completion, and superseded closure before assignment. Those fixtures exercise both the normal completed lifecycle and the documented supersession exception.
+- `review.md` states the same real-instant, explicit-offset, completed-order, and superseded-before-completion rules implemented by the checker. The attachment INDEX and coordinator repair history accurately preserve the original finding, RED reproduction, local-defect disposition, repair boundary, and incremental-review state.
+
+### Evidence and disposition
+
+Accepted post-repair evidence: `Protocol.Tests.ps1` PASS; `OpenSpecSkill.Tests.ps1` PASS; strict active validation `1/1` valid with zero issues; cached diff check PASS. A broad Quick rerun was neither required nor performed because the repair is confined to the documented Review predicate, its focused fixtures, and lifecycle evidence.
+
+Finding 1 retains its original text and is now `status: resolved`. Incremental finding counts are 0 Critical, 0 open Required, and 0 Advisory; one Required finding is resolved.
+
+**Incremental verdict: APPROVE.** The repaired snapshot satisfies every resolution condition and remains bound to the originally approved unchanged scope. The coordinator may close this Review, complete Task `5.5`, update Review/Task/attachment-INDEX lifecycle bookkeeping, and proceed with the already-declared deterministic closure/archive operations.
+
+## Coordinator closure
+
+- Closed at `2026-09-03T13:31:12+08:00` after accepting the incremental `APPROVE` verdict.
+- Finding disposition: one Required finding resolved and independently re-reviewed; no open or deferred Critical or Required finding; no Advisory finding.
+- Covered final semantic snapshot: `38f10812502cca293b06d25714ee36d96a681a2d`.
+- Only Task/INDEX lifecycle bookkeeping and deterministic completed closure/archive operations follow this gate.

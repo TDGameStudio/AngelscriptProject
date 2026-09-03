@@ -145,7 +145,7 @@ task_graph:
   2. Record completed verification, spec-sync disposition, broad-impact Review requirement, closure inputs, and all excluded unrelated workspace paths.
   3. Commit the exact complete semantic snapshot before allocating the Final Review.
 
-- [ ] 5.5 Run the last semantic Final Review — verify: `one review-v2 Final Review is closed with APPROVE against the complete committed snapshot and no open or deferred Critical or Required finding`
+- [x] 5.5 Run the last semantic Final Review — verify: `one review-v2 Final Review is closed with APPROVE against the complete committed snapshot and no open or deferred Critical or Required finding`
   > Files: `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/reviews/review-*-hardness-workflow-subagent.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/attachments/INDEX.md`, `openspec/changes/hardness/restore-exploration-authoring-contracts/tasks.md`
 
   1. Confirm every earlier DAG node is complete, allocate one immutable commit snapshot and unique Review file, and dispatch the reviewer subagent asynchronously.
