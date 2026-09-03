@@ -101,7 +101,7 @@ try {
     )
     $passIndex = Write-UeAutomationReport -Directory $passDirectory -Value $passReport
     $pass = Get-UnrealAutomationSummary -ReportPath $passDirectory -ProcessExitCode 0
-    Assert-Equal 'hardness-unreal-automation-summary-v1' $pass.SchemaVersion 'the parser emits a versioned result'
+    Assert-Equal 'hardness-unreal-automation-summary' $pass.SchemaVersion 'the parser emits the stable summary schema'
     Assert-Equal 'UEAutomationJson' $pass.SummarySource 'a valid index.json is structured UE truth'
     Assert-Equal 'Passed' $pass.Outcome 'a complete successful report passes'
     Assert-True $pass.Passed 'the pass flag is true for successful structured truth'

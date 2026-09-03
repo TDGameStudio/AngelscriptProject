@@ -80,7 +80,7 @@ function Assert-UnrealUbtArgumentsSafe {
     foreach ($name in @(
         'Project', 'Mode', 'Output', 'WaitMutex', 'NoMutex', 'NoEngineChanges', 'Log', 'Session',
         'UniqueBuildEnvironment', 'Clean', 'Architecture', 'NoHotReload', 'NoHotReloadFromIDE',
-        'Progress', 'NoXGE', 'IncludeAllTargets', 'DontIncludeParentAssembly'
+        'Progress', 'NoXGE', 'NoUBA', 'IncludeAllTargets', 'DontIncludeParentAssembly'
     )) {
         [void] $reserved.Add($name)
     }
@@ -160,6 +160,9 @@ function New-UnrealUbtPlan {
         EngineRoot     = [string] $Request.engineRoot
         EngineKind     = [string] $Context.Engine.Kind
         ProjectFile    = [string] $Request.projectFile
+        ExecutionPath  = [string] $Request.execution.workspaceRoot
+        ExecutionProjectFile = [string] $Request.execution.projectFile
+        Execution      = $Request.execution
         Target         = $Target
         Platform       = $Platform
         Configuration  = $Configuration
@@ -173,6 +176,7 @@ function New-UnrealUbtPlan {
         RequestedBuildConcurrency = if ($null -eq $Request.concurrency.PSObject.Properties['requestedBuildConcurrency']) { 'NotApplicable' } else { [string] $Request.concurrency.requestedBuildConcurrency }
         BuildConcurrency = if ($null -eq $Request.concurrency.PSObject.Properties['buildConcurrency']) { 'NotApplicable' } else { [string] $Request.concurrency.buildConcurrency }
         Paths          = $Request.paths
+        ExecutionPaths = $Request.executionPaths
         Request        = $Request
     }
 }
@@ -494,6 +498,9 @@ function New-UnrealEditorPlan {
         EngineRoot             = [string] $Request.engineRoot
         EngineKind             = [string] $Context.Engine.Kind
         ProjectFile            = [string] $Request.projectFile
+        ExecutionPath          = [string] $Request.execution.workspaceRoot
+        ExecutionProjectFile   = [string] $Request.execution.projectFile
+        Execution              = $Request.execution
         SelectionKind          = $SelectionKind
         TestPrefix             = $TestPrefix
         Group                  = $Group
@@ -509,6 +516,7 @@ function New-UnrealEditorPlan {
         Environment            = $Request.environment
         Concurrency            = $Request.concurrency
         Paths                  = $Request.paths
+        ExecutionPaths         = $Request.executionPaths
         Request                = $Request
     }
 }

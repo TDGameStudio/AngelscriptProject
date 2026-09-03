@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "hardness-unreal-launch-profiles-v1",
+  "schemaVersion": "hardness-unreal-launch-profiles",
   "profiles": [
     {
       "name": "headless",

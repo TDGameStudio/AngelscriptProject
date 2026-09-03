@@ -1,0 +1,21 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_f1720738-3fd1-4498-aa48-ce24eaef2efd
+  id: hardness/complete-unreal-runner-cutover
+  title: Complete the Hardness Unreal runner cutover
+workflow: angelscript
+created_at: 2026-09-04T00:00:00Z
+goal: Make every Hardness-managed Unreal launch use a verified transient short execution path with stable schema names while preserving exact Git workspace identity.
+affected_areas:
+- .agents/skills/unreal-engine-develop
+- .agents/skills/hardness
+- openspec/specs/hardness/unreal
+- Config/DefaultEngine.ini
+- AGENTS.md
+- AGENTS_ZH.md
+archived_at: 2026-09-03T17:22:18Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The Windows short execution path, stable unsuffixed Unreal record names, exact mapping ownership and cleanup, mapped process correlation, and Smoke-suite alignment are implemented and synchronized; seven focused test groups pass, the mapped default-executor build contract was exercised, and the real mapped AngelscriptSmoke run succeeded with terminal mapping cleanup. The unrelated generated-JIT build failure is explicitly deferred by user direction.

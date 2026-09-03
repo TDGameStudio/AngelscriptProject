@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "hardness-unreal-suites-v1",
+  "schemaVersion": "hardness-unreal-suites",
   "launchProfile": "headless",
   "description": "Tracked Unreal Automation-only suites for the AngelscriptProject host.",
   "deferredCapabilities": [

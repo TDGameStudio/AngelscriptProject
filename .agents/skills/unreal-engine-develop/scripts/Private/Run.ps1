@@ -206,6 +206,120 @@ function Get-UnrealRunPaths {
     }
 }
 
+function Assert-UnrealExecutionPaths {
+    param(
+        [Parameter(Mandatory = $true)] $Request,
+        [Parameter(Mandatory = $true)] $ExpectedPaths
+    )
+    if ($null -eq $Request.PSObject.Properties['executionPaths']) {
+        throw 'Run request is missing executionPaths.'
+    }
+    foreach ($name in @('RunsRoot', 'RunRoot', 'RequestPath', 'MetadataPath', 'LogPath', 'StdOutPath', 'StdErrPath', 'UnrealLogPath', 'UbtLogPath', 'TargetsPath', 'EntriesRoot', 'ReportPath', 'SummaryPath', 'TempPath')) {
+        $property = $Request.executionPaths.PSObject.Properties[$name]
+        if ($null -eq $property -or -not ([string] $property.Value).Equals([string] $ExpectedPaths.$name, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Run request execution path '$name' does not match its mapped run directory."
+        }
+    }
+}
+
+function Assert-UnrealExecutionDescription {
+    param([Parameter(Mandatory = $true)] $Request)
+    if ($null -eq $Request.PSObject.Properties['execution']) { throw 'Run request is missing execution metadata.' }
+    $execution = $Request.execution
+    if ([string] $execution.strategy -notin @('DosDevice', 'Direct')) { throw "Run execution strategy is invalid: $($execution.strategy)" }
+    if ([string] $execution.assignmentState -notin @('Proposed', 'Assigned', 'Conflict', 'Unsupported') -or
+        [string] $execution.mappingState -notin @('Absent', 'Ready', 'Owned', 'Foreign', 'StaleOwned')) {
+        throw 'Run execution assignment or mapping state is invalid.'
+    }
+    if ((-not (Test-UnrealPathEqual -Left ([string] $execution.physicalWorkspaceRoot) -Right ([string] $Request.workspaceRoot))) -or
+        (-not (Test-UnrealPathEqual -Left ([string] $execution.physicalProjectFile) -Right ([string] $Request.projectFile)))) {
+        throw 'Run execution metadata does not preserve the physical workspace identity.'
+    }
+    $expectedAssignmentKey = Get-UnrealWorkspaceAssignmentKey -GitCommonDir ([string] $Request.gitCommonDir) -WorkspaceRoot ([string] $Request.workspaceRoot)
+    if ([string] $execution.assignmentKey -cne $expectedAssignmentKey) { throw 'Run execution assignment key does not match the physical workspace identity.' }
+    if ([string] $execution.strategy -ceq 'DosDevice') {
+        if ([string] $execution.driveLetter -notmatch '^[G-Z]:$' -or
+            -not ([string] $execution.workspaceRoot).Equals(([string] $execution.driveLetter + '\'), [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Run execution drive metadata is invalid.'
+        }
+        if ([string] $execution.rawTarget -cne (ConvertTo-UnrealRawDosTarget -WorkspaceRoot ([string] $Request.workspaceRoot))) {
+            throw 'Run execution raw DOS target does not match the physical workspace.'
+        }
+        $expectedProject = ConvertTo-UnrealExecutionPath -PhysicalPath ([string] $Request.projectFile) -Execution $execution
+        if (-not ([string] $execution.projectFile).Equals($expectedProject, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Run execution project path does not match the physical project file.'
+        }
+    }
+    else {
+        if (-not [string]::IsNullOrEmpty([string] $execution.driveLetter) -or
+            -not [string]::IsNullOrEmpty([string] $execution.rawTarget) -or
+            -not (Test-UnrealPathEqual -Left ([string] $execution.workspaceRoot) -Right ([string] $Request.workspaceRoot)) -or
+            -not (Test-UnrealPathEqual -Left ([string] $execution.projectFile) -Right ([string] $Request.projectFile))) {
+            throw 'Direct execution metadata must equal the physical workspace identity.'
+        }
+    }
+    $expectedPaths = Get-UnrealExecutionPaths -PhysicalPaths $Request.paths -Execution $execution
+    Assert-UnrealExecutionPaths -Request $Request -ExpectedPaths $expectedPaths
+}
+
+function Convert-UnrealRequestTextToExecution {
+    param(
+        [AllowEmptyString()][string] $Text,
+        [Parameter(Mandatory = $true)] $PreviousExecution,
+        [Parameter(Mandatory = $true)] $Execution
+    )
+    if ([string]::IsNullOrEmpty($Text) -or [string] $Execution.strategy -ceq 'Direct') { return $Text }
+    $result = $Text
+    $previousRoot = [string] $PreviousExecution.workspaceRoot
+    $nextRoot = [string] $Execution.workspaceRoot
+    if (-not [string]::IsNullOrWhiteSpace($previousRoot) -and -not $previousRoot.Equals([string] $PreviousExecution.physicalWorkspaceRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $result = [regex]::Replace($result, [regex]::Escape($previousRoot), [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $nextRoot }, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    }
+    $physicalRoot = ([string] $Execution.physicalWorkspaceRoot).TrimEnd('\', '/')
+    if ($result.Equals($physicalRoot, [System.StringComparison]::OrdinalIgnoreCase)) { return $nextRoot }
+    $physicalPattern = [regex]::Escape($physicalRoot) + '(?=$|[\\/])'
+    $result = [regex]::Replace($result, $physicalPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $nextRoot.TrimEnd('\', '/') }, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    return $result
+}
+
+function Set-UnrealRunExecutionAssignment {
+    param([Parameter(Mandatory = $true)] $Request)
+    Assert-UnrealExecutionDescription -Request $Request
+    $previous = $Request.execution
+    $execution = Get-UnrealExecutionPath `
+        -WorkspaceRoot ([string] $Request.workspaceRoot) `
+        -ProjectFile ([string] $Request.projectFile) `
+        -GitCommonDir ([string] $Request.gitCommonDir) `
+        -RunId ([string] $Request.runId) `
+        -Assign
+    $Request.execution = $execution
+    $Request.executionPaths = Get-UnrealExecutionPaths -PhysicalPaths $Request.paths -Execution $execution
+    $Request.workingDirectory = Convert-UnrealRequestTextToExecution -Text ([string] $Request.physicalWorkingDirectory) -PreviousExecution $previous -Execution $execution
+    $Request.arguments = @($Request.arguments | ForEach-Object {
+        Convert-UnrealRequestTextToExecution -Text ([string] $_) -PreviousExecution $previous -Execution $execution
+    })
+    $environment = [ordered]@{}
+    foreach ($property in @($Request.environment.PSObject.Properties)) {
+        $environment[$property.Name] = Convert-UnrealRequestTextToExecution -Text ([string] $property.Value) -PreviousExecution $previous -Execution $execution
+    }
+    $Request.environment = [pscustomobject] $environment
+    if ($null -ne $Request.PSObject.Properties['suite']) {
+        foreach ($entry in @($Request.suite.entries)) {
+            $entry.executionPaths = Get-UnrealExecutionPaths -PhysicalPaths $entry.paths -Execution $execution
+            $entry.arguments = @($entry.arguments | ForEach-Object {
+                Convert-UnrealRequestTextToExecution -Text ([string] $_) -PreviousExecution $previous -Execution $execution
+            })
+            $entryEnvironment = [ordered]@{}
+            foreach ($property in @($entry.environment.PSObject.Properties)) {
+                $entryEnvironment[$property.Name] = Convert-UnrealRequestTextToExecution -Text ([string] $property.Value) -PreviousExecution $previous -Execution $execution
+            }
+            $entry.environment = [pscustomobject] $entryEnvironment
+        }
+    }
+    Assert-UnrealExecutionDescription -Request $Request
+    return $Request
+}
+
 function Assert-UnrealRequestPaths {
     param(
         [Parameter(Mandatory = $true)] $Request,
@@ -442,6 +556,17 @@ function New-UnrealRunRequest {
 
     $runId = [guid]::NewGuid().ToString('N')
     $paths = Get-UnrealRunPaths -WorkspaceRoot $configuration.WorkspaceRoot -RunId $runId
+    $execution = Get-UnrealExecutionPath `
+        -WorkspaceRoot $configuration.WorkspaceRoot `
+        -ProjectFile $canonicalProject `
+        -GitCommonDir ([string] $configuration.Identity.GitCommonDir) `
+        -RunId $runId
+    $executionPaths = Get-UnrealExecutionPaths -PhysicalPaths $paths -Execution $execution
+    $executionWorkingDirectory = if ((Test-UnrealPathEqual -Left $working -Right $configuration.WorkspaceRoot) -or
+        $working.StartsWith($configuration.WorkspaceRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+        ConvertTo-UnrealExecutionPath -PhysicalPath $working -Execution $execution
+    }
+    else { $working }
     return [pscustomobject][ordered]@{
         schemaVersion           = $script:UnrealRequestSchema
         runId                   = $runId
@@ -453,9 +578,11 @@ function New-UnrealRunRequest {
         gitCommonDir            = $configuration.Identity.GitCommonDir
         engineRoot              = $canonicalEngine
         projectFile             = $canonicalProject
+        execution               = $execution
         filePath                = $executable
         arguments               = @($Arguments | ForEach-Object { [string] $_ })
-        workingDirectory        = $working
+        physicalWorkingDirectory = $working
+        workingDirectory        = $executionWorkingDirectory
         timeoutMs               = $TimeoutMs
         environment             = [pscustomobject] $Environment
         concurrency             = [pscustomobject][ordered]@{
@@ -472,6 +599,7 @@ function New-UnrealRunRequest {
         }
         enforceAutomationReport = $EnforceAutomationReport
         paths                   = $paths
+        executionPaths          = $executionPaths
     }
 }
 
@@ -484,6 +612,7 @@ function Set-UnrealRunCommand {
     Assert-UnrealArgumentArray -Arguments $Arguments
     $expectedPaths = Get-UnrealRunPaths -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
     Assert-UnrealRequestPaths -Request $Request -ExpectedPaths $expectedPaths
+    Assert-UnrealExecutionDescription -Request $Request
     foreach ($key in @($Environment.Keys)) {
         if ([string] $key -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "Child environment key is invalid: $key" }
         if ([string] $Environment[$key] -match "`0") { throw "Child environment value contains NUL: $key" }
@@ -492,8 +621,14 @@ function Set-UnrealRunCommand {
     foreach ($key in @($Environment.Keys | Sort-Object)) {
         $environmentValues[[string] $key] = [string] $Environment[$key]
     }
-    $Request.arguments = @($Arguments | ForEach-Object { [string] $_ })
-    $Request.environment = [pscustomobject] $environmentValues
+    $Request.arguments = @($Arguments | ForEach-Object {
+        Convert-UnrealRequestTextToExecution -Text ([string] $_) -PreviousExecution $Request.execution -Execution $Request.execution
+    })
+    $mappedEnvironment = [ordered]@{}
+    foreach ($key in @($environmentValues.Keys)) {
+        $mappedEnvironment[$key] = Convert-UnrealRequestTextToExecution -Text ([string] $environmentValues[$key]) -PreviousExecution $Request.execution -Execution $Request.execution
+    }
+    $Request.environment = [pscustomobject] $mappedEnvironment
     return $Request
 }
 
@@ -528,6 +663,8 @@ function New-UnrealRunMetadata {
         updatedAtUtc       = [DateTimeOffset]::UtcNow.ToString('o')
         workspaceRoot      = [string] $Request.workspaceRoot
         engineRoot         = [string] $Request.engineRoot
+        projectFile        = [string] $Request.projectFile
+        execution          = $Request.execution
         concurrency        = $Request.concurrency
         workerPid          = $null
         workerStartedAtUtc = $null
@@ -550,7 +687,8 @@ function Test-UnrealRunStateTransition {
     if ($CurrentState -eq $NextState) { return $true }
     $allowed = switch ($CurrentState) {
         'Queued' { @('WaitingWorkspace', 'Failed', 'TimedOut', 'Cancelled') }
-        'WaitingWorkspace' { @('WaitingEngine', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingWorkspace' { @('WaitingExecutionDrive', 'Failed', 'TimedOut', 'Cancelled') }
+        'WaitingExecutionDrive' { @('WaitingEngine', 'Running', 'Failed', 'TimedOut', 'Cancelled') }
         'WaitingEngine' { @('Running', 'Failed', 'TimedOut', 'Cancelled') }
         'Running' { @('Succeeded', 'Failed', 'TimedOut', 'Cancelled') }
         default { @() }
@@ -628,6 +766,11 @@ function Get-UnrealRunStatusRecord {
         LogPath       = $paths.LogPath
         ReportPath    = $paths.ReportPath
         SummaryPath   = $paths.SummaryPath
+        WorkspaceRoot = [string] $metadata.workspaceRoot
+        ProjectFile   = [string] $metadata.projectFile
+        ExecutionPath = [string] $metadata.execution.workspaceRoot
+        ExecutionProjectFile = [string] $metadata.execution.projectFile
+        Execution     = $metadata.execution
         Concurrency   = $metadata.concurrency
         Progress      = $progress
         Artifacts     = @($metadata.artifacts | ForEach-Object { [string] $_ })
@@ -649,12 +792,21 @@ function Start-UnrealRunRequest {
     if ([string] $Request.schemaVersion -ne $script:UnrealRequestSchema) { throw "Unsupported Unreal request schema: $($Request.schemaVersion)" }
     $paths = Get-UnrealRunPaths -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
     Assert-UnrealRequestPaths -Request $Request -ExpectedPaths $paths
+    Assert-UnrealExecutionDescription -Request $Request
     if (-not (Test-UnrealIgnoredRunRoot -WorkspaceRoot ([string] $Request.workspaceRoot))) { throw 'Saved/Hardness/Unreal/Runs must be ignored before a run can start.' }
     if (Test-Path -LiteralPath $paths.RunRoot) { throw "Run directory already exists: $($paths.RunRoot)" }
-    [void][System.IO.Directory]::CreateDirectory($paths.RunRoot)
-    [void][System.IO.Directory]::CreateDirectory($paths.TempPath)
-    Write-UnrealJsonFileAtomic -Path $paths.RequestPath -Value $Request
-    Write-UnrealJsonFileAtomic -Path $paths.MetadataPath -Value (New-UnrealRunMetadata -Request $Request)
+    $Request = Set-UnrealRunExecutionAssignment -Request $Request
+    $reservedMapping = [pscustomobject]@{ Execution = $Request.execution; Created = $false }
+    try {
+        [void][System.IO.Directory]::CreateDirectory($paths.RunRoot)
+        [void][System.IO.Directory]::CreateDirectory($paths.TempPath)
+        Write-UnrealJsonFileAtomic -Path $paths.RequestPath -Value $Request
+        Write-UnrealJsonFileAtomic -Path $paths.MetadataPath -Value (New-UnrealRunMetadata -Request $Request)
+    }
+    catch {
+        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+        throw
+    }
 
     $worker = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSScriptRoot '../Invoke-UnrealRunWorker.ps1')
     $pwsh = ConvertTo-UnrealCanonicalPath -Path (Join-Path $PSHOME 'pwsh.exe')
@@ -669,18 +821,32 @@ function Start-UnrealRunRequest {
     $startInfo.Environment['HARDNESS_GIT_COMMON_DIR'] = [string] $Request.gitCommonDir
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
-    if (-not $process.Start()) {
+    try { $workerStarted = $process.Start() }
+    catch {
+        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = "Unable to start the Unreal worker: $($_.Exception.Message)" })
+        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+        $process.Dispose()
+        throw
+    }
+    if (-not $workerStarted) {
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Unable to start the Unreal worker.' })
+        Exit-UnrealExecutionDriveMapping -Mapping $reservedMapping -RunId ([string] $Request.runId)
+        $process.Dispose()
         throw 'Unable to start the Unreal worker.'
     }
     [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = [DateTimeOffset]::UtcNow.ToString('o') })
-    if ($NoWait) { return Get-HardnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId) }
+    if ($NoWait) {
+        $process.Dispose()
+        return Get-HardnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
+    }
 
     $parentWaitMs = [Math]::Min([int]::MaxValue, [int64] $Request.timeoutMs + 30000)
     if (-not $process.WaitForExit([int] $parentWaitMs)) {
         Stop-UnrealProcessTree -ProcessId $process.Id
+        Exit-UnrealExecutionDriveMappingAfterWorker -Mapping $reservedMapping -RunId ([string] $Request.runId)
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'TimedOut'; exitCode = 2; timedOut = $true; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Worker exceeded the operation timeout plus shutdown allowance.' })
     }
+    $process.Dispose()
     return Get-HardnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
 }
 
@@ -793,10 +959,16 @@ function Invoke-UnrealRequestWorker {
     $paths = Get-UnrealRunPaths -WorkspaceRoot ([string] $request.workspaceRoot) -RunId ([string] $request.runId)
     if (-not (Test-UnrealPathEqual -Left $paths.RequestPath -Right $RequestPath)) { throw "Request path does not match its contained run identity: $RequestPath" }
     Assert-UnrealRequestPaths -Request $request -ExpectedPaths $paths
+    Assert-UnrealExecutionDescription -Request $request
+    if ([string] $request.execution.strategy -ceq 'DosDevice' -and [string] $request.execution.assignmentState -cne 'Assigned') {
+        throw 'Worker request does not contain an assigned execution drive.'
+    }
     [void](Get-UnrealWorkspaceConfiguration -WorkspaceRoot ([string] $request.workspaceRoot) -RequireExecutionGuard -CallerPath ([string] $request.workspaceRoot))
 
     $workspaceLease = $null
+    $driveLease = $null
     $engineLease = $null
+    $driveMapping = $null
     $started = [DateTimeOffset]::UtcNow
     try {
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'WaitingWorkspace' })
@@ -805,6 +977,19 @@ function Invoke-UnrealRequestWorker {
             $state = if ([string] $request.concurrency.policy -eq 'Fail') { 'Failed' } else { 'TimedOut' }
             $code = if ($state -eq 'TimedOut') { 2 } else { 4 }
             return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = $state; exitCode = $code; timedOut = $state -eq 'TimedOut'; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Workspace lease was not acquired.' }
+        }
+        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'WaitingExecutionDrive' })
+        if ([string] $request.execution.strategy -ceq 'DosDevice') {
+            $driveLease = Enter-UnrealLease `
+                -Scope 'drive' `
+                -Key ([string] $request.execution.driveLetter) `
+                -Policy ([string] $request.concurrency.policy) `
+                -TimeoutMs (Get-UnrealRemainingTimeout -Request $request)
+            if ($null -eq $driveLease) {
+                $state = if ([string] $request.concurrency.policy -eq 'Fail') { 'Failed' } else { 'TimedOut' }
+                $code = if ($state -eq 'TimedOut') { 2 } else { 8 }
+                return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = $state; exitCode = $code; timedOut = $state -eq 'TimedOut'; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Execution-drive lease was not acquired.' }
+            }
         }
         if ([bool] $request.concurrency.requiresEngineLease) {
             [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'WaitingEngine' })
@@ -821,6 +1006,8 @@ function Invoke-UnrealRequestWorker {
                 return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = $state; exitCode = $code; timedOut = $state -eq 'TimedOut'; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = "$engineLane engine lane was not acquired." }
             }
         }
+        $driveMapping = Enter-UnrealExecutionDriveMapping -Execution $request.execution -RunId ([string] $request.runId)
+        [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ execution = $driveMapping.Execution })
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Running' })
         $result = if ([string] $request.operation -eq 'Suite') {
             Invoke-UnrealSuiteRequest -Request $request -MetadataPath $paths.MetadataPath
@@ -881,13 +1068,30 @@ function Invoke-UnrealRequestWorker {
         else {
             "Native process exited with code $effectiveExitCode."
         }
+        Exit-UnrealExecutionDriveMapping -Mapping $driveMapping -RunId ([string] $request.runId)
+        if ([string] $driveMapping.Execution.mappingState -in @('Owned', 'StaleOwned')) {
+            $releasedExecution = $driveMapping.Execution | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+            $releasedExecution.mappingState = 'Absent'
+            [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ execution = $releasedExecution })
+        }
+        $driveMapping = $null
         return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = $state; exitCode = $effectiveExitCode; timedOut = [bool] $result.TimedOut; durationMs = [long] $result.DurationMs; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = $message }
     }
     catch {
         return Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Failed'; exitCode = 1; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); durationMs = [long] ([DateTimeOffset]::UtcNow - $started).TotalMilliseconds; message = $_.Exception.Message }
     }
     finally {
+        $cleanupMapping = if ($null -eq $driveMapping) { [pscustomobject]@{ Execution = $request.execution; Created = $false } } else { $driveMapping }
+        try { Exit-UnrealExecutionDriveMapping -Mapping $cleanupMapping -RunId ([string] $request.runId) }
+        catch { }
+        if ($null -ne $driveMapping -and [string] $driveMapping.Execution.mappingState -in @('Owned', 'StaleOwned')) {
+            $releasedExecution = $driveMapping.Execution | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+            $releasedExecution.mappingState = 'Absent'
+            try { [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ execution = $releasedExecution }) }
+            catch { }
+        }
         Exit-UnrealEngineLane -Lease $engineLease
+        Exit-UnrealLease -Lease $driveLease
         Exit-UnrealLease -Lease $workspaceLease
     }
 }
@@ -922,6 +1126,8 @@ function Stop-HardnessUnrealRun {
             else { return $status }
         }
     }
+    $request = Read-UnrealJsonFile -Path $paths.RequestPath
+    Exit-UnrealExecutionDriveMappingAfterWorker -Mapping ([pscustomobject]@{ Execution = $request.execution; Created = $false }) -RunId $RunId
     [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'Cancelled'; exitCode = 3; completedAtUtc = [DateTimeOffset]::UtcNow.ToString('o'); message = 'Run cancelled by explicit request.' })
     return Get-UnrealRunStatusRecord -WorkspaceRoot $configuration.WorkspaceRoot -RunId $RunId
 }

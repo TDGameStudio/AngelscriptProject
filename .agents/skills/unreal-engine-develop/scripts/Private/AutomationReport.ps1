@@ -1,4 +1,4 @@
-$script:UnrealAutomationSummarySchema = 'hardness-unreal-automation-summary-v1'
+$script:UnrealAutomationSummarySchema = 'hardness-unreal-automation-summary'
 $script:UnrealAutomationMaxReportBytes = 134217728
 $script:UnrealAutomationMaxLogBytes = 262144
 $script:UnrealAutomationMaxLogHints = 20

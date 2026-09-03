@@ -2,7 +2,7 @@
 
 > **本文件是 `AGENTS.md` 的中文翻译版本，内容应与英文版保持同步。**
 
-> 当前项目正处于重构阶段；在重构完成且用户明确解除限制前，禁止使用所有 Skill。
+> 当前项目仍处于重构阶段；用户已于 2026-09-04 明确解除临时 Skill 禁令。项目 Skill 已恢复使用，但仍须遵守本文件的 workspace、OpenSpec、UE 真实验证与 Git 边界。
 
 ## 项目概览
 
@@ -225,13 +225,14 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - 每个 workspace 根目录的 `AgentConfig.ini` 保存本机路径及由 Hardness 管理的 workspace 身份，并已被 `.gitignore` 忽略。
 - 使用 Hardness `workspace.bootstrap` 初始化或修复配置，再通过 `workspace.config.set` 设置非托管键。Hardness 从 canonical primary checkout 复制共享本机设置，并始终把 `Paths.ProjectFile` 重新绑定到当前 workspace。
 - 构建、测试入口从 `Paths.EngineRoot` 读取引擎路径；若受管 workspace 身份或当前 PowerShell 会话选择与目标根目录不匹配，则拒绝执行。
+- 过时的 `References.HazelightAngelscriptEngineRoot` 键无效；bootstrap 必须移除它，配置写入不得恢复它，执行入口遇到残留键时必须拒绝继续。
+- `AgentConfig.ini`、Git 注册、workspace/engine 锁与 `Saved/Hardness` 证据始终使用真实物理路径。Windows 下 UE 子进程统一使用 Hardness 自动分配的临时短盘符执行视图；该盘符不会写回配置，`PlanOnly` 不创建映射或分配记录，真实运行只清理经过精确目标和所有权验证的映射。
 
 ## 构建与验证原则
 
-- 构建说明统一参考 `Documents/Guides/Build.md`。
-- 测试说明统一参考 `Documents/Guides/Test.md`。
-- Standalone Debug 构建与验证统一使用 `Tools\RunTestSuite.ps1 -Suite Standalone`；最终 Win64 ZIP 使用独立的 `-Suite StandaloneRelease` 构建并执行 Release CTest。当前两套配置各为 `19/19`，报告与计数不能和 UE Automation、NativeCore 或 catalogued C++ 数字混写。
-- 发布前运行 `Tools\RunStandaloneExternalSmoke.ps1`：它创建无 C++ host module 的临时外部项目，两次确定性导出 Project Bundle，并用最终 Release ZIP 中解压出的 CLI 消费该 Bundle。
+- UE 5.8 的发现、构建、Automation、suite、commandlet、进程、进度与取消统一使用 Hardness `ue.*` 路由；根 `Tools` PowerShell wrapper 不是回退入口。旧 wrapper 只有在长 worktree 的默认 executor、Smoke、commandlet、suite、取消及并行 worktree 真实门禁通过后才能原子删除。
+- 当前 Hardness suite catalog 只承载 UE Automation。Standalone Debug/Release、打包、coverage、release 编排、CachePackage、external smoke 与完整 StaticJIT pipeline 继续作为显式 deferred capability，直到独立 Change 提供验证过的路由。
+- Standalone CTest 与 UE Automation、NativeCore、catalogued C++ baseline 是相互独立的统计范围；Debug 与 Release 是同一批测试的不同配置，不得把两者计数相加。
 - 状态导出入口：`FAngelscriptStateDump::DumpAll()`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`），控制台命令 `as.DumpEngineState`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`）。Dump API 还提供 `CaptureSnapshot`、`DiffSnapshots`、`DumpSnapshot` 和 `DumpDiff`；`DumpAll()` 会写出 `EngineStateSnapshot.csv` 与分类 snapshot 表，diff helper 会写出 `StateDiff.csv` 和 `StateDiffSummary.csv`。
 - 保持 dump 架构为纯外部观察者：优先通过已有 public/runtime API 读取，不要为 dump 侵入原有业务类型。
 - 若文档与当前插件化目标不一致，应先更新文档，再继续扩展实现。
@@ -266,12 +267,12 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 ## Harness、子模块与 Worktree
 
-- 当前项目处于全面重构期；在用户明确解除本文件顶部限制前，所有项目 Skill 继续禁用。以下规则只记录已经准备好的 Hardness 契约，本身不构成调用授权。
+- 当前项目仍处于全面重构期，但项目 Skill 已由用户明确恢复使用。所有调用继续受本节的 Hardness、workspace、子模块、Review 与收口契约约束。
 - 默认编辑位置仍是 Current/main workspace。除非用户明确要求 worktree，或明确启动了由 Goal 持有的任务，否则不要创建、切换或继续使用 worktree。一旦选择 Goal 模式，它使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`。
 - `.agents/skills/hardness/SKILL.md` 是准备好的项目 Skill 入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前核心公开 `workspace.*`、`git.*`、`openspec.*` 与 `task.status`。Unreal 路由和公共 `Tools` wrapper 迁移仍延后到独立 `unreal-engine-develop` change。
 - `Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS` 与 `Tools/openspec` 都是 **git 子模块**。父 worktree 必须初始化 gitlink 记录的精确 OID；远端不再提供该对象时，只允许从已验证的本机对象库回退。
 - 先提交并标记 `Tools/openspec`。每个 release 在父仓库历史中只允许一次最终 accepted package 更新，其中包含 gitlink、manifest/docs 与 bundled `openspec.exe`；候选 EXE 不得进入父仓库提交。
-- 临时 Skill 限制解除后，使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化，并用 `workspace.activate` 将所选 workspace 绑定到当前 PowerShell 进程。仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
+- 使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化，并用 `workspace.activate` 将所选 workspace 绑定到当前 PowerShell 进程。仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
 - Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`git.commit` 负责带明确 scope 的 Git 收口；`git.integrate`、非 force 的 `git.push` 与 `workspace.remove` 是相互独立且仅在用户明确要求时执行的操作。验证和 Review Gate 仍由 agent 负责，清理 worktree 时保留 Goal 分支。
 - 目标代码位于子模块时，先提交子模块，再提交父仓库 gitlink。完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 

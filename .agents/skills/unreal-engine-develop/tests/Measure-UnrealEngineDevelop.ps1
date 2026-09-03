@@ -259,7 +259,7 @@ try {
     }))
     $measurements.Add((Invoke-MeasuredOperation -Id 'suite-plan' -Operation 'New-HardnessUnrealSuitePlan -WorkspaceRoot <fixture> -Suite Smoke' -Action {
         $plan = New-HardnessUnrealSuitePlan -WorkspaceRoot $fixture.WorkspaceRoot -Suite Smoke
-        Assert-Measure -Condition ([string] $plan.SchemaVersion -ceq 'hardness-unreal-suite-plan-v1' -and [string] $plan.Suite -ceq 'Smoke' -and $plan.EntryCount -gt 0) -Message 'suite plan contract was not exact'
+        Assert-Measure -Condition ([string] $plan.SchemaVersion -ceq 'hardness-unreal-suite-plan' -and [string] $plan.Suite -ceq 'Smoke' -and $plan.EntryCount -gt 0) -Message 'suite plan contract was not exact'
     }))
     $measurements.Add((Invoke-MeasuredOperation -Id 'typed-build-plan' -Operation 'Invoke-HardnessUnrealBuild -WorkspaceRoot <fixture> -PlanOnly' -Action {
         $plan = Invoke-HardnessUnrealBuild -WorkspaceRoot $fixture.WorkspaceRoot -PlanOnly
@@ -340,7 +340,7 @@ try {
     }
 
     $document = [pscustomobject][ordered]@{
-        SchemaVersion = 'hardness-unreal-workflow-measurement-v1'
+        SchemaVersion = 'hardness-unreal-workflow-measurement'
         Environment   = [pscustomobject][ordered]@{
             PSEdition      = [string] $PSVersionTable.PSEdition
             PSVersion      = [string] $PSVersionTable.PSVersion
@@ -388,7 +388,7 @@ try {
     }
 
     [pscustomobject][ordered]@{
-        SchemaVersion = 'hardness-unreal-workflow-measurement-result-v1'
+        SchemaVersion = 'hardness-unreal-workflow-measurement-result'
         RawJsonSha256 = $rawHash
         RawJson       = $rawJson
         Data          = $document

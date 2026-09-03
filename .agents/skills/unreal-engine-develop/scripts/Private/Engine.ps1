@@ -221,10 +221,18 @@ function Get-HardnessUnrealStatus {
         throw "AgentConfig.ini Paths.EngineRoot is missing for '$($configuration.WorkspaceRoot)'."
     }
     $engine = Get-UnrealEngineDescription -EngineRoot $configuration.EngineRoot -Sources @('AgentConfig') -Configured $true
+    $execution = Get-UnrealExecutionPath `
+        -WorkspaceRoot $configuration.WorkspaceRoot `
+        -ProjectFile $configuration.ProjectFile `
+        -GitCommonDir ([string] $configuration.Identity.GitCommonDir) `
+        -RunId '00000000000000000000000000000000'
     return [pscustomobject][ordered]@{
         Ready         = $engine.Ready
         WorkspaceRoot = $configuration.WorkspaceRoot
         ProjectFile   = $configuration.ProjectFile
+        ExecutionPath = [string] $execution.workspaceRoot
+        ExecutionProjectFile = [string] $execution.projectFile
+        Execution     = $execution
         Engine        = $engine
         Errors        = @($engine.Errors)
     }
@@ -413,6 +421,8 @@ function ConvertTo-UnrealProcessView {
         WorkspaceRoot       = ''
         EngineRoot          = ''
         ProjectFile         = ''
+        ExecutionPath       = ''
+        ExecutionProjectFile = ''
         Target              = ''
         Platform            = ''
         Configuration       = ''
@@ -432,9 +442,17 @@ function ConvertTo-UnrealProcessView {
     $projectValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Project'
     if ([string]::IsNullOrWhiteSpace($projectValue)) { return $result }
     try {
-        $project = ConvertTo-UnrealCanonicalPath -Path $projectValue
-        if (-not $project.EndsWith('.uproject', [System.StringComparison]::OrdinalIgnoreCase)) { return $result }
-        $workspace = ConvertTo-UnrealCanonicalPath -Path (Split-Path -Parent $project)
+        $executionProject = ConvertTo-UnrealCanonicalPath -Path $projectValue
+        if (-not $executionProject.EndsWith('.uproject', [System.StringComparison]::OrdinalIgnoreCase)) { return $result }
+        $resolvedExecution = Resolve-UnrealPhysicalWorkspaceFromExecutionProject -ProjectFile $executionProject
+        if ($null -eq $resolvedExecution) {
+            $project = $executionProject
+            $workspace = ConvertTo-UnrealCanonicalPath -Path (Split-Path -Parent $project)
+        }
+        else {
+            $project = ConvertTo-UnrealCanonicalPath -Path ([string] $resolvedExecution.ProjectFile)
+            $workspace = ConvertTo-UnrealCanonicalPath -Path ([string] $resolvedExecution.WorkspaceRoot)
+        }
         $paths = Get-UnrealRunPaths -WorkspaceRoot $workspace -RunId $session
         foreach ($jsonPath in @($paths.RequestPath, $paths.MetadataPath)) {
             if (-not (Test-Path -LiteralPath $jsonPath -PathType Leaf)) { return $result }
@@ -450,12 +468,14 @@ function ConvertTo-UnrealProcessView {
             [string] $metadata.operation -ne 'Build' -or
             [string] $metadata.state -in $script:UnrealTerminalStates -or
             -not (Test-UnrealPathEqual -Left ([string] $request.workspaceRoot) -Right $workspace) -or
-            -not (Test-UnrealPathEqual -Left ([string] $request.projectFile) -Right $project)) {
+            -not (Test-UnrealPathEqual -Left ([string] $request.projectFile) -Right $project) -or
+            -not ([string] $request.execution.projectFile).Equals($executionProject, [System.StringComparison]::OrdinalIgnoreCase)) {
             return $result
         }
         $nativePid = 0
         if (-not [int]::TryParse([string] $metadata.nativePid, [ref] $nativePid) -or $nativePid -ne $ProcessId) { return $result }
         Assert-UnrealRequestPaths -Request $request -ExpectedPaths $paths
+        Assert-UnrealExecutionDescription -Request $request
         $sessionArguments = @($request.arguments | Where-Object { [string] $_ -match '(?i)^[-/]Session[:=]([a-f0-9]{32})$' })
         if ($sessionArguments.Count -ne 1 -or (Get-UnrealCommandLineOptionValue -CommandLine ([string] $sessionArguments[0]) -Name 'Session').ToLowerInvariant() -ne $session) {
             return $result
@@ -477,6 +497,8 @@ function ConvertTo-UnrealProcessView {
         $result.WorkspaceRoot = $workspace
         $result.EngineRoot = ConvertTo-UnrealCanonicalPath -Path ([string] $request.engineRoot)
         $result.ProjectFile = $project
+        $result.ExecutionPath = [string] $request.execution.workspaceRoot
+        $result.ExecutionProjectFile = $executionProject
         $result.Target = [string] $build.target
         $result.Platform = [string] $build.platform
         $result.Configuration = [string] $build.configuration

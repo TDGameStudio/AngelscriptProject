@@ -1,6 +1,6 @@
 @{
     RootModule        = 'UnrealEngineDevelop.psm1'
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '2.0.0'
     GUID              = 'e40891cb-066b-45d8-b49d-1e51b74b6f67'
     Author            = 'AngelscriptProject'
     CompanyName       = 'AngelscriptProject'

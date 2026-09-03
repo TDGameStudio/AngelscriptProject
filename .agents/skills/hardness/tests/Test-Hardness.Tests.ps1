@@ -88,14 +88,13 @@ $unrealTagIndex = [array]::IndexOf([object[]]@($unrealQuickCheck.Arguments), '-T
 Assert-Equal 'Integration' $unrealQuickCheck.Arguments[$unrealTagIndex + 1] 'the Unreal Quick check never runs the full or real-UE suite'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
-$commandTemplateScript = Join-Path $projectRoot 'Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1'
-$commandTemplateLauncher = Join-Path $projectRoot 'Tools\Diagnostics\ResolveAgentCommandTemplates.bat'
-$commandTemplateScriptText = Get-Content -LiteralPath $commandTemplateScript -Raw
-$commandTemplateLauncherText = Get-Content -LiteralPath $commandTemplateLauncher -Raw
-Assert-True ($commandTemplateScriptText -match '(?m)^#Requires -Version 7\.0\s*$') 'the command-template script requires PowerShell 7.0 or later'
-Assert-True ($commandTemplateScriptText -match '(?m)^#Requires -PSEdition Core\s*$') 'the command-template script rejects Windows PowerShell'
-Assert-True ($commandTemplateLauncherText -match '(?im)^pwsh\.exe\s') 'the command-template launcher starts PowerShell 7'
-Assert-True ($commandTemplateLauncherText -notmatch '(?i)powershell\.exe') 'the command-template launcher never falls back to Windows PowerShell'
+$unrealModulePath = Join-Path $projectRoot '.agents\skills\unreal-engine-develop\scripts\UnrealEngineDevelop.psm1'
+$unrealWindowsPath = Join-Path $projectRoot '.agents\skills\unreal-engine-develop\scripts\Private\WindowsPath.ps1'
+$unrealModuleText = Get-Content -LiteralPath $unrealModulePath -Raw
+Assert-True (Test-Path -LiteralPath $unrealWindowsPath -PathType Leaf) 'the Unreal leaf owns its Windows execution-path implementation'
+Assert-True ($unrealModuleText -match "hardness-unreal-request") 'the Unreal leaf publishes the stable Request schema'
+Assert-True ($unrealModuleText -match "hardness-unreal-run") 'the Unreal leaf publishes the stable Run schema'
+Assert-True ($unrealModuleText -notmatch '(?i)(?:^|[\\/])Tools[\\/].*\.ps1') 'the Unreal leaf has no operational dependency on root Tools scripts'
 
 foreach ($check in @($performance)) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references the private performance leaf"

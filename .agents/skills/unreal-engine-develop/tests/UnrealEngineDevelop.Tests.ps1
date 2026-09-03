@@ -9,6 +9,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$previousUnrealTestMode = $env:HARDNESS_UNREAL_TEST_MODE
+$previousUnrealTestStateRoot = $env:HARDNESS_UNREAL_TEST_STATE_ROOT
+$unrealTestStateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hardness-unreal-state-{0}" -f [guid]::NewGuid().ToString('N'))
+$env:HARDNESS_UNREAL_TEST_MODE = '1'
+$env:HARDNESS_UNREAL_TEST_STATE_ROOT = $unrealTestStateRoot
 
 function Assert-True {
     param([bool] $Condition, [string] $Message)
@@ -221,7 +226,7 @@ if (Test-Selected 'Foundation') {
     }
 
     $capabilities = Get-Content -LiteralPath (Join-Path $skillRoot 'data/ubt-capabilities.json') -Raw | ConvertFrom-Json
-    Assert-Equal 'hardness-ubt-capabilities-v1' $capabilities.schemaVersion 'UBT capability data is versioned'
+    Assert-Equal 'hardness-ubt-capabilities' $capabilities.schemaVersion 'UBT capability data uses its stable schema name'
     Assert-True (@($capabilities.capabilities).Count -ge 3) 'UBT capability catalog is not empty'
     foreach ($capability in @($capabilities.capabilities)) {
         Assert-True (-not [string]::IsNullOrWhiteSpace([string] $capability.id)) 'every UBT capability has an id'
@@ -229,7 +234,7 @@ if (Test-Selected 'Foundation') {
     }
 
     $profiles = Get-Content -LiteralPath (Join-Path $skillRoot 'data/launch-profiles.json') -Raw | ConvertFrom-Json
-    Assert-Equal 'hardness-unreal-launch-profiles-v1' $profiles.schemaVersion 'launch-profile data is versioned'
+    Assert-Equal 'hardness-unreal-launch-profiles' $profiles.schemaVersion 'launch-profile data uses its stable schema name'
     Assert-True (@($profiles.profiles.name) -contains 'headless') 'the default headless profile exists'
 }
 
@@ -254,6 +259,10 @@ try {
         Assert-Equal '5.8.0' $status.Engine.Version 'Build.version is reported'
         Assert-Equal '10.0' $status.Engine.DotNet.VersionDirectory 'runtimeconfig selects the bundled major.minor directory'
         Assert-Equal (Join-Path $scenarioFixture.EngineRoot 'Engine/Binaries/ThirdParty/DotNet/10.0/win-x64/dotnet.exe') $status.Engine.DotNet.Executable 'bundled dotnet is selected without a fixed SDK patch'
+        Assert-Equal 'DosDevice' $status.Execution.Strategy 'Windows Unreal execution uses a transient DOS-device view'
+        Assert-Equal 'Proposed' $status.Execution.AssignmentState 'read-only status proposes an execution drive without assigning it'
+        Assert-Match $status.ExecutionPath '^[G-Z]:\\$' 'read-only status exposes a short execution root'
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $unrealTestStateRoot 'DriveAssignments.json'))) 'read-only status does not create the assignment registry'
 
         $engines = @(Get-HardnessUnrealEngineList -WorkspaceRoot $scenarioFixture.WorkspaceRoot)
         $configured = @($engines | Where-Object { $_.Configured })
@@ -314,6 +323,8 @@ try {
         } $scenarioFixture.WorkspaceRoot $scenarioFixture.EngineRoot $scenarioFixture.ProjectFile (Join-Path $PSHOME 'pwsh.exe') $successArguments
         Assert-True (& $module { Test-UnrealRunStateTransition -CurrentState Queued -NextState WaitingWorkspace }) 'Queued may advance to WaitingWorkspace'
         Assert-True (-not (& $module { Test-UnrealRunStateTransition -CurrentState Queued -NextState Running })) 'Queued may not skip directly to Running'
+        Assert-True (& $module { Test-UnrealRunStateTransition -CurrentState WaitingWorkspace -NextState WaitingExecutionDrive }) 'workspace ownership advances to execution-drive ownership'
+        Assert-True (& $module { Test-UnrealRunStateTransition -CurrentState WaitingExecutionDrive -NextState Running }) 'non-UBT execution advances from its drive lease to Running'
         Assert-True (& $module { Test-UnrealRunStateTransition -CurrentState Running -NextState Cancelled }) 'Running may terminate as Cancelled'
         $tamperedRequest = $successRequest | ConvertTo-Json -Depth 100 | ConvertFrom-Json
         $tamperedRequest.paths.LogPath = Join-Path $scenarioScratch 'escaped-command.log'
@@ -330,6 +341,134 @@ try {
         Assert-True (Test-Path -LiteralPath $success.RequestPath -PathType Leaf) 'Request.json is retained'
         Assert-True (Test-Path -LiteralPath $success.LogPath -PathType Leaf) 'Command.log is retained'
         Assert-Match (Get-Content -LiteralPath $success.LogPath -Raw) 'fixture-success' 'stdout is streamed into bounded run evidence'
+        $persistedSuccessRequest = Get-Content -LiteralPath $success.RequestPath -Raw | ConvertFrom-Json -Depth 100
+        Assert-Equal 'hardness-unreal-request' $persistedSuccessRequest.schemaVersion 'real runs persist the stable execution-path request schema'
+        Assert-Equal 'Assigned' $persistedSuccessRequest.execution.assignmentState 'real runs assign a stable execution drive before request persistence'
+        Assert-True ([string] $persistedSuccessRequest.execution.projectFile -like "$([string] $persistedSuccessRequest.execution.driveLetter)\*") 'the child project view is rooted on the assigned drive'
+        $releasedTarget = & $module { param($Drive) Get-UnrealDosDeviceTarget -DriveLetter $Drive } ([string] $persistedSuccessRequest.execution.driveLetter)
+        Assert-True ([string]::IsNullOrWhiteSpace([string] $releasedTarget)) 'worker completion removes the Hardness-owned transient mapping'
+
+        $foreignExecution = $persistedSuccessRequest.execution
+        & $module {
+            param($Drive, $RawTarget)
+            Initialize-UnrealDosDeviceInterop
+            [Hardness.Unreal.Interop.DosDeviceNative]::Create($Drive, $RawTarget)
+        } ([string] $foreignExecution.driveLetter) ([string] $foreignExecution.rawTarget)
+        try {
+            $foreignRequest = & $module {
+                param($Workspace, $Engine, $Project, $Executable)
+                New-UnrealRunRequest `
+                    -WorkspaceRoot $Workspace `
+                    -EngineRoot $Engine `
+                    -ProjectFile $Project `
+                    -Operation Test `
+                    -FilePath $Executable `
+                    -Arguments @('-NoProfile', '-Command', "Write-Output 'foreign-mapping'") `
+                    -WorkingDirectory $Workspace `
+                    -TimeoutMs 10000 `
+                    -ConcurrencyDecision ([pscustomobject]@{ Policy = 'Auto'; Decision = 'CrossWorkspaceNonUbt'; RequiresEngineLease = $false; Reasons = @('fixture') })
+            } $scenarioFixture.WorkspaceRoot $scenarioFixture.EngineRoot $scenarioFixture.ProjectFile (Join-Path $PSHOME 'pwsh.exe')
+            $foreignRun = & $module { param($Request) Start-UnrealRunRequest -Request $Request } $foreignRequest
+            Assert-Equal 'Succeeded' $foreignRun.State 'an exact foreign mapping can be reused safely'
+            Assert-Equal 'Foreign' $foreignRun.Execution.MappingState 'foreign mapping ownership remains explicit in terminal metadata'
+            $foreignTarget = & $module { param($Drive) Get-UnrealDosDeviceTarget -DriveLetter $Drive } ([string] $foreignExecution.driveLetter)
+            Assert-True (-not [string]::IsNullOrWhiteSpace([string] $foreignTarget)) 'worker completion preserves a matching foreign mapping'
+        }
+        finally {
+            & $module {
+                param($Drive, $RawTarget)
+                Initialize-UnrealDosDeviceInterop
+                [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact($Drive, $RawTarget)
+            } ([string] $foreignExecution.driveLetter) ([string] $foreignExecution.rawTarget)
+        }
+
+        $assignmentPath = Join-Path $unrealTestStateRoot 'DriveAssignments.json'
+        $assignmentBeforeConflict = Get-Content -LiteralPath $assignmentPath -Raw
+        $conflictingRawTarget = & $module { param($Root) ConvertTo-UnrealRawDosTarget -WorkspaceRoot $Root } $scenarioScratch
+        & $module {
+            param($Drive, $RawTarget)
+            Initialize-UnrealDosDeviceInterop
+            [Hardness.Unreal.Interop.DosDeviceNative]::Create($Drive, $RawTarget)
+        } ([string] $foreignExecution.driveLetter) $conflictingRawTarget
+        try {
+            $conflictPlan = Invoke-HardnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -PlanOnly
+            Assert-True ($conflictPlan.Execution.DriveLetter -cne [string] $foreignExecution.driveLetter) 'PlanOnly proposes another free drive when the stable drive has a foreign target'
+            Assert-Equal 'Proposed' $conflictPlan.Execution.AssignmentState 'a conflict proposal does not rewrite the stable assignment'
+            Assert-Equal $assignmentBeforeConflict (Get-Content -LiteralPath $assignmentPath -Raw) 'conflict planning leaves the assignment registry byte-for-byte unchanged'
+            $reallocatedRequest = & $module {
+                param($Workspace, $Engine, $Project, $Executable)
+                New-UnrealRunRequest `
+                    -WorkspaceRoot $Workspace `
+                    -EngineRoot $Engine `
+                    -ProjectFile $Project `
+                    -Operation Test `
+                    -FilePath $Executable `
+                    -Arguments @('-NoProfile', '-Command', "Write-Output 'reallocated-mapping'") `
+                    -WorkingDirectory $Workspace `
+                    -TimeoutMs 10000 `
+                    -ConcurrencyDecision ([pscustomobject]@{ Policy = 'Auto'; Decision = 'CrossWorkspaceNonUbt'; RequiresEngineLease = $false; Reasons = @('fixture') })
+            } $scenarioFixture.WorkspaceRoot $scenarioFixture.EngineRoot $scenarioFixture.ProjectFile (Join-Path $PSHOME 'pwsh.exe')
+            $reallocatedRun = & $module { param($Request) Start-UnrealRunRequest -Request $Request } $reallocatedRequest
+            Assert-Equal 'Succeeded' $reallocatedRun.State 'a real run reallocates before request persistence when the stable drive conflicts'
+            $reallocatedPersisted = Get-Content -LiteralPath $reallocatedRun.RequestPath -Raw | ConvertFrom-Json -Depth 100
+            Assert-True ([string] $reallocatedPersisted.execution.driveLetter -cne [string] $foreignExecution.driveLetter) 'the real request records the reallocated drive'
+            $conflictingTargetAfterRun = & $module { param($Drive) Get-UnrealDosDeviceTarget -DriveLetter $Drive } ([string] $foreignExecution.driveLetter)
+            $conflictPreserved = & $module { param($RawTarget, $Root) Test-UnrealDosDeviceTargetsWorkspace -RawTarget $RawTarget -WorkspaceRoot $Root } $conflictingTargetAfterRun $scenarioScratch
+            Assert-True $conflictPreserved 'the reallocated run never removes the conflicting foreign drive'
+        }
+        finally {
+            & $module {
+                param($Drive, $RawTarget)
+                Initialize-UnrealDosDeviceInterop
+                [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact($Drive, $RawTarget)
+            } ([string] $foreignExecution.driveLetter) $conflictingRawTarget
+        }
+
+        $staleDrive = [string] $reallocatedPersisted.execution.driveLetter
+        $staleRawTarget = [string] $reallocatedPersisted.execution.rawTarget
+        & $module {
+            param($Drive, $RawTarget, $AssignmentKey)
+            Initialize-UnrealDosDeviceInterop
+            [Hardness.Unreal.Interop.DosDeviceNative]::Create($Drive, $RawTarget)
+            $store = Read-UnrealDriveAssignmentStore
+            $record = @($store.assignments | Where-Object { [string] $_.key -ceq $AssignmentKey } | Select-Object -First 1)
+            if ($record.Count -ne 1) { throw 'stale recovery fixture assignment is missing' }
+            $record[0].ownerRunId = [guid]::NewGuid().ToString('N')
+            $record[0].ownerPid = 2147483647
+            $record[0].mappingOwned = $true
+            Write-UnrealDriveAssignmentStore -Store $store
+        } $staleDrive $staleRawTarget ([string] $reallocatedPersisted.execution.assignmentKey)
+        try {
+            $stalePlan = Invoke-HardnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -PlanOnly
+            Assert-Equal 'StaleOwned' $stalePlan.Execution.MappingState 'PlanOnly identifies an abandoned exact Hardness-owned mapping without mutating it'
+            $staleRecoveryRequest = & $module {
+                param($Workspace, $Engine, $Project, $Executable)
+                New-UnrealRunRequest `
+                    -WorkspaceRoot $Workspace `
+                    -EngineRoot $Engine `
+                    -ProjectFile $Project `
+                    -Operation Test `
+                    -FilePath $Executable `
+                    -Arguments @('-NoProfile', '-Command', "Write-Output 'stale-recovery'") `
+                    -WorkingDirectory $Workspace `
+                    -TimeoutMs 10000 `
+                    -ConcurrencyDecision ([pscustomobject]@{ Policy = 'Auto'; Decision = 'CrossWorkspaceNonUbt'; RequiresEngineLease = $false; Reasons = @('fixture') })
+            } $scenarioFixture.WorkspaceRoot $scenarioFixture.EngineRoot $scenarioFixture.ProjectFile (Join-Path $PSHOME 'pwsh.exe')
+            $staleRecoveryRun = & $module { param($Request) Start-UnrealRunRequest -Request $Request } $staleRecoveryRequest
+            Assert-Equal 'Succeeded' $staleRecoveryRun.State 'a later real run reclaims an abandoned owned mapping'
+            $staleTargetAfterRun = & $module { param($Drive) Get-UnrealDosDeviceTarget -DriveLetter $Drive } $staleDrive
+            Assert-True ([string]::IsNullOrWhiteSpace([string] $staleTargetAfterRun)) 'stale recovery leaves no owned mapping behind'
+        }
+        finally {
+            & $module {
+                param($Drive, $RawTarget, $Workspace)
+                $current = Get-UnrealDosDeviceTarget -DriveLetter $Drive
+                if (Test-UnrealDosDeviceTargetsWorkspace -RawTarget $current -WorkspaceRoot $Workspace) {
+                    Initialize-UnrealDosDeviceInterop
+                    [Hardness.Unreal.Interop.DosDeviceNative]::RemoveExact($Drive, $RawTarget)
+                }
+            } $staleDrive $staleRawTarget $scenarioFixture.WorkspaceRoot
+        }
 
         $timeoutArguments = @('-NoProfile', '-Command', 'Start-Sleep -Seconds 10')
         $timeoutRequest = & $module {
@@ -450,7 +589,7 @@ try {
             'FixtureEditor'
             'Win64'
             'Development'
-            "-Project=$($scenarioFixture.ProjectFile)"
+            "-Project=$($installedPlan.ExecutionProjectFile)"
             '-architecture=x64'
             '-NoHotReload'
             '-NoHotReloadFromIDE'
@@ -460,19 +599,20 @@ try {
             '-NoEngineChanges'
             '-TraceWrites'
             '-Example=alpha beta'
-            "-Log=$($installedPlan.Paths.UbtLogPath)"
+            "-Log=$($installedPlan.ExecutionPaths.UbtLogPath)"
             "-Session=$($installedPlan.RunId)"
         ) -Actual $installedPlan.Arguments -Message 'installed build arguments are exact and ordered'
         Assert-Equal (Split-Path -Parent $installedPlan.Executable) ([string] $installedPlan.Environment.DOTNET_ROOT) 'DOTNET_ROOT is child-local and follows the selected host'
-        Assert-Equal $installedPlan.Paths.TempPath ([string] $installedPlan.Environment.UnrealBuildTool_TMP) 'UBT temp is unique per run'
-        Assert-Equal $installedPlan.Paths.TempPath ([string] $installedPlan.Environment.TMP) 'TMP is unique per run'
-        Assert-Equal $installedPlan.Paths.TempPath ([string] $installedPlan.Environment.TEMP) 'TEMP is unique per run'
+        Assert-Equal $installedPlan.ExecutionPaths.TempPath ([string] $installedPlan.Environment.UnrealBuildTool_TMP) 'UBT temp uses the short per-run execution view'
+        Assert-Equal $installedPlan.ExecutionPaths.TempPath ([string] $installedPlan.Environment.TMP) 'TMP uses the short per-run execution view'
+        Assert-Equal $installedPlan.ExecutionPaths.TempPath ([string] $installedPlan.Environment.TEMP) 'TEMP uses the short per-run execution view'
         Assert-Equal '0' ([string] $installedPlan.Environment.DOTNET_MULTILEVEL_LOOKUP) 'bundled .NET multilevel lookup is disabled'
         Assert-Equal 'LatestMajor' ([string] $installedPlan.Environment.DOTNET_ROLL_FORWARD) 'bundled .NET roll-forward policy is explicit'
         Assert-Equal $dotNetRootBefore ([Environment]::GetEnvironmentVariable('DOTNET_ROOT', 'Process')) 'planning does not mutate parent DOTNET_ROOT'
         Assert-Equal $pathBefore ([Environment]::GetEnvironmentVariable('PATH', 'Process')) 'planning does not mutate parent PATH'
         Assert-Equal $tempBefore ([Environment]::GetEnvironmentVariable('TEMP', 'Process')) 'planning does not mutate parent TEMP'
         Assert-True (-not (Test-Path -LiteralPath $installedPlan.Paths.RunRoot)) 'PlanOnly creates no run directory'
+        Assert-True (-not (Test-Path -LiteralPath $installedPlan.ExecutionPath)) 'PlanOnly does not create the proposed DOS-device mapping'
         Assert-Equal 'Parallel' $installedPlan.BuildConcurrency 'installed build Auto mode selects controlled parallelism'
         Assert-True (@($installedPlan.Arguments | Where-Object { $_ -ceq '-WaitMutex' }).Count -eq 0) 'parallel installed builds do not request WaitMutex'
         Assert-True (@($installedPlan.Arguments | Where-Object { $_ -ceq '-NoEngineChanges' }).Count -eq 1) 'installed NoEngineChanges appears exactly once'
@@ -502,7 +642,7 @@ try {
             [System.IO.File]::WriteAllText($installedMarker, 'Fixture', [System.Text.UTF8Encoding]::new($false))
         }
 
-        foreach ($unsafeArgument in @('-UniqueBuildEnvironment', '-UniqueBuildEnvironment=true', 'UniqueBuildEnvironment=true', '/NoMutex', '-Mode=Clean', 'Clean', '@unsafe.rsp', "/Log=$scenarioScratch/escape.log")) {
+        foreach ($unsafeArgument in @('-UniqueBuildEnvironment', '-UniqueBuildEnvironment=true', 'UniqueBuildEnvironment=true', '/NoMutex', '-NoUBA', '-Mode=Clean', 'Clean', '@unsafe.rsp', "/Log=$scenarioScratch/escape.log")) {
             Assert-Throws {
                 Invoke-HardnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -PlanOnly -ExtraArguments @($unsafeArgument)
             } 'unsafe|reserved|prohibited|destructive|response|ownership' "build rejects unsafe or policy-owned argument '$unsafeArgument'"
@@ -518,13 +658,13 @@ try {
         Assert-SequenceEqual -Expected @(
             (Join-Path $scenarioFixture.EngineRoot 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll')
             '-Mode=QueryTargets'
-            "-Project=$($scenarioFixture.ProjectFile)"
-            "-Output=$($queryPlan.Paths.TargetsPath)"
+            "-Project=$($queryPlan.ExecutionProjectFile)"
+            "-Output=$($queryPlan.ExecutionPaths.TargetsPath)"
             '-IncludeAllTargets'
             '-DontIncludeParentAssembly'
             '-WaitMutex'
             '-SomeValue=alpha beta'
-            "-Log=$($queryPlan.Paths.UbtLogPath)"
+            "-Log=$($queryPlan.ExecutionPaths.UbtLogPath)"
             "-Session=$($queryPlan.RunId)"
         ) -Actual $queryPlan.Arguments -Message 'QueryTargets arguments are exact, ordered, and retain caller boundaries'
         Assert-True (-not (Test-Path -LiteralPath $queryPlan.Paths.RunRoot)) 'generic UBT PlanOnly creates no run directory'
@@ -580,8 +720,10 @@ try {
         Assert-True (@($parallelPlan.Arguments) -contains '-NoMutex') 'parallel builds use the UBT concurrency switch'
         Assert-True (@($parallelPlan.Arguments) -contains '-NoEngineChanges') 'parallel builds retain the installed-engine write guard'
         Assert-True (@($parallelPlan.Arguments) -notcontains '-WaitMutex') 'parallel builds do not request the exclusive UBT mutex'
-        Assert-Equal $parallelPlan.Paths.TempPath ([string] $parallelPlan.Environment.TEMP) 'parallel build TEMP is run-local'
-        Assert-True (@($parallelPlan.Arguments) -contains "-Log=$($parallelPlan.Paths.UbtLogPath)") 'parallel build UBT log is run-local'
+        Assert-True (@($parallelPlan.Arguments) -notcontains '-NoUBA') 'the default executor remains enabled for long-path acceptance'
+        Assert-True (@($parallelPlan.Arguments) -notcontains '-NoXGE') 'XGE remains enabled unless the typed caller opts out explicitly'
+        Assert-Equal $parallelPlan.ExecutionPaths.TempPath ([string] $parallelPlan.Environment.TEMP) 'parallel build TEMP uses the run-local execution view'
+        Assert-True (@($parallelPlan.Arguments) -contains "-Log=$($parallelPlan.ExecutionPaths.UbtLogPath)") 'parallel build UBT log uses the run-local execution view'
 
         $serializePlan = Invoke-HardnessUnrealBuild `
             -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
@@ -651,7 +793,9 @@ try {
         Assert-Equal 'None' $unknownProgress.Source 'unknown progress has an explicit source'
         Assert-True ($null -eq $unknownProgress.Percent) 'unknown progress does not invent a percentage'
 
-        $request = $parallelPlan.Request
+        $request = & $module { param($Request) Set-UnrealRunExecutionAssignment -Request $Request } $parallelPlan.Request
+        $processMapping = & $module { param($Execution, $RunId) Enter-UnrealExecutionDriveMapping -Execution $Execution -RunId $RunId } $request.execution $request.runId
+        try {
         $metadata = & $module { param($Request) New-UnrealRunMetadata -Request $Request } $request
         $metadata.state = 'Running'
         $metadata.workerPid = $PID
@@ -669,7 +813,7 @@ try {
         [System.IO.File]::WriteAllText($outsideLog, "[99/100] Untrusted action`n", [System.Text.UTF8Encoding]::new($false))
         $correlatedCommandLine = 'dotnet.exe "{0}" FixtureEditor Win64 Development "-Project={1}" -NoMutex -Session={2} "-Log={3}"' -f `
             (Join-Path $scenarioFixture.EngineRoot 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll'), `
-            $scenarioFixture.ProjectFile, `
+            $request.execution.projectFile, `
             $request.runId, `
             $outsideLog
         $correlated = & $module {
@@ -693,6 +837,10 @@ try {
             ConvertTo-UnrealProcessView -ProcessId $Id -Name $Name -Executable $Executable -CommandLine $CommandLine
         } 4242 'dotnet' $scenarioFixture.EngineRoot ($correlatedCommandLine -replace $request.runId, 'not-a-session')
         Assert-True (-not $invalidSession.RecognizedBuild) 'invalid Session values cannot correlate run evidence'
+        }
+        finally {
+            & $module { param($Mapping, $RunId) Exit-UnrealExecutionDriveMapping -Mapping $Mapping -RunId $RunId } $processMapping $request.runId
+        }
 
         $contentionPlan = Invoke-HardnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -BuildConcurrency Parallel -PlanOnly
         $contentionRequest = $contentionPlan.Request | ConvertTo-Json -Depth 100 | ConvertFrom-Json
@@ -804,6 +952,13 @@ $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
     }
     if (Test-Selected 'Automation') {
         $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
+        $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $skillRoot '../../..'))
+        $suiteCatalog = Get-Content -LiteralPath (Join-Path $skillRoot 'data/suites.json') -Raw | ConvertFrom-Json -Depth 100
+        $smokeSuite = @($suiteCatalog.suites | Where-Object { [string] $_.name -ceq 'Smoke' })
+        $smokeGroup = @(& $module { param($Root) Get-UnrealAutomationGroupRecords -WorkspaceRoot $Root } $projectRoot | Where-Object { [string] $_.Name -ceq 'AngelscriptSmoke' })
+        Assert-Equal 1 $smokeSuite.Count 'the declarative Smoke suite exists exactly once'
+        Assert-Equal 1 $smokeGroup.Count 'the engine AngelscriptSmoke group exists exactly once'
+        Assert-SequenceEqual -Expected @($smokeSuite[0].entries.prefix) -Actual @($smokeGroup[0].Filters) -Message 'the engine AngelscriptSmoke group exactly matches the Hardness Smoke suite'
         $configDirectory = Join-Path $scenarioFixture.WorkspaceRoot 'Config'
         [void][System.IO.Directory]::CreateDirectory($configDirectory)
         [System.IO.File]::WriteAllText((Join-Path $configDirectory 'DefaultEngine.ini'), @"
@@ -826,8 +981,8 @@ $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
         Assert-True (-not $prefixPlan.Concurrency.RequiresEngineLease) 'tests use only their workspace lease'
         Assert-True $prefixPlan.EnforceAutomationReport 'reports are enforced by default'
         Assert-True (@($prefixPlan.Arguments) -contains '-NullRHI') 'tests default to NullRHI'
-        Assert-True (@($prefixPlan.Arguments) -contains "-ABSLOG=$($prefixPlan.Paths.UnrealLogPath)") 'Unreal writes an independent per-run editor log'
-        Assert-True (@($prefixPlan.Arguments) -contains "-ReportExportPath=$($prefixPlan.Paths.ReportPath)") 'the report directory is run-local'
+        Assert-True (@($prefixPlan.Arguments) -contains "-ABSLOG=$($prefixPlan.ExecutionPaths.UnrealLogPath)") 'Unreal writes through the independent per-run execution log path'
+        Assert-True (@($prefixPlan.Arguments) -contains "-ReportExportPath=$($prefixPlan.ExecutionPaths.ReportPath)") 'the report directory uses the run-local execution view'
         Assert-True (@($prefixPlan.Arguments) -contains '-FixtureValue=alpha beta') 'test extra-argument boundaries are preserved'
         Assert-True (-not (Test-Path -LiteralPath $prefixPlan.Paths.RunRoot)) 'test PlanOnly creates no run directory'
 
@@ -882,7 +1037,7 @@ $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
         Assert-Equal 'headless' $commandletPlan.LaunchProfile 'commandlets default to headless NullRHI'
         Assert-True (@($commandletPlan.Arguments) -contains '-run=BlueprintImpact') 'commandlet syntax is exact'
         Assert-True (@($commandletPlan.Arguments) -contains '-FixtureValue=one value') 'commandlet argument boundaries are preserved'
-        Assert-True (@($commandletPlan.Arguments) -contains "-ABSLOG=$($commandletPlan.Paths.UnrealLogPath)") 'commandlets use an independent run-local Unreal log'
+        Assert-True (@($commandletPlan.Arguments) -contains "-ABSLOG=$($commandletPlan.ExecutionPaths.UnrealLogPath)") 'commandlets use the independent run-local execution log path'
         Assert-Throws {
             Invoke-HardnessUnrealCommandlet -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Commandlet 'Bad;Quit' -PlanOnly
         } 'Commandlet' 'unsafe commandlet names are rejected'
@@ -962,8 +1117,8 @@ $log = [string] $env:FIXTURE_UNREAL_LOG
 
         $planOne = New-HardnessUnrealSuitePlan -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Suite Debugger -TimeoutMs 60000
         $planTwo = New-HardnessUnrealSuitePlan -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Suite Debugger -TimeoutMs 60000
-        Assert-Equal 'hardness-unreal-suite-plan-v1' $planOne.SchemaVersion 'suite plans publish a versioned schema'
-        Assert-Equal 'hardness-unreal-suites-v1' $planOne.DataSchemaVersion 'suite plans retain the declarative data schema'
+        Assert-Equal 'hardness-unreal-suite-plan' $planOne.SchemaVersion 'suite plans publish the stable plan schema'
+        Assert-Equal 'hardness-unreal-suites' $planOne.DataSchemaVersion 'suite plans retain the stable declarative data schema'
         Assert-Match $planOne.DataHash '^sha256:[a-f0-9]{64}$' 'suite plans retain the exact tracked data hash'
         Assert-Equal (($planOne | ConvertTo-Json -Depth 100 -Compress)) (($planTwo | ConvertTo-Json -Depth 100 -Compress)) 'suite planning is deterministic across repeated calls'
         Assert-True ($null -eq $planOne.PSObject.Properties['RunId']) 'deterministic suite plans contain no RunId'
@@ -1047,7 +1202,7 @@ $report = '{"reportCreatedOn":"2026.09.03-12.00.00","succeeded":1,"succeededWith
         Assert-True (Test-Path -LiteralPath $suiteRun.SummaryPath -PathType Leaf) 'suite execution retains a root Summary.json'
         Assert-True (@($suiteRun.Artifacts) -contains $suiteRun.SummaryPath) 'root metadata advertises the aggregate Summary.json'
         $suiteSummary = Get-Content -LiteralPath $suiteRun.SummaryPath -Raw | ConvertFrom-Json
-        Assert-Equal 'hardness-unreal-suite-summary-v1' $suiteSummary.SchemaVersion 'root suite summary is versioned'
+        Assert-Equal 'hardness-unreal-suite-summary' $suiteSummary.SchemaVersion 'root suite summary uses the stable schema name'
         Assert-Equal 'Passed' $suiteSummary.Outcome 'root summary aggregates passing structured truth'
         Assert-Equal 2 $suiteSummary.EntryCount 'root summary retains planned entry count'
         Assert-Equal 2 $suiteSummary.Succeeded 'root summary counts passing entries'
@@ -1153,6 +1308,11 @@ finally {
             throw "Refusing to remove unexpected scenario scratch path: $resolvedScratch"
         }
         Remove-Item -LiteralPath $resolvedScratch -Recurse -Force
+    }
+    $env:HARDNESS_UNREAL_TEST_MODE = $previousUnrealTestMode
+    $env:HARDNESS_UNREAL_TEST_STATE_ROOT = $previousUnrealTestStateRoot
+    if (Test-Path -LiteralPath $unrealTestStateRoot -PathType Container) {
+        Remove-Item -LiteralPath $unrealTestStateRoot -Recurse -Force
     }
 }
 

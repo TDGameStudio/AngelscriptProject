@@ -1,7 +1,7 @@
-$script:UnrealSuiteDataSchema = 'hardness-unreal-suites-v1'
-$script:UnrealSuitePlanSchema = 'hardness-unreal-suite-plan-v1'
-$script:UnrealSuiteRequestSchema = 'hardness-unreal-suite-request-v1'
-$script:UnrealSuiteSummarySchema = 'hardness-unreal-suite-summary-v1'
+$script:UnrealSuiteDataSchema = 'hardness-unreal-suites'
+$script:UnrealSuitePlanSchema = 'hardness-unreal-suite-plan'
+$script:UnrealSuiteRequestSchema = 'hardness-unreal-suite-request'
+$script:UnrealSuiteSummarySchema = 'hardness-unreal-suite-summary'
 $script:UnrealSuiteNames = @('Smoke', 'NativeCore', 'RuntimeCpp', 'Bindings', 'HotReload', 'Cache', 'Debugger', 'FunctionalSamples', 'All')
 $script:UnrealDeferredSuiteCapabilities = @('Standalone', 'StandaloneRelease', 'CachePackage', 'package', 'coverage', 'release')
 
@@ -131,6 +131,11 @@ function New-HardnessUnrealSuitePlan {
     [void](Get-UnrealLaunchProfileRecord -Name $profileName)
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.TestDefaultTimeoutMs -FallbackMs 3600000
     $concurrency = Get-UnrealConcurrencyDecision -Operation Suite -EngineRoot $context.Engine.EngineRoot -Policy $ConcurrencyPolicy -InstalledEngine ([bool] $context.Engine.Installed)
+    $executionPath = Get-UnrealExecutionPath `
+        -WorkspaceRoot $context.Configuration.WorkspaceRoot `
+        -ProjectFile $context.Configuration.ProjectFile `
+        -GitCommonDir ([string] $context.Configuration.Identity.GitCommonDir) `
+        -RunId '00000000000000000000000000000000'
     $entries = [System.Collections.Generic.List[object]]::new()
     $index = 0
     foreach ($entry in @($suiteRecord.entries)) {
@@ -157,8 +162,11 @@ function New-HardnessUnrealSuitePlan {
         WorkspaceRoot        = [string] $context.Configuration.WorkspaceRoot
         EngineRoot           = [string] $context.Engine.EngineRoot
         ProjectFile          = [string] $context.Configuration.ProjectFile
+        ExecutionPath        = [string] $executionPath.workspaceRoot
+        ExecutionProjectFile = [string] $executionPath.projectFile
+        ExecutionPathDetails = $executionPath
         Executable           = [string] $context.Engine.EditorCmd.Executable
-        WorkingDirectory     = [string] $context.Configuration.WorkspaceRoot
+        WorkingDirectory     = [string] $executionPath.workspaceRoot
         LaunchProfile        = $profileName
         TimeoutMs            = $timeoutValue
         Concurrency          = $concurrency
@@ -216,23 +224,24 @@ function New-UnrealSuiteOperation {
         -Operation Suite `
         -FilePath $plan.Executable `
         -Arguments @() `
-        -WorkingDirectory $plan.WorkingDirectory `
+        -WorkingDirectory $plan.WorkspaceRoot `
         -TimeoutMs $plan.TimeoutMs `
         -ConcurrencyDecision $plan.Concurrency `
         -Label $plan.Suite
     $runtimeEntries = [System.Collections.Generic.List[object]]::new()
     foreach ($entry in @($plan.Entries)) {
         $paths = Get-UnrealSuiteEntryPaths -EntriesRoot ([string] $request.paths.EntriesRoot) -Order ([int] $entry.Order) -Label ([string] $entry.Label)
+        $executionPaths = Get-UnrealExecutionPaths -PhysicalPaths $paths -Execution $request.execution
         $arguments = [System.Collections.Generic.List[string]]::new()
         foreach ($argument in @(
-            $plan.ProjectFile,
+            $request.execution.projectFile,
             "-ExecCmds=Automation RunTests $($entry.AutomationTarget); Quit",
             '-TestExit=Automation Test Queue Empty',
             '-BUILDMACHINE'
         )) { $arguments.Add([string] $argument) }
         foreach ($argument in @($profile.arguments)) { $arguments.Add([string] $argument) }
-        $arguments.Add("-ABSLOG=$($paths.UnrealLogPath)")
-        $arguments.Add("-ReportExportPath=$($paths.ReportPath)")
+        $arguments.Add("-ABSLOG=$($executionPaths.UnrealLogPath)")
+        $arguments.Add("-ReportExportPath=$($executionPaths.ReportPath)")
         Assert-UnrealArgumentArray -Arguments @($arguments)
         $runtimeEntries.Add([pscustomobject][ordered]@{
             order            = [int] $entry.Order
@@ -242,8 +251,9 @@ function New-UnrealSuiteOperation {
             label            = [string] $entry.Label
             tier             = [string] $entry.Tier
             arguments        = @($arguments)
-            environment      = [pscustomobject][ordered]@{ TEMP = [string] $paths.TempPath; TMP = [string] $paths.TempPath }
+            environment      = [pscustomobject][ordered]@{ TEMP = [string] $executionPaths.TempPath; TMP = [string] $executionPaths.TempPath }
             paths            = $paths
+            executionPaths   = $executionPaths
         })
     }
     $suiteRequest = [pscustomobject][ordered]@{
@@ -287,6 +297,13 @@ function Assert-UnrealSuiteRequest {
         }
         $expectedPaths = Get-UnrealSuiteEntryPaths -EntriesRoot ([string] $Request.paths.EntriesRoot) -Order $expectedOrder -Label ([string] $entry.label)
         Assert-UnrealSuiteEntryPaths -Entry $entry -ExpectedPaths $expectedPaths
+        $expectedExecutionPaths = Get-UnrealExecutionPaths -PhysicalPaths $expectedPaths -Execution $Request.execution
+        foreach ($name in @('EntryRoot', 'LogPath', 'StdOutPath', 'StdErrPath', 'UnrealLogPath', 'ReportPath', 'SummaryPath', 'TempPath')) {
+            $property = $entry.executionPaths.PSObject.Properties[$name]
+            if ($null -eq $property -or -not ([string] $property.Value).Equals([string] $expectedExecutionPaths.$name, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "Suite entry execution path '$name' does not match its mapped entry directory."
+            }
+        }
     }
 }
 

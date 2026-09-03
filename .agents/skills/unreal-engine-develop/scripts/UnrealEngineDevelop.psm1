@@ -6,8 +6,8 @@ $ErrorActionPreference = 'Stop'
 
 $script:UnrealSkillRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $script:UnrealDataRoot = Join-Path $script:UnrealSkillRoot 'data'
-$script:UnrealRunSchema = 'hardness-unreal-run-v1'
-$script:UnrealRequestSchema = 'hardness-unreal-request-v1'
+$script:UnrealRunSchema = 'hardness-unreal-run'
+$script:UnrealRequestSchema = 'hardness-unreal-request'
 $script:UnrealTerminalStates = @('Succeeded', 'Failed', 'TimedOut', 'Cancelled')
 
 foreach ($privateFile in @(
@@ -15,6 +15,7 @@ foreach ($privateFile in @(
     'Engine.ps1'
     'Concurrency.ps1'
     'Run.ps1'
+    'WindowsPath.ps1'
     'AutomationReport.ps1'
     'Operations.ps1'
     'Suites.ps1'
