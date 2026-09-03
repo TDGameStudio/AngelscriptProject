@@ -783,6 +783,16 @@ function Remove-HardnessWorkspace {
 
     $registered = @(Get-RegisteredWorkspaceRoots -Repository $repository)
     if ($target -notin $registered) {
+        $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
+        $remainingEntries = @(if ($targetItem.PSIsContainer) { Get-ChildItem -LiteralPath $target -Force -ErrorAction Stop } else { $targetItem })
+        $isCanonicalGoalRoot = Test-WorkspacePathEqual -Left (Split-Path -Parent $target) -Right $container
+        if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0 -and $isCanonicalGoalRoot -and $DiscardIgnoredFiles) {
+            if ($PSCmdlet.ShouldProcess($target, 'remove empty unregistered worktree residue; preserve branches')) {
+                [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'empty workspace residue removal')
+                Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+            }
+            return [pscustomobject]@{ WorktreeRoot = $target; Removed = -not (Test-Path -LiteralPath $target); BranchPreserved = $true; DiscardedIgnoredFiles = @() }
+        }
         throw "Refusing to remove '$target': it is not a registered Git worktree."
     }
     $verification = Test-HardnessWorkspace -ProjectRoot $target -RequireClean
@@ -810,8 +820,27 @@ function Remove-HardnessWorkspace {
         # submodule. The explicit clean checks above are the safety gate; this
         # flag only bypasses Git's structural submodule refusal.
         [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'remove', '--force', $target))
+        if (Test-Path -LiteralPath $target) {
+            $targetItem = Get-Item -LiteralPath $target -Force -ErrorAction Stop
+            if (-not $targetItem.PSIsContainer) {
+                throw "Git unregistered worktree '$target' but the residual target is not a directory; it was preserved."
+            }
+            [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'post-remove empty directory cleanup')
+            $remainingEntries = @(Get-ChildItem -LiteralPath $target -Force -ErrorAction Stop)
+            if ($remainingEntries.Count -gt 0) {
+                throw "Git unregistered worktree '$target' but residual content remains; it was preserved for explicit recovery."
+            }
+            # A Windows process can briefly keep the worktree root open after
+            # Git removes every entry. Non-recursive deletion fails closed if
+            # any content appears after the empty-directory check.
+            Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+        }
     }
-    return [pscustomobject]@{ WorktreeRoot = $target; Removed = -not (Test-Path -LiteralPath $target); BranchPreserved = $true; DiscardedIgnoredFiles = @($ignoredFiles | ForEach-Object { $_ }) }
+    $removed = -not (Test-Path -LiteralPath $target)
+    if (-not $removed -and -not $WhatIfPreference) {
+        throw "Workspace removal did not remove '$target'."
+    }
+    return [pscustomobject]@{ WorktreeRoot = $target; Removed = $removed; BranchPreserved = $true; DiscardedIgnoredFiles = @($ignoredFiles | ForEach-Object { $_ }) }
 }
 
 Export-ModuleMember -Function @(

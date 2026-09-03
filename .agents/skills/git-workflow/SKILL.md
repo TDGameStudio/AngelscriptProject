@@ -18,6 +18,6 @@ Safety invariants:
 - Copy `AgentConfig.ini` only when the destination ignores it.
 - Worktree creation never scaffolds OpenSpec records or runs a build.
 - Finish commits dirty submodules before staging their parent gitlinks, then verifies a clean exact state.
-- Finish never runs on the primary checkout and never merges, pushes, or removes. Remove is a separate explicit operation; it refuses dirty, unregistered, or reparse-point targets and requires `-DiscardIgnoredFiles` before deleting ignored local data.
+- Finish never runs on the primary checkout and never merges, pushes, or removes. Remove is a separate explicit operation; it refuses dirty, noncanonical, payload-bearing unregistered, or reparse-point targets and requires `-DiscardIgnoredFiles` before deleting ignored local data. The same explicit flag may retry removal of an empty canonical root left after Git already unregistered the worktree.
 
 The plugin and `Tools/openspec` directories are submodules. Their source commits must exist before the parent records new gitlinks. Follow [git-commit.md](git-commit.md) for messages.

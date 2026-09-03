@@ -62,7 +62,7 @@ function Initialize-HardnessRoutes {
     $routes.Add((New-HardnessRoute 'workspace.bootstrap' 'PowerShell' $workspaceModule 'Initialize-HardnessWorkspace' @() @{} 'Bootstrap an existing worktree safely.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.verify' 'PowerShell' $workspaceModule 'Test-HardnessWorkspace' @() @{} 'Verify exact gitlinks and local configuration safety.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.finish' 'PowerShell' $workspaceModule 'Complete-HardnessWorkspace' @() @{} 'Commit submodules first, then parent changes.')) | Out-Null
-    $routes.Add((New-HardnessRoute 'workspace.remove' 'PowerShell' $workspaceModule 'Remove-HardnessWorkspace' @() @{} 'Explicitly remove a clean registered worktree.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.remove' 'PowerShell' $workspaceModule 'Remove-HardnessWorkspace' @() @{} 'Explicitly remove a clean registered worktree or recover its empty residual root.')) | Out-Null
 
     foreach ($command in @('init', 'doctor', 'status', 'instructions', 'validate', 'domain', 'spec', 'change', 'workflow', 'completion')) {
         $routes.Add((New-HardnessRoute "openspec.$command" 'Native' $openspecExecutable '' @($command) @{} "Run openspec $command.")) | Out-Null
@@ -248,10 +248,19 @@ function Resolve-HardnessGoalSelection {
 function Assert-HardnessGoalRouteAuthority {
     param(
         [Parameter(Mandatory = $true)]$Context,
-        [switch]$AllowCreateCandidate
+        [switch]$AllowCreateCandidate,
+        [switch]$AllowEmptyUnregisteredRemoval
     )
 
-    $authority = Get-HardnessRepositoryAuthority -ProjectRoot ([string]$Context.ProjectRoot)
+    $authorityRoot = if ($AllowEmptyUnregisteredRemoval -and
+        'PrimaryRoot' -in @($Context.PSObject.Properties.Name) -and
+        -not [string]::IsNullOrWhiteSpace([string]$Context.PrimaryRoot)) {
+        [string]$Context.PrimaryRoot
+    }
+    else {
+        [string]$Context.ProjectRoot
+    }
+    $authority = Get-HardnessRepositoryAuthority -ProjectRoot $authorityRoot
     $selection = Resolve-HardnessGoalSelection -Authority $authority -GoalName ([string]$Context.GoalName) -WorkspaceRoot ([string]$Context.WorkspaceRoot)
     if ($AllowCreateCandidate) {
         return $selection.WorkspaceRoot
@@ -262,6 +271,13 @@ function Assert-HardnessGoalRouteAuthority {
     [void](Assert-HardnessPathChainSafe -Root $authority.PrimaryRoot -Target $selection.WorkspaceRoot -Purpose 'Goal route execution')
     $isRegistered = @($authority.RegisteredRoots | Where-Object { Test-HardnessPathEqual -Left $_ -Right $selection.WorkspaceRoot }).Count -eq 1
     if (-not $isRegistered) {
+        if ($AllowEmptyUnregisteredRemoval) {
+            $targetItem = Get-Item -LiteralPath $selection.WorkspaceRoot -Force -ErrorAction Stop
+            $remainingEntries = @(Get-ChildItem -LiteralPath $selection.WorkspaceRoot -Force -ErrorAction Stop)
+            if ($targetItem.PSIsContainer -and $remainingEntries.Count -eq 0) {
+                return $selection.WorkspaceRoot
+            }
+        }
         throw "Goal workspace is not a registered worktree: $($selection.WorkspaceRoot)"
     }
     $workspaceTop = Invoke-HardnessGit -Repository $selection.WorkspaceRoot -Arguments @('rev-parse', '--show-toplevel')
@@ -451,8 +467,24 @@ function Add-HardnessContextDefaults {
         'workspace.verify'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
         'workspace.finish'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
         'workspace.remove'   {
-            if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.ProjectRoot }
-            if (-not $values.ContainsKey('WorktreeRoot')) { $values.WorktreeRoot = $Context.WorkspaceRoot }
+            if ([string]$Context.Mode -eq 'Goal') {
+                if ($values.ContainsKey('RepositoryRoot') -and
+                    ([string]::IsNullOrWhiteSpace([string]$values.RepositoryRoot) -or
+                    -not (Test-HardnessPathEqual -Left ([string]$values.RepositoryRoot) -Right ([string]$Context.PrimaryRoot)))) {
+                    throw 'Goal workspace.remove RepositoryRoot must match the context PrimaryRoot.'
+                }
+                if ($values.ContainsKey('WorktreeRoot') -and
+                    ([string]::IsNullOrWhiteSpace([string]$values.WorktreeRoot) -or
+                    -not (Test-HardnessPathEqual -Left ([string]$values.WorktreeRoot) -Right ([string]$Context.WorkspaceRoot)))) {
+                    throw 'Goal workspace.remove WorktreeRoot must match the context WorkspaceRoot.'
+                }
+                $values.RepositoryRoot = $Context.PrimaryRoot
+                $values.WorktreeRoot = $Context.WorkspaceRoot
+            }
+            else {
+                if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.ProjectRoot }
+                if (-not $values.ContainsKey('WorktreeRoot')) { $values.WorktreeRoot = $Context.WorkspaceRoot }
+            }
         }
     }
     return $values
@@ -477,11 +509,24 @@ function Invoke-Hardness {
         if ($null -eq $route) {
             throw "Unknown Hardness command '$Command'. Use Get-HardnessCommand to list routes."
         }
-        if ([string]$Context.Mode -eq 'Goal') {
-            [void](Assert-HardnessGoalRouteAuthority -Context $Context -AllowCreateCandidate:($route.Name -eq 'workspace.new'))
+        $allowEmptyUnregisteredRemoval = $false
+        if ($route.Name -eq 'workspace.remove' -and $null -ne $Parameters -and $Parameters.ContainsKey('DiscardIgnoredFiles')) {
+            $discardValue = $Parameters['DiscardIgnoredFiles']
+            $allowEmptyUnregisteredRemoval = ($discardValue -is [bool] -and $discardValue)
         }
-        $routeRoot = if ($Context.Mode -eq 'Goal' -and $route.Name -ne 'workspace.new') {
-            $Context.WorkspaceRoot
+        if ([string]$Context.Mode -eq 'Goal') {
+            [void](Assert-HardnessGoalRouteAuthority -Context $Context -AllowCreateCandidate:($route.Name -eq 'workspace.new') -AllowEmptyUnregisteredRemoval:$allowEmptyUnregisteredRemoval)
+        }
+        $routeRoot = if ($Context.Mode -eq 'Goal') {
+            if ($route.Name -eq 'workspace.new') {
+                $Context.ProjectRoot
+            }
+            elseif ($route.Name -eq 'workspace.remove') {
+                $Context.PrimaryRoot
+            }
+            else {
+                $Context.WorkspaceRoot
+            }
         }
         else {
             $Context.ProjectRoot
@@ -696,6 +741,7 @@ function Get-HardnessCommandDocsDigest {
     )
 
     $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $utf8 = [System.Text.UTF8Encoding]::new($false, $true)
     try {
         [byte[]]$separator = @(0)
         foreach ($file in $Files) {
@@ -704,7 +750,9 @@ function Get-HardnessCommandDocsDigest {
             }
             $relative = $file.FullName.Substring($DocsRoot.Length).TrimStart('\', '/').Replace('\', '/')
             [byte[]]$pathBytes = [System.Text.Encoding]::UTF8.GetBytes($relative)
-            [byte[]]$fileBytes = [System.IO.File]::ReadAllBytes($file.FullName)
+            [byte[]]$sourceBytes = [System.IO.File]::ReadAllBytes($file.FullName)
+            $documentText = $utf8.GetString($sourceBytes).Replace("`r`n", "`n").Replace("`r", "`n")
+            [byte[]]$fileBytes = $utf8.GetBytes($documentText)
             if ($pathBytes.Length -gt 0) { [void]$algorithm.TransformBlock($pathBytes, 0, $pathBytes.Length, $pathBytes, 0) }
             [void]$algorithm.TransformBlock($separator, 0, 1, $separator, 0)
             if ($fileBytes.Length -gt 0) { [void]$algorithm.TransformBlock($fileBytes, 0, $fileBytes.Length, $fileBytes, 0) }

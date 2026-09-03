@@ -93,12 +93,15 @@ function Get-CommandDocsDigest {
         [Parameter(Mandatory = $true)][System.IO.FileInfo[]]$Files
     )
     $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $utf8 = [System.Text.UTF8Encoding]::new($false, $true)
     try {
         [byte[]]$separator = @(0)
         foreach ($file in $Files) {
             $relative = $file.FullName.Substring($DocsRoot.Length).TrimStart('\', '/').Replace('\', '/')
             [byte[]]$pathBytes = [System.Text.Encoding]::UTF8.GetBytes($relative)
-            [byte[]]$fileBytes = [System.IO.File]::ReadAllBytes($file.FullName)
+            [byte[]]$sourceBytes = [System.IO.File]::ReadAllBytes($file.FullName)
+            $documentText = $utf8.GetString($sourceBytes).Replace("`r`n", "`n").Replace("`r", "`n")
+            [byte[]]$fileBytes = $utf8.GetBytes($documentText)
             if ($pathBytes.Length -gt 0) { [void]$algorithm.TransformBlock($pathBytes, 0, $pathBytes.Length, $pathBytes, 0) }
             [void]$algorithm.TransformBlock($separator, 0, 1, $separator, 0)
             if ($fileBytes.Length -gt 0) { [void]$algorithm.TransformBlock($fileBytes, 0, $fileBytes.Length, $fileBytes, 0) }

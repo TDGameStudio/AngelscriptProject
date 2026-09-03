@@ -200,6 +200,24 @@ try {
     Assert-True (-not (Test-Path -LiteralPath $worktreeRoot)) 'explicit remove deletes a clean registered worktree'
     $remainingBranch = @((Invoke-TestGit -Repository $parentRoot -Arguments @('branch', '--list', 'goal/fixture-goal')))
     Assert-True (($remainingBranch -join "`n") -match 'goal/fixture-goal') 'workspace removal preserves its branch'
+
+    [void](New-Item -ItemType Directory -Path $worktreeRoot)
+    Assert-ThrowsMatch {
+        Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot | Out-Null
+    } 'not a registered' 'an unregistered empty root still requires explicit recovery intent'
+    $nestedResidue = Join-Path $worktreeRoot 'nested'
+    [void](New-Item -ItemType Directory -Path $nestedResidue)
+    Assert-ThrowsMatch {
+        Remove-HardnessWorkspace -WorktreeRoot $nestedResidue -RepositoryRoot $parentRoot -DiscardIgnoredFiles | Out-Null
+    } 'not a registered' 'empty-root recovery rejects nested directories below a canonical Goal root'
+    Assert-True (Test-Path -LiteralPath $nestedResidue -PathType Container) 'rejected nested recovery preserves the directory'
+    Remove-Item -LiteralPath $nestedResidue -Force
+    $orphanPreview = Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot -DiscardIgnoredFiles -WhatIf
+    Assert-True (-not $orphanPreview.Removed) 'empty-root recovery WhatIf does not remove the directory'
+    Assert-True (Test-Path -LiteralPath $worktreeRoot -PathType Container) 'empty-root recovery WhatIf preserves the directory'
+    $orphanRecovery = Remove-HardnessWorkspace -WorktreeRoot $worktreeRoot -RepositoryRoot $parentRoot -DiscardIgnoredFiles
+    Assert-True $orphanRecovery.Removed 'explicit recovery removes an empty unregistered worktree root'
+    Assert-True $orphanRecovery.BranchPreserved 'empty-root recovery never deletes the preserved branch'
 }
 finally {
     Remove-Module Workspace -Force -ErrorAction SilentlyContinue

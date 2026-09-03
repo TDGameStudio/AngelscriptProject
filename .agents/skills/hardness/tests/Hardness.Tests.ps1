@@ -292,6 +292,28 @@ task_graph:
     Assert-Equal 'Succeeded' $createdRoute.status 'the same Goal context routes successfully after workspace.new registers its candidate'
     Assert-Equal $expectedCreateRoot $createdRoute.data.ProjectRoot 'create and subsequent route resolution agree exactly'
 
+    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $expectedCreateRoot))
+    [void](New-Item -ItemType Directory -Path $expectedCreateRoot)
+    $orphanWithoutIntent = Invoke-Hardness -Command 'workspace.remove' -Context $createContext
+    Assert-Equal 'Failed' $orphanWithoutIntent.status 'an empty unregistered Goal root still requires explicit recovery intent'
+    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'a rejected orphan recovery preserves the empty root'
+    $overrideTarget = Join-Path $fixtureProject '.worktrees\override-target'
+    [void](New-Item -ItemType Directory -Path $overrideTarget)
+    $orphanOverride = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true; WorktreeRoot = $overrideTarget }
+    Assert-Equal 'Failed' $orphanOverride.status 'Goal recovery parameters cannot redirect removal away from the authorized context target'
+    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'a rejected target override preserves the authorized orphan root'
+    Assert-True (Test-Path -LiteralPath $overrideTarget -PathType Container) 'a rejected target override preserves the alternate directory'
+    $orphanPreview = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true; WhatIf = $true }
+    Assert-Equal 'Succeeded' $orphanPreview.status 'explicit WhatIf previews empty unregistered Goal recovery through Hardness'
+    Assert-True (-not $orphanPreview.data.Removed) 'orphan recovery WhatIf does not remove the empty root'
+    Assert-True (Test-Path -LiteralPath $expectedCreateRoot -PathType Container) 'orphan recovery WhatIf preserves the empty root'
+    $orphanRecovery = Invoke-Hardness -Command 'workspace.remove' -Context $createContext -Parameters @{ DiscardIgnoredFiles = $true }
+    Assert-Equal 'Succeeded' $orphanRecovery.status 'explicit recovery removes an empty unregistered Goal root through Hardness'
+    Assert-True $orphanRecovery.data.Removed 'Hardness reports successful empty-root recovery'
+    Assert-True (-not (Test-Path -LiteralPath $expectedCreateRoot)) 'empty unregistered Goal recovery removes the residual directory'
+    $preservedFutureBranch = @((Invoke-FixtureGit -Repository $fixtureProject -Arguments @('branch', '--list', 'goal/future-goal')))
+    Assert-True (($preservedFutureBranch -join "`n") -match 'goal/future-goal') 'empty-root recovery preserves the Goal branch'
+
     $unregisteredRoot = Join-Path $fixtureProject '.worktrees\unregistered-goal'
     $unregisteredModuleDirectory = Join-Path $unregisteredRoot '.agents\skills\git-workflow\scripts'
     [void](New-Item -ItemType Directory -Path $unregisteredModuleDirectory -Force)
@@ -327,6 +349,9 @@ Export-ModuleMember -Function 'Get-HardnessWorkspaceStatus'
     $unregisteredNative = Invoke-Hardness -Command 'openspec.status' -Context $unregisteredContext -ArgumentList @('--json')
     Assert-Equal 'Failed' $unregisteredNative.status 'an unregistered Goal workspace cannot run a native leaf'
     Assert-Match $unregisteredNative.error.message 'registered worktree|registered Goal workspace' 'native leaf rejection reports missing registration rather than executing the file'
+    $unregisteredRemoval = Invoke-Hardness -Command 'workspace.remove' -Context $unregisteredContext -Parameters @{ DiscardIgnoredFiles = $true }
+    Assert-Equal 'Failed' $unregisteredRemoval.status 'explicit recovery never authorizes a nonempty unregistered Goal root'
+    Assert-True (-not (Test-Path -LiteralPath $unregisteredSentinel)) 'a rejected nonempty recovery never imports an unregistered leaf module'
 
     $goalContext = New-HardnessContext -Mode Goal -ProjectRoot $fixtureProject -GoalName 'fixture-goal' -WorkspaceRoot $fixtureWorkspace
     $goalResult = Invoke-Hardness -Command 'workspace.status' -Context $goalContext
@@ -386,6 +411,15 @@ task_graph:
     finally {
         Pop-Location
     }
+
+    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $fixtureWorkspace))
+    [void](New-Item -ItemType Directory -Path $fixtureWorkspace)
+    $staleOriginRecovery = Invoke-Hardness -Command 'workspace.remove' -Context $linkedOriginContext -Parameters @{ DiscardIgnoredFiles = $true }
+    Assert-Equal 'Succeeded' $staleOriginRecovery.status 'empty-root recovery uses PrimaryRoot after the context origin worktree disappears'
+    Assert-True $staleOriginRecovery.data.Removed 'stale-origin recovery removes the empty residual directory'
+    Assert-True (-not (Test-Path -LiteralPath $fixtureWorkspace)) 'stale-origin recovery leaves no directory behind'
+    $preservedFixtureBranch = @((Invoke-FixtureGit -Repository $fixtureProject -Arguments @('branch', '--list', 'goal/fixture-goal')))
+    Assert-True (($preservedFixtureBranch -join "`n") -match 'goal/fixture-goal') 'stale-origin recovery preserves the original Goal branch'
 
     $incompleteHealth = Test-HardnessInstallation -ProjectRoot $fixtureProject
     Assert-True (-not $incompleteHealth.IsValid) 'installation fails when the required OpenSpec leaf is missing'
