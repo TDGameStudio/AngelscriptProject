@@ -1,8 +1,0 @@
-// Theme: Feature.Delegates. Isolated compile-fail: unknown delegate parameter type.
-// C++: AngelscriptSyntaxDelegateEventTests.cpp::Declaration_Negative_InvalidParamType
-// sha256=01dd64d3c6d87bbea77a857be39e3192644e58961b442a5b7ed0fb936ef2e16c; lines 171-173.
-// Expected diagnostic: "Delegate with invalid parameter type should fail".
-// Isolate this failing program; do not add declarations that would compile it away.
-// DiagnosticOnly.
-
-delegate void FOnActionBadParam(NonExistentType X);
