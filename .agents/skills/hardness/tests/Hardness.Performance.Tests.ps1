@@ -30,6 +30,9 @@ param(
     [ValidateRange(1, 600000)]
     [double]$TaskStatusP95BudgetMs = 2000,
 
+    [ValidateRange(1, 600000)]
+    [double]$WorkspaceReadP95BudgetMs = 15000,
+
     [ValidateRange(100, 600000)]
     [int]$FreshProcessTimeoutMs = 30000,
 
@@ -430,6 +433,7 @@ $scenarioValues = [ordered]@{
     FreshProcess = New-Object System.Collections.Generic.List[double]
     PersistentApi = New-Object System.Collections.Generic.List[double]
     TaskStatus = New-Object System.Collections.Generic.List[double]
+    WorkspaceReadRoutes = New-Object System.Collections.Generic.List[double]
 }
 
 $hostExecutable = (Get-Process -Id $PID).Path
@@ -571,6 +575,26 @@ task_graph:
             if ($phase -eq 'Measurement') { $scenarioValues.TaskStatus.Add($value) | Out-Null }
         }
     }
+
+    foreach ($phase in @('Warmup', 'Measurement')) {
+        $runCount = if ($phase -eq 'Warmup') { $WarmupRuns } else { $MeasurementRuns }
+        for ($iteration = 1; $iteration -le $runCount; $iteration++) {
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            $configResult = Invoke-Hardness -Command 'workspace.config.status' -Context $context
+            $workspaceResult = Invoke-Hardness -Command 'workspace.status' -Context $context
+            $gitResult = Invoke-Hardness -Command 'git.status' -Context $context
+            $timer.Stop()
+            foreach ($routeResult in @($configResult, $workspaceResult, $gitResult)) {
+                Assert-PerformanceCondition ($routeResult.status -eq 'Succeeded' -and $routeResult.exitCode -eq 0) "$($routeResult.command) failed"
+            }
+            Assert-PerformanceCondition $configResult.data.IdentityValid 'workspace.config.status returned invalid managed identity'
+            Assert-PerformanceCondition ($workspaceResult.data.ProjectRoot -eq $ProjectRoot) 'workspace.status returned a different project root'
+            Assert-PerformanceCondition ($gitResult.data.ProjectRoot -eq $ProjectRoot) 'git.status returned a different project root'
+            $value = [double]$timer.Elapsed.TotalMilliseconds
+            Add-PerformanceSample -Samples $samples -Scenario 'WorkspaceReadRoutes' -Phase $phase -Iteration $iteration -Unit 'ms' -Value $value
+            if ($phase -eq 'Measurement') { $scenarioValues.WorkspaceReadRoutes.Add($value) | Out-Null }
+        }
+    }
 }
 finally {
     Remove-Module Hardness -Force -ErrorAction SilentlyContinue
@@ -589,6 +613,7 @@ $scenarioSummaries = @(
     New-ScenarioSummary -Name 'FreshProcess' -Metric 'Hardness import plus context and route lookup' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.FreshProcess) -P95Budget $FreshProcessP95BudgetMs
     New-ScenarioSummary -Name 'PersistentApi' -Metric 'Context plus route lookup batch' -Unit 'us/op' -OperationsPerSample $BatchSize -Values @($scenarioValues.PersistentApi) -P95Budget $PersistentApiP95BudgetUsPerOp
     New-ScenarioSummary -Name 'TaskStatus' -Metric 'Real task.status route' -Unit 'ms' -OperationsPerSample 1 -Values @($scenarioValues.TaskStatus) -P95Budget $TaskStatusP95BudgetMs
+    New-ScenarioSummary -Name 'WorkspaceReadRoutes' -Metric 'workspace.config.status plus workspace.status plus git.status' -Unit 'ms' -OperationsPerSample 3 -Values @($scenarioValues.WorkspaceReadRoutes) -P95Budget $WorkspaceReadP95BudgetMs
 )
 $failedBudgets = @($scenarioSummaries | Where-Object BudgetStatus -eq 'Failed')
 $failedCorrectness = @($failures.ToArray())

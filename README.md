@@ -198,16 +198,23 @@ pnpm dev
 
 `Experiment/` 下的旧 MkDocs 备份和实验性 TiddlyWiki 工作区不属于当前 Wiki 子模块的初始内容；AS Wiki 功能将在后续变更中逐步迁移。
 
-仓库根目录有大量自动化脚本（构建、测试、引导）依赖 `AgentConfig.ini` 中的本机路径配置。该文件已 `.gitignore`，每个 worktree 都需要先 bootstrap：
+仓库根目录有大量自动化脚本依赖 `AgentConfig.ini` 中的本机路径配置和 workspace 身份。该文件已 `.gitignore`，每个 workspace 都需要通过 Hardness 初始化，并在同一 PowerShell 7 会话中激活：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1
+Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
+$context = New-HardnessContext -Mode Current
+Invoke-Hardness -Command workspace.bootstrap -Context $context
+Invoke-Hardness -Command workspace.activate -Context $context
 ```
 
-也可显式指定引擎根目录：
+也可通过受控配置入口设置引擎根目录：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1 -EngineRoot "J:\UnrealEngine\UERelease"
+Invoke-Hardness -Command workspace.config.set -Context $context -Parameters @{
+  Section = 'Paths'
+  Key = 'EngineRoot'
+  Value = 'J:\UnrealEngine\UERelease'
+}
 ```
 
 Bootstrap 完成后，根目录会出现 `AgentConfig.ini`，其中关键配置：

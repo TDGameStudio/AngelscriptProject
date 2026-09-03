@@ -911,15 +911,25 @@ function Resolve-AgentConfiguration {
     )
 
     $resolvedProjectRoot = Normalize-PathValue -Path $ProjectRoot
+    $workspaceLifecycleManifest = Join-Path $resolvedProjectRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1'
+    if (-not (Test-Path -LiteralPath $workspaceLifecycleManifest -PathType Leaf)) {
+        throw "Hardness workspace lifecycle module was not found: $workspaceLifecycleManifest"
+    }
+    Import-Module $workspaceLifecycleManifest -ErrorAction Stop
+    [void](Assert-HardnessWorkspaceExecution -ProjectRoot $resolvedProjectRoot -CallerPath (Get-Location).Path)
     $resolvedConfigPath = if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
         Join-Path $resolvedProjectRoot 'AgentConfig.ini'
     }
     else {
         Normalize-PathValue -Path $ConfigPath
     }
+    $managedConfigPath = Normalize-PathValue -Path (Join-Path $resolvedProjectRoot 'AgentConfig.ini')
+    if (-not $resolvedConfigPath.Equals($managedConfigPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "ConfigPath must select the Hardness-managed AgentConfig.ini for this workspace: $managedConfigPath"
+    }
 
     if (-not (Test-Path -LiteralPath $resolvedConfigPath -PathType Leaf)) {
-        throw "AgentConfig.ini was not found: $resolvedConfigPath. Run Tools\Bootstrap\BootstrapWorktree.bat to initialize this worktree."
+        throw "AgentConfig.ini was not found: $resolvedConfigPath. Use Hardness workspace.bootstrap to initialize this workspace."
     }
 
     $config = Read-IniFile -Path $resolvedConfigPath
@@ -938,7 +948,7 @@ function Resolve-AgentConfiguration {
 
     $resolvedProjectFile = Normalize-PathValue -Path $projectFile
     if ($resolvedProjectFileCandidates -notcontains $resolvedProjectFile) {
-        throw "AgentConfig.ini [Paths] ProjectFile does not belong to project root '$resolvedProjectRoot'. Run Tools\Bootstrap\BootstrapWorktree.bat for this worktree."
+        throw "AgentConfig.ini [Paths] ProjectFile does not belong to project root '$resolvedProjectRoot'. Use Hardness workspace.bootstrap for this workspace."
     }
 
     return [PSCustomObject]@{

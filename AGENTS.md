@@ -223,9 +223,9 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 ## Local Configuration
 
-- `AgentConfig.ini` in the project root stores machine-specific paths (e.g., engine root). It is excluded via `.gitignore`.
-- On first use, run `Tools\Bootstrap\GenerateAgentConfigTemplate.bat` to generate a template, then fill in local paths.
-- Engine paths in build and test commands should be read from `AgentConfig.ini` key `Paths.EngineRoot`.
+- `AgentConfig.ini` in each workspace stores machine-local paths and Hardness-managed workspace identity. It is excluded via `.gitignore`.
+- Initialize or repair it through Hardness `workspace.bootstrap`, then set exact non-managed values through `workspace.config.set`. Hardness copies shared local settings from the canonical primary checkout and always rebinds `Paths.ProjectFile` to the selected workspace.
+- Build and test entry points read `Paths.EngineRoot` and reject a workspace whose managed identity or current PowerShell-session selection does not match the target root.
 
 ## Build & Validation Principles
 
@@ -269,12 +269,12 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 
 - During the current project-wide refactor, all project Skills remain disabled until the user explicitly lifts the restriction at the top of this file. The following rules document the prepared Hardness contract and do not authorize Skill invocation by themselves.
 - Default editing remains in the Current/main workspace. Do **not** create, switch to, or continue in a worktree unless the user explicitly requests one or explicitly starts a Goal that owns it. Once Goal mode is selected, it uses canonical `.worktrees/<goal>` on branch `goal/<goal>`.
-- `.agents/skills/hardness/SKILL.md` is the prepared project Skill entrypoint. Hardness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop. Its current core exposes only `workspace.*`, `openspec.*`, and `task.status`; Unreal routes and public `Tools` wrapper migration remain deferred to a separate `unreal-engine-develop` change.
+- `.agents/skills/hardness/SKILL.md` is the prepared project Skill entrypoint. Hardness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop. Its current core exposes `workspace.*`, `git.*`, `openspec.*`, and `task.status`; Unreal routes and public `Tools` wrapper migration remain deferred to a separate `unreal-engine-develop` change.
 - The prepared Hardness/Workspace harness requires PowerShell 7.0 or later (`Core`) and invokes `pwsh.exe` only. Windows PowerShell 5.1 is not a supported harness host; historical dual-host archives remain evidence, not current policy.
 - `Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`, and `Tools/openspec` are **git submodules**, not ordinary directories. A parent worktree must initialize the exact recorded gitlink OIDs; a verified local-object fallback is allowed when an upstream no longer serves an OID.
 - Commit and tag `Tools/openspec` first. For each release, the parent history receives only one final accepted package update containing the gitlink, manifest/docs, and bundled `openspec.exe`; candidate executables never receive parent commits.
-- After the temporary Skill restriction is lifted, use Hardness `workspace.new` / `workspace.bootstrap` for setup. Resolve the project root from the Skill module, copy `AgentConfig.ini` only after confirming it is ignored, never discard a dirty submodule, and do not scaffold an OpenSpec change as a worktree side effect.
-- The Goal workflow stops at committed, verified, review-disposition-complete, ready-to-integrate. Broad-impact work is reviewed against its scope-frozen final snapshot; verified small low-impact work records `Final Review: not required` with rationale. `workspace.finish` performs only canonical Goal Git closure and reports `GitStateComplete`; verification and Review policy remain separate agent-owned gates. Neither Goal nor Current mode automatically merges, pushes, publishes, or removes a worktree.
+- After the temporary Skill restriction is lifted, use Hardness `workspace.new` / `workspace.bootstrap` for setup and `workspace.activate` to bind the selected workspace to the current PowerShell process. Copy `AgentConfig.ini` only after confirming it is ignored, never discard a dirty submodule, and do not scaffold an OpenSpec change as a worktree side effect.
+- The Goal workflow stops at committed, verified, review-disposition-complete, ready-to-integrate. Broad-impact work is reviewed against its scope-frozen final snapshot; verified small low-impact work records `Final Review: not required` with rationale. `git.commit` performs scoped Git closure; `git.integrate`, non-force `git.push`, and `workspace.remove` are separate operations that run only when the user explicitly requests them. Verification and Review policy remain agent-owned gates, and cleanup preserves the Goal branch.
 - When code belongs to a submodule, commit the submodule first and the parent gitlink second. Full workflow, fallback strategies, scope guards, and troubleshooting: **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**.
 
 ## OpenSpec & TODO

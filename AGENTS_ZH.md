@@ -222,9 +222,9 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 ## 本地配置
 
-- 项目根目录的 `AgentConfig.ini` 存放本机引擎路径等配置，已被 `.gitignore` 忽略。
-- 首次使用运行 `Tools\Bootstrap\GenerateAgentConfigTemplate.bat` 生成模板，再填入本机路径。
-- 构建、测试命令中的引擎路径统一从 `AgentConfig.ini` 的 `Paths.EngineRoot` 获取。
+- 每个 workspace 根目录的 `AgentConfig.ini` 保存本机路径及由 Hardness 管理的 workspace 身份，并已被 `.gitignore` 忽略。
+- 使用 Hardness `workspace.bootstrap` 初始化或修复配置，再通过 `workspace.config.set` 设置非托管键。Hardness 从 canonical primary checkout 复制共享本机设置，并始终把 `Paths.ProjectFile` 重新绑定到当前 workspace。
+- 构建、测试入口从 `Paths.EngineRoot` 读取引擎路径；若受管 workspace 身份或当前 PowerShell 会话选择与目标根目录不匹配，则拒绝执行。
 
 ## 构建与验证原则
 
@@ -268,11 +268,11 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 - 当前项目处于全面重构期；在用户明确解除本文件顶部限制前，所有项目 Skill 继续禁用。以下规则只记录已经准备好的 Hardness 契约，本身不构成调用授权。
 - 默认编辑位置仍是 Current/main workspace。除非用户明确要求 worktree，或明确启动了由 Goal 持有的任务，否则不要创建、切换或继续使用 worktree。一旦选择 Goal 模式，它使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`。
-- `.agents/skills/hardness/SKILL.md` 是准备好的项目 Skill 入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前核心只公开 `workspace.*`、`openspec.*` 与 `task.status`。Unreal 路由和公共 `Tools` wrapper 迁移仍延后到独立 `unreal-engine-develop` change。
+- `.agents/skills/hardness/SKILL.md` 是准备好的项目 Skill 入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前核心公开 `workspace.*`、`git.*`、`openspec.*` 与 `task.status`。Unreal 路由和公共 `Tools` wrapper 迁移仍延后到独立 `unreal-engine-develop` change。
 - `Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS` 与 `Tools/openspec` 都是 **git 子模块**。父 worktree 必须初始化 gitlink 记录的精确 OID；远端不再提供该对象时，只允许从已验证的本机对象库回退。
 - 先提交并标记 `Tools/openspec`。每个 release 在父仓库历史中只允许一次最终 accepted package 更新，其中包含 gitlink、manifest/docs 与 bundled `openspec.exe`；候选 EXE 不得进入父仓库提交。
-- 临时 Skill 限制解除后，使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化。项目根从 Skill module 自身解析；仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
-- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`workspace.finish` 只完成 canonical Goal 的 Git 收口并报告 `GitStateComplete`；验证和 Review Gate 仍是 agent 独立负责的门禁。Goal 与 Current 都不会自动 merge、push、publish 或删除 worktree。
+- 临时 Skill 限制解除后，使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化，并用 `workspace.activate` 将所选 workspace 绑定到当前 PowerShell 进程。仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
+- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`git.commit` 负责带明确 scope 的 Git 收口；`git.integrate`、非 force 的 `git.push` 与 `workspace.remove` 是相互独立且仅在用户明确要求时执行的操作。验证和 Review Gate 仍由 agent 负责，清理 worktree 时保留 Goal 分支。
 - 目标代码位于子模块时，先提交子模块，再提交父仓库 gitlink。完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 
 ## OpenSpec 与 TODO

@@ -31,11 +31,16 @@ Not copied here (still run from `Tools\`): `RunPackage.ps1`, `RunAngelscriptJIT.
 
 ## Prerequisites
 
-Need `AgentConfig.ini` at the worktree root (`Paths.EngineRoot`, `Paths.ProjectFile`, `Build.*`, `Test.DefaultTimeoutMs`). If missing:
+Need a Hardness-managed `AgentConfig.ini` at the selected workspace root (`Paths.EngineRoot`, workspace-owned `Paths.ProjectFile`, `Build.*`, `Test.DefaultTimeoutMs`). If missing or stale:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1
+Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
+$context = New-HardnessContext -Mode Current
+Invoke-Hardness -Command workspace.bootstrap -Context $context
+Invoke-Hardness -Command workspace.activate -Context $context
 ```
+
+Build and test entry points verify the managed workspace identity and the active PowerShell-session selection before resolving UE paths. A Goal session therefore cannot accidentally target the primary checkout.
 
 Every command must pass an explicit timeout. Build max `3600000`; test max `900000` unless a dedicated long runner (package/cache) says otherwise.
 

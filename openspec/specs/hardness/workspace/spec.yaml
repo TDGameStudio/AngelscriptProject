@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_44e4d03e-3ce6-43fa-9479-e496459653c0
+  id: hardness/workspace
+  title: Hardness Workspace Lifecycle
+  description: Canonical Current and Goal workspace lifecycle, local identity, configuration, activation, verification, and explicit cleanup.

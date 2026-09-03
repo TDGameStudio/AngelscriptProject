@@ -9,10 +9,10 @@ Hardness is a skill router, not a loop runtime. Native Goal mode owns persistenc
 
 ## Choose the workspace mode
 
-- **Goal**: default for an autonomous goal. Create `.worktrees/<goal>` on `goal/<goal>` through `workspace.new`, then stay there. Finish committed, verified, reviewed, and ready to integrate.
+- **Goal**: default for an autonomous goal. Create `.worktrees/<goal>` on `goal/<goal>` through `workspace.new`, activate that workspace for the PowerShell session, then stay there. Finish committed, verified, reviewed, and ready to integrate.
 - **Current**: use the current checkout when the user asks for direct work. Do not create or switch worktrees implicitly.
 
-Neither mode merges, pushes, or removes a worktree automatically.
+Neither mode integrates, pushes, or removes a worktree automatically. `git.integrate`, `git.push`, and `workspace.remove` run only for explicit user intent; `git.push` is non-force and `workspace.remove` preserves the Goal branch.
 
 ## Load only what is needed
 
@@ -62,6 +62,7 @@ Import-Module ./.agents/skills/hardness/scripts/Hardness.psd1
 $context = New-HardnessContext -Mode Current
 Get-HardnessCommand
 Invoke-Hardness -Command workspace.status -Context $context
+Invoke-Hardness -Command workspace.config.status -Context $context
 Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = 'domain/change' }
 ```
 

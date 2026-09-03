@@ -134,10 +134,10 @@ Documents/ImplementTestCoverage/ImplementHistory.md
 
 - 唯一标准入口：`Tools\RunBuild.ps1`。禁止直接调用 `Build.bat`、`RunUBT.bat` 或 `dotnet UnrealBuildTool.dll`。
 - 必须显式带超时且不超过 `900000ms`。
-- 构建前先确认 `AgentConfig.ini` 存在；如不存在，先执行 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`。
+- 构建前先通过 Hardness `workspace.bootstrap` 与 `workspace.activate` 确认当前 PowerShell 7 会话和 `AgentConfig.ini` 都绑定到目标 workspace。
 
 ```
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label implcov -TimeoutMs 180000
+pwsh.exe -NoProfile -File Tools\RunBuild.ps1 -Label implcov -TimeoutMs 180000
 ```
 
 1. 代码写完后执行上述构建命令。

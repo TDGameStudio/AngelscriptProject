@@ -75,7 +75,8 @@ function Get-HardnessGateChecks {
             Hardness            = '.agents\skills\hardness\tests\Hardness.Tests.ps1'
             HardnessGateContract = '.agents\skills\hardness\tests\Test-Hardness.Tests.ps1'
             Protocol            = '.agents\skills\hardness\tests\Protocol.Tests.ps1'
-            Workspace           = '.agents\skills\git-workflow\tests\Workspace.Tests.ps1'
+            Workspace           = '.agents\skills\workspace-lifecycle\tests\WorkspaceLifecycle.Tests.ps1'
+            GitOperations       = '.agents\skills\git-operations\tests\GitOperations.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
         }
         foreach ($testName in $scriptTests.Keys) {

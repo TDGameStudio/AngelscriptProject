@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_fa72de66-2bf4-4461-9aa5-29625fdd912e
+  id: hardness/refactor-workspace-git-operations
+  title: Split workspace lifecycle and Git operations
+workflow: angelscript
+created_at: 2026-09-03T06:36:18Z
+goal: Split worktree/configuration lifecycle from scoped Git commit and local integration operations, then bind every workspace-sensitive execution to the selected Hardness workspace without removing multi-worktree diagnostics or concurrency.
+affected_areas:
+- .agents/skills/hardness
+- .agents/skills/workspace-lifecycle
+- .agents/skills/git-operations
+- .agents/skills/unreal-engine-develop
+- openspec/specs/hardness
+- Tools/Shared/UnrealCommandUtils.ps1
+- README.md
+- AGENTS.md

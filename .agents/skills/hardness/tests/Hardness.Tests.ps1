@@ -60,12 +60,16 @@ function New-InstallationFixture {
         [Parameter(Mandatory = $true)][string]$SourceRoot
     )
 
-    $workspaceTarget = Join-Path $Root '.agents\skills\git-workflow\scripts'
+    $workspaceTarget = Join-Path $Root '.agents\skills\workspace-lifecycle\scripts'
+    $gitTarget = Join-Path $Root '.agents\skills\git-operations\scripts'
     $openspecTarget = Join-Path $Root '.agents\skills\openspec'
     [void](New-Item -ItemType Directory -Path $workspaceTarget -Force)
+    [void](New-Item -ItemType Directory -Path $gitTarget -Force)
     [void](New-Item -ItemType Directory -Path (Join-Path $openspecTarget 'bin') -Force)
-    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-workflow\scripts\Workspace.psm1') -Destination $workspaceTarget
-    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-workflow\scripts\Workspace.psd1') -Destination $workspaceTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psm1') -Destination $workspaceTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1') -Destination $workspaceTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-operations\scripts\GitOperations.psm1') -Destination $gitTarget
+    Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\git-operations\scripts\GitOperations.psd1') -Destination $gitTarget
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\bin\openspec.exe') -Destination (Join-Path $openspecTarget 'bin\openspec.exe')
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\commands') -Destination $openspecTarget -Recurse
     Copy-Item -LiteralPath (Join-Path $SourceRoot '.agents\skills\openspec\release-manifest.json') -Destination $openspecTarget
@@ -122,7 +126,9 @@ try {
 
     $routes = @(Get-HardnessCommand)
     foreach ($name in @(
-        'workspace.status', 'workspace.new', 'workspace.bootstrap', 'workspace.verify', 'workspace.finish', 'workspace.remove',
+        'workspace.status', 'workspace.new', 'workspace.bootstrap', 'workspace.verify', 'workspace.remove', 'workspace.activate',
+        'workspace.config.status', 'workspace.config.get', 'workspace.config.set',
+        'git.status', 'git.commit', 'git.integrate', 'git.push',
         'task.status',
         'openspec.validate', 'openspec.change'
     )) {
@@ -258,11 +264,16 @@ task_graph:
     $fixtureProject = Join-Path $scratch 'fixture-project'
     [void](New-Item -ItemType Directory -Path $fixtureProject)
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('init', '-b', 'main'))
-    $fixtureModuleDirectory = Join-Path $fixtureProject '.agents\skills\git-workflow\scripts'
+    $fixtureModuleDirectory = Join-Path $fixtureProject '.agents\skills\workspace-lifecycle\scripts'
+    $fixtureGitModuleDirectory = Join-Path $fixtureProject '.agents\skills\git-operations\scripts'
     [void](New-Item -ItemType Directory -Path $fixtureModuleDirectory -Force)
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-workflow\scripts\Workspace.psm1') -Destination $fixtureModuleDirectory
-    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-workflow\scripts\Workspace.psd1') -Destination $fixtureModuleDirectory
-    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`n")
+    [void](New-Item -ItemType Directory -Path $fixtureGitModuleDirectory -Force)
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psm1') -Destination $fixtureModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1') -Destination $fixtureModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-operations\scripts\GitOperations.psm1') -Destination $fixtureGitModuleDirectory
+    Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\skills\git-operations\scripts\GitOperations.psd1') -Destination $fixtureGitModuleDirectory
+    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`nAgentConfig.ini`n")
+    [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'fixture.txt'), "fixture`n")
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('add', '--', '.'))
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('-c', 'user.name=Hardness Tests', '-c', 'user.email=hardness-tests@example.invalid', 'commit', '-m', 'fixture'))
@@ -315,7 +326,7 @@ task_graph:
     Assert-True (($preservedFutureBranch -join "`n") -match 'goal/future-goal') 'empty-root recovery preserves the Goal branch'
 
     $unregisteredRoot = Join-Path $fixtureProject '.worktrees\unregistered-goal'
-    $unregisteredModuleDirectory = Join-Path $unregisteredRoot '.agents\skills\git-workflow\scripts'
+    $unregisteredModuleDirectory = Join-Path $unregisteredRoot '.agents\skills\workspace-lifecycle\scripts'
     [void](New-Item -ItemType Directory -Path $unregisteredModuleDirectory -Force)
     $unregisteredSentinel = Join-Path $scratch 'unregistered-leaf-imported.txt'
     $escapedSentinel = $unregisteredSentinel.Replace("'", "''")
@@ -324,10 +335,10 @@ task_graph:
 function Get-HardnessWorkspaceStatus { [pscustomobject]@{ Imported = `$true } }
 Export-ModuleMember -Function 'Get-HardnessWorkspaceStatus'
 "@
-    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'Workspace.psm1'), $maliciousModule)
+    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'WorkspaceLifecycle.psm1'), $maliciousModule)
     $maliciousManifest = @"
 @{
-    RootModule = 'Workspace.psm1'
+    RootModule = 'WorkspaceLifecycle.psm1'
     ModuleVersion = '1.0.0'
     GUID = '$([guid]::NewGuid())'
     FunctionsToExport = @('Get-HardnessWorkspaceStatus')
@@ -336,7 +347,7 @@ Export-ModuleMember -Function 'Get-HardnessWorkspaceStatus'
     AliasesToExport = @()
 }
 "@
-    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'Workspace.psd1'), $maliciousManifest)
+    [System.IO.File]::WriteAllText((Join-Path $unregisteredModuleDirectory 'WorkspaceLifecycle.psd1'), $maliciousManifest)
     $unregisteredOpenSpecDirectory = Join-Path $unregisteredRoot '.agents\skills\openspec\bin'
     [void](New-Item -ItemType Directory -Path $unregisteredOpenSpecDirectory -Force)
     [System.IO.File]::WriteAllBytes((Join-Path $unregisteredOpenSpecDirectory 'openspec.exe'), [byte[]](1, 2, 3, 4))

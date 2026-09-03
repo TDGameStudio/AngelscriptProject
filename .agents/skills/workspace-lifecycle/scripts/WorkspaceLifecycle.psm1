@@ -1,3 +1,4 @@
+#requires -Version 7.0
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -413,27 +414,355 @@ function Initialize-WorkspaceSubmodules {
     return @($states | ForEach-Object { $_ })
 }
 
-function Copy-WorkspaceAgentConfig {
+function Assert-WorkspaceIniName {
     param(
-        [Parameter(Mandatory = $true)][string]$SourceRoot,
-        [Parameter(Mandatory = $true)][string]$TargetRoot
+        [Parameter(Mandatory = $true)][string]$Value,
+        [Parameter(Mandatory = $true)][string]$Kind
     )
-
-    $source = Join-Path $SourceRoot 'AgentConfig.ini'
-    $target = Join-Path $TargetRoot 'AgentConfig.ini'
-    if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or (Test-Path -LiteralPath $target -PathType Leaf)) {
-        return $false
+    if ($Value -notmatch '^[A-Za-z][A-Za-z0-9_.-]{0,63}$') {
+        throw "Invalid AgentConfig.ini $Kind '$Value'. Use 1-64 ASCII letters, digits, dots, underscores, or hyphens and start with a letter."
     }
-    if ([System.IO.Path]::GetFullPath($source) -eq [System.IO.Path]::GetFullPath($target)) {
-        return $false
+    return $Value
+}
+
+function Get-WorkspaceIniValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Section,
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    $activeSection = ''
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        $trimmed = $line.Trim()
+        if ($trimmed -match '^\[([^]]+)\]$') {
+            $activeSection = $matches[1].Trim()
+            continue
+        }
+        if (-not $activeSection.Equals($Section, [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith(';') -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        $separator = $line.IndexOf('=')
+        if ($separator -lt 0) { continue }
+        $candidateKey = $line.Substring(0, $separator).Trim()
+        if ($candidateKey.Equals($Key, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $line.Substring($separator + 1).Trim()
+        }
+    }
+    return $null
+}
+
+function Get-WorkspaceIniKeyNames {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return @() }
+    $activeSection = ''
+    $keys = New-Object System.Collections.Generic.List[string]
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        $trimmed = $line.Trim()
+        if ($trimmed -match '^\[([^]]+)\]$') {
+            $activeSection = $matches[1].Trim()
+            continue
+        }
+        if ([string]::IsNullOrWhiteSpace($activeSection) -or [string]::IsNullOrWhiteSpace($trimmed) -or
+            $trimmed.StartsWith(';') -or $trimmed.StartsWith('#')) { continue }
+        $separator = $line.IndexOf('=')
+        if ($separator -lt 0) { continue }
+        $key = $line.Substring(0, $separator).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($key)) {
+            $keys.Add("$activeSection.$key") | Out-Null
+        }
+    }
+    return @($keys | Sort-Object -Unique)
+}
+
+function Set-WorkspaceIniValueInternal {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Section,
+        [Parameter(Mandatory = $true)][string]$Key,
+        [AllowEmptyString()][Parameter(Mandatory = $true)][string]$Value
+    )
+    [void](Assert-WorkspaceIniName -Value $Section -Kind 'section')
+    [void](Assert-WorkspaceIniName -Value $Key -Kind 'key')
+    if ($Value.Contains("`r") -or $Value.Contains("`n") -or $Value.Contains([char]0)) {
+        throw 'AgentConfig.ini values must be single-line text without NUL characters.'
     }
 
-    $ignore = Invoke-WorkspaceGit -Repository $TargetRoot -Arguments @('check-ignore', '--quiet', '--', 'AgentConfig.ini') -AllowFailure
+    $raw = if (Test-Path -LiteralPath $Path -PathType Leaf) { [System.IO.File]::ReadAllText($Path) } else { '' }
+    $newLine = if ($raw.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $hadTrailingNewLine = $raw.EndsWith("`n")
+    $sourceLines = @()
+    if (-not [string]::IsNullOrEmpty($raw)) {
+        $sourceLines = @([regex]::Split($raw, '\r?\n'))
+    }
+    if ($sourceLines.Count -gt 0 -and $sourceLines[-1] -eq '' -and $hadTrailingNewLine) {
+        $sourceLines = if ($sourceLines.Count -eq 1) { @() } else { @($sourceLines[0..($sourceLines.Count - 2)]) }
+    }
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $sourceLines) { $lines.Add([string]$line) | Out-Null }
+
+    $sectionStart = -1
+    $sectionEnd = $lines.Count
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $trimmed = $lines[$index].Trim()
+        if ($trimmed -match '^\[([^]]+)\]$') {
+            if ($sectionStart -ge 0) {
+                $sectionEnd = $index
+                break
+            }
+            if ($matches[1].Trim().Equals($Section, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $sectionStart = $index
+            }
+        }
+    }
+
+    if ($sectionStart -lt 0) {
+        if ($lines.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($lines[$lines.Count - 1])) {
+            $lines.Add('') | Out-Null
+        }
+        $lines.Add("[$Section]") | Out-Null
+        $lines.Add("$Key=$Value") | Out-Null
+    }
+    else {
+        $keyIndex = -1
+        for ($index = $sectionStart + 1; $index -lt $sectionEnd; $index++) {
+            $line = $lines[$index]
+            $trimmed = $line.Trim()
+            if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith(';') -or $trimmed.StartsWith('#')) { continue }
+            $separator = $line.IndexOf('=')
+            if ($separator -lt 0) { continue }
+            if ($line.Substring(0, $separator).Trim().Equals($Key, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $keyIndex = $index
+                break
+            }
+        }
+        if ($keyIndex -ge 0) {
+            $lines[$keyIndex] = "$Key=$Value"
+        }
+        else {
+            $lines.Insert($sectionEnd, "$Key=$Value")
+        }
+    }
+
+    $directory = Split-Path -Parent $Path
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+        throw "AgentConfig.ini target directory does not exist: $directory"
+    }
+    $text = (@($lines) -join $newLine) + $newLine
+    $temporary = Join-Path $directory ('.AgentConfig.{0}.tmp' -f [guid]::NewGuid().ToString('N'))
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    try {
+        [System.IO.File]::WriteAllText($temporary, $text, $encoding)
+        [System.IO.File]::Move($temporary, $Path, $true)
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) {
+            Remove-Item -LiteralPath $temporary -Force
+        }
+    }
+}
+
+function Get-WorkspaceIdentity {
+    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $primary = Get-PrimaryWorkspaceRoot -Repository $root
+    $registered = @(Get-RegisteredWorkspaceRoots -Repository $primary)
+    if (-not (@($registered | Where-Object { Test-WorkspacePathEqual -Left $_ -Right $root }).Count -eq 1)) {
+        throw "Workspace is not registered with Git: $root"
+    }
+    $isPrimary = Test-WorkspacePathEqual -Left $root -Right $primary
+    $goalName = if ($isPrimary) { '' } else { Split-Path -Leaf $root }
+    return [pscustomobject][ordered]@{
+        SchemaVersion = '1'
+        WorkspaceKind = if ($isPrimary) { 'Primary' } else { 'Goal' }
+        PrimaryRoot   = [System.IO.Path]::GetFullPath($primary)
+        WorkspaceRoot = [System.IO.Path]::GetFullPath($root)
+        GitCommonDir  = [System.IO.Path]::GetFullPath((Get-WorkspaceCommonGitDirectory -Repository $root))
+        GoalName      = $goalName
+    }
+}
+
+function Get-WorkspaceProjectFile {
+    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+    $files = @(Get-ChildItem -LiteralPath $ProjectRoot -Filter '*.uproject' -File -ErrorAction Stop)
+    if ($files.Count -ne 1) {
+        throw "Expected exactly one .uproject file at workspace root '$ProjectRoot'; found $($files.Count)."
+    }
+    return [System.IO.Path]::GetFullPath($files[0].FullName)
+}
+
+function Set-WorkspaceManagedConfiguration {
+    param(
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [string]$SourceRoot = ''
+    )
+    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $identity = Get-WorkspaceIdentity -ProjectRoot $root
+    $target = Join-Path $root 'AgentConfig.ini'
+    $ignore = Invoke-WorkspaceGit -Repository $root -Arguments @('check-ignore', '--quiet', '--', 'AgentConfig.ini') -AllowFailure
     if ($ignore.ExitCode -ne 0) {
-        throw "Refusing to copy AgentConfig.ini because it is not ignored in '$TargetRoot'."
+        throw "Refusing to materialize AgentConfig.ini because it is not ignored in '$root'."
     }
-    Copy-Item -LiteralPath $source -Destination $target
-    return $true
+
+    $copied = $false
+    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+        $source = if ([string]::IsNullOrWhiteSpace($SourceRoot)) { Join-Path $identity.PrimaryRoot 'AgentConfig.ini' } else { Join-Path ([System.IO.Path]::GetFullPath($SourceRoot)) 'AgentConfig.ini' }
+        if ((Test-Path -LiteralPath $source -PathType Leaf) -and -not (Test-WorkspacePathEqual -Left $source -Right $target)) {
+            Copy-Item -LiteralPath $source -Destination $target
+            $copied = $true
+        }
+    }
+
+    $projectFile = Get-WorkspaceProjectFile -ProjectRoot $root
+    Set-WorkspaceIniValueInternal -Path $target -Section 'Paths' -Key 'ProjectFile' -Value $projectFile
+    foreach ($entry in @(
+        @('SchemaVersion', $identity.SchemaVersion),
+        @('WorkspaceKind', $identity.WorkspaceKind),
+        @('PrimaryRoot', $identity.PrimaryRoot),
+        @('WorkspaceRoot', $identity.WorkspaceRoot),
+        @('GitCommonDir', $identity.GitCommonDir),
+        @('GoalName', $identity.GoalName)
+    )) {
+        Set-WorkspaceIniValueInternal -Path $target -Section 'Hardness' -Key $entry[0] -Value ([string]$entry[1])
+    }
+    return [pscustomobject]@{ Path = $target; Copied = $copied; Identity = $identity; ProjectFile = $projectFile }
+}
+
+function Get-HardnessWorkspaceConfigStatus {
+    [CmdletBinding()]
+    param([string]$ProjectRoot = '')
+    $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $path = Join-Path $root 'AgentConfig.ini'
+    $errors = New-Object System.Collections.Generic.List[string]
+    $identity = Get-WorkspaceIdentity -ProjectRoot $root
+    $exists = Test-Path -LiteralPath $path -PathType Leaf
+    $ignored = $false
+    if (-not $exists) {
+        $errors.Add('AgentConfig.ini is missing.') | Out-Null
+    }
+    else {
+        $ignored = (Invoke-WorkspaceGit -Repository $root -Arguments @('check-ignore', '--quiet', '--', 'AgentConfig.ini') -AllowFailure).ExitCode -eq 0
+        if (-not $ignored) { $errors.Add('AgentConfig.ini exists but is not ignored.') | Out-Null }
+        foreach ($entry in @(
+            @('SchemaVersion', $identity.SchemaVersion),
+            @('WorkspaceKind', $identity.WorkspaceKind),
+            @('PrimaryRoot', $identity.PrimaryRoot),
+            @('WorkspaceRoot', $identity.WorkspaceRoot),
+            @('GitCommonDir', $identity.GitCommonDir),
+            @('GoalName', $identity.GoalName)
+        )) {
+            $actual = Get-WorkspaceIniValue -Path $path -Section 'Hardness' -Key $entry[0]
+            $expected = [string]$entry[1]
+            $matches = if ($entry[0] -in @('PrimaryRoot', 'WorkspaceRoot', 'GitCommonDir')) {
+                -not [string]::IsNullOrWhiteSpace([string]$actual) -and (Test-WorkspacePathEqual -Left $actual -Right $expected)
+            }
+            else { ([string]$actual).Equals($expected, [System.StringComparison]::OrdinalIgnoreCase) }
+            if (-not $matches) { $errors.Add("AgentConfig.ini [Hardness] $($entry[0]) does not match this workspace.") | Out-Null }
+        }
+        $expectedProject = Get-WorkspaceProjectFile -ProjectRoot $root
+        $configuredProject = Get-WorkspaceIniValue -Path $path -Section 'Paths' -Key 'ProjectFile'
+        if ([string]::IsNullOrWhiteSpace([string]$configuredProject) -or -not (Test-WorkspacePathEqual -Left $configuredProject -Right $expectedProject)) {
+            $errors.Add('AgentConfig.ini [Paths] ProjectFile does not belong to this workspace.') | Out-Null
+        }
+    }
+    $engineRoot = if ($exists) { Get-WorkspaceIniValue -Path $path -Section 'Paths' -Key 'EngineRoot' } else { $null }
+    $configurationReady = -not [string]::IsNullOrWhiteSpace([string]$engineRoot)
+    return [pscustomobject][ordered]@{
+        ProjectRoot       = $root
+        Path              = $path
+        Exists            = $exists
+        Ignored           = $ignored
+        Identity          = $identity
+        IdentityValid     = $errors.Count -eq 0
+        ConfigurationReady = $configurationReady
+        Keys              = if ($exists) { @(Get-WorkspaceIniKeyNames -Path $path) } else { @() }
+        Errors            = @($errors | ForEach-Object { $_ })
+    }
+}
+
+function Get-HardnessWorkspaceConfigValue {
+    [CmdletBinding()]
+    param(
+        [string]$ProjectRoot = '',
+        [Parameter(Mandatory = $true)][string]$Section,
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+    [void](Assert-WorkspaceIniName -Value $Section -Kind 'section')
+    [void](Assert-WorkspaceIniName -Value $Key -Kind 'key')
+    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
+    $value = Get-WorkspaceIniValue -Path $status.Path -Section $Section -Key $Key
+    return [pscustomobject]@{ ProjectRoot = $status.ProjectRoot; Section = $Section; Key = $Key; Exists = $null -ne $value; Value = $value }
+}
+
+function Set-HardnessWorkspaceConfigValue {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [string]$ProjectRoot = '',
+        [Parameter(Mandatory = $true)][string]$Section,
+        [Parameter(Mandatory = $true)][string]$Key,
+        [AllowEmptyString()][Parameter(Mandatory = $true)][string]$Value
+    )
+    [void](Assert-WorkspaceIniName -Value $Section -Kind 'section')
+    [void](Assert-WorkspaceIniName -Value $Key -Kind 'key')
+    if ($Section.Equals('Hardness', [System.StringComparison]::OrdinalIgnoreCase) -or
+        ($Section.Equals('Paths', [System.StringComparison]::OrdinalIgnoreCase) -and $Key.Equals('ProjectFile', [System.StringComparison]::OrdinalIgnoreCase))) {
+        throw "AgentConfig.ini [$Section] $Key is managed by Hardness and cannot be set directly."
+    }
+    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    if (-not $status.IdentityValid) { throw "AgentConfig.ini is not valid for this workspace: $($status.Errors -join '; ')" }
+    if ($PSCmdlet.ShouldProcess($status.Path, "set [$Section] $Key")) {
+        Set-WorkspaceIniValueInternal -Path $status.Path -Section $Section -Key $Key -Value $Value
+    }
+    return Get-HardnessWorkspaceConfigValue -ProjectRoot $status.ProjectRoot -Section $Section -Key $Key
+}
+
+function Assert-HardnessWorkspaceExecution {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [string]$SelectedWorkspaceRoot = '',
+        [string]$CallerPath = ''
+    )
+    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    if (-not $status.IdentityValid) { throw "Workspace execution identity is invalid: $($status.Errors -join '; ')" }
+    $selected = if (-not [string]::IsNullOrWhiteSpace($SelectedWorkspaceRoot)) { $SelectedWorkspaceRoot } else { [Environment]::GetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', 'Process') }
+    if (-not [string]::IsNullOrWhiteSpace($selected) -and -not (Test-WorkspacePathEqual -Left $selected -Right $status.ProjectRoot)) {
+        throw "Hardness selected workspace '$selected' but the command targets '$($status.ProjectRoot)'."
+    }
+    $caller = if ([string]::IsNullOrWhiteSpace($CallerPath)) { (Get-Location).Path } else { $CallerPath }
+    if (Test-Path -LiteralPath $caller) {
+        $callerFull = [System.IO.Path]::GetFullPath($caller)
+        $registered = @(Get-RegisteredWorkspaceRoots -Repository $status.Identity.PrimaryRoot | Sort-Object Length -Descending)
+        $callerWorkspace = @($registered | Where-Object { (Test-WorkspacePathEqual -Left $_ -Right $callerFull) -or (Test-WorkspacePathInside -Parent $_ -Child $callerFull) } | Select-Object -First 1)
+        if ($callerWorkspace.Count -eq 1 -and -not (Test-WorkspacePathEqual -Left $callerWorkspace[0] -Right $status.ProjectRoot)) {
+            throw "The current shell belongs to workspace '$($callerWorkspace[0])' but the command targets '$($status.ProjectRoot)'."
+        }
+    }
+    return $status
+}
+
+function Set-HardnessWorkspaceSession {
+    [CmdletBinding()]
+    param(
+        [string]$ProjectRoot = '',
+        [ValidateSet('Current', 'Goal')][string]$Mode = 'Current',
+        [string]$GoalName = ''
+    )
+    $status = Get-HardnessWorkspaceConfigStatus -ProjectRoot $ProjectRoot
+    if (-not $status.IdentityValid) { throw "Workspace activation identity is invalid: $($status.Errors -join '; ')" }
+    if ($Mode -eq 'Goal' -and $status.Identity.WorkspaceKind -ne 'Goal') { throw 'Goal activation requires a registered Goal workspace.' }
+    if ($Mode -eq 'Goal' -and -not [string]::IsNullOrWhiteSpace($GoalName) -and $GoalName -ne $status.Identity.GoalName) {
+        throw "GoalName '$GoalName' does not match workspace Goal '$($status.Identity.GoalName)'."
+    }
+    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_ROOT', $status.ProjectRoot, 'Process')
+    [Environment]::SetEnvironmentVariable('HARDNESS_PRIMARY_ROOT', $status.Identity.PrimaryRoot, 'Process')
+    [Environment]::SetEnvironmentVariable('HARDNESS_WORKSPACE_MODE', $Mode, 'Process')
+    [Environment]::SetEnvironmentVariable('HARDNESS_GOAL_NAME', $status.Identity.GoalName, 'Process')
+    return [pscustomobject]@{ WorkspaceRoot = $status.ProjectRoot; PrimaryRoot = $status.Identity.PrimaryRoot; Mode = $Mode; GoalName = $status.Identity.GoalName; Activated = $true }
 }
 
 function Get-PrimaryWorkspaceRoot {
@@ -504,6 +833,7 @@ function Get-HardnessWorkspaceStatus {
         }
     }
 
+    $configStatus = Get-HardnessWorkspaceConfigStatus -ProjectRoot $root
     return [pscustomobject]@{
         ProjectRoot = $root
         Branch      = [string](($branchResult.Output | Select-Object -Last 1).Trim())
@@ -511,6 +841,7 @@ function Get-HardnessWorkspaceStatus {
         Dirty       = $dirty.Count -gt 0
         Changes     = $dirty
         Submodules  = @($submodules | ForEach-Object { $_ })
+        Configuration = $configStatus
     }
 }
 
@@ -561,7 +892,7 @@ function New-HardnessWorkspace {
     [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace creation')
     [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'add', '-b', $branchName, $target, $startCommit))
     try {
-        $configCopied = Copy-WorkspaceAgentConfig -SourceRoot $requestedRepository -TargetRoot $target
+        $configResult = Set-WorkspaceManagedConfiguration -ProjectRoot $target -SourceRoot $repository
         $submodules = @(Initialize-WorkspaceSubmodules -Repository $target)
     }
     catch {
@@ -574,7 +905,8 @@ function New-HardnessWorkspace {
         StartPoint        = $startCommit
         Created           = $true
         Mutates           = $true
-        AgentConfigCopied = $configCopied
+        AgentConfigCopied = $configResult.Copied
+        Configuration     = $configResult
         Submodules        = $submodules
     }
 }
@@ -582,15 +914,14 @@ function New-HardnessWorkspace {
 function Initialize-HardnessWorkspace {
     [CmdletBinding()]
     param(
-        [string]$ProjectRoot = '',
-        [string]$SourceRoot = ''
+        [string]$ProjectRoot = ''
     )
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $source = if ([string]::IsNullOrWhiteSpace($SourceRoot)) { Get-PrimaryWorkspaceRoot -Repository $root } else { Resolve-WorkspaceRepository -Path $SourceRoot }
-    $copied = Copy-WorkspaceAgentConfig -SourceRoot $source -TargetRoot $root
+    $source = Get-PrimaryWorkspaceRoot -Repository $root
+    $config = Set-WorkspaceManagedConfiguration -ProjectRoot $root -SourceRoot $source
     $submodules = @(Initialize-WorkspaceSubmodules -Repository $root)
-    return [pscustomobject]@{ ProjectRoot = $root; SourceRoot = $source; AgentConfigCopied = $copied; Submodules = $submodules }
+    return [pscustomobject]@{ ProjectRoot = $root; SourceRoot = $source; AgentConfigCopied = $config.Copied; Configuration = $config; Submodules = $submodules }
 }
 
 function Test-HardnessWorkspace {
@@ -618,147 +949,18 @@ function Test-HardnessWorkspace {
             }
         }
     }
-    $configPath = Join-Path $status.ProjectRoot 'AgentConfig.ini'
-    if (Test-Path -LiteralPath $configPath -PathType Leaf) {
-        $ignored = Invoke-WorkspaceGit -Repository $status.ProjectRoot -Arguments @('check-ignore', '--quiet', '--', 'AgentConfig.ini') -AllowFailure
-        if ($ignored.ExitCode -ne 0) {
-            $errors.Add('AgentConfig.ini exists but is not ignored.') | Out-Null
+    if (-not $status.Configuration.IdentityValid) {
+        foreach ($configError in @($status.Configuration.Errors)) {
+            $errors.Add([string]$configError) | Out-Null
         }
+    }
+    if (-not $status.Configuration.ConfigurationReady) {
+        $warnings.Add('AgentConfig.ini is workspace-valid but consumer configuration is incomplete; set [Paths] EngineRoot before UE build or test execution.') | Out-Null
     }
     if ($RequireClean -and $status.Dirty) {
         $errors.Add('Workspace has uncommitted changes.') | Out-Null
     }
     return [pscustomobject]@{ IsValid = $errors.Count -eq 0; Errors = @($errors | ForEach-Object { $_ }); Warnings = @($warnings | ForEach-Object { $_ }); Status = $status }
-}
-
-function Complete-HardnessWorkspace {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param(
-        [string]$ProjectRoot = '',
-        [string]$CommitMessage = '[Harness] Chore: complete goal workspace',
-        [string]$SubmoduleCommitMessage = '',
-        [string]$SubmoduleBranch = ''
-    )
-
-    $goalWorkspace = Assert-WorkspaceIsCanonicalGoal -WorkspaceRoot (Resolve-WorkspaceRepository -Path $ProjectRoot)
-    $root = $goalWorkspace.Root
-    $parentBranchResult = Invoke-WorkspaceGit -Repository $root -Arguments @('branch', '--show-current')
-    $parentBranch = ([string]($parentBranchResult.Output -join '')).Trim()
-    if ([string]::IsNullOrWhiteSpace($parentBranch)) {
-        throw 'Workspace is detached. Create a parent branch before finishing.'
-    }
-    $subMessage = if ([string]::IsNullOrWhiteSpace($SubmoduleCommitMessage)) { $CommitMessage } else { $SubmoduleCommitMessage }
-    $subBranch = if ([string]::IsNullOrWhiteSpace($SubmoduleBranch)) { $parentBranch } else { $SubmoduleBranch }
-    $branchCheck = Invoke-WorkspaceGit -Repository $root -Arguments @('check-ref-format', '--branch', $subBranch) -AllowFailure
-    if ($branchCheck.ExitCode -ne 0) {
-        throw "Invalid submodule goal branch '$subBranch'."
-    }
-    $submoduleCommits = New-Object System.Collections.Generic.List[object]
-    $submodulePlans = New-Object System.Collections.Generic.List[object]
-
-    foreach ($submodule in @(Get-WorkspaceSubmodules -Repository $root)) {
-        $path = $submodule.Path
-        $fullPath = Join-Path $root $path
-        if (-not (Test-WorkspaceSubmoduleRepository -Repository $root -Submodule $submodule -Path $fullPath)) {
-            throw "Cannot finish: submodule '$path' is not initialized."
-        }
-
-        $expected = Get-WorkspaceGitlink -Repository $root -SubmodulePath $path
-        $actual = ((Invoke-WorkspaceGit -Repository $fullPath -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim().ToLowerInvariant()
-        $dirty = @(Get-WorkspaceDirtyLines -Repository $fullPath)
-        $currentBranch = ([string](((Invoke-WorkspaceGit -Repository $fullPath -Arguments @('branch', '--show-current')).Output) -join '')).Trim()
-        $branchExistsResult = Invoke-WorkspaceGit -Repository $fullPath -Arguments @('show-ref', '--verify', '--quiet', "refs/heads/$subBranch") -AllowFailure
-        $branchExists = $branchExistsResult.ExitCode -eq 0
-
-        if ($actual -ne $expected) {
-            if ($currentBranch -ne $subBranch) {
-                throw "Submodule '$path' is at $actual instead of parent gitlink $expected and is not on the dedicated branch '$subBranch'."
-            }
-            $ancestor = Invoke-WorkspaceGit -Repository $fullPath -Arguments @('merge-base', '--is-ancestor', $expected, $actual) -AllowFailure
-            if ($ancestor.ExitCode -ne 0) {
-                throw "Submodule '$path' branch '$subBranch' does not descend from required gitlink $expected."
-            }
-        }
-
-        if ($dirty.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($currentBranch) -and $currentBranch -ne $subBranch) {
-            throw "Submodule '$path' is dirty on branch '$currentBranch'. Finish only commits the dedicated Goal branch '$subBranch'."
-        }
-
-        if ($dirty.Count -gt 0 -and [string]::IsNullOrWhiteSpace($currentBranch) -and $branchExists) {
-            $branchCommit = ((Invoke-WorkspaceGit -Repository $fullPath -Arguments @('rev-parse', "refs/heads/$subBranch")).Output | Select-Object -Last 1).Trim().ToLowerInvariant()
-            if ($branchCommit -ne $actual) {
-                throw "Existing submodule branch '$subBranch' for '$path' points to different commit $branchCommit; current exact checkout is $actual."
-            }
-            $branchLine = "branch refs/heads/$subBranch"
-            $occupied = @((Invoke-WorkspaceGit -Repository $fullPath -Arguments @('worktree', 'list', '--porcelain')).Output | Where-Object { $_ -eq $branchLine })
-            if ($occupied.Count -gt 0) {
-                throw "Existing submodule branch '$subBranch' for '$path' is already checked out by another worktree."
-            }
-        }
-
-        $submodulePlans.Add([pscustomobject]@{
-            Name          = $submodule.Name
-            Path          = $path
-            FullPath      = $fullPath
-            Expected      = $expected
-            Actual        = $actual
-            Dirty         = $dirty.Count -gt 0
-            CurrentBranch = $currentBranch
-            BranchExists  = $branchExists
-        }) | Out-Null
-    }
-
-    if ($WhatIfPreference) {
-        $preview = Get-HardnessWorkspaceStatus -ProjectRoot $root
-        return [pscustomobject]@{
-            ProjectRoot          = $root
-            Branch               = $parentBranch
-            ParentCommit         = $null
-            SubmoduleCommits     = @()
-            WouldCommitParent    = $preview.Dirty
-            WouldCommitSubmodule = @($submodulePlans | Where-Object Dirty | ForEach-Object Path)
-            GitStateComplete     = $false
-        }
-    }
-
-    foreach ($plan in @($submodulePlans | ForEach-Object { $_ })) {
-        if (-not $plan.Dirty) {
-            continue
-        }
-        if ($PSCmdlet.ShouldProcess($plan.Path, 'commit submodule changes before the parent gitlink')) {
-            if ([string]::IsNullOrWhiteSpace($plan.CurrentBranch)) {
-                if ($plan.BranchExists) {
-                    [void](Invoke-WorkspaceGit -Repository $plan.FullPath -Arguments @('checkout', $subBranch))
-                }
-                else {
-                    [void](Invoke-WorkspaceGit -Repository $plan.FullPath -Arguments @('checkout', '-b', $subBranch))
-                }
-            }
-            [void](Invoke-WorkspaceGit -Repository $plan.FullPath -Arguments @('add', '-A'))
-            [void](Invoke-WorkspaceGit -Repository $plan.FullPath -Arguments @('commit', '-m', $subMessage))
-            $commit = ((Invoke-WorkspaceGit -Repository $plan.FullPath -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
-            $submoduleCommits.Add([pscustomobject]@{ Path = $plan.Path; Commit = $commit }) | Out-Null
-        }
-    }
-
-    $parentCommit = $null
-    $parentNeedsCommit = @(Get-WorkspaceDirtyLines -Repository $root).Count -gt 0 -or $submoduleCommits.Count -gt 0
-    if ($parentNeedsCommit -and $PSCmdlet.ShouldProcess($root, 'commit parent changes and updated gitlinks')) {
-        [void](Invoke-WorkspaceGit -Repository $root -Arguments @('add', '-A'))
-        $staged = Invoke-WorkspaceGit -Repository $root -Arguments @('diff', '--cached', '--quiet') -AllowFailure
-        if ($staged.ExitCode -eq 1) {
-            [void](Invoke-WorkspaceGit -Repository $root -Arguments @('commit', '-m', $CommitMessage))
-            $parentCommit = ((Invoke-WorkspaceGit -Repository $root -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
-        }
-        elseif ($staged.ExitCode -ne 0) {
-            throw "Unable to inspect staged workspace changes: $($staged.Output -join [Environment]::NewLine)"
-        }
-    }
-    $verification = Test-HardnessWorkspace -ProjectRoot $root -RequireClean
-    if (-not $verification.IsValid) {
-        throw "Workspace finish verification failed: $($verification.Errors -join '; ')"
-    }
-    return [pscustomobject]@{ ProjectRoot = $root; Branch = $parentBranch; ParentCommit = $parentCommit; SubmoduleCommits = @($submoduleCommits | ForEach-Object { $_ }); GitStateComplete = $true }
 }
 
 function Remove-HardnessWorkspace {
@@ -848,6 +1050,10 @@ Export-ModuleMember -Function @(
     'New-HardnessWorkspace',
     'Initialize-HardnessWorkspace',
     'Test-HardnessWorkspace',
-    'Complete-HardnessWorkspace',
-    'Remove-HardnessWorkspace'
+    'Remove-HardnessWorkspace',
+    'Get-HardnessWorkspaceConfigStatus',
+    'Get-HardnessWorkspaceConfigValue',
+    'Set-HardnessWorkspaceConfigValue',
+    'Set-HardnessWorkspaceSession',
+    'Assert-HardnessWorkspaceExecution'
 )

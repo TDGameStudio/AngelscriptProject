@@ -90,9 +90,10 @@ function New-SimpleParentFixture {
 
     $parent = Join-Path $FixtureRoot 'parent'
     Initialize-TestRepository -Path $parent
-    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`nlocal.payload`n")
+    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`nAgentConfig.ini`nlocal.payload`n")
+    [System.IO.File]::WriteAllText((Join-Path $parent 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $parent 'README.md'), "fixture`n")
-    [void](Invoke-TestGit -Repository $parent -Arguments @('add', '.gitignore', 'README.md'))
+    [void](Invoke-TestGit -Repository $parent -Arguments @('add', '.gitignore', 'Fixture.uproject', 'README.md'))
     [void](Invoke-TestGit -Repository $parent -Arguments @('commit', '-m', 'parent base'))
     return $parent
 }
@@ -113,9 +114,10 @@ function New-SubmoduleFixture {
     $commitB = ((Invoke-TestGit -Repository $child -Arguments @('rev-parse', 'HEAD')).Output | Select-Object -Last 1).Trim()
 
     Initialize-TestRepository -Path $parent
-    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`n")
+    [System.IO.File]::WriteAllText((Join-Path $parent '.gitignore'), ".worktrees/`nAgentConfig.ini`n")
+    [System.IO.File]::WriteAllText((Join-Path $parent 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $parent 'README.md'), "fixture`n")
-    [void](Invoke-TestGit -Repository $parent -Arguments @('add', '.gitignore', 'README.md'))
+    [void](Invoke-TestGit -Repository $parent -Arguments @('add', '.gitignore', 'Fixture.uproject', 'README.md'))
     [void](Invoke-TestGit -Repository $parent -Arguments @('commit', '-m', 'parent base'))
     [void](Invoke-TestGit -Repository $parent -Arguments @('-c', 'protocol.file.allow=always', 'submodule', 'add', '--name', 'sdk', $child, 'Modules/Child'))
     $parentChild = Join-Path $parent 'Modules/Child'
@@ -156,14 +158,14 @@ function Remove-TestFixture {
     Remove-Item -LiteralPath $FixtureRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-$manifest = Join-Path $PSScriptRoot '..\scripts\Workspace.psd1'
-$moduleFile = Join-Path $PSScriptRoot '..\scripts\Workspace.psm1'
+$manifest = Join-Path $PSScriptRoot '..\scripts\WorkspaceLifecycle.psd1'
+$moduleFile = Join-Path $PSScriptRoot '..\scripts\WorkspaceLifecycle.psm1'
 $tokens = $null
 $parseErrors = $null
 [void][System.Management.Automation.Language.Parser]::ParseFile($moduleFile, [ref]$tokens, [ref]$parseErrors)
-Assert-Equal 0 @($parseErrors).Count 'Workspace.psm1 must parse without errors'
+Assert-Equal 0 @($parseErrors).Count 'WorkspaceLifecycle.psm1 must parse without errors'
 Import-Module $manifest -Force
-$workspaceModule = Get-Module Workspace
+$workspaceModule = Get-Module WorkspaceLifecycle
 
 $regressions = @(
     [pscustomobject]@{
@@ -363,9 +365,9 @@ foreach ($regression in $regressions) {
     }
 }
 
-Remove-Module Workspace -Force -ErrorAction SilentlyContinue
+Remove-Module WorkspaceLifecycle -Force -ErrorAction SilentlyContinue
 if ($failures.Count -gt 0) {
     throw "Workspace safety regressions failed ($($failures.Count)):$([Environment]::NewLine)$($failures -join [Environment]::NewLine)"
 }
 
-Write-Output 'Workspace.Safety.Tests.ps1: PASS'
+Write-Output 'WorkspaceLifecycle.Safety.Tests.ps1: PASS'

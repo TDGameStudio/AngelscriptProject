@@ -4,7 +4,8 @@ Read one leaf only after the route is selected.
 
 | Need | Leaf | Hardness route family |
 |---|---|---|
-| Workspace lifecycle | `git-workflow/SKILL.md` | `workspace.*` |
+| Workspace lifecycle, local identity, and explicit cleanup | `workspace-lifecycle/SKILL.md` | `workspace.*` |
+| Scoped commits, reviewed local integration, and explicit non-force push | `git-operations/SKILL.md` | `git.*` |
 | OpenSpec command or CLI maintenance | `openspec/SKILL.md` | `openspec.*` |
 | Deep discovery for a new feature, architecture refactor, or major behavior change | `openspec-explore/SKILL.md` | Agent-driven before creating the target Change only |
 | Task-local technical uncertainty inside a Ready node | Stay in `openspec-apply-change/SKILL.md`; load `systematic-debugging/SKILL.md` only for an unexplained failure | Agent-driven inside the current task |
@@ -23,13 +24,15 @@ Inspect the executable table without loading leaves:
 
 ```powershell
 Get-HardnessCommand
-Get-HardnessCommand workspace.finish
+Get-HardnessCommand workspace.activate
+Get-HardnessCommand git.integrate
 ```
 
 The public route families are:
 
 ```text
-workspace.status/new/bootstrap/verify/finish/remove
+workspace.status/new/bootstrap/verify/remove/activate/config.status/config.get/config.set
+git.status/commit/integrate/push
 openspec.init/doctor/status/instructions/validate/domain/spec/change/workflow/completion
 task.status
 ```

@@ -35,10 +35,11 @@ foreach ($name in @(
         'HardnessGateContract.PS7',
         'Protocol.PS7',
         'Workspace.PS7',
+        'GitOperations.PS7',
         'OpenSpecSkill.PS7')) {
     Assert-True ($name -in @($quick.Name)) "Quick profile contains $name"
 }
-Assert-Equal 5 @($quick).Count 'Quick profile remains a focused PowerShell 7 core matrix'
+Assert-Equal 6 @($quick).Count 'Quick profile remains a focused PowerShell 7 core matrix'
 Assert-Equal 0 @($quick | Where-Object Name -match 'PS5|WindowsPowerShell').Count 'Quick exposes no legacy host check'
 
 foreach ($name in @('HardnessPerformance.PS7')) {
@@ -52,7 +53,7 @@ foreach ($name in @('Hardness.Installation', 'OpenSpec.Doctor', 'OpenSpec.Workfl
 foreach ($name in @('HardnessPerformance.PS7')) {
     Assert-True ($name -in @($integration.Name)) "Integration contains $name"
 }
-Assert-Equal 10 @($integration).Count 'Integration contains five scripts, one performance run, and four route checks'
+Assert-Equal 11 @($integration).Count 'Integration contains six scripts, one performance run, and four route checks'
 Assert-Equal 0 @($integration | Where-Object { $_.Name -match '^(UE\.|Unreal|StaticJIT|Cache|Coverage|Standalone|Engine|Execution|Toolchain)' }).Count 'the deferred UE leaf is absent from every core gate'
 Assert-Equal $quick.Count @($integration | Where-Object Kind -eq 'Script').Count 'Integration keeps the complete Quick script matrix'
 Assert-Equal $performance.Count @($integration | Where-Object Kind -eq 'Performance').Count 'Integration includes the complete Performance matrix'
@@ -63,8 +64,9 @@ foreach ($check in @($integration | Where-Object Kind -in @('Script', 'Performan
 }
 
 $hardnessManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\scripts\Hardness.psd1')
-$workspaceManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\git-workflow\scripts\Workspace.psd1')
-foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData)) {
+$workspaceManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\workspace-lifecycle\scripts\WorkspaceLifecycle.psd1')
+$gitManifestData = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '..\..\git-operations\scripts\GitOperations.psd1')
+foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData, $gitManifestData)) {
     Assert-Equal '7.0' ([string]$manifestData.PowerShellVersion) 'public module manifests require PowerShell 7.0 or later'
     Assert-Equal 'Core' (@($manifestData.CompatiblePSEditions) -join '|') 'public module manifests support only the Core edition'
 }
@@ -113,10 +115,10 @@ try {
     Assert-Equal 'HardnessPerformanceRaw' $summary.RecordType 'the performance summary identifies its record type'
     Assert-Equal 'Passed' $summary.OverallStatus 'the minimal performance correctness sample passes its budgets'
     Assert-Equal 'fixture/performance' $summary.Parameters.TaskChange 'the default performance run uses its self-contained Task Graph fixture'
-    Assert-Equal 3 @($summary.Scenarios).Count 'the performance summary contains all three scenarios'
+    Assert-Equal 4 @($summary.Scenarios).Count 'the performance summary contains all four scenarios'
 
     $samples = @(Import-Csv -LiteralPath $samplesPath)
-    Assert-Equal 3 $samples.Count 'one measured sample is retained for each scenario'
+    Assert-Equal 4 $samples.Count 'one measured sample is retained for each scenario'
     Assert-Equal 0 @($samples | Where-Object Correct -ne 'True').Count 'every retained sample passed its behavior assertion'
     Assert-Equal 'Scenario|Phase|Iteration|Unit|Value|Correct' (@($samples[0].PSObject.Properties.Name) -join '|') 'the raw sample table schema remains stable'
     Assert-True ($summaryText -notmatch [regex]::Escape($projectRoot)) 'the performance summary omits the absolute project path'

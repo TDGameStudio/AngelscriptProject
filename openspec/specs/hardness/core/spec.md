@@ -8,7 +8,7 @@ This capability defines how the AngelscriptProject Skill harness selects a works
 
 ### Requirement: Progressive skill routing
 
-Hardness SHALL be the single short entry for the project Skill system and SHALL load only the selected leaf Skill or reference from a static route. Default context MUST NOT bulk-load command documentation, attachments, Replan history, or script implementations.
+Hardness SHALL be the single short entry for the project Skill system and SHALL load only the selected leaf Skill or reference from a static route. Workspace lifecycle and Git mutation SHALL route to separate leaves: `workspace.*` cannot create commits or integrate branches, while `git.*` cannot create, bootstrap, remove, or globally select worktrees. Default context MUST NOT bulk-load command documentation, attachments, Replan history, or script implementations.
 
 #### Scenario: Route one project command
 - **WHEN** an agent requests a registered command in a session that imported Hardness
@@ -18,9 +18,13 @@ Hardness SHALL be the single short entry for the project Skill system and SHALL 
 - **WHEN** a project command leaf is intentionally deferred to a separate change
 - **THEN** Hardness does not publish placeholder routes or report that leaf as installed until its complete contract is independently verified
 
+#### Scenario: Keep workspace and Git ownership separate
+- **WHEN** an agent selects a workspace or Git route
+- **THEN** Hardness loads only the matching lifecycle or Git leaf and preserves the other leaf's authority boundary
+
 ### Requirement: Explicit workspace modes
 
-The system MUST support Goal and Current modes. Goal uses an isolated Git worktree by default, while Current remains in the current checkout. Neither mode may automatically merge, push, or remove the workspace after completion.
+The system MUST support Goal and Current modes. Goal uses an isolated Git worktree by default, while Current remains in the current checkout. Neither mode may automatically integrate, push, or remove the workspace after completion. Local integration, non-force push, and worktree cleanup MUST remain three separate operations that each require explicit user intent.
 
 #### Scenario: Start a Goal task
 - **WHEN** native Goal mode starts a change that requires implementation
@@ -262,7 +266,7 @@ Goal mode SHALL autonomously investigate, choose in-scope technical solutions, r
 
 ### Requirement: Ready-to-integrate finish state
 
-A successful Goal MUST reach committed, verified, reviewed, and ready-to-integrate while preserving its branch and worktree for inspection. Integration MAY occur only as a later explicitly authorized action.
+A successful Goal MUST reach committed, verified, reviewed, and ready-to-integrate while preserving its branch and worktree for inspection. `git.commit` MAY establish scoped Git closure without claiming verification or Review completion. `git.integrate` MAY occur only as a later explicitly authorized action against the exact reviewed source HEAD and MUST leave remote state and the source workspace unchanged. `git.push` and `workspace.remove` MUST remain distinct later operations that each require explicit user intent.
 
 #### Scenario: Finish a successful Goal
 - **WHEN** all tasks, verification, and Review Gates are closed
@@ -270,4 +274,8 @@ A successful Goal MUST reach committed, verified, reviewed, and ready-to-integra
 
 #### Scenario: Integrate after explicit authorization
 - **WHEN** the user explicitly requests integration after all gates pass
-- **THEN** the coordinator first audits overlap with the primary checkout, preserves its unrelated dirty changes, and then applies only the reviewed commits without pushing
+- **THEN** the coordinator audits overlap with the primary checkout, preserves unrelated dirty changes, integrates affected submodules before the parent, and leaves remote state and the source workspace unchanged
+
+#### Scenario: Publish or clean up later
+- **WHEN** local integration is complete
+- **THEN** no remote or worktree changes occur until the user separately requests non-force push or worktree cleanup

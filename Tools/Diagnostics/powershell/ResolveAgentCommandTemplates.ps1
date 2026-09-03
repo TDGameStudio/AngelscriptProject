@@ -30,20 +30,22 @@ else {
     Normalize-PathValue -Path $ConfigPath
 }
 
-$powerShell = Get-ConsolePowerShellPath
-$bootstrapScript = Join-Path $resolvedProjectRoot 'Tools\Bootstrap\powershell\BootstrapWorktree.ps1'
+$powerShellCommand = Get-Command -Name 'pwsh.exe' -CommandType Application -ErrorAction Stop | Select-Object -First 1
+$powerShell = $powerShellCommand.Source
+$hardnessManifest = Join-Path $resolvedProjectRoot '.agents\skills\hardness\scripts\Hardness.psd1'
 $buildScript = Join-Path $resolvedProjectRoot 'Tools\RunBuild.ps1'
 $testScript = Join-Path $resolvedProjectRoot 'Tools\RunTests.ps1'
 $testSuiteScript = Join-Path $resolvedProjectRoot 'Tools\RunTestSuite.ps1'
 $ubtProcessScript = Join-Path $resolvedProjectRoot 'Tools\Diagnostics\powershell\Get-UbtProcess.ps1'
 
+$bootstrapCommand = '{0} -NoProfile -Command "& {{ Import-Module ''{1}''; $context = New-HardnessContext -Mode Current -ProjectRoot ''{2}''; Invoke-Hardness -Command workspace.bootstrap -Context $context; Invoke-Hardness -Command workspace.activate -Context $context }}"' -f $powerShell, $hardnessManifest.Replace("'", "''"), $resolvedProjectRoot.Replace("'", "''")
+
 $resolved = [ordered]@{
     Status                  = 'BootstrapRequired'
-    BootstrapCommand        = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}"' -f $powerShell, $bootstrapScript)
-    BootstrapAllCommand     = ('{0} -NoProfile -ExecutionPolicy Bypass -File "{1}" -AllRegisteredWorktrees' -f $powerShell, $bootstrapScript)
+    BootstrapCommand        = $bootstrapCommand
     ConfigPath              = $resolvedConfigPath
     ProjectRoot             = $resolvedProjectRoot
-    Message                 = 'AgentConfig.ini is missing or needs normalization. Run BootstrapCommand first.'
+    Message                 = 'AgentConfig.ini is missing or needs normalization. Run BootstrapCommand in the selected PowerShell 7 workspace session first.'
 }
 
 try {

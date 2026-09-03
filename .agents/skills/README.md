@@ -10,12 +10,13 @@ Goal mode    -> .worktrees/<goal> on goal/<goal> -> Ready task -> local explorat
 Current mode -> current workspace -> protect existing changes -> the same lifecycle in place
 ```
 
-Neither mode automatically merges, pushes, publishes, or removes a worktree.
+Neither mode automatically integrates, pushes, publishes, or removes a worktree. Integration, non-force push, and cleanup are separate user-requested operations.
 
 ## Hardness command surface
 
 ```text
-workspace.{status,new,bootstrap,verify,finish,remove}
+workspace.{status,new,bootstrap,verify,remove,activate,config.status,config.get,config.set}
+git.{status,commit,integrate,push}
 openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,completion}
 task.status
 ```
@@ -25,7 +26,8 @@ The current core publishes no `ue.*` or `toolchain.check` route.
 ## Supporting Skills
 
 - `hardness` — context, command routing, result envelope, and progressive-loading rules.
-- `git-workflow` (`using-git-worktrees`) — safe workspace lifecycle and submodule ordering.
+- `workspace-lifecycle` — workspace identity, exact submodule bootstrap, local configuration, session activation, verification, and explicit cleanup.
+- `git-operations` — scoped parent/submodule commits, reviewed local integration, and explicit non-force push.
 - `systematic-debugging` — evidence-first diagnosis before fixes or Replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.
 - `code-review/code-reviewer` — fixed-snapshot Incident, impact-gated Final, or explicit External Review.

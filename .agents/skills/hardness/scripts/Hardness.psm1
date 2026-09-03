@@ -53,7 +53,8 @@ function Initialize-HardnessRoutes {
         return
     }
 
-    $workspaceModule = '.agents/skills/git-workflow/scripts/Workspace.psd1'
+    $workspaceModule = '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
+    $gitModule = '.agents/skills/git-operations/scripts/GitOperations.psd1'
     $openspecExecutable = '.agents/skills/openspec/bin/openspec.exe'
     $routes = New-Object System.Collections.Generic.List[object]
 
@@ -61,8 +62,16 @@ function Initialize-HardnessRoutes {
     $routes.Add((New-HardnessRoute 'workspace.new' 'PowerShell' $workspaceModule 'New-HardnessWorkspace' @() @{} 'Create and bootstrap an isolated goal worktree.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.bootstrap' 'PowerShell' $workspaceModule 'Initialize-HardnessWorkspace' @() @{} 'Bootstrap an existing worktree safely.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.verify' 'PowerShell' $workspaceModule 'Test-HardnessWorkspace' @() @{} 'Verify exact gitlinks and local configuration safety.')) | Out-Null
-    $routes.Add((New-HardnessRoute 'workspace.finish' 'PowerShell' $workspaceModule 'Complete-HardnessWorkspace' @() @{} 'Commit submodules first, then parent changes.')) | Out-Null
     $routes.Add((New-HardnessRoute 'workspace.remove' 'PowerShell' $workspaceModule 'Remove-HardnessWorkspace' @() @{} 'Explicitly remove a clean registered worktree or recover its empty residual root.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.activate' 'PowerShell' $workspaceModule 'Set-HardnessWorkspaceSession' @() @{} 'Bind the selected workspace to this PowerShell process.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.config.status' 'PowerShell' $workspaceModule 'Get-HardnessWorkspaceConfigStatus' @() @{} 'Inspect local configuration identity and readiness without dumping values.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.config.get' 'PowerShell' $workspaceModule 'Get-HardnessWorkspaceConfigValue' @() @{} 'Read one exact local configuration key.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'workspace.config.set' 'PowerShell' $workspaceModule 'Set-HardnessWorkspaceConfigValue' @() @{} 'Atomically set one non-managed local configuration key.')) | Out-Null
+
+    $routes.Add((New-HardnessRoute 'git.status' 'PowerShell' $gitModule 'Get-HardnessGitStatus' @() @{} 'Inspect parent and top-level submodule Git state.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'git.commit' 'PowerShell' $gitModule 'Complete-HardnessGitCommit' @() @{} 'Commit exact scopes with dirty submodules before parent gitlinks.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'git.integrate' 'PowerShell' $gitModule 'Merge-HardnessGitGoal' @() @{} 'Explicitly integrate an exact reviewed Goal into the primary workspace.')) | Out-Null
+    $routes.Add((New-HardnessRoute 'git.push' 'PowerShell' $gitModule 'Publish-HardnessGitBranches' @() @{} 'Explicitly push named local branches without force.')) | Out-Null
 
     foreach ($command in @('init', 'doctor', 'status', 'instructions', 'validate', 'domain', 'spec', 'change', 'workflow', 'completion')) {
         $routes.Add((New-HardnessRoute "openspec.$command" 'Native' $openspecExecutable '' @($command) @{} "Run openspec $command.")) | Out-Null
@@ -465,7 +474,22 @@ function Add-HardnessContextDefaults {
         }
         'workspace.bootstrap' { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
         'workspace.verify'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
-        'workspace.finish'   { if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot } }
+        'workspace.activate' {
+            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
+            if (-not $values.ContainsKey('Mode')) { $values.Mode = $Context.Mode }
+            if (-not $values.ContainsKey('GoalName')) { $values.GoalName = $Context.GoalName }
+        }
+        { $_ -in @('workspace.config.status', 'workspace.config.get', 'workspace.config.set', 'git.status', 'git.push') } {
+            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
+        }
+        'git.commit' {
+            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.WorkspaceRoot }
+            if (-not $values.ContainsKey('Mode')) { $values.Mode = $Context.Mode }
+            if (-not $values.ContainsKey('GoalName')) { $values.GoalName = $Context.GoalName }
+        }
+        'git.integrate' {
+            if (-not $values.ContainsKey('ProjectRoot')) { $values.ProjectRoot = $Context.PrimaryRoot }
+        }
         'workspace.remove'   {
             if ([string]$Context.Mode -eq 'Goal') {
                 if ($values.ContainsKey('RepositoryRoot') -and
@@ -521,7 +545,7 @@ function Invoke-Hardness {
             if ($route.Name -eq 'workspace.new') {
                 $Context.ProjectRoot
             }
-            elseif ($route.Name -eq 'workspace.remove') {
+            elseif ($route.Name -in @('workspace.remove', 'git.integrate', 'git.push')) {
                 $Context.PrimaryRoot
             }
             else {
@@ -871,12 +895,19 @@ function Test-HardnessInstallation {
         CommandDocsDigest = ''
         CommandDocCount   = 0
     }
-    $workspaceManifest = Join-Path $root '.agents/skills/git-workflow/scripts/Workspace.psd1'
+    $workspaceManifest = Join-Path $root '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
     if (-not (Test-Path -LiteralPath $workspaceManifest -PathType Leaf)) {
         $errors.Add("Missing workspace module: $workspaceManifest") | Out-Null
     }
     else {
         try { Test-ModuleManifest -Path $workspaceManifest -ErrorAction Stop | Out-Null } catch { $errors.Add($_.Exception.Message) | Out-Null }
+    }
+    $gitManifest = Join-Path $root '.agents/skills/git-operations/scripts/GitOperations.psd1'
+    if (-not (Test-Path -LiteralPath $gitManifest -PathType Leaf)) {
+        $errors.Add("Missing Git operations module: $gitManifest") | Out-Null
+    }
+    else {
+        try { Test-ModuleManifest -Path $gitManifest -ErrorAction Stop | Out-Null } catch { $errors.Add($_.Exception.Message) | Out-Null }
     }
     try {
         $openSpecPackage = Assert-HardnessOpenSpecPackage -ProjectRoot $root
