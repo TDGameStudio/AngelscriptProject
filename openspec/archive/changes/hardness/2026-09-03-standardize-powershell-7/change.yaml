@@ -4,7 +4,6 @@ metadata:
   uid: change_38dfe94d-36c8-45b7-bfae-089e8d5fdf1b
   id: hardness/standardize-powershell-7
   title: Standardize Hardness on PowerShell 7
-  aliases: []
 workflow: angelscript
 created_at: 2026-09-02T23:49:12Z
 goal: Make PowerShell 7 the only supported Hardness host, remove the duplicated PS5 gate matrix, and retain a PS7-only verification snapshot without rewriting historical evidence.
@@ -12,3 +11,8 @@ affected_areas:
 - .agents/skills/hardness
 - .agents/skills/git-workflow
 - openspec/specs/hardness/core
+archived_at: 2026-09-03T00:01:33Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Hardness and Workspace now require PowerShell 7.0/Core, the public runner exposes only the PS7 gate matrix, Integration passes 10/10 with retained privacy-trimmed evidence, and independent fixed-snapshot review approved the change with no findings.
