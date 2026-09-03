@@ -60,8 +60,8 @@ task_graph:
 - [x] 5.1 Synchronize `hardness/core`, `hardness/workspace`, and `hardness/git` with capability knowledge — verify: `strict all-spec validation succeeds and capability knowledge indexes resolve every promoted record`
   > Files: `openspec/specs/hardness/**`, `openspec/changes/hardness/refactor-workspace-git-operations/specs/**`
 
-- [ ] 5.2 Complete one scope-frozen broad-impact Final Review after every semantic deliverable — verify: `one closed approving review-v2 record binds the final snapshot and has no open Critical or Required finding`
+- [x] 5.2 Complete one scope-frozen broad-impact Final Review after every semantic deliverable — verify: `one closed approving review-v2 record binds the final snapshot and has no open Critical or Required finding`
   > Files: `openspec/changes/hardness/refactor-workspace-git-operations/attachments/reviews/**`, `openspec/changes/hardness/refactor-workspace-git-operations/attachments/INDEX.md`
 
-- [ ] 5.3 Validate closure readiness and archive without changing remote state — verify: `strict active validation, doctor, archived validation, and the smallest archive-stable Hardness gate all pass; no push occurred`
+- [x] 5.3 Validate closure readiness and archive without changing remote state — verify: `strict active validation, doctor, archived validation, and the smallest archive-stable Hardness gate all pass; no push occurred`
   > Files: `openspec/changes/hardness/refactor-workspace-git-operations/**`, `openspec/archive/changes/hardness/**`

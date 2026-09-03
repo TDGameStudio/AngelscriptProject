@@ -16,3 +16,8 @@ affected_areas:
 - Tools/Shared/UnrealCommandUtils.ps1
 - README.md
 - AGENTS.md
+archived_at: 2026-09-03T07:40:08Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Workspace lifecycle and Git operations are separated behind Hardness, per-workspace AgentConfig identity is enforced before UE execution, commit/integration/push and explicit removal retain their authority boundaries, PS7-only focused gates pass, accepted performance evidence is retained, and fixed-snapshot Final Review approved the complete semantic delivery with no open finding.
