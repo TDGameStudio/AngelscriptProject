@@ -1,3 +1,6 @@
+#Requires -Version 7.0
+#Requires -PSEdition Core
+
 [CmdletBinding()]
 param(
     [string]$ProjectRoot = '',

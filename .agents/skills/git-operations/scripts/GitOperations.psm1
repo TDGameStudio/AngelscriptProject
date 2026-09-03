@@ -137,9 +137,13 @@ function Assert-GitRelativeScope {
 
 function Test-GitPathCovered {
     param([string]$Path, [string[]]$Scopes)
-    $candidate = $Path.Replace('\', '/').TrimStart('./')
+    $candidate = $Path.Replace('\', '/')
+    if ($candidate.StartsWith('./', [System.StringComparison]::Ordinal)) { $candidate = $candidate.Substring(2) }
+    $candidate = $candidate.TrimEnd('/')
     foreach ($scopeValue in $Scopes) {
-        $scope = $scopeValue.Replace('\', '/').TrimStart('./').TrimEnd('/')
+        $scope = $scopeValue.Replace('\', '/')
+        if ($scope.StartsWith('./', [System.StringComparison]::Ordinal)) { $scope = $scope.Substring(2) }
+        $scope = $scope.TrimEnd('/')
         if ($scope -eq '' -or $scope -eq '.' -or $candidate -eq $scope -or $candidate.StartsWith($scope + '/', [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
     }
     return $false
@@ -194,6 +198,10 @@ function Complete-HardnessGitCommit {
         if ([string]::IsNullOrWhiteSpace($GoalName)) { $GoalName = $expectedGoal }
         if ($GoalName -ne $expectedGoal -or -not (Test-GitPathEqual -Left (Split-Path -Parent $root) -Right (Join-Path $primary '.worktrees'))) { throw 'Goal git.commit workspace does not match its canonical Goal name/root.' }
     }
+    $parentBranch = Get-GitBranch -Repository $root
+    $targetParentBranch = if ($TargetBranches.ContainsKey('.')) { [string]$TargetBranches['.'] } elseif ($Mode -eq 'Goal') { "goal/$GoalName" } else { $parentBranch }
+    if ([string]::IsNullOrWhiteSpace($targetParentBranch)) { throw "Detached parent repository requires an explicit TargetBranches entry for '.'." }
+    if ($parentBranch -ne $targetParentBranch) { throw "Parent repository is on '$parentBranch', expected target branch '$targetParentBranch'." }
     $scopes = Resolve-GitCommitScopes -Root $root -Mode $Mode -RepositoryScopes $RepositoryScopes -AllChanges:$AllChanges
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     $repositories = @{ '.' = $root }
@@ -216,18 +224,21 @@ function Complete-HardnessGitCommit {
         $branch = Get-GitBranch -Repository $repoRoot
         $targetBranch = if ($TargetBranches.ContainsKey($repoKey)) { [string]$TargetBranches[$repoKey] } elseif ($Mode -eq 'Goal') { "goal/$GoalName" } else { $branch }
         if ([string]::IsNullOrWhiteSpace($targetBranch)) { throw "Detached scoped repository '$repoKey' requires an explicit TargetBranches entry." }
+        $branchExists = $false
         if ([string]::IsNullOrWhiteSpace($branch)) {
             $branchExists = (Invoke-GitOperation -Repository $repoRoot -Arguments @('show-ref', '--verify', '--quiet', "refs/heads/$targetBranch") -AllowFailure).ExitCode -eq 0
             if ($branchExists) {
                 $branchHead = Get-GitHead -Repository $repoRoot -Revision "refs/heads/$targetBranch"
                 if ($branchHead -ne (Get-GitHead -Repository $repoRoot)) { throw "Existing target branch '$targetBranch' for '$repoKey' is not at the detached checkout HEAD." }
-                [void](Invoke-GitOperation -Repository $repoRoot -Arguments @('checkout', $targetBranch))
             }
-            else { [void](Invoke-GitOperation -Repository $repoRoot -Arguments @('checkout', '-b', $targetBranch)) }
         }
         elseif ($branch -ne $targetBranch) { throw "Scoped repository '$repoKey' is on '$branch', expected target branch '$targetBranch'." }
         $message = if ($SubmoduleCommitMessages.ContainsKey($repoKey)) { [string]$SubmoduleCommitMessages[$repoKey] } else { $CommitMessage }
         if ($PSCmdlet.ShouldProcess($repoKey, "commit scoped paths on '$targetBranch'")) {
+            if ([string]::IsNullOrWhiteSpace($branch)) {
+                $checkoutArguments = if ($branchExists) { @('checkout', $targetBranch) } else { @('checkout', '-b', $targetBranch) }
+                [void](Invoke-GitOperation -Repository $repoRoot -Arguments $checkoutArguments)
+            }
             [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('add', '-A', '--') + @($scopes[$repoKey])))
             $hasStaged = (Invoke-GitOperation -Repository $repoRoot -Arguments @('diff', '--cached', '--quiet') -AllowFailure).ExitCode
             if ($hasStaged -eq 1) {
@@ -256,7 +267,13 @@ function Complete-HardnessGitCommit {
         }
     }
     $finalStatus = Get-HardnessGitStatus -ProjectRoot $root
-    return [pscustomobject]@{ ProjectRoot = $root; Mode = $Mode; Commits = @($commits | ForEach-Object { $_ }); GitStateComplete = -not $finalStatus.Dirty; ScopedGitStateComplete = $true; Status = $finalStatus }
+    $scopedGitStateComplete = $true
+    foreach ($repoKey in $scopes.Keys) {
+        $remainingState = Get-GitPathState -Repository $repositories[$repoKey]
+        $remaining = @($remainingState.Staged + $remainingState.Unstaged + $remainingState.Untracked | Where-Object { Test-GitPathCovered -Path $_ -Scopes $scopes[$repoKey] })
+        if ($remaining.Count -gt 0) { $scopedGitStateComplete = $false }
+    }
+    return [pscustomobject]@{ ProjectRoot = $root; Mode = $Mode; Preview = [bool]$WhatIfPreference; Commits = @($commits | ForEach-Object { $_ }); GitStateComplete = -not $finalStatus.Dirty; ScopedGitStateComplete = $scopedGitStateComplete; Status = $finalStatus }
 }
 
 function Get-GitMergeAction {

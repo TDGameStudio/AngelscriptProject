@@ -98,6 +98,17 @@ try {
         Complete-HardnessGitCommit -ProjectRoot $parentRoot -Mode Current -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'scoped current commit' | Out-Null
     } 'staged paths outside|unrelated' 'Current scoped commit rejects unrelated pre-staged content'
     [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--staged', 'unrelated.txt'))
+
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot '.hidden-scope.txt'), "hidden staged path`n")
+    [System.IO.File]::WriteAllText((Join-Path $parentRoot 'hidden-scope.txt'), "different visible path`n")
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', '.hidden-scope.txt'))
+    Assert-ThrowsMatch {
+        Complete-HardnessGitCommit -ProjectRoot $parentRoot -Mode Current -RepositoryScopes @{ '.' = @('hidden-scope.txt') } -CommitMessage 'must not alias dotfile scope' | Out-Null
+    } 'staged paths outside|hidden-scope' 'Current scoped commit never aliases a leading-dot path to a visible path'
+    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--staged', '.hidden-scope.txt'))
+    [System.IO.File]::Delete((Join-Path $parentRoot '.hidden-scope.txt'))
+    [System.IO.File]::Delete((Join-Path $parentRoot 'hidden-scope.txt'))
+
     $currentCommit = Complete-HardnessGitCommit -ProjectRoot $parentRoot -Mode Current -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'scoped current commit'
     Assert-Equal 1 @($currentCommit.Commits).Count 'Current scoped commit creates one parent commit'
     Assert-True (Test-Path -LiteralPath (Join-Path $parentRoot 'unrelated.txt') -PathType Leaf) 'Current scoped commit preserves unrelated untracked content'
@@ -124,7 +135,16 @@ try {
     Assert-True $status.Dirty 'status aggregates parent and initialized submodule changes'
     Assert-Equal 2 @($status.Repositories).Count 'status reports the parent and top-level submodule independently'
 
+    $previewChildHead = Get-TestHead -Repository $goalChild
+    $commitPreview = Complete-HardnessGitCommit -ProjectRoot $worktreeRoot -Mode Goal -GoalName integration-fixture -AllChanges -CommitMessage 'goal parent preview' -SubmoduleCommitMessages @{ 'Modules/Child' = 'goal child preview' } -WhatIf
+    Assert-True $commitPreview.Preview 'Goal commit preview reports preview mode'
+    Assert-True (-not $commitPreview.ScopedGitStateComplete) 'Goal commit preview does not claim dirty scoped state is complete'
+    Assert-Equal 0 @($commitPreview.Commits).Count 'Goal commit preview creates no commits'
+    Assert-Equal $previewChildHead (Get-TestHead -Repository $goalChild) 'Goal commit preview preserves the detached submodule HEAD'
+    Assert-Equal 1 (Invoke-TestGit -Repository $goalChild -Arguments @('show-ref', '--verify', '--quiet', 'refs/heads/goal/integration-fixture') -AllowFailure).ExitCode 'Goal commit preview creates no submodule branch'
+
     $commit = Complete-HardnessGitCommit -ProjectRoot $worktreeRoot -Mode Goal -GoalName integration-fixture -AllChanges -CommitMessage 'goal parent result' -SubmoduleCommitMessages @{ 'Modules/Child' = 'goal child result' }
+    Assert-True (-not $commit.Preview) 'actual Goal commit is not reported as a preview'
     Assert-Equal 'Modules/Child' $commit.Commits[0].Repository 'Goal commit records submodules before the parent'
     Assert-Equal '.' $commit.Commits[-1].Repository 'Goal commit records the parent last'
     Assert-True $commit.GitStateComplete 'Goal commit leaves its repositories clean'

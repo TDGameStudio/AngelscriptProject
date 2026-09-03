@@ -74,6 +74,17 @@ foreach ($manifestData in @($hardnessManifestData, $workspaceManifestData, $gitM
 foreach ($check in @($quick | Where-Object Kind -eq 'Script')) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references an existing test script"
 }
+
+$projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
+$commandTemplateScript = Join-Path $projectRoot 'Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1'
+$commandTemplateLauncher = Join-Path $projectRoot 'Tools\Diagnostics\ResolveAgentCommandTemplates.bat'
+$commandTemplateScriptText = Get-Content -LiteralPath $commandTemplateScript -Raw
+$commandTemplateLauncherText = Get-Content -LiteralPath $commandTemplateLauncher -Raw
+Assert-True ($commandTemplateScriptText -match '(?m)^#Requires -Version 7\.0\s*$') 'the command-template script requires PowerShell 7.0 or later'
+Assert-True ($commandTemplateScriptText -match '(?m)^#Requires -PSEdition Core\s*$') 'the command-template script rejects Windows PowerShell'
+Assert-True ($commandTemplateLauncherText -match '(?im)^pwsh\.exe\s') 'the command-template launcher starts PowerShell 7'
+Assert-True ($commandTemplateLauncherText -notmatch '(?i)powershell\.exe') 'the command-template launcher never falls back to Windows PowerShell'
+
 foreach ($check in @($performance)) {
     Assert-True (Test-Path -LiteralPath $check.Path -PathType Leaf) "$($check.Name) references the private performance leaf"
     Assert-True ('-WarmupRuns' -in @($check.Arguments)) "$($check.Name) forwards WarmupRuns"
@@ -86,7 +97,6 @@ foreach ($check in @($explicitPerformance)) {
     Assert-Equal 'fixture/custom' $check.Arguments[$taskChangeIndex + 1] "$($check.Name) preserves the explicit TaskChange"
 }
 
-$projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $performanceLeaf = Join-Path $PSScriptRoot 'Hardness.Performance.Tests.ps1'
 $contractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('hardness-performance-contract-' + [guid]::NewGuid().ToString('N'))
 [void](New-Item -ItemType Directory -Path $contractRoot)
