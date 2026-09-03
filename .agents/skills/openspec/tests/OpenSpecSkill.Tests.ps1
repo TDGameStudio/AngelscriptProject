@@ -196,6 +196,78 @@ function Get-OpenSpecEnglishViolations {
     return @($violations | ForEach-Object { $_ })
 }
 
+function Get-LocalMarkdownLinkIssues {
+    param([Parameter(Mandatory = $true)][System.IO.FileInfo[]]$Files)
+
+    $issues = @()
+    $linkPattern = '(?<!\!)\[[^\]\r\n]+\]\((?<target>(?![A-Za-z][A-Za-z0-9+.-]*:)(?![#/\\])[A-Za-z0-9._/-]+\.(?:md|ps1)(?:#[A-Za-z0-9._-]+)?)\)'
+    foreach ($file in $Files) {
+        $fileText = Get-Content -LiteralPath $file.FullName -Raw
+        foreach ($match in [regex]::Matches($fileText, $linkPattern)) {
+            $target = $match.Groups['target'].Value
+            $relativePath = ($target -split '#', 2)[0]
+            try {
+                $resolved = [System.IO.Path]::GetFullPath((Join-Path $file.DirectoryName $relativePath))
+            }
+            catch {
+                $issues += "markdown-link: $($file.FullName) has malformed target '$target'"
+                continue
+            }
+            if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+                $issues += "markdown-link: $($file.FullName) has missing target '$target'"
+            }
+        }
+    }
+    return $issues
+}
+
+function Get-CapabilityKnowledgeIndexIssues {
+    param([Parameter(Mandatory = $true)][string]$SpecsRoot)
+
+    $issues = @()
+    if (-not (Test-Path -LiteralPath $SpecsRoot -PathType Container)) {
+        return "knowledge-root: current specs root is missing: $SpecsRoot"
+    }
+
+    $knowledgeDirectories = @(Get-ChildItem -LiteralPath $SpecsRoot -Recurse -Directory | Where-Object { $_.Name -ceq 'knowledges' })
+    foreach ($directory in $knowledgeDirectories) {
+        $indexPath = Join-Path $directory.FullName 'INDEX.md'
+        if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
+            $issues += "knowledge-index: $($directory.FullName) lacks INDEX.md"
+            continue
+        }
+
+        $indexFile = Get-Item -LiteralPath $indexPath
+        $indexText = Get-Content -LiteralPath $indexPath -Raw
+        $knowledgeFiles = @(Get-ChildItem -LiteralPath $directory.FullName -File -Filter '*.md' | Where-Object { $_.Name -cne 'INDEX.md' })
+        foreach ($knowledgeFile in $knowledgeFiles) {
+            $escapedName = [regex]::Escape($knowledgeFile.Name)
+            $linkPattern = '\[[^\]\r\n]+\]\((?:\./)?' + $escapedName + '(?:#[A-Za-z0-9._-]+)?\)'
+            $matches = [regex]::Matches($indexText, $linkPattern)
+            if ($matches.Count -ne 1) {
+                $issues += "knowledge-entry: $($directory.FullName) '$($knowledgeFile.Name)' has $($matches.Count) INDEX links"
+                continue
+            }
+
+            $entryPattern = '(?ims)^-[ \t]+\[[^\]\r\n]+\]\((?:\./)?' + $escapedName + '\)[^\r\n]*\r?\n(?<body>.*?)(?=^-[ \t]+\[|\z)'
+            $entry = [regex]::Match($indexText, $entryPattern)
+            if (-not $entry.Success) {
+                $issues += "knowledge-entry-shape: $($knowledgeFile.Name) is not a top-level INDEX entry"
+                continue
+            }
+            foreach ($field in @('Summary', 'Serves', 'Source', 'Status')) {
+                $fieldPattern = '(?im)^[ \t]+-[ \t]+' + [regex]::Escape($field) + '[ \t]*:[ \t]+\S'
+                if ($entry.Groups['body'].Value -notmatch $fieldPattern) {
+                    $issues += "knowledge-entry-field: $($knowledgeFile.Name) lacks $field"
+                }
+            }
+        }
+
+        $issues += @(Get-LocalMarkdownLinkIssues -Files @($indexFile))
+    }
+    return $issues
+}
+
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $hardnessManifest = Join-Path $projectRoot '.agents\skills\hardness\scripts\Hardness.psd1'
 $exePath = Join-Path $projectRoot '.agents\skills\openspec\bin\openspec.exe'
@@ -343,6 +415,9 @@ foreach ($sourceFile in $sourceFiles) {
 }
 
 $mandatoryLifecycleReferences = [ordered]@{
+    'openspec-explore' = @('references/deep-exploration.md', 'references/question-rounds.md', 'references/markers.md')
+    'openspec-continue-change' = @('../openspec/references/attachments.md', '../openspec/references/knowledge.md')
+    'openspec-apply-change' = @('../openspec/references/implementation-issues.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md')
     'openspec-update-change' = @('../openspec/references/attachments.md')
 }
@@ -358,18 +433,139 @@ foreach ($entry in $mandatoryLifecycleReferences.GetEnumerator()) {
     }
 }
 
-$lifecycleSkillFiles = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agents\skills') -Directory -Filter 'openspec-*' | ForEach-Object {
-    $candidate = Join-Path $_.FullName 'SKILL.md'
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
-})
-foreach ($skillFile in $lifecycleSkillFiles) {
-    $skillText = Get-Content -LiteralPath $skillFile.FullName -Raw
-    $referenceMatches = [regex]::Matches($skillText, '\.\./openspec/references/[A-Za-z0-9._/-]+\.md')
-    foreach ($referenceMatch in $referenceMatches) {
-        $resolvedReference = [System.IO.Path]::GetFullPath((Join-Path $skillFile.DirectoryName $referenceMatch.Value))
-        Assert-True (Test-Path -LiteralPath $resolvedReference -PathType Leaf) "$($skillFile.FullName) has a broken lifecycle reference: $($referenceMatch.Value)"
+$authoringFiles = New-Object System.Collections.Generic.List[System.IO.FileInfo]
+$portableSkillRoot = Join-Path $projectRoot '.agents\skills\openspec'
+foreach ($file in @(Get-ChildItem -LiteralPath $portableSkillRoot -Recurse -File -Filter '*.md')) {
+    $authoringFiles.Add($file) | Out-Null
+}
+foreach ($directory in @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agents\skills') -Directory -Filter 'openspec-*')) {
+    $entry = Join-Path $directory.FullName 'SKILL.md'
+    if (-not (Test-Path -LiteralPath $entry -PathType Leaf)) { continue }
+    $authoringFiles.Add((Get-Item -LiteralPath $entry)) | Out-Null
+    $references = Join-Path $directory.FullName 'references'
+    if (Test-Path -LiteralPath $references -PathType Container) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $references -Recurse -File -Filter '*.md')) {
+            $authoringFiles.Add($file) | Out-Null
+        }
     }
 }
+
+$localLinkIssues = @(Get-LocalMarkdownLinkIssues -Files @($authoringFiles | Sort-Object FullName -Unique))
+Assert-Equal $localLinkIssues.Count 0 ("Maintained OpenSpec Markdown has broken local links:`n{0}" -f ($localLinkIssues -join [Environment]::NewLine))
+
+$exploreText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\SKILL.md') -Raw
+$deepExplorationText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\references\deep-exploration.md') -Raw
+$questionRoundsText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\references\question-rounds.md') -Raw
+$markerText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-explore\references\markers.md') -Raw
+$applyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-apply-change\SKILL.md') -Raw
+$continueText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-continue-change\SKILL.md') -Raw
+$hardnessText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\SKILL.md') -Raw
+$routingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\routing.md') -Raw
+$reviewReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\hardness\references\review.md') -Raw
+$taskReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\tasks.md') -Raw
+$issueReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\implementation-issues.md') -Raw
+$knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\knowledge.md') -Raw
+$attachmentReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\attachments.md') -Raw
+
+foreach ($token in @('references/deep-exploration.md', 'references/question-rounds.md', 'references/markers.md', 'before `change create`', 'decision-complete handoff', 'Never invoke it after', 'indexed talks', 'indexed change-local knowledge', 'never copy the exploration transcript')) {
+    Assert-True ($exploreText.Contains($token)) "Explore entry is missing: $token"
+}
+foreach ($token in @('Problem', 'Success Criteria', 'Evidence', 'Scope and Exclusions', 'Constraints', 'Options', 'Decision and Rationale', 'Flip Condition', 'Architecture, Components, and Data Flow', 'Failures and Edge Cases', 'Verification', 'OpenSpec Handoff', 'Exploration Carryover', 'Talk candidate', 'Knowledge candidate', 'Discard')) {
+    Assert-True ($deepExplorationText.Contains($token)) "Deep exploration handoff is missing: $token"
+}
+foreach ($token in @('Current/Plan', 'at least three', 'user-owned', 'independent', 'Settled', 'Held', 'Reopened', 'Dropped', 'Pinned fact', 'Never use them for Goal execution or task-local implementation uncertainty')) {
+    Assert-True ($questionRoundsText.Contains($token)) "Question-round contract is missing: $token"
+}
+foreach ($token in @('markers.md', '✅ Settled:', '❌ Dropped:', '🔁 Reopened:', '⏳ Held:', '📌 Pinned fact:', '❔ Open decision:', '👉 Recommendation:', '❗ Flip condition:', '✨ New:', '💡 Knowledge candidate:', 'Do not use the historical red/green circles', 'materialize them only after the target Change is created')) {
+    Assert-True ($questionRoundsText.Contains($token)) "Question-round visual contract is missing: $token"
+}
+Assert-True (-not $questionRoundsText.Contains('Do not create a marker file or emoji protocol')) 'Question rounds still prohibit the restored marker reference.'
+foreach ($token in @('optional presentation hints, not a state machine', 'at most one leading marker per line', 'never means a test or gate passed', 'Historical `🔴 Reopened` and `🟢 Landed` are deliberately not restored', 'a green dot does not explain what landed', '## Durable carryover', '📌', '❔', '👉', '❗', '✅', '❌', '🚫', '💡', '🔗', '📁', '⭐', '✨', '⏳', '🔁')) {
+    Assert-True ($markerText.Contains($token)) "Marker contract is missing: $token"
+}
+foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'Do not invoke deep pre-change Explore from a Ready task')) {
+    Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
+}
+foreach ($token in @('new feature, architecture refactor, or major behavior change', 'decision-complete exploration handoff', 'before this Change was created', 'Never invoke', 'Exploration Carryover', 'attachments/talks/', 'attachments/knowledges/', 'discard temporary round state or transcript prose')) {
+    Assert-True ($continueText.Contains($token)) "Continue contract is missing: $token"
+}
+foreach ($token in @('pre-change ambiguity -> deep Explore', 'Ready task uncertainty -> local investigation', 'A decision-complete handoff is not an active Change', 'before implementation mutation', 'Once the target Change exists, never invoke deep Explore')) {
+    Assert-True ($hardnessText.Contains($token)) "Hardness exploration route is missing: $token"
+}
+foreach ($token in @('before creating the target Change only', 'Task-local technical uncertainty inside a Ready node')) {
+    Assert-True ($routingText.Contains($token)) "Hardness route map is missing: $token"
+}
+foreach ($token in @('Incident Review', 'Final Review: not required', 'External Review', 'Diff size alone does not determine impact', 'asynchronous subagent', 'immutable snapshot', 'no Review file line limit', 'one batched incremental Final Review')) {
+    Assert-True ($reviewReferenceText.Contains($token)) "Review scheduling contract is missing: $token"
+}
+foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'explicitly bounded package-wide glob with exclusions', 'interface, artifact, or state it consumes and produces', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
+    Assert-True ($taskReferenceText.Contains($token)) "Task authoring contract is missing: $token"
+}
+foreach ($token in @('## Material threshold', 'One root cause and its repair lifecycle', 'issue_id', 'source_ref', 'affected_tasks', 'Failure Evidence (RED)', 'Resolution Evidence (GREEN)', 'Rejected Evidence', 'What This Proves', 'What This Does Not Prove', 'update `attachments/INDEX.md` in the same edit')) {
+    Assert-True ($issueReferenceText.Contains($token)) "Implementation issue contract is missing: $token"
+}
+foreach ($token in @('change evidence', 'capability knowledge plus knowledges/INDEX.md', 'AGENTS project instruction only for cross-capability invariants', 'Every capability `knowledges/` directory has one `INDEX.md`', 'Promote only after evidence', 'Archive never promotes automatically')) {
+    Assert-True ($knowledgeReferenceText.Contains($token)) "Knowledge promotion contract is missing: $token"
+}
+foreach ($token in @('## Exploration carryover', 'decision-critical visualization', 'reusable evidence-backed insights', 'transcript prose', 'candidate', 'promoted', 'superseded', 'retired')) {
+    Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"
+}
+foreach ($token in @('review_schema: review-v2', 'review_kind: incident | final | external', 'Final Review: not required', 'user or another agent', 'asynchronously', 'no line limit', 'per-file manifest is optional')) {
+    Assert-True ($attachmentReferenceText.Contains($token)) "Review attachment contract is missing: $token"
+}
+foreach ($token in @('attachments/knowledges/', '## Exploration candidates', 'accepted pre-Change handoff', 'plausible reuse across tasks or later work', 'candidate | promoted | superseded | retired', 'Emoji is optional presentation')) {
+    Assert-True ($knowledgeReferenceText.Contains($token)) "Exploration knowledge contract is missing: $token"
+}
+
+$policyFiles = @(
+    '.agents\skills\openspec-explore\SKILL.md',
+    '.agents\skills\openspec-explore\references\deep-exploration.md',
+    '.agents\skills\openspec-explore\references\question-rounds.md',
+    '.agents\skills\openspec-explore\references\markers.md',
+    '.agents\skills\openspec-apply-change\SKILL.md',
+    '.agents\skills\openspec-continue-change\SKILL.md',
+    '.agents\skills\openspec\references\record-schema.md',
+    '.agents\skills\openspec\references\tasks.md',
+    '.agents\skills\openspec\references\attachments.md',
+    '.agents\skills\openspec\references\implementation-issues.md',
+    '.agents\skills\openspec\references\knowledge.md'
+)
+$policyText = @($policyFiles | ForEach-Object { Get-Content -LiteralPath (Join-Path $projectRoot $_) -Raw }) -join "`n"
+foreach ($forbiddenPattern in @('(?i)\bopenspec-schema\b', '(?i)\bnpx[ \t]+openspec\b', '(?i)@fission-ai/openspec', '(?i)\bopenspec[ \t]+store\b')) {
+    Assert-True ($policyText -notmatch $forbiddenPattern) "Maintained OpenSpec authoring policy contains stale syntax: $forbiddenPattern"
+}
+
+$rootReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot 'README.md') -Raw
+foreach ($staleEntry in @('openspec-work', '/opsx:', '@fission-ai/openspec', 'npm install -g', 'Superpowers')) {
+    Assert-True ($rootReadmeText -notmatch [regex]::Escape($staleEntry)) "Root README contains stale OpenSpec workflow entry: $staleEntry"
+}
+foreach ($requiredEntry in @('openspec-explore', 'openspec-continue-change', 'openspec-update-change', 'openspec-apply-change', 'openspec-archive-change')) {
+    Assert-True ($rootReadmeText.Contains($requiredEntry)) "Root README is missing the current OpenSpec lifecycle entry: $requiredEntry"
+}
+
+$knowledgeIndexIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot (Join-Path $projectRoot 'openspec\specs'))
+Assert-Equal $knowledgeIndexIssues.Count 0 ("Current capability knowledge INDEX audit failed:`n{0}" -f ($knowledgeIndexIssues -join [Environment]::NewLine))
+
+$activeAttachmentIndexIssues = @()
+$activeChangesRoot = Join-Path $projectRoot 'openspec\changes'
+if (Test-Path -LiteralPath $activeChangesRoot -PathType Container) {
+    foreach ($attachmentRoot in @(Get-ChildItem -LiteralPath $activeChangesRoot -Recurse -Directory -Filter 'attachments')) {
+        $indexPath = Join-Path $attachmentRoot.FullName 'INDEX.md'
+        if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
+            $activeAttachmentIndexIssues += "attachment-index-missing: $($attachmentRoot.FullName)"
+            continue
+        }
+        $indexLines = @(Get-Content -LiteralPath $indexPath)
+        if ($indexLines.Count -gt 120) { $activeAttachmentIndexIssues += "attachment-index-size: $($attachmentRoot.FullName) has $($indexLines.Count) lines" }
+        $indexText = (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/')
+        foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot.FullName -Recurse -File | Where-Object { $_.FullName -ne $indexPath })) {
+            $relative = $file.FullName.Substring($attachmentRoot.FullName.Length).TrimStart('\', '/').Replace('\', '/')
+            $count = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
+            if ($count -ne 1) { $activeAttachmentIndexIssues += "attachment-index-entry: $relative appears $count times" }
+        }
+    }
+}
+Assert-Equal $activeAttachmentIndexIssues.Count 0 ("Active change attachment INDEX audit failed:`n{0}" -f ($activeAttachmentIndexIssues -join [Environment]::NewLine))
 
 $workflow = & $exePath workflow validate angelscript 2>&1
 Assert-Equal $LASTEXITCODE 0 "Project workflow validation failed: $($workflow -join [Environment]::NewLine)"

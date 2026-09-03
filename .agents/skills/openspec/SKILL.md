@@ -28,15 +28,15 @@ Read [commands/README.md](commands/README.md), then only the one command documen
 
 ## Lifecycle routes
 
-- Investigate unclear work: `openspec-explore`.
+- Deep discovery before creating a new feature, architecture refactor, or major behavior-change record: `openspec-explore`; its accepted decision-complete handoff feeds `change create` and planning. Never invoke it after the target Change exists.
 - Create the next missing artifact: `openspec-continue-change`.
 - Revise current artifacts or apply a Replan: `openspec-update-change`.
-- Implement ready Task DAG nodes: `openspec-apply-change`.
+- Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`; do not restart deep Explore inside a Ready task.
 - Verify a fixed snapshot: `openspec-verify-change`.
 - Merge durable delta specs: `openspec-sync-specs`.
 - Apply close policy and archive: `openspec-archive-change`.
 
-For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Task DAG](references/tasks.md), or [attachments and closure](references/attachments.md).
+For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Task DAG](references/tasks.md), [attachments and closure](references/attachments.md), [material implementation issues](references/implementation-issues.md), or [knowledge promotion](references/knowledge.md).
 
 ## Deterministic boundary
 

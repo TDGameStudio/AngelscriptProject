@@ -36,6 +36,21 @@ Rules:
 - Historical body-level `After` records are read-only compatibility. A current task plan writes frontmatter only, and mixed syntax is invalid.
 - No `> Graph:` line, Mermaid source of truth, separate `task-dag.yaml`, GraphRevision, snapshot tree, or hidden task database.
 
+## Authoring quality
+
+Build a file, artifact, and exclusive-resource map before drawing dependencies. Each top-level node is the smallest independently reviewable outcome, not one command and not an unbounded work package. A zero-context implementer must be able to execute it from the record alone.
+
+Every node states:
+
+- the concrete outcome and scope boundary;
+- exact paths, or an explicitly bounded package-wide glob with exclusions;
+- the interface, artifact, or state it consumes and produces when another node depends on it;
+- one exact verification command and the result that proves the outcome.
+
+Nested numbered steps are real execution order, including RED/GREEN/refactor when behavior changes; they are not placeholder examples. Do not use `TBD`, "appropriate handling", "similar to Task N", or other prose that delegates design back to the implementer.
+
+Before accepting a plan, map every requirement and acceptance condition to at least one node, then self-review IDs, names, dependencies, interfaces, `Files`, verification, and spec coverage for consistency. A plan-only delivery is complete only when `tasks.md` is ready to execute without another planning pass.
+
 Derived state:
 
 ```text

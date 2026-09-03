@@ -5,15 +5,15 @@ description: Implement ready nodes from an active OpenSpec tasks.md with TDD, ex
 
 # Apply a Change
 
-1. Select the explicit/Goal change and call `Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = '<id>' }`.
-2. Read proposal, relevant specs/design, `tasks.md`, and `attachments/INDEX.md`. Load only attachments linked by the current task.
+1. Select the explicit/Goal change and call `Invoke-Hardness -Command task.status -Context $context -Parameters @{ Change = '<id>' }` before implementation mutation. An accepted exploration handoff is not an active Change or Ready Task DAG.
+2. Read proposal, relevant specs/design, `tasks.md`, and `attachments/INDEX.md`. Load only attachments linked by the current task. Before editing, check the node's goal, `Files`, prerequisites, linked context, exact verification, and design assumptions for local coherence.
 3. Select nodes whose OpenSpec-derived `ready` field is true. Parallelize only nodes with disjoint Files, artifacts, and resource leases; never infer an edge from display order or parse the YAML again.
 4. For each node, follow TDD for behavior changes, run its exact verify command, then change `[ ]` to `[x]`. No passing evidence means no completed checkbox.
-5. Record a material diagnosis in implementation, a non-obvious decision in talk/current design, and reusable knowledge only when it passes the admission test. Update INDEX in the same edit.
+5. If investigation crosses the [material implementation issue](../openspec/references/implementation-issues.md) threshold, record one root-cause lifecycle and update INDEX in the same edit. Keep ordinary RED/GREEN cycles and immediate corrections out of attachments. Record a non-obvious decision in talk/current design and reusable knowledge only when it passes the admission test.
 6. Run strict validation and report completed/total plus the next Ready nodes.
 
 ```text
 task.status -> read current truth -> choose Ready node -> RED -> GREEN -> verify -> check task
 ```
 
-In Goal mode, investigate and fix in-scope technical failures autonomously. A finding is triaged before Replan; use `openspec-update-change` only when the plan boundary is invalid. Stop only for a real authorization boundary, not ordinary ambiguity, test failure, or review feedback. Never weaken specified behavior to make a task pass.
+Do not invoke deep pre-change Explore from a Ready task. In Goal mode, investigate and fix in-scope technical failures autonomously. A finding is triaged before Replan; use `openspec-update-change` only when the plan boundary is invalid. Stop only for a real authorization boundary, not ordinary ambiguity, test failure, or review feedback. Never weaken specified behavior to make a task pass.

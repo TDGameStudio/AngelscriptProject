@@ -135,7 +135,7 @@ AngelscriptProject/
 │   ├── Knowledges/              # 架构知识库（中文，按主题前缀组织）
 │   ├── Plans/                   # 历史 Plan 文档（OpenSpec 前，仅作参考）
 │   └── Rules/                   # Git 提交规则、参考对照规则等
-├── .agents/                     # OpenSpec + Superpowers 项目技能适配说明
+├── .agents/                     # Hardness + OpenSpec 项目技能适配说明
 ├── openspec/                    # OpenSpec change 产物目录（由 CLI 在存在 change 时维护）
 ├── Reference/                   # 外部参考仓库（不入库，仅本地比对用）
 ├── Tools/                       # 本地辅助脚本（构建/测试/引导/分析）
@@ -161,25 +161,24 @@ AngelscriptProject/
 
 ### 1.1 AI 协作与计划管理依赖
 
-本项目的计划管理与 AI 协作流程依赖 **OpenSpec** 和 **Superpowers**：
+本项目的计划管理与 AI 协作流程依赖项目内的 **Hardness** 与便携版 **OpenSpec**：
 
 | 依赖 | 用途 |
 |------|------|
-| OpenSpec CLI | 管理 change 生命周期：`proposal.md`、`design.md`、`specs/*`、`tasks.md`、验证与归档 |
-| Superpowers | 提供需求澄清、方案推导、TDD、系统调试、完成前验证等执行纪律 |
+| Hardness | 选择 Current/Goal 工作区、渐进加载 Skill，并管理 review/replan/closure 门禁 |
+| Portable OpenSpec | 管理 Change 生命周期：`proposal.md`、`design.md`、`specs/*`、`tasks.md`、验证与归档 |
 
-安装 / 检查 OpenSpec CLI：
+在 PowerShell 7 会话中通过 Hardness 检查项目内 OpenSpec：
 
 ```powershell
-openspec --version
-
-# 未安装时
-npm install -g @fission-ai/openspec
+Import-Module .\.agents\skills\hardness\scripts\Hardness.psd1
+$context = New-HardnessContext -Mode Current
+Invoke-Hardness -Command openspec.doctor -Context $context -ArgumentList @('--json')
 ```
 
-Superpowers 由 AI 工具的插件/技能系统提供；本仓库的 OpenSpec 适配说明见 `.agents/skills/README.md`。
+不要调用 `PATH` 中的同名程序、官方 Node CLI 或 `Tools/openspec/target` 构建；项目工作流说明见 `.agents/skills/README.md`。
 
-关键规则：如果用户请求创建/更新计划、方案、任务拆解或实施某个 change，使用 `openspec-work` skill（或 `/opsx:work`，也可经 `/opsx:propose` / `/opsx:apply` 触发）。它一体支持"记录"和"实现"，没有阶段墙——可只记录就停，也可边记边做。不要再为新工作创建 `Documents/Plans/Plan_*.md`；当前 change 的 `tasks.md` 是可随时重写的活记录。
+关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `openspec-explore`，形成 decision-complete handoff 后再创建 Change。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，只有证据证明当前计划失效时才由 Hardness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -279,7 +278,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 | 文档 | 用途 |
 |------|------|
 | `AGENTS.md` / `AGENTS_ZH.md` | AI Agent / 协作者的工作指引（**项目规范的权威来源**） |
-| `.agents/skills/README.md` | OpenSpec + Superpowers 协作流程与项目技能适配说明 |
+| `.agents/skills/README.md` | Hardness + OpenSpec 协作流程与项目技能适配说明 |
 | `Documents/Knowledges/ZH/Index.md` | 知识库主索引，按主题前缀组织所有原理性文档 |
 | `Documents/Guides/Build.md` | 构建规则、超时约束、并发安全 |
 | `Documents/Guides/Test.md` | 测试入口与超时约束 |
@@ -302,9 +301,14 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 ### OpenSpec 计划管理
 
-OpenSpec 是当前项目的权威**记录**系统（轻量使用，非流程门禁）。新的需求、方案、计划、任务拆解、背景资料、性能数据与实施状态统一进入 `openspec/changes/<change>/`：
+OpenSpec 是当前项目的权威记录系统；便携 CLI 负责确定性的记录操作，Hardness 负责探索、执行、review、replan 与 closure 策略。明确采用 OpenSpec 的工作统一进入 `openspec/changes/<domain>/<change>/`：
 
-- `openspec-work`：探索+记录+实现+归档一体流程（合并了原 `openspec-explore`、`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`）。可只探索/思考、只产出完整计划当交付物（先不实现）、边记录边实现、续做已有 change、或直接归档；产物与代码可同时、任意顺序修改，初始规划可随时推翻重写。记录深度由意图决定：plan-only 时产出达到 `superpowers:writing-plans` 严谨度的计划再停下，边记边做时可从 lean 记录起步。探索/思考用 `superpowers:brainstorming`；归档经 `openspec archive "<name>"` 完成，是普通收尾动作而非门禁。
+- `openspec-explore`：仅在目标 Change 创建前进行深度探索并形成 decision-complete handoff。
+- `openspec-continue-change` / `openspec-update-change`：创建下一份规划产物，或在证据门禁下修订现有真相。
+- `openspec-apply-change` / `openspec-verify-change`：按 Ready Task DAG 实施，并对固定快照验证。
+- `openspec-sync-specs` / `openspec-archive-change`：显式同步 durable spec，并按 closure policy 归档。
+
+Plan-only 是完整交付：proposal/spec/design/tasks 必须达到可直接执行的质量再停下。归档是显式 closure gate，不会自动合并 spec、Git 分支、推送或删除 worktree。
 
 `Documents/Plans/` 是 OpenSpec 引入前的历史 Plan 文档目录，仅作背景参考或迁移输入。
 
@@ -337,7 +341,7 @@ Tools\PullReference\PullReference.bat <name>
 详细规范见 `AGENTS.md` 与 `Documents/Rules/`。简要清单：
 
 1. **不修改 UE 引擎核心**。所有改动落在 `Plugins/Angelscript/` 或本仓库内。
-2. **计划/记录走 OpenSpec**。创建计划、方案、任务拆解或实施 change 时使用 `openspec-work`；当前 change 的 `tasks.md` 是可随时重写的活记录，背景资料/性能数据等可一并存于 change 目录。
+2. **计划/记录走 OpenSpec**。重大工作先在 Change 创建前完成 `openspec-explore`，再进入 continue/update/apply/verify/sync/archive 生命周期；`tasks.md` 是唯一 Task DAG 与执行状态，附件只保存按需加载的证据和决策。
 3. **构建 / 测试只走标准入口**。直接调 `Build.bat` / `UnrealEditor-Cmd.exe` 等的命令不允许写入文档或脚本。
 4. **测试覆盖**。新功能或 bugfix 必须配套测试（`Plugins/Angelscript/Source/AngelscriptTest/`）。
 5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
@@ -357,5 +361,5 @@ Tools\PullReference\PullReference.bat <name>
 ## 联系与反馈
 
 - 项目状态分析：`Documents/ProjectStatusAnalysis.md`
-- OpenSpec / Superpowers 协作说明：`.agents/skills/README.md`
+- Hardness / OpenSpec 协作说明：`.agents/skills/README.md`
 - 历史优先级路线图：`Documents/Plans/Plan_StatusPriorityRoadmap.md`

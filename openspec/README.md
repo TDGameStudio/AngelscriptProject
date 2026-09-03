@@ -31,6 +31,7 @@ Do not invoke a bare `openspec` from `PATH`, the official Node CLI, or a `Tools/
 
 ## Current workflow
 
+- A new feature, architecture refactor, or major behavior change receives deep read-only exploration before its OpenSpec Change is created unless an accepted decision-complete handoff already exists. Once the target Change exists, corrections use update/replan and never restart `openspec-explore`. Clear fixes and mechanical documentation changes may skip the pre-creation gate.
 - `proposal.md` and `tasks.md` are required; apply depends on tasks.
 - `specs/**/*.md` exists only for durable behavior changes.
 - `design.md` exists only for non-obvious architecture, compatibility, or migration decisions.
@@ -39,4 +40,4 @@ Do not invoke a bare `openspec` from `PATH`, the official Node CLI, or a `Tools/
 - `validate --archived` audits closure provenance and Task history; it does not rerun implementation verification.
 - Current archives use `closure-v1`; explicitly marked `legacy-completed-v0` records receive the legacy completed audit.
 
-The only current execution truth for a change is `tasks.md`. Load attachments progressively from `attachments/INDEX.md`; Review, Replan, and closure policy lives under `.agents/skills/openspec/references/`.
+The only current execution truth for a change is `tasks.md`; a conversation or exploration handoff is not an active Change. Resolve the canonical Change and Ready Task DAG before implementation mutation. Implementation-time technical uncertainty stays inside the Ready task and triggers replan only when evidence invalidates current truth. Load attachments progressively from `attachments/INDEX.md`; Review, material implementation issues, knowledge promotion, replan, and closure policy lives under `.agents/skills/openspec/references/`.

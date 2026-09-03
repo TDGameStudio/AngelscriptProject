@@ -22,34 +22,65 @@ Read this reference only when a current task creates, resolves, or archives an a
 - reviews/<file> — <summary> — <when to read>
 ```
 
-Index every attachment file once. Update INDEX in the same change as a new attachment. It does not duplicate task state.
+Index every attachment file exactly once. Update INDEX in the same edit as creation, material status change, supersession, or resolution. It does not duplicate task state. Do not add parallel session-state files such as `*-next.md` or `*-leftover.md`, and do not use Markdown checkboxes outside `tasks.md` to track execution.
+
+If INDEX would exceed 120 lines, merge or trim low-value detail and improve summaries; never raise the limit or create a second index.
+
+## Event routing
+
+| Event | Record | Boundary |
+|---|---|---|
+| Incident, Final, or External fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
+| Material investigated technical problem | `implementation/` | One shared root cause and repair lifecycle; never a final summary or second task list. |
+| Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
+| Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
+| Reusable learning candidate | `knowledges/` | Change-local evidence until explicit capability promotion. |
+| Reusable helper | `scripts/` | One purpose with usage and dependencies in the header. |
+| Benchmark, matrix, or trimmed output | `data/` | Text-first aggregate with source/run provenance. |
 
 ## Reviews
 
 - Filename: `reviews/review-YYYYMMDD-HHmmss-<theme>-<reviewer>.md`.
+- New records declare `review_schema: review-v2`, `review_kind: incident | final | external`, `requested_by`, actual `assigned_at` / `reviewed_at` / `closed_at` lifecycle times, immutable `snapshot_ref`, `snapshot_sha256`, and verdict.
 - Review state: `open | closed | superseded`.
 - Finding state: `open | resolved | rejected | deferred`.
 - Each finding keeps its original text and records severity, fixed snapshot, evidence, affected requirement/tasks, disposition, appended resolution, and verification evidence.
-- An external reviewer may create only its assigned review file against the fixed snapshot. It may not edit code, tasks, design, INDEX, implementation, replans, or existing reviews.
+- Incident Review is exceptional and requires demonstrated major security/trust, destructive data/history, public compatibility, cross-repository atomicity, or invalidated cross-boundary completion evidence. Routine slices and local defects do not trigger it.
+- Final Review runs once after scope freeze for broad public, cross-boundary, security/destructive, compatibility/release, production-performance, or architectural impact and must cover the current final snapshot. Verified small low-impact work records `Final Review: not required` with rationale and creates no placeholder Review. Diff size alone does not decide impact. A post-assignment task-owned change invalidates final-gate coverage; batch late changes and request one incremental Final Review after the next freeze.
+- A user or another agent may create one unique External Review file at any time. Hardness indexes and triages it at the nearest safe boundary. An unbound report remains open input until its snapshot is reproduced or it is superseded with rationale.
+- Dispatch fixed-snapshot Review asynchronously when a reviewer subagent is available. The main thread may continue disjoint work, but it cannot promote knowledge, close, archive, integrate, or claim completion before the applicable gate closes.
+- A reviewer may edit only its unique Review file. It may not edit code, tasks, design, INDEX, implementation, replans, or existing Reviews.
+- Review files have no line limit. Retain detailed findings, evidence, impact, resolution conditions, disposition, repair evidence, and re-review history; a per-file manifest is optional rather than mandatory.
 - A Review Gate is complete only after triage, resolution, re-review, and review closure. A delivered report is not a completed gate.
-- Archive requires every review closed/superseded and no open/deferred Critical or Required finding. Advisory findings may defer with an explicit follow-up.
+- Completed archive requires either one closed approving Final Review for a broad-impact current final snapshot or a recorded low-impact `Final Review: not required` disposition. Every existing Review is closed/superseded and no Critical or Required finding is open/deferred. Advisory findings may defer with an explicit follow-up.
 
 ## Implementation issues and talks
 
-- Filename: `implementation/issue-YYYYMMDD-HHmmss-<theme>.md`.
-- State: `open | resolved | superseded`.
-- Record symptom/source, chronological observations, root cause, disposition, RED/GREEN run evidence, and links. Do not add checkboxes.
-- Non-obvious major decisions go to `talks/talk-YYYYMMDD-HHmmss-<theme>.md`, then lift the settled truth into design/spec before Replan.
+- Use [implementation-issues.md](implementation-issues.md) only after a technical problem crosses its material threshold. `implementation/` is issue-only; final integration evidence, routine TDD cycles, closure preparation, and progress summaries belong in their owning task evidence, `data/`, Review, INDEX, or closure record.
+- Non-obvious major decisions go to `talks/talk-YYYYMMDD-HHmmss-<theme>.md`, then lift the settled truth into proposal/spec/design before replan.
+
+## Exploration carryover
+
+Pre-Change Explore remains read-only. Its accepted handoff may classify decision rationale, useful visuals, and reusable evidence-backed insights, but records are created only after the target Change exists:
+
+| Carryover | Destination | Admission boundary |
+|---|---|---|
+| Settled requirement, scope, architecture, or executable boundary | proposal/spec/design/tasks | Canonical current truth; do not leave it only in an attachment. |
+| Non-obvious decision, dropped alternative, flip condition, or decision-critical visualization | `talks/talk-YYYYMMDD-HHmmss-<theme>.md` | Preserve only when the rationale prevents likely re-decision. |
+| Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and Review. |
+| Temporary question-round state, transcript prose, or one-off visual | discard | No durable decision or reuse value. |
+
+A carryover talk uses concise plain headings such as Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual, and Sources. A change-local knowledge candidate uses Reusable Insight, Evidence, Boundaries, Application, and Sources. Embed the smallest useful Markdown table or text diagram in the owning file; a separate visual file is allowed only when it is itself indexed exactly once.
+
+Markers may improve scanning, but each line keeps a stable plain-text label and complete meaning without emoji. Markers never replace frontmatter, Task DAG, Review, issue, or INDEX state. Create the talk/knowledge file and update `attachments/INDEX.md` in the same edit; the INDEX summary states whether a knowledge candidate is `candidate`, `promoted`, `superseded`, or `retired`.
 
 Material lifecycle:
 
 ```text
-review finding
-  -> implementation issue
-  -> talk (only for a non-obvious decision)
-  -> current design/spec truth
-  -> replan
-  -> tasks.md
+review or verification evidence
+  -> local defect -> implementation issue only when material -> repair and evidence
+  -> non-obvious decision -> talk -> current proposal/spec/design truth
+  -> invalid plan boundary -> applied replan -> tasks.md
 ```
 
 ## Replans
@@ -64,8 +95,8 @@ review finding
 
 ## Other attachment types
 
-- `knowledges/`: currently valid reusable knowledge; promote explicitly, never as an archive side effect.
+- `knowledges/`: change-local reusable knowledge candidates, including accepted exploration insights that meet the carryover boundary. Apply the [knowledge promotion contract](knowledge.md) explicitly; archive never promotes them as a side effect.
 - `scripts/`: one reusable purpose per script, with usage and dependencies in its header.
 - `data/`: trimmed text-first evidence. Files over 100 KB or 1000 lines must be reduced with source run ID, trim rationale, and original line ranges.
 
-Before archive, trim data, decide knowledge promotion, close review/issue state, record spec-sync disposition, and provide the requested closure manifest.
+Before archive, trim data, decide knowledge promotion, close review/issue state, record spec-sync disposition, and provide the requested closure manifest. The portable CLI validates structural closure, not attachment semantics; the applicable Hardness/OpenSpec protocol gate supplies that evidence.

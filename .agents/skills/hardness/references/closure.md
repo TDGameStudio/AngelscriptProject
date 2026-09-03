@@ -6,7 +6,7 @@ Closure is explicit and has exactly one of three kinds:
 - `abandoned`: work stops without fulfilling the goal; record the reason.
 - `superseded`: another named goal or change replaces this one; record its reference.
 
-Completed closure requires a clean verified workspace, every Review Gate closed, every review file `closed | superseded`, no open or deferred Critical/Required finding, and a short resolution/evidence summary. Durable OpenSpec behavior is synced before archive or marked not applicable with rationale.
+Completed closure requires a clean verified workspace and an explicit final impact disposition: broad-impact work has one closed approving Final Review bound to the current scope-frozen final snapshot; verified small low-impact work records `Final Review: not required` and the reason. Every existing Review file is `closed | superseded`, no Critical/Required finding is open or deferred, and a short resolution/evidence summary is present. Incident and External Reviews do not silently substitute for a required Final Review. Durable OpenSpec behavior is synced before archive or marked not applicable with rationale.
 
 Reusable gates cited as closure evidence must use hermetic fixtures or stable repository inputs. They must not require the current change to remain under `openspec/changes/`; before archive, confirm that the closing canonical change ID is not configured as a reusable gate's default fixture. Register every accepted performance aggregate and its raw-artifact hashes under `attachments/data/` and `attachments/INDEX.md` before archive; ignored `Saved/` output alone is not durable closure evidence.
 

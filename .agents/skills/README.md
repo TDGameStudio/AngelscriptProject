@@ -5,8 +5,9 @@
 The prepared harness requires PowerShell 7.0 or later (`Core`) and uses `pwsh.exe`; Windows PowerShell 5.1 is not a supported Skill host.
 
 ```text
-Goal mode    -> .worktrees/<goal> on goal/<goal> -> implement -> verify -> review -> ready to integrate
-Current mode -> current workspace -> protect existing changes -> implement and verify in place
+new feature / architecture / major behavior -> deep Explore -> decision-complete handoff -> create Change -> planning
+Goal mode    -> .worktrees/<goal> on goal/<goal> -> Ready task -> local exploration -> verify -> impact disposition -> ready to integrate
+Current mode -> current workspace -> protect existing changes -> the same lifecycle in place
 ```
 
 Neither mode automatically merges, pushes, publishes, or removes a worktree.
@@ -27,7 +28,7 @@ The current core publishes no `ue.*` or `toolchain.check` route.
 - `git-workflow` (`using-git-worktrees`) — safe workspace lifecycle and submodule ordering.
 - `systematic-debugging` — evidence-first diagnosis before fixes or Replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.
-- `code-review/code-reviewer` — fixed-snapshot five-dimension review.
+- `code-review/code-reviewer` — fixed-snapshot Incident, impact-gated Final, or explicit External Review.
 - `angelscript-test-guide` — project C++/CQTest/inline AngelScript testing patterns.
 - `hazelight-update-audit` — upstream comparison and adoption decisions.
 
@@ -35,8 +36,10 @@ The current core publishes no `ue.*` or `toolchain.check` route.
 
 OpenSpec is used only when the user/Goal explicitly names or owns an OpenSpec change. The portable Rust CLI provides deterministic record primitives; Hardness owns orchestration and Replan/Review policy.
 
+For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG before implementation mutation in either Current or Goal mode.
+
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
-- `openspec-explore` — read-only investigation of unclear work.
+- `openspec-explore` — deep read-only discovery before creating a new feature, architecture refactor, or major behavior-change Change; it produces a decision-complete handoff and is never invoked after target Change creation.
 - `openspec-continue-change` — create the next missing artifact.
 - `openspec-update-change` — revise current artifacts and apply an evidence-gated Replan.
 - `openspec-apply-change` — implement Ready Task DAG nodes.
@@ -44,7 +47,7 @@ OpenSpec is used only when the user/Goal explicitly names or owns an OpenSpec ch
 - `openspec-sync-specs` — agent-driven durable-spec merge.
 - `openspec-archive-change` — explicit closure policy plus deterministic archive primitive.
 
-Record schemas are references under `openspec/references/`, not an independently triggered Skill.
+Record schemas are focused references under `openspec/references/`, not an independently triggered Skill. Task-local technical uncertainty remains in `openspec-apply-change`; material root-cause history uses the implementation-issue reference, and reusable learning follows the capability-knowledge promotion reference.
 
 ## Other leaves
 

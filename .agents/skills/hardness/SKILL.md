@@ -22,18 +22,34 @@ Use [routing.md](references/routing.md) only when the route is unclear. Load the
 
 - [task-dag.md](references/task-dag.md) for planning or selecting ready work.
 - [replan.md](references/replan.md) after evidence invalidates the current plan.
-- [review.md](references/review.md) at a planned review gate or explicit review request.
+- [review.md](references/review.md) only for a demonstrated major Incident Review, an impact-gated scope-frozen Final Review, or External Review intake.
 - [closure.md](references/closure.md) only when closing or archiving a goal.
 
 OpenSpec is opt-in: create or mutate an OpenSpec change only when the user or active goal explicitly selects it.
 
+## Orient and pass the Explore Gate
+
+Before creating a new change, identify the workspace mode, authorized objective, and whether the intended work is decision-complete:
+
+- A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff routes to `openspec-explore` before `change create`.
+- A clear defect repair, mechanical documentation change, or already approved ready-to-execute plan may skip deep exploration.
+- A decision-complete handoff is not an active Change. When OpenSpec owns the work, resolve the canonical active Change and Ready Task DAG before implementation mutation; Current mode does not waive this checkpoint.
+- Once the target Change exists, never invoke deep Explore for it. Revise existing planning truth through `openspec-update-change`; technical uncertainty inside a Ready task remains in the implementation leaf. Inspect, experiment, and choose autonomously; use replan only when evidence invalidates a requirement, design boundary, verification contract, dependency edge, or artifact.
+
+```text
+pre-change ambiguity -> deep Explore -> accepted handoff -> create Change -> planning
+Ready task uncertainty -> local investigation -> repair, or evidence-gated replan
+```
+
 ## Native Goal iteration
 
-1. Call `task.status` for the selected change, choose a node whose derived `ready` field is true, and read only its linked context.
+1. After orientation and the Explore Gate, call `task.status` for the selected change, choose a node whose derived `ready` field is true, and read only its linked context.
 2. Implement the smallest complete slice, verify with the task's exact command, and preserve evidence.
-3. At planned high-risk slice gates and the final gate, run review and close its findings before completing the gate.
+3. Start an Incident Review only for a demonstrated major incident. At scope freeze, run one Final Review for broad-impact work; record `Final Review: not required` for a verified small low-impact change. Register user- or agent-started External Reviews without turning ordinary tasks into Review Gates.
 4. If evidence invalidates a requirement, design boundary, verification contract, dependency edge, or artifact, apply the Replan protocol and continue autonomously.
 5. Mark a task done only after its verification passes. Never uncheck it; create a new follow-up task.
+
+When a reviewer subagent is available, assign it an immutable snapshot and unique Review file asynchronously. Continue disjoint work while it runs, but do not let a moving live workspace redefine its scope. A Final Review result cannot close the current gate after task-owned reviewed content changes; batch those changes and request one incremental Final Review after the next scope freeze.
 
 Investigate technical uncertainty, compare in-scope options, and choose the strongest evidence-backed implementation without interrupting the goal. Stop only when progress requires new authority: a product-goal change, destructive or external action outside scope, unavailable credentials, or irreconcilable user decisions.
 

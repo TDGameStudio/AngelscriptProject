@@ -40,6 +40,14 @@ attachments/
 
 `INDEX.md` is the only default attachment entry. Do not bulk-load attachments or historical replans. Read [attachments.md](attachments.md) only when writing or closing an attachment.
 
+Focused authoring contracts are separate so they load only when needed:
+
+- [tasks.md](tasks.md) owns Task DAG structure and ready-to-execute authoring quality.
+- [implementation-issues.md](implementation-issues.md) owns material problem history during implementation, verification, or review repair.
+- [knowledge.md](knowledge.md) owns explicit promotion from change evidence to capability knowledge and, only for cross-capability invariants, project instructions.
+
+There is no independent schema Skill and no project-level `openspec/knowledges/` tree. The portable CLI validates record structure and Task DAGs; Hardness protocol tests own attachment and knowledge policy that the CLI does not parse.
+
 ## Instructions output
 
 Treat `context` and `rules` as prompt constraints, never artifact content. An artifact response distinguishes:
