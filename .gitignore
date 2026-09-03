@@ -107,6 +107,10 @@ DerivedDataCache/*
 .vscode/
 *.DotSettings.user
 
+# Python bytecode caches
+__pycache__/
+*.py[cod]
+
 # Sisyphus
 .sisyphus/
 
@@ -129,6 +133,9 @@ DerivedDataCache/*
 
 # Local experiment workspace
 /Experiment/
+
+# Local scratch files and temporary research drafts
+/Temp/
 
 # UnrealMCP (may become a submodule later)
 Tools/UnrealMCP/
