@@ -34,7 +34,7 @@ task_graph:
   2. Retain a privacy-trimmed aggregate with PS7 raw-artifact and source hashes while leaving raw samples ignored.
   3. Record actual per-check duration so later workflow review can distinguish policy simplification from runtime optimization.
 
-- [ ] 2.2 Review and close the fixed snapshot — verify: `.agents/skills/openspec/bin/openspec.exe validate --archived --strict --json`
+- [x] 2.2 Review and close the fixed snapshot — verify: `.agents/skills/openspec/bin/openspec.exe validate --archived --strict --json`
   > Files: `openspec/changes/hardness/standardize-powershell-7/attachments/reviews/review-*.md`, `openspec/changes/hardness/standardize-powershell-7/attachments/INDEX.md`, `openspec/changes/hardness/standardize-powershell-7/tasks.md`
 
   1. Independently verify that no executable PS5 route remains in the maintained Hardness gate surface.
