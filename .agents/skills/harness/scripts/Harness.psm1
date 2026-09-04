@@ -543,6 +543,55 @@ function Add-HarnessContextDefaults {
     return $values
 }
 
+function Test-HarnessUnrealExecutionFailure {
+    param(
+        [Parameter(Mandatory = $true)][string]$RouteName,
+        $Data
+    )
+
+    if ($RouteName -notin @('ue.build', 'ue.ubt.invoke', 'ue.test', 'ue.commandlet', 'ue.suite.run') -or $null -eq $Data) {
+        return $false
+    }
+    $stateProperty = $Data.PSObject.Properties['State']
+    if ($null -eq $stateProperty) {
+        return $false
+    }
+    return [string]$stateProperty.Value -in @('Failed', 'TimedOut', 'Cancelled', 'Orphaned')
+}
+
+function New-HarnessUnrealExecutionFailureResult {
+    param(
+        [Parameter(Mandatory = $true)][string]$Command,
+        [Parameter(Mandatory = $true)][string]$RunId,
+        [Parameter(Mandatory = $true)][long]$DurationMs,
+        [Parameter(Mandatory = $true)]$Data
+    )
+
+    $operationExitCode = 0
+    $exitCodeProperty = $Data.PSObject.Properties['ExitCode']
+    if ($null -eq $exitCodeProperty -or -not [int]::TryParse([string]$exitCodeProperty.Value, [ref]$operationExitCode) -or $operationExitCode -eq 0) {
+        $operationExitCode = 1
+    }
+    $state = [string]$Data.PSObject.Properties['State'].Value
+    $operationRunId = ''
+    $runIdProperty = $Data.PSObject.Properties['RunId']
+    if ($null -ne $runIdProperty) {
+        $operationRunId = [string]$runIdProperty.Value
+    }
+    $message = "Unreal execution route '$Command' reached terminal state '$state' with exit code $operationExitCode."
+    if (-not [string]::IsNullOrWhiteSpace($operationRunId)) {
+        $message = "Unreal execution route '$Command' reached terminal state '$state' with exit code $operationExitCode for run '$operationRunId'."
+    }
+    $artifacts = if ('Artifacts' -in @($Data.PSObject.Properties.Name)) { @($Data.Artifacts) } else { @() }
+    $errorData = [pscustomobject]@{
+        code    = 'UnrealOperationFailed'
+        type    = 'AngelscriptProject.HarnessUnrealOperationFailure'
+        message = $message
+        details = $message
+    }
+    return New-HarnessResult -Command $Command -RunId $RunId -Status 'Failed' -ExitCode $operationExitCode -DurationMs $DurationMs -Artifacts $artifacts -Data $Data -ErrorRecord $errorData
+}
+
 function Invoke-Harness {
     [CmdletBinding()]
     param(
@@ -616,6 +665,9 @@ function Invoke-Harness {
         }
 
         $timer.Stop()
+        if ($route.Kind -eq 'PowerShell' -and (Test-HarnessUnrealExecutionFailure -RouteName $Command -Data $data)) {
+            return New-HarnessUnrealExecutionFailureResult -Command $Command -RunId $runId -DurationMs $timer.ElapsedMilliseconds -Data $data
+        }
         $artifacts = if ($null -ne $data -and 'Artifacts' -in @($data.PSObject.Properties.Name)) { @($data.Artifacts) } else { @() }
         return New-HarnessResult -Command $Command -RunId $runId -Status 'Succeeded' -ExitCode 0 -DurationMs $timer.ElapsedMilliseconds -Artifacts $artifacts -Data $data -ErrorRecord $null
     }

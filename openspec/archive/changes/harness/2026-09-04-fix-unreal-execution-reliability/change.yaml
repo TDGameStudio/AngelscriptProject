@@ -1,0 +1,19 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_71109ffb-a12f-468b-8902-040f40155747
+  id: harness/fix-unreal-execution-reliability
+  title: Fix Unreal execution reliability
+  description: Keep Session-correlated UBT builds off the incompatible UBA executor and propagate synchronous Unreal terminal failures through the common Harness envelope.
+workflow: angelscript
+created_at: 2026-09-04T10:23:34Z
+goal: Make Harness Unreal build selection and synchronous failure reporting truthful without caller workarounds.
+affected_areas:
+- .agents/skills/unreal-engine-develop
+- .agents/skills/harness
+- openspec/specs/harness/unreal
+archived_at: 2026-09-04T10:48:38Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All six tasks are complete; focused dispatcher, Unreal route, protocol, evolution, and real XGE/local-UBA build proofs pass; the durable harness/unreal contract is synchronized; and no issue or Review remains open.

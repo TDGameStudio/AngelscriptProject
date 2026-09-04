@@ -241,7 +241,6 @@ function New-UnrealBuildOperation {
     foreach ($argument in @($concurrency.UbtArguments)) { $arguments.Add([string] $argument) }
     foreach ($argument in @($ExtraArguments)) { $arguments.Add([string] $argument) }
     $arguments.Add("-Log=$($request.paths.UbtLogPath)")
-    $arguments.Add("-Session=$($request.runId)")
     $environment = New-UnrealUbtChildEnvironment -Engine $context.Engine -Paths $request.paths
     $request = Set-UnrealRunCommand -Request $request -Arguments @($arguments) -Environment $environment
     return [pscustomobject][ordered]@{
@@ -314,7 +313,6 @@ function Invoke-HarnessUnrealUbt {
         }
     }
     $nativeArguments.Add("-Log=$($request.paths.UbtLogPath)")
-    $nativeArguments.Add("-Session=$($request.runId)")
     $environment = New-UnrealUbtChildEnvironment -Engine $context.Engine -Paths $request.paths
     $request = Set-UnrealRunCommand -Request $request -Arguments @($nativeArguments) -Environment $environment
     $plan = New-UnrealUbtPlan -Request $request -Context $context -Capability ([string] $capabilityRecord.id)

@@ -436,11 +436,10 @@ function ConvertTo-UnrealProcessView {
     }
     if (-not $isUbt) { return $result }
 
-    $session = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Session'
-    if ($session -notmatch '^[a-fA-F0-9]{32}$') { return $result }
-    $session = $session.ToLowerInvariant()
     $projectValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Project'
     if ([string]::IsNullOrWhiteSpace($projectValue)) { return $result }
+    $logValue = Get-UnrealCommandLineOptionValue -CommandLine $CommandLine -Name 'Log'
+    if ([string]::IsNullOrWhiteSpace($logValue)) { return $result }
     try {
         $executionProject = ConvertTo-UnrealCanonicalPath -Path $projectValue
         if (-not $executionProject.EndsWith('.uproject', [System.StringComparison]::OrdinalIgnoreCase)) { return $result }
@@ -453,7 +452,18 @@ function ConvertTo-UnrealProcessView {
             $project = ConvertTo-UnrealCanonicalPath -Path ([string] $resolvedExecution.ProjectFile)
             $workspace = ConvertTo-UnrealCanonicalPath -Path ([string] $resolvedExecution.WorkspaceRoot)
         }
-        $paths = Get-UnrealRunPaths -WorkspaceRoot $workspace -RunId $session
+        $executionWorkspace = ConvertTo-UnrealCanonicalPath -Path (Split-Path -Parent $executionProject) -AllowMissing
+        $executionLog = ConvertTo-UnrealCanonicalPath -Path $logValue -AllowMissing
+        $executionRunsRoot = ConvertTo-UnrealCanonicalPath -Path (Join-Path $executionWorkspace 'Saved/Harness/Unreal/Runs') -AllowMissing
+        $relativeLog = [System.IO.Path]::GetRelativePath($executionRunsRoot, $executionLog)
+        $relativeParts = @($relativeLog -split '[\\/]')
+        if ([System.IO.Path]::IsPathRooted($relativeLog) -or $relativeParts.Count -ne 2 -or
+            $relativeParts[0] -notmatch '^[a-fA-F0-9]{32}$' -or
+            -not $relativeParts[1].Equals('UBT.log', [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $result
+        }
+        $runId = $relativeParts[0].ToLowerInvariant()
+        $paths = Get-UnrealRunPaths -WorkspaceRoot $workspace -RunId $runId
         foreach ($jsonPath in @($paths.RequestPath, $paths.MetadataPath)) {
             if (-not (Test-Path -LiteralPath $jsonPath -PathType Leaf)) { return $result }
             if ((Get-Item -LiteralPath $jsonPath).Length -gt (1024 * 1024)) { return $result }
@@ -462,8 +472,8 @@ function ConvertTo-UnrealProcessView {
         $metadata = Read-UnrealJsonFile -Path $paths.MetadataPath
         if ([string] $request.schemaVersion -ne $script:UnrealRequestSchema -or
             [string] $metadata.schemaVersion -ne $script:UnrealRunSchema -or
-            [string] $request.runId -ne $session -or
-            [string] $metadata.runId -ne $session -or
+            [string] $request.runId -ne $runId -or
+            [string] $metadata.runId -ne $runId -or
             [string] $request.operation -ne 'Build' -or
             [string] $metadata.operation -ne 'Build' -or
             [string] $metadata.state -in $script:UnrealTerminalStates -or
@@ -476,8 +486,11 @@ function ConvertTo-UnrealProcessView {
         if (-not [int]::TryParse([string] $metadata.nativePid, [ref] $nativePid) -or $nativePid -ne $ProcessId) { return $result }
         Assert-UnrealRequestPaths -Request $request -ExpectedPaths $paths
         Assert-UnrealExecutionDescription -Request $request
-        $sessionArguments = @($request.arguments | Where-Object { [string] $_ -match '(?i)^[-/]Session[:=]([a-f0-9]{32})$' })
-        if ($sessionArguments.Count -ne 1 -or (Get-UnrealCommandLineOptionValue -CommandLine ([string] $sessionArguments[0]) -Name 'Session').ToLowerInvariant() -ne $session) {
+        $logArguments = @($request.arguments | Where-Object { [string] $_ -match '(?i)^[-/]Log[:=]' })
+        $sessionArguments = @($request.arguments | Where-Object { [string] $_ -match '(?i)^[-/]Session[:=]' })
+        if ($sessionArguments.Count -ne 0 -or $logArguments.Count -ne 1 -or
+            -not (Test-UnrealPathEqual -Left (Get-UnrealCommandLineOptionValue -CommandLine ([string] $logArguments[0]) -Name 'Log') -Right $executionLog) -or
+            -not (Test-UnrealPathEqual -Left ([string] $request.executionPaths.UbtLogPath) -Right $executionLog)) {
             return $result
         }
         $buildProperty = $request.PSObject.Properties['build']
@@ -493,7 +506,7 @@ function ConvertTo-UnrealProcessView {
 
         $result.Kind = 'UbtBuild'
         $result.RecognizedBuild = $true
-        $result.RunId = $session
+        $result.RunId = $runId
         $result.WorkspaceRoot = $workspace
         $result.EngineRoot = ConvertTo-UnrealCanonicalPath -Path ([string] $request.engineRoot)
         $result.ProjectFile = $project

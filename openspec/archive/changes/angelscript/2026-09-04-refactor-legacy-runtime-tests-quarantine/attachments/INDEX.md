@@ -29,3 +29,4 @@ Implementation, focused real-UE verification, durable-spec synchronization, and 
 - `replans/replan-20260904-171148-hard-disable-legacy-execution.md` — applied user-directed removal of the config-restorable legacy path.
 - `replans/replan-20260904-172453-isolate-legacy-test-framework.md` — applied user direction plus link evidence defining the thin test-module and passive TestJIT ABI boundary.
 - `replans/replan-20260904-174800-use-parent-ubtignore-boundaries.md` — applied UHT/UBT evidence replacing invalid whole-file guards with source-free parent `.ubtignore` boundaries and routing the reusable rule to the test Skill.
+- `scripts/Test-LegacyTestQuarantine.ps1` — focused retained-source quarantine audit used by Tasks `3.1` and `5.1`.

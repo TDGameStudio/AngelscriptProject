@@ -637,7 +637,6 @@ try {
             '-TraceWrites'
             '-Example=alpha beta'
             "-Log=$($installedPlan.ExecutionPaths.UbtLogPath)"
-            "-Session=$($installedPlan.RunId)"
         ) -Actual $installedPlan.Arguments -Message 'installed build arguments are exact and ordered'
         Assert-Equal (Split-Path -Parent $installedPlan.Executable) ([string] $installedPlan.Environment.DOTNET_ROOT) 'DOTNET_ROOT is child-local and follows the selected host'
         Assert-Equal $installedPlan.ExecutionPaths.TempPath ([string] $installedPlan.Environment.UnrealBuildTool_TMP) 'UBT temp uses the short per-run execution view'
@@ -652,6 +651,8 @@ try {
         Assert-True (-not (Test-Path -LiteralPath $installedPlan.ExecutionPath)) 'PlanOnly does not create the proposed DOS-device mapping'
         Assert-Equal 'Parallel' $installedPlan.BuildConcurrency 'installed build Auto mode selects controlled parallelism'
         Assert-True (@($installedPlan.Arguments | Where-Object { $_ -ceq '-WaitMutex' }).Count -eq 0) 'parallel installed builds do not request WaitMutex'
+        Assert-Equal 0 @($installedPlan.Arguments | Where-Object { $_ -match '(?i)^[-/]Session(?:=|:)' }).Count 'top-level typed builds do not impersonate recursive UBT sessions'
+        Assert-Equal 0 @($installedPlan.Arguments | Where-Object { $_ -ceq '-NoUBA' }).Count 'typed builds preserve configured UBA policy'
         Assert-True (@($installedPlan.Arguments | Where-Object { $_ -ceq '-NoEngineChanges' }).Count -eq 1) 'installed NoEngineChanges appears exactly once'
         Assert-True (@($installedPlan.Arguments | Where-Object { $_ -match '(?i)^[-/]NoMutex(?:=|$)' }).Count -eq 1) 'Harness supplies NoMutex exactly once for the controlled parallel lane'
 
@@ -702,8 +703,8 @@ try {
             '-WaitMutex'
             '-SomeValue=alpha beta'
             "-Log=$($queryPlan.ExecutionPaths.UbtLogPath)"
-            "-Session=$($queryPlan.RunId)"
         ) -Actual $queryPlan.Arguments -Message 'QueryTargets arguments are exact, ordered, and retain caller boundaries'
+        Assert-Equal 0 @($queryPlan.Arguments | Where-Object { $_ -match '(?i)^[-/]Session(?:=|:)' }).Count 'top-level QueryTargets does not impersonate a recursive UBT session'
         Assert-True (-not (Test-Path -LiteralPath $queryPlan.Paths.RunRoot)) 'generic UBT PlanOnly creates no run directory'
         $queryFixtureDirectory = Join-Path $scenarioFixture.WorkspaceRoot 'Saved/Harness/Unreal/QueryTargetsFixture'
         [void][System.IO.Directory]::CreateDirectory($queryFixtureDirectory)
@@ -733,6 +734,14 @@ try {
             Invoke-HarnessUnrealUbt -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Capability query-targets -Arguments @('-Output=escape.json') -PlanOnly
         } 'reserved|unsafe' 'generic UBT cannot override managed output paths'
 
+        $genericBuildPlan = Invoke-HarnessUnrealUbt `
+            -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
+            -Capability build `
+            -Arguments @('FixtureEditor', 'Win64', 'Development') `
+            -PlanOnly
+        Assert-Equal 0 @($genericBuildPlan.Arguments | Where-Object { $_ -ceq '-NoUBA' }).Count 'generic builds preserve configured UBA policy'
+        Assert-Equal 0 @($genericBuildPlan.Arguments | Where-Object { $_ -match '(?i)^[-/]Session(?:=|:)' }).Count 'top-level generic builds do not impersonate recursive UBT sessions'
+
         $nativeRequest = $installedPlan.Request | ConvertTo-Json -Depth 100 | ConvertFrom-Json
         $nativeRequest.filePath = Join-Path $PSHOME 'pwsh.exe'
         $nativeRequest.arguments = @('-NoProfile', '-Command', "Write-Output 'fixture-build-success'")
@@ -757,7 +766,7 @@ try {
         Assert-True (@($parallelPlan.Arguments) -contains '-NoMutex') 'parallel builds use the UBT concurrency switch'
         Assert-True (@($parallelPlan.Arguments) -contains '-NoEngineChanges') 'parallel builds retain the installed-engine write guard'
         Assert-True (@($parallelPlan.Arguments) -notcontains '-WaitMutex') 'parallel builds do not request the exclusive UBT mutex'
-        Assert-True (@($parallelPlan.Arguments) -notcontains '-NoUBA') 'the default executor remains enabled for long-path acceptance'
+        Assert-True (@($parallelPlan.Arguments) -notcontains '-NoUBA') 'the configured UBA policy remains unchanged for long-path acceptance'
         Assert-True (@($parallelPlan.Arguments) -notcontains '-NoXGE') 'XGE remains enabled unless the typed caller opts out explicitly'
         Assert-Equal $parallelPlan.ExecutionPaths.TempPath ([string] $parallelPlan.Environment.TEMP) 'parallel build TEMP uses the run-local execution view'
         Assert-True (@($parallelPlan.Arguments) -contains "-Log=$($parallelPlan.ExecutionPaths.UbtLogPath)") 'parallel build UBT log uses the run-local execution view'
@@ -848,32 +857,32 @@ try {
 
         $outsideLog = Join-Path $scenarioScratch 'untrusted-ubt.log'
         [System.IO.File]::WriteAllText($outsideLog, "[99/100] Untrusted action`n", [System.Text.UTF8Encoding]::new($false))
-        $correlatedCommandLine = 'dotnet.exe "{0}" FixtureEditor Win64 Development "-Project={1}" -NoMutex -Session={2} "-Log={3}"' -f `
+        $correlatedCommandLine = 'dotnet.exe "{0}" FixtureEditor Win64 Development "-Project={1}" -NoMutex "-Log={2}"' -f `
             (Join-Path $scenarioFixture.EngineRoot 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll'), `
             $request.execution.projectFile, `
-            $request.runId, `
-            $outsideLog
+            $request.executionPaths.UbtLogPath
         $correlated = & $module {
             param($Id, $Name, $Executable, $CommandLine)
             ConvertTo-UnrealProcessView -ProcessId $Id -Name $Name -Executable $Executable -CommandLine $CommandLine
         } 4242 'dotnet' $scenarioFixture.EngineRoot $correlatedCommandLine
-        Assert-True $correlated.RecognizedBuild 'valid Session plus contained metadata and matching nativePid identifies the build'
+        Assert-True $correlated.RecognizedBuild 'contained log identity plus matching project, request, and nativePid identifies the build'
         Assert-Equal $scenarioFixture.WorkspaceRoot $correlated.WorkspaceRoot 'recognized build exposes its exact workspace'
         Assert-Equal 'FixtureEditor' $correlated.Target 'recognized build exposes its trusted target'
         Assert-Equal 'Development' $correlated.Configuration 'recognized build exposes its trusted configuration'
         Assert-Equal 'Parallel' $correlated.BuildConcurrency 'recognized build exposes its managed concurrency'
-        Assert-Equal 12 $correlated.Progress.Current 'process progress comes from contained metadata, not command-line Log'
+        Assert-Equal 12 $correlated.Progress.Current 'process progress comes from the physical contained run evidence'
         $wrongPid = & $module {
             param($Id, $Name, $Executable, $CommandLine)
             ConvertTo-UnrealProcessView -ProcessId $Id -Name $Name -Executable $Executable -CommandLine $CommandLine
         } 4243 'dotnet' $scenarioFixture.EngineRoot $correlatedCommandLine
         Assert-True (-not $wrongPid.RecognizedBuild) 'a mismatched nativePid cannot correlate run evidence'
         Assert-True (-not $wrongPid.Progress.ProgressKnown) 'an uncorrelated process cannot expose log progress'
-        $invalidSession = & $module {
+        $externalLog = & $module {
             param($Id, $Name, $Executable, $CommandLine)
             ConvertTo-UnrealProcessView -ProcessId $Id -Name $Name -Executable $Executable -CommandLine $CommandLine
-        } 4242 'dotnet' $scenarioFixture.EngineRoot ($correlatedCommandLine -replace $request.runId, 'not-a-session')
-        Assert-True (-not $invalidSession.RecognizedBuild) 'invalid Session values cannot correlate run evidence'
+        } 4242 'dotnet' $scenarioFixture.EngineRoot ($correlatedCommandLine.Replace([string] $request.executionPaths.UbtLogPath, $outsideLog))
+        Assert-True (-not $externalLog.RecognizedBuild) 'an external command-line log cannot correlate contained run evidence'
+        Assert-True (-not $externalLog.Progress.ProgressKnown) 'an external command-line log cannot expose contained progress'
         }
         finally {
             & $module { param($Mapping, $RunId) Exit-UnrealExecutionDriveMapping -Mapping $Mapping -RunId $RunId } $processMapping $request.runId

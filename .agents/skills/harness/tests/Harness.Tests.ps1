@@ -253,6 +253,81 @@ goal: Prove installation audit rejects an invalid active Change identity.
     Assert-True ($null -ne $nativeFailure.data) 'native failure preserves its diagnostic data'
     Assert-True (@($nativeFailure.data.Output).Count -gt 0) 'native failure preserves stdout and stderr output'
 
+    $unrealEnvelopeRoot = Join-Path $scratch 'unreal-envelope'
+    $unrealEnvelopeScripts = Join-Path $unrealEnvelopeRoot '.agents\skills\unreal-engine-develop\scripts'
+    [void](New-Item -ItemType Directory -Path $unrealEnvelopeScripts -Force)
+    [System.IO.File]::WriteAllText((Join-Path $unrealEnvelopeScripts 'UnrealEngineDevelop.psd1'), @'
+@{
+    RootModule = 'UnrealEngineDevelop.psm1'
+    ModuleVersion = '1.0.0'
+    GUID = '8939df42-d93d-4382-9622-ea9011423908'
+    PowerShellVersion = '7.0'
+    FunctionsToExport = @(
+        'Invoke-HarnessUnrealUbt'
+        'Invoke-HarnessUnrealBuild'
+        'Invoke-HarnessUnrealTest'
+        'Invoke-HarnessUnrealCommandlet'
+        'Invoke-HarnessUnrealSuite'
+        'Get-HarnessUnrealRunStatus'
+        'Stop-HarnessUnrealRun'
+    )
+}
+'@, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $unrealEnvelopeScripts 'UnrealEngineDevelop.psm1'), @'
+function New-FixtureUnrealResult {
+    param([string] $Scenario)
+    switch ($Scenario) {
+        'Failed' { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'Failed'; ExitCode = 6; Artifacts = @('fixture.log') } }
+        'TimedOut' { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'TimedOut'; ExitCode = 2; Artifacts = @('timeout.log') } }
+        'Orphaned' { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'Orphaned'; ExitCode = $null; Artifacts = @('orphan.log') } }
+        'Queued' { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'Queued'; ExitCode = $null; Artifacts = @() } }
+        'Cancelled' { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'Cancelled'; ExitCode = 2; Artifacts = @('cancel.log') } }
+        default { return [pscustomobject]@{ RunId = 'fixture-run'; State = 'Succeeded'; ExitCode = 0; Artifacts = @('success.log') } }
+    }
+}
+function Invoke-HarnessUnrealUbt { param($WorkspaceRoot, $Scenario = 'Succeeded') New-FixtureUnrealResult $Scenario }
+function Invoke-HarnessUnrealBuild { param($WorkspaceRoot, $BuildConcurrency, $Scenario = 'Succeeded') New-FixtureUnrealResult $Scenario }
+function Invoke-HarnessUnrealTest { param($WorkspaceRoot, $Scenario = 'Succeeded') New-FixtureUnrealResult $Scenario }
+function Invoke-HarnessUnrealCommandlet { param($WorkspaceRoot, $Scenario = 'Succeeded') New-FixtureUnrealResult $Scenario }
+function Invoke-HarnessUnrealSuite { param($WorkspaceRoot, $Scenario = 'Succeeded') New-FixtureUnrealResult $Scenario }
+function Get-HarnessUnrealRunStatus { param($WorkspaceRoot, $Scenario = 'Failed') New-FixtureUnrealResult $Scenario }
+function Stop-HarnessUnrealRun { param($WorkspaceRoot, $Scenario = 'Cancelled') New-FixtureUnrealResult $Scenario }
+Export-ModuleMember -Function Invoke-HarnessUnrealUbt, Invoke-HarnessUnrealBuild, Invoke-HarnessUnrealTest, Invoke-HarnessUnrealCommandlet, Invoke-HarnessUnrealSuite, Get-HarnessUnrealRunStatus, Stop-HarnessUnrealRun
+'@, [System.Text.UTF8Encoding]::new($false))
+    $unrealEnvelopeContext = $context | Select-Object *
+    $unrealEnvelopeContext.HarnessRoot = $unrealEnvelopeRoot
+    foreach ($executionRoute in @('ue.build', 'ue.ubt.invoke', 'ue.test', 'ue.commandlet', 'ue.suite.run')) {
+        $failedOperation = Invoke-Harness -Command $executionRoute -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Failed' }
+        Assert-Equal 'Failed' $failedOperation.status "$executionRoute propagates a synchronous terminal failure to the common envelope"
+        Assert-Equal 6 $failedOperation.exitCode "$executionRoute preserves the operation exit code"
+        Assert-Equal 'UnrealOperationFailed' $failedOperation.error.code "$executionRoute exposes the stable Unreal operation error code"
+        Assert-Match $failedOperation.error.message ([regex]::Escape($executionRoute)) "$executionRoute failure identifies its route"
+        Assert-Equal 'Failed' $failedOperation.data.State "$executionRoute preserves the terminal operation data"
+        Assert-Equal 'fixture.log' $failedOperation.artifacts[0] "$executionRoute preserves the operation artifacts"
+    }
+    foreach ($terminalCase in @(
+        [pscustomobject]@{ State = 'TimedOut'; ExitCode = 2 },
+        [pscustomobject]@{ State = 'Cancelled'; ExitCode = 2 },
+        [pscustomobject]@{ State = 'Orphaned'; ExitCode = 1 }
+    )) {
+        $terminalOperation = Invoke-Harness -Command 'ue.build' -Context $unrealEnvelopeContext -Parameters @{ Scenario = $terminalCase.State }
+        Assert-Equal 'Failed' $terminalOperation.status "synchronous $($terminalCase.State) is a failed execution envelope"
+        Assert-Equal $terminalCase.ExitCode $terminalOperation.exitCode "synchronous $($terminalCase.State) uses the expected non-zero envelope exit"
+        Assert-Equal $terminalCase.State $terminalOperation.data.State "synchronous $($terminalCase.State) preserves returned operation data"
+    }
+    $queuedOperation = Invoke-Harness -Command 'ue.build' -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Queued' }
+    Assert-Equal 'Succeeded' $queuedOperation.status 'a non-terminal asynchronous-style dispatch remains a successful envelope'
+    $successfulOperation = Invoke-Harness -Command 'ue.build' -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Succeeded' }
+    Assert-Equal 'Succeeded' $successfulOperation.status 'a successful synchronous operation remains a successful envelope'
+    Assert-Equal 'success.log' $successfulOperation.artifacts[0] 'a successful operation retains its artifacts'
+    $failedObservation = Invoke-Harness -Command 'ue.run.status' -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Failed' }
+    Assert-Equal 'Succeeded' $failedObservation.status 'successfully observing a failed run is not itself an execution failure'
+    Assert-Equal 'Failed' $failedObservation.data.State 'status observation retains the observed failed state'
+    $cancelledCommand = Invoke-Harness -Command 'ue.run.cancel' -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Cancelled' }
+    Assert-Equal 'Succeeded' $cancelledCommand.status 'a successful cancellation command is not reclassified from its cancelled result state'
+    Assert-Equal 'Cancelled' $cancelledCommand.data.State 'cancellation retains the resulting cancelled state'
+    & (Get-Module Harness -ErrorAction Stop) { Remove-Module UnrealEngineDevelop -Force -ErrorAction SilentlyContinue }
+
     $sourceOpenSpec = Join-Path $repoRoot '.agents\skills\openspec\bin\openspec.exe'
     $taskWorkspaceRoot = Join-Path $scratch 'task-workspace'
     $taskWorkspaceExeDirectory = Join-Path $taskWorkspaceRoot '.agents\skills\openspec\bin'
