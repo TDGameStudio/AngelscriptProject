@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_08a2ad58-ef89-43dc-921b-b3cd21f69e97
+  id: harness/fix-git-copy-scope-false-positive
+  title: Allow safe scoped Git copies
+  description: Fix exact scoped commit isolation so Git similarity detection cannot misclassify a new in-scope file copied from an unchanged out-of-scope tracked file as an unsafe cross-scope rename or copy.
+workflow: angelscript
+created_at: 2026-09-04T14:02:29Z
+goal: Preserve real cross-scope rename rejection while allowing safe target-only additions regardless of content similarity.
+affected_areas:
+- harness/git
+archived_at: 2026-09-04T14:12:00Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Exact scoped commits now allow target-only copied additions while true cross-scope renames and all actual outside mutations remain rejected, with the dogfooding issue resolved and focused Git, protocol, Skill, and strict specification verification passing.

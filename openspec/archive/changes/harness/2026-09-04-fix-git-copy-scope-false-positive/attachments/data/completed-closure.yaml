@@ -1,0 +1,2 @@
+kind: completed
+reason: Exact scoped commits now allow target-only copied additions while true cross-scope renames and all actual outside mutations remain rejected, with the dogfooding issue resolved and focused Git, protocol, Skill, and strict specification verification passing.

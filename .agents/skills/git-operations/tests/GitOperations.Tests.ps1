@@ -278,13 +278,14 @@ exit 0
     } 'rename/copy crossing|rename-source.*rename-target' 'preservation rejects a staged rename crossing the exact scope before mutation'
     Assert-Equal $renameBoundaryHead (Get-TestHead -Repository $parentRoot) 'cross-scope rename rejection preserves HEAD'
     [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--source=HEAD', '--staged', '--worktree', '--', 'rename-source.txt', 'rename-target.txt'))
+    $copySourceBefore = [System.IO.File]::ReadAllBytes((Join-Path $parentRoot 'rename-source.txt'))
     [System.IO.File]::Copy((Join-Path $parentRoot 'rename-source.txt'), (Join-Path $parentRoot 'copy-target.txt'))
     [void](Invoke-TestGit -Repository $parentRoot -Arguments @('add', '--', 'copy-target.txt'))
-    Assert-ThrowsMatch {
-        Complete-HarnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('copy-target.txt') } -CommitMessage 'must reject cross-scope copy' -PreserveOutsideStaged | Out-Null
-    } 'rename/copy crossing|rename-source.*copy-target' 'preservation rejects a staged copy crossing the exact scope before mutation'
-    [void](Invoke-TestGit -Repository $parentRoot -Arguments @('restore', '--staged', '--', 'copy-target.txt'))
-    [System.IO.File]::Delete((Join-Path $parentRoot 'copy-target.txt'))
+    $copyCommit = Complete-HarnessGitCommit -WorkspaceRoot $parentRoot -RepositoryScopes @{ '.' = @('copy-target.txt') } -CommitMessage 'accept target-only copied content'
+    Assert-Equal 1 @($copyCommit.Commits).Count 'a target-only addition remains committable when Git detects an unchanged out-of-scope copy source'
+    Assert-Equal 'copy-target.txt' (((Invoke-TestGit -Repository $parentRoot -Arguments @('diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD^', 'HEAD')).Output | Where-Object { $_ }) -join ',') 'copied-content commit contains only the requested target path'
+    Assert-True ([System.IO.File]::Exists((Join-Path $parentRoot 'rename-source.txt'))) 'copy similarity never removes the unchanged source'
+    Assert-True ([System.Linq.Enumerable]::SequenceEqual[byte]($copySourceBefore, [System.IO.File]::ReadAllBytes((Join-Path $parentRoot 'rename-source.txt')))) 'copy similarity never rewrites the unchanged source'
 
     $unmergedRoot = Join-Path $fixtureRoot 'unmerged'
     Initialize-TestRepository -Path $unmergedRoot

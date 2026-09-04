@@ -234,23 +234,23 @@ function Get-GitUnmergedPaths {
     return @($paths | Sort-Object -Unique)
 }
 
-function Assert-GitNoCrossScopeRenameOrCopy {
+function Assert-GitNoCrossScopeRename {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
         [Parameter(Mandatory = $true)][string[]]$Scopes
     )
     $result = Invoke-GitOperation -Repository $Repository -Arguments @(
         '-c', 'core.quotepath=false', 'diff', '--cached', '--name-status', '--no-ext-diff',
-        '--find-renames', '--find-copies-harder'
+        '--find-renames'
     )
     foreach ($line in $result.Output) {
-        if ($line -notmatch '^[RC][0-9]+\t') { continue }
+        if ($line -notmatch '^R[0-9]+\t') { continue }
         $parts = @($line -split "`t", 3)
-        if ($parts.Count -ne 3) { throw "Unable to parse staged rename/copy entry in '$Repository': $line" }
+        if ($parts.Count -ne 3) { throw "Unable to parse staged rename entry in '$Repository': $line" }
         $sourceCovered = Test-GitPathCovered -Path $parts[1] -Scopes $Scopes
         $targetCovered = Test-GitPathCovered -Path $parts[2] -Scopes $Scopes
         if ($sourceCovered -ne $targetCovered) {
-            throw "Repository '$Repository' has a staged rename/copy crossing the requested scope: $($parts[1]) -> $($parts[2])."
+            throw "Repository '$Repository' has a staged rename crossing the requested scope: $($parts[1]) -> $($parts[2])."
         }
     }
 }
@@ -408,7 +408,7 @@ function Assert-GitCandidateIndexScope {
     if ($unmerged.Count -gt 0) {
         throw "Git hook candidate contains unmerged paths after ${Stage}: $($unmerged -join ', ')"
     }
-    Assert-GitNoCrossScopeRenameOrCopy -Repository $Repository -Scopes $Scopes
+    Assert-GitNoCrossScopeRename -Repository $Repository -Scopes $Scopes
 }
 
 function Invoke-GitCandidateHook {
@@ -646,7 +646,7 @@ function Complete-HarnessGitCommit {
         $snapshot = Get-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes $repoScopes
         $outsideBoundarySnapshots[$repoKey] = $snapshot
         if ($PreserveOutsideStaged) {
-            Assert-GitNoCrossScopeRenameOrCopy -Repository $repoRoot -Scopes $repoScopes
+            Assert-GitNoCrossScopeRename -Repository $repoRoot -Scopes $repoScopes
             if (@($snapshot.Paths).Count -gt 0) { $outsideSnapshots[$repoKey] = $snapshot }
         }
     }
