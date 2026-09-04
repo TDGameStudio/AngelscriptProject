@@ -359,6 +359,192 @@ function Assert-GitCommitPathsCovered {
     return $changedPaths
 }
 
+function Get-GitIndexSnapshot {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+
+    $indexPath = ([string]((Invoke-GitOperation -Repository $Repository -Arguments @(
+        'rev-parse', '--path-format=absolute', '--git-path', 'index'
+    )).Output | Select-Object -Last 1)).Trim()
+    if (-not [System.IO.Path]::IsPathRooted($indexPath)) {
+        $indexPath = [System.IO.Path]::GetFullPath((Join-Path $Repository $indexPath))
+    }
+    $exists = [System.IO.File]::Exists($indexPath)
+    return [pscustomobject]@{
+        Path   = $indexPath
+        Exists = $exists
+        Bytes  = if ($exists) { [System.IO.File]::ReadAllBytes($indexPath) } else { [byte[]]@() }
+    }
+}
+
+function Restore-GitIndexSnapshot {
+    param([Parameter(Mandatory = $true)]$Snapshot)
+
+    if ([bool]$Snapshot.Exists) {
+        [System.IO.File]::WriteAllBytes([string]$Snapshot.Path, [byte[]]$Snapshot.Bytes)
+    }
+    elseif ([System.IO.File]::Exists([string]$Snapshot.Path)) {
+        [System.IO.File]::Delete([string]$Snapshot.Path)
+    }
+}
+
+function Assert-GitCandidateIndexScope {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Scopes,
+        [Parameter(Mandatory = $true)][string]$Stage
+    )
+
+    $outsideIntentToAdd = @(Get-GitIntentToAddPaths -Repository $Repository |
+        Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $Scopes) })
+    if ($outsideIntentToAdd.Count -gt 0) {
+        throw "Git hook candidate contains outside intent-to-add paths after ${Stage}: $($outsideIntentToAdd -join ', ')"
+    }
+    $outsideStaged = @(Get-GitStagedPaths -Repository $Repository -IncludeIntentToAdd |
+        Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $Scopes) })
+    if ($outsideStaged.Count -gt 0) {
+        throw "Git hook candidate contains paths outside the requested scope after ${Stage}: $($outsideStaged -join ', ')"
+    }
+    $unmerged = @(Get-GitUnmergedPaths -Repository $Repository)
+    if ($unmerged.Count -gt 0) {
+        throw "Git hook candidate contains unmerged paths after ${Stage}: $($unmerged -join ', ')"
+    }
+    Assert-GitNoCrossScopeRenameOrCopy -Repository $Repository -Scopes $Scopes
+}
+
+function Invoke-GitCandidateHook {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string[]]$Arguments = @(),
+        [switch]$AllowFailure
+    )
+
+    $hookArguments = @('hook', 'run', '--ignore-missing', $Name)
+    if ($Arguments.Count -gt 0) {
+        $hookArguments += '--'
+        $hookArguments += $Arguments
+    }
+    return Invoke-GitOperation -Repository $Repository -Arguments $hookArguments -AllowFailure:$AllowFailure
+}
+
+function Restore-GitIndexEnvironment {
+    param([AllowNull()][string]$Value)
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        Remove-Item -LiteralPath 'Env:GIT_INDEX_FILE' -ErrorAction SilentlyContinue
+    }
+    else {
+        [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $Value, 'Process')
+    }
+}
+
+function Invoke-GitScopedCommitAttempt {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Scopes,
+        [Parameter(Mandatory = $true)][string]$Message,
+        [Parameter(Mandatory = $true)]$ExpectedOutsideSnapshot
+    )
+
+    $oldHead = Get-GitHead -Repository $Repository
+    $indexSnapshot = Get-GitIndexSnapshot -Repository $Repository
+    $nonce = [guid]::NewGuid().ToString('N')
+    $candidateIndex = "$( [string]$indexSnapshot.Path ).harness-candidate-$nonce"
+    $messagePath = "$( [string]$indexSnapshot.Path ).harness-message-$nonce"
+    $disabledHooksPath = "$( [string]$indexSnapshot.Path ).harness-no-hooks-$nonce"
+    $previousIndex = [Environment]::GetEnvironmentVariable('GIT_INDEX_FILE', 'Process')
+    $candidateHead = ''
+    $candidateExists = $false
+
+    try {
+        try {
+            [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $candidateIndex, 'Process')
+            [void](Invoke-GitOperation -Repository $Repository -Arguments @('read-tree', $oldHead))
+            $candidateExists = $true
+            [void](Invoke-GitOperation -Repository $Repository -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $Scopes))
+            $hasCandidate = (Invoke-GitOperation -Repository $Repository -Arguments @('diff', '--cached', '--quiet') -AllowFailure).ExitCode
+            if ($hasCandidate -eq 0) {
+                return $null
+            }
+            if ($hasCandidate -ne 1) {
+                throw "Unable to inspect the isolated scoped candidate in '$Repository'."
+            }
+
+            Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'initial staging'
+            [void](Invoke-GitCandidateHook -Repository $Repository -Name 'pre-commit')
+            Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'pre-commit'
+
+            [System.IO.File]::WriteAllText($messagePath, "$Message$([Environment]::NewLine)", [System.Text.UTF8Encoding]::new($false))
+            [void](Invoke-GitCandidateHook -Repository $Repository -Name 'prepare-commit-msg' -Arguments @($messagePath, 'message'))
+            Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'prepare-commit-msg'
+            [void](Invoke-GitCandidateHook -Repository $Repository -Name 'commit-msg' -Arguments @($messagePath))
+            Assert-GitCandidateIndexScope -Repository $Repository -Scopes $Scopes -Stage 'commit-msg'
+
+            [void](Invoke-GitOperation -Repository $Repository -Arguments @(
+                '-c', "core.hooksPath=$disabledHooksPath", 'commit', '--no-verify', '--file', $messagePath
+            ))
+            $candidateHead = Get-GitHead -Repository $Repository
+            [void](Assert-GitCommitPathsCovered -Repository $Repository -OldHead $oldHead -NewHead $candidateHead -Scopes $Scopes)
+        }
+        finally {
+            Restore-GitIndexEnvironment -Value $previousIndex
+        }
+
+        [void](Invoke-GitOperation -Repository $Repository -Arguments (@(
+            '--literal-pathspecs', 'reset', '--quiet', $candidateHead, '--'
+        ) + $Scopes))
+
+        try {
+            [Environment]::SetEnvironmentVariable('GIT_INDEX_FILE', $candidateIndex, 'Process')
+            [void](Invoke-GitCandidateHook -Repository $Repository -Name 'post-commit' -AllowFailure)
+        }
+        finally {
+            Restore-GitIndexEnvironment -Value $previousIndex
+        }
+
+        $outsideIntentToAdd = @(Get-GitIntentToAddPaths -Repository $Repository |
+            Where-Object { -not (Test-GitPathCovered -Path $_ -Scopes $Scopes) })
+        if ($outsideIntentToAdd.Count -gt 0) {
+            throw "Live index contains outside intent-to-add paths after quarantined hooks: $($outsideIntentToAdd -join ', ')"
+        }
+        [void](Assert-GitOutsideStagedSnapshot -Repository $Repository -Scopes $Scopes -Expected $ExpectedOutsideSnapshot)
+        return [pscustomobject]@{ OldHead = $oldHead; NewHead = $candidateHead }
+    }
+    catch {
+        $cause = $_
+        $rollbackFailures = New-Object System.Collections.Generic.List[string]
+        $canRestoreIndex = $true
+        try {
+            $currentHead = Get-GitHead -Repository $Repository
+            if ($currentHead -ne $oldHead) {
+                if ([string]::IsNullOrWhiteSpace($candidateHead) -or $currentHead -ne $candidateHead) {
+                    $canRestoreIndex = $false
+                    throw "HEAD moved to '$currentHead' outside the owned candidate '$candidateHead'."
+                }
+                $symbolic = Invoke-GitOperation -Repository $Repository -Arguments @('symbolic-ref', '--quiet', 'HEAD') -AllowFailure
+                $reference = if ($symbolic.ExitCode -eq 0) { ([string]($symbolic.Output | Select-Object -Last 1)).Trim() } else { 'HEAD' }
+                [void](Invoke-GitOperation -Repository $Repository -Arguments @('update-ref', $reference, $oldHead, $candidateHead))
+            }
+        }
+        catch { $rollbackFailures.Add("ref: $($_.Exception.Message)") | Out-Null }
+
+        if ($canRestoreIndex) {
+            try { Restore-GitIndexSnapshot -Snapshot $indexSnapshot }
+            catch { $rollbackFailures.Add("index: $($_.Exception.Message)") | Out-Null }
+        }
+        $rollback = if ($rollbackFailures.Count -eq 0) { 'affected repository ref and live index restored' } else { 'rollback incomplete: ' + ($rollbackFailures -join '; ') }
+        throw "Scoped Git hook isolation failed in '$Repository'; $rollback. Hook worktree, process, network, and repository-external effects are reported but never overwritten. Cause: $($cause.Exception.Message)"
+    }
+    finally {
+        Restore-GitIndexEnvironment -Value $previousIndex
+        foreach ($temporaryPath in @($candidateIndex, $messagePath)) {
+            if ([System.IO.File]::Exists($temporaryPath)) {
+                [System.IO.File]::Delete($temporaryPath)
+            }
+        }
+    }
+}
+
 function Complete-HarnessGitCommit {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
@@ -443,6 +629,7 @@ function Complete-HarnessGitCommit {
     }
 
     $outsideSnapshots = @{}
+    $outsideBoundarySnapshots = @{}
     foreach ($repoKey in @($effectiveScopes.Keys | Sort-Object)) {
         $repoRoot = $repositories[$repoKey]
         $repoScopes = @($effectiveScopes[$repoKey])
@@ -456,9 +643,10 @@ function Complete-HarnessGitCommit {
         if (-not $PreserveOutsideStaged -and $outsideStaged.Count -gt 0) {
             throw "Repository '$repoKey' has staged paths outside the requested scope: $($outsideStaged -join ', ')"
         }
+        $snapshot = Get-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes $repoScopes
+        $outsideBoundarySnapshots[$repoKey] = $snapshot
         if ($PreserveOutsideStaged) {
             Assert-GitNoCrossScopeRenameOrCopy -Repository $repoRoot -Scopes $repoScopes
-            $snapshot = Get-GitOutsideStagedSnapshot -Repository $repoRoot -Scopes $repoScopes
             if (@($snapshot.Paths).Count -gt 0) { $outsideSnapshots[$repoKey] = $snapshot }
         }
     }
@@ -494,22 +682,10 @@ function Complete-HarnessGitCommit {
                     [void](Invoke-GitOperation -Repository $repoRoot -Arguments $checkoutArguments)
                 }
                 $repoScopes = @($effectiveScopes[$repoKey])
-                [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $repoScopes))
-                $hasStaged = (Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'diff', '--cached', '--quiet', '--') + $repoScopes) -AllowFailure).ExitCode
-                if ($hasStaged -eq 1) {
-                    $oldHead = Get-GitHead -Repository $repoRoot
-                    if ($PreserveOutsideStaged) {
-                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'commit', '--dry-run', '--only', '--') + $repoScopes))
-                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments (@('--literal-pathspecs', 'commit', '--only', '-m', $message, '--') + $repoScopes))
-                    }
-                    else {
-                        [void](Invoke-GitOperation -Repository $repoRoot -Arguments @('commit', '-m', $message))
-                    }
-                    $newHead = Get-GitHead -Repository $repoRoot
-                    [void](Assert-GitCommitPathsCovered -Repository $repoRoot -OldHead $oldHead -NewHead $newHead -Scopes $repoScopes)
-                    $commits.Add([pscustomobject]@{ Repository = $repoKey; Commit = $newHead; Branch = $plan.TargetBranch; Paths = $repoScopes }) | Out-Null
+                $attempt = Invoke-GitScopedCommitAttempt -Repository $repoRoot -Scopes $repoScopes -Message $message -ExpectedOutsideSnapshot $outsideBoundarySnapshots[$repoKey]
+                if ($null -ne $attempt) {
+                    $commits.Add([pscustomobject]@{ Repository = $repoKey; Commit = $attempt.NewHead; Branch = $plan.TargetBranch; Paths = $repoScopes }) | Out-Null
                 }
-                elseif ($hasStaged -ne 0) { throw "Unable to inspect scoped staged changes in '$repoKey'." }
             }
         }
 
@@ -523,22 +699,10 @@ function Complete-HarnessGitCommit {
                 if ($outsideSnapshots.ContainsKey('.')) {
                     [void](Assert-GitOutsideStagedSnapshot -Repository $root -Scopes $repoScopes -Expected $outsideSnapshots['.'])
                 }
-                [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'add', '-A', '--') + $repoScopes))
-                $hasStaged = (Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'diff', '--cached', '--quiet', '--') + $repoScopes) -AllowFailure).ExitCode
-                if ($hasStaged -eq 1) {
-                    $oldHead = Get-GitHead -Repository $root
-                    if ($PreserveOutsideStaged) {
-                        [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'commit', '--dry-run', '--only', '--') + $repoScopes))
-                        [void](Invoke-GitOperation -Repository $root -Arguments (@('--literal-pathspecs', 'commit', '--only', '-m', $CommitMessage, '--') + $repoScopes))
-                    }
-                    else {
-                        [void](Invoke-GitOperation -Repository $root -Arguments @('commit', '-m', $CommitMessage))
-                    }
-                    $newHead = Get-GitHead -Repository $root
-                    [void](Assert-GitCommitPathsCovered -Repository $root -OldHead $oldHead -NewHead $newHead -Scopes $repoScopes)
-                    $commits.Add([pscustomobject]@{ Repository = '.'; Commit = $newHead; Branch = Get-GitBranch $root; Paths = $repoScopes }) | Out-Null
+                $attempt = Invoke-GitScopedCommitAttempt -Repository $root -Scopes $repoScopes -Message $CommitMessage -ExpectedOutsideSnapshot $outsideBoundarySnapshots['.']
+                if ($null -ne $attempt) {
+                    $commits.Add([pscustomobject]@{ Repository = '.'; Commit = $attempt.NewHead; Branch = Get-GitBranch $root; Paths = $repoScopes }) | Out-Null
                 }
-                elseif ($hasStaged -ne 0) { throw 'Unable to inspect scoped staged parent changes.' }
             }
         }
     }
@@ -555,7 +719,7 @@ function Complete-HarnessGitCommit {
             catch { $preservationFailures.Add("$repoKey`: $($_.Exception.Message)") | Out-Null }
         }
         $preservation = if ($preservationFailures.Count -eq 0) { 'outside staged snapshots preserved' } else { $preservationFailures -join '; ' }
-        throw "Scoped Git commit failed without rollback. Completed commits: $completed. Preservation: $preservation. Cause: $($commitFailure.Exception.Message)"
+        throw "Scoped Git commit failed. The failing repository restores its owned ref/index boundary when safe; earlier completed repository commits remain resumable and are not rolled back. Completed commits: $completed. Preservation: $preservation. Cause: $($commitFailure.Exception.Message)"
     }
 
     $preservedStaged = New-Object System.Collections.Generic.List[object]

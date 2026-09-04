@@ -78,6 +78,101 @@ $parentRemote = Join-Path $fixtureRoot 'parent-remote.git'
 
 try {
     [void](New-Item -ItemType Directory -Path $fixtureRoot -Force)
+
+    $hookIsolationRoot = Join-Path $fixtureRoot 'hook-isolation-outside-success'
+    Initialize-TestRepository -Path $hookIsolationRoot
+    [System.IO.File]::WriteAllText((Join-Path $hookIsolationRoot 'scoped.txt'), "scoped base`n")
+    [System.IO.File]::WriteAllText((Join-Path $hookIsolationRoot 'outside.txt'), "outside base`n")
+    [void](Invoke-TestGit -Repository $hookIsolationRoot -Arguments @('add', '--', 'scoped.txt', 'outside.txt'))
+    [void](Invoke-TestGit -Repository $hookIsolationRoot -Arguments @('commit', '-m', 'hook isolation base'))
+    [System.IO.File]::WriteAllText((Join-Path $hookIsolationRoot 'scoped.txt'), "scoped requested change`n")
+    [System.IO.File]::WriteAllText((Join-Path $hookIsolationRoot 'outside.txt'), "outside must remain unstaged`n")
+    $hookDirectory = Join-Path $hookIsolationRoot '.git\hooks'
+    [System.IO.File]::WriteAllText((Join-Path $hookDirectory 'pre-commit'), "#!/bin/sh`ngit add -- outside.txt`nexit 0`n", [System.Text.UTF8Encoding]::new($false))
+    $hookIsolationHead = Get-TestHead -Repository $hookIsolationRoot
+    $hookIsolationIndexPath = ([string]((Invoke-TestGit -Repository $hookIsolationRoot -Arguments @('rev-parse', '--path-format=absolute', '--git-path', 'index')).Output | Select-Object -Last 1)).Trim()
+    $hookIsolationIndexHash = (Get-FileHash -LiteralPath $hookIsolationIndexPath -Algorithm SHA256).Hash
+    Assert-ThrowsMatch {
+        Complete-HarnessGitCommit -WorkspaceRoot $hookIsolationRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'hook-expanded candidate must fail' | Out-Null
+    } 'hook|outside|scope' 'a hook-expanded candidate is rejected as a scoped commit'
+    Assert-Equal $hookIsolationHead (Get-TestHead -Repository $hookIsolationRoot) 'hook-expanded candidate never advances the affected repository HEAD'
+    Assert-Equal $hookIsolationIndexHash (Get-FileHash -LiteralPath $hookIsolationIndexPath -Algorithm SHA256).Hash 'hook-expanded candidate restores the complete live index byte-for-byte'
+    Assert-Equal ' M outside.txt| M scoped.txt' (((Invoke-TestGit -Repository $hookIsolationRoot -Arguments @('status', '--short')).Output | Sort-Object) -join '|') 'hook isolation preserves the caller worktree and staged/unstaged shape'
+
+    $failingHookRoot = Join-Path $fixtureRoot 'hook-isolation-outside-failure'
+    Initialize-TestRepository -Path $failingHookRoot
+    [System.IO.File]::WriteAllText((Join-Path $failingHookRoot 'scoped.txt'), "scoped base`n")
+    [System.IO.File]::WriteAllText((Join-Path $failingHookRoot 'outside.txt'), "outside base`n")
+    [void](Invoke-TestGit -Repository $failingHookRoot -Arguments @('add', '--', 'scoped.txt', 'outside.txt'))
+    [void](Invoke-TestGit -Repository $failingHookRoot -Arguments @('commit', '-m', 'failing hook base'))
+    [System.IO.File]::WriteAllText((Join-Path $failingHookRoot 'scoped.txt'), "scoped requested change`n")
+    [System.IO.File]::WriteAllText((Join-Path $failingHookRoot 'outside.txt'), "outside must remain unstaged`n")
+    [System.IO.File]::WriteAllText((Join-Path $failingHookRoot '.git\hooks\pre-commit'), "#!/bin/sh`ngit add -- outside.txt`nexit 1`n", [System.Text.UTF8Encoding]::new($false))
+    $failingHookHead = Get-TestHead -Repository $failingHookRoot
+    $failingHookIndexPath = ([string]((Invoke-TestGit -Repository $failingHookRoot -Arguments @('rev-parse', '--path-format=absolute', '--git-path', 'index')).Output | Select-Object -Last 1)).Trim()
+    $failingHookIndexHash = (Get-FileHash -LiteralPath $failingHookIndexPath -Algorithm SHA256).Hash
+    Assert-ThrowsMatch {
+        Complete-HarnessGitCommit -WorkspaceRoot $failingHookRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'failing hook candidate must restore' | Out-Null
+    } 'hook|exit|failed' 'a failing hook reports failure through scoped commit isolation'
+    Assert-Equal $failingHookHead (Get-TestHead -Repository $failingHookRoot) 'a failing hook leaves HEAD unchanged'
+    Assert-Equal $failingHookIndexHash (Get-FileHash -LiteralPath $failingHookIndexPath -Algorithm SHA256).Hash 'a failing hook restores the complete live index byte-for-byte'
+
+    $messageHookRoot = Join-Path $fixtureRoot 'hook-isolation-commit-message'
+    Initialize-TestRepository -Path $messageHookRoot
+    [System.IO.File]::WriteAllText((Join-Path $messageHookRoot 'scoped.txt'), "scoped base`n")
+    [System.IO.File]::WriteAllText((Join-Path $messageHookRoot 'outside.txt'), "outside base`n")
+    [void](Invoke-TestGit -Repository $messageHookRoot -Arguments @('add', '--', 'scoped.txt', 'outside.txt'))
+    [void](Invoke-TestGit -Repository $messageHookRoot -Arguments @('commit', '-m', 'message hook base'))
+    [System.IO.File]::WriteAllText((Join-Path $messageHookRoot 'scoped.txt'), "scoped requested change`n")
+    [System.IO.File]::WriteAllText((Join-Path $messageHookRoot 'outside.txt'), "outside must remain unstaged`n")
+    [System.IO.File]::WriteAllText((Join-Path $messageHookRoot '.git\hooks\commit-msg'), "#!/bin/sh`ngit add -- outside.txt`nexit 0`n", [System.Text.UTF8Encoding]::new($false))
+    $messageHookHead = Get-TestHead -Repository $messageHookRoot
+    $messageHookIndexPath = ([string]((Invoke-TestGit -Repository $messageHookRoot -Arguments @('rev-parse', '--path-format=absolute', '--git-path', 'index')).Output | Select-Object -Last 1)).Trim()
+    $messageHookIndexHash = (Get-FileHash -LiteralPath $messageHookIndexPath -Algorithm SHA256).Hash
+    Assert-ThrowsMatch {
+        Complete-HarnessGitCommit -WorkspaceRoot $messageHookRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'message hook candidate must fail' | Out-Null
+    } 'hook|outside|scope' 'a commit-message hook cannot stage an outside path into the live index'
+    Assert-Equal $messageHookHead (Get-TestHead -Repository $messageHookRoot) 'an outside-staging commit-message hook leaves HEAD unchanged'
+    Assert-Equal $messageHookIndexHash (Get-FileHash -LiteralPath $messageHookIndexPath -Algorithm SHA256).Hash 'an outside-staging commit-message hook leaves the live index byte-for-byte unchanged'
+
+    $intentHookRoot = Join-Path $fixtureRoot 'hook-isolation-intent-to-add'
+    Initialize-TestRepository -Path $intentHookRoot
+    [System.IO.File]::WriteAllText((Join-Path $intentHookRoot 'scoped.txt'), "scoped base`n")
+    [void](Invoke-TestGit -Repository $intentHookRoot -Arguments @('add', '--', 'scoped.txt'))
+    [void](Invoke-TestGit -Repository $intentHookRoot -Arguments @('commit', '-m', 'intent hook base'))
+    [System.IO.File]::WriteAllText((Join-Path $intentHookRoot 'scoped.txt'), "scoped requested change`n")
+    [System.IO.File]::WriteAllText((Join-Path $intentHookRoot 'outside-new.txt'), "outside remains untracked`n")
+    [System.IO.File]::WriteAllText((Join-Path $intentHookRoot '.git\hooks\pre-commit'), "#!/bin/sh`ngit add -N -- outside-new.txt`nexit 0`n", [System.Text.UTF8Encoding]::new($false))
+    $intentHookHead = Get-TestHead -Repository $intentHookRoot
+    $intentHookIndexPath = ([string]((Invoke-TestGit -Repository $intentHookRoot -Arguments @('rev-parse', '--path-format=absolute', '--git-path', 'index')).Output | Select-Object -Last 1)).Trim()
+    $intentHookIndexHash = (Get-FileHash -LiteralPath $intentHookIndexPath -Algorithm SHA256).Hash
+    Assert-ThrowsMatch {
+        Complete-HarnessGitCommit -WorkspaceRoot $intentHookRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'intent hook candidate must fail' | Out-Null
+    } 'intent-to-add|hook|outside' 'a hook-created outside intent-to-add entry is rejected'
+    Assert-Equal $intentHookHead (Get-TestHead -Repository $intentHookRoot) 'outside intent-to-add never advances HEAD'
+    Assert-Equal $intentHookIndexHash (Get-FileHash -LiteralPath $intentHookIndexPath -Algorithm SHA256).Hash 'outside intent-to-add never changes the live index'
+    Assert-Equal ' M scoped.txt|?? outside-new.txt' (((Invoke-TestGit -Repository $intentHookRoot -Arguments @('status', '--short')).Output | Sort-Object) -join '|') 'outside intent-to-add cleanup preserves the caller worktree shape'
+
+    $positiveHookRoot = Join-Path $fixtureRoot 'hook-isolation-scope-local'
+    Initialize-TestRepository -Path $positiveHookRoot
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot 'scoped.txt'), "scoped base`n")
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot 'outside.txt'), "outside base`n")
+    [void](Invoke-TestGit -Repository $positiveHookRoot -Arguments @('add', '--', 'scoped.txt', 'outside.txt'))
+    [void](Invoke-TestGit -Repository $positiveHookRoot -Arguments @('commit', '-m', 'positive hook base'))
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot 'scoped.txt'), "unformatted requested change`n")
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot 'outside.txt'), "outside remains unstaged`n")
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot '.git\hooks\pre-commit'), "#!/bin/sh`nprintf 'formatted by hook\n' > scoped.txt`ngit add -- scoped.txt`nexit 0`n", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $positiveHookRoot '.git\hooks\commit-msg'), @'
+#!/bin/sh
+printf '\nHooked-Message\n' >> "$1"
+exit 0
+'@, [System.Text.UTF8Encoding]::new($false))
+    $positiveHookCommit = Complete-HarnessGitCommit -WorkspaceRoot $positiveHookRoot -RepositoryScopes @{ '.' = @('scoped.txt') } -CommitMessage 'scope-local hook commit'
+    Assert-Equal 1 @($positiveHookCommit.Commits).Count 'scope-local hooks retain a successful exact commit'
+    Assert-Equal 'formatted by hook' ([string]((Invoke-TestGit -Repository $positiveHookRoot -Arguments @('show', 'HEAD:scoped.txt')).Output -join "`n")).Trim() 'the commit retains scope-local pre-commit formatting'
+    Assert-True (((Invoke-TestGit -Repository $positiveHookRoot -Arguments @('log', '-1', '--pretty=%B')).Output -join "`n") -match 'Hooked-Message') 'the commit retains commit-message hook output'
+    Assert-Equal ' M outside.txt' (((Invoke-TestGit -Repository $positiveHookRoot -Arguments @('status', '--short')).Output | Sort-Object) -join '|') 'scope-local hooks leave outside work unstaged and unchanged'
+
     Initialize-TestRepository -Path $childRoot
     [System.IO.File]::WriteAllText((Join-Path $childRoot 'child.txt'), "child base`n")
     [void](Invoke-TestGit -Repository $childRoot -Arguments @('add', 'child.txt'))

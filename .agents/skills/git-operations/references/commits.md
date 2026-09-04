@@ -22,11 +22,11 @@ Invoke-Harness -Command git.commit -Context $context -Parameters @{
 }
 ```
 
-Map `.` to parent-repository paths and a top-level submodule path to paths relative to that submodule. `WorkspaceRoot` comes from the selected context. An omitted scope and any pre-staged path outside the selected scope are rejected.
+Map `.` to parent-repository paths and a top-level submodule path to paths relative to that submodule. `WorkspaceRoot` comes from the selected context. An omitted scope and any pre-staged path outside the selected scope are rejected. Exact commits always build a candidate index from the current HEAD, stage only literal effective scopes, run the repository's normal `pre-commit`, `prepare-commit-msg`, and `commit-msg` hooks against that candidate, and validate it before the ref is accepted.
 
 ## Preserve Existing Staged Work Outside the Scope
 
-The default rejection remains the safest choice. When a primary or linked workspace intentionally contains independently staged work, opt into path-only commit semantics explicitly:
+The default rejection remains the safest choice. When a primary or linked workspace intentionally contains independently staged work, opt into an explicit outside-index preservation proof:
 
 ```powershell
 Invoke-Harness -Command git.commit -Context $context -Parameters @{
@@ -42,9 +42,11 @@ Invoke-Harness -Command git.commit -Context $context -Parameters @{
 }
 ```
 
-Inspect `IncludedChanges` and `PreservedStaged`, then repeat without `WhatIf`. Preservation mode performs a literal path-only dry run and commit, verifies that the resulting commit contains only the effective scopes, and compares a stable SHA-256 snapshot of each repository's outside staged paths, index metadata, and binary patch before and after the commit. Preview records use `Validation = 'Pending'`; only an executed and verified commit reports `Validation = 'Preserved'`.
+Inspect `IncludedChanges` and `PreservedStaged`, then repeat without `WhatIf`. All exact scoped commits already use an isolated path-only candidate. Preservation mode additionally compares a stable SHA-256 snapshot of each repository's outside staged paths, index metadata, and binary patch before and after the commit. Preview records use `Validation = 'Pending'`; only an executed and verified commit reports `Validation = 'Preserved'`.
 
-`PreserveOutsideStaged` requires exact `RepositoryScopes` and cannot be combined with `AllChanges`. It fails before mutation for unmerged index entries, outside intent-to-add entries, or a staged rename/copy crossing the scope boundary. Dirty scoped submodules still commit before the parent; the parent path-only commit includes only its explicit paths and the resulting gitlinks. If a later repository fails, successful earlier commits are reported as partial work and are not rolled back.
+`PreserveOutsideStaged` requires exact `RepositoryScopes` and cannot be combined with `AllChanges`. It fails before mutation for unmerged index entries, outside intent-to-add entries, or a staged rename/copy crossing the scope boundary. A hook that adds any of those states to the candidate is rejected before acceptance. If a hook or commit fails, or a postcondition detects expansion, Harness restores that affected repository's ref with compare-and-swap and restores the exact pre-attempt live index. Dirty scoped submodules still commit before the parent; if a later repository fails, successful earlier commits are reported as resumable partial work and are not rolled back.
+
+Hook quarantine protects repository refs and indexes. Hooks can still modify worktree bytes, launch processes, use the network, or write outside the repository. Harness reports such residual effects and never overwrites them under a generic rollback claim. A scope-local formatter staged by `pre-commit` and a message edit made by `commit-msg` remain valid candidate output; `post-commit` runs with the isolated index after the ref and live scoped entries are updated.
 
 ## Commit an Entire Linked Worktree
 
