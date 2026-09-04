@@ -79,6 +79,12 @@ Real operations SHALL use stable Request and Run schema names in a unique physic
 - **WHEN** a native child exceeds the request's total timeout
 - **THEN** the worker stops the child tree, records `TimedOut`, preserves bounded evidence, releases every lease, and returns a non-zero result
 
+> Details:
+>
+> 1. The contained native process tree is no longer live before the run is reported terminal.
+> 2. `RunMetadata.json` and bounded command evidence identify the timeout and final `TimedOut` state.
+> 3. Only an ownership-verified execution mapping is removed, and all acquired leases become available again.
+
 #### Scenario: Cancel an asynchronous run
 - **GIVEN** a `NoWait` run has reached `Running` and its contained metadata records matching live worker and native-process identities
 - **WHEN** the user explicitly cancels a contained run whose recorded worker identity still matches

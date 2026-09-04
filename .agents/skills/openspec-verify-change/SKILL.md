@@ -10,7 +10,7 @@ Use the portable CLI through Harness as defined by the `openspec` skill.
 ## Completion verification
 
 - Read proposal, relevant delta/current specs, design, tasks, and `attachments/INDEX.md`; open only linked evidence.
-- When durable specs changed, load the [Specification and Scenario Card contract](../openspec/references/specs.md). Confirm every ordinary scenario has a clear `WHEN` and `THEN`, optional detail supports observable behavior rather than implementation steps, and synchronization preserved each intended complete card plus all unnamed current behavior. A `Verification` detail names a stable oracle or test family; it never substitutes for executed evidence.
+- When durable specs changed, load the [Specification and Scenario Card contract](../openspec/references/specs.md). Confirm every ordinary scenario has a clear `WHEN` and `THEN`; any Scenario-owned detail block, prose, lists, examples, or tables support observable behavior rather than implementation steps; and synchronization preserved each intended complete Scenario Card plus all unnamed current behavior. A `Verification` detail names a stable oracle or test family; it never substitutes for executed evidence.
 - Run `doctor`, strict change validation, Task DAG validation, and the exact task verification commands appropriate to the completed scope.
 - Compare observable implementation and tests to requirements, including correctness, maintainability, architecture, security, performance, and bounded side effects where relevant.
 - Preserve exact commands, results, scope, exclusions, and content identity as completion evidence.

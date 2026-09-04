@@ -196,6 +196,17 @@ function Get-OpenSpecEnglishViolations {
     return @($violations | ForEach-Object { $_ })
 }
 
+function Get-ScenarioBlock {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+    $pattern = '(?ms)^#### Scenario: ' + [regex]::Escape($Name) + '\r?\n(?<Body>.*?)(?=^#### Scenario: |^### Requirement: |\z)'
+    $match = [regex]::Match($Text, $pattern)
+    Assert-True $match.Success "Scenario is missing: $Name"
+    return $match.Groups['Body'].Value
+}
+
 function Get-LocalMarkdownLinkIssues {
     param([Parameter(Mandatory = $true)][System.IO.FileInfo[]]$Files)
 
@@ -425,7 +436,8 @@ $syncSpecText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills
 foreach ($token in @(
     '## Scenario Card', '- **GIVEN**', '- **WHEN**', '- **THEN**', '- **AND**', '- **BUT**',
     '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:',
-    'ordinary Markdown', 'not parser fields', 'delete unused', 'simple scenario'
+    '> Details:', 'Scenario heading', 'detail block', 'ordered or unordered lists', 'examples', 'tables',
+    'durable behavior order', 'ordinary Markdown', 'not parser fields', 'delete unused', 'simple scenario'
 )) {
     Assert-True ($specAuthoringText.Contains($token)) "Scenario Card contract is missing: $token"
 }
@@ -435,10 +447,10 @@ foreach ($token in @('Specs', 'Design', 'Tasks', 'Attachments', 'durable externa
 foreach ($token in @('ADDED', 'MODIFIED', 'REMOVED', 'RENAMED', 'same-name scenario', 'complete Scenario Card', 'new scenario name', 'unspecified scenarios', 'requirement body')) {
     Assert-True ($specAuthoringText.Contains($token)) "Specification delta semantics are missing: $token"
 }
-foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:')) {
+foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:', '> Details:', '> 1.', '> -')) {
     Assert-True ($specTemplateText.Contains($token)) "Specification template is missing: $token"
 }
-foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'simple scenarios')) {
+foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'Scenario-owned detail block', 'ordered or unordered lists', 'simple scenarios')) {
     Assert-True ($workflowDefinitionText.Contains($token)) "Workflow specification instruction is missing: $token"
 }
 Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[ \t]*\r?$') 'Angelscript workflow must retain record-v1.'
@@ -509,6 +521,37 @@ $taskReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\s
 $issueReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\implementation-issues.md') -Raw
 $knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\knowledge.md') -Raw
 $attachmentReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\attachments.md') -Raw
+
+foreach ($entry in ([ordered]@{
+    'openspec-continue-change' = $continueText
+    'openspec-update-change' = $updateText
+    'openspec-sync-specs' = $syncSpecText
+    'openspec-verify-change' = $verifyText
+}).GetEnumerator()) {
+    foreach ($token in @('Scenario-owned detail block', 'lists', 'complete Scenario Card')) {
+        Assert-True ($entry.Value.Contains($token)) "$($entry.Key) is missing flexible Scenario detail guidance: $token"
+    }
+}
+
+foreach ($token in @('Scenario-owned detail block', 'ordered or unordered lists', 'no Task state')) {
+    Assert-True ($openSpecEntryText.Contains($token)) "OpenSpec entry is missing flexible Scenario detail guidance: $token"
+    Assert-True ($skillsReadmeText.Contains($token)) "Skills README is missing flexible Scenario detail guidance: $token"
+    Assert-True ($liveConfigText.Contains($token)) "OpenSpec config is missing flexible Scenario detail guidance: $token"
+    Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec README is missing flexible Scenario detail guidance: $token"
+}
+
+$representativeScenarioDetails = [ordered]@{
+    'openspec\specs\harness\core\spec.md' = 'Interpret Codex Goal continuation'
+    'openspec\specs\harness\workspace\spec.md' = 'Coordinate concurrent agents'
+    'openspec\specs\harness\git\spec.md' = 'Report resumable partial completion'
+    'openspec\specs\harness\unreal\spec.md' = 'Time out a process'
+}
+foreach ($entry in $representativeScenarioDetails.GetEnumerator()) {
+    $text = Get-Content -Raw -LiteralPath (Join-Path $projectRoot $entry.Key)
+    $block = Get-ScenarioBlock -Text $text -Name $entry.Value
+    Assert-True ($block.Contains('> Details:')) "Representative Scenario lacks a Details block: $($entry.Value)"
+    Assert-True ($block -match '(?m)^> (?:-|1\.) ') "Representative Scenario lacks a quoted list: $($entry.Value)"
+}
 
 foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenario name', 'Preserve unspecified scenarios', 'requirement body', 'Remove delta-operation headers')) {
     Assert-True ($syncSpecText.Contains($token)) "Spec sync semantics are missing: $token"

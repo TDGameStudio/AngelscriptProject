@@ -15,8 +15,8 @@ rules:
   specs:
     - Record durable externally observable behavior rather than implementation steps.
     - For durable specification deltas, put each delta at specs/<capability-id>/spec.md and use ADDED, MODIFIED, REMOVED, or RENAMED Requirements sections.
-    - Follow .agents/skills/openspec/references/specs.md. Keep a clear WHEN and THEN, add optional Scenario Card detail only for complex behavior, and keep simple scenarios compact.
-    - Scenario Card detail is ordinary Markdown authoring guidance, not parser fields or a rigid template. In MODIFIED, a same-name scenario supplies the complete replacement card while unspecified scenarios remain unchanged.
+    - Follow .agents/skills/openspec/references/specs.md. Keep a clear WHEN and THEN; a complex case may add one Scenario-owned detail block with quoted labels, prose, ordered or unordered lists, examples, or tables, while simple scenarios stay compact.
+    - Scenario Card detail is ordinary Markdown with no Task state, not parser fields or a rigid template. Ordered lists describe durable behavior order or rule precedence, not implementation execution. In MODIFIED, a same-name scenario supplies the complete replacement card while unspecified scenarios remain unchanged.
   design:
     - Separate decisions and rationale from implementation detail; record alternatives only when they materially affect the choice.
     - Call out compatibility, migration, module boundaries, failure modes, and rollback when relevant.

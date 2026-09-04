@@ -34,6 +34,12 @@ Harness MUST use one Git-derived workspace model in both the primary checkout an
 - **WHEN** work is running under Codex `/goal`
 - **THEN** repository selection still comes from the explicit or discoverable WorkspaceRoot and no repository-mode state is created
 
+> Details:
+>
+> - Repository identity remains the explicit or current-directory-discovered `WorkspaceRoot`.
+> - `/goal` contributes continuation only; it does not choose a branch, create a worktree, or expand Git authority.
+> - Repeated continuation observes the same selected-workspace contract as an interactive call.
+
 #### Scenario: Reject a route target override
 - **GIVEN** Harness has resolved one exact selected Context
 - **WHEN** caller parameters supply a blank, conflicting, or different dispatcher-owned root or internal Context
@@ -194,14 +200,14 @@ Before a Task DAG is accepted, planning MUST map affected files, artifacts, and 
 
 ### Requirement: Flexible Scenario Card authoring
 
-Maintained Harness specifications SHALL express durable behavior through `Requirement` and `Scenario` headings, with one `WHEN` trigger and one `THEN` result in an ordinary behavioral scenario. Authors MAY add `GIVEN`, `AND`, or `BUT` clauses and quoted `Context`, `Inputs`, `Observables`, `Boundaries`, or `Verification` detail only when that information materially clarifies a complex behavior for a zero-context reader. Every optional clause and detail line SHALL remain ordinary Markdown and MUST NOT become a parser field, ordering rule, required placeholder, scenario identifier, checkbox, dependency edge, Ready state, or execution record.
+Maintained Harness specifications SHALL express durable behavior through `Requirement` and `Scenario` headings, with one `WHEN` trigger and one `THEN` result in an ordinary behavioral scenario. Authors MAY add `GIVEN`, `AND`, or `BUT` clauses and SHALL treat the Scenario heading as the owner of one optional progressive detail block after those clauses. That block MAY combine quoted `Context`, `Inputs`, `Observables`, `Boundaries`, `Verification`, or `Details` labels with useful prose, ordered or unordered lists, examples, and tables when the information materially clarifies a complex behavior for a zero-context reader. Every optional clause and detail element SHALL remain ordinary Markdown and MUST NOT become a parser field, ordering rule, required placeholder, scenario identifier, checkbox, dependency edge, Ready state, or execution record.
 
-Scenario Cards MUST retain the existing artifact ownership boundaries. Specs own durable externally observable behavior and stable behavioral or proof boundaries; design owns technical choices and rationale; tasks own affected paths, implementation steps, dependencies, and exact execution commands; attachments own one-off observations, run output, investigation history, and closure evidence. A `Verification` detail MAY identify a stable invariant, test family, or acceptance route, but MUST NOT embed transient output or impersonate task execution state. When the required `WHEN` and `THEN` already make a scenario clear, the author MUST omit unused optional clauses and detail labels.
+Scenario Cards MUST retain the existing artifact ownership boundaries. Specs own durable externally observable behavior, stable behavioral or proof boundaries, protocol order, rule precedence, and durable examples; design owns technical choices and rationale; tasks own affected paths, implementation steps, dependencies, and exact execution commands; attachments own one-off observations, run output, investigation history, and closure evidence. An ordered spec list MAY clarify durable behavior order or rule precedence but MUST NOT prescribe implementation execution. A `Verification` detail MAY identify a stable invariant, test family, or acceptance route, but MUST NOT embed transient output or impersonate task execution state. When the required `WHEN` and `THEN` already make a scenario clear, the author MUST omit the entire unused detail block.
 
 #### Scenario: Enrich a complex behavior scenario
-- **GIVEN** a durable behavior has multiple relevant preconditions, outputs, exclusions, or proof boundaries
+- **GIVEN** a durable behavior has multiple relevant preconditions, outputs, exclusions, proof boundaries, ordered results, or examples
 - **WHEN** an author records that behavior in a Harness specification
-- **THEN** the Scenario Card retains one clear behavioral flow and adds only the optional clauses and quoted detail that materially help a zero-context reader
+- **THEN** the Scenario Card retains one clear behavioral flow and adds one Scenario-owned detail block containing only the quoted metadata and ordinary Markdown that materially help a zero-context reader
 - **AND** each added detail remains durable, externally meaningful, and owned by the specification
 - **BUT** the card does not acquire task state, implementation steps, transient evidence, or a second machine-readable schema
 
@@ -209,13 +215,19 @@ Scenario Cards MUST retain the existing artifact ownership boundaries. Specs own
 >
 > Observables: Requirement and Scenario headings, the `WHEN` trigger, and the `THEN` result remain recognizable exactly as they are in a compact scenario.
 >
-> Boundaries: Optional labels may be omitted, reordered, or replaced by clearer ordinary Markdown without changing OpenSpec parser behavior.
+> Boundaries: Optional labels, prose, lists, examples, and tables may be omitted, reordered, or combined without changing OpenSpec parser behavior.
 >
-> Verification: OpenSpec authoring-contract fixtures and strict specification validation cover both rich and compact cards while preserving their Requirement and Scenario structure.
+> Verification: OpenSpec authoring-contract fixtures and strict specification validation cover both rich and compact cards while preserving complete detail blocks.
+>
+> Details:
+>
+> 1. Establish the durable behavioral spine with `WHEN` and `THEN`.
+> 2. Add only the context, sequence, rules, examples, or proof boundaries a zero-context reader needs.
+> 3. Keep implementation order and completion evidence in tasks and attachments.
 
 #### Scenario: Keep a simple behavior scenario compact
 - **WHEN** one trigger and one observable result completely express the durable behavior
-- **THEN** the Scenario Card keeps only its useful `WHEN` and `THEN` clauses instead of adding empty or boilerplate detail
+- **THEN** the Scenario Card keeps only its useful `WHEN` and `THEN` clauses instead of adding an empty or boilerplate detail block
 
 ### Requirement: Material implementation issue history
 

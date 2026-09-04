@@ -20,3 +20,12 @@ The system SHALL <!-- durable externally observable behavior -->.
 > Observables: <!-- optional; delete when unused -->
 > Boundaries: <!-- optional; delete when unused -->
 > Verification: <!-- optional stable oracle or test family; delete when unused -->
+>
+> Details: <!-- optional durable explanation; delete this whole block when unused -->
+>
+> 1. <!-- optional durable behavior order or rule precedence; not implementation steps -->
+> 2. <!-- optional next durable result; delete the list when unused -->
+>
+> - <!-- optional durable example, edge case, or boundary; delete when unused -->
+
+<!-- The Scenario-owned detail block may instead use concise prose, ordered or unordered lists, examples, or tables. It carries no Task state. -->

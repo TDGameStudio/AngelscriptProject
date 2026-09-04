@@ -41,7 +41,7 @@ Before creating or renaming a Change, follow the project `<domain>/<type>-<scope
 - Merge durable delta specs: `openspec-sync-specs`.
 - Apply close policy and archive: `openspec-archive-change`.
 
-For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Specification and Scenario Card authoring](references/specs.md), [Task DAG](references/tasks.md), [attachments and closure](references/attachments.md), [material implementation issues](references/implementation-issues.md), or [knowledge promotion](references/knowledge.md). Load the specification reference only when creating, modifying, synchronizing, or verifying durable specs.
+For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Specification and Scenario Card authoring](references/specs.md), [Task DAG](references/tasks.md), [attachments and closure](references/attachments.md), [material implementation issues](references/implementation-issues.md), or [knowledge promotion](references/knowledge.md). Load the specification reference only when creating, modifying, synchronizing, or verifying durable specs. A complex Scenario-owned detail block may use quoted labels, prose, ordered or unordered lists, examples, or tables with no Task state; preserve it as part of the complete Scenario Card.
 
 ## Deterministic boundary
 

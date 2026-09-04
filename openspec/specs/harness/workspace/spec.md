@@ -91,6 +91,12 @@ Harness MAY bind one exact registered WorkspaceRoot to the current PowerShell pr
 - **WHEN** two agents select different registered worktrees in separate PowerShell 7 sessions
 - **THEN** each process retains its own exact WorkspaceRoot and neither modifies the other's AgentConfig or session binding
 
+> Details:
+>
+> - Each session exposes only its own `WorkspaceRoot`, `PrimaryRoot`, and `GitCommonDir` to its child processes.
+> - Replacing one session's selection does not alter another session's binding or either workspace's managed identity.
+> - No machine-global active-workspace state mediates the two selections.
+
 #### Scenario: Replace a process-local selection
 - **WHEN** a caller explicitly selects another registered workspace in the same session
 - **THEN** the three workspace environment bindings are replaced together without retaining a mode or Goal name
