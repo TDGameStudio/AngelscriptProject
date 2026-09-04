@@ -111,10 +111,10 @@ AngelscriptProject/
 │   └── Tools/
 │       └── Tool.md                          # Internal tool documentation
 │
-├── Tools/                                   # Build/test/diagnostic scripts
-│   ├── RunBuild.ps1                         # Build entry
-│   ├── RunTests.ps1                         # Test entry
-│   ├── RunTestSuite.ps1                     # Suite runner
+├── Tools/                                   # Legacy wrappers, diagnostics, and OpenSpec source
+│   ├── RunBuild.ps1                         # Legacy deletion candidate; not a live entry
+│   ├── RunTests.ps1                         # Legacy deletion candidate; not a live entry
+│   ├── RunTestSuite.ps1                     # Legacy deletion candidate; not a live entry
 │   ├── openspec/                            # Portable Rust OpenSpec CLI (git submodule)
 │   ├── Bootstrap/                           # First-time setup
 │   ├── Shared/                              # Shared utility modules
@@ -126,7 +126,7 @@ AngelscriptProject/
 
 ## Architecture Overview
 
-This project is an **Unreal Engine 5.7 plugin** that integrates the AngelScript scripting language as a first-class alternative to Blueprints and C++. Its current product identity is `Unreal AngelScript 1.0.0`. The plugin was originally created by Hazelight Games; the underlying source retains AngelScript 2.33 WIP lineage with selective 2.38 backports, but those upstream numbers are no longer the product version.
+This project is an **Unreal Engine 5.8 plugin** that integrates the AngelScript scripting language as a first-class alternative to Blueprints and C++. Its current product identity is `Unreal AngelScript 1.0.0`. The plugin was originally created by Hazelight Games; the underlying source retains AngelScript 2.33 WIP lineage with selective 2.38 backports, but those upstream numbers are no longer the product version.
 
 ### Module Dependency Graph
 
@@ -277,7 +277,7 @@ Angelscript `.as` example scripts demonstrating core patterns (actor lifecycle, 
 - The project remains in its project-wide refactor, but the user has explicitly restored project Skill use. Every invocation remains governed by the Harness, workspace, submodule, review, and closure contracts in this section.
 - Default editing remains in the main checkout. Create or select another Git-registered worktree only when the user explicitly requests it; new worktree branches default to the exact requested name. Every operation uses one explicit or current-directory-discovered `WorkspaceRoot`. Codex `/goal` is external unattended continuation of the same work and is not a repository mode, branch convention, or workspace selector.
 - `.agents/skills/harness/SKILL.md` is the prepared project Skill entrypoint. Harness is a lightweight static router, not a daemon, database, Event Store, or custom agent loop. Its prepared surface exposes `workspace.*`, `git.*`, `openspec.*`, `task.status`, `harness.*`, `openspec.maintenance.status`, and the verified `ue.*` Unreal leaf routes.
-- The prepared Harness/Workspace harness requires PowerShell 7.0 or later (`Core`) and invokes `pwsh.exe` only. Windows PowerShell 5.1 is not a supported harness host; historical dual-host archives remain evidence, not current policy.
+- The Harness/Workspace entry requires PowerShell 7.0 or later (`Core`). Ordinary routes import and execute directly in the current PowerShell 7 process; intentional child `pwsh` processes are limited to isolated tests, Git hooks or native fixtures, and Harness-managed Unreal workers. Windows PowerShell 5.1 is not a supported harness host; historical dual-host archives remain evidence, not current policy.
 - `Plugins/Angelscript`, `Plugins/AngelscriptGameplayTags`, `Plugins/AngelscriptGAS`, and `Tools/openspec` are **git submodules**, not ordinary directories. A parent worktree must initialize the exact recorded gitlink OIDs; a verified local-object fallback is allowed when an upstream no longer serves an OID.
 - Commit and tag `Tools/openspec` first. For each release, the parent history receives only one final accepted package update containing the gitlink, manifest/docs, and bundled `openspec.exe`; candidate executables never receive parent commits.
 - Root `Tools` PowerShell entrypoints are legacy deletion candidates and are not the live Harness command surface. `Tools/openspec` is the intentional tracked-source exception; normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`.

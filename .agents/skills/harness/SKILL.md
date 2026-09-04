@@ -61,7 +61,7 @@ An explicitly requested Review may run inline or as an asynchronous subagent. As
 
 ## PowerShell entry
 
-PowerShell 7.0 or later (`Core`) is the only supported harness host. Keep one `pwsh.exe` session and import once:
+PowerShell 7.0 or later (`Core`) is the only supported harness host. In the current PowerShell 7 session, import once:
 
 ```powershell
 Import-Module ./.agents/skills/harness/scripts/Harness.psd1
@@ -74,6 +74,8 @@ Invoke-Harness -Command task.status -Context $context -Parameters @{ Change = 'd
 Invoke-Harness -Command ue.status -Context $context
 ```
 
+Once imported, ordinary Harness routes execute directly in that current process; `Invoke-Harness` does not launch another PowerShell host for dispatch. Intentional child `pwsh` processes are reserved for isolated test hosts, Git hooks or native fixtures, and Harness-managed Unreal workers whose process lifetime is part of the route contract.
+
 The selected Context is the dispatcher authority. Do not pass a different repository root or replacement Context through route parameters; matching explicit roots are only idempotent aliases, and `git.integrate` uses `SourceWorkspaceRoot` as its sole authorized different workspace.
 
 Every invocation returns the same small result envelope. `task.status` returns OpenSpec TaskPlan JSON in `data`; OpenSpec validates the frontmatter graph while Harness owns workspace selection and scheduling. Task Card detail below the machine-readable surface remains ordinary Markdown for agents and people.
@@ -85,9 +87,11 @@ The optional project Codex hooks run only fast, read-only `harness.status` at `S
 Run the core gates through one public test entry:
 
 ```powershell
-pwsh.exe -NoProfile -File .agents/skills/harness/scripts/Test-Harness.ps1 -Profile Quick
-pwsh.exe -NoProfile -File .agents/skills/harness/scripts/Test-Harness.ps1 -Profile Performance -WarmupRuns 3 -MeasurementRuns 15
-pwsh.exe -NoProfile -File .agents/skills/harness/scripts/Test-Harness.ps1 -Profile Integration
+& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Quick
+& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Performance -WarmupRuns 3 -MeasurementRuns 15
+& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Integration
 ```
+
+The public runner itself starts fresh bounded `pwsh` hosts for individual gates so module state cannot leak between tests; that is an intentional test-isolation boundary.
 
 Performance runs validate every timed sample. Raw `Summary.json` and `Samples.csv` remain below ignored `Saved/Harness/Performance/`; durable Change evidence keeps only a privacy-trimmed aggregate and its hashes. The default TaskStatus measurement uses an isolated temporary graph. Register accepted aggregates in the current Change and its attachment index before archive; ignored raw data alone is not durable evidence.

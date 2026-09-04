@@ -13,7 +13,7 @@ task_graph:
     "2.1": ["1.2"]
 ---
 
-- [ ] 2.1 Implement the route contract — verify: `pwsh.exe -NoProfile -File .agents/skills/harness/tests/Harness.Tests.ps1`
+- [ ] 2.1 Implement the route contract — verify: `& ./.agents/skills/harness/tests/Harness.Tests.ps1`
   > Files: `.agents/skills/harness/scripts/Harness.psm1`, `.agents/skills/harness/tests/Harness.Tests.ps1`
 
   1. Add the failing contract test.

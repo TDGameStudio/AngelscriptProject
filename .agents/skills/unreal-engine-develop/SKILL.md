@@ -7,11 +7,11 @@ description: Use after project Skills are enabled when Unreal Engine 5.8 targets
 
 This leaf provides the PowerShell 7 Unreal surface behind Harness. Enter through `Invoke-Harness`; do not call UE executables, private module functions, Skill-local scripts, or legacy root `Tools` wrappers directly.
 
-The restriction at the top of `AGENTS.md` remains authoritative. This prepared Skill does not enable itself during the project-wide refactor.
+Project Skills are enabled by `AGENTS.md`; this leaf still acquires only the authority of the exact selected Harness route and workspace.
 
 ## Start once
 
-Keep one PowerShell 7 process, import Harness once, and bind one exact workspace context:
+Keep one PowerShell 7 process, import Harness once, and bind one exact workspace context. The ordinary route dispatch stays in the caller process; a real UE operation starts a bounded Harness-managed worker only after planning and validation:
 
 ```powershell
 Import-Module ./.agents/skills/harness/scripts/Harness.psd1

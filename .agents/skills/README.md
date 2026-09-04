@@ -2,7 +2,7 @@
 
 `harness` is the project entrypoint. It selects a static route and loads only the matching leaf Skill/reference. It is not a daemon, workflow database, or custom agent loop.
 
-The prepared harness requires PowerShell 7.0 or later (`Core`) and uses `pwsh.exe`; Windows PowerShell 5.1 is not a supported Skill host.
+Harness requires PowerShell 7.0 or later (`Core`). Import it once and run ordinary routes directly in the current PowerShell 7 process; Windows PowerShell 5.1 is not a supported Skill host. Child `pwsh` processes are intentional only for isolated tests, hooks or native fixtures, and Harness-managed Unreal workers.
 
 ```text
 new feature / architecture / major behavior -> deep Explore -> decision-complete handoff -> create Change -> planning
@@ -30,7 +30,7 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 
 - `harness` — context, command routing, result envelope, and progressive-loading rules.
 - `workspace-lifecycle` — workspace identity, exact submodule bootstrap, local configuration, session activation, verification, and explicit cleanup.
-- `git-operations` — scoped parent/submodule commits, reviewed local integration, and explicit non-force push.
+- `git-operations` — scoped parent/submodule commits, verified linked-workspace integration, and explicit non-force push.
 - `unreal-engine-develop` — UE 5.8 discovery, typed builds, Automation tests and suites, commandlets, UBT capabilities, process observation, progress, and explicit cancellation through `ue.*` routes.
 - `systematic-debugging` — evidence-first diagnosis before fixes or replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.

@@ -107,10 +107,10 @@ AngelscriptProject/
 │   └── Tools/
 │       └── Tool.md                          # 内部工具说明
 │
-├── Tools/                                   # 构建/测试/诊断脚本
-│   ├── RunBuild.ps1                         # 构建入口
-│   ├── RunTests.ps1                         # 测试入口
-│   ├── RunTestSuite.ps1                     # Suite 运行器
+├── Tools/                                   # 旧 wrapper、诊断脚本与 OpenSpec 源码
+│   ├── RunBuild.ps1                         # 待删除旧 wrapper；不是活动入口
+│   ├── RunTests.ps1                         # 待删除旧 wrapper；不是活动入口
+│   ├── RunTestSuite.ps1                     # 待删除旧 wrapper；不是活动入口
 │   ├── openspec/                            # 便携 Rust OpenSpec CLI（git 子模块）
 │   ├── Bootstrap/                           # 首次配置
 │   ├── Shared/                              # 共享工具模块
@@ -122,7 +122,7 @@ AngelscriptProject/
 
 ## 架构概览
 
-本项目是一个 **Unreal Engine 5.7 插件**，将 AngelScript 脚本语言集成为 Blueprint 和 C++ 的一等替代方案。当前产品身份为 `Unreal AngelScript 1.0.0`。该插件最初由 Hazelight Games 创建；底层源码保留 AngelScript 2.33 WIP lineage，并选择性回移 2.38 改进，但这些上游数字不再作为产品版本。
+本项目是一个 **Unreal Engine 5.8 插件**，将 AngelScript 脚本语言集成为 Blueprint 和 C++ 的一等替代方案。当前产品身份为 `Unreal AngelScript 1.0.0`。该插件最初由 Hazelight Games 创建；底层源码保留 AngelScript 2.33 WIP lineage，并选择性回移 2.38 改进，但这些上游数字不再作为产品版本。
 
 ### 模块依赖关系
 
@@ -222,16 +222,16 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 ## 本地配置
 
-- 每个 workspace 根目录的 `AgentConfig.ini` 保存本机路径及由 Hardness 管理的 workspace 身份，并已被 `.gitignore` 忽略。
-- 使用 Hardness `workspace.bootstrap` 初始化或修复配置，再通过 `workspace.config.set` 设置非托管键。Hardness 从 canonical primary checkout 复制共享本机设置，并始终把 `Paths.ProjectFile` 重新绑定到当前 workspace。
+- 每个 workspace 根目录的 `AgentConfig.ini` 保存本机路径及由 Harness 管理的 workspace 身份，并已被 `.gitignore` 忽略。
+- 使用 Harness `workspace.bootstrap` 初始化或修复配置，再通过 `workspace.config.set` 设置非托管键。Harness 从 canonical primary checkout 复制共享本机设置，并始终把 `Paths.ProjectFile` 重新绑定到当前 workspace。
 - 构建、测试入口从 `Paths.EngineRoot` 读取引擎路径；若受管 workspace 身份或当前 PowerShell 会话选择与目标根目录不匹配，则拒绝执行。
 - 过时的 `References.HazelightAngelscriptEngineRoot` 键无效；bootstrap 必须移除它，配置写入不得恢复它，执行入口遇到残留键时必须拒绝继续。
-- `AgentConfig.ini`、Git 注册、workspace/engine 锁与 `Saved/Hardness` 证据始终使用真实物理路径。Windows 下 UE 子进程统一使用 Hardness 自动分配的临时短盘符执行视图；该盘符不会写回配置，`PlanOnly` 不创建映射或分配记录，真实运行只清理经过精确目标和所有权验证的映射。
+- `AgentConfig.ini`、Git 注册、workspace/engine 锁与 `Saved/Harness` 证据始终使用真实物理路径。Windows 下 UE 子进程统一使用 Harness 自动分配的临时短盘符执行视图；该盘符不会写回配置，`PlanOnly` 不创建映射或分配记录，真实运行只清理经过精确目标和所有权验证的映射。
 
 ## 构建与验证原则
 
-- UE 5.8 的发现、构建、Automation、suite、commandlet、进程、进度与取消统一使用 Hardness `ue.*` 路由；根 `Tools` PowerShell wrapper 不是回退入口。旧 wrapper 只有在长 worktree 的默认 executor、Smoke、commandlet、suite、取消及并行 worktree 真实门禁通过后才能原子删除。
-- 当前 Hardness suite catalog 只承载 UE Automation。Standalone Debug/Release、打包、coverage、release 编排、CachePackage、external smoke 与完整 StaticJIT pipeline 继续作为显式 deferred capability，直到独立 Change 提供验证过的路由。
+- UE 5.8 的发现、构建、Automation、suite、commandlet、进程、进度与取消统一使用 Harness `ue.*` 路由；根 `Tools` PowerShell wrapper 是待删除的旧入口，不是回退入口。
+- 当前 Harness suite catalog 只承载 UE Automation。Standalone Debug/Release、打包、coverage、release 编排、CachePackage、external smoke 与完整 StaticJIT pipeline 继续作为显式 deferred capability，直到独立 Change 提供验证过的路由。
 - Standalone CTest 与 UE Automation、NativeCore、catalogued C++ baseline 是相互独立的统计范围；Debug 与 Release 是同一批测试的不同配置，不得把两者计数相加。
 - 状态导出入口：`FAngelscriptStateDump::DumpAll()`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateDump.h`），控制台命令 `as.DumpEngineState`（`Plugins/Angelscript/Source/AngelscriptRuntime/Dump/`）。Dump API 还提供 `CaptureSnapshot`、`DiffSnapshots`、`DumpSnapshot` 和 `DumpDiff`；`DumpAll()` 会写出 `EngineStateSnapshot.csv` 与分类 snapshot 表，diff helper 会写出 `StateDiff.csv` 和 `StateDiffSummary.csv`。
 - 保持 dump 架构为纯外部观察者：优先通过已有 public/runtime API 读取，不要为 dump 侵入原有业务类型。
@@ -267,13 +267,13 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 
 ## Harness、子模块与 Worktree
 
-- 当前项目仍处于全面重构期，但项目 Skill 已由用户明确恢复使用。所有调用继续受本节的 Hardness、workspace、子模块、Review 与收口契约约束。
-- 默认编辑位置仍是 Current/main workspace。除非用户明确要求 worktree，或明确启动了由 Goal 持有的任务，否则不要创建、切换或继续使用 worktree。一旦选择 Goal 模式，它使用 canonical `.worktrees/<goal>` 与分支 `goal/<goal>`。
-- `.agents/skills/hardness/SKILL.md` 是准备好的项目 Skill 入口。Hardness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前核心公开 `workspace.*`、`git.*`、`openspec.*` 与 `task.status`。Unreal 路由和公共 `Tools` wrapper 迁移仍延后到独立 `unreal-engine-develop` change。
+- 当前项目仍处于全面重构期，但项目 Skill 已由用户明确恢复使用。所有调用继续受本节的 Harness、workspace、子模块、显式 Review 与收口契约约束。
+- 默认编辑位置仍是 main checkout。只有用户明确要求时才创建或选择另一个 Git 已注册的 worktree；新 worktree 默认使用用户明确请求的名称作为分支。Codex `/goal` 只是同一工作的外部无人值守续跑机制，不是仓库模式、分支规范或 workspace 选择器。
+- `.agents/skills/harness/SKILL.md` 是项目 Skill 入口。Harness 只是轻量静态路由，不是 daemon、数据库、Event Store 或自定义 Agent loop；当前公开 `workspace.*`、`git.*`、`openspec.*`、`task.status`、`harness.*`、`openspec.maintenance.status` 与已验证的 `ue.*` 路由。
 - `Plugins/Angelscript`、`Plugins/AngelscriptGameplayTags`、`Plugins/AngelscriptGAS` 与 `Tools/openspec` 都是 **git 子模块**。父 worktree 必须初始化 gitlink 记录的精确 OID；远端不再提供该对象时，只允许从已验证的本机对象库回退。
 - 先提交并标记 `Tools/openspec`。每个 release 在父仓库历史中只允许一次最终 accepted package 更新，其中包含 gitlink、manifest/docs 与 bundled `openspec.exe`；候选 EXE 不得进入父仓库提交。
-- 使用 Hardness `workspace.new` / `workspace.bootstrap` 初始化，并用 `workspace.activate` 将所选 workspace 绑定到当前 PowerShell 进程。仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
-- Goal 工作流终态是 committed、verified、reviewed、ready-to-integrate。`git.commit` 负责带明确 scope 的 Git 收口；`git.integrate`、非 force 的 `git.push` 与 `workspace.remove` 是相互独立且仅在用户明确要求时执行的操作。验证和 Review Gate 仍由 agent 负责，清理 worktree 时保留 Goal 分支。
+- 使用 Harness `workspace.new` / `workspace.bootstrap` 初始化，并用 `workspace.activate` 将所选 workspace 绑定到当前 PowerShell 进程。普通 Harness 路由直接在这个 PowerShell 7 进程中执行；只有隔离测试、Git hook/native fixture 或 Harness 管理的 UE worker 才有意启动受限的子 `pwsh` 进程。仅在确认忽略后复制 `AgentConfig.ini`；绝不丢弃 dirty 子模块；worktree 创建本身不生成 OpenSpec change 骨架。
+- 成功工作应达到 committed、verified、closure-ready；只有用户或外部 agent 明确请求 Review 时，才额外要求对应 Review resolved 或 superseded。`git.commit` 负责带明确 scope 的 Git 收口；`git.integrate`、非 force 的 `git.push` 与 `workspace.remove` 是相互独立且仅在用户明确要求时执行的操作，清理时保留源分支。
 - 目标代码位于子模块时，先提交子模块，再提交父仓库 gitlink。完整工作流、回退策略、scope guard 和故障排查参见 **`Documents/Guides/SubmoduleWorktreeWorkflow.md`**。
 
 ## OpenSpec 与 TODO
@@ -288,11 +288,11 @@ Angelscript `.as` 示例脚本，演示核心模式（Actor 生命周期、子�
 - 稳定的架构边界见 `Documents/Guides/OpenSpecSystemRefactor.md`。
 
 - `Documents/Plans/` **已废弃** — 仅保留作历史参考。所有新的计划、设计、任务跟踪与归档生命周期使用 `openspec/changes/<change>/` 下的 OpenSpec 产物。
-- 只有用户或 Goal 明确命名/拥有 OpenSpec change 时才启用 OpenSpec。便携 Rust CLI 只提供确定性记录原语；生命周期策略拆分到 `openspec-explore`、`openspec-continue-change`、`openspec-update-change`、`openspec-apply-change`、`openspec-verify-change`、`openspec-sync-specs` 与 `openspec-archive-change`。
+- 只有用户或已接受工作明确选择 OpenSpec Change 时才启用 OpenSpec。便携 Rust CLI 只提供确定性记录原语；生命周期策略拆分到 `openspec-explore`、`openspec-continue-change`、`openspec-update-change`、`openspec-apply-change`、`openspec-verify-change`、`openspec-sync-specs` 与 `openspec-archive-change`。
 - `tasks.md` 是唯一当前 Task DAG：文件顶部 YAML `task_graph.depends_on` 为稳定 `X.Y` ID 保存依赖边，OpenSpec 派生 `after` 与 `ready`。每个任务继续保留精确 `Files` 与验证；不要维护第二份 DAG、GraphRevision、snapshot tree 或 resume 状态。
-- Goal 模式在已授权目标内自主调查、Replan、实现、验证和 re-review。Review finding 必须先 triage；只有 requirement、design、验收、Task 边界、依赖边或完成证据失效时才 Replan。
+- 在已授权目标内自主调查、Replan、实现和验证；如果存在明确登记的 Review，则同时处理 finding 与必要的 re-review。只有 requirement、design、验收、Task 边界、依赖边或完成证据失效时才 Replan。
 - Change 附件固定放在 `attachments/`，默认只从 `attachments/INDEX.md` 渐进加载。Review、implementation、talk、replan、knowledge、script 和 data 记录都不能复制任务状态。
-- Archive 是明确 closure gate。`completed` 要求任务完成、Review Gate 关闭、证据齐全并处理 spec sync；`abandoned` / `superseded` 必须提供原因和每个未完成任务的 disposition。CLI archive 始终是纯确定性 move，不合并 specs。
+- Archive 是明确 closure gate。`completed` 要求任务完成、证据齐全、处理 spec sync，并关闭或 supersede 所有已明确登记的 Review；它不要求自动创建 Review 或写 `not required` 占位。`abandoned` / `superseded` 必须提供原因和每个未完成任务的 disposition。CLI archive 始终是纯确定性 move，不合并 specs。
 - Plan-only 仍是一等模式：产出可直接执行的 proposal/spec/design/Task DAG 后停止；记录深度与风险相称。
 - TODO 应围绕插件目标拆解。涉及重命名、模块迁移、对外 API 调整时，同步梳理受影响文件和文档。
 

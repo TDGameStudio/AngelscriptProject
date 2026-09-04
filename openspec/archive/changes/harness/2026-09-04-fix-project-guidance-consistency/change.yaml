@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_23cb7c14-743e-4218-9b6b-317fc9585c2d
+  id: harness/fix-project-guidance-consistency
+  title: fix-project-guidance-consistency
+workflow: angelscript
+created_at: 2026-09-04T03:39:49Z
+archived_at: 2026-09-04T03:51:11Z
+archive_schema: closure-v1
+closure:
+  kind: completed

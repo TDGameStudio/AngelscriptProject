@@ -1,6 +1,6 @@
 # AngelscriptProject
 
-本仓库是 **Unreal AngelScript 1.0.0** 的宿主工程。真正交付物是 `Plugins/Angelscript/`：一份深度嵌入 Unreal Engine 5.7 的 AngelScript 方言与运行时，让脚本成为和 Blueprint、C++ 并列的选项。仓库本身只负责开发与验证。
+本仓库是 **Unreal AngelScript 1.0.0** 的宿主工程。真正交付物是 `Plugins/Angelscript/`：一份深度嵌入 Unreal Engine 5.8 的 AngelScript 方言与运行时，让脚本成为和 Blueprint、C++ 并列的选项。仓库本身只负责开发与验证。
 
 ---
 
@@ -11,7 +11,7 @@
 | **产品** | Unreal AngelScript `1.0.0`（编码 `10000`） |
 | **目标** | 把 `Plugins/Angelscript` 维护为一个**独立可复用**的 AngelScript 插件 |
 | **来源** | 最初来自 Hazelight Games 公开的 [Unreal Angelscript](http://angelscript.hazelight.se) 集成；本仓库走纯插件路线，不改 UE 引擎核心 |
-| **引擎版本** | Unreal Engine `5.7` |
+| **引擎版本** | Unreal Engine `5.8` |
 | **当前阶段** | 核心运行时、编辑器集成、测试基础设施已稳定；正在补齐若干能力闭环与对外交付入口 |
 
 ---
@@ -138,7 +138,7 @@ AngelscriptProject/
 ├── .agents/                     # Harness + OpenSpec 项目技能适配说明
 ├── openspec/                    # OpenSpec change 产物目录（由 CLI 在存在 change 时维护）
 ├── Reference/                   # 外部参考仓库（不入库，仅本地比对用）
-├── Tools/                       # 本地辅助脚本（构建/测试/引导/分析）
+├── Tools/                       # 旧 wrapper 与诊断工具；Tools/openspec 是跟踪的源码例外
 ├── AgentConfig.ini              # 机器本地配置（已 gitignore，需 bootstrap 生成）
 ├── AGENTS.md / AGENTS_ZH.md     # AI Agent 工作指引（项目规范来源）
 ├── AngelscriptProject.uproject  # UE 工程文件
@@ -154,10 +154,10 @@ AngelscriptProject/
 | 项 | 要求 |
 |----|------|
 | OS | Windows 10 / 11（命令以 PowerShell 与 cmd 为例） |
-| Unreal Engine | 5.7（源码版本，需要本地完整构建） |
+| Unreal Engine | 5.8（源码版本，需要本地完整构建） |
 | Visual Studio | 2022 (Desktop development with C++) |
 | .NET | UE 自带 .NET 8.0 SDK |
-| PowerShell | 5.1+ 或 PowerShell Core 7+ |
+| PowerShell | 7.0+（Core） |
 
 ### 1.1 AI 协作与计划管理依赖
 
@@ -165,10 +165,10 @@ AngelscriptProject/
 
 | 依赖 | 用途 |
 |------|------|
-| Harness | 选择 Current/Goal 工作区、渐进加载 Skill，并管理 review/replan/closure 门禁 |
+| Harness | 选择一个精确 Git workspace、渐进加载 Skill，并管理显式 review、replan 与 closure 门禁 |
 | Portable OpenSpec | 管理 Change 生命周期：`proposal.md`、`design.md`、`specs/*`、`tasks.md`、验证与归档 |
 
-在 PowerShell 7 会话中通过 Harness 检查项目内 OpenSpec：
+在当前 PowerShell 7 会话中直接导入 Harness 并检查项目内 OpenSpec；普通路由不会再启动一个 PowerShell 进程：
 
 ```powershell
 Import-Module .\.agents\skills\harness\scripts\Harness.psd1
@@ -236,27 +236,36 @@ DefaultTimeoutMs=600000
 
 ### 3. 构建
 
-仓库**唯一标准构建入口**：
+UE 构建统一使用所选 workspace 的 Harness `ue.build` 路由。可先用 `PlanOnly` 检查完整命令，再去掉该开关执行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Label first-build -TimeoutMs 180000
+Invoke-Harness -Command ue.build -Context $context -Parameters @{
+  TimeoutMs = 180000
+  PlanOnly = $true
+}
 ```
 
-脚本会自动读取 `AgentConfig.ini`，并把日志写到独立目录。详见 `Documents/Guides/Build.md`（含规则约束、超时上限、并发安全策略）。
+Harness 会读取 `AgentConfig.ini`，并为每次运行创建独立记录和日志。详见 `.agents/skills/unreal-engine-develop/SKILL.md`；根 `Tools` PowerShell wrapper 是旧入口，不是回退入口。
 
 ### 4. 运行测试
 
-仓库**唯一标准测试入口**：
+UE Automation 与具名 suite 统一使用 Harness `ue.test` / `ue.suite.run` 路由：
 
 ```powershell
-# 跑全量测试
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTests.ps1 -Label first-test -TimeoutMs 600000
+# 跑一个精确 Automation 前缀
+Invoke-Harness -Command ue.test -Context $context -Parameters @{
+  TestPrefix = 'Angelscript.TestModule.Bindings.'
+  TimeoutMs = 600000
+}
 
-# 跑具名测试套件
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunTestSuite.ps1 -SuiteName <suite> -TimeoutMs 600000
+# 跑配置中的具名 suite
+Invoke-Harness -Command ue.suite.run -Context $context -Parameters @{
+  Suite = 'All'
+  TimeoutMs = 600000
+}
 ```
 
-详见 `Documents/Guides/Test.md`。
+先用对应路由的 `PlanOnly` 检查选择和执行参数。Standalone、coverage、package、release、CachePackage 与完整 StaticJIT pipeline 仍是独立 deferred capability，不会回退到根 `Tools` wrapper。
 
 ### 5. 在编辑器中编辑 / 运行 `.as` 脚本
 
@@ -308,7 +317,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 ### OpenSpec 计划管理
 
-OpenSpec 是当前项目的权威记录系统；便携 CLI 负责确定性的记录操作，Harness 负责探索、执行、review、replan 与 closure 策略。明确采用 OpenSpec 的工作统一进入 `openspec/changes/<domain>/<change>/`：
+对于明确采用 OpenSpec 的工作，活动 Change 是计划、任务与收口状态的权威记录；便携 CLI 负责确定性的记录操作，Harness 负责探索、执行、显式 review、replan 与 closure 策略。重构期的既有 current spec 仍需与代码、测试和最新有效 Change 交叉核对。相关工作统一进入 `openspec/changes/<domain>/<change>/`：
 
 - `openspec-explore`：仅在目标 Change 创建前进行深度探索并形成 decision-complete handoff。
 - `openspec-continue-change` / `openspec-update-change`：创建下一份规划产物，或在证据门禁下修订现有真相。

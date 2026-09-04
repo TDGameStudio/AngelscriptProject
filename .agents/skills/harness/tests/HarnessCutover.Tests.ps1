@@ -14,12 +14,52 @@ function Assert-Equal {
     if ($Expected -ne $Actual) { throw "Assertion failed: $Message (expected '$Expected', actual '$Actual')" }
 }
 
+function Assert-Contains {
+    param([string]$Text, [string]$Expected, [string]$Message)
+    if (-not $Text.Contains($Expected, [System.StringComparison]::Ordinal)) {
+        throw "Assertion failed: $Message (missing '$Expected')"
+    }
+}
+
+function Assert-NotContains {
+    param([string]$Text, [string]$Forbidden, [string]$Message)
+    if ($Text.Contains($Forbidden, [System.StringComparison]::Ordinal)) {
+        throw "Assertion failed: $Message (found '$Forbidden')"
+    }
+}
+
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 $harnessManifest = Join-Path $projectRoot '.agents\skills\harness\scripts\Harness.psd1'
 $legacyManifest = Join-Path $projectRoot '.agents\skills\hardness\scripts\Hardness.psd1'
 
 Assert-True (Test-Path -LiteralPath $harnessManifest -PathType Leaf) 'the canonical Harness module exists'
 Assert-True (-not (Test-Path -LiteralPath $legacyManifest)) 'the old Hardness module path is absent'
+
+$agentsEnglish = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'AGENTS.md')
+$agentsChinese = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'AGENTS_ZH.md')
+$readme = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'README.md')
+$skillIndex = Get-Content -Raw -LiteralPath (Join-Path $projectRoot '.agents\skills\README.md')
+$harnessSkill = Get-Content -Raw -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\SKILL.md')
+$taskDag = Get-Content -Raw -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\references\task-dag.md')
+$unrealSkill = Get-Content -Raw -LiteralPath (Join-Path $projectRoot '.agents\skills\unreal-engine-develop\SKILL.md')
+
+Assert-Contains $agentsEnglish 'Unreal Engine 5.8 plugin' 'English agent guidance uses the current engine baseline'
+Assert-Contains $agentsChinese 'Unreal Engine 5.8 插件' 'Chinese agent guidance uses the current engine baseline'
+Assert-Contains $readme 'Unreal Engine `5.8`' 'the root README uses the current engine baseline'
+Assert-Contains $readme '| PowerShell | 7.0+（Core） |' 'the root README requires the supported PowerShell host'
+Assert-Contains $readme 'Invoke-Harness -Command ue.build' 'the root README routes builds through Harness'
+Assert-Contains $readme 'Invoke-Harness -Command ue.test' 'the root README routes tests through Harness'
+Assert-NotContains $readme 'Current/Goal' 'the root README does not invent repository modes'
+Assert-NotContains $readme 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Run' 'the root README does not publish legacy UE wrappers'
+Assert-NotContains $agentsChinese 'Hardness' 'Chinese live guidance uses only the Harness identity'
+Assert-NotContains $agentsChinese 'Goal 模式' 'Chinese live guidance treats Codex Goal as continuation only'
+Assert-NotContains $agentsChinese 'Review Gate' 'Chinese live guidance does not require automatic Review cadence'
+Assert-NotContains $unrealSkill 'does not enable itself' 'the Unreal Skill acknowledges that project Skills are enabled'
+Assert-Contains $skillIndex 'directly in the current PowerShell 7 process' 'the Skill index distinguishes direct route invocation'
+Assert-Contains $harnessSkill 'ordinary Harness routes execute directly in that current process' 'the Harness entry documents direct invocation'
+Assert-Contains $harnessSkill 'Intentional child `pwsh` processes' 'the Harness entry bounds isolated child hosts'
+Assert-Contains $taskDag '& ./.agents/skills/harness/tests/Harness.Tests.ps1' 'task verification examples use the current PowerShell process'
+Assert-Contains $unrealSkill 'ordinary route dispatch stays in the caller process' 'the Unreal Skill distinguishes managed workers from dispatch'
 
 $moduleManifests = @(
     $harnessManifest
