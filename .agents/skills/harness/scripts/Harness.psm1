@@ -463,6 +463,39 @@ function Get-HarnessCommand {
     return $null
 }
 
+function Set-HarnessAuthoritativePathParameter {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Values,
+        [Parameter(Mandatory = $true)][string[]]$Names,
+        [Parameter(Mandatory = $true)][string]$CanonicalName,
+        [Parameter(Mandatory = $true)][string]$ExpectedValue,
+        [Parameter(Mandatory = $true)][string]$RouteName
+    )
+
+    foreach ($name in $Names) {
+        if (-not $Values.ContainsKey($name)) {
+            continue
+        }
+        $requestedValue = [string]$Values[$name]
+        $matchesContext = $false
+        if (-not [string]::IsNullOrWhiteSpace($requestedValue)) {
+            try {
+                $matchesContext = Test-HarnessPathEqual -Left $requestedValue -Right $ExpectedValue
+            }
+            catch {
+                $matchesContext = $false
+            }
+        }
+        if (-not $matchesContext) {
+            throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$RouteName' parameter '$name' must match the selected Harness Context value '$ExpectedValue'; received '$requestedValue'.")
+        }
+    }
+    foreach ($name in $Names) {
+        [void]$Values.Remove($name)
+    }
+    $Values[$CanonicalName] = $ExpectedValue
+}
+
 function Add-HarnessContextDefaults {
     param(
         [Parameter(Mandatory = $true)]$Route,
@@ -476,44 +509,35 @@ function Add-HarnessContextDefaults {
     }
     switch ($Route.Name) {
         { $_ -like 'ue.*' } {
-            if ($values.ContainsKey('WorkspaceRoot') -and
-                -not (Test-HarnessPathEqual -Left ([string]$values.WorkspaceRoot) -Right ([string]$Context.WorkspaceRoot))) {
-                throw "Unreal route WorkspaceRoot '$($values.WorkspaceRoot)' must match the selected context WorkspaceRoot '$($Context.WorkspaceRoot)'."
-            }
-            $values.WorkspaceRoot = $Context.WorkspaceRoot
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        { $_ -in @('workspace.list', 'workspace.status') } {
-            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
+        { $_ -in @(
+                'workspace.list', 'workspace.status', 'workspace.bootstrap', 'workspace.verify', 'workspace.activate',
+                'workspace.config.status', 'workspace.config.get', 'workspace.config.set'
+            ) } {
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        'workspace.new'      {
-            if (-not $values.ContainsKey('RepositoryRoot')) { $values.RepositoryRoot = $Context.PrimaryRoot }
+        'workspace.new' {
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
         }
-        'workspace.bootstrap' { if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot } }
-        'workspace.verify'   { if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot } }
-        'workspace.activate' {
-            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
-        }
-        { $_ -in @('workspace.config.status', 'workspace.config.get', 'workspace.config.set', 'git.status', 'git.push') } {
-            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
-        }
-        'git.commit' {
-            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.WorkspaceRoot }
+        { $_ -in @('git.status', 'git.commit', 'git.push') } {
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
         'git.integrate' {
-            if (-not $values.ContainsKey('WorkspaceRoot')) { $values.WorkspaceRoot = $Context.PrimaryRoot }
+            if (-not (Test-HarnessPathEqual -Left ([string]$Context.WorkspaceRoot) -Right ([string]$Context.PrimaryRoot))) {
+                throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route 'git.integrate' requires the canonical primary Harness Context; selected '$($Context.WorkspaceRoot)'.")
+            }
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        'workspace.remove'   {
-            if ($values.ContainsKey('RepositoryRoot') -and -not (Test-HarnessPathEqual -Left ([string]$values.RepositoryRoot) -Right ([string]$Context.PrimaryRoot))) {
-                throw 'workspace.remove RepositoryRoot must match the context PrimaryRoot.'
-            }
-            if ($values.ContainsKey('WorktreeRoot') -and -not (Test-HarnessPathEqual -Left ([string]$values.WorktreeRoot) -Right ([string]$Context.WorkspaceRoot))) {
-                throw 'workspace.remove WorktreeRoot must match the context WorkspaceRoot.'
-            }
-            $values.RepositoryRoot = $Context.PrimaryRoot
-            $values.WorktreeRoot = $Context.WorkspaceRoot
+        'workspace.remove' {
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
+            Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorktreeRoot') -CanonicalName 'WorktreeRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
         { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status') } {
-            if (-not $values.ContainsKey('Context')) { $values.Context = $Context }
+            if ($values.ContainsKey('Context')) {
+                throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$($Route.Name)' receives Context only from the Harness dispatcher; caller replacement is forbidden.")
+            }
+            $values.Context = $Context
         }
     }
     return $values

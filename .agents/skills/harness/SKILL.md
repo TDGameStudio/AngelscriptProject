@@ -74,6 +74,8 @@ Invoke-Harness -Command task.status -Context $context -Parameters @{ Change = 'd
 Invoke-Harness -Command ue.status -Context $context
 ```
 
+The selected Context is the dispatcher authority. Do not pass a different repository root or replacement Context through route parameters; matching explicit roots are only idempotent aliases, and `git.integrate` uses `SourceWorkspaceRoot` as its sole authorized different workspace.
+
 Every invocation returns the same small result envelope. `task.status` returns OpenSpec TaskPlan JSON in `data`; OpenSpec validates the frontmatter graph while Harness owns workspace selection and scheduling. Task Card detail below the machine-readable surface remains ordinary Markdown for agents and people.
 
 Unreal execution uses the same context and lazy-loads `unreal-engine-develop` only on the first `ue.*` route. Prefer `PlanOnly` before committing resources, `NoWait` when the caller wants an asynchronous `RunId`, `ue.run.status` for one managed run, and `ue.process.list` for a bounded machine view. Same-workspace operations remain exclusive; eligible Installed Engine builds may share an Engine lane across distinct worktrees. Load the leaf's [concurrency reference](../unreal-engine-develop/references/concurrency.md) only when selecting `Auto`, `Parallel`, or `Serialize`, choosing `Auto`, `Wait`, or `Fail`, or interpreting unknown progress.

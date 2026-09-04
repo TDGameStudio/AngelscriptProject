@@ -263,6 +263,12 @@ goal: Prove installation audit rejects an invalid active Change identity.
     [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'Fixture.uproject'), "{}`n")
     $taskWorkspaceContext = New-HarnessContext -WorkspaceRoot $taskWorkspaceRoot
 
+    $alternateRepositoryRoot = Join-Path $repoRoot 'Tools\openspec'
+    $retargetedGitStatus = Invoke-Harness -Command 'git.status' -Context $context -Parameters @{ WorkspaceRoot = $alternateRepositoryRoot }
+    Assert-Equal 'Failed' $retargetedGitStatus.status 'selected Context rejects a Git route retargeted to another repository'
+    Assert-Equal 'ContextAuthorityMismatch' $retargetedGitStatus.error.code 'a rejected route retarget exposes the stable authority error code'
+    Assert-True ($null -eq $retargetedGitStatus.data) 'route authority rejection occurs before the alternate leaf is invoked'
+
     $taskWorkspaceInit = Invoke-Harness -Command 'openspec.init' -Context $taskWorkspaceContext -ArgumentList @(
         '--project-id', 'harness-task-workspace',
         '--title', 'Harness Task Workspace Fixture'
@@ -477,6 +483,99 @@ task_graph:
     Assert-Equal 'feature/fixture-workspace' $workspaceContext.Branch 'context preserves the actual branch name'
     Assert-True ('Mode' -notin @($workspaceContext.PSObject.Properties.Name)) 'linked context has no repository mode'
     Assert-True ('GoalName' -notin @($workspaceContext.PSObject.Properties.Name)) 'linked context has no Goal name'
+
+    $workspaceAuthorityCases = @(
+        [pscustomobject]@{ Route = 'workspace.list'; Parameters = @{ WorkspaceRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.status'; Parameters = @{ ProjectRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.new'; Parameters = @{ RepositoryRoot = $fixtureWorkspace } },
+        [pscustomobject]@{ Route = 'workspace.bootstrap'; Parameters = @{ WorkspaceRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.verify'; Parameters = @{ ProjectRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.activate'; Parameters = @{ WorkspaceRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.config.status'; Parameters = @{ ProjectRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.config.get'; Parameters = @{ WorkspaceRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.config.set'; Parameters = @{ ProjectRoot = $fixtureProject } },
+        [pscustomobject]@{ Route = 'workspace.remove'; Parameters = @{ RepositoryRoot = $fixtureWorkspace } },
+        [pscustomobject]@{ Route = 'workspace.remove'; Parameters = @{ WorktreeRoot = $fixtureProject } }
+    )
+    foreach ($authorityCase in $workspaceAuthorityCases) {
+        $rejected = Invoke-Harness -Command $authorityCase.Route -Context $workspaceContext -Parameters $authorityCase.Parameters
+        Assert-Equal 'Failed' $rejected.status "$($authorityCase.Route) rejects a dispatcher-owned workspace override"
+        Assert-Equal 'ContextAuthorityMismatch' $rejected.error.code "$($authorityCase.Route) reports the stable context authority failure"
+        Assert-True ($null -eq $rejected.data) "$($authorityCase.Route) rejects the override before leaf data exists"
+    }
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixtureProject 'AgentConfig.ini'))) 'rejected workspace retargets do not bootstrap or configure the alternate target'
+
+    foreach ($routeName in @('git.status', 'git.commit', 'git.push')) {
+        $rejected = Invoke-Harness -Command $routeName -Context $workspaceContext -Parameters @{ ProjectRoot = $fixtureProject }
+        Assert-Equal 'Failed' $rejected.status "$routeName rejects an alternate Git target"
+        Assert-Equal 'ContextAuthorityMismatch' $rejected.error.code "$routeName reports the stable context authority failure"
+        Assert-True ($null -eq $rejected.data) "$routeName rejects before the Git leaf returns data"
+    }
+
+    foreach ($routeName in @($expectedUnrealRoutes.Keys)) {
+        $rejected = Invoke-Harness -Command $routeName -Context $workspaceContext -Parameters @{ WorkspaceRoot = $fixtureProject }
+        Assert-Equal 'Failed' $rejected.status "$routeName rejects an alternate Unreal workspace"
+        Assert-Equal 'ContextAuthorityMismatch' $rejected.error.code "$routeName reports the stable context authority failure"
+        Assert-True ($null -eq $rejected.data) "$routeName rejects before the Unreal leaf returns data"
+    }
+
+    foreach ($routeName in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status')) {
+        $rejected = Invoke-Harness -Command $routeName -Context $workspaceContext -Parameters @{ Context = $fixturePrimaryContext }
+        Assert-Equal 'Failed' $rejected.status "$routeName rejects a caller-supplied replacement Context"
+        Assert-Equal 'ContextAuthorityMismatch' $rejected.error.code "$routeName reports the stable context authority failure"
+        Assert-True ($null -eq $rejected.data) "$routeName rejects before the internal route returns data"
+    }
+
+    $blankRoot = Invoke-Harness -Command 'git.status' -Context $workspaceContext -Parameters @{ WorkspaceRoot = ' ' }
+    Assert-Equal 'ContextAuthorityMismatch' $blankRoot.error.code 'a blank dispatcher-owned root is rejected explicitly'
+    $conflictingAliases = Invoke-Harness -Command 'git.status' -Context $workspaceContext -Parameters @{ WorkspaceRoot = $fixtureWorkspace; ProjectRoot = $fixtureProject }
+    Assert-Equal 'ContextAuthorityMismatch' $conflictingAliases.error.code 'conflicting canonical and alias roots are rejected explicitly'
+
+    foreach ($matchingParameters in @(
+        @{ WorkspaceRoot = $fixtureWorkspace },
+        @{ ProjectRoot = $fixtureWorkspace },
+        @{ WorkspaceRoot = ($fixtureWorkspace + [System.IO.Path]::DirectorySeparatorChar); ProjectRoot = $fixtureWorkspace }
+    )) {
+        $matchingWorkspaceStatus = Invoke-Harness -Command 'workspace.status' -Context $workspaceContext -Parameters $matchingParameters
+        Assert-Equal 'Succeeded' $matchingWorkspaceStatus.status 'matching explicit workspace roots are idempotent aliases'
+        Assert-Equal $fixtureWorkspace $matchingWorkspaceStatus.data.WorkspaceRoot 'matching aliases normalize to the selected canonical workspace'
+    }
+    foreach ($matchingParameters in @(
+        @{ WorkspaceRoot = $fixtureWorkspace },
+        @{ ProjectRoot = $fixtureWorkspace },
+        @{ WorkspaceRoot = $fixtureWorkspace; ProjectRoot = ($fixtureWorkspace + [System.IO.Path]::DirectorySeparatorChar) }
+    )) {
+        $matchingGitStatus = Invoke-Harness -Command 'git.status' -Context $workspaceContext -Parameters $matchingParameters
+        Assert-Equal 'Succeeded' $matchingGitStatus.status 'matching explicit Git roots are idempotent aliases'
+        Assert-Equal $fixtureWorkspace $matchingGitStatus.data.WorkspaceRoot 'matching Git aliases normalize to the selected canonical workspace'
+    }
+
+    $linkedIntegration = Invoke-Harness -Command 'git.integrate' -Context $workspaceContext -Parameters @{
+        SourceWorkspaceRoot = $fixtureProject
+        ExpectedSourceHead = $fixturePrimaryContext.Head
+        TargetBranches = @{ '.' = 'feature/fixture-workspace' }
+        WhatIf = $true
+    }
+    Assert-Equal 'Failed' $linkedIntegration.status 'git.integrate cannot silently redirect a linked selected Context to its primary root'
+    Assert-Equal 'ContextAuthorityMismatch' $linkedIntegration.error.code 'linked-context integration reports the dispatcher authority failure'
+
+    $overriddenIntegration = Invoke-Harness -Command 'git.integrate' -Context $fixturePrimaryContext -Parameters @{
+        WorkspaceRoot = $fixtureWorkspace
+        SourceWorkspaceRoot = $fixtureWorkspace
+        ExpectedSourceHead = $workspaceContext.Head
+        TargetBranches = @{ '.' = 'main' }
+        WhatIf = $true
+    }
+    Assert-Equal 'ContextAuthorityMismatch' $overriddenIntegration.error.code 'git.integrate rejects an explicit target override from the primary Context'
+
+    $legalIntegration = Invoke-Harness -Command 'git.integrate' -Context $fixturePrimaryContext -Parameters @{
+        SourceWorkspaceRoot = $fixtureWorkspace
+        ExpectedSourceHead = $workspaceContext.Head
+        TargetBranches = @{ '.' = 'main' }
+        WhatIf = $true
+    }
+    Assert-Equal 'Succeeded' $legalIntegration.status 'primary integration retains SourceWorkspaceRoot as its sole authorized different root'
+    Assert-True $legalIntegration.data.Preview 'the legal integration authority fixture remains non-mutating'
 
     $fastStatus = Invoke-Harness -Command 'workspace.status' -Context $workspaceContext
     Assert-Equal 'Succeeded' $fastStatus.status 'fast workspace status succeeds for an arbitrary registered worktree'
