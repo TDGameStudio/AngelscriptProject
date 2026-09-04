@@ -1,7 +1,5 @@
 # AngelscriptProject OpenSpec
 
-> Project Skills are temporarily disabled by `AGENTS.md` during the repository-wide refactor. The invocation section documents the prepared interface and becomes active only after that restriction is explicitly lifted.
-
 This directory is the current OpenSpec record system. The ignored `openspec-old/` directory is only a historical backup and is never scanned or migrated automatically.
 
 ## Customization
@@ -35,8 +33,10 @@ Do not invoke a bare `openspec` from `PATH`, the official Node CLI, or a `Tools/
 - `proposal.md` and `tasks.md` are required; apply depends on tasks.
 - `specs/**/*.md` exists only for durable behavior changes.
 - `design.md` exists only for non-obvious architecture, compatibility, or migration decisions.
-- The project workflow uses `record-v1` to require non-empty artifacts and a valid Task DAG without forcing Requirement/Scenario syntax.
-- `requirements-v1` is an explicit opt-in profile for current `spec.md`, change `specs/**/spec.md`, and root `tasks.md`; it is not a generic validator for arbitrary paths.
+- Durable requirements use progressive Scenario Cards from `.agents/skills/openspec/references/specs.md`; complex cases may add optional ordinary-Markdown detail while simple scenarios keep only their useful `WHEN` and `THEN`.
+- `record-v1` and `requirements-v1` are validator profile identifiers, not a content version, storage format, or migration sequence. Scenario Cards work with either profile.
+- The `angelscript` workflow continues to use `record-v1` because it requires non-empty proposal/tasks artifacts and a valid Task DAG while allowing specs to remain optional for maintenance, documentation, and internal refactors.
+- `requirements-v1` is an explicit opt-in for a workflow that requires Requirement deltas in every Change; it is not an upgrade from `record-v1` or a generic validator for arbitrary paths.
 - `validate --archived` audits closure provenance and Task history; it does not rerun implementation verification.
 - Current archives use `closure-v1`; explicitly marked `legacy-completed-v0` records receive the legacy completed audit.
 

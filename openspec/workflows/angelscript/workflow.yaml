@@ -20,9 +20,10 @@ artifacts:
   required: false
   instruction: |
     Write this record in English and only when the change adds or modifies behavior worth preserving.
-    Describe observable outcomes, boundaries, and verification evidence instead of disguising
-    implementation steps as requirements. This workflow does not force Requirement/Scenario syntax;
-    the project may continue customizing the workflow and templates directly.
+    Write Requirements as durable externally observable SHALL behavior and use the Scenario Card
+    contract in .agents/skills/openspec/references/specs.md. Every ordinary scenario keeps a clear
+    `WHEN` and `THEN`; add optional clauses or quoted detail only when a complex case benefits, and
+    keep simple scenarios compact. Never disguise implementation steps or transient evidence as behavior.
   requires: []
   context:
   - proposal

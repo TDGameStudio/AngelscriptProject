@@ -42,6 +42,7 @@ attachments/
 
 Focused authoring contracts are separate so they load only when needed:
 
+- [specs.md](specs.md) owns Requirement and Scenario Card authoring, artifact content boundaries, validator-profile meaning, and delta synchronization semantics.
 - [tasks.md](tasks.md) owns Task DAG structure and ready-to-execute authoring quality.
 - [implementation-issues.md](implementation-issues.md) owns material problem history during implementation, verification, or review repair.
 - [knowledge.md](knowledge.md) owns explicit promotion from change evidence to capability knowledge and, only for cross-capability invariants, project instructions.

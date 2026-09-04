@@ -39,7 +39,7 @@ Read [commands/README.md](commands/README.md), then only the one command documen
 - Merge durable delta specs: `openspec-sync-specs`.
 - Apply close policy and archive: `openspec-archive-change`.
 
-For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Task DAG](references/tasks.md), [attachments and closure](references/attachments.md), [material implementation issues](references/implementation-issues.md), or [knowledge promotion](references/knowledge.md).
+For record layout, load only the relevant reference: [record schema](references/record-schema.md), [Specification and Scenario Card authoring](references/specs.md), [Task DAG](references/tasks.md), [attachments and closure](references/attachments.md), [material implementation issues](references/implementation-issues.md), or [knowledge promotion](references/knowledge.md). Load the specification reference only when creating, modifying, synchronizing, or verifying durable specs.
 
 ## Deterministic boundary
 

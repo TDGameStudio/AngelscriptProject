@@ -1,18 +1,8 @@
-# Harness Git Operations
-
-## Purpose
-
-This capability defines exact-workspace Git inspection and commits, reviewed local integration from a registered linked worktree into the primary workspace, and explicitly requested ordered non-force publication.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Structured scoped Git status and commit
 
 `git-operations` SHALL own Git change inspection and commit creation across the exact selected WorkspaceRoot's parent repository and top-level submodules. Every commit MUST receive exact repository/path scopes, unless the caller explicitly authorizes all non-ignored changes in that same workspace. By default, unrelated staged content MUST be rejected. For exact scoped intent only, the caller MAY explicitly select `PreserveOutsideStaged`; that mode MUST use path-only dry-run and commit semantics, MUST include only effective-scope paths in each new commit, and MUST prove that scope-external index entries remain equivalent before and after the operation. The preservation option MUST be rejected for all-change intent. Ignored configuration MUST NOT be force-added, dirty scoped submodules MUST commit before the parent records their gitlinks, and repository mode or Goal-name inputs MUST NOT exist.
-
-#### Scenario: Reject outside staged content by default
-- **WHEN** a scoped commit finds a staged path outside its effective scopes and preservation was not explicitly selected
-- **THEN** the operation fails before mutation and leaves HEAD, index, and worktree unchanged
 
 #### Scenario: Preserve outside staged content explicitly
 - **GIVEN** the exact selected workspace contains intentionally staged work outside the requested repository/path scopes
@@ -63,18 +53,6 @@ This capability defines exact-workspace Git inspection and commits, reviewed loc
 >
 > Verification: The preservation-rejection fixtures in `.agents/skills/git-operations/tests/GitOperations.Tests.ps1` cover all-change ambiguity, intent-to-add, cross-scope rename/copy, literal path boundaries, and an unmerged index.
 
-#### Scenario: Report resumable partial completion
-- **WHEN** all static preflight passed but a later repository commit or hook fails after an earlier submodule committed
-- **THEN** the operation preserves outside staged state, reports completed and pending repositories, and performs no destructive rollback
-
-#### Scenario: Commit exact linked-worktree paths
-- **WHEN** a caller targets a registered linked WorkspaceRoot with a dirty top-level submodule and parent gitlink
-- **THEN** the submodule commits on its actual branch before the parent commits the resulting gitlink, without requiring a branch prefix
-
-#### Scenario: Authorize all changes explicitly
-- **WHEN** a caller selects all-change intent for one exact WorkspaceRoot
-- **THEN** the preview lists every included non-ignored repository/path before commit, rejects unrelated pre-staged content, and does not expose outside-staged preservation
-
 ### Requirement: Explicit previewable local integration
 
 Local integration SHALL require the canonical primary target, an exact registered linked source WorkspaceRoot, the reviewed expected source HEAD, and explicit parent/submodule target branches. Preview SHALL report every planned repository, source root, source/target commit, and fast-forward/merge action without changing either workspace or remote state. Integration SHALL preserve source commits, branches, worktree, unrelated target changes, and remote state.
@@ -95,10 +73,6 @@ Local integration SHALL require the canonical primary target, an exact registere
 > Boundaries: Target staged content or any local/incoming path overlap is unsafe and must be rejected before the affected repository changes.
 >
 > Verification: The linked-worktree integration fixture in `.agents/skills/git-operations/tests/GitOperations.Tests.ps1` proves preview immutability, submodule-before-parent integration, preserved merge lineage, disjoint local work retention, source preservation, and unchanged remotes.
-
-#### Scenario: Refuse a stale or unsafe source
-- **WHEN** target staged content exists, local payload overlaps incoming paths, the source is not a registered linked worktree in the same common directory, source HEAD differs from the reviewed snapshot, or a target branch is ambiguous
-- **THEN** integration fails before changing the affected repository
 
 ### Requirement: Merge-based resumable multi-repository integration
 
@@ -121,10 +95,6 @@ Each affected repository SHALL fast-forward when possible and otherwise create a
 >
 > Verification: The later-parent-conflict fixture in `.agents/skills/git-operations/tests/GitOperations.Tests.ps1` proves current-repository merge abort, preservation of the already integrated submodule, and idempotent `AlreadyIntegrated`/`Resumed` planning.
 
-#### Scenario: Keep delivery authority separate
-- **WHEN** local integration completes
-- **THEN** no push, publication, branch deletion, or worktree removal has occurred
-
 ### Requirement: Explicit ordered non-force push
 
 `git.push` SHALL run only after an explicit user push or publication request and SHALL require an exact repository-to-local-branch map and remote for the selected workspace. Preview MUST perform no remote mutation. A real multi-repository push MUST publish required submodule commits before the parent branch, MUST reject a parent gitlink that is neither known remote-reachable nor included in the push plan, and MUST NOT expose implicit force, deletion, integration, or worktree cleanup.
@@ -143,19 +113,3 @@ Each affected repository SHALL fast-forward when possible and otherwise create a
 > Boundaries: Push does not integrate branches, remove source worktrees, delete branches, or infer a branch for an unpublished gitlink.
 >
 > Verification: The publication fixture in `.agents/skills/git-operations/tests/GitOperations.Tests.ps1` proves missing-submodule rejection, non-mutating preview, submodule-before-parent publication, normal non-force updates, and source-worktree retention.
-
-#### Scenario: Keep cleanup separate after push
-- **WHEN** push completes
-- **THEN** source branches and worktrees still exist until the user separately requests cleanup
-
-### Requirement: Harness Git API identity
-
-The Git operations module SHALL expose only Harness-named context, result, and helper symbols where the shared framework identity appears, while the stable `git.status`, `git.commit`, `git.integrate`, and `git.push` routes retain their existing semantics and authority boundaries. Generated default commit messages and maintained examples SHALL use `[Harness]`; no `[Hardness]` default or old PowerShell alias SHALL remain.
-
-#### Scenario: Invoke Git through Harness
-- **WHEN** a caller uses a stable `git.*` route in a Harness context
-- **THEN** results and diagnostics use Harness-named types/helpers without changing exact-scope, preservation, integration, or push behavior
-
-#### Scenario: Reject old Git helper names
-- **WHEN** a caller attempts to invoke an exported `*-Hardness*` Git helper after cutover
-- **THEN** the helper is absent instead of forwarding to its Harness replacement

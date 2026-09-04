@@ -414,12 +414,44 @@ foreach ($sourceFile in $sourceFiles) {
     Assert-Equal $bundledHash $sourceHash "Bundled command doc differs from source: $relative"
 }
 
+$specAuthoringPath = Join-Path $projectRoot '.agents\skills\openspec\references\specs.md'
+Assert-True (Test-Path -LiteralPath $specAuthoringPath -PathType Leaf) 'Specification and Scenario Card reference is missing.'
+
+$specAuthoringText = Get-Content -LiteralPath $specAuthoringPath -Raw
+$specTemplateText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\templates\spec.md') -Raw
+$workflowDefinitionText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\workflow.yaml') -Raw
+$syncSpecText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-sync-specs\SKILL.md') -Raw
+
+foreach ($token in @(
+    '## Scenario Card', '- **GIVEN**', '- **WHEN**', '- **THEN**', '- **AND**', '- **BUT**',
+    '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:',
+    'ordinary Markdown', 'not parser fields', 'delete unused', 'simple scenario'
+)) {
+    Assert-True ($specAuthoringText.Contains($token)) "Scenario Card contract is missing: $token"
+}
+foreach ($token in @('Specs', 'Design', 'Tasks', 'Attachments', 'durable externally observable behavior', 'implementation steps', 'one-off evidence')) {
+    Assert-True ($specAuthoringText.Contains($token)) "Specification content ownership is missing: $token"
+}
+foreach ($token in @('ADDED', 'MODIFIED', 'REMOVED', 'RENAMED', 'same-name scenario', 'complete Scenario Card', 'new scenario name', 'unspecified scenarios', 'requirement body')) {
+    Assert-True ($specAuthoringText.Contains($token)) "Specification delta semantics are missing: $token"
+}
+foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:')) {
+    Assert-True ($specTemplateText.Contains($token)) "Specification template is missing: $token"
+}
+foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'simple scenarios')) {
+    Assert-True ($workflowDefinitionText.Contains($token)) "Workflow specification instruction is missing: $token"
+}
+Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[ \t]*\r?$') 'Angelscript workflow must retain record-v1.'
+Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+requirements-v1[ \t]*\r?$') 'Angelscript workflow must not switch to requirements-v1.'
+
 $mandatoryLifecycleReferences = [ordered]@{
     'openspec-explore' = @('references/deep-exploration.md', 'references/question-rounds.md', 'references/markers.md')
-    'openspec-continue-change' = @('../openspec/references/attachments.md', '../openspec/references/knowledge.md')
+    'openspec-continue-change' = @('../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../openspec/references/specs.md')
     'openspec-apply-change' = @('../openspec/references/implementation-issues.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md')
-    'openspec-update-change' = @('../openspec/references/attachments.md')
+    'openspec-update-change' = @('../openspec/references/attachments.md', '../openspec/references/specs.md')
+    'openspec-sync-specs' = @('../openspec/references/specs.md')
+    'openspec-verify-change' = @('../openspec/references/specs.md')
 }
 foreach ($entry in $mandatoryLifecycleReferences.GetEnumerator()) {
     $skillFile = Join-Path $projectRoot ".agents\skills\$($entry.Key)\SKILL.md"
@@ -477,6 +509,10 @@ $taskReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\s
 $issueReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\implementation-issues.md') -Raw
 $knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\knowledge.md') -Raw
 $attachmentReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\attachments.md') -Raw
+
+foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenario name', 'Preserve unspecified scenarios', 'requirement body', 'Remove delta-operation headers')) {
+    Assert-True ($syncSpecText.Contains($token)) "Spec sync semantics are missing: $token"
+}
 
 foreach ($token in @('references/deep-exploration.md', 'references/question-rounds.md', 'references/markers.md', 'before `change create`', 'decision-complete handoff', 'Never invoke it after', 'indexed talks', 'indexed change-local knowledge', 'never copy the exploration transcript')) {
     Assert-True ($exploreText.Contains($token)) "Explore entry is missing: $token"
@@ -550,6 +586,11 @@ foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Codex /goal 
     Assert-True ($liveConfigText.Contains($token)) "Live OpenSpec configuration is missing: $token"
 }
 Assert-True ($openSpecReadmeText.Contains('New-HarnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'
+foreach ($token in @('validator profile identifiers', 'not a content version', '`record-v1`', '`requirements-v1`', 'Scenario Cards', 'continues to use `record-v1`')) {
+    Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec profile guidance is missing: $token"
+}
+Assert-True (-not $openSpecReadmeText.Contains('Project Skills are temporarily disabled')) 'OpenSpec README still claims that project Skills are disabled.'
+Assert-True (-not $liveConfigText.Contains('While AGENTS.md temporarily disables project Skills')) 'OpenSpec config still carries the lifted temporary Skill restriction.'
 Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HarnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
 foreach ($token in @('user explicitly lifted the temporary Skill restriction', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
     Assert-True ($agentsText.Contains($token)) "Prepared AGENTS workflow contract is missing: $token"

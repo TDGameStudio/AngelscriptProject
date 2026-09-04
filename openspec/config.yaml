@@ -14,7 +14,9 @@ rules:
     - Identify whether the work changes a submodule, the parent project, or both.
   specs:
     - Record durable externally observable behavior rather than implementation steps.
-    - Under the requirements workflow, put each delta at specs/<capability-id>/spec.md and use ADDED, MODIFIED, REMOVED, or RENAMED Requirements sections.
+    - For durable specification deltas, put each delta at specs/<capability-id>/spec.md and use ADDED, MODIFIED, REMOVED, or RENAMED Requirements sections.
+    - Follow .agents/skills/openspec/references/specs.md. Keep a clear WHEN and THEN, add optional Scenario Card detail only for complex behavior, and keep simple scenarios compact.
+    - Scenario Card detail is ordinary Markdown authoring guidance, not parser fields or a rigid template. In MODIFIED, a same-name scenario supplies the complete replacement card while unspecified scenarios remain unchanged.
   design:
     - Separate decisions and rationale from implementation detail; record alternatives only when they materially affect the choice.
     - Call out compatibility, migration, module boundaries, failure modes, and rollback when relevant.
@@ -30,7 +32,7 @@ operations:
   apply:
     - Preserve unrelated dirty-worktree changes and keep plugin logic in the owning plugin.
     - Investigate and resolve in-scope failures autonomously in the selected workspace; stop only at a real authorization boundary. Codex /goal continuation does not change this policy.
-    - While AGENTS.md temporarily disables project Skills, do not invoke a project Skill. After that restriction is explicitly lifted, import Harness once and route build/test/OpenSpec commands through Invoke-Harness, selecting the smallest relevant verification scope first.
+    - Import Harness once and route build, test, and OpenSpec commands through Invoke-Harness, selecting the smallest relevant verification scope first.
   archive:
     - Use completed closure only after every task and verification passes, durable specs and attachments are ready, and every explicitly requested Review is closed or superseded. Do not create an automatic Final Review or a not-required placeholder; abandoned or superseded closure requires reasons and incomplete-task dispositions.
     - Sync durable behavior into openspec/specs or explicitly record why sync is not applicable before preserving history.

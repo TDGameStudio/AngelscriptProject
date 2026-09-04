@@ -1,0 +1,19 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_6102165a-b9cb-41e8-a1e2-fbdfad458d07
+  id: harness/enrich-spec-scenario-cards
+  title: Enrich spec scenario cards
+  description: Teach optional scenario detail without expanding the parser schema, enrich representative Harness contracts, and preserve record-v1 compatibility.
+workflow: angelscript
+created_at: 2026-09-04T00:36:55Z
+goal: Make complex WHEN/THEN scenarios execution-ready while simple scenarios remain compact.
+affected_areas:
+- openspec authoring workflow
+- OpenSpec lifecycle skills
+- Harness current specifications
+archived_at: 2026-09-04T01:00:18Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The progressive Scenario Card contract, template and lifecycle guidance, 29 enriched or new Harness cards, workspace ownership repair, durable spec synchronization, focused TDD, Skill validation, strict OpenSpec gates, independent usability evaluation, and Harness Quick 8/8 all passed with one resolved material issue and no Review or Replan.

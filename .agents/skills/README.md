@@ -55,6 +55,8 @@ For OpenSpec-scoped work, an accepted exploration handoff is not execution state
 
 Record schemas are focused references under `openspec/references/`, not an independently triggered Skill. Task-local technical uncertainty remains in `openspec-apply-change`; material root-cause history uses the implementation-issue reference, and reusable learning follows the capability-knowledge promotion reference.
 
+Durable specifications use progressive Scenario Cards defined in `.agents/skills/openspec/references/specs.md`. Like flexible Task Cards, complex scenarios may add only useful context and boundaries while simple scenarios stay compact; unlike tasks, specs never acquire checkboxes, a DAG, Ready state, file ownership, or execution state.
+
 ## Other leaves
 
 - Use `visual-explain` proactively when three or more relationships, a sequence/state transition, hierarchy/layout, or a decision structure is materially clearer visually. Skip trivial one-step work. Other specialized work remains under `external/` and `web/`.

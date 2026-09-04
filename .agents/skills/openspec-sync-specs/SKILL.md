@@ -5,10 +5,16 @@ description: Merge an active change's durable delta specs into current OpenSpec 
 
 # Sync Delta Specs
 
+Load the [Specification and Scenario Card contract](../openspec/references/specs.md) for authoring and ownership boundaries.
+
 1. Read each concrete change `specs/**/spec.md` and its current target before writing.
 2. Create a missing current capability through `openspec.domain/spec`, never by fabricating manifests.
-3. Merge idempotently: ADDED adds or reconciles, MODIFIED changes only named behavior, REMOVED deletes the named block, RENAMED applies FROM/TO. Preserve all unrelated current content.
-4. Remove delta-operation headers from current specs.
+3. Merge idempotently:
+   - `ADDED` adds or reconciles the complete Requirement and complete Scenario Cards.
+   - In `MODIFIED`, a same-name scenario uses the delta's complete Scenario Card as its replacement, while a new scenario name appends its complete card.
+   - Preserve unspecified scenarios and their detail. Change the requirement body only when the delta explicitly provides its replacement.
+   - `REMOVED` deletes only the named Requirement block, and `RENAMED` applies only the explicit `FROM` / `TO` mapping.
+4. Remove delta-operation headers from current specs and preserve every ordinary Markdown detail line inside the synchronized cards.
 5. Run `openspec.validate --specs --strict --json` and record which capabilities changed or why sync is not applicable.
 
 ```text
