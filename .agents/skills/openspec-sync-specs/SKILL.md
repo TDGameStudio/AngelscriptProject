@@ -7,7 +7,7 @@ description: Merge an active change's durable delta specs into current OpenSpec 
 
 Load the [Specification and Scenario Card contract](../openspec/references/specs.md) for authoring and ownership boundaries.
 
-1. Read each concrete change `specs/**/spec.md` and its current target before writing.
+1. Read each concrete change `specs/**/spec.md` and its current target before writing. For each new or modified behavior clause, actively evaluate whether synchronization preserves the smallest useful combination in its clause-owned detail block, including useful prose, lists, examples, or tables; a form may be absent when it adds no durable information.
 2. Create a missing current capability through `openspec.domain/spec`, never by fabricating manifests.
 3. Merge idempotently:
    - `ADDED` adds or reconciles the complete Requirement and complete Scenario Cards, including every clause-owned detail block beneath its exact behavior item.

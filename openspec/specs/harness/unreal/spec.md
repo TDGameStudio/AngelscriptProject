@@ -12,7 +12,9 @@ Harness SHALL expose Unreal discovery and execution through one `unreal-engine-d
 
 #### Scenario: Load one Unreal route
 - **WHEN** a caller invokes one `ue.*` command through Harness
+  > Inputs: The selected workspace context and the named public route bound the authority of the call.
 - **THEN** only the Unreal leaf is loaded, the common Harness result envelope is returned, and unrelated workflow authority is not acquired
+  > Observables: The envelope identifies the invoked route, status, exit code, data, and artifacts without loading unrelated lifecycle policy.
 
 #### Scenario: Use a retired root script name
 - **WHEN** a caller searches the maintained Unreal Skill for an operational dependency on a root `Tools` PowerShell entry
@@ -24,8 +26,11 @@ Harness SHALL expose Unreal discovery and execution through one `unreal-engine-d
 
 #### Scenario: Report a synchronous Unreal operation failure
 - **WHEN** `ue.build`, `ue.ubt.invoke`, `ue.test`, `ue.commandlet`, or `ue.suite.run` synchronously returns `Failed`, `TimedOut`, `Cancelled`, or `Orphaned`
+  > Inputs: A completed synchronous operation supplies its terminal state, operation exit code, retained data, and artifacts.
 - **THEN** the common envelope reports `Failed`, preserves the operation's non-zero exit code when present, and retains the returned data and artifacts
+  > Observables: Callers can see both transport-level failure and the operation evidence needed for diagnosis.
 - **BUT** a non-terminal `NoWait` dispatch, a successful `ue.run.status` observation, or a successful `ue.run.cancel` command is not reclassified from the state described by its data
+  > Boundaries: Command success and the observed or queued run state remain distinct contracts.
 
 ### Requirement: Exact workspace execution identity
 
@@ -174,18 +179,15 @@ Real operations SHALL use stable Request and Run schema names in a unique physic
 
 #### Scenario: Inspect a mapped worktree build
 - **GIVEN** contained `Request.json` and `RunMetadata.json` identify the physical workspace and matching native PID for the run ID embedded in the owned UBT log path
+  > Context: Correlation begins from physical Harness evidence even when the child process uses a transient mapped execution view.
 - **WHEN** an active UBT command line contains a mapped `-Project` and the exact contained `-Log` path
+  > Inputs: Machine process identity and command line, mapped project argument, contained run-local log path, and the physical contained run records.
 - **THEN** process discovery returns the physical WorkspaceRoot and ProjectFile together with ExecutionPath and uses only that physical run's bounded progress evidence
+  > Observables: `RecognizedBuild`, physical and execution identities, target/configuration/concurrency fields, and `ProgressKnown` with its bounded source.
 - **AND** recognized output reports trusted target, configuration, build concurrency, current action counts, and the contained evidence path
+  > Verification: The `ConcurrencyProgress` fixture correlates an exact contained log and mapped project to matching metadata and proves progress comes only from physical run evidence.
 - **BUT** a malformed or external log path, mismatched native PID, or mismatched request argument cannot make the process recognized or supply trusted progress
-
-> Inputs: Machine process identity and command line, mapped project argument, contained run-local log path, and the physical contained run records.
->
-> Observables: `RecognizedBuild`, physical and execution identities, target/configuration/concurrency fields, and `ProgressKnown` with its bounded source.
->
-> Boundaries: Uncorrelated processes may expose basic machine facts, but their progress remains unknown rather than inferred from untrusted logs.
->
-> Verification: The `ConcurrencyProgress` fixture correlates an exact contained log and mapped project to matching metadata, rejects wrong PID and external-log variants, and proves progress comes only from physical run evidence.
+  > Boundaries: Uncorrelated processes may expose basic machine facts, but their progress remains unknown rather than inferred from untrusted logs.
 
 ### Requirement: Managed multi-worktree concurrency
 
@@ -228,12 +230,22 @@ One operation SHALL hold one workspace lease for its whole lifetime. Auto and Wa
 
 #### Scenario: Launch a top-level Harness build
 - **WHEN** Harness plans or launches a typed `ue.build` or vetted generic UBT `build`
+  > Inputs: Normalized target identity, workspace-local mapped paths, and configured executor policy form the native plan.
 - **THEN** the UBT argument array contains one contained run-local `-Log` path and no `-Session`
+  > Observables: The native arguments expose exactly one owned log destination and no recursive-session marker.
 - **AND** configured UBA/XGE selection remains available without a forced executor or caller action-threshold workaround
+  > Boundaries: Harness preserves supported executor configuration and does not invent capacity policy.
 
 #### Scenario: Reject a caller executor override
 - **WHEN** a caller supplies raw `-NoUBA` or `-NoXGE` through extra UBT arguments
+  > Inputs: Raw extra arguments attempt to override executor policy outside the maintained typed surface.
 - **THEN** the planner rejects the policy ownership conflict and directs the caller to the maintained typed route behavior
+  > Observables: No native UBT process is launched from the rejected plan.
+
+  Examples of rejected raw overrides:
+
+  - `-NoUBA`
+  - `-NoXGE`
 
 ### Requirement: Unreal Automation and commandlet operations
 

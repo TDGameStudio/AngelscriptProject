@@ -546,6 +546,48 @@ foreach ($token in @('clause-owned detail block', 'ordered or unordered lists', 
     Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec README is missing flexible Scenario detail guidance: $token"
 }
 
+$scenarioPrioritySources = [ordered]@{
+    'authoring reference' = $specAuthoringText
+    'OpenSpec entry' = $openSpecEntryText
+    'continue lifecycle' = $continueText
+    'update lifecycle' = $updateText
+    'sync lifecycle' = $syncSpecText
+    'verify lifecycle' = $verifyText
+    'workflow instruction' = $workflowDefinitionText
+    'specification template' = $specTemplateText
+    'live generated-instruction config' = $liveConfigText
+    'Skills overview' = $skillsReadmeText
+    'OpenSpec overview' = $openSpecReadmeText
+}
+foreach ($entry in $scenarioPrioritySources.GetEnumerator()) {
+    foreach ($token in @('actively evaluate', 'smallest useful combination', 'adds no durable information')) {
+        Assert-True ($entry.Value.ToLowerInvariant().Contains($token)) "$($entry.Key) is missing the preferred optional Scenario-detail policy: $token"
+    }
+}
+
+$scenarioPalette = 'quoted notes, prose, ordered or unordered lists, examples, and tables'
+foreach ($entry in ([ordered]@{
+    'authoring reference' = $specAuthoringText
+    'OpenSpec entry' = $openSpecEntryText
+    'workflow instruction' = $workflowDefinitionText
+    'specification template' = $specTemplateText
+    'live generated-instruction config' = $liveConfigText
+    'Skills overview' = $skillsReadmeText
+    'OpenSpec overview' = $openSpecReadmeText
+}).GetEnumerator()) {
+    $normalizedScenarioText = [regex]::Replace($entry.Value, '\s+', ' ')
+    Assert-True ($normalizedScenarioText.Contains($scenarioPalette)) "$($entry.Key) does not present the complete Scenario-detail palette."
+}
+
+foreach ($entry in $scenarioPrioritySources.GetEnumerator()) {
+    Assert-True (-not $entry.Value.ToLowerInvariant().Contains('when a complex clause benefits')) "$($entry.Key) still limits useful detail to complex clauses."
+    Assert-True (-not $entry.Value.ToLowerInvariant().Contains('keep simple clauses compact')) "$($entry.Key) still makes compactness the primary authoring instruction."
+}
+
+Assert-True ($specTemplateText -match '(?m)^  [^>|\-\d\s][^\r\n]+$') 'Specification template must demonstrate clause-owned prose in addition to quoted notes.'
+Assert-True ($specTemplateText -match '(?m)^  \|[^\r\n]+\|\r?\n  \|[-:| ]+\|') 'Specification template must demonstrate a clause-owned Markdown table.'
+Assert-True ($specTemplateText.Contains('Example:')) 'Specification template must demonstrate a clause-owned example.'
+
 $representativeScenarioDetails = [ordered]@{
     'openspec\specs\harness\core\spec.md' = 'Interpret Codex Goal continuation'
     'openspec\specs\harness\workspace\spec.md' = 'Coordinate concurrent agents'
@@ -559,6 +601,48 @@ foreach ($entry in $representativeScenarioDetails.GetEnumerator()) {
     Assert-True ($block -match '(?m)^- \*\*THEN\*\*[^\r\n]*\r?\n  > ') "Representative Scenario lacks THEN-owned detail: $($entry.Value)"
     Assert-True ($block -match '(?m)^  (?:>|1\.) ') "Representative Scenario lacks an indented nested detail line: $($entry.Value)"
 }
+
+$recentScenarioDetails = @(
+    [pscustomobject]@{ Path = 'openspec\specs\harness\core\spec.md'; Name = 'Verify a ready task' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\core\spec.md'; Name = 'Select a broader Harness profile' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\core\spec.md'; Name = 'Select Unreal verification' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\core\spec.md'; Name = 'Complete and archive a guidance-only Change' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\core\spec.md'; Name = 'Enter the project through maintained guidance' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\unreal\spec.md'; Name = 'Load one Unreal route' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\unreal\spec.md'; Name = 'Report a synchronous Unreal operation failure' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\unreal\spec.md'; Name = 'Launch a top-level Harness build' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\unreal\spec.md'; Name = 'Reject a caller executor override' }
+    [pscustomobject]@{ Path = 'openspec\specs\harness\unreal\spec.md'; Name = 'Inspect a mapped worktree build' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\runtime\startup\spec.md'; Name = 'Default startup remains dormant' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\runtime\startup\spec.md'; Name = 'Compatibility initializer cannot bypass dormancy' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\runtime\startup\spec.md'; Name = 'Configuration cannot reactivate legacy startup' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\runtime\startup\spec.md'; Name = 'Disabled module shutdown is side-effect safe' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Default editor build excludes the legacy corpus' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Default editor build includes replacement tests' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Default test module excludes the legacy framework surface' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Isolated baseline is discoverable' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Legacy Automation prefixes are absent by default' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Isolation preserves the old corpus without content rewrites' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Reflected legacy fixtures are excluded consistently' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Source topology transition is rebuilt from fresh discovery' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'A logic-only replacement test is verified' }
+    [pscustomobject]@{ Path = 'openspec\specs\angelscript\testing\baseline\spec.md'; Name = 'Startup duration is reported as evidence' }
+)
+Assert-Equal $recentScenarioDetails.Count 24 'Recent Scenario regression set must cover all cards introduced by the four affected Changes.'
+$recentScenarioBlocks = New-Object System.Collections.Generic.List[string]
+foreach ($scenario in $recentScenarioDetails) {
+    $text = Get-Content -Raw -LiteralPath (Join-Path $projectRoot $scenario.Path)
+    $block = Get-ScenarioBlock -Text $text -Name $scenario.Name
+    Assert-True ($block -match '(?m)^- \*\*WHEN\*\*[^\r\n]*\r?\n  (?:>|1\. |- |\||[A-Za-z])') "Recent Scenario lacks useful WHEN-owned detail: $($scenario.Name)"
+    Assert-True ($block -match '(?m)^- \*\*THEN\*\*[^\r\n]*\r?\n  (?:>|1\. |- |\||[A-Za-z])') "Recent Scenario lacks useful THEN-owned detail: $($scenario.Name)"
+    $recentScenarioBlocks.Add($block) | Out-Null
+}
+$recentScenarioCorpus = $recentScenarioBlocks -join [Environment]::NewLine
+Assert-True ($recentScenarioCorpus -match '(?m)^  [A-Za-z][^\r\n]+$') 'Recent Scenario details do not demonstrate clause-owned prose.'
+Assert-True ($recentScenarioCorpus -match '(?m)^  (?:> )?1\. ') 'Recent Scenario details do not demonstrate a clause-owned ordered list.'
+Assert-True ($recentScenarioCorpus -match '(?m)^  - ') 'Recent Scenario details do not demonstrate a clause-owned unordered list.'
+Assert-True ($recentScenarioCorpus.Contains('Example:')) 'Recent Scenario details do not demonstrate a clause-owned example.'
+Assert-True ($recentScenarioCorpus -match '(?m)^  \|[^\r\n]+\|\r?\n  \|[-:| ]+\|') 'Recent Scenario details do not demonstrate a clause-owned table.'
 
 foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenario name', 'Preserve unspecified scenarios', 'requirement body', 'Remove delta-operation headers')) {
     Assert-True ($syncSpecText.Contains($token)) "Spec sync semantics are missing: $token"

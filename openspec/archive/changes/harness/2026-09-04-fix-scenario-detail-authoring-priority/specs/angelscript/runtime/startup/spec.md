@@ -1,10 +1,4 @@
-# Runtime Startup
-
-## Purpose
-
-Define the hard reconstruction boundary that keeps the legacy AngelScript source available for reference while making project startup observably dormant.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Legacy runtime is locked dormant during reconstruction
 

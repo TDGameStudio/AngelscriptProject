@@ -1,10 +1,4 @@
-# Testing Baseline
-
-## Purpose
-
-Define the compile-time boundary between the preserved legacy test corpus and the replacement Automation suite used by new language work.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Legacy and replacement tests use separate compile gates
 

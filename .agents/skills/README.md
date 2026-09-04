@@ -57,7 +57,7 @@ New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `r
 
 Record schemas are focused references under `openspec/references/`, not an independently triggered Skill. Task-local technical uncertainty remains in `openspec-apply-change`; material root-cause history uses the implementation-issue reference, and reusable learning follows the capability-knowledge promotion reference.
 
-Durable specifications use progressive Scenario Cards defined in `.agents/skills/openspec/references/specs.md`. Like a flexible Task Card, each complex `GIVEN`, `WHEN`, `THEN`, `AND`, or `BUT` list item may own one immediately indented clause-owned detail block with useful quoted labels, prose, ordered or unordered lists, examples, or tables and no Task state. Simple clauses stay compact; specs never acquire checkboxes, a DAG, Ready state, file ownership, or execution state.
+Durable specifications use progressive Scenario Cards defined in `.agents/skills/openspec/references/specs.md`. For every new or modified `GIVEN`, `WHEN`, `THEN`, `AND`, or `BUT`, actively evaluate what helps a zero-context reader and prefer the smallest useful combination of quoted notes, prose, ordered or unordered lists, examples, and tables in an immediately indented clause-owned detail block. Every form remains optional and is omitted when it adds no durable information; cards carry no Task state, and specs never acquire checkboxes, a DAG, Ready state, file ownership, or execution state.
 
 ## Other leaves
 

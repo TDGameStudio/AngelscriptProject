@@ -1,0 +1,20 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_9e03c398-5133-4f3e-9b91-c5e9905353d1
+  id: harness/fix-scenario-detail-authoring-priority
+  title: Prioritize useful Scenario clause detail
+  description: Correct OpenSpec authoring guidance so every behavior clause actively considers the smallest useful clause-owned detail across quoted notes, prose, lists, examples, and tables while keeping all detail optional.
+workflow: angelscript
+created_at: 2026-09-04T13:37:38Z
+goal: Make rich Scenario Card detail a high-priority authoring default without adding parser-required fields or editing immutable archives.
+affected_areas:
+- harness/core
+- harness/unreal
+- angelscript/runtime/startup
+- angelscript/testing/baseline
+archived_at: 2026-09-04T13:59:39Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Scenario Card authoring now actively evaluates every behavior clause, prefers the smallest useful combination across the full optional Markdown palette, preserves exact clause ownership, and synchronizes meaningful detail into the affected current specifications with focused verification passing.
