@@ -10,6 +10,8 @@ $script:HarnessRoutes = $null
 $script:HarnessRouteByName = $null
 $script:HarnessResolvedRoots = @{}
 $script:HarnessPackageSafetyModule = $null
+$script:HarnessChangeTypes = @('feature', 'fix', 'refactor', 'improve', 'docs', 'test', 'chore')
+$script:HarnessChangeNameContract = '<domain>/<type>-<scope>-<outcome>; allowed types: feature, fix, refactor, improve, docs, test, chore'
 $script:HarnessOpenSpecIdentity = [ordered]@{
     Version           = '0.8.1'
     SourceCommit      = '1930040ab18acba43d44fcd635d2a91a701f04ce'
@@ -217,6 +219,91 @@ function Import-HarnessLeafModule {
     }
     Import-Module $manifest -ErrorAction Stop
     return Get-Module -Name ([System.IO.Path]::GetFileNameWithoutExtension($manifest)) -ErrorAction Stop
+}
+
+function Test-HarnessSemanticChangeId {
+    param([string]$ChangeId)
+
+    if ([string]::IsNullOrWhiteSpace($ChangeId) -or $ChangeId -cne $ChangeId.Trim()) {
+        return $false
+    }
+    $pathSegments = @($ChangeId -split '/')
+    if ($pathSegments.Count -lt 2 -or @($pathSegments | Where-Object { $_ -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$' }).Count -gt 0) {
+        return $false
+    }
+    $leafParts = @($pathSegments[-1] -split '-')
+    if ($leafParts.Count -lt 3 -or $leafParts[0] -cnotin $script:HarnessChangeTypes) {
+        return $false
+    }
+    return $true
+}
+
+function New-HarnessCodedException {
+    param(
+        [Parameter(Mandatory = $true)][string]$Code,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+
+    $exception = [System.ArgumentException]::new($Message)
+    $exception.Data['HarnessErrorCode'] = $Code
+    return $exception
+}
+
+function Assert-HarnessOpenSpecChangeName {
+    param(
+        [Parameter(Mandatory = $true)][string]$Command,
+        [object[]]$ArgumentList = @()
+    )
+
+    if ($Command -cne 'openspec.change' -or $ArgumentList.Count -eq 0) {
+        return
+    }
+    $operation = ([string]$ArgumentList[0]).ToLowerInvariant()
+    $target = ''
+    if ($operation -eq 'create' -and $ArgumentList.Count -ge 2) {
+        $target = [string]$ArgumentList[1]
+    }
+    elseif ($operation -eq 'move') {
+        for ($index = 1; $index -lt $ArgumentList.Count; $index++) {
+            $argument = [string]$ArgumentList[$index]
+            if ($argument -eq '--to' -and ($index + 1) -lt $ArgumentList.Count) {
+                $target = [string]$ArgumentList[$index + 1]
+                break
+            }
+            if ($argument.StartsWith('--to=', [System.StringComparison]::Ordinal)) {
+                $target = $argument.Substring(5)
+                break
+            }
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($target)) {
+        return
+    }
+    if (-not (Test-HarnessSemanticChangeId -ChangeId $target)) {
+        throw (New-HarnessCodedException -Code 'InvalidChangeName' -Message "OpenSpec Change target '$target' must follow $script:HarnessChangeNameContract. Change IDs use 'feature', not the Git commit alias 'feat'.")
+    }
+}
+
+function Get-HarnessInvalidActiveChangeIds {
+    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+
+    $changesRoot = Join-Path $ProjectRoot 'openspec/changes'
+    if (-not (Test-Path -LiteralPath $changesRoot -PathType Container)) {
+        return @()
+    }
+    $invalid = New-Object System.Collections.Generic.List[string]
+    foreach ($domainDirectory in @(Get-ChildItem -LiteralPath $changesRoot -Directory -Force -ErrorAction Stop)) {
+        foreach ($changeDirectory in @(Get-ChildItem -LiteralPath $domainDirectory.FullName -Directory -Force -ErrorAction Stop)) {
+            if (-not (Test-Path -LiteralPath (Join-Path $changeDirectory.FullName 'change.yaml') -PathType Leaf)) {
+                continue
+            }
+            $changeId = '{0}/{1}' -f $domainDirectory.Name, $changeDirectory.Name
+            if (-not (Test-HarnessSemanticChangeId -ChangeId $changeId)) {
+                $invalid.Add($changeId) | Out-Null
+            }
+        }
+    }
+    return @($invalid | Sort-Object -Unique)
 }
 
 function Get-HarnessLiveHead {
@@ -454,6 +541,7 @@ function Invoke-Harness {
         foreach ($required in @('HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'Branch', 'Head')) {
             if ($required -notin @($Context.PSObject.Properties.Name)) { throw "Invalid Harness context: missing '$required'." }
         }
+        Assert-HarnessOpenSpecChangeName -Command $Command -ArgumentList $ArgumentList
         $target = if ($route.Kind -eq 'Internal') { '' } else { Join-Path ([string]$Context.HarnessRoot) $route.Target }
         $data = $null
         $exitCode = 0
@@ -511,7 +599,9 @@ function Invoke-Harness {
         $timer.Stop()
         $capturedExitCode = if ($null -ne (Get-Variable -Name exitCode -Scope Local -ErrorAction SilentlyContinue) -and $exitCode -is [int] -and $exitCode -ne 0) { $exitCode } else { 1 }
         $capturedData = if ($null -ne (Get-Variable -Name data -Scope Local -ErrorAction SilentlyContinue)) { $data } else { $null }
+        $errorCode = if ($_.Exception.Data.Contains('HarnessErrorCode')) { [string]$_.Exception.Data['HarnessErrorCode'] } else { 'HarnessFailure' }
         $errorData = [pscustomobject]@{
+            code    = $errorCode
             type    = $_.Exception.GetType().FullName
             message = $_.Exception.Message
             details = [string]$_
@@ -1393,6 +1483,9 @@ function Test-HarnessInstallation {
     $duplicateNames = @($script:HarnessRoutes | Group-Object Name | Where-Object Count -gt 1)
     if ($duplicateNames.Count -gt 0) {
         $errors.Add("Duplicate route names: $($duplicateNames.Name -join ', ')") | Out-Null
+    }
+    foreach ($invalidChangeId in @(Get-HarnessInvalidActiveChangeIds -ProjectRoot $root)) {
+        $errors.Add("Active Change identity '$invalidChangeId' must follow $script:HarnessChangeNameContract.") | Out-Null
     }
     return [pscustomobject]@{
         IsValid  = $errors.Count -eq 0

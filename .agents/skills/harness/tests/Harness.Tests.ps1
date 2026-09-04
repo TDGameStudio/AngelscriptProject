@@ -54,6 +54,34 @@ function Invoke-FixtureGit {
     return @($output | ForEach-Object { [string]$_ })
 }
 
+function Invoke-FixtureOpenSpec {
+    param(
+        [Parameter(Mandatory = $true)][string]$WorkspaceRoot,
+        [Parameter(Mandatory = $true)][string]$Executable,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $locationPushed = $false
+    try {
+        Push-Location -LiteralPath $WorkspaceRoot
+        $locationPushed = $true
+        $output = @(& $Executable @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        if ($locationPushed) {
+            Pop-Location
+        }
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "Fixture OpenSpec command failed: $Executable $($Arguments -join ' ')`n$($output -join [Environment]::NewLine)"
+    }
+    return @($output | ForEach-Object { [string]$_ })
+}
+
 function New-InstallationFixture {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
@@ -139,6 +167,24 @@ try {
     Assert-True ('Mode' -notin $contextParameters) 'New-HarnessContext exposes no mode compatibility parameter'
     Assert-True ('GoalName' -notin $contextParameters) 'New-HarnessContext exposes no Goal-name compatibility parameter'
     Assert-True ('ProjectRoot' -notin $contextParameters) 'WorkspaceRoot is the only repository-selection parameter'
+
+    $invalidActiveNameFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-invalid-active-change-name') -SourceRoot $repoRoot
+    $invalidActiveNameRoot = Join-Path $invalidActiveNameFixture 'openspec\changes\fixture\legacy-name'
+    [void](New-Item -ItemType Directory -Path $invalidActiveNameRoot -Force)
+    [System.IO.File]::WriteAllText((Join-Path $invalidActiveNameRoot 'change.yaml'), @'
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_22222222-2222-4222-8222-222222222222
+  id: fixture/legacy-name
+  title: Invalid active semantic name
+workflow: angelscript
+created_at: 2026-09-04T00:00:00Z
+goal: Prove installation audit rejects an invalid active Change identity.
+'@, [System.Text.UTF8Encoding]::new($false))
+    $invalidActiveNameHealth = Test-HarnessInstallation -ProjectRoot $invalidActiveNameFixture
+    Assert-True (-not $invalidActiveNameHealth.IsValid) 'installation audit rejects a nonconforming active Change identity'
+    Assert-Equal 1 @($invalidActiveNameHealth.Errors | Where-Object { $_ -match "Active Change identity 'fixture/legacy-name'.*<type>-<scope>-<outcome>" }).Count 'installation audit reports the invalid active identity exactly once'
 
     $routes = @(Get-HarnessCommand)
     foreach ($name in @(
@@ -226,13 +272,102 @@ try {
         'create', 'fixture', '--title', 'Fixture', '--description', 'Fixture', '--json'
     )
     Assert-Equal 'Succeeded' $taskWorkspaceDomain.status 'Task Graph fixture domain is created'
+
+    $legacyArchiveRoot = Join-Path $taskWorkspaceRoot 'openspec\archive\changes\fixture\2026-01-01-legacy-archive-name'
+    $legacyArchiveManifestPath = Join-Path $legacyArchiveRoot 'change.yaml'
+    [void](New-Item -ItemType Directory -Path $legacyArchiveRoot -Force)
+    [System.IO.File]::WriteAllText($legacyArchiveManifestPath, @'
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_11111111-1111-4111-8111-111111111111
+  id: fixture/legacy-archive-name
+  title: Immutable legacy archive fixture
+workflow: angelscript
+created_at: 2026-01-01T00:00:00Z
+archived_at: 2026-01-02T00:00:00Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+goal: Prove semantic naming never rewrites historical archives.
+'@, [System.Text.UTF8Encoding]::new($false))
+    $legacyArchiveHash = (Get-FileHash -LiteralPath $legacyArchiveManifestPath -Algorithm SHA256).Hash
+
+    $validSemanticChangeIds = @(
+        'fixture/feature-runtime-route-selection',
+        'fixture/fix-change-name-validation',
+        'fixture/refactor-skill-module-boundaries',
+        'fixture/improve-status-error-diagnostics',
+        'fixture/docs-change-authoring-guidance',
+        'fixture/test-semantic-name-regressions',
+        'fixture/chore-record-tree-maintenance'
+    )
+    foreach ($changeId in $validSemanticChangeIds) {
+        $validSemanticChange = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
+            'create', $changeId, '--title', "Semantic fixture $changeId", '--goal', 'Exercise one allowed semantic Change type', '--json'
+        )
+        Assert-Equal 'Succeeded' $validSemanticChange.status "semantic Change type is accepted for '$changeId'"
+        $validSemanticLeaf = ($changeId -split '/', 2)[1]
+        $validSemanticManifestPath = Join-Path $taskWorkspaceRoot "openspec\changes\fixture\$validSemanticLeaf\change.yaml"
+        Assert-True (Test-Path -LiteralPath $validSemanticManifestPath -PathType Leaf) "accepted semantic Change '$changeId' is created at its canonical active identity"
+    }
+
+    $invalidSemanticChangeCases = @(
+        [pscustomobject]@{ Id = 'fixture/feat-change-naming'; Reason = 'the Git commit alias feat is not a Change type' },
+        [pscustomobject]@{ Id = 'fixture/repair-change-naming'; Reason = 'an unknown semantic type is rejected' },
+        [pscustomobject]@{ Id = 'fixture/fix-naming'; Reason = 'a Change leaf without a distinct outcome is rejected' },
+        [pscustomobject]@{ Id = 'fixture/fix'; Reason = 'a Change leaf without scope and outcome is rejected' },
+        [pscustomobject]@{ Id = 'fixture/Fix-change-naming'; Reason = 'uppercase text is rejected by the project boundary' }
+    )
+    foreach ($invalidCase in $invalidSemanticChangeCases) {
+        $invalidSemanticChange = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
+            'create', $invalidCase.Id, '--title', 'Rejected semantic fixture', '--goal', 'This target must not be created', '--json'
+        )
+        Assert-Equal 'Failed' $invalidSemanticChange.status $invalidCase.Reason
+        Assert-Equal 'InvalidChangeName' $invalidSemanticChange.error.code "semantic failure for '$($invalidCase.Id)' exposes the stable error code"
+        Assert-True ($null -eq $invalidSemanticChange.data) "semantic failure for '$($invalidCase.Id)' occurs before the portable CLI is invoked"
+        Assert-Match $invalidSemanticChange.error.message '<type>-<scope>-<outcome>' "semantic failure for '$($invalidCase.Id)' states the canonical form"
+        Assert-Match $invalidSemanticChange.error.message 'feature.*fix.*refactor.*improve.*docs.*test.*chore' "semantic failure for '$($invalidCase.Id)' lists every allowed type"
+        $invalidSemanticLeaf = ($invalidCase.Id -split '/', 2)[1]
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $taskWorkspaceRoot "openspec\changes\fixture\$invalidSemanticLeaf"))) "rejected semantic target '$($invalidCase.Id)' never mutates the active record tree"
+    }
+
+    $taskWorkspaceOpenSpec = Join-Path $taskWorkspaceExeDirectory 'openspec.exe'
+    [void](Invoke-FixtureOpenSpec -WorkspaceRoot $taskWorkspaceRoot -Executable $taskWorkspaceOpenSpec -Arguments @(
+        'change', 'create', 'fixture/legacy-change-name', '--title', 'Legacy source', '--goal', 'Seed a pre-policy active Change', '--json'
+    ))
+    $legacyMove = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
+        'move', 'fixture/legacy-change-name', '--to', 'fixture/fix-legacy-change-name', '--json'
+    )
+    Assert-Equal 'Succeeded' $legacyMove.status 'a pre-policy active source may move to a conforming target'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\legacy-change-name'))) 'successful repair removes the legacy active source path'
+    Assert-True (Test-Path -LiteralPath (Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\fix-legacy-change-name\change.yaml') -PathType Leaf) 'successful repair creates the conforming active target'
+
+    [void](Invoke-FixtureOpenSpec -WorkspaceRoot $taskWorkspaceRoot -Executable $taskWorkspaceOpenSpec -Arguments @(
+        'change', 'create', 'fixture/legacy-move-source', '--title', 'Legacy move source', '--goal', 'Prove an invalid target cannot consume a legacy source', '--json'
+    ))
+    $legacyMoveSourcePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\legacy-move-source'
+    $legacyMoveSourceHash = (Get-FileHash -LiteralPath (Join-Path $legacyMoveSourcePath 'change.yaml') -Algorithm SHA256).Hash
+    $invalidMove = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
+        'move', 'fixture/legacy-move-source', '--to', 'fixture/feat-move-target', '--json'
+    )
+    Assert-Equal 'Failed' $invalidMove.status 'a legacy active source does not permit a nonconforming move target'
+    Assert-Equal 'InvalidChangeName' $invalidMove.error.code 'a rejected move target exposes the stable naming error code'
+    Assert-True ($null -eq $invalidMove.data) 'a nonconforming move target is rejected before the portable CLI is invoked'
+    Assert-Match $invalidMove.error.message '<type>-<scope>-<outcome>' 'a rejected move target states the canonical form'
+    Assert-True (Test-Path -LiteralPath $legacyMoveSourcePath -PathType Container) 'a rejected move preserves the legacy active source'
+    Assert-Equal $legacyMoveSourceHash (Get-FileHash -LiteralPath (Join-Path $legacyMoveSourcePath 'change.yaml') -Algorithm SHA256).Hash 'a rejected move preserves the legacy source manifest byte-for-byte'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\feat-move-target'))) 'a rejected move never creates its nonconforming target'
+    Assert-True (Test-Path -LiteralPath $legacyArchiveRoot -PathType Container) 'semantic route validation leaves the historical archive path in place'
+    Assert-Equal $legacyArchiveHash (Get-FileHash -LiteralPath $legacyArchiveManifestPath -Algorithm SHA256).Hash 'semantic route validation leaves the historical archive manifest byte-for-byte unchanged'
+
     $taskWorkspaceChange = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
-        'create', 'fixture/dag', '--title', 'Task DAG', '--goal', 'Verify Harness task recognition', '--json'
+        'create', 'fixture/test-task-dag', '--title', 'Task DAG', '--goal', 'Verify Harness task recognition', '--json'
     )
     Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
 
     $taskSeparator = [string][char]0x2014
-    $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\dag\tasks.md'
+    $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\tasks.md'
     $taskWorkspaceDocument = @'
 ---
 task_graph:
@@ -261,9 +396,9 @@ task_graph:
     $taskWorkspaceDocument = $taskWorkspaceDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskWorkspaceDocument, [System.Text.UTF8Encoding]::new($false))
 
-    $taskStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/dag' }
+    $taskStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }
     Assert-Equal 'Succeeded' $taskStatus.status 'task.status recognizes a selected workspace Task Graph'
-    Assert-Equal 'fixture/dag' $taskStatus.data.changeId 'task.status returns the selected change'
+    Assert-Equal 'fixture/test-task-dag' $taskStatus.data.changeId 'task.status returns the selected change'
     Assert-True ('tasks' -in @($taskStatus.data.PSObject.Properties.Name)) 'task.status returns parsed TaskPlan data'
     Assert-True ('Output' -notin @($taskStatus.data.PSObject.Properties.Name)) 'task.status does not expose an untyped native-output wrapper'
     Assert-Equal '1.1|1.2|1.10|2.1' (@($taskStatus.data.tasks.id) -join '|') 'task.status presents task IDs in natural numeric order'
@@ -300,7 +435,7 @@ task_graph:
 '@
     $taskCycleDocument = $taskCycleDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskCycleDocument, [System.Text.UTF8Encoding]::new($false))
-    $cycleStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/dag' }
+    $cycleStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }
     Assert-Equal 'Succeeded' $cycleStatus.status 'task.status preserves a successfully inspected invalid Task Graph in its envelope'
     Assert-Equal 'waiting' $cycleStatus.data.state 'an invalid Task Graph remains waiting instead of becoming schedulable'
     Assert-True ('cycle' -in @($cycleStatus.data.taskIssues.code)) 'task.status preserves OpenSpec cycle diagnostics'
@@ -423,7 +558,7 @@ task_graph:
         Pop-Location
     }
 
-    $evolutionChangeRoot = Join-Path $fixtureWorkspace 'openspec\changes\fixture\evolution'
+    $evolutionChangeRoot = Join-Path $fixtureWorkspace 'openspec\changes\fixture\test-evolution-lifecycle'
     $evolutionAttachmentRoot = Join-Path $evolutionChangeRoot 'attachments'
     $evolutionImplementationRoot = Join-Path $evolutionAttachmentRoot 'implementation'
     $evolutionDataRoot = Join-Path $evolutionAttachmentRoot 'data'
@@ -433,8 +568,8 @@ task_graph:
 api_version: openspec.dev/v1
 kind: change
 metadata:
-  uid: change_fixture-evolution
-  id: fixture/evolution
+  uid: change_fixture-test-evolution-lifecycle
+  id: fixture/test-evolution-lifecycle
   title: Evolution fixture
 workflow: angelscript
 created_at: 2026-09-03T00:00:00Z
@@ -462,7 +597,7 @@ The body deliberately contains `status: resolved`; evolution status must read fr
 ---
 record: harness-workflow-evaluation-v1
 result: passed
-change: fixture/evolution
+change: fixture/test-evolution-lifecycle
 captured_at: 2026-09-03T16:10:00+08:00
 ---
 
@@ -480,9 +615,9 @@ The body deliberately contains `result: failed`; evolution status must read fron
 - `data/workflow-evaluation.md` - final workflow evaluation.
 '@, [System.Text.UTF8Encoding]::new($false))
 
-    $activeEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution' }
+    $activeEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle' }
     Assert-Equal 'Succeeded' $activeEvolution.status 'exact evolution structural status remains inspectable while a material issue is open'
-    Assert-Equal 'fixture/evolution' $activeEvolution.data.ChangeId 'exact evolution status remains bound to the requested change'
+    Assert-Equal 'fixture/test-evolution-lifecycle' $activeEvolution.data.ChangeId 'exact evolution status remains bound to the requested change'
     Assert-Equal 1 $activeEvolution.data.V2IssueCount 'exact evolution status counts admitted v2 issues'
     Assert-Equal 1 $activeEvolution.data.IssueCounts.Open 'exact evolution status reports the open state'
     Assert-Equal 1 @($activeEvolution.data.OpenIssuePaths).Count 'exact evolution status returns the open issue path'
@@ -490,26 +625,26 @@ The body deliberately contains `result: failed`; evolution status must read fron
     Assert-True (-not $activeEvolution.data.ClosureReady) 'an open v2 issue is not closure-ready'
     Assert-True (-not $activeEvolution.data.RawBodiesLoaded) 'exact evolution status never loads issue or evaluation bodies'
 
-    $blockedEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution'; RequireTerminal = $true }
+    $blockedEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle'; RequireTerminal = $true }
     Assert-Equal 'Failed' $blockedEvolution.status 'the exact terminal gate rejects an open admitted issue'
     Assert-Match $blockedEvolution.error.message 'open material issue' 'the exact terminal gate identifies the open owner'
 
     $rejectedEvolutionIssue = $openEvolutionIssue.Replace('status: open', 'status: rejected').Replace("created_at: 2026-09-03T16:00:00+08:00", "created_at: 2026-09-03T16:00:00+08:00`nresolved_at: 2026-09-03T16:20:00+08:00`nresolution_ref: talk:fixture-decision")
     [System.IO.File]::WriteAllText($evolutionIssuePath, $rejectedEvolutionIssue, [System.Text.UTF8Encoding]::new($false))
-    $terminalEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution'; RequireTerminal = $true }
+    $terminalEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle'; RequireTerminal = $true }
     Assert-Equal 'Succeeded' $terminalEvolution.status 'the exact terminal gate accepts evidence-backed rejected disposition'
     Assert-Equal 1 $terminalEvolution.data.IssueCounts.Rejected 'exact evolution status reports the rejected terminal state'
     Assert-True $terminalEvolution.data.ClosureReady 'terminal issue disposition plus a valid evaluation is closure-ready'
 
-    $successorChangeRoot = Join-Path $fixtureWorkspace 'openspec\changes\fixture\evolution-successor'
+    $successorChangeRoot = Join-Path $fixtureWorkspace 'openspec\changes\fixture\test-evolution-successor'
     $successorImplementationRoot = Join-Path $successorChangeRoot 'attachments\implementation'
     [void](New-Item -ItemType Directory -Path $successorImplementationRoot -Force)
     [System.IO.File]::WriteAllText((Join-Path $successorChangeRoot 'change.yaml'), @'
 api_version: openspec.dev/v1
 kind: change
 metadata:
-  uid: change_fixture-evolution-successor
-  id: fixture/evolution-successor
+  uid: change_fixture-test-evolution-successor
+  id: fixture/test-evolution-successor
   title: Evolution successor fixture
 workflow: angelscript
 created_at: 2026-09-03T00:00:00Z
@@ -522,7 +657,7 @@ issue_schema: openspec-material-issue-v2
 issue_id: issue-20260903-163000-successor-owner
 status: open
 source: dogfooding
-source_ref: "issue:fixture/evolution#issue-20260903-160000-fixture-finding"
+source_ref: "issue:fixture/test-evolution-lifecycle#issue-20260903-160000-fixture-finding"
 affected_tasks: ["1.1"]
 created_at: 2026-09-03T16:30:00+08:00
 ---
@@ -540,29 +675,29 @@ source_ref: "run:fixture-red"
 affected_tasks: ["1.1"]
 created_at: 2026-09-03T16:00:00+08:00
 resolved_at: 2026-09-03T16:35:00+08:00
-superseded_by: fixture/evolution-successor#issue-20260903-163000-successor-owner
+superseded_by: fixture/test-evolution-successor#issue-20260903-163000-successor-owner
 ---
 
 # Fixture Finding
 '@
     [System.IO.File]::WriteAllText($evolutionIssuePath, $supersededEvolutionIssue, [System.Text.UTF8Encoding]::new($false))
-    $supersededEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution'; RequireTerminal = $true }
+    $supersededEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle'; RequireTerminal = $true }
     Assert-Equal 'Succeeded' $supersededEvolution.status 'the terminal gate accepts an exact existing v2 successor owner'
     Assert-Equal 1 $supersededEvolution.data.IssueCounts.Superseded 'exact evolution status reports the superseded terminal state'
 
-    $selfSupersededIssue = $supersededEvolutionIssue.Replace('fixture/evolution-successor#issue-20260903-163000-successor-owner', 'fixture/evolution#issue-20260903-160000-fixture-finding')
+    $selfSupersededIssue = $supersededEvolutionIssue.Replace('fixture/test-evolution-successor#issue-20260903-163000-successor-owner', 'fixture/test-evolution-lifecycle#issue-20260903-160000-fixture-finding')
     [System.IO.File]::WriteAllText($evolutionIssuePath, $selfSupersededIssue, [System.Text.UTF8Encoding]::new($false))
-    $selfSupersededEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution'; RequireTerminal = $true }
+    $selfSupersededEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle'; RequireTerminal = $true }
     Assert-Equal 'Failed' $selfSupersededEvolution.status 'the terminal gate rejects a self-superseded material issue'
     Assert-Match $selfSupersededEvolution.error.message 'cannot reference itself' 'self-supersession has an exact diagnostic'
     [System.IO.File]::WriteAllText($evolutionIssuePath, $rejectedEvolutionIssue, [System.Text.UTF8Encoding]::new($false))
 
     $invalidCapturedEvaluation = $evolutionEvaluation.Replace('captured_at: 2026-09-03T16:10:00+08:00', 'captured_at: not-a-timestamp')
     [System.IO.File]::WriteAllText($evolutionEvaluationPath, $invalidCapturedEvaluation, [System.Text.UTF8Encoding]::new($false))
-    $invalidEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution' }
+    $invalidEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle' }
     Assert-Equal 'Succeeded' $invalidEvolution.status 'structural status reports invalid evaluation metadata without hiding the finding summary'
     Assert-True (@($invalidEvolution.data.StructuralErrors | Where-Object { $_ -match 'captured_at' }).Count -eq 1) 'invalid evaluation captured_at is reported exactly'
-    $invalidTerminalEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/evolution'; RequireTerminal = $true }
+    $invalidTerminalEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ Change = 'fixture/test-evolution-lifecycle'; RequireTerminal = $true }
     Assert-Equal 'Failed' $invalidTerminalEvolution.status 'the exact terminal gate rejects invalid workflow evaluation metadata'
 
     $unscopedTerminalEvolution = Invoke-Harness -Command 'harness.evolution.status' -Context $workspaceContext -Parameters @{ RequireTerminal = $true }

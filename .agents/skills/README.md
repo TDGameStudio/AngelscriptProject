@@ -44,6 +44,8 @@ OpenSpec is used only when the user explicitly names a Change or the accepted wo
 
 For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation.
 
+New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`; use `feature`, not `feat`. The OpenSpec record-schema reference owns the full distinction and immutable-archive boundary.
+
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
 - `openspec-explore` — deep read-only discovery before creating a new feature, architecture refactor, or major behavior-change Change; it produces a decision-complete handoff and is never invoked after target Change creation.
 - `openspec-continue-change` — create the next missing artifact.

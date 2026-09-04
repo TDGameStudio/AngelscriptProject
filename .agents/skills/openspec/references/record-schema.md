@@ -24,6 +24,14 @@ openspec/
 
 The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. Maintained project records, Skills, workflows, templates, and command documentation use English; files explicitly named with `_ZH` are the sole temporary localization exception.
 
+## Change identity
+
+New AngelscriptProject Change IDs use `<domain>/<type>-<scope>-<outcome>`. The leaf is lowercase kebab-case and its type is exactly one of `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`. Use `feature`, not the Git commit type `Feat` or the alias `feat`.
+
+Use `refactor` when module boundaries, dependencies, or structural shape change. Use `improve` for quality, diagnostics, performance, readability, or ergonomics without a structural reshape. Keep both a concrete scope and an outcome; do not use a bare verb or bundle unrelated outcomes into one Change.
+
+Harness enforces this project policy for normal `change create` targets and `change move --to` targets. An existing nonconforming active source may move to a conforming target. The portable CLI remains project-neutral, and immutable archive IDs and paths are never renamed by this policy.
+
 ## Change attachments
 
 ```text

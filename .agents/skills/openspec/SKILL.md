@@ -31,6 +31,8 @@ Read [commands/README.md](commands/README.md), then only the one command documen
 
 ## Lifecycle routes
 
+Before creating or renaming a Change, follow the project `<domain>/<type>-<scope>-<outcome>` convention in [record schema](references/record-schema.md). Harness rejects a nonconforming target before the portable CLI runs; historical archives remain immutable.
+
 - Deep discovery before creating a new feature, architecture refactor, or major behavior-change record: `openspec-explore`; its accepted decision-complete handoff feeds `change create` and planning. Never invoke it after the target Change exists.
 - Create the next missing artifact: `openspec-continue-change`.
 - Revise existing artifacts or apply an evidence-gated replan: `openspec-update-change`.

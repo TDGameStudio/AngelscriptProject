@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_429b339c-d342-4f26-ad32-56f852692c8f
+  id: harness/fix-openspec-change-naming
+  title: Restore OpenSpec Change naming
+  description: Restore and enforce the project semantic Change naming convention without rewriting immutable archives.
+workflow: angelscript
+created_at: 2026-09-04T02:42:36Z
+goal: New active Changes use domain/type-scope-outcome identities and invalid targets fail before mutation.
+affected_areas:
+- harness
+- openspec
+archived_at: 2026-09-04T03:00:21Z
+archive_schema: closure-v1
+closure:
+  kind: completed

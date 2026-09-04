@@ -28,6 +28,7 @@ OpenSpec is opt-in: create or mutate a Change only when the user or accepted wor
 
 Before creating a Change, establish the authorized objective, selected workspace, and whether the intended behavior is decision-complete:
 
+- Name a new Change `<domain>/<type>-<scope>-<outcome>` with an allowed type from the OpenSpec [record schema](../openspec/references/record-schema.md). Keep unrelated outcomes in separate Changes and never rename an immutable archive to repair historical style.
 - A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff uses deep Explore before Change creation.
 - A clear defect repair, mechanical documentation change, or accepted ready-to-execute plan may skip deep Explore.
 - A decision-complete exploration handoff is not an active Change. If OpenSpec owns the work, resolve or create the canonical Change and its Ready Task DAG before implementation mutation.
