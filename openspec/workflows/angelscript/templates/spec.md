@@ -10,22 +10,21 @@ The system SHALL <!-- durable externally observable behavior -->.
 
 #### Scenario: <!-- scenario name -->
 - **GIVEN** <!-- optional starting state; delete when unused -->
+  > Context: <!-- optional durable context for this GIVEN; delete when unused -->
 - **WHEN** <!-- required trigger or action -->
+  > Inputs: <!-- optional relevant inputs for this WHEN; delete when unused -->
+  >
+  > Details: <!-- optional durable explanation for this WHEN; delete when unused -->
+
+  1. <!-- optional durable behavior order or rule precedence; not implementation steps -->
+  2. <!-- optional next durable result; delete the list when unused -->
 - **THEN** <!-- required primary observable result -->
+  > Observables: <!-- optional externally visible evidence for this THEN; delete when unused -->
+
+  - <!-- optional durable result, example, or edge case; delete when unused -->
 - **AND** <!-- optional additional result; delete when unused -->
+  > Verification: <!-- optional stable oracle or test family for this AND; delete when unused -->
 - **BUT** <!-- optional negative guarantee; delete when unused -->
+  > Boundaries: <!-- optional exclusion or limit for this BUT; delete when unused -->
 
-> Context: <!-- optional; delete when unused -->
-> Inputs: <!-- optional; delete when unused -->
-> Observables: <!-- optional; delete when unused -->
-> Boundaries: <!-- optional; delete when unused -->
-> Verification: <!-- optional stable oracle or test family; delete when unused -->
->
-> Details: <!-- optional durable explanation; delete this whole block when unused -->
->
-> 1. <!-- optional durable behavior order or rule precedence; not implementation steps -->
-> 2. <!-- optional next durable result; delete the list when unused -->
->
-> - <!-- optional durable example, edge case, or boundary; delete when unused -->
-
-<!-- The Scenario-owned detail block may instead use concise prose, ordered or unordered lists, examples, or tables. It carries no Task state. -->
+<!-- Each clause-owned detail block is indented beneath its exact behavior item. It may use concise quoted notes, prose, ordered or unordered lists, examples, or tables and carries no Task state. -->

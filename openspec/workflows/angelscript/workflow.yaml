@@ -22,9 +22,10 @@ artifacts:
     Write this record in English and only when the change adds or modifies behavior worth preserving.
     Write Requirements as durable externally observable SHALL behavior and use the Scenario Card
     contract in .agents/skills/openspec/references/specs.md. Every ordinary scenario keeps a clear
-    `WHEN` and `THEN`; when a complex case benefits, add one Scenario-owned detail block using only
-    useful quoted labels, prose, ordered or unordered lists, examples, or tables. Keep simple scenarios
-    compact and never disguise implementation steps, Task state, or transient evidence as behavior.
+    `WHEN` and `THEN`; when a complex clause benefits, attach one clause-owned detail block immediately
+    beneath that exact `GIVEN`, `WHEN`, `THEN`, `AND`, or `BUT` item using useful quoted labels, prose,
+    ordered or unordered lists, examples, or tables. Keep simple clauses compact and never disguise
+    implementation steps, Task state, or transient evidence as behavior.
   requires: []
   context:
   - proposal

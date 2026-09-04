@@ -78,13 +78,13 @@ This capability defines exact-workspace Git inspection and commits, reviewed loc
 
 #### Scenario: Report resumable partial completion
 - **WHEN** all static preflight passed but a later repository commit or hook fails after an earlier submodule committed
+  > Context: Failure occurs after at least one repository has already produced a valid commit.
 - **THEN** the failing repository restores its own ref and index, the operation accurately reports earlier completed repositories and pending work, and no completed earlier commit is destructively rolled back
+  > Details:
 
-> Details:
->
-> 1. Earlier successful repository commits remain completed and are reported with their resulting heads.
-> 2. The failing repository returns to its pre-attempt ref and complete index when the compare-and-swap boundary is still owned.
-> 3. Unattempted repositories remain pending, so retry can resume without duplicating earlier commits.
+  1. Earlier successful repository commits remain completed and are reported with their resulting heads.
+  2. The failing repository returns to its pre-attempt ref and complete index when the compare-and-swap boundary is still owned.
+  3. Unattempted repositories remain pending, so retry can resume without duplicating earlier commits.
 
 #### Scenario: Commit exact linked-worktree paths
 - **WHEN** a caller targets a registered linked WorkspaceRoot with a dirty top-level submodule and parent gitlink

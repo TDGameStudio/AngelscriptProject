@@ -436,21 +436,26 @@ $syncSpecText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills
 foreach ($token in @(
     '## Scenario Card', '- **GIVEN**', '- **WHEN**', '- **THEN**', '- **AND**', '- **BUT**',
     '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:',
-    '> Details:', 'Scenario heading', 'detail block', 'ordered or unordered lists', 'examples', 'tables',
+    '> Details:', 'behavior-clause list item', 'immediately indented beneath', 'same readable composition shape',
+    'clause-owned block', 'ordered or unordered lists', 'examples', 'tables',
     'durable behavior order', 'ordinary Markdown', 'not parser fields', 'delete unused', 'simple scenario'
 )) {
     Assert-True ($specAuthoringText.Contains($token)) "Scenario Card contract is missing: $token"
 }
+Assert-True (-not $specAuthoringText.Contains('Scenario heading owns one optional progressive detail block')) 'Scenario Card detail must not remain a shared Scenario-owned tail.'
 foreach ($token in @('Specs', 'Design', 'Tasks', 'Attachments', 'durable externally observable behavior', 'implementation steps', 'one-off evidence')) {
     Assert-True ($specAuthoringText.Contains($token)) "Specification content ownership is missing: $token"
 }
 foreach ($token in @('ADDED', 'MODIFIED', 'REMOVED', 'RENAMED', 'same-name scenario', 'complete Scenario Card', 'new scenario name', 'unspecified scenarios', 'requirement body')) {
     Assert-True ($specAuthoringText.Contains($token)) "Specification delta semantics are missing: $token"
 }
-foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:', '> Details:', '> 1.', '> -')) {
+foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:', '> Details:', '  1.', '  -')) {
     Assert-True ($specTemplateText.Contains($token)) "Specification template is missing: $token"
 }
-foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'Scenario-owned detail block', 'ordered or unordered lists', 'simple scenarios')) {
+Assert-True ($specTemplateText -match '(?m)^- \*\*WHEN\*\*[^\r\n]*\r?\n  > ') 'Specification template must nest quoted detail beneath WHEN.'
+Assert-True ($specTemplateText -match '(?m)^  1\. ') 'Specification template must demonstrate a Task-like ordered list nested beneath one behavior clause.'
+Assert-True ($specTemplateText -match '(?m)^- \*\*THEN\*\*[^\r\n]*\r?\n  > ') 'Specification template must nest quoted detail beneath THEN.'
+foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'clause-owned detail block', 'ordered or unordered lists', 'simple clauses')) {
     Assert-True ($workflowDefinitionText.Contains($token)) "Workflow specification instruction is missing: $token"
 }
 Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[ \t]*\r?$') 'Angelscript workflow must retain record-v1.'
@@ -528,12 +533,12 @@ foreach ($entry in ([ordered]@{
     'openspec-sync-specs' = $syncSpecText
     'openspec-verify-change' = $verifyText
 }).GetEnumerator()) {
-    foreach ($token in @('Scenario-owned detail block', 'lists', 'complete Scenario Card')) {
+    foreach ($token in @('clause-owned detail block', 'lists', 'complete Scenario Card')) {
         Assert-True ($entry.Value.Contains($token)) "$($entry.Key) is missing flexible Scenario detail guidance: $token"
     }
 }
 
-foreach ($token in @('Scenario-owned detail block', 'ordered or unordered lists', 'no Task state')) {
+foreach ($token in @('clause-owned detail block', 'ordered or unordered lists', 'no Task state')) {
     Assert-True ($openSpecEntryText.Contains($token)) "OpenSpec entry is missing flexible Scenario detail guidance: $token"
     Assert-True ($skillsReadmeText.Contains($token)) "Skills README is missing flexible Scenario detail guidance: $token"
     Assert-True ($liveConfigText.Contains($token)) "OpenSpec config is missing flexible Scenario detail guidance: $token"
@@ -549,8 +554,9 @@ $representativeScenarioDetails = [ordered]@{
 foreach ($entry in $representativeScenarioDetails.GetEnumerator()) {
     $text = Get-Content -Raw -LiteralPath (Join-Path $projectRoot $entry.Key)
     $block = Get-ScenarioBlock -Text $text -Name $entry.Value
-    Assert-True ($block.Contains('> Details:')) "Representative Scenario lacks a Details block: $($entry.Value)"
-    Assert-True ($block -match '(?m)^> (?:-|1\.) ') "Representative Scenario lacks a quoted list: $($entry.Value)"
+    Assert-True ($block -match '(?m)^- \*\*WHEN\*\*[^\r\n]*\r?\n  > ') "Representative Scenario lacks WHEN-owned detail: $($entry.Value)"
+    Assert-True ($block -match '(?m)^- \*\*THEN\*\*[^\r\n]*\r?\n  > ') "Representative Scenario lacks THEN-owned detail: $($entry.Value)"
+    Assert-True ($block -match '(?m)^  (?:>|1\.) ') "Representative Scenario lacks an indented nested detail line: $($entry.Value)"
 }
 
 foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenario name', 'Preserve unspecified scenarios', 'requirement body', 'Remove delta-operation headers')) {

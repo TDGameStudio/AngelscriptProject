@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_4f5bfe3c-8d2c-4b49-9aa0-7bf382cdadc2
+  id: harness/fix-spec-clause-detail-blocks
+  title: Attach optional detail blocks to individual Spec clauses
+  description: Make each Scenario behavior clause own flexible nested explanatory content like a Task node owns its detail block.
+workflow: angelscript
+created_at: 2026-09-04T04:13:38Z
+goal: Let GIVEN, WHEN, THEN, AND, and BUT entries each carry optional indented blockquotes, prose, lists, examples, or tables without creating a second schema.
+affected_areas:
+- .agents/skills/openspec
+- openspec/workflows/angelscript
+- openspec/specs/harness/core
+archived_at: 2026-09-04T04:27:21Z
+archive_schema: closure-v1
+closure:
+  kind: completed
