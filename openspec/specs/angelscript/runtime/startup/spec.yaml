@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_47fe5bcb-afd3-46c6-92c8-f32bd3c3341a
+  id: angelscript/runtime/startup
+  title: Runtime Startup
+  description: AngelScript runtime startup and reconstruction-state behavior.

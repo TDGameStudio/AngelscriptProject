@@ -1,4 +1,5 @@
 // @angelscript-jit-scaffold revision=2 kind=module-source
+#include "Core/AngelscriptRuntimeModule.h"
 #include "Modules/ModuleManager.h"
 #include "StaticJIT/AngelscriptJITProvider.h"
 
@@ -11,6 +12,11 @@ class FAngelscriptJITModule final
 public:
 	virtual void StartupModule() override
 	{
+		if (!FAngelscriptRuntimeModule::IsLegacyRuntimeEnabled())
+		{
+			return;
+		}
+
 		IModularFeatures::Get().RegisterModularFeature(
 			IAngelscriptJITArtifactProvider::FeatureName(), this);
 		bRegistered = true;

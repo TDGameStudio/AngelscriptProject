@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_24639aff-31d8-4148-ae03-7e12fcd1edd1
+  id: angelscript/testing
+  title: AngelScript Testing
+  description: Test architecture, discovery, and verification behavior.

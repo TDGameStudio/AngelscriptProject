@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_b5f5e24b-dee2-4813-bdd8-78391aee2376
+  id: angelscript/runtime
+  title: AngelScript Runtime
+  description: Runtime startup, execution, and lifecycle behavior.

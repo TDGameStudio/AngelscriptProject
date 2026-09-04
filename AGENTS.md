@@ -23,6 +23,12 @@ This repository develops and validates `Plugins/Angelscript` as a reusable Unrea
 - Do not treat `Quick`, `Performance`, `Integration`, an Unreal build, UE Automation, or a full suite as an unconditional daily gate. Select them only when their documented scope matches the demonstrated impact.
 - Record the tests actually run and any intentionally omitted heavier tests with the reason. Load `.agents/skills/harness/references/verification.md` when choosing or expanding the verification scope.
 
+## AngelScript reconstruction baseline
+
+- The preserved legacy AngelScript runtime and old test corpus are intentionally dormant while the language stack is reconstructed; retained source is reference material, not a supported config-restorable path.
+- New C++ Automation tests live under `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/` and use the public identity `Angelscript.UnitTest.<Area>.<Scenario>`.
+- Treat `WITH_ANGELSCRIPT_UNITTESTS` as the disabled legacy gate and `WITH_ANGELSCRIPT_TESTS` as the enabled replacement gate. Route detailed startup and test behavior to `openspec/specs/angelscript/` and legacy-source isolation mechanics to `.agents/skills/angelscript-test-guide/references/legacy-source-isolation.md`.
+
 ## Execution and Git boundaries
 
 - Route UE discovery, builds, tests, suites, commandlets, status, progress, and cancellation only through Harness `ue.*` routes for the selected workspace. Root `Tools` PowerShell wrappers are not a fallback.

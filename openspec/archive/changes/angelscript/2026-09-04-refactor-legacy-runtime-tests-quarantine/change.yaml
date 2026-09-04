@@ -1,0 +1,21 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_f52faba7-58f7-4ca1-be2e-f0f872322876
+  id: angelscript/refactor-legacy-runtime-tests-quarantine
+  title: Quarantine legacy runtime and tests
+  description: Establish a reversible dormant baseline for the legacy AngelScript runtime and test suite while creating the final replacement test namespace.
+workflow: angelscript
+created_at: 2026-09-04T08:36:48Z
+goal: Keep legacy implementation available as reference but disabled by default so lexer and AST work can restart from an isolated baseline.
+affected_areas:
+- Plugins/Angelscript
+- Plugins/AngelscriptGameplayTags
+- Plugins/AngelscriptGAS
+- Config
+- openspec/specs/angelscript
+archived_at: 2026-09-04T10:02:44Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Legacy AngelScript startup and test infrastructure are source-preserved but dormant, replacement tests and durable contracts are established, all eight tasks and scoped real-UE proofs pass, and both discovered Harness issues have evidence-backed terminal dispositions.

@@ -7,17 +7,13 @@ description: Use when implementing, extending, or refactoring AngelscriptProject
 
 Use this skill as the quick execution guide for writing or refactoring C++ automation tests in `AngelscriptProject`.
 
-`Documents/UnitTest/UnitTest.md` is the current authority for unit-test structure. Read it before editing tests when the task touches CQTest, HotReload, Bindings, inline AngelScript fixtures, helper extraction, assertions, or validation. If this skill conflicts with `UnitTest.md`, follow `UnitTest.md` and update this skill.
+The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests go in `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/`, use Unreal Automation directly, and register beneath `Angelscript.UnitTest.<Area>.<Scenario>`. The physical `NewVersion` name is temporary and must not appear in public test identities.
 
-Related sources:
+Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT. The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
-- `Documents/UnitTest/UnitTest.md`: required structure and style for new or refactored C++ automation tests.
-- `Documents/Guides/Test.md`: runner entry points, CQTest framework details, templates, and report layout.
-- `Documents/Guides/TestConventions.md`: test layers, directory placement, naming, and Automation prefixes.
-- `Documents/Rules/ASInlineFormattingRule.md`: inline AngelScript formatting.
-- `Plugins/Angelscript/Source/AngelscriptTest/Template/`: current templates.
+The CQTest guidance below describes the quarantined legacy corpus. Treat it as recovery/reference material unless a later explicit OpenSpec Change restores that framework; it is not the default for new reconstruction tests.
 
-## Immediate Rules
+## Legacy CQTest Rules
 
 - Prefer `TEST_CLASS_WITH_FLAGS` + scenario-specific `TEST_METHOD` for new CQTest work.
 - Keep the main test flow inside `TEST_METHOD`; do not move it into file-level `RunXxxSection()` wrappers.
@@ -168,16 +164,13 @@ For delegate hot reload, distinguish delegate declaration from `UPROPERTY` membe
 
 ## Layer And Placement
 
-Use `Documents/Guides/TestConventions.md` for the authoritative layer matrix. Quick routing:
+Legacy layer routing:
 
 - `AngelscriptRuntime/Tests/`: runtime C++ unit paths without script integration.
-- `AngelscriptEditor/Tests/`: editor-only behavior.
-- `AngelscriptTest/AngelScriptSDK/`: raw AngelScript SDK tests; do not include `FAngelscriptEngine`.
-- `AngelscriptTest/Bindings/`: AS-visible binding surface and API matrices.
-- `AngelscriptTest/Syntax`, `Compiler`, `Preprocessor`, `Core`, `ClassGenerator`, `FileSystem`: runtime integration without world lifecycle.
-- `AngelscriptTest/Actor`, `Component`, `Delegate`, `GC`, `HotReload`, `Interface`, `Subsystem`: world, UObject, actor, reload, or functional behavior.
-- `AngelscriptTest/Coverage/`: coverage-matrix closure tracked in OpenSpec `test-coverage` (`coverage-matrix.md`).
-- `AngelscriptTest/Learning/*`: teaching or trace-oriented tests.
+- `AngelscriptEditor/Legacy/Tests/`: editor-only legacy behavior.
+- `AngelscriptTest/Legacy/AngelScriptSDK/`: raw AngelScript SDK tests; do not include `FAngelscriptEngine`.
+- `AngelscriptTest/Legacy/Bindings/`: AS-visible binding surface and API matrices.
+- Other old themes remain beneath `AngelscriptTest/Legacy/` and are excluded from active source discovery.
 
 Automation prefixes should match the existing theme and nearby files. Do not invent a new prefix shape without checking `TestConventions.md`.
 
@@ -194,19 +187,32 @@ Automation prefixes should match the existing theme and nearby files. Do not inv
 
 ## Verification
 
-After changing CQTest or HotReload tests, run the narrowest useful Automation prefix through `Tools\RunTests.ps1`, then record pass/fail counts and report path.
+Run the narrowest useful Automation prefix through Harness and record the managed run ID, pass/fail counts, and report path.
 
 Examples:
 
 ```powershell
-Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload.ReloadDelegates" -Label hotreload-reload-delegates -TimeoutMs 600000
-Tools\RunTests.ps1 -TestPrefix "Angelscript.TestModule.HotReload.Delegates" -Label hotreload-delegates -TimeoutMs 600000
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot (Get-Location).Path
+Invoke-Harness -Command workspace.activate -Context $context | Out-Null
+Invoke-Harness -Command ue.test -Context $context -Parameters @{
+    TestPrefix = 'Angelscript.UnitTest.Baseline'
+    Fast = $true
+    TimeoutMs = 600000
+}
 ```
 
-Run `Tools\RunBuild.ps1` when the change can affect compilation structure, includes, unity/non-unity behavior, module dependencies, or runtime headers:
+Run a Harness build when the change can affect compilation structure, includes, unity/non-unity behavior, module dependencies, or runtime headers:
 
 ```powershell
-Tools\RunBuild.ps1 -ExtraArgs -NoHotReloadFromIDE -TimeoutMs 1800000
+Invoke-Harness -Command ue.build -Context $context -Parameters @{
+    Target = 'AngelscriptProjectEditor'
+    Platform = 'Win64'
+    Configuration = 'Development'
+    BuildConcurrency = 'Auto'
+    ConcurrencyPolicy = 'Auto'
+    TimeoutMs = 3600000
+}
 ```
 
 Never mark coverage docs, tasks, or change records complete before fresh verification passes.

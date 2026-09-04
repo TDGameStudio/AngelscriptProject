@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_9dee7f2e-b979-495d-a42e-8f20708753ae
+  id: angelscript/testing/baseline
+  title: Testing Baseline
+  description: Legacy test isolation and replacement Automation baseline.
