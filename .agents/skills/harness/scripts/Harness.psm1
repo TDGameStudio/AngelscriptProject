@@ -860,6 +860,75 @@ function Test-HarnessIsoTimestamp {
         [ref]$parsed)
 }
 
+function ConvertTo-HarnessIsoInstant {
+    param([AllowEmptyString()][string]$Value)
+
+    if (-not (Test-HarnessIsoTimestamp $Value)) { return $null }
+    return [DateTimeOffset]::Parse(
+        $Value,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::RoundtripKind)
+}
+
+function Get-HarnessAttachmentIndexCount {
+    param(
+        [AllowEmptyString()][string]$IndexText,
+        [Parameter(Mandatory = $true)][string]$AttachmentRelativePath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($IndexText)) { return 0 }
+    $escapedPath = [regex]::Escape($AttachmentRelativePath.Replace('\', '/'))
+    return [regex]::Matches($IndexText, "(?m)^[ \t]*-[ \t]+``$escapedPath``(?:[ \t]|$)").Count
+}
+
+function Get-HarnessIssueBodyProblems {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $problems = New-Object System.Collections.Generic.List[string]
+    $file = Get-Item -LiteralPath $Path -ErrorAction Stop
+    if ($file.Length -gt 4MB) {
+        $problems.Add('issue body exceeds the 4 MiB validation limit') | Out-Null
+        return @($problems)
+    }
+    $text = [System.IO.File]::ReadAllText($file.FullName)
+    foreach ($heading in @('Symptom', 'Investigation Log', 'Root Cause', 'Disposition', 'Evidence', 'Links')) {
+        $match = [regex]::Match($text, "(?ms)^##[ \t]+$([regex]::Escape($heading))[ \t]*\r?\n(?<body>.*?)(?=^##[ \t]+|\z)")
+        if (-not $match.Success -or [string]::IsNullOrWhiteSpace($match.Groups['body'].Value)) {
+            $problems.Add("required issue section '$heading' is missing or empty") | Out-Null
+        }
+    }
+    foreach ($heading in @('Failure Evidence (RED)', 'Resolution Evidence (GREEN)', 'What This Proves', 'What This Does Not Prove')) {
+        $match = [regex]::Match($text, "(?ms)^###[ \t]+$([regex]::Escape($heading))[ \t]*\r?\n(?<body>.*?)(?=^###[ \t]+|^##[ \t]+|\z)")
+        if (-not $match.Success -or [string]::IsNullOrWhiteSpace($match.Groups['body'].Value)) {
+            $problems.Add("required issue evidence section '$heading' is missing or empty") | Out-Null
+        }
+    }
+    return @($problems | ForEach-Object { [string]$_ })
+}
+
+function Get-HarnessReviewFindingRecords {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $file = Get-Item -LiteralPath $Path -ErrorAction Stop
+    if ($file.Length -gt 8MB) { throw 'Review body exceeds the 8 MiB validation limit.' }
+    $text = [System.IO.File]::ReadAllText($file.FullName)
+    $headingMatches = @([regex]::Matches($text, '(?im)^[ \t]*#{2,6}[ \t]+Finding(?:[ \t]+[0-9]+)?(?:\b|[ \t]+|-).*?$'))
+    $records = New-Object System.Collections.Generic.List[object]
+    for ($index = 0; $index -lt $headingMatches.Count; $index++) {
+        $start = $headingMatches[$index].Index
+        $end = if ($index + 1 -lt $headingMatches.Count) { $headingMatches[$index + 1].Index } else { $text.Length }
+        $body = $text.Substring($start, $end - $start)
+        $severityMatch = [regex]::Match($body, '(?im)^[ \t]*(?:[-*][ \t]*)?severity[ \t]*:[ \t]*(?<value>Critical|Required|Advisory)[ \t]*$')
+        $statusMatch = [regex]::Match($body, '(?im)^[ \t]*(?:[-*][ \t]*)?(?:status|state)[ \t]*:[ \t]*(?<value>open|resolved|rejected|deferred)[ \t]*$')
+        $records.Add([pscustomobject][ordered]@{
+            Heading  = $headingMatches[$index].Value.Trim()
+            Severity = if ($severityMatch.Success) { $severityMatch.Groups['value'].Value } else { '' }
+            Status   = if ($statusMatch.Success) { $statusMatch.Groups['value'].Value.ToLowerInvariant() } else { '' }
+        }) | Out-Null
+    }
+    return @($records | ForEach-Object { $_ })
+}
+
 function Get-HarnessChangeYamlId {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -915,11 +984,83 @@ function Get-HarnessWorkspaceRelativePath {
     return $fullPath.Substring($prefix.Length).Replace('\', '/')
 }
 
+function Invoke-HarnessEvolutionTaskPlan {
+    param(
+        [Parameter(Mandatory = $true)]$Context,
+        [Parameter(Mandatory = $true)][string]$Change
+    )
+
+    $executable = Join-Path ([string]$Context.HarnessRoot) '.agents/skills/openspec/bin/openspec.exe'
+    if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+        throw "Packaged OpenSpec executable is missing: $executable"
+    }
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $locationPushed = $false
+    try {
+        Push-Location -LiteralPath ([string]$Context.WorkspaceRoot)
+        $locationPushed = $true
+        $output = @(& $executable instructions apply --json --change $Change 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        if ($locationPushed) { Pop-Location }
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "OpenSpec TaskPlan failed with exit code ${exitCode}: $(@($output | ForEach-Object { [string]$_ }) -join [Environment]::NewLine)"
+    }
+    return ConvertFrom-HarnessTaskPlanOutput -Output @($output)
+}
+
+function Add-HarnessLengthFramedHashData {
+    param(
+        [Parameter(Mandatory = $true)][System.Security.Cryptography.IncrementalHash]$Hash,
+        [Parameter(Mandatory = $true)][byte[]]$Data
+    )
+
+    $length = [BitConverter]::GetBytes([long]$Data.LongLength)
+    if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($length) }
+    $Hash.AppendData($length)
+    if ($Data.Length -gt 0) { $Hash.AppendData($Data) }
+}
+
+function Get-HarnessChangeInputSha256 {
+    param([Parameter(Mandatory = $true)][string]$ChangeRoot)
+
+    $root = [System.IO.Path]::GetFullPath($ChangeRoot).TrimEnd('\', '/')
+    $excluded = 'attachments/data/workflow-evaluation.md'
+    $files = New-Object System.Collections.Generic.List[object]
+    foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction Stop)) {
+        $relative = $file.FullName.Substring($root.Length).TrimStart('\', '/').Replace('\', '/')
+        if ($relative -ne $excluded) { $files.Add([pscustomobject]@{ File = $file; Relative = $relative }) | Out-Null }
+    }
+    $files.Sort([System.Comparison[object]]{
+        param($left, $right)
+        return [System.StringComparer]::Ordinal.Compare([string]$left.Relative, [string]$right.Relative)
+    })
+    $hash = [System.Security.Cryptography.IncrementalHash]::CreateHash([System.Security.Cryptography.HashAlgorithmName]::SHA256)
+    try {
+        foreach ($entry in $files) {
+            if (($entry.File.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "Change input contains a reparse-point file: $($entry.Relative)"
+            }
+            Add-HarnessLengthFramedHashData -Hash $hash -Data ([System.Text.Encoding]::UTF8.GetBytes([string]$entry.Relative))
+            Add-HarnessLengthFramedHashData -Hash $hash -Data ([System.IO.File]::ReadAllBytes($entry.File.FullName))
+        }
+        return [Convert]::ToHexString($hash.GetHashAndReset()).ToLowerInvariant()
+    }
+    finally {
+        $hash.Dispose()
+    }
+}
+
 function Get-HarnessEvolutionStatus {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]$Context,
         [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')][string]$Change = '',
+        [ValidateSet('completed', 'abandoned', 'superseded')][string]$ClosureKind = 'completed',
         [switch]$RequireTerminal
     )
 
@@ -976,8 +1117,12 @@ function Get-HarnessEvolutionStatus {
 
     $resolvedChange = Resolve-HarnessEvolutionChange -Context $Context -Change $Change
     $changeRoot = [string]$resolvedChange.Root
+    if ($RequireTerminal -and [bool]$resolvedChange.Archived) {
+        throw 'RequireTerminal applies only to one exact active Change. Use openspec validate --archived --strict --json for historical archived validation.'
+    }
     $attachmentRoot = Join-Path $changeRoot 'attachments'
     $implementationRoot = Join-Path $attachmentRoot 'implementation'
+    $reviewRoot = Join-Path $attachmentRoot 'reviews'
     $indexPath = Join-Path $attachmentRoot 'INDEX.md'
     $indexText = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/') } else { '' }
     $structuralErrors = New-Object System.Collections.Generic.List[string]
@@ -986,9 +1131,39 @@ function Get-HarnessEvolutionStatus {
     $issueRecords = New-Object System.Collections.Generic.List[object]
     $counts = [ordered]@{ Open = 0; Resolved = 0; Rejected = 0; Superseded = 0 }
     $legacyIssueCount = 0
+    $reviewRecords = New-Object System.Collections.Generic.List[object]
+    $reviewCounts = [ordered]@{ Open = 0; Closed = 0; Superseded = 0 }
+    $legacyReviewCount = 0
+    $openReviewPaths = New-Object System.Collections.Generic.List[string]
+    $terminalEvidenceInstants = New-Object System.Collections.Generic.List[DateTimeOffset]
+    $currentInputSha256 = ''
+    $taskPlanValid = $false
+    $taskCount = 0
+    $incompleteTaskIds = @()
+    $taskIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
 
+    if (-not [bool]$resolvedChange.Archived) {
+        try {
+            $currentInputSha256 = Get-HarnessChangeInputSha256 -ChangeRoot $changeRoot
+        }
+        catch {
+            $structuralErrors.Add("Change input digest is invalid: $($_.Exception.Message)") | Out-Null
+        }
+        try {
+            $taskPlan = Invoke-HarnessEvolutionTaskPlan -Context $Context -Change $Change
+            $taskPlanValid = $true
+            $taskCount = @($taskPlan.tasks).Count
+            $incompleteTaskIds = @($taskPlan.tasks | Where-Object { -not [bool]$_.done } | ForEach-Object { [string]$_.id })
+            foreach ($task in @($taskPlan.tasks)) { [void]$taskIds.Add([string]$task.id) }
+        }
+        catch {
+            $structuralErrors.Add("TaskPlan is invalid: $($_.Exception.Message)") | Out-Null
+        }
+    }
+
+    $isActiveChange = -not [bool]$resolvedChange.Archived
     if (Test-Path -LiteralPath $implementationRoot -PathType Container) {
-        foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -File -Filter 'issue-*.md' | Sort-Object Name)) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -Recurse -File -Filter 'issue-*.md' | Sort-Object FullName)) {
             $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
             $attachmentRelativePath = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
             $frontmatter = Read-HarnessFrontmatter -Path $file.FullName
@@ -998,6 +1173,7 @@ function Get-HarnessEvolutionStatus {
             $status = (Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'status').ToLowerInvariant()
             if ([string]::IsNullOrWhiteSpace($schema)) {
                 $legacyIssueCount++
+                if ($isActiveChange) { $structuralErrors.Add("${relativePath}: active material issue requires issue_schema openspec-material-issue-v2") | Out-Null }
                 $issueRecords.Add([pscustomobject]@{ Path = $relativePath; IssueId = $issueId; Status = $status; Schema = ''; Frontmatter = $frontmatter }) | Out-Null
                 continue
             }
@@ -1020,6 +1196,7 @@ function Get-HarnessEvolutionStatus {
             if ($affectedTasks.Count -eq 0) { $structuralErrors.Add("${relativePath}: affected_tasks requires at least one task ID") | Out-Null }
             foreach ($taskId in $affectedTasks) {
                 if ($taskId -cnotmatch '^\d+\.\d+$') { $structuralErrors.Add("${relativePath}: affected_tasks contains invalid task ID '$taskId'") | Out-Null }
+                elseif ($isActiveChange -and $taskPlanValid -and -not $taskIds.Contains($taskId)) { $structuralErrors.Add("${relativePath}: affected_tasks references unknown TaskPlan ID '$taskId'") | Out-Null }
             }
             $createdAt = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'created_at'
             if (-not (Test-HarnessIsoTimestamp $createdAt)) { $structuralErrors.Add("${relativePath}: created_at must be an ISO-8601 timestamp") | Out-Null }
@@ -1040,18 +1217,27 @@ function Get-HarnessEvolutionStatus {
                 if (-not [string]::IsNullOrWhiteSpace($resolvedAt) -or -not [string]::IsNullOrWhiteSpace($resolutionRef) -or -not [string]::IsNullOrWhiteSpace($supersededBy)) { $structuralErrors.Add("${relativePath}: open status forbids terminal fields") | Out-Null }
                 $openIssuePaths.Add($relativePath) | Out-Null
             }
-            if ([string]::IsNullOrWhiteSpace($indexText)) {
-                $structuralErrors.Add("${relativePath}: attachments/INDEX.md is required") | Out-Null
-            }
-            else {
-                $indexCount = [regex]::Matches($indexText, [regex]::Escape($attachmentRelativePath)).Count
+            if ($isActiveChange) {
+                $createdInstant = ConvertTo-HarnessIsoInstant $createdAt
+                $resolvedInstant = ConvertTo-HarnessIsoInstant $resolvedAt
+                if ($null -ne $createdInstant -and $null -ne $resolvedInstant) {
+                    if ($resolvedInstant -lt $createdInstant) { $structuralErrors.Add("${relativePath}: resolved_at must not precede created_at (invalid timestamp order)") | Out-Null }
+                    else { $terminalEvidenceInstants.Add($resolvedInstant) | Out-Null }
+                }
+                $indexCount = Get-HarnessAttachmentIndexCount -IndexText $indexText -AttachmentRelativePath $attachmentRelativePath
                 if ($indexCount -ne 1) { $structuralErrors.Add("${relativePath}: must appear in attachments/INDEX.md exactly once (actual $indexCount)") | Out-Null }
+                try {
+                    foreach ($problem in @(Get-HarnessIssueBodyProblems -Path $file.FullName)) { $structuralErrors.Add("${relativePath}: $problem") | Out-Null }
+                }
+                catch {
+                    $structuralErrors.Add("${relativePath}: issue body validation failed ($($_.Exception.Message))") | Out-Null
+                }
             }
             $issueRecords.Add([pscustomobject]@{ Path = $relativePath; IssueId = $issueId; Status = $status; Schema = $schema; SupersededBy = $supersededBy; Frontmatter = $frontmatter }) | Out-Null
         }
     }
 
-    foreach ($issue in @($issueRecords | Where-Object { $_.Schema -eq 'openspec-material-issue-v2' -and $_.Status -eq 'superseded' })) {
+    foreach ($issue in @($issueRecords | Where-Object { $isActiveChange -and $_.Schema -eq 'openspec-material-issue-v2' -and $_.Status -eq 'superseded' })) {
         $ownReference = "$Change#$($issue.IssueId)"
         if ($issue.SupersededBy -eq $ownReference) {
             $structuralErrors.Add("$($issue.Path): superseded_by cannot reference itself") | Out-Null
@@ -1060,13 +1246,38 @@ function Get-HarnessEvolutionStatus {
         if ($issue.SupersededBy -notmatch '^(?<change>[^#]+)#(?<issue>issue-.+)$') { continue }
         try {
             $targetChange = Resolve-HarnessEvolutionChange -Context $Context -Change $Matches['change']
-            $targetPath = Join-Path ([string]$targetChange.Root) ("attachments/implementation/{0}.md" -f $Matches['issue'])
-            if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) { throw 'target issue file does not exist' }
+            if ([bool]$targetChange.Archived) { throw 'target Change must be active' }
+            $targetImplementationRoot = Join-Path ([string]$targetChange.Root) 'attachments/implementation'
+            $targetFiles = @(
+                if (Test-Path -LiteralPath $targetImplementationRoot -PathType Container) {
+                    Get-ChildItem -LiteralPath $targetImplementationRoot -Recurse -File -Filter "$($Matches['issue']).md" | Sort-Object FullName
+                }
+            )
+            if ($targetFiles.Count -ne 1) { throw "target issue file must exist exactly once (actual $($targetFiles.Count))" }
+            $targetPath = $targetFiles[0].FullName
             $targetFrontmatter = Read-HarnessFrontmatter -Path $targetPath
             if ($targetFrontmatter.Errors.Count -gt 0 -or
                 (Get-HarnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'issue_schema') -ne 'openspec-material-issue-v2' -or
                 (Get-HarnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'issue_id') -ne $Matches['issue']) {
                 throw 'target is not an exact v2 material issue'
+            }
+            $targetStatus = (Get-HarnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'status').ToLowerInvariant()
+            if ($targetStatus -notin @('open', 'resolved', 'rejected')) { throw "target issue must be non-superseded with a valid status (actual '$targetStatus')" }
+            $expectedSourceRef = "issue:$ownReference"
+            if ((Get-HarnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'source_ref') -ne $expectedSourceRef) { throw "target source_ref must equal '$expectedSourceRef'" }
+            $targetAttachmentRoot = Join-Path ([string]$targetChange.Root) 'attachments'
+            $targetRelativePath = $targetPath.Substring($targetAttachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
+            $targetIndexPath = Join-Path $targetAttachmentRoot 'INDEX.md'
+            $targetIndexText = if (Test-Path -LiteralPath $targetIndexPath -PathType Leaf) { (Get-Content -LiteralPath $targetIndexPath -Raw).Replace('\', '/') } else { '' }
+            $targetIndexCount = Get-HarnessAttachmentIndexCount -IndexText $targetIndexText -AttachmentRelativePath $targetRelativePath
+            if ($targetIndexCount -ne 1) { throw "target issue must appear in its attachments/INDEX.md exactly once (actual $targetIndexCount)" }
+            $targetTaskPlan = Invoke-HarnessEvolutionTaskPlan -Context $Context -Change $Matches['change']
+            $targetTaskIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+            foreach ($task in @($targetTaskPlan.tasks)) { [void]$targetTaskIds.Add([string]$task.id) }
+            $targetAffectedTasks = @(Get-HarnessFrontmatterCollection -Frontmatter $targetFrontmatter -Name 'affected_tasks')
+            if ($targetAffectedTasks.Count -eq 0) { throw 'target affected_tasks requires at least one TaskPlan ID' }
+            foreach ($taskId in $targetAffectedTasks) {
+                if (-not $targetTaskIds.Contains($taskId)) { throw "target affected_tasks references unknown TaskPlan ID '$taskId'" }
             }
             $targetSupersededBy = Get-HarnessFrontmatterValue -Frontmatter $targetFrontmatter -Name 'superseded_by'
             if ($targetSupersededBy -eq $ownReference) { throw 'direct supersession cycle detected' }
@@ -1076,11 +1287,96 @@ function Get-HarnessEvolutionStatus {
         }
     }
 
+    if (Test-Path -LiteralPath $reviewRoot -PathType Container) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $reviewRoot -Recurse -File -Filter 'review-*.md' | Sort-Object FullName)) {
+            $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+            $attachmentRelativePath = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
+            $frontmatter = Read-HarnessFrontmatter -Path $file.FullName
+            $schema = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'review_schema'
+            $state = (Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'state').ToLowerInvariant()
+            if ([string]::IsNullOrWhiteSpace($schema)) {
+                $legacyReviewCount++
+                if ($isActiveChange) { $structuralErrors.Add("${relativePath}: active Review requires review_schema review-v2") | Out-Null }
+                $reviewRecords.Add([pscustomobject]@{ Path = $relativePath; Schema = ''; State = $state }) | Out-Null
+                continue
+            }
+            if (-not $isActiveChange) {
+                $reviewRecords.Add([pscustomobject]@{ Path = $relativePath; Schema = $schema; State = $state }) | Out-Null
+                continue
+            }
+            foreach ($problem in @($frontmatter.Errors)) { $structuralErrors.Add("${relativePath}: $problem") | Out-Null }
+            if ($schema -ne 'review-v2') {
+                $structuralErrors.Add("${relativePath}: unsupported review_schema '$schema'") | Out-Null
+                $reviewRecords.Add([pscustomobject]@{ Path = $relativePath; Schema = $schema; State = $state }) | Out-Null
+                continue
+            }
+            if ($file.BaseName -cnotmatch '^review-\d{8}-\d{6}-[a-z0-9][a-z0-9-]*$') { $structuralErrors.Add("${relativePath}: invalid Review filename") | Out-Null }
+            $reviewKind = (Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'review_kind').ToLowerInvariant()
+            if ($reviewKind -notin @('incident', 'final', 'external')) { $structuralErrors.Add("${relativePath}: invalid review_kind '$reviewKind'") | Out-Null }
+            $requestedBy = (Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'requested_by').ToLowerInvariant()
+            if ($requestedBy -notin @('user', 'external-agent')) { $structuralErrors.Add("${relativePath}: requested_by must be user or external-agent for an active Review") | Out-Null }
+            if ($state -notin @('open', 'closed', 'superseded')) {
+                $structuralErrors.Add("${relativePath}: invalid Review state '$state'") | Out-Null
+            }
+            else {
+                $reviewCounts[(Get-Culture).TextInfo.ToTitleCase($state)]++
+                if ($state -eq 'open') { $openReviewPaths.Add($relativePath) | Out-Null }
+            }
+
+            $assignedAt = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'assigned_at'
+            $reviewedAt = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'reviewed_at'
+            $closedAt = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'closed_at'
+            $assignedInstant = ConvertTo-HarnessIsoInstant $assignedAt
+            $reviewedInstant = ConvertTo-HarnessIsoInstant $reviewedAt
+            $closedInstant = ConvertTo-HarnessIsoInstant $closedAt
+            if ($null -eq $assignedInstant) { $structuralErrors.Add("${relativePath}: assigned_at must be an ISO-8601 timestamp") | Out-Null }
+            if (-not [string]::IsNullOrWhiteSpace($reviewedAt) -and $null -eq $reviewedInstant) { $structuralErrors.Add("${relativePath}: reviewed_at must be an ISO-8601 timestamp when populated") | Out-Null }
+            if (-not [string]::IsNullOrWhiteSpace($closedAt) -and $null -eq $closedInstant) { $structuralErrors.Add("${relativePath}: closed_at must be an ISO-8601 timestamp when populated") | Out-Null }
+            if ($state -eq 'closed' -and $null -eq $reviewedInstant) { $structuralErrors.Add("${relativePath}: closed Review requires reviewed_at") | Out-Null }
+            if ($state -in @('closed', 'superseded') -and $null -eq $closedInstant) { $structuralErrors.Add("${relativePath}: $state Review requires closed_at") | Out-Null }
+            if ($state -eq 'open' -and -not [string]::IsNullOrWhiteSpace($closedAt)) { $structuralErrors.Add("${relativePath}: open Review forbids closed_at") | Out-Null }
+            if ($null -ne $assignedInstant -and $null -ne $reviewedInstant -and $reviewedInstant -lt $assignedInstant) { $structuralErrors.Add("${relativePath}: reviewed_at must not precede assigned_at") | Out-Null }
+            if ($null -ne $assignedInstant -and $null -ne $closedInstant -and $closedInstant -lt $assignedInstant) { $structuralErrors.Add("${relativePath}: closed_at must not precede assigned_at") | Out-Null }
+            if ($null -ne $reviewedInstant -and $null -ne $closedInstant -and $closedInstant -lt $reviewedInstant) { $structuralErrors.Add("${relativePath}: closed_at must not precede reviewed_at") | Out-Null }
+            if ($state -in @('closed', 'superseded') -and $null -ne $closedInstant) { $terminalEvidenceInstants.Add($closedInstant) | Out-Null }
+
+            $snapshotRef = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'snapshot_ref'
+            if ([string]::IsNullOrWhiteSpace($snapshotRef) -or $snapshotRef -match '(?i)^(?:live|current|dirty|working[-_ ]?tree|live[-_ ]?worktree)$') { $structuralErrors.Add("${relativePath}: snapshot_ref must identify immutable content") | Out-Null }
+            $snapshotSha256 = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'snapshot_sha256'
+            if ($snapshotSha256 -cnotmatch '^[a-f0-9]{64}$') { $structuralErrors.Add("${relativePath}: snapshot_sha256 must be a lowercase SHA-256") | Out-Null }
+            $verdict = (Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'verdict').ToUpperInvariant()
+            if ($verdict -notin @('PENDING', 'APPROVE', 'CHANGES_REQUIRED')) { $structuralErrors.Add("${relativePath}: invalid Review verdict '$verdict'") | Out-Null }
+            if ($state -eq 'closed' -and $verdict -ne 'APPROVE') { $structuralErrors.Add("${relativePath}: closed Review requires verdict APPROVE") | Out-Null }
+
+            $indexCount = Get-HarnessAttachmentIndexCount -IndexText $indexText -AttachmentRelativePath $attachmentRelativePath
+            if ($indexCount -ne 1) { $structuralErrors.Add("${relativePath}: must appear in attachments/INDEX.md exactly once (actual $indexCount)") | Out-Null }
+            try {
+                foreach ($finding in @(Get-HarnessReviewFindingRecords -Path $file.FullName)) {
+                    if ([string]::IsNullOrWhiteSpace($finding.Severity) -or [string]::IsNullOrWhiteSpace($finding.Status)) {
+                        $structuralErrors.Add("${relativePath}: $($finding.Heading) requires valid severity and status") | Out-Null
+                    }
+                    elseif ($finding.Severity -in @('Critical', 'Required') -and $finding.Status -in @('open', 'deferred')) {
+                        $structuralErrors.Add("${relativePath}: $($finding.Severity) finding remains $($finding.Status)") | Out-Null
+                    }
+                }
+            }
+            catch {
+                $structuralErrors.Add("${relativePath}: Review finding validation failed ($($_.Exception.Message))") | Out-Null
+            }
+            $reviewRecords.Add([pscustomobject]@{ Path = $relativePath; Schema = $schema; State = $state }) | Out-Null
+        }
+    }
+
     $evaluationPath = Join-Path $attachmentRoot 'data/workflow-evaluation.md'
     $evaluationRelativePath = ''
     $evaluationResult = ''
     $evaluationCapturedAt = ''
+    $evaluationClosureKind = ''
+    $evaluationInputSha256 = ''
+    $evaluationFresh = $false
     $evaluationValid = $false
+    $evaluationCapturedInstant = $null
+    $latestTerminalEvidenceInstant = @($terminalEvidenceInstants | Sort-Object -Descending | Select-Object -First 1)
     if (Test-Path -LiteralPath $evaluationPath -PathType Leaf) {
         $evaluationRelativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $evaluationPath
         $evaluation = Read-HarnessFrontmatter -Path $evaluationPath
@@ -1089,32 +1385,59 @@ function Get-HarnessEvolutionStatus {
         $evaluationResult = (Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'result').ToLowerInvariant()
         $evaluationChange = Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'change'
         $evaluationCapturedAt = Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'captured_at'
+        $evaluationCapturedInstant = ConvertTo-HarnessIsoInstant $evaluationCapturedAt
+        $evaluationClosureKind = (Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'closure_kind').ToLowerInvariant()
+        $evaluationInputSha256 = Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'input_sha256'
         $recognizedEvaluationRecord = $evaluationRecord -eq 'harness-workflow-evaluation-v1' -or ([bool]$resolvedChange.Archived -and $evaluationRecord -eq 'hardness-workflow-evaluation-v1')
         if (-not $recognizedEvaluationRecord) { $structuralErrors.Add("${evaluationRelativePath}: record must be harness-workflow-evaluation-v1 (immutable archives may retain hardness-workflow-evaluation-v1)") | Out-Null }
         if ($evaluationResult -notin @('passed', 'failed')) { $structuralErrors.Add("${evaluationRelativePath}: result must be passed or failed") | Out-Null }
         if ($evaluationChange -ne $Change) { $structuralErrors.Add("${evaluationRelativePath}: change must equal '$Change'") | Out-Null }
         if (-not (Test-HarnessIsoTimestamp $evaluationCapturedAt)) { $structuralErrors.Add("${evaluationRelativePath}: captured_at must be an ISO-8601 timestamp") | Out-Null }
+        if (-not [bool]$resolvedChange.Archived) {
+            if ($evaluationClosureKind -notin @('completed', 'abandoned', 'superseded')) { $structuralErrors.Add("${evaluationRelativePath}: closure_kind must be completed, abandoned, or superseded") | Out-Null }
+            if ($evaluationInputSha256 -cnotmatch '^[a-f0-9]{64}$') { $structuralErrors.Add("${evaluationRelativePath}: input_sha256 must be a lowercase SHA-256") | Out-Null }
+            $evaluationFresh = -not [string]::IsNullOrWhiteSpace($currentInputSha256) -and $evaluationInputSha256 -eq $currentInputSha256
+        }
         if ([string]::IsNullOrWhiteSpace($indexText)) {
             $structuralErrors.Add("${evaluationRelativePath}: attachments/INDEX.md is required") | Out-Null
         }
         else {
             $evaluationIndexPath = $evaluationPath.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
-            $evaluationIndexCount = [regex]::Matches($indexText, [regex]::Escape($evaluationIndexPath)).Count
+            $evaluationIndexCount = Get-HarnessAttachmentIndexCount -IndexText $indexText -AttachmentRelativePath $evaluationIndexPath
             if ($evaluationIndexCount -ne 1) { $structuralErrors.Add("${evaluationRelativePath}: must appear in attachments/INDEX.md exactly once (actual $evaluationIndexCount)") | Out-Null }
         }
         $evaluationValid = $evaluation.Errors.Count -eq 0 -and $recognizedEvaluationRecord -and $evaluationResult -in @('passed', 'failed') -and $evaluationChange -eq $Change -and (Test-HarnessIsoTimestamp $evaluationCapturedAt)
+        if (-not [bool]$resolvedChange.Archived) {
+            $evaluationValid = $evaluationValid -and $evaluationClosureKind -in @('completed', 'abandoned', 'superseded') -and $evaluationInputSha256 -cmatch '^[a-f0-9]{64}$'
+        }
     }
 
     foreach ($problem in @($structuralErrors)) { $closureBlockers.Add([string]$problem) | Out-Null }
     foreach ($path in @($openIssuePaths)) { $closureBlockers.Add("open material issue: $path") | Out-Null }
+    foreach ($path in @($openReviewPaths)) { $closureBlockers.Add("open Review: $path") | Out-Null }
     if (-not (Test-Path -LiteralPath $evaluationPath -PathType Leaf)) { $closureBlockers.Add('workflow evaluation is missing') | Out-Null }
     elseif (-not $evaluationValid) { $closureBlockers.Add('workflow evaluation frontmatter is invalid') | Out-Null }
     elseif ($evaluationResult -ne 'passed') { $closureBlockers.Add("workflow evaluation result is '$evaluationResult'") | Out-Null }
+    if (-not [bool]$resolvedChange.Archived) {
+        if (-not $taskPlanValid) { $closureBlockers.Add('TaskPlan is invalid') | Out-Null }
+        elseif ($taskCount -eq 0) { $closureBlockers.Add('TaskPlan is empty') | Out-Null }
+        elseif ($ClosureKind -eq 'completed' -and $incompleteTaskIds.Count -gt 0) { $closureBlockers.Add("incomplete task(s): $($incompleteTaskIds -join ', ')") | Out-Null }
+        if ($evaluationValid -and $evaluationClosureKind -ne $ClosureKind) { $closureBlockers.Add("workflow evaluation closure_kind '$evaluationClosureKind' does not match requested '$ClosureKind'") | Out-Null }
+        if ($evaluationValid -and -not $evaluationFresh) { $closureBlockers.Add('workflow evaluation is stale because input_sha256 does not match the current Change digest') | Out-Null }
+        if ($evaluationValid -and $latestTerminalEvidenceInstant.Count -eq 1 -and $null -ne $evaluationCapturedInstant -and $evaluationCapturedInstant -lt $latestTerminalEvidenceInstant[0]) {
+            $closureBlockers.Add("workflow evaluation captured_at precedes latest terminal evidence at $($latestTerminalEvidenceInstant[0].ToString('o'))") | Out-Null
+        }
+    }
 
     $result = [pscustomobject][ordered]@{
         ChangeId                  = $Change
         ChangeRoot                = $changeRoot
         Archived                  = [bool]$resolvedChange.Archived
+        ClosureKind               = $ClosureKind
+        TaskPlanValid             = $taskPlanValid
+        TaskCount                 = $taskCount
+        IncompleteTaskIds         = @($incompleteTaskIds)
+        CurrentInputSha256        = $currentInputSha256
         ObservationRoot           = $observationRoot
         LegacyObservationRoot     = $legacyObservationRoot
         ObservationCount          = $observations.Count
@@ -1123,10 +1446,18 @@ function Get-HarnessEvolutionStatus {
         LegacyIssueCount          = $legacyIssueCount
         IssueCounts               = [pscustomobject]$counts
         OpenIssuePaths            = @($openIssuePaths | ForEach-Object { [string]$_ })
+        V2ReviewCount             = @($reviewRecords | Where-Object Schema -eq 'review-v2').Count
+        LegacyReviewCount         = $legacyReviewCount
+        ReviewCounts              = [pscustomobject]$reviewCounts
+        OpenReviewPaths           = @($openReviewPaths | ForEach-Object { [string]$_ })
         StructuralErrors          = @($structuralErrors | ForEach-Object { [string]$_ })
+        LatestTerminalEvidenceAt  = if ($latestTerminalEvidenceInstant.Count -eq 1) { $latestTerminalEvidenceInstant[0].ToString('o') } else { '' }
         LatestEvaluationPath      = $evaluationRelativePath
         LatestEvaluationResult    = $evaluationResult
         LatestEvaluationCapturedAt = $evaluationCapturedAt
+        EvaluationClosureKind     = $evaluationClosureKind
+        EvaluationInputSha256     = $evaluationInputSha256
+        EvaluationFresh           = $evaluationFresh
         ClosureReady              = $closureBlockers.Count -eq 0
         ClosureBlockers           = @($closureBlockers | ForEach-Object { [string]$_ })
         RawBodiesLoaded           = $false

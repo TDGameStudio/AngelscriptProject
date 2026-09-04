@@ -107,10 +107,14 @@ Every Harness or OpenSpec self-hosting Change keeps one indexed canonical `data/
 record: harness-workflow-evaluation-v1
 result: passed | failed
 change: harness/exact-change-id
+closure_kind: completed | abandoned | superseded
+input_sha256: <lowercase SHA-256 of all active Change inputs except this evaluation>
 captured_at: 2026-09-03T18:00:00+08:00
 ---
 ```
 
-The compact body records elapsed lifecycle stages, material friction, corrective actions, transferred/superseded owners, and raw-data provenance. `harness.evolution.status` reads only this frontmatter and material-issue frontmatter; it does not replay attachment bodies or ignored observation bodies. A parseable `failed` result remains inspectable but cannot pass terminal closure.
+The compact body records elapsed lifecycle stages, material friction, corrective actions, transferred/superseded owners, and raw-data provenance. The digest is derived from ordinal forward-slash relative paths plus raw bytes, length-framed for every ordinary file beneath the active Change except this evaluation. Obtain `CurrentInputSha256` from ordinary exact evolution status, then write the evaluation last. A later Change input edit makes it stale. Its `captured_at` cannot precede the latest terminal issue or Review event.
 
-Before archive, trim data, decide knowledge promotion, close any existing Review and v2 issue state, record spec-sync disposition, and provide the requested closure manifest. Run `harness.evolution.status` for the exact Change with `RequireTerminal = $true`; ordinary status remains inspectable while an issue is open, but the terminal call fails. The portable CLI validates structural closure, not attachment semantics; the applicable Harness/OpenSpec protocol gate supplies that evidence.
+`harness.evolution.status` reads evaluation frontmatter, material-issue/Review frontmatter, and bounded active issue/Review section structure. It does not retain or return raw attachment bodies and does not replay ignored observation bodies. A parseable `failed` result remains inspectable but cannot pass terminal closure.
+
+Before archive, trim data, decide knowledge promotion, close every existing active Review and v2 issue state, record spec-sync disposition, and provide the requested closure manifest. Active issues and Reviews are discovered recursively, require exact INDEX membership, and cannot use schema-less historical compatibility. Run `harness.evolution.status` for the exact active Change with its explicit `ClosureKind` and `RequireTerminal = $true`; ordinary status remains inspectable while evidence is incomplete, but the terminal call fails closed. After archive, use strict archived OpenSpec validation rather than rerunning active terminal policy. The portable CLI validates structural closure; the applicable Harness evolution/protocol checks supply attachment semantics.

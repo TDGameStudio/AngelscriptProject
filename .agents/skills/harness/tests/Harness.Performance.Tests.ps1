@@ -480,32 +480,54 @@ try {
     $evolutionGitCommit = @(& git -C $evolutionFixtureRoot -c user.name='Harness Performance Fixture' -c user.email=harness-performance@example.invalid commit -m 'fixture baseline' 2>&1)
     Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture git commit failed: {0}" -f ($evolutionGitCommit -join [Environment]::NewLine))
 
+    $sourceOpenSpec = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\openspec\bin\openspec.exe'))
+    Assert-PerformanceCondition (Test-Path -LiteralPath $sourceOpenSpec -PathType Leaf) 'packaged OpenSpec is required for the EvolutionStatus fixture'
+    $evolutionInit = @(& $sourceOpenSpec init $evolutionFixtureRoot --project-id harness-performance-evolution --title 'Harness Performance Evolution' --workflow spec-driven --language en 2>&1)
+    Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture init failed: {0}" -f ($evolutionInit -join [Environment]::NewLine))
+    Push-Location -LiteralPath $evolutionFixtureRoot
+    try {
+        $evolutionDomain = @(& $sourceOpenSpec domain create fixture --title Fixture --description 'Fixture domain.' --json 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture domain creation failed: {0}" -f ($evolutionDomain -join [Environment]::NewLine))
+        $evolutionChange = @(& $sourceOpenSpec change create fixture/evolution-status --title 'Evolution status performance fixture' --goal 'Measure exact evolution status.' --json 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture change creation failed: {0}" -f ($evolutionChange -join [Environment]::NewLine))
+    }
+    finally {
+        Pop-Location
+    }
+
     $evolutionChangeRoot = Join-Path $evolutionFixtureRoot 'openspec\changes\fixture\evolution-status'
     $evolutionDataRoot = Join-Path $evolutionChangeRoot 'attachments\data'
     [void](New-Item -ItemType Directory -Path $evolutionDataRoot -Force)
-    [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'change.yaml'), @'
-api_version: openspec.dev/v1
-kind: change
-metadata:
-  uid: change_performance-evolution-status
-  id: fixture/evolution-status
-  title: Evolution status performance fixture
-workflow: angelscript
-created_at: 2026-09-03T00:00:00Z
-goal: Measure exact frontmatter-only evolution status.
+    [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'proposal.md'), "# Proposal`n`nThis stable performance fixture measures exact evolution status after all setup completes.`n", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'tasks.md'), @'
+---
+task_graph:
+  version: 1
+  depends_on:
+    "1.1": []
+---
+
+## Tasks
+
+- [x] 1.1 Measure terminal status — verify: `fixture`
+  > Files: `fixture`
 '@, [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText((Join-Path $evolutionDataRoot 'workflow-evaluation.md'), @'
+    $evolutionEvaluationPath = Join-Path $evolutionDataRoot 'workflow-evaluation.md'
+    $evolutionEvaluationTemplate = @'
 ---
 record: harness-workflow-evaluation-v1
 result: passed
 change: fixture/evolution-status
+closure_kind: completed
+input_sha256: __INPUT_SHA256__
 captured_at: 2026-09-03T18:00:00+08:00
 ---
 
 # Workflow Evaluation
 
 Body sentinel: result: failed; captured_at: invalid. The measured route must stop at the frontmatter delimiter.
-'@, [System.Text.UTF8Encoding]::new($false))
+'@
+    [System.IO.File]::WriteAllText($evolutionEvaluationPath, $evolutionEvaluationTemplate.Replace('__INPUT_SHA256__', ('0' * 64)), [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'attachments\INDEX.md'), @'
 # INDEX
 
@@ -514,12 +536,15 @@ Body sentinel: result: failed; captured_at: invalid. The measured route must sto
 - `data/workflow-evaluation.md` - terminal workflow evaluation fixture.
 '@, [System.Text.UTF8Encoding]::new($false))
     $evolutionContext = New-HarnessContext -WorkspaceRoot $evolutionFixtureRoot
+    $evolutionOrientation = Invoke-Harness -Command 'harness.evolution.status' -Context $evolutionContext -Parameters @{ Change = 'fixture/evolution-status' }
+    Assert-PerformanceCondition ($evolutionOrientation.status -eq 'Succeeded') 'EvolutionStatus fixture could not derive the current input digest'
+    Assert-PerformanceCondition ([string]$evolutionOrientation.data.CurrentInputSha256 -match '^[a-f0-9]{64}$') 'EvolutionStatus fixture returned an invalid current input digest'
+    [System.IO.File]::WriteAllText($evolutionEvaluationPath, $evolutionEvaluationTemplate.Replace('__INPUT_SHA256__', [string]$evolutionOrientation.data.CurrentInputSha256), [System.Text.UTF8Encoding]::new($false))
 
     if ([string]::IsNullOrWhiteSpace($effectiveTaskChange)) {
         $taskFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path $temporaryRoot ('harness-performance-task-' + [guid]::NewGuid().ToString('N'))))
         Assert-PerformanceCondition ($taskFixtureRoot.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase)) 'TaskStatus fixture escaped the system temp directory'
 
-        $sourceOpenSpec = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\openspec\bin\openspec.exe'))
         Assert-PerformanceCondition (Test-Path -LiteralPath $sourceOpenSpec -PathType Leaf) 'packaged OpenSpec is required for the TaskStatus fixture'
         $fixtureExeDirectory = Join-Path $taskFixtureRoot '.agents\skills\openspec\bin'
         [void](New-Item -ItemType Directory -Path $fixtureExeDirectory -Force)

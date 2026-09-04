@@ -327,7 +327,7 @@ Harness SHALL expose cheap visible feedback during self-hosted evolution. `harne
 
 Whether evidence crosses the material threshold remains a bounded agent/user judgment. Once admitted, every v2 issue MUST appear exactly once in the owning attachment index and remain open until it is resolved with evidence, rejected with evidence, or superseded by an exact existing v2 issue. Open or structurally invalid v2 issues MUST block completed, abandoned, and superseded archive closure. A material issue SHALL trigger Replan only when its evidence invalidates accepted planning truth and MUST NOT start Review automatically.
 
-`harness.evolution.status` MUST summarize ignored observation availability, v2 material-issue counts and terminal states for an exact active Change, open issue paths, structural errors, and the canonical versioned workflow evaluation without replaying raw history or attachment bodies. Every Harness or OpenSpec self-hosting Change MUST create one indexed compact `attachments/data/workflow-evaluation.md` before closure, with parseable schema/result frontmatter, exact Change identity, final capture time, elapsed lifecycle stages, friction, corrective actions, superseded owners, and raw-data provenance. Historical unversioned evaluations remain immutable compatibility evidence.
+`harness.evolution.status` MUST summarize ignored observation availability, v2 material-issue counts and terminal states for an exact active Change, open issue paths, structural errors, and the canonical versioned workflow evaluation without replaying raw observation history. Active closure validation MAY scan bounded issue and Review section structure but MUST NOT retain or return raw bodies. Every Harness or OpenSpec self-hosting Change MUST create one indexed compact `attachments/data/workflow-evaluation.md` before closure, with parseable schema/result frontmatter, exact Change identity, final capture time, elapsed lifecycle stages, friction, corrective actions, superseded owners, and raw-data provenance. Historical unversioned evaluations remain immutable compatibility evidence.
 
 #### Scenario: Record a local raw observation
 - **WHEN** an agent detects a timing boundary, transient friction, or candidate invariant that has not been classified as material
@@ -347,7 +347,7 @@ Whether evidence crosses the material threshold remains a bounded agent/user jud
 
 #### Scenario: Inspect evolution state cheaply
 - **WHEN** a caller invokes `harness.evolution.status` for one exact active Change
-- **THEN** the result reports raw observation metadata, v2 issue counts/states/open paths, structural errors, and the canonical workflow-evaluation result using frontmatter only
+- **THEN** the result reports raw observation metadata, v2 issue counts/states/open paths, structural errors, and the canonical workflow-evaluation result using frontmatter plus bounded active evidence-structure validation
 
 #### Scenario: Close a self-hosting Change
 - **GIVEN** one exact Harness or OpenSpec Change and its requested archive closure kind have been selected
@@ -360,9 +360,34 @@ Whether evidence crosses the material threshold remains a bounded agent/user jud
 >
 > Observables: Evolution status reports issue counts and terminal states, open paths, structural errors, the final evaluation result, and whether the exact Change is closure-ready.
 >
-> Boundaries: Status reads versioned frontmatter without replaying issue, evaluation, or raw-observation bodies; open or malformed issues and a missing, invalid, or failed final evaluation block closure.
+> Boundaries: Status does not retain or return issue, Review, evaluation, or raw-observation bodies; open or malformed evidence and a missing, invalid, stale, or failed final evaluation block closure.
 >
-> Verification: Harness evolution and protocol fixtures cover open, resolved, rejected, superseded, self-superseded, malformed, unindexed, and invalid-evaluation states.
+> Verification: Focused Harness evolution and protocol fixtures cover TaskPlan completion, active/archive policy, issue/Review schemas and lifecycles, successor ownership, evaluation digest/capture freshness, and terminal disposition.
+
+### Requirement: Fail-closed active evolution closure
+
+Harness SHALL evaluate terminal closure only for one exact active Change and one explicit `completed`, `abandoned`, or `superseded` closure kind. It MUST consume the portable OpenSpec TaskPlan rather than parse Task DAG YAML. A completed closure MUST have a valid non-empty TaskPlan whose every node is complete; incomplete closure kinds MAY retain incomplete nodes for explicit disposition by the portable closure manifest. Ordinary status MAY inspect immutable archives, but terminal policy MUST reject an archived target and leave historical audit to strict archived validation.
+
+Active material issues and Reviews MUST be discovered recursively and validated against the exact active TaskPlan, attachment index, lifecycle schema, evidence body, timestamps, and terminal disposition. Active schema-less issues or Reviews MUST NOT receive historical compatibility. A superseded issue MUST reference one exact active, indexed, non-superseded v2 owner with a reciprocal source reference. Review absence SHALL remain valid, while any existing Review MUST be closed or superseded with no open or deferred Critical/Required finding.
+
+The canonical workflow evaluation MUST name the requested closure kind, include a lowercase SHA-256 of every ordinary active Change input except itself, and be captured no earlier than the latest terminal issue or Review event. Harness SHALL report the current input digest during ordinary exact status so the evaluation can be written last. Any later input mutation MUST make the evaluation stale and block terminal closure.
+
+#### Scenario: Reject incomplete completed closure
+- **WHEN** terminal evaluation requests `completed` for an active Change whose portable TaskPlan is missing, invalid, empty, or contains an incomplete node
+- **THEN** Harness reports the exact task blocker and does not declare the Change closure-ready
+
+#### Scenario: Reject stale workflow evaluation
+- **WHEN** an active Change input differs from the digest recorded by its passed workflow evaluation or its evaluation predates a terminal issue or Review event
+- **THEN** terminal evaluation fails until current evidence is captured last with the requested closure kind
+  > Observables: Ordinary exact status exposes `CurrentInputSha256`, the recorded digest, evaluation freshness, and bounded closure blockers.
+
+#### Scenario: Reject unfinished active evidence
+- **WHEN** an active material issue or existing Review is schema-less, malformed, unindexed, task-invalid, time-invalid, open, improperly superseded, or retains an open/deferred Critical or Required finding
+- **THEN** terminal evaluation rejects the exact evidence owner without changing its files or starting a Review automatically
+
+#### Scenario: Preserve immutable archive compatibility
+- **WHEN** a caller inspects an archived Change containing historical evidence formats
+- **THEN** ordinary evolution status remains read-only and terminal evaluation directs the caller to strict archived validation instead of applying new active-record requirements or rewriting history
 
 ### Requirement: Progressive harness knowledge promotion
 

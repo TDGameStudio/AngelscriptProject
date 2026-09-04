@@ -36,14 +36,14 @@ superseded_by: harness/successor-change#issue-20260903-160000-successor
 ---
 ```
 
-New records use `issue_schema: openspec-material-issue-v2`; historical records without `issue_schema` remain readable and are not rewritten. `issue_id` matches the filename stem. `source_ref`, `affected_tasks`, and `created_at` are always required.
+New active records use `issue_schema: openspec-material-issue-v2`; historical records without `issue_schema` remain readable only as immutable archive evidence and are not rewritten. `issue_id` matches the filename stem. `source_ref`, `affected_tasks`, and `created_at` are always required. Each active `affected_tasks` value resolves to an exact task in the current portable TaskPlan, and terminal timestamps cannot precede creation.
 
 - `open` is the only non-terminal v2 state and omits every status-specific closure field.
 - `resolved` means the issue was repaired; it requires `resolved_at` and an exact `resolution_ref`.
 - `rejected` means an evidence-backed decision deliberately did not implement the finding; it also requires `resolved_at` and an exact decision/evidence `resolution_ref`.
-- `superseded` requires `resolved_at` and `superseded_by`. The latter names one existing v2 owner as `<domain>/<change>#<issue-id>`; it cannot self-reference or form a direct cycle.
+- `superseded` requires `resolved_at` and `superseded_by`. The latter names one active, indexed, non-superseded v2 owner as `<domain>/<change>#<issue-id>`; it cannot self-reference or form a direct cycle. The target's `source_ref` reciprocally names the source as `issue:<domain>/<change>#<issue-id>`, and its task references resolve in the target TaskPlan.
 
-During active work, an open v2 issue is structurally valid. Before any archive closure kind, `harness.evolution.status` with the exact Change and `RequireTerminal = $true` must pass. That terminal check rejects open or malformed v2 records, invalid INDEX membership, and a missing, invalid, or failed canonical workflow evaluation. It never turns raw observations into issues automatically.
+During active work, an open v2 issue is structurally valid. Before any archive closure kind, `harness.evolution.status` with the exact active Change, explicit `ClosureKind`, and `RequireTerminal = $true` must pass. It discovers `attachments/implementation/**/issue-*.md` recursively and rejects schema-less active records, open or malformed v2 records, unknown TaskPlan IDs, invalid timestamp order, incomplete required body sections, invalid successor ownership, invalid INDEX membership, and missing, stale, invalid, or failed canonical workflow evaluation. It transiently scans bounded section structure without retaining or returning raw bodies, and it never turns raw observations into issues automatically.
 
 ## Body
 

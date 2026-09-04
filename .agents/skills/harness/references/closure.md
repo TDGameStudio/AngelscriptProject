@@ -13,13 +13,18 @@ Before any archive closure kind, run the exact evolution terminal gate:
 ```powershell
 $result = Invoke-Harness -Command harness.evolution.status -Context $context -Parameters @{
     Change          = 'harness/exact-change-id'
+    ClosureKind     = 'completed'
     RequireTerminal = $true
 }
 ```
 
-The gate reads only versioned material-issue and canonical workflow-evaluation frontmatter. Every admitted `openspec-material-issue-v2` record must be `resolved`, evidence-backed `rejected`, or `superseded` by an exact existing v2 issue. `open` is valid while implementation continues but blocks closure. A valid indexed `harness-workflow-evaluation-v1` record with exact Change identity, ISO-8601 `captured_at`, and `result: passed` is also required. Ignored observations remain non-blocking until explicitly admitted as a material issue.
+The terminal gate accepts only one exact active Change. Ordinary exact status remains available for immutable archives, while archived policy is audited with `openspec validate --archived --strict --json`; never apply new active-record rules retroactively. The gate consumes the packaged OpenSpec TaskPlan. Every closure kind needs a valid, non-empty TaskPlan, and `completed` additionally requires every task complete. `abandoned` and `superseded` may retain incomplete nodes only when their closure manifest records each disposition.
 
-When an explicitly requested Review file exists, it must be `closed | superseded` before archive, no Critical/Required finding may remain open or deferred, and the resolution/evidence summary must be current. Review absence is a valid completed state.
+Active `attachments/implementation/**/issue-*.md` records are discovered recursively and must be `openspec-material-issue-v2`, indexed exactly once, bound to existing TaskPlan IDs, timestamp-ordered, and structurally complete. Each must be `resolved`, evidence-backed `rejected`, or validly `superseded`; `open` remains valid during implementation but blocks closure. A superseded issue points to one active, indexed, non-superseded v2 owner whose `source_ref` reciprocally identifies the source issue. Historical schema-less records remain readable only after archive.
+
+A valid indexed `harness-workflow-evaluation-v1` record with exact Change identity, ISO-8601 `captured_at`, `result: passed`, requested `closure_kind`, and current `input_sha256` is required. The digest covers every ordinary active Change file except the evaluation itself, using ordinal forward-slash paths and length-framed path/content bytes. Write the evaluation last; its capture time cannot precede the latest terminal issue or Review event. Ignored observations remain non-blocking until explicitly admitted as a material issue.
+
+When an explicitly requested `attachments/reviews/**/review-*.md` file exists, active policy requires `review-v2`, exact INDEX membership, valid immutable-snapshot metadata, ordered lifecycle timestamps, and `closed | superseded` before every closure kind. A closed Review requires `APPROVE`; no Critical/Required finding may remain open or deferred. Review absence is valid.
 
 Reusable gates cited as closure evidence must use hermetic fixtures or stable repository inputs. They must not require the current change to remain under `openspec/changes/`; before archive, confirm that the closing canonical change ID is not configured as a reusable gate's default fixture. Register every accepted performance aggregate and its raw-artifact hashes under `attachments/data/` and `attachments/INDEX.md` before archive; ignored `Saved/` output alone is not durable closure evidence.
 
@@ -27,6 +32,6 @@ Abandoned and superseded closure must not pretend incomplete tasks passed. Recor
 
 Archiving is a separate deterministic operation after policy checks. Closure never chooses or deletes a workspace or worktree. It does not merge specs, merge Git branches, push, remove a worktree, or manufacture completion evidence.
 
-After the move, run strict archived validation and the smallest applicable non-destructive lifecycle gate that can expose active-path coupling. If that gate finds a new defect, keep the archive immutable and open a follow-up change with its own evidence.
+After the move, run strict archived validation and only the smallest applicable non-destructive check that does not reapply active terminal policy. `RequireTerminal` deliberately rejects an archived target. If post-move evidence finds a new defect, keep the archive immutable and open a follow-up change with its own evidence.
 
 Neither observation admission nor the terminal gate starts Review or Replan. Review remains explicit-only; Replan remains evidence-gated by invalidated planning truth. A material finding discovered after archive enters an immediate exact successor Change and v2 issue before final handoff rather than mutating the archive.

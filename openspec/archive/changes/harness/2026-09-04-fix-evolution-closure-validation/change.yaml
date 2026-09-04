@@ -1,0 +1,19 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_f979c9a1-41b9-42b0-bf85-3529616b5d8d
+  id: harness/fix-evolution-closure-validation
+  title: Fail closed on incomplete Harness evolution evidence
+  description: Strengthen active self-hosting Change terminal validation while preserving immutable archive compatibility.
+workflow: angelscript
+created_at: 2026-09-04T04:59:14Z
+goal: Require complete tasks, structurally valid terminal evidence, closed reviews, and a fresh evaluation before Harness self-hosting closure.
+affected_areas:
+- .agents/skills/harness
+- .agents/skills/openspec
+- openspec/specs/harness/core
+archived_at: 2026-09-04T05:26:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Active Harness evolution closure now consumes the portable TaskPlan, validates recursive issue and Review evidence, requires reciprocal active successor ownership, binds the final evaluation to the current Change digest and terminal evidence time, preserves immutable archive compatibility, and passes the focused evolution, protocol, Skill-package, workflow, exact Change, and exact spec checks without broad Quick, performance, UE, build, Editor, or Automation execution.
