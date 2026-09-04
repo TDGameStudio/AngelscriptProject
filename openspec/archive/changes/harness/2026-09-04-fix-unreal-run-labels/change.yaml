@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_6523601d-09cf-428f-b92d-bc439afb01ef
+  id: harness/fix-unreal-run-labels
+  title: Restore user-visible Unreal run labels
+  description: Restore caller-defined semantic labels across Harness Unreal execution routes and expose them through run observation without changing RunId-based storage identity.
+workflow: angelscript
+created_at: 2026-09-04T13:20:25Z
+goal: Allow callers to label individual Unreal builds, UBT operations, tests, and commandlets while preserving unique RunId paths and showing the effective label in status and process output.
+affected_areas:
+- harness/unreal
+archived_at: 2026-09-04T13:34:11Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Caller-defined Unreal run labels, stable defaults, bounded validation, persisted evidence, status, and recognized-build observation are implemented, synchronized, and verified while RunId-only identity and paths remain unchanged.

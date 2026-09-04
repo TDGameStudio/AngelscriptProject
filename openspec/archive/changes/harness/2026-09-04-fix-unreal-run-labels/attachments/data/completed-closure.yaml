@@ -1,0 +1,2 @@
+kind: completed
+reason: Caller-defined Unreal run labels, stable defaults, bounded validation, persisted evidence, status, and recognized-build observation are implemented, synchronized, and verified while RunId-only identity and paths remain unchanged.

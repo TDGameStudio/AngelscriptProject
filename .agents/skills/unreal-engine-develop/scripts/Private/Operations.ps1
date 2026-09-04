@@ -155,6 +155,7 @@ function New-UnrealUbtPlan {
         PlanOnly       = $true
         RunId          = [string] $Request.runId
         Operation      = [string] $Request.operation
+        Label          = [string] $Request.label
         Capability     = $Capability
         WorkspaceRoot  = [string] $Request.workspaceRoot
         EngineRoot     = [string] $Request.engineRoot
@@ -188,6 +189,7 @@ function New-UnrealBuildOperation {
         [string] $Platform = '',
         [string] $Configuration = '',
         [string] $Architecture = '',
+        [AllowEmptyString()][string] $Label = '',
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto',
         [ValidateSet('Auto', 'Parallel', 'Serialize')][string] $BuildConcurrency = 'Auto',
@@ -199,6 +201,7 @@ function New-UnrealBuildOperation {
     $platformValue = Resolve-UnrealBuildValue -ExplicitValue $Platform -ConfiguredValue $context.Configuration.Platform -Name 'Platform'
     $configurationValue = Resolve-UnrealBuildConfiguration -ExplicitValue $Configuration -ConfiguredValue $context.Configuration.Configuration
     $architectureValue = Resolve-UnrealBuildValue -ExplicitValue $Architecture -ConfiguredValue $context.Configuration.Architecture -Name 'Architecture' -AllowEmpty
+    $labelValue = Resolve-UnrealRunLabel -Label $Label -Fallback $targetValue
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.BuildDefaultTimeoutMs -FallbackMs 900000
     $capability = Get-UnrealUbtCapabilityRecord -Capability 'build'
     Assert-UnrealUbtArgumentsSafe -Arguments $ExtraArguments -ReservedArguments @($capability.reservedArguments)
@@ -219,7 +222,7 @@ function New-UnrealBuildOperation {
         -WorkingDirectory $context.Engine.Ubt.WorkingDirectory `
         -TimeoutMs $timeoutValue `
         -ConcurrencyDecision $concurrency `
-        -Label $targetValue
+        -Label $labelValue
     $request | Add-Member -NotePropertyName build -NotePropertyValue ([pscustomobject][ordered]@{
         target          = $targetValue
         platform        = $platformValue
@@ -255,6 +258,7 @@ function Invoke-HarnessUnrealUbt {
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
         [Parameter(Mandatory = $true)][string] $Capability,
         [AllowEmptyCollection()][string[]] $Arguments = @(),
+        [AllowEmptyString()][string] $Label = '',
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto',
         [switch] $PlanOnly,
@@ -273,6 +277,7 @@ function Invoke-HarnessUnrealUbt {
         throw "The generic build capability requires ordered Target, Platform, and Configuration arguments; use Invoke-HarnessUnrealBuild for configured defaults."
     }
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.BuildDefaultTimeoutMs -FallbackMs 900000
+    $labelValue = Resolve-UnrealRunLabel -Label $Label -Fallback ([string] $capabilityRecord.id)
     $concurrency = Get-UnrealConcurrencyDecision -Operation $operation -EngineRoot $context.Engine.EngineRoot -Policy $ConcurrencyPolicy -InstalledEngine ([bool] $context.Engine.Installed)
     $request = New-UnrealRunRequest `
         -WorkspaceRoot $context.Configuration.WorkspaceRoot `
@@ -284,7 +289,7 @@ function Invoke-HarnessUnrealUbt {
         -WorkingDirectory $context.Engine.Ubt.WorkingDirectory `
         -TimeoutMs $timeoutValue `
         -ConcurrencyDecision $concurrency `
-        -Label ([string] $capabilityRecord.id)
+        -Label $labelValue
 
     $nativeArguments = [System.Collections.Generic.List[string]]::new()
     $nativeArguments.Add([string] $context.Engine.Ubt.Dll)
@@ -328,6 +333,7 @@ function Invoke-HarnessUnrealBuild {
         [string] $Platform = '',
         [string] $Configuration = '',
         [string] $Architecture = '',
+        [AllowEmptyString()][string] $Label = '',
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto',
         [ValidateSet('Auto', 'Parallel', 'Serialize')][string] $BuildConcurrency = 'Auto',
@@ -343,6 +349,7 @@ function Invoke-HarnessUnrealBuild {
         -Platform $Platform `
         -Configuration $Configuration `
         -Architecture $Architecture `
+        -Label $Label `
         -TimeoutMs $TimeoutMs `
         -ConcurrencyPolicy $ConcurrencyPolicy `
         -BuildConcurrency $BuildConcurrency `
@@ -492,6 +499,7 @@ function New-UnrealEditorPlan {
         PlanOnly               = $true
         RunId                  = [string] $Request.runId
         Operation              = [string] $Request.operation
+        Label                  = [string] $Request.label
         WorkspaceRoot          = [string] $Request.workspaceRoot
         EngineRoot             = [string] $Request.engineRoot
         EngineKind             = [string] $Context.Engine.Kind
@@ -525,6 +533,7 @@ function Invoke-HarnessUnrealTest {
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
         [string] $TestPrefix = '',
         [string] $Group = '',
+        [AllowEmptyString()][string] $Label = '',
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto',
         [switch] $Render,
@@ -551,6 +560,7 @@ function Invoke-HarnessUnrealTest {
     $profileName = if ($Render) { 'render' } elseif ($Fast) { 'fast-headless' } else { 'headless' }
     $profile = Get-UnrealLaunchProfileRecord -Name $profileName
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.TestDefaultTimeoutMs -FallbackMs 600000
+    $labelValue = Resolve-UnrealRunLabel -Label $Label -Fallback ([string] $selection.Value)
     $concurrency = Get-UnrealConcurrencyDecision -Operation Test -EngineRoot $context.Engine.EngineRoot -Policy $ConcurrencyPolicy -InstalledEngine ([bool] $context.Engine.Installed)
     $request = New-UnrealRunRequest `
         -WorkspaceRoot $context.Configuration.WorkspaceRoot `
@@ -563,7 +573,7 @@ function Invoke-HarnessUnrealTest {
         -TimeoutMs $timeoutValue `
         -ConcurrencyDecision $concurrency `
         -EnforceAutomationReport:(-not $NoReport) `
-        -Label ([string] $selection.Value)
+        -Label $labelValue
     $arguments = [System.Collections.Generic.List[string]]::new()
     foreach ($argument in @(
         $context.Configuration.ProjectFile,
@@ -596,6 +606,7 @@ function Invoke-HarnessUnrealCommandlet {
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
         [Parameter(Mandatory = $true)][string] $Commandlet,
+        [AllowEmptyString()][string] $Label = '',
         [int] $TimeoutMs = 0,
         [ValidateSet('Auto', 'Wait', 'Fail')][string] $ConcurrencyPolicy = 'Auto',
         [switch] $Render,
@@ -611,6 +622,7 @@ function Invoke-HarnessUnrealCommandlet {
     $profileName = if ($Render) { 'render' } else { 'headless' }
     $profile = Get-UnrealLaunchProfileRecord -Name $profileName
     $timeoutValue = Resolve-UnrealPositiveTimeout -TimeoutMs $TimeoutMs -ConfiguredValue $context.Configuration.TestDefaultTimeoutMs -FallbackMs 600000
+    $labelValue = Resolve-UnrealRunLabel -Label $Label -Fallback $commandletValue
     $concurrency = Get-UnrealConcurrencyDecision -Operation Commandlet -EngineRoot $context.Engine.EngineRoot -Policy $ConcurrencyPolicy -InstalledEngine ([bool] $context.Engine.Installed)
     $request = New-UnrealRunRequest `
         -WorkspaceRoot $context.Configuration.WorkspaceRoot `
@@ -622,7 +634,7 @@ function Invoke-HarnessUnrealCommandlet {
         -WorkingDirectory $context.Configuration.WorkspaceRoot `
         -TimeoutMs $timeoutValue `
         -ConcurrencyDecision $concurrency `
-        -Label $commandletValue
+        -Label $labelValue
     $arguments = [System.Collections.Generic.List[string]]::new()
     foreach ($argument in @($context.Configuration.ProjectFile, "-run=$commandletValue", '-BUILDMACHINE')) { $arguments.Add([string] $argument) }
     foreach ($argument in @($profile.arguments)) { $arguments.Add([string] $argument) }

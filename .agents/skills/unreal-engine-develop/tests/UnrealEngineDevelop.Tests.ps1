@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'Foundation', 'Discovery', 'RunLifecycle', 'Build', 'ConcurrencyProgress', 'Automation', 'Suites', 'Integration')]
+    [ValidateSet('All', 'Foundation', 'Discovery', 'RunLifecycle', 'RunLabels', 'Build', 'ConcurrencyProgress', 'Automation', 'Suites', 'Integration')]
     [string] $Tag = 'All'
 )
 
@@ -255,6 +255,115 @@ if ($Tag -ne 'Foundation') {
 }
 
 try {
+    if (Test-Selected 'RunLabels') {
+        $labelledBuildPlan = Invoke-HarnessUnrealBuild `
+            -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
+            -Label '  lexer-red  ' `
+            -PlanOnly
+        Assert-Equal 'lexer-red' $labelledBuildPlan.Label 'a caller-defined build label is trimmed and exposed by PlanOnly'
+        Assert-Equal 'lexer-red' $labelledBuildPlan.Request.label 'the effective build label is retained by the run request'
+        Assert-Match ([System.IO.Path]::GetFileName($labelledBuildPlan.Paths.RunRoot)) '^[a-f0-9]{32}$' 'the run directory remains keyed only by RunId'
+        Assert-True (@($labelledBuildPlan.Arguments | Where-Object { [string] $_ -match 'lexer-red' }).Count -eq 0) 'display labels never enter native build arguments'
+
+        $defaultBuildPlan = Invoke-HarnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Label '   ' -PlanOnly
+        Assert-Equal 'FixtureEditor' $defaultBuildPlan.Label 'a blank build label preserves the existing target-derived default'
+
+        $unicodeBuildPlan = Invoke-HarnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Label '  词法分析 RED  ' -PlanOnly
+        Assert-Equal '词法分析 RED' $unicodeBuildPlan.Label 'a readable Unicode build label is preserved after trimming'
+
+        $ubtPlan = Invoke-HarnessUnrealUbt `
+            -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
+            -Capability query-targets `
+            -Label '  target-query  ' `
+            -PlanOnly
+        $testPlan = Invoke-HarnessUnrealTest `
+            -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
+            -TestPrefix 'Angelscript.UnitTest.Parser' `
+            -Label '  parser-green  ' `
+            -PlanOnly
+        $commandletPlan = Invoke-HarnessUnrealCommandlet `
+            -WorkspaceRoot $scenarioFixture.WorkspaceRoot `
+            -Commandlet BlueprintImpact `
+            -Label '  ast-dump  ' `
+            -PlanOnly
+        Assert-Equal 'target-query' $ubtPlan.Label 'generic UBT exposes the normalized caller label'
+        Assert-Equal 'parser-green' $testPlan.Label 'Automation exposes the normalized caller label'
+        Assert-Equal 'ast-dump' $commandletPlan.Label 'commandlet execution exposes the normalized caller label'
+        Assert-Equal 'query-targets' (Invoke-HarnessUnrealUbt -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Capability query-targets -Label ' ' -PlanOnly).Label 'generic UBT retains its capability-derived default label'
+        Assert-Equal 'Angelscript.UnitTest.Parser' (Invoke-HarnessUnrealTest -WorkspaceRoot $scenarioFixture.WorkspaceRoot -TestPrefix 'Angelscript.UnitTest.Parser' -Label ' ' -PlanOnly).Label 'Automation retains its selection-derived default label'
+        Assert-Equal 'BlueprintImpact' (Invoke-HarnessUnrealCommandlet -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Commandlet BlueprintImpact -Label ' ' -PlanOnly).Label 'commandlets retain their name-derived default label'
+
+        $runsRoot = Join-Path $scenarioFixture.WorkspaceRoot 'Saved/Harness/Unreal/Runs'
+        $runCountBeforeInvalid = if (Test-Path -LiteralPath $runsRoot) { @(Get-ChildItem -LiteralPath $runsRoot -Directory).Count } else { 0 }
+        Assert-Throws {
+            Invoke-HarnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Label (('x' * 128) + 'y') -PlanOnly
+        } '128|label' 'labels longer than 128 UTF-16 code units are rejected'
+        Assert-Throws {
+            Invoke-HarnessUnrealBuild -WorkspaceRoot $scenarioFixture.WorkspaceRoot -Label "bad`nlabel" -PlanOnly
+        } 'control|label' 'labels containing control characters are rejected'
+        $runCountAfterInvalid = if (Test-Path -LiteralPath $runsRoot) { @(Get-ChildItem -LiteralPath $runsRoot -Directory).Count } else { 0 }
+        Assert-Equal $runCountBeforeInvalid $runCountAfterInvalid 'invalid labels create no run directory'
+
+        $module = Get-Module UnrealEngineDevelop -ErrorAction Stop
+        $statusRequest = & $module {
+            param($Workspace, $Engine, $Project, $Executable)
+            New-UnrealRunRequest `
+                -WorkspaceRoot $Workspace `
+                -EngineRoot $Engine `
+                -ProjectFile $Project `
+                -Operation Test `
+                -FilePath $Executable `
+                -Arguments @('-NoProfile', '-Command', "Write-Output 'label-status'") `
+                -WorkingDirectory $Workspace `
+                -TimeoutMs 10000 `
+                -ConcurrencyDecision ([pscustomobject]@{ Policy = 'Auto'; Decision = 'CrossWorkspaceNonUbt'; RequiresEngineLease = $false; Reasons = @('fixture') }) `
+                -Label 'status-green'
+        } $scenarioFixture.WorkspaceRoot $scenarioFixture.EngineRoot $scenarioFixture.ProjectFile (Join-Path $PSHOME 'pwsh.exe')
+        $statusRun = & $module { param($Request) Start-UnrealRunRequest -Request $Request } $statusRequest
+        Assert-Equal 'Succeeded' $statusRun.State 'the labelled status fixture reaches a terminal success'
+        Assert-Equal 'status-green' $statusRun.Label 'run status exposes the persisted effective label'
+        $statusMetadata = Get-Content -LiteralPath $statusRun.MetadataPath -Raw | ConvertFrom-Json -Depth 100
+        Assert-Equal 'status-green' $statusMetadata.label 'new run metadata copies the effective request label'
+        [void] $statusMetadata.PSObject.Properties.Remove('label')
+        [System.IO.File]::WriteAllText($statusRun.MetadataPath, ($statusMetadata | ConvertTo-Json -Depth 100), [System.Text.UTF8Encoding]::new($false))
+        $historicalStatus = Get-HarnessUnrealRunStatus -WorkspaceRoot $scenarioFixture.WorkspaceRoot -RunId $statusRun.RunId
+        Assert-Equal 'status-green' $historicalStatus.Label 'historical metadata falls back to its contained request label'
+
+        $processRequest = & $module { param($Request) Set-UnrealRunExecutionAssignment -Request $Request } $labelledBuildPlan.Request
+        $processMapping = & $module {
+            param($Execution, $RunId)
+            Enter-UnrealExecutionDriveMapping -Execution $Execution -RunId $RunId
+        } $processRequest.execution $processRequest.runId
+        try {
+            [void][System.IO.Directory]::CreateDirectory($processRequest.paths.RunRoot)
+            [System.IO.File]::WriteAllText($processRequest.paths.UbtLogPath, "[1/2] Compile LabelFixture.cpp`n", [System.Text.UTF8Encoding]::new($false))
+            $processMetadata = & $module { param($Request) New-UnrealRunMetadata -Request $Request } $processRequest
+            $processMetadata.state = 'Running'
+            $processMetadata.workerPid = $PID
+            $processMetadata.nativePid = 4242
+            & $module {
+                param($Request, $Metadata)
+                Write-UnrealJsonFileAtomic -Path $Request.paths.RequestPath -Value $Request
+                Write-UnrealJsonFileAtomic -Path $Request.paths.MetadataPath -Value $Metadata
+            } $processRequest $processMetadata
+            $commandLine = 'dotnet.exe "{0}" FixtureEditor Win64 Development "-Project={1}" -NoMutex "-Log={2}"' -f `
+                (Join-Path $scenarioFixture.EngineRoot 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll'), `
+                $processRequest.execution.projectFile, `
+                $processRequest.executionPaths.UbtLogPath
+            $processView = & $module {
+                param($Id, $Executable, $CommandLine)
+                ConvertTo-UnrealProcessView -ProcessId $Id -Name dotnet -Executable $Executable -CommandLine $CommandLine
+            } 4242 $scenarioFixture.EngineRoot $commandLine
+            Assert-True $processView.RecognizedBuild 'the contained labelled build is recognized from trusted run evidence'
+            Assert-Equal 'lexer-red' $processView.Label 'recognized build observation exposes the trusted request label'
+        }
+        finally {
+            & $module {
+                param($Mapping, $RunId)
+                Exit-UnrealExecutionDriveMapping -Mapping $Mapping -RunId $RunId
+            } $processMapping $processRequest.runId
+        }
+    }
     if (Test-Selected 'Discovery') {
         $currentAssignmentPath = Join-Path $unrealTestStateRoot 'DriveAssignments.json'
         $legacyAssignmentPath = Join-Path $unrealLegacyTestStateRoot 'DriveAssignments.json'

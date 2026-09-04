@@ -512,6 +512,21 @@ function Test-UnrealIgnoredRunRoot {
     return $exitCode -eq 0
 }
 
+function Resolve-UnrealRunLabel {
+    param(
+        [AllowEmptyString()][string] $Label = '',
+        [Parameter(Mandatory = $true)][string] $Fallback
+    )
+    $source = if ([string]::IsNullOrWhiteSpace($Label)) { $Fallback } else { $Label }
+    foreach ($character in $source.ToCharArray()) {
+        if ([char]::IsControl($character)) { throw 'Unreal run label cannot contain control characters.' }
+    }
+    $effective = $source.Trim()
+    if ([string]::IsNullOrWhiteSpace($effective)) { throw 'Unreal run label cannot be empty after normalization.' }
+    if ($effective.Length -gt 128) { throw "Unreal run label cannot exceed 128 UTF-16 code units; received $($effective.Length)." }
+    return $effective
+}
+
 function New-UnrealRunRequest {
     param(
         [Parameter(Mandatory = $true)][string] $WorkspaceRoot,
@@ -567,12 +582,13 @@ function New-UnrealRunRequest {
         ConvertTo-UnrealExecutionPath -PhysicalPath $working -Execution $execution
     }
     else { $working }
+    $effectiveLabel = Resolve-UnrealRunLabel -Label $Label -Fallback $Operation
     return [pscustomobject][ordered]@{
         schemaVersion           = $script:UnrealRequestSchema
         runId                   = $runId
         createdAtUtc            = [DateTimeOffset]::UtcNow.ToString('o')
         operation               = $Operation
-        label                   = $Label
+        label                   = $effectiveLabel
         workspaceRoot           = $configuration.WorkspaceRoot
         primaryRoot             = $configuration.Identity.PrimaryRoot
         gitCommonDir            = $configuration.Identity.GitCommonDir
@@ -658,6 +674,7 @@ function New-UnrealRunMetadata {
         schemaVersion      = $script:UnrealRunSchema
         runId              = [string] $Request.runId
         operation          = [string] $Request.operation
+        label              = [string] $Request.label
         state              = 'Queued'
         createdAtUtc       = [string] $Request.createdAtUtc
         updatedAtUtc       = [DateTimeOffset]::UtcNow.ToString('o')
@@ -750,9 +767,21 @@ function Get-UnrealRunStatusRecord {
     else {
         New-UnrealUnknownBuildProgress
     }
+    $labelProperty = $metadata.PSObject.Properties['label']
+    $label = if ($null -ne $labelProperty) {
+        Resolve-UnrealRunLabel -Label ([string] $labelProperty.Value) -Fallback ([string] $metadata.operation)
+    }
+    else {
+        $request = Read-UnrealJsonFile -Path $paths.RequestPath
+        if ([string] $request.schemaVersion -ne $script:UnrealRequestSchema -or [string] $request.runId -ne $RunId) {
+            throw "Historical run request identity is invalid: $($paths.RequestPath)"
+        }
+        Resolve-UnrealRunLabel -Label ([string] $request.label) -Fallback ([string] $metadata.operation)
+    }
     return [pscustomobject][ordered]@{
         RunId         = $RunId
         Operation     = [string] $metadata.operation
+        Label         = $label
         State         = $effectiveState
         RecordedState = $recordedState
         ExitCode      = $metadata.exitCode

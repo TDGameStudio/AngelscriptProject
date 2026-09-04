@@ -418,6 +418,7 @@ function ConvertTo-UnrealProcessView {
         CommandLine         = $CommandLine
         RecognizedBuild     = $false
         RunId               = ''
+        Label               = ''
         WorkspaceRoot       = ''
         EngineRoot          = ''
         ProjectFile         = ''
@@ -507,6 +508,7 @@ function ConvertTo-UnrealProcessView {
         $result.Kind = 'UbtBuild'
         $result.RecognizedBuild = $true
         $result.RunId = $runId
+        $result.Label = Resolve-UnrealRunLabel -Label ([string] $request.label) -Fallback ([string] $build.target)
         $result.WorkspaceRoot = $workspace
         $result.EngineRoot = ConvertTo-UnrealCanonicalPath -Path ([string] $request.engineRoot)
         $result.ProjectFile = $project
