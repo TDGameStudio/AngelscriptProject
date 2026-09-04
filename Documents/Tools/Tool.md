@@ -4,7 +4,7 @@
 
 标准入口只保留五类：
 
-- `Tools\Bootstrap\BootstrapWorktree.bat`：初始化或规范化当前 worktree 的 `AgentConfig.ini`
+- `.agents\skills\git-workflow\scripts\BootstrapWorktree.bat`：初始化或规范化当前 worktree 的 `AgentConfig.ini`
 - `Tools\Diagnostics\ResolveAgentCommandTemplates.bat`：生成给 AI Agent/脚本使用的官方命令模板
 - `Tools\RunBuild.ps1`：标准构建入口
 - `Tools\RunTests.ps1` / `Tools\RunTestSuite.ps1`：标准自动化测试入口
@@ -22,10 +22,11 @@ Tools/
 ├── RunCommandlet.ps1                        # ★ 标准 commandlet 入口
 ├── GetAutomationReportSummary.ps1           # 根据 Report/ 与 Automation.log 生成轻量摘要
 │
-├── Bootstrap/                                 # 首次配置与 worktree 初始化
-│   ├── BootstrapWorktree.bat                  # ★ 新 worktree 优先使用的官方入口
-│   ├── BootstrapWorktree.ps1                  # 初始化 AgentConfig.ini、预热 TargetInfo.json
+├── Bootstrap/                                 # 首次配置
 │   └── GenerateAgentConfigTemplate.bat        # 生成本机模板版 AgentConfig.ini（兼容入口）
+│
+│   # worktree 脚本已迁移至 .agents\skills\git-workflow\scripts\
+│   #   NewWorktree.ps1 / BootstrapWorktree.ps1 / BootstrapWorktree.bat
 │
 ├── Diagnostics/                               # 健康检查与调试
 │   ├── ResolveAgentCommandTemplates.bat       # ★ 输出官方 build/test/bootstrap 命令模板
@@ -60,9 +61,9 @@ Tools/
 ### 官方入口（build / test / bootstrap）
 
 - **BootstrapWorktree**
-  - 路径：`Tools\Bootstrap\BootstrapWorktree.bat` → `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`
+  - 路径：`.agents\skills\git-workflow\scripts\BootstrapWorktree.bat` → `.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1`
   - 用途：初始化当前 worktree，规范化 `AgentConfig.ini`，并按需预热 `Intermediate\TargetInfo.json`
-  - 常用命令：`Tools\Bootstrap\BootstrapWorktree.bat`
+  - 常用命令：`.agents\skills\git-workflow\scripts\BootstrapWorktree.bat`
   - 输出：`AgentConfig.ini`、`Intermediate\TargetInfo.json`
   - 备注：新 worktree 优先使用
 
@@ -138,7 +139,7 @@ Tools/
   - 路径：`Tools\Bootstrap\GenerateAgentConfigTemplate.bat`
   - 用途：生成本机模板版 `AgentConfig.ini`
   - 输出：`AgentConfig.ini`
-  - 备注：仍可用，但新 worktree 更推荐 `Tools\Bootstrap\BootstrapWorktree.bat`
+  - 备注：仍可用，但新 worktree 更推荐 `.agents\skills\git-workflow\scripts\BootstrapWorktree.bat`
 
 - **RunAutomationTests (legacy)**
   - 路径：`Tools\RunAutomationTests.ps1` / `Tools\RunAutomationTests.bat`
@@ -162,7 +163,7 @@ Tools/
 
 ## BootstrapWorktree.ps1
 
-- **路径：** `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`（入口：`Tools\Bootstrap\BootstrapWorktree.bat`）
+- **路径：** `.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1`（入口：`.agents\skills\git-workflow\scripts\BootstrapWorktree.bat`）
 - **用途：** 为当前 worktree 创建或规范化 `AgentConfig.ini`，并预热 `Intermediate\TargetInfo.json`
 - **常用参数：** `-AllRegisteredWorktrees`、`-EngineRoot`、`-NoPrewarm`、`-Force`
 - **推荐场景：** 新建 worktree、发现 `ProjectFile` 指向了其他 worktree、缺少默认超时配置
@@ -170,9 +171,9 @@ Tools/
 示例：
 
 ```powershell
-Tools\Bootstrap\BootstrapWorktree.bat
-Tools\Bootstrap\BootstrapWorktree.bat -AllRegisteredWorktrees
-Tools\Bootstrap\BootstrapWorktree.bat -EngineRoot "J:\UnrealEngine\UERelease" -NoPrewarm
+.agents\skills\git-workflow\scripts\BootstrapWorktree.bat
+.agents\skills\git-workflow\scripts\BootstrapWorktree.bat -AllRegisteredWorktrees
+.agents\skills\git-workflow\scripts\BootstrapWorktree.bat -EngineRoot "J:\UnrealEngine\UERelease" -NoPrewarm
 ```
 
 ## BlueprintImpactScanCommandlet
@@ -198,7 +199,7 @@ J:\UnrealEngine\UERelease\Engine\Binaries\Win64\UnrealEditor-Cmd.exe <ProjectFil
 - **路径：** `Tools\Bootstrap\GenerateAgentConfigTemplate.bat`
 - **用途：** 生成本机模板版 `AgentConfig.ini`（不执行完整 worktree 预热流程）
 - **输出：** `AgentConfig.ini`
-- **备注：** 新 worktree 更推荐 `Tools\Bootstrap\BootstrapWorktree.bat`
+- **备注：** 新 worktree 更推荐 `.agents\skills\git-workflow\scripts\BootstrapWorktree.bat`
 
 ## ResolveAgentCommandTemplates.ps1
 

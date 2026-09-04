@@ -33,13 +33,13 @@ DefaultTimeoutMs=600000
 如果当前 worktree 还没有配置，先执行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1
 ```
 
 批量补齐所有 worktree：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1 -AllRegisteredWorktrees
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1 -AllRegisteredWorktrees
 ```
 
 只想拿标准命令模板时，使用：
@@ -1227,7 +1227,7 @@ ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 ## 对 AI Agent 的要求
 
 1. 先读取根目录 `AgentConfig.ini`
-2. 配置缺失或 worktree 路径不匹配时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`
+2. 配置缺失或 worktree 路径不匹配时先跑 `.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`
 3. bootstrap 会自动初始化子模块；如果子模块仍缺失，参考 `Documents/Guides/SubmoduleWorktreeWorkflow.md`
 4. 单条测试只通过 `Tools\RunTests.ps1`
 5. suite 波次只通过 `Tools\RunTestSuite.ps1`
@@ -1237,5 +1237,5 @@ ON_SCOPE_EXIT { Engine.DiscardModule(*ModuleName.ToString()); };
 ## 推荐提示词
 
 ```text
-请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。自动化测试只能通过 Tools\RunTests.ps1 或 Tools\RunTestSuite.ps1 执行，并显式带一个不超过 3600000ms 的超时。不要手写 UnrealEditor-Cmd.exe 命令，也不要手写 -ABSLOG / -ReportExportPath 共享路径；日志、报告和摘要必须写入当前 run 的独立目录。除非明确需要真实渲染，否则保持默认 headless 模式。
+请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。自动化测试只能通过 Tools\RunTests.ps1 或 Tools\RunTestSuite.ps1 执行，并显式带一个不超过 3600000ms 的超时。不要手写 UnrealEditor-Cmd.exe 命令，也不要手写 -ABSLOG / -ReportExportPath 共享路径；日志、报告和摘要必须写入当前 run 的独立目录。除非明确需要真实渲染，否则保持默认 headless 模式。
 ```

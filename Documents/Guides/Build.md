@@ -36,23 +36,23 @@ DefaultTimeoutMs=600000
 如果当前 worktree 还没有 `AgentConfig.ini`，优先执行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1
 ```
 
 常用 bootstrap 方式：
 
 ```powershell
 # 初始化当前 worktree
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1
 
 # 初始化所有已注册 worktree
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1 -AllRegisteredWorktrees
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1 -AllRegisteredWorktrees
 
 # 显式指定引擎目录并跳过预热
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\Bootstrap\powershell\BootstrapWorktree.ps1 -EngineRoot "J:\UnrealEngine\UERelease" -NoPrewarm
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1 -EngineRoot "J:\UnrealEngine\UERelease" -NoPrewarm
 ```
 
-`Tools\Bootstrap\powershell\BootstrapWorktree.ps1` 会：
+`.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1` 会：
 
 - 生成或规范化当前 worktree 的 `AgentConfig.ini`
 - 回填 `Build.DefaultTimeoutMs=180000` 与 `Test.DefaultTimeoutMs=600000`
@@ -315,7 +315,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 处理顺序：
 
 1. 用 `Tools\Diagnostics\powershell\Get-UbtProcess.ps1` 找出还在跑旧流程的 worktree
-2. 用 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1 -AllRegisteredWorktrees` 统一补齐配置
+2. 用 `.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1 -AllRegisteredWorktrees` 统一补齐配置
 3. 只通过 `Tools\Diagnostics\powershell\ResolveAgentCommandTemplates.ps1` / 本文档下发构建命令
 
 ### UBT 共享日志冲突
@@ -355,7 +355,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ## 对 AI Agent 的要求
 
 1. 先读取根目录 `AgentConfig.ini`
-2. 配置缺失时先跑 `Tools\Bootstrap\powershell\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`（从主 workspace `AgentConfig.ini` 读取）
+2. 配置缺失时先跑 `.agents\skills\git-workflow\scripts\BootstrapWorktree.ps1`；新 worktree 需要显式传 `-EngineRoot`（从主 workspace `AgentConfig.ini` 读取）
 3. bootstrap 现在会自动初始化子模块（标准 init + fallback 本地对象库 worktree）；如果仍有子模块缺失，参考 `Documents/Guides/SubmoduleWorktreeWorkflow.md`
 4. 仅通过 `Tools\RunBuild.ps1` 执行构建
 5. 显式传入或继承一个不超过 `3600000ms` 的超时
@@ -366,5 +366,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\RunBuild.ps1 -Labe
 ## 推荐提示词
 
 ```text
-请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 Tools\Bootstrap\powershell\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。构建只能通过 Tools\RunBuild.ps1 进行，并显式带一个不超过 3600000ms 的超时。默认保持并发模式；只有确认要写共享引擎输出时才追加 -SerializeByEngine。常用的 -NoXGE 不要再通过 ExtraArgs 透传，直接使用一等参数。不要使用 -UniqueBuildEnvironment，因为它会触发 worktree 私有的引擎级重编。日志必须实时输出，并写入当前 run 的独立目录；不要手写 Build.bat、RunUBT.bat 或 dotnet UnrealBuildTool.dll 命令。
+请先读取项目根目录的 AgentConfig.ini；如果缺失或 ProjectFile 不属于当前 worktree，先执行 .agents\skills\git-workflow\scripts\BootstrapWorktree.ps1（新 worktree 需要 -EngineRoot 参数）。bootstrap 会自动初始化子模块；如果子模块目录仍然为空，参考 Documents/Guides/SubmoduleWorktreeWorkflow.md 中的 fallback 策略。构建只能通过 Tools\RunBuild.ps1 进行，并显式带一个不超过 3600000ms 的超时。默认保持并发模式；只有确认要写共享引擎输出时才追加 -SerializeByEngine。常用的 -NoXGE 不要再通过 ExtraArgs 透传，直接使用一等参数。不要使用 -UniqueBuildEnvironment，因为它会触发 worktree 私有的引擎级重编。日志必须实时输出，并写入当前 run 的独立目录；不要手写 Build.bat、RunUBT.bat 或 dotnet UnrealBuildTool.dll 命令。
 ```
