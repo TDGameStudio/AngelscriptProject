@@ -462,13 +462,16 @@ $changeRoot = Join-Path $projectRoot 'openspec\archive\changes\hardness\2026-09-
 $exePath = Join-Path $projectRoot '.agents\skills\openspec\bin\openspec.exe'
 $harnessSkillPath = Join-Path $projectRoot '.agents\skills\harness\SKILL.md'
 $routingPath = Join-Path $referenceRoot 'routing.md'
+$verificationPath = Join-Path $referenceRoot 'verification.md'
 $hookScriptPath = Join-Path $projectRoot '.agents\skills\harness\scripts\Invoke-HarnessCodexHook.ps1'
 $hookConfigPath = Join-Path $projectRoot '.codex\hooks.json'
 
 Assert-True (Test-Path -LiteralPath $changeRoot -PathType Container) 'The archived Hardness dogfood record is required for protocol audit'
+Assert-True (Test-Path -LiteralPath $verificationPath -PathType Leaf) 'The canonical impact-scoped verification policy is required'
 
 $harnessSkill = Get-Content -LiteralPath $harnessSkillPath -Raw
 $routingProtocol = Get-Content -LiteralPath $routingPath -Raw
+$verificationProtocol = Get-Content -LiteralPath $verificationPath -Raw
 $taskProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'task-dag.md') -Raw
 $replanProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'replan.md') -Raw
 $reviewProtocol = Get-Content -LiteralPath (Join-Path $referenceRoot 'review.md') -Raw
@@ -488,6 +491,29 @@ foreach ($token in @(
 )) {
     Assert-True ($harnessSkill.Contains($token)) "Harness entry is missing the unified workflow contract: $token"
 }
+Assert-True ($harnessSkill.Contains('[impact-scoped verification policy](references/verification.md)')) 'Harness entry routes verification decisions to the canonical focused reference'
+Assert-True (-not $harnessSkill.Contains('Run the core gates through one public test entry:')) 'Harness entry does not present every aggregate profile as a routine gate'
+foreach ($token in @(
+    'smallest reliable scope',
+    'Skill, Markdown, template, or specification',
+    'single Harness route or module',
+    'public envelope, dispatcher routing, or shared state',
+    'matching Unreal operation',
+    '`Performance`',
+    '`Integration`',
+    '`Quick`',
+    'adjacent affected surface',
+    'release gate',
+    'explicit user request',
+    'tests actually run',
+    'intentionally omitted',
+    'does not add a parser field'
+)) {
+    Assert-True ($verificationProtocol.Contains($token)) "Impact-scoped verification policy is missing: $token"
+}
+Assert-Contains $verificationProtocol '(?i)local failure.*(?:diagnose|repair).*current task' 'Local failures remain in the current task'
+Assert-Contains $verificationProtocol '(?i)Replan.*requirement.*design.*Task DAG.*verification contract.*required artifact' 'Replan remains evidence-gated by invalid planning truth'
+Assert-Contains $verificationProtocol '(?i)(?:full|complete).*Unreal.*(?:product code|release gate|explicit user request)' 'Full Unreal verification remains conditional'
 foreach ($token in @('`workspace.list`', '`harness.status`', '`harness.observe`', '`harness.evolution.status`', '`openspec.maintenance.status`')) {
     Assert-True ($routingProtocol.Contains($token)) "Route map is missing: $token"
 }

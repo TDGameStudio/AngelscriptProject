@@ -53,6 +53,8 @@ Every node states:
 - on its one-line checkbox statement, the concrete outcome plus one exact verification command or directly observable result;
 - on a following `> Files:` line, exact paths or an explicitly bounded package-wide glob with exclusions.
 
+Choose that command through the Harness [impact-scoped verification policy](../../harness/references/verification.md): start with the smallest reliable scope that directly proves the node. When broader verification is required, state the concrete reason in ordinary Task Card or completion-evidence prose; do not add a parser field or make aggregate profiles universal gates.
+
 Add only the concise detail that helps a zero-context implementer. A Task Card may freely use ordinary Markdown such as short prose, `> Context:`, `> Inputs:`, `> Produces:`, `> Constraints:`, numbered steps, examples, or other useful notes. These are authoring aids, not parser fields or a rigid template. When another node depends on an interface, artifact, or state, explain that handoff somewhere in the card using the clearest compact form.
 
 Nested numbered steps are real execution order, including RED/GREEN/refactor when behavior changes; they are not placeholder examples. Do not use `TBD`, "appropriate handling", "similar to Task N", or other prose that delegates design back to the implementer.

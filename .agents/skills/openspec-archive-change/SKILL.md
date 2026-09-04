@@ -5,7 +5,7 @@ description: Close and archive an OpenSpec change with explicit completed, aband
 
 # Close and Archive a Change
 
-Read the [closure schema](../openspec/references/record-schema.md) and [attachment gates](../openspec/references/attachments.md).
+Read the [closure schema](../openspec/references/record-schema.md), [attachment gates](../openspec/references/attachments.md), and Harness [impact-scoped verification policy](../harness/references/verification.md). Use the smallest applicable post-move check and expand only when its evidence requires it.
 
 ## Completed gate
 

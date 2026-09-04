@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_154e3f7d-2fd8-4028-ad4d-9b92bbf1b5c2
+  id: harness/refactor-agent-guidance-progressive-routing
+  title: Refactor agent guidance and progressive verification routing
+  description: Make root AGENTS.md a thin canonical entry and default Harness lifecycle verification to the smallest evidence-backed impact scope.
+workflow: angelscript
+created_at: 2026-09-04T06:23:27Z
+goal: Provide one stable project-level agent entry and one shared impact-scoped verification policy across Harness and OpenSpec lifecycle guidance.
+affected_areas:
+- project-agent-guidance
+- harness-verification-policy
+- openspec-lifecycle-skills
+archived_at: 2026-09-04T06:34:22Z
+archive_schema: closure-v1
+closure:
+  kind: completed

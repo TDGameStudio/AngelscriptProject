@@ -9,6 +9,7 @@ Use the portable CLI through Harness as defined by the `openspec` skill.
 
 ## Completion verification
 
+- Use the Harness [impact-scoped verification policy](../harness/references/verification.md) to begin with the smallest task and owner checks that prove the final content identity. Expand only for the policy's concrete shared-impact, failure-evidence, release, or user-request reasons.
 - Read proposal, relevant delta/current specs, design, tasks, and `attachments/INDEX.md`; open only linked evidence.
 - When durable specs changed, load the [Specification and Scenario Card contract](../openspec/references/specs.md). Confirm every ordinary scenario has a clear `WHEN` and `THEN`; every clause-owned detail block is indented beneath the exact behavior item it qualifies; its prose, lists, examples, or tables support observable behavior rather than implementation steps; and synchronization preserved each intended complete Scenario Card plus all unnamed current behavior. A `Verification` detail names a stable oracle or test family; it never substitutes for executed evidence.
 - Run `doctor`, strict change validation, Task DAG validation, and the exact task verification commands appropriate to the completed scope.

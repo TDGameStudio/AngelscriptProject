@@ -430,6 +430,7 @@ Assert-True (Test-Path -LiteralPath $specAuthoringPath -PathType Leaf) 'Specific
 
 $specAuthoringText = Get-Content -LiteralPath $specAuthoringPath -Raw
 $specTemplateText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\templates\spec.md') -Raw
+$taskTemplateText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\templates\tasks.md') -Raw
 $workflowDefinitionText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\workflow.yaml') -Raw
 $syncSpecText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-sync-specs\SKILL.md') -Raw
 
@@ -464,11 +465,11 @@ Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+require
 $mandatoryLifecycleReferences = [ordered]@{
     'openspec-explore' = @('references/deep-exploration.md', 'references/question-rounds.md', 'references/markers.md')
     'openspec-continue-change' = @('../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../openspec/references/specs.md')
-    'openspec-apply-change' = @('../openspec/references/implementation-issues.md')
-    'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md')
+    'openspec-apply-change' = @('../openspec/references/implementation-issues.md', '../harness/references/verification.md')
+    'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../harness/references/verification.md')
     'openspec-update-change' = @('../openspec/references/attachments.md', '../openspec/references/specs.md')
     'openspec-sync-specs' = @('../openspec/references/specs.md')
-    'openspec-verify-change' = @('../openspec/references/specs.md')
+    'openspec-verify-change' = @('../openspec/references/specs.md', '../harness/references/verification.md')
 }
 foreach ($entry in $mandatoryLifecycleReferences.GetEnumerator()) {
     $skillFile = Join-Path $projectRoot ".agents\skills\$($entry.Key)\SKILL.md"
@@ -621,6 +622,20 @@ foreach ($retiredReviewPattern in @(
 foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'one-line checkbox statement', 'exact verification command or directly observable result', '`> Files:` line', 'explicitly bounded package-wide glob with exclusions', 'ordinary Markdown', '`> Context:`', '`> Inputs:`', '`> Produces:`', '`> Constraints:`', 'not parser fields or a rigid template', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
     Assert-True ($taskReferenceText.Contains($token)) "Task authoring contract is missing: $token"
 }
+foreach ($token in @('impact-scoped verification policy', '../../harness/references/verification.md', 'smallest reliable scope', 'broader verification', 'concrete reason')) {
+    Assert-True ($taskReferenceText.Contains($token)) "Task authoring verification guidance is missing: $token"
+}
+foreach ($token in @('.agents/skills/harness/references/verification.md', 'smallest impact-related verification', 'Broader verification', 'concrete reason', 'ordinary Markdown')) {
+    Assert-True ($taskTemplateText.Contains($token)) "Task template verification guidance is missing: $token"
+}
+foreach ($entry in ([ordered]@{
+    'apply' = $applyText
+    'verify' = $verifyText
+    'archive' = $archiveText
+}).GetEnumerator()) {
+    Assert-True ($entry.Value.Contains('../harness/references/verification.md')) "$($entry.Key) lifecycle entry does not route to the canonical verification policy"
+    Assert-True ($entry.Value.Contains('smallest')) "$($entry.Key) lifecycle entry does not preserve smallest-scope selection"
+}
 
 foreach ($token in @('New-HarnessContext -WorkspaceRoot', 'one explicit or discovered `WorkspaceRoot`', 'Codex `/goal` invocation', 'not a repository mode', 'tracked `Tools/openspec` submodule', 'packaged `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($openSpecEntryText.Contains($token)) "Portable OpenSpec workspace/package contract is missing: $token"
@@ -641,8 +656,8 @@ foreach ($token in @('validator profile identifiers', 'not a content version', '
 Assert-True (-not $openSpecReadmeText.Contains('Project Skills are temporarily disabled')) 'OpenSpec README still claims that project Skills are disabled.'
 Assert-True (-not $liveConfigText.Contains('While AGENTS.md temporarily disables project Skills')) 'OpenSpec config still carries the lifted temporary Skill restriction.'
 Assert-True ([regex]::Matches($projectReadmeRoutingText, [regex]::Escape('New-HarnessContext -WorkspaceRoot $PWD')).Count -ge 2) 'Root README must use the canonical explicit workspace example for OpenSpec and workspace setup.'
-foreach ($token in @('user explicitly lifted the temporary Skill restriction', 'current-directory-discovered `WorkspaceRoot`', 'Codex `/goal` is external unattended continuation', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'normal OpenSpec runtime calls use `.agents/skills/openspec/bin/openspec.exe`', 'not parser fields or a rigid template')) {
-    Assert-True ($agentsText.Contains($token)) "Prepared AGENTS workflow contract is missing: $token"
+foreach ($token in @('Project Skills are enabled', 'Harness is the project workflow entry', 'current selected workspace', '`tasks.md`', '`attachments/INDEX.md`', '<domain>/<type>-<scope>-<outcome>', 'smallest impact-related verification', 'current PowerShell 7 process', 'Harness `ue.*` routes', 'Commit only the exact paths and hunks')) {
+    Assert-True ($agentsText.Contains($token)) "Thin AGENTS routing contract is missing: $token"
 }
 
 $modeFreeTexts = @($openSpecEntryText, $exploreText, $deepExplorationText, $questionRoundsText, $continueText, $updateText, $applyText, $unrealDevelopText, $skillsReadmeText, $liveConfigText, $openSpecReadmeText, $projectReadmeRoutingText, $agentsText) -join "`n"

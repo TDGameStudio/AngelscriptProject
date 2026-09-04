@@ -6,6 +6,8 @@ task_graph:
     "2.1": ["1.1"]
 ---
 
+<!-- Choose each command through .agents/skills/harness/references/verification.md. Start with the smallest impact-related verification that directly proves the node. When Broader verification is required, state the concrete reason in ordinary Markdown rather than adding a parser field. -->
+
 ## 1. <!-- Deliverable group -->
 
 - [ ] 1.1 <!-- Task title --> — verify: `<exact command or observable outcome>`

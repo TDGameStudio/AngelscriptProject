@@ -84,13 +84,7 @@ Unreal execution uses the same context and lazy-loads `unreal-engine-develop` on
 
 The optional project Codex hooks run only fast, read-only `harness.status` at `SessionStart` (`startup|resume`) and `SubagentStart`. They add bounded orientation context when the repository hooks are trusted. Hook failure is never a correctness dependency; Cursor, Grok, and ordinary terminal use continue to call the same public routes directly.
 
-Run the core gates through one public test entry:
-
-```powershell
-& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Quick
-& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Performance -WarmupRuns 3 -MeasurementRuns 15
-& ./.agents/skills/harness/scripts/Test-Harness.ps1 -Profile Integration
-```
+Choose task, completion, and post-archive checks through the [impact-scoped verification policy](references/verification.md). Focused owner tests are the default; `Quick`, `Performance`, `Integration`, and real Unreal operations remain available only when their documented scope matches the demonstrated impact or an explicit user request.
 
 The public runner itself starts fresh bounded `pwsh` hosts for individual gates so module state cannot leak between tests; that is an intentional test-isolation boundary.
 

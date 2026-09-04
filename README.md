@@ -140,7 +140,7 @@ AngelscriptProject/
 ├── Reference/                   # 外部参考仓库（不入库，仅本地比对用）
 ├── Tools/                       # 旧 wrapper 与诊断工具；Tools/openspec 是跟踪的源码例外
 ├── AgentConfig.ini              # 机器本地配置（已 gitignore，需 bootstrap 生成）
-├── AGENTS.md / AGENTS_ZH.md     # AI Agent 工作指引（项目规范来源）
+├── AGENTS.md                    # 唯一的项目级 AI Agent 工作入口
 ├── AngelscriptProject.uproject  # UE 工程文件
 └── README.md                    # 本文件
 ```
@@ -293,7 +293,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 | 文档 | 用途 |
 |------|------|
-| `AGENTS.md` / `AGENTS_ZH.md` | AI Agent / 协作者的工作指引（**项目规范的权威来源**） |
+| `AGENTS.md` | AI Agent / 协作者的唯一项目级入口；详细规则渐进路由到 Skills 与 OpenSpec specs |
 | `.agents/skills/README.md` | Harness + OpenSpec 协作流程与项目技能适配说明 |
 | `Documents/Knowledges/ZH/Index.md` | 知识库主索引，按主题前缀组织所有原理性文档 |
 | `Documents/Guides/Build.md` | 构建规则、超时约束、并发安全 |
