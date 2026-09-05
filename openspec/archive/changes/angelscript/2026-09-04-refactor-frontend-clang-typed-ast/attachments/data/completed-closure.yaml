@@ -1,0 +1,3 @@
+kind: completed
+reason: The concrete typed AST families, context ownership, stable type and attribute facts, exhaustive traversal, structural verification, immutable projection, versioned codec, thirty focused CQTests, and durable AST core contract are complete; all seven tasks pass.
+

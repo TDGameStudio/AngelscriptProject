@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_456ca1d8-e08f-4296-963c-9ebd8d216cc7
+  id: angelscript/refactor-frontend-declarations-semantic-authority
+  title: Refactor declaration semantic authority
+  description: Define a two-phase compilation session in which Parser and Sema collect and resolve declarations across files without Builder or live Engine mutation.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Make typed declarations and semantic resolution the sole authority for frontend declaration facts.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T21:18:22Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The Engine-independent declaration collection barrier, deterministic whole-session resolution, typed recovery, stable lookup and overload ordering, twelve focused CQTests, and durable declaration semantics contract are complete; all five tasks pass.

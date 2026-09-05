@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_4e2ae4ac-abe4-4b1a-a985-34e6aead9952
+  id: angelscript/fix-reflection-payload-projection
+  title: Fix reflection payload projection
+  description: Complete typed annotation payload and enum constant projection into resolved Angelscript descriptors.
+workflow: angelscript
+created_at: 2026-09-04T22:26:13Z
+goal: Project metadata arguments and enum constants through Parser and Sema without source reparsing or runtime materialization.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend/reflection-dependencies
+archived_at: 2026-09-04T22:40:10Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Typed annotation payload ownership, concrete enum-constant declarations, deterministic values and semantic keys, descriptor projection, two focused RED regressions, ten complete Reflection tests, forty-two adjacent AST and Declarations tests, strict validation, and terminal evolution evidence are complete; all three tasks pass without changing the accepted durable contract.

@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_09b35d6c-8f07-42e4-9c58-d28648be10e4
+  id: angelscript/language/frontend/reflection-dependencies
+  title: Frontend Reflection Dependencies

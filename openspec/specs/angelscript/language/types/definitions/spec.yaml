@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_87c572cf-1f53-477a-89a9-0f8b24ac14f0
+  id: angelscript/language/types/definitions
+  title: Detached Type and Function Definitions

@@ -1,0 +1,2 @@
+kind: completed
+reason: The deferred body-analysis barrier, concrete typed statements and expressions, stable call and conversion semantics, explicit control and lifetime facts, deterministic recovery and merge, thirteen focused Bodies tests, thirty adjacent AST tests, and durable body-semantics contract are complete; all five tasks pass.

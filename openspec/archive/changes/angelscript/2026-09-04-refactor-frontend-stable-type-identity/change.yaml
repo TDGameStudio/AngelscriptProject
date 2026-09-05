@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_d7e6b2b1-8d14-4d7e-ba6d-c46ee6e6668d
+  id: angelscript/refactor-frontend-stable-type-identity
+  title: Refactor stable type identity
+  description: Consolidate declaration, type-use, schema, ABI, artifact-slot, and runtime identities into one deterministic type identity system.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Provide stable type identity across compilation, caching, reload, and later publication without runtime-ID leakage.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/types
+archived_at: 2026-09-04T20:25:37Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Canonical nominal and structural type identities, exact collision-safe witnesses, scoped artifact and runtime projections, nineteen focused CQTests, and the durable stable-identity capability are complete; all six tasks and their impact-scoped verification pass.

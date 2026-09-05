@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Builder stage pipeline",
+    "subtitle": "asCBuilder::RunStage products, from snapshot to frozen image",
+    "output": "builder-stages.html",
+    "viewBox": [1080, 760],
+    "quality_profile": "standard",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Happy path",
+        "focus": ["snapshot", "tokens", "session", "image", "engine"],
+        "note": "Each later stage is illegal until the previous stage succeeded."
+      },
+      {
+        "id": "token-selection",
+        "label": "Token selection",
+        "focus": ["snapshot", "tokens", "selected", "session"],
+        "note": "Raw tokens keep trivia; preprocessing publishes only active tokens and a record."
+      },
+      {
+        "id": "host-gap",
+        "label": "Host lookup gap",
+        "focus": ["host", "session", "image"],
+        "note": "Frozen host types can resolve; body lookup still misses host globals and methods."
+      }
+    ]
+  },
+  "stages": [
+    { "label": "Source" },
+    { "label": "Tokens" },
+    { "label": "Typed frontend" },
+    { "label": "Definitions" },
+    { "label": "Optional bind" }
+  ],
+  "nodes": [
+    {
+      "id": "snapshot",
+      "type": "database",
+      "label": "SourceSnapshot",
+      "sublabel": "frozen UTF-8 files",
+      "stage": 0,
+      "row": 1,
+      "tag": "Lexed input"
+    },
+    {
+      "id": "host",
+      "type": "external",
+      "label": "Host image",
+      "sublabel": "frozen dependencies",
+      "stage": 2,
+      "row": 4,
+      "tag": "types only"
+    },
+    {
+      "id": "tokens",
+      "type": "backend",
+      "label": "Raw tokens",
+      "sublabel": "Tokenizer + identifiers",
+      "stage": 1,
+      "row": 0,
+      "tag": "Lexed"
+    },
+    {
+      "id": "selected",
+      "type": "messagebus",
+      "label": "Selected tokens",
+      "sublabel": "directive record",
+      "stage": 1,
+      "row": 2,
+      "tag": "Preprocessed"
+    },
+    {
+      "id": "session",
+      "type": "backend",
+      "label": "CompilationSession",
+      "sublabel": "collect resolve bodies",
+      "stage": 2,
+      "row": 1,
+      "tag": "no Engine"
+    },
+    {
+      "id": "ast",
+      "type": "database",
+      "label": "Verified AST",
+      "sublabel": "one-way seal",
+      "stage": 2,
+      "row": 0,
+      "tag": "ASTVerified"
+    },
+    {
+      "id": "image",
+      "type": "database",
+      "label": "MetadataImage",
+      "sublabel": "layout then freeze",
+      "stage": 3,
+      "row": 1,
+      "tag": "DefinitionsFrozen"
+    },
+    {
+      "id": "engine",
+      "type": "cloud",
+      "label": "ScriptEngine",
+      "sublabel": "transactional attach",
+      "stage": 4,
+      "row": 1,
+      "tag": "optional"
+    },
+    {
+      "id": "vm",
+      "type": "messagebus",
+      "label": "VM / bytecode",
+      "sublabel": "not a consumer",
+      "stage": 4,
+      "row": 3,
+      "tag": "dormant"
+    }
+  ],
+  "flows": [
+    {
+      "id": "bytes-in",
+      "from": "snapshot",
+      "to": "tokens",
+      "label": "file bytes",
+      "classification": "source identity",
+      "variant": "emphasis"
+    },
+    {
+      "id": "select-tokens",
+      "from": "tokens",
+      "to": "selected",
+      "label": "active branch",
+      "classification": "no macros",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tokens-to-session",
+      "from": "selected",
+      "to": "session",
+      "label": "replay bodies",
+      "classification": "owned identifiers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "host-types",
+      "from": "host",
+      "to": "session",
+      "label": "external types",
+      "classification": "callables missing",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "session-ast",
+      "from": "session",
+      "to": "ast",
+      "label": "VerifyAST",
+      "classification": "sealed syntax",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ast-image",
+      "from": "ast",
+      "to": "image",
+      "label": "definition consumer",
+      "classification": "real objects",
+      "variant": "emphasis"
+    },
+    {
+      "id": "image-engine",
+      "from": "image",
+      "to": "engine",
+      "label": "register",
+      "classification": "same pointer",
+      "variant": "dashed",
+      "labelDy": -24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Stage contract",
+      "items": [
+        "RunStage only accepts the next sequential stage",
+        "A failed attempt keeps diagnostics and publishes no image",
+        "Text and JSON dumps are observations, never compiler input"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "4.1 remainder",
+      "items": [
+        "Host types resolve; host globals and methods still do not",
+        "Access and conversion implementations are unverified after 481",
+        "Registration is metadata only, not executable script"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_66fde159-4d9c-4f13-9378-62bc1c3d6690
+  id: angelscript/refactor-frontend-preprocessor-directive-record
+  title: Refactor frontend preprocessing records
+  description: Define active conditional token routing, a full directive tree, skipped ranges, and source backquery without C macro expansion or import dependencies.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Make conditional preprocessing and its provenance a typed queryable frontend product.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T19:58:34Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Deterministic conditional routing, complete directive and inactive-range preservation, typed restriction policy records, explicit include rejection, snapshot-bound preprocessing range queries, twenty-four focused CQTests, and the durable frontend preprocessing capability are complete; all seven tasks and their focused verification pass.

@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_ce351e84-091d-4765-a5c8-c63dda1d26b8
+  id: angelscript/language/frontend/builder
+  title: Independent Builder Stages

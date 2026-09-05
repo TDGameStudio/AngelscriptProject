@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_07fb2d64-34ba-43a2-beaf-a72c434c2006
+  id: angelscript/refactor-frontend-source-diagnostics-model
+  title: Refactor frontend source and diagnostics model
+  description: Define immutable UTF-8 source snapshots, source coordinates, provenance, and one structured diagnostic system for the reconstructed frontend.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Give every later frontend stage deterministic source ownership and diagnostics without live engine coupling.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T18:53:21Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Immutable UTF-8 source snapshots, owner-validated locations and ranges, lazy line maps, queryable provenance, structured deterministic diagnostics, eleven focused CQTests, and the durable source-diagnostics capability are complete; all four tasks pass and both implementation issues are resolved.

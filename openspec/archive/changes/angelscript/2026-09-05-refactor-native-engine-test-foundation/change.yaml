@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_7f49fb2b-cb56-4c72-bd39-27ecaa700246
+  id: angelscript/refactor-native-engine-test-foundation
+  title: Establish NativeEngine CQTest foundation
+  description: Create an isolated CQTest foundation for replacement AngelScript native-engine frontend tests without reviving the legacy test framework.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Provide the executable test boundary required to rebuild the AngelScript frontend from the bottom up.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/testing
+archived_at: 2026-09-04T18:28:33Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The replacement-only CQTest foundation, stable NativeEngine public identity, four focused scenarios, testing guidance, and durable baseline are implemented and verified; all four tasks pass and both material issues have evidence-backed terminal dispositions.

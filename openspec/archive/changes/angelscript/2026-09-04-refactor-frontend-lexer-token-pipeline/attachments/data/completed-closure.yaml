@@ -1,0 +1,3 @@
+kind: completed
+reason: The engine-independent pull tokenizer, compact source-referential tokens, session identifier interning, Unicode and malformed-input recovery, deterministic concurrent sessions, cold/warm allocation evidence, twelve focused CQTests, and durable frontend lexing capability are complete; all five tasks pass and the single observed Harness issue has an evidence-backed terminal rejection.
+

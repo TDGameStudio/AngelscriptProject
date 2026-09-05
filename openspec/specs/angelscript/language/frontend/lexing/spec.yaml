@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_7a71373c-61b8-4599-a3ae-ed5e290f398a
+  id: angelscript/language/frontend/lexing
+  title: Frontend Lexing

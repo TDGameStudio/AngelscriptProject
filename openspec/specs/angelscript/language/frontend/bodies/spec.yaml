@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_c7fe1a01-47b2-4d1f-bbeb-ee3c473b7a8d
+  id: angelscript/language/frontend/bodies
+  title: Frontend Body Semantics

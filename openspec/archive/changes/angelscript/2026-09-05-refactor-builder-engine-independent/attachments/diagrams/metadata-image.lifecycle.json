@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Definition image lifecycle",
+    "subtitle": "asCMetadataImage states: build, freeze, attach one Engine, retire",
+    "output": "metadata-image.html",
+    "quality_profile": "standard",
+    "views": [
+      {
+        "id": "happy-attach",
+        "label": "Happy attach",
+        "focus": ["building", "frozen", "attaching", "attached"],
+        "note": "A complete frozen closure attaches atomically and keeps every object address."
+      },
+      {
+        "id": "failed-publish",
+        "label": "Failed publish",
+        "focus": ["frozen", "attaching", "failed"],
+        "note": "A failed prepare returns to Frozen with no visible Engine publication."
+      },
+      {
+        "id": "retire",
+        "label": "Retire",
+        "focus": ["attached", "retired"],
+        "note": "Retirement unbinds Engine queries; surviving external handles keep the image."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "main", "label": "Image phases" },
+    { "id": "waiting", "label": "Engine transaction" },
+    { "id": "exceptions", "label": "Rejected publish" },
+    { "id": "terminal", "label": "Unbound" }
+  ],
+  "states": [
+    {
+      "id": "building",
+      "type": "start",
+      "label": "Building",
+      "sublabel": "draft objects",
+      "lane": "main",
+      "col": 0,
+      "step": "01",
+      "tag": "mutable"
+    },
+    {
+      "id": "frozen",
+      "type": "active",
+      "label": "Frozen",
+      "sublabel": "immutable graph",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "no Engine"
+    },
+    {
+      "id": "attaching",
+      "type": "waiting",
+      "label": "Attaching",
+      "sublabel": "prepare whole closure",
+      "lane": "waiting",
+      "col": 1,
+      "tag": "atomic"
+    },
+    {
+      "id": "attached",
+      "type": "success",
+      "label": "Attached",
+      "sublabel": "one Engine",
+      "lane": "main",
+      "col": 3,
+      "step": "03",
+      "tag": "same pointer"
+    },
+    {
+      "id": "failed",
+      "type": "failure",
+      "label": "Failed attach",
+      "sublabel": "identity or layout",
+      "lane": "exceptions",
+      "col": 0,
+      "yOffset": 78,
+      "tag": "no publication"
+    },
+    {
+      "id": "retired",
+      "type": "success",
+      "label": "Retired",
+      "sublabel": "engine queries fail",
+      "lane": "terminal",
+      "col": 2,
+      "tag": "image lives"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "freeze-to-attach",
+      "from": "frozen",
+      "to": "attaching",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "attach-success",
+      "from": "attaching",
+      "to": "attached",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "attach-failed",
+      "from": "attaching",
+      "to": "failed",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "failed-returns",
+      "from": "failed",
+      "to": "frozen",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "retire-engine",
+      "from": "attached",
+      "to": "retired",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [[820, 188], [820, 540]]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Invariants",
+      "items": [
+        "Building cannot register into an Engine",
+        "Successful attach preserves every object address",
+        "A second Engine or reuse after retirement is rejected"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Not claimed",
+      "items": [
+        "Attached metadata is not VM-executable script",
+        "Numeric TypeId queries never implicitly attach a detached object",
+        "Builder destruction does not free externally retained images"
+      ]
+    }
+  ]
+}

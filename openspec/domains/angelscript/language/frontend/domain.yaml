@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_e5260ac7-27b3-41dd-b656-f67d4b1143d0
+  id: angelscript/language/frontend
+  title: Frontend

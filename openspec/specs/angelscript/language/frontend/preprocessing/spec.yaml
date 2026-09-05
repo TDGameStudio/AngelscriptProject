@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_38f79884-8eef-43d7-8ae8-b8e8d35759e6
+  id: angelscript/language/frontend/preprocessing
+  title: Frontend Preprocessing

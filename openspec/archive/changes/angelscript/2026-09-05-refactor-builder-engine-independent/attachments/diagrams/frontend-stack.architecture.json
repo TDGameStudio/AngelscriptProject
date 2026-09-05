@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Replacement frontend stack",
+    "subtitle": "Engine-independent Builder, typed AST, detached definitions, optional Engine attach",
+    "output": "frontend-stack.html",
+    "quality_profile": "standard",
+    "views": [
+      {
+        "id": "compile-path",
+        "label": "Compile path",
+        "focus": ["snapshot", "lexer", "preprocess", "session", "ast", "image"],
+        "note": "Source bytes become a frozen definition image without creating an Engine."
+      },
+      {
+        "id": "identity-share",
+        "label": "Shared identity",
+        "focus": ["identity", "session", "image", "engine"],
+        "note": "One TypeContext registry authenticates keys for the session, image, and later attach."
+      },
+      {
+        "id": "optional-engine",
+        "label": "Optional attach",
+        "focus": ["image", "engine", "vm"],
+        "note": "Registration pins one Engine. Bytecode, VM, cache, and JIT stay quarantined."
+      }
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 7,
+    "origin": [40, 110],
+    "gapX": 24,
+    "gapY": 72,
+    "cellW": 128,
+    "cellH": 64
+  },
+  "components": [
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "TypeContext",
+      "sublabel": "BLAKE3-256 registry",
+      "row": 0,
+      "col": 3,
+      "tag": "shared"
+    },
+    {
+      "id": "snapshot",
+      "type": "database",
+      "label": "SourceSnapshot",
+      "sublabel": "owned UTF-8 files",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "lexer",
+      "type": "backend",
+      "label": "Tokenizer",
+      "sublabel": "source-referential",
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "preprocess",
+      "type": "backend",
+      "label": "Preprocessor",
+      "sublabel": "select tokens only",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "session",
+      "type": "backend",
+      "label": "CompilationSession",
+      "sublabel": "Parser + Sema",
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "ast",
+      "type": "database",
+      "label": "Typed AST",
+      "sublabel": "Decl Stmt Expr TypeLoc",
+      "row": 1,
+      "col": 4
+    },
+    {
+      "id": "image",
+      "type": "database",
+      "label": "MetadataImage",
+      "sublabel": "real TypeInfo / Function",
+      "row": 1,
+      "col": 5
+    },
+    {
+      "id": "engine",
+      "type": "cloud",
+      "label": "ScriptEngine",
+      "sublabel": "same-pointer attach",
+      "row": 1,
+      "col": 6,
+      "tag": "optional"
+    },
+    {
+      "id": "host",
+      "type": "external",
+      "label": "Host image",
+      "sublabel": "frozen dependencies",
+      "row": 2,
+      "col": 3,
+      "tag": "types only"
+    },
+    {
+      "id": "vm",
+      "type": "messagebus",
+      "label": "VM / JIT / cache",
+      "sublabel": "dormant backends",
+      "row": 2,
+      "col": 6,
+      "tag": "excluded"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "No Engine required",
+      "wraps": ["identity", "snapshot", "lexer", "preprocess", "session", "ast"]
+    },
+    {
+      "kind": "region",
+      "label": "Detached definitions",
+      "wraps": ["image"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Single-engine attach",
+      "wraps": ["engine"]
+    },
+    {
+      "kind": "region",
+      "label": "Quarantined",
+      "wraps": ["vm"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "bytes-to-tokens",
+      "from": "snapshot",
+      "to": "lexer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tokens-to-preprocess",
+      "from": "lexer",
+      "to": "preprocess"
+    },
+    {
+      "id": "selected-tokens",
+      "from": "preprocess",
+      "to": "session"
+    },
+    {
+      "id": "session-to-ast",
+      "from": "session",
+      "to": "ast"
+    },
+    {
+      "id": "ast-to-image",
+      "from": "ast",
+      "to": "image"
+    },
+    {
+      "id": "image-to-engine",
+      "from": "image",
+      "to": "engine",
+      "variant": "dashed"
+    },
+    {
+      "id": "registry-to-session",
+      "from": "identity",
+      "to": "session",
+      "label": "keys",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "host-to-session",
+      "from": "host",
+      "to": "session",
+      "label": "types only",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend",
+      "items": [
+        "Preprocessor selects tokens; it does not orchestrate semantics",
+        "CompilationSession owns Parser, Sema, and stage barriers",
+        "Typed AST is syntax; TypeInfo is not another AST"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Definitions",
+      "items": [
+        "Images own real type and function objects",
+        "External handles keep the graph alive with atomic leases",
+        "Freeze is separate from Engine registration"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Still open in 4.1",
+      "items": [
+        "Host lookup currently indexes types, not callable members",
+        "Access and user-conversion code exists but lacks a post-481 GREEN",
+        "VM, bytecode, cache, and JIT stay dormant until a later Change"
+      ]
+    }
+  ]
+}

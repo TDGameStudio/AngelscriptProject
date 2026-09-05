@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_c4dacc44-9876-4147-8f05-995a2232e82c
+  id: angelscript/refactor-frontend-clang-typed-ast
+  title: Refactor frontend into a typed AST
+  description: Replace wide tagged records with genuine Decl, Stmt, Expr, Type, and Attr hierarchies informed by Clang while retaining AngelScript-specific source contracts.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Establish the typed semantic object model used by parsing, semantic analysis, reflection, and future code generation.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/ast
+archived_at: 2026-09-04T20:54:07Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The concrete typed AST families, context ownership, stable type and attribute facts, exhaustive traversal, structural verification, immutable projection, versioned codec, thirty focused CQTests, and durable AST core contract are complete; all seven tasks pass.

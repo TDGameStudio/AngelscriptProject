@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_3187eba2-b5f4-4cfb-bea9-ca021c59a1ea
+  id: angelscript/language/frontend/declarations
+  title: Frontend Declaration Semantics

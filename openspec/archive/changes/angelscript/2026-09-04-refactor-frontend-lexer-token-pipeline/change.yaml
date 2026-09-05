@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_f7a8fcb0-ed5f-4bc1-b429-68b074154206
+  id: angelscript/refactor-frontend-lexer-token-pipeline
+  title: Refactor frontend lexer and token pipeline
+  description: Replace engine-coupled tokenization with a Clang-informed pull lexer, compact tokens, frozen options, and identifier interning.
+workflow: angelscript
+created_at: 2026-09-04T16:58:23Z
+goal: Provide a fast deterministic lexer contract suitable for the reconstructed parser and preprocessor.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T19:23:00Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The engine-independent pull tokenizer, compact source-referential tokens, session identifier interning, Unicode and malformed-input recovery, deterministic concurrent sessions, cold/warm allocation evidence, twelve focused CQTests, and durable frontend lexing capability are complete; all five tasks pass and the single observed Harness issue has an evidence-backed terminal rejection.

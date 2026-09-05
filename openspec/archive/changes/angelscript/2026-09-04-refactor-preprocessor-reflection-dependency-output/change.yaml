@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_e798ba79-8e94-474a-8dce-237a3ca419e7
+  id: angelscript/refactor-preprocessor-reflection-dependency-output
+  title: Refactor reflection and dependency output
+  description: Produce resolved FAngelscript descriptors and typed module dependency graphs directly from Parser and Sema events through the preprocessor facade.
+workflow: angelscript
+created_at: 2026-09-04T16:58:24Z
+goal: Replace regex and import-driven metadata inference with one typed frontend authority for UE reflection descriptions and module dependencies.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T22:24:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The dormant semantic preprocessor facade, retained preprocessing and sealed AST leases, resolved concrete descriptor projection, typed declaration dependency SCC graph, separate body invalidation graph, fourteen focused Reflection and ModuleGraph tests, thirty-seven adjacent frontend tests, and synchronized durable capability knowledge are complete; all six tasks and terminal gates pass.

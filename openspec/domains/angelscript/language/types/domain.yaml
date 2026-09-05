@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_0cf66cd1-b717-44d6-ba19-d010a176df39
+  id: angelscript/language/types
+  title: AngelScript Types

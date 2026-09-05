@@ -1,0 +1,19 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_9b3a9bb2-84c6-4dd7-b80e-32c16579e77a
+  id: angelscript/refactor-builder-engine-independent
+  title: Engine-independent Builder, definitions and canonical frontend
+  description: Replace competing ASTs with the typed frontend, isolate preprocessing, create engine-independent type/function definitions with stable identity and transactional single-engine registration, and verify the replacement NativeEngine surface.
+workflow: angelscript
+created_at: 2026-09-05T01:29:05Z
+goal: Deliver a staged engine-independent frontend with real detached definitions, one stable identity value and comprehensive focused CQTest evidence.
+affected_areas:
+- angelscript/language/frontend
+- angelscript/language/types
+- angelscript/language/ast/core
+archived_at: 2026-09-05T13:23:51Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Independent Builder, detached definitions, single typed AST, obsolete-AST isolation, canonical AS C++ names, review-required repairs, NativeEngine 561/561 and Baseline dormancy verified; durable specs synced.

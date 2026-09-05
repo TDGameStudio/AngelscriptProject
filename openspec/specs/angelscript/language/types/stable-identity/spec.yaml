@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_05d9cb50-be22-4972-8d26-73786f99e38d
+  id: angelscript/language/types/stable-identity
+  title: Stable Type Identity

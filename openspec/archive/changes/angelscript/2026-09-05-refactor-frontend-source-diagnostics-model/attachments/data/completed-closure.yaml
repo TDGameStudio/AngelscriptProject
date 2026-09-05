@@ -1,0 +1,3 @@
+kind: completed
+reason: Immutable UTF-8 source snapshots, owner-validated locations and ranges, lazy line maps, queryable provenance, structured deterministic diagnostics, eleven focused CQTests, and the durable source-diagnostics capability are complete; all four tasks pass and both implementation issues are resolved.
+

@@ -1,0 +1,3 @@
+kind: completed
+reason: Deterministic conditional routing, complete directive and inactive-range preservation, typed restriction policy records, explicit include rejection, snapshot-bound preprocessing range queries, twenty-four focused CQTests, and the durable frontend preprocessing capability are complete; all seven tasks and their focused verification pass.
+

@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_caadfb30-fa16-4223-9c7b-3c2aa7579cab
+  id: angelscript/language/frontend/source-diagnostics
+  title: Frontend Source Diagnostics

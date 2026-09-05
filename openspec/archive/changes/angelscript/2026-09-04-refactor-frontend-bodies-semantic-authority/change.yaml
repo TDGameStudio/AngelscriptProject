@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_7b60c305-a3c4-4f5d-9df7-c9f9af147203
+  id: angelscript/refactor-frontend-bodies-semantic-authority
+  title: Refactor body semantic authority
+  description: Define typed statement and expression semantics, recovery, lifetime facts, and deterministic body fragments after declaration resolution.
+workflow: angelscript
+created_at: 2026-09-04T16:58:24Z
+goal: Complete the new frontend semantic model for function bodies without producing bytecode or publishing runtime objects.
+affected_areas:
+- Plugins/Angelscript
+- openspec/specs/angelscript/language/frontend
+archived_at: 2026-09-04T21:45:40Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The deferred body-analysis barrier, concrete typed statements and expressions, stable call and conversion semantics, explicit control and lifetime facts, deterministic recovery and merge, thirteen focused Bodies tests, thirty adjacent AST tests, and durable body-semantics contract are complete; all five tasks pass.
