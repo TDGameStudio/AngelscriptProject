@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_065c2679-877a-4f7b-8d32-6a48ee993b9e
+  id: angelscript/refactor-defaults-constructor-unification
+  title: Unify class defaults with constructors
+  description: Remove class-body default syntax and the separate ClassDefault execution phase to reduce language noise and align UObject construction with C++; retain default restoration and reload migration as host responsibilities.
+workflow: angelscript
+created_at: 2026-09-06T06:34:04Z
+goal: Record the accepted rationale and migration boundaries for constructor-based defaults without implementing product changes.
+affected_areas:
+- language/frontend
+- language/ast
+- runtime/ue-construction
+- editor/hot-reload

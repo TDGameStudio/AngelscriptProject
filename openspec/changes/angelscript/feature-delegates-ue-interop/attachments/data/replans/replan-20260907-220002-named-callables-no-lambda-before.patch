@@ -1,0 +1,250 @@
+--- a/openspec/changes/angelscript/feature-delegates-ue-interop/proposal.md
++++ b/openspec/changes/angelscript/feature-delegates-ue-interop/proposal.md
+@@ -1,8 +1,8 @@
+ ## Why
+ 
+-The replacement compiler needs delegate usage comparable to Unreal C++: typed member/free-function binding, callbacks that retain explicit bind-time payloads after the creating function returns, multicast subscription handles, and explicit interoperability with native C++ and Blueprint delegates. Recognizing `delegate` and `event` alone does not provide those execution and lifetime contracts.
++The replacement compiler needs delegate usage comparable to Unreal C++: typed member/free-function binding, callbacks that retain context after the creating function returns, multicast subscription handles, and explicit interoperability with native C++ and Blueprint delegates. Recognizing `delegate` and `event` alone does not provide those execution and lifetime contracts.
+ 
+-The preserved legacy implementation rewrites declarations into wrapper structs around UE dynamic delegates, reconstructs signatures from generated Execute/Broadcast methods, and binds UObject/function-name pairs. It is reference material, not a supported runtime to reactivate. The replacement frontend already owns callable declarations, canonical signatures, nominal identities, delegate invocation semantics and host descriptor projection. The separately owned language-surface reduction removes every Lambda form and migrates old funcdef SDK consumers to structured callable metadata. This feature consumes that resulting interface and does not restore anonymous functions.
++The preserved legacy implementation rewrites declarations into wrapper structs around UE dynamic delegates, reconstructs signatures from generated Execute/Broadcast methods, and binds UObject/function-name pairs. It is reference material, not a supported runtime to reactivate. The replacement frontend already owns callable declarations, canonical signatures, nominal identities, delegate invocation semantics, noncapturing lambda conversion, and host descriptor projection. Stored capturing lambdas are currently rejected. This is an appropriate boundary for introducing a shared native callable model.
+ 
+ The user requested creation of a Change to record the explored feature. This delivery creates the record, proposal, required task record, and indexed source evidence only. It does not authorize implementation, UE execution, engine modification, specification synchronization, archive, commits, or publication. The task graph begins with explicit design/specification completion; product nodes cannot become Ready until that planning outcome is complete. This feature record is not a claim that implementation-ready planning has finished.
+ 
+@@ -29,25 +29,25 @@
+ 
+ The inspected UE core headers also contain Event, Derived Event, TS multicast and Sparse multicast forms: 31 further spellings. Recognize these known deferred families sufficiently to emit a specific unsupported-feature diagnostic and recover; do not silently erase their owner, inheritance, thread-policy or sparse-storage meaning. Implementing those semantics is outside this Change.
+ 
+-### Typed named callables and explicit payloads
++### Typed callables, closures, and payloads
+ 
+-Provide typed references to named free functions and members, including C++-style `&Type::Method` syntax, and Bind/Create entry points for static functions and object receivers. Resolve overloads, access, receiver compatibility, constness, passing modes and returns at compilation. A script member reference denotes a script callable identity and dispatch contract, not the C++ member-pointer ABI. Preserve virtual dispatch. Native C++ functions are callable only through registered bindings.
++Provide typed references to free functions and members, including C++-style `&Type::Method` syntax, and familiar Bind/Create entry points for static functions, UObject receivers, and lambdas. Resolve overloads, access, receiver compatibility, constness, passing modes and returns at compilation. A script member reference denotes a script callable identity and dispatch contract, not the C++ member-pointer ABI. Preserve virtual dispatch. Native C++ functions are callable only through registered bindings.
+ 
+-Ordinary callbacks do not require UFUNCTION reflection. Keep direct invocation and explicit Execute operations consistent. Empty Execute fails deterministically; void callbacks provide ExecuteIfBound. Non-void callbacks require an explicit bound check rather than silently inventing a return value. Multicast signatures require void returns; migrate the existing event-int identity fixture to a valid identity control plus a rejection case.
++Ordinary callbacks do not require UFUNCTION reflection. Keep direct invocation and explicit Execute operations consistent. Empty Execute fails deterministically; void callbacks provide ExecuteIfBound. Non-void callbacks require an explicit bound check rather than silently inventing a return value. Multicast signatures require void returns; the existing declaration-identity fixture that accepts `event int` must be migrated to a valid identity control plus a rejection case.
+ 
+-All Lambda forms, anonymous function conversion and lexical capture environments are excluded. There are no BindLambda/CreateLambda/AddLambda or weak-owner Lambda variants. Ordinary managed script receivers use their managed lifetime; UObject method bindings are weak and do not implicitly protect unrelated payload values.
++Add escaping closures with explicit, owned value captures and C++-style capture-list syntax. Retain existing `function(...)` syntax without maintaining a second lambda implementation. Compile captures into a typed environment with correct construction, copy, destruction and managed-reference participation. Reject escaping references to local stack variables. Capturing a managed handle preserves a reference relationship rather than deep-copying its object. Ordinary managed script receivers use their managed lifetime; UObject method bindings are weak. Provide weak-owner lambda binding with explicit owner handling, and never imply that the owner protects unrelated captures or that a weak guard overrides a separately authored strong capture.
+ 
+-Trailing bind-time payloads are explicit stored typed values appended after invocation-time arguments to a named function or member. Preserve bind-time value semantics, construction, copy, destruction and managed-reference ownership; reject stored references to local stack variables. A managed handle payload retains that handle's reference relation rather than deep-copying its object. Payload storage uses the callable's explicit binding state, not an anonymous-function AST or a revived boxed-payload wrapper. Storage optimization is deferred until measured.
++Trailing bind-time payloads are stored typed values appended after invocation-time arguments. Share the capture/environment and invocation machinery with closures instead of restoring the legacy ad hoc boxed-payload wrapper. Small-object storage and other performance tuning are implementation choices, not initial correctness criteria.
+ 
+ ### Multicast subscriptions and lifetime
+ 
+-Add/AddStatic/AddUObject-style operations return an opaque subscription handle. Remove(handle) removes that subscription; RemoveAll(receiver) acts only on bindings explicitly associated with that receiver; Clear removes all subscriptions. Keep Add and explicit deduplicating operations distinct because legacy AddUFunction used AddUnique. Deduplicate only through explicit supported target/receiver identity; do not infer binding equality by comparing payload memory.
++Add/AddLambda/AddUObject-style operations return an opaque subscription handle. Remove(handle) removes that subscription; RemoveAll(receiver) acts only on bindings explicitly associated with that receiver; Clear removes all subscriptions. Keep Add and explicit deduplicating operations distinct because legacy AddUFunction used AddUnique. Do not infer lambda equality by comparing capture memory.
+ 
+ Event instances own subscription identity domains. Copying an owning event creates an independent domain, and a handle from the source cannot remove a subscription in the copy. A borrowed native-event view refers to the original UE event rather than copying its listener list. The bridge retains the native handle and origin needed for removal.
+ 
+ Ordinary script multicast does not promise listener order. New listeners are deferred until a subsequent broadcast; removed listeners not yet invoked are skipped; nested broadcast takes its own current membership snapshot. Script callback failure stops that script broadcast and unwinds invocation resources. Native-event views retain their host's documented iteration behavior rather than claiming to impose script-container semantics on UE internals.
+ 
+-Callbacks must retain valid execution ownership and code-generation information. Stable identity alone does not establish executable compatibility. After code retirement, reject stale entry; compatible rebinding requires signature and payload-layout checks. Automatic migration of changed bound payload layouts is excluded. Handle removal and destruction remain safe after receiver invalidation or runtime teardown.
++Callbacks must retain valid execution ownership and code-generation information. Stable identity alone does not establish executable compatibility. After code retirement, reject stale entry; compatible rebinding requires signature and capture-layout checks. Automatic migration of changed closure environments is excluded. Handle removal and destruction remain safe after receiver invalidation or runtime teardown.
+ 
+ ### Two Unreal integration paths
+ 
+@@ -61,7 +61,7 @@
+ 
+ For dynamic declarations, extend the existing AST-to-host descriptor projection and materialize reflection objects explicitly after signature resolution. Do not reconstruct signatures from wrapper methods or materialize UObject pointers during parsing/Sema. Complete signature/property layout and class registration before public visibility. Script handlers eligible for dynamic binding receive a UFunction invocation bridge into the new executor; script Broadcast uses the real dynamic delegate storage. Typed BindDynamic/AddDynamic expressions validate UFUNCTION eligibility and produce the required reflection target identity.
+ 
+-BlueprintAssignable members require a dynamic multicast declaration. Ordinary callbacks with explicit payloads are not implicitly serializable Blueprint delegates. The dynamic DECLARE forms provide the explicit reflection selection in this Change; adding UDELEGATE annotation syntax can be a later extension and is not a prerequisite.
++BlueprintAssignable members require a dynamic multicast declaration. Ordinary closures are not implicitly serializable Blueprint delegates. The dynamic DECLARE forms provide the explicit reflection selection in this Change; adding UDELEGATE annotation syntax can be a later extension and is not a prerequisite.
+ 
+ Load script reflection definitions before dependent Blueprint assets need them in editor and cooked startup. Reflection replacement must update affected Blueprint/type references using valid host lifecycle operations. Delegate work consumes the replacement class/function host lifecycle; it does not authorize wholesale restoration of the dormant integration. If that host lifecycle is unavailable when implementation is planned, represent its required bounded prerequisite explicitly rather than disguising it as a parser task.
+ 
+@@ -79,15 +79,10 @@
+ Callback.Execute(200);
+ 
+ delegate int FTransform(int Value);
+-int AddOffset(int Value, int Offset)
+-{
+-    return Value + Offset;
+-}
+ FTransform MakeTransform(int Offset)
+ {
+-    return FTransform::CreateStatic(AddOffset, Offset);
++    return [Offset](int Value) { return Value + Offset; };
+ }
+-// MakeTransform(10).Execute(5) invokes named AddOffset(5, 10).
+ 
+ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+     FOnHealthChanged, float, OldValue, float, NewValue
+@@ -98,9 +93,9 @@
+ 
+ ### Compatibility and non-goals
+ 
+-- Raw delegate/event declarations use the ordinary callable model in the proposed replacement language. Legacy declarations intended for reflection migrate to explicit dynamic forms; do not infer reflection from use sites or silently project an ordinary payload-bearing callback into a dynamic delegate. This is an intentional legacy compatibility change, not a legacy-runtime restoration switch.
++- Raw delegate/event declarations use the ordinary callable model in the proposed replacement language. Legacy declarations intended for reflection migrate to explicit dynamic forms; do not infer reflection from use sites or silently project an ordinary closure into a dynamic delegate. This is an intentional legacy compatibility change, not a legacy-runtime restoration switch.
+ - Keep ordinary and dynamic binding rules explicit. String-based reflection lookup is not the primary typed binding mechanism and does not gain compile-time guarantees by renaming its API.
+-- Exclude general C/C++ macro expansion, C++ header ingestion, arbitrary new C++ types at runtime, UDELEGATE syntax, TDelegate function-signature template syntax in scripts, operator-based subscription sugar, all Lambda/anonymous-function forms, lexical captures, stored stack-reference payloads, move-only callable families, network/RPC behavior, result aggregation and automatic payload-state serialization.
++- Exclude general C/C++ macro expansion, C++ header ingestion, arbitrary new C++ types at runtime, UDELEGATE syntax, TDelegate function-signature template syntax in scripts, operator-based subscription sugar, implicit capture defaults, escaping stack-reference captures, move-only callable families, network/RPC behavior, result aggregation and automatic closure-state serialization.
+ - Exclude functional support for DECLARE_EVENT, DECLARE_DERIVED_EVENT, TS multicast and Sparse multicast beyond their explicit diagnostics. In particular do not claim owner-only publication from UE's DECLARE_EVENT spelling.
+ - Implement within Plugins/Angelscript first. No engine-source patch, host-project behavior, unrelated Skill change, external editor extension change or JIT backend is included by default. A demonstrated missing host/engine extension point requires a bounded follow-up or evidence-gated plan update.
+ 
+@@ -108,13 +103,13 @@
+ 
+ ### New Capabilities
+ 
+-- `angelscript/runtime/delegates`: Executable typed callable values, receiver/payload ownership, multicast subscriptions, invalidation and teardown behavior.
++- `angelscript/runtime/delegates`: Executable typed callable values, capture/payload ownership, multicast subscriptions, invalidation and teardown behavior.
+ - `angelscript/bindings/delegates`: Registered native C++ delegate adapters and dynamic UE/Blueprint materialization, invocation and loading contracts.
+ 
+ ### Modified Capabilities
+ 
+ - `angelscript/language/frontend/declarations`: Built-in UE declaration forms, callable flavor, arity/name validation and void multicast constraints.
+-- `angelscript/language/frontend/bodies`: Typed function/member references, callable operations and explicit named-target bind-time payloads.
++- `angelscript/language/frontend/bodies`: Typed function/member references, callable operations and escaping closures with explicit captures.
+ - `angelscript/language/frontend/reflection-dependencies`: Flavor-aware resolved delegate descriptions and dependencies, while preserving the explicit host-materialization boundary.
+ 
+ The preprocessing contract remains intact. Later deltas should amend lexing, AST codec or definition/identity capabilities only where the actual authored behavior or shared contract requires it, rather than listing every touched implementation file as a capability.
+@@ -126,7 +121,7 @@
+ - Current delivery: parent repository OpenSpec record and attachments only, written in English.
+ - Future implementation: Plugins/Angelscript submodule, principally ThirdParty/angelscript/source/frontend, replacement execution/metadata owners, Binds, ClassGenerator and the required editor integration; new tests remain under Source/AngelscriptTest/NewVersion with public Angelscript.UnitTest identities.
+ - Keep Source/AngelscriptProject minimal and all unrelated dirty work intact. Legacy source is evidence, not an enabled test or implementation target.
+-- Consume execution, metadata compatibility and generation-lifetime services owned by `angelscript/refactor-vm-symbolic-execution`. That Change already covers base delegate/VM ownership and indirect execution; this Change owns the added declaration forms, explicit named-target payload runtime behavior, multicast API and UE adapters. Do not fork a second VM, cache format or stable-key authority. Its planned services are not assumed implemented. Consume `angelscript/refactor-language-surface-ue-focused` task 2.1 structured callable metadata; the public interface is `asCCallableType`, `CreateCallableType` and retained `CreateCallableSignature`, not funcdef registration. Task 1.1 must confirm that interface and its proof before any delegate product task becomes executable.
++- Consume execution, metadata compatibility and generation-lifetime services owned by `angelscript/refactor-vm-symbolic-execution`. That Change already covers base delegate/VM ownership and indirect execution; this Change owns the added declaration forms, escaping closure language/runtime behavior, multicast API and UE adapters. Do not fork a second VM, cache format or stable-key authority. Its planned services are not assumed implemented.
+ - Coordinate frontend interface/diagnostic changes with `angelscript/feature-frontend-diagnostics-tooling`; preserve source ranges and precise failures without making the entire diagnostics or unified-testing-framework Change an unconditional prerequisite. Existing replacement CQTest remains usable.
+ 
+ ### Planned proof boundaries
+@@ -134,9 +129,9 @@
+ The following acceptance groups are mapped to the required tasks.md. Task 1.1 must finalize their design/specification and prerequisite contracts before any product node enters Ready execution. This list is acceptance intent, not a second Task DAG:
+ 
+ 1. Declaration semantics: cover all 60 supported spellings; zero/one/nine-parameter boundaries; typed/raw declaration equivalence; dynamic names; nested types; forward references; namespace/class placement; invalid arity and unsupported families; inactive branches; recovery and source-accurate diagnostics.
+-2. Callable execution: execute free/member/virtual calls and a returned named-target callback with explicit payload after its creator exits; prove payload argument ordering, payload destruction, weak receiver invalidation, empty invocation and stale-generation rejection with independent values and lifetime counters.
++2. Callable execution: execute free/member/virtual calls and a returned value-capturing closure after its creator exits; prove payload argument ordering, capture destruction, weak receiver invalidation, empty invocation and stale-generation rejection with independent values and lifetime counters.
+ 3. Multicast execution: prove precise handle removal, duplicate versus unique behavior, copy domains, weak listeners, mutation/nesting, failure cleanup and teardown-safe removal. AST acceptance alone is insufficient.
+-4. Native C++ integration: pass a retained named-target script callback with explicit payload to a real registered C++ delegate API, obtain the expected return/output values, and subscribe/remove on the original native multicast instance. Prove type mismatch rejection before callback entry.
++4. Native C++ integration: pass an escaping script callback to a real registered C++ delegate API, obtain the expected return/output values, and subscribe/remove on the original native multicast instance. Prove type mismatch rejection before callback entry.
+ 5. Dynamic/Blueprint integration: materialize a script dynamic event, bind a real Blueprint listener and verify its received values; invoke a script UFUNCTION handler through a real UE dynamic delegate; verify reflected storage lifetime, asset-loading order and replacement/invalidation. These cases require actual host execution rather than fabricated descriptors.
+ 
+ Use grouped observed RED/GREEN when implementation is authorized. Start with the smallest owner suite, build changed C++ before its execution proof, and expand only for demonstrated shared-contract or host integration impact. Do not enable dormant startup merely to satisfy a test. No UE build, Automation execution, benchmark or implementation verification occurred during this record creation.
+--- a/openspec/changes/angelscript/feature-delegates-ue-interop/tasks.md
++++ b/openspec/changes/angelscript/feature-delegates-ue-interop/tasks.md
+@@ -21,12 +21,6 @@
+ Read proposal.md and attachments/INDEX.md first. Task 1.1 owns completing design, durable deltas, exact interface contracts and any evidence-required changes to the pending cards. This graph is deliberately not advertised as a completed implementation-ready planning handoff until that node finishes. Later plan completion must use the applicable OpenSpec lifecycle Skills and preserve permanent IDs.
+ 
+ All paths below are repository-relative. Runtime work consumes the replacement execution/identity owners of angelscript/refactor-vm-symbolic-execution; do not duplicate its VM, source emitter, metadata fingerprints or generation-lifetime authority. The current host startup and legacy corpus remain dormant until a separately valid replacement host path exists. Unavailable host/VM prerequisites must be made explicit during 1.1, not discovered by silently enabling legacy services in a test. Do not modify the diagnostics/testing-framework Changes as a side effect.
+-
+-## Language-surface prerequisite
+-
+-The accepted language policy removes every Lambda form, source funcdef, script exception/coroutine syntax and AS BlueprintGetter/BlueprintSetter requests. This Change retains named free/member bindings, explicit payload values and UE delegate/event interoperability. It must not restore anonymous-function syntax, BindLambda/CreateLambda/AddLambda or lexical capture storage.
+-
+-Consume `angelscript/refactor-language-surface-ue-focused` task 2.1's completed structured callable API and proof before executing product nodes here. Task 1.1 records that external prerequisite and the design's actual `asCCallableType` / `CreateCallableType` / `CreateCallableSignature` contracts. Its own design/spec work may proceed earlier, but it cannot finish while the required interface evidence is absent. Cross-change dependencies are explicit prose; local DAG IDs remain local. Runtime faults/unwind and host Context control are preserved.
+ 
+ ## Future proving setup
+ 
+@@ -55,7 +49,7 @@
+   Consume the proposal and indexed evidence. Produce a decision-complete design, scenario deltas for the five named capabilities, and a complete requirement-to-task mapping. Strict validation proves record structure only; completion also requires all product cards to be executable without another design pass. No C++ or current-spec mutation belongs here.
+ 
+   1. Resolve the exact existing VM/emitter/host services against their owning current records and source. Record which are implemented versus planned; consume their actual APIs. If a required replacement host lifecycle or runtime prerequisite is absent, apply an evidence-gated update with bounded prerequisite ownership before enabling dependent work. Do not mark this task complete while those contracts are unresolved.
+-  2. Specify actual public/internal interface names and types for binding expressions, explicit receiver/payload state, generation leases, native-event views and reflected descriptors. Set parameter conversion/error behavior, copy/destruction, weak receiver and managed payload treatment, runtime-fault boundaries, reload rejection, signature fingerprint inputs and AST/metadata format evolution. Keep the proposal's six-family scope and explicit exclusions.
++  2. Specify actual public/internal interface names and types for binding expressions, capture environments, generation leases, native-event views and reflected descriptors. Set parameter conversion/error behavior, copy/destruction, weak capture treatment, exception boundaries, reload rejection, signature fingerprint inputs and AST/metadata format evolution. Keep the proposal's six-family scope and explicit exclusions.
+   3. Specify real Blueprint and editor/cooked-load fixture construction, commands and artifact oracles. Replace any still-unavailable proving surface in pending cards with a supported exact Harness route or introduce the necessary bounded prerequisite. Do not substitute an editor-only fake for a cooked load.
+   4. Write design/deltas and indexed contracts; refine pending cards through the matching update route where contracts change. Strictly validate and check every scope, interface, scenario, file owner and proof mapping. Leave all product tasks pending.
+ 
+@@ -94,27 +88,27 @@
+   2. Wire the shared callable representation into the existing executor and emitter using 1.1's exact ownership contract.
+   3. Run GREEN, proving return/output values and release counts rather than only emitted instruction shapes.
+ 
+-- [ ] 2.2 Store explicit named-target payloads and receiver state with managed lifetime — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Delegates.Payloads'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_sema_postfix.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_expr*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_ast_*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_callable*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_bytecode*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Delegates/PayloadTests.cpp`
++- [ ] 2.2 Store escaping closures and typed payloads with managed lifetime — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Delegates.Closures'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_parser*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_sema_lambda.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_decl*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_expr*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_ast_*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_callable*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_bytecode*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Delegates/ClosureTests.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/Bodies/BodyLambdaTests.cpp`
+ 
+-  Disposition: preserved task ID, revised pending outcome by the user-approved language-surface replan. Consume 2.1 and 1.1's explicit payload/receiver schema. Produce bind-time value initialization, copy/destruction and typed trailing payload invocation for named functions/members. Package globs cover only those binding-state consumers and their format evolution. No Lambda node, lexical capture parser, anonymous function conversion or boxed legacy wrapper is included.
++  Consume 2.1 and the owned capture schema from 1.1. Produce capture initialization/copy/destruction and typed trailing payload invocation. Globs cover only closure/binding consumers and their representation evolution. Do not restore the boxed legacy payload wrapper or add arbitrary stack-reference capture.
+ 
+-  Cases: named AddOffset(Value, Offset) bound with Offset=10 returns 15 for Execute(5) after the factory returns; later changing the factory's local Offset does not change the stored value. A managed handle payload retains its object until the final callback owner releases it; an escaping local-stack reference payload rejects. Result=200 and stored RequestId=7 reach the named handler arguments (200,7). Copy/reset/runtime-fault paths destroy counted payload values exactly once. Incompatible payload layout cannot rebind as compatible. A weak UObject member receiver is not kept alive by receiver storage. Anonymous function syntax and Lambda-specific Bind/Create variants remain rejected.
++  Cases: MakeTransform(10) returns a callback yielding 15 for input 5 after creator exit; captured scalar preserves its binding-time value; captured managed handle keeps its object alive until the last owning reference is released; reference capture of a returned stack local is rejected; payload Result=200 and stored RequestId=7 reaches target arguments (200,7); copy/reset/exception clean up counted capture values exactly; changed capture layout cannot be rebound as compatible. Existing noncapturing function(...) controls remain supported.
+ 
+-  1. Prepare payload lifetime and named-target invocation fixtures, then observe RED for missing explicit payload storage/execution; existing Lambda rejection is a retained control.
+-  2. Implement typed receiver/payload binding state and its call adapter using canonical callable metadata; do not add a capture environment or Lambda producer.
+-  3. Run grouped GREEN including runtime-fault cleanup and compatibility failures. Record exact payload values, argument order and release counts; defer allocation tuning until measured.
++  1. Prepare semantic and actual escaping-execution fixtures; observe RED for the current capturing-lambda rejection and missing environment ownership.
++  2. Implement explicit captures and payloads through one typed environment and call adapter.
++  3. Run GREEN including cleanup and compatibility failures; defer allocation optimization until measured.
+ 
+ - [ ] 2.3 Implement multicast subscription handles and deterministic mutation boundaries — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Delegates.Multicast'; Fast = $true; TimeoutMs = 600000 }`
+   > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_callable*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_multicast*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_sema_postfix.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Delegates/MulticastTests.cpp`
+ 
+   Consume 2.2 callback ownership. Produce subscription-domain handles, Add/Remove/RemoveAll/Clear and broadcast over owned script events. Exclude UE native container semantics and reflection materialization.
+ 
+-  Cases: two callbacks observe value 42; removal leaves only its distinct peer; duplicate Add produces two subscriptions; unique member binding deduplicates; copied event has independent handle domain; stale/foreign handle cannot remove another entry; newly added callback misses current round; removed pending callback is skipped; nested broadcast sees current membership; runtime fault stops script broadcast and cleans temporary ownership; destruction during valid teardown releases receiver/payload ownership once. Do not assert incidental listener ordering.
++  Cases: two callbacks observe value 42; removal leaves only its distinct peer; duplicate Add produces two subscriptions; unique member binding deduplicates; copied event has independent handle domain; stale/foreign handle cannot remove another entry; newly added callback misses current round; removed pending callback is skipped; nested broadcast sees current membership; exception stops script broadcast and cleans temporary ownership; destruction during valid teardown releases captures once. Do not assert incidental listener ordering.
+ 
+   1. Prepare the mutation/identity matrix with observable logs and release counts; observe RED for absent subscription behavior.
+   2. Implement the proposal's handle and broadcast contracts with explicit reentrancy-safe lifetime.
+-  3. Prove grouped GREEN and no memory-derived payload equality.
++  3. Prove grouped GREEN and no memory-derived lambda equality.
+ 
+ ## 3. Unreal interoperability
+ 
+@@ -123,7 +117,7 @@
+ 
+   Consume 2.3 and compiled typed adapter interfaces from 1.1. Produce real TDelegate values for exposed signatures and borrowed native-event views retaining original instance/native handles. Binds glob excludes legacy runtime restoration; adapter fixture types stay in the plugin test module.
+ 
+-  Cases: registered TDelegate<int(int)> retains a returned named AddOffset callback and yields 42 from input 2 with explicit payload 40; mismatched signature fails before native callback entry; native multicast broadcasts reach a script subscriber and stop after exact handle removal; subscribe/unsubscribe operates on the original object, not a copy; invalid UObject weak binding is skipped; weak UObject member binding does not retain the receiver or validate unrelated payload objects; native-boundary callback failure follows 1.1's defined return/error contract without unwinding illegally through C++ frames. Native teardown after script invalidation is safe.
++  Cases: registered TDelegate<int(int)> retains a returned script closure and yields 42 from input 2 with capture 40; mismatched signature fails before native callback entry; native multicast broadcasts reach a script subscriber and stop after exact handle removal; subscribe/unsubscribe operates on the original object, not a copy; invalid UObject weak binding is skipped; designated weak lambda owner does not retain the owner or validate unrelated captures; native-boundary callback failure follows 1.1's defined return/error contract without unwinding illegally through C++ frames. Native teardown after script invalidation is safe.
+ 
+   1. Prepare real compiled native fixtures and source-driven binding; observe missing-adapter/weak-lifetime RED.
+   2. Implement typed adaptation, native handle ownership and receiver policy without runtime C++ template generation or storage reinterpretation.
+@@ -149,7 +143,7 @@
+ 
+   1. Build the actual Blueprint/native/script fixture selected in 1.1 and observe RED for missing invocation bridges.
+   2. Implement both directions over real reflection storage and the replacement executor.
+-  3. Run GREEN and retain listener values, return/output values and frame/payload release oracles.
++  3. Run GREEN and retain listener values, return/output values and frame/capture release oracles.
+ 
+ ## 4. Host lifecycle acceptance
+ 
+@@ -158,7 +152,7 @@
+ 
+   Consume both real bridge paths and 1.1's exact supported Harness editor/cook/run fixture contract. This is the only card allowed to add delegate-owned plugin test assets. Use only explicit Harness ue.* routes for cooking, processes and observations; root wrappers or unmanaged child workers are not substitutes. It cannot enter Ready without exact executable routes, artifact paths and host prerequisites being fixed by 1.1.
+ 
+-  Cases: a dependent Blueprint asset loads only after complete script reflection publication in editor and a real cooked fixture; dynamic broadcast delivers (100,75); native retained named-target callback with explicit payload returns 42; same stable name with incompatible signature/payload layout cannot re-enter stale code; active callback completion and subsequent invalidation follow the generation lease; native and reflected bindings release safely on teardown; unrelated script behavior and dormant startup controls are preserved. No automatic payload-state migration or engine patch belongs here.
++  Cases: a dependent Blueprint asset loads only after complete script reflection publication in editor and a real cooked fixture; dynamic broadcast delivers (100,75); native retained closure returns 42; same stable name with incompatible signature/capture layout cannot re-enter stale code; active callback completion and subsequent invalidation follow the generation lease; native and reflected bindings release safely on teardown; unrelated script behavior and dormant startup controls are preserved. No automatic closure-state migration or engine patch belongs here.
+ 
+   1. Prepare startup/reload/integrated fixtures and observe actual missing lifecycle behavior before implementing repairs within the declared boundary.
+   2. Wire delegate registration/invalidation into the existing replacement host lifecycle. An unavailable broader host service triggers prerequisite replan rather than scope creep.
+@@ -172,7 +166,7 @@
+ | 60 declaration forms, 31 diagnostics, flavor/identity/codec | 1.2 |
+ | Typed symbols, overloads, receiver/const/access rules | 1.3 |
+ | Executable ordinary callable and generation lifetime | 2.1 |
+-| Explicit named-target payload and receiver lifetime | 2.2 |
++| Escaping closures, captures and payloads | 2.2 |
+ | Multicast subscriptions, copy domains and mutation | 2.3 |
+ | Native adapters, live event views and weak UObject policy | 3.1 |
+ | Dynamic reflection descriptors, signatures and properties | 3.2 |
+--- a/openspec/changes/angelscript/feature-delegates-ue-interop/attachments/INDEX.md
++++ b/openspec/changes/angelscript/feature-delegates-ue-interop/attachments/INDEX.md
+@@ -2,26 +2,20 @@
+ 
+ ## Current position
+ 
+-Feature recorded at proposal stage with the workflow-required tasks.md. The user authorized Change creation only. No design or delta specs has been authored, and no implementation or UE verification is claimed. The user-approved language-surface alignment removes all Lambda/closure goals and revises 2.2 to explicit receiver/payload state; public callable metadata is supplied by the language-surface Change. Task 1.1 is the design/specification prerequisite; all product tasks depend on it. tasks.md is the sole execution-state authority. Record validation is not a claim of implementation-ready planning.
++Feature recorded at proposal stage with the workflow-required tasks.md. The user authorized Change creation only. No design or delta specs has been authored, and no implementation or UE verification is claimed. Task 1.1 is the design/specification prerequisite; all product tasks depend on it. tasks.md is the sole execution-state authority. Record validation is not a claim of implementation-ready planning.
+ 
+ ## Hard conclusions
+ 
+ - Use one typed callable model for raw declarations and built-in UE DECLARE forms; parse declarations in Parser/Sema after conditional preprocessing.
+ - Initial functional scope is six families / 60 spellings. The other inspected 31 spellings require explicit unsupported diagnostics rather than semantic degradation.
+ - Separate ordinary native callables from reflected dynamic delegates; C++ templates need compiled adapters, and Blueprint needs explicit host reflection materialization.
+-- No Lambda/anonymous functions or lexical capture environments. Bind named functions/members with explicit payloads; preserve weak UObject receiver semantics.
+-- Consume `angelscript/refactor-language-surface-ue-focused` task 2.1 before product work; task 1.1 checks the external interface evidence.
+ - Keep feature implementation inside the plugin and consume the replacement VM/host lifecycle. Preserved legacy sources are evidence only.
+ 
+ ## Forbidden
+ 
+ - No wrapper-source regeneration, AST-time UObject creation, copied native-event listener lists masquerading as live views, or reinterpretation of script callable storage as a UE delegate.
+-- Do not equate signature/AST inspection or successful OpenSpec validation with executable delegate, Blueprint or payload lifetime support.
++- Do not equate signature/AST inspection or successful OpenSpec validation with executable delegate, Blueprint or closure support.
+ 
+ ## Attachment index
+ 
+-- [UE delegate inventory and integration evidence](data/ue-delegate-evidence.md) — historical source inspection and 91-macro inventory; Lambda observations are superseded by the indexed replan; read when authoring design/deltas or refreshing engine-version assumptions.
+-
+-- [Named-callable scope replan](replans/replan-20260907-220002-named-callables-no-lambda.md) — applied user scope change; preserves task IDs and DAG while removing Lambda acceptance; read before resuming task 1.1.
+-- [Recoverable prior planning text](data/replans/replan-20260907-220002-named-callables-no-lambda-before.patch) — small reverse patch for previously untracked proposal/tasks/INDEX; provenance only, not current requirements.
+-- [Alignment verification](data/language-surface-alignment-verification.md) — strict record and candidate/scope checks; no implementation or UE execution.
++- [UE delegate inventory and integration evidence](data/ue-delegate-evidence.md) — source inspection, 91-macro inventory, current frontend limits and UE integration anchors; read when authoring design/deltas or refreshing engine-version assumptions.

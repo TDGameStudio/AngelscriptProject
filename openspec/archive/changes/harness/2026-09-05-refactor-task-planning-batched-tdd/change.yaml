@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_565cabb0-c478-4a25-8659-6846d21665fa
+  id: harness/refactor-task-planning-batched-tdd
+  title: Outcome-sized tasks and feature-group batched TDD
+  description: Unify task authoring and grouped RED/GREEN verification, then replan pending AS work without changing product code.
+workflow: angelscript
+created_at: 2026-09-05T08:01:57Z
+archived_at: 2026-09-05T08:47:53Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Coherent feature-group TDD, detailed outcome-sized task authoring and shared proof are implemented and verified; pending AS tasks are replanned with prior work preserved and the Harness durable contract synchronized.

@@ -1,0 +1,250 @@
+{
+  "captured_at": "2026-09-05T11:19:10.2880093+08:00",
+  "kind": "verified-source-identities",
+  "files": [
+    {
+      "path": ".agents/skills/openspec/SKILL.md",
+      "sha256": "717218670bade304a01f10f13e5b3c7c6e6147a80b1eb4f9b3b4dc8e1ef9f88b"
+    },
+    {
+      "path": "Reference/README.md",
+      "sha256": "724480479f5043bbb1b2451fecba9c72d3e548f07490d76600305b3799ea147a"
+    },
+    {
+      "path": "Tools/PullReference/PullReference.bat",
+      "sha256": "654398ff7ca4fb24f2472ca0b03d90c3e9ba44e61efa8c468096f3d1fe44a02b"
+    },
+    {
+      "path": "Tools/harness-web/.gitignore",
+      "sha256": "e538828f3db0c97741d378626bd718a0b28766c975e37f14c1f3f0d7abc67b72"
+    },
+    {
+      "path": "Tools/harness-web/.prettierignore",
+      "sha256": "43681215804e2455e5a9685e69f4f1eec1cfa3a16a65db9feccb054e4f965063"
+    },
+    {
+      "path": "Tools/harness-web/.prettierrc.json",
+      "sha256": "4e51c887b0d56ac2714d848389be3d85a90d00ca43ec4befad47c397ccb71c7a"
+    },
+    {
+      "path": "Tools/harness-web/README.md",
+      "sha256": "644d8d8ee48a853a58178e695493d528c16efebf25849bece280e63eb751e0a1"
+    },
+    {
+      "path": "Tools/harness-web/index.html",
+      "sha256": "5c41fcc082ba8ae084e4ffb2d00b1b04a6f98fbea24cc35f86ae8d26aa1c0a15"
+    },
+    {
+      "path": "Tools/harness-web/package-lock.json",
+      "sha256": "8d0dad1604e91301fbcb0996654d1aa71254077bac828fb631ab3b31f9c819c9"
+    },
+    {
+      "path": "Tools/harness-web/package.json",
+      "sha256": "198d5cae5c18495a6f1b20637152a9f0c6602d57821b0a5d5cf27c8b5a81ab7a"
+    },
+    {
+      "path": "Tools/harness-web/playwright.config.ts",
+      "sha256": "ef60a61d97b0a4dd077357592fdba43c62b2181cb340b00d75903b5ea2efe280"
+    },
+    {
+      "path": "Tools/harness-web/src/client/App.tsx",
+      "sha256": "9779abfb523a5697f30f1d0b892efaec39aff3a4fdb098ee0886942c6c8e07f5"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/Charts.tsx",
+      "sha256": "cbf0920d1eaa3c2b9d3dfb687900f3e90626063e5325032642d1826025388af1"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/DocumentPane.tsx",
+      "sha256": "49b701a0195e4563af477008bacc9b835942833d83f26d6b83c23c5df0be777d"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/FileTree.tsx",
+      "sha256": "45a3289cafa1898e2168ad2f74dc68f34f6247c45ce591f46ca1c2178fef32f2"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/MarkdownDocument.tsx",
+      "sha256": "68662a17c643dbfe8f07279da6e988a6c0144cefb0061222fe846563228f5325"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/RecordDocumentsNav.tsx",
+      "sha256": "5df0cd2510cfca26f9b8362bc7f6500c047f9a446443888838272f7a33fd7d99"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/RecordList.tsx",
+      "sha256": "19411e9d5835de4950787a58615b0583d9ac24cc12232cfffc4bb8c710a77b3f"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/SearchDialog.tsx",
+      "sha256": "b0f1b9c223ce037ca2149de58807deb5e24f32043d6144e638fb22843ddf2421"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/State.tsx",
+      "sha256": "701f023d56d61f4c11db08b3864d4f3f757324d106321489e66862b6dff3f58f"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/TaskGraph.tsx",
+      "sha256": "3f6bf4c0bbf682eddfa5fea3f9e4cfd392b00fcec6b77eb6824eca67cb9f4f54"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/TaskViews.tsx",
+      "sha256": "f85315861a2dc70d10e29fbf05db36af146be0590f633ef3cc074022b239b5ea"
+    },
+    {
+      "path": "Tools/harness-web/src/client/components/WorkspacePanels.tsx",
+      "sha256": "8fb1f479eb2b7c63b29dab47218bb1eb95a5c2868eda546054ae88c98a04665e"
+    },
+    {
+      "path": "Tools/harness-web/src/client/editor/DocumentEditor.tsx",
+      "sha256": "7625bf23612553dde1b9f07f4e1171cc389952caf4c95ebaeaadeb6628eaf3eb"
+    },
+    {
+      "path": "Tools/harness-web/src/client/editor/README.md",
+      "sha256": "937f4f5a8188d1efee1a9075022b67b59d62e19b8b3068c3429c3225134e3ad0"
+    },
+    {
+      "path": "Tools/harness-web/src/client/editor/body-editor.ts",
+      "sha256": "eda38492a97ed2420b98518c90976f3de0c75e60fa2f9a5a0586355a363fbb59"
+    },
+    {
+      "path": "Tools/harness-web/src/client/editor/drafts.ts",
+      "sha256": "7cddd0c23a9f72a1c406593859deaac9f7666311fadaa76a69940c609e9303d8"
+    },
+    {
+      "path": "Tools/harness-web/src/client/editor/editor.css",
+      "sha256": "0bf5e4abe8e72a369c2ab1f89880828e0f4c94e1a566325048d85846a617b4f6"
+    },
+    {
+      "path": "Tools/harness-web/src/client/lib/api.ts",
+      "sha256": "0ee20baae8056f0547d9d14dbb2fde93eaf1b6cd20bf17a82fffcae82eb53a73"
+    },
+    {
+      "path": "Tools/harness-web/src/client/lib/markdown.ts",
+      "sha256": "7d24f5c75fa825f38a1a96b771a2c14f4d764fed8d9dbc21de23eaca530837f0"
+    },
+    {
+      "path": "Tools/harness-web/src/client/lib/paths.ts",
+      "sha256": "8b5a337b6ced22d9dccada3950879846776ddc78a52693bcb501d6c447958f16"
+    },
+    {
+      "path": "Tools/harness-web/src/client/lib/preferences.ts",
+      "sha256": "bae31543bcc3a03431cb4f337e24691615330beea60bfaa4aa090c954ebbdee6"
+    },
+    {
+      "path": "Tools/harness-web/src/client/main.tsx",
+      "sha256": "d8298ac9cbc6e0b0bd5e996a360839b0ef53cba7079c7f726bcc10b48779a2dd"
+    },
+    {
+      "path": "Tools/harness-web/src/client/pages/DocumentsPage.tsx",
+      "sha256": "d44bb30ebba7f68e0e071dc31c0d407feb096e8764541fa42e9af4b3d4de8421"
+    },
+    {
+      "path": "Tools/harness-web/src/client/pages/OverviewPage.tsx",
+      "sha256": "bd9667f6ab2943b901acbaab4fad940205e39ee57e259ba912fcdc3180180d82"
+    },
+    {
+      "path": "Tools/harness-web/src/client/pages/RecordsPage.tsx",
+      "sha256": "511183b0904ce6a9ba43f347f786f028c1c15ddd9f5a5297056701bce69b8cd2"
+    },
+    {
+      "path": "Tools/harness-web/src/client/pages/TasksPage.tsx",
+      "sha256": "67beff9448148d94262cadb1774de97755bac4d7e2595083b4e7266ad7d011ac"
+    },
+    {
+      "path": "Tools/harness-web/src/client/styles.css",
+      "sha256": "aa9b4de5b3e2d3b8c3fdbdbe9363839eadef4d5a18a747153b6d7c7223642ffb"
+    },
+    {
+      "path": "Tools/harness-web/src/server/app.ts",
+      "sha256": "0c0b5ca63e12e8d9ff54b82305ac71213012bdf1466f919015f152d2c8c0e5d1"
+    },
+    {
+      "path": "Tools/harness-web/src/server/errors.ts",
+      "sha256": "84307cc65c4a2f98168080f1f64a16ab47129a82cfb12a6261012c4cdfc88033"
+    },
+    {
+      "path": "Tools/harness-web/src/server/index.ts",
+      "sha256": "4e95caf5b080fae44c2daeee9c385aa6f539299002c41b94a6a4e35c03d229af"
+    },
+    {
+      "path": "Tools/harness-web/src/server/native.ts",
+      "sha256": "c3b4b33fc9b65e5c89b0654ed28bf36dcf24360703ec3fd4bb238a11d791f928"
+    },
+    {
+      "path": "Tools/harness-web/src/server/workspace.ts",
+      "sha256": "44d9a56d76c83f2c59c2420fc21dc7966ddb31c04ff224b200f85e303e3ab405"
+    },
+    {
+      "path": "Tools/harness-web/src/shared/documents.ts",
+      "sha256": "fc43fcf57619cd5ebeb69eb2633150ed711fce790196e9a855f1dd4e2020c6d6"
+    },
+    {
+      "path": "Tools/harness-web/src/shared/types.ts",
+      "sha256": "997caf66d45c0c8830a42f2cbabc0213817180d00d2ea8d04cf77a82774b5684"
+    },
+    {
+      "path": "Tools/harness-web/tests/adapter/fixture.ts",
+      "sha256": "85d92ebf52a6285df021b8abede97d3df87e1e6a13ad0d722dca6f5b98d30289"
+    },
+    {
+      "path": "Tools/harness-web/tests/adapter/workbench.test.ts",
+      "sha256": "8f9381ad48edf214c270d86791c716db6fc1226345e27092ffce1ed6ff638c86"
+    },
+    {
+      "path": "Tools/harness-web/tests/documents/component.test.tsx",
+      "sha256": "b09a73c0e013a0f5915dcbe459f4790e8dee8638eebb32526a3238dc955250d9"
+    },
+    {
+      "path": "Tools/harness-web/tests/documents/editor.test.ts",
+      "sha256": "6913e2495e062959a10965f06ac5346e05601355a151dcd1c3b1594efd369431"
+    },
+    {
+      "path": "Tools/harness-web/tests/documents/envelope.test.ts",
+      "sha256": "b2320757a02b17a3bb70a40de187355da62762a2a3a517c3a212670a2ca12381"
+    },
+    {
+      "path": "Tools/harness-web/tests/e2e/server.ts",
+      "sha256": "fe9ec87a43b42c36e5db58871b82d46cc126ad38e8378f0e6c4c311178f285d8"
+    },
+    {
+      "path": "Tools/harness-web/tests/e2e/workbench.spec.ts",
+      "sha256": "b8ce39e3f9479a3845110d49378424d96eeb342067c264dff59a0bb5205cc6b9"
+    },
+    {
+      "path": "Tools/harness-web/tests/ui/preferences.test.tsx",
+      "sha256": "481256ff1756301424ce0093d4fefa9041cde767e3af4e7d990cb4d4f687ac2f"
+    },
+    {
+      "path": "Tools/harness-web/tests/ui/record-navigation.test.tsx",
+      "sha256": "018c1125ca8ba9ab71870b7eee300b12014d9c846853027fa563a08f85b4e445"
+    },
+    {
+      "path": "Tools/harness-web/tests/ui/workbench.test.tsx",
+      "sha256": "0c0fe18449253f6dae06609577141e2efa7de9f9edcd1c813da9a91cf45232f4"
+    },
+    {
+      "path": "Tools/harness-web/tsconfig.json",
+      "sha256": "0e1b2561f10e293cc7c81001b651fb639f9371326a6bfbb68e905bc9189a3d25"
+    },
+    {
+      "path": "Tools/harness-web/tsconfig.server.json",
+      "sha256": "1bc706fd1e9ebc831de20d311920d788a3836498768a7a2f609c61c361d3aaa3"
+    },
+    {
+      "path": "Tools/harness-web/vite.config.ts",
+      "sha256": "9a3a7801ff9cb4add5fd7a915f79adc8b064e4a23931294a640871fa48bb3850"
+    },
+    {
+      "path": "Tools/harness-web/vitest.config.ts",
+      "sha256": "a9f3c6a1e020e43b09692064b10d4a2a2af707408f821facccfc9f8b65d189b5"
+    },
+    {
+      "path": "openspec/specs/harness/web/spec.md",
+      "sha256": "5c5a3b7f12c349be59faa22e18a581d20c048103bcf951ac6afc73ff0c3b620e"
+    },
+    {
+      "path": "openspec/specs/harness/web/spec.yaml",
+      "sha256": "f4387d84d7eb1228fa760344f6cfcbb551a057ecb58e493281feb86d7040a33c"
+    }
+  ]
+}

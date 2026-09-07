@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_408473f3-b39d-4b8d-ac4a-20db3bc1f889
+  id: angelscript/refactor-language-surface-ue-focused
+  title: Simplify the UE-facing AngelScript language and SDK
+  description: Remove unsupported script language and legacy SDK surfaces while preserving host parameterized types, callable foundations and runtime safety.
+workflow: angelscript
+created_at: 2026-09-07T13:48:57Z
+goal: Define a smaller UE-owned script language and migrate retained consumers without Lambda, funcdef, script exceptions, coroutines, virtual properties or standalone add-ons.
+affected_areas:
+- angelscript/language/frontend/declarations
+- angelscript/language/frontend/bodies
+- angelscript/language/types/definitions
+- angelscript/language/frontend/reflection-dependencies

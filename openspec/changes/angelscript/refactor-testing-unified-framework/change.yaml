@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_76c64e89-0055-403c-84e3-42dc63df620f
+  id: angelscript/refactor-testing-unified-framework
+  title: Unify AngelScript test code, data-driven cases, source histories, and authoring guidance
+  description: 'Planning-only handoff for replacement testing: FAngelscriptTestCode, inline source macros, embedded external AS with version tags, typed data cases, and testing Skill consolidation. No framework or Skill implementation in this delivery.'
+workflow: angelscript
+created_at: 2026-09-05T01:43:19Z
+goal: Produce decision-complete proposal, design, capability deltas, executable future tasks and indexed evidence while preserving dormant legacy code and unrelated work.
+affected_areas:
+- angelscript/testing

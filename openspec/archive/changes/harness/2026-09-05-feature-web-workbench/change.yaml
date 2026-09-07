@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_602de76f-c7e0-45d5-a1d6-da28515c1249
+  id: harness/feature-web-workbench
+  title: Harness Web workbench
+workflow: angelscript
+created_at: 2026-09-05T02:01:52Z
+goal: Browse OpenSpec, edit Markdown with protected syntax, and explore task relationships in a local Node TypeScript workbench.
+affected_areas:
+- harness/web
+archived_at: 2026-09-05T03:20:10Z
+archive_schema: closure-v1
+closure:
+  kind: completed

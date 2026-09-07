@@ -1,0 +1,16 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_67ec4158-6354-4c4f-96ad-6e939279f1a4
+  id: angelscript/refactor-vm-symbolic-execution
+  title: SDK VM execution with stable symbols and type fingerprints
+  description: Plan SDK-only bytecode authoring, validated symbolic cache linking, complete maintained VM semantics, and separate schema/layout fingerprints against pre-registered definitions.
+workflow: angelscript
+created_at: 2026-09-05T16:05:48Z
+goal: Execute hand-authored or cached bytecode with a minimal SDK Engine and pre-registered native or AS definitions, binding stable symbols to current runtime objects without source compilation or UE integration.
+affected_areas:
+- angelscript/language/types/stable-identity
+- angelscript/language/types/definitions
+- angelscript/runtime/bytecode
+- angelscript/runtime/vm
+- angelscript/testing/baseline

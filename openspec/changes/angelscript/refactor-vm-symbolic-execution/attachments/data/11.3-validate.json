@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "command": "openspec.validate",
+  "runId": "8ceadd083df64b5d9a5b498d96f8279e",
+  "status": "Succeeded",
+  "exitCode": 0,
+  "durationMs": 139,
+  "artifacts": [],
+  "data": {
+    "Arguments": [
+      "validate",
+      "angelscript/refactor-vm-symbolic-execution",
+      "--type",
+      "change",
+      "--strict",
+      "--json"
+    ],
+    "Output": [
+      "{",
+      "  \"items\": [",
+      "    {",
+      "      \"id\": \"angelscript/refactor-vm-symbolic-execution\",",
+      "      \"type\": \"change\",",
+      "      \"valid\": true,",
+      "      \"issues\": [],",
+      "      \"durationMs\": 5",
+      "    }",
+      "  ],",
+      "  \"summary\": {",
+      "    \"totals\": {",
+      "      \"items\": 1,",
+      "      \"passed\": 1,",
+      "      \"failed\": 0",
+      "    },",
+      "    \"byType\": {",
+      "      \"change\": {",
+      "        \"items\": 1,",
+      "        \"passed\": 1,",
+      "        \"failed\": 0",
+      "      }",
+      "    }",
+      "  },",
+      "  \"effectiveConcurrency\": 1,",
+      "  \"version\": \"1.0\"",
+      "}"
+    ]
+  },
+  "error": null
+}

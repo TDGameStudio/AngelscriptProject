@@ -2,7 +2,7 @@ workflow: angelscript
 context: |
   Language: English. All maintained OpenSpec records, manifests, workflows, templates, and attachments are written in English.
   Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception.
-  AngelscriptProject is an Unreal Engine 5.7 host repository whose primary deliverable is Plugins/Angelscript.
+  AngelscriptProject is an Unreal Engine 5.8 host repository whose primary deliverable is Plugins/Angelscript.
   Keep Source/AngelscriptProject minimal; plugin behavior belongs in the owning plugin or extension.
   Plugins/Angelscript, Plugins/AngelscriptGameplayTags, Plugins/AngelscriptGAS, and Tools/openspec are independent Git submodules. Source changes land in the owning submodule before the parent gitlink is updated.
   The repository may contain unrelated work from an ongoing large refactor. Inspect the current tree and preserve unrelated user changes.

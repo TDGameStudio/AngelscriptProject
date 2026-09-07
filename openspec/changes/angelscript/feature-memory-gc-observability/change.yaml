@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_994923f3-d703-4965-b32c-04cfe8632110
+  id: angelscript/feature-memory-gc-observability
+  title: Expose AngelScript allocation and GC behavior through Unreal profiling
+  description: Inventory AS and UE memory ownership, instrument allocation lifetime and GC work, and expose consistent Stats, LLM and Unreal Insights views without changing collection policy.
+workflow: angelscript
+created_at: 2026-09-06T06:58:50Z
+goal: Make AS memory ownership, live allocations, retained capacity and GC batch work measurable through Unreal profiling with explicit accounting and reproducible evidence.
+affected_areas:
+- runtime/memory
+- runtime/gc
+- language/frontend
+- profiling/unreal

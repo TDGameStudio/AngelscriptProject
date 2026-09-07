@@ -1,0 +1,6 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_aeb05327-aeca-4c9a-b12a-c18ac1743686
+  id: harness/web
+  title: Local OpenSpec and Markdown workbench
