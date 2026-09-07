@@ -1,7 +1,0 @@
-.codexloop/
-Temp/
-tests/.tmp/
-references/*/
-!references/manifest.psd1
-1.txt
-hi
