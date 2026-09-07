@@ -48,6 +48,8 @@ Rules:
 
 Build a file, artifact, and exclusive-resource map before drawing dependencies. Each top-level node is the smallest independently reviewable outcome, not one command and not an unbounded work package. A zero-context implementer must be able to execute it from the record alone.
 
+Size behavior tasks as bounded feature groups. Keep the setup, related tests, implementation, interface wiring and necessary documentation with the outcome they enable. Several positive, negative and boundary tests can belong to one task. Split where one deliverable can meaningfully pass acceptance while another is rejected; do not split every test, command, file or commit into a node, and do not use fixed test counts or minute quotas.
+
 Every node states:
 
 - on its one-line checkbox statement, the concrete outcome plus one exact verification command or directly observable result;
@@ -57,7 +59,45 @@ Choose that command through the Harness [impact-scoped verification policy](../.
 
 Add only the concise detail that helps a zero-context implementer. A Task Card may freely use ordinary Markdown such as short prose, `> Context:`, `> Inputs:`, `> Produces:`, `> Constraints:`, numbered steps, examples, or other useful notes. These are authoring aids, not parser fields or a rigid template. When another node depends on an interface, artifact, or state, explain that handoff somewhere in the card using the clearest compact form.
 
+Before a behavior task enters Ready execution, its content must make these decisions executable:
+
+- The concrete outcome, included behavior and explicit exclusions.
+- Consumed and produced interfaces, including actual names/types when another task relies on them.
+- Concrete test inputs and independently derived expected outputs or errors, including relevant failure and boundary cases; "add complete tests" is not a test plan.
+- Which new behavior is absent and what the group's expected RED will demonstrate; distinguish existing regression controls from missing-behavior cases.
+- Ordered test preparation, grouped RED, bounded implementation, grouped GREEN and necessary refactoring actions.
+- The exact proving selection, completion conditions and case mapping required if another run supplies the proof.
+
+These are information requirements, not mandatory labels or a fixed checklist to paste into every card. A simple task can already express them compactly. Add a short fixture or API sketch when it prevents an implementation decision from being deferred; do not duplicate whole implementations just to make the card long.
+
+Keep all owned paths in the actual Files line. A bounded glob includes its exclusions in the card; prose may explain those paths but must not silently add unrelated ownership. A newly discovered independent product, hidden prerequisite or proving selection that cannot establish the whole outcome invalidates the task boundary. Replan pending nodes before proceeding; preserve completed nodes and valid evidence. Ordinary local debugging remains within the task.
+
 Nested numbered steps are real execution order, including RED/GREEN/refactor when behavior changes; they are not placeholder examples. Do not use `TBD`, "appropriate handling", "similar to Task N", or other prose that delegates design back to the implementer.
+
+## Example: related cases, one outcome
+
+This illustrative parser contract accepts only `mode=fast` and `mode=safe`; duplicate keys and unknown keys are errors. Its exact API is `parse_options(text) -> Result<Options, ConfigError>`. The example is not a new repository API.
+
+```markdown
+- [ ] 2.1 Validate option declarations without partial output — verify: `cargo test option_policy`
+  > Files: `src/options.rs`, `tests/option_policy.rs`
+
+  Inputs: Existing Options and ConfigError types; the key/value grammar above.
+  Produces: Validated Options for the later exporter. No JSON format change.
+
+  Cases: `mode=fast` returns Mode::Fast; `mode=fast\nmode=safe` returns
+  DuplicateKey("mode"); `mdoe=fast` returns UnknownKey("mdoe"). Both
+  failures return no Options. Existing valid parsing is a regression control.
+
+  1. Add these real parser cases with literal expectations. Run option_policy
+     once and observe duplicate/unknown acceptance or partial-output failures.
+  2. Implement declaration validation and its error path together, preserving
+     valid parsing and the existing public result type.
+  3. Rerun option_policy together; require every named case to execute and pass.
+     Record the report mapping if a justified broader run supplied this proof.
+```
+
+An independently acceptable JSON exporter receives its own task with its concrete schema, fixtures and interface handoff. Do not inflate this example into separate write-test/run-test/implement/commit nodes. Expensive tests may share a process; test scheduling does not merge the two outcomes or create a second DAG.
 
 Before accepting a plan, map every requirement and acceptance condition to at least one node, then self-review IDs, names, dependencies, interfaces, `Files`, verification, and spec coverage for consistency. A plan-only delivery is complete only when `tasks.md` is ready to execute without another planning pass.
 

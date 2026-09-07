@@ -1,5 +1,13 @@
 [CmdletBinding()]
-param()
+param(
+    [Parameter()]
+    [AllowNull()]
+    [AllowEmptyCollection()]
+    [AllowEmptyString()]
+    [string[]]$SurfacePaths
+)
+
+$surfacePathsSpecified = $PSBoundParameters.ContainsKey('SurfacePaths')
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -115,62 +123,216 @@ function Get-CommandDocsDigest {
     }
 }
 
-function Get-OpenSpecEnglishViolations {
-    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+function Resolve-OpenSpecSurfacePathItems {
+    param(
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [AllowNull()]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$SurfacePaths
+    )
 
-    $roots = @(
-        'Tools\openspec',
-        '.agents\skills\openspec',
-        'openspec'
+    if ($null -eq $SurfacePaths -or $SurfacePaths.Count -eq 0) {
+        throw 'SurfacePaths was explicitly provided but contains no paths.'
+    }
+
+    $canonicalRoot = [System.IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\', '/')
+    $rootPrefix = $canonicalRoot + [System.IO.Path]::DirectorySeparatorChar
+    $resolvedItems = [System.Collections.Generic.List[System.IO.FileSystemInfo]]::new()
+    foreach ($candidate in $SurfacePaths) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            throw 'SurfacePaths entries must not be null, empty, or whitespace.'
+        }
+        if ([System.IO.Path]::IsPathRooted($candidate) -or
+            [System.IO.Path]::IsPathFullyQualified($candidate) -or
+            $candidate -match '^[^\\/]+::' -or
+            $candidate -match '^[A-Za-z]:') {
+            throw "SurfacePaths entries must be workspace-relative: $candidate"
+        }
+
+        try {
+            $fullPath = [System.IO.Path]::GetFullPath((Join-Path $canonicalRoot $candidate))
+        }
+        catch {
+            throw "SurfacePaths entry is invalid: $candidate"
+        }
+        if (-not $fullPath.Equals($canonicalRoot, [System.StringComparison]::OrdinalIgnoreCase) -and
+            -not $fullPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "SurfacePaths entry escapes the workspace: $candidate"
+        }
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf) -and
+            -not (Test-Path -LiteralPath $fullPath -PathType Container)) {
+            throw "SurfacePaths entry does not exist: $candidate"
+        }
+
+        $walkPath = $fullPath
+        while (-not $walkPath.Equals($canonicalRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $walkItem = Get-Item -LiteralPath $walkPath -Force
+            if (($walkItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "SurfacePaths entry crosses a reparse point: $candidate"
+            }
+            $parent = [System.IO.Directory]::GetParent($walkPath)
+            if ($null -eq $parent) {
+                throw "SurfacePaths entry cannot be traced to the workspace: $candidate"
+            }
+            $walkPath = $parent.FullName
+        }
+
+        $resolvedItems.Add((Get-Item -LiteralPath $fullPath -Force)) | Out-Null
+    }
+    return @($resolvedItems | Sort-Object FullName -Unique)
+}
+
+function Test-OpenSpecPathIsWithinDirectory {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Directory
     )
-    $roots += @(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot '.agents\skills') -Directory -Filter 'openspec-*' | ForEach-Object {
-        $_.FullName.Substring($ProjectRoot.Length).TrimStart('\', '/')
-    })
-    $standaloneFiles = @(
-        '.agents\skills\README.md',
-        '.gitignore'
+
+    $canonicalPath = [System.IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
+    $canonicalDirectory = [System.IO.Path]::GetFullPath($Directory).TrimEnd('\', '/')
+    if ($canonicalPath.Equals($canonicalDirectory, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $true
+    }
+    $directoryPrefix = $canonicalDirectory + [System.IO.Path]::DirectorySeparatorChar
+    return $canonicalPath.StartsWith($directoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Test-OpenSpecSurfaceIntersectsDirectory {
+    param(
+        [AllowNull()][System.IO.FileSystemInfo[]]$SurfaceItems,
+        [Parameter(Mandatory = $true)][string]$Directory
     )
+
+    foreach ($surfaceItem in @($SurfaceItems)) {
+        if (Test-OpenSpecPathIsWithinDirectory -Path $surfaceItem.FullName -Directory $Directory) {
+            return $true
+        }
+        if ($surfaceItem.PSIsContainer -and (Test-OpenSpecPathIsWithinDirectory -Path $Directory -Directory $surfaceItem.FullName)) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Get-OpenSpecOwningChangeRoot {
+    param(
+        [Parameter(Mandatory = $true)][System.IO.DirectoryInfo]$AttachmentRoot,
+        [Parameter(Mandatory = $true)][string]$ActiveChangesRoot
+    )
+
+    $current = $AttachmentRoot
+    while ($null -ne $current -and (Test-OpenSpecPathIsWithinDirectory -Path $current.FullName -Directory $ActiveChangesRoot)) {
+        if (Test-Path -LiteralPath (Join-Path $current.FullName 'change.yaml') -PathType Leaf) {
+            return $current
+        }
+        if ($current.FullName.Equals([System.IO.Path]::GetFullPath($ActiveChangesRoot).TrimEnd('\', '/'), [System.StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $current = $current.Parent
+    }
+    return $AttachmentRoot
+}
+
+function Get-OpenSpecEnglishViolations {
+    param(
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [bool]$SurfacePathsSpecified = $false,
+        [AllowNull()]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$SurfacePaths
+    )
+
     $files = New-Object System.Collections.Generic.List[System.IO.FileInfo]
     $allFiles = New-Object System.Collections.Generic.List[System.IO.FileInfo]
-    foreach ($relativeRoot in $roots) {
-        $root = Join-Path $ProjectRoot $relativeRoot
-        if (Test-Path -LiteralPath $root -PathType Container) {
-            $rootItem = Get-Item -LiteralPath $root -Force
-            if (($rootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-                $allFiles.Add($rootItem) | Out-Null
-                continue
-            }
-            $generatedRoots = @(
-                [System.IO.Path]::GetFullPath((Join-Path $root 'target')),
-                [System.IO.Path]::GetFullPath((Join-Path $root 'build'))
-            )
-            $pending = New-Object System.Collections.Generic.Stack[string]
-            $pending.Push([System.IO.Path]::GetFullPath($root))
-            while ($pending.Count -gt 0) {
-                $directory = $pending.Pop()
-                foreach ($entry in @(Get-ChildItem -LiteralPath $directory -Force)) {
-                    if ($entry.PSIsContainer) {
-                        $entryFull = [System.IO.Path]::GetFullPath($entry.FullName)
-                        if ($entry.Name -ne '.git' -and $entryFull -notin $generatedRoots -and -not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-                            $pending.Push($entry.FullName)
+
+    if ($SurfacePathsSpecified) {
+        $selectedItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $ProjectRoot -SurfacePaths $SurfacePaths)
+        foreach ($selectedItem in $selectedItems) {
+            if ($selectedItem.PSIsContainer) {
+                $root = $selectedItem.FullName
+                $generatedRoots = @(
+                    [System.IO.Path]::GetFullPath((Join-Path $root 'target')),
+                    [System.IO.Path]::GetFullPath((Join-Path $root 'build'))
+                )
+                $pending = New-Object System.Collections.Generic.Stack[string]
+                $pending.Push([System.IO.Path]::GetFullPath($root))
+                while ($pending.Count -gt 0) {
+                    $directory = $pending.Pop()
+                    foreach ($entry in @(Get-ChildItem -LiteralPath $directory -Force)) {
+                        if ($entry.PSIsContainer) {
+                            $entryFull = [System.IO.Path]::GetFullPath($entry.FullName)
+                            if ($entry.Name -ne '.git' -and $entryFull -notin $generatedRoots -and -not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                                $pending.Push($entry.FullName)
+                            }
+                        }
+                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name)) {
+                            $allFiles.Add($entry) | Out-Null
+                            if (Test-IsLikelyOpenSpecTextFile -File $entry) { $files.Add($entry) | Out-Null }
                         }
                     }
-                    elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name)) {
-                        $allFiles.Add($entry) | Out-Null
-                        if (Test-IsLikelyOpenSpecTextFile -File $entry) { $files.Add($entry) | Out-Null }
+                }
+            }
+            elseif (-not (Test-IsOpenSpecLocalizationExempt -FileName $selectedItem.Name)) {
+                $allFiles.Add($selectedItem) | Out-Null
+                if (Test-IsLikelyOpenSpecTextFile -File $selectedItem) { $files.Add($selectedItem) | Out-Null }
+            }
+        }
+    }
+    else {
+        $roots = @(
+            'Tools\openspec',
+            '.agents\skills\openspec',
+            'openspec'
+        )
+        $roots += @(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot '.agents\skills') -Directory -Filter 'openspec-*' | ForEach-Object {
+            $_.FullName.Substring($ProjectRoot.Length).TrimStart('\', '/')
+        })
+        $standaloneFiles = @(
+            '.agents\skills\README.md',
+            '.gitignore'
+        )
+        foreach ($relativeRoot in $roots) {
+            $root = Join-Path $ProjectRoot $relativeRoot
+            if (Test-Path -LiteralPath $root -PathType Container) {
+                $rootItem = Get-Item -LiteralPath $root -Force
+                if (($rootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    $allFiles.Add($rootItem) | Out-Null
+                    continue
+                }
+                $generatedRoots = @(
+                    [System.IO.Path]::GetFullPath((Join-Path $root 'target')),
+                    [System.IO.Path]::GetFullPath((Join-Path $root 'build'))
+                )
+                $pending = New-Object System.Collections.Generic.Stack[string]
+                $pending.Push([System.IO.Path]::GetFullPath($root))
+                while ($pending.Count -gt 0) {
+                    $directory = $pending.Pop()
+                    foreach ($entry in @(Get-ChildItem -LiteralPath $directory -Force)) {
+                        if ($entry.PSIsContainer) {
+                            $entryFull = [System.IO.Path]::GetFullPath($entry.FullName)
+                            if ($entry.Name -ne '.git' -and $entryFull -notin $generatedRoots -and -not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                                $pending.Push($entry.FullName)
+                            }
+                        }
+                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name)) {
+                            $allFiles.Add($entry) | Out-Null
+                            if (Test-IsLikelyOpenSpecTextFile -File $entry) { $files.Add($entry) | Out-Null }
+                        }
                     }
                 }
             }
         }
-    }
 
-    foreach ($relativeFile in $standaloneFiles) {
-        $file = Join-Path $ProjectRoot $relativeFile
-        if (Test-Path -LiteralPath $file -PathType Leaf) {
-            $item = Get-Item -LiteralPath $file -Force
-            if (-not (Test-IsOpenSpecLocalizationExempt -FileName $item.Name)) {
-                $allFiles.Add($item) | Out-Null
-                if (Test-IsLikelyOpenSpecTextFile -File $item) { $files.Add($item) | Out-Null }
+        foreach ($relativeFile in $standaloneFiles) {
+            $file = Join-Path $ProjectRoot $relativeFile
+            if (Test-Path -LiteralPath $file -PathType Leaf) {
+                $item = Get-Item -LiteralPath $file -Force
+                if (-not (Test-IsOpenSpecLocalizationExempt -FileName $item.Name)) {
+                    $allFiles.Add($item) | Out-Null
+                    if (Test-IsLikelyOpenSpecTextFile -File $item) { $files.Add($item) | Out-Null }
+                }
             }
         }
     }
@@ -233,14 +395,21 @@ function Get-LocalMarkdownLinkIssues {
 }
 
 function Get-CapabilityKnowledgeIndexIssues {
-    param([Parameter(Mandatory = $true)][string]$SpecsRoot)
+    param(
+        [Parameter(Mandatory = $true)][string]$SpecsRoot,
+        [bool]$SurfacePathsSpecified = $false,
+        [System.IO.FileSystemInfo[]]$SurfaceItems
+    )
 
     $issues = @()
     if (-not (Test-Path -LiteralPath $SpecsRoot -PathType Container)) {
         return "knowledge-root: current specs root is missing: $SpecsRoot"
     }
 
-    $knowledgeDirectories = @(Get-ChildItem -LiteralPath $SpecsRoot -Recurse -Directory | Where-Object { $_.Name -ceq 'knowledges' })
+    $knowledgeDirectories = @(Get-ChildItem -LiteralPath $SpecsRoot -Recurse -Directory | Where-Object {
+        $_.Name -ceq 'knowledges' -and
+        (-not $SurfacePathsSpecified -or (Test-OpenSpecSurfaceIntersectsDirectory -SurfaceItems $SurfaceItems -Directory $_.FullName))
+    })
     foreach ($directory in $knowledgeDirectories) {
         $indexPath = Join-Path $directory.FullName 'INDEX.md'
         if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
@@ -275,6 +444,41 @@ function Get-CapabilityKnowledgeIndexIssues {
         }
 
         $issues += @(Get-LocalMarkdownLinkIssues -Files @($indexFile))
+    }
+    return $issues
+}
+
+function Get-ActiveAttachmentIndexIssues {
+    param(
+        [Parameter(Mandatory = $true)][string]$ActiveChangesRoot,
+        [bool]$SurfacePathsSpecified = $false,
+        [System.IO.FileSystemInfo[]]$SurfaceItems
+    )
+
+    $issues = @()
+    if (-not (Test-Path -LiteralPath $ActiveChangesRoot -PathType Container)) {
+        return $issues
+    }
+    foreach ($attachmentRoot in @(Get-ChildItem -LiteralPath $ActiveChangesRoot -Recurse -Directory -Filter 'attachments')) {
+        if ($SurfacePathsSpecified) {
+            $changeRoot = Get-OpenSpecOwningChangeRoot -AttachmentRoot $attachmentRoot -ActiveChangesRoot $ActiveChangesRoot
+            if (-not (Test-OpenSpecSurfaceIntersectsDirectory -SurfaceItems $SurfaceItems -Directory $changeRoot.FullName)) {
+                continue
+            }
+        }
+        $indexPath = Join-Path $attachmentRoot.FullName 'INDEX.md'
+        if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
+            $issues += "attachment-index-missing: $($attachmentRoot.FullName)"
+            continue
+        }
+        $indexLines = @(Get-Content -LiteralPath $indexPath)
+        if ($indexLines.Count -gt 120) { $issues += "attachment-index-size: $($attachmentRoot.FullName) has $($indexLines.Count) lines" }
+        $indexText = (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/')
+        foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot.FullName -Recurse -File | Where-Object { $_.FullName -ne $indexPath })) {
+            $relative = $file.FullName.Substring($attachmentRoot.FullName.Length).TrimStart('\', '/').Replace('\', '/')
+            $count = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
+            if ($count -ne 1) { $issues += "attachment-index-entry: $relative appears $count times" }
+        }
     }
     return $issues
 }
@@ -314,15 +518,20 @@ foreach ($ordinaryName in @('CLI_REFERENCE_zh.md', 'CLI_REFERENCE_Zh.md', 'CLI_R
 }
 
 $languageFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path ([System.IO.Path]::GetTempPath()) ("openspec-language-{0}" -f [guid]::NewGuid().ToString('N'))))
+$languageOutsideFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path ([System.IO.Path]::GetTempPath()) ("openspec-language-outside-{0}" -f [guid]::NewGuid().ToString('N'))))
+$languageFixtureReparsePath = Join-Path $languageFixtureRoot 'openspec\changes\fixture\external-link'
 try {
     foreach ($directory in @(
         'Tools\openspec\docs',
         '.agents\skills\openspec',
         '.agents\skills\README-parent',
-        'openspec\changes\fixture\attachments\reviews'
+        'openspec\changes\fixture\attachments\reviews',
+        'openspec\changes\fixture\selected',
+        'openspec\changes\fixture\unselected'
     )) {
         [void](New-Item -ItemType Directory -Path (Join-Path $languageFixtureRoot $directory) -Force)
     }
+    [void](New-Item -ItemType Directory -Path $languageOutsideFixtureRoot -Force)
     $forbiddenDefaultPhrase = 'OpenSpec records default' + ' to Chinese.'
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot '.agents\skills\README.md'), $forbiddenDefaultPhrase, [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot 'Tools\openspec\.gitignore'), "ignored-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
@@ -338,21 +547,177 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot 'Tools\openspec\docs\supplementary.txt'), [char]::ConvertFromUtf32(0x10400), [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllBytes((Join-Path $languageFixtureRoot 'Tools\openspec\BINARY'), [byte[]]@(0, 0xCE, 0xB1))
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot 'openspec\changes\fixture\attachments\reviews\quoted.md'), "Evidence: $forbiddenDefaultPhrase", [System.Text.UTF8Encoding]::new($false))
+    $selectedCleanRelative = 'openspec\changes\fixture\selected\clean.md'
+    $unselectedViolationRelative = 'openspec\changes\fixture\unselected\bad.md'
+    [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $selectedCleanRelative), 'Selected English content.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $unselectedViolationRelative), "unselected-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $languageOutsideFixtureRoot 'outside.md'), "outside-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
+    [void](New-Item -ItemType Junction -Path $languageFixtureReparsePath -Target $languageOutsideFixtureRoot)
 
     $fixtureViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot)
-    foreach ($requiredPath in @('.agents\skills\README.md', 'Tools\openspec\.gitignore', 'Tools\openspec\NOTICE', '.agents\skills\openspec\lower_zh.md', '.agents\skills\openspec\embedded_ZH_notes.md', 'Tools\openspec\parent_ZH\ordinary.md', 'Tools\openspec\docs\supplementary.txt')) {
+    foreach ($requiredPath in @('.agents\skills\README.md', 'Tools\openspec\.gitignore', 'Tools\openspec\NOTICE', '.agents\skills\openspec\lower_zh.md', '.agents\skills\openspec\embedded_ZH_notes.md', 'Tools\openspec\parent_ZH\ordinary.md', 'Tools\openspec\docs\supplementary.txt', $unselectedViolationRelative)) {
         Assert-True (($fixtureViolations -join "`n").Contains($requiredPath)) "Language fixture was not rejected: $requiredPath"
     }
     Assert-True (@($fixtureViolations | Where-Object { $_ -like 'non-English path:*' }).Count -ge 1) 'Language gate must reject a non-English path segment.'
     foreach ($allowedPath in @('.agents\skills\openspec\allowed_ZH.md', 'Tools\openspec\BINARY', 'attachments\reviews\quoted.md')) {
         Assert-True (-not (($fixtureViolations -join "`n").Contains($allowedPath))) "Language fixture should remain allowed: $allowedPath"
     }
+
+    $selectionFixtureFailures = [System.Collections.Generic.List[string]]::new()
+    $selectedCleanViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($selectedCleanRelative))
+    if ($selectedCleanViolations.Count -ne 0) {
+        $selectionFixtureFailures.Add("Selecting one clean file did not isolate the adjacent violation: $($selectedCleanViolations -join ', ')") | Out-Null
+    }
+
+    $selectedDirectoryViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @('openspec/changes/fixture/selected'))
+    if ($selectedDirectoryViolations.Count -ne 0) {
+        $selectionFixtureFailures.Add("Selecting one clean directory did not isolate the adjacent violation: $($selectedDirectoryViolations -join ', ')") | Out-Null
+    }
+
+    $selectedBadViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($unselectedViolationRelative))
+    $expectedSelectedBadViolation = "${unselectedViolationRelative}:1"
+    if ($selectedBadViolations.Count -ne 1 -or $selectedBadViolations[0] -ne $expectedSelectedBadViolation) {
+        $selectionFixtureFailures.Add("A selected violating file was not reported exactly once: $($selectedBadViolations -join ', ')") | Out-Null
+    }
+
+    $overlapViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @('openspec\changes\fixture\unselected', $unselectedViolationRelative))
+    if ($overlapViolations.Count -ne 1 -or $overlapViolations[0] -ne $expectedSelectedBadViolation) {
+        $selectionFixtureFailures.Add("Overlapping selections did not deduplicate the violating file: $($overlapViolations -join ', ')") | Out-Null
+    }
+
+    $outsideRelative = "..\$([System.IO.Path]::GetFileName($languageOutsideFixtureRoot))\outside.md"
+    $invalidSelections = @(
+        @{ Name = 'empty collection'; Paths = [string[]]@() },
+        @{ Name = 'explicit null'; Paths = $null },
+        @{ Name = 'empty element'; Paths = [string[]]@('') },
+        @{ Name = 'whitespace element'; Paths = [string[]]@('   ') },
+        @{ Name = 'missing path'; Paths = [string[]]@('openspec\changes\fixture\missing.md') },
+        @{ Name = 'workspace-absolute path'; Paths = [string[]]@((Join-Path $languageFixtureRoot $selectedCleanRelative)) },
+        @{ Name = 'outside traversal'; Paths = [string[]]@($outsideRelative) },
+        @{ Name = 'selected reparse point'; Paths = [string[]]@('openspec\changes\fixture\external-link') },
+        @{ Name = 'reparse ancestor'; Paths = [string[]]@('openspec\changes\fixture\external-link\outside.md') }
+    )
+    foreach ($invalidSelection in $invalidSelections) {
+        $didReject = $false
+        try {
+            [void]@(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths $invalidSelection.Paths)
+        }
+        catch {
+            $didReject = $true
+        }
+        if (-not $didReject) {
+            $selectionFixtureFailures.Add("Language path selection did not reject $($invalidSelection.Name).") | Out-Null
+        }
+    }
+    Assert-Equal $selectionFixtureFailures.Count 0 ("Language path selection fixture failures:`n{0}" -f ($selectionFixtureFailures -join [Environment]::NewLine))
 }
 finally {
+    if (Test-Path -LiteralPath $languageFixtureReparsePath) { Remove-Item -LiteralPath $languageFixtureReparsePath -Force }
     if (Test-Path -LiteralPath $languageFixtureRoot) { Remove-Item -LiteralPath $languageFixtureRoot -Recurse -Force }
+    if (Test-Path -LiteralPath $languageOutsideFixtureRoot) { Remove-Item -LiteralPath $languageOutsideFixtureRoot -Recurse -Force }
 }
 
-$englishViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $projectRoot)
+$surfaceAuditFixtureRoot = [System.IO.Path]::GetFullPath((Join-Path ([System.IO.Path]::GetTempPath()) ("openspec-surface-audit-{0}" -f [guid]::NewGuid().ToString('N'))))
+try {
+    $fixtureSpecsRoot = Join-Path $surfaceAuditFixtureRoot 'openspec\specs'
+    $goodKnowledgeRoot = Join-Path $fixtureSpecsRoot 'fixture\good\knowledges'
+    $badKnowledgeRoot = Join-Path $fixtureSpecsRoot 'fixture\bad\knowledges'
+    $childKnowledgeRoot = Join-Path $fixtureSpecsRoot 'fixture\child\knowledges'
+    foreach ($directory in @($goodKnowledgeRoot, $badKnowledgeRoot, $childKnowledgeRoot)) {
+        [void](New-Item -ItemType Directory -Path $directory -Force)
+    }
+    $knowledgeEntry = @"
+- [Good](good.md)
+  - Summary: Good fixture knowledge.
+  - Serves: Fixture verification.
+  - Source: Fixture source.
+  - Status: current
+"@
+    [System.IO.File]::WriteAllText((Join-Path $goodKnowledgeRoot 'good.md'), 'Good knowledge.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $goodKnowledgeRoot 'INDEX.md'), "# Good Knowledge`n`n$knowledgeEntry", [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $badKnowledgeRoot 'bad.md'), 'Adjacent bad knowledge.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $badKnowledgeRoot 'INDEX.md'), '# Bad Knowledge', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childKnowledgeRoot 'chosen.md'), 'Chosen knowledge.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childKnowledgeRoot 'unindexed.md'), 'Unindexed sibling knowledge.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childKnowledgeRoot 'INDEX.md'), $knowledgeEntry.Replace('Good', 'Chosen').Replace('good.md', 'chosen.md'), [System.Text.UTF8Encoding]::new($false))
+
+    $fixtureChangesRoot = Join-Path $surfaceAuditFixtureRoot 'openspec\changes'
+    $goodChangeRoot = Join-Path $fixtureChangesRoot 'fixture\good-change'
+    $badChangeRoot = Join-Path $fixtureChangesRoot 'fixture\bad-change'
+    $childChangeRoot = Join-Path $fixtureChangesRoot 'fixture\child-change'
+    foreach ($changeRoot in @($goodChangeRoot, $badChangeRoot, $childChangeRoot)) {
+        [void](New-Item -ItemType Directory -Path (Join-Path $changeRoot 'attachments') -Force)
+        [System.IO.File]::WriteAllText((Join-Path $changeRoot 'change.yaml'), 'schema: fixture', [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText((Join-Path $changeRoot 'proposal.md'), 'Fixture proposal.', [System.Text.UTF8Encoding]::new($false))
+    }
+    [System.IO.File]::WriteAllText((Join-Path $goodChangeRoot 'attachments\proof.txt'), 'Good proof.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $goodChangeRoot 'attachments\INDEX.md'), '- [Proof](proof.txt)', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $badChangeRoot 'attachments\bad.txt'), 'Unindexed proof.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $badChangeRoot 'attachments\INDEX.md'), '# Bad Attachments', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childChangeRoot 'attachments\chosen.txt'), 'Chosen proof.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childChangeRoot 'attachments\unindexed.txt'), 'Unindexed sibling proof.', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $childChangeRoot 'attachments\INDEX.md'), '- [Chosen](chosen.txt)', [System.Text.UTF8Encoding]::new($false))
+
+    $defaultKnowledgeIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot $fixtureSpecsRoot)
+    Assert-True (($defaultKnowledgeIssues -join "`n").Contains("'bad.md'")) 'Default knowledge audit must retain adjacent owner coverage.'
+    Assert-True (($defaultKnowledgeIssues -join "`n").Contains("'unindexed.md'")) 'Default knowledge audit must retain complete directory coverage.'
+    $defaultAttachmentIssues = @(Get-ActiveAttachmentIndexIssues -ActiveChangesRoot $fixtureChangesRoot)
+    Assert-True (($defaultAttachmentIssues -join "`n").Contains('bad.txt appears 0 times')) 'Default attachment audit must retain adjacent change coverage.'
+    Assert-True (($defaultAttachmentIssues -join "`n").Contains('unindexed.txt appears 0 times')) 'Default attachment audit must retain complete change coverage.'
+
+    $surfaceAuditFailures = [System.Collections.Generic.List[string]]::new()
+    $goodKnowledgeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\specs\fixture\good\knowledges\good.md'))
+    $goodKnowledgeIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot $fixtureSpecsRoot -SurfacePathsSpecified $true -SurfaceItems $goodKnowledgeItems)
+    if ($goodKnowledgeIssues.Count -ne 0) {
+        $surfaceAuditFailures.Add("An unselected bad knowledge owner polluted a selected good owner: $($goodKnowledgeIssues -join ', ')") | Out-Null
+    }
+
+    $childKnowledgeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\specs\fixture\child\knowledges\chosen.md'))
+    $childKnowledgeIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot $fixtureSpecsRoot -SurfacePathsSpecified $true -SurfaceItems $childKnowledgeItems)
+    if ($childKnowledgeIssues.Count -ne 1 -or -not (($childKnowledgeIssues -join "`n").Contains("'unindexed.md'"))) {
+        $surfaceAuditFailures.Add("Selecting one knowledge child did not validate its complete owner directory: $($childKnowledgeIssues -join ', ')") | Out-Null
+    }
+
+    $parentKnowledgeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\specs\fixture\child'))
+    $parentKnowledgeIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot $fixtureSpecsRoot -SurfacePathsSpecified $true -SurfaceItems $parentKnowledgeItems)
+    if ($parentKnowledgeIssues.Count -ne 1 -or -not (($parentKnowledgeIssues -join "`n").Contains("'unindexed.md'"))) {
+        $surfaceAuditFailures.Add("Selecting a parent directory did not cover its descendant knowledge owner: $($parentKnowledgeIssues -join ', ')") | Out-Null
+    }
+
+    $goodChangeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\changes\fixture\good-change\proposal.md'))
+    $goodAttachmentIssues = @(Get-ActiveAttachmentIndexIssues -ActiveChangesRoot $fixtureChangesRoot -SurfacePathsSpecified $true -SurfaceItems $goodChangeItems)
+    if ($goodAttachmentIssues.Count -ne 0) {
+        $surfaceAuditFailures.Add("An unselected bad change polluted a selected good change: $($goodAttachmentIssues -join ', ')") | Out-Null
+    }
+
+    $childChangeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\changes\fixture\child-change\attachments\chosen.txt'))
+    $childAttachmentIssues = @(Get-ActiveAttachmentIndexIssues -ActiveChangesRoot $fixtureChangesRoot -SurfacePathsSpecified $true -SurfaceItems $childChangeItems)
+    if ($childAttachmentIssues.Count -ne 1 -or -not (($childAttachmentIssues -join "`n").Contains('unindexed.txt appears 0 times'))) {
+        $surfaceAuditFailures.Add("Selecting one attachment child did not validate its complete change owner: $($childAttachmentIssues -join ', ')") | Out-Null
+    }
+
+    $parentChangeItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $surfaceAuditFixtureRoot -SurfacePaths @('openspec\changes\fixture\child-change'))
+    $parentAttachmentIssues = @(Get-ActiveAttachmentIndexIssues -ActiveChangesRoot $fixtureChangesRoot -SurfacePathsSpecified $true -SurfaceItems $parentChangeItems)
+    if ($parentAttachmentIssues.Count -ne 1 -or -not (($parentAttachmentIssues -join "`n").Contains('unindexed.txt appears 0 times'))) {
+        $surfaceAuditFailures.Add("Selecting a parent directory did not cover its descendant change owner: $($parentAttachmentIssues -join ', ')") | Out-Null
+    }
+    Assert-Equal $surfaceAuditFailures.Count 0 ("Surface owner-closure fixture failures:`n{0}" -f ($surfaceAuditFailures -join [Environment]::NewLine))
+}
+finally {
+    if (Test-Path -LiteralPath $surfaceAuditFixtureRoot) { Remove-Item -LiteralPath $surfaceAuditFixtureRoot -Recurse -Force }
+}
+
+$selectedSurfaceItems = @()
+if ($surfacePathsSpecified) {
+    $selectedSurfaceItems = @(Resolve-OpenSpecSurfacePathItems -ProjectRoot $projectRoot -SurfacePaths $SurfacePaths)
+}
+
+$englishScanArguments = @{ ProjectRoot = $projectRoot }
+if ($surfacePathsSpecified) {
+    $englishScanArguments.SurfacePathsSpecified = $true
+    $englishScanArguments.SurfacePaths = $SurfacePaths
+}
+$englishViolations = @(Get-OpenSpecEnglishViolations @englishScanArguments)
 Assert-Equal $englishViolations.Count 0 "Maintained OpenSpec surfaces must use English; only explicitly named *_ZH files are exempt: $($englishViolations -join ', ')"
 
 Assert-True (Test-Path -LiteralPath $harnessManifest -PathType Leaf) 'Harness module manifest is missing.'
@@ -790,28 +1155,21 @@ foreach ($requiredEntry in @('openspec-explore', 'openspec-continue-change', 'op
     Assert-True ($rootReadmeText.Contains($requiredEntry)) "Root README is missing the current OpenSpec lifecycle entry: $requiredEntry"
 }
 
-$knowledgeIndexIssues = @(Get-CapabilityKnowledgeIndexIssues -SpecsRoot (Join-Path $projectRoot 'openspec\specs'))
+$knowledgeAuditArguments = @{ SpecsRoot = (Join-Path $projectRoot 'openspec\specs') }
+if ($surfacePathsSpecified) {
+    $knowledgeAuditArguments.SurfacePathsSpecified = $true
+    $knowledgeAuditArguments.SurfaceItems = $selectedSurfaceItems
+}
+$knowledgeIndexIssues = @(Get-CapabilityKnowledgeIndexIssues @knowledgeAuditArguments)
 Assert-Equal $knowledgeIndexIssues.Count 0 ("Current capability knowledge INDEX audit failed:`n{0}" -f ($knowledgeIndexIssues -join [Environment]::NewLine))
 
-$activeAttachmentIndexIssues = @()
 $activeChangesRoot = Join-Path $projectRoot 'openspec\changes'
-if (Test-Path -LiteralPath $activeChangesRoot -PathType Container) {
-    foreach ($attachmentRoot in @(Get-ChildItem -LiteralPath $activeChangesRoot -Recurse -Directory -Filter 'attachments')) {
-        $indexPath = Join-Path $attachmentRoot.FullName 'INDEX.md'
-        if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
-            $activeAttachmentIndexIssues += "attachment-index-missing: $($attachmentRoot.FullName)"
-            continue
-        }
-        $indexLines = @(Get-Content -LiteralPath $indexPath)
-        if ($indexLines.Count -gt 120) { $activeAttachmentIndexIssues += "attachment-index-size: $($attachmentRoot.FullName) has $($indexLines.Count) lines" }
-        $indexText = (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/')
-        foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot.FullName -Recurse -File | Where-Object { $_.FullName -ne $indexPath })) {
-            $relative = $file.FullName.Substring($attachmentRoot.FullName.Length).TrimStart('\', '/').Replace('\', '/')
-            $count = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
-            if ($count -ne 1) { $activeAttachmentIndexIssues += "attachment-index-entry: $relative appears $count times" }
-        }
-    }
+$attachmentAuditArguments = @{ ActiveChangesRoot = $activeChangesRoot }
+if ($surfacePathsSpecified) {
+    $attachmentAuditArguments.SurfacePathsSpecified = $true
+    $attachmentAuditArguments.SurfaceItems = $selectedSurfaceItems
 }
+$activeAttachmentIndexIssues = @(Get-ActiveAttachmentIndexIssues @attachmentAuditArguments)
 Assert-Equal $activeAttachmentIndexIssues.Count 0 ("Active change attachment INDEX audit failed:`n{0}" -f ($activeAttachmentIndexIssues -join [Environment]::NewLine))
 
 $workflow = & $exePath workflow validate angelscript 2>&1

@@ -13,9 +13,11 @@ here:
 2. Every test exercises the real thing
 ```
 
-Strict TDD produces both naturally: a test written first and watched
-failing against real code has already proven it can fail, and only earns
-a mock when the real dependency proves slow or external.
+Grouped TDD produces both naturally: related tests written first and
+observed failing against real code prove the group's missing behavior.
+One shared run may establish several failures; each claimed case must
+actually execute. A mock earns its place only when the real dependency
+proves slow or external.
 
 ## Principle 1: Name the Break
 
@@ -48,7 +50,7 @@ retried 5 times and the 6th attempt never happens."
 contains an exact line proves only that the source is the source. Run
 scripts against controlled inputs and assert outputs, side effects, or
 exit codes. Documents that instruct agents are tested by the consuming
-agent's behavior (superpowers:writing-skills); prose for humans earns no
+agent's behavior (use the available skill-creator consumer exercise); prose for humans earns no
 test at all.
 
 **Your code, not the framework.** Test the contract your code makes at

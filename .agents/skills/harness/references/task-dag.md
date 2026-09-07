@@ -35,6 +35,10 @@ Rules:
 
 ## Flexible Task Cards
 
+Before writing or selecting behavior work, use the [ready-to-execute authoring contract](../../openspec/references/tasks.md). A node owns a bounded feature outcome with concrete fixtures, expected RED, interfaces and completion evidence. Tests and implementation can be substantial inside that outcome; neither individual test launches nor an ever-growing subsystem are useful task boundaries.
+
+Preflight the actual Files, handoffs and proving selection. If independent products or hidden prerequisites have accumulated, use an evidence-backed replan to split pending work before continuing. Do not turn ordinary local failures into Replan. Compatible tasks may share grouped verification through [verification.md](verification.md), but keep separate case-level completion evidence and the existing single DAG.
+
 Optional Task Card detail is ordinary Markdown. After the validated node surface, authors may add only the context that helps execution: intent, constraints, examples, ordered steps, expected output, risks, evidence links, or useful implementation notes. A simple task may need none of these; a difficult task may use several short sections or lists.
 
 Harness does not parse or require those optional sections, labels, or ordering. Do not invent another Task Card schema, encode dependencies in prose, or duplicate completion with nested checkboxes. The frontmatter graph remains the dependency authority, while the body remains readable guidance for agents and people.

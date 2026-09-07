@@ -17,10 +17,24 @@ The profiles remain public supported entry points; this policy governs when to s
 
 ## Apply, verify, and archive
 
-- Each ready task names one exact impact-related verification command. For behavior work, run it in RED, make the smallest passing change, and rerun the same command in GREEN.
+- Each ready task names one exact impact-related verification command and concrete acceptance cases. For behavior work, prepare the bounded feature group's related tests, observe their expected RED together, implement that group, and rerun the same proving selection in GREEN. Use the [TDD Skill](../../test-driven-development/SKILL.md) for test design and missing-interface or existing-code boundaries.
 - An ordinary local failure is diagnosed and repaired in the current task. Replan only when evidence invalidates an accepted requirement, design boundary, Task DAG edge, verification contract, or required artifact.
-- Completion verification reruns the exact task proofs still relevant to the final content identity, then adds only adjacent checks justified by shared impact or failure evidence.
+- Completion verification establishes the exact task proofs for the final content identity. A fresh task or shared run may already supply them; rerun stale or missing proof, then add only adjacent checks justified by shared impact or failure evidence. A prior snapshot's passing counts never prove later unverified code.
 - Post-archive verification adds strict archived validation and the smallest non-destructive lifecycle check that can expose archive-path coupling. It does not repeat implementation tests merely because the directory moved.
+
+## Feature-group batching
+
+Choose group boundaries when writing the task, not after accumulating untested code. Several normal, negative and boundary cases can prove one outcome. Separate independently acceptable products; do not create one Task per test, command or commit. A batch has named outcomes, case selections and a stopping point, not a fixed case count or time quota.
+
+Batching changes process scheduling, not proof order. Run the group's RED before implementing its new behavior and its GREEN afterwards; do not require a fresh UE process for every case or promise one total run for the whole group. Use a cheaper existing real-behavior check when reliable, but do not replace necessary product C++/UE execution with a text scan.
+
+Compatible Ready tasks may share a documented union or justified superset selection. Preserve each task's exact command as its proving selector and record the actual shared command, case identities/results and source/binary identity. One full report can satisfy those selectors without redundant subset launches. Do not invent runner parameters for a union; use only supported selectors or commands. If their scopes cannot be combined reliably, run them separately.
+
+The coordinator alone schedules UE operations and freezes source writers for both build and Automation. Any intervening source change invalidates use of that binary as evidence for the changed code. Completion needs all required and adjacent cases actually executed; aggregate counts, crashes, missing discovery, in-process/not-run cases or an incomplete report do not suffice. A task in a partially failing batch may complete only when exact evidence proves its entire outcome and the other failure cannot invalidate it; never call that whole batch green.
+
+An explicit user-authorized delayed-first-run exception remains bounded to its stated scope and is recorded as missing preimplementation RED, not strict TDD. Merely requesting batching grants no such exception. Preserve existing code and historical evidence; never delete it or fabricate RED to repair provenance. Subsequent work follows the latest accepted policy.
+
+For material instruction changes, use a realistic independent consumer exercise before and after editing, with the same raw request and artifacts. Judge task boundaries, ordering and evidence decisions; a structural/link test alone cannot prove an agent follows prose. Record compensated old-policy behavior honestly rather than manufacturing a failing baseline.
 
 ## Record evidence
 

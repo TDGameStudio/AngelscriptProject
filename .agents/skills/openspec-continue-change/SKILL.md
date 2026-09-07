@@ -12,6 +12,8 @@ description: Create the next missing planning artifact for an active project Ope
 5. If the accepted handoff contains `Exploration Carryover`, process it once only after the Change exists. Load the [attachment contract](../openspec/references/attachments.md) and [knowledge contract](../openspec/references/knowledge.md) only for qualifying candidates: index non-obvious decision rationale/visuals in `attachments/talks/`, index reusable evidence-backed insights/visuals in `attachments/knowledges/`, and discard temporary round state or transcript prose. This does not relax the one-workflow-artifact step.
 6. Run strict change validation and report the next ready artifact.
 
+When writing tasks, read the [Task authoring contract](../openspec/references/tasks.md), not just the template's checkbox syntax. Plan independently testable feature groups with concrete cases, expected failures, interfaces and completion evidence. Keep related tests and implementation together, then use the [verification policy](../harness/references/verification.md) to schedule grouped RED/GREEN. Strict structural validation alone does not prove the task is ready for a zero-context implementer.
+
 ```text
 status -> instructions -> one concrete artifact -> strict validate
 ```

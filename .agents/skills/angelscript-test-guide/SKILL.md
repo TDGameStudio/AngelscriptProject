@@ -7,11 +7,26 @@ description: Use when implementing, extending, or refactoring AngelscriptProject
 
 Use this skill as the quick execution guide for writing or refactoring C++ automation tests in `AngelscriptProject`.
 
-The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests go in `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/`, use Unreal Automation directly, and register beneath `Angelscript.UnitTest.<Area>.<Scenario>`. The physical `NewVersion` name is temporary and must not appear in public test identities.
+The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests go in `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/` and register beneath `Angelscript.UnitTest.<Area>.<Scenario>`. They may use plain Unreal Automation or the isolated NativeEngine CQTest pattern below; the physical `NewVersion` name is temporary and must not appear in public test identities.
 
 Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT. The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
-The CQTest guidance below describes the quarantined legacy corpus. Treat it as recovery/reference material unless a later explicit OpenSpec Change restores that framework; it is not the default for new reconstruction tests.
+## Replacement NativeEngine CQTest Rules
+
+- Use CQTest only as an explicitly included UE assertion and registration library under `WITH_ANGELSCRIPT_TESTS`; do not enable `WITH_ANGELSCRIPT_UNITTESTS` or inherit the legacy force include.
+- Put shared replacement-only fixtures in `NewVersion/NativeEngine/NativeEngineTestSupport.h`. Keep them limited to locally owned inputs and observations; do not construct an ambient `asCScriptEngine`, `FAngelscriptEngine`, or legacy engine pool.
+- CQTest composes `<TestDir>.<ClassName>.<MethodName>`. Use `Angelscript.UnitTest.NativeEngine` as `TestDir`, the exact area token such as `Foundation` as the unprefixed C++ class identifier, and each `TEST_METHOD` as the scenario token.
+- Include `CQTest.h` explicitly in each test translation unit. Keep scenario flow and matcher assertions in the method, and clean up method-owned state deterministically.
+- After an incremental Harness editor build, run one exact `Angelscript.UnitTest.NativeEngine.<Area>` prefix with `Fast = $true`. Treat the Automation report's complete paths, counts, warnings/errors, and process exit as the public-identity oracle.
+
+## CQTest numeric assertions (replacement and legacy)
+
+- `AreEqual` and `AreNotEqual` reject floating-point operands with a compile-time assertion. Use `ASSERT_THAT(IsNear(Expected, Actual, Epsilon))` for approximate numeric results; choose the tolerance from the tested contract rather than merely making a failure disappear.
+- When exact numeric equality is the intended contract, use `ASSERT_THAT(IsTrue(Expected == Actual))` and explain why exactness is justified. For example, literal-decoding fixtures `0.5`, `1.0`, `0.25` and `100.0` are exactly representable; they should not lose their exact-value proof just to satisfy CQTest's matcher API.
+- Exact numeric equality is not bitwise identity (for example, signed zero). If the contract concerns representation, compare the explicit representation instead. Do not cast floating values to integers or suppress compiler diagnostics to bypass the matcher restriction.
+- Local authority: the selected engine's `Engine/Source/Developer/CQTest/Public/Assert/NoDiscardAsserter.inl` (`AreEqual`, `AreNotEqual`, `IsNear`), checked against UE 5.8. Confirm the implementation again if the engine or assertion library changes.
+
+The remaining CQTest guidance describes the quarantined legacy corpus. Treat its force include, `ASTEST_*`, engine lifecycle, and test organization as recovery/reference material, not as defaults for reconstruction tests.
 
 ## Legacy CQTest Rules
 

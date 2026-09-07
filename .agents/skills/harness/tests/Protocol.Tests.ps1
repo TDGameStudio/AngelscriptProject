@@ -400,6 +400,7 @@ function Test-ActiveImplementationIssueGate {
         $attachmentRoot = $implementationRoot.Parent.FullName
         $indexPath = Join-Path $attachmentRoot 'INDEX.md'
         $indexText = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/') } else { '' }
+        $indexLines = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { @(Get-Content -LiteralPath $indexPath) } else { @() }
         if ([string]::IsNullOrWhiteSpace($indexText)) { $issues += "issue-index: $attachmentRoot requires INDEX.md" }
         foreach ($directory in @(Get-ChildItem -LiteralPath $implementationRoot.FullName -Directory)) {
             $issues += "issue-nested-directory: $($directory.FullName) is not allowed"
@@ -408,7 +409,7 @@ function Test-ActiveImplementationIssueGate {
             $issues += @(Test-ImplementationIssueFile -File $file)
             if (-not [string]::IsNullOrWhiteSpace($indexText)) {
                 $relative = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
-                $indexCount = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
+                $indexCount = Get-ExactAttachmentIndexEntryCount -IndexLines $indexLines -RelativePath $relative
                 if ($indexCount -ne 1) { $issues += "issue-index-entry: $($file.Name) must appear in INDEX.md exactly once (actual $indexCount)" }
             }
         }
@@ -434,6 +435,39 @@ function Test-ImplementationIssueClosureGate {
     return $issues
 }
 
+function Get-ExactAttachmentIndexEntryCount {
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string[]]$IndexLines,
+        [Parameter(Mandatory = $true)][string]$RelativePath
+    )
+
+    $expectedPath = $RelativePath.Replace('\', '/')
+    $count = 0
+    foreach ($rawLine in $IndexLines) {
+        $line = $rawLine.Replace('\', '/')
+        $tableEntry = [regex]::Match($line, '^[ \t]*\|[ \t]*`(?<path>[^`\r\n]+)`[ \t]*\|')
+        $bulletEntry = [regex]::Match(
+            $line,
+            '^[ \t]*[-*][ \t]+(?:`(?<inline>[^`\r\n]+)`|\[[^\]\r\n]*\]\((?<link>[^)\r\n]+)\)|(?<bare>[^ \t\r\n]+))(?:[ \t]+.*)?$'
+        )
+        if (-not $tableEntry.Success -and -not $bulletEntry.Success) { continue }
+        $indexedPath = if ($tableEntry.Success) {
+            $tableEntry.Groups['path'].Value
+        }
+        elseif ($bulletEntry.Groups['inline'].Success) {
+            $bulletEntry.Groups['inline'].Value
+        }
+        elseif ($bulletEntry.Groups['link'].Success) {
+            $bulletEntry.Groups['link'].Value
+        }
+        else {
+            $bulletEntry.Groups['bare'].Value
+        }
+        if ($indexedPath -ceq $expectedPath) { $count++ }
+    }
+    return $count
+}
+
 function Test-AttachmentIndexCompatibility {
     param([Parameter(Mandatory = $true)][string]$ChangeRoot)
 
@@ -447,10 +481,9 @@ function Test-AttachmentIndexCompatibility {
 
     $indexLines = @(Get-Content -LiteralPath $indexPath)
     if ($indexLines.Count -gt 120) { $issues += "attachment-index-size: $ChangeRoot has $($indexLines.Count) lines" }
-    $indexText = (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/')
     foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot -Recurse -File | Where-Object { $_.FullName -ne $indexPath })) {
         $relative = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
-        $count = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
+        $count = Get-ExactAttachmentIndexEntryCount -IndexLines $indexLines -RelativePath $relative
         if ($count -ne 1) { $issues += "attachment-index-entry: $ChangeRoot must index '$relative' exactly once (actual $count)" }
     }
     return $issues
@@ -634,6 +667,62 @@ foreach ($kind in @('`completed`', '`abandoned`', '`superseded`')) {
 Assert-Contains $closureProtocol 'does not merge specs, merge Git branches, push, remove a worktree' 'Archive is separate from integration and removal'
 foreach ($token in @('Material threshold', 'One root cause', 'Failure Evidence (RED)', 'Resolution Evidence (GREEN)', 'What This Proves', 'What This Does Not Prove', 'Do not record')) {
     Assert-True ($implementationProtocol.Contains($token)) "Implementation issue protocol is missing: $token"
+}
+
+$attachmentIndexFixtureRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine(
+    [System.IO.Path]::GetTempPath(),
+    ('harness-attachment-index-{0}' -f [guid]::NewGuid().ToString('N'))
+))
+$attachmentIndexTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+Assert-True ($attachmentIndexFixtureRoot.StartsWith($attachmentIndexTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) 'Attachment INDEX fixture escaped the system temp directory'
+try {
+    $fixtureAttachments = Join-Path $attachmentIndexFixtureRoot 'attachments'
+    $fixtureKnowledges = Join-Path $fixtureAttachments 'knowledges'
+    [void](New-Item -ItemType Directory -Path $fixtureKnowledges -Force)
+    $fixtureRelativePath = 'knowledges/clang-source-provenance.md'
+    [System.IO.File]::WriteAllText(
+        (Join-Path $fixtureKnowledges 'clang-source-provenance.md'),
+        '# fixture attachment',
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $fixtureIndexPath = Join-Path $fixtureAttachments 'INDEX.md'
+
+    $validIndexEntries = @(
+        "# INDEX`n`n- $fixtureRelativePath - bare path entry.`n",
+        "# INDEX`n`n- ``$fixtureRelativePath`` - inline-code path entry.`n",
+        "# INDEX`n`n- [Clang source provenance]($fixtureRelativePath) - Markdown link entry.`n"
+    )
+    foreach ($validIndex in $validIndexEntries) {
+        [System.IO.File]::WriteAllText($fixtureIndexPath, $validIndex, [System.Text.UTF8Encoding]::new($false))
+        Assert-Equal 0 @(Test-AttachmentIndexCompatibility -ChangeRoot $attachmentIndexFixtureRoot).Count 'bare, inline-code, and Markdown-link attachment entries each index one exact path'
+    }
+
+    $suffixAndProseIndex = @"
+# INDEX
+
+- ``$fixtureRelativePath`` - the one attachment entry.
+
+The attachment $fixtureRelativePath is promoted after closure.
+- ``openspec/specs/angelscript/language/frontend/source-diagnostics/$fixtureRelativePath`` - durable knowledge location, not another attachment entry.
+"@
+    [System.IO.File]::WriteAllText($fixtureIndexPath, $suffixAndProseIndex, [System.Text.UTF8Encoding]::new($false))
+    Assert-Equal 0 @(Test-AttachmentIndexCompatibility -ChangeRoot $attachmentIndexFixtureRoot).Count 'prose and a longer path with the same suffix do not duplicate an exact attachment entry'
+
+    $duplicateIndex = "# INDEX`n`n- ``$fixtureRelativePath```n- [$fixtureRelativePath]($fixtureRelativePath)`n"
+    [System.IO.File]::WriteAllText($fixtureIndexPath, $duplicateIndex, [System.Text.UTF8Encoding]::new($false))
+    $duplicateIssues = @(Test-AttachmentIndexCompatibility -ChangeRoot $attachmentIndexFixtureRoot)
+    Assert-Equal 1 $duplicateIssues.Count 'two exact attachment entries remain invalid'
+    Assert-Contains $duplicateIssues[0] 'actual 2' 'duplicate attachment entries report the exact entry count'
+
+    [System.IO.File]::WriteAllText($fixtureIndexPath, "# INDEX`n", [System.Text.UTF8Encoding]::new($false))
+    $missingIssues = @(Test-AttachmentIndexCompatibility -ChangeRoot $attachmentIndexFixtureRoot)
+    Assert-Equal 1 $missingIssues.Count 'a missing attachment entry remains invalid'
+    Assert-Contains $missingIssues[0] 'actual 0' 'missing attachment entries report zero exact entries'
+}
+finally {
+    if (Test-Path -LiteralPath $attachmentIndexFixtureRoot) {
+        Remove-Item -LiteralPath $attachmentIndexFixtureRoot -Recurse -Force
+    }
 }
 
 $archiveCompatibilityIssues = @()
@@ -966,6 +1055,23 @@ It does not prove unrelated OpenSpec CLI behavior.
     Assert-Equal 0 @(Test-ImplementationIssueFile -File (Get-Item -LiteralPath $validIssuePath)).Count 'valid material implementation issue passes'
     Assert-Equal 0 @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot).Count 'valid active implementation issue and INDEX pass'
     Assert-Equal 0 @(Test-ImplementationIssueClosureGate -ChangeRoot (Join-Path $issueFixtureRoot 'fixture\sample')).Count 'resolved v2 material issue passes the closure gate'
+
+    $issueSuffixAndProseIndex = @"
+# INDEX
+
+- ``implementation/$validIssueName`` - the one material issue entry.
+
+The issue implementation/$validIssueName is discussed here without creating an index entry.
+- ``openspec/archive/changes/fixture/sample/attachments/implementation/$validIssueName`` - a longer durable path, not another local entry.
+"@
+    [System.IO.File]::WriteAllText((Join-Path $fixtureAttachmentRoot 'INDEX.md'), $issueSuffixAndProseIndex, [System.Text.UTF8Encoding]::new($false))
+    Assert-Equal 0 @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot).Count 'active issue indexing uses the same exact-entry boundary as attachment compatibility'
+
+    $duplicateIssueIndex = "# INDEX`n`n- ``implementation/$validIssueName```n- [material issue](implementation/$validIssueName)`n"
+    [System.IO.File]::WriteAllText((Join-Path $fixtureAttachmentRoot 'INDEX.md'), $duplicateIssueIndex, [System.Text.UTF8Encoding]::new($false))
+    $duplicateIssueProblems = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot $issueFixtureRoot)
+    Assert-Equal 1 @($duplicateIssueProblems | Where-Object { $_ -like 'issue-index-entry:*actual 2*' }).Count 'duplicate active issue entries remain invalid with their exact count'
+    [System.IO.File]::WriteAllText((Join-Path $fixtureAttachmentRoot 'INDEX.md'), $fixtureIndex, [System.Text.UTF8Encoding]::new($false))
 
     $legacyIssue = $validIssue -replace '(?m)^issue_schema: openspec-material-issue-v2\r?\n', ''
     [System.IO.File]::WriteAllText($validIssuePath, $legacyIssue, [System.Text.UTF8Encoding]::new($false))

@@ -2,6 +2,8 @@
 
 Replan only when verified evidence makes the current plan false: a requirement or design boundary changed, a task dependency became invalid, a verification contract is wrong, or a required artifact no longer represents current truth. A user idea, agent discovery, subagent report, or review finding is evidence to triage—not an automatic Replan.
 
+A pending task whose concrete scope now contains independently acceptable products, hidden prerequisite interfaces or a proving command that cannot cover its outcome has an invalid task boundary. Repeated independently verified partial deliveries under one permanently pending node are evidence to inspect that boundary, not a numeric trigger. Split the remaining outcomes, preserve completed work and map existing evidence without claiming it proves newer code. Shared files constrain scheduling; do not invent dependency edges solely to order writers. Ordinary failed assertions and routine RED/GREEN remain task-local.
+
 ## Apply atomically
 
 1. Capture `base_commit`, the current `tasks.md` SHA-256, affected `git status`, and diff stat.

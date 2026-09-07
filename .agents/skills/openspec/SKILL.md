@@ -23,7 +23,7 @@ Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('list'
 
 One context selects one explicit or discovered `WorkspaceRoot`. A Codex `/goal` invocation may continue the work unattended, but it is not a repository mode, branch convention, or alternate OpenSpec lifecycle.
 
-Routes are `openspec.init|doctor|status|instructions|validate|domain|spec|change|workflow|completion`. Never invoke bare `openspec`, `npx @fission-ai/openspec`, or a `target/` build for project operations. Direct EXE invocation is reserved for package self-test and release verification.
+Routes are `openspec.init|doctor|status|instructions|validate|domain|spec|change|workflow|completion`. Never invoke bare `openspec`, `npx @fission-ai/openspec`, or a `target/` build for project operations. Direct EXE invocation is reserved for package self-test, release verification, and the `Tools/harness-web` product's fixed read-only adapter. That adapter uses the selected workspace as cwd, the packaged executable, bounded argument-array calls, and only `doctor`, domain/spec/change list/show, `status`, and `instructions apply` JSON queries. It never exposes arbitrary commands, launches PowerShell, or changes ordinary agent routing.
 
 ## Command lookup
 

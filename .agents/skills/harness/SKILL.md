@@ -42,7 +42,7 @@ Ready task uncertainty          -> lightweight investigation -> implement or evi
 ## Execute the work
 
 1. Resolve the selected workspace and, when a Change exists, call `task.status` to choose a node whose derived `ready` field is true.
-2. Read only the task's linked context. Implement the smallest complete slice, run its exact verification, and preserve useful evidence.
+2. Read only the task's linked context. Confirm its bounded feature outcome and executable test cases, then use grouped RED/GREEN from the verification policy. Implement the smallest complete slice and retain exact task-to-case evidence, including any valid shared proving run.
 3. Mark the task complete only after verification passes. Never uncheck completed work; add a follow-up node when new work is required.
 4. After verification, Replan autonomously only when evidence invalidates accepted planning truth. Ordinary implementation uncertainty and local defects stay inside the task.
 5. Otherwise proceed directly to closure or archive. Harness never starts an Incident or Final Review on its own and completion needs no Review classification.
