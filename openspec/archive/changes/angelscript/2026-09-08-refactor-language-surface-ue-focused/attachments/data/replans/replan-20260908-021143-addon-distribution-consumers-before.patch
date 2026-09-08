@@ -1,0 +1,11 @@
+--- tasks.md.after
++++ tasks.md.before
+@@ -117,7 +117,7 @@
+ ## 4. Library distribution
+ 
+ - [ ] 4.1 Remove upstream add-on packages and their dedicated dependency chain — verify: `python Plugins/Angelscript/Standalone/Tests/CheckRemovedAddons.py`
+-  > Files: `Plugins/Angelscript/Standalone/ThirdParty/AngelScriptAddons/**`, `Plugins/Angelscript/Standalone/CMakeLists.txt`, `Plugins/Angelscript/Standalone/Source/**`, `Plugins/Angelscript/Standalone/Tests/**`, `Plugins/Angelscript/Standalone/README*`, `Plugins/Angelscript/Standalone/docs/**`, `Plugins/Angelscript/Standalone/SUPPORT_MATRIX.md`, `Plugins/Angelscript/Standalone/ThirdParty/README.md`, `Plugins/Angelscript/Standalone/Examples/Native/hello.as`
++  > Files: `Plugins/Angelscript/Standalone/ThirdParty/AngelScriptAddons/**`, `Plugins/Angelscript/Standalone/CMakeLists.txt`, `Plugins/Angelscript/Standalone/Source/**`, `Plugins/Angelscript/Standalone/Tests/**`, `Plugins/Angelscript/Standalone/README*`, `Plugins/Angelscript/Standalone/docs/**`
+ 
+   Scope is the four removed packages and exact package-dependent includes, link targets, registrations, runtime/runner operations, fixtures and documented distribution claims. Keep unrelated standalone architecture/CLI adapters. Produce CheckRemovedAddons.py as a bounded read-only audit with explicit ignored build/output directories, self-exclusion and documented historical exclusions. It checks package absence and forbidden dependency symbols/paths in retained nonhistorical manifests/source/tests/docs; it does not reject arbitrary host array/string/math identifiers. No standalone build revival or substitute library is included.
+ 

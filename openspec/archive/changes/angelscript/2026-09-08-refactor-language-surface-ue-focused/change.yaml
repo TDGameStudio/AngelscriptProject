@@ -13,3 +13,7 @@ affected_areas:
 - angelscript/language/frontend/bodies
 - angelscript/language/types/definitions
 - angelscript/language/frontend/reflection-dependencies
+archived_at: 2026-09-07T18:41:31Z
+archive_schema: closure-v1
+closure:
+  kind: completed

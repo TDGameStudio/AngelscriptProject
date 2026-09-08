@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_f1588358-7f9a-4e69-a79b-a154cf62d4cb
+  id: angelscript/language/surface
+  title: UE-Focused Language Surface
+  description: Permanent language and host-library boundary with retained runtime safety and host control

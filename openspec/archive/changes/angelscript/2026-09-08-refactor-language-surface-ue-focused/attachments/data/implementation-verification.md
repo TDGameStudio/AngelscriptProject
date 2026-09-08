@@ -1,0 +1,1143 @@
+# Implementation verification
+
+## Current product proof
+
+Verified on 2026-09-08 in the selected AngelscriptProject workspace. Plugin base commit: `eae823bb`; parent base: `62d15e1a`. Product changes remain uncommitted. Unrelated parent changes are preserved; no worktree, merge, push or engine-source patch was performed.
+
+Harness build `c876f6a9bb6f459abbf07188970df08b` succeeded (4 actions, exit 0). NativeEngine run `7aed02a253bb44e58de9630011901219` discovered and executed 968 unique identities: 968 Success, zero failed/not-run/in-process and zero succeeded-with-warnings. Source writers were frozen during build/test. The snapshot digest and all seven DLL hashes matched before and after NativeEngine.
+
+```powershell
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot (Get-Location).Path
+Invoke-Harness -Command ue.build -Context $context -Parameters @{ Target='AngelscriptProjectEditor'; Platform='Win64'; Configuration='Development'; BuildConcurrency='Auto'; ConcurrencyPolicy='Auto'; TimeoutMs=3600000; NoWait=$true }
+Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix='Angelscript.UnitTest.NativeEngine'; Fast=$true; TimeoutMs=600000; NoWait=$true }
+```
+
+The asynchronous dispatch envelope is not a PASS; terminal managed-run status and the complete Automation report supply the outcomes above. The required task selectors are unchanged by NoWait. This final shared run proves tasks 1.1, 1.2, 2.1, 2.2, 3.1 and 5.3 on one current binary; their earlier observed RED/GREEN histories remain in tasks.md.
+
+## Requirement mapping and actual oracles
+
+| Task / durable contract | Final selection and result | Observable evidence |
+|---|---|---|
+| 1.1 / removed syntax, host parameterization, ordinary methods | LanguageSurface.Syntax, 12/12 | Named feature/range diagnostics, following Good declaration, inactive input, host nesting/provider/arity, ordinary getter and Cast controls |
+| 1.2 / Lambda-free AST and retired artifacts | LanguageSurface.Lambda, 9/9; affected Bodies/Builder/Identity/AST regressions | Immediate/stored/capture-list rejection; no origin factory; retired kinds/prior AST format reject; named roundtrip and execution 42 |
+| 2.1 / structured callable SDK | LanguageSurface.CallableSDK, 8/8; VM dispatch/ABI/lease/cache regressions | Old API absence; nominal identity vs structural signature; script and native indirect result 42; mismatch leaves installed callable valid; one receiver destruction |
+| 2.2 / Engine-owned definitions and retained host control | LanguageSurface.SDK, 7/7; full shared runtime regression | Public policy/module/accessor removal; two-file result 7; frozen native provider result 42; suspend/resume/abort/fault cleanup counts and recovery 97 |
+| 3.1 / AS Blueprint accessor metadata | LanguageSurface.Reflection, 8/8 | Direct/nested/case-varied/enum metadata rejects at marker; no publication; ordinary field/method stable descriptors; inactive/unrelated metadata remains valid |
+| 4.1 / upstream distribution cleanup | Python audit, 192 text files, 0 violations; five self-controls PASS | Four packages, exclusive targets, registrations, run operation and dependent claims absent; ordinary host names allowed; Standalone remains dormant |
+| 5.1 / integrated source, bytecode and runtime | NativeEngine, 968/968 | Every full identity below came from the current report; independent producer oracles remain present |
+
+Independent execution routes were inspected and executed, not collapsed into a shared source producer:
+
+- `VMCache.EncodedImageExecutesOnFreshEngineAfterProducerRelease` hand-builds MakeReturn42 bytecode, executes 42, encodes it, releases the producer, decodes/links against independently defined metadata in a fresh Engine and executes 42 again.
+- `VMSourceIntegration.SourceProducedCacheRunsAfterProducerRelease` parses actual class/constructor/member-call source through Builder and the emitter, observes result 7 and native trace [7], then decodes/relinks on a fresh Engine and repeats those values after producer release.
+- `VMWireFormat.EmptyImageMatchesIndependentGoldenAndRejectsV1` retains a byte-level independent golden; `CanonicalOrderRoundtripPreservesContractsFrameAndCleanup` retains wire/frame/source assertions. Its invalid-frame fixture correction is documented in task 1.2; production wire/verification algorithms were not changed for that repair.
+- All existing VM public test identities are preserved. Native ABI, receiver/handle/GC lifetime, stack/fault/Context, link rollback and cache-fingerprint cases remain in the full report.
+
+## SDK and distribution inspection
+
+The maintained-header audits scanned 94 callable SDK headers and 81 policy/Core headers after stripping comments/string literals: zero retired SDK aliases/identifiers in each bounded set. `asOBJ_CALLABLE_TYPE` keeps bit 24 and `asFUNC_CALLABLE_SIGNATURE` keeps ordinal 4. Retained stable witness bytes and VM opcode ordinals were preserved; retired anonymous semantic wire slots remain reserved and AST format is 9.
+
+The exact distribution command `python Plugins/Angelscript/Standalone/Tests/CheckRemovedAddons.py` passes 192 text files and five self-controls. Its prior RED was 103 violations over 201 text files. `--self-test` separately passes. The isolated current CLI parser was compiled with clang++ and executed for three early unsupported-run forms, two compile-profile controls, invalid bundle selection and help absence. This extra smoke is post-change verification, not independent RED evidence or a Standalone build claim.
+
+The separate `angelscript/feature-delegates-ue-interop` tasks explicitly consume this Change's task 2.1 and `asCCallableType` / `CreateCallableType` / `CreateCallableSignature`, and prohibit every Lambda, lexical capture and Lambda-specific Bind/Create/Add interface. Its pending tasks are not completed by this delivery.
+
+## Snapshot identity
+
+The source inventory contains 2,528 sorted entries from tracked and nonignored untracked plugin Source/Standalone/manifest inputs plus host Source/Config/project inputs, restricted to source/config extensions. Missing tracked files remain explicit null digests. Its SHA-256 hashes the compact UTF-8 JSON sourceFiles array (ordinal forward-slash paths, per-file raw-byte SHA-256). The local raw inventory is `Saved/product-identity.json`; it is auxiliary evidence, not a committed snapshot or a Review reference.
+
+Source SHA-256: `b5ac33b9a0d3501aabec674ddb8b768f601d847b87962378c24228a37d01104a`.
+
+NativeEngine raw report SHA-256: `3e17040af9d1778ad133bca850fb19da1aeef6f46eb93cb10ef971b4895a7068`.
+
+| Binary path | SHA-256 |
+|---|---|
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptEditor.dll` | `db8e1855484dc0dc1cb93fa360c378e0646e44d52014328098b29375bc4568c3` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptRuntime.dll` | `80940eb21ee8df737fc343ff4ace0b06a0c7a59b7b5b29ddf22c2f4ae1ae14a9` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTest.dll` | `e6ab674fdb73d8ed97e9b1a9978e5e07c3cbc276f5b77967c0d26787fc0d9338` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTestJIT.dll` | `cfdf21047d6d536eb78aa3b7f467d9f852025a1a4b5f5ed094818231dab3ab38` |
+| `Binaries/Win64/UnrealEditor-AngelscriptJIT.dll` | `2d432178b0d8c4c6a45e998e93d4699391eed0eda954fca2f156ed29b3b43c51` |
+| `Binaries/Win64/UnrealEditor-AngelscriptProject.dll` | `8d94fe09eab6788c1491f184fa051ec72df2f1ae6e6d79e42a95908600197a4f` |
+| `Binaries/Win64/UnrealEditor-AngelscriptProjectTest.dll` | `376724549b5fc3fe3ef2fd0acaa2a8bb366dbcd79472dcf4241990a6a394ff70` |
+
+## Deliberately migrated test identities
+
+Fifteen prior public identities were specific to removed anonymous syntax/origins. Their replacements retain explicit rejection or named-function identity/lease/parallel controls. The nine BodiesLambdas cases and the defaults case reject removed authoring; two Builder and three ImplicitFunctionDefinitions cases use named or reserved-kind contracts. No VM identity is retired.
+
+Retired identities:
+
+- `Angelscript.UnitTest.NativeEngine.BodiesCallContext.ImmediateLambdaInDefaultsMayCallDefaultsOnly`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.CapturedLambdaCannotEscapeIntoStoredDelegate`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ContextualDelegateProvidesUntypedParameterSignature`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.DefaultAndBodyOriginsRemainDistinctFromNestedOrigins`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ImmediateInvocationInfersActualParameterAndReturnTypes`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ImmediateInvocationRetainsExplicitOuterCapture`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.InconsistentInferredReturnsAreRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.NamespaceAndMethodLambdaRetainLexicalIdentityAndThisCapture`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.SeparateLambdaOriginsDoNotMergeIdenticalSignatures`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.TypedLambdaCannotMasqueradeAsDifferentContextualSignature`
+- `Angelscript.UnitTest.NativeEngine.Builder.ParallelLambdaBodiesKeepTheSameActualFunctionKeysAndObservations`
+- `Angelscript.UnitTest.NativeEngine.Builder.ParsedLambdaPublishesAnActualFunctionWithAnImageOwnedOrigin`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.ActualLambdaFunctionRegistersWithSamePointerAndRetainsItsOrigin`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.LexicalOriginAndOrdinalAreStableWithoutFabricatedNames`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.MissingForeignOrWrongRoleOriginCannotAcquireAFunctionIdentity`
+
+Replacement identities in the existing files:
+
+- `Angelscript.UnitTest.NativeEngine.BodiesCallContext.ImmediateAnonymousFunctionInDefaultsIsRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.AnonymousReturnInferenceIsRemoved`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ContextualDelegateDoesNotAdmitAnonymousFunction`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.DefaultAndNestedAnonymousOriginsAreRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ImmediateAnonymousInvocationIsRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.ImmediateOuterCaptureIsRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.MethodAnonymousThisCaptureIsRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.MultipleAnonymousOriginsAreRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.StoredCapturedAnonymousFunctionIsRejected`
+- `Angelscript.UnitTest.NativeEngine.BodiesLambdas.TypedAnonymousFunctionIsRejected`
+- `Angelscript.UnitTest.NativeEngine.Builder.NamedFunctionRetainsItsImageAndNamespaceAfterBuilderRelease`
+- `Angelscript.UnitTest.NativeEngine.Builder.ParallelNamedBodiesKeepTheSameActualFunctionKeysAndObservations`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.NamedFunctionIdentityRemainsStableAcrossContexts`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.NamedFunctionRegistersWithSamePointerAndRetainsItsDefinition`
+- `Angelscript.UnitTest.NativeEngine.ImplicitFunctionDefinitions.RetiredAnonymousKindCannotAcquireAFunctionIdentity`
+
+## Restored discovery and prior snapshot
+
+Two process-global CQTest class registrations used BodiesControlFlow, despite different C++ namespaces. The initial NativeEngine run `d8a6408a76894173b17110dbfa9bddd4` therefore executed 960 cases and suppressed eight BodySemanticTests.cpp methods. The same startup warning in original Syntax RED run `762f7a5565c34fa0aef0ba119b5b4ffd` proves the defect predated this implementation. This gap was found and repaired before closure.
+
+Task 5.3 changed exactly one C++ class identity to BodiesStructuredControlFlow. Fixtures and assertions are unchanged. The final report executes that family's eight methods, the existing twelve BodiesControlFlow methods and every prior VM/LanguageSurface identity. The startup duplicate-registration warning is absent, and a static scan of 102 replacement CQTest class names finds no duplicate. The explicit eight-method discovery check observed eight missing executions before repair and zero after repair.
+
+The initial build was `2a202695a1454e81854ebd2f5c882a75`; source digest was `ddbfad765918e904cb8b88f5df085b51ca94cb6a7795610d5a4ed0829b883433`. Initial NativeEngine report SHA-256: `cb1150f95d46f036e6740c6b402c9951803ff479af76314c0cc07c171c59e456`. Its 960 executed identities are exactly the final list below excluding BodiesStructuredControlFlow. These prior results remain historical individual-case proof and are superseded by the current final snapshot for completion.
+
+Initial binary hashes:
+
+| Binary path | SHA-256 |
+|---|---|
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptEditor.dll` | `db8e1855484dc0dc1cb93fa360c378e0646e44d52014328098b29375bc4568c3` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptRuntime.dll` | `80940eb21ee8df737fc343ff4ace0b06a0c7a59b7b5b29ddf22c2f4ae1ae14a9` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTest.dll` | `229839d75f35aef2f23e4e6d8cfab3d8f51a1c67456947bbad4206801e13c720` |
+| `Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTestJIT.dll` | `cfdf21047d6d536eb78aa3b7f467d9f852025a1a4b5f5ed094818231dab3ab38` |
+| `Binaries/Win64/UnrealEditor-AngelscriptJIT.dll` | `2d432178b0d8c4c6a45e998e93d4699391eed0eda954fca2f156ed29b3b43c51` |
+| `Binaries/Win64/UnrealEditor-AngelscriptProject.dll` | `8d94fe09eab6788c1491f184fa051ec72df2f1ae6e6d79e42a95908600197a4f` |
+| `Binaries/Win64/UnrealEditor-AngelscriptProjectTest.dll` | `376724549b5fc3fe3ef2fd0acaa2a8bb366dbcd79472dcf4241990a6a394ff70` |
+
+## Final startup proof and warning boundary
+
+```powershell
+Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix='Angelscript.UnitTest.Baseline'; Fast=$true; TimeoutMs=600000; NoWait=$true }
+```
+
+Baseline run `ee999f8fc1804143afd027ef98f43a3a` used the same final binary, with no intervening source changes. Source inventory and all seven DLL hashes matched before and after both final runs. Managed exit 0; three unique cases executed Success, zero failed/skipped/in-process. The report classifies two clean successes and one success with warnings:
+
+| Exact public identity | State | Warning events | Actual invariant |
+|---|---|---|---|
+| Angelscript.UnitTest.Baseline.RuntimeDormantByDefault | Success | 0 | Legacy activation false; subsystem shell exists but owns no Engine, cannot tick or initialize an Engine; no ambient Engine |
+| Angelscript.UnitTest.Baseline.OptionalIntegrationsDormantByDefault | Success | 0 | Zero legacy JIT providers/engine extensions; no StaticJIT refresh console command |
+| Angelscript.UnitTest.Baseline.LegacySuiteExcludedByDefault | Success | 2436 | Legacy TestModule/CppTests/Editor prefixes absent from actual test enumeration |
+
+All 2,436 recorded warning events are `LogMetaSound: Failed to register automation test tags for test ...`, emitted while the last case enumerates UE's full test registry. They are retained accurately, not suppressed or counted as errors. The initial Baseline run `1b52d12c25054c98a9795208d6316bc6` had the same three successes and warning category/count.
+
+Unreal.log reports `[RuntimeStartup] Legacy runtime is disabled; module remains dormant.` Editor StartupModule's existing hard gate returns before legacy services and directory watchers register. This combines real startup assertions with direct startup-path inspection; it does not claim a new watcher introspection test. Other engine startup warnings (deprecated optional-plugin config and existing Python exposed-name collisions) are outside the test-event counters and were not modified by this change.
+
+Baseline report SHA-256: `a0608125c44e60ef51dd9107f9c24630d3f46bd535c03843915dea5ddd4537a7`.
+
+## Verification scope and deliberate omissions
+
+- UE 5.8 Editor Development build plus the entire NativeEngine selector were required by shared AST/identity/fingerprint/ABI/linker/GC/Context impact. All 968 discovered cases executed; the eight-case discovery gap was repaired before completion.
+- Baseline was separately selected to prove dormant startup on the same final binary. Its 2,436 warnings are documented above.
+- Standalone CMake build, CTest and package execution were omitted because that tooling still references retired SDK paths/interfaces and build restoration is an explicit non-goal. The source audit and isolated parser smoke certify their bounded outcomes only.
+- JIT execution, delegate interop, full UE Automation, cooked/packaged targets, performance and unrelated Harness Quick/Integration suites were omitted: no such runtime feature, performance contract or Harness implementation changed. Compiling dormant direct consumers does not activate or certify them.
+- `git diff --check` passed for the plugin using its configured newline handling. Unrelated parent edits are preserved. No fresh broad rerun is required for later specification/archive-only changes.
+
+No standalone runtime, delegate payload feature, UE materialization, engine patch or legacy startup restoration is claimed. Durable source/runtime permissions and removals belong to the six synchronized language capabilities. There is no new capability knowledge candidate: the reusable decision is the durable language boundary, while the test-registration issue remains indexed implementation evidence.
+
+## Completion and specification checks
+
+Final doctor `f0d8fed93c884c2aac0eabab1ed18f13`, strict Change validation `685ab2a74ea847f0952a9c32e99edbc9` and TaskPlan validation passed with ten complete nodes. The missing current surface capability was created through Harness/OpenSpec (`181f1001338f48279c226cdf758429fe`). Strict current-spec validation `e168714b2fc24a93952553b1710512e9` passed after synchronization.
+
+Eleven added requirements and 22 complete Scenario Cards were merged into six current capabilities. Existing requirements/scenarios and all clause-owned content were preserved; added cards match their delta byte-for-byte after newline normalization. No delta operation header remains in current specs.
+
+| Current capability | Added requirements | Added scenarios | Current text SHA-256 (UTF-8 LF) |
+|---|---|---|---|
+| `angelscript/language/ast/core` | 1 | 2 | `52aa4e067318bcb672aa6f70d529a9e14747f282fe9d57e076abe06bde9bd795` |
+| `angelscript/language/frontend/bodies` | 1 | 2 | `98cd116186054a9e279f64af1cb21c842f133e851549747376a6e73f5f1f85dc` |
+| `angelscript/language/frontend/declarations` | 2 | 3 | `5763f393a64ec66e4ad136677a1d9ffe025e0fb4154f002103b1e466a90e74dc` |
+| `angelscript/language/frontend/reflection-dependencies` | 1 | 3 | `6bc7f663d757bc70b9fc6740754967455929e178aecae6fa32fe227fa2f6bb08` |
+| `angelscript/language/surface` | 4 | 8 | `f5c9109ef61e6d57deb81fea30d3643771b56fa9346ec71f1d775fb38f037d1a` |
+| `angelscript/language/types/definitions` | 2 | 4 | `5dceba2fef4c9eef2c995cf8bad5f6b541423d6bbc82cc57496395b16209f2ec` |
+
+The closing Change ID is not used as a reusable Harness script/test default fixture (bounded source search returned no references). There are no accepted performance aggregates or knowledge candidates requiring promotion. The one admitted material issue is resolved; implementation evidence retains its actual failure and repaired discovery. Terminal evolution uses the indexed current-input evaluation; post-move proof uses strict archived validation and a read-only lookup of the archived record, without rerunning unchanged product tests.
+
+## Final executed identities
+
+All following names have the prefix `Angelscript.UnitTest.NativeEngine.` and the actual report state **Success**. There are 968 unique entries, including all 44 LanguageSurface methods and all eight BodiesStructuredControlFlow methods.
+
+```text
+ASTCodec.AuthoredTypeSyntaxAndNestedAttributePayloadRoundTrip
+ASTCodec.ByteAndEdgeBudgetsRejectBeforePublishingAnyRecord
+ASTCodec.CorruptIndicesAndTruncationFailClosed
+ASTCodec.DecodeBudgetsAreEnforcedBeforePublication
+ASTCodec.DecodedIdentityRequiresAnExplicitMatchingRegistry
+ASTCodec.EnumInitializerStateAndSourceRoundTrip
+ASTCodec.EveryTruncatedFixedKeyRecordClearsPreviousOutput
+ASTCodec.ExpressionPayloadSemanticTypeAndOperatorRangeRoundTrip
+ASTCodec.FixedIdentitySurvivesSourceAndContextDestruction
+ASTCodec.InitializerListAndValueInitializationRoundTripTypedBinding
+ASTCodec.MultiForRoundTripPreservesExactPhaseBoundaries
+ASTCodec.OldAndUnknownVersionsFailWithoutPartialOutput
+ASTCodec.ProjectionAndCodecRoundTripDeterministically
+ASTCodec.ProjectionPreservesSourceAnchorsAndOwningOrder
+ASTCodec.ProjectionRejectsUnownedIdentityBeforePublishingRecords
+ASTCodec.ReversedSourceRangeDoesNotSurviveDecode
+ASTCodec.StringLiteralAndCallSourceMappingRoundTrip
+ASTCodec.SwitchRoundTripPreservesClauseOrderAndTypedTransferTargets
+ASTCodec.TypeProjectionCarriesTypedPayloadAndFixedIdentity
+ASTCodec.TypedBuiltinPayloadMustAuthenticateAgainstItsRetainedIdentity
+ASTCodec.UnknownConcreteKindAndTrailingDataFailClosed
+ASTCodec.V7AccessAndUserConversionRoundTripPreservesAuthoredSemantics
+ASTCodec.V7AccessPayloadRejectsTagEnumRangeAndNestedBudgetCorruption
+ASTCodec.V7UserConversionRejectsAdmittedTypeUseKeyInFunctionSlot
+ASTCodec.V7UserConversionRejectsModeCrossRoleAndIndexCorruption
+ASTCodec.VerificationFailureCannotSealOrPublishMismatchedTypeIdentity
+ASTCodec.WrongPayloadAlternativeAndInvalidExpressionEnumFailClosed
+ASTContext.CallableSignatureKeyCannotDisguiseDifferentParameterTypes
+ASTContext.CallableSignatureKeyCannotDisguiseParameterPassingMode
+ASTContext.CanonicalBuiltinTypesAreUniquedPerContext
+ASTContext.CanonicalNominalGenericAndCallableTypesAreUniquedPerContext
+ASTContext.CastsAreNullAwareAndFamilyChecked
+ASTContext.ContextOwnsStableNodeAddresses
+ASTContext.ContextOwnsTheSourceSnapshotLease
+ASTContext.ContextRetainsItsExplicitCanonicalOwner
+ASTContext.HandlesAreOwnerChecked
+ASTContext.IndependentWorkersShareSynchronizedAllocationAndBuiltinUniquing
+ASTContext.KnownKeyCannotDisguiseAnotherBuiltinPrimitive
+ASTContext.NominalUseCannotNameAnotherDeclarationKey
+ASTContext.SealIsOneWayAndRejectsMutation
+ASTContext.SharedRegistryDoesNotAuthorizeBorrowingForeignASTTypeNodes
+ASTContext.SharedTypeContextSharesIdentityButNotASTNodeAddresses
+ASTControlFlow.ContinueCannotTargetSwitch
+ASTControlFlow.FallthroughMustTargetTheImmediateNextClause
+ASTControlFlow.MultiForOwnsEachPhaseInAuthoredOrder
+ASTControlFlow.SwitchOwnsAuthoredClausesWhileTargetsRemainReferences
+ASTTraversal.DefaultArgumentUsesReferenceParametersValueForm
+ASTTraversal.DeferredInitializerMustBeMaterializedBeforeSealing
+ASTTraversal.MemberAndSubscriptReferencesDoNotOwnTheirDeclarations
+ASTTraversal.NonOwningDeclReferencesDoNotCreateCycles
+ASTTraversal.NullLiteralRequiresAContextualHandleType
+ASTTraversal.OwningTraversalIsDeterministicAndOnceOnly
+ASTTraversal.ParameterOwnsDefaultInitializerWhileDefaultUseOnlyReferencesParameter
+ASTTraversal.QualifiedExpressionTypeIsACompleteSemanticReference
+ASTTraversal.RecoveryNodesCannotSealAPublishableRoot
+ASTTraversal.ReferenceBindingCannotMasqueradeAsAnArbitraryImplicitCast
+ASTTraversal.SharedCanonicalTypesAreSemanticReferencesNotOwningChildren
+ASTTraversal.TypeAliasProjectsAuthoredSyntaxAndSemanticTargetWithoutOwningTheType
+ASTTraversal.VerifierAcceptsAuthoredEmptyValuesAndUnnamedParameters
+ASTTraversal.VerifierRejectsDuplicateCallArgumentSourceOrdinals
+ASTTraversal.VerifierRejectsDuplicateOwningEdges
+ASTTraversal.VerifierRejectsForeignChildrenAndRanges
+ASTTraversal.VerifierRejectsInvalidConcretePayloadAndCrossReferenceTarget
+ASTTraversal.VerifierRejectsLiteralPayloadsThatDisagreeWithSemanticTypes
+ASTTraversal.VerifierRejectsMalformedRecursiveTypeSyntax
+ASTTraversal.VerifierRejectsMissingCallArgumentSourceMapping
+ASTTraversal.VerifierRejectsMissingExpressionSemantics
+ASTTraversal.VerifierRejectsOwningCycles
+ASTTraversal.VerifierRejectsQualifiedTypeAliasTargets
+ASTTraversal.VerifierRejectsUnknownRecordModifierBits
+ASTTypeAndAttr.AuthoredTypeLocationIsSeparateFromCanonicalType
+ASTTypeAndAttr.CanonicalTypeFormsHaveConcretePayload
+ASTTypeAndAttr.ErrorTypeIsExplicitAndNeverAStableIdentity
+ASTTypeAndAttr.OrderedGenericArgumentsRemainStructural
+ASTTypeAndAttr.QualTypeAcceptsOnlyGeneralUseQualifiers
+ASTTypeAndAttr.TypedAttributesPreserveArgumentsRangeAndTargets
+ASTTypedNodes.CheckedCastsRejectWrongFamiliesAndKinds
+ASTTypedNodes.ConcreteDeclsExposeOnlyTheirPayload
+ASTTypedNodes.ConcreteStatementsRetainOrderedChildren
+ASTTypedNodes.DeclContextIsOrthogonalToDeclKind
+ASTTypedNodes.ExpressionsFollowValueStatementLineage
+ASTTypedNodes.RepresentativeNodesDoNotCarryUniversalWidePayload
+AccessDefinitions.ActualDetachedCallerNamesAndNamespacesDrivePermissionUnion
+AccessDefinitions.ActualOwnedPolicyBindsPropertiesAndFunctionsWithoutEngineIds
+AccessDefinitions.ConcurrentOwnedPolicyCreationHasNoEngineOrSharedNameRace
+AccessDefinitions.ExposedMethodObjectTypeMustMatchDeclarationOwner
+AccessDefinitions.FrozenFieldCannotGainAForeignTypeEdge
+AccessDefinitions.FrozenFieldTypeMutationsCannotValidateOrRegister
+AccessDefinitions.FrozenPolicyContentsAndMemberRebindingAreAuthenticated
+AccessDefinitions.InvalidAndDuplicatePoliciesCannotPartiallyPublish
+AccessDefinitions.TamperedFrozenPolicyCannotRegisterWithEngine
+AccessDefinitions.UnownedAndUnrelatedPoliciesCannotBindActualMembers
+BodiesAccess.DefaultsOnlyAndConstructionUnsafeCallsHaveDistinctBoundaries
+BodiesAccess.EditDefaultsOnlyPermissionRequiresAnActualDefaultsContext
+BodiesAccess.EditorOnlyAccessHonorsExplicitTypeContext
+BodiesAccess.InheritedSubjectPermissionFollowsCallerBasesOnlyWhenRequested
+BodiesAccess.NamedCallerTypeAndNamespaceAreIndependentPermissionSubjects
+BodiesAccess.NamedGlobalCallerReceivesReadAndWritePermission
+BodiesAccess.OrdinaryConstructorDoesNotAcquireEditDefaultsPermission
+BodiesAccess.OwnerAlwaysRetainsFullAccessToItsOwnPolicy
+BodiesAccess.ProtectedPolicyGrantsDerivedCallerButNotUnrelatedCaller
+BodiesAccess.ReadonlyMethodPolicyAllowsConstCallsButNotMutableCalls
+BodiesAccess.RepeatedWildcardPermissionsUnionReadAndEditWithoutGrantingOrdinaryWrite
+BodiesAccess.UnlistedCallerCannotReadAndLaterStatementSurvives
+BodiesAccess.WildcardReadonlyPreservesReadableLValueButForbidsMutation
+BodiesAccess.WildcardWithoutModifiersDoesNotAccidentallyGrantPublicAccess
+BodiesCallContext.ConstructorImmediateLambdaRejectsUnsafeDuringConstruction
+BodiesCallContext.EscapingLambdaDoesNotKeepDefaultsPrivilege
+BodiesCallContext.ImmediateAnonymousFunctionInDefaultsIsRejected
+BodiesCallContext.NestedImmediateLambdasPreserveConstructionContext
+BodiesCallContext.OrdinaryFunctionMayCallUnsafeDuringConstruction
+BodiesControlFlow.ContinueSkipsSwitchAndTargetsTheNearestLoop
+BodiesControlFlow.DefaultOnlyAndNonFinalDefaultRemainAuthoredClauses
+BodiesControlFlow.ForRetainsMultipleInitializersAndIncrementsInAuthoredOrder
+BodiesControlFlow.ForeachHandleConstAdditionAnalyzesAndVerifies
+BodiesControlFlow.ForeachHandleConstRemovalFailsDuringAnalysis
+BodiesControlFlow.ForeachIterationLocalsAreDestroyedOnContinueAndBreak
+BodiesControlFlow.ForeachOwnsVariablesAndAuthenticatesTheSelectedProtocol
+BodiesControlFlow.ForeachRejectsIncompleteOrMismatchedProtocols
+BodiesControlFlow.LocalAutoRequiresAConcreteTypedInitializer
+BodiesControlFlow.LocalAutoUsesTheInitializerCanonicalQualType
+BodiesControlFlow.SwitchRejectsDuplicateLabelsInvalidFallthroughAndUnscopedDeclarations
+BodiesControlFlow.SwitchRetainsNormalizedCasesAndExactControlTargets
+BodiesConversions.BoolConversionCreatesTypedConditionWithoutNumericTruthiness
+BodiesConversions.ConstReceiverCannotCallOnlyMutableConversion
+BodiesConversions.ConstReceiverFiltersMutableConversionAndMutableReceiverPrefersIt
+BodiesConversions.EquallyViableUserConvertedCallOverloadsAreAmbiguous
+BodiesConversions.ExactCallArgumentWinsOverUserConversion
+BodiesConversions.ExplicitHandleCastSelectsOpCastInsteadOfOpImplCast
+BodiesConversions.ExplicitOnlyConversionCannotLeakIntoImplicitReturn
+BodiesConversions.ExplicitPrimitiveConstructionPrefersExplicitConversion
+BodiesConversions.ImplicitHandleCastKeepsActualTargetAndCannotRemoveConst
+BodiesConversions.ImplicitReturnSelectsTheActualDestinationOverload
+BodiesConversions.InheritedConversionRetainsItsRealBaseDeclaration
+BodiesConversions.LogicalOperatorsKeepActualBoolConversionOperands
+BodiesConversions.PrivateConversionCannotBypassAccessPolicy
+BodiesConversions.UniqueUserConversionMaterializesForACallArgumentAndAssignment
+BodiesConversions.UserConversionPrecedesASeparateBuiltinNumericConversion
+BodiesCore.BodyAnalysisRequiresResolvedDeclarations
+BodiesCore.ConcreteNodesCarryTypeAndValueCategory
+BodiesCore.DeclarationsRemainInspectableBeforeBodyResume
+BodiesCore.DeferredBodyPreservesOuterConditionalContext
+BodiesCore.DeferredBodyRetainsSelectedConditionalBranch
+BodiesCore.DeferredIdentifiersSurviveCallerOwners
+BodiesCore.DeferredTokensPreserveOriginalUnicodePolicy
+BodiesCore.ExplicitASTVerificationRejectsSubsequentMutation
+BodiesCore.LaterFileCallResolvesCanonicalDeclaration
+BodiesCore.MutualRecursionUsesTheFrozenOverloadEnvironment
+BodiesCore.OverloadConversionIsAnExplicitTypedNode
+BodiesCore.RejectedBodyInputMarksOwningFragment
+BodiesExpressions.AngelScriptBitwisePrecedenceIsNotCppPrecedence
+BodiesExpressions.ArgumentTrailingCommaAndExcessiveDepthRecover
+BodiesExpressions.ArithmeticAndPowerRemainLeftAssociative
+BodiesExpressions.AssignmentIsRightAssociativeAndRetainsLvalue
+BodiesExpressions.BooleanAndIntegralOperatorsRejectUnrelatedTypes
+BodiesExpressions.ConditionalBetweenHandlesKeepsHandleQualifiers
+BodiesExpressions.ConditionalNestingIsRightAssociativeAndTyped
+BodiesExpressions.DecimalExponentAndFloatSuffixPreserveFloatingCategory
+BodiesExpressions.MalformedAndOverflowingNumbersDiagnoseWithoutLosingLaterReturn
+BodiesExpressions.MultiplicationBindsInsideAdditionWithExactOperatorRange
+BodiesExpressions.NumericCommonTypeCreatesExplicitConversions
+BodiesExpressions.OutArgumentsRequireExactModifiableStorage
+BodiesExpressions.ParenthesesAndPrefixPostfixAreDistinctTypedNodes
+BodiesExpressions.ReadonlyAndRvalueMutationAreRejected
+BodiesExpressions.ReturnTypeContractRejectsMissingVoidAndBooleanMismatches
+BodiesExpressions.StrictIntegerRadicesAndWidthsPreserveValues
+BodiesFinalization.DeclarationErrorsSkipInvalidBodiesButAnalyzeValidOnes
+BodiesFinalization.InvalidConstructionDoesNotInventCleanup
+BodiesFinalization.MalformedBodyDoesNotEraseALaterFunction
+BodiesFinalization.NestedExitsCarryTypedTargetsAndReverseCleanup
+BodiesFinalization.RecoveryExpressionKeepsTheLaterStatement
+BodiesFinalization.ReversedInputsProduceEqualBodyResults
+BodiesFinalization.WorkerCountDoesNotChangeBodyResults
+BodiesLambdas.AnonymousReturnInferenceIsRemoved
+BodiesLambdas.ContextualDelegateDoesNotAdmitAnonymousFunction
+BodiesLambdas.DefaultAndNestedAnonymousOriginsAreRejected
+BodiesLambdas.ImmediateAnonymousInvocationIsRejected
+BodiesLambdas.ImmediateOuterCaptureIsRejected
+BodiesLambdas.MethodAnonymousThisCaptureIsRejected
+BodiesLambdas.MultipleAnonymousOriginsAreRejected
+BodiesLambdas.StoredCapturedAnonymousFunctionIsRejected
+BodiesLambdas.TypedAnonymousFunctionIsRejected
+BodiesLanguageForms.ConstMethodCannotMutateImplicitReceiver
+BodiesLanguageForms.DeprecatedCallReportsAWarningWithoutDiscardingTheTypedResult
+BodiesLanguageForms.ImplicitFieldReceiverIsARealThisExpression
+BodiesLanguageForms.ImplicitMixinReceiverPreservesConstObjectBinding
+BodiesLanguageForms.MixinIsNotAnOrdinaryGlobalOverload
+BodiesLanguageForms.MixinMemberSyntaxCallsTheActualGlobalFunctionWithReceiver
+BodiesLanguageForms.MultipleDeclaratorsRemainInTheSurroundingScope
+BodiesLanguageForms.NoDiscardWarnsOnlyWhenTheCallResultIsDiscarded
+BodiesLanguageForms.PrivateMemberIsReadableWithinOwnerButNotOutside
+BodiesLanguageForms.ProtectedMemberIsVisibleThroughTheDerivedLexicalOwner
+BodiesPostfix.ConstMethodCanBeCalledOnReadonlyReceiver
+BodiesPostfix.ConstReceiverRejectsFieldMutationAndMutableMethod
+BodiesPostfix.DefaultArgumentReferencesOneAuthoredInitializerTree
+BodiesPostfix.DelegateVariableCallUsesCanonicalSignatureWithoutEngine
+BodiesPostfix.DirectLocalInitializationResolvesRealConstructor
+BodiesPostfix.DuplicateUnknownAndMisorderedNamedArgumentsReject
+BodiesPostfix.ExplicitCastRetainsAuthoredTargetAndOperand
+BodiesPostfix.IndexOperatorRetainsSelectedMethodAndReferenceCategory
+BodiesPostfix.InvalidIndexReceiverAndArgumentAreDiagnosed
+BodiesPostfix.MalformedEscapeAndMissingStringProviderAreErrors
+BodiesPostfix.MemberCallUsesTypedReceiverAndSelectedOverload
+BodiesPostfix.MemberChainResolvesEachActualDeclaration
+BodiesPostfix.MutableReceiverPrefersNonConstIndexOverloadOfEqualRank
+BodiesPostfix.MutableReceiverPrefersNonConstOverloadOfEqualRank
+BodiesPostfix.NamedArgumentsReorderByParameterWithoutLosingAuthoredOrder
+BodiesPostfix.NoMatchingConstructorDoesNotProduceSuccessfulBody
+BodiesPostfix.NullCannotMasqueradeAsPrimitiveOrUntypedSuccess
+BodiesPostfix.NullReturnAcquiresActualHandleTypeThroughConversion
+BodiesPostfix.PrimitiveConstructionIsNotAnUnresolvedFunctionCall
+BodiesPostfix.PrimitiveConversionRequiresOnePositionalArgumentAndRecovers
+BodiesPostfix.RecordDefaultConstructionStillSelectsItsActualConstructor
+BodiesPostfix.StringEscapesUseDeclaredProviderAndDecodedValue
+BodiesPostfix.UnknownMemberRecoversLaterReturn
+BodiesStructuredControlFlow.ContinuePreservesForInitializerButBreakDestroysIt
+BodiesStructuredControlFlow.DanglingElseBindsNearestIf
+BodiesStructuredControlFlow.DoAndEmptyForHaveExplicitBodiesAndTypedBreakTargets
+BodiesStructuredControlFlow.ForOwnsTypedInitConditionIncrementAndContinueTarget
+BodiesStructuredControlFlow.InnerLocalShadowsParameterAndDuplicateLocalIsRejected
+BodiesStructuredControlFlow.LocalInitializerConvertsButIncompatibleInitializerFails
+BodiesStructuredControlFlow.LoopAndBranchLocalsDoNotLeakToEnclosingScope
+BodiesStructuredControlFlow.NumericConditionsAreRejectedRatherThanImplicitlyBoolified
+Builder.AuthoredAccessPoliciesReachFrozenDefinitionsAndOutliveTheBuilder
+Builder.AutoGlobalsInferOnceThroughForwardInitializerDependencies
+Builder.AutoInferenceCyclesAndMissingInitializersFailWithoutDefinitions
+Builder.BodyLookupUsesItsNamespaceBeforeUnrelatedSameNameDeclarations
+Builder.ClassDefaultStatementsShareOneActualLexicalBodyScope
+Builder.CyclicAliasesFailBeforeBodyAnalysis
+Builder.CyclicDefaultDependenciesCannotPublishDefinitions
+Builder.DefinitionDumpDistinguishesSameSizeFieldsWithDifferentTypes
+Builder.DirectSessionRecoveryCannotPublishAfterDeclarationFailure
+Builder.EmptyTranslationUnitHasAValidVerifiedSourceAnchor
+Builder.EnumExplicitFloatConversionRetainsTypedConstantSemantics
+Builder.EnumExpressionsResolveBeforeHostDeclarationOutput
+Builder.EnumForwardAndGlobalConstantDependenciesUseOriginalTypedExpressions
+Builder.EnumShortCircuitDoesNotEvaluateUnselectedConstantFailure
+Builder.EqualFunctionSignaturesShareTheCanonicalTypeButNotFunctionDefinitions
+Builder.ExactBaseOverrideAndDistinctOverloadsProduceRealDefinitions
+Builder.ExplicitGlobalBaseNameDoesNotBindANamespacedShadow
+Builder.ForeignDiagnosticSnapshotRejectsTheBuilderInput
+Builder.ForwardDefaultDependenciesAreIndependentOfDeclarationOrder
+Builder.FrozenImageOutlivesTheBuilderAndRetainsIdentityContext
+Builder.FullAndSplitRunsProduceIdenticalStageObservations
+Builder.FunctionDefinitionModifiersReachActualTraitsAndFrozenAuthentication
+Builder.GlobalInitializerAndDefaultArgumentsAreAnalyzedBeforeBodies
+Builder.IllegalOrderDoesNotConsumeOrPoisonTheCurrentStage
+Builder.IndependentStagesPublishActualDefinitionsOnlyAfterExplicitFreeze
+Builder.InvalidAccessPolicyDoesNotPublishDefinitions
+Builder.InvalidDefaultInitializerCannotPublishDefinitions
+Builder.InvalidEnumConstantsFailBeforeDefinitionPublication
+Builder.InvalidOptionsRejectBeforeLexing
+Builder.LayoutFailureRetainsExactReasonAndDoesNotFreezeTheDraft
+Builder.MaintainedSuffixFactsSurviveActualFunctionMaterialization
+Builder.ManyParallelBodiesRetainTheSerialCanonicalProjection
+Builder.MemberAccessAndConstructionReachActualDefinitionObjects
+Builder.NamedFunctionRetainsItsImageAndNamespaceAfterBuilderRelease
+Builder.ParallelNamedBodiesKeepTheSameActualFunctionKeysAndObservations
+Builder.ParsedClassDefaultsProduceOneImplicitActualFunctionInSourceOrder
+Builder.PreprocessorSelectionIsRetainedAndDoesNotConstructDeclarations
+Builder.RecordInheritanceAndOverrideRulesFailAtDeclarationResolution
+Builder.RecoveryStopsDefinitionPublicationAndKeepsFailureObservation
+Builder.TypedefKeepsItsEntityIdentityButCanonicalizesFunctionTypeUses
+Builder.UnknownConditionalFlagStopsBeforeDeclarationCollection
+Builder.UnrelatedNamespaceDeclarationsAreNotImplicitlyVisible
+CanonicalNamespace.IndependentBuilderCompilesAuthoredDemoNamespaceWithoutEngine
+CanonicalNamespace.QualifiedCanonicalTypesCompileWithoutNestedFrontend
+ConversionDefinitions.BuilderPublishesDestinationDistinctConversionsAndRejectsVoidShape
+ConversionDefinitions.ConversionDeclarationFactsRejectVoidAndParameterizedShapes
+ConversionDefinitions.DestinationDistinctConversionsPublishAuthenticatedFunctions
+ConversionDefinitions.ExposedConversionObjectTypeMustMatchDeclarationOwner
+ConversionDefinitions.TamperedConversionReturnOrKindCannotFreezeOrRegister
+ConversionIdentity.ConversionEdgesAuthenticateOwnerRoleAndDestinationRole
+ConversionIdentity.ConversionKindIsAppendOnlyAndAllMaintainedNamesAreAdmitted
+ConversionIdentity.ConversionShapeRejectsSyntheticOrVoidSignaturesWithoutPublishing
+ConversionIdentity.DestinationAndReceiverQualificationAreIdentitySignificant
+ConversionIdentity.DestinationDistinctConversionsRejectInjectedDigestCollision
+ConversionIdentity.OrdinaryReturnOnlyConflictContractRemainsUnchanged
+ConversionIdentity.ValidationAuthenticatesKindOwnerDestinationAndDefinitionFacts
+DeclarationsAccess.ConversionDeclarationsRejectParametersAndVoidDestinations
+DeclarationsAccess.ForwardPolicyUseResolvesAfterTheDeclarationBarrier
+DeclarationsAccess.MalformedPolicyRecoversTheFollowingOrdinaryDeclaration
+DeclarationsAccess.MissingDuplicateAndForeignPoliciesCannotBecomeResolvedDefinitions
+DeclarationsAccess.PolicyDeclarationAndUseAreNotGlobalLanguageConstructs
+DeclarationsAccess.PolicyKeepsOrderedSubjectsAndExactAuthoredModifierRanges
+DeclarationsCollection.AllSourcesCollectBeforeTheBarrier
+DeclarationsCollection.CollectionBarrierIsOneWay
+DeclarationsCollection.FunctionBodiesRemainDeferredRanges
+DeclarationsCollection.ParserBoundaryUsesOnlySema
+DeclarationsCollection.ParserCreatesConcreteDeclarationsThroughSema
+DeclarationsCollection.TypedAnnotationsArePreservedWithoutReflectionExecution
+DeclarationsExpandedLanguage.EnumArithmeticReferencesAndImplicitSequenceUseTypedExpressions
+DeclarationsExpandedLanguage.EnumInitializersRemainDeferredUntilResolution
+DeclarationsExpandedLanguage.EnumOverflowAndInvalidExpressionPreventResolution
+DeclarationsExpandedLanguage.MaintainedMethodSuffixesRemainTypedDefinitionFacts
+DeclarationsExpandedLanguage.RemovedPropertySyntaxDoesNotPublishFunctionsOrEatLaterDeclarations
+DeclarationsExpandedLanguage.ScopedEnumReferenceRetainsNominalTypeBeforeIntegralConversion
+DeclarationsLanguageForms.AllSixAnnotationKindsAttachToTheirDeclaredTargets
+DeclarationsLanguageForms.AnnotationTargetValidationDistinguishesClassStructEnumAndCallable
+DeclarationsLanguageForms.CallableAndRecordShareOneNominalNameDomain
+DeclarationsLanguageForms.CallableDeclarationsCanReferenceLaterCallableTypes
+DeclarationsLanguageForms.CallableForwardTypesResolveToQualifiedSignatureWithoutEngine
+DeclarationsLanguageForms.CallableGlobalQualificationBypassesInnerShadow
+DeclarationsLanguageForms.CallableLookupDoesNotLeakAnUnrelatedNamespaceType
+DeclarationsLanguageForms.CallableTraversalIncludesParametersWithoutGeneratedChildren
+DeclarationsLanguageForms.CallableTypeSyntaxRetainsQualificationModifiersAndExactLocations
+DeclarationsLanguageForms.CollectedHostOutputPrecedesResolvedSignaturesAndOwnsSyntax
+DeclarationsLanguageForms.DelegateAndEventAreCallableTypesNotFunctionsOrGeneratedRecords
+DeclarationsLanguageForms.FailedCollectedHostOutputIsEmpty
+DeclarationsLanguageForms.InvalidCallableParametersNeverPublishAPartialSignature
+DeclarationsLanguageForms.MalformedAnnotationPayloadAndDanglingAnnotationAreErrors
+DeclarationsLanguageForms.MalformedCallableRecoversAfterTrailingCommaAndIllegalBody
+DeclarationsLanguageForms.NestedAnnotationPayloadRemainsATreeWithAuthoredRanges
+DeclarationsLanguageForms.RemovedAssetConsumesNestedInitializerWithoutCreatingSemanticEntities
+DeclarationsLanguageForms.RemovedImportDiagnosesItsAuthoredRangeAndRecovers
+DeclarationsLanguageForms.RemovedSpellingsRemainLegalAsOrdinaryIdentifiers
+DeclarationsLanguageForms.RemovedSyntaxInsideTriviaStringsAndInactiveBranchesIsNotDiagnosed
+DeclarationsLanguageForms.ReopenedNamespaceRetainsDistinctOccurrencesAndSharedMemberScope
+DeclarationsLanguageForms.UDelegateIsNotAnAnnotationAlias
+DeclarationsLanguageForms.UnnamedCallableParametersPreserveOrderedTypes
+DeclarationsMaintainedSyntax.CallableDefaultOwnsAnAnalyzedExpression
+DeclarationsMaintainedSyntax.ConstructorDestructorAndMethodModifiersRemainDistinctTypedFacts
+DeclarationsMaintainedSyntax.DefaultInitializerRangeExcludesDelimitersAndKeepsNestedCommas
+DeclarationsMaintainedSyntax.NestedGenericClosersAndArrayDimensionsRetainTypedSourceTrees
+DeclarationsMaintainedSyntax.PrimitiveAliasRetainsAuthoredTargetAndCanonicalAliasedType
+DeclarationsMaintainedSyntax.RequiredParameterAfterDefaultIsRejectedAndLaterDeclarationSurvives
+DeclarationsMaintainedSyntax.VoidParameterSpellingMeansAnEmptySignature
+DeclarationsResolution.DuplicatePrimaryIsChosenByStableSourceOrder
+DeclarationsResolution.LaterFileTypesResolveAfterTheBarrier
+DeclarationsResolution.MalformedDeclarationRecoversToLaterValidDeclaration
+DeclarationsResolution.OverloadSetsUseStableSignatureOrder
+DeclarationsResolution.ReversedSourceInputProducesTheSameStableProjection
+DeclarationsResolution.WorkerCountDoesNotChangeResolution
+DeclarationsStableIdentity.CallableNominalAndSignatureHaveDistinctRegistryRoles
+DeclarationsStableIdentity.ConstAndHandleQualifiersRemainCanonicalTypeEdges
+DeclarationsStableIdentity.ConstMethodQualificationChangesFunctionNotSignatureType
+DeclarationsStableIdentity.EquivalentNamesAndSourceMovesReuseFunctionIdentity
+DeclarationsStableIdentity.FloatAliasUsesContextOptionsWhileSizedSpellingsStayFixed
+DeclarationsStableIdentity.HostDeclarationCoordinatesSurviveSourceMoves
+DeclarationsStableIdentity.NestedNominalOwnersDistinguishSameMethodNames
+DeclarationsStableIdentity.OrdinaryDeclarationsRetainStructuredQualifiedTypeLocations
+DeclarationsStableIdentity.ParameterNamesAndBuiltinAliasesDoNotInventOverloads
+DeclarationsStableIdentity.PassingModesCreateDistinctOverloadsAndCallableTypeUses
+DeclarationsStableIdentity.RegistryCollisionPreventsFrontendPublication
+DeclarationsStableIdentity.ReturnTypeOnlyOverloadIsRejected
+DeclarationsStableIdentity.SharedTypeContextRetainsIdentityAfterSessionDestruction
+DefinitionConsumer.ActualForwardRecursiveTypesAndMethodsRemainEngineFree
+DefinitionConsumer.CallableSignatureCorruptionFailsBeforeEnginePublication
+DefinitionConsumer.DefinitionsOutliveSessionAndSourceWithoutBorrowedAST
+DefinitionConsumer.DelegateAndEventShareActualStructuralSignatureNotFunctionIdentity
+DefinitionConsumer.DuplicateNestedDeclarationInTheSameOwnerIsStillRejected
+DefinitionConsumer.ImmutableFloatOptionsReachActualPropertyLayout
+DefinitionConsumer.RecordLayoutUsesRealBaseInterfaceAndEnumEdges
+DefinitionConsumer.RecoveryInputCannotPublishAnEmptySuccessImage
+DefinitionConsumer.RequiresTheExplicitVerifiedASTBarrier
+DefinitionConsumer.SameNamedNestedTypesKeepDistinctOwnersThroughEngineRegistration
+DefinitionConsumer.SeparateImagesCanRegisterEqualStructuralSignatures
+DefinitionConsumer.UnfrozenDependenciesCannotEscapeThroughConsumer
+DefinitionConsumer.ValueCyclesFailLayoutWithoutFreezingOrPartialOffsets
+EngineRegistration.CompetingEnginesHaveExactlyOneWinner
+EngineRegistration.ConcurrentQueriesObserveWholeClosureCounts
+EngineRegistration.ConcurrentRegistrationInOneEnginePublishesExactlyOnce
+EngineRegistration.ConstructorCreatesTypedBuiltinsWithoutLegacyRegistration
+EngineRegistration.DependencyClosurePublishesTogetherAndReusesSameEngineDependency
+EngineRegistration.DependencyFailurePublishesNoneOfTheClosure
+EngineRegistration.DuplicateAndSecondEngineRegistrationAreExplicit
+EngineRegistration.EnumAndAliasIdsNeverShadowPrimitiveIds
+EngineRegistration.ForeignEngineDependencyRejectsTheUnattachedRoot
+EngineRegistration.GenericArityMustMatchActualDefinitionFacts
+EngineRegistration.ImmutableFloatProfileMismatchCannotRegister
+EngineRegistration.LegacyMutationAndDeclarationParsingAreExplicitlyDormant
+EngineRegistration.MalformedSignatureArraysAndReturnTypeFailClosed
+EngineRegistration.MethodOnlyReferenceRetainsWholeGraphAfterEngineDestruction
+EngineRegistration.MissingOrForgedIdentityContextCannotPublish
+EngineRegistration.NumericQueriesNeverAttachADetachedOrForeignType
+EngineRegistration.PostFreezeLayoutCorruptionFailsWithoutPublication
+EngineRegistration.RegistersOriginalPointersAndKeepsSemanticNamespace
+EngineRegistration.RetirementRemovesAllVisibilityAndReleasesEngineLeases
+EngineRegistration.SameIdentityDoesNotMergeDistinctDefinitions
+EngineRegistration.SameNameDifferentScopeConflictsButNamespacesDoNot
+EngineRegistration.TypeReferenceSurvivesEngineAndCannotBeReattached
+EngineRegistration.UnknownParameterModeCannotMasqueradeAsValue
+Foundation.DiagnosticCapturePreservesOrderAndResets
+Foundation.LegacyGateRemainsDisabled
+Foundation.ReplacementGateProvidesCQTest
+Foundation.SourceInputOwnsUtf8Bytes
+FrozenHostSemantics.ConstHostReceiverRejectsMutableMethod
+FrozenHostSemantics.FrozenHostGlobalCallSelectsAuthenticatedKey
+FrozenHostSemantics.OmittedHostDefaultWithoutTypedValueIsUnsupported
+FrozenHostSemantics.ReleasedCallerImageDoesNotInvalidateSelectedHostFunction
+FrozenHostSemantics.UnfrozenOrForeignImageCannotEnterLookup
+GenericDefinitions.ArgumentKeyMismatchDoesNotPublishASpecialization
+GenericDefinitions.ConcreteArgumentsProduceDistinctActualObjectTypes
+GenericDefinitions.CorruptFrozenEnvironmentIsRejectedBeforeSourceResolution
+GenericDefinitions.DetachedBuilderResolvesExplicitAndArrayShorthandToOneConcreteType
+GenericDefinitions.RepeatedSpecializationPreservesPointerAndRejectsArgumentMutation
+GenericDefinitions.TemplateLayoutMustBeExplicitNotGuessedFromOneInstantiation
+GenericDefinitions.TransitiveHostEnvironmentAndNestedTemplateClosersAreRetained
+GlobalDefinitions.DetachedGlobalMetadataDoesNotAllocateExecutableStorage
+GlobalDefinitions.DuplicateGlobalRegistrationDoesNotPublishNewImage
+GlobalDefinitions.FrozenGlobalMutationIsRejectedByRegistration
+GlobalDefinitions.GlobalExternalReferencesAreConcurrentWithoutGraphCycles
+GlobalDefinitions.GlobalOnlyLeaseRetainsImageAfterProducerAndEngineDestruction
+GlobalDefinitions.MutableGlobalAndVoidTypeAreRejectedWithoutPublication
+GlobalDefinitions.WrongKeyRoleNameNamespaceAndTypeAreRejected
+IdentityScope.CoreTypeAndFunctionAdaptersAreLosslessNotAuthenticators
+IdentityScope.RuntimeProjectionRequiresTheOwningTypeUseRegistry
+IdentityScope.RuntimeTypeIdsAreGenerationLocalAndNeverDurable
+IdentityTypeContext.DeclarationCoordinatesUseConstrainedOwnerRoles
+IdentityTypeContext.QualifiedTypeUsesAreCanonicalizedThroughTheirOwningRegistry
+IdentityTypeContext.SharedContextsRetainOneRegistryAndImmutableOptions
+IdentityTypeContext.TypedValidationAuthenticatesExactSemanticDescriptors
+IdentityTypeDecl.GeneratedNominalsRequireAStableGeneratorIdentity
+IdentityTypeDecl.InvalidEnumsAndBudgetsFailWithoutPublishingKeys
+IdentityTypeDecl.NominalIdentityIsDeterministicAndSemantic
+IdentityTypeDecl.UnstableDeclarationsAreExplicitlyNonCacheable
+IdentityTypeUse.AliasSpellingIsNotASecondIdentityAuthority
+IdentityTypeUse.InvalidQualifierRolesAndUnknownEdgesFailClosed
+IdentityTypeUse.LegalUseQualifiersHaveIndependentIdentity
+IdentityTypeUse.OrderedGenericArgumentsRemainStableKeyEdges
+IdentityTypeUse.PrimitiveAndNominalUsesEncodeDeterministically
+IdentityTypeUse.ResourceBudgetsAndCallableStructureAreEnforced
+ImplicitFunctionDefinitions.ClassDefaultHasAnOwnerButIsNotAnOrdinaryMethod
+ImplicitFunctionDefinitions.NamedFunctionIdentityRemainsStableAcrossContexts
+ImplicitFunctionDefinitions.NamedFunctionRegistersWithSamePointerAndRetainsItsDefinition
+ImplicitFunctionDefinitions.RetiredAnonymousKindCannotAcquireAFunctionIdentity
+IntegralConstants.CheckedCaseConversionPreservesOutputOnFailure
+IntegralConstants.ConstFloatingReferenceArithmeticCanFeedBuiltinIntegralConstruction
+IntegralConstants.CrossWidthDenominatorIsNormalizedBeforeCheckedDivision
+IntegralConstants.FloatingConstantArithmeticCanFeedAnExplicitIntegralCast
+IntegralConstants.FloatingConversionChecksRangeBeforeNativeConversion
+IntegralConstants.Int64MinimumDivisionAndNegationRejectOverflowWithoutNativeUB
+IntegralConstants.LogicalAndArithmeticRightShiftKeepMaintainedASMeanings
+IntegralConstants.NestedBuiltinFloatingConstructionFeedsCheckedIntegralConstruction
+IntegralConstants.ShortCircuitDoesNotEvaluateAnUnreachableDivision
+IntegralConstants.SignedLeftShiftUsesTheMaintainedFixedWidthBitPattern
+IntegralConstants.SignedOverflowAndInvalidShiftFailAtTheActualOperator
+IntegralConstants.TypedArithmeticAndBitwiseValuesAreEvaluatedWithoutAnEngine
+IntegralConstants.UnresolvedEnumReferenceBecomesConcreteAfterResolution
+IntegralConstants.UnsignedArithmeticWrapsAtItsDeclaredWidth
+LanguageSurface.CallableSDK.BoundNamedCallbackReleasesItsReceiverExactlyOnce
+LanguageSurface.CallableSDK.CallableSignatureLeaseSurvivesProducerRelease
+LanguageSurface.CallableSDK.NamedScriptAndGenericNativeCallbacksExecuteFortyTwoIndirectly
+LanguageSurface.CallableSDK.NominalDelegateAndEventShareOnlyTheirStructuralSignature
+LanguageSurface.CallableSDK.OldNominalFactoryAndChildFactoryAreAbsent
+LanguageSurface.CallableSDK.OldTypeSignatureAndChildQueriesAreAbsent
+LanguageSurface.CallableSDK.ReturnTypeMismatchCannotReplaceTheInstalledCallable
+LanguageSurface.CallableSDK.StringDeclarationRegistrationAndEngineEnumerationAreAbsent
+LanguageSurface.Lambda.DefaultAndNestedAnonymousFunctionsCannotEscapeTheBoundary
+LanguageSurface.Lambda.EmptyValueAndReferenceCaptureListsHaveExplicitRejection
+LanguageSurface.Lambda.ImmediateAnonymousFunctionCannotPublish
+LanguageSurface.Lambda.MetadataImageExposesNoAnonymousOriginFactory
+LanguageSurface.Lambda.NamedFunctionRoundtripAndExecutionPreserveFortyTwo
+LanguageSurface.Lambda.PreviousASTFormatIsRejectedEvenForANamedFunction
+LanguageSurface.Lambda.RetiredFunctionIdentityCannotBeInterned
+LanguageSurface.Lambda.RetiredStatementOrdinalCannotDecodeAsASupportedNode
+LanguageSurface.Lambda.StoredAnonymousFunctionCannotPublish
+LanguageSurface.Reflection.DedicatedAccessorDescriptorFieldsAndAssociationConsumersAreAbsent
+LanguageSurface.Reflection.EnumUMetaAccessorRequestsAreRejected
+LanguageSurface.Reflection.FunctionAccessorRequestsRejectAtTheirMarker
+LanguageSurface.Reflection.InactiveAccessorMetadataDoesNotAffectDescriptors
+LanguageSurface.Reflection.NestedMetadataCannotHideAccessorRequests
+LanguageSurface.Reflection.OrdinaryFieldAndExplicitMethodsKeepStableDescriptors
+LanguageSurface.Reflection.PropertyAccessorRequestsRejectAtTheirMarker
+LanguageSurface.Reflection.UnrelatedMetadataAndAccessorWordsAsValuesRemainOrdinary
+LanguageSurface.SDK.FrozenProviderAndGenericCallSurviveFailedCandidate
+LanguageSurface.SDK.HostContextSuspendResumeAbortAndRuntimeFaultKeepCleanup
+LanguageSurface.SDK.ModuleManagementAndMutableProvenanceAreAbsent
+LanguageSurface.SDK.PublicModuleCompilationAndImportsAreAbsent
+LanguageSurface.SDK.RemovedAccessorOptionCannotBeEnabledNumerically
+LanguageSurface.SDK.SharingPolicyInterfacesAreAbsent
+LanguageSurface.SDK.SuppliedFilesAndOrdinaryGetterExecuteSeven
+LanguageSurface.Syntax.CastIntrinsicRetainsExplicitTypedConversion
+LanguageSurface.Syntax.CoroutineStatementsReportFeatureAtKeyword
+LanguageSurface.Syntax.ExceptionStatementsReportFeatureAtKeyword
+LanguageSurface.Syntax.FuncdefReportsItsDeclarationFeature
+LanguageSurface.Syntax.InactiveRemovedSyntaxProducesNoFeatureErrors
+LanguageSurface.Syntax.ModuleModifiersReportFeatureAndKeepFollowingDeclaration
+LanguageSurface.Syntax.OrdinaryGetterDoesNotCreateImplicitProperty
+LanguageSurface.Syntax.OrdinaryNamesAndCrossFileCallsExecuteSeven
+LanguageSurface.Syntax.RegisteredNestedHostTypesAndYieldNamedCallbackRemainAvailable
+LanguageSurface.Syntax.UnknownHostProviderAndWrongArityDoNotPublish
+LanguageSurface.Syntax.UserTemplatesReportFeatureAndRecoverPastBodies
+LanguageSurface.Syntax.VirtualPropertiesReportFeatureWithoutSynthesizingMembers
+Lexer.CharacterStreamUsesValidatedSnapshotRange
+Lexer.FrozenOptionsAreValueOwned
+Lexer.HeredocIsOneLiteralAcrossNewlinesAndEmbeddedQuotes
+Lexer.HexadecimalEDigitDoesNotAbsorbAdjacentAddition
+Lexer.IndependentParallelSessionsRemainDeterministic
+Lexer.IndependentSessionsProduceIdenticalTokenProjection
+Lexer.LeadingDotExponentAndRadixNumbersRetainWholeTokens
+Lexer.MalformedBytesAlwaysAdvanceAndDiagnoseOnce
+Lexer.OnlySixOuterAnnotationsAndCallableIntroducersAreKeywords
+Lexer.PostfixAndNestedGenericPunctuationPreserveMaximalMunch
+Lexer.PullLexerClassifiesKeywordsReflectionSpellingsLiteralsAndPunctuation
+Lexer.RepeatedIdentifiersReuseOneSessionEntry
+Lexer.RepresentativeCorpusRecordsColdAndWarmEvidence
+Lexer.TokenContractIsSourceReferentialAndDeclarative
+Lexer.TriviaModesPreserveNonTriviaRanges
+Lexer.UnicodePolicyIsFrozenPerTokenizer
+Lexer.UnterminatedBlockCommentConsumesToEnd
+ListInitializerDefinitions.InitializerListsKeepAnActualFactoryAndExplicitOmissionNodes
+ListInitializerDefinitions.InvalidRepetitionAndTemplateSlotsDoNotPublishAContract
+ListInitializerDefinitions.NestedListShapeAndRepeatSameAreSemanticContracts
+ListInitializerDefinitions.OrdinaryRecordsAreNotImplicitlyTreatedAsCppAggregates
+ListInitializerDefinitions.RealFactoryAndPatternSurviveFreezeWithoutAnEngine
+ListInitializerDefinitions.TemplateListSlotsUseConcreteArgumentsNotTheContainerName
+ListInitializerDefinitions.TrailingCommaRetainsAnOmittedASSlotRatherThanCppListSemantics
+MetadataImage.ActualTypesAndMethodsNeedNoEngineOrNumericIds
+MetadataImage.AdmittedFloatAliasesAndTargetReferencesMatchLayoutQueries
+MetadataImage.AliasCycleIsRejectedWithoutRecursingForever
+MetadataImage.ByValueRecursionFailsWithoutPartialLayouts
+MetadataImage.ConcurrentExternalReferencesKeepTheFrozenGraphAlive
+MetadataImage.ConcurrentFactoriesSerializeOwnershipWithoutAnEngine
+MetadataImage.DefaultArrayAndChildFuncdefRetainSemanticEdges
+MetadataImage.DuplicateIdentityAndNameFailuresDoNotPublishObjects
+MetadataImage.EnumAliasAndFuncdefAreActualOwnedTypes
+MetadataImage.FactoryAndBehaviourQueriesUseObjectsBeforeRegistration
+MetadataImage.FreezeRequiresCompleteSignaturesAndFinalizedLayouts
+MetadataImage.FrozenDependencyLifetimeAndForeignEdgesAreExplicit
+MetadataImage.FrozenImageRejectsNewObjectsAndSemanticEdges
+MetadataImage.ImmutableOptionsDoNotFollowCallerOrOtherImageChanges
+MetadataImage.ImportedLayoutAndTargetCompatibilityAreExplicit
+MetadataImage.InheritanceAndInterfacesRemainLocalDefinitionRelations
+MetadataImage.InheritanceCycleIsRejectedBeforeDraftQueries
+MetadataImage.InvalidNativeLayoutDoesNotBecomeAValidFrozenType
+MetadataImage.LayoutUsesTargetPointerSizeAndAlignment
+MetadataImage.MethodLeaseRetainsOwnerSignatureAndNamespace
+MetadataImage.RejectedSignatureDoesNotPublishOwnerOrParameters
+MetadataImage.SignatureQueriesRetainTypesNamesFlagsAndDefaults
+MetadataImage.TypeLeaseRetainsRecursiveMembersUntilFinalRelease
+ModuleGraph.BodyReferencesCannotChangeDeclarationComponents
+ModuleGraph.CyclesProduceDeterministicStrongComponentsAndCondensation
+ModuleGraph.DistinctUseSitesRemainButExactTuplesAreDeduplicated
+ModuleGraph.PermutedInputsSerializeIdentically
+ModuleGraph.SameModuleReferencesDoNotCreateCrossModuleEdges
+ModuleGraph.TypedEdgesRetainReasonRangeAndCompleteness
+PreprocessorConditions.BooleanConstantsSelectOnlyEligibleBranch
+PreprocessorConditions.ConjunctionBindsTighterThanDisjunction
+PreprocessorConditions.DefinedTestsPresenceNotFlagValue
+PreprocessorConditions.ExcessiveParenthesisDepthFailsWithoutStackExhaustion
+PreprocessorConditions.LongFlatUnaryAndBooleanChainsDoNotUseRecursiveOperatorParsing
+PreprocessorConditions.MalformedInactiveOperandsStillFailStructurally
+PreprocessorConditions.ParenthesesAndUnaryNegationOverridePrecedence
+PreprocessorConditions.ReachableUnknownOperandReportsItsOriginalRange
+PreprocessorConditions.SelectedSourceIdentifiersAreNotExpanded
+PreprocessorConditions.ShortCircuitSuppressesOnlyUnreachableLookups
+PreprocessorConditions.UnexpectedOperatorDiagnosticIdentifiesTheOperator
+PreprocessorConditions.UnsupportedArithmeticAndMalformedConditionsNeverPublishTokens
+PreprocessorDirectiveTree.DuplicateElseRetainsInvalidRecoveryTree
+PreprocessorDirectiveTree.HashInsideStringOrCommentDoesNotCreateDirective
+PreprocessorDirectiveTree.MissingTerminatorRetainsInspectableRecoveryTree
+PreprocessorDirectiveTree.NestedInactiveTreeRetainsNotEvaluatedChild
+PreprocessorDirectiveTree.NoTakenBranchPreservesNormalizedSkippedRanges
+PreprocessorDirectiveTree.TreePreservesBranchesTerminatorAndExactRanges
+PreprocessorPolicy.ActiveIncludeIsRejectedWithoutImportGuidance
+PreprocessorPolicy.ActiveNestedRestrictionRetainsBranchOwnership
+PreprocessorPolicy.InactiveRestrictionIsPreservedButNotPublishedAsPolicy
+PreprocessorPolicy.MissingPolicyAndExtraArgumentFailClosed
+PreprocessorPolicy.UnknownRestrictionOperationFailsAtOperation
+PreprocessorPolicy.ValidUsageRestrictionsBecomeTypedRecords
+PreprocessorRecord.DifferentRegionComparisonUsesInnermostBranch
+PreprocessorRecord.DirectiveIntersectionDetectsOnlyAuthoredDirectiveRanges
+PreprocessorRecord.ForeignSnapshotCoordinatesFailDespiteReusedNumericIDs
+PreprocessorRecord.OverlapAndContainmentReturnConditionalAndDirectiveRecords
+PreprocessorRecord.QueryResultsRemainInAuthoredSourceOrder
+PreprocessorRecord.SkippedRangesRetainTheirOwningBranchRecord
+PreprocessorRouting.ElifAfterElseFailsClosed
+PreprocessorRouting.ElifSelectsOnlyTheFirstEligibleBranch
+PreprocessorRouting.IfAndSingleNegationRouteActiveTokens
+PreprocessorRouting.IfdefAndIfndefTestFlagPresence
+PreprocessorRouting.NestedInactiveConditionDoesNotEvaluateUnknownFlag
+PreprocessorRouting.UnknownEvaluatedFlagFailsClosedWithStableDiagnostic
+ReflectionDescriptors.ActiveConfigurationSelectsOneDescriptorSurface
+ReflectionDescriptors.CallableForwardSignaturesProduceSourceLocatedDependencies
+ReflectionDescriptors.ConcreteResultOwnsResolvedDescriptorCollection
+ReflectionDescriptors.DeclarationFailureReturnsDiagnosticsWithoutPublishableDescriptors
+ReflectionDescriptors.DelegateAndEventHostDescriptionsKeepSingleAndMulticastSignatures
+ReflectionDescriptors.DelegateSignatureUsesCallableKeyAndNominalParameterOwner
+ReflectionDescriptors.EngineAndDescriptorHeadersExposeTheSameConcreteTypes
+ReflectionDescriptors.EnumAndDelegateDescriptorsRemainResolvedAndUnmaterialized
+ReflectionDescriptors.EnumConstantsProjectNamesAndValues
+ReflectionDescriptors.EnumMetaAnnotationProjectsValueMetadata
+ReflectionDescriptors.HostDescriptorsPreserveTheFrontendCanonicalKeyRoles
+ReflectionDescriptors.MemberDescriptorsComeFromTypedDeclarationsAndAttributes
+ReflectionDescriptors.MetadataArgumentsProjectIntoConcreteDescriptors
+ReflectionDescriptors.RemovedDeclarationsNeverProducePublishableHostDescriptions
+ReflectionDescriptors.ResolvedDescriptorsRetainSemanticKeysAndNullMaterializationPointers
+ReflectionDescriptors.ResolvedProjectionAllowsBodyResume
+ReflectionDescriptors.ResolvedTypeUseProducesDeclarationDependencyWithoutSourceImports
+SourceDiagnostics.ConcurrentLineQueriesPublishOneEquivalentMap
+SourceDiagnostics.HalfOpenRangeSelectsExactUtf8Bytes
+SourceDiagnostics.InvalidRangesAreRejected
+SourceDiagnostics.LineMapIsLazyAndUsesUtf8ByteColumns
+SourceDiagnostics.OriginQueriesReturnOverlapsAndParentChain
+SourceDiagnostics.ParallelFragmentMergeMatchesSingleThreadOrder
+SourceDiagnostics.RelatedRangesAndFixItsRemainSourceBound
+SourceDiagnostics.SnapshotIdentityRejectsMixedLocations
+SourceDiagnostics.StableAnchorRelocatesWithoutSnapshotLocalIdentity
+SourceDiagnostics.StableAnchorRevisionMismatchFailsRelocation
+SourceDiagnostics.StructuredDiagnosticsDeferRenderingAndKeepTypedArguments
+StableIdentity.CallableTypeUseOwnsItsResolvedSignatureStructure
+StableIdentity.CanonicalRegistryRejectsAnInjectedCollisionAndRetainsTheFirstDescription
+StableIdentity.CoreTypeAndFunctionAdaptersPreserveTheCanonicalKeyExactly
+StableIdentity.DelegateAndEventCallableTypesHaveDistinctNominalIdentity
+StableIdentity.FunctionIdentityUsesCanonicalSignatureAndRejectsReturnOnlyOverloads
+StableIdentity.NestedNominalIdentityUsesItsOwnersStableKey
+StableIdentity.NominalIdentityUsesStableSemanticFieldsOnly
+StableIdentity.PublicKeyIsOneOpaqueBlake3Value
+StableIdentity.StableKeysDoNotDependOnRegistryInsertionOrder
+StableIdentity.TypeUsesContainOrderedKeyEdgesWithoutRecursiveWitnesses
+StableIdentity.UnknownTypeEdgesFailWithoutMutatingTheRegistry
+StableIdentity.UnstableAndInvalidNominalOriginsNeverAcquireAKey
+VMAtomicLink.FailedCandidateRestoresCountsAndSentinels
+VMAtomicLink.FailedFingerprintQueryRejects
+VMAtomicLink.FrozenTamperedMetadataRejects
+VMAtomicLink.InstalledBodyRemainsCallableAfterFailedCandidate
+VMAtomicLink.MissingSiblingLeavesFUnpublishedThenRetrySucceeds
+VMAtomicLink.OffsetOnlyPropertyChangeRejects
+VMAtomicLink.PointeeOnlyChangeRejects
+VMAtomicLink.RetiredAndForeignReject
+VMAtomicLink.ReturnOnlyChangeRejects
+VMAtomicLink.TwoThreadsOnePublicationWinner
+VMAtomicLink.UnboundNativeThenRetryAfterBind
+VMAtomicLink.WitnessCollisionRejectsDigestMatch
+VMAtomicLink.ZeroDigestRequirementRejects
+VMByteCodeImage.GoldenHeaderAndRejections
+VMByteCodeImage.HandleCycleRequirementTerminates
+VMByteCodeImage.LabelLoopAndFunctionOrder
+VMByteCodeImage.RoundTripAndCanonicalOrder
+VMByteCodeVerifier.RejectsOutOfRangeJump
+VMByteCodeVerifier.RejectsRetiredReservedAndMissingClosure
+VMByteCodeVerifier.ValidConstantAndLoopPass
+VMCache.DestinationLayoutChangeRejectsLink
+VMCache.DestinationSchemaChangeRejectsLink
+VMCache.EncodedImageExecutesOnFreshEngineAfterProducerRelease
+VMCache.IndirectReferencedTypeMismatchRejects
+VMCache.MissingDestinationFunctionRejectsWithoutMutation
+VMCache.MissingNativeBindingOnDestinationRejects
+VMCache.NativeAddPortableAcrossFreshEngine
+VMCache.TamperedBytesRejectDecode
+VMCache.TwoLiveEnginesHaveIndependentSnapshots
+VMCacheContracts.ChangedParameterModeRejects
+VMCacheContracts.ChangedReturnSameFunctionKeyRejects
+VMCacheContracts.DecodeDoesNotCreateDefinitionsOnB
+VMCacheContracts.FailedFingerprintQueryRejects
+VMCacheContracts.ForeignAttachedImageRejectsOnSecondEngine
+VMCacheContracts.FuncdefAndMethodSignatureResolveOnB
+VMCacheContracts.InjectedEqualDigestDifferentWitnessRejects
+VMCacheContracts.LateMissingFunctionLeavesInstalledBodyAndSentinel
+VMCacheContracts.MalformedPointerProfileRejects
+VMCacheContracts.MissingTypeRejectsWithoutInstalling
+VMCacheContracts.NamespacedStringAndGenericExecuteOnFreshEngineAfterProducerRelease
+VMCacheContracts.NativeCallbackAndGlobalStorageUseBPointers
+VMCacheContracts.OffsetOnlyNativeLayoutRejects
+VMCacheContracts.VersionOneBytesRejectDecode
+VMContextBoundaries.LineCallbackFiresWhenSetAndSilentWhenCleared
+VMContextBoundaries.NestedNativeToScriptRestoresOuterAndReturnsSeven
+VMContextBoundaries.RecursionHitsStackLimitThenRecoveryNinetySeven
+VMContextBoundaries.TwoThreadsKeepIndependentLineCallbacks
+VMContexts.IndependentContextsAndReprepare
+VMContexts.IndependentThreadsPreserveResults
+VMContexts.JitEntryAndSaveReturnValueAdvance
+VMContexts.NestedInnerAbortRestoresOuter
+VMContexts.NestedNativeToScriptReturnsSeven
+VMContexts.ReentrantExecuteIsRejected
+VMContexts.ShutdownRejectsPrepareAndKeepsMetadataReadable
+VMContexts.SuspendResumeAddsOneThenTwoReturnsThree
+VMContexts.ThrowExceptionUnwindsOnce
+VMDetachedMetadata.ConcurrentLeaseReleaseFromHeldReference
+VMDetachedMetadata.FunctionLeaseRetainsOwnerAfterFixtureRelease
+VMDetachedMetadata.HandBuiltCounterNeedsNoEngineOrNumericIds
+VMDetachedMetadata.InvalidSignatureAndFrozenMutationLeaveCountsUnchanged
+VMDetachedMetadata.OrdinaryFunctionKeyCanAgreeWhenReturnTypeDiffers
+VMDetachedMetadata.ShellFreezeStillRejectsFingerprints
+VMDispatch.BoundCallAndNativeCallReturnFortyTwo
+VMDispatch.BoundCallUnboundNativeThrows
+VMDispatch.CastDerivedToBaseSucceedsUnrelatedFails
+VMDispatch.DelegateCaptureReleasesReceiver
+VMDispatch.DerivedDispatchThroughBaseChoosesTwo
+VMDispatch.ExplicitBaseCallRemainsOne
+VMDispatch.FuncPtrCallPtrReturnsFortyTwo
+VMDispatch.MethodFunctionExecutesThroughSnapshot
+VMDispatch.NullCallPtrThrows
+VMDispatch.NullCastLeavesNull
+VMDispatchContracts.CallBndScriptAndNativeIndependentOracles
+VMDispatchContracts.CallBndUnboundAndWrongSignatureRejectBeforeExecute
+VMDispatchContracts.FuncdefSignatureAcceptsMatchAndRejectsReturnMismatch
+VMDispatchContracts.InterfaceCallSelectsDerivedWhileBaseCallStaysOne
+VMDispatchContracts.InterfaceFactoryRequiresOwnerAndLeavesCountUnchanged
+VMDispatchContracts.TwoDelegatesReleaseEachReceiverOnce
+VMExecutableLeases.ExecuteAfterCallerSnapshotReleaseReturnsFortyTwo
+VMExecutableLeases.MissingPublishedScriptPrepareReturnsNoFunction
+VMExecutableLeases.NativePrepareExecuteAddTwentyAndTwentyTwo
+VMExecutableOwnership.ExecutionSurvivesProducerRelease
+VMExecutableOwnership.FailedCandidateDoesNotInstallAndExistingBodySurvives
+VMExecutableOwnership.ForeignAndUnlinkedPrepareReject
+VMExecutableOwnership.NativeTwentyPlusTwentyTwoLeavesSysFuncIntfUnchanged
+VMExecutableOwnership.ScriptFortyTwoLeavesFrozenDeclarationUnchanged
+VMExecutableOwnership.TwoEnginesKeepIndependentExecutableStorage
+VMFingerprints.BuildingAndIncompleteStatesRejectFingerprints
+VMFingerprints.ConcurrentReadsAgree
+VMFingerprints.EnumBaseInterfaceGenericAccessAndListChangeSchema
+VMFingerprints.FunctionBodyAndSourceLocationDoNotChangeTypeFingerprints
+VMFingerprints.GoldenCanonicalBytesFixFieldOrderAndDomains
+VMFingerprints.HandleCycleTerminatesAndValueCyclePublishesNoHash
+VMFingerprints.IndependentPointsAgreeOnKeyWitnessAndHash
+VMFingerprints.InjectedEqualDigestsWithDifferentWitnessesAreCollisions
+VMFingerprints.MethodReturnChangesSchemaButNotIdentity
+VMFingerprints.OneFactChangesAffectDeclaredDomains
+VMFingerprints.RetiredAuthenticDefinitionsRemainInspectable
+VMFingerprints.UnauthenticatedShellFreezeRejectsFingerprintQuery
+VMFloatingOpcodeMatrix.DoubleArithmetic
+VMFloatingOpcodeMatrix.FloatArithmeticAndImmediate
+VMFloatingOpcodeMatrix.FloatDoubleComparisons
+VMFloatingOpcodeMatrix.IntegerFloatConversions
+VMFloatingOpcodeMatrix.NegIncDecFloatDouble
+VMFloatingOpcodeMatrix.PowerFloatAndDomain
+VMFloatingOpcodeMatrix.WideFloatConversions
+VMFlowAdmission.ExclusiveBranchNormalDestroysSucceedAndSamePathDuplicatesReject
+VMFlowAdmission.FinalConditionalFallthroughRejectsAndFinalJumpSucceeds
+VMFlowAdmission.InRefCallWithOneDwordPushRejects
+VMFlowAdmission.LiveSlotWithoutNormalCleanupRejects
+VMFlowAdmission.ResultSpanBeyondFrameAndOverflowReject
+VMFlowAdmission.VoidDoubleCallWithOneDwordPushRejects
+VMFlowAdmission.VoidDoubleCallWithPshC8SucceedsAndBalancedLoopSucceeds
+VMFlowPath.BothPathDuplicateDestroyStillRejects
+VMFlowPath.CallSysWithTwoPushesThenReturnSucceeds
+VMFlowPath.CallSysWithoutArgumentPushesRejects
+VMFlowPath.CleanupPastBodyAndMissingTypeReject
+VMFlowPath.DisjointNormalAndExceptionCleanupSucceeds
+VMFlowPath.PshC4WithoutReturnRejectsFallthrough
+VMFlowVerification.DuplicateDestroyAndUnconstructedCleanupReject
+VMFlowVerification.MutationInvalidatesPriorAdmission
+VMFlowVerification.PopPtrWithoutPushUnderflows
+VMFlowVerification.UnequalBranchJoinAndGrowingBackedgeReject
+VMFlowVerification.ValidBalancedLoopAndGuardedCleanupPass
+VMGC.DelegateCaptureCycleIsReclaimed
+VMGC.EngineGarbageCollectAfterExecution
+VMGC.FullAndIncrementalReachSameDestructorSet
+VMGC.PreparedContextRootsLiveObject
+VMGC.RefCpyVBalancesAddRefRelease
+VMGC.RootedCycleSurvivesThenDies
+VMGC.UnrootedSelfCycleFinalizesOnce
+VMGC.UnrootedTwoNodeCycleFinalizesEachOnce
+VMGC.WeakRefValidThenInvalidAfterCollection
+VMImageContracts.CanonicalContractBytesMatchDocumentedOrder
+VMImageContracts.CompleteClosureCapturesFieldBaseReturnAndParameter
+VMImageContracts.CyclicHandlesTerminate
+VMImageContracts.DuplicateRoleKeyDifferentWitnessRejects
+VMImageContracts.InjectedEqualDigestsDoNotHideWitnessMismatch
+VMImageContracts.SameFunctionKeyDifferentReturnHasDifferentContracts
+VMImageContracts.UnfrozenTypeRejectsFingerprintQuery
+VMIntegerOpcodeMatrix.Bitwise32
+VMIntegerOpcodeMatrix.Bitwise64
+VMIntegerOpcodeMatrix.ComparisonsAndTestFlags
+VMIntegerOpcodeMatrix.ConditionalJumpsTakenAndNotTaken
+VMIntegerOpcodeMatrix.ConstantMovesAndWidths
+VMIntegerOpcodeMatrix.DivModByZeroTypedException
+VMIntegerOpcodeMatrix.GlobalMoves
+VMIntegerOpcodeMatrix.Integer32Arithmetic
+VMIntegerOpcodeMatrix.Integer64Arithmetic
+VMIntegerOpcodeMatrix.IntegerConversions
+VMIntegerOpcodeMatrix.JumpTableEachArmDefaultAndMalformed
+VMIntegerOpcodeMatrix.MemoryWidthsWithSentinels
+VMIntegerOpcodeMatrix.NegIncDec
+VMIntegerOpcodeMatrix.NegativeArgOffsetsVersusPositiveLocals
+VMIntegerOpcodeMatrix.PowerIntegerAndOverflow
+VMIntegerOpcodeMatrix.StackPointerAndVar
+VMIntegerOpcodeMatrix.TerminatingLoopSumOneToTen
+VMIntegerOpcodeMatrix.UnsignedDivMod
+VMIntegration.CopyScriptNullThrowsThenListInitReturnsFortyTwo
+VMIntegration.FloatDoubleConversionAndPowerFamilies
+VMIntegration.GetObjMovesHandleThenGetRefReadsFortyTwo
+VMIntegration.GlobalStoragePgaPshG4Roundtrip
+VMIntegration.IntegerWidthShiftCompareAndJumpFamilies
+VMIntegration.JmppIndexOneSkipsNextStore
+VMIntegration.MemoryWidthIncAndSwapFamilies
+VMIntegration.MixedImageStillReturnsFortyTwo
+VMIntegration.MixedNativeDispatchDelegateSuspendCycleAndException
+VMIntegration.RejectsRetiredReservedAndPseudoOpcodes
+VMIntegration.RemainingWidthShiftFloatJumpAliases
+VMIntegration.Thiscall1AddsSevenToReceiver
+VMLinking.LinkResolvesOriginalFunctionPointers
+VMLinking.MissingDeclarationAndBodyConflictReject
+VMNativeABI.InOutInoutAndForwardedReference
+VMNativeABI.MultipleInheritanceAppliesBaseOffset
+VMNativeABI.ObjectFirstAndLastReachReceiver
+VMNativeABI.PaddedReceiverSevenPlusFiveReturnsTwelve
+VMNativeABI.PrimitiveWidthsGenericAndTyped
+VMNativeABI.RejectsMissingCallerUnsupportedNullReceiverAndThrowsOnce
+VMNativeABI.ValueObjectArgumentAndHandleReturn
+VMNativeCalls.BindNativeFunctionRequiresRegisteredDeclaration
+VMNativeCalls.BytecodeWritesNativeRecordValueAndPreservesPadding
+VMNativeCalls.GenericAddTwentyAndTwentyTwoReturnsFortyTwo
+VMNativeCalls.GenericInt64BoolAndOutParameter
+VMNativeCalls.MethodReceiverValueSevenPlusFiveReturnsTwelveWithSentinels
+VMNativeCalls.NativeSetExceptionReportsVmException
+VMNativeCalls.NullIndirectCompositeThrowsBeforeWrite
+VMNativeCalls.TypedCallerAddTwentyAndTwentyTwoReturnsFortyTwo
+VMNativeCalls.UnboundSystemCallRejectsAtLink
+VMNativeCalls.UnsupportedThiscallOnFreeFunctionFailsBeforeCallback
+VMNativeLayout.CompositeInlineAndIndirectHaveDistinctLayoutWitnesses
+VMNativeLayout.NativeAdmissionRejectsOverflowOverlapPackedAndFrozenMutation
+VMNativeLayout.NativeRecordPreservesHostOffsetsAndPadding
+VMNativeLayout.SameKeyDifferentOffsetChangesLayoutHash
+VMObjectLifetime.DestructorFiresThroughNativeBinding
+VMObjectLifetime.HighAlignmentHeaderRecovers
+VMObjectLifetime.NativeHandleIsNotProbedAsSdkHeader
+VMObjectLifetime.ObjectSurvivesCallerSnapshotRelease
+VMObjectLifetime.PartialMemberFailureSkipsWholeObjectDestructor
+VMObjects.AllocatedObjectReportsTypeAndEngine
+VMObjects.CopyPreservesValueWithoutAliasing
+VMObjects.DestructScriptAdvancesPastSentinel
+VMObjects.HeapAllocConstructorSetsXDestructorFiresOnce
+VMObjects.NullObjectReferenceThrows
+VMObjects.PointFieldZeroRoundtrip
+VMObjects.ScriptObjectTypeRegistersAndContextExecutes
+VMOperandContracts.AssignedOpcodesHaveDescriptorsOrStrRejects
+VMOperandContracts.FrameCleanupSourceCapturedAndInvalidResultRegionRejects
+VMOperandContracts.FrameSpanAlignmentCrossingAndZeroSizeRejects
+VMOperandContracts.ImmediateWidthSlotRoleAndStringRejects
+VMOperandContracts.JmpImmediateS32RejectsWrongTagDirectAndDecoded
+VMOperandContracts.ReservedAndPseudoOpcodesReject
+VMOperandContracts.SetV4MinLocalRejectsFrameRangeDirectAndDecoded
+VMOperandContracts.ValidNegativeParameterAndInRangeLocalPass
+VMResourceOpcodeMatrix.CallBndScriptAndNative
+VMResourceOpcodeMatrix.CallSysReturnsFortyTwo
+VMResourceOpcodeMatrix.CastStoreLoadAndCallIntf
+VMResourceOpcodeMatrix.FuncPtrCallPtrAndNull
+VMResourceOpcodeMatrix.GetObjGetRefChkAndAddSi
+VMResourceOpcodeMatrix.GetObjRefReplacesStackWithHandleThenReadsSeventeen
+VMResourceOpcodeMatrix.ListCopyTypeIdAndNullChecks
+VMResourceOpcodeMatrix.LoadThisRReadsReceiverFieldSeventeenAndNullThrows
+VMResourceOpcodeMatrix.NestedCallAndReturn
+VMResourceOpcodeMatrix.NullChecksThrow
+VMResourceOpcodeMatrix.ObjectAllocCopyFreeAndGetRef
+VMResourceOpcodeMatrix.ObserversMarkersSuspendAndThrow
+VMResourceOpcodeMatrix.RetiredAndReservedReject
+VMResourceOpcodeMatrix.Thiscall1AddsSevenToReceiver
+VMRootLifetime.ConcurrentAddRefReleaseFinalizesOnce
+VMRootLifetime.FailedConstructorIsNotCollectedAsComplete
+VMRootLifetime.NestedNativeCollectLeavesInnerRootUntilUnwind
+VMRootLifetime.SuspendedCycleSurvivesGcThenAbortFinalizesOnce
+VMRootLifetime.TwoEnginesKeepIndependentRoots
+VMScalar.ExecuteAddSevenAndThirtyFive
+VMScalar.ExecuteConstantReturnFortyTwo
+VMShutdownDrain.BlockedNativeReleasedBySignalWithoutEarlyComplete
+VMShutdownDrain.ConcurrentPrepareVersusShutdownIsCoherent
+VMShutdownDrain.NativeCallbackShutdownReturnsWithoutDeadlock
+VMShutdownDrain.RepeatedShutdownIsIdempotentAndMetadataStaysReadable
+VMShutdownDrain.RetainedObjectDelaysDestroyUntilFinalRelease
+VMShutdownDrain.ShutdownAbortsSuspendedAndReleasesRoot
+VMShutdownDrain.ShutdownRejectsNewLinkAndPrepare
+VMSourceAdmission.AdapterDoesNotMutateFrozenParameterOffsets
+VMSourceAdmission.BodiesOnlySessionReturnsNotReady
+VMSourceAdmission.DiagnosticsSurviveProducerDestruction
+VMSourceAdmission.ForeignEqualKeyDefinitionsReturnInvalidInput
+VMSourceAdmission.NullSessionOrDefinitionsReturnInvalidInput
+VMSourceAdmission.RecoverySessionReturnsInvalidInput
+VMSourceAdmission.ResourceBudgetReturnsResourceLimit
+VMSourceAdmission.UnfrozenDefinitionsReturnNotReady
+VMSourceAdmission.UnsupportedBodyPublishesNoPartialImage
+VMSourceAdmission.UnsupportedTargetReturnsUnsupportedLowering
+VMSourceAdmission.UnverifiedSessionReturnsNotReady
+VMSourceAdmission.ValidEmissionLinksThroughAtomicPublish
+VMSourceAdmission.VerifiedSupportedBodySucceedsEngineFree
+VMSourceCacheContracts.ChangedMethodReturnRejects
+VMSourceCacheContracts.ConflictingBodyLeavesInstalledCallable
+VMSourceCacheContracts.ForeignImageRejects
+VMSourceCacheContracts.IntegerControlStillSeven
+VMSourceCacheContracts.MissingClassRejectsWithoutInstalling
+VMSourceCacheContracts.MissingFreeFunctionRejectsWithoutInstalling
+VMSourceCacheContracts.MissingNativeBindingRejects
+VMSourceCacheContracts.MixedLoopBodyObjectsContinueThrowRecoverOnAAndB
+VMSourceCacheContracts.SourceCacheExecutesOnBAfterProducerRelease
+VMSourceCallContracts.ConstOutRvalueMismatchesReject
+VMSourceCallContracts.ConstructorOrdinalsRoundtripAndRejectCorrupt
+VMSourceCallContracts.ExplicitArgSuppressesTypedDefault
+VMSourceCallContracts.ImplicitThisMemberAccessReturnsSeven
+VMSourceCallContracts.MetadataStringDefaultExplicitSucceeds
+VMSourceCallContracts.MetadataStringDefaultOmitRejectsWithoutImage
+VMSourceCallContracts.NativeFillBumpPeekForwardedRefWritesFortyTwo
+VMSourceCallContracts.NativeFillBumpPeekLocalWritesFortyTwo
+VMSourceCallContracts.NativeFillBumpPeekMemberWritesFortyTwo
+VMSourceCallContracts.PairNamedCtorStoresWithReverseFormalTrace
+VMSourceCallContracts.PositionalNamedReverseFormalTraceTwelve
+VMSourceCallContracts.ScriptFillRunsThenLiteralOutRejects
+VMSourceCallContracts.TwoFilesEitherOrderReturnSevenWithLocations
+VMSourceCallContracts.TypedDefaultHostMarkTwiceIsSixtyEight
+VMSourceCalls.MissingNativeBindingRejectsLink
+VMSourceCalls.MissingOverloadPublishesNoImage
+VMSourceCalls.NativeHostAddTwentyAndTwentyTwo
+VMSourceCalls.NativePackMarkTracesReverseFormal
+VMSourceCalls.NativeSetExceptionReportsVmException
+VMSourceCalls.OutTemporaryPublishesNoImage
+VMSourceCalls.SourceCallerReturnsSeven
+VMSourceCalls.SourceCombineNamedAndDefaultIsThirtyFour
+VMSourceCalls.SourceFactorialZeroOneFive
+VMSourceCalls.SourceFillAndBumpYieldFortyTwo
+VMSourceCalls.SourceForwardCalleeAfterCallerReturnsSeven
+VMSourceCalls.SourceInRefPreservesCallerValue
+VMSourceCalls.SourceLiteralReturnExecutes
+VMSourceCalls.SourceOverloadsReturnDistinctMarkers
+VMSourceCalls.SourcePackMarkPositionalAndNamedReturnTwelve
+VMSourceCalls.TypedDefaultMarkRunsPerCallSite
+VMSourceCalls.UnsupportedThiscallBindingRejected
+VMSourceCalls.WrongNamedArgumentPublishesNoImage
+VMSourceControlFlow.SourceForSkipTwoBreakFiveGivesEight
+VMSourceControlFlow.SourceIfElseSelectsBranch
+VMSourceControlFlow.SourceLazyAndOrTernarySkipSideEffects
+VMSourceControlFlow.SourceLazyAndSkipsZeroDivisor
+VMSourceControlFlow.SourceSwitchFallthroughAndDefault
+VMSourceControlFlow.SourceWhileSumOneToTenIsFiftyFive
+VMSourceControlFlow.SourceWhileZeroVersusDoOnce
+VMSourceExpressions.SourceAddWithRuntimeParameters
+VMSourceExpressions.SourceBitwiseOrEqualsIsTrue
+VMSourceExpressions.SourceEightMinusThreeMinusOneIsFour
+VMSourceExpressions.SourceOnePlusTwoPointFiveIsThreePointFive
+VMSourceExpressions.SourceOnePlusTwoTimesThreeIsSeven
+VMSourceExpressions.SourcePowerIsLeftAssociatedSixtyFour
+VMSourceExpressions.SourceUnaryMinusAndLocalAssignment
+VMSourceIntegration.MissingDestinationFunctionRejectsSourceCache
+VMSourceIntegration.PreinstalledBodyRejectsSourceCache
+VMSourceIntegration.SourceMixedLoopObjectExceptionCache
+VMSourceIntegration.SourceProducedCacheRunsAfterProducerRelease
+VMSourceNumeric.BoolOrPreserved
+VMSourceNumeric.DoubleDivideLiteralEmitsDivd
+VMSourceNumeric.DoubleMultiplyLiteralEmitsMuldNotAddd
+VMSourceNumeric.DoubleOpsThroughParameterLocalCastAndConditional
+VMSourceNumeric.DoubleSubtractLiteralEmitsSubdNotAddd
+VMSourceNumeric.EnumValuePreserved
+VMSourceNumeric.FloatCompareAssignAndNonIntCast
+VMSourceNumeric.FrameAbove64DwordsExecutesWhenBudgetAllows
+VMSourceNumeric.Int64Above32BitsPreserved
+VMSourceNumeric.IntegerControlStillSeven
+VMSourceNumeric.NarrowSignExtension
+VMSourceNumeric.OverBudgetFrameRejectsWithoutImage
+VMSourceNumeric.UnsignedHighBitCompareAndDivide
+VMSourceObjects.SourceConstructOrdinalsRoundtripAndRejectBadVersion
+VMSourceObjects.SourceEmptyDefaultConstructCompletes
+VMSourceObjects.SourceFreeFunctionStillExecutes
+VMSourceObjects.SourcePairNamedConstructorFormalOrder
+VMSourceObjects.SourcePlainCopyReadsNine
+VMSourceObjects.SourceReverseDestroyOnReturn
+VMSourceObjects.SourceValueFieldWriteThenRead
+VMSourceObjects.SourceValueLocalSevenReadsSeven
+VMSourceScopeCleanup.BreakDestroysBodyBeforeInitializer
+VMSourceScopeCleanup.EarlyReturnPreservesValueThroughDestructors
+VMSourceScopeCleanup.ForInitSurvivesContinueBodyDestroyedEachIteration
+VMSourceScopeCleanup.IntegerControlStillSeven
+VMSourceScopeCleanup.NestedForBreakSelectsNearest
+VMSourceScopeCleanup.NestedInnerDestroysBeforeMarkerThenOuter
+VMSourceScopeCleanup.NestedWhileContinueUsesBackedge
+VMSourceScopeCleanup.NoDuplicateDestructionOnNestedScopes
+VMSourceScopeCleanup.SwitchBreakSelectsNearest
+VMSourceScopeCleanup.UntakenConstructionBranchHasNoDestructor
+VMSourceUnwind.BrokenConstructorDestroysCompletedLocalOnly
+VMSourceUnwind.IntegerControlStillSeven
+VMSourceUnwind.NativeFailUnwindsReverseThenRecoveryNinetySeven
+VMSourceUnwind.NestedMemberPartialConstructionOrder
+VMSourceUnwind.SourceRecordsSurviveEncodeDecodeAndProducerRelease
+VMSourceUnwind.StackLimitReportsSourceLocationThenRecovery
+VMSourceUnwind.TwoLocalsDivByZeroUnwindsReverseThenRecoveryNinetySeven
+VMWireFormat.CanonicalOrderRoundtripPreservesContractsFrameAndCleanup
+VMWireFormat.EmptyImageMatchesIndependentGoldenAndRejectsV1
+VMWireFormat.MalformedCountsTargetsAndTrailingBytesReject
+VMWireFormat.StringsPreserveExactUtf8BoundsAndRejectTruncatedMultibyte
+```

@@ -4,7 +4,7 @@ The reconstructed AngelScript frontend and maintained SDK still expose a mixture
 
 The accepted direction is a smaller UE-owned script language. The engine selects source/module membership, supplies external definitions and publishes executable generations. Scripts use ordinary classes/functions, host-registered parameterized types and explicit UE declarations. They do not define module sharing policy, anonymous functions, exception handlers, coroutines or user templates.
 
-This delivery creates planning artifacts only and aligns the conflicting delegate proposal/tasks. It does not implement the product tasks, execute UE, synchronize current specs, archive or perform Git publication. Every implementation task remains unchecked.
+The user authorized implementation on 2026-09-08 after the initial planning delivery and delegate-plan alignment. This Change implements the bounded language/SDK/library reduction, verifies the current plugin, synchronizes its durable specifications and closes through the project lifecycle. Task cards and implementation evidence record actual completion. Git publication and the separate delegate implementation are outside this delivery.
 
 ## What Changes
 
@@ -40,7 +40,7 @@ Retain native generic-call interfaces (asIScriptGeneric), host parameterized-typ
 
 ## Impact
 
-Planning lives in the parent repository. Future implementation belongs in Plugins/Angelscript: the maintained SDK/frontend, current test corpus, affected runtime reflection/binding consumers and bounded Standalone add-on consumers. Keep Source/AngelscriptProject minimal and preserve unrelated work. Dormant Legacy implementation and historical test oracles remain reference material; only active build-boundary consumers are migrated when necessary to compile the changed public SDK.
+Planning lives in the parent repository. Implementation belongs in Plugins/Angelscript: the maintained SDK/frontend, current test corpus, affected runtime reflection/binding consumers and bounded Standalone add-on consumers. Keep Source/AngelscriptProject minimal and preserve unrelated work. Dormant Legacy implementation and historical test oracles remain reference material; only active build-boundary consumers are migrated when necessary to compile the changed public SDK.
 
 The adjacent `angelscript/feature-delegates-ue-interop` remains the owner of UE delegate/event execution, explicit bind-time payloads and native/dynamic adapters. Its Lambda/closure proposal is superseded by this decision. Align its pending task 2.2 and dependent acceptance cases without implementing that feature or completing its existing design prerequisite. This Change supplies the callable metadata interface; the delegate Change consumes it before product work. Cross-change prerequisites are stated explicitly, not encoded as foreign task IDs in a local DAG.
 

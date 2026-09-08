@@ -1,0 +1,41 @@
+--- tasks.md.after
++++ tasks.md.before
+@@ -10,8 +10,6 @@
+     "4.1": ["3.1"]
+     "5.1": ["4.1"]
+     "5.2": ["5.1"]
+-    "5.3": ["5.2"]
+-    "5.4": ["5.3"]
+ ---
+ 
+ ## Delivery and execution boundary
+@@ -142,28 +140,10 @@
+ 
+   Consume completed 1.1-4.1 and build the current unchanged source through Harness. Produce exact source/binary SHA-256, build/test RunIds, discovered case identities, retired-case explanations, interface absence evidence and requirement mapping. Whole NativeEngine is justified by AST/identity/fingerprint/ABI/linker/GC/Context shared contracts. Verify hand-authored bytecode, source execution and decode/link execution remain independent producer oracles. Confirm the delegate Change refers to the new callable interface and prohibits Lambda; do not complete its tasks. No product fix is owned by this evidence node: ordinary owner defects return to their owning work; invalidated boundaries receive a follow-up plan without unchecking history.
+ 
+-- [x] 5.2 Prove dormant startup and record terminal verification boundaries — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Baseline'; Fast = $true; TimeoutMs = 600000 }`
++- [ ] 5.2 Prove dormant startup and record terminal verification boundaries — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Baseline'; Fast = $true; TimeoutMs = 600000 }`
+   > Files: `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/data/implementation-verification.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/INDEX.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/tasks.md`
+ 
+-  > Evidence (2026-09-08): same-binary Baseline run `1b52d12c25054c98a9795208d6316bc6` executed all three identities successfully: RuntimeDormantByDefault, OptionalIntegrationsDormantByDefault and LegacySuiteExcludedByDefault. The last case records 2,436 LogMetaSound test-tag registration warnings; the other two have zero warnings. No errors/skips/in-process cases. Source and seven DLL hashes match task 5.1. Runtime log confirms legacy startup is disabled; the dormant editor returns before watcher registration. Warning inspection additionally exposed a preexisting duplicate BodiesControlFlow class registration and eight undiscovered body-semantic cases; follow-up tasks 5.3/5.4 repair discovery and refresh the final snapshot without erasing these valid executed-case results.
+-
+   Use the 5.1 binary without intervening source changes. Require Baseline's real startup dormancy cases to execute, retain warnings accurately, and ensure no script engine/watcher legacy services were enabled. Record omitted standalone/JIT/full UE/performance tests with scope reasons. Later spec synchronization, terminal evolution evidence and archive use the owning lifecycle skills; no routine Review is introduced and no existing Review is implicitly closed.
+-
+-## 6. Discovery follow-up from final verification
+-
+-- [ ] 5.3 Restore the eight suppressed control-flow tests and prove the complete NativeEngine selection — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.NativeEngine'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/Bodies/BodySemanticTests.cpp`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/tasks.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/INDEX.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/data/implementation-verification.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/implementation/issue-20260908-023255-duplicate-controlflow-registration.md`
+-
+-  Own only the colliding CQTest class registration identity and its final evidence. Two C++ namespaces do not separate the process-global CQTest class-name registry. Give the eight-case class the distinct public identity BodiesStructuredControlFlow; preserve all source fixtures and assertions, the existing twelve-case BodiesControlFlow family and every VM identity. No compiler/runtime behavior is added.
+-
+-  Cases: ForOwnsTypedInitConditionIncrementAndContinueTarget, DoAndEmptyForHaveExplicitBodiesAndTypedBreakTargets, DanglingElseBindsNearestIf, LoopAndBranchLocalsDoNotLeakToEnclosingScope, InnerLocalShadowsParameterAndDuplicateLocalIsRejected, ContinuePreservesForInitializerButBreakDestroysIt, NumericConditionsAreRejectedRatherThanImplicitlyBoolified and LocalInitializerConvertsButIncompatibleInitializerFails. All eight must be discovered and execute Success together; the original twelve-case family and all 44 LanguageSurface cases remain Success. The complete selector should contain 968 unique cases and startup must not report this duplicate registration.
+-
+-  Observed RED: NativeEngine `d8a6408a76894173b17110dbfa9bddd4` has zero of the eight identities, while its startup log rejects duplicate BodiesControlFlow registration. The same warning in preimplementation Syntax run `762f7a5565c34fa0aef0ba119b5b4ffd` proves the defect predates this change. Restore discovery, build through Harness with source writers frozen, execute the exact NativeEngine selector, and update current source/binary/report hashes and identity lists. Keep prior 960-case evidence as historical executed-case proof, not complete source-test coverage.
+-
+-- [ ] 5.4 Reprove dormant startup on the final discovery-corrected binary — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.Baseline'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `openspec/changes/angelscript/refactor-language-surface-ue-focused/tasks.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/INDEX.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/data/implementation-verification.md`, `openspec/changes/angelscript/refactor-language-surface-ue-focused/attachments/implementation/issue-20260908-023255-duplicate-controlflow-registration.md`
+-
+-  Repeat the three concrete startup cases on 5.3's unchanged binary; retain actual warning counts and source/binary identity. This is a final proof refresh after a test-source change, not another product feature. Then verify, synchronize durable specifications, record terminal evolution evidence and archive.
+ 
+ ## Requirement and cross-change mapping
+ 

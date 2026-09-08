@@ -1,0 +1,11 @@
+--- tasks.md.after
++++ tasks.md.before
+@@ -100,7 +100,7 @@
+ ## 3. Reflection authoring
+ 
+ - [ ] 3.1 Reject AS Blueprint accessor metadata and remove its dedicated consumers — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.NativeEngine.LanguageSurface.Reflection'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_sema*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_descriptor_consumer.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptDescriptors.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/**`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/LanguageSurface/ReflectionTests.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_frontend_sema*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_descriptor_consumer.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptDescriptors.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Preprocessor/AngelscriptPreprocessor.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ClassGenerator/AngelscriptClassGenerator*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/**`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/LanguageSurface/ReflectionTests.cpp`
+ 
+   Own only AS-authored BlueprintGetter/BlueprintSetter validation, dedicated descriptor fields and their production/consumption; do not edit UE native reflection or ordinary metadata. Binds scope is an actual accessor-metadata consumer only. No legacy runtime activation is permitted for tests.
+ 
