@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_73456147-4a16-4f31-b494-f568983456db
+  id: angelscript/runtime/vm
+  title: SDK Virtual Machine
+  description: Maintained interpreter execution, native contracts and owned runtime cleanup.

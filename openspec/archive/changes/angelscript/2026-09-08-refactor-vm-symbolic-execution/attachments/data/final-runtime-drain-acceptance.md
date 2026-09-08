@@ -1,0 +1,565 @@
+# Final runtime-drain acceptance evidence
+
+Captured 2026-09-08T13:12:43.772042+08:00. This is renewed 11.4 product verification after task 8.7, before immutable Review reconciliation. Passing selections do not by themselves close any original finding or authorize archive.
+
+## Frozen source and actual execution
+
+- Build f07882afc2674ef7b10b32e2e93f78b4: Succeeded.
+- Complete NativeEngine c2ceeb65d57d4f8fb84006dbaa309f41: 1080/1080 Success, zero warnings/failures/skipped/in-process; raw report SHA-256 `8edcd47e689e60f37ee96a2ec720c4d9ad39cc9b430b7220c8137258cfde9457`.
+- Baseline a53eca61567847c29d74e5dbbab70a02: 3/3 Success, 2,436 warning events in LegacySuiteExcludedByDefault; raw report SHA-256 `8c5858d82e8d7c9ba49171f65d6bba31fe886572ce18017b65988cfeb5ee0ce7`. The warnings are MetaSound test-tag registration and are retained.
+- Shared VM 4d86afaf614c494a8d945050b4e2f2ca: 467/467, zero warnings. Runtime-drain stomp b4148c96bb2a4f559091818265c3b2ce: 12/12, one warning-bearing case. Exact commands, warnings and failed earlier iterations are in runtime-drain-verification.md.
+- Source identity `3a9195feac747d5e8f6e7685bb028e3221968d68250a0cb72fc91ce9156b55f0`, 2318 source entries. Full inventory Saved/runtime-drain-verified-identity.json. Every current source and binary hash was rechecked when writing this evidence.
+
+| Binary | SHA-256 |
+|---|---|
+| Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptEditor.dll | 2d8aff0477c721d1813592be9bdebdee5fb1fcee0e3b6c43e8ac48dab7b4294f |
+| Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptRuntime.dll | b162cb3f704df54432173a1e9067532faf68c9e986ea8a1c9f873ea1607cb387 |
+| Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTest.dll | 975d73d2206db1c92f1238adc7c927e10bf177ea74028edcb78e2ba99b5a0f09 |
+| Plugins/Angelscript/Binaries/Win64/UnrealEditor-AngelscriptTestJIT.dll | 3f337d0d6111e3fd60dec1aac3d3c21e04ceefd9cda69fa9fbe0f04e8888419e |
+
+Final commands use `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = <exact prefix>; Fast = $true; NoWait = $true; TimeoutMs = 600000 }`, selecting Angelscript.UnitTest.NativeEngine and Angelscript.UnitTest.Baseline separately on the same binary.
+
+## Exact task selectors in the report
+
+| Task | Exact selection | Individually discovered Success cases |
+|---|---|---|
+| 1.1 | Angelscript.UnitTest.NativeEngine.VMFingerprints | 12 |
+| 1.2 | Angelscript.UnitTest.NativeEngine.VMNativeLayout | 4 |
+| 1.3 | Angelscript.UnitTest.NativeEngine.VMDetachedMetadata | 6 |
+| 2.1 | Angelscript.UnitTest.NativeEngine.VMByteCodeImage | 4 |
+| 2.2 | Angelscript.UnitTest.NativeEngine.VMByteCodeVerifier | 3 |
+| 2.3 | Angelscript.UnitTest.NativeEngine.VMLinking | 2 |
+| 3.1 | Angelscript.UnitTest.NativeEngine.VMScalar | 2 |
+| 3.2 | Angelscript.UnitTest.NativeEngine.VMNativeCalls | 10 |
+| 3.3 | Angelscript.UnitTest.NativeEngine.VMObjects | 7 |
+| 3.4 | Angelscript.UnitTest.NativeEngine.VMDispatch | 16 |
+| 3.5 | Angelscript.UnitTest.NativeEngine.VMGC | 9 |
+| 3.6 | Angelscript.UnitTest.NativeEngine.VMContexts | 9 |
+| 4.1 | Angelscript.UnitTest.NativeEngine.VMCache | 23 |
+| 4.2 | Angelscript.UnitTest.NativeEngine | 1080 |
+| 5.1 | Angelscript.UnitTest.NativeEngine.VMSourceExpressions | 7 |
+| 5.2 | Angelscript.UnitTest.NativeEngine.VMSourceControlFlow | 7 |
+| 5.3 | Angelscript.UnitTest.NativeEngine.VMSourceCalls | 18 |
+| 5.4 | Angelscript.UnitTest.NativeEngine.VMSourceObjects | 8 |
+| 5.5 | Angelscript.UnitTest.NativeEngine.VMSourceIntegration | 4 |
+| 6.1 | Angelscript.UnitTest.NativeEngine.VMImageContracts | 7 |
+| 6.2 | Angelscript.UnitTest.NativeEngine.VMWireFormat | 4 |
+| 6.3 | Angelscript.UnitTest.NativeEngine.VMOperandContracts | 8 |
+| 6.4 | Angelscript.UnitTest.NativeEngine.VMFlowVerification | 5 |
+| 6.5 | Angelscript.UnitTest.NativeEngine.VMFlowPath | 6 |
+| 6.6 | Angelscript.UnitTest.NativeEngine.VMFlowAdmission | 8 |
+| 7.1 | Angelscript.UnitTest.NativeEngine.VMExecutableOwnership | 6 |
+| 7.2 | Angelscript.UnitTest.NativeEngine.VMAtomicLink | 13 |
+| 7.3 | Angelscript.UnitTest.NativeEngine.VMExecutableLeases | 3 |
+| 8.1 | Angelscript.UnitTest.NativeEngine.VMNativeABI | 7 |
+| 8.2 | Angelscript.UnitTest.NativeEngine.VMDispatchContracts | 6 |
+| 8.3 | Angelscript.UnitTest.NativeEngine.VMObjectLifetime | 5 |
+| 8.4 | Angelscript.UnitTest.NativeEngine.VMRootLifetime | 5 |
+| 8.5 | Angelscript.UnitTest.NativeEngine.VMContextBoundaries | 4 |
+| 8.6 | Angelscript.UnitTest.NativeEngine.VMShutdownDrain | 7 |
+| 9.1 | Angelscript.UnitTest.NativeEngine.VMIntegerOpcodeMatrix | 18 |
+| 9.2 | Angelscript.UnitTest.NativeEngine.VMFloatingOpcodeMatrix | 7 |
+| 9.3 | Angelscript.UnitTest.NativeEngine.VMResourceOpcodeMatrix | 14 |
+| 10.1 | Angelscript.UnitTest.NativeEngine.VMSourceAdmission | 13 |
+| 10.2 | Angelscript.UnitTest.NativeEngine.VMSourceNumeric | 13 |
+| 10.3 | Angelscript.UnitTest.NativeEngine.VMSourceCallContracts | 14 |
+| 10.4 | Angelscript.UnitTest.NativeEngine.VMSourceScopeCleanup | 11 |
+| 10.5 | Angelscript.UnitTest.NativeEngine.VMSourceUnwind | 8 |
+| 11.1 | Angelscript.UnitTest.NativeEngine.VMCacheContracts | 14 |
+| 11.2 | Angelscript.UnitTest.NativeEngine.VMSourceCacheContracts | 9 |
+| 11.3 | Angelscript.UnitTest.NativeEngine | 1080 |
+| 6.7 | Angelscript.UnitTest.NativeEngine.VMCallAdmission | 12 |
+| 6.8 | Angelscript.UnitTest.NativeEngine.VMLifetimeAdmission | 12 |
+| 6.9 | Angelscript.UnitTest.NativeEngine.VMFrameAdmission | 13 |
+| 6.10 | Angelscript.UnitTest.NativeEngine.VMReturnAdmission | 11 |
+| 6.11 | Angelscript.UnitTest.NativeEngine.VMIndirectAdmission | 15 |
+| 6.12 | Angelscript.UnitTest.NativeEngine.VMIndexedAdmission | 12 |
+| 6.13 | Angelscript.UnitTest.NativeEngine.VMManualAdmission | 15 |
+| 7.4 | Angelscript.UnitTest.NativeEngine.VMNativeBindingLifetime | 7 |
+| 8.7 | Angelscript.UnitTest.NativeEngine.VMRuntimeDrain | 12 |
+| 11.4 | Angelscript.UnitTest.NativeEngine | 1080 |
+
+All 213 assigned opcode rows match an individual Success identity; retired STR and reserved/pseudo rejection retain their explicit ledger disposition. The current report contains 467 VM cases, including 112 source-producer cases. The original source/opcode obligation mapping and F/P/R/V/W/X ownership remain in final-reconciliation-verification.md; tasks 7.4 and 8.7 additionally address immutable native generations, declaration layout and SDK object/runtime shutdown ownership in F02/Y01 and F05/Z01. A fresh immutable Review must still compare every original resolution condition against actual implementation and tests.
+
+## Exact VM and adjacent producer identities
+
+Every entry below is Success in c2ceeb65d57d4f8fb84006dbaa309f41. Prefix Angelscript.UnitTest.NativeEngine. is omitted for readability.
+- LanguageSurface.CallableSDK.BoundNamedCallbackReleasesItsReceiverExactlyOnce
+- LanguageSurface.CallableSDK.CallableSignatureLeaseSurvivesProducerRelease
+- LanguageSurface.CallableSDK.NamedScriptAndGenericNativeCallbacksExecuteFortyTwoIndirectly
+- LanguageSurface.CallableSDK.NominalDelegateAndEventShareOnlyTheirStructuralSignature
+- LanguageSurface.CallableSDK.OldNominalFactoryAndChildFactoryAreAbsent
+- LanguageSurface.CallableSDK.OldTypeSignatureAndChildQueriesAreAbsent
+- LanguageSurface.CallableSDK.ReturnTypeMismatchCannotReplaceTheInstalledCallable
+- LanguageSurface.CallableSDK.StringDeclarationRegistrationAndEngineEnumerationAreAbsent
+- VMAtomicLink.FailedCandidateRestoresCountsAndSentinels
+- VMAtomicLink.FailedFingerprintQueryRejects
+- VMAtomicLink.FrozenTamperedMetadataRejects
+- VMAtomicLink.InstalledBodyRemainsCallableAfterFailedCandidate
+- VMAtomicLink.MissingSiblingLeavesFUnpublishedThenRetrySucceeds
+- VMAtomicLink.OffsetOnlyPropertyChangeRejects
+- VMAtomicLink.PointeeOnlyChangeRejects
+- VMAtomicLink.RetiredAndForeignReject
+- VMAtomicLink.ReturnOnlyChangeRejects
+- VMAtomicLink.TwoThreadsOnePublicationWinner
+- VMAtomicLink.UnboundNativeThenRetryAfterBind
+- VMAtomicLink.WitnessCollisionRejectsDigestMatch
+- VMAtomicLink.ZeroDigestRequirementRejects
+- VMByteCodeImage.GoldenHeaderAndRejections
+- VMByteCodeImage.HandleCycleRequirementTerminates
+- VMByteCodeImage.LabelLoopAndFunctionOrder
+- VMByteCodeImage.RoundTripAndCanonicalOrder
+- VMByteCodeVerifier.RejectsOutOfRangeJump
+- VMByteCodeVerifier.RejectsRetiredReservedAndMissingClosure
+- VMByteCodeVerifier.ValidConstantAndLoopPass
+- VMCache.DestinationLayoutChangeRejectsLink
+- VMCache.DestinationSchemaChangeRejectsLink
+- VMCache.EncodedImageExecutesOnFreshEngineAfterProducerRelease
+- VMCache.IndirectReferencedTypeMismatchRejects
+- VMCache.MissingDestinationFunctionRejectsWithoutMutation
+- VMCache.MissingNativeBindingOnDestinationRejects
+- VMCache.NativeAddPortableAcrossFreshEngine
+- VMCache.TamperedBytesRejectDecode
+- VMCache.TwoLiveEnginesHaveIndependentSnapshots
+- VMCacheContracts.ChangedParameterModeRejects
+- VMCacheContracts.ChangedReturnSameFunctionKeyRejects
+- VMCacheContracts.DecodeDoesNotCreateDefinitionsOnB
+- VMCacheContracts.FailedFingerprintQueryRejects
+- VMCacheContracts.ForeignAttachedImageRejectsOnSecondEngine
+- VMCacheContracts.FuncdefAndMethodSignatureResolveOnB
+- VMCacheContracts.InjectedEqualDigestDifferentWitnessRejects
+- VMCacheContracts.LateMissingFunctionLeavesInstalledBodyAndSentinel
+- VMCacheContracts.MalformedPointerProfileRejects
+- VMCacheContracts.MissingTypeRejectsWithoutInstalling
+- VMCacheContracts.NamespacedStringAndGenericExecuteOnFreshEngineAfterProducerRelease
+- VMCacheContracts.NativeCallbackAndGlobalStorageUseBPointers
+- VMCacheContracts.OffsetOnlyNativeLayoutRejects
+- VMCacheContracts.VersionOneBytesRejectDecode
+- VMCallAdmission.DecodedRealDoubleCallReturnsFortyTwo
+- VMCallAdmission.EqualHeightAddressValueMergeRejects
+- VMCallAdmission.InvalidCategoryModeAndAggregateWidthRejectDirectAndDecoded
+- VMCallAdmission.MixedArgumentsAndReceiverConsumeExactStorage
+- VMCallAdmission.RealDoubleAndInt64RejectOneDwordArguments
+- VMCallAdmission.RealWideCallsBalanceLoopAndDecode
+- VMCallAdmission.ReferenceModesAcceptLocalAddressAndPointerLoad
+- VMCallAdmission.ReferenceModesRejectScalarBitsOfPointerWidth
+- VMCallAdmission.SwapPtrRequiresTwoCompletePointers
+- VMCallAdmission.TamperedReturnStorageRejectsBeforePublication
+- VMCallAdmission.TamperedWidthCannotAuthenticateAtTarget
+- VMCallAdmission.UnknownZeroAndOversizedStorageReject
+- VMContextBoundaries.LineCallbackFiresWhenSetAndSilentWhenCleared
+- VMContextBoundaries.NestedNativeToScriptRestoresOuterAndReturnsSeven
+- VMContextBoundaries.RecursionHitsStackLimitThenRecoveryNinetySeven
+- VMContextBoundaries.TwoThreadsKeepIndependentLineCallbacks
+- VMContexts.IndependentContextsAndReprepare
+- VMContexts.IndependentThreadsPreserveResults
+- VMContexts.JitEntryAndSaveReturnValueAdvance
+- VMContexts.NestedInnerAbortRestoresOuter
+- VMContexts.NestedNativeToScriptReturnsSeven
+- VMContexts.ReentrantExecuteIsRejected
+- VMContexts.ShutdownRejectsPrepareAndKeepsMetadataReadable
+- VMContexts.SuspendResumeAddsOneThenTwoReturnsThree
+- VMContexts.ThrowExceptionUnwindsOnce
+- VMDetachedMetadata.ConcurrentLeaseReleaseFromHeldReference
+- VMDetachedMetadata.FunctionLeaseRetainsOwnerAfterFixtureRelease
+- VMDetachedMetadata.HandBuiltCounterNeedsNoEngineOrNumericIds
+- VMDetachedMetadata.InvalidSignatureAndFrozenMutationLeaveCountsUnchanged
+- VMDetachedMetadata.OrdinaryFunctionKeyCanAgreeWhenReturnTypeDiffers
+- VMDetachedMetadata.ShellFreezeStillRejectsFingerprints
+- VMDispatch.BoundCallAndNativeCallReturnFortyTwo
+- VMDispatch.BoundCallUnboundNativeThrows
+- VMDispatch.CastDerivedToBaseSucceedsUnrelatedFails
+- VMDispatch.DelegateCaptureReleasesReceiver
+- VMDispatch.DerivedDispatchThroughBaseChoosesTwo
+- VMDispatch.ExplicitBaseCallRemainsOne
+- VMDispatch.FuncPtrCallPtrReturnsFortyTwo
+- VMDispatch.MethodFunctionExecutesThroughSnapshot
+- VMDispatch.NullCallPtrThrows
+- VMDispatch.NullCastLeavesNull
+- VMDispatchContracts.CallBndScriptAndNativeIndependentOracles
+- VMDispatchContracts.CallBndUnboundAndWrongSignatureRejectBeforeExecute
+- VMDispatchContracts.FuncdefSignatureAcceptsMatchAndRejectsReturnMismatch
+- VMDispatchContracts.InterfaceCallSelectsDerivedWhileBaseCallStaysOne
+- VMDispatchContracts.InterfaceFactoryRequiresOwnerAndLeavesCountUnchanged
+- VMDispatchContracts.TwoDelegatesReleaseEachReceiverOnce
+- VMExecutableLeases.ExecuteAfterCallerSnapshotReleaseReturnsFortyTwo
+- VMExecutableLeases.MissingPublishedScriptPrepareReturnsNoFunction
+- VMExecutableLeases.NativePrepareExecuteAddTwentyAndTwentyTwo
+- VMExecutableOwnership.ExecutionSurvivesProducerRelease
+- VMExecutableOwnership.FailedCandidateDoesNotInstallAndExistingBodySurvives
+- VMExecutableOwnership.ForeignAndUnlinkedPrepareReject
+- VMExecutableOwnership.NativeTwentyPlusTwentyTwoLeavesSysFuncIntfUnchanged
+- VMExecutableOwnership.ScriptFortyTwoLeavesFrozenDeclarationUnchanged
+- VMExecutableOwnership.TwoEnginesKeepIndependentExecutableStorage
+- VMFingerprints.BuildingAndIncompleteStatesRejectFingerprints
+- VMFingerprints.ConcurrentReadsAgree
+- VMFingerprints.EnumBaseInterfaceGenericAccessAndListChangeSchema
+- VMFingerprints.FunctionBodyAndSourceLocationDoNotChangeTypeFingerprints
+- VMFingerprints.GoldenCanonicalBytesFixFieldOrderAndDomains
+- VMFingerprints.HandleCycleTerminatesAndValueCyclePublishesNoHash
+- VMFingerprints.IndependentPointsAgreeOnKeyWitnessAndHash
+- VMFingerprints.InjectedEqualDigestsWithDifferentWitnessesAreCollisions
+- VMFingerprints.MethodReturnChangesSchemaButNotIdentity
+- VMFingerprints.OneFactChangesAffectDeclaredDomains
+- VMFingerprints.RetiredAuthenticDefinitionsRemainInspectable
+- VMFingerprints.UnauthenticatedShellFreezeRejectsFingerprintQuery
+- VMFloatingOpcodeMatrix.DoubleArithmetic
+- VMFloatingOpcodeMatrix.FloatArithmeticAndImmediate
+- VMFloatingOpcodeMatrix.FloatDoubleComparisons
+- VMFloatingOpcodeMatrix.IntegerFloatConversions
+- VMFloatingOpcodeMatrix.NegIncDecFloatDouble
+- VMFloatingOpcodeMatrix.PowerFloatAndDomain
+- VMFloatingOpcodeMatrix.WideFloatConversions
+- VMFlowAdmission.ExclusiveBranchNormalDestroysSucceedAndSamePathDuplicatesReject
+- VMFlowAdmission.FinalConditionalFallthroughRejectsAndFinalJumpSucceeds
+- VMFlowAdmission.FinalJnzDecodedFallthroughRejectsAndBackwardJumpPasses
+- VMFlowAdmission.InRefCallWithOneDwordPushRejects
+- VMFlowAdmission.LiveSlotWithoutNormalCleanupRejects
+- VMFlowAdmission.ResultSpanBeyondFrameAndOverflowReject
+- VMFlowAdmission.VoidDoubleCallWithOneDwordPushRejects
+- VMFlowAdmission.VoidDoubleCallWithPshC8SucceedsAndBalancedLoopSucceeds
+- VMFlowPath.BothPathDuplicateDestroyStillRejects
+- VMFlowPath.CallSysWithTwoPushesThenReturnSucceeds
+- VMFlowPath.CallSysWithoutArgumentPushesRejects
+- VMFlowPath.CleanupPastBodyAndMissingTypeReject
+- VMFlowPath.DisjointNormalAndExceptionCleanupSucceeds
+- VMFlowPath.PshC4WithoutReturnRejectsFallthrough
+- VMFlowVerification.DuplicateDestroyAndUnconstructedCleanupReject
+- VMFlowVerification.MutationInvalidatesPriorAdmission
+- VMFlowVerification.PopPtrWithoutPushUnderflows
+- VMFlowVerification.UnequalBranchJoinAndGrowingBackedgeReject
+- VMFlowVerification.ValidBalancedLoopAndGuardedCleanupPass
+- VMFrameAdmission.ArgumentPastItsLastDwordRejects
+- VMFrameAdmission.ConversionOperandsUseTheirOwnStorageWidths
+- VMFrameAdmission.FirstAndLastCompleteArgumentsPass
+- VMFrameAdmission.FirstAndLastCompleteLocalsPassDirectAndDecoded
+- VMFrameAdmission.ManagedPointerSpansCannotOverlap
+- VMFrameAdmission.ManagedStorageCannotOwnArgumentZero
+- VMFrameAdmission.NoArgumentZeroLocalRejectsDirectAndDecoded
+- VMFrameAdmission.PointerLoadRequiresBothDwordsInsideTheFrame
+- VMFrameAdmission.ResultSpanMustStayWithinLocalStorage
+- VMFrameAdmission.SafeLocalBoundaryExecutionReturnsFortyTwo
+- VMFrameAdmission.SignedPositiveEdgeUsesPhysicalStorageDirection
+- VMFrameAdmission.WideArgumentCannotCrossItsEnd
+- VMFrameAdmission.WideLocalCannotCrossIntoArguments
+- VMGC.DelegateCaptureCycleIsReclaimed
+- VMGC.EngineGarbageCollectAfterExecution
+- VMGC.FullAndIncrementalReachSameDestructorSet
+- VMGC.PreparedContextRootsLiveObject
+- VMGC.RefCpyVBalancesAddRefRelease
+- VMGC.RootedCycleSurvivesThenDies
+- VMGC.UnrootedSelfCycleFinalizesOnce
+- VMGC.UnrootedTwoNodeCycleFinalizesEachOnce
+- VMGC.WeakRefValidThenInvalidAfterCollection
+- VMImageContracts.CanonicalContractBytesMatchDocumentedOrder
+- VMImageContracts.CompleteClosureCapturesFieldBaseReturnAndParameter
+- VMImageContracts.CyclicHandlesTerminate
+- VMImageContracts.DuplicateRoleKeyDifferentWitnessRejects
+- VMImageContracts.InjectedEqualDigestsDoNotHideWitnessMismatch
+- VMImageContracts.SameFunctionKeyDifferentReturnHasDifferentContracts
+- VMImageContracts.UnfrozenTypeRejectsFingerprintQuery
+- VMIndexedAdmission.CompleteTablePassesDirectAndDecoded
+- VMIndexedAdmission.EveryEntryExecutesItsDistinctResult
+- VMIndexedAdmission.EveryEntryMustBeFixedWidthJump
+- VMIndexedAdmission.LargeRuntimeIndexThrowsAndRecovers
+- VMIndexedAdmission.MaximumPlusOneThrowsAndRecovers
+- VMIndexedAdmission.NegativeMaximumRejectsDirectAndDecoded
+- VMIndexedAdmission.NegativeRuntimeIndexThrowsAndRecovers
+- VMIndexedAdmission.NonFirstEntryCannotBypassObjectConstruction
+- VMIndexedAdmission.NonFirstEntryStackJoinRejectsDirectAndDecoded
+- VMIndexedAdmission.NonFirstEntryUnderflowRejectsDirectAndDecoded
+- VMIndexedAdmission.OversizedTableRejectsWithoutArithmeticOverflow
+- VMIndexedAdmission.TruncatedTableRejectsDirectAndDecoded
+- VMIndirectAdmission.ActualParameterCountRejectsBeforeCallbackAndRecovers
+- VMIndirectAdmission.ActualParameterModeRejectsBeforeCallbackAndRecovers
+- VMIndirectAdmission.ActualReturnTypeRejectsBeforeCallbackAndRecovers
+- VMIndirectAdmission.ActualSameWidthDifferentTypeRejectsBeforeCallbackAndRecovers
+- VMIndirectAdmission.ActualWideParameterRejectsBeforeCallbackAndRecovers
+- VMIndirectAdmission.DistinctNativeNameWithSameShapeReturnsFortyTwo
+- VMIndirectAdmission.DistinctNativeReferenceShapeReturnsFortyTwo
+- VMIndirectAdmission.DistinctScriptNameWithSameShapeReturnsFortyTwo
+- VMIndirectAdmission.ForgedExpectedWidthRejectsAtTarget
+- VMIndirectAdmission.MissingCallSiteSignatureRejectsLegacyEncoding
+- VMIndirectAdmission.NullTargetPreservesExceptionAndRecovers
+- VMIndirectAdmission.ReferenceRejectsValueBitsAndAcceptsAddressLoops
+- VMIndirectAdmission.UnboundReceiverCannotUseReceiverFreeShape
+- VMIndirectAdmission.WideArgumentsRejectOneDwordDirectAndDecoded
+- VMIndirectAdmission.WideCallLoopsBalanceDirectAndDecoded
+- VMIntegerOpcodeMatrix.Bitwise32
+- VMIntegerOpcodeMatrix.Bitwise64
+- VMIntegerOpcodeMatrix.ComparisonsAndTestFlags
+- VMIntegerOpcodeMatrix.ConditionalJumpsTakenAndNotTaken
+- VMIntegerOpcodeMatrix.ConstantMovesAndWidths
+- VMIntegerOpcodeMatrix.DivModByZeroTypedException
+- VMIntegerOpcodeMatrix.GlobalMoves
+- VMIntegerOpcodeMatrix.Integer32Arithmetic
+- VMIntegerOpcodeMatrix.Integer64Arithmetic
+- VMIntegerOpcodeMatrix.IntegerConversions
+- VMIntegerOpcodeMatrix.JumpTableEachArmDefaultAndMalformed
+- VMIntegerOpcodeMatrix.MemoryWidthsWithSentinels
+- VMIntegerOpcodeMatrix.NegIncDec
+- VMIntegerOpcodeMatrix.NegativeArgOffsetsVersusPositiveLocals
+- VMIntegerOpcodeMatrix.PowerIntegerAndOverflow
+- VMIntegerOpcodeMatrix.StackPointerAndVar
+- VMIntegerOpcodeMatrix.TerminatingLoopSumOneToTen
+- VMIntegerOpcodeMatrix.UnsignedDivMod
+- VMIntegration.CopyScriptNullThrowsThenListInitReturnsFortyTwo
+- VMIntegration.FloatDoubleConversionAndPowerFamilies
+- VMIntegration.GetObjMovesHandleThenGetRefReadsFortyTwo
+- VMIntegration.GlobalStoragePgaPshG4Roundtrip
+- VMIntegration.IntegerWidthShiftCompareAndJumpFamilies
+- VMIntegration.JmppIndexOneSkipsNextStore
+- VMIntegration.MemoryWidthIncAndSwapFamilies
+- VMIntegration.MixedImageStillReturnsFortyTwo
+- VMIntegration.MixedNativeDispatchDelegateSuspendCycleAndException
+- VMIntegration.RejectsRetiredReservedAndPseudoOpcodes
+- VMIntegration.RemainingWidthShiftFloatJumpAliases
+- VMIntegration.Thiscall1AddsSevenToReceiver
+- VMLifetimeAdmission.BranchBypassingAllocationBeforeDestroyRejects
+- VMLifetimeAdmission.BranchBypassingOnlyNormalCleanupRejects
+- VMLifetimeAdmission.CleanupRecordsMustDescribeActualOperations
+- VMLifetimeAdmission.CompletedConstructorBeforeDestroyPasses
+- VMLifetimeAdmission.ConstructionAndDestructionBalanceLoop
+- VMLifetimeAdmission.DestroyRevisitedWithoutReconstructionRejects
+- VMLifetimeAdmission.ExceptionExitUsesLiveGuardWithoutNormalDestroy
+- VMLifetimeAdmission.ExclusiveBranchesEachConstructAndDestroyPass
+- VMLifetimeAdmission.LinearConstructionAndDestructionPassDirectAndDecoded
+- VMLifetimeAdmission.MissingInitializationGuardRejects
+- VMLifetimeAdmission.ReconstructedInstancesMayEachBeDestroyed
+- VMLifetimeAdmission.SkippedConstructorBeforeDestroyRejects
+- VMLinking.LinkResolvesOriginalFunctionPointers
+- VMLinking.MissingDeclarationAndBodyConflictReject
+- VMManualAdmission.ConflictingDuplicateRequirementRejectsEveryAdmission
+- VMManualAdmission.DuplicateBodyCannotSelectAnOrderDependentWinner
+- VMManualAdmission.IdenticalDuplicateRequirementStillRejectsDirectAdmission
+- VMManualAdmission.ImmediateNarrowingRejectsEveryAdmission
+- VMManualAdmission.LateInvalidBodyAndForgedValidationPublishNothing
+- VMManualAdmission.LegalCounterpartsExecuteThroughDirectAndDecodedAdmission
+- VMManualAdmission.MissingFunctionSlotRejectsEveryAdmission
+- VMManualAdmission.OversizedFrameCannotWrapRuntimeReservation
+- VMManualAdmission.TemporaryStackPeakIsReservedInAdditionToLocals
+- VMManualAdmission.UnreachableInvalidBranchStillRejects
+- VMManualAdmission.UnreachableInvalidLocalStillRejects
+- VMManualAdmission.UnreachableUnknownOpcodeStillRejects
+- VMManualAdmission.WrongOperandKindRejectsEveryAdmission
+- VMManualAdmission.WrongRoleFunctionSlotRejectsEveryAdmission
+- VMManualAdmission.ZeroFunctionIdentityCannotEnterDirectAdmission
+- VMNativeABI.InOutInoutAndForwardedReference
+- VMNativeABI.MultipleInheritanceAppliesBaseOffset
+- VMNativeABI.ObjectFirstAndLastReachReceiver
+- VMNativeABI.PaddedReceiverSevenPlusFiveReturnsTwelve
+- VMNativeABI.PrimitiveWidthsGenericAndTyped
+- VMNativeABI.RejectsMissingCallerUnsupportedNullReceiverAndThrowsOnce
+- VMNativeABI.ValueObjectArgumentAndHandleReturn
+- VMNativeBindingLifetime.ConcurrentReadersSeeCompleteRetainedGenerations
+- VMNativeBindingLifetime.DescriptorLeaseKeepsDeclarationReadableAfterEngineAndProducerRelease
+- VMNativeBindingLifetime.InvalidReplacementPreservesInstalledCallback
+- VMNativeBindingLifetime.OldGenerationInvokesOriginalAfterReplacementAndExpiresOnRelease
+- VMNativeBindingLifetime.ReentrantReplacementCleansTransferredValueExactlyOnce
+- VMNativeBindingLifetime.ReentrantReplacementRetainsActiveDescriptorThroughReturn
+- VMNativeBindingLifetime.RetiredEngineRejectsReplacementBeforeBindingMutation
+- VMNativeCalls.BindNativeFunctionRequiresRegisteredDeclaration
+- VMNativeCalls.BytecodeWritesNativeRecordValueAndPreservesPadding
+- VMNativeCalls.GenericAddTwentyAndTwentyTwoReturnsFortyTwo
+- VMNativeCalls.GenericInt64BoolAndOutParameter
+- VMNativeCalls.MethodReceiverValueSevenPlusFiveReturnsTwelveWithSentinels
+- VMNativeCalls.NativeSetExceptionReportsVmException
+- VMNativeCalls.NullIndirectCompositeThrowsBeforeWrite
+- VMNativeCalls.TypedCallerAddTwentyAndTwentyTwoReturnsFortyTwo
+- VMNativeCalls.UnboundSystemCallRejectsAtLink
+- VMNativeCalls.UnsupportedThiscallOnFreeFunctionFailsBeforeCallback
+- VMNativeLayout.CompositeInlineAndIndirectHaveDistinctLayoutWitnesses
+- VMNativeLayout.NativeAdmissionRejectsOverflowOverlapPackedAndFrozenMutation
+- VMNativeLayout.NativeRecordPreservesHostOffsetsAndPadding
+- VMNativeLayout.SameKeyDifferentOffsetChangesLayoutHash
+- VMObjectLifetime.DestructorFiresThroughNativeBinding
+- VMObjectLifetime.HighAlignmentHeaderRecovers
+- VMObjectLifetime.NativeHandleIsNotProbedAsSdkHeader
+- VMObjectLifetime.ObjectSurvivesCallerSnapshotRelease
+- VMObjectLifetime.PartialMemberFailureSkipsWholeObjectDestructor
+- VMObjects.AllocatedObjectReportsTypeAndEngine
+- VMObjects.CopyPreservesValueWithoutAliasing
+- VMObjects.DestructScriptAdvancesPastSentinel
+- VMObjects.HeapAllocConstructorSetsXDestructorFiresOnce
+- VMObjects.NullObjectReferenceThrows
+- VMObjects.PointFieldZeroRoundtrip
+- VMObjects.ScriptObjectTypeRegistersAndContextExecutes
+- VMOperandContracts.AssignedOpcodesHaveDescriptorsOrStrRejects
+- VMOperandContracts.FrameCleanupSourceCapturedAndInvalidResultRegionRejects
+- VMOperandContracts.FrameSpanAlignmentCrossingAndZeroSizeRejects
+- VMOperandContracts.ImmediateWidthSlotRoleAndStringRejects
+- VMOperandContracts.JmpImmediateS32RejectsWrongTagDirectAndDecoded
+- VMOperandContracts.ReservedAndPseudoOpcodesReject
+- VMOperandContracts.SetV4MinLocalRejectsFrameRangeDirectAndDecoded
+- VMOperandContracts.ValidNegativeParameterAndInRangeLocalPass
+- VMResourceOpcodeMatrix.CallBndScriptAndNative
+- VMResourceOpcodeMatrix.CallSysReturnsFortyTwo
+- VMResourceOpcodeMatrix.CastStoreLoadAndCallIntf
+- VMResourceOpcodeMatrix.FuncPtrCallPtrAndNull
+- VMResourceOpcodeMatrix.GetObjGetRefChkAndAddSi
+- VMResourceOpcodeMatrix.GetObjRefReplacesStackWithHandleThenReadsSeventeen
+- VMResourceOpcodeMatrix.ListCopyTypeIdAndNullChecks
+- VMResourceOpcodeMatrix.LoadThisRReadsReceiverFieldSeventeenAndNullThrows
+- VMResourceOpcodeMatrix.NestedCallAndReturn
+- VMResourceOpcodeMatrix.NullChecksThrow
+- VMResourceOpcodeMatrix.ObjectAllocCopyFreeAndGetRef
+- VMResourceOpcodeMatrix.ObserversMarkersSuspendAndThrow
+- VMResourceOpcodeMatrix.RetiredAndReservedReject
+- VMResourceOpcodeMatrix.Thiscall1AddsSevenToReceiver
+- VMReturnAdmission.BodyIncludesHiddenReturnDestination
+- VMReturnAdmission.BodyIncludesReferenceStorage
+- VMReturnAdmission.BodyParameterSizeMustMatchRealWideRequirement
+- VMReturnAdmission.MethodBodyIncludesReceiverStorage
+- VMReturnAdmission.RepeatedNestedCallsPreserveResultsArgumentsAndStackPosition
+- VMReturnAdmission.ReturnCannotHaveNegativePop
+- VMReturnAdmission.ReturnCannotPopFewerArguments
+- VMReturnAdmission.ReturnCannotPopMoreArguments
+- VMReturnAdmission.ScalarShorthandRejectsWideReturn
+- VMReturnAdmission.ScalarShorthandRetainsMethodArgumentPop
+- VMReturnAdmission.TargetChecksBodyWithoutInImageRequirement
+- VMRootLifetime.ConcurrentAddRefReleaseFinalizesOnce
+- VMRootLifetime.FailedConstructorIsNotCollectedAsComplete
+- VMRootLifetime.NestedNativeCollectLeavesInnerRootUntilUnwind
+- VMRootLifetime.SuspendedCycleSurvivesGcThenAbortFinalizesOnce
+- VMRootLifetime.TwoEnginesKeepIndependentRoots
+- VMRuntimeDrain.CallbackShutdownCollectsUnreachableCycleAfterOuterReturn
+- VMRuntimeDrain.CallerSnapshotDetachesWhenLastRuntimeObjectDrains
+- VMRuntimeDrain.ConcurrentShutdownRetainsActiveCrossSnapshotContinuation
+- VMRuntimeDrain.GlobalStorageCannotBeReboundDuringRetainedObjectDrain
+- VMRuntimeDrain.NativeCleanupCanAllocateAndReleaseTemporaryAfterShutdown
+- VMRuntimeDrain.OnlyObjectRetainsNativeCleanupAfterHostAndProducerRelease
+- VMRuntimeDrain.OnlyObjectRetainsScriptAndCrossSnapshotCleanupThenExpires
+- VMRuntimeDrain.PayloadAddsAndReleasesItsOwnRuntimeLease
+- VMRuntimeDrain.PublicAdmissionsStayClosedWhileNativeCleanupRemainsValid
+- VMRuntimeDrain.RetainedScriptDestructorRunsAfterRetirementRequest
+- VMRuntimeDrain.ScriptCleanupCanAllocateAndReleaseTemporaryAfterShutdown
+- VMRuntimeDrain.SuspendedScriptRootUnwindsWithItsCleanupBinding
+- VMScalar.ExecuteAddSevenAndThirtyFive
+- VMScalar.ExecuteConstantReturnFortyTwo
+- VMShutdownDrain.BlockedNativeReleasedBySignalWithoutEarlyComplete
+- VMShutdownDrain.ConcurrentPrepareVersusShutdownIsCoherent
+- VMShutdownDrain.NativeCallbackShutdownReturnsWithoutDeadlock
+- VMShutdownDrain.RepeatedShutdownIsIdempotentAndMetadataStaysReadable
+- VMShutdownDrain.RetainedObjectDelaysDestroyUntilFinalRelease
+- VMShutdownDrain.ShutdownAbortsSuspendedAndReleasesRoot
+- VMShutdownDrain.ShutdownRejectsNewLinkAndPrepare
+- VMSourceAdmission.AdapterDoesNotMutateFrozenParameterOffsets
+- VMSourceAdmission.BodiesOnlySessionReturnsNotReady
+- VMSourceAdmission.DiagnosticsSurviveProducerDestruction
+- VMSourceAdmission.ForeignEqualKeyDefinitionsReturnInvalidInput
+- VMSourceAdmission.NullSessionOrDefinitionsReturnInvalidInput
+- VMSourceAdmission.RecoverySessionReturnsInvalidInput
+- VMSourceAdmission.ResourceBudgetReturnsResourceLimit
+- VMSourceAdmission.UnfrozenDefinitionsReturnNotReady
+- VMSourceAdmission.UnsupportedBodyPublishesNoPartialImage
+- VMSourceAdmission.UnsupportedTargetReturnsUnsupportedLowering
+- VMSourceAdmission.UnverifiedSessionReturnsNotReady
+- VMSourceAdmission.ValidEmissionLinksThroughAtomicPublish
+- VMSourceAdmission.VerifiedSupportedBodySucceedsEngineFree
+- VMSourceCacheContracts.ChangedMethodReturnRejects
+- VMSourceCacheContracts.ConflictingBodyLeavesInstalledCallable
+- VMSourceCacheContracts.ForeignImageRejects
+- VMSourceCacheContracts.IntegerControlStillSeven
+- VMSourceCacheContracts.MissingClassRejectsWithoutInstalling
+- VMSourceCacheContracts.MissingFreeFunctionRejectsWithoutInstalling
+- VMSourceCacheContracts.MissingNativeBindingRejects
+- VMSourceCacheContracts.MixedLoopBodyObjectsContinueThrowRecoverOnAAndB
+- VMSourceCacheContracts.SourceCacheExecutesOnBAfterProducerRelease
+- VMSourceCallContracts.ConstOutRvalueMismatchesReject
+- VMSourceCallContracts.ConstructorOrdinalsRoundtripAndRejectCorrupt
+- VMSourceCallContracts.ExplicitArgSuppressesTypedDefault
+- VMSourceCallContracts.ImplicitThisMemberAccessReturnsSeven
+- VMSourceCallContracts.MetadataStringDefaultExplicitSucceeds
+- VMSourceCallContracts.MetadataStringDefaultOmitRejectsWithoutImage
+- VMSourceCallContracts.NativeFillBumpPeekForwardedRefWritesFortyTwo
+- VMSourceCallContracts.NativeFillBumpPeekLocalWritesFortyTwo
+- VMSourceCallContracts.NativeFillBumpPeekMemberWritesFortyTwo
+- VMSourceCallContracts.PairNamedCtorStoresWithReverseFormalTrace
+- VMSourceCallContracts.PositionalNamedReverseFormalTraceTwelve
+- VMSourceCallContracts.ScriptFillRunsThenLiteralOutRejects
+- VMSourceCallContracts.TwoFilesEitherOrderReturnSevenWithLocations
+- VMSourceCallContracts.TypedDefaultHostMarkTwiceIsSixtyEight
+- VMSourceCalls.MissingNativeBindingRejectsLink
+- VMSourceCalls.MissingOverloadPublishesNoImage
+- VMSourceCalls.NativeHostAddTwentyAndTwentyTwo
+- VMSourceCalls.NativePackMarkTracesReverseFormal
+- VMSourceCalls.NativeSetExceptionReportsVmException
+- VMSourceCalls.OutTemporaryPublishesNoImage
+- VMSourceCalls.SourceCallerReturnsSeven
+- VMSourceCalls.SourceCombineNamedAndDefaultIsThirtyFour
+- VMSourceCalls.SourceFactorialZeroOneFive
+- VMSourceCalls.SourceFillAndBumpYieldFortyTwo
+- VMSourceCalls.SourceForwardCalleeAfterCallerReturnsSeven
+- VMSourceCalls.SourceInRefPreservesCallerValue
+- VMSourceCalls.SourceLiteralReturnExecutes
+- VMSourceCalls.SourceOverloadsReturnDistinctMarkers
+- VMSourceCalls.SourcePackMarkPositionalAndNamedReturnTwelve
+- VMSourceCalls.TypedDefaultMarkRunsPerCallSite
+- VMSourceCalls.UnsupportedThiscallBindingRejected
+- VMSourceCalls.WrongNamedArgumentPublishesNoImage
+- VMSourceControlFlow.SourceForSkipTwoBreakFiveGivesEight
+- VMSourceControlFlow.SourceIfElseSelectsBranch
+- VMSourceControlFlow.SourceLazyAndOrTernarySkipSideEffects
+- VMSourceControlFlow.SourceLazyAndSkipsZeroDivisor
+- VMSourceControlFlow.SourceSwitchFallthroughAndDefault
+- VMSourceControlFlow.SourceWhileSumOneToTenIsFiftyFive
+- VMSourceControlFlow.SourceWhileZeroVersusDoOnce
+- VMSourceExpressions.SourceAddWithRuntimeParameters
+- VMSourceExpressions.SourceBitwiseOrEqualsIsTrue
+- VMSourceExpressions.SourceEightMinusThreeMinusOneIsFour
+- VMSourceExpressions.SourceOnePlusTwoPointFiveIsThreePointFive
+- VMSourceExpressions.SourceOnePlusTwoTimesThreeIsSeven
+- VMSourceExpressions.SourcePowerIsLeftAssociatedSixtyFour
+- VMSourceExpressions.SourceUnaryMinusAndLocalAssignment
+- VMSourceIntegration.MissingDestinationFunctionRejectsSourceCache
+- VMSourceIntegration.PreinstalledBodyRejectsSourceCache
+- VMSourceIntegration.SourceMixedLoopObjectExceptionCache
+- VMSourceIntegration.SourceProducedCacheRunsAfterProducerRelease
+- VMSourceNumeric.BoolOrPreserved
+- VMSourceNumeric.DoubleDivideLiteralEmitsDivd
+- VMSourceNumeric.DoubleMultiplyLiteralEmitsMuldNotAddd
+- VMSourceNumeric.DoubleOpsThroughParameterLocalCastAndConditional
+- VMSourceNumeric.DoubleSubtractLiteralEmitsSubdNotAddd
+- VMSourceNumeric.EnumValuePreserved
+- VMSourceNumeric.FloatCompareAssignAndNonIntCast
+- VMSourceNumeric.FrameAbove64DwordsExecutesWhenBudgetAllows
+- VMSourceNumeric.Int64Above32BitsPreserved
+- VMSourceNumeric.IntegerControlStillSeven
+- VMSourceNumeric.NarrowSignExtension
+- VMSourceNumeric.OverBudgetFrameRejectsWithoutImage
+- VMSourceNumeric.UnsignedHighBitCompareAndDivide
+- VMSourceObjects.SourceConstructOrdinalsRoundtripAndRejectBadVersion
+- VMSourceObjects.SourceEmptyDefaultConstructCompletes
+- VMSourceObjects.SourceFreeFunctionStillExecutes
+- VMSourceObjects.SourcePairNamedConstructorFormalOrder
+- VMSourceObjects.SourcePlainCopyReadsNine
+- VMSourceObjects.SourceReverseDestroyOnReturn
+- VMSourceObjects.SourceValueFieldWriteThenRead
+- VMSourceObjects.SourceValueLocalSevenReadsSeven
+- VMSourceScopeCleanup.BreakDestroysBodyBeforeInitializer
+- VMSourceScopeCleanup.ConditionalReturnsEachDestroyOuterLocalOnce
+- VMSourceScopeCleanup.EarlyReturnPreservesValueThroughDestructors
+- VMSourceScopeCleanup.ForInitSurvivesContinueBodyDestroyedEachIteration
+- VMSourceScopeCleanup.IntegerControlStillSeven
+- VMSourceScopeCleanup.NestedForBreakSelectsNearest
+- VMSourceScopeCleanup.NestedInnerDestroysBeforeMarkerThenOuter
+- VMSourceScopeCleanup.NestedWhileContinueUsesBackedge
+- VMSourceScopeCleanup.NoDuplicateDestructionOnNestedScopes
+- VMSourceScopeCleanup.SwitchBreakSelectsNearest
+- VMSourceScopeCleanup.UntakenConstructionBranchHasNoDestructor
+- VMSourceUnwind.BrokenConstructorDestroysCompletedLocalOnly
+- VMSourceUnwind.FailedConstructorNeverRunsCompleteDestructor
+- VMSourceUnwind.IntegerControlStillSeven
+- VMSourceUnwind.NativeFailUnwindsReverseThenRecoveryNinetySeven
+- VMSourceUnwind.NestedMemberPartialConstructionOrder
+- VMSourceUnwind.SourceRecordsSurviveEncodeDecodeAndProducerRelease
+- VMSourceUnwind.StackLimitReportsSourceLocationThenRecovery
+- VMSourceUnwind.TwoLocalsDivByZeroUnwindsReverseThenRecoveryNinetySeven
+- VMWireFormat.CanonicalOrderRoundtripPreservesContractsFrameAndCleanup
+- VMWireFormat.EmptyImageMatchesIndependentGoldenAndRejectsV1
+- VMWireFormat.MalformedCountsTargetsAndTrailingBytesReject
+- VMWireFormat.StringsPreserveExactUtf8BoundsAndRejectTruncatedMultibyte
+
+## Scope and historical truth
+
+Complete NativeEngine is justified by shared frame/native/Context/Generic/linker changes and both producers. Separate Baseline verifies dormant startup/test namespaces. Unrelated Quick, Performance, Integration, full UE suites, Standalone/JIT/UE reflection integration, exhaustive fuzzing and race-sanitizer coverage are not claimed. Historical RED gaps, crashed/incomplete runs and previously uncovered conditions remain historical; this report does not rewrite them. Native replacement generations expire after their final consumer. SDK payloads own Type and Engine leases; retirement closes public admissions and defers resource detachment until active operations and retained objects drain. Script cleanup has private Context authority; collector and callback completion can reclaim unreachable cycles. The final caller snapshot is detached from the Engine before its owner reference is released.

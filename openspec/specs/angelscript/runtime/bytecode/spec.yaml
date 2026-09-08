@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_9b3435e3-64f8-4018-aa0c-e2adac4087e5
+  id: angelscript/runtime/bytecode
+  title: Symbolic Bytecode
+  description: Definition-free executable images, verification, persistence and atomic runtime linking.
