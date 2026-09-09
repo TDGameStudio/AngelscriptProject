@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_47d3bac4-1fc4-4157-8a42-b29e3dbf27ca
+  id: angelscript/runtime/binding-engine
+  title: Binding Engine
+  description: Explicit ownership and lifecycle contracts for Runtime binding engines.

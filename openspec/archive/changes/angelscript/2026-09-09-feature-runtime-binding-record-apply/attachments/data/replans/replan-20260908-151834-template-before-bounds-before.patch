@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@
+-    "4.5": ["4.2", "5.2"]
++    "4.5": ["4.2"]
+@@
+-  Consumes task 5.2's installable `TArray<T>` template declaration and native adapter because the complete `FSphere` and `FBoxSphereBounds` constructor surfaces contain `TArray<FVector>` parameters.
+-
+*** End Patch

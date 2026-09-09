@@ -1,0 +1,5 @@
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@ -172,1 +172,1 @@
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingTestSupport.h`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingIsolationTests.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.*`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingTestSupport.h`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingIsolationTests.cpp`

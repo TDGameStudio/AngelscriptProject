@@ -1,0 +1,90 @@
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/specs/angelscript/bindings/runtime/spec.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/specs/angelscript/bindings/runtime/spec.md
+@@ -87,20 +87,3 @@
+ - **THEN** each source provider maps to recorded/installed declarations or explicit effects, or an evidenced compile-time/policy exclusion
+   > Details: Intentional no-output, compiled-out, policy-excluded and unsupported/unaccounted entries remain distinct.
+ - **BUT** an unexplained eligible entry or missing expected member fails even when aggregate counts match
+-
+-### Requirement: Sealed snapshots receive engine-free pre-installation validation
+-
+-The system SHALL validate sealed binding records before engine creation and SHALL distinguish write closure from structural and installation readiness. Validation SHALL be read-only, deterministic and provenance-bearing.
+-
+-#### Scenario: Reject a sealed but invalid binding surface
+-- **GIVEN** a sealed snapshot contains an unresolved required type, illegal inheritance/layout, incompatible duplicate member, inconsistent policy/provenance or a missing required native target
+-- **WHEN** the host validates it for installation
+-- **THEN** validation fails with stage, symbol and provider/source diagnostics without creating an engine
+-- **AND** the store remains unchanged and may be inspected with its failed validation report
+-- **BUT** successful sealing alone cannot be reported as successful installation validation
+-
+-#### Scenario: Revalidate without changing a sealed snapshot
+-- **WHEN** the same sealed snapshot is validated repeatedly before and after rejected mutation attempts
+-- **THEN** its semantic contents and validation result remain unchanged
+-- **AND** a valid snapshot reused by two engines passes the same pre-installation checks without re-executing providers
+-  > Boundaries: Validation proves recorded structure and required descriptor presence. Runtime ABI, invocation and lifecycle effects still require their execution tests.
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/design.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/design.md
+@@ -58,12 +58,6 @@
+ 
+ Full Runtime 8.2 joins source inventory, compiled Collection, sealed manifest and installed effects using independently maintained family expectations. Compiled-out alternatives require inventory/build evidence. Keep complete JSON/CSV and Python reports under the Harness run with build/policy/source provenance; keep bounded durable summaries and hashes.
+ 
+-### Validation after Seal
+-
+-Seal closes record writes and preserves any recording failure; it is not complete installation validation. Add FAngelscriptTypeBindInfoValidation::ValidateSealed with a deterministic read-only result carrying stage/symbol/provider/source diagnostics. Reuse current engine-free declaration parsing, nominal/dependency/layout and member-identity checks rather than reproducing these rules in the exporter. Validate policy/provenance consistency, required nominal references, legal base/by-value dependencies, native layout/property bounds, member uniqueness/modifiers and presence of required native descriptors. Do not invoke callbacks, dereference borrowed addresses or create an Engine. Template parameter and handle-reference rules follow existing canonical type semantics.
+-
+-Explicit binding creation calls this gate before allocating a native Engine. Dump includes seal state plus validation outcome/diagnostics; a sealed but semantically invalid Store can still be dumped for diagnosis and is never labeled ready. Declaration-only/family inspection reports its explicit scope and unresolved requirements without being presented as full-runtime installation readiness. Validators return external results without mutating the sealed Store, including on failure. Python validation independently checks the exported facts; VM/ABI/lifecycle tests remain required for actual execution behavior.
+-
+ ### Migration and proof
+ 
+ The current main Runtime provider inventory is the coverage authority. Compare each provider with the reference workspace and record target conditions and destination stage. Keep selected-workspace changes and reference-workspace edits separate. Preserve all existing public binding declarations unless current native semantics explicitly reject them with an investigated contract correction.
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@ -6,9 +6,8 @@
+     "1.3": ["1.2"]
+     "1.4": ["1.3"]
+     "1.5": ["1.4", "3.3", "6.2"]
+-    "1.6": ["1.8"]
++    "1.6": ["1.5"]
+     "1.7": ["1.6"]
+-    "1.8": ["1.5", "2.4"]
+     "2.2": ["1.3"]
+     "2.3": ["2.2"]
+     "2.4": ["2.3"]
+@@ -117,7 +116,7 @@
+ - [ ] 1.6 Dump intended AS types, members and globals before Engine creation — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Recording.Manifest.'; Fast = $true; TimeoutMs = 600000 }`
+   > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindsInternal.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptBindingDump.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingManifestTests.cpp`
+ 
+-  Add FAngelscriptTypeBindInfoInspection and explicit Store-based export-to-directory entry. Produce versioned JSON, types/classes/members/globals/providers/exclusions CSV tables and summary from one projection. Old StateDump columns are reference only; no global Engine lookup or script compilation. Collection-only export never executes providers; Store export rejects unsealed/failed input. Label recorded stage and selected-family/full-runtime scope; separate intended AS declarations, reflection-only identities and exclusions/effects. Include qualified identities, canonical typed references through the existing engine-free parser/resolver, inheritance/interfaces, aliases/templates, layout/property facts, signatures/modifiers/defaults, globals/constants, source/conditions and ordered native/lifecycle recipes. Describe addresses symbolically; preserve int64 reflection values as decimal strings and opaque categories explicitly. Include 1.8 seal/validation status and diagnostics, allowing sealed semantic failures to be inspected without labeling them ready. 1.7 consumes this schema; 8.2 produces the real full Runtime dump.
++  Add FAngelscriptTypeBindInfoInspection and explicit Store-based export-to-directory entry. Produce versioned JSON, types/classes/members/globals/providers/exclusions CSV tables and summary from one projection. Old StateDump columns are reference only; no global Engine lookup or script compilation. Collection-only export never executes providers; Store export rejects unsealed/failed input. Label recorded stage and selected-family/full-runtime scope; separate intended AS declarations, reflection-only identities and exclusions/effects. Include qualified identities, canonical typed references through the existing engine-free parser/resolver, inheritance/interfaces, aliases/templates, layout/property facts, signatures/modifiers/defaults, globals/constants, source/conditions and ordered native/lifecycle recipes. Describe addresses symbolically; preserve int64 reflection values as decimal strings and opaque categories explicitly. 1.7 consumes this schema; 8.2 produces the real full Runtime dump.
+ 
+   Cases: Pair/X/Sum, Derived-before-Base, Test.Add overloads and constant 7 have independently asserted declarations/fields/sources. Captured-only UE identity and excluded Editor candidate are absent from intended AS classes. Equivalent captures with shuffled registration/different valid host addresses produce equal semantic output; signature/offset/policy/constant changes alter corresponding fields. Nested array-of-object, interfaces, layout/lifecycle flags and int64 -3/1234567890123 survive export. Repeated dump and rejected sealed mutation preserve output/callback counts; payloads are never dereferenced. JSON/CSV quotes, commas, newlines and Unicode round-trip; tables agree with JSON. Unsealed input or unwritable method-owned destination fails without success metadata. Actual Runtime Collection inspection accounts for all compiled descriptors without executing unmigrated callbacks and labels itself collection-only.
+ 
+@@ -138,17 +137,6 @@
+   2. Implement offline validation/diff and README commands against 1.6's contract.
+   3. Run the exact unittest selection for GREEN; 8.2 additionally runs these tools on actual full Runtime output, preserving commands/results rather than substituting fixture proof.
+ 
+-- [ ] 1.8 Validate sealed records before allocating an Engine — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Recording.Validation.'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingValidationTests.cpp`
+-
+-  Add FAngelscriptTypeBindInfoValidation::ValidateSealed producing a read-only deterministic result with stage, symbol, provider and source diagnostics. Consume existing parsing/nominal/layout/member validation rules from 2.2-2.4 and ownership/policy facts from 1.5; do not duplicate AS parsing or create a native Engine. Seal remains write closure, not a claim of installation readiness. Check source/policy consistency, required type references, base/by-value cycles, native layout/property bounds, canonical incompatible member duplicates and required native callable/recipe descriptor presence according to declaration kind. Legal overloads, template parameters, forward references and handle cycles follow existing semantics. Do not validate borrowed pointees by dereferencing them. CreateForBindings runs this gate before native Engine allocation; failed semantic validation leaves the Store inspectable. 1.6 exports result/diagnostics and distinguishes partial declaration inspection from installable/full-runtime readiness.
+-
+-  Cases: A literal sealed Pair/X/Sum/Add surface validates without Engine creation or callback execution. A deliberately missing required nominal can Seal but fails ValidateSealed with its exact symbol/source. Invalid base cycle, by-value cycle, property offset/alignment, malformed member declaration, incompatible canonical duplicate, missing required native target and mismatched policy/provenance each fail their stage; existing earlier admission failures are controls, not bypassed or manufactured RED. Root/named overloads, Derived-before-Base and mutually referring handles pass. Unsealed/recording-failed input is rejected. Repeated validation before/after attempted sealed edits returns equal diagnostics/results and unchanged records, provider lists, policy, attachment and native targets. Invalid CreateForBindings returns no owner and no allocated native Engine; valid two-owner reuse does not execute providers. Failed semantic validation is dumpable with failure status rather than ready.
+-
+-  1. Prepare related positive/negative fixtures and distinguish current parser/admission controls from missing preflight behavior; observe grouped behavioral RED.
+-  2. Implement reusable validation and pre-allocation factory wiring without mutating sealed records or running native targets.
+-  3. Prove GREEN with the exact selector and refresh impacted Creation and Recording proofs; retain case/source/binary identities. VM/ABI/lifecycle execution proof remains owned by the existing tasks.
+-
+ ## 2. Declaration parsing and metadata installation
+ 
+ Task 2.4 proof: [Member verification](attachments/data/verification-members.md), observed staged RED followed by 51 shared RuntimeBindings successes, 23 MetadataImage and seven GlobalDefinitions successes.
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/INDEX.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/INDEX.md
+@@ -16,9 +16,6 @@
+ - Do not silently skip an unsupported eligible provider or mutate a frozen image.
+ 
+ ## Attachment index
+-
+-- `replans/replan-20260908-120118-sealed-store-validation.md` — applied follow-up for explicit engine-free validation after Seal and before Engine creation.
+-- `data/replans/replan-20260908-120118-sealed-store-validation-before.patch` — inverse planning delta for the post-Seal validation follow-up.
+ 
+ - `replans/replan-20260908-115931-binding-surface-dump-validation.md` — applied user-requested intended-AS dump, ownership tests and Python validation/diff; implementation remains paused.
+ - `data/replans/replan-20260908-115931-binding-surface-dump-validation-before.patch` — inverse uncommitted planning changes before dump/validation acceptance.

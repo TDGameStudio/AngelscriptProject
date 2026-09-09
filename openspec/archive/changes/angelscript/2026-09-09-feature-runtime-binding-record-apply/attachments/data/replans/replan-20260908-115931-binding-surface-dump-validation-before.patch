@@ -1,0 +1,173 @@
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/proposal.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/proposal.md
+@@ -8,7 +8,6 @@
+ - Build complete per-engine metadata images and native bindings serially. Reuse immutable recorded descriptions between engines, never engine-bound metadata objects or mutable adapter state.
+ - Add explicit `FAngelscriptEngine::CreateForBindings` entry points for a fresh Runtime snapshot and an existing sealed store, with failure diagnostics and deterministic ownership.
+ - Port the behavioral intent of dormant value, container, UE interop and engine-isolation tests into replacement CQTests. Prove full installation coverage and representative native calls through the current VM.
+-- Export the intended AS surface before Engine creation as versioned JSON and readable tables of types, inheritance, members, globals and exclusions. Add standalone Python validation/diff and reconcile the manifest with full Runtime installation.
+ - Keep production recording serial. Preserve default dormant startup and legacy test isolation. Full script compilation, scanning, hot reload, debugger/cache services, JIT execution, dynamic module-load updates and separate GAS/GameplayTags plugins are outside this change.
+ 
+ ## Capabilities
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/specs/angelscript/bindings/runtime/spec.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/specs/angelscript/bindings/runtime/spec.md
+@@ -50,40 +50,3 @@
+ #### Scenario: Exclude target-specific declarations
+ - **WHEN** an editor-only or development-only declaration is evaluated for an ineligible target
+ - **THEN** coverage identifies its condition-based exclusion and the declaration is absent from the installed surface
+-
+-### Requirement: Hosts can inspect the intended AS surface before installation
+-
+-The system SHALL export versioned diagnostic JSON and readable tables of sealed bindings without creating an engine, distinguishing intended AS declarations from reflection-only facts and excluded candidates.
+-
+-#### Scenario: Dump sealed binding declarations
+-- **GIVEN** a sealed snapshot with types, inheritance, members, namespace globals, recipes and reflection
+-- **WHEN** the host requests its binding dump
+-- **THEN** output exposes intended declarations, relationships, layout, modifiers, target categories and provenance
+-  > Details: Captured-only UE identities and excluded candidates appear separately. Recorded declarations are not labeled installed or executable.
+-- **AND** equivalent captured inputs produce identical semantic output independent of process addresses, timestamps and unordered map traversal
+-- **BUT** export does not execute providers or targets, dereference borrowed payloads, or restore an executable snapshot from disk
+-
+-#### Scenario: Validate and compare dumps offline
+-- **WHEN** the host validates or compares manifests with the provided Python tools
+-- **THEN** invalid schema, duplicate identities, missing required references, illegal layout/inheritance and missing expected symbols produce structured symbol/source diagnostics and nonzero exit codes
+-  > Details: Builtins, template parameters and declared external dependencies have explicit reference categories; handle cycles remain legal.
+-- **AND** comparison identifies added, removed and changed types, members and globals while ignoring cosmetic ordering
+-- **BUT** incompatible schema versions cannot silently pass
+-
+-### Requirement: Snapshot inspection preserves ownership and complete accounting
+-
+-The system SHALL distinguish copied records/constants, borrowed host targets, retained reflection and engine-owned state. Full coverage SHALL reconcile source inventory, registered providers, recorded declarations/effects and installed results.
+-
+-#### Scenario: Seal namespace globals and retain snapshot lifetime
+-- **GIVEN** root and named scopes contain functions, constants and borrowed global properties
+-- **WHEN** a sealed snapshot is reused by separately owned engines
+-- **THEN** namespace identities, overload declarations, copied values and provenance remain immutable while mutable engine state is independently owned
+-- **AND** borrowed global storage remains host-owned and intentionally shared where bound as a process-global property
+-  > Boundaries: Seal freezes records, not pointees. Callback code and borrowed payloads must outlive consumers. Captured reflection identities remain retained until the final snapshot consumer releases them.
+-- **BUT** mismatched effective reflection policy fails before publishing mixed records or attachment
+-
+-#### Scenario: Reconcile all eligible providers and expected members
+-- **WHEN** the complete Runtime surface is checked against independent inventory expectations
+-- **THEN** each source provider maps to recorded/installed declarations or explicit effects, or an evidenced compile-time/policy exclusion
+-  > Details: Intentional no-output, compiled-out, policy-excluded and unsupported/unaccounted entries remain distinct.
+-- **BUT** an unexplained eligible entry or missing expected member fails even when aggregate counts match
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/design.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/design.md
+@@ -44,20 +44,6 @@
+ 
+ `FAngelscriptTypeBindInfoReflection` captures loaded or explicitly supplied UE nominal roots on GameThread. Its immutable `FAngelscriptReflectedTypeSnapshot` copies native paths, parents/interfaces, nested property type uses, enum values and delegate signature flags. Owning class/struct/enum providers supply eligibility and native adaptation recipes. A Store retains the snapshot, which pins the reflected objects and property type dependencies until all owners release it. Declaration providers reuse that same snapshot across phases; this prepass records types while later reflection tasks install members and adapters.
+ 
+-### Intended AS surface inspection and offline validation
+-
+-The new export entry receives a sealed Store, not a global Engine. Existing as.DumpEngineState/FAngelscriptStateDump Classes, RegisteredTypes and BindRegistrations tables guide readable columns; their initialized-global-Engine, active-module and adapter queries are not the new entry path. Script-defined compiled classes remain outside this binding-only change.
+-
+-Add FAngelscriptTypeBindInfoInspection with Collection-only and sealed-Store projections. Collection inspection executes no callbacks and works before migration completes. Store output distinguishes intended AS types/classes/enums/interfaces/templates/aliases, base/interface relationships, methods/behaviours/properties and namespace globals from captured-only UE identities, exclusions and explicit effects. Label stage and scope (collection-only, selected-family, full-runtime). Resolve canonical referenced-type facts through the existing engine-free declaration parser/resolver; Python does not parse AngelScript again.
+-
+-Use versioned UTF-8 JSON and types/classes, members, globals, providers and exclusions CSV tables plus a summary from one projection. Identities are case-sensitive qualified symbols/signatures and module/provider/phase provenance. Normalize repository-relative source paths; exclude pointer addresses, timestamps and allocation-dependent IDs from comparable output. Preserve meaningful recipe order and explicit provider execution ordinal. Describe native/auxiliary/global targets with stable binding identity, presence, convention and lifetime category without dereferencing or invoking them. Preserve reflected int64 enum values as decimal strings. Retain opaque/unknown categories explicitly. This is diagnostic interchange, not executable persistence.
+-
+-The process-wide Collection owns callbacks; each Capture creates a policy-specific Store. Types, Namespace scopes/globals, members and provenance are copied; Engine consumers share const Store ownership. TypeDatabase, metadata and mutable adapters belong to each Engine. Store-bound index handles and lookup maps are not persistent identities. Native code and borrowed auxiliary/global addresses require host lifetime spanning all consumers. Reflection snapshots pin UObject identities/dependencies without freezing external UE objects. Reject policy mismatch before attachment or mutation.
+-
+-Add stdlib-only Plugins/Angelscript/Tools/BindingInspection/validate_bindings.py and diff_bindings.py with unittest fixtures and README usage. Validate version/schema, qualified identities, typed references, native layout, provider provenance, exclusions and independent expected symbols. Detect inheritance/by-value cycles while allowing handle cycles. Explicit categories cover builtins/template parameters/external dependencies. Semantic comparison reports added/removed/changed declarations and modifiers. Collection-only/partial output cannot satisfy full-runtime expectations. Successful static validation does not prove native ABI, calls or GC.
+-
+-Full Runtime 8.2 joins source inventory, compiled Collection, sealed manifest and installed effects using independently maintained family expectations. Compiled-out alternatives require inventory/build evidence. Keep complete JSON/CSV and Python reports under the Harness run with build/policy/source provenance; keep bounded durable summaries and hashes.
+-
+ ### Migration and proof
+ 
+ The current main Runtime provider inventory is the coverage authority. Compare each provider with the reference workspace and record target conditions and destination stage. Keep selected-workspace changes and reference-workspace edits separate. Preserve all existing public binding declarations unless current native semantics explicitly reject them with an investigated contract correction.
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@ -5,9 +5,6 @@
+     "1.2": []
+     "1.3": ["1.2"]
+     "1.4": ["1.3"]
+-    "1.5": ["1.4", "3.3", "6.2"]
+-    "1.6": ["1.5"]
+-    "1.7": ["1.6"]
+     "2.2": ["1.3"]
+     "2.3": ["2.2"]
+     "2.4": ["2.3"]
+@@ -43,7 +40,7 @@
+     "7.8": ["4.7", "6.6"]
+     "7.9": ["6.6", "6.8", "7.3"]
+     "7.10": ["4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "5.3", "5.4", "5.5", "5.6", "6.7", "6.8", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"]
+-    "8.2": ["1.7", "3.3", "7.10"]
++    "8.2": ["3.3", "7.10"]
+     "8.3": ["8.2"]
+     "8.4": ["8.2"]
+     "8.5": ["8.3", "8.4"]
+@@ -102,41 +99,6 @@
+   2. Implement the outcome and required consumer wiring, preserving dormant startup and ownership.
+   3. Build through Harness and rerun for GREEN. Record complete case paths, source/binary identity and report; shared proof maps every case to this task.
+ 
+-- [ ] 1.5 Prove global scope storage and sealed snapshot ownership — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Recording.Ownership.'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingOwnershipTests.cpp`
+-
+-  Follow up completed 1.2-1.4 with typed lifetime inspection of copied constants, borrowed native/auxiliary/global addresses and retained reflection. Consume explicit two-owner creation and 6.2 retained reflection. Preserve one Store per Capture, store-bound handles, shared const records and separate engine state; no global mutable Store cache or automatic module-unload support.
+-
+-  Cases: Root and Test scopes have independent Add overloads/Value globals; nominal Test does not collide with namespace Test. Copied constant 7 survives source mutation; borrowed host value changes to 9 without altering its declaration. Different-policy captures have separate records. Two Engines retain one snapshot after creator release; releasing A leaves B usable, releasing B allows snapshot/reflection weak references to expire. All exposed record mutation after Seal preserves content, policy, provenance and attachment; foreign handles fail. Reflection policy mismatch rejects before attachment/record mutation (6.2 control). Lifetime categories truthfully distinguish borrowed versus retained objects.
+-
+-  1. Prepare literal fixtures, counters and weak references; observe missing inspection/category or mutation behavior as RED and label passing existing controls.
+-  2. Implement bounded storage/lifetime descriptors and consumer wiring without changing intentional shared host globals.
+-  3. Prove GREEN with the exact selector and retain case/source/binary evidence; refresh impacted Recording/Isolation proof when shared behavior changes.
+-
+-- [ ] 1.6 Dump intended AS types, members and globals before Engine creation — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Recording.Manifest.'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBindsInternal.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptBindingDump.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingManifestTests.cpp`
+-
+-  Add FAngelscriptTypeBindInfoInspection and explicit Store-based export-to-directory entry. Produce versioned JSON, types/classes/members/globals/providers/exclusions CSV tables and summary from one projection. Old StateDump columns are reference only; no global Engine lookup or script compilation. Collection-only export never executes providers; Store export rejects unsealed/failed input. Label recorded stage and selected-family/full-runtime scope; separate intended AS declarations, reflection-only identities and exclusions/effects. Include qualified identities, canonical typed references through the existing engine-free parser/resolver, inheritance/interfaces, aliases/templates, layout/property facts, signatures/modifiers/defaults, globals/constants, source/conditions and ordered native/lifecycle recipes. Describe addresses symbolically; preserve int64 reflection values as decimal strings and opaque categories explicitly. 1.7 consumes this schema; 8.2 produces the real full Runtime dump.
+-
+-  Cases: Pair/X/Sum, Derived-before-Base, Test.Add overloads and constant 7 have independently asserted declarations/fields/sources. Captured-only UE identity and excluded Editor candidate are absent from intended AS classes. Equivalent captures with shuffled registration/different valid host addresses produce equal semantic output; signature/offset/policy/constant changes alter corresponding fields. Nested array-of-object, interfaces, layout/lifecycle flags and int64 -3/1234567890123 survive export. Repeated dump and rejected sealed mutation preserve output/callback counts; payloads are never dereferenced. JSON/CSV quotes, commas, newlines and Unicode round-trip; tables agree with JSON. Unsealed input or unwritable method-owned destination fails without success metadata. Actual Runtime Collection inspection accounts for all compiled descriptors without executing unmigrated callbacks and labels itself collection-only.
+-
+-  1. Prepare these semantic/export cases and observe behavioral RED; only a compilable missing-interface skeleton may precede RED.
+-  2. Implement typed projection, condition/lifetime descriptions and deterministic JSON/CSV export.
+-  3. Prove GREEN with the exact selector and retain sample artifacts plus case/source/binary evidence; defer full-runtime success to 8.2.
+-
+-- [ ] 1.7 Validate and diff binding dumps with standalone Python tools — verify: `python -m unittest discover -s Plugins/Angelscript/Tools/BindingInspection/tests -p "test_*.py"`
+-  > Files: `Plugins/Angelscript/Tools/BindingInspection/**`
+-
+-  Add stdlib-only validate_bindings.py, diff_bindings.py, README and unittest fixtures. CLI: `python Plugins/Angelscript/Tools/BindingInspection/validate_bindings.py MANIFEST --expect EXPECTATIONS --report REPORT` (expect/report optional); `python Plugins/Angelscript/Tools/BindingInspection/diff_bindings.py BEFORE AFTER --report REPORT` (report optional). Validator exits 0 valid, 1 validation/schema/expectation failure; diff exits 0 equal, 1 semantic changes, 2 invalid/incompatible input; usage errors exit 2. Structured diagnostics name symbol/source. Expectations independently specify required/forbidden symbols and provider dispositions, never copy actual exporter results.
+-
+-  Consume the 1.6 versioned schema. Validate required fields/kinds, unique qualified type/member/global identities, provider references, alias/base/interface/by-value references, positive power-of-two alignment where applicable, nonnegative layout and property bounds, enum precision, exclusions and explicit scope. Builtins/template parameters/authorized external references use typed categories. Reject base/value cycles; allow handle cycles. Compare semantic declarations/modifiers, ignoring cosmetic ordering but preserving recipe order, qualifiers and defaults. No UE launch or duplicate AS parser.
+-
+-  Cases: Hand-authored valid Pair/Derived/Test.Add/constant-7 input passes. Deleted Base, dangling member type/provider, duplicate canonical identity, illegal alignment/offset, base/value cycle, malformed enum/schema and missing expected method fail with exact symbol/source. Legal overloads/namespaces/mutual handles pass. Unsupported schema and partial/collection-only input cannot satisfy full-runtime expectations. Diff independently identifies added type, removed method and changed base/default/constant/recipe order; reorder-only input compares equal. Malformed files, Unicode and CLI exit codes use bounded Python subprocesses. Fixtures use independent literals and deliberate mutations.
+-
+-  1. Prepare positive/negative validator and comparison fixtures and observe missing behavior as RED.
+-  2. Implement offline validation/diff and README commands against 1.6's contract.
+-  3. Run the exact unittest selection for GREEN; 8.2 additionally runs these tools on actual full Runtime output, preserving commands/results rather than substituting fixture proof.
+-
+ ## 2. Declaration parsing and metadata installation
+ 
+ Task 2.4 proof: [Member verification](attachments/data/verification-members.md), observed staged RED followed by 51 shared RuntimeBindings successes, 23 MetadataImage and seven GlobalDefinitions successes.
+@@ -375,7 +337,7 @@
+ 
+   Provide the GameThread reflection declaration snapshot: loaded UClass/UStruct/UEnum/interface/delegate signature identities, parent relationships, native layout, property type uses and lifecycle/GC adaptation recipes. Extract declaration hooks from owning providers; member implementation remains in 6.3–6.8. Combined with native value declarations this becomes the real dependency catalog used by family tests. No arbitrary script class compilation or late module tracking.
+ 
+-  Cases: Derived UClass declared before its base resolves correct identity; UStruct fixture size/alignment and property kind match reflection; enum names/values round-trip; delegate signature identity is captured without invoking it; same loaded snapshot can be reread without Engine query; editor-ineligible types have a policy exclusion; temporary fixture types remain valid for the snapshot lifetime; int64/nested property facts are copied; original providers reuse the detached snapshot; mismatched policy fails before attachment or record mutation.
++  Cases: Derived UClass declared before its base resolves correct identity; UStruct fixture size/alignment and property kind match reflection; enum names/values round-trip; delegate signature identity is captured without invoking it; same loaded snapshot can be reread without Engine query; editor-ineligible types have a policy exclusion; temporary fixture types remain valid for the snapshot lifetime.
+ 
+   1. Prepare these cases and run the exact selection together; record the missing behavior demonstrated by RED and distinguish existing regression controls.
+   2. Implement the outcome and required consumer wiring, preserving dormant startup and ownership.
+@@ -553,9 +515,9 @@
+ - [ ] 8.2 Prove complete provider accounting and publish fresh full Runtime Engines — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Coverage.FullRuntime.'; Fast = $true; TimeoutMs = 600000 }`
+   > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingFullRuntimeTests.cpp`, `openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/data/provider-inventory.md`
+ 
+-  Finish the fresh-snapshot CreateForBindings overload and make coverage compare static inventory, runtime provider collection and installed declaration/effect accounting. Every eligible provider is installed; exclusions name actual target/module conditions. Source inventory contains 253 declarations/247 distinct names, including mutually exclusive branches, so raw counts are not the oracle. Later module loads require a new snapshot. Emit 1.6 JSON/CSV manifests and join source inventory, Collection, recorded expected members/effects and installed results. Classify compiled-out, policy-excluded, intentional no-output and unsupported/unaccounted entries with evidence. Run 1.7 Python validation against the actual full-runtime manifest and independent family expectations, and diff same-input captures for semantic equality. Retain complete artifacts, commands, exit codes and build/policy/source provenance under the Harness run, plus a bounded durable summary/hash. This node is integration only; it cannot become a bucket for unmigrated families.
+-
+-  Cases: Full selected Runtime snapshot creates a usable owner; every eligible provider and expected output accounted; missing expected member/unknown provider fails even when counts match; intended AS types match installed definitions and captured-only UE identities stay separate; partial/collection-only output cannot satisfy full-runtime acceptance; target policy fixtures distinguish Editor/Game and Development/Shipping; no unsupported Register* replay; fresh full Engine executes vector/string/container/reflected representative calls; induced finalization/native-binding failure returns no owner with source diagnostic.
++  Finish the fresh-snapshot CreateForBindings overload and make coverage compare static inventory, runtime provider collection and installed declaration/effect accounting. Every eligible provider is installed; exclusions name actual target/module conditions. Source inventory contains 253 declarations/247 distinct names, including mutually exclusive branches, so raw counts are not the oracle. Later module loads require a new snapshot. This node is integration only; it cannot become a bucket for unmigrated families.
++
++  Cases: Full selected Runtime snapshot creates a usable owner; every eligible provider and its expected output accounted; target policy fixtures distinguish Editor/Game and Development/Shipping; no unsupported Register* replay; fresh full Engine executes vector/string/container/reflected representative calls; induced finalization/native-binding failure returns no owner with source diagnostic.
+ 
+   1. Prepare full-snapshot coverage cases before enabling the full factory and observe missing-surface RED.
+   2. Complete only full-factory wiring/accounting; return missing family behavior to its owning task, adding a follow-up ID if that task is completed.
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/INDEX.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/INDEX.md
+@@ -16,9 +16,6 @@
+ - Do not silently skip an unsupported eligible provider or mutate a frozen image.
+ 
+ ## Attachment index
+-
+-- `replans/replan-20260908-115931-binding-surface-dump-validation.md` — applied user-requested intended-AS dump, ownership tests and Python validation/diff; implementation remains paused.
+-- `data/replans/replan-20260908-115931-binding-surface-dump-validation-before.patch` — inverse uncommitted planning changes before dump/validation acceptance.
+ 
+ - `data/verification-isolation.md` — task 3.3 five RED failures/four controls, shared 89-case GREEN, 28 VM native cases and three baseline cases, with active-call ownership and exact identity evidence.
+ 

@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: domain
+metadata:
+  uid: domain_466f8185-8ca6-44ed-96a0-83a6b7d79c0a
+  id: angelscript/bindings
+  title: AngelScript Bindings
+  description: Binding surfaces exposed to AngelScript hosts and runtimes.

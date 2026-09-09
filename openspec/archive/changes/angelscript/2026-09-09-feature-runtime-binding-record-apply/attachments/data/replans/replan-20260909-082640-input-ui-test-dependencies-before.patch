@@ -1,0 +1,7 @@
+--- a/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@
+-  > Files: [...], `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingInputUITests.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/AngelscriptTest.Build.cs`
++  > Files: [...], `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingInputUITests.cpp`
+
+This compact inverse records the only semantic task change: remove `AngelscriptTest.Build.cs` from task 7.4's Files line to restore the pre-replan boundary. The full task document is uncommitted and cannot be recovered from the base commit.

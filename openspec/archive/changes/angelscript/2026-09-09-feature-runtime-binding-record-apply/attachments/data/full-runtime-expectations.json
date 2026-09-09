@@ -1,0 +1,19 @@
+{
+  "requireFullRuntime": true,
+  "requiredSymbols": [
+    "FVector",
+    "FVector|method|float64 Size() const",
+    "FString",
+    "FString|method|int Len() const",
+    "TArray",
+    "URuntimeBindingFunctionFixtureChild"
+  ],
+  "forbiddenSymbols": [
+    "namespace:<invalid>"
+  ],
+  "providerDispositions": {
+    "FVector": "recorded",
+    "TArray.MethodSurface": "recorded",
+    "ScriptEditorPrompts.ExplicitBindings": "excluded-by-condition"
+  }
+}

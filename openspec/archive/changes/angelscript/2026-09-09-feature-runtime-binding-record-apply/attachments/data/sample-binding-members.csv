@@ -1,0 +1,4 @@
+identity,owner,kind,declaration,property_offset,enum_value,constant_value,storage,native_target,recipes,provider,file,line
+"Pair|property|int X",Pair,property,int X,0,,,none,none,,Manifest.Provider,"Fixture,""Unicode_绑定"".cpp",19
+"Pair|method|int Sum() const",Pair,method,int Sum() const,0,,,none,native-callable,,Manifest.Provider,"Fixture,""Unicode_绑定"".cpp",19
+"Test|global-property|const int Answer",Test,global-property,const int Answer,0,,7,copied-record,copied-constant,,Manifest.Provider,"Fixture,""Unicode_绑定"".cpp",19

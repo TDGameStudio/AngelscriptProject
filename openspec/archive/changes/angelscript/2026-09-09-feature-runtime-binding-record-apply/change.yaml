@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_9904f7f5-bc1b-4089-91bd-d574ca5c0d7d
+  id: angelscript/feature-runtime-binding-record-apply
+  title: Record and apply all Runtime bindings to explicitly owned Engines
+workflow: angelscript
+created_at: 2026-09-08T07:14:27Z
+goal: Manually adapt the typeinfo bind cache design to detached recording, serial metadata installation, native calls and explicit FAngelscriptEngine lifetime for all Runtime providers.
+affected_areas:
+- angelscript/bindings/runtime
+- angelscript/runtime/engine
+- angelscript/testing/baseline
+archived_at: 2026-09-09T06:00:56Z
+archive_schema: closure-v1
+closure:
+  kind: completed

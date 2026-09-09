@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_ff5614a8-13e3-4c2e-a02e-62649df9f4d6
+  id: angelscript/bindings/runtime
+  title: Runtime Bindings
+  description: Durable contracts for detached Runtime binding records, installation, inspection, and complete provider accounting.

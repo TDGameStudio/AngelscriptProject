@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "scope": "selected-family",
+  "stage": "sealed-store",
+  "collectionOnly": false,
+  "sealed": true,
+  "recordingFailed": false,
+  "validationAttempted": true,
+  "valid": true,
+  "diagnostic": "",
+  "providers": [
+    {
+      "ownerModule": "AngelscriptTest",
+      "provider": "Manifest.Provider",
+      "file": "Fixture,\"Unicode_绑定\".cpp",
+      "line": 19,
+      "phase": "explicit-bindings",
+      "eligible": true,
+      "disposition": "recorded"
+    }
+  ],
+  "sampleIntendedSymbols": [
+    "Pair",
+    "Pair|property|int X",
+    "Pair|method|int Sum() const",
+    "Derived",
+    "Test|global-function|int Add(int A, int B = 1)",
+    "Test|global-property|const int Answer"
+  ],
+  "sampleConstant": "7"
+}

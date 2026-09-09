@@ -1,0 +1,104 @@
+--- /dev/null
++++ b/openspec/changes/angelscript/feature-runtime-binding-record-apply/tasks.md
+@@ -0,0 +1,101 @@
++---
++task_graph:
++  version: 1
++  depends_on:
++    "1.1": []
++    "2.1": ["1.1"]
++    "3.1": ["2.1"]
++    "4.1": ["3.1"]
++    "5.1": ["4.1"]
++    "6.1": ["5.1"]
++    "7.1": ["6.1"]
++    "8.1": ["7.1"]
++---
++
++## Execution contract
++
++Import Harness in the current PowerShell 7 process; `$context = New-HarnessContext` selects this primary workspace. Read attachments/INDEX.md and data/provider-inventory.md. Product globs exclude Legacy and unrelated extension plugins. ThirdParty is owned only when explicitly listed. UE builds and tests use Harness; freeze source writers during both. Before each implementation group, prepare its concrete cases and observe behavioral RED together; introduce only a compilable interface skeleton if necessary. After implementation, require every named case to execute and pass GREEN on the tested binary. Historical reference-workspace results are not current proof. Record actual case paths, command, report and source/binary identity on the owning task.
++
++## 1. Detached recording
++
++- [ ] 1.1 Record and seal native binding descriptions without an Engine — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Recording.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBind*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBind*.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingRecordingTests.cpp`
++
++  Produce FAngelscriptTypeBindInfoStore, Recorder and FAngelscriptBinds(Store). Record native Pair(int32 X,Y), X property, constructor, Sum method, global Add(int,int), namespace and Mode{Off=0,On=1}. Preserve callable/auxiliary addresses, modifiers and provider provenance. Seal exposes immutable views. Compatible providers may extend a type; incompatible size/kind reports both sources. Empty store sealing is valid. No engine is created.
++
++  1. Prepare RecordingWithoutEngine, RetainsNativeCallAndModifiers, NamespaceAndEnumRecords, SealedMutationRejected, ConflictingTypeReportsProviders, ProviderRunsOnce and EmptyStoreSeals. Expected RED is missing records, sealing enforcement or conflict diagnostics; compilation failure is setup only.
++  2. Implement recording and the immutable output contract consumed by 2.1. Rejected sealed additions leave the original snapshot unchanged.
++  3. Build through Harness and run the exact group for GREEN; retain all case-level proof.
++
++## 2. Type application
++
++- [ ] 2.1 Apply complete dependent types and signatures to reconstructed metadata — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Types.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/**`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_native*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_native*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_objecttype*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_objecttype*.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingTypesTests.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/Definitions/*Tests.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/*Tests.cpp`
++
++  Consume sealed Store and produce FAngelscriptTypeBindInfoApply plus an owned installation result. Add a focused binding-declaration parser using current tokens/type syntax and canonical identities. Declare Derived before Base and a holder before its FloatPair member type; final inheritance, sizeof/alignof and offsets must match native fixtures. Complete all members before Freeze and install into a locally owned native Engine. Resolve namespaces, defaults, overloads and const/ref/handle signatures.
++
++  1. Prepare ForwardTypeReferences, NativeLayoutAndInheritance, QualifiedMemberSignatures, MissingDependencyHasSource, LayoutCycleRejected and FrozenCompleteImageInstalled. Observe missing application behavior as RED.
++  2. Implement serial dependency resolution and validated metadata construction. Reject unknown types, inheritance/by-value cycles and malformed declarations. Never mutate frozen fields or use legacy Register*. Two applications create distinct images.
++  3. Prove GREEN and run adjacent native metadata/layout tests for any modified shared API. Record their exact selectors with the proof.
++
++## 3. Explicit Engine ownership
++
++- [ ] 3.1 Create and destroy explicit binding owners without ambient services — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Engine.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingEngineTests.cpp`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingTestSupport.h`
++
++  Add CreateForBindings overloads for a shared sealed Store and fresh Runtime snapshot, returning TUniquePtr and structured diagnostics. Use the sealed fixture overload here; the full overload must report unmigrated-provider failure until 7.1. A private binding construction path bypasses old cache/source/debug/coverage initialization. Own ScriptEngine, contexts, images, TypeDB and adapters; resolve calls through the exact owner.
++
++  1. Prepare ExplicitOwnerHasBindings, SharedStoreDoesNotRerecord, DestroyOneOwnerKeepsOtherCallable, FailureReleasesState and NoAmbientRuntimeServices. Create A/B from one snapshot; after A destruction B must still query Pair and execute Add(2,3)==5. Bad native connection returns no owner, with no retained context. Observe RED.
++  2. Implement creation, failure unwinding and ordered teardown; ambient lookup remains null and provider invocation count remains one.
++  3. Build and prove the complete lifecycle group GREEN, including repeated creation/destruction.
++
++## 4. Values and native calling
++
++- [ ] 4.1 Migrate Runtime scalar/value providers and native ABI behavior — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Values.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_F*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_F*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Math*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Math*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Primitive*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Primitive*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/FunctionCallers.h`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingValuesTests.cpp`; reflected UObject/delegate helpers are excluded from this value task
++
++  Migrate every value/scalar provider in the inventory, including complete FString, FName, FVector variants, FRotator, FTransform and FText interfaces and dependencies. Retain Native/JIT recipes while JIT execution stays outside acceptance. Calls use the current VM Context, not legacy source compilation.
++
++  1. Prepare VectorMembersAndReturnABI, StringCopyAndLifetime, NameTextTransformContracts, ReferenceAndOutArguments and ValueProviderCoverage. Literal expectations: FVector(1,2,3) has squared length 14; string copy/append gives 'abcd'; identity transform preserves (1,2,3); counted fixture has balanced destruction, reference-return aliasing, out=7 and inout 3->8. Observe the missing behavior RED.
++  2. Migrate the full provider group and bridge native caller/auxiliary state without weakening qualifiers or lifetimes.
++  3. Prove GREEN and affected native ABI regression controls, with independently derived expectations.
++
++## 5. Containers and templates
++
++- [ ] 5.1 Migrate Runtime templates with isolated instance operations — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Containers.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_T*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_T*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingContainersTests.cpp`
++
++  Migrate all inventory template/container providers, including array/set/map/optional and pointer wrappers where present. Replace immediate template-user-data discovery with recorded definitions and engine-owned element operations. Cache by canonical type use; late instances use complete additional frozen images.
++
++  1. Prepare ArrayCopyIndexAndDestruction, MapSetOptionalSemantics, NestedInstanceDependencies, HandleElementLifetime, LateInstanceIsolation, InvalidElementRejected and ContainerProviderCoverage. Array [2,5] copy remains two elements after source clear and index 1 is 5; map replacement keeps one key; repeated set insertion keeps one element; optional reset destroys its element. Invalid index/element operations produce the existing explicit error contract. Observe RED.
++  2. Implement template dependency resolution, per-engine caching and element ownership. Same-engine repeated requests share identity; distinct engines share no mutable operations. Invalid late instances preserve earlier definitions.
++  3. Build and prove the complete group GREEN, including nested containers and object-handle lifetime.
++
++## 6. UE reflection and callable bridges
++
++- [ ] 6.1 Migrate reflected types, generated calls and UE adapters — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Reflection.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_U*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_U*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_A*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_A*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Blueprint*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Blueprint*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Delegate*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Delegate*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Multicast*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Multicast*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FProperty*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FProperty*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FInterface*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_FInterface*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Helper*.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Helper*.cpp`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/FunctionCallers.h`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/NativeBindings/**`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingReflection*`
++
++  Migrate UClass/UStruct/UEnum/interface/delegate/event providers and Runtime generated/native callable maps. Preserve manual/generated/reflection precedence, static namespaces, world context, mixins, property conversion, GC and native struct operations. Do not activate the separate delegate-language Change.
++
++  1. Prepare NativeStructPropertyInterop, UObjectInheritanceAndInterface, ManualGeneratedReflectionPrecedence, ReflectedOutAndWorldContext, MixinReceiver, DelegateNativeAdapter, AlternateNativeTransport and ReflectionProviderCoverage. Plugin-owned transient fixtures expose parent property 11, child property 13, Add(2,3)==5, a concrete interface callback, a mixin mutating only its receiver, and a native delegate subscriber invoked once. Observe RED for missing bridge behavior.
++  2. Implement serial reflection capture, adapters and explicit installation/finalization. Preserve active backend configuration and test alternate native transport through explicit fixture installation.
++  3. Build and prove GREEN, including object-handle retention/release, direction qualifiers and wrong-owner rejection.
++
++## 7. Full Runtime surface
++
++- [ ] 7.1 Close remaining providers and full explicit Engine creation — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Coverage.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Binds/**`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine*`, `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType*`, `Plugins/Angelscript/Source/AngelscriptRuntime/NativeBindings/**`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingCoverageTests.cpp`, `openspec/changes/angelscript/feature-runtime-binding-record-apply/attachments/data/provider-inventory.md`, `.agents/skills/angelscript-test-guide/SKILL.md`
++
++  Complete all inventory utilities/globals, ToString and Finalization providers. Fresh CreateForBindings installs the entire selected Runtime snapshot. Account for expected declarations/effects and concrete condition-based exclusions; no unsupported-provider skip or legacy replay is allowed. Compare the runtime collection with source inventory so missing registrations cannot disappear from the oracle. Update only explicit-owner replacement-fixture guidance.
++
++  1. Prepare FullRuntimeEngineCreation, AllEligibleProvidersAccounted, TargetExclusionsAreExplained, FinalizationAndToString and FullSnapshotNativeCall. Missing full coverage is expected RED.
++  2. Close each inventory entry, including Editor/Game and Development/Shipping policy checks with explicit inputs. Do not claim compiled-out code executed.
++  3. Prove the full-creation group GREEN and retain provider-to-declaration evidence.
++
++## 8. Completion
++
++- [ ] 8.1 Verify final content, synchronize durable specs and archive — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.'; Fast = $true; TimeoutMs = 600000 }`
++  > Files: `openspec/changes/angelscript/feature-runtime-binding-record-apply/**`, `openspec/specs/angelscript/bindings/runtime/**`, `openspec/specs/angelscript/runtime/binding-engine/**`, `openspec/specs/angelscript/testing/baseline/**`, `openspec/changes/angelscript/archive/*feature-runtime-binding-record-apply/**`
++
++  Reuse task proofs only on the final source/binary identity. Execute full RuntimeBindings and `Angelscript.UnitTest.Baseline`, plus the exact affected native metadata/layout/call selectors recorded by 2.1–6.1. Full legacy suites, Performance, packaging and JIT execution are omitted because those products are not activated here. Missing cases, crashes or incomplete reports are not success. Synchronize all three capability deltas, preserve unspecified baseline scenarios, record terminal evolution evidence and close/archive using lifecycle Skills and strict validation. No review, commit or push is implicitly requested.

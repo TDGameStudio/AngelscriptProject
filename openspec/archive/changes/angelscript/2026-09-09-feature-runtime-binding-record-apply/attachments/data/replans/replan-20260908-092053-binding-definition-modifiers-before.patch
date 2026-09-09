@@ -1,0 +1,15 @@
+--- tasks.md
++++ tasks.md
+@@ -128,9 +128,9 @@
+   3. Build through Harness and rerun for GREEN. Record complete case paths, source/binary identity and report; shared proof maps every case to this task.
+ 
+ - [ ] 2.4 Complete signatures, behaviours and properties before freezing images — verify: `Invoke-Harness -Command ue.test -Context $context -Parameters @{ TestPrefix = 'Angelscript.UnitTest.RuntimeBindings.Types.Members.'; Fast = $true; TimeoutMs = 600000 }`
+-  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/frontend/as_binding_declaration.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_property.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingMembersTests.cpp`
+-
+-  Consume the typed draft and recorded members; define all methods, globals, properties, behaviours, defaults, traits and access facts, finalize layouts, Freeze and register into a supplied local native Engine. Add checked native metadata facts as required. Pass recorded definition modifiers through the binding parser before function identity interning, so frozen metadata authenticates against the complete producer descriptor. Never append to an installed frozen type.
++  > Files: `Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfo*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.*`, `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_property.*`, `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingMembersTests.cpp`
++
++  Consume the typed draft and recorded members; define all methods, globals, properties, behaviours, defaults, traits and access facts, finalize layouts, Freeze and register into a supplied local native Engine. Add checked native metadata facts as required. Never append to an installed frozen type.
+ 
+   Cases: Pair.Sum and overloaded globals resolve distinct stable functions; read-only/protected/property offsets and no-discard/default/direction facts are preserved; missing parameter type and duplicate incompatible signature fail before publication; every member is visible after image install; second Engine uses a distinct image; later attempted mutation fails.
+ 
