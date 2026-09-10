@@ -31,7 +31,7 @@ The SDK SHALL execute supported Generic and typed caller bindings using complete
 - **WHEN** bytecode invokes the binding with primitive, reference, value or handle arguments
 - **THEN** the native callback receives the correct values, receiver adjustment and out/inout storage, and its result reaches the VM caller
 
-  > Supported call shapes include the maintained Generic/typed-caller forms of global, member, object-first and object-last calls. Native ownership follows registered behaviours, not pointer guesses.
+    > Supported call shapes include the maintained Generic/typed-caller forms of global, member, object-first and object-last calls. Native ownership follows registered behaviours, not pointer guesses.
 
 #### Scenario: Reject unsupported native calling contracts
 
@@ -45,12 +45,12 @@ The SDK SHALL execute supported Generic and typed caller bindings using complete
 - **WHEN** the host replaces that binding, including from inside its active callback
 - **THEN** the complete replacement becomes available atomically and an active call retains its original callback and cleanup contract through return
 
-  > Subsequent calls may use the replacement. Concurrent acquisition observes a complete generation; replacing a binding does not change the declaration's signature or runtime-independent metadata.
+    > Subsequent calls may use the replacement. Concurrent acquisition observes a complete generation; replacing a binding does not change the declaration's signature or runtime-independent metadata.
 
 - **AND** the replaced generation remains readable while a call or explicit binding lease owns it and is reclaimed after its final owner releases it
 - **BUT** an invalid replacement or retired Engine cannot publish new work or discard a previously installed binding needed for remaining cleanup
 
-  > Retirement stops new execution admission. The Engine may retain its last installed native bindings while existing Contexts and objects finish cleanup; this does not keep historical replaced generations indefinitely.
+    > Retirement stops new execution admission. The Engine may retain its last installed native bindings while existing Contexts and objects finish cleanup; this does not keep historical replaced generations indefinitely.
 
 ### Requirement: SDK objects preserve dynamic type and complete lifetime semantics
 
@@ -62,7 +62,7 @@ The SDK SHALL own AS object identity, payload storage, reference/weak state and 
 - **THEN** its dynamic ObjectType, field values, constructor/destructor effects and reference ownership are correct
 - **AND** public object pointers and metadata field offsets address the payload rather than a hidden runtime header
 
-  > Inline by-value instances have payload layout without an independent heap-reference header. Ordinary C++ objects keep their original storage and are managed only through their declared behaviours.
+    > Inline by-value instances have payload layout without an independent heap-reference header. Ordinary C++ objects keep their original storage and are managed only through their declared behaviours.
 
 #### Scenario: Unwind partial construction
 
@@ -88,7 +88,7 @@ The SDK SHALL reclaim unreachable AS cycles and invalidate weak references while
 - **THEN** unreachable objects finalize exactly once and live roots remain usable
 - **AND** weak references become invalid only when their target lifetime ends
 
-  > Type/function metadata leases and runtime object references are distinct roots with distinct ownership; neither is inferred from a cached ID.
+    > Type/function metadata leases and runtime object references are distinct roots with distinct ownership; neither is inferred from a cached ID.
 
 ### Requirement: Context control and shutdown retain valid cleanup bindings
 
@@ -112,15 +112,15 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 - **WHEN** Engine shutdown begins while contexts or runtime objects still own executable resources
 - **THEN** new admissions stop and active calls/objects are cleaned before bindings and IDs retire
 
-  | Operation after the shutdown request | Observable behavior |
-  |---|---|
-  | New public Prepare, Execute, image link, definition registration or native/global binding | Rejected without replacing retained cleanup bindings |
-  | An already executing call | Keeps the code, IDs and native contracts required for its continuation |
-  | Destruction of an already owned object | Can invoke script or native destructors and release temporary objects through owned cleanup services |
+    | Operation after the shutdown request | Observable behavior |
+    |---|---|
+    | New public Prepare, Execute, image link, definition registration or native/global binding | Rejected without replacing retained cleanup bindings |
+    | An already executing call | Keeps the code, IDs and native contracts required for its continuation |
+    | Destruction of an already owned object | Can invoke script or native destructors and release temporary objects through owned cleanup services |
 
 - **AND** a shutdown request from inside an active callback defers final destruction until the callback exits
 
-  > Unreachable object cycles are eligible for collection after the outer execution returns; the application does not need an otherwise unused Engine owner solely to trigger that drain.
+    > Unreachable object cycles are eligible for collection after the outer execution returns; the application does not need an otherwise unused Engine owner solely to trigger that drain.
 
 - **BUT** a retained metadata pointer alone cannot prepare or execute after retirement
 
@@ -130,12 +130,12 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 - **WHEN** its last external runtime reference is released
 - **THEN** its native or script destructor completes exactly once with its required type, code and native bindings still valid
 
-  > A script destructor may call a helper from a separately linked executable image. Ownership covers the complete cleanup dependency path, not only the destructor declaration.
+    > A script destructor may call a helper from a separately linked executable image. Ownership covers the complete cleanup dependency path, not only the destructor declaration.
 
 - **AND** object, collector and Engine ownership is released after cleanup without a permanent reference cycle
 - **BUT** internal cleanup authority does not reopen public execution or reattach retired definitions
 
-  > A separately retained executable snapshot may remain readable after the Engine is destroyed; releasing that snapshot cannot call its former Engine.
+    > A separately retained executable snapshot may remain readable after the Engine is destroyed; releasing that snapshot cannot call its former Engine.
 
 #### Scenario: Handle maintained marker and observer instructions
 
@@ -143,4 +143,45 @@ The SDK SHALL support suspension, resumption, abort, reuse, nesting, exceptions 
 - **THEN** VM markers advance without a JIT backend and optional SDK hooks follow their explicit enabled/disabled contract
 - **AND** `DestructScript` performs its destruction contract and advances, while `ThrowException` reports a real VM exception
 
-  > No optional observer requires UE startup. Disabled observers still advance; a commented handler that makes no progress is not valid no-op behaviour.
+    > No optional observer requires UE startup. Disabled observers still advance; a commented handler that makes no progress is not valid no-op behaviour.
+
+### Requirement: Shared publications never determine execution ownership
+
+The SDK SHALL obtain runtime ownership from the executing Engine's materialized TypeInfo, Context or object header, and SHALL retain mutable native, type-user-data and object-lifetime state per Engine.
+
+#### Scenario: Execute one external function with different auxiliary state
+
+- **GIVEN** A and B materialized the same Pair publication, with native auxiliary results 42 and 99 respectively
+- **WHEN** each Engine executes Sum
+- **THEN** A returns 42 and B returns 99 without changing BindInfo
+- **AND** replacing or releasing A's binding does not change B's native state
+
+#### Scenario: Allocate and collect objects using published type metadata
+
+- **GIVEN** A and B materialized the same VM-managed object publication
+- **WHEN** their contexts allocate objects and their collectors later release unreachable objects
+- **THEN** each object retains its allocating Engine and follows that Engine's cleanup bindings
+- **BUT** a numeric publication ID does not transfer an object or its execution authority to another Engine
+
+#### Scenario: Keep mutable type sidecars isolated
+
+- **WHEN** A changes its type user data or template operations state for a materialized publication
+- **THEN** B's corresponding state and the BindInfo record remain unchanged
+- **BUT** writing Engine-owned state into BindInfo or into a discarded Image is rejected
+
+#### Scenario: Retire one consumer of a shared publication
+
+- **GIVEN** A and B have independent live calls or objects using independently materialized TypeInfo
+- **WHEN** A requests shutdown, including from its native callback
+- **THEN** A completes its admitted cleanup while B continues execution
+- **AND** BindInfo remains until the host drops it
+
+### Requirement: Context admission validates the receiving Engine's definition set
+
+The SDK SHALL admit a callable only when its TypeInfo and required executable/native binding belong to the receiving Engine, without requiring Image or TypeInfo to return a BoundEngine from a shared object.
+
+#### Scenario: Prepare an admitted external callable
+
+- **WHEN** a Context prepares a callable TypeInfo owned by its own Engine
+- **THEN** Prepare succeeds
+- **BUT** a TypeInfo pointer from another Engine is rejected even when the publication ID matches

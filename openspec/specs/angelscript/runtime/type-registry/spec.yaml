@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_66e6d23e-a463-4dd5-ad88-b11025f9c7f9
+  id: angelscript/runtime/type-registry
+  title: Process Type Registry
+  description: BindInfo publications, process IDs, delayed unique Engine TypeInfo, and host class-info queries without Engine TypeInfo.

@@ -1,0 +1,377 @@
+{
+  "captured_at": "2026-09-10T03:57:47.8198392+00:00",
+  "meaning": "Planning-only current-spec baseline; no formatting repaired in this delivery.",
+  "authorized_disposition": "At task 6.2 only, repair clause-ownership indentation in the named Scenario Cards while preserving unchanged text and parentage; do not migrate unrelated specs.",
+  "targets": [
+    {
+      "Target": "angelscript/language/types/definitions",
+      "Path": "openspec/specs/angelscript/language/types/definitions/spec.md",
+      "Sha256": "be4c9320387173046b11318c729cb5e92ced526600e1bc18b8bfddc4269a5592",
+      "RunId": "a08d348e09b84673953e698b468fd3f5",
+      "ExitCode": 1,
+      "Valid": false,
+      "Issues": [
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retain only a method after destroying its producer, line 23: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retain only a method after destroying its producer, line 23: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject conflicting or competing registration, line 38: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject conflicting or competing registration, line 38: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 45: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 45: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 46: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 47: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 51: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Retire an attached image, line 51: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Rebuild an old funcdef SDK caller, line 65: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Rebuild an old funcdef SDK caller, line 65: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Define a padded native object, line 90: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Define a padded native object, line 90: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an invalid native address without mutation, line 99: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an invalid native address without mutation, line 99: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an invalid native address without mutation, line 100: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an invalid native address without mutation, line 101: clause continuation requires four-space indentation"
+        }
+      ]
+    },
+    {
+      "Target": "angelscript/runtime/vm",
+      "Path": "openspec/specs/angelscript/runtime/vm/spec.md",
+      "Sha256": "d0d493b7ab2d0031de7bd902da7782428897a450fd08e5bea5b7c66cb4bac5be",
+      "RunId": "80aa5433f7334759aee9d4ebc2e19e53",
+      "ExitCode": 1,
+      "Valid": false,
+      "Issues": [
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Call ordinary C++ through a linked function, line 34: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Call ordinary C++ through a linked function, line 34: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Replace a live native binding, line 48: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Replace a live native binding, line 48: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Replace a live native binding, line 53: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Replace a live native binding, line 53: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Construct and destroy an AS object with fields, line 65: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Construct and destroy an AS object with fields, line 65: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Collect cycles without losing live objects, line 91: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Collect cycles without losing live objects, line 91: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 115: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 115: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 116: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 117: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 118: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 119: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 123: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Shut down with active execution and retained metadata, line 123: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Release the last runtime object after its host owners, line 133: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Release the last runtime object after its host owners, line 133: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Release the last runtime object after its host owners, line 138: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Release the last runtime object after its host owners, line 138: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Handle maintained marker and observer instructions, line 146: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Handle maintained marker and observer instructions, line 146: clause continuation requires four-space indentation"
+        }
+      ]
+    },
+    {
+      "Target": "angelscript/runtime/bytecode",
+      "Path": "openspec/specs/angelscript/runtime/bytecode/spec.md",
+      "Sha256": "7a126cb649ce84cfd37084da9ea3ef2d2297b3ffa5a27c2374d271c5b6f8246a",
+      "RunId": "c93d390eeac243a99786b484eaa2d90e",
+      "ExitCode": 1,
+      "Valid": false,
+      "Issues": [
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Author a function using stable type and callable symbols, line 16: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Author a function using stable type and callable symbols, line 16: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Load code against pre-existing definitions, line 37: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Load code against pre-existing definitions, line 37: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an incompatible or corrupt wire image, line 44: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject an incompatible or corrupt wire image, line 44: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 61: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 61: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 62: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 63: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 64: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Validate malformed executable control flow, line 65: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Resolve a type use and callable in the current Engine, line 84: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Resolve a type use and callable in the current Engine, line 84: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject a late binding failure atomically, line 95: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject a late binding failure atomically, line 95: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Emit and execute a supported source function, line 114: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Emit and execute a supported source function, line 114: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Preserve argument mapping and lazy evaluation, line 124: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Preserve argument mapping and lazy evaluation, line 124: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Preserve argument mapping and lazy evaluation, line 125: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Preserve argument mapping and lazy evaluation, line 126: clause continuation requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject unready or unsupported source emission without partial output, line 135: direct clause detail requires four-space indentation"
+        },
+        {
+          "level": "ERROR",
+          "path": "spec.md",
+          "message": "Scenario: Reject unready or unsupported source emission without partial output, line 135: clause continuation requires four-space indentation"
+        }
+      ]
+    },
+    {
+      "Target": "angelscript/runtime/binding-engine",
+      "Path": "openspec/specs/angelscript/runtime/binding-engine/spec.md",
+      "Sha256": "e39a73610c03bd541f72f478b08fa49bc716804f52faeb4e72af08f5fed33e97",
+      "RunId": "ea8c8c08767648d69e0b7322851231ed",
+      "ExitCode": 0,
+      "Valid": true,
+      "Issues": []
+    }
+  ]
+}
+

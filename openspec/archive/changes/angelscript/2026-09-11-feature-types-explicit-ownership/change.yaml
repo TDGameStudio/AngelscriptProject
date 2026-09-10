@@ -1,0 +1,22 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_6f58d4ea-1ff3-48f6-8680-df1b32635270
+  id: angelscript/feature-types-explicit-ownership
+  title: Explicit type metadata ownership and unified identity registration
+  description: Planning-only delivery for prebuilt external type libraries, scoped ID queries, Engine-owned script definitions, shared metadata execution ownership, and the binding-pipeline prerequisite handoff. Product implementation is excluded from this delivery.
+  aliases:
+  - angelscript/feature-types-external-ownership
+workflow: angelscript
+created_at: 2026-09-10T03:53:40Z
+goal: Create a decision-complete SDK prerequisite Change for external type creation and management, isolated Engine-generated types, safe lookup and lifetime, and minimal reusable UE binding preparation.
+affected_areas:
+- angelscript/runtime/type-registry
+- angelscript/language/types/definitions
+- angelscript/runtime/vm
+- angelscript/runtime/bytecode
+- angelscript/runtime/binding-engine
+archived_at: 2026-09-10T16:27:31Z
+archive_schema: closure-v1
+closure:
+  kind: completed

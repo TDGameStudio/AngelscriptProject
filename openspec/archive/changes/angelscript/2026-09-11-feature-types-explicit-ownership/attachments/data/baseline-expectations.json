@@ -1,0 +1,49 @@
+{
+  "schema": "type-ownership-baseline-expectations-v1",
+  "status": "observed",
+  "semantic_fixture": "Pair{int32 X=20,int32 Y=22; Sum()->int32=42; GetX()->int32=20; GetY()->int32=22; One()->int32=1} types=128 methods=4",
+  "semantic_fixture_md5": "D724E66C82D29F67FE9A878B7169FDB4",
+  "literals": {
+    "x": 20,
+    "y": 22,
+    "sum": 42,
+    "one": 1,
+    "pair_type_count": 128,
+    "methods_per_type": 4
+  },
+  "current_unsupported_or_pre_publication": {
+    "detached_type_id": -1,
+    "detached_function_id": -1,
+    "detached_member_type_id": -1,
+    "detached_get_engine": null,
+    "detached_get_bound_engine": null,
+    "get_type_id_by_decl": "asNOT_SUPPORTED(-7)",
+    "get_type_info_by_decl": null,
+    "primitive_type_info": null,
+    "second_engine_same_image": "ForeignEngine",
+    "reattach_after_owner_destroy": "Retired",
+    "installed_template_operations_in_native_engine_baseline": "unsupported"
+  },
+  "current_supported_observations": {
+    "native_host_sum": "Pair.X+Pair.Y=42 without a VM",
+    "after_engine_register": "GetTypeId/GetId assigned; GetTypeInfoById/GetFunctionById return original pointers; member int32 IDs are asTYPEID_INT32",
+    "vm_invocation": "Prepare/Execute of Sum/GetX/GetY/One returns 42/20/22/1",
+    "private_owners": "Independent ScriptThing images have distinct pointers and keys; ForeignEngine rejects cross-registration; survivor AddRef outlives the destroyed Engine"
+  },
+  "vm_workloads": ["arithmetic", "native_call", "alloc_release", "handle_copy", "cast", "template_operations", "concurrent_arithmetic_1", "concurrent_arithmetic_2", "concurrent_arithmetic_8"],
+  "cost_ns": {
+    "prepare": 42410900,
+    "attach": 702800,
+    "query": 40600,
+    "release": 107400
+  },
+  "observed_run": {
+    "build_run_id": "cdcea3a595fa4706a935a9a366b942a4",
+    "test_run_id": "72d04f2d6b524bbba54443fb365997c0",
+    "selector": "Angelscript.UnitTest.NativeEngine.TypeOwnership.Baseline",
+    "discovered": 5,
+    "executed": 5,
+    "failed": 0,
+    "head": "0f0cf23ee78e563bf93dcf20b43a55381948273d"
+  }
+}

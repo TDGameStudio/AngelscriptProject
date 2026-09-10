@@ -1,8 +1,4 @@
-## Purpose
-
-Expose an explicitly owned FAngelscriptEngine capable of installing and executing Runtime bindings while the project's automatic script runtime remains dormant.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Hosts can explicitly create a binding engine
 

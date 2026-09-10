@@ -1,0 +1,85 @@
+path,line,symbol,kind,status,owning_task,disposition,notes
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.cpp,291,asCTypeInfo::GetTypeId,id-query,active,2.2,read-publication-ids,Currently returns GetBoundTypeId or engine typeId; detached images report -1 until Engine attach
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.cpp,312,asCTypeInfo::GetEngine,GetEngine,active,4.1,exact-owner-or-null,Delegates to metadataOwner->GetBoundEngine(); external publications must stay null after 4.1
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.cpp,193,asCTypeInfo::SetUserData,user-data,active,4.1,engine-sidecar,plainUserData type-0 slot plus userData array
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.cpp,233,asCTypeInfo::GetUserData,user-data,active,4.1,engine-sidecar,Type-0 reads plainUserData
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.h,199,asCTypeInfo::plainUserData,user-data,active,4.1,engine-sidecar,Storage field consumed by VM predicates and Runtime template operations
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.cpp,524,asCScriptFunction::GetId,id-query,active,2.2,read-publication-ids,GetBoundFunctionId while metadata-owned
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.cpp,625,asCScriptFunction::GetTypeId,id-query,active,2.2,read-publication-ids,Callable TypeInfo ID through bound image
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.cpp,1808,asCScriptFunction::GetEngine,GetEngine,active,4.1,exact-owner-or-null,Delegates to metadataOwner->GetBoundEngine()
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.cpp,2019,asCScriptFunction::SetUserData,user-data,active,4.1,engine-sidecar,Function user data remains callable-local
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_objecttype.cpp,494,asCObjectType::GetProperty,id-query,active,2.2,member-type-ids,Detached member typeId is -1; attached primitive fields use GetBoundDataTypeId
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp,211,asCMetadataImage::GetBoundEngine,GetBoundEngine,active,3.1,remove-universal-bound-engine,Single BoundEngine is the current ForeignEngine source
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp,217,asCMetadataImage::GetBoundTypeId,id-query,active,2.1,process-ids-on-publication,IDs exist only after Engine RegisterMetadataImage
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp,225,asCMetadataImage::GetBoundFunctionId,id-query,active,2.1,process-ids-on-publication,Function IDs assigned by nextMetadataFunctionId
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp,231,asCMetadataImage::GetBoundDataTypeId,id-query,active,2.2,qualified-type-use-ids,Requires BoundEngine even for primitive field IDs
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine_metadata.cpp,79,nextMetadataTypeId,id-producer,active,3.1,migrate-to-registry,Per-Engine sequence starting at asTYPEID_FLOAT64+1
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine_metadata.cpp,80,nextMetadataFunctionId,id-producer,active,3.1,migrate-to-registry,Per-Engine function sequence starting at 1
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine_metadata.cpp,57,BoundEngine/ForeignEngine,GetBoundEngine,active,3.1,shared-external-attach,Second Engine receives ForeignEngine for the same Image
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.h,622,typeIdSeqNbr,id-producer,dormant,3.1,leave-disabled,Legacy engine sequence; maintained metadata path uses nextMetadataTypeId
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.h,704,nextMetadataTypeId,id-producer,active,3.1,migrate-to-registry,Maintained producer
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5324,typeIdSeqNbr++,id-producer,dormant,3.1,leave-disabled,GetTypeIdFromDataType legacy object path
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5280,GetTypeIdFromDataType,id-query,active,3.1,admission-membership,Rejects unadmitted original objects
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5419,GetTypeIdByDecl,id-query,active,2.2,implement-query-frontend,Returns asNOT_SUPPORTED on the maintained path
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5399,GetTypeInfoByDecl,id-query,active,2.2,implement-query-frontend,Returns nullptr; dormant builder parse is #if 0
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,6435,GetTypeInfoById,id-query,active,2.4,global-then-engine-view,Primitives <= asTYPEID_FLOAT64 return null TypeInfo
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,1571,GetScriptFunction,id-query,active,4.1,engine-local-execution-index,metadataFunctionsById then scriptFunctions array
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5881,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,VM object copy/assign storage predicate
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.cpp,5920,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,VM object compare/storage predicate
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_bytecode_linker.cpp,619,Image->GetBoundEngine,GetBoundEngine,active,4.1,receiving-engine-admission,Link recovers owning Engine from the Image
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,653,func->GetEngine,GetEngine,active,4.1,context-engine-match,Prepare rejects a function whose BoundEngine is not this Context engine
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,2963,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,VM copy/handle path; GetUserData()==0 selects script-object storage
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,2975,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,VM copy/handle path
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,3050,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,asOBJ_SCRIPT_OBJECT && GetUserData()==0
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,3140,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,GC/copy predicate
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,3147,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,script-object copy predicate
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,4424,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,assignment path
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,4431,objType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,assignment script-object path
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,5363,GetTypeInfo()->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,parameter object storage
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,5602,variableType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,local variable object storage
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,5796,allocationType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,ALLOC storage decision
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,5830,partialType->GetUserData()==0,user-data,active,4.1,immutable-storage-facts,partial-construction cleanup
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,5878,GetUserData()==0,user-data,active,4.1,immutable-storage-facts,current-function parameter storage
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_vm_object.cpp,49,Type->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Allocation derives Engine from Type
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_vm_object.cpp,72,Type->GetEngine,GetEngine,active,4.1,explicit-engine-authority,GC registration uses Type->GetEngine()
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_vm_object.cpp,112,Type->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Release/cleanup uses Type->GetEngine()
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp,53,objType->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Script object callback engine match
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp,146,objType->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Script object callback engine match
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp,384,asIScriptObject::GetEngine,GetEngine,active,4.1,exact-owner-or-null,Returns objType->GetEngine()
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp,517,objType->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Enumrefs engine match
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptobject.cpp,833,ctx->GetEngine,GetEngine,active,4.1,explicit-engine-authority,Release refs engine match
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfoApply.cpp,870,GetImage()->GetBoundEngine,GetBoundEngine,active,5.1,installation-vs-definition,Rejects applying operations to a foreign Image
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfoApply.cpp,1756,GetImage()->GetBoundEngine,GetBoundEngine,active,5.1,installation-vs-definition,Second installation-bound check
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfoApply.cpp,1049,Type->plainUserData,user-data,active,4.1,engine-sidecar,Writes template operations pointer into shared type user data
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp,321,ScriptFunction->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Context/function engine pairing
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp,378,Candidate->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Context reuse filter
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.cpp,9222,TypeInfo->plainUserData,user-data,active,4.1,engine-sidecar,Reads type operations/user class pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngineFunctionRoutes.cpp,46,Route.Function->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Native route owner check
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngineFunctionRoutes.cpp,62,Function->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Native route owner check
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngineFunctionRoutes.cpp,371,Verified.Function->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Verified route owner check
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.cpp,261,ScriptClass->GetUserData,user-data,active,5.1,ue-class-association,UClass* stored in type user data
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.cpp,411,ScriptType->GetUserData,user-data,active,5.1,ue-class-association,UClass* stored in type user data
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptType.cpp,790,ScriptFunction->GetEngine,GetEngine,active,4.1,exact-owner-or-null,Creates FAngelscriptContext from function engine
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp,1515,ExistingType->GetUserData,user-data,active,5.1,ue-class-association,Bind-time UClass association
+Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptBinds.cpp,1526,ExistingType->SetUserData,user-data,active,5.1,ue-class-association,Bind-time UClass association
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TArray.h,91,Meta->plainUserData,user-data,active,4.1,engine-sidecar,FArrayOperations template pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TMap.h,100,Meta->plainUserData,user-data,active,4.1,engine-sidecar,FMapOperations template pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TSet.h,98,Meta->plainUserData,user-data,active,4.1,engine-sidecar,FSetOperations template pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_TOptional.h,67,Meta->plainUserData,user-data,active,4.1,engine-sidecar,FOptionalOperations template pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_Delegates.h,74,Type->plainUserData,user-data,active,5.1,ue-class-association,UDelegateFunction pointer
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_AActor_Functions.cpp,44,ElementTypeInfo->plainUserData,user-data,active,5.1,ue-class-association,UClass element type
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_UDataTable_Functions.cpp,58,SubTypeInfo->plainUserData,user-data,active,5.1,ue-class-association,UStruct row type
+Plugins/Angelscript/Source/AngelscriptRuntime/Binds/Bind_USceneComponent_Functions.cpp,59,SubTypeInfo->plainUserData,user-data,active,5.1,ue-class-association,UClass subtype
+Plugins/Angelscript/Source/AngelscriptRuntime/Dump/AngelscriptStateSnapshot.cpp,615,typeIdSeqNbr,id-producer,dormant,6.1,observability-only,Dump of legacy sequence; not a maintained issuer
+Plugins/Angelscript/Source/AngelscriptRuntime/StaticJIT/PrecompiledData.cpp,866,typeIdSeqNbr++,id-producer,dormant,3.1,leave-disabled,StaticJIT remains dormant in this Change
+Plugins/Angelscript/Source/AngelscriptRuntime/Legacy/angelscript/source/as_bytecode_codegen.cpp,13121,typeIdSeqNbr,id-producer,dormant,3.1,leave-disabled,Legacy compiler backend
+Plugins/Angelscript/Source/AngelscriptRuntime/Legacy/angelscript/source/as_bytecode_codegen.cpp,2460,bc.GetEngine,GetEngine,dormant,3.1,leave-disabled,Legacy bytecode helper
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/Registration/EngineRegistrationTests.cpp,97,GetEngine/ForeignEngine,GetEngine,active,3.1,update-shared-vs-private,Original-pointer ForeignEngine and survivor controls
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMObjectLifetimeTests.cpp,1,native/object lifetime,user-data,active,4.2,retain-lifetime-oracles,Destructor native-binding and partial-construction cleanup
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/Bindings/RuntimeBindingIsolationTests.cpp,1,independent owners,GetBoundEngine,active,5.1,shared-preparation-plus-isolation,Independent capture remains a valid control
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/Builder/BuilderStageTests.cpp,347,GetBoundEngine,GetBoundEngine,active,3.2,engine-free-builder,Builder definitions stay unbound
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMDispatchTests.cpp,1,script/native dispatch,id-query,active,1.1,baseline-control,Adapted into Baseline.VMExecution arithmetic/script call samples
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMResourceOpcodeMatrixTests.cpp,1,ALLOC/FREE/Cast,id-query,active,1.1,baseline-control,Adapted into Baseline.VMExecution alloc/cast samples
+Plugins/Angelscript/Source/AngelscriptTest/NewVersion/NativeEngine/VM/VMNativeCallsTests.cpp,1,native CALLSYS,id-query,active,1.1,baseline-control,Adapted into Baseline.Pair and Baseline.VMExecution native call samples
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_generic.cpp,75,asCGeneric::GetEngine,GetEngine,active,4.1,context-engine,Generic native call engine
+Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_context.cpp,515,asCContext::GetEngine,GetEngine,active,4.1,context-engine,Context reports its constructing Engine

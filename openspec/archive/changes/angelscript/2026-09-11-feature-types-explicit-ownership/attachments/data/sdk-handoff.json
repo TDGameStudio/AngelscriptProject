@@ -1,0 +1,45 @@
+{
+  "schema": "external-types-handoff-v1",
+  "status": "complete",
+  "producer_uid": "change_6f58d4ea-1ff3-48f6-8680-df1b32635270",
+  "producer_id": "angelscript/feature-types-explicit-ownership",
+  "preparation": "shared-const-v1",
+  "head": "0f0cf23ee78e563bf93dcf20b43a55381948273d",
+  "ownership": {
+    "bindinfo_store": "Durable pre-Engine class records. Hosts hold TSharedRef<const FAngelscriptTypeBindInfoStore>.",
+    "metadata_image": "TUniquePtr intermediate. No std::shared_ptr for Image, Image dependencies, publication lifetime or TypeInfo.",
+    "typeinfo": "Unique per receiving Engine. A and B share publication IDs, never TypeInfo pointers.",
+    "registry": "asCTypeIdRegistry issues process IDs only; it does not own TypeInfo or Image.",
+    "admission": "TypeInfo.GetEngine() and Function.GetEngine() are Engine admission. Image BoundEngine is not authority."
+  },
+  "interfaces": {
+    "asCTypeIdRegistry::Get": "Process singleton.",
+    "asCTypeIdRegistry::Reserve": "Checked bundle reservation of type sequences, function IDs and generations.",
+    "FAngelscriptTypeBindInfoStore::PublishProcessIds": "Attach process TypeIds/FunctionIds to BindInfo records before Engine TypeInfo exists.",
+    "FAngelscriptTypeBindInfoStore::GetPublishedClassInfo": "UE-facing class facts by process TypeId without returning asCTypeInfo*.",
+    "FAngelscriptTypeBindInfoApply::MaterializePublishedTypes": "Unique TypeInfo per Engine from a published store and optional unique Image.",
+    "FAngelscriptEngine::CreateForBindings(TSharedRef<const FAngelscriptTypeBindInfoStore>)": "Publish once, materialize unique TypeInfo, isolate native installation."
+  },
+  "forbidden": [
+    "std::shared_ptr for Image or TypeInfo ownership",
+    "Sharing TypeInfo pointers across Engines",
+    "Image BoundEngine as execution authority",
+    "Global Registry lookup as implicit Engine admission"
+  ],
+  "sources": {
+    "Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_type_id_registry.h": "1530784bfadd71796da1c11748d0eb718f3857e8f4e88da36474f788eb9295db",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfoStore.h": "122042e3f9eb790826c2f631e9cbedf7aeba34fcb12bb25b3aa44134bd4d3e3a",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptTypeBindInfoApply.h": "37a892d3cc26476d7ce09dcd9d91d1d4421e5ef64eb64297d1d6285bf7d45fde",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/Core/AngelscriptEngine.h": "da1d0318ce70de659f3e4b77e523958a0b88cea7c978d64b8ecdd827e9c25c95",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.h": "8c18d42c26d36a14a8fa72d926b95a75efe4b2ed2db8538f24f143f345572c52",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_typeinfo.h": "7e41cc5de71dfc559d580f95c13d787fb2afe50071583096615b84992fe8d585",
+    "Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptengine.h": "e29d97c1184c61c387d15a07ecb7d081fc9c513c16c68f3ae11171eb808cc8ca"
+  },
+  "capabilities": [
+    "angelscript/runtime/type-registry",
+    "angelscript/language/types/definitions",
+    "angelscript/runtime/vm",
+    "angelscript/runtime/bytecode",
+    "angelscript/runtime/binding-engine"
+  ]
+}

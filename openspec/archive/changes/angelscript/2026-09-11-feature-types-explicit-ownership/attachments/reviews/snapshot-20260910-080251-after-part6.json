@@ -1,0 +1,11 @@
+[
+  {
+    "path": "Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_metadata_image.cpp",
+    "full_file_sha256": "12ab9c4674ada3fd181fadf0ace2e211903441db481e602f29c6bd30f551cd4a",
+    "original_lines": [
+      47,
+      59
+    ],
+    "content": "asCMetadataImage::asCMetadataImage(const asSMetadataOptions& InOptions) : Options(InOptions) {}\n\nasCMetadataImage::~asCMetadataImage()\n{\n\t// All semantic edges are borrowed from this graph or retained dependencies.\n\t// There are no external object leases once the shared control block reaches 0.\n\tbDestroying = true;\n\tfor (asCGlobalProperty* Global : Globals) asDELETE(Global, asCGlobalProperty);\n\tfor (asCScriptFunction* Function : Functions) asDELETE(Function, asCScriptFunction);\n\tfor (asCTypeInfo* Type : Types) asDELETE(Type, asCTypeInfo);\n\tfor (asSNameSpace* Namespace : Namespaces) asDELETE(Namespace, asSNameSpace);\n}\n"
+  }
+]

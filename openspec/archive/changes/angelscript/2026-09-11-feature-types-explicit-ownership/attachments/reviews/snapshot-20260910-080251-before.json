@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-09-10T08:02:51+00:00",
+  "requested_by": "user",
+  "request": "再处理和review 下当前的方案/",
+  "scope": "Current SDK ownership/registry plan, dependent binding handoff and planned proving contracts",
+  "exclusions": "Product implementation/completion, unrelated dirty files, historical alternatives; source excerpts are context only",
+  "evidence": "Embedded exact planning text and prior static validation only; no product tests executed",
+  "parts": [
+    {
+      "path": "openspec/changes/angelscript/feature-types-external-ownership/attachments/reviews/snapshot-20260910-080251-before-part1.json",
+      "sha256": "77a32b8c955a0fde4aa6e40ca84979c2647a7e0d85387c29f1096bdb37dd2131"
+    },
+    {
+      "path": "openspec/changes/angelscript/feature-types-external-ownership/attachments/reviews/snapshot-20260910-080251-before-part2.json",
+      "sha256": "5912056e35e2c1926b9d7877b42952fe8a109444007924b2bd22999c8d43c379"
+    },
+    {
+      "path": "openspec/changes/angelscript/feature-types-external-ownership/attachments/reviews/snapshot-20260910-080251-before-part3.json",
+      "sha256": "ba18548aaa3e0506e6a70cbe60b9e53d7793fdc0ac3e29aacff17c93ea107088"
+    },
+    {
+      "path": "openspec/changes/angelscript/feature-types-external-ownership/attachments/reviews/snapshot-20260910-080251-before-part4.json",
+      "sha256": "5ca43fba74ae53f9c2902d07f7a7f0363a054a871fe15364e1db87c24552ad77"
+    },
+    {
+      "path": "openspec/changes/angelscript/feature-types-external-ownership/attachments/reviews/snapshot-20260910-080251-before-part5.json",
+      "sha256": "b9eafc9db2448ce04af12e0aa3a1d7632ea6a256d6ebc61cdceeeac02cab7fd8"
+    }
+  ]
+}
