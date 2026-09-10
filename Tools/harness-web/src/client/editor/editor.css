@@ -1,0 +1,302 @@
+.document-editor {
+  --editor-bg: var(--panel, #fff);
+  --editor-text: var(--text, #253247);
+  --editor-muted: var(--muted, #748194);
+  --editor-border: var(--border, #e3e8ef);
+  color: var(--editor-text);
+  min-width: 0;
+  background: var(--editor-bg);
+}
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-block: 1px solid var(--editor-border);
+  position: sticky;
+  top: 0;
+  background: var(--editor-bg);
+  z-index: 5;
+}
+.editor-save-state {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--editor-muted);
+  font-size: 12px;
+}
+.editor-unsaved-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c88c35;
+}
+.editor-toolbar-spacer {
+  flex: 1;
+}
+.editor-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--editor-border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--editor-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.editor-button:hover:not(:disabled) {
+  background: color-mix(in srgb, #7790b5 9%, transparent);
+}
+.editor-button:focus-visible {
+  outline: 2px solid #5688da;
+  outline-offset: 3px;
+}
+.editor-button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.editor-button kbd {
+  font:
+    10px 'JetBrains Mono',
+    monospace;
+  opacity: 0.65;
+  margin-left: 4px;
+}
+.editor-save {
+  background: #356dcc;
+  color: #fff;
+  border-color: #356dcc;
+}
+.editor-save:hover:not(:disabled) {
+  background: #285dbb;
+}
+.editor-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 10px 20px;
+  margin: 0;
+  border-bottom: 1px solid var(--editor-border);
+  color: var(--editor-muted);
+}
+.editor-error {
+  color: #b84f4a;
+  white-space: pre-wrap;
+}
+.editor-conflict {
+  border: 1px solid #c99744;
+  border-radius: 9px;
+  padding: 15px 18px;
+  margin: 16px 24px;
+  font-size: 13px;
+  background: color-mix(in srgb, #d9a640 7%, transparent);
+}
+.editor-conflict p {
+  color: var(--editor-muted);
+  margin: 6px 0 12px;
+}
+.editor-conflict > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.editor-document-body {
+  max-width: 920px;
+  padding: 30px 44px 44px;
+  margin-inline: auto;
+}
+.editor-body-segment {
+  min-width: 0;
+}
+.editor-protected {
+  border: 1px solid var(--editor-border);
+  background: color-mix(in srgb, #7b8daa 4%, transparent);
+  margin: 14px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+}
+.editor-protected-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--editor-muted);
+  font-size: 10px;
+  padding: 9px 12px 0;
+  letter-spacing: 0.02em;
+}
+.editor-protected p,
+.editor-protected ul {
+  margin: 8px 12px 12px;
+  padding-left: 14px;
+}
+.editor-protected code {
+  font:
+    11px 'JetBrains Mono',
+    monospace;
+  overflow-wrap: anywhere;
+}
+.editor-task-heading {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.editor-task-files {
+  margin-top: 0;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.editor-task-files blockquote {
+  margin: 0;
+}
+.editor-task-files p {
+  padding-left: 0;
+}
+.editor-opaque summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px;
+  cursor: pointer;
+}
+.editor-opaque summary span {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--editor-muted);
+}
+.editor-opaque pre {
+  margin: 0;
+  padding: 14px;
+  border-top: 1px solid var(--editor-border);
+  overflow: auto;
+  font:
+    11px/1.7 'JetBrains Mono',
+    monospace;
+  white-space: pre-wrap;
+}
+.editor-diff {
+  margin: 16px 24px;
+  border: 1px solid var(--editor-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.editor-diff-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--editor-border);
+}
+.editor-diff pre {
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+  font:
+    12px/1.8 'JetBrains Mono',
+    monospace;
+}
+.editor-diff-added {
+  color: #218166;
+  background: color-mix(in srgb, #2ba47d 12%, transparent);
+}
+.editor-diff-removed {
+  color: #be585a;
+  background: color-mix(in srgb, #c74d5c 12%, transparent);
+  text-decoration: line-through;
+}
+.editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  border-top: 1px solid var(--editor-border);
+  padding: 10px 20px;
+  color: var(--editor-muted);
+  font-size: 10px;
+}
+.document-editor .milkdown {
+  --crepe-color-background: var(--editor-bg);
+  --crepe-color-on-background: var(--editor-text);
+  --crepe-color-surface: var(--editor-bg);
+  --crepe-color-surface-low: var(--editor-bg);
+  --crepe-color-on-surface: var(--editor-text);
+  --crepe-color-outline: var(--editor-border);
+  --crepe-font-default: 'IBM Plex Sans', 'Microsoft YaHei', sans-serif;
+  --crepe-font-title: 'IBM Plex Sans', 'Microsoft YaHei', sans-serif;
+  --crepe-font-code: 'JetBrains Mono', monospace;
+  --crepe-color-primary: #5287d9;
+  --crepe-color-secondary: color-mix(in srgb, #6e8aad 12%, var(--editor-bg));
+  font-size: 14px;
+}
+.document-editor .milkdown .ProseMirror {
+  padding: 12px 6px;
+  min-height: 56px;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.document-editor .milkdown .ProseMirror h1 {
+  font-size: 30px;
+  letter-spacing: -0.04em;
+  margin: 24px 0 15px;
+}
+.document-editor .milkdown .ProseMirror h2 {
+  font-size: 22px;
+  margin: 25px 0 12px;
+}
+.document-editor .milkdown .ProseMirror h3 {
+  font-size: 18px;
+}
+.document-editor .milkdown .ProseMirror h4 {
+  font-size: 15px;
+}
+.document-editor .milkdown .ProseMirror p {
+  margin: 8px 0;
+}
+.editor-mermaid {
+  padding: 16px;
+  overflow: auto;
+  text-align: center;
+  background: var(--editor-bg);
+}
+.editor-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.editor-mermaid-error {
+  color: var(--editor-muted);
+  font-size: 12px;
+  text-align: left;
+}
+@media (max-width: 700px) {
+  .editor-toolbar {
+    padding: 10px;
+    gap: 6px;
+  }
+  .editor-button {
+    padding: 7px;
+  }
+  .editor-button kbd {
+    display: none;
+  }
+  .editor-save-state {
+    font-size: 10px;
+  }
+  .editor-document-body {
+    padding: 20px 18px;
+  }
+  .editor-conflict,
+  .editor-diff {
+    margin: 12px;
+  }
+  .editor-footer {
+    gap: 10px;
+    padding-inline: 10px;
+  }
+}
