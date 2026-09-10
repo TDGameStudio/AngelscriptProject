@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_011ae428-a46e-486f-b758-c30a3f7c09cd
+  id: angelscript/refactor-bindings-two-stage-pipeline
+  title: Refactor Runtime bindings into an extensible two-stage pipeline
+  description: 'Planning-only delivery: complete two-stage recording and installation design, extensible provider and native transport contracts, SDK and UE ownership, full Runtime migration, correctness repairs, and performance and memory observation. No product implementation is authorized in this delivery.'
+workflow: angelscript
+created_at: 2026-09-09T13:59:34Z
+goal: Create a decision-complete Change for a complete, extensible and measurable Runtime binding system while preserving dormant legacy behavior and planning incremental migration.
+affected_areas:
+- angelscript/bindings/runtime
+- angelscript/runtime/binding-engine
+- angelscript/bindings/extensions
+- angelscript/bindings/observability
