@@ -93,40 +93,64 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 ### Requirement: Harness-recognized Task Graph
 
-`tasks.md` MUST be the change's only current execution state and DAG. A current-format file MUST declare one versioned YAML-frontmatter `task_graph.depends_on` map whose quoted stable `X.Y` keys exactly match the top-level Markdown checkbox IDs. The Markdown body MUST retain each task's checkbox state, `Files:`, and exact verification command. A completed task MUST NOT return to incomplete, and an ID MUST NOT be reused or renumbered.
+`tasks.md` MUST be the change's only current execution state and DAG. A current file MUST declare one versioned YAML-frontmatter `task_graph.depends_on` map whose directly quoted stable `X.Y` keys exactly match its root checkbox IDs. Each checkbox MUST have a short title and four-space owned Markdown with exactly one direct **Files** path-list section and one direct **Verification** section containing one non-empty fenced proving command. A completed task MUST NOT return to incomplete, and an ID MUST NOT be reused or renumbered.
 
 #### Scenario: Derive ready work through Harness
-- **GIVEN** the current Task Graph has matching frontmatter and Markdown task IDs and contains no invalid dependency cycle
-- **WHEN** Harness reads a current `tasks.md` and all `depends_on` predecessors of an incomplete task are complete
-- **THEN** the task is Ready through the Harness task route and may run in parallel only when its files, artifacts, and resource leases are also disjoint
-- **AND** a completed task is never returned Ready, while an incomplete task with any incomplete predecessor remains blocked
-- **BUT** a cyclic or structurally invalid graph produces structured issues and no Ready work
 
-> Inputs: The versioned `task_graph.depends_on` map, top-level checkbox states, stable task IDs, and each task's declared file surface.
->
-> Observables: The task route reports natural task order, completion state, normalized direct predecessors, derived Ready state, and any structured Task Graph issues.
->
-> Boundaries: Dependency readiness is necessary but does not by itself authorize parallel execution when files, artifacts, or exclusive resources overlap.
->
-> Verification: Harness and OpenSpec Task Graph fixtures cover completed, Ready, blocked, independent, missing-change, and cyclic cases.
+- **GIVEN** a valid graph has completed `1.1`, pending `1.2` depending on `1.1`, pending `1.3` depending on `1.2`, and independent pending `2.1`
+
+    Every task owns its exact Files selection and proving command. Graph keys
+    and body task IDs match; no dependency is inferred from display order.
+
+- **WHEN** Harness reads the current task plan
+
+- **THEN** `1.2` and `2.1` are Ready, `1.3` remains blocked, and completed `1.1` is not Ready
+
+    The public projection retains `id / description / done / files / verify /
+    after / ready / line`. Parallel execution additionally requires disjoint
+    files, generated artifacts and resource leases.
+
+- **BUT** any graph or task-card issue suppresses every Ready result
+
+    An independent valid task is not schedulable while another card is
+    malformed. Diagnostics retain the task identity and source location where
+    applicable; validation does not rewrite the document.
 
 #### Scenario: Keep presentation separate from execution
-- **WHEN** Graph keys and Markdown task blocks are displayed
-- **THEN** they use natural numeric task-ID order while dependency edges and Ready state derive only from `depends_on`
+
+- **WHEN** Graph keys and task blocks are displayed in a different Markdown order
+
+- **THEN** output uses natural numeric task-ID order and derives dependencies only from `depends_on`
+
+    Nested headings, tables, quotations and fenced task examples remain content
+    of their enclosing card. They do not create nodes or end the owning task.
 
 #### Scenario: Read historical task records
-- **GIVEN** a task record uses either the historical `After:`-only dialect without Task Graph frontmatter or the current frontmatter dialect without live `After:` fields
-- **WHEN** validation or archive audit encounters an older `After:`-only task record without Task Graph frontmatter
-- **THEN** it remains readable, while a file that mixes both dependency dialects fails validation
-- **BUT** historical readability does not make `After:` a valid dependency source for newly authored current-format tasks
 
-> Inputs: A complete legacy task body or a current `task_graph.depends_on` map and its matching Markdown task IDs.
->
-> Observables: A valid legacy record yields its historical dependency relationships; mixed current and legacy syntax yields the specific structured validation issue.
->
-> Boundaries: Dependency-looking text inside fenced examples is documentation rather than live Task Graph input, and reading a legacy record does not rewrite it.
->
-> Verification: Task-plan contract fixtures cover legacy readability, mixed-syntax rejection, exact graph/body parity, and fenced-example exclusion.
+- **GIVEN** a record still uses inline verification, blockquote Files or body After metadata
+
+- **WHEN** the current parser is asked to inspect it
+
+- **THEN** the parser reports explicit unsupported-format diagnostics and exposes no Ready work
+
+    There is no old-format fallback, automatic conversion or dependency
+    inference from retired After fields. The original record bytes remain
+    unchanged; migration is a separately scoped action.
+
+#### Scenario: Preserve exact metadata values
+
+- **GIVEN** one task lists `src/a b.rs` and `tests/a,b.rs` as separate code-formatted Files items
+
+    Its Verification fence contains a command spanning multiple lines. A
+    quoted example elsewhere in the card also contains a Files label.
+
+- **WHEN** the parser projects the task
+
+- **THEN** it returns exactly the two paths and preserves internal command newlines
+
+    Commas, spaces and Unicode inside a path are data, not delimiters. The
+    quoted label supplies no metadata. Missing or duplicate direct sections,
+    empty commands and multiple proving fences produce diagnostics.
 
 ### Requirement: Two-tier exploration
 
@@ -187,71 +211,97 @@ When an extended user-led exploration establishes multiple interacting cross-cap
 
 ### Requirement: Ready-to-execute Task authoring
 
-Before a Task DAG is accepted, planning MUST map affected files, artifacts, and exclusive resources; divide work into independently reviewable outcomes; state exact or explicitly bounded paths, cross-task interfaces, and exact verification; and map every requirement and acceptance condition to at least one node. Behavior tasks SHALL define bounded feature groups with concrete test inputs, expected outcomes, expected missing-behavior failures, implementation order and completion evidence before Ready execution. A task MUST NOT be sized by a fixed test count, file count, elapsed-time quota or process launch. Setup, tests, implementation and necessary documentation SHOULD stay with the outcome they enable. Each task card MAY use concise free-form prose, quoted notes, lists, examples or tables; labels remain optional, not a fixed schema. Only the existing DAG frontmatter, checkbox ID, Files and verify text remain machine-readable. This contract MUST NOT change the portable OpenSpec parser or executable.
+Planning MUST map affected files, artifacts and exclusive resources, divide work into independently acceptable bounded outcomes, and map every requirement and acceptance condition to a node. Behavior tasks SHALL supply concrete inputs and independently expected results, missing-behavior RED, actual interface handoffs, relevant ownership/lifetime/failure-state decisions, implementation order and completion criteria before execution. Related tests, implementation, wiring and necessary documentation SHOULD stay with their outcome. Tasks MUST NOT be sized by fixed word, test, file, time or process-launch quotas.
+
+The default reading order SHOULD be Outcome, Context and interfaces, Cases, Implementation, Files and Verification. Evidence MUST be added only after actual execution. Non-machine sections MAY be combined, renamed or expanded. Useful detail MAY be extensive and use ordinary Markdown; Files and Verification retain their exact direct-section contract.
 
 #### Scenario: Execute a detailed task card
-- **WHEN** a node needs local constraints, inputs, or known hazards beyond its outcome and paths
-- **THEN** the card includes only the useful prose needed by a zero-context implementer and OpenSpec derives the same task ID, dependencies, files, verification, and Ready state
+
+- **WHEN** a task has non-trivial interfaces, state transitions or failure behavior
+
+- **THEN** its card supplies the actual signatures, literal cases and decisions needed to implement and judge completion
+
+    Code examples, tables, nested headings, prose, lists, links and images stay
+    within its four-space owner. Section presence or length alone does not
+    establish planning completeness.
 
 #### Scenario: Keep a simple task card small
-- **WHEN** outcome, files, and verification already make a node executable
-- **THEN** the card omits optional labels instead of adding empty or boilerplate sections
+
+- **WHEN** outcome, interfaces, cases, Files and Verification already settle all relevant decisions
+
+- **THEN** the card may combine optional explanation and omit empty scaffolding
+
+    Shortness is a consequence of a self-contained contract, not a target that
+    permits missing acceptance conditions.
 
 #### Scenario: Recognize an oversized task before continuing
-- **WHEN** one pending task accumulates independently acceptable deliverables, hidden prerequisite interfaces or verification contracts that no longer prove its whole outcome
-  > Inputs: Actual file ownership, acceptance conditions and previously verified partial outcomes establish the boundary problem; a routine test failure alone does not.
-- **THEN** the coordinator revises the pending task boundary through an evidence-backed Replan before implementing the newly separated work
 
-  - Completed nodes and valid evidence remain intact.
-  - New outcomes receive new IDs; shared files constrain scheduling without inventing semantic dependencies.
-  - Files and verification are updated with the real scope, not extended only in tail prose.
+- **WHEN** a pending task accumulates independently acceptable deliverables, hidden prerequisite interfaces or a proving command that cannot establish its whole outcome
+
+- **THEN** the coordinator revises the invalid boundary through evidence-backed Replan
+
+    Completed nodes and valid evidence remain intact. New outcomes receive new
+    IDs. Shared files constrain scheduling without inventing semantic edges.
+    A routine test failure or a long but bounded card alone does not require
+    Replan.
 
 #### Scenario: Plan a feature group before implementation
-- **WHEN** an author prepares a behavior task for an implementer without prior conversation context
-  > Context: Several related cases may share one feature outcome and one expensive test process.
-- **THEN** the task states concrete inputs and expected results, missing-behavior RED expectations, interface handoffs, ordered implementation actions and an exact proving selection
-  > Boundaries: A simple self-contained card may remain short; generic instructions to finish a subsystem or add complete tests do not define a Ready outcome.
-- **AND** the template and execution entry actively check that quality and route to the same task-authoring contract
-  > Observables: This is authoring quality, not a new parser field, rigid heading set or second completion checklist.
+
+- **WHEN** an author prepares a behavior task for a zero-context implementer
+
+- **THEN** the card identifies concrete missing-behavior cases and existing regression controls before grouped RED
+
+    The task orders test preparation, observed RED, bounded implementation,
+    grouped GREEN and relevant refactoring. One direct Verification command
+    has an exact working context, nonempty case selection and completion
+    criteria; shared proof retains task-specific case mapping.
+
+- **AND** templates and lifecycle preflight judge information sufficiency rather than matching prescribed wording
 
 ### Requirement: Flexible Scenario Card authoring
 
-Maintained Harness specifications SHALL express durable behavior through `Requirement` and `Scenario` headings, with one `WHEN` trigger and one `THEN` result in an ordinary behavioral scenario. Authors MAY add `GIVEN`, `AND`, or `BUT` clauses. For every behavior clause that is created or modified, the author SHALL actively evaluate whether clause-owned detail would improve a zero-context reader's understanding and SHOULD retain the smallest useful combination of quoted `Context`, `Inputs`, `Observables`, `Boundaries`, `Verification`, or `Details` notes, short prose, ordered or unordered lists, examples, and tables. Each retained detail block SHALL be immediately indented beneath the exact behavior-clause list item it qualifies.
+Maintained behavioral specifications SHALL use real root Requirement and Scenario headings, with direct non-empty WHEN and THEN clauses. GIVEN, AND and BUT MAY add meaningful state or guarantees. Every authored clause SHALL carry the durable detail needed to make its case unambiguous; a self-contained clause MAY omit detail that adds no information. Direct content and wrapped clause continuations MUST use four spaces, with deeper Markdown owned by its immediate container. Detail MUST NOT drift into an unowned Scenario-wide tail.
 
-All clauses and detail forms SHALL remain optional ordinary Markdown and MUST NOT become parser fields, ordering rules, required placeholders, scenario identifiers, checkboxes, dependency edges, Ready state, or execution records. An author MAY omit any form only when it adds no durable information, and MUST omit empty or boilerplate forms. Scenario Cards MUST retain the existing artifact ownership boundaries: specs own durable externally observable behavior, stable behavioral or proof boundaries, protocol order, rule precedence, and durable examples; design owns technical choices and rationale; tasks own affected paths, implementation steps, dependencies, and exact execution commands; attachments own one-off observations, run output, investigation history, and closure evidence. Clause-specific detail MUST NOT drift into an ambiguous Scenario-wide trailing block.
+Scenario content MAY include prose, headings, tables, code, lists, quotes, links, images and other Markdown without a fixed field matrix or length target. Specs MUST retain durable observable behavior and examples, not source-edit steps, Task state or transient execution evidence. Parsing and synchronization MUST preserve complete raw cards and their relative links; nested example headings MUST NOT create Requirement, Scenario or delta-operation structure. Both validation profiles SHALL check authored scenarios without requiring optional specifications to exist.
 
 #### Scenario: Enrich individual behavior clauses
-- **GIVEN** a durable behavior has a precondition that benefits from extra context
-  > Context: This note belongs only to the `GIVEN` clause immediately above it.
-- **WHEN** an author creates or modifies a `GIVEN`, `WHEN`, `THEN`, `AND`, or `BUT` behavior clause
-  > Details: The author evaluates the whole progressive-detail palette rather than treating blockquotes as the only enrichment form.
 
-  The smallest useful combination may include:
+- **GIVEN** a durable case needs explicit identity, input, state or boundary information
 
-  1. a quoted label or short paragraph for a semantic boundary;
-  2. an ordered list for durable sequence or precedence;
-  3. an unordered list for rules, examples, or edge cases; or
-  4. a table for repeated-field comparison.
+- **WHEN** an author writes or modifies its behavior clauses
 
-  - Example: use a table when several inputs map to distinct durable outcomes.
-  - Example: use prose when a label would obscure the relationship being explained.
-- **THEN** useful durable information is retained directly beneath the exact clause it qualifies
-  > Observables: A zero-context reader can distinguish inputs, results, boundaries, examples, ordering, and proof expectations without consulting task execution history.
+    Each useful detail is attached to the exact GIVEN, WHEN, THEN, AND or BUT
+    that it qualifies. A wrapped behavior sentence itself uses at least four
+    spaces on every continuation line.
 
-  | Card content | Ownership |
-  |---|---|
-  | Quoted note, prose, list, example, or table | Immediately preceding behavior clause |
-  | Scenario-wide trailing detail | Invalid when it qualifies only one clause |
-- **AND** synchronization preserves every complete clause-owned block
-  > Verification: Authoring-contract fixtures cover the priority rule, the complete Markdown palette, clause ownership, and the no-boilerplate boundary.
-- **BUT** the Scenario does not acquire Task state, implementation steps, transient evidence, or a shared unowned detail tail
-  > Boundaries: Optional detail explains durable behavior; it never records execution progress.
+- **THEN** the card retains enough concrete information to distinguish accepted and rejected behavior
+
+    A table may map literal inputs to results; code may demonstrate a public
+    call or input/output fixture; an ordered list may explain durable protocol
+    precedence. None of these forms implies task execution.
+
+- **AND** a same-name modified scenario replaces the complete named card during semantic synchronization
+
+    Still-valid clause content is repeated in the replacement; unspecified
+    scenarios remain unchanged. The CLI does not implement automatic merging.
 
 #### Scenario: Keep a simple behavior scenario compact
-- **WHEN** an author actively evaluates a self-contained trigger and finds that every optional detail form adds no durable information
-  > Inputs: The clause is already unambiguous to a zero-context reader and has no hidden boundary, example, ordering, or proof expectation.
-- **THEN** the Scenario Card keeps only its useful behavior clauses instead of adding empty or boilerplate nested content
-  > Observables: Compactness follows the completed evaluation; it is not assumed from the clause's apparent simplicity.
+
+- **WHEN** a self-contained trigger and result have no additional useful durable information
+
+- **THEN** the card may remain a pair of clear clauses without boilerplate
+
+#### Scenario: Reject detached or missing behavior
+
+- **GIVEN** a card lacks a direct WHEN or THEN, or places its explanation outside every clause
+
+- **WHEN** either validator profile examines the authored scenario
+
+- **THEN** validation reports the structural defect without editing the document
+
+    A WHEN/THEN shown only in a quote, nested list or code fence does not satisfy
+    the direct clause requirement. Two-space or lazy unindented continuations
+    are invalid even when a permissive Markdown renderer would display them.
 
 ### Requirement: Material implementation issue history
 

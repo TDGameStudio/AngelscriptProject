@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_72d09318-4456-4f81-84dd-559616395032
+  id: harness/refactor-document-authoring-structured-markdown
+  title: Structured Markdown task and specification authoring
+workflow: angelscript
+created_at: 2026-09-09T10:03:46Z
+goal: Adopt new-only task cards and clause-owned rich Markdown with detailed executable planning, correct parsing, and a released local OpenSpec package. Existing business records and archives remain untouched.
+affected_areas:
+- harness/core
+archived_at: 2026-09-09T10:46:01Z
+archive_schema: closure-v1
+closure:
+  kind: completed

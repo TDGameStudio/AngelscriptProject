@@ -23,9 +23,11 @@ artifacts:
     Write Requirements as durable externally observable SHALL behavior and use the Scenario Card
     contract in .agents/skills/openspec/references/specs.md. Every ordinary scenario keeps a clear
     `WHEN` and `THEN`. Actively evaluate every new or modified `GIVEN`, `WHEN`, `THEN`, `AND`, or
-    `BUT`, and prefer the smallest useful combination of quoted notes, prose, ordered or unordered lists,
+    `BUT`, and supply useful quoted notes, prose, ordered or unordered lists,
     examples, and tables in a clause-owned detail block immediately beneath the exact clause. Even simple clauses
-    receive this evaluation. Every form remains optional: omit it when it adds no durable information, never to
+    receive this evaluation. Direct detail uses four spaces and blank-line block separation. Include concrete
+    inputs, identities, outputs, failure-state and lifetime constraints when they settle behavior. Detail may
+    be extensive. Every form remains optional: omit it when it adds no durable information, never to
     satisfy a compact-first habit, and never disguise implementation steps, Task state, or transient evidence as behavior.
   requires: []
   context:
@@ -52,14 +54,18 @@ artifacts:
   instruction: |
     Write this record in English. Put the sole dependency graph in top-of-file YAML frontmatter under
     task_graph.version 1 and depends_on. Quote every permanent X.Y task id, map every top-level task
-    exactly once, and use [] for roots. Keep Files and exact verification in each task body, and use
+    exactly once, and use [] for roots. Use a short checkbox title and four-space owned Markdown.
+    Require one direct **Files** path list and one direct **Verification** section containing exactly
+    one fenced proving command; no old inline or blockquote metadata is supported. Use
     ordered lists for nested execution steps. Markdown order is presentation-only. Derive parallelism
     from completed dependencies and disjoint files, artifacts, and resource leases; do not create a
     second graph, status store, or runtime database.
     Read .agents/skills/openspec/references/tasks.md before authoring: each node is a bounded,
     independently testable feature outcome, not a test launch or an open-ended subsystem. State
     concrete test inputs/results and expected RED, consumed/produced interfaces, implementation order
-    and completion evidence when needed for execution. Keep related tests and implementation together;
+    and completion conditions. Default to Outcome, Context and interfaces, Cases, Implementation,
+    Files and Verification; add Evidence only after execution. Include relevant identity, lifetime,
+    ownership and failure-state contracts. Useful detail may be extensive. Keep related tests and implementation together;
     use optional prose, quotes, lists or examples rather than rigid fields. Keep Files aligned with the
     real scope. Use .agents/skills/harness/references/verification.md for grouped RED/GREEN and exact
     task-to-case evidence when compatible tasks share an expensive run. Do not size tasks by quotas.

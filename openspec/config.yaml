@@ -15,7 +15,7 @@ rules:
   specs:
     - Record durable externally observable behavior rather than implementation steps.
     - For durable specification deltas, put each delta at specs/<capability-id>/spec.md and use ADDED, MODIFIED, REMOVED, or RENAMED Requirements sections.
-    - Follow .agents/skills/openspec/references/specs.md. Keep a clear WHEN and THEN; actively evaluate every new or modified GIVEN, WHEN, THEN, AND, or BUT and prefer the smallest useful combination of quoted notes, prose, ordered or unordered lists, examples, and tables in a clause-owned detail block beneath its exact clause. Every form remains optional and may be omitted when it adds no durable information.
+    - Follow .agents/skills/openspec/references/specs.md. Keep a clear WHEN and THEN; actively evaluate every new or modified GIVEN, WHEN, THEN, AND, or BUT and supply useful quoted notes, prose, ordered or unordered lists, examples, and tables in a four-space clause-owned detail block beneath its exact clause. Useful detail may be extensive, including concrete identities, lifetime and failure-state constraints. Every form remains optional and may be omitted when it adds no durable information.
     - Scenario Card detail uses the Task-like list-item composition shape but remains ordinary Markdown with no Task state, parser fields, or rigid field matrix. Ordered lists describe durable behavior order or rule precedence, not implementation execution. In MODIFIED, a same-name scenario supplies the complete replacement card with every block retained beneath its exact owning clause, while unspecified scenarios remain unchanged.
   design:
     - Separate decisions and rationale from implementation detail; record alternatives only when they materially affect the choice.
@@ -23,8 +23,8 @@ rules:
   tasks:
     - Treat each top-level checkbox as one permanent X.Y DAG node; nested execution steps are numbered lists, never checkboxes.
     - Keep the sole dependency graph in top-of-file task_graph.version 1 frontmatter; depends_on maps each quoted task ID to quoted direct prerequisites and uses [] for roots.
-    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only; each Task Card keeps a concise one-line node with an exact verify command or observable outcome plus a following Files line.
-    - Add only useful concise detail. Context, Inputs, Produces, Constraints, numbered steps, examples, and ordinary prose are optional Markdown authoring aids, not parser fields or a rigid template.
+    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only. Use a short checkbox title and four-space owned Markdown; require one direct **Files** path list and one direct **Verification** section with one fenced proving command. No old inline metadata is supported.
+    - Read .agents/skills/openspec/references/tasks.md. Default to Outcome, Context and interfaces, Cases, Implementation, Files and Verification; add Evidence only after execution. Supply literal inputs/results, actual interfaces, ownership and failure-state decisions, expected RED and ordered implementation/GREEN. Useful detail may be extensive; non-machine sections are optional Markdown authoring aids, not parser fields or a rigid template.
     - Never reuse task IDs, uncheck completed tasks, mix live After fields with frontmatter, or maintain a second graph or status store. Derive parallel work only after checking file, artifact, and resource-lease conflicts.
   apply:
     - Update checkbox state only after the associated work and stated verification have actually completed.
