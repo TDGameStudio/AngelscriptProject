@@ -4,21 +4,7 @@
 
 ## Graph and node form
 
-```markdown
----
-task_graph:
-  version: 1
-  depends_on:
-    "1.2": []
-    "2.1": ["1.2"]
----
-
-- [ ] 2.1 Implement the route contract — verify: `& ./.agents/skills/harness/tests/Harness.Tests.ps1`
-  > Files: `.agents/skills/harness/scripts/Harness.psm1`, `.agents/skills/harness/tests/Harness.Tests.ps1`
-
-  1. Add the failing contract test.
-  2. Implement the smallest passing behavior.
-```
+See the complete new-format examples in the [Task Card contract](../../openspec/references/tasks.md). Each root checkbox has a short title and four-space owned Markdown. The only machine-readable direct sections are **Files** (one code-formatted path per list item) and **Verification** (one fenced proving command). Full explanation, case tables, signatures and execution steps stay inside the owning task.
 
 Rules:
 
@@ -28,18 +14,18 @@ Rules:
 - Keep Graph keys and body blocks in natural numeric order for people (`1.2` before `1.10`), but order never creates an edge.
 - An ID is never reused. A completed node is never unchecked; changed work becomes a new node.
 - OpenSpec deterministically validates the Graph and derives each node's `after` and `ready`; Harness consumes that JSON and owns scheduling policy. Never parse YAML again in PowerShell.
-- A node is ready when every derived `after` node is complete.
+- A pending node is ready only when the whole plan is valid and every derived `after` node is complete.
 - Ready nodes may run in parallel only when their files, artifacts, and exclusive execution leases are disjoint.
 - Update the DAG before starting newly discovered work. Preserve the old node's disposition in a Replan when the plan boundary changed.
-- Historical body-level `After` records remain readable. Current records write only frontmatter; mixing frontmatter with a live `After` field is invalid.
+- Old inline verify, blockquote Files and body-level After formats are unsupported. An unmigrated record yields explicit diagnostics and no Ready work; migration is a separately scoped action.
 
 ## Flexible Task Cards
 
 Before writing or selecting behavior work, use the [ready-to-execute authoring contract](../../openspec/references/tasks.md). A node owns a bounded feature outcome with concrete fixtures, expected RED, interfaces and completion evidence. Tests and implementation can be substantial inside that outcome; neither individual test launches nor an ever-growing subsystem are useful task boundaries.
 
-Preflight the actual Files, handoffs and proving selection. If independent products or hidden prerequisites have accumulated, use an evidence-backed replan to split pending work before continuing. Do not turn ordinary local failures into Replan. Compatible tasks may share grouped verification through [verification.md](verification.md), but keep separate case-level completion evidence and the existing single DAG.
+Use the semantic authoring check in the linked Task contract for Files, handoffs, concrete cases, proving selections and validation baselines; do not maintain a second checklist here. If independent products or hidden prerequisites have accumulated, use an evidence-backed replan before continuing. Do not turn ordinary local failures into Replan. Compatible tasks may share grouped verification through [verification.md](verification.md), but keep separate case-level completion evidence and the existing single DAG.
 
-Optional Task Card detail is ordinary Markdown. After the validated node surface, authors may add only the context that helps execution: intent, constraints, examples, ordered steps, expected output, risks, evidence links, or useful implementation notes. A simple task may need none of these; a difficult task may use several short sections or lists.
+Optional Task Card detail is ordinary Markdown. After the validated node surface, authors may add only the context that helps execution: intent, constraints, examples, ordered steps, expected output, risks, evidence links, or useful implementation notes. A simple task may need none of these; a difficult task may use extensive sections, lists, tables and code examples. Do not use a compactness target to omit implementation decisions.
 
 Harness does not parse or require those optional sections, labels, or ordering. Do not invent another Task Card schema, encode dependencies in prose, or duplicate completion with nested checkboxes. The frontmatter graph remains the dependency authority, while the body remains readable guidance for agents and people.
 

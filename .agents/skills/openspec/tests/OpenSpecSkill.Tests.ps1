@@ -799,31 +799,8 @@ $taskTemplateText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\w
 $workflowDefinitionText = Get-Content -LiteralPath (Join-Path $projectRoot 'openspec\workflows\angelscript\workflow.yaml') -Raw
 $syncSpecText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-sync-specs\SKILL.md') -Raw
 
-foreach ($token in @(
-    '## Scenario Card', '- **GIVEN**', '- **WHEN**', '- **THEN**', '- **AND**', '- **BUT**',
-    '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:',
-    '> Details:', 'behavior-clause list item', 'immediately indented beneath', 'same readable composition shape',
-    'clause-owned block', 'ordered or unordered lists', 'examples', 'tables',
-    'durable behavior order', 'ordinary Markdown', 'not parser fields', 'delete unused', 'simple scenario'
-)) {
-    Assert-True ($specAuthoringText.Contains($token)) "Scenario Card contract is missing: $token"
-}
-Assert-True (-not $specAuthoringText.Contains('Scenario heading owns one optional progressive detail block')) 'Scenario Card detail must not remain a shared Scenario-owned tail.'
-foreach ($token in @('Specs', 'Design', 'Tasks', 'Attachments', 'durable externally observable behavior', 'implementation steps', 'one-off evidence')) {
-    Assert-True ($specAuthoringText.Contains($token)) "Specification content ownership is missing: $token"
-}
-foreach ($token in @('ADDED', 'MODIFIED', 'REMOVED', 'RENAMED', 'same-name scenario', 'complete Scenario Card', 'new scenario name', 'unspecified scenarios', 'requirement body')) {
-    Assert-True ($specAuthoringText.Contains($token)) "Specification delta semantics are missing: $token"
-}
-foreach ($token in @('### Requirement:', 'SHALL', '#### Scenario:', '- **WHEN**', '- **THEN**', '> Context:', '> Inputs:', '> Observables:', '> Boundaries:', '> Verification:', '> Details:', '  1.', '  -')) {
-    Assert-True ($specTemplateText.Contains($token)) "Specification template is missing: $token"
-}
-Assert-True ($specTemplateText -match '(?m)^- \*\*WHEN\*\*[^\r\n]*\r?\n  > ') 'Specification template must nest quoted detail beneath WHEN.'
-Assert-True ($specTemplateText -match '(?m)^  1\. ') 'Specification template must demonstrate a Task-like ordered list nested beneath one behavior clause.'
-Assert-True ($specTemplateText -match '(?m)^- \*\*THEN\*\*[^\r\n]*\r?\n  > ') 'Specification template must nest quoted detail beneath THEN.'
-foreach ($token in @('Scenario Card', '`WHEN`', '`THEN`', 'clause-owned detail block', 'ordered or unordered lists', 'simple clauses')) {
-    Assert-True ($workflowDefinitionText.Contains($token)) "Workflow specification instruction is missing: $token"
-}
+# Exercise actual generated cards through the packaged parser; wording is not an acceptance oracle.
+& (Join-Path $PSScriptRoot 'Authoring.Tests.ps1')
 Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[ \t]*\r?$') 'Angelscript workflow must retain record-v1.'
 Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+requirements-v1[ \t]*\r?$') 'Angelscript workflow must not switch to requirements-v1.'
 
@@ -910,48 +887,6 @@ foreach ($token in @('clause-owned detail block', 'ordered or unordered lists', 
     Assert-True ($liveConfigText.Contains($token)) "OpenSpec config is missing flexible Scenario detail guidance: $token"
     Assert-True ($openSpecReadmeText.Contains($token)) "OpenSpec README is missing flexible Scenario detail guidance: $token"
 }
-
-$scenarioPrioritySources = [ordered]@{
-    'authoring reference' = $specAuthoringText
-    'OpenSpec entry' = $openSpecEntryText
-    'continue lifecycle' = $continueText
-    'update lifecycle' = $updateText
-    'sync lifecycle' = $syncSpecText
-    'verify lifecycle' = $verifyText
-    'workflow instruction' = $workflowDefinitionText
-    'specification template' = $specTemplateText
-    'live generated-instruction config' = $liveConfigText
-    'Skills overview' = $skillsReadmeText
-    'OpenSpec overview' = $openSpecReadmeText
-}
-foreach ($entry in $scenarioPrioritySources.GetEnumerator()) {
-    foreach ($token in @('actively evaluate', 'smallest useful combination', 'adds no durable information')) {
-        Assert-True ($entry.Value.ToLowerInvariant().Contains($token)) "$($entry.Key) is missing the preferred optional Scenario-detail policy: $token"
-    }
-}
-
-$scenarioPalette = 'quoted notes, prose, ordered or unordered lists, examples, and tables'
-foreach ($entry in ([ordered]@{
-    'authoring reference' = $specAuthoringText
-    'OpenSpec entry' = $openSpecEntryText
-    'workflow instruction' = $workflowDefinitionText
-    'specification template' = $specTemplateText
-    'live generated-instruction config' = $liveConfigText
-    'Skills overview' = $skillsReadmeText
-    'OpenSpec overview' = $openSpecReadmeText
-}).GetEnumerator()) {
-    $normalizedScenarioText = [regex]::Replace($entry.Value, '\s+', ' ')
-    Assert-True ($normalizedScenarioText.Contains($scenarioPalette)) "$($entry.Key) does not present the complete Scenario-detail palette."
-}
-
-foreach ($entry in $scenarioPrioritySources.GetEnumerator()) {
-    Assert-True (-not $entry.Value.ToLowerInvariant().Contains('when a complex clause benefits')) "$($entry.Key) still limits useful detail to complex clauses."
-    Assert-True (-not $entry.Value.ToLowerInvariant().Contains('keep simple clauses compact')) "$($entry.Key) still makes compactness the primary authoring instruction."
-}
-
-Assert-True ($specTemplateText -match '(?m)^  [^>|\-\d\s][^\r\n]+$') 'Specification template must demonstrate clause-owned prose in addition to quoted notes.'
-Assert-True ($specTemplateText -match '(?m)^  \|[^\r\n]+\|\r?\n  \|[-:| ]+\|') 'Specification template must demonstrate a clause-owned Markdown table.'
-Assert-True ($specTemplateText.Contains('Example:')) 'Specification template must demonstrate a clause-owned example.'
 
 $representativeScenarioDetails = [ordered]@{
     'openspec\specs\harness\core\spec.md' = 'Interpret Codex Goal continuation'
@@ -1067,15 +1002,6 @@ foreach ($retiredReviewPattern in @(
     '(?i)must (?:run|perform|complete) (?:an? )?Final Review'
 )) {
     Assert-True ($liveReviewPolicyText -notmatch $retiredReviewPattern) "Live protocol text still contains retired automatic or mandatory Review policy: $retiredReviewPattern"
-}
-foreach ($token in @('## Authoring quality', 'file, artifact, and exclusive-resource map', 'smallest independently reviewable outcome', 'one-line checkbox statement', 'exact verification command or directly observable result', '`> Files:` line', 'explicitly bounded package-wide glob with exclusions', 'ordinary Markdown', '`> Context:`', '`> Inputs:`', '`> Produces:`', '`> Constraints:`', 'not parser fields or a rigid template', 'Nested numbered steps are real execution order', '`TBD`', 'map every requirement and acceptance condition', 'self-review', 'ready to execute')) {
-    Assert-True ($taskReferenceText.Contains($token)) "Task authoring contract is missing: $token"
-}
-foreach ($token in @('impact-scoped verification policy', '../../harness/references/verification.md', 'smallest reliable scope', 'broader verification', 'concrete reason')) {
-    Assert-True ($taskReferenceText.Contains($token)) "Task authoring verification guidance is missing: $token"
-}
-foreach ($token in @('.agents/skills/harness/references/verification.md', 'smallest impact-related verification', 'Broader verification', 'concrete reason', 'ordinary Markdown')) {
-    Assert-True ($taskTemplateText.Contains($token)) "Task template verification guidance is missing: $token"
 }
 foreach ($entry in ([ordered]@{
     'apply' = $applyText

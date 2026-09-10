@@ -13,21 +13,21 @@ $script:HarnessPackageSafetyModule = $null
 $script:HarnessChangeTypes = @('feature', 'fix', 'refactor', 'improve', 'docs', 'test', 'chore')
 $script:HarnessChangeNameContract = '<domain>/<type>-<scope>-<outcome>; allowed types: feature, fix, refactor, improve, docs, test, chore'
 $script:HarnessOpenSpecIdentity = [ordered]@{
-    Version           = '0.8.1'
-    SourceCommit      = '1930040ab18acba43d44fcd635d2a91a701f04ce'
-    SourceTag         = 'v0.8.1'
+    Version           = '0.9.0'
+    SourceCommit      = 'aa9754508c384e392eecd1c54201c623dca3404e'
+    SourceTag         = 'v0.9.0'
     SourceTagType     = 'annotated'
-    SourceTagObject   = 'cd643b0bb1e12e09f32012bb2364f37e3f43db88'
-    SourceTagTarget   = '1930040ab18acba43d44fcd635d2a91a701f04ce'
+    SourceTagObject   = 'b615468fb744feec706c8ce9c05a2beffc12c0dd'
+    SourceTagTarget   = 'aa9754508c384e392eecd1c54201c623dca3404e'
     Target            = 'x86_64-pc-windows-msvc'
     Profile           = 'release'
     BuildCommand      = 'cargo build --release --locked'
     Rustc             = 'rustc 1.95.0 (59807616e 2026-04-14)'
     Cargo             = 'cargo 1.95.0 (f2d3ce0bd 2026-03-21)'
-    Sha256            = '0c19e657120075679e12db22e5ec6b1368c245021f089043008dfd318f43a658'
-    BinarySize        = 2970112
+    Sha256            = '8710e36a59b970e311c666d336d7fef4f9e76c0375e232dd0f8d440d69c6c4f2'
+    BinarySize        = 3212288
     CommandDocCount   = 32
-    CommandDocsDigest = '85e8399a09ae013c365dd3b1652ae633ed127e983fd4e4466a5f7b143331a825'
+    CommandDocsDigest = '35fbe97cd5e7238958fed1900891a2c2d67d47aebdcbc1458a2f6ba6de9bcaac'
 }
 
 function New-HarnessRoute {
@@ -386,6 +386,14 @@ function ConvertFrom-HarnessTaskPlanOutput {
         throw "OpenSpec returned invalid TaskPlan JSON: $($_.Exception.Message)"
     }
     $properties = @($plan.PSObject.Properties.Name)
+    # The portable serializer omits an empty task vector. Preserve a diagnosed
+    # zero-node plan as waiting instead of replacing its issue with a shape error.
+    if ('tasks' -notin $properties -and 'state' -in $properties -and $plan.state -eq 'waiting' -and
+        'progress' -in $properties -and 'total' -in @($plan.progress.PSObject.Properties.Name) -and $plan.progress.total -eq 0 -and
+        'taskIssues' -in $properties -and @($plan.taskIssues).Count -gt 0) {
+        $plan | Add-Member -NotePropertyName tasks -NotePropertyValue @()
+        $properties += 'tasks'
+    }
     foreach ($required in @('changeId', 'state', 'tasks')) {
         if ($required -notin $properties) {
             throw "OpenSpec TaskPlan JSON is missing '$required'."

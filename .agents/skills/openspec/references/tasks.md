@@ -1,113 +1,144 @@
-# Task DAG Contract
+# Task DAG and Rich Markdown Cards
 
 Read this reference when writing, validating, or replanning `tasks.md`.
 
-`tasks.md` is the sole current execution state and DAG. Its top-of-file frontmatter is the one dependency graph. Headings and Markdown order are presentation only.
+`tasks.md` is the sole execution state and DAG. Its top-of-file YAML frontmatter is the one dependency authority. A short top-level checkbox names one bounded outcome; its indented Markdown card supplies everything needed to execute it. Headings and document order are presentation, never dependencies.
 
-```markdown
+## Machine-readable surface
+
+- One root `- [ ] X.Y Short title` or `- [x] X.Y Short title` is one task. Preserve permanent unique IDs; present them in natural numeric order.
+- `task_graph.version` is `1`; `depends_on` maps each task to its direct prerequisites. Every key and dependency is a directly quoted stable ID. Roots use `[]`; the key set exactly equals the body task set.
+- All direct task detail blocks start with **four spaces**, with a blank line before each paragraph, list, table, quote, heading, or fence. Indent deeper content beneath its own Markdown container. Do not rely on lazy paragraph continuation.
+- Exactly one direct paragraph `**Files**` owns a list of individually code-formatted paths or bounded globs. Each list item contains one path; spaces, commas and Unicode are part of the path, not separators. Use the literal `none` only for genuinely file-free work. Explain glob exclusions in ordinary prose.
+- Exactly one direct paragraph `**Verification**` owns exactly one fenced executable command. Multiline commands retain their line breaks. State working directory, setup, expected exit/results and task-to-case mapping in accompanying prose. Other examples belong outside Verification or in a deeper example container.
+- Labels in a quote, fence, nested example or nested list are ordinary content, not task metadata. The parser consumes only the two direct sections above and the root checkbox/graph. All other card content remains ordinary Markdown.
+- A detached unindented paragraph/list/fence after a task is an ownership error. Put shared context before the first task. Use root headings to organize groups, not to detach task details.
+- Old inline `— verify:`, old `> Files:` and body `> After:` metadata are unsupported; there is no compatibility parser or silent migration. Do not rewrite existing business or archive records unless explicitly tasked with migrating them.
+
+## Write for a zero-context implementer
+
+Start from the information required to make the task executable, not a length target. Detail may be substantial. A reader should understand the goal, actual interfaces, inputs, expected results, implementation order and proof without reverse-engineering another task or making deferred design decisions.
+
+The default reading order is **Outcome → Context and interfaces → Cases → Implementation → Files → Verification**. Add **Evidence** only after work has actually run. These are useful navigation labels, not a mandatory field matrix: combine or rename non-machine sections when that communicates better. Files and Verification keep their exact names and direct ownership.
+
+For every behavior task, supply:
+
+- The concrete outcome, included behavior, explicit exclusions, current behavior and what changes.
+- Actual consumed and produced interfaces: symbol names, signatures/types, artifact shapes and prerequisite handoffs. Explain identity, lifetime, ownership, invariants and failure-state behavior wherever they affect correctness. Name known interfaces; do not invent an established API that has not been inspected.
+- Concrete representative inputs with independently derived literal outputs/errors. Include normal, negative and boundary cases that distinguish accepted from rejected implementations. Use a table when the cases have repeated fields; use code, prose or a sequence when those are clearer.
+- The missing-behavior cases expected to fail in grouped RED, separately from existing regression controls. “Add complete tests” is not a test plan.
+- Ordered test preparation, observed grouped RED, bounded implementation and wiring, grouped GREEN, and relevant refactoring/reverification. Put necessary construction detail here, not in a specification.
+- One exact proving command plus completion criteria. If a justified shared run provides proof, record the selection and individual case mapping for this task.
+
+Use prose, nested headings, numbered or unordered lists, fenced code, tables, quotations, links, images, formulas or other supported Markdown when they carry information. Examples may include nested checkbox-shaped Markdown inside an owned example; those are not DAG nodes. Prefer numbered lists for actual execution steps. Do not add empty scaffolding, repeat the title as “detail”, copy whole implementations, or fill optional labels mechanically.
+
+A simple task can be short when its clauses already settle every relevant decision. A complex task should carry its full necessary detail; do not compress it into a one-line slogan, send its missing decisions to generic tail prose, or impose word/test/minute quotas.
+
+### Semantic authoring check
+
+Before handing off a card, follow its evidence chain: inspected interface or prerequisite output -> concrete case -> proving selection -> observable completion. This is an authoring check, not another required section or machine schema.
+
+- When reusing existing tests, name the source file and relevant case, retain its actual inputs/results, and distinguish native-host controls, metadata/operations checks and end-to-end execution. A case name alone does not prove it exercises the boundary required by this task. Future interfaces and fixtures must be identified as future work, with their producing task or construction step.
+- Replace phrases such as "known values", "existing fixtures" or "preserve behavior" with the relevant example or an exact evidence link. Representative cases need not enumerate every provider, but coverage beyond them must have an independently defined inventory/oracle and an owner; do not derive expectations from the migrated output.
+- Make every required case reachable by the proving selector. Explain reuse/wrapping or an exact shared selection when an existing case is outside that prefix. A future test name is a plan, not proof that discovery or execution already succeeds.
+- Inspect the baseline of every existing record included in a final validation command. If preserved content already fails, name the failure and an authorized, bounded disposition before claiming the plan can close. A passing delta does not imply a passing merged target; never silently migrate unrelated records or weaken validation.
+- Put repeated setup once before the first task. Keep card-local completion conditions specific to its outcome; a document-only handoff does not inherit product-build or provider-coverage boilerplate. Choose prose, steps or tables for the actual information, not to fill every optional label.
+
+Build the file, artifact and exclusive-resource map before drawing dependencies. One node owns the smallest independently acceptable **feature outcome**, not one test, command, file or commit. Keep related tests, implementation, interface wiring and necessary documentation with their outcome. Split when one deliverable can pass acceptance while another is rejected. Length alone is not a reason to split, and a large unbounded subsystem is not made acceptable by adding more prose.
+
+## Complete example: declaration policy
+
+The following is an illustrative Rust API, not a new repository feature. It shows a filled card with literal expectations; replace the example with the actual inspected domain contract.
+
+````markdown
 ---
 task_graph:
   version: 1
   depends_on:
-    "1.2": []
-    "2.1": ["1.2"]
+    "1.1": []
 ---
 
-## 2. Implementation
+- [ ] 1.1 Reject ambiguous option declarations without partial output
 
-- [ ] 2.1 Implement the parser boundary — verify: `cargo test parser_boundary`
-  > Files: `src/parser.rs`, `tests/parser.rs`
+    **Outcome**
 
-  > Context: Preserve the public parser contract while rejecting ambiguous input.
+    Accept the existing fast/safe modes while rejecting duplicate and unknown
+    keys. A failed parse returns no Options. Do not change the exporter schema
+    or introduce additional modes.
 
-  > Inputs: The accepted grammar and the failing fixture from exploration.
+    **Context and interfaces**
 
-  > Produces: A parser change and focused regression coverage.
+    The public boundary remains:
 
-  > Constraints: Do not widen the grammar or change diagnostics outside this boundary.
+    ```rust
+    fn parse_options(text: &str) -> Result<Options, ConfigError>;
+    ```
 
-  1. Add the failing behavior test and observe the expected failure.
-  2. Implement the smallest passing change.
-  3. Run the exact verification command.
-```
+    Options owns its parsed values. The current parser silently overwrites
+    duplicate mode declarations and ignores unknown keys. Preserve the valid
+    mode path; replace those two acceptance behaviors with the existing
+    ConfigError variants DuplicateKey(String) and UnknownKey(String).
 
-Rules:
+    **Cases**
 
-- One top-level checkbox is one DAG node. Nested steps are ordered-list items, never checkboxes.
-- `task_graph.version` is `1`; `depends_on` is incoming adjacency (`task -> direct prerequisites`).
-- Every body task ID appears exactly once as a quoted Graph key, every dependency ID is quoted, and roots use `[]`.
-- The Graph key set exactly matches the body task ID set. Every task body has a permanent unique `X.Y` ID, a one-line node statement with an exact verify command or observable outcome, and a `Files:` line.
-- Present Graph keys and task blocks in natural numeric order, but never infer dependencies from their order.
-- IDs are never reused. A completed task is never unchecked.
-- A replan adds new IDs. A completed task that needs more work keeps `[x]`, receives `needs_followup`, and points to a new task.
-- Allowed old-task dispositions are `preserved`, `superseded`, `cancelled`, and `needs_followup`.
-- Historical body-level `After` records are read-only compatibility. A current task plan writes frontmatter only, and mixed syntax is invalid.
-- No `> Graph:` line, Mermaid source of truth, separate `task-dag.yaml`, GraphRevision, snapshot tree, or hidden task database.
+    | Input | Expected result | Role |
+    | --- | --- | --- |
+    | `mode=fast` | `Ok(Options { mode: Mode::Fast })` | Existing regression control |
+    | `mode=safe` | `Ok(Options { mode: Mode::Safe })` | Existing regression control |
+    | `mode=fast\nmode=safe` | `Err(DuplicateKey("mode"))` | New RED case |
+    | `mode=safe\nmode=safe` | `Err(DuplicateKey("mode"))` | Duplicate identity, not value conflict |
+    | `mdoe=fast` | `Err(UnknownKey("mdoe"))` | Preserve actual offending key |
+    | `mode=fast\nmdoe=safe` | `Err(UnknownKey("mdoe"))` and no Options | No partial success |
 
-## Authoring quality
+    In this table `\n` denotes one actual input newline, not two literal
+    characters. Assertions call the real parser; expected values must not be
+    produced by the implementation under test.
 
-Build a file, artifact, and exclusive-resource map before drawing dependencies. Each top-level node is the smallest independently reviewable outcome, not one command and not an unbounded work package. A zero-context implementer must be able to execute it from the record alone.
+    **Implementation**
 
-Size behavior tasks as bounded feature groups. Keep the setup, related tests, implementation, interface wiring and necessary documentation with the outcome they enable. Several positive, negative and boundary tests can belong to one task. Split where one deliverable can meaningfully pass acceptance while another is rejected; do not split every test, command, file or commit into a node, and do not use fixed test counts or minute quotas.
+    1. Add the six named cases in option_policy and run the proving selection.
+       Observe duplicate/unknown cases fail for their missing behavior while
+       the two valid-mode controls remain green.
+    2. Validate key identity before accepting each declaration. Track accepted
+       keys so identical duplicate values are still rejected. Return the
+       existing error variant without publishing a partially populated Options.
+    3. Run the same group for GREEN. Refactor shared setup only when it leaves
+       literal expectations visible, then rerun the selection.
 
-Every node states:
+    **Files**
 
-- on its one-line checkbox statement, the concrete outcome plus one exact verification command or directly observable result;
-- on a following `> Files:` line, exact paths or an explicitly bounded package-wide glob with exclusions.
+    - `src/options.rs`
+    - `tests/option_policy.rs`
 
-Choose that command through the Harness [impact-scoped verification policy](../../harness/references/verification.md): start with the smallest reliable scope that directly proves the node. When broader verification is required, state the concrete reason in ordinary Task Card or completion-evidence prose; do not add a parser field or make aggregate profiles universal gates.
+    **Verification**
 
-Add only the concise detail that helps a zero-context implementer. A Task Card may freely use ordinary Markdown such as short prose, `> Context:`, `> Inputs:`, `> Produces:`, `> Constraints:`, numbered steps, examples, or other useful notes. These are authoring aids, not parser fields or a rigid template. When another node depends on an interface, artifact, or state, explain that handoff somewhere in the card using the clearest compact form.
+    Run from the Rust package root:
 
-Before a behavior task enters Ready execution, its content must make these decisions executable:
+    ```sh
+    cargo test option_policy
+    ```
 
-- The concrete outcome, included behavior and explicit exclusions.
-- Consumed and produced interfaces, including actual names/types when another task relies on them.
-- Concrete test inputs and independently derived expected outputs or errors, including relevant failure and boundary cases; "add complete tests" is not a test plan.
-- Which new behavior is absent and what the group's expected RED will demonstrate; distinguish existing regression controls from missing-behavior cases.
-- Ordered test preparation, grouped RED, bounded implementation, grouped GREEN and necessary refactoring actions.
-- The exact proving selection, completion conditions and case mapping required if another run supplies the proof.
+    Completion requires all six cases to execute and pass, both error variants
+    to carry the actual key, and the public Result boundary to remain unchanged.
+````
 
-These are information requirements, not mandatory labels or a fixed checklist to paste into every card. A simple task can already express them compactly. Add a short fixture or API sketch when it prevents an implementation decision from being deferred; do not duplicate whole implementations just to make the card long.
+An independently acceptable exporter receives a separate task with its schema, fixtures and dependency on the Options interface. Expensive tests can share a process without merging outcomes or creating a second graph.
 
-Keep all owned paths in the actual Files line. A bounded glob includes its exclusions in the card; prose may explain those paths but must not silently add unrelated ownership. A newly discovered independent product, hidden prerequisite or proving selection that cannot establish the whole outcome invalidates the task boundary. Replan pending nodes before proceeding; preserve completed nodes and valid evidence. Ordinary local debugging remains within the task.
+## Execution and validation
 
-Nested numbered steps are real execution order, including RED/GREEN/refactor when behavior changes; they are not placeholder examples. Do not use `TBD`, "appropriate handling", "similar to Task N", or other prose that delegates design back to the implementer.
+Choose proving commands through [impact-scoped verification](../../harness/references/verification.md). Start with the smallest reliable selection that proves the entire task. Explain a broader run's concrete impact reason in ordinary prose; aggregate profiles are not universal gates.
 
-## Example: related cases, one outcome
+Keep every owned path in Files. Newly discovered independent products, hidden prerequisites or an insufficient proving selection invalidate the relevant boundary: revise pending nodes through the update lifecycle. Ordinary local debugging remains inside the task.
 
-This illustrative parser contract accepts only `mode=fast` and `mode=safe`; duplicate keys and unknown keys are errors. Its exact API is `parse_options(text) -> Result<Options, ConfigError>`. The example is not a new repository API.
-
-```markdown
-- [ ] 2.1 Validate option declarations without partial output — verify: `cargo test option_policy`
-  > Files: `src/options.rs`, `tests/option_policy.rs`
-
-  Inputs: Existing Options and ConfigError types; the key/value grammar above.
-  Produces: Validated Options for the later exporter. No JSON format change.
-
-  Cases: `mode=fast` returns Mode::Fast; `mode=fast\nmode=safe` returns
-  DuplicateKey("mode"); `mdoe=fast` returns UnknownKey("mdoe"). Both
-  failures return no Options. Existing valid parsing is a regression control.
-
-  1. Add these real parser cases with literal expectations. Run option_policy
-     once and observe duplicate/unknown acceptance or partial-output failures.
-  2. Implement declaration validation and its error path together, preserving
-     valid parsing and the existing public result type.
-  3. Rerun option_policy together; require every named case to execute and pass.
-     Record the report mapping if a justified broader run supplied this proof.
-```
-
-An independently acceptable JSON exporter receives its own task with its concrete schema, fixtures and interface handoff. Do not inflate this example into separate write-test/run-test/implement/commit nodes. Expensive tests may share a process; test scheduling does not merge the two outcomes or create a second DAG.
-
-Before accepting a plan, map every requirement and acceptance condition to at least one node, then self-review IDs, names, dependencies, interfaces, `Files`, verification, and spec coverage for consistency. A plan-only delivery is complete only when `tasks.md` is ready to execute without another planning pass.
-
-Derived state:
+A completed task is never unchecked and its ID is never reused. Replans add new IDs; old-task dispositions are `preserved`, `superseded`, `cancelled` or `needs_followup`. A completed task needing follow-up remains checked and points to its new task. No GraphRevision, separate DAG file, Mermaid source of truth or hidden status database.
 
 ```text
 Done     = [x]
-Ready    = [ ] and every derived after dependency is Done
-Blocked  = [ ] and at least one derived after dependency is not Done
-Parallel = Ready plus disjoint Files, generated artifacts, and resource leases
+Ready    = valid whole plan + [ ] + all direct prerequisites Done
+Blocked  = [ ] + at least one prerequisite incomplete
+Parallel = Ready + disjoint Files/artifacts/resource leases
 ```
 
-OpenSpec owns deterministic frontmatter/Markdown parsing and returns the stable `tasks[].after/ready` JSON contract. Harness owns workspace selection and scheduling; it must not duplicate a YAML parser. Validation rejects malformed or duplicate IDs, Graph/body mismatch, unquoted IDs, missing/self edges, unknown dependencies, cycles, a done task depending on pending work, mixed syntax, and missing `Files`/verify. Fenced examples do not create task metadata. The current in-progress task is session state, not a second committed status field.
+An invalid plan exposes diagnostics and **no Ready work**, including otherwise independent tasks. OpenSpec owns parsing and graph validation; its `tasks[].after/ready` JSON remains stable. Harness owns workspace selection and scheduling and must not duplicate a YAML or Markdown parser.
+
+Before accepting a plan, map every requirement and acceptance condition to a task, check IDs, dependencies, real interfaces, Files, proof and spec coverage, and ensure the record can be executed without another design pass. Record actual commands and outcomes in Evidence only after execution; never prefill successful results.

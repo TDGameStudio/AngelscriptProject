@@ -621,7 +621,7 @@ foreach ($token in @(
     '`after` and `ready`',
     '`Files`',
     'never unchecked',
-    'Historical body-level `After` records remain readable'
+    'Old inline verify, blockquote Files and body-level After formats are unsupported'
 )) {
     Assert-True ($taskProtocol.Contains($token)) "Task DAG protocol is missing: $token"
 }
@@ -1188,7 +1188,6 @@ try {
         $change = & $exePath change create fixture/dag --title 'Task DAG' --goal 'Verify ready and cycle derivation' --json 2>&1
         Assert-Equal 0 $LASTEXITCODE "Fixture change creation failed: $($change -join [Environment]::NewLine)"
         $tasksPath = Join-Path $fixtureRoot 'openspec\changes\fixture\dag\tasks.md'
-        $taskSeparator = [string][char]0x2014
         $readyTasks = @'
 ---
 task_graph:
@@ -1201,16 +1200,42 @@ task_graph:
 
 ## Tasks
 
-- [x] 1.1 Establish the base __TASK_SEPARATOR__ verify: `base`
-  > Files: `base`
+- [x] 1.1 Establish the base
 
-- [ ] 1.2 Ready work __TASK_SEPARATOR__ verify: `ready`
-  > Files: `ready`
+    **Files**
 
-- [ ] 1.3 Blocked work __TASK_SEPARATOR__ verify: `blocked`
-  > Files: `blocked`
+    - `base`
+
+    **Verification**
+
+    ```sh
+    base
+    ```
+
+- [ ] 1.2 Ready work
+
+    **Files**
+
+    - `ready`
+
+    **Verification**
+
+    ```sh
+    ready
+    ```
+
+- [ ] 1.3 Blocked work
+
+    **Files**
+
+    - `blocked`
+
+    **Verification**
+
+    ```sh
+    blocked
+    ```
 '@
-        $readyTasks = $readyTasks.Replace('__TASK_SEPARATOR__', $taskSeparator)
         [System.IO.File]::WriteAllText($tasksPath, $readyTasks, [System.Text.UTF8Encoding]::new($false))
         $readyJson = & $exePath instructions apply --change fixture/dag --json
         Assert-Equal 0 $LASTEXITCODE 'Ready Task DAG instructions failed'
@@ -1232,13 +1257,30 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 First __TASK_SEPARATOR__ verify: `one`
-  > Files: `one`
+- [ ] 1.1 First
 
-- [ ] 1.2 Second __TASK_SEPARATOR__ verify: `two`
-  > Files: `two`
+    **Files**
+
+    - `one`
+
+    **Verification**
+
+    ```sh
+    one
+    ```
+
+- [ ] 1.2 Second
+
+    **Files**
+
+    - `two`
+
+    **Verification**
+
+    ```sh
+    two
+    ```
 '@
-        $cycleTasks = $cycleTasks.Replace('__TASK_SEPARATOR__', $taskSeparator)
         [System.IO.File]::WriteAllText($tasksPath, $cycleTasks, [System.Text.UTF8Encoding]::new($false))
         $cycleJson = & $exePath instructions apply --change fixture/dag --json
         Assert-Equal 0 $LASTEXITCODE 'Cycle instructions should return structured task issues'

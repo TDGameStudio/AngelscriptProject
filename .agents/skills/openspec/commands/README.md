@@ -1,6 +1,6 @@
 # OpenSpec command reference
 
-This directory is the canonical English prose reference for OpenSpec 0.8.1. The Clap command tree owns syntax; an automated parity test rejects missing or extra command documents.
+This directory is the canonical English prose reference for OpenSpec 0.9.0. The Clap command tree owns syntax; an automated parity test rejects missing or extra command documents.
 
 - [`openspec init`](init.md)
 - [`openspec doctor`](doctor.md)

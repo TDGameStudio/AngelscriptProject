@@ -239,7 +239,7 @@ $summary = [pscustomobject][ordered]@{
     Excluded      = @(
         'Fixture-only Unreal route integration is included; no real Editor, UBT, build, Automation, suite, or commandlet process is started.',
         'Smoke, Standalone, complete All, and StaticJIT All remain outside this core gate.',
-        'The fixed OpenSpec 0.8.1 source and package gates are reused from their closed independent review.'
+        'The fixed OpenSpec 0.9.0 source and package gates are recorded in its verified release manifest.'
     )
 }
 

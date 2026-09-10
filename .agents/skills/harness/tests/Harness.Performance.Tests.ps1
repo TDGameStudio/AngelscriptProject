@@ -509,8 +509,17 @@ task_graph:
 
 ## Tasks
 
-- [x] 1.1 Measure terminal status — verify: `fixture`
-  > Files: `fixture`
+- [x] 1.1 Measure terminal status
+
+    **Files**
+
+    - `fixture`
+
+    **Verification**
+
+    ```sh
+    fixture
+    ```
 '@, [System.Text.UTF8Encoding]::new($false))
     $evolutionEvaluationPath = Join-Path $evolutionDataRoot 'workflow-evaluation.md'
     $evolutionEvaluationTemplate = @'
@@ -578,8 +587,6 @@ Body sentinel: result: failed; captured_at: invalid. The measured route must sto
         finally {
             Pop-Location
         }
-
-        $taskSeparator = [string][char]0x2014
         $tasksPath = Join-Path $taskFixtureRoot 'openspec\changes\fixture\performance\tasks.md'
         $tasksDocument = @'
 ---
@@ -591,10 +598,18 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 Measure TaskStatus __TASK_SEPARATOR__ verify: `fixture`
-  > Files: `fixture`
+- [ ] 1.1 Measure TaskStatus
+
+    **Files**
+
+    - `fixture`
+
+    **Verification**
+
+    ```sh
+    fixture
+    ```
 '@
-        $tasksDocument = $tasksDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
         [System.IO.File]::WriteAllText($tasksPath, $tasksDocument, [System.Text.UTF8Encoding]::new($false))
 
         $effectiveTaskChange = 'fixture/performance'

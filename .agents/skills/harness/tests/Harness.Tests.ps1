@@ -446,8 +446,6 @@ goal: Prove semantic naming never rewrites historical archives.
         'create', 'fixture/test-task-dag', '--title', 'Task DAG', '--goal', 'Verify Harness task recognition', '--json'
     )
     Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
-
-    $taskSeparator = [string][char]0x2014
     $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\tasks.md'
     $taskWorkspaceDocument = @'
 ---
@@ -462,19 +460,54 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.10 Independent work __TASK_SEPARATOR__ verify: `independent`
-  > Files: `independent`
+- [ ] 1.10 Independent work
 
-- [ ] 2.1 Blocked work __TASK_SEPARATOR__ verify: `blocked`
-  > Files: `blocked`
+    **Files**
 
-- [ ] 1.2 Ready work __TASK_SEPARATOR__ verify: `ready`
-  > Files: `ready`
+    - `independent`
 
-- [x] 1.1 Completed base __TASK_SEPARATOR__ verify: `base`
-  > Files: `base`
+    **Verification**
+
+    ```sh
+    independent
+    ```
+
+- [ ] 2.1 Blocked work
+
+    **Files**
+
+    - `blocked`
+
+    **Verification**
+
+    ```sh
+    blocked
+    ```
+
+- [ ] 1.2 Ready work
+
+    **Files**
+
+    - `ready`
+
+    **Verification**
+
+    ```sh
+    ready
+    ```
+
+- [x] 1.1 Completed base
+
+    **Files**
+
+    - `base`
+
+    **Verification**
+
+    ```sh
+    base
+    ```
 '@
-    $taskWorkspaceDocument = $taskWorkspaceDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskWorkspaceDocument, [System.Text.UTF8Encoding]::new($false))
 
     $taskStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }
@@ -508,19 +541,44 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 First __TASK_SEPARATOR__ verify: `first`
-  > Files: `first`
+- [ ] 1.1 First
 
-- [ ] 1.2 Second __TASK_SEPARATOR__ verify: `second`
-  > Files: `second`
+    **Files**
+
+    - `first`
+
+    **Verification**
+
+    ```sh
+    first
+    ```
+
+- [ ] 1.2 Second
+
+    **Files**
+
+    - `second`
+
+    **Verification**
+
+    ```sh
+    second
+    ```
 '@
-    $taskCycleDocument = $taskCycleDocument.Replace('__TASK_SEPARATOR__', $taskSeparator)
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskCycleDocument, [System.Text.UTF8Encoding]::new($false))
     $cycleStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }
     Assert-Equal 'Succeeded' $cycleStatus.status 'task.status preserves a successfully inspected invalid Task Graph in its envelope'
     Assert-Equal 'waiting' $cycleStatus.data.state 'an invalid Task Graph remains waiting instead of becoming schedulable'
     Assert-True ('cycle' -in @($cycleStatus.data.taskIssues.code)) 'task.status preserves OpenSpec cycle diagnostics'
     Assert-Equal 0 @($cycleStatus.data.tasks | Where-Object ready).Count 'task.status never produces Ready work from a cycle'
+
+    $retiredTaskDocument = '- [ ] 1.1 Retired metadata — verify: `never`' + "`n" + '  > Files: `old.rs`'
+    [System.IO.File]::WriteAllText($taskWorkspacePath, $retiredTaskDocument, [System.Text.UTF8Encoding]::new($false))
+    $retiredStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }
+    Assert-Equal 'Succeeded' $retiredStatus.status 'task.status preserves an inspected zero-node invalid plan'
+    Assert-Equal 'waiting' $retiredStatus.data.state 'retired metadata remains unschedulable'
+    Assert-Equal 0 @($retiredStatus.data.tasks).Count 'retired metadata yields no executable tasks'
+    Assert-True ('unsupported-task-format' -in @($retiredStatus.data.taskIssues.code)) 'the migration diagnostic survives Harness projection'
 
     $missingTaskStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/missing' }
     Assert-Equal 'Failed' $missingTaskStatus.status 'task.status reports a missing change through the common failed envelope'
@@ -744,8 +802,8 @@ task_graph:
 
     $validFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-valid') -SourceRoot $repoRoot
     $validFixtureHealth = Test-HarnessInstallation -ProjectRoot $validFixture
-    Assert-True $validFixtureHealth.IsValid 'a complete fixed OpenSpec 0.8.1 package passes installation health'
-    Assert-Equal '0.8.1' $validFixtureHealth.OpenSpecPackage.Version 'health reports the verified final OpenSpec identity'
+    Assert-True $validFixtureHealth.IsValid 'a complete fixed OpenSpec 0.9.0 package passes installation health'
+    Assert-Equal '0.9.0' $validFixtureHealth.OpenSpecPackage.Version 'health reports the verified final OpenSpec identity'
     Assert-True $validFixtureHealth.OpenSpecPackage.Verified 'health distinguishes a verified package from mere file presence'
     Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'installation validation checks the Unreal manifest without importing it'
 

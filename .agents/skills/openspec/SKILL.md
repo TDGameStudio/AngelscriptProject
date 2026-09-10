@@ -45,6 +45,8 @@ For record layout, load only the relevant reference: [record schema](references/
 
 ## Deterministic boundary
 
+OpenSpec 0.9.0 uses new-only rich Markdown Task Cards: short checkbox titles, four-space owned detail, a direct **Files** list and one fenced command in direct **Verification**. Old inline/blockquoted metadata yields migration diagnostics and no Ready work. Authored Scenario clauses use the same ownership indentation, including wrapped sentences; useful detail may be extensive. Existing business records and archives are not migrated implicitly.
+
 The CLI owns manifests, identities, moves, workflow/status/instructions, validation, explicit closure metadata, completion scripts, and a pure archive move. It does not decide requirements, merge specs, run implementation, schedule worktrees, update Skills, detect AI tools, send telemetry, or make review/replan decisions.
 
 `instructions --json` constraints are prompts, not artifact text. A glob has no writable path; use `existingOutputPaths` and a concrete workflow-permitted file. Prefer JSON for automation and preserve non-zero exit codes.

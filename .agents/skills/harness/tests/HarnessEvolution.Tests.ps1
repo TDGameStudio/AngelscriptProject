@@ -62,8 +62,17 @@ task_graph:
 
 ## Tasks
 
-- [$mark] 1.1 Exercise terminal closure — verify: ``focused fixture``
-  > Files: ``fixture``
+- [$mark] 1.1 Exercise terminal closure
+
+    **Files**
+
+    - ``fixture``
+
+    **Verification**
+
+    ``````sh
+    focused fixture
+    ``````
 "@
 }
 
