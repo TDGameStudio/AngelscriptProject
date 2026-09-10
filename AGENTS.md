@@ -13,7 +13,7 @@ This repository develops and validates `Plugins/Angelscript` as a reusable Unrea
 ## OpenSpec lifecycle
 
 - Name new Changes `<domain>/<type>-<scope>-<outcome>` and use the matching OpenSpec lifecycle Skill to create, continue, update, apply, verify, synchronize, and archive them.
-- Each task declares one exact verification command directly related to its outcome. For behavior changes, observe the focused RED failure, make the smallest implementation change, and rerun the same proof.
+- Each task declares a bounded outcome and one exact proving command. For behavior changes, plan concrete related tests, observe the feature group's RED together, implement it, and verify GREEN together; shared runs retain task-specific evidence.
 - Diagnose and repair ordinary local failures inside the current task. Replan only when evidence invalidates a requirement, design boundary, Task DAG edge, verification contract, or required artifact.
 - Review starts only when the user or an external agent explicitly requests one; normal completion proceeds through verification, specification synchronization when applicable, terminal evolution evidence, and archive.
 
