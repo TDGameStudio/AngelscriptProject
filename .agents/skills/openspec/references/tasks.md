@@ -25,6 +25,7 @@ For every behavior task, supply:
 
 - The concrete outcome, included behavior, explicit exclusions, current behavior and what changes.
 - Actual consumed and produced interfaces: symbol names, signatures/types, artifact shapes and prerequisite handoffs. Explain identity, lifetime, ownership, invariants and failure-state behavior wherever they affect correctness. Name known interfaces; do not invent an established API that has not been inspected.
+- Every new public name the task introduces — types, modules, files, public functions, test identities — listed in **Context and interfaces** with its source: the draft `glossary.md`, a brainstorming or naming grill round, or an existing convention. Follow the [naming grill](../../brainstorming/references/naming.md). A task that creates a public name without listing it fails the authoring preflight; apply never asks, so an unlisted name becomes a convention-derived `Naming assumed` entry in Evidence that verification reviews.
 - Concrete representative inputs with independently derived literal outputs/errors. Include normal, negative and boundary cases that distinguish accepted from rejected implementations. Use a table when the cases have repeated fields; use code, prose or a sequence when those are clearer.
 - The missing-behavior cases expected to fail in grouped RED, separately from existing regression controls. “Add complete tests” is not a test plan.
 - Ordered test preparation, observed grouped RED, bounded implementation and wiring, grouped GREEN, and relevant refactoring/reverification. Put necessary construction detail here, not in a specification.
@@ -141,4 +142,4 @@ Parallel = Ready + disjoint Files/artifacts/resource leases
 
 An invalid plan exposes diagnostics and **no Ready work**, including otherwise independent tasks. OpenSpec owns parsing and graph validation; its `tasks[].after/ready` JSON remains stable. Harness owns workspace selection and scheduling and must not duplicate a YAML or Markdown parser.
 
-Before accepting a plan, map every requirement and acceptance condition to a task, check IDs, dependencies, real interfaces, Files, proof and spec coverage, and ensure the record can be executed without another design pass. Record actual commands and outcomes in Evidence only after execution; never prefill successful results.
+Before accepting a plan, map every requirement and acceptance condition to a task, check IDs, dependencies, real interfaces, new public names, Files, proof and spec coverage, and ensure the record can be executed without another design pass. Record actual commands and outcomes in Evidence only after execution; never prefill successful results.

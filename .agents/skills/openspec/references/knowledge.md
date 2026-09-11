@@ -19,7 +19,7 @@ Do not create a project-level `openspec/knowledges/` tree. Do not copy chronolog
 
 ## Exploration candidates
 
-An accepted pre-Change handoff may nominate a `💡 Knowledge candidate:` but Explore itself stays read-only. After the target Change exists, create a change-local candidate only when it has evidence, an application boundary, and plausible reuse across tasks or later work. Preserve the useful table or text diagram when it carries part of the reusable model; discard temporary question state and transcript prose.
+An accepted pre-Change handoff may nominate a `💡 Knowledge candidate:` but brainstorming writes nothing outside its draft. `openspec-create-change` creates the change-local candidate once the user confirmed it in the carryover round and it has evidence, an application boundary, and plausible reuse across tasks or later work. Preserve the useful table or text diagram when it carries part of the reusable model; discard temporary question state and transcript prose.
 
 The candidate is not current requirements or execution state. Copy settled truth into proposal/spec/design/tasks, index the candidate in the same edit, and record its `candidate | promoted | superseded | retired` disposition in `attachments/INDEX.md`. Emoji is optional presentation; headings, labels, evidence, and INDEX status remain authoritative.
 

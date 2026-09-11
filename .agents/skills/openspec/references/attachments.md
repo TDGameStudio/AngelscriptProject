@@ -30,6 +30,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 | Event | Record | Boundary |
 |---|---|---|
+| Change created from a designed brainstorming draft by `openspec-create-change` | `drafts/` | Copies of the approved draft `design.md` and `handoff.md`, indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The source draft under `openspec/drafts/` remains the owner of the round log, findings, and glossary. |
 | Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
 | Material investigated technical or workflow problem | `implementation/` | One shared root cause and disposition lifecycle, including admitted dogfooding findings; never a final summary or second task list. |
 | Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
@@ -62,14 +63,15 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 ## Exploration carryover
 
-Pre-Change Explore remains read-only. Its accepted handoff may classify decision rationale, useful visuals, and reusable evidence-backed insights, but records are created only after the target Change exists:
+Pre-Change brainstorming writes only to its draft under `openspec/drafts/<domain>/<topic>/`. Its final carryover round has the user confirm which decision rationale, useful visuals, and reusable evidence-backed insights the Change keeps; `openspec-create-change` materializes exactly that list once the target Change exists:
 
 | Carryover | Destination | Admission boundary |
 |---|---|---|
+| Approved draft `design.md` and `handoff.md` | `drafts/design.md`, `drafts/handoff.md` | Verbatim copies indexed once; the draft README records `target_change`. Round log, findings, and glossary stay in the draft. |
 | Settled requirement, scope, architecture, or executable boundary | proposal/spec/design/tasks | Canonical current truth; do not leave it only in an attachment. |
 | Non-obvious decision, dropped alternative, flip condition, or decision-critical visualization | `talks/talk-YYYYMMDD-HHmmss-<theme>.md` | Preserve only when the rationale prevents likely re-decision. |
 | Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and an explicit disposition. |
-| Temporary question-round state, transcript prose, or one-off visual | discard | No durable decision or reuse value. |
+| Temporary question-round state, transcript prose, or one-off visual | discard from the Change | No durable decision or reuse value inside the Change; the draft `log.md` already keeps the conversation. |
 
 A carryover talk uses concise plain headings such as Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual, and Sources. A change-local knowledge candidate uses Reusable Insight, Evidence, Boundaries, Application, and Sources. Embed the smallest useful Markdown table or text diagram in the owning file; a separate visual file is allowed only when it is itself indexed exactly once.
 

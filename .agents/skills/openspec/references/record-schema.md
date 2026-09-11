@@ -19,10 +19,17 @@ openspec/
 │   ├── specs/**/spec.md
 │   ├── tasks.md
 │   └── attachments/
+├── drafts/<domain>/<topic>/          # brainstorming working records, not CLI artifacts
+│   ├── README.md
+│   ├── log.md
+│   ├── findings/
+│   ├── glossary.md
+│   ├── design.md
+│   └── handoff.md
 └── archive/changes/<domain>/<date>-<change>/
 ```
 
-The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. Maintained project records, Skills, workflows, templates, and command documentation use English; files explicitly named with `_ZH` are the sole temporary localization exception.
+The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness does not scan it, and it carries no task state. `openspec-create-change` is the only Skill that turns a designed draft into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; files explicitly named with `_ZH` and the draft `log.md`/`findings/` working records (which may keep the user's original wording) are the only localization exceptions.
 
 ## Change identity
 
@@ -37,6 +44,7 @@ Harness enforces this project policy for normal `change create` targets and `cha
 ```text
 attachments/
 ├── INDEX.md
+├── drafts/
 ├── reviews/
 ├── implementation/
 ├── replans/

@@ -21,7 +21,7 @@ Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--jso
 Invoke-Harness -Command openspec.change -Context $context -ArgumentList @('list', '--json')
 ```
 
-One context selects one explicit or discovered `WorkspaceRoot`. A Codex `/goal` invocation may continue the work unattended, but it is not a repository mode, branch convention, or alternate OpenSpec lifecycle.
+One context selects one explicit or discovered `WorkspaceRoot`. Unattended continuation reuses the same context and lifecycle; there is no repository mode, branch convention, or alternate OpenSpec lifecycle (see the Harness entry for what external continuation is and is not).
 
 Routes are `openspec.init|doctor|status|instructions|validate|domain|spec|change|workflow|completion`. Never invoke bare `openspec`, `npx @fission-ai/openspec`, or a `target/` build for project operations. Direct EXE invocation is reserved for package self-test, release verification, and the `Tools/harness-web` product's fixed read-only adapter. That adapter uses the selected workspace as cwd, the packaged executable, bounded argument-array calls, and only `doctor`, domain/spec/change list/show, `status`, and `instructions apply` JSON queries. It never exposes arbitrary commands, launches PowerShell, or changes ordinary agent routing.
 
@@ -33,10 +33,11 @@ Read [commands/README.md](commands/README.md), then only the one command documen
 
 Before creating or renaming a Change, follow the project `<domain>/<type>-<scope>-<outcome>` convention in [record schema](references/record-schema.md). Harness rejects a nonconforming target before the portable CLI runs; historical archives remain immutable.
 
-- Deep discovery before creating a new feature, architecture refactor, or major behavior-change record: `openspec-explore`; its accepted decision-complete handoff feeds `change create` and planning. Never invoke it after the target Change exists.
+- Brainstorming before a new feature, architecture refactor, or major behavior-change record: `brainstorming`; it records rounds under `openspec/drafts/<domain>/<topic>/` and ends with a designed, parked, or abandoned draft. Never reopen its `design` mode for a Change that already exists.
+- Create the Change from a designed draft and seed its attachments (draft copies, confirmed talks and knowledge, INDEX): `openspec-create-change`; this is the only route that runs `change create` for major work.
 - Create the next missing artifact: `openspec-continue-change`.
 - Revise existing artifacts or apply an evidence-gated replan: `openspec-update-change`.
-- Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`; do not restart deep Explore inside a Ready task.
+- Implement ready Task DAG nodes and resolve task-local technical uncertainty: `openspec-apply-change`; do not restart brainstorming or ask the user inside a Ready task; an unlisted new public name is derived from convention and recorded as `Naming assumed`.
 - Verify a fixed snapshot: `openspec-verify-change`.
 - Merge durable delta specs: `openspec-sync-specs`.
 - Apply close policy and archive: `openspec-archive-change`.
