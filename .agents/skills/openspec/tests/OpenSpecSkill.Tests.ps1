@@ -40,6 +40,8 @@ function Test-ContainsDisallowedOpenSpecLanguage {
     for ($index = 0; $index -lt $Text.Length; $index++) {
         $codeUnit = [int]$Text[$index]
         if ($codeUnit -le 0x7F) { continue }
+        # Variation selectors (U+FE00-FE0F) are NonSpacingMark but only pick an emoji/text glyph style; they carry no language.
+        if ($codeUnit -ge 0xFE00 -and $codeUnit -le 0xFE0F) { continue }
         $category = [System.Globalization.CharUnicodeInfo]::GetUnicodeCategory($Text, $index)
         if ($category -in $letterCategories -or $category -eq [System.Globalization.UnicodeCategory]::DecimalDigitNumber) {
             return $true
@@ -519,7 +521,7 @@ foreach ($sample in @(
 )) {
     Assert-True (Test-ContainsDisallowedOpenSpecLanguage -Text $sample.Text) "English gate must reject $($sample.Name) letters."
 }
-foreach ($allowedSymbol in @([string][char]0x2192, [string][char]0x2014, [string][char]0x2502)) {
+foreach ($allowedSymbol in @([string][char]0x2192, [string][char]0x2014, [string][char]0x2502, ([string][char]0x26A0 + [string][char]0xFE0F))) {
     Assert-True (-not (Test-ContainsDisallowedOpenSpecLanguage -Text $allowedSymbol)) 'English gate must allow intentional punctuation and diagram symbols.'
 }
 Assert-True (Test-IsOpenSpecLocalizationExempt -FileName 'CLI_REFERENCE_ZH.md') 'Exact uppercase _ZH filename marker must be exempt.'
