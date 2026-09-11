@@ -178,7 +178,7 @@ Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--jso
 
 不要调用 `PATH` 中的同名程序、官方 Node CLI 或 `Tools/openspec/target` 构建；项目工作流说明见 `.agents/skills/README.md`。
 
-关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `openspec-explore`，形成 decision-complete handoff 后再创建 Change。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，只有证据证明当前计划失效时才由 Harness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
+关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `brainstorming`（grilling 轮次逐题确认，每轮都记录到 `openspec/drafts/<domain>/<topic>/`），形成用户批准的 design、确认过的 talk/knowledge 携带清单与 decision-complete handoff 后，由 `openspec-create-change` 创建 Change 并把草稿副本、talks、knowledges 落进 attachments（草稿也可以 `parked`/`abandoned` 收尾而不建 Change）。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，执行阶段不向用户提问（tasks 未列出的新公开命名按约定取名并记 `Naming assumed` 供审查）；只有证据证明当前计划失效或冒出用户级决策时才由 Harness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -298,6 +298,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 | `Documents/Knowledges/ZH/Index.md` | 知识库主索引，按主题前缀组织所有原理性文档 |
 | `Documents/Guides/Build.md` | 构建规则、超时约束、并发安全 |
 | `Documents/Guides/Test.md` | 测试入口与超时约束 |
+| `Documents/Guides/OpenSpecSystemRefactor.md` | OpenSpec Rust 内核、Web 预览、独立 Skill 与 spec 重基线边界 |
 | `Documents/Guides/AngelscriptForkStrategy.md` | Fork 策略、与上游 Hazelight 的差异哲学 |
 | `Documents/Guides/VSCodeAngelscript.md` | 项目内 VS Code 扩展的构建、安装与 DebugServer 使用流程 |
 
@@ -319,7 +320,8 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 对于明确采用 OpenSpec 的工作，活动 Change 是计划、任务与收口状态的权威记录；便携 CLI 负责确定性的记录操作，Harness 负责探索、执行、显式 review、replan 与 closure 策略。重构期的既有 current spec 仍需与代码、测试和最新有效 Change 交叉核对。相关工作统一进入 `openspec/changes/<domain>/<change>/`：
 
-- `openspec-explore`：仅在目标 Change 创建前进行深度探索并形成 decision-complete handoff。
+- `brainstorming`：以 grilling 轮次探索并把讨论、探索、命名全部记录到 `openspec/drafts/`，最终草稿为 designed / parked / abandoned 之一。
+- `openspec-create-change`：从 designed 草稿创建 Change，并把草稿副本、用户确认的 talks 与 knowledge 候选、INDEX 一次性落进 attachments。
 - `openspec-continue-change` / `openspec-update-change`：创建下一份规划产物，或在证据门禁下修订现有真相。
 - `openspec-apply-change` / `openspec-verify-change`：按 Ready Task DAG 实施，并对固定快照验证。
 - `openspec-sync-specs` / `openspec-archive-change`：显式同步 durable spec，并按 closure policy 归档。
@@ -357,7 +359,7 @@ Tools\PullReference\PullReference.bat <name>
 详细规范见 `AGENTS.md` 与 `Documents/Rules/`。简要清单：
 
 1. **不修改 UE 引擎核心**。所有改动落在 `Plugins/Angelscript/` 或本仓库内。
-2. **计划/记录走 OpenSpec**。重大工作先在 Change 创建前完成 `openspec-explore`，再进入 continue/update/apply/verify/sync/archive 生命周期；`tasks.md` 是唯一 Task DAG 与执行状态，附件只保存按需加载的证据和决策。
+2. **计划/记录走 OpenSpec**。重大工作先在 Change 创建前完成 `brainstorming`（草稿留在 `openspec/drafts/`），再进入 continue/update/apply/verify/sync/archive 生命周期；`tasks.md` 是唯一 Task DAG 与执行状态，附件只保存按需加载的证据和决策。
 3. **构建 / 测试只走标准入口**。直接调 `Build.bat` / `UnrealEditor-Cmd.exe` 等的命令不允许写入文档或脚本。
 4. **测试覆盖**。新功能或 bugfix 必须配套测试（`Plugins/Angelscript/Source/AngelscriptTest/`）。
 5. **Git 提交规范**。遵循 `Documents/Rules/GitCommitRule.md`，前缀如 `[Plugin/Angelscript] Feat:` / `[Test/Angelscript] Test:` / `[Docs] Docs:`。
@@ -378,4 +380,5 @@ Tools\PullReference\PullReference.bat <name>
 
 - 项目状态分析：`Documents/ProjectStatusAnalysis.md`
 - Harness / OpenSpec 协作说明：`.agents/skills/README.md`
+- OpenSpec Rust 核心、Web 预览与 Skill 解耦重构记录：`Documents/Guides/OpenSpecSystemRefactor.md`
 - 历史优先级路线图：`Documents/Plans/Plan_StatusPriorityRoadmap.md`

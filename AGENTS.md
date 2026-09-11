@@ -12,9 +12,10 @@ This repository develops and validates `Plugins/Angelscript` as a reusable Unrea
 
 ## OpenSpec lifecycle
 
-- Name new Changes `<domain>/<type>-<scope>-<outcome>` and use the matching OpenSpec lifecycle Skill to create, continue, update, apply, verify, synchronize, and archive them.
+- Open a `brainstorming` draft (`research` or `proposal` mode) whenever a reply contains a proposal, a trade-off, or more than one diagram; drafts are local and git-ignored. Before a new feature, architecture refactor, major behavior change, or any request with an unconfirmed user-owned decision, run `brainstorming` in `design` mode: grill in frontier rounds, record every round under `openspec/drafts/<domain>/<topic>/`, confirm new public names, get the design approved, and confirm which draft material becomes talks or knowledge. Drafts are working records, not OpenSpec artifacts; a draft may end `parked` or `abandoned` with no Change.
+- Name new Changes `<domain>/<type>-<scope>-<outcome>` and use the matching OpenSpec lifecycle Skill to create, continue, update, apply, verify, synchronize, and archive them. `openspec-create-change` creates the Change from a designed draft, copies its `design.md` and `handoff.md` into indexed `attachments/drafts/`, and materializes the confirmed talks and knowledge candidates.
 - Each task declares a bounded outcome and one exact proving command. For behavior changes, plan concrete related tests, observe the feature group's RED together, implement it, and verify GREEN together; shared runs retain task-specific evidence.
-- Diagnose and repair ordinary local failures inside the current task. Replan only when evidence invalidates a requirement, design boundary, Task DAG edge, verification contract, or required artifact.
+- Diagnose and repair ordinary local failures inside the current task. Apply never asks the user: derive an unlisted new public name from convention and record `Naming assumed: <name>` in task Evidence for review. Replan only when evidence invalidates a requirement, design boundary, Task DAG edge, verification contract, or required artifact, or when a user-owned decision surfaces inside a task; unattended continuation parks that decision in the replan and never opens `brainstorming`.
 - Review starts only when the user or an external agent explicitly requests one; normal completion proceeds through verification, specification synchronization when applicable, terminal evolution evidence, and archive.
 
 ## Verification

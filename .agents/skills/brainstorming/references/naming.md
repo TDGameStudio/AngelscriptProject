@@ -34,7 +34,7 @@ Record each settled name in the draft `glossary.md` as `| term | chosen | reject
 
 ## Into tasks
 
-Every task's "Context and interfaces" lists the new public names it introduces, with the source (`glossary.md` or the round). A task that introduces a public name without listing it fails the authoring preflight.
+Every task's **Interfaces** lists the new public names it introduces, with the source (`glossary.md` or the round). A task that introduces a public name without listing it fails the authoring preflight.
 
 ## In apply
 

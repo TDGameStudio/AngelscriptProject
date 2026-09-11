@@ -33,7 +33,7 @@ Work these in order and keep the draft current at every step. `proposal` mode en
 
 1. **Explore project context** — code, tests, current specs, active Changes, recent commits. Facts are your job, never the user's.
 2. **Open the draft** — create `openspec/drafts/<domain>/<topic>/` per [drafts.md](references/drafts.md) before the first question. Append every round, every answer, and every finding as it happens.
-3. **Grill in frontier rounds** — per [grilling.md](references/grilling.md): open with a situation brief, number each question, give a recommended answer, ask the whole current frontier, wait, recompute. Include naming questions per [naming.md](references/naming.md) and record settled names in `glossary.md`.
+3. **Grill in frontier rounds** — per [grilling.md](references/grilling.md): open with a situation brief, number each question, give a recommended answer, ask the whole current frontier, collect the answers through the host's answer form, wait, recompute. Paste the round into `log.md` exactly as sent and the user's reply exactly as written. Include naming questions per [naming.md](references/naming.md) and record settled names in `glossary.md`.
 4. **Propose 2-3 approaches** — with trade-offs and one recommendation, lead with the recommendation. Do not manufacture alternatives when requirements force one option.
 5. **Present the design** — in sections scaled to their complexity; ask after each section whether it is right so far. Cover scope, architecture and components, data flow, naming, error handling and edge cases, verification.
 6. **Write `design.md`** — the approved design, then self-review: placeholders, contradictions, scope too large for one Change, ambiguous requirements. Fix inline.
@@ -61,12 +61,13 @@ idea -> context -> draft opened -> grill rounds (incl. naming) -> approaches
 - Model the plan as a design tree. The **frontier** is every decision whose prerequisites are settled. Ask the whole frontier in one round; a question that depends on another open question waits for a later round.
 - Every question carries a **recommended answer** and its consequence. Prefer multiple choice; accept partial, out-of-order, or "all recommendations" replies.
 - When a question needs a fact, look it up (or dispatch an explore subagent) and ask the rest of the frontier now. Never ask the user for something the repository can answer.
-- Use the [marker vocabulary](references/markers.md) so rounds scan well; every line keeps its plain-text label.
+- Use the [marker vocabulary](references/markers.md) so rounds scan well; every line keeps its plain-text label. Write the round in the compact shape from [grilling.md](references/grilling.md): one heading, `**Situation**` marker lines, one `❔ Open decision:` paragraph per question.
+- After the written round, issue the same questions through the host's structured answer form (`AskQuestion` in Cursor) with matching letters and the recommended option first; the form never replaces the written round, and a cancelled form falls back to a text reply.
 - The session is done when the frontier is empty and the user confirms shared understanding.
 
 ## Naming
 
-New public types, modules, files, and key functions are decisions, not details. Inspect neighbouring conventions first, then present each name in a round with the recommendation, alternatives, and the evidence. Settled names go to the draft `glossary.md` and the design's "Vocabulary and Naming" section, and later into each task's "Context and interfaces". Apply never asks: a name the task did not list is derived from convention and recorded as `Naming assumed: <name>` in the task Evidence for review. See [naming.md](references/naming.md).
+New public types, modules, files, and key functions are decisions, not details. Inspect neighbouring conventions first, then present each name in a round with the recommendation, alternatives, and the evidence. Settled names go to the draft `glossary.md` and the design's "Vocabulary and Naming" section, and later into each task's **Interfaces**. Apply never asks: a name the task did not list is derived from convention and recorded as `Naming assumed: <name>` in the task Evidence for review. See [naming.md](references/naming.md).
 
 ## Design for isolation and clarity
 

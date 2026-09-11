@@ -91,36 +91,26 @@ Each round the user answers reshapes the tree: settled decisions push the fronti
 
 Number the questions, give the recommended answer and its consequence for each, and accept numbered, partial, out-of-order, or "all recommendations" replies without forcing the user to restate settled answers. Use the [marker vocabulary](markers.md) labels.
 
-Write the round as real Markdown, not as a text block: one heading per section, one sub-heading per question, one bullet per fact or option, a blank line between blocks. Emoji markers lead a bullet; they never replace list structure. Keep each bullet to one or two sentences and move longer evidence into `findings/`.
+Write the round as compact Markdown: one `##` heading for the round, a `**Situation**` block of marker lines, the overall recommendation, then one `❔ Open decision:` paragraph per question with its option bullets and two marker lines. No `###` per question. Keep each line to one or two sentences and move longer evidence into `findings/`.
 
 ```markdown
 ## Round <N> — <topic>
 
-### Situation
+**Situation**
 
-**Looked at**
-- 📌 Pinned fact: <what was inspected and what it showed> — 
-  🔗 Source: `<path>`
-- 📌 Pinned fact: <...>
+📌 Pinned fact: <what was inspected and what it showed> 🔗 Source: `<path:line>`
+📌 Pinned fact: <...>
+✅ Settled: Q<i> — <accepted decision>
+❌ Dropped: Q<j> — <rejected path, reason>
+🔁 Reopened: Q<k> as Q<m> — <which premise the new evidence broke>
+⏳ Held: <decision> — <what it waits on>
+Why now: <branch that just unblocked>. Still blocked: <branches waiting on this round>.
 
-**How it works today** (when the round touches code; full text also in `findings/<topic>.md`)
-- Purpose — <one or two sentences>
-- Lifecycle — <created / initialized / used / torn down, and the triggers>
-- Call chains — <caller chain>; <callee chain>; <who reads the result>
-- Data formats — <struct or record, key fields, invariants>
-- Simplified code — one code block, explanation embedded as comments at the relevant lines
+**How it works today** — only when the round touches code; full text in `findings/<topic>.md`, the round keeps purpose, chain tree and simplified code.
 
-**Where we are**
-- ✅ Settled: Q<i> — <accepted decision>
-- ❌ Dropped: Q<j> — <rejected path, reason>
-- 🔁 Reopened: Q<k> as Q<m> — <which premise the new evidence broke>
-- ⏳ Held: <decision> — <what it waits on>
+**Overall recommendation**: <the answer set if the user says "all recommendations">.
 
-**Why now** — <branch that just unblocked>. Still blocked: <branches waiting on this round>.
-
-**Overall recommendation** — <the answer set if the user says "all recommendations">.
-
-### ❔ Open decision: Q<m> — <title> ⭐ Heavyweight
+❔ Open decision: **Q<m> — <title>** ⭐ Heavyweight
 
 - **A.** <option — trade-off>
 - **B.** <option — trade-off>
@@ -129,8 +119,7 @@ Write the round as real Markdown, not as a text block: one heading per section, 
 👉 Recommendation: **A** — <reason>.
 ❗ Flip condition: <evidence that would reverse it>.
 
-### ❔ Open decision: Q<n> — <title> 
-✨ New: <what just unblocked it>
+❔ Open decision: **Q<n> — <title>** ✨ New: <what just unblocked it>
 
 - **A.** <option>
 - **B.** <option>
@@ -140,12 +129,16 @@ Write the round as real Markdown, not as a text block: one heading per section, 
 
 Rules that keep it scannable:
 
-- Every marker keeps its plain-text label (`Pinned fact:`, `Settled:`, `Recommendation:`, `Flip condition:`) per [markers.md](markers.md); the emoji is presentation only.
-- One `###` per question, led by `❔ Open decision:`; the `⭐ Heavyweight` / `✨ New:` marker sits at the end of the heading, never inline in prose.
-- Options are a bullet list with bold letters; one line each. Consequences that need more than a clause go under the option as an indented sub-bullet.
+- Every marker keeps its plain-text label (`Pinned fact:`, `Settled:`, `Recommendation:`, `Flip condition:`) per [markers.md](markers.md); the emoji is presentation only; one marker per line.
+- Each question is one `❔ Open decision:` paragraph with the bold `Q<n> — <title>`; the `⭐ Heavyweight` / `✨ New:` marker sits at the end of that line, never inline in prose.
+- Options are `- **A.**` bullets, one line each. Consequences that need more than a clause go under the option as an indented sub-bullet. Never indent option lines with four spaces: chat renders that as a code block.
 - Recommendation and flip condition are two separate lines directly under the options, so the eye finds them in the same place every time.
-- The Situation block has the labelled sub-blocks above and no others; "How it works today" may be long, everything else stays short. If "Looked at" exceeds five bullets, summarize to three and link a `findings/` file.
+- Situation lines stay short; "How it works today" may be long. If the pinned facts exceed five lines, summarize to three and link a `findings/` file. A decision matrix with more than about six rows also goes to `findings/`, and the round lists only the rows the user is likely to change.
 - Chat rendering collapses single newlines: always leave a blank line between blocks.
+
+## Collect the answers
+
+After the written round is sent, issue the same questions through the host's structured answer form (`AskQuestion` in Cursor): one form question per `❔ Open decision:`, the same letters and titles, the recommended option first and suffixed `(Recommended)`, multiple selection only when the question allows several picks. The written round is the brief the form points at; a form alone is never a round. If the form is cancelled or the host has no form, accept the answers as text and continue. Record form answers in `log.md` exactly as returned.
 
 ## Grilling around a proposal draft
 
