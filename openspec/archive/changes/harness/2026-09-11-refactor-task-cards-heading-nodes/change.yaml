@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_d02c0ef2-b2b1-48e5-8da4-a569f51e31bc
+  id: harness/refactor-task-cards-heading-nodes
+  title: Heading-node task cards with diff Files and a structured authoring contract
+workflow: angelscript
+created_at: 2026-09-11T09:11:52Z
+archived_at: 2026-09-11T10:05:31Z
+archive_schema: closure-v1
+closure:
+  kind: completed
