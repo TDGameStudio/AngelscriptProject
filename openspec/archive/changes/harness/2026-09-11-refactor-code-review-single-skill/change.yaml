@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_575c2853-17cd-423c-b0f6-0f917e9e1ee1
+  id: harness/refactor-code-review-single-skill
+  title: Collapse code-review to one Skill and define review rules
+workflow: angelscript
+created_at: 2026-09-11T07:58:53Z
+archived_at: 2026-09-11T08:04:30Z
+archive_schema: closure-v1
+closure:
+  kind: completed
