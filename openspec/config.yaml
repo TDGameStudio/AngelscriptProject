@@ -1,12 +1,12 @@
 workflow: angelscript
 context: |
   Language: English. All maintained OpenSpec records, manifests, workflows, templates, and attachments are written in English.
-  Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception.
+  Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception among maintained records; brainstorming drafts under openspec/drafts/ are working records whose log.md and findings/ may keep the user's original wording, while their design.md and handoff.md stay English.
   AngelscriptProject is an Unreal Engine 5.8 host repository whose primary deliverable is Plugins/Angelscript.
   Keep Source/AngelscriptProject minimal; plugin behavior belongs in the owning plugin or extension.
   Plugins/Angelscript, Plugins/AngelscriptGameplayTags, Plugins/AngelscriptGAS, and Tools/openspec are independent Git submodules. Source changes land in the owning submodule before the parent gitlink is updated.
   The repository may contain unrelated work from an ongoing large refactor. Inspect the current tree and preserve unrelated user changes.
-  Use one explicit or current-directory-discovered WorkspaceRoot for every operation. A Codex /goal invocation is external unattended continuation, not a repository mode, branch convention, or workspace selector.
+  Use one explicit or current-directory-discovered WorkspaceRoot for every operation. Unattended continuation is defined once in .agents/skills/harness/SKILL.md; it continues only approved Ready tasks and never asks the user.
   Root Tools PowerShell entry points are legacy deletion candidates and are not the live Harness route. Tools/openspec remains the tracked Rust source submodule; normal runtime uses .agents/skills/openspec/bin/openspec.exe.
 rules:
   proposal:
@@ -21,17 +21,17 @@ rules:
     - Separate decisions and rationale from implementation detail; record alternatives only when they materially affect the choice.
     - Call out compatibility, migration, module boundaries, failure modes, and rollback when relevant.
   tasks:
-    - Treat each top-level checkbox as one permanent X.Y DAG node; nested execution steps are numbered lists, never checkboxes.
+    - Treat each level-2 heading "## [ ] X.Y Title" as one permanent DAG node whose unindented body runs to the next "##"; group headings without a checkbox own nothing, and root checkbox list items are a retired format.
     - Keep the sole dependency graph in top-of-file task_graph.version 1 frontmatter; depends_on maps each quoted task ID to quoted direct prerequisites and uses [] for roots.
-    - The Graph key set must exactly match the task body IDs. Markdown order is presentation-only. Use a short checkbox title and four-space owned Markdown; require one direct **Files** path list and one direct **Verification** section with one fenced proving command. No old inline metadata is supported.
-    - Read .agents/skills/openspec/references/tasks.md. Default to Outcome, Context and interfaces, Cases, Implementation, Files and Verification; add Evidence only after execution. Supply literal inputs/results, actual interfaces, ownership and failure-state decisions, expected RED and ordered implementation/GREEN. Useful detail may be extensive; non-machine sections are optional Markdown authoring aids, not parser fields or a rigid template.
+    - The Graph key set must exactly match the task heading IDs. Markdown order is presentation-only. Require one direct **Files** paragraph followed by one ```diff tree (+ create, space modify, - delete, /-terminated directory prefixes) and one direct **Verification** section with one fenced proving command. No old inline or list metadata is supported.
+    - Read .agents/skills/openspec/references/tasks.md. Open with # title, ## Goal, ## Architecture, ## Global constraints (linking execution-conventions.md), optional ## File map and ## Requirement coverage with a self-review line. A behavior card carries a brief paragraph, Outcome, Interfaces (signatures in code fences, new names with their source), Cases (named cases with a role tag and Given/When/Then; at least one new RED; no tables), Files, Verification, optional Notes; add Evidence only after execution. Document or migration cards omit Interfaces and Cases. No step-level TDD scripts, no forbidden placeholder phrases, no size quotas.
     - Never reuse task IDs, uncheck completed tasks, mix live After fields with frontmatter, or maintain a second graph or status store. Derive parallel work only after checking file, artifact, and resource-lease conflicts.
   apply:
     - Update checkbox state only after the associated work and stated verification have actually completed.
 operations:
   apply:
     - Preserve unrelated dirty-worktree changes and keep plugin logic in the owning plugin.
-    - Investigate and resolve in-scope failures autonomously in the selected workspace; stop only at a real authorization boundary. Codex /goal continuation does not change this policy.
+    - Investigate and resolve in-scope failures autonomously in the selected workspace; stop only at a real authorization boundary. Unattended continuation does not change this policy.
     - Import Harness once and route build, test, and OpenSpec commands through Invoke-Harness, selecting the smallest relevant verification scope first.
   archive:
     - Use completed closure only after every task and verification passes, durable specs and attachments are ready, and every explicitly requested Review is closed or superseded. Do not create an automatic Final Review or a not-required placeholder; abandoned or superseded closure requires reasons and incomplete-task dispositions.

@@ -5,54 +5,81 @@ task_graph:
     "1.1": []
 ---
 
-<!-- Replace the scaffold with actual inspected interfaces and literal cases.
+# <!-- Change title -->
+
+<!-- Replace every comment with inspected interfaces and literal cases.
      Read .agents/skills/openspec/references/tasks.md in this project.
      Keep related tests, implementation and wiring in one bounded outcome.
      Add more permanent IDs and exact dependency entries when needed. -->
 
+## Goal
+
+<!-- One sentence. -->
+
+## Architecture
+
+<!-- Two or three sentences and a design.md link when one exists. -->
+
+## Global constraints
+
+- <!-- One line per plan-specific constraint: prerequisite Changes, test identities, forbidden substitutes. -->
+- Execution conventions: `.agents/skills/harness/references/execution-conventions.md`.
+
+## Requirement coverage
+
+| Requirement | Tasks |
+|---|---|
+| <!-- requirement or acceptance condition --> | 1.1 |
+
+Self-review <!-- date -->: coverage <!-- complete -->; placeholders <!-- none -->; symbols <!-- consistent with design -->. Record: `attachments/data/planning-validation.md`.
+
 ## 1. <!-- Deliverable group -->
 
-- [ ] 1.1 <!-- Short outcome title -->
+## [ ] 1.1 <!-- Short outcome title -->
 
-    **Outcome**
+<!-- Brief paragraph: what changes and what stays. -->
 
-    <!-- State the accepted behavior, current gap and explicit exclusions. -->
+**Outcome**
 
-    **Context and interfaces**
+<!-- State the accepted behavior and its explicit exclusions. -->
 
-    <!-- Name consumed/produced symbols, signatures and artifact shapes.
-    Explain relevant identity, lifetime, ownership, errors and prerequisite
-    handoffs. Include a concrete API or data example when it settles a decision. -->
+**Interfaces**
 
-    **Cases**
+Consumes:
 
-    <!-- Give literal normal, failure and boundary inputs and expected outputs.
-    Distinguish new missing-behavior RED cases from existing regression controls.
-    Use prose, a table, fenced fixtures, or a useful combination; remove unused
-    forms rather than filling a field matrix. -->
+```text
+<!-- inspected signatures with file:line -->
+```
 
-    **Implementation**
+Produces:
 
-    1. <!-- Prepare the related cases; run the selection together and observe
-       expected RED for the missing behavior. -->
-    2. <!-- Implement the bounded behavior and necessary consumer wiring. -->
-    3. <!-- Run the same cases together for GREEN; refactor and reverify if needed. -->
+```text
+<!-- new signatures; every new public name followed by its source (glossary.md, naming round, convention) -->
+```
 
-    **Files**
+**Cases**
 
-    - `path/to/implementation`
-    - `path/to/tests`
+1. **<!-- case name -->** — new RED
+   Given <!-- literal input --> When <!-- action --> Then <!-- independently derived expected result -->
+2. **<!-- case name -->** — existing control
+   Given <!-- input --> Then <!-- unchanged result -->
 
-    **Verification**
+**Files**
 
-    <!-- State exact working directory and setup. Choose the smallest proving
-    scope through the project's impact policy; explain any broader selection. -->
+```diff
+ path/to/implementation
++path/to/tests
+```
 
-    ```sh
-    <exact executable proving command>
-    ```
+**Verification**
 
-    <!-- State concrete completion conditions and required case coverage.
-    Add Evidence only after real execution, with actual results and any shared
-    run's task-to-case mapping. All direct detail blocks use four spaces.
-    Useful detail may be extensive; no word-count or compactness target. -->
+<!-- State exact working directory and setup. Choose the smallest proving
+scope through the project's impact policy; explain any broader selection. -->
+
+```sh
+<exact executable proving command>
+```
+
+<!-- State concrete completion conditions and required case coverage.
+Add Evidence only after real execution, with actual results and any shared
+run's task-to-case mapping. Body lines are not indented. -->

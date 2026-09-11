@@ -32,28 +32,31 @@ Harness MUST use one Git-derived workspace model in both the primary checkout an
 
 #### Scenario: Interpret Codex Goal continuation
 - **WHEN** work is running under Codex `/goal`
-  > `/goal` contributes unattended continuation only; it does not choose a branch, create a worktree, or expand Git authority.
+
+    > `/goal` contributes unattended continuation only; it does not choose a branch, create a worktree, or expand Git authority.
+
 - **THEN** repository selection still comes from the explicit or discoverable WorkspaceRoot and no repository-mode state is created
-  > The same selected-workspace contract applies to interactive and repeated continuation calls.
-  >
-  > - Repository identity remains the explicit or current-directory-discovered `WorkspaceRoot`.
-  > - No repository mode or machine-global Goal selection is created.
+
+    > The same selected-workspace contract applies to interactive and repeated continuation calls.
+    >
+    > - Repository identity remains the explicit or current-directory-discovered `WorkspaceRoot`.
+    > - No repository mode or machine-global Goal selection is created.
 
 #### Scenario: Reject a route target override
 - **GIVEN** Harness has resolved one exact selected Context
 - **WHEN** caller parameters supply a blank, conflicting, or different dispatcher-owned root or internal Context
 - **THEN** Harness returns `ContextAuthorityMismatch` before loading or invoking the leaf and does not mutate either the selected or requested target
 
-> Inputs: Workspace routes, Git routes, Unreal routes, and internal Harness routes with both canonical parameter names and supported aliases.
-> Observables: Matching explicit roots are normalized to the selected Context; rejected results contain no leaf data and no target-side effect.
-> Boundaries: Portable native OpenSpec and task routes receive authority through their working directory and never accept a second repository-selection parameter.
-> Verification: Table-driven dispatcher fixtures cover every routed root category and an alternate registered worktree.
+    > Inputs: Workspace routes, Git routes, Unreal routes, and internal Harness routes with both canonical parameter names and supported aliases.
+    > Observables: Matching explicit roots are normalized to the selected Context; rejected results contain no leaf data and no target-side effect.
+    > Boundaries: Portable native OpenSpec and task routes receive authority through their working directory and never accept a second repository-selection parameter.
+    > Verification: Table-driven dispatcher fixtures cover every routed root category and an alternate registered worktree.
 
 #### Scenario: Integrate from the primary Context
 - **WHEN** `git.integrate` is dispatched from the canonical primary Context with an explicitly selected registered linked source
 - **THEN** the target remains that primary Context and `SourceWorkspaceRoot` is the only authorized different workspace root
 
-> Boundaries: Selecting a linked Context and silently redirecting its target to `PrimaryRoot` is forbidden.
+    > Boundaries: Selecting a linked Context and silently redirecting its target to `PrimaryRoot` is forbidden.
 
 ### Requirement: Retained Harness performance evidence
 
@@ -93,13 +96,13 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 ### Requirement: Harness-recognized Task Graph
 
-`tasks.md` MUST be the change's only current execution state and DAG. A current file MUST declare one versioned YAML-frontmatter `task_graph.depends_on` map whose directly quoted stable `X.Y` keys exactly match its root checkbox IDs. Each checkbox MUST have a short title and four-space owned Markdown with exactly one direct **Files** path-list section and one direct **Verification** section containing one non-empty fenced proving command. A completed task MUST NOT return to incomplete, and an ID MUST NOT be reused or renumbered.
+`tasks.md` MUST be the change's only current execution state and DAG. A current file MUST declare one versioned YAML-frontmatter `task_graph.depends_on` map whose directly quoted stable `X.Y` keys exactly match its task-node IDs. A task node MUST be a level-2 heading whose text starts with `[ ] ` or `[x] `, then the `X.Y` ID, then a short title; its body MUST be every Markdown block until the next level-1 or level-2 heading, written without indentation. Each node MUST contain exactly one direct **Files** paragraph followed by one fenced `diff` tree and one direct **Verification** paragraph followed by one non-empty fenced proving command. In the Files tree a line beginning `+` creates, `-` deletes, and a leading space modifies; a path ending in `/` prefixes the deeper-indented lines beneath it; text after ` # ` is a comment; the literal `none` alone denotes file-free work. The projection MUST keep `files` as plain paths and MUST add `file_roles` with each path's role. Level-2 headings without a checkbox are group headings and MUST NOT own Files or Verification. Root-level checkbox list items, inline verification, blockquote Files and body After metadata MUST all be reported as `unsupported-task-format` with no Ready work. A completed task MUST NOT return to incomplete, and an ID MUST NOT be reused or renumbered.
 
 #### Scenario: Derive ready work through Harness
 
 - **GIVEN** a valid graph has completed `1.1`, pending `1.2` depending on `1.1`, pending `1.3` depending on `1.2`, and independent pending `2.1`
 
-    Every task owns its exact Files selection and proving command. Graph keys
+    Every task owns its exact Files tree and proving command. Graph keys
     and body task IDs match; no dependency is inferred from display order.
 
 - **WHEN** Harness reads the current task plan
@@ -107,8 +110,9 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 - **THEN** `1.2` and `2.1` are Ready, `1.3` remains blocked, and completed `1.1` is not Ready
 
     The public projection retains `id / description / done / files / verify /
-    after / ready / line`. Parallel execution additionally requires disjoint
-    files, generated artifacts and resource leases.
+    after / ready / line` and adds `file_roles`. Parallel execution
+    additionally requires disjoint files, generated artifacts and resource
+    leases.
 
 - **BUT** any graph or task-card issue suppresses every Ready result
 
@@ -122,114 +126,244 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 - **THEN** output uses natural numeric task-ID order and derives dependencies only from `depends_on`
 
-    Nested headings, tables, quotations and fenced task examples remain content
-    of their enclosing card. They do not create nodes or end the owning task.
+    Group headings, nested headings of level 3 or deeper, tables, quotations
+    and fenced task examples remain content of their enclosing card or group.
+    They do not create nodes; only a level-2 heading ends the owning task.
 
 #### Scenario: Read historical task records
 
-- **GIVEN** a record still uses inline verification, blockquote Files or body After metadata
+- **GIVEN** a record still uses root-level checkbox list nodes, inline verification, blockquote Files or body After metadata
 
 - **WHEN** the current parser is asked to inspect it
 
-- **THEN** the parser reports explicit unsupported-format diagnostics and exposes no Ready work
+- **THEN** the parser reports explicit `unsupported-task-format` diagnostics naming the heading-node form and exposes no Ready work
 
     There is no old-format fallback, automatic conversion or dependency
-    inference from retired After fields. The original record bytes remain
+    inference from retired fields. The original record bytes remain
     unchanged; migration is a separately scoped action.
 
 #### Scenario: Preserve exact metadata values
 
-- **GIVEN** one task lists `src/a b.rs` and `tests/a,b.rs` as separate code-formatted Files items
+- **GIVEN** one task's Files tree lists `src/a b.rs` as a created file and `tests/a,b.rs` as a modified file under a `/`-terminated directory line with a ` # ` comment
 
     Its Verification fence contains a command spanning multiple lines. A
     quoted example elsewhere in the card also contains a Files label.
 
 - **WHEN** the parser projects the task
 
-- **THEN** it returns exactly the two paths and preserves internal command newlines
+- **THEN** it returns exactly the two resolved paths in `files`, their roles in `file_roles`, and preserves internal command newlines
 
-    Commas, spaces and Unicode inside a path are data, not delimiters. The
-    quoted label supplies no metadata. Missing or duplicate direct sections,
-    empty commands and multiple proving fences produce diagnostics.
+    Commas, spaces and Unicode inside a path are data, not delimiters; the
+    comment is not part of the path. The quoted label supplies no metadata.
+    Missing or duplicate direct sections, empty commands, a malformed tree
+    line and multiple proving fences produce diagnostics.
 
 ### Requirement: Two-tier exploration
 
-Harness MUST distinguish deep pre-creation discovery from task-local technical exploration. Before a new feature, architecture refactor, or major behavior-change Change is created, unresolved scope, architecture, or integration choices MUST trigger the read-only Explore Gate. A decision-complete handoff or an already explicit approved plan MAY proceed directly to Change creation. After target Change creation, deep Explore MUST NOT restart; task-local uncertainty stays in Apply unless evidence invalidates canonical planning truth and triggers update/replan. A request to explain architecture, workflow, state, ownership, or three or more related branches SHOULD invoke `visual-explain`; routine one-step work and already-clear prose MUST NOT incur that cost.
+Harness MUST distinguish deep pre-creation brainstorming from task-local technical exploration. Before a new feature, architecture refactor, or major behavior-change Change is created, unresolved scope, architecture, integration, or user-owned product choices MUST trigger the Brainstorm Gate owned by the `brainstorming` Skill. The gate MUST NOT be skipped while any user-owned decision remains unconfirmed; a clear defect repair or mechanical documentation change MAY skip it only with one stated assumption. A decision-complete handoff or an already explicit approved plan MAY proceed directly to Change creation. Brainstorming MUST run only with the user present; unattended continuation MUST NOT open brainstorming or start a draft. After target Change creation, `design`-mode brainstorming MUST NOT reopen for that Change's scope and Apply MUST NOT ask the user questions; `research` and `proposal` drafts are independent of any Change and MAY be opened at any time, but a finding that changes an active plan is planning-invalidating evidence for update/replan; task-local uncertainty stays in Apply unless evidence invalidates canonical planning truth and triggers update/replan. A user-owned decision that surfaces inside a task MUST be recorded as planning-invalidating evidence and parked through `openspec-update-change` replan with the agent's recommendation until the next attended grill round answers it. A request to explain architecture, workflow, state, ownership, or three or more related branches SHOULD invoke `visual-explain`; routine one-step work and already-clear prose MUST NOT incur that cost.
 
 #### Scenario: Shape a major change before planning
-- **WHEN** a major change still contains blocking design choices before registration
-- **THEN** `openspec-explore` produces a decision-complete handoff before the target Change is created
+
+- **WHEN** a major change still contains blocking design choices or unconfirmed user-owned decisions before registration
+
+- **THEN** `brainstorming` runs grilling rounds until the frontier is empty and produces a decision-complete handoff before the target Change is created
+
+    Every question to the user is a grill round, including a single question
+    or a naming choice. Each round opens with a situation brief (what was
+    inspected, what is settled, why these questions are unblocked now, the
+    overall recommendation), then asks every question whose prerequisites are
+    settled, numbers the questions, and states a recommended answer. The round
+    is compact Markdown using the marker vocabulary: one heading per round,
+    one `❔ Open decision:` paragraph per question with lettered option
+    bullets, a recommendation line and a flip-condition line. After the
+    written round is sent, the same questions are issued through the host's
+    structured answer form when one exists, with matching letters and the
+    recommended option first; the form never replaces the written round, and
+    a cancelled or missing form falls back to a text reply. The round and the
+    user's reply are appended verbatim to the draft log. Facts are
+    investigated by the agent; decisions are put to the user. No Change, code,
+    or apply action occurs before the user approves the presented design.
 
 #### Scenario: Continue from an explicit accepted plan
-- **WHEN** scope, boundaries, and verification are already decision-complete
-- **THEN** Harness creates or updates the canonical Change without repeating deep exploration
+
+- **WHEN** scope, boundaries, naming, and verification are already decision-complete
+
+- **THEN** Harness creates or updates the canonical Change without repeating brainstorming
+
+#### Scenario: Skip the gate for a clear defect
+
+- **WHEN** the request is a clear defect repair or mechanical documentation change with no user-owned decision left open
+
+- **THEN** the agent states the one assumption that justifies skipping and proceeds
+
+- **BUT** an unconfirmed user-owned choice reopens the gate regardless of perceived simplicity
+
+#### Scenario: Park a user-owned decision found during unattended continuation
+
+- **GIVEN** an unattended run is implementing a Ready task of an approved Change
+
+- **WHEN** the task reveals a product-scope or behavior choice the design never settled
+
+- **THEN** the agent records the finding, routes it to `openspec-update-change` replan as an open decision with its recommendation, and stops advancing that branch
+
+- **BUT** it does not open `brainstorming`, create a draft, or decide the choice locally
 
 #### Scenario: Explain a multi-branch workflow
+
 - **WHEN** the user needs to understand a workflow with multiple states, branches, or owners
+
 - **THEN** Harness routes a small useful visualization and keeps the underlying canonical state in plain text
 
 ### Requirement: Exploration markers and durable carryover
 
-Pre-Change exploration MAY use the project marker vocabulary and compact Markdown visualizations to make facts, decisions, risks, boundaries, and knowledge candidates easy to scan. Every marker MUST retain a plain-text label and MUST NOT be the sole machine-readable state. The decision-complete handoff MUST classify accepted carryover before Change planning. After the target Change is created, canonical truth MUST enter proposal/spec/design/tasks; non-obvious decisions and their useful visuals MUST enter indexed talks when their rationale prevents re-decision; reusable evidence-backed insights or reusable visuals MUST enter indexed change-local knowledge.
+Pre-Change brainstorming MAY use the project marker vocabulary and compact Markdown visualizations to make facts, decisions, risks, boundaries, and knowledge candidates easy to scan. Every marker MUST retain a plain-text label and MUST NOT be the sole machine-readable state. The final brainstorming round MUST present every carryover candidate with its draft source, target (talk or knowledge), and reason, and the user MUST confirm the list before it enters the decision-complete handoff. `openspec-create-change` MUST be the only Skill that creates the target Change from a designed draft; in the same step it MUST copy the approved draft `design.md`, `handoff.md` and `glossary.md` into indexed `attachments/drafts/`, MUST copy every draft finding that the design or a confirmed talk or knowledge cites into indexed `attachments/drafts/findings/`, and MUST materialize exactly the confirmed candidates — non-obvious decisions and their useful visuals into indexed talks, reusable evidence-backed insights or visuals into indexed change-local knowledge — with provenance naming the draft round or the copied finding. Because drafts are local and git-ignored, no Change file MAY reference an `openspec/drafts/` path. Afterwards canonical truth MUST enter proposal/spec/design/tasks through `openspec-continue-change`, which MUST NOT recreate the seeded carryover.
 
-When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient questions, navigation state, task state, progress evidence, and the full exploration transcript MUST NOT be copied into the Change.
+When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient navigation state, task state, and progress evidence MUST NOT be copied into the Change; the full round log stays in the draft, which is the durable owner of the conversation.
 
-#### Scenario: Scan a question round without changing semantics
-- **WHEN** interactive pre-Change exploration uses markers for a decision frontier
+#### Scenario: Scan a grilling round without changing semantics
+
+- **WHEN** interactive pre-Change brainstorming uses markers for a decision frontier
+
 - **THEN** each marked line remains understandable without emoji and durable task/review/issue state continues to come from its canonical schema
 
 #### Scenario: Carry accepted exploration into a new Change
+
 - **GIVEN** the target Change exists and the decision-complete handoff has classified its accepted carryover
+
 - **WHEN** an accepted handoff contains a non-obvious decision and a reusable insight after the target Change is created
-- **THEN** the decision and useful visualization are indexed in one talk, the reusable insight is indexed in change-local knowledge, and settled current truth is copied into the canonical planning artifacts
-- **AND** transient questions, navigation state, execution progress, and the full exploration transcript remain outside the Change
+
+- **THEN** `openspec-create-change` copies the approved draft `design.md`, `handoff.md` and `glossary.md` and the cited findings into `attachments/drafts/`, indexes each once, materializes the confirmed decision and its visualization as one talk and the confirmed insight as change-local knowledge, and `openspec-continue-change` then copies settled current truth into the canonical planning artifacts
+
+    The draft README records `status: handed-off` and `target_change` in the
+    same step so the source discussion and the Change point at each other.
+    Each talk and knowledge cites the copied finding by its Change-relative
+    path in English; the original wording stays in the draft `log.md`.
+
+- **AND** only the round log and uncited findings remain in the draft; the Change is self-contained once the draft directory disappears
+
 - **BUT** a talk is retained only when its rationale prevents likely re-decision, and knowledge is retained only when the insight is reusable beyond the originating task
 
-> Inputs: The accepted handoff, its evidence and provenance, the non-obvious decision, the reusable insight, and the settled canonical behavior.
->
-> Observables: Proposal, specification, design, or tasks contain current truth; the attachment index names the talk and knowledge candidate; the capability knowledge index changes only after explicit promotion.
->
-> Boundaries: The talk owns decision rationale, the knowledge candidate owns reusable guidance, and neither becomes a parallel source of current requirements or task state.
->
-> Verification: Canonical artifacts and their attachment and knowledge indexes provide the stable ownership oracle for every retained carryover item.
+    > Inputs: The accepted handoff, its evidence and provenance, the non-obvious decision, the reusable insight, and the settled canonical behavior.
+    >
+    > Observables: Proposal, specification, design, or tasks contain current truth; the attachment index names the draft copies, the copied findings, the talk, and the knowledge candidate; the capability knowledge index changes only after explicit promotion.
+    >
+    > Boundaries: The draft owns the conversation, the talk owns decision rationale, the knowledge candidate owns reusable guidance, and none becomes a parallel source of current requirements or task state.
 
 #### Scenario: Preserve a major user-intent baseline
+
 - **WHEN** a major user-led refactor is shaped by several interacting goals, corrections, exclusions, or rejected interpretations whose rationale would otherwise be lost
+
 - **THEN** planning indexes one concise intent talk with exact provenance and canonical mappings while proposal/spec/design/tasks retain current truth
 
 #### Scenario: Keep routine work free of intent boilerplate
+
 - **WHEN** a Change is a clear defect, mechanical edit, one-step request, or contains no rationale beyond its canonical artifacts
-- **THEN** no intent talk or not-required placeholder is created and closure does not infer one from conversation or diff size
+
+- **THEN** no intent talk, draft copy, or not-required placeholder is created and closure does not infer one from conversation or diff size
 
 #### Scenario: Repair missing historical carryover honestly
+
 - **WHEN** later evidence shows that required user rationale was never recorded before a source Change was archived
+
 - **THEN** a suitable active Change records a clearly dated reconstruction and does not edit the immutable archive or claim contemporaneous provenance
 
+#### Scenario: Reject transcript accumulation inside the Change
+
+- **WHEN** brainstorming contains temporary held/reopened navigation, redundant prose, progress state, or a one-off visualization with no later decision or reuse value
+
+- **THEN** the Change receives only the approved design, handoff, qualifying talks, and knowledge, while the draft keeps the rest
+
 #### Scenario: Reject transcript accumulation
+
 - **WHEN** exploration contains temporary held/reopened navigation, redundant prose, progress state, or a one-off visualization with no later decision or reuse value
+
 - **THEN** the handoff discards it rather than creating a parallel exploration diary
+
+### Requirement: Persistent brainstorming drafts
+
+Every brainstorming session MUST record itself under `openspec/drafts/<domain>/<topic>/` from its first round, and a draft MUST be opened as soon as a reply contains a proposal, a trade-off, or more than one diagram. Brainstorming MUST write nothing outside the draft. The draft MUST contain `README.md` with `mode` (`research`, `proposal`, or `design`), `status` (`exploring`, `designed`, `handed-off`, `parked`, or `abandoned`), `opened`, and, once known, `target_change`; only a `design` draft MAY reach `designed`; an append-only `log.md` holding each round's questions, the user's answers in their own words, and agent conclusions; `findings/` for agent evidence; `glossary.md` for chosen and rejected names; `design.md` for the approved design; and `handoff.md` for the decision-complete handoff. Drafts MUST remain under `openspec/drafts/` after Change creation. Drafts MUST NOT carry task state, Ready state, or checkboxes, MUST NOT be scanned by Harness Change validation, and MUST NOT be treated as an OpenSpec artifact by the portable CLI. `design.md` and `handoff.md` MUST be English; `log.md` and `findings/` MAY retain the user's original-language wording.
+
+#### Scenario: Open a draft on the first round
+
+- **WHEN** `brainstorming` asks its first grilling round
+
+- **THEN** `openspec/drafts/<domain>/<topic>/README.md` exists with `status: exploring` and `log.md` contains the round and, once answered, the user's reply
+
+#### Scenario: Abandon a draft
+
+- **WHEN** the user drops the idea before a Change is created
+
+- **THEN** the draft README records `status: abandoned` and nothing is copied into any Change
+
+#### Scenario: Research request with diagrams
+
+- **WHEN** the user asks how a subsystem works and the reply carries more than one diagram or a comparison
+
+- **THEN** a `mode: research` draft is opened and announced once, the diagrams and conclusions are written to `findings/<topic>.md`, and no design approval is requested
+
+#### Scenario: Proposal request
+
+- **WHEN** the user asks for a proposal
+
+- **THEN** a `mode: proposal` draft writes `design.md` first as a marked proposal draft and subsequent grill questions each name the section they would change
+
+- **AND** creating a Change from it requires upgrading the draft to `mode: design` and completing the naming and carryover rounds
+
+#### Scenario: Park a draft without a Change
+
+- **WHEN** the exploration is worth keeping but the user decides not to create a Change now
+
+- **THEN** the draft README records `status: parked` with one line on what would revive it, the findings and glossary stay discoverable under `openspec/drafts/`, and no Change or attachment is created
+
+- **AND** reviving it reopens `brainstorming` on the same directory with `status: exploring`, appending to `log.md` rather than starting over
+
+#### Scenario: Validate records with drafts present
+
+- **WHEN** strict OpenSpec validation or Harness `task.status` runs while `openspec/drafts/` contains files
+
+- **THEN** the drafts produce no diagnostics and no Ready work, and the active Change list is unchanged
+
+### Requirement: Naming confirmation before implementation
+
+New public names — types, modules, files, and key functions — MUST be confirmed by the user before code is written. `brainstorming` MUST grill each new public name after inspecting neighbouring conventions and record the choice in the draft `glossary.md` and the design's vocabulary section. Task authoring MUST list every new public name the task introduces in its **Interfaces** section with its source. Apply MUST NOT ask the user for a name: when implementation requires a new public name that the task does not list, Apply MUST choose the convention-derived name and record `Naming assumed: <name>` in the task's Evidence, and verification MUST surface every assumed name for user review before the task closes.
+
+#### Scenario: Grill a name during planning
+
+- **WHEN** the design introduces a new public type
+
+- **THEN** the round presents the recommended name, alternatives, and the neighbouring convention evidence, and the settled name is written to `glossary.md` and later to the task's Interfaces
+
+#### Scenario: Continue past an unplanned name in Apply
+
+- **WHEN** a Ready task requires a new public class or file whose name is not in its **Interfaces**
+
+- **THEN** the agent proceeds with the convention-derived name and records `Naming assumed: <name> — <reason>` in the task Evidence
+
+    Attended and unattended runs behave identically; Apply has no interactive
+    stop. Verification lists every `Naming assumed` entry so the user can
+    rename before commit.
+
+- **BUT** repeated assumed names indicate that task authoring skipped the naming round, which is corrected in planning rather than by asking during Apply
 
 ### Requirement: Ready-to-execute Task authoring
 
-Planning MUST map affected files, artifacts and exclusive resources, divide work into independently acceptable bounded outcomes, and map every requirement and acceptance condition to a node. Behavior tasks SHALL supply concrete inputs and independently expected results, missing-behavior RED, actual interface handoffs, relevant ownership/lifetime/failure-state decisions, implementation order and completion criteria before execution. Related tests, implementation, wiring and necessary documentation SHOULD stay with their outcome. Tasks MUST NOT be sized by fixed word, test, file, time or process-launch quotas.
-
-The default reading order SHOULD be Outcome, Context and interfaces, Cases, Implementation, Files and Verification. Evidence MUST be added only after actual execution. Non-machine sections MAY be combined, renamed or expanded. Useful detail MAY be extensive and use ordinary Markdown; Files and Verification retain their exact direct-section contract.
+Planning MUST map affected files, artifacts and exclusive resources, divide work into stage-level independently acceptable outcomes, and map every requirement and acceptance condition to a node. A plan MUST open with `## Goal`, `## Architecture`, `## Global constraints` and `## Requirement coverage` sections and MAY add `## File map`; Harness execution policy MUST be linked from `.agents/skills/harness/references/execution-conventions.md`, not repeated. A behavior task MUST supply, in order, a brief paragraph, **Outcome** with explicit exclusions, **Interfaces** with consumed and produced signatures in code fences and every new public name with its source whenever any symbol is produced or consumed, **Cases** as named cases each tagged new RED, existing control or boundary and carrying the literal input and independently derived expected result in Given / When / Then clauses or one-line clauses, **Files**, **Verification**, and MAY add **Notes**; a document or migration task MAY omit Interfaces and Cases. Cards MUST NOT contain step-level test-driven-development scripts; the TDD Skill derives grouped RED/GREEN from Cases. Evidence MUST be added only after actual execution. Cards MUST NOT contain the forbidden placeholder phrases listed in the task authoring reference. Before a plan is accepted, a three-item self-review — requirement coverage, placeholder scan, cross-task symbol consistency — MUST be recorded in `attachments/data/planning-validation.md`. Skill-side preflight MUST refuse to start a task whose mandatory labels, RED case or interface fence are missing. Tasks MUST NOT be sized by fixed word, test, file, time or process-launch quotas; mandatory labels are information requirements, not size targets.
 
 #### Scenario: Execute a detailed task card
 
 - **WHEN** a task has non-trivial interfaces, state transitions or failure behavior
 
-- **THEN** its card supplies the actual signatures, literal cases and decisions needed to implement and judge completion
+- **THEN** its card supplies the actual signatures, named literal cases and decisions needed to implement and judge completion
 
-    Code examples, tables, nested headings, prose, lists, links and images stay
-    within its four-space owner. Section presence or length alone does not
-    establish planning completeness.
+    Code fences, lists, links and images stay in the unindented body under
+    the task heading. Label presence alone does not establish planning
+    completeness; the preflight checks presence, the reviewer checks content.
 
 #### Scenario: Keep a simple task card small
 
-- **WHEN** outcome, interfaces, cases, Files and Verification already settle all relevant decisions
+- **WHEN** a document or migration task's outcome, Files and Verification already settle all relevant decisions
 
-- **THEN** the card may combine optional explanation and omit empty scaffolding
+- **THEN** the card omits Interfaces and Cases and adds no empty scaffolding
 
     Shortness is a consequence of a self-contained contract, not a target that
     permits missing acceptance conditions.
@@ -249,14 +383,24 @@ The default reading order SHOULD be Outcome, Context and interfaces, Cases, Impl
 
 - **WHEN** an author prepares a behavior task for a zero-context implementer
 
-- **THEN** the card identifies concrete missing-behavior cases and existing regression controls before grouped RED
+- **THEN** the card names concrete missing-behavior cases tagged new RED and existing regression controls, and the TDD Skill orders test preparation, observed RED, bounded implementation and grouped GREEN from them
 
-    The task orders test preparation, observed RED, bounded implementation,
-    grouped GREEN and relevant refactoring. One direct Verification command
-    has an exact working context, nonempty case selection and completion
-    criteria; shared proof retains task-specific case mapping.
+    One direct Verification command has an exact working context, nonempty
+    case selection and completion criteria; shared proof retains task-specific
+    case mapping.
 
-- **AND** templates and lifecycle preflight judge information sufficiency rather than matching prescribed wording
+- **AND** templates and lifecycle preflight judge information sufficiency rather than matching prescribed wording beyond the mandatory labels
+
+#### Scenario: Block a thin card at apply time
+
+- **GIVEN** a migrated plan whose card lacks an Interfaces fence or any new RED case
+
+- **WHEN** `openspec-apply-change` selects that task
+
+- **THEN** preflight refuses to start it and names the missing element; the owning Change repairs the card through `openspec-update-change`
+
+    Syntax migration never fills in interfaces or cases on another Change's
+    behalf.
 
 ### Requirement: Flexible Scenario Card authoring
 
@@ -336,13 +480,13 @@ A Review finding MUST NOT directly trigger Replan. Harness may apply a Replan on
 - **AND** the Replan records the affected behavior, task and edge changes, retained work, and resulting canonical plan
 - **BUT** a finding, severity label, preference, or implementation defect inside an otherwise valid task does not by itself authorize Replan
 
-> Inputs: The exact evidence reference and the affected requirement, design boundary, acceptance condition, task boundary, dependency edge, or completion record.
->
-> Observables: One immutable applied Replan records old-task disposition and a bounded semantic diff, while the current canonical artifacts and Task Graph contain the repaired truth.
->
-> Boundaries: Valid completed work remains preserved; local implementation repair stays in its owning task or material issue when planning truth remains valid.
->
-> Verification: Replan protocol fixtures require applied-only state, old-task dispositions, preserved work, and a bounded task, edge, artifact, and path-status diff.
+    > Inputs: The exact evidence reference and the affected requirement, design boundary, acceptance condition, task boundary, dependency edge, or completion record.
+    >
+    > Observables: One immutable applied Replan records old-task disposition and a bounded semantic diff, while the current canonical artifacts and Task Graph contain the repaired truth.
+    >
+    > Boundaries: Valid completed work remains preserved; local implementation repair stays in its owning task or material issue when planning truth remains valid.
+    >
+    > Verification: Replan protocol fixtures require applied-only state, old-task dispositions, preserved work, and a bounded task, edge, artifact, and path-status diff.
 
 ### Requirement: Explicit Review intake and direct closure
 
@@ -350,44 +494,100 @@ Harness MUST NOT start Incident Review, Final Review, or any other Review automa
 
 The user or an external agent MAY explicitly request a fixed-snapshot Review. Harness SHALL register that Review with a unique file and materializable immutable content reference, reproduce and triage its findings, and MAY run the assigned reviewer asynchronously when useful; asynchronous execution is optional and does not become the default lifecycle. A finding never directly triggers replan. Before completed archive, every explicitly registered Review file MUST be `closed` or `superseded`, no Critical or Required finding may remain open or deferred, and resolutions MUST retain evidence. Review records MUST preserve actual lifecycle times, concrete findings, and detailed resolution history without a report line limit.
 
+The single `code-review` Skill owns the reviewer's stance. A reviewer MUST read tests and task cards before code, MUST inspect other revisions read-only, MUST NOT dispatch further reviewers, and MUST label a finding whose defect lies in the requirement, design, or task card as a planning finding without prescribing Replan. Severity MUST use the retained names with fixed meaning: `Critical` is wrong behavior, data or safety loss, or a broken contract that blocks; `Required` must be fixed before the Change closes but does not endanger the snapshot's correctness claim; `Advisory` is optional and MAY be deferred only with a named follow-up. A re-review MUST check only the previous findings' resolution conditions against a new immutable snapshot; a new scope MUST become a new Review. The coordinator MAY fan one snapshot out into several Reviews by area with distinct reviewers and non-overlapping scopes, MUST clarify every ambiguous finding before repairing any, and MUST route a finding that contradicts a user-owned decision to the user when attended or to `openspec-update-change` when unattended.
+
 #### Scenario: Archive verified work without Review
+
 - **WHEN** every task and required verification passes, durable truth is synchronized, closure evidence is ready, and no Review was explicitly requested
+
 - **THEN** Harness prepares completed closure and archives directly without creating a Review record or impact classification ceremony
 
 #### Scenario: Replan a discovered planning failure
+
 - **WHEN** implementation or verification evidence invalidates a requirement, design boundary, verification contract, required artifact, or Task DAG edge
+
 - **THEN** Harness applies the replan protocol, preserves valid work, repairs the new plan, and verifies again without starting Review automatically
 
 #### Scenario: Process an explicitly requested Review
+
 - **WHEN** the user or an external agent requests Review of an exact snapshot
+
 - **THEN** Harness registers and triages the Review, optionally delegates it asynchronously, and blocks archive only until that explicit Review is resolved or superseded
+
 - **AND** the Review is bound to one materializable immutable snapshot and retains its actual assignment, completion, and closure lifecycle
+
 - **BUT** report arrival or finding severity does not trigger Replan until evidence proves that accepted planning truth is invalid
 
-> Context: Review is an explicit intake path rather than automatic lifecycle cadence.
->
-> Inputs: The requesting authority, Review kind, exact immutable snapshot reference and digest, and any already available verification evidence.
->
-> Observables: One unique Review file records concrete findings, dispositions, repair evidence, any required re-review, and a final `closed` or `superseded` state.
->
-> Boundaries: An asynchronous reviewer writes only its assigned Review file; disjoint work may continue, but the reviewed work cannot archive while its explicit Review remains unresolved.
->
-> Verification: Review protocol fixtures accept valid closed and superseded lifecycles and reject invalid requesters, snapshots, timestamps, verdicts, open blocking findings, and unowned deferred advice.
+    > Context: Review is an explicit intake path rather than automatic lifecycle cadence.
+    >
+    > Inputs: The requesting authority, Review kind, exact immutable snapshot reference and digest, and any already available verification evidence.
+    >
+    > Observables: One unique Review file records concrete findings, dispositions, repair evidence, any required re-review, and a final `closed` or `superseded` state.
+    >
+    > Boundaries: An asynchronous reviewer writes only its assigned Review file; disjoint work may continue, but the reviewed work cannot archive while its explicit Review remains unresolved.
+    >
+    > Verification: Review protocol fixtures accept valid closed and superseded lifecycles and reject invalid requesters, snapshots, timestamps, verdicts, open blocking findings, and unowned deferred advice.
 
 #### Scenario: Preserve detailed Review evidence
+
 - **WHEN** findings require extensive evidence, impact analysis, resolution conditions, or re-review history
+
 - **THEN** the Review file retains the necessary detail without a line cap while avoiding redundant verification already supplied with the snapshot
+
+#### Scenario: Classify a finding by fixed severity
+
+- **WHEN** the reviewer records a finding against the assigned snapshot
+
+- **THEN** the finding carries `Critical`, `Required`, or `Advisory` with the fixed meaning, file or record location, observation, impact, evidence or reproduction, and a concrete resolution condition
+
+    | Severity | Meaning | Closure effect |
+    |---|---|---|
+    | `Critical` | Wrong behavior, data or safety loss, or a broken contract | Blocks; must be resolved |
+    | `Required` | Must be fixed before the Change closes; does not endanger the correctness claim | Blocks until resolved or rejected with evidence |
+    | `Advisory` | Optional improvement | May be deferred only with a named follow-up |
+
+- **AND** a finding whose defect is in the requirement, design, or task card is labelled a planning finding and does not prescribe Replan
+
+- **AND** the Review lists what was checked and found sound so a re-review can bound its scope
+
+#### Scenario: Re-review a repaired snapshot
+
+- **WHEN** the coordinator requests a re-review after repairing findings
+
+- **THEN** the re-review checks only the previous findings' resolution conditions against a new immutable snapshot and appends its result under each original finding
+
+- **BUT** a request that widens the scope becomes a new Review file rather than another round of the same chain
+
+#### Scenario: Fan a snapshot out by area
+
+- **WHEN** one snapshot is too broad for a single reviewer pass
+
+- **THEN** the coordinator assigns several Review files with distinct reviewers and non-overlapping scopes before any reviewer starts
+
+- **BUT** a reviewer never dispatches another reviewer for part of its own assignment
+
+#### Scenario: Triage a finding that contradicts a user-owned decision
+
+- **WHEN** a finding asks to reverse a decision recorded in the design or an indexed talk
+
+- **THEN** the coordinator does not repair it locally; attended, it puts the decision to the user, and unattended, it parks the finding through `openspec-update-change`
+
+- **AND** every ambiguous finding is clarified before any finding in the same Review is repaired
 
 ### Requirement: Deterministic OpenSpec package
 
-The distributed OpenSpec executable MUST be located at `.agents/skills/openspec/bin/openspec.exe` and MUST be reproducible from the parent-recorded `Tools/openspec` commit, immutable 0.8.1 tag layered after preserved 0.8.0 and 0.7.4 snapshots, locked build commands, byte-identical isolated rebuild gate, and release manifest. Existing candidate tags MUST NOT be moved to impersonate a repaired snapshot. The parent repository MUST commit only the final accepted package once per release and MUST NOT commit intermediate or candidate executable builds.
+The distributed OpenSpec executable MUST be located at `.agents/skills/openspec/bin/openspec.exe` and MUST be reproducible from the parent-recorded `Tools/openspec` commit, immutable `v0.10.0` tag layered after the preserved `v0.9.0` and earlier snapshots, locked build commands, byte-identical isolated rebuild gate, and release manifest. Existing candidate tags MUST NOT be moved to impersonate a repaired snapshot. The parent repository MUST commit only the final accepted package once per release and MUST NOT commit intermediate or candidate executable builds.
 
 #### Scenario: Validate a packaged release
+
 - **WHEN** installation health checks validate the OpenSpec package
+
 - **THEN** the executable version, SHA-256, source commit, annotated tag object/target, command-document set, release gates, and manifest agree
 
 #### Scenario: Preserve parent binary history
+
 - **WHEN** an OpenSpec release is iterated before final acceptance
+
 - **THEN** candidate executables remain outside parent history and the final accepted package enters the parent repository in exactly one release commit
 
 ### Requirement: English OpenSpec maintenance surface
@@ -437,13 +637,13 @@ Whether evidence crosses the material threshold remains a bounded agent/user jud
 - **AND** the terminal check evaluates that exact Change rather than inferring closure readiness from an unscoped scan
 - **BUT** an ignored raw observation remains non-blocking unless it has been explicitly admitted as a material issue
 
-> Inputs: The exact Change identity, indexed v2 issue frontmatter, the canonical workflow-evaluation frontmatter, and the requested closure kind.
->
-> Observables: Evolution status reports issue counts and terminal states, open paths, structural errors, the final evaluation result, and whether the exact Change is closure-ready.
->
-> Boundaries: Status does not retain or return issue, Review, evaluation, or raw-observation bodies; open or malformed evidence and a missing, invalid, stale, or failed final evaluation block closure.
->
-> Verification: Focused Harness evolution and protocol fixtures cover TaskPlan completion, active/archive policy, issue/Review schemas and lifecycles, successor ownership, evaluation digest/capture freshness, and terminal disposition.
+    > Inputs: The exact Change identity, indexed v2 issue frontmatter, the canonical workflow-evaluation frontmatter, and the requested closure kind.
+    >
+    > Observables: Evolution status reports issue counts and terminal states, open paths, structural errors, the final evaluation result, and whether the exact Change is closure-ready.
+    >
+    > Boundaries: Status does not retain or return issue, Review, evaluation, or raw-observation bodies; open or malformed evidence and a missing, invalid, stale, or failed final evaluation block closure.
+    >
+    > Verification: Focused Harness evolution and protocol fixtures cover TaskPlan completion, active/archive policy, issue/Review schemas and lifecycles, successor ownership, evaluation digest/capture freshness, and terminal disposition.
 
 ### Requirement: Fail-closed active evolution closure
 
@@ -460,7 +660,8 @@ The canonical workflow evaluation MUST name the requested closure kind, include 
 #### Scenario: Reject stale workflow evaluation
 - **WHEN** an active Change input differs from the digest recorded by its passed workflow evaluation or its evaluation predates a terminal issue or Review event
 - **THEN** terminal evaluation fails until current evidence is captured last with the requested closure kind
-  > Observables: Ordinary exact status exposes `CurrentInputSha256`, the recorded digest, evaluation freshness, and bounded closure blockers.
+
+    > Observables: Ordinary exact status exposes `CurrentInputSha256`, the recorded digest, evaluation freshness, and bounded closure blockers.
 
 #### Scenario: Reject unfinished active evidence
 - **WHEN** an active material issue or existing Review is schema-less, malformed, unindexed, task-invalid, time-invalid, open, improperly superseded, or retains an open/deferred Critical or Required finding
@@ -492,62 +693,81 @@ Harness lifecycle guidance SHALL begin task execution, Change completion verific
 
 #### Scenario: Verify a ready task
 - **WHEN** an agent implements one Ready behavior task
-  > Inputs: The task declares the feature boundary, concrete cases, expected failures and an exact impact-related proving command.
+
+    > Inputs: The task declares the feature boundary, concrete cases, expected failures and an exact impact-related proving command.
 - **THEN** it observes the group's expected RED before new behavior implementation and reruns the same proving selection for GREEN
-  > Observables: Related tests share each phase; one new case does not require its own process, and one group is not promised only one total run.
+
+    > Observables: Related tests share each phase; one new case does not require its own process, and one group is not promised only one total run.
 - **AND** a local failure is diagnosed and repaired in the task before expanding to the adjacent affected surface
-  > Details: Expansion follows evidence from the failure rather than the mere availability of broader suites.
+
+    > Details: Expansion follows evidence from the failure rather than the mere availability of broader suites.
 - **BUT** it enters Replan only when evidence invalidates an accepted requirement, design boundary, Task DAG edge, verification contract, or required artifact
-  > Boundaries: Ordinary implementation defects and first expected TDD failures remain task-local.
+
+    > Boundaries: Ordinary implementation defects and first expected TDD failures remain task-local.
 
 #### Scenario: Select a broader Harness profile
 - **WHEN** an agent chooses among focused tests, `Quick`, `Performance`, and `Integration`
-  > Inputs: The demonstrated affected surface and any explicit user or release requirement control the choice.
+
+    > Inputs: The demonstrated affected surface and any explicit user or release requirement control the choice.
 - **THEN** it selects the profile whose contract matches the demonstrated impact
-  > Details: The escalation rules are:
-  >
-  > 1. `Performance` applies to performance contracts or suspected performance regressions.
-  > 2. `Integration` applies to changed cross-component integration boundaries.
-  > 3. `Quick` applies when changes span multiple Harness core groups, the affected surface cannot be bounded reliably, or the user explicitly requests broader regression.
+
+    > Details: The escalation rules are:
+    >
+    > 1. `Performance` applies to performance contracts or suspected performance regressions.
+    > 2. `Integration` applies to changed cross-component integration boundaries.
+    > 3. `Quick` applies when changes span multiple Harness core groups, the affected surface cannot be bounded reliably, or the user explicitly requests broader regression.
 - **BUT** profile availability does not make all profiles unconditional daily gates
-  > Boundaries: A focused static-contract change does not acquire an unrelated full Harness or Unreal gate.
+
+    > Boundaries: A focused static-contract change does not acquire an unrelated full Harness or Unreal gate.
 
 #### Scenario: Select Unreal verification
 - **WHEN** a change affects a Harness `ue.*` route
-  > Inputs: Route implementation, native-plan rendering, fixture coverage, and the presence or absence of product-code impact determine the initial scope.
+
+    > Inputs: Route implementation, native-plan rendering, fixture coverage, and the presence or absence of product-code impact determine the initial scope.
 - **THEN** it first runs the route's focused fixture or protocol proof
-  > Observables: The proof covers the exact arguments, envelope, persisted evidence, or status behavior changed by the route.
+
+    > Observables: The proof covers the exact arguments, envelope, persisted evidence, or status behavior changed by the route.
 - **AND** it launches the matching Unreal operation only when the actual Unreal behavior cannot be proven by the fixture, product code is affected, release policy requires it, or the user explicitly requests it
-  > Boundaries: Real Unreal startup is an evidence-selected validation surface, not an automatic consequence of editing a `ue.*` route.
+
+    > Boundaries: Real Unreal startup is an evidence-selected validation surface, not an automatic consequence of editing a `ue.*` route.
 
 #### Scenario: Complete and archive a guidance-only Change
 - **WHEN** a completed Change affects only Skills, Markdown, templates, specifications, or their static contracts
-  > Inputs: The changed owners and their direct static or protocol fixtures bound completion verification.
+
+    > Inputs: The changed owners and their direct static or protocol fixtures bound completion verification.
 - **THEN** completion uses the owning static or protocol tests plus strict OpenSpec validation
-  > Observables: The final evidence identifies exact checks, results, and the content snapshot they prove.
+
+    > Observables: The final evidence identifies exact checks, results, and the content snapshot they prove.
 - **AND** post-archive checking adds strict archived validation and the smallest non-destructive lifecycle check without repeating unrelated tests
-  > Verification: The archived record validates strictly and no active Change remains unexpectedly.
+
+    > Verification: The archived record validates strictly and no active Change remains unexpectedly.
 - **AND** final evidence records tests actually run and heavier gates intentionally omitted with their reasons
-  > Details: Omitted suites remain explicit evidence decisions rather than silent gaps.
+
+    > Details: Omitted suites remain explicit evidence decisions rather than silent gaps.
 
 #### Scenario: Share a proving run without merging task state
 - **WHEN** compatible Ready tasks share an expensive build or test process
-  > Inputs: Each task retains its proving selection and acceptance cases; the shared run selects their documented union or justified superset.
+
+    > Inputs: Each task retains its proving selection and acceptance cases; the shared run selects their documented union or justified superset.
 - **THEN** completion evidence maps each task to actual executed test identities and results from the same source and binary snapshot
 
-  - The coordinator freezes source writers during build and Automation.
-  - A proven task need not repeat its subset command solely because a shared run supplied its proof.
-  - Aggregate counts without case mapping, missing cases, crashes and incomplete reports do not establish task completion.
+    - The coordinator freezes source writers during build and Automation.
+    - A proven task need not repeat its subset command solely because a shared run supplied its proof.
+    - Aggregate counts without case mapping, missing cases, crashes and incomplete reports do not establish task completion.
 - **BUT** an unrelated failure cannot be called a completely green batch
-  > Boundaries: Individually complete task evidence must also establish that the failure does not invalidate that task's required or adjacent contract.
+
+    > Boundaries: Individually complete task evidence must also establish that the failure does not invalidate that task's required or adjacent contract.
 
 #### Scenario: Preserve existing work without fabricating RED
 - **WHEN** resumed code predates a test or was written under an explicit user-authorized delayed-first-run exception
-  > Context: A newer grouped-TDD instruction governs subsequent work without rewriting historical provenance.
+
+    > Context: A newer grouped-TDD instruction governs subsequent work without rewriting historical provenance.
 - **THEN** the agent preserves that code, records the actual verification gap and validates it without claiming a failure was observed before implementation
-  > Boundaries: Neither automatic deletion nor manufactured retroactive RED is authorized. New behavior follows grouped RED/GREEN unless the user explicitly grants another exception.
+
+    > Boundaries: Neither automatic deletion nor manufactured retroactive RED is authorized. New behavior follows grouped RED/GREEN unless the user explicitly grants another exception.
 - **AND** ordinary build errors, fixture crashes or unexecuted cases are repaired as verification setup failures rather than accepted as feature RED
-  > Details: Only a minimal interface skeleton needed to execute the test may precede its runtime RED; it must not implement the behavior being proved.
+
+    > Details: Only a minimal interface skeleton needed to execute the test may precede its runtime RED; it must not implement the behavior being proved.
 
 ### Requirement: Consistent maintained project guidance
 
@@ -557,13 +777,17 @@ The canonical entry and live Harness-facing Skills SHALL agree that project Skil
 
 #### Scenario: Enter the project through maintained guidance
 - **WHEN** an agent opens the root project guidance
-  > Inputs: The root entry supplies stable cross-capability policy and links, not a snapshot of mutable implementation detail.
+
+    > Inputs: The root entry supplies stable cross-capability policy and links, not a snapshot of mutable implementation detail.
 - **THEN** the sole root `AGENTS.md` provides the stable routing and authority boundaries needed to select the owning Skill, current Change, specification, or index
-  > Observables: The entry routes to `.agents/skills/README.md`, Harness and OpenSpec Skills, `openspec/specs/`, and `Reference/README.md` without reproducing their volatile detail.
+
+    > Observables: The entry routes to `.agents/skills/README.md`, Harness and OpenSpec Skills, `openspec/specs/`, and `Reference/README.md` without reproducing their volatile detail.
 - **AND** focused static checks reject a second root Agent guide and representative architecture inventories, mutable test counts, reference-repository catalogs, historical milestones, or detailed command tutorials in the canonical entry
-  > Verification: The project-entry fixture checks both required routing anchors and prohibited heavyweight content.
+
+    > Verification: The project-entry fixture checks both required routing anchors and prohibited heavyweight content.
 - **BUT** immutable OpenSpec archives and subsystem-owned guidance such as `Wiki/Agents_ZH.md` remain outside this single-entry cleanup
-  > Boundaries: Historical evidence and subsystem documentation are not alternate root project instructions.
+
+    > Boundaries: Historical evidence and subsystem documentation are not alternate root project instructions.
 
 #### Scenario: Invoke Harness in an existing PowerShell session
 
@@ -678,27 +902,27 @@ New project OpenSpec Changes SHALL use a canonical `<domain>/<type>-<scope>-<out
 - **WHEN** a caller creates a Change through Harness with a registered domain and a semantic type, scope, and outcome
 - **THEN** Harness permits the portable CLI to create the canonical active identity
 
-> Inputs: A registered domain and a lowercase Change leaf whose first segment is an allowed semantic type and whose remaining segments provide a scope and outcome.
-> Observables: The resulting active Change resolves at the requested canonical ID and normal OpenSpec validation remains available.
-> Boundaries: This naming rule is an AngelscriptProject policy and does not change portable CLI syntax for other projects.
-> Verification: Harness route fixtures cover all allowed types and representative nested outcomes.
+    > Inputs: A registered domain and a lowercase Change leaf whose first segment is an allowed semantic type and whose remaining segments provide a scope and outcome.
+    > Observables: The resulting active Change resolves at the requested canonical ID and normal OpenSpec validation remains available.
+    > Boundaries: This naming rule is an AngelscriptProject policy and does not change portable CLI syntax for other projects.
+    > Verification: Harness route fixtures cover all allowed types and representative nested outcomes.
 
 #### Scenario: Reject a nonconforming target
 - **WHEN** a caller asks Harness to create or move a Change to a leaf with an unknown type, `feat`, uppercase text, or no distinct scope and outcome
 - **THEN** Harness returns a structured naming failure before the portable CLI mutates any record
 
-> Observables: No target directory or manifest is created or moved, and the diagnostic states the required form and allowed types.
-> Verification: Negative create and move fixtures assert both the failure envelope and an unchanged record tree.
+    > Observables: No target directory or manifest is created or moved, and the diagnostic states the required form and allowed types.
+    > Verification: Negative create and move fixtures assert both the failure envelope and an unchanged record tree.
 
 #### Scenario: Repair an active legacy name
 - **GIVEN** an active Change predates semantic enforcement and has a nonconforming source identity
 - **WHEN** the caller moves it through Harness to a conforming target
 - **THEN** the source remains acceptable only for resolution and the conforming target is permitted
 
-> Boundaries: The exception applies only to the existing move source; it never permits a new nonconforming target.
+    > Boundaries: The exception applies only to the existing move source; it never permits a new nonconforming target.
 
 #### Scenario: Preserve immutable archives
 - **WHEN** naming validation audits current project records
 - **THEN** it checks live Changes and excludes every archived path and historical manifest from semantic renaming
 
-> Verification: Repository fixtures retain known pre-rule archive names byte-for-byte while an invalid active fixture is reported.
+    > Verification: Repository fixtures retain known pre-rule archive names byte-for-byte while an invalid active fixture is reported.

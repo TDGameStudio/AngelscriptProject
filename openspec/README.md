@@ -29,7 +29,8 @@ Do not invoke a bare `openspec` from `PATH`, the official Node CLI, or a `Tools/
 
 ## Current workflow
 
-- A new feature, architecture refactor, or major behavior change receives deep read-only exploration before its OpenSpec Change is created unless an accepted decision-complete handoff already exists. Once the target Change exists, corrections use update/replan and never restart `openspec-explore`. Clear fixes and mechanical documentation changes may skip the pre-creation gate.
+- A new feature, architecture refactor, or major behavior change receives `brainstorming` before its OpenSpec Change is created unless an accepted decision-complete handoff already exists. Brainstorming grills the user in frontier rounds and records every round, finding, and settled name under `openspec/drafts/<domain>/<topic>/`; the draft is a working record, not an artifact. A draft ends `designed`, `parked`, or `abandoned`; for a designed draft `openspec-create-change` creates the Change, copies the approved `design.md` and `handoff.md` into indexed `attachments/drafts/`, and materializes the user-confirmed talks and knowledge candidates before `openspec-continue-change` writes the proposal. Once the target Change exists, corrections use update/replan and never restart `brainstorming`. Clear fixes and mechanical documentation changes may skip the pre-creation gate only when no user-owned decision remains unconfirmed.
+- `openspec/drafts/` is not scanned by Harness or validated by the portable CLI. `design.md` and `handoff.md` are English; `log.md` and `findings/` may keep the user's original wording.
 - `proposal.md` and `tasks.md` are required; apply depends on tasks.
 - `specs/**/*.md` exists only for durable behavior changes.
 - `design.md` exists only for non-obvious architecture, compatibility, or migration decisions.

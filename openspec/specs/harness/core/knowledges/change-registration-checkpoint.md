@@ -10,11 +10,11 @@ For work explicitly governed by OpenSpec, a decision-complete handoff is plannin
 4. Resolve `task.status` and select a stable Ready node from the canonical Task DAG.
 5. Mutate only the scope owned by that node.
 
-The primary checkout and linked worktrees follow the same checkpoint. Codex `/goal` may continue authorized work unattended, but it neither selects a repository mode nor changes workspace, Git, integration, push, or removal authority. Deep Explore belongs only before creation of the target Change. After creation, revise invalid truth through update and an evidence-gated Harness replan.
+The primary checkout and linked worktrees follow the same checkpoint. Codex `/goal` may continue authorized work unattended, but it neither selects a repository mode nor changes workspace, Git, integration, push, or removal authority. `design`-mode brainstorming belongs only before creation of the target Change; `research` and `proposal` drafts stay independent of any Change. After creation, revise invalid truth through update and an evidence-gated Harness replan.
 
 ## Recovery when the checkpoint was missed
 
-Preserve the working tree and actual chronology. Do not fabricate an earlier Change, discard useful in-scope work by default, or restart deep Explore after the target Change exists.
+Preserve the working tree and actual chronology. Do not fabricate an earlier Change, discard useful in-scope work by default, or reopen `design`-mode brainstorming for that scope after the target Change exists.
 
 ```text
 detect missing registration before commit
@@ -30,4 +30,4 @@ If existing evidence invalidates requirements, design, verification, a dependenc
 
 ## Provenance
 
-The registration recovery rule was generalized from `issue-20260903-111408-change-created-after-implementation-start` and independently approved by `review-20260903-113000-exploration-authoring-independent`. The exact-`WorkspaceRoot` clarification comes from `harness/refactor-unified-workspace-core` and is admitted through that Change's verification and completed closure gate. Source records remain authoritative for incident chronology and fixed-snapshot evidence.
+The registration recovery rule was generalized from `issue-20260903-111408-change-created-after-implementation-start` and independently approved by `review-20260903-113000-exploration-authoring-independent`. The exact-`WorkspaceRoot` clarification comes from `harness/refactor-unified-workspace-core` and is admitted through that Change's verification and completed closure gate. The brainstorming wording follows `harness/refactor-explore-brainstorming-drafts` (archived 2026-09-11), which replaced the pre-Change Explore Gate with the `brainstorming` Skill and its `design` / `research` / `proposal` modes. Source records remain authoritative for incident chronology and fixed-snapshot evidence.
