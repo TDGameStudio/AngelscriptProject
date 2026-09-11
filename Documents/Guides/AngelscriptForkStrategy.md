@@ -16,7 +16,7 @@ Embedding clients, retention timing, snapshot leases, Cache/`SaveByteCode` bound
 
 ## 核心定位
 
-**当前 ThirdParty/angelscript 已经是一个深度定制的 fork，不是、也不再可能是 vanilla AngelScript 的某个版本。**
+**当前 `Source/AngelscriptRuntime/angelscript` 已经是一个深度定制的 first-party SDK，不是、也不再可能是 vanilla AngelScript 的某个版本。**
 
 当前 fork 基于 2.33 WIP 起步，经过大量 `[UE++]` 改造（78 个源文件中 32 个包含定制标记，累计 73+ 处显式改动），已经在内存管理、模块系统、对象类型、编译器、解析器、恢复器、类型系统等核心面形成了与上游不可调和的结构分叉。同时，又从 2.38 选择性吸收了 foreach 语法解析、模块查找 API、导入函数 traits、恢复器表面等能力。
 
@@ -62,7 +62,7 @@ Embedding clients, retention timing, snapshot leases, Cache/`SaveByteCode` bound
 2. 适用性评审
    ↓ 对照 ASSDK_Fork_Differences.md 和当前 [UE++] 标记点，判断是否可移植
 3. 影响面分析
-   ↓ 确定涉及的 ThirdParty 源文件和依赖的 Runtime/Binds 文件
+   ↓ 确定涉及的 first-party SDK 源文件和依赖的 Runtime/Binds 文件
 4. 先补 failing test
    ↓ 在 AngelscriptTest 中建立能暴露当前行为不正确或能力缺失的测试
 5. 最小实现
@@ -73,7 +73,7 @@ Embedding clients, retention timing, snapshot leases, Cache/`SaveByteCode` bound
 
 ### 代码标记约定
 
-所有对 ThirdParty/angelscript/source 的改动必须使用 `[UE++]` 注释标记：
+所有对 `Source/AngelscriptRuntime/angelscript` 的改动必须使用 `[UE++]` 注释标记：
 
 ```cpp
 //[UE++]: 简要说明改动目的和与上游的差异
@@ -88,7 +88,7 @@ Embedding clients, retention timing, snapshot leases, Cache/`SaveByteCode` bound
 
 ### 原生核心回归策略
 
-对 `ThirdParty/angelscript` 的修改或选择性高版本回移，必须先运行同主题的 `Angelscript.TestModule.AngelScriptSDK.<Domain>` 回归，再运行完整 SDK 前缀。该套件只覆盖语言核心和原生 SDK；`sdk/add_on` 不在此范围。
+对 `Source/AngelscriptRuntime/angelscript` 的修改或选择性高版本回移，必须先运行同主题的 `Angelscript.TestModule.AngelScriptSDK.<Domain>` 回归，再运行完整 SDK 前缀。该套件只覆盖语言核心和原生 SDK；`sdk/add_on` 不在此范围。
 
 当前 fork 行为优先于 vanilla 预期：测试要固定实际的声明规范化、ABI、拒绝诊断和隔离引擎限制。可由 2.38 表达、但当前尚未回移的脚本语义保留为编译的 Disabled CQTest，并带 `#as-v238-backport` tag；等实现落地后先移除 Disabled，再把该行为并入活跃回归。缺失的 C++ API 不以不可编译的测试占位。
 
@@ -141,7 +141,7 @@ entry，由每个 Engine 按稳定模块/函数键、内容、Profile、环境�
 |------|------------|
 | 上游 2.38.0 参考源码 | `Reference/angelscript-v2.38.0`（`Tools\PullReference\PullReference.bat angelscript`） |
 | Fork 差异记录 | `Documents/Guides/ASSDK_Fork_Differences.md` |
-| 当前 ThirdParty 源码 | `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/` |
+| 当前 first-party SDK 源码 | `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/` |
 | `[UE++]` 改动分布 | 32 个文件，73+ 处标记 |
 | 2.38 changelog | `Reference/angelscript-v2.38.0/sdk/docs/articles/changes2.html` |
 | 优先级总览 | `Documents/Plans/Plan_StatusPriorityRoadmap.md` |

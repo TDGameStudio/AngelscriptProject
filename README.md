@@ -76,7 +76,7 @@ UE 模块默认在 `PostDefault` 阶段加载。`GameplayTags` 脚本绑定拆�
 | **函数库** | `FunctionLibraries/` | Mixin 库为数学类型/Actor/Component/Widget 等增加辅助方法 |
 | **状态导出** | `Dump/` | 27+ CSV 表导出器；纯外部观察者，不入侵运行时 |
 | **代码覆盖率** | `CodeCoverage/` | AngelScript 行级覆盖率追踪 + HTML/JSON 报告 |
-| **第三方 AS 内核** | `ThirdParty/angelscript/` | 与 Runtime 同模块编译的深度定制内核，不是可替换的官方 SDK |
+| **First-party AS SDK** | `angelscript/` | 与 Runtime 同模块编译的深度定制内核，不是可替换的官方 SDK |
 
 ### 可选扩展插件（AngelscriptGameplayTags / AngelscriptGAS）
 
@@ -372,7 +372,7 @@ Tools\PullReference\PullReference.bat <name>
 - 本仓库代码：**MIT License**。详见根目录 `LICENSE`。
 - `Plugins/Angelscript/`：**MIT License**（原始版权 Hazelight Games AB，Fork 修改版权 TDGameStudio）。详见 `Plugins/Angelscript/LICENSE.md`。
 - `Plugins/AngelscriptGAS/`：**MIT License**。详见 `Plugins/AngelscriptGAS/LICENSE.md`。
-- `Plugins/Angelscript/ThirdParty/angelscript/`：AngelCode Scripting Library，**zlib 协议**。详见 `Plugins/Angelscript/LICENSE.md`。
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/`：AngelCode Scripting Library 源码 lineage，**zlib 协议**。详见 `Plugins/Angelscript/LICENSE.md`。
 
 ---
 

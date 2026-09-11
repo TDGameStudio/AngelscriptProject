@@ -30,5 +30,5 @@ Pass frozen options into a cursor-owning `asCTokenizer`, return non-owning token
 - `clang/include/clang/Lex/Token.h`
 - `clang/include/clang/Basic/IdentifierTable.h`
 - `clang/lib/Lex/Lexer.cpp`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_tokenizer.cpp`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_parser.cpp`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_frontend_tokenizer.cpp`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_frontend_parser.cpp`

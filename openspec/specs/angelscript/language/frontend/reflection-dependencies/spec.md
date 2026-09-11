@@ -8,7 +8,7 @@ Define how the reconstructed AngelScript frontend exposes UE reflection descript
 
 The fork-internal CompilationSession/Builder facade SHALL return `FAngelscriptPreprocessResult` as the concrete owner-visible result of preprocessing and declaration semantics for one frozen source configuration. The preprocessor itself SHALL remain a directive/token producer; declaration orchestration belongs to the compilation facade.
 
-Fork-internal result and consumer leaves MAY remain under `ThirdParty/angelscript/source/frontend/` for source organization, but SHALL be declared directly inside `BEGIN_AS_NAMESPACE` with final names and no nested `frontend`, replacement `Frontend`/`V2` surface or compatibility aliases.
+Fork-internal result and consumer leaves MAY remain under `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/` for source organization, but SHALL be declared directly inside `BEGIN_AS_NAMESPACE` with final names and no nested `frontend`, replacement `Frontend`/`V2` surface or compatibility aliases.
 
 #### Scenario: A source set completes declaration semantics
 - **WHEN** a caller completes a source set's declaration semantics through CompilationSession/Builder
@@ -29,12 +29,17 @@ Fork-internal result and consumer leaves MAY remain under `ThirdParty/angelscrip
   > Boundaries: The typed AST remains the semantic authority and the concrete descriptors are its UE-facing projection.
 
 #### Scenario: A caller names the reconstructed preprocessing API
-- **WHEN** code includes a reconstructed leaf from `ThirdParty/angelscript/source/frontend/`
-  > Inputs: The header retains the existing AS namespace configuration; its directory does not impose another C++ scope.
+- **WHEN** code includes a reconstructed leaf from `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/`
+
+    The header retains the existing AS namespace configuration; its directory does not impose another C++ scope. Include the leaf as `"frontend/<header>"` against the first-party SDK include root `Source/AngelscriptRuntime/angelscript`.
+
 - **THEN** it refers to that leaf directly in the scope selected by `BEGIN_AS_NAMESPACE`
-  > Observables: `AS_NAMESPACE_QUALIFIER` names the canonical type from an external C++ scope, without a nested `frontend` qualifier.
+
+    `AS_NAMESPACE_QUALIFIER` names the canonical type from an external C++ scope, without a nested `frontend` qualifier.
+
 - **BUT** no nested `frontend`, parallel `Frontend`/`V2` surface, namespace alias or using declaration preserves the retired API
-  > Boundaries: Existing directory paths and conceptual frontend terminology remain valid; exported C++ consumers are rebuilt against the canonical declarations.
+
+    Existing directory paths and conceptual frontend terminology remain valid; exported C++ consumers are rebuilt against the canonical declarations.
 
 #### Scenario: Conditional source selects one active declaration surface
 - **WHEN** the same source snapshots are processed under a particular frozen conditional configuration

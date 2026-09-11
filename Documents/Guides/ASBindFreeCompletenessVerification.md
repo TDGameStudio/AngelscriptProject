@@ -151,7 +151,7 @@ FAngelscriptBinds::BindGlobalFunctionDirect(..., asFUNCTION(CallStaticWithSignat
 The `Sig` pointer is attached to the resulting `asIScriptFunction` so it can be
 retrieved via `Function->GetUserData()` at call-dispatch time. The AS 2.33 fork
 used by this project diverges from upstream Angelscript here in two important
-ways (see `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_scriptfunction.{h,cpp}`):
+ways (see `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_scriptfunction.{h,cpp}`):
 
 - `asCScriptFunction::SetUserData(data, type)` **ignores the `type` parameter**
   and stores into a single `void* userData` slot (no multi-slot user-data table).
@@ -169,7 +169,7 @@ events × `sizeof(FBlueprintEventSignature)` ≈ 1.6 KB on a real bind, given th
 
 ### 4.2 Fix — per-engine `FBlueprintEventSignatureRegistry`
 
-Adding a cleanup callback hook to the fork was rejected (touches ThirdParty).
+Adding a cleanup callback hook to the fork was rejected (touches the first-party SDK).
 The recommended-but-deferred upstream-alignment path was also passed over for
 the smaller-surface alternative. The accepted fix is **C — per-engine owner
 list**:

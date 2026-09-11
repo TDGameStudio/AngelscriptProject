@@ -49,10 +49,10 @@ When adding a node kind, first place it once in the correct family taxonomy, the
 - `Temp/ast/CanonicalASTArchitectureVisual.md:2639-2698,3239-3275`
 - [Temp reconstruction transcript 1](../../../../../../../Temp/as%E5%A4%A7%E9%87%8D%E6%9E%84/1.md), lines 3955-4043
 - [Canonical AST architecture audit 01](../../../../../../../Temp/canonical-ast-cache-jit-audit/01-CanonicalAST%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%97%AE%E9%A2%98.md), lines 38-216,327-375,475-503
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_decl.h`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_stmt.h`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_expr.h`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/ThirdParty/angelscript/source/as_ast_type.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_decl.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_stmt.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_expr.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_type.h`
 - `D:/LLVM/llvm-project-22.1.8.src/clang/include/clang/AST/DeclBase.h`
 - `D:/LLVM/llvm-project-22.1.8.src/clang/include/clang/AST/Decl.h`
 - `D:/LLVM/llvm-project-22.1.8.src/clang/include/clang/AST/Stmt.h`

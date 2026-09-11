@@ -1,0 +1,18 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_19b1354b-351a-4d77-b579-6455d34a0fc7
+  id: angelscript/refactor-runtime-owned-sdk-layout
+  title: Retarget first-party SDK layout
+  description: Point UBT, current specs, and live fork-strategy guidance at Source/AngelscriptRuntime/angelscript after the ThirdParty tree was removed.
+workflow: angelscript
+created_at: 2026-09-11T11:44:26Z
+goal: Point UBT, current specs, and live fork-strategy guidance at Source/AngelscriptRuntime/angelscript after the ThirdParty tree was removed.
+affected_areas:
+- angelscript/language/ast/core
+- angelscript/language/frontend/reflection-dependencies
+archived_at: 2026-09-11T12:12:02Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: First-party SDK include root, live path language, and include retarget compiled; Editor Development build succeeded; durable spec path language synced; knowledge promoted.

@@ -188,18 +188,23 @@ The reconstructed lexer, preprocessor, parser, AST, compilation, identity and de
 
 #### Scenario: Include the reconstructed language headers
 - **GIVEN** a consumer includes the maintained headers and uses the repository's existing AS namespace configuration
-  > Context: Source directory organization is independent of C++ scope. Headers may remain under ThirdParty/angelscript/source/frontend/.
+
+    Source directory organization is independent of C++ scope. Reconstructed language headers live under `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/`. That folder name is not a C++ namespace.
+
 - **WHEN** the consumer names asCTokenizer, asCPreprocessor, asCParser, asCASTContext or asCCompilationSession
-  > Inputs: Consumers outside the library may use AS_NAMESPACE_QUALIFIER; code inside BEGIN_AS_NAMESPACE uses the direct type name.
+
+    Consumers outside the library may use AS_NAMESPACE_QUALIFIER; code inside BEGIN_AS_NAMESPACE uses the direct type name.
+
 - **THEN** those names resolve to the sole reconstructed definitions in the existing AS scope
 
-  | Existing configuration | Canonical qualified form |
-  |---|---|
-  | AS_USE_NAMESPACE defined | AngelScript::asCParser |
-  | AS_USE_NAMESPACE absent | ::asCParser |
+    | Existing configuration | Canonical qualified form |
+    |---|---|
+    | AS_USE_NAMESPACE defined | AngelScript::asCParser |
+    | AS_USE_NAMESPACE absent | ::asCParser |
 
 - **BUT** the migration does not remove the outer AS namespace macros or add a new configuration switch
-  > Boundaries: A directory named frontend is not a compatibility namespace. Legacy declarations must not reappear through transitive includes, aliases, or a fallback parser.
+
+    A directory named frontend is not a compatibility namespace. Legacy declarations must not reappear through transitive includes, aliases, or a fallback parser.
 
 #### Scenario: Compose compilation and detached metadata consumers
 - **WHEN** Builder, MetadataImage, ScriptFunction, Engine registration and the UE descriptor consumer exchange asSStableKey or asCTypeContext
