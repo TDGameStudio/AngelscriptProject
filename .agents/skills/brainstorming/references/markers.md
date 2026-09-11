@@ -26,7 +26,7 @@ Load this reference only when markers make a pre-Change exploration round, compa
 
 ## Round-only navigation markers
 
-These remain temporary conversation or Plan-output navigation. Do not copy them into durable records merely to preserve round state.
+These remain conversation navigation. They are kept in the draft `log.md` as part of the round record, but never copied into Change artifacts merely to preserve round state.
 
 | Marker | Stable label | Meaning |
 |---|---|---|
@@ -46,4 +46,4 @@ After the target Change is created, preserve only accepted carryover:
 - A talk may keep `📌 Pinned fact:`, `✅ Settled:`, `❌ Dropped:`, `❗ Flip condition:`, `🚫 Out of scope:`, `🔗 Source:`, and the smallest decision-critical diagram or table.
 - Change-local knowledge may keep `💡 Knowledge candidate:`, its evidence, application boundary, and sources.
 - Proposal, specs, design, and tasks contain the current settled truth. Marked attachments provide rationale or reusable evidence and never replace those artifacts.
-- Temporary `❔`, `⭐`, `✨`, `⏳`, and `🔁` round navigation is discarded unless the underlying decision or evidence qualifies independently for a talk.
+- Temporary `❔`, `⭐`, `✨`, `⏳`, and `🔁` round navigation stays in the draft `log.md` and enters the Change only when the underlying decision or evidence qualifies independently for a talk.
