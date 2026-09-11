@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: Evidence-first diagnosis for unexpected behavior, failing verification, flaky automation, or repeated implementation failure. Use before proposing a fix when the root cause is not already demonstrated.
+description: "Use before proposing any fix for unexpected behavior, a failing test or verification, flaky automation, or a second failed implementation attempt, unless the root cause is already demonstrated with evidence. Evidence-first diagnosis: reproduce, isolate, prove the cause, then repair."
 ---
 
 # Systematic Debugging
