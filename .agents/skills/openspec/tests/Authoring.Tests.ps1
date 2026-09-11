@@ -106,7 +106,38 @@ try {
     if ('unsupported-task-format' -notin @($plan.taskIssues.code) -or $readyCount -ne 0) {
         throw 'Retired Task format did not produce migration diagnostics with zero Ready work.'
     }
+    $retiredList = @'
+---
+task_graph:
+  version: 1
+  depends_on:
+    "1.1": []
+---
+
+- [ ] 1.1 Retired list node
+
+    **Files**
+
+    - `old.rs`
+
+    **Verification**
+
+    ```sh
+    never
+    ```
+'@
+    [IO.File]::WriteAllText($taskPath, $retiredList)
+    $plan = (Invoke-AuthoringCli -Arguments @('instructions', 'apply', '--change', 'fixture/authoring', '--json')) | ConvertFrom-Json
+    $readyCount = if ('tasks' -in $plan.PSObject.Properties.Name) { @($plan.tasks | Where-Object ready).Count } else { 0 }
+    $retiredIssue = @($plan.taskIssues | Where-Object code -eq 'unsupported-task-format')
+    if ($retiredIssue.Count -eq 0 -or $readyCount -ne 0 -or -not $retiredIssue[0].message.Contains('## [ ] X.Y Title')) {
+        throw 'Retired root checkbox list node did not produce the heading-node migration diagnostic with zero Ready work.'
+    }
     [IO.File]::WriteAllText($taskPath, $example)
+    $plan = (Invoke-AuthoringCli -Arguments @('instructions', 'apply', '--change', 'fixture/authoring', '--json')) | ConvertFrom-Json
+    if (($plan.tasks[0].fileRoles | ForEach-Object { "$($_.path)=$($_.role)" }) -join '|' -cne 'src/options.rs=modify|tests/option_policy.rs=create') {
+        throw "Filled Task example did not project fileRoles: $($plan.tasks[0] | ConvertTo-Json -Depth 5)"
+    }
     [IO.File]::WriteAllText($specPath, "## Purpose`nPreserve a durable contract.`n`n## Requirements`n### Requirement: Failure`nThe system SHALL reject invalid cards.`n`n#### Scenario: Missing result`n`n- **WHEN** invoked`n")
     $failure = Invoke-AuthoringCli -Arguments @('validate', '--all', '--strict', '--json') -ExpectFailure
     if (-not $failure.Contains('WHEN and THEN')) { throw 'Scenario negative control failed for an unrelated reason.' }

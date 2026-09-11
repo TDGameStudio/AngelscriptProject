@@ -17,6 +17,8 @@ If the task says only "finish the parser" or "add complete tests", resolve its b
 
 Before writing tests, read [writing-good-tests.md](writing-good-tests.md). Derive expectations independently, exercise real behavior and name the break each test catches. Do not test private structure, trivial forwarding or source wording just to increase the count.
 
+In this project the card's `**Cases**` block decides the group: group by role, shape by kind, per the [case catalog](../openspec/references/cases.md). Every `new RED` case is written first and observed red in one run; `existing control` runs alongside and stays green; `boundary` is judged as a limit; a `deferred RED until X.Y` case is observed red here, excluded from this card's GREEN set, and cited green by task `X.Y`; a custom role follows the definition its card gives. Kind decides the test's inner shape: a `sequence` is one test with several assertions, an `example-table` is normally one parameterized test whose rows red and green together, a `measurement` compares against its checked-in baseline and is normally a boundary (as a card's only `new RED`, red means the bound is currently exceeded), a `golden` case is red while the expected file is absent or differs, an `absence` case compiles or looks up the listed symbols.
+
 ## RED: prove the group's missing behavior
 
 1. Write the related tests before implementing their new behavior. Include useful existing regression controls without calling those controls new RED evidence.

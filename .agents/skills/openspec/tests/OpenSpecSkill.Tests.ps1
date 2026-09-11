@@ -983,6 +983,13 @@ foreach ($token in @('markers.md', '✅ Settled:', '❌ Dropped:', '🔁 Reopene
 foreach ($token in @('openspec/drafts/<domain>/<topic>/', 'README.md', 'log.md', 'findings/', 'glossary.md', 'design.md', 'handoff.md', 'exploring | designed | handed-off | parked | abandoned', 'mode: research | proposal | design', 'findings/<topic>.md', 'Draft opened:', 'target_change', 'attachments/drafts/', 'openspec-create-change', 'Harness does not scan them', 'no checkboxes, Task state, Ready state, or DAG', 'original-language wording')) {
     Assert-True ($draftsText.Contains($token)) "Draft contract is missing: $token"
 }
+foreach ($token in @('## Collect the answers', 'AskQuestion', '(Recommended)', 'never a round', '- **A.**', 'Never indent option lines', 'every question to the user is a grill round')) {
+    Assert-True ($grillingText.Contains($token)) "Grilling round-form contract is missing: $token"
+}
+Assert-True (-not $grillingText.Contains('### ❔ Open decision')) 'Grilling must use the compact round template, not one heading per question.'
+foreach ($token in @('AskQuestion', 'exactly as sent')) {
+    Assert-True ($exploreText.Contains($token)) "Brainstorming entry is missing the round-form rule: $token"
+}
 Assert-True ($grillingText.Contains('## The carryover round')) 'Grilling must define the carryover round.'
 Assert-True ($grillingText.Contains('## Grilling around a proposal draft')) 'Grilling must define proposal-mode rounds.'
 Assert-True ($exploreText.Contains('`designed` → `openspec-create-change`')) 'Brainstorming must hand a designed draft to openspec-create-change.'
@@ -994,23 +1001,101 @@ foreach ($token in @('status: designed', '`change create`', 'attachments/drafts/
     Assert-True ($createChangeText.Contains($token)) "Create-change contract is missing: $token"
 }
 Assert-True (-not $continueText.Contains('Copy the draft `design.md`')) 'Continue-change must no longer copy draft files; openspec-create-change owns that step.'
-foreach ($token in @('public name', 'Inspect the neighbours', 'Context and interfaces', 'glossary.md', 'Naming assumed: <name>', 'Apply never asks the user', 'situation brief')) {
+foreach ($token in @('public name', 'Inspect the neighbours', '**Interfaces**', 'glossary.md', 'Naming assumed: <name>', 'Apply never asks the user', 'situation brief')) {
     Assert-True ($namingText.Contains($token)) "Naming grill contract is missing: $token"
 }
 Assert-True (-not $namingText.Contains('Interactive session: stop')) 'Naming grill must not reintroduce an apply-stage interactive stop.'
 foreach ($token in @('optional presentation hints, not a state machine', 'at most one leading marker per line', 'never means a test or gate passed', 'Historical `🔴 Reopened` and `🟢 Landed` are deliberately not restored', 'a green dot does not explain what landed', '## Durable carryover', '📌', '❔', '👉', '❗', '✅', '❌', '🚫', '💡', '🔗', '📁', '⭐', '✨', '⏳', '🔁')) {
     Assert-True ($markerText.Contains($token)) "Marker contract is missing: $token"
 }
-foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'Do not open `design`-mode brainstorming from a Ready task', 'Apply never asks the user questions', 'Naming assumed: <name>', 'listed new public names', 'planning-invalidating evidence')) {
+foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'Do not open `design`-mode brainstorming from a Ready task', 'Apply never asks the user questions', 'Naming assumed: <name>', 'that the task''s **Interfaces** does not list', 'never fills interfaces or cases', 'planning-invalidating evidence')) {
     Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
 }
 Assert-True (-not $applyText.Contains('naming grill round')) 'Apply must not schedule an interactive naming grill round.'
 foreach ($token in @('new feature, architecture refactor, or major behavior change', 'openspec-create-change', 'attachments/drafts/handoff.md', 'Never reopen', 'Exploration Carryover', 'attachments/drafts/', 'attachments/talks/', 'attachments/knowledges/', 'never paste the draft `log.md`', 'glossary.md')) {
     Assert-True ($continueText.Contains($token)) "Continue contract is missing: $token"
 }
-foreach ($token in @('new public name', 'Context and interfaces', 'naming grill')) {
+foreach ($token in @('new public name', '**Interfaces**', 'naming grill')) {
     Assert-True ($taskReferenceText.Contains($token)) "Task authoring naming contract is missing: $token"
 }
+# Heading-node task contract (OpenSpec 0.10.0): heading nodes, diff Files, plan header, mandatory labels, preflight.
+foreach ($token in @('## [ ] X.Y Short title', 'unindented', '```diff', '`+` (create)', '`fileRoles`', '## Plan header', '## Goal', '## Architecture', '## Global constraints', '## File map', '## Requirement coverage', 'execution-conventions.md', 'planning-validation.md', '**Outcome**', '**Interfaces**', '**Cases**', '`new RED`', '`existing control`', '`boundary`', 'Given / When / Then', '[case catalog](cases.md)', '**Notes**', '**Evidence**', 'no step-level test-driven-development', '### Forbidden phrases', '`TBD`', '`similar to Task`', '### Self-review', '### Preflight', 'unsupported-task-format', 'Root checkbox list items')) {
+    Assert-True ($taskReferenceText.Contains($token)) "Heading-node task contract is missing: $token"
+}
+foreach ($token in @('Context and interfaces', 'four spaces', '**Implementation**', '| Input | Expected result |')) {
+    Assert-True (-not $taskReferenceText.Contains($token)) "Task contract must not restore the retired list-format element: $token"
+}
+Assert-True ($taskReferenceText -match '(?m)^## \[ \] 1\.1 ') 'Task contract example must be a heading node.'
+Assert-True (-not ($taskReferenceText -match '(?m)^- \[[ x]\] [0-9]+\.[0-9]+ ')) 'Task contract must not contain a root checkbox list node.'
+$executionConventionsText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\references\execution-conventions.md') -Raw
+foreach ($token in @('Import-Module', 'ue.build', 'enforced Automation report', 'Shared runs', 'freeze source', 'Grouped RED/GREEN', 'Naming assumed')) {
+    Assert-True ($executionConventionsText.Contains($token)) "Execution conventions are missing: $token"
+}
+$taskDagText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\harness\references\task-dag.md') -Raw
+foreach ($token in @('## [ ] X.Y Short title', '```diff', 'execution-conventions.md', 'Skill-side preflight', 'unsupported-task-format')) {
+    Assert-True ($taskDagText.Contains($token)) "Task DAG protocol is missing: $token"
+}
+Assert-True (-not $taskDagText.Contains('four-space')) 'Task DAG protocol must not describe four-space ownership.'
+foreach ($token in @('preflight', '`new RED`', 'Interfaces', 'planning-validation.md', 'openspec-update-change', '## Goal')) {
+    Assert-True ($continueText.Contains($token)) "Continue plan-acceptance preflight is missing: $token"
+}
+foreach ($token in @('preflight', '`new RED`', '**Interfaces**', 'openspec-update-change', 'never fills interfaces or cases', 'heading-node card')) {
+    Assert-True ($applyText.Contains($token)) "Apply task-start preflight is missing: $token"
+}
+Assert-True (-not $applyText.Contains('Context and interfaces')) 'Apply must reference the Interfaces label, not the retired Context and interfaces label.'
+Assert-True ($taskTemplateText -match '(?m)^## \[ \] 1\.1 ') 'Task template must scaffold a heading node.'
+Assert-True ($taskTemplateText.Contains('```diff')) 'Task template must scaffold the Files diff tree.'
+Assert-True (-not ($taskTemplateText -match '(?m)^- \[ \] 1\.1 ')) 'Task template must not scaffold a root checkbox list node.'
+Assert-True ($liveConfigText.Contains('## [ ] X.Y Title')) 'OpenSpec config rules.tasks must describe heading nodes.'
+Assert-True (-not $liveConfigText.Contains('four-space owned Markdown')) 'OpenSpec config rules.tasks must not describe four-space ownership.'
+Assert-True ($openSpecEntryText.Contains('OpenSpec 0.10.0 uses heading-node Task Cards')) 'OpenSpec entry must describe the 0.10.0 heading-node format.'
+# Open-shape Cases (harness/refactor-task-cases-open-shapes): case header grammar, standard roles, kind catalog, definitions.
+$casesReferencePath = Join-Path $projectRoot '.agents\skills\openspec\references\cases.md'
+Assert-True (Test-Path -LiteralPath $casesReferencePath -PathType Leaf) 'Case catalog reference cases.md is missing.'
+$casesReferenceText = Get-Content -LiteralPath $casesReferencePath -Raw
+foreach ($token in @('N. **Name** — <role> · <kind>', 'deferred RED until', 'Roles:', 'Kinds:', 'Setup:', 'Replaces:', 'example-table', 'sequence', 'invariant', 'absence', 'measurement', 'golden', 'action → observation', '(?<role>[^·]+?)', 'existing control', 'boundary', 'new RED')) {
+    Assert-True ($casesReferenceText.Contains($token)) "Case catalog is missing: $token"
+}
+Assert-True ($taskReferenceText.Contains('cases.md')) 'Task contract must link the case catalog.'
+Assert-True ($taskReferenceText.Contains('· <kind>')) 'Task contract must show the optional kind suffix.'
+foreach ($token in @('Tables are not used', 'no tables')) {
+    Assert-True (-not $taskReferenceText.Contains($token)) "Task contract must not restore the table ban: $token"
+    Assert-True (-not $liveConfigText.Contains($token)) "OpenSpec config must not restore the table ban: $token"
+}
+Assert-True ($liveConfigText.Contains('cases.md')) 'OpenSpec config rules.tasks must point at the case catalog.'
+Assert-True ($taskReferenceText -match '(?m)^\d+\. \*\*[^*]+\*\* — new RED · sequence') 'Task contract example must demonstrate a kind suffix.'
+Assert-True ($taskTemplateText.Contains('· <!-- kind')) 'Task template must scaffold the optional kind suffix.'
+$caseHeaderPattern = '^\d+\. \*\*[^*]+\*\* — (?<role>[^·]+?)( · (?<kind>[a-z][a-z-]*))?\s*$'
+Assert-True ($casesReferenceText.Contains($caseHeaderPattern)) 'Case catalog must publish the header regex verbatim.'
+foreach ($fixture in @(
+    @{ Header = '1. **RejectGcFlag** — new RED'; Role = 'new RED'; Kind = '' },
+    @{ Header = '2. **Baseline.Reuse** — new RED · sequence'; Role = 'new RED'; Kind = 'sequence' },
+    @{ Header = '3. **LastRelease** — existing control'; Role = 'existing control'; Kind = '' },
+    @{ Header = '4. **Leftovers** — deferred RED until 2.1'; Role = 'deferred RED until 2.1'; Kind = '' },
+    @{ Header = '5. **Handshake** — quarantined · protocol'; Role = 'quarantined'; Kind = 'protocol' }
+)) {
+    $m = [regex]::Match($fixture.Header, $caseHeaderPattern)
+    Assert-True $m.Success "Case header must match: $($fixture.Header)"
+    Assert-Equal $m.Groups['role'].Value $fixture.Role "Case header role for $($fixture.Header)"
+    Assert-Equal $m.Groups['kind'].Value $fixture.Kind "Case header kind for $($fixture.Header)"
+}
+foreach ($bad in @('1. **Name** new RED', '1. **Name** — new RED · Sequence', '1. Name — new RED', '- **Name** — new RED')) {
+    Assert-True (-not [regex]::IsMatch($bad, $caseHeaderPattern)) "Malformed case header must not match: $bad"
+}
+# Open-shape Cases: preflight, TDD grouping and PASS wording follow the catalog.
+foreach ($token in @('cases.md', 'header line', 'Roles:', 'Kinds:', 'deferred RED until', 'task_graph', 'example-table')) {
+    Assert-True ($continueText.Contains($token)) "Continue plan-acceptance preflight is missing the case rule: $token"
+}
+foreach ($token in @('cases.md', 'Roles:', 'Kinds:', 'deferred RED', "excluded from this card's GREEN", 'cites')) {
+    Assert-True ($applyText.Contains($token)) "Apply task-start preflight is missing the case rule: $token"
+}
+$tddText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\test-driven-development\SKILL.md') -Raw
+foreach ($token in @('cases.md', 'group by role', 'kind', 'parameterized', 'checked-in baseline', 'deferred RED', 'golden')) {
+    Assert-True ($tddText.Contains($token)) "TDD Skill is missing the case-shape rule: $token"
+}
+Assert-True ($executionConventionsText.Contains('deferred RED')) 'Execution conventions must exclude deferred RED cases from the card pass set.'
+Assert-True (-not $continueText.Contains('a role tag and Given')) 'Continue must not describe cases as a role tag plus Given / When / Then only.'
+Assert-True (-not $applyText.Contains('a role tag and Given')) 'Apply must not describe cases as a role tag plus Given / When / Then only.'
 foreach ($token in @('canonical active Change in the selected workspace', 'unattended continuation')) {
     Assert-True ($continueText.Contains($token)) "Continue workspace contract is missing: $token"
 }
@@ -1100,7 +1185,7 @@ foreach ($token in @('three or more important relationships or mappings', 'multi
 foreach ($token in @('explicit/discovered WorkspaceRoot', 'unattended continuation', 'no repository mode or branch convention', 'harness.{status,observe,evolution.status}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($skillsReadmeText.Contains($token)) "Skills README routing contract is missing: $token"
 }
-foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Unattended continuation is defined once in .agents/skills/harness/SKILL.md', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'optional Markdown authoring aids, not parser fields or a rigid template')) {
+foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Unattended continuation is defined once in .agents/skills/harness/SKILL.md', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'No step-level TDD scripts, no forbidden placeholder phrases, no size quotas')) {
     Assert-True ($liveConfigText.Contains($token)) "Live OpenSpec configuration is missing: $token"
 }
 Assert-True ($openSpecReadmeText.Contains('New-HarnessContext -WorkspaceRoot $PWD')) 'OpenSpec README still lacks the canonical explicit workspace example.'

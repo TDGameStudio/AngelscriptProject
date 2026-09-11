@@ -63,6 +63,8 @@ Produces:
    Given <!-- literal input --> When <!-- action --> Then <!-- independently derived expected result -->
 2. **<!-- case name -->** — existing control
    Given <!-- input --> Then <!-- unchanged result -->
+3. **<!-- case name -->** — new RED · <!-- kind: sequence | example-table | invariant | absence | measurement | golden, or a word defined in Kinds:; omit for a plain behavior case -->
+   <!-- body shaped per .agents/skills/openspec/references/cases.md -->
 
 **Files**
 
