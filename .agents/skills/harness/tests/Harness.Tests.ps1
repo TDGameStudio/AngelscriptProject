@@ -460,53 +460,61 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.10 Independent work
+## [ ] 1.10 Independent work
 
-    **Files**
+**Files**
 
-    - `independent`
+```diff
+ independent
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    independent
-    ```
+```sh
+independent
+```
 
-- [ ] 2.1 Blocked work
+## [ ] 2.1 Blocked work
 
-    **Files**
+**Files**
 
-    - `blocked`
+```diff
+ blocked
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    blocked
-    ```
+```sh
+blocked
+```
 
-- [ ] 1.2 Ready work
+## [ ] 1.2 Ready work
 
-    **Files**
+**Files**
 
-    - `ready`
+```diff
+ ready
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    ready
-    ```
+```sh
+ready
+```
 
-- [x] 1.1 Completed base
+## [x] 1.1 Completed base
 
-    **Files**
+**Files**
 
-    - `base`
+```diff
+ base
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    base
-    ```
+```sh
+base
+```
 '@
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskWorkspaceDocument, [System.Text.UTF8Encoding]::new($false))
 
@@ -541,29 +549,33 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 First
+## [ ] 1.1 First
 
-    **Files**
+**Files**
 
-    - `first`
+```diff
+ first
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    first
-    ```
+```sh
+first
+```
 
-- [ ] 1.2 Second
+## [ ] 1.2 Second
 
-    **Files**
+**Files**
 
-    - `second`
+```diff
+ second
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    second
-    ```
+```sh
+second
+```
 '@
     [System.IO.File]::WriteAllText($taskWorkspacePath, $taskCycleDocument, [System.Text.UTF8Encoding]::new($false))
     $cycleStatus = Invoke-Harness -Command 'task.status' -Context $taskWorkspaceContext -Parameters @{ Change = 'fixture/test-task-dag' }

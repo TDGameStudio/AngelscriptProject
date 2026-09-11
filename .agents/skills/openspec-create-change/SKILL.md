@@ -20,13 +20,13 @@ draft status: designed ──► openspec-create-change ──► Change exists,
 ## Steps
 
 1. Import Harness once and run `openspec.change create <id> --title <title> --json` in the selected workspace. Harness rejects a nonconforming ID before the CLI runs. Never hand-create `change.yaml`.
-2. Copy the draft `design.md` and `handoff.md` verbatim into `attachments/drafts/`.
+2. Copy the draft `design.md`, `handoff.md` and `glossary.md` verbatim into `attachments/drafts/`, and copy every `findings/<file>` that the design, a confirmed talk or a confirmed knowledge cites into `attachments/drafts/findings/`. Rewrite those citations to the Change-relative copies: the draft is git-ignored and unstable, so no Change file may reference an `openspec/drafts/` path.
 3. Materialize the confirmed carryover list, nothing more:
     - Each **Talk candidate** becomes `attachments/talks/talk-YYYYMMDD-HHmmss-<theme>.md` with Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual (only if decision-critical), and Sources. Sources cite the draft path and the round heading in `log.md` or the file under `findings/`. Change records are English: paraphrase the user's intent and point to the log entry that holds the original wording instead of quoting it.
     - Each **Knowledge candidate** becomes `attachments/knowledges/<theme>.md` with Reusable Insight, Evidence, Boundaries, Application, and Sources, disposition `candidate`, per the [knowledge contract](../openspec/references/knowledge.md).
     - Items the user did not confirm stay in the draft. Do not paste `log.md` or round navigation into the Change.
 4. Write `attachments/INDEX.md` per the [attachment contract](../openspec/references/attachments.md): current position ("created from draft `<path>`; next artifact proposal"), hard conclusions and forbidden items lifted from the handoff, and every attachment file indexed exactly once with a one-line reason to load it.
-5. Set the draft `README.md` to `status: handed-off`, `handed_off: <date>`, `target_change: <id>` per the [draft contract](../brainstorming/references/drafts.md). `log.md`, `findings/`, and `glossary.md` stay in the draft only.
+5. Set the draft `README.md` to `status: handed-off`, `handed_off: <date>`, `target_change: <id>` per the [draft contract](../brainstorming/references/drafts.md). Only `log.md` and uncited findings stay in the draft.
 6. Run strict change validation and the Harness attachment audit, then invoke `openspec-continue-change` for the proposal.
 
 ## Boundaries

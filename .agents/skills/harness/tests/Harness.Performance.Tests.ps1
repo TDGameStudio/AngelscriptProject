@@ -509,17 +509,19 @@ task_graph:
 
 ## Tasks
 
-- [x] 1.1 Measure terminal status
+## [x] 1.1 Measure terminal status
 
-    **Files**
+**Files**
 
-    - `fixture`
+```diff
+ fixture
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    fixture
-    ```
+```sh
+fixture
+```
 '@, [System.Text.UTF8Encoding]::new($false))
     $evolutionEvaluationPath = Join-Path $evolutionDataRoot 'workflow-evaluation.md'
     $evolutionEvaluationTemplate = @'
@@ -598,17 +600,19 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 Measure TaskStatus
+## [ ] 1.1 Measure TaskStatus
 
-    **Files**
+**Files**
 
-    - `fixture`
+```diff
+ fixture
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    fixture
-    ```
+```sh
+fixture
+```
 '@
         [System.IO.File]::WriteAllText($tasksPath, $tasksDocument, [System.Text.UTF8Encoding]::new($false))
 

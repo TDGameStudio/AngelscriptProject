@@ -46,7 +46,7 @@ For record layout, load only the relevant reference: [record schema](references/
 
 ## Deterministic boundary
 
-OpenSpec 0.9.0 uses new-only rich Markdown Task Cards: short checkbox titles, four-space owned detail, a direct **Files** list and one fenced command in direct **Verification**. Old inline/blockquoted metadata yields migration diagnostics and no Ready work. Authored Scenario clauses use the same ownership indentation, including wrapped sentences; useful detail may be extensive. Existing business records and archives are not migrated implicitly.
+OpenSpec 0.10.0 uses heading-node Task Cards: a `## [ ] X.Y Title` heading per task, an unindented body, a direct **Files** ```` ```diff ```` tree (`+` create, space modify, `-` delete) projected as `files` plus `fileRoles`, and one fenced command in direct **Verification**. Root checkbox list nodes and old inline/blockquoted metadata yield `unsupported-task-format` diagnostics and no Ready work. Authored Scenario clauses use the same ownership indentation, including wrapped sentences; useful detail may be extensive. Existing business records and archives are not migrated implicitly.
 
 The CLI owns manifests, identities, moves, workflow/status/instructions, validation, explicit closure metadata, completion scripts, and a pure archive move. It does not decide requirements, merge specs, run implementation, schedule worktrees, update Skills, detect AI tools, send telemetry, or make review/replan decisions.
 

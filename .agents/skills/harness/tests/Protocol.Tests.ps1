@@ -555,8 +555,8 @@ Assert-Contains $verificationProtocol '(?i)(?:full|complete).*Unreal.*(?:product
 foreach ($token in @('`workspace.list`', '`harness.status`', '`harness.observe`', '`harness.evolution.status`', '`openspec.maintenance.status`')) {
     Assert-True ($routingProtocol.Contains($token)) "Route map is missing: $token"
 }
-Assert-Contains $taskProtocol 'Optional Task Card detail is ordinary Markdown' 'Task Card detail remains flexible Markdown'
-Assert-Contains $taskProtocol 'Harness does not parse or require those optional sections' 'Harness adds no Task Card parser contract'
+Assert-Contains $taskProtocol 'Outcome, Interfaces, named Cases and Notes stay inside the owning card' 'Task Card detail stays inside the owning heading-node card'
+Assert-Contains $taskProtocol 'Harness does not parse those labels' 'Harness adds no Task Card parser contract beyond Files and Verification'
 Assert-Contains $reviewProtocol '(?i)explicit user or external-agent request' 'Review starts only from an explicit user or external-agent request'
 Assert-Contains $reviewProtocol '(?i)(?:impact|incident).*never.*(?:auto|automatic).*Review|never.*(?:auto|automatic).*Review.*(?:impact|incident)' 'Impact and incident evidence never auto-start Review'
 Assert-Contains $reviewProtocol '(?i)verified work.*close and archive directly.*(?:without|no).*Review' 'Verified work may close and archive without Review'
@@ -626,7 +626,7 @@ foreach ($token in @(
     '`after` and `ready`',
     '`Files`',
     'never unchecked',
-    'Old inline verify, blockquote Files and body-level After formats are unsupported'
+    'Root checkbox list nodes, old inline verify, blockquote Files and body-level After formats are unsupported'
 )) {
     Assert-True ($taskProtocol.Contains($token)) "Task DAG protocol is missing: $token"
 }
@@ -1205,41 +1205,47 @@ task_graph:
 
 ## Tasks
 
-- [x] 1.1 Establish the base
+## [x] 1.1 Establish the base
 
-    **Files**
+**Files**
 
-    - `base`
+```diff
+ base
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    base
-    ```
+```sh
+base
+```
 
-- [ ] 1.2 Ready work
+## [ ] 1.2 Ready work
 
-    **Files**
+**Files**
 
-    - `ready`
+```diff
+ ready
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    ready
-    ```
+```sh
+ready
+```
 
-- [ ] 1.3 Blocked work
+## [ ] 1.3 Blocked work
 
-    **Files**
+**Files**
 
-    - `blocked`
+```diff
+ blocked
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    blocked
-    ```
+```sh
+blocked
+```
 '@
         [System.IO.File]::WriteAllText($tasksPath, $readyTasks, [System.Text.UTF8Encoding]::new($false))
         $readyJson = & $exePath instructions apply --change fixture/dag --json
@@ -1262,29 +1268,33 @@ task_graph:
 
 ## Tasks
 
-- [ ] 1.1 First
+## [ ] 1.1 First
 
-    **Files**
+**Files**
 
-    - `one`
+```diff
+ one
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    one
-    ```
+```sh
+one
+```
 
-- [ ] 1.2 Second
+## [ ] 1.2 Second
 
-    **Files**
+**Files**
 
-    - `two`
+```diff
+ two
+```
 
-    **Verification**
+**Verification**
 
-    ```sh
-    two
-    ```
+```sh
+two
+```
 '@
         [System.IO.File]::WriteAllText($tasksPath, $cycleTasks, [System.Text.UTF8Encoding]::new($false))
         $cycleJson = & $exePath instructions apply --change fixture/dag --json
