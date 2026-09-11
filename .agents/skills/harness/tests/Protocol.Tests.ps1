@@ -518,7 +518,12 @@ foreach ($token in @(
     'one Git-derived workspace model',
     'Codex `/goal`',
     'external continuation',
-    'deep Explore',
+    'do not reopen `design`-mode brainstorming',
+    'Brainstorm Gate',
+    '`brainstorming`',
+    'openspec/drafts/<domain>/<topic>/',
+    'Apply never asks the user',
+    'never opens `brainstorming`',
     'lightweight investigation',
     'multiple relationships, a sequence, or state transitions'
 )) {

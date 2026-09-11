@@ -14,7 +14,9 @@ Select the route first, then read only the owning leaf Skill. Every route operat
 | UE build, test, commandlet, suite, or managed-run lifecycle | `unreal-engine-develop/SKILL.md` | `ue.build`, `ue.test`, `ue.commandlet`, `ue.suite.*`, `ue.run.*`; use `ue.ubt.invoke` only for a declared generic capability |
 | Portable OpenSpec source/package alignment | `openspec/SKILL.md` | `openspec.maintenance.status` |
 | OpenSpec command or CLI maintenance | `openspec/SKILL.md` | `openspec.*` |
-| Deep discovery before a new feature, architecture refactor, or major behavior Change | `openspec-explore/SKILL.md` | Agent-driven before creating that Change |
+| Brainstorming before a new feature, architecture refactor, or major behavior Change, or when a user-owned decision is unconfirmed | `brainstorming/SKILL.md` | Agent-driven before creating that Change; records rounds under `openspec/drafts/` |
+| Creating the Change from a designed draft and seeding its attachments (draft copies, confirmed talks and knowledge, INDEX) | `openspec-create-change/SKILL.md` | Once per draft, before `openspec-continue-change` |
+| Naming a new public type, module, file, or function | `brainstorming/references/naming.md` | Grilled during brainstorming and task authoring; apply derives an unlisted name from convention and records `Naming assumed` |
 | Lightweight investigation inside a Ready task | Stay in `openspec-apply-change/SKILL.md`; add `systematic-debugging/SKILL.md` only for unexplained failure | Agent-driven inside the task |
 | Create the next missing planning artifact | `openspec-continue-change/SKILL.md` | Agent-driven |
 | Revise accepted planning truth or apply an evidence-gated Replan | `openspec-update-change/SKILL.md` | Agent-driven |
@@ -25,7 +27,7 @@ Select the route first, then read only the owning leaf Skill. Every route operat
 | AngelScript C++ automation tests | `angelscript-test-guide/SKILL.md` | Agent-driven |
 | Behavior implementation | `test-driven-development/SKILL.md` | Agent-driven |
 | Unexpected or repeated failure | `systematic-debugging/SKILL.md` | Agent-driven |
-| Review explicitly requested by the user or an external agent | `code-review/code-reviewer/SKILL.md` | Fixed snapshot; inline or asynchronous when useful |
+| Review explicitly requested by the user or an external agent | `code-review/SKILL.md` | Fixed snapshot; inline or asynchronous when useful; coordinator triage in `review.md` |
 | Hazelight update audit | `hazelight-update-audit/SKILL.md` | Agent-driven |
 
 Inspect the executable table without loading leaf documentation:

@@ -1,13 +1,13 @@
 ---
 name: harness
-description: Lightweight entry router for AngelscriptProject work in a selected Git workspace. Use after project instructions enable Skills to orient work, resume an unattended request, handle an evidence-gated replan or explicitly requested review, or invoke project OpenSpec, workspace, Git, and observation routes.
+description: "Read first for any AngelscriptProject task that touches code, tests, Skills, or OpenSpec records: the entry router that selects the workspace, decides brainstorming vs Change vs task work, and routes to the one leaf Skill needed. Also use to resume an unattended request, handle an evidence-gated replan or explicitly requested review, or invoke OpenSpec, workspace, Git, and observation routes."
 ---
 
 # Harness
 
 Harness is a small Skill router, not an agent runtime. The repository uses one Git-derived workspace model: the primary checkout and every registered linked worktree have the same contract. Harness derives identity from Git, keeps execution rooted in the selected workspace, and loads trusted Skill code from the derived harness root. There is no daemon, database, event store, custom loop, or repository workflow mode.
 
-Codex `/goal` is an external continuation mechanism. It can keep an agent working, but it does not select a repository mode, prescribe a branch name, create a worktree, or become state in `AgentConfig.ini` or OpenSpec. The current workspace remains the default; create or select a linked worktree only when the user explicitly asks for it.
+Codex `/goal` is an external continuation mechanism. It can keep an agent working, but it does not select a repository mode, prescribe a branch name, create a worktree, or become state in `AgentConfig.ini` or OpenSpec. It continues only approved Ready tasks; it never opens `brainstorming`, never asks the user, and parks any user-owned decision it uncovers through `openspec-update-change` replan. This is the single definition; other Skills say "unattended continuation" and refer here. The current workspace remains the default; create or select a linked worktree only when the user explicitly asks for it.
 
 Workspace creation, integration, publication, and removal are separate explicit actions. Never infer permission to run `workspace.new`, `git.integrate`, `git.push`, or `workspace.remove`; push is non-force and cleanup preserves the branch.
 
@@ -24,19 +24,22 @@ Use [routing.md](references/routing.md) only when the route is unclear. Load a p
 
 OpenSpec is opt-in: create or mutate a Change only when the user or accepted work explicitly selects it.
 
-## Orient and pass the Explore Gate
+## Orient and pass the Brainstorm Gate
 
 Before creating a Change, establish the authorized objective, selected workspace, and whether the intended behavior is decision-complete:
 
 - Name a new Change `<domain>/<type>-<scope>-<outcome>` with an allowed type from the OpenSpec [record schema](../openspec/references/record-schema.md). Keep unrelated outcomes in separate Changes and never rename an immutable archive to repair historical style.
-- A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff uses deep Explore before Change creation.
-- A clear defect repair, mechanical documentation change, or accepted ready-to-execute plan may skip deep Explore.
-- A decision-complete exploration handoff is not an active Change. If OpenSpec owns the work, resolve or create the canonical Change and its Ready Task DAG before implementation mutation.
-- After Change creation, do not restart deep Explore for that Change. Use lightweight investigation inside the Ready task to inspect code, reproduce behavior, compare bounded options, or run a focused experiment. Update the Change only when evidence invalidates a requirement, design boundary, verification contract, dependency edge, or required artifact.
+- A new feature, architecture refactor, or major behavior change without an accepted decision-complete handoff uses `brainstorming` in `design` mode before Change creation; `research` and `proposal` modes open a draft whenever a reply carries a proposal, a trade-off, or more than one diagram, independent of any Change. Every question to the user is a grill round that opens with a situation brief; every round is recorded under `openspec/drafts/<domain>/<topic>/`; the draft is the durable owner of the conversation.
+- A clear defect repair, mechanical documentation change, or accepted ready-to-execute plan may skip brainstorming only when no user-owned decision remains unconfirmed; state the one assumption that justifies skipping.
+- A decision-complete exploration handoff is not an active Change. If OpenSpec owns the work, `openspec-create-change` creates the canonical Change from the designed draft — copying `design.md` and `handoff.md` into indexed `attachments/drafts/` and materializing the user-confirmed talks and knowledge candidates — and `openspec-continue-change` builds its Ready Task DAG before implementation mutation. A draft may also end `parked` or `abandoned` with no Change.
+- After Change creation, do not reopen `design`-mode brainstorming for that Change's scope. Use lightweight investigation inside the Ready task to inspect code, reproduce behavior, compare bounded options, or run a focused experiment. Apply never asks the user: an unlisted new public name is derived from convention and recorded as `Naming assumed` in task Evidence; a user-owned decision that surfaces is planning-invalidating evidence for replan. Update the Change only when evidence invalidates a requirement, design boundary, verification contract, dependency edge, or required artifact.
 
 ```text
-unclear feature or architecture -> deep Explore -> accepted handoff -> create Change
+unclear feature or architecture -> brainstorming (drafts/) -> approved design + confirmed carryover -> openspec-create-change -> openspec-continue-change
+                                                            -> parked / abandoned draft (no Change)
 Ready task uncertainty          -> lightweight investigation -> implement or evidence-gated replan
+unlisted public name in a task  -> convention-derived name + `Naming assumed` in Evidence -> reviewed at verify
+user-owned decision in a task   -> planning-invalidating evidence -> update-change replan -> next attended grill round
 ```
 
 ## Execute the work

@@ -82,4 +82,19 @@ review finding -> local repair and evidence
                -> Replan only when accepted planning truth is invalid
 ```
 
+### Coordinator conduct
+
+- Reproduce or verify every finding against the assigned snapshot before acting on it; a finding that does not hold is marked `rejected` with the evidence.
+- Clarify every ambiguous finding before repairing any finding in the same Review. Findings are often related; partial repair on partial understanding is forbidden.
+- Repair in order Critical → Required → Advisory, and within one severity blocking → simple → complex. Verify each repair with the owning task's proving selection before starting the next.
+- A finding that contradicts a user-owned decision recorded in the design or an indexed talk is not repaired locally. Attended, put the decision to the user; unattended, park it through `openspec-update-change` replan with the agent's recommendation.
+- A finding that asks for functionality nothing calls is answered with usage evidence, not an implementation.
+- A planning finding (the defect is in the requirement, design, or task card) is triaged as planning-invalidating evidence, not as a code repair.
+- State the repair and its evidence; no performative agreement, no gratitude, no apology when a rejection turns out to be wrong — record the correction and move on.
+
+### Re-review and fan-out
+
+- A re-review checks only the previous findings' resolution conditions against a new immutable snapshot and appends its result under each original finding. A request that widens the scope is a new Review file, not another round of the same chain.
+- The coordinator may fan one snapshot out into several Reviews by area, each with its own file, reviewer, and non-overlapping scopes, decided before any reviewer starts. A reviewer never dispatches another reviewer for part of its own assignment.
+
 Close or supersede a Review only after triage. Before any archive closure kind, `harness.evolution.status` recursively discovers every active `attachments/reviews/**/review-*.md` record. Each must be `review-v2`, indexed exactly once, requested by `user | external-agent`, bound to immutable snapshot metadata, and use ordered real lifecycle times. Every existing Review must be closed or superseded; a closed Review requires `APPROVE`, and no open or deferred Critical or Required finding may remain. Resolve or reject each finding with evidence and any required re-review. Advisory findings may be deferred only with an explicit follow-up. Historical schema-less or `requested_by: hardness` records remain readable only as immutable archive evidence. When no Review file exists, there is no Review gate or Review disposition to record.
