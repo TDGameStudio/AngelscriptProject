@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_55e3a43a-8496-4403-a4fe-d862699e5417
+  id: harness/fix-brainstorming-round-form
+  title: Compact grill rounds with a structured answer form
+workflow: angelscript
+created_at: 2026-09-11T08:29:23Z
+archived_at: 2026-09-11T08:36:16Z
+archive_schema: closure-v1
+closure:
+  kind: completed
