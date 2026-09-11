@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_29144afe-6329-49ca-9599-6f7a0d904113
+  id: harness/refactor-explore-brainstorming-drafts
+  title: Brainstorming skill with persistent openspec drafts
+workflow: angelscript
+created_at: 2026-09-11T04:59:39Z
+archived_at: 2026-09-11T07:30:52Z
+archive_schema: closure-v1
+closure:
+  kind: completed
