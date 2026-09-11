@@ -15,10 +15,9 @@ Select the route first, then read only the owning leaf Skill. Every route operat
 | Portable OpenSpec source/package alignment | `openspec/SKILL.md` | `openspec.maintenance.status` |
 | OpenSpec command or CLI maintenance | `openspec/SKILL.md` | `openspec.*` |
 | Brainstorming before a new feature, architecture refactor, or major behavior Change, or when a user-owned decision is unconfirmed | `brainstorming/SKILL.md` | Agent-driven before creating that Change; records rounds under `openspec/drafts/` |
-| Creating the Change from a designed draft and seeding its attachments (draft copies, confirmed talks and knowledge, INDEX) | `openspec-create-change/SKILL.md` | Once per draft, before `openspec-continue-change` |
+| Creating the Change from a designed draft and seeding its attachments (draft copies, confirmed talks and knowledge, INDEX) | `openspec-create-change/SKILL.md` | Once per draft, before `openspec-apply-change` |
 | Naming a new public type, module, file, or function | `brainstorming/references/naming.md` | Grilled during brainstorming and task authoring; apply derives an unlisted name from convention and records `Naming assumed` |
 | Lightweight investigation inside a Ready task | Stay in `openspec-apply-change/SKILL.md`; add `systematic-debugging/SKILL.md` only for unexplained failure | Agent-driven inside the task |
-| Create the next missing planning artifact | `openspec-continue-change/SKILL.md` | Agent-driven |
 | Revise accepted planning truth or apply an evidence-gated Replan | `openspec-update-change/SKILL.md` | Agent-driven |
 | Implement a Change | `openspec-apply-change/SKILL.md` | Agent-driven |
 | Verify a Change for completion or an explicitly requested fixed-snapshot Review | `openspec-verify-change/SKILL.md` | Agent-driven |

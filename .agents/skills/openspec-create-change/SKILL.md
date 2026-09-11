@@ -1,14 +1,14 @@
 ---
 name: openspec-create-change
-description: Create the target OpenSpec Change from an approved brainstorming draft and carry the draft's confirmed material into it — design/handoff copies, talks, knowledge candidates, and INDEX — then hand the empty Change to openspec-continue-change. Use once per draft; never use it to write proposal, specs, design, or tasks.
+description: Create the target OpenSpec Change from an approved brainstorming draft and carry the draft's confirmed material into it — design/handoff copies, talks, knowledge candidates, and INDEX — then hand the empty Change to the Ensure plan step of openspec-apply-change. Use once per draft; never use it to write proposal, specs, design, or tasks.
 ---
 
 # Create a Change from a Draft
 
-This Skill owns `change create` and the one-time move of draft material into the new Change. It sits between `brainstorming` (which only writes the draft) and `openspec-continue-change` (which only writes the next planning artifact).
+This Skill owns `change create` and the one-time move of draft material into the new Change. It sits between `brainstorming` (which only writes the draft) and `openspec-apply-change` (whose `Ensure plan` step writes the planning artifacts before implementing).
 
 ```text
-draft status: designed ──► openspec-create-change ──► Change exists, attachments seeded ──► openspec-continue-change (proposal)
+draft status: designed ──► openspec-create-change ──► Change exists, attachments seeded ──► openspec-apply-change step 0 Ensure plan (proposal, specs, design, tasks)
 ```
 
 ## Preconditions
@@ -27,11 +27,11 @@ draft status: designed ──► openspec-create-change ──► Change exists,
     - Items the user did not confirm stay in the draft. Do not paste `log.md` or round navigation into the Change.
 4. Write `attachments/INDEX.md` per the [attachment contract](../openspec/references/attachments.md): current position ("created from draft `<path>`; next artifact proposal"), hard conclusions and forbidden items lifted from the handoff, and every attachment file indexed exactly once with a one-line reason to load it.
 5. Set the draft `README.md` to `status: handed-off`, `handed_off: <date>`, `target_change: <id>` per the [draft contract](../brainstorming/references/drafts.md). Only `log.md` and uncited findings stay in the draft.
-6. Run strict change validation and the Harness attachment audit, then invoke `openspec-continue-change` for the proposal.
+6. Run strict change validation and the Harness attachment audit, then invoke `openspec-apply-change`, whose `Ensure plan` step writes the planning artifacts.
 
 ## Boundaries
 
 - One draft, one Change, one invocation. A second Change from the same draft needs its own confirmed handoff section.
 - Do not write proposal, specs, design, or tasks here; do not edit the draft beyond its README status.
-- A Change created without a draft (clear fix, mechanical documentation) skips this Skill: `openspec-continue-change` states the skipped-gate assumption in the proposal and no `attachments/drafts/` is created.
+- A Change created without a draft (clear fix, mechanical documentation) skips this Skill: `openspec-apply-change` step `Ensure plan` plans it from the request and states the skipped-gate assumption in the proposal and no `attachments/drafts/` is created.
 - Unattended continuation may run this Skill only when the preconditions already hold; it never confirms carryover or names the Change itself.

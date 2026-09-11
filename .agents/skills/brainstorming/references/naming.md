@@ -1,6 +1,6 @@
 # Naming Grill
 
-Load this reference when a design or task introduces a new public name, or when apply discovers one the task did not list. Shared by `brainstorming`, `openspec-continue-change` (tasks), and `openspec-apply-change`.
+Load this reference when a design or task introduces a new public name, or when apply discovers one the task did not list. Shared by `brainstorming` and `openspec-apply-change` (planning in `Ensure plan`, discovery during implementation).
 
 ## What counts as a public name
 

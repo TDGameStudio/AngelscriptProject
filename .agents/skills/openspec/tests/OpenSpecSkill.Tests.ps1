@@ -819,7 +819,6 @@ Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+require
 $mandatoryLifecycleReferences = [ordered]@{
     'brainstorming' = @('references/deep-exploration.md', 'references/grilling.md', 'references/drafts.md', 'references/naming.md', 'references/markers.md')
     'openspec-create-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../brainstorming/references/drafts.md')
-    'openspec-continue-change' = @('../openspec-create-change/SKILL.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../openspec/references/specs.md', '../brainstorming/references/drafts.md', '../brainstorming/references/naming.md')
     'openspec-apply-change' = @('../openspec/references/implementation-issues.md', '../harness/references/verification.md', '../brainstorming/references/naming.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../harness/references/verification.md')
     'openspec-update-change' = @('../openspec/references/attachments.md', '../openspec/references/specs.md')
@@ -869,7 +868,6 @@ $namingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\b
 $markerText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming\references\markers.md') -Raw
 $applyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-apply-change\SKILL.md') -Raw
 $archiveText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-archive-change\SKILL.md') -Raw
-$continueText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-continue-change\SKILL.md') -Raw
 $updateText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-update-change\SKILL.md') -Raw
 $verifyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-verify-change\SKILL.md') -Raw
 $openSpecEntryText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\SKILL.md') -Raw
@@ -889,7 +887,6 @@ $knowledgeReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.age
 $attachmentReferenceText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\attachments.md') -Raw
 
 foreach ($entry in ([ordered]@{
-    'openspec-continue-change' = $continueText
     'openspec-update-change' = $updateText
     'openspec-sync-specs' = $syncSpecText
     'openspec-verify-change' = $verifyText
@@ -997,10 +994,9 @@ Assert-True (-not $exploreText.Contains('Never invoke it after the target Change
 $gitignoreText = Get-Content -LiteralPath (Join-Path $projectRoot '.gitignore') -Raw
 Assert-True ($gitignoreText -match '(?m)^/openspec/drafts/\s*$') 'Brainstorming drafts must be git-ignored.'
 $createChangeText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-create-change\SKILL.md') -Raw
-foreach ($token in @('status: designed', '`change create`', 'attachments/drafts/', 'talks/talk-YYYYMMDD-HHmmss-<theme>.md', 'knowledges/<theme>.md', 'INDEX.md', 'status: handed-off', 'target_change', 'Do not write proposal, specs, design, or tasks here', 'openspec-continue-change', 'Never hand-create `change.yaml`')) {
+foreach ($token in @('status: designed', '`change create`', 'attachments/drafts/', 'talks/talk-YYYYMMDD-HHmmss-<theme>.md', 'knowledges/<theme>.md', 'INDEX.md', 'status: handed-off', 'target_change', 'Do not write proposal, specs, design, or tasks here', 'openspec-apply-change', 'Never hand-create `change.yaml`')) {
     Assert-True ($createChangeText.Contains($token)) "Create-change contract is missing: $token"
 }
-Assert-True (-not $continueText.Contains('Copy the draft `design.md`')) 'Continue-change must no longer copy draft files; openspec-create-change owns that step.'
 foreach ($token in @('public name', 'Inspect the neighbours', '**Interfaces**', 'glossary.md', 'Naming assumed: <name>', 'Apply never asks the user', 'situation brief')) {
     Assert-True ($namingText.Contains($token)) "Naming grill contract is missing: $token"
 }
@@ -1012,8 +1008,8 @@ foreach ($token in @('before implementation mutation', 'not an active Change or 
     Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
 }
 Assert-True (-not $applyText.Contains('naming grill round')) 'Apply must not schedule an interactive naming grill round.'
-foreach ($token in @('new feature, architecture refactor, or major behavior change', 'openspec-create-change', 'attachments/drafts/handoff.md', 'Never reopen', 'Exploration Carryover', 'attachments/drafts/', 'attachments/talks/', 'attachments/knowledges/', 'never paste the draft `log.md`', 'glossary.md')) {
-    Assert-True ($continueText.Contains($token)) "Continue contract is missing: $token"
+foreach ($token in @('Never reopen', 'Exploration Carryover', 'attachments/drafts/handoff.md', 'never paste the draft `log.md`', 'unattended continuation', 'openspec-create-change', 'glossary.md', 'attachments/talks/', 'attachments/knowledges/')) {
+    Assert-True ($applyText.Contains($token)) "Apply planning contract is missing: $token"
 }
 foreach ($token in @('new public name', '**Interfaces**', 'naming grill')) {
     Assert-True ($taskReferenceText.Contains($token)) "Task authoring naming contract is missing: $token"
@@ -1036,10 +1032,7 @@ foreach ($token in @('## [ ] X.Y Short title', '```diff', 'execution-conventions
     Assert-True ($taskDagText.Contains($token)) "Task DAG protocol is missing: $token"
 }
 Assert-True (-not $taskDagText.Contains('four-space')) 'Task DAG protocol must not describe four-space ownership.'
-foreach ($token in @('preflight', '`new RED`', 'Interfaces', 'planning-validation.md', 'openspec-update-change', '## Goal')) {
-    Assert-True ($continueText.Contains($token)) "Continue plan-acceptance preflight is missing: $token"
-}
-foreach ($token in @('preflight', '`new RED`', '**Interfaces**', 'openspec-update-change', 'never fills interfaces or cases', 'heading-node card')) {
+foreach ($token in @('Task authoring preflight', 'task-start moment', 'openspec-update-change', 'never fills interfaces or cases', 'heading-node card')) {
     Assert-True ($applyText.Contains($token)) "Apply task-start preflight is missing: $token"
 }
 Assert-True (-not $applyText.Contains('Context and interfaces')) 'Apply must reference the Interfaces label, not the retired Context and interfaces label.'
@@ -1083,10 +1076,7 @@ foreach ($bad in @('1. **Name** new RED', '1. **Name** — new RED · Sequence',
     Assert-True (-not [regex]::IsMatch($bad, $caseHeaderPattern)) "Malformed case header must not match: $bad"
 }
 # Open-shape Cases: preflight, TDD grouping and PASS wording follow the catalog.
-foreach ($token in @('cases.md', 'header line', 'Roles:', 'Kinds:', 'deferred RED until', 'task_graph', 'example-table')) {
-    Assert-True ($continueText.Contains($token)) "Continue plan-acceptance preflight is missing the case rule: $token"
-}
-foreach ($token in @('cases.md', 'Roles:', 'Kinds:', 'deferred RED', "excluded from this card's GREEN", 'cites')) {
+foreach ($token in @('deferred RED', "excluded from this card's GREEN", 'cites')) {
     Assert-True ($applyText.Contains($token)) "Apply task-start preflight is missing the case rule: $token"
 }
 $tddText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\test-driven-development\SKILL.md') -Raw
@@ -1094,10 +1084,25 @@ foreach ($token in @('cases.md', 'group by role', 'kind', 'parameterized', 'chec
     Assert-True ($tddText.Contains($token)) "TDD Skill is missing the case-shape rule: $token"
 }
 Assert-True ($executionConventionsText.Contains('deferred RED')) 'Execution conventions must exclude deferred RED cases from the card pass set.'
-Assert-True (-not $continueText.Contains('a role tag and Given')) 'Continue must not describe cases as a role tag plus Given / When / Then only.'
 Assert-True (-not $applyText.Contains('a role tag and Given')) 'Apply must not describe cases as a role tag plus Given / When / Then only.'
+# Merged lifecycle (harness/refactor-apply-change-absorb-planning): apply step 0 Ensure plan; one preflight text in tasks.md.
+foreach ($token in @('Ensure plan', 'openspec.status', 'attachments/drafts/handoff.md', 'skipped-gate', 'Never reopen', 'stops and reports', 'one indexed talk', 'never paste the draft `log.md`')) {
+    Assert-True ($applyText.Contains($token)) "Apply Ensure plan step is missing: $token"
+}
+$preflightSection = [regex]::Match($taskReferenceText, '(?s)### Preflight\s*\n(.*?)(?=\n### |\z)').Groups[1].Value
+foreach ($token in @('**Plan acceptance**', '**Task start**', 'openspec-apply-change', 'cases.md', 'Roles:', 'deferred RED', 'example-table', 'planning-validation.md')) {
+    Assert-True ($preflightSection.Contains($token)) "Task preflight text is missing: $token"
+}
+Assert-True (-not $preflightSection.Contains('openspec-continue-change')) 'Task preflight text must not name openspec-continue-change.'
+Assert-True (([regex]::Matches($applyText, '\[Task authoring preflight\]')).Count -ge 2) 'Apply must link the task authoring preflight at plan acceptance and at task start.'
+Assert-True ($casesReferenceText.Contains('plan acceptance and task start in `openspec-apply-change`')) 'Case catalog must name the two preflight moments in apply.'
+Assert-True (-not $casesReferenceText.Contains('openspec-continue-change')) 'Case catalog must not name openspec-continue-change.'
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-continue-change\SKILL.md'))) 'openspec-continue-change is retired; its Skill file must not exist.'
+$liveReferenceFiles = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agents\skills') -Recurse -File -Include *.md, *.yaml | Where-Object { $_.FullName -notmatch '\\tests\\' }) + @(Get-Item -LiteralPath (Join-Path $projectRoot 'openspec\README.md'), (Join-Path $projectRoot 'README.md'), (Join-Path $projectRoot 'openspec\config.yaml'))
+$staleReferences = @($liveReferenceFiles | Where-Object { [string](Get-Content -LiteralPath $_.FullName -Raw) -like '*openspec-continue-change*' } | ForEach-Object { $_.FullName })
+Assert-True ($staleReferences.Count -eq 0) ("Live Skill and README surfaces must not reference openspec-continue-change:`n{0}" -f ($staleReferences -join [Environment]::NewLine))
 foreach ($token in @('canonical active Change in the selected workspace', 'unattended continuation')) {
-    Assert-True ($continueText.Contains($token)) "Continue workspace contract is missing: $token"
+    Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
 }
 foreach ($token in @('canonical active Change in the selected workspace', 'attended or unattended', 'open decision')) {
     Assert-True ($updateText.Contains($token)) "Update workspace contract is missing: $token"
@@ -1199,7 +1204,7 @@ foreach ($token in @('Project Skills are enabled', 'Harness is the project workf
     Assert-True ($agentsText.Contains($token)) "Thin AGENTS routing contract is missing: $token"
 }
 
-$modeFreeTexts = @($openSpecEntryText, $exploreText, $deepExplorationText, $grillingText, $draftsText, $namingText, $continueText, $updateText, $applyText, $unrealDevelopText, $skillsReadmeText, $liveConfigText, $openSpecReadmeText, $projectReadmeRoutingText, $agentsText) -join "`n"
+$modeFreeTexts = @($openSpecEntryText, $exploreText, $deepExplorationText, $grillingText, $draftsText, $namingText, $updateText, $applyText, $unrealDevelopText, $skillsReadmeText, $liveConfigText, $openSpecReadmeText, $projectReadmeRoutingText, $agentsText) -join "`n"
 foreach ($staleModePattern in @('(?i)\bGoal mode\b', '(?i)\bCurrent mode\b', '(?i)-Mode[ \t]+(?:Current|Goal)\b', '(?i)\.worktrees/<goal>', '(?i)goal/<goal>', '(?i)explicit/Goal', '(?i)Goal context')) {
     Assert-True ($modeFreeTexts -notmatch $staleModePattern) "Prepared authoring guidance still contains retired repository-mode syntax: $staleModePattern"
 }
@@ -1244,11 +1249,9 @@ $policyFiles = @(
     '.agents\skills\brainstorming\SKILL.md',
     '.agents\skills\brainstorming\references\deep-exploration.md',
     '.agents\skills\brainstorming\references\grilling.md',
-    '.agents\skills\brainstorming\references\drafts.md',
     '.agents\skills\brainstorming\references\naming.md',
     '.agents\skills\brainstorming\references\markers.md',
     '.agents\skills\openspec-apply-change\SKILL.md',
-    '.agents\skills\openspec-continue-change\SKILL.md',
     '.agents\skills\openspec\references\record-schema.md',
     '.agents\skills\openspec\references\tasks.md',
     '.agents\skills\openspec\references\attachments.md',
@@ -1264,7 +1267,7 @@ $rootReadmeText = Get-Content -LiteralPath (Join-Path $projectRoot 'README.md') 
 foreach ($staleEntry in @('openspec-work', '/opsx:', '@fission-ai/openspec', 'npm install -g', 'Superpowers')) {
     Assert-True ($rootReadmeText -notmatch [regex]::Escape($staleEntry)) "Root README contains stale OpenSpec workflow entry: $staleEntry"
 }
-foreach ($requiredEntry in @('brainstorming', 'openspec-create-change', 'openspec-continue-change', 'openspec-update-change', 'openspec-apply-change', 'openspec-archive-change')) {
+foreach ($requiredEntry in @('brainstorming', 'openspec-create-change', 'openspec-update-change', 'openspec-apply-change', 'openspec-archive-change')) {
     Assert-True ($rootReadmeText.Contains($requiredEntry)) "Root README is missing the current OpenSpec lifecycle entry: $requiredEntry"
 }
 Assert-True (-not $rootReadmeText.Contains('openspec-explore')) 'Root README still references the retired openspec-explore skill.'

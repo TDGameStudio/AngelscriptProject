@@ -178,7 +178,7 @@ Invoke-Harness -Command openspec.doctor -Context $context -ArgumentList @('--jso
 
 不要调用 `PATH` 中的同名程序、官方 Node CLI 或 `Tools/openspec/target` 构建；项目工作流说明见 `.agents/skills/README.md`。
 
-关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `brainstorming`（grilling 轮次逐题确认，每轮都记录到 `openspec/drafts/<domain>/<topic>/`），形成用户批准的 design、确认过的 talk/knowledge 携带清单与 decision-complete handoff 后，由 `openspec-create-change` 创建 Change 并把草稿副本、talks、knowledges 落进 attachments（草稿也可以 `parked`/`abandoned` 收尾而不建 Change）。Change 创建后使用 `openspec-continue-change`、`openspec-update-change` 和 `openspec-apply-change`；实施中的局部探索留在当前 Ready task，执行阶段不向用户提问（tasks 未列出的新公开命名按约定取名并记 `Naming assumed` 供审查）；只有证据证明当前计划失效或冒出用户级决策时才由 Harness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
+关键规则：新特性、架构重构或重大行为变更只在创建目标 OpenSpec Change 之前使用 `brainstorming`（grilling 轮次逐题确认，每轮都记录到 `openspec/drafts/<domain>/<topic>/`），形成用户批准的 design、确认过的 talk/knowledge 携带清单与 decision-complete handoff 后，由 `openspec-create-change` 创建 Change 并把草稿副本、talks、knowledges 落进 attachments（草稿也可以 `parked`/`abandoned` 收尾而不建 Change）。Change 创建后使用 `openspec-apply-change`（先 `Ensure plan` 补齐规划产物，再实施 Ready 节点）与 `openspec-update-change`；实施中的局部探索留在当前 Ready task，执行阶段不向用户提问（tasks 未列出的新公开命名按约定取名并记 `Naming assumed` 供审查）；只有证据证明当前计划失效或冒出用户级决策时才由 Harness 触发 replan。不要再为新工作创建 `Documents/Plans/Plan_*.md`；`tasks.md` 是唯一执行状态，已完成节点不得取消勾选。
 
 ### 2. Bootstrap：生成 `AgentConfig.ini`
 
@@ -322,7 +322,7 @@ Script/Examples/Extended/              # 进阶示例（GAS、子系统生命周
 
 - `brainstorming`：以 grilling 轮次探索并把讨论、探索、命名全部记录到 `openspec/drafts/`，最终草稿为 designed / parked / abandoned 之一。
 - `openspec-create-change`：从 designed 草稿创建 Change，并把草稿副本、用户确认的 talks 与 knowledge 候选、INDEX 一次性落进 attachments。
-- `openspec-continue-change` / `openspec-update-change`：创建下一份规划产物，或在证据门禁下修订现有真相。
+- `openspec-update-change`：在证据门禁下修订现有规划真相（缺失的规划产物由 `openspec-apply-change` 的 `Ensure plan` 步骤补齐）。
 - `openspec-apply-change` / `openspec-verify-change`：按 Ready Task DAG 实施，并对固定快照验证。
 - `openspec-sync-specs` / `openspec-archive-change`：显式同步 durable spec，并按 closure policy 归档。
 

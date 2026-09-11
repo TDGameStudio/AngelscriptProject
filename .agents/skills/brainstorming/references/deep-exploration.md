@@ -74,4 +74,4 @@ Knowledge candidate -> `findings/external-references.md` -> knowledges/ -> reusa
 Discard          -> temporary round navigation, redundant or one-off visuals (the draft log already keeps the conversation)
 ```
 
-After acceptance, `openspec-create-change` creates the target Change, copies the draft design and handoff, and materializes exactly the confirmed talks and knowledge candidates; `openspec-continue-change` then writes the planning artifacts. The draft remains the owner of the conversation; the Change never becomes a parallel transcript.
+After acceptance, `openspec-create-change` creates the target Change, copies the draft design and handoff, and materializes exactly the confirmed talks and knowledge candidates; the `Ensure plan` step of `openspec-apply-change` then writes the planning artifacts. The draft remains the owner of the conversation; the Change never becomes a parallel transcript.

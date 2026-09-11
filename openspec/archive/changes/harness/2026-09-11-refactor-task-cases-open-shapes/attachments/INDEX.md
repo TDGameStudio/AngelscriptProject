@@ -2,7 +2,7 @@
 
 ## Current position
 
-Change created 2026-09-11 18:27 from the designed draft `harness/cases-expression` (local, git-ignored; every cited file is copied under `attachments/drafts/`, nothing links back to `openspec/drafts/`). Carryover confirmed in Round 4 (talk + one knowledge; the example finding is copied because the design cites it). Proposal, specs delta, root `design.md` (current truth; the draft copy below keeps the approved shape) and `tasks.md` (3 cards) written 18:35; all 3 tasks done 18:50; spec sync and archive pending user direction.
+Change created 2026-09-11 18:27 from the designed draft `harness/cases-expression` (local, git-ignored; every cited file is copied under `attachments/drafts/`, nothing links back to `openspec/drafts/`). Carryover confirmed in Round 4 (talk + one knowledge; the example finding is copied because the design cites it). Proposal, specs delta, root `design.md` (current truth; the draft copy below keeps the approved shape) and `tasks.md` (3 cards) written 18:35; all 3 tasks done 18:50; harness/core synced 19:21 (Ready-to-execute Task authoring: body + 3 new scenarios), archived as completed.
 
 ## Hard conclusions
 

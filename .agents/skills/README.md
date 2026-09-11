@@ -50,7 +50,6 @@ New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `r
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
 - `brainstorming` — explore an idea in grilling rounds and record everything under `openspec/drafts/<domain>/<topic>/` (git-ignored, local). Three entry modes share one layout: `research` (findings and diagrams), `proposal` (write the proposal first, then grill around it), `design` (required before a new feature, architecture refactor, or major behavior change, and whenever a user-owned decision is unconfirmed). It grills naming, ends the round sequence with a user-confirmed carryover list, and leaves the draft `designed`, `parked`, or `abandoned`. `design` mode is never reopened for a Change that already exists; `research` drafts may be opened at any time.
 - `openspec-create-change` — create the Change from a designed draft and seed its attachments: draft copies, the confirmed talks and knowledge candidates, INDEX. The only route that runs `change create` for major work.
-- `openspec-continue-change` — create the next missing artifact.
 - `openspec-update-change` — revise existing artifacts and apply an evidence-gated replan.
 - `openspec-apply-change` — implement Ready Task DAG nodes.
 - `openspec-verify-change` — completion verification and explicitly requested fixed-snapshot Review input.

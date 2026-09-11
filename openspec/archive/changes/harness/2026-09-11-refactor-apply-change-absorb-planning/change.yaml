@@ -1,0 +1,12 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_e58beb87-c2ba-46e0-be84-b096a04f0015
+  id: harness/refactor-apply-change-absorb-planning
+  title: Fold planning-artifact creation into openspec-apply-change
+workflow: angelscript
+created_at: 2026-09-11T11:18:39Z
+archived_at: 2026-09-11T11:29:38Z
+archive_schema: closure-v1
+closure:
+  kind: completed

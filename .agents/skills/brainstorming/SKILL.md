@@ -49,7 +49,7 @@ design:
 idea -> context -> draft opened -> grill rounds (incl. naming) -> approaches
      -> design sections approved -> design.md + self-review -> user review
      -> carryover round (talks / knowledge confirmed) -> handoff.md
-     -> designed  -> openspec-create-change -> Change + seeded attachments -> openspec-continue-change
+     -> designed  -> openspec-create-change -> Change + seeded attachments -> openspec-apply-change (Ensure plan)
      -> parked    -> draft kept, revisit later
      -> abandoned -> draft kept as record, nothing else
 ```
@@ -76,7 +76,7 @@ Break the system into units with one purpose, clear interfaces, and independent 
 ## Records
 
 - The draft is the durable owner of the conversation. Keep `log.md` append-only; `log.md` and `findings/` may keep the user's original wording, while `design.md` and `handoff.md` are English.
-- After acceptance, `openspec-create-change` creates the Change, copies `design.md` and `handoff.md` into `attachments/drafts/`, and materializes only the confirmed carryover: decision-critical rationale into indexed talks, reusable evidence-backed insights into indexed change-local knowledge. `openspec-continue-change` then routes settled scope to proposal, durable behavior to specs, non-obvious architecture to design, and executable boundaries to tasks. Never copy the exploration transcript into the Change; it stays in the draft.
+- After acceptance, `openspec-create-change` creates the Change, copies `design.md` and `handoff.md` into `attachments/drafts/`, and materializes only the confirmed carryover: decision-critical rationale into indexed talks, reusable evidence-backed insights into indexed change-local knowledge. The `Ensure plan` step of `openspec-apply-change` then routes settled scope to proposal, durable behavior to specs, non-obvious architecture to design, and executable boundaries to tasks. Never copy the exploration transcript into the Change; it stays in the draft.
 - Ask before `change create`, never after. A decision-complete handoff is an input to Change creation, not an active Change or Ready Task DAG.
 - A `parked` draft is a legitimate outcome. Its findings and glossary remain discoverable under `openspec/drafts/`; reviving it means reopening `brainstorming` on the same directory, not starting over.
 

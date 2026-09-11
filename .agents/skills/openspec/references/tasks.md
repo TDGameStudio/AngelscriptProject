@@ -56,7 +56,12 @@ Before a plan is accepted, record three checks in `attachments/data/planning-val
 
 ### Preflight
 
-`openspec-continue-change` accepts a plan only when the header sections exist, every card has the labels for its kind in order, each behavior card has a `new RED` case and an Interfaces fence when it names a symbol, no forbidden phrase appears, and `planning-validation.md` is indexed. `openspec-apply-change` refuses to start a card that fails the same checks and routes the repair to `openspec-update-change`. Preflight checks presence; the reviewer judges content.
+This is the single preflight text; `openspec-apply-change` applies it at two moments and does not restate it. The checks: the header sections (`## Goal`, `## Architecture`, `## Global constraints`, `## Requirement coverage`) exist; every card carries the labels for its kind in order; every behavior card has at least one case tagged `new RED` and an Interfaces code fence when it names a symbol; every case opens with a header line matching the grammar in the [case catalog](cases.md); every role or kind word outside the standard set is defined in that block's `Roles:` / `Kinds:` paragraph; every `deferred RED until X.Y` names a task present in `task_graph`; tables appear only inside an `example-table` case; no forbidden phrase appears.
+
+- **Plan acceptance** (apply step `Ensure plan`): all checks plus `attachments/data/planning-validation.md` recording the three-item self-review and indexed. A failing plan is repaired before any node is selected; once accepted, corrections go through `openspec-update-change`.
+- **Task start** (apply step 2): the same checks on the selected card; a failing card is not started, the missing element is named in the report, and the repair is routed to `openspec-update-change`. Preflight never fills interfaces or cases on the plan's behalf.
+
+Preflight checks presence; the reviewer judges content.
 
 ### Semantic authoring check
 
