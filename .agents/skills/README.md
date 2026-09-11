@@ -5,12 +5,13 @@
 Harness requires PowerShell 7.0 or later (`Core`). Import it once and run ordinary routes directly in the current PowerShell 7 process; Windows PowerShell 5.1 is not a supported Skill host. Child `pwsh` processes are intentional only for isolated tests, hooks or native fixtures, and Harness-managed Unreal workers.
 
 ```text
-new feature / architecture / major behavior -> deep Explore -> decision-complete handoff -> create Change -> planning
+new feature / architecture / major behavior -> brainstorming (openspec/drafts/) -> approved design + confirmed carryover -> openspec-create-change (Change + talks/knowledge seeded) -> planning
+                                            -> parked / abandoned draft (no Change)
 explicit/discovered WorkspaceRoot -> Ready task -> lightweight local investigation -> verify -> close/archive -> ready to integrate
-Codex /goal -> external unattended continuation of the same workspace lifecycle; no repository mode or branch convention
+unattended continuation -> same workspace lifecycle; no repository mode or branch convention (defined once in harness/SKILL.md)
 ```
 
-Workspace selection and Codex `/goal` continuation never automatically integrate, push, publish, or remove a worktree. Integration, non-force push, and cleanup are separate user-requested operations.
+Workspace selection and unattended continuation never automatically integrate, push, publish, or remove a worktree. Integration, non-force push, and cleanup are separate user-requested operations.
 
 ## Harness command surface
 
@@ -34,20 +35,21 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 - `unreal-engine-develop` — UE 5.8 discovery, typed builds, Automation tests and suites, commandlets, UBT capabilities, process observation, progress, and explicit cancellation through `ue.*` routes.
 - `systematic-debugging` — evidence-first diagnosis before fixes or replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.
-- `code-review/code-reviewer` — fixed-snapshot Review only after an explicit user or external-agent request.
+- `code-review` — reviewer stance for a fixed-snapshot Review, only after an explicit user or external-agent request; coordinator intake and triage stay in `harness/references/review.md`.
 - `angelscript-test-guide` — project C++/CQTest/inline AngelScript testing patterns.
 - `hazelight-update-audit` — upstream comparison and adoption decisions.
 
 ## OpenSpec lifecycle Skills
 
-OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. A Codex `/goal` may continue that work unattended but does not create a second lifecycle. The portable Rust CLI provides deterministic record primitives; Harness owns orchestration, evidence-gated Replan, and explicit Review intake.
+OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. Unattended continuation may carry that work forward but does not create a second lifecycle, and it never opens `brainstorming`. The portable Rust CLI provides deterministic record primitives; Harness owns orchestration, evidence-gated Replan, and explicit Review intake.
 
-For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation.
+For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation. Drafts under `openspec/drafts/` are working records owned by `brainstorming`; they carry no task state and are not scanned by Harness or validated by the CLI.
 
 New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`; use `feature`, not `feat`. The OpenSpec record-schema reference owns the full distinction and immutable-archive boundary.
 
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
-- `openspec-explore` — deep read-only discovery before creating a new feature, architecture refactor, or major behavior-change Change; it produces a decision-complete handoff and is never invoked after target Change creation.
+- `brainstorming` — explore an idea in grilling rounds and record everything under `openspec/drafts/<domain>/<topic>/` (git-ignored, local). Three entry modes share one layout: `research` (findings and diagrams), `proposal` (write the proposal first, then grill around it), `design` (required before a new feature, architecture refactor, or major behavior change, and whenever a user-owned decision is unconfirmed). It grills naming, ends the round sequence with a user-confirmed carryover list, and leaves the draft `designed`, `parked`, or `abandoned`. `design` mode is never reopened for a Change that already exists; `research` drafts may be opened at any time.
+- `openspec-create-change` — create the Change from a designed draft and seed its attachments: draft copies, the confirmed talks and knowledge candidates, INDEX. The only route that runs `change create` for major work.
 - `openspec-continue-change` — create the next missing artifact.
 - `openspec-update-change` — revise existing artifacts and apply an evidence-gated replan.
 - `openspec-apply-change` — implement Ready Task DAG nodes.
