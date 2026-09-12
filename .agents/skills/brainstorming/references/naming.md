@@ -14,7 +14,7 @@ Types (classes, structs, enums, interfaces), modules and namespaces, source and 
 
 ## Round shape
 
-One naming round lists every name the current design or task needs. Like every grill round it opens with a situation brief: which neighbours were inspected, which convention they follow, and what the names are for.
+Track required names in their owning design. Related independent naming decisions may share a round per [grilling.md](grilling.md); dependent names wait. Send the situation brief first: inspected neighbours, conventions, responsibility and scope. The example below is a content guide; use the host's permitted question mechanism.
 
 ```text
 Round <N> — Naming
@@ -30,7 +30,7 @@ Why now: design section 3 settled the ownership table; its class and header need
 📌 Pinned fact: siblings are `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`. 🔗 Source: <path>.
 ```
 
-Record each settled name in the draft `glossary.md` as `| term | chosen | rejected | reason |`, and in the design's "Vocabulary and Naming" section.
+Record each settled name in designs/<scope>/glossary.md as `| term | chosen | rejected | reason |`, and in that design's Vocabulary and Naming section. Topic glossary.md holds shared vocabulary; include this design's required shared terms with provenance before export. Legacy flat designs retain their glossary path. Draft explanations default to the user's conversation language unless explicitly specified otherwise; Change exports use English and preserve identifiers.
 
 ## Into tasks
 

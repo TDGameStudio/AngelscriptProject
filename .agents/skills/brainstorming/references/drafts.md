@@ -1,46 +1,87 @@
 # Draft Directory Contract
 
-Load this reference when opening, updating, handing off, or abandoning a brainstorming draft.
+Load when opening, resuming, updating or handing off a topic draft.
 
 ## Location and layout
 
 ```text
-openspec/drafts/<domain>/<topic>/
-├── README.md      # frontmatter: draft, status, opened, handed_off, target_change
-├── log.md         # append-only, verbatim: each agent reply and each user message as written
-├── findings/      # agent evidence: code inspections, comparisons, spikes, external references
-├── glossary.md    # chosen and rejected names with reasons
-├── design.md      # the approved design (the artifact the user signs off)
-└── handoff.md     # decision-complete handoff with Exploration Carryover
+openspec/drafts/<domain>/<topic>/    // One continuing topic; zero, one or several Changes may result.
+├─ README.md                        // Current focus, mode, continuation and design navigation.
+├─ log.md                           // Append-only actual conversation, including diagrams and answers.
+├─ findings/                        // Shared evidence and optional topic entry pages.
+├─ glossary.md                      // Shared vocabulary, only when needed.
+└─ designs/<scope>/                 // An independently describable delivery outcome, before approval.
+   ├─ README.md                     // This design's boundary, status and approval sources.
+   ├─ design.md                     // Candidate, then accepted design for this scope.
+   ├─ glossary.md                   // Relevant settled names, when needed.
+   └─ handoff.md                    // Written once the design and Change carryover are confirmed.
 ```
 
-`<domain>` matches an OpenSpec domain (`angelscript`, `harness`). `<topic>` is lowercase kebab-case and describes the idea, not a Change type.
+Domain follows OpenSpec conventions; topic and scope use lowercase kebab-case outcome names. A scope name need not equal the eventual Change ID. Create only needed files: a small investigation may have only README.md and log.md. Research without a bounded delivery stays in findings/<topic>.md; once its outcome is identifiable, create the scoped README/candidate design without waiting for approval. A/B alternatives for one outcome belong in one design; independently deliverable outcomes may have sibling directories. Split genuinely independent topics into linked drafts, not merely because a second Change is possible.
 
-## README frontmatter
+## Topic README
 
 ```yaml
 ---
 draft: <domain>/<topic>
 mode: research | proposal | design
-status: exploring | designed | handed-off | parked | abandoned
+status: exploring | parked | abandoned
 opened: YYYY-MM-DD
-handed_off: YYYY-MM-DD        # when status is handed-off
-target_change: <domain>/<change>   # once the Change exists
-archived_as: openspec/archive/changes/<domain>/<date>-<change>   # optional, after the Change archives
 ---
 ```
 
-- `exploring` from the first round; `designed` once the user approved `design.md` and confirmed the carryover list; `handed-off` once `openspec-create-change` created the target Change and seeded its attachments; `parked` when the exploration is worth keeping but no Change is wanted now, with one line on what would revive it; `abandoned` when the user drops the idea, with one sentence why.
-- Reviving a `parked` draft reopens `brainstorming` on the same directory: append to `log.md`, set `status: exploring`, keep the earlier findings.
-- `mode` is the entry mode from the Skill's "Entry modes" table. Only `design` may reach `designed`; upgrading `research` or `proposal` rewrites `mode` in place, appends a `Mode upgraded` line to `log.md`, and completes the skipped steps.
+The body gives the current focus as a relative link, a short continuation note, settled decisions with their source rounds, next open decisions, minimum reading order and links to designs. Link to authoritative scoped status; do not maintain a second approval ledger.
 
-## Rules
+Mode describes the current activity: investigate, propose, or converge a design. Switch it with the focus and append the reason to log.md. It is not approval or a one-way maturity ladder. Each design keeps its own state, without its own mode. Going back to research does not undo approval or reopen an existing Change's design.
 
-- Open the draft before the first grilling round, or as soon as the reply contains a proposal, a trade-off, or more than one diagram — whichever comes first. Announce `Draft opened: <path> (mode: <mode>)` once. Append to `log.md` as rounds are asked and answered, pasting both the agent's reply and the user's message verbatim — no summaries or paraphrase; never rewrite earlier entries.
-- `findings/` holds one file per research topic (`findings/<topic>.md`): the evidence, any ASCII or Mermaid diagram embedded as produced, and a closing "Conclusions / Open" block. Diagrams and comparisons never live only in the chat.
-- In `proposal` mode `design.md` starts as the agent's draft and is marked `Status: proposal draft` at the top until the user approves it; the approval line is removed when the mode upgrades to `design`.
-- Drafts stay under `openspec/drafts/` permanently on the author's machine; `/openspec/drafts/` is git-ignored, so the Change's `attachments/drafts/`, talks, and knowledge are the only shared copies. They are working records, not OpenSpec artifacts: no checkboxes, Task state, Ready state, or DAG. Harness does not scan them and the portable CLI does not validate them; do not add either.
-- `openspec-create-change` creates the target Change, copies `design.md` and `handoff.md` into `changes/<domain>/<change>/attachments/drafts/`, materializes the confirmed carryover into `attachments/talks/` and `attachments/knowledges/`, indexes everything once in `attachments/INDEX.md`, and sets the draft README to `handed-off` with `target_change`. `log.md`, `findings/`, and `glossary.md` remain only in the draft; talks quote from them with provenance.
-- Language: `design.md` and `handoff.md` are English like every OpenSpec record. `log.md` and `findings/` may retain the user's original-language wording; this is the declared exception to the English rule.
-- One draft per idea. If brainstorming splits a large request into sub-projects, open one draft per sub-project and link them from each README.
-- Resuming: read `README.md`, then the tail of `log.md`, then `design.md`; do not reload the whole history unless a decision is being reopened.
+Topic status stays exploring while conversation or research remains. Waiting for a reply or handing off one design does not park it. Park when discussion is intentionally paused, with what would revive it; abandon when dropped, with why. Resume a parked topic in the same directory. Never mark an entire multi-design topic handed-off because one design produced a Change.
+
+## Scoped design README
+
+```yaml
+---
+design: <scope>
+status: exploring | designed | handed-off | parked | abandoned
+opened: YYYY-MM-DD
+handed_off: YYYY-MM-DD            # once this design was handed off
+target_change: <domain>/<change>  # once its Change exists
+archived_as: <archive-path>       # optional later navigation
+---
+```
+
+The body states this design's scope/exclusions, links its design and related research, records approval and naming/carryover round sources, and gives its next step. State belongs here, not in emoji markers or the topic mode.
+
+- exploring: candidate or incomplete design, including partial approval and waiting for replies.
+- designed: this exact design is accepted and its required names and OpenSpec carryover are settled; handoff.md is decision-complete. Topic mode may now describe other work.
+- handed-off: its named Change exists and the selected English attachments/carryover are seeded and verified. Creation or export interrupted midway is resumed before marking this state.
+- parked / abandoned: retain this design and reason without closing its siblings. Reviving parked work resumes its earlier context; substantive revisions invalidate the affected prior approval and are presented again before a new handoff.
+
+One scoped handoff creates one Change. Its accepted design/handoff are historical inputs after handoff; later work on the same Change routes to update-change/apply. A separately approved new outcome may become a sibling design, with dependencies and overlap identified explicitly. Never use the topic's mode or another design's approval to authorize it.
+
+Explicitly authorized direct implementation without a Change uses the accepted design and records the user instruction, outcome and verification in the design's continuation/evidence. Do not fabricate target_change or handed-off, demand Change-only carryover, or invent a new lifecycle state. The topic may remain exploring or be parked when discussion pauses; implementation completion is described in prose.
+
+## Conversation and navigation
+
+- Announce Draft opened: <path> (mode: <mode>) once. Keep log.md append-only: every actual user message, assistant discussion, displayed diagram, submitted tool question/options and returned answer retains original wording. Corrections, interruptions and resumed replies are new entries; a summary never replaces the original. Do not log prepared text as already delivered or an empty tool result as a choice.
+- Send the situation brief in chat before the form. Saved text, tool output and links are not a conversational explanation. Log the delivered brief before a blocking question when practical; tool history preserves pending questions until logging resumes.
+- Each findings/<topic>.md carries evidence, diagrams as shown, conclusions and open points. Identify observations versus proposals and the source/time context when it affects interpretation. Optional topic entry pages help large findings collections; avoid empty navigation scaffolds.
+- Resume through the topic README, the focused finding or scoped README/design, then the cited log rounds. Use the tail for recent messages, not as the sole proof of approval. Mark reopened decisions with their original decision reference.
+- Shared glossary.md carries common terms. The selected design's glossary records its relevant names and any shared definitions it relies on, with provenance. New public names use the naming round. Do not silently change the meaning of a name already exported to a Change.
+
+## Language and export
+
+New local draft material defaults to the user's conversation language, including README.md, findings, design.md, handoff.md, glossary.md and diagram explanations. Honor an explicit draft-language preference; otherwise infer the language from the user's conversation. Do not rewrite historical files merely because the discussion language changes. log.md retains original-language wording. Every final Change record and attachment is English, including carried findings and explanatory diagram labels; preserve code identifiers and accepted meaning.
+
+openspec-create-change exports the selected design.md, handoff.md and glossary.md into attachments/drafts/, plus cited research dependencies into attachments/drafts/findings/. Copy English text or faithfully translate other languages with source/approval provenance. If no naming decisions apply, create an explicit not-applicable glossary for the receiving contract. Preserve original local files. No Change file may depend on an openspec/drafts/ filesystem link; provenance may identify the local source and round as plain text. Material translation ambiguity must be resolved without inventing decisions. Do not translate or export the entire transcript or unselected sibling material.
+
+The consumer materializes only confirmed talks/knowledge, indexes the English output and updates only the selected design's state and topic navigation. Local originals, including design and cited findings, remain; exporting copies never moves or deletes them.
+
+## Legacy flat drafts
+
+Existing top-level design.md/handoff.md/glossary.md and the root target_change remain readable as one legacy scoped record. Preserve those paths and historical approval; do not bulk-migrate old drafts or logs. A root handed-off record may cover only part of a topic: use the documented scope and remaining research rather than treating the entire topic as exhausted.
+
+When another bounded outcome appears in a legacy topic, create designs/<scope>/ for that new design and clearly label the old root files/target as legacy provenance in the topic README. Maintain the new current-focus/mode/topic status without erasing the old handoff mapping or reinterpreting its approval. If continuing residual research without a bounded outcome, use shared findings and a continuation note; no new design directory is required. Before export, select the exact scoped directory or explicitly selected legacy root. If several candidates exist and the request does not identify one, do not guess by timestamps or newest paths.
+
+## Boundaries
+
+Drafts remain local under openspec/drafts/ and git-ignored. They are working records with no checkboxes, Task state, Ready state, or DAG. Harness does not scan them and the portable CLI does not validate them; do not add either. Persistent approval and state come from scoped records and source rounds, not an automatic runtime or marker parser.

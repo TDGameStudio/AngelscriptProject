@@ -30,7 +30,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 | Event | Record | Boundary |
 |---|---|---|
-| Change created from a designed brainstorming draft by `openspec-create-change` | `drafts/` | Copies of the approved draft `design.md`, `handoff.md` and `glossary.md`, plus `drafts/findings/<file>` for every finding a carried design, talk or knowledge cites, each indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The draft is local and git-ignored, so a Change never links into `openspec/drafts/`; only the round log stays there. |
+| Change created from a selected approved brainstorming design by `openspec-create-change` | `drafts/` | English exports of the selected scoped `design.md`, `handoff.md` and `glossary.md`, plus `drafts/findings/<file>` for every finding a carried design, talk or knowledge cites, each indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The draft is local and git-ignored, so a Change never links into `openspec/drafts/`; all local originals remain there. |
 | Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
 | Material investigated technical or workflow problem | `implementation/` | One shared root cause and disposition lifecycle, including admitted dogfooding findings; never a final summary or second task list. |
 | Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
@@ -63,11 +63,11 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 
 ## Exploration carryover
 
-Pre-Change brainstorming writes only to its draft under `openspec/drafts/<domain>/<topic>/`. Its final carryover round has the user confirm which decision rationale, useful visuals, and reusable evidence-backed insights the Change keeps; `openspec-create-change` materializes exactly that list once the target Change exists:
+Pre-Change brainstorming writes only to its draft under `openspec/drafts/<domain>/<topic>/`. The selected designs/<scope>/ handoff has the user confirm which decision rationale, useful visuals, and reusable evidence-backed insights the Change keeps; `openspec-create-change` materializes exactly that list once the target Change exists:
 
 | Carryover | Destination | Admission boundary |
 |---|---|---|
-| Approved draft `design.md` and `handoff.md` | `drafts/design.md`, `drafts/handoff.md` | Verbatim copies indexed once, together with `drafts/glossary.md` and the cited `drafts/findings/<file>`; the draft README records `target_change`. Only the round log stays in the draft; a Change file never references an `openspec/drafts/` path. |
+| Approved draft `design.md` and `handoff.md` | `drafts/design.md`, `drafts/handoff.md` | English exports indexed once, together with `drafts/glossary.md` and required cited `drafts/findings/<file>` dependencies. Copy English originals or faithfully translate other languages, including diagram explanations, preserving identifiers and source/approval provenance. The selected design README records `target_change`; all originals remain local. Change links resolve inside the Change; local draft/round provenance is plain text, never a dependency on an `openspec/drafts/` path. |
 | Settled requirement, scope, architecture, or executable boundary | proposal/spec/design/tasks | Canonical current truth; do not leave it only in an attachment. |
 | Non-obvious decision, dropped alternative, flip condition, or decision-critical visualization | `talks/talk-YYYYMMDD-HHmmss-<theme>.md` | Preserve only when the rationale prevents likely re-decision. |
 | Evidence-backed insight or visualization reusable across tasks or later work | `knowledges/<theme>.md` | Change-local candidate; promotion still requires evidence, verification, and an explicit disposition. |

@@ -43,7 +43,7 @@ Resolve blocking engineering decisions before Change creation. Non-blocking assu
 
 ## Decision-complete handoff
 
-Write `openspec/drafts/<domain>/<topic>/handoff.md` with these headings when applicable. Its first line names the source draft and acceptance date.
+For OpenSpec-selected work, write `openspec/drafts/<domain>/<topic>/designs/<scope>/handoff.md` once the scoped design and carryover are accepted. Its first line identifies the source topic, design and acceptance date. Legacy flat handoffs retain their original paths. The local handoff defaults to the user's conversation language unless explicitly specified otherwise; the consumer exports English Change material with provenance. Explicit direct work without a Change does not require this artifact.
 
 ```text
 Draft
@@ -74,4 +74,4 @@ Knowledge candidate -> `findings/external-references.md` -> knowledges/ -> reusa
 Discard          -> temporary round navigation, redundant or one-off visuals (the draft log already keeps the conversation)
 ```
 
-After acceptance, `openspec-create-change` creates the target Change, copies the draft design and handoff, and materializes exactly the confirmed talks and knowledge candidates; the `Ensure plan` step of `openspec-apply-change` then writes the planning artifacts. The draft remains the owner of the conversation; the Change never becomes a parallel transcript.
+After scoped acceptance, openspec-create-change exports the selected design and handoff into the target Change in English, copying English text or faithfully translating other languages, and materializes exactly the confirmed talks and knowledge candidates. Ensure plan then writes planning artifacts. Local originals remain and other designs may continue; the Change never becomes a parallel transcript.

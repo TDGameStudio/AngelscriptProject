@@ -29,7 +29,7 @@ openspec/
 └── archive/changes/<domain>/<date>-<change>/
 ```
 
-The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness does not scan it, and it carries no task state. `openspec-create-change` is the only Skill that turns a designed draft into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; files explicitly named with `_ZH` and the draft `log.md`/`findings/` working records (which may keep the user's original wording) are the only localization exceptions.
+The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness does not scan it, and it carries no task state. `openspec-create-change` is the only Skill that turns one selected approved scoped design into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; new local draft materials under `openspec/drafts/` default to the user's conversation language unless the user specifies another draft language, and explicitly named `_ZH` documents retain their existing localization exception. Every final Change record and attachment is English, including exported draft design/handoff, research and diagram explanations.
 
 ## Change identity
 

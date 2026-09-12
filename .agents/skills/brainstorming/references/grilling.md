@@ -1,10 +1,10 @@
 # Grilling Rounds
 
-Load this reference when running interactive brainstorming. It replaces the retired threshold that asked questions only when three or more dependent decisions remained: every unconfirmed user-owned decision is asked, and **every question to the user is a grill round** — one question, a naming choice, or a whole frontier all use the same shape. Never ask an ad-hoc yes/no question outside a round, and never let a bare `AskQuestion` form replace the round's written brief.
+Load this reference when running interactive brainstorming. Every unconfirmed user-owned decision is recorded, and **every question to the user is a grill round**: a round may include several related independent decisions. Adapt presentation to host rules without losing necessary explanation. Cursor and Codex share the sequence: investigate, send the situation brief in chat, ask, receive answers, acknowledge the updated state, and record what actually happened. Each question owns one clear decision; round size does not limit explanation depth.
 
 ## Situation brief before every round
 
-Open each round with a short brief so the user can answer without re-reading the history:
+Before calling any question tool, send the situation brief as an assistant message in the conversation so the user can answer without re-reading the history or opening a file. Include the following information; adapt headings to the host's presentation rules:
 
 1. **What I looked at** — the files, records, references, or experiments investigated since the last round, with paths.
 2. **How it works today** — when the round touches code, explain the current system as if to someone who has never seen it (see below).
@@ -12,11 +12,13 @@ Open each round with a short brief so the user can answer without re-reading the
 4. **Why these questions now** — which branch of the design tree just unblocked, and what stays blocked until it is answered.
 5. **What I recommend overall** — the shape of the answer set you would choose if the user said "all recommendations".
 
-The brief is written into `log.md` together with the questions. Items 1, 3–5 stay short; item 2 is as long as it needs to be, and its full text is also saved as `findings/<topic>.md` so later rounds can link instead of repeat.
+Sending the brief is a separate action from saving it. A `log.md` entry, shell output containing the text, a link to `design.md`, or a bare form never counts as the chat brief. Items 1 and 3–5 stay compact; the system explanation is as detailed as necessary for a reader unfamiliar with it. Save that explanation in `findings/` too, but retain the decision-critical parts in chat, including code, diagrams or option comparisons when needed. Do not shorten it merely to meet a paragraph quota. Later rounds can focus on changes once the relevant background has actually been explained to the user.
+
+Before sending, identify the topic and selected design or research focus, settled/open decisions, evidence, and what each answer changes. This preparation is not a separate approval step. Deliver state and rationale in chat, not private reasoning. After answers, acknowledge each settled decision and what remains. Answer a direct user question before resuming the round. Do not bundle unresolved organization, naming and behavior choices into one omnibus approval question; host restrictions on approval collection do not excuse skipping the discussion.
 
 ### How it works today
 
-Write for a reader who does not know this system. Cover, in this order, whatever the questions depend on:
+Write for a reader who does not know this system. For a technical decision, cover the following in order wherever they apply to the decision. A class-naming question may require a full responsibility, ownership and lifecycle explanation before the names are meaningful. Do not invent code for a non-code question or pad the brief with unrelated mechanisms:
 
 - **Purpose** — what the component is for, in one or two sentences, and who owns it.
 - **Lifecycle** — when it is created, initialized, used, torn down; what triggers each step.
@@ -76,22 +78,24 @@ Use the [visual-explain](../../visual-explain/SKILL.md) conventions for any othe
 
 ## Design tree and frontier
 
-Map the plan as a design tree: each decision branches into the decisions that hang off it. The **frontier** is every decision whose prerequisites are already settled — the questions you can ask now without guessing at answers you have not heard. Ask the whole frontier in one round. A question whose answer depends on another question still open in this round belongs to a later round.
+Map the plan as a design tree: each decision branches into those that depend on it. The **frontier** contains decisions whose prerequisites are settled. Group related independent frontier questions when useful, following the user's pace and actual tool limits; use one question when it needs deep explanation or the others depend on its answer. Do not force a one-question cap, pad a form to its maximum or impose one host's numeric limit on another. Dependent questions wait. Keep remaining decisions in the draft and track replies by question identity, including partial or out-of-order answers.
 
 Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock dependent questions. Recompute the frontier and ask the next round. Stop when the frontier is empty and the user confirms shared understanding.
 
 ## Before a round
 
-- Investigate repository facts first. A running investigation is an unsettled prerequisite: only the questions downstream of it wait; ask the rest of the frontier now.
+- Investigate repository facts first. A running investigation is an unsettled prerequisite: questions downstream of it wait; another unblocked key question may be asked first.
 - Separate user-owned product and naming choices from engineering choices the agent can settle with evidence.
 - Present a heavyweight or unfamiliar option before asking the user to choose it.
 - Ask only questions whose answers can change design, scope, or naming.
 
 ## Round shape
 
-Number the questions, give the recommended answer and its consequence for each, and accept numbered, partial, out-of-order, or "all recommendations" replies without forcing the user to restate settled answers. Use the [marker vocabulary](markers.md) labels.
+Number questions, give the recommended answer and its consequence, and accept numbered, partial, out-of-order, or "all recommendations" replies without forcing the user to restate settled answers. Use the [marker vocabulary](markers.md) and compact structure below. Preserve the situation, evidence, option meanings, recommendation and any material flip condition; host channel restrictions only change how the question itself is presented.
 
-Write the round as compact Markdown: one `##` heading for the round, a `**Situation**` block of marker lines, the overall recommendation, then one `❔ Open decision:` paragraph per question with its option bullets and two marker lines. No `###` per question. Keep each line to one or two sentences and move longer evidence into `findings/`.
+Use compact Markdown: one round heading, situation and current-system explanation, then each decision with its alternatives, recommendation and material flip condition. Headings and explanations default to the user's conversation language, unless the user explicitly requests another language for discussion/drafts. Explain shared background once, while each question keeps its consequences and answer boundary. Explanations may be substantial; compact layout is not a brevity requirement. Explain options in chat before the form. In Codex, pre-form commentary is declarative and actual questions go in the tool. Cursor may show written questions before AskQuestion when permitted. Do not omit comparisons to avoid repeated short labels.
+
+For a focused round, use the shared situation and Q<m> block below. A grouped round also includes Q<n> only when its prerequisites are settled independently; omit the second block otherwise. For example, diagnostic-example formatting and identifier stability may share a round, but ownership and an unresolved ownership-dependent lifetime choice may not.
 
 ```markdown
 ## Round <N> — <topic>
@@ -106,7 +110,7 @@ Write the round as compact Markdown: one `##` heading for the round, a `**Situat
 ⏳ Held: <decision> — <what it waits on>
 Why now: <branch that just unblocked>. Still blocked: <branches waiting on this round>.
 
-**How it works today** — only when the round touches code; full text in `findings/<topic>.md`, the round keeps purpose, chain tree and simplified code.
+**How it works today** — explain purpose, lifecycle, caller/callee relationships, data formats and commented simplified code where the decision depends on them; preserve the full explanation in `findings/<topic>.md` too.
 
 **Overall recommendation**: <the answer set if the user says "all recommendations">.
 
@@ -129,7 +133,7 @@ Why now: <branch that just unblocked>. Still blocked: <branches waiting on this 
 
 Rules that keep it scannable:
 
-- Every marker keeps its plain-text label (`Pinned fact:`, `Settled:`, `Recommendation:`, `Flip condition:`) per [markers.md](markers.md); the emoji is presentation only; one marker per line.
+- Every marker keeps a plain-text label with the meaning in markers.md; local discussion may translate labels, while Change output uses English. Emoji are presentation only; one marker per line.
 - Each question is one `❔ Open decision:` paragraph with the bold `Q<n> — <title>`; the `⭐ Heavyweight` / `✨ New:` marker sits at the end of that line, never inline in prose.
 - Options are `- **A.**` bullets, one line each. Consequences that need more than a clause go under the option as an indented sub-bullet. Never indent option lines with four spaces: chat renders that as a code block.
 - Recommendation and flip condition are two separate lines directly under the options, so the eye finds them in the same place every time.
@@ -138,15 +142,29 @@ Rules that keep it scannable:
 
 ## Collect the answers
 
-After the written round is sent, issue the same questions through the host's structured answer form (`AskQuestion` in Cursor): one form question per `❔ Open decision:`, the same letters and titles, the recommended option first and suffixed `(Recommended)`, multiple selection only when the question allows several picks. The written round is the brief the form points at; a form alone is never a round. If the form is cancelled or the host has no form, accept the answers as text and continue. Record form answers in `log.md` exactly as returned.
+Use the current session's actual tool declarations, mode restrictions, and channel rules. The Skill describes the conversation; it cannot enable tools or guarantee how a client renders them.
+
+| Host | After sending the chat brief |
+| --- | --- |
+| Cursor | Call `AskQuestion` when the host exposes it and permits the question; follow its actual schema. |
+| Codex | Send the declarative brief in commentary, then call `request_user_input` when its declaration permits the active mode. Default mode is allowed only when the session exposes that capability; never assume all installations have it enabled. |
+| No usable form | Give the brief and ask one concise direct text question in the host-permitted channel. In Codex when commentary questions are forbidden, ask the text question in final. |
+
+For Codex form collection, do not send final before calling the tool: final ends the turn. Keep the question self-contained, with the recommended option first, suffixed `(Recommended)` when the schema calls for it, and short consequences in the option descriptions. A form alone is never a round: the system explanation and option comparison must already have been delivered in chat. Follow the schema's limits and built-in free-text support; do not copy Cursor-specific fields or option formatting into Codex arguments. Host restrictions on required input and approval take precedence: use a plain-text approval when the host requires it, and do not ask again for an already authorized action.
+
+Do not substitute `request_user_input_async` merely because Default mode is active. It sends an asynchronous question message; a tool acknowledgement is not proof of a visible selectable form. Use it only when the current host supports that interaction and asynchronous clarification fits the task. The confirmed Codex form path for this workflow is `request_user_input` when available.
+
+If a form is unavailable, fails, is cancelled, or the user reports that it is invisible, briefly explain and use the text fallback. Do not repeatedly probe the same tool or leave questions only in files. A preselected option, acknowledgement, cancellation, silence or elapsed time is not an answer or approval. Follow host policy for optional clarification and keep any permitted working assumption distinct from a user-confirmed decision. Required input stays pending. With asynchronous questions, continue only work independent of the answer and process the reply when it arrives.
+
+Record the actual brief, submitted question/options, and returned answer verbatim in `log.md`; record asynchronous answers delivered as new user messages the same way. If a blocking call is pending, its tool history holds the question until logging can resume. Never record prepared but unsent text as a presented round. After receiving an answer, reflect the settled choice and any remaining uncertainty in the conversation, update the draft, and recompute the next question.
 
 ## Grilling around a proposal draft
 
-In `proposal` mode the document comes first. Write the `design.md` draft, then run rounds whose questions each name the section they would change ("§3 Data flow — A keep the cache per module (recommended) / B global"). The situation brief is the draft itself plus what you are unsure of; do not re-ask what the draft already states. Settled answers are folded into the draft in place and logged as usual.
+In proposal mode, prepare or update the selected designs/<scope>/design.md, then explain evidence, recommendation and unresolved choices in chat. The document preserves the proposal; it does not replace the brief. Topic README owns current focus/mode, while the selected design README owns approval status. Do not re-ask settled decisions or treat recommendations as approval. Fold replies into the owning design and append the shared log.
 
 ## The carryover round
 
-The last round before `handoff.md` asks what the Change should keep from the draft. Its situation brief lists every candidate with source (`log.md` round heading or `findings/<file>`), target (`talk` when the rationale would otherwise be re-decided — the decision was hard to reverse, surprising without context, and a real trade-off; `knowledge` when the insight is reusable beyond this work and has evidence and a boundary), and reason; recommend a selection and let the user confirm, add, or drop. Only confirmed entries go into `Exploration Carryover`; `openspec-create-change` materializes exactly those.
+For an OpenSpec-selected handoff, the carryover round identifies what this design's Change should keep. List every candidate's source (shared log round or findings file), target (talk for decision rationale; knowledge for reusable insight) and reason. The user confirms, adds or drops candidates; only confirmed entries enter designs/<scope>/handoff.md. Sibling approval and research do not carry over implicitly. Explicit direct work without a Change does not require a Change carryover round.
 
 ## Record every round
 

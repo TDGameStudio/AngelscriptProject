@@ -59,12 +59,16 @@ function Test-IsOpenSpecLocalizationExempt {
 }
 
 function Test-IsOpenSpecDraftWorkingRecord {
-    # Brainstorming drafts keep the user's original wording in log.md and findings/; design.md and handoff.md stay English.
-    param([Parameter(Mandatory = $true)][string]$FullPath)
-    $normalized = $FullPath.Replace('\', '/')
-    if ($normalized -notmatch '/openspec/drafts/[^/]+/[^/]+/(.+)$') { return $false }
-    $relative = $Matches[1]
-    return ($relative -eq 'log.md') -or ($relative -like 'findings/*')
+    # Only the project's local draft tree follows the user's language; Change exports remain English.
+    param(
+        [Parameter(Mandatory = $true)][string]$FullPath,
+        [Parameter(Mandatory = $true)][string]$ProjectRoot
+    )
+    $normalized = [System.IO.Path]::GetFullPath($FullPath).Replace('\', '/')
+    $rootPrefix = [System.IO.Path]::GetFullPath($ProjectRoot).Replace('\', '/').TrimEnd('/') + '/'
+    if (-not $normalized.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) { return $false }
+    $relative = $normalized.Substring($rootPrefix.Length)
+    return $relative -match '^openspec/drafts/[^/]+/[^/]+/.+$'
 }
 
 function Test-IsLikelyOpenSpecTextFile {
@@ -278,14 +282,14 @@ function Get-OpenSpecEnglishViolations {
                                 $pending.Push($entry.FullName)
                             }
                         }
-                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $entry.FullName)) {
+                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $entry.FullName -ProjectRoot $ProjectRoot)) {
                             $allFiles.Add($entry) | Out-Null
                             if (Test-IsLikelyOpenSpecTextFile -File $entry) { $files.Add($entry) | Out-Null }
                         }
                     }
                 }
             }
-            elseif (-not (Test-IsOpenSpecLocalizationExempt -FileName $selectedItem.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $selectedItem.FullName)) {
+            elseif (-not (Test-IsOpenSpecLocalizationExempt -FileName $selectedItem.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $selectedItem.FullName -ProjectRoot $ProjectRoot)) {
                 $allFiles.Add($selectedItem) | Out-Null
                 if (Test-IsLikelyOpenSpecTextFile -File $selectedItem) { $files.Add($selectedItem) | Out-Null }
             }
@@ -328,7 +332,7 @@ function Get-OpenSpecEnglishViolations {
                                 $pending.Push($entry.FullName)
                             }
                         }
-                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $entry.FullName)) {
+                        elseif (-not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and -not (Test-IsOpenSpecLocalizationExempt -FileName $entry.Name) -and -not (Test-IsOpenSpecDraftWorkingRecord -FullPath $entry.FullName -ProjectRoot $ProjectRoot)) {
                             $allFiles.Add($entry) | Out-Null
                             if (Test-IsLikelyOpenSpecTextFile -File $entry) { $files.Add($entry) | Out-Null }
                         }
@@ -574,6 +578,42 @@ try {
     foreach ($allowedPath in @('.agents\skills\openspec\allowed_ZH.md', 'Tools\openspec\BINARY', 'attachments\reviews\quoted.md')) {
         Assert-True (-not (($fixtureViolations -join "`n").Contains($allowedPath))) "Language fixture should remain allowed: $allowedPath"
     }
+
+    # Exercise the real language gate, including flat legacy and scoped local designs.
+    $localDraftLanguagePaths = @(
+        'openspec\drafts\harness\topic\README.md',
+        'openspec\drafts\harness\topic\design.md',
+        'openspec\drafts\harness\topic\handoff.md',
+        'openspec\drafts\harness\topic\glossary.md',
+        'openspec\drafts\harness\topic\designs\delivery\README.md',
+        'openspec\drafts\harness\topic\designs\delivery\design.md',
+        'openspec\drafts\harness\topic\designs\delivery\handoff.md',
+        'openspec\drafts\harness\topic\designs\delivery\glossary.md',
+        'openspec\drafts\harness\topic\log.md',
+        'openspec\drafts\harness\topic\findings\diagram.md'
+    )
+    $changeLanguagePaths = @(
+        'openspec\changes\fixture\attachments\drafts\design.md',
+        'openspec\changes\fixture\attachments\drafts\handoff.md',
+        'openspec\changes\fixture\attachments\drafts\findings\diagram.md',
+        'openspec\changes\fixture\attachments\openspec\drafts\harness\topic\design.md'
+    )
+    $draftLanguageFailures = [System.Collections.Generic.List[string]]::new()
+    foreach ($relative in @($localDraftLanguagePaths) + @($changeLanguagePaths)) {
+        $fixtureFile = Join-Path $languageFixtureRoot $relative
+        [void](New-Item -ItemType Directory -Path (Split-Path -Parent $fixtureFile) -Force)
+        [System.IO.File]::WriteAllText($fixtureFile, [string][char]0x8BBE, [System.Text.UTF8Encoding]::new($false))
+        $actual = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($relative))
+        $expectedCount = if ($relative -in $localDraftLanguagePaths) { 0 } else { 1 }
+        if ($actual.Count -ne $expectedCount) {
+            $draftLanguageFailures.Add("${relative}: expected $expectedCount language violations, got $($actual.Count)") | Out-Null
+        }
+    }
+    $selectedDraftTreeViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @('openspec/drafts/harness/topic'))
+    if ($selectedDraftTreeViolations.Count -ne 0) {
+        $draftLanguageFailures.Add("Selecting a local draft directory reported $($selectedDraftTreeViolations.Count) language violations") | Out-Null
+    }
+    Assert-Equal $draftLanguageFailures.Count 0 ("Local draft language boundary failures:`n{0}" -f ($draftLanguageFailures -join [Environment]::NewLine))
 
     $selectionFixtureFailures = [System.Collections.Generic.List[string]]::new()
     $selectedCleanViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($selectedCleanRelative))
@@ -989,7 +1029,7 @@ foreach ($token in @('AskQuestion', 'exactly as sent')) {
 }
 Assert-True ($grillingText.Contains('## The carryover round')) 'Grilling must define the carryover round.'
 Assert-True ($grillingText.Contains('## Grilling around a proposal draft')) 'Grilling must define proposal-mode rounds.'
-Assert-True ($exploreText.Contains('`designed` → `openspec-create-change`')) 'Brainstorming must hand a designed draft to openspec-create-change.'
+Assert-True ($exploreText.Contains('`designed` → `openspec-create-change`')) 'Brainstorming must hand a selected designed scope to openspec-create-change.'
 Assert-True (-not $exploreText.Contains('Never invoke it after the target Change exists')) 'Brainstorming must scope the never-after rule to design mode so research drafts stay allowed.'
 $gitignoreText = Get-Content -LiteralPath (Join-Path $projectRoot '.gitignore') -Raw
 Assert-True ($gitignoreText -match '(?m)^/openspec/drafts/\s*$') 'Brainstorming drafts must be git-ignored.'
@@ -1218,7 +1258,7 @@ foreach ($token in @('## Exploration carryover', 'openspec/drafts/<domain>/<topi
     Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"
 }
 $recordSchemaText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\record-schema.md') -Raw
-foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness does not scan it', 'log.md`/`findings/`')) {
+foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness does not scan it', 'local draft materials under `openspec/drafts/` default to', 'Every final Change record and attachment is English')) {
     Assert-True ($recordSchemaText.Contains($token)) "Record schema draft contract is missing: $token"
 }
 foreach ($token in @('openspec/drafts/', 'brainstorming')) {

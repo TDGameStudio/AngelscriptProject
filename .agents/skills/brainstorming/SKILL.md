@@ -1,85 +1,90 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative or design work — a new feature, refactor, behavior change, Skill or workflow change — and before replying with a proposal, a recommendation among options, a trade-off, or more than one diagram, or whenever a user-owned decision is unconfirmed. Opens an openspec/drafts/ draft (research | proposal | design), grills the user in recorded rounds, confirms names, and ends with an approved design handed to openspec-create-change or a parked/abandoned draft. Never reopen design mode for a Change that already exists."
+description: "Use before creative or design work, proposals, trade-offs, or unconfirmed user-owned decisions. Keep a continuing openspec/drafts/ topic with recorded grill rounds and independent scoped design directories. Confirm names and scoped handoffs before selected OpenSpec work; respect explicitly authorized direct work without a Change. Never reopen design mode for a Change that already exists."
 ---
 
 # Brainstorming: Explore and Record into a Draft
 
-Explore an idea with the user through relentless, recorded dialogue, and write everything you learn — questions, answers in the user's own words, findings, rejected paths, names — into a draft under `openspec/drafts/`. This Skill owns the Brainstorm Gate and writes nothing outside the draft. A draft ends in one of three states: `designed` (handed to `openspec-create-change`, which creates the Change and mines the draft for talks and knowledge), `parked` (worth keeping, no Change now), or `abandoned`.
+Explore ideas with the user through recorded dialogue under `openspec/drafts/`. One topic owns shared research and an append-only conversation; independently deliverable designs live in `designs/<scope>/`. A topic can keep exploring while individual designs become ready or handed off. This Skill owns the Brainstorm Gate; exploration writes stay in the draft and implementation follows the user's selected route.
 
 <HARD-GATE>
-Do not create an OpenSpec Change, write code, scaffold files outside the draft, or invoke `openspec-apply-change` until you have presented a design and the user has approved it. This applies regardless of perceived simplicity and regardless of entry mode: a `research` or `proposal` draft must be upgraded to `design` and complete the checklist before anything leaves the draft. Once a Change exists, never reopen `design` mode for that Change's scope; corrections then belong to `openspec-update-change`, and task-local uncertainty to `openspec-apply-change`. `research` and `proposal` drafts are not tied to a Change and may be opened at any time — but a finding that changes an active Change's plan is planning-invalidating evidence and goes to `openspec-update-change`, never straight into implementation.
+For unresolved design work, present the relevant design and obtain its approval before implementation or Change creation. A mode, directory, sibling design's approval or unanswered form is not approval. Respect existing authorization: if the user explicitly directs implementation of the discussed approach without a Change, record that route and proceed with authorized work; do not create a Change or repeat an already settled approval. Only OpenSpec-selected work requires the named Change and carryover handoff below. Once a Change exists, never reopen `design` mode for that Change's scope; corrections belong to `openspec-update-change`, task-local uncertainty to `openspec-apply-change`. Other scopes can continue in the topic. A research finding invalidating an active Change's plan goes to update-change, not straight into implementation.
 </HARD-GATE>
+
+## Conversation before questions
+
+Before every questioning round, including the first or resumed round, send a situation brief in the conversation. Identify the current topic/design, settled and open decisions, relevant facts and uncertainty, what each answer changes, and recommendations with consequences. Explain why these decisions are next. For technical decisions, explain the system for someone unfamiliar with it: purpose, lifecycle, caller and callee chains, data formats, and simplified code with comments at the relevant lines. Cover what establishes the decisions; do not impose a paragraph limit or move necessary explanation out of chat to keep it short.
+
+The brief must be an actual assistant message visible before the question tool is called. Writing it to log.md, displaying file contents through a tool, linking design.md or putting it only in the form does not satisfy this step. In Codex, send declarative commentary, then use `request_user_input` when its current declaration and host rules permit. Do not send final before that call. Follow [answer collection](references/grilling.md#collect-the-answers) for host restrictions and fallback.
+
+Each question settles one clear decision; a round may group related, independent questions whose prerequisites are settled. Choose the count for the user's pace, explanation complexity and actual host limits, rather than mechanically forcing one question. Dependent questions wait. After answers, acknowledge what each settles and what remains open, then recompute the frontier. Append actual conversation, diagrams and tool questions/answers to log.md; corrections are new entries, never rewritten history. Never end with only a file link or "the draft has been updated".
+
+Use [visual-explain](../visual-explain/SKILL.md) for useful structure, workflow, call-chain, lifecycle or data-format explanations. Show the diagram in chat, explain important relationships, and preserve it in the draft. Use inline trees, flow diagrams and annotated code sketches; no interactive diagram tool is part of this workflow. A trivial question need not have a diagram. Headings and new draft content default to the user's conversation language unless the user specifies another draft language; Change output is English.
 
 ## Entry modes
 
-One draft layout, three ways in. The mode is recorded in the draft `README.md` and only decides where you start and where you may stop; recording rules are identical.
+The topic README records mode for its current focus: what the agent is doing now, not the maturity of every design. Keep a current-focus link and continuation note. Scoped designs record their own approval/handoff status, with no separate mode. Recording rules are identical.
 
-| Mode | When | First step | May stop at |
-| --- | --- | --- | --- |
-| `research` | The user wants to understand something: "how does this part work", a comparison, an ASCII diagram | Explore and write `findings/<topic>.md` (diagrams embedded as-is, conclusions and open points at the end); grill only when a fact needs the user | `parked` — no design, no Change |
-| `proposal` | The user asks for a proposal: "give me a proposal for X" | Write a `design.md` draft first — scope, approach, diagram, trade-offs, recommendation — then grill *around that document*: each question points at the section it would change | `parked`, or upgrade to `design` |
-| `design` | New feature, architecture refactor, major behavior change, or any unconfirmed user-owned decision | The full checklist below | `designed` → `openspec-create-change` |
+| Mode | Work | Stop or continue |
+| --- | --- | --- |
+| `research` | Investigate and write shared `findings/<topic>.md`; ask only for missing user-owned information | Findings may be enough; keep exploring or park |
+| `proposal` | Once a bounded outcome is identifiable, write `designs/<scope>/design.md` as a candidate, then grill around its affected sections | Revise, park, or switch to design to converge |
+| `design` | Resolve the decisions needed for an accepted scoped design | For OpenSpec-selected work: `designed` → `openspec-create-change`; otherwise follow the authorized direct route |
 
-Open a draft as soon as your output contains a proposal, a trade-off, or more than one diagram; plain question-and-answer ("what does this function do") is not recorded. Say `Draft opened: <path> (mode: <mode>)` once so the user can object. Upgrading a mode appends to the same draft — change `mode`, keep every finding, and complete the steps the earlier mode skipped (naming round, carryover round).
+Open a draft when output contains a proposal, trade-off or more than one diagram. An isolated factual answer outside continuing exploration need not open one. Say `Draft opened: <path> (mode: <mode>)` once. Within an existing draft, append all discussion, including factual clarifications. Switch mode when activity changes and record why; returning to research does not revoke scoped approval. Create a design directory when its independent outcome can be described, before approval, with only needed files. Pure investigation stays in findings. Do not force a one-way mode ladder.
 
-## Anti-pattern: "this is too simple to brainstorm"
+## Pass the gate with the actual scope
 
-Unexamined assumptions cost the most on small requests. A clear defect repair or a mechanical documentation change may skip the gate, but only after you state the one assumption that makes it clear, in one sentence, where the user can object. If any user-owned decision is still unconfirmed, the gate applies.
+A clear defect repair, mechanical documentation change or accepted implementation may skip unresolved-design exploration when no user-owned decision remains: state the assumption. Do not use apparent simplicity to skip a real design choice. Explicit user authorization takes precedence over an inferred approval ceremony or mandatory Change creation.
 
-## Checklist (design mode)
+## Checklist for a scoped design
 
-Work these in order and keep the draft current at every step. `proposal` mode enters at step 6 with a draft `design.md` and then runs steps 3-5 against it; `research` mode runs steps 1-2 and records into `findings/`:
+Research uses shared findings; proposal may start with a candidate before grilling. Complete relevant design work for the selected `designs/<scope>/`, not for every subject in the topic at once.
 
-1. **Explore project context** — code, tests, current specs, active Changes, recent commits. Facts are your job, never the user's.
-2. **Open the draft** — create `openspec/drafts/<domain>/<topic>/` per [drafts.md](references/drafts.md) before the first question. Append every round, every answer, and every finding as it happens.
-3. **Grill in frontier rounds** — per [grilling.md](references/grilling.md): open with a situation brief, number each question, give a recommended answer, ask the whole current frontier, collect the answers through the host's answer form, wait, recompute. Paste the round into `log.md` exactly as sent and the user's reply exactly as written. Include naming questions per [naming.md](references/naming.md) and record settled names in `glossary.md`.
-4. **Propose 2-3 approaches** — with trade-offs and one recommendation, lead with the recommendation. Do not manufacture alternatives when requirements force one option.
-5. **Present the design** — in sections scaled to their complexity; ask after each section whether it is right so far. Cover scope, architecture and components, data flow, naming, error handling and edge cases, verification.
-6. **Write `design.md`** — the approved design, then self-review: placeholders, contradictions, scope too large for one Change, ambiguous requirements. Fix inline.
-7. **User reviews the written design** — stop and wait: "Design written to `<path>`. Review it before I write the handoff." Revise and re-review on changes.
-8. **Carryover round** — the last grill round. List every candidate worth carrying into the Change: for each, its source (`log.md` round heading or `findings/<file>`), its target (`talk` when the rationale would otherwise be re-decided; `knowledge` when the insight is reusable beyond this work), and the reason. Recommend a selection; the user confirms. Only confirmed items enter `handoff.md`; everything else stays in the draft.
-9. **Write `handoff.md`** — the decision-complete handoff per [deep-exploration.md](references/deep-exploration.md), including `OpenSpec Handoff` (Change ID settled in the naming round) and the confirmed `Exploration Carryover`.
-10. **Transition** — set the draft to `status: designed` and invoke `openspec-create-change`. That is the only skill invoked after a designed draft. If the user decides not to proceed, set `parked` (with one line on what would revive it) or `abandoned` (with why) and stop.
+1. **Explore project context** — inspect code, tests, current specs and relevant existing Changes. Facts available in the repository are the agent's job.
+2. **Open or resume the draft** — use [drafts.md](references/drafts.md). Read the current-focus entry and selected material before the relevant log rounds; preserve older records.
+3. **Grill in frontier rounds** — per [grilling.md](references/grilling.md), present the situation brief, number each independent decision, give a recommended answer for each, collect replies and recompute. Paste the round into log.md exactly as sent and replies exactly as written. Include [naming](references/naming.md); distinguish shared glossary.md vocabulary from the selected design's names.
+4. **Compare approaches** — explain viable alternatives and recommend one with trade-offs. Do not manufacture alternatives when the evidence forces a choice.
+5. **Maintain design.md** — scope, architecture, data flow, names, errors, edge cases and verification. Label it as a candidate until accepted. Separate independently deliverable outcomes into sibling designs; A/B alternatives for the same outcome normally remain sections in one design.
+6. **Present and review** — explain the written design and meaningful revisions in the conversation, linked to its file. Obtain only missing approval for this scope using the host-permitted mechanism; a file link alone is not presentation. A material change to an accepted decision needs the affected decision revisited, not unrelated approvals repeated.
+7. **Select the work route** — respect explicit direct implementation without a Change. The remaining handoff steps apply only when OpenSpec owns the work; do not create a Change by inference from a design directory.
+8. **Carryover round** — list this design's talk/knowledge candidates with source, target and reason; the user confirms what enters the Change. Recommend relevant material, not the whole transcript or sibling research.
+9. **Write handoff.md** — in the selected design directory per [deep-exploration.md](references/deep-exploration.md): decision-complete handoff, settled OpenSpec Handoff identity and confirmed Exploration Carryover.
+10. **Transition** — set only the selected design README to status: designed and pass its exact directory to openspec-create-change. A design or topic may instead be parked with a resumption condition, or abandoned with why. Handing off one design does not close the topic.
 
 ```text
-research: question -> draft opened (mode: research) -> findings/<topic>.md (diagrams, conclusions) -> parked | upgrade
-proposal: request  -> draft opened (mode: proposal) -> design.md draft -> grill around it -> parked | upgrade to design
-design:
-idea -> context -> draft opened -> grill rounds (incl. naming) -> approaches
-     -> design sections approved -> design.md + self-review -> user review
-     -> carryover round (talks / knowledge confirmed) -> handoff.md
-     -> designed  -> openspec-create-change -> Change + seeded attachments -> openspec-apply-change (Ensure plan)
-     -> parked    -> draft kept, revisit later
-     -> abandoned -> draft kept as record, nothing else
+topic draft                         // Shared log, findings and current activity remain resumable.
+├─ research                         // Investigation needs no delivery directory.
+└─ designs/<scope>/                 // Created when a bounded outcome can be described.
+   ├─ proposal/design discussion    // Explain, grill, revise and confirm this scope.
+   ├─ authorized direct work        // Follow the user's route without a Change.
+   ├─ designed -> create-change     // OpenSpec route with confirmed carryover.
+   │  └─ apply (Ensure plan)        // English seeded attachments feed the Change plan.
+   └─ parked / abandoned            // Other designs and research can continue.
 ```
 
 ## Grilling in short
 
-- Every question to the user is a grill round, whether it is one question, a naming choice, or a full frontier. Do not ask ad-hoc questions outside a round.
-- Every round opens with a **situation brief**: what you inspected (with paths); when code is involved, the current state — purpose, lifecycle, caller and callee chains, data formats, and a simplified code block with the explanation embedded as comments, written for someone who has never seen the system; what is already settled; why these questions are unblocked now; and your overall recommendation. The user should never have to scroll back or open a file to answer.
-- Model the plan as a design tree. The **frontier** is every decision whose prerequisites are settled. Ask the whole frontier in one round; a question that depends on another open question waits for a later round.
-- Every question carries a **recommended answer** and its consequence. Prefer multiple choice; accept partial, out-of-order, or "all recommendations" replies.
-- When a question needs a fact, look it up (or dispatch an explore subagent) and ask the rest of the frontier now. Never ask the user for something the repository can answer.
-- Use the [marker vocabulary](references/markers.md) so rounds scan well; every line keeps its plain-text label. Write the round in the compact shape from [grilling.md](references/grilling.md): one heading, `**Situation**` marker lines, one `❔ Open decision:` paragraph per question.
-- After the written round, issue the same questions through the host's structured answer form (`AskQuestion` in Cursor) with matching letters and the recommended option first; the form never replaces the written round, and a cancelled form falls back to a text reply.
-- The session is done when the frontier is empty and the user confirms shared understanding.
+- Every question to the user is a grill round: one decision or several independent decisions share the required context and recording discipline. Do not ask ad-hoc questions outside that structure.
+- Every round starts with the visible situation brief, detailed enough to answer without opening files or reconstructing history.
+- Model a design tree. The frontier contains decisions whose prerequisites are settled; dependent questions wait. Group independent questions when useful, respecting the host's actual limits and the user's pace.
+- Give a recommended answer and consequences for each question. Accept partial, out-of-order and free-text replies; do not interpret silence or a selected default as confirmation.
+- Use the compact [round format](references/grilling.md) and [markers](references/markers.md) when helpful. Adapt language and headings; preserve scope, sources, explanation, alternatives, recommendation and material flip conditions. Short form labels alone cannot explain a decision.
+- After the brief, prefer Codex request_user_input or Cursor AskQuestion when actually exposed and permitted. A form does not replace the brief. A required text fallback retains the same explanation and decision boundary.
+- After replies, reflect what each answer settles, record it, and choose the next unblocked work. Do not substitute an omnibus design-approval question for unresolved frontier decisions.
 
 ## Naming
 
-New public types, modules, files, and key functions are decisions, not details. Inspect neighbouring conventions first, then present each name in a round with the recommendation, alternatives, and the evidence. Settled names go to the draft `glossary.md` and the design's "Vocabulary and Naming" section, and later into each task's **Interfaces**. Apply never asks: a name the task did not list is derived from convention and recorded as `Naming assumed: <name>` in the task Evidence for review. See [naming.md](references/naming.md).
+New public types, modules, files and key functions are decisions. Inspect neighbours, explain the name and alternatives, and record settled names in glossary.md and the design's Vocabulary and Naming section per [naming.md](references/naming.md). Independent names may share a round. Apply never asks: it derives an unlisted public name from convention and records Naming assumed in task Evidence.
 
-## Design for isolation and clarity
+## Records and handoff
 
-Break the system into units with one purpose, clear interfaces, and independent tests. For each unit answer: what does it do, how is it used, what does it depend on. When existing code obstructs the work (a file grown too large, tangled ownership), include the targeted improvement in the design; do not propose unrelated refactoring.
-
-## Records
-
-- The draft is the durable owner of the conversation. Keep `log.md` append-only; `log.md` and `findings/` may keep the user's original wording, while `design.md` and `handoff.md` are English.
-- After acceptance, `openspec-create-change` creates the Change, copies `design.md` and `handoff.md` into `attachments/drafts/`, and materializes only the confirmed carryover: decision-critical rationale into indexed talks, reusable evidence-backed insights into indexed change-local knowledge. The `Ensure plan` step of `openspec-apply-change` then routes settled scope to proposal, durable behavior to specs, non-obvious architecture to design, and executable boundaries to tasks. Never copy the exploration transcript into the Change; it stays in the draft.
-- Ask before `change create`, never after. A decision-complete handoff is an input to Change creation, not an active Change or Ready Task DAG.
-- A `parked` draft is a legitimate outcome. Its findings and glossary remain discoverable under `openspec/drafts/`; reviving it means reopening `brainstorming` on the same directory, not starting over.
+- Write new draft material in the user's conversation language by default, inferred from the conversation; honor an explicit draft-language preference. Do not choose an arbitrary language. Preserve historical records rather than translating them automatically. Preserve original-language conversation verbatim in append-only log.md, including visible diagrams and actual form payloads/answers.
+- Final Change output, including design/handoff/glossary copies, findings, talks, knowledge and diagram explanations, is English. Copy English originals or faithfully translate other languages with provenance; keep local originals.
+- openspec-create-change consumes one selected approved handoff, seeds attachments/drafts/, and materializes confirmed rationale into indexed talks and reusable insights into indexed change-local knowledge. Ensure plan writes proposal/specs/design/tasks. Never copy the exploration transcript into the Change.
+- Resolve required approval before `change create`, never after; existing authorization need not be requested again. One scoped handoff produces one Change; a topic can produce several. A decision-complete handoff is not an active Change or Ready Task DAG.
+- Preserve legacy flat drafts per [drafts.md](references/drafts.md). Do not bulk-migrate logs or approved records. A parked topic resumes in the same directory.
 
 ## Brainstorming needs a present user
 
-Grill rounds are conversations. Unattended continuation (for example a Codex `/goal` run) never opens brainstorming and never starts a new draft: it continues only the Ready tasks of an already approved Change. When such a run uncovers a user-owned decision, that is planning-invalidating evidence — record it and route it to `openspec-update-change` replan, which parks the open decision with a recommendation until the next attended session answers it in a grill round.
+Unattended continuation (including Codex `/goal`, defined by Harness) never opens brainstorming or a new draft. It continues approved Ready tasks of an existing Change; a new user-owned decision is planning-invalidating evidence for `openspec-update-change` replan, which parks it with a recommendation until an attended round can answer. Ordinary task uncertainty stays inside apply.

@@ -4,7 +4,7 @@ Load this reference only when markers make a pre-Change exploration round, compa
 
 ## Usage contract
 
-- Use at most one leading marker per line and always follow it with the stable English label below.
+- Use at most one leading marker per line and pair it with a plain-text label. The English labels below define stable meanings; local discussion defaults to equivalent labels in the user's conversation language, honoring an explicit language preference. Final Change exports use English.
 - Keep the sentence complete without the emoji. Color, glyph width, or emoji rendering must never carry the only meaning.
 - Do not put markers in YAML, filenames, Task DAG IDs/edges, review or issue status fields, or commands.
 - Do not parse markers to determine readiness, completion, review state, or knowledge promotion.
