@@ -189,7 +189,17 @@ The reconstructed lexer, preprocessor, parser, AST, compilation, identity and de
 #### Scenario: Include the reconstructed language headers
 - **GIVEN** a consumer includes the maintained headers and uses the repository's existing AS namespace configuration
 
-    Source directory organization is independent of C++ scope. Reconstructed language headers live under `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/`. That folder name is not a C++ namespace.
+    Source directory organization is independent of C++ scope. Reconstructed language headers live under `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/<Phase>/`, where `<Phase>` is one of `Basic`, `Lexer`, `Parser`, `AST`, `Sema`, or `Compile`. The directory name `frontend` is not a C++ namespace.
+
+    Consumers include against the `angelscript/` root:
+
+    ```cpp
+    #include "frontend/Lexer/as_tokenizer.h"
+    #include "frontend/Parser/as_parser.h"
+    #include "frontend/Sema/as_sema.h"
+    #include "frontend/AST/as_ast_context.h"
+    #include "frontend/Compile/as_compilation_session.h"
+    ```
 
 - **WHEN** the consumer names asCTokenizer, asCPreprocessor, asCParser, asCASTContext or asCCompilationSession
 
@@ -204,13 +214,13 @@ The reconstructed lexer, preprocessor, parser, AST, compilation, identity and de
 
 - **BUT** the migration does not remove the outer AS namespace macros or add a new configuration switch
 
-    A directory named frontend is not a compatibility namespace. Legacy declarations must not reappear through transitive includes, aliases, or a fallback parser.
+    A directory named frontend is not a compatibility namespace. Legacy declarations must not reappear through transitive includes, aliases, or a fallback parser. A nested `frontend/Frontend/` directory is not a substitute for the `Compile/` phase folder.
 
 #### Scenario: Compose compilation and detached metadata consumers
-- **WHEN** Builder, MetadataImage, ScriptFunction, Engine registration and the UE descriptor consumer exchange asSStableKey or asCTypeContext
+- **WHEN** Builder, DefinitionSet, ScriptFunction, Engine registration and the UE descriptor consumer exchange asSStableKey or asCTypeContext
   > Inputs: These are the same identity/configuration types used by the reconstructed syntax pipeline, not frontend-only copies.
 - **THEN** all consumers refer to the same canonical AS definitions without an intermediate namespace or adapter type
-  > Observables: Cross-module declarations agree at compile/link time; same-pointer definitions, retained image leases and single-engine registration keep their existing behavior.
+  > Observables: Cross-module declarations agree at compile/link time; same-pointer definitions, retained definition-set leases and single-engine registration keep their existing behavior.
 - **BUT** a namespace alias or using declaration cannot stand in for migrating the real declaration and its consumers
   > Boundaries: Rebuilding dependent C++ modules is required; old exported C++ symbol compatibility is not promised.
 

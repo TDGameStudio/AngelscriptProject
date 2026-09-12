@@ -46,7 +46,7 @@ Use this split whenever adding a type-bearing AST edge, artifact record, cache e
 - [Canonical AST architecture audit 01](../../../../../../../Temp/canonical-ast-cache-jit-audit/01-CanonicalAST%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%97%AE%E9%A2%98.md), lines 296-325,401-458
 - [Canonical AST type audit 09](../../../../../../../Temp/canonical-ast-cache-jit-audit/09-CanonicalAST%E7%B1%BB%E5%9E%8B%E5%88%86%E7%B1%BB%E4%BA%8C%E6%AC%A1%E5%AE%A1%E8%AE%A1.md), lines 167-318,353-414
 - `Plugins/Angelscript/Source/AngelscriptRuntime/Core/Artifacts/AngelscriptArtifactIdentity.h`
-- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/as_type.h`
+- `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/frontend/AST/as_type.h`
 - `Plugins/Angelscript/Source/AngelscriptRuntime/angelscript/as_runtime_type_binding.h`
 - `D:/LLVM/llvm-project-22.1.8.src/clang/include/clang/AST/Type.h`
 - `D:/LLVM/llvm-project-22.1.8.src/clang/include/clang/Serialization/ASTBitCodes.h`

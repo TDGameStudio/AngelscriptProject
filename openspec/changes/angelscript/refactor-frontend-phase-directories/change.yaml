@@ -1,0 +1,11 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_0f34308a-ea45-49f8-9826-4fef54e01931
+  id: angelscript/refactor-frontend-phase-directories
+  title: Split reconstructed frontend sources into phase directories
+workflow: angelscript
+created_at: 2026-09-12T04:22:42Z
+goal: Move reconstructed language sources into frontend phase directories, align implementation filenames with headers, rewrite includes, and retarget live path citations, without changing language behavior or C++ namespaces.
+affected_areas:
+- angelscript/language
