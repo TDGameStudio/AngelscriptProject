@@ -1,0 +1,13 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_ca786123-01ef-484c-9532-f862d2cab07a
+  id: angelscript/fix-generated-registration-inline-lambda
+  title: Inline Generated Test Code Registration Factories
+workflow: angelscript
+created_at: 2026-09-14T05:00:50Z
+archived_at: 2026-09-14T05:06:49Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The only Task DAG node passed renderer RED/GREEN, deterministic regeneration and drift checking, editor compilation, exact 1/1 GeneratedSources Automation, and strict Change validation; no durable specification delta applies.

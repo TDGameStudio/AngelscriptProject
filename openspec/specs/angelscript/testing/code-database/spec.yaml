@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_f2a9645a-9faa-45ac-9998-34f53731b9cb
+  id: angelscript/testing/code-database
+  title: AngelScript test code database
+  description: Durable contracts for owned, versioned and reusable AngelScript test source materials.

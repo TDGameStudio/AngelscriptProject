@@ -11,6 +11,10 @@ The reconstruction baseline hard-disables the old runtime and legacy test corpus
 
 Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT. The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
+Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries. It covers both providers, complete-version rules, ownership and failure boundaries; the durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
+
+When you need CQTest macro expansion, registration, lifecycle, matcher internals, latent commands, or engine test components, load [cqtest.md](cqtest.md). That file is the UE 5.8 engine reference. This skill owns project identity, replacement fixtures, and Harness verification. If they conflict, this file wins.
+
 ## Replacement NativeEngine CQTest Rules
 
 - Use CQTest only as an explicitly included UE assertion and registration library under `WITH_ANGELSCRIPT_TESTS`; do not enable `WITH_ANGELSCRIPT_UNITTESTS` or inherit the legacy force include.

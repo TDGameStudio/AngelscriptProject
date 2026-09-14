@@ -1,0 +1,139 @@
+"""Shared read-only synchronization planning and bounded plan application."""
+
+from __future__ import annotations
+
+import os
+import tempfile
+from pathlib import Path
+
+from .cpp_renderer import GENERATOR_SIGNATURE, render_projection
+from .discovery import discover_sources
+from .model import CodegenError, Projection, SyncPlan
+
+
+_SIGNATURE_BYTES = (GENERATOR_SIGNATURE + "\n").encode("utf-8")
+
+
+def _relative_output_path(generated_root: Path, candidate: Path) -> str:
+    try:
+        return candidate.relative_to(generated_root).as_posix()
+    except ValueError as error:
+        raise CodegenError(f"Generated path escapes the generated root: {candidate}") from error
+
+
+def _is_signed_projection(path: Path) -> bool:
+    if path.is_symlink() or not path.is_file() or path.name.endswith(".generated.cpp") is False:
+        return False
+    with path.open("rb") as stream:
+        return stream.read(len(_SIGNATURE_BYTES)) == _SIGNATURE_BYTES
+
+
+def build_sync_plan(author_root: Path, generated_root: Path) -> SyncPlan:
+    author_root = Path(author_root).resolve()
+    generated_root = Path(generated_root).resolve()
+    sources = discover_sources(author_root)
+    projections = tuple(
+        Projection(
+            source=source,
+            output_path=generated_root / Path(source.output_relative_path),
+            content=render_projection(source),
+        )
+        for source in sources
+    )
+
+    expected = {projection.source.output_relative_path: projection for projection in projections}
+    missing: list[str] = []
+    changed: list[str] = []
+    stale: list[str] = []
+    unsafe_extra: list[str] = []
+
+    for relative_path, projection in expected.items():
+        output_path = projection.output_path
+        if output_path.is_symlink():
+            unsafe_extra.append(relative_path)
+        elif not output_path.exists():
+            missing.append(relative_path)
+        elif not output_path.is_file():
+            unsafe_extra.append(relative_path)
+        elif output_path.read_bytes() != projection.content:
+            changed.append(relative_path)
+
+    if generated_root.is_symlink():
+        raise CodegenError(f"Generated root must not be a symbolic link: {generated_root}")
+    if generated_root.exists() and not generated_root.is_dir():
+        raise CodegenError(f"Generated root is not a directory: {generated_root}")
+    if generated_root.is_dir():
+        for candidate in sorted(generated_root.rglob("*"), key=lambda path: path.as_posix()):
+            if not candidate.is_file() and not candidate.is_symlink():
+                continue
+            relative_path = _relative_output_path(generated_root, candidate)
+            if relative_path in expected:
+                continue
+            if _is_signed_projection(candidate):
+                stale.append(relative_path)
+            else:
+                unsafe_extra.append(relative_path)
+
+    return SyncPlan(
+        author_root=author_root,
+        generated_root=generated_root,
+        projections=projections,
+        missing=tuple(sorted(missing)),
+        changed=tuple(sorted(changed)),
+        stale=tuple(sorted(stale)),
+        unsafe_extra=tuple(sorted(set(unsafe_extra))),
+    )
+
+
+def _atomic_write(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+
+def _remove_empty_directories(generated_root: Path) -> None:
+    if not generated_root.is_dir():
+        return
+    directories = [path for path in generated_root.rglob("*") if path.is_dir()]
+    for directory in sorted(directories, key=lambda path: len(path.parts), reverse=True):
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+
+
+def apply_sync_plan(plan: SyncPlan) -> None:
+    write_paths = set(plan.missing) | set(plan.changed)
+    for projection in plan.projections:
+        relative_path = projection.source.output_relative_path
+        if relative_path not in write_paths:
+            continue
+        expected_path = plan.generated_root / Path(relative_path)
+        if expected_path != projection.output_path:
+            raise CodegenError(f"Projection path changed after planning: {relative_path}")
+        if expected_path.is_symlink():
+            raise CodegenError(f"Refusing to replace generated-output symlink: {relative_path}")
+        _atomic_write(expected_path, projection.content)
+
+    for relative_path in plan.stale:
+        stale_path = plan.generated_root / Path(relative_path)
+        if not _is_signed_projection(stale_path):
+            raise CodegenError(
+                f"Refusing to remove stale output whose signature changed: {relative_path}"
+            )
+        stale_path.unlink()
+
+    _remove_empty_directories(plan.generated_root)

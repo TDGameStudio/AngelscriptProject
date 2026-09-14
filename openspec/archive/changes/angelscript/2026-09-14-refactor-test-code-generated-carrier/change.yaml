@@ -1,0 +1,13 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_394ac662-e902-46cd-82f3-e7f8dd9975a0
+  id: angelscript/refactor-test-code-generated-carrier
+  title: Replace Test Code Resources with Generated C++
+workflow: angelscript
+created_at: 2026-09-14T04:35:09Z
+archived_at: 2026-09-14T04:58:28Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: Both Task DAG nodes passed their exact proofs; the modular generator, checked-in carrier, resource removal, 27-case Framework run, strict validation, Skill validation, and durable specification synchronization are complete.
