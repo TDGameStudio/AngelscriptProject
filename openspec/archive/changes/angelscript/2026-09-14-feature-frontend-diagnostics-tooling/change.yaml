@@ -1,0 +1,77 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_e28485fe-1dc1-4d62-adf9-b45bfebd0528
+  id: angelscript/feature-frontend-diagnostics-tooling
+  title: Clang-style frontend diagnostics and native semantic tooling
+  description: Upgrade every current native frontend diagnostic path, implement reusable completion, signature help, hover and definition queries, and expose an in-process SDK language service for compile-time diagnostic formatting and suggestion query without an LSP transport or legacy runtime activation.
+workflow: angelscript
+created_at: 2026-09-05T13:52:52Z
+goal: Provide rich source-accurate diagnostics, engine-independent semantic queries, and an in-process SDK facade so compilation failures can format Clang-style suggestions and inspect notes/fixes without a language-server process.
+affected_areas:
+- angelscript/language/frontend
+- angelscript/language/ast/core
+archived_at: 2026-09-14T13:33:21Z
+archive_schema: closure-v1
+closure:
+  kind: superseded
+  reason: Accepted diagnostic-engine successor combines the full native tooling contract with fragment-bound production and queued Lex/PP; no predecessor product task was implemented.
+  superseded_by: angelscript/feature-frontend-diagnostics-and-tooling
+  superseded_by_uid: change_105fafc6-2415-4c9a-9b7c-ed3f81310d0c
+  task_dispositions:
+    '1.1':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.1
+    '1.2':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.2
+    '1.3':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.3
+    '1.4':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.4
+    '2.1':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.1
+    '2.2':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.2
+    '2.3':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.3
+    '2.4':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.4
+    '3.1':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.1
+    '3.2':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.2
+    '3.3':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.3
+    '3.4':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.4
+    '4.1':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/6.1
+    '5.1':
+      status: superseded
+      reason: Accepted outcome transferred without claiming implementation.
+      follow_up: angelscript/feature-frontend-diagnostics-and-tooling/5.1

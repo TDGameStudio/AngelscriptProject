@@ -1,0 +1,2 @@
+kind: completed
+reason: All 25 Task DAG nodes passed their proving commands. Durable deltas are synchronized into current specs, including the new angelscript/language/frontend/tooling capability. Both user Final Reviews are closed APPROVE on the repaired snapshot. Knowledge candidates remain unpromoted. NativeEngine 58e6f563f214438bbf7ace83d26d4aeb is 1164/1164.

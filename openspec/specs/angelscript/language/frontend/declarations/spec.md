@@ -140,7 +140,7 @@ The replacement frontend SHALL reject the legacy asset declaration and import sy
 The declaration frontend SHALL obtain source membership and external provider definitions from the compilation request and SHALL reject source shared/external module-sharing policy and funcdef declarations.
 
 #### Scenario: Resolve declarations across supplied files
-- **GIVEN** two source files in one Session and a frozen externally supplied definition image
+- **GIVEN** two source files in one Session and a frozen externally supplied definition set
 - **WHEN** declarations reference names in the other file or supplied provider
 - **THEN** the normal declaration barrier and semantic lookup resolve them without shared/external modifiers or source funcdef registration
 - **BUT** this contract does not discover files or schedule missing providers automatically
@@ -157,3 +157,26 @@ The frontend SHALL treat get/set-shaped function names as ordinary functions and
 - **WHEN** a class declares and calls GetValue(), SetValue(int), get_Value() or set_Value(int) as ordinary methods
 - **THEN** normal function resolution applies
 - **BUT** those functions alone do not create a field named Value or permit property assignment syntax
+
+### Requirement: Declaration failures retain specific semantic explanations
+
+Declaration analysis SHALL report every current invalid declaration cause as a concrete structured diagnostic, retain the relevant authored name/type/attribute locations, and preserve independent declarations through controlled recovery.
+
+#### Scenario: Resolve an unknown declaration type
+
+- **GIVEN** a declaration names an unavailable type and a later independent function has a valid signature
+- **WHEN** declaration resolution completes against the full collected source set
+- **THEN** the unknown type diagnostic identifies its authored type use and requested name, while the independent function remains inspectable
+
+    > Observables: The failure is present in the structured collection, not only a stable text projection.
+- **BUT** the failed declaration does not satisfy another unresolved type reference or become a publication candidate
+
+#### Scenario: Explain declaration conflicts and invalid annotations
+
+- **WHEN** duplicate declarations, invalid inheritance/signatures or illegal annotation targets are encountered
+- **THEN** the diagnostic identifies the specific cause and relevant declaration or annotation, with related-source notes where another declaration explains it
+
+    > Examples: A duplicate points to the conflicting declaration and the prior declaration; an invalid parameter annotation identifies the parameter annotation rather than only setting an invalid bit.
+- **AND** valid later declarations remain available after a grammar-appropriate recovery boundary
+
+    > Boundaries: Recovery does not skip semantic checks on independent declarations or emit a generic follow-up for every use of one invalid declaration.

@@ -1,0 +1,60 @@
+kind: superseded
+reason: Accepted diagnostic-engine successor combines the full native tooling contract with fragment-bound production and queued Lex/PP; no predecessor product task was implemented.
+superseded_by: angelscript/feature-frontend-diagnostics-and-tooling
+task_dispositions:
+  "1.1":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.1
+  "1.2":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.2
+  "1.3":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.3
+  "1.4":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/2.4
+  "2.1":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.1
+  "2.2":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.2
+  "2.3":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.3
+  "2.4":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/3.4
+  "3.1":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.1
+  "3.2":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.2
+  "3.3":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.3
+  "3.4":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/4.4
+  "4.1":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/6.1
+  "5.1":
+    status: superseded
+    reason: Accepted outcome transferred without claiming implementation.
+    follow_up: angelscript/feature-frontend-diagnostics-and-tooling/5.1

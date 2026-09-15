@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_63edc86a-e4c5-4747-9bf8-01871e531be2
+  id: angelscript/language/frontend/tooling
+  title: Native Frontend Tooling
+  description: Authoritative engine-independent semantic queries, owned analysis results, and an in-process compile-time language service.
