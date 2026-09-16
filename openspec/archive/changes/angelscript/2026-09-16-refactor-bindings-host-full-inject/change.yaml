@@ -11,3 +11,8 @@ goal: Capture every registered bind into one frozen HostProcess graph and inject
 affected_areas:
 - angelscript/bindings/runtime
 - angelscript/runtime/binding-engine
+archived_at: 2026-09-16T12:17:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 12 Task DAG nodes passed their proving commands. The production host whitelist is removed, all seven bind phases run in one ExecuteToHost, BindScriptTypes is inject-only, Store/Apply and Recording tests are retired, and S1-S6 / P1-P4 are proven. Durable deltas are synchronized into angelscript/bindings/runtime and angelscript/runtime/binding-engine. Knowledge candidates remain change-local. Host prefix Unreal run 7d402a23081c410d96ef456210d713f2 is 55/55.

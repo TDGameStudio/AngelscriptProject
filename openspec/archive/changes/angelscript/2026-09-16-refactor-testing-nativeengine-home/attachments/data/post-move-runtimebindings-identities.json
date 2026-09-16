@@ -1,0 +1,27 @@
+{
+  "trimmed": true,
+  "trimRationale": "Archive data-size gate: original exceeded 100 KB / 1000 lines. Full discovered rows are recoverable from the cited Unreal.log and originalSha256.",
+  "originalBytes": 90567,
+  "originalLines": 2197,
+  "originalLineRange": "1-2197",
+  "originalSha256": "0d8bdcf4db548ffa9f9dab38ca358d51890cbb7b6d86fa13c19c1eba17f5a1ad",
+  "sourceRunId": "69679c5984aa4296bf971ac1d3bcf749",
+  "reportCreatedOn": "2026.09.15-05.32.23",
+  "source": "d:\\Workspace\\AngelscriptProject\\Saved\\Harness\\Unreal\\Runs\\69679c5984aa4296bf971ac1d3bcf749\\Unreal.log",
+  "note": "Discovery list from the post-move RuntimeBindings run. Native process crashed in Array.AppendRemoveAndIterationYieldTwoThenFive (asCModuleDefinitionSet::Create AV 0x4) before index.json export. Same product defect as pre-move run 47d5bd5dd8024815bad75d26eb932ff9.",
+  "succeeded": 16,
+  "succeededWithWarnings": 0,
+  "failed": 4,
+  "notRun": 292,
+  "inProcess": 0,
+  "crashIdentity": "Angelscript.UnitTest.RuntimeBindings.Containers.Array.Array.AppendRemoveAndIterationYieldTwoThenFive",
+  "discoveredCount": 312,
+  "prefixCounts": {
+    "Angelscript.UnitTest.RuntimeBindings": {
+      "total": 312,
+      "Success": 16,
+      "Fail": 4,
+      "other": 292
+    }
+  }
+}

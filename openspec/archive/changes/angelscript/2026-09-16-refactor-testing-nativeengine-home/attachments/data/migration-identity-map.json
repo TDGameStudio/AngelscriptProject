@@ -1,0 +1,59 @@
+{
+  "trimmed": true,
+  "trimRationale": "Archive data-size gate: original exceeded 100 KB / 1000 lines. Mapping counts and prefixes remain; row-level identities are recoverable from originalSha256 and the 2.6 conservation proof.",
+  "originalBytes": 512347,
+  "originalLines": 9111,
+  "originalLineRange": "1-9111",
+  "originalSha256": "dc6f36fd9dfb39fb5585d6df23d5d83ccb4593a9e32c710099b11344d70726f3",
+  "schemaVersion": 1,
+  "description": "Old-to-new Automation identity map from the 2026-09-15 pre-move discovery list.",
+  "beforeReport": "D:\\Workspace\\AngelscriptProject\\openspec\\changes\\angelscript\\refactor-testing-nativeengine-home\\attachments\\data\\pre-move-identities.json",
+  "allowedNativeEngineLayers": [
+    "Basic",
+    "Lexer",
+    "Parser",
+    "AST",
+    "Sema",
+    "Compile",
+    "SourceExecution",
+    "Diagnostics",
+    "Tooling",
+    "Definitions",
+    "Identity",
+    "TypeOwnership",
+    "Registration",
+    "VM"
+  ],
+  "tenantCounts": {
+    "NativeEngine": {
+      "oldPrefix": "Angelscript.UnitTest.NativeEngine",
+      "newPrefix": "Angelscript.UnitTest.NativeEngine",
+      "identityPreserving": false,
+      "mappingCount": 1206
+    },
+    "Framework": {
+      "oldPrefix": "Angelscript.UnitTest.Framework",
+      "newPrefix": "Angelscript.UnitTest.Framework",
+      "identityPreserving": true,
+      "mappingCount": 45
+    },
+    "RuntimeBindings": {
+      "oldPrefix": "Angelscript.UnitTest.RuntimeBindings",
+      "newPrefix": "Angelscript.UnitTest.RuntimeBindings",
+      "identityPreserving": true,
+      "mappingCount": 312
+    },
+    "Bindings": {
+      "oldPrefix": "Angelscript.UnitTest.Bindings",
+      "newPrefix": "Angelscript.UnitTest.Bindings",
+      "identityPreserving": true,
+      "mappingCount": 2
+    },
+    "Baseline": {
+      "oldPrefix": "Angelscript.UnitTest.Baseline",
+      "newPrefix": "Angelscript.UnitTest.Baseline",
+      "identityPreserving": true,
+      "mappingCount": 3
+    }
+  }
+}

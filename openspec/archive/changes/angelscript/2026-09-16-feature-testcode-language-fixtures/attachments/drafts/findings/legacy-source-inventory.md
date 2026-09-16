@@ -1,0 +1,644 @@
+# Legacy source inventory
+
+Read-only census taken during Change creation. These are source-evidence paths, not 624 target containers. Every row is subject to the accepted host/import exclusions and concern-based merging. A task records its dispositions in the owning theme migration document; overlapping source observations may map to multiple focused containers, with justification.
+
+## Operators (85 source files)
+
+- `TestSource-old/Language/Operators/Advance/BitmaskProtocol.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Advance/ExpressionPrecedenceChains.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Exception/IntegerDivisionFaults.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Function/ArithmeticOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Function/ColorAndRandomStreamExpressions.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Function/ExpressionEdgeCases.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/ArithmeticMissingRightOperand.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/AssignToExpressionResult.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/BoolAddition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/CommaExpressionOutsideForClause.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/DoubleOperatorInExpression.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/EmptyParenthesesAsValue.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/FloatModulo.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/IncrementOnConst.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/IncrementOnLiteral.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/LeadingBinaryOperator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/StringPlusInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/StringTimesInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/TrailingOperator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/UnaryPlusOnString.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Arithmetic/Reject/UnmatchedParenthesis.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Function/AssignmentOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Function/BranchDefiniteAssignment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Function/PartialDefiniteAssignment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AddAssignStringToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AssignmentToConst.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AssignmentToExpression.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AssignmentToFunctionReturn.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AssignmentToLiteral.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/AssignmentToUndeclaredVariable.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/ModAssignOnFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/ShiftAssignOnFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Assignment/Reject/StringAssignedToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Function/BitwiseOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/BitwiseAndMissingOperand.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/BitwiseAndOnFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/BitwiseNotOnString.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/BitwiseOrOnFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/BitwiseXorOnBool.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/ShiftOnFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Bitwise/Reject/ShiftOnString.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Function/ComparisonOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Reject/BooleanOrderingComparison.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Reject/CompareStringToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Reject/ComparisonMissingRightOperand.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Reject/TripleEqualsOperator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/Reject/VectorOrderingComparison.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Comparison/UClass/HandleComparison.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Operators/Logical/Function/LogicalOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/LogicalAndOnFloats.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/LogicalAndOnIntegers.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/LogicalMissingRightOperand.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/LogicalNotOnInteger.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/LogicalOrOnStrings.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Logical/Reject/TripleAmpersandOperator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/ContainerOpIndex.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FValCmpOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecAddAssignOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecAddOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecEqualsOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecMulOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecNegOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecSubOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/FVecUsageOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Function/ScoreOperatorSuite.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/AdditionWithoutOpAdd.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/AdditionWithoutOpAddCoverage.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/DuplicateOpAdd.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/DuplicateOpAddCoverage.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/GlobalOperatorOverload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/InvalidOperatorName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpAddReturnsVoid.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpAddWithoutParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpCmpNonIntReturn.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpEqualsNonBoolReturn.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpIndexReturnsVoid.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Overload/Reject/OpNegWithParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Function/TernaryOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryBranchTypeMismatch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryFloatCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryMissingColon.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryMissingTrueBranch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryNonBoolCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/Ternary/Reject/TernaryStringCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Operators/UClass/OperatorStateOnActor.as` — Excluded: UClass host material.
+## ControlFlow (65 source files)
+
+- `TestSource-old/Language/ControlFlow/Function/BreakInLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ContinueInLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/DoWhileLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FMatrixReturnApi.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ForeachBreakContinue.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ForeachContainerMutation.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ForeachValueReference.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FunctionReturnBoolValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FunctionReturnControlFlow.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FunctionReturnFloatValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FunctionReturnIntegerWidths.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/FunctionReturnQuatValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/GeometricStructParametersAndReturns.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/IfBasic.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/IfConditions.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/IfElseForms.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/IfNested.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/MultipleReturns.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ReturnEarly.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ReturnExpression.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ReturnFloatAsInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ReturnInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/ReturnVoid.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/SwitchBasic.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/SwitchBreak.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/SwitchEnum.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/SwitchIntegerTypes.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/TernaryOperator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Function/WhileLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/BreakInFunctionCalledFromLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/BreakInsideIfWithoutLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/BreakOutsideLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/CaseOutsideSwitch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ContinueInsideIfWithoutLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ContinueOutsideLoop.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/DoWhileIntegerCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/DoWhileMissingSemicolon.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ElseWithoutIf.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ForeachElementTypeMismatch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ForeachMissingColon.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ForeachOverIntegerLiteral.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ForeachOverPrimitive.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ForeachOverStringLiteral.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfEmptyCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfFloatCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfIntegerCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfStringCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfUnparenthesizedCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/IfVariableIntegerCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ReturnStringForInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ReturnValueInVoidFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/ReturnWithoutValueInIntFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchDuplicateCase.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchDuplicateDefault.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchFloatCaseLabel.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchOverBool.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchOverFName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchStringCaseLabel.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchVariableCaseLabel.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/SwitchWithoutBraces.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/WhileEmptyCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/WhileIntegerCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/WhileUnparenthesizedCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/Reject/WhileVariableCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/ControlFlow/UClass/ContainerAsReturnValue.as` — Excluded: UClass host material.
+## Casting (51 source files)
+
+- `TestSource-old/Language/Casting/Function/CastDowncast.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/CastNullptrIsNull.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/CastRoundTripWithNullCheck.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/CastToParentClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ExplicitFloatToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ExplicitIntToFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ExplicitIntToUint8.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/FStringCaseConversion.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/FStringConversionMethods.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitBoolToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitDerivedToBase.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitFloatToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitFloatToUint8.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitInt64ToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitIntToFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitIntToInt64.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitLiteralToFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/ImplicitUint8ToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/NullptrComparison.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/NullptrHandleAssignment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/NumericEnumAndStringConversions.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/StringNameTextConversions.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Function/UnaryIndexAndConversionOperators.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastBetweenUnrelatedTypes.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastNullptrAsRvalue.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastOnPrimitive.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastResultAssignment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastToEnum.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastToStruct.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastToUndeclaredClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastWithoutArgument.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastWithoutTemplateArgument.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastWithTwoArguments.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/CastWithTwoTemplateArguments.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ExplicitActorToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ExplicitBoolToFString.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ExplicitMultipleArguments.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ExplicitStringToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ExplicitToVoid.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ImplicitArrayToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ImplicitBaseToDerived.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ImplicitIntToBool.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ImplicitStringToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/ImplicitVectorToRotator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/NullptrArithmetic.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/NullptrToBool.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/NullptrToFloat.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/NullptrToInt.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/Reject/NullptrToStruct.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Casting/UClass/ObjectCastAndTypeChecks.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Casting/UClass/StringNameTextConversionRoundTrips.as` — Excluded: UClass host material.
+## Namespace (16 source files)
+
+- `TestSource-old/Language/Namespace/Exception/NamespacedScriptClassLocal.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespacedAnnotatedClassStaticHelper.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceGlobalVersusScoped.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceNestedAccess.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceNestedScope.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceQualifiedCall.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceQualifiedName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceScopedGlobal.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceScopeShadowing.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Function/NamespaceWithEnum.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Reject/NamespaceAnonymous.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Reject/NamespaceMissingMember.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Reject/NamespaceUndeclared.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Reject/NamespaceUsingDirective.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/Reject/NamespaceUsingSymbol.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Namespace/UClass/NamespaceScopeLifecycle.as` — Excluded: UClass host material.
+## Syntax (272 source files)
+
+- `TestSource-old/Language/Syntax/Comments/Function/BlockCommentBeforeFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/BlockCommentWithSeparateMarkers.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/CommentBeforeFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/DocumentationComment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/InlineCommentInsideFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/MultiLineBlockComment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/RangeBasedForRewriteSkipsLiterals.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/SingleLineComment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/Function/TrailingBlockCommentImportConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Comments/UClass/StringDefaultPreservesCommentMarkers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/AnnotatedStructRoundTrip.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/AnonymousStructCompiles.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BasicEnumValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BasicScriptStruct.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolDefaultParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolInOutParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolIntOverloadResolution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolOutParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolReferenceInParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/BoolValueParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/CombinedJumps.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/CommonCVarUsagePatterns.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ConsoleCommandCommonStringMatrixDispatch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ConsoleCommandRegistrationArgumentsAndUnload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ConsoleCommandStringConstructionCompileBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/DeeplyNestedBlocks.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/DeeplyParenthesizedAddition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/DefaultParameterFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EmptyEnumDeclaration.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EmptyFunctionBodyCompiles.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EmptySourceRecovery.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EmptyVoidFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EnumAvailability.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EnumExplicitValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/EnumLocalUsage.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ExistingEngineCVarSmokePreservesAndRestoresValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ExistingEngineRenderAndScalabilityCVarsPreserveAndRestoreValues.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FBoxOperations.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FirstCompilationContextPayload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatDefaultParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatDoubleOverloadResolution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatInOutParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatOutParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatReferenceInParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FloatValueParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ForBasicShapes.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ForCommaClauses.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ForNestedLoops.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ForOmittedClauses.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ForPositiveSyntaxForms.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FPlaneOperations.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FQuatDefaultParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FQuatInOutParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FQuatOutParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FQuatReferenceInParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FQuatValueParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FunctionDefaultParameterEdges.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FunctionOverloadArityAndNumericResolution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/FunctionParametersMultipleOut.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ImportConsumerModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ImportProviderModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ImportReloadConsumerModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ImportReloadProviderV1.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ImportReloadProviderV2.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/InfiniteLoops.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntFamilyDefaultParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntFamilyInOutParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntFamilyOutParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntFamilyReferenceInParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntFamilyValueParameters.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntReturnFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/IntWidthOverloadResolution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/LongChainedAddition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/MemorySourceCompilesWithFullVirtualPathIdentity.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ModuleFunctionInspection.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/MultipleStatementsInOneFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/NamedArgumentsMixedPartialOrder.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/NoListenerCompileIsSilentAndPreservesResult.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ParameterlessMappingGettersDispatchWithNativeParity.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ParseEventsAreBroadcastFromMainThreadInDeterministicOrder.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RangeBasedForRewriteSupportsBlockAndSingleLine.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RecursiveFrameIsolation.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ReferenceWriteParameter.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RegisteredCVarNameMatrix.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RegisteredListenerReceivesValueStyleCompileEvents.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RuntimeCompileRunsObservableBuilderStages.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/RuntimeFloatCurveInstanceSurface.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/SecondCompilationContextPayload.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/ShortCircuitSkipsRightHandSide.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/StaticDeltaAndRelativeHelpers.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/StructConstMethod.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/StructConstReaderMethod.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/StructConstructors.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/StructMemberDefaults.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/SuccessfulCompileEmitsOrderedStageEvents.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/TouchAndGestureApiBoundaries.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/UEnumReflection.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/UEnumWithoutPrefixNaming.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/UStructPropertyZeroDefault.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/UStructWithoutPrefixNaming.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Function/VoidOverloadSet.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassInvalidMemberType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassRemovedLegacyParent.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassSelfInheritance.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassUnknownSuperType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassWithoutBraces.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ClassWithoutName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DefaultNonExistentProperty.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DefaultOutsideClassScope.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DefaultTypeMismatch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DuplicateClassName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DuplicateEnumerator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DuplicateFunctionSignature.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/DuplicateStructName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/EnumWithoutName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/EventAddDynamicBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/EventLambdaSyntaxIsUnsupported.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ExtraClosingBrace.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FailedCompileEmitsPairedEndEvent.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FBox2DUnsupportedBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FloatNestedContainerBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ForHeaderWithoutSemicolons.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ForLoopVariableEscapesScope.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ForNonBoolCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ForWithoutParentheses.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/ForWithTwoClausesOnly.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FunctionUnknownParameterType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FunctionUnknownReturnType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FunctionWithoutBody.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/FunctionWithoutReturnType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/GarbageTokens.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/GlobalConsoleCommandExecution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/GlobalPlusFunctionCombo.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/HttpBindLambdaCallbackBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/InterfaceDataMember.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/InterfaceKeywordUnsupported.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/InterfaceMethodBody.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/InterfaceWithoutName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/LegacyMappingGetterArguments.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/MethodInsideEnum.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/MissingSemicolonBetweenDeclarations.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/NamedArgumentDuplicateName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/NamedArgumentUnknownName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/NestedContainerCombinations.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/NonDefaultParameterAfterDefault.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/NonIntegerEnumerator.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/OutOfScopeUse.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/PlayerControllerConsoleCommandExecution.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/StructInheritance.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/StructInvalidMemberType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/StructVoidMember.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/SyntaxErrorMissingSemicolon.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/TimerLambdaCallbackBoundary.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/TopLevelAssignment.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/UnknownGhostBuilderType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/UnmatchedOpeningBrace.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/UnmatchedParenthesis.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/Reject/VoidParameterType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/AbstractUClassWithConcreteChild.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ActionBinding.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ActorMembersWithInitializers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ActorMethodsCompiling.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ActorWithoutPrefixNaming.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/AnnotatedMethodExecutes.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/AxisBinding.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BlueprintEventWrapperExecutesImplementation.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BlueprintEventWrapperUsesMixedPushPaths.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BoolContainerProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BoolDeclarationDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BoolReplicatedProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/BoolWriteRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ClassLikeMethodExecutionRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ClassLikeReflectionShape.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/CompilesAndRegistersProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ContainerAsParameter.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ContainerIteratorAdvancedOperations.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/DefaultEnumPropertyApplied.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/DefaultFloatAndBoolPropertyApplied.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/DefaultFNamePropertyApplied.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/DefaultTagsAddExecutedOnCDO.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EmptyActorSubclass.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventBindAndTrigger.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventBusDecouplesPublisherAndReceiver.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventChaining.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventCustomGameEvents.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventLifecycle.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventMultipleHandlers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/EventUnbinding.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FinalActorSubclass.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatContainerProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatFamilyBoundaryValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatFamilyDeclarationDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatFamilySpecialValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatFamilyWriteRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatPropertyScriptMutationRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FloatReplicatedProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FQuatClassMemberRuntimeFlow.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FQuatContainerProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FQuatDeclarationDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/FQuatWriteRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GamepadInput.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCBasicReclaim.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCCollectionMethods.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCContainerProtection.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCCrossFrameHold.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCIsValidCheck.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCNewObjectOuterAndCollection.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCRootReachability.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCStrongCycleReclaim.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GCWeakPtrInvalidation.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/GeometricStructReflectionPropertiesAndContainers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleAsParameter.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleAsProperty.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleBasics.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleCast.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleInContainers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/HandleOperations.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ImmediateFailureCallbacks.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/InheritFromFinalActor.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntContainerEdgeCases.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntContainerProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntContainerPropertiesExtended.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntContainerWidthCompletion.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntFamilyBoundaryValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntFamilyDeclarationDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntFamilyImplicitAndExplicitZeroDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntFamilyNearBoundaryValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntFamilyWriteRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntPropertyScriptReadWriteApiSurface.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntStructDeepNestedPropertyPaths.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/IntStructNestedPropertyWidths.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/KeyboardKeys.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/KeyDirectBinding.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/LegacyInputPriorityAndConsumeSurface.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/MixedContainerParameters.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/MouseInput.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/MultipleCommaSeparatedBases.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/PropertyDefaultsCompile.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/ScriptConstructorAssignsMember.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/SyntaxErrorInitialCarrier.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/SyntaxErrorRecoveredCarrier.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/TouchStateQuerySurface.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/TwoLevelInheritanceChain.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/UClassPropertyDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/UObjectFlagMutationAndTransientState.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/UObjectOuterChainAndPathMatrix.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/EdgeCases/UClass/Vector4IntPointIntVectorReflection.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Keywords/Function/ConstMethodOnStruct.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/Reject/InheritFromFinalClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/Reject/MutateMemberInConstMethod.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/Reject/OverrideWithoutParentMethod.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/Reject/SuperOutsideClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/Reject/ThisOutsideClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Keywords/UClass/FinalClassModifier.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Keywords/UClass/OverrideKeywordOnChildMethod.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Keywords/UClass/SuperCallInBlueprintOverride.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Keywords/UClass/ThisKeywordMemberAssignment.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Reference/Function/ConstValuesMethodsAndReferences.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Reference/Function/FunctionReferenceParameterCombinations.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Reference/UClass/ContainerReferenceReturn.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Reference/UClass/MemberReferenceAndNullableHandleConversions.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Syntax/Variable/Function/PrimitiveAndReferenceLocals.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Function/ScopeVariables.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/AutoWithoutInitializer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/ConstWithoutInitializer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/DuplicateLocalVariable.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/IdentifierStartingWithDigit.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/KeywordAsVariableName.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/UndeclaredType.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/UseBeforeDeclaration.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/Reject/VoidVariable.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Syntax/Variable/UClass/GCLocalVariableNoProtection.as` — Excluded: UClass host material.
+## Const (3 source files)
+
+- `TestSource-old/Language/Const/Reject/ConstLocalMutation.as` — Route to Syntax/Const.
+- `TestSource-old/Language/Const/Reject/ConstMethodMemberMutation.as` — Route to Syntax/Const.
+- `TestSource-old/Language/Const/Reject/ConstValueParameterMutation.as` — Route to Syntax/Const.
+## Preprocessor (63 source files)
+
+- `TestSource-old/Language/Preprocessor/Function/AddSourcePreprocessesMemoryText.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/AddSourceRejectsInvalidVirtualPathDescriptor.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/AsyncProviderModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/AutomaticModeManualImportConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/AutomaticWarningConfigConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/BackslashPathConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/BasicParse.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/ConditionalImportConsumerUndefined.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/ConditionalImportEnabledConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/ConditionalImportProviderModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/DeadBranchImportConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/DisabledImportBranchConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/DuplicateImportDedupConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/DuplicateImportProvider.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/EditorConfigurationFlagBranch.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/FormatStringExpansion.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/IfElifElseEndifBranches.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/ImportParsingConsumerModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/ImportParsingProviderModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/NameLiteralRoundTrip.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/PlainSourcePreprocessorRoundTrip.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/PostProcessCodeReplacement.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/PreprocessSingleUseFirstModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/PreprocessSingleUseSecondModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/RangeForRewritePreservesUEBehavior.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/RestrictUsageAllowPattern.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/RestrictUsageInactiveBranchIgnored.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/SharedImportProviderModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/StringLiteralDoesNotTriggerDirectiveLexer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/TopologicalChainBase.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/TopologicalChainConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/TopologicalChainMiddle.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/WideImportGraphFanInConsumer.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/WideImportGraphFanOutA.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/WideImportGraphFanOutB.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/WideImportGraphFanOutC.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Function/WideImportGraphRoot.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/BlueprintEventAndOverrideConflict.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/CircularImportChainFromA.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/CircularImportChainFromB.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/GlobalFunctionMarkedBlueprintEvent.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/ImportMissingTerminatingSemicolon.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/IncludeDirectiveUnsupported.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/NamespaceMissingOpeningBrace.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/TreatAsDeletedProducesEmptyModule.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnknownFunctionSpecifier.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnknownSuperTypeOnClass.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnregisteredPlatformWindowsCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnregisteredWithEditorCondition.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnsupportedConditionalPlacementAroundFunction.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/Reject/UnsupportedConditionalPlacementAroundProperty.as` — Review within the owning theme; apply selected language/host boundaries.
+- `TestSource-old/Language/Preprocessor/UClass/AsyncLoadConsumerActor.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/ClassAnalyzeHookCarrier.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/DefaultBlueprintAccessUsesSettings.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/DuplicateClassNameFirstBatchFile.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/DuplicateClassNameSecondBatchFile.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/DuplicateClassNameSeedCarrier.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/EditorConditionalMembers.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/ExplicitContextControlsFlagsAndDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/HookMomentsEmitSummaryBackedCompilationEvents.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/MacroDetection.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/SummaryAvailableAtExistingHookPoints.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Preprocessor/UClass/SummaryReportsCoverageFixtureShape.as` — Excluded: UClass host material.
+## Literals (69 source files)
+
+- `TestSource-old/Language/Literals/FString/Exception/ClassMembersNonProperty.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/EmptyStringLiteral.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FNameLiteral.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FormatMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FormatStringRewriteProducesExpectedOutput.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FStringInterpolatesExpression.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FStringInterpolatesInt.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FStringInterpolatesMultipleTypes.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionDefaultParameters.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionOverloading.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionParametersIn.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionParametersInOut.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionParametersOut.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionParametersValue.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/FunctionReturnValues.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/GlobalConstDeclarations.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/IsNumericMethod.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/LengthAndEmpty.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/LocalDeclarations.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/MutableStringEdgeCases.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/MutableStringMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/NameAndTextComparisonOperators.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/NameAndTextSpecificOperations.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/ReplaceMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/ReverseMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/SearchMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/SplitMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringConcatenationPlus.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringConcatenationPlusAssign.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringDeclarationContexts.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringEqualityOperator.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringInequalityOperator.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringLiteralAssignment.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringLiterals.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/StringOperators.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/SubstringMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Function/TrimMethods.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/EmptyNameLiteral.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/EscapedInterpolationBraces.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FCStringAtof.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FCStringAtoi.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FNameFromInt.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FNameOrderingOperator.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FStringComparedToInt.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FTextDefaultLiteralRejected.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FTextEqualityOperator.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FTextMapKeyRejected.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FTextOrderingOperator.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/FTextSetElementRejected.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/IntToFStringAssignment.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/MutableGlobalFString.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/NullptrToFStringAssignment.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringBitwiseAnd.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringDivision.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringMultiplication.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringSubtraction.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringToFloatMethod.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/StringToIntMethod.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/UnclosedInterpolationBrace.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/Reject/UnterminatedStringLiteral.as` — Excluded: literal-host family outside the accepted inventory.
+- `TestSource-old/Language/Literals/FString/UClass/DefaultFStringPropertyApplied.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/FStringInterpolationAndFNameLiteralRuntimeValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringContainerProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringFamilyDeclarationDefaults.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringFamilyReplicatedProperties.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringFamilyScriptSpecialTextValues.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringFamilyWriteRoundTrip.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringPropertyScriptReadWriteApiSurface.as` — Excluded: UClass host material.
+- `TestSource-old/Language/Literals/FString/UClass/StringSpecialValues.as` — Excluded: UClass host material.

@@ -1,0 +1,15 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_fe86bb86-3684-4edd-9297-439f42017a2a
+  id: angelscript/refactor-standalone-lsp-layout
+  title: Retarget Standalone host to AngelscriptLSP
+  description: Point CMake, live guides, and tools at AngelscriptLSP while keeping dormant Standalone product identity and the later JSON-RPC boundary.
+workflow: angelscript
+created_at: 2026-09-11T11:44:33Z
+goal: Point CMake, live guides, and tools at AngelscriptLSP while keeping dormant Standalone product identity and the later JSON-RPC boundary.
+archived_at: 2026-09-16T12:17:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 4 Task DAG nodes passed their proving commands. CMake, live guides, and tools now point at AngelscriptLSP while dormant Standalone product identity remains. No durable spec delta. Knowledge remains a change-local candidate.

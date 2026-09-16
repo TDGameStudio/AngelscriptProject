@@ -1,0 +1,17 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_36cb3117-53f3-48cd-bfa1-33ca2ead65fa
+  id: angelscript/refactor-testing-nativeengine-home
+  title: Retire NewVersion and complete NativeEngine test homes
+  description: Move replacement tests out of the temporary NewVersion shell into durable module-root homes, nest NativeEngine identities by proof layer, then fill the Parser unit tree and language core matrix through SourceExecution.
+workflow: angelscript
+created_at: 2026-09-15T04:08:06Z
+goal: Delete NewVersion as a source root, give NativeEngine/Bindings/Framework/Baseline durable homes, and prove the accepted language matrix on the relocated tree.
+affected_areas:
+- angelscript/testing
+archived_at: 2026-09-16T12:17:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 15 Task DAG nodes passed their proving commands. NewVersion is retired, four tenants live at module-root homes, and Parser plus the language matrix are proven by NativeEngine run b99a111c19a2478a9f15027ae270f89f. Durable deltas are synchronized into angelscript/testing/baseline. The closed External Review is APPROVE with F01-F03 resolved. Oversized identity JSON attachments were trimmed with original SHA-256 provenance. Knowledge candidates remain change-local.

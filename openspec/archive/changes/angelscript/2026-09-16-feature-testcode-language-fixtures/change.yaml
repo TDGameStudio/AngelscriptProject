@@ -1,0 +1,13 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_a562a97e-85e4-40a8-9d15-3f02fc534b71
+  id: angelscript/feature-testcode-language-fixtures
+  title: Migrate 47 hand-authored Language fixture containers
+workflow: angelscript
+created_at: 2026-09-15T08:55:07Z
+archived_at: 2026-09-16T12:17:26Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 50 Task DAG nodes passed their proving commands. The 47 hand-authored Language fixture containers are admitted, StructFields replaced production Counter, and the complete catalog dump/compare gate passed. Durable deltas are synchronized into the new current spec angelscript/testing/language-fixtures. Knowledge candidates remain change-local.

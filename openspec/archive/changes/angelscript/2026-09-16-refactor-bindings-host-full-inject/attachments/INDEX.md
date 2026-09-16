@@ -2,7 +2,7 @@
 
 ## Current position
 
-5.1 GREEN. Change DAG 1.0-5.1 complete. Host prefix Unreal `7d402a23081c410d96ef456210d713f2` 55/55. Specs synced; strict validate passed.
+Apply 1.0-5.1 complete. Host prefix Unreal `7d402a23081c410d96ef456210d713f2` 55/55. Specs synced. Ready for completed archive. Knowledges remain change-local candidates.
 
 ## Hard conclusions
 
@@ -50,3 +50,5 @@
 - [Replan: bound-engine call path](replans/replan-20260916-165201-bound-engine-call-path.md) — applied; Prepare/Execute oracle.
 - [Replan: replay delegate failure](replans/replan-20260916-165900-replay-delegate-failure.md) — applied; 1.0 GREEN is the replay failure.
 - [Replan: Temp host surface](replans/replan-20260916-173600-temp-host-surface.md) — applied; 2.1 writes TArray/Log on host.
+- `data/closure.yaml` — Completed-closure input for the archive primitive.
+- `data/workflow-evaluation.md` — Terminal completed-closure evaluation bound to the current Change digest; write last.

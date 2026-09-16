@@ -1,0 +1,50 @@
+{
+  "trimmed": true,
+  "trimRationale": "Archive data-size gate: original exceeded 100 KB / 1000 lines. Full discovered rows are recoverable from the cited Unreal.log and originalSha256.",
+  "originalBytes": 421221,
+  "originalLines": 10694,
+  "originalLineRange": "1-10694",
+  "originalSha256": "d4edac3afa0e8e06a8156955e50cd211d66613ec2e9e4a0e73df8b0c7f5dca9c",
+  "sourceRunId": "47d5bd5dd8024815bad75d26eb932ff9",
+  "reportCreatedOn": "2026.09.15-05.18.20",
+  "source": "d:\\Workspace\\AngelscriptProject\\Saved\\Harness\\Unreal\\Runs\\47d5bd5dd8024815bad75d26eb932ff9\\Unreal.log",
+  "note": "Discovery list from the pre-move Automation log. The run crashed in Bindings before index.json export.",
+  "succeeded": 1230,
+  "succeededWithWarnings": 0,
+  "failed": 4,
+  "notRun": 292,
+  "inProcess": 0,
+  "discoveredCount": 1526,
+  "prefixCounts": {
+    "Angelscript.UnitTest.RuntimeBindings": {
+      "total": 312,
+      "Success": 16,
+      "Fail": 4,
+      "other": 292
+    },
+    "Angelscript.UnitTest.Framework": {
+      "total": 45,
+      "Success": 45,
+      "Fail": 0,
+      "other": 0
+    },
+    "Angelscript.UnitTest.Baseline": {
+      "total": 3,
+      "Success": 3,
+      "Fail": 0,
+      "other": 0
+    },
+    "Angelscript.UnitTest.NativeEngine": {
+      "total": 1164,
+      "Success": 1164,
+      "Fail": 0,
+      "other": 0
+    },
+    "Angelscript.UnitTest.Bindings": {
+      "total": 2,
+      "Success": 2,
+      "Fail": 0,
+      "other": 0
+    }
+  }
+}

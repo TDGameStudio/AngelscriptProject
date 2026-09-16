@@ -1,0 +1,7 @@
+api_version: openspec.dev/v1
+kind: spec
+metadata:
+  uid: spec_085c4d2b-bc9b-4295-a814-b30384c28717
+  id: angelscript/testing/language-generators
+  title: Language source generators
+  description: Durable contracts for deterministic Language source generators and their generator-only proof.

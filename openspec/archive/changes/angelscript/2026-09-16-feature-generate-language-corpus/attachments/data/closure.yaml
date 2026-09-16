@@ -1,0 +1,2 @@
+kind: completed
+reason: All 123 Task DAG nodes passed their proving commands. The 122 Language generator products and 36,686 cells are proven by run d6bbeeb31cd544078d7ac3f8ba619f87. Durable deltas are synchronized into angelscript/testing/language-generators. The closed External Review is APPROVE; Advisory F01 remains deferred with an explicit follow-up. Knowledge candidates remain change-local.

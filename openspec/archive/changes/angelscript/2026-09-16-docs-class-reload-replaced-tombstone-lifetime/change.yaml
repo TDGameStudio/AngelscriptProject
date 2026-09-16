@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_87ae085f-ba5e-48c9-939d-41386df76c28
+  id: angelscript/docs-class-reload-replaced-tombstone-lifetime
+  title: Record replaced UClass tombstone lifetime for later replan
+  description: Record that FullReload renamed _REPLACED_N UASClass objects are intentional tombstones, not immediate BeginDestroy, and inventory related owners that must replan before any later lifetime policy.
+workflow: angelscript
+created_at: 2026-09-11T12:15:27Z
+archived_at: 2026-09-16T12:17:25Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: The single Task DAG node recorded replaced UASClass _REPLACED_N tombstone lifetime and the related-owner inventory. No current-spec SHALL and no product implementation. Knowledge remains a change-local candidate.
