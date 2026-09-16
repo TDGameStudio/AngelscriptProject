@@ -1,8 +1,4 @@
-## Purpose
-
-Collect eligible Runtime bindings into a retained HostProcess graph, inject that graph into explicitly owned Engines, and keep Blueprint class writes configurable without activating the default script runtime.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Runtime bindings can be recorded without a script engine
 
@@ -92,31 +88,6 @@ The system SHALL route BindScriptTypes and explicit binding Engine creation thro
 - **THEN** its member and native target join the same eventual host graph with the external module's provenance
 - **BUT** a missing target or incompatible member fails collection without publishing a partial usable Engine
 
-### Requirement: Blueprint writes have configurable class ownership and barriers
-
-The system SHALL permit parallel creation and own-member writes for independent Blueprint classes with explicit shell/base/member barriers, prewarmed UE reflection state and deterministic serial-equivalent results.
-
-#### Scenario: Select write worker count
-
-- **WHEN** collection starts with as.Bind.WriteWorkers equal to 0, 1, 2 or 4
-- **THEN** 0 behaves as 1, the default is 1, and larger values run the fixed worker group claiming one UClass at a time
-- **AND** as.Bind.ParallelPrepare independently controls preparation
-- **BUT** different binding phases are not registered concurrently and no performance speedup is implied by this setting
-
-#### Scenario: Resolve inherited Blueprint members
-
-- **GIVEN** parent P declares X=7 and child C declares Y=11
-- **WHEN** Blueprint own-member registration runs after shell/base barriers
-- **THEN** C resolves X and Y exactly once through its own members and inherited relation
-- **AND** property collection excludes inherited duplicates without changing UStruct's separate field policy
-
-#### Scenario: Keep shared and thread-affine work safe
-
-- **WHEN** at least two independent classes are registered with two write workers
-- **THEN** their own table writes can overlap while shared indexes use bounded synchronization
-- **AND** lazy reflection initialization, static globals and global duplicate scans remain serialized where required
-- **BUT** failure in one worker prevents publication of the incomplete graph without damaging an earlier valid consumer
-
 ### Requirement: Every eligible Runtime provider is accounted for
 
 The system SHALL account for every current Runtime provider as present on the frozen host graph under its active target conditions or explicitly excluded by those conditions, preserving existing manual, generated and reflection precedence.
@@ -148,15 +119,7 @@ The system SHALL export readable host-declaration tables from a frozen collectio
 - **AND** equivalent captured inputs produce identical semantic names independent of process addresses
 - **BUT** export does not restore an executable snapshot from disk
 
-#### Scenario: Validate and compare dumps offline
-
-- **WHEN** the host validates or compares manifests with the provided Python tools
-- **THEN** invalid schema, duplicate identities, missing required references, illegal layout/inheritance and missing expected symbols produce structured symbol/source diagnostics and nonzero exit codes
-
-    > Details: Builtins, template parameters and declared external dependencies have explicit reference categories; handle cycles remain legal.
-
-- **AND** comparison identifies added, removed and changed types, members and globals while ignoring cosmetic ordering
-- **BUT** incompatible schema versions cannot silently pass
+## ADDED Requirements
 
 ### Requirement: Injected host graphs compile and call without replay
 
@@ -176,3 +139,9 @@ The system SHALL let an injected Engine compile and execute scripts that use adm
     > Verification: `Angelscript.UnitTest.Temp.BasicTypes` AfterBind* cases prove bind-then-call via Prepare/Execute. After inject-only, HostScheme `InjectedScriptCompilesHostTypes` plus the same Temp prefix prove `asCBuilder` compile. Host* native-pointer cases are not this scenario. Legacy `AddScriptSection` / `CompileModules` are not this path.
 
 - **BUT** TypeInfo presence without Prepare/Execute is not successful proof
+
+## REMOVED Requirements
+
+### Requirement: Snapshot inspection preserves ownership and complete accounting
+
+### Requirement: Sealed snapshots receive engine-free pre-installation validation
