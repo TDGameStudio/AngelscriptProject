@@ -4,11 +4,14 @@
  * @topic Language
  * @topic ControlFlow
  *
- * loop-jump
- * break-in-loop
- * continue-in-loop
- * break-in-nested-loop
- * continue-in-nested-loop
+ * loop-jump                  // A while that breaks early and a while that continues on even values.
+ * break-in-loop              // Authored language form for break in loop.
+ * continue-in-loop           // Authored language form for continue in loop.
+ * break-in-nested-loop       // Break leaves only the inner loop.
+ * continue-in-nested-loop    // Continue skips the rest of the inner iteration.
+ * break-in-while             // Break leaves a while loop before later iterations.
+ * continue-in-while          // Continue skips the rest of one while iteration.
+ * break-in-do-while          // Break leaves a do-while before the condition is retested.
  */
 /**
  * @begin loop-jump
@@ -125,6 +128,70 @@ int NestedContinue()
 			Total += Inner;
 		}
 	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin break-in-while
+ * @summary Break leaves a while loop before later iterations.
+ * @topic ControlFlow
+ */
+int BreakInWhile()
+{
+	int Index = 0;
+	int Total = 0;
+	while (Index < 8)
+	{
+		if (Index == 3)
+		{
+			break;
+		}
+		Total += Index;
+		++Index;
+	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin continue-in-while
+ * @summary Continue skips the rest of one while iteration.
+ * @topic ControlFlow
+ */
+int ContinueInWhile()
+{
+	int Index = 0;
+	int Total = 0;
+	while (Index < 5)
+	{
+		++Index;
+		if (Index == 2)
+		{
+			continue;
+		}
+		Total += Index;
+	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin break-in-do-while
+ * @summary Break leaves a do-while before the condition is retested.
+ * @topic ControlFlow
+ */
+int BreakInDoWhile()
+{
+	int Index = 0;
+	int Total = 0;
+	do
+	{
+		if (Index == 3)
+		{
+			break;
+		}
+		Total += Index;
+		++Index;
+	}
+	while (Index < 8);
 	return Total;
 }
 /** @end */

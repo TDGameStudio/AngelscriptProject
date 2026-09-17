@@ -1,0 +1,80 @@
+/**
+ * @version v1
+ * @summary Serialize bound single and multicast delegates. BindDelegates binds Single and Multi to Handler; serialized bytes restore those bindings.
+ * @topic Feature
+ */
+/**
+ * @version root
+ * @summary Serialize bound single and multicast delegates. BindDelegates binds Single and Multi to Handler; serialized bytes restore those bindings.
+ * @topic Baseline
+ */
+/**
+ * A parameterless void unicast that is serialized.
+ *
+ * @Covers Delegates.Serialization
+ * @Inputs none
+ * @Return nothing when executed
+ */
+delegate void FCoverageSerializedSingle();
+
+/**
+ * A parameterless multicast that is serialized.
+ *
+ * @Covers Delegates.Serialization
+ * @Inputs none
+ * @Return nothing when broadcast
+ */
+event void FCoverageSerializedEvent();
+
+UCLASS()
+class UCoverageDynamicDelegateSerializationObject : UObject
+{
+	UPROPERTY()
+	FCoverageSerializedSingle Single;
+
+	UPROPERTY()
+	FCoverageSerializedEvent Multi;
+
+	/**
+	 * The named handler both delegates bind.
+	 *
+	 * @Covers Delegates.Serialization
+	 * @Inputs none
+	 * @Return nothing
+	 */
+	UFUNCTION()
+	void Handler()
+	{
+	}
+
+	/**
+	 * Binds Single and Multi to Handler.
+	 *
+	 * @Covers Delegates.Serialization
+	 * @Inputs none
+	 * @Return nothing; both delegates become bound
+	 */
+	UFUNCTION()
+	void BindDelegates()
+	{
+		Single.BindUFunction(this, n"Handler");
+		Multi.AddUFunction(this, n"Handler");
+	}
+
+	/**
+	 * Observe that a default-constructed handle is null.
+	 *
+	 * @Kind Observe
+	 * @Covers Delegates.Serialization
+	 * @Inputs a local UCoverageDynamicDelegateSerializationObject
+	 * @Return true when the handle is null
+	 * @Boundary empty default
+	 */
+	UFUNCTION()
+	bool EmptyDefaultIsNull()
+	{
+		UCoverageDynamicDelegateSerializationObject Obj;
+		return Obj == nullptr;
+	}
+}
+/** @end */

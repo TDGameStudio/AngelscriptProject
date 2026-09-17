@@ -4,16 +4,17 @@
  * @topic Language
  * @topic Casting
  *
- * implicit-derived-to-base     // implicit Derived@ to Base@
- * cast-to-parent               // cast<Base>(Derived@)
- * cast-downcast                // cast<Derived>(Base@)
- *   cast-downcast-null-guard   // same program + null check; parent cast-downcast
- * cast-round-trip              // upcast then downcast; sibling, not a child
+ * implicit-derived-to-base      // derived handle converts to base
+ * cast-to-parent                // explicit Cast to the parent class
+ * cast-downcast                 // explicit downcast from a base handle
+ *   cast-downcast-null-guard    // same downcast, reject a nullptr result
+ * cast-round-trip               // upcast then downcast, with a nullptr check
+ * cast-null-handle              // Cast a nullptr base handle to derived
+ * cast-same-type                // Cast a handle to its own class
  */
 /**
  * @begin implicit-derived-to-base
  * @summary Implicit derived handle converts to base.
- * @topic Casting
  */
 class ABase
 {
@@ -25,13 +26,6 @@ class ADerived : ABase
 	int Extra;
 }
 
-/**
- * @function ImplicitDerivedToBase
- * @summary Implicit derived handle converts to base.
- * @covers implicit handle conversion
- * @inputs a live ADerived@
- * @return the same object as ABase@
- */
 ABase@ ImplicitDerivedToBase(ADerived@ Child)
 {
 	ABase@ Parent = Child;
@@ -40,8 +34,7 @@ ABase@ ImplicitDerivedToBase(ADerived@ Child)
 /** @end */
 /**
  * @begin cast-to-parent
- * @summary Explicit cast to the parent class.
- * @topic Casting
+ * @summary Explicit Cast to the parent class.
  */
 class ABase
 {
@@ -53,25 +46,17 @@ class ADerived : ABase
 	int Extra;
 }
 
-/**
- * @function CastToParent
- * @summary Explicit cast to the parent class.
- * @covers cast<Base>
- * @inputs a live ADerived@
- * @return the same object as ABase@
- */
 ABase@ CastToParent(ADerived@ Child)
 {
-	return cast<ABase>(Child);
+	return Cast<ABase>(Child);
 }
 /** @end */
 /**
  * @begin cast-downcast
  * @summary Explicit downcast from a base handle.
- * @topic Casting
  *
- * cast-downcast                // this case
- *   cast-downcast-null-guard
+ * cast-downcast                // explicit downcast from a base handle
+ *   cast-downcast-null-guard   // same downcast, reject a nullptr result
  */
 class ABase
 {
@@ -83,26 +68,15 @@ class ADerived : ABase
 	int Extra;
 }
 
-/**
- * @function CastDowncast
- * @summary Explicit downcast from a base handle.
- * @covers cast<Derived>
- * @inputs an ABase@ that is actually ADerived
- * @return the same object as ADerived@, or null
- */
 ADerived@ CastDowncast(ABase@ Parent)
 {
-	return cast<ADerived>(Parent);
+	return Cast<ADerived>(Parent);
 }
 /** @end */
 /**
  * @begin cast-downcast-null-guard
  * @parent cast-downcast
- * @summary Same downcast, then reject a null result.
- * @topic Casting
- *
- * cast-downcast
- *   cast-downcast-null-guard   // this case; @range null-guard is the diff
+ * @summary Same downcast, then reject a nullptr result.
  */
 class ABase
 {
@@ -114,29 +88,19 @@ class ADerived : ABase
 	int Extra;
 }
 
-/**
- * @function CastDowncast
- * @summary Same downcast, then reject a null result.
- * @covers cast<Derived> plus null guard
- * @inputs an ABase@ that is actually ADerived
- * @return the same object as ADerived@, or null
- */
 ADerived@ CastDowncast(ABase@ Parent)
 {
-	ADerived@ Child = /** @point downcast */cast<ADerived>(Parent);
-	/** @range-begin null-guard */
-	if (Child is null)
+	ADerived@ Child = Cast<ADerived>(Parent);
+	if (Child == nullptr)
 	{
-		return null;
+		return nullptr;
 	}
-	/** @range-end null-guard */
 	return Child;
 }
 /** @end */
 /**
  * @begin cast-round-trip
- * @summary Upcast then downcast, with a null check.
- * @topic Casting
+ * @summary Upcast then downcast, with a nullptr check.
  */
 class ABase
 {
@@ -148,21 +112,53 @@ class ADerived : ABase
 	int Extra;
 }
 
-/**
- * @function CastRoundTrip
- * @summary Upcast then downcast, with a null check.
- * @covers upcast then downcast
- * @inputs a live ADerived@
- * @return the same object after Base@ and back, or null
- */
 ADerived@ CastRoundTrip(ADerived@ Child)
 {
 	ABase@ Parent = Child;
-	ADerived@ Again = cast<ADerived>(Parent);
-	if (Again is null)
+	ADerived@ Again = Cast<ADerived>(Parent);
+	if (Again == nullptr)
 	{
-		return null;
+		return nullptr;
 	}
 	return Again;
+}
+/** @end */
+/**
+ * @begin cast-null-handle
+ * @summary Cast a nullptr base handle to derived.
+ */
+class ABase
+{
+	int Id;
+}
+
+class ADerived : ABase
+{
+	int Extra;
+}
+
+ADerived@ CastNullHandle()
+{
+	ABase@ Parent = nullptr;
+	return Cast<ADerived>(Parent);
+}
+/** @end */
+/**
+ * @begin cast-same-type
+ * @summary Cast a handle to its own class.
+ */
+class ABase
+{
+	int Id;
+}
+
+class ADerived : ABase
+{
+	int Extra;
+}
+
+ADerived@ CastSameType(ADerived@ Child)
+{
+	return Cast<ADerived>(Child);
 }
 /** @end */

@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-default-before-required
- * invalid-default-type-mismatch
- * invalid-default-outside-class-scope
- * invalid-non-default-parameter-after-default
+ * invalid-default-before-required                // A required parameter cannot follow a defaulted one.
+ * invalid-default-type-mismatch                  // A default expression must match the parameter type.
+ * invalid-default-outside-class-scope            // Compile-rejection form retained from legacy default outside class scope.
+ * invalid-non-default-parameter-after-default    // Compile-rejection form retained from legacy non default parameter after default.
  */
 /**
  * @begin invalid-default-before-required

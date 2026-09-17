@@ -4,13 +4,13 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-logical-on-int
- * invalid-logical-and-on-floats
- * invalid-logical-and-on-integers
- * invalid-logical-missing-right-operand
- * invalid-logical-not-on-integer
- * invalid-logical-or-on-strings
- * invalid-triple-ampersand-operator
+ * invalid-logical-on-int                   // Logical and requires boolean operands.
+ * invalid-logical-and-on-floats            // Compile-rejection form retained from legacy logical and on floats.
+ * invalid-logical-and-on-integers          // Compile-rejection form retained from legacy logical and on integers.
+ * invalid-logical-missing-right-operand    // Compile-rejection form retained from legacy logical missing right operand.
+ * invalid-logical-not-on-integer           // Compile-rejection form retained from legacy logical not on integer.
+ * invalid-logical-or-on-strings            // Compile-rejection form retained from legacy logical or on strings.
+ * invalid-triple-ampersand-operator        // Compile-rejection form retained from legacy triple ampersand operator.
  */
 /**
  * @begin invalid-logical-on-int

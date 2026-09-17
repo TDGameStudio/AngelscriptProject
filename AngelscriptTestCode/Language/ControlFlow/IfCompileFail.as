@@ -4,13 +4,13 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-if-non-bool
- * invalid-if-empty-condition
- * invalid-if-float-condition
- * invalid-if-integer-condition
- * invalid-if-string-condition
- * invalid-if-unparenthesized-condition
- * invalid-if-variable-integer-condition
+ * invalid-if-non-bool                      // An if condition must be boolean.
+ * invalid-if-empty-condition               // Compile-rejection form retained from legacy if empty condition.
+ * invalid-if-float-condition               // Compile-rejection form retained from legacy if float condition.
+ * invalid-if-integer-condition             // Compile-rejection form retained from legacy if integer condition.
+ * invalid-if-string-condition              // Compile-rejection form retained from legacy if string condition.
+ * invalid-if-unparenthesized-condition     // Compile-rejection form retained from legacy if unparenthesized condition.
+ * invalid-if-variable-integer-condition    // Compile-rejection form retained from legacy if variable integer condition.
  */
 /**
  * @begin invalid-if-non-bool

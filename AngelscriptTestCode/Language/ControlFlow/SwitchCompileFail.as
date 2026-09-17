@@ -4,16 +4,17 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-switch-on-float
- * invalid-duplicate-case
- * invalid-case-outside-switch
- * invalid-switch-duplicate-case
- * invalid-switch-duplicate-default
- * invalid-switch-float-case-label
- * invalid-switch-over-bool
- * invalid-switch-string-case-label
- * invalid-switch-variable-case-label
- * invalid-switch-without-braces
+ * invalid-switch-on-float               // A float cannot be the switch selector.
+ * invalid-duplicate-case                // Duplicate case labels are invalid.
+ * invalid-case-outside-switch           // Compile-rejection form retained from legacy case outside switch.
+ * invalid-switch-duplicate-case         // Compile-rejection form retained from legacy switch duplicate case.
+ * invalid-switch-duplicate-default      // Compile-rejection form retained from legacy switch duplicate default.
+ * invalid-switch-float-case-label       // Compile-rejection form retained from legacy switch float case label.
+ * invalid-switch-over-bool              // Compile-rejection form retained from legacy switch over bool.
+ * invalid-switch-string-case-label      // Compile-rejection form retained from legacy switch string case label.
+ * invalid-switch-variable-case-label    // Compile-rejection form retained from legacy switch variable case label.
+ * invalid-switch-without-braces         // Compile-rejection form retained from legacy switch without braces.
+ * invalid-fallthrough-outside-switch    // fallthrough is only valid inside a switch clause.
  */
 /**
  * @begin invalid-switch-on-float
@@ -163,5 +164,15 @@ void Test()
 {
 	int X = 1;
 	switch (X) case 0: break;
+}
+/** @end */
+/**
+ * @begin invalid-fallthrough-outside-switch
+ * @summary fallthrough is only valid inside a switch clause.
+ * @topic Negative
+ */
+void Test()
+{
+	fallthrough;
 }
 /** @end */

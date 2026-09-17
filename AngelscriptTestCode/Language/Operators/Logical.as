@@ -1,45 +1,86 @@
 /**
  * @version v1
- * @summary Logical conjunction, disjunction, negation, and short-circuit forms.
+ * @summary Logical conjunction, disjunction, negation, xor, and short-circuit forms.
  * @topic Language
  * @topic Operators
  *
- * logical
- * short-circuit-and
- * short-circuit-or
+ * logical-and-true     // Logical and of two true operands.
+ * logical-and-false    // Logical and with a false operand.
+ * logical-or-true      // Logical or that holds because one operand is true.
+ * logical-or-false     // Logical or of two false operands.
+ * logical-not-true     // Logical not applied to true.
+ * logical-not-false    // Logical not applied to false.
+ * logical-xor-true     // Logical xor using the live ^^ token, true against false.
+ * short-circuit-and    // Logical and skips the right operand when the left is false.
+ * short-circuit-or     // Logical or skips the right operand when the left is true.
  */
 /**
- * @begin logical
- * @summary And, or, not, a compound mix, and a short-circuit probe.
+ * @begin logical-and-true
+ * @summary Logical and of two true operands.
  */
-int ConjunctionHolds()
+bool LogicalAndTrue()
 {
-	bool Result = (true && true);
-	return Result ? 1 : 0;
+	return true && true;
 }
-
-int DisjunctionHolds()
+/** @end */
+/**
+ * @begin logical-and-false
+ * @summary Logical and with a false operand.
+ * @topic Operators
+ */
+bool LogicalAndFalse()
 {
-	bool Result = (false || true);
-	return Result ? 1 : 0;
+	return true && false;
 }
-
-int NegationHolds()
+/** @end */
+/**
+ * @begin logical-or-true
+ * @summary Logical or that holds because one operand is true.
+ * @topic Operators
+ */
+bool LogicalOrTrue()
 {
-	return (!false) ? 1 : 0;
+	return false || true;
 }
-
-int CompoundExpressionHolds()
+/** @end */
+/**
+ * @begin logical-or-false
+ * @summary Logical or of two false operands.
+ * @topic Operators
+ */
+bool LogicalOrFalse()
 {
-	bool Result = ((true && !false) || (false && true));
-	return Result ? 1 : 0;
+	return false || false;
 }
-
-int ShortCircuitSkipsDivisor()
+/** @end */
+/**
+ * @begin logical-not-true
+ * @summary Logical not applied to true.
+ * @topic Operators
+ */
+bool LogicalNotTrue()
 {
-	int Z = 0;
-	bool Result = (false && (1 / Z) == 0);
-	return Result ? 1 : 0;
+	return !true;
+}
+/** @end */
+/**
+ * @begin logical-not-false
+ * @summary Logical not applied to false.
+ * @topic Operators
+ */
+bool LogicalNotFalse()
+{
+	return !false;
+}
+/** @end */
+/**
+ * @begin logical-xor-true
+ * @summary Logical xor using the live ^^ token, true against false.
+ * @topic Operators
+ */
+bool LogicalXorTrue()
+{
+	return true ^^ false;
 }
 /** @end */
 /**
@@ -47,7 +88,7 @@ int ShortCircuitSkipsDivisor()
  * @summary Logical and skips the right operand when the left is false.
  * @topic Operators
  */
-int Probe()
+int ProbeAnd()
 {
 	int Value = 0;
 	bool Result = (false && (Value = 1) == 1);
@@ -59,7 +100,7 @@ int Probe()
  * @summary Logical or skips the right operand when the left is true.
  * @topic Operators
  */
-int Probe()
+int ProbeOr()
 {
 	int Value = 0;
 	bool Result = (true || (Value = 1) == 1);

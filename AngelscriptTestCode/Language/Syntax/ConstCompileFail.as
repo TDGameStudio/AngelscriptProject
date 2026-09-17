@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-assign-const-local
- * invalid-const-without-initializer
- * invalid-const-local-mutation
- * invalid-const-method-member-mutation
- * invalid-const-value-parameter-mutation
- * invalid-this-outside-class
+ * invalid-assign-const-local                // A const local cannot be reassigned.
+ * invalid-const-without-initializer         // A const local requires an initializer.
+ * invalid-const-local-mutation              // Compile-rejection form retained from legacy const local mutation.
+ * invalid-const-method-member-mutation      // Compile-rejection form retained from legacy const method member mutation.
+ * invalid-const-value-parameter-mutation    // Compile-rejection form retained from legacy const value parameter mutation.
+ * invalid-this-outside-class                // This is invalid outside a class or struct method.
  */
 /**
  * @begin invalid-assign-const-local

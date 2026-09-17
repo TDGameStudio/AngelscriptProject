@@ -4,13 +4,13 @@
  * @topic Language
  * @topic Syntax
  *
- * overload
- * bool-int-overload-resolution
- * float-double-overload-resolution
- * function-overload-arity-and-numeric-resolution
- * int-width-overload-resolution
- * void-overload-set
- * string-function-overloading
+ * overload                                          // Overloads distinguished by arity and by int versus float.
+ * bool-int-overload-resolution                      // Positive language form retained from legacy bool int overload resolution.
+ * float-double-overload-resolution                  // Positive language form retained from legacy float double overload resolution.
+ * function-overload-arity-and-numeric-resolution    // Positive language form retained from legacy function overload arity and numeric resolution.
+ * int-width-overload-resolution                     // Positive language form retained from legacy int width overload resolution.
+ * void-overload-set                                 // Positive language form retained from legacy void overload set.
+ * string-function-overloading                       // Overloads distinguished by string versus int.
  */
 /**
  * @begin overload

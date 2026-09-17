@@ -4,11 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-do-without-while
- * invalid-do-while-integer-condition
- * invalid-do-while-missing-semicolon
- * invalid-do-while-empty-condition
- * invalid-do-while-missing-parens
+ * invalid-do-without-while              // A do body must be followed by while.
+ * invalid-do-while-integer-condition    // Compile-rejection form retained from legacy do while integer condition.
+ * invalid-do-while-missing-semicolon    // Compile-rejection form retained from legacy do while missing semicolon.
+ * invalid-do-while-empty-condition      // Do-while condition cannot be empty.
+ * invalid-do-while-missing-parens       // Do-while condition must be parenthesized.
  */
 /**
  * @begin invalid-do-without-while

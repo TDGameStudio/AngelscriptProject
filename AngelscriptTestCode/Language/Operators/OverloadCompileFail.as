@@ -4,19 +4,19 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-unknown-operator
- * invalid-addition-without-op-add
- * invalid-addition-without-op-add-coverage
- * invalid-duplicate-op-add
- * invalid-duplicate-op-add-coverage
- * invalid-global-operator-overload
- * invalid-invalid-operator-name
- * invalid-op-add-returns-void
- * invalid-op-add-without-parameter
- * invalid-op-cmp-non-int-return
- * invalid-op-equals-non-bool-return
- * invalid-op-index-returns-void
- * invalid-op-neg-with-parameter
+ * invalid-unknown-operator                    // An unknown operator name is not a valid overload.
+ * invalid-addition-without-op-add             // Compile-rejection form retained from legacy addition without op add.
+ * invalid-addition-without-op-add-coverage    // Compile-rejection form retained from legacy addition without op add coverage.
+ * invalid-duplicate-op-add                    // Compile-rejection form retained from legacy duplicate op add.
+ * invalid-duplicate-op-add-coverage           // Compile-rejection form retained from legacy duplicate op add coverage.
+ * invalid-global-operator-overload            // Compile-rejection form retained from legacy global operator overload.
+ * invalid-invalid-operator-name               // Compile-rejection form retained from legacy invalid operator name.
+ * invalid-op-add-returns-void                 // Compile-rejection form retained from legacy op add returns void.
+ * invalid-op-add-without-parameter            // Compile-rejection form retained from legacy op add without parameter.
+ * invalid-op-cmp-non-int-return               // Compile-rejection form retained from legacy op cmp non int return.
+ * invalid-op-equals-non-bool-return           // Compile-rejection form retained from legacy op equals non bool return.
+ * invalid-op-index-returns-void               // Compile-rejection form retained from legacy op index returns void.
+ * invalid-op-neg-with-parameter               // Compile-rejection form retained from legacy op neg with parameter.
  */
 /**
  * @begin invalid-unknown-operator

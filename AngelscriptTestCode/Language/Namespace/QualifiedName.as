@@ -4,10 +4,12 @@
  * @topic Language
  * @topic Namespace
  *
- * qualified-name
- * namespace-qualified-call
- * namespace-qualified-name
- * multi-segment-qualifier
+ * qualified-name              // A named namespace function invoked through a qualified name.
+ * namespace-qualified-call    // A namespaced function is invoked with an argument through a qualifier.
+ * namespace-qualified-name    // A namespaced constant is read through a qualified name.
+ * multi-segment-qualifier     // A three-segment qualified function call.
+ * qualified-enum-member       // An enumerator is selected through a namespace qualifier.
+ * qualified-struct-type       // A struct type is named through a namespace qualifier.
  */
 /**
  * @begin qualified-name
@@ -28,25 +30,36 @@ int QualifiedCall()
 /** @end */
 /**
  * @begin namespace-qualified-call
- * @summary Positive language form retained from legacy namespace qualified call.
+ * @summary A namespaced function is invoked with an argument through a qualifier.
  * @topic Namespace
  */
-int GetVal()
+namespace Tools
+{
+	int Add(int Value)
 	{
-		return 42;
+		return Value + 3;
 	}
+}
+
+int CallAdd()
+{
+	return Tools::Add(4);
+}
 /** @end */
 /**
  * @begin namespace-qualified-name
- * @summary Positive language form retained from legacy namespace qualified name.
+ * @summary A namespaced constant is read through a qualified name.
  * @topic Namespace
  */
-const int Value = 100;
+namespace Tools
+{
+	const int Offset = 3;
+}
 
-	int GetValue()
-	{
-		return Value;
-	}
+int ReadOffset()
+{
+	return Tools::Offset;
+}
 /** @end */
 /**
  * @begin multi-segment-qualifier
@@ -67,5 +80,44 @@ namespace Game
 int Use()
 {
 	return Game::Combat::Hit();
+}
+/** @end */
+/**
+ * @begin qualified-enum-member
+ * @summary An enumerator is selected through a namespace qualifier.
+ * @topic Namespace
+ */
+namespace Tools
+{
+	enum EKind
+	{
+		Low,
+		High
+	}
+}
+
+int ReadKind()
+{
+	return int(Tools::EKind::High);
+}
+/** @end */
+/**
+ * @begin qualified-struct-type
+ * @summary A struct type is named through a namespace qualifier.
+ * @topic Namespace
+ */
+namespace Tools
+{
+	struct FSize
+	{
+		int Width;
+	}
+}
+
+int ReadWidth()
+{
+	Tools::FSize Size;
+	Size.Width = 4;
+	return Size.Width;
 }
 /** @end */

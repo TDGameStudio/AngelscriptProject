@@ -4,17 +4,17 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-assign-to-literal
- * invalid-compound-on-const
- * invalid-add-assign-string-to-int
- * invalid-assignment-to-const
- * invalid-assignment-to-expression
- * invalid-assignment-to-function-return
- * invalid-assignment-to-literal
- * invalid-assignment-to-undeclared-variable
- * invalid-mod-assign-on-float
- * invalid-shift-assign-on-float
- * invalid-string-assigned-to-int
+ * invalid-assign-to-literal                    // A literal cannot be the target of assignment.
+ * invalid-compound-on-const                    // A const local cannot be compound-assigned.
+ * invalid-add-assign-string-to-int             // Compile-rejection form retained from legacy add assign string to int.
+ * invalid-assignment-to-const                  // Compile-rejection form retained from legacy assignment to const.
+ * invalid-assignment-to-expression             // Compile-rejection form retained from legacy assignment to expression.
+ * invalid-assignment-to-function-return        // Compile-rejection form retained from legacy assignment to function return.
+ * invalid-assignment-to-literal                // Compile-rejection form retained from legacy assignment to literal.
+ * invalid-assignment-to-undeclared-variable    // Compile-rejection form retained from legacy assignment to undeclared variable.
+ * invalid-mod-assign-on-float                  // Compile-rejection form retained from legacy mod assign on float.
+ * invalid-shift-assign-on-float                // Compile-rejection form retained from legacy shift assign on float.
+ * invalid-string-assigned-to-int               // Compile-rejection form retained from legacy string assigned to int.
  */
 /**
  * @begin invalid-assign-to-literal

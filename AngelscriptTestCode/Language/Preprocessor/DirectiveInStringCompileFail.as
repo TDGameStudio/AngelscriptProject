@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Preprocessor
  *
- * invalid-directive-outside-string
- * invalid-include-directive
+ * invalid-directive-outside-string    // A bare unknown directive token is not valid source.
+ * invalid-include-directive           // Include is not a supported source directive in this corpus.
  */
 /**
  * @begin invalid-directive-outside-string

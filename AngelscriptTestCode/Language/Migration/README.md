@@ -2,7 +2,18 @@
 
 Disposition for every inspected `TestSource-old/Language` source. Byte equality is against migrated container clean source, not these 624 wrappers.
 
-Legacy files: 624. Accepted FileTags: 47.
+Legacy files: 624. First-wave FileTags: 47. Second-wave chapters replace flat theme pockets with per-syntax FileTags such as `Language/Auto/InferFromLiteral`, `Language/Class/Constructor`, `Language/Inheritance/Override`, `Language/Destructors/ClassDestructor`, `Language/Typedef/Alias`, and `Language/Mixin/FunctionMixin`, plus Interface, Delegate, and Event. `Language/Syntax/ClassDeclarationCompileFail` merged into Class and Inheritance Fail siblings.
+
+## Second-wave Pending trees
+
+| Pending tree | Disposition | Destination |
+| --- | --- | --- |
+| `Pending/Language/Auto` | adapted | `Language/Auto/InferFromLiteral` |
+| `Pending/Language/Class` | adapted | `Language/Class/Constructor` |
+| `Pending/Language/Inheritance` | adapted | `Language/Inheritance/Override` |
+| `Pending/Language/Destructors` | adapted | `Language/Destructors/ClassDestructor` |
+| `Pending/Language/Typedef` | adapted | `Language/Typedef/Alias` |
+| `Pending/Language/Mixin` | adapted | `Language/Mixin/FunctionMixin` |
 
 | Legacy path | Disposition | Destination | Reason |
 | --- | --- | --- | --- |

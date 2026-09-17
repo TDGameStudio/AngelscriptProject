@@ -4,10 +4,12 @@
  * @topic Language
  * @topic Syntax
  *
- * references
- * function-reference-parameter-combinations
- * ref-to-local
- * ref-inout-chain
+ * references                                   // In, out, and inout references plus a local alias.
+ * function-reference-parameter-combinations    // Positive language form retained from legacy function reference parameter combinations.
+ * ref-to-local                                 // A reference parameter writes through a local.
+ * ref-inout-chain                              // Two inout references update the same local in sequence.
+ * ref-out-parameter                            // An &out parameter writes back into the caller's local.
+ * ref-to-member                                // A local reference aliases a struct member.
  */
 /**
  * @begin references
@@ -109,5 +111,40 @@ int UseChain()
 	AddOne(Value);
 	AddTwo(Value);
 	return Value;
+}
+/** @end */
+/**
+ * @begin ref-out-parameter
+ * @summary An &out parameter writes back into the caller's local.
+ * @topic Syntax
+ */
+void Write(int&out Result)
+{
+	Result = 7;
+}
+
+int UseOut()
+{
+	int Value = 0;
+	Write(Value);
+	return Value;
+}
+/** @end */
+/**
+ * @begin ref-to-member
+ * @summary A local reference aliases a struct member.
+ * @topic Syntax
+ */
+struct FHolder
+{
+	int Value;
+}
+
+int ReadMember()
+{
+	FHolder Holder;
+	Holder.Value = 3;
+	int& Alias = Holder.Value;
+	return Alias;
 }
 /** @end */

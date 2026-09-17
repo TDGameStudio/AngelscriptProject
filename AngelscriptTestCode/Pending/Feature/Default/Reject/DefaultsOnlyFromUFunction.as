@@ -1,0 +1,45 @@
+/**
+ * @version v1
+ * @summary A method marked `defaults` is only accessible from default statements. Calling it from an ordinary UFUNCTION is rejected. This file is the illegal program itself; do not call BuildDefaultValue from a default statement.
+ * @topic Feature
+ */
+/**
+ * @version root
+ * @summary A method marked `defaults` is only accessible from default statements. Calling it from an ordinary UFUNCTION is rejected. This file is the illegal program itself; do not call BuildDefaultValue from a default statement.
+ * @topic Negative
+ */
+UCLASS()
+class UDefaultsOnlyRejectTarget : UObject
+{
+	UPROPERTY()
+	int Value = 0;
+
+	/**
+	 * A defaults-only helper that may not be called from ordinary functions.
+	 *
+	 * @Kind CompileReject
+	 * @Covers Default.DefaultsOnly
+	 * @Inputs none
+	 * @Return 7 after writing Value
+	 */
+	int BuildDefaultValue() defaults
+	{
+		Value = 7;
+		return Value;
+	}
+
+	/**
+	 * Illegally calls the defaults-only helper from an ordinary UFUNCTION.
+	 *
+	 * @Kind CompileReject
+	 * @Covers Default.DefaultsOnly
+	 * @Inputs none
+	 * @Return does not compile
+	 */
+	UFUNCTION()
+	int Entry()
+	{
+		return BuildDefaultValue();
+	}
+}
+/** @end */

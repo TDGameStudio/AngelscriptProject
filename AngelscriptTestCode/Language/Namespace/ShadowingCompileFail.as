@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Namespace
  *
- * invalid-shadowed-type-as-value
- * invalid-duplicate-in-same-namespace
+ * invalid-shadowed-type-as-value         // A shadowed type name cannot be used as a value.
+ * invalid-duplicate-in-same-namespace    // Two functions cannot share a name in one namespace.
  */
 /**
  * @begin invalid-shadowed-type-as-value

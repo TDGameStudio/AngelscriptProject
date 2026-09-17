@@ -4,17 +4,17 @@
  * @topic Language
  * @topic Syntax
  *
- * comments
- * escaped-annotation-comment
- * block-comment-before-function
- * block-comment-with-separate-markers
- * comment-before-function
- * documentation-comment
- * inline-comment-inside-function
- * multi-line-block-comment
- * range-based-for-rewrite-skips-literals
- * single-line-comment
- * comment-in-string-is-literal
+ * comments                                  // A function preceded by line and block comments, with an inline comment.
+ * escaped-annotation-comment                // An escaped annotation comment remains literal source text.
+ * block-comment-before-function             // Positive language form retained from legacy block comment before function.
+ * block-comment-with-separate-markers       // Positive language form retained from legacy block comment with separate markers.
+ * comment-before-function                   // Positive language form retained from legacy comment before function.
+ * documentation-comment                     // Positive language form retained from legacy documentation comment.
+ * inline-comment-inside-function            // Positive language form retained from legacy inline comment inside function.
+ * multi-line-block-comment                  // Positive language form retained from legacy multi line block comment.
+ * range-based-for-rewrite-skips-literals    // Positive language form retained from legacy range based for rewrite skips literals.
+ * single-line-comment                       // Positive language form retained from legacy single line comment.
+ * comment-in-string-is-literal              // Comment markers inside a string remain payload.
  */
 /**
  * @begin comments

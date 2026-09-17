@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Syntax
  *
- * enum
- * basic-enum-values
- * empty-enum-declaration
- * enum-explicit-values
- * enum-local-usage
- * enum-trailing-comma
+ * enum                      // An implicit enum and an explicitly numbered enum used as a local.
+ * basic-enum-values         // Positive language form retained from legacy basic enum values.
+ * empty-enum-declaration    // Positive language form retained from legacy empty enum declaration.
+ * enum-explicit-values      // Positive language form retained from legacy enum explicit values.
+ * enum-local-usage          // Positive language form retained from legacy enum local usage.
+ * enum-trailing-comma       // An enumerator list that ends with a trailing comma.
  */
 /**
  * @begin enum

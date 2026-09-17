@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Namespace
  *
- * invalid-skip-inner-qualifier
- * invalid-namespace-missing-opening-brace
+ * invalid-skip-inner-qualifier               // The outer name alone does not expose the inner function.
+ * invalid-namespace-missing-opening-brace    // A namespace declaration requires an opening brace.
  */
 /**
  * @begin invalid-skip-inner-qualifier

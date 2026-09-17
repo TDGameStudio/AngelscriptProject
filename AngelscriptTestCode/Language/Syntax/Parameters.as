@@ -4,27 +4,27 @@
  * @topic Language
  * @topic Syntax
  *
- * parameters
- * bool-in-out-parameter
- * bool-out-parameter
- * bool-reference-in-parameter
- * bool-value-parameters
- * float-in-out-parameters
- * float-out-parameters
- * float-reference-in-parameters
- * float-value-parameters
- * function-parameters-multiple-out
- * int-family-in-out-parameters
- * int-family-out-parameters
- * int-family-reference-in-parameters
- * int-family-value-parameters
- * reference-write-parameter
- * script-quat-value-parameters
- * script-quat-out-parameters
- * string-value-parameters
- * string-in-parameter
- * string-out-parameter
- * string-inout-parameter
+ * parameters                            // By-value, const-in, out, and inout integer parameters.
+ * bool-in-out-parameter                 // Positive language form retained from legacy bool in out parameter.
+ * bool-out-parameter                    // Positive language form retained from legacy bool out parameter.
+ * bool-reference-in-parameter           // Positive language form retained from legacy bool reference in parameter.
+ * bool-value-parameters                 // Positive language form retained from legacy bool value parameters.
+ * float-in-out-parameters               // Positive language form retained from legacy float in out parameters.
+ * float-out-parameters                  // Positive language form retained from legacy float out parameters.
+ * float-reference-in-parameters         // Positive language form retained from legacy float reference in parameters.
+ * float-value-parameters                // Positive language form retained from legacy float value parameters.
+ * function-parameters-multiple-out      // Positive language form retained from legacy function parameters multiple out.
+ * int-family-in-out-parameters          // Positive language form retained from legacy int family in out parameters.
+ * int-family-out-parameters             // Positive language form retained from legacy int family out parameters.
+ * int-family-reference-in-parameters    // Positive language form retained from legacy int family reference in parameters.
+ * int-family-value-parameters           // Positive language form retained from legacy int family value parameters.
+ * reference-write-parameter             // Positive language form retained from legacy reference write parameter.
+ * script-quat-value-parameters          // Authored language form for script quat value parameters.
+ * script-quat-out-parameters            // Authored language form for script quat out parameters.
+ * string-value-parameters               // A string received by value.
+ * string-in-parameter                   // A const-in string parameter.
+ * string-out-parameter                  // A string written through an out parameter.
+ * string-inout-parameter                // A string updated through an inout parameter.
  */
 /**
  * @begin parameters

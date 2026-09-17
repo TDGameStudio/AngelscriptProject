@@ -4,7 +4,7 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-unassigned-read
+ * invalid-unassigned-read    // Reading a local that is not definitely assigned is invalid.
  */
 /**
  * @begin invalid-unassigned-read

@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Casting
  *
- * invalid-null-to-value
- * invalid-nullptr-arithmetic
- * invalid-nullptr-to-bool
- * invalid-nullptr-to-float
- * invalid-nullptr-to-int
- * invalid-nullptr-to-struct
+ * invalid-null-to-value         // A value type cannot be assigned null.
+ * invalid-nullptr-arithmetic    // Compile-rejection form retained from legacy nullptr arithmetic.
+ * invalid-nullptr-to-bool       // Compile-rejection form retained from legacy nullptr to bool.
+ * invalid-nullptr-to-float      // Compile-rejection form retained from legacy nullptr to float.
+ * invalid-nullptr-to-int        // Compile-rejection form retained from legacy nullptr to int.
+ * invalid-nullptr-to-struct     // A script struct value cannot be assigned null.
  */
 /**
  * @begin invalid-null-to-value

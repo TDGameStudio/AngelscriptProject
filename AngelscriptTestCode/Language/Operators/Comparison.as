@@ -4,60 +4,102 @@
  * @topic Language
  * @topic Operators
  *
- * comparison
- * string-equality-operator
+ * equal-int                   // Integer equality comparison.
+ * not-equal-int               // Integer inequality comparison.
+ * less-int                    // Integer less-than comparison.
+ * less-equal-int              // Integer less-or-equal comparison.
+ * greater-int                 // Integer greater-than comparison.
+ * greater-equal-int           // Integer greater-or-equal comparison.
+ * equal-float                 // Float equality comparison.
+ * equal-bool                  // Bool equality comparison.
+ * string-equality-operator    // String equality.
  */
 /**
- * @begin comparison
- * @summary Equality, inequality, and ordered comparisons on integers and floats.
+ * @begin equal-int
+ * @summary Integer equality comparison.
  */
-int EqualInt()
+bool EqualInt()
 {
-	return (1 == 1) ? 1 : 0;
+	return 1 == 1;
 }
-
-int NotEqualInt()
+/** @end */
+/**
+ * @begin not-equal-int
+ * @summary Integer inequality comparison.
+ * @topic Operators
+ */
+bool NotEqualInt()
 {
-	return (1 != 2) ? 1 : 0;
+	return 1 != 2;
 }
-
-int LessInt()
+/** @end */
+/**
+ * @begin less-int
+ * @summary Integer less-than comparison.
+ * @topic Operators
+ */
+bool LessInt()
 {
-	return (1 < 2) ? 1 : 0;
+	return 1 < 2;
 }
-
-int LessEqualInt()
+/** @end */
+/**
+ * @begin less-equal-int
+ * @summary Integer less-or-equal comparison.
+ * @topic Operators
+ */
+bool LessEqualInt()
 {
-	return (2 <= 2) ? 1 : 0;
+	return 2 <= 2;
 }
-
-int GreaterInt()
+/** @end */
+/**
+ * @begin greater-int
+ * @summary Integer greater-than comparison.
+ * @topic Operators
+ */
+bool GreaterInt()
 {
-	return (3 > 2) ? 1 : 0;
+	return 3 > 2;
 }
-
-int GreaterEqualInt()
+/** @end */
+/**
+ * @begin greater-equal-int
+ * @summary Integer greater-or-equal comparison.
+ * @topic Operators
+ */
+bool GreaterEqualInt()
 {
-	return (3 >= 3) ? 1 : 0;
+	return 3 >= 3;
 }
-
-int CompareFloat()
+/** @end */
+/**
+ * @begin equal-float
+ * @summary Float equality comparison.
+ * @topic Operators
+ */
+bool EqualFloat()
 {
-	return (1.0f < 2.5f) ? 1 : 0;
+	return 1.0f == 1.0f;
+}
+/** @end */
+/**
+ * @begin equal-bool
+ * @summary Bool equality comparison.
+ * @topic Operators
+ */
+bool EqualBool()
+{
+	return true == true;
 }
 /** @end */
 /**
  * @begin string-equality-operator
- * @summary String equality and inequality.
+ * @summary String equality.
  * @topic Operators
  */
 bool Equal()
 {
 	return "a" == "a";
-}
-
-bool Unequal()
-{
-	return "a" != "b";
 }
 /** @end */

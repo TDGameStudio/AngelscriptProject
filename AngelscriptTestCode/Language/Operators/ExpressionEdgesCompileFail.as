@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-unmatched-paren
- * invalid-unmatched-parenthesis
- * invalid-extra-closing-paren
- * invalid-empty-call-on-int
+ * invalid-unmatched-paren          // An unmatched opening parenthesis is invalid.
+ * invalid-unmatched-parenthesis    // Compile-rejection form retained from legacy unmatched parenthesis.
+ * invalid-extra-closing-paren      // An extra closing parenthesis is invalid.
+ * invalid-empty-call-on-int        // An integer cannot be called.
  */
 /**
  * @begin invalid-unmatched-paren

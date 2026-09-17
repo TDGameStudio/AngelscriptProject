@@ -4,9 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * do-while
- * do-while-once
- * do-while-nested
+ * do-while                       // A do-while that executes the body before testing the condition.
+ * do-while-once                  // Do-while body runs once when the condition is already false.
+ * do-while-nested                // Inner do-while nested in an outer do-while.
+ * do-while-false-after-first     // Do-while stops after the first pass once the flag is cleared.
+ * do-while-compound-condition    // Do-while condition uses a conjunctive && test.
  */
 /**
  * @begin do-while
@@ -62,6 +64,42 @@ int DoWhileNested()
 		++Outer;
 	}
 	while (Outer < 2);
+	return Total;
+}
+/** @end */
+/**
+ * @begin do-while-false-after-first
+ * @summary Do-while stops after the first pass once the flag is cleared.
+ * @topic ControlFlow
+ */
+int DoWhileFalseAfterFirst()
+{
+	int Value = 0;
+	bool KeepGoing = true;
+	do
+	{
+		Value = 1;
+		KeepGoing = false;
+	}
+	while (KeepGoing);
+	return Value;
+}
+/** @end */
+/**
+ * @begin do-while-compound-condition
+ * @summary Do-while condition uses a conjunctive && test.
+ * @topic ControlFlow
+ */
+int DoWhileCompound()
+{
+	int Index = 0;
+	int Total = 0;
+	do
+	{
+		Total += Index;
+		++Index;
+	}
+	while (Index < 3 && Total < 10);
 	return Total;
 }
 /** @end */

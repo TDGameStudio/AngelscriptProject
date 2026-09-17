@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-ref-to-literal
- * invalid-ref-to-const-then-write
+ * invalid-ref-to-literal             // A non-const reference cannot bind a literal.
+ * invalid-ref-to-const-then-write    // A const reference cannot be written.
  */
 /**
  * @begin invalid-ref-to-literal

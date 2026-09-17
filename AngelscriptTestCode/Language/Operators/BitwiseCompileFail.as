@@ -4,15 +4,15 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-bitwise-on-float
- * invalid-shift-on-bool
- * invalid-bitwise-and-missing-operand
- * invalid-bitwise-and-on-float
- * invalid-bitwise-not-on-string
- * invalid-bitwise-or-on-float
- * invalid-bitwise-xor-on-bool
- * invalid-shift-on-float
- * invalid-shift-on-string
+ * invalid-bitwise-on-float               // Bitwise and cannot take float operands.
+ * invalid-shift-on-bool                  // Shift operators cannot take boolean operands.
+ * invalid-bitwise-and-missing-operand    // Compile-rejection form retained from legacy bitwise and missing operand.
+ * invalid-bitwise-and-on-float           // Compile-rejection form retained from legacy bitwise and on float.
+ * invalid-bitwise-not-on-string          // Compile-rejection form retained from legacy bitwise not on string.
+ * invalid-bitwise-or-on-float            // Compile-rejection form retained from legacy bitwise or on float.
+ * invalid-bitwise-xor-on-bool            // Compile-rejection form retained from legacy bitwise xor on bool.
+ * invalid-shift-on-float                 // Compile-rejection form retained from legacy shift on float.
+ * invalid-shift-on-string                // Compile-rejection form retained from legacy shift on string.
  */
 /**
  * @begin invalid-bitwise-on-float

@@ -4,8 +4,8 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-dangling-else-token
- * invalid-if-missing-inner-condition
+ * invalid-dangling-else-token           // A second else on the same if is invalid.
+ * invalid-if-missing-inner-condition    // A nested if still requires a condition.
  */
 /**
  * @begin invalid-dangling-else-token

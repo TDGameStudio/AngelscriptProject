@@ -4,11 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-break-outside-loop
- * invalid-continue-outside-loop
- * invalid-break-in-function-called-from-loop
- * invalid-break-inside-if-without-loop
- * invalid-continue-inside-if-without-loop
+ * invalid-break-outside-loop                    // Break is invalid outside a loop or switch.
+ * invalid-continue-outside-loop                 // Continue is invalid outside a loop.
+ * invalid-break-in-function-called-from-loop    // Compile-rejection form retained from legacy break in function called from loop.
+ * invalid-break-inside-if-without-loop          // Compile-rejection form retained from legacy break inside if without loop.
+ * invalid-continue-inside-if-without-loop       // Compile-rejection form retained from legacy continue inside if without loop.
  */
 /**
  * @begin invalid-break-outside-loop

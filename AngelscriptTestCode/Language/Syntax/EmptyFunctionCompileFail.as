@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-function-without-body
- * invalid-function-missing-braces
+ * invalid-function-without-body      // A function declaration without a body is invalid in this corpus.
+ * invalid-function-missing-braces    // A function body cannot be a bare semicolon.
  */
 /**
  * @begin invalid-function-without-body

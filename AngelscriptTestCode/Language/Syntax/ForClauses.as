@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Syntax
  *
- * for-clauses
- * for-basic-shapes
- * for-comma-clauses
- * for-omitted-clauses
- * for-positive-syntax-forms
- * for-infinite-with-break
+ * for-clauses                  // A basic for, omitted clauses, and a comma increment.
+ * for-basic-shapes             // Positive language form retained from legacy for basic shapes.
+ * for-comma-clauses            // Positive language form retained from legacy for comma clauses.
+ * for-omitted-clauses          // Positive language form retained from legacy for omitted clauses.
+ * for-positive-syntax-forms    // Positive language form retained from legacy for positive syntax forms.
+ * for-infinite-with-break      // A for with omitted clauses that exits by break.
  */
 /**
  * @begin for-clauses

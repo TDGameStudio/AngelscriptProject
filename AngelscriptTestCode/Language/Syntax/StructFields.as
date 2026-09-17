@@ -4,11 +4,13 @@
  * @topic Language
  * @topic Syntax
  *
- * fields-two
- *    add-field; parent fields-two
- * anonymous-struct-compiles
- * struct-member-defaults
- * struct-empty-body
+ * fields-two                   // Two-field struct with integer and float in-class initializers.
+ *   add-field                  // Insert a third annotated integer field after the first two members.
+ * anonymous-struct-compiles    // Positive language form retained from legacy anonymous struct compiles.
+ * struct-member-defaults       // Positive language form retained from legacy struct member defaults.
+ * struct-empty-body            // A struct with no members.
+ * three-fields                 // A struct with three integer members.
+ * struct-bool-field            // A struct whose only member is a bool.
  */
 /**
  * @begin fields-two
@@ -68,5 +70,27 @@ int Use()
 {
 	FEmpty Value;
 	return 0;
+}
+/** @end */
+/**
+ * @begin three-fields
+ * @summary A struct with three integer members.
+ * @topic Syntax
+ */
+struct FTriple
+{
+	int A;
+	int B;
+	int C;
+}
+/** @end */
+/**
+ * @begin struct-bool-field
+ * @summary A struct whose only member is a bool.
+ * @topic Syntax
+ */
+struct FFlag
+{
+	bool Ready;
 }
 /** @end */

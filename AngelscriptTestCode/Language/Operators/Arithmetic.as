@@ -4,87 +4,191 @@
  * @topic Language
  * @topic Operators
  *
- * arithmetic
- * string-concatenation-plus
+ * add-int                      // Integer addition of two literals.
+ * sub-int                      // Integer subtraction of two literals.
+ * mul-int                      // Integer multiplication of two literals.
+ * div-int                      // Integer division of two literals.
+ * mod-int                      // Integer remainder of two literals.
+ * add-float                    // Float addition of two literals.
+ * sub-float                    // Float subtraction of two literals.
+ * mul-float                    // Float multiplication of two literals.
+ * div-float                    // Float division of two literals.
+ * unary-minus-int              // Unary minus applied to an integer local.
+ * unary-plus-int               // Unary plus applied to an integer local.
+ * power-int                    // Integer power using the live ** token.
+ * prefix-increment             // Prefix increment of an integer local.
+ * postfix-increment            // Postfix increment of an integer local.
+ * prefix-decrement             // Prefix decrement of an integer local.
+ * postfix-decrement            // Postfix decrement of an integer local.
+ * string-concatenation-plus    // String concatenation with plus.
  */
 /**
- * @begin arithmetic
- * @summary Representative arithmetic helpers: binary ops, unary negation, increment, mixed types.
+ * @begin add-int
+ * @summary Integer addition of two literals.
  */
 int AddInt()
 {
 	return 1 + 2;
 }
-
+/** @end */
+/**
+ * @begin sub-int
+ * @summary Integer subtraction of two literals.
+ * @topic Operators
+ */
 int SubInt()
 {
 	return 5 - 3;
 }
-
+/** @end */
+/**
+ * @begin mul-int
+ * @summary Integer multiplication of two literals.
+ * @topic Operators
+ */
 int MulInt()
 {
 	return 2 * 3;
 }
-
+/** @end */
+/**
+ * @begin div-int
+ * @summary Integer division of two literals.
+ * @topic Operators
+ */
 int DivInt()
 {
 	return 10 / 2;
 }
-
+/** @end */
+/**
+ * @begin mod-int
+ * @summary Integer remainder of two literals.
+ * @topic Operators
+ */
 int ModInt()
 {
 	return 10 % 3;
 }
-
-int AddFloat()
+/** @end */
+/**
+ * @begin add-float
+ * @summary Float addition of two literals.
+ * @topic Operators
+ */
+float AddFloat()
 {
-	float X = 1.0f + 2.5f;
-	return int(X * 10);
+	return 1.0f + 2.5f;
 }
-
-int UnaryNeg()
+/** @end */
+/**
+ * @begin sub-float
+ * @summary Float subtraction of two literals.
+ * @topic Operators
+ */
+float SubFloat()
+{
+	return 5.5f - 2.0f;
+}
+/** @end */
+/**
+ * @begin mul-float
+ * @summary Float multiplication of two literals.
+ * @topic Operators
+ */
+float MulFloat()
+{
+	return 2.0f * 3.5f;
+}
+/** @end */
+/**
+ * @begin div-float
+ * @summary Float division of two literals.
+ * @topic Operators
+ */
+float DivFloat()
+{
+	return 10.0f / 4.0f;
+}
+/** @end */
+/**
+ * @begin unary-minus-int
+ * @summary Unary minus applied to an integer local.
+ * @topic Operators
+ */
+int UnaryMinusInt()
 {
 	int X = 5;
 	return -X;
 }
-
-int PreInc()
+/** @end */
+/**
+ * @begin unary-plus-int
+ * @summary Unary plus applied to an integer local.
+ * @topic Operators
+ */
+int UnaryPlusInt()
+{
+	int X = 5;
+	return +X;
+}
+/** @end */
+/**
+ * @begin power-int
+ * @summary Integer power using the live ** token.
+ * @topic Operators
+ */
+int PowerInt()
+{
+	return 2 ** 3;
+}
+/** @end */
+/**
+ * @begin prefix-increment
+ * @summary Prefix increment of an integer local.
+ * @topic Operators
+ */
+int PrefixIncrement()
 {
 	int X = 0;
 	++X;
 	return X;
 }
-
-int PostInc()
+/** @end */
+/**
+ * @begin postfix-increment
+ * @summary Postfix increment of an integer local.
+ * @topic Operators
+ */
+int PostfixIncrement()
 {
 	int X = 0;
 	X++;
 	return X;
 }
-
-int PreDec()
+/** @end */
+/**
+ * @begin prefix-decrement
+ * @summary Prefix decrement of an integer local.
+ * @topic Operators
+ */
+int PrefixDecrement()
 {
 	int X = 5;
 	--X;
 	return X;
 }
-
-int PostDec()
+/** @end */
+/**
+ * @begin postfix-decrement
+ * @summary Postfix decrement of an integer local.
+ * @topic Operators
+ */
+int PostfixDecrement()
 {
 	int X = 5;
 	X--;
 	return X;
-}
-
-int CompoundExpr()
-{
-	return (1 + 2) * 3 - 4 / 2 + 7 % 3;
-}
-
-int MixedTypes()
-{
-	float X = 1 + 2.0f;
-	return int(X * 10);
 }
 /** @end */
 /**

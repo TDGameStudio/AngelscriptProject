@@ -4,13 +4,13 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-ternary-non-bool-condition
- * invalid-ternary-mismatched-arms
- * invalid-ternary-branch-type-mismatch
- * invalid-ternary-float-condition
- * invalid-ternary-missing-colon
- * invalid-ternary-missing-true-branch
- * invalid-ternary-string-condition
+ * invalid-ternary-non-bool-condition      // The ternary condition must be boolean.
+ * invalid-ternary-mismatched-arms         // Ternary arms must share a common type.
+ * invalid-ternary-branch-type-mismatch    // Compile-rejection form retained from legacy ternary branch type mismatch.
+ * invalid-ternary-float-condition         // Compile-rejection form retained from legacy ternary float condition.
+ * invalid-ternary-missing-colon           // Compile-rejection form retained from legacy ternary missing colon.
+ * invalid-ternary-missing-true-branch     // Compile-rejection form retained from legacy ternary missing true branch.
+ * invalid-ternary-string-condition        // Compile-rejection form retained from legacy ternary string condition.
  */
 /**
  * @begin invalid-ternary-non-bool-condition

@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Preprocessor
  *
- * if-elif-else
- * editor-flag-branch
- * editor-configuration-flag-branch
- * if-elif-endif-no-else
- * nested-if-directives
- * if-zero-dead-branch
+ * if-elif-else                        // A three-arm directive chain selecting among integer returns.
+ * editor-flag-branch                  // A single #if/#else pair guarded by an editor configuration flag.
+ * editor-configuration-flag-branch    // Positive language form retained from legacy editor configuration flag branch.
+ * if-elif-endif-no-else               // If/elif/endif chain without an else arm.
+ * nested-if-directives                // An inner #if nested inside an outer #if/#endif.
+ * if-zero-dead-branch                 // A #if 0 branch is source text that is not selected.
  */
 /**
  * @begin if-elif-else

@@ -4,9 +4,11 @@
  * @topic Language
  * @topic Syntax
  *
- * empty-function
- * empty-void-no-statements
- * empty-inner-block
+ * empty-function                 // An empty void function and an empty int function that still returns.
+ * empty-void-no-statements       // A void function whose body contains no statements.
+ * empty-inner-block              // A function whose only statement is an empty block.
+ * empty-void-trailing-comment    // An empty void function followed by a trailing comment.
+ * empty-global-void              // An empty void function at global scope.
  */
 /**
  * @begin empty-function
@@ -39,5 +41,23 @@ void EmptyBlock()
 {
 	{
 	}
+}
+/** @end */
+/**
+ * @begin empty-void-trailing-comment
+ * @summary An empty void function followed by a trailing comment.
+ * @topic Syntax
+ */
+void EmptyTrailing()
+{
+} // trailing
+/** @end */
+/**
+ * @begin empty-global-void
+ * @summary An empty void function at global scope.
+ * @topic Syntax
+ */
+void GlobalEmpty()
+{
 }
 /** @end */

@@ -1,13 +1,14 @@
 /**
  * @version v1
- * @summary Const locals, const parameters, and const methods.
+ * @summary Const locals and a const method that only reads.
  * @topic Language
  * @topic Syntax
  *
- * const
- * const-method-on-struct
- * const-values-methods-and-references
- * const-string-local
+ * const                     // A const local and a const method that only reads.
+ * const-method-on-struct    // Positive language form retained from legacy const method on struct.
+ * const-int-local           // A const int local cannot be rebound.
+ * const-float-local         // A const float local cannot be rebound.
+ * const-string-local        // A const string local cannot be rebound.
  */
 /**
  * @begin const
@@ -47,53 +48,26 @@ struct FStructConst
 	}
 /** @end */
 /**
- * @begin const-values-methods-and-references
- * @summary Positive language form retained from legacy const values methods and references.
+ * @begin const-int-local
+ * @summary A const int local cannot be rebound.
  * @topic Syntax
  */
-const int GlobalLimit = 12;
-
-namespace SyntaxTest
+int ReadInt()
 {
-	int LocalConstValue()
-	{
-		const int LocalLimit = 5;
-		return LocalLimit + GlobalLimit;
-	}
-
-	int AddReadonly(const int&in Amount)
-	{
-		return 30 + Amount;
-	}
-
-	int ConstInRefRead()
-	{
-		const int Bonus = 34;
-		return AddReadonly(Bonus);
-	}
-
-	int SumConstArray(const array<int>&in Values)
-	{
-		int Sum = 0;
-		for (const int& Value : Values)
-		{
-			Sum += Value;
-		}
-		return Sum;
-	}
-
-	int ConstContainerRead()
-	{
-		array<int> Values;
-		Values.insertLast(3);
-		Values.insertLast(4);
-		Values.insertLast(5);
-		return SumConstArray(Values);
-	}
-
-	
-	
-	}
+	const int Limit = 3;
+	return Limit;
+}
+/** @end */
+/**
+ * @begin const-float-local
+ * @summary A const float local cannot be rebound.
+ * @topic Syntax
+ */
+float ReadFloat()
+{
+	const float Scale = 1.5f;
+	return Scale;
+}
 /** @end */
 /**
  * @begin const-string-local

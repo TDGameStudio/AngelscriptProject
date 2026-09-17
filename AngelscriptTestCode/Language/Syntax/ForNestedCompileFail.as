@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-inner-index-escape
- * invalid-for-loop-variable-escapes-scope
+ * invalid-inner-index-escape                 // A for-declared index is not visible after the loop.
+ * invalid-for-loop-variable-escapes-scope    // Compile-rejection form retained from legacy for loop variable escapes scope.
  */
 /**
  * @begin invalid-inner-index-escape

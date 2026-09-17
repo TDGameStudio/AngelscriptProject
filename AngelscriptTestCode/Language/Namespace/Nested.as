@@ -4,9 +4,11 @@
  * @topic Language
  * @topic Namespace
  *
- * nested
- * namespace-nested-access
- * namespace-nested-scope
+ * nested                     // An inner namespace reached through a two-segment qualifier.
+ * namespace-nested-access    // Outer scope reaches an inner name, and the inner name is also reached globally.
+ * namespace-nested-scope     // A name declared in an inner namespace is read inside that same scope.
+ * three-level-nested         // A function is reached through three nested namespace segments.
+ * inner-calls-outer          // An inner namespace calls a function in its outer namespace.
  */
 /**
  * @begin nested
@@ -30,43 +32,105 @@ int NestedAccess()
 /** @end */
 /**
  * @begin namespace-nested-access
- * @summary Positive language form retained from legacy namespace nested access.
+ * @summary Outer scope reaches an inner name, and the inner name is also reached globally.
  * @topic Namespace
  */
-const int OuterValue = 10;
-
-	int OuterFunction()
+namespace Outer
+{
+	int Root()
 	{
-		return 100;
+		return 10;
 	}
 
 	namespace Inner
 	{
-		const int InnerValue = 20;
-
-		int InnerFunction()
+		int Leaf()
 		{
-			return 200;
-		}
-
-		int AccessOuter()
-		{
-			return Outer::OuterFunction();
+			return 20;
 		}
 	}
 
-	int AccessInner()
+	int FromOuter()
 	{
-		return Inner::InnerFunction();
+		return Inner::Leaf();
 	}
+}
+
+int FromGlobal()
+{
+	return Outer::Inner::Leaf() + Outer::Root();
+}
 /** @end */
 /**
  * @begin namespace-nested-scope
- * @summary Positive language form retained from legacy namespace nested scope.
+ * @summary A name declared in an inner namespace is read inside that same scope.
  * @topic Namespace
  */
-namespace Inner
+namespace Outer
+{
+	namespace Inner
 	{
 		int Value = 1;
+
+		int Read()
+		{
+			return Value;
+		}
 	}
+}
+
+int UseInnerScope()
+{
+	return Outer::Inner::Read();
+}
+/** @end */
+/**
+ * @begin three-level-nested
+ * @summary A function is reached through three nested namespace segments.
+ * @topic Namespace
+ */
+namespace World
+{
+	namespace Game
+	{
+		namespace Combat
+		{
+			int Hit()
+			{
+				return 4;
+			}
+		}
+	}
+}
+
+int UseDeep()
+{
+	return World::Game::Combat::Hit();
+}
+/** @end */
+/**
+ * @begin inner-calls-outer
+ * @summary An inner namespace calls a function in its outer namespace.
+ * @topic Namespace
+ */
+namespace Outer
+{
+	int Root()
+	{
+		return 5;
+	}
+
+	namespace Inner
+	{
+		int UseRoot()
+		{
+			return Outer::Root();
+		}
+	}
+}
+
+int CallInner()
+{
+	return Outer::Inner::UseRoot();
+}
 /** @end */

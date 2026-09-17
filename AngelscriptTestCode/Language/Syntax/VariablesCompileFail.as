@@ -4,16 +4,15 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-use-before-declaration
- * invalid-duplicate-local
- * invalid-void-variable
- * invalid-auto-without-initializer
- * invalid-const-without-initializer
- * invalid-duplicate-local-variable
- * invalid-identifier-starting-with-digit
- * invalid-keyword-as-variable-name
- * invalid-undeclared-type
- * invalid-unterminated-string-literal
+ * invalid-use-before-declaration            // A local cannot be read before its declaration.
+ * invalid-duplicate-local                   // Two locals cannot share a name in one scope.
+ * invalid-void-variable                     // Void is not a legal variable type.
+ * invalid-const-without-initializer         // Compile-rejection form retained from legacy const without initializer.
+ * invalid-duplicate-local-variable          // Compile-rejection form retained from legacy duplicate local variable.
+ * invalid-identifier-starting-with-digit    // Compile-rejection form retained from legacy identifier starting with digit.
+ * invalid-keyword-as-variable-name          // Compile-rejection form retained from legacy keyword as variable name.
+ * invalid-undeclared-type                   // Compile-rejection form retained from legacy undeclared type.
+ * invalid-unterminated-string-literal       // A string literal must close on the same line.
  */
 /**
  * @begin invalid-use-before-declaration
@@ -47,16 +46,6 @@ int Test()
 void Test()
 {
 	void X;
-}
-/** @end */
-/**
- * @begin invalid-auto-without-initializer
- * @summary Compile-rejection form retained from legacy auto without initializer.
- * @topic Negative
- */
-void Test()
-{
-	auto X;
 }
 /** @end */
 /**

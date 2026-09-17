@@ -4,7 +4,7 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-unterminated-block-comment
+ * invalid-unterminated-block-comment    // A block comment must close.
  */
 /**
  * @begin invalid-unterminated-block-comment

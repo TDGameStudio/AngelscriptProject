@@ -4,11 +4,11 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-duplicate-field
- * invalid-duplicate-struct-name
- * invalid-struct-inheritance
- * invalid-struct-invalid-member-type
- * invalid-struct-void-member
+ * invalid-duplicate-field               // Duplicate member name is an invalid field declaration.
+ * invalid-duplicate-struct-name         // Compile-rejection form retained from legacy duplicate struct name.
+ * invalid-struct-inheritance            // Compile-rejection form retained from legacy struct inheritance.
+ * invalid-struct-invalid-member-type    // Compile-rejection form retained from legacy struct invalid member type.
+ * invalid-struct-void-member            // Compile-rejection form retained from legacy struct void member.
  */
 /**
  * @begin invalid-duplicate-field

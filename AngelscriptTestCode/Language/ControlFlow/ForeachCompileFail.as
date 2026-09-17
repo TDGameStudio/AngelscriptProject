@@ -4,15 +4,15 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-foreach-on-int
- * invalid-foreach-over-integer-literal
- * invalid-foreach-missing-colon
- * invalid-foreach-element-type-mismatch
- * invalid-foreach-over-string-literal
- * invalid-foreach-missing-next
- * invalid-foreach-over-primitive
- * invalid-foreach-missing-begin
- * invalid-foreach-missing-value
+ * invalid-foreach-on-int                   // Foreach requires an iterable collection.
+ * invalid-foreach-over-integer-literal     // An integer literal is not a foreach range.
+ * invalid-foreach-missing-colon            // Foreach header requires a colon before the range.
+ * invalid-foreach-element-type-mismatch    // Foreach variable type must accept the range value.
+ * invalid-foreach-over-string-literal      // A string literal is not a foreach range.
+ * invalid-foreach-missing-next             // An iterable must declare opForNext.
+ * invalid-foreach-over-primitive           // Compile-rejection form retained from legacy foreach over primitive.
+ * invalid-foreach-missing-begin            // An iterable must declare opForBegin.
+ * invalid-foreach-missing-value            // An iterable must declare opForValue.
  */
 /**
  * @begin invalid-foreach-on-int

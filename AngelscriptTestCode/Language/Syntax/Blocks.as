@@ -4,11 +4,13 @@
  * @topic Language
  * @topic Syntax
  *
- * blocks
- * deeply-parenthesized-addition
- * long-chained-addition
- * multiple-statements-in-one-function
- * short-circuit-skips-right-hand-side
+ * blocks                                 // Deep blocks, parenthesized addition, a long chain, and short-circuit skip.
+ * deeply-parenthesized-addition          // Positive language form retained from legacy deeply parenthesized addition.
+ * long-chained-addition                  // Positive language form retained from legacy long chained addition.
+ * multiple-statements-in-one-function    // Positive language form retained from legacy multiple statements in one function.
+ * short-circuit-skips-right-hand-side    // Positive language form retained from legacy short circuit skips right hand side.
+ * nested-block-shadow                    // An inner block local hides the outer local of the same name.
+ * empty-block                            // A function whose only statement is an empty block.
  */
 /**
  * @begin blocks
@@ -130,4 +132,29 @@ bool RecordTrue(int&inout Calls)
 		}
 		return -1;
 	}
+/** @end */
+/**
+ * @begin nested-block-shadow
+ * @summary An inner block local hides the outer local of the same name.
+ * @topic Syntax
+ */
+int Shadow()
+{
+	int Value = 1;
+	{
+		int Value = 2;
+		return Value;
+	}
+}
+/** @end */
+/**
+ * @begin empty-block
+ * @summary A function whose only statement is an empty block.
+ * @topic Syntax
+ */
+void Empty()
+{
+	{
+	}
+}
 /** @end */

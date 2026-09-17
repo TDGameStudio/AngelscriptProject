@@ -4,7 +4,7 @@
  * @topic Language
  * @topic Namespace
  *
- * invalid-ambiguous-unqualified-after-using
+ * invalid-ambiguous-unqualified-after-using    // An unqualified name is invalid when a using-directive makes it ambiguous.
  */
 /**
  * @begin invalid-ambiguous-unqualified-after-using

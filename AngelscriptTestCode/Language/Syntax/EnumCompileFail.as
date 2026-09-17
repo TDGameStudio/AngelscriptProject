@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-duplicate-enumerator
- * invalid-enum-without-name
- * invalid-method-inside-enum
- * invalid-non-integer-enumerator
+ * invalid-duplicate-enumerator      // Enumerator names must be unique in one enum.
+ * invalid-enum-without-name         // An enum declaration requires a name.
+ * invalid-method-inside-enum        // Compile-rejection form retained from legacy method inside enum.
+ * invalid-non-integer-enumerator    // Compile-rejection form retained from legacy non integer enumerator.
  */
 /**
  * @begin invalid-duplicate-enumerator

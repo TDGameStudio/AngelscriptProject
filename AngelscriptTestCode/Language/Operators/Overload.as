@@ -4,20 +4,20 @@
  * @topic Language
  * @topic Operators
  *
- * overload
- * compare-overload
- * container-op-index
- * f-val-cmp-overload
- * f-vec-add-assign-overload
- * f-vec-add-overload
- * f-vec-equals-overload
- * f-vec-mul-overload
- * f-vec-neg-overload
- * f-vec-sub-overload
- * f-vec-usage-overload
- * score-operator-suite
- * op-index-read-write
- * unary-index-and-conversion
+ * overload                      // A two-axis value type with add, subtract, multiply, negate, and equality overloads.
+ * compare-overload              // A comparable value type with a dedicated less-than overload.
+ * container-op-index            // Positive language form retained from legacy container op index.
+ * f-val-cmp-overload            // Positive language form retained from legacy f val cmp overload.
+ * f-vec-add-assign-overload     // Positive language form retained from legacy f vec add assign overload.
+ * f-vec-add-overload            // Positive language form retained from legacy f vec add overload.
+ * f-vec-equals-overload         // Positive language form retained from legacy f vec equals overload.
+ * f-vec-mul-overload            // Positive language form retained from legacy f vec mul overload.
+ * f-vec-neg-overload            // Positive language form retained from legacy f vec neg overload.
+ * f-vec-sub-overload            // Positive language form retained from legacy f vec sub overload.
+ * f-vec-usage-overload          // Positive language form retained from legacy f vec usage overload.
+ * score-operator-suite          // Positive language form retained from legacy score operator suite.
+ * op-index-read-write           // A value type with opIndex used on both sides of assignment.
+ * unary-index-and-conversion    // Positive language form retained from legacy unary index and conversion operators.
  */
 /**
  * @begin overload

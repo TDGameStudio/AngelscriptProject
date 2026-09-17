@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-mutate-in-const-method
- * invalid-mutate-member-in-const-method
+ * invalid-mutate-in-const-method           // A const method cannot assign a member.
+ * invalid-mutate-member-in-const-method    // Compile-rejection form retained from legacy mutate member in const method.
  */
 /**
  * @begin invalid-mutate-in-const-method

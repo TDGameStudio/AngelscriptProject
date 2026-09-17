@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Casting
  *
- * invalid-implicit-struct-to-int
- * invalid-implicit-array-to-int
- * invalid-implicit-int-to-bool
- * invalid-implicit-string-to-int
+ * invalid-implicit-struct-to-int    // A struct cannot convert implicitly to int.
+ * invalid-implicit-array-to-int     // Compile-rejection form retained from legacy implicit array to int.
+ * invalid-implicit-int-to-bool      // Compile-rejection form retained from legacy implicit int to bool.
+ * invalid-implicit-string-to-int    // Compile-rejection form retained from legacy implicit string to int.
  */
 /**
  * @begin invalid-implicit-struct-to-int

@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Namespace
  *
- * invalid-unqualified-namespaced-enum
- * invalid-enum-missing-qualifier
+ * invalid-unqualified-namespaced-enum    // A namespaced enum type is not visible without its qualifier.
+ * invalid-enum-missing-qualifier         // A namespaced enumerator is not visible without its qualifier.
  */
 /**
  * @begin invalid-unqualified-namespaced-enum

@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-void-result-as-int
- * invalid-function-unknown-return-type
- * invalid-function-without-return-type
- * invalid-return-missing-semicolon
+ * invalid-void-result-as-int              // A void call cannot be returned as int.
+ * invalid-function-unknown-return-type    // Compile-rejection form retained from legacy function unknown return type.
+ * invalid-function-without-return-type    // Compile-rejection form retained from legacy function without return type.
+ * invalid-return-missing-semicolon        // A return expression must end with a semicolon.
  */
 /**
  * @begin invalid-void-result-as-int

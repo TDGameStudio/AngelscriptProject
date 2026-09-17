@@ -4,9 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * while
- * while-zero-iterations
- * while-nested
+ * while                       // A counted while loop that advances a local.
+ * while-zero-iterations       // While body is skipped when the condition starts false.
+ * while-nested                // Nested while loops accumulate a product of iterations.
+ * while-one-iteration         // While body runs once when the condition is true only first.
+ * while-compound-condition    // While condition uses a conjunctive && test.
  */
 /**
  * @begin while
@@ -57,6 +59,40 @@ int WhileNested()
 			++Inner;
 		}
 		++Outer;
+	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin while-one-iteration
+ * @summary While body runs once when the condition is true only first.
+ * @topic ControlFlow
+ */
+int WhileOne()
+{
+	int Value = 0;
+	int Index = 0;
+	while (Index < 1)
+	{
+		Value = 1;
+		++Index;
+	}
+	return Value;
+}
+/** @end */
+/**
+ * @begin while-compound-condition
+ * @summary While condition uses a conjunctive && test.
+ * @topic ControlFlow
+ */
+int WhileCompound()
+{
+	int Index = 0;
+	int Total = 0;
+	while (Index < 3 && Total < 10)
+	{
+		Total += Index;
+		++Index;
 	}
 	return Total;
 }

@@ -4,11 +4,11 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-for-without-parens
- * invalid-for-non-bool-condition
- * invalid-for-header-without-semicolons
- * invalid-for-without-parentheses
- * invalid-for-with-two-clauses-only
+ * invalid-for-without-parens               // A for header requires parentheses.
+ * invalid-for-non-bool-condition           // A for condition must be boolean.
+ * invalid-for-header-without-semicolons    // Compile-rejection form retained from legacy for header without semicolons.
+ * invalid-for-without-parentheses          // Compile-rejection form retained from legacy for without parentheses.
+ * invalid-for-with-two-clauses-only        // Compile-rejection form retained from legacy for with two clauses only.
  */
 /**
  * @begin invalid-for-without-parens

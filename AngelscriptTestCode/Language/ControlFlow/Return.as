@@ -4,20 +4,20 @@
  * @topic Language
  * @topic ControlFlow
  *
- * return
- * function-return-bool-values
- * function-return-control-flow
- * function-return-float-values
- * function-return-integer-widths
- * return-early
- * return-expression
- * return-float-as-int
- * return-int
- * return-void
- * script-quat-return
- * script-matrix-return
- * geometric-struct-parameters-and-returns
- * string-function-return
+ * return                                     // Early return, expression return, multiple returns, and a void return.
+ * function-return-bool-values                // Positive language form retained from legacy function return bool values.
+ * function-return-control-flow               // Positive language form retained from legacy function return control flow.
+ * function-return-float-values               // Positive language form retained from legacy function return float values.
+ * function-return-integer-widths             // Positive language form retained from legacy function return integer widths.
+ * return-early                               // Positive language form retained from legacy return early.
+ * return-expression                          // Positive language form retained from legacy return expression.
+ * return-float-as-int                        // Positive language form retained from legacy return float as int.
+ * return-int                                 // Positive language form retained from legacy return int.
+ * return-void                                // Positive language form retained from legacy return void.
+ * script-quat-return                         // Authored language form for script quat return.
+ * script-matrix-return                       // Authored language form for script matrix return.
+ * geometric-struct-parameters-and-returns    // Authored language form for geometric struct parameters and returns.
+ * string-function-return                     // A function that returns a string literal.
  */
 /**
  * @begin return

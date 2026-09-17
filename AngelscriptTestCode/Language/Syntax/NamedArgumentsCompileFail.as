@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-named-unknown
- * invalid-named-duplicate
- * invalid-named-argument-duplicate-name
- * invalid-named-argument-unknown-name
+ * invalid-named-unknown                    // A named argument must match a parameter name.
+ * invalid-named-duplicate                  // The same parameter cannot be named twice.
+ * invalid-named-argument-duplicate-name    // Compile-rejection form retained from legacy named argument duplicate name.
+ * invalid-named-argument-unknown-name      // Compile-rejection form retained from legacy named argument unknown name.
  */
 /**
  * @begin invalid-named-unknown

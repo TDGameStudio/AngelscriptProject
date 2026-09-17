@@ -4,15 +4,15 @@
  * @topic Language
  * @topic Casting
  *
- * implicit-int-to-float
- * implicit-float-to-int
- * implicit-int-to-int64
- * implicit-int64-to-int
- * implicit-uint8-to-int
- * implicit-float-to-uint8
- * implicit-literal-to-float
- * implicit-bool-to-int
- * numeric-enum-conversions
+ * implicit-int-to-float        // Authored language form for implicit int to float.
+ * implicit-float-to-int        // Authored language form for implicit float to int.
+ * implicit-int-to-int64        // Authored language form for implicit int to int64.
+ * implicit-int64-to-int        // Authored language form for implicit int64 to int.
+ * implicit-uint8-to-int        // Authored language form for implicit uint8 to int.
+ * implicit-float-to-uint8      // Authored language form for implicit float to uint8.
+ * implicit-literal-to-float    // Authored language form for implicit literal to float.
+ * implicit-bool-to-int         // Authored language form for implicit bool to int.
+ * numeric-enum-conversions     // Authored language form for numeric enum conversions.
  */
 /**
  * @begin implicit-int-to-float

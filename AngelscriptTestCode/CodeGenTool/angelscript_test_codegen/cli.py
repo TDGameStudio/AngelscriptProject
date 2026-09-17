@@ -11,6 +11,7 @@ from typing import Sequence, TextIO
 from .model import CodegenError, SyncPlan
 from .paths import CodegenPaths
 from .sync import apply_sync_plan, build_sync_plan
+from .tag_tree import report_author_tag_trees
 
 
 def _make_parser() -> argparse.ArgumentParser:
@@ -23,6 +24,10 @@ def _make_parser() -> argparse.ArgumentParser:
         "generate", help="write desired projections and remove safe stale projections"
     )
     subparsers.add_parser("check", help="report projection drift without writing")
+    subparsers.add_parser(
+        "tag-tree",
+        help="require Language file-header tag trees with // explanations",
+    )
     return parser
 
 
@@ -59,6 +64,19 @@ def main(
 
     selected_paths = paths if paths is not None else _default_paths()
     try:
+        if arguments.command == "tag-tree":
+            diagnostics = report_author_tag_trees(selected_paths.author_root)
+            if not diagnostics:
+                print("Language tag trees are complete.", file=output)
+                return 0
+            for diagnostic in diagnostics:
+                print(
+                    f"{diagnostic.source_path}:{diagnostic.line}: {diagnostic.code}: "
+                    f"{diagnostic.message}",
+                    file=output,
+                )
+            return 1
+
         plan = build_sync_plan(selected_paths.author_root, selected_paths.generated_root)
         if arguments.command == "check":
             if plan.is_clean:

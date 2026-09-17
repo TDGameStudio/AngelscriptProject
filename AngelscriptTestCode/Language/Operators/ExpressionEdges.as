@@ -4,35 +4,18 @@
  * @topic Language
  * @topic Operators
  *
- * expression-edges
- * unary-minus-versus-subtract
- * deeply-nested-parens
+ * expression-edges               // A long addition chain used as a single expression.
+ * unary-minus-versus-subtract    // Unary minus on the right operand of subtraction.
+ * deeply-nested-parens           // Eight nested parenthesis pairs around an addition.
+ * parenthesized-primary          // A parenthesized primary expression.
  */
 /**
  * @begin expression-edges
- * @summary Nested parentheses, a long addition chain, and assignment used as a statement sequence.
+ * @summary A long addition chain used as a single expression.
  */
-int MaxParens()
-{
-	return ((((1 + 2))));
-}
-
 int LongChain()
 {
 	return 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10;
-}
-
-int PrecedenceMix()
-{
-	return 2 + 3 * 4 - 1;
-}
-
-int AssignThenRead()
-{
-	int X = 0;
-	X = 5;
-	int Y = X;
-	return Y;
 }
 /** @end */
 /**
@@ -54,5 +37,16 @@ int UnaryMinusRight()
 int DeepParens()
 {
 	return ((((((((1 + 2))))))));
+}
+/** @end */
+/**
+ * @begin parenthesized-primary
+ * @summary A parenthesized primary expression.
+ * @topic Operators
+ */
+int ParenthesizedPrimary()
+{
+	int Value = 4;
+	return (Value);
 }
 /** @end */

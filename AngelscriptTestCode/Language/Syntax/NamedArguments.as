@@ -4,9 +4,11 @@
  * @topic Language
  * @topic Syntax
  *
- * named-arguments
- * named-arguments-all-named
- * named-arguments-trailing-only
+ * named-arguments                                // A call that names later arguments and keeps one positional.
+ * named-arguments-all-named                      // A call that names every argument.
+ * named-arguments-trailing-only                  // A call that names only the trailing argument.
+ * named-arguments-mixed-positional-then-named    // A call that keeps a leading positional then names the rest.
+ * named-arguments-default-skipped                // A named later argument skips a defaulted middle parameter.
  */
 /**
  * @begin named-arguments
@@ -50,5 +52,35 @@ int Combine(int Left, int Right)
 int CallPartial()
 {
 	return Combine(2, Right = 3);
+}
+/** @end */
+/**
+ * @begin named-arguments-mixed-positional-then-named
+ * @summary A call that keeps a leading positional then names the rest.
+ * @topic Syntax
+ */
+int Mix(int First, int Second, int Third)
+{
+	return First + Second * 10 + Third * 100;
+}
+
+int CallMixed()
+{
+	return Mix(1, Second: 2, Third: 3);
+}
+/** @end */
+/**
+ * @begin named-arguments-default-skipped
+ * @summary A named later argument skips a defaulted middle parameter.
+ * @topic Syntax
+ */
+int Mix(int First, int Second = 2, int Third = 3)
+{
+	return First + Second + Third;
+}
+
+int CallSkip()
+{
+	return Mix(1, Third: 3);
 }
 /** @end */

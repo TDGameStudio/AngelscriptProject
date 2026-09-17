@@ -4,14 +4,14 @@
  * @topic Language
  * @topic Casting
  *
- * invalid-unrelated-cast
- * invalid-implicit-base-to-derived
- * invalid-cast-on-primitive
- * invalid-cast-to-undeclared-class
- * invalid-cast-to-struct
- * invalid-cast-to-enum
- * invalid-cast-without-argument
- * invalid-cast-with-two-arguments
+ * invalid-unrelated-cast              // Unrelated class types cannot be cast to each other.
+ * invalid-implicit-base-to-derived    // A base handle cannot convert implicitly to derived.
+ * invalid-cast-on-primitive           // Handle cast cannot target a primitive value.
+ * invalid-cast-to-undeclared-class    // Cast target class must be declared.
+ * invalid-cast-to-struct              // Handle cast cannot target a struct.
+ * invalid-cast-to-enum                // Handle cast cannot target an enum.
+ * invalid-cast-without-argument       // Cast requires a value argument.
+ * invalid-cast-with-two-arguments     // Cast takes one value argument.
  */
 /**
  * @begin invalid-unrelated-cast

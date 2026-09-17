@@ -4,13 +4,13 @@
  * @topic Language
  * @topic Syntax
  *
- * default-parameters
- * bool-default-parameters
- * default-parameter-function
- * float-default-parameters
- * function-default-parameter-edges
- * int-family-default-parameters
- * string-default-parameter
+ * default-parameters                  // Trailing defaults on mixed primitive parameters.
+ * bool-default-parameters             // Positive language form retained from legacy bool default parameters.
+ * default-parameter-function          // Positive language form retained from legacy default parameter function.
+ * float-default-parameters            // Positive language form retained from legacy float default parameters.
+ * function-default-parameter-edges    // Positive language form retained from legacy function default parameter edges.
+ * int-family-default-parameters       // Positive language form retained from legacy int family default parameters.
+ * string-default-parameter            // A trailing string parameter with a default literal.
  */
 /**
  * @begin default-parameters

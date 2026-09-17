@@ -4,12 +4,16 @@
  * @topic Language
  * @topic ControlFlow
  *
- * switch
- * switch-enum
- * switch-basic
- * switch-break
- * switch-integer-types
- * switch-fallthrough-to-default
+ * switch                           // A defaulted integer switch, an explicit-break switch, and an enum switch.
+ * switch-enum                      // Positive language form retained from legacy switch enum.
+ * switch-basic                     // Authored language form for switch basic.
+ * switch-break                     // Authored language form for switch break.
+ * switch-integer-types             // Authored language form for switch integer types.
+ * switch-fallthrough-to-default    // A case without break falls into default.
+ * switch-default-only              // A switch with only default still selects that clause.
+ * switch-no-default                // A switch with only cases leaves unmatched values to the following return.
+ * switch-empty-case-fallthrough    // An empty case falls into the next case body.
+ * switch-explicit-fallthrough      // Explicit fallthrough continues from one case into the next.
  */
 /**
  * @begin switch
@@ -161,6 +165,81 @@ int Fall(int Value)
 			Result = 1;
 		default:
 			Result += 10;
+			break;
+	}
+	return Result;
+}
+/** @end */
+/**
+ * @begin switch-default-only
+ * @summary A switch with only default still selects that clause.
+ * @topic ControlFlow
+ */
+int SwitchDefaultOnly(int Value)
+{
+	switch (Value)
+	{
+		default:
+			return 1;
+	}
+}
+/** @end */
+/**
+ * @begin switch-no-default
+ * @summary A switch with only cases leaves unmatched values to the following return.
+ * @topic ControlFlow
+ */
+int SwitchNoDefault(int Value)
+{
+	switch (Value)
+	{
+		case 1:
+			return 10;
+		case 2:
+			return 20;
+	}
+	return 0;
+}
+/** @end */
+/**
+ * @begin switch-empty-case-fallthrough
+ * @summary An empty case falls into the next case body.
+ * @topic ControlFlow
+ */
+int SwitchEmptyCaseFallthrough(int Value)
+{
+	int Result = 0;
+	switch (Value)
+	{
+		case 1:
+		case 2:
+			Result = 1;
+			break;
+		default:
+			Result = 0;
+			break;
+	}
+	return Result;
+}
+/** @end */
+/**
+ * @begin switch-explicit-fallthrough
+ * @summary Explicit fallthrough continues from one case into the next.
+ * @topic ControlFlow
+ */
+int SwitchExplicitFallthrough(int Value)
+{
+	int Result = 0;
+	switch (Value)
+	{
+		case 1:
+			Result = 1;
+			fallthrough;
+		case 2:
+			Result += 2;
+			break;
+		default:
+			Result = 4;
 			break;
 	}
 	return Result;

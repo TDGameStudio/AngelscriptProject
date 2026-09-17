@@ -4,11 +4,13 @@
  * @topic Language
  * @topic Operators
  *
- * definite-assignment
- * partial-then-complete
- * branch-definite-assignment
- * partial-definite-assignment
- * assigned-on-all-returns
+ * definite-assignment              // Both branches assign the same local before it is read.
+ * partial-then-complete            // A later assignment completes a path that left the local unset.
+ * branch-definite-assignment       // Positive language form retained from legacy branch definite assignment.
+ * partial-definite-assignment      // Positive language form retained from legacy partial definite assignment.
+ * assigned-on-all-returns          // A local is assigned on every return path before it is read.
+ * assigned-before-nested-block     // A local is assigned before a nested block reads it.
+ * assigned-on-both-if-else-arms    // Both if and else arms assign before each arm returns.
  */
 /**
  * @begin definite-assignment
@@ -49,44 +51,34 @@ int CompleteAfterPartial(bool Flag)
  * @summary Positive language form retained from legacy branch definite assignment.
  * @topic Operators
  */
-int Compute(bool bFlag)
+int Compute(bool Flag)
+{
+	int Value;
+	if (Flag)
 	{
-		int Value;
-		if (bFlag)
-		{
-			Value = 7;
-		}
-		else
-		{
-			Value = 9;
-		}
-		return Value;
+		Value = 7;
 	}
-
-	int RunSafeTrue()
+	else
 	{
-		return Compute(true);
+		Value = 9;
 	}
-
-	int RunSafeFalse()
-	{
-		return Compute(false);
-	}
+	return Value;
+}
 /** @end */
 /**
  * @begin partial-definite-assignment
  * @summary Positive language form retained from legacy partial definite assignment.
  * @topic Operators
  */
-int RunPartial(bool bFlag)
+int RunPartial(bool Flag)
+{
+	int Value;
+	if (Flag)
 	{
-		int Value;
-		if (bFlag)
-		{
-			Value = 7;
-		}
-		return Value;
+		Value = 7;
 	}
+	return Value;
+}
 /** @end */
 /**
  * @begin assigned-on-all-returns
@@ -99,11 +91,42 @@ int AllPaths(bool Flag)
 	if (Flag)
 	{
 		Value = 1;
+		return Value;
+	}
+	Value = 2;
+	return Value;
+}
+/** @end */
+/**
+ * @begin assigned-before-nested-block
+ * @summary A local is assigned before a nested block reads it.
+ * @topic Operators
+ */
+int AssignedBeforeNestedBlock()
+{
+	int Value = 1;
+	{
+		return Value;
+	}
+}
+/** @end */
+/**
+ * @begin assigned-on-both-if-else-arms
+ * @summary Both if and else arms assign before each arm returns.
+ * @topic Operators
+ */
+int AssignedOnBothIfElseArms(bool Flag)
+{
+	int Value;
+	if (Flag)
+	{
+		Value = 1;
+		return Value;
 	}
 	else
 	{
 		Value = 2;
+		return Value;
 	}
-	return Value;
 }
 /** @end */

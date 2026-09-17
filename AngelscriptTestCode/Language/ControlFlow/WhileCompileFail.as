@@ -4,11 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-while-non-bool
- * invalid-while-empty-condition
- * invalid-while-integer-condition
- * invalid-while-unparenthesized-condition
- * invalid-while-variable-condition
+ * invalid-while-non-bool                     // A while condition must be boolean.
+ * invalid-while-empty-condition              // Compile-rejection form retained from legacy while empty condition.
+ * invalid-while-integer-condition            // Compile-rejection form retained from legacy while integer condition.
+ * invalid-while-unparenthesized-condition    // Compile-rejection form retained from legacy while unparenthesized condition.
+ * invalid-while-variable-condition           // Compile-rejection form retained from legacy while variable condition.
  */
 /**
  * @begin invalid-while-non-bool

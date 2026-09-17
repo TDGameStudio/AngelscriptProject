@@ -4,9 +4,9 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-constructor-wrong-arity
- * invalid-constructor-unknown-arg-type
- * invalid-constructor-on-primitive
+ * invalid-constructor-wrong-arity         // A constructor call must match a declared arity.
+ * invalid-constructor-unknown-arg-type    // Constructor parameter type must exist.
+ * invalid-constructor-on-primitive        // A primitive cannot be constructed with a user constructor call shape.
  */
 /**
  * @begin invalid-constructor-wrong-arity

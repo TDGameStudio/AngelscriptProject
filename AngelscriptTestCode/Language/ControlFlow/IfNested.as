@@ -4,10 +4,12 @@
  * @topic Language
  * @topic ControlFlow
  *
- * if-nested
- * if-nested-three-deep
- * if-nested-in-else
- * if-nested-unbraced-inner
+ * if-nested                   // An inner if nested in both arms of an outer if.
+ * if-nested-three-deep        // Three nested ifs all taking the true arm.
+ * if-nested-in-else           // Inner if lives only in the outer else arm.
+ * if-nested-unbraced-inner    // Outer if contains an unbraced inner if.
+ * if-nested-false-outer       // A false outer if skips the nested inner if.
+ * if-nested-false-inner       // A true outer if still skips a false inner if.
  */
 /**
  * @begin if-nested
@@ -109,6 +111,42 @@ int NestedUnbraced(bool Outer, bool Inner)
 			Value = 1;
 		else
 			Value = 2;
+	return Value;
+}
+/** @end */
+/**
+ * @begin if-nested-false-outer
+ * @summary A false outer if skips the nested inner if.
+ * @topic ControlFlow
+ */
+int NestedFalseOuter()
+{
+	int Value = 1;
+	if (false)
+	{
+		if (true)
+		{
+			Value = 0;
+		}
+	}
+	return Value;
+}
+/** @end */
+/**
+ * @begin if-nested-false-inner
+ * @summary A true outer if still skips a false inner if.
+ * @topic ControlFlow
+ */
+int NestedFalseInner()
+{
+	int Value = 1;
+	if (true)
+	{
+		if (false)
+		{
+			Value = 0;
+		}
+	}
 	return Value;
 }
 /** @end */

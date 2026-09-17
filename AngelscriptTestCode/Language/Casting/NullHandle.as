@@ -4,79 +4,89 @@
  * @topic Language
  * @topic Casting
  *
- * handle-null-assignment
- * handle-null-comparison
- * cast-null-is-null
+ * handle-null-assignment             // A reference class handle assigned nullptr and compared with nullptr.
+ * handle-null-comparison             // Equality and inequality against nullptr on a handle.
+ * cast-null-is-null                  // Casting a nullptr handle yields nullptr.
+ * handle-null-then-is-null           // Assign nullptr to a handle, then compare with nullptr.
+ * handle-assign-null-after-object    // Replace a constructed handle with nullptr.
  */
 /**
  * @begin handle-null-assignment
- * @summary A reference class handle assigned null and compared with is-null.
- * @topic Casting
+ * @summary A reference class handle assigned nullptr and compared with nullptr.
  */
 class ANode
 {
 	int Value;
 }
 
-/**
- * @function NullptrHandleAssignment
- * @summary A reference class handle assigned null and compared with is-null.
- * @covers null assignment
- * @inputs none
- * @return true when the handle is null
- */
-bool NullptrHandleAssignment()
+bool Assigned()
 {
-	ANode@ Node = null;
-	return Node is null;
+	ANode@ Node = nullptr;
+	return Node == nullptr;
 }
 /** @end */
 /**
  * @begin handle-null-comparison
- * @summary is-null and not-is-null on a handle.
- * @topic Casting
+ * @summary Equality and inequality against nullptr on a handle.
  */
 class ANode
 {
 	int Value;
 }
 
-/**
- * @function Compare
- * @summary is-null and not-is-null on a handle.
- * @covers is null
- * @inputs an ANode@ that may be null
- * @return true when the handle is null or not null
- */
 bool Compare(ANode@ Node)
 {
-	if (Node is null)
+	if (Node == nullptr)
 	{
 		return true;
 	}
-	return Node !is null;
+	return Node != nullptr;
 }
 /** @end */
 /**
  * @begin cast-null-is-null
- * @summary Casting a null handle yields null.
- * @topic Casting
+ * @summary Casting a nullptr handle yields nullptr.
  */
 class ANode
 {
 	int Value;
 }
 
-/**
- * @function CastNull
- * @summary Casting a null handle yields null.
- * @covers cast of null
- * @inputs none
- * @return true when the cast result is null
- */
 bool CastNull()
 {
-	ANode@ Node = null;
-	return cast<ANode>(Node) is null;
+	ANode@ Node = nullptr;
+	return Cast<ANode>(Node) == nullptr;
+}
+/** @end */
+/**
+ * @begin handle-null-then-is-null
+ * @summary Assign nullptr to a handle, then compare with nullptr.
+ */
+class ANode
+{
+	int Value;
+}
+
+bool AssignedThenCompared()
+{
+	ANode@ Node;
+	Node = nullptr;
+	return Node == nullptr;
+}
+/** @end */
+/**
+ * @begin handle-assign-null-after-object
+ * @summary Replace a constructed handle with nullptr.
+ */
+class ANode
+{
+	int Value;
+}
+
+bool ClearedAfterObject()
+{
+	ANode@ Node = ANode();
+	Node = nullptr;
+	return Node == nullptr;
 }
 /** @end */

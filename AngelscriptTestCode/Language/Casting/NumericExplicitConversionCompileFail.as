@@ -4,10 +4,10 @@
  * @topic Language
  * @topic Casting
  *
- * invalid-explicit-unknown-type
- * invalid-explicit-multiple-arguments
- * invalid-explicit-string-to-int
- * invalid-explicit-to-void
+ * invalid-explicit-unknown-type          // An unknown target type cannot be used as a cast.
+ * invalid-explicit-multiple-arguments    // Compile-rejection form retained from legacy explicit multiple arguments.
+ * invalid-explicit-string-to-int         // Compile-rejection form retained from legacy explicit string to int.
+ * invalid-explicit-to-void               // Compile-rejection form retained from legacy explicit to void.
  */
 /**
  * @begin invalid-explicit-unknown-type

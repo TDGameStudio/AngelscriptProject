@@ -4,9 +4,9 @@
  * @topic Language
  * @topic Preprocessor
  *
- * invalid-missing-endif
- * invalid-elif-without-if
- * invalid-endif-without-if
+ * invalid-missing-endif       // A #if chain must close with #endif.
+ * invalid-elif-without-if     // Elif cannot appear without an open if.
+ * invalid-endif-without-if    // Endif cannot appear without an open if.
  */
 /**
  * @begin invalid-missing-endif

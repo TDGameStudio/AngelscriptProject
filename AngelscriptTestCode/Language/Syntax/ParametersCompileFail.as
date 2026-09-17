@@ -4,9 +4,9 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-void-parameter
- * invalid-function-unknown-parameter-type
- * invalid-void-parameter-type
+ * invalid-void-parameter                     // Void is not a legal parameter type.
+ * invalid-function-unknown-parameter-type    // Compile-rejection form retained from legacy function unknown parameter type.
+ * invalid-void-parameter-type                // Compile-rejection form retained from legacy void parameter type.
  */
 /**
  * @begin invalid-void-parameter

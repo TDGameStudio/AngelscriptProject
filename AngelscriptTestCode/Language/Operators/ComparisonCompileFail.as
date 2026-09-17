@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-compare-incompatible-types
- * invalid-boolean-ordering-comparison
- * invalid-compare-string-to-int
- * invalid-comparison-missing-right-operand
- * invalid-triple-equals-operator
- * invalid-string-compared-to-int
+ * invalid-compare-incompatible-types          // A struct value cannot be compared with an integer.
+ * invalid-boolean-ordering-comparison         // Compile-rejection form retained from legacy boolean ordering comparison.
+ * invalid-compare-string-to-int               // Compile-rejection form retained from legacy compare string to int.
+ * invalid-comparison-missing-right-operand    // Compile-rejection form retained from legacy comparison missing right operand.
+ * invalid-triple-equals-operator              // Compile-rejection form retained from legacy triple equals operator.
+ * invalid-string-compared-to-int              // A string cannot be compared to an integer.
  */
 /**
  * @begin invalid-compare-incompatible-types

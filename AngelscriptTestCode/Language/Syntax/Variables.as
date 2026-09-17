@@ -1,13 +1,15 @@
 /**
  * @version v1
- * @summary Primitive locals, references, and block-scoped variables.
+ * @summary Primitive locals, a module-level int, and width-specific declarators.
  * @topic Language
  * @topic Syntax
  *
- * variables
- * string-literal-assignment
- * empty-string-literal
- * string-escape-sequences
+ * variables               // Typed locals, a reference alias, and an inner-block variable.
+ * global-int              // A module-level integer read from a function.
+ * multi-declarator-int    // One int declaration names two initialized locals.
+ * int8-local              // A local declared with the live int8 keyword.
+ * uint16-local            // A local declared with the live uint16 keyword.
+ * float64-local           // A local declared with the live float64 keyword.
  */
 /**
  * @begin variables
@@ -36,34 +38,58 @@ int ReferenceLocal()
 }
 /** @end */
 /**
- * @begin string-literal-assignment
- * @summary A string local assigned from a literal.
+ * @begin global-int
+ * @summary A module-level integer read from a function.
  * @topic Syntax
  */
-string Literal()
+int GlobalCount = 1;
+
+int ReadGlobal()
 {
-	string Text = "Hello World";
-	return Text;
+	return GlobalCount;
 }
 /** @end */
 /**
- * @begin empty-string-literal
- * @summary An empty string literal assigned to a local.
+ * @begin multi-declarator-int
+ * @summary One int declaration names two initialized locals.
  * @topic Syntax
  */
-string Empty()
+int MultiDeclarator()
 {
-	string Text = "";
-	return Text;
+	int Left = 1, Right = 2;
+	return Left + Right;
 }
 /** @end */
 /**
- * @begin string-escape-sequences
- * @summary Newline, tab, quote, and backslash escapes in a string literal.
+ * @begin int8-local
+ * @summary A local declared with the live int8 keyword.
  * @topic Syntax
  */
-string Escapes()
+int8 Narrow()
 {
-	return "Line1\nLine2\t\"\\";
+	int8 Value = 1;
+	return Value;
+}
+/** @end */
+/**
+ * @begin uint16-local
+ * @summary A local declared with the live uint16 keyword.
+ * @topic Syntax
+ */
+uint16 WideUnsigned()
+{
+	uint16 Value = 1;
+	return Value;
+}
+/** @end */
+/**
+ * @begin float64-local
+ * @summary A local declared with the live float64 keyword.
+ * @topic Syntax
+ */
+float64 WideFloat()
+{
+	float64 Value = 1.0;
+	return Value;
 }
 /** @end */

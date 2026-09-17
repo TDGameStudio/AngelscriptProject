@@ -4,9 +4,11 @@
  * @topic Language
  * @topic Namespace
  *
- * global-versus-scoped
- * namespace-global-versus-scoped
- * namespace-scoped-global
+ * global-versus-scoped              // A global helper and a same-named scoped helper selected by qualification.
+ * namespace-global-versus-scoped    // Distinct namespaces and a global function are selected by qualification.
+ * namespace-scoped-global           // A namespace function reads the global through a leading scope qualifier.
+ * unqualified-finds-global          // An inner namespace without a hiding name finds the global function.
+ * scoped-hides-global               // An unqualified call inside a namespace finds the scoped function, not the global.
  */
 /**
  * @begin global-versus-scoped
@@ -37,7 +39,7 @@ int PickScoped()
 /** @end */
 /**
  * @begin namespace-global-versus-scoped
- * @summary Positive language form retained from legacy namespace global versus scoped.
+ * @summary Distinct namespaces and a global function are selected by qualification.
  * @topic Namespace
  */
 int GlobalFunction()
@@ -83,8 +85,75 @@ namespace AccessGlobal
 /** @end */
 /**
  * @begin namespace-scoped-global
- * @summary Positive language form retained from legacy namespace scoped global.
+ * @summary A namespace function reads the global through a leading scope qualifier.
  * @topic Namespace
  */
-int GlobalVal = 42;
+int Amount()
+{
+	return 7;
+}
+
+namespace Game
+{
+	int ReadGlobal()
+	{
+		return ::Amount();
+	}
+}
+
+int UseScopedGlobal()
+{
+	return Game::ReadGlobal();
+}
+/** @end */
+/**
+ * @begin unqualified-finds-global
+ * @summary An inner namespace without a hiding name finds the global function.
+ * @topic Namespace
+ */
+int Amount()
+{
+	return 1;
+}
+
+namespace Game
+{
+	int Read()
+	{
+		return Amount();
+	}
+}
+
+int UseUnqualified()
+{
+	return Game::Read();
+}
+/** @end */
+/**
+ * @begin scoped-hides-global
+ * @summary An unqualified call inside a namespace finds the scoped function, not the global.
+ * @topic Namespace
+ */
+int Amount()
+{
+	return 1;
+}
+
+namespace Game
+{
+	int Amount()
+	{
+		return 2;
+	}
+
+	int Read()
+	{
+		return Amount();
+	}
+}
+
+int UseHidden()
+{
+	return Game::Read();
+}
 /** @end */

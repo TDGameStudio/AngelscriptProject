@@ -4,11 +4,13 @@
  * @topic Language
  * @topic ControlFlow
  *
- * foreach
- * foreach-break-continue
- * foreach-container-mutation
- * foreach-value-reference
- * foreach-empty-range
+ * foreach                       // Complete opForBegin/opForEnd/opForNext/opForValue range and a summing foreach.
+ * foreach-break-continue        // Foreach that skips the first value and breaks on a negative sentinel.
+ * foreach-container-mutation    // Foreach that writes through opForValue references into stored elements.
+ * foreach-value-reference       // Value, reference, and const-reference foreach variables over one range.
+ * foreach-empty-range           // Foreach over an empty opFor range visits nothing.
+ * foreach-over-array            // Explicitly typed foreach over a TArray visits each element.
+ * foreach-keyword-syntax        // The foreach keyword iterates an opFor range with an explicit type.
  */
 /**
  * @begin foreach
@@ -270,6 +272,69 @@ int ForeachEmpty()
 	FEmptyRange Values;
 	int Total = 0;
 	for (int Value : Values)
+	{
+		Total += Value;
+	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin foreach-over-array
+ * @summary Explicitly typed foreach over a TArray visits each element.
+ * @topic ControlFlow
+ */
+int ForeachOverArray()
+{
+	TArray<int> Values;
+	Values.Add(1);
+	Values.Add(2);
+	Values.Add(3);
+	int Total = 0;
+	for (int Value : Values)
+	{
+		Total += Value;
+	}
+	return Total;
+}
+/** @end */
+/**
+ * @begin foreach-keyword-syntax
+ * @summary The foreach keyword iterates an opFor range with an explicit type.
+ * @topic ControlFlow
+ */
+struct FIntRange
+{
+	int First;
+	int Last;
+
+	int opForBegin() const
+	{
+		return First;
+	}
+
+	bool opForEnd(int Iterator) const
+	{
+		return Iterator >= Last;
+	}
+
+	void opForNext(int& InOut Iterator) const
+	{
+		++Iterator;
+	}
+
+	int opForValue(int Iterator) const
+	{
+		return Iterator;
+	}
+}
+
+int ForeachKeyword()
+{
+	FIntRange Values;
+	Values.First = 1;
+	Values.Last = 4;
+	int Total = 0;
+	foreach (int Value : Values)
 	{
 		Total += Value;
 	}

@@ -4,12 +4,12 @@
  * @topic Language
  * @topic Namespace
  *
- * invalid-unknown-qualifier
- * invalid-namespace-anonymous
- * invalid-namespace-missing-member
- * invalid-namespace-undeclared
- * invalid-namespace-using-directive
- * invalid-namespace-using-symbol
+ * invalid-unknown-qualifier            // A qualifier that names no namespace is invalid.
+ * invalid-namespace-anonymous          // Compile-rejection form retained from legacy namespace anonymous.
+ * invalid-namespace-missing-member     // Compile-rejection form retained from legacy namespace missing member.
+ * invalid-namespace-undeclared         // Compile-rejection form retained from legacy namespace undeclared.
+ * invalid-namespace-using-directive    // Compile-rejection form retained from legacy namespace using directive.
+ * invalid-namespace-using-symbol       // Compile-rejection form retained from legacy namespace using symbol.
  */
 /**
  * @begin invalid-unknown-qualifier

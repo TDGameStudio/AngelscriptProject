@@ -4,11 +4,11 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-missing-return
- * invalid-return-type-mismatch
- * invalid-return-string-for-int
- * invalid-return-value-in-void-function
- * invalid-return-without-value-in-int-function
+ * invalid-missing-return                          // A value-returning function cannot fall off the end.
+ * invalid-return-type-mismatch                    // A boolean cannot be returned from an integer function.
+ * invalid-return-string-for-int                   // Compile-rejection form retained from legacy return string for int.
+ * invalid-return-value-in-void-function           // Compile-rejection form retained from legacy return value in void function.
+ * invalid-return-without-value-in-int-function    // Compile-rejection form retained from legacy return without value in int function.
  */
 /**
  * @begin invalid-missing-return

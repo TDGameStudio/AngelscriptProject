@@ -4,8 +4,8 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-duplicate-signature
- * invalid-duplicate-function-signature
+ * invalid-duplicate-signature             // Two functions cannot share the same signature.
+ * invalid-duplicate-function-signature    // Compile-rejection form retained from legacy duplicate function signature.
  */
 /**
  * @begin invalid-duplicate-signature

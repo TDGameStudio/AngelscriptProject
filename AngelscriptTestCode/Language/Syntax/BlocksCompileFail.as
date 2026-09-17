@@ -4,14 +4,14 @@
  * @topic Language
  * @topic Syntax
  *
- * invalid-unmatched-opening-brace
- * invalid-extra-closing-brace
- * invalid-garbage-tokens
- * invalid-missing-semicolon-between-declarations
- * invalid-out-of-scope-use
- * invalid-top-level-assignment
- * invalid-unmatched-parenthesis
- * invalid-syntax-error-missing-semicolon
+ * invalid-unmatched-opening-brace                   // A block must close.
+ * invalid-extra-closing-brace                       // An extra closing brace is invalid.
+ * invalid-garbage-tokens                            // Compile-rejection form retained from legacy garbage tokens.
+ * invalid-missing-semicolon-between-declarations    // Compile-rejection form retained from legacy missing semicolon between declarations.
+ * invalid-out-of-scope-use                          // Compile-rejection form retained from legacy out of scope use.
+ * invalid-top-level-assignment                      // Compile-rejection form retained from legacy top level assignment.
+ * invalid-unmatched-parenthesis                     // Compile-rejection form retained from legacy unmatched parenthesis.
+ * invalid-syntax-error-missing-semicolon            // Adjacent declarations require a semicolon.
  */
 /**
  * @begin invalid-unmatched-opening-brace

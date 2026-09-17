@@ -4,13 +4,13 @@
  * @topic Language
  * @topic Operators
  *
- * precedence
- * parenthesized-override
- * arithmetic-before-comparison
- * comparison-before-logical
- * bitwise-before-comparison
- * ternary-inside-arithmetic
- * and-versus-or
+ * precedence                      // Arithmetic, shift, comparison, bitwise, and logical precedence mixes.
+ * parenthesized-override          // Parentheses override the default arithmetic binding.
+ * arithmetic-before-comparison    // Addition binds before equality comparison.
+ * comparison-before-logical       // Comparisons bind before logical and.
+ * bitwise-before-comparison       // Bitwise and binds before equality.
+ * ternary-inside-arithmetic       // A parenthesized ternary resolves before surrounding addition.
+ * and-versus-or                   // Logical and binds tighter than logical or.
  */
 /**
  * @begin precedence

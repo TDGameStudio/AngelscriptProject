@@ -4,8 +4,8 @@
  * @topic Language
  * @topic ControlFlow
  *
- * invalid-else-without-if
- * invalid-else-if-without-if
+ * invalid-else-without-if       // An else clause cannot stand alone.
+ * invalid-else-if-without-if    // Else-if cannot start a statement.
  */
 /**
  * @begin invalid-else-without-if

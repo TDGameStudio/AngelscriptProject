@@ -4,23 +4,23 @@
  * @topic Language
  * @topic Operators
  *
- * invalid-bool-addition
- * invalid-float-modulo
- * invalid-increment-on-literal
- * invalid-arithmetic-missing-right-operand
- * invalid-assign-to-expression-result
- * invalid-comma-expression-outside-for-clause
- * invalid-double-operator-in-expression
- * invalid-empty-parentheses-as-value
- * invalid-increment-on-const
- * invalid-leading-binary-operator
- * invalid-string-plus-int
- * invalid-string-times-int
- * invalid-trailing-operator
- * invalid-unary-plus-on-string
- * invalid-string-subtraction
- * invalid-string-multiplication
- * invalid-string-division
+ * invalid-bool-addition                          // Boolean operands cannot use arithmetic plus.
+ * invalid-float-modulo                           // Float modulo is not a valid arithmetic form.
+ * invalid-increment-on-literal                   // Increment cannot target a literal.
+ * invalid-arithmetic-missing-right-operand       // Compile-rejection form retained from legacy arithmetic missing right operand.
+ * invalid-assign-to-expression-result            // Compile-rejection form retained from legacy assign to expression result.
+ * invalid-comma-expression-outside-for-clause    // Compile-rejection form retained from legacy comma expression outside for clause.
+ * invalid-double-operator-in-expression          // Compile-rejection form retained from legacy double operator in expression.
+ * invalid-empty-parentheses-as-value             // Compile-rejection form retained from legacy empty parentheses as value.
+ * invalid-increment-on-const                     // Compile-rejection form retained from legacy increment on const.
+ * invalid-leading-binary-operator                // Compile-rejection form retained from legacy leading binary operator.
+ * invalid-string-plus-int                        // Compile-rejection form retained from legacy string plus int.
+ * invalid-string-times-int                       // Compile-rejection form retained from legacy string times int.
+ * invalid-trailing-operator                      // Compile-rejection form retained from legacy trailing operator.
+ * invalid-unary-plus-on-string                   // Compile-rejection form retained from legacy unary plus on string.
+ * invalid-string-subtraction                     // Strings cannot use minus.
+ * invalid-string-multiplication                  // Strings cannot use times.
+ * invalid-string-division                        // Strings cannot use divide.
  */
 /**
  * @begin invalid-bool-addition
