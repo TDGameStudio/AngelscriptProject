@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
+from dataclasses import replace
+from pathlib import Path, PurePosixPath
 
 from .model import CodegenError, SourceInput
 from .paths import derive_source_identity
@@ -20,6 +21,26 @@ def _validate_unique_paths(relative_paths: list[str]) -> None:
                 f"{previous!r} and {relative_path!r}"
             )
         by_folded_path[folded_path] = relative_path
+
+
+def _uniquify_generated_leaves(sources: list[SourceInput]) -> list[SourceInput]:
+    """UBT rejects two translation units that share a basename."""
+    by_leaf: dict[str, list[int]] = {}
+    for index, source in enumerate(sources):
+        leaf = PurePosixPath(source.output_relative_path).name.casefold()
+        by_leaf.setdefault(leaf, []).append(index)
+
+    uniquified = list(sources)
+    for indices in by_leaf.values():
+        if len(indices) < 2:
+            continue
+        for index in indices:
+            source = uniquified[index]
+            unique_leaf = source.file_tag.replace("/", "_") + ".generated.cpp"
+            parent = PurePosixPath(source.output_relative_path).parent.as_posix()
+            output = unique_leaf if parent in (".", "") else f"{parent}/{unique_leaf}"
+            uniquified[index] = replace(source, output_relative_path=output)
+    return uniquified
 
 
 def discover_sources(author_root: Path) -> tuple[SourceInput, ...]:
@@ -68,4 +89,4 @@ def discover_sources(author_root: Path) -> tuple[SourceInput, ...]:
                 symbol_suffix=hashlib.sha256(file_tag.encode("utf-8")).hexdigest()[:12],
             )
         )
-    return tuple(sources)
+    return tuple(_uniquify_generated_leaves(sources))

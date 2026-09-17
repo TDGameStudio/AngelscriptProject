@@ -20,7 +20,18 @@ class CliTests(unittest.TestCase):
         self.author_root = root / "Author"
         self.generated_root = root / "Generated"
         self.author_root.mkdir()
-        (self.author_root / "A.as").write_bytes(b"source")
+        (self.author_root / "A.as").write_bytes(
+            b"/**\n"
+            b" * @version v1\n"
+            b" * @summary CLI fixture.\n"
+            b" */\n"
+            b"/**\n"
+            b" * @version root\n"
+            b" * @summary Root body.\n"
+            b" */\n"
+            b"class A {}\n"
+            b"/** @end */\n"
+        )
         self.paths = CodegenPaths(
             repository_root=root,
             author_root=self.author_root,

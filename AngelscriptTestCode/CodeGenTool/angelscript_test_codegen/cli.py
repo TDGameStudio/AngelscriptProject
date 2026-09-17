@@ -76,4 +76,11 @@ def main(
         return 1
     except (CodegenError, OSError) as error:
         print(f"error: {error}", file=error_output)
+        if isinstance(error, CodegenError):
+            for diagnostic in error.diagnostics:
+                location = f"{diagnostic.source_path}:{diagnostic.line}"
+                print(
+                    f"{location}: {diagnostic.code}: {diagnostic.message}",
+                    file=error_output,
+                )
         return 2

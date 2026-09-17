@@ -1,0 +1,410 @@
+/**
+ * @version v1
+ * @summary Integer, boolean, float, and void return forms.
+ * @topic Language
+ * @topic ControlFlow
+ */
+/**
+ * @version root
+ * @summary Early return, expression return, multiple returns, and a void return.
+ * @topic Baseline
+ */
+int ReturnInt()
+{
+	return 7;
+}
+
+bool ReturnBool(int Value)
+{
+	return Value > 0;
+}
+
+float ReturnFloat()
+{
+	return 1.5f;
+}
+
+int ReturnEarly(bool Flag)
+{
+	if (Flag)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int MultipleReturns(int Value)
+{
+	if (Value < 0)
+	{
+		return -1;
+	}
+	if (Value == 0)
+	{
+		return 0;
+	}
+	return Value;
+}
+
+void ReturnVoid()
+{
+	return;
+}
+
+int ReturnExpression(int Left, int Right)
+{
+	return Left + Right;
+}
+/** @end */
+/**
+ * @version invalid-missing-return
+ * @parent root
+ * @summary A value-returning function cannot fall off the end.
+ * @topic Negative
+ */
+int Test(bool Flag)
+{
+	if (Flag)
+	{
+		return 1;
+	}
+}
+/** @end */
+/**
+ * @version invalid-return-type-mismatch
+ * @parent root
+ * @summary A boolean cannot be returned from an integer function.
+ * @topic Negative
+ */
+int Test()
+{
+	return true;
+}
+/** @end */
+/**
+ * @version valid-function-return-bool-values
+ * @parent root
+ * @summary Positive language form retained from legacy function return bool values.
+ * @topic ControlFlow
+ */
+bool TrueReturn()
+	{
+		return true;
+	}
+
+	bool FalseReturn()
+	{
+		return false;
+	}
+/** @end */
+/**
+ * @version valid-function-return-control-flow
+ * @parent root
+ * @summary Positive language form retained from legacy function return control flow.
+ * @topic ControlFlow
+ */
+int AddPair(int A, int B)
+	{
+		return A + B;
+	}
+
+	int ExpressionReturn()
+	{
+		int A = 20;
+		int B = 22;
+		return A + B;
+	}
+
+	int CallReturn()
+	{
+		return AddPair(20, 22);
+	}
+
+	int ConditionalAbsoluteReturn(int Value)
+	{
+		return Value > 0 ? Value : -Value;
+	}
+
+	int EarlyReturnOnNegative(int Value)
+	{
+		if (Value < 0)
+		{
+			return -1;
+		}
+
+		return Value + 1;
+	}
+/** @end */
+/**
+ * @version valid-function-return-float-values
+ * @parent root
+ * @summary Positive language form retained from legacy function return float values.
+ * @topic ControlFlow
+ */
+float FloatReturn()
+	{
+		return 42.25f;
+	}
+
+	double DoubleReturn()
+	{
+		return 84.5;
+	}
+/** @end */
+/**
+ * @version valid-function-return-integer-widths
+ * @parent root
+ * @summary Positive language form retained from legacy function return integer widths.
+ * @topic ControlFlow
+ */
+int8 Int8Return()
+	{
+		return -42;
+	}
+
+	int16 Int16Return()
+	{
+		return 30000;
+	}
+
+	int IntReturn()
+	{
+		return 123456;
+	}
+
+	int64 Int64Return()
+	{
+		return 10000000000;
+	}
+
+	uint8 UInt8Return()
+	{
+		return 255;
+	}
+
+	uint16 UInt16Return()
+	{
+		return 60000;
+	}
+
+	uint UIntReturn()
+	{
+		return 3000000000;
+	}
+
+	uint64 UInt64Return()
+	{
+		return 18000000000000000000;
+	}
+/** @end */
+/**
+ * @version valid-return-early
+ * @parent root
+ * @summary Positive language form retained from legacy return early.
+ * @topic ControlFlow
+ */
+int ClampedEarlyReturn(int Value)
+	{
+		if (Value < 0)
+			return -1;
+		if (Value > 100)
+			return 100;
+		return Value;
+	}
+
+	int EarlyReturnInsideLoop()
+	{
+		for (int i = 0; i < 10; i++)
+		{
+			if (i == 5)
+				return i;
+		}
+		return -1;
+	}
+
+	void EarlyReturnFromVoid(int Value)
+	{
+		if (Value < 0)
+			return;
+		if (Value > 10)
+			return;
+	}
+
+	int GuardClauseDoublesInRange(int Value)
+	{
+		if (Value < 0)
+			return 0;
+		if (Value > 100)
+			return 100;
+
+		int Result = Value * 2;
+		return Result;
+	}
+
+	int NestedEarlyReturn(int A, int B)
+	{
+		if (A > 0)
+		{
+			if (B > 0)
+				return 1;
+			return 2;
+		}
+		return 3;
+	}
+/** @end */
+/**
+ * @version valid-return-expression
+ * @parent root
+ * @summary Positive language form retained from legacy return expression.
+ * @topic ControlFlow
+ */
+int ComputedReturn()
+	{
+		int X = 5;
+		return X * 2 + 1;
+	}
+/** @end */
+/**
+ * @version valid-return-float-as-int
+ * @parent root
+ * @summary Positive language form retained from legacy return float as int.
+ * @topic ControlFlow
+ */
+int TruncatedFloatReturn()
+	{
+		return 3.14f;
+	}
+/** @end */
+/**
+ * @version valid-return-int
+ * @parent root
+ * @summary Positive language form retained from legacy return int.
+ * @topic ControlFlow
+ */
+int FixedIntReturn()
+	{
+		return 42;
+	}
+/** @end */
+/**
+ * @version valid-return-void
+ * @parent root
+ * @summary Positive language form retained from legacy return void.
+ * @topic ControlFlow
+ */
+void BareVoidReturn()
+	{
+		return;
+	}
+/** @end */
+/**
+ * @version invalid-return-string-for-int
+ * @parent root
+ * @summary Compile-rejection form retained from legacy return string for int.
+ * @topic Negative
+ */
+int Test()
+{
+	return "hello";
+}
+/** @end */
+/**
+ * @version invalid-return-value-in-void-function
+ * @parent root
+ * @summary Compile-rejection form retained from legacy return value in void function.
+ * @topic Negative
+ */
+void Test()
+{
+	return 5;
+}
+/** @end */
+/**
+ * @version invalid-return-without-value-in-int-function
+ * @parent root
+ * @summary Compile-rejection form retained from legacy return without value in int function.
+ * @topic Negative
+ */
+int Test()
+{
+	return;
+}
+/** @end */
+/**
+ * @version valid-script-quat-return
+ * @parent root
+ * @summary Authored language form for script quat return.
+ * @topic ControlFlow
+ */
+struct FScriptQuat
+{
+	float X;
+	float Y;
+	float Z;
+	float W;
+}
+
+FScriptQuat IdentityQuat()
+{
+	FScriptQuat Value;
+	Value.X = 0.0f;
+	Value.Y = 0.0f;
+	Value.Z = 0.0f;
+	Value.W = 1.0f;
+	return Value;
+}
+/** @end */
+/**
+ * @version valid-script-matrix-return
+ * @parent root
+ * @summary Authored language form for script matrix return.
+ * @topic ControlFlow
+ */
+struct FScriptMatrix
+{
+	float M00;
+	float M01;
+	float M10;
+	float M11;
+}
+
+FScriptMatrix IdentityMatrix()
+{
+	FScriptMatrix Value;
+	Value.M00 = 1.0f;
+	Value.M01 = 0.0f;
+	Value.M10 = 0.0f;
+	Value.M11 = 1.0f;
+	return Value;
+}
+/** @end */
+/**
+ * @version valid-geometric-struct-parameters-and-returns
+ * @parent root
+ * @summary Authored language form for geometric struct parameters and returns.
+ * @topic ControlFlow
+ */
+struct FScriptVec
+{
+	float X;
+	float Y;
+}
+
+FScriptVec Offset(FScriptVec Value, float Delta)
+{
+	Value.X += Delta;
+	Value.Y += Delta;
+	return Value;
+}
+/** @end */
+/**
+ * @version valid-string-function-return
+ * @parent root
+ * @summary A function that returns a string literal.
+ * @topic ControlFlow
+ */
+string Message()
+{
+	return "ok";
+}
+/** @end */

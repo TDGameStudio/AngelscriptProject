@@ -38,6 +38,34 @@ class DiscoveryTests(unittest.TestCase):
                 [source.file_tag for source in sources],
             )
             self.assertEqual(b"counter", sources[0].content)
+            self.assertEqual(
+                ["Language/Counter.generated.cpp", "Reload/Actor.generated.cpp"],
+                [source.output_relative_path for source in sources],
+            )
+
+    def test_duplicate_generated_basenames_are_uniquified(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            author_root = Path(directory)
+            for relative_path in (
+                "Language/Syntax/Enum.as",
+                "Language/Namespace/Enum.as",
+            ):
+                path = author_root / Path(relative_path)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"enum")
+
+            sources = discover_sources(author_root)
+            self.assertEqual(
+                ["Language/Namespace/Enum", "Language/Syntax/Enum"],
+                [source.file_tag for source in sources],
+            )
+            self.assertEqual(
+                [
+                    "Language/Namespace/Language_Namespace_Enum.generated.cpp",
+                    "Language/Syntax/Language_Syntax_Enum.generated.cpp",
+                ],
+                [source.output_relative_path for source in sources],
+            )
 
     def test_case_fold_collision_is_rejected_with_both_paths(self) -> None:
         with self.assertRaises(CodegenError) as raised:
