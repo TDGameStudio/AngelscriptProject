@@ -20,6 +20,7 @@ class DiscoveryTests(unittest.TestCase):
                 "Reload/Actor.as": b"reload",
                 "Language/Counter.as": b"counter",
                 "CodeGenTool/tests/fixtures/Hidden.as": b"hidden",
+                "Pending/Language/Syntax/Class.as": b"pending",
                 "Language/Notes.txt": b"notes",
             }
             for relative_path, content in fixtures.items():

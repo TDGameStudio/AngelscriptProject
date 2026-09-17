@@ -56,7 +56,7 @@ def discover_sources(author_root: Path) -> tuple[SourceInput, ...]:
             raise CodegenError(f"Discovered source escapes author root: {candidate}") from error
 
         segments = relative_path.split("/")
-        if segments and segments[0].casefold() == "codegentool":
+        if segments and segments[0].casefold() in {"codegentool", "pending"}:
             continue
         if candidate.suffix != ".as" or not candidate.is_file():
             continue
