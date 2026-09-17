@@ -1,14 +1,14 @@
 {
-  "description": "Optional, read-only Harness workspace orientation for Codex sessions and subagents.",
+  "description": "Harness workspace orientation and explicitly bound draft recording.",
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "startup|resume|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1\") }'",
-            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
+            "command": "pwsh -NoProfile -Command '$cursor = Get-Item -LiteralPath .; $root = '\"'\"''\"'\"'; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '\"'\"'.harness/workspace.json'\"'\"'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"') }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$cursor = Get-Item -LiteralPath .; $root = ''; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '.harness/workspace.json'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
             "timeout": 3,
             "additionalContextLimit": 1000
           }
@@ -20,8 +20,47 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -Command '$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root \".agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1\") }'",
-            "commandWindows": "pwsh.exe -NoProfile -Command \"$root = @(& git rev-parse --show-superproject-working-tree 2>$null)[-1]; if ([string]::IsNullOrWhiteSpace($root)) { $root = @(& git rev-parse --show-toplevel 2>$null)[-1] }; if (-not [string]::IsNullOrWhiteSpace($root)) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
+            "command": "pwsh -NoProfile -Command '$cursor = Get-Item -LiteralPath .; $root = '\"'\"''\"'\"'; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '\"'\"'.harness/workspace.json'\"'\"'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"') }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$cursor = Get-Item -LiteralPath .; $root = ''; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '.harness/workspace.json'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
+            "timeout": 3,
+            "additionalContextLimit": 1000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -Command '$cursor = Get-Item -LiteralPath .; $root = '\"'\"''\"'\"'; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '\"'\"'.harness/workspace.json'\"'\"'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"') }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$cursor = Get-Item -LiteralPath .; $root = ''; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '.harness/workspace.json'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
+            "timeout": 3,
+            "additionalContextLimit": 1000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -Command '$cursor = Get-Item -LiteralPath .; $root = '\"'\"''\"'\"'; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '\"'\"'.harness/workspace.json'\"'\"'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"') }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$cursor = Get-Item -LiteralPath .; $root = ''; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '.harness/workspace.json'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
+            "timeout": 3,
+            "additionalContextLimit": 1000
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -Command '$cursor = Get-Item -LiteralPath .; $root = '\"'\"''\"'\"'; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '\"'\"'.harness/workspace.json'\"'\"'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '\"'\"'.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1'\"'\"') }'",
+            "commandWindows": "pwsh.exe -NoProfile -Command \"$cursor = Get-Item -LiteralPath .; $root = ''; while ($null -ne $cursor) { $marker = Join-Path $cursor.FullName '.harness/workspace.json'; if (Test-Path -LiteralPath $marker) { $root = (Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json).PrimaryRoot; break }; if (Test-Path -LiteralPath (Join-Path $cursor.FullName '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1')) { $root = $cursor.FullName; break }; $cursor = $cursor.Parent }; if ($root) { & (Join-Path $root '.agents/skills/harness/scripts/Invoke-HarnessCodexHook.ps1') }\"",
             "timeout": 3,
             "additionalContextLimit": 1000
           }

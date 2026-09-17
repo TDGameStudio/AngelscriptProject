@@ -75,13 +75,18 @@ function Get-HarnessGateChecks {
         $scriptTests = [ordered]@{
             Harness            = '.agents\skills\harness\tests\Harness.Tests.ps1'
             HarnessDraft       = '.agents\skills\harness\tests\HarnessDraft.Tests.ps1'
+            HarnessHandoff     = '.agents\skills\harness\tests\HarnessHandoff.Tests.ps1'
+            HarnessRecording   = '.agents\skills\harness\tests\HarnessRecording.Tests.ps1'
+            HarnessQueue       = '.agents\skills\harness\tests\HarnessQueue.Tests.ps1'
             HarnessChangeGate  = '.agents\skills\harness\tests\HarnessChangeGate.Tests.ps1'
             HarnessEvolution   = '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'
             HarnessCutover     = '.agents\skills\harness\tests\HarnessCutover.Tests.ps1'
             HarnessGateContract = '.agents\skills\harness\tests\Test-Harness.Tests.ps1'
             Protocol            = '.agents\skills\harness\tests\Protocol.Tests.ps1'
             Workspace           = '.agents\skills\workspace-lifecycle\tests\WorkspaceLifecycle.Tests.ps1'
+            WorkspaceReplica    = '.agents\skills\workspace-lifecycle\tests\WorkspaceReplica.Tests.ps1'
             GitOperations       = '.agents\skills\git-operations\tests\GitOperations.Tests.ps1'
+            PluginCommits       = '.agents\skills\git-operations\tests\PluginCommits.Tests.ps1'
             OpenSpecSkill       = '.agents\skills\openspec\tests\OpenSpecSkill.Tests.ps1'
             UnrealIntegration   = '.agents\skills\unreal-engine-develop\tests\UnrealEngineDevelop.Tests.ps1'
         }

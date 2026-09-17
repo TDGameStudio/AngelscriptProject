@@ -1,6 +1,7 @@
 #requires -Version 7.0
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if (Test-Path (Join-Path $PSScriptRoot 'WorkspaceReplica.ps1')) { . (Join-Path $PSScriptRoot 'WorkspaceReplica.ps1') }
 
 function Get-WorkspaceRepositoryRootFromModule {
     return [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
@@ -70,6 +71,10 @@ function Resolve-WorkspaceRepository {
         $Path
     }
     $resolved = (Resolve-Path -LiteralPath $candidate -ErrorAction Stop).Path
+    if (Get-Command Find-WorkspaceReplicaRoot -ErrorAction SilentlyContinue) {
+        $replicaRoot = Find-WorkspaceReplicaRoot $resolved
+        if ($replicaRoot) { return $replicaRoot }
+    }
     $probe = Invoke-WorkspaceGit -Repository $resolved -Arguments @('rev-parse', '--show-toplevel')
     return [System.IO.Path]::GetFullPath(($probe.Output | Select-Object -Last 1).Trim())
 }
@@ -793,6 +798,9 @@ function New-WorkspaceIdentityFromRegistration {
         Branch        = $Registration.Branch
         Head          = $Registration.Head
         Managed       = $false
+        WorkspaceId   = 'git_' + [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Registration.WorkspaceRoot.ToLowerInvariant()))).Replace('-', '').Substring(0, 32).ToLowerInvariant()
+        OpenSpecRoot  = [System.IO.Path]::GetFullPath($Registration.WorkspaceRoot)
+        Repositories  = @{}
     }
     $identity.Managed = Test-WorkspaceManagedIdentity -Path (Join-Path $identity.WorkspaceRoot 'AgentConfig.ini') -Identity $identity
     return $identity
@@ -802,6 +810,7 @@ function Get-WorkspaceIdentity {
     param([Parameter(Mandatory = $true)][string]$ProjectRoot)
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
+    if (Test-Path (Join-Path $root '.harness/workspace.json')) { return Get-WorkspaceReplicaIdentity $root }
     $registrations = @(Get-WorkspaceRegistrationRecords -Repository $root)
     $record = @($registrations | Where-Object { Test-WorkspacePathEqual -Left $_.WorkspaceRoot -Right $root })
     if ($record.Count -ne 1) {
@@ -1144,9 +1153,10 @@ function Assert-HarnessWorkspaceExecution {
     $caller = if ([string]::IsNullOrWhiteSpace($CallerPath)) { (Get-Location).Path } else { $CallerPath }
     if (Test-Path -LiteralPath $caller) {
         $callerFull = [System.IO.Path]::GetFullPath($caller)
-        $registered = @(Get-RegisteredWorkspaceRoots -Repository $status.Identity.PrimaryRoot | Sort-Object Length -Descending)
+        $registered = @(Get-HarnessWorkspaceList -WorkspaceRoot $status.Identity.PrimaryRoot | ForEach-Object WorkspaceRoot | Sort-Object Length -Descending)
         $callerWorkspace = @($registered | Where-Object { (Test-WorkspacePathEqual -Left $_ -Right $callerFull) -or (Test-WorkspacePathInside -Parent $_ -Child $callerFull) } | Select-Object -First 1)
-        if ($callerWorkspace.Count -eq 1 -and -not (Test-WorkspacePathEqual -Left $callerWorkspace[0] -Right $status.ProjectRoot)) {
+        $trustedScripts = Join-Path $status.Identity.HarnessRoot '.agents'
+        if ($callerWorkspace.Count -eq 1 -and -not (Test-WorkspacePathInside -Parent $trustedScripts -Child $callerFull) -and -not (Test-WorkspacePathEqual -Left $callerWorkspace[0] -Right $status.ProjectRoot)) {
             throw "The current shell belongs to workspace '$($callerWorkspace[0])' but the command targets '$($status.ProjectRoot)'."
         }
     }
@@ -1263,12 +1273,19 @@ function Get-HarnessWorkspaceList {
     )
 
     if ($Refresh) { [void](Clear-HarnessWorkspaceCache) }
-    $repository = Resolve-WorkspaceRepository -Path $ProjectRoot
+    $repository = (Get-WorkspaceIdentity (Resolve-WorkspaceRepository -Path $ProjectRoot)).PrimaryRoot
     $records = @(Get-WorkspaceRegistrationRecords -Repository $repository)
     $commonDirectory = Get-WorkspaceCommonGitDirectory -Repository $repository
     $contexts = New-Object System.Collections.Generic.List[object]
     foreach ($record in $records) {
         $contexts.Add((New-WorkspaceIdentityFromRegistration -Registration $record -GitCommonDir $commonDirectory)) | Out-Null
+    }
+    $registry = Join-Path $repository 'Saved/Harness/Workspaces'
+    if (Test-Path $registry) {
+        foreach ($file in Get-ChildItem $registry -Filter 'workspace_*.json' -File) {
+            $entry = Get-Content $file.FullName -Raw | ConvertFrom-Json
+            $contexts.Add((Get-WorkspaceReplicaIdentity $entry.WorkspaceRoot)) | Out-Null
+        }
     }
     return @($contexts | ForEach-Object { $_ })
 }
@@ -1307,6 +1324,16 @@ function Get-HarnessWorkspaceStatus {
         return [pscustomobject]$result
     }
 
+    if ($identity.Topology -eq 'Replica') {
+        $details = Get-WorkspaceReplicaDetails $root
+        $result.Dirty = $details.Dirty
+        $result.Changes = @()
+        $result.IgnoredFiles = @()
+        $result.Submodules = @($details.Submodules)
+        $result.SnapshotErrors = @($details.Errors)
+        return [pscustomobject]$result
+    }
+
     $dirty = @(Get-WorkspaceDirtyLines -Repository $root)
     $ignoredFiles = @(Get-WorkspaceIgnoredLines -Repository $root | ForEach-Object { $_.Substring(3) })
     $submodules = New-Object System.Collections.Generic.List[object]
@@ -1342,65 +1369,19 @@ function New-HarnessWorkspace {
         [Parameter(Mandatory = $true)][ValidatePattern('^[A-Za-z0-9._-]{1,80}$')][string]$Name,
         [string]$Branch = '',
         [string]$RepositoryRoot = '',
-        [string]$StartPoint = 'HEAD'
+        [string]$StartPoint = 'HEAD',
+        [string[]]$EditablePlugins = @(),
+        [string[]]$RequiredPlugins = @(),
+        [string[]]$HostFiles = @()
     )
 
     $requestedRepository = Resolve-WorkspaceRepository -Path $RepositoryRoot
-    $repository = Get-PrimaryWorkspaceRoot -Repository $requestedRepository
-    $branchName = if ([string]::IsNullOrWhiteSpace($Branch)) { $Name } else { $Branch }
-    $branchCheck = Invoke-WorkspaceGit -Repository $repository -Arguments @('check-ref-format', '--branch', $branchName) -AllowFailure
-    if ($branchCheck.ExitCode -ne 0) {
-        throw "Invalid worktree branch '$branchName'."
+    $repository = (Get-WorkspaceIdentity $requestedRepository).PrimaryRoot
+    if ($StartPoint -ne 'HEAD') { throw 'Replica creation pins each plugin HEAD; parent StartPoint is not applicable.' }
+    if (-not $PSCmdlet.ShouldProcess((Join-Path $repository ".workspaces/$Name"), 'create minimal project and selected plugin worktrees')) {
+        return [pscustomobject]@{ Created = $false; Mutates = $false }
     }
-    $branchExists = Invoke-WorkspaceGit -Repository $repository -Arguments @('show-ref', '--verify', '--quiet', "refs/heads/$branchName") -AllowFailure
-    if ($branchExists.ExitCode -eq 0) {
-        throw "Branch '$branchName' already exists."
-    }
-
-    $container = Join-Path $repository '.worktrees'
-    $target = Join-Path $container $Name
-    if (-not (Test-WorkspacePathInside -Parent $container -Child $target)) {
-        throw "Worktree target escapes the canonical .worktrees directory: $target"
-    }
-    [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace creation')
-    if (Test-Path -LiteralPath $target) {
-        throw "Worktree target already exists: $target"
-    }
-    $ignored = Invoke-WorkspaceGit -Repository $repository -Arguments @('check-ignore', '--quiet', '--', '.worktrees/__harness_probe__') -AllowFailure
-    if ($ignored.ExitCode -ne 0) {
-        throw "'$container' is not ignored. Add .worktrees/ to .gitignore before creating a workspace."
-    }
-
-    $startCommitResult = Invoke-WorkspaceGit -Repository $requestedRepository -Arguments @('rev-parse', '--verify', "$StartPoint`^{commit}")
-    $startCommit = ($startCommitResult.Output | Select-Object -Last 1).Trim()
-
-    if (-not $PSCmdlet.ShouldProcess($target, "create branch '$branchName' from '$startCommit'")) {
-        return [pscustomobject]@{ RepositoryRoot = $repository; WorktreeRoot = $target; Branch = $branchName; StartPoint = $startCommit; Created = $false; Mutates = $false }
-    }
-    if (-not (Test-Path -LiteralPath $container -PathType Container)) {
-        [void](New-Item -ItemType Directory -Path $container)
-    }
-    [void](Assert-WorkspacePathChainSafe -Root $repository -Target $target -Purpose 'workspace creation')
-    [void](Invoke-WorkspaceGit -Repository $repository -Arguments @('worktree', 'add', '-b', $branchName, $target, $startCommit))
-    [void](Clear-HarnessWorkspaceCache)
-    try {
-        $configResult = Set-WorkspaceManagedConfiguration -ProjectRoot $target -SourceRoot $repository
-        $submodules = @(Initialize-WorkspaceSubmodules -Repository $target)
-    }
-    catch {
-        throw "Workspace was created at '$target' but bootstrap failed; it was preserved for recovery. $($_.Exception.Message)"
-    }
-    return [pscustomobject]@{
-        WorktreeRoot      = $target
-        RepositoryRoot    = $repository
-        Branch            = $branchName
-        StartPoint        = $startCommit
-        Created           = $true
-        Mutates           = $true
-        AgentConfigCopied = $configResult.Copied
-        Configuration     = $configResult
-        Submodules        = $submodules
-    }
+    return New-WorkspaceReplica -RepositoryRoot $repository -Name $Name -Branch $Branch -EditablePlugins $EditablePlugins -RequiredPlugins $RequiredPlugins -HostFiles $HostFiles
 }
 
 function Initialize-HarnessWorkspace {
@@ -1410,9 +1391,10 @@ function Initialize-HarnessWorkspace {
     )
 
     $root = Resolve-WorkspaceRepository -Path $ProjectRoot
-    $source = Get-PrimaryWorkspaceRoot -Repository $root
+    $identity = Get-WorkspaceIdentity $root
+    $source = $identity.PrimaryRoot
     $config = Set-WorkspaceManagedConfiguration -ProjectRoot $root -SourceRoot $source
-    $submodules = @(Initialize-WorkspaceSubmodules -Repository $root)
+    $submodules = if ($identity.Topology -eq 'Replica') { @() } else { @(Initialize-WorkspaceSubmodules -Repository $root) }
     [void](Clear-HarnessWorkspaceCache)
     return [pscustomobject]@{ ProjectRoot = $root; SourceRoot = $source; AgentConfigCopied = $config.Copied; Configuration = $config; Submodules = $submodules }
 }
@@ -1427,6 +1409,7 @@ function Test-HarnessWorkspace {
     $errors = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
     $status = Get-HarnessWorkspaceStatus -ProjectRoot $ProjectRoot -Detailed -Refresh
+    if ($status.Topology -eq 'Replica') { foreach ($issue in $status.SnapshotErrors) { $errors.Add($issue) } }
     foreach ($submodule in @($status.Submodules)) {
         if (-not $submodule.Initialized) {
             $payloadSuffix = if (@($submodule.Payload).Count -gt 0) { " Local payload is present: $(@($submodule.Payload) -join ', ')." } else { '' }
@@ -1467,6 +1450,9 @@ function Remove-HarnessWorkspace {
     $requestedRepository = Resolve-WorkspaceRepository -Path $RepositoryRoot
     $repository = Get-PrimaryWorkspaceRoot -Repository $requestedRepository
     $target = (Resolve-Path -LiteralPath $WorktreeRoot -ErrorAction Stop).Path
+    if (Test-Path -LiteralPath (Join-Path $target '.harness/workspace.json')) {
+        return Remove-WorkspaceReplica -Root $target -PrimaryRoot $repository -DiscardIgnoredFiles:$DiscardIgnoredFiles -WhatIf:$WhatIfPreference
+    }
     $container = Join-Path $repository '.worktrees'
     if (Test-WorkspacePathEqual -Left $target -Right $repository) {
         throw 'Refusing to remove the primary repository checkout.'
@@ -1553,6 +1539,7 @@ Export-ModuleMember -Function @(
     'Get-HarnessWorkspaceStatus',
     'Clear-HarnessWorkspaceCache',
     'New-HarnessWorkspace',
+    'Initialize-HarnessWorkspacePlugins',
     'Initialize-HarnessWorkspace',
     'Test-HarnessWorkspace',
     'Remove-HarnessWorkspace',

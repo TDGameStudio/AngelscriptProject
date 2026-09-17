@@ -20,7 +20,7 @@ Harness SHALL remain the single short entry for project workflow and SHALL load 
 
 ### Requirement: Unified workspace context
 
-Harness MUST use one Git-derived workspace model in both the primary checkout and any registered linked worktree. The exact selected Context SHALL be authoritative for every dispatcher-owned workspace, repository, primary-root, and internal-context argument; caller parameters MAY repeat a matching root but MUST NOT retarget the operation. Codex `/goal` is an external continuation facility only and MUST NOT select a repository mode, imply worktree creation, constrain branch names, or change Git authority. New worktrees default to `.worktrees/<name>` on branch `<name>`, while existing registered worktrees remain valid at their current path and branch. Integration, non-force push, and worktree removal MUST remain three separate operations requiring explicit user intent.
+Harness MUST preserve the exact selected execution Context. The primary workspace SHALL be both control center and a full execution workspace, including major host, Harness and plugin work. New workspaces SHALL be minimal project replicas under `.workspaces/<name>/` without a parent Git worktree; edited plugins SHALL use their own Git worktrees and necessary unmodified plugins SHALL use fixed committed file snapshots. Replica identity MUST match its local descriptor and primary registration. Canonical OpenSpec SHALL remain in the primary workspace, while queue state and build outputs SHALL remain local to each execution workspace. Existing parent Git worktrees SHALL remain inspectable in place and parked outside the new queue workflow. Caller parameters MUST NOT retarget dispatcher-owned roots; exact primary queue-management targets are an explicit exception. Codex `/goal` SHALL be optional continuation only. Workspace creation, integration, push and removal MUST retain separate explicit authority.
 
 #### Scenario: Work in the primary checkout
 - **WHEN** the caller selects the registered primary checkout
@@ -234,12 +234,12 @@ When an extended user-led exploration establishes multiple interacting cross-cap
 
 - **THEN** `openspec-create-change` copies the approved draft `design.md`, `handoff.md` and `glossary.md` and the cited findings into `attachments/drafts/`, indexes each once, materializes the confirmed decision and its visualization as one talk and the confirmed insight as change-local knowledge, and `openspec-apply-change` step `Ensure plan` then copies settled current truth into the canonical planning artifacts
 
-    The draft README records `status: handed-off` and `target_change` in the
+    The selected design README records `status: handed-off` and `target_change` in the
     same step so the source discussion and the Change point at each other.
     Each talk and knowledge cites the copied finding by its Change-relative
     path in English; the original wording stays in the draft `log.md`.
 
-- **AND** only the round log and uncited findings remain in the draft; the Change is self-contained once the draft directory disappears
+- **AND** the original draft files remain local; the Change uses self-contained copies and still works when the draft directory is unavailable
 
 - **BUT** a talk is retained only when its rationale prevents likely re-decision, and knowledge is retained only when the insight is reusable beyond the originating task
 
@@ -281,13 +281,24 @@ When an extended user-led exploration establishes multiple interacting cross-cap
 
 ### Requirement: Persistent brainstorming drafts
 
-Every brainstorming session MUST record itself under `openspec/drafts/<domain>/<topic>/` from its first round, and a draft MUST be opened as soon as a reply contains a proposal, a trade-off, or more than one diagram. Brainstorming MUST write nothing outside the draft. The draft MUST contain `README.md` with `mode` (`research`, `proposal`, or `design`), `status` (`exploring`, `designed`, `handed-off`, `parked`, or `abandoned`), `opened`, and, once known, `target_change`; only a `design` draft MAY reach `designed`; an append-only `log.md` holding each round's questions, the user's answers in their own words, and agent conclusions; `findings/` for agent evidence; `glossary.md` for chosen and rejected names; `design.md` for the approved design; and `handoff.md` for the decision-complete handoff. Drafts MUST remain under `openspec/drafts/` after Change creation. Drafts MUST NOT carry task state, Ready state, or checkboxes, MUST NOT be scanned by Harness Change validation, and MUST NOT be treated as an OpenSpec artifact by the portable CLI. `design.md` and `handoff.md` MUST be English; `log.md` and `findings/` MAY retain the user's original-language wording.
+- Every brainstorming session MUST keep a continuing topic under `openspec/drafts/<domain>/<topic>/`; a proposal, trade-off or more than one diagram opens a draft.
+- The topic README MUST record current `mode` (`research`, `proposal`, `design`), `status` (`exploring`, `parked`, `abandoned`), opening date and the five current fields (activity, focus, settled decision, next question and last explained round). Resumption, correction and handoff MUST refresh current decisions without rewriting history.
+- An independently deliverable outcome MUST own `designs/<scope>/`; its README owns approval and handoff state independently of topic focus. New local prose MUST follow the user's conversation language unless explicitly overridden; exported Change material MUST be English.
+- The append-only log MUST preserve actual visible user and assistant messages, diagrams and question submissions/results, with original wording and source order. An unsent final MUST NOT be recorded as delivered.
+- Drafts MUST remain local after export, contain no task/Ready state and stay outside portable OpenSpec validation. Explicit authorized direct work MAY proceed without a Change. Archive requires explicit topic closure; legacy records remain readable.
 
 #### Scenario: Open a draft on the first round
 
 - **WHEN** `brainstorming` asks its first grilling round
 
 - **THEN** `openspec/drafts/<domain>/<topic>/README.md` exists with `status: exploring` and `log.md` contains the round and, once answered, the user's reply
+
+#### Scenario: Archive a preserved flat handoff
+
+- **GIVEN** a legacy flat draft records a dated completed handoff to one exact existing Change and retains its original log, design and handoff files
+- **WHEN** the user requests completed draft archive
+- **THEN** Harness moves the topic to the local draft archive without requiring conversion to scoped design directories or rewriting its conversation and handoff
+- **BUT** a missing target, an unresolved scoped design or a parked topic does not qualify for completed archive
 
 #### Scenario: Abandon a draft
 
@@ -305,9 +316,9 @@ Every brainstorming session MUST record itself under `openspec/drafts/<domain>/<
 
 - **WHEN** the user asks for a proposal
 
-- **THEN** a `mode: proposal` draft writes `design.md` first as a marked proposal draft and subsequent grill questions each name the section they would change
+- **THEN** a `mode: proposal` topic writes its selected `designs/<scope>/design.md` first as a marked proposal draft and subsequent grill questions each name the section they would change
 
-- **AND** creating a Change from it requires upgrading the draft to `mode: design` and completing the naming and carryover rounds
+- **AND** creating a Change requires approval of the selected design and its naming/carryover decisions; the topic may already be researching another focus
 
 #### Scenario: Park a draft without a Change
 
@@ -829,7 +840,7 @@ Harness lifecycle guidance SHALL begin task execution, Change completion verific
 
 The root `AGENTS.md` SHALL be the sole canonical project-level agent entry and SHALL contain only stable, cross-capability invariants needed to route work safely. Detailed architecture, commands, lifecycle procedures, validation selection, implementation rules, mutable counts, reference inventories, and history MUST remain in their owning Skills, OpenSpec specifications, source, or existing indexes rather than being copied into the root entry. A second root language mirror MUST NOT be required.
 
-The canonical entry and live Harness-facing Skills SHALL agree that project Skills are enabled, Harness is the project workflow entry, the selected Git workspace is authoritative, Codex `/goal` is continuation rather than a repository mode, Review begins only on explicit request, ordinary routes run in the current PowerShell 7 process, intentional child `pwsh` hosts are bounded exceptions, and Unreal operations use `ue.*` routes without a root `Tools` wrapper fallback.
+The canonical entry and live Harness-facing Skills SHALL agree that project Skills are enabled, Harness is the project workflow entry, the selected execution workspace and canonical record root are authoritative, Codex `/goal` is continuation rather than a repository mode, Review begins only on explicit request, ordinary routes run in the current PowerShell 7 process, intentional child `pwsh` hosts are bounded exceptions, and Unreal operations use `ue.*` routes without a root `Tools` wrapper fallback.
 
 #### Scenario: Enter the project through maintained guidance
 - **WHEN** an agent opens the root project guidance
@@ -886,7 +897,7 @@ Harness SHALL autonomously investigate, select in-scope technical solutions, upd
 
 ### Requirement: Ready-to-deliver finish state
 
-Successful work MUST reach committed, verified, and closure-ready state while preserving its selected workspace and branch for inspection. Any explicitly registered Review MUST also be resolved or superseded. `git.commit` MAY establish scoped Git closure without claiming verification completion. `git.integrate` MAY run only after explicit user authorization against the exact verified source workspace and HEAD. `git.push` and `workspace.remove` MUST remain distinct later operations requiring separate explicit user intent.
+Successful work MUST reach verified and closure-ready state while preserving its selected workspace and plugin branches for inspection. Queue closure SHALL commit exact owned plugin changes; primary-repository commits SHALL remain user-directed, and recorded uncommitted host/Harness work MUST NOT alone block completed closure. Any explicitly registered Review MUST also be resolved or superseded. `git.commit` MAY establish scoped Git closure without claiming verification completion. `git.integrate` MAY run only after explicit user authorization against the exact verified source workspace and HEAD. `git.push` and `workspace.remove` MUST remain distinct later operations requiring separate explicit user intent.
 
 #### Scenario: Finish in the selected workspace
 - **WHEN** all tasks and verification complete and any explicitly registered Review is resolved
@@ -982,3 +993,143 @@ New project OpenSpec Changes SHALL use a canonical `<domain>/<type>-<scope>-<out
 - **THEN** it checks live Changes and excludes every archived path and historical manifest from semantic renaming
 
     > Verification: Repository fixtures retain known pre-rule archive names byte-for-byte while an invalid active fixture is reported.
+
+### Requirement: Bound draft conversation recording
+
+- `harness.draft.record` MUST bind one exact workspace, session, source, draft and starting message range; support sync, read-only status and unbind; and close an old range before switching drafts.
+- Trusted Codex tool, stop, interrupt and resume/compact hooks MUST share the same append-only recorder. Unbound sessions MUST remain inert, with no newest-draft selection or cross-workspace recording.
+- Source occurrences MUST retain their own identity even when text repeats. Retry MUST be idempotent, append/checkpoint writes serialized, and progress advanced only after durable append. Unsupported, changed, partial or missing source MUST expose a coverage gap; unavailable hooks/hosts use explicit source reconciliation.
+
+#### Scenario: Retry after interrupted recording
+
+- **WHEN** a delivered message is appended but the checkpoint write is interrupted
+- **THEN** the next sync recognizes the same source occurrence and advances without another copy
+- **AND** an identical message at a different source position is still recorded separately
+
+#### Scenario: Resume with incomplete source
+
+- **WHEN** the bound source ends in a partial JSONL line or cannot be interpreted
+- **THEN** recording reports the covered boundary and gap, preserving the pending range for retry
+- **BUT** recording failure does not force a new assistant turn or imply the missing final is already covered
+
+### Requirement: Exact scoped handoff and expected exports
+
+- A new draft-backed Change MUST have an explicit scoped `approval_round` naming an existing log round, exact selected design/Scope identity and exact target Change ID. Topic focus MUST NOT substitute for scoped identity.
+- Confirmed `Exploration Carryover` MUST use a Source / Target / Reason table covering required copies, necessary findings and accepted talks/knowledge. Creation MUST freeze expected exports and approval identity in a schema 2 origin marker.
+- Seed verification MUST reject a missing promised file, duplicate index entry or broken local link before Ensure plan. Existing schema 1 origins MUST retain their earlier verification contract without bulk migration.
+
+#### Scenario: Hand off one scope while researching another
+
+- **GIVEN** design A has an explicit approved handoff and the topic currently focuses on B
+- **WHEN** the user requests A's confirmed Change
+- **THEN** the gate checks A's identity, approval round and carryover without requiring focus to move from B
+
+#### Scenario: Detect omitted promised material
+
+- **GIVEN** creation froze a confirmed talk target in its origin marker
+- **WHEN** all present attachments are indexed but that talk was never exported
+- **THEN** seed verification names the missing promised target and refuses planning
+
+
+### Requirement: Minimal project and plugin source identity
+
+Harness SHALL generate only necessary host engineering files, targets and configuration. Host files SHALL come from the primary current working files with recorded hashes. Plugin baselines SHALL be each source repository's HEAD at creation, excluding uncommitted plugin edits; enabled necessary project-plugin dependencies SHALL be included transitively. Later preparation SHALL use those pinned baselines and MUST NOT silently overwrite source changes. A replica MUST NOT report its control repository HEAD as a project-root HEAD.
+
+#### Scenario: Create an isolated plugin workspace
+- **WHEN** the approved workspace edits Foo and only depends on Bar
+- **THEN** Foo has a plugin Git worktree, Bar has a fixed source snapshot with local build outputs, unrelated plugins are absent, and the parent Git worktree inventory is unchanged
+
+#### Scenario: Upgrade a dependency for later approved editing
+- **GIVEN** a necessary plugin is a source snapshot with generated outputs
+- **WHEN** approved scope requires editing that plugin
+- **THEN** preparation checks original source hashes, preserves generated outputs and creates a plugin worktree at the pinned baseline; changed source stops the upgrade without deletion
+
+#### Scenario: Query from inside a replica
+- **WHEN** the working directory is the replica or one of its plugin directories
+- **THEN** identity resolves the containing registered replica, including when inspecting sibling workspaces, without a drive-relative Git fallback
+
+#### Scenario: Build a drive-mapped minimal host
+- **WHEN** the generated project executes at a mapped drive root under UE 5.8
+- **THEN** project-local UBT configuration disables the invalid optional parent Git working-set probe while preserving normal target compilation
+
+### Requirement: Ordered local Change queues
+
+Each primary or replica workspace SHALL own an explicit ordered Change queue under ignored local Saved data. The queue SHALL order Changes while the existing Task DAG determines Ready work inside each Change. A Change SHALL bind to one workspace on enqueue through an indexed execution attachment, without extending the native Change manifest schema. Ordinary chat SHALL be sufficient to execute the entire approved queue. No daemon, automatic chat creation or cross-workspace transfer SHALL be implied.
+
+#### Scenario: Execute the full queue in ordinary chat
+- **GIVEN** the current workspace has an approved ordered queue A then B
+- **WHEN** the user asks to execute until finished
+- **THEN** the agent claims that queue, completes A through required verification and completed archive, advances to B, ensures missing planning from approved material, and continues until exhaustion or a concrete blocker
+
+#### Scenario: Preserve Task DAG progress during feedback
+- **WHEN** feedback invalidates accepted planning truth
+- **THEN** the executing workspace replans the exact affected Change, preserves valid completed work and continues from derived Ready tasks; ordinary failures remain task-local and do not skip the blocked Change
+
+#### Scenario: Remove queue membership
+- **WHEN** a pending member is explicitly removed
+- **THEN** its Change lifecycle is unchanged, an unstarted assignment may be released, and an already started member retains provenance even if requeued
+
+#### Scenario: Reconfigure an exhausted queue
+
+- **WHEN** an unclaimed exhausted queue receives new pending Changes
+- **THEN** it reports idle with the new membership and does not claim a controller; an existing requested pause remains paused
+- **AND** removing the last pending member reports exhaustion and counts removal separately from completed archives
+
+### Requirement: Queue ownership and recovery
+
+Queue membership writes SHALL use revision checks and short recoverable transactions. One logical controller SHALL hold the local queue token; elapsed time alone MUST NOT replace that owner. Explicit takeover SHALL inspect UE activity and require the former controller to have stopped. Queue advance MUST verify exact archived Change UID, ID and completed closure. An abandoned or superseded archive MUST NOT count as completed queue delivery.
+
+#### Scenario: Reject a duplicate assignment or stale update
+- **WHEN** another workspace enqueues an assigned Change or a writer uses an old revision
+- **THEN** the operation fails without changing accepted ownership or queue order
+
+#### Scenario: Recover an interrupted state write
+- **WHEN** a write stops between canonical assignment and local queue publication
+- **THEN** the next mutation replays the journal before applying the new request
+
+#### Scenario: Acknowledge a pause
+- **WHEN** primary requests a pause for a registered queue
+- **THEN** the executing agent preserves work and releases at a task or closure boundary; duplicate claims do not erase the request and the request itself does not terminate a running process
+
+#### Scenario: Advance after archive interruption
+- **WHEN** a completed archive exists but queue advance was interrupted
+- **THEN** the controller can reconcile that exact archive and advance without repeating finished implementation or counting a different archive
+
+### Requirement: Shared records and execution evidence
+
+Replica Change, TaskPlan, draft, closure and native OpenSpec operations SHALL use canonical OpenSpecRoot while implementation and runtime files use WorkspaceRoot. Queue checkpoints SHALL retain initial and current host/plugin identities, including content fingerprints for intentionally uncommitted host work. Replan base_commit SHALL identify the canonical record repository and SHALL cite individual affected plugin identities. Shared spec publication SHALL use a short lock and expected content SHA-256, with reread and semantic merge after a stale-write rejection.
+
+#### Scenario: Close verified plugin work without committing the primary
+- **WHEN** queue implementation and verification finish
+- **THEN** exact owned plugin commits preserve unrelated staged content and leave the primary HEAD unchanged, checkpoint actual source identities, synchronize applicable specs, satisfy the terminal gate and complete archive before advance
+
+#### Scenario: Reject a concurrent stale spec merge
+- **GIVEN** two workspaces read the same canonical spec
+- **WHEN** one publishes before the other
+- **THEN** the second stale write is rejected and the first merge remains intact until a new merge uses the current content digest
+
+#### Scenario: Record a replica conversation
+- **WHEN** a trusted hook reconciles an explicitly bound replica session
+- **THEN** the local session binding retains the execution workspace while the shared recorder appends visible messages to the canonical draft, without copying OpenSpec into the replica
+
+### Requirement: Read-only Harness status queries
+
+Natural-language requests for current task, queue, workspace, lifecycle or build status SHALL route through actual Harness query results. Queries MUST NOT claim, reorder, resume or take over execution. Queue status SHALL distinguish unconfigured, exhausted, paused, missing-plan and unknown-activity states; a controller token MUST NOT be presented as proof of a live agent.
+
+#### Scenario: Query current task progress
+- **WHEN** the user asks what remains in the selected workspace
+- **THEN** Harness reports queue membership and the current canonical TaskPlan, including complete, total and Ready counts where known; a missing plan is explicitly unknown rather than zero completed tasks
+
+#### Scenario: Query interrupted queue transitions
+
+- **WHEN** queue publication or the transition after completed archive was interrupted
+- **THEN** read-only status distinguishes pending write recovery from an unconfigured queue, and an exact completed archive awaiting advance from an active Change needing planning
+- **AND** a missing or invalid Change record is reported as blocked; status never recreates planning, replays writes or advances the queue
+
+#### Scenario: Query multiple workspace queues
+- **WHEN** the user asks the primary for all workspace progress
+- **THEN** the agent lists registered workspaces and reads their exact targeted queue states, reports legacy parent worktrees as parked, and leaves execution ownership unchanged
+
+#### Scenario: Detect a reused worker process identifier
+- **WHEN** a recorded UE worker PID exists but its start time does not match the recorded worker
+- **THEN** run status reports the orphaned run instead of presenting the unrelated process as active work

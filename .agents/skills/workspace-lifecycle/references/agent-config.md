@@ -12,7 +12,7 @@ PrimaryRoot=D:\Workspace\AngelscriptProject
 GitCommonDir=D:\Workspace\AngelscriptProject\.git
 ```
 
-Harness owns these four keys and `[Paths] ProjectFile`. `Topology`, `WorktreeName`, `Branch`, and `Head` are live Git facts and are never persisted. `HarnessRoot` is the checkout supplying the loaded Harness module and may differ from the selected `WorkspaceRoot`.
+Harness owns these four keys and `[Paths] ProjectFile`. Primary/legacy `Branch` and `Head` are live Git facts. Replicas return empty root branch/HEAD and derive topology, workspace ID and canonical record root from their registered descriptor; plugin repositories carry their own Git facts. `HarnessRoot` supplies the shared Skill code and may differ from `WorkspaceRoot`. Replica `GitCommonDir` identifies the control repository, never a root Git worktree.
 
 Explicit bootstrap migrates schema v1 and v2 in place. A legacy `[Hardness]` schema-v2 section is accepted only by bootstrap and is atomically renamed to `[Harness]` schema v3. Bootstrap removes the former workspace-kind and goal-name identity keys plus `[References] HazelightAngelscriptEngineRoot`, rebinds `ProjectFile`, and preserves unrelated values, sections, comments, and newline style. When a new linked workspace has no local file, machine-shared values are copied from the canonical primary checkout before its managed fields are rebound.
 

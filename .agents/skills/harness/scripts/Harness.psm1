@@ -30,6 +30,12 @@ $script:HarnessOpenSpecIdentity = [ordered]@{
     CommandDocsDigest = '35fbe97cd5e7238958fed1900891a2c2d67d47aebdcbc1458a2f6ba6de9bcaac'
 }
 
+function Get-HarnessRecordRoot {
+    param($Context)
+    if ('OpenSpecRoot' -in $Context.PSObject.Properties.Name -and $Context.OpenSpecRoot) { return [string]$Context.OpenSpecRoot }
+    return [string]$Context.WorkspaceRoot
+}
+
 function New-HarnessRoute {
     param(
         [string]$Name,
@@ -65,6 +71,13 @@ function Initialize-HarnessRoutes {
     $draftModule = '.agents/skills/harness/scripts/DraftLifecycle.psd1'
     $changeGateModule = '.agents/skills/harness/scripts/ChangeGate.psd1'
     $routes = New-Object System.Collections.Generic.List[object]
+    foreach ($action in @('read','write')) {
+        $routes.Add((New-HarnessRoute "harness.specs.$action" 'PowerShell' '.agents/skills/harness/scripts/SharedSpecs.psm1' 'Invoke-HarnessSharedSpec' @() @{Action=$action} 'Read or optimistically publish one canonical spec.')) | Out-Null
+    }
+    foreach ($action in @('status','set','remove','reorder','claim','release','pause','takeover','advance','checkpoint')) {
+        $routes.Add((New-HarnessRoute "harness.queue.$action" 'PowerShell' '.agents/skills/harness/scripts/ChangeQueue.psd1' 'Invoke-HarnessChangeQueue' @() @{Action=$action} 'Manage one selected workspace Change queue.')) | Out-Null
+    }
+    $routes.Add((New-HarnessRoute 'workspace.prepare' 'PowerShell' $workspaceModule 'Initialize-HarnessWorkspacePlugins' @() @{} 'Prepare approved plugin worktrees or pinned snapshots.')) | Out-Null
 
     $routes.Add((New-HarnessRoute 'workspace.list' 'PowerShell' $workspaceModule 'Get-HarnessWorkspaceList' @() @{} 'List registered Git workspaces without a dirty-state scan.')) | Out-Null
     $routes.Add((New-HarnessRoute 'workspace.status' 'PowerShell' $workspaceModule 'Get-HarnessWorkspaceStatus' @() @{} 'Inspect fast workspace identity or opt into detailed repository state.')) | Out-Null
@@ -105,6 +118,7 @@ function Initialize-HarnessRoutes {
     $routes.Add((New-HarnessRoute 'harness.status' 'Internal' '' 'Get-HarnessStatus' @() @{} 'Inspect the selected workspace and installed harness through a fast read-only route.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.create' 'PowerShell' $draftModule 'New-HarnessDraft' @() @{} 'Create one local brainstorming topic in the selected workspace.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.status' 'PowerShell' $draftModule 'Get-HarnessDraftStatus' @() @{} 'Inspect one exact brainstorming topic and its current links.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.record' 'PowerShell' $draftModule 'Invoke-HarnessDraftRecord' @() @{} 'Bind, sync, inspect or unbind one exact session transcript and draft.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.check' 'PowerShell' $draftModule 'Test-HarnessDraft' @() @{} 'Check one selected draft design before Change creation.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.draft.archive' 'PowerShell' $draftModule 'Close-HarnessDraft' @() @{} 'Explicitly archive one completed or abandoned local topic.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.change.create' 'PowerShell' $changeGateModule 'New-HarnessChange' @() @{} 'Create one Change after the exact draft or direct-origin preflight.')) | Out-Null
@@ -328,6 +342,7 @@ function Get-HarnessInvalidActiveChangeIds {
 function Get-HarnessLiveHead {
     param([Parameter(Mandatory = $true)][string]$WorkspaceRoot)
 
+    if (Test-Path -LiteralPath (Join-Path $WorkspaceRoot '.harness/workspace.json')) { return '' }
     $result = Invoke-HarnessGit -Repository $WorkspaceRoot -Arguments @('rev-parse', 'HEAD')
     return ([string]($result.Output | Select-Object -Last 1)).Trim().ToLowerInvariant()
 }
@@ -535,11 +550,15 @@ function Add-HarnessContextDefaults {
         foreach ($key in @($Parameters.Keys)) { $values[$key] = $Parameters[$key] }
     }
     switch ($Route.Name) {
+        { $_ -like 'harness.queue.*' -or $_ -like 'harness.specs.*' } {
+            if ($values.ContainsKey('Context')) { throw 'Queue Context comes only from the dispatcher.' }
+            $values.Context = $Context
+        }
         { $_ -like 'ue.*' } {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
         { $_ -in @(
-                'workspace.list', 'workspace.status', 'workspace.bootstrap', 'workspace.verify', 'workspace.activate',
+                'workspace.list', 'workspace.status', 'workspace.bootstrap', 'workspace.verify', 'workspace.activate', 'workspace.prepare',
                 'workspace.config.status', 'workspace.config.get', 'workspace.config.set'
             ) } {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorkspaceRoot', 'ProjectRoot') -CanonicalName 'WorkspaceRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
@@ -560,7 +579,7 @@ function Add-HarnessContextDefaults {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorktreeRoot') -CanonicalName 'WorktreeRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
+        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.record', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
             if ($values.ContainsKey('Context')) {
                 throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$($Route.Name)' receives Context only from the Harness dispatcher; caller replacement is forbidden.")
             }
@@ -641,6 +660,14 @@ function Invoke-Harness {
         foreach ($required in @('HarnessRoot', 'WorkspaceRoot', 'PrimaryRoot', 'GitCommonDir', 'Topology', 'Branch', 'Head')) {
             if ($required -notin @($Context.PSObject.Properties.Name)) { throw "Invalid Harness context: missing '$required'." }
         }
+        if ('WorkspaceId' -in $Context.PSObject.Properties.Name) {
+            $currentIdentity = New-HarnessContext -WorkspaceRoot $Context.WorkspaceRoot
+            foreach ($field in @('WorkspaceId','WorkspaceRoot','PrimaryRoot','OpenSpecRoot','GitCommonDir','HarnessRoot','Topology')) {
+                if ($field -notin $Context.PSObject.Properties.Name -or [string]$Context.$field -ne [string]$currentIdentity.$field) {
+                    throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Selected workspace identity changed or mixes roots: $field. Resolve a fresh Context for the intended workspace.")
+                }
+            }
+        }
         Assert-HarnessOpenSpecChangeName -Command $Command -ArgumentList $ArgumentList
         if ($Command -eq 'openspec.instructions' -and $ArgumentList.Count -gt 0) {
             if ([string]$ArgumentList[0] -in @('--help', '-h')) {
@@ -706,7 +733,7 @@ function Invoke-Harness {
             $ErrorActionPreference = 'Continue'
             $locationPushed = $false
             try {
-                Push-Location -LiteralPath $Context.WorkspaceRoot
+                Push-Location -LiteralPath (Get-HarnessRecordRoot $Context)
                 $locationPushed = $true
                 $output = & $target @nativeArguments 2>&1
                 $exitCode = $LASTEXITCODE
@@ -1065,13 +1092,13 @@ function Resolve-HarnessEvolutionChange {
 
     $segments = @($Change -split '/', 2)
     $candidates = New-Object System.Collections.Generic.List[object]
-    $activeRoot = Join-Path $Context.WorkspaceRoot ("openspec/changes/{0}/{1}" -f $segments[0], $segments[1])
+    $activeRoot = Join-Path (Get-HarnessRecordRoot $Context) ("openspec/changes/{0}/{1}" -f $segments[0], $segments[1])
     $activeYaml = Join-Path $activeRoot 'change.yaml'
     if ((Test-Path -LiteralPath $activeYaml -PathType Leaf) -and (Get-HarnessChangeYamlId -Path $activeYaml) -eq $Change) {
         $candidates.Add([pscustomobject]@{ Root = [System.IO.Path]::GetFullPath($activeRoot); Archived = $false }) | Out-Null
     }
 
-    $archiveDomain = Join-Path $Context.WorkspaceRoot ("openspec/archive/changes/{0}" -f $segments[0])
+    $archiveDomain = Join-Path (Get-HarnessRecordRoot $Context) ("openspec/archive/changes/{0}" -f $segments[0])
     if (Test-Path -LiteralPath $archiveDomain -PathType Container) {
         foreach ($directory in @(Get-ChildItem -LiteralPath $archiveDomain -Directory -ErrorAction SilentlyContinue)) {
             $changeYaml = Join-Path $directory.FullName 'change.yaml'
@@ -1115,7 +1142,7 @@ function Invoke-HarnessEvolutionTaskPlan {
     $ErrorActionPreference = 'Continue'
     $locationPushed = $false
     try {
-        Push-Location -LiteralPath ([string]$Context.WorkspaceRoot)
+        Push-Location -LiteralPath (Get-HarnessRecordRoot $Context)
         $locationPushed = $true
         $output = @(& $executable instructions apply --json --change $Change 2>&1)
         $exitCode = $LASTEXITCODE
@@ -1198,19 +1225,19 @@ function Get-HarnessEvolutionStatus {
     if ([string]::IsNullOrWhiteSpace($Change)) {
         $evaluations = New-Object System.Collections.Generic.List[object]
         foreach ($root in @(
-            (Join-Path $Context.WorkspaceRoot 'openspec/changes'),
-            (Join-Path $Context.WorkspaceRoot 'openspec/archive/changes')
+            (Join-Path (Get-HarnessRecordRoot $Context) 'openspec/changes'),
+            (Join-Path (Get-HarnessRecordRoot $Context) 'openspec/archive/changes')
         )) {
             if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
             foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -Filter 'workflow-evaluation.md' -File -ErrorAction SilentlyContinue)) {
                 $frontmatter = Read-HarnessFrontmatter -Path $file.FullName
                 $record = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'record'
                 $capturedAt = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'captured_at'
-                $isHistoricalArchive = $file.FullName.IndexOf((Join-Path $Context.WorkspaceRoot 'openspec/archive/changes'), [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+                $isHistoricalArchive = $file.FullName.IndexOf((Join-Path (Get-HarnessRecordRoot $Context) 'openspec/archive/changes'), [System.StringComparison]::OrdinalIgnoreCase) -ge 0
                 $recognizedRecord = $record -eq 'harness-workflow-evaluation-v1' -or ($isHistoricalArchive -and $record -eq 'hardness-workflow-evaluation-v1')
                 if ($frontmatter.Errors.Count -eq 0 -and $recognizedRecord -and (Test-HarnessIsoTimestamp $capturedAt)) {
                     $evaluations.Add([pscustomobject]@{
-                        Path       = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+                        Path       = Get-HarnessWorkspaceRelativePath -WorkspaceRoot (Get-HarnessRecordRoot $Context) -Path $file.FullName
                         Result     = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'result'
                         Change     = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'change'
                         CapturedAt = [DateTimeOffset]::Parse($capturedAt, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
@@ -1281,7 +1308,7 @@ function Get-HarnessEvolutionStatus {
     $isActiveChange = -not [bool]$resolvedChange.Archived
     if (Test-Path -LiteralPath $implementationRoot -PathType Container) {
         foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -Recurse -File -Filter 'issue-*.md' | Sort-Object FullName)) {
-            $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+            $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot (Get-HarnessRecordRoot $Context) -Path $file.FullName
             $attachmentRelativePath = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
             $frontmatter = Read-HarnessFrontmatter -Path $file.FullName
             foreach ($problem in @($frontmatter.Errors)) { $structuralErrors.Add("${relativePath}: $problem") | Out-Null }
@@ -1406,7 +1433,7 @@ function Get-HarnessEvolutionStatus {
 
     if (Test-Path -LiteralPath $reviewRoot -PathType Container) {
         foreach ($file in @(Get-ChildItem -LiteralPath $reviewRoot -Recurse -File -Filter 'review-*.md' | Sort-Object FullName)) {
-            $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $file.FullName
+            $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot (Get-HarnessRecordRoot $Context) -Path $file.FullName
             $attachmentRelativePath = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
             $frontmatter = Read-HarnessFrontmatter -Path $file.FullName
             $schema = Get-HarnessFrontmatterValue -Frontmatter $frontmatter -Name 'review_schema'
@@ -1495,7 +1522,7 @@ function Get-HarnessEvolutionStatus {
     $evaluationCapturedInstant = $null
     $latestTerminalEvidenceInstant = @($terminalEvidenceInstants | Sort-Object -Descending | Select-Object -First 1)
     if (Test-Path -LiteralPath $evaluationPath -PathType Leaf) {
-        $evaluationRelativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot $Context.WorkspaceRoot -Path $evaluationPath
+        $evaluationRelativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot (Get-HarnessRecordRoot $Context) -Path $evaluationPath
         $evaluation = Read-HarnessFrontmatter -Path $evaluationPath
         foreach ($problem in @($evaluation.Errors)) { $structuralErrors.Add("${evaluationRelativePath}: $problem") | Out-Null }
         $evaluationRecord = Get-HarnessFrontmatterValue -Frontmatter $evaluation -Name 'record'

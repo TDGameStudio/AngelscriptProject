@@ -8,6 +8,9 @@ Closure is explicit and has exactly one of three kinds:
 
 Completed closure requires all required tasks and proportionate verification to pass. If verification exposes a local defect, fix and verify it; if evidence invalidates accepted planning truth, Replan before closure. Otherwise proceed directly to closure without creating a Review or recording a Review impact/not-required classification. Durable OpenSpec behavior is synced before archive or marked not applicable with rationale.
 
+- Queue closure commits verified owned plugin changes with `PluginsOnly`; record plugin baseline/result commits and host source identity before the final evaluation. Primary-repository work may remain uncommitted under user control without blocking completed closure.
+- In a replica, evaluate/archive the canonical Change at `Context.OpenSpecRoot`, while verification artifacts and implementation paths belong to `Context.WorkspaceRoot`.
+
 Before any archive closure kind, run the exact evolution terminal gate:
 
 ```powershell

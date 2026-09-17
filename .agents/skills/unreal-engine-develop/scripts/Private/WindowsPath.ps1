@@ -319,7 +319,7 @@ function Get-UnrealDriveAssignmentOwnerState {
         if (-not (Test-Path -LiteralPath $paths.MetadataPath -PathType Leaf)) { return 'Stale' }
         $metadata = Read-UnrealJsonFile -Path $paths.MetadataPath
         if ([string] $metadata.state -in $script:UnrealTerminalStates) { return 'Stale' }
-        if (Test-UnrealProcessAlive -ProcessId $metadata.workerPid) { return 'Live' }
+        if (Test-UnrealProcessAlive -ProcessId $metadata.workerPid -StartedAtUtc $metadata.workerStartedAtUtc) { return 'Live' }
     }
     catch { }
     return 'Stale'

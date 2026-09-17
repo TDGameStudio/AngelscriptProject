@@ -890,7 +890,7 @@ Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[
 Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+requirements-v1[ \t]*\r?$') 'Angelscript workflow must not switch to requirements-v1.'
 
 $mandatoryLifecycleReferences = [ordered]@{
-    'brainstorming' = @('references/deep-exploration.md', 'references/grilling.md', 'references/drafts.md', 'references/naming.md', 'references/markers.md')
+    'brainstorming' = @('references/deep-exploration.md', 'references/grilling.md', 'references/drafts.md', 'references/naming.md')
     'openspec-create-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../brainstorming/references/drafts.md')
     'openspec-apply-change' = @('../openspec/references/implementation-issues.md', '../harness/references/verification.md', '../brainstorming/references/naming.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../harness/references/verification.md')
@@ -1036,34 +1036,10 @@ foreach ($token in @('same-name scenario', 'complete Scenario Card', 'new scenar
     Assert-True ($syncSpecText.Contains($token)) "Spec sync semantics are missing: $token"
 }
 
-foreach ($token in @('references/deep-exploration.md', 'references/grilling.md', 'references/drafts.md', 'references/naming.md', 'references/markers.md', 'HARD-GATE', 'frontier', 'recommended answer', 'Every question to the user is a grill round', 'situation brief', 'openspec/drafts/', 'glossary.md', 'Naming assumed', 'openspec-create-change', 'Carryover round', 'parked', 'abandoned', 'Explore and Record into a Draft', '## Entry modes', '`research`', '`proposal`', '`design`', 'Draft opened:', 'before `change create`', 'decision-complete handoff', 'Never reopen design mode for a Change that already exists', 'indexed talks', 'indexed change-local knowledge', 'Never copy the exploration transcript into the Change')) {
-    Assert-True ($exploreText.Contains($token)) "Brainstorming entry is missing: $token"
-}
-Assert-True (-not $exploreText.Contains('at least three')) 'Brainstorming entry must not restore the retired three-decision question threshold.'
-foreach ($token in @('Draft', 'Problem', 'Success Criteria', 'Evidence', 'Scope and Exclusions', 'Constraints', 'Options', 'Decision and Rationale', 'Flip Condition', 'Architecture, Components, and Data Flow', 'Failures and Edge Cases', 'Verification', 'OpenSpec Handoff', 'Exploration Carryover', 'Draft copy', 'Talk candidate', 'Knowledge candidate', 'Discard', 'handoff.md')) {
-    Assert-True ($deepExplorationText.Contains($token)) "Deep exploration handoff is missing: $token"
-}
-foreach ($token in @('frontier', 'design tree', 'recommended answer', 'user-owned', 'every question to the user is a grill round', '## Situation brief before every round', 'What I looked at', 'Why these questions now', 'Settled', 'Held', 'Reopened', 'Dropped', 'Pinned fact', '## Rounds need a present user', 'never run them unattended', 'log.md', 'glossary.md')) {
-    Assert-True ($grillingText.Contains($token)) "Grilling contract is missing: $token"
-}
-Assert-True (-not $grillingText.Contains('at least three')) 'Grilling must not restore the retired three-decision threshold.'
-foreach ($token in @('markers.md', '✅ Settled:', '❌ Dropped:', '🔁 Reopened:', '⏳ Held:', '📌 Pinned fact:', '❔ Open decision:', '👉 Recommendation:', '❗ Flip condition:', '✨ New:')) {
-    Assert-True ($grillingText.Contains($token)) "Grilling visual contract is missing: $token"
-}
-foreach ($token in @('openspec/drafts/<domain>/<topic>/', 'README.md', 'log.md', 'findings/', 'glossary.md', 'design.md', 'handoff.md', 'exploring | designed | handed-off | parked | abandoned', 'mode: research | proposal | design', 'findings/<topic>.md', 'Draft opened:', 'target_change', 'attachments/drafts/', 'openspec-create-change', 'never a tree-wide inventory', 'no Task state, Ready state, or DAG', 'original-language wording')) {
-    Assert-True ($draftsText.Contains($token)) "Draft contract is missing: $token"
-}
-foreach ($token in @('## Collect the answers', 'AskQuestion', '(Recommended)', 'never a round', '- **A.**', 'Never indent option lines', 'every question to the user is a grill round')) {
-    Assert-True ($grillingText.Contains($token)) "Grilling round-form contract is missing: $token"
-}
-Assert-True (-not $grillingText.Contains('### ❔ Open decision')) 'Grilling must use the compact round template, not one heading per question.'
-foreach ($token in @('AskQuestion', 'exactly as sent')) {
-    Assert-True ($exploreText.Contains($token)) "Brainstorming entry is missing the round-form rule: $token"
-}
-Assert-True ($grillingText.Contains('## The carryover round')) 'Grilling must define the carryover round.'
-Assert-True ($grillingText.Contains('## Grilling around a proposal draft')) 'Grilling must define proposal-mode rounds.'
-Assert-True ($exploreText.Contains('`designed` → `openspec-create-change`')) 'Brainstorming must hand a selected designed scope to openspec-create-change.'
-Assert-True (-not $exploreText.Contains('Never invoke it after the target Change exists')) 'Brainstorming must scope the never-after rule to design mode so research drafts stay allowed.'
+# Brainstorming behavior is exercised with an independent consumer before/after revision.
+# Draft identity, approval and promised exports are executable HarnessHandoff fixtures;
+# conversation coverage is exercised by HarnessRecording and test_draft_record.py.
+# Shared skill metadata, reference existence and Markdown link checks remain below/above.
 $gitignoreText = Get-Content -LiteralPath (Join-Path $projectRoot '.gitignore') -Raw
 Assert-True ($gitignoreText -match '(?m)^/openspec/drafts/\s*$') 'Brainstorming drafts must be git-ignored.'
 $createChangeText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-create-change\SKILL.md') -Raw
@@ -1194,9 +1170,6 @@ foreach ($projectPolicyFile in @('openspec\config.yaml', 'openspec\README.md', '
 }
 foreach ($token in @('never opens `brainstorming`', 'never asks the user', 'single definition')) {
     Assert-True ($harnessText.Contains($token)) "Harness /goal definition is missing: $token"
-}
-foreach ($token in @('## Brainstorming needs a present user', 'never opens brainstorming', '`openspec-update-change` replan')) {
-    Assert-True ($exploreText.Contains($token)) "Brainstorming present-user contract is missing: $token"
 }
 foreach ($token in @('new feature, architecture refactor, or major behavior change', 'Brainstorm Gate', '`brainstorming`', 'openspec/drafts/<domain>/<topic>/', 'decision-complete exploration handoff is not an active Change', 'Ready Task DAG before implementation mutation', 'do not reopen `design`-mode brainstorming for that Change', 'lightweight investigation inside the Ready task', 'Apply never asks the user', 'update-change replan')) {
     Assert-True ($harnessText.Contains($token)) "Harness exploration route is missing: $token"

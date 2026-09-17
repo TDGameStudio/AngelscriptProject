@@ -14,6 +14,7 @@
         'Get-HarnessWorkspaceStatus',
         'Clear-HarnessWorkspaceCache',
         'New-HarnessWorkspace',
+        'Initialize-HarnessWorkspacePlugins',
         'Initialize-HarnessWorkspace',
         'Test-HarnessWorkspace',
         'Remove-HarnessWorkspace',

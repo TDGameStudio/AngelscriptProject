@@ -178,10 +178,10 @@ Profile=fixture
     Assert-Equal '' $primaryContext.WorktreeName 'the canonical checkout has no linked-worktree name'
     Assert-True $primaryContext.Managed 'the bootstrapped primary checkout is managed'
 
-    $created = New-HarnessWorkspace -Name 'fixture-workspace' -RepositoryRoot $parentRoot
     $worktreeRoot = Join-Path $parentRoot '.worktrees\fixture-workspace'
-    Assert-Equal $worktreeRoot $created.WorktreeRoot 'new creates under the canonical local container'
-    Assert-Equal 'fixture-workspace' $created.Branch 'the default branch is exactly Name'
+    # Compatibility fixture: these pre-existing parent worktrees remain parked in place.
+    Invoke-TestGit -Repository $parentRoot -Arguments @('worktree','add','-b','fixture-workspace',$worktreeRoot,'HEAD') | Out-Null
+    [void](Initialize-HarnessWorkspace -ProjectRoot $worktreeRoot)
     Assert-Equal 'fixture-workspace' (((Invoke-TestGit -Repository $worktreeRoot -Arguments @('branch', '--show-current')) | Select-Object -Last 1).Trim()) 'Git receives the exact default branch'
     Assert-False (Test-Path -LiteralPath (Join-Path $worktreeRoot 'openspec\changes\fixture-workspace')) 'creation does not scaffold workflow records'
 

@@ -1,10 +1,13 @@
 # Route Map
 
-Select the route first, then read only the owning leaf Skill. Every route operates on the workspace carried by the Harness context; the primary checkout and registered linked worktrees share one contract.
+Select the route first, then read only the owning leaf Skill. The Context separates selected execution workspace, canonical OpenSpec root and shared Harness code.
 
 | Need | Leaf | Route or dispatch |
 |---|---|---|
 | Fast workspace/harness orientation | `harness/SKILL.md` | `harness.status` |
+| Query current tasks, queues, workspaces or build progress | `harness/references/queries.md` | Read-only routes selected from the user's question |
+| Configure or execute an ordered per-workspace Change queue | `change-queue/SKILL.md` | `harness.queue.*`; ordinary chat can execute the full list |
+| Publish merged canonical specs without overwriting concurrent edits | `openspec-sync-specs/SKILL.md` | `harness.specs.read/write` |
 | List registered workspaces | `workspace-lifecycle/SKILL.md` | `workspace.list` |
 | Workspace identity, bootstrap, selection, verification, or explicit cleanup | `workspace-lifecycle/SKILL.md` | `workspace.*` |
 | Exact commits, reviewed workspace integration, or explicit non-force push | `git-operations/SKILL.md` | `git.*` |
@@ -15,6 +18,7 @@ Select the route first, then read only the owning leaf Skill. Every route operat
 | Portable OpenSpec source/package alignment | `openspec/SKILL.md` | `openspec.maintenance.status` |
 | OpenSpec command or CLI maintenance | `openspec/SKILL.md` | `openspec.*` |
 | Brainstorming before a new feature, architecture refactor, or major behavior Change, or when a user-owned decision is unconfirmed | `brainstorming/SKILL.md` | Agent-driven before creating that Change; records rounds under `openspec/drafts/` |
+| Bind or reconcile the exact session transcript with a local draft | `brainstorming/references/drafts.md` | `harness.draft.record`: bind / sync / status / unbind; no unbound draft guessing |
 | Creating a Change from one selected approved design and seeding English attachments (design/handoff, confirmed talks and knowledge, INDEX) | `openspec-create-change/SKILL.md` | Once per scoped handoff; resume an existing target before `openspec-apply-change` |
 | Naming a new public type, module, file, or function | `brainstorming/references/naming.md` | Grilled during brainstorming and task authoring; apply derives an unlisted name from convention and records `Naming assumed` |
 | Lightweight investigation inside a Ready task | Stay in `openspec-apply-change/SKILL.md`; add `systematic-debugging/SKILL.md` only for unexplained failure | Agent-driven inside the task |
@@ -41,9 +45,11 @@ Get-HarnessCommand git.integrate
 Current public route families are:
 
 ```text
-workspace.list/status/new/bootstrap/verify/remove/activate/config.status/config.get/config.set
+workspace.list/status/new/prepare/bootstrap/verify/remove/activate/config.status/config.get/config.set
 git.status/commit/integrate/push
 harness.status/observe/evolution.status
+harness.queue.status/set/remove/reorder/claim/release/pause/takeover/checkpoint/advance
+harness.specs.read/write
 openspec.init/doctor/status/instructions/validate/domain/spec/change/workflow/completion
 openspec.maintenance.status
 task.status

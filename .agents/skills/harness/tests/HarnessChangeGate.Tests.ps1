@@ -65,9 +65,9 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $draftRoot 'log.md'), "## R1`n`nExplained call chain and approval.`n")
     [System.IO.File]::WriteAllText((Join-Path $draftRoot 'findings/evidence.md'), "# Evidence`n")
     $selected = Join-Path $draftRoot 'designs/selected'
-    [System.IO.File]::WriteAllText((Join-Path $selected 'README.md'), "---`ndesign: selected`nstatus: designed`nopened: 2026-09-17`n---`n`nApproved at R1.`n")
+    [System.IO.File]::WriteAllText((Join-Path $selected 'README.md'), "---`ndesign: selected`nstatus: designed`napproval_round: R1`nopened: 2026-09-17`n---`n`nApproved at R1.`n")
     [System.IO.File]::WriteAllText((Join-Path $selected 'design.md'), "# Selected`n`n[Evidence](../../findings/evidence.md)`n")
-    [System.IO.File]::WriteAllText((Join-Path $selected 'handoff.md'), "## OpenSpec Handoff`n`n- Target: harness/improve-seeded-change`n`n## Exploration Carryover`n`n- None`n")
+    [System.IO.File]::WriteAllText((Join-Path $selected 'handoff.md'), "## OpenSpec Handoff`n`n- Scope: selected`n- Target Change: harness/improve-seeded-change`n`n## Exploration Carryover`n`n| Source | Target | Reason |`n| --- | --- | --- |`n| design.md | attachments/drafts/design.md | Accepted design |`n| handoff.md | attachments/drafts/handoff.md | Accepted handoff |`n| not-applicable | attachments/drafts/glossary.md | No names |`n| ../../findings/evidence.md | attachments/drafts/findings/evidence.md | Required evidence |`n")
     $seeded = Invoke-Harness -Command harness.change.create -Context $context -Parameters @{ ChangeId = 'harness/improve-seeded-change'; Title = 'Seeded'; Goal = 'Seed handoff'; Origin = 'Draft'; DraftId = 'harness/fixture'; Scope = 'selected' }
     Assert-Equal 'Succeeded' $seeded.status 'approved exact draft can create a Change'
     $seedRoot = Join-Path $fixtureRoot 'openspec/changes/harness/improve-seeded-change'
@@ -82,7 +82,7 @@ try {
     Assert-Equal 'Failed' $implicitPlanning.status 'planning instructions require an exact Change identity'
     [void](New-Item -ItemType Directory -Path (Join-Path $seedRoot 'attachments/drafts/findings') -Force)
     [System.IO.File]::WriteAllText((Join-Path $seedRoot 'attachments/drafts/design.md'), "# Selected`n`n[Evidence](findings/evidence.md)`n")
-    [System.IO.File]::WriteAllText((Join-Path $seedRoot 'attachments/drafts/handoff.md'), "## OpenSpec Handoff`n`n- Target: harness/improve-seeded-change`n`n## Exploration Carryover`n`n- None`n")
+    [System.IO.File]::WriteAllText((Join-Path $seedRoot 'attachments/drafts/handoff.md'), "## OpenSpec Handoff`n`n- Scope: selected`n- Target Change: harness/improve-seeded-change`n`n## Exploration Carryover`n`n| Source | Target | Reason |`n| --- | --- | --- |`n| design.md | attachments/drafts/design.md | Accepted design |`n| handoff.md | attachments/drafts/handoff.md | Accepted handoff |`n| not-applicable | attachments/drafts/glossary.md | No names |`n| ../../findings/evidence.md | attachments/drafts/findings/evidence.md | Required evidence |`n")
     [System.IO.File]::WriteAllText((Join-Path $seedRoot 'attachments/drafts/glossary.md'), "# Glossary`n`nNot applicable.`n")
     [System.IO.File]::WriteAllText((Join-Path $seedRoot 'attachments/drafts/findings/evidence.md'), "# Evidence`n")
     [void](New-Item -ItemType Directory -Path (Join-Path $seedRoot 'attachments/talks') -Force)

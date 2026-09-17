@@ -48,11 +48,11 @@ try {
 
     $designRoot = Join-Path $draftRoot 'designs/selected'
     [void](New-Item -ItemType Directory -Path $designRoot -Force)
-    [System.IO.File]::WriteAllText((Join-Path $designRoot 'README.md'), "---`ndesign: selected`nstatus: designed`nopened: 2026-09-17`n---`n`nAccepted at R1.`n")
+    [System.IO.File]::WriteAllText((Join-Path $designRoot 'README.md'), "---`ndesign: selected`nstatus: designed`napproval_round: R1`nopened: 2026-09-17`n---`n`nAccepted at R1.`n")
     [System.IO.File]::WriteAllText((Join-Path $designRoot 'design.md'), "# Selected design`n`nSee [explanation](../../findings/explanation.md).`n")
     [void](New-Item -ItemType Directory -Path (Join-Path $draftRoot 'findings') -Force)
     [System.IO.File]::WriteAllText((Join-Path $draftRoot 'findings/explanation.md'), "# Explanation`n`nA relevant diagram and explanation.`n")
-    [System.IO.File]::WriteAllText((Join-Path $designRoot 'handoff.md'), "# Handoff`n`n## OpenSpec Handoff`n`n- Target Change: `harness/improve-draft-gate-coverage``n`n## Exploration Carryover`n`n- R1 explanation -> draft copy, because implementation needs it.`n")
+    [System.IO.File]::WriteAllText((Join-Path $designRoot 'handoff.md'), "## OpenSpec Handoff`n`n- Scope: selected`n- Target Change: harness/improve-draft-gate-coverage`n`n## Exploration Carryover`n`n| Source | Target | Reason |`n| --- | --- | --- |`n| design.md | attachments/drafts/design.md | Accepted design |`n| handoff.md | attachments/drafts/handoff.md | Accepted handoff |`n| not-applicable | attachments/drafts/glossary.md | No names |`n| ../../findings/explanation.md | attachments/drafts/findings/explanation.md | Required evidence |`n")
     [System.IO.File]::WriteAllText((Join-Path $draftRoot 'log.md'), "# Log`n`n## R1`n`nAssistant explanation and user decision.`n")
     [System.IO.File]::WriteAllText((Join-Path $draftRoot 'README.md'), "---`ndraft: harness/fixture`nmode: design`nstatus: exploring`nopened: 2026-09-17`n---`n`n# Fixture discussion`n`n- **此刻**：收束这一刀`n- **焦点**：[selected](designs/selected/design.md)`n- **已决**：R1 accepted`n- **下一问**：无`n- **讲清于**：[R1](log.md#r1) · 2026-09-17`n")
 
@@ -73,12 +73,30 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $designRoot 'README.md'), "---`ndesign: selected`nstatus: parked`nopened: 2026-09-17`n---`n")
     $parked = Invoke-Harness -Command harness.draft.archive -Context $context -Parameters @{ DraftId = 'harness/fixture'; Closure = 'completed' }
     Assert-Equal 'Failed' $parked.status 'completed archive refuses a parked scoped design'
-    [System.IO.File]::WriteAllText((Join-Path $designRoot 'README.md'), "---`ndesign: selected`nstatus: designed`nopened: 2026-09-17`n---`nAccepted at R1.`n")
+    [System.IO.File]::WriteAllText((Join-Path $designRoot 'README.md'), "---`ndesign: selected`nstatus: designed`napproval_round: R1`nopened: 2026-09-17`n---`nAccepted at R1.`n")
     $archived = Invoke-Harness -Command harness.draft.archive -Context $context -Parameters @{ DraftId = 'harness/fixture'; Closure = 'completed' }
     Assert-Equal 'Succeeded' $archived.status 'a concluded topic archives explicitly'
     Assert-True (-not (Test-Path $draftRoot)) 'archive removes the active topic path'
     Assert-True (Test-Path (Join-Path $archived.data.Path 'log.md')) 'archive preserves the original conversation'
     Assert-True ($archived.data.Path -like '*openspec*archive*drafts*harness*') 'archive stays in the local draft archive tree'
+
+    $legacyRoot = Join-Path $fixtureRoot 'openspec/drafts/harness/legacy'
+    [void][IO.Directory]::CreateDirectory($legacyRoot)
+    $legacyReadme = "---`ndraft: harness/legacy`nmode: design`nstatus: handed-off`nhanded_off: 2026-09-11`ntarget_change: harness/test-legacy-handoff`nopened: 2026-09-11`n---`n`nOriginal flat handoff record.`n"
+    [IO.File]::WriteAllText((Join-Path $legacyRoot 'README.md'), $legacyReadme)
+    foreach ($file in @('log.md','design.md','handoff.md')) { [IO.File]::WriteAllText((Join-Path $legacyRoot $file), "Original $file`n") }
+    $missingTarget = Invoke-Harness harness.draft.archive -Context $context -Parameters @{DraftId='harness/legacy';Closure='completed'}
+    Assert-Equal 'Failed' $missingTarget.status 'legacy handoff with missing target cannot be archived as completed'
+    Assert-Equal $legacyReadme ([IO.File]::ReadAllText((Join-Path $legacyRoot 'README.md'))) 'rejected legacy archive preserves its source metadata'
+    $legacyChange = Join-Path $fixtureRoot 'openspec/archive/changes/harness/2026-09-11-test-legacy-handoff'
+    [void][IO.Directory]::CreateDirectory($legacyChange)
+    [IO.File]::WriteAllText((Join-Path $legacyChange 'change.yaml'), "metadata:`n  id: harness/test-legacy-handoff`n  uid: change_fixture`nclosure:`n  kind: completed`n")
+    $legacyArchive = Invoke-Harness harness.draft.archive -Context $context -Parameters @{DraftId='harness/legacy';Closure='completed'}
+    Assert-Equal 'Succeeded' $legacyArchive.status 'preserved flat handed-off drafts archive without schema migration'
+    foreach ($file in @('log.md','design.md','handoff.md')) {
+        Assert-Equal "Original $file`n" ([IO.File]::ReadAllText((Join-Path $legacyArchive.data.Path $file))) 'legacy archive preserves original conversation and handoff bytes'
+    }
+    Assert-True (-not (Test-Path (Join-Path $legacyArchive.data.Path 'designs'))) 'legacy archive does not invent scoped design directories'
 }
 finally {
     $resolvedFixture = [System.IO.Path]::GetFullPath($fixtureRoot)

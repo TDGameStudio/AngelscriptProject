@@ -703,6 +703,12 @@ try {
         Assert-Equal 'Running' $orphaned.RecordedState 'orphan inference does not rewrite recorded state'
         & $module {
             param($Path, $CurrentPid)
+            [void](Update-UnrealRunMetadata -Path $Path -Changes @{ workerPid = $CurrentPid; workerStartedAtUtc = '2000-01-01T00:00:00Z' })
+        } $orphanRequest.paths.MetadataPath $PID
+        $reused = Get-HarnessUnrealRunStatus -WorkspaceRoot $scenarioFixture.WorkspaceRoot -RunId $orphanRequest.runId
+        Assert-Equal 'Orphaned' $reused.State 'a reused live PID is not the recorded worker'
+        & $module {
+            param($Path, $CurrentPid)
             [void](Update-UnrealRunMetadata -Path $Path -Changes @{ workerPid = $CurrentPid })
         } $orphanRequest.paths.MetadataPath $PID
         Assert-Throws {

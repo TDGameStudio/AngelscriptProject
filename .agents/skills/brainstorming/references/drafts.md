@@ -1,23 +1,18 @@
 # Draft Directory Contract
 
-Load when opening, resuming, updating or handing off a topic draft.
-
-## Location and layout
+- Load when opening, resuming, recording or handing off a topic. Drafts are ignored local working records, with no Task state, Ready state or Task DAG.
 
 ```text
-openspec/drafts/<domain>/<topic>/    // One continuing topic; zero, one or several Changes may result.
-├─ README.md                        // Current focus, mode, continuation and design navigation.
-├─ log.md                           // Append-only actual conversation, including diagrams and answers.
-├─ findings/                        // Shared evidence and optional topic entry pages.
-├─ glossary.md                      // Shared vocabulary, only when needed.
-└─ designs/<scope>/                 // An independently describable delivery outcome, before approval.
-   ├─ README.md                     // This design's boundary, status and approval sources.
-   ├─ design.md                     // Candidate, then accepted design for this scope.
-   ├─ glossary.md                   // Relevant settled names, when needed.
-   └─ handoff.md                    // Written once the design and Change carryover are confirmed.
+openspec/drafts/<domain>/<topic>/    // One continuing topic can yield several independent Changes.
+├─ README.md                        // Current focus, continuation and design navigation.
+├─ log.md                           // Append-only original conversation and round outcomes.
+├─ findings/                        // Evidence and research, only as needed.
+├─ glossary.md                      // Shared vocabulary, when needed.
+└─ designs/<scope>/                 // One independently deliverable outcome.
+   ├─ README.md                     // Scope, status and approval sources.
+   ├─ design.md                     // Candidate, then accepted design.
+   └─ handoff.md                    // Only when an OpenSpec handoff is selected.
 ```
-
-Domain follows OpenSpec conventions; topic and scope use lowercase kebab-case outcome names. A scope name need not equal the eventual Change ID. Create only needed files: a small investigation may have only README.md and log.md. Research without a bounded delivery stays in findings/<topic>.md; once its outcome is identifiable, create the scoped README/candidate design without waiting for approval. A/B alternatives for one outcome belong in one design; independently deliverable outcomes may have sibling directories. Split genuinely independent topics into linked drafts, not merely because a second Change is possible.
 
 ## Topic README
 
@@ -30,19 +25,15 @@ opened: YYYY-MM-DD
 ---
 ```
 
-The body begins with five concise Markdown list items, then optional reading order and design links:
+- **此刻**：current activity.
+- **焦点**：one relative local Markdown link to the current finding, log or design.
+- **已决**：latest settled decision and source round, or `无`.
+- **下一问**：next open decision, or `无`.
+- **讲清于**：`[R<n>](log.md#r<n>) · YYYY-MM-DD`, or `未讲`.
 
-- **此刻**：current activity in plain language.
-- **焦点**：one relative local link to the current finding, log, or design.
-- **已决**：the latest settled decision and its source round, or `无`.
-- **下一问**：the next open decision, or `无`.
-- **讲清于**：`[R<n>](log.md#r<n>) · YYYY-MM-DD` for the last visible explanation, or `未讲`.
-
-`harness.draft.status` checks these five fields, link closure, and the log-round anchor; it cannot establish that the explanation really appeared in chat or that the log is verbatim. The author maintains those facts. Link to authoritative scoped status; do not maintain a second approval ledger.
-
-Mode describes the current activity: investigate, propose, or converge a design. Switch it with the focus and append the reason to log.md. It is not approval or a one-way maturity ladder. Each design keeps its own state, without its own mode. Going back to research does not undo approval or reopen an existing Change's design.
-
-Topic status stays exploring while conversation or research remains. Waiting for a reply or handing off one design does not park it. Park when discussion is intentionally paused, with what would revive it; abandon when dropped, with why. Resume a parked topic in the same directory. Never mark an entire multi-design topic handed-off because one design produced a Change.
+- Refresh these five fields on resume, correction, focus change and handoff; update the owning design's current decisions at the same time. Preserve superseded conclusions and their sources in the log.
+- Mode describes current activity; it neither approves nor revokes a scoped design. Topic status remains exploring while research continues. Park only when intentionally paused, with a resumption condition; abandon with a reason.
+- `harness.draft.status` checks these fields, links and round existence. It cannot prove approval meaning or conversation completeness.
 
 ## Scoped design README
 
@@ -51,47 +42,50 @@ Topic status stays exploring while conversation or research remains. Waiting for
 design: <scope>
 status: exploring | designed | handed-off | parked | abandoned
 opened: YYYY-MM-DD
-handed_off: YYYY-MM-DD            # once this design was handed off
-target_change: <domain>/<change>  # once its Change exists
-archived_as: <archive-path>       # optional later navigation
+approval_round: R8                # actual scoped approval, required before handoff
+target_change: <domain>/<change>  # once the Change exists
+handed_off: YYYY-MM-DD            # after export and seed verification
 ---
 ```
 
-The body states this design's scope/exclusions, links its design and related research, records approval and naming/carryover round sources, and gives its next step. State belongs here, not in emoji markers or the topic mode.
+- State scope/exclusions, link design and research, retain naming/carryover approval sources, and give the next step.
+- `exploring` includes candidates and partial approval; `designed` means the selected design and required handoff choices are settled; `handed-off` means its exact Change is created, exported and seed-verified.
+- A sibling's state and the topic's current focus do not authorize or block this selected scope. Revisit only decisions affected by a substantive revision.
+- Direct implementation records authorization, outcome and verification in continuation/evidence. Do not invent a Change identity or mark direct work handed-off.
 
-- exploring: candidate or incomplete design, including partial approval and waiting for replies.
-- designed: this exact design is accepted and its required names and OpenSpec carryover are settled; handoff.md is decision-complete. Topic mode may now describe other work.
-- handed-off: its named Change exists and the selected English attachments/carryover are seeded and verified. Creation or export interrupted midway is resumed before marking this state.
-- parked / abandoned: retain this design and reason without closing its siblings. Reviving parked work resumes its earlier context; substantive revisions invalidate the affected prior approval and are presented again before a new handoff.
+## Recording checkpoints
 
-One scoped handoff creates one Change. Its accepted design/handoff are historical inputs after handoff; later work on the same Change routes to update-change/apply. A separately approved new outcome may become a sibling design, with dependencies and overlap identified explicitly. Never use the topic's mode or another design's approval to authorize it.
+- Preserve every visible user message, assistant commentary/final, displayed diagram, submitted question payload and returned answer verbatim, with original source and order. Summaries and corrections supplement originals; never replace them.
+- Codex: bind the exact workspace/session/source/draft and first task message line. Do not bind injected setup instructions or a child agent's private conversation. The recorder recognizes Codex 0.154.x JSONL and reports unsupported formats explicitly.
 
-Explicitly authorized direct implementation without a Change uses the accepted design and records the user instruction, outcome and verification in the design's continuation/evidence. Do not fabricate target_change or handed-off, demand Change-only carryover, or invent a new lifecycle state. The topic may remain exploring or be parked when discussion pauses; implementation completion is described in prose.
+```powershell
+Import-Module ./.agents/skills/harness/scripts/Harness.psd1
+$context = New-HarnessContext -WorkspaceRoot $PWD
+Invoke-Harness harness.draft.record -Context $context -Parameters @{
+    Action = 'bind'; DraftId = '<domain>/<topic>'; SessionId = '<exact-session-id>'
+    Source = '<absolute-transcript.jsonl>'; StartLine = <first-task-message-line>
+}
+Invoke-Harness harness.draft.record -Context $context -Parameters @{ Action = 'status'; SessionId = '<exact-session-id>' }
+```
 
-## Conversation and navigation
-
-- Announce Draft opened: <path> (mode: <mode>) once. Keep log.md append-only: every actual user message, assistant discussion, displayed diagram, submitted tool question/options and returned answer retains original wording. Corrections, interruptions and resumed replies are new entries; a summary never replaces the original. Do not log prepared text as already delivered or an empty tool result as a choice.
-- Send the situation brief in chat before the form. Saved text, tool output and links are not a conversational explanation. Log the delivered brief before a blocking question when practical; tool history preserves pending questions until logging resumes.
-- Each findings/<topic>.md carries evidence, diagrams as shown, conclusions and open points. Identify observations versus proposals and the source/time context when it affects interpretation. Optional topic entry pages help large findings collections; avoid empty navigation scaffolds.
-- Resume through `harness.draft.status`, the focused finding or scoped README/design, then the cited log rounds. Use the tail for recent messages, not as the sole proof of approval. Mark reopened decisions with their original decision reference.
-- Shared glossary.md carries common terms. The selected design's glossary records its relevant names and any shared definitions it relies on, with provenance. New public names use the naming round. Do not silently change the meaning of a name already exported to a Change.
+- `sync` reconciles the bound source; `status` reads the last coverage, binding and `last_hook` checkpoint without writing. `unbind` flushes and closes it. Switching drafts uses `bind` with the same source and a later, nonoverlapping start line; it closes the previous range first.
+- State is local to `Saved/Harness/draft-record/` in the selected workspace. An unbound hook does nothing; it never selects the newest draft. Replaying a source event is idempotent; identical words at different source positions remain separate occurrences.
+- Trusted project hooks call this same recorder on `PostToolUse`, `Stop`, `Interrupt` and `SessionStart` resume/compact. Startup/subagent orientation remains separate. New or changed definitions require native Codex `/hooks` trust; configuration alone is not evidence of activation. See [Codex hooks](https://learn.chatgpt.com/docs/hooks).
+- On resume and before handoff, inspect the recorded range and any gaps. A partial line, changed/missing source, unsupported format or interrupted write requires retry/reconciliation; a successful hook run only covers the source bytes actually available then.
+- Existing logs are append-only. The recorder appends canonical source occurrences even when similar legacy text exists; `legacy_overlap` identifies unresolved historical matching, not a reason to discard a message.
+- Without a working hook, sync or reconcile original messages on entry and before questions/final. The current unsent final stays pending until a later source sync; never prewrite it as delivered. For other hosts or unavailable originals, record the exact available boundary and missing range manually, without inventing quotations.
 
 ## Language and export
 
-New local draft material defaults to the user's conversation language, including README.md, findings, design.md, handoff.md, glossary.md and diagram explanations. Honor an explicit draft-language preference; otherwise infer the language from the user's conversation. Do not rewrite historical files merely because the discussion language changes. log.md retains original-language wording. Every final Change record and attachment is English, including carried findings and explanatory diagram labels; preserve code identifiers and accepted meaning.
+- New README, findings, design, handoff, glossary and diagram prose follows the user's conversation language. Preserve historical wording; log originals are never translated.
+- The [handoff](deep-exploration.md) lists exact Source / Target / Reason rows. Export selected design, handoff, applicable glossary, necessary findings and confirmed talks/knowledge in English with source/approval provenance.
+- Rewrite links into Change-local copies, retain local originals and index each attachment once. No Change file may depend on an `openspec/drafts/` filesystem link. Never export the full conversation or unselected sibling material.
+- Run `harness.draft.check` for the exact selected scope. Its approval field and round checks establish structural evidence; the author still checks actual user acceptance and translation meaning.
 
-openspec-create-change exports the selected design.md, handoff.md and glossary.md into attachments/drafts/, plus cited research dependencies into attachments/drafts/findings/. Copy English text or faithfully translate other languages with source/approval provenance. If no naming decisions apply, create an explicit not-applicable glossary for the receiving contract. Preserve original local files. No Change file may depend on an openspec/drafts/ filesystem link; provenance may identify the local source and round as plain text. Material translation ambiguity must be resolved without inventing decisions. Do not translate or export the entire transcript or unselected sibling material.
+## Legacy records and archive
 
-The consumer materializes only confirmed talks/knowledge, indexes the English output and updates only the selected design's state and topic navigation. Local originals, including design and cited findings, remain; exporting copies never moves or deletes them.
-
-## Legacy flat drafts
-
-Existing top-level design.md/handoff.md/glossary.md and the root target_change remain readable as one legacy scoped record. Preserve those paths and historical approval; do not bulk-migrate old drafts or logs. A root handed-off record may cover only part of a topic: use the documented scope and remaining research rather than treating the entire topic as exhausted.
-
-When another bounded outcome appears in a legacy topic, create designs/<scope>/ for that new design and clearly label the old root files/target as legacy provenance in the topic README. Maintain the new current-focus/mode/topic status without erasing the old handoff mapping or reinterpreting its approval. If continuing residual research without a bounded outcome, use shared findings and a continuation note; no new design directory is required. Before export, select the exact scoped directory or explicitly selected legacy root. If several candidates exist and the request does not identify one, do not guess by timestamps or newest paths.
-
-## Boundaries
-
-- Drafts remain local and ignored under `openspec/drafts/`; they carry no Task state, Ready state, or DAG. Harness checks one exact topic or selected scope, never a tree-wide inventory. The portable CLI does not validate drafts.
-- Use `harness.draft.check` for the selected designed scope before creating a draft-backed Change. Its structural check includes handoff headings, target identity, referenced local files, and a scoped approval round for behavior work. Human review still owns approval meaning, English translation, and chat/log identity.
-- Use `harness.draft.archive` only for an explicitly completed or abandoned topic. Completion requires no next question and no exploring or parked scoped design. A parked topic stays active. Archived drafts are immutable under ignored `openspec/archive/drafts/<domain>/<date>-<topic>/`; restart discussion in a new linked topic.
+- Preserve flat legacy design/handoff/glossary paths and their target mapping as historical provenance. Do not bulk-migrate old topics, logs or schema 1 Change origins.
+- For a new handoff from legacy material, prepare only the explicitly selected `designs/<scope>/` with the actual approved content, explicit approval field and carryover table. Retain originals and already-given approval; do not ask again merely for the new fields.
+- Resume a parked topic in place. Archive a completed or abandoned topic only through explicit `harness.draft.archive`; completion requires no next question and no exploring/parked design.
+- Explicit completed archive also accepts a preserved flat `handed-off` record with dated handoff, original log/design/handoff files and one exact existing target Change. Keep that legacy layout; no conversion to scoped designs is required.
+- Archived drafts remain ignored under `openspec/archive/drafts/<domain>/<date>-<topic>/`. Preserve them as historical inputs; renewed discussion opens a linked topic.

@@ -73,7 +73,8 @@ try {
     $hookInput = if ([string]::IsNullOrWhiteSpace($inputText)) { $null } else { $inputText | ConvertFrom-Json -ErrorAction Stop }
     if ($null -ne $hookInput -and 'hook_event_name' -in @($hookInput.PSObject.Properties.Name)) {
         $requestedEvent = [string]$hookInput.hook_event_name
-        if ($requestedEvent -in @('SessionStart', 'SubagentStart')) { $hookEventName = $requestedEvent }
+        if ($requestedEvent -notin @('SessionStart', 'SubagentStart', 'PostToolUse', 'Stop', 'Interrupt')) { exit 0 }
+        $hookEventName = $requestedEvent
     }
 
     $workingDirectory = if ($null -ne $hookInput -and 'cwd' -in @($hookInput.PSObject.Properties.Name) -and
@@ -85,11 +86,34 @@ try {
     }
 
     $expectedHarnessRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
-    $workspaceRoot = Resolve-HarnessHookGitRoot -WorkingDirectory $workingDirectory -ExpectedHarnessRoot $expectedHarnessRoot
+    $workspaceManifest = Join-Path $expectedHarnessRoot '.agents/skills/workspace-lifecycle/scripts/WorkspaceLifecycle.psd1'
+    $workspaceContext = $null
+    if (Test-Path -LiteralPath $workspaceManifest) {
+        Import-Module $workspaceManifest -ErrorAction Stop
+        $workspaceContext = Get-HarnessWorkspaceContext -WorkspaceRoot $workingDirectory
+        if (-not (Test-HarnessHookPathEqual $workspaceContext.PrimaryRoot $expectedHarnessRoot) -and
+            -not (Test-HarnessHookPathEqual $workspaceContext.WorkspaceRoot $expectedHarnessRoot)) { throw 'Hook belongs to another control center.' }
+        $workspaceRoot = $workspaceContext.WorkspaceRoot
+    } else {
+        $workspaceRoot = Resolve-HarnessHookGitRoot -WorkingDirectory $workingDirectory -ExpectedHarnessRoot $expectedHarnessRoot
+    }
     if ([string]::IsNullOrWhiteSpace($workspaceRoot)) {
         throw 'The hook working directory is not inside this registered project workspace.'
     }
 
+    if ($hookEventName -ne 'SubagentStart' -and $null -ne $hookInput -and 'session_id' -in $hookInput.PSObject.Properties.Name) {
+        try {
+            Import-Module (Join-Path $expectedHarnessRoot '.agents/skills/harness/scripts/DraftLifecycle.psd1') -ErrorAction Stop
+            $recordContext = [pscustomobject]@{WorkspaceRoot=$workspaceRoot; HarnessRoot=$expectedHarnessRoot}
+            if ($null -ne $workspaceContext) { $recordContext | Add-Member -NotePropertyName OpenSpecRoot -NotePropertyValue $workspaceContext.OpenSpecRoot }
+            # The recorder owns source identity and reports a Stop final that is not flushed yet.
+            [void](Invoke-HarnessDraftRecord -Context $recordContext -Action sync -SessionId $hookInput.session_id -HookInput $hookInput)
+        }
+        catch {
+            [Console]::Error.WriteLine((Limit-HarnessHookText -Text ("Draft recording incomplete: " + $_.Exception.Message + ' Retry harness.draft.record sync.') -Limit 600))
+        }
+    }
+    if ($hookEventName -notin @('SessionStart', 'SubagentStart')) { exit 0 }
     $manifestPath = Join-Path $expectedHarnessRoot '.agents\skills\harness\scripts\Harness.psd1'
     Import-Module -Name $manifestPath -Force -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
     $context = New-HarnessContext -WorkspaceRoot $workspaceRoot
@@ -102,14 +126,16 @@ try {
     $head = [string]$identity.Head
     if ($head.Length -gt 12) { $head = $head.Substring(0, 12) }
     $additionalContext = Limit-HarnessHookText -Text (
-        "Harness read-only workspace: root='$($identity.WorkspaceRoot)'; topology=$($identity.Topology); " +
-        "branch='$($identity.Branch)'; head=$head; primary='$($identity.PrimaryRoot)'. " +
-        'Keep repository, build, and test operations in this workspace. Codex /goal continuation does not change workspace identity.'
+        "Harness read-only workspace: id='$($identity.WorkspaceId)'; root='$($identity.WorkspaceRoot)'; topology=$($identity.Topology); " +
+        "branch='$($identity.Branch)'; head=$head; primary='$($identity.PrimaryRoot)'; records='$($identity.OpenSpecRoot)'. " +
+        'Resolve code/edit/build/test paths under root and OpenSpec edits under records; shared Harness scripts do not switch the selected workspace. Codex /goal does not change workspace identity.'
     )
 }
 catch {
-    # Hooks are orientation hints only. Fail open without leaking local diagnostics or
-    # making repository correctness depend on Codex hook availability.
+    if ($hookEventName -notin @('SessionStart', 'SubagentStart')) {
+        [Console]::Error.WriteLine('Draft recording unavailable for this workspace; retry the bound session with harness.draft.record sync.')
+        exit 0
+    }
 }
 
 $response = [ordered]@{

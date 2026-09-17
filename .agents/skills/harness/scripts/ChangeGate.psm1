@@ -4,6 +4,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Get-HarnessRecordRoot {
+    param($Context)
+    if ('OpenSpecRoot' -in $Context.PSObject.Properties.Name -and $Context.OpenSpecRoot) { return [string]$Context.OpenSpecRoot }
+    return [string]$Context.WorkspaceRoot
+}
+
 function Assert-ChangeId {
     param([string]$ChangeId)
     if ($ChangeId -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*/(?:feature|fix|refactor|improve|docs|test|chore)-[a-z0-9]+(?:-[a-z0-9]+){1,}$') {
@@ -16,8 +22,8 @@ function Get-ChangeRoot {
     if ($ChangeId -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$') {
         throw "Change ID '$ChangeId' is not a safe canonical path."
     }
-    $root = [System.IO.Path]::GetFullPath((Join-Path ([string]$Context.WorkspaceRoot) ('openspec/changes/' + $ChangeId)))
-    $base = [System.IO.Path]::GetFullPath((Join-Path ([string]$Context.WorkspaceRoot) 'openspec/changes'))
+    $root = [System.IO.Path]::GetFullPath((Join-Path ((Get-HarnessRecordRoot $Context)) ('openspec/changes/' + $ChangeId)))
+    $base = [System.IO.Path]::GetFullPath((Join-Path ((Get-HarnessRecordRoot $Context)) 'openspec/changes'))
     if (-not $root.StartsWith(($base + [System.IO.Path]::DirectorySeparatorChar), [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Change path escapes the selected workspace.'
     }
@@ -50,7 +56,7 @@ function Get-ChangeMarker {
         return $null
     }
     $marker = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-    if ($marker.schema -ne 1 -or $marker.changeId -cne $ChangeId -or $marker.origin -notin @('Draft', 'Direct')) {
+    if ($marker.schema -notin @(1, 2) -or $marker.changeId -cne $ChangeId -or $marker.origin -notin @('Draft', 'Direct')) {
         throw "Change '$ChangeId' has an invalid Harness creation marker."
     }
     return $marker
@@ -72,7 +78,7 @@ function New-HarnessChange {
     if ($Origin -eq 'Draft') {
         if (-not $DraftId -or -not $Scope) { throw 'Draft creation requires DraftId and Scope.' }
         Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/DraftLifecycle.psd1') -ErrorAction Stop
-        [void](Test-HarnessDraft -Context $Context -DraftId $DraftId -Scope $Scope -ChangeId $ChangeId)
+        $draft = Test-HarnessDraft -Context $Context -DraftId $DraftId -Scope $Scope -ChangeId $ChangeId
     }
     else {
         if ([string]::IsNullOrWhiteSpace($Reason)) { throw 'Direct Change creation requires the reason for skipping a draft.' }
@@ -83,7 +89,7 @@ function New-HarnessChange {
     $oldPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        Push-Location -LiteralPath $Context.WorkspaceRoot
+        Push-Location -LiteralPath (Get-HarnessRecordRoot $Context)
         try {
             $output = @(& $exe change create $ChangeId --title $Title --goal $Goal --json 2>&1)
             $exitCode = $LASTEXITCODE
@@ -96,10 +102,12 @@ function New-HarnessChange {
     $markerPath = Join-Path $root 'attachments/data/harness-origin.json'
     [void][System.IO.Directory]::CreateDirectory((Split-Path $markerPath -Parent))
     $marker = [ordered]@{
-        schema = 1; changeId = $ChangeId; origin = $Origin
+        schema = 2; changeId = $ChangeId; origin = $Origin
         draftId = if ($Origin -eq 'Draft') { $DraftId } else { $null }
         scope = if ($Origin -eq 'Draft') { $Scope } else { $null }
         reason = if ($Origin -eq 'Direct') { $Reason } else { $null }
+        approvalRound = if ($Origin -eq 'Draft') { $draft.ApprovalRound } else { $null }
+        expectedExports = if ($Origin -eq 'Draft') { @($draft.ExpectedExports) } else { @() }
         createdAt = [DateTime]::UtcNow.ToString('o')
     }
     [System.IO.File]::WriteAllText($markerPath, (($marker | ConvertTo-Json -Depth 5) + "`n"), [System.Text.UTF8Encoding]::new($false))
@@ -142,6 +150,21 @@ function Test-HarnessChangeSeed {
     }
     $exportedHandoff = [System.IO.File]::ReadAllText((Join-Path $root 'attachments/drafts/handoff.md'))
     if ($exportedHandoff -notmatch [regex]::Escape($ChangeId)) { throw 'Exported handoff does not name this Change.' }
+    if ($marker.schema -eq 2) {
+        if ($marker.approvalRound -cnotmatch '^R[0-9]+$' -or -not $marker.scope -or -not $marker.draftId) { throw 'Draft marker has incomplete approval identity.' }
+        foreach ($field in @(@('Scope', $marker.scope), @('Target Change', $ChangeId))) {
+            $entries = [regex]::Matches($exportedHandoff, ('(?m)^- {0}:\s*`?(?<value>[^`\r\n]+)`?\s*$' -f [regex]::Escape($field[0])))
+            if ($entries.Count -ne 1 -or $entries[0].Groups['value'].Value.Trim() -cne $field[1]) { throw 'Exported handoff identity differs from its creation marker.' }
+        }
+        $targets = @($marker.expectedExports | ForEach-Object { [string]$_.Target })
+        foreach ($required in @('attachments/drafts/design.md', 'attachments/drafts/handoff.md', 'attachments/drafts/glossary.md')) {
+            if ($required -cnotin $targets) { throw "Origin marker is missing expected export: $required" }
+        }
+        foreach ($target in $targets) {
+            if ($target -cnotmatch '^attachments/(?:drafts|talks|knowledges)/[a-zA-Z0-9_./-]+\.md$' -or '..' -in ($target -split '/') -or @($targets | Where-Object { $_ -ceq $target }).Count -ne 1) { throw "Invalid or duplicate expected export: $target" }
+            if (-not (Test-Path -LiteralPath (Join-Path $root $target) -PathType Leaf)) { throw "Promised export is missing: $target" }
+        }
+    }
     $index = [System.IO.File]::ReadAllText($indexPath)
     $attachmentRoot = Join-Path $root 'attachments'
     $files = @(Get-ChildItem -LiteralPath $attachmentRoot -File -Recurse | Where-Object { $_.FullName -ne $indexPath })

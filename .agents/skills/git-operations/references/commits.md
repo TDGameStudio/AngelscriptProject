@@ -8,6 +8,18 @@ Invoke-Harness -Command git.status -Context $context
 
 The result reports parent and initialized top-level submodule heads, branches, and staged/unstaged/untracked paths.
 
+- In a registered replica, status exposes only editable plugin repositories. The project root and fixed snapshots have no Git commit target.
+- Queue closure uses exact plugin scopes with `PluginsOnly = $true` and `PreserveOutsideStaged = $true`. This also applies in primary: plugin commits do not automatically commit parent gitlinks. Primary-repository commits remain separately user-directed.
+
+```powershell
+Invoke-Harness git.commit -Context $context -Parameters @{
+    RepositoryScopes = @{'Plugins/Angelscript'=@('Source/ExactOwnedFile.cpp')}
+    PluginsOnly = $true
+    PreserveOutsideStaged = $true
+    CommitMessage = '[Angelscript] Fix exact verified behavior'
+}
+```
+
 ## Commit Exact Paths
 
 ```powershell

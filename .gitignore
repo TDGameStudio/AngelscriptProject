@@ -129,6 +129,7 @@ __pycache__/
 
 # Local git worktrees
 .worktrees/
+.workspaces/
 
 # Wiki source is tracked as a submodule at Wiki/
 

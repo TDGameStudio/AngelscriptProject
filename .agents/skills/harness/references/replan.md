@@ -7,6 +7,7 @@ A pending task whose concrete scope now contains independently acceptable produc
 ## Apply atomically
 
 1. Capture `base_commit`, the current `tasks.md` SHA-256, affected `git status`, and diff stat.
+   - `base_commit` identifies the canonical record repository at `Context.OpenSpecRoot`. A replica has no root Git HEAD: also cite its indexed execution checkpoint, which captures each plugin baseline/current HEAD and host file hashes. Record affected plugin status/diff separately; never substitute one arbitrary plugin HEAD for the canonical record commit.
 2. Verify the source evidence and classify the impact. Preserve valid work.
 3. Resolve non-obvious major decisions in `attachments/talks/`; record material implementation problems in `attachments/implementation/`.
 4. Update proposal/spec/design current truth before changing tasks.

@@ -36,6 +36,14 @@ function Test-GitPathInside {
     return $childPath.StartsWith($parentPath + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
 }
 
+function Get-GitReplicaContext {
+    param([string]$Root)
+    Import-Module (Join-Path $PSScriptRoot '../../workspace-lifecycle/scripts/WorkspaceLifecycle.psd1')
+    $context = Get-HarnessWorkspaceContext -WorkspaceRoot $Root
+    if ($context.Topology -ne 'Replica' -or -not (Test-GitPathEqual $context.WorkspaceRoot $Root)) { throw 'Invalid exact replica root.' }
+    return $context
+}
+
 function Resolve-GitRepositoryRoot {
     param([string]$Path = '')
     $candidate = if ([string]::IsNullOrWhiteSpace($Path)) { (Get-Location).Path } else { $Path }
@@ -48,6 +56,10 @@ function Resolve-GitExactWorkspaceRoot {
     param([Parameter(Mandatory = $true)][string]$WorkspaceRoot)
     if ([string]::IsNullOrWhiteSpace($WorkspaceRoot)) { throw 'WorkspaceRoot must name an exact Git worktree root.' }
     $requested = [System.IO.Path]::GetFullPath($WorkspaceRoot)
+    if (Test-Path (Join-Path $requested '.harness/workspace.json')) {
+        [void](Get-GitReplicaContext $requested)
+        return $requested
+    }
     $resolved = Resolve-GitRepositoryRoot -Path $requested
     if (-not (Test-GitPathEqual -Left $requested -Right $resolved)) {
         throw "WorkspaceRoot must be the exact Git worktree root '$resolved', not '$requested'."
@@ -75,6 +87,7 @@ function Test-GitRegisteredRoot {
 
 function Get-GitPrimaryRoot {
     param([Parameter(Mandatory = $true)][string]$Repository)
+    if (Test-Path (Join-Path $Repository '.harness/workspace.json')) { return (Get-GitReplicaContext $Repository).PrimaryRoot }
     $result = Invoke-GitOperation -Repository $Repository -Arguments @('worktree', 'list', '--porcelain')
     foreach ($line in $result.Output) {
         if ($line -like 'worktree *') { return [System.IO.Path]::GetFullPath($line.Substring(9).Trim()) }
@@ -92,6 +105,16 @@ function Get-GitRegisteredRoots {
 
 function Get-GitTopLevelSubmodules {
     param([Parameter(Mandatory = $true)][string]$Repository)
+    if (Test-Path (Join-Path $Repository '.harness/workspace.json')) {
+        $context = Get-GitReplicaContext $Repository
+        return @($context.Repositories.PSObject.Properties | Where-Object { $_.Value.Mode -eq 'Worktree' } | ForEach-Object {
+            $entry = $_.Value
+            $expected = [IO.Path]::GetFullPath((Join-Path $Repository $entry.Path))
+            if (-not (Test-GitPathInside $Repository $expected) -or -not (Test-GitPathEqual $entry.Root $expected)) { throw 'Replica plugin path mismatch.' }
+            if ((Get-GitCommonDirectory $expected) -ne (Get-GitCommonDirectory $entry.SourceRoot)) { throw 'Replica plugin Git identity mismatch.' }
+            [pscustomobject]@{Name=$_.Name; Path=$entry.Path; FullPath=$expected}
+        })
+    }
     if (-not (Test-Path -LiteralPath (Join-Path $Repository '.gitmodules') -PathType Leaf)) { return @() }
     $result = Invoke-GitOperation -Repository $Repository -Arguments @('config', '-f', '.gitmodules', '--get-regexp', '^submodule\..*\.path$') -AllowFailure
     if ($result.ExitCode -eq 1) { return @() }
@@ -142,8 +165,10 @@ function Get-HarnessGitStatus {
     param([Parameter(Mandatory = $true)][Alias('ProjectRoot')][string]$WorkspaceRoot)
     $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $repositories = New-Object System.Collections.Generic.List[object]
-    $parentState = Get-GitPathState -Repository $root
-    $repositories.Add([pscustomobject]@{ Path = '.'; Root = $root; Branch = Get-GitBranch $root; Head = Get-GitHead $root; Initialized = $true; State = $parentState }) | Out-Null
+    if (-not (Test-Path (Join-Path $root '.harness/workspace.json'))) {
+        $parentState = Get-GitPathState -Repository $root
+        $repositories.Add([pscustomobject]@{ Path = '.'; Root = $root; Branch = Get-GitBranch $root; Head = Get-GitHead $root; Initialized = $true; State = $parentState }) | Out-Null
+    }
     foreach ($submodule in @(Get-GitTopLevelSubmodules -Repository $root)) {
         if (Test-GitRepository -Path $submodule.FullPath) {
             $repositories.Add([pscustomobject]@{ Path = $submodule.Path; Root = $submodule.FullPath; Branch = Get-GitBranch $submodule.FullPath; Head = Get-GitHead $submodule.FullPath; Initialized = $true; State = Get-GitPathState $submodule.FullPath }) | Out-Null
@@ -187,6 +212,7 @@ function Resolve-GitCommitScopes {
     if ($AllChanges -and $null -ne $RepositoryScopes -and $RepositoryScopes.Count -gt 0) { throw 'Choose RepositoryScopes or AllChanges, not both.' }
     if (-not $AllChanges -and ($null -eq $RepositoryScopes -or $RepositoryScopes.Count -eq 0)) { throw 'RepositoryScopes is required unless AllChanges is explicitly selected.' }
     $known = @{ '.' = $Root }
+    if (Test-Path (Join-Path $Root '.harness/workspace.json')) { $known.Remove('.') }
     foreach ($submodule in @(Get-GitTopLevelSubmodules -Repository $Root)) { $known[$submodule.Path] = $submodule.FullPath }
     $resolved = @{}
     if ($AllChanges) {
@@ -552,22 +578,26 @@ function Complete-HarnessGitCommit {
         [hashtable]$RepositoryScopes = @{},
         [switch]$AllChanges,
         [switch]$PreserveOutsideStaged,
+        [switch]$PluginsOnly,
         [Parameter(Mandatory = $true)][string]$CommitMessage,
         [hashtable]$SubmoduleCommitMessages = @{},
         [hashtable]$TargetBranches = @{}
     )
     $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $primary = Get-GitPrimaryRoot -Repository $root
+    $replica = Test-Path (Join-Path $root '.harness/workspace.json')
+    $PluginsOnly = $PluginsOnly -or $replica
+    if ($PluginsOnly -and ($AllChanges -or $RepositoryScopes.ContainsKey('.'))) { throw 'PluginsOnly requires exact plugin scopes, with no parent or AllChanges scope.' }
     if ($PreserveOutsideStaged -and $AllChanges) {
         throw 'PreserveOutsideStaged requires exact RepositoryScopes and cannot be combined with AllChanges.'
     }
     if ($AllChanges -and ((Test-GitPathEqual -Left $root -Right $primary) -or -not (Test-GitRegisteredRoot -Repository $primary -Candidate $root))) {
         throw 'AllChanges is allowed only for an exact registered linked worktree; primary-workspace commits require RepositoryScopes.'
     }
-    $parentBranch = Get-GitBranch -Repository $root
+    $parentBranch = if ($replica) { '' } else { Get-GitBranch -Repository $root }
     $targetParentBranch = if ($TargetBranches.ContainsKey('.')) { [string]$TargetBranches['.'] } else { $parentBranch }
-    if ([string]::IsNullOrWhiteSpace($targetParentBranch)) { throw "Detached parent repository requires an explicit TargetBranches entry for '.'." }
-    if ($parentBranch -ne $targetParentBranch) { throw "Parent repository is on '$parentBranch', expected target branch '$targetParentBranch'." }
+    if (-not $replica -and [string]::IsNullOrWhiteSpace($targetParentBranch)) { throw "Detached parent repository requires an explicit TargetBranches entry for '.'." }
+    if (-not $replica -and $parentBranch -ne $targetParentBranch) { throw "Parent repository is on '$parentBranch', expected target branch '$targetParentBranch'." }
     $scopes = Resolve-GitCommitScopes -Root $root -RepositoryScopes $RepositoryScopes -AllChanges:$AllChanges
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     $repositories = @{ '.' = $root }
@@ -615,7 +645,7 @@ function Complete-HarnessGitCommit {
     $parentScopes = New-Object System.Collections.Generic.List[string]
     if ($scopes.ContainsKey('.')) { foreach ($path in $scopes['.']) { $parentScopes.Add($path) | Out-Null } }
     foreach ($repoKey in @($scopes.Keys | Where-Object { $_ -ne '.' } | Sort-Object)) {
-        if (@($scopedDirtyPaths[$repoKey]).Count -gt 0) { $parentScopes.Add([string]$repoKey) | Out-Null }
+        if (-not $PluginsOnly -and @($scopedDirtyPaths[$repoKey]).Count -gt 0) { $parentScopes.Add([string]$repoKey) | Out-Null }
     }
     if ($parentScopes.Count -gt 0) {
         $effectiveScopes['.'] = @($parentScopes | Sort-Object -Unique)
@@ -994,6 +1024,7 @@ function Publish-HarnessGitBranches {
     if ($RepositoryBranches.Count -eq 0) { throw 'RepositoryBranches must explicitly name at least one repository and branch.' }
     $root = Resolve-GitExactWorkspaceRoot -WorkspaceRoot $WorkspaceRoot
     $known = @{ '.' = $root }
+    if (Test-Path -LiteralPath (Join-Path $root '.harness/workspace.json')) { $known.Remove('.') }
     $submodules = @(Get-GitTopLevelSubmodules -Repository $root)
     foreach ($submodule in $submodules) { $known[$submodule.Path] = $submodule.FullPath }
     $branches = @{}

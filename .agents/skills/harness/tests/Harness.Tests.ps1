@@ -294,7 +294,9 @@ function Get-HarnessUnrealRunStatus { param($WorkspaceRoot, $Scenario = 'Failed'
 function Stop-HarnessUnrealRun { param($WorkspaceRoot, $Scenario = 'Cancelled') New-FixtureUnrealResult $Scenario }
 Export-ModuleMember -Function Invoke-HarnessUnrealUbt, Invoke-HarnessUnrealBuild, Invoke-HarnessUnrealTest, Invoke-HarnessUnrealCommandlet, Invoke-HarnessUnrealSuite, Get-HarnessUnrealRunStatus, Stop-HarnessUnrealRun
 '@, [System.Text.UTF8Encoding]::new($false))
-    $unrealEnvelopeContext = $context | Select-Object *
+    # Isolated envelope fixture, not a forged registered workspace identity.
+    # Live mixed-root rejection is exercised by HarnessQueue.Tests.ps1.
+    $unrealEnvelopeContext = $context | Select-Object HarnessRoot, WorkspaceRoot, PrimaryRoot, GitCommonDir, Topology, Branch, Head
     $unrealEnvelopeContext.HarnessRoot = $unrealEnvelopeRoot
     foreach ($executionRoute in @('ue.build', 'ue.ubt.invoke', 'ue.test', 'ue.commandlet', 'ue.suite.run')) {
         $failedOperation = Invoke-Harness -Command $executionRoute -Context $unrealEnvelopeContext -Parameters @{ Scenario = 'Failed' }
@@ -616,7 +618,7 @@ second
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\workspace-lifecycle\\scripts\\WorkspaceLifecycle.psd1') -Destination $fixtureModuleDirectory
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psm1') -Destination $fixtureGitModuleDirectory
     Copy-Item -LiteralPath (Join-Path $repoRoot '.agents\\skills\\git-operations\\scripts\\GitOperations.psd1') -Destination $fixtureGitModuleDirectory
-    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`nAgentConfig.ini`nSaved/`n")
+    [System.IO.File]::WriteAllText((Join-Path $fixtureProject '.gitignore'), ".worktrees/`n.workspaces/`nAgentConfig.ini`nSaved/`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'Fixture.uproject'), "{}`n")
     [System.IO.File]::WriteAllText((Join-Path $fixtureProject 'fixture.txt'), "fixture`n")
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('add', '--', '.'))
@@ -788,7 +790,7 @@ second
 
     $created = Invoke-Harness -Command 'workspace.new' -Context $fixturePrimaryContext -Parameters @{ Name = 'future-workspace' }
     Assert-Equal 'Succeeded' $created.status 'workspace.new creates an explicitly named workspace from the selected primary'
-    Assert-Equal 'future-workspace' $created.data.Branch 'new workspace branch defaults exactly to Name'
+    Assert-Equal 'future-workspace' $created.data.Workspace.PluginBranch 'new plugin branches default exactly to Name'
     $createdContext = New-HarnessContext -WorkspaceRoot $created.data.WorktreeRoot
     $removePreview = Invoke-Harness -Command 'workspace.remove' -Context $createdContext -Parameters @{ WhatIf = $true; DiscardIgnoredFiles = $true }
     Assert-Equal 'Succeeded' $removePreview.status 'workspace.remove is explicitly previewable from the exact linked context'
@@ -813,7 +815,8 @@ second
     $focusedEvolutionTest = Join-Path $repoRoot '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'
     Assert-True (Test-Path -LiteralPath $focusedEvolutionTest -PathType Leaf) 'the exact evolution lifecycle is owned by the dedicated focused fixture'
 
-    [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $created.data.WorktreeRoot))
+    # Replica cleanup belongs to the isolated fixture's verified recursive cleanup,
+    # not the parent's Git worktree inventory.
     [void](Invoke-FixtureGit -Repository $fixtureProject -Arguments @('worktree', 'remove', '--force', $fixtureWorkspace))
 
     $incompleteHealth = Test-HarnessInstallation -ProjectRoot $fixtureProject

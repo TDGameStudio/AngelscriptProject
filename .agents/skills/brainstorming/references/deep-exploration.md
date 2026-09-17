@@ -1,77 +1,42 @@
-# Deep Exploration and Handoff
+# Scoped Handoff
 
-Load this reference only before creating the target OpenSpec Change. Be curious, grounded, adaptive, and opinionated when evidence supports a recommendation. The objective is a decision-complete engineering handoff written to the draft's `handoff.md`; the round-by-round diary belongs in the draft `log.md`, not in the handoff.
+- Load before handing an approved scope to `openspec-create-change`; explicit direct work needs no Change handoff.
+- Write the selected `designs/<scope>/handoff.md` in the user's draft language. Cover the problem, success criteria, evidence, scope/exclusions, constraints, chosen approach/rationale, meaningful alternatives and flip conditions, architecture/data flow, failure cases and verification.
+- Resolve blocking decisions first. Keep accepted nonblocking assumptions and excluded work explicit. Confirm names and the exact target Change; do not manufacture alternatives or ask settled questions again.
 
-## 1. Classify the opening
+## OpenSpec Handoff
 
-Identify the dominant shape before gathering detail:
+- Use these exact identity labels; values identify this scoped handoff, not the topic's current focus:
 
-- **Vague idea** — discover the real problem, users, and success condition.
-- **Specific problem** — prove current behavior and locate the boundary that owns it.
-- **Choice** — identify the criteria that can distinguish viable options and settle scope or architecture before durable planning begins.
+```markdown
+## OpenSpec Handoff
 
-## 2. Establish facts before questions
-
-Inspect only evidence that can change the decision: relevant code and tests, current OpenSpec artifacts, attachment INDEX entries, documentation, and recent commits. Separate observed facts, strong inferences, assumptions, and user-owned product choices. Do not ask the user to supply facts available in the repository.
-
-## 3. Shape the scope
-
-- State the problem and measurable success criteria.
-- Decompose independent systems before discussing implementation detail.
-- Map architecture, integration points, existing patterns, ownership boundaries, and hidden complexity.
-- Name exclusions, compatibility constraints, migrations, operational limits, and failure modes.
-- Reduce scope with YAGNI: keep only behavior needed to satisfy the success criteria.
-
-## 4. Compare viable options
-
-Compare two or three genuinely viable options when a choice exists. Use the smallest deciding view: concise prose, a compact table, or a small diagram only when it materially reduces ambiguity. Evaluate behavior, fit with existing architecture, complexity, migration, verification, and failure containment.
-
-Give one recommendation with:
-
-- the evidence-backed reason;
-- the important tradeoff being accepted;
-- the assumption or new evidence that would flip the choice;
-- remaining risks, unknowns, or a bounded spike needed to settle them.
-
-Do not manufacture alternatives after one option is already forced by requirements and repository evidence.
-
-Use the optional [marker vocabulary](markers.md), compact Markdown tables, and small text diagrams when they materially reduce ambiguity. Visuals must remain understandable in plain text and must not introduce an independent state model.
-
-## 5. Converge
-
-Resolve blocking engineering decisions before Change creation. Non-blocking assumptions and explicit out-of-scope questions may remain. Every unconfirmed user-owned choice, including naming, is asked through [grilling.md](grilling.md) rounds with the user present; the handoff is not decision-complete while any such choice is open.
-
-## Decision-complete handoff
-
-For OpenSpec-selected work, write `openspec/drafts/<domain>/<topic>/designs/<scope>/handoff.md` once the scoped design and carryover are accepted. Its first line identifies the source topic, design and acceptance date. Legacy flat handoffs retain their original paths. The local handoff defaults to the user's conversation language unless explicitly specified otherwise; the consumer exports English Change material with provenance. Explicit direct work without a Change does not require this artifact.
-
-```text
-Draft
-Problem
-Success Criteria
-Evidence
-Scope and Exclusions
-Constraints
-Options
-Decision and Rationale
-Flip Condition
-Architecture, Components, and Data Flow
-Failures and Edge Cases
-Verification
-OpenSpec Handoff
-Exploration Carryover
+- Scope: <scope>
+- Target Change: <domain>/<type>-<scope>-<outcome>
 ```
 
-`OpenSpec Handoff` identifies the likely domain/change identity, affected or new capabilities, required artifacts, and independently reviewable task boundaries. It is input to Change creation, not an OpenSpec artifact by itself.
+- Add affected capabilities, required artifacts and reviewable task boundaries as needed.
+- In the selected README, set `design: <scope>`, `status: designed`, and `approval_round: R<n>` referencing the actual recorded approval. An incidental round mention is insufficient.
 
-`Exploration Carryover` lists the material the user confirmed in the carryover round, without writing it into the Change yet. Each talk or knowledge entry names its source in the draft, its target, and the reason:
+## Exploration Carryover
 
-```text
-Canonical truth  -> proposal/spec/design/tasks
-Draft copy       -> design.md and handoff.md -> attachments/drafts/ (indexed once)
-Talk candidate   -> `log.md` Round 2 Q1-Q3 (draft lifecycle) -> talks/ -> rationale would otherwise be re-decided
-Knowledge candidate -> `findings/external-references.md` -> knowledges/ -> reusable mapping beyond this Change
-Discard          -> temporary round navigation, redundant or one-off visuals (the draft log already keeps the conversation)
+- Confirm the required copies, necessary cited findings, decision rationale (talks) and reusable insights (knowledge). Every row needs an exact source, Change-relative target and reason.
+- Sources are paths relative to the selected design, optionally with log round anchors. Targets below are examples; use the confirmed names and timestamp for the actual handoff.
+
+```markdown
+## Exploration Carryover
+
+| Source | Target | Reason |
+| --- | --- | --- |
+| design.md | attachments/drafts/design.md | Accepted scoped design |
+| handoff.md | attachments/drafts/handoff.md | Accepted handoff |
+| not-applicable | attachments/drafts/glossary.md | No naming decisions apply |
+| ../../findings/example.md | attachments/drafts/findings/example.md | Required implementation evidence |
+| ../../log.md#r8 | attachments/talks/talk-20260917-120000-example.md | Confirmed decision rationale |
+| ../../findings/example.md | attachments/knowledges/example.md | Confirmed reusable insight |
 ```
 
-After scoped acceptance, openspec-create-change exports the selected design and handoff into the target Change in English, copying English text or faithfully translating other languages, and materializes exactly the confirmed talks and knowledge candidates. Ensure plan then writes planning artifacts. Local originals remain and other designs may continue; the Change never becomes a parallel transcript.
+- Replace `not-applicable` with the relevant glossary source when names exist. It is allowed only for the glossary. Include transitive research dependencies needed to make the export self-contained.
+- Omit unused example rows. Keep the full transcript, unconfirmed candidates and unrelated sibling research local.
+- `harness.change.create` freezes this expected export list in its schema 2 origin marker. Export English copies with provenance; `harness.change.seed.verify` checks every expected file, indexing exactly once and local link closure before Ensure plan.
+- Preserve existing schema 1 Change origins. For an older draft, add explicit fields/table only to the selected handoff using actual approval evidence; never bulk-migrate records or repeat approval already given.

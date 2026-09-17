@@ -16,7 +16,7 @@ Workspace selection and unattended continuation never automatically integrate, p
 ## Harness command surface
 
 ```text
-workspace.{status,list,new,bootstrap,verify,remove,activate,config.status,config.get,config.set}
+workspace.{status,list,new,prepare,bootstrap,verify,remove,activate,config.status,config.get,config.set}
 git.{status,commit,integrate,push}
 openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,completion}
 task.status
@@ -30,7 +30,9 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 ## Supporting Skills
 
 - `harness` — context, command routing, result envelope, and progressive-loading rules.
-- `workspace-lifecycle` — workspace identity, exact submodule bootstrap, local configuration, session activation, verification, and explicit cleanup.
+- `workspace-lifecycle` — minimal project replicas, selected plugin worktrees/snapshots, local configuration, identity, verification, and explicit cleanup.
+- `change-queue` — explicit ordered Changes per workspace; ordinary-chat execution, status, pause, recovery and feedback/replan.
+- Live task/workspace/build queries — use [Harness queries](harness/references/queries.md) for actual read-only status.
 - `git-operations` — scoped parent/submodule commits, verified linked-workspace integration, and explicit non-force push.
 - `unreal-engine-develop` — UE 5.8 discovery, typed builds, Automation tests and suites, commandlets, UBT capabilities, process observation, progress, and explicit cancellation through `ue.*` routes.
 - `systematic-debugging` — evidence-first diagnosis before fixes or replan.
@@ -43,7 +45,7 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 
 OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. Brainstorming topics share research/logs and manage independent designs in designs/<scope>/; current-focus mode is separate from scoped handoff state. The selected design exports English Change materials while new local draft content defaults to the user's conversation language unless explicitly specified otherwise. Unattended continuation may carry that work forward but does not create a second lifecycle, and it never opens `brainstorming`. The portable Rust CLI provides deterministic record primitives; Harness owns orchestration, evidence-gated Replan, and explicit Review intake.
 
-For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation. Drafts under `openspec/drafts/` are working records owned by `brainstorming`; they carry no task state. Harness checks only an exact topic or selected scope and never scans the tree. Completed or abandoned topics can be explicitly archived under ignored `openspec/archive/drafts/`; parked topics stay active.
+For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG at Context.OpenSpecRoot, with implementation at Context.WorkspaceRoot before implementation mutation. Drafts under `openspec/drafts/` are working records owned by `brainstorming`; they carry no task state. Harness checks only an exact topic or selected scope and never scans the tree. Completed or abandoned topics can be explicitly archived under ignored `openspec/archive/drafts/`; parked topics stay active.
 
 New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`; use `feature`, not `feat`. The OpenSpec record-schema reference owns the full distinction and immutable-archive boundary.
 

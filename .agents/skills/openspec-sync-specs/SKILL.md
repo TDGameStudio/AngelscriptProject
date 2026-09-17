@@ -15,6 +15,7 @@ Load the [Specification and Scenario Card contract](../openspec/references/specs
    - Preserve unspecified scenarios and their complete clause-owned detail blocks, except an explicitly scoped formatting correction established in step 1 that retains text and parentage. Change the requirement body only when the delta explicitly provides its replacement.
    - `REMOVED` deletes only the named Requirement block, and `RENAMED` applies only the explicit `FROM` / `TO` mapping.
 4. Remove delta-operation headers from current specs and preserve every ordinary Markdown detail line inside the synchronized cards.
+   - Read canonical content through `harness.specs.read` with exact `Spec='domain/capability'`; retain its `sha256`. Publish the merged text through `harness.specs.write` with `Spec`, `ExpectedSha256` and `Content`. The short write lock plus digest check rejects stale writers; reread and re-merge on conflict. Never hold a lock throughout agent reasoning or overwrite another workspace's merge.
 5. Through Harness, run `openspec.validate <capability-id> --type spec --strict --json` for each affected current capability, and strict validation for the owning Change. Record the exact IDs, results and any resolved baseline failures. Use all-spec validation only when the impact policy or user request justifies that broader scope; report unrelated baseline failures separately without relabeling a failing affected target as successful.
 
 ```text

@@ -9,7 +9,8 @@
         'New-HarnessDraft',
         'Get-HarnessDraftStatus',
         'Test-HarnessDraft',
-        'Close-HarnessDraft'
+        'Close-HarnessDraft',
+        'Invoke-HarnessDraftRecord'
     )
     CmdletsToExport = @()
     VariablesToExport = @()

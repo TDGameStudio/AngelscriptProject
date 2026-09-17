@@ -4,6 +4,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Get-HarnessRecordRoot {
+    param($Context)
+    if ('OpenSpecRoot' -in $Context.PSObject.Properties.Name -and $Context.OpenSpecRoot) { return [string]$Context.OpenSpecRoot }
+    return [string]$Context.WorkspaceRoot
+}
+
 function Assert-DraftId {
     param([Parameter(Mandatory = $true)][string]$DraftId)
     if ($DraftId -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$') {
@@ -41,9 +47,9 @@ function Get-DraftRoot {
     param($Context, [string]$DraftId, [switch]$Archive)
     Assert-DraftId -DraftId $DraftId
     $subroot = if ($Archive) { 'openspec/archive/drafts' } else { 'openspec/drafts' }
-    $root = Join-Path ([string]$Context.WorkspaceRoot) $subroot
+    $root = Join-Path ((Get-HarnessRecordRoot $Context)) $subroot
     $target = Join-Path $root ($DraftId.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
-    [void](Assert-DraftPath -Root ([string]$Context.WorkspaceRoot) -Path $target)
+    [void](Assert-DraftPath -Root ((Get-HarnessRecordRoot $Context)) -Path $target)
     return $target
 }
 
@@ -166,29 +172,56 @@ function Test-HarnessDraft {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Selected design is missing '$path'." }
     }
     $designReadmeText = [System.IO.File]::ReadAllText($designReadme)
-    $designState = Get-DraftMetadata -Text $designReadmeText -Name 'status'
+    $metadata = [regex]::Match($designReadmeText, '\A---\r?\n(?<fields>[\s\S]*?)\r?\n---(?:\r?\n|$)')
+    if (-not $metadata.Success) { throw 'Selected design README needs frontmatter metadata.' }
+    $fields = $metadata.Groups['fields'].Value
+    if ((Get-DraftMetadata -Text $fields -Name 'design') -cne $Scope) { throw 'Selected README design identity does not match Scope.' }
+    $designState = Get-DraftMetadata -Text $fields -Name 'status'
     if ($designState -ne 'designed') { throw "Selected design '$Scope' is '$designState', not designed." }
     $handoff = [System.IO.File]::ReadAllText($handoffPath)
     if ($handoff -cnotmatch '(?m)^## OpenSpec Handoff\s*$' -or $handoff -cnotmatch '(?m)^## Exploration Carryover\s*$') {
         throw 'Selected handoff must contain OpenSpec Handoff and Exploration Carryover.'
     }
-    if ($handoff -cnotmatch [regex]::Escape($ChangeId)) { throw "Handoff does not name target Change '$ChangeId'." }
-    $kind = ($ChangeId -split '/', 2)[-1].Split('-')[0]
-    $round = ''
-    $approvalRound = [regex]::Match($designReadmeText, '\bR(?<number>[0-9]+)\b')
-    if ($kind -notin @('docs', 'chore', 'test') -and -not $approvalRound.Success) {
-        throw "Behavior or architecture handoff '$DraftId/$Scope' has no scoped approval round."
+    $identity = [regex]::Split(([regex]::Split($handoff, '(?m)^## OpenSpec Handoff\s*$', 2)[1]), '(?m)^## ', 2)[0]
+    foreach ($field in @(@('Scope', $Scope), @('Target Change', $ChangeId))) {
+        $entries = [regex]::Matches($identity, ('(?m)^- {0}:\s*`?(?<value>[^`\r\n]+)`?\s*$' -f [regex]::Escape($field[0])))
+        if ($entries.Count -ne 1 -or $entries[0].Groups['value'].Value.Trim() -cne $field[1]) { throw "Handoff needs exact '$($field[0]): $($field[1])'." }
     }
-    if ($approvalRound.Success) {
-        $round = 'R' + $approvalRound.Groups['number'].Value
+    $approval = [regex]::Matches($fields, '(?m)^approval_round: *(?<round>R[0-9]+) *\r?$')
+    if ($approval.Count -ne 1) { throw "Selected design '$Scope' needs one explicit approval_round: R<n>." }
+    $round = $approval[0].Groups['round'].Value
+    if ($round) {
         $log = Join-Path $status.Path 'log.md'
         if (-not (Test-Path -LiteralPath $log -PathType Leaf) -or
             [System.IO.File]::ReadAllText($log) -cnotmatch ('(?m)^## {0}(?:\s|$)' -f [regex]::Escape($round))) {
             throw "Scoped approval round '$round' does not exist in log.md."
         }
     }
+    $carryover = [regex]::Split(([regex]::Split($handoff, '(?m)^## Exploration Carryover\s*$', 2)[1]), '(?m)^## ', 2)[0]
+    if ($carryover -notmatch '(?m)^\| Source \| Target \| Reason \|\s*$') { throw 'Exploration Carryover needs a Source / Target / Reason table.' }
+    $exports = [System.Collections.Generic.List[object]]::new()
+    foreach ($line in ($carryover -split '\r?\n')) {
+        if ($line -notmatch '^\|(?<source>[^|]+)\|(?<target>[^|]+)\|(?<reason>[^|]+)\|\s*$') { continue }
+        $source = $Matches.source.Trim().Trim('`')
+        $target = $Matches.target.Trim().Trim('`')
+        $reason = $Matches.reason.Trim()
+        if ($source -eq 'Source' -or $source -match '^:?-+:?$') { continue }
+        if ($target -cnotmatch '^attachments/(?:drafts|talks|knowledges)/[a-zA-Z0-9_./-]+\.md$' -or '..' -in ($target -split '/') -or -not $reason) { throw "Invalid carryover target or reason: $target" }
+        if ($target -cin @($exports | ForEach-Object Target)) { throw "Duplicate carryover target: $target" }
+        if ($source -eq 'not-applicable') {
+            if ($target -cne 'attachments/drafts/glossary.md') { throw 'Only an inapplicable glossary can omit a source.' }
+        }
+        else {
+            $sourcePath = Resolve-DraftLink -Root $status.Path -Base $designRoot -Link $source
+            if (-not $sourcePath -or -not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { throw "Carryover source is missing or not local: $source" }
+        }
+        $exports.Add([pscustomobject]@{ Source = $source; Target = $target; Reason = $reason })
+    }
+    foreach ($required in @('attachments/drafts/design.md', 'attachments/drafts/handoff.md', 'attachments/drafts/glossary.md')) {
+        if ($required -cnotin @($exports | ForEach-Object Target)) { throw "Carryover omits required export: $required" }
+    }
     $references = [System.Collections.Generic.List[string]]::new()
-    $workspaceBase = [string]$Context.WorkspaceRoot
+    $workspaceBase = (Get-HarnessRecordRoot $Context)
     foreach ($file in @($designPath, $handoffPath)) {
         $content = [System.IO.File]::ReadAllText($file)
         foreach ($match in [regex]::Matches($content, '\]\((?<link>[^)]+)\)')) {
@@ -197,7 +230,7 @@ function Test-HarnessDraft {
             if ($target) { $references.Add($target) }
         }
     }
-    return [pscustomobject]@{ DraftId = $DraftId; Scope = $Scope; ChangeId = $ChangeId; Path = $designRoot; ExplainedRound = $status.ExplainedRound; ApprovalRound = $round; ReferencedFiles = @($references.ToArray() | Sort-Object -Unique) }
+    return [pscustomobject]@{ DraftId = $DraftId; Scope = $Scope; ChangeId = $ChangeId; Path = $designRoot; ExplainedRound = $status.ExplainedRound; ApprovalRound = $round; ExpectedExports = @($exports.ToArray()); ReferencedFiles = @($references.ToArray() | Sort-Object -Unique) }
 }
 
 function Close-HarnessDraft {
@@ -209,7 +242,35 @@ function Close-HarnessDraft {
         [string]$Reason = ''
     )
     $status = Get-HarnessDraftStatus -Context $Context -DraftId $DraftId
-    if (-not $status.Valid) { throw "Cannot archive invalid draft: $($status.Issues -join '; ')" }
+    if (-not $status.Valid) {
+        # Preserve the pre-scoped flat handoff format during explicit archive.
+        $legacyReadme = [IO.File]::ReadAllText((Join-Path $status.Path 'README.md'))
+        $legacyHandoff = $Closure -eq 'completed' -and $status.State -eq 'handed-off' -and
+            (Get-DraftMetadata $legacyReadme 'draft') -ceq $DraftId -and
+            (Get-DraftMetadata $legacyReadme 'mode') -eq 'design' -and
+            (Get-DraftMetadata $legacyReadme 'handed_off') -match '^\d{4}-\d{2}-\d{2}$' -and
+            $legacyReadme -notmatch '(?m)^- \*\*(?:此刻|焦点|已决|下一问|讲清于)\*\*'
+        if (-not $legacyHandoff) { throw "Cannot archive invalid draft: $($status.Issues -join '; ')" }
+        foreach ($file in @('log.md','design.md','handoff.md')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $status.Path $file) -PathType Leaf)) { throw "Legacy handoff lacks $file." }
+        }
+        $targetChange = Get-DraftMetadata $legacyReadme 'target_change'
+        Assert-DraftId $targetChange
+        $recordRoot = Get-HarnessRecordRoot $Context
+        $activeManifest = Join-Path $recordRoot "openspec/changes/$targetChange/change.yaml"
+        $archiveDomain = Join-Path $recordRoot ("openspec/archive/changes/" + $targetChange.Split('/')[0])
+        [void](Assert-DraftPath -Root $recordRoot -Path $archiveDomain)
+        $manifests = @($activeManifest)
+        if (Test-Path -LiteralPath $archiveDomain -PathType Container) {
+            $manifests += @(Get-ChildItem -LiteralPath $archiveDomain -Directory | ForEach-Object { Join-Path $_.FullName 'change.yaml' })
+        }
+        $matchingManifests = @($manifests | Where-Object {
+            [void](Assert-DraftPath -Root $recordRoot -Path $_)
+            (Test-Path -LiteralPath $_ -PathType Leaf) -and (Get-DraftMetadata ([IO.File]::ReadAllText($_)) '  id') -ceq $targetChange
+        })
+        if ($matchingManifests.Count -ne 1) { throw 'Legacy handoff requires one exact existing target Change.' }
+        $status.Next = 'none'
+    }
     if ($status.State -eq 'parked') { throw 'A parked topic stays in active drafts until it is explicitly completed or abandoned.' }
     if ($Closure -eq 'abandoned' -and [string]::IsNullOrWhiteSpace($Reason)) { throw 'Abandoned draft closure requires a reason.' }
     if ($Closure -eq 'completed') {
@@ -230,7 +291,7 @@ function Close-HarnessDraft {
     $archiveParent = Split-Path $archiveBase -Parent
     $leaf = Split-Path $archiveBase -Leaf
     $archive = Join-Path $archiveParent ('{0}-{1}' -f [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'), $leaf)
-    [void](Assert-DraftPath -Root ([string]$Context.WorkspaceRoot) -Path $archive)
+    [void](Assert-DraftPath -Root ((Get-HarnessRecordRoot $Context)) -Path $archive)
     if (Test-Path -LiteralPath $archive) { throw "Draft archive target already exists: $archive" }
     [void][System.IO.Directory]::CreateDirectory($archiveParent)
     Move-Item -LiteralPath $status.Path -Destination $archive -ErrorAction Stop
@@ -244,4 +305,29 @@ function Close-HarnessDraft {
     return [pscustomobject]@{ DraftId = $DraftId; Closure = $Closure; Path = $archive }
 }
 
-Export-ModuleMember -Function New-HarnessDraft, Get-HarnessDraftStatus, Test-HarnessDraft, Close-HarnessDraft
+function Invoke-HarnessDraftRecord {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Context,
+        [Parameter(Mandatory)][ValidateSet('bind', 'sync', 'status', 'unbind')][string]$Action,
+        [Parameter(Mandatory)][string]$SessionId,
+        [string]$DraftId = '', [string]$Source = '', [int]$StartLine = 0,
+        [object]$HookInput = $null
+    )
+    $scriptPath = Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/draft_record.py'
+    $arguments = @('-X', 'utf8', $scriptPath, $Action, '--workspace', [string]$Context.WorkspaceRoot, '--session', $SessionId)
+    $arguments += @('--records-root', (Get-HarnessRecordRoot $Context))
+    if ($DraftId) { $arguments += @('--draft-id', $DraftId) }
+    if ($Source) { $arguments += @('--source', $Source) }
+    if ($StartLine) { $arguments += @('--start-line', [string]$StartLine) }
+    $output = if ($null -ne $HookInput) {
+        $arguments += '--hook-input'
+        @(($HookInput | ConvertTo-Json -Depth 30 -Compress) | & python @arguments)
+    } else { @(& python @arguments) }
+    if ($LASTEXITCODE -notin @(0, 2)) { throw "Draft recorder process failed ($LASTEXITCODE)." }
+    $result = ($output -join "`n") | ConvertFrom-Json -ErrorAction Stop
+    if ($LASTEXITCODE -eq 2 -and $Action -ne 'status') { throw "Draft recording gap: $($result.gaps -join '; ')" }
+    return $result
+}
+
+Export-ModuleMember -Function New-HarnessDraft, Get-HarnessDraftStatus, Test-HarnessDraft, Close-HarnessDraft, Invoke-HarnessDraftRecord

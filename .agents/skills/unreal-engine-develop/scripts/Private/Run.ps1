@@ -742,11 +742,24 @@ function Update-UnrealRunMetadata {
 }
 
 function Test-UnrealProcessAlive {
-    param([AllowNull()][object] $ProcessId)
+    param([AllowNull()][object] $ProcessId, [AllowNull()][object] $StartedAtUtc = $null)
     if ($null -eq $ProcessId) { return $false }
     $idValue = 0
     if (-not [int]::TryParse([string] $ProcessId, [ref] $idValue) -or $idValue -le 0) { return $false }
-    return $null -ne (Get-Process -Id $idValue -ErrorAction SilentlyContinue)
+    $process = Get-Process -Id $idValue -ErrorAction SilentlyContinue
+    if ($null -eq $process) { return $false }
+    if ($null -ne $StartedAtUtc -and -not [string]::IsNullOrWhiteSpace([string]$StartedAtUtc)) {
+        # Historical metadata recorded observation time just after spawn.
+        # The narrow tolerance accommodates that format, not PID lifetime reuse.
+        try {
+            $expected = if ($StartedAtUtc -is [DateTime]) { $StartedAtUtc.ToUniversalTime() }
+                elseif ($StartedAtUtc -is [DateTimeOffset]) { $StartedAtUtc.UtcDateTime }
+                else { [DateTimeOffset]::Parse([string]$StartedAtUtc).UtcDateTime }
+            return [Math]::Abs(($process.StartTime.ToUniversalTime() - $expected).TotalSeconds) -lt 2
+        }
+        catch { return $false }
+    }
+    return $true
 }
 
 function Get-UnrealRunStatusRecord {
@@ -760,7 +773,7 @@ function Get-UnrealRunStatusRecord {
     if ([string] $metadata.runId -ne $RunId -or [string] $metadata.schemaVersion -ne $script:UnrealRunSchema) { throw "Run metadata identity is invalid: $($paths.MetadataPath)" }
     $recordedState = [string] $metadata.state
     $effectiveState = $recordedState
-    if ($recordedState -notin $script:UnrealTerminalStates -and $null -ne $metadata.workerPid -and -not (Test-UnrealProcessAlive -ProcessId $metadata.workerPid)) { $effectiveState = 'Orphaned' }
+    if ($recordedState -notin $script:UnrealTerminalStates -and $null -ne $metadata.workerPid -and -not (Test-UnrealProcessAlive -ProcessId $metadata.workerPid -StartedAtUtc $metadata.workerStartedAtUtc)) { $effectiveState = 'Orphaned' }
     $progress = if ([string] $metadata.operation -eq 'Build') {
         Get-UnrealBuildProgressSnapshot -Paths $paths
     }
@@ -863,7 +876,7 @@ function Start-UnrealRunRequest {
         $process.Dispose()
         throw 'Unable to start the Unreal worker.'
     }
-    [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = [DateTimeOffset]::UtcNow.ToString('o') })
+    [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ workerPid = $process.Id; workerStartedAtUtc = $process.StartTime.ToUniversalTime().ToString('o') })
     if ($NoWait) {
         $process.Dispose()
         return Get-HarnessUnrealRunStatus -WorkspaceRoot ([string] $Request.workspaceRoot) -RunId ([string] $Request.runId)
@@ -992,7 +1005,6 @@ function Invoke-UnrealRequestWorker {
     if ([string] $request.execution.strategy -ceq 'DosDevice' -and [string] $request.execution.assignmentState -cne 'Assigned') {
         throw 'Worker request does not contain an assigned execution drive.'
     }
-    [void](Get-UnrealWorkspaceConfiguration -WorkspaceRoot ([string] $request.workspaceRoot) -RequireExecutionGuard -CallerPath ([string] $request.workspaceRoot))
 
     $workspaceLease = $null
     $driveLease = $null
@@ -1000,6 +1012,7 @@ function Invoke-UnrealRequestWorker {
     $driveMapping = $null
     $started = [DateTimeOffset]::UtcNow
     try {
+        [void](Get-UnrealWorkspaceConfiguration -WorkspaceRoot ([string] $request.workspaceRoot) -RequireExecutionGuard -CallerPath ([string] $request.workspaceRoot))
         [void](Update-UnrealRunMetadata -Path $paths.MetadataPath -Changes @{ state = 'WaitingWorkspace' })
         $workspaceLease = Enter-UnrealLease -Scope 'workspace' -Key ([string] $request.workspaceRoot) -Policy ([string] $request.concurrency.policy) -TimeoutMs (Get-UnrealRemainingTimeout -Request $request)
         if ($null -eq $workspaceLease) {

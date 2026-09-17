@@ -526,9 +526,11 @@ foreach ($legacyPattern in @('native Goal mode', 'Choose the workspace mode', 'N
     Assert-True ($harnessSkill -notmatch $legacyPattern) "Harness entry still exposes legacy repository mode text: $legacyPattern"
 }
 foreach ($token in @(
-    'one Git-derived workspace model',
+    'primary workspace is both the control center and a full execution workspace',
+    'WorkspaceRoot',
+    'OpenSpecRoot',
     'Codex `/goal`',
-    'external continuation',
+    'optional unattended continuation',
     'do not reopen `design`-mode brainstorming',
     'Brainstorm Gate',
     '`brainstorming`',
@@ -590,19 +592,19 @@ foreach ($token in @('#requires -Version 7.0', '#requires -PSEdition Core', '[Co
     Assert-True ($hookScript.Contains($token)) "Codex hook adapter is missing: $token"
 }
 foreach ($forbiddenHookToken in @('harness.observe', 'workspace.bootstrap', 'workspace.config.set', 'git.commit', 'git.push', 'Stop-Harness')) {
-    Assert-True (-not $hookScript.Contains($forbiddenHookToken)) "Codex hook adapter must remain non-mutating: $forbiddenHookToken"
+    Assert-True (-not $hookScript.Contains($forbiddenHookToken)) "Codex hook adapter cannot perform unrelated workflow mutations: $forbiddenHookToken"
 }
 
 $hookConfig = Get-Content -LiteralPath $hookConfigPath -Raw | ConvertFrom-Json -ErrorAction Stop
 $hookEventNames = @($hookConfig.hooks.PSObject.Properties.Name)
 Assert-True ('SessionStart' -in $hookEventNames) 'SessionStart hook is required'
 Assert-True ('SubagentStart' -in $hookEventNames) 'SubagentStart hook is required'
-Assert-True ('Stop' -notin $hookEventNames) 'Stop hook is intentionally absent'
-Assert-True ('PostToolUse' -notin $hookEventNames) 'PostToolUse hook is intentionally absent'
+Assert-True ('Stop' -in $hookEventNames) 'Stop records the delivered final for a bound session'
+Assert-True ('PostToolUse' -in $hookEventNames -and 'Interrupt' -in $hookEventNames) 'Tool and interrupt checkpoints are configured'
 $sessionRegistration = @($hookConfig.hooks.SessionStart)[0]
-Assert-Equal 'startup|resume' ([string]$sessionRegistration.matcher) 'SessionStart is limited to startup and resume'
-$hookCommands = @($sessionRegistration.hooks) + @(@($hookConfig.hooks.SubagentStart)[0].hooks)
-Assert-True ($hookCommands.Count -eq 2) 'Exactly one command is registered for each supported hook event'
+Assert-Equal 'startup|resume|compact' ([string]$sessionRegistration.matcher) 'SessionStart includes compaction recovery'
+$hookCommands = @($hookConfig.hooks.PSObject.Properties | ForEach-Object { $_.Value | ForEach-Object { $_.hooks } })
+Assert-True ($hookCommands.Count -eq 5) 'Exactly one command is registered for each supported hook event'
 foreach ($hookCommand in $hookCommands) {
     Assert-Equal 'command' ([string]$hookCommand.type) 'Codex hook uses the command adapter'
     Assert-Equal 3 ([int]$hookCommand.timeout) 'Codex hook timeout stays bounded at three seconds'
