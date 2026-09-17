@@ -1,0 +1,11 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-tarray-type-and-direction-coverage",
+  "origin": "Direct",
+  "draftId": null,
+  "scope": null,
+  "reason": "User explicitly requested archive of angelscript/feature-container-type-directories and a new Change after comparing TestSource-old/Containers/TArray. The completed directory rewrite admitted one int32 local observe per API (AddAndOrder is the cited hole) and omitted the old Function type-axis (float, bool, FString, FVector, UObject) plus UFUNCTION const&in / &out / &inout. Scope is TArray only. Packing stays one observation per file. No remaining user-owned product choice.",
+  "approvalRound": null,
+  "expectedExports": null,
+  "createdAt": "2026-09-17T10:22:20.2657014Z"
+}

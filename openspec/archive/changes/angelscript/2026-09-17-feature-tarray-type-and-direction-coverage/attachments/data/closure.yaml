@@ -1,0 +1,2 @@
+kind: completed
+reason: All 8 Task DAG nodes passed their proving commands. TArray type-axis and UFUNCTION direction siblings are parentless FileTags under Containers/TArray/. Durable delta is already synchronized into current spec angelscript/testing/host-api-fixtures. HostApiFixtureCorpus Fast 5/5 includes CorpusHasTArrayTypeAndDirection. Knowledge remains change-local. Other containers stay out.

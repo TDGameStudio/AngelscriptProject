@@ -1,0 +1,14 @@
+api_version: openspec.dev/v1
+kind: change
+metadata:
+  uid: change_cf1dd567-29b6-40ae-9da2-0c164edb1224
+  id: angelscript/feature-tarray-type-and-direction-coverage
+  title: Port TArray type-axis and direction observations
+workflow: angelscript
+created_at: 2026-09-17T10:22:20Z
+goal: Hand-author TArray observation leaves for TestSource-old Function type suffixes and UFUNCTION const&in, &out, and &inout that the directory rewrite omitted.
+archived_at: 2026-09-17T11:16:21Z
+archive_schema: closure-v1
+closure:
+  kind: completed
+  reason: All 8 Task DAG nodes passed their proving commands. TArray type-axis and UFUNCTION direction siblings are parentless FileTags under Containers/TArray/. Durable delta is already synchronized into current spec angelscript/testing/host-api-fixtures. HostApiFixtureCorpus Fast 5/5 includes CorpusHasTArrayTypeAndDirection. Knowledge remains change-local. Other containers stay out.

@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "changeId": "angelscript/feature-tmap-tset-optional-type-direction",
+  "origin": "Draft",
+  "draftId": "angelscript/remaining-container-type-direction",
+  "scope": "tmap-tset-optional",
+  "reason": null,
+  "approvalRound": "R3",
+  "expectedExports": [
+    {
+      "Source": "design.md",
+      "Target": "attachments/drafts/design.md",
+      "Reason": "Accepted scoped design"
+    },
+    {
+      "Source": "handoff.md",
+      "Target": "attachments/drafts/handoff.md",
+      "Reason": "Accepted handoff"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/drafts/glossary.md",
+      "Reason": "Settled Change and FileTag names"
+    },
+    {
+      "Source": "../../findings/old-function-gap.md",
+      "Target": "attachments/drafts/findings/old-function-gap.md",
+      "Reason": "Old Function versus current leaves"
+    },
+    {
+      "Source": "../../log.md#r1",
+      "Target": "attachments/talks/talk-20260917-191700-wave.md",
+      "Reason": "Which containers this wave covers"
+    },
+    {
+      "Source": "../../log.md#r2",
+      "Target": "attachments/talks/talk-20260917-191800-packaging.md",
+      "Reason": "One bundled Change"
+    },
+    {
+      "Source": "../../log.md#r3",
+      "Target": "attachments/talks/talk-20260917-191900-names-and-approval.md",
+      "Reason": "Change id, keep TMap In, design approval"
+    },
+    {
+      "Source": "glossary.md",
+      "Target": "attachments/knowledges/param-container-type-direction.md",
+      "Reason": "Per-tree type suffixes and direction stems"
+    }
+  ],
+  "createdAt": "2026-09-17T11:20:58.8189521Z"
+}
