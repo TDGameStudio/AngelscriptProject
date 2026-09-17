@@ -5,7 +5,9 @@ description: "Use before creative or design work, proposals, trade-offs, or unco
 
 # Brainstorming: Explore and Record into a Draft
 
-Explore ideas with the user through recorded dialogue under `openspec/drafts/`. One topic owns shared research and an append-only conversation; independently deliverable designs live in `designs/<scope>/`. A topic can keep exploring while individual designs become ready or handed off. This Skill owns the Brainstorm Gate; exploration writes stay in the draft and implementation follows the user's selected route.
+- Keep one shared research area and append-only conversation per topic under `openspec/drafts/`.
+- Put independently deliverable designs under `designs/<scope>/`; one topic may continue while one scope is ready or handed off.
+- Use the user's selected route after exploration. An explicitly authorized direct implementation creates no Change.
 
 <HARD-GATE>
 For unresolved design work, present the relevant design and obtain its approval before implementation or Change creation. A mode, directory, sibling design's approval or unanswered form is not approval. Respect existing authorization: if the user explicitly directs implementation of the discussed approach without a Change, record that route and proceed with authorized work; do not create a Change or repeat an already settled approval. Only OpenSpec-selected work requires the named Change and carryover handoff below. Once a Change exists, never reopen `design` mode for that Change's scope; corrections belong to `openspec-update-change`, task-local uncertainty to `openspec-apply-change`. Other scopes can continue in the topic. A research finding invalidating an active Change's plan goes to update-change, not straight into implementation.
@@ -31,7 +33,10 @@ The topic README records mode for its current focus: what the agent is doing now
 | `proposal` | Once a bounded outcome is identifiable, write `designs/<scope>/design.md` as a candidate, then grill around its affected sections | Revise, park, or switch to design to converge |
 | `design` | Resolve the decisions needed for an accepted scoped design | For OpenSpec-selected work: `designed` → `openspec-create-change`; otherwise follow the authorized direct route |
 
-Open a draft when output contains a proposal, trade-off or more than one diagram. An isolated factual answer outside continuing exploration need not open one. Say `Draft opened: <path> (mode: <mode>)` once. Within an existing draft, append all discussion, including factual clarifications. Switch mode when activity changes and record why; returning to research does not revoke scoped approval. Create a design directory when its independent outcome can be described, before approval, with only needed files. Pure investigation stays in findings. Do not force a one-way mode ladder.
+- Open a draft through `harness.draft.create` when output contains a proposal, trade-off, or more than one diagram; an isolated factual answer outside continuing exploration need not open one. Say `Draft opened: <path> (mode: <mode>)` once.
+- Resume a named topic with `harness.draft.status`; its five README lines show 此刻 / 焦点 / 已决 / 下一问 / 讲清于. Keep links and the exact explained round current. The route checks structure and links, while the author remains responsible for matching the chat and log verbatim.
+- Append all actual discussion to the existing log, including factual clarifications. Switch mode when activity changes and record why; returning to research does not revoke scoped approval.
+- Create a design directory once an independent outcome can be described, before approval, with only needed files. Pure investigation stays in findings. Do not force a one-way mode ladder.
 
 ## Pass the gate with the actual scope
 
@@ -50,7 +55,7 @@ Research uses shared findings; proposal may start with a candidate before grilli
 7. **Select the work route** — respect explicit direct implementation without a Change. The remaining handoff steps apply only when OpenSpec owns the work; do not create a Change by inference from a design directory.
 8. **Carryover round** — list this design's talk/knowledge candidates with source, target and reason; the user confirms what enters the Change. Recommend relevant material, not the whole transcript or sibling research.
 9. **Write handoff.md** — in the selected design directory per [deep-exploration.md](references/deep-exploration.md): decision-complete handoff, settled OpenSpec Handoff identity and confirmed Exploration Carryover.
-10. **Transition** — set only the selected design README to status: designed and pass its exact directory to openspec-create-change. A design or topic may instead be parked with a resumption condition, or abandoned with why. Handing off one design does not close the topic.
+10. **Transition** — set only the selected design README to status: designed. For OpenSpec work, pass its exact directory through `harness.draft.check` and then openspec-create-change. A design or topic may instead be parked with a resumption condition, or abandoned with why. Handing off one design does not close the topic.
 
 ```text
 topic draft                         // Shared log, findings and current activity remain resumable.
@@ -84,6 +89,7 @@ New public types, modules, files and key functions are decisions. Inspect neighb
 - openspec-create-change consumes one selected approved handoff, seeds attachments/drafts/, and materializes confirmed rationale into indexed talks and reusable insights into indexed change-local knowledge. Ensure plan writes proposal/specs/design/tasks. Never copy the exploration transcript into the Change.
 - Resolve required approval before `change create`, never after; existing authorization need not be requested again. One scoped handoff produces one Change; a topic can produce several. A decision-complete handoff is not an active Change or Ready Task DAG.
 - Preserve legacy flat drafts per [drafts.md](references/drafts.md). Do not bulk-migrate logs or approved records. A parked topic resumes in the same directory.
+- Archive a completed or abandoned topic only by explicit `harness.draft.archive`. Parked topics remain active. Archived material is immutable; open a new topic with a reference if discussion restarts. The archive stays ignored under `openspec/archive/drafts/`.
 
 ## Brainstorming needs a present user
 

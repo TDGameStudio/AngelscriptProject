@@ -13,19 +13,19 @@ $script:HarnessPackageSafetyModule = $null
 $script:HarnessChangeTypes = @('feature', 'fix', 'refactor', 'improve', 'docs', 'test', 'chore')
 $script:HarnessChangeNameContract = '<domain>/<type>-<scope>-<outcome>; allowed types: feature, fix, refactor, improve, docs, test, chore'
 $script:HarnessOpenSpecIdentity = [ordered]@{
-    Version           = '0.9.0'
-    SourceCommit      = 'aa9754508c384e392eecd1c54201c623dca3404e'
-    SourceTag         = 'v0.9.0'
+    Version           = '0.10.0'
+    SourceCommit      = '0a394098abe5ac0a64d32347ba5d591bbf870bc1'
+    SourceTag         = 'v0.10.0'
     SourceTagType     = 'annotated'
-    SourceTagObject   = 'b615468fb744feec706c8ce9c05a2beffc12c0dd'
-    SourceTagTarget   = 'aa9754508c384e392eecd1c54201c623dca3404e'
+    SourceTagObject   = '3334f28d64f66c18951429a08cfda0b7397ec0b5'
+    SourceTagTarget   = '0a394098abe5ac0a64d32347ba5d591bbf870bc1'
     Target            = 'x86_64-pc-windows-msvc'
     Profile           = 'release'
     BuildCommand      = 'cargo build --release --locked'
     Rustc             = 'rustc 1.95.0 (59807616e 2026-04-14)'
     Cargo             = 'cargo 1.95.0 (f2d3ce0bd 2026-03-21)'
-    Sha256            = '8710e36a59b970e311c666d336d7fef4f9e76c0375e232dd0f8d440d69c6c4f2'
-    BinarySize        = 3212288
+    Sha256            = '8f12bf788e1d0b1f95d9251397497b1ff6e50986bc80e0508412a8390fa8e9a2'
+    BinarySize        = 3218432
     CommandDocCount   = 32
     CommandDocsDigest = '35fbe97cd5e7238958fed1900891a2c2d67d47aebdcbc1458a2f6ba6de9bcaac'
 }
@@ -62,6 +62,8 @@ function Initialize-HarnessRoutes {
     $gitModule = '.agents/skills/git-operations/scripts/GitOperations.psd1'
     $unrealModule = '.agents/skills/unreal-engine-develop/scripts/UnrealEngineDevelop.psd1'
     $openspecExecutable = '.agents/skills/openspec/bin/openspec.exe'
+    $draftModule = '.agents/skills/harness/scripts/DraftLifecycle.psd1'
+    $changeGateModule = '.agents/skills/harness/scripts/ChangeGate.psd1'
     $routes = New-Object System.Collections.Generic.List[object]
 
     $routes.Add((New-HarnessRoute 'workspace.list' 'PowerShell' $workspaceModule 'Get-HarnessWorkspaceList' @() @{} 'List registered Git workspaces without a dirty-state scan.')) | Out-Null
@@ -101,6 +103,13 @@ function Initialize-HarnessRoutes {
     $routes.Add((New-HarnessRoute -Name 'task.status' -Kind 'Native' -Target $openspecExecutable -Prefix @('instructions', 'apply', '--json') -Description 'Inspect the selected Task Graph through the OpenSpec parser.' -OutputFormat 'TaskPlanJson')) | Out-Null
 
     $routes.Add((New-HarnessRoute 'harness.status' 'Internal' '' 'Get-HarnessStatus' @() @{} 'Inspect the selected workspace and installed harness through a fast read-only route.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.create' 'PowerShell' $draftModule 'New-HarnessDraft' @() @{} 'Create one local brainstorming topic in the selected workspace.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.status' 'PowerShell' $draftModule 'Get-HarnessDraftStatus' @() @{} 'Inspect one exact brainstorming topic and its current links.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.check' 'PowerShell' $draftModule 'Test-HarnessDraft' @() @{} 'Check one selected draft design before Change creation.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.draft.archive' 'PowerShell' $draftModule 'Close-HarnessDraft' @() @{} 'Explicitly archive one completed or abandoned local topic.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.change.create' 'PowerShell' $changeGateModule 'New-HarnessChange' @() @{} 'Create one Change after the exact draft or direct-origin preflight.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.change.seed.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangeSeed' @() @{} 'Check indexed self-contained draft exports before Ensure plan.')) | Out-Null
+    $routes.Add((New-HarnessRoute 'harness.change.plan.verify' 'PowerShell' $changeGateModule 'Test-HarnessChangePlan' @() @{} 'Require a root design with call chains for a new Change.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.observe' 'Internal' '' 'Add-HarnessObservation' @() @{} 'Record one bounded ignored workflow observation.')) | Out-Null
     $routes.Add((New-HarnessRoute 'harness.evolution.status' 'Internal' '' 'Get-HarnessEvolutionStatus' @() @{} 'Summarize observations or inspect one exact Change evolution lifecycle and optional terminal gate.')) | Out-Null
     $routes.Add((New-HarnessRoute 'openspec.maintenance.status' 'Internal' '' 'Get-HarnessOpenSpecMaintenanceStatus' @() @{} 'Compare packaged OpenSpec identity with its tracked source without mutation.')) | Out-Null
@@ -258,6 +267,10 @@ function Assert-HarnessOpenSpecChangeName {
     if ($Command -cne 'openspec.change' -or $ArgumentList.Count -eq 0) {
         return
     }
+    if ([string]$ArgumentList[0] -in @('--help', '-h')) { return }
+    if (([string]$ArgumentList[0]).StartsWith('-', [System.StringComparison]::Ordinal)) {
+        throw (New-HarnessCodedException -Code 'ChangeOperationRequired' -Message "Route 'openspec.change' requires the operation as its first argument; creation uses 'harness.change.create'.")
+    }
     $operation = ([string]$ArgumentList[0]).ToLowerInvariant()
     $target = ''
     if ($operation -eq 'create' -and $ArgumentList.Count -ge 2) {
@@ -277,10 +290,16 @@ function Assert-HarnessOpenSpecChangeName {
         }
     }
     if ([string]::IsNullOrWhiteSpace($target)) {
+        if ($operation -eq 'create') {
+            throw (New-HarnessCodedException -Code 'ChangeCreationGate' -Message "Create Changes through 'harness.change.create' with an explicit draft or direct origin.")
+        }
         return
     }
     if (-not (Test-HarnessSemanticChangeId -ChangeId $target)) {
         throw (New-HarnessCodedException -Code 'InvalidChangeName' -Message "OpenSpec Change target '$target' must follow $script:HarnessChangeNameContract. Change IDs use 'feature', not the Git commit alias 'feat'.")
+    }
+    if ($operation -eq 'create') {
+        throw (New-HarnessCodedException -Code 'ChangeCreationGate' -Message "Create Changes through 'harness.change.create' with an explicit draft or direct origin.")
     }
 }
 
@@ -541,7 +560,7 @@ function Add-HarnessContextDefaults {
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('RepositoryRoot') -CanonicalName 'RepositoryRoot' -ExpectedValue ([string]$Context.PrimaryRoot) -RouteName ([string]$Route.Name)
             Set-HarnessAuthoritativePathParameter -Values $values -Names @('WorktreeRoot') -CanonicalName 'WorktreeRoot' -ExpectedValue ([string]$Context.WorkspaceRoot) -RouteName ([string]$Route.Name)
         }
-        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status') } {
+        { $_ -in @('harness.status', 'harness.observe', 'harness.evolution.status', 'openspec.maintenance.status', 'harness.draft.create', 'harness.draft.status', 'harness.draft.check', 'harness.draft.archive', 'harness.change.create', 'harness.change.seed.verify', 'harness.change.plan.verify') } {
             if ($values.ContainsKey('Context')) {
                 throw (New-HarnessCodedException -Code 'ContextAuthorityMismatch' -Message "Route '$($Route.Name)' receives Context only from the Harness dispatcher; caller replacement is forbidden.")
             }
@@ -623,6 +642,44 @@ function Invoke-Harness {
             if ($required -notin @($Context.PSObject.Properties.Name)) { throw "Invalid Harness context: missing '$required'." }
         }
         Assert-HarnessOpenSpecChangeName -Command $Command -ArgumentList $ArgumentList
+        if ($Command -eq 'openspec.instructions' -and $ArgumentList.Count -gt 0) {
+            if ([string]$ArgumentList[0] -in @('--help', '-h')) {
+                $instructionKind = ''
+            }
+            elseif (([string]$ArgumentList[0]).StartsWith('-', [System.StringComparison]::Ordinal)) {
+                throw (New-HarnessCodedException -Code 'InstructionArtifactRequired' -Message "Route 'openspec.instructions' requires the artifact or operation as its first argument.")
+            }
+            else { $instructionKind = [string]$ArgumentList[0] }
+            if ($instructionKind -in @('proposal', 'specs', 'design', 'tasks', 'apply')) {
+                $instructionChange = if ($Parameters.ContainsKey('Change')) { [string]$Parameters.Change } else { '' }
+                for ($index = 1; -not $instructionChange -and $index -lt $ArgumentList.Count; $index++) {
+                    $part = [string]$ArgumentList[$index]
+                    if ($part -eq '--change' -and $index + 1 -lt $ArgumentList.Count) { $instructionChange = [string]$ArgumentList[$index + 1] }
+                    elseif ($part.StartsWith('--change=', [System.StringComparison]::Ordinal)) { $instructionChange = $part.Substring(9) }
+                }
+                if (-not $instructionChange) {
+                    throw (New-HarnessCodedException -Code 'InstructionChangeRequired' -Message "Planning instructions require one exact '--change <id>' target.")
+                }
+                if ($instructionChange) {
+                    $gateManifest = Join-Path ([string]$Context.HarnessRoot) '.agents/skills/harness/scripts/ChangeGate.psd1'
+                    if (Test-Path -LiteralPath $gateManifest -PathType Leaf) {
+                        Import-Module $gateManifest -ErrorAction Stop
+                        if ($instructionKind -eq 'apply') { [void](Test-HarnessChangePlan -Context $Context -ChangeId $instructionChange) }
+                        else { [void](Test-HarnessChangeSeedIfNeeded -Context $Context -ChangeId $instructionChange) }
+                    }
+                }
+            }
+        }
+        if ($Command -eq 'task.status') {
+            if (-not $Parameters.ContainsKey('Change') -or $ArgumentList.Count -gt 0) {
+                throw (New-HarnessCodedException -Code 'TaskStatusChangeRequired' -Message "Route 'task.status' requires one exact Change in Parameters and no positional arguments.")
+            }
+            $gateManifest = Join-Path ([string]$Context.HarnessRoot) '.agents/skills/harness/scripts/ChangeGate.psd1'
+            if (Test-Path -LiteralPath $gateManifest -PathType Leaf) {
+                Import-Module $gateManifest -ErrorAction Stop
+                [void](Test-HarnessChangePlan -Context $Context -ChangeId ([string]$Parameters.Change))
+            }
+        }
         $target = if ($route.Kind -eq 'Internal') { '' } else { Join-Path ([string]$Context.HarnessRoot) $route.Target }
         $data = $null
         $exitCode = 0

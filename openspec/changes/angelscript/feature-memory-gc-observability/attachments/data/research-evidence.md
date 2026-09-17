@@ -2,7 +2,7 @@
 
 ## Provenance
 
-Read-only inspection on 2026-09-06 in the selected workspace; local installed UE 5.8 source is the version-specific authority. Resolve engine paths from AgentConfig.ini. The workspace is undergoing reconstruction; source presence is not a fresh execution result. Temp/as的gc.md is a historical conversation, not a durable runtime contract. No binary or runtime measurement was produced here.
+Read-only inspection on 2026-09-06 in the selected workspace; local installed UE 5.8 source is the version-specific authority. Resolve engine paths from AgentConfig.ini. The workspace is undergoing reconstruction; source presence is not a fresh execution result. `Temp/as的gc.md` is a historical conversation, not a durable runtime contract. No binary or runtime measurement was produced here.
 
 ## Current project evidence
 

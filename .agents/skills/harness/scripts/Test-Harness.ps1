@@ -74,6 +74,8 @@ function Get-HarnessGateChecks {
     if ($Profile -in @('Quick', 'Integration')) {
         $scriptTests = [ordered]@{
             Harness            = '.agents\skills\harness\tests\Harness.Tests.ps1'
+            HarnessDraft       = '.agents\skills\harness\tests\HarnessDraft.Tests.ps1'
+            HarnessChangeGate  = '.agents\skills\harness\tests\HarnessChangeGate.Tests.ps1'
             HarnessEvolution   = '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'
             HarnessCutover     = '.agents\skills\harness\tests\HarnessCutover.Tests.ps1'
             HarnessGateContract = '.agents\skills\harness\tests\Test-Harness.Tests.ps1'

@@ -62,17 +62,19 @@ task_graph:
 
 ## Tasks
 
-- [$mark] 1.1 Exercise terminal closure
+## [$mark] 1.1 Exercise terminal closure
 
-    **Files**
+**Files**
 
-    - ``fixture``
+``````diff
+ fixture
+``````
 
-    **Verification**
+**Verification**
 
-    ``````sh
-    focused fixture
-    ``````
+``````sh
+focused fixture
+``````
 "@
 }
 

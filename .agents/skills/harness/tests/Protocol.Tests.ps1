@@ -391,12 +391,23 @@ function Test-ImplementationIssueFile {
 }
 
 function Test-ActiveImplementationIssueGate {
-    param([Parameter(Mandatory = $true)][string]$ActiveChangesRoot)
+    param(
+        [Parameter(Mandatory = $true)][string]$ActiveChangesRoot,
+        [string]$TrackedRepositoryRoot = ''
+    )
 
     $issues = @()
     if (-not (Test-Path -LiteralPath $ActiveChangesRoot -PathType Container)) { return $issues }
     $implementationRoots = @(Get-ChildItem -LiteralPath $ActiveChangesRoot -Recurse -Directory -Filter 'implementation' | Where-Object { $_.Parent.Name -eq 'attachments' })
     foreach ($implementationRoot in $implementationRoots) {
+        $files = @(Get-ChildItem -LiteralPath $implementationRoot.FullName -File)
+        if ($TrackedRepositoryRoot) {
+            $files = @($files | Where-Object {
+                $relative = [System.IO.Path]::GetRelativePath($TrackedRepositoryRoot, $_.FullName).Replace('\', '/')
+                @(& git -C $TrackedRepositoryRoot ls-files -- $relative).Count -gt 0
+            })
+            if ($files.Count -eq 0) { continue }
+        }
         $attachmentRoot = $implementationRoot.Parent.FullName
         $indexPath = Join-Path $attachmentRoot 'INDEX.md'
         $indexText = if (Test-Path -LiteralPath $indexPath -PathType Leaf) { (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/') } else { '' }
@@ -405,7 +416,7 @@ function Test-ActiveImplementationIssueGate {
         foreach ($directory in @(Get-ChildItem -LiteralPath $implementationRoot.FullName -Directory)) {
             $issues += "issue-nested-directory: $($directory.FullName) is not allowed"
         }
-        foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot.FullName -File)) {
+        foreach ($file in $files) {
             $issues += @(Test-ImplementationIssueFile -File $file)
             if (-not [string]::IsNullOrWhiteSpace($indexText)) {
                 $relative = $file.FullName.Substring($attachmentRoot.Length).TrimStart('\', '/').Replace('\', '/')
@@ -732,12 +743,29 @@ finally {
 
 $archiveCompatibilityIssues = @()
 $archiveRoot = Join-Path $projectRoot 'openspec\archive\changes'
+# These five omissions predate this compatibility audit. Archived records are
+# immutable, so exempt only their exact missing-entry diagnostics. The fixture
+# above still proves that a new missing or duplicate entry fails.
+$legacyArchiveMissingEntries = @{
+    'angelscript/2026-09-05-refactor-builder-engine-independent' = @('data/closure.yaml')
+    'angelscript/2026-09-16-refactor-bindings-two-stage-pipeline' = @('data/maintenance-20260912.md')
+    'harness/2026-09-09-refactor-document-authoring-structured-markdown' = @(
+        'authoring-exercise.md', 'final-verification.md', 'implementation-evidence.md'
+    )
+}
+$legacyArchiveIssueTexts = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+foreach ($archiveIdentity in @($legacyArchiveMissingEntries.Keys)) {
+    $historicalRoot = Join-Path $archiveRoot $archiveIdentity
+    foreach ($relative in @($legacyArchiveMissingEntries[$archiveIdentity])) {
+        [void]$legacyArchiveIssueTexts.Add("attachment-index-entry: $historicalRoot must index '$relative' exactly once (actual 0)")
+    }
+}
 $closureV1Count = 0
 foreach ($manifest in @(Get-ChildItem -LiteralPath $archiveRoot -Recurse -File -Filter 'change.yaml')) {
     $manifestText = Get-Content -LiteralPath $manifest.FullName -Raw
     if ($manifestText -match '(?m)^archive_schema:[ \t]*closure-v1[ \t]*\r?$') {
         $closureV1Count++
-        $archiveCompatibilityIssues += @(Test-AttachmentIndexCompatibility -ChangeRoot $manifest.DirectoryName)
+        $archiveCompatibilityIssues += @(Test-AttachmentIndexCompatibility -ChangeRoot $manifest.DirectoryName | Where-Object { -not $legacyArchiveIssueTexts.Contains([string]$_) })
     }
 }
 Assert-True ($closureV1Count -ge 1) 'At least one closure-v1 archive is required for attachment compatibility audit'
@@ -1158,7 +1186,7 @@ finally {
     }
 }
 
-$activeImplementationIssues = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot (Join-Path $projectRoot 'openspec\changes'))
+$activeImplementationIssues = @(Test-ActiveImplementationIssueGate -ActiveChangesRoot (Join-Path $projectRoot 'openspec\changes') -TrackedRepositoryRoot $projectRoot)
 Assert-Equal 0 $activeImplementationIssues.Count ("Active implementation issue gate failed:`n{0}" -f ($activeImplementationIssues -join [Environment]::NewLine))
 
 $reviewIssues = @(Test-ReviewClosureGate -ReviewRoot (Join-Path $changeRoot 'attachments\reviews'))

@@ -321,6 +321,11 @@ function Get-OpenSpecEnglishViolations {
                     [System.IO.Path]::GetFullPath((Join-Path $root 'target')),
                     [System.IO.Path]::GetFullPath((Join-Path $root 'build'))
                 )
+                if ($relativeRoot -eq 'openspec') {
+                    # Immutable archives remain selectable for a focused audit;
+                    # a default current-authoring audit does not rewrite history.
+                    $generatedRoots += [System.IO.Path]::GetFullPath((Join-Path $root 'archive'))
+                }
                 $pending = New-Object System.Collections.Generic.Stack[string]
                 $pending.Push([System.IO.Path]::GetFullPath($root))
                 while ($pending.Count -gt 0) {
@@ -365,7 +370,20 @@ function Get-OpenSpecEnglishViolations {
         $lineNumber = 0
         foreach ($line in [System.IO.File]::ReadLines($file.FullName)) {
             $lineNumber++
-            if ((Test-ContainsDisallowedOpenSpecLanguage -Text $line) -or
+            $languageLine = $line
+            if ($relativePath.Replace('\', '/') -like '.agents/skills/brainstorming/*') {
+                # These fixed draft field keys are literal schema values, not non-English guidance.
+                foreach ($codePoints in @(
+                    @(0x6B64, 0x523B), @(0x7126, 0x70B9), @(0x5DF2, 0x51B3),
+                    @(0x4E0B, 0x4E00, 0x95EE), @(0x8BB2, 0x6E05, 0x4E8E),
+                    @(0x672A, 0x8BB2), @(0x65E0)
+                )) {
+                    $key = -join @($codePoints | ForEach-Object { [char]$_ })
+                    $languageLine = $languageLine.Replace($key, '')
+                }
+            }
+            $languageLine = [regex]::Replace($languageLine, '`[^`\r\n]+`', '')
+            if ((Test-ContainsDisallowedOpenSpecLanguage -Text $languageLine) -or
                 (Test-ContainsForbiddenOpenSpecLanguageDefault -Text $line -RelativePath $relativePath)) {
                 $violations.Add("${relativePath}:$lineNumber") | Out-Null
             }
@@ -492,7 +510,15 @@ function Get-ActiveAttachmentIndexIssues {
         $indexText = (Get-Content -LiteralPath $indexPath -Raw).Replace('\', '/')
         foreach ($file in @(Get-ChildItem -LiteralPath $attachmentRoot.FullName -Recurse -File | Where-Object { $_.FullName -ne $indexPath })) {
             $relative = $file.FullName.Substring($attachmentRoot.FullName.Length).TrimStart('\', '/').Replace('\', '/')
-            $count = [regex]::Matches($indexText, [regex]::Escape($relative)).Count
+            $escapedRelative = [regex]::Escape($relative)
+            $entryPattern = '(?m)^-[ \t]+(?:\[[^\]\r\n]+\]\((?:\./)?' + $escapedRelative + '\)|(?:\./)?' + $escapedRelative + ')(?=[ \t]|$)'
+            $tableEntryPattern = '(?m)^\|[ \t]*\[[^\]\r\n]+\]\((?:\./)?' + $escapedRelative + '\)[ \t]*\|'
+            $count = [regex]::Matches($indexText, $entryPattern).Count + [regex]::Matches($indexText, $tableEntryPattern).Count
+            if ($count -eq 0) {
+                # Older INDEX files navigate some attachments through a prose link instead of a list or table row.
+                $proseLinkPattern = '\[[^\]\r\n]+\]\((?:\./)?' + $escapedRelative + '\)'
+                $count = [regex]::Matches($indexText, $proseLinkPattern).Count
+            }
             if ($count -ne 1) { $issues += "attachment-index-entry: $relative appears $count times" }
         }
     }
@@ -543,7 +569,8 @@ try {
         '.agents\skills\README-parent',
         'openspec\changes\fixture\attachments\reviews',
         'openspec\changes\fixture\selected',
-        'openspec\changes\fixture\unselected'
+        'openspec\changes\fixture\unselected',
+        'openspec\archive\changes\fixture\old-change'
     )) {
         [void](New-Item -ItemType Directory -Path (Join-Path $languageFixtureRoot $directory) -Force)
     }
@@ -567,6 +594,10 @@ try {
     $unselectedViolationRelative = 'openspec\changes\fixture\unselected\bad.md'
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $selectedCleanRelative), 'Selected English content.', [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $unselectedViolationRelative), "unselected-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
+    $archivedViolationRelative = 'openspec\archive\changes\fixture\old-change\historical.md'
+    [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $archivedViolationRelative), "historical-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
+    $inlineLiteralRelative = 'openspec\changes\fixture\selected\literal-path.md'
+    [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $inlineLiteralRelative), ('Source: `Temp/as' + [char]0x8BBE + '.md`.'), [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $languageOutsideFixtureRoot 'outside.md'), "outside-$([char]0x03B1)", [System.Text.UTF8Encoding]::new($false))
     [void](New-Item -ItemType Junction -Path $languageFixtureReparsePath -Target $languageOutsideFixtureRoot)
 
@@ -575,9 +606,11 @@ try {
         Assert-True (($fixtureViolations -join "`n").Contains($requiredPath)) "Language fixture was not rejected: $requiredPath"
     }
     Assert-True (@($fixtureViolations | Where-Object { $_ -like 'non-English path:*' }).Count -ge 1) 'Language gate must reject a non-English path segment.'
-    foreach ($allowedPath in @('.agents\skills\openspec\allowed_ZH.md', 'Tools\openspec\BINARY', 'attachments\reviews\quoted.md')) {
+    foreach ($allowedPath in @('.agents\skills\openspec\allowed_ZH.md', 'Tools\openspec\BINARY', 'attachments\reviews\quoted.md', $archivedViolationRelative, $inlineLiteralRelative)) {
         Assert-True (-not (($fixtureViolations -join "`n").Contains($allowedPath))) "Language fixture should remain allowed: $allowedPath"
     }
+    $selectedArchiveViolations = @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($archivedViolationRelative))
+    Assert-Equal $selectedArchiveViolations.Count 1 'an explicitly selected archive still receives the English audit'
 
     # Exercise the real language gate, including flat legacy and scoped local designs.
     $localDraftLanguagePaths = @(
@@ -703,7 +736,7 @@ try {
         [System.IO.File]::WriteAllText((Join-Path $changeRoot 'proposal.md'), 'Fixture proposal.', [System.Text.UTF8Encoding]::new($false))
     }
     [System.IO.File]::WriteAllText((Join-Path $goodChangeRoot 'attachments\proof.txt'), 'Good proof.', [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText((Join-Path $goodChangeRoot 'attachments\INDEX.md'), '- [Proof](proof.txt)', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText((Join-Path $goodChangeRoot 'attachments\INDEX.md'), "Proof: [proof.txt](proof.txt).`n`n- [Proof](proof.txt)", [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $badChangeRoot 'attachments\bad.txt'), 'Unindexed proof.', [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $badChangeRoot 'attachments\INDEX.md'), '# Bad Attachments', [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllText((Join-Path $childChangeRoot 'attachments\chosen.txt'), 'Chosen proof.', [System.Text.UTF8Encoding]::new($false))
@@ -770,7 +803,7 @@ if ($surfacePathsSpecified) {
     $englishScanArguments.SurfacePaths = $SurfacePaths
 }
 $englishViolations = @(Get-OpenSpecEnglishViolations @englishScanArguments)
-Assert-Equal $englishViolations.Count 0 "Maintained OpenSpec surfaces must use English; only explicitly named *_ZH files are exempt: $($englishViolations -join ', ')"
+Assert-Equal $englishViolations.Count 0 "Maintained OpenSpec surfaces must use English except literal brainstorming draft field keys and explicitly named *_ZH files: $($englishViolations -join ', ')"
 
 Assert-True (Test-Path -LiteralPath $harnessManifest -PathType Leaf) 'Harness module manifest is missing.'
 Assert-True (Test-Path -LiteralPath $exePath -PathType Leaf) 'Bundled openspec.exe is missing.'
@@ -1017,7 +1050,7 @@ Assert-True (-not $grillingText.Contains('at least three')) 'Grilling must not r
 foreach ($token in @('markers.md', '✅ Settled:', '❌ Dropped:', '🔁 Reopened:', '⏳ Held:', '📌 Pinned fact:', '❔ Open decision:', '👉 Recommendation:', '❗ Flip condition:', '✨ New:')) {
     Assert-True ($grillingText.Contains($token)) "Grilling visual contract is missing: $token"
 }
-foreach ($token in @('openspec/drafts/<domain>/<topic>/', 'README.md', 'log.md', 'findings/', 'glossary.md', 'design.md', 'handoff.md', 'exploring | designed | handed-off | parked | abandoned', 'mode: research | proposal | design', 'findings/<topic>.md', 'Draft opened:', 'target_change', 'attachments/drafts/', 'openspec-create-change', 'Harness does not scan them', 'no checkboxes, Task state, Ready state, or DAG', 'original-language wording')) {
+foreach ($token in @('openspec/drafts/<domain>/<topic>/', 'README.md', 'log.md', 'findings/', 'glossary.md', 'design.md', 'handoff.md', 'exploring | designed | handed-off | parked | abandoned', 'mode: research | proposal | design', 'findings/<topic>.md', 'Draft opened:', 'target_change', 'attachments/drafts/', 'openspec-create-change', 'never a tree-wide inventory', 'no Task state, Ready state, or DAG', 'original-language wording')) {
     Assert-True ($draftsText.Contains($token)) "Draft contract is missing: $token"
 }
 foreach ($token in @('## Collect the answers', 'AskQuestion', '(Recommended)', 'never a round', '- **A.**', 'Never indent option lines', 'every question to the user is a grill round')) {
@@ -1048,7 +1081,7 @@ foreach ($token in @('before implementation mutation', 'not an active Change or 
     Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
 }
 Assert-True (-not $applyText.Contains('naming grill round')) 'Apply must not schedule an interactive naming grill round.'
-foreach ($token in @('Never reopen', 'Exploration Carryover', 'attachments/drafts/handoff.md', 'never paste the draft `log.md`', 'unattended continuation', 'openspec-create-change', 'glossary.md', 'attachments/talks/', 'attachments/knowledges/')) {
+foreach ($token in @('Do not reopen', 'harness.change.seed.verify', 'attachments/INDEX.md', 'root `design.md`', '`## Call chains`', 'harness.change.plan.verify', 'unattended continuation', 'openspec-create-change', 'glossary')) {
     Assert-True ($applyText.Contains($token)) "Apply planning contract is missing: $token"
 }
 foreach ($token in @('new public name', '**Interfaces**', 'naming grill')) {
@@ -1126,7 +1159,7 @@ foreach ($token in @('cases.md', 'group by role', 'kind', 'parameterized', 'chec
 Assert-True ($executionConventionsText.Contains('deferred RED')) 'Execution conventions must exclude deferred RED cases from the card pass set.'
 Assert-True (-not $applyText.Contains('a role tag and Given')) 'Apply must not describe cases as a role tag plus Given / When / Then only.'
 # Merged lifecycle (harness/refactor-apply-change-absorb-planning): apply step 0 Ensure plan; one preflight text in tasks.md.
-foreach ($token in @('Ensure plan', 'openspec.status', 'attachments/drafts/handoff.md', 'skipped-gate', 'Never reopen', 'stops and reports', 'one indexed talk', 'never paste the draft `log.md`')) {
+foreach ($token in @('Ensure plan', 'openspec.status', 'harness.change.seed.verify', 'skipped-draft reason', 'Do not reopen', 'stops and reports', 'one indexed talk', 'do not recreate seeded talks/knowledge or copy the draft transcript', 'harness.change.plan.verify')) {
     Assert-True ($applyText.Contains($token)) "Apply Ensure plan step is missing: $token"
 }
 $preflightSection = [regex]::Match($taskReferenceText, '(?s)### Preflight\s*\n(.*?)(?=\n### |\z)').Groups[1].Value
@@ -1227,7 +1260,7 @@ foreach ($token in @('New-HarnessContext -WorkspaceRoot', 'one explicit or disco
 foreach ($token in @('three or more important relationships or mappings', 'multi-step sequence or state transition', 'hierarchy or layout', 'decision structure', 'Do not add a visual for a single fact', 'trivial one-step action', 'lightweight inline text diagram')) {
     Assert-True ($visualExplainText.Contains($token)) "Visual-explain trigger contract is missing: $token"
 }
-foreach ($token in @('explicit/discovered WorkspaceRoot', 'unattended continuation', 'no repository mode or branch convention', 'harness.{status,observe,evolution.status}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
+foreach ($token in @('explicit/discovered WorkspaceRoot', 'unattended continuation', 'no repository mode or branch convention', 'harness.{status,observe,evolution.status,draft.create', 'change.plan.verify}', 'openspec.maintenance.status', 'Root `Tools` PowerShell entrypoints are legacy deletion candidates', 'runtime uses `.agents/skills/openspec/bin/openspec.exe`')) {
     Assert-True ($skillsReadmeText.Contains($token)) "Skills README routing contract is missing: $token"
 }
 foreach ($token in @('current-directory-discovered WorkspaceRoot', 'Unattended continuation is defined once in .agents/skills/harness/SKILL.md', 'Root Tools PowerShell entry points are legacy deletion candidates', 'normal runtime uses .agents/skills/openspec/bin/openspec.exe', 'No step-level TDD scripts, no forbidden placeholder phrases, no size quotas')) {
@@ -1258,7 +1291,7 @@ foreach ($token in @('## Exploration carryover', 'openspec/drafts/<domain>/<topi
     Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"
 }
 $recordSchemaText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\record-schema.md') -Raw
-foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness does not scan it', 'local draft materials under `openspec/drafts/` default to', 'Every final Change record and attachment is English')) {
+foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness checks only an exact topic or scope', 'local draft materials under `openspec/drafts/` default to', 'Every final Change record and attachment is English')) {
     Assert-True ($recordSchemaText.Contains($token)) "Record schema draft contract is missing: $token"
 }
 foreach ($token in @('openspec/drafts/', 'brainstorming')) {

@@ -20,7 +20,7 @@ workspace.{status,list,new,bootstrap,verify,remove,activate,config.status,config
 git.{status,commit,integrate,push}
 openspec.{init,doctor,status,instructions,validate,domain,spec,change,workflow,completion}
 task.status
-harness.{status,observe,evolution.status}
+harness.{status,observe,evolution.status,draft.create,draft.status,draft.check,draft.archive,change.create,change.seed.verify,change.plan.verify}
 openspec.maintenance.status
 ue.{status,engine.list,target.list,process.list,ubt.capabilities,ubt.invoke,build,test,commandlet,suite.list,suite.plan,suite.run,run.status,run.cancel}
 ```
@@ -43,13 +43,13 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 
 OpenSpec is used only when the user explicitly names a Change or the accepted work requires one. Brainstorming topics share research/logs and manage independent designs in designs/<scope>/; current-focus mode is separate from scoped handoff state. The selected design exports English Change materials while new local draft content defaults to the user's conversation language unless explicitly specified otherwise. Unattended continuation may carry that work forward but does not create a second lifecycle, and it never opens `brainstorming`. The portable Rust CLI provides deterministic record primitives; Harness owns orchestration, evidence-gated Replan, and explicit Review intake.
 
-For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation. Drafts under `openspec/drafts/` are working records owned by `brainstorming`; they carry no task state and are not scanned by Harness or validated by the CLI.
+For OpenSpec-scoped work, an accepted exploration handoff is not execution state: resolve the canonical active Change and Ready Task DAG in the selected workspace before implementation mutation. Drafts under `openspec/drafts/` are working records owned by `brainstorming`; they carry no task state. Harness checks only an exact topic or selected scope and never scans the tree. Completed or abandoned topics can be explicitly archived under ignored `openspec/archive/drafts/`; parked topics stay active.
 
 New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`; use `feature`, not `feat`. The OpenSpec record-schema reference owns the full distinction and immutable-archive boundary.
 
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
 - `brainstorming` — keep a topic under `openspec/drafts/<domain>/<topic>/` with shared research and append-only conversation, plus independent `designs/<scope>/`. Topic mode follows the current focus: research investigates, proposal presents a candidate, design converges accepted decisions. Related independent questions may share a grill round. Each design owns its naming, approval and optional Change handoff; one handoff does not close the topic. Explicitly authorized direct edits need no Change. Existing Change scope uses update/replan rather than renewed design-mode brainstorming.
-- `openspec-create-change` — create the Change from one selected approved scoped design and seed its attachments: English draft exports, the confirmed talks and knowledge candidates, INDEX. The only route that runs `change create` for major work.
+- `openspec-create-change` — call `harness.change.create` for one selected approved scoped design, then seed English draft exports, confirmed talks/knowledge, and INDEX. Run `harness.change.seed.verify` before Ensure plan. Direct-origin Change creation also uses `harness.change.create` with a reason.
 - `openspec-update-change` — revise existing artifacts and apply an evidence-gated replan.
 - `openspec-apply-change` — implement Ready Task DAG nodes.
 - `openspec-verify-change` — completion verification and explicitly requested fixed-snapshot Review input.
@@ -70,3 +70,4 @@ Durable specifications use progressive Scenario Cards defined in `.agents/skills
 - Validate every changed Skill with the system `quick_validate.py` and execute changed scripts against controlled inputs.
 - Root `Tools` PowerShell entrypoints are legacy deletion candidates and are not the live Harness command surface. `Tools/openspec` is the intentional tracked-source exception: commit/tag that submodule first, while runtime uses `.agents/skills/openspec/bin/openspec.exe`. For each release, the parent records only one final accepted package commit containing the gitlink, manifest/docs, and bundled EXE; never stage or commit candidate EXE builds.
 - Keep entry Skills short. Move conditional schemas or procedures to a linked reference and load only the one needed.
+- Write new agent scratch under `Saved/AgentTemp/<topic>/`; do not bulk-migrate or delete prior Saved material.

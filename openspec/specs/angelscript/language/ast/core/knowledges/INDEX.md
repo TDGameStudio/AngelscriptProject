@@ -1,7 +1,22 @@
 # AST Core Knowledge Index
 
-- `clang-typed-ast-shape-and-lifetime.md` — evidence-backed guidance for concrete subclasses, taxonomy-driven casts and traversal, context-owned lifetime, canonical type separation, immutable projections, and the new codec; promoted from the typed-AST reconstruction Change.
-- `first-party-sdk-root.md` — current — first-party SDK lives at `Source/AngelscriptRuntime/angelscript/` (flattened; language headers under `frontend/<Phase>/`; public C header stays `Core/angelscript.h`). Serves Canonical AngelScript C++ names / include reconstructed headers. Origin: `angelscript/refactor-runtime-owned-sdk-layout/attachments/knowledges/first-party-sdk-root.md`.
-- `frontend-phase-directories.md` — current — reconstructed language sources live under `frontend/{Basic,Lexer,Parser,AST,Sema,Compile}/`; include `"frontend/<Phase>/as_*.h"`. Serves Canonical AngelScript C++ names / include reconstructed headers. Origin: `angelscript/refactor-frontend-phase-directories/attachments/knowledges/frontend-phase-directories.md`.
-- `impl-stem-matches-header.md` — current — implementation stems match headers except `as_frontend_options.h`; `as_builder.cpp` stays at the SDK root. Serves Canonical AngelScript C++ names. Origin: `angelscript/refactor-frontend-phase-directories/attachments/knowledges/impl-stem-matches-header.md`.
-
+- [Clang typed AST shape and lifetime](clang-typed-ast-shape-and-lifetime.md)
+  - Summary: Concrete subclasses, taxonomy-driven casts and traversal, context-owned lifetime, canonical type separation, immutable projections, and the new codec.
+  - Serves: Typed AST reconstruction and its consumers.
+  - Source: `angelscript/refactor-frontend-clang-typed-ast/attachments/knowledges/clang-typed-ast-shape-and-lifetime.md`.
+  - Status: current
+- [First-party SDK root](first-party-sdk-root.md)
+  - Summary: The first-party SDK lives at `Source/AngelscriptRuntime/angelscript/`, with language headers under `frontend/<Phase>/` and the public C header in `Core/angelscript.h`.
+  - Serves: Canonical AngelScript C++ names and reconstructed header includes.
+  - Source: `angelscript/refactor-runtime-owned-sdk-layout/attachments/knowledges/first-party-sdk-root.md`.
+  - Status: current
+- [Frontend phase directories](frontend-phase-directories.md)
+  - Summary: Reconstructed language sources live under `frontend/{Basic,Lexer,Parser,AST,Sema,Compile}/` and use `frontend/<Phase>/as_*.h` includes.
+  - Serves: Canonical AngelScript C++ names and reconstructed header includes.
+  - Source: `angelscript/refactor-frontend-phase-directories/attachments/knowledges/frontend-phase-directories.md`.
+  - Status: current
+- [Implementation stems match headers](impl-stem-matches-header.md)
+  - Summary: Implementation stems match headers except `as_frontend_options.h`; `as_builder.cpp` stays at the SDK root.
+  - Serves: Canonical AngelScript C++ names.
+  - Source: `angelscript/refactor-frontend-phase-directories/attachments/knowledges/impl-stem-matches-header.md`.
+  - Status: current

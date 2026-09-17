@@ -1,7 +1,7 @@
 workflow: angelscript
 context: |
   Language: English. All maintained OpenSpec records, manifests, workflows, templates, and attachments are written in English.
-  Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception among maintained records; brainstorming drafts under openspec/drafts/ are working records whose log.md and findings/ may keep the user's original wording, while their design.md and handoff.md stay English.
+  Keep structural headings and the normative keywords SHALL/MUST in English. Files explicitly named with _ZH are the only temporary localization exception among maintained records; new brainstorming draft materials under openspec/drafts/ default to the user's conversation language unless explicitly specified otherwise, including design.md and handoff.md; log.md preserves original wording. Every final Change record and attachment, including exported draft material and diagram explanations, remains English.
   AngelscriptProject is an Unreal Engine 5.8 host repository whose primary deliverable is Plugins/Angelscript.
   Keep Source/AngelscriptProject minimal; plugin behavior belongs in the owning plugin or extension.
   Plugins/Angelscript, Plugins/AngelscriptGameplayTags, Plugins/AngelscriptGAS, and Tools/openspec are independent Git submodules. Source changes land in the owning submodule before the parent gitlink is updated.

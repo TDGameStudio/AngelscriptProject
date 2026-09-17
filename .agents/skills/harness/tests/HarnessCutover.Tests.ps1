@@ -74,7 +74,8 @@ Assert-NotContains $unrealSkill 'does not enable itself' 'the Unreal Skill ackno
 Assert-Contains $skillIndex 'directly in the current PowerShell 7 process' 'the Skill index distinguishes direct route invocation'
 Assert-Contains $harnessSkill 'ordinary Harness routes execute directly in that current process' 'the Harness entry documents direct invocation'
 Assert-Contains $harnessSkill 'Intentional child `pwsh` processes' 'the Harness entry bounds isolated child hosts'
-Assert-Contains $taskDag '& ./.agents/skills/harness/tests/Harness.Tests.ps1' 'task verification examples use the current PowerShell process'
+Assert-Contains $taskDag 'level-2 heading `## [ ] X.Y Short title`' 'task guidance uses the current heading-node format'
+Assert-Contains $taskDag 'one fenced proving command' 'task guidance keeps a direct proving command'
 Assert-Contains $unrealSkill 'ordinary route dispatch stays in the caller process' 'the Unreal Skill distinguishes managed workers from dispatch'
 
 $moduleManifests = @(

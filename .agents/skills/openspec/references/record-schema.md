@@ -23,13 +23,12 @@ openspec/
 │   ├── README.md
 │   ├── log.md
 │   ├── findings/
-│   ├── glossary.md
-│   ├── design.md
-│   └── handoff.md
+│   └── designs/<scope>/{README,design,handoff,glossary}.md
+├── archive/drafts/<domain>/<date>-<topic>/ # ignored explicit completed/abandoned drafts
 └── archive/changes/<domain>/<date>-<change>/
 ```
 
-The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, identity, moves, and archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness does not scan it, and it carries no task state. `openspec-create-change` is the only Skill that turns one selected approved scoped design into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; new local draft materials under `openspec/drafts/` default to the user's conversation language unless the user specifies another draft language, and explicitly named `_ZH` documents retain their existing localization exception. Every final Change record and attachment is English, including exported draft design/handoff, research and diagram explanations.
+The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, Change identity, Change moves, and Change archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness checks only an exact topic or scope, and it carries no task state. `openspec-create-change` is the Skill that turns one selected approved scoped design into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; new local draft materials under `openspec/drafts/` default to the user's conversation language unless the user specifies another draft language, and explicitly named `_ZH` documents retain their existing localization exception. Every final Change record and attachment is English, including exported draft design/handoff, research and diagram explanations.
 
 ## Change identity
 
@@ -37,7 +36,9 @@ New AngelscriptProject Change IDs use `<domain>/<type>-<scope>-<outcome>`. The l
 
 Use `refactor` when module boundaries, dependencies, or structural shape change. Use `improve` for quality, diagnostics, performance, readability, or ergonomics without a structural reshape. Keep both a concrete scope and an outcome; do not use a bare verb or bundle unrelated outcomes into one Change.
 
-Harness enforces this project policy for normal `change create` targets and `change move --to` targets. An existing nonconforming active source may move to a conforming target. The portable CLI remains project-neutral, and immutable archive IDs and paths are never renamed by this policy.
+Harness enforces this project policy for `harness.change.create` and `change move --to` targets. The generic `openspec.change create` route rejects creation; use the typed Harness route with `Origin = Draft` and exact scope, or `Origin = Direct` and a reason. An existing nonconforming active source may move to a conforming target. The portable CLI remains project-neutral, and immutable archive IDs and paths are never renamed by this policy.
+
+Every newly marked Change keeps `attachments/data/harness-origin.json`. Draft-backed Changes pass `harness.change.seed.verify` after indexed, self-contained English export and before Ensure plan; Harness also checks the seed when `openspec.instructions` requests a planning artifact. Every new Change has a root `design.md` with `## Call chains`: actual caller-to-callee paths and `Measured at` (revision plus dirty paths) for code, or `none` with a reason for a non-code change. `harness.change.plan.verify`, `task.status`, and `openspec.instructions apply` enforce this on marked Changes. The exact pre-gate active IDs in `harness/scripts/legacy-change-plan-exemptions.json` retain their accepted contract; an unmarked new ID cannot claim grandfathering. The workflow's optional design artifact remains optional for those legacy IDs.
 
 ## Change attachments
 

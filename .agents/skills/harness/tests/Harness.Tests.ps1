@@ -333,6 +333,11 @@ Export-ModuleMember -Function Invoke-HarnessUnrealUbt, Invoke-HarnessUnrealBuild
     $taskWorkspaceExeDirectory = Join-Path $taskWorkspaceRoot '.agents\skills\openspec\bin'
     [void](New-Item -ItemType Directory -Path $taskWorkspaceExeDirectory -Force)
     Copy-Item -LiteralPath $sourceOpenSpec -Destination (Join-Path $taskWorkspaceExeDirectory 'openspec.exe')
+    $taskWorkspaceHarnessScripts = Join-Path $taskWorkspaceRoot '.agents\skills\harness\scripts'
+    [void](New-Item -ItemType Directory -Path $taskWorkspaceHarnessScripts -Force)
+    foreach ($leaf in @('ChangeGate.psd1', 'ChangeGate.psm1', 'DraftLifecycle.psd1', 'DraftLifecycle.psm1')) {
+        Copy-Item -LiteralPath (Join-Path $repoRoot ".agents\skills\harness\scripts\$leaf") -Destination $taskWorkspaceHarnessScripts
+    }
     [void](Invoke-FixtureGit -Repository $taskWorkspaceRoot -Arguments @('init', '-b', 'main'))
     [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot '.gitignore'), "Saved/`nAgentConfig.ini`n")
     [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'Fixture.uproject'), "{}`n")
@@ -384,9 +389,10 @@ goal: Prove semantic naming never rewrites historical archives.
         'fixture/chore-record-tree-maintenance'
     )
     foreach ($changeId in $validSemanticChangeIds) {
-        $validSemanticChange = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
-            'create', $changeId, '--title', "Semantic fixture $changeId", '--goal', 'Exercise one allowed semantic Change type', '--json'
-        )
+        $validSemanticChange = Invoke-Harness -Command 'harness.change.create' -Context $taskWorkspaceContext -Parameters @{
+            ChangeId = $changeId; Title = "Semantic fixture $changeId"; Goal = 'Exercise one allowed semantic Change type'
+            Origin = 'Direct'; Reason = 'Fixture has no user-owned design decision'
+        }
         Assert-Equal 'Succeeded' $validSemanticChange.status "semantic Change type is accepted for '$changeId'"
         $validSemanticLeaf = ($changeId -split '/', 2)[1]
         $validSemanticManifestPath = Join-Path $taskWorkspaceRoot "openspec\changes\fixture\$validSemanticLeaf\change.yaml"
@@ -442,10 +448,12 @@ goal: Prove semantic naming never rewrites historical archives.
     Assert-True (Test-Path -LiteralPath $legacyArchiveRoot -PathType Container) 'semantic route validation leaves the historical archive path in place'
     Assert-Equal $legacyArchiveHash (Get-FileHash -LiteralPath $legacyArchiveManifestPath -Algorithm SHA256).Hash 'semantic route validation leaves the historical archive manifest byte-for-byte unchanged'
 
-    $taskWorkspaceChange = Invoke-Harness -Command 'openspec.change' -Context $taskWorkspaceContext -ArgumentList @(
-        'create', 'fixture/test-task-dag', '--title', 'Task DAG', '--goal', 'Verify Harness task recognition', '--json'
-    )
+    $taskWorkspaceChange = Invoke-Harness -Command 'harness.change.create' -Context $taskWorkspaceContext -Parameters @{
+        ChangeId = 'fixture/test-task-dag'; Title = 'Task DAG'; Goal = 'Verify Harness task recognition'
+        Origin = 'Direct'; Reason = 'Fixture tests a parsed Task DAG'
+    }
     Assert-Equal 'Succeeded' $taskWorkspaceChange.status 'Task Graph fixture change is created'
+    [System.IO.File]::WriteAllText((Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\design.md'), "## Call chains`n`nnone — fixture Task DAG parsing has no code path.`n")
     $taskWorkspacePath = Join-Path $taskWorkspaceRoot 'openspec\changes\fixture\test-task-dag\tasks.md'
     $taskWorkspaceDocument = @'
 ---
@@ -814,8 +822,8 @@ second
 
     $validFixture = New-InstallationFixture -Root (Join-Path $scratch 'health-valid') -SourceRoot $repoRoot
     $validFixtureHealth = Test-HarnessInstallation -ProjectRoot $validFixture
-    Assert-True $validFixtureHealth.IsValid 'a complete fixed OpenSpec 0.9.0 package passes installation health'
-    Assert-Equal '0.9.0' $validFixtureHealth.OpenSpecPackage.Version 'health reports the verified final OpenSpec identity'
+    Assert-True $validFixtureHealth.IsValid 'a complete fixed OpenSpec 0.10.0 package passes installation health'
+    Assert-Equal '0.10.0' $validFixtureHealth.OpenSpecPackage.Version 'health reports the verified final OpenSpec identity'
     Assert-True $validFixtureHealth.OpenSpecPackage.Verified 'health distinguishes a verified package from mere file presence'
     Assert-Equal 0 @(Get-Module UnrealEngineDevelop -All).Count 'installation validation checks the Unreal manifest without importing it'
 

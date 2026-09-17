@@ -488,14 +488,15 @@ try {
     try {
         $evolutionDomain = @(& $sourceOpenSpec domain create fixture --title Fixture --description 'Fixture domain.' --json 2>&1)
         Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture domain creation failed: {0}" -f ($evolutionDomain -join [Environment]::NewLine))
-        $evolutionChange = @(& $sourceOpenSpec change create fixture/evolution-status --title 'Evolution status performance fixture' --goal 'Measure exact evolution status.' --json 2>&1)
-        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture change creation failed: {0}" -f ($evolutionChange -join [Environment]::NewLine))
+        $evolutionChangeOutput = @(& $sourceOpenSpec change create fixture/evolution-status --title 'Evolution status performance fixture' --goal 'Measure exact evolution status.' --json 2>&1)
+        Assert-PerformanceCondition ($LASTEXITCODE -eq 0) ("EvolutionStatus fixture change creation failed: {0}" -f ($evolutionChangeOutput -join [Environment]::NewLine))
     }
     finally {
         Pop-Location
     }
 
     $evolutionChangeRoot = Join-Path $evolutionFixtureRoot 'openspec\changes\fixture\evolution-status'
+    $evolutionChange = 'fixture/evolution-status'
     $evolutionDataRoot = Join-Path $evolutionChangeRoot 'attachments\data'
     [void](New-Item -ItemType Directory -Path $evolutionDataRoot -Force)
     [System.IO.File]::WriteAllText((Join-Path $evolutionChangeRoot 'proposal.md'), "# Proposal`n`nThis stable performance fixture measures exact evolution status after all setup completes.`n", [System.Text.UTF8Encoding]::new($false))
@@ -615,6 +616,11 @@ fixture
 ```
 '@
         [System.IO.File]::WriteAllText($tasksPath, $tasksDocument, [System.Text.UTF8Encoding]::new($false))
+        $taskChangeRoot = Split-Path $tasksPath -Parent
+        $taskMarkerRoot = Join-Path $taskChangeRoot 'attachments/data'
+        [void](New-Item -ItemType Directory -Path $taskMarkerRoot -Force)
+        [System.IO.File]::WriteAllText((Join-Path $taskMarkerRoot 'harness-origin.json'), '{"schema":1,"changeId":"fixture/performance","origin":"Direct","reason":"Isolated performance fixture"}', [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText((Join-Path $taskChangeRoot 'design.md'), "## Call chains`n`nnone — parser performance fixture with no code path.`n", [System.Text.UTF8Encoding]::new($false))
 
         $effectiveTaskChange = 'fixture/performance'
         $taskContext = New-HarnessContext -WorkspaceRoot $taskFixtureRoot
@@ -739,7 +745,7 @@ fixture
                 $timer = [System.Diagnostics.Stopwatch]::StartNew()
                 $evolutionResult = Invoke-Harness -Command 'harness.evolution.status' -Context $evolutionContext -Parameters @{ Change = $evolutionChange; RequireTerminal = $true }
                 $timer.Stop()
-                Assert-PerformanceCondition ($evolutionResult.status -eq 'Succeeded' -and $evolutionResult.exitCode -eq 0) 'harness.evolution.status failed'
+                Assert-PerformanceCondition ($evolutionResult.status -eq 'Succeeded' -and $evolutionResult.exitCode -eq 0) ("harness.evolution.status failed: {0}" -f ($evolutionResult | ConvertTo-Json -Depth 5 -Compress))
                 Assert-PerformanceCondition ($evolutionResult.data.ChangeId -eq $evolutionChange) 'harness.evolution.status returned a different change'
                 Assert-PerformanceCondition ($evolutionResult.data.LatestEvaluationResult -eq 'passed') 'harness.evolution.status did not use workflow-evaluation frontmatter'
                 Assert-PerformanceCondition ([bool]$evolutionResult.data.ClosureReady) 'harness.evolution.status fixture was not terminal'

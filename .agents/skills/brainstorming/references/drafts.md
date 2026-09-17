@@ -30,7 +30,15 @@ opened: YYYY-MM-DD
 ---
 ```
 
-The body gives the current focus as a relative link, a short continuation note, settled decisions with their source rounds, next open decisions, minimum reading order and links to designs. Link to authoritative scoped status; do not maintain a second approval ledger.
+The body begins with five concise Markdown list items, then optional reading order and design links:
+
+- **此刻**：current activity in plain language.
+- **焦点**：one relative local link to the current finding, log, or design.
+- **已决**：the latest settled decision and its source round, or `无`.
+- **下一问**：the next open decision, or `无`.
+- **讲清于**：`[R<n>](log.md#r<n>) · YYYY-MM-DD` for the last visible explanation, or `未讲`.
+
+`harness.draft.status` checks these five fields, link closure, and the log-round anchor; it cannot establish that the explanation really appeared in chat or that the log is verbatim. The author maintains those facts. Link to authoritative scoped status; do not maintain a second approval ledger.
 
 Mode describes the current activity: investigate, propose, or converge a design. Switch it with the focus and append the reason to log.md. It is not approval or a one-way maturity ladder. Each design keeps its own state, without its own mode. Going back to research does not undo approval or reopen an existing Change's design.
 
@@ -65,7 +73,7 @@ Explicitly authorized direct implementation without a Change uses the accepted d
 - Announce Draft opened: <path> (mode: <mode>) once. Keep log.md append-only: every actual user message, assistant discussion, displayed diagram, submitted tool question/options and returned answer retains original wording. Corrections, interruptions and resumed replies are new entries; a summary never replaces the original. Do not log prepared text as already delivered or an empty tool result as a choice.
 - Send the situation brief in chat before the form. Saved text, tool output and links are not a conversational explanation. Log the delivered brief before a blocking question when practical; tool history preserves pending questions until logging resumes.
 - Each findings/<topic>.md carries evidence, diagrams as shown, conclusions and open points. Identify observations versus proposals and the source/time context when it affects interpretation. Optional topic entry pages help large findings collections; avoid empty navigation scaffolds.
-- Resume through the topic README, the focused finding or scoped README/design, then the cited log rounds. Use the tail for recent messages, not as the sole proof of approval. Mark reopened decisions with their original decision reference.
+- Resume through `harness.draft.status`, the focused finding or scoped README/design, then the cited log rounds. Use the tail for recent messages, not as the sole proof of approval. Mark reopened decisions with their original decision reference.
 - Shared glossary.md carries common terms. The selected design's glossary records its relevant names and any shared definitions it relies on, with provenance. New public names use the naming round. Do not silently change the meaning of a name already exported to a Change.
 
 ## Language and export
@@ -84,4 +92,6 @@ When another bounded outcome appears in a legacy topic, create designs/<scope>/ 
 
 ## Boundaries
 
-Drafts remain local under openspec/drafts/ and git-ignored. They are working records with no checkboxes, Task state, Ready state, or DAG. Harness does not scan them and the portable CLI does not validate them; do not add either. Persistent approval and state come from scoped records and source rounds, not an automatic runtime or marker parser.
+- Drafts remain local and ignored under `openspec/drafts/`; they carry no Task state, Ready state, or DAG. Harness checks one exact topic or selected scope, never a tree-wide inventory. The portable CLI does not validate drafts.
+- Use `harness.draft.check` for the selected designed scope before creating a draft-backed Change. Its structural check includes handoff headings, target identity, referenced local files, and a scoped approval round for behavior work. Human review still owns approval meaning, English translation, and chat/log identity.
+- Use `harness.draft.archive` only for an explicitly completed or abandoned topic. Completion requires no next question and no exploring or parked scoped design. A parked topic stays active. Archived drafts are immutable under ignored `openspec/archive/drafts/<domain>/<date>-<topic>/`; restart discussion in a new linked topic.
