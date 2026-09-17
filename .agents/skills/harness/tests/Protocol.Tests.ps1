@@ -588,7 +588,7 @@ $null = & git -C $projectRoot check-ignore --no-index --quiet -- '.codex/local.j
 $localCodexIgnoreExitCode = $LASTEXITCODE
 Assert-Equal 0 $localCodexIgnoreExitCode 'Unrelated project-local .codex files remain ignored'
 $hookScript = Get-Content -LiteralPath $hookScriptPath -Raw
-foreach ($token in @('#requires -Version 7.0', '#requires -PSEdition Core', '[Console]::In.ReadToEnd()', 'rev-parse', 'harness.status', 'hookSpecificOutput', 'additionalContext')) {
+foreach ($token in @('#requires -Version 7.0', '#requires -PSEdition Core', '[Console]::In.ReadToEnd()', 'rev-parse', 'hookSpecificOutput', 'additionalContext')) {
     Assert-True ($hookScript.Contains($token)) "Codex hook adapter is missing: $token"
 }
 foreach ($forbiddenHookToken in @('harness.observe', 'workspace.bootstrap', 'workspace.config.set', 'git.commit', 'git.push', 'Stop-Harness')) {
@@ -598,17 +598,19 @@ foreach ($forbiddenHookToken in @('harness.observe', 'workspace.bootstrap', 'wor
 $hookConfig = Get-Content -LiteralPath $hookConfigPath -Raw | ConvertFrom-Json -ErrorAction Stop
 $hookEventNames = @($hookConfig.hooks.PSObject.Properties.Name)
 Assert-True ('SessionStart' -in $hookEventNames) 'SessionStart hook is required'
-Assert-True ('SubagentStart' -in $hookEventNames) 'SubagentStart hook is required'
+Assert-True ('SubagentStart' -notin $hookEventNames -and 'PostToolUse' -notin $hookEventNames) 'Optional hooks do not run per tool or subagent'
 Assert-True ('Stop' -in $hookEventNames) 'Stop records the delivered final for a bound session'
-Assert-True ('PostToolUse' -in $hookEventNames -and 'Interrupt' -in $hookEventNames) 'Tool and interrupt checkpoints are configured'
+Assert-True ('UserPromptSubmit' -in $hookEventNames -and 'Interrupt' -in $hookEventNames) 'User input and pause checkpoints are configured'
 $sessionRegistration = @($hookConfig.hooks.SessionStart)[0]
 Assert-Equal 'startup|resume|compact' ([string]$sessionRegistration.matcher) 'SessionStart includes compaction recovery'
 $hookCommands = @($hookConfig.hooks.PSObject.Properties | ForEach-Object { $_.Value | ForEach-Object { $_.hooks } })
-Assert-True ($hookCommands.Count -eq 6) 'Exactly one command is registered for each supported hook event'
+Assert-True ($hookCommands.Count -eq 4) 'Exactly one command is registered for each low-frequency hook event'
 foreach ($hookCommand in $hookCommands) {
     Assert-Equal 'command' ([string]$hookCommand.type) 'Codex hook uses the command adapter'
     Assert-True ([int]$hookCommand.timeout -ge 1 -and [int]$hookCommand.timeout -le 10) 'Codex hook has a bounded execution timeout'
-    Assert-True ([int]$hookCommand.additionalContextLimit -gt 0 -and [int]$hookCommand.additionalContextLimit -le 1200) 'Codex hook context limit stays positive and bounded'
+    if ('additionalContextLimit' -in $hookCommand.PSObject.Properties.Name) {
+        Assert-True ([int]$hookCommand.additionalContextLimit -gt 0 -and [int]$hookCommand.additionalContextLimit -le 1200) 'Codex hook context limit stays positive and bounded'
+    }
     Assert-Contains ([string]$hookCommand.commandWindows) 'pwsh(?:\.exe)?[ \t]+-NoProfile' 'Codex hook explicitly uses PowerShell 7 without a profile'
 }
 

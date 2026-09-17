@@ -5,18 +5,29 @@ description: "Use whenever a reply explains architecture, a workflow, state or l
 
 ## guidance
 
-- Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
-- Trigger proactively when the explanation contains three or more important relationships or mappings, dependent branches, a multi-step sequence or state transition, hierarchy or layout, or a decision structure that is materially easier to scan than prose. Also trigger when the user explicitly asks to visualize or compare.
-- Do not add a visual for a single fact, a trivial one-step action, a simple edit, or information already clear in a short paragraph or list. Prefer a lightweight inline text diagram; create a focused HTML artifact only when exploration, navigation, interaction, or export materially helps.
-- Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
-- You may use one visual, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user. Treat every example as a shape hint, not a fill-in-the-blanks form.
+- Help the user understand the current topic of conversation visually.
+  - Skip the preamble and keep prose brief.
+  - Pick the smallest view that makes the key point clear.
+- Trigger proactively when the explanation contains three or more important relationships or mappings, dependent branches, a multi-step sequence or state transition, hierarchy or layout, or a decision structure that is materially easier to scan than prose.
+- Also trigger when the user explicitly asks to visualize or compare.
+- Do not add a visual for a single fact, a trivial one-step action, a simple edit, or information already clear in a short paragraph or list.
+- Prefer a lightweight inline text diagram; create a focused HTML artifact only when exploration, navigation, interaction, or export materially helps.
+- Place each visual next to the short text it supports.
+  - Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
+- You may use one visual, you may use several, it is unlikely you will use all of them.
+  - Use your judgement and don't overwhelm the user.
+  - Treat every example as a shape hint, not a fill-in-the-blanks form.
 - A proven pairing for walking through a function or class: a call tree for navigation plus a simplified-code excerpt for depth — the tree shows where, the excerpt shows how.
-- Project preference: no enclosing boxes or frames in ASCII figures. Prefer indented trees (`└─`, `├─`, `│`) with bracketed edge labels (`[calls]`, `[member]`, `[inherits]`) and an aligned `//` sentence comment per node instead of file:line columns. Use a boxed pattern from the catalog only when the user asks for it.
-- All ASCII example figures live in the `ascii/` directory next to this file: one file per category, one worked example per diagram type. Pick the diagram types you need from the catalog below, then read only the matching category file — or just the one fragment, by searching that file for the exact section heading text and reading until the next heading. Never read all category files.
+- Project preference: no enclosing boxes or frames in ASCII figures.
+  - Prefer indented trees (`└─`, `├─`, `│`) with bracketed edge labels (`[calls]`, `[member]`, `[inherits]`) and an aligned `//` sentence comment per node instead of file:line columns.
+  - Use a boxed pattern from the catalog only when the user asks for it.
+- All ASCII example figures live in the `ascii/` directory next to this file: one file per category, one worked example per diagram type.
+  - Pick the diagram types you need from the catalog below, then read only the matching category file — or just the one fragment, by searching that file for the exact section heading text and reading until the next heading.
+  - Never read all category files.
 
 ## Diagram catalog for the ascii/ directory
 
-Each category below maps to one file; each "Section heading" is a `##` heading inside that file, exact text — use it as the search key.
+- Each category below maps to one file; each "Section heading" is a `##` heading inside that file, exact text — use it as the search key.
 
 ### Code-shaped views — `ascii/code-shaped-views.md`
 

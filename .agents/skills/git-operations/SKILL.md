@@ -5,7 +5,8 @@ description: Inspect and commit exact AngelscriptProject workspace changes acros
 
 # Git Operations
 
-Harness selects the workspace and authority. Use `git.status`, `git.commit`, `git.integrate`, or explicitly authorized `git.push`; never bypass the selected context with an implicit repository root.
+- Harness selects the workspace and authority.
+- Use `git.status`, `git.commit`, `git.integrate`, or explicitly authorized `git.push`; never bypass the selected context with an implicit repository root.
 
 Load only the relevant reference:
 
@@ -15,15 +16,18 @@ Load only the relevant reference:
 Safety invariants:
 
 - Commits require an exact `WorkspaceRoot` and exact repository/path scopes.
-- Replicas expose only their editable plugin repositories; snapshots and the project root are not Git commit targets. Queue closure uses `PluginsOnly` and `PreserveOutsideStaged` in primary and replica workspaces; parent commits stay user-directed.
-- Exact scoped commits run normal hooks against an isolated candidate index. A hook cannot widen the accepted commit or pollute the live index; a failed candidate restores the affected repository ref/index boundary when its compare-and-swap still owns the attempted ref.
+- Replicas expose only their editable plugin repositories; snapshots and the project root are not Git commit targets.
+- Queue closure uses `PluginsOnly` and `PreserveOutsideStaged` in primary and replica workspaces; parent commits stay user-directed.
+- Exact scoped commits run normal hooks against an isolated candidate index.
+  - A hook cannot widen the accepted commit or pollute the live index; a failed candidate restores the affected repository ref/index boundary when its compare-and-swap still owns the attempted ref.
 - Hooks are arbitrary programs: report exact residual worktree paths and external effects, but never overwrite them while claiming rollback.
 - `AllChanges` requires explicit intent, an exact registered linked worktree, and a preview of included non-ignored paths.
 - Reject unrelated pre-staged content and never force-add ignored local configuration.
 - Use actual checked-out branches; detached repositories require explicit `TargetBranches` entries.
-- Generic parent commits record selected submodule gitlinks after plugin commits. `PluginsOnly` never adds parent scopes or changes the parent HEAD.
+- Generic parent commits record selected submodule gitlinks after plugin commits.
+  - `PluginsOnly` never adds parent scopes or changes the parent HEAD.
 - Integrate only an exact registered `SourceWorkspaceRoot` and reviewed source HEAD, with explicit target branches and a complete preview.
 - Commit and integration preserve source commits, branches/worktree, unrelated target changes, and all remote state.
 - Push only through an explicit user-requested `git.push`; never force push, delete branches, or remove worktrees as a Git operation side effect.
 
-Workspace creation, bootstrap, configuration, verification, activation, and removal belong to `workspace-lifecycle`.
+- Workspace creation, bootstrap, configuration, verification, activation, and removal belong to `workspace-lifecycle`.

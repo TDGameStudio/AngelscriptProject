@@ -934,11 +934,21 @@ Successful work MUST reach verified and closure-ready state while preserving its
 
 ### Requirement: Optional low-cost Codex hooks
 
-The repository MAY provide project-local Codex `SessionStart` and `SubagentStart` hooks that call the same fast Harness status contract. Hooks MUST be optional, bounded, PowerShell 7-only, non-mutating, and fail open with concise diagnostics. They MUST NOT run detailed Git/submodule scans, create workflow records automatically, become required by Cursor or Grok, or add `Stop` or `PostToolUse` hooks in this Change.
+The repository MAY provide optional, bounded, PowerShell 7-only Codex hooks at `SessionStart`, `UserPromptSubmit`, `Interrupt` and `Stop`. Hooks MUST resolve and validate the selected workspace, fail open with concise diagnostics, and remain optional for Cursor and other clients. They MUST NOT register per-tool or subagent hooks, scan all drafts, run detailed Git/submodule scans, or start an execution scope. Unbound sessions MUST NOT require Python workers; inactive recording bindings MUST also be skipped. Workspace orientation MUST reuse the identity already resolved by the hook.
+
+For explicitly bound sessions, `SessionStart`, `UserPromptSubmit` and `Stop` MAY reconcile delivered conversation originals through the shared recorder with its source identity, history integrity and coverage checks. `UserPromptSubmit` MUST save pending execution input before recording. `Interrupt` MUST only preserve an existing execution pause, leaving recording to the next boundary. `Stop` MAY request continuation only within an explicitly authorized running scope after recording reconciliation has been attempted. The agent's public Harness workflow MUST remain responsible for continuation, feedback handling and source reconciliation when hooks are unavailable.
 
 #### Scenario: Start a trusted Codex session
-- **WHEN** Codex trusts the project hook configuration and emits `SessionStart` or `SubagentStart`
-- **THEN** the hook resolves the event workspace from its working directory and injects a bounded status summary without changing repository state
+- **WHEN** Codex trusts the project hook configuration and emits `SessionStart`
+- **THEN** the hook resolves the event workspace from its working directory and injects a bounded identity summary without creating a recording or execution binding
+
+#### Scenario: Keep tool calls free of hook overhead
+- **WHEN** a tool completes or a subagent starts
+- **THEN** no project hook is registered for that event and conversation recording waits for the next configured boundary
+
+#### Scenario: Preserve interrupted feedback and originals
+- **WHEN** a bound execution is interrupted while delivered messages remain unrecorded
+- **THEN** the hook saves the pause without waiting for recording and the next recording boundary reconciles those originals without automatically resuming the paused execution
 
 #### Scenario: Run in another client
 - **WHEN** Cursor, Grok, or a Codex session without trusted project hooks uses Harness

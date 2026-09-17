@@ -5,32 +5,52 @@ description: Use when implementing, extending, or refactoring AngelscriptProject
 
 # Angelscript Test Guide
 
-Use this skill as the quick execution guide for writing or refactoring C++ automation tests in `AngelscriptProject`.
+- Use this skill as the quick execution guide for writing or refactoring C++ automation tests in `AngelscriptProject`.
 
-The reconstruction baseline hard-disables the old runtime and legacy test corpus. New tests live under `Plugins/Angelscript/Source/AngelscriptTest/{NativeEngine,Bindings,Framework,FrameworkTests,Baseline}/`. NativeEngine identities are `Angelscript.UnitTest.NativeEngine.<Layer>.<Class>.<Method>`; Bindings, Framework, and Baseline keep their existing prefixes. `NewVersion` is not a source root or identity segment.
+- The reconstruction baseline hard-disables the old runtime and legacy test corpus.
+- New tests live under `Plugins/Angelscript/Source/AngelscriptTest/{NativeEngine,Bindings,Framework,FrameworkTests,Baseline}/`.
+- NativeEngine identities are `Angelscript.UnitTest.NativeEngine.<Layer>.<Class>.<Method>`; Bindings, Framework, and Baseline keep their existing prefixes.
+- `NewVersion` is not a source root or identity segment.
 
-Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT. The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
+- Read [references/legacy-source-isolation.md](references/legacy-source-isolation.md) before changing a `Legacy/.ubtignore` boundary, moving old test source, or diagnosing why ignored sources still enter C++ or UHT.
+  - The durable behavior is owned by `openspec/specs/angelscript/testing/baseline/spec.md`.
 
-Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries. It covers both providers, complete-version rules, ownership and failure boundaries; the production Language example is `Language/Syntax/StructFields` with parentless `fields-two`, child `add-field`, and `StructFieldsCompileFail`. The durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
+- Read [references/test-code-database.md](references/test-code-database.md) when authoring shared versioned `.as` containers, adding generic source annotations, registering C++ source factories from another module, or consuming `FAngelscriptTestCode` queries.
+  - It covers both providers, complete-version rules, ownership and failure boundaries; the production Language example is `Language/Syntax/StructFields` with parentless `fields-two`, child `add-field`, and `StructFieldsCompileFail`.
+  - The durable behavior is owned by `openspec/specs/angelscript/testing/code-database/spec.md`.
 
-When you need CQTest macro expansion, registration, lifecycle, matcher internals, latent commands, or engine test components, load [cqtest.md](cqtest.md). That file is the UE 5.8 engine reference. This skill owns project identity, replacement fixtures, and Harness verification. If they conflict, this file wins.
+- When you need CQTest macro expansion, registration, lifecycle, matcher internals, latent commands, or engine test components, load [cqtest.md](cqtest.md).
+  - That file is the UE 5.8 engine reference.
+  - This skill owns project identity, replacement fixtures, and Harness verification.
+  - If they conflict, this file wins.
 
 ## Replacement NativeEngine CQTest Rules
 
 - Use CQTest only as an explicitly included UE assertion and registration library under `WITH_ANGELSCRIPT_TESTS`; do not enable `WITH_ANGELSCRIPT_UNITTESTS` or inherit the legacy force include.
-- Put shared replacement-only fixtures in `NativeEngine/NativeEngineTestSupport.h`. Keep them limited to locally owned inputs and observations; do not construct an ambient `asCScriptEngine`, `FAngelscriptEngine`, or legacy engine pool.
-- CQTest composes `<TestDir>.<ClassName>.<MethodName>`. Use `Angelscript.UnitTest.NativeEngine.<Layer>` as `TestDir`. The C++ class token names the scenario family and must not repeat the layer; each `TEST_METHOD` is the case token.
-- Include `CQTest.h` explicitly in each test translation unit. Keep scenario flow and matcher assertions in the method, and clean up method-owned state deterministically.
-- After an incremental Harness editor build, run one exact `Angelscript.UnitTest.NativeEngine.<Area>` prefix with `Fast = $true`. Treat the Automation report's complete paths, counts, warnings/errors, and process exit as the public-identity oracle.
+- Put shared replacement-only fixtures in `NativeEngine/NativeEngineTestSupport.h`.
+  - Keep them limited to locally owned inputs and observations; do not construct an ambient `asCScriptEngine`, `FAngelscriptEngine`, or legacy engine pool.
+- CQTest composes `<TestDir>.<ClassName>.<MethodName>`.
+  - Use `Angelscript.UnitTest.NativeEngine.<Layer>` as `TestDir`.
+  - The C++ class token names the scenario family and must not repeat the layer; each `TEST_METHOD` is the case token.
+- Include `CQTest.h` explicitly in each test translation unit.
+  - Keep scenario flow and matcher assertions in the method, and clean up method-owned state deterministically.
+- After an incremental Harness editor build, run one exact `Angelscript.UnitTest.NativeEngine.<Area>` prefix with `Fast = $true`.
+  - Treat the Automation report's complete paths, counts, warnings/errors, and process exit as the public-identity oracle.
 
 ## CQTest numeric assertions (replacement and legacy)
 
-- `AreEqual` and `AreNotEqual` reject floating-point operands with a compile-time assertion. Use `ASSERT_THAT(IsNear(Expected, Actual, Epsilon))` for approximate numeric results; choose the tolerance from the tested contract rather than merely making a failure disappear.
-- When exact numeric equality is the intended contract, use `ASSERT_THAT(IsTrue(Expected == Actual))` and explain why exactness is justified. For example, literal-decoding fixtures `0.5`, `1.0`, `0.25` and `100.0` are exactly representable; they should not lose their exact-value proof just to satisfy CQTest's matcher API.
-- Exact numeric equality is not bitwise identity (for example, signed zero). If the contract concerns representation, compare the explicit representation instead. Do not cast floating values to integers or suppress compiler diagnostics to bypass the matcher restriction.
-- Local authority: the selected engine's `Engine/Source/Developer/CQTest/Public/Assert/NoDiscardAsserter.inl` (`AreEqual`, `AreNotEqual`, `IsNear`), checked against UE 5.8. Confirm the implementation again if the engine or assertion library changes.
+- `AreEqual` and `AreNotEqual` reject floating-point operands with a compile-time assertion.
+  - Use `ASSERT_THAT(IsNear(Expected, Actual, Epsilon))` for approximate numeric results; choose the tolerance from the tested contract rather than merely making a failure disappear.
+- When exact numeric equality is the intended contract, use `ASSERT_THAT(IsTrue(Expected == Actual))` and explain why exactness is justified.
+  - For example, literal-decoding fixtures `0.5`, `1.0`, `0.25` and `100.0` are exactly representable; they should not lose their exact-value proof just to satisfy CQTest's matcher API.
+- Exact numeric equality is not bitwise identity (for example, signed zero).
+  - If the contract concerns representation, compare the explicit representation instead.
+  - Do not cast floating values to integers or suppress compiler diagnostics to bypass the matcher restriction.
+- Local authority: the selected engine's `Engine/Source/Developer/CQTest/Public/Assert/NoDiscardAsserter.inl` (`AreEqual`, `AreNotEqual`, `IsNear`), checked against UE 5.8.
+  - Confirm the implementation again if the engine or assertion library changes.
 
-The remaining CQTest guidance describes the quarantined legacy corpus. Treat its force include, `ASTEST_*`, engine lifecycle, and test organization as recovery/reference material, not as defaults for reconstruction tests.
+- The remaining CQTest guidance describes the quarantined legacy corpus.
+- Treat its force include, `ASTEST_*`, engine lifecycle, and test organization as recovery/reference material, not as defaults for reconstruction tests.
 
 ## Legacy CQTest Rules
 
@@ -107,9 +127,11 @@ For Bindings/CQTest matrices, split one test class into scenario-oriented `TEST_
 - null, boundary, and exception paths
 - return-type or diagnostic paths
 
-Create the `FScopedAngelscriptModule` inside the relevant `TEST_METHOD`. Make the module name match the scenario, for example `ASOptional_TypeMatrix`.
+- Create the `FScopedAngelscriptModule` inside the relevant `TEST_METHOD`.
+- Make the module name match the scenario, for example `ASOptional_TypeMatrix`.
 
-File-level native bind registration objects such as `AS_FORCE_LINK const FAngelscriptBinds::FBind ...` may remain at file scope because they must register during bind initialization. Test flow, fixtures, and assertions still belong in the CQTest class.
+- File-level native bind registration objects such as `AS_FORCE_LINK const FAngelscriptBinds::FBind ...` may remain at file scope because they must register during bind initialization.
+- Test flow, fixtures, and assertions still belong in the CQTest class.
 
 ## Inline AngelScript Fixtures
 
@@ -161,7 +183,8 @@ HotReload tests must prove externally observable reload behavior, not just compi
 - property, function, or delegate signature retargets correctly
 - runtime behavior changes after reload where the scenario is runtime-facing
 
-Each `TEST_METHOD` must manage modules and delegate handles locally. Register cleanup before the first early-return point:
+- Each `TEST_METHOD` must manage modules and delegate handles locally.
+- Register cleanup before the first early-return point:
 
 ```cpp
 ON_SCOPE_EXIT
@@ -171,7 +194,8 @@ ON_SCOPE_EXIT
 };
 ```
 
-Use focused regression tests for AS `USTRUCT` delegate or `UFUNCTION` parameter bugs. These must execute the parameter path, not only compile metadata:
+- Use focused regression tests for AS `USTRUCT` delegate or `UFUNCTION` parameter bugs.
+- These must execute the parameter path, not only compile metadata:
 
 - create the AS `USTRUCT`
 - use it in a delegate or `UFUNCTION`
@@ -179,11 +203,13 @@ Use focused regression tests for AS `USTRUCT` delegate or `UFUNCTION` parameter 
 - execute the path
 - assert field values actually crossed the boundary
 
-For delegate hot reload, distinguish delegate declaration from `UPROPERTY` members using the delegate type. Test property retarget only when the scenario includes a delegate property.
+- For delegate hot reload, distinguish delegate declaration from `UPROPERTY` members using the delegate type.
+- Test property retarget only when the scenario includes a delegate property.
 
 ## Layer And Placement
 
-Do not recreate `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/`. New replacement tests go only under `NativeEngine/<Layer>/`, `Bindings/`, `Framework/`, `FrameworkTests/`, or `Baseline/`.
+- Do not recreate `Plugins/Angelscript/Source/AngelscriptTest/NewVersion/`.
+- New replacement tests go only under `NativeEngine/<Layer>/`, `Bindings/`, `Framework/`, `FrameworkTests/`, or `Baseline/`.
 
 Legacy layer routing:
 
@@ -193,7 +219,8 @@ Legacy layer routing:
 - `AngelscriptTest/Legacy/Bindings/`: AS-visible binding surface and API matrices.
 - Other old themes remain beneath `AngelscriptTest/Legacy/` and are excluded from active source discovery.
 
-Automation prefixes should match the existing theme and nearby files. Do not invent a new prefix shape without checking `TestConventions.md`.
+- Automation prefixes should match the existing theme and nearby files.
+- Do not invent a new prefix shape without checking `TestConventions.md`.
 
 ## Common Pitfalls
 
@@ -208,7 +235,7 @@ Automation prefixes should match the existing theme and nearby files. Do not inv
 
 ## Verification
 
-Run the narrowest useful Automation prefix through Harness and record the managed run ID, pass/fail counts, and report path.
+- Run the narrowest useful Automation prefix through Harness and record the managed run ID, pass/fail counts, and report path.
 
 Examples:
 
@@ -236,4 +263,4 @@ Invoke-Harness -Command ue.build -Context $context -Parameters @{
 }
 ```
 
-Never mark coverage docs, tasks, or change records complete before fresh verification passes.
+- Never mark coverage docs, tasks, or change records complete before fresh verification passes.

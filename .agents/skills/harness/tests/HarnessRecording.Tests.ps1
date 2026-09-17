@@ -2,8 +2,10 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
 Import-Module (Join-Path $projectRoot '.agents/skills/harness/scripts/Harness.psd1') -Force
-& python -X utf8 -m unittest discover -s (Join-Path $projectRoot '.agents/skills/harness/tests') -p test_draft_record.py
-if ($LASTEXITCODE -ne 0) { throw 'Transcript recorder behavior tests failed.' }
+foreach ($suite in @('test_draft_record.py', 'test_codex_hook.py')) {
+    & python -X utf8 -m unittest discover -s (Join-Path $projectRoot '.agents/skills/harness/tests') -p $suite
+    if ($LASTEXITCODE -ne 0) { throw "$suite failed." }
+}
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('harness-record-hook-' + [guid]::NewGuid().ToString('N'))
 $failures = [Collections.Generic.List[string]]::new()
 function Check($ok, $message) { if (-not $ok) { $failures.Add($message) } }
@@ -30,7 +32,7 @@ try {
     $log = Join-Path $fixtureRoot 'openspec/drafts/harness/fixture/log.md'
     [IO.File]::WriteAllText($source, ((@{type='session_meta';payload=@{id='fixture-session';cwd=$fixtureRoot;cli_version='0.154.0'}} | ConvertTo-Json -Compress) + "`n"))
     & python -X utf8 (Join-Path $scripts 'draft_record.py') bind --workspace $fixtureRoot --session fixture-session --draft-id harness/fixture --source $source --start-line 2 | Out-Null
-    foreach ($event in @('PostToolUse','Stop','Interrupt','SessionStart')) {
+    foreach ($event in @('UserPromptSubmit','Stop','SessionStart')) {
         $body = "Visible content at $event"
         Add-Content -LiteralPath $source -Value (@{type='response_item';payload=@{type='message';role='assistant';phase='final_answer';content=@(@{type='output_text';text=$body})}} | ConvertTo-Json -Depth 6 -Compress)
         $result = Invoke-FixtureHook $event $source

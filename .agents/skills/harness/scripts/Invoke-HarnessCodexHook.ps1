@@ -73,7 +73,7 @@ try {
     $hookInput = if ([string]::IsNullOrWhiteSpace($inputText)) { $null } else { $inputText | ConvertFrom-Json -ErrorAction Stop }
     if ($null -ne $hookInput -and 'hook_event_name' -in @($hookInput.PSObject.Properties.Name)) {
         $requestedEvent = [string]$hookInput.hook_event_name
-        if ($requestedEvent -notin @('SessionStart', 'SubagentStart', 'PostToolUse', 'Stop', 'Interrupt', 'UserPromptSubmit')) { exit 0 }
+        if ($requestedEvent -notin @('SessionStart', 'Stop', 'Interrupt', 'UserPromptSubmit')) { exit 0 }
         $hookEventName = $requestedEvent
     }
 
@@ -101,44 +101,54 @@ try {
         throw 'The hook working directory is not inside this registered project workspace.'
     }
 
-    if ($hookEventName -ne 'SubagentStart' -and $null -ne $hookInput -and 'session_id' -in $hookInput.PSObject.Properties.Name) {
-        try {
-            Import-Module (Join-Path $expectedHarnessRoot '.agents/skills/harness/scripts/DraftLifecycle.psd1') -ErrorAction Stop
-            $recordContext = [pscustomobject]@{WorkspaceRoot=$workspaceRoot; HarnessRoot=$expectedHarnessRoot}
-            if ($null -ne $workspaceContext) { $recordContext | Add-Member -NotePropertyName OpenSpecRoot -NotePropertyValue $workspaceContext.OpenSpecRoot }
-            # The recorder owns source identity and reports a Stop final that is not flushed yet.
-            [void](Invoke-HarnessDraftRecord -Context $recordContext -Action sync -SessionId $hookInput.session_id -HookInput $hookInput)
-        }
-        catch {
-            [Console]::Error.WriteLine((Limit-HarnessHookText -Text ("Draft recording incomplete: " + $_.Exception.Message + ' Retry harness.draft.record sync.') -Limit 600))
-        }
+    $sessionId = ''
+    if ($null -ne $hookInput -and 'session_id' -in $hookInput.PSObject.Properties.Name) {
+        $sessionId = [string]$hookInput.session_id
+        if ($sessionId -notmatch '^[A-Za-z0-9_-]+$') { throw 'An exact session ID is required.' }
     }
+    $orientation = $hookEventName -eq 'SessionStart'
     $executionSummary = ''
     $workflowModule = Join-Path $expectedHarnessRoot '.agents/skills/harness/scripts/Workflow.psm1'
-    if ($null -ne $workspaceContext -and $null -ne $hookInput -and 'session_id' -in $hookInput.PSObject.Properties.Name -and (Test-Path -LiteralPath $workflowModule)) {
-        try {
-            Import-Module $workflowModule -ErrorAction Stop
-            $workflowContext = $workspaceContext | Select-Object *
-            if ('HarnessRoot' -notin $workflowContext.PSObject.Properties.Name) { $workflowContext | Add-Member -NotePropertyName HarnessRoot -NotePropertyValue $expectedHarnessRoot }
-            $hookValues = @{}; foreach ($property in $hookInput.PSObject.Properties) { $hookValues[$property.Name] = $property.Value }
-            $decision = Invoke-HarnessWorkflowCore -Context $workflowContext -Group execution -Action hook -Parameters $hookValues
-            if (@($decision.PSObject.Properties).Count) { [Console]::Out.WriteLine(($decision | ConvertTo-Json -Depth 8 -Compress)) }
-            if ($hookEventName -in @('SessionStart','SubagentStart')) {
-                $execution = Invoke-HarnessExecution -Context $workflowContext -Action status -SessionId $hookInput.session_id
-                if ($execution.state -ne 'unbound') { $executionSummary = " Execution: state=$($execution.state); change=$($execution.change); phase=$($execution.phase). Query harness.execution.status for this session before continuing." }
+    # Save feedback/pause before optional recording; Stop still reconciles before deciding continuation.
+    $stages = if ($hookEventName -in @('UserPromptSubmit', 'Interrupt')) { @('execution', 'record') } else { @('record', 'execution') }
+    foreach ($stage in $stages) {
+        if ($stage -eq 'record' -and $sessionId -and $hookEventName -ne 'Interrupt') {
+            try {
+                $bindingPath = Join-Path $workspaceRoot "Saved/Harness/draft-record/$sessionId.json"
+                if (-not (Test-Path -LiteralPath $bindingPath -PathType Leaf)) { continue }
+                $binding = Get-Content -LiteralPath $bindingPath -Raw | ConvertFrom-Json -ErrorAction Stop
+                if ($null -eq $binding.active) { continue }
+                Import-Module (Join-Path $expectedHarnessRoot '.agents/skills/harness/scripts/DraftLifecycle.psd1') -ErrorAction Stop
+                $recordContext = [pscustomobject]@{WorkspaceRoot=$workspaceRoot; HarnessRoot=$expectedHarnessRoot}
+                if ($null -ne $workspaceContext) { $recordContext | Add-Member -NotePropertyName OpenSpecRoot -NotePropertyValue $workspaceContext.OpenSpecRoot }
+                # The shared recorder retains complete source identity, prefix and coverage checks.
+                [void](Invoke-HarnessDraftRecord -Context $recordContext -Action sync -SessionId $sessionId -HookInput $hookInput)
             }
-        } catch { [Console]::Error.WriteLine((Limit-HarnessHookText -Text ('Harness continuation check unavailable: ' + $_.Exception.Message) -Limit 600)) }
+            catch {
+                [Console]::Error.WriteLine((Limit-HarnessHookText -Text ("Draft recording incomplete: " + $_.Exception.Message + ' Retry harness.draft.record sync.') -Limit 600))
+            }
+        }
+        if ($stage -eq 'execution' -and $sessionId -and $null -ne $workspaceContext -and
+            ($orientation -or $hookEventName -in @('UserPromptSubmit', 'Interrupt', 'Stop')) -and
+            (Test-Path -LiteralPath (Join-Path $workspaceRoot "Saved/Harness/Execution/$sessionId.json") -PathType Leaf) -and
+            (Test-Path -LiteralPath $workflowModule -PathType Leaf)) {
+            try {
+                Import-Module $workflowModule -ErrorAction Stop
+                if ($orientation) {
+                    $execution = Invoke-HarnessExecution -Context $workspaceContext -Action status -SessionId $sessionId
+                    if ($execution.state -ne 'unbound') { $executionSummary = " Execution: state=$($execution.state); change=$($execution.change); phase=$($execution.phase). Query harness.execution.status for this session before continuing." }
+                } else {
+                    $hookValues = @{}; foreach ($property in $hookInput.PSObject.Properties) { $hookValues[$property.Name] = $property.Value }
+                    $decision = Invoke-HarnessWorkflowCore -Context $workspaceContext -Group execution -Action hook -Parameters $hookValues
+                    if (@($decision.PSObject.Properties).Count) { [Console]::Out.WriteLine(($decision | ConvertTo-Json -Depth 8 -Compress)) }
+                }
+            } catch { [Console]::Error.WriteLine((Limit-HarnessHookText -Text ('Harness continuation check unavailable: ' + $_.Exception.Message) -Limit 600)) }
+        }
     }
-    if ($hookEventName -notin @('SessionStart', 'SubagentStart')) { exit 0 }
-    $manifestPath = Join-Path $expectedHarnessRoot '.agents\skills\harness\scripts\Harness.psd1'
-    Import-Module -Name $manifestPath -Force -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
-    $context = New-HarnessContext -WorkspaceRoot $workspaceRoot
-    $status = Invoke-Harness -Command harness.status -Context $context
-    if ([string]$status.status -ne 'Succeeded') {
-        throw "Fast status failed with exit code $($status.exitCode)."
-    }
-
-    $identity = $status.data.Workspace.Context
+    if (-not $orientation) { exit 0 }
+    if ($null -eq $workspaceContext) { throw 'Workspace identity is unavailable for orientation.' }
+    # Orientation needs the identity already checked above, not another full Harness dispatch.
+    $identity = $workspaceContext
     $head = [string]$identity.Head
     if ($head.Length -gt 12) { $head = $head.Substring(0, 12) }
     $additionalContext = Limit-HarnessHookText -Text (
@@ -148,7 +158,7 @@ try {
     )
 }
 catch {
-    if ($hookEventName -notin @('SessionStart', 'SubagentStart')) {
+    if ($hookEventName -ne 'SessionStart') {
         [Console]::Error.WriteLine('Draft recording unavailable for this workspace; retry the bound session with harness.draft.record sync.')
         exit 0
     }
