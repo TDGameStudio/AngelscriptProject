@@ -73,7 +73,7 @@ try {
     $hookInput = if ([string]::IsNullOrWhiteSpace($inputText)) { $null } else { $inputText | ConvertFrom-Json -ErrorAction Stop }
     if ($null -ne $hookInput -and 'hook_event_name' -in @($hookInput.PSObject.Properties.Name)) {
         $requestedEvent = [string]$hookInput.hook_event_name
-        if ($requestedEvent -notin @('SessionStart', 'SubagentStart', 'PostToolUse', 'Stop', 'Interrupt')) { exit 0 }
+        if ($requestedEvent -notin @('SessionStart', 'SubagentStart', 'PostToolUse', 'Stop', 'Interrupt', 'UserPromptSubmit')) { exit 0 }
         $hookEventName = $requestedEvent
     }
 
@@ -113,6 +113,22 @@ try {
             [Console]::Error.WriteLine((Limit-HarnessHookText -Text ("Draft recording incomplete: " + $_.Exception.Message + ' Retry harness.draft.record sync.') -Limit 600))
         }
     }
+    $executionSummary = ''
+    $workflowModule = Join-Path $expectedHarnessRoot '.agents/skills/harness/scripts/Workflow.psm1'
+    if ($null -ne $workspaceContext -and $null -ne $hookInput -and 'session_id' -in $hookInput.PSObject.Properties.Name -and (Test-Path -LiteralPath $workflowModule)) {
+        try {
+            Import-Module $workflowModule -ErrorAction Stop
+            $workflowContext = $workspaceContext | Select-Object *
+            if ('HarnessRoot' -notin $workflowContext.PSObject.Properties.Name) { $workflowContext | Add-Member -NotePropertyName HarnessRoot -NotePropertyValue $expectedHarnessRoot }
+            $hookValues = @{}; foreach ($property in $hookInput.PSObject.Properties) { $hookValues[$property.Name] = $property.Value }
+            $decision = Invoke-HarnessWorkflowCore -Context $workflowContext -Group execution -Action hook -Parameters $hookValues
+            if (@($decision.PSObject.Properties).Count) { [Console]::Out.WriteLine(($decision | ConvertTo-Json -Depth 8 -Compress)) }
+            if ($hookEventName -in @('SessionStart','SubagentStart')) {
+                $execution = Invoke-HarnessExecution -Context $workflowContext -Action status -SessionId $hookInput.session_id
+                if ($execution.state -ne 'unbound') { $executionSummary = " Execution: state=$($execution.state); change=$($execution.change); phase=$($execution.phase). Query harness.execution.status for this session before continuing." }
+            }
+        } catch { [Console]::Error.WriteLine((Limit-HarnessHookText -Text ('Harness continuation check unavailable: ' + $_.Exception.Message) -Limit 600)) }
+    }
     if ($hookEventName -notin @('SessionStart', 'SubagentStart')) { exit 0 }
     $manifestPath = Join-Path $expectedHarnessRoot '.agents\skills\harness\scripts\Harness.psd1'
     Import-Module -Name $manifestPath -Force -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
@@ -128,7 +144,7 @@ try {
     $additionalContext = Limit-HarnessHookText -Text (
         "Harness read-only workspace: id='$($identity.WorkspaceId)'; root='$($identity.WorkspaceRoot)'; topology=$($identity.Topology); " +
         "branch='$($identity.Branch)'; head=$head; primary='$($identity.PrimaryRoot)'; records='$($identity.OpenSpecRoot)'. " +
-        'Resolve code/edit/build/test paths under root and OpenSpec edits under records; shared Harness scripts do not switch the selected workspace. Codex /goal does not change workspace identity.'
+        ('Resolve code/edit/build/test paths under root and OpenSpec edits under records; shared Harness scripts do not switch the selected workspace. Codex /goal does not change workspace identity.' + $executionSummary)
     )
 }
 catch {

@@ -23,6 +23,8 @@ Select the route first, then read only the owning leaf Skill. The Context separa
 | Naming a new public type, module, file, or function | `brainstorming/references/naming.md` | Grilled during brainstorming and task authoring; apply derives an unlisted name from convention and records `Naming assumed` |
 | Lightweight investigation inside a Ready task | Stay in `openspec-apply-change/SKILL.md`; add `systematic-debugging/SKILL.md` only for unexplained failure | Agent-driven inside the task |
 | Revise accepted planning truth or apply an evidence-gated Replan | `openspec-update-change/SKILL.md` | Agent-driven |
+| Resolve decisions during an existing Change | `grill/SKILL.md` through Update | `harness.talk.*`, `harness.replan.*`; return to the current execution |
+| Inspect or continue an explicitly started session request | `harness/references/discussions.md` | `harness.execution.start/checkpoint/status` |
 | Implement a Change | `openspec-apply-change/SKILL.md` | Agent-driven |
 | Verify a Change for completion or an explicitly requested fixed-snapshot Review | `openspec-verify-change/SKILL.md` | Agent-driven |
 | Sync durable specs or archive | `openspec-sync-specs/SKILL.md`, `openspec-archive-change/SKILL.md` | Agent-driven |
@@ -50,6 +52,10 @@ git.status/commit/integrate/push
 harness.status/observe/evolution.status
 harness.queue.status/set/remove/reorder/claim/release/pause/takeover/checkpoint/advance
 harness.specs.read/write
+harness.talk.create/update/status
+harness.conversation.record
+harness.replan.apply/status
+harness.execution.start/checkpoint/status
 openspec.init/doctor/status/instructions/validate/domain/spec/change/workflow/completion
 openspec.maintenance.status
 task.status

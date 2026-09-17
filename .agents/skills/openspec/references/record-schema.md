@@ -28,7 +28,7 @@ openspec/
 └── archive/changes/<domain>/<date>-<change>/
 ```
 
-The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, Change identity, Change moves, and Change archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness checks only an exact topic or scope, and it carries no task state. `openspec-create-change` is the Skill that turns one selected approved scoped design into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; new local draft materials under `openspec/drafts/` default to the user's conversation language unless the user specifies another draft language, and explicitly named `_ZH` documents retain their existing localization exception. Every final Change record and attachment is English, including exported draft design/handoff, research and diagram explanations.
+The CLI owns `project.yaml`, `domain.yaml`, `spec.yaml`, `change.yaml`, Change identity, Change moves, and Change archive paths. Never fabricate or hand-move those files. `drafts/` is owned by the `brainstorming` Skill ([draft contract](../../brainstorming/references/drafts.md)): the CLI does not validate it, Harness checks only an exact topic or scope, and it carries no task state. `openspec-create-change` is the Skill that turns one selected approved scoped design into a Change. Maintained project records, Skills, workflows, templates, and command documentation use English; new local draft materials under `openspec/drafts/` default to the user's conversation language unless the user specifies another draft language, and explicitly named `_ZH` documents retain their existing localization exception. Final Change planning records, summaries and exported draft design/handoff remain English. Source-framed original conversation inside typed Change talks retains its original language.
 
 ## Change identity
 
@@ -50,7 +50,7 @@ attachments/
 ├── implementation/
 ├── replans/
 ├── knowledges/
-├── talks/
+├── talks/                           # grill-* interactive rounds; talk-* technical discussions
 ├── scripts/
 └── data/
 ```

@@ -160,71 +160,96 @@ Reusable gates cited as closure evidence MUST use hermetic fixtures or stable re
 
 ### Requirement: Two-tier exploration
 
-Harness MUST distinguish deep pre-creation brainstorming from task-local technical exploration. Before a new feature, architecture refactor, or major behavior-change Change is created, unresolved scope, architecture, integration, or user-owned product choices MUST trigger the Brainstorm Gate owned by the `brainstorming` Skill. The gate MUST NOT be skipped while any user-owned decision remains unconfirmed; a clear defect repair or mechanical documentation change MAY skip it only with one stated assumption. A decision-complete handoff or an already explicit approved plan MAY proceed directly to Change creation. Brainstorming MUST run only with the user present; unattended continuation MUST NOT open brainstorming or start a draft. After target Change creation, `design`-mode brainstorming MUST NOT reopen for that Change's scope and Apply MUST NOT ask the user questions; `research` and `proposal` drafts are independent of any Change and MAY be opened at any time, but a finding that changes an active plan is planning-invalidating evidence for update/replan; task-local uncertainty stays in Apply unless evidence invalidates canonical planning truth and triggers update/replan. A user-owned decision that surfaces inside a task MUST be recorded as planning-invalidating evidence and parked through `openspec-update-change` replan with the agent's recommendation until the next attended grill round answers it. A request to explain architecture, workflow, state, ownership, or three or more related branches SHOULD invoke `visual-explain`; routine one-step work and already-clear prose MUST NOT incur that cost.
+Harness MUST route pre-creation design ownership to Brainstorming and existing Change planning updates to Update/Replan. The independent Grill Skill MUST discover affected decisions, explain the available frontier, collect actual answers and return to its caller. Every substantive requirement, design or plan change MUST inspect affected scope, behavior, interfaces, dependencies, failures and acceptance; an explicit direction alone MUST NOT imply all decisions are settled. Still-valid decisions MAY carry forward with evidence. Ordinary implementation defects remain task-local.
 
-#### Scenario: Shape a major change before planning
+#### Scenario: Discover decisions before changing an accepted plan
 
-- **WHEN** a major change still contains blocking design choices or unconfirmed user-owned decisions before registration
+- **WHEN** feedback changes an accepted behavior or boundary
 
-- **THEN** `brainstorming` runs grilling rounds until the frontier is empty and produces a decision-complete handoff before the target Change is created
+- **THEN** the agent expands affected decisions, explains related unblocked questions, and recomputes the frontier after each answer
 
-    Every question to the user is a grill round, including a single question
-    or a naming choice. Each round opens with a situation brief (what was
-    inspected, what is settled, why these questions are unblocked now, the
-    overall recommendation), then asks every question whose prerequisites are
-    settled, numbers the questions, and states a recommended answer. The round
-    is compact Markdown using the marker vocabulary: one heading per round,
-    one `❔ Open decision:` paragraph per question with lettered option
-    bullets, a recommendation line and a flip-condition line. After the
-    written round is sent, the same questions are issued through the host's
-    structured answer form when one exists, with matching letters and the
-    recommended option first; the form never replaces the written round, and
-    a cancelled or missing form falls back to a text reply. The round and the
-    user's reply are appended verbatim to the draft log. Facts are
-    investigated by the agent; decisions are put to the user. No Change, code,
-    or apply action occurs before the user approves the presented design.
+    An answer can reveal another decision. Required answers need actual provenance;
+    silence, recommended defaults and elapsed time do not settle them.
 
-#### Scenario: Continue from an explicit accepted plan
+#### Scenario: Pause the current Change for an answer
 
-- **WHEN** scope, boundaries, naming, and verification are already decision-complete
+- **WHEN** a necessary user-owned choice remains unanswered
 
-- **THEN** Harness creates or updates the canonical Change without repeating brainstorming
+- **THEN** all implementation in the current Change pauses while read-only investigation may continue
 
-#### Scenario: Skip the gate for a clear defect
+- **AND** an attended session asks through Grill immediately; unattended continuation preserves the question without opening Brainstorming or inventing an answer
 
-- **WHEN** the request is a clear defect repair or mechanical documentation change with no user-owned decision left open
+#### Scenario: Finish Grill without ending execution
 
-- **THEN** the agent states the one assumption that justifies skipping and proceeds
+- **WHEN** affected decisions and required authority are complete
 
-- **BUT** an unconfirmed user-owned choice reopens the gate regardless of perceived simplicity
+- **THEN** Grill returns to Brainstorming or Replan, and successful Replan returns to the authorized execution request without another start instruction
 
-#### Scenario: Park a user-owned decision found during unattended continuation
+### Requirement: Change-owned discussion and applied planning
 
-- **GIVEN** an unattended run is implementing a Ready task of an approved Change
+Change discussions MUST remain under indexed attachments/talks. The grill- prefix identifies interactive rounds and talk- identifies technical analysis; prefixes MUST NOT represent state or force duplicate records. Structured current state MUST distinguish open, settled, closed and superseded discussion while preserving original conversation and earlier decisions. Existing schema-less talks MUST remain readable without implicit migration. Only successfully applied planning updates MAY create immutable applied Replans.
 
-- **WHEN** the task reveals a product-scope or behavior choice the design never settled
+#### Scenario: Preserve original rounds beside current conclusions
 
-- **THEN** the agent records the finding, routes it to `openspec-update-change` replan as an open decision with its recommendation, and stops advancing that branch
+- **WHEN** a user corrects a decision or recording retries the same source event
 
-- **BUT** it does not open `brainstorming`, create a draft, or decide the choice locally
+- **THEN** current conclusions update while original delivered explanations, questions and replies retain source boundaries and occur once per source occurrence
 
-#### Scenario: Explain a multi-branch workflow
+    Recognized original conversation frames retain their source language. Current
+    summaries and final Change planning artifacts remain English. Draft-stage
+    conversation remains local to its draft and is not a Change dependency.
 
-- **WHEN** the user needs to understand a workflow with multiple states, branches, or owners
+#### Scenario: Apply a design-only Replan
 
-- **THEN** Harness routes a small useful visualization and keeps the underlying canonical state in plain text
+- **WHEN** a settled discussion changes design while retaining the existing Task DAG
 
-### Requirement: Exploration markers and durable carryover
+- **THEN** Harness validates the candidate, checks baseline hashes, applies the planning changes and creates one applied Replan before resuming execution
 
-Pre-Change brainstorming MAY use the project marker vocabulary and compact Markdown visualizations to make facts, decisions, risks, boundaries, and knowledge candidates easy to scan. Every marker MUST retain a plain-text label and MUST NOT be the sole machine-readable state. The final brainstorming round MUST present every carryover candidate with its draft source, target (talk or knowledge), and reason, and the user MUST confirm the list before it enters the decision-complete handoff. `openspec-create-change` MUST be the only Skill that creates the target Change from a designed draft; in the same step it MUST copy the approved draft `design.md`, `handoff.md` and `glossary.md` into indexed `attachments/drafts/`, MUST copy every draft finding that the design or a confirmed talk or knowledge cites into indexed `attachments/drafts/findings/`, and MUST materialize exactly the confirmed candidates — non-obvious decisions and their useful visuals into indexed talks, reusable evidence-backed insights or visuals into indexed change-local knowledge — with provenance naming the draft round or the copied finding. Because drafts are local and git-ignored, no Change file MAY reference an `openspec/drafts/` path. Afterwards canonical truth MUST enter proposal/spec/design/tasks through the `Ensure plan` step of `openspec-apply-change`, which MUST write every missing required artifact from the seeded handoff in one pass, MUST NOT recreate the seeded carryover, MUST NOT reopen design-mode brainstorming, and MUST stop and report — never invent — when the handoff lacks a user-owned decision or a settled public name.
+#### Scenario: Recover an interrupted planning update
 
-When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient navigation state, task state, and progress evidence MUST NOT be copied into the Change; the full round log stays in the draft, which is the durable owner of the conversation.
+- **WHEN** validation fails, a baseline changes, or application is interrupted
 
-#### Scenario: Scan a grilling round without changing semantics
+- **THEN** failed validation leaves live artifacts unchanged, stale baselines are rejected, and an interrupted journal prevents execution and closure until explicit application recovery succeeds
 
-- **WHEN** interactive pre-Change brainstorming uses markers for a decision frontier
+- **AND** recovery preserves unrelated edits, existing task IDs and completed work
 
-- **THEN** each marked line remains understandable without emoji and durable task/review/issue state continues to come from its canonical schema
+### Requirement: Explicit execution continuation
+
+Harness MUST bind explicitly started Change or queue execution to its selected workspace and session. Recording and read-only queries MUST NOT start execution. Status MUST expose pending input, waiting decisions, explicit pause, genuine blockers, current work and derived completion without replacing native TaskPlan readiness. A task, Grill, Replan or individual Change completion MUST return to the authorized loop. Exhausted authorized work with no pending feedback MAY finish the response while retaining recovery context.
+
+#### Scenario: Accept feedback during execution
+
+- **WHEN** input arrives during an active execution request
+
+- **THEN** Harness retains its identity for triage before subsequent implementation or closure
+
+- **AND** unrelated ideas become follow-up topics without silently changing scope or queue membership
+
+#### Scenario: Check premature Stop
+
+- **WHEN** a trusted Codex Stop hook observes a bound running request with authorized work remaining
+
+- **THEN** it requests continuation at the recorded position
+
+- **BUT** plan mode, necessary unanswered questions, explicit user pause, user interruption, genuine blockers and completed work do not trigger automatic restart
+
+    A generated continuation is not fresh user feedback. Repeated continuation
+    without observable progress reports a recovery blocker rather than completion.
+    Hook configuration alone does not prove actual host activation.
+
+#### Scenario: Archive after discussion recording is complete
+
+- **WHEN** a Change reaches terminal evaluation and archive
+
+- **THEN** its current-scope decisions and Replan recovery are resolved and its source recording is synchronized and unbound
+
+- **AND** archived originals receive no later hook writes
+
+### Requirement: Exploration carryover
+
+The final pre-Change brainstorming round MUST present every carryover candidate with its draft source, target (talk or knowledge), and reason, and the user MUST confirm the list before it enters the decision-complete handoff. `openspec-create-change` MUST be the only Skill that creates the target Change from a designed draft; in the same step it MUST copy the approved draft `design.md`, `handoff.md` and `glossary.md` into indexed `attachments/drafts/`, MUST copy every draft finding that the design or a confirmed talk or knowledge cites into indexed `attachments/drafts/findings/`, and MUST materialize exactly the confirmed candidates — non-obvious decisions and their useful visuals into indexed talks, reusable evidence-backed insights or visuals into indexed change-local knowledge — with provenance naming the draft round or the copied finding. Because drafts are local and git-ignored, no Change file MAY reference an `openspec/drafts/` path. Afterwards canonical truth MUST enter proposal/spec/design/tasks through the `Ensure plan` step of `openspec-apply-change`, which MUST write every missing required artifact from the seeded handoff in one pass, MUST NOT recreate the seeded carryover, MUST NOT reopen design-mode brainstorming, and MUST stop and report — never invent — when the handoff lacks a user-owned decision or a settled public name.
+
+When an extended user-led exploration establishes multiple interacting cross-capability constraints, meaningful corrections, rejected interpretations, or non-obvious rationale that canonical artifacts would flatten and future agents would otherwise re-decide, planning MUST preserve one selective indexed intent talk. The talk MUST retain provenance, capture date, source limits, architecture-changing corrections, exclusions, and canonical mappings. It MUST NOT impersonate an earlier record when reconstructed later. Clear defects, mechanical documentation changes, one-step requests, routine task-local choices, and decisions fully represented by canonical artifacts MUST NOT create a required talk or a not-required placeholder. Transient navigation state, task state, and progress evidence MUST NOT be copied into the Change; the pre-Change round log stays in the draft. Discussions after Change creation remain in that Change's indexed talks.
 
 #### Scenario: Carry accepted exploration into a new Change
 

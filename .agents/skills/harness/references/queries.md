@@ -7,7 +7,9 @@
 - “Workspace / Git state”: `workspace.status`; opt into `Detailed=$true` for dirty files, snapshots and plugin baselines, or use `git.status` for exact repository heads and staged paths.
 - “Harness capabilities / health”: `Get-HarnessCommand` lists available routes; `harness.status` checks current identity, configuration readiness and packaged CLI availability.
 - “Build/test progress”: `ue.run.status` with exact `RunId`; use `ue.process.list` to investigate active processes. A queue controller token or last task update does not prove that a chat/process is alive.
-- “Replan / closure state”: `harness.evolution.status` with exact `Change`; use its returned lifecycle evidence and TaskPlan issues.
+- “Discussion / Replan”: `harness.talk.status` and `harness.replan.status` for an exact Change; report unanswered questions, settled-but-unapplied decisions and recovery state.
+- “This session / why stopped”: `harness.execution.status` with exact SessionId; distinguish waiting-input, user pause, blockers and derived completion.
+- “Closure state”: `harness.evolution.status` with exact Change; include pending discussions and TaskPlan issues.
 
 ```powershell
 $context = New-HarnessContext -WorkspaceRoot $PWD

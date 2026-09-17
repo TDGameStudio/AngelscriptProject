@@ -26,3 +26,6 @@ openspec.status -> Ensure plan (missing artifacts, plan-acceptance preflight) ->
 ```
 
 Do not open `design`-mode brainstorming from a Ready task, attended or unattended; a `research` draft may be opened to understand code, but its findings feed the task or a replan, never a new design. Use lightweight task-local investigation and fix in-scope technical failures autonomously. A finding is triaged before replan; use `openspec-update-change` only when the plan boundary is invalid or a user-owned decision has surfaced. Stop only for a real authorization boundary, not ordinary ambiguity, test failure, or review feedback. Never weaken specified behavior to make a task pass.
+
+- On explicit Change execution, inspect `harness.execution.status`; when unbound, use `harness.execution.start` with `Scope=Change` and the actual request source. Reuse a caller's existing Queue binding. Query again at task/closure boundaries; triage input before mutation and pause implementation for unresolved Change decisions.
+- Apply never asks the user questions inside implementation: hand planning-invalidating decisions to Update, which calls independent `grill` and returns through applied Replan to this task. This handoff does not end the authorized execution loop.

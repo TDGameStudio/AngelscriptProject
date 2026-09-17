@@ -38,7 +38,7 @@ Every `ue.*` route uses the selected Harness workspace, lazy-loads one maintaine
 - `systematic-debugging` — evidence-first diagnosis before fixes or replan.
 - `test-driven-development` — RED/GREEN/refactor for behavior changes.
 - `code-review` — reviewer stance for a fixed-snapshot Review, only after an explicit user or external-agent request; coordinator intake and triage stay in `harness/references/review.md`.
-- `angelscript-test-guide` — project C++/CQTest/inline AngelScript testing patterns.
+- `angelscript-test-guide` — project C++/CQTest/inline AngelScript testing patterns, plus Language chapter FileTags and coverage rules.
 - `hazelight-update-audit` — upstream comparison and adoption decisions.
 
 ## OpenSpec lifecycle Skills
@@ -50,6 +50,7 @@ For OpenSpec-scoped work, an accepted exploration handoff is not execution state
 New Change IDs use `<domain>/<type>-<scope>-<outcome>` with `feature`, `fix`, `refactor`, `improve`, `docs`, `test`, or `chore`; use `feature`, not `feat`. The OpenSpec record-schema reference owns the full distinction and immutable-archive boundary.
 
 - `openspec` — binary/package contract, command lookup, and lifecycle routing.
+- `grill` — independent decision-impact exploration, explained frontier rounds and return to the caller; draft and Change record ownership remain with the caller.
 - `brainstorming` — keep a topic under `openspec/drafts/<domain>/<topic>/` with shared research and append-only conversation, plus independent `designs/<scope>/`. Topic mode follows the current focus: research investigates, proposal presents a candidate, design converges accepted decisions. Related independent questions may share a grill round. Each design owns its naming, approval and optional Change handoff; one handoff does not close the topic. Explicitly authorized direct edits need no Change. Existing Change scope uses update/replan rather than renewed design-mode brainstorming.
 - `openspec-create-change` — call `harness.change.create` for one selected approved scoped design, then seed English draft exports, confirmed talks/knowledge, and INDEX. Run `harness.change.seed.verify` before Ensure plan. Direct-origin Change creation also uses `harness.change.create` with a reason.
 - `openspec-update-change` — revise existing artifacts and apply an evidence-gated replan.
@@ -68,7 +69,7 @@ Durable specifications use progressive Scenario Cards defined in `.agents/skills
 
 ## Maintenance
 
-- Skills, references, and maintained OpenSpec records are English; only files explicitly named with exact uppercase `_ZH` remain temporarily exempt.
+- Skills, references, and maintained OpenSpec records are English; recognized original conversation frames in typed talks retain their source language; only files explicitly named with exact uppercase `_ZH` remain temporarily exempt.
 - Validate every changed Skill with the system `quick_validate.py` and execute changed scripts against controlled inputs.
 - Root `Tools` PowerShell entrypoints are legacy deletion candidates and are not the live Harness command surface. `Tools/openspec` is the intentional tracked-source exception: commit/tag that submodule first, while runtime uses `.agents/skills/openspec/bin/openspec.exe`. For each release, the parent records only one final accepted package commit containing the gitlink, manifest/docs, and bundled EXE; never stage or commit candidate EXE builds.
 - Keep entry Skills short. Move conditional schemas or procedures to a linked reference and load only the one needed.

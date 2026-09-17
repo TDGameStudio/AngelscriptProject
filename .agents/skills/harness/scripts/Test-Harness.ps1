@@ -77,6 +77,7 @@ function Get-HarnessGateChecks {
             HarnessDraft       = '.agents\skills\harness\tests\HarnessDraft.Tests.ps1'
             HarnessHandoff     = '.agents\skills\harness\tests\HarnessHandoff.Tests.ps1'
             HarnessRecording   = '.agents\skills\harness\tests\HarnessRecording.Tests.ps1'
+            HarnessWorkflow    = '.agents\skills\harness\tests\HarnessWorkflow.Tests.ps1'
             HarnessQueue       = '.agents\skills\harness\tests\HarnessQueue.Tests.ps1'
             HarnessChangeGate  = '.agents\skills\harness\tests\HarnessChangeGate.Tests.ps1'
             HarnessEvolution   = '.agents\skills\harness\tests\HarnessEvolution.Tests.ps1'

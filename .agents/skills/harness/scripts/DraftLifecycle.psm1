@@ -312,12 +312,15 @@ function Invoke-HarnessDraftRecord {
         [Parameter(Mandatory)][ValidateSet('bind', 'sync', 'status', 'unbind')][string]$Action,
         [Parameter(Mandatory)][string]$SessionId,
         [string]$DraftId = '', [string]$Source = '', [int]$StartLine = 0,
+        [string]$Change = '', [string]$TalkId = '',
         [object]$HookInput = $null
     )
     $scriptPath = Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/draft_record.py'
     $arguments = @('-X', 'utf8', $scriptPath, $Action, '--workspace', [string]$Context.WorkspaceRoot, '--session', $SessionId)
     $arguments += @('--records-root', (Get-HarnessRecordRoot $Context))
     if ($DraftId) { $arguments += @('--draft-id', $DraftId) }
+    if ($Change) { $arguments += @('--change', $Change) }
+    if ($TalkId) { $arguments += @('--talk-id', $TalkId) }
     if ($Source) { $arguments += @('--source', $Source) }
     if ($StartLine) { $arguments += @('--start-line', [string]$StartLine) }
     $output = if ($null -ne $HookInput) {

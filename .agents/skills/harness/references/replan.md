@@ -4,6 +4,9 @@ Replan only when verified evidence makes the current plan false: a requirement o
 
 A pending task whose concrete scope now contains independently acceptable products, hidden prerequisite interfaces or a proving command that cannot cover its outcome has an invalid task boundary. Repeated independently verified partial deliveries under one permanently pending node are evidence to inspect that boundary, not a numeric trigger. Split the remaining outcomes, preserve completed work and map existing evidence without claiming it proves newer code. Shared files constrain scheduling; do not invent dependency edges solely to order writers. Ordinary failed assertions and routine RED/GREEN remain task-local.
 
+- Expand the affected decision tree before revising accepted truth. Independent `grill` handles attended decisions in the current session; unanswered choices stay in Change-owned `talks/grill-*` and pause the whole Change. No pending discussion is an applied Replan.
+- Use `harness.replan.apply` with the settled discussion revision and exact candidate/baseline map; see [discussion operations](discussions.md). The staged CLI validation and recoverable journal implement the following protocol. A successful update returns to execution without another start request.
+
 ## Apply atomically
 
 1. Capture `base_commit`, the current `tasks.md` SHA-256, affected `git status`, and diff stat.

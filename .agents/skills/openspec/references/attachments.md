@@ -33,7 +33,7 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 | Change created from a selected approved brainstorming design by `openspec-create-change` | `drafts/` | English exports of the selected scoped `design.md`, `handoff.md` and `glossary.md`, plus `drafts/findings/<file>` for every finding a carried design, talk or knowledge cites, each indexed once; the same step materializes the user-confirmed talks and knowledge candidates. The draft is local and git-ignored, so a Change never links into `openspec/drafts/`; all local originals remain there. |
 | Explicit user- or external-agent-requested fixed-snapshot Review | `reviews/` | Reviewer writes only its unique file; coordinator owns registration, triage, and lifecycle state. |
 | Material investigated technical or workflow problem | `implementation/` | One shared root cause and disposition lifecycle, including admitted dogfooding findings; never a final summary or second task list. |
-| Non-obvious major decision | `talks/` | Promote settled truth into proposal/spec/design before replan. |
+| Interactive questioning or non-obvious technical decision | `talks/grill-*.md` or `talks/talk-*.md` | One discussion record with current decisions and original conversation; promote settled truth through Replan. |
 | Evidence proves the current plan invalid | `replans/` | Persist only the accepted applied semantic diff. |
 | Reusable learning candidate | `knowledges/` | Change-local evidence until verification establishes whether it should be promoted, superseded, or retired. |
 | Reusable helper | `scripts/` | One purpose with usage and dependencies in the header. |
@@ -55,6 +55,12 @@ If INDEX would exceed 120 lines, merge or trim low-value detail and improve summ
 - A delivered report alone does not resolve its lifecycle. Triage each finding, fix local defects, and Replan only when evidence invalidates accepted planning truth.
 - Verified work may close and archive directly with no Review record or not-required classification. If Review files exist, every one is closed or superseded and no Critical or Required finding is open or deferred. Advisory findings may defer with an explicit follow-up.
 
+## Change discussions
+
+- Use [discussion operations](../../harness/references/discussions.md) for `harness-talk-v1`, complete original question rounds, pending state and return position. Prefixes distinguish record form, not lifecycle.
+- Current Change discussions stay in the Change; pre-creation conversation remains in its draft. Do not automatically duplicate a Grill as another Talk. Recognized original source frames retain their language; current summaries remain English.
+- An open or settled current-scope discussion blocks implementation and closure. Only successful `harness.replan.apply` links and closes an applied decision. Synchronize and unbind recording before terminal evaluation/archive.
+
 ## Implementation issues and talks
 
 - Use [implementation-issues.md](implementation-issues.md) only after a technical problem crosses its material threshold. `implementation/` is issue-only; final integration evidence, routine TDD cycles, closure preparation, and progress summaries belong in their owning task evidence, `data/`, Review, INDEX, or closure record.
@@ -75,7 +81,7 @@ Pre-Change brainstorming writes only to its draft under `openspec/drafts/<domain
 
 A carryover talk uses concise plain headings such as Context, Evidence, Options, Settled Decision, Consequences and Flip Condition, Visual, and Sources. A change-local knowledge candidate uses Reusable Insight, Evidence, Boundaries, Application, and Sources. Embed the smallest useful Markdown table or text diagram in the owning file; a separate visual file is allowed only when it is itself indexed exactly once.
 
-Markers may improve scanning, but each line keeps a stable plain-text label and complete meaning without emoji. Markers never replace frontmatter, Task DAG, Review, issue, or INDEX state. Create the talk/knowledge file and update `attachments/INDEX.md` in the same edit; the INDEX summary states whether a knowledge candidate is `candidate`, `promoted`, `superseded`, or `retired`.
+Create the talk/knowledge file and update `attachments/INDEX.md` in the same edit; the INDEX summary states whether a knowledge candidate is `candidate`, `promoted`, `superseded`, or `retired`.
 
 Material lifecycle:
 

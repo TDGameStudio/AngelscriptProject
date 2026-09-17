@@ -368,7 +368,14 @@ function Get-OpenSpecEnglishViolations {
     foreach ($file in @($files | Sort-Object FullName -Unique)) {
         $relativePath = $file.FullName.Substring($ProjectRoot.Length).TrimStart('\', '/')
         $lineNumber = 0
-        foreach ($line in [System.IO.File]::ReadLines($file.FullName)) {
+        $auditedText = [System.IO.File]::ReadAllText($file.FullName)
+        if ($relativePath.Replace('\','/') -match '^openspec/changes/[^/]+/[^/]+/attachments/talks/(?:grill|talk)-[^/]+\.md$' -and
+            $auditedText -match '(?m)^talk_schema:\s*"?harness-talk-v1"?\s*$') {
+            # Only complete recorder frames are verbatim-source language exceptions.
+            $auditedText = [regex]::Replace($auditedText, '(?ms)^<!-- draft-record:(?<id>[a-f0-9]{64}):begin -->\r?\n.*?^<!-- draft-record:\k<id>:end -->[ \t]*(?:\r?\n|$)',
+                [System.Text.RegularExpressions.MatchEvaluator]{ param($frame) [regex]::Replace($frame.Value, '[^\r\n]', '') })
+        }
+        foreach ($line in ($auditedText -split '\r?\n')) {
             $lineNumber++
             $languageLine = $line
             if ($relativePath.Replace('\', '/') -like '.agents/skills/brainstorming/*') {
@@ -590,6 +597,18 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot 'Tools\openspec\docs\supplementary.txt'), [char]::ConvertFromUtf32(0x10400), [System.Text.UTF8Encoding]::new($false))
     [System.IO.File]::WriteAllBytes((Join-Path $languageFixtureRoot 'Tools\openspec\BINARY'), [byte[]]@(0, 0xCE, 0xB1))
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot 'openspec\changes\fixture\attachments\reviews\quoted.md'), "Evidence: $forbiddenDefaultPhrase", [System.Text.UTF8Encoding]::new($false))
+    $conversationRelative = 'openspec/changes/fixture/change/attachments/talks/grill-example.md'
+    $conversationFile = Join-Path $languageFixtureRoot $conversationRelative
+    [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($conversationFile))
+    $frameId = 'a' * 64
+    $conversationText = "---`ntalk_schema: harness-talk-v1`n---`n`n## Conversation`n<!-- draft-record:${frameId}:begin -->`n$([char]0x8BBE)`n<!-- draft-record:${frameId}:end -->`n"
+    [IO.File]::WriteAllText($conversationFile, $conversationText)
+    Assert-Equal 0 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($conversationRelative)).Count 'Typed talk preserves original-language complete source frames'
+    [IO.File]::WriteAllText($conversationFile, ($conversationText + "Current summary: $([char]0x8BBE)`n"))
+    Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($conversationRelative)).Count 'Talk summaries remain English outside source frames'
+    [IO.File]::WriteAllText($conversationFile, $conversationText.Replace('talk_schema: harness-talk-v1', 'other: value'))
+    Assert-Equal 1 @(Get-OpenSpecEnglishViolations -ProjectRoot $languageFixtureRoot -SurfacePathsSpecified $true -SurfacePaths @($conversationRelative)).Count 'Arbitrary files cannot claim a typed conversation exception'
+    [IO.File]::WriteAllText($conversationFile, $conversationText)
     $selectedCleanRelative = 'openspec\changes\fixture\selected\clean.md'
     $unselectedViolationRelative = 'openspec\changes\fixture\unselected\bad.md'
     [System.IO.File]::WriteAllText((Join-Path $languageFixtureRoot $selectedCleanRelative), 'Selected English content.', [System.Text.UTF8Encoding]::new($false))
@@ -890,11 +909,11 @@ Assert-True ($workflowDefinitionText -match '(?m)^[ \t]+profile:[ \t]+record-v1[
 Assert-True ($workflowDefinitionText -notmatch '(?m)^[ \t]+profile:[ \t]+requirements-v1[ \t]*\r?$') 'Angelscript workflow must not switch to requirements-v1.'
 
 $mandatoryLifecycleReferences = [ordered]@{
-    'brainstorming' = @('references/deep-exploration.md', 'references/grilling.md', 'references/drafts.md', 'references/naming.md')
+    'brainstorming' = @('references/deep-exploration.md', '../grill/SKILL.md', 'references/drafts.md', 'references/naming.md')
     'openspec-create-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../openspec/references/knowledge.md', '../brainstorming/references/drafts.md')
     'openspec-apply-change' = @('../openspec/references/implementation-issues.md', '../harness/references/verification.md', '../brainstorming/references/naming.md')
     'openspec-archive-change' = @('../openspec/references/record-schema.md', '../openspec/references/attachments.md', '../harness/references/verification.md')
-    'openspec-update-change' = @('../openspec/references/attachments.md', '../openspec/references/specs.md')
+    'openspec-update-change' = @('../grill/SKILL.md', '../harness/references/discussions.md', '../openspec/references/specs.md')
     'openspec-sync-specs' = @('../openspec/references/specs.md')
     'openspec-verify-change' = @('../openspec/references/specs.md', '../harness/references/verification.md')
 }
@@ -938,7 +957,6 @@ $deepExplorationText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents
 $grillingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming\references\grilling.md') -Raw
 $draftsText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming\references\drafts.md') -Raw
 $namingText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming\references\naming.md') -Raw
-$markerText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\brainstorming\references\markers.md') -Raw
 $applyText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-apply-change\SKILL.md') -Raw
 $archiveText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-archive-change\SKILL.md') -Raw
 $updateText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec-update-change\SKILL.md') -Raw
@@ -1050,9 +1068,6 @@ foreach ($token in @('public name', 'Inspect the neighbours', '**Interfaces**', 
     Assert-True ($namingText.Contains($token)) "Naming grill contract is missing: $token"
 }
 Assert-True (-not $namingText.Contains('Interactive session: stop')) 'Naming grill must not reintroduce an apply-stage interactive stop.'
-foreach ($token in @('optional presentation hints, not a state machine', 'at most one leading marker per line', 'never means a test or gate passed', 'Historical `🔴 Reopened` and `🟢 Landed` are deliberately not restored', 'a green dot does not explain what landed', '## Durable carryover', '📌', '❔', '👉', '❗', '✅', '❌', '🚫', '💡', '🔗', '📁', '⭐', '✨', '⏳', '🔁')) {
-    Assert-True ($markerText.Contains($token)) "Marker contract is missing: $token"
-}
 foreach ($token in @('before implementation mutation', 'not an active Change or Ready Task DAG', 'local coherence', '`Files`', 'prerequisites', 'exact verification', 'implementation-issues.md', 'Do not open `design`-mode brainstorming from a Ready task', 'Apply never asks the user questions', 'Naming assumed: <name>', 'that the task''s **Interfaces** does not list', 'never fills interfaces or cases', 'planning-invalidating evidence')) {
     Assert-True ($applyText.Contains($token)) "Apply contract is missing: $token"
 }
@@ -1153,18 +1168,17 @@ Assert-True ($staleReferences.Count -eq 0) ("Live Skill and README surfaces must
 foreach ($token in @('canonical active Change in the selected workspace', 'unattended continuation')) {
     Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
 }
-foreach ($token in @('canonical active Change in the selected workspace', 'attended or unattended', 'open decision')) {
-    Assert-True ($updateText.Contains($token)) "Update workspace contract is missing: $token"
-}
+# Update workspace ownership, pending decisions and return-to-execution are
+# exercised through real routes in HarnessWorkflow.Tests.ps1.
 foreach ($token in @('canonical active Change in the selected workspace', 'lightweight task-local investigation', 'attended or unattended')) {
     Assert-True ($applyText.Contains($token)) "Apply workspace contract is missing: $token"
 }
-# Codex /goal is defined once in harness/SKILL.md and referenced once by the brainstorming HARD-GATE; every other Skill says "unattended continuation".
+# Codex /goal is defined once in Harness; other Skills defer through unattended continuation.
 $goalMentionFiles = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.agents\skills') -Recurse -File -Filter '*.md' |
     Where-Object { $_.FullName -notmatch '\\(tests|external|web)\\' -and (Get-Content -LiteralPath $_.FullName -Raw) -match '/goal' } |
     ForEach-Object { $_.FullName.Substring($projectRoot.Length).TrimStart('\', '/') } | Sort-Object)
-$allowedGoalMentionFiles = @('.agents\skills\brainstorming\SKILL.md', '.agents\skills\harness\SKILL.md')
-Assert-Equal ($goalMentionFiles -join ';') ($allowedGoalMentionFiles -join ';') 'Codex /goal may be mentioned only by the Harness entry definition and the brainstorming HARD-GATE.'
+$allowedGoalMentionFiles = @('.agents\skills\harness\SKILL.md')
+Assert-Equal ($goalMentionFiles -join ';') ($allowedGoalMentionFiles -join ';') 'Codex /goal is defined only by the Harness entry.'
 foreach ($projectPolicyFile in @('openspec\config.yaml', 'openspec\README.md', 'AGENTS.md')) {
     Assert-True (-not ((Get-Content -LiteralPath (Join-Path $projectRoot $projectPolicyFile) -Raw) -match '/goal')) "$projectPolicyFile must say 'unattended continuation' and defer to harness/SKILL.md instead of restating Codex /goal."
 }
@@ -1264,7 +1278,7 @@ foreach ($token in @('## Exploration carryover', 'openspec/drafts/<domain>/<topi
     Assert-True ($attachmentReferenceText.Contains($token)) "Exploration attachment routing is missing: $token"
 }
 $recordSchemaText = Get-Content -LiteralPath (Join-Path $projectRoot '.agents\skills\openspec\references\record-schema.md') -Raw
-foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness checks only an exact topic or scope', 'local draft materials under `openspec/drafts/` default to', 'Every final Change record and attachment is English')) {
+foreach ($token in @('drafts/<domain>/<topic>/', 'not CLI artifacts', 'Harness checks only an exact topic or scope', 'local draft materials under `openspec/drafts/` default to')) {
     Assert-True ($recordSchemaText.Contains($token)) "Record schema draft contract is missing: $token"
 }
 foreach ($token in @('openspec/drafts/', 'brainstorming')) {
@@ -1296,7 +1310,6 @@ $policyFiles = @(
     '.agents\skills\brainstorming\references\deep-exploration.md',
     '.agents\skills\brainstorming\references\grilling.md',
     '.agents\skills\brainstorming\references\naming.md',
-    '.agents\skills\brainstorming\references\markers.md',
     '.agents\skills\openspec-apply-change\SKILL.md',
     '.agents\skills\openspec\references\record-schema.md',
     '.agents\skills\openspec\references\tasks.md',

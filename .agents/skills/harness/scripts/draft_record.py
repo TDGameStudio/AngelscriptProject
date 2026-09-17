@@ -138,6 +138,16 @@ def visible(item, questions):
     raise ValueError("Unsupported response_item type: " + str(subtype))
 
 
+def binding_target(workspace, binding):
+    records_root = binding.get('records_root', workspace)
+    if binding.get('talk_id'):
+        from discussions import record_path, record_lock
+        target = record_path({'OpenSpecRoot': records_root}, binding['change'], binding['talk_id'])
+        return target, record_lock(records_root, target)
+    target = local_path(records_root, 'openspec/drafts/' + binding['draft_id'] + '/log.md')
+    return target, target.with_suffix('.record.lock')
+
+
 def sync_binding(workspace, session, binding, end_line=None, hook_input=None):
     result = {"status": "covered", "draft_id": binding["draft_id"], "appended": 0,
               "through_line": binding["through_line"], "gaps": [], "legacy_overlap": []}
@@ -151,11 +161,11 @@ def sync_binding(workspace, session, binding, end_line=None, hook_input=None):
         previous = b"".join(lines[:binding["through_line"]])
         if len(lines) < binding["through_line"] or digest(previous) != binding["prefix_sha256"]:
             raise ValueError("Transcript prefix changed or was truncated; checkpoint preserved")
-        log = local_path(binding.get("records_root", workspace), "openspec/drafts/" + binding["draft_id"] + "/log.md")
+        log, log_lock = binding_target(workspace, binding)
         if not log.is_file():
             raise ValueError("Bound draft log is missing; no replacement draft selected")
         questions = set(binding.get("questions", []))
-        with locked(log.with_suffix(".record.lock")):
+        with locked(log_lock):
             old = log.read_text(encoding="utf8")
             chunks = []
             through = binding["through_line"]
@@ -217,7 +227,7 @@ def sync_binding(workspace, session, binding, end_line=None, hook_input=None):
     return result
 
 
-def record(workspace, session, action, *, draft_id=None, source=None, start_line=None, hook_input=None, records_root=None):
+def record(workspace, session, action, *, draft_id=None, source=None, start_line=None, hook_input=None, records_root=None, change=None, talk_id=None):
     workspace = Path(workspace).absolute()
     records_root = Path(records_root or workspace).absolute()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", session):
@@ -238,18 +248,28 @@ def record(workspace, session, action, *, draft_id=None, source=None, start_line
             raise ValueError("Invalid recorder state identity")
         active = state["active"]
         if action == "bind":
-            if not draft_id or not re.fullmatch(r"[a-z0-9-]+/[a-z0-9-]+", draft_id):
+            if talk_id:
+                if draft_id or not change:
+                    raise ValueError('Bind one exact draft or Change talk, never both')
+                binding_target(workspace, {'records_root': str(records_root), 'change': change, 'talk_id': talk_id})
+            elif not draft_id or not re.fullmatch(r"[a-z0-9-]+/[a-z0-9-]+", draft_id):
                 raise ValueError("Bind needs an exact domain/topic draft ID")
             if not source or not start_line or start_line < 2:
                 raise ValueError("Bind needs a transcript and explicit first message line (>= 2)")
-            if not local_path(records_root, "openspec/drafts/" + draft_id + "/log.md").is_file():
+            target, _ = binding_target(workspace, dict(records_root=str(records_root), draft_id=draft_id, change=change, talk_id=talk_id))
+            if not target.is_file():
                 raise ValueError("Bind requires an existing draft log")
+            if talk_id:
+                from discussions import read_record
+                discussion, _ = read_record(target)
+                if not discussion or Path(discussion['workspace_root']).resolve() != workspace.resolve():
+                    raise ValueError('Talk recorder cannot bind another execution workspace')
             source = str(Path(source).absolute())
             data = source_bytes(source, session, workspace)
             lines = data.splitlines(keepends=True)
             if start_line > len(lines) + 1:
                 raise ValueError("Start line is beyond the transcript boundary")
-            same = active and all(active[key] == value for key, value in {"source": source, "draft_id": draft_id, "start_line": start_line}.items())
+            same = active and all(active.get(key) == value for key, value in {"source": source, "draft_id": draft_id, "start_line": start_line, 'talk_id': talk_id, 'change': change}.items())
             if active and Path(active.get('records_root', workspace)) != records_root:
                 raise ValueError('Record root changed; unbind the old range before rebinding')
             if active and not same:
@@ -265,7 +285,7 @@ def record(workspace, session, action, *, draft_id=None, source=None, start_line
                 questions = set()
                 for raw in lines[:start_line - 1]:
                     visible(json.loads(raw), questions)
-                active = {"draft_id": draft_id, "source": source, "records_root": str(records_root), "start_line": start_line,
+                active = {"draft_id": draft_id, 'change': change, 'talk_id': talk_id, "source": source, "records_root": str(records_root), "start_line": start_line,
                           "through_line": start_line - 1, "prefix_sha256": digest(b"".join(lines[:start_line - 1])), "questions": sorted(questions)}
                 state["active"] = active
         if not active:
@@ -289,6 +309,8 @@ def main():
     parser.add_argument("--source")
     parser.add_argument("--start-line", type=int)
     parser.add_argument("--hook-input", action="store_true", help="Read the native hook payload from stdin")
+    parser.add_argument('--change')
+    parser.add_argument('--talk-id')
     args = vars(parser.parse_args())
     try:
         args["hook_input"] = json.load(sys.stdin) if args["hook_input"] else None

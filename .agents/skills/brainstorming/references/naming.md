@@ -14,20 +14,20 @@ Types (classes, structs, enums, interfaces), modules and namespaces, source and 
 
 ## Round shape
 
-Track required names in their owning design. Related independent naming decisions may share a round per [grilling.md](grilling.md); dependent names wait. Send the situation brief first: inspected neighbours, conventions, responsibility and scope. The example below is a content guide; use the host's permitted question mechanism.
+Track required names in the owning draft design or current Change discussion. Related independent naming decisions may share a round per [grill](../../grill/SKILL.md); dependent names wait. Send the situation brief first: inspected neighbours, conventions, responsibility and scope. The example below is a content guide; use the host's permitted question mechanism.
 
 ```text
 Round <N> — Naming
 
 Situation
-📌 Pinned fact: Types/ holds `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`; suffix `Table` = flat lookup, `Database` = owning store. 🔗 Source: Plugins/Angelscript/Source/AngelscriptCode/Public/Types/.
+Pinned fact: Types/ holds `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`; suffix `Table` = flat lookup, `Database` = owning store. Source: Plugins/Angelscript/Source/AngelscriptCode/Public/Types/.
 Why now: design section 3 settled the ownership table; its class and header need names before tasks are written.
 
-❔ Open decision: N1 — <what the thing is>
+Open decision: N1 — <what the thing is>
     A. `FAngelscriptTypeOwnershipTable`  (matches `FAngelscript*Table` in Types/)
     B. `FAngelscriptOwnedTypeRegistry`   (emphasizes registration; no sibling uses Registry)
-👉 Recommendation: A — <reason>.
-📌 Pinned fact: siblings are `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`. 🔗 Source: <path>.
+Recommendation: A — <reason>.
+Pinned fact: siblings are `FAngelscriptTypeDatabase`, `FAngelscriptTypeIdTable`. Source: <path>.
 ```
 
 Record each settled name in designs/<scope>/glossary.md as `| term | chosen | rejected | reason |`, and in that design's Vocabulary and Naming section. Topic glossary.md holds shared vocabulary; include this design's required shared terms with provenance before export. Legacy flat designs retain their glossary path. Draft explanations default to the user's conversation language unless explicitly specified otherwise; Change exports use English and preserve identifiers.

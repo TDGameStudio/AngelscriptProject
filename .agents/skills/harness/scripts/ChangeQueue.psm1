@@ -49,7 +49,12 @@ function Invoke-HarnessChangeQueue {
             } else { $planState = 'invalid-plan'; $issues = @($plan.error.message) }
         }
     }
-    $data | Add-Member -NotePropertyMembers @{planState=$planState; progress=$progress; ready=$ready; taskIssues=$issues; activity='unknown'} -Force
+    $discussions = $null
+    if ($data.currentChange -and $data.recordState -eq 'active') {
+        Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Workflow.psm1')
+        $discussions = Invoke-HarnessReplan -Context $selected -Action status -Change $data.currentChange
+    }
+    $data | Add-Member -NotePropertyMembers @{planState=$planState; progress=$progress; ready=$ready; taskIssues=$issues; activity='unknown'; workflow=$discussions} -Force
     return $data
 }
 Export-ModuleMember -Function Invoke-HarnessChangeQueue

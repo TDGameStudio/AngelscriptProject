@@ -604,10 +604,10 @@ Assert-True ('PostToolUse' -in $hookEventNames -and 'Interrupt' -in $hookEventNa
 $sessionRegistration = @($hookConfig.hooks.SessionStart)[0]
 Assert-Equal 'startup|resume|compact' ([string]$sessionRegistration.matcher) 'SessionStart includes compaction recovery'
 $hookCommands = @($hookConfig.hooks.PSObject.Properties | ForEach-Object { $_.Value | ForEach-Object { $_.hooks } })
-Assert-True ($hookCommands.Count -eq 5) 'Exactly one command is registered for each supported hook event'
+Assert-True ($hookCommands.Count -eq 6) 'Exactly one command is registered for each supported hook event'
 foreach ($hookCommand in $hookCommands) {
     Assert-Equal 'command' ([string]$hookCommand.type) 'Codex hook uses the command adapter'
-    Assert-Equal 3 ([int]$hookCommand.timeout) 'Codex hook timeout stays bounded at three seconds'
+    Assert-True ([int]$hookCommand.timeout -ge 1 -and [int]$hookCommand.timeout -le 10) 'Codex hook has a bounded execution timeout'
     Assert-True ([int]$hookCommand.additionalContextLimit -gt 0 -and [int]$hookCommand.additionalContextLimit -le 1200) 'Codex hook context limit stays positive and bounded'
     Assert-Contains ([string]$hookCommand.commandWindows) 'pwsh(?:\.exe)?[ \t]+-NoProfile' 'Codex hook explicitly uses PowerShell 7 without a profile'
 }

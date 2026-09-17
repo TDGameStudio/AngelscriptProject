@@ -71,6 +71,14 @@ function Initialize-HarnessRoutes {
     $draftModule = '.agents/skills/harness/scripts/DraftLifecycle.psd1'
     $changeGateModule = '.agents/skills/harness/scripts/ChangeGate.psd1'
     $routes = New-Object System.Collections.Generic.List[object]
+    foreach ($group in @('talk','replan','execution')) {
+        $actions = switch ($group) { talk { @('create','update','status') }; replan { @('apply','status') }; execution { @('start','checkpoint','status') } }
+        $entry = switch ($group) { talk { 'Invoke-HarnessTalk' }; replan { 'Invoke-HarnessReplan' }; execution { 'Invoke-HarnessExecution' } }
+        foreach ($action in $actions) {
+            $routes.Add((New-HarnessRoute "harness.$group.$action" 'PowerShell' '.agents/skills/harness/scripts/Workflow.psm1' $entry @() @{Action=$action} 'Inspect or advance an explicitly owned workflow record.')) | Out-Null
+        }
+    }
+    $routes.Add((New-HarnessRoute 'harness.conversation.record' 'PowerShell' $draftModule 'Invoke-HarnessDraftRecord' @() @{} 'Record one exact session to its draft or Change talk.')) | Out-Null
     foreach ($action in @('read','write')) {
         $routes.Add((New-HarnessRoute "harness.specs.$action" 'PowerShell' '.agents/skills/harness/scripts/SharedSpecs.psm1' 'Invoke-HarnessSharedSpec' @() @{Action=$action} 'Read or optimistically publish one canonical spec.')) | Out-Null
     }
@@ -550,6 +558,11 @@ function Add-HarnessContextDefaults {
         foreach ($key in @($Parameters.Keys)) { $values[$key] = $Parameters[$key] }
     }
     switch ($Route.Name) {
+        { $_ -match '^harness\.(talk|replan|execution)\.' -or $_ -eq 'harness.conversation.record' } {
+            if ($values.ContainsKey('Context')) { throw 'Workflow Context comes only from the dispatcher.' }
+            if ($Route.Defaults.ContainsKey('Action') -and $values.Action -ne $Route.Defaults.Action) { throw 'Workflow action comes only from the selected route.' }
+            $values.Context = $Context
+        }
         { $_ -like 'harness.queue.*' -or $_ -like 'harness.specs.*' } {
             if ($values.ContainsKey('Context')) { throw 'Queue Context comes only from the dispatcher.' }
             $values.Context = $Context
@@ -669,6 +682,19 @@ function Invoke-Harness {
             }
         }
         Assert-HarnessOpenSpecChangeName -Command $Command -ArgumentList $ArgumentList
+        if ($Command -eq 'openspec.change' -and $ArgumentList.Count -ge 2 -and $ArgumentList[0] -eq 'archive') {
+            Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Workflow.psm1')
+            $closureWorkflow = Invoke-HarnessReplan -Context $Context -Action status -Change ([string]$ArgumentList[1])
+            if (-not $closureWorkflow.executionAllowed) { throw 'Pending discussion or Replan recovery prevents archive.' }
+            if (@($closureWorkflow.recordingSessions).Count) { throw 'Synchronize and unbind the Change conversation before terminal evaluation and archive.' }
+            $bindingRoot = Join-Path $Context.WorkspaceRoot 'Saved/Harness/draft-record'
+            foreach ($bindingFile in @(Get-ChildItem -LiteralPath $bindingRoot -Filter '*.json' -ErrorAction SilentlyContinue)) {
+                $binding = Get-Content -LiteralPath $bindingFile.FullName -Raw | ConvertFrom-Json
+                if ($null -ne $binding.active -and 'change' -in $binding.active.PSObject.Properties.Name -and $binding.active.change -eq [string]$ArgumentList[1]) {
+                    throw 'Synchronize and unbind the Change conversation before terminal evaluation and archive.'
+                }
+            }
+        }
         if ($Command -eq 'openspec.instructions' -and $ArgumentList.Count -gt 0) {
             if ([string]$ArgumentList[0] -in @('--help', '-h')) {
                 $instructionKind = ''
@@ -750,6 +776,12 @@ function Invoke-Harness {
             }
             if ($route.OutputFormat -eq 'TaskPlanJson') {
                 $data = ConvertFrom-HarnessTaskPlanOutput -Output @($output)
+                $workflowManifest = Join-Path (Get-HarnessRecordRoot $Context) "openspec/changes/$($Parameters.Change)/change.yaml"
+                if (Test-Path -LiteralPath $workflowManifest) {
+                    Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Workflow.psm1')
+                    $workflowState = Invoke-HarnessReplan -Context $Context -Action status -Change $Parameters.Change
+                    $data | Add-Member -NotePropertyMembers @{executionAllowed=$workflowState.executionAllowed; discussionBlockers=@($workflowState.discussions.blockers); replanRecoveryNeeded=$workflowState.recoveryNeeded} -Force
+                }
             }
         }
         else {
@@ -1306,6 +1338,18 @@ function Get-HarnessEvolutionStatus {
     }
 
     $isActiveChange = -not [bool]$resolvedChange.Archived
+    $discussionState = $null
+    if ($isActiveChange) {
+        try {
+            Import-Module (Join-Path $Context.HarnessRoot '.agents/skills/harness/scripts/Workflow.psm1')
+            $discussionState = Invoke-HarnessReplan -Context $Context -Action status -Change $Change
+            foreach ($issue in $discussionState.discussions.issues) { $structuralErrors.Add([string]$issue) | Out-Null }
+            foreach ($pending in $discussionState.discussions.blockers) { $closureBlockers.Add("pending discussion: $pending") | Out-Null }
+            if ($discussionState.recoveryNeeded) { $closureBlockers.Add('Replan recovery required') | Out-Null }
+            if (@($discussionState.recordingSessions).Count) { $closureBlockers.Add('Change conversation recording is still bound') | Out-Null }
+            if (@($discussionState.pendingInputSessions).Count) { $closureBlockers.Add('User input awaits triage') | Out-Null }
+        } catch { $structuralErrors.Add("Discussion state unavailable: $($_.Exception.Message)") | Out-Null }
+    }
     if (Test-Path -LiteralPath $implementationRoot -PathType Container) {
         foreach ($file in @(Get-ChildItem -LiteralPath $implementationRoot -Recurse -File -Filter 'issue-*.md' | Sort-Object FullName)) {
             $relativePath = Get-HarnessWorkspaceRelativePath -WorkspaceRoot (Get-HarnessRecordRoot $Context) -Path $file.FullName
@@ -1602,6 +1646,7 @@ function Get-HarnessEvolutionStatus {
         EvaluationClosureKind     = $evaluationClosureKind
         EvaluationInputSha256     = $evaluationInputSha256
         EvaluationFresh           = $evaluationFresh
+        DiscussionState           = $discussionState
         ClosureReady              = $closureBlockers.Count -eq 0
         ClosureBlockers           = @($closureBlockers | ForEach-Object { [string]$_ })
         RawBodiesLoaded           = $false

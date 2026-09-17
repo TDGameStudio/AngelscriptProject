@@ -38,3 +38,5 @@ Archiving is a separate deterministic operation after policy checks. Closure nev
 After the move, run strict archived validation and only the smallest applicable non-destructive check that does not reapply active terminal policy. `RequireTerminal` deliberately rejects an archived target. If post-move evidence finds a new defect, keep the archive immutable and open a follow-up change with its own evidence.
 
 Neither observation admission nor the terminal gate starts Review or Replan. Review remains explicit-only; Replan remains evidence-gated by invalidated planning truth. A material finding discovered after archive enters an immediate exact successor Change and v2 issue before final handoff rather than mutating the archive.
+
+- Before terminal evaluation, resolve current-scope discussions, finish Replan recovery, synchronize and unbind Change conversation recording. Pending decisions or an active recording sink prevent archive; archived originals remain immutable.
