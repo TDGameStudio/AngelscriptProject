@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "agent-run-lifecycle",
+  "diagram_type": "lifecycle",
+  "quality_profile": "showcase",
+  "requirements": {
+    "nodes": [
+      { "key": "queued", "labels": ["Queued", "Accepted", "Admitted"], "type": "start" },
+      { "key": "executing", "labels": ["Executing", "Running", "Execution"], "type": "active" },
+      { "key": "reviewing", "labels": ["Reviewing", "Quality Review"], "type": "decision" },
+      { "key": "approval", "labels": ["Needs Approval", "Waiting for Approval", "Awaiting Approval", "Approval hold", "Pending Approval", "Approval Pending"], "type": "waiting" },
+      { "key": "blocked", "labels": ["Blocked", "Waiting for Input", "Awaiting Input", "Blocked for Input", "Pending Input"], "type": "waiting" },
+      { "key": "recoverable", "labels": ["Failed", "Recoverable Failure", "Retryable Failure", "Recoverable Error", "Tool Error"], "sublabels": ["recoverable error", "tool error", "retryable"], "tags": ["retryable", "recoverable"], "type": "failure" },
+      { "key": "cancelled", "labels": ["Cancelled", "Canceled"], "type": "failure" },
+      { "key": "expired", "labels": ["Expired", "Timed Out"], "type": "failure" }
+    ],
+    "relationships": [
+      { "from": "executing", "to": "approval", "variant": "security" },
+      { "from": "reviewing", "to": "blocked" },
+      { "from": "executing", "to": "recoverable" },
+      { "from": "recoverable", "to": "executing" },
+      { "from": "blocked", "to": "expired", "variant": "security" },
+      { "from": "approval", "to": "cancelled", "variant": "security" }
+    ]
+  }
+}

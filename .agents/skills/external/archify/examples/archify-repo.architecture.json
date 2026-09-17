@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Archify",
+    "subtitle": "Agent skill → JSON IR → typed renderers → standalone HTML",
+    "output": "examples/archify-repo.html"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "You",
+      "sublabel": "NL or Mermaid",
+      "pos": [40, 300],
+      "size": [120, 60]
+    },
+    {
+      "id": "agents",
+      "type": "frontend",
+      "label": "Agent Hosts",
+      "sublabel": "Claude · Codex · opencode",
+      "pos": [200, 300],
+      "size": [150, 60]
+    },
+    {
+      "id": "skill",
+      "type": "frontend",
+      "label": "SKILL.md",
+      "sublabel": "layout judgment",
+      "pos": [200, 140],
+      "size": [150, 60],
+      "tag": "prompt dialect"
+    },
+    {
+      "id": "ir",
+      "type": "messagebus",
+      "label": "JSON IR",
+      "sublabel": "schema_version: 1",
+      "pos": [400, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "schemas",
+      "type": "security",
+      "label": "JSON Schema",
+      "sublabel": "ajv strict",
+      "pos": [400, 140],
+      "size": [140, 60],
+      "tag": "fail-closed"
+    },
+    {
+      "id": "renderers",
+      "type": "backend",
+      "label": "Renderers ×5",
+      "sublabel": "layout checks",
+      "pos": [590, 300],
+      "size": [140, 60],
+      "tag": "no auto-layout"
+    },
+    {
+      "id": "template",
+      "type": "frontend",
+      "label": "template.html",
+      "sublabel": "theme + export",
+      "pos": [780, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "checker",
+      "type": "security",
+      "label": "Output Check",
+      "sublabel": "SVG gates",
+      "pos": [970, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "html",
+      "type": "cloud",
+      "label": "HTML Artifact",
+      "sublabel": "single file",
+      "pos": [1160, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "zip",
+      "type": "cloud",
+      "label": "archify.zip",
+      "sublabel": "skill package",
+      "pos": [1160, 140],
+      "size": [140, 60]
+    },
+    {
+      "id": "ci",
+      "type": "backend",
+      "label": "CI Gates",
+      "sublabel": "golden + zip",
+      "pos": [590, 440],
+      "size": [140, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "archify/ skill package",
+      "wraps": ["ir", "schemas", "renderers", "template", "checker"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "agents",
+      "variant": "emphasis"
+    },
+    {
+      "from": "agents",
+      "to": "skill",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "agents",
+      "to": "ir",
+      "label": "write IR",
+      "variant": "emphasis"
+    },
+    {
+      "from": "ir",
+      "to": "schemas",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "ir",
+      "to": "renderers",
+      "variant": "emphasis"
+    },
+    {
+      "from": "renderers",
+      "to": "template",
+      "variant": "emphasis"
+    },
+    {
+      "from": "template",
+      "to": "checker",
+      "variant": "emphasis"
+    },
+    {
+      "from": "checker",
+      "to": "html",
+      "label": "deliver",
+      "variant": "emphasis"
+    },
+    {
+      "from": "renderers",
+      "to": "ci",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "html",
+      "to": "zip",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Agent loop",
+      "items": [
+        "Claude / Codex / opencode load the skill",
+        "SKILL.md teaches layout judgment, not auto-layout",
+        "Mermaid is an input dialect via prompt, not a parser"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Render path",
+      "items": [
+        "JSON IR pins schema_version: 1",
+        "Five typed renderers: architecture / workflow / sequence / dataflow / lifecycle",
+        "template.html owns theme toggle and 4× export"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Quality gates",
+      "items": [
+        "ajv schema validation sits on the IR (fail-closed)",
+        "Renderer layout checks, then Output Check on the HTML",
+        "CI golden tests and zip freshness stay off the main path"
+      ]
+    }
+  ]
+}

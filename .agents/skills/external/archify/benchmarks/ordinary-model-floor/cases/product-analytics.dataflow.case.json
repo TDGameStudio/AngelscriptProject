@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "product-analytics-dataflow",
+  "diagram_type": "dataflow",
+  "quality_profile": "showcase",
+  "requirements": {
+    "nodes": [
+      { "key": "edge", "labels": ["Edge API", "Edge Gateway", "Edge Ingestion", "Ingestion API", "Ingestion Gateway", "Ingest Gateway", "Edge Collector", "Edge Proxy"], "type": "cloud" },
+      { "key": "consent", "labels": ["Consent Gate", "Consent Check", "Consent Filter", "Consent Policy", "Policy Gate"], "type": "security" },
+      { "key": "stream", "labels": ["Event Stream", "Event Bus"], "type": "messagebus" },
+      { "key": "pii", "labels": ["PII Vault", "Identity Vault", "Identity Store"], "type": "security" },
+      { "key": "warehouse", "labels": ["Warehouse", "Data Warehouse", "Analytics Warehouse"], "type": "database" },
+      { "key": "dashboard", "labels": ["Dashboards", "Analytics Dashboard", "Analytics UI", "BI Dashboard"], "type": "backend" }
+    ],
+    "relationships": [
+      { "from": "edge", "to": "consent", "labels": ["identity + consent", "consent check", "identity claims", "identity context", "identity payload", "identity fields"] },
+      { "from": "edge", "to": "stream", "labels": ["accepted events", "validated events", "cleared events", "telemetry", "sanitized events"] },
+      { "from": "consent", "to": "pii", "labels": ["identity map", "approved identity", "consented identity", "encrypted identity", "encrypted PII"] },
+      { "from": "stream", "to": "warehouse", "labels": ["normalized facts", "normalized events"] },
+      { "from": "warehouse", "to": "dashboard", "labels": ["metrics SQL", "analytics query", "KPI reads", "metric aggregates", "metric queries", "metrics query"] }
+    ]
+  }
+}

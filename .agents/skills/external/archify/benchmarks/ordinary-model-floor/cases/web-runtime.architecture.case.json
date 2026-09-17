@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "web-runtime-architecture",
+  "diagram_type": "architecture",
+  "quality_profile": "showcase",
+  "requirements": {
+    "nodes": [
+      { "key": "users", "labels": ["Users", "Browser Clients"], "type": "external" },
+      { "key": "cdn", "labels": ["CloudFront", "CDN", "Content Delivery Network"], "type": "cloud" },
+      { "key": "api", "labels": ["API Server", "Application API", "App API"], "type": "backend" },
+      { "key": "cache", "labels": ["Redis", "Redis Cache"], "type": "database" },
+      { "key": "db", "labels": ["PostgreSQL", "Postgres", "Primary Database"], "type": "database" }
+    ],
+    "relationships": [
+      { "from": "users", "to": "cdn", "labels": ["HTTPS"] },
+      { "from": "api", "to": "cache", "labels": ["read-through", "cache read", "GET / SET", "Redis access"] },
+      { "from": "api", "to": "db", "labels": ["SQL", "database query"] }
+    ]
+  }
+}

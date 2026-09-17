@@ -1,0 +1,12 @@
+# Manifest: randomized filename → (diagram, version)
+# Generated 2026-04-16T02:07:47Z
+
+img-04-12c2.png → diagram=1 version=C
+img-05-n1tw.png → diagram=3 version=C
+img-06-hkrq.png → diagram=3 version=A
+img-07-43uu.png → diagram=1 version=B
+img-08-weo4.png → diagram=1 version=A
+img-10-rnix.png → diagram=3 version=B
+img-12-nlmi.png → diagram=2 version=B
+img-13-5mj4.png → diagram=2 version=A
+img-15-05g2.png → diagram=2 version=C

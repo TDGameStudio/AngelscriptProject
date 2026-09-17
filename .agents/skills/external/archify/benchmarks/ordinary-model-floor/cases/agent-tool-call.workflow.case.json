@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "agent-tool-call-workflow",
+  "diagram_type": "workflow",
+  "quality_profile": "showcase",
+  "requirements": {
+    "nodes": [
+      { "key": "planner", "labels": ["Agent Planner", "Planner", "Intent Planner"], "type": "backend" },
+      { "key": "router", "labels": ["Tool Router", "Router", "Route Decision", "Dispatcher"], "types": ["backend", "security"] },
+      { "key": "approval", "labels": ["Approval Gate", "Human Approval", "Consent Gate", "Approval"], "type": "security" },
+      { "key": "tool", "labels": ["Tool Call", "Tool Execution", "Tool Execute", "Tool Executor", "Tool Runner", "Tool Dispatch", "Tool Invoke", "Tool Invocation"], "type": "messagebus" },
+      { "key": "blocked", "labels": ["Blocked", "Denied", "Held"], "type": "security" },
+      { "key": "external", "labels": ["External API", "Provider API", "Remote API", "Remote Service", "External Provider"], "type": "cloud" }
+    ],
+    "relationships": [
+      { "from": "planner", "to": "router" },
+      { "from": "router", "to": "approval", "labels": ["needs approval?", "approval required?", "requires approval?", "approve?", "consent?"] },
+      { "from": "approval", "to": "tool" },
+      { "from": "approval", "to": "blocked", "labels": ["denied", "rejected"] },
+      { "from": "tool", "to": "external" }
+    ]
+  }
+}

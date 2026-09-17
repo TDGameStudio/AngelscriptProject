@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Maka",
+    "subtitle": "Local-first desktop AI workbench — sessions, tools, permissions, recovery",
+    "output": "examples/maka-architecture.html"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "You",
+      "sublabel": "desktop user",
+      "pos": [40, 300],
+      "size": [120, 60]
+    },
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "Desktop UI",
+      "sublabel": "React renderer",
+      "pos": [200, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "main",
+      "type": "backend",
+      "label": "Main Process",
+      "sublabel": "Electron IPC",
+      "pos": [390, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "session",
+      "type": "backend",
+      "label": "SessionManager",
+      "sublabel": "public runtime API",
+      "pos": [580, 300],
+      "size": [150, 60]
+    },
+    {
+      "id": "agentrun",
+      "type": "backend",
+      "label": "AgentRun",
+      "sublabel": "turn + recovery",
+      "pos": [780, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "model",
+      "type": "backend",
+      "label": "ModelAdapter",
+      "sublabel": "stream + usage",
+      "pos": [970, 300],
+      "size": [140, 60]
+    },
+    {
+      "id": "providers",
+      "type": "cloud",
+      "label": "Model Providers",
+      "sublabel": "AI SDK / Ollama",
+      "pos": [970, 140],
+      "size": [140, 60],
+      "tag": "API keys local"
+    },
+    {
+      "id": "bots",
+      "type": "external",
+      "label": "Bots & Gateway",
+      "sublabel": "Telegram · Feishu · HTTP",
+      "pos": [580, 140],
+      "size": [150, 60]
+    },
+    {
+      "id": "permission",
+      "type": "security",
+      "label": "Permission",
+      "sublabel": "policy engine",
+      "pos": [780, 140],
+      "size": [140, 60],
+      "tag": "fail-closed"
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Local Storage",
+      "sublabel": "userData JSONL",
+      "pos": [580, 440],
+      "size": [150, 60]
+    },
+    {
+      "id": "toolrt",
+      "type": "messagebus",
+      "label": "ToolRuntime",
+      "sublabel": "validate · abort",
+      "pos": [780, 440],
+      "size": [140, 60]
+    },
+    {
+      "id": "tools",
+      "type": "frontend",
+      "label": "Local Tools",
+      "sublabel": "Read · Write · Bash",
+      "pos": [970, 440],
+      "size": [140, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Electron app + packages/runtime",
+      "wraps": ["ui", "main", "session", "agentrun", "model", "toolrt", "storage", "permission"]
+    },
+    {
+      "kind": "security-group",
+      "label": "trust boundary",
+      "wraps": ["permission", "storage"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "ui",
+      "variant": "emphasis"
+    },
+    {
+      "from": "ui",
+      "to": "main",
+      "label": "IPC",
+      "variant": "emphasis"
+    },
+    {
+      "from": "main",
+      "to": "session",
+      "variant": "emphasis"
+    },
+    {
+      "from": "session",
+      "to": "agentrun",
+      "label": "turn",
+      "variant": "emphasis"
+    },
+    {
+      "from": "agentrun",
+      "to": "model",
+      "variant": "emphasis"
+    },
+    {
+      "from": "model",
+      "to": "providers",
+      "label": "stream",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "bots",
+      "to": "session",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "agentrun",
+      "to": "permission",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "session",
+      "to": "storage",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "agentrun",
+      "to": "toolrt",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "toolrt",
+      "to": "tools",
+      "variant": "emphasis"
+    },
+    {
+      "from": "toolrt",
+      "to": "permission",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [[850, 540], [1160, 540], [1160, 100], [850, 100]]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Desktop surfaces",
+      "items": [
+        "apps/desktop: renderer, preload, main process",
+        "Settings for models, bots, search, gateway, permissions",
+        "Bots and open gateway share SessionManager as the public API"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Runtime kernel",
+      "items": [
+        "SessionManager → AgentRun → AiSdkBackend",
+        "ModelAdapter normalizes provider streams and usage",
+        "ToolRuntime owns tool validation, abort, and telemetry"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Local & privacy",
+      "items": [
+        "Sessions and credentials live under Electron userData",
+        "Write/Bash and risky ops go through the permission engine",
+        "Renderer never sees plaintext secrets — only masked status"
+      ]
+    }
+  ]
+}

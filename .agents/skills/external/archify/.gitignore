@@ -1,2 +1,6 @@
-# Dependencies are restored from package-lock.json for local verification.
+.DS_Store
+.harnessed/
 node_modules/
+.claude/
+.lore/
+/.impeccable/

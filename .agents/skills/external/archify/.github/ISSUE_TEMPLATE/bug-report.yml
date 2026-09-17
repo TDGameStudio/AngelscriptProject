@@ -1,0 +1,114 @@
+name: Report a reproducible bug
+description: Report a renderer, validator, package, or generated-artifact problem.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Stability comes first. A small typed JSON reproduction and the machine-readable validation receipt are the fastest path to a safe fix.
+
+  - type: input
+    id: archify_version
+    attributes:
+      label: Archify version or commit
+      placeholder: "2.12.0 or 0123456789abcdef..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation method
+      options:
+        - npm package
+        - Git clone
+        - Downloaded archify.zip
+        - Uploaded skill archive
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: diagram_type
+    attributes:
+      label: Diagram type
+      options:
+        - Architecture
+        - Workflow
+        - Sequence
+        - Data flow
+        - Lifecycle
+        - Installation or packaging
+        - Generated viewer
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command
+      description: Include flags and paths, replacing private path segments with neutral placeholders.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: minimal_json
+    attributes:
+      label: Minimal redacted JSON reproduction
+      description: Remove unrelated nodes and facts while preserving the failure.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation_receipt
+    attributes:
+      label: Validation receipt or exact error
+      description: Prefer the complete JSON produced by `validate --json` or `deliver --json`.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: upload
+    id: visual_evidence
+    attributes:
+      label: Supporting visual evidence
+      description: When it helps reviewers evaluate a visual problem, upload screenshots or recordings and mark subtle defects. Reproducible steps above may be enough when media would not add useful context.
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include operating system, Node.js version, coding client, and model when relevant.
+      placeholder: "macOS 15, Node.js 22, Cursor, model-name"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: sensitive_data
+    attributes:
+      label: Final checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed access tokens, credentials, private repository contents, and personal or customer data.
+          required: true

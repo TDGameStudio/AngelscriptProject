@@ -13,3 +13,12 @@
 [submodule "Tools/openspec"]
 	path = Tools/openspec
 	url = git@github.com:TDGameStudio/openspec.git
+[submodule ".agents/skills/external/web/ui-ux-pro-max"]
+	path = .agents/skills/external/web/ui-ux-pro-max
+	url = git@github.com:nextlevelbuilder/ui-ux-pro-max-skill.git
+[submodule ".agents/skills/external/archify"]
+	path = .agents/skills/external/archify
+	url = git@github.com:tt-a1i/archify.git
+[submodule ".agents/skills/external/web/frontend-design"]
+	path = .agents/skills/external/web/frontend-design
+	url = git@github.com:anthropics/skills.git

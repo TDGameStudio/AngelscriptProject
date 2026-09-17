@@ -1,0 +1,10 @@
+# Opt-in Archify filesystem Skill provider for DeepSeek Harness.
+# Resolves the packaged Skill root from the installed npm identity anchored at
+# the DSH profile (Loader baseUrl), never as a path concatenated onto baseUrl.
+- insert:
+    - id: archify-skill-filesystem
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: archify-plugin
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@tt-a1i/archify-dsh/package.json')), 'skills')

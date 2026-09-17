@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "cache-miss-sequence",
+  "diagram_type": "sequence",
+  "quality_profile": "showcase",
+  "requirements": {
+    "nodes": [
+      { "key": "web", "labels": ["Web App", "Browser", "Dashboard UI"], "types": ["frontend", "external"] },
+      { "key": "api", "labels": ["API", "API Server"], "type": "backend" },
+      { "key": "auth", "labels": ["Auth", "Authentication", "Identity", "Authorizer", "JWT Authorizer", "JWT Guard", "JWT Validator", "Token Guard"], "type": "security" },
+      { "key": "redis", "labels": ["Redis", "Cache"], "type": "database" },
+      { "key": "db", "labels": ["Postgres", "PostgreSQL", "Database"], "type": "database" }
+    ],
+    "relationships": [
+      { "from": "api", "to": "auth", "labels": ["verify JWT", "verify Bearer JWT", "validate JWT", "validate token", "verify token"] },
+      { "from": "api", "to": "redis", "labels": ["read cache", "cache get", "GET"] },
+      { "from": "redis", "to": "api", "labels": ["miss", "cache miss"] },
+      { "from": "api", "to": "db", "labels": ["query profile + metrics", "query database", "SELECT"] },
+      { "from": "api", "to": "redis", "labels": ["set cache", "cache set", "store cache", "write cache", "SET", "SETEX"] }
+    ]
+  }
+}

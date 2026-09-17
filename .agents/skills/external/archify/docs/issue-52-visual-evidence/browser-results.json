@@ -1,0 +1,156 @@
+{
+  "ok": true,
+  "chrome": "Google Chrome headless",
+  "viewportThemes": [
+    "dark",
+    "light"
+  ],
+  "results": {
+    "dataflow-dark": {
+      "theme": "dark",
+      "kinds": [
+        "default"
+      ],
+      "bridge": false,
+      "legendTitle": true,
+      "roles": [
+        null
+      ],
+      "aria": [
+        null
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "lifecycle-dark": {
+      "theme": "dark",
+      "kinds": [
+        "start",
+        "active",
+        "success"
+      ],
+      "bridge": true,
+      "legendTitle": true,
+      "roles": [
+        "button",
+        "button",
+        "button"
+      ],
+      "aria": [
+        "Inspect start, 1 node",
+        "Inspect active state, 1 node",
+        "Inspect terminal success, 1 node"
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "dataflow-light": {
+      "theme": "light",
+      "kinds": [
+        "default"
+      ],
+      "bridge": false,
+      "legendTitle": true,
+      "roles": [
+        null
+      ],
+      "aria": [
+        null
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "lifecycle-light": {
+      "theme": "light",
+      "kinds": [
+        "start",
+        "active",
+        "success"
+      ],
+      "bridge": true,
+      "legendTitle": true,
+      "roles": [
+        "button",
+        "button",
+        "button"
+      ],
+      "aria": [
+        "Inspect start, 1 node",
+        "Inspect active state, 1 node",
+        "Inspect terminal success, 1 node"
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "custom": {
+      "theme": "dark",
+      "kinds": [
+        "frontend",
+        "database",
+        "external"
+      ],
+      "bridge": true,
+      "legendTitle": true,
+      "roles": [
+        "button",
+        "button",
+        null
+      ],
+      "aria": [
+        "Inspect Reader <UI> & ops, 1 node",
+        "Inspect Database, 1 node",
+        null
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "hidden": {
+      "theme": "dark",
+      "kinds": [],
+      "bridge": false,
+      "legendTitle": false,
+      "roles": [],
+      "aria": [],
+      "inside": true,
+      "nonOverlapping": true
+    },
+    "longLabels": {
+      "theme": "dark",
+      "kinds": [
+        "start",
+        "active",
+        "waiting",
+        "decision",
+        "success",
+        "failure",
+        "neutral",
+        "external"
+      ],
+      "bridge": true,
+      "legendTitle": true,
+      "roles": [
+        "button",
+        "button",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "aria": [
+        "Inspect 开始 / Start of the complete lifecycle, 1 node",
+        "Inspect 正在执行 active processing, 1 node",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "inside": true,
+      "nonOverlapping": true
+    }
+  },
+  "runtimeErrors": []
+}
